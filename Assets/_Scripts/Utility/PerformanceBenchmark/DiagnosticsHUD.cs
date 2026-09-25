@@ -1,6 +1,7 @@
 using UnityEngine;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -45,6 +46,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static readonly List<string> s_statSectionOrder = new();
         static readonly Dictionary<string, List<KeyValuePair<string, string>>> s_customStats = new();
         static readonly Dictionary<string, System.Func<string[], string>> s_commands = new();
+        // Who registered each name, so a collision can NAME both sides. Two owners claiming
+        // one name is not theoretical: PrismStressInjector (a render-only ECS cloud) and
+        // PrismGridExplosionHarness (a lattice of REAL prisms) both claimed "prisms", and
+        // registration order is not guaranteed — so `prisms 50000` gave you whichever ran
+        // last, and the two measure completely different things.
+        static readonly Dictionary<string, string> s_commandOwners = new();
 
         // Command handlers are closures over play-mode components; an owner that misses
         // UnregisterCommand in OnDestroy would otherwise ghost into the next session.
@@ -54,6 +61,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             s_statSectionOrder.Clear();
             s_customStats.Clear();
             s_commands.Clear();
+            s_commandOwners.Clear();
         }
 #endif
 
@@ -94,8 +102,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public static void RegisterCommand(string name, System.Func<string[], string> handler)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (!string.IsNullOrEmpty(name) && handler != null)
-                s_commands[name.ToLowerInvariant()] = handler;
+            if (string.IsNullOrEmpty(name) || handler == null) return;
+
+            string key = name.ToLowerInvariant();
+            string owner = handler.Target?.GetType().Name
+                           ?? handler.Method.DeclaringType?.Name
+                           ?? "<static>";
+
+            // Loud, because the failure mode is silent and total: the command still works, it
+            // just belongs to somebody else, and a measurement taken through it is a
+            // measurement of the wrong thing. Re-registering from the SAME owner (a component
+            // re-enabled) is normal and says nothing.
+            if (s_commandOwners.TryGetValue(key, out string previous) && previous != owner)
+                Debug.LogWarning(
+                    $"[DiagnosticsHUD] Console command '{key}' re-registered by {owner}, " +
+                    $"replacing {previous}. Registration order is NOT guaranteed, so this " +
+                    $"command is now whichever component happened to start last. Give one of " +
+                    $"them a distinct name.");
+
+            s_commands[key] = handler;
+            s_commandOwners[key] = owner;
 #endif
         }
 
@@ -103,7 +129,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public static void UnregisterCommand(string name)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (!string.IsNullOrEmpty(name)) s_commands.Remove(name.ToLowerInvariant());
+            if (string.IsNullOrEmpty(name)) return;
+            string key = name.ToLowerInvariant();
+            s_commands.Remove(key);
+            s_commandOwners.Remove(key);
 #endif
         }
 
@@ -144,6 +173,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         float _recStart, _recEnd, _recRunningSum;
         float _recCpuSum, _recBusyCpuSum, _recGpuSum;
         int _recFrames, _recTimedFrames;
+
+        // Render + GC accumulators. The recorders behind these have been started since
+        // StartRecorders() but were only ever read for SPIKE records and the live rows, so a
+        // saved report carried one INSTANTANEOUS draw count and no GC figure at all — which is
+        // precisely the number an A/B of the prism render path is chasing. Averaged over the
+        // whole run they are comparable between arms; a single sample is not.
+        double _recDrawSum, _recBatchSum, _recSetPassSum, _recGcKbSum;
+
+        /// <summary>Operator-supplied tag for the run in flight ("pathOn" / "pathOff").</summary>
+        string _recLabel = string.Empty;
         readonly List<float> _recFrameMs = new(8192);
         readonly List<DiagSpike> _recSpikes = new(256);
         string _lastSavedPath = "";
@@ -169,12 +208,492 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _instance = this;
             StartRecorders();
             BuildUI();
+            RegisterCommand(FrameCapCommand, HandleFrameCapCommand);
+            RegisterCommand(DiagCommand, HandleDiagCommand);
+            RegisterCommand(RenderersCommand, HandleRenderersCommand);
+            RegisterCommand(FreezeCommand, EcologyFreezeSwitch.Handle);
+            RegisterCommand(ABComparison.CommandName, HandleABCommand);
+            RegisterCommand(ProfilerCapture.CommandName, HandleProfCommand);
         }
 
         void OnDestroy()
         {
+            RestoreFrameCap();
+            UnregisterCommand(FrameCapCommand);
+            UnregisterCommand(DiagCommand);
+            UnregisterCommand(RenderersCommand);
+            UnregisterCommand(FreezeCommand);
+            UnregisterCommand(ABComparison.CommandName);
+            UnregisterCommand(ProfilerCapture.CommandName);
+            _abStopRequested = true;
+#if UNITY_EDITOR
+            _profStopRequested = true;
+            // The coroutine dies with this object; the Profiler's Record state must not.
+            if (_profRunning) ProfilerFrameReader.Recording = _profWasRecording;
+#endif
+            _abAcc = null;
+            RendererHideSwitch.ShowIfHidden();
+            EcologyFreezeSwitch.ReleaseIfFrozen();
             DisposeRecorders();
             if (_instance == this) _instance = null;
+        }
+
+        // ── frame cap ─────────────────────────────────────────────────────
+        // A capped frame cannot MEASURE: idle time absorbs any change smaller than itself,
+        // so an A/B run under a cap reports "no difference" from a test that could not have
+        // shown one. This is the one knob that has to be reachable without leaving play mode.
+        const string FrameCapCommand = "fps";
+        bool _frameCapOverridden;
+        int _savedVSync, _savedTargetFrameRate;
+
+        const string DiagCommand = "diag";
+
+        // ── renderer census ──────────────────────────────────────────────
+        // On demand only: see RendererCensus for why it is never sampled on a timer.
+        const string RenderersCommand = "renderers";
+        RendererCensus _lastCensus;
+
+        // renderers                  → census
+        // renderers hide <prefix>      → switch off every renderer on a material named <prefix>*
+        // renderers show               → switch exactly those back on
+        string HandleRenderersCommand(string[] args)
+        {
+            string verb = args is { Length: > 0 } ? args[0].ToLowerInvariant() : "";
+            if (verb == "hide") return RendererHideSwitch.Hide(args.Length > 1 ? args[1] : null);
+            if (verb == "show") return RendererHideSwitch.Show();
+
+            _lastCensus = RendererCensus.Take();
+            string hidden = RendererHideSwitch.HiddenCount > 0
+                ? $" [{RendererHideSwitch.HiddenCount:N0} hidden by 'renderers hide']"
+                : "";
+            return _lastCensus.Describe() + hidden;
+        }
+
+        /// <summary>
+        /// <c>diag [label] [seconds]</c> — start a timed recording, TAGGED. The label is what
+        /// makes two saved reports diffable as an A/B; F5 leaves them anonymous, and a pair of
+        /// anonymous JSONs an hour apart is exactly how an arm gets misattributed.
+        /// </summary>
+        string HandleDiagCommand(string[] args)
+        {
+            if (_recording) return $"already recording ({_recFrames} frames so far) — wait, or press Stop";
+            if (_abRunning) return "an 'ab' run is in progress — wait for it, or 'ab stop'";
+            if (_profRunning) return "a 'prof' capture is in progress — wait for it, or 'prof stop'";
+
+            string label = string.Empty;
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (int.TryParse(args[i], out int seconds) && seconds > 0)
+                {
+                    _diagSeconds = Mathf.Clamp(seconds, 1, 600);
+                    continue;
+                }
+                label = args[i];
+            }
+
+            _recLabel = label;
+            StartDiagnostic();
+            return $"recording {_diagSeconds}s" +
+                   (string.IsNullOrEmpty(label) ? "" : $" as '{label}'") +
+                   $" · path {CosmicShore.ECS.PrismRenderService.StatusLine()}";
+        }
+
+        string HandleFrameCapCommand(string[] args)
+        {
+            string mode = args.Length > 0 ? args[0].ToLowerInvariant() : "";
+            switch (mode)
+            {
+                case "uncap":
+                    if (!_frameCapOverridden)
+                    {
+                        // Captured at OVERRIDE time, not at Awake: DisplayGraphicsSettings
+                        // applies the player's saved settings at AfterSceneLoad, which can be
+                        // after this component exists, so an Awake snapshot is the wrong value.
+                        _savedVSync = QualitySettings.vSyncCount;
+                        _savedTargetFrameRate = Application.targetFrameRate;
+                        _frameCapOverridden = true;
+                    }
+                    QualitySettings.vSyncCount = 0;
+                    Application.targetFrameRate = -1;
+                    return $"frame cap removed (was vsync {_savedVSync}, target " +
+                           $"{(_savedTargetFrameRate > 0 ? _savedTargetFrameRate.ToString() : "uncapped")}) " +
+                           "— `fps restore` puts it back";
+
+                case "restore":
+                    if (!_frameCapOverridden) return "frame cap was never overridden here";
+                    RestoreFrameCap();
+                    return $"frame cap restored: vsync {QualitySettings.vSyncCount}, target " +
+                           $"{(Application.targetFrameRate > 0 ? Application.targetFrameRate.ToString() : "uncapped")}";
+
+                case "":
+                    return $"vsync {QualitySettings.vSyncCount}, target " +
+                           $"{(Application.targetFrameRate > 0 ? Application.targetFrameRate.ToString() : "uncapped")}" +
+                           $"{(_frameCapOverridden ? " (overridden by `fps uncap`)" : "")} " +
+                           $"| usage: {FrameCapCommand} uncap | restore";
+
+                default:
+                    return $"usage: {FrameCapCommand} uncap | restore";
+            }
+        }
+
+        // Restoring on teardown matters because both of these are PROCESS-wide and survive a
+        // scene load: an override left behind would silently uncap the next scene the player
+        // entered, which is a measurement setting escaping into the game.
+        void RestoreFrameCap()
+        {
+            if (!_frameCapOverridden) return;
+            QualitySettings.vSyncCount = _savedVSync;
+            Application.targetFrameRate = _savedTargetFrameRate;
+            _frameCapOverridden = false;
+        }
+
+        // ── ecology freeze ────────────────────────────────────────────────
+        // Production gating for a same-state A/B; the switch owns the hold and its release.
+        const string FreezeCommand = "freeze";
+
+        // ── A/B ───────────────────────────────────────────────────────────
+        // `ab "<command A>" "<command B>" [seconds] [rounds]` runs two console commands as the
+        // two arms of one comparison: counterbalanced rounds (A B | B A | ...), a settle after
+        // every command, a recording per arm, then ONE line of paired deltas and one saved
+        // JSON holding both arms. The statistics are ABComparison's (pure, tested); this class
+        // owns only the clock and the per-frame sampling, which already runs in Update.
+        bool _abRunning, _abStopRequested;
+        ABComparison.ArmAccumulator _abAcc;
+        const string ABSection = "A/B";
+
+        string HandleABCommand(string[] args)
+        {
+            if (args is { Length: 1 } && args[0].Equals("stop", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!_abRunning) return "no 'ab' run in progress";
+                _abStopRequested = true;
+                return "stopping after the current step - the world is put back in arm B's state";
+            }
+
+            if (_abRunning) return "an 'ab' run is already in progress — 'ab stop' to cancel it";
+            if (_recording) return "a 'diag' recording is in progress — wait for it first";
+            // The Profiler's recording overhead would land in one arm and not the other.
+            if (_profRunning) return "a 'prof' capture is in progress — wait for it, or 'prof stop'";
+            if (!ABComparison.TryParse(args, out var request, out string error)) return error;
+
+            foreach (string command in new[] { request.CommandA, request.CommandB })
+            {
+                string name = ABComparison.CommandNameOf(command);
+                // A run inside a run would sample into one accumulator from two clocks; a diag
+                // inside a run would record over the arm it was meant to measure.
+                if (name == ABComparison.CommandName || name == DiagCommand || name == ProfilerCapture.CommandName)
+                    return $"'{name}' cannot be an arm of an A/B";
+                if (!s_commands.ContainsKey(name))
+                    return $"unknown command '{name}' in an arm — commands: {string.Join(", ", s_commands.Keys)}";
+            }
+
+            StartCoroutine(RunAB(request));
+            float perArm = ABComparison.SettleSeconds + ABComparison.PostCensusGapSeconds + request.Seconds;
+            return $"A/B started: {request.Rounds} rounds x 2 arms x ~{perArm:F0}s = ~{request.Rounds * 2 * perArm:F0}s. " +
+                   $"Hands off; do not change focus. Frozen: {(EcologyFreezeSwitch.IsFrozen ? "yes" : "NO")}";
+        }
+
+        IEnumerator RunAB(ABComparison.Request request)
+        {
+            _abRunning = true;
+            _abStopRequested = false;
+
+            string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            var report = new ABComparison.Report
+            {
+                scene = scene,
+                timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
+                commandA = request.CommandA,
+                commandB = request.CommandB,
+                seconds = request.Seconds,
+                rounds = request.Rounds,
+                settleSeconds = ABComparison.SettleSeconds,
+                frozenAtStart = EcologyFreezeSwitch.IsFrozen,
+                prismPath = CosmicShore.ECS.PrismRenderService.StatusLine(),
+            };
+
+            var schedule = ABComparison.Schedule(request.Rounds);
+            ABComparison.Arm lastArmRun = ABComparison.Arm.B;
+            bool completed = true;
+
+            for (int i = 0; i < schedule.Length; i++)
+            {
+                if (_abStopRequested || !SameScene(scene)) { completed = false; break; }
+
+                var arm = schedule[i];
+                int round = i / 2;
+                string status = $"round {round + 1}/{request.Rounds} · arm {arm}";
+
+                string result = ExecuteCommand(arm == ABComparison.Arm.A ? request.CommandA : request.CommandB);
+                lastArmRun = arm;
+
+                SetStat(ABSection, "run", status + " · settling");
+                yield return new WaitForSecondsRealtime(ABComparison.SettleSeconds);
+                if (_abStopRequested || !SameScene(scene)) { completed = false; break; }
+
+                // Census before AND after, both outside the recorded window: FindObjectsByType
+                // over tens of thousands of objects is a spike of its own.
+                int renderersStart = RendererCensus.Take().enabled;
+                yield return new WaitForSecondsRealtime(ABComparison.PostCensusGapSeconds);
+
+                int entsStart = CosmicShore.ECS.PrismRenderService.LiveEntityCount;
+                _abAcc = new ABComparison.ArmAccumulator();
+                float end = Time.unscaledTime + request.Seconds;
+                while (Time.unscaledTime < end)
+                {
+                    if (_abStopRequested || !SameScene(scene)) break;
+                    SetStat(ABSection, "run", $"{status} · recording {Time.unscaledTime - (end - request.Seconds):F0}/{request.Seconds}s");
+                    yield return null;
+                }
+
+                var acc = _abAcc;
+                _abAcc = null;
+                if (acc == null || _abStopRequested || !SameScene(scene)) { completed = false; break; }
+
+                var rec = acc.ToRecord(arm, round);
+                rec.prismEntsStart = entsStart;
+                rec.prismEntsEnd = CosmicShore.ECS.PrismRenderService.LiveEntityCount;
+                rec.renderersStart = renderersStart;
+                rec.renderersEnd = RendererCensus.Take().enabled;
+                rec.commandResult = result;
+
+                float namedCap = FrameBoundness.TargetFpsCap();
+                float avgFps = rec.avgFrameMs > 0.0001f ? 1000f / rec.avgFrameMs : 0f;
+                var limit = FrameBoundness.ClassifyFrameLimit(
+                    rec.avgFrameMs, avgFps, rec.avgBusyCpuMs, rec.avgGpuMs,
+                    FrameBoundness.IsFrameCapConfigured(), namedCap, out float idleMs);
+                rec.frameLimit = limit.ToString();
+                rec.frameTrustworthy = ABComparison.IsFrameTrustworthy(limit);
+                rec.idleMs = idleMs;
+
+                report.recordings.Add(rec);
+            }
+
+            // Leave the world in arm B's state, whatever order the schedule ended in, and even
+            // when stopped - B is the "put it back" arm (e.g. renderers show). Not after a scene
+            // change: the command would act on a world the run never saw.
+            if (lastArmRun != ABComparison.Arm.B && SameScene(scene))
+                ExecuteCommand(request.CommandB);
+
+            report.completed = completed;
+            report.frozenAtEnd = EcologyFreezeSwitch.IsFrozen;
+            string line = ABComparison.Summarize(report);
+            string path = SaveABReport(report);
+
+            if (report.warnings.Count > 0)
+                Debug.LogWarning($"[DiagnosticsHUD] {line}\n  " + string.Join("\n  ", report.warnings) + $"\n  saved: {path}");
+            else
+                Debug.Log($"[DiagnosticsHUD] {line}\n  saved: {path}");
+
+            SetStat(ABSection, "run", completed ? "done" : "stopped");
+            SetStat(ABSection, "result", line);
+            SetStat("Console", "›", line);
+            _lastSavedPath = path;
+            _lastSavedShownAt = Time.unscaledTime;
+            if (_visible) RefreshText();
+
+            _abRunning = false;
+            _abStopRequested = false;
+        }
+
+        // ── profiler capture ──────────────────────────────────────────────
+        // `prof [label] [frames] [key=value ...]` records N frames with the Unity Profiler, then
+        // reads them back into ONE report: the averaged hierarchy, the top self-time and
+        // self-allocation rows, the typical and spike frames as trees, and per-thread busy vs
+        // waiting. It replaces four screenshots per scenario. ProfilerCapture (pure, tested)
+        // decides what the report says; ProfilerFrameReader (Editor only) reads the frames.
+#if UNITY_EDITOR
+        bool _profRunning, _profStopRequested, _profWasRecording;
+#else
+        // prof exists only in the Editor; the diag/ab guards that read this stay unconditional.
+        static readonly bool _profRunning = false;
+#endif
+        const string ProfSection = "Profile";
+
+        /// <summary>No time without a new Profiler frame before a capture gives up.</summary>
+        const float ProfStallSeconds = 5f;
+
+        /// <summary>Frames read per rendered frame, so reading 180 frames does not freeze the Editor.</summary>
+        const int ProfFramesPerStep = 8;
+
+        string HandleProfCommand(string[] args)
+        {
+#if UNITY_EDITOR
+            if (args is { Length: 1 } && args[0].Equals("stop", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!_profRunning) return "no 'prof' capture in progress";
+                _profStopRequested = true;
+                return "stopping - whatever was read so far is still saved";
+            }
+            if (_profRunning) return "a 'prof' capture is already in progress — 'prof stop' to cancel it";
+            if (_recording) return "a 'diag' recording is in progress — wait for it first";
+            if (_abRunning) return "an 'ab' run is in progress — wait for it, or 'ab stop'";
+            if (!ProfilerCapture.TryParse(args, out var options, out string error)) return error;
+
+            // Read BEFORE StartCoroutine: it runs RunProf up to its first yield immediately, and
+            // RunProf switches Record on, so asking afterwards would always answer "on".
+            bool wasRecording = ProfilerFrameReader.Recording;
+            StartCoroutine(RunProf(options));
+            return $"prof started: recording {options.frames} Profiler frames, then reading them back" +
+                   (wasRecording ? "" : " (Profiler Record switched ON for the capture)") +
+                   (ProfilerFrameReader.DeepProfiling ? " - WARNING: Deep Profile is on, times will be inflated" : "");
+#else
+            return "prof reads the Unity Editor's Profiler - it only exists in Editor play mode";
+#endif
+        }
+
+#if UNITY_EDITOR
+        IEnumerator RunProf(ProfilerCapture.Options options)
+        {
+            _profRunning = true;
+            _profStopRequested = false;
+            _profWasRecording = ProfilerFrameReader.Recording;
+            if (!_profWasRecording) ProfilerFrameReader.Recording = true;
+
+            string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            var report = new ProfilerCapture.Report
+            {
+                scene = scene,
+                timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
+                label = options.label,
+                framesRequested = options.frames,
+                profilerWasRecording = _profWasRecording,
+                deepProfiling = ProfilerFrameReader.DeepProfiling,
+            };
+
+            // 1) Record: wait for N NEW frames, so the capture describes now rather than whatever
+            //    the ring buffer held before the command.
+            int start = ProfilerFrameReader.LastFrame;
+            int target = start + options.frames;
+            int lastSeen = start;
+            float lastProgressAt = Time.unscaledTime;
+            bool completed = true;
+            while (ProfilerFrameReader.LastFrame < target)
+            {
+                if (_profStopRequested || !SameScene(scene)) { completed = false; break; }
+                int now = ProfilerFrameReader.LastFrame;
+                if (now != lastSeen) { lastSeen = now; lastProgressAt = Time.unscaledTime; }
+                else if (Time.unscaledTime - lastProgressAt > ProfStallSeconds)
+                {
+                    completed = false;
+                    report.notes.Add("The Profiler stopped producing frames - open Window > Analysis > Profiler and check Record is on.");
+                    break;
+                }
+                SetStat(ProfSection, "run", $"recording {Mathf.Max(0, now - start)}/{options.frames} frames");
+                yield return null;
+            }
+
+            // 2) Freeze the ring buffer while reading: a buffer still recording would evict the
+            //    frames being read on any machine where reading is slower than playing.
+            ProfilerFrameReader.Recording = false;
+
+            int first = Mathf.Max(start + 1, ProfilerFrameReader.FirstFrame);
+            int last = Mathf.Min(target, ProfilerFrameReader.LastFrame);
+            if (first > start + 1)
+                report.notes.Add($"{first - start - 1} of the captured frames had already left the Profiler's buffer - raise Preferences > Analysis > Profiler > Frame count, or capture fewer frames.");
+
+            var acc = new ProfilerCapture.Accumulator();
+            var threads = new ProfilerCapture.ThreadAccumulator();
+            int step = 0;
+            for (int f = first; f <= last; f++)
+            {
+                if (_profStopRequested) { completed = false; break; }
+                ProfilerFrameReader.ReadMainThread(f, acc);
+                if ((f - first) % ProfilerCapture.ThreadSampleStride == 0)
+                    ProfilerFrameReader.ReadThreads(f, threads);
+
+                if (++step >= ProfFramesPerStep)
+                {
+                    step = 0;
+                    SetStat(ProfSection, "run", $"reading {f - first + 1}/{last - first + 1} frames");
+                    yield return null;
+                }
+            }
+
+            // 3) The two single frames, read as trees once the median and the maximum are known.
+            //    Picked by the game's own PlayerLoop, so an Editor repaint is never "the spike".
+            var series = acc.SelectionSeries;
+            ProfilerCapture.PickTypicalAndSpike(series, out int typicalPos, out int spikePos);
+            ProfilerCapture.FrameNode typicalTree = null, spikeTree = null;
+            if (typicalPos >= 0)
+            {
+                report.typicalFrame = acc.FrameIndices[typicalPos];
+                report.typicalFrameMs = series[typicalPos];
+                typicalTree = ProfilerFrameReader.ReadMainThreadTree(report.typicalFrame, out _);
+            }
+            if (spikePos >= 0)
+            {
+                report.spikeFrame = acc.FrameIndices[spikePos];
+                report.spikeFrameMs = series[spikePos];
+                spikeTree = ProfilerFrameReader.ReadMainThreadTree(report.spikeFrame, out _);
+            }
+
+            ProfilerFrameReader.Recording = _profWasRecording;
+
+            report.completed = completed && acc.FrameCount > 0;
+            ProfilerCapture.Build(report, acc, threads, typicalTree, spikeTree, options);
+            string path = SaveProfReport(report);
+            string line = ProfilerCapture.Summarize(report, path);
+            Debug.Log($"[DiagnosticsHUD] {line}");
+
+            SetStat(ProfSection, "run", report.completed ? "done" : "stopped");
+            SetStat(ProfSection, "result", line);
+            SetStat("Console", "›", line);
+            _lastSavedPath = path;
+            _lastSavedShownAt = Time.unscaledTime;
+            if (_visible) RefreshText();
+
+            _profRunning = false;
+            _profStopRequested = false;
+        }
+
+        string SaveProfReport(ProfilerCapture.Report r)
+        {
+            try
+            {
+                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
+                string dir = Path.Combine(docs, OutputFolderName);
+                Directory.CreateDirectory(dir);
+
+                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+                string label = string.IsNullOrEmpty(r.label) ? "" : "_" + Sanitize(r.label);
+                string baseName = $"prof_{Sanitize(r.scene)}{label}_{stamp}";
+                File.WriteAllText(Path.Combine(dir, baseName + ".json"), JsonUtility.ToJson(r, true));
+                File.WriteAllText(Path.Combine(dir, baseName + ".txt"), ProfilerCapture.BuildText(r));
+                return Path.Combine(dir, baseName + ".json");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[DiagnosticsHUD] Could not save profiler capture: {e.Message}");
+                return "(save failed: " + e.Message + ")";
+            }
+        }
+#endif
+
+        static bool SameScene(string scene) =>
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == scene;
+
+        string SaveABReport(ABComparison.Report r)
+        {
+            try
+            {
+                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
+                string dir = Path.Combine(docs, OutputFolderName);
+                Directory.CreateDirectory(dir);
+
+                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+                string baseName = $"ab_{Sanitize(r.scene)}_{stamp}";
+                File.WriteAllText(Path.Combine(dir, baseName + ".json"), JsonUtility.ToJson(r, true));
+                File.WriteAllText(Path.Combine(dir, baseName + ".txt"), ABComparison.BuildText(r));
+                return Path.Combine(dir, baseName + ".json");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[DiagnosticsHUD] Could not save A/B report: {e.Message}");
+                return "(save failed: " + e.Message + ")";
+            }
         }
 
         // ── recorders ─────────────────────────────────────────────────────
@@ -236,7 +755,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (FrameTimingManager.GetLatestTimings(1, _frameTimings) > 0)
             {
                 _rawCpuMs = (float)_frameTimings[0].cpuFrameTime;
-                _rawGpuMs = (float)_frameTimings[0].gpuFrameTime;
+                // Sanitize BEFORE Smooth: one garbage sample poisons the EMA for many
+                // frames, and a 7.7e10 ms reading makes Bound read GPU-bound on an idle GPU.
+                _rawGpuMs = FrameBoundness.SanitizeGpuMs((float)_frameTimings[0].gpuFrameTime);
                 _rawMainMs = (float)_frameTimings[0].cpuMainThreadFrameTime;
                 _rawWaitMs = (float)_frameTimings[0].cpuMainThreadPresentWaitTime;
                 _rawRenderMs = (float)_frameTimings[0].cpuRenderThreadFrameTime;
@@ -248,6 +769,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             }
 
             if (_recording) SampleRecording(ms);
+            if (_abAcc != null)
+                _abAcc.Add(ms, _rawCpuMs,
+                    FrameBoundness.BusyCpuMs(_rawCpuMs, _rawMainMs, _rawWaitMs, _rawRenderMs),
+                    _rawGpuMs, RInt(_drawCalls), RInt(_batches), RInt(_setPass), RLong(_gcAlloc) / 1024.0);
 
             _refreshTimer += Time.unscaledDeltaTime;
             if (_refreshTimer >= 0.25f)
@@ -320,6 +845,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Row(la, va, "CPU (busy)", MsValue(busyCpuMs));
             Row(la, va, "GPU", MsValue(_smGpuMs));
             Row(la, va, "Bound", BoundValue(busyCpuMs));
+            Row(la, va, "Frame cap", FrameCapValue());
 
             // External sections published via SetStat (stress harness, probes, injectors).
             foreach (var section in s_statSectionOrder)
@@ -344,6 +870,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 Row(la, va, "SetPass", Col(White, RInt(_setPass).ToString()));
                 Row(la, va, "Triangles", Col(White, RLong(_triangles).ToString("N0")));
                 Row(la, va, "Vertices", Col(White, RLong(_vertices).ToString("N0")));
+                Row(la, va, "Renderers", _lastCensus == null
+                    ? Col(Dim, "type 'renderers'")
+                    : Col(White, _lastCensus.Summary()) +
+                      Col(Dim, $" ({Time.unscaledTime - _lastCensus.takenAt:F0}s ago)"));
 
                 // Instanced prism path (Entities Graphics): ON ⇒ draw calls should decouple
                 // from prism count; OFF (reason) explains why they don't. See PrismRenderService.
@@ -416,11 +946,47 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         string BoundValue(float busyCpuMs)
         {
-            string verdict = FrameBoundness.Classify(busyCpuMs, _smGpuMs);
-            if (verdict == FrameBoundness.Unknown) return Col(Dim, "n/a");
-            if (FrameBoundness.IsAtCap(_displayFps, out float cap))
-                return Col(Good, "Capped @" + cap.ToString("F0"));
-            return Col(FpsColor(_displayFps), verdict);
+            // ONE decision, shared with BuildReport — see FrameBoundness.ClassifyFrameLimit.
+            // The two used to walk different ladders and the saved report was the one that
+            // lied: "CPU-bound" on a 76.6%-idle empty scene.
+            float namedCap = FrameBoundness.TargetFpsCap();
+            var limit = FrameBoundness.ClassifyFrameLimit(
+                _displayMs, _displayFps, busyCpuMs, _smGpuMs,
+                FrameBoundness.IsFrameCapConfigured(), namedCap, out float idleMs);
+
+            switch (limit)
+            {
+                case FrameBoundness.FrameLimit.Unknown:
+                    return Col(Dim, "n/a");
+                case FrameBoundness.FrameLimit.AtNamedCap:
+                    return Col(Good, $"Capped @{namedCap:F0}");
+                case FrameBoundness.FrameLimit.CappedByIdle:
+                    return Col(Warn, $"Capped — {idleMs:F1} ms idle");
+                case FrameBoundness.FrameLimit.Stalled:
+                    return Col(Bad, $"Stalled — {idleMs:F1} ms unattributed");
+                case FrameBoundness.FrameLimit.IdleNoCap:
+                    return Col(Dim, $"Idle {idleMs:F1} ms — no cap set");
+                default:
+                    return Col(FpsColor(_displayFps),
+                        FrameBoundness.DescribeFrameLimit(limit, idleMs, namedCap));
+            }
+        }
+
+        /// <summary>
+        /// The live frame-rate cap, always on the overlay so it can never be the invisible
+        /// reason an A/B showed no difference. Reads QualitySettings/Application directly
+        /// rather than any cached setting: DisplayGraphicsSettings re-applies the player's
+        /// saved graphics settings at AfterSceneLoad, AFTER AppManager.ConfigurePlatform has
+        /// set BootstrapConfig's values, so the config asset does not say what is in force.
+        /// </summary>
+        static string FrameCapValue()
+        {
+            int vsync = QualitySettings.vSyncCount;
+            int target = Application.targetFrameRate;
+            bool capped = FrameBoundness.IsFrameCapConfigured(vsync, target);
+            string text = vsync > 0 ? $"vsync {vsync}" : "vsync off";
+            text += target > 0 ? $" · target {target}" : " · target uncapped";
+            return Col(capped ? Warn : Good, text);
         }
 
         static string Mb(long bytes) => (bytes / (1024f * 1024f)).ToString("F0") + " MB";
@@ -512,7 +1078,19 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         void ToggleDiagnostic()
         {
             if (_recording) FinishDiagnostic();
-            else StartDiagnostic();
+            else if (_abRunning)
+            {
+                SetStat("Console", "›", "an 'ab' run is in progress — wait for it, or 'ab stop'");
+            }
+            else
+            {
+                // An F5/button run is ANONYMOUS. Clearing here rather than in StartDiagnostic
+                // is what lets `diag <label>` set the label before starting — and stops an
+                // untagged run inheriting the previous arm's label, which would put two
+                // different populations in two files that claim to be the same arm.
+                _recLabel = string.Empty;
+                StartDiagnostic();
+            }
         }
 
         void StartDiagnostic()
@@ -524,6 +1102,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _recTimedFrames = 0;
             _recRunningSum = 0f;
             _recCpuSum = _recBusyCpuSum = _recGpuSum = 0f;
+            _recDrawSum = _recBatchSum = _recSetPassSum = _recGcKbSum = 0;
             _recFrameMs.Clear();
             _recSpikes.Clear();
             UpdateDiagButtonLabel();
@@ -534,6 +1113,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _recFrames++;
             _recRunningSum += frameMs;
             _recFrameMs.Add(frameMs);
+
+            _recDrawSum += RInt(_drawCalls);
+            _recBatchSum += RInt(_batches);
+            _recSetPassSum += RInt(_setPass);
+            _recGcKbSum += RLong(_gcAlloc) / 1024.0;
 
             if (_rawCpuMs > 0.001f || _rawGpuMs > 0.001f)
             {
@@ -589,6 +1173,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 draws = RInt(_drawCalls),
                 tris = RLong(_triangles),
                 rttMs = Rtt(),
+                label = _recLabel,
+                prismPath = CosmicShore.ECS.PrismRenderService.StatusLine(),
+                prismEnts = CosmicShore.ECS.PrismRenderService.LiveEntityCount,
+                ecologyFrozen = EcologyFreezeSwitch.IsFrozen,
                 spikes = new List<DiagSpike>(_recSpikes),
             };
             if (_recTimedFrames > 0)
@@ -597,16 +1185,39 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 r.avgCpuBusyMs = _recBusyCpuSum / _recTimedFrames;
                 r.avgGpuMs = _recGpuSum / _recTimedFrames;
             }
-            r.boundVerdict = FrameBoundness.Classify(r.avgCpuBusyMs, r.avgGpuMs);
+            // Computed AFTER avgFrameMs/avgFps are filled in below? No — they are filled in the
+            // `if (n > 0)` block further down, so the verdict is assigned there instead. See
+            // the ordering note at that site.
+            // Taken AFTER sampling stopped, so its own cost can never land in the run's frames.
+            r.renderers = _lastCensus = RendererCensus.Take();
+            r.frameCapVSync = QualitySettings.vSyncCount;
+            r.frameCapTarget = Application.targetFrameRate;
             r.allocMB = Profiler.GetTotalAllocatedMemoryLong() / (1024 * 1024);
             r.reservedMB = Profiler.GetTotalReservedMemoryLong() / (1024 * 1024);
             r.systemMB = SystemInfo.systemMemorySize;
             if (n > 0)
             {
+                r.avgDraws = (float)(_recDrawSum / n);
+                r.avgBatches = (float)(_recBatchSum / n);
+                r.avgSetPass = (float)(_recSetPassSum / n);
+                r.avgGcKbPerFrame = (float)(_recGcKbSum / n);
+
                 var sorted = new List<float>(_recFrameMs); sorted.Sort();
                 float sum = 0f; for (int i = 0; i < n; i++) sum += _recFrameMs[i];
                 r.avgFrameMs = sum / n;
                 r.avgFps = r.avgFrameMs > 0.0001f ? 1000f / r.avgFrameMs : 0f;
+
+                // ORDERING: the frame-limit verdict needs avgFrameMs and avgFps, so it cannot
+                // be assigned in the object initializer above. Assigning it there against a
+                // still-zero frame time is what a bare Classify() call hid — it needed neither,
+                // and answered "CPU-bound" for a frame it had never looked at.
+                float namedCap = FrameBoundness.TargetFpsCap();
+                var limit = FrameBoundness.ClassifyFrameLimit(
+                    r.avgFrameMs, r.avgFps, r.avgCpuBusyMs, r.avgGpuMs,
+                    FrameBoundness.IsFrameCapConfigured(r.frameCapVSync, r.frameCapTarget),
+                    namedCap, out float idleMs);
+                r.idleMs = idleMs;
+                r.boundVerdict = FrameBoundness.DescribeFrameLimit(limit, idleMs, namedCap);
                 r.p99FrameMs = sorted[Mathf.Clamp(Mathf.RoundToInt(0.99f * (n - 1)), 0, n - 1)];
                 r.maxFrameMs = sorted[n - 1];
             }
@@ -638,13 +1249,22 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static string BuildTxt(DiagReport r)
         {
             var sb = new StringBuilder(2048);
-            sb.AppendLine($"Cosmic Shore diagnostic - {r.scene}   {r.timestamp}");
+            sb.AppendLine($"Cosmic Shore diagnostic - {r.scene}   {r.timestamp}" +
+                          (string.IsNullOrEmpty(r.label) ? "" : $"   [{r.label}]"));
             sb.AppendLine($"duration {r.durationSec}s · {r.frames} frames · avg {r.avgFps:F1} fps " +
                           $"({r.avgFrameMs:F1} ms) · p99 {r.p99FrameMs:F1} ms · max {r.maxFrameMs:F1} ms");
-            sb.AppendLine($"draws {r.draws} · tris {r.tris:N0} · RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
+            sb.AppendLine($"draws avg {r.avgDraws:F0} (sample {r.draws}) · batches avg {r.avgBatches:F0} · " +
+                          $"setpass avg {r.avgSetPass:F0} · tris {r.tris:N0} · " +
+                          $"RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
+            sb.AppendLine($"GC {r.avgGcKbPerFrame:F1} KB/frame · prism path {r.prismPath} · " +
+                          $"ecology {(r.ecologyFrozen ? "FROZEN" : "running")}");
+            sb.AppendLine($"frame cap: vsync {r.frameCapVSync} · target " +
+                          $"{(r.frameCapTarget > 0 ? r.frameCapTarget.ToString() : "uncapped")}" +
+                          $" · idle {r.idleMs:F1} ms of {r.avgFrameMs:F1} ms");
             sb.AppendLine($"cpu {r.avgCpuMs:F1} ms (busy {r.avgCpuBusyMs:F1}) · " +
                           $"gpu {(r.avgGpuMs > 0.001f ? r.avgGpuMs.ToString("F1") + " ms" : "n/a")} · {r.boundVerdict} · " +
                           $"mem {r.allocMB}/{r.reservedMB} MB (device {r.systemMB} MB)");
+            if (r.renderers != null) sb.AppendLine($"renderers {r.renderers.Describe()}");
             sb.AppendLine($"spikes ({r.spikes?.Count ?? 0}):");
             if (r.spikes != null)
                 foreach (var s in r.spikes)
@@ -846,9 +1466,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _cmdInput.ActivateInputField(); // keep focus for repeated commands
         }
 
-        void ExecuteCommand(string raw)
+        /// <summary>Runs one console line and returns what the handler answered (also shown on the overlay).</summary>
+        string ExecuteCommand(string raw)
         {
-            if (string.IsNullOrWhiteSpace(raw)) return;
+            if (string.IsNullOrWhiteSpace(raw)) return null;
 
             string[] tokens = raw.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
             string name = tokens[0].ToLowerInvariant();
@@ -871,6 +1492,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             SetStat("Console", "›", result);
             Debug.Log($"[DiagnosticsHUD] {raw} → {result}");
             if (_visible) RefreshText();
+            return result;
         }
 
         // ── serializable report ───────────────────────────────────────────
@@ -896,6 +1518,48 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             public int frames, draws;
             public long tris;
             public double rttMs;
+
+            /// <summary>Operator tag for the arm ("pathOn" / "pathOff"), so two files can be diffed.</summary>
+            public string label;
+
+            /// <summary>
+            /// Run averages. `draws` above is a single instantaneous sample taken as the report is
+            /// built; these are the comparable numbers. `avgGcKbPerFrame` is the one this whole
+            /// exercise is chasing and was not recorded at all before.
+            /// </summary>
+            public float avgDraws, avgBatches, avgSetPass, avgGcKbPerFrame;
+
+            /// <summary>
+            /// <c>PrismRenderService.StatusLine()</c> captured with the run, so a report can never
+            /// misattribute its own arm — the failure mode of hand-labelled A/B captures.
+            /// </summary>
+            public string prismPath;
+            public int prismEnts;
+
+            /// <summary>
+            /// Whether ecology production was held (<c>freeze on</c>) when the run ended. A frozen
+            /// world and a growing one are different populations, so two reports only compare
+            /// when this matches.
+            /// </summary>
+            public bool ecologyFrozen;
+
+            /// <summary>
+            /// The frame-rate cap IN FORCE during the run, and how much of the average frame
+            /// was idle. Recorded because a capped run's frame time and fps carry no
+            /// information — three reports in one batch sat within 0.06 ms of the 120 Hz
+            /// budget while reading "CPU-bound" — and a reader a week later has no other way
+            /// to tell. `frameCapVSync > 0 || frameCapTarget > 0` means a cap was set.
+            /// </summary>
+            public int frameCapVSync, frameCapTarget;
+            public float idleMs;
+
+            /// <summary>
+            /// The culling population at the end of the run. Draw calls turned out to cost
+            /// ~0.2 ms of a 57 ms frame; renderer COUNT is what culling and the render-job
+            /// wait scale with, and no report recorded it.
+            /// </summary>
+            public RendererCensus renderers;
+
             public List<DiagSpike> spikes;
         }
 #endif

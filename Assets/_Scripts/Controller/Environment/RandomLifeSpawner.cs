@@ -228,8 +228,11 @@ namespace CosmicShore.Gameplay
                 // every shipped biome released from the first tick.
                 bool released = faunaCfg.ReleaseTier <= host.FaunaReleaseTier;
 
+                // A diagnostic production hold (Cell.DiagnosticProductionHold) skips this tick
+                // like a famine does: the clock below still turns, so releasing the hold never
+                // hatches the waves that were held.
                 int spawned = 0;
-                if (toSpawn > 0 && preyAvailable && released)
+                if (toSpawn > 0 && preyAvailable && released && !Cell.DiagnosticProductionHold)
                 {
                     // Spread across frames - a densely-stocked biome seeds tens of prism-bodied
                     // creatures on one tick (Cleave hatches 85 across four species loops that all

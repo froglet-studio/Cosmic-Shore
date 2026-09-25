@@ -1440,7 +1440,7 @@ decision, made per profile.
 (still clamped by each species' `MaxLivePopulation` — a tick with the species at cap
 hatches nothing). The profile is shared by `Menu_Main` **and** `BenchmarkStressTest`, so
 the benchmark now runs a fuller average fauna population; re-baseline before reading it
-against older numbers (`Docs/PERFORMANCE_OPTIMIZATION.md`).
+against older numbers (`Docs/archive/PERFORMANCE_LOG_2026.md`).
 
 ### 16.2 Shielded mass is not food for any herbivore
 
@@ -10701,3 +10701,36 @@ selector at it would fix all three at once and is not done here.
 **Nothing has been run in the editor**: the prism counts, volumes and extents above are the
 offline model's — the Mandelbulb sixteen measured by growing the shipped C# growth rule, the
 Borromean four read out of `BorromeanSurfaceData.cs` — and the cell has never been loaded.
+
+---
+
+## 58. The diagnostic production hold — `freeze`, for a same-state A/B (Sep 2026)
+
+**What it is.** `Cell.DiagnosticProductionHold` — one static flag, raised and released only by the
+DiagnosticsHUD `freeze on | off` console command (`EcologyFreezeSwitch`), settable only in the Editor
+and Development builds. While it is up, no cell produces: `FloraGrowingEnabled` is false (so growth,
+planting, plant reproduction and the lattice colonies' population births stop, exactly as they do at
+Frenzy), `FaunaSpawningEnabled` is false, `IsFaunaAtCap` / `IsFloraAtCap` read full (the Microscene
+conveyor, `Fauna.TryReproduce`, the IntensityWise seeder), and the two producers that ask none of
+those — `RandomLifeSpawner`'s fauna seeder and `WormFauna.TickProduction` — check the flag directly.
+
+**Why it exists.** A performance A/B is only valid when the only difference between its two arms is
+the thing under test (`Docs/PERFORMANCE_OPTIMIZATION.md` §4.3). A growing world breaks that: the first
+spindle A/B compared 24,243 prisms against 49,116 because the Lattice cell had kept growing between
+the arms, and the result could not be separated from the growth.
+
+**Invariants (restated per the protocol).** It is **production gating**, which §0 already permits
+("not creating mass is allowed"), and the same class of gate as Frenzy — so it is not a carve-out.
+Nothing is removed, aged or culled; no timer runs; grazing, predation, starvation and vessel abilities
+keep working, so a held world can only LOSE mass. Continuity of existence is untouched (nothing
+appears or disappears because of it). Domain symmetry is untouched (it gates every domain alike and
+changes no spawn colour). The phase is not touched, so fauna aggression does not change. **Nothing
+catches up on release**: every producer already turns its cycle whether or not it produced (the
+lattice colony books, the worm colony's production stamp, the seeders), so `freeze off` resumes at the
+ordinary rate. Collider impact: none.
+
+**Its two fences.** It is released on any active-scene change, with a warning, so a hold set for one
+scenario can never freeze the next one. And it is not a lever: nothing in gameplay may raise it — a
+mode that wants less production tunes its spawn profile or its volume ladder, the way every shipped
+mode does. Explicit player acts are deliberately not gated (the Lifeform Matrix toy's releases).
+

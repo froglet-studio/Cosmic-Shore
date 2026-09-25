@@ -457,6 +457,27 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual float ResolveShieldPeriod(float authored) => authored;
 
+        // Scratch + cached yield for ShieldRegenCoroutine. This runs forever on every SHIELDED
+        // lifeform, and Charge floors every Charge plant at a 1 s period (Flora.ChargeShieldPeriod),
+        // so the old body allocated a fresh List per cycle AND a WaitForSeconds PER PRISM - on a
+        // plant with dozens of prisms, dozens of allocations a second, times the population.
+        // Measured contribution in a boot-world spike frame: Docs/archive/PERFORMANCE_LOG_2026.md §0.8.
+        //
+        // The snapshot itself is load-bearing and is KEPT: the tracker mutates while this
+        // coroutine yields between prisms (grazing, growth), so iterating it directly would
+        // throw. Reusing one list preserves the snapshot and drops the garbage. It is a
+        // `List` rather than the tracker's own `HashSet` on purpose - AddRange over an
+        // ICollection is a straight array copy, so the refill allocates nothing once the
+        // capacity has settled.
+        //
+        // Hoisting the wait OUT of the per-prism loop is unobservable: `shieldPeriod` is
+        // written only by `ApplyVariantTuning` and by `ResolveShieldPeriod` on the line above
+        // the StartCoroutine, and has no runtime writer at all - so it cannot change between
+        // two prisms of one cycle. The per-cycle re-mint covers it if one is ever added.
+        readonly List<HealthPrism> _shieldRegenScratch = new();
+        WaitForSeconds _shieldWait;
+        float _shieldWaitFor = float.NaN;
+
         /// <summary>
         /// Called once during <see cref="Initialize"/>, after the crystal carrying this
         /// lifeform's ELEMENT has been resolved and BEFORE the prefab's own prisms are bound
@@ -475,18 +496,27 @@ namespace CosmicShore.Gameplay
         {
             while (shieldPeriod > 0)
             {
-                var blocks = healthTracker.All.ToList();
-                if (blocks.Count > 0)
+                if (_shieldWait == null || shieldPeriod != _shieldWaitFor)
                 {
-                    foreach (var block in blocks)
+                    _shieldWaitFor = shieldPeriod;
+                    _shieldWait = new WaitForSeconds(shieldPeriod);
+                }
+
+                _shieldRegenScratch.Clear();
+                _shieldRegenScratch.AddRange(healthTracker.All);
+
+                if (_shieldRegenScratch.Count > 0)
+                {
+                    for (int i = 0; i < _shieldRegenScratch.Count; i++)
                     {
+                        var block = _shieldRegenScratch[i];
                         if (block) block.ActivateShield();
-                        yield return new WaitForSeconds(shieldPeriod);
+                        yield return _shieldWait;
                     }
                 }
                 else
                 {
-                    yield return new WaitForSeconds(shieldPeriod);
+                    yield return _shieldWait;
                 }
             }
         }

@@ -531,6 +531,37 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Re-evaluates which path draws this prism against the CURRENT state of
+        /// <see cref="PrismRenderService.Enabled"/>, releasing the companion entity when
+        /// the service has been switched off.
+        ///
+        /// WHY this exists: <c>SetRuntimeOverride</c> only gates entity CREATION, so
+        /// flipping it mid-session leaves every prism that already owns an entity drawing
+        /// through it with its MeshRenderer still disabled — i.e. the A/B measures the two
+        /// paths on the prisms laid AFTER the flip and nothing else, which for a standing
+        /// arena is nothing at all. This is the missing half: the diagnostic toggle calls
+        /// it on every live prism so the whole population moves together.
+        ///
+        /// Diagnostics only — nothing in the game loop calls it, and the render path is not
+        /// a thing gameplay may switch. Left outside a compilation guard deliberately: it is
+        /// a handful of unreferenced lines in a release build, against the guard hazards
+        /// Docs/CONDITIONAL_COMPILATION.md records.
+        /// </summary>
+        internal void ResyncRenderPathForDiagnostics()
+        {
+            if (!PrismRenderService.Enabled && PrismRenderService.IsHandleUsable(in RenderHandle))
+            {
+                PrismRenderService.Destroy(ref RenderHandle);
+                // SyncRenderMesh dedupes against this; a stale value would suppress the
+                // mesh push to a LATER entity for as long as the prism keeps that mesh.
+                _renderEntityMesh = null;
+                _renderEntityDecline = null;
+            }
+
+            ApplyRenderPath();
+        }
+
+        /// <summary>
         /// Last-chance companion-entity creation from a clock STAMP site. Clock stamps
         /// are one-shot initial-conditions writes (Docs/PRISM_ANIMATION.md §4) — miss
         /// the instant and that animation is gone for this life — so every stamp site
@@ -911,7 +942,7 @@ namespace CosmicShore.Gameplay
         // Split attribution for the ~0.5ms creation-completion tick: which of the
         // three suspects dominates decides the fix (enableable-component render flag
         // vs SOAP listener work vs spatial bind). See
-        // Docs/PERFORMANCE_OPTIMIZATION.md Task 4.
+        // Docs/archive/PERFORMANCE_LOG_2026.md Task 4.
         static readonly ProfilerMarker s_createVisibilityMarker = new("Prism.Create.Visibility");
         static readonly ProfilerMarker s_createSoapMarker = new("Prism.Create.SOAPRaise");
         static readonly ProfilerMarker s_createSpatialMarker = new("Prism.Create.SpatialBind");

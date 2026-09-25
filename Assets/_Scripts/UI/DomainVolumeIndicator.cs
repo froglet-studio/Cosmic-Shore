@@ -73,7 +73,7 @@ namespace CosmicShore.UI
         const float ConvergedEpsilon = 0.0005f;
         const float CyclePushEpsilon = 0.002f;
 
-        // Attribution split (PERFORMANCE_OPTIMIZATION.md TODO C2): Sample is the
+        // Attribution split (Docs/archive/PERFORMANCE_LOG_2026.md TODO C2): Sample is the
         // 0.25s cell read — its cost is really Cell.VolumeSum when this component
         // is the first volume reader of the recompute interval; Push is the
         // per-frame lerp + SetState residual.

@@ -49,7 +49,7 @@ all permissive — UniTask, Reflex, ParrelSync. No scoped registries. The exposu
 |---|---|---|
 | 3.4 MB | `Assets/_Prefabs/MIgration_Prefabs (DELETE LATER)/` | 9 files. **Do not delete blind** — it currently hosts `GameModeProgressionService`, which is exactly why the progression system is not in the build. See the audit §02. |
 | 19 MB | `Assets/Unity Assests/` | 199 files behind a typo'd name. Nothing indicates what it is or who added it. |
-| 288 KB | `Assets/_Scripts/Game/` | Vestigial — CLAUDE.md records it as holding only non-code assets plus `PRISM_PERFORMANCE_AUDIT.md`. |
+| 288 KB | `Assets/_Scripts/Game/` | Not vestigial (CLAUDE.md, `Docs/LAUNCH_BLOCKER_INDEX.md` §C6) — holds live code and vessel assets; its `PRISM_PERFORMANCE_AUDIT.md` was deleted 2026-09-22. |
 | 84 KB | `Assets/Wwise/` | Inert: **zero first-party references**, no `AkSoundEngine` usage anywhere. Audio is FMOD. |
 | 4.7 MB | `Assets/PlayFabSDK/` | PlayFab is legacy and inert; auth, cloud save and analytics are all UGS. |
 

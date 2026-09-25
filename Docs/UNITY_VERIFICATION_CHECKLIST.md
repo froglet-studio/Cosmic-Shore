@@ -406,7 +406,7 @@ Authored without a Unity compile. `/verify-unity` did not run. Human: Menu_Main 
 **Verify in editor**
 1. Compile clean. No missing-script on Menu_Main (or any other scene) for the five deleted GUIDs.
 2. Painting toy still paints from `ShapeDefinition` / `PaintingDefinitionSO.sourceShape`. SkimRace still uses `SegmentSpawner`.
-3. Do **not** Raise `EventOnShapeGameModeStarted` or `EventOnShapePrismReturnToPool` as a "cleanup" — that would dump every listening prism to the pool.
+3. ~~Do not Raise the two shape events~~ — moot since 2026-09: their prism-prefab listeners were stripped (`Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6), so nothing listens.
 
 ---
 
