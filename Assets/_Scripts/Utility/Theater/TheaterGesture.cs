@@ -44,6 +44,33 @@ namespace CosmicShore.Utility
         /// the free camera is: <see cref="TheaterStage"/> has paused the local pilot's input, so
         /// nothing else on the machine is listening to the pad.</para>
         /// </summary>
+        /// <summary>
+        /// Pick a shot outright by number (0-3, in <c>TheaterShot</c>'s own order), or -1 for no
+        /// request. Live only while the recording area is up.
+        ///
+        /// <para>The number row rather than the on-screen buttons, because a shot you can only
+        /// reach by clicking is one you cannot reach while flying the free camera with a pad in
+        /// both hands — and because the first playtest could not change shot at all: the buttons
+        /// were being pressed THROUGH to the HUD underneath. A key cannot be covered.</para>
+        /// </summary>
+        public static int ShotRequestedThisFrame()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return -1;
+            if (keyboard.digit1Key.wasPressedThisFrame) return 0;
+            if (keyboard.digit2Key.wasPressedThisFrame) return 1;
+            if (keyboard.digit3Key.wasPressedThisFrame) return 2;
+            if (keyboard.digit4Key.wasPressedThisFrame) return 3;
+            return -1;
+        }
+
+        /// <summary>Watch the next pilot (Chase and Static follow one). Live only in the theater.</summary>
+        public static bool NextPilotRequestedThisFrame()
+        {
+            var keyboard = Keyboard.current;
+            return keyboard != null && keyboard.digit5Key.wasPressedThisFrame;
+        }
+
         public static void ReadPadTransport(out int shotStep, out int pilotStep, out bool togglePause)
         {
             shotStep = 0;

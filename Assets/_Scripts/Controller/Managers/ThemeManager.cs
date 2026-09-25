@@ -12,6 +12,16 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] ThemeManagerDataContainerSO _dataContainer;
 
+        /// <summary>
+        /// The live theme, for the handful of statics that cannot be injected — the same reason
+        /// <c>PrismLit.ColorSet</c> and <c>GameToastAPI.ColorSet</c> are handed off below, one
+        /// level up: those need the palette, this needs the whole container (the per-domain
+        /// MATERIAL sets are built here at Awake and exist nowhere on disk). Read-only to everyone
+        /// else; null until this manager wakes, and it is a Bootstrap DI singleton, so nothing
+        /// that can legitimately ask has woken yet.
+        /// </summary>
+        public static ThemeManagerDataContainerSO Data { get; private set; }
+
         void Awake()
         {
             var GreenTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.JadeColors, Domains.Jade, "Green");
@@ -34,6 +44,9 @@ namespace CosmicShore.Gameplay
             // tint and cannot be injected. Until this line runs a light falls back to white, and
             // this manager is a Bootstrap DI singleton, so nothing that can fire has woken yet.
             PrismLit.ColorSet = _dataContainer.ColorSet;
+
+            // Last, so Data is never observable before the material sets above are in it.
+            Data = _dataContainer;
         }
 
         SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, Domains domain, string domainName)

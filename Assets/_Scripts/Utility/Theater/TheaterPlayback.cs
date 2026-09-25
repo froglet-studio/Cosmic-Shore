@@ -33,11 +33,15 @@ namespace CosmicShore.Utility
     /// construction rather than by remembering a guard. The cost, stated plainly: a P0 puppet has
     /// no jets, no tail, no hull morph and no animation. It is a ghost of the right SHIP.</para>
     ///
-    /// <para><b>A ghost wears a flat domain fill rather than the ship's own materials</b>, for the
-    /// reason <see cref="VesselModelBuilder"/> records: a vessel's real materials are dark unlit
-    /// theme shaders that read as a black blob out of their lit context, and the theater's stage is
-    /// a dark void. The flat fill is what makes four ghosts tellable apart at orbit distance. Set
-    /// <see cref="TheaterConfigSO.liveHullMaterials"/> to see the authored materials instead.</para>
+    /// <para><b>A ghost wears the ship's OWN materials, with its pilot's real domain accent</b> —
+    /// the ship as it looks in the game, which is the point of watching a replay. The first cut
+    /// painted a flat domain fill, on <see cref="VesselModelBuilder"/>'s reasoning that a vessel's
+    /// real materials read as a black blob out of their lit context; that reasoning was about a
+    /// mini hull floating in a toy station, and it stopped applying the moment the theater kept the
+    /// world (and its lighting) in shot. The accent is resolved the way the toys resolve it, off
+    /// the theme's own per-domain material set, so a Ruby pilot's ghost is Ruby rather than the
+    /// jade placeholder every vessel prefab is authored with. The flat fill survives behind
+    /// <see cref="TheaterConfigSO.liveHullMaterials"/>.</para>
     ///
     /// <para><b>Seeking backward is free here and will not stay free.</b> A vessel track is
     /// SAMPLED STATE, so any timestamp is a binary search with nothing to rebuild — scrubbing in
@@ -158,8 +162,7 @@ namespace CosmicShore.Utility
                     "the recording is drawn from the live camera and the shots do nothing.");
             }
 
-            _stage.Enter(ResolveCamera(), _root.transform,
-                _config != null ? _config.stageBackground : new Color(0.03f, 0.04f, 0.06f, 1f));
+            _stage.Enter(ResolveCamera(), _root.transform, _config);
 
             IsPlaying = true;
             Apply();
@@ -217,9 +220,18 @@ namespace CosmicShore.Utility
         /// <summary>Cycle the shot itself, in the order the overlay lists them.</summary>
         public void CycleShot(int step)
         {
-            int count = System.Enum.GetValues(typeof(TheaterShot)).Length;
+            int count = ShotCount;
             Shot = (TheaterShot)((((int)_shot + step) % count + count) % count);
         }
+
+        /// <summary>Pick a shot outright, by its position in <see cref="TheaterShot"/>.</summary>
+        public void SetShotByIndex(int index)
+        {
+            if (index < 0 || index >= ShotCount) return;
+            Shot = (TheaterShot)index;
+        }
+
+        static int ShotCount => System.Enum.GetValues(typeof(TheaterShot)).Length;
 
         public void Tick(float unscaledDeltaTime)
         {
@@ -234,6 +246,13 @@ namespace CosmicShore.Utility
                     // Loop rather than stop. A director is looking at the same three seconds over
                     // and over; making them press play each time is the wrong default.
                     _time = _recording.StartTime;
+
+                    // And the ORBIT restarts with it. Left running, the vantage kept advancing
+                    // across loops, so the same three seconds arrived from a different angle every
+                    // time and read as a different recording. A loop has to be a loop in the SHOT
+                    // as well as in the data - anything the camera accumulates is part of what the
+                    // viewer is comparing against.
+                    _orbitPhase = 0f;
                 }
             }
 
@@ -406,7 +425,7 @@ namespace CosmicShore.Utility
                     // Radius 0 = NATIVE scale and native pivot: the recorded pose is relative to the
                     // ship's own origin, so a re-centred model would sit off by the hull's bounds
                     // offset for the whole replay.
-                    if (live) VesselModelBuilder.TryBuildLive(prefab, 0f, null, out model);
+                    if (live) VesselModelBuilder.TryBuildLive(prefab, 0f, DomainMaterial(domain), out model);
                     else VesselModelBuilder.TryBuild(prefab, 0f, color, out model);
                 }
 
@@ -458,6 +477,22 @@ namespace CosmicShore.Utility
                 "rather than real hulls. Assign one to Resources/TheaterConfig's 'Vessel Prefabs', " +
                 "or put a copy of the container in a Resources folder.");
             return null;
+        }
+
+        /// <summary>
+        /// The ship material for a recorded pilot's domain, off the theme's own per-domain set —
+        /// the same list <c>ToyVesselRoster</c> paints a live mini hull from.
+        ///
+        /// <para>Those sets are BUILT at <c>ThemeManager.Awake</c> and exist nowhere on disk, so
+        /// there is no asset to load and no way to reach them but the static. Null before the
+        /// manager wakes, which <see cref="VesselModelBuilder.TryBuildLive"/> reads as
+        /// "keep the authored materials" — a jade-accented ghost rather than no ghost.</para>
+        /// </summary>
+        static Material DomainMaterial(Domains domain)
+        {
+            var sets = ThemeManager.Data != null ? ThemeManager.Data.TeamMaterialSets : null;
+            if (sets == null) return null;
+            return sets.TryGetValue(domain, out var set) && set != null ? set.ShipMaterial : null;
         }
 
         /// <summary>

@@ -25,7 +25,9 @@ MonoBehaviour:
   framingMargin: 2.5
   orbitElevation: 0.35
   followDistance: 9
-  liveHullMaterials: 0
+  liveHullMaterials: 1
+  hideGameplayUI: 1
+  hideWorld: 0
   stageBackground: {r: 0.03, g: 0.04, b: 0.06, a: 1}
   freeCameraSpeed: 0.9
   freeCameraLookSpeed: 140

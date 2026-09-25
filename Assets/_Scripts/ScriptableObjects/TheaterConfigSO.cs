@@ -87,16 +87,26 @@ namespace CosmicShore.ScriptableObjects
                  "that hull's own measured radius - so one number frames every ship in the fleet.")]
         [Range(2f, 40f)] public float followDistance = 9f;
 
-        [Tooltip("Ghosts wear their ship's OWN authored materials instead of a flat domain fill. " +
-                 "Off by default: a vessel's real materials are dark unlit theme shaders that read " +
-                 "as a black blob out of their lit context, and the theater's stage is a dark void " +
-                 "- the flat fill is what makes four ghosts tellable apart at orbit distance.")]
-        public bool liveHullMaterials = false;
+        [Tooltip("Ghosts wear their ship's own materials and their pilot's real domain accent - " +
+                 "the ship as it looks in the game. Turn OFF for a flat domain fill, which is " +
+                 "easier to tell apart at orbit distance but is not what the ship looks like.")]
+        public bool liveHullMaterials = true;
 
         [Header("Stage")]
-        [Tooltip("What the recording area is drawn against once the live world is masked off the " +
-                 "camera. Dark enough that domain fills carry, not black - a pure black stage and " +
-                 "a camera pointed at nothing look identical.")]
+        [Tooltip("Hide the gameplay UI while a recording plays. This is a BUG FIX as much as a " +
+                 "look: IMGUI and uGUI both receive the same click and neither can consume it for " +
+                 "the other, so a theater button over a live uGUI control presses both.")]
+        public bool hideGameplayUI = true;
+
+        [Tooltip("Mask the live world off the camera so ONLY the ghosts are in shot. Off by " +
+                 "default - a theater shows you the map, and the first cut's clean void turned out " +
+                 "to mean no prisms, no environment and no crystals. Turn it on for 'show me this " +
+                 "flight and nothing else'. Needs a user layer named 'Theater'.")]
+        public bool hideWorld = false;
+
+        [Tooltip("What the recording area is drawn against when hideWorld is on. Dark enough that " +
+                 "domain fills carry, not black - a pure black stage and a camera pointed at " +
+                 "nothing look identical.")]
         public Color stageBackground = new Color(0.03f, 0.04f, 0.06f, 1f);
 
         [Header("Free camera")]
