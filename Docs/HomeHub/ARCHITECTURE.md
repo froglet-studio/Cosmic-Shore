@@ -324,6 +324,63 @@ record (intensity, placed AI, domain count, own domain, own hull) and the rules 
 re-validate it are `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.2 - the arena is the arcade pointed
 at another roster, so it inherits the memory with the modal.
 
+### 3.7 The genre petal: one element saying what KIND of game this is
+
+Every card wears an element petal in its top-right corner - card IDENTITY like the hull icon
+beside it, drawn from the moment the grid appears. Four categories, one glance across a grid of
+twenty-odd cards:
+
+| Petal | The card is about | Cards today |
+|---|---|---|
+| **Time** | a RACE | Scurry, Scarab Scramble, Tollway, Switchback, Headlong, Breakwater, Skein, Redline, Brood Rush, Regatta |
+| **Mass** | MAKING mass, or taking it into your own hands | Hijack |
+| **Space** | DESTROYING mass | Rampage, Cleave, Salvo, Wrecking Ball, Wildlife Liberation, Bloomrush |
+| **Charge** | working other PILOTS over | Joust, Dog Fight, The Bends, Undertow, Broadside |
+
+**It is keyed on the METRIC, never on the game mode** - the rule `ObjectiveIconSetSO` is built on
+(`Docs/GAME_MODE_TOPBAR.md` §2), applied one surface over. `ScoringMetric` is already the
+platform's single answer to *what is this mode scored on*, and a mode's genre is not a separate
+fact from that: a mode scored on prisms destroyed IS a destruction mode. So a new mode that picks
+an existing metric gets its badge for free, and there is deliberately no per-mode override - one
+would re-open exactly the divergence `ScoringMetric` exists to close, letting a card advertise a
+genre its own end condition contradicts.
+
+**It is a RULE, so it lives in code** (`ModeGenre`, in the extracted `CosmicShore.Data` leaf
+assembly beside the two enums it relates) rather than in an authored table an editor can
+contradict - the same argument `ToyDefinitionSO.Category` is abstract-and-in-code for.
+`ModeGenreTests` sweeps every `ScoringMetric` member and fails on any that does not classify,
+because an unclassified metric fails SILENTLY at runtime: the card simply draws no petal.
+
+The metric itself comes from `ModePreviewLibrarySO`, which is where the launch panel's objective
+box already reads it. A mode's `ScoringRuleSO` lives in its own scene, so the preview definition
+is the platform's only pre-scene answer to that question - and it is the SAME answer, mirrored
+per mode. Reading it here rather than adding a second table is what keeps the card, the objective
+box and the goal row saying one thing. The art is the fleet's own
+`ElementalBarsConfigSO.GetPetalSprite` - the petal the vessel HUD flowers and the ability
+lockup's upgrade badge draw - tinted the lockup's level-5 WHITE rather than a per-element colour,
+because **element identity is SHAPE** (that is what the flower is built on) and a second channel
+saying the same thing would only compete with the card art.
+
+**Maelstrom draws no petal, and that is correct** - it is a session-level meta that draws OTHER
+modes, so it has no genre of its own; it is the one roster card with no preview definition and
+therefore no metric to read. Blank is the honest state here exactly as it is for a vessel with no
+icon.
+
+#### The prefab is not what runs
+
+`GameCard.prefab` is referenced by **one** prefab in the project, and that one is
+`MIgration_Prefabs (DELETE LATER)/`. The live cards are **36 scene-local `GameCard` objects in
+Menu_Main** that are not instances of it, and the two `Arcade Screen` prefabs that also hold
+cards are referenced by nothing at all. So editing the prefab asset alone ships a feature that
+renders on no card - `Docs/GAMECANVAS.md` §9's finding, one prefab over.
+`Tools/Build/author_game_card_genre_petal.py` therefore writes the `GenrePetal` child onto every
+live card AND the canonical prefab, so the two cannot drift; `--check` fails on any card missing
+it. Its fileIDs are DERIVED from each card's own GameObject id, so a re-run is a no-op rather
+than a second copy. The Image ships with no sprite and `m_Enabled: 0`, because `GameCard`
+resolves both the art and whether there is any at runtime and an enabled Image with no sprite
+draws a white quad; `m_RaycastTarget: 0`, because it is decoration and must never eat the card's
+own click.
+
 ## 4. The Toy Box drives the LIVE toys
 
 `ToyboxModal` (`_Scripts/UI/Modals/ToyboxModal.cs`) is the app-shell face of the freestyle

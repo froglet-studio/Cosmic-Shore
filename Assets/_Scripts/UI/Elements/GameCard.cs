@@ -35,6 +35,16 @@ namespace CosmicShore.UI
                  "empty (Wildlife Blitz).")]
         [SerializeField] SO_VesselList VesselList;
 
+        [Header("Genre Petal")]
+        [Tooltip("One element petal saying what KIND of game this is - a race is TIME, making " +
+                 "mass is MASS, destroying it is SPACE, working other pilots over is CHARGE. " +
+                 "Card IDENTITY like the vessel icon, so it is drawn for every card from the " +
+                 "moment the grid appears.\n\n" +
+                 "Ships with no sprite and DISABLED: the art and the shape are both resolved at " +
+                 "runtime from the mode's own scoring metric, and an Image left enabled with no " +
+                 "sprite draws a white quad.")]
+        [SerializeField] Image GenrePetal;
+
         [Header("Party Picks")]
         [Tooltip("Container the interested party members' avatars are laid out in. The FIRST " +
                  "AvatarIcon under it is the authored template every extra chip is cloned from, " +
@@ -127,6 +137,7 @@ namespace CosmicShore.UI
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
 
             UpdateVesselIcon(game);
+            UpdateGenrePetal(game);
         }
 
         /// <summary>
@@ -183,6 +194,67 @@ namespace CosmicShore.UI
 
             return null;
         }
+
+        /// <summary>
+        /// Draws the element petal that says what KIND of game this is. Unconditional and
+        /// derived end to end, so a card can never advertise a genre its own end condition
+        /// contradicts: the mode's <see cref="ScoringMetric"/> answers what it is scored on,
+        /// <see cref="ModeGenre"/> answers which of the four kinds that is, and the fleet's own
+        /// <see cref="ElementalBarsConfigSO"/> supplies the petal - the same art the vessel HUD
+        /// flowers and the ability lockup's upgrade badge draw, so the card and the HUD cannot
+        /// drift apart on what a Mass petal looks like.
+        ///
+        /// <para>Tinted the lockup's level-5 WHITE rather than a per-element colour, because the
+        /// four petals are already told apart by SHAPE - that is what the flower is built on -
+        /// and a second channel saying the same thing would only compete with the card art.</para>
+        ///
+        /// <para>Draws NOTHING when the mode has no metric to read (Maelstrom, which draws OTHER
+        /// modes and so has no genre of its own) or when the metric has no genre yet. Blank is
+        /// the honest state here, exactly as it is for a vessel with no icon.</para>
+        /// </summary>
+        void UpdateGenrePetal(SO_ArcadeGame game)
+        {
+            if (!GenrePetal) return;
+
+            var sprite = ResolveGenrePetal(game.Mode, out var tint);
+
+            GenrePetal.sprite = sprite;
+            if (sprite) GenrePetal.color = tint;
+            GenrePetal.enabled = sprite != null;
+        }
+
+        /// <summary>
+        /// The petal art for a mode's genre, or null when it has none.
+        ///
+        /// <para>The metric comes from <see cref="ModePreviewLibrarySO"/>, which is where the
+        /// launch panel's objective box already reads it: a mode's <c>ScoringRuleSO</c> lives in
+        /// its own scene, so the preview definition is the platform's only pre-scene answer to
+        /// "what is this mode scored on" - and it is the SAME answer, mirrored per mode. Reading
+        /// it here rather than adding a second table is what keeps the card, the objective box
+        /// and the goal row saying one thing.</para>
+        /// </summary>
+        Sprite ResolveGenrePetal(GameModes mode, out Color tint)
+        {
+            tint = Color.white;
+
+            if (!_previews) _previews = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+            var definition = _previews ? _previews.Resolve(mode) : null;
+            if (definition == null) return null;
+
+            if (!ModeGenre.TryElementFor(definition.ObjectiveMetric, out var element)) return null;
+
+            if (!_bars) _bars = Resources.Load<ElementalBarsConfigSO>(ElementalBarsConfigSO.ResourcePath);
+            if (!_bars) return null;
+
+            tint = _bars.whiteColor;
+            return _bars.GetPetalSprite(element);
+        }
+
+        // Both assets are shipped singletons and the grid rebuilds every card on every refresh
+        // (a favourite toggle repopulates the whole list), so the two lookups are cached per
+        // session rather than per card - the shape ObjectiveIconSetSO.Load already uses.
+        static ModePreviewLibrarySO _previews;
+        static ElementalBarsConfigSO _bars;
 
         /// <summary>
         /// Shows which party members are asking to play this card. Called by the grid whenever
