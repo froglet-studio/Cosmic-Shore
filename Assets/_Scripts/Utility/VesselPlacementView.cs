@@ -6,14 +6,13 @@ namespace CosmicShore.Utility
     /// <summary>
     /// The placement view: while a pilot is choosing WHERE to put their vessel, the gameplay
     /// camera frames the place rather than the ship. The Butterfly's Fold is its one caller —
-    /// hold LT, the vessel stops, and the sticks sweep a destination anywhere in the cell
-    /// (<c>R_VesselActions/BUTTERFLY_FOLD.md</c>).
+    /// hold LT, the vessel stops, and a ghost glides out along the heading, further the longer
+    /// you hold (<c>R_VesselActions/BUTTERFLY_FOLD.md</c>).
     ///
-    /// <para><b>A pilot cannot choose a place they cannot see.</b> The Fold reaches
-    /// <c>MaxRadiusFraction</c> of the membrane — hundreds of units — so a camera left behind the
-    /// stationary vessel shows the destination as a few pixels of ghost against the cell, if it
-    /// is on screen at all. Framing the ghost turns the hold into what it is: you fly the
-    /// DESTINATION with the sticks and let go when you like where you are.</para>
+    /// <para><b>A pilot cannot choose a place they cannot see.</b> A fold reaches hundreds of
+    /// units, so a camera left behind the stationary vessel shows the destination as a few pixels
+    /// of ghost against the cell, if it is on screen at all. Framing the ghost turns the hold into
+    /// what it is: you watch the destination run out ahead of you and let go where you want it.</para>
     ///
     /// <para><b>The sibling of <see cref="VesselRearView"/>, deliberately built to the same
     /// shape</b> — one static, one binding, one per-frame push onto the resolved gameplay
@@ -26,9 +25,9 @@ namespace CosmicShore.Utility
     ///
     /// <para><b>Only the POINT moves.</b> The follow distance, the offset and the ROTATION FRAME
     /// still come from the vessel, so the camera sits behind the destination at the vessel's own
-    /// distance, oriented the way the pilot is oriented. That is not a detail: the Fold addresses
-    /// its target in the vessel's ROLLED frame, so "roll the world until the place you want is
-    /// where your thumbs already are" is only legible if the camera rolls with it.</para>
+    /// distance, oriented the way the pilot is oriented — which is what makes the view a PREVIEW
+    /// of the arrival rather than a detached look at a spot: you are already seeing what you will
+    /// see when you let go.</para>
     ///
     /// <para><b>It is the pilot's, not the owner's.</b> The binding comes from
     /// <c>VesselController.Initialize</c> and <c>ChangePlayer</c> under

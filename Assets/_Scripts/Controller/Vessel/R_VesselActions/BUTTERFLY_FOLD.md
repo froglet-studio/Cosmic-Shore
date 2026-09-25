@@ -141,7 +141,7 @@ far it may reach is a vessel in two places.
 
 ## The camera goes with the placement
 
-A pilot cannot choose a place they cannot see. The reach is `MaxRadiusFraction` of the membrane —
+A pilot cannot choose a place they cannot see. The reach is the fold's whole range —
 hundreds of units — so a camera left behind the stopped vessel shows the destination as a few
 pixels of ghost against the cell, if it is on screen at all. `VesselPlacementView` frames the ghost
 for the length of the hold, at the vessel's own follow distance and in the vessel's own **rolled**
@@ -165,3 +165,30 @@ exists to avoid.
 keyed on the vessel bound at `VesselController.Initialize`/`ChangePlayer` under `IsLocalPilot`, so
 this executor carries no camera gate of its own to get wrong — an AI Butterfly folds on the server,
 where there is no camera and no ghost, and its `Place` calls are simply ignored.
+
+## One reach, everywhere (2026-09-25)
+
+The Fold used to have **two** branches. Inside a membrane the hold addressed a point in the cell's
+sphere — `XDiff` the radius, `XSum`/`YSum` the azimuth and elevation, the whole frame rolled with
+the vessel; outside one it was a reach along the heading. That is retired. **There is one
+behaviour: a reach along the heading, `hold x reachSpeed`, capped at `ResolveRange`.**
+
+Three things it bought.
+
+**The upgrade stopped being a lie.** Time 5 "Far Fold" multiplies the RANGE, and inside a membrane
+the membrane was already the limit — so the ability's one level-5 upgrade did nothing at all in the
+branch a player spends nearly all of their time in. Its own tooltip said so. With one reach it is
+always worth something.
+
+**No boundary changes the ability under you.** A pilot crossing a membrane found their trigger
+doing a different thing, with nothing on screen to say why. `Cell.MembraneRadius` also returns 0
+until the membrane has SPAWNED, so which branch you got was a function of load order for the first
+seconds of a match.
+
+**The cost, stated: the sticks no longer aim it.** A fold is committed to the heading the pilot was
+already flying — pitch and yaw were dead for the duration anyway (`restrictedTurnMultiplier = 0`),
+and the spherical placement was the only thing the sticks were steering. So the decision moves
+BEFORE the press: you have to finish whatever you were doing on a line that points where you want
+to go. On the fleet's slowest hull that is a good trade — the fold gives distance for free and
+charges you for the exit line — and it is what `Waystation` is built on. If aiming is ever wanted
+back, it is one prefab field (`restrictedTurnMultiplier`), not a second branch.

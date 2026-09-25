@@ -22,18 +22,18 @@ namespace CosmicShore.Gameplay
     /// so each one writing its own idea of the destination would be four machines placing the same
     /// vessel from four different stick readings. The sticks are the OWNER's.</para>
     ///
-    /// <para><b>Pitch and yaw die, roll does not, and neither is written here.</b> The stop is
-    /// <c>IsTranslationRestricted</c>, and the Butterfly prefab authors
+    /// <para><b>Pitch and yaw die, and NOTHING re-aims a fold once it has begun.</b> The stop is
+    /// <c>IsTranslationRestricted</c> and the Butterfly prefab authors
     /// <c>restrictedTurnMultiplier = 0</c>, so <c>VesselTransformer.TurnScalar</c> zeroes pitch and
-    /// yaw for the duration and the sticks are free to aim. <c>Roll()</c> is deliberately NOT
-    /// scaled by that multiplier and is left unsuppressed, so <c>YDiff</c> goes on rolling the
-    /// vessel exactly as it always does — and because the camera reads the ROOT's rotation, rolling
-    /// the vessel rolls the frame this executor builds its azimuth and elevation in. That is the
-    /// whole "roll the world until the place you want is where your thumbs already are" mechanic,
-    /// and it is bought with no new code.</para>
+    /// yaw for the duration. With the spherical placement retired (see <see cref="ResolveTarget"/>)
+    /// the sticks no longer address a destination either, so a fold is committed to the heading the
+    /// pilot was already flying: the decision is EARNING THE LINE before the press. <c>Roll()</c>
+    /// is deliberately not scaled by that multiplier and is left unsuppressed, so <c>YDiff</c> goes
+    /// on rolling the vessel — which rolls the camera, and is now purely a look, since roll is
+    /// about the forward axis and cannot change where forward points.</para>
     ///
     /// <para><b>The CAMERA goes with the placement, not with the ship.</b> A pilot cannot choose
-    /// a place they cannot see, and the reach is <c>MaxRadiusFraction</c> of the membrane — so a
+    /// a place they cannot see, and the reach is up to the fold's whole range — so a
     /// camera left behind the stopped vessel shows the destination as a few pixels of ghost, if it
     /// is on screen at all. <see cref="VesselPlacementView"/> frames the ghost instead, at the
     /// vessel's own follow distance and in the vessel's own ROLLED frame, which is what keeps the
@@ -274,54 +274,26 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Where the ghost is being commanded to, this frame.
+        /// Where the ghost is being commanded to, this frame: a REACH along the heading,
+        /// <c>hold x reachSpeed</c>, capped at the fold's resolved range.
         ///
-        /// INSIDE a membrane: a point in the cell's sphere, addressed in the VESSEL's own rolled
-        /// frame — radius from <c>XDiff</c> (0 inward, 0.5 at rest, 1 outward), azimuth from
-        /// <c>XSum</c>, elevation from <c>YSum</c>.
-        ///
-        /// OUTSIDE one: a reach along the heading, <c>hold × reachSpeed</c>, capped.
-        ///
-        /// <b>A cell with no membrane yet reads as open space</b>, deliberately:
-        /// <c>Cell.MembraneRadius</c> returns 0 until the membrane has SPAWNED, and a radius of
-        /// zero would collapse every placement onto the cell centre. That is the same trap the
-        /// arena preview's framing already records; here the honest answer is that there is no
-        /// sphere to place anything in yet, so the free-space branch is correct rather than a
-        /// fallback.
+        /// <para><b>One behaviour everywhere.</b> There used to be a second branch INSIDE a
+        /// membrane — a point in the cell's sphere addressed by the sticks, <c>XDiff</c> the
+        /// radius and <c>XSum</c>/<c>YSum</c> the angles — so the ability did one thing in a cell
+        /// and a different thing outside one, and Time 5 "Far Fold" was inert in the branch a
+        /// player spends nearly all of their time in. It is retired: the reach is the reach, the
+        /// upgrade always means something, and no boundary changes the ability under a pilot who
+        /// crosses it. What went with it is worth stating — the sticks no longer steer the
+        /// destination at all, so a fold is committed to the heading the pilot was already flying
+        /// (pitch and yaw are dead for the duration anyway, at
+        /// <c>restrictedTurnMultiplier = 0</c>). Earning the line before the press IS the
+        /// decision.</para>
         /// </summary>
         Vector3 ResolveTarget(FoldActionSO so)
         {
             Transform hull = _status.Transform;
-            var cell = Cell.FindCellContaining(hull.position);
-            float radius = cell ? cell.MembraneRadius : 0f;
-
-            if (!cell || radius <= 0.01f)
-            {
-                float reach = Mathf.Min(_heldSeconds * so.FreeSpaceReachSpeed,
-                                        so.ResolveFreeSpaceRange(_status));
-                return hull.position + hull.forward * reach;
-            }
-
-            // InputStatus is a default interface member routing through Player, which is null
-            // between a despawn and the next pair-init — read it defensively rather than NREing
-            // inside a per-frame hold.
-            var input = _status.Player != null ? _status.InputStatus : null;
-            float xDiff = input != null ? Mathf.Clamp01(input.XDiff) : 0.5f;
-            float xSum = input != null ? Mathf.Clamp(input.XSum, -1f, 1f) : 0f;
-            float ySum = input != null ? Mathf.Clamp(input.YSum, -1f, 1f) : 0f;
-
-            float azimuth = xSum * so.AzimuthDegrees * Mathf.Deg2Rad;
-            float elevation = ySum * so.ElevationDegrees * Mathf.Deg2Rad;
-
-            // The frame is the VESSEL's, which the pilot rolls with YDiff — see the class note.
-            Vector3 forward = hull.forward, right = hull.right, up = hull.up;
-            float ce = Mathf.Cos(elevation), se = Mathf.Sin(elevation);
-            Vector3 direction = forward * (ce * Mathf.Cos(azimuth))
-                              + right   * (ce * Mathf.Sin(azimuth))
-                              + up      * se;
-
-            return cell.transform.position
-                   + direction.normalized * (xDiff * radius * so.MaxRadiusFraction);
+            float reach = Mathf.Min(_heldSeconds * so.ReachSpeed, so.ResolveRange(_status));
+            return hull.position + hull.forward * reach;
         }
 
         // ---- departure / arrival ------------------------------------------------------------

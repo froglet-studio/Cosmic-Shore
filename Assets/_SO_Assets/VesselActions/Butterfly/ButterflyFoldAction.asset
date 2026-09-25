@@ -15,11 +15,8 @@ MonoBehaviour:
   cooldownSeconds: 30
   cooldownMultiplierAtFullTime: 0.5
   maxCooldownMultiplier: 2
-  azimuthDegrees: 180
-  elevationDegrees: 90
-  maxRadiusFraction: 0.94
-  freeSpaceReachSpeed: 900
-  freeSpaceRange: 1800
+  reachSpeed: 900
+  reachRange: 1800
   upgradeRangeMultiplier: 2
   ghostTravelSpeed: 1400
   departSeconds: 0.22
