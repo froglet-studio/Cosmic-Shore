@@ -117,10 +117,29 @@ namespace CosmicShore.Utility
         static readonly HashSet<Prism> _resident = new();
         static readonly HashSet<Prism> _wanted = new();
         static readonly List<Prism> _query = new();
-        static readonly List<Prism> _candidates = new();
+        static readonly List<Candidate> _candidates = new();
         static readonly List<Prism> _evict = new();
-        static Vector3 _sortOrigin;
-        static readonly System.Comparison<Prism> _byDistance = CompareByDistance;
+        static readonly System.Comparison<Candidate> _byShellDistance = CompareByShellDistance;
+
+        /// <summary>
+        /// A residency candidate and its RANK: how far it sits from the front's own shell this
+        /// frame, <c>abs(|p - U| - c)</c>. Precomputed rather than measured inside the comparator
+        /// because a sort asks O(n log n) times and the key needs a square root - one per candidate
+        /// instead of two per comparison - and because the key IS the finding recorded on
+        /// <see cref="ReconcileResidency"/>: rank a travelling shell by the shell, never by the
+        /// centre it has left.
+        /// </summary>
+        readonly struct Candidate
+        {
+            public readonly Prism Prism;
+            public readonly float ShellDistance;
+
+            public Candidate(Prism prism, float shellDistance)
+            {
+                Prism = prism;
+                ShellDistance = shellDistance;
+            }
+        }
 
         static PrismWakeConfigSO _config;
         static bool _configResolved;
@@ -359,16 +378,35 @@ namespace CosmicShore.Utility
         /// version needed one because a sphere bounding a cylinder holds a lot of prisms the ripple
         /// could never move, and a sphere bounding a sphere holds none.
         ///
-        /// <para><b>Residency is the REACH, not the shell.</b> A prism is made resident for the whole
-        /// volume the front will cross, not for the thin shell the front occupies right now — which
-        /// is the point: a prism must already be carrying the dense mesh by the time the shell
-        /// arrives at it, and the swap must happen where the map provably cannot have moved a vertex.
-        /// <para>On this carrier both are satisfied at once and STRUCTURALLY rather than by the shell
-        /// happening to be elsewhere: the carrier reports progress 0 for a frame before its sweep
-        /// begins, so the whole volume is swapped on a frame whose published strength is exactly zero.
-        /// The cost is that residents the front has not reached yet carry the dense mesh for nothing,
-        /// which is the price of a travelling front and is bounded by the budget rather than by the
-        /// reach — and here it is bounded in TIME too, since the sweep lasts 0.15 s.</para>
+        /// <para><b>The QUERY is the reach; the RANKING is the shell — and ranking by the centre
+        /// instead is why this effect shipped invisible.</b> The query is still the whole volume the
+        /// front will ever cross (<c>reach + sigma + margin</c>), because a prism must already be
+        /// carrying the dense mesh by the time the shell arrives at it. But the BUDGET truncates that
+        /// volume, and the first cut truncated it NEAREST-TO-THE-CENTRE — so the dense mesh went to
+        /// exactly the prisms the front leaves behind in its first two frames. Measured against the
+        /// shipped numbers: a 95-unit warhead sweeps a 161.8-unit query volume, so 128 residents only
+        /// reach the sweep's outer life if fewer than ~200 prisms lie inside it — true in open space,
+        /// false in any arena this weapon is actually fired in. The front puckered the mass at the
+        /// detonation point for two frames and then travelled 95 units through prisms that were all
+        /// still 24 triangles, which on screen is indistinguishable from the effect not being there.
+        /// Ranking by <c>abs(|p - U| - c)</c> makes the resident set an ANNULUS that tracks the shell
+        /// outward, which is the effect.</para>
+        ///
+        /// <para><b>Both halves of the invisible-swap contract still hold, now for two different
+        /// reasons.</b> The set swapped in on the FIRST frame is invisible because the carrier reports
+        /// progress 0 for a frame before its sweep begins, so the published strength is exactly zero
+        /// (<c>FrontEnvelope(0)</c>) — unchanged. The set swapped in and out on every frame AFTER
+        /// that is invisible because a prism enters and leaves through a shell FACE, where the
+        /// wavelet's value AND its slope are exactly zero, with
+        /// <see cref="PrismWakeConfigSO.ResidencyMargin"/> of lead-in ahead of the leading face. That
+        /// is a STRONGER guarantee than the volume version it replaces, which rested on the margin
+        /// alone.</para>
+        ///
+        /// <para>The cost is CHURN rather than headcount: a band swaps in and another swaps out every
+        /// frame, instead of one set being swapped once. It is bounded by the same
+        /// <see cref="PrismWakeConfigSO.MaxResidentPrisms"/> budget and by the sweep's own 0.15 s, and
+        /// it buys back every resident the old ranking was spending on mass the front had already
+        /// passed.</para>
         ///
         /// The swept radius is <c>reach + sigma + margin</c>, because the front dies AT the reach and
         /// the shell reaches <c>sigma</c> past its own centre: the outermost displaced vertex of a
@@ -424,6 +462,10 @@ namespace CosmicShore.Utility
                         index.QuerySphere(origin, queryRadius, _query);
                         if (_query.Count == 0) continue;
 
+                        // Where the shell is RIGHT NOW - Write packs the front radius into centre.w,
+                        // so the ranking below reads the same number the shader is drawing with.
+                        float front = centreSlot.w;
+
                         _candidates.Clear();
                         for (int i = 0; i < _query.Count; i++)
                         {
@@ -436,20 +478,22 @@ namespace CosmicShore.Utility
                             if (p.RenderMeshOverride != null && !ReferenceEquals(p.RenderMeshOverride, mesh))
                                 continue;
 
-                            _candidates.Add(p);
+                            float d = Vector3.Distance(p.transform.position, origin);
+                            _candidates.Add(new Candidate(p, Mathf.Abs(d - front)));
                         }
                         if (_candidates.Count == 0) continue;
 
-                        // QuerySphere is unordered, so without this the dense mesh would go to
-                        // whichever prisms the bucket walk happened to reach rather than to the ones
-                        // nearest the blast — which is where every front spends its early life.
-                        _sortOrigin = origin;
-                        _candidates.Sort(_byDistance);
+                        // QuerySphere is unordered AND the budget truncates it, so this sort decides
+                        // which part of the swept volume gets the dense mesh. Rank by distance to the
+                        // SHELL, never to the blast's centre: a front lives in a thin annulus that
+                        // moves, and nearest-to-centre spends the whole budget on the prisms the front
+                        // is leaving. See the summary above.
+                        _candidates.Sort(_byShellDistance);
 
                         int room = Mathf.Min(share, config.MaxResidentPrisms - _wanted.Count);
                         int take = Mathf.Min(room, _candidates.Count);
                         for (int i = 0; i < take; i++)
-                            _wanted.Add(_candidates[i]);
+                            _wanted.Add(_candidates[i].Prism);
 
                         if (_wanted.Count >= config.MaxResidentPrisms) break;
                     }
@@ -487,14 +531,8 @@ namespace CosmicShore.Utility
             }
         }
 
-        static int CompareByDistance(Prism a, Prism b)
-        {
-            if (a == null) return b == null ? 0 : 1;
-            if (b == null) return -1;
-            float da = (a.transform.position - _sortOrigin).sqrMagnitude;
-            float db = (b.transform.position - _sortOrigin).sqrMagnitude;
-            return da.CompareTo(db);
-        }
+        static int CompareByShellDistance(Candidate a, Candidate b) =>
+            a.ShellDistance.CompareTo(b.ShellDistance);
 
         /// <summary>Hand every resident prism its own mesh back. Called on teardown and reset.</summary>
         static void ReleaseAllResidents()

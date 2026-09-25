@@ -341,10 +341,12 @@ namespace CosmicShore.Tests
         [Test]
         public void FrontEnvelope_IsZeroWithZeroSlopeAtBothEnds()
         {
-            // The recycle seam. A front dies at the reach and the next appears at the shell's own
-            // half-thickness, ~1.6 times a second at the shipped rate, so BOTH ends must reach zero
-            // in value AND slope or a front pops into or out of existence — the continuity law,
-            // applied to the effect's own life rather than to a prism's.
+            // BOTH ends must reach zero in value AND slope, and for different reasons. At the REACH it
+            // is continuity of existence: a front must not blink out at the edge of the blast volume.
+            // At BIRTH it is what makes the residency swap invisible — the carrier answers progress 0
+            // for one frame before its sweep begins, so the frame the prisms are handed the high-poly
+            // mesh is a frame on which the map moves nothing at all. It is also why the engage ease is
+            // authored 0: this IS the engage.
             Assert.AreEqual(0f, PrismWakeConfigSO.FrontEnvelope(0f), 1e-6f, "a front is born at full strength");
             Assert.AreEqual(0f, PrismWakeConfigSO.FrontEnvelope(1f), 1e-6f, "a front dies at full strength");
             Assert.AreEqual(1f, PrismWakeConfigSO.FrontEnvelope(0.5f), 1e-5f, "a front never reaches full strength");
@@ -500,6 +502,47 @@ namespace CosmicShore.Tests
                 "PrismWakeConfig.ReleaseSeconds is 0. This one earns its keep where the engage does not: a blast " +
                 "cancelled mid-sweep by a turn end freezes with the envelope at full value, and that must fade " +
                 "rather than blink.");
+        }
+
+        [Test]
+        public void ResidencyRanksByTheSHELL_NotTheBlastCentre()
+        {
+            // The fifth playtest's defect, and the reason it survived the fourth. The residency QUERY
+            // is the whole volume the front will cross (reach + sigma + margin) and the BUDGET
+            // truncates it, so the sort key decides WHICH PART of that volume gets the high-poly mesh.
+            // Ranked nearest-to-the-blast's-centre, the entire budget goes to exactly the prisms the
+            // front leaves behind in its first two frames: measured, 128 residents only reach the
+            // sweep's outer life if fewer than ~200 prisms lie inside the 161.8 u query volume of a
+            // resting-Mass warhead, which is true in open space and false in every arena this weapon
+            // is fired in. What was on screen was a two-frame pucker and then a 95-unit sweep through
+            // prisms that were all still 24 triangles.
+            //
+            // It passed the playtest before it because the travelling carrier's reach was the round's
+            // own small hit radius, where nearest-to-centre and nearest-to-shell agree. That is the
+            // general trap: the two keys are identical in code and diverge only as the support grows
+            // relative to the budget.
+            string wake = CodeOf("Assets/_Scripts/Utility/PrismWake.cs");
+
+            Assert.IsTrue(wake.Contains("CompareByShellDistance"),
+                "PrismWake no longer ranks residency candidates by their distance to the SHELL. A front lives in " +
+                "a moving annulus; ranking by distance to the blast's centre spends the whole budget on the mass " +
+                "the front is leaving, and the effect cannot be seen at all (Docs/PRISM_ANIMATION.md 4.7.3a).");
+            Assert.IsTrue(wake.Contains("Mathf.Abs(d - front)"),
+                "PrismWake's residency key is no longer abs(distance-to-blast minus the front's own radius) - the " +
+                "resident set would stop tracking the shell outward.");
+            Assert.IsFalse(wake.Contains("_sortOrigin"),
+                "PrismWake has a centre-anchored sort origin again. That is the cradle's key, and it is the wrong " +
+                "one for a travelling shell - see above.");
+
+            // The other half of the distinction, asserted so the rule reads in both directions: the
+            // CRADLE's field decays with distance from the hull, so nearest-to-source is correct THERE
+            // and must not be 'fixed' to match. If this ever fails because the cradle was changed
+            // deliberately, the note on its comparator is the thing to read first.
+            string cradle = CodeOf("Assets/_Scripts/Utility/PrismCradle.cs");
+            Assert.IsTrue(cradle.Contains("_sortOrigin"),
+                "PrismCradle no longer ranks by distance to the hull. Its field DECAYS with distance, so " +
+                "nearest-to-source is both the best spend of its budget and a stable set - the shell ranking " +
+                "above is specific to a morph whose field travels.");
         }
 
         [Test]

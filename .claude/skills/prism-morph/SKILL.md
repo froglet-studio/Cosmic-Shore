@@ -60,8 +60,8 @@ able to say why in two lines, because a reviewer will ask:
 And the third claim, which is what makes it *affordable*:
 
 3. **Residency is bounded.** A handful of prisms carry the dense mesh at any instant, chosen
-   nearest-first inside a radius around a small number of sources. The cost is `O(sources)`,
-   never `O(prisms)`.
+   inside a radius around a small number of sources and ranked by **where the field actually
+   lives** (§4.2). The cost is `O(sources)`, never `O(prisms)`.
 
 **If your effect cannot make all three claims, it is not a member of this family.** See §3.
 
@@ -145,10 +145,19 @@ different from it: it changes prism STATE. Five rules, each of which has a failu
   move anything: query radius = `sourceRadius + reach + residencyMargin`, with the margin > 0
   and asserted in an edit-mode test. If a swap can occur where a vertex is already displaced,
   the prism pops — and continuity of existence is platform-wide.
-- **Nearest-first, then the budget.** `PrismSpatialIndex.QuerySphere` is **unordered**, so
-  without a sort the dense mesh goes to whichever prisms the bucket walk happened to reach,
-  which in a crowded trail is not the ones wrapped around the source. Sort by squared distance
-  to the source, then take `maxResidentPrisms`.
+- **Sort, then the budget — and the SORT KEY is a claim about where your field lives.**
+  `PrismSpatialIndex.QuerySphere` is **unordered**, so without a sort the dense mesh goes to
+  whichever prisms the bucket walk happened to reach. But the budget *truncates* the query
+  volume, so the key decides WHICH PART of it gets the dense mesh, and there are two answers:
+  a field that **decays with distance** from its source (the cradle) ranks nearest-to-source,
+  because those prisms move most and will still be moving next frame; a field that lives in a
+  **moving shell** (the shockwave front) ranks by distance to the shell, `abs(|p - U| - c)`,
+  because nearest-to-source there is exactly the mass the effect is LEAVING. **The two are
+  identical in code and the wrong one is invisible until the support is large relative to the
+  budget** — the front inherited the cradle's key, passed a playtest on a carrier whose reach
+  was small (where the two agree), and then could not be seen AT ALL on one whose reach was 95
+  units (§4.7.3a). Precompute the key per candidate into a small struct rather than measuring
+  it inside the comparator: one square root per candidate instead of two per comparison.
 - **Never `Physics.OverlapSphere`.** Prism colliders are disabled for the first 0.6 s after
   spawn, so physics queries are structurally blind to fresh prisms — exactly the prisms a
   fast-moving source is passing through. `PrismSpatialIndex` is the only spatial index of prism

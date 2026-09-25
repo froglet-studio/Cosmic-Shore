@@ -2172,18 +2172,20 @@ Integrating rather than evaluating a function of position is what keeps the shel
 while the reach GROWS under it as MASS swells the round — it keeps going outward instead of jumping
 when the reach changes. The strength envelope is `4·S(u)·S(1−u)` (`FrontEnvelope`), zero in **value
 AND slope** at birth and at the reach: at the reach that is continuity of existence (a front must not
-blink out at the edge of the blast volume), and at BIRTH it is the **recycle** — the next front
-appears at the shell's half-thickness 3 times a second, where a full-strength arrival would pop.
+blink out at the edge of the blast volume), and at BIRTH it is what makes the **residency swap**
+invisible — the carrier reports progress 0 for a frame before its sweep begins, so the frame the
+prisms are handed the high-poly mesh is a frame on which the map moves nothing at all.
 One consequence is load-bearing and non-obvious: **`PrismWake.Publish` must NOT drop a slot at zero
-strength.** The envelope passes through zero between pulses, so a strength-based drop would release
-and re-acquire all 128 high-poly overrides 3 times a second. The SOURCE decides when a round stops
-having a shockwave, and it calls `Clear`.
+strength.** That zero IS the first frame, so a strength-based drop would release all 128 high-poly
+overrides and re-acquire them mid-sweep — precisely the pop §4.2 forbids. The SOURCE decides when a
+blast stops having a shockwave, and it calls `Clear`.
 
-**Residency.** `PrismWake` runs the same pass the cradle does, against the front's own volume — and
-**residency is the REACH, not the shell**: the query is a sphere at the blast's centre of radius
+**Residency — the QUERY is the reach, the RANKING is the shell.** `PrismWake` runs the same pass the
+cradle does, against the front's own volume: the query is a sphere at the blast's centre of radius
 `reach + σ + margin` (`PrismWakeConfigSO.ResidencyRadiusFor`), because the shell is travelling and a
-prism the front has not reached yet must already be carrying the dense mesh when it arrives. **The σ
-in that sum is not padding.** The front dies AT the reach and the shell reaches σ past its own centre,
+prism the front has not reached yet must already be carrying the dense mesh when it arrives. **But the
+budget TRUNCATES that volume, and how it truncates it is the whole effect** — see §4.7.3a below, which
+is why the fifth playtest could not detect the front at all. **The σ in that sum is not padding.** The front dies AT the reach and the shell reaches σ past its own centre,
 so the outermost displaced vertex of the sweep's last frame sits at `reach + σ` — and the margin is an
 ABSOLUTE distance while the shell is a FRACTION of the reach, so "the margin covers the overshoot"
 holds at one authored pair and silently stops holding at the next: it was true by **0.2 of a unit** at
@@ -2195,8 +2197,8 @@ clearance written as an absolute distance, against a volume whose extent is a fr
 else, is a different clearance every time that something else moves.*) Everything else is the family's contract
 verbatim: `HighPolyPrismMesh` shared so the residents stay in ONE instanced batch,
 `Prism.SetRenderMeshOverride` for the handoff, the override slot taken only when free and cleared
-only when still ours, `PrismSpatialIndex.QuerySphere` sorted nearest-first (it is unordered, so
-without the sort the dense mesh goes to whichever prisms the bucket walk reached), and a
+only when still ours, `PrismSpatialIndex.QuerySphere` SORTED because it is unordered (by distance to
+the SHELL, not to the blast's centre — §4.7.3a), and a
 `RuntimeInitializeOnLoadMethod` reset that drops the bookkeeping WITHOUT touching prisms that no
 longer exist.
 
@@ -2243,11 +2245,9 @@ round sits at the origin to remove one more cancellation. *When a numeric test f
 TEST is wrong before assuming the code is* — the same rule the cradle's convergence test paid for
 from the other direction.
 
-**Stated limitations.** (1) The front is a sphere about the round's CURRENT position, and the round is
-moving, so a pulse launched a moment ago is re-centred on where the round is now rather than on where
-it was when the pulse left; over one pulse's life at the shipped rate that is a fraction of the
-shell's own thickness, and a true trailing front needs per-pulse history, which no closed-form map
-can carry. (2) The spatial index keys prisms by their CENTRE, so a prism longer than twice the margin
+**Stated limitations.** (1) The travelling carrier's MOVING-CENTRE imprecision is **retired**: a
+detonation does not move, so the front's sphere is about a fixed point for its whole life and there is
+no per-pulse history for a closed-form map to fail to carry. (2) The spatial index keys prisms by their CENTRE, so a prism longer than twice the margin
 whose centre is outside the volume still ripples at the authored mesh's resolution — coarse, never
 wrong. (3) Entities Graphics culls by `RenderBounds`, which a per-frame global cannot expand, so a
 prism whose bounds are just off-screen can carry a rippled face that should be on-screen. (4) **Not
@@ -2291,7 +2291,7 @@ that is not running.
 **First playtest: *"i couldn't see it at all"* — and the first thing to check was not the tuning.**
 The heavy skyburst is the TURRET-STANCE shot: `SkyBurstGunAction.asset` authors `armWarhead: 0` on the
 wing variant and `stationaryArmWarhead: 1` on the stationary one, so a rocket fired while flying
-carries `ArmWarhead = false`, `WarheadBlastRadiusMultiplier` is 0, `TryGetShockwaveReach` refuses, and
+carries `ArmWarhead = false`, `WarheadBlastRadiusMultiplier` is 0, `TryGetShockwave` refuses, and
 **no front is published at all**. That is the discriminator working exactly as designed (§ above) and
 it is also the effect's whole discoverability problem: a pilot has to stop to see it. Nothing about
 that is tuning, which is why the diagnostic rung exists — *a window that never opens reads on screen
@@ -2321,10 +2321,79 @@ prism with none of the smoothness the family exists for.
 
 Tuning: `Resources/PrismWakeConfig` (`PrismWakeConfigSO`) — amplitude **0.143** (90% of the folding
 bound at `Q = 1`), `wavesInFront` **1** (one wavelet), half-thickness **0.45** of the reach,
-**3** pulses per second, subdivision 10, **128** resident prisms (153,600 triangles), 24 u margin,
-0.15 s in / 0.35 s out. At a skyburst's resting-Mass reach of **95.2 u** that is a **42.8 u** shell
-carrying a **5.45 u** peak ripple, travelling 52.4 u in a third of a second (157 u/s). Recipe:
-`.claude/skills/prism-morph`.
+subdivision 10, **128** resident prisms (153,600 triangles), 24 u margin, **0 s in** (the envelope's
+C1 zero at birth IS the engage) / 0.35 s out. There is **no pulse rate** — the sweep is the blast's
+own and happens ONCE. At a skyburst's resting-Mass reach of **95.2 u** that is a **42.8 u** shell
+carrying a **5.45 u** peak ripple, travelling 52.4 u over the warhead's authored
+`ExplosionDuration` of **0.15 s** (349 u/s). Recipe: `.claude/skills/prism-morph`.
+
+### 4.7.3a Fifth playtest: *"i could not detect the shockwave at all"* — the residency RANKING
+
+The carrier move shipped and the report came back identical to the spherical cut's first one. The
+differential is what made it diagnosable: the immediately preceding playtest APPROVED the same map,
+the same amplitude, the same shell and the same budget on the travelling round (*"I could see the
+pulses"*), and exactly one thing changed — which object carries it. So the question was never the
+tuning.
+
+**The defect is that the residency budget was truncating the swept volume NEAREST-TO-THE-CENTRE, and a
+front lives in a moving SHELL.** The query was right (`reach + σ + margin`, the whole volume the front
+will ever cross) and the section above was right that a prism must already carry the dense mesh before
+the shell arrives — but `ReconcileResidency` then sorted the candidates by distance to the blast's
+centre and took the first `MaxResidentPrisms`, which hands the entire budget to **exactly the prisms
+the front leaves behind in its first two frames**. Its own comment said so out loud and read as a
+justification: *"the ones nearest the blast — which is where every front spends its early life."*
+Early life. The rest of it had no residents at all.
+
+Measured against the shipped numbers: a resting-Mass warhead reaches **95.2 u**, so the query sweeps
+**161.8 u** and the front's shell centre travels from 42.8 u to 95.2 u. For 128 residents to still be
+in the shell at the end of the sweep they would have to span `(137.8/161.8)³ = 62%` of the query
+volume — i.e. the arena would need fewer than ~200 prisms inside 161.8 u of the detonation. That is
+true in open space and false in every arena this weapon is fired in, which is also why the travelling
+carrier looked fine: its reach was the round's own small hit radius, so the residency sphere and the
+shell were nearly the same volume and nearest-to-centre ≈ nearest-to-shell. What was on screen was a
+two-frame pucker at the detonation point and then a 95-unit sweep through prisms that were all still
+24 triangles.
+
+**The fix is the ranking and nothing else**: rank by `abs(|p − U| − c)` — distance to the shell's own
+mid-surface, with `c` the front radius this frame, read from the same `centre.w` the shader draws
+with. The resident set becomes an ANNULUS that tracks the shell outward, which is the effect. The key
+is precomputed per candidate into a `Candidate` struct rather than measured inside the comparator: one
+square root per candidate instead of two per comparison, and `Sort` asks O(n log n) times.
+
+**Both halves of the invisible-swap contract still hold, now for two different reasons**, and the
+second is stronger than what it replaces. The set swapped in on the FIRST frame is invisible because
+the carrier reports progress 0 for a frame before its sweep begins, so the published strength is
+exactly `FrontEnvelope(0) = 0` — unchanged. Everything swapped in or out on every frame AFTER that is
+invisible because a prism enters and leaves through a shell FACE, where `(1−s²)²` has a DOUBLE root so
+the wavelet's value AND slope are exactly zero, plus `ResidencyMargin` of lead-in ahead of the leading
+face. The volume version rested on the margin alone. The cost is CHURN rather than headcount — a band
+swaps in and another swaps out each frame instead of one set being swapped once — bounded by the same
+budget and by the sweep's own 0.15 s, and it buys back every resident the old ranking was spending on
+mass the front had already passed.
+
+**The general rule, and it is a rule about the FAMILY rather than about this effect:** *a residency
+selector is a claim about where a morph's field LIVES.* The cradle's field decays with distance from
+the hull, so nearest-to-the-source is both the best spend of its budget and a stable set, and that is
+the selector this effect inherited by copying the cradle's pass. A field that lives in a moving shell
+has the opposite shape, and the two look identical in code. `PrismCradle.CompareByDistance` now
+carries the note saying which one it is and why, so the next member does not inherit the wrong one.
+A related trap it records: **when a support radius is much smaller than the volume the budget is
+truncating, the two selectors agree, so a wrong selector can pass a playtest on one carrier and fail
+totally on the next with nothing else changed.**
+
+⚠ **What this fix does NOT address, stated rather than bundled.** The whole sweep is the warhead's
+authored `ExplosionDuration` of **0.15 s** — about nine frames at 60 FPS, peaking for three
+(`FrontEnvelope` is 0.30 / 0.79 / 1.00 / 0.95 / 0.70 / 0.40 / 0.14 / 0.02 / 0 on successive frames) —
+inside the loudest nine frames in the game: the warhead's own expanding translucent sphere, the
+sibling spherical blast destroying mass with debris, and the 72-prism cairn blooming over twelve
+frames. This project's own measured answer to *how long is a beat the player reads as one event* is
+the crystal capture's **0.44 s** (`Docs/ECOSYSTEM.md §31`), and 0.15 s is a third of it. The only dial
+is that prefab's `ExplosionDuration`, which is a GAMEPLAY number — it also sets how fast the debuff
+volume reaches a victim, and at 0.4 s a pilot near the rim of a 95 u sphere can outrun the ease's
+decelerating wavefront where at 0.15 s they cannot. It is **deliberately not changed in the same
+commit as the ranking**, for the reason the Serpent's scope already records: *when two fixes ship in
+one commit and either could be the one that worked, the report cannot tell them apart* — and the
+ranking is both the one with a proof and the cheaper to undo.
 
 ### 4.8 The shield morph — the last CPU ticker (shipped 2026-08-15, B4)
 
@@ -2783,7 +2852,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C15 | `ShapeDrawingManager` shrink-to-outline — per-frame `transform.position`/`localScale` Lerp, no render-bridge / spatial-index sync; **no §5 row**, so every sweep missed it | ✅ 2026-08-25: **resolved by deletion** (Prompt 15), the C4/C10 outcome. Unreachable — GUID `d375b1129a0a4e29b505296c9e510bdc` lived only on its own `.meta` after `MinigameFreestyle.unity` was removed. Exclusive dependents deleted with it: `ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData` (all GUID-only-on-own-meta). **Kept:** `ShapeDefinition` (painting toy), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `SegmentSpawner` (SkimRace live), SOAP events `EventOnShapeGameModeStarted` (`8484be0c8df25b94a9e0ba29131f8dc3`) / `EventOnShapePrismReturnToPool` (`33f47a5e536b78442a7f206db3ad7929`) — still wired on live prism prefabs to `Prism.ReturnToPool`; only the deleted manager `Raise()`d them; **never Raise them**; do not strip the EventListeners. Migrating a path nothing can execute would have shipped an untested clock path. |
 | C16 | A LIVING health prism stands still while the limb it is bolted to bends — the lockup that reads as one creature comes apart | ✅ SHIPPED 2026-09-16 — new `PrismSway` (its own `PrismSway.hlsl`, which `#include`s `SpindleSway.hlsl` so the prism and the limb share the two wave constants rather than each carrying a copy) + `_SwaySpanX`/`_SwaySpanY`/`_SwayAxis`/`_SwayTiming` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_sway.py`, spliced immediately AFTER `PrismShieldMorph` so the two compose) + `PrismRenderService.StampSway`/`ClearSwayStamp` + `PrismSway` (the bake and the stamp site) + `Prism.OnCreationComplete` (a new one-line virtual — the stamp cannot live in `Initialize`, which runs before the companion entity exists and before `AssembledFlora` has re-parented the prism onto its spindle). The prism reads the LIMB'S OWN shear field evaluated at its own vertices, so the two move together **bit-identically** rather than approximately; `verify_prism_sway.py` T3 asserts exactly that against `SpindleSway`, which is why the limb height is folded into the span BEFORE the sine. Everything stamped is a constant of the attachment, so there is no start time, no duration and no per-frame CPU. A ZERO span is the exact no-op and is the default, so trails, authored environments and the skeleton a dead lifeform leaves behind (`HealthPrism.LeaveAsSkeleton` clears the stamp) are unchanged — which is the feature: **living mass is the mass that moves**. Design, the four proof layers and the instance-data cost: `Docs/ECOSYSTEM.md` §47 |
 | C17 | The Urchin's CRADLE — the mass around a RIDING Urchin drapes onto its hull (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2); **RE-CUT 2026-09-22 from a per-triangle rigid motion to a high-poly radial DRAPE** after the per-face and per-wedge cuts were both rejected on look (*"this looks terrible"* → a 10x tone-down → *"really bad to the point i put this down"*) — a deformation is only as smooth as the surface it moves, and 24 triangles is not a surface. Now: `HighPolyPrismMesh` (the identical solid subdivided 16x per face axis, 3,072 tris, SHARED so the swapped prisms still batch) + `PrismCradle`'s residency pass (`Prism.SetRenderMeshOverride` on the nearest prisms within `hullRadius + drapeReach + residencyMargin` — a STATE CHANGE, final at the instant it is applied, like a shield engaging, and budgeted at 24 prisms; it declines any prism already holding an override and only clears one that is still its own) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, 4 slots — the object-space Tangent Vector the wedge cut needed is GONE, the map reads only world position and normal — spliced LAST on both live graphs by `Tools/Shaders/wire_prism_cradle.py`, whose migration is now written against slot DIRECTIONS so it runs in both directions and sweeps the feeder nodes an old signature orphaned) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 6 u drape reach, exponent 1.5, max strength **1**, subdivision 16, 24 resident prisms, 2 u residency margin, 0.25 s in / 0.4 s out). The map is ONE line — `p' = U + dir·(d − s·k(s)·w)` — with a falloff C1 at both ends (no seam) and the ANALYTIC inverse-transpose for the normal (the cheap lerp-toward-the-sphere-normal shortcut pops where `n·dir` crosses zero, which is a line down the middle of the ridden prism's side faces). Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file: identity off/beyond reach, the wrap onto the surface along the outward radial, the lip never past the surface and never folding, radial purity, the normal proven by CONVERGENCE RATE — halving the patch quarters the error, 0.32 → 0.0058 — no seam at the reach, affine in the weight, dominant slot, plus a negative control that PLATEAUS at 0.74 with the radial Jacobian term neutered). Not run in the editor. |
-| C18 | The SHOCKWAVE FRONT — a thin spherical shell of rippled prisms travelling out from a detonating warhead blast to the exact radius that blast reaches (live per-frame data for every prism, so a per-prism material write would have made it a §1 violation) | ✅ SHIPPED 2026-09-24 as the FOURTH §4.7 global-uniform citizen and the SECOND high-poly vertex morph (§4.7.3), built with the `/prism-morph` skill. `PrismWake.hlsl` (`PrismWakeDeform`, VERTEX, 4 slots, a file-scope bank of two float4 arrays + one params vector) + `PrismWake` (the publisher and the residency pass — budget SPLIT EVENLY across live fronts, query = a plain sphere at the blast's centre of radius `reach + σ + margin`, because residency is the REACH and not the shell: a prism the front has not reached yet must already carry the dense mesh when it arrives — and σ is in that sum because the front dies AT the reach while the shell reaches σ past its own centre, a `margin ≥ σ` coincidence that held by 0.2 of a unit at the first cut and broke by 19 the first time the shell was thickened) + `PrismWakeSource` + `IPrismWakeCarrier` (the capability, asking a REACH and a PROGRESS) + `PrismWakeConfigSO` (`Resources/PrismWakeConfig`: amplitude 0.143 = 90% of the folding bound at Q=1, `wavesInFront` 1, half-thickness 0.45 of the reach, subdivision 10, 128 resident prisms ≈ 153.6k triangles, 24 u margin, **0 s in** / 0.35 s out). **GRANTED TO ONE OBJECT — the heavy skyburst's 10-POINT WARHEAD BLAST, at detonation** (`AOEExplosion.TryGetShockwave`, a source added at the one site that knows which blast is the warhead, `ProjectileDetonatorSO`). The blast touches no prism mass at all (`affectsPrisms: 0`, its whole payload aimed at pilots and creatures), which is what makes the ripple honest: the prisms are still standing afterwards, which is what happened to them. **FOUR playtests, and three carriers were each individually good and wrong for one reason** — the fleet grant (*'awesome effect, but it will be overused as a wake on every vessel'*), the Scarab ball (in play for a whole match), and the missile IN FLIGHT, pulled on a playtest that APPROVED it: *'I could see the pulses as a **wake** for the travelling heavy prism'* — the word is the verdict, a front trailing a travelling object is a texture. The question is never *does this look good on the thing*, it is *is the thing an EVENT*. **The front consequently has NO CLOCK of its own**: a blast already has an expanding wavefront (`colliderRadius × MaxScale × ease`, the number its damage pass uses), so the position is READ and `pulsesPerSecond` / `PrismWake.PulseRate` are retired outright — a rate beside a clock the carrier owns is a second answer to one question and the two drift. The carrier reports a PROGRESS, never a radius, so it cannot break the no-fold proof (a blast honestly starts at radius 0). **The FIRST FRAME is silent by construction** — `ExplodeAsync` awaits its delay, so the blast exists one frame at progress 0 where `FrontEnvelope(0)` is exactly 0, which is the frame the residency swap happens on; what held statistically on the travelling carrier now holds structurally. Engage ease → 0 (the envelope's C1 zero at birth IS the engage); the round's moving-centre imprecision is retired (a detonation does not move); the honest cost is TEMPO, a 0.15 s sweep ≈ nine frames at 60 FPS, whose only dial is the warhead prefab's `ExplosionDuration` and that is a GAMEPLAY change. The two non-spherical blast shapes (`AOEConicExplosion`, `AOECylindricalExplosion`) refuse in CODE rather than relying on nobody granting them a source. **It is half of a PAIR with the armed fuze's LIT SPHERE** (`Docs/LIT.md`, `Projectile.PublishFuzeLit`), now separated in time too: the lit half says WHERE on the way in, the front says HOW FAR when it happens. Map: `f(r) = r + σ·A·w·(1−s²)²·sin(2πQs)` with `s = (r−c)/σ`, so the amplitude is ABSOLUTE (bounded by σ·A everywhere, where the cylinder's strain would have moved a 95 u reach's outer mass 40 u), the frame is spherical (no `_PrismWakeAxis`, no shear term in the Jacobian), and NO FOLD is ONE condition `A < 1/(2πQ)` DERIVED from the bandwidth. Spliced BEFORE the cradle on both live graphs by `Tools/Shaders/wire_prism_wake.py` — the cradle must see the rippled position or the drape is undone — which broke three sibling wirers that walked past ONE hard-coded node name and produced `Tools/Shaders/prism_vertex_chain.py`, the structural definition of a vertex morph. Proven by `Tools/Shaders/verify_prism_wake.py` (clang++ over the SHIPPED file, ten properties: identity off and outside both shell faces separately, radial purity, BANDWIDTH = exactly 4Q−1 sign changes at s = j/(2Q), no fold over 2,160,720 samples of the whole authored range, affine in strength, the normal by CONVERGENCE RATE 5.1e−3 → 8.3e−5, no seam at either face, slot authority bit-exact, plus a negative control that PLATEAUS flat with the Jacobian's RADIAL STRETCH term neutered), and the interface/override binding proven by a Roslyn stub compile with a signature-drift control. One gate defect found and fixed on the way: a ruling comment that NAMES the call it forbids trips an `Assert.IsFalse(file.Contains(...))` ban, so the suite's bans now read `CodeOnly(file)` — *a textual gate that forbids a token must not be able to read the comment documenting the ban.* Not run in the editor. |
+| C18 | The SHOCKWAVE FRONT — a thin spherical shell of rippled prisms travelling out from a detonating warhead blast to the exact radius that blast reaches (live per-frame data for every prism, so a per-prism material write would have made it a §1 violation) | ✅ SHIPPED 2026-09-24 as the FOURTH §4.7 global-uniform citizen and the SECOND high-poly vertex morph (§4.7.3), built with the `/prism-morph` skill. `PrismWake.hlsl` (`PrismWakeDeform`, VERTEX, 4 slots, a file-scope bank of two float4 arrays + one params vector) + `PrismWake` (the publisher and the residency pass — budget SPLIT EVENLY across live fronts, QUERY = a plain sphere at the blast's centre of radius `reach + σ + margin`, because a prism the front has not reached yet must already carry the dense mesh when it arrives, while the RANKING inside that volume is by distance to the travelling SHELL — see the fifth playtest below — and σ is in that sum because the front dies AT the reach while the shell reaches σ past its own centre, a `margin ≥ σ` coincidence that held by 0.2 of a unit at the first cut and broke by 19 the first time the shell was thickened) + `PrismWakeSource` + `IPrismWakeCarrier` (the capability, asking a REACH and a PROGRESS) + `PrismWakeConfigSO` (`Resources/PrismWakeConfig`: amplitude 0.143 = 90% of the folding bound at Q=1, `wavesInFront` 1, half-thickness 0.45 of the reach, subdivision 10, 128 resident prisms ≈ 153.6k triangles, 24 u margin, **0 s in** / 0.35 s out). **GRANTED TO ONE OBJECT — the heavy skyburst's 10-POINT WARHEAD BLAST, at detonation** (`AOEExplosion.TryGetShockwave`, a source added at the one site that knows which blast is the warhead, `ProjectileDetonatorSO`). The blast touches no prism mass at all (`affectsPrisms: 0`, its whole payload aimed at pilots and creatures), which is what makes the ripple honest: the prisms are still standing afterwards, which is what happened to them. **FOUR playtests, and three carriers were each individually good and wrong for one reason** — the fleet grant (*'awesome effect, but it will be overused as a wake on every vessel'*), the Scarab ball (in play for a whole match), and the missile IN FLIGHT, pulled on a playtest that APPROVED it: *'I could see the pulses as a **wake** for the travelling heavy prism'* — the word is the verdict, a front trailing a travelling object is a texture. The question is never *does this look good on the thing*, it is *is the thing an EVENT*. **The front consequently has NO CLOCK of its own**: a blast already has an expanding wavefront (`colliderRadius × MaxScale × ease`, the number its damage pass uses), so the position is READ and `pulsesPerSecond` / `PrismWake.PulseRate` are retired outright — a rate beside a clock the carrier owns is a second answer to one question and the two drift. The carrier reports a PROGRESS, never a radius, so it cannot break the no-fold proof (a blast honestly starts at radius 0). **The FIRST FRAME is silent by construction** — `ExplodeAsync` awaits its delay, so the blast exists one frame at progress 0 where `FrontEnvelope(0)` is exactly 0, which is the frame the residency swap happens on; what held statistically on the travelling carrier now holds structurally. Engage ease → 0 (the envelope's C1 zero at birth IS the engage); the round's moving-centre imprecision is retired (a detonation does not move); the honest cost is TEMPO, a 0.15 s sweep ≈ nine frames at 60 FPS, whose only dial is the warhead prefab's `ExplosionDuration` and that is a GAMEPLAY change. The two non-spherical blast shapes (`AOEConicExplosion`, `AOECylindricalExplosion`) refuse in CODE rather than relying on nobody granting them a source. **It is half of a PAIR with the armed fuze's LIT SPHERE** (`Docs/LIT.md`, `Projectile.PublishFuzeLit`), now separated in time too: the lit half says WHERE on the way in, the front says HOW FAR when it happens. Map: `f(r) = r + σ·A·w·(1−s²)²·sin(2πQs)` with `s = (r−c)/σ`, so the amplitude is ABSOLUTE (bounded by σ·A everywhere, where the cylinder's strain would have moved a 95 u reach's outer mass 40 u), the frame is spherical (no `_PrismWakeAxis`, no shear term in the Jacobian), and NO FOLD is ONE condition `A < 1/(2πQ)` DERIVED from the bandwidth. Spliced BEFORE the cradle on both live graphs by `Tools/Shaders/wire_prism_wake.py` — the cradle must see the rippled position or the drape is undone — which broke three sibling wirers that walked past ONE hard-coded node name and produced `Tools/Shaders/prism_vertex_chain.py`, the structural definition of a vertex morph. Proven by `Tools/Shaders/verify_prism_wake.py` (clang++ over the SHIPPED file, ten properties: identity off and outside both shell faces separately, radial purity, BANDWIDTH = exactly 4Q−1 sign changes at s = j/(2Q), no fold over 2,160,720 samples of the whole authored range, affine in strength, the normal by CONVERGENCE RATE 5.1e−3 → 8.3e−5, no seam at either face, slot authority bit-exact, plus a negative control that PLATEAUS flat with the Jacobian's RADIAL STRETCH term neutered), and the interface/override binding proven by a Roslyn stub compile with a signature-drift control. One gate defect found and fixed on the way: a ruling comment that NAMES the call it forbids trips an `Assert.IsFalse(file.Contains(...))` ban, so the suite's bans now read `CodeOnly(file)` — *a textual gate that forbids a token must not be able to read the comment documenting the ban.* **FIFTH playtest: *"i could not detect the shockwave at all"*, and the defect was the RESIDENCY RANKING rather than the tuning** — the preceding playtest approved the identical map, amplitude, shell and budget on the travelling round, so the only variable was which object carries it. `ReconcileResidency` truncated the swept volume NEAREST-TO-THE-CENTRE, and a front lives in a moving SHELL: the whole budget went to exactly the prisms the front leaves behind in its first two frames, so what was on screen was a two-frame pucker at the detonation point and then a 95-unit sweep through prisms that were all still 24 triangles. Its own comment said so and read as a justification (*"nearest the blast — which is where every front spends its early life"*). Measured: 128 residents only reach the sweep's outer life if fewer than ~200 prisms lie inside the 161.8 u query volume — true in open space, false in every arena this weapon is fired in, which is also why the travelling carrier looked fine (its reach was the round's own small hit radius, so nearest-to-centre ≈ nearest-to-shell). Fixed by ranking on `abs(|p − U| − c)` so the resident set is an ANNULUS that TRACKS the shell outward, with the key precomputed per candidate rather than measured inside the comparator. **The general rule is about the FAMILY: a residency selector is a claim about where a morph's field LIVES** — the cradle's decays with distance so nearest-to-source is right there, a shell's does not, and the two are identical in code, so `PrismCradle.CompareByDistance` now carries the note saying which it is. Its corollary is why this survived a playtest: **when the support radius is much smaller than the volume the budget truncates, the two selectors agree** — a wrong selector can pass on one carrier and fail totally on the next with nothing else changed. ⚠ The 0.15 s TEMPO is deliberately NOT fixed in the same commit (the Serpent scope's rule: two fixes in one commit cannot be told apart by the next report), and its only dial is a GAMEPLAY number. Not run in the editor. |
 
 Phase D — lock-in:
 
