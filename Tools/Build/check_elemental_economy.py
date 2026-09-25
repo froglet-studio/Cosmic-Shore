@@ -120,7 +120,13 @@ def check_every_hull_can_debuff(index, hull_containers=None, serpent_src=None):
 
         if hull == "Serpent":
             src = serpent_src if serpent_src is not None else read(SERPENT_EXECUTOR)
-            if "ElementalTransfer.Eject" in src and "StripVessels" in src:
+            # Either spelling of the same verb: the direct Eject helper, or ApplyAll carrying
+            # ElementalTransferForm.Eject (the sanctioned "strip all four" shape). Pinning one
+            # spelling made this gate fail the day the call was tidied into the other, which
+            # reads as the Serpent losing its anti-vessel verb - ask WHICH VERB, not which word.
+            ejects = re.search(r"ElementalTransfer\.Eject\s*\(", src) or \
+                     re.search(r"ElementalTransferForm\.Eject\s*,", src)
+            if ejects and "StripVessels" in src:
                 found.append("SniperShotActionExecutor.StripVessels (code, not a container)")
 
         if found:

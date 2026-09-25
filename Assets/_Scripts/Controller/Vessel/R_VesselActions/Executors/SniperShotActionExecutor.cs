@@ -316,8 +316,16 @@ namespace CosmicShore.Gameplay
                 var candidate = _vesselScratch[i];
                 if (candidate == null) continue;
 
-                var victim = candidate.GetComponentInChildren<VesselStatus>();
-                if (victim == null) continue;
+                var component = candidate.GetComponentInChildren<VesselStatus>();
+                if (component == null) continue;
+
+                // Typed as the INTERFACE from here on, because Domain is a DEFAULT INTERFACE
+                // MEMBER (IVesselStatus implements it over Player) and a default member is
+                // reachable only through the interface - VesselStatus itself does not declare
+                // one. The Unity null check above is deliberately done on the concrete
+                // reference first: `== null` on an interface-typed variable is a plain
+                // reference compare and misses a destroyed Object.
+                IVesselStatus victim = component;
 
                 // Never yourself, never a team-mate. The own-domain rule is the same one every
                 // other anti-vessel effect in the fleet applies, and it is what stops a Serpent
@@ -325,17 +333,16 @@ namespace CosmicShore.Gameplay
                 if (ReferenceEquals(victim, _status)) continue;
                 if (victim.Domain == _status.Domain) continue;
 
-                if (!PrismSpatialIndex.ConeContains(victim.transform.position, origin, direction,
+                if (!PrismSpatialIndex.ConeContains(component.transform.position, origin, direction,
                                                     reach, tanHalf, so.MinPathRadius))
                     continue;
 
                 // Classed Other: this is a gun round rather than a blast or a contact, so neither
                 // the Explosion nor the VesselContact ward should stop it, and only a pilot warded
                 // against everything is spared.
-                for (int e = 0; e < ElementalTransfer.Elements.Length; e++)
-                    ElementalTransfer.Eject(victim, ElementalTransfer.Elements[e],
-                                            so.VesselStripPerElement, launch,
-                                            ElementalDebuffSources.Other);
+                ElementalTransfer.ApplyAll(ElementalTransferForm.Eject, victim, attacker: null,
+                                           so.VesselStripPerElement, launch,
+                                           ElementalDebuffSources.Other);
             }
             _vesselScratch.Clear();
         }

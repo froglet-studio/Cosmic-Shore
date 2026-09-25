@@ -42,10 +42,6 @@ namespace CosmicShore.Gameplay
         static readonly Element[] AllElements =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
-        /// <summary>Every element, in the fleet's canonical charge/mass/space/time order - so a
-        /// caller that debuffs "all four" spells it the same way the HUD flowers do.</summary>
-        public static Element[] Elements => AllElements;
-
         /// <summary>
         /// Which destination a hit class sends its petals to. <see cref="CombatHitClass.Strike"/>
         /// is the contact verb (the Squirrel's joust, the Rhino's sword) and STEALS; every other
