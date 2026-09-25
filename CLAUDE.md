@@ -1717,10 +1717,11 @@ largest speed whose radius fits, traded against how long the following straight 
 a binary classification. Before the grading there were exactly two points on that curve and
 therefore one decision per corner, which a play test reported as nothing to master; authoring
 `straightnessGraceBand` back to the engage threshold restores that latch exactly. It is the
-Rhino's mode because its turn radius **converges** with speed (`RotationThrottleScaler 0.5`,
-asymptote `180/(pi*r)` = 287 u at the retuned 0.2, 115 u before it) where every other hull's grows without bound. **Intensity is
-what MIX of corners a lap asks for** — a median lap costs speed on 1 / 1 / 2 / 3 of its 8
-corners, its hardest corner taking a pilot to 99% / 82% / 65% / **37%** of top speed — and level
+Rhino's mode because its turn radius **converges** with speed (`RotationThrottleScaler` 0.2,
+asymptote `180/(pi*r)` = 287 u; 115 u at the pre-retune 0.5) where every other hull's grows without bound. **Intensity is
+what MIX of corners a lap asks for** — a median lap costs speed on 2 / 4 / 4 / 5 of its 8
+corners, its hardest corner taking a pilot to 92% / 66% / 47% / **34%** of top speed (measured
+after the 2026-09-25 retune; 1 / 1 / 2 / 3 and 99 / 82 / 65 / 37% before it) — and level
 4 spends its whole 360-degree turning budget on three corners, so it is a TRIANGLE with gates
 down its sides: three braking zones and three long straights to wind the ramp back up. **A FLOOR
 IS A PERMISSION, NOT A DEMAND**, and that is the finding worth carrying: the first ladder
