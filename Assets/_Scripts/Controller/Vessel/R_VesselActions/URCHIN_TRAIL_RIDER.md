@@ -1294,6 +1294,45 @@ Nothing below can be checked without play mode.
     spikes use, and before it a client's steals scored nothing at all — for every steal source in
     the game, not just the Urchin.
 
+### The CRADLE (never run — this is its only gate)
+
+The drape is the branch's deliverable and **nothing about how it LOOKS has been verified**.
+Everything offline could prove is proven (`Tools/Shaders/verify_prism_cradle.py`: the map is
+the map, the normal is its analytic derivative by convergence rate, nothing folds, there is no
+seam at the reach, and a no-slot frame is bit-identical pass-through). Whether it READS is
+this list.
+
+24. **It appears at all.** Ride any ribbon. The prisms within ~6 units of the hull's surface
+    should close over the ship like cloth — inside the hull rising out to meet it, outside
+    sliding in to touch it. Flat nothing means the graph is unwired (`FrogletTools > Ecology >
+    Prism Animation` reports it) or the config's `enabled` is off.
+25. **The SWAP is invisible.** Watch the prisms AHEAD of the ride, at the far edge of the
+    effect, as you approach them. A prism must never visibly change shape, shade or silhouette
+    as it enters the effect — the high-poly mesh is handed over outside the volume the drape
+    can move anything (`residencyMargin` 2 on top of `drapeReach` 6). A pop there is the one
+    failure the whole invisible-swap argument rests on.
+26. **The surface is SMOOTH, not faceted.** This is what two rejected rounds were about: if
+    the motion reads as flat triangles HINGING rather than as a bending surface, the mesh
+    override is not landing (the prism is still drawing its authored 24 triangles) — raise
+    `subdivision` only after checking the override, because a smaller hinge is still a hinge.
+27. **The LIGHTING follows the bend.** Look along the draped prisms at a grazing angle. The
+    shading must move with the surface; a bent surface lit as if it were still flat reads as a
+    sticker sliding over geometry and means the analytic normal is not reaching the graph.
+28. **Only a handful of prisms are dense.** `PrismCradle.ResidentPrismCount` peaks at the
+    authored 24. In a CROWDED trail (ride back through your own dense ribbon) it must stay at
+    24 and the dense prisms must be the ones around the hull — not an arbitrary two dozen.
+29. **It leaves NOTHING behind.** Slip off the ribbon, fly away, and look at the prisms you
+    were just riding: every one must be back to its authored shape, unbent. Then detach at
+    speed, at a launch, and by destroying the prism under you — three different exits.
+30. **A shielded prism keeps its shield.** Ride a MASS-5 Urchin's own armoured trail. A prism
+    that shields WHILE you are draping it must show its octahedron, not a box: the cradle
+    hands the override slot over and must not take it back.
+31. **Stop and start.** Ride, slip, ride again, then exit play mode and re-enter. No prism may
+    come back deformed and no error may fire on the transition — the reset drops bookkeeping
+    only, deliberately without touching prisms that no longer exist.
+32. **Nothing else in the fleet changed.** Fly any other hull through mass: no drape, and no
+    change to how prisms look. The cradle is granted by `GunVesselTransformer` alone.
+
 ## Follow-ups
 
 - **Netcode components are not wired** — no `NetcodeHooks`, `NetworkVesselClientCache`,

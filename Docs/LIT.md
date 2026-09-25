@@ -38,16 +38,12 @@ lands, which is a property of the producer, not of the state:
 | Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | everything | `Projectile.PublishFuzeLit` |
 | Explosion passthrough | any | **resolved** — the blast arrived and spared this | **own domain only** | `ExplosionImpactor.PublishLit` |
 
-**The fuze row was half of a PAIR for one branch, and the general rule it left behind outlives it.**
-The same round briefly also swept a travelling **ripple** of rippled prisms out to that warhead's own
-blast radius — a vertex morph rather than a light — so one weapon said two things in two channels of
-the surface description: the lit sphere says **WHERE** it goes off, statically, in the shooter's
-domain colour, and the ripple said **HOW FAR**, kinetically, by sweeping to that radius. The ripple
-was removed with the high-poly morph family's second member (`.claude/skills/prism-morph` §13), so
-the fuze row is a solo effect today and nothing is waiting on it. The shape is worth keeping:
-**when a producer wants to say two things about one force, check whether a DIFFERENT channel of the
-surface description can carry the second** — a second lit volume competes for the eight slots and for
-the same colour language, where a vertex morph competes for neither.
+**A producer that wants to say TWO things about one force should look for a different CHANNEL, not a
+second light.** The fuze row was briefly paired with a prism *ripple* on the same round — a vertex
+morph rather than a light — the sphere saying **WHERE** the warhead goes off and the ripple **HOW
+FAR**. That ripple was removed with its family (`.claude/skills/prism-morph` §13) and the fuze row
+is a solo effect today, but the shape is the reusable part: a second lit volume competes for the
+eight slots and for the same colour language, where a vertex morph competes for neither.
 
 Three producers, and the third one is a **replacement rather than an addition**: it is what the
 2-second temporary shield used to do (see below), so it is the only one of the three that removes

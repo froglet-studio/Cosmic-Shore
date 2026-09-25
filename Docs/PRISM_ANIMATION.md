@@ -212,6 +212,20 @@ conveyor recycle — all inventoried in §3.7 lenses A, F, G, J, K.)*
 
 ### 3.7 Full path inventory (all 10 lenses + critic)
 
+> ⚠ **This table's `file:line` references are a SNAPSHOT of the sweep and have rotted — treat
+> every one as a hint, not an address.** Measured 2026-09-25: **24** cite paths that no longer
+> resolve and **9** are out of range in files that still exist. Both are expected and mostly
+> *correct as history* — the migration's whole point was deleting `PrismScaleManager.cs`,
+> `MaterialStateManager.cs` and `ClearPrisms.cs`, so a row whose path is gone is a row that
+> LANDED — but the out-of-range ones on live files (`PrismEffectsManager.cs`,
+> `PrismOctahedronShield.cs`, `PrismStellatedOctahedronShield.cs`,
+> `AOEDangerHemisphereBlocks.cs`, `PrismExplosionPoolManager.cs`) point at nothing in particular
+> and read as precise. Re-anchoring them on SYMBOLS rather than numbers is the fix (the rule
+> `VESSEL_CONSTRUCTION_FOLLOWUP`-style docs already use: name the method, demote the line to a
+> parenthesised hint); the sweep that measures it is ~20 lines over the extracted references.
+> **Do not spend a branch's time on it in passing** — it is a whole-table pass, and a
+> half-re-anchored table is worse than a uniformly stale one.
+
 <!-- AUDIT_TABLE_START -->
 #### A. Grow-in / scale
 
