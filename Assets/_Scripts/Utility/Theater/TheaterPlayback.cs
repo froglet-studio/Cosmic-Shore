@@ -66,6 +66,17 @@ namespace CosmicShore.Utility
             /// shot then falls back to the same measured-radius framing the chase uses.
             /// </summary>
             public Vector3 PilotOffset;
+
+            /// <summary>Jets and trails, when this puppet is a full ghost. Null for a harvested one.</summary>
+            public TheaterGhost.Parts Ghost;
+
+            /// <summary>
+            /// The fastest this pilot ever went in this recording, which is what the jets are
+            /// normalised against. SELF-CALIBRATING on purpose: a plume that swelled against an
+            /// authored cruise speed would need a number per hull, and the fleet's speeds span
+            /// 34x — against its own top speed, a ghost's jets read right with nothing authored.
+            /// </summary>
+            public float TopSpeed = 1f;
         }
 
         readonly List<Puppet> _puppets = new();
@@ -211,6 +222,12 @@ namespace CosmicShore.Utility
         {
             if (_recording == null) return;
             _time = _recording.StartTime + Mathf.Clamp(secondsIntoRecording, 0f, _recording.Duration);
+
+            // A TrailRenderer's points are in WORLD space, so a seek that teleports a ghost across
+            // the arena otherwise draws one straight ribbon from where it was to where it now is.
+            // Clearing is the whole cost of making a snap look like a snap.
+            for (int i = 0; i < _puppets.Count; i++) ClearTrails(_puppets[i]);
+
             Apply();
         }
 
@@ -274,6 +291,7 @@ namespace CosmicShore.Utility
                     // as well as in the data - anything the camera accumulates is part of what the
                     // viewer is comparing against.
                     _orbitPhase = 0f;
+                    for (int i = 0; i < _puppets.Count; i++) ClearTrails(_puppets[i]);
                 }
             }
 
@@ -318,15 +336,21 @@ namespace CosmicShore.Utility
                 var puppet = _puppets[i];
                 if (puppet.Model == null) continue;
 
-                bool live = puppet.Track.TryEvaluate(_time, out Vector3 position, out Quaternion rotation, out _);
+                bool live = puppet.Track.TryEvaluate(_time, out Vector3 position, out Quaternion rotation,
+                    out float speed);
                 if (live != puppet.Visible)
                 {
                     puppet.Visible = live;
                     puppet.Model.SetActive(live);
+
+                    // A puppet that just came back must not draw a ribbon from wherever it was
+                    // last seen. Same trap, same fix, as a pooled missile's tail.
+                    if (live) ClearTrails(puppet);
                 }
                 if (!live) continue;
 
                 puppet.Transform.SetPositionAndRotation(position, rotation);
+                DriveJets(puppet, speed);
 
                 if (!anyVisible) { framed = new Bounds(position, Vector3.zero); anyVisible = true; }
                 else framed.Encapsulate(position);
@@ -350,6 +374,47 @@ namespace CosmicShore.Utility
             // No live subject — a pilot who has not spawned yet, or has already left. Frame the
             // whole recording rather than holding a shot of nothing.
             ApplyOrbit(framed);
+        }
+
+        /// <summary>
+        /// Swell a ghost's jets with how fast its pilot was actually going, normalised against
+        /// that pilot's own fastest moment in this recording. Nothing per-frame beyond one
+        /// emission write per jet, and nothing authored per hull.
+        /// </summary>
+        void DriveJets(Puppet puppet, float speed)
+        {
+            var ghost = puppet.Ghost;
+            if (ghost == null || ghost.Jets.Count == 0) return;
+
+            float idle = _config != null ? _config.jetIdleThrottle : 0.25f;
+            float throttle = Mathf.Lerp(idle, 1f, Mathf.Clamp01(speed / Mathf.Max(1f, puppet.TopSpeed)));
+
+            for (int i = 0; i < ghost.Jets.Count; i++)
+            {
+                var (system, authoredRate) = ghost.Jets[i];
+                if (system == null) continue;
+
+                var emission = system.emission;
+                emission.rateOverTimeMultiplier = authoredRate * throttle;
+            }
+        }
+
+        static void ClearTrails(Puppet puppet)
+        {
+            var ghost = puppet?.Ghost;
+            if (ghost == null) return;
+
+            for (int i = 0; i < ghost.Trails.Count; i++)
+                if (ghost.Trails[i] != null) ghost.Trails[i].Clear();
+        }
+
+        /// <summary>The fastest this pilot went in this recording — the jets' own normaliser.</summary>
+        static float TopSpeedOf(TheaterTrack track)
+        {
+            float top = 1f;
+            for (int i = 0; i < track.Poses.Count; i++)
+                if (track.Poses[i].Speed > top) top = track.Poses[i].Speed;
+            return top;
         }
 
         bool TrySubject(out Puppet puppet)
@@ -445,6 +510,7 @@ namespace CosmicShore.Utility
             var container = ResolveVesselPrefabs();
             var colorSet = PrismLit.ColorSet;
             bool live = _config != null && _config.liveHullMaterials;
+            bool fullGhosts = _config == null || _config.fullGhosts;
 
             for (int i = 0; i < _recording.Tracks.Count; i++)
             {
@@ -460,21 +526,35 @@ namespace CosmicShore.Utility
                 GameObject model = null;
                 Vector3 pilotOffset = Vector3.zero;
 
+                TheaterGhost.Parts ghost = null;
+
                 if (container != null && container.TryGetShipPrefab((VesselClassType)track.VesselType,
                         out Transform prefab))
                 {
-                    // Read off the PREFAB, never an instance: this is the only thing the theater
-                    // wants from the vessel besides its meshes, and asking the asset keeps the
-                    // harvest's whole point intact (nothing is instantiated, so nothing wakes).
+                    // Read off the PREFAB, never an instance: asking the asset costs nothing and
+                    // cannot wake anything.
                     if (prefab.TryGetComponent(out VesselCameraCustomizer cameraCustomizer)
                         && cameraCustomizer.Settings != null)
                         pilotOffset = cameraCustomizer.Settings.followOffset;
 
+                    if (fullGhosts)
+                    {
+                        ghost = TheaterGhost.Build(prefab, domain, DomainMaterial(domain),
+                            _root.transform, $"Ghost_{track.PlayerName}");
+                        if (ghost != null) model = ghost.Root;
+                    }
+
                     // Radius 0 = NATIVE scale and native pivot: the recorded pose is relative to the
                     // ship's own origin, so a re-centred model would sit off by the hull's bounds
                     // offset for the whole replay.
-                    if (live) VesselModelBuilder.TryBuildLive(prefab, 0f, DomainMaterial(domain), out model);
-                    else VesselModelBuilder.TryBuild(prefab, 0f, color, out model);
+                    if (model == null)
+                    {
+                        // Radius 0 = NATIVE scale and native pivot: the recorded pose is relative to
+                        // the ship's own origin, so a re-centred model would sit off by the hull's
+                        // bounds offset for the whole replay.
+                        if (live) VesselModelBuilder.TryBuildLive(prefab, 0f, DomainMaterial(domain), out model);
+                        else VesselModelBuilder.TryBuild(prefab, 0f, color, out model);
+                    }
                 }
 
                 if (model == null) model = BuildProxy(color);
@@ -490,6 +570,8 @@ namespace CosmicShore.Utility
                     Transform = model.transform,
                     Radius = radius,
                     PilotOffset = pilotOffset,
+                    Ghost = ghost,
+                    TopSpeed = TopSpeedOf(track),
                     Visible = true
                 });
             }
@@ -579,14 +661,36 @@ namespace CosmicShore.Utility
             if (renderer != null && material != null) renderer.sharedMaterial = material;
         }
 
+        /// <summary>
+        /// The hull's own radius, which every shot's framing is expressed in multiples of.
+        ///
+        /// <para><b>MESHES ONLY.</b> A full ghost carries a <c>TrailRenderer</c> that is hundreds of
+        /// units long the moment it starts drawing, and a particle system whose bounds grow with
+        /// its plume — measuring those would hand the camera a "hull radius" that grows as the
+        /// ship flies and pull every shot steadily away from it.</para>
+        /// </summary>
         static float MeasureRadius(Transform model)
         {
-            var renderers = model.GetComponentsInChildren<Renderer>(true);
-            if (renderers.Length == 0) return 1f;
+            Bounds bounds = default;
+            bool any = false;
 
-            Bounds b = renderers[0].bounds;
-            for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
-            return Mathf.Max(1f, b.extents.magnitude);
+            var meshes = model.GetComponentsInChildren<MeshRenderer>(true);
+            for (int i = 0; i < meshes.Length; i++)
+            {
+                if (meshes[i] == null) continue;
+                if (!any) { bounds = meshes[i].bounds; any = true; }
+                else bounds.Encapsulate(meshes[i].bounds);
+            }
+
+            var skinned = model.GetComponentsInChildren<SkinnedMeshRenderer>(true);
+            for (int i = 0; i < skinned.Length; i++)
+            {
+                if (skinned[i] == null) continue;
+                if (!any) { bounds = skinned[i].bounds; any = true; }
+                else bounds.Encapsulate(skinned[i].bounds);
+            }
+
+            return any ? Mathf.Max(1f, bounds.extents.magnitude) : 1f;
         }
     }
 }

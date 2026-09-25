@@ -87,6 +87,16 @@ namespace CosmicShore.ScriptableObjects
                  "that hull's own measured radius - so one number frames every ship in the fleet.")]
         [Range(2f, 40f)] public float followDistance = 9f;
 
+        [Tooltip("Build ghosts from the REAL vessel prefab, declawed - so they have jets and a " +
+                 "tail. Turn OFF to fall back to harvested meshes, which cannot have either but " +
+                 "never instantiate anything. See TheaterGhost for what the declaw removes and why.")]
+        public bool fullGhosts = true;
+
+        [Tooltip("How hard a ghost's jets burn when its pilot was at a standstill, as a fraction " +
+                 "of their authored rate. They reach full at that pilot's own fastest moment in " +
+                 "the recording, so nothing is authored per hull.")]
+        [Range(0f, 1f)] public float jetIdleThrottle = 0.25f;
+
         [Tooltip("Ghosts wear their ship's own materials and their pilot's real domain accent - " +
                  "the ship as it looks in the game. Turn OFF for a flat domain fill, which is " +
                  "easier to tell apart at orbit distance but is not what the ship looks like.")]
