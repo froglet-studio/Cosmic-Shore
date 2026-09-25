@@ -26,6 +26,11 @@ namespace CosmicShore.Tests
         {
             public ToyCategory CategoryValue = ToyCategory.Pilot;
             public override ToyCategory Category => CategoryValue;
+
+            // These tests never build a runtime toy - the two buttons are pure over the
+            // registry's shell options, so a definition here only has to exist and carry
+            // a category.
+            public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context) { }
         }
 
         class TestSurface : IToyShellSurface
