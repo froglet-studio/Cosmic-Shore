@@ -1952,25 +1952,6 @@ namespace CosmicShore.Gameplay
 
         #endregion
 
-        #region Wake
-
-        // NO SHOCKWAVE FRONT IS CARRIED HERE, and it is not an oversight. The prism front
-        // (Docs/PRISM_ANIMATION.md §4.7.3) rode the round IN FLIGHT for one playtest: it read well
-        // and it read as a WAKE — pulses trailing a travelling object — which is a texture the
-        // round wears rather than an event. It belongs to the thing the round is carrying, so it
-        // moved to the heavy skyburst's WARHEAD BLAST, whose own expanding sphere is a shockwave
-        // and needs no pulse rate invented for it: the blast answers IPrismWakeCarrier itself
-        // (AOEExplosion.TryGetShockwave) and is granted its source at the one site that knows which
-        // blast is the warhead (ProjectileDetonatorSO). Do not re-add an IPrismWakeCarrier
-        // implementation or an AddComponent<PrismWakeSource>() here.
-        //
-        // What the round DOES still publish on the way in is the other half of the pair: its armed
-        // fuze volume as a LIT SPHERE (Docs/LIT.md, PublishFuzeLit) — where the warhead will go
-        // off, statically, in colour. The front is now what happens WHEN it goes off, kinetically,
-        // in vertices. Two channels, one weapon, neither duplicating the other.
-
-        #endregion
-
         void Stop()
         {
             if (_moveCts == null) return;

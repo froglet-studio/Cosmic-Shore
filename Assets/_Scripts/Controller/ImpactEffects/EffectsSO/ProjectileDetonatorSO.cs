@@ -173,22 +173,6 @@ namespace CosmicShore.Gameplay
                         AffectSelfOverride  = false
                     });
                     warhead.Detonate();
-
-                    // THE PRISM SHOCKWAVE FRONT (Docs/PRISM_ANIMATION.md §4.7.3). This blast's
-                    // whole payload is aimed at LIVING things - it debuffs pilots and jousts
-                    // creatures and authors affectsPrisms: 0 - so until now it had no expression in
-                    // the arena at all: a translucent sphere flashing for 0.15 s and nothing else.
-                    // The front is that expression, and it is honest precisely BECAUSE the blast
-                    // touches no mass: the prisms ripple as the shockwave crosses them and are
-                    // still there afterwards, which is exactly what happened to them.
-                    //
-                    // Granted HERE because this is the one place in the codebase that knows a blast
-                    // is THE WARHEAD rather than the prism cairn, the skyburst cone, or any of the
-                    // other ~dozen AOEExplosion instances the game spawns - and the gate above is
-                    // already the base-vs-heavy discriminator (Payload.ArmWarhead through
-                    // WarheadBlastRadiusMultiplier), so the two rockets sharing one prefab and one
-                    // pool cannot confuse it. Fresh Instantiate, so there is no duplicate to guard.
-                    warhead.gameObject.AddComponent<PrismWakeSource>();
                 }
             }
 

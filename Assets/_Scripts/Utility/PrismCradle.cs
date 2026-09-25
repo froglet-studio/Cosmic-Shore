@@ -348,10 +348,14 @@ namespace CosmicShore.Utility
         /// inherits. The cradle's field DECAYS with distance, so the prisms nearest the source are
         /// simultaneously the ones it moves most and the ones it will still be moving next frame —
         /// nearest-to-centre is therefore both the best spend of the budget and a stable set. A
-        /// morph whose field lives in a MOVING SHELL (the shockwave front, <c>PrismWake</c>) must
-        /// rank by distance to the shell instead: there the innermost prisms are exactly the ones
-        /// the effect is leaving, and copying this comparator into one cost that effect a playtest
-        /// in which it could not be seen at all.
+        /// morph whose field lives in a MOVING SHELL or FRONT must rank by distance to that
+        /// front instead: there the innermost prisms are exactly the ones the effect is leaving,
+        /// so this comparator spends the whole budget two frames behind the thing being drawn.
+        /// That is measured rather than supposed — copying this comparator into a travelling-front
+        /// morph cost a playtest in which the effect could not be seen at all, and the two
+        /// selectors are identical in code and diverge only once the support is small next to the
+        /// query volume. A residency selector is a CLAIM about where the field lives
+        /// (.claude/skills/prism-morph §4.2).
         /// </summary>
         static int CompareByDistance(Prism a, Prism b)
         {

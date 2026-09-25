@@ -175,18 +175,15 @@ namespace CosmicShore.Gameplay
                 VesselRearView.SetTarget(transform);
             }
 
-            // NO WAKE IS GRANTED HERE, and that is the design rather than an omission. The
-            // prism wake (Docs/PRISM_ANIMATION.md §4.7.3) shipped on every vessel for exactly one
-            // playtest: it reads beautifully on ONE fast thing crossing open space and reads as
-            // wallpaper when every hull in the match trails one, and its high-poly residency is a
-            // shared 96-prism budget that a per-vessel grant splits until nothing is smooth. It
-            // now belongs to ONE thing a whole arena has a reason to watch, and it took three more
-            // rounds to find it: the Scarab's ball went the same way (in play for a whole match, so
-            // its front was continuous too), and so did the skyburst missile IN FLIGHT (a front
-            // trailing a travelling round is a wake, which is a texture). What is left is the
-            // heavy skyburst's WARHEAD BLAST — 0.15 s, once, when it detonates — which carries it by
-            // implementing IPrismWakeCarrier. Adding a second carrier is a design call, not a wiring
-            // one, so do not re-add an ensure here.
+            // NO HIGH-POLY PRISM MORPH IS GRANTED HERE, and that is the design rather than an
+            // omission. The family (.claude/skills/prism-morph, Docs/PRISM_ANIMATION.md §4.7.2)
+            // deforms the surface of a handful of prisms out of a SHARED residency budget, so a
+            // per-vessel grant does not add morphs, it DIVIDES the one that mattered until nothing
+            // is smooth — and an effect strong enough to be an EVENT stops being one the moment
+            // every hull in the match wears it. Its one member is the Urchin's cradle, granted by
+            // the hull that can ride (GunVesselTransformer ensures PrismCradleSource) rather than
+            // by every vessel's Initialize. Adding a second is a design call, not a wiring one, so
+            // do not add an ensure here.
 
             // Pip is NOT granted here any more. The picture-in-picture rear view is retired in
             // favour of the look-back camera above (Docs/REAR_VIEW.md), which shows the same

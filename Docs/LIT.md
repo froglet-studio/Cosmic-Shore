@@ -38,19 +38,16 @@ lands, which is a property of the producer, not of the state:
 | Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | everything | `Projectile.PublishFuzeLit` |
 | Explosion passthrough | any | **resolved** — the blast arrived and spared this | **own domain only** | `ExplosionImpactor.PublishLit` |
 
-**The fuze row is half of a PAIR, and the other half is not a light at all.** The same round also
-publishes a **SHOCKWAVE FRONT** — a thin spherical shell of rippled prisms travelling out to that
-warhead's own blast radius, over and over, all the way in (`Docs/PRISM_ANIMATION.md §4.7.3`, the
-`PrismWake` family). The two say different things about one weapon and were designed against each
-other: the lit sphere says **WHERE** it goes off, statically, in the shooter's domain colour; the
-front says **HOW FAR**, kinetically, by sweeping to that radius. Two channels of the surface
-description — colour and vertices — which is why neither needed to be the other. Two consequences to
-carry. If the fuze row is ever removed, the front becomes the only read of that warhead's volume and
-the pairing needs re-arguing rather than silently becoming a solo effect (`PrismWakeTests`
-`TheFrontAndTheFuzeLitSphereAreOnePair` is the gate). And the general shape generalises past this
-round: **when a producer wants to say two things about one force, check whether a DIFFERENT channel
-of the surface description can carry the second** — a second lit volume competes for the eight slots
-and for the same colour language, where a vertex morph competes for neither.
+**The fuze row was half of a PAIR for one branch, and the general rule it left behind outlives it.**
+The same round briefly also swept a travelling **ripple** of rippled prisms out to that warhead's own
+blast radius — a vertex morph rather than a light — so one weapon said two things in two channels of
+the surface description: the lit sphere says **WHERE** it goes off, statically, in the shooter's
+domain colour, and the ripple said **HOW FAR**, kinetically, by sweeping to that radius. The ripple
+was removed with the high-poly morph family's second member (`.claude/skills/prism-morph` §13), so
+the fuze row is a solo effect today and nothing is waiting on it. The shape is worth keeping:
+**when a producer wants to say two things about one force, check whether a DIFFERENT channel of the
+surface description can carry the second** — a second lit volume competes for the eight slots and for
+the same colour language, where a vertex morph competes for neither.
 
 Three producers, and the third one is a **replacement rather than an addition**: it is what the
 2-second temporary shield used to do (see below), so it is the only one of the three that removes

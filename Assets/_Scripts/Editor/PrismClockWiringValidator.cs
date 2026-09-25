@@ -65,8 +65,6 @@ namespace CosmicShore.Editor
         public const string SightHlslGuid = "c7d41a9e5b8f4e3ab216d0f97c4e8a52";
         /// <summary>PrismCradle.hlsl — the Urchin's cradle (§4.7.2), a file-scope global bank.</summary>
         public const string CradleHlslGuid = "02815910e1a7418bb18c430341747719";
-        /// <summary>PrismWake.hlsl — the carrier travelling wake (§4.7.3), a file-scope global bank.</summary>
-        public const string WakeHlslGuid = "4e61030d8d1148b6a5751d98f71dfcab";
 
         /// PrismSway.hlsl — deliberately NOT PrismClockAnimation.hlsl. It `#include`s
         /// SpindleSway.hlsl so a health prism and the limb it is bolted to share the two
@@ -130,41 +128,25 @@ namespace CosmicShore.Editor
             },
         };
 
-        // The two vertex MORPHS (§4.7.2, §4.7.3) sit at the end of the chain in a fixed order:
-        // ... -> PrismWakeDeform -> PrismCradleDeform -> the two VertexDescription blocks. The
-        // order is not arbitrary and is asserted here because nothing on screen would report it
-        // being swapped: the cradle closes mass onto a hull that is RESTING on it, so it must see
-        // the rippled position; a wake applied after the drape would ripple the very vertices the
-        // drape had just closed onto the hull, and open the hole back up.
-        static readonly GraphEdgeCheck[] WakeEdges =
-        {
-            new GraphEdgeCheck
-            {
-                InputFunction = "PrismWakeDeform", InputSlot = 0,
-                OutputFunction = "PrismSuctionConverge", OutputSlot = 3,
-                Description = "wake Position fed by PrismSuctionConverge.OutPosition (the wake opens the morph pair)",
-            },
-            new GraphEdgeCheck
-            {
-                InputFunction = "PrismWakeDeform", InputSlot = 1,
-                OutputFunction = "PrismJiggleClock", OutputSlot = 7,
-                Description = "wake Normal fed by PrismJiggleClock.OutNormal (the wake opens the morph pair)",
-            },
-        };
-
+        // The vertex MORPH (§4.7.2) sits LAST on the chain, after every clock-driven stage, so
+        // the drape operates on the position they have already produced. Asserted here because
+        // nothing on screen would report it being spliced earlier. If a SECOND morph is ever
+        // added it goes in FRONT of this one and the pair's order becomes part of this check: the
+        // cradle closes mass onto a hull that is RESTING on it, so anything that would ripple the
+        // vertices it has just closed onto the hull has to run before it, never after.
         static readonly GraphEdgeCheck[] CradleEdges =
         {
             new GraphEdgeCheck
             {
                 InputFunction = "PrismCradleDeform", InputSlot = 0,
-                OutputFunction = "PrismWakeDeform", OutputSlot = 2,
-                Description = "cradle Position fed by PrismWakeDeform.OutPosition (the cradle is LAST on Position)",
+                OutputFunction = "PrismSuctionConverge", OutputSlot = 3,
+                Description = "cradle Position fed by PrismSuctionConverge.OutPosition (the cradle is LAST on Position)",
             },
             new GraphEdgeCheck
             {
                 InputFunction = "PrismCradleDeform", InputSlot = 1,
-                OutputFunction = "PrismWakeDeform", OutputSlot = 3,
-                Description = "cradle Normal fed by PrismWakeDeform.OutNormal (the cradle is LAST on Normal)",
+                OutputFunction = "PrismJiggleClock", OutputSlot = 7,
+                Description = "cradle Normal fed by PrismJiggleClock.OutNormal (the cradle is LAST on Normal)",
             },
         };
 
@@ -253,11 +235,11 @@ namespace CosmicShore.Editor
                     "PrismShieldMorph", "PrismJiggleClock", "PrismSway",
                     "PrismBackFaceFade", "PrismDestructionSight",
                     "PrismSuctionClock", "PrismSuctionConverge",
-                    "PrismWakeDeform", "PrismCradleDeform",
+                    "PrismCradleDeform",
                 },
                 UnexposedGlobals = DestructionSightGlobals,
-                EdgeChecks = Concat(Concat(Concat(Concat(BackFaceEdges("PrismOcclusionFade"), LiveSuctionEdges), SwayEdges), WakeEdges), CradleEdges),
-                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + shield engage/shatter morph (PrismShieldMorph, vertex) + super-shield deflection jiggle (PrismJiggleClock, vertex) + living-mass sway (PrismSway, vertex) + cell-swap suction (PrismSuctionClock + PrismSuctionConverge, vertex) + wake shockwave (PrismWakeDeform, vertex, §4.7.3 global bank) + Urchin cradle (PrismCradleDeform, vertex, §4.7.2 global bank) + back-face fade + destruction sight",
+                EdgeChecks = Concat(Concat(Concat(BackFaceEdges("PrismOcclusionFade"), LiveSuctionEdges), SwayEdges), CradleEdges),
+                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + shield engage/shatter morph (PrismShieldMorph, vertex) + super-shield deflection jiggle (PrismJiggleClock, vertex) + living-mass sway (PrismSway, vertex) + cell-swap suction (PrismSuctionClock + PrismSuctionConverge, vertex) + Urchin cradle (PrismCradleDeform, vertex, §4.7.2 global bank) + back-face fade + destruction sight",
             },
             new GraphSpec
             {
@@ -289,11 +271,11 @@ namespace CosmicShore.Editor
                     "PrismFlightClock", "PrismShieldMorph", "PrismJiggleClock", "PrismSway",
                     "PrismErosionFade", "PrismBackFaceFade", "PrismDestructionSight",
                     "PrismSuctionClock", "PrismSuctionConverge",
-                    "PrismWakeDeform", "PrismCradleDeform",
+                    "PrismCradleDeform",
                 },
                 UnexposedGlobals = DestructionSightGlobals,
-                EdgeChecks = Concat(Concat(Concat(Concat(Concat(ExplosionErosionEdges, BackFaceEdges("PrismOcclusionFadeDebris")), LiveSuctionEdges), SwayEdges), WakeEdges), CradleEdges),
-                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/shield morph/deflection/sway + cell-swap suction + wake shockwave (§4.7.3) + Urchin cradle (§4.7.2) + UV0 erosion + back-face fade + destruction sight",
+                EdgeChecks = Concat(Concat(Concat(Concat(ExplosionErosionEdges, BackFaceEdges("PrismOcclusionFadeDebris")), LiveSuctionEdges), SwayEdges), CradleEdges),
+                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/shield morph/deflection/sway + cell-swap suction + Urchin cradle (§4.7.2) + UV0 erosion + back-face fade + destruction sight",
             },
             new GraphSpec
             {
@@ -446,7 +428,7 @@ namespace CosmicShore.Editor
         /// <summary>
         /// HLSL file the Custom Function must source. Clock families →
         /// PrismClockAnimation.hlsl; erosion / back-face → PrismOcclusionCorridor.hlsl;
-        /// sight → PrismDestructionSight.hlsl; cradle → PrismCradle.hlsl; wake → PrismWake.hlsl. Putting every CF's missing-message on
+        /// sight → PrismDestructionSight.hlsl; cradle → PrismCradle.hlsl. Putting every CF's missing-message on
         /// PrismClockAnimation.hlsl was a lie for the non-clock families.
         /// </summary>
         public static string CustomFunctionSourceHint(string functionName)
@@ -462,8 +444,6 @@ namespace CosmicShore.Editor
                     return "PrismDestructionSight.hlsl";
                 case "PrismCradleDeform":
                     return "PrismCradle.hlsl";
-                case "PrismWakeDeform":
-                    return "PrismWake.hlsl";
                 case "PrismSway":
                     return "PrismSway.hlsl";
                 default:
@@ -484,8 +464,6 @@ namespace CosmicShore.Editor
                     return SightHlslGuid;
                 case "PrismCradleDeform":
                     return CradleHlslGuid;
-                case "PrismWakeDeform":
-                    return WakeHlslGuid;
                 case "PrismSway":
                     return SwayHlslGuid;
                 default:

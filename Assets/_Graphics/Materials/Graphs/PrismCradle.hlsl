@@ -168,13 +168,12 @@ void PrismCradleFalloff(float s, float reach, float e, out float k, out float dk
     dk = -e * pow(u, e - 1.0) * dS / reach;
 }
 
-// Position and Normal are OBJECT space. They arrive at the END of the prism vertex chain
-// (after grow, shield morph, jiggle, flight, suction and the WAKE — §4.7.3, which must run
-// BEFORE this: the drape closes mass onto a hull RESTING on it, so it has to see the rippled
-// position, and a wake applied afterwards would re-open the hole the drape had just closed).
-// Outputs are object space too — the
-// graph's VertexDescription blocks take object space, and the model matrix is applied after
-// this.
+// Position and Normal are OBJECT space. They arrive at the END of the prism vertex chain (after
+// grow, shield morph, jiggle, flight and suction), and any FUTURE morph goes in front of this
+// one rather than after it: the drape closes mass onto a hull RESTING on it, so it must see the
+// position everything else has already produced, and a deformation applied afterwards would
+// re-open the hole the drape had just closed. Outputs are object space too — the graph's
+// VertexDescription blocks take object space, and the model matrix is applied after this.
 void PrismCradleDeform_float(float3 Position, float3 Normal,
     out float3 OutPosition, out float3 OutNormal)
 {
