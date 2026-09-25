@@ -214,8 +214,8 @@ fixed:
   Cleave, Wildlife Liberation, Dog Fight, The Bends, Scarab Scramble, …) — solo + AI
 - Menu_Main lava-lamp / freestyle, all toys (cell selector, painting, Wanderway, vessel/domain changers)
 - Maelstrom / Maelstrom — sequential `Single` scene loads, all local
-- The two genuine single-player scenes (`MinigameDuelForTheCell`, `MinigameWildlifeBlitz`) use the
-  non-networked `PlayerSpawner` path and would work even without a host
+- The two genuine single-player scenes (`MinigameDuelForTheCell`, `MinigameWildlifeBlitz`) used the
+  non-networked `PlayerSpawner` path and would have worked even without a host *(both retired 2026-09)*
 
 **Not playable offline:** party play with real humans. That is inherent, not a defect.
 
