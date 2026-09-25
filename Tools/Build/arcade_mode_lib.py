@@ -294,9 +294,9 @@ class Generator:
         project-settings save writes the Editor's stale in-memory list back over this file and
         silently deletes the entry.
 
-        After running a generator against an open Editor, run
-        **FrogletTools > Game Modes > Reconcile Build Scene List** (or restart the Editor)
-        before testing the card.
+        `BuildSceneListReconciler` repairs this on every domain reload, so pulling the branch
+        or touching a script is enough; **FrogletTools > Game Modes > Reconcile Build Scene
+        List** is the same check run deliberately, with a report.
         """
         build = self.read_current(BUILD_SETTINGS)
         if f"{scene}.unity" not in build:

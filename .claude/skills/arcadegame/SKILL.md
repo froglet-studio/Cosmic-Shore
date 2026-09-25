@@ -145,8 +145,9 @@ python3 Tools/Build/author_preview_spawns.py --check
 at project open and never again. The card then renders normally and fails at the moment a player
 commits to it - *"has not been added to the build settings scenes in build list"*, about a list
 that on disk contains the scene - and the next project-settings save writes the stale in-memory
-list back over the file and deletes the registration. Run **FrogletTools > Game Modes > Reconcile
-Build Scene List** (or restart the Editor) before testing the card. General rule: *a settings file
+list back over the file and deletes the registration. `BuildSceneListReconciler` repairs it on
+every domain reload, so pulling the branch or touching a script is enough; **FrogletTools > Game
+Modes > Reconcile Build Scene List** is the same check run deliberately, with a report. General rule: *a settings file
 outside the AssetDatabase is one the Editor owns for the whole session; an external write to it is
 not a change, it is a change that has not happened yet.*
 

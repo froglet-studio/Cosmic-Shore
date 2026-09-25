@@ -37,9 +37,45 @@ namespace CosmicShore.Editor
     /// whole session — an external write to one is not a change, it is a change that has not
     /// happened yet.
     /// </summary>
+    [InitializeOnLoad]
     public static class BuildSceneListReconciler
     {
         const string MenuPath = "FrogletTools/Game Modes/Reconcile Build Scene List";
+
+        // ── Automatic repair ─────────────────────────────────────────────────────
+        //
+        // The menu item is the deliberate path; this is the one that actually saves you, because
+        // the failure it closes is one nobody knows to look for. A generator writes the file, the
+        // Editor never re-reads it, and the only symptom is a card that fails at the moment a
+        // player commits to it. So the repair runs on every domain reload: pulling the branch,
+        // touching any script, or exiting play mode is enough.
+        //
+        // It is safe to run unconditionally because it is a no-op in the only state that matters
+        // (every card's scene already in the live list) and converges in one write otherwise.
+        // `delayCall` rather than the static constructor: the AssetDatabase is not queryable
+        // during static init.
+        static BuildSceneListReconciler()
+        {
+            EditorApplication.delayCall += AutoRepair;
+        }
+
+        static void AutoRepair()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode || BuildPipeline.isBuildingPlayer)
+                return;
+
+            Build(out var missing);
+            if (missing.Count == 0) return;
+
+            AddToLiveList(missing);
+            Debug.LogWarning(
+                "[BuildSceneListReconciler] the build-scene list this Editor session is holding was " +
+                $"missing {missing.Count} scene(s) an arcade card names, so those cards could not be " +
+                "launched. Added:\n  " + string.Join("\n  ", missing) +
+                "\n\nThis happens because ProjectSettings/EditorBuildSettings.asset is not in the " +
+                "AssetDatabase: a headless generator's write to it is invisible to an Editor that is " +
+                "already open. Commit the change (FrogletTools > Build > Pending Tool Changes).");
+        }
 
         [MenuItem(MenuPath)]
         [FrogletTool(FrogletToolCategory.GameModes, Importance = 4,
@@ -61,15 +97,7 @@ namespace CosmicShore.Editor
 
             if (!add) return;
 
-            var scenes = EditorBuildSettings.scenes.ToList();
-            foreach (var path in missing)
-                scenes.Add(new EditorBuildSettingsScene(path, true));
-            EditorBuildSettings.scenes = scenes.ToArray();
-
-            // The write lands in ProjectSettings/, which is a working-tree file like any other -
-            // record it so `FrogletTools > Build > Pending Tool Changes` can ship it.
-            FrogletToolChangeLedger.Record("Reconcile Build Scene List",
-                                           "ProjectSettings/EditorBuildSettings.asset");
+            AddToLiveList(missing);
 
             Debug.Log($"[BuildSceneListReconciler] added {missing.Count} scene(s):\n  " +
                       string.Join("\n  ", missing));
@@ -146,6 +174,21 @@ namespace CosmicShore.Editor
             }
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Appends to the LIVE list (Bootstrap keeps index 0) and records the write, because it
+        /// lands in ProjectSettings/, which is a working-tree file like any other.
+        /// </summary>
+        static void AddToLiveList(IReadOnlyList<string> paths)
+        {
+            var scenes = EditorBuildSettings.scenes.ToList();
+            foreach (var path in paths)
+                scenes.Add(new EditorBuildSettingsScene(path, true));
+            EditorBuildSettings.scenes = scenes.ToArray();
+
+            FrogletToolChangeLedger.Record("Reconcile Build Scene List",
+                                           "ProjectSettings/EditorBuildSettings.asset");
         }
 
         static string ResolveScenePath(string sceneName)

@@ -278,10 +278,20 @@ its own stale in-memory list back over the file, **deleting the registration fro
 tree**. So the window between a generator run and an Editor restart is one in which the mode
 cannot be played *and* its registration can be lost with nothing in the diff to explain it.
 
-The fix is **FrogletTools > Game Modes > Reconcile Build Scene List**, which compares every arcade
-card's `SceneName` against `EditorBuildSettings.scenes` — the LIVE list, which is what the game
-loads from — and adds the missing ones through the API, fixing the running Editor and persisting.
-Restarting the Editor works too.
+The fix is `BuildSceneListReconciler`, which compares every arcade card's `SceneName` against
+`EditorBuildSettings.scenes` — the LIVE list, which is what the game loads from — and adds the
+missing ones through the API, fixing the running Editor and persisting. It runs **automatically on
+every domain reload** (`[InitializeOnLoad]`), because the failure is one nobody knows to look for
+and a menu item you have to remember is no guard at all; **FrogletTools > Game Modes > Reconcile
+Build Scene List** is the same check run deliberately, with a report.
+
+**Two systems report the one fault, which is why it reads like two bugs.** Netcode's
+`NetworkSceneManager` builds its scene registry when the `NetworkManager` starts and never rebuilds
+it, so its `ValidateSceneEvent` complains first (`SceneLoader.cs:515`); Unity's own runtime scene
+registry, built from the same Editor list, complains second on the local fallback
+(`SceneLoader.cs:519`) and names Build Profiles. One stale list, two messages. Because the
+NetworkManager under the eager-Relay design persists for the whole session, the list has to be
+right **before** play starts — which is exactly where a domain-reload repair sits.
 
 General rule: **a settings file outside the AssetDatabase is one the Editor owns for the whole
 session — an external write to it is not a change, it is a change that has not happened yet.**
