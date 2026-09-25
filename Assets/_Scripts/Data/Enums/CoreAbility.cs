@@ -1,10 +1,10 @@
-
 namespace CosmicShore.Data
 {
     /// <summary>
-    /// A vessel action that <b>no element upgrades</b> - the hull's own engine rather than one of its
-    /// four elemental abilities. The Squirrel's skimming is the first: it is how the vessel banks
-    /// boost energy, every pilot always has it, and it has no button and no cooldown.
+    /// A vessel action that <b>no element upgrades</b> - core flight rather than one of the hull's
+    /// four elemental abilities. The Squirrel's drift is the first: it is how the vessel carves a
+    /// corner its turn rate could not otherwise make, every pilot always has it, and no element
+    /// touches it.
     ///
     /// <para>This is the KEY of a non-elemental ability lockup card, and it exists for the same
     /// reason <see cref="Element"/> keys the elemental ones: a card is addressed by a compile-time
@@ -24,9 +24,9 @@ namespace CosmicShore.Data
         None = 0,
 
         /// <summary>
-        /// Grazing mass with the skimmer. The Squirrel's engine - it banks the boost energy every
-        /// other Squirrel ability spends - and the reason this enum exists.
+        /// Carving a turn the hull's own rotation rate cannot reach. Core flight on every vessel
+        /// that has it, bound to a trigger, upgraded by nothing - and the reason this enum exists.
         /// </summary>
-        Skim = 1,
+        Drift = 1,
     }
 }

@@ -38,13 +38,14 @@ empty rather than given a placeholder. Do not fill it to green the tool — the 
 | `SquirrelVesselWitherLifeformByCrystalEffect.asset` | `allyUpgradeElement: 3 → 1` |
 | `VesselPrismController.cs` | `massUpgradeShieldsTrail` → `driftShieldsTrail` (`[FormerlySerializedAs]`); the drift branch loses its `IsUpgradeActive(Element.Mass)` term |
 | `Squirrel.prefab` | `trailVolume` → `Enabled: 0, Value: 1.35`; `driftShieldsTrail: 1`; three drift SOAP refs dropped |
-| `SquirrelHUDVariant.prefab` | gauge/cooldown/impact re-bound; drift + overheat keys dropped. **Second pass:** the row re-bound to the Images that already carry the right ART, the retired drift placeholder re-pointed at `objective_joust.png`, skimming moved to `coreAbilities` |
-| `CoreAbility.cs` *(new)* | the key of a non-elemental lockup card; `Skim` is its one member |
-| `VesselHUDView.cs` | `CoreAbilityBinding` + `coreAbilities` + `CoreAbilityDisplayOrder`; `TryGetCoreAbility{Icon,Gauge}`; `SetCoreAbility{Cooldown,Pressed,Control}`; the row validator now walks the core cards first |
-| `AbilityLockupView.cs` | core cards: `_coreSlots`, a signed slot index, `BuildSlot(… Element flowerElement)` where `Element.None` means *no element cell*, and the four element-keyed internals refactored to slot-keyed so both kinds share one body |
-| `AbilityLockupAuditor.cs` | reports a vessel's core cards (a REPORT — an absent core card is an absence of a claim, not a defect) |
-| `SquirrelVesselHUDView.cs` | drift + overheat retired (428 → 246 lines); impact rest scale re-anchored to Charge; `SetTubeCooldownReady` → `Element.Mass` |
-| `SquirrelVesselHUDController.cs` | drift juice + its three subscriptions removed |
+| `SquirrelHUDVariant.prefab` | gauge/cooldown/impact re-bound; drift + overheat keys dropped. **Second pass:** the row re-bound to the Images that already carry the right ART, the retired drift placeholder re-pointed at `objective_joust.png`, skimming moved to `coreAbilities`. **Third pass:** skimming came back to TIME with its gauge, the core card became the DRIFT (its sprite restored, `input: 2`), Charge took the skull, and Space unbound so the view can generate it |
+| `CoreAbility.cs` *(new)* | the key of a non-elemental lockup card; `Drift` is its one member |
+| `VesselHUDView.cs` | `CoreAbilityBinding` (+ its own `input`) + `coreAbilities` + `CoreAbilityDisplayOrder`; `TryGetCoreAbility{Icon,Gauge}`; `SetCoreAbility{Cooldown,Pressed,Control}`; `SeedCoreAbilityControls`; `EnsureGeneratedAbilityIcons` / `BindGeneratedAbilityIcon`; the row validator now walks the core cards first |
+| `AbilityLockupView.cs` | core cards: `_coreSlots`, a signed slot index, `BuildSlot(… Element flowerElement)` where `Element.None` means *no element cell*, and the four element-keyed internals refactored to slot-keyed so both kinds share one body. **Third pass:** `Build` calls the generated-icon hook, and `NormaliseIcon` writes the icon's kerning scale |
+| `AbilityLockupAuditor.cs` | reports a vessel's core cards, and names the elemental slots that bind no AUTHORED icon (undesigned or generated — the asset cannot tell those apart) |
+| `SquirrelVesselHUDView.cs` | drift + overheat retired (428 → 246 lines); impact rest scale re-anchored to Charge; `SetTubeCooldownReady` → `Element.Mass`. **Third pass:** builds the Space card (`EnsureGeneratedAbilityIcons`), `SetStealReach01` / `SetStealCount` |
+| `SquirrelVesselHUDController.cs` | drift juice + its three subscriptions removed; **third pass:** `PushStealReadout` polls the skimmer's reach and `RoundStats.PrismStolen` |
+| `Skimmer.cs` | new `ElementalScale01` — the live reach as a fraction of this skimmer's own authored range |
 
 ## Second pass (same day): the artwork, and the first non-elemental card
 
@@ -82,12 +83,91 @@ Layout, measured on the shipped style (pitch 116, plate 104): the core card's ab
 host Y **+0.0** and its control chip at **−62.0**, both identical to the four elemental cards, and it
 spans x `[−568, −464]` against Charge's `[−452, −348]` — one pitch left, same 12 px gap.
 
-⚠ **Stated cost: the TIME card now binds no icon and renders LOCKED.** Time still scales skim energy
-and still carries "Live Wire", so the flower above that card is doing real work while the plate below
-it reads as an ability that does not exist yet — and because `SetUpgraded` early-returns on a locked
-slot, **the Live Wire upgrade draws nothing on the card**. The two honest resolutions are an ability
-of Time's own, or a third card state meaning *this element upgrades a core ability*. Both are design
-calls, so neither is invented here. This is the one unfinished thing in the re-cut's HUD half.
+⚠ That pass left the TIME card unbound and therefore LOCKED, which the **third pass below
+resolves**: Time keeps skimming, and it now has the skim icon to say so.
+
+## Third pass (2026-09-25): the row the design actually wanted
+
+Five changes, from one playtest read of the second pass.
+
+| card | host | Image | art |
+|---|---|---|---|
+| core `Drift` | `DriftButton` | `DriftIcon` | `{PLACEHOLDERS}/Icons/DriftIcon-PLACEHOLDER.png` — restored |
+| Charge (Joust) | `DangerRingsButton` | `DangerRingsIcon` | `{PLACEHOLDERS}/Icons/HuntIcon-PLACEHOLDER.png` — the SKULL, already there |
+| Mass (Boost Ring) | `ShieldRingsButton` | `ShieldRingsIcon` | `Squirrel/BoostRingCrossSectionIcon.png` — unchanged |
+| Space (Steal) | *generated* | *generated* | none — a ring + a number, drawn |
+| Time (Skimming) | `OverheatButton` | `Icon` | `New_Sparrow/boost icon.png` (+ `OverheatCounter` as the gauge) |
+
+**1. Time keeps skimming — the icon as well as the gauge.** The second pass moved skimming onto a
+non-elemental card on the grounds that it is the hull's engine, which is true and was the wrong
+call: skimming is what Time *scales* (1 → 2 skim energy) and what Live Wire upgrades, so a Time
+flower over a locked plate was a flower doing real work above an ability that did not exist. Time
+now carries the skim icon and `boostFill`, and the row is 4/4 again.
+
+**2. The core card is the DRIFT.** The drift is the thing on this hull that genuinely has no
+element: core flight, on LT, upgraded by nothing, and the *reason* its icon was retired in the first
+pass was that it was squatting on the card the Boost Ring wanted. A card with no flower above it is
+exactly the place for it. `CoreAbility.Skim` → `CoreAbility.Drift` (value 1 kept, so the prefab's
+`ability: 1` is untouched).
+
+**3. The chip comes from the BINDING.** `CoreAbilityBinding.input` is new, authored `2`
+(`LeftStickAction`) here, and `VesselHUDController.SeedAbilityControls` pushes the core ones before
+the elemental ones. An elemental card takes its control from its `ElementalAbilityMapSO` entry
+because that is where an elemental ability's input lives; a core ability has no map entry, so the
+binding names it. Both are still one authored fact with the glyph derived from it, so a wrong label
+stays structurally impossible. No clash: Mass is the only elemental row with an input (RT).
+
+**4. Charge shows the skull.** `HuntIcon-PLACEHOLDER.png` is a skull and was already the Space
+card's sprite; the joust is the Charge ability, so the card binds *that* Image. `objective_joust.png`
+(crossed lances), swapped in by the second pass, is reverted off `DriftIcon` in the same edit — the
+drift needs its own art back.
+
+**5. Space is GENERATED, and that is the interesting one.** Space scales the skimmer 15 → 30 on this
+hull, and the steal reaches exactly as far as the skimmer does, so the honest readout of "what does
+Space do for me" is the reach itself — measured, not illustrated. `SquirrelVesselHUDView` builds a
+`ScopeRingGraphic` whose **radius IS that live measurement** with the running total of prisms stolen
+inside it, hung off a deliberately-invisible bound `Image` so the card is not LOCKED and the lockup
+still has something to kern. The Rhino's `skimmerSizeIcon` (a rect lerped between `minIconSize` and
+`maxIconSize`) is the precedent; this is that idea inside a lockup card and reading from the element
+rather than from a bespoke setter.
+
+Three details of it are decisions rather than defaults. The ring **eases** toward its target, because
+an element level moves in steps and a ring that stepped with it reads as a glitch rather than as a
+measurement. The count is tinted in the pilot's **own domain colour**, which is not decoration — a
+stolen prism *changes hands to that domain*, so the number is counting mass that now wears that
+colour; the ring stays white because it measures the skimmer, which belongs to nobody. And both are
+**polled** in the controller's existing `Update`: the reach is a continuous function of an element
+level nothing raises an event for, and the count lives on a server-write `NetworkVariable`
+(`RoundStats.n_PrismStolen`), so the owner of a steal learns about its own steal by reading it back.
+
+### The kerning bug the core card exposed
+
+The second pass's core card drew **a third larger than its four neighbours**, and the cause
+generalises. An icon's drawn size is its authored `sizeDelta` times the lockup's kerning scale, and
+that scale was written in exactly one place: `VesselHUDView.AbilityIconRestScale`, applied by
+`SetAbilityUpgraded`, which `VesselHUDController` seeds **for every ELEMENT**. So every elemental
+icon was kerned a moment after the row was built, and the one card no element seeds never was — it
+drew at its authored 80 in a cell sized for 60. Measured: all four elemental icons are authored
+80×80 at scale 1, so the authored data was uniform and only the *application* was not, which is why
+it could not be found by reading the prefab.
+
+`AbilityLockupView.NormaliseIcon` now writes the content scale as it centres an icon, so the row is
+correct the instant it is laid out and the seeding pass writes the identical value (nothing is
+upgraded at build time, so the rest scale IS the content scale). General rule: **a value applied
+only by an event is missing on everything that event does not reach**, and it shows up on whichever
+card is outside the loop rather than as an error.
+
+### A vessel may generate an icon
+
+`VesselHUDView.EnsureGeneratedAbilityIcons()` — virtual, empty by default, called by
+`AbilityLockupView.Build()` before the row is laid out — plus `BindGeneratedAbilityIcon(element,
+icon)`. An override must be idempotent, must create its host outside the row (the lockup re-homes
+it), and **an authored icon always wins**, so a generated readout can never overwrite a prefab's own
+art. Every other vessel is byte-for-byte unchanged.
+
+⚠ Stated cost: the **asset** no longer shows the whole row, so *Audit Ability Lockups* now names the
+unbound slots and says it cannot tell *undesigned* from *generated* apart — only one of those is in
+the prefab. Check the Squirrel in play.
 
 ## Findings worth more than the change
 
@@ -134,17 +214,18 @@ because it is a separate design call.
 ## Also worth knowing
 
 `LT` is no longer claimed by any map row (Trail Volume held `Input: 12`, which was really the drift's
-trigger). That is honest — the drift is not an element ability — but it means the Squirrel's control
-chips no longer name LT anywhere.
+trigger). That is honest — the drift is not an element ability — and the **third pass** put LT back
+on screen where it belongs: on the drift's own non-elemental card, from
+`CoreAbilityBinding.input`.
 
 ## In-editor verification
 
 Nothing below has been run; there is no Unity in this session.
 
 1. **Auditors** (asset-only, no play mode): *FrogletTools > Vessels >* **Audit Vessel Ability Rows**
-   (expect Squirrel **3** bound slots, in order, uniform — Time unbound is deliberate),
-   **Audit Ability Lockups** (expect a `core card 'Skim'` line naming `Icon` and `OverheatCounter`),
-   **Audit Vessel Skimmers**.
+   (expect Squirrel **3** bound slots plus a line naming **Space** as binding no authored icon —
+   that one is GENERATED, not missing), **Audit Ability Lockups** (expect a `core card 'Drift'` line
+   naming `DriftIcon` and `no gauge`), **Audit Vessel Skimmers**.
 2. **Reader**: `python3 Tools/Build/element_ability_table.py Squirrel` — expect
    `abilities 4/4  scaling wired 3/4  L5 gates wired 4/4`, with the single disagreement being the
    Charge `NO SCALING` hole.
@@ -159,13 +240,20 @@ Nothing below has been run; there is no Unity in this session.
    danger prisms pay 10×; **below** Time 5 confirm they pay base (this is the half that regresses
    silently if `dangerBonusElement` did not land).
 6b. **The non-elemental card** — confirm a FIFTH card sits one pitch LEFT of Charge with **no flower
-   above it**, that its plate and control chip line up with the four elemental plates, that the boost
-   fill rises through IT rather than through the Time card, and that the four element flowers still
-   sit over charge / mass / space / time in that order. Then confirm the **Time** card draws as
-   locked (quiet plate, hairline mark, no gauge track).
-6c. **The artwork** — read the row left to right and confirm: skim, joust, boost ring, steal,
-   locked. If a card shows a neighbour's icon, the BINDING moved and the sprite did not — the defect
-   this pass exists to fix.
+   above it**, wearing the DRIFT icon and an **LT** chip below it, and that its plate and chip line
+   up with the four elemental ones. Its icon must be the **same drawn size** as theirs: it was a
+   third larger before the kerning fix, so if it looks big again `NormaliseIcon` has stopped writing
+   the content scale.
+6c. **The artwork** — read the row left to right and confirm: **drift, skull, boost ring, ring +
+   number, speed arrows**. If a card shows a neighbour's icon, the BINDING moved and the sprite did
+   not — the defect the second pass existed to fix.
+6d. **The generated Space card** — it must NOT render locked. Raise Space (crystals) and confirm the
+   ring **grows smoothly** rather than stepping; steal prisms and confirm the number climbs in your
+   own domain's colour. On a client as well as the host, since the count reads a server-write
+   NetworkVariable.
+6e. **Skimming back on Time** — the Time card shows the speed-arrow icon and the boost fill rises
+   through IT (a linear fill inside that card), while the **Mass** card is the one the cooldown veil
+   sweeps.
 7. **Iron Grip** — skim an opposing **shielded** prism below Space 5: it should lose its shield and
    keep its domain. At Space 5: it should change domain **and keep the shield**. Then confirm a
    **super**-shielded prism is refused at both levels.

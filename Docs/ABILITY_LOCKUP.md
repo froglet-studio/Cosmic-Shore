@@ -255,7 +255,7 @@ to claim, silently, and only on the vessels whose authoring had drifted.
 
 | vessel | slot | meter |
 |---|---|---|
-| Squirrel | **Charge** (Skimming) | `boostFill` — the skim-energy meter. It sits under the skimming button and belongs on the skimming card; a first pass put it on Time, which is the Boost Ring |
+| Squirrel | **Time** (Skimming) | `boostFill` — the skim-energy meter. It is authored under the skimming button and belongs on the card of the ability it reports on, which since the 2026-09 element re-cut is **Time**: skimming is what banks the energy |
 | Sparrow | Time (Afterburner) | `rollChargeIndicator` — the strafing-roll pip, already on the right card |
 | Scarab | Space (Ball Forge) | `energyRing` — authored under the throttle button, re-homed |
 
@@ -488,7 +488,7 @@ Not every ability an element could upgrade *is* one. A hull's **engine** — the
 that the other four spend — belongs on the row and has no flower to sit under. Since 2026-09-24 the
 lockup draws those as **core cards**: an ability plate with its gauge, its cooldown veil, its press
 flash and its control chip, and **no element cell above it at all**. They are keyed on
-`CosmicShore.Data.CoreAbility` (`Skim` is the first and only member today) for the same reason the
+`CosmicShore.Data.CoreAbility` (`Drift` is the first and only member today) for the same reason the
 elemental cards are keyed on `Element` — a card is addressed by a compile-time name rather than by a
 string a prefab can typo, and a member added to that enum is the whole of what a new one costs.
 
@@ -515,18 +515,54 @@ a core ability has no element, so nothing could ever raise it. Everything else a
 available: `SetCoreAbilityCooldown`, `SetCoreAbilityPressed`, `PlayCoreAbilityFlash`,
 `SetCoreAbilityControl`, and a `gauge` binding adopted exactly as an elemental one is.
 
-**One vessel binds one today.** The Squirrel's **skimming** is `CoreAbility.Skim`: no button, no
-cooldown, always available, and what banks the boost energy every other Squirrel ability spends — so
-its icon and the `boostFill` meter draw on a card one pitch left of Charge. Every other vessel binds
-none and emits nothing, so the row is byte-for-byte what it was.
+**The control chip comes from the BINDING, not from the ability map, and that follows from where the
+fact lives.** An elemental card derives its chip from its `ElementalAbilityMapSO` entry's `Input`
+because that is where an elemental ability's control is authored; a core ability has no map entry at
+all, so `CoreAbilityBinding.input` carries it. Both are still ONE authored fact — *which control* —
+with the glyph derived from it through `InputHintBindingMap` + `ControlGlyphSetSO`, so a wrong label
+stays structurally impossible. `VesselHUDController.SeedAbilityControls` pushes the core ones first,
+which means a vessel with no ability map at all still gets its chips.
 
-⚠ **Stated cost on the Squirrel: its TIME card binds no icon and therefore renders LOCKED**, while
-Time genuinely scales skim energy and carries "Live Wire". So the flower above that card is doing
-real work, the plate below it reads as an ability that does not exist yet, and — because
-`SetUpgraded` early-returns on a locked slot — **the Live Wire upgrade draws nothing on the card**.
-The two honest resolutions are an ability of Time's own, or a third card state meaning *this element
-upgrades a core ability*; both are design calls, so neither is invented here. This is the one thing
-about the non-elemental row that is not finished.
+**One vessel binds one today.** The Squirrel's **drift** is `CoreAbility.Drift`: core flight, on the
+left trigger, upgraded by nothing — so its icon draws on a card one pitch left of Charge, with its
+chip below it exactly as an elemental card's is. Every other vessel binds none and emits nothing, so
+the row is byte-for-byte what it was.
+
+### The kerning bug a core card exposed
+
+An icon's drawn size is its authored `sizeDelta` times the lockup's kerning scale
+(`AbilityLockupStyleSO.IconScaleFor`, `iconBoxSize / authoredSize`). That scale was written in
+exactly one place — `VesselHUDView.AbilityIconRestScale`, applied by `SetAbilityUpgraded`, which
+`VesselHUDController` seeds **for every ELEMENT**. So every elemental icon was kerned a moment after
+the row was built, and the first non-elemental one, which no element ever seeds, **never was**: it
+drew at its authored 80 in a cell sized for 60, a third larger than its four neighbours, on the one
+card in the row nothing else touches.
+
+The fix is one line in `AbilityLockupView.NormaliseIcon`, which now writes the content scale as it
+centres an icon — so the row is correct the instant it is laid out and the seeding pass writes the
+identical value (nothing is upgraded at build time, so the rest scale IS the content scale). General
+rule: **a value applied only by an event is missing on everything that event does not reach**, and
+the gap shows up on whichever card is outside the loop rather than as an error.
+
+### A vessel may GENERATE an icon rather than author one
+
+`VesselHUDView.EnsureGeneratedAbilityIcons()` is a virtual called by `AbilityLockupView.Build()`
+before the row is laid out, and `BindGeneratedAbilityIcon(element, icon)` is how the vessel points a
+card at what it made. It exists because some readouts are a live **measurement** rather than a
+picture — the Squirrel's skimmer reach, the Dolphin's blast profile — and a measurement drawn as a
+sprite ladder quantizes it and silently stops matching the thing it depicts.
+
+Three rules. An override must be **idempotent** (the lockup may rebuild). It must create its host
+**outside the row**, which `PlaceHost` then re-homes. And an **authored icon always wins** —
+`BindGeneratedAbilityIcon` refuses a slot that already has one, so a generated readout can never
+overwrite a prefab's own art. The default is an empty body, so every other vessel is byte-for-byte
+unchanged.
+
+⚠ The cost is that the **asset** no longer shows the whole row: FrogletTools ▸ Vessels ▸ Audit
+Ability Lockups reads prefabs, and a generated icon does not exist there. The audit therefore names
+the unbound slots and says it cannot tell the two causes apart — *undesigned* (the card renders
+LOCKED) and *generated at runtime* — because only one of them is in the asset. Check that vessel in
+play.
 
 ## Rollout + enforcement (all vessels)
 
@@ -543,7 +579,7 @@ per-vessel art or wiring for a human to supply.
 | Dolphin | 4/4 | ✅ (component also authored on the prefab — explicit, and equivalent) |
 | Scarab | 4/4 | ✅ ensured at runtime; `energyRing` re-homed onto the Space card as its gauge |
 | Sparrow | 4/4 | ✅ ensured at runtime; `rollChargeIndicator` becomes the Time card's gauge |
-| Squirrel | 3/4 + 1 core | ✅ ensured at runtime; AUTHORED flowers re-homed. Charge/Mass/Space bound (joust / boost ring / steal), **Time unbound → LOCKED**, and skimming on a **non-elemental card left of Charge** carrying `boostFill` as its gauge. Boost Ring recharge on the standard cooldown |
+| Squirrel | 4/4 + 1 core | ✅ ensured at runtime; AUTHORED flowers re-homed. Charge = the joust (skull), Mass = boost ring (+ the standard cooldown veil), **Space = GENERATED** (skimmer-reach ring + steal count, built by the view), Time = skimming (+ `boostFill` as its gauge). The **drift** is a non-elemental card one pitch left of Charge, chip **LT** |
 | Manta · Rhino · Serpent | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
 | Urchin | 0/4 | — no HUD prefab exists at all, so there is no view to ensure |
 
@@ -595,7 +631,9 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | Style asset | `Assets/Resources/AbilityLockupStyle.asset` |
 | The composer | `Assets/_Scripts/UI/View/AbilityLockupView.cs` |
 | Non-elemental card key | `Assets/_Scripts/Data/Enums/CoreAbility.cs` |
-| Non-elemental bindings + order | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `coreAbilities`, `CoreAbilityDisplayOrder` |
+| Non-elemental bindings + order | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `coreAbilities`, `CoreAbilityDisplayOrder`, `SeedCoreAbilityControls` |
+| Generated-icon hook | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `EnsureGeneratedAbilityIcons`, `BindGeneratedAbilityIcon`; called from `AbilityLockupView.Build` |
+| Icon kerning (applied at BUILD) | `Assets/_Scripts/UI/View/AbilityLockupView.cs` — `NormaliseIcon` |
 | The generated plate | `Assets/_Scripts/UI/View/TrapezoidGraphic.cs` |
 | Upgrade hook (shared) | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `SetAbilityUpgraded` → `SetUpgraded` |
 | Flower socket injection | `Assets/_Scripts/UI/View/ElementalBarsView.cs` — `TrySetPetalRoot` |
@@ -672,8 +710,9 @@ notches inside the trapezoid.
    Time = LT on the Dolphin; Mass and Space are passive and correctly show none.
 8. **Press.** Hold each bound control. The whole CARD lights and decays on release — and no circular
    glow appears anywhere behind an icon.
-9. **Gauge (Squirrel / Sparrow / Scarab).** Fly a Squirrel and boost: the Time card fills from the
-   bottom in a straight line, inside the icon's cell, over a dim track — no ring anywhere. Sparrow:
+9. **Gauge (Squirrel / Sparrow / Scarab).** Fly a Squirrel and boost: the **Time** card (the skim
+   icon) fills from the bottom in a straight line, inside the icon's cell, over a dim track — no
+   ring anywhere. Sparrow:
    the Time card wipes empty when a strafing roll is spent, refills on re-arm. Scarab: the Space
    card fills with ball energy and goes READY. Confirm each meter is on the card of the ability it
    reports on (boost on Boost Ring, ball energy on Ball Forge), not the one it was authored under.
@@ -685,13 +724,22 @@ notches inside the trapezoid.
     **solid the whole length including the corners**, wrapping a short way onto the top and bottom
     before dissolving; the plate's core stays transparent behind it. Look at the diagonals close up:
     they must be smooth, not stair-stepped. **No band across the middle of the top or bottom edge.**
-12. **Cooldown (Squirrel Time).** Fire the Boost Ring: a dark veil sweeps **clockwise** off the
+12. **Cooldown (Squirrel Mass).** Fire the Boost Ring: a dark veil sweeps **clockwise** off the
     card, over the icon, and clears with a bright flash when it comes back. If it unwinds
     anticlockwise, `fillClockwise` has been "corrected" back to true. The icon itself must NOT sink,
     rise, breathe, tint or wipe any more — if it does, the old animation is still wired.
-13. **Two readouts on one row.** Squirrel Charge shows the linear skim-energy fill; Squirrel Time
-    shows the radial cooldown. Confirm they read as different things at a glance, which is the whole
-    reason the cooldown is radial.
+13. **Two readouts on one row.** Squirrel **Time** shows the linear skim-energy fill; Squirrel
+    **Mass** shows the radial cooldown. Confirm they read as different things at a glance, which is
+    the whole reason the cooldown is radial.
+13a. **The core card (Squirrel).** One card sits a full pitch LEFT of Charge with **no flower above
+    it** — the drift, wearing the drift icon and an **LT** chip below it. Its plate's top edge must
+    line up with the four elemental ability plates, and its icon must be the SAME drawn size as
+    theirs (it was a third larger before the kerning fix — if it looks big again, `NormaliseIcon`
+    has stopped writing the content scale).
+13b. **The generated Space card (Squirrel).** A ring with a number inside it, no sprite anywhere.
+    Collect crystals to raise Space and the ring **grows smoothly** (it is the skimmer's live reach,
+    eased); steal prisms and the number climbs, in your own domain's colour. Neither is authored, so
+    if the card renders LOCKED instead, `EnsureGeneratedAbilityIcons` did not run.
 14. **Vessel swap.** Swap to the Dolphin from another vessel in Menu_Main freestyle and confirm
     exactly one set of cards (Build is idempotent; cards are adopted by name).
 

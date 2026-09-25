@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -11,38 +12,42 @@ namespace CosmicShore.UI
     /// charge → mass → space → time (the same order as the element flowers above them), plus ONE
     /// non-elemental card to their left.
     ///
-    ///   [core]  Skim          (the boost fill, bound as gauge) → no element, no upgrade
-    ///   Charge → crystal joust (impactIcon, joust + crystal)   → "Shepherd"
-    ///   Mass   → boost ring    (tubeCooldownIcon)              → "Twin Rings"
-    ///   Space  → steal         (no local readout)              → "Iron Grip"
-    ///   Time   → skim energy scaling                           → "Live Wire"
+    ///   [core]  drift         (LT, no gauge)                   → no element, no upgrade
+    ///   Charge → crystal joust (the skull, impactIcon)          → "Shepherd"
+    ///   Mass   → boost ring    (tubeCooldownIcon + veil)        → "Twin Rings"
+    ///   Space  → steal         (GENERATED: reach ring + count)  → "Iron Grip"
+    ///   Time   → skimming      (the skim icon + the boost fill) → "Live Wire"
     ///
-    /// <para><b>Skimming draws on a card of its own, and that is the point of it.</b> It is the
-    /// hull's engine - always available, no button, no cooldown, and what every other Squirrel
-    /// ability spends - so it is bound as <see cref="CoreAbility.Skim"/> and the lockup gives it an
-    /// ability plate with NO element flower above it, one pitch left of Charge. The boost fill goes
-    /// with it as that card's gauge.</para>
+    /// <para><b>The drift draws on a card of its own, and that is the point of it.</b> It is core
+    /// flight - always available, upgraded by nothing, and on a trigger rather than on one of the
+    /// four elemental slots - so it is bound as <see cref="CoreAbility.Drift"/> and the lockup
+    /// gives it an ability plate with NO element flower above it, one pitch left of Charge. Its
+    /// control chip is drawn from the binding's own <c>input</c>, because a core ability has no
+    /// entry in the vessel's ability map for the chip to derive from.</para>
     ///
-    /// <para><b>Stated cost: the TIME card has no icon and therefore renders LOCKED.</b> Time still
-    /// scales skim energy and still carries "Live Wire", so the flower above that card is doing real
-    /// work while the plate below it reads as an ability that does not exist yet. The two honest
-    /// resolutions are an ability of Time's own or a third card state meaning <i>this element
-    /// upgrades a core ability</i>; both are design calls, so neither is invented here.</para>
+    /// <para><b>The SPACE card is GENERATED rather than authored</b>, via
+    /// <see cref="EnsureGeneratedAbilityIcons"/>. Space is the steal, and a steal reaches exactly
+    /// as far as the skimmer sphere does (Space scales it 15 → 30 on this hull), so the honest
+    /// readout is the reach itself: a ring whose radius IS that live measurement, with the running
+    /// total of prisms stolen inside it. It is generated for the reason the Dolphin's blast profile
+    /// is - a sprite ladder quantizes a continuous measurement and silently stops matching it the
+    /// first time anyone retunes the endpoints. The Rhino's skimmer-size icon is the precedent;
+    /// this is that idea inside a lockup card.</para>
     ///
-    /// <para>Two of these readouts are the LOCKUP's, not this view's: the boost fill (the core
-    /// card's gauge) and the Boost Ring's recharge (the fleet's standard cooldown veil over the MASS
-    /// card). This view keeps only what is genuinely the Squirrel's own: the impact flash and the
-    /// crystal surge.</para>
+    /// <para>Two of these readouts are the LOCKUP's, not this view's: the boost fill (the TIME
+    /// card's gauge, because skimming is what banks it) and the Boost Ring's recharge (the fleet's
+    /// standard cooldown veil over the MASS card). This view keeps only what is genuinely the
+    /// Squirrel's own: the impact flash, the crystal surge, and the Space readout it builds.</para>
     ///
-    /// <para>RETIRED with the 2026-09 element re-cut: the drift sprite/lean (the drift is core
-    /// flight with no element, and it was hijacking the card that now carries the Boost Ring) and
-    /// the overheat gauge (SetOverheatHeat / JuiceOverheat* had had no callers since the Sparrow's
-    /// overheat mechanic was deleted - a gauge whose meter is gone is a lie, not a spare part).</para>
+    /// <para>RETIRED with the 2026-09 element re-cut: the overheat gauge (SetOverheatHeat /
+    /// JuiceOverheat* had had no callers since the Sparrow's overheat mechanic was deleted - a
+    /// gauge whose meter is gone is a lie, not a spare part). The drift's own icon came BACK in the
+    /// same pass, onto the core card, where it is not competing with an element for a slot.</para>
     ///
-    /// Its remaining icon is a live gameplay gauge - the impact flash - repainted per event. So the
-    /// upgrade signal here is carried by the card rather than by the icon's colour
-    /// (tintIconOnUpgrade is off on this prefab), and the local rest scale below is re-anchored on
-    /// every upgrade flip so this view's own tweens can never wipe the bump.
+    /// Its impact icon is a live gameplay gauge repainted per event. So the upgrade signal here is
+    /// carried by the card rather than by the icon's colour (tintIconOnUpgrade is off on this
+    /// prefab), and the local rest scale below is re-anchored on every upgrade flip so this view's
+    /// own tweens can never wipe the bump.
     /// </summary>
     public sealed class SquirrelVesselHUDView : VesselHUDView
     {
@@ -70,6 +75,18 @@ namespace CosmicShore.UI
                  "with their tuning fields: one recharge readout for the fleet beats four per hull.")]
         [SerializeField] private Image tubeCooldownIcon;
 
+        [Header("Steal reach + count (Space slot - GENERATED, see EnsureGeneratedAbilityIcons)")]
+        [Tooltip("Ring radius in icon-local units at rest (skimmer at its authored minimum).")]
+        [SerializeField] private float reachRingMinRadius = 20f;
+        [Tooltip("Ring radius in icon-local units at full Space. Kept inside the icon's own 80-unit " +
+                 "box so the lockup's kerning is the only thing that decides its drawn size.")]
+        [SerializeField] private float reachRingMaxRadius = 34f;
+        [SerializeField] private float reachRingThickness = 2.5f;
+        [Tooltip("How fast the ring chases the live reach. A skimmer resize is a step, and a ring " +
+                 "that steps with it reads as a glitch rather than as a measurement.")]
+        [SerializeField] private float reachRingLerpSpeed = 8f;
+        [SerializeField] private float stealCountFontSize = 26f;
+
         [Header("Icon Juice")]
         [Tooltip("Duration for icon scale punch on events")]
         [SerializeField] private float iconPunchDuration = 0.25f;
@@ -90,8 +107,122 @@ namespace CosmicShore.UI
 
         private Vector3 _impactIconOriginalScale;
 
+        // The generated Space readout. Built once by EnsureGeneratedAbilityIcons.
+        private Image _reachIcon;
+        private ScopeRingGraphic _reachRing;
+        private TMP_Text _stealCountText;
+        private float _reachTarget01;
+        private float _reachShown01;
+        private int _stealCountShown = -1;
+
+        /// <summary>
+        /// Builds the SPACE card's readout - the steal's reach and its running total - because
+        /// neither is a picture. The reach is a live measurement of the skimmer sphere Space
+        /// scales, and the count is a number, so both are generated rather than authored.
+        ///
+        /// <para>The bound icon itself is deliberately INVISIBLE: it exists so the card is not
+        /// LOCKED and so the lockup has something to normalise and kern, while the ring and the
+        /// number - its children, and therefore inside that kerning - are what the pilot reads.
+        /// The Dolphin's fully-transparent Space icon is the same shape.</para>
+        ///
+        /// <para>Idempotent by name, and the host is created OUTSIDE the row (the lockup re-homes
+        /// it), so a rebuild finds the objects it made last time.</para>
+        /// </summary>
+        public override void EnsureGeneratedAbilityIcons()
+        {
+            if (_reachIcon) return;
+
+            var host = transform.Find("StealReachButton") as RectTransform;
+            if (!host)
+            {
+                host = new GameObject("StealReachButton", typeof(RectTransform))
+                    .GetComponent<RectTransform>();
+                host.SetParent(transform, false);
+            }
+
+            _reachIcon = ResolveGeneratedChild<Image>(host, "StealReachIcon");
+            _reachIcon.rectTransform.anchorMin = _reachIcon.rectTransform.anchorMax =
+                _reachIcon.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            _reachIcon.rectTransform.sizeDelta = new Vector2(80f, 80f);
+            // The card's ANCHOR, never drawn: alpha 0 and the Graphic switched off, which are two
+            // different guards - the second costs no draw call (an Image with no sprite draws a
+            // solid quad), and the first means a future pass that re-enables it still shows
+            // nothing. Disabling the component does not touch the ring and the count below it;
+            // only disabling the GameObject would.
+            _reachIcon.color = new Color(1f, 1f, 1f, 0f);
+            _reachIcon.enabled = false;
+            _reachIcon.raycastTarget = false;
+
+            _reachRing = ResolveGeneratedChild<ScopeRingGraphic>(_reachIcon.rectTransform, "ReachRing");
+            StretchGenerated(_reachRing.rectTransform);
+            _reachRing.Thickness = reachRingThickness;
+            _reachRing.Radius = reachRingMinRadius;
+            _reachRing.raycastTarget = false;
+
+            _stealCountText = ResolveGeneratedChild<TextMeshProUGUI>(_reachIcon.rectTransform, "StealCount");
+            StretchGenerated(_stealCountText.rectTransform);
+            _stealCountText.alignment = TextAlignmentOptions.Center;
+            _stealCountText.fontSize = stealCountFontSize;
+            _stealCountText.raycastTarget = false;
+            _stealCountText.text = "0";
+
+            BindGeneratedAbilityIcon(Element.Space, _reachIcon);
+        }
+
+        static T ResolveGeneratedChild<T>(RectTransform parent, string name) where T : Component
+        {
+            var existing = parent.Find(name);
+            var found = existing ? existing.GetComponent<T>() : null;
+            if (found) return found;
+
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(T));
+            go.transform.SetParent(parent, false);
+            return go.GetComponent<T>();
+        }
+
+        static void StretchGenerated(RectTransform rt)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.localScale = Vector3.one;
+        }
+
+        /// <summary>
+        /// The steal's live reach, 0 at the skimmer's authored resting size and 1 at full Space.
+        /// Polled by the controller; eased here rather than snapped, because an element level moves
+        /// in steps and a ring that stepped with it would read as a glitch.
+        /// </summary>
+        public void SetStealReach01(float reach01) => _reachTarget01 = Mathf.Clamp01(reach01);
+
+        /// <summary>The running total of prisms this pilot has taken. Repainted only on a change.</summary>
+        public void SetStealCount(int count)
+        {
+            if (!_stealCountText || count == _stealCountShown) return;
+            _stealCountShown = count;
+            _stealCountText.text = count.ToString();
+        }
+
+        /// <summary>
+        /// Tints the steal count in the pilot's own domain colour, which is not decoration: a
+        /// stolen prism CHANGES HANDS to that domain, so the number is counting mass that now wears
+        /// this colour. The ring stays white - it measures the skimmer, which belongs to nobody.
+        /// </summary>
+        void PaintStealCount(Color domainColor)
+        {
+            if (_stealCountText) _stealCountText.color = domainColor;
+        }
+
         public override void Initialize()
         {
+            EnsureGeneratedAbilityIcons();
+            _reachShown01 = 0f;
+            if (_reachRing) _reachRing.Radius = reachRingMinRadius;
+            _stealCountShown = -1;
+            SetStealCount(0);
+            PaintStealCount(_playerDomainColor);
+
             if (!boostFill) return;
             boostFill.fillAmount = 0f;
             boostFill.color = _playerDomainColor;
@@ -131,10 +262,13 @@ namespace CosmicShore.UI
                     // standard cooldown, which never touches the icon's transform.
                     break;
                 case Element.Space:
+                    // The reach ring is a MEASUREMENT of the skimmer, so Iron Grip re-anchors
+                    // nothing here: the ring already moves when Space does, and the icon it hangs
+                    // off is invisible. The card's own plate carries the upgrade.
+                    break;
                 case Element.Time:
-                    // No local readout on either card - Space's steal reach is the skimmer sphere
-                    // itself, and Time's skim energy draws on the non-elemental Skim card, whose
-                    // gauge the lockup owns. Time's own card binds no icon at all.
+                    // Time's card carries the skim icon and the boost fill; the gauge is the
+                    // lockup's and nothing local tweens that icon's transform.
                     break;
             }
         }
@@ -147,6 +281,8 @@ namespace CosmicShore.UI
 
             if (boostFill)
                 boostFill.color = color;
+
+            PaintStealCount(color);
         }
 
         public void SetBoostState(float boost01, bool isBoosted, bool isFull,
@@ -181,6 +317,15 @@ namespace CosmicShore.UI
 
         private void Update()
         {
+            // The reach ring is eased here rather than in the controller because the controller
+            // pushes a level, not a frame - and this runs whether or not the boost fill is live.
+            if (_reachRing)
+            {
+                _reachShown01 = Mathf.Lerp(_reachShown01, _reachTarget01,
+                                           1f - Mathf.Exp(-reachRingLerpSpeed * Time.deltaTime));
+                _reachRing.Radius = Mathf.Lerp(reachRingMinRadius, reachRingMaxRadius, _reachShown01);
+            }
+
             if (!boostFill || !boostFill.enabled) return;
 
             if (_flashTimer > 0f)

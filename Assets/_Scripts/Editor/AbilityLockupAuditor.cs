@@ -326,6 +326,22 @@ namespace CosmicShore.Editor
 
             report.AppendLine($"  {vessel,-10} ✓ {sizes.Count} slot(s); {normalising}. " +
                               "Row position, pitch, cell size and host scale are taken over by the lockup.");
+
+            // An unbound elemental slot is NOT a defect and this audit cannot tell its two causes
+            // apart, because only one of them exists in the asset: an ability nobody has designed
+            // yet (the card renders LOCKED) and a readout the vessel GENERATES at runtime
+            // (VesselHUDView.EnsureGeneratedAbilityIcons - the Squirrel's steal reach). Naming the
+            // count is what stops "3 slot(s)" reading as a complete row.
+            if (sizes.Count < VesselHUDView.AbilityDisplayOrder.Length)
+            {
+                var unbound = VesselHUDView.AbilityDisplayOrder
+                    .Where(e => !(view.TryGetAbilityIcon(e, out var i) && i))
+                    .ToList();
+                report.AppendLine($"             {unbound.Count} slot(s) bind no authored icon " +
+                                  $"({string.Join(", ", unbound)}) - either undesigned (drawn LOCKED) " +
+                                  "or generated at runtime by the view. Check the vessel in play.");
+            }
+
             ReportCoreCards(view, style, report);
             ReportGauges(vessel, view, report);
             ReportLegacyContent(view, report);

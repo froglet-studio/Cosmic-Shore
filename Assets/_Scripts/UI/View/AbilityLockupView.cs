@@ -178,6 +178,11 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // A vessel whose readout is a live MEASUREMENT builds its icon here rather than
+            // authoring one, so the row can find it in the pass below like any other. No-op on
+            // every vessel that authors all of its art.
+            hudView.EnsureGeneratedAbilityIcons();
+
             var row = ResolveRow();
             var order = VesselHUDView.AbilityDisplayOrder;
             var coreOrder = VesselHUDView.CoreAbilityDisplayOrder;
@@ -361,10 +366,25 @@ namespace CosmicShore.UI
             host.SetSiblingIndex(Mathf.Max(0, index));
         }
 
+        /// <summary>
+        /// Lands an ability icon in the middle of its card at the fleet's ONE drawn size, whatever
+        /// size the prefab authored for it.
+        ///
+        /// <para><b>The scale write is load-bearing and used to be missing.</b> It was left to
+        /// <c>VesselHUDController</c>'s upgrade seeding, which writes
+        /// <c>VesselHUDView.AbilityIconRestScale</c> for every ELEMENT - so an elemental icon was
+        /// kerned a moment after the row was built and a NON-elemental one, which no element ever
+        /// seeds, never was. It therefore drew at its authored size (80) in a cell sized for 60,
+        /// a third larger than its neighbours, on the one card in the row nothing else touches.
+        /// Writing it here makes the row correct the instant it is laid out, and the seeding pass
+        /// then writes the identical value - nothing is upgraded at build time, so the rest scale
+        /// IS the content scale.</para>
+        /// </summary>
         void NormaliseIcon(RectTransform iconRT)
         {
             iconRT.anchorMin = iconRT.anchorMax = iconRT.pivot = new Vector2(0.5f, 0.5f);
             iconRT.anchoredPosition = Vector2.zero;
+            iconRT.localScale = Vector3.one * style.IconScaleFor(AuthoredIconSize(iconRT));
         }
 
         /// <summary>

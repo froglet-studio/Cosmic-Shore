@@ -60,6 +60,13 @@ namespace CosmicShore.UI
             [Tooltip("Optional meter for this ability. Re-homed into the card and restyled as the " +
                      "fleet's one gauge; the vessel keeps writing fillAmount on the same Image.")]
             public Image gauge;
+
+            [Tooltip("The control this ability is bound to, for the card's control chip. An " +
+                     "ELEMENTAL card takes this from the vessel's ElementalAbilityMapSO entry; a " +
+                     "core ability has no map entry, so the binding names it here. It is still ONE " +
+                     "authored fact - which control - and the glyph is derived from it, so a wrong " +
+                     "label stays structurally impossible. FullSpeedStraightAction (0) draws no chip.")]
+            public InputEvents input;
         }
 
         /// <summary>
@@ -78,7 +85,7 @@ namespace CosmicShore.UI
         /// "which flower upgrades this?" stops being answered by position.
         /// </summary>
         public static readonly CoreAbility[] CoreAbilityDisplayOrder =
-            { CoreAbility.Skim };
+            { CoreAbility.Drift };
 
         [Header("Button highlights")] public List<HighlightBinding> highlights = new();
 
@@ -92,7 +99,7 @@ namespace CosmicShore.UI
         [Header("Non-elemental abilities (cards to the LEFT of the elemental row)")]
         [Tooltip("Abilities no element upgrades - the hull's own engine. Each gets a lockup card " +
                  "with an ability plate and NO element flower above it, placed left of the four " +
-                 "elemental cards. Empty on most vessels; the Squirrel binds its skimming here.")]
+                 "elemental cards. Empty on most vessels; the Squirrel binds its drift here.")]
         public List<CoreAbilityBinding> coreAbilities = new();
 
         [Tooltip("Persistent scale an upgraded ability icon rests at while the upgrade is active.")]
@@ -264,6 +271,59 @@ namespace CosmicShore.UI
         {
             var lockups = ResolveAbilityLockups();
             if (lockups) lockups.SetCoreAbilityControl(ability, input);
+        }
+
+        /// <summary>
+        /// Hands every NON-elemental card the control its binding names. An elemental card takes
+        /// that from the vessel's <c>ElementalAbilityMapSO</c> entry, which is where an elemental
+        /// ability's input lives; a core ability has no map entry at all, so the binding carries
+        /// it. Still ONE authored fact per card, with the glyph derived from it.
+        ///
+        /// <para><c>FullSpeedStraightAction</c> (the enum's zero) means "no button", exactly as it
+        /// does on the elemental side, and draws a blank chip.</para>
+        /// </summary>
+        public void SeedCoreAbilityControls()
+        {
+            for (int i = 0; i < coreAbilities.Count; i++)
+                SetCoreAbilityControl(coreAbilities[i].ability, coreAbilities[i].input);
+        }
+
+        /// <summary>
+        /// A vessel's chance to BUILD an ability icon rather than author one, called by
+        /// <see cref="AbilityLockupView.Build"/> before the row is laid out.
+        ///
+        /// <para>It exists because some readouts are a live MEASUREMENT rather than a picture - the
+        /// Squirrel's skimmer reach, the Dolphin's blast profile - and a measurement drawn as a
+        /// sprite ladder quantizes it and silently stops matching the thing it depicts. A generated
+        /// icon is authored by nobody, so there is no prefab object for the row to find; this is
+        /// where the vessel makes one and writes it into <see cref="abilityIcons"/>.</para>
+        ///
+        /// <para>An override must be IDEMPOTENT (the lockup may rebuild) and must create its host
+        /// somewhere other than the row - the lockup re-homes it into the row itself. Default:
+        /// nothing at all, so every other vessel is byte-for-byte unchanged.</para>
+        /// </summary>
+        public virtual void EnsureGeneratedAbilityIcons() { }
+
+        /// <summary>
+        /// Points an ELEMENT's card at an icon built at runtime, adding the entry when the vessel
+        /// authored none. The counterpart of <see cref="EnsureGeneratedAbilityIcons"/>; an authored
+        /// icon always wins, so this can never overwrite a prefab's own art.
+        /// </summary>
+        protected void BindGeneratedAbilityIcon(Element element, Image icon)
+        {
+            if (!icon) return;
+
+            for (int i = 0; i < abilityIcons.Count; i++)
+            {
+                if (abilityIcons[i].element != element) continue;
+                if (abilityIcons[i].icon) return;          // authored art wins
+                var binding = abilityIcons[i];
+                binding.icon = icon;
+                abilityIcons[i] = binding;
+                return;
+            }
+
+            abilityIcons.Add(new AbilityIconBinding { element = element, icon = icon });
         }
 
         /// <summary>

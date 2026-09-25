@@ -53,6 +53,30 @@ namespace CosmicShore.Gameplay
         /// <summary>Live elemental scale in world units — the resting size an external scale driver should grow from.</summary>
         public float LiveElementalScale => Scale.EvaluateLive(VesselStatus);
 
+        /// <summary>
+        /// The live reach as a 0..1 fraction of THIS skimmer's own authored range - 0 at the
+        /// resting size, 1 at integer element level 10. A HUD readout of "how far does my skimmer
+        /// reach right now" needs the fraction rather than the world units, because the units mean
+        /// nothing without the two endpoints beside them, and those are authored per vessel (the
+        /// Squirrel: Space, 15 -> 30).
+        ///
+        /// <para>Clamped, so the overcharge band above level 10 reads as full rather than as more
+        /// than full; a readout with no top is not a readout. Returns 0 for a skimmer whose scale
+        /// does not vary at all, which is the honest answer - there is nothing to report.</para>
+        /// </summary>
+        public float ElementalScale01
+        {
+            get
+            {
+                float rest = Scale.EvaluateAtNormalizedLevel(0f);
+                float full = Scale.EvaluateAtNormalizedLevel(1f);
+                float span = full - rest;
+                return Mathf.Abs(span) < 0.0001f
+                    ? 0f
+                    : Mathf.Clamp01((LiveElementalScale - rest) / span);
+            }
+        }
+
         /// <summary>Set by an external per-frame scale driver (ShieldSkimmerScaleDriver) while it owns this transform's scale.</summary>
         public bool HasExternalScaleDriver { get; set; }
 

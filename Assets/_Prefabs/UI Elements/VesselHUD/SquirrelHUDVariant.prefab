@@ -400,7 +400,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: cacfb7621bd845fea384570be5f8b4ce, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 15d4c0157372e564882ed7a7ea6b0f2b, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -3173,7 +3173,7 @@ MonoBehaviour:
   highlights: []
   abilityIcons:
   - element: 1
-    icon: {fileID: 5199230409720723880}
+    icon: {fileID: 4425814395415128621}
     upgradedSprite: {fileID: 0}
     gauge: {fileID: 0}
   - element: 2
@@ -3181,17 +3181,18 @@ MonoBehaviour:
     upgradedSprite: {fileID: 0}
     gauge: {fileID: 0}
   - element: 3
-    icon: {fileID: 4425814395415128621}
-    upgradedSprite: {fileID: 0}
-    gauge: {fileID: 0}
-  - element: 4
     icon: {fileID: 0}
     upgradedSprite: {fileID: 0}
     gauge: {fileID: 0}
+  - element: 4
+    icon: {fileID: 6559234619875545904}
+    upgradedSprite: {fileID: 0}
+    gauge: {fileID: 6390265052795311443}
   coreAbilities:
   - ability: 1
-    icon: {fileID: 6559234619875545904}
-    gauge: {fileID: 6390265052795311443}
+    icon: {fileID: 5199230409720723880}
+    gauge: {fileID: 0}
+    input: 2
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35
@@ -3200,7 +3201,7 @@ MonoBehaviour:
   colorLerpSpeed: 4
   crystalFlashDuration: 0.5
   fullBoostWhiteMix: 0.3
-  impactIcon: {fileID: 5199230409720723880}
+  impactIcon: {fileID: 4425814395415128621}
   impactRestColor: {r: 1, g: 1, b: 1, a: 1}
   joustFlashColor: {r: 1, g: 0, b: 0, a: 1}
   crystalFlashColor: {r: 0.4, g: 0.9, b: 1, a: 1}

@@ -83,6 +83,28 @@ namespace CosmicShore.UI
             if (_tubeExecutor != null)
                 // Fill grows 0 -> 1 as the ability recharges (ready = full + bright).
                 view.SetTubeCooldownReady(1f - _tubeExecutor.CooldownRemaining01);
+
+            PushStealReadout();
+        }
+
+        /// <summary>
+        /// The SPACE card: how far the steal reaches right now, and how much has been taken.
+        ///
+        /// <para>Both are POLLED rather than pushed, and for different reasons. The reach is a
+        /// continuous function of an element level that nothing raises an event for - it moves with
+        /// every crystal, every temporary effect and every comeback buff - and the count lives on a
+        /// server-write <c>NetworkVariable</c> (<c>RoundStats.n_PrismStolen</c>), so the owner of a
+        /// steal learns about its own steal by reading it back. A per-frame read of two fields is
+        /// the cheap half of this controller's Update; the view repaints only on a change.</para>
+        /// </summary>
+        private void PushStealReadout()
+        {
+            var skimmer = _vesselStatus?.NearFieldSkimmer;
+            if (skimmer) view.SetStealReach01(skimmer.ElementalScale01);
+
+            if (gameData != null && _vesselStatus != null &&
+                gameData.TryGetRoundStats(_vesselStatus.PlayerName, out var stats) && stats != null)
+                view.SetStealCount(stats.PrismStolen);
         }
 
         private void Subscribe()
