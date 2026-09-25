@@ -1,7 +1,7 @@
 # Microgame Training — design plan
 
-**Status: PLAN, not built.** Revision 2 (2026-09-25) — the five open questions from revision 1 are
-answered and folded in (§1). Nothing here has run in the editor. The Game of the Week rotation is a
+**Status: PLAN, not built.** Revision 3 (2026-09-25) — revision 1's five open questions and
+revision 2's four are answered and folded in (§1). Nothing here has run in the editor. The Game of the Week rotation is a
 separate thread; this plan only assumes it names one `GameModes` value, whose card locks one hull.
 
 ---
@@ -15,6 +15,11 @@ separate thread; this plan only assumes it names one `GameModes` value, whose ca
 | D3 | **The Mentor is CURATED, not reactive.** It offers the most effective tips, tricks and advice **in an authored order that makes sense**, like a tutor or a friend flying alongside — it does not diagnose what the player just did wrong |
 | D4 | **"Racing" = the Time-genre minigames.** A mode is Time-genre because it expresses its vessel's Time controls, which are always movement. The list for now: Skim Race, Switchback, Headlong, Redline, Skein, Breakwater, Regatta. **Source of truth later: the "genre petals"** a parallel branch is adding (categories Mass / Charge / Space / Time) — not on `bleeding-edge` as of `3d9f7660`; switch to it when it lands (§8) |
 | D5 | **Leaderboards are shown only when RELEVANT.** Show a board only when the player is top ten in some grouping that makes sense (world, faction once factions exist, friends, …); otherwise show only their personal best (§6) |
+| D7 | **"First time" is per ACCOUNT, split by flight scheme.** The account's first Lesson ever is unskippable. Separately, the first Lesson on a **two-thumb** ship is unskippable once, because two-thumb flight is unique to this game; after that, every two-thumb Lesson skips at 3 s. One-thumb flight is close to conventional flight controls, so it gets no key of its own: once the account's first Lesson is done, every one-thumb Lesson skips at 3 s (§3) |
+| D8 | **Drift stays in the Lesson** on ships that have it |
+| D9 | **"Near the top" = top ten, or within 10% of tenth place's time.** Likely the long-term rule |
+| D10 | **Mentor pacing:** ~6 s on screen, ~8 s gap, and a tip waiting for its Moment fires anyway after **14 s** |
+| D11 | **`DeveloperUnlockGate` is out of scope** — the product owner handles it manually and will decide its new paradigm separately (§5) |
 | D6 | **Architecture: plans B + C combined** — a linear drill layer (B) for the Lesson and a curated tip sequence (C, re-cut from "reactive" to "curated" by D3) for the Mentor, sharing one runner, one condition set and one view |
 
 ---
@@ -63,12 +68,32 @@ first login
 The railroad is first-login only. Every later preview entry, on any card, runs the same two
 sections through the same runner, just not forced into by navigation.
 
-**"First time" is keyed per HULL.** A Lesson teaches one ship's controls, so the unskippable first
-run happens once per vessel class: the first time a player meets the Manta they sit through the
-Manta's Lesson; their second Manta microgame lets them skip at 3 s; their first Rhino is
-unskippable again. (*Assumption — D2 says "the very first time" without saying first time for
-what. Per-hull follows from what the Lesson teaches; per-player would teach one ship and leave
-every other ship's controls to chance. Easy to change: it is one key.*)
+**"First time" is per ACCOUNT, with one extra key for two-thumb flight (D7).** Every ship is
+one of two flight schemes, named by how many thumbsticks it flies with:
+
+| Scheme | Ships (today) | Why it gets its own key |
+|---|---|---|
+| **Two-thumb** | Dolphin, Squirrel, Rhino, Manta, Urchin, … | Unique to this game. Learned once, it transfers to every other two-thumb ship |
+| **One-thumb** | Sparrow, Serpent, Scarab, Grizzly, Termite, Falcon, Shrike | Close to conventional flight controls; no separate key |
+
+Two account-level keys decide whether a Lesson may be skipped:
+
+```
+lessonSkippable(hull) =
+      account.completedAnyLesson                                   // the account's first Lesson, whatever the ship
+  AND (scheme(hull) == OneThumb  OR  account.completedTwoThumbLesson)
+```
+
+So a new player whose first Game of the Week is a one-thumb race sits through that one Lesson; their
+first two-thumb ship later is unskippable once more; everything after that skips at 3 s. A player
+whose first Lesson is two-thumb sets both keys at once. **Completing** a Lesson sets a key; skipping
+never does (by construction, skipping is only offered after the key is already set).
+
+The scheme is read from the flag the platform already computes, `IVesselStatus.IsSingleStickControls`
+(and the roster `OneThumbVesselCoverageTests` pins), so no new vessel labelling is needed for this.
+If the ships are later labelled more formally, the resolver changes in one place. The scheme is
+also what picks which of the two shared flight blocks the Lesson teaches (§4.1), so "what the
+Lesson teaches" and "what counts as having learned it" come from the same source.
 
 ---
 
@@ -155,8 +180,8 @@ billboard:
 - **An optional `Moment` condition** lets a tip *wait for a good time* to say its piece — "boost
   on the straights" waits until the ship is actually at speed, and "take the gate on the inside"
   waits until a gate is ahead. This changes **when** a tip is said, never **which** tip is said,
-  so the Mentor stays curated rather than reactive (D3). A Moment that doesn't come within ~20 s
-  lets the tip go anyway.
+  so the Mentor stays curated rather than reactive (D3). A Moment that doesn't come within **14 s**
+  lets the tip go anyway (D10).
 - The Mentor ends when the list is exhausted (a closing line pointing at Play) or when the player
   leaves; re-entering resumes where it left off.
 
@@ -170,7 +195,7 @@ playlist, which is how B and C combine without becoming two systems.
 | `DrillComposer` | Pure function `(mode, hull, progress) → (lessonSteps, mentorTips)`. Edit-mode testable; the authoring window (§9) calls the same function, so what the tool shows is what runs |
 | `DrillRunner` | Plain MonoBehaviour beside `ModePreviewRunner`, same lifetime; created by the session, starts at tap-in, stops on every existing exit route. Runs the Lesson, then the Mentor. Never writes `GameDataSO`, never replicates (the preview is local by design) |
 | `DrillCoachView` | One panel over the preview window rect: prompt line, the control glyph chip (drawn from `ControlGlyphSetSO` exactly as the lockup draws it), Lesson step pips, a Skip button that appears only when allowed, the Mentor's "next". Anchors reuse surfaces that already exist: the launch panel's controls block already lights a row when its control is held, and `PulseAbilityRow` drives that same row |
-| `DrillProgressStore` | Hulls whose Lesson was **completed** (the per-hull first-time key), tip ids **seen**, best practice lap per (mode, hull). PlayerPrefs mirror plus one Cloud Save key through the existing repository pattern (`LocalCloudDataCache` makes it work offline). Deliberately NOT the quest cursor |
+| `DrillProgressStore` | The two account keys — `completedAnyLesson`, `completedTwoThumbLesson` (§3) —, tip ids **seen**, best practice lap per (mode, hull). PlayerPrefs mirror plus one Cloud Save key through the existing repository pattern (`LocalCloudDataCache` makes it work offline). Deliberately NOT the quest cursor |
 
 **Forcing uses gates that already exist.** While the Lesson is unskippable, `ModePreviewWindow`'s
 own release test (`WantsRelease`) is held shut by one flag, and the card's Play button is
@@ -202,12 +227,11 @@ existing flight-school nodes (`EnterFreestyle`, `WaitForInput`, `WaitForDrift`, 
 (the Crystal Capture funnel, the unlocks) need re-deciding against the Game of the Week, which is
 the separate thread.
 
-**A conflict to resolve before this can run:** `DeveloperUnlockGate.AllUnlocked` (default ON)
-stops the whole quest graph, so in a default checkout the railroad never fires. Recommended fix:
-the gate should switch off the nodes that apply *locks* (LockModes, SetArcadeConstraints,
-LockNavigation), not the runner itself; the railroad's routing is not an entitlement. Independently
-of the graph, the preview's own "first time on this hull" rule still forces the Lesson, so the
-Lesson itself does not depend on the graph running.
+**Known, and deliberately out of scope (D11):** `DeveloperUnlockGate.AllUnlocked` (default ON)
+stops the whole quest graph, so in a default checkout the railroad does not fire. The product owner
+is handling that switch manually and will choose its new paradigm separately. Either way, the
+preview's own account keys (§3) force the Lesson by themselves, so the Lesson does not depend on
+the graph running — only the navigation to it does.
 
 ---
 
@@ -240,7 +264,14 @@ config.
    behind it are already standalone code with edit-mode tests (`SwitchbackCourse`,
    `HeadlongCircuit`/`RedlineCourse`, `SkeinCourse`, `RegattaCourse`, Breakwater's builder). A
    per-mode `IRaceCourseSource` that both the controller and the preview call gives ONE course
-   definition per mode.
+   definition per mode. Its inputs are exactly what the controller feeds `BuildCourse` today — a
+   seed, the gate count (`AuthoredGateTarget()`), the shell radii (`ResolveShell`, read off the
+   cell) and the intensity — and every one of those is available in the preview from its
+   definition and its arena. Lead-in gates and laps go with it (`LeadInGates`, `LapsPerRace`,
+   and the static `RaceLengthFor`/`RingIndexFor` already exist), so the preview laps a circuit
+   exactly as the match does. Done as a pure move (same seeds give the same courses), the existing
+   course tests prove it changed nothing; one new test per mode asserts the controller and the
+   preview get identical gates for the same seed.
 2. **`ModePreviewGateCourse`** stands `RaceGateRing`s in the preview arena from a local seed, tests
    crossings with the existing pure `RaceGateRing.CrossedMouth(prev, cur)`, and raises
    `GateThreaded` / `LapCompleted` for the Mentor's Moment conditions and the practice-lap time.
@@ -293,10 +324,10 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 
 | Phase | Scope | Proves |
 |---|---|---|
-| 1 | `DrillRunner`, `DrillComposer`, `DrillCoachView`, `DrillProgressStore`; the Lesson with derived beats; unskippable-first-time + 3 s skip; Play gating | every hull has a Lesson |
+| 1 | `DrillRunner`, `DrillComposer`, `DrillCoachView`, `DrillProgressStore`; the Lesson with derived beats; the two account keys + 3 s skip; Play gating | every hull has a Lesson |
 | 2 | §7 gate course in previews (Switchback + Redline first) | the race is in the window |
 | 3 | The Mentor: TipListSOs for the gate-race family, pacing, Moment conditions, resume | the curated tutor |
-| 4 | Quest Graph P0 railroad + the `DeveloperUnlockGate` fix; the Game of the Week source | first login → Lesson, end to end |
+| 4 | Quest Graph P0 railroad; the Game of the Week source | first login → Lesson, end to end |
 | 5 | Remaining races; tip lists for non-racing families; relevance-gated leaderboards (§6); practice-lap result | coverage |
 | 6 | Authoring window, coverage test, analytics; switch D4's list to genre petals | the "every vessel ever" guarantee |
 | later | `GhostDemo` cue (the preview's own autopilot flies a step once before handing over) | show, don't tell |
@@ -305,11 +336,8 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 
 ## 11. Still open
 
-1. **Per-hull "first time"** (§3) — confirm, or should it be once per player?
-2. **Mentor pacing defaults** — ~6 s on screen, ~8 s gap, ~20 s Moment timeout. Real numbers want
-   one playtest.
-3. **Does the Lesson include drift** on hulls that have it, or is drift a Mentor tip? The plan
-   includes it (it is movement); it adds ~5 s.
-4. **What happens to Main Quest phases 1–5** (the Crystal Capture funnel and the unlock chain) now
+1. **What happens to Main Quest phases 1–5** (the Crystal Capture funnel and the unlock chain) now
    that first login goes to the Game of the Week — separate thread, but they currently assume P0
    ended in freestyle.
+2. **Mentor pacing** is set (D10) but wants one playtest to confirm it reads as a friend, not a
+   billboard.
