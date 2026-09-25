@@ -583,6 +583,27 @@ namespace CosmicShore.ECS
         static VisibilityFlushHost s_flushHost;
         static readonly Unity.Profiling.ProfilerMarker s_flushMarker = new("PrismRender.VisibilityFlush");
 
+        // Play-mode exit / quit. The DontDestroyOnLoad flush host is torn down with everything
+        // else, but Prism.OnDisable still queues a hide for its entity during that teardown -
+        // re-creating the host then leaks it ("Some objects were not cleaned up when closing
+        // the scene" listing [PrismRenderVisibilityFlush]). Application.quitting also fires on
+        // editor play-mode exit; reset per session (domain reload is disabled in this project).
+        static bool s_quitting;
+
+        /// <summary>True from play-mode exit / application quit until the next session starts.
+        /// Lazily-created prism hosts check it so teardown cascades can't re-spawn them.</summary>
+        public static bool IsQuitting => s_quitting;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetQuitting()
+        {
+            s_quitting = false;
+            Application.quitting -= HandleQuitting;
+            Application.quitting += HandleQuitting;
+        }
+
+        static void HandleQuitting() => s_quitting = true;
+
         /// <summary>
         /// Deferred SetVisible: applied in one batched structural change per direction
         /// at LateUpdate — same frame, before rendering, so nothing is ever visibly
@@ -591,6 +612,9 @@ namespace CosmicShore.ECS
         public static void QueueVisible(in PrismRenderHandle handle, bool visible)
         {
             if (!IsUsable(in handle)) return;
+            // Teardown: the world and every entity are going away with the session, so a
+            // queued hide has nothing left to do - and queuing it would re-create the host.
+            if (s_quitting) return;
             s_pendingVisibility[handle.Entity] = visible;
             EnsureFlushHost();
         }
@@ -598,6 +622,8 @@ namespace CosmicShore.ECS
         static void EnsureFlushHost()
         {
             if (s_flushHost != null) return;
+            // Never spawn a DontDestroyOnLoad host outside play mode or during teardown.
+            if (s_quitting || !Application.isPlaying) return;
             // HideInHierarchy (NOT HideAndDontSave — that exempts the object from
             // play-mode-exit cleanup and leaks one host into edit mode per session).
             var go = new GameObject("[PrismRenderVisibilityFlush]") { hideFlags = HideFlags.HideInHierarchy };

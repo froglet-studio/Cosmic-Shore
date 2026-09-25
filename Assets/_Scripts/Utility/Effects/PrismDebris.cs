@@ -407,6 +407,7 @@ namespace CosmicShore.Utility
         static void EnsureHost()
         {
             if (s_host != null) return;
+            if (s_quitting || !Application.isPlaying) return;
             // HideInHierarchy, NOT HideAndDontSave — same reasoning as the render
             // service's visibility flush host (play-mode-exit cleanup applies).
             var go = new GameObject("[PrismDebris]") { hideFlags = HideFlags.HideInHierarchy };
