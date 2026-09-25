@@ -48,7 +48,7 @@ because the generators are closed-form and deterministic on one machine.
 | Records | Every live vessel's position, rotation and speed at `vesselSampleHz` (default 30) |
 | Roster from | `VesselVisionShading.CollectStampedVessels` — a list a PLATFORM LAW keeps correct, so no DI, no scene wiring, no `GameDataSO` |
 | Timebase | `Time.time`, which is exactly what `PrismClock.Now` reads, so P1's prism events already share one clock |
-| Plays back as | The fleet's real hulls, in a flat domain fill, inside the **recording area** (§3.1) |
+| Plays back as | Declawed real vessels — hull, **jets and tail** — inside the **recording area** (§3.1) |
 | Shots | **Free** (detached), plus **Pilot** / **Orbit** / **Chase**, all three steerable — §3.2 |
 | Transport | Play/pause, ×0.1 to ×8, ±5 s snap, cycle shot, cycle pilot — on screen and on the pad |
 | Lands in | `<repo>/Recordings/<scene>_<date>_<time>.cstheater` — already git-ignored, never pushed |
@@ -58,40 +58,66 @@ that is uncompressed on purpose — a recording you can read in a hex editor is 
 now than one that is four times smaller. Delta-coding positions and packing rotations
 smallest-three takes a pose to roughly 10 B; that belongs in the phase that needs it.
 
-### The puppet decision
+### The ghost decision
 
-A puppet is **harvested from the prefab asset, never instantiated** (`VesselModelBuilder`, which
-reads meshes without ever waking the prefab). Three things fall out at once: no gameplay
-controller can fly a puppet off its recorded pose, no `Awake` side effect fires, and — the one
-that matters — **there is no `NetworkObject` to neutralise**. Instantiating a vessel prefab
-without spawning it is the B16 trap, where Netcode adopts the stray as an in-scene placed object
-and the *second* one breaks synchronisation for the rest of the session. Harvesting sidesteps it
-by construction rather than by remembering a guard.
+A ghost is **a real vessel with everything that ACTS removed**, so what is left can only draw:
+hull, jets and tail, flying a recorded path and touching nothing.
 
-Stated cost: a P0 puppet has no jets, no tail, no hull morph and no animation. It is a ghost of
-the right *ship*.
+It began as harvested meshes read off the prefab asset, which was safe and silent and **could never
+have a jet** — a jet is a particle system and a tail is a `TrailRenderer`, and neither survives
+being copied as geometry. Getting them means instantiating the real prefab, which carries two
+hazards worth naming separately, because only one of them is the one people expect.
 
-**A ghost wears a flat domain fill rather than the ship's own materials.** `VesselModelBuilder`
-records why: a vessel's real materials are dark unlit theme shaders that read as a black blob out
-of their lit context, and the stage is a dark void. The flat fill is what makes four ghosts
-tellable apart at orbit distance. `TheaterConfigSO.liveHullMaterials` shows the authored materials
-instead, for whoever wants to inspect a hull rather than read a match.
+**Hazard 1 — the stray `NetworkObject`, and being offline does not remove it.** Netcode scans
+loaded scenes for un-spawned `NetworkObject`s and adopts each as an in-scene *placed* object, keyed
+on a hash every instance of one prefab shares — so the **second** stray throws inside
+`PopulateScenePlacedObjects` and breaks synchronisation for every later joiner, on this machine,
+silently (`Docs/PartySystem/BUGS.md` B16). The theater sends and receives nothing, but there is
+always a NetworkManager running here: the project hosts even in Menu_Main, and offline mode is
+itself a `127.0.0.1` local host. *Local does not mean there is no NetworkManager to confuse.*
 
-**The prefab registry is asked for in three places**, because it lives somewhere different in
-every context the theater can be opened from: the config field, then `Resources`, then the live
-scene's `ServerPlayerVesselInitializer`. Falling through all three is what produced the
-placeholder wedge on the first playtest — the container asset lives at `_SO_Assets/Vessel Prefab
-Container.asset`, not in `Resources`, and nothing had been authored to point at it. It is now
-authored (`Resources/TheaterConfig.asset`), the scene fallback covers a clone that loses it, and
-the miss is reported **by name**: a silent fallback to a proxy reads as *the theater cannot draw
-ships*, which is a much larger and much wronger conclusion than *nothing told it where they are*.
+**Hazard 2 — the one that would actually corrupt a match.** A vessel prefab carries
+`VesselPrismController`. An un-declawed ghost retracing a flight would lay **real trail prisms into
+the live cell**: conserved mass injected into a running simulation by something that is supposed to
+be a picture.
 
-`ToyModelBuilder.NormalizeToRadius` gained one line for this — a target radius of zero or less now
-means **native scale and native pivot**. A toy wants a model normalised into a station of a known
-size; a puppet retracing a recorded flight needs the opposite, because the recorded pose is
-relative to the ship's *pivot* and re-centring on the hull's bounds would slide the whole replay
-off by that offset. A non-positive radius previously yielded `scale = 0`, an invisible model,
-which was never what any caller wanted.
+Both are answered the same way, and the shape is the point:
+
+- **Nothing ever wakes.** The prefab is instantiated under a **deactivated holder**, so `Awake` is
+  deferred; the strip runs while the instance is inert; only the survivors are ever activated. That
+  is also why the strip uses `DestroyImmediate` — a deferred `Destroy` lands at end of frame, which
+  is *after* the activation that would have run every stripped component's `Awake`.
+- **The strip is a whitelist of what may DRAW**, not a blacklist of what to remove. A blacklist
+  forgets the next component somebody adds to a vessel, and that failure is silent and cumulative.
+  The list is renderers, particle systems, trails, lights, the `Animator`, and the three tail/jet
+  markers — whose own `Awake`s do nothing but size the FX, which is what a ghost wants.
+- **The strip repeats until it stops making progress**, because `RequireComponent` refuses a
+  destruction whose dependent is still present and the dependency order among a vessel's own
+  scripts is not knowable from here. Anything still standing is **named**: a component that cannot
+  be removed is one whose `Awake` is about to run on a ghost, which is the whole thing this
+  prevents, so it must not fail quietly.
+
+**Jets swell with the recorded speed, normalised against that pilot's own fastest moment.** Self
+-calibrating on purpose: a plume sized against an authored cruise speed needs a number per hull,
+and the fleet's straight-line speeds span 34×. Against its own top speed a ghost reads right with
+nothing authored.
+
+**Trails are cleared on every seek, every loop, and every time a ghost reappears.** A
+`TrailRenderer`'s points are in world space, so a jump otherwise draws one straight ribbon from
+where the ghost was to where it now is — the same trap, and the same fix, as a pooled missile's
+tail.
+
+**The hull radius is measured from MESHES only.** Every shot's framing is in multiples of it, and a
+trail is hundreds of units long the moment it starts drawing — measuring it would hand the camera a
+"hull radius" that grows as the ship flies and pull every shot steadily away from it.
+
+Stated cost: a ghost has no **hull morph** (that needs `VesselAnimation`, which the strip removes)
+and its `Animator` plays its default state with nothing driving its parameters. `fullGhosts: false`
+falls back to the harvested mesh, which instantiates nothing.
+
+`ToyModelBuilder.NormalizeToRadius` still carries the one line the harvest needed — a target radius
+of zero or less means **native scale and native pivot**, because a recorded pose is relative to the
+ship's *pivot* and re-centring on its bounds would slide the whole replay off by that offset.
 
 ### 3.1 The recording area
 

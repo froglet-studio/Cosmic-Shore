@@ -86,12 +86,25 @@ namespace CosmicShore.Gameplay
         /// a vessel that changes which slot carries its domain changes both at once.
         /// </summary>
         static Material[] ResolveMaterials(Material[] authored, VesselCustomization custom,
-            Material domainMaterial)
+            Material domainMaterial) =>
+            custom == null
+                ? authored
+                : ResolveDomainMaterials(authored, custom.DomainReplacesMaterials,
+                    custom.DomainMaterialSlot, domainMaterial);
+
+        /// <summary>
+        /// The same swap, for a caller that has already read the rule off the
+        /// <see cref="VesselCustomization"/> and no longer holds the component — the theater's
+        /// ghost builder strips it before painting, because the strip has to happen while the
+        /// instance is still inert. One implementation either way, so a vessel that changes which
+        /// slot carries its domain moves every consumer with it.
+        /// </summary>
+        public static Material[] ResolveDomainMaterials(Material[] authored,
+            IReadOnlyList<Material> identities, int domainMaterialSlot, Material domainMaterial)
         {
             if (authored == null || authored.Length == 0) return authored;
-            if (!domainMaterial || custom == null) return authored;
+            if (!domainMaterial) return authored;
 
-            var identities = custom.DomainReplacesMaterials;
             bool byIdentity = false;
             if (identities != null)
                 for (int i = 0; i < identities.Count && !byIdentity; i++)
@@ -109,7 +122,7 @@ namespace CosmicShore.Gameplay
                 return result;
             }
 
-            int index = Mathf.Clamp(custom.DomainMaterialSlot, 0, result.Length - 1);
+            int index = Mathf.Clamp(domainMaterialSlot, 0, result.Length - 1);
             result[index] = domainMaterial;
             return result;
         }
