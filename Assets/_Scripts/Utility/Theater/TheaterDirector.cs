@@ -89,6 +89,10 @@ namespace CosmicShore.Utility
                 if (pilotStep != 0) _playback.CycleFollow(pilotStep);
                 if (togglePause) _playback.TogglePause();
 
+                int shot = TheaterGesture.ShotRequestedThisFrame();
+                if (shot >= 0) _playback.SetShotByIndex(shot);
+                if (TheaterGesture.NextPilotRequestedThisFrame()) _playback.CycleFollow(1);
+
                 _playback.Tick(Time.unscaledDeltaTime);
             }
         }
@@ -275,10 +279,11 @@ namespace CosmicShore.Utility
                 if (Button(ref bx, y, 50f, "Pilot >")) _playback.CycleFollow(1);
                 y += Row + 4f;
 
-                GUI.Label(new Rect(x, y, PanelWidth, Row * 2f),
-                    "[8] leave   pad: sticks fly, triggers climb, D-pad shot/pilot, A pause\n" +
+                GUI.Label(new Rect(x, y, PanelWidth, Row * 3f),
+                    "[8] leave   [1-4] shot   [5] next pilot\n" +
+                    "pad: sticks fly, triggers climb, D-pad shot/pilot, A pause\n" +
                     "kb: WASD + QE, right-mouse look, Shift boost, Ctrl crawl");
-                y += Row * 2f + 4f;
+                y += Row * 3f + 4f;
             }
 
             if (showMessage) GUI.Label(new Rect(x, y, PanelWidth, Row * 2f), _lastMessage);

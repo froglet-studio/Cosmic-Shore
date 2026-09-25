@@ -95,30 +95,41 @@ which was never what any caller wanted.
 
 ### 3.1 The recording area
 
-The place a recording is watched: the live world off the screen, nothing in shot but the ghosts.
+**The world stays. Only the interface goes.** The first cut masked the live world off the camera
+onto a private layer, on the reasoning that a theater wants a clean void — and a void is exactly
+what it produced: no prisms, no environment, no crystals, nothing but ghosts in the dark. A Halo
+theater shows you the *map*. So the mask is opt-in now (`TheaterConfigSO.hideWorld`, default off,
+for "show me this flight and nothing else"), and the stage's real job is the three things that
+genuinely have to stop while somebody watches a replay.
 
-**It is a CULLING MASK, not a scene load, and that is the whole design.** A dedicated scene is
-what a theater wants to be, and this project cannot have one cheaply — a local
-`SceneManager.LoadScene` while a NetworkManager is listening races the server's own scene
-management (the MPPM guard in `SceneLoader` exists for exactly that), and every scene in the game,
-Menu_Main included, is running one. So the stage hides the world the one way that touches nothing:
-the replay camera is re-masked onto a `Theater` layer only the puppets are on, and its background
-is painted. Nothing is destroyed, nothing is disabled, no gameplay object learns the theater
-exists, and leaving is four field restores.
+1. **The gameplay UI is hidden, and that is a BUG FIX before it is a look.** IMGUI and uGUI process
+   the same mouse event independently and neither can consume it for the other, so every theater
+   button sitting over a live uGUI control pressed **both** — which is why the two rightmost
+   buttons, parked over the HUD's own top-right Volume/Pause button, kicked the player back to the
+   menu. Root canvases are switched off and the EventSystem is stood down; world-space canvases are
+   left alone, because they are part of the scene rather than part of the interface.
+2. **The local pilot's input is paused** (`IsLocalPilot`, never `IsLocalUser` — the legacy
+   single-player spawn path never network-spawns its Player), so the theater and the vessel are not
+   both reading the same sticks.
+3. **The live vessels stop drawing**, through `forceRenderingOff` rather than by disabling
+   anything: a frozen real ship parked beside the ghost replaying its own flight is the one thing
+   in shot that can only ever confuse. Every component keeps running, and restoring is one bool.
 
-Three consequences, stated rather than buried:
+Two consequences, stated rather than buried:
 
 - **The match keeps simulating underneath.** Prisms are still laid, fauna still feed, the clock
-  still runs. That is what makes entering and leaving free — you come back to the game you left,
-  mid-flight, rather than to a reloaded one.
-- **The local pilot's input is paused for the duration** (`IsLocalPilot`, never `IsLocalUser` —
-  the legacy single-player spawn path never network-spawns its Player). The theater and the vessel
-  would otherwise both read the same sticks, so the ship coasts instead of flying off while its
-  pilot watches a replay.
-- **A missing layer degrades, it does not fail.** With no `Theater` layer in `TagManager` the stage
-  declines to mask and playback runs over the live world — worse-looking and completely functional.
-  Masking onto a layer that does not exist renders a black screen, and a black screen is
-  indistinguishable from a broken feature. (The layer ships at index 19.)
+  still runs — which is what makes entering and leaving free: you come back to the game you left,
+  mid-flight. It also means the world you fly through is the world as it is **now**, not as it was
+  during the recording. Prisms are P1; until then the trails in shot are live ones.
+- **Re-enabling a canvas re-dirties its graphics.** A `Graphic`'s rebuilds are inert while its
+  `Canvas` is disabled (CLAUDE.md's `Canvas.enabled` trap), so anything the HUD tried to redraw
+  while the theater was up was dropped. `SetAllDirty` on the way out, rather than leaving a stale
+  readout behind.
+
+**What a ghost still does not have: jets, tail or trail.** The puppet is harvested meshes, and a
+jet is a particle system — it cannot come along without instantiating the prefab, which is the one
+thing the harvest exists to avoid (§ the puppet decision). The prism trail is P1. Both are absent
+by construction rather than by oversight.
 
 ### 3.2 The four shots
 
@@ -128,6 +139,10 @@ Three consequences, stated rather than buried:
 | **Orbit** | A vantage circling everything visible, framed to fit it. The default |
 | **Chase** | Behind one pilot and carried by them, so the shot turns as they turn |
 | **Static** | A tripod: parked where it was anchored, turning to keep one pilot in frame |
+
+**A loop restarts the shot, not just the data.** The orbit's phase used to keep accumulating across
+loops, so the same three seconds arrived from a different angle every time and read as a different
+recording. Anything the camera accumulates is part of what the viewer is comparing against.
 
 The free camera's **horizon is locked** — yaw accumulates about world up, pitch is clamped short of
 vertical, no roll. Forge's monitor cannot roll either, and unlike a vessel a camera has no horizon
@@ -148,6 +163,13 @@ hull the player happens to be flying.
 |---|---|
 | **9** | Start / stop recording |
 | **8** | Enter / leave the recording area |
+| **1 2 3 4** | Free / Orbit / Chase / Static (in the theater only) |
+| **5** | Watch the next pilot (in the theater only) |
+
+The shot keys exist because the first playtest **could not change shot at all** — the buttons were
+being pressed through to the HUD underneath. Hiding the UI fixes that, and a key fixes it twice: a
+shot you can only reach by clicking is one you cannot reach while flying the free camera with a pad
+in both hands. A key cannot be covered.
 
 Inside it, on a pad: **left stick** translates, **right stick** looks, **triggers** climb and dive,
 **RB** boost ×4 and **LB** crawl ×0.25, **D-pad left/right** cycles the shot, **D-pad up/down**
@@ -267,12 +289,22 @@ because which subsystem costs what is the decision the config exists to expose:
   `PrismLit`). That is a real compile, not a parse — it catches a missing member, a drifted
   override and an argument mismatch, which a syntax check structurally cannot.
 - The six standing out-of-editor gates pass.
-- **Still not opened in Unity.** The recorder, the playback, the puppet build, the stage's camera
-  mask and the overlay have not been run. A human needs to: press 9 in a match, press 9 again,
-  confirm a file appears in `Recordings/`, press 8, confirm the world goes dark and real hulls
-  move, fly the free camera, and press 8 again to confirm the world comes back.
-- **The one failure worth watching for** is the stage's camera restore. It holds the gameplay
-  camera's culling mask, and a mask left pointing at an empty layer is a black screen for the rest
-  of the session — so `TheaterStage.Exit` restores the camera first and unconditionally, and
-  `TheaterDirector.OnDestroy` stops playback. If a session ever comes back from the theater to a
-  black screen, that path is where to look.
+- **The first playtest (2026-09-25) found five defects and all five are fixed here**, listed with
+  what each one actually was because four of them were one cause wearing four costumes:
+
+  | Reported | Cause |
+  |---|---|
+  | Static / Pilot> buttons exit to the menu | IMGUI and uGUI both get the click; those two sat over the HUD's Volume/Pause button |
+  | Ships are highlight-coloured, not their normal look | The flat domain fill was the default; it was chosen for a void that no longer exists |
+  | No prisms, environment, crystals or trails | The culling mask hid the whole world — now opt-in |
+  | Shots and free camera "made no difference" | The shot buttons were the only way to change shot, and they were being eaten (row 1) |
+  | A loop starts from a different place | The orbit phase accumulated across loops |
+
+- **Still not opened in Unity after those fixes.** A human needs to: press 9, press 9, confirm a
+  file in `Recordings/`, press 8, confirm the world and its prisms are in shot and the HUD is gone,
+  press **1** and fly the free camera, press **2** and confirm a loop returns to the same vantage,
+  press 8 and confirm the HUD and the live ships come back.
+- **The failures worth watching for**, both on the way out: the stage restores the camera mask
+  first and unconditionally (a mask left on an empty layer is a black screen for the rest of the
+  session), and it re-enables every canvas it hid plus the EventSystem. If a session ever comes
+  back from the theater with no UI or no input, `TheaterStage.Exit` is the whole of where to look.
