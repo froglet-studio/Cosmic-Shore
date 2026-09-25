@@ -336,8 +336,8 @@ namespace CosmicShore.Utility
             }
 
             var timers = PrismTimerManager.EnsureInstance();
-            timers.CancelScheduledActions(this);
-            timers.ScheduleAction(this, delay + EffectiveDuration, OnEffectComplete);
+            timers?.CancelScheduledActions(this);
+            timers?.ScheduleAction(this, delay + EffectiveDuration, OnEffectComplete);
             // Re-arm after Cancel — OnEnable's watchdog was cleared above. Must not
             // Cancel again here or the completion schedule above is lost.
             ArmWatchdog();
@@ -355,7 +355,7 @@ namespace CosmicShore.Utility
         {
             float window = Mathf.Max(0.01f, EffectiveDuration * WatchdogDurationMultiplier);
             PrismTimerManager.EnsureInstance()
-                .ScheduleAction(this, window, OnWatchdogFired);
+                ?.ScheduleAction(this, window, OnWatchdogFired);
         }
 
         void OnWatchdogFired()
