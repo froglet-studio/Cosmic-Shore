@@ -747,11 +747,12 @@ namespace CosmicShore.Core
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
-                    // .AsMainThread() marshals the SUCCESS path only: this exception was raised
-                    // by linkedCts's timer, so the catch resumes on the timer's thread and every
-                    // Unity call below it (Application.internetReachability, PlayerPrefs, the
-                    // status text) would throw EnsureRunningOnMainThread. Marshal explicitly -
-                    // the documented shape for the top of a catch block (Docs/THREADING.md).
+                    // This exception is raised by linkedCts's timer. .AsMainThread() now marshals
+                    // in a finally (2026-09), so the catch already resumes on the main thread -
+                    // but it did not always, and every Unity call below it
+                    // (Application.internetReachability, PlayerPrefs, the status text) throws
+                    // EnsureRunningOnMainThread off-thread. The explicit switch is kept as a
+                    // no-op guard (Docs/THREADING.md).
                     await MainThreadDispatcher.SwitchToMainThreadAsync();
 
                     if (attempt < maxAttempts)

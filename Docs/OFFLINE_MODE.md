@@ -537,7 +537,7 @@ Proven by executing the shipped latch logic (`ResetForReconnect` → re-announce
 once, re-entry does not double-raise, a reconnect raises again, and the pre-fix path is kept as a
 negative control showing the trunk staying silent.
 
-### 9.2 `.AsMainThread()` marshals the SUCCESS path only
+### 9.2 `.AsMainThread()` marshals the SUCCESS path only *(fixed 2026-09 — it now marshals in a `finally`; see `Docs/THREADING.md`)*
 
 `await WaitForRelayReadyAsync(linkedCts.Token).AsMainThread()` — when the wait **times out**, the
 `OperationCanceledException` is raised from `linkedCts`'s timer, so it propagates out of the
