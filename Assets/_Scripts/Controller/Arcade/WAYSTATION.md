@@ -254,3 +254,34 @@ gameplay monolith), so they have had a syntax pass and an API-surface read and n
   generosity costs nothing — but it is inherited rather than derived, and a tighter value would
   describe this hull.
 - **No milestone toasts** (above).
+
+## The scene registration, and why the card failed to launch once
+
+The card's first launch failed with
+
+```
+Scene 'MinigameWaystation' couldn't be loaded because it has not been added to the
+build settings scenes in build list.
+```
+
+while `ProjectSettings/EditorBuildSettings.asset` on disk carried the entry, enabled, with the
+scene's real guid, committed — and `check_gamelist_scenes.py` passed.
+
+**`ProjectSettings/EditorBuildSettings.asset` is not in the AssetDatabase.** Unity reads it once
+when the project opens and never re-reads it, so the generator's headless write (through
+`arcade_mode_lib.register_build_scene`) was invisible to the Editor that was already running. The
+same is true of every mode generator this repo has; it has never surfaced before only because
+nobody had generated a mode and tested it without restarting in between.
+
+It is worse than invisible in one direction: the next time Unity saves project settings it writes
+its own stale in-memory list back over the file, **deleting the registration from the working
+tree**. So the window between a generator run and an Editor restart is one in which the mode
+cannot be played *and* its registration can be lost with nothing in the diff to explain it.
+
+The fix is **FrogletTools > Game Modes > Reconcile Build Scene List**, which compares every arcade
+card's `SceneName` against `EditorBuildSettings.scenes` — the LIVE list, which is what the game
+loads from — and adds the missing ones through the API, fixing the running Editor and persisting.
+Restarting the Editor works too.
+
+General rule: **a settings file outside the AssetDatabase is one the Editor owns for the whole
+session — an external write to it is not a change, it is a change that has not happened yet.**

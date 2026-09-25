@@ -140,6 +140,16 @@ python3 Tools/Build/check_gamelist_scenes.py
 python3 Tools/Build/author_preview_spawns.py --check
 ```
 
+**After the generator runs, the open Editor has NOT seen the build-scene registration.**
+`ProjectSettings/EditorBuildSettings.asset` is outside the AssetDatabase, so Unity reads it once
+at project open and never again. The card then renders normally and fails at the moment a player
+commits to it - *"has not been added to the build settings scenes in build list"*, about a list
+that on disk contains the scene - and the next project-settings save writes the stale in-memory
+list back over the file and deletes the registration. Run **FrogletTools > Game Modes > Reconcile
+Build Scene List** (or restart the Editor) before testing the card. General rule: *a settings file
+outside the AssetDatabase is one the Editor owns for the whole session; an external write to it is
+not a change, it is a change that has not happened yet.*
+
 These are syntax-level. What stays editor-only: a member that does not exist, an override whose
 signature drifted, an argument mismatch - and everything about how the mode PLAYS. Say so.
 

@@ -285,6 +285,19 @@ class Generator:
         self.emit(PROGRESSION, prog)
 
     def register_build_scene(self, after_scene: str, scene: str, scene_guid: str):
+        """Add the mode's scene to `ProjectSettings/EditorBuildSettings.asset`.
+
+        ⚠ THAT FILE IS NOT IN THE ASSETDATABASE, so a Unity Editor that is already open
+        will never re-read it. The registration is correct on disk, `check_gamelist_scenes.py`
+        passes, the card renders — and pressing it fails with *"has not been added to the build
+        settings scenes in build list"*, about a list that on disk contains it. Worse, the next
+        project-settings save writes the Editor's stale in-memory list back over this file and
+        silently deletes the entry.
+
+        After running a generator against an open Editor, run
+        **FrogletTools > Game Modes > Reconcile Build Scene List** (or restart the Editor)
+        before testing the card.
+        """
         build = self.read_current(BUILD_SETTINGS)
         if f"{scene}.unity" not in build:
             anchor = re.search(
