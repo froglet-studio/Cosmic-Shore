@@ -166,7 +166,7 @@ namespace CosmicShore.Gameplay
             }
 
             var timers = PrismTimerManager.EnsureInstance();
-            timers.CancelScheduledActions(this);
+            timers?.CancelScheduledActions(this);
             _clockColorActive = false;
             if (cachedPrism != null && PrismRenderService.IsHandleUsable(in cachedPrism.RenderHandle))
                 PrismRenderService.ClearColorTransitionStamp(in cachedPrism.RenderHandle);
@@ -244,7 +244,7 @@ namespace CosmicShore.Gameplay
 
             // A new transition supersedes any pending settle.
             var timers = PrismTimerManager.EnsureInstance();
-            timers.CancelScheduledActions(this);
+            timers?.CancelScheduledActions(this);
             _clockColorActive = false;
 
             bool stamped = cachedPrism != null && cachedPrism.UsesEntityColorSink &&
@@ -265,7 +265,7 @@ namespace CosmicShore.Gameplay
                 // Touchpoint 3: ONE scheduled settle — clear the stamp (invisible: at
                 // t >= end the shader lerp already equals the bound material) and fire
                 // the caller's completion.
-                timers.ScheduleAction(this, duration, () =>
+                timers?.ScheduleAction(this, duration, () =>
                 {
                     _clockColorActive = false;
                     if (cachedPrism != null)
@@ -277,7 +277,7 @@ namespace CosmicShore.Gameplay
             {
                 // No entity sink (exotic window / pre-show / instanced down): the
                 // bind above IS the transition. Preserve completion timing.
-                timers.ScheduleAction(this, duration, () => onComplete());
+                timers?.ScheduleAction(this, duration, () => onComplete());
             }
         }
 

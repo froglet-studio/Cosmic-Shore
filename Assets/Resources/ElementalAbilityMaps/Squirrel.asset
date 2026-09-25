@@ -41,13 +41,13 @@ MonoBehaviour:
     UpgradeDescription: Trail prisms arrive shielded (one-hit ablative armor).
   - Element: 3
     AbilityLabel: Skimmer Reach
-    AbilityDescription: Space grows the skimmer sphere (authored on the skimmer's
+    AbilityDescription: 'Space grows the skimmer sphere (authored on the skimmer''s
       Scale ElementalFloat, 15 -> 30 at level 10, evaluated live). BASE joust
-      (no upgrade needed) - joust any lifeform's crystal while moving faster than
+      (no upgrade needed) - joust any lifeform''s crystal while moving faster than
       it to wither opposing-domain creatures; at level 5 the joust also SHEPHERDS
       allies - an own-domain lifeform is NOURISHED instead (ILifeFormEntity.Nourish:
       its starvation clock resets and its birth counter advances). It used to LEVEL
-      the ally; per-individual lifeform levels were retired by Docs/ECOSYSTEM.md 40.
+      the ally; per-individual lifeform levels were retired by Docs/ECOSYSTEM.md 40.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -57,11 +57,11 @@ MonoBehaviour:
       and crystal grow, max level 5) instead of doing nothing.
   - Element: 4
     AbilityLabel: Boost Ring
-    AbilityDescription: Time shortens the boost-ring cooldown (authored on
+    AbilityDescription: 'Time shortens the boost-ring cooldown (authored on
       SquirrelTubeActionSO.cooldownMultiplierAtFullTime, x0.5 at level 10). Time
-      deliberately does NOT touch this hull's boost speed:
+      deliberately does NOT touch this hull''s boost speed:
       VesselTransformer.BoostSpeedMultiplier is left disabled on Squirrel.prefab.
-      At level 5 each deploy lays a second ring.
+      At level 5 each deploy lays a second ring.'
     Input: 11
     UnlockLevel: 5
     RelockBelowLevel: 4
