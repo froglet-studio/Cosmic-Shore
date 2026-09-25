@@ -25,6 +25,8 @@ MonoBehaviour:
   framingMargin: 2.5
   orbitElevation: 0.35
   followDistance: 9
+  fullGhosts: 1
+  jetIdleThrottle: 0.25
   liveHullMaterials: 1
   hideGameplayUI: 1
   hideWorld: 0
