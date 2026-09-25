@@ -505,6 +505,33 @@ dead-card trap. Neither card carries a `MenuAudio` for the same reason: the pres
 from `ToyboxModal` on the code path (`PlayMenuAudio`), where it cannot sit in front of the card's
 own runtime listener. `audit_persistent_listener_injection.py --check` is unmoved by this branch.
 
+### 4.0.6 In freestyle they are the two POLE switches
+
+The same two buttons exist in the world: `ToyboxController` builds a big **switch at each of the
+cell's poles** after it has rung the equator with toys - **today's activity at the north pole,
+shuffle at the south** (`ToyboxPoleSwitch`, `placePoleSwitches`, body 55 / trigger 105 against a
+toy's 22 / 42, all on the controller). They sit OFF the equator because they are not toys - each
+one presses OTHER toys - and a switch among the six would read as a seventh; on the axis the ring
+turns about they read as belonging to the whole ring. Bigger for the arcade's reason: its two top
+buttons are bigger than its cards.
+
+They call exactly what the cards call - `DailyToyActivity.Today` + `TryClaim`, `ToyShuffle.Plan` +
+`ApplyAsync` - so the world and the menu can never name two different activities or pay twice. Two
+differences, both forced by where the player is: the daily switch **applies** the activity rather
+than selecting it (you are already flying, so there is no entry step and no second press to wait
+for; the claim still lands AFTER the apply, so an activity that failed to start pays nothing), and
+each switch's label is the card's two lines on a billboard above its ring, refreshed once a second.
+
+Three rules they keep. They are **not** `IToyShellSurface`, or they would appear as cards in their
+own grid and could be dealt to themselves by the shuffle. They have **no `ToyDefinitionSO`**,
+because a definition declares a `ToyCategory` and is harvested by the codex as a toy, and neither
+is true (`Toy.DisplayName` / the ring tint already tolerate a null definition). And their rings are
+**neutral** (`ToySwitchSignal.Neutral`, Blue): the shuffle can land on any domain, so it names none.
+
+Placing a toy at a pole exposed a latent `ToyFactory.CreateBareRoot` defect: it aimed every root
+with `LookRotation(toCenter, Vector3.up)`, which is undefined when the toy looks straight down, and
+Unity invents a pose rather than saying so. It now names `Vector3.forward` as up in that case.
+
 ## 4.1 Two windows, and the narrowing that produced them
 
 The Toy Box is a **catalogue plus a detail window**, matching the Arcade's shape:

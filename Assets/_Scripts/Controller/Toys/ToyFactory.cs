@@ -39,7 +39,14 @@ namespace CosmicShore.Gameplay
 
             Vector3 toCenter = lookTarget - position;
             if (toCenter.sqrMagnitude > 0.0001f)
-                root.transform.rotation = Quaternion.LookRotation(toCenter.normalized, Vector3.up);
+            {
+                // A toy at a POLE looks straight down (or up) at the centre, and LookRotation is
+                // undefined when up is parallel to forward - Unity does not say so, it invents a
+                // pose. Name the up explicitly there instead.
+                Vector3 look = toCenter.normalized;
+                Vector3 up = Mathf.Abs(Vector3.Dot(look, Vector3.up)) > 0.98f ? Vector3.forward : Vector3.up;
+                root.transform.rotation = Quaternion.LookRotation(look, up);
+            }
 
             var col = root.AddComponent<SphereCollider>();
             col.isTrigger = true;

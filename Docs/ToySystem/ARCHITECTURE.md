@@ -1337,6 +1337,11 @@ submitted the (still touch-interactable) vessel HUD.
 Definitions with `placementAngleDegrees < 0` (the default) auto-distribute evenly around the
 ring so they stay far apart; set a specific angle per toy to pin it.
 
+The **poles** are not part of the ring. After placing the toys the controller builds two larger
+`ToyboxPoleSwitch`es at `center +/- up * radius` - today's activity above, shuffle below - which
+are the world face of the Toy Box's two top buttons (`Docs/HomeHub/ARCHITECTURE.md` §4.0.6). They
+are not toys, have no definition, and do not register with the app shell.
+
 ## Toybox & unlock state
 
 `ToyboxSO` is the registry: a list of `ToyDefinitionSO` + an id→bool unlock map.
