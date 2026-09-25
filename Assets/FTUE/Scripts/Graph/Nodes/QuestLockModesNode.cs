@@ -13,6 +13,7 @@ namespace CosmicShore.Core
     public class QuestLockModesNode : QuestNodeSO
     {
         public override QuestNodeCategory Category => QuestNodeCategory.Gameplay;
+        public override bool AppliesLock => true;
         public override string TypeTooltip => "Locks every arcade game card except the designated tutorial game, funneling the player into one mode.";
         public override string EditorSummary => $"Only {tutorialGame}";
 

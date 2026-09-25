@@ -109,6 +109,17 @@ namespace CosmicShore.Core
         public virtual QuestVenue VenueAfter => Venue;
 
         /// <summary>
+        /// True when running this node would APPLY a lock (disable a mode, a nav button, a scene
+        /// button, or narrow the arcade). Under the master developer unlock
+        /// (<see cref="DeveloperUnlockGate"/>) the runner passes straight through such a node
+        /// instead of executing it - the gate exists to open exactly these - so a quest that
+        /// opts in with <see cref="QuestSO.runsUnderDeveloperUnlock"/> can still route and teach
+        /// without re-locking what the gate opened. The UNLOCK direction of the same node types
+        /// is not a lock and still runs.
+        /// </summary>
+        public virtual bool AppliesLock => false;
+
+        /// <summary>
         /// The output ports this node can advance through. Linear nodes emit only
         /// <see cref="QuestPorts.Next"/>; override to expose branch ports, or return an
         /// empty list for terminal nodes.

@@ -124,17 +124,22 @@ namespace CosmicShore.Core
         {
             if (_started || _stopped) return;
 
-            // The MASTER DEVELOPER UNLOCK stops the quest graph outright. Every lock the graph
-            // can apply - the arcade funnel, the nav-button lock, button interactability - is
-            // something that gate exists to open, and a graph that still ran would spend the
-            // session re-applying them behind a switch that says nothing is locked.
+            // The MASTER DEVELOPER UNLOCK stops a quest that has not opted in. Every lock the
+            // graph can apply - the arcade funnel, the nav-button lock, button interactability -
+            // is something that gate exists to open, and a lock-funnel quest that still ran would
+            // spend the session re-applying them behind a switch that says nothing is locked.
+            //
+            // A quest that ROUTES and TEACHES rather than locks (the first-login railroad into
+            // the Game of the Week microgame) sets QuestSO.runsUnderDeveloperUnlock and runs;
+            // its lock-applying nodes pass straight through in RunNode (QuestNodeSO.AppliesLock),
+            // so the gate still gets to mean "nothing is locked".
             //
             // TryStart is the ONE choke point both start paths funnel through (OnClientReady
             // and FTUEEventManager.InitializeFTUE), so not starting is all it takes: no node
             // runs, so there is nothing to undo, and OnDisable's cleanup has nothing to clean.
             // A constraint set persisted by an EARLIER session is covered separately, by
             // QuestArcadeConstraints.Active reading the same gate.
-            if (DeveloperUnlockGate.AllUnlocked)
+            if (DeveloperUnlockGate.AllUnlocked && !(quest != null && quest.runsUnderDeveloperUnlock))
             {
                 CSDebug.LogVerbose(CSLogChannel.FTUE,
                     "[Quest] Runner stood down - the master developer unlock is on, so there is " +
@@ -281,6 +286,16 @@ namespace CosmicShore.Core
             if (!node.nodeEnabled)
             {
                 CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Node '{node.displayName}' disabled — passing through.");
+                _current = node;
+                _advanced = false;
+                Advance(node, QuestPorts.Next);
+                return;
+            }
+
+            if (node.AppliesLock && DeveloperUnlockGate.AllUnlocked)
+            {
+                CSDebug.LogVerbose(CSLogChannel.FTUE,
+                    $"[Quest] Node '{node.displayName}' would apply a lock - passing through (master developer unlock is on).");
                 _current = node;
                 _advanced = false;
                 Advance(node, QuestPorts.Next);

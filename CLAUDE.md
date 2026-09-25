@@ -4183,9 +4183,14 @@ is the only currency.
 
 **THE MASTER DEVELOPER UNLOCK IS ON BY DEFAULT — read this before debugging any lock.**
 `DeveloperUnlockGate.AllUnlocked` (`_Scripts/System/Progression/`) opens every entitlement at
-once — all vessels, all game modes, every intensity tier, the Vessel Hangar — **and stands the
-quest graph down entirely**, because everything the graph applies is a lock that gate exists to
-open. It defaults ON until the FTUE is designed, so *the onboarding does not run in a default
+once — all vessels, all game modes, every intensity tier, the Vessel Hangar — **and stands down
+every quest that has not opted in** (`QuestSO.runsUnderDeveloperUnlock`, default off), because a
+lock-funnel quest applies exactly the locks that gate exists to open. A quest that ROUTES rather
+than locks (the first-login railroad into the Game of the Week microgame,
+`Docs/ModePreview/TRAINING_PLAN.md`) opts in and runs, with every lock-APPLYING node
+(`QuestNodeSO.AppliesLock` — LockModes, the locking direction of LockNavigation /
+SetButtonInteractable / SetArcadeConstraints) passing straight through while the gate is on. It
+defaults ON until the FTUE is designed, so *the onboarding does not run in a default
 checkout*, and a lock that appears not to work is this switch before it is a bug. Flip it in the
 Froglet Toolbox (Quest Debug or Vessel Unlock tab); it announces itself once per session as a
 warning for exactly that reason. It gates six choke points rather than teaching ~20 call sites

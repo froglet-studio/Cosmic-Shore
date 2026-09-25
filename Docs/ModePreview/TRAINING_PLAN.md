@@ -19,7 +19,7 @@ separate thread; this plan only assumes it names one `GameModes` value, whose ca
 | D8 | **Drift stays in the Lesson** on ships that have it |
 | D9 | **"Near the top" = top ten, or within 10% of tenth place's time.** Likely the long-term rule |
 | D10 | **Mentor pacing:** ~6 s on screen, ~8 s gap, and a tip waiting for its Moment fires anyway after **14 s** |
-| D11 | **`DeveloperUnlockGate` is out of scope** — the product owner handles it manually and will decide its new paradigm separately (§5) |
+| D11 | **`DeveloperUnlockGate` gets out of the way, minimally** — a quest may opt in to running under the gate; its lock-applying nodes pass through. The gate's longer-term paradigm is decided separately (§5) |
 | D6 | **Architecture: plans B + C combined** — a linear drill layer (B) for the Lesson and a curated tip sequence (C, re-cut from "reactive" to "curated" by D3) for the Mentor, sharing one runner, one condition set and one view |
 
 ---
@@ -227,11 +227,23 @@ existing flight-school nodes (`EnterFreestyle`, `WaitForInput`, `WaitForDrift`, 
 (the Crystal Capture funnel, the unlocks) need re-deciding against the Game of the Week, which is
 the separate thread.
 
-**Known, and deliberately out of scope (D11):** `DeveloperUnlockGate.AllUnlocked` (default ON)
-stops the whole quest graph, so in a default checkout the railroad does not fire. The product owner
-is handling that switch manually and will choose its new paradigm separately. Either way, the
-preview's own account keys (§3) force the Lesson by themselves, so the Lesson does not depend on
-the graph running — only the navigation to it does.
+**The master developer unlock (D11) — SHIPPED, the least disruptive version.**
+`DeveloperUnlockGate.AllUnlocked` (default ON) used to stop the whole quest graph, so in a default
+checkout the railroad would never fire. Now:
+
+- `QuestSO.runsUnderDeveloperUnlock` (default **off**) lets one quest opt in to running under the
+  gate. Every quest that exists today keeps standing down exactly as before, so nothing changes
+  until the railroad quest sets the flag.
+- While the gate is on, the runner passes straight through any node whose
+  `QuestNodeSO.AppliesLock` is true: `LockModes`, and the LOCKING direction of `LockNavigation`,
+  `SetButtonInteractable` and `SetArcadeConstraints`. The unlock directions still run. So the gate
+  still means "nothing is locked", and the railroad can still navigate, speak and wait.
+- `QuestArcadeConstraints.Active` already reads the gate, so a funnel persisted by an earlier
+  session stays inert as before.
+
+The gate's longer-term paradigm is still the product owner's call. Independently, the preview's
+own account keys (§3) force the Lesson by themselves, so the Lesson never depended on the graph —
+only the navigation to it did.
 
 ---
 

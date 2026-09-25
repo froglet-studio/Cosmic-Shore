@@ -168,6 +168,13 @@ Interactive/editable reference map (browser): the "Main Quest Progression Map" a
 
 ## Runtime
 
+**Master developer unlock.** While `DeveloperUnlockGate.AllUnlocked` is on (the default), the
+runner stands down unless the quest sets `QuestSO.runsUnderDeveloperUnlock`. An opted-in quest
+runs, but every node whose `QuestNodeSO.AppliesLock` is true (LockModes; the locking direction of
+LockNavigation, SetButtonInteractable and SetArcadeConstraints) passes straight through, so the
+gate keeps meaning "nothing is locked". A new node type that locks anything must override
+`AppliesLock`.
+
 `QuestGraphRunner` (Menu_Main):
 - Starts after `GameData.OnClientReady` (vessel exists); also via `FTUEEventManager.InitializeFTUE`.
 - Gated by `QuestProgressStore.IsCompleted(questId)`; `debugForceRun` / `debugDisable` for testing;
