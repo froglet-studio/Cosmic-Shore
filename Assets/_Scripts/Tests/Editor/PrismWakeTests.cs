@@ -359,13 +359,32 @@ namespace CosmicShore.Tests
                 "edge of the blast volume.");
 
             // Monotone up then down, so there is exactly one crest and the front never flickers.
+            // NON-STRICT on purpose: the envelope has a PLATEAU rather than a crest, so the way up
+            // is flat once it reaches full strength. Strict here is what the single-hump shape
+            // happened to satisfy, not what the property is — what must never happen is a DIP.
             float prev = 0f;
             for (int i = 1; i <= 50; i++)
             {
                 float v = PrismWakeConfigSO.FrontEnvelope(i / 100f);
-                Assert.Greater(v, prev, "the envelope is not monotone on the way up");
+                Assert.GreaterOrEqual(v, prev, "the envelope DIPS on the way up — the front flickers");
                 prev = v;
             }
+
+            // And the plateau is the property the sixth playtest bought, so it is asserted rather
+            // than left to the shape. "Very fast and very subtle" was a 0.15 s sweep whose envelope
+            // touched full strength for an instant: only ~21% of a front's life was above 90%, and
+            // the sweep's LENGTH cannot be spent to fix it (the warhead's ExplosionDuration is
+            // pinned at ~0.166 s by the capture requirement — see SparrowMissileFuzeTests). So WHEN
+            // the front is strong is the whole of the readability budget. Stated as a floor well
+            // under the shipped 52%, so the rise fraction stays free to retune.
+            int above = 0;
+            const int Samples = 1000;
+            for (int i = 0; i <= Samples; i++)
+                if (PrismWakeConfigSO.FrontEnvelope(i / (float)Samples) >= 0.9f) above++;
+            Assert.Greater(above / (float)(Samples + 1), 0.4f,
+                "the envelope spends under 40% of a front's life above 90% strength. On a ~9-frame " +
+                "sweep that is a front nobody can read, and the duration cannot be lengthened to " +
+                "compensate — widen PrismWakeConfigSO.EnvelopeRiseFraction's plateau instead.");
         }
 
         [Test]
@@ -408,7 +427,10 @@ namespace CosmicShore.Tests
             // prisms or more slightly coarser ones. The first playtest of the front said it could not
             // be seen at all, and what a player reads at arena range is how many prisms are MOVING —
             // so the overtune spent the budget on count (128 x 10) rather than on smoothness
-            // (96 x 12), which is fewer triangles than before, not more.
+            // (96 x 12), which is fewer triangles than before, not more. The sixth playtest's
+            // "very subtle" spent it the same way again — 160 x 9 against 128 x 10 is 25% more
+            // prisms MOVING for 1.25% more triangles, because one subdivision of smoothness is
+            // invisible at arena range and a quarter more mass in motion is not.
             long tris = (long)config.MaxResidentPrisms * config.Subdivision * config.Subdivision * 2 * 6;
             Assert.Less(tris, 200000,
                 $"The residency budget is {tris} triangles ({config.MaxResidentPrisms} prisms x subdivision " +

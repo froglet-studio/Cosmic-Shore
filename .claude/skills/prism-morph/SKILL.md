@@ -408,6 +408,21 @@ wrong. Two things follow:
 - If the report comes back "this looks terrible", **do not reach for the tuning dials first.**
   Ask whether the motion is smooth enough to be a surface at all. A 10× tone-down of a hinging
   facet is a smaller hinging facet.
+- If it comes back **"too fast and too subtle"**, a morph has exactly THREE budgets and they are
+  not interchangeable: *how big* (amplitude and support), *how long* (the carrier's clock), and
+  *how much of that time it spends at full size* (the strength envelope). Find out which ones are
+  already spent before proposing one. The shockwave front had amplitude and shell thickness ON
+  their structural ceilings and its LENGTH owned by a gameplay guarantee — the warhead's
+  `ExplosionDuration` is capped by a shipped capture test, and the value being asked for had
+  already been rejected once for that exact reason — so the envelope was the only budget left, and
+  a plateau bought 3× the frames at full amplitude for free. **General rule: when an effect's
+  length is owned by something other than the effect, the envelope's SHAPE is the budget** — and
+  changing the peak is what a no-fold proof is stated against, while changing when the peak
+  happens is not.
+- And **check whose number it is before you spend it.** A duration on a gameplay prefab is a
+  weapon's tuning, not a visual's; the honest move is to state what buying more would cost (in
+  that case a bigger blast or a closer fuze, a buff or a nerf) and let the person decide, rather
+  than failing a test somebody wrote a justification for.
 
 ---
 

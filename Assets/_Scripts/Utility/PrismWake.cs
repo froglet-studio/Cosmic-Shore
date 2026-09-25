@@ -384,7 +384,7 @@ namespace CosmicShore.Utility
         /// carrying the dense mesh by the time the shell arrives at it. But the BUDGET truncates that
         /// volume, and the first cut truncated it NEAREST-TO-THE-CENTRE — so the dense mesh went to
         /// exactly the prisms the front leaves behind in its first two frames. Measured against the
-        /// shipped numbers: a 95-unit warhead sweeps a 161.8-unit query volume, so 128 residents only
+        /// numbers of the day: a 95-unit warhead sweeps a 161.8-unit query volume, so 128 residents only
         /// reach the sweep's outer life if fewer than ~200 prisms lie inside it — true in open space,
         /// false in any arena this weapon is actually fired in. The front puckered the mass at the
         /// detonation point for two frames and then travelled 95 units through prisms that were all

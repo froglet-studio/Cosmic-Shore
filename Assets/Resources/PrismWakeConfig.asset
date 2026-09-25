@@ -16,8 +16,8 @@ MonoBehaviour:
   amplitude: 0.143
   wavesInFront: 1
   halfThicknessFraction: 0.45
-  subdivision: 10
-  maxResidentPrisms: 128
+  subdivision: 9
+  maxResidentPrisms: 160
   residencyMargin: 24
   engageSeconds: 0
   releaseSeconds: 0.35

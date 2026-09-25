@@ -529,11 +529,16 @@ by, so the ripple arrives at a prism as the shockwave crosses it, and the effect
 dial was retired outright. The previous cut needed one because it rode the round IN FLIGHT, which has
 no wavefront of its own.
 
-**⚠ The sweep is 0.15 s**, about nine frames at 60 FPS, once per heavy rocket — a hard whump rather
-than a rhythm, and much cheaper than the old flight-long draw. If it reads as too fast, the dial is
-`AOEMissileWarhead.prefab`'s `ExplosionDuration`, and **that is a gameplay number**: it sets how fast
-the trigger volume grows, so it decides when a victim at the edge is debuffed and how long they have
-to leave. Playtest it rather than editing it quietly.
+**⚠ The sweep is 0.15 s and it CANNOT be lengthened**, about nine frames at 60 FPS, once per heavy
+rocket — a hard whump rather than a rhythm, and much cheaper than the old flight-long draw. It read as
+*"very fast and very subtle"* on its first good playtest and the obvious answer is unavailable:
+`ExplosionDuration` is the only dial, and `TheWarheadExpandsFastEnoughToCatchOrdinaryFlight` caps it at
+**0.1658 s** against the shipped geometry — the blast has to CONTAIN a target receding at 120 u/s
+before it stops expanding, which is why 0.5 s was rejected here in the first place. Buying more means
+widening the warhead (a buff) or narrowing the fuze (a nerf), i.e. a weapon change rather than a
+visual one. What was spent instead is the front's own strength ENVELOPE, which now holds full
+amplitude across a plateau rather than touching it for one frame — three frames of this sweep at ≥0.9
+instead of one, peak unchanged, blast untouched (`Docs/PRISM_ANIMATION.md §4.7.3b`).
 
 **It is the ONLY object in the game granted one.** The effect shipped on every vessel and was pulled
 (*"it will be overused as a wake on every vessel"*), then on the Scarab's ball and was pulled again
@@ -812,7 +817,7 @@ rocket is next; closing it is an ART task (five sprites), not a code one.
 | — (the warhead's own drain asset is **DELETED**) | was `MissileWarheadDebuffByExplosionEffect.asset` | — | A missile's bite is no longer authored per blast. All four missile-adjacent classes drain off the HIT REPORT through `CombatHitDrain` at ten points to the petal, netted against the tier an upgrade supersedes — which is the only place one rocket's three ranked tiers can be prevented from stacking. See `BROADSIDE.md` § *The drain follows the price* |
 | `faunaOnly` | `MissileWarheadWitherLifeformEffect.asset` | on | Off lets the warhead kill FLORA too — a whole grown plant per rocket, through its heart |
 | `sparesOwnDomain` | `MissileWarheadWitherLifeformEffect.asset` | **off** | Off = wildlife is quarry whatever colour it wears. Deliberately the effect's OWN decision, NOT the blast's friendly-fire flag: fauna spawn in ONE colour, so borrowing that flag let the CHARGE-5 *prism* upgrade switch off wildlife kills in the one mode scored on them |
-| `ExplosionDuration` | `AOEMissileWarhead.prefab` | **0.15 s** | How fast the sphere reaches full size — i.e. how fast a target can be moving away and still be caught (~130 u/s here; 0.5 s bought only ~40). Reach is not capture; see the geometry section |
+| `ExplosionDuration` | `AOEMissileWarhead.prefab` | **0.15 s** | How fast the sphere reaches full size — i.e. how fast a target can be moving away and still be caught (~130 u/s here; 0.5 s bought only ~40). Reach is not capture; see the geometry section. **Effectively pinned**: the capture requirement caps it at 0.1658 s, so it is not the dial for a shockwave front that reads as too fast (`Docs/PRISM_ANIMATION.md §4.7.3b`) |
 | `playsDetonationSfx` | `AOEMissileWarhead.prefab` | **off** | The warhead is SILENT. A skyburst already spawns two authored blasts that each play the shared `Explosion` one-shot; a third at the same point on the same frame sums and phases rather than reading as a bigger explosion. A voice of its own would be its own `EventReference`, shipped empty — never a third consumer of a shared category |
 | `syncIntervalSeconds` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | 1 s | How often the OWNER publishes its missile tank to the other peers as an idempotent SET. 0 disables the correction and accepts per-peer drift, which makes a replica silently skip drawing the missile |
 | `ammoCost` / `stationaryAmmoCost` | `SkyBurstGunAction.asset` | **0.25 / 0.5** | What each rocket costs. Authored as absolutes and asserted as a RATIO (`SparrowMissileVariantTests`), so retuning the heavy one carries the base one with it. The bay is a 0..1 tank: four cheap or two heavy |

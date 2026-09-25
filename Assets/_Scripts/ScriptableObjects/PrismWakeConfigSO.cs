@@ -89,14 +89,14 @@ namespace CosmicShore.ScriptableObjects
                  "prism still draws in ONE instanced batch whatever this is — the cost is triangles, " +
                  "not draw calls.")]
         [Range(2, 32)]
-        [SerializeField] int subdivision = 12;
+        [SerializeField] int subdivision = 9;
 
         [Tooltip("Hard ceiling on how many prisms may hold the high-poly mesh at once, per frame, " +
                  "ACROSS EVERY LIVE FRONT. The budget is split evenly between them, so this is the " +
                  "number that makes granting the effect to N things DIVIDE the one that mattered " +
                  "rather than multiply the cost — and the reason the grant is a design call.")]
         [Range(0, 256)]
-        [SerializeField] int maxResidentPrisms = 96;
+        [SerializeField] int maxResidentPrisms = 160;
 
         [Tooltip("Extra world units beyond the front's own reach at which a prism becomes resident. " +
                  "It exists so the mesh swap happens where the map provably cannot have moved a " +
@@ -193,23 +193,55 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
-        /// A front's own strength envelope over its life, <c>4*S(u)*S(1-u)</c> with S the smoothstep
-        /// polynomial: exactly zero — value AND slope — at birth and at the reach, exactly 1 in the
-        /// middle. Both ends matter and for different reasons. At the reach it is continuity of
-        /// existence: a front must not blink out at the edge of the blast volume. At BIRTH it is
-        /// what makes the RESIDENCY SWAP invisible — the carrier reports progress 0 for a frame
-        /// before its sweep begins, so the frame the prisms in the volume are handed the high-poly
-        /// mesh is a frame on which this returns exactly 0 and the map moves nothing. It is also
-        /// why the engage ease is authored 0: this IS the engage, and a second one only attenuates.
+        /// The fraction of a front's life spent rising to full strength, and the same again falling.
+        /// It is the ONE dial that decides how much of a sweep is worth looking at, and it exists
+        /// because the sweep's LENGTH cannot be spent: the warhead's <c>ExplosionDuration</c> is
+        /// pinned at 0.15 s by <c>TheWarheadExpandsFastEnoughToCatchOrdinaryFlight</c> — the blast
+        /// has to CONTAIN a target receding at 120 u/s before it stops expanding, which caps the
+        /// duration at ~0.166 s (0.5 s was the originally-authored value and was rejected for
+        /// exactly that reason). So a front gets ~nine frames whatever anyone wants, and the only
+        /// question left is how many of them are at full amplitude.
+        ///
+        /// <para><b>It is bounded at BOTH ends and neither bound is taste.</b> Below ~0.25 the
+        /// rise is steep enough that the slope at birth stops reading as zero
+        /// (<c>S(h/a) = 3h²/a²</c>, and <c>FrontEnvelope_IsZeroWithZeroSlopeAtBothEnds</c> gates
+        /// the ratio at 0.05, which <c>a = 0.25</c> meets by 4%) — and a front that appears with a
+        /// kink is a front whose residency swap can be SEEN. At 0.5 the shape degenerates back into
+        /// a single crest with no plateau at all, which is what it was.</para>
+        /// </summary>
+        public const float EnvelopeRiseFraction = 0.3f;
+
+        /// <summary>
+        /// A front's own strength envelope over its life: <c>S(u/a)*S((1-u)/a)</c> with S the
+        /// smoothstep polynomial and <c>a</c> = <see cref="EnvelopeRiseFraction"/>. Exactly zero —
+        /// value AND slope — at birth and at the reach, exactly 1 across the whole middle. Both ends
+        /// matter and for different reasons. At the reach it is continuity of existence: a front
+        /// must not blink out at the edge of the blast volume. At BIRTH it is what makes the
+        /// RESIDENCY SWAP invisible — the carrier reports progress 0 for a frame before its sweep
+        /// begins, so the frame the prisms in the volume are handed the high-poly mesh is a frame on
+        /// which this returns exactly 0 and the map moves nothing. It is also why the engage ease is
+        /// authored 0: this IS the engage, and a second one only attenuates.
+        ///
+        /// <para><b>It has a PLATEAU rather than a crest, and that is the readability fix.</b> It
+        /// was <c>4*S(u)*S(1-u)</c> — a single hump that touches 1 for an instant, so on a 0.15 s
+        /// sweep only ~22% of the front's life was above 90% strength and the effect read as *very
+        /// fast and very subtle*. The amplitude and the shell thickness are both already at their
+        /// structural ceilings (the no-fold bound and <c>IsSane</c>'s 0.45), and the duration is
+        /// pinned by the weapon, so WHEN the front is strong was the only quantity left. It is now
+        /// above 90% for ~52% of the sweep and its mean strength is 1.36× what it was, with the
+        /// peak unchanged at exactly 1 — which is what keeps the no-fold proof untouched, since
+        /// that bound is stated against a strength of 1.</para>
         /// </summary>
         public static float FrontEnvelope(float u)
         {
             if (u <= 0f || u >= 1f) return 0f;
-            float v = 1f - u;
-            float su = u * u * (3f - 2f * u);
-            float sv = v * v * (3f - 2f * v);
-            return 4f * su * sv;
+            // Clamped ramps rather than one product over the whole span: this is what buys the flat
+            // top, and both ramps reach their own C1 zero inside the span so the ends are unchanged.
+            return Smoothstep01(Mathf.Min(1f, u / EnvelopeRiseFraction))
+                 * Smoothstep01(Mathf.Min(1f, (1f - u) / EnvelopeRiseFraction));
         }
+
+        static float Smoothstep01(float x) => x * x * (3f - 2f * x);
 
         /// <summary>Is this asset inside every range the map and the proof assume?</summary>
         public bool IsSane =>
