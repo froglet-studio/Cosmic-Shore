@@ -1,79 +1,126 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using CosmicShore.Core;
-using Cysharp.Threading.Tasks;
-using CosmicShore.Gameplay;
+using CosmicShore.Data;
+using CosmicShore.UI;
+using CosmicShore.Utility;
+using FMODUnity;
 using Obvious.Soap;
 using Reflex.Attributes;
 using UnityEngine;
-using CosmicShore.Utility;
-using CosmicShore.Data;
-using CosmicShore.UI;
-using System.Linq;
+
 namespace CosmicShore.Gameplay
 {
+    /// <summary>
+    /// The Serpent's SOLID FUEL PELLETS (Time). One press burns one pellet - a fixed amount of the
+    /// vessel's fuel resource - and every burn is its OWN event with its own duration. Press again
+    /// while a pellet is still burning and a second one lights beside it; the two overlap, and each
+    /// adds the same increment of speed, so four pellets burning at once is four times the effect of
+    /// one. Fuel refills at a fixed rate (the resource's authored <c>resourceGainRate</c>, ticked by
+    /// <see cref="ResourceSystem"/>) up to a capacity of exactly four pellets.
+    ///
+    /// <para><b>The fuel resource IS the magazine.</b> There is no charge counter and no reload:
+    /// how many pellets you hold is <c>floor(fuel / pelletCost)</c>, and a spent pellet comes back
+    /// on the resource's own clock. That is what makes it a resource to MANAGE - burn one now and
+    /// keep three in hand, or dump all four for a 4x overlap and fly on empty. A magazine-and-reload
+    /// version replaced it for a while (four charges that came back only after the LAST burn ended
+    /// plus a seven-second wait) and read as a cooldown ability rather than as a fuel tank; it is
+    /// retired, not kept beside this.</para>
+    ///
+    /// <para><b>A release does NOT end a burn.</b> The pellet is spent at the press and burns for
+    /// its full duration whatever the button does afterwards. The retired version cancelled every
+    /// burn on release, which made overlap impossible for a human (you cannot press again without
+    /// releasing) and zeroed every AI burn outright (<c>AIPilot</c> authors <c>Duration: 0</c>, so
+    /// its StopAction arrived the same frame as its StartAction).</para>
+    ///
+    /// <para>Burns are tracked as END TIMES and retired in <see cref="Update"/>, never as one
+    /// cancellable task per burn: nothing about a burn can be interrupted except the whole set, and
+    /// a cancelled task that skips its own tail is exactly how a boost multiplier gets stranded on
+    /// (vessel skill rule 13). Every teardown path goes through <see cref="ClearBurns"/>, which
+    /// always writes the status back.</para>
+    /// </summary>
     public class ConsumeBoostActionExecutor : ShipActionExecutorBase
     {
         [Inject] AudioSystem audioSystem;
-        public event Action<int, int> OnChargesSnapshot;
-        public event Action<int, float> OnChargeConsumed;
-        public event Action<float> OnReloadStarted;
-        public event Action OnReloadCompleted;
-        public event Action<float, float> OnBoostStarted;
-        public event Action OnBoostEnded;
-    
+
+        [Header("Config")]
+        [Tooltip("The pellet config this executor burns. Wired here so the fuel HUD can read the " +
+                 "pellet size before the first press; a press also adopts whichever asset fired it.")]
+        [SerializeField] ConsumeBoostActionSO config;
+
         [Header("Events")]
         [SerializeField] private ScriptableEventBoostChanged boostChanged;
+        [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
 
-        [SerializeField, Range(0,4)] private int initialCharges = 4;
+        [Header("Audio")]
+        [Tooltip("FMOD event played when a pellet ignites. Empty falls back to the shared " +
+                 "BoostActivate category until the audio owner authors a dedicated pellet sound.")]
+        [SerializeField] EventReference pelletIgniteEvent;
+
+        /// <summary>A pellet ignited: (burn duration in seconds, pellets now burning).</summary>
+        public event Action<float, int> OnPelletBurned;
+
+        /// <summary>The number of pellets burning changed (a burn lit or burned out).</summary>
+        public event Action<int> OnBurningCountChanged;
 
         IVesselStatus _status;
         ResourceSystem _resources;
-        ConsumeBoostActionSO _so;
 
-        int _available;
-        bool _reloading;
+        readonly List<float> _burnEndTimes = new();
 
-        [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
+        public ConsumeBoostActionSO Config => config;
+        public int BurningCount => _burnEndTimes.Count;
 
-        sealed class BoostStack
+        /// <summary>Which resource holds the fuel, or -1 when no config is wired yet.</summary>
+        public int FuelResourceIndex => config ? config.ResourceIndex : -1;
+
+        /// <summary>Fuel one pellet costs, as a fraction of the resource. 0 when unconfigured.</summary>
+        public float PelletCost => config ? config.ResourceCost : 0f;
+
+        /// <summary>
+        /// How many pellets a FULL tank holds - derived from the resource's own capacity and the
+        /// pellet size, never authored twice. 4 on the shipped Serpent (1.0 / 0.25).
+        /// </summary>
+        public int PelletCapacity
         {
-            public float Mult;
-            public float Duration;
-            public int PipIndex;
-            public CancellationTokenSource Cts;
+            get
+            {
+                float cost = PelletCost;
+                if (cost <= 0f || !TryGetFuel(out var fuel)) return 0;
+                return Mathf.Max(0, Mathf.FloorToInt(fuel.MaxAmount / cost + 0.0001f));
+            }
         }
 
-        readonly List<BoostStack> _activeStacks = new();
-        CancellationTokenSource _reloadCts;
-
-        public int AvailableCharges => _available;
-        public int MaxCharges => _so != null ? _so.MaxCharges : 0;
-        public bool IsReloading => _reloading;
+        /// <summary>Pellets in the tank right now, fractional - 2.6 is two ready and one 60% refilled.</summary>
+        public float PelletsHeld
+        {
+            get
+            {
+                float cost = PelletCost;
+                if (cost <= 0f || !TryGetFuel(out var fuel)) return 0f;
+                return fuel.CurrentAmount / cost;
+            }
+        }
 
         void OnEnable()
         {
-            OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised += OnTurnEndOfMiniGame;
         }
 
         void OnDisable()
         {
-            OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+            if (OnMiniGameTurnEnd) OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
+            ClearBurns();
         }
 
-        void OnTurnEndOfMiniGame()
-        {
-            CancelReload();
-            CancelAllStacks();
-            _reloading = false;
-            if (_status == null) return;
-            _status.IsBoosting = false;
-            _status.BoostMultiplier = 1f;
-        }
+        void OnTurnEndOfMiniGame() => ClearBurns();
 
         public override void Initialize(IVesselStatus shipStatus)
         {
+            // A vessel swap re-runs Initialize on a live component, so drop whatever the previous
+            // pilot had burning before adopting the new status.
+            ClearBurns();
+
             _status = shipStatus;
             _resources = shipStatus?.ResourceSystem;
 
@@ -82,193 +129,88 @@ namespace CosmicShore.Gameplay
                 _status.BoostMultiplier = 1f;
                 _status.IsBoosting = false;
             }
-
-            _available = Mathf.Clamp(initialCharges, 0, 4);
-            OnChargesSnapshot?.Invoke(_available, MaxCharges > 0 ? MaxCharges : 4);
         }
 
+        /// <summary>Burn one pellet, if the tank holds one.</summary>
         public void Consume(ConsumeBoostActionSO so, IVesselStatus status)
         {
             if (!so || status == null) return;
-
             if (_status is { IsTranslationRestricted: true }) return;
-        
-            if (_so != so)
+
+            if (config != so) config = so;
+
+            float cost = so.ResourceCost;
+            if (cost <= 0f)
             {
-                _so = so;
-                if (_available <= 0 && _activeStacks.Count == 0 && !_reloading)
-                {
-                    _available = Mathf.Clamp(_so.MaxCharges, 0, 4);
-                    OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
-                }
+                CSDebug.LogWarning($"[ConsumeBoost] '{so.name}' authors resourceCost {cost}; a pellet " +
+                                   "must cost fuel or the tank is bottomless. Burn refused.");
+                return;
             }
 
-            if (_reloading) return;
-            if (_available <= 0) return;
+            if (!TryGetFuel(out var fuel)) return;
+            if (fuel.CurrentAmount + 0.0001f < cost) return;   // no whole pellet in the tank
 
-            if (_so.ResourceCost > 0f)
-            {
-                if (!_resources) return;
-                if (_so.ResourceIndex < 0 || _so.ResourceIndex >= _resources.Resources.Count) return;
+            _resources.ChangeResourceAmount(so.ResourceIndex, -cost);
 
-                var res = _resources.Resources[_so.ResourceIndex];
-                if (res == null || res.CurrentAmount < _so.ResourceCost) return;
+            // Time -> burn duration, read at use time (x1 at rest, x1.6 at Time 10).
+            float duration = Mathf.Max(0.05f, so.BoostDuration * so.TimeDurationMultiplier(_status));
+            _burnEndTimes.Add(Time.time + duration);
 
-                _resources.ChangeResourceAmount(_so.ResourceIndex, -_so.ResourceCost);
-                OnBoostStarted?.Invoke(_so.BoostDuration, res.CurrentAmount);
-            }
+            PlayIgniteSound();
+            ApplyMultiplier();
 
-            // Only play the activation SFX once a charge is actually being consumed —
-            // not on no-op presses (reloading / empty magazine / stationary / no resource).
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
-
-            int pipIndex = Mathf.Clamp(_available - 1, 0, _so.MaxCharges - 1);
-            // Element → parameter (Time → boost duration). Anchored at 1x at resting level; a high
-            // Time element makes each Serpent boost charge last longer.
-            float duration = Mathf.Max(0.05f,
-                _so.BoostDuration * _so.TimeDurationMultiplier(_status));
-
-            OnChargeConsumed?.Invoke(pipIndex, duration);
-            _available = Mathf.Max(0, _available - 1);
-            OnChargesSnapshot?.Invoke(_available, _so.MaxCharges);
-
-            var stack = new BoostStack
-            {
-                Mult = _status.BoostMultiplier,
-                Duration = duration,
-                PipIndex = pipIndex,
-                Cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy())
-            };
-
-            _activeStacks.Add(stack);
-            StackRoutineAsync(stack, stack.Cts.Token).Forget();
-            RecalculateMultiplier();
-
-            // if (_available != 0 || _reloading) return;
-            //
-            // _reloadCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-            // ReloadRoutineAsync(_so.ReloadCooldown, _so.ReloadFillTime, _reloadCts.Token).Forget();
+            OnPelletBurned?.Invoke(duration, _burnEndTimes.Count);
+            OnBurningCountChanged?.Invoke(_burnEndTimes.Count);
         }
 
-        void RecalculateMultiplier()
+        /// <summary>
+        /// The button was released. Deliberately nothing: a lit pellet burns out on its own.
+        /// </summary>
+        public void Release() { }
+
+        void Update()
+        {
+            if (_burnEndTimes.Count == 0) return;
+
+            float now = Time.time;
+            int before = _burnEndTimes.Count;
+            _burnEndTimes.RemoveAll(end => end <= now);
+            if (_burnEndTimes.Count == before) return;
+
+            ApplyMultiplier();
+            OnBurningCountChanged?.Invoke(_burnEndTimes.Count);
+        }
+
+        /// <summary>
+        /// Every burning pellet adds the same increment. The authored <c>boostMultiplier</c> is
+        /// what ONE pellet produces (3 = three times cruise), so the increment is that minus one
+        /// and n pellets give <c>1 + (m - 1) * n</c>: 3x, 5x, 7x, 9x on the shipped asset - the
+        /// speed a burn ADDS is exactly n times the speed one burn adds.
+        /// </summary>
+        void ApplyMultiplier()
         {
             if (_status == null) return;
 
-            var stacks = _activeStacks.Count;
-
-            if (stacks > 0)
+            int burning = _burnEndTimes.Count;
+            if (burning > 0)
             {
+                float perPellet = config ? Mathf.Max(0f, config.BoostMultiplier - 1f) : 2f;
                 _status.IsBoosting = true;
-
-                // Linear, config-driven stacking. The previous multiplicative Mathf.Pow(4, stacks)
-                // reached 256x at 4 charges — a balance bug that made Serpent uncontrollable. Each
-                // charge now adds one unit of the SO's authored per-charge boost multiplier
-                // (default 4 → 4x..16x across 1..4 charges).
-                float perCharge = _so ? _so.BoostMultiplier : 4f;
-                _status.BoostMultiplier = perCharge * stacks;
+                _status.BoostMultiplier = 1f + perPellet * burning;
             }
             else
             {
                 _status.IsBoosting = false;
                 _status.BoostMultiplier = 1f;
-                OnBoostEnded?.Invoke();
             }
 
-            // Notify HUD of the multiplier change (MaxMultiplier = 0 → HUD uses its own config)
-            boostChanged?.Raise(new BoostChangedPayload
-            {
-                BoostMultiplier = _status.BoostMultiplier,
-                MaxMultiplier = 0f,
-                SourceDomain = Domains.Blue,
-                VesselStatus = _status
-            });
-
-            if (stacks == 0 && _so && _available == 0 && !_reloading)
-            {
-                _reloadCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-                ReloadRoutineAsync(_so.ReloadCooldown, _so.ReloadFillTime, _reloadCts.Token).Forget();
-            }
+            RaiseBoostChanged();
         }
 
-
-        async UniTaskVoid ReloadRoutineAsync(float cooldown, float ignoredPerPip, CancellationToken token)
+        void ClearBurns()
         {
-            _reloading = true;
-
-            float total = Mathf.Max(0f, cooldown);
-            OnReloadStarted?.Invoke(total);
-
-            try
-            {
-                float endTime = Time.time + total;
-                float nextLog = 0f; 
-                while (!token.IsCancellationRequested && Time.time < endTime)
-                {
-                    float remaining = Mathf.Max(0f, endTime - Time.time);
-
-                    if (Time.unscaledTime >= nextLog)
-                    {
-                        nextLog = Time.unscaledTime + 0.1f;
-                    }
-
-                    await UniTask.Yield(PlayerLoopTiming.Update, token);
-                }
-            
-                token.ThrowIfCancellationRequested();
-                _available = _so ? Mathf.Clamp(_so.MaxCharges, 0, 4) : 4;
-            
-                OnChargesSnapshot?.Invoke(_available, _so ? _so.MaxCharges : 4);
-                OnReloadCompleted?.Invoke();
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogError($"[ConsumeBoost] ReloadRoutine error: {e}");
-            }
-            finally
-            {
-                _reloading = false;
-                if (_reloadCts != null)
-                {
-                    _reloadCts.Dispose();
-                    _reloadCts = null;
-                }
-
-            }
-        }
-
-        async UniTaskVoid StackRoutineAsync(BoostStack stack, CancellationToken token)
-        {
-            try
-            {
-                await UniTask.Delay(TimeSpan.FromSeconds(stack.Duration), DelayType.DeltaTime, PlayerLoopTiming.Update,
-                    token);
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogError($"[ConsumeBoost] StackRoutine error: {e}");
-            }
-            finally
-            {
-                int idx = _activeStacks.IndexOf(stack);
-                if (idx >= 0) _activeStacks.RemoveAt(idx);
-                stack.Cts?.Dispose();
-                stack.Cts = null;
-                RecalculateMultiplier();
-            }
-        }
-    
-        public void StopAllBoosts()
-        {
-            CancelReload();
-            CancelAllStacks();
-
-            _reloading = false;
+            bool hadBurns = _burnEndTimes.Count > 0;
+            _burnEndTimes.Clear();
 
             if (_status != null)
             {
@@ -276,39 +218,46 @@ namespace CosmicShore.Gameplay
                 _status.BoostMultiplier = 1f;
             }
 
-            OnBoostEnded?.Invoke();
-            OnChargesSnapshot?.Invoke(_available, _so ? _so.MaxCharges : 4);
+            if (!hadBurns) return;
+            RaiseBoostChanged();
+            OnBurningCountChanged?.Invoke(0);
         }
 
-
-        void CancelReload()
+        void RaiseBoostChanged()
         {
-            if (_reloadCts == null) return;
-            try
-            {
-                _reloadCts.Cancel();
-            }
-            catch { /* ignored */ }
+            if (!boostChanged || _status == null) return;
 
-            _reloadCts.Dispose();
-            _reloadCts = null;
+            // MaxMultiplier = 0 -> the HUD uses its own config.
+            boostChanged.Raise(new BoostChangedPayload
+            {
+                BoostMultiplier = _status.BoostMultiplier,
+                MaxMultiplier = 0f,
+                SourceDomain = Domains.Blue,
+                VesselStatus = _status
+            });
         }
 
-
-        void CancelAllStacks()
+        bool TryGetFuel(out Resource fuel)
         {
-            foreach (var st in _activeStacks)
-            {
-                try { st?.Cts?.Cancel(); }
-                catch
-                {
-                    // ignored
-                }
-            
-                st?.Cts?.Dispose();
-                if (st != null) st.Cts = null;
-            }
-            _activeStacks.Clear();
+            fuel = null;
+            if (!_resources || !config) return false;
+
+            int index = config.ResourceIndex;
+            if ((uint)index >= (uint)_resources.Resources.Count) return false;
+
+            fuel = _resources.Resources[index];
+            return fuel != null;
+        }
+
+        void PlayIgniteSound()
+        {
+            var audio = audioSystem ? audioSystem : AudioSystem.Instance;
+            if (!audio) return;
+
+            if (!pelletIgniteEvent.IsNull)
+                audio.PlaySFXEvent(pelletIgniteEvent, transform.position);
+            else
+                audio.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
         }
     }
 }
