@@ -324,6 +324,147 @@ record (intensity, placed AI, domain count, own domain, own hull) and the rules 
 re-validate it are `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.2 - the arena is the arcade pointed
 at another roster, so it inherits the memory with the modal.
 
+### 3.7 The genre petal: one element saying what KIND of game this is
+
+Every card wears an element petal in its bottom-left corner - card IDENTITY like the hull icon
+opposite it, drawn from the moment the grid appears. Four categories, one glance across a grid of
+twenty-five cards:
+
+| Petal | The card is about | Cards today |
+|---|---|---|
+| **Time** | a RACE | Skim Race, Scarab Scramble, Switchback, Headlong, Breakwater, Skein, Redline, Astro League, Regatta |
+| **Mass** | MAKING mass, or taking it into your own hands | Scurry, Tollway, Hijack, *Brood Rush* |
+| **Space** | DESTROYING mass | Rampage, Cleave, Salvo, Wrecking Ball, Wildlife Liberation, Bloomrush, *Brood Rush* |
+| **Charge** | working other PILOTS over | Joust, Dog Fight, The Bends, Undertow, Broadside |
+
+**It is keyed on the MODE, with the METRIC as the fallback** (`ModeGenre.TryElementsFor`). A
+mode's genre is *usually* predictable from `ScoringMetric` - the rule `ObjectiveIconSetSO` is
+built on (`Docs/GAME_MODE_TOPBAR.md` §2), applied one surface over - because a mode scored on
+prisms destroyed IS a destruction mode. But it is not the SAME fact, and **the places the two part
+company are the reason the table exists at all**:
+
+- **Tollway and Scarab Scramble are both `Goals`** and are not the same kind of game. One is a
+  ball race; the other is acquisition - a toll is paid in mass, every ring that pays raises a
+  255-prism monument on the spot, and the arena ends the match built out of the scoring.
+- **Scurry is `Crystals`**, which reads as a race and is a gather.
+- **Brood Rush is TWO genres.** It contests the nucleus by laying claim mass inside it and tearing
+  the other side's out - MASS *and* SPACE - and a card that could only say one of those would be
+  advertising half the mode.
+
+So the explicit rows win, and any mode with no row falls through to the metric, which is what
+keeps a new mode from drawing nothing merely because nobody has been asked about it yet. Two is
+the ceiling on genres: a badge that needs three is a mode whose genre nobody can state, which is a
+design question rather than a UI one.
+
+**A second genre is drawn ABOVE the first, never beside it.** Nearly every card has one, so a
+horizontal pair would either push the primary off its place on every card or leave a hole where
+the second would be. Stacked, a single-genre card always draws in the same corner and a two-genre
+card grows upward.
+
+**It shares FavoriteIcon's vertical centre, so the petal and the star are one pair in opposite
+lower corners.** That is the whole of why the y is what it is: the star's band is y 0.02-0.2978,
+centre **0.1588889**, and the petal is 0.43 of the card tall, so it spans that centre +/- 0.215.
+
+**Its SIZE is what the layout costs, and all three costs are stated rather than designed around.**
+The petal is `~87x87` px on a `275x203` card. Centring 87 px on a 56 px band puts **11.37 px of it
+below the card rect** - bounded, because `Background` is a 313x208 plate offset off the card's
+top-left that reaches 11.48 px below the rect, so the petal lands **0.11 px inside the plate's own
+bottom edge**. It does cross `Border` (the arcade-card frame, which *is* the card rect) and draws
+over it, being the last child: a badge clipped to the corner rather than a thing inside the frame.
+It also lies over **AvatarSpace**, the party-pick chip row - empty on every card nobody in the
+party has picked, and drawn *under* the petal when it is not. And two stacked petals are 91% of the
+card's height, so the second one crosses the **title** band: exactly one shipped card (Brood Rush)
+has a second genre, and the Arena roster it belongs to is being treated separately. None of the
+three overlaps can eat a press - both Images are `m_RaycastTarget: 0`.
+
+**It is a RULE, so it lives in code** (`ModeGenre`, in the extracted `CosmicShore.Data` leaf
+assembly beside the enums it relates) rather than in an authored table an editor can contradict -
+the same argument `ToyDefinitionSO.Category` is abstract-and-in-code for. `ModeGenreTests` sweeps
+every `ScoringMetric` member, pins every row of the mode table, and - the guard that catches the
+failure nobody would notice - asks the SHIPPED rosters and the SHIPPED preview library exactly
+what `GameCard` asks them, so a card added with no genre fails a test instead of quietly drawing
+nothing.
+
+The metric the fallback reads comes from `ModePreviewLibrarySO`, which is where the launch panel's
+objective box already reads it. A mode's `ScoringRuleSO` lives in its own scene, so the preview
+definition is the platform's only pre-scene answer to that question. Reading it here rather than
+adding a second table is what keeps the card, the objective box and the goal row saying one thing
+about the modes whose genre IS their metric. A mode with a row of its own needs no definition at
+all, so a missing one is passed along as a **null** metric rather than short-circuiting - and null
+rather than the enum's zero, because `ScoringMetric.Crystals` is a real answer several cards give.
+The art is the fleet's own `ElementalBarsConfigSO.GetPetalSprite` - the petal the vessel HUD
+flowers and the ability lockup's upgrade badge draw - tinted the lockup's level-5 WHITE rather
+than a per-element colour, because **element identity is SHAPE** (that is what the flower is built
+on) and a second channel saying the same thing would only compete with the card art.
+
+**Maelstrom draws no petal, and that is correct** - it is a session-level meta that draws OTHER
+modes, so it has no genre of its own; it is the one roster card with no preview definition and no
+row, and therefore nothing to read. Blank is the honest state here exactly as it is for a vessel
+with no icon.
+
+#### The prefab is not what runs
+
+`GameCard.prefab` is referenced by **one** prefab in the project, and that one is
+`MIgration_Prefabs (DELETE LATER)/`. The live cards are **36 scene-local `GameCard` objects in
+Menu_Main** that are not instances of it, and the two `Arcade Screen` prefabs that also hold
+cards are referenced by nothing at all. So editing the prefab asset alone ships a feature that
+renders on no card - `Docs/GAMECANVAS.md` §9's finding, one prefab over.
+`Tools/Build/author_game_card_genre_petal.py` therefore writes both petal children onto every
+live card AND the canonical prefab, so the two cannot drift; `--check` fails on any unwired slot.
+Its fileIDs are DERIVED from each card's own GameObject id **and the field name**, so a re-run is
+a no-op rather than a second copy and adding the second slot left the first one's ids
+byte-identical. Both Images ship with no sprite and `m_Enabled: 0`, because `GameCard` resolves
+the art and whether there is any at runtime and an enabled Image with no sprite draws a white
+quad; `m_RaycastTarget: 0`, because they are decoration and must never eat the card's own click.
+
+### 3.8 The card background: each mode's own arena, RENDERED from its data
+
+`GameCard.UpdateCardView` does `BackgroundImage.sprite = game.CardBackground`, so the backdrop
+is authored per mode on its own `SO_ArcadeGame` (the field is inherited from `SO_Game`). Measured
+across the live roster, **22 of the 25 cards shared FOUR legacy images** from the retired
+single-player era - sixteen of them all wearing `GameCardBackground_Rampage.jpg` - and three had
+none at all, so the grid told the player almost nothing about which world a card leads to.
+
+Each card now wears **its own mode's intensity-2 arena**, and it is not a screenshot. The first
+cut of this section called the capture "play-testing" and built only the import half; that was
+the wrong line. **An arena is data** - the environment generators emit prism poses, the course
+generators emit gates, the spawn profile says what grows where - so the picture is made the way
+the mode preview's scale model is (`CellMiniatureBuilder`, `ModePreviewPlantingModel`), offline,
+by RUNNING that data. `Tools/Build/render_card_backgrounds.py` resolves each live card's arena off
+its own scene (`Cell.CellConfigs`, IntensityWise index 1; the preview definition as fallback),
+and `Tools/Build/card_art_harness/` compiles and runs the shipped generators against a faithful
+UnityEngine shim and rasterizes what they lay in the live palette (`OriginalColorSetSO`, base face
+lerped to rim by fresnel - the prism shader's defining read). Every card states its **tier**:
+
+| tier | cards | what is drawn |
+|---|---|---|
+| RUN | Cleave, Wildlife Liberation, Undertow, Dog Fight, Salvo, Broadside, Hijack, Skein, Regatta, Skim Race, Joust, Scurry | the shipped generator's own lay list, prism for prism (Swell 14,277, Switchyard 3,978, concentric shells 24,966 - each the documented count) |
+| COURSE | Switchback, Headlong, Redline, Breakwater | the shipped course generator at intensity 2 on the card's fixed seed, shell and gate count mirrored from `GateRaceController.BuildCourse` |
+| MODEL | Rampage, Bends, Bloomrush, Wrecking Ball, Tollway, Scarab Scramble, Astro League, Brood Rush | what exists only at runtime: the planting measured as the preview measures it with each plant a species glyph, or a court read off the controller's own settings asset |
+| MONTAGE | Maelstrom | slanted strips of the cards of the modes it can draw at intensity 2 (its cumulative ladder) |
+
+Pilots - a dart and the prism trail it lays - and each mode's **signature act** (a Dolphin cone
+into the forest, a bloom, a tracer, a creature in a cage) are STAGING, and they are how the cards
+that share an arena (the cactus forest x3, the Boneyard x3, the cages x2) still say different
+things. The renderer is byte-deterministic, so **`render_card_backgrounds.py --check` re-renders
+and byte-compares**: a generator, course, palette or spawn-profile change that moves a card fails
+it until the card is re-rendered, and a hand edit reads as stale. A new mode is the `/cardart`
+skill's job and a step of `/arcadegame` and `/arenagame`; a mode with an `EnvironmentPrefab` needs
+no code, anything else is one `recipe()` branch, and an unknown card makes the renderer RAISE so a
+mode cannot ship on a legacy backdrop by omission. Stated plainly: nothing here is the game's
+renderer, a MODEL-tier plant is a glyph, and whether a card reads well in the grid beside the
+others is the one thing still owed to an eyes-on pass.
+
+`Tools/Build/author_card_backgrounds.py` stays the IMPORT half, and still accepts a hand capture:
+it writes each `.meta` as a Sprite with the shipped backgrounds' importer settings, rewires the
+matching card, and writes the folder's and README's `.meta` with deterministic guids. **The roster
+is READ, never typed** - the live cards are whatever `ArcadeGames.asset` and `ArenaGames.asset`
+list. **Its `--check` fails only on something actually wrong** - a reference to a file not on
+disk, a guid that disagrees with the file's meta, or a capture no live card is named for (a
+misspelled filename otherwise fails by the card silently keeping its old art) - and coverage is
+behind `--strict`, which now passes at 25/25. A mode that should ship a real screenshot is opted
+out of rendering by name (`HAND_CAPTURED`), never by dropping a file on top of a render.
+
 ## 4. The Toy Box drives the LIVE toys
 
 `ToyboxModal` (`_Scripts/UI/Modals/ToyboxModal.cs`) is the app-shell face of the freestyle

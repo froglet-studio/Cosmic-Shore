@@ -40,9 +40,10 @@ namespace CosmicShore.Gameplay
         // each lifeform's measured body by Tools/Build/author_lifeform_heart_sizes.py.
         //
         // THE ROOT SCALE IS THE GAMEPLAY NUMBER, and that is now the point rather than a
-        // hazard: the collect reward (SkimmerAdjustElementLevelByCrystalEffectSO) and the live
-        // domain fauna buff (DomainFaunaBuffSystem) both read the root's lossyScale, so a
-        // bigger lifeform's heart is worth more - a bigger kill pays more. What must NOT happen
+        // hazard: the collect reward (SkimmerAdjustElementLevelByCrystalEffectSO) reads the
+        // root's lossyScale, so a bigger lifeform's heart is worth more - a bigger kill pays
+        // more. (It used to be read TWICE, the second reader being the domain fauna buff, which
+        // was removed - Docs/ECOSYSTEM.md §15.) What must NOT happen
         // is a heart CLIPPING the reward cap, because a clipped heart is a size the player can
         // see and a reward they cannot. The authoring tool holds the whole band under
         // ElementalCrystalSetSO.MaxSafeHeartWorldScale and fails if it ever escapes.

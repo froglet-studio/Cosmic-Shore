@@ -2472,6 +2472,28 @@ Limits, state them: the plant is not the engine, so the simulation bounds *behav
 law*, never feel. Frame timing, replication, and the vessel's real thrust/grip model are out
 of scope, and the human still playtests.
 
+## 4.5e Technique: PHOTOGRAPH a generator — compile + run the shipped arena, rasterize what it lays
+
+When the deliverable is a PICTURE of something the game builds (a card background, a thumbnail, a
+proof-of-look), do not ask for a screenshot: compile the SHIPPED generator in a Roslyn harness,
+run it with every field read off its prefab, and rasterize the lay list. Worked example and
+reusable machinery: `Tools/Build/card_art_harness/` driven by `render_card_backgrounds.py` (the
+`/cardart` skill) - 12 generators and 5 course files compiled unmodified, ~1 s per picture,
+byte-deterministic so a `--check` re-renders and compares. Four rules it paid for:
+
+- **Two kinds of shim, held to two standards.** GEOMETRY (Vector3/Quaternion/Mathf) must be
+  FAITHFUL - the Cleave harness's identity `LookRotation` is fine for COUNTING and photographs an
+  axis-aligned world. ENGINE-OBJECT stand-ins on the lay path (`PrismTrailBuilder`, `Instantiate`,
+  `SpawnPrismTrail`) must be LOUD: log an error, and the harness refuses to write the picture.
+- **Prove fidelity by COUNT against a number someone else wrote down.** The Swell's 14,277, the
+  Switchyard's 3,978 and the concentric shells' 24,966 all reproduce to the prism; a count that
+  disagrees is a shim bug.
+- **A generator that lays in `Spawn()` gets read through its PREVIEW API** (`GetPreviewBlocks`),
+  never by stubbing enough of the lay path for it to run.
+- **Serialized data has two shapes a line parser gets wrong**: a primitive array is ONE hex blob
+  (keep the raw token; decode by the C# field's type), and a value that looks like it lives on a
+  transform may be a component FIELD (`CapsuleMembrane.radius`, not the membrane's scale).
+
 ## 4.6 Technique: hand-authoring a new asset trio
 
 Adding a new SO-configured, prefab-backed thing (here: a cell) means four

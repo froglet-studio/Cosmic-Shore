@@ -141,9 +141,10 @@ class this mode has no opinion about is worth 0 and says so.
 **Both of the Sparrow's fire modes count as "bullet".** Full-auto rounds and turret-stance prism
 rounds are the same weapon class — one direct projectile hit — so
 `SparrowPrismProjectileImpactContainer` carries the same `VesselCombatHitByBullet` effect as
-`SparrowFullAutoProjectileImpactContainer`, and its container already carried the same two victim
-effects (spin + skimmer shrink). Only the **missile** is worth more, and only because a missile
-is a different proposition.
+`SparrowFullAutoProjectileImpactContainer`, and when this shipped both containers already carried
+the same two victim effects (a spin and a skimmer shrink — **both removed in Sep 2026**, since a
+weapon may take a pilot's petals and nothing else: `Docs/ELEMENTAL_ECONOMY.md §9`). Only the
+**missile** is worth more, and only because a missile is a different proposition.
 
 `CombatHitScoring.Credit` applies that weighting **once, server-side, at the instant of the
 hit**, and banks the result in `IRoundStats.CombatPoints`. That is deliberate: it keeps
@@ -200,7 +201,7 @@ necessary, and they are why the projectile effect and the explosion effect share
 rather than each carrying its own:
 
 1. **A rocket scores through two code paths for one shot.** A skyburst that hits a vessel
-   directly *detonates on impact* (`VesselSpinBySkyBurstProjectileEffectSO.detonateOnHit`), so
+   directly *detonates on impact* (`VesselDetonateSkyBurstProjectileEffectSO.detonateOnHit`), so
    the direct hit fires from `ProjectileImpactor` and the blast fires again from
    `ExplosionImpactor` a fraction of a second later, and the *warhead* blast fires from a third.
    One missile, three events — and at 10-30 points each that is not a rounding error.

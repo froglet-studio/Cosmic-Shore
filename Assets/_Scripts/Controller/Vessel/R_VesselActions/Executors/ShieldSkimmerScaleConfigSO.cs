@@ -1,5 +1,3 @@
-using System;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -23,7 +21,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float baseScale = 30f;      // energy = 0
         [Tooltip("Blade length at FULL energy.")]
         [SerializeField] private float maxScale  = 120f;     // energy = 1
-        [Tooltip("Legacy prism-growth cap, kept only so ApplyMaxSizeDebuff keeps its historical meaning; the driver no longer reads it.")]
+        [Tooltip("Legacy prism-growth cap. Nothing reads PrismMaxScale since the max-size debuff was retired; kept as serialized data rather than dropped in a removal commit.")]
         [SerializeField] private float prismMaxScale = 100f;
 
         [Header("Length Smoothing (world units/sec)")]
@@ -148,21 +146,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Strength (0..1) of each grind pulse, before the player's haptics level.")]
         [SerializeField, Range(0f, 1f)] private float bindHapticStrength = 0.7f;
 
-        // Runtime-only debuff multiplier for max sizes
-        [NonSerialized] private bool  _isMaxSizeDebuffed;
-        [NonSerialized] private float _maxScaleMultiplier = 1f;
-
         // --- Public API ---
 
         public float BaseScale => baseScale;
 
-        public float MaxScale => Mathf.Max(
-            baseScale,
-            maxScale * Mathf.Max(0.01f, _maxScaleMultiplier));
+        public float MaxScale => Mathf.Max(baseScale, maxScale);
 
-        public float PrismMaxScale => Mathf.Max(
-            baseScale,
-            prismMaxScale * Mathf.Max(0.01f, _maxScaleMultiplier));
+        public float PrismMaxScale => Mathf.Max(baseScale, prismMaxScale);
 
         public float PrismGrowSpeed => prismGrowSpeed;
         public float ShrinkSpeed    => shrinkSpeed;
@@ -213,26 +203,12 @@ namespace CosmicShore.Gameplay
         public float BindHapticIntervalSeconds => Mathf.Max(0.06f, bindHapticIntervalSeconds);
         public float BindHapticStrength        => Mathf.Clamp01(bindHapticStrength);
 
-        /// <summary>
-        /// Temporarily scales the effective max sizes (MaxScale & PrismMaxScale)
-        /// by <paramref name="sizeMultiplier"/> and restores after <paramref name="durationSeconds"/>.
-        /// NOTE: this mutates THIS ScriptableObject; if multiple skimmers share it, they share the debuff too.
-        /// </summary>
-        public async UniTaskVoid ApplyMaxSizeDebuff(float sizeMultiplier, float durationSeconds)
-        {
-            if (_isMaxSizeDebuffed)
-                return;
-
-            _isMaxSizeDebuffed = true;
-
-            // Store old multiplier in case we want nested debuffs later.
-            float previous = _maxScaleMultiplier;
-            _maxScaleMultiplier = Mathf.Max(0.01f, sizeMultiplier);
-
-            await UniTask.Delay(TimeSpan.FromSeconds(durationSeconds));
-
-            _maxScaleMultiplier = previous;
-            _isMaxSizeDebuffed = false;
-        }
+        // ApplyMaxSizeDebuff is RETIRED (Sep 2026, Docs/ELEMENTAL_ECONOMY.md §9). The Sparrow's
+        // guns called it to shrink a Rhino's blade for 3s, which is taking a pilot's CONTROLS -
+        // the one class of hit they cannot answer with flying. It also mutated THIS asset, and
+        // ONE asset drives every Rhino, so shooting one pilot shrank every Rhino's sword in the
+        // match. What a weapon may take from another pilot is their elemental PETALS.
+        // The `_maxScaleMultiplier` runtime state went with it, so MaxScale / PrismMaxScale are
+        // now the authored values. Do not reintroduce a debuff here.
     }
 }

@@ -77,7 +77,6 @@ namespace CosmicShore.Gameplay
             // AddComponent runs OnEnable SYNCHRONOUSLY, before this method can assign anything -
             // so configuration and the gameData handoff both happen after it, and OnEnable is a
             // deliberate no-op while gameData is still null. Bind() is what actually subscribes.
-            // (The same trap is recorded in DomainFaunaBuffSystem.Update.)
             var system = host.AddComponent<ElementalComebackSystem>();
             system.useGolfRules = useGolfRules;
             system.Bind(gameData);

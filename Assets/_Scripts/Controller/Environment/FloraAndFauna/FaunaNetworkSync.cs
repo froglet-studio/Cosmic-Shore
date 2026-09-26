@@ -21,8 +21,8 @@ namespace CosmicShore.Gameplay
     ///     reproduction), then rebuilds the SAME individual from the replicated identity:
     ///     same species config, same element, same variant tuning, therefore the same body
     ///     scale and the same heart size. That last one is gameplay, not cosmetics - a heart's
-    ///     world scale IS the collect reward and the live domain fauna buff
-    ///     (Docs/ECOSYSTEM.md §40), so a client that re-rolled its own element would pay a
+    ///     world scale IS the collect reward (Docs/ECOSYSTEM.md §40), so a client that
+    ///     re-rolled its own element would pay a
     ///     different price for the same kill.
     ///   - Death: the server's sealed <see cref="Fauna.Die"/> flips the replicated life state;
     ///     every peer then runs the same wither-to-crystal path locally (crystal drop +

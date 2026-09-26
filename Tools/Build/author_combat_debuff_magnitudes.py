@@ -22,6 +22,14 @@ statement about each element, so how WIDE an attack spreads its drain is now par
 attack is, not something normalised away. The Manta's bloom consequently bites the same per
 element as the cone and half as much in total, which is what a two-element weapon should do.
 
+A DRAIN IS NOW A TRANSFER, AND THIS TABLE STILL ONLY SETS ITS SIZE. What a landed hit takes is
+priced here; WHERE the petals go is ElementalTransfer.FormFor's business - a contact verb (strike)
+hands them to the attacker, every ranged verb knocks them loose as collectable crystals. Nothing
+decays any more, so the `dur` column below is no longer a fade: it is retained because the
+sustained-pressure arithmetic at the bottom still needs the window it used to define, and because
+an ally BUFF (the Squirrel's mirrored overtake) genuinely is still temporary - a buff has no
+victim to take it from, so making it permanent would mint petals out of nothing.
+
 THE DRAIN INHERITS THE BALANCE THE PRICE ALREADY HAS. `broadside_balance.py` flattened POINTS
 PER SECOND across the seven hulls to a 1.33x spread by tuning the latch windows. Drain-per-second
 is (hits/s) x magnitude x duration/2, and magnitude is k x points, so drain-per-second is
@@ -95,6 +103,12 @@ DRAINS = [
     ("Assets/_SO_Assets/Effects/Vessel Skimmer Effects/VesselOvertakeBySkimmerEffect.asset",
      "strike", "debuffMagnitude", "buffMagnitude", "effectDuration",
      "Squirrel joust overtake (the ally BUFF mirrors the debuff)"),
+    ("Assets/_SO_Assets/Effects/Vessel Skimmer Effects/RhinoSwordStealBySkimmerEffect.asset",
+     "strike", "debuffMagnitude", "buffMagnitude", "effectDuration",
+     "Rhino sword contact steal (same type, requireOvertake OFF - a blade connects on its own "
+     "terms). Priced identically to the joust because they are the same VERB: Broadside prices a "
+     "Strike once, and two hulls landing one must take the same petals or the price list is a "
+     "fiction."),
 ]
 
 # Verbs that SCORE and still carry no drain path at all. Reported, never authored.
