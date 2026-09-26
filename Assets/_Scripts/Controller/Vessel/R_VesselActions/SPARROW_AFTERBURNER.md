@@ -193,7 +193,7 @@ blanket one:
 
 | Piece | Where | What it does |
 |---|---|---|
-| The opt-in | `ShipVelocityModifier.ignoresTranslationRestriction` | Per-modifier flag, default **false**. Only the roll sets it — every other `ModifyVelocity` caller uses the unchanged 2-arg overload and stays fully held while restricted (knockback, bounce, deviation, spin, AstroLeague, NudgeShard, `ModifyVelocityActionSO`). |
+| The opt-in | `ShipVelocityModifier.ignoresTranslationRestriction` | Per-modifier flag, default **false**. Only the roll sets it — every other `ModifyVelocity` caller uses the unchanged 2-arg overload and stays fully held while restricted (bounce, deviation, AstroLeague, NudgeShard, `ModifyVelocityActionSO` — the vessel-on-vessel spin and shove that used to be in this list are removed, `Docs/ELEMENTAL_ECONOMY.md` §9). |
 | The application | `VesselTransformer.MoveRestricted` | Restricted position update: `position += velocityShift * dt`. No throttle, no course term. Deliberately does **not** write `VesselStatus.Speed` or `Course`, so nothing downstream (gun velocity inheritance, telemetry, the speed tunnel) reads differently than it did before. |
 | The projection plane | `BarrelRollController` | Restricted, `Course` is **stale** — `MoveShip` is what refreshes it and it does not run — so it holds the heading from the moment the stance engaged while the turret has gone on rotating. The nudge projects on current **facing** there instead. |
 
@@ -339,7 +339,8 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    - Aim somewhere well away from the heading you had when you stopped, then dodge — the strafe
      must go where the stick points relative to your **current** facing, not skew off toward the
      old heading. (This is the stale-`Course` fix; a skew here means the projection plane is wrong.)
-4c. **No banked lurch.** Stopped, take a knockback (fly a Rhino into you, or clip a danger prism)
+4c. **No banked lurch.** Stopped, take a knockback (clip a danger prism, or fly into a prism
+   wall — a Rhino's sword no longer shoves you, `Docs/ELEMENTAL_ECONOMY.md` §9)
    — you must not move. Then release the stance: you must **not** lurch. (Before this branch the
    modifier froze and fired late.)
 4d. **Stopped turn rate (§2.2).** Flying, note how long a full 180° yaw takes. Toggle the stance

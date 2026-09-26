@@ -436,7 +436,7 @@ On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosion
   edge). The complete fix is an owner-write NetworkVariable for energy + energize phase on the
   driver, mirroring the analog-replication follow-up in `RHINO_SHIELD_SWIPE.md`.
 - **Sibling dt-as-duration pattern:** `VesselDeviationByPrismEffectSO` and
-  `VesselSpinBySkimmerEffectSO` pass `Time.deltaTime * accelScale` into `ModifyVelocity`'s
+  `VesselSpinBySkimmerEffectSO` (since removed) passed `Time.deltaTime * accelScale` into `ModifyVelocity`'s
   DURATION exactly the way the sword's bounce used to — the same frame-rate dependence, on
   paths this branch does not touch. Worth its own pass; not changed here.
 - **HUD:** the energize phase is exposed (`ShieldSkimmerScaleDriver.EnergizePhase`, `Charge01`)

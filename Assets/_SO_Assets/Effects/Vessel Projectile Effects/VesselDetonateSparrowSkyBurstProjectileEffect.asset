@@ -10,11 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9fe2ea192311406aa229554909fba385, type: 3}
-  m_Name: VesselSpinBySparrowSkyBurstProjectileEffect
+  m_Name: VesselDetonateSparrowSkyBurstProjectileEffect
   m_EditorClassIdentifier: 
-  spinSpeed: 1
-  useGentleSpin: 1
-  gentleSpinSeconds: 0.5
   detonateOnHit: 1
   detonator: {fileID: 11400000, guid: 6fd89f92dc5dac54f9064c27f5147f5d, type: 2}
   aoePrefabs:

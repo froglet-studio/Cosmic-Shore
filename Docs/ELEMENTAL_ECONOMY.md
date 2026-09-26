@@ -267,3 +267,88 @@ with flora to graze (Rampage, Wrecking Ball, Bloomrush, The Bends). What a human
    crystals leave their hull.
 6. **MPPM two-client**: confirm both peers agree on the flower levels after a joust, and note
    whether they agree on who collected an ejected crystal (they may not — §6).
+
+---
+
+## 9. A VESSEL MAY NOT MOVE AN OPPOSING VESSEL (Sep 2026)
+
+This is the other half of the economy's design, and it arrived as a playtest call: *"the sparrow
+knocks other vessels around. this is not fun to receive. vessels should not be able to move
+opponent vessels."*
+
+**The rule.** An offensive act against another pilot may take their **elemental crystals** and
+nothing about their **motion**. The asymmetry is the whole point:
+
+| what a hit takes | can the victim answer it? |
+|---|---|
+| **petals** (stolen on a contact verb, ejected as free-for-all crystals on a ranged one) | **yes** — the crystals land in the world, so a stripped pilot flies after them, and a thief who banks them is carrying a prize somebody can take back |
+| **motion** (a spun heading, a lateral shove) | **no** — flying better cannot undo having been re-aimed, and the pilot's own input is what stops answering |
+
+So the economy is not merely *a* thing a weapon may do to a pilot; it is the ONLY thing.
+
+### What was removed
+
+Four effects broke the rule, across three hulls:
+
+| effect | wired into | what it did |
+|---|---|---|
+| `VesselSpinBySparrowFullAutoProjectileEffect` | `SparrowFullAutoProjectileImpactContainer`, `SparrowPrismProjectileImpactContainer`, `SparrowExhaustProjectile.prefab` | the Sparrow's guns (both fire modes) snapped a victim's heading onto the impact vector |
+| the spin half of `VesselSpinBySkyBurstProjectileEffectSO` | `SparrowSkyBurstProjectileImpactContainer` | the Sparrow's rocket, on a direct hit |
+| `VesselSpinByUrchinSpikeProjectileEffect` | `UrchinSpikeProjectileImpactContainer` | the Urchin's spikes |
+| `VesselSpinBySkimmerEffect` | `RhinoForceFieldSkimmerImpactorDataContainer` | the Rhino's sword — a yaw **plus** a lateral `ModifyVelocity` shove |
+
+`VesselTransformer.SpinShip(Vector3)` — a snap re-aim onto a supplied heading — is deleted with
+them, because those three effects were its only callers. `VesselGentleSpinByProjectileEffectSO`
+and `VesselChangeSpeedByProjectileEffectSO` are deleted too: neither had an asset instance, but
+both are the same capability sitting one `[CreateAssetMenu]` away from being wired.
+
+**The rocket could not simply be unwired, and that is worth knowing before touching it.** The spin
+and the round's **direct-hit detonation** lived in the SAME effect, and it was the only entry on
+that container's `projectileShipEffects` that detonated the round on a vessel — so deleting the
+asset would have made a centre-punch, the dearest hit in the game at 30 points, pass through a
+pilot without going off. The class is therefore stripped to the detonation and **renamed**
+(`VesselDetonateSkyBurstProjectileEffectSO`, asset
+`VesselDetonateSparrowSkyBurstProjectileEffect`), because a name that outlives its behaviour is
+read as the behaviour. Both `git mv`s carried the `.meta`, so every guid and every container
+reference is unchanged.
+
+### What is deliberately NOT removed
+
+- **A vessel deflecting off MASS it flew into.** `Vessel Prism Effects`' bounce and deviation
+  (`GentleSpinShip` + `ModifyVelocity`) and the Rhino blade's bounce off a prism it cut are the
+  **flight model**, not a weapon. A rival's trail deflecting you is you hitting their wall, which
+  a pilot answers by flying around it.
+- **A vessel moving ITSELF** — every dash, barrel roll, boost and `SpinAroundAction`. That is
+  what an ability is for.
+- **The Squirrel's joust explosion and every combat-hit report**, which score and draw without
+  touching the victim's motion.
+
+### ⚠ The CONTROL-THEFT tier is still standing, and it is a separate decision
+
+These take a pilot's **controls** rather than their motion, so the motion law does not reach them
+and none has been removed:
+
+| effect | wired into | what it takes |
+|---|---|---|
+| `VesselChangeSkimmerSizeBySparrowFullAutoProjectileEffect` | the Sparrow's two gun containers | shrinks the victim's skimmer — their skim economy's reach |
+| `VesselDamageBySkimmerEffect` | `RhinoForceFieldSkimmerImpactorDataContainer` | mutes the victim's `RightStickAction` |
+| `VesselPrismSpawnerCooldownBySkimmerEffect` | `Rhino.prefab` | freezes the victim's trail spawner |
+| `VesselChangeSpeedByExplosionEffect` | `SlowExplosionImpactorDataContainer` → the Rhino's sword crystal burst and vessel crystal blast, and the Squirrel's vessel crystal blast | mutes `RightStickAction` for 3 s. **Misnamed — it changes no speed at all** |
+
+Read literally, *"remove any vessel offensive abilities that do anything but remove or steal
+elemental crystals"* covers this tier as well. It is left for a deliberate call because each entry
+changes what a hull IS beyond its motion (the Rhino's sword becomes a pure elemental steal; the
+Sparrow's guns stop touching a rival's skim reach), which is a balance decision across three hulls
+rather than the one-line law above.
+
+### The gate
+
+`Tools/Build/check_vessel_on_vessel_motion.py` (`--self-test`) fails the build if any effect in a
+victim-facing family — `Vessel Projectile Effects`, `Vessel Skimmer Effects`,
+`Vessel Explosion Effects`, the three whose source is another pilot's weapon — calls a motion or
+attitude API on the victim. It is a gate rather than a paragraph because **the capability is one
+`[SerializeField]` away from returning**: an effect SO can call the transformer, a designer re-adds
+it by dropping the asset into a container, and nothing about that fails to compile or looks wrong
+on the asset. It is proven against the pre-fix tree, where it reports **6 findings** across the
+four removed effects, and its self-test carries the prose shapes that must NOT fire (a commented
+call, a doc comment naming the API) beside the calls that must.

@@ -200,7 +200,7 @@ necessary, and they are why the projectile effect and the explosion effect share
 rather than each carrying its own:
 
 1. **A rocket scores through two code paths for one shot.** A skyburst that hits a vessel
-   directly *detonates on impact* (`VesselSpinBySkyBurstProjectileEffectSO.detonateOnHit`), so
+   directly *detonates on impact* (`VesselDetonateSkyBurstProjectileEffectSO.detonateOnHit`), so
    the direct hit fires from `ProjectileImpactor` and the blast fires again from
    `ExplosionImpactor` a fraction of a second later, and the *warhead* blast fires from a third.
    One missile, three events — and at 10-30 points each that is not a rounding error.
