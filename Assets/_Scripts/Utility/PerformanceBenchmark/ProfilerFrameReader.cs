@@ -1,8 +1,11 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using UnityEditor.Profiling;
 using UnityEditorInternal;
+using UnityEngine;
 
 namespace CosmicShore.Utility.PerformanceBenchmark
 {
@@ -181,6 +184,61 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// The last step of every capture, shared by the in-game <c>prof</c> command and the
+        /// Editor exporter so the two can never write different reports from the same frames:
+        /// pick the typical and spike frames (by the game's own <c>PlayerLoop</c>, so an Editor
+        /// repaint is never "the spike"), read each as a whole tree, and build the report.
+        /// Call it with the Profiler's Record OFF, so the buffer cannot evict what is being read.
+        /// </summary>
+        public static void Finish(ProfilerCapture.Report report, ProfilerCapture.Accumulator acc,
+                                  ProfilerCapture.ThreadAccumulator threads, ProfilerCapture.Options options,
+                                  bool completed)
+        {
+            var series = acc.SelectionSeries;
+            ProfilerCapture.PickTypicalAndSpike(series, out int typicalPos, out int spikePos);
+            ProfilerCapture.FrameNode typicalTree = null, spikeTree = null;
+            if (typicalPos >= 0)
+            {
+                report.typicalFrame = acc.FrameIndices[typicalPos];
+                report.typicalFrameMs = series[typicalPos];
+                typicalTree = ReadMainThreadTree(report.typicalFrame, out _);
+            }
+            if (spikePos >= 0)
+            {
+                report.spikeFrame = acc.FrameIndices[spikePos];
+                report.spikeFrameMs = series[spikePos];
+                spikeTree = ReadMainThreadTree(report.spikeFrame, out _);
+            }
+
+            report.completed = completed && acc.FrameCount > 0;
+            ProfilerCapture.Build(report, acc, threads, typicalTree, spikeTree, options);
+        }
+
+        /// <summary>
+        /// Writes <c>prof_&lt;scene&gt;[_&lt;label&gt;]_&lt;stamp&gt;.json</c> and its .txt twin into
+        /// <paramref name="directory"/> and returns the .json path. The stamp is formatted with
+        /// the invariant culture: a file name is a KEY, and a device culture with a non-Gregorian
+        /// calendar would otherwise stamp it in another year.
+        /// </summary>
+        public static string Save(ProfilerCapture.Report report, string directory)
+        {
+            Directory.CreateDirectory(directory);
+            string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", CultureInfo.InvariantCulture);
+            string label = string.IsNullOrEmpty(report.label) ? "" : "_" + SanitizeFileName(report.label);
+            string baseName = $"prof_{SanitizeFileName(report.scene)}{label}_{stamp}";
+            File.WriteAllText(Path.Combine(directory, baseName + ".json"), JsonUtility.ToJson(report, true));
+            File.WriteAllText(Path.Combine(directory, baseName + ".txt"), ProfilerCapture.BuildText(report));
+            return Path.Combine(directory, baseName + ".json");
+        }
+
+        static string SanitizeFileName(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "capture";
+            foreach (var c in Path.GetInvalidFileNameChars()) s = s.Replace(c, '_');
+            return s;
         }
     }
 }

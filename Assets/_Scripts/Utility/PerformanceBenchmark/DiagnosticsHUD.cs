@@ -150,7 +150,23 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // ── config ──
         const Key ToggleKey = Key.F7, AdvancedKey = Key.F6, DiagnosticKey = Key.F5;
-        const string OutputFolderName = "CosmicShore Diagnostics";
+        /// <summary>
+        /// Where every report goes: <c>Documents/CosmicShore Diagnostics</c> (or
+        /// <c>persistentDataPath</c> where there is no Documents folder). Public so the Editor's
+        /// Profiler exporter writes beside the in-game reports.
+        /// </summary>
+        public const string OutputFolderName = "CosmicShore Diagnostics";
+
+        /// <summary>The absolute folder <see cref="OutputFolderName"/> resolves to on this machine.</summary>
+        public static string OutputDirectory
+        {
+            get
+            {
+                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
+                return Path.Combine(docs, OutputFolderName);
+            }
+        }
 
         // ── state ──
         bool _visible = true, _advanced;
@@ -183,6 +199,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         /// <summary>Operator-supplied tag for the run in flight ("pathOn" / "pathOff").</summary>
         string _recLabel = string.Empty;
+
+        // Per-system timings (MarkerBudget): one ProfilerRecorder per named marker, for the run.
+        // Extra markers come from a `m=Name1,Name2` argument; an F5 run takes the defaults only.
+        readonly MarkerBudgetRecorder _markerRecorder = new();
+        List<string> _recExtraMarkers;
+
+        // Frames discarded at the start of a run: the command's own frame and the recorders'
+        // handle enumeration land in them, and neither is the scenario being measured.
+        const int DiagWarmupFrames = 3;
+        int _recWarmupFrames;
         readonly List<float> _recFrameMs = new(8192);
         readonly List<DiagSpike> _recSpikes = new(256);
         string _lastSavedPath = "";
@@ -235,6 +261,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             RendererHideSwitch.ShowIfHidden();
             EcologyFreezeSwitch.ReleaseIfFrozen();
             DisposeRecorders();
+            _markerRecorder.Dispose();
             if (_instance == this) _instance = null;
         }
 
@@ -281,8 +308,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (_profRunning) return "a 'prof' capture is in progress — wait for it, or 'prof stop'";
 
             string label = string.Empty;
+            List<string> extraMarkers = null;
             for (int i = 0; i < args.Length; i++)
             {
+                if (MarkerBudget.TryParseExtraMarkers(args[i], out var names))
+                {
+                    extraMarkers ??= new List<string>();
+                    extraMarkers.AddRange(names);
+                    continue;
+                }
                 if (int.TryParse(args[i], out int seconds) && seconds > 0)
                 {
                     _diagSeconds = Mathf.Clamp(seconds, 1, 600);
@@ -292,9 +326,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             }
 
             _recLabel = label;
+            _recExtraMarkers = extraMarkers;
             StartDiagnostic();
             return $"recording {_diagSeconds}s" +
                    (string.IsNullOrEmpty(label) ? "" : $" as '{label}'") +
+                   $" · {_markerRecorder.Count} markers timed" +
                    $" · path {CosmicShore.ECS.PrismRenderService.StatusLine()}";
         }
 
@@ -610,28 +646,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 }
             }
 
-            // 3) The two single frames, read as trees once the median and the maximum are known.
-            //    Picked by the game's own PlayerLoop, so an Editor repaint is never "the spike".
-            var series = acc.SelectionSeries;
-            ProfilerCapture.PickTypicalAndSpike(series, out int typicalPos, out int spikePos);
-            ProfilerCapture.FrameNode typicalTree = null, spikeTree = null;
-            if (typicalPos >= 0)
-            {
-                report.typicalFrame = acc.FrameIndices[typicalPos];
-                report.typicalFrameMs = series[typicalPos];
-                typicalTree = ProfilerFrameReader.ReadMainThreadTree(report.typicalFrame, out _);
-            }
-            if (spikePos >= 0)
-            {
-                report.spikeFrame = acc.FrameIndices[spikePos];
-                report.spikeFrameMs = series[spikePos];
-                spikeTree = ProfilerFrameReader.ReadMainThreadTree(report.spikeFrame, out _);
-            }
-
+            // 3) The two single frames and the report - one step shared with the Editor exporter
+            //    (FrogletTools > Performance > Export Profiler Frames to JSON).
+            ProfilerFrameReader.Finish(report, acc, threads, options, completed);
             ProfilerFrameReader.Recording = _profWasRecording;
-
-            report.completed = completed && acc.FrameCount > 0;
-            ProfilerCapture.Build(report, acc, threads, typicalTree, spikeTree, options);
             string path = SaveProfReport(report);
             string line = ProfilerCapture.Summarize(report, path);
             Debug.Log($"[DiagnosticsHUD] {line}");
@@ -651,17 +669,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             try
             {
-                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-                if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
-                string dir = Path.Combine(docs, OutputFolderName);
-                Directory.CreateDirectory(dir);
-
-                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
-                string label = string.IsNullOrEmpty(r.label) ? "" : "_" + Sanitize(r.label);
-                string baseName = $"prof_{Sanitize(r.scene)}{label}_{stamp}";
-                File.WriteAllText(Path.Combine(dir, baseName + ".json"), JsonUtility.ToJson(r, true));
-                File.WriteAllText(Path.Combine(dir, baseName + ".txt"), ProfilerCapture.BuildText(r));
-                return Path.Combine(dir, baseName + ".json");
+                return ProfilerFrameReader.Save(r, OutputDirectory);
             }
             catch (Exception e)
             {
@@ -1089,6 +1097,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 // untagged run inheriting the previous arm's label, which would put two
                 // different populations in two files that claim to be the same arm.
                 _recLabel = string.Empty;
+                _recExtraMarkers = null;
                 StartDiagnostic();
             }
         }
@@ -1105,11 +1114,39 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _recDrawSum = _recBatchSum = _recSetPassSum = _recGcKbSum = 0;
             _recFrameMs.Clear();
             _recSpikes.Clear();
+            _recWarmupFrames = DiagWarmupFrames;
+            // Capacity: the most frames one recorder keeps. 250 fps covers every run this
+            // project makes; a faster one keeps its latest frames and says it was truncated.
+            // A diagnostic must never break the tool it rides on: if the recorders cannot start,
+            // the run still records everything else and says why the timings are missing.
+            try
+            {
+                _markerRecorder.Start(MarkerBudget.ResolveMarkers(_recExtraMarkers),
+                                      Mathf.Clamp(_diagSeconds * 250, 600, 60000));
+            }
+            catch (Exception e)
+            {
+                _markerRecorder.Dispose();
+                Debug.LogWarning($"[DiagnosticsHUD] per-system timings unavailable this run: {e.Message}");
+            }
             UpdateDiagButtonLabel();
         }
 
         void SampleRecording(float frameMs)
         {
+            if (_recWarmupFrames > 0)
+            {
+                // The run's clock and the marker recorders both start AFTER the warm-up, so the
+                // report's duration, frames and per-system timings describe the same frames.
+                if (--_recWarmupFrames == 0)
+                {
+                    _recStart = Time.unscaledTime;
+                    _recEnd = _recStart + _diagSeconds;
+                    _markerRecorder.ResetSamples();
+                }
+                return;
+            }
+
             _recFrames++;
             _recRunningSum += frameMs;
             _recFrameMs.Add(frameMs);
@@ -1167,7 +1204,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var r = new DiagReport
             {
                 scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name,
-                timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
                 durationSec = _diagSeconds,
                 frames = n,
                 draws = RInt(_drawCalls),
@@ -1188,8 +1225,19 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             // Computed AFTER avgFrameMs/avgFps are filled in below? No — they are filled in the
             // `if (n > 0)` block further down, so the verdict is assigned there instead. See
             // the ordering note at that site.
+            try
+            {
+                r.markers = _markerRecorder.Stop(n);
+            }
+            catch (Exception e)
+            {
+                _markerRecorder.Dispose();
+                r.markers = new List<MarkerBudget.MarkerStat>();
+                Debug.LogWarning($"[DiagnosticsHUD] per-system timings could not be read: {e.Message}");
+            }
             // Taken AFTER sampling stopped, so its own cost can never land in the run's frames.
             r.renderers = _lastCensus = RendererCensus.Take();
+            r.environment = RunEnvironment.Capture();
             r.frameCapVSync = QualitySettings.vSyncCount;
             r.frameCapTarget = Application.targetFrameRate;
             r.allocMB = Profiler.GetTotalAllocatedMemoryLong() / (1024 * 1024);
@@ -1218,6 +1266,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     namedCap, out float idleMs);
                 r.idleMs = idleMs;
                 r.boundVerdict = FrameBoundness.DescribeFrameLimit(limit, idleMs, namedCap);
+                r.p50FrameMs = MarkerBudget.Percentile(sorted, 0.50f);
+                r.p95FrameMs = MarkerBudget.Percentile(sorted, 0.95f);
                 r.p99FrameMs = sorted[Mathf.Clamp(Mathf.RoundToInt(0.99f * (n - 1)), 0, n - 1)];
                 r.maxFrameMs = sorted[n - 1];
             }
@@ -1233,8 +1283,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 string dir = Path.Combine(docs, OutputFolderName);
                 Directory.CreateDirectory(dir);
 
-                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string baseName = $"diag_{Sanitize(r.scene)}_{stamp}";
+                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+                // The label goes in the NAME, as it does for prof: a folder of diag files an hour
+                // apart is otherwise told apart only by opening each one.
+                string label = string.IsNullOrEmpty(r.label) ? "" : "_" + Sanitize(r.label);
+                string baseName = $"diag_{Sanitize(r.scene)}{label}_{stamp}";
                 File.WriteAllText(Path.Combine(dir, baseName + ".json"), JsonUtility.ToJson(r, true));
                 File.WriteAllText(Path.Combine(dir, baseName + ".txt"), BuildTxt(r));
                 return Path.Combine(dir, baseName + ".json");
@@ -1265,6 +1318,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                           $"gpu {(r.avgGpuMs > 0.001f ? r.avgGpuMs.ToString("F1") + " ms" : "n/a")} · {r.boundVerdict} · " +
                           $"mem {r.allocMB}/{r.reservedMB} MB (device {r.systemMB} MB)");
             if (r.renderers != null) sb.AppendLine($"renderers {r.renderers.Describe()}");
+            sb.AppendLine($"frame p50 {r.p50FrameMs:F1} · p95 {r.p95FrameMs:F1} · p99 {r.p99FrameMs:F1} ms");
+            if (r.environment != null) sb.AppendLine($"environment {r.environment.Describe()}");
+            if (r.markers is { Count: > 0 })
+            {
+                sb.AppendLine("markers (main thread, ms per frame over the whole run: avg / p50 / p95 / max · present · calls):");
+                foreach (var m in r.markers)
+                {
+                    if (!m.found) { sb.AppendLine($"  {m.name}: not in this build"); continue; }
+                    sb.AppendLine($"  {m.avgMs,7:F2} / {m.p50Ms,6:F2} / {m.p95Ms,6:F2} / {m.maxMs,7:F2}  " +
+                                  $"{m.presentPct,5:F1}%  {m.avgCalls,7:F1}  {m.name}" +
+                                  (m.unit != "ms" ? $" [unit {m.unit}]" : "") +
+                                  (m.truncated ? " [truncated]" : ""));
+                }
+            }
             sb.AppendLine($"spikes ({r.spikes?.Count ?? 0}):");
             if (r.spikes != null)
                 foreach (var s in r.spikes)
@@ -1511,6 +1578,23 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             public string scene, timestamp;
             public float durationSec, avgFps, avgFrameMs, p99FrameMs, maxFrameMs;
+
+            /// <summary>
+            /// The median and 95th-percentile frame, by the same nearest-rank rule as the p99.
+            /// The median is the frame a player gets most of the time; the average is pulled up by
+            /// hitches. Quote the median for "how fast", the p95/p99 for "how smooth".
+            /// </summary>
+            public float p50FrameMs, p95FrameMs;
+
+            /// <summary>
+            /// Main-thread milliseconds per frame for each named marker (see <see cref="MarkerBudget"/>),
+            /// biggest first. Unlike <c>prof</c> this needs no Profiler, so it works in a
+            /// Development build, where the frame target is judged.
+            /// </summary>
+            public List<MarkerBudget.MarkerStat> markers;
+
+            /// <summary>The conditions of the run (Editor vs build, Burst, resolution, Profiler...).</summary>
+            public RunEnvironment environment;
             public float avgCpuMs, avgCpuBusyMs, avgGpuMs;
             public string boundVerdict;
             public long allocMB, reservedMB;

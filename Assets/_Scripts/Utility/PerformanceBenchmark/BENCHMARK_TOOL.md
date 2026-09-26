@@ -309,7 +309,7 @@ prints in the Console row of the overlay. Full reference and when to use each:
 | Command | Does |
 |---|---|
 | `fps uncap` / `fps restore` | Remove / restore the vsync + target-frame-rate cap — a capped frame cannot show a change smaller than its idle time |
-| `diag [label] [seconds]` | Timed, **tagged** recording → `diag_*.json` + `.txt` with averages (`avgGcKbPerFrame`, `avgDraws`, CPU/GPU, `prismPath`, renderer census) |
+| `diag [label] [seconds] [m=A,B]` | Timed, **tagged** recording → `diag_<scene>_<label>_*.json` + `.txt`. Holds averages (`avgGcKbPerFrame`, `avgDraws`, CPU/GPU, `prismPath`, renderer census), the frame's **p50 / p95 / p99**, **per-system timings** (`markers`) and the **run environment** (`environment`). The timings are ~23 named markers timed with `ProfilerRecorder`: avg / p50 / p95 / max main-thread ms per frame, how often each ran, calls per frame. They work in a **Development build with no Profiler attached**. `m=` adds markers to the default list, and a name the build does not have reports `found: false`. The environment block records Editor or build, backend, Burst, whether the Profiler was recording, focus, resolution and quality. The first 3 frames are discarded |
 | `renderers` | Renderer census: enabled / disabled / visible, by type, top 8 materials |
 | `renderers hide <prefix>` / `renderers hide *<text>` / `renderers show` | Switch off every renderer whose material name starts with `<prefix>` — or, with a leading `*`, CONTAINS `<text>` — then exactly those back on. Use `*Spindle` for the spindle family: the lattice species wear `GyroidSpindleMaterial`, `AssemblySpindleMaterial` and `QuasicrystalSpindleMaterial`, which the prefix `Spindle` misses |
 | `prismpath on\|off\|auto` | Instanced vs legacy prism rendering, live |
@@ -353,7 +353,11 @@ screenshot is one frame.
 | `freeze` console command (drives `Cell.DiagnosticProductionHold`) | `EcologyFreezeSwitch.cs` |
 | Renderer census + `renderers hide/show` | `RendererCensus.cs` |
 | `prof` console command: parsing, per-frame averaging, self-time / self-GC ranking, typical + spike frame pick, report text (pure) | `ProfilerCapture.cs` |
-| `prof`: reads recorded Profiler frames into `ProfilerCapture` (editor-only) | `ProfilerFrameReader.cs` |
+| `prof`: reads recorded Profiler frames into `ProfilerCapture`, plus the shared finish + save step (editor-only) | `ProfilerFrameReader.cs` |
+| Export the Profiler window's frames (Play mode, a connected Development build, a loaded `.data` file) as `prof_*.json` — FrogletTools ▸ Performance ▸ Export Profiler Frames to JSON | `Editor/ProfilerJsonExporterWindow.cs` |
+| `diag` per-system timings: default marker list, `m=` parsing, per-marker avg / p50 / p95 / max (pure, tested) | `MarkerBudget.cs` |
+| `diag` per-system timings: one `ProfilerRecorder` per marker, names resolved via `ProfilerRecorderHandle.GetAvailable` | `MarkerBudgetRecorder.cs` |
+| The conditions a `diag` run was taken under (Editor vs build, Burst, Profiler, focus, resolution, quality, hardware) | `RunEnvironment.cs` |
 | Customizable hint rules (SO) | `BenchmarkHintRulesSO.cs` |
 | Netcode (NGO) markers + counters | `NetMarkers.cs` |
 | Game-load counters (prisms/VFX/vessels) | `GameLoadSampler.cs` |
