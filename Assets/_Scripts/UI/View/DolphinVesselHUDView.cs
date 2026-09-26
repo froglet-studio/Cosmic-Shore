@@ -17,7 +17,8 @@ namespace CosmicShore.UI
     ///
     ///   Charge → Echo Sight       (profile + living tally) → "Pilot Echo"
     ///   Mass   → crystal seeding  (the recharge fill)      → "Claimed Seed"
-    ///   Space  → cone blast       (jaws + tally)           → "Clean Blast"
+    ///   Space  → cone blast       (jaws)                   → "Clean Blast"
+    ///   Omni   → the blast itself (prisms it destroyed)   — the non-elemental card
     ///   Time   → charge fill rate (the boost ring)         → "Drift Ward"
     ///
     /// <para><b>Every slot draws one dimension of the same weapon.</b> The Dolphin has essentially
@@ -33,12 +34,17 @@ namespace CosmicShore.UI
     /// tintIconOnUpgrade OFF on this prefab), and the local rest scales below are re-anchored on
     /// every upgrade flip so this view's own tweens can never wipe the bump.</para>
     ///
-    /// <para>The SPACE slot shows exactly two things: the jaws open to the gape half-angle the next
-    /// blast will carry (the same angle the hull's own jaws open to), and the tally beneath them
-    /// reports what the last cone actually claimed — ANGLE and AMOUNT. A third readout for Space's
-    /// REACH was tried here as a thin bar under the jaws and dropped: reach only moves when the
-    /// element moves, so it was a near-static line competing with two live gauges, and the icon
-    /// says more by saying less.</para>
+    /// <para>The SPACE slot shows exactly one thing: the jaws open to the gape half-angle the next
+    /// blast will carry (the same angle the hull's own jaws open to). A readout for Space's REACH
+    /// was tried here as a thin bar under the jaws and dropped: reach only moves when the element
+    /// moves, so it was a near-static line competing with a live gauge.</para>
+    ///
+    /// <para>The DESTRUCTION TALLY — what the last cone destroyed — lives on the OMNI CRYSTAL card,
+    /// centred, and stays up until the next blast replaces it. That card is by definition "what
+    /// this hull does when it flies through a crystal", and for the Dolphin that is the blast, so
+    /// the number the blast produced belongs there rather than under the jaws. It is re-homed at
+    /// runtime by <see cref="EnsureGeneratedAbilityIcons"/>, so the prefab's authored text keeps
+    /// its font and material wherever it was authored.</para>
     ///
     /// Every reference is optional; an unwired slot is simply not drawn (opt-in rollout).
     /// </summary>
@@ -60,8 +66,8 @@ namespace CosmicShore.UI
         [SerializeField, Min(0.01f)] private float profileEngageDuration = 0.15f;
 
         [Header("Charge — the living tally")]
-        [Tooltip("PILOTS the last blast debuffed. A bare number, exactly like the Space slot's prism " +
-                 "tally - the Charge slot reports what the blast did to the LIVING, Space what it did " +
+        [Tooltip("PILOTS the last blast debuffed. A bare number, exactly like the omni card's prism " +
+                 "tally - the Charge slot reports what the blast did to the LIVING, the omni card what it did " +
                  "to MASS.")]
         [SerializeField] private TMP_Text pilotCountText;
         [Tooltip("CREATURES the last blast killed. Bare number, sitting under the pilot count.")]
@@ -113,15 +119,19 @@ namespace CosmicShore.UI
                  "top of the gape, which only moves ~1/150th of its range per skim.")]
         [SerializeField, Min(1f)] private float skimPunchScale = 1.3f;
 
-        [Header("Space — blast tally")]
-        [Tooltip("What the last cone destroyed. Sits on its OWN row beneath the jaws so a four- or " +
-                 "five-figure claim has room to render at full size rather than auto-shrinking into " +
-                 "the gape.")]
+        [Header("Omni crystal card — blast tally")]
+        [Tooltip("What the last cone destroyed. Wherever it is authored, it is RE-HOMED at runtime " +
+                 "onto the omni crystal card and centred there (see EnsureGeneratedAbilityIcons), " +
+                 "and it stays up until the next blast replaces it - no hold timer.")]
         [SerializeField] private TMP_Text blastCountText;
         [SerializeField] private Color blastFlashColor = new(1f, 0.85f, 0.4f, 1f);
         [SerializeField] private Color blastRestColor = Color.white;
-        [Tooltip("Seconds the blast tally stays up after a cone fires.")]
-        [SerializeField, Min(0.1f)] private float blastCountHoldSeconds = 2.5f;
+        [Tooltip("Largest the centred tally may draw, in the card icon's own 80-unit box. Aldrich's " +
+                 "widest digit advances ~0.73 per point, so 32 fits three digits with room and " +
+                 "auto-sizing takes a four- or five-figure claim down toward the minimum.")]
+        [SerializeField, Min(1f)] private float blastCountFontSizeMax = 32f;
+        [Tooltip("Smallest the centred tally may shrink to. Five digits fit the 80-unit box at 20.")]
+        [SerializeField, Min(1f)] private float blastCountFontSizeMin = 16f;
 
         // ---- Time: boost charged while drifting ---------------------------------------
         [Header("Time — boost charged while drifting")]
@@ -175,12 +185,74 @@ namespace CosmicShore.UI
         Color _pilotRest;
         Color _faunaRest;
 
-        float _blastCountTimer;
         float _echoCountTimer;
         float _currentJawAngle;
         bool _sightEngaged;
         bool _lastSeedsTeam;
         Color _teamColor;
+
+        // The omni crystal card's anchor icon - built once, never drawn. See EnsureGeneratedAbilityIcons.
+        Image _omniTallyIcon;
+        const string OmniTallyHostName = "BlastTallyButton";
+        const float OmniTallyIconSize = 80f;
+
+        /// <summary>
+        /// Builds the OMNI CRYSTAL card's readout: the blast tally, centred. Called by the lockup
+        /// before the row is laid out, the same seam the Squirrel's generated Space card uses.
+        ///
+        /// <para>The bound icon is deliberately INVISIBLE (alpha 0 AND the Graphic switched off —
+        /// an Image with no sprite would otherwise draw a solid quad). It exists so the card is not
+        /// LOCKED and so the lockup has an 80-unit rect to kern; the tally is its child, so it is
+        /// kerned with it and sits in exactly the box an authored icon would.</para>
+        ///
+        /// <para>The tally itself is the prefab's AUTHORED text, re-parented rather than generated,
+        /// so its font asset and material survive. Idempotent: a rebuild finds the host by name and
+        /// re-parenting to the same parent is a no-op.</para>
+        /// </summary>
+        public override void EnsureGeneratedAbilityIcons()
+        {
+            if (_omniTallyIcon) return;
+
+            var host = transform.Find(OmniTallyHostName) as RectTransform;
+            if (!host)
+            {
+                host = new GameObject(OmniTallyHostName, typeof(RectTransform))
+                    .GetComponent<RectTransform>();
+                host.SetParent(transform, false);
+            }
+
+            _omniTallyIcon = ResolveGeneratedChild<Image>(host, "BlastTallyIcon");
+            var iconRt = _omniTallyIcon.rectTransform;
+            iconRt.anchorMin = iconRt.anchorMax = iconRt.pivot = new Vector2(0.5f, 0.5f);
+            iconRt.sizeDelta = new Vector2(OmniTallyIconSize, OmniTallyIconSize);
+            _omniTallyIcon.color = new Color(1f, 1f, 1f, 0f);
+            _omniTallyIcon.enabled = false;
+            _omniTallyIcon.raycastTarget = false;
+
+            if (blastCountText)
+            {
+                var rt = blastCountText.rectTransform;
+                rt.SetParent(iconRt, false);
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = iconRt.sizeDelta;
+                rt.localScale = Vector3.one;
+                rt.localRotation = Quaternion.identity;
+
+                blastCountText.alignment = TextAlignmentOptions.Center;
+                // Never wrap: a wrapped number is a wrong reading that looks deliberate. Auto-size
+                // is safe here (unlike a ticking counter) because the value changes once per blast.
+                blastCountText.enableWordWrapping = false;
+                blastCountText.overflowMode = TextOverflowModes.Overflow;
+                blastCountText.enableAutoSizing = true;
+                blastCountText.fontSizeMin = blastCountFontSizeMin;
+                blastCountText.fontSizeMax = Mathf.Max(blastCountFontSizeMin, blastCountFontSizeMax);
+                blastCountText.margin = Vector4.zero;
+                blastCountText.raycastTarget = false;
+            }
+
+            BindCoreAbilityIcon(CoreAbility.OmniCrystal, _omniTallyIcon);
+        }
 
         public override void Initialize()
         {
@@ -220,12 +292,12 @@ namespace CosmicShore.UI
             _jawArm01 = -1f;             // a re-init must repaint, not early-out on a stale value
             ApplyJawArming(0f, immediate: true);
 
+            // Blank until the first blast: a "0" here would claim a blast that never happened.
             if (blastCountText)
             {
                 blastCountText.color = blastRestColor;
                 blastCountText.text = string.Empty;
             }
-            _blastCountTimer = 0f;
 
             ResolveTallyColors();
             if (pilotCountText) { pilotCountText.color = _pilotRest; pilotCountText.text = string.Empty; }
@@ -409,14 +481,16 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // Space: the cone fired - flash the tally and show what it took.
+        // Omni crystal card: the cone fired - flash the tally and show what it
+        // took. It STAYS until the next blast replaces it; nothing clears it on
+        // a timer. A blast that destroyed nothing shows "0", because it did
+        // replace the last one - blank is reserved for "no blast yet".
         // ---------------------------------------------------------------
         public void ReportBlast(int destroyedCount)
         {
             if (blastCountText)
             {
-                blastCountText.text = destroyedCount > 0 ? destroyedCount.ToString() : string.Empty;
-                _blastCountTimer = blastCountHoldSeconds;
+                blastCountText.text = Mathf.Max(0, destroyedCount).ToString();
 
                 // DOVirtual rather than a DOColor extension: this project ships no DOTween TMP
                 // module, so TMP_Text has no tween shortcut of its own.
@@ -435,12 +509,6 @@ namespace CosmicShore.UI
 
         void Update()
         {
-            if (_blastCountTimer > 0f && blastCountText)
-            {
-                _blastCountTimer -= Time.deltaTime;
-                if (_blastCountTimer <= 0f) blastCountText.text = string.Empty;
-            }
-
             if (_echoCountTimer > 0f)
             {
                 _echoCountTimer -= Time.deltaTime;
@@ -454,7 +522,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// What the last blast did to LIVING things: pilots caught and debuffed, creatures killed.
-        /// The Charge slot's counterpart to the Space slot's prism tally, and deliberately the same
+        /// The Charge slot's counterpart to the omni card's prism tally, and deliberately the same
         /// grammar — bare numbers that flash and fade — so the row reads as one language.
         ///
         /// The two are told apart by COLOUR rather than by a label or a glyph: pilots wear the

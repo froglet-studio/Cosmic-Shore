@@ -353,7 +353,7 @@ Every slot now draws one dimension of the same weapon:
 |---|---|---|
 | **Charge** | `BlastProfileGraphic` — a generated stadium mesh: the blast's cross-section, radius from Charge, extent from energy. Warms to the sight's own colour while RT is held | NEW. The band's old blast sprite is retired; `ProfileIcon` is now a transparent container with the generated profile as its child, the same arrangement `JawIcon` uses |
 | **Mass** | the crystal recharge fill, tinted by the tier the next cycle will plant | moved from the Charge band; the two carry pips are **deleted** with Twin Seed |
-| **Space** | the jaw pair (gape = energy) + the prism tally | jaws moved from the Time band; the tally moved onto its own row beneath them and was widened to 120px so a five-figure claim renders at full size |
+| **Space** | the jaw pair (gape = energy) | jaws moved from the Time band. The prism tally that sat beneath them moved again (2026-09-26) onto the **omni crystal card**, centred and held until the next blast — see `DolphinVesselHUDView.EnsureGeneratedAbilityIcons` |
 | **Time** | the authored 11-step boost ring | moved from the Mass band |
 
 The profile is procedural rather than an authored sprite ladder for the same reason the preview

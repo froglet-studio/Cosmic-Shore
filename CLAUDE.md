@@ -5007,8 +5007,11 @@ scale bump** with a one-shot unlock punch.
   just no longer wired here). Its HUD row was re-cut to match: Charge draws a **procedural**
   blast-profile capsule (`BlastProfileGraphic` — a sprite ladder would quantize a continuous
   function of two live meters and silently stop matching the blast on the first retune), Mass the
-  seeding recharge, Space the jaws plus a widened prism tally, Time the boost ring. **Space reports
-  what a blast did to MASS and Charge what it did to the LIVING** — pilots debuffed and creatures
+  seeding recharge, Space the jaws, Time the boost ring — and the prism tally lives on the
+  non-elemental **OMNI CRYSTAL card**, centred, held until the NEXT blast replaces it (the card is
+  "what this hull does with a crystal", which for the Dolphin is the blast; the authored text is
+  re-homed there at runtime by `DolphinVesselHUDView.EnsureGeneratedAbilityIcons`). **The omni card
+  reports what a blast did to MASS and Charge what it did to the LIVING** — pilots debuffed and creatures
   killed, two stacked bare numbers in the prism tally's own grammar, told apart by palette colour
   (pilots in `whiteColor`, the colour the engaged sight wears; creatures in `blueColor`, the
   neutral-lifeform range a living heart already wears). The two counts arrive differently and the
