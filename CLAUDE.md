@@ -2682,7 +2682,11 @@ score follows the PILOT. Astro League lists three hulls and therefore seats thre
 records: **a hull that changes machines MID-FLIGHT exposes every piece of simulation state that was
 decided once at spawn** — the vessel's replica NetworkVariable subscription now follows ownership
 (`OnGainedOwnership`/`OnLostOwnership`, idempotent) and the transformer re-seeds its integrator
-(`AdoptCurrentMotion`). `Docs/HomeHub/ARCHITECTURE.md` §3.7.
+(`AdoptCurrentMotion`), and **a stopped autopilot must leave its hull holding nothing** —
+`StopAIPilot` now releases the commit drift and any cycled ability it started, which played as an
+unrecoverable spin the first time a human took over an AI's hull mid-drift. Seat caps live in more
+than the card: the launch modal's Add AI ceiling (`MatchSeatCeiling`, 6 on an arena card) and the
+replicated `LobbySnapshot`'s AI slots (6) both had to move with it. `Docs/HomeHub/ARCHITECTURE.md` §3.7.
 
 `WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
 

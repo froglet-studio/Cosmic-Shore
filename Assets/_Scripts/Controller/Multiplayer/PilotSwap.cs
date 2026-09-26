@@ -139,6 +139,14 @@ namespace CosmicShore.Gameplay
             var humanClient = human.OwnerClientId;
             var aiClient = ai.OwnerClientId;
 
+            // The AI lets go of EVERYTHING before the hull changes hands, and it has to happen HERE,
+            // while the server still owns the hull, so the releases travel the owner's route
+            // (owner -> server -> every peer) instead of stopping on this machine only. A hull the
+            // AI was mid-drift in used to arrive with the drift still held - the course locked and
+            // the nose free - which read as a spin the new pilot could not get out of.
+            aiHull.ToggleAIPilot(false);
+            aiHull.VesselStatus.ActionHandler.ReleaseHeldInputs();
+
             // The hull a human now flies must outlive that human exactly as the hull they spawned
             // in does (ServerPlayerVesselInitializer.SpawnVesselForPlayer), or a pilot who drops
             // after a swap takes the hull with them and the departed-pilot AI takeover finds no

@@ -588,8 +588,7 @@ namespace CosmicShore.UI
             if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
             if (!remembered.HasHostTerms) return;
 
-            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxSeats, MaxSupportedPlayers),
-                                    MaxMatchSeats);
+            int ceiling = MatchSeatCeiling;
             var placements = LaunchPreferenceRules.ResolveAiPlacements(
                 remembered.AIDomains, ceiling - BaseSeats);
 
@@ -856,7 +855,8 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Place one AI on <paramref name="domain"/> - the armed Add AI mode's answer to a domain
-        /// tile tap. Capacity is the HOUSE match size (4 seats total, humans included) further
+        /// tile tap. Capacity is the HOUSE match size (<see cref="MatchSeatCeiling"/>: 4 seats, 6 on an
+        /// arena card, humans included) further
         /// clamped by the card; a full house refuses quietly (the roster already shows every seat
         /// taken).
         /// </summary>
@@ -866,8 +866,7 @@ namespace CosmicShore.UI
 
             // Placements stack ON TOP of the base seats (humans, floored at the card's minimum) -
             // a min-2 card played solo keeps its balanced auto-AI and a tap adds the THIRD seat.
-            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxSeats, MaxSupportedPlayers),
-                                    MaxMatchSeats);
+            int ceiling = MatchSeatCeiling;
             if (BaseSeats + config.AIDomains.Count >= ceiling)
             {
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
@@ -929,6 +928,27 @@ namespace CosmicShore.UI
         /// <summary>Total seats a match holds, humans included - the house party size. The old
         /// fill toggle used the same four; a lobby of twelve bots is not what Add AI means.</summary>
         const int MaxMatchSeats = 4;
+
+        /// <summary>The house size for an ARENA card (<see cref="SO_ArcadeGame.ArenaRules"/>), whose
+        /// cards go to six. Also what <c>ArcadeConfigSyncManager.LobbySnapshot.MaxAiSlots</c> is
+        /// sized against (one seat is always the host, so six AI slots is one spare).</summary>
+        const int MaxArenaSeats = 6;
+
+        /// <summary>
+        /// How many seats Add AI (and a remembered roster) may fill on the open card: the card's own
+        /// <see cref="SO_ArcadeGame.MaxSeats"/> under the house size - FOUR for an ordinary card and
+        /// SIX for an arena card. The arena went to six seats in the card assets while this stayed
+        /// a flat four, so the stepper offered six and Add AI refused the fourth bot.
+        /// </summary>
+        int MatchSeatCeiling
+        {
+            get
+            {
+                if (!_selectedGame) return MaxMatchSeats;
+                int house = _selectedGame.ArenaRules ? MaxArenaSeats : MaxMatchSeats;
+                return Mathf.Min(Mathf.Min(_selectedGame.MaxSeats, MaxSupportedPlayers), house);
+            }
+        }
 
         /// <summary>How many of the Jade→Ruby→Gold prefix the placed list needs (a Gold placement
         /// needs all three). Blue never occurs here - the tiles only offer real domains.</summary>

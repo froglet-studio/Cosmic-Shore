@@ -402,6 +402,29 @@ overwriting its own simulation from its echoed writes - it is now idempotent and
 (`OnGainedOwnership` / `OnLostOwnership`), which also makes the ownership message and the apply RPC
 order-independent.
 
+**First playtest found two defects, both fixed.**
+- *"It would not allow a 4th AI."* The cards went to six seats and the stepper followed, but Add AI
+  (and the remembered-roster restore) still capped at the modal's flat **house size of four**
+  (`MaxMatchSeats`). Both now read `MatchSeatCeiling` - `min(card MaxSeats, 4)`, or 6 on an arena
+  card (`MaxArenaSeats`). The same four was baked into the replicated lobby: `LobbySnapshot`
+  carried AI placements in four fixed slots (`Ai0..Ai3`), so a fifth placement was TRUNCATED on
+  the wire and a guest's roster silently disagreed with the host's. It carries six now
+  (`MaxAiSlots`, `ArcadeLobbySnapshotTests`). General rule: **raising a count in the data is only
+  half a change while any consumer still states the old count as a constant** - the stepper, the
+  Add AI path and the wire each had their own.
+- *"The D-pad sent me into a spin I couldn't get out of."* A stopped autopilot left its hull
+  holding things. The AI's COMMIT DRIFT (course locked on a crystal, nose free) is started with
+  `PerformShipControllerActions(CommitControl)` and released only by the AI's own steering, which
+  never runs again once it is stopped; and `StopAIPilot`'s per-ability `StopCoroutine` was handed
+  a fresh iterator and stopped nothing, so a cycled ability ran on to the end of its Duration on the
+  hull the human now flew. On the host - where ownership does not move, so nothing else resets the
+  hull - the human took over a hull stuck in a drift. `StopAIPilot` now releases the commit drift it
+  holds and stops every cycled ability that had started (`StartAIPilot` does the same before
+  restarting), and `PilotSwap.TransferOwnershipServer` stops the AI and releases the hull's held
+  inputs while the server still owns it, so the releases replicate. The rule: **a stopped pilot
+  must leave its hull holding nothing** - harmless to get wrong while the only stop was the menu
+  handing the controls straight back to the same player, and not once a hull changes pilots.
+
 **Stated limits.** Element levels are simulated on the machine that OWNS a hull and never
 replicate, so a hull that changes machines keeps the levels its new owner's replica held (starting
 elements plus whatever it saw) - crystal-earned levels the previous owner simulated do not travel.
