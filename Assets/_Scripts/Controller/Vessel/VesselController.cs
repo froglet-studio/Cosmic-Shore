@@ -352,10 +352,18 @@ namespace CosmicShore.Gameplay
                 VesselRearView.ClearTarget(transform);
             }
 
+            // The HUD is OPTIONAL on a hull, exactly as Initialize treats it: the Urchin ships
+            // with no HUD controller at all. Dereferencing it unguarded here threw on the Urchin
+            // halfway through a pilot swap - after the hull's Player had changed and before the
+            // other hull's had - so the Urchin went on reading the AI's stick (it looked like
+            // "autopilot switched on") while the human never reached the teammate's hull. A
+            // hull-handover path must tolerate every optional component Initialize tolerates.
+            var hud = VesselStatus.VesselHUDController;
+
             // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)
             {
-                VesselStatus.VesselHUDController.UnsubscribeFromEvents();
+                hud?.UnsubscribeFromEvents();
                 if (player.IsInitializedAsAI)
                 {
                     VesselStatus.VesselTransformer.ToggleActive(true);
@@ -366,15 +374,15 @@ namespace CosmicShore.Gameplay
                     SubscribeToNetworkVariables();
                 }
                 VesselStatus.ActionHandler.ToggleSubscription(false);
-                VesselStatus.VesselHUDController.HideHUD();
+                hud?.HideHUD();
 
                 return;
             }
             
             UnsubscribeFromNetworkVariables();
 
-            VesselStatus.VesselHUDController.SubscribeToEvents();
-            VesselStatus.VesselHUDController.ShowHUD();
+            hud?.SubscribeToEvents();
+            hud?.ShowHUD();
 
                 
             VesselStatus.VesselTransformer.ToggleActive(true);

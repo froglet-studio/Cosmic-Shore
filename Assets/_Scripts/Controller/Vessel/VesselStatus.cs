@@ -64,7 +64,12 @@ namespace CosmicShore.Gameplay
             get
             {
                 if (vesselHUDController is IVesselHUDController c) return c;
-                CSDebug.LogError($"{name}: vesselHUDController does not implement IVesselHUDController", this);
+                // A hull may legitimately carry NO HUD (the Urchin has no HUD prefab yet), and
+                // VesselController.Initialize already warns once for that. Only a reference that
+                // is SET but of the wrong type is an authoring error worth shouting about -
+                // logging on every read turned an optional component into console spam.
+                if (vesselHUDController)
+                    CSDebug.LogError($"{name}: vesselHUDController does not implement IVesselHUDController", this);
                 return null;
             }
         }

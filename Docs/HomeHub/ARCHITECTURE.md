@@ -458,6 +458,24 @@ order-independent.
   cannot recover by themselves, is re-pointed as well as reported. A server-side refusal is a
   warning too, since a refused swap and a D-pad that does nothing look identical.
 
+**Third playtest (Urchin in Regatta, Serpent teammate): the swap THREW halfway, and that was the
+whole symptom.** `VesselController.ChangePlayer` dereferenced the hull's HUD controller unguarded,
+and the Urchin ships with none (`vesselHUDController: {fileID: 0}` - it has no HUD prefab yet;
+every other arena hull has one). So `PilotSwap.ApplyLocal` got as far as re-pointing both Players
+and the Urchin's own pilot pointer, then threw on the Urchin's HUD before the Serpent was ever
+re-bound: the Urchin went on reading the AI's `InputStatus` (it looked exactly like "the D-pad
+switched on an autopilot"), the camera never moved, the takeover check never ran, and a second
+press swapped the pointers back. `Initialize` has always tolerated a null HUD; `ChangePlayer` now
+does too (one cached read, null-conditional), the `VesselStatus.VesselHUDController` getter stops
+logging an error on every read of a legitimately absent HUD (it still shouts when a reference is
+SET but of the wrong type), and `ApplyLocal` re-binds each hull in isolation (`PilotSwap.Rebind`),
+so a throw on one hull is reported by name and the other hull still changes hands. The previous
+round's three fixes were real defects but none of them was this one. General rule: **a hull-handover
+path must tolerate every optional component the hull's own `Initialize` tolerates**, because a swap
+is the first thing to run it against every hull on the card rather than against the one a vessel
+was spawned as. Stated cost: swapping INTO the Urchin still shows no ability row, because it has
+none to show.
+
 **Stated limits.** Element levels are simulated on the machine that OWNS a hull and never
 replicate, so a hull that changes machines keeps the levels its new owner's replica held (starting
 elements plus whatever it saw) - crystal-earned levels the previous owner simulated do not travel.

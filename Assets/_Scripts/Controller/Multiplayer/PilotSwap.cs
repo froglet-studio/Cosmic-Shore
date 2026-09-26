@@ -161,6 +161,19 @@ namespace CosmicShore.Gameplay
                 humanHull.NetworkObject.ChangeOwnership(aiClient);
         }
 
+        static void Rebind(IVessel hull, Player pilot)
+        {
+            try
+            {
+                hull.ChangePlayer(pilot);
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[PilotSwap] Re-binding {hull.VesselStatus.VesselType} to {pilot.Name} " +
+                                 $"threw; the swap continues on the other hull.\n{e}");
+            }
+        }
+
         /// <summary>
         /// Exchange the two pilots' hulls on THIS machine. Runs on every peer, server included.
         /// </summary>
@@ -188,8 +201,12 @@ namespace CosmicShore.Gameplay
             // input subscription (releasing anything held on the hull being left), the camera and
             // which machine's transformer simulates. Identity-guarded clears, so the order of these
             // two calls cannot cancel the new binding.
-            humanHull.ChangePlayer(ai);
-            aiHull.ChangePlayer(human);
+            // Each re-bind is ISOLATED: a swap that throws on one hull must still finish on the
+            // other, or the two hulls disagree about who flies them - which is exactly how the
+            // Urchin (no HUD controller) left its human reading the AI's stick while the teammate
+            // hull never changed hands. The throw is still reported, loudly, with the hull named.
+            Rebind(humanHull, ai);
+            Rebind(aiHull, human);
 
             // Both hulls are mid-flight, and each is about to be simulated by a transformer that
             // was NOT the one flying it a frame ago on at least one machine.
