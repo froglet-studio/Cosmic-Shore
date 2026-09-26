@@ -258,10 +258,10 @@ trio, and the traps).
   authored → `ElementalCrystalSet.defaultHeartWorldScale`), applied at the single gate every
   heart passes through (`Crystal.SetEmbeddedIn` → `LifeFormCrystal.ApplyHeartSize`) and
   re-applied by `LifeForm`/`Fauna.ApplyHeartSize` when the variant lands. A crystal's world
-  scale is read twice AS GAMEPLAY — the collect reward
-  (`SkimmerAdjustElementLevelByCrystalEffectSO`) and the live domain fauna buff
-  (`DomainFaunaBuffSystem`) — so the size IS the reward, and that is now the DESIGN rather than
-  the hazard: **a bigger kill pays more**, the largest lifeform's heart being worth 4.0× a
+  scale is read AS GAMEPLAY by the collect reward
+  (`SkimmerAdjustElementLevelByCrystalEffectSO`) — it was read a SECOND time by the live domain
+  fauna buff, which was removed (`Docs/ECOSYSTEM.md §15`) — so the size IS the reward, and that
+  is the DESIGN rather than the hazard: **a bigger kill pays more**, the largest lifeform's heart being worth 4.0× a
   SchwarzP Charge plant's. It only holds while the whole band stays under
   `ElementalCrystalSetSO.MaxSafeHeartWorldScale` (**4.8**, under the 5.0 world scale at which
   `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)` saturates) — past that, two visibly
@@ -293,8 +293,7 @@ trio, and the traps).
   thin rather than small — four concentric `ShepardGraph` shells vs Space's solid `_spread`
   body — and that number is an eye-calibration pending playtest, not a measurement. A
   per-element size fix belongs on that element's crystal PREFAB child; putting it on the root
-  moves the collect reward and the live domain fauna buff with it, since both read the root's
-  `lossyScale`. `Docs/ECOSYSTEM.md §33`.
+  moves the collect reward with it, since that reads the root's `lossyScale`. `Docs/ECOSYSTEM.md §33`.
   **Collecting one is a BEAT, not a journey** — snatch → suction → absorb in **0.44 s**, ending in
   the element's spent-crystal husk bursting into the vessel's wake (`Crystal.Explode`, the same
   payoff an omni pickup plays) and the crystal dissolving out on `_opacity` rather than being
@@ -4539,7 +4538,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 
 At any total at most two adjacent colours show (e.g. +8 → 3 blue + 2 white). Petals are pure white, so a single multiply-tint reproduces every colour exactly — **never hue-shift** (a low-saturation source can't reach grey/white or vivid colours). Each petal recolours and scale-pops about the flower centre (outward bloom) on upgrade, flash+shakes on downgrade.
 
-**The maintained-mechanism law (LOCKED).** No sustained/held mechanism may HOLD an element above integer level **10** — the 10..15 overcharge band belongs to **transients only**, and everything in it drains back to (at most) 10: temporary effects decay to zero, crystal-earned base overcharge bleeds down (`RecoverBaseLevels`), the domain fauna buff's held layer fills only to 10 with over-ceiling increases converted to draining spikes, and the comeback bonus fills toward 10 and never past it. The player always gets to *feel* a reward above 10, and the drain always restores the headroom to feel the next one. Enforced in `ResourceSystem` (`SustainedCeiling`, `CompositeEffectiveLevel`); mechanics log: `Docs/ECOSYSTEM.md §15`.
+**The maintained-mechanism law (LOCKED).** No sustained/held mechanism may HOLD an element above integer level **10** — the 10..15 overcharge band belongs to **transients only**, and everything in it drains back to (at most) 10: temporary effects decay to zero, crystal-earned base overcharge bleeds down (`RecoverBaseLevels`), and the comeback bonus fills toward 10 and never past it. (A FOURTH such layer, the **domain fauna buff** — living fauna hearts empowering their whole domain's vessels — was **REMOVED** in Sep 2026, because it granted standing elemental power for nothing but having fauna alive. The law governs whatever sustained mechanisms exist; do not rebuild that one. `Docs/ECOSYSTEM.md §15`.) The player always gets to *feel* a reward above 10, and the drain always restores the headroom to feel the next one. Enforced in `ResourceSystem` (`SustainedCeiling`, `CompositeEffectiveLevel`); mechanics log: `Docs/ECOSYSTEM.md §15`.
 
 **Single source of truth — `ElementalBarsConfigSO`** (`_Scripts/ScriptableObjects/`, asset at `Resources/ElementalBarsConfig.asset`). Per CLAUDE.md Config Separation, all shared look/feel lives here: the 5 tick colours, per-element petal sprites, and every juice timing/haptic. All vessels reference the one asset, so the spec can't drift between prefabs. Holds the petal math (`DistributePetalValues`, `ColorForTick`) and constants (`PetalCount=5`, `MinLevel=-5`, `MaxLevel=15`, `PetalSpacing=72`).
 

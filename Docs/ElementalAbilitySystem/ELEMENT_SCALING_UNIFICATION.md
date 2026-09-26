@@ -88,7 +88,7 @@ quantized to tenths — while `ElementalScaling.Multiplier` used the **continuou
 `GetNormalizedLevel`. The unified formula uses the continuous one.
 
 Crystal progression moves the level in exact tenths (`AdjustLevel(±0.1)`) and the two agree there.
-They diverge only while a temporary effect, fauna buff or comeback bonus is decaying — all
+They diverge only while a temporary effect or comeback bonus is decaying — both
 continuous — where the old form **stepped** and this one **glides**. No authored endpoint moves:
 both return `Min` at rest and `Max` at level 10. Measured on the ×1→×2.5 case: 1986 of 2001 samples
 differ, max delta 0.15, zero at every tenth.
