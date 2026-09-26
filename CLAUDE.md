@@ -4832,12 +4832,13 @@ scale bump** with a one-shot unlock punch.
   missing and every hull can fly through a crystal. Its upper plate carries the crystal's own mark
   from ONE authored row on the fleet-wide style (`AbilityLockupStyleSO.coreAbilityEmblems`), drawn
   **untinted** — an omni crystal belongs to nobody until somebody takes it — while its lower plate
-  is per-vessel (`omniAbilitySprite`) because what a crystal DOES is a property of the hull. Only
-  the Squirrel authors one today (a ring of shielded prisms, baked by
+  is per-vessel (`omniAbilitySprite`) because what a crystal DOES is a property of the hull. Two
+  hulls fill it today: the Dolphin GENERATES its lower plate (the blast's prism tally, re-homed by
+  `DolphinVesselHUDView.EnsureGeneratedAbilityIcons`), and the Squirrel authors one (a ring of shielded prisms, baked by
   `author_squirrel_shielded_ring_icon.py` as the octahedron's own cross-section — *a shielded prism
   reads as a DIAMOND where a bare one reads as a SQUARE*, so the icon says "shielded" by drawing
   the armour — and tinted the pilot's domain's shielded base face through the new
-  `SO_ColorSet.GetShieldedSignalColor`, `Docs/PALETTE.md §2.7`); the other seven render LOCKED,
+  `SO_ColorSet.GetShieldedSignalColor`, `Docs/PALETTE.md §2.7`); the other six render LOCKED,
   which is the honest state and what a locked card is for. **It shipped painted the NO-TEAM
   SENTINEL, and that is the finding worth more than the card**: `SO_ColorSet` authors a full
   `DomainColorSet` for `Domains.Blue` and `TryGetColorSetByDomain` returns it, so a domain that had
@@ -5007,8 +5008,11 @@ scale bump** with a one-shot unlock punch.
   just no longer wired here). Its HUD row was re-cut to match: Charge draws a **procedural**
   blast-profile capsule (`BlastProfileGraphic` — a sprite ladder would quantize a continuous
   function of two live meters and silently stop matching the blast on the first retune), Mass the
-  seeding recharge, Space the jaws plus a widened prism tally, Time the boost ring. **Space reports
-  what a blast did to MASS and Charge what it did to the LIVING** — pilots debuffed and creatures
+  seeding recharge, Space the jaws, Time the boost ring — and the prism tally lives on the
+  non-elemental **OMNI CRYSTAL card**, centred, held until the NEXT blast replaces it (the card is
+  "what this hull does with a crystal", which for the Dolphin is the blast; the authored text is
+  re-homed there at runtime by `DolphinVesselHUDView.EnsureGeneratedAbilityIcons`). **The omni card
+  reports what a blast did to MASS and Charge what it did to the LIVING** — pilots debuffed and creatures
   killed, two stacked bare numbers in the prism tally's own grammar, told apart by palette colour
   (pilots in `whiteColor`, the colour the engaged sight wears; creatures in `blueColor`, the
   neutral-lifeform range a living heart already wears). The two counts arrive differently and the

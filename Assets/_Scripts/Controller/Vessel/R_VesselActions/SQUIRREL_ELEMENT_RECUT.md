@@ -448,9 +448,8 @@ same thing the crystal's own palette says (`Docs/PALETTE.md §2.2`).
 fleet-wide style (`AbilityLockupStyleSO.coreAbilityEmblems` → `ElementIcons/OmniCrystal_Active.png`,
 the same crystal the Dolphin's Mass card wears) because the mark means the same thing on every hull;
 the lower icon is per-vessel (`omniAbilitySprite`) because what a crystal *does* is a property of
-the hull. Only the Squirrel authors one today — the other seven render **LOCKED**, which is what a
-locked card is for, and six of them have a real ability waiting for art (the table is in the lockup
-doc).
+the hull. The Squirrel authors one and the Dolphin generates one (the blast's prism tally) — the
+other six render **LOCKED**, which is what a locked card is for (the table is in the lockup doc).
 
 ### The Squirrel's icon is a measurement, not a drawing
 

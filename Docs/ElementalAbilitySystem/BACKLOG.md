@@ -500,3 +500,28 @@ measurement attached is worse than no row.
   draw the shared emblem above a locked plate, which is the honest state and what a locked card is
   for. What a crystal DOES is a property of the hull, so each icon is a design decision for that
   vessel, and the owner has said they will take a pass. No action until then.
+
+## From the Dolphin omni-tally branch (`cece/tender-brown-eu5bdr`, 2026-09-26)
+
+- **Correction to the row above: SIX of eight vessels now render a LOCKED omni card, not seven.**
+  The Dolphin's omni card is GENERATED (its blast's prism tally, centred, held until the next
+  blast) by `DolphinVesselHUDView.EnsureGeneratedAbilityIcons`, which binds an invisible anchor
+  icon so the card is not locked. The "exactly 1 HUD variant authors `omniAbilitySprite`" count
+  still holds — the Dolphin authors none; it generates.
+
+- **Latent orphan if the Dolphin ever authors `omniAbilitySprite`.** DEBT this branch CREATED.
+  `AbilityLockupView.Build` calls `EnsureGeneratedAbilityIcons()` before `EnsureOmniCrystalCard()`,
+  so the tally binds `CoreAbility.OmniCrystal` first; `BindCoreAbilityIcon` then returns on the
+  second bind (`if (coreAbilities[i].icon) return;`, `VesselHUDView.cs:426`) — but
+  `EnsureOmniCrystalCard` has ALREADY built and painted its `OmniCrystalHost/OmniCrystalIcon`
+  (`VesselHUDView.cs:368-382`) before asking. Result: a visible, un-placed sprite at the view root.
+  Not reachable today (`grep -n omniAbilitySprite` over `DolphinHUDVariant.prefab` and the Dolphin vessel prefabs → no key, so the field is its C# default, null).
+  Fix when it becomes reachable: have `EnsureOmniCrystalCard` return early when an OmniCrystal
+  binding already carries an icon, BEFORE building its host.
+  *Shape (`/refactor` §3): two producers for one slot, arbitrated by call order.*
+
+- **`VesselAbilityRowWirer` still authors `BlastCount` under the Space jaw container**
+  (`Assets/_Scripts/Editor/VesselAbilityRowWirer.cs:264`, `:376`). Harmless — the view re-homes the
+  text onto the omni card at runtime, keeping its font and material — but the authored position is
+  now a lie a reader will believe. Either author it under a `BlastTallyButton` host at the view
+  root, or leave it and say so in the wirer's comment. No prefab was edited on this branch.
