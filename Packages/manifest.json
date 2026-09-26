@@ -25,7 +25,7 @@
     "com.unity.multiplayer.playmode": "1.6.3",
     "com.unity.multiplayer.tools": "2.2.12",
     "com.unity.multiplayer.widgets": "1.0.1",
-    "com.unity.netcode.gameobjects": "2.5.0",
+    "com.unity.netcode.gameobjects": "2.13.3",
     "com.unity.nuget.newtonsoft-json": "3.2.2",
     "com.unity.performance.profile-analyzer": "1.2.3",
     "com.unity.purchasing": "4.12.2",
