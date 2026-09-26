@@ -208,7 +208,7 @@ namespace CosmicShore.Editor.Codex
             for (int i = 0; i < ElementChargerToy.MatrixElements.Count; i++)
             {
                 var element = ElementChargerToy.MatrixElements[i];
-                var variant = Variant(element.ToString(), $"Charge {element} by {Count(levels, "level")}");
+                var variant = Variant(element.ToString(), $"Raise your {element} by {Count(levels, "level")}");
                 // The variant IS an element, so it resolves to that element's own ethirion image
                 // at draw time (CodexSO.VariantImage) - nothing is baked for it.
                 variant.Element = element;
@@ -424,8 +424,8 @@ namespace CosmicShore.Editor.Codex
         static string CategoryLine(ToyCategory category) => category switch
         {
             ToyCategory.Pilot =>
-                "Pilot — it changes YOU. The hull you fly or the colours you wear; the world is " +
-                "exactly where you left it",
+                "Pilot — it changes YOU. The hull you fly, the colours you wear or the elements " +
+                "your hull carries; the world is exactly where you left it",
             ToyCategory.World =>
                 "World — it changes WHERE YOU ARE. A world arrives or leaves, which is the " +
                 "heaviest thing any tool does",
