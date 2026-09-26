@@ -345,6 +345,219 @@ version:
   on that event rather than on `IsInFreestyle` because the flag flips at the *start* of the
   transition, while the vessel's input is still paused and the camera is still blending.
 
+## 4.0 The two big buttons above the grid
+
+The Toy Box carries the same two-big-buttons-then-a-grid shape as the arcade, and the buttons are
+its **own** two rather than copies of the arcade's:
+
+| | arcade | Toy Box |
+|---|---|---|
+| left | weekly challenge — one curated mode a week, ranked by time | **today's activity** — one activity a day, paid for TRYING it |
+| right | Maelstrom — a tournament of other modes | **shuffle** — re-roll every setting the toys own |
+
+Both are authored by `Tools/Build/author_toybox_top_buttons.py` (`--check`, `--self-test`), which
+also writes the one asset they read (`Resources/ToyboxDailyActivityConfig`, optional — every field
+has a code default, so a missing asset costs the feature nothing).
+
+### 4.0.1 One flag divides them, and it already existed
+
+`ToyShellOption.RequiresFreestyle` means *this only means anything with the player at the stick* —
+a painting, a wander, a voyage. That is exactly the difference between an **activity** and a
+**setting**, so the left button's pool is the `RequiresFreestyle` leaves and the right button's is
+everything else. Neither carries a list of toys, neither needed a new field, and a toy authored
+tomorrow joins whichever button its own declaration puts it in.
+
+That is the same reasoning as `ToyDefinitionSO.Category` and `ToyShellOption.AppliesOnSelect`: what
+a thing costs and what it needs are properties of the thing, not opinions a menu gets to hold.
+
+### 4.0.2 Today's activity: derived definition, stored claim
+
+`DailyToyActivity` (`_Scripts/System/Toys/DailyToyActivity.cs`) is the weekly challenge's two rules
+one feature over:
+
+- **The definition is DERIVED.** Today's activity is `FNV-1a(UTC day key) % candidates` over the
+  live toys' activity options in a stable order (registry placement order, then each toy's own
+  option order), so it resolves on a cold launch, offline, and identically on every device — with
+  nothing authored and no server round trip. The hash is
+  `WeeklyChallengeCatalogSO.HashPeriodKey`, shared because the platform-independence argument for
+  it is the same one and the project should have exactly one of those. The **day key is local**,
+  deliberately: the Toy Box's day must not depend on the arcade's catalog asset being present.
+  `InvariantCulture` is load-bearing for the same reason it is there — a bare `ToString("yyyy-MM-dd")`
+  formats through `CurrentCulture`, whose calendar is not always Gregorian.
+- **The pool is the LIVE toys, never an authored list.** A catalog naming
+  `Connect the Dots > Rainbow` would be the second authority on what a toy does that this whole
+  window exists to avoid (§4.1.1), and it would go out of step the first time a painting was
+  renamed. A painting added tomorrow is in the draw for free.
+- **Only the claim is STORED**, and it is stored where it cannot be re-earned:
+  `PlayerDataService.UnlockReward("toy-activity:<day>")`, whose `UnlockedRewardIds` is cloud-merged.
+  A local file would hand a reinstall or a second device the same day's crystals again.
+
+**Paid for trying, not for finishing.** A painting has no pass mark and a wander has no end, so
+there is nothing to complete. The press opens the activity's own toy with the activity selected —
+so the player sees what they are being asked to fly first — and the reward lands on the *commit*,
+through `ToyConfigureModal.BindToPath(surface, path, onApplied)`. That callback is an opaque
+`Action` on purpose: the detail window knows how to apply an option and nothing about days, claims
+or crystals.
+
+**A claimed day is still playable.** The card reads DONE and counts down to tomorrow; it never goes
+dead on the player who did what it asked — the same correction the weekly challenge card records
+for its own spent-attempt state.
+
+**Stated limit: only a toy's TOP LAYER is in the pool.** Every toy that offers an activity today
+offers it flat (the gallery's sixteen canvases, the Wanderway's one *Wander*, the Arkway's one
+*Set sail*), while walking every branch to find a nested one would pay the Lifeform Matrix's whole
+species enumeration to draw a menu button. A toy that nests its activities is not in this pool;
+widening it is one recursive call, at that cost.
+
+### 4.0.3 Shuffle: plan, then apply, World last
+
+`ToyShuffle` (`_Scripts/Controller/Toys/ToyShuffle.cs`) picks one random setting per live toy and
+applies it. Three things about it are load-bearing:
+
+- **It calls the toys.** Every change is a live `ToyShellOption.Apply` — the call the ring makes —
+  so a shuffle can never do something no toy can do.
+- **Plan, THEN apply.** Every decision is taken against the registry as it stands before anything
+  changes, because applying a cell swap tears the toybox down and unregisters every other surface.
+  A shuffle that decided as it went would be deciding against destroyed toys halfway through. For
+  the same reason `ToyCategory.World` picks go **last**, after the ones that only change you, with
+  a beat between so a hull respawn has settled before a veiled cell build starts on top of it. Both
+  toys already refuse a second pass while their own swap is in flight, so the beat buys the *read*
+  (you see your hull change, then the world change) rather than correctness.
+- **A random DESCENT, not an enumeration.** The Lifeform Matrix is three layers deep, so
+  enumerating its leaves would expand every species of every kingdom to make one choice. A descent
+  expands one branch per layer — and "pick a random thing from this toy" is what a descent means.
+  It does not backtrack: a branch that turns out to hold no setting costs that toy its turn rather
+  than being retried, which is deliberate, since backtracking would expand exactly the subtrees the
+  descent exists to avoid.
+
+It prefers a leaf that is **not** where the player already is, because the cell selector does offer
+the current world (flying it is the freestyle reset) and a shuffle that landed there would read as
+having done nothing. The summary is computed **before** the plan is applied, because an option's
+label is read off a live toy and the cell swap at the end of a plan destroys the toys the earlier
+picks came from.
+
+**A shuffle from the menu puts the player IN the result** (2026-09-26, prompter-directed). It used to
+leave the window open and re-roll behind it, which handed the player a new hull, domain and world and
+then left all three on autopilot behind a modal. `ToyboxModal.ShuffleToyBox` now closes the window,
+calls `MenuCrystalClickHandler.ToggleTransition()` and waits for
+`MenuFreestyleEventsContainerSO.OnGameStateTransitionEnd` — the configure window's handoff, and for
+its reason: `IsInFreestyle` flips at the transition's START while input is still paused, so a vessel
+swap begun then restores control to nobody — and only then applies the shuffle. The plan is re-drawn
+after the wait (a toy can be torn down in those seconds, and a pick against a destroyed surface
+throws). Already flying: it just closes and shuffles. A wait that times out still shuffles — a
+re-roll is a setting change, not a run that needs a pilot to start against — and a scene with no
+freestyle toggle shuffles in place with a warning. The button's second line still reports what the
+last shuffle landed on, for the next time the window is opened.
+
+**Nothing here is a cull or a clock.** A cell swap removes mass because a player asked for a new
+world — the same explicit, active event class as flying the station, which is what keeps this inside
+the conserved-mass law (`Docs/ECOSYSTEM.md` §19). There is no auto-shuffle and there must never be
+one.
+
+### 4.0.3a Both halves are PROVEN, not read
+
+`_Scripts/Tests/Editor/ToyboxTopButtonsTests.cs` runs the real `ToyShuffle` and `DailyToyActivity`
+against a fake roster shaped like the shipped toys (flat settings, one three-layer Creation toy, two
+activity-only toys). Thirteen tests, and what they hold is the SCOPE rule in both directions: the
+shuffle reaches every setting leaf over 400 rolls and **never** an activity, a current row or a
+read-only row; the activity pool is the `RequiresFreestyle` leaves and nothing else; and the World
+pick is always applied last.
+
+Two of them are measurements rather than assertions of intent:
+
+- **The draw spreads.** The pool is derived at runtime, so its size is not a constant anybody
+  authored — a hash whose low bits cycled with the pool size would starve an activity forever.
+  Measured over three years of day keys for every pool size 2–40: **nothing starves**, and the
+  thinnest option lands at **0.452 of ideal** (pool 33, 15 draws against 33.2). The test's skew rail
+  is `ideal/3` because of that number — a rail at `ideal/2` was written first and **would have
+  failed on pool 33**, which is the only reason it is a rail and not a trap.
+- **The day key survives a non-Gregorian locale.** The key is re-derived under `ar-SA`, `th-TH` and
+  `fa-IR` and must not move. That is the weekly challenge's own shipped defect, tested here rather
+  than inherited.
+
+They were also compiled and RUN offline against transcribed Unity stubs (13/13) before the branch
+went up, which is how the `ideal/2` rail was caught. Stated limit: that run proves the LOGIC, not
+the editor — the file is an ordinary edit-mode test and the Unity test runner is what proves it in
+place.
+
+### 4.0.4 The buttons sit OUTSIDE the scroll view, unlike the arcade's
+
+The arcade's two cards are children of its `ScrollRect`'s Content, and §4.1.8 records what that
+cost: a Content is a **scroll extent, not a layout frame**, its `VerticalLayoutGroup` is disabled,
+and two of its three children are anchored to a *fraction* of its height — so every unit added to
+the content stretched the grid by 0.625 and the Maelstrom banner by 0.239, and a 13th arcade card
+became unreachable.
+
+These two are siblings of the scroll view, pinned, so nothing about the grid's extent can move them
+and growing the toy grid cannot push them off screen. Stated difference in behaviour: **they do not
+scroll away**, where the arcade's do.
+
+The bands are asserted rather than eyeballed (`assert_layout`, four negative controls): header
+`0.945..0.985`, buttons `0.735..0.930`, grid `0..0.720` — each button **631 × 177 px**, and the grid
+keeps **654 px**, which is the two full 250-tall rows it showed before (a third was never visible).
+The assertion is an ORDERING over the constants, not the pixel numbers they happen to produce, so
+moving one band can only fail loudly.
+
+### 4.0.5 Two traps the authoring hit
+
+**`set_field` is a regex REPLACE, so binding a field Unity has never serialized does nothing.**
+Unity writes only the fields a component had when the scene was last saved, so a field added to a
+C# class is simply absent from every already-saved document — and a replace matches nothing and
+returns silently. The first run of the tool therefore produced two perfectly-built buttons bound to
+a modal that had never heard of them: the exact shape of a feature that is authored, documented and
+dead. `bind_ref` now ADDS the key when the body does not carry it. *Anything that points a
+serialized reference at something has to handle the field not being there yet.*
+
+**A cloned Button brings its donor's `onClick` with it.** The plate and Button are cloned off the
+Toy Box's own CloseButton so they carry the project's colour transitions; `m_OnClick` is cleared,
+because keeping the donor's persistent listeners would wire the close handler to these cards — and
+a persistent listener that throws eats every runtime listener behind it, which is CLAUDE.md's
+dead-card trap. Neither card carries a `MenuAudio` for the same reason: the press sound is played
+from `ToyboxModal` on the code path (`PlayMenuAudio`), where it cannot sit in front of the card's
+own runtime listener. `audit_persistent_listener_injection.py --check` is unmoved by this branch.
+
+### 4.0.6 In freestyle they are the two POLE switches
+
+The same two buttons exist in the world: `ToyboxController` builds a big **switch at each of the
+cell's poles** after it has rung the equator with toys - **today's activity at the north pole,
+shuffle at the south** (`ToyboxPoleSwitch`, `placePoleSwitches`, body 55 / trigger 105 against a
+toy's 22 / 42, all on the controller). They sit OFF the equator because they are not toys - each
+one presses OTHER toys - and a switch among the six would read as a seventh; on the axis the ring
+turns about they read as belonging to the whole ring. Bigger for the arcade's reason: its two top
+buttons are bigger than its cards. They carry **no text** (no toy does - `Docs/ToySystem` "Toys
+carry NO text"): the body says which is which, CTA lime for the activity, white for shuffle.
+
+They call exactly what the cards call - `DailyToyActivity.Today` + `TryClaim`, `ToyShuffle.Plan` +
+`ApplyAsync` - so the world and the menu can never name two different activities or pay twice.
+
+**The daily switch TAKES you to the activity.** Starting a painting from a switch at the pole used
+to build its first gate beside the gallery, a cell away, where the player could not see it. So a
+shell option can now answer **`ToyShellOption.Arrival`** - the ring the player threads next and the
+way through it, resolved AFTER the press because the press is what builds the ring - and the pole
+puts the vessel in front of it, facing through, at the Navigate stand-off (2.4 ring radii) plus
+1.5 s of the vessel's own speed (a fresh gate blooms for 1.2 s and cannot fire until it has, and a
+fast hull needs room to see it). The painting gallery answers with its live run's start gate or
+ride checkpoint (`PaintingRunner.TryGetArrival`, read off the stroke's points, not the ring object,
+which is scale 0 while it blooms), or with the gallery itself when there is no run to fly to. A
+wander or a voyage answers nothing, because they happen wherever the player already is - starting
+one IS taking you there. Two ordering rules: the arrival is asked FIRST, and an activity already
+under way is flown to rather than pressed again (a second press PAUSES a painting and ENDS a
+wander); and the claim lands after the start, so an activity that failed to start pays nothing.
+An arrival is deliberately not `WorldAnchor`: an anchor is where an option LIVES, an arrival is
+where its play HAPPENS. Stated gap: the menu card's Start does not use it yet - it enters freestyle
+and starts the painting where it stands, and teleporting after the enter-freestyle blend is the
+hard cut `ToyConfigureModal.Navigate` was written to avoid.
+
+Three rules they keep. They are **not** `IToyShellSurface`, or they would appear as cards in their
+own grid and could be dealt to themselves by the shuffle. They have **no `ToyDefinitionSO`**,
+because a definition declares a `ToyCategory` and is harvested by the codex as a toy, and neither
+is true (`Toy.DisplayName` / the ring tint already tolerate a null definition). And their rings are
+**neutral** (`ToySwitchSignal.Neutral`, Blue): the shuffle can land on any domain, so it names none.
+
+Placing a toy at a pole exposed a latent `ToyFactory.CreateBareRoot` defect: it aimed every root
+with `LookRotation(toCenter, Vector3.up)`, which is undefined when the toy looks straight down, and
+Unity invents a pose rather than saying so. It now names `Vector3.forward` as up in that case.
+
 ## 4.1 Two windows, and the narrowing that produced them
 
 The Toy Box is a **catalogue plus a detail window**, matching the Arcade's shape:

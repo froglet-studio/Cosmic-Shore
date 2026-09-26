@@ -94,9 +94,9 @@ POINT_TARGET = 12
 BEND_POINTS = 3
 KILL_POINTS = 1
 
-# Comeback - a FUNCTION OF THE TARGET. The comeback system reads the BEND deficit
-# (ScoreDifferenceSource.CombatPoints, bends x 3), so a quarter of the race behind (3 points, one
-# bend) buys 1.5 element levels. The assert below is the gate this family keeps re-learning.
+# Comeback - a FUNCTION OF THE TARGET. The comeback system reads the SCORE deficit
+# (UndertowScoringRuleSO.DomainValue: bends x 3 + kills x 1, since 2026-09 - it used to read bends
+# alone), so a quarter of the race behind (3 points, e.g. one bend) buys 1.5 element levels. The assert below is the gate this family keeps re-learning.
 COMEBACK_RATE = 0.5
 
 # Anti-double-count window - MUST match the plate's debuff effect (cooldown 1): the plate

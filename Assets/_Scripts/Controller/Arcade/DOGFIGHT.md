@@ -60,7 +60,7 @@ scoreboard anywhere before this.
   vessel you can actually shoot (see below)
 - **Crystals**: **four** omni crystals on platform-normal settings (with an authored
   `noNucleusSpawnRadius`, see below) **plus** elemental pickups scattered by `DogFightController`
-- **Comeback**: `ScoreDifferenceSource.CombatPoints`, rate **0.12** (see below)
+- **Comeback**: the rule's `DomainValue` (`CombatPoints`), rate **0.12** (see below)
 - **Environment**: `SpawnableBoneyard` at all four intensities, 9,043 → 34,654 prisms
 
 ## Why it is a TEAM race and not a free-for-all
@@ -630,7 +630,7 @@ Two implementation notes, both forced rather than chosen:
 
 ## Comeback — all four elements, sized to a 90-point race
 
-`ElementalComebackSystem` runs here on `ScoreDifferenceSource.CombatPoints`, per **domain** like
+`ElementalComebackSystem` runs here on the rule's `DomainValue` (`CombatPoints`), per **domain** like
 every other team source: a pilot's deficit is their side's deficit behind the leading colour.
 
 **All four elements rise together.** That is platform law, not a Dog Fight choice —
@@ -779,7 +779,7 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 | `GameDataSO` | `OnCombatHitLanded` channel + `CombatPointTargetCount` |
 | `StatsManager` | `CombatHitLanded(CombatHitStats)` + a code-side SOAP subscription, and the class's SECOND client branch (see "Multiplayer") |
 | `Player` | `ReportCombatHit_ServerRpc(int)` — owner-side hit report; identity comes from RPC ownership |
-| `ElementalComebackSystem` | `ScoreDifferenceSource.CombatPoints` (per-DOMAIN) |
+| `ElementalComebackSystem` | the rule's `DomainValue` (`CombatPoints`) (per-DOMAIN) |
 | `EndConditionOverridesSO` (+ window + asset) | `dogFightPointTarget` live/build/getter, default 90 |
 | `GameToastSituation` | `DogFightQuarterDown = 57`, `DogFightHalfDown = 58`, `DogFightLeadChanged = 59` |
 | `ServerPlayerVesselInitializerWithAI` | Dog Fight added to the `shouldSeekPlayers` modes |

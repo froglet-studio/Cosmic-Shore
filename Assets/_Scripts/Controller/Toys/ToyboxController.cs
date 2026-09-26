@@ -44,6 +44,19 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Trigger radius - how close the vessel must get to activate, world units.")]
         float toyTriggerRadius = 42f;
 
+        [Header("Pole switches (today's activity + shuffle)")]
+        [SerializeField, Tooltip("Place the two Toy Box top buttons as big switches at the cell's poles - " +
+                                 "today's activity above the ring, shuffle below it. They are not toys " +
+                                 "(they press other toys), so they sit off the equator the toys share.")]
+        bool placePoleSwitches = true;
+
+        [SerializeField, Min(1f), Tooltip("Body radius of a pole switch, world units. Larger than a toy's, " +
+                                          "as the arcade's two top buttons are larger than its cards.")]
+        float poleBodyRadius = 55f;
+
+        [SerializeField, Min(1f), Tooltip("Trigger (and switch-ring) radius of a pole switch, world units.")]
+        float poleTriggerRadius = 105f;
+
         [Inject] GameDataSO _gameData;
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
         [Inject] Reflex.Core.Container _container;
@@ -162,6 +175,17 @@ namespace CosmicShore.Gameplay
                 var placement = new ToyPlacement(center + dir * radius, center, toyBodyRadius, toyTriggerRadius);
 
                 def.Spawn(_root, placement, context);
+            }
+
+            // After the toys, so both switches find a populated shell registry on their first read.
+            if (placePoleSwitches)
+            {
+                ToyboxPoleSwitch.Build(ToyboxPoleSwitch.PoleRole.DailyActivity, _root,
+                    new ToyPlacement(center + Vector3.up * radius, center, poleBodyRadius, poleTriggerRadius),
+                    context);
+                ToyboxPoleSwitch.Build(ToyboxPoleSwitch.PoleRole.Shuffle, _root,
+                    new ToyPlacement(center - Vector3.up * radius, center, poleBodyRadius, poleTriggerRadius),
+                    context);
             }
         }
 

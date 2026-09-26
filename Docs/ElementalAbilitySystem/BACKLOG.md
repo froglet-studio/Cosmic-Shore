@@ -356,6 +356,25 @@ replica's cosmetic roll passes a null transformer and never touches it), and the
 advances by the delta of the same smoothstep the spin uses. The playtest demanded above is still
 owed — it is a numbered step in the branch's `UNITY_VERIFICATION_CHECKLIST.md` entry.
 
+## Serpent fuel-pellet follow-ups (opened by `cece/epic-planck-1snjtc`)
+
+Measured 2026-09-25 while restoring Solid Fuel Pellets (`R_VesselActions/SERPENT_FUEL_PELLETS.md`).
+Logged, not acted on — none of these is the subject of that branch.
+
+- **Dead legacy `VesselActions/ConsumeBoostAction.cs`** (`class ConsumeBoostAction : ShipAction`,
+  guid `c8f865735b87b6a43a367be3280d8332`) — the old magazine version of this ability. **0** asset
+  references to its guid across `.prefab`/`.asset`/`.unity`, **0** code references to the type.
+  Salvage check before deleting: it carries nothing the new executor lacks. Proposal: delete it and
+  its `.meta`.
+- **Orphaned Seed Wall readout** — `SerpentVesselHUDView.shieldIcon` / `shieldIconsByCount` /
+  `SetShieldCount` and the controller's shield-resource path now have no target on any shipped HUD
+  (`shieldIcon` nulled on `Serpent.prefab` so the lockup would not resurrect the old art). Decide
+  when the Mass slot is designed: delete, or re-home if the wall returns.
+- **`ConsumeBoostActionExecutor.boostChanged` is unwired** on `Serpent.prefab`
+  (`boostChanged: {fileID: 0}`), so `RaiseBoostChanged` is a no-op there. Either wire it (if a HUD
+  wants the multiplier) or remove the field. Not changed: it was already unwired before the branch.
+- **Time L5 is an open design slot** for the Serpent — needs design markup, nothing invented.
+
 ## Phase 5 — Element scaling unification (SHIPPED 2026-09-18)
 
 Full record: **`ELEMENT_SCALING_UNIFICATION.md`**. The generic per-element multiplier
@@ -381,3 +400,19 @@ of Time were fixed (Rhino ramp ceiling, Serpent boost speed) and four defensive 
 | 5.10 | The remaining gaps are DESIGN gaps, not wiring. Five when this row was written; **three** after the scope + rifle branch merged and filled the Serpent's Charge and Space: **Rhino Charge + Space, Serpent Mass**. Report: **`FLEET_GAPS.md`** — and re-run `element_ability_table.py --gaps` rather than trusting either count | **OPEN — design** |
 | 5.11a | **A shared `ShipActionSO` mutated its own serialized field at runtime — and the dangerous copy was dead code.** `GrowSkimmerActionSO.ApplyMaxSizeDebuff` writes `maxSize.Value = original * multiplier`, awaits, then writes it back — on a SHARED asset, so in multiplayer two Rhinos debuffed at overlapping times race on one number and the second restore writes the FIRST one's already-multiplied value back as "original". This is the exact last-initializer-wins hazard `ARCHITECTURE.md §2(a)` and the vessel contract both name as their cautionary tale, and it predates this branch — found by D1 while proving the `Enabled: 0` flip on that same field is a no-op. Measured: **nothing calls it.** There are TWO methods by that name — the live caller (`VesselChangeSkimmerSizeByProjectileEffectSO`) holds a `ShieldSkimmerScaleConfigSO`, a different class whose version writes a private runtime `_maxScaleMultiplier` and never touches a serialized field. The uncalled one is deleted, which also unblocked 5.7's `maxSize`. **Sequel (Sep 2026):** the live one is deleted too, with the control-theft tier (`Docs/ELEMENTAL_ECONOMY.md §9`) — and it shared the hazard as well as the name, since ONE `ShieldSkimmerScaleConfig.asset` drives every Rhino, so writing runtime state on it still let one hit shrink every Rhino's blade. Runtime state made it safer, not safe | **SHIPPED** |
 | 5.11b | What survives 5.11a: `ShieldSkimmerScaleConfigSO` still keeps its debuff latch and multiplier on the SHARED asset, so two Rhinos still share one debuff and the second one's press is swallowed by `if (_isMaxSizeDebuffed) return` — its own comment says so. The fix is per-vessel state in the driver. **Establish first whether the debuff changes anything on screen**: that config's `prismMaxScale` is tooltipped *"the driver no longer reads it"*, so the answer may be no, and that is a playtest rather than a read | **OPEN — needs a playtest before a fix** |
+
+## Rhino follow-ups (opened by `cece/serene-goodall-338ctt`)
+
+- **Rhino has no `VesselChangeSpeedByPrismEffectSO` in its prism container** (CLAUDE.md's danger
+  prism section already names it the open item with Serpent). The new sword BIND slows ROTATION
+  inside super-shielded mass and deliberately touches nothing about speed; a hull ram into ordinary
+  mass still costs the Rhino no speed. Measurement: grep `Rhino` vessel impactor container for the
+  effect type — zero entries.
+- **Pre-retune tables survive as history in `RHINO_RAMP_BOOST.md` and `HEADLONG.md`.** Both carry a
+  "RETUNED 2026-09-25" callout above the old curve/ladder tables rather than rewriting them; the old
+  rows are labelled but a reader skimming a table can still quote a 1200 u/s top speed. Rewrite the
+  tables in place once the retune is play-tested and the old numbers stop being a useful A/B.
+- **The sword bind is inert on the legacy box path** — it reads `PrismShellContactManager`'s live
+  pair set, so under `ForceLegacyBoxInteraction` the Rhino gets the entry beat (jiggle + thud) and
+  no sustained drag/grind. Acceptable while the shell tier is the shipped path; revisit if that
+  flag is ever flipped on in a build.

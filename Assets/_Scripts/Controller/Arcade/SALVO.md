@@ -64,7 +64,7 @@ parallel solo demolition.
   `Vessels` entry on `ArcadeGameSalvo.asset`
 - **Crystals**: `CrystalCountMode.PlayerCountPlusExtra` **+5** (7 omni crystals in a 2-player
   lobby, 9 in a full one) **plus** 14 scattered elemental pickups (seed 42)
-- **Comeback**: `ScoreDifferenceSource.PrismsDestroyed`, rate **0.013** (a quarter-of-target
+- **Comeback**: the rule's `DomainValue` (`PrismsDestroyed`), rate **0.013** (a quarter-of-target
   deficit ≈ 2.3 element levels — clears the "must buy a whole level" floor, well under
   Rampage's ~4.9-level footing since the target came down and the rate did not)
 - **Environment**: the Boneyard cell assets **reused verbatim** (`Boneyard Cell Config
@@ -203,7 +203,7 @@ break to repair.
 | `SalvoPrismTurnMonitor` | new turn monitor reading `GetSalvoPrismTarget()` |
 | `SalvoScoringRuleSO` | new rule subclass (`RampageScoringRuleSO` + "SALVO TIME" reveal) |
 | `EndConditionOverridesSO` (+ window + asset) | `salvoPrismTarget` live/build/getter, default 700 |
-| `ElementalComebackSystem.DefaultSourceFor` | Salvo → `PrismsDestroyed` |
+| `ElementalComebackSystem` | reads `SalvoScoringRule`'s `DomainValue` (`PrismsDestroyed`) |
 | `MiniGameHUD.CreateObjectiveProviderForGameMode` | Salvo → `RampageObjectiveProvider` |
 
 Nothing else moved: no new stats, no new metrics, no new impact effects, no vessel or cell

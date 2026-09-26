@@ -341,19 +341,8 @@ assert n == 1, "spawnDistanceOutsideNucleus not found"
 scene, n = re.subn(r"^  spawnFormation: 0$", "  spawnFormation: 1", scene, count=1, flags=re.M)
 assert n == 1, "spawnFormation not found"
 
-# 4e. the COMEBACK SOURCE. A cloned scene carries the DONOR's serialized settings, and
-# ElementalComebackSystem.EnsureExists respects a scene-authored instance as-is (it only fills in
-# gameData) - DefaultSourceFor runs on the AddComponent branch alone. So leaving Rampage's
-# PrismsDestroyed (3) here would make Switchback's comeback read a stat no pilot in this mode ever
-# moves, and every Switchback case in that file would be unreachable dead code. The enum is
-# explicitly numbered for exactly this reason: SwitchesThreaded = 8.
-scene, n = re.subn(r"^  differenceSource: 3$", "  differenceSource: 8", scene, count=1, flags=re.M)
-assert n == 1, "donor differenceSource not found"
-# Dead while the source is SwitchesThreaded (which is always higher-is-better), but Switchback IS
-# golf-scored, so this matches what EnsureExists would have configured had the scene not authored
-# one - a later flip to the Score source then reads the right way round.
-scene, n = re.subn(r"^  useGolfRules: 0$", "  useGolfRules: 1", scene, count=1, flags=re.M)
-assert n == 1, "donor useGolfRules not found"
+# 4e. (No comeback source to patch: ElementalComebackSystem reads ScoringRuleSO.DomainValue
+# since 2026-09, so a clone cannot inherit its donor's comeback stat.)
 
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity.meta",
@@ -568,8 +557,6 @@ if "  spawnFormation: 1\n" not in sc:
 if "  arrangeSpawnPointsAroundCell: 1\n" not in sc:
     errors.append("cloned scene lost the cell-relative spawn ring")
 
-# A scene-authored ElementalComebackSystem is used AS AUTHORED, so a stale donor source is a
-# silent no-op comeback layer, not a fallback to DefaultSourceFor.
 # Intensity is the COURSE. Rampage spends it on crystal scarcity, and a crystal is the Dolphin's
 # only blast trigger, so inheriting that ladder makes intensity mean two contradictory things.
 if "  crystalCountMode: 1\n" not in sc:
@@ -578,11 +565,6 @@ if "  crystalCountMode: 1\n" not in sc:
 if re.search(r"^  - CrystalsPerPlayer: 2\n", sc, re.M) or "    ExtraCrystals: -1\n" in sc:
     errors.append("cloned scene still carries Rampage's crystal scarcity ladder")
 
-if "  differenceSource: 8\n" not in sc:
-    errors.append("cloned scene kept the donor's comeback source - Switchback must read "
-                  "ScoreDifferenceSource.SwitchesThreaded (8)")
-if "  useGolfRules: 1\n" not in sc:
-    errors.append("cloned scene did not take the golf-rules flag off the donor")
 
 # Dolphin only, and the donor's four AI templates are already Dolphins.
 if sc.count("  - vesselClass: 2\n") != 4:

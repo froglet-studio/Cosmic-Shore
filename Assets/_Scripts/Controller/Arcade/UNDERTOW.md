@@ -73,8 +73,8 @@ DomainValue(d) = Σ CombatPoints(d) + killPoints × Σ LifeformsKilled(d)
 ```
 
 **The stated cost.** `ScoringRuleSO.LiveMetric` (the per-player HUD card) is not virtual and reads
-the single metric, and `ElementalComebackSystem` reads a `ScoreDifferenceSource`, not the rule —
-so the per-player card and the comeback deficit see BENDS alone (×3), while the goal row, the
+the single metric, so the per-player card sees BENDS alone (×3) — the comeback deficit USED to as
+well, and since 2026-09 reads the rule's `DomainValue` like everything else, while the goal row, the
 domain boxes, the end condition and the placement order see bends plus kills. The scoreboard's
 secondary line is the honest breakdown ("2 bends · 3 kills"). This is deliberate: the bend is the
 act the mode is named for, and a new `ScoringMetric` member for a stat the platform already
@@ -120,8 +120,8 @@ push is. Both ranges track the plate's reach (10× the hull radius, ~45u) and mu
 
 ## Comeback
 
-`ComebackRatePerScoreDeficit = 0.5` against a target of 12, read off the BEND deficit
-(`ScoreDifferenceSource.CombatPoints`): one bend behind (3 points, a quarter of the race) buys 1.5
+`ComebackRatePerScoreDeficit = 0.5` against a target of 12, read off the SCORE deficit
+(the rule's `DomainValue`, bends + kills since 2026-09): one bend behind (3 points, a quarter of the race) buys 1.5
 element levels, two behind buys 3. The generator asserts the quarter-of-target rule. It matters
 here as it did in The Bends: the thing a bend TAKES is element levels, so a losing pilot is by
 construction also debuffed, and the comeback is what stops that being a spiral.
