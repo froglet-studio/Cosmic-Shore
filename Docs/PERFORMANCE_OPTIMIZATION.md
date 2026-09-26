@@ -11,7 +11,7 @@ numbers (`§0.8`, `§0.11.6`, `Task 10`), which stay valid there.
 | **Rewritten** | 2026-09-22, on branch `claude/bold-fermi-54nlts` @ `561700737` |
 | **Merged** | bleeding-edge `ee2ad320f` merged in on 2026-09-23 (`c2e7a7c46`) — 1,390 files, **including a new boot world** (§1.1); then `899f0baba` the same day (`070874533`), for the fix to an every-frame console error |
 | **Plan revised** | 2026-09-23 on the merged tree @ `5c6439e68` (§3 — every lever re-checked in code) |
-| **Every number below** | an **Editor** number taken on the PRE-merge tree (base `1f160508f`), unless stated. None is a ship number, and none has been re-taken since the merge. |
+| **Every number below** | an **Editor** number, none a ship number. **§1.0 is the merged tree** (game code `070874533`, measured 2026-09-24 → 26). Everything else is the PRE-merge tree (base `1f160508f`) unless stated. |
 
 ---
 
@@ -23,6 +23,82 @@ The instanced (Entities Graphics / BRG) prism path draws **103,823 prisms at 4.8
 **12.9× cheaper** than the old one-GameObject-per-prism path (61.9 ms), and in the boot world
 **8,436 prisms render in 23 opaque draw calls**. Draw calls, materials and prism count are not
 where the frame goes any more.
+
+### 1.0 The six scenarios on the merged tree (2026-09-24 → 26)
+
+Game code at **`070874533`** (the merged tree). The measuring tools were at `bfcc16117`–`18bbd2445`
+and add only diagnostics: the `freeze` hold does nothing unless a measurement switches it on.
+Every row is a `diag <label> 15` average. None is a HUD reading.
+
+| # | Scenario | Prism ents | Enabled renderers | FPS | Frame ms | **CPU busy ms** | GPU ms | p99 ms | Draws | GC KB/f |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| S1 | Garland, 4 min | 17,854 | 7,150 | 55.1\* | 18.2\* | **14.3** | 12.4 | 25.9 | 4,772 | 24.5 |
+| S2 | Lattice, 8 min | 42,076 | 55,323 | 38.6 | 25.9 | **21.4** | 6.2 | 41.1 | 10,797 | 52.9 |
+| S3 | Rampage **intensity 4** (labelled `S3_Rampage1`) | 18,843 | 29,568 | 58.7 | 17.0 | **13.9** | 4.9 | 25.3 | 7,008 | 24.7 |
+| S3 | Rampage **intensity 1** | 1,216 | 66 | — | — | — | — | — | — | — |
+| S4 | Scurry intensity 4 (Atlantis) | 69,094 | 4,444 | 74.8 | 13.4 | **10.6** | 3.3 | 21.1 | 1,539 | 24.6 |
+| S5 | **Wildlife Liberation** | 13,419 | 6,095 | 19.8 | 50.5 | **46.0** | 5.9 | **163.3** | 2,013 | 48.3 |
+| S6 | Arboretum, 8 min | 22,182 | 7,335 | 64.8 | 15.4 | **12.5** | 3.5 | 19.5 | 2,991 | 22.1 |
+
+\* S1 ran with VSync on (`frameCapVSync 1`), so its FPS and frame time are capped. Its CPU busy
+figure is the one to use. An earlier S4 run (72,583 entities) agrees within 3%.
+
+**The S3 intensity-1 run is invalid.** It had 1,216 prism entities and 66 enabled renderers:
+the forest had not grown. The diag ran at 06:30:03 and the `prof` 10 s later. **Re-run it after
+at least 3 min, once `prisms` reads ~40k.** Until then, the heaviest arcade cell is still
+unmeasured.
+
+**Against the target, only S5 misses.** The target is 60 fps in a Development build with no
+frame over 50 ms, and the editor runs about 2–3× slower than a build.
+- **S5** spends 46.0 ms of CPU and has a 163 ms p99 in the editor.
+- **S2** is next at 21.4 ms (p99 41 ms).
+- **S1, S3 i4, S4 and S6** spend 10.6–14.3 ms.
+
+S5 is not GPU-bound (5.9 ms). **It is main-thread script.**
+
+**Where S5 goes.** `prof S5_Wildlife`, 180 frames. The Profiler's overhead is included, so this
+table RANKS. Its PlayerLoop averages 73.9 ms against the diag's 46.0 ms of CPU busy.
+
+| Block | Avg self ms | Median frame | Spike frame | What it is |
+|---|---:|---:|---:|---|
+| UniTask continuations at `PreLateUpdate` | **20.2** (in 74% of frames) | — | **123** | The AI Sparrows' full-auto loop (`FullAutoActionExecutor`) and every round's flight step (`Projectile.MoveProjectileAsync`). The pool activations, prism hits and vessel sweeps under it are instrumented, and together they are ~2% of it. **This is the p99** |
+| `LightFauna.Update` | **13.1** (374 calls) | 13.4 | 15.1 | Each creature, every frame, moves and then re-syncs every body prism: spatial index, shell, render matrix. 323 of the 374 are QuadFish |
+| `LightFauna.UpdateBehaviorCoroutine` | **12.7** (in 54% of frames) | **29.9** (35 ticks) | 28.2 | The behaviour tick: goal, vessel overlap, prism-neighbour scan. **~0.85 ms per tick.** The goal query is cached (`BlockDensityGrid.FindDensestRegion`), so the cost is the scan |
+| `QuadFishSwimDriver.Update` | 1.6 | | | Fin strokes |
+| Camera rendering | 4.8 | | | Not the problem |
+
+All three script blocks are uninstrumented managed code, so the Profiler shows only their outer
+edge. **`aaa1517fe` adds markers inside them:**
+- `Fauna.BodySync`
+- `LightFauna.Tick.Goal`, `LightFauna.Tick.Vessels`, `LightFauna.Tick.PrismScan`
+- `LightFauna.Feed`, `LightFauna.Hunt`
+- `Projectile.Growth`, `Projectile.SweepVessels`, `Projectile.SweepPrisms`, `Projectile.Fuze`
+- `FullAuto.Fire`
+
+One more `prof S5_Wildlife` splits each block.
+
+**The other findings:**
+
+- **Spindles, S2:** `ab "renderers hide *Spindle" "renderers show" 20 6` with the ecology frozen.
+  - CPU busy **+5.3 ms ±0.4**, GPU +1.5 ±0.3, draws +8,570.
+  - That is for ~50,300 spindle renderers, so **~0.105 ms of CPU per 1,000**.
+- **Spindles, S6:** the same command gave **+0.3 ±0.4**, which is noise (draws +176).
+- Both runs warned that prism entities drifted 12% / 29% between arms. The interleaved rounds
+  balance that out, but it is why the capped world is the clean one.
+- **S2's spike frame** (45.9 ms PlayerLoop):
+  - `PhyllotacticFlora.GrowCoroutine` took 15.8 ms, 5.0 ms of it `Instantiate` for 26 growth steps.
+  - `ShieldRegenCoroutine` took 5.2 ms.
+- **S4's spike frame** (27.6 ms): `LOD.Sweep` took **15.9 ms**. That is the collider-LOD tick over
+  ~69k prisms. It runs on 20% of frames (every 0.25 s) and averages only 0.64 ms, so it is a 4 Hz
+  frame-pacing hitch, not an average cost.
+- **GC** is 20–53 KB/frame in every scenario. **The pre-merge 154.5 KB/frame is not reproduced.**
+  - S5's largest allocator is `DiagnosticsHUD.Update` itself, at 8.3 KB/f while it samples.
+    Discount it.
+  - Next are S5's `PreLateUpdate` continuations: 4.6 KB/f over ~59 allocations.
+- **`prof` fix (`ded51b6ad`):** `GfxTask_ReadValue` is now counted as a wait. Before, the D3D12
+  task worker read ~100% busy in every capture, exactly the frame time in each.
+
+### 1.0.1 The pre-merge Lattice frame (history)
 
 Where it does go — one Profiler frame of the Lattice boot world (main thread 57.6 ms, Editor,
 Deep Profile off, `archive §0.11.6`):
@@ -36,7 +112,8 @@ Deep Profile off, `archive §0.11.6`):
 | ↳ everything outside `ScriptRunBehaviourUpdate` | **~17** | **not expanded in that capture — unattributed** |
 | `EditorLoop` | 4.7 | Free in a player build |
 
-Four things are open, and nothing else is proven to matter yet:
+Four things were open before the merge. §1.0 supersedes their priority. Lead 1 is now measured
+(+5.3 ms in a grown Lattice), and lead 4's 154.5 KB/frame is not reproduced:
 
 1. **~14 ms of render-job waiting.** Best lead: the boot world had **45,197 enabled renderers
    and only 4,599 visible**, and **~40,000 of them were flora spindles** (the branch geometry
@@ -96,6 +173,7 @@ bond), which is why the scenario set gains an S6.
 | 09-23 | Merged bleeding-edge (new boot world: Garland); plan re-derived on the merged tree; target + six scenarios confirmed. `freeze` and `ab` console commands | The confounded spindle test can now be re-run in one state (§4.5) |
 | 09-25 | First spindle `ab` hid 5 of ~68k renderers (the lattice spindles wear their own materials); `renderers hide *text` added | An accidental A/A: ±3.9 ms CPU noise at 3 × 10 s in the menu, so the re-run is 6 × 20 s (§4.5) |
 | 09-25 | S1–S6 `diag`s and the spindle `ab` in S2 + S6; `prof` console command (the Profiler Hierarchy as JSON) | Spindles cost ~+5.3 ms CPU in a grown Lattice; S5 Wildlife Liberation is the worst scenario (50.5 ms) and is not yet attributed — `prof` is how |
+| 09-26 | `prof` on S2, S4, S5 (and an invalid S3 i1). §1.0 recorded, §3.3 re-ranked. Markers inside S5's three script blocks (`aaa1517fe`); `prof` counts `GfxTask_ReadValue` as a wait (`ded51b6ad`) | **Only S5 misses the target.** It is main-thread script: gunfight continuations 20.2 ms (the p99), creature `Update` 13.1, behaviour tick 12.7. Pick: **L8**, gated on one more `prof S5` |
 
 ### 2.1 How the picture changed
 
@@ -119,7 +197,7 @@ bond), which is why the scenario set gains an S6.
 Revise the plan before running tests. Tests exist to answer a question on this list.
 **This section was re-derived on the merged tree (`5c6439e68`, 2026-09-23)** by reading the code
 each row names, not from memory. The target and all six scenarios were **confirmed by the human on
-2026-09-23**; nothing in §1 has been re-measured yet.
+2026-09-23**, and all six were measured on 2026-09-24 → 26 (§1.0). S3 intensity 1 is still owed.
 
 ### 3.1 Step 0 — the tree, the boot world, the target, the scenarios
 
@@ -183,7 +261,57 @@ Timeline view is still the only way to see WHICH worker job the main thread is w
 
 ### 3.3 Step 2 — the levers we already know about
 
-Ranked by the evidence we had **before** the merge. Each needs Step 1 to confirm it is big in a
+**Re-ranked 2026-09-26 on the §1.0 numbers (game code `070874533`).** Only S5 misses the target,
+so the top of the list is what S5 spends its time on. L8–L11 are new; each is described in the
+table below.
+
+| Rank | Lever | Scenario | Evidence (§1.0) | Status |
+|---|---|---|---|---|
+| 1 | **L8** creature body re-sync, batched | S5 | `LightFauna.Update` 13.1 ms avg self | **The pick** (below) |
+| 2 | **L9** the S5 gunfight continuations | S5 | 20.2 ms avg; **123 ms in the spike frame, i.e. the p99** | Needs the marker capture first |
+| 3 | **L10** the behaviour-tick neighbour scan | S5 | 12.7 ms avg; 29.9 in the median frame | Needs the marker capture first |
+| 4 | L1 spindles | S2 (inside target); S3 i1 (unmeasured) | S2 **+5.3 ms ±0.4**; S6 noise | Waits on the S3 i1 re-run |
+| 5 | L2 growth instantiation | S2 spike frames | `GrowCoroutine` 15.8 ms in one frame, 5.0 of it `Instantiate` | Spikes, not the average |
+| 6 | **L11** collider-LOD tick hitch | S4 | `LOD.Sweep` 15.9 ms every 0.25 s | Pacing, not the average |
+| 7 | L3 gameplay GC | all | 20–53 KB/f; the pre-merge 154.5 is not reproduced | Demoted |
+| — | L4–L7 | | Unchanged | |
+
+**Why L1 waits on S3 i1.** Rampage at intensity 4 already runs 29,568 enabled renderers.
+Intensity 1 grows 5× the plants. At S2's measured slope, that projects to **~15 ms** of spindle
+cost in the heaviest arcade cell. That is a projection, not a measurement, and L1 goes back to
+the top only if the re-run confirms it.
+
+**The pick: L8 — batch the creature body-prism re-sync.**
+- **What it replaces.** Every moving creature, every frame, walks its own body prisms (the mover
+  contract, `Fauna.NotifyBodyPrismsMoved`). For each prism it:
+  - reads the transform,
+  - moves its entry in `PrismSpatialIndex`,
+  - refreshes its shell,
+  - writes its render matrix through `EntityManager.SetComponentData`.
+
+  That is thousands of prisms a frame in S5, each several native calls.
+- **What it becomes:** one pass after every creature has moved.
+  - A `TransformAccessArray` read inside a Burst job.
+  - One index pass.
+  - One bulk matrix write.
+- **Why it is safe.** It does not change behaviour: the same positions land in the same frame.
+  It must run after the last creature's `Update` and before the behaviour-tick coroutines, which
+  read the index. It touches no ecology rule. It is platform-wide: every creature in every cell,
+  plus every other mover on the same contract.
+- **Why it beats L9 and L10 today.** It is the only one of the three whose content is known from
+  the code alone. L10's fix is also boxed in: it must keep the ONE diet predicate
+  (`Fauna.IsPreyForMe`), so it cannot be a Burst copy of the rule.
+- **Expected saving: ~5 ms of CPU busy in S5** (range 4–7).
+  - 13.1 ms profiled × the 0.62 Profiler-to-diag ratio ≈ 8 ms for all of `LightFauna.Update`.
+  - The re-sync is the larger part of that; movement, feeding and hunting stay.
+- **Go / no-go before building.** In the marker capture, `Fauna.BodySync` must average **≥ 8 ms**.
+  If `FullAuto.Fire`, a `Projectile.*` marker or `LightFauna.Tick.PrismScan` is bigger, the pick
+  moves to that one.
+- **Proof.** The lever ships with a console switch. In S5, after 3 min, run `freeze on`, then
+  `ab "bodysync batch" "bodysync legacy" 20 6`. Expect CPU busy **B − A ≈ +5 ms (+4 to +7)**,
+  well outside ±0.4.
+
+Rows L1–L7 were ranked by the evidence we had **before** the merge. Each needs Step 1 to confirm it is big in a
 scenario that **misses the target**; the ranking is redone from those numbers once §1 holds
 them. "Merged tree" says whether the code the row names is still there.
 
@@ -196,6 +324,10 @@ them. "Merged tree" says whether the code the row names is still there.
 | L5 | Cheap, known-wrong code, no capture needed | `archive §4 Tier 1–2` | **All still present**, lines moved: `HijackController` AIs re-plan on one frame (`nextRetarget = 0f`, `:217`/`:272`); `AstroLeagueBall._shieldPoppedThisVisit` is a `List` scanned by `Contains` (`:1214`, `:1236`); `PrismSpatialIndex`'s four `Schedule(_highWaterMark).Complete()` scans (`:2211`, `:2363`, `:2448`, `:2520`) with no "anything shielded?" early-out; `ConnectingPanelController.Update` rebuilds strings every frame (`:174–193`); `Boid.cs:627` allocating `OverlapSphere` | Small each |
 | L6 | Snow shard count (`SnowChanger.shardDistance` 120 → 200 = 4,189 → 905 GameObjects) | Renderer census | **Still true** (`SnowChanger.prefab` 120) | Small; a visual-density call for a human |
 | L7 | Memory: music `DecompressOnLoad` (182 MB resident), texture streaming off | `Docs/MEMORY_AUDIT.md` | **Still true** (`cosmic shore chill time 3.wav` `loadType: 0`, `quality: 1`) | Load time + RAM, not frame time |
+| L8 | **Batch the creature body-prism re-sync** — one pass after all creatures move: `TransformAccessArray` read in Burst, one index pass, one bulk `LocalToWorld` write | §1.0 S5: `LightFauna.Update` 13.1 ms avg self, 374 calls | Code read at `070874533`: `Fauna.NotifyBodyPrismsMoved` → per prism `Prism.NotifyPositionChanged` (index + shell + `EntityManager.SetComponentData`) | Medium. Behaviour-neutral; must keep the mover contract's same-frame visibility |
+| L9 | **The S5 gunfight continuations** — AI full-auto fire + per-round flight steps | §1.0 S5: 20.2 ms avg, 123 ms in the spike frame | Contents unknown; markers in `aaa1517fe` | Unknown until the marker capture |
+| L10 | **The behaviour-tick neighbour scan** | §1.0 S5: 12.7 ms avg, ~0.85 ms per tick | Goal query is cached, so the cost is the `QuerySphere` + per-candidate loop | Must keep the ONE diet predicate (`Fauna.IsPreyForMe`) — no Burst copy of the rule |
+| L11 | **Collider-LOD tick hitch** — slice `RunSweep`'s transitions across frames | §1.0 S4: `LOD.Sweep` 15.9 ms on one frame in five | `PrismColliderLodManager` restores are unbudgeted by design (safety); which half costs is unknown | Small–medium; must never delay a restore near a focus |
 
 **New since the base, not a lever yet:** every prism render prototype gained four `float3` sway
 overrides (`PrismSwaySpan*`/`Axis`/`Timing`, 48 B per entity) for the health-prism sway
@@ -332,7 +464,10 @@ Three ways to satisfy the rule, simplest first:
   how often it ran and `maxTotalMs` how bad it got); `topSelf`, self time summed by NAME across
   every path; `topGc`, ranked by **self** allocation — the Profiler's GC column is inclusive, so
   ranking it names `PlayerLoop` rather than the caller; `threads`, busy vs wait for every other
-  thread (sampled every 6th frame), which is where a main-thread `Idle` is explained; and two
+  thread (sampled every 6th frame), which is where a main-thread `Idle` is explained. A sample
+counts as a wait when it is `Idle`, a `WaitFor…`, a `Semaphore.Wait…` or `GfxTask_ReadValue`. That
+last one is the D3D12 task worker blocked on its next command. It has no "Wait" in its name, and
+until `ded51b6ad` it showed that thread as 100% busy for the whole frame. The report also holds two
   whole frames, the **typical** (median) and the **spike** (slowest). Those two are picked by
   `PlayerLoop` time, not the whole frame, because in the Editor the slowest whole frame is usually
   an Editor repaint — a test proves the whole-frame pick would choose it. Editor-only rows

@@ -10,6 +10,14 @@ pushing to the branch updates it; do not open another PR). You cannot run Unity.
 the editor and sends you results. **Plan first, then tests.** Do not ask the human to measure
 anything until steps 1–3 are done and the plan is written down.
 
+> **Status 2026-09-26: steps 1–5 are done.** §1.0 of the perf doc holds the six scenarios, and
+> §3.3 holds the re-rank and the one pick, **L8**. Three things are still waiting:
+> 1. One `prof S5_Wildlife` run with the markers from `aaa1517fe`. It is L8's go / no-go.
+> 2. An S3 Rampage intensity-1 re-run after the forest has grown. The 09-26 run had 1,216 prisms.
+> 3. The human's go-ahead to build.
+>
+> Start from §3.3's "The pick" rather than from Step 1.
+
 ## Read first, in this order
 
 1. `Docs/PERFORMANCE_OPTIMIZATION.md` — the whole thing. It is short on purpose: state, history
