@@ -457,6 +457,19 @@ namespace CosmicShore.Gameplay
         // the GameObject renderer handles only the brief per-prism morph/shatter animations.
         Mesh _renderMeshOverride;
 
+        /// <summary>
+        /// The shared mesh currently overriding the companion entity's geometry, or null.
+        ///
+        /// Exposed because an override is a SHARED resource with more than one legitimate
+        /// claimant — the settled shield and the Urchin cradle's high-poly swap — and neither
+        /// may stomp the other. A claimant checks this is null before taking the slot, and on
+        /// release checks it is still holding ITS OWN mesh before calling
+        /// <see cref="ClearRenderMeshOverride"/>: a prism that got shielded mid-cradle has
+        /// legitimately been taken over, and clearing there would drop the shield's geometry
+        /// on the floor. Never write through this — it is the question, not the setter.
+        /// </summary>
+        internal Mesh RenderMeshOverride => _renderMeshOverride;
+
         // The prefab's own mesh, cached at Awake. This is the prism's STABLE render
         // identity: while an exotic visual is animating, meshFilter.sharedMesh holds a
         // per-prism morph mesh, and registering that with Entities Graphics would mint

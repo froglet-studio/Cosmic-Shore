@@ -334,7 +334,7 @@ namespace CosmicShore.Gameplay
 
             WriteTint(fromBright, fromDull); // frame 0 is the start pair - never a flash of the end
             _tintDriver = StartCoroutine(DriveTintTransition());
-            PrismTimerManager.EnsureInstance().ScheduleAction(this, duration, SettleTint);
+            PrismTimerManager.EnsureInstance()?.ScheduleAction(this, duration, SettleTint);
         }
 
         IEnumerator DriveTintTransition()

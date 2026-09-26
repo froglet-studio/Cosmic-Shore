@@ -45,21 +45,22 @@ namespace CosmicShore.Tests
         [Test]
         public void Flat_out_radius_matches_the_shipped_Rhino()
         {
-            Assert.AreEqual(1200f, HeadlongCircuitSettings.RhinoTopSpeed, 0.1f,
-                "50 x 24 + 0. If the ramp's maxBoostMultiplier moved, so did every corner. "
-                + "(Was 1210 while the Rhino authored a 10 u/s DefaultMinimumSpeed; the floor "
-                + "went to 0 so the vessel can be brought to a stop - MinimumThrottleBrake.)");
+            Assert.AreEqual(840f, HeadlongCircuitSettings.RhinoTopSpeed, 0.1f,
+                "50 x 16.8 + 0. If the ramp's maxBoostMultiplier moved, so did every corner. "
+                + "(Was 1200 before the 2026-09-25 retune to 70% top speed, and 1210 while the "
+                + "Rhino authored a 10 u/s DefaultMinimumSpeed.)");
 
-            // 1200 u/s over (1200 x 0.5 + 90) = 690 deg/s is a 99.6u circle; a pilot holding the
+            // 840 u/s over (840 x 0.2 + 90) = 258 deg/s is a 186.5u circle; a pilot holding the
             // ramp boost at FULL power may spend only 0.28 of the stick, so the tightest circle
-            // they can fly without giving any of it up is 99.6 / 0.28.
-            Assert.AreEqual(99.6f, RaceCourseGeometry.MinTurnRadius(
+            // they can fly without giving any of it up is 186.5 / 0.28. (99.6 / 355.9 before the
+            // retune, at 1200 u/s and RotationThrottleScaler 0.5.)
+            Assert.AreEqual(186.5f, RaceCourseGeometry.MinTurnRadius(
                 HeadlongCircuitSettings.RhinoTopSpeed,
                 HeadlongCircuitSettings.RhinoRotationThrottleScaler,
                 HeadlongCircuitSettings.RhinoTurnScaler), 0.5f,
                 "Rhino min turn radius at top speed changed - re-derive the circuit ladder.");
 
-            Assert.AreEqual(355.9f, HeadlongCircuitSettings.FlatOutRadius, 1f,
+            Assert.AreEqual(666.2f, HeadlongCircuitSettings.FlatOutRadius, 1f,
                 "The flat-out radius is one point on the curve. If it moved, every corner did.");
         }
 
@@ -78,8 +79,12 @@ namespace CosmicShore.Tests
 
             Assert.Less(atTop, asymptote, "radius must stay under its own asymptote");
             Assert.Less(atTenTimes, asymptote, "...at any speed");
-            Assert.Less(atTenTimes - atTop, 30f,
-                "a 10x speed increase should cost under 30u of radius - that is the convergence");
+            // Stated as a fraction of the asymptote so it survives a retune of the scaler: at the
+            // shipped 0.2 a 10x speed increase costs 85u against a 286u asymptote (0.30); at the
+            // pre-2026-09-25 0.5 it was 13u against 115u (0.12). A DIVERGING radius (r -> 0)
+            // blows straight through any fixed fraction.
+            Assert.Less(atTenTimes - atTop, 0.35f * asymptote,
+                "a 10x speed increase should cost under a third of the asymptote - that is the convergence");
         }
 
         // ── The circuit is a circuit ─────────────────────────────────────────

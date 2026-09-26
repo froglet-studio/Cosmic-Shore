@@ -494,6 +494,43 @@ creature in the match. If the other reading is wanted, it is a one-field change:
   pilots and kills fauna. Outside the Sparrow modes that is mostly invisible; in Wildlife Liberation
   it is a real new kill source, which is the point.
 
+### The 10-POINT SHOCKWAVE still has no visible body (a prism ripple was built and pulled, 2026-09-25)
+
+The warhead shockwave is the cheapest of the heavy rocket's three ranked tiers and the only one
+with nothing to show: it destroys nothing, lays nothing, and its own art is a translucent sphere
+that flashes for 0.15 s. A prism **ripple** was built as its body — a thin spherical shell of
+rippled prisms expanding with the blast, out to `warheadBlastRadiusMultiplier x HitRadiusWorld`,
+once, at the moment it detonates — and it was **removed** with the high-poly morph family's second
+member (`.claude/skills/prism-morph` §13 carries the retirement record). Nothing in the branch
+grants it and no code refers to it; this row is open again.
+
+Three things it established belong here rather than in the skill, because they are facts about
+this weapon and they are what the next attempt inherits.
+
+**The blast touching no prism mass is exactly why that shape was the right one.**
+`AOEMissileWarhead.prefab` authors `affectsPrisms: 0` — its whole payload is the all-element
+debuff on pilots and the joust on creatures — so prisms it rippled were **still standing**
+afterwards, which is precisely what happened to them. A blast that destroyed what it rippled
+would be saying the same thing twice, and the ripple would be the less legible of the two.
+*An effect is honest when the thing it draws is the thing that happened.*
+
+**It needed no authored field, and the discriminator did not have to move.** The warhead blast is
+spawned at exactly one site (`ProjectileDetonatorSO`) already fenced by
+`proj.WarheadBlastRadiusMultiplier > 0f`, which is `Payload.ArmWarhead ? 25 : 0` and is authored
+**zero on every other round in the fleet** — so *"the heavy skyburst and nothing else"* falls out
+of the weapon. The base and heavy rockets are ONE prefab and ONE pool (§"One prefab, a per-shot
+PAYLOAD" below), so the first cut's `leavesWake` bool on the prefab could not have told them apart
+at all. **Find the gameplay quantity that already discriminates, rather than authoring a flag.**
+
+**⚠ Whatever is drawn here is 0.15 s long and that CANNOT be lengthened.** About nine frames at
+60 FPS, once per heavy rocket. The ripple read as *"very fast and very subtle"* and the obvious
+answer was unavailable: `ExplosionDuration` is the only dial, and
+`TheWarheadExpandsFastEnoughToCatchOrdinaryFlight` caps it at **0.1658 s** against the shipped
+geometry — the blast has to CONTAIN a target receding at 120 u/s before it stops expanding, which
+is why 0.5 s was rejected here in the first place. Buying more means widening the warhead (a buff)
+or narrowing the fuze (a nerf), i.e. a weapon change rather than a visual one. So the next attempt
+must be legible inside 0.15 s by its SHAPE, and its brief should say so.
+
 ## TWO rockets out of one bay (2026-09-22)
 
 The bay now holds two different missiles, and which one leaves is decided by whether the Sparrow
@@ -763,7 +800,7 @@ rocket is next; closing it is an ART task (five sprites), not a code one.
 | — (the warhead's own drain asset is **DELETED**) | was `MissileWarheadDebuffByExplosionEffect.asset` | — | A missile's bite is no longer authored per blast. All four missile-adjacent classes drain off the HIT REPORT through `CombatHitDrain` at ten points to the petal, netted against the tier an upgrade supersedes — which is the only place one rocket's three ranked tiers can be prevented from stacking. See `BROADSIDE.md` § *The drain follows the price* |
 | `faunaOnly` | `MissileWarheadWitherLifeformEffect.asset` | on | Off lets the warhead kill FLORA too — a whole grown plant per rocket, through its heart |
 | `sparesOwnDomain` | `MissileWarheadWitherLifeformEffect.asset` | **off** | Off = wildlife is quarry whatever colour it wears. Deliberately the effect's OWN decision, NOT the blast's friendly-fire flag: fauna spawn in ONE colour, so borrowing that flag let the CHARGE-5 *prism* upgrade switch off wildlife kills in the one mode scored on them |
-| `ExplosionDuration` | `AOEMissileWarhead.prefab` | **0.15 s** | How fast the sphere reaches full size — i.e. how fast a target can be moving away and still be caught (~130 u/s here; 0.5 s bought only ~40). Reach is not capture; see the geometry section |
+| `ExplosionDuration` | `AOEMissileWarhead.prefab` | **0.15 s** | How fast the sphere reaches full size — i.e. how fast a target can be moving away and still be caught (~130 u/s here; 0.5 s bought only ~40). Reach is not capture; see the geometry section. **Effectively pinned**: the capture requirement caps it at 0.1658 s, so it is not the dial for making the 10-point tier readable — see the shockwave-body section above |
 | `playsDetonationSfx` | `AOEMissileWarhead.prefab` | **off** | The warhead is SILENT. A skyburst already spawns two authored blasts that each play the shared `Explosion` one-shot; a third at the same point on the same frame sums and phases rather than reading as a bigger explosion. A voice of its own would be its own `EventReference`, shipped empty — never a third consumer of a shared category |
 | `syncIntervalSeconds` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | 1 s | How often the OWNER publishes its missile tank to the other peers as an idempotent SET. 0 disables the correction and accepts per-peer drift, which makes a replica silently skip drawing the missile |
 | `ammoCost` / `stationaryAmmoCost` | `SkyBurstGunAction.asset` | **0.25 / 0.5** | What each rocket costs. Authored as absolutes and asserted as a RATIO (`SparrowMissileVariantTests`), so retuning the heavy one carries the base one with it. The bay is a 0..1 tank: four cheap or two heavy |

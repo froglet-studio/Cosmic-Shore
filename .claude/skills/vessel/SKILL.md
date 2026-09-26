@@ -504,6 +504,26 @@ applies to new abilities, new resources on the meter list, and anything that add
     change is reachable before you pick the numbers you test it at** — and prefer a swept control
     that states the boundary over a handful of hand-picked points, because a hand-picked point
     that lands outside the reachable band is indistinguishable from a broken feature.
+37. **`ShipActionSO.StopAction` fires on button RELEASE — for a PRESS-and-forget ability it must
+    be a no-op, or the ability silently never works for the AI.** `R_VesselActionHandler` calls
+    `StopAction` on every release, and `AIPilot.UseAbilityCoroutine` does Start → wait `Duration`
+    → Stop; the Serpent authors `Duration: 0`, so its Stop landed the same frame as its Start. The
+    Serpent's fuel pellets cancelled every burn in `StopAction`, which (a) made the ability's whole
+    point — overlapping burns — impossible for a human, who cannot press again without releasing,
+    and (b) zeroed EVERY AI burn, so AI Serpents never boosted and nothing reported it. When an
+    ability's effect has its own clock, give it no release semantics at all; decide this per
+    ability rather than inheriting a Start/Stop pair because the base class has one. And when
+    several instances of an effect may be live at once, track them as END TIMES retired in
+    `Update` (rule 13's stranded-tail trap cannot arise) and make the stacking formula ADDITIVE in
+    the thing the player feels: `1 + (m − 1) × n`, not `m × n`, if "four at once is four times
+    one" is the promise (`SERPENT_FUEL_PELLETS.md`).
+38. **Binding a vessel's FIRST ability icon changes how the lockup treats the rest of its HUD.**
+    With zero icons bound `AbilityLockupView` clears every drawing child of the HUD root; with one
+    or more it SPARES any root branch a HUD-root component still references. So the first binding
+    can resurrect retired UI through a stale serialized reference nobody was reading — the
+    Serpent's view still pointed `shieldIcon` at the long-unbound Seed Wall readout, which would
+    have reappeared as old art in the row's own corner. Before binding a first icon, list every
+    object reference on the HUD-root components and null the ones that point at retired UI.
 
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
@@ -688,6 +708,25 @@ every time: *"I don't see the pip."*
 **The general shape:** *an instrument's failure mode is the vocabulary of the bug report you will
 get.* Before you change one, ask what a pilot could say if it went wrong, and whether that sentence
 would point at one thing. If it would not, split the change.
+
+### 4.ab Retuning a vessel's SPEED or TURN constants moves a MODE, not just the hull
+
+A game mode cut against a vessel's own geometry holds a **compile-time copy** of that vessel's
+numbers, and nothing tells you it is there. The Rhino is the worked example (2026-09-25: top speed
+to 70% via `RhinoRampBoostAction.maxBoostMultiplier` 24 -> 16.8, `RotationThrottleScaler` 0.5 ->
+0.2). That one prefab + asset edit had to be carried into:
+
+- `HeadlongCircuitSettings` (`RhinoMaxBoostMultiplier`, `RhinoRotationThrottleScaler`) — held in
+  step by `RhinoRampGradingTests`, which fails if you change one side only;
+- `HeadlongCircuitTests`' flat-out constants — and, because the flat-out circle nearly DOUBLED in a
+  fixed shell, the ladder itself (level 1's `CornerRadiusFactor` 0.62 -> 0.75 to stay hairpin-free);
+- `Tools/Build/regatta_course_measurements.json`'s `sourceHash`, which hashes `HeadlongCircuit.cs`
+  (shared by Regatta's course) — `author_regatta_assets.py --check` goes red on any edit there even
+  when every measurement is byte-identical.
+
+Grep the vessel's constant NAMES and its numbers across `_Scripts/Controller/Arcade/` and
+`Tools/Build/` before calling a retune done; a mode whose course was proven against the old curve
+is now a different mode, and the doc's measured ladder is the first thing to go stale.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

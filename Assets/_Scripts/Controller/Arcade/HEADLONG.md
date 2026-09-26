@@ -4,6 +4,16 @@
 > pilot flies **laps** of it in order; the first **domain** whose **lead runner** threads the
 > last gate of the last lap wins.
 
+> **Rhino retuned 2026-09-25** — top speed 1200 → **840 u/s**, `RotationThrottleScaler` 0.5 →
+> **0.2**. The flat-out radius went 355.9 → **666.2 u** in the same fixed 480..1080 shell, so every
+> level got harder: median speed-costing corners per lap 1/2/2/3 → **2/4/4/5**, median hardest
+> corner 99/80/50/37% → **92/66/47/34%** of top speed (400 seeds per level, measured by compiling
+> and running the shipped generator and `HeadlongCircuitTests` offline — all 12 pass). Level 1's
+> `CornerRadiusFactor` went 0.62 → **0.75** so it still never produces a hairpin; levels 2-4 are
+> unchanged. Every table below that quotes 1200 u/s or a 332/356 u radius is the PRE-retune record;
+> the live curve is in `RHINO_RAMP_BOOST.md`'s retune note. ⚠ Needs a playtest — the easiest
+> level now asks for two lifts per lap where it asked for one.
+
 ## 1. What the mode is asking
 
 The Rhino's ramp boost pays **full** power only while the pilot holds full throttle and

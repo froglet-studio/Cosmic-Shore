@@ -38,6 +38,13 @@ lands, which is a property of the producer, not of the state:
 | Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | everything | `Projectile.PublishFuzeLit` |
 | Explosion passthrough | any | **resolved** — the blast arrived and spared this | **own domain only** | `ExplosionImpactor.PublishLit` |
 
+**A producer that wants to say TWO things about one force should look for a different CHANNEL, not a
+second light.** The fuze row was briefly paired with a prism *ripple* on the same round — a vertex
+morph rather than a light — the sphere saying **WHERE** the warhead goes off and the ripple **HOW
+FAR**. That ripple was removed with its family (`.claude/skills/prism-morph` §13) and the fuze row
+is a solo effect today, but the shape is the reusable part: a second lit volume competes for the
+eight slots and for the same colour language, where a vertex morph competes for neither.
+
 Three producers, and the third one is a **replacement rather than an addition**: it is what the
 2-second temporary shield used to do (see below), so it is the only one of the three that removes
 code instead of adding it. It covers every shape, because every blast that spares its own domain
