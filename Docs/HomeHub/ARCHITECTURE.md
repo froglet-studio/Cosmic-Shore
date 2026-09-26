@@ -417,7 +417,7 @@ byte-identical. Both Images ship with no sprite and `m_Enabled: 0`, because `Gam
 the art and whether there is any at runtime and an enabled Image with no sprite draws a white
 quad; `m_RaycastTarget: 0`, because they are decoration and must never eat the card's own click.
 
-### 3.8 The card background: one screenshot per mode, and why it is a drop folder
+### 3.8 The card background: each mode's own arena, RENDERED from its data
 
 `GameCard.UpdateCardView` does `BackgroundImage.sprite = game.CardBackground`, so the backdrop
 is authored per mode on its own `SO_ArcadeGame` (the field is inherited from `SO_Game`). Measured
@@ -425,26 +425,45 @@ across the live roster, **22 of the 25 cards shared FOUR legacy images** from th
 single-player era - sixteen of them all wearing `GameCardBackground_Rampage.jpg` - and three had
 none at all, so the grid told the player almost nothing about which world a card leads to.
 
-Each card should instead wear a screenshot of **its own mode at intensity 2**, and the work splits
-cleanly in two. The capture needs the running editor and a built arena, which is play-testing;
-everything after it - import settings, guid, twenty-five inspector drags - is mechanical.
-`Tools/Build/author_card_backgrounds.py` owns the mechanical half: drop a capture at
-`Assets/_Graphics/ARCADE/CardBackgrounds/<CardName>.png` and it writes the `.meta` as a Sprite
-with the same importer settings the shipped backgrounds carry and rewires the matching card.
-`<CardName>` is the card asset's own name with `ArcadeGame` stripped, and the report prints the
-exact filename every card is waiting for, so nothing is guessed.
+Each card now wears **its own mode's intensity-2 arena**, and it is not a screenshot. The first
+cut of this section called the capture "play-testing" and built only the import half; that was
+the wrong line. **An arena is data** - the environment generators emit prism poses, the course
+generators emit gates, the spawn profile says what grows where - so the picture is made the way
+the mode preview's scale model is (`CellMiniatureBuilder`, `ModePreviewPlantingModel`), offline,
+by RUNNING that data. `Tools/Build/render_card_backgrounds.py` resolves each live card's arena off
+its own scene (`Cell.CellConfigs`, IntensityWise index 1; the preview definition as fallback),
+and `Tools/Build/card_art_harness/` compiles and runs the shipped generators against a faithful
+UnityEngine shim and rasterizes what they lay in the live palette (`OriginalColorSetSO`, base face
+lerped to rim by fresnel - the prism shader's defining read). Every card states its **tier**:
 
-**The roster is READ, never typed** - the live cards are whatever `ArcadeGames.asset` and
-`ArenaGames.asset` list, so a mode added to either is asked for the day it is added.
+| tier | cards | what is drawn |
+|---|---|---|
+| RUN | Cleave, Wildlife Liberation, Undertow, Dog Fight, Salvo, Broadside, Hijack, Skein, Regatta, Skim Race, Joust, Scurry | the shipped generator's own lay list, prism for prism (Swell 14,277, Switchyard 3,978, concentric shells 24,966 - each the documented count) |
+| COURSE | Switchback, Headlong, Redline, Breakwater | the shipped course generator at intensity 2 on the card's fixed seed, shell and gate count mirrored from `GateRaceController.BuildCourse` |
+| MODEL | Rampage, Bends, Bloomrush, Wrecking Ball, Tollway, Scarab Scramble, Astro League, Brood Rush | what exists only at runtime: the planting measured as the preview measures it with each plant a species glyph, or a court read off the controller's own settings asset |
+| MONTAGE | Maelstrom | slanted strips of the cards of the modes it can draw at intensity 2 (its cumulative ladder) |
 
-**`--check` passes while captures are merely MISSING and fails only on something actually wrong**:
-a card pointing at a capture that is not on disk, a reference whose guid disagrees with the file's
-meta, or - the one that would otherwise be invisible - **a capture file no live card is named for**,
-because a misspelled filename fails by the card silently keeping its old art. Coverage is behind
-`--strict`, which is the flag to put in CI once the twenty-five exist. That split is deliberate:
-*a gate that cannot be passed on the day it lands is noise*, and this one would have failed
-twenty-five times for a reason nobody could act on from a terminal. All four failure modes were
-run as negative controls before the tool shipped.
+Pilots - a dart and the prism trail it lays - and each mode's **signature act** (a Dolphin cone
+into the forest, a bloom, a tracer, a creature in a cage) are STAGING, and they are how the cards
+that share an arena (the cactus forest x3, the Boneyard x3, the cages x2) still say different
+things. The renderer is byte-deterministic, so **`render_card_backgrounds.py --check` re-renders
+and byte-compares**: a generator, course, palette or spawn-profile change that moves a card fails
+it until the card is re-rendered, and a hand edit reads as stale. A new mode is the `/cardart`
+skill's job and a step of `/arcadegame` and `/arenagame`; a mode with an `EnvironmentPrefab` needs
+no code, anything else is one `recipe()` branch, and an unknown card makes the renderer RAISE so a
+mode cannot ship on a legacy backdrop by omission. Stated plainly: nothing here is the game's
+renderer, a MODEL-tier plant is a glyph, and whether a card reads well in the grid beside the
+others is the one thing still owed to an eyes-on pass.
+
+`Tools/Build/author_card_backgrounds.py` stays the IMPORT half, and still accepts a hand capture:
+it writes each `.meta` as a Sprite with the shipped backgrounds' importer settings, rewires the
+matching card, and writes the folder's and README's `.meta` with deterministic guids. **The roster
+is READ, never typed** - the live cards are whatever `ArcadeGames.asset` and `ArenaGames.asset`
+list. **Its `--check` fails only on something actually wrong** - a reference to a file not on
+disk, a guid that disagrees with the file's meta, or a capture no live card is named for (a
+misspelled filename otherwise fails by the card silently keeping its old art) - and coverage is
+behind `--strict`, which now passes at 25/25. A mode that should ship a real screenshot is opted
+out of rendering by name (`HAND_CAPTURED`), never by dropping a file on top of a render.
 
 ## 4. The Toy Box drives the LIVE toys
 

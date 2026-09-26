@@ -20,7 +20,7 @@ MonoBehaviour:
     First to five, golden goal if it's tied. Welcome to the league.
   IconActive: {fileID: 0}
   IconInactive: {fileID: 0}
-  CardBackground: {fileID: 0}
+  CardBackground: {fileID: 21300000, guid: c97fda61c4544717b67ae57bbfae7035, type: 3}
   GolfScoring: 0
   SceneName: MinigameAstroLeague
   Vessels:

@@ -9,20 +9,18 @@ roster, 22 of the 25 cards share FOUR legacy images from the retired single-play
 (sixteen of them are all `GameCardBackground_Rampage.jpg`) and three have none at all. So
 the grid tells the player almost nothing about which world a card leads to.
 
-WHAT THIS TOOL DOES, AND WHAT IT DOES NOT
------------------------------------------
-It does NOT take the screenshots - that needs the running editor, and it is the one half of
-this job that is genuinely play-testing rather than asset work. Capture them however suits
-(the Screenshot Director, `Docs/SCREENSHOT_DIRECTOR.md`, is the shortest route: fly the mode
-at intensity 2 and press 0), drop them in
+WHAT THIS TOOL DOES, AND WHAT MAKES THE PICTURES
+------------------------------------------------
+This is the IMPORT half. The pictures are RENDERED from each mode's own intensity-2 arena by
+`render_card_backgrounds.py` (the /cardart skill), which calls this tool when it finishes; a hand
+capture still works too (`HAND_CAPTURED` in the renderer opts a card out of rendering). Given
 
     Assets/_Graphics/ARCADE/CardBackgrounds/<CardName>.png
 
-and this tool does everything after that: writes each PNG's `.meta` as a Sprite with the
-same import settings the legacy backgrounds carry, and rewires every matching card's
-`CardBackground` to it. `<CardName>` is the card asset's own name with `ArcadeGame` stripped
-(`ArcadeGameWreckingBall` -> `WreckingBall.png`); the report prints the exact filename each
-card is waiting for, so there is nothing to guess. `.jpg` works too.
+this writes each PNG's `.meta` as a Sprite with the same import settings the legacy backgrounds
+carry, rewires every matching card's `CardBackground` to it, and writes the folder's and README's
+own `.meta` with deterministic guids. `<CardName>` is the card asset's own name with `ArcadeGame`
+stripped (`ArcadeGameWreckingBall` -> `WreckingBall.png`). `.jpg` works too.
 
 The ROSTER IS READ, never typed: the live cards are whatever `ArcadeGames.asset` and
 `ArenaGames.asset` list, so a mode added to either is covered the day it is added and a mode
@@ -37,7 +35,7 @@ Usage:
 - and fails only on something actually wrong: a card pointing at a capture that is not on
 disk, a capture nothing points at, or a reference whose guid disagrees with the file's meta.
 A gate that cannot be passed on the day it lands is noise, so the coverage half is behind
-`--strict`, which is the flag to put in CI once the 25 captures exist.
+`--strict` (25/25 since the renderer landed - the flag for CI).
 """
 
 import re
@@ -219,6 +217,36 @@ def read_reference(body: str):
     return (m.group(1), m.group(2)) if m else (None, None)
 
 
+def _stable_guid(key: str) -> str:
+    """Deterministic, so a re-run (or another machine) mints the SAME guid and the diff is empty."""
+    import hashlib
+    return hashlib.md5(f"CosmicShore/CardBackgrounds/{key}".encode()).hexdigest()
+
+
+def ensure_folder_metas(folder: Path, check: bool) -> list:
+    """The captures folder and its README are assets too: without a committed .meta, Unity mints
+    one per machine and the folder shows as an untracked change forever."""
+    wanted = {Path(str(folder) + ".meta"): ("fileFormatVersion: 2\nguid: {g}\nfolderAsset: yes\n"
+                                           "DefaultImporter:\n  externalObjects: {{}}\n  userData: \n"
+                                           "  assetBundleName: \n  assetBundleVariant: \n", "folder")}
+    readme = folder / "README.md"
+    if readme.exists():
+        wanted[Path(str(readme) + ".meta")] = ("fileFormatVersion: 2\nguid: {g}\nTextScriptImporter:\n"
+                                               "  externalObjects: {{}}\n  userData: \n  assetBundleName: \n"
+                                               "  assetBundleVariant: \n", "readme")
+    problems = []
+    if not folder.exists():
+        return problems
+    for meta, (template, key) in wanted.items():
+        if meta.exists():
+            continue
+        if check:
+            problems.append(f"{meta.relative_to(ROOT)} is missing - run without --check to write it")
+        else:
+            meta.write_text(template.format(g=_stable_guid(key)), encoding="utf-8")
+    return problems
+
+
 def main() -> int:
     check = "--check" in sys.argv
     strict = "--strict" in sys.argv
@@ -230,6 +258,7 @@ def main() -> int:
 
     folder = ROOT / CAPTURES
     problems, rows, wired, imported = [], [], 0, 0
+    problems += ensure_folder_metas(folder, check)
     claimed = set()
 
     for card, display, mode in cards:

@@ -123,6 +123,7 @@ Three things the Rhino cost Broadside, each of which a future model will meet ag
 | **Preview** | `Vessel: -1` - the carousel's pick flies the preview. |
 | **Toasts** | The tutorial is "what does MY hull do here"; an idle hint per verb family, not per hull. |
 | **The doc** | The fleet table (§1) for THIS arena - what each hull does with the structure, what it costs each hull - and the balance table with the residual. |
+| **Card background** | Run `/cardart`: an arena card gets its backdrop rendered from its own intensity-2 arena like an arcade card does. Stage the MIXED grid (several hulls' darts, several verbs) - it is what tells an arena card from the single-hull card that shares its arena (Broadside vs Dog Fight/Salvo in the Boneyard). |
 
 ## 4. The C# an arena card may add
 
@@ -148,6 +149,7 @@ python3 Tools/Build/render_scarab_card_icons.py --check  # the one generated car
 python3 Tools/Build/check_vessel_class_icons.py       # every hull's IconActive/IconInactive resolves (a dangling sprite is a white square)
 python3 Tools/Build/author_arena_launch_panel_layout.py --check  # the SELECT VESSEL button is in the carousel, not on Play
 bash Tools/Build/regatta_course_harness/run.sh        # after ANY edit to a pure course file
+python3 Tools/Build/render_card_backgrounds.py --check   # after ANY arena/course edit: the card must still be that arena
 ```
 
 The editor still owns: whether a hull actually latches / skims / clears the mouth at the speed
