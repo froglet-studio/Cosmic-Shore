@@ -29,9 +29,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// </summary>
     public sealed class MarkerBudgetRecorder : IDisposable
     {
+        // Member names checked against the Unity 6000.3 scripting reference: the wrap flag is
+        // "...CapacityReached". "...CapacityExceeded" does not exist and failed the compile once.
         const ProfilerRecorderOptions Options =
             ProfilerRecorderOptions.SumAllSamplesInFrame |
-            ProfilerRecorderOptions.WrapAroundWhenCapacityExceeded |
+            ProfilerRecorderOptions.WrapAroundWhenCapacityReached |
             ProfilerRecorderOptions.CollectOnlyOnCurrentThread;
 
         struct Entry
@@ -93,11 +95,21 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         /// Drops everything collected so far and keeps recording. Called on the first frame
         /// <c>diag</c> actually samples, so the start-up hitch (including this class's own
         /// handle enumeration) is in no marker's numbers.
+        ///
+        /// <para><see cref="ProfilerRecorder.Reset"/> STOPS the recorder as well as clearing it
+        /// (Unity: "Sets Count to 0 and WrappedAround to false and stops collection"), so it must
+        /// be started again here. Without the restart every marker reads zero for the whole run,
+        /// and nothing reports that: a stopped recorder looks exactly like a marker that never ran.</para>
         /// </summary>
         public void ResetSamples()
         {
             for (int i = 0; i < _entries.Count; i++)
-                if (_entries[i].found) _entries[i].recorder.Reset();
+            {
+                if (!_entries[i].found) continue;
+                var recorder = _entries[i].recorder;
+                recorder.Reset();
+                recorder.Start();
+            }
         }
 
         /// <summary>
@@ -122,7 +134,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
                 e.recorder.Stop();
                 _samples.Clear();
-                e.recorder.CopyTo(_samples);
+                e.recorder.CopyTo(_samples, false);
                 ms.Clear();
                 calls.Clear();
                 for (int s = 0; s < _samples.Count; s++)
