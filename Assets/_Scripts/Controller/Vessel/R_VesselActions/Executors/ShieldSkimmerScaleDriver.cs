@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility;
 
@@ -29,6 +30,17 @@ namespace CosmicShore.Gameplay
     /// blade contacts are RE-DISPATCHED (both the box-trigger overlaps and the shell-tier
     /// pairs) so a super-shielded prism already resting against the blade pops without
     /// needing a fresh OnTriggerEnter.
+    ///
+    /// BINDING — a NON-energized blade inside super-shielded mass it cannot cut does not recoil;
+    /// the armour DRAGS on it. While the shell tier reports the blade inside one or more live
+    /// super-shielded prisms (<see cref="PrismShellContactManager.CollectSuperShieldedContactsForOwner"/>)
+    /// the vessel's rotation rate (pitch, yaw AND roll) eases down to <c>BindTurnRateMultiplier</c>
+    /// (<see cref="VesselTransformer.ExternalTurnRateMultiplier"/>), every bound prism keeps
+    /// shuddering (the deflection jiggle, re-stamped through <see cref="Prism.AbsorbSuperShieldHit"/>
+    /// — photons only, the prism stays invulnerable), and the local human pilot feels a grind
+    /// (<see cref="HapticController.PlayBind"/>). Leaving the prism eases the turn rate back.
+    /// The ENTRY beat (first jiggle + punish thud) is the damage effect's. See
+    /// <c>RHINO_ENERGY_SWORD.md</c> § "Binding".
     ///
     /// The resting length reflects stored energy (Y-only elongation from the Space-driven
     /// elemental base — the same meter the Rhino HUD draws through <see cref="OnScaleChanged"/>).
@@ -71,6 +83,13 @@ namespace CosmicShore.Gameplay
         float _chargeStart, _tailEnd, _cooldownEnd;
         bool _tailCounting;
         bool _inStance;
+
+        // ── binding (a non-energized blade inside super-shielded mass) ──
+        readonly List<Prism> _bound = new(4);
+        float _bindTurnMultiplier = 1f;
+        VesselTransformer _turnOwner;   // the transformer we are currently slowing, if any
+        bool _wasBound;
+        float _nextBindJiggle, _nextBindHaptic;
 
         // Sword capsules (Skimmer.ElongateYOnly): the resting length grows only local Y and
         // preserves the authored X/Z silhouette; the crystal burst overrides all three dims.
@@ -188,11 +207,14 @@ namespace CosmicShore.Gameplay
             _inStance = false;
             _tailCounting = false;
             _cooldownEnd = 0f;
+            _bindTurnMultiplier = 1f;
+            _wasBound = false;
         }
 
         void OnDisable()
         {
             if (_skimmer) _skimmer.HasExternalScaleDriver = false;
+            ReleaseTurn();
         }
 
         void Update()
@@ -201,6 +223,7 @@ namespace CosmicShore.Gameplay
             float dt = Time.deltaTime;
 
             UpdateEnergize();
+            UpdateBind(dt);
             UpdateScale(dt);
             Fx?.Tick(Mathf.Clamp01(GetShield01()), _energize, Charge01, dt);
         }
@@ -280,6 +303,77 @@ namespace CosmicShore.Gameplay
             if (!_skimmerImpactor) return;
             _skimmerImpactor.ReapplyPrismEffectsToOverlapping();
             PrismShellContactManager.RedispatchPairsForOwner(_skimmerImpactor);
+        }
+
+        // ── binding ───────────────────────────────────────────────────────────
+        void UpdateBind(float dt)
+        {
+            var status = _skimmer ? _skimmer.VesselStatus : null;
+
+            _bound.Clear();
+            // An energized blade POPS super-shields on contact (and the ignition edge re-dispatches
+            // standing contacts), so it is never bound — anything left in the pair set this frame
+            // is about to pop.
+            bool bound = !IsEnergized && _skimmerImpactor && _skimmer && _skimmer.IsInitialized
+                         && PrismShellContactManager.CollectSuperShieldedContactsForOwner(_skimmerImpactor, _bound) > 0;
+
+            float target = bound ? config.BindTurnRateMultiplier : 1f;
+            float rate = target < _bindTurnMultiplier ? config.BindEngageRate : config.BindReleaseRate;
+            _bindTurnMultiplier = Mathf.MoveTowards(_bindTurnMultiplier, target, rate * dt);
+            ApplyTurn(status);
+
+            if (!bound)
+            {
+                _wasBound = false;
+                return;
+            }
+
+            float now = Time.time;
+            if (!_wasBound)
+            {
+                // The damage effect already played the ENTRY beat (first jiggle + punish thud), so
+                // the texture starts one interval later rather than stacking on top of it.
+                _wasBound = true;
+                _nextBindJiggle = now + config.BindJiggleIntervalSeconds;
+                _nextBindHaptic = now + config.BindHapticIntervalSeconds;
+            }
+
+            if (now >= _nextBindJiggle)
+            {
+                _nextBindJiggle = now + config.BindJiggleIntervalSeconds;
+                float speed = config.BindJiggleImpactSpeed;
+                for (int i = 0; i < _bound.Count; i++)
+                    _bound[i].AbsorbSuperShieldHit(speed);
+            }
+
+            if (now >= _nextBindHaptic)
+            {
+                _nextBindHaptic = now + config.BindHapticIntervalSeconds;
+                if (status != null && status.IsLocalUser && !status.AutoPilotEnabled)
+                    HapticController.PlayBind(config.BindHapticStrength);
+            }
+        }
+
+        // Single writer of VesselTransformer.ExternalTurnRateMultiplier for this vessel: writes
+        // while the drag is non-trivial and hands it back at exactly 1 once it has eased out.
+        void ApplyTurn(IVesselStatus status)
+        {
+            var transformer = status?.VesselTransformer;
+            if (!transformer || _bindTurnMultiplier >= 0.9999f)
+            {
+                ReleaseTurn();
+                return;
+            }
+
+            if (_turnOwner && _turnOwner != transformer) ReleaseTurn();
+            transformer.ExternalTurnRateMultiplier = _bindTurnMultiplier;
+            _turnOwner = transformer;
+        }
+
+        void ReleaseTurn()
+        {
+            if (_turnOwner) _turnOwner.ExternalTurnRateMultiplier = 1f;
+            _turnOwner = null;
         }
 
         // ── scale ─────────────────────────────────────────────────────────────

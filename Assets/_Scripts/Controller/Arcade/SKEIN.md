@@ -357,7 +357,7 @@ it at a live rail), physics (it carries 833 u above cruise) and economy (only ri
 ammo). Scoring the *record* of a manoeuvre rather than its effect is the scripted-outcome cheat.
 
 **NO NEW SCORING METRIC.** Metric 9 (`SwitchesThreaded`) is reused wholesale, and with it
-`ScoreDifferenceSource.SwitchesThreaded` (8), `IRoundStats.SwitchesThreaded`,
+the rule's `DomainValue` (`SwitchesThreaded`), `IRoundStats.SwitchesThreaded`,
 `Player.ReportSwitchThreaded_ServerRpc`, `SwitchThreadScoring.Credit` and the `BestByDomain` fold.
 The mode claims **one** new enum member in the whole project.
 

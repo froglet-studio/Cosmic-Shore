@@ -95,8 +95,15 @@ namespace CosmicShore.Gameplay
             // REQUIRED for every party game: the elemental comeback system. Scene-authored
             // instances are respected; a scene that forgot one gets it created and configured
             // for this game mode (comeback runs locally on every machine, so this executes on
-            // host and clients alike). UseGolfRules travels with it so a Score-sourced mode
-            // knows which direction "ahead" is.
+            // host and clients alike). Its deficit is the mode's own ScoringRuleSO.DomainValue;
+            // UseGolfRules travels with it only for the legacy rule-less Score fallback.
+            //
+            // The comeback reads gameData.ScoringRule, and GameDataSO outlives the scene - so a
+            // rule-less legacy mode launched after a rule-scored one would otherwise inherit the
+            // PREVIOUS mode's rule and catch up on its stat. Every subclass that has a rule
+            // publishes it immediately after this base call returns, so clearing here costs none
+            // of them anything.
+            gameData.ScoringRule = null;
             ElementalComebackSystem.EnsureExists(gameObject, gameData, UseGolfRules);
 
             InitializeAfterDelay().Forget();

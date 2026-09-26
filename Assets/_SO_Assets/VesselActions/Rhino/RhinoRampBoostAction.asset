@@ -20,7 +20,7 @@ MonoBehaviour:
     element: 4
     UseFloor: 1
     Floor: 0.5
-  maxBoostMultiplier: 24
+  maxBoostMultiplier: 16.8
   accelerationPerSecond: 220
   returnPerSecond: 120
   straightnessGraceBand: 1

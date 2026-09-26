@@ -650,8 +650,12 @@ MonoBehaviour:
 
 
 def _wrap_yaml_scalar(text: str, width: int = 88, indent: str = "    ") -> str:
-    """Unity's own folded-scalar style: first line inline, continuations indented."""
-    words, lines, cur = text.split(), [], ""
+    """Unity's own style for a long string: a SINGLE-QUOTED scalar ('' escapes a quote), first
+    line inline, continuations indented. It must be quoted - the text carries ': ' and lines
+    that end in ':', which a plain scalar cannot hold (Unity: "Expect ':' between key and value
+    within mapping", and the whole asset fails to load). Folding turns each line break back
+    into the single space it replaced, so the loaded string is exactly `text`."""
+    words, lines, cur = ("'" + text.replace("'", "''") + "'").split(), [], ""
     for w in words:
         cand = f"{cur} {w}".strip()
         if len(cand) > width and cur:

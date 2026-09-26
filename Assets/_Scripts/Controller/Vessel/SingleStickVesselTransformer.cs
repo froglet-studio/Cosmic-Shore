@@ -47,7 +47,7 @@ namespace CosmicShore.Gameplay
         {
             if (BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
-                                -InputStatus.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime, //use roll scaler to adjust the banking into turns
+                                -InputStatus.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * RollScalar * Time.deltaTime, //use roll scaler to adjust the banking into turns
                                 transform.forward) * accumulatedRotation;
         }
 

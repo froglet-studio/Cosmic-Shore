@@ -891,7 +891,7 @@ work is saved and Phase 2 can be picked up.
    - *Menu_Main:* dense flora, flora visibly resume growing in pulses, fauna spawn
      in the controlling color (Jade appears when Jade leads), hunt, and thin out as
      prey runs low; spawn ring sweeps; **no numeric readout**.
-   - *One gameplay scene* (e.g. `MinigameWildlifeBlitz` / `MinigameSkimRace`): confirm
+   - *One gameplay scene* (e.g. `MinigameWildlifeBlitzMultuplayerCoOp` / `MinigameSkimRace`): confirm
      the prey-linked fauna + flora regrowth pulse don't break gameplay — fauna
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
@@ -2024,6 +2024,7 @@ It cancelled nothing, for two independent reasons:
   **down before reading the volume**; `PrismScaleAnimator.GetCurrentVolume()` gates on
   `enabled` and returns 0 once it is off, so `Mathf.Max(0f, 1f)` pins
   `prismProperties.volume` to **exactly 1 for every prism** at the moment of the divide.
+  *(2026-09: that divide is now deleted and the death volume is read correctly, for the stats.)*
 
 So creature debris was scaled by an unrelated quantity. The multiply is gone; debris now leaves
 at the creature's own speed. **No ecology invariant is touched** — this is destruction VFX
@@ -3670,7 +3671,7 @@ Two things to watch in a playtest, in this order:
 ### 26.8 In-editor verification (the human is the gate)
 
 Scene: **Menu_Main** freestyle (Squirrel is the menu vessel, so the joust is one flight away), and
-**MinigameWildlifeBlitz** for a populated cell.
+**MinigameWildlifeBlitzMultuplayerCoOp** for a populated cell (the single-player scene was retired 2026-09).
 
 1. **Joust a fauna.** Fly the Squirrel faster than a brittlestar/shark and clip its heart. Expect:
    no explosion; the crystal flies to *your* vessel and grants its element; the arms/fins evaporate
