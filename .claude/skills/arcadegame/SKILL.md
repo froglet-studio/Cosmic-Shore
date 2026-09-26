@@ -66,7 +66,7 @@ Then the platform rows, in this order:
   after every merge** - 7, 31 and 47 are reserved forever; parallel branches have collided on
   "the next free id" five times. Bump `EnumIntegrityTests.GameModes_HasExpectedMemberCount`.
 - `EndConditionOverridesSO` + `EndConditionOverridesWindow` (all rows in §1).
-- `ElementalComebackSystem.DefaultSourceFor` - the `ScoreDifferenceSource` the comeback reads.
+- (nothing for the comeback: `ElementalComebackSystem` reads the mode's `ScoringRuleSO.DomainValue`, so publishing the rule IS the registration. The per-mode `DefaultSourceFor` table and the scene-authored `differenceSource` were retired 2026-09 after eight cloned scenes shipped reading their donor's stat.)
 - `MiniGameHUD.CreateObjectiveProviderForGameMode` - reuse a provider when the arrow answers
   the same question (Salvo/Bloomrush -> Rampage's, Undertow -> Bends', Wrecking Ball -> Scramble's).
 - `GameToastSituation` - new per-mode situations at the next free block (100+ is the lobby).

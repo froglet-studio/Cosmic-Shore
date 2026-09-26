@@ -361,7 +361,8 @@ item is a real check a human has to perform, in this order (load-bearing first).
 ### The three registry IDs, and why 46 rather than 45
 
 A mode claims a slot in three enums that every other mode also lives in — `GameModes` (46),
-`ScoringMetric` (10) and `ElementalComebackSystem.ScoreDifferenceSource` (9). **None of the
+`ScoringMetric` (10) and the comeback's `ScoreDifferenceSource` (9, retired 2026-09 — the comeback
+now reads the rule). **None of the
 three fails loudly on a double-claim.** C# lets two members share a value, so a second mode
 taking the same number *compiles*: `GameModes.Hijack` would `==` the other mode, every switch
 over it ambiguous, and the two metrics silently reading each other's stat. Only `GameModes` has

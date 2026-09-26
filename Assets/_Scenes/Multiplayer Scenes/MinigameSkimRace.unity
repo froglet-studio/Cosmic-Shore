@@ -366,8 +366,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   comebackProfile: {fileID: 11400000, guid: 57125668d0b856746a63e472e6c2b3f9, type: 2}
-  differenceSource: 1
-  useGolfRules: 0
   updateInterval: 1
   comebackAudioCooldown: 3
   debugLogging: 0

@@ -82,8 +82,18 @@ namespace CosmicShore.Utility
         {
             var impact = Get_(position, rotation, parent, worldPositionStays);
             if (impact != null)
+                // -= first: exactly one handler per life, whatever a previous life left behind.
+                impact.OnReturnToPool -= Release;
                 impact.OnReturnToPool += Release;
             return impact;
+        }
+
+        // Runs on EVERY path back into the pool, including the bulk scene-change releases that
+        // bypass Release() - which is where the per-Get handler used to survive and double up
+        // (GenericPoolManager.Release_ has the full story).
+        protected override void OnReturnedToPool(Impact instance)
+        {
+            if (instance) instance.OnReturnToPool -= Release;
         }
 
         public override void Release(Impact instance)

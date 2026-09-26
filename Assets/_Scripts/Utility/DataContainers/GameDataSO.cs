@@ -368,8 +368,10 @@ namespace CosmicShore.Utility
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
         /// and the "remaining" readout (and, in later commits, the scoreboard + end-game
-        /// cinematic). Transient - re-published on every (re)spawn, so it is intentionally NOT
-        /// cleared by the reset methods.
+        /// cinematic), and by ElementalComebackSystem, whose deficit IS this rule's DomainValue.
+        /// Transient - re-published on every (re)spawn, so it is intentionally NOT cleared by the
+        /// reset methods; MultiplayerMiniGameControllerBase.OnNetworkSpawn nulls it just before
+        /// the subclass publishes, so a rule-less mode can never inherit the previous mode's.
         /// </summary>
         [NonSerialized] public ScoringRuleSO ScoringRule;
 
