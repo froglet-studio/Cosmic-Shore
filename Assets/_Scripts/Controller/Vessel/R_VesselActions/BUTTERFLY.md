@@ -149,7 +149,14 @@ LONGER rather than fatter, and `ButterflyDustField`, which switches the collider
 off together outside Dust mode (a disabled collider sends no `OnTriggerExit`, and Unity delivers
 trigger messages to disabled MonoBehaviours, so both have to go) and draws the capsule as a runtime
 particle fall of motes sized to its live world length. Motes stop EMITTING on the way out rather
-than vanishing (continuity of existence).
+than vanishing (continuity of existence). The motes wear the **shielded tier of the vessel's own
+domain** — the rim colour (`ShieldedInsideBlockColor`), read through
+`SO_ColorSet.TryGetPrismKindColors(domain, PrismKind.Shielded)`, the one source every prism tier is
+painted from, so the dust always matches the shielded mass it lays and shields. It is read LIVE
+each frame against the last domain painted, so a domain change reaches the NEXT motes while the
+ones in the air finish in their old colour; `Domains.Blue` and a missing palette fall back to the
+authored `dustColor`. Motes are 2.5-6 world units: at the Butterfly's ~204-unit camera a world unit
+is ~2.6 px at 1080p, and the first cut's 0.5-1.6 were 1-4 px, which made Dust mode read as nothing.
 
 What it does to the **living**:
 
@@ -351,7 +358,8 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 4. **Fly it** in Menu_Main freestyle via the vessel-changer toy. Check: the hull is a butterfly and
    the wings BEAT visibly from the chase camera; the wake is a row of separate wide keys.
 5. **Mode switch** (RT): spawns in Mass mode with a WIDE wake (~5x the key). RT once → wings fold,
-   wake narrows over ~1.5 s, the Mass fill empties, and a fall of motes appears **below** the hull
+   wake narrows over ~1.5 s, the Mass fill empties, and a fall of motes in your domain's shielded
+   colour appears **below** the hull
    (and only there — confirm there is exactly ONE dust volume and none at the wingtips). RT again →
    back. Feed Mass and watch Mass mode's wake widen toward 20x; at Mass 5 its keys come out shielded.
 5a. **Dust on mass.** In Dust mode fly low over your own trail: keys grow, some go dangerous, some

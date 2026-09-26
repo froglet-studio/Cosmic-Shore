@@ -1,4 +1,7 @@
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -37,8 +40,10 @@ namespace CosmicShore.Gameplay
                  "one falls back to that shader and is reported once.")]
         [SerializeField] Material particleMaterial;
 
-        [Tooltip("Mote colour. Alpha is shaped over each mote's life (in, hold, out), so this is " +
-                 "the peak.")]
+        [Tooltip("FALLBACK mote colour, used only while the vessel has no playable domain or no " +
+                 "palette is reachable. In play the motes wear the SHIELDED tier of the vessel's " +
+                 "own domain (see ResolveMoteColour). Alpha is shaped over each mote's life (in, " +
+                 "hold, out) and this alpha is the peak in both cases.")]
         [SerializeField] Color dustColor = new(1f, 0.86f, 0.52f, 0.9f);
 
         [Tooltip("Motes emitted per second per 100 cubic units of dust column, so a longer column " +
@@ -58,6 +63,14 @@ namespace CosmicShore.Gameplay
         [Tooltip("Motes drift slowly downward, as dust falls off a wing.")]
         [SerializeField] float fallSpeed = 6f;
 
+        // The palette. Injected: the dust skimmer is a child of the vessel prefab, and vessels are
+        // GameObjectInjector.InjectRecursive'd on every spawn path.
+        [Inject] GameDataSO _gameData;
+
+        IVesselStatus _status;
+        Domains _paintedDomain;
+        bool _painted;
+
         CapsuleCollider _capsule;
         SkimmerImpactor _impactor;
         ParticleSystem _particles;
@@ -75,6 +88,17 @@ namespace CosmicShore.Gameplay
             // Default to OFF: a Butterfly spawns in Mass mode, and a skimmer live for its first
             // frame would dust whatever it spawned inside.
             ApplyColliderState(false);
+        }
+
+        /// <summary>
+        /// Hand the field the vessel it belongs to, so the motes can wear that vessel's domain.
+        /// Called from <see cref="SpreadWingsActionExecutor"/>'s Initialize, which re-runs on a
+        /// re-init, so a vessel handed to another pilot repaints on the next frame.
+        /// </summary>
+        public void Bind(IVesselStatus status)
+        {
+            _status = status;
+            _painted = false;
         }
 
         /// <summary>Switch the dust on or off. Idempotent.</summary>
@@ -118,6 +142,43 @@ namespace CosmicShore.Gameplay
         {
             if (!_particles) return;
             FitParticlesToCapsule();
+            RefreshColour();
+        }
+
+        /// <summary>
+        /// Repaint when the vessel's domain changes. Read LIVE rather than snapshotted, so the
+        /// freestyle domain changer and every replicated NetDomain change reach the dust on the
+        /// next frame. Only NEW motes take the colour - the ones already in the air finish in
+        /// the colour they were born in, which is continuity rather than a snap.
+        /// </summary>
+        void RefreshColour()
+        {
+            var domain = _status != null && _status.Player != null ? _status.Domain : Domains.Blue;
+            if (_painted && domain == _paintedDomain) return;
+            _painted = true;
+            _paintedDomain = domain;
+
+            var main = _particles.main;
+            main.startColor = ResolveMoteColour(domain);
+        }
+
+        /// <summary>
+        /// The SHIELDED tier's rim colour for <paramref name="domain"/> - the frosty, bright colour
+        /// that says "shielded" on a prism - through <c>SO_ColorSet.TryGetPrismKindColors</c>, the
+        /// single source every prism tier is painted from, so the dust can never drift from the
+        /// shielded mass it sits beside. The rim rather than the base face because a mote is a
+        /// point of light: the base is the darker half of the pair and reads as dim smoke.
+        /// Blue (no team) and a missing palette fall back to the authored dust colour.
+        /// </summary>
+        Color ResolveMoteColour(Domains domain)
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            if (domain == Domains.Blue || colorSet == null ||
+                !colorSet.TryGetPrismKindColors(domain, PrismKind.Shielded, out var rim, out _))
+                return dustColor;
+
+            rim.a = dustColor.a;
+            return rim;
         }
 
         /// <summary>The capsule's world length and radius, read the way PhysX sizes it.</summary>

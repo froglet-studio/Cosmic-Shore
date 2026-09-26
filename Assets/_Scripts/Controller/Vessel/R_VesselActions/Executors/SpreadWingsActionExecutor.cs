@@ -71,6 +71,7 @@ namespace CosmicShore.Gameplay
             var root = shipStatus?.Vessel != null ? shipStatus.Vessel.Transform : transform.root;
             _animation = root ? root.GetComponentInChildren<ButterflyAnimation>(true) : null;
             if (!dustField && root) dustField = root.GetComponentInChildren<ButterflyDustField>(true);
+            if (dustField) dustField.Bind(shipStatus);
 
             // A re-init hands this component to a different pilot; it starts in Mass mode like a
             // fresh spawn, on every peer, so the mode cannot start out of step.
