@@ -54,6 +54,44 @@ own root hinge, because the beat rotates about that hinge and a wing welded into
 beat. Measured at the shipped settings: **809 verts, 2,464 tris, 21.35 u span × 11.55 u long**
 (aspect 1.85).
 
+### 2.0 The camera — and the one field it shipped inheriting (2026-09-26)
+
+`ButterflyCameraSettingsSO` is `followOffset (0, 22, -120)`: the fleet's longest camera after the
+Serpent's 250, and the brief's "flies slow from far away". That number is load-bearing for more
+than the look — the prism occlusion corridor and the vessel-tail width are both derived from
+`|followOffset.z|`, so it sizes the hull's whole relationship with the camera.
+
+**It also shipped with `farClipPlane 1000` against the fleet's 12000**, which was reported as *the
+draw distance goes way down with the Butterfly*. That is what it was, and the cause was not the
+camera: `ButterflyVesselSetup.BuildCameraSettings` named `followOffset` and nothing else, so every
+other field came out at the C# field initializer — and `CameraSettingsSO.farClipPlane`'s initializer
+was 1000 while all nine shipped assets say 12000. **A twelfth of the fleet's draw distance, chosen
+by nobody.**
+
+1000 does not cross a standard cell: a 1200-radius membrane is 2400 units across, so the far wall
+of the arena was clipped away outright, and in Waystation — whose course spans the whole shell —
+the next cluster was routinely not drawn. `CustomCameraController` writes the value straight onto
+the live camera in two places, so it reached the screen in full.
+
+Fixed three ways, because the asset alone would only fix this hull:
+
+- the asset is 12000;
+- the **class initializer is now 12000**, so the next vessel is correct by construction (a no-op
+  today — all nine assets carry the key);
+- `ButterflyVesselSetup` now **states** it, and `Tools/Build/check_vessel_camera_farclip.py`
+  (`--self-test`) fails any vessel camera below the fleet's own measured mode, or carrying no
+  `farClipPlane` at all. Its negative control is this exact value.
+
+This is the `/vessel` skill's rule 4-i met from the other side. That rule warns that a field ABSENT
+from a prefab takes its initializer, so a silent prefab is not an unset one; here the field was
+*present* in the asset and still carried the initializer, because the tool that wrote the asset
+never named it. **General rule: a generated asset's un-named fields are the C# initializer's
+opinion, and an initializer that disagrees with every shipped asset is a trap rather than a
+default** — so the fleet value belongs in the initializer, and a gate belongs on the agreement.
+
+The rest of its camera block is deliberate and unflagged: `dynamicMinDistance 10` /
+`dynamicMaxDistance 40`, `followSmoothTime 0.2`, `rotationSmoothTime 5`, adaptive zoom off.
+
 ### 2.1 What the elements do to the shape
 
 The four morphs are `Generate` run at perturbed settings, so "level 7 Mass and level 3 Space" is the

@@ -272,6 +272,13 @@ namespace CosmicShore.Editor
                 // both derived from |followOffset.z|, so this one number sizes the whole vessel's
                 // relationship with the camera.
                 Set(so, "followOffset", new Vector3(0f, 22f, -120f));
+
+                // STATED, not inherited. This tool set followOffset and nothing else, so every
+                // other field came out at the C# initializer - and farClipPlane's was 1000 against
+                // the fleet's 12000, which does not even cross a standard 1200-radius cell. The
+                // hull shipped with a twelfth of the fleet's draw distance and it read as a bug in
+                // the camera rather than as a field nobody named.
+                Set(so, "farClipPlane", 12000f);
             });
 
         // ─────────────────────────────────────────────────────────────── HUD

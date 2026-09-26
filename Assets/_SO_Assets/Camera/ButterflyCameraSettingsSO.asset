@@ -20,7 +20,7 @@ MonoBehaviour:
   rotationSmoothTime: 5
   disableSmoothing: 0
   nearClipPlane: 0.3
-  farClipPlane: 1000
+  farClipPlane: 12000
   enableAdaptiveZoom: 0
   adaptiveMaxDistance: 0
   orthographicSize: 5
