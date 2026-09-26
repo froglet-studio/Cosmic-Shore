@@ -132,7 +132,11 @@ write does not appear in a grep for the read.
 **3.2 Two members can share a name and not a class.** Two `ApplyMaxSizeDebuff` methods existed;
 one wrote a shared ScriptableObject's serialized field and was the documented hazard, the other
 wrote a private runtime field and was the one anything called. Resolve the caller's
-`[SerializeField]` type.
+`[SerializeField]` type. Its sequel is the reason the distinction was worth making rather than
+merging: the surviving twin ALSO mutated a shared asset (one `ShieldSkimmerScaleConfig` drives
+every Rhino), so writing runtime state made it *safer* and not *safe* — it went too, with the
+control-theft tier (`Docs/ELEMENTAL_ECONOMY.md §9`). **"The dangerous one is dead code" is a
+finding about one copy, never a clearance for the other.**
 
 **3.3 "Referenced by nothing" is a statement about what you searched.** A guid sweep cannot see
 `Resources.Load` **by name**, and it cannot see a C# type reference. `TMP Settings.asset`

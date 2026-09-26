@@ -433,7 +433,10 @@ if G_ASSET["VesselCombatHitBySpike"] not in urchin:
 rhino = g.files[CONTAINERS["rhino"]]
 if G_ASSET["VesselCombatHitBySword"] not in rhino:
     errors.append("rhino sword container missing the combat-hit report")
-for keep in ("02cd4a20ea91bbc4591c9ccbf9db91af", "c57e976ae0b3f0749895f17697cac036"):
+# The haptics effect. `VesselDamageBySkimmerEffect` used to be checked here too and was
+# REMOVED in Sep 2026 with the control-theft tier - it muted the victim's right stick for 5s
+# (Docs/ELEMENTAL_ECONOMY.md §9), which a pilot cannot answer with flying.
+for keep in ("02cd4a20ea91bbc4591c9ccbf9db91af",):
     if keep not in rhino:
         errors.append("rhino sword container LOST an effect it already carried")
 squirrel = g.files[CONTAINERS["squirrel"]]

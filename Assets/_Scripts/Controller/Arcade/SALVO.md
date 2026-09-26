@@ -127,10 +127,12 @@ client-simulated environment — the Boneyard's wreckage is environment-owned `D
 mass, hostile to every domain, so all of it scores). Fauna bodies count too (a scavenger is
 prisms); teammates' trails never score, by the roster domain check.
 
-The two Sparrow-vs-Sparrow combat-hit effects still run here (they are wired on the shared
-weapon containers), but `PointsForCombatHit` is 0 in this rule — shooting a rival pilot
-suppresses them (spin + skimmer shrink), it does not score. That is deliberate: interference
-is free, the quarry is the arena.
+The Sparrow-vs-Sparrow combat-hit effects still run here (they are wired on the shared weapon
+containers), but `PointsForCombatHit` is 0 in this rule — shooting a rival pilot does not score.
+That is deliberate: interference is free, the quarry is the arena. (This paragraph used to say
+the hit *"suppresses them (spin + skimmer shrink)"*; both of those victim effects were removed in
+Sep 2026 — a weapon may take a pilot's petals and nothing else, `Docs/ELEMENTAL_ECONOMY.md §9` —
+so what a rival hit does here now is drain petals, which this rule still pays nothing for.)
 
 ## Crystals
 

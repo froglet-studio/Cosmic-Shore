@@ -383,8 +383,9 @@ scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energize
 0.7 · tracer size is NOT here — it is authored on the five `RhinoSwordBladeTracer*`
 TrailRenderers (hairline: `widthMultiplier` 0.5, `time` 0.15) · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
 (2,2,2) · `popShakeIntensity` 1.2 / `popShakeDuration` 0.25 · `burstShakeMaxIntensity` 2.5 /
-`burstShakeDuration` 0.4. (`prismMaxScale` remains only so the Sparrow full-auto
-`ApplyMaxSizeDebuff` keeps its historical meaning. The v2 tracer keys — `tracersEnabled`,
+`burstShakeDuration` 0.4. (`prismMaxScale` remains as serialized data with
+NOTHING reading it: the Sparrow full-auto `ApplyMaxSizeDebuff` that was its only consumer
+was deleted in Sep 2026 with the control-theft tier, `Docs/ELEMENTAL_ECONOMY.md §9`. The v2 tracer keys — `tracersEnabled`,
 `tracerMaterial`, `tracerWidth`, `tracerTimeSeconds` — are retired: the tracer is an authored
 TrailRenderer in `Rhino.prefab` now; tune its persistence, taper curve and material on the
 component, and its overall width through `tracerWidthLengthFraction` above — the width
@@ -422,9 +423,11 @@ On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosion
 9. **Tracers:** two streaks ride the blade tips through swipes, tinted with the live blade
    colour (teal → cyan → white-hot when energized).
 10. **Non-regression:** other vessels' skimmers unaffected (SwordState null; base skimmer
-    crackle still the red sphere look); Sparrow full-auto still shrinks the Rhino sword's max
-    (`ApplyMaxSizeDebuff`); the omni-crystal pickup still snaps the meter full; touch/binary
-    input can energize by holding both swipe controls.
+    crackle still the red sphere look); the omni-crystal pickup still snaps the meter full;
+    touch/binary input can energize by holding both swipe controls. (This step used to read
+    *"Sparrow full-auto still shrinks the Rhino sword's max (`ApplyMaxSizeDebuff`)"* — that
+    effect and that method were removed in Sep 2026 with the control-theft tier, so the
+    blade's max is now always its authored length: `Docs/ELEMENTAL_ECONOMY.md §9`.)
 
 ## Follow-ups
 

@@ -270,23 +270,27 @@ with flora to graze (Rampage, Wrecking Ball, Bloomrush, The Bends). What a human
 
 ---
 
-## 9. A VESSEL MAY NOT MOVE AN OPPOSING VESSEL (Sep 2026)
+## 9. A VESSEL MAY NOT MOVE AN OPPOSING VESSEL, NOR TAKE ITS CONTROLS (Sep 2026)
 
 This is the other half of the economy's design, and it arrived as a playtest call: *"the sparrow
 knocks other vessels around. this is not fun to receive. vessels should not be able to move
 opponent vessels."*
 
 **The rule.** An offensive act against another pilot may take their **elemental crystals** and
-nothing about their **motion**. The asymmetry is the whole point:
+nothing else. The asymmetry is the whole point:
 
 | what a hit takes | can the victim answer it? |
 |---|---|
 | **petals** (stolen on a contact verb, ejected as free-for-all crystals on a ranged one) | **yes** — the crystals land in the world, so a stripped pilot flies after them, and a thief who banks them is carrying a prize somebody can take back |
 | **motion** (a spun heading, a lateral shove) | **no** — flying better cannot undo having been re-aimed, and the pilot's own input is what stops answering |
+| **controls** (a muted stick, a shrunk skimmer, a frozen trail spawner) | **no** — same loss, one layer in: the pilot is still flying, and flying no longer does what they asked |
 
-So the economy is not merely *a* thing a weapon may do to a pilot; it is the ONLY thing.
+So the economy is not merely *a* thing a weapon may do to a pilot; it is the ONLY thing. The law
+landed in two passes and covers both tiers: the MOTION tier went first, on the report quoted
+above, and the CONTROL tier went in the same session on *"yes i want all four of those effects
+gone as well"*.
 
-### What was removed
+### What was removed — the MOTION tier
 
 Four effects broke the rule, across three hulls:
 
@@ -323,32 +327,88 @@ reference is unchanged.
 - **The Squirrel's joust explosion and every combat-hit report**, which score and draw without
   touching the victim's motion.
 
-### ⚠ The CONTROL-THEFT tier is still standing, and it is a separate decision
+### What was removed — the CONTROL tier
 
-These take a pilot's **controls** rather than their motion, so the motion law does not reach them
-and none has been removed:
+Four more effects took a pilot's **controls** instead of their motion. The motion law did not
+reach them, so they were flagged as a separate decision and then removed on the same call:
 
-| effect | wired into | what it takes |
+| effect | wired into | what it took |
 |---|---|---|
-| `VesselChangeSkimmerSizeBySparrowFullAutoProjectileEffect` | the Sparrow's two gun containers | shrinks the victim's skimmer — their skim economy's reach |
-| `VesselDamageBySkimmerEffect` | `RhinoForceFieldSkimmerImpactorDataContainer` | mutes the victim's `RightStickAction` |
-| `VesselPrismSpawnerCooldownBySkimmerEffect` | `Rhino.prefab` | freezes the victim's trail spawner |
-| `VesselChangeSpeedByExplosionEffect` | `SlowExplosionImpactorDataContainer` → the Rhino's sword crystal burst and vessel crystal blast, and the Squirrel's vessel crystal blast | mutes `RightStickAction` for 3 s. **Misnamed — it changes no speed at all** |
+| `VesselChangeSkimmerSizeBySparrowFullAutoProjectileEffect` | the Sparrow's two gun containers | shrank a **Rhino's** skimmer to 0.7× for 3 s (`vesselTypesToImpact` was Rhino-only) — i.e. its blade |
+| `VesselDamageBySkimmerEffect` | `RhinoForceFieldSkimmerImpactorDataContainer` | muted the victim's `RightStickAction` for 5 s and cancelled the action it was driving |
+| `VesselPrismSpawnerCooldownBySkimmerEffect` | `Rhino.prefab` | froze the victim's trail spawner for 10 s |
+| `VesselChangeSpeedByExplosionEffect` | `SlowExplosionImpactorDataContainer` → the Rhino's sword crystal burst and vessel crystal blast, and the Squirrel's vessel crystal blast | muted `RightStickAction` for 3 s. **Misnamed — it changed no speed at all** |
 
-Read literally, *"remove any vessel offensive abilities that do anything but remove or steal
-elemental crystals"* covers this tier as well. It is left for a deliberate call because each entry
-changes what a hull IS beyond its motion (the Rhino's sword becomes a pure elemental steal; the
-Sparrow's guns stop touching a rival's skim reach), which is a balance decision across three hulls
-rather than the one-line law above.
+`ShieldSkimmerScaleConfigSO.ApplyMaxSizeDebuff` is deleted with them (the first row was its only
+caller), along with the `_maxScaleMultiplier` / `_isMaxSizeDebuffed` runtime state it wrote, so
+`MaxScale` and `PrismMaxScale` are now the authored values.
+
+Three findings came out of the measurement and each is worth more than the removal.
+
+**One of the four had never run.** `VesselPrismSpawnerCooldownBySkimmerEffect`'s only reference
+anywhere was a `shipSkimmerEffectsSO` / `vesselSkimmerEffectsSO` prefab-instance override on
+`Rhino.prefab` — and **all three of `SkimmerImpactor`'s inline effect lists are commented out**
+(the component reads its effects from `skimmerImpactorDataContainer` instead). Unity never prunes
+a modification whose property it cannot resolve, so the override survived the refactor that moved
+those lists into a container and went on *looking* like wiring for as long as anybody read the
+prefab. General rule, the one CLAUDE.md already records for stale `Cell` overrides, met from the
+effect side: **a retired serialized key is indistinguishable from live wiring in the YAML, so
+"which container holds this?" is the question to ask, never "which prefab mentions it?"**
+
+**A shared config asset made one hit hit everybody.** `ApplyMaxSizeDebuff` mutated the
+`ShieldSkimmerScaleConfigSO` instance it was called on, and **ONE asset
+(`_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset`) drives every Rhino** — so a
+Sparrow shooting one pilot shrank every Rhino's blade in the match, and its own doc comment said
+so (*"if multiple skimmers share it, they share the debuff too"*). This is the twin of the
+`GrowSkimmerActionSO.ApplyMaxSizeDebuff` hazard `Docs/ElementalAbilitySystem/BACKLOG.md` 5.11a
+retired, and the reason that row could only delete one of the two: the live one wrote runtime
+state rather than a serialized field, which made it *safer* and not *safe*.
+
+**A container can be emptied to nothing, and that is a real gameplay change to state.**
+`SlowExplosionImpactorDataContainer` carried exactly one effect and an empty
+`explosionPrismEffects`, so it is now empty outright — which means the **Rhino's sword crystal
+burst, the Rhino's vessel crystal blast and the Squirrel's vessel crystal blast have no
+vessel-facing effect at all.** That is correct under this law and it is a hole rather than a
+neutral outcome: if those blasts should reach a pilot, the sanctioned shape is a Debuff-class
+combat-hit report plus a drain, exactly as the Dolphin's cone and the Scarab's plate carry
+(`ScarabCavitationDebuffByExplosionEffect`), which is a Broadside **pricing** decision through
+`Tools/Build/author_combat_debuff_magnitudes.py` rather than a wiring change. The container and
+its two prefabs are kept rather than deleted, because a dangling container reference on
+`AOESlowExplosion.prefab` / `AOEShieldedRingSpawner.prefab` is worse than an empty one.
+
+What is left behind, reported rather than swept: `ScriptableEventSkimmerDebuffApplied` and
+`SkimmerDebuffPayload` now have **no producer** — the channel and `RhinoVesselHUDController`'s
+`ShowDebuffTimer` handler are kept, since a SOAP channel with no producer is a wire rather than a
+feature and this one is the generic *"a skimmer debuffed you"* vehicle. (That HUD readout is
+already dark for a different reason: the ability lockup's retire sweep switched the Rhino's whole
+status cluster off, `Docs/ABILITY_LOCKUP.md`.) `ScriptableEventExplosionDebuffApplied` keeps its
+producer — the **danger prism**, below.
+
+### Where the line falls: the ARENA is not a weapon
+
+`SparrowDebuffByRhinoDangerPrismEffectSO` still mutes a pilot's input, and that is deliberate. A
+danger prism is a hazard **standing in the world**: it is the risk/reward surface the whole trail
+economy is built on (a danger skim pays 10× energy and slams its own owner on contact), and a
+pilot answers it by not flying into it. The line this law draws is between the **arena** and a
+weapon somebody **aimed at you** — the same line `Vessel Prism Effects`' bounce already sits on.
+It is also why the danger prism is the economy's only **burn** sink: the world destroying petals
+is a different act from a rival taking them.
 
 ### The gate
 
 `Tools/Build/check_vessel_on_vessel_motion.py` (`--self-test`) fails the build if any effect in a
 victim-facing family — `Vessel Projectile Effects`, `Vessel Skimmer Effects`,
-`Vessel Explosion Effects`, the three whose source is another pilot's weapon — calls a motion or
-attitude API on the victim. It is a gate rather than a paragraph because **the capability is one
-`[SerializeField]` away from returning**: an effect SO can call the transformer, a designer re-adds
-it by dropping the asset into a container, and nothing about that fails to compile or looks wrong
-on the asset. It is proven against the pre-fix tree, where it reports **6 findings** across the
-four removed effects, and its self-test carries the prose shapes that must NOT fire (a commented
-call, a doc comment naming the API) beside the calls that must.
+`Vessel Explosion Effects`, the three whose source is another pilot's weapon — reaches a motion,
+attitude **or control** API on the victim (`ModifyVelocity`, `SpinShip`, `GentleSpinShip`,
+`FlatSpinShip`, `ApplyRotation`, `SetPose`, `SetInitialSpeed`, `MuteInput`,
+`StopShipControllerActions`, `ApplyMaxSizeDebuff`, `StopSpawn`). Deleted members stay on the list
+so a revival is caught rather than merely compiling. It is a gate rather than a paragraph because
+**the capability is one `[SerializeField]` away from returning**: an effect SO can call the
+transformer or the action handler, a designer re-adds it by dropping the asset into a container,
+and nothing about that fails to compile or looks wrong on the asset. Each tier was proven against
+its own pre-fix tree at **6 findings**, and its self-test carries the prose shapes that must NOT
+fire (a commented call, a doc comment naming the API) beside the calls that must — including the
+control-theft calls, which moved from the must-NOT list to the must list when the tier fell.
+
+The `Vessel Prism Effects/` carve-out covers the danger prism's mute for the reason above, so the
+gate never has to know which hull laid the prism.

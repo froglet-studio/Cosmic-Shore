@@ -364,6 +364,14 @@ of a method by that name, `VesselChangeSkimmerSizeByProjectileEffectSO`, holds a
 **Two methods, one name, and only the uncalled one was dangerous.** Grepping the METHOD name
 found the hazard; only resolving the CALLER'S TYPE said which one was live.
 
+> **Sequel (Sep 2026).** The live twin is gone too — the effect that called it was removed with
+> the control-theft tier (`Docs/ELEMENTAL_ECONOMY.md §9`), and `ShieldSkimmerScaleConfigSO`'s
+> `ApplyMaxSizeDebuff` went with it. It turned out to share the hazard as well as the name: ONE
+> `ShieldSkimmerScaleConfig.asset` drives every Rhino, so mutating runtime state on it still made
+> a Sparrow shooting one pilot shrink every Rhino's blade. Writing a runtime field instead of a
+> serialized one made it **safer, not safe** — so *"the dangerous copy was uncalled"* is a
+> finding about one copy and never a clearance for the other.
+
 What survives is milder and already self-documented (*"if multiple skimmers share it, they
 share the debuff too"*) and is **5.11b**, deliberately not fixed: before moving that latch
 per-vessel, establish whether the debuff reaches anything at all — the config's `prismMaxScale`

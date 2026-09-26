@@ -126,11 +126,14 @@ guarantees all Awakes complete before the driver's first `Update` write.
 ## Self-impact exclusion (shipped with this feature)
 
 The Rhino's sword capsule permanently overlaps its own hull, and the impact pipeline
-had no self-exclusion — the Rhino's own `VesselDamageBySkimmerEffect`
+had no self-exclusion — when this shipped, the Rhino's own `VesselDamageBySkimmerEffect`
 (`inputToMute: RightStickAction`, 5s) ran with victim = attacker = the pilot on every
 re-enter, permanently muting the pilot's own right trigger (invisible until this
-feature bound an action to that event). `SkimmerImpactor` and `VesselImpactor` now
-carry mirrored guards: **a vessel and its own skimmer never impact each other.**
+feature bound an action to that event). That effect was removed in Sep 2026 with the
+control-theft tier (`Docs/ELEMENTAL_ECONOMY.md §9`), but the guard's reason is the
+OVERLAP rather than any one effect, so it outlives whatever the container carries:
+`SkimmerImpactor` and `VesselImpactor` carry mirrored guards, and **a vessel and its
+own skimmer never impact each other.**
 Enemy-Rhino skims still mute the victim's right trigger — that debuff now visibly
 disarms an active swipe, which is the designed interaction.
 
