@@ -465,6 +465,21 @@ The family is defined by four axes. A new member is a choice on each:
   over, outside rises to meet. **It is the family's only member, and the only consumer of the
   high-poly swap, the residency contract and the global-uniform bank.**
 
+**A neighbour, not a member: the Rhino sword's SLICE** (`Docs/PRISM_ANIMATION.md` §4.10). It is
+the admission test's question 1 answered "no" and still wanting the dense mesh — every input (the
+cut plane, the side, the blade speed) is known at the instant of the kill, so it is a §1 STAMP on
+two pure render entities per prism, not a global, and it shares only `HighPolyPrismMesh` with this
+family (no residency swap: the halves are BORN on the dense mesh, so there is nothing to hide). It
+is worth reading before a new member for two findings that transfer: **a vertex map that folds one
+part of a surface onto another is exact only up to the straddling row of triangles**, so the mesh
+density IS the precision — and what is left is best closed in the fragment stage (clip on the
+interpolated REST value, which is exact within a triangle, and let back faces shade as the surface
+the clip opened onto); and **a central projection from an interior point is the one way to flatten
+the far side of a convex solid onto a plane EXACTLY** (a bijection onto the true cross-section),
+where the obvious orthogonal projection overhangs every face slanted to the plane. Its harness
+(`verify_prism_slice.py`) adds a second proof tier this family lacks: glslang front-end-compiles
+every pass of a hand-written `.shader`, plain and DOTS-instanced, against a URP mock.
+
 **Built and NOT shipped — a retirement record.** One other member reached playtest and was removed
 with everything that carried it. It is written down because the family inherits its findings, not
 because any of it is in the tree: **no code, asset, graph node, config, tool or gate refers to it**,

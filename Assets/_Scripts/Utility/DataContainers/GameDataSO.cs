@@ -410,6 +410,12 @@ namespace CosmicShore.Utility
             // has exactly two goals" (a rule). Astro League and Brood Rush pin it to 2.
             MaxDomainsForGame = Mathf.Clamp(game.MaxDomainsAllowed, 1, ActiveDomains.Length);
 
+            // Arena seating (unique hulls + mid-match pilot swap), published for the same reason:
+            // the rule is authored on the card and ENFORCED by the server-side spawner and the
+            // pilot-swap RPC, neither of which can see the card. Shipped to clients by the config
+            // sync RPC so a guest's swap gesture knows whether it means anything here.
+            IsArenaMatch = game.ArenaRules;
+
             // The card's per-hull starting element levels, published for the same reason as the
             // hull list and shipped to every client by the config sync RPC: element levels are
             // simulated on the machine that OWNS a vessel and never replicate, so the guest's own
@@ -463,6 +469,50 @@ namespace CosmicShore.Utility
         /// the game scene, where the spawner reads it.
         /// </summary>
         [NonSerialized] public int MaxDomainsForGame = 3;
+
+        /// <summary>
+        /// True when the CURRENT card plays by <see cref="SO_ArcadeGame.ArenaRules"/>: every hull
+        /// is flown by exactly one pilot, and a human may swap into an AI teammate's hull mid-match
+        /// (<c>PilotSwap</c>). Published by <see cref="SyncFromArcadeGame"/> on the host and by the
+        /// config sync RPC on a client. Pre-launch config like <see cref="AllowedVesselClasses"/>:
+        /// deliberately NOT cleared by ResetRuntimeData(), because the spawner that enforces it
+        /// runs in the game scene.
+        /// </summary>
+        [NonSerialized] public bool IsArenaMatch;
+
+        /// <summary>
+        /// The first hull this game permits that is NOT in <paramref name="inUse"/>, preferring
+        /// <paramref name="preferred"/> when it is itself free - the one answer to "which hull
+        /// may this pilot have" under <see cref="IsArenaMatch"/>. Order is the card's own list
+        /// order, so identical inputs give identical answers on every machine. False when every
+        /// permitted hull is taken (more seats than hulls, which the launch modal's
+        /// <see cref="SO_ArcadeGame.MaxSeats"/> exists to prevent).
+        /// </summary>
+        public bool TryPickFreeHull(VesselClassType preferred, ICollection<VesselClassType> inUse,
+                                    out VesselClassType hull) =>
+            TryPickFreeHull(AllowedVesselClasses, preferred, inUse, out hull);
+
+        /// <summary>Pure core of <see cref="TryPickFreeHull(VesselClassType, ICollection{VesselClassType}, out VesselClassType)"/>,
+        /// separated so it can be tested without a GameDataSO.</summary>
+        public static bool TryPickFreeHull(IList<VesselClassType> allowed, VesselClassType preferred,
+                                           ICollection<VesselClassType> inUse, out VesselClassType hull)
+        {
+            hull = preferred;
+            bool IsFree(VesselClassType t) => inUse == null || !inUse.Contains(t);
+
+            bool preferredLegal = preferred != VesselClassType.Any && preferred != VesselClassType.Random &&
+                                  (allowed == null || allowed.Count == 0 || allowed.Contains(preferred));
+            if (preferredLegal && IsFree(preferred)) return true;
+
+            if (allowed == null) return false;
+            for (int i = 0; i < allowed.Count; i++)
+            {
+                if (!IsFree(allowed[i])) continue;
+                hull = allowed[i];
+                return true;
+            }
+            return false;
+        }
 
         /// <summary>
         /// The vessel classes the CURRENT game permits (<see cref="SO_ArcadeGame.Vessels"/>),

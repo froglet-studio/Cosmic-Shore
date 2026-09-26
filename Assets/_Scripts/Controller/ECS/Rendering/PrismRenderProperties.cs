@@ -355,4 +355,59 @@ namespace CosmicShore.ECS
     {
         public float3 Value;
     }
+
+    // ----------------------------------------------------------------------
+    // The Rhino sword's SLICE death (Docs/PRISM_ANIMATION.md §4.10, PrismSlice.hlsl).
+    // Read ONLY by PrismSlice.shader, and only on the pure render entities
+    // PrismSlice.cs spawns — two per sliced prism, one per half. Every one of them is
+    // an INITIAL CONDITION stamped once at spawn and never written again; the GPU runs
+    // the cut, the parting and the dissolve off _PrismClock. float4 throughout: the
+    // slice shader is hand-written, so unlike the prism graphs it has no Vector3-donor
+    // constraint forcing three-wide packing. Sizes match the shader's DOTS declarations.
+    // ----------------------------------------------------------------------
+
+    /// (start time on PrismClock, life in seconds, noise seed, unused).
+    [MaterialProperty("_SliceTiming")]
+    public struct PrismSliceTimingOverride : IComponentData
+    {
+        public float4 Value;
+    }
+
+    /// The cut in THIS half's object space, (m, d): the half keeps dot(m, x) &lt;= d, m
+    /// points out of it. NOT normalised — m = Mᵀ·n_world — so dot(m, x) − d is the
+    /// WORLD signed distance from the cut under any non-uniform scale.
+    [MaterialProperty("_SlicePlane")]
+    public struct PrismSlicePlaneOverride : IComponentData
+    {
+        public float4 Value;
+    }
+
+    /// (the central projection's centre in object space — strictly inside the half —,
+    /// the half's deepest point measured from the cut in world units).
+    [MaterialProperty("_SliceCentre")]
+    public struct PrismSliceCentreOverride : IComponentData
+    {
+        public float4 Value;
+    }
+
+    /// (the hinge the half opens about, WORLD space, the distance the half parts by).
+    [MaterialProperty("_SlicePivot")]
+    public struct PrismSlicePivotOverride : IComponentData
+    {
+        public float4 Value;
+    }
+
+    /// (the hinge axis, WORLD space, unit; the opening angle in radians).
+    [MaterialProperty("_SliceAxis")]
+    public struct PrismSliceAxisOverride : IComponentData
+    {
+        public float4 Value;
+    }
+
+    /// (the drift velocity both halves are carried along the swing with, WORLD space; unused).
+    [MaterialProperty("_SliceDrift")]
+    public struct PrismSliceDriftOverride : IComponentData
+    {
+        public float4 Value;
+    }
 }

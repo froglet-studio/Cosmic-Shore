@@ -236,6 +236,18 @@ namespace CosmicShore.Utility
             return s_configured;
         }
 
+        /// <summary>
+        /// The explosion debris' render layer, for the one other death visual that stands in for
+        /// an explosion: the Rhino sword's slice (<see cref="PrismSlice"/>), whose halves must be
+        /// culled and camera-masked exactly as the debris they replace would have been. False while
+        /// unconfigured — the slice then refuses and the factory explodes the prism.
+        /// </summary>
+        internal static bool TryGetExplosionLayer(out int layer)
+        {
+            layer = s_layer;
+            return s_configured;
+        }
+
         /// <summary>Implosion counterpart of <see cref="Configure"/> — same contract,
         /// reading the mesh/material/timings off the pooled implosion prefab so the
         /// batched suction is visually identical to the pooled one.</summary>

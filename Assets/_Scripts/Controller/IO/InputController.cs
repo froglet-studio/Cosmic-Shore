@@ -114,6 +114,14 @@ namespace CosmicShore.Gameplay
             if (RearViewGesture.RequestedThisFrame())
                 VesselRearView.Toggle();
 
+            // Take over an AI teammate's hull (D-pad left/right, keyboard 1/2) - ARENA matches
+            // only; RequestPilotSwap is a no-op anywhere else. Polled here for the rear view's
+            // reasons: local-human-pilot and pause gated already, and it moves the PILOT between
+            // hulls, so it is not an ability a hull could fail to author. See PilotSwap.
+            int pilotSwap = PilotSwapGesture.DirectionThisFrame();
+            if (pilotSwap != 0 && ownerPlayer != null)
+                ownerPlayer.RequestPilotSwap(pilotSwap);
+
             // Tick once per frame here so engagement detection and the
             // strategy itself read the same per-frame snapshot.
             multiMouseService?.Tick();

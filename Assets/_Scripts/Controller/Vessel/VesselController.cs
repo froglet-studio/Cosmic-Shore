@@ -358,7 +358,12 @@ namespace CosmicShore.Gameplay
 
         public void ChangePlayer(IPlayer player)
         {
+            // The pause subscription belongs to the PILOT, so it has to be moved across the
+            // pointer change: detached from the outgoing pilot while this vessel can still reach
+            // them, re-attached to the incoming one (only if they are the local user).
+            VesselStatus.ActionHandler.DetachInputPause();
             VesselStatus.Player = player;
+            VesselStatus.ActionHandler.AttachInputPause();
 
             // Re-evaluate BOTH platform laws: ChangePlayer hands a LIVE vessel to a different
             // player (the Cellular Duel round-boundary ownership swap), which Initialize never
@@ -385,10 +390,18 @@ namespace CosmicShore.Gameplay
                 VesselPlacementView.ClearTarget(transform);
             }
 
+            // The HUD is OPTIONAL on a hull, exactly as Initialize treats it: the Urchin ships
+            // with no HUD controller at all. Dereferencing it unguarded here threw on the Urchin
+            // halfway through a pilot swap - after the hull's Player had changed and before the
+            // other hull's had - so the Urchin went on reading the AI's stick (it looked like
+            // "autopilot switched on") while the human never reached the teammate's hull. A
+            // hull-handover path must tolerate every optional component Initialize tolerates.
+            var hud = VesselStatus.VesselHUDController;
+
             // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)
             {
-                VesselStatus.VesselHUDController.UnsubscribeFromEvents();
+                hud?.UnsubscribeFromEvents();
                 if (player.IsInitializedAsAI)
                 {
                     VesselStatus.VesselTransformer.ToggleActive(true);
@@ -399,15 +412,15 @@ namespace CosmicShore.Gameplay
                     SubscribeToNetworkVariables();
                 }
                 VesselStatus.ActionHandler.ToggleSubscription(false);
-                VesselStatus.VesselHUDController.HideHUD();
+                hud?.HideHUD();
 
                 return;
             }
             
             UnsubscribeFromNetworkVariables();
 
-            VesselStatus.VesselHUDController.SubscribeToEvents();
-            VesselStatus.VesselHUDController.ShowHUD();
+            hud?.SubscribeToEvents();
+            hud?.ShowHUD();
 
                 
             VesselStatus.VesselTransformer.ToggleActive(true);
@@ -492,8 +505,38 @@ namespace CosmicShore.Gameplay
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;
         void OnIsTranslationRestrictedValueChanged(bool previousValue, bool newValue) => VesselStatus.IsTranslationRestricted = newValue;
         
+        // Guarded so a subscribe/unsubscribe is IDEMPOTENT. A vessel's replica subscription used
+        // to be decided once, at spawn, from its ownership then - and ChangePlayer added a second
+        // unguarded += on every hand-over, so a hull that changed hands mid-match (the Cellular
+        // Duel swap, the arena pilot swap) either ran every replica callback twice or, having
+        // BECOME the owner, kept overwriting its own simulation from its own echoed writes.
+        // Subscription now follows OWNERSHIP (OnGainedOwnership / OnLostOwnership below), and
+        // ChangePlayer's calls are no-ops when the state is already right.
+        bool _netVarsSubscribed;
+
+        /// <summary>
+        /// A hull handed to another machine mid-match (<c>PilotSwap</c>, the Cellular Duel swap)
+        /// stops reading its kinematics off the network the moment it is this machine's to
+        /// simulate - whichever of the ownership message and the swap RPC lands first.
+        /// </summary>
+        public override void OnGainedOwnership()
+        {
+            base.OnGainedOwnership();
+            UnsubscribeFromNetworkVariables();
+        }
+
+        /// <summary>The mirror: a hull this machine no longer owns is driven by its new owner's
+        /// replicated kinematics from here on.</summary>
+        public override void OnLostOwnership()
+        {
+            base.OnLostOwnership();
+            SubscribeToNetworkVariables();
+        }
+
         void SubscribeToNetworkVariables()
         {
+            if (_netVarsSubscribed) return;
+            _netVarsSubscribed = true;
             n_Speed.OnValueChanged += OnSpeedChanged;
             n_Course.OnValueChanged += OnCourseChanged;
             n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
@@ -502,6 +545,8 @@ namespace CosmicShore.Gameplay
         
         void UnsubscribeFromNetworkVariables()
         {
+            if (!_netVarsSubscribed) return;
+            _netVarsSubscribed = false;
             n_Speed.OnValueChanged -= OnSpeedChanged;
             n_Course.OnValueChanged -= OnCourseChanged;
             n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;

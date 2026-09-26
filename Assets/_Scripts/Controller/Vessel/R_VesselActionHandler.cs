@@ -315,6 +315,38 @@ namespace CosmicShore.Gameplay
         void OnToggleInputPaused(bool toggle) => ToggleSubscription(!toggle);
 
         /// <summary>
+        /// Detach the input-pause subscription from the pilot currently on this vessel. Call
+        /// BEFORE <c>VesselStatus.Player</c> changes (<c>VesselController.ChangePlayer</c>): the
+        /// subscription lives on the PILOT's InputStatus, and once the pointer moves this handler
+        /// can no longer reach the one it subscribed to. Left behind, the pilot who LEFT keeps
+        /// switching this vessel's button channels on and off with their own pauses, and the
+        /// pilot who ARRIVED never does.
+        /// </summary>
+        public void DetachInputPause()
+        {
+            if (!_subscribedToInputPaused) return;
+            _subscribedToInputPaused = false;
+            // Detach from the status we RECORDED, not from whatever vesselStatus resolves to now -
+            // they are the same here (called before the pointer moves), and recording it is what
+            // keeps Initialize's own re-bind and this pair from ever disagreeing.
+            if (_pauseSource != null && vesselStatus?.Player is UnityEngine.Object obj && obj != null)
+                _pauseSource.OnToggleInputPaused -= OnToggleInputPaused;
+            _pauseSource = null;
+        }
+
+        /// <summary>
+        /// Subscribe to the input pause of the pilot NOW on this vessel, if that pilot is the local
+        /// user - the same rule <see cref="Initialize"/> applies at spawn. Idempotent.
+        /// </summary>
+        public void AttachInputPause()
+        {
+            if (_subscribedToInputPaused || vesselStatus == null || !vesselStatus.IsLocalUser) return;
+            _pauseSource = vesselStatus.InputStatus;
+            _pauseSource.OnToggleInputPaused += OnToggleInputPaused;
+            _subscribedToInputPaused = true;
+        }
+
+        /// <summary>
         /// Appends every action this vessel binds to <paramref name="inputEvent"/> - across the shared
         /// map AND both device override maps, not just the active device's. Presentation code uses it
         /// to work out which ability an input drives (the HUD's control-hint binder), which needs to
