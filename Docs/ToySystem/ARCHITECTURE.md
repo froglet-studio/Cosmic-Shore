@@ -1564,9 +1564,9 @@ Selector still works, it just is not the only place the load is paid.
 
 ## Status & follow-up
 
-The framework + **six toys** are in (Vessel Changer, Domain Changer, Painting, the Wanderway
-microscene conveyor, the Lifeform Matrix — now three-kingdom, with an AI-companion hangar — and
-the Cell Selector),
+The framework + **the toys** are in (Vessel Changer, Domain Changer, Element Charger, Painting,
+the Wanderway microscene conveyor, the Lifeform Matrix — now three-kingdom, with an AI-companion
+hangar — the Cell Selector, and the Arkway),
 plus the vessel-changer second-pass fixes above: mini-model hull rendering,
 exit-gated re-arm + slow flip re-grow, swap continuity (domain / pose / speed), recolour-on-domain,
 HUD-after-swap, and gamepad-Start / input-ownership. The conveyor has been through two adversarial
