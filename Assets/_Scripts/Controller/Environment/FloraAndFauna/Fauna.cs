@@ -763,14 +763,22 @@ namespace CosmicShore.Gameplay
         /// when a body crosses an 8m occupancy-bucket boundary; unregistered
         /// bodies (inside Prism.waitTime) no-op.
         /// </summary>
+        // Per-frame body sync for every moving creature: one index update, one shell refresh and
+        // one render-matrix write per body prism. Named so a Profiler capture can separate it
+        // from the rest of a creature's Update (PERFORMANCE_OPTIMIZATION.md §1, S5).
+        static readonly Unity.Profiling.ProfilerMarker s_BodySyncMarker = new("Fauna.BodySync");
+
         protected void NotifyBodyPrismsMoved()
         {
             var prisms = _bodyPrisms;
             if (prisms == null) return;
-            for (int i = 0; i < prisms.Length; i++)
+            using (s_BodySyncMarker.Auto())
             {
-                var hp = prisms[i];
-                if (hp) hp.NotifyPositionChanged();
+                for (int i = 0; i < prisms.Length; i++)
+                {
+                    var hp = prisms[i];
+                    if (hp) hp.NotifyPositionChanged();
+                }
             }
         }
 

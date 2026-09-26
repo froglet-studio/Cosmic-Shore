@@ -140,6 +140,10 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     #endregion
 
     #region Core Loop
+    // Named so a Profiler capture can separate the gun from the flight of what it fired: a
+    // round's first flight step runs synchronously inside FireGun, so its own markers nest here.
+    static readonly Unity.Profiling.ProfilerMarker s_FireMarker = new("FullAuto.Fire");
+
     private async UniTaskVoid FireLoopAsync(FullAutoActionSO so, CancellationToken token)
     {
         if (muzzles == null || muzzles.Length == 0)
@@ -209,62 +213,65 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     // size that hits. Resolved per tick off the LIVE Mass level.
                     var growth = so.ResolveGrowthFactor(_status);
 
-                    for (int v = 0; v < volleys && !token.IsCancellationRequested; v++)
+                    using (s_FireMarker.Auto())
                     {
-                        // Re-read per volley — several can be paid off in one tick and each one
-                        // spends ammo, so a hoisted copy would let the last ones fire for free.
-                        if (_resources.Resources[ammoIndex].CurrentAmount < ammoCost)
-                            break;
-
-                        for (int i = 0, count = muzzles.Length; i < count; i++)
+                        for (int v = 0; v < volleys && !token.IsCancellationRequested; v++)
                         {
-                            if (token.IsCancellationRequested)
+                            // Re-read per volley — several can be paid off in one tick and each one
+                            // spends ammo, so a hoisted copy would let the last ones fire for free.
+                            if (_resources.Resources[ammoIndex].CurrentAmount < ammoCost)
                                 break;
 
-                            if (!gun || !gun.gameObject)
+                            for (int i = 0, count = muzzles.Length; i < count; i++)
                             {
-                                CSDebug.LogError("[FullAutoActionExecutor] Gun destroyed or missing during loop.");
-                                return;
+                                if (token.IsCancellationRequested)
+                                    break;
+
+                                if (!gun || !gun.gameObject)
+                                {
+                                    CSDebug.LogError("[FullAutoActionExecutor] Gun destroyed or missing during loop.");
+                                    return;
+                                }
+
+                                if (!gun.isActiveAndEnabled)
+                                {
+                                    // No gun to fire, but don't hard-crash the loop
+                                    continue;
+                                }
+
+                                var muzzle = muzzles[i];
+                                if (!muzzle)
+                                    continue;
+
+                                // Accuracy decay: every round is deflected somewhere inside the cone
+                                // the held trigger has opened. One roll PER ROUND — two muzzles in
+                                // the same frame scatter independently, which is what turns the
+                                // stream into a widening danger zone instead of two widening lines.
+                                var aim = _spray ? _spray.PerturbAim(muzzle.forward) : muzzle.forward;
+
+                                // detachAfterSpawn: bullets fly in world space instead of staying
+                                // parented to the moving muzzle (which made them swerve with the
+                                // shooter's maneuvers and die with the ship hierarchy mid-flight).
+                                gun.FireGun(
+                                    muzzle,
+                                    speedValue,
+                                    inheritVel,
+                                    projectileScale,
+                                    true,
+                                    projectileTime,
+                                    0,
+                                    firingPattern,
+                                    energy,
+                                    detachAfterSpawn: true,
+                                    stopOnFirstPrismImpact: !piercing,
+                                    aimDirection: aim,
+                                    flightGrowthFactor: growth
+                                );
                             }
 
-                            if (!gun.isActiveAndEnabled)
-                            {
-                                // No gun to fire, but don't hard-crash the loop
-                                continue;
-                            }
-
-                            var muzzle = muzzles[i];
-                            if (!muzzle)
-                                continue;
-
-                            // Accuracy decay: every round is deflected somewhere inside the cone
-                            // the held trigger has opened. One roll PER ROUND — two muzzles in
-                            // the same frame scatter independently, which is what turns the
-                            // stream into a widening danger zone instead of two widening lines.
-                            var aim = _spray ? _spray.PerturbAim(muzzle.forward) : muzzle.forward;
-
-                            // detachAfterSpawn: bullets fly in world space instead of staying
-                            // parented to the moving muzzle (which made them swerve with the
-                            // shooter's maneuvers and die with the ship hierarchy mid-flight).
-                            gun.FireGun(
-                                muzzle,
-                                speedValue,
-                                inheritVel,
-                                projectileScale,
-                                true,
-                                projectileTime,
-                                0,
-                                firingPattern,
-                                energy,
-                                detachAfterSpawn: true,
-                                stopOnFirstPrismImpact: !piercing,
-                                aimDirection: aim,
-                                flightGrowthFactor: growth
-                            );
+                            _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
+                            OnVolleyFired?.Invoke(_status?.PlayerName);
                         }
-
-                        _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
-                        OnVolleyFired?.Invoke(_status?.PlayerName);
                     }
                 }
 

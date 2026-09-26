@@ -785,6 +785,15 @@ namespace CosmicShore.Gameplay
 
         #endregion
 
+        // The per-frame flight step, split into its named parts so a Profiler capture can say
+        // which one a heavy gunfight is paying for (PERFORMANCE_OPTIMIZATION.md §1, S5). The
+        // step itself runs as a UniTask continuation, which the Profiler otherwise reports only
+        // as the self time of UniTaskLoopRunnerPreLateUpdate.
+        static readonly Unity.Profiling.ProfilerMarker s_GrowthMarker = new("Projectile.Growth");
+        static readonly Unity.Profiling.ProfilerMarker s_SweepVesselsMarker = new("Projectile.SweepVessels");
+        static readonly Unity.Profiling.ProfilerMarker s_SweepPrismsMarker = new("Projectile.SweepPrisms");
+        static readonly Unity.Profiling.ProfilerMarker s_FuzeMarker = new("Projectile.Fuze");
+
         private async UniTaskVoid MoveProjectileAsync(float projectileTime, CancellationToken token)
         {
             float elapsedTime = 0f;
@@ -805,7 +814,10 @@ namespace CosmicShore.Gameplay
                     // change again, and re-writing that transform every frame for the rest of
                     // the flight would dirty its hierarchy for nothing.
                     if (_flightGrowthFactor != 1f && !_flightGrowthSettled)
-                        ApplyFlightGrowth(elapsedTime / projectileTime);
+                    {
+                        using (s_GrowthMarker.Auto())
+                            ApplyFlightGrowth(elapsedTime / projectileTime);
+                    }
 
                     Vector3 sweepFrom = t.position;
                     t.position += Velocity * (deltaTime * factor);
@@ -817,13 +829,15 @@ namespace CosmicShore.Gameplay
                     // them would mean putting one of those populations in the other's store.
                     if (sweptVesselDetection)
                     {
-                        SweepVesselsAlong(sweepFrom, t.position);
+                        using (s_SweepVesselsMarker.Auto())
+                            SweepVesselsAlong(sweepFrom, t.position);
                         if (_flightEndRaised) return;
                     }
 
                     if (sweptPrismDetection)
                     {
-                        SweepPrismsAlong(sweepFrom, t.position);
+                        using (s_SweepPrismsMarker.Auto())
+                            SweepPrismsAlong(sweepFrom, t.position);
 
                         // A stopping impact has already run the whole end-of-flight path
                         // (RaiseFlightEnded + ReturnToFactory). Returning rather than
@@ -840,13 +854,19 @@ namespace CosmicShore.Gameplay
                     // tests, so the light and the trigger are one number - a fuze that armed at a
                     // radius the light did not draw would be worse than no light. The bank fades
                     // it out by itself when the round is retired or detonates.
-                    PublishFuzeLit(t.position);
+                    bool fuzeTripped;
+                    using (s_FuzeMarker.Auto())
+                    {
+                        PublishFuzeLit(t.position);
 
-                    // The PROXIMITY FUZE. Checked after the step so it reads the position the
-                    // round actually reached this frame, and after the swept prism dispatch so a
-                    // direct hit - which ends the flight from inside that call - always wins.
-                    if (proximityFuzeRadiusMultiplier > 0f && !IsDetonating
-                        && ProximityFuzeTripped(t.position))
+                        // The PROXIMITY FUZE. Checked after the step so it reads the position the
+                        // round actually reached this frame, and after the swept prism dispatch so a
+                        // direct hit - which ends the flight from inside that call - always wins.
+                        fuzeTripped = proximityFuzeRadiusMultiplier > 0f && !IsDetonating
+                            && ProximityFuzeTripped(t.position);
+                    }
+
+                    if (fuzeTripped)
                     {
                         // The round stops here, and its DIRECT-hit collider goes with it: the
                         // detonation's return delay leaves this object parked and live for a

@@ -319,6 +319,14 @@ namespace CosmicShore.Gameplay
             RemoveHusk();
         }
 
+        // The behaviour tick, split into the three things it does, so a Profiler capture can say
+        // which one a heavy fauna cell is paying for (PERFORMANCE_OPTIMIZATION.md §1, S5).
+        static readonly Unity.Profiling.ProfilerMarker s_TickGoalMarker = new("LightFauna.Tick.Goal");
+        static readonly Unity.Profiling.ProfilerMarker s_TickVesselsMarker = new("LightFauna.Tick.Vessels");
+        static readonly Unity.Profiling.ProfilerMarker s_TickPrismScanMarker = new("LightFauna.Tick.PrismScan");
+        static readonly Unity.Profiling.ProfilerMarker s_FeedMarker = new("LightFauna.Feed");
+        static readonly Unity.Profiling.ProfilerMarker s_HuntMarker = new("LightFauna.Hunt");
+
         IEnumerator UpdateBehaviorCoroutine()
         {
             while (true)
@@ -466,62 +474,65 @@ namespace CosmicShore.Gameplay
             // crystal), arrived, and its goal direction degenerated to zero — see the
             // degenerate-steering guard below.
             var phase = cell ? cell.Phase : CellPhase.Calm;
-            Goal = phase switch
+            using (s_TickGoalMarker.Auto())
             {
-                CellPhase.Restless => cell.GetExplosionTarget(domain) + GoalOrbitOffset,
-                CellPhase.Frenzy => cell.GetDensestRegionAnyDomain(),
-                _ => ((cellData && cellData.CrystalTransform)
-                       ? cellData.CrystalTransform.position
-                       : (cell ? cell.transform.position : transform.position)) + GoalOrbitOffset,
-            };
+                Goal = phase switch
+                {
+                    CellPhase.Restless => cell.GetExplosionTarget(domain) + GoalOrbitOffset,
+                    CellPhase.Frenzy => cell.GetDensestRegionAnyDomain(),
+                    _ => ((cellData && cellData.CrystalTransform)
+                           ? cellData.CrystalTransform.position
+                           : (cell ? cell.transform.position : transform.position)) + GoalOrbitOffset,
+                };
 
-            // Voracious exterior: with a nucleus control zone, mass outside the
-            // nucleus is prey at EVERY phase - even a Calm herbivore hunts the
-            // densest sensed exterior region instead of idling at the crystal
-            // (the grids only hold exterior mass in such cells; aggression still
-            // scales cadence/radius/speed).
-            if (phase == CellPhase.Calm && cell != null &&
-                cell.HasNucleusControlZone && cell.HasSensedExteriorMass)
-                Goal = cell.GetDensestRegionAnyDomain() + GoalOrbitOffset;
+                // Voracious exterior: with a nucleus control zone, mass outside the
+                // nucleus is prey at EVERY phase - even a Calm herbivore hunts the
+                // densest sensed exterior region instead of idling at the crystal
+                // (the grids only hold exterior mass in such cells; aggression still
+                // scales cadence/radius/speed).
+                if (phase == CellPhase.Calm && cell != null &&
+                    cell.HasNucleusControlZone && cell.HasSensedExteriorMass)
+                    Goal = cell.GetDensestRegionAnyDomain() + GoalOrbitOffset;
 
-            // Centre focus (per-deployment, FaunaConfigurationSO.CenterFocusBias): pull
-            // the herbivore's roaming goal toward the cell centre so it lingers on the
-            // central canopy (the gyroids around the nucleus). Edibility is untouched —
-            // a nucleus claim stays protected. One lerp per tick; 0 = off.
-            if (diet == FaunaDiet.Herbivore && cell != null &&
-                SourceConfig && SourceConfig.CenterFocusBias > 0f)
-                Goal = Vector3.Lerp(Goal, cell.transform.position, SourceConfig.CenterFocusBias);
+                // Centre focus (per-deployment, FaunaConfigurationSO.CenterFocusBias): pull
+                // the herbivore's roaming goal toward the cell centre so it lingers on the
+                // central canopy (the gyroids around the nucleus). Edibility is untouched —
+                // a nucleus claim stays protected. One lerp per tick; 0 = off.
+                if (diet == FaunaDiet.Herbivore && cell != null &&
+                    SourceConfig && SourceConfig.CenterFocusBias > 0f)
+                    Goal = Vector3.Lerp(Goal, cell.transform.position, SourceConfig.CenterFocusBias);
 
-            // Predators hunt PREY, not mass: seek the nearest live herbivore the cell
-            // senses (Cell.LiveFauna - the fauna analogue of the prism density grid).
-            // Replaces the v1 approximation where predators converged on prism-density
-            // centroids and only met herbivores incidentally. Skips predation-immune
-            // newborns so a shark doesn't camp a fresh birth; with no herbivores alive
-            // the phase-based goal above stands (roam plausibly, then starve). The
-            // target is HELD as a reference: UpdateHunting homes on its live position
-            // every frame between ticks, and the mouth check devours it in range.
-            if (diet == FaunaDiet.Predator)
-            {
-                // Hunt pulses: outside the window the predator carries no target — it
-                // cruises its territory without pursuing or feeding, guaranteeing the
-                // herbivores grazing time between attacks.
-                _targetPrey = IsHuntWindow ? FindNearestPreyFauna() : null;
-                if (_targetPrey) Goal = _targetPrey.transform.position;
-                // Empty patch (or resting): patrol the den instead of roaming the shared
-                // density goal — a territorial predator stays out of other predators'
-                // territories, so a distant herbivore group faces at most the one shark
-                // whose patch it's in.
-                else if (_hasTerritory) Goal = _territoryAnchor;
-            }
+                // Predators hunt PREY, not mass: seek the nearest live herbivore the cell
+                // senses (Cell.LiveFauna - the fauna analogue of the prism density grid).
+                // Replaces the v1 approximation where predators converged on prism-density
+                // centroids and only met herbivores incidentally. Skips predation-immune
+                // newborns so a shark doesn't camp a fresh birth; with no herbivores alive
+                // the phase-based goal above stands (roam plausibly, then starve). The
+                // target is HELD as a reference: UpdateHunting homes on its live position
+                // every frame between ticks, and the mouth check devours it in range.
+                if (diet == FaunaDiet.Predator)
+                {
+                    // Hunt pulses: outside the window the predator carries no target — it
+                    // cruises its territory without pursuing or feeding, guaranteeing the
+                    // herbivores grazing time between attacks.
+                    _targetPrey = IsHuntWindow ? FindNearestPreyFauna() : null;
+                    if (_targetPrey) Goal = _targetPrey.transform.position;
+                    // Empty patch (or resting): patrol the den instead of roaming the shared
+                    // density goal — a territorial predator stays out of other predators'
+                    // territories, so a distant herbivore group faces at most the one shark
+                    // whose patch it's in.
+                    else if (_hasTerritory) Goal = _territoryAnchor;
+                }
 
-            if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
-            {
-                // Offset here too: this fallback fires when the resolved goal lands on the
-                // world ORIGIN, which in an origin-centred cell is exactly where the whole
-                // pack would otherwise pile up.
-                Goal = (cellData && cellData.CrystalTransform
-                    ? cellData.CrystalTransform.position
-                    : cell.transform.position) + GoalOrbitOffset;
+                if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
+                {
+                    // Offset here too: this fallback fires when the resolved goal lands on the
+                    // world ORIGIN, which in an origin-centred cell is exactly where the whole
+                    // pack would otherwise pile up.
+                    Goal = (cellData && cellData.CrystalTransform
+                        ? cellData.CrystalTransform.position
+                        : cell.transform.position) + GoalOrbitOffset;
+                }
             }
 
             Vector3 goalDirection = (Goal - transform.position).normalized;
@@ -558,118 +569,124 @@ namespace CosmicShore.Gameplay
             // index below, so the broadphase no longer wades through thousands of
             // prism colliders (which also used to truncate ships out of the
             // 256-slot scratch in dense fields).
-            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, OverlapScratch, NonPrismOverlapMask);
-
-            for (int ci = 0; ci < hitCount; ci++)
+            using (s_TickVesselsMarker.Auto())
             {
-                var collider = OverlapScratch[ci];
-                if (!collider || collider.gameObject == gameObject) continue;
+                int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, OverlapScratch, NonPrismOverlapMask);
 
-                if (!collider.TryGetComponent(out IVesselStatus vessel)) continue;
+                for (int ci = 0; ci < hitCount; ci++)
+                {
+                    var collider = OverlapScratch[ci];
+                    if (!collider || collider.gameObject == gameObject) continue;
 
-                Vector3 diff = transform.position - collider.transform.position;
-                float sqr = diff.sqrMagnitude;
-                if (sqr <= 0f) continue;
+                    if (!collider.TryGetComponent(out IVesselStatus vessel)) continue;
 
-                neighborCount++;
-                // Level 2: skip separation from same-domain ships.
-                if (!(dropFriendlyAvoidance && vessel.Domain == domain))
-                    separation -= diff / sqr;
+                    Vector3 diff = transform.position - collider.transform.position;
+                    float sqr = diff.sqrMagnitude;
+                    if (sqr <= 0f) continue;
+
+                    neighborCount++;
+                    // Level 2: skip separation from same-domain ships.
+                    if (!(dropFriendlyAvoidance && vessel.Domain == domain))
+                        separation -= diff / sqr;
+                }
             }
 
             // --- Prism populations via the spatial index -------------------------
             // Snapshot of live prisms in range (Fauna.PrismScratch). Entries can be
             // consumed/predated by our own side effects mid-loop, so each is
             // re-checked - the same contract collider snapshots had.
-            var spatialIndex = PrismSpatialIndex.EnsureInstance();
-            int prismCount = spatialIndex != null && spatialIndex.IsAvailable
-                ? spatialIndex.QuerySphere(transform.position, detectionRadius, PrismScratch)
-                : 0;
-
-            for (int pi = 0; pi < prismCount; pi++)
+            using (s_TickPrismScanMarker.Auto())
             {
-                var prism = PrismScratch[pi];
-                if (!prism || prism.destroyed) continue;
+                var spatialIndex = PrismSpatialIndex.EnsureInstance();
+                int prismCount = spatialIndex != null && spatialIndex.IsAvailable
+                    ? spatialIndex.QuerySphere(transform.position, detectionRadius, PrismScratch)
+                    : 0;
 
-                Vector3 diff = transform.position - prism.transform.position;
-                float sqr = diff.sqrMagnitude;
-                if (sqr <= 0f) continue;
-
-                // Predator diet: hunt herbivore fauna. Another creature's body shows up
-                // here as its child HealthPrisms, so walk up to the owning Fauna (only
-                // HealthPrisms can be fauna bodies - plain prisms skip the walk). We match
-                // the Fauna BASE (not LightFauna) so a predator eats ANY herbivore species
-                // - LightFauna (brittlestar) and Boid (tadpole) alike. The creature is the
-                // nearest Fauna ancestor of its body prisms, so managers (also Fauna,
-                // but with no body in the scene) are never returned. A predator's own body
-                // resolves to `this` and is skipped; other predators (Diet != Herbivore)
-                // are neighbors, not prey, so predators don't cannibalize. Predation
-                // ignores domain - it is a diet relationship, not a team fight - so
-                // predators always have prey even in a single-domain cell.
-                if (diet == FaunaDiet.Predator && prism is HealthPrism preyBody)
+                for (int pi = 0; pi < prismCount; pi++)
                 {
-                    // Stamped owner (field read) instead of a GetComponentInParent walk
-                    // per neighbor per tick; the walk-and-backfill fallback preserves
-                    // the nearest-Fauna-ancestor semantics for unstamped species.
-                    var prey = preyBody.ResolveOwnerFauna();
-                    if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
-                    {
-                        // Prey bodies never repel a hunting predator — a shark doesn't
-                        // avoid its dinner. Environment prisms (flora / trails / other
-                        // predators) keep their separation push below, so the predator
-                        // still maneuvers around obstacles to reach its prey. The actual
-                        // kill is mouth-driven: TryDevourPreyAtMouth (per-frame) devours
-                        // prey within a danger-prism length of the mouth.
-                        neighborCount++;
-                        continue;
-                    }
-                    // Not prey (flora / another predator's body): predators don't eat
-                    // prism mass, so fall through for separation only - the consume
-                    // calls below are gated to Herbivore.
-                }
+                    var prism = PrismScratch[pi];
+                    if (!prism || prism.destroyed) continue;
 
-                // Handle other fauna/health prisms
-                if (prism is HealthPrism otherHealthBlock)
-                {
-                    neighborCount++;
+                    Vector3 diff = transform.position - prism.transform.position;
+                    float sqr = diff.sqrMagnitude;
+                    if (sqr <= 0f) continue;
 
-                    // Herbivore: one edibility check per prism decides BOTH roles —
-                    // FOOD ATTRACTS AND NEVER REPELS (edible prisms are feed candidates,
-                    // exempt from separation), while non-edible mass (own canopy, the
-                    // nucleus claim, fauna bodies) keeps pushing us away. Flora are
-                    // HealthPrisms, so before this split a brittlestar's own food
-                    // repelled it from separationRadius (70) out while feeding needed
-                    // consumeRadius (40) — approach geometry decided whether it ever ate,
-                    // which read as "swims past a lot of mass before feeding".
-                    // (The diet rule is spatialized through Cell.IsPreyForHerbivore —
-                    // see IsEdibleForHerbivore. Intentional feeding: don't vacuum;
-                    // remember the NEAREST edible prism, UpdateFeeding approaches it,
-                    // turns to face it, and only then starts the suction.)
-                    if (diet == FaunaDiet.Herbivore && IsEdibleForHerbivore(prism))
+                    // Predator diet: hunt herbivore fauna. Another creature's body shows up
+                    // here as its child HealthPrisms, so walk up to the owning Fauna (only
+                    // HealthPrisms can be fauna bodies - plain prisms skip the walk). We match
+                    // the Fauna BASE (not LightFauna) so a predator eats ANY herbivore species
+                    // - LightFauna (brittlestar) and Boid (tadpole) alike. The creature is the
+                    // nearest Fauna ancestor of its body prisms, so managers (also Fauna,
+                    // but with no body in the scene) are never returned. A predator's own body
+                    // resolves to `this` and is skipped; other predators (Diet != Herbivore)
+                    // are neighbors, not prey, so predators don't cannibalize. Predation
+                    // ignores domain - it is a diet relationship, not a team fight - so
+                    // predators always have prey even in a single-domain cell.
+                    if (diet == FaunaDiet.Predator && prism is HealthPrism preyBody)
                     {
-                        if (sqr < bestFeedSqr)
+                        // Stamped owner (field read) instead of a GetComponentInParent walk
+                        // per neighbor per tick; the walk-and-backfill fallback preserves
+                        // the nearest-Fauna-ancestor semantics for unstamped species.
+                        var prey = preyBody.ResolveOwnerFauna();
+                        if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
                         {
-                            bestFeedSqr = sqr;
-                            feedCandidate = prism;
+                            // Prey bodies never repel a hunting predator — a shark doesn't
+                            // avoid its dinner. Environment prisms (flora / trails / other
+                            // predators) keep their separation push below, so the predator
+                            // still maneuvers around obstacles to reach its prey. The actual
+                            // kill is mouth-driven: TryDevourPreyAtMouth (per-frame) devours
+                            // prey within a danger-prism length of the mouth.
+                            neighborCount++;
+                            continue;
                         }
+                        // Not prey (flora / another predator's body): predators don't eat
+                        // prism mass, so fall through for separation only - the consume
+                        // calls below are gated to Herbivore.
+                    }
+
+                    // Handle other fauna/health prisms
+                    if (prism is HealthPrism otherHealthBlock)
+                    {
+                        neighborCount++;
+
+                        // Herbivore: one edibility check per prism decides BOTH roles —
+                        // FOOD ATTRACTS AND NEVER REPELS (edible prisms are feed candidates,
+                        // exempt from separation), while non-edible mass (own canopy, the
+                        // nucleus claim, fauna bodies) keeps pushing us away. Flora are
+                        // HealthPrisms, so before this split a brittlestar's own food
+                        // repelled it from separationRadius (70) out while feeding needed
+                        // consumeRadius (40) — approach geometry decided whether it ever ate,
+                        // which read as "swims past a lot of mass before feeding".
+                        // (The diet rule is spatialized through Cell.IsPreyForHerbivore —
+                        // see IsEdibleForHerbivore. Intentional feeding: don't vacuum;
+                        // remember the NEAREST edible prism, UpdateFeeding approaches it,
+                        // turns to face it, and only then starts the suction.)
+                        if (diet == FaunaDiet.Herbivore && IsEdibleForHerbivore(prism))
+                        {
+                            if (sqr < bestFeedSqr)
+                            {
+                                bestFeedSqr = sqr;
+                                feedCandidate = prism;
+                            }
+                            continue;
+                        }
+
+                        bool sameDomain = otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain == domain;
+
+                        if (sqr < separationRadiusSqr && !(dropFriendlyAvoidance && sameDomain))
+                            separation += diff / sqr;
+
                         continue;
                     }
 
-                    bool sameDomain = otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain == domain;
-
-                    if (sqr < separationRadiusSqr && !(dropFriendlyAvoidance && sameDomain))
-                        separation += diff / sqr;
-
-                    continue;
-                }
-
-                // Handle blocks (trail prisms) — same spatialized diet rule as above
-                // (plain prisms never contributed separation here, so only the
-                // feed-candidate role applies).
-                if (diet == FaunaDiet.Herbivore && sqr < bestFeedSqr && IsEdibleForHerbivore(prism))
-                {
-                    bestFeedSqr = sqr;
-                    feedCandidate = prism;
+                    // Handle blocks (trail prisms) — same spatialized diet rule as above
+                    // (plain prisms never contributed separation here, so only the
+                    // feed-candidate role applies).
+                    if (diet == FaunaDiet.Herbivore && sqr < bestFeedSqr && IsEdibleForHerbivore(prism))
+                    {
+                        bestFeedSqr = sqr;
+                        feedCandidate = prism;
+                    }
                 }
             }
 
@@ -1004,9 +1021,13 @@ namespace CosmicShore.Gameplay
             if (!_withering && data)
             {
                 if (diet == FaunaDiet.Herbivore)
-                    UpdateFeeding();
+                {
+                    using (s_FeedMarker.Auto()) UpdateFeeding();
+                }
                 else if (diet == FaunaDiet.Predator)
-                    UpdateHunting();
+                {
+                    using (s_HuntMarker.Auto()) UpdateHunting();
+                }
             }
 
             float lerpSpeed = data ? Mathf.Max(0f, data.rotationLerpSpeed) : 5f;
