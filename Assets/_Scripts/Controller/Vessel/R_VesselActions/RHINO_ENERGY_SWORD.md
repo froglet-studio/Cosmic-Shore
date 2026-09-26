@@ -430,8 +430,9 @@ TrailRenderers (hairline: `widthMultiplier` 0.5, `time` 0.15) · `hitFlashAmount
 `bindReleaseRate` 4 / `bindJiggleIntervalSeconds` 0.2 / `bindJiggleImpactSpeed` 90 /
 `bindHapticIntervalSeconds` 0.1 / `bindHapticStrength` 0.7 — all seven are C# initializers today
 (the asset predates them and carries no keys, so the initializer IS the shipped value until the
-asset is next saved in the editor). (`prismMaxScale` remains only so the Sparrow full-auto
-`ApplyMaxSizeDebuff` keeps its historical meaning. The v2 tracer keys — `tracersEnabled`,
+asset is next saved in the editor). (`prismMaxScale` remains as serialized data with NOTHING
+reading it: the Sparrow full-auto `ApplyMaxSizeDebuff` that was its only consumer was deleted in
+Sep 2026 with the control-theft tier, `Docs/ELEMENTAL_ECONOMY.md §9`. The v2 tracer keys — `tracersEnabled`,
 `tracerMaterial`, `tracerWidth`, `tracerTimeSeconds` — are retired: the tracer is an authored
 TrailRenderer in `Rhino.prefab` now; tune its persistence, taper curve and material on the
 component, and its overall width through `tracerWidthLengthFraction` above — the width
@@ -477,9 +478,11 @@ On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosion
 9. **Tracers:** two streaks ride the blade tips through swipes, tinted with the live blade
    colour (teal → cyan → white-hot when energized).
 10. **Non-regression:** other vessels' skimmers unaffected (SwordState null; base skimmer
-    crackle still the red sphere look); Sparrow full-auto still shrinks the Rhino sword's max
-    (`ApplyMaxSizeDebuff`); the omni-crystal pickup still snaps the meter full; touch/binary
-    input can energize by holding both swipe controls.
+    crackle still the red sphere look); the omni-crystal pickup still snaps the meter full;
+    touch/binary input can energize by holding both swipe controls. (This step used to read
+    *"Sparrow full-auto still shrinks the Rhino sword's max (`ApplyMaxSizeDebuff`)"* — that
+    effect and that method were removed in Sep 2026 with the control-theft tier, so the
+    blade's max is now always its authored length: `Docs/ELEMENTAL_ECONOMY.md §9`.)
 
 ## Follow-ups
 
@@ -491,7 +494,7 @@ On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosion
   edge). The complete fix is an owner-write NetworkVariable for energy + energize phase on the
   driver, mirroring the analog-replication follow-up in `RHINO_SHIELD_SWIPE.md`.
 - **Sibling dt-as-duration pattern:** `VesselDeviationByPrismEffectSO` and
-  `VesselSpinBySkimmerEffectSO` pass `Time.deltaTime * accelScale` into `ModifyVelocity`'s
+  `VesselSpinBySkimmerEffectSO` (since removed) passed `Time.deltaTime * accelScale` into `ModifyVelocity`'s
   DURATION exactly the way the sword's bounce used to — the same frame-rate dependence, on
   paths this branch does not touch. Worth its own pass; not changed here.
 - **HUD:** the energize phase is exposed (`ShieldSkimmerScaleDriver.EnergizePhase`, `Charge01`)
