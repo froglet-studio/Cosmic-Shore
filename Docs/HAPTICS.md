@@ -1,4 +1,4 @@
-# Haptics — the two-feel policy (+ one rare alert, + one held-trigger texture)
+# Haptics — the two-feel policy (+ one rare alert, + two fenced textures)
 
 Cosmic Shore ships **two everyday haptic feels**, both **local-human-pilot-only**, plus **one
 rare alert** reserved for match-changing events and **one continuous texture** fenced to a held
@@ -12,9 +12,11 @@ explosion reads as noise. Keep it this way — see "Adding/changing a feel" befo
 | **Skim pulse** (reward) | Short (~70 ms), bright, sharp transient at high haptic frequency. Strength scales with how close the prism passed to the skimmer centre. Many in sequence read as a rapid, continuously rewarding pulse train. | Each prism entering a skimmer (Squirrel etc.) |
 | **Punish thud** (mistake) | Short (~200 ms), heavy, **low**-frequency thud — the deliberate opposite of the bright skim. | The vessel **body** slamming a prism |
 | **Alert shake** (event) | Long (~1.2 s) hard **rattle** — full-amplitude sawtooth at mid frequency, both gamepad motors out of phase. Unmistakably neither of the above, and long enough to read as "something happened" rather than "you hit something". | Cleave's progress-milestone rungs (25% / 50% of the win target) — **nothing else** |
+| **Bind grind** (state) | Short (~80 ms) **low**-frequency (0.15) grind carried by the LOW motor with a little high-motor grit, no transient, repeated every ~100 ms. Heavy like the thud, repeating like the spray. | The Rhino's NON-energized blade held inside a super-shielded prism it cannot cut (`RHINO_ENERGY_SWORD.md` § "Binding") — the entry is a punish thud, this is the texture after it. **Nothing else** |
 | **Spray buzz** (state) | Short (~50 ms) **mid**-frequency buzz with no transient (skim's signature) and both motors together (which is what reads as a buzz rather than a tick or a rumble). Repeats while the trigger is down, climbing in **both** strength (0.15 → 1.0) and cadence (100 ms → 45 ms) as the gun's accuracy decays, and holding flat once the cone reaches its sustainable cap — both channels are at their ceiling there, so a longer hold has nothing worse left to say. | Holding the Sparrow's full-auto trigger — bullets **or** turret stance. **Nothing else** |
 
-**Priority, top to bottom: alert > punish > skim > spray.** The spray is the game's only
+**Priority, top to bottom: alert > punish > skim > spray = bind.** The two textures share the
+bottom rung and neither sets a busy window, so neither can suppress anything. The spray is the game's only
 *continuous* feel and therefore the only one that sits below skim: everything suppresses it and
 it suppresses nothing. Being interruptible costs it nothing (the next pulse is milliseconds
 away) and it is what keeps the two feels the policy is built around fully legible — a thud still
@@ -152,7 +154,14 @@ its call site — it's already silent.
 - **Do not** add a further feel or re-enable a legacy category without a deliberate decision — the whole
   point is that the set stays legible. If you must, route it through a new dedicated method on
   `HapticController` (never through the silenced `PlayHaptic`/`PlayConstant`) and extend the gate.
-- **Two exercises of that clause exist so far.** Both were requested explicitly, both added a
+- **The bind grind** (requested for the Rhino, 2026-09-25) is the third exercise and the second
+  texture: `HapticController.PlayBind(strength01)`, driven by `ShieldSkimmerScaleDriver` every
+  `bindHapticIntervalSeconds` (0.1 s, above the 80 ms clip — the cadence floor below) while the
+  blade is inside super-shielded mass, local human pilot only. It answers "am I still stuck in
+  it?" and stops the frame the blade comes free. The ENTRY into the armour reuses the punish
+  thud (it is a mistake-shaped event: you hit something you cannot cut), which the grind cannot
+  cut short. Same fence as the spray: one mechanic, bottom priority, no busy window.
+- **Two exercises of that clause preceded it.** Both were requested explicitly, both added a
   dedicated method with the gate extended, and both are fenced to exactly one thing.
 - **The spray buzz** (requested for the Sparrow, 2026-08) is the second, and the only one that is
   CONTINUOUS: `HapticController.PlaySpray(strength01)` reports how far the full-auto gun's accuracy

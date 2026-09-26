@@ -441,7 +441,7 @@ namespace CosmicShore.Gameplay
             }
 
             float delay = Mathf.Max(0f, startTime + duration - PrismClock.Now);
-            PrismTimerManager.EnsureInstance().ScheduleAction(this, delay, onSettle);
+            PrismTimerManager.EnsureInstance()?.ScheduleAction(this, delay, onSettle);
         }
 
         void OnCondenseSettled()
@@ -514,18 +514,28 @@ namespace CosmicShore.Gameplay
             // During scene unload, only remove references - don't trigger the death
             // cascade (CheckForLife/CheckIfDead) which explodes prisms, accesses
             // disposed NativeArrays, and spawns new GameObjects during teardown.
+            // RemoveSpindle itself runs CheckForLife/CheckIfDead, so on unload it must not be
+            // called at all - it evaporated the parent (re-spawning [PrismTimerManager]) and
+            // killed the LifeForm (its structure exploding into a fresh [PrismDebris]), both
+            // leaked into the closing scene.
             bool sceneUnloading = !gameObject.scene.isLoaded;
 
             if (parentSpindle)
             {
-                parentSpindle.RemoveSpindle(this);
-                if (!sceneUnloading) parentSpindle.CheckForLife();
+                if (sceneUnloading)
+                    parentSpindle.spindles.Remove(this);
+                else
+                {
+                    parentSpindle.RemoveSpindle(this);
+                    parentSpindle.CheckForLife();
+                }
             }
 
-            if (LifeForm)
+            // The LifeForm goes down with the same scene, so there is nothing to deregister from.
+            if (LifeForm && !sceneUnloading)
             {
                 LifeForm.RemoveSpindle(this);
-                if (!sceneUnloading) LifeForm.CheckIfDead();
+                LifeForm.CheckIfDead();
             }
         }
 

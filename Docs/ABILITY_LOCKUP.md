@@ -396,9 +396,13 @@ is genuinely driven *and* it is the old UI, sitting in the row's own corner.
 
 So the sweep splits on one fact: **does this vessel bind any ability icon at all?**
 
-- **Any icon bound** (Squirrel, Sparrow, Dolphin, Scarab) — the reference guard applies unchanged. A
-  live readout is spared; a leftover is retired.
-- **No icon bound** (Rhino, Manta, Serpent — all `0/4`) — every drawing root-level child is retired.
+- **Any icon bound** (Squirrel, Sparrow, Dolphin, Scarab, and the Serpent since 2026-09-25 at 1/4)
+  — the reference guard applies unchanged. A live readout is spared; a leftover is retired.
+  **Binding a vessel's FIRST icon flips it from the clear-slate rule to this one**, so every root
+  branch a HUD-root component still references comes back: the Serpent's view still pointed
+  `shieldIcon` at the retired Seed Wall readout, and that reference had to be nulled or the old
+  wall art would have reappeared in the row's corner (`SERPENT_FUEL_PELLETS.md`).
+- **No icon bound** (Rhino, Manta, Serpent — all `0/4` when this was written) — every drawing root-level child is retired.
   All four cards render LOCKED, so there is no designed row for anything at root to belong to, and
   whatever is there is the pre-lockup HUD by definition.
 
@@ -409,7 +413,7 @@ Rhino's. Measured per vessel:
 |---|---|---|
 | Rhino | 0/4 | `BoostContainer`, `VesselImpactCooldown`, `TrailContainer`, and the instance-added `LaserTargeting`, `Crystal`, `ForceField` — i.e. the debuff timer, slowed count, skimmer-size ring, laser and crystal indicators |
 | Manta | 0/4 | inherited from `VesselHUDPrefab`: `Boost Button/display`, `Exhause Barrage`, `ShootBullets`, `ShootMissiles` — **each carrying a live `ResourceDisplay`** — plus both glyph roots |
-| Serpent | 0/4 | the same four inherited buttons and their `ResourceDisplay`s |
+| Serpent | 0/4 → **1/4 since 2026-09-25** | was: the same four inherited buttons and their `ResourceDisplay`s. Now the reference guard runs instead, and the old `Boost Button` hosts the Time icon |
 | Squirrel / Sparrow / Dolphin / Scarab | 4/4 | **nothing** — the reference guard still runs on these |
 
 The four inherited buttons are safe to switch off for a *specific* reason, not by assumption: their
@@ -755,8 +759,9 @@ per-vessel art or wiring for a human to supply.
 | Dolphin | 4/4 | ✅ (component also authored on the prefab — explicit, and equivalent) |
 | Scarab | 4/4 | ✅ ensured at runtime; `energyRing` re-homed onto the Space card as its gauge |
 | Sparrow | 4/4 | ✅ ensured at runtime; `rollChargeIndicator` becomes the Time card's gauge |
-| Squirrel | 4/4 + 1 core | ✅ ensured at runtime; AUTHORED flowers re-homed. Charge = the joust (skull), Mass = boost ring (+ the standard cooldown veil), **Space = GENERATED** (skimmer-reach ring + steal count, built by the view), Time = skimming (+ `boostFill` as its gauge). The **drift** is a non-elemental card one pitch left of Charge, chip **LT** |
-| Manta · Rhino · Serpent | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
+| Squirrel | 4/4 + 2 core | ✅ ensured at runtime; AUTHORED flowers re-homed. Charge = the joust (skull), Mass = boost ring (+ the standard cooldown veil), **Space = GENERATED** (skimmer-reach ring + steal count, built by the view), Time = skimming (+ `boostFill` as its gauge). Two non-elemental cards sit left of Charge: the **omni crystal** (emblem above, shielded-ring icon below) and the **drift** (no upper cell at all), chip **LT** |
+| Serpent | 1/4 | ✅ Time card bound (Solid Fuel Pellets — its four pips are the fuel tank); Charge/Mass/Space LOCKED. Its Charge card DOES draw the cooldown veil — a locked card has a plate, which is all the veil needs |
+| Manta · Rhino | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
 | Urchin | 0/4 | — no HUD prefab exists at all, so there is no view to ensure |
 
 **Row ownership is why `EnsureAbilityLockup` runs BEFORE `view.Initialize`.** Per-vessel views

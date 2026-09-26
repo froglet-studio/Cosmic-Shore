@@ -10,7 +10,7 @@ namespace CosmicShore.ScriptableObjects
     /// freestyle vessel camera.
     ///
     /// Consumers (ScreenSwitcher, MainMenuController, MainMenuCameraController,
-    /// MenuMiniGameHUD, MenuVesselSelectionPanelController) subscribe to these
+    /// MenuMiniGameHUD) subscribe to these
     /// events to show/hide their UI without direct coupling to the click handler.
     ///
     /// <b>Transition events</b> (Start/End) bracket each async transition so

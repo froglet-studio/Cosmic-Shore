@@ -220,6 +220,40 @@ namespace CosmicShore.Gameplay
             inst._redispatchBuffer.Clear();
         }
 
+        /// <summary>
+        /// Appends every LIVE super-shielded prism this owner's probes are currently inside to
+        /// <paramref name="into"/> (not cleared first) and returns how many were added.
+        ///
+        /// The shell tier dispatches a pair ONCE, on entry, so an impactor that needs a
+        /// continuous "am I still inside it?" answer — the Rhino's blade binding in armour it
+        /// cannot cut (RHINO_ENERGY_SWORD.md § "Binding") — reads the live pair set here rather
+        /// than keeping its own copy, which would need its own exit test and could disagree with
+        /// this one. The set is exactly what <see cref="SweepStalePairs"/> keeps: a pair leaves it
+        /// the first frame its probes stop overlapping the shell.
+        ///
+        /// Always zero under <see cref="ForceLegacyBoxInteraction"/>: the A/B box path has no
+        /// persistent pair set, so a binding reads as "never inside" there.
+        /// </summary>
+        public static int CollectSuperShieldedContactsForOwner(ImpactorBase owner, List<Prism> into)
+        {
+            var inst = Instance;
+            if (inst == null || owner == null || into == null || ForceLegacyBoxInteraction) return 0;
+            if (inst._activePairs.Count == 0) return 0;
+
+            int added = 0;
+            foreach (var kvp in inst._activePairs)
+            {
+                var pair = kvp.Value;
+                if (!ReferenceEquals(pair.Owner, owner)) continue;
+                var prism = pair.Prism;
+                if (prism == null || prism.destroyed) continue;
+                if (prism.prismProperties is not { IsSuperShielded: true }) continue;
+                into.Add(prism);
+                added++;
+            }
+            return added;
+        }
+
         public static void UnregisterProbeOwner(ImpactorBase owner)
         {
             for (int i = 0; i < s_owners.Count; i++)

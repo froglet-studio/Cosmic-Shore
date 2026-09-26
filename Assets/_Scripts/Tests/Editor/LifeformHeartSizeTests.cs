@@ -30,8 +30,7 @@ namespace CosmicShore.Tests
     ///
     ///   <item><b>A heart that clips the collect reward.</b> Heart world scale is read AS
     ///   GAMEPLAY: the collect reward is <c>min(worldScale × levelPerUnitScale,
-    ///   maxLevelGainPerCrystal)</c> and the live domain fauna buff is the same function
-    ///   summed over a domain's living hearts. Past the saturation scale two visibly
+    ///   maxLevelGainPerCrystal)</c>. Past the saturation scale two visibly
     ///   different hearts pay the same — a size the player can see and a reward they cannot
     ///   — which is exactly the property that makes "bigger lifeform, bigger heart, bigger
     ///   kill" true. <c>ElementalCrystalSetSO.MaxSafeHeartWorldScale</c> is the margin under
@@ -135,7 +134,7 @@ namespace CosmicShore.Tests
         /// SpreadElements OFF, EMPTY palette, Variant disabled, so it rolls nothing and
         /// authors nothing). The second is a DORMANT authoring gap, and worth naming so the
         /// exclusion is not mistaken for a clean bill: nothing in Assets/ references its guid
-        /// — the Lifeform Matrix toy's "Worm Colony" entry lists the four canonical
+        /// — the Spawn Matrix toy's "Worm Colony" entry lists the four canonical
         /// "Worm Colony &lt;Element&gt;" siblings, which all author 2.277 — so nothing spawns
         /// it today, but anything that did would render the platform default heart.
         /// LifeFormCrystalValidator reports it; it is an ecology call (give it an element, or

@@ -41,6 +41,39 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool RearView { get; set; }
 
+        /// <summary>
+        /// While set, the camera frames THIS WORLD POINT instead of the vessel — the Butterfly's
+        /// Fold places its destination across the whole cell, and a pilot cannot choose a place
+        /// they cannot see. Driven only by <c>VesselPlacementView</c>; nothing else may write it.
+        ///
+        /// <para>It moves the POINT and nothing else: the offset, the distance and the ROTATION
+        /// FRAME still come from the vessel, so the camera sits behind the destination at the
+        /// vessel's own follow distance, oriented the way the pilot is oriented. That last part is
+        /// load-bearing rather than incidental — the Fold addresses its target in the vessel's
+        /// ROLLED frame, so "roll the world until the place you want is where your thumbs already
+        /// are" only reads if the camera rolls with it.</para>
+        ///
+        /// <para>Applied at the point of use (<see cref="FollowPoint"/>), never by writing
+        /// <see cref="_followTarget"/> — the same reasoning as <see cref="RearView"/>. The follow
+        /// target is re-written by the spawn chain, by a vessel swap and by every system that
+        /// re-applies a <c>CameraSettingsSO</c>; a placement written into it would be silently
+        /// dropped by the first of those to fire, and would leave the camera framing a point in
+        /// space if the ability's teardown missed a path.</para>
+        ///
+        /// <para>It BEATS the rear view rather than composing with it. Two vantages that re-pose
+        /// one camera must be ORDERED (<c>Docs/REAR_VIEW.md</c>), and the order is the one the
+        /// pilot asked for most recently and most specifically: a placement is a decision being
+        /// made right now, and looking backwards from a destination you have not chosen yet is
+        /// not a thing anyone asked for.</para>
+        /// </summary>
+        public Vector3? PlacementAnchor { get; set; }
+
+        /// <summary>
+        /// The world point the camera frames this frame: the placement anchor if one is set, else
+        /// the follow target's own position.
+        /// </summary>
+        private Vector3 FollowPoint =>
+            PlacementAnchor ?? (_followTarget ? _followTarget.position : Vector3.zero);
 
         /// <summary>
         /// The offset actually used to pose the camera this frame: the authored one, or its
@@ -55,7 +88,7 @@ namespace CosmicShore.Gameplay
         /// third case here, not a revival of a flag nothing was setting.</para>
         /// </summary>
         private Vector3 EffectiveOffset =>
-            RearView
+            RearView && !PlacementAnchor.HasValue
                 ? new Vector3(_followOffset.x, _followOffset.y, -_followOffset.z)
                 : _followOffset;
 
@@ -80,11 +113,20 @@ namespace CosmicShore.Gameplay
         {
             if (!_followTarget) return;
 
-            if (_lastTargetPos == Vector3.zero)
-                _lastTargetPos = _followTarget.position;
+            // The point being FRAMED, which is the vessel unless a placement anchor is set. Every
+            // read below is of this rather than of the target's own position — including the
+            // teleport guard and `_lastTargetPos`, which exist to describe how far what the camera
+            // is looking at moved this frame. Leaving them on the vessel would make the guard
+            // blind during a placement (the vessel is stopped, so its delta is zero while the
+            // framed point sweeps the whole cell) and would then fire it on the frame the anchor
+            // is released.
+            Vector3 followPoint = FollowPoint;
 
-            Vector3 desiredPos = _followTarget.position + _followTarget.rotation * EffectiveOffset;
-            Vector3 shipDelta = _followTarget.position - _lastTargetPos;
+            if (_lastTargetPos == Vector3.zero)
+                _lastTargetPos = followPoint;
+
+            Vector3 desiredPos = followPoint + _followTarget.rotation * EffectiveOffset;
+            Vector3 shipDelta = followPoint - _lastTargetPos;
 
             // Teleport guard: on a kickoff park / fresh spawn the follow target jumps a long way in one
             // frame (normal flight is only a few units/frame). Snap the camera into place instead of
@@ -93,11 +135,11 @@ namespace CosmicShore.Gameplay
             if (shipDelta.sqrMagnitude > teleportStep * teleportStep)
             {
                 transform.position = desiredPos;
-                if (SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var snapRot, this, logError: false))
+                if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var snapRot, this, logError: false))
                     transform.rotation = snapRot;
                 _velocity = Vector3.zero;
                 _lateralDominance = 0f;
-                _lastTargetPos = _followTarget.position;
+                _lastTargetPos = followPoint;
                 return;
             }
 
@@ -129,7 +171,7 @@ namespace CosmicShore.Gameplay
                 );
             }
 
-            if (!SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (!SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))
                 targetRot = transform.rotation;
 
             if (_disableRotationLerp)
@@ -145,7 +187,7 @@ namespace CosmicShore.Gameplay
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
             }
 
-            _lastTargetPos = _followTarget.position;
+            _lastTargetPos = followPoint;
 
             ApplyShake();
         }
@@ -215,12 +257,13 @@ namespace CosmicShore.Gameplay
         {
             if (!_followTarget) return;
 
-            transform.position = _followTarget.position + _followTarget.rotation * EffectiveOffset;
+            Vector3 followPoint = FollowPoint;
+            transform.position = followPoint + _followTarget.rotation * EffectiveOffset;
 
-            if (SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))
                 transform.rotation = targetRot;
 
-            _lastTargetPos = _followTarget.position;
+            _lastTargetPos = followPoint;
             _velocity = Vector3.zero;
         }
 

@@ -71,6 +71,13 @@ FIELD_DECL = re.compile(_HEAD + r"([A-Z]\w*)[ \t]*(?==>|=[^=]|;|\{)", re.M)
 # A type mention: an identifier starting uppercase, not preceded by a dot (which would make it a
 # member access or an already-qualified name).
 MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
+# An ASSIGNMENT TARGET is never a type: C# has no syntax in which a type name is the left side of
+# `=`. So `Element = element,` (an object-initializer member), `Foo = 1` inside an attribute, and a
+# plain field write are all member references that happen to share a type's name. Excluded shapes
+# matter: `==` is a comparison, `=>` is an expression body or a lambda, and a compound operator
+# (`+=`) leaves a non-`=` char before the sign so it never reaches here. A qualified target
+# (`ThemeManager.Current = x`) masks `Current`, not `ThemeManager`, which still needs its using.
+ASSIGN_TARGET = re.compile(r"(?<![\w.])([A-Z]\w*)([ \t]*=(?![=>]))", re.M)
 
 COMMENT = re.compile(r"//.*?$|/\*.*?\*/", re.S | re.M)
 STRING = re.compile(r'"(?:\\.|[^"\\])*"|\$@?"(?:[^"]|"")*"')
@@ -178,6 +185,7 @@ def check_file(path, decls):
     # own TYPE is still reported. See METHOD_DECL / FIELD_DECL.
     own.update(METHOD_DECL.findall(src))
     scan = FIELD_DECL.sub(lambda m: m.group(0)[:m.start(1) - m.start(0)], src)
+    scan = ASSIGN_TARGET.sub(lambda m: " " * len(m.group(1)) + m.group(2), scan)
 
     bad = []
     for name in sorted(set(MENTION.findall(scan))):
@@ -242,6 +250,14 @@ def self_test():
          "a BOM does not hide the FIRST using directive"),
         ("\ufeffusing CosmicShore.Data;\nnamespace CosmicShore.Gameplay { class A { WidgetSO w; } }", 1,
          "...and a BOM'd file with a genuinely missing using is still caught"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() {\n        var v = new B { WidgetSO = 1 };\n    }\n}\n}", 0,
+         "an OBJECT-INITIALIZER member sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    int x;\n    void Ok() {\n        WidgetSO = 1;\n    }\n}\n}", 0,
+         "...and neither is any other assignment TARGET -- a type can never be assigned to"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() {\n        var v = WidgetSO;\n    }\n}\n}", 1,
+         "...but the RIGHT side of an assignment is still a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() {\n        var v = (WidgetSO == null);\n    }\n}\n}", 1,
+         "`==` is a comparison, not an assignment target"),
     ]
     ok = True
     for src, want, label in cases:
@@ -292,7 +308,7 @@ def working_tree_files():
         xy, path = rec[:2], rec[3:]
         if "R" in xy or "C" in xy:
             i += 1
-        if path.endswith(".cs"):
+        if _in_project(path):
             names.append(path)
     return names
 
@@ -318,13 +334,25 @@ def changed_files():
         rc, out = _git(["diff", "--name-only", "-z", f"{base}...HEAD"])
         if rc != 0:
             continue
-        names = [n for n in out.split("\0") if n.endswith(".cs")]
+        names = [n for n in out.split("\0") if _in_project(n)]
         extra = [n for n in working_tree_files() if n not in names]
         label = f"{base}...HEAD"
         if extra:
             label += " + uncommitted"
         return label, names + extra
     return "uncommitted only", working_tree_files()
+
+
+def _in_project(path):
+    """A changed .cs file this gate can actually judge.
+
+    Declarations are indexed from Assets/ only, so a .cs OUTSIDE it - an offline compile harness
+    under Tools/Build/*_harness/, which builds against its own stand-in shims rather than the Unity
+    project - can only ever produce false positives: every shim that declares a stand-in for a
+    project type reads as "declared in CosmicShore.X, add a using". Explicit paths still bypass
+    this, so a harness can be checked on purpose.
+    """
+    return path.endswith(".cs") and path.replace("\\", "/").startswith("Assets/")
 
 
 def main():

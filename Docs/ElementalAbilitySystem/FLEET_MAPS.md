@@ -64,6 +64,7 @@ day after the channel it referred to had been deleted.
 | Serpent | 3/4 | 3/4 | 2/4 |
 | Scarab | 4/4 | 4/4 | 2/4 |
 | Rhino | 2/4 | 3/4 | 0/4 |
+| **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
@@ -335,7 +336,7 @@ Element assignment and the right-trigger resolution were confirmed in the same s
 | Charge | **Sniper Shot** on RT — the RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`) | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first (`SniperShotActionExecutor`, gated on `IsUpgradeActive(Charge)`) |
 | Mass | *(open)* → proposal below still stands | **Fortified Wall** — woven wall prisms arrive shielded |
 | Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`) |
-| Time | boost duration (1.6) | *(open)* → proposal: **Endless Coil** — consuming a boost charge while boosting chains without the reload pause |
+| Time | **Solid Fuel Pellets** on A — burn DURATION per pellet: ×1 at rest → ×1.6 at Time 10 (`ConsumeBoostAction.asset`). Restored 2026-09-25: one press burns one pellet, burns overlap additively, the fuel tank refills at a fixed rate and holds four (`R_VesselActions/SERPENT_FUEL_PELLETS.md`) | *(open)* — the old **Endless Coil** proposal ("chains without the reload pause") is void: the reload no longer exists |
 
 Retired with the re-cut: the Charge proposal *boost stack potency* / **Venom Wake**, and the Space
 proposal *skimmer scale* / **Coil Reach**. `VesselPrismController.EnableDangerMode` is still

@@ -31,6 +31,39 @@ Four things were wrong with it, and only the first is a matter of taste:
 
 ---
 
+## The sibling: the placement view
+
+`VesselPlacementView` (`Docs`-less, `_Scripts/Utility/`) is built to this file's shape and re-poses
+the same camera: while a pilot is choosing WHERE to put their vessel — the Butterfly's Fold, its
+only caller — the camera frames the DESTINATION rather than the ship. One static, one binding at
+the same two `IsLocalPilot` sites, one per-frame push onto the resolved gameplay controller, and
+the vantage applied at the POINT OF USE (`CustomCameraController.PlacementAnchor`) rather than
+written into the follow target. Every argument in this document carries over unchanged, including
+the one against a second camera.
+
+**Only the POINT moves.** The offset, the distance and the ROTATION FRAME still come from the
+vessel, so the camera sits behind the destination at the vessel's own follow distance, oriented
+the way the pilot is oriented. That is load-bearing rather than tidy: the Fold addresses its
+target in the vessel's ROLLED frame, so *roll the world until the place you want is where your
+thumbs already are* is only legible if the camera rolls with it.
+
+**The two vantages are ORDERED, and placement wins.** `EffectiveOffset` suppresses the rear mirror
+while an anchor is set. Looking backwards from a destination you have not chosen yet is not a
+thing anyone asked for, and this is the rule this document already states from the other side: two
+vantages that re-pose one camera must be ordered, never blended.
+
+**A placement SNAPS only on its two transitions.** Entering, the anchor is seeded at the vessel, so
+the snap is a no-op that clears the smoothing state; leaving, the vessel has just been posed ONTO
+the point the camera is already framing, so it is a no-op again. Between them the point sweeps the
+cell and the ordinary SmoothDamp carries it — a per-frame snap would read as a cut per frame. The
+consequence worth stating: **the teleport itself costs the camera no motion at all.**
+
+Note what this forced in the camera: `_lastTargetPos` and the 50-unit teleport guard now describe
+the FRAMED point rather than the follow target. Left on the vessel they would be blind for the
+whole placement (the vessel is stopped, so its delta is zero while the framed point crosses the
+arena) and would then fire on the frame the anchor is released — the guard inverted, firing on the
+one transition that is genuinely a no-op.
+
 ## 2. What it does now
 
 `VesselRearView` (`Assets/_Scripts/Utility/VesselRearView.cs`) is a static driver in the shape of

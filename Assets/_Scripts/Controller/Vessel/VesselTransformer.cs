@@ -189,7 +189,30 @@ public class VesselTransformer : MonoBehaviour
         /// <see cref="SingleStickVesselTransformer"/>, which is what the Sparrow and Serpent
         /// actually run — a base-only change would not reach either of them.</summary>
         protected float TurnScalar =>
-            VesselStatus != null && VesselStatus.IsTranslationRestricted ? restrictedTurnMultiplier : 1f;
+            (VesselStatus != null && VesselStatus.IsTranslationRestricted ? restrictedTurnMultiplier : 1f)
+            * Mathf.Max(0f, ExternalTurnRateMultiplier);
+
+        /// <summary>
+        /// ROTATION rate multiplier an ABILITY owns while it runs — 1 = no effect. Folded into
+        /// <see cref="TurnScalar"/> (pitch/yaw) and <see cref="RollScalar"/> (roll), so it reaches
+        /// this class's Pitch/Yaw/Roll AND every override (SingleStickVesselTransformer,
+        /// ScarabVesselTransformer) and <see cref="MaxTurnRateDegreesPerSecond"/>, which the AI's
+        /// reachability test reads. Unlike <c>restrictedTurnMultiplier</c> it DOES reach roll: an
+        /// ability that says "you are held" means every axis you could swing on.
+        ///
+        /// One writer at a time, same contract as <see cref="BankIntoTurnSuppressed"/>: the
+        /// setter is responsible for handing it back at 1, and <see cref="ResetTransformer"/>
+        /// clears it so an interrupted ability cannot strand a slowed turn. Its one writer today
+        /// is the Rhino's sword binding in super-shielded mass
+        /// (<c>ShieldSkimmerScaleDriver</c>, RHINO_ENERGY_SWORD.md § "Binding").
+        /// </summary>
+        public float ExternalTurnRateMultiplier { get; set; } = 1f;
+
+        /// <summary>Roll rate scalar for this frame — <see cref="ExternalTurnRateMultiplier"/>
+        /// alone (the translation-restricted stance deliberately does not speed roll). Applied
+        /// by this class's <see cref="Roll"/> and by every override, the same reach
+        /// <see cref="TurnScalar"/> needs.</summary>
+        protected float RollScalar => Mathf.Max(0f, ExternalTurnRateMultiplier);
 
         /// <summary>
         /// While true the transformer applies NO bank-into-turn — an ability owns the roll axis
@@ -428,6 +451,7 @@ public class VesselTransformer : MonoBehaviour
 
             // Movement
             BankIntoTurnSuppressed = false;   // an interrupted ability must not strand the roll axis
+            ExternalTurnRateMultiplier = 1f;  // ...nor a slowed turn
             velocityShift = Vector3.zero;
             _bodyFlaring = true;   // force one rest-state material write on the next pass
 
@@ -484,8 +508,30 @@ public class VesselTransformer : MonoBehaviour
         }
 
         // ----------------------------- Public Controls -----------------------------
+        /// <summary>
+        /// How many times this vessel has been TELEPORTED — a discontinuous pose write rather
+        /// than travel. Monotonic; only ever compared for CHANGE, never for magnitude.
+        ///
+        /// <para>It exists because a system that watches a vessel's motion cannot tell a jump
+        /// from a fast frame by looking at the distance. <c>GateRaceController</c> sweeps
+        /// <c>prev -> cur</c> against the next ring and guards with a plausible-speed step, which
+        /// rejects a LONG teleport by accident and credits a SHORT one — so the Butterfly's Fold
+        /// could thread a gate it never flew through. A counter makes it a FACT the mover states
+        /// rather than a magnitude the watcher guesses at, and a watcher that compares counts is
+        /// correct across any frame ordering and any number of jumps in one frame.</para>
+        /// </summary>
+        public int TeleportCount { get; private set; }
+
+        /// <summary>
+        /// Say that this vessel jumped. For a discontinuity that does NOT go through
+        /// <see cref="SetPose"/> — <c>VesselController.Teleport</c> writes the transform directly
+        /// through <c>VesselHelper</c>.
+        /// </summary>
+        public void NotifyTeleported() => TeleportCount++;
+
         public void SetPose(Pose pose)
         {
+            TeleportCount++;
             transform.SetPositionAndRotation(pose.position, pose.rotation);
             accumulatedRotation = pose.rotation;
 
@@ -504,16 +550,39 @@ public class VesselTransformer : MonoBehaviour
         /// </summary>
         public void SetInitialSpeed(float initialSpeed) => speed = initialSpeed;
 
+        /// <summary>
+        /// Take over a hull that is ALREADY IN FLIGHT from wherever it is right now.
+        ///
+        /// <para>A transformer only simulates on the machine that flies its hull; everywhere else
+        /// it is switched off and the hull is posed by replication. So the integrator state it
+        /// keeps for itself - the orientation it is slerping toward, the smoothed scalar speed and
+        /// the vector model's momentum - is stale on every machine that was NOT flying it. A hull
+        /// handed to another pilot mid-match (<c>PilotSwap</c>) would otherwise snap back to that
+        /// stale orientation and lurch from a dead stop on the frame its new simulation starts.
+        /// This re-seeds all three from the live transform and the replicated
+        /// <c>VesselStatus.Speed</c>, which is exactly what every peer is drawing.</para>
+        /// </summary>
+        public void AdoptCurrentMotion()
+        {
+            accumulatedRotation = transform.rotation;
+            if (VesselStatus != null) speed = VesselStatus.Speed;
+            _vectorSeeded = false;   // re-seeds from the live facing and speed on the next move
+        }
+
         public void FlatSpinShip(float YAngle)
         {
             accumulatedRotation = Quaternion.AngleAxis(180, transform.up) * accumulatedRotation;
         }
 
-        public void SpinShip(Vector3 newDirection)
-        {
-            if (SafeLookRotation.TryGet(newDirection, out var rotation, this, logError: false))
-                accumulatedRotation = rotation;
-        }
+        // SpinShip(Vector3) - a SNAP re-aim onto a supplied heading - is DELETED (Sep 2026).
+        // Its only three callers were vessel-on-vessel weapon effects (the Sparrow's guns and
+        // rocket, the Urchin's spikes, the Rhino's sword), and **A VESSEL MAY NOT MOVE AN
+        // OPPOSING VESSEL**: being shoved and re-aimed by somebody else's weapon is the one hit
+        // a pilot cannot answer with flying. What a weapon may take from another pilot is their
+        // ELEMENTAL CRYSTALS (Docs/ELEMENTAL_ECONOMY.md). GentleSpinShip below survives because
+        // its callers are a vessel deflecting off MASS it flew into - self-caused, and the
+        // flight model rather than a weapon. Tools/Build/check_vessel_on_vessel_motion.py fails
+        // the build if a victim-facing effect reaches for either of them again.
 
         public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
         {
@@ -729,7 +798,7 @@ public class VesselTransformer : MonoBehaviour
         {
             if (InputStatus == null || BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
-                InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
+                InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * RollScalar * Time.deltaTime,
                 transform.forward) * accumulatedRotation;
         }
 

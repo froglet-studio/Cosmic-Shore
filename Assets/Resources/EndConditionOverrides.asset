@@ -34,6 +34,7 @@ MonoBehaviour:
   broadsidePointsPerPilot: 100
   salvoPrismTarget: 700
   switchbackGateTarget: 20
+  waystationRingTarget: 24
   breakwaterStationTarget: 15
   breakwaterLaps: 2
   headlongGateTarget: 24
@@ -62,6 +63,7 @@ MonoBehaviour:
   broadsidePointsPerPilotBuild: 100
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
+  waystationRingTargetBuild: 24
   breakwaterStationTargetBuild: 15
   breakwaterLapsBuild: 2
   headlongGateTargetBuild: 24

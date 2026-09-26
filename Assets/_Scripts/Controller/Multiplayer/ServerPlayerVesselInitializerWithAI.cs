@@ -195,6 +195,16 @@ namespace CosmicShore.Gameplay
             // two dictionaries, so it cannot disagree with the hub's answer.
             bool tournament = gameData.IsMaelstromMode && tournamentData != null;
 
+            // ARENA: every hull is flown by exactly one pilot (SO_ArcadeGame.ArenaRules). The
+            // humans' hulls are taken first - each human already picked and confirmed theirs in the
+            // lobby (a server-arbitrated claim, Player.NetArenaHullClaim) - and each AI is dealt a
+            // hull nobody has yet. Humans are resolved through the same clamp their own spawn will
+            // apply (ResolveSpawnVesselType), so a bot can never be dealt the hull a human is about
+            // to be clamped INTO. Outside an arena this set is still filled but never consulted.
+            var hullsInUse = new HashSet<VesselClassType>();
+            foreach (var human in GatherHumanPlayers())
+                if (human) hullsInUse.Add(gameData.ClampVesselToGame(human.NetDefaultVesselType.Value));
+
             // The whole loop runs synchronously in ONE frame — the dominant launch spike at
             // high player counts. The span makes that cost (and its scaling) visible.
             using var _ = LoadInsights.Measure(LoadInsightCategory.AiBackfill,
@@ -227,8 +237,11 @@ namespace CosmicShore.Gameplay
                 var hasTemplate = aiInitializeDatas != null && i < aiInitializeDatas.Length;
 
                 var aiVesselType = hasTemplate ? aiInitializeDatas[i].vesselClass : VesselClassType.Random;
-                if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
-                    aiVesselType = PickAIVesselType();
+                // ARENA: a hull is flown by ONE pilot, so an authored template that names a hull
+                // somebody already has is re-drawn like an unset one.
+                if (aiVesselType is VesselClassType.Any or VesselClassType.Random ||
+                    (gameData.IsArenaMatch && hullsInUse.Contains(aiVesselType)))
+                    aiVesselType = PickAIVesselType(hullsInUse);
 
                 // A restricted-vessel mode restricts the AI too. The AI's class comes from the
                 // scene's aiInitializeDatas (or the captain roll), neither of which knows the
@@ -237,6 +250,7 @@ namespace CosmicShore.Gameplay
                 // and same authority as the human path (ResolveSpawnVesselType); no-op when the
                 // game authors no Vessels list.
                 aiVesselType = gameData.ClampVesselToGame(aiVesselType);
+                hullsInUse.Add(aiVesselType);
 
                 // A seat already dealt this tournament is replayed verbatim - same bot, same team,
                 // every round. It still bumps the placement counts, so any bot WITHOUT a seat yet
@@ -434,7 +448,7 @@ namespace CosmicShore.Gameplay
         /// Shrike) are skipped rather than drawn and failed, so a roster may name a planned hull
         /// without breaking the backfill.</para>
         /// </summary>
-        VesselClassType PickAIVesselType()
+        VesselClassType PickAIVesselType(ICollection<VesselClassType> hullsInUse = null)
         {
             var allowed = gameData?.AllowedVesselClasses;
             if (allowed != null && allowed.Count > 0)
@@ -443,8 +457,26 @@ namespace CosmicShore.Gameplay
                 // one unbuilt hull on a roster must not bias the rest toward the fallback.
                 _aiVesselDrawBuffer.Clear();
                 for (int i = 0; i < allowed.Count; i++)
-                    if (vesselPrefabContainer.TryGetShipPrefab(allowed[i], out _))
+                    if (vesselPrefabContainer.TryGetShipPrefab(allowed[i], out _, reportMissing: false))
                         _aiVesselDrawBuffer.Add(allowed[i]);
+
+                // ARENA: only hulls nobody flies yet. If that leaves nothing (more seats than hulls,
+                // which SO_ArcadeGame.MaxSeats exists to prevent at the launch modal), say so and
+                // fall back to a duplicate rather than spawn no opponent at all.
+                if (gameData.IsArenaMatch && hullsInUse != null && hullsInUse.Count > 0)
+                {
+                    int before = _aiVesselDrawBuffer.Count;
+                    _aiVesselDrawBuffer.RemoveAll(hullsInUse.Contains);
+                    if (_aiVesselDrawBuffer.Count == 0 && before > 0)
+                    {
+                        CSDebug.LogWarning($"[ServerPlayerVesselInitializerWithAI] Arena match has more seats " +
+                                           $"than free hulls ({hullsInUse.Count} taken of {before}); this AI " +
+                                           "shares a hull. The launch modal's MaxSeats should have prevented it.");
+                        for (int i = 0; i < allowed.Count; i++)
+                            if (vesselPrefabContainer.TryGetShipPrefab(allowed[i], out _))
+                                _aiVesselDrawBuffer.Add(allowed[i]);
+                    }
+                }
 
                 if (_aiVesselDrawBuffer.Count > 0)
                     return _aiVesselDrawBuffer[Random.Range(0, _aiVesselDrawBuffer.Count)];
@@ -456,7 +488,7 @@ namespace CosmicShore.Gameplay
                 if (game != null && game.Vessels is { Count: > 0 })
                 {
                     var vessel = game.Vessels[Random.Range(0, game.Vessels.Count)];
-                    if (vessel != null && vesselPrefabContainer.TryGetShipPrefab(vessel.Class, out _))
+                    if (vessel != null && vesselPrefabContainer.TryGetShipPrefab(vessel.Class, out _, reportMissing: false))
                         return vessel.Class;
                 }
             }
@@ -519,6 +551,18 @@ namespace CosmicShore.Gameplay
         {
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
+            ConfigureAIPilotForMode(aiPilot, gameData);
+        }
+
+        /// <summary>
+        /// Configure an autopilot for the CURRENT mode exactly as a backfill bot is configured.
+        /// Static and public because a pilot can inherit a hull mid-match from two directions - a
+        /// departed human (<see cref="ConfigureDepartedPilotAI"/>) and an arena pilot swap
+        /// (<see cref="PilotSwap"/>) - and all three must fly to the same standard.
+        /// </summary>
+        public static void ConfigureAIPilotForMode(AIPilot aiPilot, GameDataSO gameData)
+        {
+            if (aiPilot == null || gameData == null) return;
 
             // Player-seek is for the modes whose OBJECTIVE is another pilot. Joust wants to
             // sweep its skimmer past you; Dog Fight wants you in its gunsight - the steering

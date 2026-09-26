@@ -171,8 +171,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectileShipEffects:
-  - {fileID: 11400000, guid: 2e278df34f7acd385365a6522f8e7ddc, type: 2}
+  projectileShipEffects: []
   projectilePrismEffects:
   - {fileID: 11400000, guid: 2564c4fefc3011b43a28e573899e7889, type: 2}
   projectileMineEffects:

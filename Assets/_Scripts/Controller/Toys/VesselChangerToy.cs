@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
+using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -20,24 +21,22 @@ namespace CosmicShore.Gameplay
     /// the moment your domain changes.
     ///
     /// The swap pipeline drops the new vessel into autopilot with input paused, so this restores
-    /// freestyle control once the swap completes (mirroring
-    /// <c>MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync</c>).
+    /// freestyle control once the swap completes. (It used to say it mirrored the freestyle HUD's
+    /// vessel-selection panel; that panel was retired 2026-09-23 after measuring that it was
+    /// inactive in the scene with no caller for its <c>Open()</c> - this toy is the only thing
+    /// that has actually restored freestyle control for some time.)
     /// </summary>
-    public sealed class VesselChangerToy : MatrixToy, IToyShellSurface
+    public sealed class VesselChangerToy : MatrixToy
     {
         const int RestoreDelayMs = 600;
 
         VesselChangerToyDefinitionSO _def;
 
-        // The ships the open matrix is showing, index-aligned with _stationBodies.
-        readonly List<VesselClassType> _offered = new();
         readonly List<Transform> _stationBodies = new();
-        readonly List<VesselClassType> _emblemScratch = new();
 
-        // Its own list, never _offered or _emblemScratch: the shell can be asked at any moment,
-        // including while the matrix is open (whose list is index-aligned with live stations) or
-        // between two emblem slot builds.
-        readonly List<VesselClassType> _shellScratch = new();
+        // The emblem's own scratch: it is rebuilt on a domain change whether the matrix is open
+        // or not, so it must never borrow the base's WorldOptions (which exist only while it is).
+        readonly List<VesselClassType> _emblemScratch = new();
 
         Domains _lastDomain;
         bool _hasDomain;
@@ -96,8 +95,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Slot 0 is the vessel you're flying; slots 1..N walk the offer list (the collection minus
-        /// what you fly). Recomputed per slot - it is an array walk, and it must not depend on
-        /// <c>_offered</c>, which only exists while the matrix is open.
+        /// what you fly). Recomputed per slot - it is an array walk, and it must not depend on the
+        /// base's <c>WorldOptions</c>, which only exist while the matrix is open.
         /// </summary>
         bool TryGetEmblemVessel(int slot, out VesselClassType vessel)
         {
@@ -111,10 +110,10 @@ namespace CosmicShore.Gameplay
                 return true;
             }
 
-            // Into a scratch list, not _offered: that one only exists while the matrix is open,
-            // and the emblem is built (and rebuilt on a domain change) whether it is or not.
-            ToyVesselRoster.Resolve(_def ? _def.VesselCollection : null, _emblemScratch,
-                hasCurrent ? current : null);
+            // Into a scratch list, not the base's WorldOptions: those exist only while the matrix
+            // is open, and the emblem is built (and rebuilt on a domain change) whether it is or not.
+            ToyVesselRoster.ResolveOffered(Context, _def ? _def.VesselCollection : null,
+                _emblemScratch, hasCurrent ? current : null);
 
             int wanted = slot - 1;
             if (wanted < 0 || wanted >= _emblemScratch.Count) return false;
@@ -122,38 +121,56 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        // ── The one declaration ──────────────────────────────────────────────
+
+        /// <summary>
+        /// Every hull the roster offers, the one you are flying flagged as current. The matrix
+        /// builds no station for that one (<see cref="WorldOmitsCurrentOption"/>) because flying
+        /// it would swap your hull for itself; the window keeps the row so you can see which you
+        /// are on. Same list, one declared difference in how it is shown.
+        /// </summary>
+        protected override void BuildOptions(List<ToyShellOption> into)
+        {
+            bool hasCurrent = TryGetCurrentVessel(out var current);
+            ToyVesselRoster.ResolveOffered(Context, _def ? _def.VesselCollection : null,
+                _shellScratch, exclude: null);
+
+            Color accent = PreviewColor();
+
+            foreach (var vessel in _shellScratch)
+            {
+                var captured = vessel;
+                bool isCurrent = hasCurrent && vessel == current;
+
+                into.Add(new ToyShellOption
+                {
+                    Label = vessel.ToString(),
+                    Detail = isCurrent ? "flying" : "",
+                    Accent = accent,
+                    IsCurrent = isCurrent,
+                    Payload = captured,
+                    // No Apply on the hull you are already flying: that row is there to be READ.
+                    Apply = isCurrent ? null : () => SelectVessel(captured),
+                    BuildPreview = parent => BuildShellPreview(captured, parent),
+                });
+            }
+        }
+
+        readonly List<VesselClassType> _shellScratch = new();
+
+        /// <summary>Your own hull has no station - flying it would swap it for itself.</summary>
+        protected override bool WorldOmitsCurrentOption => true;
+
         // ── Layout ───────────────────────────────────────────────────────────
 
-        protected override int StationCount => _offered.Count;
         protected override float StationSpacing => _def.StationSpacing;
         protected override float StationRadius => Placement.BodyRadius > 0.01f ? Placement.BodyRadius : 20f;
         protected override float MatrixDistanceFactor => _def.MatrixDistanceFactor;
 
         protected override void OnActivated(IVesselStatus localVessel)
         {
-            if (IsMatrixOpen)
-            {
-                CloseMatrix();
-                return;
-            }
-
-            // Resolve what to offer BEFORE the base opens - StationCount reads from it.
-            if (!ResolveOffer()) return;
+            if (!IsMatrixOpen) _stationBodies.Clear();
             base.OnActivated(localVessel);
-        }
-
-        bool ResolveOffer()
-        {
-            _stationBodies.Clear();
-
-            // You are already flying one of them, so that hull is not on offer here.
-            bool hasCurrent = TryGetCurrentVessel(out var current);
-            ToyVesselRoster.Resolve(_def ? _def.VesselCollection : null, _offered,
-                hasCurrent ? current : null);
-
-            if (_offered.Count != 0) return true;
-            CSDebug.LogWarning("[VesselChanger] No other vessels to offer.");
-            return false;
         }
 
         bool TryGetCurrentVessel(out VesselClassType current)
@@ -168,10 +185,10 @@ namespace CosmicShore.Gameplay
 
         // ── Stations: the ship, and nothing but the ship ─────────────────────
 
-        protected override void BuildStation(int index, Transform parent, Vector3 position, float radius)
+        protected override void BuildStation(ToyShellOption option, Transform parent, Vector3 position, float radius)
         {
-            var vessel = _offered[index];
-            var station = CreateStation(parent, position, vessel.ToString(), radius * 1.6f);
+            var vessel = (VesselClassType)option.Payload;
+            var station = CreateStation(option, parent, position, vessel.ToString(), radius * 1.6f);
 
             var body = new GameObject("Body").transform;
             body.SetParent(station.transform, false);
@@ -197,11 +214,7 @@ namespace CosmicShore.Gameplay
                 ToyFactory.AddSphereBody(body, radius, previewColor);
             }
 
-            ToyFactory.AddRingedLabel(station.transform, vessel.ToString(), previewColor,
-                StationRingRadius(radius * 1.6f), radius);
-
-            var captured = vessel;
-            station.OnVesselPassed = () => SelectVessel(captured);
+            // The action is the option's own Apply, wired by CreateStation - see MatrixToy.
         }
 
         void SelectVessel(VesselClassType target)
@@ -219,55 +232,33 @@ namespace CosmicShore.Gameplay
 
             init.RequestSwap(target);
             RestoreControlAfterSwap(this.GetCancellationTokenOnDestroy()).Forget();
+
+            // The cloud record's "last hull the player deliberately picked". This moved here from
+            // the retired freestyle vessel-selection panel (2026-09-23), and moving it is what
+            // made it RUN: that panel was inactive in the scene with no caller for its Open(), so
+            // `HANGAR_DATA.SelectedVessel` had no live writer at all and
+            // Docs/Analytics/DATA_ARCHITECTURE.md's "SelectedVessel gets a writer" had never been
+            // true. A deliberate pick is exactly what a pass through this matrix is, and this toy
+            // is now the only place in the game where one happens.
+            UGSStatsManager.Instance?.ReportVesselSelected(target.ToString());
+
             CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[VesselChanger] -> {target}.");
         }
 
         // ── App-shell face ───────────────────────────────────────────────────
+        // There is no second option list here: MatrixToy answers the window with this toy's own
+        // BuildOptions. All that is left to say is when the answer is not settled yet.
 
-        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
-
-        // A swap in flight has no settled answer to "what are you flying", so the card greys out
-        // rather than offering a hull against a hull that no longer exists.
-        bool IToyShellSurface.ShellAvailable
+        /// <summary>
+        /// A swap in flight has no settled answer to "what are you flying", so the card greys out
+        /// rather than offering a hull against a hull that no longer exists.
+        /// </summary>
+        protected override bool ShellAvailable
         {
             get
             {
                 var init = Context?.VesselInitializer;
                 return init != null && !init.IsSwapping;
-            }
-        }
-
-        /// <summary>
-        /// The whole collection, the hull you fly flagged as current - not the matrix's
-        /// "everything except what you fly". The matrix says that by having no station for your
-        /// own ship; a flat list has to name it, and dropping the row would leave the player
-        /// unable to see which hull they are on.
-        /// </summary>
-        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
-        {
-            bool hasCurrent = TryGetCurrentVessel(out var current);
-            ToyVesselRoster.Resolve(_def ? _def.VesselCollection : null, _shellScratch, exclude: null);
-
-            Color accent = PreviewColor();
-
-            foreach (var vessel in _shellScratch)
-            {
-                var captured = vessel;
-                bool isCurrent = hasCurrent && vessel == current;
-
-                // No Apply on the hull you are already flying: that row is there to be READ.
-                System.Action apply = null;
-                if (!isCurrent) apply = () => SelectVessel(captured);
-
-                into.Add(new ToyShellOption
-                {
-                    Label = vessel.ToString(),
-                    Detail = isCurrent ? "flying" : "",
-                    Accent = accent,
-                    IsCurrent = isCurrent,
-                    Apply = apply,
-                    BuildPreview = parent => BuildShellPreview(captured, parent),
-                });
             }
         }
 

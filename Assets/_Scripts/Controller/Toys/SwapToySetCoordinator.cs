@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
-using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -60,7 +59,6 @@ namespace CosmicShore.Gameplay
         {
             public SwapToy Toy;
             public Transform BodyHolder;
-            public TMP_Text Label;
             public T Option;
             internal bool Keep;
         }
@@ -234,17 +232,11 @@ namespace CosmicShore.Gameplay
             var bodyHolder = new GameObject("Body").transform;
             bodyHolder.SetParent(root.transform, false);
 
-            // Hung clear ABOVE the switch ring, like every other ringed station: the old
-            // 1.9 x BodyRadius height was authored when these slots had no ring, and at the
-            // toybox's shipped radii (body 22, trigger 42) it sits inside the rim.
-            var label = ToyFactory.AddRingedLabel(root.transform, LabelFor(option), Color.white,
-                                                  SlotRingRadius, BodyRadius);
-
             var toy = root.AddComponent<SwapToy>();
             // Radius first, then ConfigureVisual, which is where a set says what its switches
             // MEAN - the two are separate calls precisely so this order cannot clobber that.
             toy.ConfigureSwitchRing(SlotRingRadius);
-            var slot = new Slot { Toy = toy, BodyHolder = bodyHolder, Label = label, Option = option };
+            var slot = new Slot { Toy = toy, BodyHolder = bodyHolder, Option = option };
 
             ConfigureVisual(slot);
             toy.Activated += OnToyActivated;
@@ -310,6 +302,7 @@ namespace CosmicShore.Gameplay
         protected abstract bool IsValid(T option);
         protected abstract void Apply(T target);
         protected abstract void ConfigureVisual(Slot slot);
+        /// <summary>The option's name - the app shell's row label. The world slot carries no text.</summary>
         protected virtual string LabelFor(T option) => option.ToString();
 
         /// <summary>

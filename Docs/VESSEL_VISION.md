@@ -258,7 +258,7 @@ One trap worth knowing: `StampDisplayModel`'s name *starts with* `Stamp`'s, so t
 trailing parenthesis is the only thing keeping the two apart — `DisplayStamp_IsNotCountedAsAVessel
 StampSite` fails loudly if that ever stops being true.
 
-Consumers today are the vessel-changer matrix and the Lifeform Matrix's hangar row
+Consumers today are the vessel-changer matrix and the Spawn Matrix's hangar row
 (`Docs/ToySystem/ARCHITECTURE.md` § "Vessel Changer"). The geometry is a happy accident worth
 recording: a vessel matrix blooms 360 units out, just past `nearFullStart`, so a station **arrives
 at full mark** and **resolves into its real hull as you close on it**.

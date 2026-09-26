@@ -1,6 +1,6 @@
 ---
 name: arcadegame
-description: Use for ANY new Cosmic Shore arcade game mode, or a change to how one is authored - a new GameModes member, a new MinigameXxx scene, a new MultiplayerDomainGamesController subclass, a new ScoringRuleSO / TurnMonitor pair, a new arcade card (SO_ArcadeGame), a per-mode intensity ladder (four CellConfigDataSOs), a Tools/Build/author_<mode>_assets.py generator, or a mode's toasts / preview / end-condition registration. Loads the mode recipe (what is REUSED from the platform, what a mode genuinely OWNS, the eleven registrations every mode makes, the generator library, the gates) so a mode stops re-deriving the checklist and stops taking "the next free id". Trigger when editing Assets/_Scripts/Controller/Arcade/**, Assets/_SO_Assets/Games/**, Assets/_SO_Assets/Cell Configs/<Mode> Cell/**, EndConditionOverridesSO, GameModes.cs, or Tools/Build/author_*_assets.py.
+description: Use for ANY new Cosmic Shore arcade game mode, or a change to how one is authored - a new GameModes member, a new MinigameXxx scene, a new MultiplayerDomainGamesController subclass, a new ScoringRuleSO / TurnMonitor pair, a new arcade card (SO_ArcadeGame), a per-mode intensity ladder (four CellConfigDataSOs), a Tools/Build/author_<mode>_assets.py generator, or a mode's toasts / preview / end-condition registration / card background (via /cardart). Loads the mode recipe (what is REUSED from the platform, what a mode genuinely OWNS, the eleven registrations every mode makes, the generator library, the gates) so a mode stops re-deriving the checklist and stops taking "the next free id". Trigger when editing Assets/_Scripts/Controller/Arcade/**, Assets/_SO_Assets/Games/**, Assets/_SO_Assets/Cell Configs/<Mode> Cell/**, EndConditionOverridesSO, GameModes.cs, or Tools/Build/author_*_assets.py.
 ---
 
 # Arcade Game Mode Protocol
@@ -66,7 +66,7 @@ Then the platform rows, in this order:
   after every merge** - 7, 31 and 47 are reserved forever; parallel branches have collided on
   "the next free id" five times. Bump `EnumIntegrityTests.GameModes_HasExpectedMemberCount`.
 - `EndConditionOverridesSO` + `EndConditionOverridesWindow` (all rows in §1).
-- `ElementalComebackSystem.DefaultSourceFor` - the `ScoreDifferenceSource` the comeback reads.
+- (nothing for the comeback: `ElementalComebackSystem` reads the mode's `ScoringRuleSO.DomainValue`, so publishing the rule IS the registration. The per-mode `DefaultSourceFor` table and the scene-authored `differenceSource` were retired 2026-09 after eight cloned scenes shipped reading their donor's stat.)
 - `MiniGameHUD.CreateObjectiveProviderForGameMode` - reuse a provider when the arrow answers
   the same question (Salvo/Bloomrush -> Rampage's, Undertow -> Bends', Wrecking Ball -> Scramble's).
 - `GameToastSituation` - new per-mode situations at the next free block (100+ is the lobby).
@@ -99,6 +99,8 @@ What the script authors, and where:
 | Preview | `_SO_Assets/Mode Previews/ModePreview_<Mode>.asset` + `g.register_preview` | `PreviewCellsByIntensity` when the arena differs per intensity; spawn block = the scene's (author_preview_spawns checks it) |
 | Scene | `_Scenes/Multiplayer Scenes/Minigame<Mode>.unity` | CLONE the nearest sibling's scene and swap guids / blocks with `lib.swap_guid` / `lib.replace_block`, which assert the donor still matches. A donor that moves fails the generator LOUDLY instead of producing a half-wired scene. |
 | Plus the registries | `g.register_arcade_card` (master roster + Arcade grid), `g.register_always_unlocked`, `g.register_build_scene`, `g.set_end_condition` | |
+| **Card background** | `_Graphics/ARCADE/CardBackgrounds/<Mode>.png` + the card's `CardBackground` | NOT authored by the mode's generator and never hand-painted: **run the `/cardart` skill** once the card is on a roster. It renders the mode's own intensity-2 arena offline (the shipped generator COMPILED AND RUN, a course generator, or a model read off the controller's settings), imports it and rewires the card. A mode with an `EnvironmentPrefab` needs no code; anything else is one `recipe()` branch - an unknown card makes the renderer RAISE, so a new mode cannot ship on a legacy backdrop by omission. |
+| **Genre petal** | `ModeGenre` (`_Scripts/Data/ModeGenre.cs`) | a mode's genre falls back to its METRIC, so most modes need nothing; add a mode row only when the mode is not the genre its metric implies (`Docs/HomeHub/ARCHITECTURE.md` §3.7) |
 
 Validate in the script before `g.finish`: the comeback assert, every donor guid gone from the
 clone and every new one present, the AI template count and hull, the intensity list, anything
@@ -138,7 +140,20 @@ python3 Tools/Build/check_self_referential_locals.py
 python3 Tools/Build/check_using_directives.py
 python3 Tools/Build/check_gamelist_scenes.py
 python3 Tools/Build/author_preview_spawns.py --check
+python3 Tools/Build/render_card_backgrounds.py --check    # the card's background is its CURRENT arena
+python3 Tools/Build/author_card_backgrounds.py --strict   # every live card wears its own
 ```
+
+**After the generator runs, the open Editor has NOT seen the build-scene registration.**
+`ProjectSettings/EditorBuildSettings.asset` is outside the AssetDatabase, so Unity reads it once
+at project open and never again. The card then renders normally and fails at the moment a player
+commits to it - *"has not been added to the build settings scenes in build list"*, about a list
+that on disk contains the scene - and the next project-settings save writes the stale in-memory
+list back over the file and deletes the registration. `BuildSceneListReconciler` repairs it on
+every domain reload, so pulling the branch or touching a script is enough; **FrogletTools > Game
+Modes > Reconcile Build Scene List** is the same check run deliberately, with a report. General rule: *a settings file
+outside the AssetDatabase is one the Editor owns for the whole session; an external write to it is
+not a change, it is a change that has not happened yet.*
 
 These are syntax-level. What stays editor-only: a member that does not exist, an override whose
 signature drifted, an argument mismatch - and everything about how the mode PLAYS. Say so.

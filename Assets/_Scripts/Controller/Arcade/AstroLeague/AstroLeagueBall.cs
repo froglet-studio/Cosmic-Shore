@@ -454,6 +454,15 @@ namespace CosmicShore.Gameplay
             if (trailBlocksLayer >= 0)
                 sphereCol.excludeLayers = 1 << trailBlocksLayer;
 
+            // NO HIGH-POLY PRISM MORPH IS GRANTED HERE, and that is the design rather than an
+            // omission. A ball carried a travelling ripple for exactly one branch
+            // (.claude/skills/prism-morph) and it was pulled for the reason the same effect came
+            // off the fleet one step earlier: a ball is in play for a WHOLE MATCH, so a ripple
+            // following it is continuous, and an effect strong enough to be an EVENT stops being
+            // one the moment it never stops. The family's residency budget is also shared and
+            // split evenly, so a ball holding slots takes them from whatever is actually saying
+            // something. Do not add an ensure here.
+
             spawnPosition = transform.position;
             _baseScale = transform.localScale;
             SetupVisuals();

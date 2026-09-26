@@ -15,7 +15,7 @@ WHAT IT OWNS (and therefore what must not be hand-edited)
     and collider overrides) is structurally identical to one Unity itself authored
   * Assets/_SO_Assets/Lifeforms/Mandelbulb Flora {Charge,Mass,Space,Time}.asset - one config
     per element, whose per-plant budget is the element's OWN measured site count
-  * the Mandelbulb row in Toy_LifeformMatrix.asset, which is how the species is reachable
+  * the Mandelbulb row in Toy_SpawnMatrix.asset, which is how the species is reachable
 
 Population numbers live here rather than in author_flora_populations.py, and that script is
 told so by name (its OWNED_ELSEWHERE table) rather than silently skipping these files - a
@@ -41,7 +41,7 @@ PREFABS = ROOT / "Assets/_Prefabs/FloraAndFauna"
 LIFEFORMS = ROOT / "Assets/_SO_Assets/Lifeforms"
 SCRIPTS = ROOT / "Assets/_Scripts/Controller/Environment/FloraAndFauna"
 DONOR = PREFABS / "RosetteFlora.prefab"
-TOY = ROOT / "Assets/_SO_Assets/Toys/Toy_LifeformMatrix.asset"
+TOY = ROOT / "Assets/_SO_Assets/Toys/Toy_SpawnMatrix.asset"
 POPULATIONS = ROOT / "Tools/Build/author_flora_populations.py"
 
 # Stable guids. Generated once and then FIXED - regenerating them dangles every reference.
@@ -298,7 +298,7 @@ def config_text(p, elem):
         "  NewPlantPeriod: 9999999",
         # A plant of this species is ~2,600 prisms and ~110,000 volume, an order of magnitude
         # past any other flora, so the population is deliberately tiny. It is in no SpawnProfile
-        # either (opt-in from the Lifeform Matrix toy), so the cost lands only where a player
+        # either (opt-in from the Spawn Matrix toy), so the cost lands only where a player
         # asked for it - but a cap of 3 still has to be affordable in the cell they ask in.
         "  PopulationSize: %d" % M.POPULATION_SIZE,
         "  MaxLivePopulation: %d" % M.MAX_LIVE_POPULATION,
@@ -345,7 +345,7 @@ def toy_row(p):
 
 
 def upsert_toy_row(toy, p):
-    """Replace this species' row in the Lifeform Matrix toy, or append it once."""
+    """Replace this species' row in the Spawn Matrix toy, or append it once."""
     row = toy_row(p)
     header = row.split("\n")[0] + "\n"
     if header in toy:
@@ -398,7 +398,7 @@ def main():
             write(LIFEFORMS / f"{name}.asset", config_text(p, elem), changed, args.check)
             write(LIFEFORMS / f"{name}.asset.meta",
                   ASSET_META.format(guid=assets["configs"][elem]), changed, args.check)
-        # Both species are reachable ONLY from the Lifeform Matrix toy. Idempotent: the row is
+        # Both species are reachable ONLY from the Spawn Matrix toy. Idempotent: the row is
         # replaced, never appended twice.
         toy = upsert_toy_row(toy, p)
     write(TOY, toy, changed, args.check)
@@ -435,7 +435,7 @@ def main():
             print(f"  config   {assets['asset_prefix']} {elem:<7} {e['prisms']:>5} prisms over "
                   f"{e['curves']:>4} curves  dims {e['dims'][0]:.2f}..{e['dims'][1]:.2f}  "
                   f"volume {e['volume']:>9,.0f}")
-        print(f"  toy row  '{assets['toy_row']}' in Toy_LifeformMatrix; in NO SpawnProfile - opt-in.\n")
+        print(f"  toy row  '{assets['toy_row']}' in Toy_SpawnMatrix; in NO SpawnProfile - opt-in.\n")
 
     if changed:
         if args.check:

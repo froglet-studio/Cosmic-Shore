@@ -741,7 +741,7 @@ namespace CosmicShore.Gameplay
         protected virtual VesselClassType ResolveSpawnVesselType(Player networkPlayer)
         {
             var requested = networkPlayer.NetDefaultVesselType.Value;
-            var allowed = gameData.ClampVesselToGame(requested);
+            var allowed = ResolveArenaUniqueHull(networkPlayer, gameData.ClampVesselToGame(requested));
             if (allowed == requested) return requested;
 
             CSDebug.LogWarning(
@@ -754,6 +754,44 @@ namespace CosmicShore.Gameplay
             networkPlayer.ServerForceVesselType(allowed);
             return allowed;
         }
+
+        /// <summary>
+        /// ARENA backstop: under <see cref="GameDataSO.IsArenaMatch"/> a hull is flown by ONE
+        /// pilot. The lobby already enforces that for every human who confirmed a hull there (a
+        /// server-arbitrated claim), and the AI draw deals only free hulls - but a pilot can reach
+        /// a spawn without having claimed anything (a rematch, a guest who joined after the card
+        /// closed), and two such pilots may walk in wearing the same hull. The SERVER sees every
+        /// live vessel, so it is the one place that can settle it: first come keeps the hull, a
+        /// later arrival is dealt the first free one in the card's own order.
+        /// </summary>
+        VesselClassType ResolveArenaUniqueHull(Player networkPlayer, VesselClassType wanted)
+        {
+            if (!gameData.IsArenaMatch) return wanted;
+
+            _arenaHullsInUse.Clear();
+            var vessels = gameData.Vessels;
+            for (int i = 0; i < vessels.Count; i++)
+            {
+                var v = vessels[i];
+                if (v is not UnityEngine.Object o || !o || v.VesselStatus == null) continue;
+                if (ReferenceEquals(v.VesselStatus.Player, networkPlayer)) continue;
+                _arenaHullsInUse.Add(v.VesselStatus.VesselType);
+            }
+
+            if (!_arenaHullsInUse.Contains(wanted)) return wanted;
+            if (gameData.TryPickFreeHull(wanted, _arenaHullsInUse, out var free))
+            {
+                CSDebug.LogWarning($"[ServerPlayerVesselInitializer] Arena: {wanted} is already flown; " +
+                                   $"{networkPlayer.NetName.Value} spawns in {free}.");
+                return free;
+            }
+
+            CSDebug.LogWarning($"[ServerPlayerVesselInitializer] Arena: every hull is taken - " +
+                               $"{networkPlayer.NetName.Value} shares {wanted}. Seats exceed the card's hulls.");
+            return wanted;
+        }
+
+        readonly HashSet<VesselClassType> _arenaHullsInUse = new();
 
         /// <summary>
         /// Spawns a vessel of the given type, assigns ownership to <paramref name="clientId"/>,
@@ -858,6 +896,32 @@ namespace CosmicShore.Gameplay
         /// has no AI profile list, so it leaves the pilot on its prefab defaults.
         /// </summary>
         protected virtual void ConfigureDepartedPilotAI(IVessel vessel) { }
+
+        /// <summary>
+        /// Could <see cref="SpawnVesselForPlayer"/> actually produce a vessel of this class?
+        /// Resolves the prefab and its <c>NetworkObject</c> WITHOUT instantiating anything.
+        ///
+        /// <para>It exists for one caller shape: a SWAP, which destroys the pilot's current ship
+        /// before it builds the next one. When the spawn then fails — an unregistered class, a
+        /// prefab whose <c>VesselStatus</c> claims a different type, a missing NetworkObject —
+        /// the pilot is left with no vessel at all: no hull, no camera target, input still paused
+        /// by the swap. That reads to a player as the game having FROZEN, and nothing in the
+        /// console says "swap", because the failure is one LogError about a prefab. Ask first,
+        /// and a refused swap costs the pilot nothing.</para>
+        ///
+        /// <para>Loud on purpose (<c>reportMissing: true</c>): a swap the player asked for and
+        /// cannot have is a fault, not a probe — the quiet form belongs to the rosters that ask
+        /// "which hulls exist on this build" (<c>ToyVesselRoster.ResolveOffered</c>).</para>
+        /// </summary>
+        protected bool CanSpawnVesselType(VesselClassType vesselType)
+        {
+            if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
+                return false;
+            if (shipPrefabTransform.TryGetComponent(out NetworkObject _)) return true;
+            CSDebug.LogError(
+                $"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} has no NetworkObject.");
+            return false;
+        }
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer, VesselClassType vesselType)
         {

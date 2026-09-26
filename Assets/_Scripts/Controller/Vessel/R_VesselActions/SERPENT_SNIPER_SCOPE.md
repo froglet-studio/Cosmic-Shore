@@ -14,7 +14,7 @@ Two of the Serpent's three open element slots are now filled. **Mass stays open.
 | Charge | **Sniper Shot** | RT (`RightStickAction`) | cooldown: 12 s at rest → 5.4 s at Charge 10 | **Pierce** — the round may break SUPER-SHIELDED mass. Below it armour is not a target at all and the round flies past it |
 | Mass | *(open design slot)* | — | — | — |
 | Space | **Scope** | LT (`LeftStickAction`) | magnification: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it (13.8° at rest, 6.9° at Space 10) |
-| Time | Boost Duration | A / Space (`Button1Action`) | boost duration ×1.6 at L10 | — *(unchanged)* |
+| Time | Solid Fuel Pellets | A / Space (`Button1Action`) | burn duration ×1.6 at L10 | — *(restored 2026-09-25, `SERPENT_FUEL_PELLETS.md`)* |
 
 ## Why these elements
 

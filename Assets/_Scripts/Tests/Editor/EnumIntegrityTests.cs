@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
 using CosmicShore.Data;
-// ScoreDifferenceSource is nested in ElementalComebackSystem, which lives in Assembly-CSharp.
-// This suite is under a folder literally named Editor, so it compiles into
-// Assembly-CSharp-Editor, which implicitly references the monolith - no asmdef, no wiring.
+// Kept for enums that live in the Assembly-CSharp monolith. This suite is under a folder
+// literally named Editor, so it compiles into Assembly-CSharp-Editor, which implicitly
+// references the monolith - no asmdef, no wiring.
 using CosmicShore.Gameplay;
 
 namespace CosmicShore.Tests
@@ -140,7 +140,7 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
-            // 55 = IDs 0..57 with 7, 31 and 47 deliberately skipped (retired Freestyle /
+            // 56 = IDs 0..58 with 7, 31 and 47 deliberately skipped (retired Freestyle /
             // never assigned / retired Drumfire — see GameModes.cs). Deliberately a hard-coded
             // number rather than one derived from the enum: the whole point is that ADDING a
             // mode fails here, so a human confirms the addition was intended and that its ID
@@ -154,7 +154,7 @@ namespace CosmicShore.Tests
             // parallel-branch collision DRUMFIRE.md records, and the reason
             // check_switch_label_collisions.py has to be re-run after every merge.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(55, values.Length,
+            Assert.AreEqual(56, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -354,9 +354,11 @@ namespace CosmicShore.Tests
         // metric 9 and comeback source 8. git merged the two additions cleanly - a merge sees
         // two files each adding a line at a different place and has no idea the lines say the
         // same number - and the result compiled, ran, and shipped an enum carrying each value
-        // twice. ScoreDifferenceSource came out worse than the other two: the member that lost
-        // its explicit value in the merge silently took the next IMPLICIT one and landed on
-        // Jousts = 7, so a mode's comeback layer read another mode's stat.
+        // twice. The comeback's ScoreDifferenceSource came out worse than the other two: the
+        // member that lost its explicit value in the merge silently took the next IMPLICIT one
+        // and landed on Jousts = 7, so a mode's comeback layer read another mode's stat. (That
+        // enum is retired - the comeback now reads ScoringRuleSO.DomainValue - but the lesson
+        // stands for every enum left here.)
         //
         // The "always assign explicit values" comment at the top of each of those enums cannot
         // prevent this - both branches DID assign explicit values, and both were right in
@@ -369,12 +371,6 @@ namespace CosmicShore.Tests
         public void ScoringMetric_AllValuesAreUnique()
         {
             AssertNoDuplicateValues(typeof(ScoringMetric));
-        }
-
-        [Test]
-        public void ScoreDifferenceSource_AllValuesAreUnique()
-        {
-            AssertNoDuplicateValues(typeof(ElementalComebackSystem.ScoreDifferenceSource));
         }
 
         // GameModes' own uniqueness test lives up in the GameModes region with every other

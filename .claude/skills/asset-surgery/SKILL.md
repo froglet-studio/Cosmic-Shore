@@ -1464,6 +1464,39 @@ Assert the JSON analog of `CS0102` while you are there: duplicate `m_ObjectId`, 
 property reference names, registry entries that do not resolve, dangling edge endpoints,
 and any input slot with more than one feeder. All five are ~20 lines over the parsed model.
 
+### Technique: UN-SPLICE a node by reusing its wirer's own migration path
+
+Origin: scoping a morph out of a branch (2026-09-25). A graph wirer that carries a MIGRATION
+(unsplice an old signature, re-splice the current one) already contains the exact removal you
+want, and it is written against slot DIRECTIONS rather than a table of known signatures — so it
+runs on a *correctly*-wired node too. Import the wirer as a module and call the migration half
+alone:
+
+```python
+import wire_prism_wake as W                 # the wirer whose node you are removing
+for path in W.GRAPHS:
+    docs = W.load_docs(full)
+    if W.find_cf(docs, W.FUNCTION_NAME) is None: continue      # already unwired
+    W.unsplice_foreign(docs)                # hands the feeders back, drops node+slots+edges,
+    open(full, "w").write(W.dump_docs(docs))#   sweeps orphans, validates expect_wired=False
+```
+
+Four reasons this beats hand-editing or a `git checkout` of the pre-splice version:
+
+- **It restores the DOWNSTREAM node's feeders**, which is the part a textual removal gets wrong —
+  the node you delete sat between two things, and both ends have to be rejoined.
+- **It sweeps the ORPHANS** the splice added (a feeder node whose only consumer was the node you
+  just removed compiles into the graph and reads as somebody's live input).
+- **It ends in the wirer's own `validate(..., expect_wired=False)`**, so the removal is checked by
+  the same invariants the addition was.
+- **`git checkout <pre-splice>^ -- <graph>` is usually WRONG**, because the base branch has
+  touched the graph since. Check with `git log <splice>^..origin/<base> -- <graph>` before
+  reaching for it; if anything comes back, the checkout throws upstream work away.
+
+Then **re-run every sibling wirer with `--check`**: removing a node renumbers object ids, which is
+the same exposure adding one has. And delete the unwire script — it is scaffolding, and the wirer
+it imported is about to be deleted too.
+
 ### Trap: two graph-edit failures that ship silently — cycles, and slot-type mismatch
 
 Both shipped and cost a playtest round each (2026-08, shield-shatter branch):
@@ -2439,6 +2472,28 @@ Limits, state them: the plant is not the engine, so the simulation bounds *behav
 law*, never feel. Frame timing, replication, and the vessel's real thrust/grip model are out
 of scope, and the human still playtests.
 
+## 4.5e Technique: PHOTOGRAPH a generator — compile + run the shipped arena, rasterize what it lays
+
+When the deliverable is a PICTURE of something the game builds (a card background, a thumbnail, a
+proof-of-look), do not ask for a screenshot: compile the SHIPPED generator in a Roslyn harness,
+run it with every field read off its prefab, and rasterize the lay list. Worked example and
+reusable machinery: `Tools/Build/card_art_harness/` driven by `render_card_backgrounds.py` (the
+`/cardart` skill) - 12 generators and 5 course files compiled unmodified, ~1 s per picture,
+byte-deterministic so a `--check` re-renders and compares. Four rules it paid for:
+
+- **Two kinds of shim, held to two standards.** GEOMETRY (Vector3/Quaternion/Mathf) must be
+  FAITHFUL - the Cleave harness's identity `LookRotation` is fine for COUNTING and photographs an
+  axis-aligned world. ENGINE-OBJECT stand-ins on the lay path (`PrismTrailBuilder`, `Instantiate`,
+  `SpawnPrismTrail`) must be LOUD: log an error, and the harness refuses to write the picture.
+- **Prove fidelity by COUNT against a number someone else wrote down.** The Swell's 14,277, the
+  Switchyard's 3,978 and the concentric shells' 24,966 all reproduce to the prism; a count that
+  disagrees is a shim bug.
+- **A generator that lays in `Spawn()` gets read through its PREVIEW API** (`GetPreviewBlocks`),
+  never by stubbing enough of the lay path for it to run.
+- **Serialized data has two shapes a line parser gets wrong**: a primitive array is ONE hex blob
+  (keep the raw token; decode by the C# field's type), and a value that looks like it lives on a
+  transform may be a component FIELD (`CapsuleMembrane.radius`, not the membrane's scale).
+
 ## 4.6 Technique: hand-authoring a new asset trio
 
 Adding a new SO-configured, prefab-backed thing (here: a cell) means four
@@ -2961,6 +3016,16 @@ never fold it into a fix for something else.
   private state back by reflection. A hand-ported formula is a hypothesis about the code,
   not a test of it — and it fails in the one direction you cannot see, by being kinder than
   production.
+- **A SIGNATURE stub harness cannot be used to MEASURE behaviour, and it answers confidently.**
+  The harness you build to type-check a file (§4) is deliberately signature-only — `Mathf.Min(a, b)
+  => a`, `Mathf.Clamp01(v) => v`, enough to bind and no more — and that is correct for its job. Run
+  the same file to read a NUMBER out of it and every one of those stubs is a silent lie: a session
+  reused its type-check harness to measure an eased envelope and got `E(h)/h = 999.99994`, which
+  looks like a real measurement of a broken function rather than a broken measurement of a real
+  one. The two harnesses want the same source and DIFFERENT stubs, so keep them as separate
+  projects — one with signature stubs for binding, one with a faithful `Mathf`/`Vector3` for
+  execution — and say in each stub file which it is. *Whenever a harness starts producing numbers
+  instead of diagnostics, re-read its stubs before you believe one.*
 - **`Mathf.Sin(Mathf.PI)` is NEGATIVE in float32** (≈ `-8.74e-8`), so `Mathf.Pow(that,
   fractional)` is `NaN`. Any profile of the shape `pow(sin(...), k)` with `0 < k < 1` NaNs at
   its endpoint. One NaN vertex poisons a whole mesh's bounds, and an invalid-bounds renderer

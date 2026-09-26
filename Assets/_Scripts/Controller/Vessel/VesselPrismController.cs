@@ -92,6 +92,31 @@ namespace CosmicShore.Gameplay
         public float YScaler = 1f;
         public float ZScaler = 1f;
 
+        /// <summary>
+        /// A runtime multiplier on the laid prism's WIDTH (x), on top of everything else that
+        /// sizes it. 1 = no change, which is every vessel that never writes it.
+        ///
+        /// <para>It exists because <see cref="SetNormalizedXScale"/> is a NORMALIZED dial capped at
+        /// <see cref="maxBlockScale"/> and eased by an async lerp that restarts on every call - it
+        /// cannot express a width that tracks an element level live, and two lerps in flight write
+        /// the same field on alternating frames. A single owner writing one float per frame can.
+        /// The Butterfly's Mass mode is that owner (<c>SpreadWingsActionExecutor</c>).</para>
+        ///
+        /// <para>A widened prism is STATED rather than grown, so the lay admits it past the
+        /// pool's scale window (<see cref="Prism.AdmitTargetScale"/>, AFTER Initialize) - the
+        /// interactive pool clamps x at 40, and without the admission every width past it is
+        /// trimmed silently, which reads as "the element stopped doing anything".</para>
+        /// </summary>
+        public float WidthMultiplier { get; set; } = 1f;
+
+        /// <summary>
+        /// While set, every prism this controller lays arrives SHIELDED (the regular tier). A
+        /// runtime sibling of the authored <see cref="shielded"/> flag, for an ability that armours
+        /// its trail only while a MODE is live (the Butterfly's Mass-mode level 5). Composes with
+        /// the drift/turn upgrade rules by OR, never replaces them.
+        /// </summary>
+        public bool ForceShielded { get; set; }
+
         // Cancellation
         CancellationTokenSource cts;
         
@@ -130,6 +155,9 @@ namespace CosmicShore.Gameplay
         // way to an infinite delay, and the ceiling stops a slow lay leaving a prism collider-less
         // (and therefore un-hittable by ANYONE, since this delay is not owner-scoped) for longer
         // than the self-trail grace would have covered anyway.
+        // Keyed by vessel name so one unwired hull cannot spam a loop that runs per prism.
+        static readonly HashSet<string> _warnedNoSkimmer = new();
+
         const float MinClearanceSpeed = 1f;
         const float MaxClearanceWaitSeconds = 2f;
 
@@ -364,6 +392,9 @@ namespace CosmicShore.Gameplay
             if (volumeMult > 0f && !Mathf.Approximately(volumeMult, 1f))
                 scale *= Mathf.Pow(volumeMult, 1f / 3f);
 
+            bool widened = WidthMultiplier > 1.0001f;
+            if (widened) scale.x *= WidthMultiplier;
+
             // Yastri flare: the OUTER lane fattens with turn intensity, so a hard bank throws
             // visibly flared prisms off the outer wing. Applied BEFORE xShift is derived so
             // the flared rail still nests against the gap edge rather than drifting outboard.
@@ -414,11 +445,25 @@ namespace CosmicShore.Gameplay
             // Note this delay hides the prism from EVERYONE, which is why it stays a geometry
             // correction and is not the lever for self-trail contact: that is owner-scoped and
             // lives in SelfTrailContactConfigSO.
-            prism.waitTime = waitTillOutsideSkimmer
+            //
+            // `skimmer` is a per-vessel serialized reference, and an unwired one used to throw
+            // here — on EVERY spawn, from inside the UniTaskVoid spawn loop, which swallows the
+            // exception and ends the loop. That vessel then lays NOTHING for the rest of its
+            // life, which on screen is a ship flying with no trail: the one symptom that reads
+            // as a missing FEATURE rather than as a missing reference. Degrade to the authored
+            // wait and say so once, by vessel, so the next hull authored without it loses a
+            // clearance delay instead of its whole trail.
+            prism.waitTime = waitTillOutsideSkimmer && skimmer
                 ? Mathf.Min((skimmer.transform.localScale.z + scale.z) /
                             Mathf.Max(vesselStatus.Speed, MinClearanceSpeed),
                             MaxClearanceWaitSeconds)
                 : waitTime;
+
+            if (waitTillOutsideSkimmer && !skimmer && _warnedNoSkimmer.Add(name))
+                CSDebug.LogWarning(
+                    $"[VesselPrismController] '{name}' has waitTillOutsideSkimmer on with no " +
+                    "skimmer assigned — laying prisms with the authored wait instead. Wire the " +
+                    "vessel's near-field Skimmer on this component, or switch the flag off.", this);
 
             if (_dangerMode)
             {
@@ -441,7 +486,8 @@ namespace CosmicShore.Gameplay
             // 'Shielded Turn Trails' is the same rule with the drift swapped for a held hard
             // TURN (the Manta's Yastri, above half intensity) and KEEPS its Mass-5 gate - that
             // is the Manta's shipped level-5, and nothing about this hull's re-cut touches it.
-            if (shielded || (driftShieldsTrail
+            // ForceShielded is the base branch's unconditional override and composes with both.
+            if (shielded || ForceShielded || (driftShieldsTrail
                              && vesselStatus is { IsDrifting: true })
                          || (turnUpgradeShieldsTrail
                              && _turnFlare01 >= 0.5f
@@ -452,6 +498,16 @@ namespace CosmicShore.Gameplay
             trail.Add(prism);
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
+
+            // A WIDENED prism is a stated size, not a grown one: admit it past the pool's scale
+            // window AFTER Initialize (whose ResetState restores and re-clamps that window), or
+            // everything past x = 40 is trimmed with no error. Un-widened lays are untouched, so
+            // every vessel that never writes WidthMultiplier is byte-identical.
+            if (widened)
+            {
+                prism.AdmitTargetScale(scale);
+                prism.TargetScale = scale;
+            }
 
             // AFTER Initialize (pool-reuse reset clears membership - AssignTrail's contract).
             // This stamp is what makes a wake block a member of ITS ribbon: without it every

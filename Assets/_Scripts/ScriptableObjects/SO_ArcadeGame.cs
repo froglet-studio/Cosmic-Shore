@@ -21,6 +21,46 @@ namespace CosmicShore.ScriptableObjects
         [Range(1, 3)] public int MaxDomainsAllowed = 3;
         [Min(1)] public int MinIntensity = 1;
         [Range(1, 4)] public int MaxIntensity = 4;
+
+        [Header("Arena rules")]
+        [Tooltip("ARENA seating (Docs/HomeHub/ARCHITECTURE.md §3.9). On: every hull in this " +
+                 "match is flown by exactly ONE pilot - once a pilot or an AI has a vessel class " +
+                 "nobody else may take it - and a human may hand their ship to the AI and take " +
+                 "over an AI teammate's hull mid-match (D-pad left/right, keyboard 1/2). Seats " +
+                 "are therefore capped at the number of hulls this card lists (MaxSeats). Set " +
+                 "on the cards in the ArenaGames roster; an arcade card that pins one hull " +
+                 "leaves it off.")]
+        public bool ArenaRules;
+
+        /// <summary>
+        /// The most pilots (human + AI) this card can seat. <see cref="MaxPlayersAllowed"/> for
+        /// every card except an <see cref="ArenaRules"/> card, where every hull is flown by one
+        /// pilot and a card listing N distinct hulls therefore seats at most N - a seventh pilot
+        /// on a six-hull card would have no hull left to fly.
+        /// </summary>
+        public int MaxSeats
+        {
+            get
+            {
+                if (!ArenaRules) return MaxPlayersAllowed;
+                int hulls = DistinctHullCount;
+                return hulls > 0 ? Mathf.Min(MaxPlayersAllowed, hulls) : MaxPlayersAllowed;
+            }
+        }
+
+        /// <summary>How many distinct vessel classes <see cref="Vessels"/> names.</summary>
+        public int DistinctHullCount
+        {
+            get
+            {
+                if (Vessels == null) return 0;
+                var seen = new HashSet<VesselClassType>();
+                for (int i = 0; i < Vessels.Count; i++)
+                    if (Vessels[i] != null) seen.Add(Vessels[i].Class);
+                return seen.Count;
+            }
+        }
+
         [Header("Briefing")]
         [Tooltip("Short play tips shown one at a time under the description on the launch panel. " +
                  "Empty is fine - the panel then shows the description alone rather than an " +

@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// <para>An option is either a LEAF (<see cref="Apply"/> does the thing) or a BRANCH
     /// (<see cref="Expand"/> yields the next layer). The two shapes exist because that is exactly
     /// what a toy already is in the world: a <see cref="MatrixToy"/> unfolds into stations, and the
-    /// Lifeform Matrix unfolds again into species and then variants. Modelling the shell as one
+    /// Spawn Matrix unfolds again into species and then variants. Modelling the shell as one
     /// flat list would have flattened a tree the player already knows is a tree.</para>
     /// </summary>
     public sealed class ToyShellOption
@@ -101,6 +101,20 @@ namespace CosmicShore.Gameplay
         /// <summary>How far back a window stands to look at <see cref="WorldAnchor"/>. 0 = the toy's radius.</summary>
         public float WorldAnchorRadius;
 
+        /// <summary>
+        /// Where the player has to fly to PLAY this option once it is going - the ring they thread
+        /// next, and the way to thread it. Resolved late (after <see cref="Apply"/>), because the
+        /// ring usually does not exist until the press made it: a painting's start gate is built by
+        /// starting the painting.
+        ///
+        /// <para>Optional, and deliberately NOT <see cref="WorldAnchor"/>: an anchor is where an
+        /// option LIVES (for a picture to turn onto), an arrival is where its play HAPPENS. A wander
+        /// or a voyage answers invalid - it happens wherever the player already is, so there is
+        /// nowhere to take them. It is what lets today's-activity switch take the player to the
+        /// activity rather than start it somewhere they cannot see.</para>
+        /// </summary>
+        public Func<ToyArrival> Arrival;
+
         /// <summary>The verb, with the fleet default applied.</summary>
         public string EffectiveCommitVerb => string.IsNullOrEmpty(CommitVerb) ? "Switch" : CommitVerb;
 
@@ -123,11 +137,45 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public Func<Transform, GameObject> BuildPreview;
 
+        /// <summary>
+        /// The toy's own handle on the thing this option names - the <c>CellConfigDataSO</c>, the
+        /// <c>VesselClassType</c>, the <c>PaintingDefinitionSO</c>. Opaque to every reader except
+        /// the toy that set it.
+        ///
+        /// <para>It exists so ONE option list can serve both surfaces. A fly-through station has
+        /// to build a model of what it offers, and before this the toy kept a second, parallel
+        /// list of its own subjects for that - which is precisely the thing that can disagree with
+        /// the window's list. With the subject riding the option, the matrix and the Toy Box are
+        /// reading the same rows (<c>MatrixToy</c>, and Docs/ToySystem/ARCHITECTURE.md
+        /// § "One declaration").</para>
+        /// </summary>
+        public object Payload;
+
         /// <summary>The next layer down, or null when this option is a leaf.</summary>
         public Func<List<ToyShellOption>> Expand;
 
         /// <summary>True when selecting this option opens another layer rather than acting.</summary>
         public bool IsBranch => Expand != null;
+    }
+
+    /// <summary>
+    /// A ring to fly to: its centre, the direction you fly THROUGH it, and its radius. Invalid
+    /// (the default) when there is nowhere to go. See <see cref="ToyShellOption.Arrival"/>.
+    /// </summary>
+    public readonly struct ToyArrival
+    {
+        public readonly Vector3 Position;
+        public readonly Vector3 Direction;
+        public readonly float Radius;
+
+        public ToyArrival(Vector3 position, Vector3 direction, float radius)
+        {
+            Position = position;
+            Direction = direction.sqrMagnitude > 1e-6f ? direction.normalized : Vector3.forward;
+            Radius = radius;
+        }
+
+        public bool IsValid => Radius > 0f;
     }
 
     /// <summary>

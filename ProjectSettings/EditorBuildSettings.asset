@@ -17,12 +17,6 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Scenes/Tools/MattsRecording Studio.unity
     guid: 24dd4d7af8c78a14199bc0ab37b17d37
-  - enabled: 1
-    path: Assets/_Scenes/Singleplayer Scenes/MinigameWildlifeBlitz.unity
-    guid: d5418cffe1da8b840bcc2e1a92a7b1db
-  - enabled: 1
-    path: Assets/_Scenes/Singleplayer Scenes/MinigameDuelForTheCell.unity
-    guid: a0793cb7cf4069b44ba82acfddb04f11
   - enabled: 0
     path: Assets/_Scenes/Tools/PhotoBooth.unity
     guid: 88bd9d59331396d44be56d5b782632ee
@@ -110,6 +104,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSkein.unity
     guid: 7a176232b6f8f7a3277106d997031bdd
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity
+    guid: 44434b4493159039a94408c64fd2bf38
   m_configObjects:
     com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: d81858d78bc481248ad644af4fc19343,
       type: 2}

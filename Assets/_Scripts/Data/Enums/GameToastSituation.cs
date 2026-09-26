@@ -131,6 +131,16 @@ namespace CosmicShore.Data
         BroadsideVerbHint = 115,        // idle hint: your hull already has a weapon - use it
         BroadsideCloseHint = 116,       // idle hint: a contact strike pays more than a round
 
+        // Waystation. TWO IDLE HINTS AND NOTHING ELSE, and the absence is the decision: the
+        // gate-race platform has no gate-threaded hook, so a milestone or lead-change situation
+        // here would have no poster - an enum member nothing raises reads exactly like a feature,
+        // and the next person to look would spend an afternoon finding out it never fires. An
+        // idle hint needs no poster at all (the toast system fires it off idleSeconds), which is
+        // why Regatta authored only hints too. Both take no args, and they are the mode's two
+        // verbs: a new pilot who never finds the Fold simply orbits the first cluster forever.
+        WaystationRingHint = 117,       // idle hint: thread every ring around you
+        WaystationFoldHint = 118,       // idle hint: hold the fold and aim at the next cluster
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

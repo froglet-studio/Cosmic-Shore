@@ -358,7 +358,8 @@ what the carve-out silently broke — see the traps below.
   corrective re-size was done by `Fauna.SetLevel`, as an incidental side-effect of seeding the
   spawn level — so retiring levels silently gave every creature with an authored body scale a
   heart of `authored × BaseBodyScale` (0.4 and 0.7 on the shipped tadpoles: a 2.5× and 1.43× cut
-  to BOTH the collect reward and the live domain fauna buff, with nothing reporting it). There is
+  to the collect reward — and, at the time, to the live domain fauna buff, since removed
+  (`Docs/ECOSYSTEM.md` §15) — with nothing reporting it). There is
   a SECOND inversion one level up — the Boid/LightFauna path runs `Initialize` (heart sized)
   before `SpawnFaunaBanded` calls `AssignLineage` (body scaled) — which is why the fix belongs at
   the END of `AssignLineage` rather than inside `ApplyVariantTuning`. **A CONDITIONAL re-apply is
@@ -379,8 +380,9 @@ what the carve-out silently broke — see the traps below.
   authors into a `Variant` block must flip `Enabled` with it — and a zero-initialised block is
   safe to enable, because every other field's initializer is a keep-the-prefab sentinel.
 - **A SIZE that gameplay reads is a REWARD, and the band needs a ceiling with a margin.** A
-  lifeform heart's world scale is read in five places (collect reward, live domain fauna buff,
-  pickup trigger radius, vacuum speed, capture flourish); the reward is
+  lifeform heart's world scale is read in four places (collect reward, pickup trigger radius,
+  vacuum speed, capture flourish — the live domain fauna buff was a fifth and was removed,
+  `Docs/ECOSYSTEM.md` §15); the reward is
   `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)`, so it SATURATES. Past that point two
   visibly different hearts pay the same — a size the player can see and a reward they cannot.
   When a band is authored rather than uniform, solve its scale constant so the LARGEST member

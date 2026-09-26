@@ -191,7 +191,7 @@ namespace CosmicShore.Gameplay
 
         public override void Plant()
         {
-            // A pinned site (a garden bed, or the Lifeform Matrix toy's spawn-here station) wins;
+            // A pinned site (a garden bed, or the Spawn Matrix toy's spawn-here station) wins;
             // otherwise disperse across the cell like every other flora.
             if (TryGetPlantPositionOverride(out var pinned))
             {

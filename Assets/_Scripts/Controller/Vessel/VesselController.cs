@@ -64,6 +64,7 @@ namespace CosmicShore.Gameplay
             PrismOcclusionCorridor.ClearTarget(transform);
             VesselSpeedTunnel.ClearTarget(transform);
             VesselRearView.ClearTarget(transform);
+            VesselPlacementView.ClearTarget(transform);
             OnBeforeDestroyed?.Invoke();
 
             // The base is what tears down this behaviour's NetworkVariables. An override that
@@ -173,7 +174,18 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
                 VesselVisionShading.SetLocalVessel(transform);
                 VesselRearView.SetTarget(transform);
+                VesselPlacementView.SetTarget(transform);
             }
+
+            // NO HIGH-POLY PRISM MORPH IS GRANTED HERE, and that is the design rather than an
+            // omission. The family (.claude/skills/prism-morph, Docs/PRISM_ANIMATION.md §4.7.2)
+            // deforms the surface of a handful of prisms out of a SHARED residency budget, so a
+            // per-vessel grant does not add morphs, it DIVIDES the one that mattered until nothing
+            // is smooth — and an effect strong enough to be an EVENT stops being one the moment
+            // every hull in the match wears it. Its one member is the Urchin's cradle, granted by
+            // the hull that can ride (GunVesselTransformer ensures PrismCradleSource) rather than
+            // by every vessel's Initialize. Adding a second is a design call, not a wiring one, so
+            // do not add an ensure here.
 
             // Pip is NOT granted here any more. The picture-in-picture rear view is retired in
             // favour of the look-back camera above (Docs/REAR_VIEW.md), which shows the same
@@ -213,14 +225,30 @@ namespace CosmicShore.Gameplay
         
         public Transform Transform => transform;
 
-        public void Teleport(Transform targetTransform) =>
+        public void Teleport(Transform targetTransform)
+        {
+            // Counted like a SetPose: this writes the transform directly, and anything watching
+            // the vessel's motion has to be able to tell a jump from a fast frame.
+            VesselStatus?.VesselTransformer?.NotifyTeleported();
             ShipHelper.Teleport(transform, targetTransform);
+        }
 
         public void SetResourceLevels(ResourceCollection resources) =>
             VesselStatus.ResourceSystem.InitializeElementLevels(resources);
 
-        public void SetShipUp(float angle) =>
-            VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
+        /// <summary>
+        /// Roll the visible ship about its own forward axis — the mobile device-orientation path.
+        ///
+        /// <para>The handle is an AUTHORED child (<c>VesselStatus.orientationHandle</c>) and a
+        /// vessel can ship without one, so this used to throw for such a hull — on a phone only,
+        /// on the frame the device was flipped, from a call site that has nothing to say about
+        /// vessel wiring. A hull with no handle simply has nothing to roll.</para>
+        /// </summary>
+        public void SetShipUp(float angle)
+        {
+            var handle = VesselStatus.OrientationHandle;
+            if (handle) handle.transform.localRotation = Quaternion.Euler(0, 0, angle);
+        }
 
         public void DisableSkimmer()
         {
@@ -302,17 +330,40 @@ namespace CosmicShore.Gameplay
             VesselStatus.ResetForPlay();
         }
 
+        /// <summary>
+        /// Put this vessel somewhere. The write travels to every peer, because a teleport that
+        /// only happened on one machine is a vessel in two places.
+        ///
+        /// <para><b>A CLIENT may move its OWN vessel</b>, and that route is the reason this is
+        /// three branches rather than one. <c>SetPose_ClientRpc</c> is a ClientRpc, which only a
+        /// server may send — so every client-owned teleport (the Butterfly's Fold, a fold gate
+        /// transit, the Wanderway's return) reached this method on a party guest, hit the ClientRpc
+        /// and did nothing but log. The owner now asks the server, which broadcasts exactly as
+        /// before.</para>
+        ///
+        /// <para>The SERVER branch is deliberately kept as it was rather than folded into the
+        /// ServerRpc the way the slowed-transform pair is: a ServerRpc invoked on the server is
+        /// still dispatched through the network layer, and every existing caller here is a
+        /// host-side teleport that should not pay a tick for a route it does not need.</para>
+        ///
+        /// <para>A peer that is neither the server nor the owner writes nothing. It is not that
+        /// machine's vessel to move, and it will receive the pose like everybody else.</para>
+        /// </summary>
         public void SetPose(Pose pose)
         {
-            if (IsSpawned)
-                SetPose_ClientRpc(pose);
-            else
-                SetPose_Local(pose);
+            if (!IsSpawned) { SetPose_Local(pose); return; }
+            if (IsServer)   { SetPose_ClientRpc(pose); return; }
+            if (IsOwner)      SetPose_ServerRpc(pose);
         }
 
         public void ChangePlayer(IPlayer player)
         {
+            // The pause subscription belongs to the PILOT, so it has to be moved across the
+            // pointer change: detached from the outgoing pilot while this vessel can still reach
+            // them, re-attached to the incoming one (only if they are the local user).
+            VesselStatus.ActionHandler.DetachInputPause();
             VesselStatus.Player = player;
+            VesselStatus.ActionHandler.AttachInputPause();
 
             // Re-evaluate BOTH platform laws: ChangePlayer hands a LIVE vessel to a different
             // player (the Cellular Duel round-boundary ownership swap), which Initialize never
@@ -328,6 +379,7 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
                 VesselVisionShading.SetLocalVessel(transform);
                 VesselRearView.SetTarget(transform);
+                VesselPlacementView.SetTarget(transform);
             }
             else
             {
@@ -335,12 +387,21 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.ClearTarget(transform);
                 VesselVisionShading.ClearLocalVessel(transform);
                 VesselRearView.ClearTarget(transform);
+                VesselPlacementView.ClearTarget(transform);
             }
+
+            // The HUD is OPTIONAL on a hull, exactly as Initialize treats it: the Urchin ships
+            // with no HUD controller at all. Dereferencing it unguarded here threw on the Urchin
+            // halfway through a pilot swap - after the hull's Player had changed and before the
+            // other hull's had - so the Urchin went on reading the AI's stick (it looked like
+            // "autopilot switched on") while the human never reached the teammate's hull. A
+            // hull-handover path must tolerate every optional component Initialize tolerates.
+            var hud = VesselStatus.VesselHUDController;
 
             // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)
             {
-                VesselStatus.VesselHUDController.UnsubscribeFromEvents();
+                hud?.UnsubscribeFromEvents();
                 if (player.IsInitializedAsAI)
                 {
                     VesselStatus.VesselTransformer.ToggleActive(true);
@@ -351,15 +412,15 @@ namespace CosmicShore.Gameplay
                     SubscribeToNetworkVariables();
                 }
                 VesselStatus.ActionHandler.ToggleSubscription(false);
-                VesselStatus.VesselHUDController.HideHUD();
+                hud?.HideHUD();
 
                 return;
             }
             
             UnsubscribeFromNetworkVariables();
 
-            VesselStatus.VesselHUDController.SubscribeToEvents();
-            VesselStatus.VesselHUDController.ShowHUD();
+            hud?.SubscribeToEvents();
+            hud?.ShowHUD();
 
                 
             VesselStatus.VesselTransformer.ToggleActive(true);
@@ -414,6 +475,11 @@ namespace CosmicShore.Gameplay
         void AddSlowedShipTransformToGameData_Local() =>
             gameData?.SlowedShipTransforms.Add(transform);
 
+        // RequireOwnership is left ON: this is the "I am moving MY OWN vessel" route, and the
+        // server already has its own direct branch for moving anybody's.
+        [ServerRpc]
+        void SetPose_ServerRpc(Pose pose) => SetPose_ClientRpc(pose);
+
         [ClientRpc]
         void SetPose_ClientRpc(Pose pose) => SetPose_Local(pose);
 
@@ -439,8 +505,38 @@ namespace CosmicShore.Gameplay
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;
         void OnIsTranslationRestrictedValueChanged(bool previousValue, bool newValue) => VesselStatus.IsTranslationRestricted = newValue;
         
+        // Guarded so a subscribe/unsubscribe is IDEMPOTENT. A vessel's replica subscription used
+        // to be decided once, at spawn, from its ownership then - and ChangePlayer added a second
+        // unguarded += on every hand-over, so a hull that changed hands mid-match (the Cellular
+        // Duel swap, the arena pilot swap) either ran every replica callback twice or, having
+        // BECOME the owner, kept overwriting its own simulation from its own echoed writes.
+        // Subscription now follows OWNERSHIP (OnGainedOwnership / OnLostOwnership below), and
+        // ChangePlayer's calls are no-ops when the state is already right.
+        bool _netVarsSubscribed;
+
+        /// <summary>
+        /// A hull handed to another machine mid-match (<c>PilotSwap</c>, the Cellular Duel swap)
+        /// stops reading its kinematics off the network the moment it is this machine's to
+        /// simulate - whichever of the ownership message and the swap RPC lands first.
+        /// </summary>
+        public override void OnGainedOwnership()
+        {
+            base.OnGainedOwnership();
+            UnsubscribeFromNetworkVariables();
+        }
+
+        /// <summary>The mirror: a hull this machine no longer owns is driven by its new owner's
+        /// replicated kinematics from here on.</summary>
+        public override void OnLostOwnership()
+        {
+            base.OnLostOwnership();
+            SubscribeToNetworkVariables();
+        }
+
         void SubscribeToNetworkVariables()
         {
+            if (_netVarsSubscribed) return;
+            _netVarsSubscribed = true;
             n_Speed.OnValueChanged += OnSpeedChanged;
             n_Course.OnValueChanged += OnCourseChanged;
             n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
@@ -449,6 +545,8 @@ namespace CosmicShore.Gameplay
         
         void UnsubscribeFromNetworkVariables()
         {
+            if (!_netVarsSubscribed) return;
+            _netVarsSubscribed = false;
             n_Speed.OnValueChanged -= OnSpeedChanged;
             n_Course.OnValueChanged -= OnCourseChanged;
             n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;

@@ -22,8 +22,5 @@ MonoBehaviour:
     Floor: 0.25
   boostMultiplier: 3
   boostDuration: 3
-  maxCharges: 4
-  reloadCooldown: 7
-  reloadFillTime: 2
   resourceIndex: 1
   resourceCost: 0.25

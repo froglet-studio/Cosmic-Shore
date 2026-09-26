@@ -1488,7 +1488,7 @@ namespace CosmicShore.Gameplay
         /// <para><b>Every producer must ask the CELL, never the config</b> - the same rule, for
         /// the same reason, as <see cref="ResolveFaunaPopulation"/>. Flora has FOUR producers
         /// (<c>RandomLifeSpawner</c>, <c>IntensityWiseLifeSpawner</c>, <c>Flora.TryReproduce</c>
-        /// and the freestyle <c>Microscene</c> conveyor / Lifeform Matrix toy), and which
+        /// and the freestyle <c>Microscene</c> conveyor / Spawn Matrix toy), and which
         /// SPAWNER a biome runs is decided by an unrelated field - <c>CellTypeChoiceOptions</c>
         /// <c>.IntensityWise</c> silently swaps the class - so a density rule implemented in one
         /// producer is dead code in exactly the modes that asked for it. The cell is the one
@@ -1601,17 +1601,6 @@ namespace CosmicShore.Gameplay
             // Bind runtime -> this cell
             runtime.Cell = this;
             runtime.EnsureCellStats(ID);
-
-            // Elemental integration: any scene with a living cell gets the domain fauna buff
-            // system — living fauna hearts empower their domain's vessels, platform-wide.
-            // NEVER for a satellite: EnsureExists REBINDS the existing system's runtime
-            // subscription (AttachRuntime swaps it onto the instance passed in), so a satellite
-            // would steal the scene system off the scene cell's runtime and leave it holding a
-            // destroyed SO when the satellite is struck — which is a chaos that only shows up
-            // AFTER the first preview is left. The satellite's fauna simply don't feed the buff
-            // pool, which is correct: a preview arena's hearts are not the menu's economy.
-            if (!IsSatellite)
-                DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
 
             AssignConfig();
 

@@ -55,6 +55,12 @@ namespace CosmicShore.Gameplay
         // a rocket's blast, and the channel is the only place every route is visible.
         // False for everything else by construction - a blast, a ram, a creature, a teardown.
         bool _destroyedByGunfire;
+        // Set transiently by Slice around its Damage call, the same way: the plane a blade cut
+        // this prism along. Explode forwards it on the death event so the factory draws a CUT
+        // (Docs/PRISM_ANIMATION.md §4.10) instead of a burst. A zero normal is an ordinary death;
+        // Slice clears it again whether or not the hit destroyed the prism.
+        Vector3 _sliceCutPoint;
+        Vector3 _sliceCutNormal;
         public bool IsSmallest;
         public bool IsLargest;
         
@@ -456,6 +462,19 @@ namespace CosmicShore.Gameplay
         // on the instanced path — batched with every same-geometry shielded prism — while
         // the GameObject renderer handles only the brief per-prism morph/shatter animations.
         Mesh _renderMeshOverride;
+
+        /// <summary>
+        /// The shared mesh currently overriding the companion entity's geometry, or null.
+        ///
+        /// Exposed because an override is a SHARED resource with more than one legitimate
+        /// claimant — the settled shield and the Urchin cradle's high-poly swap — and neither
+        /// may stomp the other. A claimant checks this is null before taking the slot, and on
+        /// release checks it is still holding ITS OWN mesh before calling
+        /// <see cref="ClearRenderMeshOverride"/>: a prism that got shielded mid-cradle has
+        /// legitimately been taken over, and clearing there would drop the shield's geometry
+        /// on the floor. Never write through this — it is the question, not the setter.
+        /// </summary>
+        internal Mesh RenderMeshOverride => _renderMeshOverride;
 
         // The prefab's own mesh, cached at Awake. This is the prism's STABLE render
         // identity: while an exotic visual is animating, meshFilter.sharedMesh holds a
@@ -1150,6 +1169,22 @@ namespace CosmicShore.Gameplay
         // Growth Methods
         public void Grow(float amount = 1) => scaleAnimator.Grow(amount);
 
+        /// <summary>
+        /// Grow (or, with a negative component, shrink) this prism by an arbitrary per-axis
+        /// <paramref name="delta"/> on the one growth engine — the target moves and the clock
+        /// carries the visual there (Docs/PRISM_ANIMATION.md), exactly as <see cref="Grow"/>
+        /// does along <see cref="GrowthVector"/>. The result is clamped per axis by the prism's
+        /// own scale window, so nothing can be driven to zero or past its ceiling. Used by the
+        /// Butterfly's dust, which grows a prism along a direction it rolls rather than the
+        /// authored growth axis.
+        /// </summary>
+        public void GrowAlong(Vector3 delta)
+        {
+            if (scaleAnimator is null || !scaleAnimator.enabled) return;
+            scaleAnimator.SetTargetScale(scaleAnimator.TargetScale + delta);
+            scaleAnimator.BeginGrowthAnimation();
+        }
+
         // Collision Handling
         protected void OnTriggerEnter(Collider other)
         {
@@ -1196,6 +1231,21 @@ namespace CosmicShore.Gameplay
             _lastDestructionPosition = transform.position;
             _lastDestructionRotation = transform.rotation;
 
+            // The volume this prism dies WITH, read before anything below can erase it. It used
+            // to be read AFTER the scale animator was stood down, and GetCurrentVolume() reports 0
+            // on a disabled animator - so every destroyed prism reported exactly 1 (the Max floor)
+            // whatever its size: VolumeDestroyed was secretly a prism COUNT (Bloomrush scored on
+            // it), VolumeRemaining drifted upward (credited true volume, debited 1), and a
+            // restored prism re-entered the cell's volume spine weighing 1.
+            //
+            // CachedVolume is the SAME number the cell's volume ladder sums (volume is the spine),
+            // so the stats and the phase ladder now agree on what a prism weighed. It is a field
+            // read; the fallback reuses the lossyScale already read above for the debris pose, so
+            // this adds no transform walk to the destruction path.
+            float volumeAtDeath = CachedVolume > 0f
+                ? CachedVolume
+                : Mathf.Abs(destructionScale.x * destructionScale.y * destructionScale.z);
+
             if (scaleAnimator)
             {
                 scaleAnimator.enabled = false;
@@ -1204,7 +1254,7 @@ namespace CosmicShore.Gameplay
             blockCollider.enabled = false;
             SetRenderVisible(false);
 
-            prismProperties.volume = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
+            prismProperties.volume = volumeAtDeath;
 
             destroyed = true;
             devastated = devastate;
@@ -1281,13 +1331,13 @@ namespace CosmicShore.Gameplay
             // PrismEffectHelper.DamageProportional) - it is already the speed the debris
             // should leave at, so it passes through untouched.
             //
-            // The legacy branch's divisor is worth understanding before trusting it:
-            // SetupDestruction has already run, and it stands the scale animator down
-            // BEFORE reading the volume. GetCurrentVolume() gates on `enabled` and reports
-            // 0 once it is off, so Max(0, 1) makes prismProperties.volume exactly 1 for
-            // EVERY prism regardless of size. The divide is therefore a no-op today and the
-            // legacy gain is just `inertia`. Do not pre-multiply by a volume expecting it to
-            // cancel here - it will not, and the result is a straight volume multiplier.
+            // The legacy branch used to divide by prismProperties.volume. That divide was a
+            // no-op for the whole life of the code - SetupDestruction read the volume AFTER
+            // disabling the scale animator, so it was pinned to exactly 1 - and every debris
+            // path was tuned against that. The read now happens first (the stats need the real
+            // number), so the divide is DELETED rather than left to start damping large prisms:
+            // the legacy gain stays exactly `inertia`, byte-for-byte what shipped. Do not
+            // re-introduce a volume term here without retuning every debris consumer.
             using var effectScope = s_destroyEffectMarker.Auto();
             OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
@@ -1295,9 +1345,11 @@ namespace CosmicShore.Gameplay
                 SpawnPosition = _lastDestructionPosition,
                 Rotation = _lastDestructionRotation,
                 Scale = _lastDestructionScale,
-                Velocity = debrisSpeedLimit > 0f ? impactVector : impactVector / prismProperties.volume,
+                Velocity = impactVector,
                 DebrisSpeedLimit = debrisSpeedLimit,
                 Kind = kind,
+                SlicePoint = _sliceCutPoint,
+                SliceNormal = _sliceCutNormal,
                 PrismType = PrismType.Explosion
             });
         }
@@ -1371,6 +1423,32 @@ namespace CosmicShore.Gameplay
                 _destroyedByCreature = byCreature;
                 _destroyedByGunfire = byGunfire;
                 Explode(impactVector, domain, playerName, devastate, debrisSpeedLimit);
+            }
+        }
+
+        /// <summary>
+        /// <see cref="Damage"/>, delivered by a BLADE: if this hit destroys the prism, its death
+        /// is drawn as a cut along the world plane through <paramref name="cutPoint"/> with normal
+        /// <paramref name="cutNormal"/> — two halves that part, open and dissolve from the cut
+        /// face (Docs/PRISM_ANIMATION.md §4.10) — instead of a burst of debris. Everything the
+        /// death MEANS is Damage's, unchanged: the same shield/super-shield gates, the same
+        /// destruction bookkeeping, the same stats and SFX. Only the photons differ, and if the
+        /// slice cannot be drawn (budget, config, a degenerate cut) the ordinary explosion is.
+        /// </summary>
+        public void Slice(Vector3 impactVector, Domains domain, string playerName,
+                          Vector3 cutPoint, Vector3 cutNormal, bool devastate = false,
+                          float debrisSpeedLimit = 0f)
+        {
+            _sliceCutPoint = cutPoint;
+            _sliceCutNormal = cutNormal;
+            try
+            {
+                Damage(impactVector, domain, playerName, devastate, debrisSpeedLimit: debrisSpeedLimit);
+            }
+            finally
+            {
+                _sliceCutPoint = Vector3.zero;
+                _sliceCutNormal = Vector3.zero;
             }
         }
 

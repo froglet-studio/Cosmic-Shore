@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e4c5bf8bb39145a9a0f352bcd30dadae, type: 3}
+  m_Name: ButterflyFoldAction
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.FoldActionSO
+  cooldownSeconds: 30
+  cooldownMultiplierAtFullTime: 0.5
+  maxCooldownMultiplier: 2
+  reachSpeed: 900
+  reachRange: 1800
+  upgradeRangeMultiplier: 2
+  gateRadius: 55
+  minGateSeparation: 300
+  gateExitClearance: 40
+  gateBloomSeconds: 0.45
+  gateSettleSeconds: 0.75
+  ghostTravelSpeed: 1400
+  departSeconds: 0.22
+  arriveSeconds: 0.3

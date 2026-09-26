@@ -230,7 +230,7 @@ structure-only, because a `LifeformsKilled` objective with nothing to shoot is n
 mode. `ModePreviewDefinitionSO.PreviewFauna` + `PreviewFaunaCount` (the three wildlife cards
 author 4 × QuadFish, the game's smallest species) are released by `ModePreviewArena` through the
 canonical `CellLifeSpawnerBase.SpawnFaunaWithDomain` + `AssignLineage` path on a runtime clone —
-the Lifeform Matrix bench's idiom — so each creature registers in the cell's lifeform book and the
+the Spawn Matrix bench's idiom — so each creature registers in the cell's lifeform book and the
 strike retires it with the world. They spawn in **`Domains.Blue`** (the neutral sentinel, hostile
 to every pilot) so anyone's rounds land; a kill still drops the heart (the lifeform-crystal
 invariant is untouched), and `SpawnPreviewFauna` warns-and-skips on any card that authors a
@@ -282,7 +282,7 @@ lava lamp; the slice is 150/frame, trading invisible drain duration for visible 
 meaningless alone, so when the card's `MinPlayersAllowed >= 2` the modal arms the session with
 `sparringPartner: true` and, on entering flight, the session spawns one AI through the menu's
 ordinary networked pipeline (`MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion` — the
-Lifeform Matrix hangar's path, never a parallel local bot), seated at the mode's **seat 1**
+Spawn Matrix hangar's path, never a parallel local bot), seated at the mode's **seat 1**
 (`SpawnPose`/`ResolveSpawnPose` grew a seat parameter: hand-placed modes use their second
 authored pose, ring modes the second ring slot), in the first active domain that is not the
 player's. The spawn API returns no handle, so the session snapshots the AI player set before
@@ -475,11 +475,13 @@ the teardown racing the next entry. Three concrete races, all closed:
   home → hull swap **awaited** → arena struck and drained) and the session stays in `Striking`
   until every step lands; the auto-start driver only fires from `Idle`. `SwapVessel` additionally
   waits out any in-flight swap *before* requesting, so a request can never be dropped.
-- **`DomainFaunaBuffSystem.EnsureExists` rebinds the scene's buff system onto whatever runtime it
-  is handed** — a satellite's `Initialize` was handing it the satellite's instance, which the
-  strike then destroyed, leaving the menu's fauna-buff system holding a dead SO. Satellites now
-  skip that call outright (`Cell.Initialize` guards on `IsSatellite`); a preview arena's hearts
-  are not the menu's economy.
+- **A scene-wide system a satellite `Initialize`s will be REBOUND onto the satellite's runtime SO**
+  — `DomainFaunaBuffSystem.EnsureExists` was handed the satellite's instance, which the strike then
+  destroyed, leaving the menu's system holding a dead SO. It was answered by guarding that call on
+  `IsSatellite`; the system itself is now removed (`Docs/ECOSYSTEM.md` §15), so the guard is gone
+  with it. **The trap is not**: anything a satellite's `Initialize` hands a scene-wide singleton is
+  a reference that outlives the satellite, so a future one must either skip the call or be handed
+  the SCENE cell's runtime.
 - **The local trail spawner is penned up across the teleport home** — a spawner live for one
   frame after `SetPose` lays a prism bridging 120k units of empty space.
 

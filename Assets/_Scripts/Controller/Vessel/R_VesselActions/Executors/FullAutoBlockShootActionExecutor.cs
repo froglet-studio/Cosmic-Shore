@@ -700,7 +700,7 @@ namespace CosmicShore.Gameplay
                             suctionShot.EffectDuration - suctionShot.FlightTime - RevealOverlapSeconds);
                         var shot = suctionShot;
                         PrismTimerManager.EnsureInstance()
-                            .ScheduleAction(this, delay, () => CreateSuctionPrism(shot));
+                            ?.ScheduleAction(this, delay, () => CreateSuctionPrism(shot));
                     }
                 }
             }

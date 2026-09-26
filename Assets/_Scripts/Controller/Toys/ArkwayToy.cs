@@ -1,7 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -17,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// Three things end a voyage and all route through <see cref="ArkwayRun.End"/>: the
     /// DISEMBARK dinghy trailing the Ark, another pass through this toy, and the overview
     /// button (or gamepad Start), which drops freestyle. The Ark falling is the fourth — the
-    /// reset. The label flips to show which way the next pass toggles; the emblem's orbit
+    /// reset. A pass reblooms the toy (it carries no text); the emblem's orbit
     /// speed carries the live state (the Wanderway's own idiom).
     /// </summary>
     public class ArkwayToy : Toy, IToyShellSurface
@@ -31,16 +30,11 @@ namespace CosmicShore.Gameplay
         ArkwayConfig _cfg;
         CellConveyor _conveyor;
         ArkwayRun _run;
-        TMP_Text _label;
 
         public void Configure(ArkwayConfig cfg) => _cfg = cfg;
 
         protected override void OnInitialized()
         {
-            _label = GetComponentInChildren<TMP_Text>(true);
-            if (_label)
-                _label.text = $"{DisplayName}\n<size=60%>fly through to set sail</size>";
-
             AttachEmblem(new EmblemSource(this), OrbitStopped);
         }
 
@@ -182,7 +176,7 @@ namespace CosmicShore.Gameplay
             if (_run && _run.IsRunning)
             {
                 _run.End(returnToCell: true);
-                return; // End raises the callback that flips the label
+                return; // End raises the callback that reblooms the toy
             }
 
             if (!_cfg.PrismPrefab)
@@ -227,11 +221,6 @@ namespace CosmicShore.Gameplay
 
         void ShowState(bool on)
         {
-            if (_label)
-                _label.text = on
-                    ? $"{DisplayName}\n<size=60%>under way - fly through to end the voyage</size>"
-                    : $"{DisplayName}\n<size=60%>fly through to set sail</size>";
-
             Rebloom();
         }
     }

@@ -300,11 +300,12 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
   SceneName: MinigameRegatta
   Vessels:
 {VESSEL_ROWS}  MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 6
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
+  ArenaRules: 1
   Tips:
   - The rail in YOUR colour is the racing line. Urchins latch onto it, Squirrels skim it.
   - A rail cannot be shot away. Only an energised Rhino sword opens a hole, and riders bridge holes.
@@ -410,9 +411,7 @@ scene, n = re.subn(r"^  - vesselClass: 2\n(    PlayerName: AI \d)", r"  - vessel
 assert n == 4, f"AI templates swapped {n} times (expected 4)"
 
 # Sanity: everything else the donor authored is what this mode wants.
-for probe, why in ((r"^  spawnFormation: 1$", "equatorial spawn ring (overridden by the start line)"),
-                   (r"^  differenceSource: 8$", "comeback reads SwitchesThreaded"),
-                   (r"^  useGolfRules: 1$", "comeback golf direction")):
+for probe, why in ((r"^  spawnFormation: 1$", "equatorial spawn ring (overridden by the start line)"),):
     assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
 g.emit_scene("MinigameRegatta", G_ASSET["MinigameRegatta.unity"], scene)
 

@@ -348,15 +348,15 @@ their element's Variant block explicitly. Legacy note: the drone-population pref
 (BoidManager path) now all spawn the base tadpole - per-element identity there awaits
 that system's own config pass.
 
-**Lifeform Matrix toy (the tuning bench).** `Toy_LifeformMatrix` (in the freestyle
+**Spawn Matrix toy (the tuning bench).** `Toy_SpawnMatrix` (in the freestyle
 toybox): fly through it → the kingdom row blooms (Fauna / Flora / Vessels); fly a kingdom →
 a station per species; fly a species → its variant **row — one station per ELEMENT, four of
 them, and that is the whole matrix** (§40), each station wearing that element's crystal drawn
 at that variant's own authored heart size, so the row shows the real size difference before
 you touch any of it; fly a variant → that exact lifeform spawns live into the containing cell
 through the canonical spawn paths on a runtime clone of its config (assets never mutated;
-spawns are ordinary food-web citizens). Files: `LifeformMatrixToyDefinitionSO`,
-`LifeformMatrixToy` (+ station). Collider impact: transient trigger spheres only (species
+spawns are ordinary food-web citizens). Files: `SpawnMatrixToyDefinitionSO`,
+`SpawnMatrixToy` (+ station). Collider impact: transient trigger spheres only (species
 count + ≤4 variants), Menu freestyle only, torn down with the matrix.
 
 ---
@@ -875,7 +875,7 @@ facing hold, so the two would double-drive consumption if both ran. Resolution:
 | Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
 | Headless perf+ecology tuner (no Unity) | `Tools/ecosim/ecosim.py` (+ `calibration.csv`, `README.md`) — see §12 |
 | In-Unity perf probe (emits calibration samples) | `Assets/_Scripts/Controller/Environment/EcosystemPerfProbe.cs` |
-| Domain fauna buff (living hearts empower their domain's vessels) — see §15 | `Assets/_Scripts/Controller/Environment/DomainFaunaBuffSystem.cs`, `Fauna.LiveHeart`, `ResourceSystem.SetFaunaBuffModifier` |
+| ~~Domain fauna buff (living hearts empower their domain's vessels)~~ — **REMOVED**, see §15 | nothing; `DomainFaunaBuffSystem`, `Fauna.LiveHeart`, `ResourceSystem.SetFaunaBuffModifier` and `CellRuntimeDataSO.OnFaunaHeartsChanged` are all deleted |
 
 ---
 
@@ -891,7 +891,7 @@ work is saved and Phase 2 can be picked up.
    - *Menu_Main:* dense flora, flora visibly resume growing in pulses, fauna spawn
      in the controlling color (Jade appears when Jade leads), hunt, and thin out as
      prey runs low; spawn ring sweeps; **no numeric readout**.
-   - *One gameplay scene* (e.g. `MinigameWildlifeBlitz` / `MinigameSkimRace`): confirm
+   - *One gameplay scene* (e.g. `MinigameWildlifeBlitzMultuplayerCoOp` / `MinigameSkimRace`): confirm
      the prey-linked fauna + flora regrowth pulse don't break gameplay — fauna
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
@@ -952,8 +952,9 @@ with the others.
    opposing mass. Vessels start to *feel* the ecosystem. Composes with Domain,
    Vessels, Elementals. **Fauna half LANDED (see §15):** every living fauna's
    embedded heart grants its elemental value to all vessels of its domain, revoked
-   at death when the same heart drops as the collectible crystal. Flora hearts are
-   the natural follow-up (same `LiveHeart`-style seam on `LifeForm`).
+   at death when the same heart drops as the collectible crystal. **This half shipped in
+   July 2026 and was REMOVED in September 2026 — see §15.** The flora follow-up it named is
+   withdrawn with it.
 
 5. **Domain territory dynamics.**
    As fauna cull opposing prisms and flora regrow, a cell's controlling domain
@@ -1291,107 +1292,63 @@ Count backstops are untouched — volume-only mass never enters `LiveBlockCount`
   prisms via `PrismSpatialIndex.QuerySphere` and skips super-shielded entirely). Collision is at
   authored box size for now; shape-precise (stellated) collision is the planned three-LOD follow-up.
 
-## 15. Domain fauna buff — living hearts empower their domain (July 2026, roadmap item 4 fauna half)
+## 15. Domain fauna buff — RETIRED (shipped July 2026, REMOVED September 2026)
 
-**The mechanic.** Every LIVING fauna's embedded elemental heart grants its element's value to
-**all vessels of the fauna's domain**; the power is **lost the moment the fauna dies** — at
-which point the very same heart drops as the collectible crystal (the locked wither-to-crystal
-invariant). The economy this creates:
+**It is gone. Do not rebuild it.** Every LIVING fauna's embedded elemental heart used to grant
+its element's value to **all vessels of the fauna's domain**, revoked the moment the fauna died
+(at which point the same heart dropped as the collectible crystal, so the two sides balanced).
+It was removed on an explicit design call: **it handed a domain standing elemental power for
+nothing but having fauna alive.** Nothing had to be done to earn it, nothing had to be aimed at,
+and a pilot's element levels moved because a creature somewhere else in the cell had been born.
+The ecology already pays for fauna the way the platform wants it paid for — *kill the creature,
+take its heart* — and that payout is a thing a player does.
 
-- **Kill + collect your own domain's fauna → net zero for you, pure loss for allies.** You
-  re-earn exactly the buff you destroyed (crystal collect adds the same value to your base);
-  every teammate who doesn't collect just loses it.
-- **Kill an opposing domain's fauna → deny AND steal.** Their whole domain loses the buff, and
-  the drop is domain-agnostic, so you can collect it for yourself.
-- **Nourish your own fauna (Shepherd joust `Nourish`) → grow your whole domain's buff** — not
-  by growing that heart (nothing grows mid-life since §40) but by adding HEARTS: a nourished
-  creature breeds sooner, and the pool is summed across every living heart of the domain.
-- **Territorial stakes:** fauna spawn in the controlling color, so holding cells now feeds your
-  domain standing elemental power — and wave kills strip it.
+**What was deleted** (one coherent removal; no behaviour is left half-wired):
 
-**Value symmetry is structural, not tuned.** Each living heart contributes
-`SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(heart.lossyScale.x, …)` — the
-exact collect formula, with the parameters read from the effect array wired on the heart's
-**own** `ElementalCrystalImpactor` (the EXACT effects `AcceptImpactee` executes at collect
-time; a heart whose drop cannot repay the value — no impactor, or no level effect wired —
-grants **nothing**; multiple wired level effects are summed exactly as collection executes
-them). The buff keys off **`Fauna.LiveHeart`**, which nulls at the precise
-`ActivateCrystal()` moment inside the sealed `Fauna.Die` — so the buff ends exactly when the
-crystal becomes collectible, with the same world scale carrying the same value on both sides
-(`transform.parent = cell` preserves world scale on the drop; since §40 a heart never changes
-size mid-life, so the drop is always at the size the creature was born with and the level-up
-flare `GrowCrystalWithPop` — and its mid-flare-death freeze — are gone with the level). **Zero
-new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`, each
-lifeform's own authored `HeartWorldScale` — see §40.2, which retired the shared level curve §33
-had put in place of the per-species `CrystalScalePerLevel` — and per-species population caps)
-govern both the standing buff and the pickup. **Since §40 the buff is no longer uniform per
-heart**: it tracks species size, so a domain fielding sharks out-buffs one fielding tadpoles.
+| Site | What it was |
+|---|---|
+| `Controller/Environment/DomainFaunaBuffSystem.cs` | the system: a 1 Hz reconcile sweep over `Cell.ActiveCellsSnapshot → cell.LiveFauna → fauna.LiveHeart` into per-domain, per-element pools, plus an event-driven re-sum |
+| `Cell.Initialize`'s `EnsureExists` call | the only production caller (and its `IsSatellite` guard, whose hazard is recorded in `Docs/ModePreview/ARCHITECTURE.md`) |
+| `ResourceSystem._faunaBuffModifiers` + `SetFaunaBuffModifier` + `ClearFaunaBuffModifiers` | the dedicated composited layer and its single-writer API |
+| `ResourceSystem.HeldFaunaContribution` + `ComputeUnfeltIncrease` | the two pure helpers that capped the held layer at level 10 and converted the remainder to a draining spike |
+| `CompositeEffectiveLevel`'s `faunaBuff` parameter | now `(baseLevel, tempModifier, comebackBonus)` — exactly the pre-buff shape |
+| `Fauna.LiveHeart` | the "alive and heart still embedded" predicate; the buff was its only consumer |
+| `Fauna.RaiseFaunaHeartsChanged` + its two call sites | the lineage-assign and death pokes |
+| `CellRuntimeDataSO.OnFaunaHeartsChanged` + `Event_OnFaunaHeartsChanged.asset` | the SOAP channel, raised twice per creature lifetime and now subscribed by nobody |
+| `Tests/Editor/DomainFaunaBuffTests.cs` | the 12 assertions pinning the layer math. **Replaced** by `Tests/Editor/ElementalLayerCompositingTests.cs`, which keeps the ones that survive the mechanic: a LOCKED law whose only pin was deleted is a law nobody notices breaking |
 
-**Mechanism (SOAP-evented + reconcile sweep, no cheat).** `DomainFaunaBuffSystem`
-(auto-created by the first `Cell.Initialize` via `EnsureExists` — so it exists wherever fauna
-do, Menu_Main freestyle included; one HyperSea, one rule set) re-sums
-`Cell.ActiveCellsSnapshot → cell.LiveFauna → fauna.LiveHeart` into per-domain, per-element
-pools and applies them via `ResourceSystem.SetFaunaBuffModifier` on every `gameData.Players`
-vessel of that domain. Two triggers share the one sweep:
-`CellRuntimeDataSO.OnFaunaHeartsChanged` (raised by `Fauna.AssignLineage` and `Fauna.Die`
-**through the host cell's runtime SO** — several fauna prefabs author their own `cellData`
-wire null or dangling, so the per-prefab wire is only the hostless fallback)
-lands spawn grants and death revocations **within a frame**, and the periodic reconcile sweep
-(`updateInterval`, 1s) tracks heart growth, late-spawning vessels, vessel swaps (access is
-hardened against the destroyed-but-referenced vessel window during a menu swap), and domain
-re-picks (`player.Domain` read live). The fauna buff is a **dedicated composited layer** on
-`ResourceSystem` (like the comeback layer, its own single writer) that never touches the
-crystal-earned base, so revocation is exact — and it obeys the **maintained-mechanism law**
-(`ResourceSystem.SustainedCeiling`): *no sustained mechanism holds an element above level 10;
-the 10..15 overcharge band belongs to transients, and everything in it drains back to (at
-most) 10.* Concretely: the held layer fills only the room between the base and level 10, and
-the part of a pool INCREASE above that (a wave spawning into a saturated pool, a heart
-growing) is converted by `SetFaunaBuffModifier` into a standard temporary elemental effect —
-a felt spike up to the 15 clamp that drains at the elemental recovery rate, restoring the
-headroom so the **next** wave is felt too. Base crystal overcharge already drains the same
-way (`RecoverBaseLevels`) and comeback already fills-to-10, so after this every channel obeys
-one law. Compositing is pure (`CompositeEffectiveLevel` + `HeldFaunaContribution` +
-`ComputeUnfeltIncrease`) and pinned by `DomainFaunaBuffTests` (net-zero own-kill-collect
-below and at saturation, exact revocation, sustained-cap, spike-rides-above, clamps). HUD:
-petal bars animate automatically off `OnElementLevelChange` — one level-1 tadpole heart
-(scale 1) = one petal tick for the whole domain, and each 30s wave at a saturated pool reads
-as a petal surge that settles back to 10.
+**No locked invariant moved.** Continuity of existence, no-imposed-death, wither-to-crystal +
+mass conservation, volume-is-the-spine, the lifeform→crystal invariant, territorial permanence
+and endogenous selection are untouched: the buff was a *composited display layer*, never a base
+level and never mass. It is a small step **toward** two of them — domain symmetry (the buff's
+size depended on which domain happened to field the bigger species, §40.2's own "a domain
+fielding sharks out-buffs one fielding tadpoles") and endogenous selection (this was the last
+automatic, un-aimed-at reward left in the ecology).
 
-**Scope + caveats:**
-- **Fauna only** for now; flora hearts are the follow-up seam (`LifeForm` would grow the same
-  `LiveHeart` accessor; roadmap item 4's "flora buff its vessels").
-- **Net-zero is exact at the moment of collection.** Over time the resting-band drift
-  (`ResourceSystem.RecoverBaseLevels`) applies to the collected BASE value — overcharge above
-  level 10 bleeds back to 10, deficits refill to 0 — and the held fauna layer sustains at
-  most level 10 by the maintained-mechanism law, so neither side of the swap can park power
-  in the overcharge band. Killing your own domain's fauna is **never profitable** —
-  break-even at best. At a saturated pool the swap is absorbed by the buffer (the held fill
-  re-balances around the collected gain; sustained level stays 10 on both sides), so
-  stripping a saturated domain's standing power takes sustained overkill, not one pick.
-- **Manager-spawned fauna** (`LightFaunaManager.SpawnGroup`, `BoidManager.SpawnBoids` — the
-  dead scene-population paths wired through the removed `Cell.fauna2` field, §7) never enter
-  `Cell.LiveFauna`, so they would drop collectibles without having granted a buff — acceptable
-  while those paths stay dead; fold them into `AssignLineage` if they ever revive. Worm colony
-  segments (§23): EVERY segment carries and drops a heart (§23.8 — head, body and tail alike),
-  and none of them is lineage-registered, so none grants a buff — drop-without-buff is a
-  deliberate §23.3 ruling (a kaiju must not destabilize the elemental economy), not the
-  manager-fauna accident described above. §23.8 multiplied the DROPS without touching the
-  pool, which is the same ruling held rather than a new one.
-- **Client-local divergence:** fauna have no NetworkObject and element levels don't replicate,
-  so peers can disagree on exact buff values — the same accepted divergence the fauna sim
-  itself has (§7 caveat 4). Each client is self-consistent. Server-authoritative pools are the
-  follow-up if the buff enters strict competitive modes.
-- **Collider budget: zero.** No colliders, no physics queries — a 1 Hz walk of the existing
-  registries (menu steady state: ~13 fauna, ≤4 players) plus event-driven re-sums on the 30s
-  wave heartbeat and on deaths.
+**The maintained-mechanism law survives intact and loses one clause.** It still reads *no
+sustained mechanism may HOLD an element above level 10; the 10..15 band belongs to transients*,
+and `ResourceSystem.SustainedCeiling` + `CompositeEffectiveLevel` still enforce it over the
+three mechanisms that remain: temporary effects decay to zero, crystal-earned base overcharge
+bleeds down (`RecoverBaseLevels`), and the comeback bonus fills toward 10 and never past. The
+fauna buff was the fourth; the law governs what exists.
 
-**In-editor verification (Menu_Main):** enter freestyle, watch your petal bars — they should
-tick up as controlling-color fauna spawn (30s waves) and drop when fauna starve/are predated,
-with the dropped crystal granting the lost amount back on collection. Once the domain's pool
-is rich enough to hold level 10, each new wave should read as a **temporary surge above 10
-that drains back to 10** (never a parked 11+); temporary effects (overtake buff, danger
-debuff) still ride on top. Toggle `debugLogging` on the auto-created `DomainFaunaBuffSystem`
-(on the Cell's GameObject) for per-player pool logs.
+**A heart's world scale is now read as gameplay in FOUR places, not five.** §40's reader table
+loses its row B. The band, `MaxSafeHeartWorldScale`, the monotonicity gate and every authored
+number are unchanged, because all of them are about the collect reward (read A, the only one
+with a cap) — only the *count of readers* narrows, which makes the sizing rationale simpler
+rather than weaker. `Tools/Build/author_lifeform_heart_sizes.py` is untouched and still
+`--check` clean.
+
+**Collider budget: strictly negative.** Zero colliders before and after; removed is a 1 Hz walk
+of `ActiveCellsSnapshot × LiveFauna × Players` plus two SOAP raises per creature lifetime.
+
+**One technique worth keeping in mind if anything ever pays out off a lifeform's heart.**
+`ComputeHeartValue` did not *assume* what a heart was worth — it read the effect array wired on
+that heart's own `ElementalCrystalImpactor` and summed exactly the `SkimmerAdjustElementLevel…`
+effects `AcceptImpactee` would execute, so a heart whose drop could not repay the value granted
+nothing. That made value symmetry **structural rather than tuned**, and it is the right shape
+for any future mechanic that has to quote a pickup's worth before the pickup happens: *ask the
+thing what it will pay, never restate its formula.*
 
 ---
 
@@ -1538,7 +1495,7 @@ unconditional `normalized` (which computes the same magnitude anyway).
 **What was wrong.** The element × level contract (§3) was fully implemented but almost
 nothing used it: every cell config authored ONE element and `InitialLevel: 1`, so a
 session only ever showed a few element variants at level 1. The 4 × 5 matrix existed in
-code and in the Lifeform Matrix bench, and nowhere in the live world.
+code and in the Spawn Matrix bench, and nowhere in the live world.
 
 **The two halves spread differently, on purpose.**
 
@@ -1580,7 +1537,7 @@ exactly as before. *(§40: the whole `Levels` block — `Enabled`, `MinLevel`, `
 `RarityFalloff` — and `InitialLevel` are deleted from both config SOs. `SpreadElements` +
 `ElementPalette` are the only spread surface that still exists.)* Enabled in the shipped cells: Blob (and Rampage, which shares its
 assets), Wildlife Blitz 1–4 with full palettes; Skim Race, Nucleus Rush and Astro League
-with element-only spread. The Lifeform Matrix toy pins both off on its runtime clones — the
+with element-only spread. The Spawn Matrix toy pins both off on its runtime clones — the
 bench must spawn the exact variant its station shows.
 
 **Verify in-editor.** *(⚠ The level half of this procedure is DEAD — run §40's verification
@@ -1938,7 +1895,7 @@ code.
 
 `CellSelectorToy` is the player-facing surface — a toy, so no score, no end condition, no
 timer. Fly it and a matrix of **mini-cells** blooms outward, well clear of the toy (the
-Lifeform Matrix's "fly at a wall of choices" pattern, now sharing `ToyMatrixStation`). Fly a
+Spawn Matrix's "fly at a wall of choices" pattern, now sharing `ToyMatrixStation`). Fly a
 mini-cell and the cell becomes it. **Fly the mini-cell of the world you are already in and you
 get the same cycle on the same config — that is the reset.**
 
@@ -2024,6 +1981,7 @@ It cancelled nothing, for two independent reasons:
   **down before reading the volume**; `PrismScaleAnimator.GetCurrentVolume()` gates on
   `enabled` and returns 0 once it is off, so `Mathf.Max(0f, 1f)` pins
   `prismProperties.volume` to **exactly 1 for every prism** at the moment of the divide.
+  *(2026-09: that divide is now deleted and the death volume is read correctly, for the stats.)*
 
 So creature debris was scaled by an unrelated quantity. The multiply is gone; debris now leaves
 at the creature's own speed. **No ecology invariant is touched** — this is destruction VFX
@@ -2654,7 +2612,7 @@ Two things the first passes left out, both found in play:
   (`Cell.GetDensestRegionAnyDomain`, which falls back to the cell anchor in an empty
   cell) plus the orbit offset — so a worm is drawn to the cell's mass, and one
   dropped outside the membrane comes home instead of drifting in empty space.
-- **The Lifeform Matrix hatched creatures into the void.** The bench's variant
+- **The Spawn Matrix hatched creatures into the void.** The bench's variant
   stations are layered outward and can sit hundreds of units BEYOND the membrane, and
   `SpawnFaunaVariant` hatched the population AT the station — in empty space, with
   nothing to graze, which defeats the bench's purpose. Fauna now hatch on the cell's
@@ -2720,8 +2678,8 @@ the root itself stays heartless, segments grown later inherit the pick in
 breeds true). All are `PopulationSize=1` (a lone kaiju; the seed floor sees split-children
 via lineage registration, so it never re-seeds while any worm lives).
 
-**Spawnable NOW from the Lifeform Matrix toy** (freestyle): the four element configs
-are wired as the "Worm Colony" species in `Toy_LifeformMatrix.asset` — fly the toy →
+**Spawnable NOW from the Spawn Matrix toy** (freestyle): the four element configs
+are wired as the "Worm Colony" species in `Toy_SpawnMatrix.asset` — fly the toy →
 fly Fauna → fly "Worm Colony" → fly an ELEMENT station and the kaiju spawns live into the
 cell in your domain. (The level row is gone with the level itself, §40; the four element
 stations are the whole matrix, and colony size lives on `KaijuScale`. Level had always been
@@ -2757,7 +2715,7 @@ First pass, in Menu_Main freestyle:
    **FrogletTools > Validation > Validate Lifeform Crystals** — every segment's heart is
    runtime-provisioned by design (and the validator only inspects `LifeForm`/`LightFauna`
    prefabs anyway), so it should stay quiet about the worm.
-2. **Spawn**: freestyle → Lifeform Matrix toy → "Worm Colony" → any element station.
+2. **Spawn**: freestyle → Spawn Matrix toy → "Worm Colony" → any element station.
    Expect 8 segments hatching **on the cell's densest mass** in your domain: a plated
    head, 6 tapering bodies, a bladed tail — segments nearly touching, tapering to the
    tail, with a wide head gap.
@@ -2802,7 +2760,7 @@ spacing `SegmentSpacing`/`TaperPerSegment`; aggression `AggroRadius`/`StrikeRang
   its fangs and its own mesh. Wound differentiation is retired entirely.
 - **Wither/bloom ride per-frame CPU** like all fauna today (C6 in the clock-material
   tracker covers that migration; the worm added no new CPU animation tier).
-- **The Lifeform Matrix station for the colony is an anonymous labeled sphere** — the
+- **The Spawn Matrix station for the colony is an anonymous labeled sphere** — the
   root prefab carries no renderer for `ToyModelBuilder` to sample. A mini-worm station
   model is cosmetic follow-up.
 
@@ -2854,8 +2812,9 @@ split worm stay the same animal.
 `WormSegmentFauna` carried a `heartLocalScale` field, authored `2.5` on the head, applied
 *after* `Crystal.SetEmbeddedIn` — i.e. it overwrote the one gate every heart passes through.
 At `KaijuScale 3` that rendered a level-1 heart at world scale 7.5 against the law's 3.5,
-and a crystal's world scale is read twice AS GAMEPLAY (the collect reward and the live
-domain fauna buff), so it was a per-prefab REWARD sitting inside the very method this
+and a crystal's world scale was at the time read twice AS GAMEPLAY (the collect reward and
+the then-live domain fauna buff, since removed — §15), so it was a per-prefab REWARD sitting
+inside the very method this
 pass was multiplying across every segment. The field is deleted from the class and from
 all three prefabs. `heartLocalPosition` stays — a **seat is not a size**, and the head's
 authored `(0,0,-13.14)` is what nests its heart inside the armour cage.
@@ -2949,7 +2908,7 @@ with a real Roslyn build against a transcribed stub harness (bodies bind — pro
 injecting a `CS0103` and a `CS1503` into the new code and watching both fire), and
 `check_conditional_compilation.py` is clean. On top of §23.6:
 
-1. **Spawn** a colony from the Lifeform Matrix toy. Every segment should now show a heart:
+1. **Spawn** a colony from the Spawn Matrix toy. Every segment should now show a heart:
    8 crystals on a spawn-8 worm, one per segment, all the same element and all the same
    size (level 1 → world 3.5 when this was written; **world 2.28** on all four elements
    since §40.2 authored it from the species' body). If the head's heart looks conspicuously
@@ -3095,7 +3054,7 @@ Time for a fresh `SpawnSegmentCount = 8` colony to reach the 16-segment cap:
 | everything else | 30 s | 240 s | toy-released, ~3 | 147 |
 
 Note the Lattice cell's 5 s is authored for its *flora* colonies' build clock (§36.9), and
-a worm released there from the Lifeform Matrix toy inherits it — full length in 40 s.
+a worm released there from the Spawn Matrix toy inherits it — full length in 40 s.
 
 #### Collider budget — stated plainly, because this one moved
 
@@ -3618,9 +3577,10 @@ the flare with the level: nothing resizes a heart mid-life any more, so this par
 caller. The lesson stands for the next thing that writes a WORLD scale onto a live heart — and §40.3
 is that lesson hit from the other direction.)*
 
-One live consequence, and it is the right one: `Fauna.LiveHeart` (which the domain fauna buff keys
-off) now stays non-null through a starvation wither. The heart is the last thing standing, so a
-starving creature keeps powering its domain until the wither reaches its core.
+One consequence worth carrying: **the heart is the LAST thing standing** through a starvation
+wither, so a starving creature's crystal does not become collectable until the wither reaches its
+core. (That fact used to be read through `Fauna.LiveHeart`, whose only consumer was the domain
+fauna buff; the accessor went with the buff in §15. The wither ordering is unchanged.)
 
 ### 26.5 Auto-collect
 
@@ -3670,7 +3630,7 @@ Two things to watch in a playtest, in this order:
 ### 26.8 In-editor verification (the human is the gate)
 
 Scene: **Menu_Main** freestyle (Squirrel is the menu vessel, so the joust is one flight away), and
-**MinigameWildlifeBlitz** for a populated cell.
+**MinigameWildlifeBlitzMultuplayerCoOp** for a populated cell (the single-player scene was retired 2026-09).
 
 1. **Joust a fauna.** Fly the Squirrel faster than a brittlestar/shark and clip its heart. Expect:
    no explosion; the crystal flies to *your* vessel and grants its element; the arms/fins evaporate
@@ -4447,7 +4407,7 @@ species out, so extinction is never permanent.
 **The cap resolves on the `Cell`, never on the config** (`Cell.ResolveFloraPopulation` /
 `ResolveFloraCap` / `IsFloraAtCap`) — the §29.2 rule, and flora needs it more than fauna did: there
 are **five** flora producers (both spawners, `Flora.TryReproduce`, the freestyle `Microscene`
-conveyor, the Lifeform Matrix toy). A cap honoured by one producer is two ceilings for one number.
+conveyor, the Spawn Matrix toy). A cap honoured by one producer is two ceilings for one number.
 The initial-batch `FloraPopulationScale` scaling that both spawners used to inline was routed
 through the same accessor for the same reason.
 
@@ -4672,7 +4632,7 @@ because a spawner flora ran this while still parked at the cell centre (world �
 ≈ 0); an octagon daughter is created AT her centre, so her seed prism was thrown into space,
 the ownership gate declined every garbage site, and the plant reseed-looped forever.
 `ExecuteGrowOrder` always zeroed the locals; the fix copies it. The same fix repairs the
-Lifeform Matrix toy's pinned-station assembled flora, broken the same way for as long as the
+Spawn Matrix toy's pinned-station assembled flora, broken the same way for as long as the
 toy has existed. `Docs/PRISM_ANIMATION.md`-style lesson: a parenting call's semantics
 (`worldPositionStays`) are load-bearing — audit both spawn paths whenever one changes.
 
@@ -4807,7 +4767,7 @@ the one unvalidated link. Resolution, four parts:
    another cannot mate (`claims=3` before any birth = three independent founders, the third
    playtest's centre chaos ball), so where independent frames meet, the colonies now stop
    at a clean interface instead of interpenetrating. The FOUNDER log names each frame's
-   origin (`lineage=` config, or `NONE/toy` for a Lifeform Matrix planting).
+   origin (`lineage=` config, or `NONE/toy` for a Spawn Matrix planting).
 
 **Sixth pass (2026-08-16, chirality confirmed fixed): reproduction became a POPULATION
 event - the organic-growth model.** With the lattice mating correctly ("everything is
@@ -4912,9 +4872,9 @@ heart — the thing worth hunting — was a property of the dice rather than of 
 done. That is the same class of mistake as a scripted fitness function: the world hands out
 the *record* of an achievement that never happened. Separately, and invisibly, a heart's SIZE
 was whatever each species' prefab had authored — and it ranged **0.7 (tadpole) to 4.0 (gyroid)
-world scale, a 5.7× spread nobody chose**, on a number that is read twice as gameplay: by
+world scale, a 5.7× spread nobody chose**, on a number that was then read twice as gameplay: by
 `SkimmerAdjustElementLevelByCrystalEffectSO` (the collect reward) and by
-`DomainFaunaBuffSystem` (the live buff every living heart grants its domain).
+`DomainFaunaBuffSystem` (the live buff every living heart granted its domain — removed, §15).
 
 ### The rule now
 
@@ -4924,7 +4884,7 @@ world scale, a 5.7× spread nobody chose**, on a number that is read twice as ga
   default. Two callers use it above 1, both on purpose:
   **Wildlife Liberation** escalates creature size per cage (middle room 2, core worms 3, core
   sharks 5, in 16 configs), because its three rooms have to read as tiers the moment the hunt
-  starts and nothing *earned* can deliver that at t=0; and the **Lifeform Matrix bench**, which
+  starts and nothing *earned* can deliver that at t=0; and the **Spawn Matrix bench**, which
   spawns a chosen level so a tuner can see the whole band without playing a session out.
   The distinction that matters is dice vs. intent: a rolled level is a lifeform being handed a
   life it did not live, while an authored one is a designer stating what the room contains.
@@ -4993,9 +4953,9 @@ composition choice as a size correction. **A ratio between two authored numbers 
 measurement until you have controlled for what else differs between them.**
 
 **The rule regardless: a per-element size fix goes on that element's crystal PREFAB, on the
-child below the root — never on the root.** The root's world scale is read as gameplay twice
-(`SkimmerAdjustElementLevelByCrystalEffectSO`, `DomainFaunaBuffSystem`), so correcting a look
-on the root moves the reward with it and re-opens the per-element reward spread this section
+child below the root — never on the root.** The root's world scale is read as gameplay by
+`SkimmerAdjustElementLevelByCrystalEffectSO` (and was read a second time by the since-removed
+`DomainFaunaBuffSystem`, §15), so correcting a look on the root moves the reward with it and re-opens the per-element reward spread this section
 removed.
 
 ### Where the size is applied — the one gate
@@ -5067,8 +5027,9 @@ the lifeform-side change would silently move rewards in two modes that were neve
    in `_SO_Assets/Lifeforms` that had the spread enabled will now read uniformly small unless
    reproduction is authored for them. That is a deliberate consequence, not an oversight: size
    variety is supposed to be earned, so a species that cannot breed has not earned any.
-3. **The domain fauna buff gets more uniform, and larger for small species.** A tadpole heart
-   went 0.7 → 3.5 world scale, so a domain fielding tadpoles now draws what a domain fielding
+3. **The domain fauna buff got more uniform, and larger for small species** *(moot since §15
+   removed that buff; kept because it is what this pass was reasoning about)*. A tadpole heart
+   went 0.7 → 3.5 world scale, so a domain fielding tadpoles drew what a domain fielding
    brittlestars always did. The pool is summed across living hearts and clamped by the
    maintained-mechanism ceiling (sustained level 10), which large populations already reached,
    so the expected change is "the small-species domains stop being quietly under-buffed" rather
@@ -5315,7 +5276,7 @@ config (no `Variant` of its own — it delegates to the element palette — but 
 config whose `LeafScalePerLevel` the spawner read, back when that field existed; §40 deleted
 it). `SchwarzPFlora.prefab`'s own
 fallback `leafSize` was the same overlapping 5 × 5 square and now carries the fitted
-Charge/Time plate, so the variant-less path and the Lifeform Matrix preview are correct too.
+Charge/Time plate, so the variant-less path and the Spawn Matrix preview are correct too.
 
 Regenerate with `--render` for the preview sheet, `--write` to re-author. The writer emits
 **every** `FloraVariantTuning` field explicitly and asserts the key set against the C#
@@ -6563,7 +6524,7 @@ five-playtest failure class).
    quasicrystal colony and a gyroid or Schwarz P one: the two must **stop at a clean interface**
    rather than interpenetrate (§36.7). The Cell Selector also reaches the species through any
    world that lists it.
-5. **Lifeform Matrix toy:** the `Quasicrystal` entry appears with all four elements; the
+5. **Spawn Matrix toy:** the `Quasicrystal` entry appears with all four elements; the
    preview icon reads as a patch of aperiodic scaffold spreading from a star (the preview walks
    the real window test).
 6. **Reproduction:** after a plant completes (~59 struts + maturation), one daughter per
@@ -6852,7 +6813,7 @@ LightFauna on QuadFish(Clone) is missing LightFaunaDataSO.
 
 Cost: **Wildlife Liberation** seeds 383 of them (cap 893) — 74% of that mode's 519-creature roster,
 in a mode scored on kills; the **Boneyard scavengers** shared by Dog Fight and Salvo seed 60
-(cap 150); plus the four `QuadFish Fauna *` species assets on the Lifeform Matrix bench. Twelve
+(cap 150); plus the four `QuadFish Fauna *` species assets on the Spawn Matrix bench. Twelve
 `FaunaConfigurationSO` assets point at the one component.
 
 Fixed by authoring `_SO_Assets/Light Fauna Data/QuadFishFaunaDataSO.asset` and migrating the
@@ -6911,7 +6872,7 @@ added, removed or resized.
 **A lifeform is its species and its ELEMENT, and nothing else.** The `Level` axis is deleted from
 the whole ecology — from `ILifeFormEntity`, from `LifeForm` / `Fauna` / `Flora`, from both config
 SOs, from the variant pick a lineage inherits, from the crystal set's size curve and from the
-Lifeform Matrix bench. Four elemental variations are the entire variation a species has, and each
+Spawn Matrix bench. Four elemental variations are the entire variation a species has, and each
 one now states everything about itself exactly once, in its own variant tuning block —
 **including the size of its heart.**
 
@@ -7071,7 +7032,7 @@ does not invent a spread.
 | | read | what it does |
 |---|---|---|
 | **A** | `SkimmerAdjustElementLevelByCrystalEffectSO.Execute` | the collect reward, `min(\|lossyScale.x\| × 0.1, 0.5)` element levels. **The one with a cap.** |
-| **B** | `DomainFaunaBuffSystem.ComputeHeartValue` | the live domain fauna buff — the same function, summed over every LIVING heart of a domain (§15) |
+| ~~**B**~~ | ~~`DomainFaunaBuffSystem.ComputeHeartValue`~~ | **REMOVED (§15)** — the live domain fauna buff was the same function summed over a domain's living hearts. A heart's world scale is now read as gameplay in FOUR places, not five, and **A is still the only one with a cap**, so no number in this section moves |
 | **C** | every crystal prefab's root `SphereCollider` | authored radius 1, so the world **pickup trigger radius EQUALS the root world scale**. `HEART_MIN` (1.0) exists so a small species' heart never becomes a hairline; the skimmer sphere is 15–30 units, so the crystal's own collider is a small addend |
 | **D** | `Crystal.Vacuum` | divides by `lossyScale.x`, so a bigger heart is drawn in more slowly — a reasonable read of "heavier" |
 | **E** | `ElementalCrystalImpactor.RunCapture` | the capture flourish's recoil radii and husk scale (§31) |
@@ -7116,8 +7077,8 @@ like pure subtraction and one of the deletions was not.
 Step 3 reads like level bookkeeping. It was the **correction for step 2**. Delete it with the rest
 of the level surface and every creature that authors a body scale wears a heart of
 `authored × BaseBodyScale` — **0.40 and 0.70 on the shipped tadpoles, a silent 2.5× and 1.43× cut
-to BOTH the collect reward (read A) and the live domain fauna buff (read B)**, with nothing
-reporting it anywhere. A crystal at 40% of its intended size is not an error state; it is a
+to the collect reward (read A) and, at the time, to the live domain fauna buff (read B, removed in
+§15)**, with nothing reporting it anywhere. A crystal at 40% of its intended size is not an error state; it is a
 slightly small crystal.
 
 **There is a SECOND inversion one level up**, and it is why the fix cannot live inside
@@ -7221,11 +7182,12 @@ shepherding either of them used to move a number nothing rendered.
    scale was. A species whose four elements author no differences (Brittlestar, Cacti, Shark,
    WormColony above) will read uniform. That is the honest state of those assets, not a defect to
    answer with a size roll.
-3. **The domain fauna buff re-sorts.** It was uniform per heart under §33's flat curve; it now
-   tracks species size, so a domain fielding sharks out-buffs one fielding tadpoles by **1.8–2.4×
-   per heart** (4.23 against 2.30 or 1.74), and a domain fielding SchwarzP colonies by 3.6×. The pool is still summed across living hearts and still clamped by the
-   maintained-mechanism ceiling (sustained level 10, §15), so the expected change is an ordering
-   between domains rather than new saturation.
+3. **The domain fauna buff re-sorted** *(moot since §15 removed that buff; kept as the reasoning
+   of this pass)*. It was uniform per heart under §33's flat curve; it then tracked species size, so
+   a domain fielding sharks out-buffed one fielding tadpoles by **1.8–2.4× per heart** (4.23 against
+   2.30 or 1.74), and one fielding SchwarzP colonies by 3.6×. The pool was summed across living
+   hearts and clamped by the maintained-mechanism ceiling (sustained level 10), so the expected
+   change was an ordering between domains rather than new saturation.
 
 ### Verify in-editor (the human is the gate — none of this has been run)
 
@@ -7237,7 +7199,7 @@ twelve flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna
    scale, so the shark's should read as clearly the prize. Under §33 all three were identical.
 2. **THE HEADLINE CHECK — a creature's heart is not cut by its body scale.** This is §40.3's
    regression. Spawn a **Mass or Time tadpole** (`BaseBodyScale` 0.40, heart 1.563) and a
-   **Charge or Space** one (0.70, heart 2.068) from the Lifeform Matrix bench and kill both.
+   **Charge or Space** one (0.70, heart 2.068) from the Spawn Matrix bench and kill both.
    Two readings, and the ABSOLUTE one is the reliable test:
    - **Absolute (strong).** Each heart must render at its authored size. If the re-size at the
      end of `AssignLineage` is not landing, every heart is multiplied by its own body scale, so
@@ -7258,7 +7220,7 @@ twelve flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna
    Watch its brood instead — a nourished creature should reproduce sooner. Joust an own-domain
    *plant* (rooted, so trivially joustable) and confirm an offspring appears rather than the plant
    inflating.
-5. **The bench shows the band.** Lifeform Matrix → any species → the row is FOUR element stations
+5. **The bench shows the band.** Spawn Matrix → any species → the row is FOUR element stations
    (no level rows), and each station's crystal is drawn at that variant's own heart size, so a
    Shark row reads visibly bigger than a SchwarzP row.
 6. **The reward tracks the size.** Collect a SchwarzP heart and a shark heart and confirm the
@@ -7362,9 +7324,10 @@ collider LOD (the host cell is handed its bare canvas at voyage start, the Wande
 opening move, so the corridor is not additive to a heavy home world). Fauna at
 `RuntimePopulationScale 0.5` ≈ one-and-a-half freestyle cells' worth of creatures across
 three cells. The Ark itself is ~150 prisms and ~150 always-on nothing — its label is one
-TMP text. Satellite cells run no cytoplasm (4k shard motes each stays preview-suppressed)
-and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
-"satellite" notes in `Cell.Initialize`, is untouched).
+TMP text. Satellite cells run no cytoplasm (4k shard motes each stays preview-suppressed).
+(They also used to be barred from `DomainFaunaBuffSystem.EnsureExists`, whose runtime rebinding
+a satellite strike could leave holding a dead SO; that system is removed — §15 — so the hazard
+and its guard are both gone.)
 
 ### 41.5 Known limitations (deliberate, recorded)
 
@@ -7823,7 +7786,7 @@ a feature that has never run, and it looks exactly like a feature that works.**
 pass that fixed it. The interesting part is not any one defect; it is that **five
 independent things were wrong and every one of them was invisible from where you would
 look for it**, on a species that has a prefab, four element configs, a Codex page, a
-baked portrait and a station on the Lifeform Matrix bench — every outward sign of a
+baked portrait and a station on the Spawn Matrix bench — every outward sign of a
 finished creature.
 
 Provenance, since it is the first question anyone asks: the Clawfish was added by
@@ -8981,7 +8944,7 @@ is twice as big, and `K · d^0.5` pays it √2 of a heart for it.
 
 As of this commit the species grows in **Rampage** (all four intensities, as mass to
 destroy), **Wrecking Ball** (all four) and **Wildlife Blitz cells 1 and 2** — ten spawn
-profiles — as well as being reachable through the freestyle **Lifeform Matrix** toy. §49.12
+profiles — as well as being reachable through the freestyle **Spawn Matrix** toy. §49.12
 is the adoption pass and carries the numbers. **Re-prove the claim by grepping the config
 GUIDs across `_SO_Assets` before inheriting it** (§ the ecology skill's "an 'it is wired
 nowhere' claim is true only on the date it was written") — this paragraph has already been
@@ -9579,7 +9542,7 @@ two-pass grazing cost made visible. `--check` fails the build if that ordering e
 
 At `MaxLivePopulation 3` the ceiling is **174,316 volume and 3 always-on heart colliders** — well
 under the retired plating version's 381,000. The species is in **no `SpawnProfile`**: it is opt-in
-from the Lifeform Matrix toy (the worm colony's posture), so it costs no shipped cell anything until
+from the Spawn Matrix toy (the worm colony's posture), so it costs no shipped cell anything until
 somebody puts it in one — which matters, because Space's ceiling alone is more than the Blob cell's
 whole Frenzy ladder.
 
@@ -9644,7 +9607,7 @@ Nothing below has been run. The offline gates are strong about GEOMETRY and say 
 Unity: whether the prefab's serialized fields deserialize into the nested `GrowthRules` struct at
 all, what the plant costs per frame, or how it reads with the game's materials. Work top-down.
 
-1. **It grows, at all.** Lifeform Matrix toy → Flora → Mandelbulb → each of the four elements in
+1. **It grows, at all.** Spawn Matrix toy → Flora → Mandelbulb → each of the four elements in
    turn. **PASS:** a plant appears and keeps adding prisms until it settles; its shape is visibly
    the one in this section's renders. **FAIL, and the first thing to check:** a plant that lays
    its single seed prism and nothing else means `formByElement` did not deserialize — the nested
@@ -9934,7 +9897,7 @@ from the plant being checked.
 
 ### 52.5 What it costs, and what has to be tested
 
-Both species are in **NO `SpawnProfile`** — opt-in from the Lifeform Matrix toy (rows `Mandelbulb`
+Both species are in **NO `SpawnProfile`** — opt-in from the Spawn Matrix toy (rows `Mandelbulb`
 and `Coral Bloom`), so neither costs a shipped cell anything until somebody puts it in one. At
 `MaxLivePopulation` 3 that is 3 always-on heart colliders and ~69,000 volume each at their heaviest
 element.
@@ -10231,7 +10194,7 @@ walk columns, and the ordering promise (the last laid prism sits in the highest 
 ### 54.4 Where it lives and what it costs
 
 `ApolloniaFlora.prefab` + four `Apollonia Flora <Element>` configs, authored by
-`author_mandelbulb_flora_assets.py`, in **NO `SpawnProfile`** — opt-in from the Lifeform Matrix
+`author_mandelbulb_flora_assets.py`, in **NO `SpawnProfile`** — opt-in from the Spawn Matrix
 toy (row `Apollonia`) like its three siblings. `MaxLivePopulation` 3, `POPULATION_SIZE` 1, one
 always-on heart collider per live plant, 2,800 LOD-cullable prisms. The gasket build is O(n³) in
 triples (n ≤ ~120) with a 24-step relaxation inside, once per plant in the lazy `EnsureSeeds` —
@@ -10332,7 +10295,7 @@ the assets currently carry.
 
 **Nothing in this pass has been run in Unity.** On top of §50.11's list:
 
-1. **Every species must reach its crystal.** Spawn each of the four from the Lifeform Matrix toy
+1. **Every species must reach its crystal.** Spawn each of the four from the Spawn Matrix toy
    and fly to the heart: a blue spiral (the Fall) must wind into the crystal from every plant, the
    closest prism a few units short of it. **FAIL:** if the dives are missing, `DiveCount` /
    `DiveStepFraction` are not reaching the prefab — check the `Rules` block; if they stab straight
@@ -10592,7 +10555,7 @@ Borromean membrane (§49). No `EnvironmentPrefab`, no second producer: the cell 
 specimens, the way the Lattice cell (§36) IS its twelve colonies.
 
 It exists because §56 made the four elements read as four different KINDS of plant and there
-was nowhere to see that. The Lifeform Matrix bench lines the same species up in a row for
+was nowhere to see that. The Spawn Matrix bench lines the same species up in a row for
 COMPARISON; this is a WORLD you fly through and meet them in.
 
 **Why the Borromean four belong here.** The species is the one in the project whose four

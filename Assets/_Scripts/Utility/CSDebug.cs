@@ -226,10 +226,10 @@ namespace CosmicShore.Utility
         SchwarzPColony = 1 << 19,
         /// <summary>
         /// <c>[Cell]</c> / <c>[Ecology]</c> — cell lifecycle and the food web's bookkeeping:
-        /// spawner start/stop, cell swaps, satellite builds, runtime-data resets, the domain
-        /// fauna buff and lifeform releases. A cell that cannot initialize is still a warning.
+        /// spawner start/stop, cell swaps, satellite builds, runtime-data resets and lifeform
+        /// releases. A cell that cannot initialize is still a warning.
         /// </summary>
-        [CSLogChannelLabel("[Ecology] cell lifecycle, spawners, swaps, fauna buff")]
+        [CSLogChannelLabel("[Ecology] cell lifecycle, spawners, swaps, lifeform releases")]
         Ecology = 1 << 20,
         /// <summary>
         /// <c>[Arcade]</c> — match flow inside a mode: the server setting a turn target,
@@ -286,6 +286,17 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[FTUE] tutorial step flow")]
         FTUE = 1 << 27,
+        /// <summary>
+        /// <c>[FoldGate]</c> — the Butterfly's standing portal pair: where a fold laid its gates,
+        /// who threaded one, and when a pair was replaced.
+        ///
+        /// It exists because a gate's failure modes all read the same on screen ("it did
+        /// nothing"): no pair was placed at all, a pair was placed too short to keep, the pilot's
+        /// domain does not match, or the transit fired on a machine that does not own that
+        /// vessel. One line separates them.
+        /// </summary>
+        [CSLogChannelLabel("[FoldGate] Butterfly fold gate placement and transits")]
+        ButterflyFold = 1 << 28,
         All = ~0
     }
 
