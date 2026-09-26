@@ -261,6 +261,21 @@ namespace CosmicShore.Editor
             return c;
         }
 
+        CameraSettingsSO BuildCameraSettings() =>
+            CreateOrUpdate<CameraSettingsSO>(CameraPath, so =>
+            {
+                // "flies slow from far away" — the brief's framing, and it is load-bearing for
+                // more than the look: the prism occlusion corridor and the vessel-tail width are
+                // both derived from |followOffset.z|, so this one number sizes the whole vessel's
+                // relationship with the camera. 70% further than it first shipped (22/-120).
+                Set(so, "followOffset", new Vector3(0f, 37.4f, -204f));
+
+                // STATED, not inherited. This tool set followOffset and nothing else, so every
+                // other field came out at the C# initializer - and farClipPlane's was 1000 against
+                // the fleet's 12000, which does not even cross a standard 1200-radius cell.
+                Set(so, "farClipPlane", 12000f);
+            });
+
         // ─────────────────────────────────────────────────────────────── HUD
 
         GameObject BuildHudVariant()
