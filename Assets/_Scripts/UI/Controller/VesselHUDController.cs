@@ -166,6 +166,9 @@ namespace CosmicShore.UI
             if (TryResolveAbilityElement(ev, out var element))
                 baseView.SetAbilityPressed(element, on);
 
+            if (TryResolveCoreAbility(ev, out var core))
+                baseView.SetCoreAbilityPressed(core, on);
+
             foreach (var h in baseView.highlights)
             {
                 if (h.input == ev && h.image)
@@ -173,9 +176,25 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>
+        /// Which ELEMENTAL card an input event presses.
+        ///
+        /// <para><c>FullSpeedStraightAction</c> is REFUSED before the map is searched, and that is
+        /// the whole of why a Squirrel's joust card used to light up whenever the pilot flew flat
+        /// out. The input enum's zero is two things at once: a real event (every input strategy
+        /// raises it while the throttle is buried and the stick is centred) AND the project's
+        /// "no button" sentinel - a passive ability, or an open design slot, is authored
+        /// <c>Input: 0</c>. So the first-match search below matched the full-speed gesture to the
+        /// FIRST passive entry in the map and pressed that card: the joust on the Squirrel, Butterfly,
+        /// Manta, Rhino and Scarab, the Mass card on the Dolphin, Serpent and Urchin. The chip side
+        /// already reads the zero as "no control" (<see cref="SeedAbilityControls"/>); the press side
+        /// now agrees, so a passive card is never pressed by flying fast.</para>
+        /// </summary>
         bool TryResolveAbilityElement(InputEvents ev, out Element element)
         {
             element = Element.None;
+            if (IsPassiveSentinel(ev)) return false;
+
             var map = _abilityHandler ? _abilityHandler.Map : null;
             if (map == null) return false;
 
@@ -187,5 +206,34 @@ namespace CosmicShore.UI
             }
             return false;
         }
+
+        /// <summary>
+        /// Which NON-elemental card an input event presses, read off the binding's own input the
+        /// same way its control chip is (<see cref="VesselHUDView.SeedCoreAbilityControls"/>). Before
+        /// this a core card drew a chip naming its trigger and never lit when that trigger was
+        /// pulled - the press path only ever searched the elemental map. The passive sentinel is
+        /// refused for the reason given on <see cref="TryResolveAbilityElement"/>, which is what
+        /// keeps the omni crystal card (bound to no input) from lighting at full speed.
+        /// </summary>
+        bool TryResolveCoreAbility(InputEvents ev, out CoreAbility ability)
+        {
+            ability = CoreAbility.None;
+            if (IsPassiveSentinel(ev) || !baseView) return false;
+
+            var cores = baseView.coreAbilities;
+            for (int i = 0; i < cores.Count; i++)
+            {
+                if (cores[i].input != ev) continue;
+                ability = cores[i].ability;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// True for the input that means "no button". Internal and pure so the rule can be held by a
+        /// test without standing up a HUD.
+        /// </summary>
+        internal static bool IsPassiveSentinel(InputEvents ev) => ev == InputEvents.FullSpeedStraightAction;
     }
 }

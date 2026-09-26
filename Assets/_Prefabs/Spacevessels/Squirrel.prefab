@@ -1249,6 +1249,9 @@ MonoBehaviour:
     type: 2}
   squirrelCrystalExplosionEvent: {fileID: 11400000, guid: e9da6bf37f53d1f4db0421348950f8ca,
     type: 2}
+  isDrifting: {fileID: 11400000, guid: aadc0dd809ad8e446aa021ddff5a2213, type: 2}
+  isDoubleDrifting: {fileID: 11400000, guid: 876e2ba7dfbc2f248b1a997b904f2d97, type: 2}
+  driftEnded: {fileID: 11400000, guid: 9869da66befaa04429e5b8c696d421f0, type: 2}
   boostBaseMultiplier: {fileID: 11400000, guid: 0e852851d79640f47ab61340406a5a5c,
     type: 2}
   boostMaxMultiplier: {fileID: 11400000, guid: 10388f8ccaeb8b44f9c950ed00af3fbb, type: 2}

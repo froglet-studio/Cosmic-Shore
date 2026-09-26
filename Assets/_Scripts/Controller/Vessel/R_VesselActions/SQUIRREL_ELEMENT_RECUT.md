@@ -713,7 +713,7 @@ had **no callers** since the Sparrow's overheat mechanic was deleted — a gauge
 (`/vessel` rule 15). `driftButtonIcon` was live, but it was sitting on the card the Boost Ring now
 occupies, and the drift is core flight with no element.
 
-## ⚠ Stated cost: the Squirrel has no drift readout on the HUD
+## ~~Stated cost: the Squirrel has no drift readout on the HUD~~ — CLOSED (tenth pass, below)
 
 The drift sprite/lean was the hull's only drift HUD feedback, and it is gone. The drift itself is
 unchanged and the hull visibly drifts, so this is a readout decision rather than a mechanic one.
@@ -839,7 +839,7 @@ Nothing below has been run; there is no Unity in this session.
 ## Follow-ups
 
 - **Charge scaling** — the hole, waiting on the joust branch.
-- **Drift readout** — wire `ElementalBarsView.JuiceDriftStart/End`, or decide the hull is enough.
+- ~~**Drift readout**~~ — done on the drift's own core card (tenth pass). `ElementalBarsView.JuiceDriftStart/End` stay dead.
 - **The Time card** — the design call above. Until it is made, one element's upgrade is invisible.
 - **Joust art** — the Charge card borrows an objective icon; purpose-made HUD art would replace it.
 - The Squirrel's `Input: 11` ability (Boost Ring) still lays **danger** prisms; unchanged here —
@@ -847,3 +847,47 @@ Nothing below has been run; there is no Unity in this session.
 - **The other 73 BOM'd files** have never been seen by `check_using_directives.py`'s first-line
   rule either. The gate is scoped to changed files, so they will be checked as they are
   touched; a one-off `--all` run would clear the backlog and is not done here.
+
+## Tenth pass (2026-09-26): full speed off the joust, the drift responds, the omni card flashes
+
+**The "full speed indicator" on the joust card was a platform bug, not Squirrel art.**
+`FullSpeedStraightAction` is the input enum's zero, and it is two things at once: a real event
+(every input strategy raises it while the throttle is buried and the stick is centred) and the "no
+button" sentinel a passive ability map entry is authored with. `VesselHUDController.Toggle` resolved
+a press through the map by first match on `entry.Input`, so flying flat out pressed the FIRST
+`Input: 0` entry — the Squirrel's joust, and the same card on Butterfly, Manta, Rhino and Scarab (the
+Mass card on Dolphin, Serpent and Urchin). The chip side already treated the zero as "no control";
+the press side now refuses it too (`VesselHUDController.IsPassiveSentinel`, held by
+`HudPassiveInputSentinelTests`). Stated consequence: the Rhino's ramp genuinely engages on that
+gesture, and its Charge card (an open slot) no longer lights for it — which was the wrong card anyway.
+
+**Core cards now light on their own control.** `Toggle` resolved only the elemental map, so the
+drift card drew an LT chip and never lit when LT was pulled. It now also matches
+`coreAbilities[i].input` (the same field the chip is drawn from), with the sentinel refused so the
+omni card — bound to no input — stays dark at full speed.
+
+**The drift icon responds again**, on the core card rather than the Mass slot it was cut from:
+sprite swap (`DriftIconSelected-PLACEHOLDER`, restored from the pre-cut prefab), tint, swell, and a
+LEAN. The lean is no longer decided once at drift start — on that frame the nose has not left the
+course, so any read is noise — but fed every frame by the controller from `Course` in the SHIP's own
+frame (the old read projected onto world up, which only meant anything while level), re-tweening
+only on a change of side. The icon is resolved off the core binding, not re-serialized. Releasing one
+of the two drift actions while the other is held no longer ends the look (`IsDrifting` is written
+before `driftEnded` is raised).
+
+**The old sharp-drift look had never fired.** Pre-cut, `isDoubleDrifting` was wired to
+`EventOnSharpDrifting`, which nothing in the project raises; the drift actions raise
+`EventOnDoubleDriftStarted`. Re-wired to the one that is raised.
+
+**An omni crystal pickup lights the omni card.** `squirrelCrystalExplosionEvent` is raised only by
+the Squirrel's omni branch, and it used to flash the JOUST icon (the two shared one impact icon
+before the omni card existed). It now calls `VesselHUDView.PlayOmniCrystalCollected` — the lockup's
+one-shot press flash on the card's plate plus a punch-and-whiten of the shielded-ring icon that
+settles back to its domain tint (a tint repaint mid-flash wins). Fleet-generic; only the Squirrel
+calls it today because only it has a HUD event for the pickup.
+
+**Not run in Unity.** Verified out of editor: the ten standing gates pass; a Roslyn pass over the
+five changed .cs finds no syntax errors (type-resolution errors are the expected no-Unity noise).
+In-editor check: fly a Squirrel flat out (joust card stays dark), hold LT (drift card lights, icon
+swaps, swells and leans toward the swing, follows a side change, settles on release), fly through an
+omni crystal (omni card flashes, icon punches white and returns to the shielded tint).
