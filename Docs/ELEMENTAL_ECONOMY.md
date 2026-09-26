@@ -15,9 +15,10 @@ exactly one of three places:
 | **Eject** | nobody yet: they are knocked out of the hull as free-for-all crystals | ranged — guns, rockets, blasts, the Serpent's rifle | yes |
 | **Burn** | nobody, ever — destroyed | a **hostile danger prism**, and nothing else | **no — this is the sink** |
 
-So elements circulate. Lifeform reproduction and spawning are the only **source**, a hostile
-danger prism is the only **sink**, and everything in between is pilots trading the same material
-back and forth.
+So elements circulate. Inside a match, lifeform reproduction and spawning are the only **source**,
+a hostile danger prism is the only **sink**, and everything in between is pilots trading the same
+material back and forth. (Two freestyle TOYS also mint petals - the Wanderway's crystals and the
+Element Charger - and both are fenced to Menu_Main; see §2.1.)
 
 ---
 
@@ -86,6 +87,14 @@ Measured, so nobody re-derives it:
   carried by `Resources/ElementalCrystalSet` (so every lifeform heart, and every ejected petal,
   pays it back on pickup) and by the Wanderway toy. `VesselIncrementLevelByCrystalEffect` and
   `VesselAdjustLevelByCrystalEffect` exist as assets and are referenced by **nobody**.
+- **The Element Charger toy mints petals directly** (`ResourceSystem.GrantPetals`, 5 per pass,
+  `Docs/ToySystem/ARCHITECTURE.md` § "Element Charger"). Like the Wanderway it is a freestyle-only
+  source, and the fence is structural rather than a convention: menu vessels are spawned with
+  `destroyWithScene: false`, so the menu -> game path despawns every vessel explicitly
+  (`SceneLoader.ClearPlayerVesselReferences`) and a match spawns fresh hulls whose levels are
+  seeded by that scene. Nothing a pilot charges in the lava lamp reaches a scored match. In a menu
+  PARTY those petals are real and stealable - a joust in freestyle moves them like any others -
+  which is harmless there because nothing in Menu_Main is scored.
 - **An OMNI crystal grants no levels at all.** It runs the vessel's `vesselCrystalEffects`, and on
   the Sparrow that is `SparrowVesselWardByCrystalEffect` (8 s, warding **every** source) plus
   haptics. Its skimmer container is empty. So in a mode whose only pickups are omni crystals, the
