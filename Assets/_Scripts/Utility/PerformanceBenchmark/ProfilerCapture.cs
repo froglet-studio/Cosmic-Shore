@@ -334,11 +334,21 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             }
         }
 
+        /// <summary>
+        /// True for a top-level thread sample that is the thread BLOCKED rather than working.
+        ///
+        /// <para><c>GfxTask_ReadValue</c> is the D3D12 task worker waiting for its next
+        /// command. It carries no "Wait" in its name, and before it was listed here that
+        /// thread reported ~100% busy in every capture - at 7.5 ms in a light scene and 71 ms
+        /// in a heavy one, i.e. exactly the frame time, which work cannot be. The sibling
+        /// <c>GfxTask_Execute</c> is real work and stays busy.</para>
+        /// </summary>
         public static bool IsWait(string name) =>
             name != null &&
             (name.Equals("Idle", StringComparison.OrdinalIgnoreCase) ||
              name.IndexOf("WaitFor", StringComparison.Ordinal) >= 0 ||
-             name.StartsWith("Semaphore.Wait", StringComparison.Ordinal));
+             name.StartsWith("Semaphore.Wait", StringComparison.Ordinal) ||
+             name.Equals("GfxTask_ReadValue", StringComparison.Ordinal));
 
         /// <summary>One frame's main thread as a tree (for the typical and spike frames).</summary>
         public sealed class FrameNode

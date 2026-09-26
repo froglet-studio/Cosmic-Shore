@@ -403,6 +403,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
         [TestCase("Gfx.WaitForPresentOnGfxThread", true)]
         [TestCase("RenderLoop", false)]
         [TestCase("ExecuteRenderQueueJob", false)]
+        [TestCase("GfxTask_ReadValue", true)]
+        [TestCase("GfxTask_Execute", false)]
         public void IsWait_ClassifiesTopLevelThreadSamples(string name, bool wait)
         {
             Assert.AreEqual(wait, ProfilerCapture.IsWait(name));
