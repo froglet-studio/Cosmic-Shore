@@ -127,11 +127,35 @@ namespace CosmicShore.ScriptableObjects
         ///
         /// <para>The shielded tier is its rim (<c>ShieldedInsideBlockColor</c>) over its base face
         /// (<c>ShieldedOutsideBlockColor</c>) - see <see cref="GetPrismKindColors"/> - and it is the
-        /// BASE FACE that carries the tier's domain hue, which is why this reads that half. The
-        /// shipped <c>OriginalColorSetSO</c> authors it dark by design (Jade
+        /// BASE FACE that carries the tier's domain hue, which is why the HUE is read from that
+        /// half. The shipped <c>OriginalColorSetSO</c> authors it dark by design (Jade
         /// (0.087, 0.237, 0.484), the darkest channel peak in the palette): correct on a prism,
         /// where a bright rim sits over it, and a near-black smudge in a UI slot that composes
-        /// nothing. Normalised here to that hue with its brightest channel driven to 1.</para>
+        /// nothing. So it is normalised to that hue with its brightest channel driven to 1.</para>
+        ///
+        /// <para><b>And that is still not what the player sees, which is the trap this accessor
+        /// exists to record</b> (<c>Docs/PALETTE.md</c> §2.9). Shielded mass is HDR and BLOOMS, and
+        /// the frame then goes through ACES, which desaturates anything bright. Measured off a
+        /// screenshot of Jade shielded prisms - four samples, modal RGB (86,167,253), (94,198,254),
+        /// (106,178,254), (94,161,254), mean saturation <b>0.626</b> - against this accessor's
+        /// pre-correction answer of <b>0.821</b>. The authored colour and the rendered colour are a
+        /// third of the saturation range apart, so a UI slot that copies the authored one does not
+        /// depict the mass it is drawn to depict.</para>
+        ///
+        /// <para><see cref="ShieldedRenderedLift"/> models that as a lerp toward white, which is
+        /// the one operation that reproduces the measurement while leaving HUE alone - so Ruby stays
+        /// violet and Gold stays amber rather than every domain drifting toward one ice blue. At
+        /// 0.25 Jade lands on saturation 0.616 against the measured 0.626. The residual is a HUE
+        /// error of ~8 degrees (217.3 against the measured 209.4): ACES shifts hue as well as
+        /// desaturating, and no reading of the two authored halves supplies that green - the rim is
+        /// 222.7 and a base+rim composite 219.7, both further away. Stated rather than chased.</para>
+        ///
+        /// <para>The correction is ALSO what keeps this accessor out of the HUD's own vocabulary.
+        /// Uncorrected, Jade's shielded signal is (0.179, 0.489, 1.000) at hue 217.3 and
+        /// <c>ElementalBarsConfigSO.blueColor</c> - which on the very same row means <i>this element
+        /// is two upgrades in</i> - is (0.220, 0.510, 1.000) at hue <b>217.7</b>. A 0.3 degree
+        /// difference: the same blue, by arithmetic rather than by coincidence. The lift moves it
+        /// from 0.041 of saturation clear of the ladder to 0.164.</para>
         ///
         /// <para>Alpha 0 when the domain authors no shielded base at all, so a caller keeps
         /// whatever it already had rather than painting something black - the same contract the
@@ -143,8 +167,24 @@ namespace CosmicShore.ScriptableObjects
             var c = colorSet.ShieldedOutsideBlockColor;
             float peak = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
             if (c.a <= 0f || peak <= 0.001f) return new Color(0f, 0f, 0f, 0f);
-            return new Color(c.r / peak, c.g / peak, c.b / peak, 1f);
+
+            float k = ShieldedRenderedLift;
+            return new Color(
+                Mathf.Lerp(c.r / peak, 1f, k),
+                Mathf.Lerp(c.g / peak, 1f, k),
+                Mathf.Lerp(c.b / peak, 1f, k),
+                1f);
         }
+
+        /// <summary>
+        /// How far <see cref="GetShieldedSignalColor"/> lifts a shielded hue toward white to reach
+        /// the colour shielded mass RENDERS as, after bloom and ACES. A MEASUREMENT (see that
+        /// method), not a taste setting: 0.25 puts Jade on saturation 0.616 against a measured
+        /// 0.626, inside the 0.583-0.660 spread of the four samples. Re-measure it, do not nudge
+        /// it - and re-measure against the SHIELDED tier specifically, since this is a property of
+        /// how bright HDR mass survives the tonemapper rather than of any one domain.
+        /// </summary>
+        public const float ShieldedRenderedLift = 0.25f;
 
         /// <summary>
         /// The per-domain accent for translucent flat-UI card tints (Maelstrom round/player/summary

@@ -4773,7 +4773,27 @@ scale bump** with a one-shot unlock punch.
   fact: **Jade's shielded tier is blue on both halves** (base 217.4°, rim 222.7°) and sits 22.6° from
   the sentinel's 240°, while Jade's *identity* teal is 41° away in the other direction — so
   white-when-unresolved is the ONLY thing separating "this is Jade" from "this never resolved".
-  `Docs/PALETTE.md §2.8`. Two more findings travel
+  **And the colour was STILL wrong, in two ways a screenshot measured in one pass and three rounds of
+  reading source could not.** (a) *A shader field is not a UI colour, and neither is the
+  signal-normalised version of it* — shielded mass is HDR, blooms, and goes through ACES, which
+  desaturates anything bright, so the octahedra MEASURE saturation 0.583–0.660 on screen against the
+  normalised base face's 0.821. `SO_ColorSet.ShieldedRenderedLift` (0.25, a lerp toward white — the
+  one operation that reproduces the measurement while leaving HUE alone, so Ruby stays violet and
+  Gold stays amber) lands Jade on 0.616; the residual ~8° of hue is stated rather than chased,
+  because ACES shifts hue too and neither authored half supplies that green (rim 222.7°, base+rim
+  composite 219.7°, both further away). (b) **The five `ElementalBarsConfigSO` ladder colours are the
+  HUD's VOCABULARY** (fire = deficit, grey = 0, white = +1, **blue = +2**, lime = +3), and Jade's
+  uncorrected shielded signal was `blueColor` to within **0.3° of hue** — so the card was painted the
+  colour meaning *two upgrades in*, eight pixels from a petal saying exactly that. *A colour read
+  honestly out of the palette can still collide with one the HUD already uses to mean something else,
+  and the collision is invisible in every source file — it exists only on screen, in one row, at one
+  size*, so any new HUD tint is checked against that ladder. One lift fixes both (0.041 saturation
+  clear of the ladder → 0.164); shipped Jade (98,157,255) / Ruby (198,130,255) / Gold (255,192,114),
+  gated by `ShieldedSignalColorTests` against the shipped assets, measured to pass the fix and fail
+  the reported bug. The reporting-loop rule: **when a report is about a COLOUR, sample the frame
+  before reading the code that sets it** — two colours 0.3° apart are identical in a diff and
+  different on a screen (`Docs/DIAGNOSTICS.md`'s *Report On-Screen UI* rule, one step further out).
+  `Docs/PALETTE.md §2.8`, `§2.9`. Two more findings travel
   with it. **An
   extension point that has only ever had one user has only ever been tested for that user's
   shape**: the lockup's core pass `continue`d on a binding with no icon where the elemental pass

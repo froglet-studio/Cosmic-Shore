@@ -302,11 +302,16 @@ will actually be, so it reads the shielded tier's **base face** — the half tha
 domain hue (§ "The danger tier borrows the shielded base" explains why it is the base and not the
 rim).
 
-| domain | `ShieldedOutsideBlockColor` raw | `GetShieldedSignalColor()` | reads as |
+| domain | `ShieldedOutsideBlockColor` raw | normalised to peak 1 | reads as |
 |---|---|---|---|
 | Jade | (0.0868, 0.2367, 0.4843) | (0.179, 0.489, 1.000) | blue |
 | Ruby | (0.3346, 0.1639, 0.4751) | (0.704, 0.345, 1.000) | violet |
 | Gold | (0.3134, 0.2099, 0.0821) | (1.000, 0.670, 0.262) | amber |
+
+> ⚠ **That middle column is no longer what `GetShieldedSignalColor()` returns** — §2.9 corrects it,
+> because normalising the authored base face is still not the colour shielded mass renders as. The
+> shipped answers are Jade (0.384, 0.617, 1.000), Ruby (0.778, 0.509, 1.000), Gold
+> (1.000, 0.752, 0.447).
 
 Every one of those is SDR with alpha 1 — so neither of §2.5's and §2.6's traps fires — and every one
 peaks **under 0.49**, which on a near-black plate is a smudge. It is authored that way *correctly*:
@@ -381,6 +386,54 @@ sentinel itself and treats it as "not resolved yet" — alpha 0, keep your white
 from the other direction before this — `EchoSightActionExecutor` and `SniperShotActionExecutor` both
 write `status?.Player != null ? status.Domain : Domains.Blue`, i.e. **Blue already MEANS unresolved in
 this codebase** — which is the whole reason it must never be looked up as a colour.
+
+### 2.9 The sixth trap is the TONEMAPPER — a signal colour still is not what the player sees (2026-09-26)
+
+§2.7 added `GetShieldedSignalColor` so a HUD could say *"this is shielded mass, in this domain"*
+without reading a shader field raw. It shipped, and the icon it feeds still did not match the prisms
+beside it. Measured off a screenshot, four samples on Jade shielded octahedra:
+
+| | RGB on screen | hue | sat |
+|---|---|---|---|
+| the shielded octahedra | (86,167,253) (94,198,254) (106,178,254) (94,161,254) | 201–215 | **0.583–0.660** |
+| the icon drawn from the normalised base face | (46, 125, 255) | 217.3 | **0.821** |
+
+A third of the saturation range apart. The cause is that **shielded mass is HDR, it BLOOMS, and the
+frame then goes through ACES, which desaturates anything bright** (§4.3 already records that for
+judging a candidate; this is the same fact arriving at a UI slot). So the chain is longer than §2.7
+said: a shader field is not a UI colour *and neither is the signal-normalised version of it*, because
+what the player compares the icon against has been through the tonemapper and the icon has not.
+
+**The correction is a lerp toward white**, `SO_ColorSet.ShieldedRenderedLift` (**0.25**), which is the
+one operation that reproduces the measurement while leaving HUE alone — so Ruby stays violet and Gold
+stays amber rather than all three drifting toward one ice blue. Jade lands on saturation 0.616 against
+the measured 0.626. Stated residual: a **~8° hue error** (217.3 against the measured 209.4). ACES
+shifts hue as well as desaturating, and *no* reading of the two authored halves supplies that green —
+the rim alone is 222.7° and a base+rim composite 219.7°, both further away. Chasing it would mean
+modelling the tonemapper for a 60 px icon.
+
+**And the same correction is what keeps the accessor out of the HUD's own vocabulary, which is the
+half worth generalising.** The ability row that draws this icon also draws the element petal ladder,
+and those five colours MEAN things — fire = deficit, grey = 0, white = +1, **blue = +2**, lime = +3:
+
+| | value | hue | sat |
+|---|---|---|---|
+| Jade shielded signal, uncorrected | (0.179, 0.489, 1.000) | **217.3** | 0.821 |
+| `ElementalBarsConfigSO.blueColor` | (0.220, 0.510, 1.000) | **217.7** | 0.780 |
+
+**0.3° of hue apart.** They are the same blue, by arithmetic rather than by coincidence, so the icon
+was literally painted the colour that means *two upgrades in* — on the same row, eight pixels away
+from a petal saying exactly that. The lift takes it from 0.041 of saturation clear of the ladder to
+0.164.
+
+> **The rule: `ElementalBarsConfigSO`'s five ladder colours are the HUD's VOCABULARY, and any new HUD
+> tint has to be checked against them.** A colour read honestly out of the palette can still collide
+> with one the HUD already uses to mean something else, and the collision is invisible in every
+> source file — it only exists on screen, in one row, at one size.
+
+Both halves are gated by `ShieldedSignalColorTests`, which reads the shipped assets and fails on a
+palette edit that reopens either problem. Measured as a watched-fail gate: the suite passes the
+correction and **fails the reported bug** on exactly the two assertions it was written for.
 
 ## 3. The colour-space rule (this is the trap)
 
