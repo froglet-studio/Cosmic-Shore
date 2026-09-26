@@ -13,7 +13,7 @@ separate thread; this plan only assumes it names one `GameModes` value, whose ca
 | D1 | **The first-time flight tutorial LEAVES freestyle.** A brand-new player is walked, forcibly, from first login all the way into the **Game of the Week's microgame** (the Mode Preview window), and taught that ship's basic flight controls there. Once they leave the tutorial they can play the minigame |
 | D2 | **Every microgame run has TWO SECTIONS.** (1) **The Lesson** — forced; teaches the ship's basic controls. **Not skippable the very first time**; after that, skippable after **3 seconds**. (2) **The Mentor** — starts when the Lesson finishes or is skipped; **always open**, even the first time: the player may stay or leave whenever they like |
 | D3 | **The Mentor is CURATED, not reactive.** It offers the most effective tips, tricks and advice **in an authored order that makes sense**, like a tutor or a friend flying alongside — it does not diagnose what the player just did wrong |
-| D4 | **"Racing" = the Time-genre minigames.** A mode is Time-genre because it expresses its vessel's Time controls, which are always movement. The list for now: Skim Race, Switchback, Headlong, Redline, Skein, Breakwater, Regatta. **Source of truth later: the "genre petals"** a parallel branch is adding (categories Mass / Charge / Space / Time) — not on `bleeding-edge` as of `3d9f7660`; switch to it when it lands (§8) |
+| D4 | **"Racing" = the Time-genre minigames.** A mode is Time-genre because it expresses its vessel's Time controls, which are always movement. **The genre petals have landed** (`bleeding-edge` `c4934c5a`, `CosmicShore.Data.ModeGenre`), so the source of truth is `ModeGenre.TryElementsFor(mode, metric)` with `Element.Time` as either petal. It is not a hand-kept list. It adds two cards (Astro League, Scarab Scramble) to the seven originally assumed (§8) |
 | D5 | **Leaderboards are shown only when RELEVANT.** Show a board only when the player is top ten in some grouping that makes sense (world, faction once factions exist, friends, …); otherwise show only their personal best (§6) |
 | D7 | **"First time" is per ACCOUNT, split by flight scheme.** The account's first Lesson ever is unskippable. Separately, the first Lesson on a **two-thumb** ship is unskippable once, because two-thumb flight is unique to this game; after that, every two-thumb Lesson skips at 3 s. One-thumb flight is close to conventional flight controls, so it gets no key of its own: once the account's first Lesson is done, every one-thumb Lesson skips at 3 s (§3) |
 | D8 | **Drift stays in the Lesson** on ships that have it |
@@ -294,14 +294,50 @@ config.
 
 ---
 
-## 8. Racing = Time genre: until the genre petals land
+## 8. Racing = Time genre: read it off `ModeGenre`
 
-Until the genre-petal branch merges, the Time-genre list is the constant in D4, held in
-`DrillLibrarySO` (not hard-coded). When the petals land, `DrillLibrarySO` switches to reading each
-card's genre, and a test asserts the two agree for one release before the constant is deleted.
-Being Time-genre changes only the **Mentor's** content (racing tips, the practice lap, the Game of
-the Week board); the Lesson is the same for every mode, because it teaches the ship, not the game.
-Non-racing microgames get exactly the same two sections, with their metric family's tips.
+**The genre petals landed on `bleeding-edge` on 2026-09-26** (`4cb00bf2` … `cb04c3f3`, merged in
+PR #911). The classifier is `CosmicShore.Data.ModeGenre.TryElementsFor(mode, metric, out primary,
+out secondary)`:
+- It is pure and Unity-free, and lives in the `CosmicShore.Data` leaf assembly.
+- It is keyed on the MODE, with the scoring METRIC as the fallback.
+- It is pinned by `ModeGenreTests`.
+
+A mode is racing when **either** petal is `Element.Time`. So `DrillLibrarySO` never carries the
+D4 constant at all: the transitional "constant + agreement test" step planned here is dropped. The
+drill composer calls `ModeGenre` directly, with the metric resolved from the card's `ScoringRuleSO`,
+exactly as `GameCard.ResolveGenrePetals` does.
+
+**What it says, compared with the list assumed in D4:**
+
+| Card | Why it is Time | In the D4 list? |
+|---|---|---|
+| Skim Race | `Crystals` | yes |
+| Switchback, Headlong, Redline, Skein, Breakwater, Regatta | `SwitchesThreaded` | yes |
+| **Astro League** | `Goals` | **no — new** |
+| **Scarab Scramble** | `Goals` | **no — new** |
+| any FUTURE card scored on `Crystals` / `OmniCrystals` / `ElementalCrystals` | metric fallback (only Skim Race and Scurry use one today) | n/a |
+| Scurry (`Crystals`), Tollway (`Goals`) | explicit rows override them to **Mass** | correctly absent |
+
+All seven assumed cards are Time, so nothing already planned moves. The additions have three
+consequences:
+
+1. **The Mentor's racing playlist must not assume GATES.** Astro League and Scarab Scramble have
+   no ring course, and neither would a future crystal race. Racing tips therefore key on the metric family, which the
+   Mentor already does:
+   - "thread the next gate" belongs only to `SwitchesThreaded`;
+   - "reach the crystal first" belongs to the crystal metrics;
+   - "put it through" belongs to `Goals`.
+   The practice lap (§7) stays scoped to the `GateRaceController` modes. It is a property of having
+   a course, not of being Time-genre.
+2. **Game of the Week eligibility widens to every Time card**, including the two ball courts. They
+   are single-hull, like the rest, so the free-vessel-for-the-week rule is unchanged. Whether a
+   ball court should rotate as a "racing" Game of the Week is a product call. It is recorded in §11.
+3. **A two-petal Time card, if one ever ships, still counts as racing.** No shipped card is one
+   today. Brood Rush is Mass + Space.
+
+The Lesson is unaffected either way, because it teaches the ship, not the game. Non-racing
+microgames get the same two sections, with their own metric family's tips.
 
 ---
 
@@ -341,7 +377,7 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 | 3 | The Mentor: TipListSOs for the gate-race family, pacing, Moment conditions, resume | the curated tutor |
 | 4 | Quest Graph P0 railroad; the Game of the Week source | first login → Lesson, end to end |
 | 5 | Remaining races; tip lists for non-racing families; relevance-gated leaderboards (§6); practice-lap result | coverage |
-| 6 | Authoring window, coverage test, analytics; switch D4's list to genre petals | the "every vessel ever" guarantee |
+| 6 | Authoring window, coverage test, analytics (genre already read from `ModeGenre`, §8) | the "every vessel ever" guarantee |
 | later | `GhostDemo` cue (the preview's own autopilot flies a step once before handing over) | show, don't tell |
 
 ---
@@ -353,3 +389,4 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
    ended in freestyle.
 2. **Mentor pacing** is set (D10) but wants one playtest to confirm it reads as a friend, not a
    billboard.
+3. **Do the ball courts rotate as Game of the Week?** `ModeGenre` makes Astro League and Scarab Scramble Time-genre (`Goals`). The drill system handles them either way (§8). Whether the weekly *racing* rotation should include them is a product call.
