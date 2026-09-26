@@ -494,6 +494,68 @@ deleted the omni card from seven hulls. Both passes now share one `ResolveLocked
 off the enum onto a string. *An extension point that has only ever had one user has only ever been
 tested for that user's shape.*
 
+## Ninth pass (2026-09-26): the omni card was painted the no-team SENTINEL
+
+The eighth pass shipped and the card came back *"blue regardless of which domain I picked"*. The
+follow-up correction is what identified it: **it was reported as NOT being Jade's shielded hue** —
+*"a neutral hue of blue, not the jade shielded outside prism hue which has more green and is less
+saturated."* Measured against the shipped `OriginalColorSetSO`:
+
+| domain | `GetShieldedSignalColor()` | hue | saturation | green |
+|---|---|---|---|---|
+| Jade | (0.179, 0.489, 1.000) | 217.4° | 0.821 | 0.489 |
+| Ruby | (0.704, 0.345, 1.000) | 272.9° | 0.655 | 0.345 |
+| Gold | (1.000, 0.670, 0.262) | 33.1° | 0.738 | 0.670 |
+| **Blue (the sentinel)** | **(0.000, 0.000, 1.000)** | **240.0°** | **1.000** | **0** |
+
+Exactly one row in the palette is a pure, fully-saturated, green-free blue, and it is
+**`Domains.Blue`** — the *"no team / not yet picked"* sentinel, which `SO_ColorSet` nevertheless
+authors a full `DomainColorSet` for and `TryGetColorSetByDomain` happily returns. The baked sprite is
+pure white + alpha (verified by decoding the PNG: 7 distinct pixels, every one `(255,255,255,a)`), so
+the whole colour is the tint, and the tint resolved the sentinel.
+
+**Two defects, and they are independent — either alone would have produced a wrong colour.**
+
+**(1) The domain was SNAPSHOTTED at `Initialize`**, which is the rule CLAUDE.md states outright: *do
+not snapshot domain at component-creation time.* `Player.NetDomain` is server-write and initialises to
+Jade, the owner's own pick arrives later through `RequestSetDomain_ServerRpc`, and the match's active
+set can move a human again at spawn (`NormalizeUnassignedHumans`) — so whatever this controller read
+one frame after `Initialize` is what the card wore for the rest of the match. It was snapshotting it
+**twice**: `SetOmniAbilityTint` (new) and `SetPlayerDomainColor` (pre-existing, which is why the steal
+count and the boost fill had the identical defect and nobody had noticed). Both now go through one
+`RepaintForDomain`, called from `Initialize` and then from `PushDomainPalette` in the existing
+`Update`, which repaints only on a change.
+
+Polled rather than subscribed, for two reasons worth stating: this controller **already runs an
+`Update`** for the tube cooldown and the steal readout, so the poll is free; and a
+`NetDomain.OnValueChanged` subscription has to be torn down against a `Player` reference that a vessel
+swap replaces underneath it, which is the asymmetric-binding failure the vessel contract has paid for
+three times. The read is gated on `Player` being present because `IVesselStatus.Domain`
+**`CSDebug.LogError`s** when it is not — a per-frame poll through that getter turns one missing
+reference into console spam.
+
+**(2) `Domains.Blue` was looked up as a colour at all.** That is the finding, and it generalises past
+this card: **a sentinel that has a row in a lookup table gets a plausible answer, so a lookup that
+failed to resolve does not render as a failure — it renders as a different team.** That is strictly
+worse than the four traps `Docs/PALETTE.md` §§2.4–2.7 record, because a black or transparent slot reads
+as *not implemented* and gets reported, while a saturated wrong hue reads as *implemented and
+mis-tinted* and gets rationalised — which is exactly what happened for a whole round.
+
+The refusal is in the **CALLER** (`ResolveShieldedColor` returns alpha 0 for Blue, so the icon keeps
+its white and the poll keeps looking), not in `SO_ColorSet`: *"no pilot can fly Blue"* is a fact about
+pilots, and a neutral mine or an uncommitted crystal legitimately wants to know what colour no-team is,
+so the palette accessor stays a pure palette read like its three siblings. Note two executors already
+used the mirror-image idiom before this — `EchoSightActionExecutor` and `SniperShotActionExecutor` both
+write `status?.Player != null ? status.Domain : Domains.Blue`, i.e. **Blue already MEANS unresolved in
+this codebase**, which is the whole reason it must never be asked for a colour. Recorded as
+`Docs/PALETTE.md` §2.8.
+
+**The Dolphin already had the right shape** and is the reason this is a Squirrel bug rather than a
+fleet one: `DolphinVesselHUDController.ResolveDomainSignalColor()` is called from
+`PushCrystalSeeding()` inside its own `Update`, so it has always resolved live. A fleet sweep found no
+other HUD controller snapshotting a domain; every other reader in `R_VesselActions/` resolves at USE
+time (per shot, per lay), which is correct.
+
 ## Findings worth more than the change
 
 **1. `superSteal` already existed and nobody passed it.** `PrismTeamManager.Steal`'s third parameter
@@ -603,12 +665,23 @@ Nothing below has been run; there is no Unity in this session.
 6j. **The omni crystal card** — the eighth pass, and it must be checked on MORE than this vessel.
    On the **Squirrel**: a SIXTH card sits between the drift and Charge, its upper plate carrying the
    omni crystal emblem in plain white (NOT a domain colour, and NOT a flower), its lower plate
-   carrying a ring of eight blue diamonds. Fly through an omni crystal and confirm the ring of
+   carrying a ring of eight diamonds. Fly through an omni crystal and confirm the ring of
    shielded prisms it lays is the same colour as the icon. Then switch domain at the domain-changer
    toy and confirm the icon follows (Jade blue → Ruby violet → Gold amber) while the emblem above it
    does not change at all. Then open the **Dolphin, Scarab, Sparrow, Manta, Rhino and Serpent** and
    confirm each has the same card with the same emblem and a LOCKED lower plate — a card that is
    MISSING on any of them is the failure mode the locked-host fallback was added for.
+6k. **The tint follows the LIVE domain, and the sentinel is never a colour** — the ninth pass, and
+   the specific thing that shipped wrong. Read the three hues off the palette before you look at the
+   HUD, because the failure was a *plausible* colour: Jade is hue **217°** at saturation 0.82 with a
+   real green channel (0.489); the value that shipped was hue **240°** at saturation **1.000** with
+   **zero green**, which is `Domains.Blue`'s row and nothing a playable domain can produce. So the
+   check is not "is it blue" — it is **"does it have green in it"**. Then: switch domain mid-flight
+   at the domain-changer toy and confirm the icon repaints *within a frame* (it is polled, not
+   event-driven), and that the **steal count and the boost fill** repaint with it — those had the
+   identical snapshot defect and are now on the same call. Finally, a card whose domain has not
+   resolved yet must render **WHITE**, never blue: a white icon reads as untinted, a saturated one
+   reads as a team.
 7. **Iron Grip** — skim an opposing **shielded** prism below Space 5: it should lose its shield and
    keep its domain. At Space 5: it should change domain **and keep the shield**. Then confirm a
    **super**-shielded prism is refused at both levels.

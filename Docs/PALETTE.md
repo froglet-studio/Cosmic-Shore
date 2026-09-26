@@ -322,6 +322,47 @@ and — worth noting — in three *different* ways: black (§2.4), a dark hue re
 for HDR" or "watch for alpha": it is that when a HUD wants to speak the palette's language, add a
 `*SignalColor` accessor rather than reading the field, whatever the field looks like.
 
+**And having the accessor is still not enough** — §2.8 is the same family's fifth trap, where the
+field and the accessor are both correct and the *argument* is a sentinel.
+
+### 2.8 The fifth trap is the ARGUMENT, not the field — `Domains.Blue` has a real row (2026-09-26)
+
+§§2.4–2.7 are all about a colour being unreadable once a UI slot composes nothing. This one is the
+opposite shape and it shipped: the field was fine, the accessor was fine, and the **domain handed in**
+was the no-team sentinel.
+
+`SO_ColorSet` authors **four** `DomainColorSet` blocks — Jade, Ruby, Gold and **Blue** — and
+`TryGetColorSetByDomain` maps `Domains.Blue` to the fourth and returns `true`. But `Domains.Blue` is
+simultaneously the platform's *"no team / not yet picked / neutral entity"* sentinel, never present in
+`GameDataSO.ActiveDomains`, and **no code path can put a human on it**. So a domain-keyed accessor
+asked about an unresolved pilot answers with a real, saturated colour:
+
+| accessor | Blue's answer | how it reads next to the three playable domains |
+|---|---|---|
+| `GetDomainUIColor` / `GetDomainSignalColor` | (0.400, 0.500, 1.000) | a soft blue — plausible next to Jade's teal |
+| `GetShieldedSignalColor` | **(0.000, 0.000, 1.000)** | hue **exactly 240°**, saturation **1.000**, zero green |
+
+The Squirrel's omni crystal card shipped painted that second one. It was reported as *"blue regardless
+of which domain I picked"* and the correction that identified it is the useful part: **it was reported
+as NOT being Jade's** — Jade's shielded signal is hue 217°, saturation 0.82, green 0.489, i.e. *more
+green and less saturated*. A pure hue-240 fully-saturated blue is not a colour anything in the
+playable palette produces, which is what makes it identifiable.
+
+**The general rule: a sentinel that has a row in a lookup table gets a plausible answer, so a lookup
+that failed to resolve does not render as a failure — it renders as a different team.** That is worse
+than the other four traps in this section, because a black or transparent slot reads as *not
+implemented* and gets reported, while a saturated wrong hue reads as *implemented and mis-tinted* and
+gets rationalised.
+
+The refusal belongs to the **CALLER**, not to the accessor: "no pilot can fly Blue" is a fact about
+pilots, and a neutral mine or an uncommitted crystal legitimately wants to know what colour no-team
+is, so the palette stays a pure palette read. A HUD that means *this pilot's domain* tests for the
+sentinel itself and treats it as "not resolved yet" — alpha 0, keep your white, and keep looking
+(`SquirrelVesselHUDController.ResolveShieldedColor`). Two executors already used exactly that idiom
+from the other direction before this — `EchoSightActionExecutor` and `SniperShotActionExecutor` both
+write `status?.Player != null ? status.Domain : Domains.Blue`, i.e. **Blue already MEANS unresolved in
+this codebase** — which is the whole reason it must never be looked up as a colour.
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)

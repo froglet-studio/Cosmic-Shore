@@ -31,6 +31,11 @@ namespace CosmicShore.UI
         private IVesselStatus _vesselStatus;
         private Domains _lastSourceDomain = Domains.Blue;
 
+        // The domain this HUD is currently PAINTED for. default(Domains) is 0, which is not a
+        // member of the enum, so the first poll always repaints - there is no value a real domain
+        // could hold that would be mistaken for "already painted".
+        private Domains _paintedDomain = default;
+
         // Polled each frame to drive the tube cooldown icon in the freed HUD slot.
         private SquirrelTubeActionExecutor _tubeExecutor;
 
@@ -61,8 +66,16 @@ namespace CosmicShore.UI
         // domain (AOEShieldedRingSpawner), so the icon is that ring's cross-section and this is
         // the colour those prisms will actually be. Domain-KEYED, unlike the danger colour, for
         // the same reason: the ring wears the pilot's colour and the danger rim wears nobody's.
+        //
+        // Domains.Blue is REFUSED rather than looked up, and that is the whole of why this card
+        // shipped the wrong colour. Blue is the platform's "no team / not yet picked" sentinel AND
+        // a real row in the palette, whose ShieldedOutsideBlockColor is authored (0, 0, 0.549) -
+        // at signal strength a pure hue-240 blue, MORE saturated and with LESS green than Jade's
+        // (0.179, 0.489, 1.000). So a domain that had not resolved yet did not render as a failure,
+        // it rendered as a plausible team colour, which is the one outcome a palette read must not
+        // have (Docs/PALETTE.md §2.8). Alpha 0 = "keep your white", which reads as untinted (§2.4).
         private Color ResolveShieldedColor(Domains domain) =>
-            gameData != null && gameData.ThemeManagerData != null
+            domain != Domains.Blue && gameData != null && gameData.ThemeManagerData != null
                 ? gameData.ThemeManagerData.GetShieldedSignalColor(domain)
                 : new Color(0f, 0f, 0f, 0f);
 
@@ -82,12 +95,9 @@ namespace CosmicShore.UI
                 return;
             }
 
-            Color playerColor = ResolveDomainColor(vesselStatus.Domain);
-
             view.Initialize();
             view.SetDangerTint(ResolveDangerColor());
-            view.SetOmniAbilityTint(ResolveShieldedColor(vesselStatus.Domain));
-            view.SetPlayerDomainColor(playerColor);
+            RepaintForDomain(vesselStatus.Domain);
             Subscribe();
             PaintFromStatusFallback();
 
@@ -106,6 +116,46 @@ namespace CosmicShore.UI
                 view.SetTubeCooldownReady(1f - _tubeExecutor.CooldownRemaining01);
 
             PushStealReadout();
+            PushDomainPalette();
+        }
+
+        /// <summary>
+        /// Repaints everything on this HUD that wears the pilot's colour: the omni crystal card's
+        /// shielded-ring icon, the boost fill and the steal count.
+        /// </summary>
+        private void RepaintForDomain(Domains domain)
+        {
+            _paintedDomain = domain;
+            view.SetOmniAbilityTint(ResolveShieldedColor(domain));
+            view.SetPlayerDomainColor(ResolveDomainColor(domain));
+        }
+
+        /// <summary>
+        /// Follows the pilot's LIVE domain rather than the one they had when this HUD was built.
+        ///
+        /// <para>A domain is not decided by the time a vessel spawns: <c>Player.NetDomain</c> is
+        /// server-write and initialises to Jade, the owner's own pick arrives later through
+        /// <c>RequestSetDomain_ServerRpc</c>, and the match's active set can move a human again at
+        /// spawn (<c>NormalizeUnassignedHumans</c>). CLAUDE.md states the rule outright - <i>do not
+        /// snapshot domain at component-creation time</i> - and this controller was snapshotting it
+        /// twice, so the omni card and the steal count both held whatever was true one frame after
+        /// <c>Initialize</c>.</para>
+        ///
+        /// <para>Polled off the live <c>Player.Domain</c> mirror rather than subscribed to
+        /// <c>NetDomain.OnValueChanged</c> for two reasons: this controller already runs an Update
+        /// for the tube cooldown and the steal readout, so the poll is free; and a subscription has
+        /// to be torn down against a <c>Player</c> reference that a vessel swap replaces underneath
+        /// it, which is the asymmetric-binding failure the vessel contract has paid for three times.
+        /// The read is gated on <c>Player</c> being present because
+        /// <c>IVesselStatus.Domain</c> logs an ERROR when it is not - a per-frame poll through that
+        /// getter would turn one missing reference into console spam.</para>
+        /// </summary>
+        private void PushDomainPalette()
+        {
+            if (_vesselStatus?.Player == null) return;
+
+            Domains live = _vesselStatus.Domain;
+            if (live != _paintedDomain) RepaintForDomain(live);
         }
 
         /// <summary>
