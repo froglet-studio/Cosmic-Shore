@@ -5,7 +5,9 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// The prism's solid, subdivided — the geometry the Urchin's CRADLE drapes
-    /// (Docs/PRISM_ANIMATION.md §4.7.2, <c>PrismCradle.hlsl</c>).
+    /// (Docs/PRISM_ANIMATION.md §4.7.2, <c>PrismCradle.hlsl</c>) and the Rhino sword's SLICE cuts
+    /// (§4.10, <c>PrismSlice.hlsl</c>: each half of a cut prism is drawn from this mesh, and its
+    /// density is what bounds the cut face's rim to one grid cell).
     ///
     /// <para><b>Why this exists.</b> A prism is 24 triangles (or 12 on the built-in cube), and a
     /// deformation is only as smooth as the surface it moves. The cradle's first two rounds moved

@@ -17,9 +17,9 @@ only** — the rejection covers NORMAL damage gating, not the hardened-target ri
 
 | Target | Blade state | Result |
 |---|---|---|
-| Normal prism | any | Explodes, debris thrown at the **contact velocity** (below) |
+| Normal prism | any | **SLICED** — cut along the plane the blade swept through it; the halves part, open and dissolve from the cut face (§ "The slice"). Falls back to the ordinary explosion, debris thrown at the **contact velocity** (below), whenever the slice cannot be drawn |
 | Shielded prism | any | Shield pops, prism survives (standard `Prism.Damage` semantics) |
-| **Super-shielded prism** | **ENERGIZED** | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Damage(devastate: true)` (animated explode-out, unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
+| **Super-shielded prism** | **ENERGIZED** | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Slice(devastate: true)` (the armour shatters, the core is CUT; unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
 | **Super-shielded prism** | not energized | **BINDS** — no recoil, no spin. The blade sticks in the armour: a dim **denied spark**, the prism **jiggles**, a **punish thud**, and while the blade stays inside the vessel's **rotation rate is dragged down** and the pilot feels a **grind** (§ "Binding"). The prism survives. |
 
 `popRequiresEnergizedBlade` (default **on** — the ritual IS the design) replaces v2's
@@ -202,6 +202,33 @@ bounded at both ends (length clamps to `MaxScale`, debris clamps to `debrisSpeed
 crystal drains the meter to zero), and it falls out of the two systems composing rather than
 being scripted anywhere.
 
+## The slice (the death visual, 2026-09-26)
+
+A prism the blade destroys is **cut**, not burst — the energy sword is a blade, and a blade kill
+that read as a blast was the one place its identity broke. The full record is
+`Docs/PRISM_ANIMATION.md §4.10`; the pilot-facing half:
+
+- **The cut is the stroke the pilot made.** The plane contains the blade's own axis and the
+  velocity of the blade point that made contact (`SkimmerSwingKinematics`), so a flat sweep cuts
+  flat, a vertical chop cuts vertically, and a blade held out while the ship flies past shears the
+  prism along the ship's path. It passes through the blade point nearest the prism, clamped so the
+  prism's centre sits within `maxCutOffsetFraction` of its half-thickness of the cut — a grazing
+  tip still reads as a slice, never as a corner chipped off. A stab (the blade moving along its own
+  length) sweeps no plane and cuts across the hull's up instead.
+- **What you see:** a white-hot seam flashes across the prism at the instant of the cut; the two
+  halves hold for a beat, part along the cut and open like a book about the trailing edge (never
+  through each other — the hinge rule is proven); each half shows its cut face cooling from white
+  to the domain's bright colour; then each half dissolves AWAY from the cut face behind a ragged
+  ember front. The halves drift a little along the swing and coast to a stop. ~1.15 s total.
+- **Photons only.** `Prism.Slice` is `Prism.Damage` with the plane parked for the death event, so
+  the kill, the energy banked, the stats, the SFX and every gate (shield, super-shield, bind) are
+  exactly what they were. A super-shield pop shatters the stellation as before and slices the core.
+- **It cannot cost a kill its visual.** Budget full (`maxLiveSlices`, 48), config off, a
+  degenerate cut or the render service down → the ordinary explosion plays.
+- **A/B:** `sliceDestroyedPrisms` on `RhinoSkimmerDamagePrismEffect.asset` (default on). Look:
+  `PrismSliceMaterial` (colours, seam, ember, dissolve noise). Timing and motion:
+  `Resources/PrismSliceConfig`.
+
 ## Energy = the Shield resource (index 1)
 
 "Energy" is the Rhino's **Shield** `Resource` (`ResourceSystem.Resources[1]`, normalized `0..1`,
@@ -382,7 +409,8 @@ same-GameObject pieces (`Skimmer`, `SkimmerSwingKinematics`, crackle, body rende
 | Gesture source (stance feed from the reparameterized triggers) | `Executors/ShieldSwipeActionExecutor.cs` (`FeedSwordStance`) |
 | Gesture thresholds | `Data Containers/RhinoShieldSwipeConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/RhinoShieldSwipeConfig.asset` |
 | Tuning (scale mapping, energize, burst, all FX knobs) | `Executors/ShieldSkimmerScaleConfigSO.cs` → `_SO_Assets/VesselActions/Rhino/ShieldSkimmerScaleConfig.asset` |
-| Prism effect (damage, energize-gated super-shield pop, energy bank) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs` → `_SO_Assets/Effects/Vessel Prism Effects/RhinoSkimmerDamagePrismEffect.asset` |
+| Prism effect (damage, energize-gated super-shield pop, energy bank, the cut plane) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSkimmerDamagePrismEffectSO.cs` → `_SO_Assets/Effects/Vessel Prism Effects/RhinoSkimmerDamagePrismEffect.asset` |
+| The slice (death visual) | `Utility/Effects/PrismSlice.cs` (batch/budget/retire) · `Utility/PrismSliceGeometry.cs` (the stamps) · `_Graphics/Materials/Graphs/PrismSlice.hlsl` + `PrismSlice.shader` · `_Graphics/Materials/PrismSliceMaterial.mat` · `Resources/PrismSliceConfig.asset` · `Vessel/Prism.cs` (`Slice`) · `Prisms/PrismFactory.cs` (`SpawnExplosion` routes it) |
 | Crystal effect (explosion + burst kick) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/RhinoSwordCrystalBurstEffectSO.cs` → `_SO_Assets/Effects/Skimmer Crystal Effects/RhinoSwordCrystalBurstEffect.asset` |
 | Box-overlap re-apply (energize rising edge) | `ImpactEffects/Impactors/SkimmerImpactor.cs` (`ReapplyPrismEffectsToOverlapping`) |
 | Shell-pair re-dispatch (energize rising edge) | `Controller/Managers/PrismShellContactManager.cs` (`RedispatchPairsForOwner`) |
@@ -477,6 +505,14 @@ On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosion
    higher energy; energy drops to 0 and the blade eases back to base length.
 9. **Tracers:** two streaks ride the blade tips through swipes, tinted with the live blade
    colour (teal → cyan → white-hot when energized).
+9b. **The slice:** cut trail prisms with a flat sweep, then a vertical chop, then by holding the
+    blade out and flying past. Each kill should show a white seam along the stroke's plane, two
+    halves that part and open (never through each other), cut faces cooling white → domain colour,
+    then a dissolve eating from the cut face outward — gone in ~1.15 s with no pop at the end.
+    Sweep a dense rib fast: past 48 live slices kills should fall back to the explosion (still a
+    visual, never nothing). Stand the camera so a kill happens between it and the hull: the halves
+    must go see-through like every other prism (the occlusion corridor). Untick
+    `sliceDestroyedPrisms` — the old explosion returns exactly.
 10. **Non-regression:** other vessels' skimmers unaffected (SwordState null; base skimmer
     crackle still the red sphere look); the omni-crystal pickup still snaps the meter full;
     touch/binary input can energize by holding both swipe controls. (This step used to read

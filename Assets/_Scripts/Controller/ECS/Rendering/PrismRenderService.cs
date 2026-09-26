@@ -26,12 +26,15 @@ namespace CosmicShore.ECS
     /// Which per-instance override components a companion entity carries.
     /// Prism: color trio + grow / color / flight / shieldMorph / jiggle / suction clocks.
     /// Explosion/Implosion: color trio + the effect shader's animated parameters.
+    /// Slice: color trio + the six slice stamps PrismSlice.shader reads (the Rhino sword's
+    /// cut, Docs/PRISM_ANIMATION.md §4.10).
     /// </summary>
     public enum PrismRenderOverrideSet
     {
         Prism,
         Explosion,
         Implosion,
+        Slice,
     }
 
     /// <summary>
@@ -508,6 +511,17 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismSuctionDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismSuctionDirectionOverride { Value = 1f });
                         em.AddComponentData(prototype, new PrismSuctionGrowDelayOverride { Value = 0f });
+                        break;
+                    case PrismRenderOverrideSet.Slice:
+                        // Zero is the UNSTAMPED state PrismSlice.shader renders as the plain prism
+                        // (zero plane = nothing is beyond the cut, zero motion). Every clone is
+                        // stamped in SpawnSliceDebrisBatch before it is ever made visible.
+                        em.AddComponentData(prototype, new PrismSliceTimingOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSlicePlaneOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSliceCentreOverride { Value = new float4(0f, 0f, 0f, 1f) });
+                        em.AddComponentData(prototype, new PrismSlicePivotOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSliceAxisOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSliceDriftOverride { Value = float4.zero });
                         break;
                 }
             }
@@ -1264,6 +1278,87 @@ namespace CosmicShore.ECS
                 em.DestroyEntity(arr.GetSubArray(0, n));
             LiveEntityCount = Mathf.Max(0, LiveEntityCount - n);
             arr.Dispose();
+        }
+
+        // ------------------------------------------------------------------
+        // Batched pure-entity SLICE halves — the Rhino sword's death visual
+        // (Docs/PRISM_ANIMATION.md §4.10, PrismSlice.hlsl). The explosion's shape
+        // exactly: one prototype-instantiate + one visibility strip per frame, every
+        // stamp a non-structural SetComponentData, retired in whole batches by
+        // PrismSlice through DestroyDebrisBatch. Two entities per sliced prism, one
+        // per half, both drawing the SHARED HighPolyPrismMesh — so a frame's slices
+        // are one instanced batch however many prisms the blade went through.
+        // ------------------------------------------------------------------
+
+        /// <summary>One half's complete initial conditions. Written once at spawn.</summary>
+        public struct SliceDebrisSpawn
+        {
+            /// <summary>The dead prism's pose. The entity matrix never moves — the GPU moves the half.</summary>
+            public Matrix4x4 LocalToWorld;
+            /// <summary>Raw tier colours — colour-space conversion happens at stamp.</summary>
+            public float4 BrightColor;
+            public float4 DarkColor;
+            /// <summary>(start, life, noise seed, 0). Start is rewritten to the batch's clock.</summary>
+            public float4 Timing;
+            public float4 Plane;
+            public float4 Centre;
+            public float4 Pivot;
+            public float4 Axis;
+            public float4 Drift;
+            /// <summary>Object-space AABB covering every pose the half takes over its life.</summary>
+            public AABB Bounds;
+        }
+
+        /// <summary>
+        /// Spawns every entry of <paramref name="spawns"/> as a slice half in ONE
+        /// prototype-instantiate + ONE batched visibility strip. Entities are appended to
+        /// <paramref name="appendEntitiesTo"/> index-aligned with <paramref name="spawns"/>.
+        /// Returns false — spawning nothing — when the service is off or no world exists;
+        /// the caller then falls back to the ordinary explosion (PrismSlice).
+        /// </summary>
+        public static bool SpawnSliceDebrisBatch(Mesh mesh, Material material, int layer,
+            System.Collections.Generic.List<SliceDebrisSpawn> spawns, float startTime,
+            System.Collections.Generic.List<Entity> appendEntitiesTo)
+        {
+            if (!Enabled || mesh == null || material == null ||
+                spawns == null || spawns.Count == 0 || !TryEnsure())
+                return false;
+
+            var em = _world.EntityManager;
+            var prototype = GetPrototype(layer, PrismRenderOverrideSet.Slice, mesh, material);
+
+            var entities = new Unity.Collections.NativeArray<Entity>(
+                spawns.Count, Unity.Collections.Allocator.Temp);
+            em.Instantiate(prototype, entities);
+            // Born hidden (prototype ships DisableRendering). The stamps below ARE the correct
+            // first frame — the two halves exactly tile the prism at age 0 — so strip at once.
+            em.RemoveComponent(entities, ComponentType.ReadWrite<DisableRendering>());
+
+            var mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh));
+
+            for (int i = 0; i < spawns.Count; i++)
+            {
+                var s = spawns[i];
+                var entity = entities[i];
+                var timing = s.Timing;
+                timing.x = startTime;
+                em.SetComponentData(entity, mmi);
+                em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in s.LocalToWorld) });
+                em.SetComponentData(entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in s.BrightColor) });
+                em.SetComponentData(entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in s.DarkColor) });
+                em.SetComponentData(entity, new PrismSliceTimingOverride { Value = timing });
+                em.SetComponentData(entity, new PrismSlicePlaneOverride { Value = s.Plane });
+                em.SetComponentData(entity, new PrismSliceCentreOverride { Value = s.Centre });
+                em.SetComponentData(entity, new PrismSlicePivotOverride { Value = s.Pivot });
+                em.SetComponentData(entity, new PrismSliceAxisOverride { Value = s.Axis });
+                em.SetComponentData(entity, new PrismSliceDriftOverride { Value = s.Drift });
+                em.SetComponentData(entity, new RenderBounds { Value = s.Bounds });
+                appendEntitiesTo.Add(entity);
+            }
+
+            LiveEntityCount += spawns.Count;
+            entities.Dispose();
+            return true;
         }
 
         // ------------------------------------------------------------------

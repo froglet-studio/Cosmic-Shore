@@ -55,6 +55,12 @@ namespace CosmicShore.Gameplay
         // a rocket's blast, and the channel is the only place every route is visible.
         // False for everything else by construction - a blast, a ram, a creature, a teardown.
         bool _destroyedByGunfire;
+        // Set transiently by Slice around its Damage call, the same way: the plane a blade cut
+        // this prism along. Explode forwards it on the death event so the factory draws a CUT
+        // (Docs/PRISM_ANIMATION.md §4.10) instead of a burst. A zero normal is an ordinary death;
+        // Slice clears it again whether or not the hit destroyed the prism.
+        Vector3 _sliceCutPoint;
+        Vector3 _sliceCutNormal;
         public bool IsSmallest;
         public bool IsLargest;
         
@@ -1326,6 +1332,8 @@ namespace CosmicShore.Gameplay
                 Velocity = impactVector,
                 DebrisSpeedLimit = debrisSpeedLimit,
                 Kind = kind,
+                SlicePoint = _sliceCutPoint,
+                SliceNormal = _sliceCutNormal,
                 PrismType = PrismType.Explosion
             });
         }
@@ -1399,6 +1407,32 @@ namespace CosmicShore.Gameplay
                 _destroyedByCreature = byCreature;
                 _destroyedByGunfire = byGunfire;
                 Explode(impactVector, domain, playerName, devastate, debrisSpeedLimit);
+            }
+        }
+
+        /// <summary>
+        /// <see cref="Damage"/>, delivered by a BLADE: if this hit destroys the prism, its death
+        /// is drawn as a cut along the world plane through <paramref name="cutPoint"/> with normal
+        /// <paramref name="cutNormal"/> — two halves that part, open and dissolve from the cut
+        /// face (Docs/PRISM_ANIMATION.md §4.10) — instead of a burst of debris. Everything the
+        /// death MEANS is Damage's, unchanged: the same shield/super-shield gates, the same
+        /// destruction bookkeeping, the same stats and SFX. Only the photons differ, and if the
+        /// slice cannot be drawn (budget, config, a degenerate cut) the ordinary explosion is.
+        /// </summary>
+        public void Slice(Vector3 impactVector, Domains domain, string playerName,
+                          Vector3 cutPoint, Vector3 cutNormal, bool devastate = false,
+                          float debrisSpeedLimit = 0f)
+        {
+            _sliceCutPoint = cutPoint;
+            _sliceCutNormal = cutNormal;
+            try
+            {
+                Damage(impactVector, domain, playerName, devastate, debrisSpeedLimit: debrisSpeedLimit);
+            }
+            finally
+            {
+                _sliceCutPoint = Vector3.zero;
+                _sliceCutNormal = Vector3.zero;
             }
         }
 

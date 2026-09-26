@@ -49,6 +49,14 @@ namespace CosmicShore.Gameplay
         [Tooltip("Ceiling on debris speed, in real speed units, replacing the explosion prefab's clamp.")]
         [SerializeField] private float debrisSpeedLimit = 200f;
 
+        [Header("Slice (the death visual)")]
+        [Tooltip("ON: a prism the blade destroys is CUT — split along the plane the blade swept " +
+                 "through it, the halves parting, opening and dissolving from the cut face " +
+                 "(Docs/PRISM_ANIMATION.md §4.10, RHINO_ENERGY_SWORD.md § \"The slice\"). OFF: the " +
+                 "ordinary prism explosion. Photons only — damage, energy, stats and SFX are identical " +
+                 "either way, and a slice the budget cannot afford falls back to the explosion.")]
+        [SerializeField] private bool sliceDestroyedPrisms = true;
+
         [Header("Super-shielded prisms")]
         [Tooltip("True (v3, the energize ritual): popping a super-shielded prism requires the blade " +
                  "to be ENERGIZED — hold the both-triggers chop stance to charge it. A non-energized " +
@@ -135,13 +143,23 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
-                PopSuperShield(status, prism, velocity);
+                PopSuperShield(impactor, status, prism, velocity);
                 sword?.AddEnergy(energyPerSuperShieldedPrism);
                 sword?.NotifyPrismDestroyed(superShielded: true, prism.transform.position);
                 return;
             }
 
-            if (proportionalDebris)
+            if (TryResolveCut(impactor, status, prism.transform.position, velocity, out var cutPoint, out var cutNormal))
+            {
+                // The same impact vector and ceiling either branch below would hand Damage; only
+                // the death's picture changes.
+                if (proportionalDebris)
+                    prism.Slice(velocity * restitution, status.Domain, status.PlayerName, cutPoint, cutNormal,
+                                debrisSpeedLimit: debrisSpeedLimit);
+                else
+                    prism.Slice(velocity * inertia, status.Domain, status.PlayerName, cutPoint, cutNormal);
+            }
+            else if (proportionalDebris)
                 PrismEffectHelper.DamageProportional(status, prismImpactee, velocity, restitution, debrisSpeedLimit);
             else
                 PrismEffectHelper.Damage(status, prismImpactee, inertia, velocity);
@@ -161,7 +179,7 @@ namespace CosmicShore.Gameplay
         // devastate so the prism cannot restore. Debris carries the contact velocity on the same
         // terms as the normal path (PrismEffectHelper.DamageProportional can't devastate, so the
         // proportional branch reproduces its two lines here rather than forking the helper).
-        void PopSuperShield(IVesselStatus status, Prism prism, Vector3 contactVelocity)
+        void PopSuperShield(SkimmerImpactor impactor, IVesselStatus status, Prism prism, Vector3 contactVelocity)
         {
             // Synchronously clears IsSuperShielded; sheds the stellation as explosion debris
             // + SFX. Each branch hands the shed the SAME vector and ceiling it hands the
@@ -172,14 +190,62 @@ namespace CosmicShore.Gameplay
             else
                 prism.DeactivateShields(contactVelocity * inertia);
 
+            // The hardened prism itself is CUT, like every other prism the blade kills; its
+            // stellation has already shattered above, so the armour bursts and the core slices.
+            bool cut = TryResolveCut(impactor, status, prism.transform.position, contactVelocity,
+                                     out var cutPoint, out var cutNormal);
+
             if (proportionalDebris)
             {
-                prism.Damage(contactVelocity * restitution, status.Domain, status.PlayerName,
-                             devastate: true, debrisSpeedLimit: debrisSpeedLimit);
+                if (cut)
+                    prism.Slice(contactVelocity * restitution, status.Domain, status.PlayerName, cutPoint, cutNormal,
+                                devastate: true, debrisSpeedLimit: debrisSpeedLimit);
+                else
+                    prism.Damage(contactVelocity * restitution, status.Domain, status.PlayerName,
+                                 devastate: true, debrisSpeedLimit: debrisSpeedLimit);
                 return;
             }
 
-            prism.Damage(contactVelocity * inertia, status.Domain, status.PlayerName, devastate: true);
+            if (cut)
+                prism.Slice(contactVelocity * inertia, status.Domain, status.PlayerName, cutPoint, cutNormal,
+                            devastate: true);
+            else
+                prism.Damage(contactVelocity * inertia, status.Domain, status.PlayerName, devastate: true);
+        }
+
+        /// <summary>
+        /// The plane the blade swept through the prism: it contains the blade's own axis and the
+        /// velocity of the part of the blade that made contact, so a flat sweep cuts flat, a
+        /// vertical chop cuts vertically and a blade held out while the ship flies past shears the
+        /// prism along the ship's path — the cut is the stroke the pilot made. It passes through the
+        /// blade point nearest the prism; PrismSliceGeometry keeps it inside the prism's middle so a
+        /// grazing tip still reads as a slice rather than a chip. False (the ordinary explosion)
+        /// when the slice is off or the skimmer has no blade to cut with.
+        /// </summary>
+        bool TryResolveCut(SkimmerImpactor impactor, IVesselStatus status, Vector3 prismPosition,
+                           Vector3 contactVelocity, out Vector3 point, out Vector3 normal)
+        {
+            point = default;
+            normal = default;
+            if (!sliceDestroyedPrisms) return false;
+
+            var swing = impactor.Skimmer.SwingKinematics;
+            if (swing == null || !swing.IsReady) return false;
+
+            Vector3 blade = swing.BladeAxisWorld;
+            Vector3 n = Vector3.Cross(blade, contactVelocity);
+            // A stab (the blade moving along its own length) sweeps no plane; cut across the hull's
+            // up instead, which is how a chop along the ship's own axis would fall.
+            if (n.sqrMagnitude < 1e-6f * Mathf.Max(contactVelocity.sqrMagnitude, 1e-6f))
+            {
+                n = Vector3.Cross(blade, status.ShipTransform.up);
+                if (n.sqrMagnitude < 1e-8f) n = Vector3.Cross(blade, status.ShipTransform.right);
+                if (n.sqrMagnitude < 1e-8f) return false;
+            }
+
+            normal = n.normalized;
+            point = swing.ClosestBladePoint(prismPosition);
+            return true;
         }
 
         private void BounceBack(IVesselStatus status, PrismImpactor prismImpactee)

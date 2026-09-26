@@ -2414,6 +2414,124 @@ spam gate. The *curve shape* stays in the HLSL, matching how C5 splits feel from
 
 ---
 
+### 4.10 The Rhino sword's SLICE — a death that is a CUT (shipped 2026-09-26, C18)
+
+A prism the Rhino's energy sword destroys no longer bursts into debris. It is **cut along the plane
+the blade swept through it** — the plane containing the blade's own axis and the velocity of the
+part of the blade that made contact — and comes apart like fruit under a sharp knife: a crisp
+white-hot seam at the instant of the cut, the two halves holding for a beat, then parting along
+the cut and opening like a book about the trailing edge, each half showing a hot cut face that
+cools to the domain's bright colour, and then each half **dissolving away from its sliced face**,
+the cut going first and a ragged ember front marching out to the far end of the piece.
+
+**It is a STAMP, not a §4.7 global, and that is the admission test answered, not dodged.** Every
+input is known at the instant of the hit — the plane, the side each half is on, how hard the blade
+was moving — and nothing depends on live data after it. So it is §1's ordinary shape: one stamp of
+initial conditions per half, the GPU runs the course off `_PrismClock`, one scheduled retirement.
+There is no per-frame CPU write to any piece and no §1 exception (contrast the implosion's moving
+target). The shape is the explosion debris' (§4.6) exactly — requests queue during the frame, ONE
+prototype-instantiate batch per frame spawns them (`PrismRenderService.SpawnSliceDebrisBatch`,
+override set `Slice`), ONE batched destroy retires each expired batch (`PrismSlice.Sweep`).
+
+**The high-poly prism is load-bearing, not decorative.** Each half is a pure render entity drawing
+the SHARED `HighPolyPrismMesh` (subdivision 10), and a half is made by MAPPING the far side of the
+prism's own skin onto the cut plane — the skin beyond the cut folds onto the plane and *becomes*
+the cut face (`PrismSliceCut` in `PrismSlice.hlsl`). The map is a **central projection from a point
+strictly inside the kept half**, which is what makes it exact for a convex solid: every ray from an
+interior point through a far-side surface point crosses the plane inside the cross-section, and
+every cross-section point is crossed by exactly one such ray, so the far skin maps BIJECTIVELY onto
+the true cut face — no overhang past the real edge (an orthogonal projection's failure on any face
+slanted to the cut), no holes, no fold; continuous where it meets the kept skin, so the half is
+watertight. A vertex map is only as exact as the triangles it moves, so the one row of triangles
+straddling the cut is where the fold is approximate: the rim is exact to ONE grid cell — half a
+face on the authored 24-triangle prism (a crude wedge), a tenth of a face at subdivision 10. What
+is left of that is closed by two fragment-stage rules: the skin's straddling triangles are clipped
+exactly on the cut line (the interpolated REST depth is exact within a triangle), and the sliver
+that opens between the skin's edge and the cap looks INTO the half, where every back face is shaded
+as cut flesh with the cut face's own normal — the same colour and shading as the cap beside it. A
+per-vertex FAR flag tells cap from rim: 1 on every moved vertex, so a triangle made wholly of them
+interpolates to exactly 1 (cap) while a straddling one is below it everywhere but its far corner.
+**This is the high-poly mesh's second consumer after the cradle (§4.7.2), and the first that is a
+stamp rather than a global** — it uses the mesh and nothing else of the morph family (no residency
+swap, no bank): the halves are born on the dense mesh, so there is nothing to swap invisibly.
+
+**The plane is stamped UNNORMALISED so a depth is a world distance.** The CPU stamps `m = Mᵀ·n` and
+`d = n·(Q − t)` for the unit world normal `n`, which makes `dot(m, x) − d` the WORLD signed distance
+of an object-space vertex from the cut, exactly, under the prism's non-uniform scale. So the
+dissolve depth, the fresh-cut seam width and the half's full depth are world units with no
+per-fragment matrix work, and a long thin slab dissolves like a cube does. Projecting in object
+space is identical to projecting in world space because an affine map preserves lines and ratios
+along them.
+
+**The motion is rigid and provably non-interpenetrating.** `world = Pivot + Rot(axis, θ·Open(u))·(rest
+− Pivot) + Away·sep·Separate(u) + drift·Drift(u)`, the three envelopes exponential approaches (the
+drift one is a velocity under linear drag, so the halves are carried along the swing and coast to a
+stop). The CPU puts the hinge on the half's most-TRAILING point along the blade's travel, dropped
+onto the cut; every point of the half is then at or ahead of the hinge, so a rotation of up to 90°
+toward "away" can only carry points further from the twin, never into it. Both properties are
+asserted — rigidity and the half-space bound in `verify_prism_slice.py`, the hinge rule against the
+C# that stamps it in `PrismSliceTests`.
+
+**The dissolve.** Each fragment's place in the dissolve order is its depth into the half as a
+fraction of the half's full depth (0 on the cut face — every cap vertex — 1 at the deepest point),
+roughened by world-scale value noise. The front is a HARD edge with an ember band behind it (the
+house style; a dithered dissolve reads as the corridor's view effect), leaning toward the fresh-cut
+white so it reads as a front against flesh that is already past the bloom clamp. The window ends
+`dissolveEndMargin` of the life before retirement and overshoots progress 1, so the retirement never
+beats the wipe (continuity of existence).
+
+**It obeys the occlusion corridor (§4.7).** The halves are born exactly where the blade kills —
+beside the Rhino's own hull — so they are the one death visual most likely to occlude the ship. The
+shader includes `PrismOcclusionCorridor.hlsl` and clips through `PrismOcclusionFadeDebris_float`, the
+same entry point ExplodingBlockGraph uses (no collider, so no nose clearance to buy), in all three
+passes so depth and colour agree.
+
+**Why a hand-written shader rather than a graph.** Three things the graph cannot give: the face side
+(a back face seen through the rim or the dissolve is shaded as flesh), two per-vertex values computed
+BEFORE the map moves the vertex (rest depth and the far flag), and a far flag that interpolates
+linearly across a triangle. It is DOTS-instanced by hand (`UNITY_DOTS_INSTANCED_PROP` for the six
+stamps plus the colour trio every prism entity carries), opaque + alpha-clip like every prism
+material, `Cull Off`, three passes (UniversalForwardOnly, DepthOnly, DepthNormalsOnly), no shadow
+caster (the entities cast none, like the debris).
+
+**It never costs a death its visual.** `PrismFactory.SpawnExplosion` tries the slice first and falls
+through to the ordinary explosion on ANY refusal — the config off or missing, the budget full, a
+degenerate cut, the render service down. The slice is photons only: damage, energy, stats, SFX and
+the destroyed-channel payload are `Prism.Damage`'s, unchanged (`Prism.Slice` is Damage with the plane
+parked in a transient field, the same idiom as `_destroyedByCreature`).
+
+**Budget (the whole cost story).** Triangles `maxLiveSlices × 2 × 12 × s²` = 48 × 2 × 1,200 =
+**115,200** at the defaults (a slice lives 1.15 s, so this is a ceiling a very fast blade reaches, not
+a steady state); past the ceiling kills explode. **Always-on colliders: ZERO** — the prism's collider
+went with its destruction, the halves are photons. **Extra draw calls: ZERO beyond one batch** — every
+half shares one mesh and one material. Per-frame CPU: the drain and the sweep, both O(this frame's
+kills), nothing that scales with live halves.
+
+**Tuning.** `Resources/PrismSliceConfig` owns everything the CPU needs to stamp and retire (life,
+the three time constants, the dissolve window, separation, opening angle, drift, the cut-offset
+clamp, the budget); the time constants and window are written onto a runtime CLONE of the material,
+so the shared material asset is never written at runtime. `PrismSliceMaterial` owns the look
+(fresnel, fresh-cut colour and cooling time, seam width, cut-face glow and shading, dissolve noise,
+ember band/glow/whiteness). `RhinoSkimmerDamagePrismEffectSO.sliceDestroyedPrisms` is the A/B switch.
+
+**Proof.** `Tools/Shaders/verify_prism_slice.py` — (A) clang++ compiles and RUNS the shipped HLSL:
+identity unstamped, the kept side bit-identical, every far vertex on the cut and inside the prism,
+the cap covering the cross-section once, continuity at the cut (as a convergence: halving the step
+halves the displacement), watertight duplicates, outward cap winding, rigid motion, the half-space
+bound, the dissolve window finishing before retirement, the cut going first, the rim clip, the
+noise; with three negative controls (a cap flag that eats the cap, a zero overshoot, and a centre
+outside the half — the broken stamp the CPU's inside-check exists to refuse) that must all FIRE.
+(B) glslang front-end-compiles every pass, vertex and fragment, plain and DOTS-instanced, against a
+mock of the URP library — it proves the shader's own code, not the library. `PrismSliceTests` holds
+the CPU stamps to the promises (A) assumes, and was itself run off-engine against real vector math
+with two mutations (hinge on the leading edge; a normalised plane) confirmed to fail it.
+
+**What was NOT proven, stated.** Nothing has run in the editor. Whether it READS as a satisfying
+slice is the playtest's answer; the numbers say only that the map is the map. Known imprecision: the
+halves' fresnel and flesh shading is the prism look approximated, not the BlockGraph composition;
+`UNITY_DOTS_INSTANCED_PROP` / `DOTS.hlsl` are the documented Entities-Graphics custom-shader surface
+and were compiled against a mock, not the package.
+
 ## 5. Migration tracker (the deduplicated work list)
 
 > **Every ☐ / ◐ row below has a ready-to-paste branch prompt in
@@ -2464,6 +2582,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C15 | `ShapeDrawingManager` shrink-to-outline — per-frame `transform.position`/`localScale` Lerp, no render-bridge / spatial-index sync; **no §5 row**, so every sweep missed it | ✅ 2026-08-25: **resolved by deletion** (Prompt 15), the C4/C10 outcome. Unreachable — GUID `d375b1129a0a4e29b505296c9e510bdc` lived only on its own `.meta` after `MinigameFreestyle.unity` was removed. Exclusive dependents deleted with it: `ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData` (all GUID-only-on-own-meta). **Kept:** `ShapeDefinition` (painting toy), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `SegmentSpawner` (SkimRace live), SOAP events `EventOnShapeGameModeStarted` (`8484be0c8df25b94a9e0ba29131f8dc3`) / `EventOnShapePrismReturnToPool` (`33f47a5e536b78442a7f206db3ad7929`) — still wired on live prism prefabs to `Prism.ReturnToPool`; only the deleted manager `Raise()`d them; **never Raise them**; do not strip the EventListeners. Migrating a path nothing can execute would have shipped an untested clock path. |
 | C16 | A LIVING health prism stands still while the limb it is bolted to bends — the lockup that reads as one creature comes apart | ✅ SHIPPED 2026-09-16 — new `PrismSway` (its own `PrismSway.hlsl`, which `#include`s `SpindleSway.hlsl` so the prism and the limb share the two wave constants rather than each carrying a copy) + `_SwaySpanX`/`_SwaySpanY`/`_SwayAxis`/`_SwayTiming` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_sway.py`, spliced immediately AFTER `PrismShieldMorph` so the two compose) + `PrismRenderService.StampSway`/`ClearSwayStamp` + `PrismSway` (the bake and the stamp site) + `Prism.OnCreationComplete` (a new one-line virtual — the stamp cannot live in `Initialize`, which runs before the companion entity exists and before `AssembledFlora` has re-parented the prism onto its spindle). The prism reads the LIMB'S OWN shear field evaluated at its own vertices, so the two move together **bit-identically** rather than approximately; `verify_prism_sway.py` T3 asserts exactly that against `SpindleSway`, which is why the limb height is folded into the span BEFORE the sine. Everything stamped is a constant of the attachment, so there is no start time, no duration and no per-frame CPU. A ZERO span is the exact no-op and is the default, so trails, authored environments and the skeleton a dead lifeform leaves behind (`HealthPrism.LeaveAsSkeleton` clears the stamp) are unchanged — which is the feature: **living mass is the mass that moves**. Design, the four proof layers and the instance-data cost: `Docs/ECOSYSTEM.md` §47 |
 | C17 | The Urchin's CRADLE — the mass around a RIDING Urchin drapes onto its hull (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2); **RE-CUT 2026-09-22 from a per-triangle rigid motion to a high-poly radial DRAPE** after the per-face and per-wedge cuts were both rejected on look (*"this looks terrible"* → a 10x tone-down → *"really bad to the point i put this down"*) — a deformation is only as smooth as the surface it moves, and 24 triangles is not a surface. Now: `HighPolyPrismMesh` (the identical solid subdivided 16x per face axis, 3,072 tris, SHARED so the swapped prisms still batch) + `PrismCradle`'s residency pass (`Prism.SetRenderMeshOverride` on the nearest prisms within `hullRadius + drapeReach + residencyMargin` — a STATE CHANGE, final at the instant it is applied, like a shield engaging, and budgeted at 24 prisms; it declines any prism already holding an override and only clears one that is still its own) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, 4 slots — the object-space Tangent Vector the wedge cut needed is GONE, the map reads only world position and normal — spliced LAST on both live graphs by `Tools/Shaders/wire_prism_cradle.py`, whose migration is now written against slot DIRECTIONS so it runs in both directions and sweeps the feeder nodes an old signature orphaned) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 6 u drape reach, exponent 1.5, max strength **1**, subdivision 16, 24 resident prisms, 2 u residency margin, 0.25 s in / 0.4 s out). The map is ONE line — `p' = U + dir·(d − s·k(s)·w)` — with a falloff C1 at both ends (no seam) and the ANALYTIC inverse-transpose for the normal (the cheap lerp-toward-the-sphere-normal shortcut pops where `n·dir` crosses zero, which is a line down the middle of the ridden prism's side faces). Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file: identity off/beyond reach, the wrap onto the surface along the outward radial, the lip never past the surface and never folding, radial purity, the normal proven by CONVERGENCE RATE — halving the patch quarters the error, 0.32 → 0.0058 — no seam at the reach, affine in the weight, dominant slot, plus a negative control that PLATEAUS at 0.74 with the radial Jacobian term neutered). Not run in the editor. |
+| C18 | The Rhino sword's kills burst into debris like any other death — a blade reads as a blast | ✅ SHIPPED 2026-09-26 (§4.10) — a blade kill is a CUT: two pure render entities per prism on the shared `HighPolyPrismMesh`, the far skin centrally projected onto the cut plane (`PrismSlice.hlsl`), rigid hinge-opening motion and a dissolve from the cut face, all off one stamp per half; batched spawn/retire (`PrismSlice.cs`, `PrismRenderService.SpawnSliceDebrisBatch`), explosion fallback on any refusal, budget 115k triangles / zero colliders. Proven offline by `verify_prism_slice.py` (execution + glslang) and `PrismSliceTests`; **not run in the editor** |
 
 Phase D — lock-in:
 
