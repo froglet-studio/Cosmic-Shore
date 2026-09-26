@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e18c66be8e429824487e2beb945f71bd, type: 3}
   m_Name: VesselOvertakeBySkimmerEffect
   m_EditorClassIdentifier: 
-  debuffMagnitude: -0.3333
-  buffMagnitude: 0.3333
+  debuffMagnitude: -0.08
+  buffMagnitude: 0.08
   effectDuration: 3
   hapticAmplitude: 0.8
   hapticFrequency: 0.7

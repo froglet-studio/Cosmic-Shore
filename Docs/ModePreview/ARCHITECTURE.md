@@ -475,11 +475,13 @@ the teardown racing the next entry. Three concrete races, all closed:
   home → hull swap **awaited** → arena struck and drained) and the session stays in `Striking`
   until every step lands; the auto-start driver only fires from `Idle`. `SwapVessel` additionally
   waits out any in-flight swap *before* requesting, so a request can never be dropped.
-- **`DomainFaunaBuffSystem.EnsureExists` rebinds the scene's buff system onto whatever runtime it
-  is handed** — a satellite's `Initialize` was handing it the satellite's instance, which the
-  strike then destroyed, leaving the menu's fauna-buff system holding a dead SO. Satellites now
-  skip that call outright (`Cell.Initialize` guards on `IsSatellite`); a preview arena's hearts
-  are not the menu's economy.
+- **A scene-wide system a satellite `Initialize`s will be REBOUND onto the satellite's runtime SO**
+  — `DomainFaunaBuffSystem.EnsureExists` was handed the satellite's instance, which the strike then
+  destroyed, leaving the menu's system holding a dead SO. It was answered by guarding that call on
+  `IsSatellite`; the system itself is now removed (`Docs/ECOSYSTEM.md` §15), so the guard is gone
+  with it. **The trap is not**: anything a satellite's `Initialize` hands a scene-wide singleton is
+  a reference that outlives the satellite, so a future one must either skip the call or be handed
+  the SCENE cell's runtime.
 - **The local trail spawner is penned up across the teleport home** — a spawner live for one
   frame after `SetPose` lays a prism bridging 120k units of empty space.
 

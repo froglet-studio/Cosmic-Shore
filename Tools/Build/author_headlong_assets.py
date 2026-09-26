@@ -26,7 +26,7 @@ so the clone swaps three things and inherits the rest:
   1. the controller script (HeadlongController), and its field block: the scoring rule asset,
      firstGateDistance dropped (a circuit has no first leg to place), and `laps` added.
   2. NOTHING about the cell, the spawn ring or the comeback source - all four are already what
-     this mode wants, including differenceSource 8 (SwitchesThreaded), which is the same metric.
+     this mode wants (the comeback reads the scoring rule, so there is no source to author).
   3. the arcade card's Vessels list: Rhino, not Dolphin.
 
 THE SCORING RULE IS A SECOND ASSET, NOT A SECOND CLASS. GateRaceScoringRuleSO is entirely
@@ -270,11 +270,8 @@ scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 #   - the SPAWN RING is EQUATORIAL at 150 outside the nucleus, which is the fairness rule: gate 0
 #     is rotated onto that ring's POLE, and only a point on the axis is equidistant from every
 #     pilot.
-#   - the COMEBACK source is 8 (SwitchesThreaded) and useGolfRules 1 - the same metric and the
-#     same direction, because it is the same kind of race.
+#   - (the comeback source is no longer authored: it reads the scoring rule, 2026-09)
 for probe, why in ((r"^  spawnFormation: 1$", "equatorial spawn ring"),
-                   (r"^  differenceSource: 8$", "comeback reads SwitchesThreaded"),
-                   (r"^  useGolfRules: 1$", "comeback golf direction"),
                    (r"^  cellTypeChoiceOptions: 0$", "single race cell")):
     assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
 

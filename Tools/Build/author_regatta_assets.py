@@ -410,9 +410,7 @@ scene, n = re.subn(r"^  - vesselClass: 2\n(    PlayerName: AI \d)", r"  - vessel
 assert n == 4, f"AI templates swapped {n} times (expected 4)"
 
 # Sanity: everything else the donor authored is what this mode wants.
-for probe, why in ((r"^  spawnFormation: 1$", "equatorial spawn ring (overridden by the start line)"),
-                   (r"^  differenceSource: 8$", "comeback reads SwitchesThreaded"),
-                   (r"^  useGolfRules: 1$", "comeback golf direction")):
+for probe, why in ((r"^  spawnFormation: 1$", "equatorial spawn ring (overridden by the start line)"),):
     assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
 g.emit_scene("MinigameRegatta", G_ASSET["MinigameRegatta.unity"], scene)
 

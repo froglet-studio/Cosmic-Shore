@@ -29,24 +29,6 @@ namespace CosmicShore.Gameplay
             NetworkVariableWritePermission.Owner);
 
         /// <summary>
-        /// Replicated INTEGER element levels, four bits per element (nibble <c>(int)element - 1</c>,
-        /// Charge lowest), each clamped to 0..15 — the deficit band reads as 0. Owner-write, the
-        /// sibling of <see cref="NetElementUnlocks"/> and published from the same place.
-        ///
-        /// <para>It exists because element levels never replicate, so any ability that scales an
-        /// OUTCOME continuously by an element (not merely gates it on an upgrade) resolves
-        /// differently on every peer: a remote copy of the vessel sits at whatever level its
-        /// replica started with. The unlock bits solved that for the qualitative half; this is
-        /// the quantitative half, at integer resolution, which is all an outcome needs and what
-        /// lets owner and peers compute the SAME number. Read it through
-        /// <c>R_VesselElementalAbilityHandler.ReplicatedLevel</c>, never directly.</para>
-        /// </summary>
-        public NetworkVariable<ushort> NetElementLevels = new(
-            0,
-            NetworkVariableReadPermission.Everyone,
-            NetworkVariableWritePermission.Owner);
-
-        /// <summary>
         /// The live SHAPE of the Dolphin's Echo Sight while its owner holds it:
         /// <c>(BlastVolume.Height, TanCorePerUnit, TanGapePerUnit)</c>, or
         /// <see cref="Vector3.zero"/> when nobody is aiming. Owner-write, for the same reason
@@ -122,35 +104,44 @@ namespace CosmicShore.Gameplay
         public event Action<InputEvents> OnInputEventStopped;
         IVesselStatus vesselStatus;
         bool _subscribedToInputPaused;
+        // The status the pause handler is attached to - recorded so a re-init (which may hand
+        // this vessel a different player) detaches from the right one before re-binding.
         IInputStatus _pauseSource;
 
-        // IDEMPOTENT, and it has to be. Three paths subscribe this handler to the button channels
-        // - VesselController.Initialize and ChangePlayer for the local pilot, and every input
-        // un-pause through OnToggleInputPaused - and nothing orders them. The Player's pause is a
-        // NetworkVariable that PERSISTS across scenes, so whether an un-pause lands after
-        // Initialize depends on history: returning to Menu_Main from a match (paused at the end)
-        // re-inits the vessel (+1) and then StartPlayer un-pauses it (+1 again). A C# event
-        // accepts the same delegate twice, so the handler then ran EVERY press twice. Holds
-        // survive that - a second Engage on a held ability is a no-op - which is why it went
-        // unseen for the whole fleet; a TOGGLE does not, and the Butterfly's right trigger
-        // flipped Mass -> Dust -> Mass on every pull and read as a button that did nothing.
+        // ONE SUBSCRIPTION, EVER - and the latch is what enforces it, because a C# delegate
+        // happily holds the same handler twice and nothing reports it.
+        //
+        // Three paths subscribe and they are not mutually exclusive: VesselController.Initialize
+        // (every spawn), VesselController.ChangePlayer (a LIVE vessel handed to another player -
+        // the Cellular Duel ownership swap, which Initialize never sees), and every un-pause
+        // (OnToggleInputPaused). A second += therefore makes OnButtonPressed run twice per press,
+        // which sends the press RPC twice, which replays PerformShipControllerActions twice on
+        // every peer.
+        //
+        // That is invisible on almost everything the fleet binds, because a HELD ability started
+        // twice is the same ability held - which is exactly why it went unnoticed. It is NOT
+        // invisible on a one-shot that SPENDS: the Sparrow's skyburst charged the tank twice and
+        // launched two rockets from one pull of the trigger, and the Butterfly's right trigger -
+        // a TOGGLE - flipped Mass -> Dust -> Mass on every pull and read as a dead button. A
+        // duplicate release is equally silent, so the pair is latched together rather than only
+        // the press.
+        bool _subscribedToInputEvents;
+
         void SubscribeToInputEvents()
         {
             if (_subscribedToInputEvents) return;
-            _subscribedToInputEvents = true;
             _onButtonPressed.OnRaised  += OnButtonPressed;
             _onButtonReleased.OnRaised += OnButtonReleased;
+            _subscribedToInputEvents = true;
         }
 
         void UnsubscribeFromInputEvents()
         {
             if (!_subscribedToInputEvents) return;
-            _subscribedToInputEvents = false;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
+            _subscribedToInputEvents = false;
         }
-
-        bool _subscribedToInputEvents;
 
         void OnDisable()
         {
@@ -237,10 +228,9 @@ namespace CosmicShore.Gameplay
             ShipHelper.InitializeShipControlActions(vesselStatus, _gamepadActionOverrides, _gamepadOverrideActions);
             ShipHelper.InitializeClassResourceActions(_resourceEventClassActions, _classResourceActions);
 
-            // Same idempotence as the button channels, for the same reason: Initialize re-runs on
-            // a live vessel (a re-init, the ownership swap), and a second += here would make every
-            // pause toggle subscribe and unsubscribe twice. Detach from whatever status we were
-            // listening to first, since a re-init may hand this vessel a different player.
+            // The same one-subscription rule for the PAUSE event: Initialize re-runs on a live
+            // vessel, and a second += here makes every pause toggle subscribe and unsubscribe the
+            // button channels twice. Detach from whatever status we were listening to first.
             if (_subscribedToInputPaused && _pauseSource != null)
                 _pauseSource.OnToggleInputPaused -= OnToggleInputPaused;
             _subscribedToInputPaused = false;
@@ -370,50 +360,6 @@ namespace CosmicShore.Gameplay
             if (TryFindInput<T>(_gamepadOverrideActions, out inputEvent)) return true;
 
             inputEvent = default;   // meaningless on false - see the summary
-            return false;
-        }
-
-        /// <summary>
-        /// <see cref="TryGetInputForAction{T}"/>, plus the ACTION itself. The same question with
-        /// one more answer, and the extra answer is what stops a caller duplicating the ability's
-        /// tuning: an autonomous pilot that has to decide HOW LONG to hold a held ability needs
-        /// that ability's own numbers, and reading them off its SO keeps the asset the single
-        /// source of them rather than copying a reach speed into a mode's controller — where it
-        /// would be right on the day it was copied and silently stale after the next retune.
-        ///
-        /// Same sweep order and the same contract as its sibling: false for a vessel that binds no
-        /// such ability, and on false neither out parameter means anything.
-        /// </summary>
-        public bool TryGetBoundAction<T>(out T action, out InputEvents inputEvent) where T : class
-        {
-            if (TryFindAction(_shipControlActions, out action, out inputEvent)) return true;
-            if (TryFindAction(_touchOverrideActions, out action, out inputEvent)) return true;
-            if (TryFindAction(_gamepadOverrideActions, out action, out inputEvent)) return true;
-
-            action = null;
-            inputEvent = default;   // meaningless on false - see TryGetInputForAction
-            return false;
-        }
-
-        static bool TryFindAction<T>(Dictionary<InputEvents, List<ShipActionSO>> map,
-                                     out T action, out InputEvents inputEvent) where T : class
-        {
-            action = null;
-            inputEvent = default;
-            if (map == null) return false;
-
-            foreach (var kv in map)
-            {
-                var list = kv.Value;
-                if (list == null) continue;
-                for (int i = 0; i < list.Count; i++)
-                {
-                    if (list[i] is not T typed) continue;
-                    action = typed;
-                    inputEvent = kv.Key;
-                    return true;
-                }
-            }
             return false;
         }
 

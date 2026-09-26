@@ -318,8 +318,8 @@ namespace CosmicShore.Gameplay
                 // body's CURRENT root scale, and ApplyVariantTuning then REWRITES that root
                 // scale from the variant's BaseBodyScale. Without this line every creature that
                 // authors a body scale wears a heart of `authored x BaseBodyScale` - 0.4 and 0.7
-                // on the shipped tadpoles, i.e. a silent 2.5x and 1.43x cut to BOTH the collect
-                // reward and the live domain fauna buff, with nothing reporting it.
+                // on the shipped tadpoles, i.e. a silent 2.5x and 1.43x cut to the collect
+                // reward, with nothing reporting it.
                 //
                 // It also covers a SECOND inversion one level up: the Boid / LightFauna spawn
                 // path runs Initialize (which provisions and sizes the heart) BEFORE
@@ -332,10 +332,6 @@ namespace CosmicShore.Gameplay
                 // side-effect of seeding the spawn level (Docs/ECOSYSTEM.md §40.3).
                 ApplyHeartSize(_heartWorldScale);
             }
-
-            // A new living heart entered the world - let the domain fauna buff re-sum now
-            // instead of on its next reconcile sweep.
-            RaiseFaunaHeartsChanged();
         }
 
         /// <summary>
@@ -350,20 +346,6 @@ namespace CosmicShore.Gameplay
         {
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
             if (crystal) crystal.SetEmbeddedIn(this);
-        }
-
-        /// <summary>
-        /// Pokes <see cref="CellRuntimeDataSO.OnFaunaHeartsChanged"/> through the host cell's
-        /// runtime SO (always wired on a live cell) rather than the per-prefab cellData wire —
-        /// several fauna prefabs author cellData null or dangling, and every fauna that
-        /// participates in the buff pool has a host cell by construction (AssignLineage sets
-        /// it). cellData is the fallback for hostless deaths; the event field itself must fail
-        /// loud if unwired on the asset.
-        /// </summary>
-        void RaiseFaunaHeartsChanged()
-        {
-            var runtimeData = hostCell ? hostCell.RuntimeData : cellData;
-            if (runtimeData) runtimeData.OnFaunaHeartsChanged.Raise();
         }
 
         void TryReproduce()
@@ -780,6 +762,12 @@ namespace CosmicShore.Gameplay
             // before the spawner calls Initialize or any predator's first behavior tick), so
             // predation immunity is active from the moment the creature exists.
             _spawnTime = Time.time;
+
+            // Emitter-driven loops (brittlestar / shark / tadpole) must honour the SFX slider:
+            // StudioEventEmitter never sets instance volume itself, so bind it here.
+            if (!TryGetComponent<CosmicShore.Gameplay.Audio.EmitterSfxVolumeBinder>(out _)
+                && GetComponentInChildren<FMODUnity.StudioEventEmitter>(true))
+                gameObject.AddComponent<CosmicShore.Gameplay.Audio.EmitterSfxVolumeBinder>();
         }
 
         protected virtual void Start()
@@ -855,7 +843,7 @@ namespace CosmicShore.Gameplay
         /// identity. This is not cosmetic: a lifeform is its species and its element and nothing
         /// else (Docs/ECOSYSTEM.md §40), and the element states the body scale, the variant
         /// tuning and the HEART SIZE - and a heart's world scale IS the collect reward and the
-        /// live domain fauna buff. A client that re-rolled its own element would pay a different
+        /// collect reward. A client that re-rolled its own element would pay a different
         /// price for the same kill.
         ///
         /// Routed through the ordinary <see cref="AssignLineage"/> inherit path, so the puppet
@@ -951,21 +939,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Crystal crystal;
 
-        /// <summary>
-        /// The living embedded heart: non-null only while this fauna is alive and its elemental
-        /// crystal is still embedded in it. <see cref="ReleaseHeart"/> is what frees it, so this
-        /// returns null from the exact moment the crystal becomes a collectible — the domain
-        /// fauna buff keys off this so a fauna's domain-wide power ends precisely when its
-        /// crystal (the same heart, at the same world scale, carrying the same value) hits the
-        /// open water. On an outside-in wither that moment is the END of the wither, not the
-        /// start of the death: the heart is the last thing standing, so a starving creature
-        /// keeps powering its domain until the wither reaches its core.
-        /// </summary>
-        public Crystal LiveHeart =>
-            crystal && crystal.gameObject.activeInHierarchy && ReferenceEquals(crystal.EmbeddedIn, this)
-                ? crystal
-                : null;
-
         // How this creature came apart - see LifeformDeathStyle. Written by the force that
         // killed it (Jousted / the devour overload of Predated); starvation and every other
         // death leave the default.
@@ -1053,10 +1026,6 @@ namespace CosmicShore.Gameplay
 
             if (crystal && crystal.gameObject && crystal.gameObject.activeInHierarchy)
                 crystal.ActivateCrystal();
-
-            // The heart just left the living pool - poke the domain fauna buff so the
-            // domain's power drops with the death, not on the next reconcile sweep.
-            RaiseFaunaHeartsChanged();
         }
 
         /// <summary>

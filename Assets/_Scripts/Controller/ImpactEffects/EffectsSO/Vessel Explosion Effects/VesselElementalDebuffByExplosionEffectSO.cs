@@ -15,15 +15,20 @@ namespace CosmicShore.Gameplay
     /// (<see cref="VesselElementalDebuffByDangerPrismEffectSO"/>) lifted onto the explosion
     /// impactor, same decay, same per-victim anti-spam.
     ///
-    /// A HIT'S BITE TRACKS ITS PRICE. Every drain asset in the fleet used to carry a flat -0.5
-    /// whatever the attack, so a Manta bloom worth 12 points bit HALF as deep as a Dolphin cone
-    /// worth the same (it drains two elements, not four) and a warhead grazing for 10 drained
-    /// exactly as hard as the cone. Magnitudes are now DERIVED from Broadside's price list by
-    /// Tools/Build/author_combat_debuff_magnitudes.py — the TOTAL over the elements an attack
-    /// touches is proportional to its points, so how an attack spreads its drain is free and
-    /// what it is worth is not. Because that price list was itself tuned to flatten POINTS PER
-    /// SECOND across the fleet, the drain inherits that balance instead of needing its own pass.
-    /// Do not hand-edit a magnitude: the script's --check fails on drift.
+    /// A HIT'S BITE TRACKS ITS PRICE, at TEN POINTS TO THE PETAL on every element it touches.
+    /// Every drain asset in the fleet used to carry a flat -0.5 whatever the attack — five
+    /// petals, a quarter of the whole element band, from one graze — so a warhead grazing for 10
+    /// points drained exactly as hard as a 12-point cone and a 30-point centre-punch had no way
+    /// to drain more than either. Magnitudes are now DERIVED from Broadside's price list by
+    /// Tools/Build/author_combat_debuff_magnitudes.py. Because that price list was itself tuned
+    /// to flatten POINTS PER SECOND across the fleet, the drain inherits that balance instead of
+    /// needing its own pass. Do not hand-edit a magnitude: the script's --check fails on drift.
+    ///
+    /// <para>ONLY the Debuff and Strike classes are authored per weapon like this, because their
+    /// bite carries design a price cannot express — which elements it touches, and whether it
+    /// mirrors as an ally buff. Every other class drains straight off the HIT REPORT
+    /// (<see cref="CombatHitDrain"/>), which is the only place a rocket's three ranked tiers can
+    /// be netted so one rocket bites its best tier rather than the sum of all three.</para>
     ///
     /// Domain filtering is NOT this effect's job: <see cref="ExplosionImpactor.AcceptImpactee"/>
     /// already declines own-domain vessels unless the blast is authored/overridden affectSelf, so
@@ -41,16 +46,20 @@ namespace CosmicShore.Gameplay
     public class VesselElementalDebuffByExplosionEffectSO : VesselExplosionEffectSO
     {
         [Header("Debuff Settings")]
-        [Tooltip("Signed level change applied to every element the blast drains (negative = " +
-                 "debuff). DERIVED, not authored: a hit's bite tracks the price Broadside puts " +
-                 "on its verb, so this is total drain / element count where total = points x " +
-                 "(2.0 / 12). Edit it with Tools/Build/author_combat_debuff_magnitudes.py, " +
-                 "whose --check FAILS on a hand-edit. The initializer is the ANCHOR itself " +
-                 "(the 12-point Debuff class over four elements), so a new asset starts on the " +
-                 "one play-tested value.")]
-        [SerializeField] private float debuffMagnitude = -0.5f;
+        [Tooltip("Signed level change applied to EACH element the blast drains (negative = " +
+                 "debuff), in normalized units where 0.1 is one petal. DERIVED, not authored: " +
+                 "a hit's bite tracks the price Broadside puts on its verb at ten points to " +
+                 "the petal, so this is points x 0.01. Edit it with " +
+                 "Tools/Build/author_combat_debuff_magnitudes.py, whose --check FAILS on a " +
+                 "hand-edit. The initializer is the 12-point Debuff class, so a new blast " +
+                 "asset starts on the class this script already covers.")]
+        [SerializeField] private float debuffMagnitude = -0.12f;
 
-        [Tooltip("Seconds over which the temporary debuff decays back to baseline.")]
+        [Tooltip("RETIRED as a decay time. A blast's bite is now a PERMANENT transfer - the " +
+                 "petals are knocked out of the victim as collectable crystals - so there is " +
+                 "nothing left to decay. Kept because author_combat_debuff_magnitudes.py prices " +
+                 "the sustained pressure a saturating attacker can hold a victim at, and that " +
+                 "arithmetic still needs the window this number used to define.")]
         [SerializeField] private float debuffDuration = 4f;
 
         [Tooltip("Which elements the blast drains. The initializer is ALL FOUR — every asset " +
@@ -86,11 +95,27 @@ namespace CosmicShore.Gameplay
                 return;
             _lastEffectTime[rs] = now;
 
-            // Classed Explosion, NOT DangerPrism: a blast is a weapon another pilot aimed, and a
-            // ward earned against the arena must not cancel one (ElementalDebuffSources).
             if (elements == null) return;
+
+            // A BLAST IS A RANGED VERB, so its petals are EJECTED rather than stolen: they are
+            // knocked out of the victim's hull as free-for-all crystals and the pilot who fired
+            // has to go and collect what they shook loose. That is the whole difference between
+            // this and a joust, and it is why a Dolphin cone is an area DENIAL rather than an
+            // area theft.
+            //
+            // The blast's own impact vector throws them - radial for a sphere, the sweep axis for
+            // a plate - so a petal leaves the way the blast was travelling. The same accessor, for
+            // the same reason, that the crystal->ball forge had to adopt.
+            var victim = impactor.Vessel.VesselStatus;
+            Vector3 blastVelocity = impactee ? impactee.BlastImpactVector(impactor.transform.position)
+                                             : Vector3.zero;
+
+            // Classed Explosion, NOT DangerPrism: a blast is a weapon another pilot aimed, and a
+            // ward earned against the arena must not cancel one (ElementalDebuffSources). The
+            // magnitude is authored NEGATIVE (it reads as a debuff); a transfer takes a positive
+            // amount, because how much moves has no sign.
             for (int i = 0; i < elements.Length; i++)
-                rs.ApplyElementalEffect(elements[i], debuffMagnitude, debuffDuration,
+                ElementalTransfer.Eject(victim, elements[i], -debuffMagnitude, blastVelocity,
                                         ElementalDebuffSources.Explosion);
         }
     }

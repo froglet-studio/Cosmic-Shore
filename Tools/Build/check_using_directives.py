@@ -300,7 +300,7 @@ def working_tree_files():
         xy, path = rec[:2], rec[3:]
         if "R" in xy or "C" in xy:
             i += 1
-        if path.endswith(".cs"):
+        if _in_project(path):
             names.append(path)
     return names
 
@@ -326,13 +326,25 @@ def changed_files():
         rc, out = _git(["diff", "--name-only", "-z", f"{base}...HEAD"])
         if rc != 0:
             continue
-        names = [n for n in out.split("\0") if n.endswith(".cs")]
+        names = [n for n in out.split("\0") if _in_project(n)]
         extra = [n for n in working_tree_files() if n not in names]
         label = f"{base}...HEAD"
         if extra:
             label += " + uncommitted"
         return label, names + extra
     return "uncommitted only", working_tree_files()
+
+
+def _in_project(path):
+    """A changed .cs file this gate can actually judge.
+
+    Declarations are indexed from Assets/ only, so a .cs OUTSIDE it - an offline compile harness
+    under Tools/Build/*_harness/, which builds against its own stand-in shims rather than the Unity
+    project - can only ever produce false positives: every shim that declares a stand-in for a
+    project type reads as "declared in CosmicShore.X, add a using". Explicit paths still bypass
+    this, so a harness can be checked on purpose.
+    """
+    return path.endswith(".cs") and path.replace("\\", "/").startswith("Assets/")
 
 
 def main():

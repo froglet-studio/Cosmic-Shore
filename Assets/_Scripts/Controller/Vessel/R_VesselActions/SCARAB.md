@@ -540,8 +540,10 @@ Modelled on the Sparrow's `BarrelRollController`
      is no hull-vs-hull contact event in the platform at all** — `VesselImpactor.AcceptImpactee`
      handles prisms, crystals and skimmers, and has no vessel case. *All* vessel-on-vessel
      interaction is **skimmer-mediated**: one vessel's hull sweeping the other's skimmer volume
-     runs that skimmer's `VesselSkimmerEffects` (the joust, the same-domain overtake buff, spin,
-     shrink…), gated on **relative speed** and **opposing domain**, owner-authoritative. So the
+     runs that skimmer's `VesselSkimmerEffects` (the joust, the same-domain overtake buff, the
+     elemental steal, shrink… — the SPIN that used to be in this list is removed, `Docs/
+     ELEMENTAL_ECONOMY.md` §9), gated on **relative speed** and **opposing domain**,
+     owner-authoritative. So the
      shove is a new `VesselSkimmerEffectsSO` in the Scarab's *skimmer* container, not its vessel
      container — and it must be a **new effect, not the joust**, for a reason that is easy to
      miss: `ModifyVelocity` displaces the vessel without touching `VesselStatus.Speed`, so a

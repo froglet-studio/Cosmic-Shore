@@ -153,12 +153,14 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 
 **CHARGE row, changed 2026-09 — the rocket's ECONOMY and its FUZE:**
 
-- **Missiles are no longer crystal-stocked.** They recharge by DESTROYING HOSTILE MASS (**0.01**
-  per prism, so **50 prisms per rocket** and 100 for a full rack — halved from 0.02 later in the
-  same pass) through `VesselRearmOnPrismDestruction` on the vessel root, which
-  listens on the prism-destroyed SOAP channel — the only producer that sees all five ways a Sparrow
-  destroys a prism, including the missile blast, whose Burst batch path dispatches no per-prism
-  effects at all.
+- **Missiles are no longer crystal-stocked.** They recharge by DESTROYING MASS WITH GUNFIRE
+  (**0.01** per prism, so **25 prisms per BASE rocket**, 50 per heavy one, and 100 for a full
+  rack — halved from 0.02 later in the same pass) through `VesselRearmOnPrismDestruction` on the
+  vessel root, which listens on the prism-destroyed SOAP channel — the only producer that sees all
+  five ways a Sparrow destroys a prism, which is what makes it possible to DECLINE four of them in
+  one line. Only direct gunfire pays, and its DOMAIN does not matter: a rocket's own blast funding
+  the next rocket closes the shoot-to-reload loop on itself, while a colour gate dried the reload
+  up in arenas whose mass wears the pilot's own.
 - **The omni crystal changed jobs**: it now grants **8 s of elemental-debuff immunity**
   (`VesselTimedElementalWard`, the event-driven sibling of `VesselElementalImmunity`). Checked
   against the mono-vessel-mode rule — none of Dog Fight, Salvo or Wildlife Liberation scores on an
@@ -332,7 +334,7 @@ Element assignment and the right-trigger resolution were confirmed in the same s
 | Charge | **Sniper Shot** on RT — the RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`) | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first (`SniperShotActionExecutor`, gated on `IsUpgradeActive(Charge)`) |
 | Mass | *(open)* → proposal below still stands | **Fortified Wall** — woven wall prisms arrive shielded |
 | Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`) |
-| Time | boost duration (1.6) | *(open)* → proposal: **Endless Coil** — consuming a boost charge while boosting chains without the reload pause |
+| Time | **Solid Fuel Pellets** on A — burn DURATION per pellet: ×1 at rest → ×1.6 at Time 10 (`ConsumeBoostAction.asset`). Restored 2026-09-25: one press burns one pellet, burns overlap additively, the fuel tank refills at a fixed rate and holds four (`R_VesselActions/SERPENT_FUEL_PELLETS.md`) | *(open)* — the old **Endless Coil** proposal ("chains without the reload pause") is void: the reload no longer exists |
 
 Retired with the re-cut: the Charge proposal *boost stack potency* / **Venom Wake**, and the Space
 proposal *skimmer scale* / **Coil Reach**. `VesselPrismController.EnableDangerMode` is still

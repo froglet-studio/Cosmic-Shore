@@ -104,6 +104,20 @@ namespace CosmicShore.Gameplay
                                                sameVictimCooldownSeconds, out int supersededRank))
                 return;
 
+            // A hit bites in proportion to what it is worth - ten points to the petal, netted
+            // against whatever tier this admission supersedes, so one rocket drains its BEST
+            // tier and never the sum of the three it can land in. See CombatHitDrain: the
+            // Debuff class is absent from that table because its drain is authored per weapon
+            // (this same container carries it), so adding this call cannot double it.
+            // BlastImpactVector is the blast's own answer for "which way, how hard, at this
+            // point" - radial for a sphere, the sweep axis for a plate - so an ejected petal
+            // leaves the way the blast was travelling rather than along some invented normal.
+            // This is the same accessor the crystal->ball forge had to adopt for the same reason.
+            Vector3 blastVelocity = impactee.BlastImpactVector(impactor.transform.position);
+
+            CombatHitDrain.Apply(victimStatus, shooterStatus, hitClass, supersededRank,
+                                 blastVelocity, ElementalDebuffSources.Explosion);
+
             onCombatHitLanded.Raise(new CombatHitStats
             {
                 ShooterName = shooterName,

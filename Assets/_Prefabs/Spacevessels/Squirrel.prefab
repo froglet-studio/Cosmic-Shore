@@ -995,7 +995,7 @@ MonoBehaviour:
   <MassLevel>k__BackingField: 0
   <SpaceLevel>k__BackingField: 0
   <TimeLevel>k__BackingField: 0
-  elementalRecoveryRate: 0.05
+  elementalRecoveryRate: 0.02
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1128,7 +1128,6 @@ MonoBehaviour:
   _touchActionOverrides:
   - InputEvent: 12
     ShipActions:
-    - {fileID: 11400000, guid: af287adc12873b24ebd5de2b46fc444a, type: 2}
     - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
     - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
   - InputEvent: 11
@@ -1137,7 +1136,6 @@ MonoBehaviour:
   _gamepadActionOverrides:
   - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: af287adc12873b24ebd5de2b46fc444a, type: 2}
     - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
     - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
   - InputEvent: 1
@@ -1323,6 +1321,7 @@ MonoBehaviour:
   attachReleaseEventToShip: 1
   driveParamToOneOnRelease: 0
   triggerDeadzone: 0.05
+  singleTriggerDepth: 1
   useAnalogScaling: 0
   amountSmoothing: 10
   releaseSmoothing: 20

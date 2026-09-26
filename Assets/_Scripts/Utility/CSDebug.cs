@@ -226,10 +226,10 @@ namespace CosmicShore.Utility
         SchwarzPColony = 1 << 19,
         /// <summary>
         /// <c>[Cell]</c> / <c>[Ecology]</c> — cell lifecycle and the food web's bookkeeping:
-        /// spawner start/stop, cell swaps, satellite builds, runtime-data resets, the domain
-        /// fauna buff and lifeform releases. A cell that cannot initialize is still a warning.
+        /// spawner start/stop, cell swaps, satellite builds, runtime-data resets and lifeform
+        /// releases. A cell that cannot initialize is still a warning.
         /// </summary>
-        [CSLogChannelLabel("[Ecology] cell lifecycle, spawners, swaps, fauna buff")]
+        [CSLogChannelLabel("[Ecology] cell lifecycle, spawners, swaps, lifeform releases")]
         Ecology = 1 << 20,
         /// <summary>
         /// <c>[Arcade]</c> — match flow inside a mode: the server setting a turn target,

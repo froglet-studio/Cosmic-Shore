@@ -257,9 +257,6 @@ namespace CosmicShore.Gameplay
                     haloSpin.Configure(Vector3.forward, -15f);
             }
 
-            var text = ToyFactory.AddRingedLabel(station.transform, DisplayNameOf(config),
-                Definition.AccentColor, StationRingRadius(radius * 1.6f), radius);
-            if (isCurrent && text) text.fontStyle = TMPro.FontStyles.Bold;
             // The action is the option's own Apply, wired by CreateStation - see MatrixToy.
         }
 

@@ -39,8 +39,8 @@ game scene and still exists.
 
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
-| **MinigameDuelForTheCell** | `_Scenes/Singleplayer Scenes/` | `DuelForTheCell (8)` | `SinglePlayerDuelForTheCellController` |
-| **MinigameWildlifeBlitz** | `_Scenes/Singleplayer Scenes/` | `WildlifeBlitz (26)` | `SinglePlayerWildlifeBlitzController` |
+| ~~MinigameDuelForTheCell~~ | retired 2026-09 | `DuelForTheCell (8)` | replaced by `MinigameDuelForCellMultiplayer_Gameplay` |
+| ~~MinigameWildlifeBlitz~~ | retired 2026-09 | `WildlifeBlitz (26)` | replaced by `MinigameWildlifeBlitzMultuplayerCoOp` |
 
 ### Multiplayer Game Scenes
 
@@ -216,7 +216,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 ├── SinglePlayerMiniGameControllerBase (abstract)
 │   │   Start(): subscribe to SOAP events, InitializeGame(), InvokeClientReady()
 │   │
-│   ├── SinglePlayerDuelForTheCellController — vessel swap on turn end (2-player vs AI)
 │   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
 │   ├── SinglePlayerWildlifeBlitzController — blitz scoring with wildlife turn monitor
 │   └── WildlifeBlitzMiniGame             — minimal variant of wildlife blitz
@@ -258,7 +257,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 4 | `ShootingGallery` | SP Arcade | Shared | Scene-configured |
 | 5 | `BlockBandit` | SP Arcade | Shared | Scene-configured |
 | 6 | `RiskyDriftness` | SP Arcade | Shared | Scene-configured |
-| 8 | `DuelForTheCell` | SP Competitive | MinigameDuelForTheCell | `SinglePlayerDuelForTheCellController` |
+| 8 | `DuelForTheCell` | SP Competitive | *(scene retired 2026-09)* | *(controller deleted)* |
 | 9 | `DashNGrab` | SP Arcade | Shared | Scene-configured |
 | 10 | `CellularBrawl` | SP Competitive | Shared | Scene-configured |
 | 11 | `Denial` | SP Arcade | Shared | Scene-configured |
@@ -276,7 +275,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 23 | `BotDuel` | SP Competitive | Shared | Scene-configured |
 | 24 | `Curvatious` | SP Arcade | Shared | Scene-configured |
 | 25 | `MazeRun` | SP Arcade | Shared | Scene-configured |
-| 26 | `WildlifeBlitz` | SP Arcade | MinigameWildlifeBlitz | `SinglePlayerWildlifeBlitzController` |
+| 26 | `WildlifeBlitz` | SP Arcade | *(scene retired 2026-09)* | `SinglePlayerWildlifeBlitzController` (BenchmarkStressTest only) |
 | 27 | `ProtectMission` | SP Mission | Shared | Scene-configured |
 | 28 | `MultiplayerFreestyle` | MP | MinigameFreestyleMultiplayer_Gameplay | `MultiplayerFreestyleController` |
 | 29 | `OnlineDuelForTheCell` | MP | MinigameDuelForCellMultiplayer_Gameplay | `OnlineDuelForTheCellController` |
@@ -329,7 +328,9 @@ the scene went; the painting toy is the scoreless successor. Still in the tree:
 - `ShapeDefinition` / spawnable shapes / `ShapeSign` — painting toy + SkimRace
 - `SinglePlayerFreestyleController.cs` — removed; recover the scored flow from git history if a scored minigame is wanted
 
-### Cellular Duel (Single-Player)
+### Cellular Duel (Single-Player) — RETIRED 2026-09
+
+> Scene and controller deleted; the online duel (`OnlineDuelForTheCellController`) replaces it. Kept below as a record.
 
 **Scene**: `MinigameDuelForTheCell.unity`
 **Controller**: `SinglePlayerDuelForTheCellController`
@@ -342,7 +343,9 @@ Two-player duel where the player alternates between two vessels (playing both si
 - `gameData.SwapVessels()` on turn end — player plays from both perspectives
 - Ready button shown at start of each round
 
-### Wildlife Blitz (Single-Player)
+### Wildlife Blitz (Single-Player) — RETIRED 2026-09
+
+> Scene deleted; the co-op scene replaces it. The controller stack survives only because `BenchmarkStressTest.unity` was cloned from this scene. Kept below as a record.
 
 **Scene**: `MinigameWildlifeBlitz.unity`
 **Controller**: `SinglePlayerWildlifeBlitzController`
@@ -690,7 +693,6 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Rampage | `RampageController.cs` | `_Scripts/Controller/Arcade/` |
 | Freestyle (MP) | `MultiplayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (MP) | `CoOpWildlifeBlitzMiniGame.cs` | `_Scripts/Controller/Arcade/` |
-| Cellular Duel (SP) | `SinglePlayerDuelForTheCellController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (SP) | `SinglePlayerWildlifeBlitzController.cs` | `_Scripts/Controller/Arcade/` |
 | SlipNStride | `SinglePlayerSlipnStrideController.cs` | `_Scripts/Controller/Arcade/` |
 | Countdown timer | `CountdownTimer.cs` | `_Scripts/Controller/Arcade/` |

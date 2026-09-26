@@ -2517,7 +2517,7 @@ MonoBehaviour:
   PitchScaler: 90
   YawScaler: 90
   RollScaler: 90
-  RotationThrottleScaler: 0.5
+  RotationThrottleScaler: 0.2
   restrictedTurnMultiplier: 3
 --- !u!114 &874579555101021522
 MonoBehaviour:
@@ -2592,7 +2592,7 @@ MonoBehaviour:
   <MassLevel>k__BackingField: 0
   <SpaceLevel>k__BackingField: 0
   <TimeLevel>k__BackingField: 0
-  elementalRecoveryRate: 0.05
+  elementalRecoveryRate: 0.02
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13822,25 +13822,14 @@ PrefabInstance:
         type: 2}
     - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
-      propertyPath: shipSkimmerEffectsSO.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
-        type: 3}
       propertyPath: skimmerPrismEffectsSO.Array.size
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: vesselSkimmerEffectsSO.Array.size
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
-        type: 3}
-      propertyPath: 'shipSkimmerEffectsSO.Array.data[0]'
-      value: 
-      objectReference: {fileID: 11400000, guid: f5275e751ae94f74e9e9142acdae6b9f,
-        type: 2}
     - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: 'skimmerPrismEffectsSO.Array.data[0]'
@@ -13867,12 +13856,6 @@ PrefabInstance:
     - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
         type: 3}
       propertyPath: 'vesselSkimmerEffectsSO.Array.data[0]'
-      value: 
-      objectReference: {fileID: 11400000, guid: f5275e751ae94f74e9e9142acdae6b9f,
-        type: 2}
-    - target: {fileID: 1817353678892531799, guid: c8d5df1098821194eb69eec4c965548e,
-        type: 3}
-      propertyPath: 'vesselSkimmerEffectsSO.Array.data[1]'
       value: 
       objectReference: {fileID: 11400000, guid: 02cd4a20ea91bbc4591c9ccbf9db91af,
         type: 2}

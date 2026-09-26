@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b2d3d503e424b0dbd9b0983f51e2b20, type: 3}
   m_Name: SquirrelDriftAction
   m_EditorClassIdentifier: 
-  Mult: 1.4
-  driftDamping: 0.5
+  Mult: 1.8
+  driftDamping: 0.25
   isSharpDrifting: 0
   playDriftSfx: 1
   OnDriftingStarted: {fileID: 11400000, guid: aadc0dd809ad8e446aa021ddff5a2213, type: 2}

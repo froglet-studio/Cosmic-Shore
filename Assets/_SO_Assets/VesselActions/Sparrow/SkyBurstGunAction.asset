@@ -13,11 +13,20 @@ MonoBehaviour:
   m_Name: SkyBurstGunAction
   m_EditorClassIdentifier: 
   ammoIndex: 0
-  ammoCost: 0.5
+  ammoCost: 0.25
   projectileScale: 10
   energy: 0
   speed: 120
   projectileTime: 3
   growthFactorAtRestingMass: 20
   growthFactorAtFullMass: 32
+  armWarhead: 0
+  createMassOnDetonation: 0
+  layPrismTrail: 0
+  hasStationaryVariant: 1
+  stationaryAmmoCost: 0.5
+  stationarySpeed: 240
+  stationaryArmWarhead: 1
+  stationaryCreateMassOnDetonation: 1
+  stationaryLayPrismTrail: 1
   launchDelaySeconds: 0.2

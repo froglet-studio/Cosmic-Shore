@@ -239,8 +239,23 @@ namespace CosmicShore.Gameplay
                     CommitVerb = live && !live.IsCelebrating ? (live.IsBenched ? "Resume" : "Pause") : "Start",
                     Apply = () => BeginFromShell(index),
                     BuildPreview = parent => BuildShellPreview(captured, parent),
+                    Arrival = () => ArrivalFor(captured),
                 });
             }
+        }
+
+        /// <summary>
+        /// Where to fly to paint <paramref name="painting"/>: its live run's next ring (the start
+        /// gate, or the ride checkpoint it is on). With no run to fly to - a finished masterpiece
+        /// opens the gallery instead of starting one, and a benched run is put down - it is this
+        /// gallery, threaded from inside the cell outward (the toybox faces its toys at the centre).
+        /// </summary>
+        ToyArrival ArrivalFor(PaintingDefinitionSO painting)
+        {
+            if (!this || painting == null) return default;
+            var live = PaintingToy.LiveRun(painting.PaintingId);
+            if (live && live.TryGetArrival(out var arrival)) return arrival;
+            return new ToyArrival(transform.position, -transform.forward, SwitchRingRadius);
         }
 
         /// <summary>
@@ -338,8 +353,6 @@ namespace CosmicShore.Gameplay
                 ToyFactory.AddSphereBody(body.transform, radius, Definition.AccentColor);
 
             float ringRadius = StationRingRadius(radius * 1.6f);
-            var label = ToyFactory.AddRingedLabel(root.transform, painting.DisplayName,
-                Definition.AccentColor, ringRadius, radius);
 
             // A full Toy, not a light matrix station: a painting station owns its own bloom, its
             // exit-gated re-arm (so a bench/resume toggle can't double-fire), and a per-frame
@@ -350,7 +363,7 @@ namespace CosmicShore.Gameplay
             // PaintingToy.OnActivated walk one run book - which is the condition the base states
             // for building a station any other way.
             var toy = root.AddComponent<PaintingToy>();
-            toy.Configure(painting, _anchorPositions[index], _anchorRotations[index], label, ToyboxRoot);
+            toy.Configure(painting, _anchorPositions[index], _anchorRotations[index], ToyboxRoot);
             // Its switch ring comes from the base like every other toy's - only the radius is ours,
             // because a gallery station's trigger overruns half the gap to its neighbour.
             toy.ConfigureSwitchRing(ringRadius);

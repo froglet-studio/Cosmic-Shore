@@ -112,7 +112,7 @@ Authored ONLY via **FrogletTools ▸ Game Modes ▸ End Game Conditions**
 - Exterior trail is bait: it feeds the *controller's* brood (any-domain voracious
   grazing) and pulls the swarm around the map, but never scores. Time in the nucleus
   is time not spent harvesting crystals from withered fauna (elemental powerups).
-- The comeback system (`ElementalComebackSystem`, `ScoreDifferenceSource.Goals`) buffs
+- The comeback system (`ElementalComebackSystem`, the rule's `DomainValue` (`Goals`)) buffs
   the trailing team's elementals, sized to the brood deficit.
 
 ## Shared-Code Touchpoints (added for this mode)

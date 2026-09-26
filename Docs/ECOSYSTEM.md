@@ -875,7 +875,7 @@ facing hold, so the two would double-drive consumption if both ran. Resolution:
 | Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
 | Headless perf+ecology tuner (no Unity) | `Tools/ecosim/ecosim.py` (+ `calibration.csv`, `README.md`) — see §12 |
 | In-Unity perf probe (emits calibration samples) | `Assets/_Scripts/Controller/Environment/EcosystemPerfProbe.cs` |
-| Domain fauna buff (living hearts empower their domain's vessels) — see §15 | `Assets/_Scripts/Controller/Environment/DomainFaunaBuffSystem.cs`, `Fauna.LiveHeart`, `ResourceSystem.SetFaunaBuffModifier` |
+| ~~Domain fauna buff (living hearts empower their domain's vessels)~~ — **REMOVED**, see §15 | nothing; `DomainFaunaBuffSystem`, `Fauna.LiveHeart`, `ResourceSystem.SetFaunaBuffModifier` and `CellRuntimeDataSO.OnFaunaHeartsChanged` are all deleted |
 
 ---
 
@@ -891,7 +891,7 @@ work is saved and Phase 2 can be picked up.
    - *Menu_Main:* dense flora, flora visibly resume growing in pulses, fauna spawn
      in the controlling color (Jade appears when Jade leads), hunt, and thin out as
      prey runs low; spawn ring sweeps; **no numeric readout**.
-   - *One gameplay scene* (e.g. `MinigameWildlifeBlitz` / `MinigameSkimRace`): confirm
+   - *One gameplay scene* (e.g. `MinigameWildlifeBlitzMultuplayerCoOp` / `MinigameSkimRace`): confirm
      the prey-linked fauna + flora regrowth pulse don't break gameplay — fauna
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
@@ -952,8 +952,9 @@ with the others.
    opposing mass. Vessels start to *feel* the ecosystem. Composes with Domain,
    Vessels, Elementals. **Fauna half LANDED (see §15):** every living fauna's
    embedded heart grants its elemental value to all vessels of its domain, revoked
-   at death when the same heart drops as the collectible crystal. Flora hearts are
-   the natural follow-up (same `LiveHeart`-style seam on `LifeForm`).
+   at death when the same heart drops as the collectible crystal. **This half shipped in
+   July 2026 and was REMOVED in September 2026 — see §15.** The flora follow-up it named is
+   withdrawn with it.
 
 5. **Domain territory dynamics.**
    As fauna cull opposing prisms and flora regrow, a cell's controlling domain
@@ -1291,107 +1292,63 @@ Count backstops are untouched — volume-only mass never enters `LiveBlockCount`
   prisms via `PrismSpatialIndex.QuerySphere` and skips super-shielded entirely). Collision is at
   authored box size for now; shape-precise (stellated) collision is the planned three-LOD follow-up.
 
-## 15. Domain fauna buff — living hearts empower their domain (July 2026, roadmap item 4 fauna half)
+## 15. Domain fauna buff — RETIRED (shipped July 2026, REMOVED September 2026)
 
-**The mechanic.** Every LIVING fauna's embedded elemental heart grants its element's value to
-**all vessels of the fauna's domain**; the power is **lost the moment the fauna dies** — at
-which point the very same heart drops as the collectible crystal (the locked wither-to-crystal
-invariant). The economy this creates:
+**It is gone. Do not rebuild it.** Every LIVING fauna's embedded elemental heart used to grant
+its element's value to **all vessels of the fauna's domain**, revoked the moment the fauna died
+(at which point the same heart dropped as the collectible crystal, so the two sides balanced).
+It was removed on an explicit design call: **it handed a domain standing elemental power for
+nothing but having fauna alive.** Nothing had to be done to earn it, nothing had to be aimed at,
+and a pilot's element levels moved because a creature somewhere else in the cell had been born.
+The ecology already pays for fauna the way the platform wants it paid for — *kill the creature,
+take its heart* — and that payout is a thing a player does.
 
-- **Kill + collect your own domain's fauna → net zero for you, pure loss for allies.** You
-  re-earn exactly the buff you destroyed (crystal collect adds the same value to your base);
-  every teammate who doesn't collect just loses it.
-- **Kill an opposing domain's fauna → deny AND steal.** Their whole domain loses the buff, and
-  the drop is domain-agnostic, so you can collect it for yourself.
-- **Nourish your own fauna (Shepherd joust `Nourish`) → grow your whole domain's buff** — not
-  by growing that heart (nothing grows mid-life since §40) but by adding HEARTS: a nourished
-  creature breeds sooner, and the pool is summed across every living heart of the domain.
-- **Territorial stakes:** fauna spawn in the controlling color, so holding cells now feeds your
-  domain standing elemental power — and wave kills strip it.
+**What was deleted** (one coherent removal; no behaviour is left half-wired):
 
-**Value symmetry is structural, not tuned.** Each living heart contributes
-`SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(heart.lossyScale.x, …)` — the
-exact collect formula, with the parameters read from the effect array wired on the heart's
-**own** `ElementalCrystalImpactor` (the EXACT effects `AcceptImpactee` executes at collect
-time; a heart whose drop cannot repay the value — no impactor, or no level effect wired —
-grants **nothing**; multiple wired level effects are summed exactly as collection executes
-them). The buff keys off **`Fauna.LiveHeart`**, which nulls at the precise
-`ActivateCrystal()` moment inside the sealed `Fauna.Die` — so the buff ends exactly when the
-crystal becomes collectible, with the same world scale carrying the same value on both sides
-(`transform.parent = cell` preserves world scale on the drop; since §40 a heart never changes
-size mid-life, so the drop is always at the size the creature was born with and the level-up
-flare `GrowCrystalWithPop` — and its mid-flare-death freeze — are gone with the level). **Zero
-new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`, each
-lifeform's own authored `HeartWorldScale` — see §40.2, which retired the shared level curve §33
-had put in place of the per-species `CrystalScalePerLevel` — and per-species population caps)
-govern both the standing buff and the pickup. **Since §40 the buff is no longer uniform per
-heart**: it tracks species size, so a domain fielding sharks out-buffs one fielding tadpoles.
+| Site | What it was |
+|---|---|
+| `Controller/Environment/DomainFaunaBuffSystem.cs` | the system: a 1 Hz reconcile sweep over `Cell.ActiveCellsSnapshot → cell.LiveFauna → fauna.LiveHeart` into per-domain, per-element pools, plus an event-driven re-sum |
+| `Cell.Initialize`'s `EnsureExists` call | the only production caller (and its `IsSatellite` guard, whose hazard is recorded in `Docs/ModePreview/ARCHITECTURE.md`) |
+| `ResourceSystem._faunaBuffModifiers` + `SetFaunaBuffModifier` + `ClearFaunaBuffModifiers` | the dedicated composited layer and its single-writer API |
+| `ResourceSystem.HeldFaunaContribution` + `ComputeUnfeltIncrease` | the two pure helpers that capped the held layer at level 10 and converted the remainder to a draining spike |
+| `CompositeEffectiveLevel`'s `faunaBuff` parameter | now `(baseLevel, tempModifier, comebackBonus)` — exactly the pre-buff shape |
+| `Fauna.LiveHeart` | the "alive and heart still embedded" predicate; the buff was its only consumer |
+| `Fauna.RaiseFaunaHeartsChanged` + its two call sites | the lineage-assign and death pokes |
+| `CellRuntimeDataSO.OnFaunaHeartsChanged` + `Event_OnFaunaHeartsChanged.asset` | the SOAP channel, raised twice per creature lifetime and now subscribed by nobody |
+| `Tests/Editor/DomainFaunaBuffTests.cs` | the 12 assertions pinning the layer math. **Replaced** by `Tests/Editor/ElementalLayerCompositingTests.cs`, which keeps the ones that survive the mechanic: a LOCKED law whose only pin was deleted is a law nobody notices breaking |
 
-**Mechanism (SOAP-evented + reconcile sweep, no cheat).** `DomainFaunaBuffSystem`
-(auto-created by the first `Cell.Initialize` via `EnsureExists` — so it exists wherever fauna
-do, Menu_Main freestyle included; one HyperSea, one rule set) re-sums
-`Cell.ActiveCellsSnapshot → cell.LiveFauna → fauna.LiveHeart` into per-domain, per-element
-pools and applies them via `ResourceSystem.SetFaunaBuffModifier` on every `gameData.Players`
-vessel of that domain. Two triggers share the one sweep:
-`CellRuntimeDataSO.OnFaunaHeartsChanged` (raised by `Fauna.AssignLineage` and `Fauna.Die`
-**through the host cell's runtime SO** — several fauna prefabs author their own `cellData`
-wire null or dangling, so the per-prefab wire is only the hostless fallback)
-lands spawn grants and death revocations **within a frame**, and the periodic reconcile sweep
-(`updateInterval`, 1s) tracks heart growth, late-spawning vessels, vessel swaps (access is
-hardened against the destroyed-but-referenced vessel window during a menu swap), and domain
-re-picks (`player.Domain` read live). The fauna buff is a **dedicated composited layer** on
-`ResourceSystem` (like the comeback layer, its own single writer) that never touches the
-crystal-earned base, so revocation is exact — and it obeys the **maintained-mechanism law**
-(`ResourceSystem.SustainedCeiling`): *no sustained mechanism holds an element above level 10;
-the 10..15 overcharge band belongs to transients, and everything in it drains back to (at
-most) 10.* Concretely: the held layer fills only the room between the base and level 10, and
-the part of a pool INCREASE above that (a wave spawning into a saturated pool, a heart
-growing) is converted by `SetFaunaBuffModifier` into a standard temporary elemental effect —
-a felt spike up to the 15 clamp that drains at the elemental recovery rate, restoring the
-headroom so the **next** wave is felt too. Base crystal overcharge already drains the same
-way (`RecoverBaseLevels`) and comeback already fills-to-10, so after this every channel obeys
-one law. Compositing is pure (`CompositeEffectiveLevel` + `HeldFaunaContribution` +
-`ComputeUnfeltIncrease`) and pinned by `DomainFaunaBuffTests` (net-zero own-kill-collect
-below and at saturation, exact revocation, sustained-cap, spike-rides-above, clamps). HUD:
-petal bars animate automatically off `OnElementLevelChange` — one level-1 tadpole heart
-(scale 1) = one petal tick for the whole domain, and each 30s wave at a saturated pool reads
-as a petal surge that settles back to 10.
+**No locked invariant moved.** Continuity of existence, no-imposed-death, wither-to-crystal +
+mass conservation, volume-is-the-spine, the lifeform→crystal invariant, territorial permanence
+and endogenous selection are untouched: the buff was a *composited display layer*, never a base
+level and never mass. It is a small step **toward** two of them — domain symmetry (the buff's
+size depended on which domain happened to field the bigger species, §40.2's own "a domain
+fielding sharks out-buffs one fielding tadpoles") and endogenous selection (this was the last
+automatic, un-aimed-at reward left in the ecology).
 
-**Scope + caveats:**
-- **Fauna only** for now; flora hearts are the follow-up seam (`LifeForm` would grow the same
-  `LiveHeart` accessor; roadmap item 4's "flora buff its vessels").
-- **Net-zero is exact at the moment of collection.** Over time the resting-band drift
-  (`ResourceSystem.RecoverBaseLevels`) applies to the collected BASE value — overcharge above
-  level 10 bleeds back to 10, deficits refill to 0 — and the held fauna layer sustains at
-  most level 10 by the maintained-mechanism law, so neither side of the swap can park power
-  in the overcharge band. Killing your own domain's fauna is **never profitable** —
-  break-even at best. At a saturated pool the swap is absorbed by the buffer (the held fill
-  re-balances around the collected gain; sustained level stays 10 on both sides), so
-  stripping a saturated domain's standing power takes sustained overkill, not one pick.
-- **Manager-spawned fauna** (`LightFaunaManager.SpawnGroup`, `BoidManager.SpawnBoids` — the
-  dead scene-population paths wired through the removed `Cell.fauna2` field, §7) never enter
-  `Cell.LiveFauna`, so they would drop collectibles without having granted a buff — acceptable
-  while those paths stay dead; fold them into `AssignLineage` if they ever revive. Worm colony
-  segments (§23): EVERY segment carries and drops a heart (§23.8 — head, body and tail alike),
-  and none of them is lineage-registered, so none grants a buff — drop-without-buff is a
-  deliberate §23.3 ruling (a kaiju must not destabilize the elemental economy), not the
-  manager-fauna accident described above. §23.8 multiplied the DROPS without touching the
-  pool, which is the same ruling held rather than a new one.
-- **Client-local divergence:** fauna have no NetworkObject and element levels don't replicate,
-  so peers can disagree on exact buff values — the same accepted divergence the fauna sim
-  itself has (§7 caveat 4). Each client is self-consistent. Server-authoritative pools are the
-  follow-up if the buff enters strict competitive modes.
-- **Collider budget: zero.** No colliders, no physics queries — a 1 Hz walk of the existing
-  registries (menu steady state: ~13 fauna, ≤4 players) plus event-driven re-sums on the 30s
-  wave heartbeat and on deaths.
+**The maintained-mechanism law survives intact and loses one clause.** It still reads *no
+sustained mechanism may HOLD an element above level 10; the 10..15 band belongs to transients*,
+and `ResourceSystem.SustainedCeiling` + `CompositeEffectiveLevel` still enforce it over the
+three mechanisms that remain: temporary effects decay to zero, crystal-earned base overcharge
+bleeds down (`RecoverBaseLevels`), and the comeback bonus fills toward 10 and never past. The
+fauna buff was the fourth; the law governs what exists.
 
-**In-editor verification (Menu_Main):** enter freestyle, watch your petal bars — they should
-tick up as controlling-color fauna spawn (30s waves) and drop when fauna starve/are predated,
-with the dropped crystal granting the lost amount back on collection. Once the domain's pool
-is rich enough to hold level 10, each new wave should read as a **temporary surge above 10
-that drains back to 10** (never a parked 11+); temporary effects (overtake buff, danger
-debuff) still ride on top. Toggle `debugLogging` on the auto-created `DomainFaunaBuffSystem`
-(on the Cell's GameObject) for per-player pool logs.
+**A heart's world scale is now read as gameplay in FOUR places, not five.** §40's reader table
+loses its row B. The band, `MaxSafeHeartWorldScale`, the monotonicity gate and every authored
+number are unchanged, because all of them are about the collect reward (read A, the only one
+with a cap) — only the *count of readers* narrows, which makes the sizing rationale simpler
+rather than weaker. `Tools/Build/author_lifeform_heart_sizes.py` is untouched and still
+`--check` clean.
+
+**Collider budget: strictly negative.** Zero colliders before and after; removed is a 1 Hz walk
+of `ActiveCellsSnapshot × LiveFauna × Players` plus two SOAP raises per creature lifetime.
+
+**One technique worth keeping in mind if anything ever pays out off a lifeform's heart.**
+`ComputeHeartValue` did not *assume* what a heart was worth — it read the effect array wired on
+that heart's own `ElementalCrystalImpactor` and summed exactly the `SkimmerAdjustElementLevel…`
+effects `AcceptImpactee` would execute, so a heart whose drop could not repay the value granted
+nothing. That made value symmetry **structural rather than tuned**, and it is the right shape
+for any future mechanic that has to quote a pickup's worth before the pickup happens: *ask the
+thing what it will pay, never restate its formula.*
 
 ---
 
@@ -2024,6 +1981,7 @@ It cancelled nothing, for two independent reasons:
   **down before reading the volume**; `PrismScaleAnimator.GetCurrentVolume()` gates on
   `enabled` and returns 0 once it is off, so `Mathf.Max(0f, 1f)` pins
   `prismProperties.volume` to **exactly 1 for every prism** at the moment of the divide.
+  *(2026-09: that divide is now deleted and the death volume is read correctly, for the stats.)*
 
 So creature debris was scaled by an unrelated quantity. The multiply is gone; debris now leaves
 at the creature's own speed. **No ecology invariant is touched** — this is destruction VFX
@@ -2854,8 +2812,9 @@ split worm stay the same animal.
 `WormSegmentFauna` carried a `heartLocalScale` field, authored `2.5` on the head, applied
 *after* `Crystal.SetEmbeddedIn` — i.e. it overwrote the one gate every heart passes through.
 At `KaijuScale 3` that rendered a level-1 heart at world scale 7.5 against the law's 3.5,
-and a crystal's world scale is read twice AS GAMEPLAY (the collect reward and the live
-domain fauna buff), so it was a per-prefab REWARD sitting inside the very method this
+and a crystal's world scale was at the time read twice AS GAMEPLAY (the collect reward and
+the then-live domain fauna buff, since removed — §15), so it was a per-prefab REWARD sitting
+inside the very method this
 pass was multiplying across every segment. The field is deleted from the class and from
 all three prefabs. `heartLocalPosition` stays — a **seat is not a size**, and the head's
 authored `(0,0,-13.14)` is what nests its heart inside the armour cage.
@@ -3618,9 +3577,10 @@ the flare with the level: nothing resizes a heart mid-life any more, so this par
 caller. The lesson stands for the next thing that writes a WORLD scale onto a live heart — and §40.3
 is that lesson hit from the other direction.)*
 
-One live consequence, and it is the right one: `Fauna.LiveHeart` (which the domain fauna buff keys
-off) now stays non-null through a starvation wither. The heart is the last thing standing, so a
-starving creature keeps powering its domain until the wither reaches its core.
+One consequence worth carrying: **the heart is the LAST thing standing** through a starvation
+wither, so a starving creature's crystal does not become collectable until the wither reaches its
+core. (That fact used to be read through `Fauna.LiveHeart`, whose only consumer was the domain
+fauna buff; the accessor went with the buff in §15. The wither ordering is unchanged.)
 
 ### 26.5 Auto-collect
 
@@ -3670,7 +3630,7 @@ Two things to watch in a playtest, in this order:
 ### 26.8 In-editor verification (the human is the gate)
 
 Scene: **Menu_Main** freestyle (Squirrel is the menu vessel, so the joust is one flight away), and
-**MinigameWildlifeBlitz** for a populated cell.
+**MinigameWildlifeBlitzMultuplayerCoOp** for a populated cell (the single-player scene was retired 2026-09).
 
 1. **Joust a fauna.** Fly the Squirrel faster than a brittlestar/shark and clip its heart. Expect:
    no explosion; the crystal flies to *your* vessel and grants its element; the arms/fins evaporate
@@ -4912,9 +4872,9 @@ heart — the thing worth hunting — was a property of the dice rather than of 
 done. That is the same class of mistake as a scripted fitness function: the world hands out
 the *record* of an achievement that never happened. Separately, and invisibly, a heart's SIZE
 was whatever each species' prefab had authored — and it ranged **0.7 (tadpole) to 4.0 (gyroid)
-world scale, a 5.7× spread nobody chose**, on a number that is read twice as gameplay: by
+world scale, a 5.7× spread nobody chose**, on a number that was then read twice as gameplay: by
 `SkimmerAdjustElementLevelByCrystalEffectSO` (the collect reward) and by
-`DomainFaunaBuffSystem` (the live buff every living heart grants its domain).
+`DomainFaunaBuffSystem` (the live buff every living heart granted its domain — removed, §15).
 
 ### The rule now
 
@@ -4993,9 +4953,9 @@ composition choice as a size correction. **A ratio between two authored numbers 
 measurement until you have controlled for what else differs between them.**
 
 **The rule regardless: a per-element size fix goes on that element's crystal PREFAB, on the
-child below the root — never on the root.** The root's world scale is read as gameplay twice
-(`SkimmerAdjustElementLevelByCrystalEffectSO`, `DomainFaunaBuffSystem`), so correcting a look
-on the root moves the reward with it and re-opens the per-element reward spread this section
+child below the root — never on the root.** The root's world scale is read as gameplay by
+`SkimmerAdjustElementLevelByCrystalEffectSO` (and was read a second time by the since-removed
+`DomainFaunaBuffSystem`, §15), so correcting a look on the root moves the reward with it and re-opens the per-element reward spread this section
 removed.
 
 ### Where the size is applied — the one gate
@@ -5067,8 +5027,9 @@ the lifeform-side change would silently move rewards in two modes that were neve
    in `_SO_Assets/Lifeforms` that had the spread enabled will now read uniformly small unless
    reproduction is authored for them. That is a deliberate consequence, not an oversight: size
    variety is supposed to be earned, so a species that cannot breed has not earned any.
-3. **The domain fauna buff gets more uniform, and larger for small species.** A tadpole heart
-   went 0.7 → 3.5 world scale, so a domain fielding tadpoles now draws what a domain fielding
+3. **The domain fauna buff got more uniform, and larger for small species** *(moot since §15
+   removed that buff; kept because it is what this pass was reasoning about)*. A tadpole heart
+   went 0.7 → 3.5 world scale, so a domain fielding tadpoles drew what a domain fielding
    brittlestars always did. The pool is summed across living hearts and clamped by the
    maintained-mechanism ceiling (sustained level 10), which large populations already reached,
    so the expected change is "the small-species domains stop being quietly under-buffed" rather
@@ -7071,7 +7032,7 @@ does not invent a spread.
 | | read | what it does |
 |---|---|---|
 | **A** | `SkimmerAdjustElementLevelByCrystalEffectSO.Execute` | the collect reward, `min(\|lossyScale.x\| × 0.1, 0.5)` element levels. **The one with a cap.** |
-| **B** | `DomainFaunaBuffSystem.ComputeHeartValue` | the live domain fauna buff — the same function, summed over every LIVING heart of a domain (§15) |
+| ~~**B**~~ | ~~`DomainFaunaBuffSystem.ComputeHeartValue`~~ | **REMOVED (§15)** — the live domain fauna buff was the same function summed over a domain's living hearts. A heart's world scale is now read as gameplay in FOUR places, not five, and **A is still the only one with a cap**, so no number in this section moves |
 | **C** | every crystal prefab's root `SphereCollider` | authored radius 1, so the world **pickup trigger radius EQUALS the root world scale**. `HEART_MIN` (1.0) exists so a small species' heart never becomes a hairline; the skimmer sphere is 15–30 units, so the crystal's own collider is a small addend |
 | **D** | `Crystal.Vacuum` | divides by `lossyScale.x`, so a bigger heart is drawn in more slowly — a reasonable read of "heavier" |
 | **E** | `ElementalCrystalImpactor.RunCapture` | the capture flourish's recoil radii and husk scale (§31) |
@@ -7116,8 +7077,8 @@ like pure subtraction and one of the deletions was not.
 Step 3 reads like level bookkeeping. It was the **correction for step 2**. Delete it with the rest
 of the level surface and every creature that authors a body scale wears a heart of
 `authored × BaseBodyScale` — **0.40 and 0.70 on the shipped tadpoles, a silent 2.5× and 1.43× cut
-to BOTH the collect reward (read A) and the live domain fauna buff (read B)**, with nothing
-reporting it anywhere. A crystal at 40% of its intended size is not an error state; it is a
+to the collect reward (read A) and, at the time, to the live domain fauna buff (read B, removed in
+§15)**, with nothing reporting it anywhere. A crystal at 40% of its intended size is not an error state; it is a
 slightly small crystal.
 
 **There is a SECOND inversion one level up**, and it is why the fix cannot live inside
@@ -7221,11 +7182,12 @@ shepherding either of them used to move a number nothing rendered.
    scale was. A species whose four elements author no differences (Brittlestar, Cacti, Shark,
    WormColony above) will read uniform. That is the honest state of those assets, not a defect to
    answer with a size roll.
-3. **The domain fauna buff re-sorts.** It was uniform per heart under §33's flat curve; it now
-   tracks species size, so a domain fielding sharks out-buffs one fielding tadpoles by **1.8–2.4×
-   per heart** (4.23 against 2.30 or 1.74), and a domain fielding SchwarzP colonies by 3.6×. The pool is still summed across living hearts and still clamped by the
-   maintained-mechanism ceiling (sustained level 10, §15), so the expected change is an ordering
-   between domains rather than new saturation.
+3. **The domain fauna buff re-sorted** *(moot since §15 removed that buff; kept as the reasoning
+   of this pass)*. It was uniform per heart under §33's flat curve; it then tracked species size, so
+   a domain fielding sharks out-buffed one fielding tadpoles by **1.8–2.4× per heart** (4.23 against
+   2.30 or 1.74), and one fielding SchwarzP colonies by 3.6×. The pool was summed across living
+   hearts and clamped by the maintained-mechanism ceiling (sustained level 10), so the expected
+   change was an ordering between domains rather than new saturation.
 
 ### Verify in-editor (the human is the gate — none of this has been run)
 
@@ -7362,9 +7324,10 @@ collider LOD (the host cell is handed its bare canvas at voyage start, the Wande
 opening move, so the corridor is not additive to a heavy home world). Fauna at
 `RuntimePopulationScale 0.5` ≈ one-and-a-half freestyle cells' worth of creatures across
 three cells. The Ark itself is ~150 prisms and ~150 always-on nothing — its label is one
-TMP text. Satellite cells run no cytoplasm (4k shard motes each stays preview-suppressed)
-and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
-"satellite" notes in `Cell.Initialize`, is untouched).
+TMP text. Satellite cells run no cytoplasm (4k shard motes each stays preview-suppressed).
+(They also used to be barred from `DomainFaunaBuffSystem.EnsureExists`, whose runtime rebinding
+a satellite strike could leave holding a dead SO; that system is removed — §15 — so the hazard
+and its guard are both gone.)
 
 ### 41.5 Known limitations (deliberate, recorded)
 

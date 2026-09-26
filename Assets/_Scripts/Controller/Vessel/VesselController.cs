@@ -177,6 +177,16 @@ namespace CosmicShore.Gameplay
                 VesselPlacementView.SetTarget(transform);
             }
 
+            // NO HIGH-POLY PRISM MORPH IS GRANTED HERE, and that is the design rather than an
+            // omission. The family (.claude/skills/prism-morph, Docs/PRISM_ANIMATION.md §4.7.2)
+            // deforms the surface of a handful of prisms out of a SHARED residency budget, so a
+            // per-vessel grant does not add morphs, it DIVIDES the one that mattered until nothing
+            // is smooth — and an effect strong enough to be an EVENT stops being one the moment
+            // every hull in the match wears it. Its one member is the Urchin's cradle, granted by
+            // the hull that can ride (GunVesselTransformer ensures PrismCradleSource) rather than
+            // by every vessel's Initialize. Adding a second is a design call, not a wiring one, so
+            // do not add an ensure here.
+
             // Pip is NOT granted here any more. The picture-in-picture rear view is retired in
             // favour of the look-back camera above (Docs/REAR_VIEW.md), which shows the same
             // thing full-screen, at the vessel's own follow distance, on the rig every camera

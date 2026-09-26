@@ -113,7 +113,7 @@ namespace CosmicShore.Gameplay
         /// <c>GetLevel(element) / 10f</c>, which is <c>FloorToInt(normalized * 10) / 10</c> and so
         /// quantized to tenths. Crystal progression moves the level in exact tenths
         /// (<c>AdjustLevel(±0.1)</c>) and the two agree there; they diverge only while a temporary
-        /// effect, fauna buff or comeback bonus is decaying — all continuous — where the quantized
+        /// effect or comeback bonus is decaying — both continuous — where the quantized
         /// form steps and this one glides. No authored endpoint changes: both forms return
         /// <see cref="Min"/> at rest and <see cref="Max"/> at level 10.</para>
         ///

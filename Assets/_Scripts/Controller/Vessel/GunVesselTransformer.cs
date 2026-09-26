@@ -51,6 +51,17 @@ namespace CosmicShore.Gameplay
         enum RideMode { None = 0, Trail = 1, Surface = 2 }
         RideMode _rideMode;
 
+        /// <summary>
+        /// True while the vessel is RIDING a prismscape: attached, with a live ride kernel under
+        /// it. False in free flight, and false the moment a launch off a ribbon's end or a Slip
+        /// clears the attach flags — the next <see cref="MoveShip"/> ends the ride, so this reads
+        /// "attached and not flying" with no extra state. Read by <see cref="PrismCradleSource"/>
+        /// (Docs/PRISM_ANIMATION.md §4.7.2), which is why it is a property and not a peek at the
+        /// attach flag: <c>VesselStatus.IsAttached</c> is set on CONTACT, before the ride is
+        /// admitted, and a refused attach clears it again on the same frame.
+        /// </summary>
+        public bool IsRiding => attached && _rideMode != RideMode.None;
+
         [Tooltip("Ammo gained per second while riding a prismscape. Doubled on a shielded prism.")]
         [SerializeField] float rechargeRate = .1f;
 
@@ -91,6 +102,14 @@ namespace CosmicShore.Gameplay
                  "this is only the hull's own half-thickness - raise it until the ship reads " +
                  "as sitting ON the trail rather than sunk into it.")]
         [SerializeField] float rideSurfaceClearance = 1.5f;
+
+        [Tooltip("What a REVERSE command in free flight is worth against the same pull forward. " +
+                 "1 = exactly symmetric, which is what the RAIL already does (the grind feeds " +
+                 "TrailFollower Abs(throttle), so backing up a ribbon is as fast as running it " +
+                 "forward) and therefore what 'one throttle mapping' means. Lower it only if " +
+                 "reverse reads as too loose in open space - it cannot make the two modes agree " +
+                 "and disagree at the same time.")]
+        [SerializeField, Range(0f, 1f)] float reverseThrottleScale = 1f;
 
         [Tooltip("How quickly the grind speed chases the throttle (1/s, exponential) - the " +
                  "rail's WEIGHT. This is what makes letting go coast to a stop, a reversal " +
@@ -159,6 +178,38 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] int ammoIndex = 0;
 
+        /// <summary>
+        /// ONE throttle mapping, on the rail and off it. <see cref="ReadThrottle"/> is the signed
+        /// axis the grind has always run on — rest parks, push forward runs the ribbon, pull back
+        /// runs it the other way — and free flight now reads exactly the same stick the same way,
+        /// which is the whole of "the Urchin can go backwards while flying".
+        ///
+        /// <b>This re-centres the forward half as well, and that is the point rather than a side
+        /// effect.</b> The base axis is raw <c>XDiff</c> in [0, 1], which rests at 0.5 — so a
+        /// hands-off Urchin used to cruise at half throttle (32.5 u/s) and a full pull-back was
+        /// the stop. Re-centred, full forward is unchanged at the authored 65 u/s, the CENTRE is
+        /// the stop, and the bottom half of the stick — which used to be a long, mushy run of
+        /// deceleration into a stop that only existed at the very end of it — is reverse. The
+        /// pilot learns one stick, and the answer to "which way does this stick position send me"
+        /// stops depending on whether there happens to be a ribbon under the hull.
+        ///
+        /// The Urchin can afford the centre-stop that falls out of this where most hulls could
+        /// not: its <c>DefaultMinimumSpeed</c> is already 0, so a full pull-back has always been a
+        /// genuine stop (<see cref="MinimumThrottleBrake"/> lands it), and this only moves WHERE
+        /// on the stick that stop lives.
+        /// </summary>
+        protected override float ThrottleAxis
+        {
+            get
+            {
+                float axis = ReadThrottle();
+                return axis < 0f ? axis * reverseThrottleScale : axis;
+            }
+        }
+
+        /// <summary>The Urchin is the one hull whose throttle can command a negative cruise.</summary>
+        public override bool CanReverse => true;
+
         public override void Initialize(IVessel vessel)
         {
             base.Initialize(vessel);
@@ -182,6 +233,13 @@ namespace CosmicShore.Gameplay
                 surfaceFollower.OnPrismCrossed -= ApplyPrismscapePayoff;
                 surfaceFollower.OnPrismCrossed += ApplyPrismscapePayoff;
             }
+
+            // The cradle (Docs/PRISM_ANIMATION.md §4.7.2) is ENSURED here rather than authored on
+            // the prefab, so an Urchin cannot be wired without it — the same reasoning as the
+            // lockup on every HUD. The component only ever reports while IsRiding, so on a remote
+            // replica (transformer inactive, never attaches) it is inert.
+            if (!TryGetComponent<PrismCradleSource>(out _))
+                gameObject.AddComponent<PrismCradleSource>();
         }
 
         void OnDisable()
@@ -329,7 +387,20 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void SeedTrailRide()
         {
-            _facingSign = (int)trailFollower.Direction;
+            // _facingSign is "does the NOSE agree with IndexOrderHeading", and the follower's
+            // latched Direction is "does TRAVEL agree with it" - the same fact only while the
+            // vessel is flying nose-first. Now that it can arrive backwards, the two are composed:
+            // nose vs index = (travel vs index) x (nose vs travel).
+            //
+            // Getting this wrong is invisible on a forward attach and wrong on every reverse one.
+            // A pilot backing into a ribbon is holding the stick BACK, the grind reads that as "go
+            // opposite my nose", and an uncomposed seed claims the nose already points the way they
+            // are travelling - so the rail would fire them off the way they CAME, in the same
+            // breath it caught them, while they were still asking to keep backing up. It is the
+            // mirror of the defect the seed itself was written to fix (seeding from the nose, where
+            // dot(forward, axis) is noise at the moment of contact).
+            int noseVsTravel = Vector3.Dot(transform.forward, VesselStatus.Course) < 0f ? -1 : 1;
+            _facingSign = (int)trailFollower.Direction * noseVsTravel;
             _grindThrottle = ReadThrottle();
             _railOffset = transform.position - (trailFollower.CenterlinePoint + RideSurfaceOffset());
         }
@@ -466,7 +537,7 @@ namespace CosmicShore.Gameplay
 
             if (rideSpeed <= 0f || InputStatus == null) return;
 
-            float natural = base.ComputeThrottleTarget();
+            float natural = NaturalForwardTarget;
             if (rideSpeed <= natural) return;
 
             _carriedSpeed = rideSpeed;
@@ -483,7 +554,19 @@ namespace CosmicShore.Gameplay
         {
             if (_carriedSpeed <= 0f || InputStatus == null) return;
 
-            float natural = base.ComputeThrottleTarget();
+            // Asking to go BACKWARDS forfeits the claim on forward momentum outright. The carry is
+            // only ever a FLOOR under the throttle target, so left standing it would keep re-flooring
+            // a reverse command for the whole ~8 s of its decay - the pilot pulls back, brakes
+            // through zero, and then gets shoved forward again the moment they ease off. The
+            // momentum itself is not deleted: it lives in the smoothed `speed` field, which still
+            // has to decelerate all the way down and back through zero before the vessel reverses.
+            if (base.ComputeThrottleTarget() < 0f)
+            {
+                _carriedSpeed = 0f;
+                return;
+            }
+
+            float natural = NaturalForwardTarget;
             _carriedSpeed = Mathf.MoveTowards(_carriedSpeed, natural,
                                               Mathf.Max(0f, detachSpeedDecayRate) * Time.deltaTime);
             if (_carriedSpeed <= natural) _carriedSpeed = 0f;
@@ -497,8 +580,27 @@ namespace CosmicShore.Gameplay
         protected override float ComputeThrottleTarget()
         {
             float natural = base.ComputeThrottleTarget();
+
+            // A reverse command is never floored by a carry. The carry exists so that letting go of
+            // a rail hands the pilot their momentum instead of a stale cruise; a pilot who is
+            // actively asking to go the other way is not being cheated of momentum, they are
+            // spending it.
+            if (natural < 0f) return natural;
+
             return _carriedSpeed > natural ? _carriedSpeed : natural;
         }
+
+        /// <summary>
+        /// The ordinary throttle target as the CARRY sees it - clamped to forward.
+        ///
+        /// The carry is a forward-momentum ledger and every one of its comparisons ("is the ride
+        /// faster than what the pilot could fly anyway", "has the bleed-off landed") is a
+        /// magnitude question. Left signed, a decay toward a NEGATIVE target walks the carry down
+        /// past zero, where <see cref="TickCarriedSpeed"/>'s own `&lt;= 0` guard freezes it a hair
+        /// below zero forever and <see cref="ComputeThrottleTarget"/> then pins the vessel at that
+        /// value - a permanent near-stop, arrived at from a feature about going fast.
+        /// </summary>
+        float NaturalForwardTarget => Mathf.Max(0f, base.ComputeThrottleTarget());
 
         /// <summary>The one exit from a ride: end it and give the pilot their camera back.</summary>
         void LeaveRide()

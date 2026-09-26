@@ -122,6 +122,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected abstract void BuildStation(ToyShellOption option, Transform parent, Vector3 position, float radius);
 
+        /// <summary>
+        /// How many columns a matrix of <paramref name="count"/> stations is laid out in. Default:
+        /// a roughly square grid. A toy whose stations are an ORDERED row (the element charger's
+        /// charge → mass → space → time) overrides it to lay them on one line.
+        /// </summary>
+        protected virtual int MatrixColumns(int count) => Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(count)));
+
+        /// <summary>
+        /// Which grid slot option <paramref name="index"/> (of <paramref name="count"/>) is laid
+        /// in. Default: the option's own index. A LAYOUT hook and nothing more - it may move a
+        /// station, never add, drop or re-act one, so both surfaces still offer the same list in
+        /// the same order. The element charger reverses its row with it so Charge sits on the
+        /// arriving pilot's LEFT, the way the HUD reads, while the window keeps HUD order.
+        /// </summary>
+        protected virtual int StationSlot(int index, int count) => index;
+
         /// <summary>Hook after every station is built (e.g. start streaming their contents).</summary>
         protected virtual void OnMatrixOpened() { }
 
@@ -157,13 +173,14 @@ namespace CosmicShore.Gameplay
             Vector3 right = transform.right;
             Vector3 up = transform.up;
 
-            int cols = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(count)));
+            int cols = Mathf.Clamp(MatrixColumns(count), 1, count);
             int rows = Mathf.CeilToInt(count / (float)cols);
 
             for (int i = 0; i < count; i++)
             {
-                int col = i % cols;
-                int row = i / cols;
+                int slot = Mathf.Clamp(StationSlot(i, count), 0, count - 1);
+                int col = slot % cols;
+                int row = slot / cols;
                 Vector3 position = origin
                                    + right * (spacing * (col - (cols - 1) * 0.5f))
                                    + up * (spacing * ((rows - 1) * 0.5f - row));

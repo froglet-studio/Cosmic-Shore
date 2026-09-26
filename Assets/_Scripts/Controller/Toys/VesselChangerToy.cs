@@ -214,8 +214,6 @@ namespace CosmicShore.Gameplay
                 ToyFactory.AddSphereBody(body, radius, previewColor);
             }
 
-            ToyFactory.AddRingedLabel(station.transform, vessel.ToString(), previewColor,
-                StationRingRadius(radius * 1.6f), radius);
             // The action is the option's own Apply, wired by CreateStation - see MatrixToy.
         }
 

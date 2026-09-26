@@ -452,7 +452,7 @@ the two presentation methods are its own, and each has the same shape as
 | `AssignScores` | winning domain's players get the finish time; everyone else a sentinel encoding *their team's* deficit, so losing teammates tie |
 | `BuildResults` | golf order is team-major by construction; individual kills order teammates, name is the final tiebreak |
 
-`ElementalComebackSystem` uses `ScoreDifferenceSource.LifeformsKilled`, domain-aggregated like
+`ElementalComebackSystem` uses the rule's `DomainValue` (`LifeformsKilled`), domain-aggregated like
 every other source — a player's deficit is their team's deficit against the leading colour.
 
 ## Sparrow-only
@@ -619,7 +619,7 @@ the band and the PhaseThresholds cannot drift apart.
 | `IRoundStats` / `RoundStats` | `LifeformsKilled` (+ event, + server-write NetworkVariable, + `Cleanup`) |
 | `ScoringMetric` / `ScoringMetrics.Read` | `LifeformsKilled = 7` |
 | `GameDataSO` | `LifeformTargetCount` |
-| `ElementalComebackSystem` | `ScoreDifferenceSource.LifeformsKilled`, domain-aggregated like every other source |
+| `ElementalComebackSystem` | the rule's `DomainValue` (`LifeformsKilled`), domain-aggregated like every other source |
 | `EndConditionOverridesSO` (+ window + asset) | `wildlifeKillTarget` live/build/getter, default 500 |
 | `GameToastSituation` | `WildlifeHuntQuarter = 53`, `WildlifeHuntHalf = 54`, `WildlifeLeadChanged = 55`, `WildlifeCoreBreached = 56` |
 | `ServerPlayerVesselInitializerWithAI` | clamps the AI's vessel class into the mode's allowed set |
@@ -796,7 +796,9 @@ It is deliberately NOT worked around here: inventing a second kill path for one 
 two systems come to disagree about what killed a creature.
 
 **Missile supply changed too.** Missiles no longer reload from omni crystals; they reload from
-destroying hostile prisms (0.01 per prism, 50 prisms per rocket). This mode's quarry is
-CREATURES, whose body prisms are hostile mass — so hunting funds the next rocket, and a pilot
-who runs dry has to shoot something. The omni crystal now grants an 8-second all-source
+destroying prisms WITH GUNFIRE (0.01 per prism, 25 per base rocket and 50 per heavy one; any
+domain, and a rocket's own blast pays nothing). This mode's quarry is CREATURES, and their body
+prisms are shot with the guns — so hunting funds the next rocket, and a pilot who runs dry has
+to shoot something. Note the blast paying nothing bites here specifically: the warhead's creature
+joust is the mode's signature kill and it now funds none of its own successor. The omni crystal now grants an 8-second all-source
 elemental-debuff ward instead.

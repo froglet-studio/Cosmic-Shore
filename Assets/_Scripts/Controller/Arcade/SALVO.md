@@ -3,7 +3,8 @@
 
 > **⚠ Changed under this mode's feet (2026-09).** The premise below — *"the tank never regenerates
 > and the only refuel is an omni crystal"* — is no longer the whole truth. The Sparrow's missiles
-> now also recharge by **destroying hostile prisms** (0.01 per prism, 50 prisms per rocket:
+> now also recharge by **destroying prisms with GUNFIRE** (any domain; a rocket's own blast pays
+> nothing — 0.01 per prism, 25 per base rocket and 50 per heavy one:
 > `VesselRearmOnPrismDestruction`), which in Salvo is the mode's own objective. So the crystal run
 > is no longer the only way to reload, and the crystal-run rhythm this mode is built around is
 > correspondingly weaker.
@@ -63,7 +64,7 @@ parallel solo demolition.
   `Vessels` entry on `ArcadeGameSalvo.asset`
 - **Crystals**: `CrystalCountMode.PlayerCountPlusExtra` **+5** (7 omni crystals in a 2-player
   lobby, 9 in a full one) **plus** 14 scattered elemental pickups (seed 42)
-- **Comeback**: `ScoreDifferenceSource.PrismsDestroyed`, rate **0.013** (a quarter-of-target
+- **Comeback**: the rule's `DomainValue` (`PrismsDestroyed`), rate **0.013** (a quarter-of-target
   deficit ≈ 2.3 element levels — clears the "must buy a whole level" floor, well under
   Rampage's ~4.9-level footing since the target came down and the rate did not)
 - **Environment**: the Boneyard cell assets **reused verbatim** (`Boneyard Cell Config
@@ -81,7 +82,7 @@ The whole missile economy is the Sparrow's shipped wiring, not this mode's inven
 | Missile tank: max **1**, starts full, **no regeneration** | `Sparrow.prefab` ResourceSystem, resource 0 ("Missiles") |
 | A skyburst costs **0.5** of the tank → 2 rockets per refuel | `SkyBurstGunAction.asset` (`ammoCost`) |
 | Full-auto guns cost **0** — always available, chip damage | `FullAutoAction.asset` |
-| ~~An omni crystal **sets the tank full** on collect~~ — **RETIRED 2026-09** | `SparrowVesselChangeResourceByCrystalEffect.asset` is DELETED. Missiles now reload by DESTROYING HOSTILE PRISMS (`VesselRearmOnPrismDestruction` on `Sparrow.prefab`, 0.01 per prism = 50 prisms per rocket); the omni crystal grants an 8 s elemental-debuff ward instead. See the ⚠ section below |
+| ~~An omni crystal **sets the tank full** on collect~~ — **RETIRED 2026-09** | `SparrowVesselChangeResourceByCrystalEffect.asset` is DELETED. Missiles now reload by DESTROYING PRISMS WITH GUNFIRE (`VesselRearmOnPrismDestruction` on `Sparrow.prefab`, 0.01 per prism = 25 per base rocket, 50 per heavy one; any domain, and a rocket's own blast pays nothing); the omni crystal grants an 8 s elemental-debuff ward instead. See the ⚠ section below |
 
 Salvo's job was to build a mode where that loop is the game: stock the arena with crystals,
 make destruction the score, and extend the refuel to the domain.
@@ -126,10 +127,12 @@ client-simulated environment — the Boneyard's wreckage is environment-owned `D
 mass, hostile to every domain, so all of it scores). Fauna bodies count too (a scavenger is
 prisms); teammates' trails never score, by the roster domain check.
 
-The two Sparrow-vs-Sparrow combat-hit effects still run here (they are wired on the shared
-weapon containers), but `PointsForCombatHit` is 0 in this rule — shooting a rival pilot
-suppresses them (spin + skimmer shrink), it does not score. That is deliberate: interference
-is free, the quarry is the arena.
+The Sparrow-vs-Sparrow combat-hit effects still run here (they are wired on the shared weapon
+containers), but `PointsForCombatHit` is 0 in this rule — shooting a rival pilot does not score.
+That is deliberate: interference is free, the quarry is the arena. (This paragraph used to say
+the hit *"suppresses them (spin + skimmer shrink)"*; both of those victim effects were removed in
+Sep 2026 — a weapon may take a pilot's petals and nothing else, `Docs/ELEMENTAL_ECONOMY.md §9` —
+so what a rival hit does here now is drain petals, which this rule still pays nothing for.)
 
 ## Crystals
 
@@ -200,7 +203,7 @@ break to repair.
 | `SalvoPrismTurnMonitor` | new turn monitor reading `GetSalvoPrismTarget()` |
 | `SalvoScoringRuleSO` | new rule subclass (`RampageScoringRuleSO` + "SALVO TIME" reveal) |
 | `EndConditionOverridesSO` (+ window + asset) | `salvoPrismTarget` live/build/getter, default 700 |
-| `ElementalComebackSystem.DefaultSourceFor` | Salvo → `PrismsDestroyed` |
+| `ElementalComebackSystem` | reads `SalvoScoringRule`'s `DomainValue` (`PrismsDestroyed`) |
 | `MiniGameHUD.CreateObjectiveProviderForGameMode` | Salvo → `RampageObjectiveProvider` |
 
 Nothing else moved: no new stats, no new metrics, no new impact effects, no vessel or cell

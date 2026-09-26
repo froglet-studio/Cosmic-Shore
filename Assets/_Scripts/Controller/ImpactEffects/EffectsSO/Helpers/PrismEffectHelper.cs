@@ -20,7 +20,13 @@ namespace CosmicShore.Gameplay
             prismImpactor.Prism.Damage(damage, status.Domain, status.PlayerName);
         }
         
-        public static void Damage(IVesselStatus status, PrismImpactor prismImpactor, float inertia, Vector3 Velocity)
+        /// <param name="byGunfire">
+        /// True when the striker is DIRECT GUNFIRE - a round that hit the prism itself. It only
+        /// marks the destroyed-channel payload (<see cref="PrismStats.DestroyedByGunfire"/>) for
+        /// the reload-by-destroying-mass weapon and changes nothing about the damage.
+        /// </param>
+        public static void Damage(IVesselStatus status, PrismImpactor prismImpactor, float inertia, Vector3 Velocity,
+                                  bool byGunfire = false)
         {
             // Default: Course * Speed * inertia
             if (status.Player == null)
@@ -30,7 +36,7 @@ namespace CosmicShore.Gameplay
             }
             
             var damage= Velocity * inertia;
-            prismImpactor.Prism.Damage(damage, status.Domain, status.PlayerName);
+            prismImpactor.Prism.Damage(damage, status.Domain, status.PlayerName, byGunfire: byGunfire);
         }
 
         /// <summary>
@@ -46,12 +52,11 @@ namespace CosmicShore.Gameplay
         /// untouched (the supplied <paramref name="debrisSpeedLimit"/> is what marks it), and
         /// that limit replaces the mismatched prefab clamp with a ceiling in the same units.
         ///
-        /// Do NOT pre-multiply by the prism's volume hoping to cancel Explode's divide. That
-        /// divide is a no-op: SetupDestruction stands the scale animator down before reading the
-        /// volume, GetCurrentVolume() reports 0 once disabled, and the Max(_, 1) floor therefore
-        /// pins prismProperties.volume to exactly 1 for every prism at the moment of the divide.
-        /// A pre-multiply survives as a straight volume multiplier - which damps small prisms
-        /// (a Rhino trail prism is ~0.75) and slams large ones into the ceiling.
+        /// Do NOT pre-multiply by the prism's volume. Explode applies no volume term at all
+        /// (its old divide was pinned to 1 for its whole life and was deleted in 2026-09 when the
+        /// death volume started being read correctly), so a pre-multiply survives as a straight
+        /// volume multiplier - which damps small prisms (a Rhino trail prism is ~0.75) and slams
+        /// large ones into the ceiling.
         /// </summary>
         /// <param name="restitution">Debris speed as a multiple of impact speed. 1 = the struck prism leaves at the speed of the striker.</param>
         /// <param name="debrisSpeedLimit">Ceiling in real speed units; 0 falls back to the explosion prefab's clamp (which will flatten it).</param>

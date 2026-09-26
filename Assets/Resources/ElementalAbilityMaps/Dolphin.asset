@@ -16,16 +16,16 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Echo Sight
-    AbilityDescription: Hold the right trigger and every prism standing inside the next
-      crystal blast's destruction volume lights up. Charge sets how THICK that blast is
-      - the capsule's diameter across the beam, authored on
+    AbilityDescription: 'Hold the right trigger and every prism standing inside the next
+      crystal blast''s destruction volume lights up. Charge sets how THICK that blast is
+      - the capsule''s diameter across the beam, authored on
       VesselExplosionByCrystalEffectSO as 0.75x the authored core at the resting level
       rising to 1.5x at level 10. It is the one element whose slot both AIMS the weapon
       and SHAPES it, which is why the sight and the thickness share it: the profile you
       are widening is the profile the sight draws. Note the total extent across the gape
       is set by banked energy, so Charge does not make the blast bigger - it redistributes
       that extent, trading a long thin beam for a fat round one. At level 5 the sight
-      also lights up VESSELS caught in the same volume, each in its own domain's colour.
+      also lights up VESSELS caught in the same volume, each in its own domain''s colour.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
@@ -66,18 +66,18 @@ MonoBehaviour:
     UpgradeDescription: The cone spares your own domain - no more friendly fire.
   - Element: 4
     AbilityLabel: Charge Fill Rate
-    AbilityDescription: Time raises the rate the boost meter charges while drifting
+    AbilityDescription: 'Time raises the rate the boost meter charges while drifting
       (authored on ChargeBoostActionSO.chargeRateMultiplierAtFullTime, x1.5 at level 10).
-      Time deliberately does NOT touch this hull's boost SPEED:
+      Time deliberately does NOT touch this hull''s boost SPEED:
       VesselTransformer.BoostSpeedMultiplier is left disabled on Dolphin.prefab. At level 5 the drift itself becomes the ward - while drifting the Dolphin
-      holds the general elemental-debuff immunity state, so a danger prism's all-element
-      drain does not land.
+      holds the general elemental-debuff immunity state, so a danger prism''s all-element
+      drain does not land.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Drift Ward
-    UpgradeDescription: While drifting you take no elemental debuff - a danger prism's
+    UpgradeDescription: 'While drifting you take no elemental debuff - a danger prism''s
       all-element drain does not land. Everything else still does: the full-strength slow
       (x3 magnitude, x3 duration) and the halving of your banked blast energy. Your banked
-      boost is halved too, but the drift you are already in refills it.
+      boost is halved too, but the drift you are already in refills it.'

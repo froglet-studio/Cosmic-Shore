@@ -58,8 +58,6 @@ SCENE_FOR_MODE = {
     56: 'MinigameRegatta',
     57: 'MinigameBroadside',
     58: 'MinigameWaystation',
-    8:  'MinigameDuelForTheCell',
-    26: 'MinigameWildlifeBlitz',
 }
 
 

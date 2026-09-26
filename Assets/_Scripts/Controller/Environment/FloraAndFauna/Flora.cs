@@ -750,7 +750,10 @@ namespace CosmicShore.Gameplay
 
         public override void RemoveHealthBlock(HealthPrism healthPrism, string killername = "")
         {
-            base.RemoveHealthBlock(healthPrism);
+            // Forward the killer: dropping it here made every gun/blast/ram flora kill a
+            // killerless death, which LifeForm.Die never raises OnLifeFormDeath for - so
+            // no mode ever credited one (only jousts, which take a different path).
+            base.RemoveHealthBlock(healthPrism, killername);
             isGrowing = false;
         }
 

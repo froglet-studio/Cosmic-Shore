@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
@@ -196,6 +197,45 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Bind this window to a toy and open it ON a named option - the labels of the branches to
+        /// walk and the leaf to select, exactly the shape <see cref="ToyPreferenceStore"/> records.
+        /// <paramref name="onApplied"/> is raised if and when the player actually commits THAT
+        /// option, and never for any other row.
+        ///
+        /// <para>It SELECTS and does not apply, for the same reason the remembered variant does:
+        /// nothing changes the world because a window was opened. The Toy Box's daily-activity
+        /// button uses this - the press names the day's activity and arms its commit, and the
+        /// reward is claimed on the commit rather than on the press, because the reward is for
+        /// TRYING the thing.</para>
+        ///
+        /// <para>The callback is deliberately an opaque <see cref="Action"/>: this window knows how
+        /// to apply an option and nothing about rewards, days or claims, so a caller can hang
+        /// anything off the commit without this class learning what it is.</para>
+        /// </summary>
+        public void BindToPath(IToyShellSurface surface, IReadOnlyList<string> path,
+                               Action onApplied = null)
+        {
+            BindInternal(surface, restoreRemembered: false);
+
+            var leaf = DescendPath(path);
+            if (leaf == null)
+            {
+                // The path no longer resolves (a painting renamed, a toy rebuilt by a cell swap).
+                // The window is still open on the right TOY, which is most of what the press
+                // promised, so fall back to the player's own remembered variant rather than
+                // leaving them looking at an arbitrary row.
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[ToyBox] BindToPath could not resolve '{string.Join(" > ", path ?? new List<string>())}' " +
+                    "- opened the toy without a selection.");
+                RestoreRememberedVariant();
+                return;
+            }
+
+            _watchedOption = leaf;
+            _onWatchedApplied = onApplied;
+        }
+
+        /// <summary>
         /// The bind proper. Opening from the grid RESTORES the variant the player last committed
         /// (<see cref="RestoreRememberedVariant"/>); the registry's re-bind after a cell swap does
         /// not - the press that caused the swap has just been applied, and lighting the button on
@@ -205,6 +245,12 @@ namespace CosmicShore.UI
         {
             _surface = surface;
             _boundDefinition = surface?.ShellDefinition;
+
+            // Cleared on EVERY bind, including the registry's re-bind after a cell swap: a watch
+            // left armed would fire a previous card's callback on whatever the player pressed next.
+            _watchedOption = null;
+            _onWatchedApplied = null;
+
             Redraw();
             if (restoreRemembered) RestoreRememberedVariant();
         }
@@ -235,30 +281,49 @@ namespace CosmicShore.UI
         void RestoreRememberedVariant()
         {
             if (!ToyPreferenceStore.TryGetPath(RememberKey, out var path)) return;
-            if (_stack.Count == 0) return;
+            if (DescendPath(path) != null)
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[ToyBox] Restored '{RememberKey}': {string.Join(" > ", path)}.");
+        }
+
+        /// <summary>
+        /// Walk a path of labels into the toy: expand each branch it names, then SELECT the leaf it
+        /// ends on - select, never apply. Returns the selected leaf, or null when the path did not
+        /// resolve to one.
+        ///
+        /// <para>A row that applies on select (a domain, a cell you are not in) is deliberately NOT
+        /// selected: nothing changes the world because a window was opened. The walk stops silently
+        /// at the first label that no longer matches - the toy's options moved on, and the window
+        /// opens where it would have anyway.</para>
+        /// </summary>
+        ToyShellOption DescendPath(IReadOnlyList<string> path)
+        {
+            if (path is not { Count: > 0 }) return null;
+            if (_stack.Count == 0) return null;
 
             for (int step = 0; step < path.Count; step++)
             {
                 string label = path[step];
                 bool last = step == path.Count - 1;
                 int index = IndexOfRow(label);
-                if (index < 0) return;
+                if (index < 0) return null;
 
                 var option = _rows[index];
                 if (!last)
                 {
-                    if (!option.IsBranch) return;
+                    if (!option.IsBranch) return null;
                     var next = option.Expand();
-                    if (next is not { Count: > 0 }) return;
+                    if (next is not { Count: > 0 }) return null;
                     PushLayer(next, option.Label);
                     continue;
                 }
 
-                if (option.IsBranch || option.AppliesOnSelect || option.Apply == null) return;
+                if (option.IsBranch || option.AppliesOnSelect || option.Apply == null) return null;
                 Select(index);
-                CSDebug.LogVerbose(CSLogChannel.ToyBox,
-                    $"[ToyBox] Restored '{RememberKey}': {string.Join(" > ", path)}.");
+                return option;
             }
+
+            return null;
         }
 
         int IndexOfRow(string label)
@@ -691,6 +756,32 @@ namespace CosmicShore.UI
             ApplyOption(option);
         }
 
+        // The option BindToPath armed, and what to raise when the player commits it. Both are
+        // cleared by every bind (see BindInternal) and by the raise itself, so a callback fires
+        // at most once per bind.
+        ToyShellOption _watchedOption;
+        Action _onWatchedApplied;
+
+        /// <summary>
+        /// Do the thing, then tell whoever armed this option that it happened. The ONE place an
+        /// option's <see cref="ToyShellOption.Apply"/> is called, so the three routes into it (an
+        /// immediate commit, a commit while already flying, a commit after the freestyle handoff)
+        /// cannot disagree about whether the callback ran.
+        /// </summary>
+        void ApplyAndNotify(ToyShellOption option)
+        {
+            option.Apply();
+
+            if (!ReferenceEquals(option, _watchedOption)) return;
+
+            // Disarmed BEFORE the callback: an Action that reopens or re-binds this window would
+            // otherwise re-enter, and a claim must be paid once.
+            var callback = _onWatchedApplied;
+            _watchedOption = null;
+            _onWatchedApplied = null;
+            callback?.Invoke();
+        }
+
         void ApplyOption(ToyShellOption option)
         {
             // Remembered at the press, whichever verb it was (Switch, Spawn, Start, or a row that
@@ -705,7 +796,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            option.Apply();
+            ApplyAndNotify(option);
 
             // The picture turns onto what the press MADE, where it landed: a Spawn shows the
             // creature blooming into the cell instead of a list that merely says it did. An
@@ -769,7 +860,7 @@ namespace CosmicShore.UI
             if (crystalClickHandler.IsInFreestyle)
             {
                 OnCloseModal();
-                option.Apply();
+                ApplyAndNotify(option);
                 return;
             }
 
@@ -806,7 +897,7 @@ namespace CosmicShore.UI
                     return;
                 }
 
-                option.Apply();
+                ApplyAndNotify(option);
             }
             finally
             {

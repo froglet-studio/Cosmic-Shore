@@ -94,6 +94,7 @@ namespace CosmicShore.Gameplay
         // Reused so a shot allocates nothing on the hot path.
         readonly List<Prism> _hits = new();
         readonly List<(Prism prism, float distance)> _ordered = new();
+        readonly List<Transform> _vesselScratch = new();
 
         /// <summary>Seconds until the next shot is available, 0 when ready. Read by the HUD.</summary>
         public float CooldownRemaining => Mathf.Max(0f, _cooldownEndTime - Time.time);
@@ -119,6 +120,20 @@ namespace CosmicShore.Gameplay
         /// number that can drift from it.
         /// </summary>
         public float ConeHalfAngleDegrees => config != null ? config.ConeHalfAngleDegrees : 0.5f;
+
+        /// <summary>
+        /// How far the round reaches, in world units — the anchor the FLIGHT view's reticle is
+        /// projected at.
+        ///
+        /// <para>The eyepiece does not need it: that camera sits ON the shot's own axis, so the
+        /// cone projects to a circle about the centre of the picture whatever range you pick. The
+        /// gameplay camera does not, so the axis projects to a POINT only where that camera is
+        /// behind the hull and on its line — which is the Serpent's steady state (its authored
+        /// follow offset is a pure <c>(0, 0, -250)</c>) and is NOT true while the camera's
+        /// smoothing is catching up through a turn. Projecting the point the shot actually reaches
+        /// is right in both cases; assuming screen centre is right in one of them.</para>
+        /// </summary>
+        public float RangeUnits => config != null ? config.RangeUnits : 3000f;
 
         /// <summary>
         /// The firing pilot's domain colour. One resolver for the tracer and the reticle, so the
@@ -225,10 +240,14 @@ namespace CosmicShore.Gameplay
                 }
                 _ordered.Sort((a, b) => a.distance.CompareTo(b.distance));
 
-                bool pierces = IsPierceUnlocked;
-                int budget = pierces
-                    ? (so.PierceCount <= 0 ? int.MaxValue : so.PierceCount)
-                    : 1;
+                // THE ROUND PIERCES BY DEFAULT. It used to stop at the first prism unless the
+                // Charge-5 upgrade was up, which made an un-upgraded rifle on a twelve-second
+                // cooldown worth exactly one prism - measured by a pilot as "the destruction was
+                // small" in the same breath as the cone being too wide. A sniper round's whole
+                // proposition is the hole it leaves, so the budget is the AUTHORED number and 0
+                // is unlimited; what Charge 5 buys is stated one method down, in what counts as
+                // a target at all.
+                int budget = so.PierceCount <= 0 ? int.MaxValue : so.PierceCount;
 
                 int killed = 0;
                 for (int i = 0; i < _ordered.Count && killed < budget; i++)
@@ -247,8 +266,85 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            StripVessels(so, origin, direction, stop);
+
             DrawTracer(so, origin, direction, stop, hit);
             PlayReport(so);
+        }
+
+        /// <summary>
+        /// THE SERPENT'S ANTI-VESSEL VERB. The round strips elements from every opposing pilot
+        /// standing in the cone it just tested, and the petals are EJECTED - knocked out of the
+        /// victim's hull as free-for-all crystals rather than handed to the sniper, because a
+        /// ranged verb cannot take what it never touched (<see cref="ElementalTransfer"/>).
+        ///
+        /// <para><b>Why this exists at all.</b> The Serpent was the one hull in the fleet with no
+        /// way to affect another pilot: no skimmer, no projectile container, no blast - its only
+        /// weapon is this hitscan, and the hitscan queried PRISMS and nothing else. So it was
+        /// excluded from Broadside outright, and under the elemental economy it would have been
+        /// the only vessel that could be robbed and could never rob anyone.</para>
+        ///
+        /// <para><b>It reuses the round's OWN cone.</b> The test is
+        /// <see cref="PrismSpatialIndex.ConeContains"/>, the same public predicate
+        /// <c>QueryCone</c> applies to prisms, with the same apex, axis, range, half-angle and
+        /// minimum path radius. One cone, one answer: a pilot the tracer visibly passes through
+        /// cannot be missed by arithmetic that disagrees with the mass around them.</para>
+        ///
+        /// <para><b>It stops where the round stopped.</b> With the shipped unlimited pierce that
+        /// is the full range, but a limited <c>PierceCount</c> parks the round at a prism, and a
+        /// pilot standing behind that prism must not be stripped by a round that never got there.
+        /// </para>
+        ///
+        /// <para>The roster is <see cref="VesselVisionShading.CollectStampedVessels"/> - the
+        /// vision band's own live handle, which that platform law maintains because the law
+        /// depends on it being right, and which excludes the toybox's mini hulls by construction.
+        /// It is a handful of entries, so the sweep is O(pilots) and allocates nothing.</para>
+        /// </summary>
+        void StripVessels(SniperShotActionSO so, Vector3 origin, Vector3 direction, Vector3 stop)
+        {
+            if (so == null || so.VesselStripPerElement <= 0f || _status == null) return;
+
+            float reach = Vector3.Dot(stop - origin, direction);
+            if (reach <= 0f) return;
+
+            float tanHalf = Mathf.Tan(Mathf.Deg2Rad * Mathf.Clamp(so.ConeHalfAngleDegrees, 0f, 89f));
+            Vector3 launch = direction * so.VesselEjectSpeed;
+
+            VesselVisionShading.CollectStampedVessels(_vesselScratch);
+            for (int i = 0; i < _vesselScratch.Count; i++)
+            {
+                var candidate = _vesselScratch[i];
+                if (candidate == null) continue;
+
+                var component = candidate.GetComponentInChildren<VesselStatus>();
+                if (component == null) continue;
+
+                // Typed as the INTERFACE from here on, because Domain is a DEFAULT INTERFACE
+                // MEMBER (IVesselStatus implements it over Player) and a default member is
+                // reachable only through the interface - VesselStatus itself does not declare
+                // one. The Unity null check above is deliberately done on the concrete
+                // reference first: `== null` on an interface-typed variable is a plain
+                // reference compare and misses a destroyed Object.
+                IVesselStatus victim = component;
+
+                // Never yourself, never a team-mate. The own-domain rule is the same one every
+                // other anti-vessel effect in the fleet applies, and it is what stops a Serpent
+                // paying for shooting its own wingman.
+                if (ReferenceEquals(victim, _status)) continue;
+                if (victim.Domain == _status.Domain) continue;
+
+                if (!PrismSpatialIndex.ConeContains(component.transform.position, origin, direction,
+                                                    reach, tanHalf, so.MinPathRadius))
+                    continue;
+
+                // Classed Other: this is a gun round rather than a blast or a contact, so neither
+                // the Explosion nor the VesselContact ward should stop it, and only a pilot warded
+                // against everything is spared.
+                ElementalTransfer.ApplyAll(ElementalTransferForm.Eject, victim, attacker: null,
+                                           so.VesselStripPerElement, launch,
+                                           ElementalDebuffSources.Other);
+            }
+            _vesselScratch.Clear();
         }
 
         /// <summary>
@@ -295,10 +391,23 @@ namespace CosmicShore.Gameplay
         bool IsValidTarget(Prism prism)
         {
             if (prism == null || prism.destroyed) return false;
+
             // Never eat your own wall. The Serpent's whole identity is the mass it weaves, and a
             // rifle that cuts through it would make the two abilities fight each other.
             // Domains.Blue is the neutral sentinel and stays hostile to everyone.
-            return prism.Domain != _status.Domain;
+            if (prism.Domain == _status.Domain) return false;
+
+            // ARMOUR IS A TARGET ONLY AT CHARGE 5, and this is what that upgrade now buys. Below
+            // it a super-shielded prism is not a target at all, so the round passes THROUGH it and
+            // carries on to whatever is behind - rather than stopping on mass it cannot break,
+            // which is what an ordinary damage call would do to it silently (Prism.Damage
+            // hard-ignores super-shielded mass, so the round would end its life there having
+            // destroyed nothing). "Pierce" therefore names a CAPABILITY rather than a count: how
+            // many prisms the round goes through is the weapon's own authored budget at every
+            // tier, and what it can go through is the element's.
+            if (!IsPierceUnlocked && prism.prismProperties is { IsSuperShielded: true }) return false;
+
+            return true;
         }
 
         /// <summary>
@@ -327,6 +436,13 @@ namespace CosmicShore.Gameplay
                          devastate: true, debrisSpeedLimit: so.DebrisSpeedLimit);
         }
 
+        /// <summary>
+        /// The Charge-5 <b>Pierce</b> upgrade: whether this round may break SUPER-SHIELDED mass.
+        /// Below it armour is not a target and the round flies past it (see
+        /// <see cref="IsValidTarget"/>); at it, the sanctioned teardown in
+        /// <see cref="DestroyPrism"/> runs and the Serpent is the fleet's second force that can
+        /// take armour off, after the Rhino's energised blade.
+        /// </summary>
         bool IsPierceUnlocked
         {
             get

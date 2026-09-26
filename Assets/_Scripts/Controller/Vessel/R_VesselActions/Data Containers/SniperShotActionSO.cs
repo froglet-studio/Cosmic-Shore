@@ -60,11 +60,29 @@ namespace CosmicShore.Gameplay
                  "angular term takes over and this stops mattering.")]
         [SerializeField, Min(0f)] private float minPathRadius = 6f;
 
-        [Header("Charge 5 — Pierce")]
-        [Tooltip("How many prisms a PIERCING round destroys before it stops. 0 is unlimited " +
-                 "(everything on the line). Below the Charge-5 upgrade the round always stops at " +
-                 "the first prism it reaches.")]
-        [SerializeField, Min(0)] private int pierceCount = 3;
+        [Tooltip("How many prisms the round destroys before it stops, at EVERY tier. 0 is " +
+                 "unlimited - everything the cone contains. What the Charge-5 Pierce upgrade buys " +
+                 "is not this number but what counts as a target: below it, super-shielded mass " +
+                 "is not one and the round flies past it; at it, the round takes the armour off " +
+                 "and destroys the prism.")]
+        [SerializeField, Min(0)] private int pierceCount;
+
+        [Header("Vessel strip (the Serpent's anti-vessel verb)")]
+        [Tooltip("Normalized element levels this round strips from EACH element of every opposing " +
+                 "pilot inside the cone. 0.1 = one petal, one integer level, one ejected crystal. " +
+                 "The petals are EJECTED, not stolen - a ranged verb knocks them loose into the " +
+                 "arena rather than handing them to the shooter. 0 switches the strip off.\n\n" +
+                 "Authored here rather than derived from Broadside's price table because this hull " +
+                 "has no priced anti-vessel class yet: what the sniper round is WORTH is part of " +
+                 "the per-vessel Charge pass, and this number is a deliberate placeholder sized so " +
+                 "a twelve-second rifle is felt without being a one-shot reset. PLAYTEST IT.")]
+        [SerializeField, Min(0f)] private float vesselStripPerElement = 0.1f;
+
+        [Tooltip("How fast the stripped crystals leave the victim's hull. A hitscan round has no " +
+                 "velocity of its own - it arrives the instant it is fired - so unlike every other " +
+                 "weapon in the fleet this one cannot hand the ejector a real impact velocity and " +
+                 "has to author the launch instead.")]
+        [SerializeField, Min(0f)] private float vesselEjectSpeed = 45f;
 
         [Header("Impact")]
         [Tooltip("Debris speed the destroyed prism's pieces carry, in world units/second - the " +
@@ -106,6 +124,8 @@ namespace CosmicShore.Gameplay
         public float ConeHalfAngleDegrees => coneHalfAngleDegrees;
         public float MinPathRadius => minPathRadius;
         public int PierceCount => pierceCount;
+        public float VesselStripPerElement => vesselStripPerElement;
+        public float VesselEjectSpeed => vesselEjectSpeed;
         public float DebrisSpeed => debrisSpeed;
         public float DebrisSpeedLimit => debrisSpeedLimit;
         public float BeamSeconds => beamSeconds;

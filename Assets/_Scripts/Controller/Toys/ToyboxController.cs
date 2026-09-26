@@ -44,6 +44,19 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Trigger radius - how close the vessel must get to activate, world units.")]
         float toyTriggerRadius = 42f;
 
+        [Header("Pole switches (today's activity + shuffle)")]
+        [SerializeField, Tooltip("Place the two Toy Box top buttons as big switches at the cell's poles - " +
+                                 "today's activity above the ring, shuffle below it. They are not toys " +
+                                 "(they press other toys), so they sit off the equator the toys share.")]
+        bool placePoleSwitches = true;
+
+        [SerializeField, Min(1f), Tooltip("Body radius of a pole switch, world units. Larger than a toy's, " +
+                                          "as the arcade's two top buttons are larger than its cards.")]
+        float poleBodyRadius = 55f;
+
+        [SerializeField, Min(1f), Tooltip("Trigger (and switch-ring) radius of a pole switch, world units.")]
+        float poleTriggerRadius = 105f;
+
         [Inject] GameDataSO _gameData;
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
         [Inject] Reflex.Core.Container _container;
@@ -163,6 +176,17 @@ namespace CosmicShore.Gameplay
 
                 def.Spawn(_root, placement, context);
             }
+
+            // After the toys, so both switches find a populated shell registry on their first read.
+            if (placePoleSwitches)
+            {
+                ToyboxPoleSwitch.Build(ToyboxPoleSwitch.PoleRole.DailyActivity, _root,
+                    new ToyPlacement(center + Vector3.up * radius, center, poleBodyRadius, poleTriggerRadius),
+                    context);
+                ToyboxPoleSwitch.Build(ToyboxPoleSwitch.PoleRole.Shuffle, _root,
+                    new ToyPlacement(center - Vector3.up * radius, center, poleBodyRadius, poleTriggerRadius),
+                    context);
+            }
         }
 
         static int CountAutoPlaced(List<ToyDefinitionSO> defs)
@@ -216,6 +240,10 @@ namespace CosmicShore.Gameplay
                 "vessel_changer", "Vessel Changer", "Fly through to swap your ship.", new Color(1.00f, 0.85f, 0.20f)));
             box.AddToy(MakeDefault<DomainChangerToyDefinitionSO>(
                 "domain_changer", "Domain Changer", "Fly through to change your team colour.", new Color(0.85f, 0.30f, 0.90f)));
+            // Needs no content wiring: its four crystals are read off the ElementalCrystalSet.
+            box.AddToy(MakeDefault<ElementChargerToyDefinitionSO>(
+                "element_charger", "Element Charger", "Fly through to charge your vessel's elements.",
+                new Color(0.90f, 0.95f, 1.00f)));
             // The conveyor's prism prefab is an asset reference the code-built fallback can't
             // supply - its scenes degrade to crystals + lifeforms until the authored asset
             // (FrogletTools > Scene Setup > Setup Freestyle Toybox) wires one.

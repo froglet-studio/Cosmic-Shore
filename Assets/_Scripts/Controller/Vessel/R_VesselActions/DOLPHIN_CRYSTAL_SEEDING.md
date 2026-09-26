@@ -743,7 +743,7 @@ Two channels, deliberately two different looks.
 | | published by | colour | who sees it |
 |---|---|---|---|
 | **Yours** | `PrismLit.PublishAimed` | `PRISM_SIGHT_COLOR`, the pale cool cast | you |
-| **Theirs** | `PrismLit.PublishLight` | that pilot's **domain signal colour**, pulled toward white by `PRISM_SIGHT_PEER_DESATURATION` | everyone but them |
+| **Theirs** | `PrismLit.PublishLight` | that pilot's **domain signal colour**, pulled toward white by `PRISM_LIT_PEER_DESATURATION` | everyone but them |
 
 **Your own cone wins outright on every prism it covers.** A rival sweeping across the same mass
 cannot recolour, brighten or dim it. This is not a tie-break convenience — an instrument that
@@ -818,7 +818,7 @@ Unchanged in the only place that matters: **O(1) per frame in total**, not per s
 prism. The peer bank is four `Shader.SetGlobalVectorArray` calls plus a float, packed once per frame
 in `LateUpdate` regardless of how many pilots are aiming — and skipped entirely when nobody is, so a
 match with no Dolphin in it costs this system literally nothing. On the GPU the loop is bounded by
-`_PrismSightPeerCount` and costs one compare when that is zero; with rivals aiming it is ~15 ALU per
+`_PrismLitPeerCount` and costs one compare when that is zero; with rivals aiming it is ~15 ALU per
 peer per prism, no texture, no extra varying, and no change to the render queue, the batch, or the
 draw call count. Wire cost is three floats per holder at a fraction of the tick rate.
 
@@ -826,7 +826,7 @@ draw call count. Wire cost is three floats per holder at a fraction of the tick 
 
 ### The bank is FOUR slots, and that is bounded by the roster
 
-`PRISM_SIGHT_PEER_SLOTS` / `PrismLit.Slots`, one number in two files. Four is the
+`PRISM_LIT_PEER_SLOTS` / `PrismLit.Slots`, one number in two files. Four is the
 roster of both Dolphin-only modes (`MaxPlayersAllowed: 4` on `ArcadeGameRampage` and
 `ArcadeGameBends`) and one of those four is the viewer, so no roster the game ships can overflow it.
 `PrismLitTests.PeerBank_IsBigEnoughForEveryDolphinOnlyRoster` reads those assets rather

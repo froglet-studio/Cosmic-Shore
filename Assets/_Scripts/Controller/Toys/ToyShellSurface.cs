@@ -101,6 +101,20 @@ namespace CosmicShore.Gameplay
         /// <summary>How far back a window stands to look at <see cref="WorldAnchor"/>. 0 = the toy's radius.</summary>
         public float WorldAnchorRadius;
 
+        /// <summary>
+        /// Where the player has to fly to PLAY this option once it is going - the ring they thread
+        /// next, and the way to thread it. Resolved late (after <see cref="Apply"/>), because the
+        /// ring usually does not exist until the press made it: a painting's start gate is built by
+        /// starting the painting.
+        ///
+        /// <para>Optional, and deliberately NOT <see cref="WorldAnchor"/>: an anchor is where an
+        /// option LIVES (for a picture to turn onto), an arrival is where its play HAPPENS. A wander
+        /// or a voyage answers invalid - it happens wherever the player already is, so there is
+        /// nowhere to take them. It is what lets today's-activity switch take the player to the
+        /// activity rather than start it somewhere they cannot see.</para>
+        /// </summary>
+        public Func<ToyArrival> Arrival;
+
         /// <summary>The verb, with the fleet default applied.</summary>
         public string EffectiveCommitVerb => string.IsNullOrEmpty(CommitVerb) ? "Switch" : CommitVerb;
 
@@ -142,6 +156,26 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True when selecting this option opens another layer rather than acting.</summary>
         public bool IsBranch => Expand != null;
+    }
+
+    /// <summary>
+    /// A ring to fly to: its centre, the direction you fly THROUGH it, and its radius. Invalid
+    /// (the default) when there is nowhere to go. See <see cref="ToyShellOption.Arrival"/>.
+    /// </summary>
+    public readonly struct ToyArrival
+    {
+        public readonly Vector3 Position;
+        public readonly Vector3 Direction;
+        public readonly float Radius;
+
+        public ToyArrival(Vector3 position, Vector3 direction, float radius)
+        {
+            Position = position;
+            Direction = direction.sqrMagnitude > 1e-6f ? direction.normalized : Vector3.forward;
+            Radius = radius;
+        }
+
+        public bool IsValid => Radius > 0f;
     }
 
     /// <summary>

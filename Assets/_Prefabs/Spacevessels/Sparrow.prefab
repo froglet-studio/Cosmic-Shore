@@ -1300,7 +1300,7 @@ MonoBehaviour:
   <MassLevel>k__BackingField: 0
   <SpaceLevel>k__BackingField: 0
   <TimeLevel>k__BackingField: 0
-  elementalRecoveryRate: 0.05
+  elementalRecoveryRate: 0.02
 --- !u!114 &333211638083239348
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1703,7 +1703,7 @@ MonoBehaviour:
   onPrismDestroyed: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d, type: 2}
   weaponAction: {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
   ammoPerPrism: 0.01
-  hostileMassOnly: 1
+  requireGunfire: 1
   syncIntervalSeconds: 1
 --- !u!114 &8279817603024118171
 MonoBehaviour:

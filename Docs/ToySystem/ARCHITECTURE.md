@@ -54,7 +54,7 @@ the same thing as **which fundamental it composes with**:
 
 | Category | What it changes | Composes with | Today |
 |---|---|---|---|
-| **Pilot** | YOU — the hull you fly or the colours you wear. The world is exactly where you left it. | Vessel, Domain | Vessel Changer, Domain Changer |
+| **Pilot** | YOU — the hull you fly, the colours you wear, or the elements your hull carries. The world is exactly where you left it. | Vessel, Domain, Elementals | Vessel Changer, Domain Changer, Element Charger |
 | **World** | WHERE YOU ARE — a world arrives or leaves. The heaviest thing any toy does. | Cells | Cell Selector, Wanderway, Arkway |
 | **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Spawn Matrix |
 
@@ -89,6 +89,8 @@ this, Pilot → World → Creation. See `Docs/CODEX.md` §3.5.
 | Mini vessel model (hull filter over the above) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
 | Vessel Changer (matrix of ships) | `Assets/_Scripts/Controller/Toys/VesselChangerToy.cs` |
 | Domain Changer set | `Assets/_Scripts/Controller/Toys/DomainChangerToySet.cs` |
+| Element Charger (row of four element crystals) | `Assets/_Scripts/Controller/Toys/ElementChargerToy.cs` |
+| Element Charger config | `Assets/_Scripts/ScriptableObjects/Toys/ElementChargerToyDefinitionSO.cs` |
 | Painting gallery (matrix of paintings) | `Assets/_Scripts/Controller/Toys/PaintingGalleryToy.cs` |
 | Painting station (one per painting) | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
 | Multi-stroke fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/PaintingRunner.cs` |
@@ -520,10 +522,24 @@ it is the ring itself carrying the meaning in its shader (see "The switch"). The
 `SwapToySetCoordinator.SlotsWearSwitchRing` exemption is deleted with it; what the coordinator
 carries now is `SlotRingRadius`, the same neighbour clamp every matrix station uses.
 
-**Labels stay for now**, hung clear above the switch ring (`ToyFactory.AddRingedLabel` — the font
-is unchanged, only the height moved). They come off once the ring-distance legibility pass
-confirms each toy is identifiable without them — a separate, gated change, and now a more likely
-one, since the ring carries the far read the label used to.
+**Toys carry NO text** (2026-09-25, prompter-directed). Every world label is gone — toy roots,
+matrix stations, domain slots, painting stations and their stroke gates, the Wanderway return
+station, the Arkway dinghy, the Ark's hull readout and the pole switches — and with them
+`ToyFactory.AddLabel`, `AddRingedLabel`, `SwitchRingLabelHeight` and `BillboardLabel`, so a new toy
+cannot grow one back without re-adding the builder. The switch ring and the icon do the lift in the
+world; the **Toy Box menu** is where a player learns a toy's name (`ToyDefinitionSO.DisplayName`, and
+every variant's `ToyShellOption.Label`, both still live — they are the menu's text). Stated cost: the
+Ark's hull fraction is read off the hull itself losing prisms.
+
+**Two exceptions, each for a stated reason, and the geometry check exempts exactly those two files.**
+`ArkwayVoyageHud` is the screen-space leash COUNTDOWN — a warning with a clock on it, not a name on a
+toy. `ToyChoiceLabel` (2026-09-26, prompter-directed, after the first no-text pass removed it) is the
+word over a finished painting's **SHARE** and **REPAINT** gates: two identical neutral rings with
+identical sphere hubs, appearing side by side, that do OPPOSITE things — one exports the picture, one
+erases it — at a moment no menu stands between the player and the choice. Colour alone (cyan vs the
+gallery accent) could not say which of the two throws the painting away. It is its own file, not a
+`ToyFactory` builder, so the rule stays "no toy carries text" with a named, greppable exception rather
+than a label API any toy could reach for.
 
 ### Layout tuning (matrix scale & distance)
 
@@ -659,6 +675,46 @@ is **clamped against that chord** exactly as a matrix station's is against its s
 (~984u) the clamp does nothing; on the toybox's no-membrane `fallbackRadius` (300u) it takes the
 ring 42 → 32.9, and without it the two rings would overlap by 17.6u.
 
+### Element Charger (`ElementChargerToy` + `ElementChargerToyDefinitionSO`)
+
+**One toy that opens into the four elements.** Fly it and a single ROW of four element crystals
+blooms out ahead (`MatrixToy`, with the new `MatrixColumns` override laying them on one line
+instead of a 2x2); fly a crystal and your vessel's level in that element rises by
+`levelsPerPass` (authored 5). Another pass through the toy folds the row away.
+
+- **The grant is a crystal's grant.** It is `ResourceSystem.GrantPetals(element, levels)` on the
+  local vessel - whole petals onto the persistent BASE level, the same raise an elemental crystal
+  pickup and a steal's receiving half make. So the
+  HUD flowers, the level-5 ability upgrades and the hull morphs all react through their own
+  `OnElementLevelChange` subscriptions with nothing wired for this toy, and the
+  **maintained-mechanism law holds for free**: a base raised past 10 is overcharge, and
+  `RecoverBaseLevels` bleeds it back to 10. One pass from rest reaches the level-5 upgrade, a second
+  reaches the sustained ceiling, a third is felt in the 10..15 band and drains (one level per five seconds).
+- **It is a SOURCE in the elemental economy, and it is fenced to freestyle.** A match's economy has
+  lifeforms as its only source (`Docs/ELEMENTAL_ECONOMY.md` §2.1); the charger mints petals from
+  nothing, which is fine only because nothing it grants can reach a match - menu vessels are
+  despawned on the way into a game scene and a match seeds fresh hulls. Do not put this toy, or its
+  grant, in any scored scene.
+- **No networking of its own.** Element levels are simulated on the OWNING machine and never
+  replicate; a toy only ever fires for the local pilot, whose machine is the owner. Levels belong
+  to the HULL, so a vessel swap starts the new hull at its own levels.
+- **The row stays open** after a pass (unlike the vessel changer, which closes because what it
+  offered has changed): charging is something you do several times in a row, and the per-station
+  `ToyMatrixStation` cooldown is what stops one pass charging twice. A pass swells the crystal and
+  settles it back - never a scale-from-zero, which would make it vanish for the regrow.
+- **Order.** The row reads charge -> mass -> space -> time LEFT TO RIGHT for a pilot flying out from
+  the cell centre through the toy - the HUD's order. The matrix lays stations along the toy's
+  +right, which faces the centre, so +right is that pilot's LEFT; `ElementAtStation` reverses the
+  index to put Charge on the left (`ElementChargerToyTests` holds it).
+- **Elements are shape, never colour.** Every crystal is its element's canonical model
+  (`ElementCrystalModelBuilder`) in the toy's ONE accent material, and every station's ring is
+  Neutral. The emblem is core-only: the four crystals on a sub-ring.
+- **App shell.** Four leaves, not `RequiresFreestyle` (a charge from the menu is still on the hull
+  when you take the stick), so it is shuffle-eligible like the Spawn Matrix's spawns - both are
+  additive acts rather than states, and a shuffle that charges a random element is as honest as
+  one that releases a random creature.
+- **Placement** 150 degrees: between the vessel changer (120) and the Spawn Matrix (180).
+
 ### Painting / Connect the Dots (`PaintingGalleryToy` + `PaintingToy` + `PaintingRunner`)
 
 **One toy that opens into the whole gallery.** `PaintingGalleryToy` is a `MatrixToy`: fly it and
@@ -709,8 +765,8 @@ painting in miniature (`MiniaturePaintingBuilder`: 5 SIGNATURE strokes — see "
 tinted, on a slow turntable) — a sphere only as fallback for stroke-less paintings. The sixteen
 stations arrange as a roughly-square matrix cluster at the toybox slot (columns along the ring
 tangent, rows climbing the off-plane vertical), and the monuments anchor behind their column in
-vertical tiers — a wall of masterpieces. Every toy label (stations, gates, all toys) wears
-`BillboardLabel`, facing the camera each frame so text reads from any approach.
+vertical tiers — a wall of masterpieces. No station or gate carries text (see "Toys carry NO
+text").
 
 Rows 5–11 are built by composition from **`PaintingStrokeToolkit`** (below); rows 12–16 are
 **baked from real references** by the offline **painting pipeline** (`Tools/PaintingPipeline/` —
@@ -1360,6 +1416,13 @@ submitted the (still touch-interactable) vessel HUD.
 Definitions with `placementAngleDegrees < 0` (the default) auto-distribute evenly around the
 ring so they stay far apart; set a specific angle per toy to pin it.
 
+The **poles** are not part of the ring. After placing the toys the controller builds two larger
+`ToyboxPoleSwitch`es at `center +/- up * radius` - today's activity above, shuffle below - which
+are the world face of the Toy Box's two top buttons (`Docs/HomeHub/ARCHITECTURE.md` §4.0.6). They
+are not toys, have no definition, and do not register with the app shell. Threading the north one
+TAKES you to today's activity: it starts it and puts your vessel in front of the ring it asks you
+to thread next (`ToyShellOption.Arrival`).
+
 ## Toybox & unlock state
 
 `ToyboxSO` is the registry: a list of `ToyDefinitionSO` + an id→bool unlock map.
@@ -1471,6 +1534,7 @@ own end. Verified as a negative control: all three subclasses failed it before t
 |---|---|---|
 | Domain Changer | all three domains, the one you wear flagged `current` | no |
 | Vessel Changer | the whole collection, the hull you fly flagged `flying` | no |
+| Element Charger | the four elements, each row reading `level N -> N+5` (or `full` at 15); commit verb **Charge** | no |
 | Cell Selector | the cell's own rotation; choosing the current one is still the reset | no |
 | Spawn Matrix | Fauna / Flora / **Vessels** → species or hull → element; an element row previews the lifeform and the window WATCHES the spawn. The kingdom row walks the same `Kingdoms` + `HasContent` filter the world's does, so it cannot lose one again (it had lost the hangar — see § "One declaration"). A hull release has no `WatchAfterApply`: `ReleaseCompanion` is a ServerRpc, so there is no object to turn the picture onto and claiming one would be a lie on every machine that is not the host | no |
 | Connect the Dots | the gallery, with live progress per canvas | **yes** |
@@ -1626,9 +1690,9 @@ Selector still works, it just is not the only place the load is paid.
 
 ## Status & follow-up
 
-The framework + **six toys** are in (Vessel Changer, Domain Changer, Painting, the Wanderway
-microscene conveyor, the Spawn Matrix — now three-kingdom, with an AI-companion hangar — and
-the Cell Selector),
+The framework + **the toys** are in (Vessel Changer, Domain Changer, Element Charger, Painting,
+the Wanderway microscene conveyor, the Spawn Matrix — now three-kingdom, with an AI-companion
+hangar — the Cell Selector, and the Arkway),
 plus the vessel-changer second-pass fixes above: mini-model hull rendering,
 exit-gated re-arm + slow flip re-grow, swap continuity (domain / pose / speed), recolour-on-domain,
 HUD-after-swap, and gamepad-Start / input-ownership. The conveyor has been through two adversarial

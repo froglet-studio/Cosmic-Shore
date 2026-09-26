@@ -57,13 +57,15 @@ MonoBehaviour:
       reachable instead of running into a ceiling the upgrade cannot pass - 22 degrees at full
       zoom at rest becomes 13.8, and Space 10 reaches 6.9.'
   - Element: 4
-    AbilityLabel: Boost Duration
-    AbilityDescription: 'Time extends the boost DURATION only
-      (ConsumeBoostActionSO.timeDurationMultiplier, x1 at rest to x1.6 at Time 10, floored
-      at x0.25). Until the element-scaling unification a fleet-wide read in
-      VesselTransformer.CurrentBoostAmount also applied Time to the boost''s SPEED, which
-      this map declared nowhere; speed is now per-hull through the prefab''s own
-      BoostSpeedMultiplier, which the Serpent does not author (so x1, unscaled).'
+    AbilityLabel: Solid Fuel Pellets
+    AbilityDescription: 'Each press burns one solid fuel pellet - a fixed quarter of the fuel
+      tank - and every pellet burns for its own duration. Press again while one is still burning
+      and a second lights beside it: the burns overlap and each adds the same increment of speed,
+      so four pellets at once is four times the effect of one (3x cruise for one, 9x for four). The
+      tank refills at a fixed rate and holds exactly four pellets, so it is a resource to manage -
+      keep some in hand or dump all four for one overlap. Time sets how long a pellet BURNS
+      (ConsumeBoostActionSO.timeDurationMultiplier, x1 at rest to x1.6 at Time 10, floored at
+      x0.25), never how fast.'
     Input: 6
     UnlockLevel: 5
     RelockBelowLevel: 4

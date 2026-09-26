@@ -193,9 +193,6 @@ def cs_float_array(rel: str, expr: str):
 MODE_BREAKWATER = enum_value("Assets/_Scripts/Data/Enums/GameModes.cs", "GameModes", "Breakwater")
 METRIC_SWITCHES_THREADED = enum_value("Assets/_Scripts/Data/Enums/ScoringMetric.cs",
                                       "ScoringMetric", "SwitchesThreaded")
-COMEBACK_SWITCHES_THREADED = enum_value(
-    "Assets/_Scripts/Controller/Arcade/ElementalComebackSystem.cs",
-    "ScoreDifferenceSource", "SwitchesThreaded")
 
 # ── Tuning, IMPORTED rather than retyped ─────────────────────────────────────────────────────
 #
@@ -782,13 +779,8 @@ SCENE_PATCHES = [
     ("spawn formation", "  spawnFormation: 0\n", "  spawnFormation: 1\n", 1),
     ("spawn ring floor", "  spawnRingRadiusFloor: 700\n",
      f"  spawnRingRadiusFloor: {int(SPAWN_RING_RADIUS)}\n", 1),
-    # ElementalComebackSystem.EnsureExists respects a scene-authored instance AS AUTHORED - it only
-    # fills in gameData - so DefaultSourceFor runs on the AddComponent branch alone. Leaving the
-    # donor's PrismsDestroyed (3) would point the comeback at a stat no pilot in this mode moves,
-    # and would make every Breakwater case in that file unreachable dead code.
-    ("comeback source", "  differenceSource: 3\n",
-     f"  differenceSource: {COMEBACK_SWITCHES_THREADED}\n", 1),
-    ("comeback golf flag", "  useGolfRules: 0\n", "  useGolfRules: 1\n", 1),
+    # (No comeback patch: ElementalComebackSystem reads ScoringRuleSO.DomainValue since 2026-09,
+    # so there is no scene-authored comeback source for a clone to inherit.)
 ]
 
 if SCENE_ALREADY_SHIPPED:
@@ -1330,10 +1322,6 @@ require(f"  spawnRingRadiusFloor: {int(SPAWN_RING_RADIUS)}\n" in sc,
 require(f"  noNucleusSpawnRadius: {CRYSTAL_SPAWN_RADIUS}\n" in sc,
         "the scene does not author noNucleusSpawnRadius - with no nucleus every omni crystal falls "
         "through to its own SphereRadius and stacks on the arena's exact centre")
-require(f"  differenceSource: {COMEBACK_SWITCHES_THREADED}\n" in sc,
-        "the scene's comeback source is not SwitchesThreaded - a scene-authored "
-        "ElementalComebackSystem is used AS AUTHORED, so DefaultSourceFor never runs")
-require("  useGolfRules: 1\n" in sc, "the scene did not take the golf-rules flag")
 require(sc.count("  - vesselClass: 11\n") == 4,
         "the scene does not carry 4 Sparrow AI templates")
 # The Cell's scene fileID is referenced by its GameObject's component list and by two sibling

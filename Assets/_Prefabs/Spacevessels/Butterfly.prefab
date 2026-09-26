@@ -273,7 +273,7 @@ MonoBehaviour:
   <MassLevel>k__BackingField: 0
   <SpaceLevel>k__BackingField: 0
   <TimeLevel>k__BackingField: 0
-  elementalRecoveryRate: 0.05
+  elementalRecoveryRate: 0.02
 --- !u!114 &1446752206856222039
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -5169,8 +5169,8 @@ MonoBehaviour:
     LockAutoHarvest: 0
     Stats:
     - Label: Kind
-      Value: "Pilot \u2014 it changes YOU. The hull you fly or the colours you wear;
-        the world is exactly where you left it"
+      Value: "Pilot \u2014 it changes YOU. The hull you fly, the colours you wear or
+        the elements your hull carries; the world is exactly where you left it"
       Authored: 0
     - Label: Activation
       Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume,
@@ -5232,6 +5232,100 @@ MonoBehaviour:
       - Label: What it does
         Value: Fly this colour
         Authored: 0
+  - Id: tool.element-charger
+    Kingdom: 3
+    DisplayName: Element Charger
+    Tagline: Fly through to charge your vessel's elements.
+    Description: 'One station that opens into a row of the four element crystals, charge
+      to time, the way your HUD reads them. Fly a crystal and your hull gains five
+      levels of that element - the same raise a crystal pickup gives, so your flowers
+      bloom and your level-5 upgrades wake up. Charge past ten and the overcharge
+      drains back down, exactly as a crystal''s does.'
+    Image: {fileID: 0}
+    SourcePrefab: {fileID: 0}
+    SourceConfig: {fileID: 11400000, guid: f3d4f07785da4b4383e4391bc15ab6a2, type: 2}
+    AccentColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: use.tool.element-charger
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    Group: "1 \xB7 Pilot"
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Kind
+      Value: "Pilot \u2014 it changes YOU. The hull you fly, the colours you wear or the elements your hull carries; the world is exactly where you left it"
+      Authored: 0
+    - Label: Activation
+      Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume, drawn at its own radius, so what you can see is what you can cross"
+      Authored: 0
+    - Label: Objective
+      Value: "None. A tool has no score, no end condition and nothing on a clock \u2014 it is a thing to play with for as long as you like"
+      Authored: 0
+    - Label: In your toybox
+      Value: "Yes \u2014 unlocked from the start"
+      Authored: 0
+    - Label: Found at
+      Value: "Out by the cell membrane, at 150\xB0 around the cell"
+      Authored: 0
+    - Label: Form
+      Value: "One station that opens into a row of the four element crystals, charge to time"
+      Authored: 0
+    - Label: Offers
+      Value: "4 elements \u2014 Charge, Mass, Space and Time"
+      Authored: 0
+    - Label: Per pass
+      Value: "5 levels"
+      Authored: 0
+    - Label: How it works
+      Value: "The same raise an elemental crystal gives. Levels past 10 are overcharge and drain back to 10, exactly as a crystal's do"
+      Authored: 0
+    - Label: What it keeps
+      Value: "Your hull, your domain and the world. A new hull starts at its own levels"
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Raise your Charge by 5 levels
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Raise your Mass by 5 levels
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Raise your Space by 5 levels
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Raise your Time by 5 levels
+        Authored: 0
   - Id: tool.vessel-changer
     Kingdom: 3
     DisplayName: Vessel Changer
@@ -5255,8 +5349,8 @@ MonoBehaviour:
     LockAutoHarvest: 0
     Stats:
     - Label: Kind
-      Value: "Pilot \u2014 it changes YOU. The hull you fly or the colours you wear;
-        the world is exactly where you left it"
+      Value: "Pilot \u2014 it changes YOU. The hull you fly, the colours you wear or
+        the elements your hull carries; the world is exactly where you left it"
       Authored: 0
     - Label: Activation
       Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume,

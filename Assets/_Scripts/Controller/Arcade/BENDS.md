@@ -478,7 +478,7 @@ becoming a spiral. All four elements rise together per the platform law
 (CLAUDE.md / `ElementalComebackSystem`: equal-elements), so this dial is the whole tuning surface;
 a Charge-only weighting would be a fundamentals change, not a mode setting.
 
-`ElementalComebackSystem` maps `GameModes.Bends → ScoreDifferenceSource.CombatPoints`, alongside
+`ElementalComebackSystem` reads the rule's `DomainValue` (`CombatPoints`), alongside
 Dog Fight and for the same reason: `Score` lands only at game end, so points are the live stat.
 
 ---

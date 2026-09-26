@@ -38,6 +38,13 @@ lands, which is a property of the producer, not of the state:
 | Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | everything | `Projectile.PublishFuzeLit` |
 | Explosion passthrough | any | **resolved** — the blast arrived and spared this | **own domain only** | `ExplosionImpactor.PublishLit` |
 
+**A producer that wants to say TWO things about one force should look for a different CHANNEL, not a
+second light.** The fuze row was briefly paired with a prism *ripple* on the same round — a vertex
+morph rather than a light — the sphere saying **WHERE** the warhead goes off and the ripple **HOW
+FAR**. That ripple was removed with its family (`.claude/skills/prism-morph` §13) and the fuze row
+is a solo effect today, but the shape is the reusable part: a second lit volume competes for the
+eight slots and for the same colour language, where a vertex morph competes for neither.
+
 Three producers, and the third one is a **replacement rather than an addition**: it is what the
 2-second temporary shield used to do (see below), so it is the only one of the three that removes
 code instead of adding it. It covers every shape, because every blast that spares its own domain
@@ -73,6 +80,37 @@ Composition with the other fundamentals is what earns it the weight: **Domain** 
   draw reads the same bank), so it never diverges.
 - With no producer lighting anything, `Flush` returns before writing and the shader returns after
   two compares.
+
+### Growing the bank RENAMES its globals, because a name carries a pinned length
+
+Unity binds a shader GLOBAL array at the length of its **first** `SetGlobal*Array` and keeps that
+length **for the whole editor session**, keyed on the property NAME — which is what its own error
+message means by *"Restart Unity to recreate the arrays."*:
+
+```
+Property (_PrismSightPeerApex) exceeds previous array size (8 vs 4). Cap to previous size.
+```
+
+That is exactly what happened when `PrismDestructionSight` (`PeerSlots = 4`) became `PrismLit`
+(`Slots = 8`) in `8618ea98`: the new system inherited the retired one's property names, so any
+editor session that had ever run the old code had those names pinned at 4 — every frame logged the
+error and **peers 5-8 were silently dropped**. Nothing was wrong in the tree, and a player build
+never saw it, because a fresh process has nothing pinned.
+
+**A restart is not the fix, because it only helps the machine that performs it, only until the next
+supersession, and only if whoever hits the wall knows to.** The fix is the RENAME: the bank's six
+globals are `_PrismLitPeerApex/Axis/Gape/Tint/Shape/Count` (sized by `PRISM_LIT_PEER_SLOTS`,
+tuned by `PRISM_LIT_PEER_DESATURATION`/`_GAIN`), not the `_PrismSightPeer*` the retired system
+published — **a name Unity has never been asked to bind cannot carry a pinned length**, so the
+first write in any session, fresh or reloaded, is the one that sets it. It also stops the bank
+being named for a system that no longer owns it.
+
+**So: superseding or resizing anything that publishes a shader global ARRAY is a one-time,
+session-scoped, loud-and-lossy event that no offline gate can see — and the answer is to rename the
+globals in the same commit, not to tell everyone to restart.** If the bank ever grows past 8 under
+these names, it needs the same treatment. (`PrismLitTests` keeps `Slots` and
+`PRISM_LIT_PEER_SLOTS` in step, which is the *other* half — it catches the two drifting apart, not
+this.)
 
 ## Rules
 
@@ -123,7 +161,7 @@ clones every prism material once per domain, so a prism's material *is* its doma
 buys three things a per-instance override would not: no per-frame CPU, no new override component,
 and a **stolen** prism carries its new domain the instant its material is swapped — the swap is
 already the mechanism by which a domain change becomes visible. It costs one float in
-`UnityPerMaterial`. The gate itself rides `_PrismSightPeerShape[i].y`, a channel the bank slot was
+`UnityPerMaterial`. The gate itself rides `_PrismLitPeerShape[i].y`, a channel the bank slot was
 already carrying unused.
 
 **Zero is safe at both ends, and that is what makes it cheap.** `Domains` has no zero member (Jade

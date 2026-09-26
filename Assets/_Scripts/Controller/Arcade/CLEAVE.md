@@ -740,7 +740,7 @@ kept: churning a shared, serialized surface twice costs more than an unused-but-
 | `EndConditionOverridesSO` (+ window + asset) | `cleavePrismTarget` live/build/getter; **`cleavePrismTargetByIntensity`** live/build + `GetCleavePrismTarget(int)` |
 | `CellEnvironmentSpawnableBase` | **`AdmitsAuthoredPrismScale`** — opt-in widening of `PrismScaleAnimator`'s per-axis clamp for an environment that STATES a prism size outside the shared prefab's window |
 | `PrismTrailBuilder` | `admitAuthoredScale` threaded through `LayOne` / `LaySync` / `LayBudgetedAsync` / `ConfigureLaid`, applied AFTER `Initialize` |
-| `ElementalComebackSystem` | `GameModes.Cleave` shares Rampage's `ScoreDifferenceSource.PrismsDestroyed` case |
+| `ElementalComebackSystem` | reads `CleaveScoringRule`'s `DomainValue` (`PrismsDestroyed`) |
 
 ### The one cross-mode behaviour change: shielded mass leaves the targeting grids
 

@@ -18,7 +18,7 @@ namespace CosmicShore.Data
         // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
         // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
         // "Lava-Lamp Mode"). Do not reuse ID 7.
-        DuelForTheCell = 8,
+        DuelForTheCell = 8,        // single-player scene retired 2026-09; id kept (never reuse)
         DashNGrab = 9,
         CellularBrawl = 10,
         Denial = 11,
@@ -36,7 +36,7 @@ namespace CosmicShore.Data
         BotDuel = 23,
         Curvatious = 24,
         MazeRun = 25,
-        WildlifeBlitz = 26,
+        WildlifeBlitz = 26,        // single-player scene retired 2026-09; still set by BenchmarkSceneLauncher
         ProtectMission = 27,
         MultiplayerFreestyle = 28,
         OnlineDuelForTheCell = 29,

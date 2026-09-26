@@ -70,6 +70,7 @@ namespace CosmicShore.Gameplay
         GameObject _gate;
         bool _gateBenchEasing;
         GameObject _milestone;         // the ONE live ride ring (SphereCollider trigger = its radius)
+        float _gateRingRadius;         // the live start gate's ring (the gate is scale 0 while it blooms)
         StrokeMilestoneTrigger _milestoneTrigger; // cached at spawn - no per-frame TryGetComponent
         int _fadeIndex = -1;           // stroke whose ghost line is easing out (ridden) or back in (done)
         float _lineFade = 1f;
@@ -375,6 +376,38 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The ring the player threads next - the start gate while awaiting it, the current ride
+        /// checkpoint while painting - and the way through it. False while benched, celebrating,
+        /// or before a stroke exists. Read off the stroke's own points rather than the ring object,
+        /// because a ride ring only exists while the player is engaged and a gate is scale 0 while
+        /// it blooms. It is what lets a switch elsewhere TAKE the player to this painting.
+        /// </summary>
+        public bool TryGetArrival(out ToyArrival arrival)
+        {
+            arrival = default;
+            if (_benched || _phase == RunPhase.Celebrating || _strokes == null) return false;
+
+            var stroke = CurrentStroke;
+            if (_phase == RunPhase.AwaitingGate)
+            {
+                if (stroke.Points.Length == 0) return false;
+                Vector3 dir = stroke.Points.Length > 1 ? stroke.Points[1] - stroke.Points[0] : _rotation * Vector3.forward;
+                arrival = new ToyArrival(stroke.Points[0], dir,
+                    _gateRingRadius > 0f ? _gateRingRadius : Mathf.Clamp(stroke.Reach * 1.2f, 14f, 36f));
+                return true;
+            }
+
+            var cps = stroke.Checkpoints;
+            if (_pointIndex >= cps.Count) return false;
+            int ptIdx = cps[_pointIndex];
+            Vector3 tangent = stroke.Points[Mathf.Min(ptIdx + 1, stroke.Points.Length - 1)]
+                              - stroke.Points[Mathf.Max(ptIdx - 1, 0)];
+            arrival = new ToyArrival(stroke.Points[ptIdx], tangent.sqrMagnitude > 1e-4f ? tangent : _rotation * Vector3.forward,
+                MilestoneRadius(stroke));
+            return true;
+        }
+
+        /// <summary>
         /// Lazily stands up the ONE shared <see cref="ObjectiveIndicator"/> for the painting
         /// gallery. It MUST parent under the full-screen Canvas root (the indicator stretches to
         /// its parent and clamps to that rect's edges - a mid-hierarchy container like "Game UI"
@@ -446,12 +479,13 @@ namespace CosmicShore.Gameplay
                 : _rotation * Vector3.forward;
 
             float ringRadius = Mathf.Clamp(stroke.Reach * 1.2f, 14f, 36f);
+            _gateRingRadius = ringRadius;
 
             // Trail-ON gate: a cone hub says "the stroke starts here", and the RING is a DOMAIN
             // switch - crossing it calls RequestStrokeDomain, so it really does hand you the
             // stroke's domain and is one of the two sanctioned wearers of a domain-coloured ring.
             _gate = ToyFactory.CreateGate($"Gate_{stroke.Name}", transform, pos, dir, ringRadius,
-                stroke.BaseColor, $"{strokeIndex + 1}/{_strokes.Length}  {stroke.Name}",
+                stroke.BaseColor,
                 hubIsCone: true, ToySwitchSignal.Domain, stroke.Domain,
                 _toyDefinition, _context, OnGateActivated);
             _gateBenchEasing = _benched; // spawned while benched → start hidden-bound

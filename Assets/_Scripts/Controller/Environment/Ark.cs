@@ -71,7 +71,6 @@ namespace CosmicShore.Gameplay
         bool _retiring;
         float _nextAliveScanAt;
         float _nextRebindAt;
-        TMPro.TMP_Text _label;
         int _aliveCount;
         CancellationTokenSource _layCts;
 
@@ -152,9 +151,6 @@ namespace CosmicShore.Gameplay
             TotalCount = _prisms.Count;
             _aliveCount = TotalCount;
             _layComplete = true;
-
-            _label = ToyFactory.AddLabel(transform, "ARK", new Color(1f, 0.92f, 0.6f),
-                hullLength * RadiusFactor + 14f, 18f);
         }
 
         /// <summary>
@@ -283,9 +279,6 @@ namespace CosmicShore.Gameplay
                     alive++;
             }
             _aliveCount = alive;
-
-            if (_label)
-                _label.text = alive == TotalCount ? "ARK" : $"ARK\n<size=60%>{HealthFraction:P0} hull</size>";
 
             if (alive == 0 && TotalCount > 0)
             {

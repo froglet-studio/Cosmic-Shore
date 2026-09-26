@@ -1,6 +1,11 @@
 using System.Collections.Generic;
+using System.Threading;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -18,7 +23,16 @@ namespace CosmicShore.UI
     /// (<see cref="ToyPortraitLibrary"/>), so the flat card is a picture of the thing the player
     /// flies at.</para>
     ///
-    /// <para><b>It is a grid and nothing else — that is a deliberate narrowing.</b> This modal used
+    /// <para><b>Two big buttons sit above the grid</b>, the way the arcade's weekly challenge and
+    /// Maelstrom sit above its cards - and they are the Toy Box's OWN two, not copies of those.
+    /// <see cref="DailyActivityCard"/> names one activity a day, drawn from the live toys' own
+    /// activity options and paid for TRYING it; <see cref="ToyboxShuffleCard"/> re-rolls every
+    /// setting the toys own - a new world, a new domain, a new hull. The one flag
+    /// <see cref="ToyShellOption.RequiresFreestyle"/> divides them: an option that only means
+    /// anything with the player at the stick is an activity, everything else is a setting. Neither
+    /// button carries a list of toys, so a toy authored tomorrow joins both for free.</para>
+    ///
+    /// <para><b>The rest of it is a grid and nothing else — that is a deliberate narrowing.</b> This modal used
     /// to drill into a toy's options in place (a breadcrumb stack over
     /// <see cref="IToyShellSurface.BuildShellOptions"/>), which made the menu a second authority on
     /// what a toy does: "change your domain" was applied from here rather than by flying the ring.
@@ -41,10 +55,32 @@ namespace CosmicShore.UI
                                  "toybox yet, or the scene has no ToyboxController.")]
         GameObject emptyState;
 
+        [Header("The two big buttons")]
+        [SerializeField, Tooltip("Today's activity - one press opens the toy that offers it with " +
+                 "the activity selected. Optional: with none wired the window is just the grid.")]
+        DailyActivityCard dailyActivityCard;
+
+        [SerializeField, Tooltip("Re-roll every setting the toys own - world, domain, hull. " +
+                 "Optional, like the card above it.")]
+        ToyboxShuffleCard shuffleCard;
+
         [Header("Detail window")]
         [SerializeField, Tooltip("The window a card opens: one toy, its description, and Navigate. " +
                  "Leave empty to find it in the scene at Start.")]
         ToyConfigureModal configureModal;
+
+        [Header("Freestyle handoff")]
+        [SerializeField, Tooltip("The scene's freestyle toggle. A shuffle closes the window and " +
+                 "puts the player IN the cell flying the vessel before it re-rolls anything. Leave " +
+                 "empty to find it in the scene at Start.")]
+        MenuCrystalClickHandler crystalClickHandler;
+
+        [SerializeField, Min(1f), Tooltip("Seconds to wait for the freestyle transition to finish " +
+                 "before shuffling anyway.")]
+        float freestyleHandoffTimeout = 8f;
+
+        // The transition bracket a shuffle waits on - the same registration ToyConfigureModal reads.
+        [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
 
         readonly List<ToyboxCard> _cards = new();
 
@@ -74,6 +110,8 @@ namespace CosmicShore.UI
                 : FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
             if (!configureModal)
                 configureModal = FindFirstObjectByType<ToyConfigureModal>(FindObjectsInactive.Include);
+            if (!crystalClickHandler)
+                crystalClickHandler = FindFirstObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include);
 
             GetComponents(_openSources);
             foreach (var source in _openSources)
@@ -128,6 +166,11 @@ namespace CosmicShore.UI
 
             if (emptyState) emptyState.SetActive(toys.Count == 0);
 
+            // Re-bound on every refresh, not just at Start: a refresh IS the toybox changing under
+            // the window, which is exactly when both cards have to re-read what they are offering.
+            if (dailyActivityCard) dailyActivityCard.Bind(this);
+            if (shuffleCard) shuffleCard.Bind(this);
+
             EnsurePool(_cards, cardPrefab, cardGrid, toys.Count);
             for (int i = 0; i < _cards.Count; i++)
             {
@@ -167,6 +210,216 @@ namespace CosmicShore.UI
                 _switcher.OpenModal(ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE);
             else
                 configureModal.ModalWindowIn();
+        }
+
+        // ── Today's activity ────────────────────────────────────────────────
+
+        /// <summary>
+        /// Open the toy that offers today's activity, with the activity already selected and its
+        /// commit button armed.
+        ///
+        /// <para><b>It selects; it does not start.</b> The press names the day's activity and shows
+        /// the player what they are being asked to fly - a painting they may not want to start
+        /// right now - and the commit is one more press, the same one every other variant takes.
+        /// The reward is claimed on THAT press (<see cref="DailyToyActivity.TryClaim"/> handed to
+        /// <see cref="ToyConfigureModal.BindToPath"/>), because the reward is for trying the thing
+        /// rather than for being shown it.</para>
+        /// </summary>
+        public void SelectDailyActivity()
+        {
+            var pick = DailyToyActivity.Today;
+            if (!pick.IsValid)
+            {
+                CSDebug.LogWarning("[ToyboxModal] No toy is offering an activity right now, so " +
+                                   "today's activity cannot be opened. The toybox has not been " +
+                                   "built yet, or a cell swap has just torn it down.");
+                PlayMenuAudio(MenuAudioCategory.Denied);
+                return;
+            }
+
+            if (!configureModal)
+            {
+                CSDebug.LogWarning("[ToyboxModal] No ToyConfigureModal is wired or findable, so " +
+                                   "today's activity opens nothing. Wire the Toy Box's detail window.");
+                return;
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                $"[ToyBox] Today's activity: {pick.ToyName} > {pick.ActivityName}.");
+
+            PlayMenuAudio(MenuAudioCategory.OptionClick);
+            configureModal.BindToPath(pick.Surface, pick.Path, ClaimDailyActivity);
+
+            if (_switcher)
+                _switcher.OpenModal(ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE);
+            else
+                configureModal.ModalWindowIn();
+        }
+
+        /// <summary>Pay for today, then redraw the card so it reads DONE without waiting a tick.</summary>
+        void ClaimDailyActivity()
+        {
+            int paid = DailyToyActivity.TryClaim();
+            if (dailyActivityCard) dailyActivityCard.Bind(this);
+            if (paid <= 0) return;
+
+            PlayMenuAudio(MenuAudioCategory.SmallReward);
+            CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                $"[ToyBox] Today's activity paid {paid} crystals.");
+        }
+
+        // ── Shuffle ─────────────────────────────────────────────────────────
+
+        /// <summary>True while a shuffle is still applying - the button is dead until it finishes.</summary>
+        public bool IsShuffling { get; private set; }
+
+        /// <summary>What the last shuffle landed on, for the button's own second line.</summary>
+        public string LastShuffleSummary { get; private set; } = "";
+
+        /// <summary>False when no live toy can answer, so a press could only ever do nothing.</summary>
+        public bool CanShuffle
+        {
+            get
+            {
+                var toys = ToyShellRegistry.Surfaces;
+                for (int i = 0; i < toys.Count; i++)
+                    if (toys[i] != null && toys[i].ShellAvailable) return true;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Re-roll every setting the live toys own: a new world, a new domain, a new hull.
+        ///
+        /// <para><b>It puts the player IN the result.</b> A shuffle is a new place to fly, so the
+        /// window closes, the vessel leaves autopilot and the player takes the stick (the same
+        /// handoff <see cref="ToyConfigureModal"/> makes for a variant that needs the player flying),
+        /// and only once that transition has FINISHED does the re-roll run - world last, behind the
+        /// standard environment veil. Staying in the menu would hand the player a new hull, domain
+        /// and world and then leave all three on autopilot behind a window. Waiting on the
+        /// transition's END rather than on <see cref="MenuCrystalClickHandler.IsInFreestyle"/> is
+        /// the configure window's rule for the same reason: that flag flips at the START, while
+        /// input is still paused, and a vessel swap begun then restores control to nobody.</para>
+        /// </summary>
+        public void ShuffleToyBox()
+        {
+            if (IsShuffling) return;
+
+            var plan = ToyShuffle.Plan();
+            if (plan.Count == 0)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    "[ToyBox] Shuffle found nothing to change - no live toy is offering a setting.");
+                LastShuffleSummary = "NOTHING TO SHUFFLE";
+                if (shuffleCard) shuffleCard.Bind(this);
+                PlayMenuAudio(MenuAudioCategory.Denied);
+                return;
+            }
+
+            PlayMenuAudio(MenuAudioCategory.Confirmed);
+            RunShuffle(plan).Forget();
+        }
+
+        async UniTaskVoid RunShuffle(List<ToyShuffle.Pick> plan)
+        {
+            IsShuffling = true;
+            LastShuffleSummary = "";
+            if (shuffleCard) shuffleCard.Bind(this);
+
+            var ct = this.GetCancellationTokenOnDestroy();
+
+            try
+            {
+                await EnterFreestyle(ct);
+            }
+            catch (System.OperationCanceledException)
+            {
+                IsShuffling = false;
+                return;
+            }
+
+            // Re-planned against the toys standing NOW. Entering freestyle builds nothing, but the
+            // wait is several seconds long and a toy can be torn down in it; a pick made against a
+            // destroyed surface would throw out of its Apply.
+            plan = ToyShuffle.Plan();
+            if (plan.Count == 0)
+            {
+                LastShuffleSummary = "NOTHING TO SHUFFLE";
+                IsShuffling = false;
+                if (shuffleCard) shuffleCard.Bind(this);
+                return;
+            }
+
+            // Described BEFORE it is applied: an option's own label is read off the live toy, and
+            // the cell swap at the end of a plan destroys the toys the earlier picks came from.
+            string summary = ToyShuffle.Describe(plan);
+
+            try
+            {
+                await ToyShuffle.ApplyAsync(plan, ct);
+                LastShuffleSummary = summary;
+            }
+            catch (System.OperationCanceledException)
+            {
+                // The scene went away mid-shuffle. The picks already applied stay applied - they
+                // were real presses on real toys - and the beat before the World pick is where a
+                // cancel lands, so it is an ordinary exit rather than a fault. Caught here because
+                // an exception out of a UniTaskVoid has nowhere to go.
+                CSDebug.LogVerbose(CSLogChannel.ToyBox, "[ToyShuffle] Cancelled mid-shuffle.");
+            }
+            finally
+            {
+                IsShuffling = false;
+                if (shuffleCard) shuffleCard.Bind(this);
+            }
+        }
+
+        /// <summary>
+        /// Close the window and hand the player the stick, returning once the freestyle transition
+        /// has finished. Already flying (the Toy Box was opened mid-freestyle): just close. No
+        /// freestyle toggle in the scene: close and shuffle in place, loudly.
+        /// </summary>
+        async UniTask EnterFreestyle(CancellationToken ct)
+        {
+            OnCloseModal();
+
+            if (!crystalClickHandler)
+            {
+                CSDebug.LogWarning("[ToyboxModal] No MenuCrystalClickHandler in the scene, so the " +
+                                   "shuffle ran without putting the player in the cell. Wire the " +
+                                   "scene's freestyle toggle on this modal.");
+                return;
+            }
+
+            if (crystalClickHandler.IsInFreestyle) return;
+
+            bool arrived = false;
+            void OnArrived() => arrived = true;
+
+            var channel = freestyleEvents ? freestyleEvents.OnGameStateTransitionEnd : null;
+            if (channel != null) channel.OnRaised += OnArrived;
+
+            try
+            {
+                crystalClickHandler.ToggleTransition();
+
+                float deadline = Time.unscaledTime + Mathf.Max(1f, freestyleHandoffTimeout);
+                while (!arrived && Time.unscaledTime < deadline)
+                {
+                    if (!crystalClickHandler) return;
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+
+                // A shuffle that waited this long is still worth running - the re-roll is a
+                // setting change, not a run that needs a pilot to start against.
+                if (!arrived)
+                    CSDebug.LogWarning($"[ToyboxModal] Freestyle did not settle within " +
+                                       $"{freestyleHandoffTimeout:0.#}s - shuffling anyway.");
+            }
+            finally
+            {
+                if (channel != null) channel.OnRaised -= OnArrived;
+            }
         }
 
         /// <summary>Wire every close/back-out control here rather than to ModalWindowOut.</summary>

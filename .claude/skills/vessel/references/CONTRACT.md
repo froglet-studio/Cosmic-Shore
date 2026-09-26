@@ -227,8 +227,9 @@ mapping to satisfy the auditor** (BACKLOG.md, locked).
   `OnUpgradeStateChanged(Element, bool)`. Per-use snapshot at fire time (piercing/shield/sparing
   flags ride the shot, which also makes replication timing benign). No mid-action interruption.
 - **Laws (LOCKED)**: all buffs/debuffs route through Elementals
-  (`ApplyElementalEffect`; single-writer modifier layers `SetComebackModifier` /
-  `SetFaunaBuffModifier`). The **maintained-mechanism law**: nothing sustained may HOLD a level
+  (`ApplyElementalEffect`; single-writer modifier layer `SetComebackModifier` — the fauna-buff
+  layer beside it was removed, `Docs/ECOSYSTEM.md` §15). The **maintained-mechanism law**:
+  nothing sustained may HOLD a level
   above 10 — `SustainedCeiling` + `RecoverBaseLevels` enforce it structurally; convert
   over-ceiling sustained gains into decaying transients, and never write base levels per tick
   (the comeback system's original clobber bug). Upgrade design ground rules (FLEET_MAPS §2–§3):
@@ -385,7 +386,7 @@ juice through `ElementBars` when a vessel wants it.
 
   Run `python3 Tools/Build/check_abstract_member_implementations.py` before committing any new
   subclass; it is the only thing in the repo that catches this class of error. See SKILL.md
-  rule 35 for the full list of abstract bases a new vessel touches.
+  rule 39 for the full list of abstract bases a new vessel touches.
 
 - **`IVesselHUDView` is a trap**: an empty marker interface implemented by nothing —
   `VesselHUDView` (abstract class) is the real contract. The legacy `ShipHUD` reparent path is
