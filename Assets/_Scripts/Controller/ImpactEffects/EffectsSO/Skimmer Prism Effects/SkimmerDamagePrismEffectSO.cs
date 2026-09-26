@@ -43,9 +43,9 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("None (the default, and every shipped asset): this effect always runs. Set an " +
                  "element and it is a NO-OP until that element's level-5 upgrade is live — which " +
-                 "is how the Butterfly's SPACE-5 'Broadwing' arms its FAR-field wings: the same " +
-                 "effect sits in both skimmer containers and only the outer one is gated, so the " +
-                 "upgrade genuinely widens the swath rather than changing what a pass does.\n\n" +
+                 "lets one effect sit in two skimmer containers with only the outer one gated, so " +
+                 "an upgrade widens a swath rather than changing what a pass does (the Butterfly's " +
+                 "retired SPACE-5 'Broadwing' was the shape; no shipped asset uses it today).\n\n" +
                  "Gated on the REPLICATED unlock bit, not a local level read: what it decides is " +
                  "how much conserved mass leaves the world.")]
         [SerializeField] Element requiresUpgradeElement = Element.None;

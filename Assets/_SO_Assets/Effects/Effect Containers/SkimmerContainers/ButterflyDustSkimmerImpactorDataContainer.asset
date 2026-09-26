@@ -10,13 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 68b3e74284f14e32a6e21b5fb8c3e8ad, type: 3}
-  m_Name: ButterflyNearWingSkimmerImpactorDataContainer
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.SkimmerImpactorDataContainerSO
+  m_Name: ButterflyDustSkimmerImpactorDataContainer
+  m_EditorClassIdentifier: 
   vesselSkimmerEffectsSO:
   - {fileID: 11400000, guid: d167f72433a730548bd503bafa845980, type: 2}
   - {fileID: 11400000, guid: 7b7ef8a550b47d141bf4a67e066542b9, type: 2}
   skimmerPrismEffectsSO:
-  - {fileID: 11400000, guid: daff75774044bd84e90bfc674f07d395, type: 2}
+  - {fileID: 11400000, guid: 0ae756518d2f043fdd8f3b596892867c, type: 2}
   skimmerCrystalEffectsSO: []
   skimmerLifeformCrystalEffectsSO:
   - {fileID: 11400000, guid: bb2c7774a47bdd2408e35d855a649a4b, type: 2}
+  - {fileID: 11400000, guid: a85f72fe2b6fc50753ca0b7a11d1b34a, type: 2}

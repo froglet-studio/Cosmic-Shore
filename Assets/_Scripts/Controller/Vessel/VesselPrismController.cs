@@ -87,6 +87,31 @@ namespace CosmicShore.Gameplay
         public float YScaler = 1f;
         public float ZScaler = 1f;
 
+        /// <summary>
+        /// A runtime multiplier on the laid prism's WIDTH (x), on top of everything else that
+        /// sizes it. 1 = no change, which is every vessel that never writes it.
+        ///
+        /// <para>It exists because <see cref="SetNormalizedXScale"/> is a NORMALIZED dial capped at
+        /// <see cref="maxBlockScale"/> and eased by an async lerp that restarts on every call - it
+        /// cannot express a width that tracks an element level live, and two lerps in flight write
+        /// the same field on alternating frames. A single owner writing one float per frame can.
+        /// The Butterfly's Mass mode is that owner (<c>SpreadWingsActionExecutor</c>).</para>
+        ///
+        /// <para>A widened prism is STATED rather than grown, so the lay admits it past the
+        /// pool's scale window (<see cref="Prism.AdmitTargetScale"/>, AFTER Initialize) - the
+        /// interactive pool clamps x at 40, and without the admission every width past it is
+        /// trimmed silently, which reads as "the element stopped doing anything".</para>
+        /// </summary>
+        public float WidthMultiplier { get; set; } = 1f;
+
+        /// <summary>
+        /// While set, every prism this controller lays arrives SHIELDED (the regular tier). A
+        /// runtime sibling of the authored <see cref="shielded"/> flag, for an ability that armours
+        /// its trail only while a MODE is live (the Butterfly's Mass-mode level 5). Composes with
+        /// the drift/turn upgrade rules by OR, never replaces them.
+        /// </summary>
+        public bool ForceShielded { get; set; }
+
         // Cancellation
         CancellationTokenSource cts;
         
@@ -362,6 +387,9 @@ namespace CosmicShore.Gameplay
             if (volumeMult > 0f && !Mathf.Approximately(volumeMult, 1f))
                 scale *= Mathf.Pow(volumeMult, 1f / 3f);
 
+            bool widened = WidthMultiplier > 1.0001f;
+            if (widened) scale.x *= WidthMultiplier;
+
             // Yastri flare: the OUTER lane fattens with turn intensity, so a hard bank throws
             // visibly flared prisms off the outer wing. Applied BEFORE xShift is derived so
             // the flared rail still nests against the gap edge rather than drifting outboard.
@@ -451,7 +479,7 @@ namespace CosmicShore.Gameplay
             // Straight-line trail stays unshielded - the armor is the drift line's reward.
             // 'Shielded Turn Trails' is the same rule with the drift swapped for a held hard
             // TURN (the Manta's Yastri, above half intensity) — turning becomes fortifying.
-            if (shielded || (massUpgradeShieldsTrail
+            if (shielded || ForceShielded || (massUpgradeShieldsTrail
                              && vesselStatus is { IsDrifting: true }
                              && vesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true)
                          || (turnUpgradeShieldsTrail
@@ -463,6 +491,16 @@ namespace CosmicShore.Gameplay
             trail.Add(prism);
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
+
+            // A WIDENED prism is a stated size, not a grown one: admit it past the pool's scale
+            // window AFTER Initialize (whose ResetState restores and re-clamps that window), or
+            // everything past x = 40 is trimmed with no error. Un-widened lays are untouched, so
+            // every vessel that never writes WidthMultiplier is byte-identical.
+            if (widened)
+            {
+                prism.AdmitTargetScale(scale);
+                prism.TargetScale = scale;
+            }
 
             // AFTER Initialize (pool-reuse reset clears membership - AssignTrail's contract).
             // This stamp is what makes a wake block a member of ITS ribbon: without it every

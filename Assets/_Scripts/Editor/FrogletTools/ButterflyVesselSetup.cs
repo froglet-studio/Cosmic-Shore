@@ -59,7 +59,12 @@ namespace CosmicShore.Editor
         // two-thumb hull and the Butterfly is a two-thumb hull, so its prism-spawn channel, its
         // baseline prism effects and its game-data reference are the right ones to mirror.
         const string SquirrelPrefabPath = "Assets/_Prefabs/Spacevessels/Squirrel.prefab";
-        const string SkimmerPrefabPath = "Assets/_Prefabs/Spacevessels/Components/Skimmer.prefab";
+        // The ONE skimmer: a trigger capsule hanging below the hull, live only in Dust mode. The
+        // prefab (and the bloom AOE below) are authored by Tools/Build/author_butterfly_dust.py,
+        // which also owns every dust effect asset's NUMBERS — this tool only wires them.
+        const string DustSkimmerPrefabPath =
+            "Assets/_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab";
+        const string BloomPrefabPath = "Assets/_Prefabs/Projectile/AOEButterflyBloom.prefab";
         const string HudBasePrefabPath = "Assets/_Prefabs/UI Elements/VesselHUD/VesselHUDPrefab.prefab";
         const string HudVariantPath = "Assets/_Prefabs/UI Elements/VesselHUD/ButterflyHUDVariant.prefab";
 
@@ -156,40 +161,20 @@ namespace CosmicShore.Editor
 
         class Effects
         {
-            public ScriptableObject NearDissolve, FarDissolve, DustDebuff, DustWither, CombatHit;
+            public ScriptableObject DustPrism, DustDebuff, DustWither, DustNourish, CombatHit, Bloom;
         }
 
         Effects BuildEffects()
         {
             var e = new Effects();
 
-            // SPACE — the wings dissolve opposing mass they pass through. TWO assets of one type:
-            // the near-field wings always cut, the far-field pair only once SPACE 5 "Broadwing"
-            // is live, which is what makes the upgrade a genuine widening of the swath rather
-            // than a change to what a pass does.
-            e.NearDissolve = CreateOrUpdate<SkimmerDamagePrismEffectSO>(
-                $"{EffectDir}/Skimmer Prism Effects/ButterflyWingDissolvePrismEffect.asset", so =>
-                {
-                    Set(so, "opposingDomainOnly", true);
-                    Set(so, "requiresUpgradeElement", (int)Element.None);
-                    Set(so, "proportionalDebris", true);
-                    Set(so, "restitution", 1f / 3f);
-                    Set(so, "debrisSpeedLimit", 120f);
-                    Set(so, "swingVelocityScale", 0f);   // the wings are rigid to the hull
-                });
+            // The dust on MASS: own-domain prisms grow / turn dangerous / shield (Space 5 adds a
+            // rare super-shield); opposing prisms are destroyed / shrunk / stolen. Numbers are
+            // the generator's (author_butterfly_dust.py); this only makes sure the asset exists.
+            e.DustPrism = CreateOrUpdate<SkimmerScaleDustPrismEffectSO>(
+                $"{EffectDir}/Skimmer Prism Effects/ButterflyScaleDustPrismEffect.asset");
 
-            e.FarDissolve = CreateOrUpdate<SkimmerDamagePrismEffectSO>(
-                $"{EffectDir}/Skimmer Prism Effects/ButterflyBroadwingDissolvePrismEffect.asset", so =>
-                {
-                    Set(so, "opposingDomainOnly", true);
-                    Set(so, "requiresUpgradeElement", (int)Element.Space);
-                    Set(so, "proportionalDebris", true);
-                    Set(so, "restitution", 1f / 3f);
-                    Set(so, "debrisSpeedLimit", 120f);
-                    Set(so, "swingVelocityScale", 0f);
-                });
-
-            // CHARGE — the dust. Two halves: the living pilot and the living creature.
+            // CHARGE — the dust's bite on a pilot, scaled by the attacker's Charge.
             e.DustDebuff = CreateOrUpdate<VesselElementalDebuffBySkimmerEffectSO>(
                 $"{EffectDir}/Vessel Skimmer Effects/ButterflyScaleDustDebuffBySkimmerEffect.asset", so =>
                 {
@@ -200,14 +185,20 @@ namespace CosmicShore.Editor
                     Set(so, "upgradeElement", (int)Element.Charge);
                     Set(so, "upgradeBiteMultiplier", 2f);
                     Set(so, "cooldown", 1f);
+                    // x0.5 at Charge 0, x2 at Charge 10 — read at the pilot's REPLICATED level.
+                    SetElementalFloat(so, "biteScale", Element.Charge, 0.5f, 2f);
                 });
 
+            // Lifeforms, partitioned by colour: opposing hearts wither (flora AND fauna now),
+            // ally hearts are refreshed.
             e.DustWither = CreateOrUpdate<SkimmerWitherLifeformByCrystalEffectSO>(
                 $"{EffectDir}/Skimmer Crystal Effects/ButterflyScaleDustWitherLifeformEffect.asset", so =>
                 {
-                    Set(so, "faunaOnly", true);
-                    Set(so, "sparesOwnDomain", false);   // wildlife is quarry whatever colour it wears
+                    Set(so, "faunaOnly", false);
+                    Set(so, "sparesOwnDomain", true);
                 });
+            e.DustNourish = CreateOrUpdate<SkimmerNourishLifeformByCrystalEffectSO>(
+                $"{EffectDir}/Skimmer Crystal Effects/ButterflyDustNourishLifeformEffect.asset");
 
             e.CombatHit = CreateOrUpdate<VesselCombatHitBySkimmerEffectSO>(
                 $"{EffectDir}/Vessel Skimmer Effects/ButterflyCombatHitBySkimmerEffect.asset", so =>
@@ -222,13 +213,20 @@ namespace CosmicShore.Editor
                         FindFirstAssetNamed("Event_CombatHitStats"), "combat-hit stats channel");
                 });
 
+            // The omni-crystal bloom: kills opposing lifeform hearts in a 450 u radius. The
+            // generator authors the prefab, its container and this crystal effect's numbers.
+            e.Bloom = AssetDatabase.LoadAssetAtPath<ScriptableObject>(
+                $"{EffectDir}/Vessel Crystal Effects/ButterflyVesselExplosionByCrystalEffect.asset");
+            if (!e.Bloom) Unwired("ButterflyVesselExplosionByCrystalEffect",
+                "run Tools/Build/author_butterfly_dust.py first");
+
             return e;
         }
 
         class Containers
         {
             public VesselImpactorDataContainerSO Vessel;
-            public SkimmerImpactorDataContainerSO NearWing, FarWing;
+            public SkimmerImpactorDataContainerSO Dust;
         }
 
         Containers BuildContainers(Effects e)
@@ -237,49 +235,31 @@ namespace CosmicShore.Editor
 
             // The vessel container mirrors the Squirrel's baseline prism trio — damage, haptics,
             // danger-prism debuff — because a prism should read the same whichever hull hits it.
+            // Its OMNI crystal list is the Butterfly's own: the bloom, then the haptics.
             c.Vessel = CreateOrUpdate<VesselImpactorDataContainerSO>(
                 $"{EffectDir}/Effect Containers/VesselContainers/ButterflyImpactorDataContainer.asset",
-                so => CopyArrayFromReferenceContainer(so, "SquirrelImpactorDataContainer",
-                          new[] { "vesselPrismEffects", "vesselCrystalEffects" }));
-
-            c.NearWing = CreateOrUpdate<SkimmerImpactorDataContainerSO>(
-                $"{EffectDir}/Effect Containers/SkimmerContainers/ButterflyNearWingSkimmerImpactorDataContainer.asset",
                 so =>
                 {
-                    SetArray(so, "skimmerPrismEffectsSO", new[] { e.NearDissolve });
-                    SetArray(so, "vesselSkimmerEffectsSO", new[] { e.DustDebuff, e.CombatHit });
-                    SetArray(so, "skimmerLifeformCrystalEffectsSO", new[] { e.DustWither });
+                    CopyArrayFromReferenceContainer(so, "SquirrelImpactorDataContainer",
+                        new[] { "vesselPrismEffects" });
+                    var haptics = FindFirstAssetNamed("VesselHapticsByCrystalEffect");
+                    var crystal = new List<UnityEngine.Object>();
+                    if (e.Bloom) crystal.Add(e.Bloom);
+                    if (haptics) crystal.Add(haptics);
+                    SetArray(so, "vesselCrystalEffects", crystal);
                 });
 
-            c.FarWing = CreateOrUpdate<SkimmerImpactorDataContainerSO>(
-                $"{EffectDir}/Effect Containers/SkimmerContainers/ButterflyFarWingSkimmerImpactorDataContainer.asset",
+            c.Dust = CreateOrUpdate<SkimmerImpactorDataContainerSO>(
+                $"{EffectDir}/Effect Containers/SkimmerContainers/ButterflyDustSkimmerImpactorDataContainer.asset",
                 so =>
                 {
-                    // Only the dissolve, and only once Broadwing is live. The dust deliberately
-                    // does NOT widen with the upgrade — Charge owns the bite, Space owns the reach,
-                    // and arming both here would be one upgrade paying out on two elements.
-                    SetArray(so, "skimmerPrismEffectsSO", new[] { e.FarDissolve });
+                    SetArray(so, "skimmerPrismEffectsSO", new[] { e.DustPrism });
+                    SetArray(so, "vesselSkimmerEffectsSO", new[] { e.DustDebuff, e.CombatHit });
+                    SetArray(so, "skimmerLifeformCrystalEffectsSO", new[] { e.DustWither, e.DustNourish });
                 });
 
             return c;
         }
-
-        CameraSettingsSO BuildCameraSettings() =>
-            CreateOrUpdate<CameraSettingsSO>(CameraPath, so =>
-            {
-                // "flies slow from far away" — the brief's framing, and it is load-bearing for
-                // more than the look: the prism occlusion corridor and the vessel-tail width are
-                // both derived from |followOffset.z|, so this one number sizes the whole vessel's
-                // relationship with the camera.
-                Set(so, "followOffset", new Vector3(0f, 22f, -120f));
-
-                // STATED, not inherited. This tool set followOffset and nothing else, so every
-                // other field came out at the C# initializer - and farClipPlane's was 1000 against
-                // the fleet's 12000, which does not even cross a standard 1200-radius cell. The
-                // hull shipped with a twelfth of the fleet's draw distance and it read as a bug in
-                // the camera rather than as a field nobody named.
-                Set(so, "farClipPlane", 12000f);
-            });
 
         // ─────────────────────────────────────────────────────────────── HUD
 
@@ -439,16 +419,12 @@ namespace CosmicShore.Editor
 
                 SetArray(registry, "_executors", new UnityEngine.Object[] { foldExec, spreadExec });
 
-                // ---- skimmers: the WINGS ----
-                // SPACE's entire continuous dial is these two bands: Skimmer.Scale is an
-                // ElementalFloat evaluated LIVE, and it drives the skimmer's localScale, so the
-                // wings genuinely grow as the pilot feeds on Space. Without it authored the
-                // element would be decorative — the ability map would describe a reach that never
-                // changes.
-                var nearWing = InstantiateSkimmer(root.transform, "NearWingSkimmer",
-                                                  containers.NearWing, restScale: 26f, fullScale: 44f);
-                var farWing = InstantiateSkimmer(root.transform, "FarWingSkimmer",
-                                                 containers.FarWing, restScale: 44f, fullScale: 72f);
+                // ---- the ONE skimmer: the dust capsule ----
+                // SPACE's continuous dial is its LENGTH: Skimmer.Scale is an ElementalFloat
+                // evaluated live and, with elongateYOnly, it drives only local Y — so Space
+                // lengthens the column hanging below the hull and changes nothing else.
+                var dust = InstantiateDustSkimmer(root.transform, containers.Dust);
+                Set(spreadExec, "dustField", dust ? dust.GetComponentInChildren<ButterflyDustField>(true) : null);
 
                 // ---- HUD ----
                 Transform hudContainer = null;
@@ -478,14 +454,14 @@ namespace CosmicShore.Editor
                 AdoptSharedAssetReferences(root, SquirrelPrefabPath);
                 Set(root.GetComponent<AIPilot>(), "actionExecutorRegistry", registry);
 
-                WireStatus(status, controller, hud, nearWing, farWing);
+                WireStatus(status, controller, hud, dust);
                 WireController(controller);
                 Set(cameraCustomizer, "settings", camera);
                 Set(impactor, "vesselImpactorDataContainerSO", containers.Vessel);
                 SetArray(customization, "_shipGeometries", new UnityEngine.Object[] { hullGo });
                 Set(impactCollider, "impactorObject", impactor);
                 WireTransformer(transformer);
-                WirePrisms(prisms, nearWing ? nearWing.GetComponentInChildren<Skimmer>(true) : null);
+                WirePrisms(prisms, dust ? dust.GetComponentInChildren<Skimmer>(true) : null);
                 WireResources(resources);
                 WireActionHandler(actionHandler, registry, fold, spread);
                 WireHud(hud, hudContainer, foldExec, spreadExec);
@@ -498,44 +474,30 @@ namespace CosmicShore.Editor
             finally { DestroyImmediate(root); }
         }
 
-        GameObject InstantiateSkimmer(Transform parent, string name,
-                                      SkimmerImpactorDataContainerSO container,
-                                      float restScale, float fullScale)
+        GameObject InstantiateDustSkimmer(Transform parent, SkimmerImpactorDataContainerSO container)
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(SkimmerPrefabPath);
-            if (!prefab) { Unwired(name, SkimmerPrefabPath); return null; }
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(DustSkimmerPrefabPath);
+            if (!prefab)
+            {
+                Unwired("ButterflyDustSkimmer", DustSkimmerPrefabPath +
+                        " — run Tools/Build/author_butterfly_dust.py first");
+                return null;
+            }
 
             var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
-            go.name = name;
-            // The authored localScale is only what shows before the first elemental read; Skimmer
-            // overwrites it from Scale.EvaluateLive every frame it changes.
-            go.transform.localScale = Vector3.one * restScale;
+            go.name = "ButterflyDustSkimmer";
 
-            // The base Skimmer prefab ships a NULL container — an un-overridden nested skimmer
-            // NREs on its first prism contact by design (the contract's §9). Overriding it on the
-            // INSTANCE is the fleet's pattern.
             var skimmerImpactor = go.GetComponentInChildren<SkimmerImpactor>(true);
             if (skimmerImpactor) Set(skimmerImpactor, "skimmerImpactorDataContainer", container);
-            else Unwired(name + ".SkimmerImpactor", "not found on the nested skimmer");
+            else Unwired("ButterflyDustSkimmer.SkimmerImpactor", "not found on the dust prefab");
 
-            var skimmer = go.GetComponentInChildren<Skimmer>(true);
-            // affectSelf OFF: the wings dissolve mass, and a Butterfly that ate its own team's
-            // wake would delete the surfaces it exists to paint. The effect ALSO gates on domain
-            // (opposingDomainOnly) because affectSelf is evaluated after the effect loop and gates
-            // only the skim bookkeeping — this flag alone would not have protected anything.
-            if (skimmer)
-            {
-                Set(skimmer, "affectSelf", false);
-                SetElementalFloat(skimmer, "Scale", Element.Space, restScale, fullScale);
-                // Spherical wings, not a sword capsule — uniform XYZ.
-                Set(skimmer, "elongateYOnly", false);
-            }
-            else Unwired(name + ".Skimmer", "not found on the nested skimmer");
+            if (!go.GetComponentInChildren<ButterflyDustField>(true))
+                Unwired("ButterflyDustSkimmer.ButterflyDustField", "not found on the dust prefab");
             return go;
         }
 
         void WireStatus(VesselStatus status, VesselController controller,
-                        MonoBehaviour hud, GameObject nearWing, GameObject farWing)
+                        MonoBehaviour hud, GameObject dust)
         {
             Set(status, "vesselType", (int)VesselClassType.Butterfly);
             Set(status, "_name", VesselName);
@@ -543,9 +505,9 @@ namespace CosmicShore.Editor
             Set(status, "vesselHUDController", hud);
             // VesselController.Initialize initializes ONLY these two references — a skimmer the
             // status does not point at is permanently inert dead weight, silently (the Dolphin
-            // shipped that way for its whole life).
-            if (nearWing) Set(status, "_nearFieldSkimmer", nearWing.GetComponentInChildren<Skimmer>(true));
-            if (farWing) Set(status, "_farFieldSkimmer", farWing.GetComponentInChildren<Skimmer>(true));
+            // shipped that way for its whole life). ONE skimmer: the far field is empty.
+            if (dust) Set(status, "_nearFieldSkimmer", dust.GetComponentInChildren<Skimmer>(true));
+            Set(status, "_farFieldSkimmer", (UnityEngine.Object)null);
         }
 
         void WireController(VesselController controller) =>
@@ -567,7 +529,7 @@ namespace CosmicShore.Editor
             Set(t, "restrictedTurnMultiplier", 0f);
         }
 
-        void WirePrisms(VesselPrismController p, Skimmer nearWing)
+        void WirePrisms(VesselPrismController p, Skimmer dustSkimmer)
         {
             // THE POOL. `prismType` selects which PrismFactory pool a laid prism comes from, and
             // it defaults to 0 — PrismType.Dolphin — so a vessel that never authors it lays
@@ -580,22 +542,27 @@ namespace CosmicShore.Editor
             // read per prism, so an unwired one used to throw from inside the spawn loop — which
             // swallows the exception and ENDS it, leaving the hull flying with no trail for the
             // rest of its life. VesselPrismController degrades now, but an authored reference is
-            // still the point: the Butterfly's near wing is 26 units of skimmer, so a prism laid
-            // inside it needs the delay more than most of the fleet does.
-            Set(p, "skimmer", nearWing);
+            // still the point: the dust capsule hangs below the hull, so a prism laid inside it
+            // needs the delay more than most of the fleet does.
+            Set(p, "skimmer", dustSkimmer);
 
             // THE PIANO KEYS: wide across (x), thin (y), SHORT along the flight path (z), laid at
             // a wavelength that leaves air between them — so the wake reads as a row of keys
             // rather than a ribbon, and a curve through them reads as a surface.
             Set(p, "BaseScale", new Vector3(26f, 1.2f, 3.4f));
-            Set(p, "minBlockScale", 0.35f);   // wings shut — a narrow line
-            Set(p, "maxBlockScale", 1f);      // wings spread — the full slab
+            // The narrow line (Dust mode) is XScaler = minBlockScale; Mass mode widens it through
+            // VesselPrismController.WidthMultiplier (SpreadWingsActionExecutor), 5x..20x.
+            Set(p, "minBlockScale", 0.35f);
+            Set(p, "maxBlockScale", 1f);
             Set(p, "initialWavelength", 9f);
             Set(p, "minWavelength", 5f);
             Set(p, "Gap", 0f);                // ONE wide key, not two rails
-            // MASS's continuous dial — the Squirrel's mapping, reused rather than reinvented.
+            // OFF: Mass's one parameter is the Mass-mode WIDTH (SpreadWingsActionSO), and a second
+            // Mass dial growing the same prism would be the double-dip the convention forbids.
             SetElementalFloat(p, "trailVolume", Element.Mass, min: 1f, max: 2.5f);
-            Set(p, "massUpgradeShieldsTrail", false);   // Mass 5 here is "Mural", not armour
+            DisableElementalFloat(p, "trailVolume");
+            // Mass 5 armours the wake through ForceShielded (Mass mode only), not these flags.
+            Set(p, "massUpgradeShieldsTrail", false);
             Set(p, "turnUpgradeShieldsTrail", false);
 
             CopyReferenceFromVessel(p, "_onPrismSpawnedEventChannel", SquirrelPrefabPath,
@@ -604,9 +571,10 @@ namespace CosmicShore.Editor
 
         void WireResources(ResourceSystem resources)
         {
-            // ONE meter, index 0: WING ENERGY. SpreadWingsActionSO.resourceIndex and
-            // ButterflyHUDController.wingEnergyResourceIndex both address it by this index, and
-            // nothing in the fleet catches a stale one — so the three move together or not at all.
+            // ONE meter, index 0. Its reader (the Spread Wings energy cost) was retired when the
+            // right trigger became a mode switch; it stays because meters are addressed by index
+            // fleet-wide and the omni bloom's crystal effect reads index 0 (at a fixed scale, so
+            // its value changes nothing).
             if (!resources) { Unwired("ResourceSystem", "component is null"); return; }
             var so = new SerializedObject(resources);
             var list = so.FindProperty("Resources");
@@ -617,8 +585,6 @@ namespace CosmicShore.Editor
             SetChild(r, "Name", "Wing Energy");
             SetChild(r, "maxAmount", 1f);
             SetChild(r, "initialAmount", 1f);
-            // Refills in ~13s from empty at 60fps. Against SpreadWingsActionSO's 0.22/s drain a
-            // full meter buys about 4.5 seconds of broad stroke — a stroke, not a state.
             SetChild(r, "resourceGainRate", 0.00125f);
             so.ApplyModifiedPropertiesWithoutUndo();
             Note("Authored 1 resource meter: [0] Wing Energy");
@@ -641,7 +607,7 @@ namespace CosmicShore.Editor
             BindInput(list.GetArrayElementAtIndex(0), InputEvents.RightStickAction, spread);
             BindInput(list.GetArrayElementAtIndex(1), InputEvents.LeftStickAction, fold);
             so.ApplyModifiedPropertiesWithoutUndo();
-            Note("Bound RightStickAction → Spread Wings, LeftStickAction → Fold");
+            Note("Bound RightStickAction → Mass/Dust mode, LeftStickAction → Fold");
         }
 
         void BindInput(SerializedProperty entry, InputEvents input, ScriptableObject action)
@@ -659,7 +625,6 @@ namespace CosmicShore.Editor
         {
             Set(hud, "foldExecutor", fold);
             Set(hud, "spreadExecutor", spread);
-            Set(hud, "wingEnergyResourceIndex", 0);
             if (!hudInstance) return;
             var view = hudInstance.GetComponentInChildren<ButterflyHUDView>(true);
             if (view) { Set(hud, "view", view); Set(hud, "baseView", view); }
@@ -1001,6 +966,17 @@ namespace CosmicShore.Editor
             SetChild(p, "Value", min);
             var enabled = p.FindPropertyRelative("Enabled");
             if (enabled != null) enabled.boolValue = true;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        void DisableElementalFloat(UnityEngine.Object target, string field)
+        {
+            if (!target) return;
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            var enabled = p?.FindPropertyRelative("Enabled");
+            if (enabled == null) { Unwired($"{target.GetType().Name}.{field}.Enabled", "not found"); return; }
+            enabled.boolValue = false;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 

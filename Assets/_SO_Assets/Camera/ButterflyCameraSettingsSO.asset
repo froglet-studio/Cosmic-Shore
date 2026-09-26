@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ButterflyCameraSettingsSO
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.CameraSettingsSO
   mode: 0
-  followOffset: {x: 0, y: 22, z: -120}
+  followOffset: {x: 0, y: 37.4, z: -204}
   dynamicMinDistance: 10
   dynamicMaxDistance: 40
   followSmoothTime: 0.2

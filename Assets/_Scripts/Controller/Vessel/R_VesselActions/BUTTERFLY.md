@@ -18,10 +18,10 @@ leave a surface behind*. Three consequences shape the whole design:
 - **Its output is 2D prismscape.** A trail is the 1-dimensional case; the Butterfly is the hull
   that makes the 2-dimensional one — which the Urchin's `BlockscapeFollower` already knows how to
   roll across and the food web already knows how to graze. It builds the thing other vessels ride.
-- **It fights by SOARING, not by shooting.** Two of its four abilities are passive and happen
-  because you flew somewhere. There is no button that hurts anybody.
-- **It is legible from a long way off.** The camera sits at **120 units** (the fleet's second
-  longest after the Serpent's 250), so the wingspan and the beat carry the read, and every
+- **It fights by SOARING, not by shooting.** Its one weapon is DUST it trails beneath it, and the
+  only button involved is the one that chooses between painting and dusting. Nothing is aimed.
+- **It is legible from a long way off.** The camera sits at **207 units** (`|followOffset|`, the
+  fleet's longest after the Serpent's 250), so the wingspan and the beat carry the read, and every
   animation amplitude is authored against that distance rather than against a mirror.
 
 ### Its mode
@@ -56,8 +56,9 @@ beat. Measured at the shipped settings: **809 verts, 2,464 tris, 21.35 u span ×
 
 ### 2.0 The camera — and the one field it shipped inheriting (2026-09-26)
 
-`ButterflyCameraSettingsSO` is `followOffset (0, 22, -120)`: the fleet's longest camera after the
-Serpent's 250, and the brief's "flies slow from far away". That number is load-bearing for more
+`ButterflyCameraSettingsSO` is `followOffset (0, 37.4, -204)` — **70% further than the shipped
+`(0, 22, -120)`**, scaled uniformly so the look-down angle is unchanged (2026-09-26). It is the
+fleet's longest camera after the Serpent's 250, and the brief's "flies slow from far away". That number is load-bearing for more
 than the look — the prism occlusion corridor and the vessel-tail width are both derived from
 `|followOffset.z|`, so it sizes the hull's whole relationship with the camera.
 
@@ -127,63 +128,102 @@ The map asset (`Assets/Resources/ElementalAbilityMaps/Butterfly.asset`) is the d
 
 | Element | Ability | Input | Level 5 |
 |---|---|---|---|
-| **Charge** | **Scale Dust** — the wings debuff pilots and wither creature hearts they pass through | passive | **Monarch** — the dust bites twice as deep |
-| **Mass** | **Spread Wings** — hold to widen the wake; costs energy | RT (`RightStickAction`) | **Mural** — the spread is free |
-| **Space** | **Wingreach** — opposing mass passing through the wings dissolves | passive | **Broadwing** — the far-field wings join in |
+| **Charge** | **Scale Dust** — in Dust mode, the capsule debuffs opposing pilots (the BITE is Charge), kills opposing lifeform hearts, refreshes ally ones | passive (lives in Dust mode) | **Monarch** — the dust bites twice as deep |
+| **Mass** | **Mass / Dust Mode** — RT switches between a WIDE wake (5x at Mass 0 → 20x at Mass 15) and the dust | RT (`RightStickAction`) | **Gilded Wake** — Mass mode lays SHIELDED prisms |
+| **Space** | **Dust Reach** — the capsule's LENGTH; own mass it touches grows / turns dangerous / shields, opposing mass is destroyed / shrunk / stolen | passive (lives in Dust mode) | **Diamond Dust** — own PLAIN mass occasionally super-shields |
 | **Time** | **Fold** — hold to stop, reach out along your heading, release to be there; leaves a standing pair of domain gates behind | LT (`LeftStickAction`) | **Far Fold** — the fold reaches twice as far |
+
+**The 2026-09-26 re-cut, in one paragraph.** The hull shipped with TWO wing skimmers (near and far
+field), both always on and both invisible, and an RT that spent a wing-energy meter to widen the
+wake. It now has **ONE skimmer** — a capsule hanging below the hull — and the right trigger is a
+**mode switch**: Mass mode paints (wide wake, dust off), Dust mode dusts (narrow wake, capsule on
+and drawn as falling motes). Nothing costs energy any more; the choice itself is the cost, because
+you cannot paint wide and dust at once.
 
 ### 3.1 Charge — Scale Dust
 
-Passive. The wings shed dust onto whatever **living** thing passes through them: an opposing pilot
-takes an all-element decaying debuff, and a creature's heart withers through its normal death path
-(mass conserved, continuity honoured, crystal dropped exactly as starvation would).
+The dust exists only in **Dust mode**. It is `ButterflyDustSkimmer.prefab`: a `CapsuleCollider`
+(centre `(0, −0.5, 0)`, height 1, radius 0.5, along local Y) so it hangs **below** the hull, a
+`Skimmer` whose Space-scaled `Scale` is elongated on **Y only** (`elongateYOnly`) so Space makes it
+LONGER rather than fatter, and `ButterflyDustField`, which switches the collider AND the impactor
+off together outside Dust mode (a disabled collider sends no `OnTriggerExit`, and Unity delivers
+trigger messages to disabled MonoBehaviours, so both have to go) and draws the capsule as a runtime
+particle fall of motes sized to its live world length. Motes stop EMITTING on the way out rather
+than vanishing (continuity of existence).
 
-**There is deliberately no speed gate**, and that is the whole reason this is not the Squirrel's
-joust. `VesselWitherLifeformByCrystalEffectSO` requires the vessel to be moving FASTER than its
-target, because a joust is an overtake and the Squirrel's kit is speed. This hull is the slowest in
-the fleet, so an overtake requirement would mean it could never kill anything that was not rooted.
-A butterfly does not ram; it drifts over something and the dust does the work.
+What it does to the **living**:
 
-**It needed a new platform arm.** `SkimmerImpactor`'s crystal case returned outright on
-`crystal.IsEmbedded` — correctly, because a heart is not skim-COLLECTABLE and without that gate
-every skimmer crystal effect in the fleet (the Rhino sword's burst) would fire on it repeatedly. So
-embedded hearts now go to their own list (`SkimmerLifeformCrystalEffectSO`), latched at 0.5 s.
-**Every other vessel leaves that list empty, so the arm is a no-op fleet-wide.**
+- an **opposing pilot** takes an all-element decaying debuff, classed `VesselContact` so an arena
+  ward cannot cancel it. **Charge is the BITE**: `VesselElementalDebuffBySkimmerEffectSO` gained a
+  `biteScale` `ElementalFloat` (0.5x at rest → 2x at level 10, floor 0.25) that multiplies the
+  priced magnitude (−0.333333 per element over four). Every other vessel authors none, so it is 1.
+- an **opposing lifeform** (flora or fauna) whose heart the capsule reaches **dies** — the wither,
+  through the normal sealed death path, crystal dropped exactly as starvation would. No speed gate:
+  this is the slowest hull in the fleet, and an overtake requirement would mean it could never kill
+  anything that was not rooted.
+- an **ally lifeform** is **refreshed** instead (`SkimmerNourishLifeformByCrystalEffectSO` →
+  `ILifeFormEntity.Nourish()`): its starvation clock resets and its breeding counter advances. It is
+  a FOOD-WEB event, never a size (`Docs/ECOSYSTEM.md §40`), and it is latched at 5 s per lifeform so
+  a Butterfly parked over a plant cannot fund a population boom by hovering.
 
-The pilot half closes a gap the fleet already knew about:
-`author_combat_debuff_magnitudes.py --check` reports *"strike 8 pts → would be −1.333 levels total …
-skimmer family's only drain SO is the Squirrel's overtake, which gates on being FASTER."* This is
-that drain path, priced by the same rule — **−0.333333 per element over four**.
+**Element levels do not replicate, and this is the first vessel whose SCALING has to agree across
+peers**: a skimmer overlap is observed on every machine, and the debuff's bite and the Mass-mode
+width would otherwise be computed from each machine's own (wrong) idea of the pilot's level. So
+`R_VesselActionHandler.NetElementLevels` (owner-write `ushort`, one 4-bit nibble per element,
+clamped 0..15) publishes the integer levels and `ElementalFloat.EvaluateReplicated(status)` reads
+them. Integer levels are exactly what an `ElementalFloat` is authored against, so nothing is lost;
+fractional overcharge above 15 clamps.
 
-### 3.2 Mass — Spread Wings
+### 3.2 Mass — Mass / Dust Mode
 
-Hold RT: the wings open and the wake widens from a narrow line of keys into a broad ribbon. **It
-costs energy the whole time** — that is the point. A brush that is always at its widest is not a
-brush, it is a setting, so what the pilot is actually composing is *where the broad strokes go*.
+The right trigger **toggles** (`SpreadWingsActionSO.inputStyle`, `Toggle` by default; `HoldForDust`
+is the other option and is one enum change away). A Butterfly spawns in **Mass mode**.
 
-Running dry is a **close, not a refusal**: the wings shut, the wake narrows, the pilot keeps flying
-and the wings re-open by themselves once the meter recovers past 15% (a hysteresis band, so a meter
-hovering at zero cannot flutter them). A meter that blocked the press would make a brush feel like
-a cooldown.
+- **Mass mode**: the wings are spread, the dust is off, and the wake is WIDE —
+  `massModeWidth` is `ElementalFloat.Multiplier(5, 15, Mass, floor 1)`, so **5x at Mass 0, 10x at
+  Mass 5, 15x at Mass 10, 20x at Mass 15** (an `ElementalFloat` is linear in the level and extends
+  past 10, which is exactly what "20x at 15" asks for). It is applied as
+  `VesselPrismController.WidthMultiplier`, eased over `widthBlendSeconds` (1.5 s) so a mode change
+  reads as a stroke rather than a snap.
+- **Dust mode**: the wings fold, the wake narrows to the unmultiplied key, and the capsule goes live.
 
-Mass's *continuous* dial is a different quantity — the trail prism's **volume**, the Squirrel's
-mapping reused rather than reinvented. So Mass makes the wake bigger two ways that do not overlap:
-the pilot spends energy to make it **wider**, and the element makes each key **heavier**.
+`WidthMultiplier` is a new, general knob on the prism controller (default 1, so every other vessel
+is byte-identical). A widened prism **states** its size through `Prism.AdmitTargetScale` after
+`Initialize` — the pooled prism clamps each axis to `maxScale` 10–40 inside the setter with no log,
+so a 20x key would otherwise be silently cut to 40 across (CLAUDE.md, "An AUTHORED prism size widens
+its clamp").
 
-### 3.3 Space — Wingreach
+**Mass's old second dial is off.** `trailVolume` (per-prism volume, 1 → 2.5) is disabled on this
+hull, because Mass is now the WIDTH and two Mass dials on one prism would be one number counted
+twice.
 
-Passive. Opposing-domain mass that passes through the wings **dissolves**. The Butterfly reduces
-enemy volume by soaring over it. Space is the **reach** — the skimmer's `Scale` ElementalFloat,
-evaluated live, so a Butterfly that has fed on Space erases a wider swath on every pass.
+**Gilded Wake (L5)** replaces Mural: while Mass is upgraded, Mass mode lays **shielded** prisms
+(`VesselPrismController.ForceShielded`, gated on `IsUpgradeActive(Mass)` — the replicated bit, since
+whether a prism is shielded is an outcome every peer must agree on). Dust mode's narrow keys are
+unshielded either way. Shielded mass is not food and leaves the targeting grids, so a Mass-5
+Butterfly's murals are paintings the herbivores leave alone.
 
-`opposingDomainOnly` is a new flag on `SkimmerDamagePrismEffectSO`, defaulting **off** so the Rhino
-is byte-identical. It has to live on the effect rather than on `Skimmer.affectSelf`, because that
-flag is a domain compare evaluated **after** the effect loop and gates only the skim bookkeeping — a
-vessel with `affectSelf` off still runs every skimmer prism effect on its own mass.
+### 3.3 Space — Dust Reach
 
-**Broadwing** arms the *far-field* wings with the same effect, gated on the replicated unlock bit
-via the new `requiresUpgradeElement` field — so the upgrade genuinely widens the swath rather than
-changing what a pass does.
+Space is the capsule's **LENGTH** (the skimmer's `Scale`, 60 → 150 across L0..L10 on Y only), and
+the capsule is what the dust does to **mass** (`SkimmerScaleDustPrismEffectSO`):
+
+| Prism | Outcome (one per prism) |
+|---|---|
+| **own domain**, plain | grows along a random axis (+35%) · turns **DANGEROUS** · turns **SHIELDED** (0.4 / 0.3 / 0.3) |
+| own domain, shielded or dangerous | grows only (it already carries a state) |
+| own domain, super-shielded | untouched |
+| **opposing** | **destroyed** (debris at the capsule's contact velocity) · **shrunk** 35% · **stolen** |
+| opposing, super-shielded | the destroy path, which the super-shield turns into a deflection |
+
+**Each prism's outcome is a deterministic roll of THAT PRISM** — a hash of its rounded position, its
+target scale and its domain — never `UnityEngine.Random`. A skimmer contact is observed on every
+peer, so a random roll would give each machine a different arena. The same hash drives the random
+growth axis.
+
+**Diamond Dust (L5)** replaces Broadwing: dust on your own **plain** mass has a **6%** chance to
+raise a **super-shield** instead. It is deliberately rare — super-shielded mass is invulnerable to
+everything but an energised Rhino blade.
 
 ### 3.4 Time — Fold
 
@@ -202,17 +242,20 @@ See **`BUTTERFLY_FOLD.md`** (§ "Every fold leaves a PAIR OF GATES standing" for
 |---|---|---|
 | `BaseScale` | `26 × 1.2 × 3.4` | Wide across, thin, SHORT along the flight path — a key, not a ribbon |
 | `initialWavelength` | 9 | Leaves air between consecutive keys at cruise, so they read as separate |
-| `minBlockScale` / `maxBlockScale` | 0.35 / 1.0 | Wings shut is a narrow line; wings spread is the full slab |
+| `minBlockScale` | 0.35 | The key's resting width (`26 × 0.35 ≈ 9.1`) — Dust mode's wake |
+| `WidthMultiplier` (Mass mode) | Mass, 5x → 20x at L15 | Mass mode's wake: ~45 across at Mass 0, ~182 at Mass 15 |
 | `Gap` | 0 | ONE wide key, not two rails |
-| `trailVolume` | Mass, 1 → 2.5 | The Squirrel's mapping |
+| `trailVolume` | **disabled** | Mass is the WIDTH now; a second Mass dial on the same prism would double-count |
 
 ## 5. HUD
 
 Deliberately sparse: two of four abilities are passive and have no state a pilot can wait on, so
 neither gets a gauge (drawing one would be an instrument reporting a decision nobody makes). The two
-that do have state get one readout each — a **linear wing-energy fill** on the Mass plate, pinned
-full once Mural makes the spread free, and the fleet's **clockwise depleting recharge veil** on the
-Time plate.
+that do have state get one readout each — a **mode fill** on the Mass plate (FULL in Mass mode,
+EMPTY in Dust mode, travelling between the two as the wake eases; it was a wing-energy meter until
+the energy cost was retired, and a gauge whose meter is gone would be a lie), and the fleet's
+**clockwise depleting recharge veil** on the Time plate. The mode fill is a BINARY state drawn with
+a transition — never a partial fill a pilot could read as a quantity.
 
 The Fold's veil is the ONLY feedback a refused press gets, which is why the controller pushes it
 every frame rather than off an edge.
@@ -269,9 +312,14 @@ screen is unchanged apart from the row itself.
 | Hull emitter | `Assets/_Scripts/Controller/Vessel/ButterflyHullBuilder.cs` |
 | Wingbeat + morph | `Assets/_Scripts/Controller/Animation/ButterflyAnimation.cs` |
 | Fold tuning / executor | `R_VesselActions/Data Containers/FoldActionSO.cs`, `R_VesselActions/Executors/FoldActionExecutor.cs` |
-| Spread tuning / executor | `R_VesselActions/Data Containers/SpreadWingsActionSO.cs`, `R_VesselActions/Executors/SpreadWingsActionExecutor.cs` |
-| Dust (pilot) | `ImpactEffects/EffectsSO/Vessel Skimmer Effects/VesselElementalDebuffBySkimmerEffectSO.cs` |
-| Dust (lifeform) | `ImpactEffects/EffectsSO/Skimmer Crystal Effects/SkimmerWitherLifeformByCrystalEffectSO.cs` |
+| Mode switch tuning / executor | `R_VesselActions/Data Containers/SpreadWingsActionSO.cs`, `R_VesselActions/Executors/SpreadWingsActionExecutor.cs` |
+| Dust capsule (collider gate + motes) | `R_VesselActions/ButterflyDustField.cs`, `_Prefabs/Spacevessels/Components/ButterflyDustSkimmer.prefab` |
+| Dust (mass) | `ImpactEffects/EffectsSO/Skimmer Prism Effects/SkimmerScaleDustPrismEffectSO.cs` |
+| Dust (pilot) | `ImpactEffects/EffectsSO/Vessel Skimmer Effects/VesselElementalDebuffBySkimmerEffectSO.cs` (`biteScale`) |
+| Dust (lifeform) | `ImpactEffects/EffectsSO/Skimmer Crystal Effects/SkimmerWitherLifeformByCrystalEffectSO.cs` (opposing), `SkimmerNourishLifeformByCrystalEffectSO.cs` (ally) |
+| Omni-crystal bloom | `_Prefabs/Projectile/AOEButterflyBloom.prefab` + `ButterflyVesselExplosionByCrystalEffect.asset` + `ButterflyBloomExplosionImpactorDataContainer.asset` |
+| Replicated element levels | `R_VesselActionHandler.NetElementLevels`, `R_VesselElementalAbilityHandler.ReplicatedLevel`, `ElementalFloat.EvaluateReplicated` |
+| Dust assets (generated) | `Tools/Build/author_butterfly_dust.py` (`--check`) |
 | The new skimmer arm | `ImpactEffects/EffectsSO/Abstract Effect Types/SkimmerLifeformCrystalEffectSO.cs` |
 | Fold gate | `R_VesselActions/FoldGate.cs`, `R_VesselActions/FoldGateGeometry.cs` |
 | Fold gate offline proof | `Tools/Build/foldgate_harness/` (compiles and RUNS the shipped geometry) |
@@ -297,12 +345,24 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 1. **Build.** Run the tool. Expect zero `UNWIRED` lines. It is idempotent — safe to re-run.
 2. **Offline gate.** `DOTNET_ROOT=… Tools/Build/butterfly_hull_harness/run.sh` → `ALL CHECKS PASSED`.
 3. **Audits.** `FrogletTools ▸ Vessels ▸` **Audit Vessel Ability Rows** (4/4, in order),
-   **Audit Vessel Skimmers** (both wings initialized and active), **Audit Vessel Elemental Morphs**
+   **Audit Vessel Skimmers** (ONE skimmer, the near field, assigned; the far field EMPTY by design
+   — the audit may flag its collider as disabled at rest, which is Mass mode working), **Audit Vessel Elemental Morphs**
    (four PROCEDURAL morphs, none INERT), **Audit Ability Lockups**, **Audit Vessel Construction**.
 4. **Fly it** in Menu_Main freestyle via the vessel-changer toy. Check: the hull is a butterfly and
    the wings BEAT visibly from the chase camera; the wake is a row of separate wide keys.
-5. **Spread** (RT): the wake widens over ~1.5 s, the wings flatten, the Mass gauge drains, the wings
-   sag shut at empty and re-open by themselves.
+5. **Mode switch** (RT): spawns in Mass mode with a WIDE wake (~5x the key). RT once → wings fold,
+   wake narrows over ~1.5 s, the Mass fill empties, and a fall of motes appears **below** the hull
+   (and only there — confirm there is exactly ONE dust volume and none at the wingtips). RT again →
+   back. Feed Mass and watch Mass mode's wake widen toward 20x; at Mass 5 its keys come out shielded.
+5a. **Dust on mass.** In Dust mode fly low over your own trail: keys grow, some go dangerous, some
+   shielded — and **the same keys do the same thing on a second client**. Over an opponent's trail:
+   keys vanish, shrink, or change to your colour. At Space 5, an occasional own key goes
+   super-shielded (stellated).
+5b. **Dust on the living.** Dust an opposing pilot (debuff lands; bigger at high Charge), an opposing
+   creature or plant (it dies and drops its crystal), and one of your own (nothing visible changes —
+   its starvation clock resets).
+5c. **Omni crystal.** Collect one: a large bloom; any opposing lifeform heart inside it dies; your
+   own lifeforms and all prisms survive.
 6. **Fold** (LT): the vessel stops, a ghost appears on the hull and travels; thumbs IN pull it to the
    cell core, thumbs OUT to the membrane, hands off leaves it at half radius; `YDiff` rolls the
    whole frame; release teleports you. Confirm the Time card's veil sweeps and a second press inside
@@ -310,10 +370,23 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
 7. **No trail pile.** Hold the Fold for 5 s and confirm **no** prisms accumulate at the origin.
 8. **MPPM two clients.** Confirm the fold's stop, closed wings and final pose all replicate, and
    that the ghost appears on the OWNER's screen only.
-9. **Elements.** Feed Mass and Space crystals and watch the hull morph and the wing reach grow.
+9. **Elements.** Feed Mass and Space crystals and watch the hull morph, Mass mode's wake widen and
+   the dust capsule lengthen.
 
 ## 9. Follow-ups
 
+- **The omni-crystal bloom kills opposing LIFEFORM hearts only.** "Destroys opposing domain
+  crystals" was read as the crystals that belong to an opposing domain in play — the hearts of its
+  flora and fauna. Opposing **team crystals** (`TeamCrystalImpactor`) are not in the blast's sweep
+  (`ExplosionImpactor.SweepCrystals` picks up OMNI crystals only) and are untouched; that needs a new
+  sweep arm if wanted. The bloom is **non-destructive to prisms** (`destructive: 0` on
+  `AOEButterflyBloom.prefab`) — one field if it should also clear mass.
+- **`R_VesselActionHandler.NetElementLevels` replicates element levels fleet-wide** (one ushort per
+  vessel, owner-written only on change). Only the Butterfly reads it today
+  (`ElementalFloat.EvaluateReplicated`). Every other skimmer effect that scales on a level still reads
+  the observer's local number — the same bug class, now with a fix available.
+- **The wing-energy resource is unused.** The meter stays in the resource list (removing an index
+  shifts every authored index after it) but nothing drains or reads it.
 - **Nothing here has been run in the editor.** Every number is authored from analysis or from the
   offline harness; none is play-tested. The beat rate, the energy economy and the fold recharge are
   the three most likely to want a pass.

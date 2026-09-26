@@ -29,6 +29,24 @@ namespace CosmicShore.Gameplay
             NetworkVariableWritePermission.Owner);
 
         /// <summary>
+        /// Replicated INTEGER element levels, four bits per element (nibble <c>(int)element - 1</c>,
+        /// Charge lowest), each clamped to 0..15 — the deficit band reads as 0. Owner-write, the
+        /// sibling of <see cref="NetElementUnlocks"/> and published from the same place.
+        ///
+        /// <para>It exists because element levels never replicate, so any ability that scales an
+        /// OUTCOME continuously by an element (not merely gates it on an upgrade) resolves
+        /// differently on every peer: a remote copy of the vessel sits at whatever level its
+        /// replica started with. The unlock bits solved that for the qualitative half; this is
+        /// the quantitative half, at integer resolution, which is all an outcome needs and what
+        /// lets owner and peers compute the SAME number. Read it through
+        /// <c>R_VesselElementalAbilityHandler.ReplicatedLevel</c>, never directly.</para>
+        /// </summary>
+        public NetworkVariable<ushort> NetElementLevels = new(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
+        /// <summary>
         /// The live SHAPE of the Dolphin's Echo Sight while its owner holds it:
         /// <c>(BlastVolume.Height, TanCorePerUnit, TanGapePerUnit)</c>, or
         /// <see cref="Vector3.zero"/> when nobody is aiming. Owner-write, for the same reason

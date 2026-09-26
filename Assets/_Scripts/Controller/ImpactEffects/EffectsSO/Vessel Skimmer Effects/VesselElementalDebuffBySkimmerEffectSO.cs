@@ -53,6 +53,16 @@ namespace CosmicShore.Gameplay
         [SerializeField] Element[] elements =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
+        [Header("Bite by element")]
+        [Tooltip("A multiplier on the drain, scaled by the ATTACKING pilot's level in its element " +
+                 "(the Butterfly: CHARGE — Charge is threat). Disabled = x1, which is every other " +
+                 "adopter. Read through the pilot's REPLICATED integer level " +
+                 "(R_VesselElementalAbilityHandler.ReplicatedLevel): the drain lands on the " +
+                 "victim's OWN machine, which has no other way to know how charged the attacker " +
+                 "is — element levels never replicate, so a local read there would use the " +
+                 "attacker replica's level and the scaling would be inert in any real match.")]
+        [SerializeField] ElementalFloat biteScale = new(1f);
+
         [Header("Upgrade")]
         [Tooltip("The element whose level-5 upgrade deepens the bite (Charge, for the " +
                  "Butterfly's 'Monarch'). None disables the upgrade branch entirely, which is " +
@@ -106,7 +116,7 @@ namespace CosmicShore.Gameplay
             // than a raw local level read: the drain lands on the VICTIM's machine as well as
             // the attacker's, and two peers disagreeing about how hard it bit is two different
             // element levels for the same pilot.
-            float magnitude = debuffMagnitude;
+            float magnitude = debuffMagnitude * BiteScale(pilot);
             var abilities = pilot.ElementalAbilityHandler;
             if (upgradeElement != Element.None && abilities != null
                 && abilities.IsUpgradeActive(upgradeElement))
@@ -116,5 +126,8 @@ namespace CosmicShore.Gameplay
                 rs.ApplyElementalEffect(elements[i], magnitude, debuffDuration,
                                         ElementalDebuffSources.VesselContact);
         }
+
+        /// <summary>The element-scaled bite multiplier, at the pilot's replicated level.</summary>
+        float BiteScale(IVesselStatus pilot) => Mathf.Max(0f, biteScale.EvaluateReplicated(pilot));
     }
 }

@@ -12,8 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f6c24538d1c4066ae8ac009d518efda, type: 3}
   m_Name: ButterflySpreadWingsAction
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.SpreadWingsActionSO
-  resourceIndex: 0
-  energyPerSecond: 0.22
-  massUpgradeMakesSpreadFree: 1
-  openWidth01: 1
-  shutWidth01: 0
+  inputStyle: 0
+  massModeWidth:
+    Enabled: 1
+    Value: 5
+    Min: 5
+    Max: 15
+    element: 2
+    UseFloor: 1
+    Floor: 1
+  widthBlendSeconds: 1.5
+  massUpgradeShieldsInMassMode: 1

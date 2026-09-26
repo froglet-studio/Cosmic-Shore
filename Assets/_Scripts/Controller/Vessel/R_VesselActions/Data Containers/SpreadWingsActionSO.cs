@@ -4,28 +4,31 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Butterfly's <b>Spread Wings</b> — MASS. Hold the trigger and the wings open; the wake
-    /// widens from a narrow line of keys into a broad ribbon, and it costs energy the whole time.
+    /// The Butterfly's <b>right trigger</b>: it switches the vessel between its two MODES.
     /// Design record: <c>R_VesselActions/BUTTERFLY.md</c> §3.2.
     ///
-    /// <para><b>The cost is the point.</b> A brush that is always at its widest is not a brush —
-    /// it is a setting — so the wide wake is METERED: holding drains
-    /// <see cref="ResourceIndex"/> at <see cref="EnergyPerSecond"/>, the meter refills only while
-    /// the wings are shut, and running it dry closes them. What the pilot is actually composing is
-    /// WHERE the broad strokes go, which is the whole craft this vessel exists for.</para>
+    /// <list type="bullet">
+    /// <item><b>Mass mode</b> (the default, "Spread Wings") — the wings are open and the wake is
+    /// WIDE: <see cref="MassModeWidth"/> times the narrow line, where the multiplier is MASS's
+    /// continuous dial — <b>5x at Mass 0, 20x at Mass 15</b>, i.e. <c>5 + level</c>. Mass level 5
+    /// makes every prism laid in this mode arrive SHIELDED.</item>
+    /// <item><b>Dust mode</b> — the wings close, the wake narrows to its 1x line, and the one
+    /// skimmer the hull carries (the dust capsule hanging below it, <see cref="ButterflyDustField"/>)
+    /// switches on. Everything the dust does lives in that skimmer's effect container.</item>
+    /// </list>
     ///
-    /// <para><b>MASS's continuous dial is not here.</b> It is the trail prism's VOLUME, authored as
-    /// the <c>trailVolume</c> ElementalFloat on the vessel's own <c>VesselPrismController</c> (the
-    /// Squirrel's mapping, reused rather than reinvented) — so Mass makes the wake bigger in two
-    /// ways that do not overlap: the pilot spends energy to make it WIDER, and the element makes
-    /// each key HEAVIER. Two dials on one element would be the double-dip the fleet convention
-    /// exists to prevent; two different QUANTITIES, one authored per ability and one per prism,
-    /// are not.</para>
+    /// <para><b>There is no energy cost any more</b>, and that is deliberate: a MODE is a choice
+    /// between two things the vessel does, not a resource you spend down. What the pilot trades
+    /// is the wide wake against the dust, and the trade is the whole decision.</para>
     ///
-    /// <para><b>MASS level-5 — "Mural": the spread costs nothing.</b> The wings stay open for as
-    /// long as the pilot wants them open, and the one reason not to fly permanently wide goes
-    /// away. That is deliberately the most desirable thing a painter could be given, and it is
-    /// what the whole metered economy exists to make feel like a reward.</para>
+    /// <para><b>One parameter per element.</b> Mass's number is the WIDTH, so the trail's own
+    /// volume ramp (<c>VesselPrismController.trailVolume</c>) is switched off on this hull — two
+    /// dials on one element growing the same prism would be the double-dip the fleet convention
+    /// exists to prevent.</para>
+    ///
+    /// <para><b>Every peer lays the SAME wake.</b> The mode rides the replicated press, the
+    /// Mass-5 shield the replicated unlock bit, and the width the replicated integer level
+    /// (<c>NetElementLevels</c>).</para>
     ///
     /// <para>The asset is SHARED by every Butterfly in a match and holds no per-vessel state.</para>
     /// </summary>
@@ -33,58 +36,66 @@ namespace CosmicShore.Gameplay
         menuName = "ScriptableObjects/Vessel Actions/Butterfly Spread Wings")]
     public class SpreadWingsActionSO : ShipActionSO
     {
-        [Header("Energy")]
-        [Tooltip("Index into ResourceSystem.Resources of the wing-energy meter. Document it when " +
-                 "you change it: meters are addressed by serialized index across the whole fleet " +
-                 "and nothing catches a stale one.")]
-        [SerializeField, Min(0)] int resourceIndex;
+        public enum ModeInputStyle
+        {
+            /// <summary>Each press flips the mode. The default.</summary>
+            Toggle = 0,
+            /// <summary>Dust while the trigger is held, Mass the moment it is released.</summary>
+            HoldForDust = 1,
+        }
 
-        [Tooltip("Energy drained per second while the wings are held open. Sized against the " +
-                 "meter's own refill rate so a full meter buys a long stroke, not a permanent " +
-                 "state — the ratio of the two IS the mechanic.")]
-        [SerializeField, Min(0f)] float energyPerSecond = 0.22f;
+        [Header("Input")]
+        [Tooltip("How the trigger switches modes. Toggle: each press flips it. HoldForDust: dust " +
+                 "only while the trigger is held.")]
+        [SerializeField] ModeInputStyle inputStyle = ModeInputStyle.Toggle;
 
-        [Tooltip("MASS level-5 'Mural': when the Mass upgrade is live the spread is FREE and the " +
-                 "wings never close on their own. Gated on the replicated unlock bit, per-frame " +
-                 "at spend time, so a level lost mid-stroke starts charging for it again.")]
-        [SerializeField] bool massUpgradeMakesSpreadFree = true;
+        [Header("Mass mode — the wide wake")]
+        [Tooltip("MASS's continuous dial: how many times WIDER than the dust-mode line the wake is " +
+                 "in Mass mode. Evaluated LerpUnclamped over the normalized level, so Min 5 / Max 15 " +
+                 "reads 5x at Mass 0, 15x at Mass 10 and 20x at Mass 15 — exactly 5 + level. The " +
+                 "floor keeps the deficit band from making Mass mode NARROWER than dust mode.")]
+        [SerializeField] ElementalFloat massModeWidth =
+            ElementalFloat.Multiplier(5f, 15f, Element.Mass, 1f);
 
-        [Header("Wake")]
-        [Tooltip("Normalized trail width while the wings are open — fed to " +
-                 "VesselPrismController.SetNormalizedXScale, where 1 means the prism controller's " +
-                 "own maxBlockScale. The controller lerps toward it, so the wake OPENS over about " +
-                 "a second and a half rather than stepping, which is what makes a stroke read as " +
-                 "a stroke.")]
-        [SerializeField, Range(0f, 1f)] float openWidth01 = 1f;
+        [Tooltip("Seconds for the wake to open fully from the narrow line (and to close again). " +
+                 "The width eases rather than steps, which is what makes a stroke read as a " +
+                 "stroke — and it is timed per full swing, so a Mass-15 wake opens in the same " +
+                 "time as a Mass-0 one.")]
+        [SerializeField, Min(0.05f)] float widthBlendSeconds = 1.5f;
 
-        [Tooltip("Normalized trail width with the wings shut. Not zero: a Butterfly always lays a " +
-                 "line, it is only ever a question of how wide.")]
-        [SerializeField, Range(0f, 1f)] float shutWidth01;
+        [Tooltip("MASS level-5: every prism laid in Mass mode arrives SHIELDED. Gated on the " +
+                 "replicated unlock bit, per frame, so every peer lays the same tier.")]
+        [SerializeField] bool massUpgradeShieldsInMassMode = true;
 
-        public int ResourceIndex => Mathf.Max(0, resourceIndex);
-        public float EnergyPerSecond => Mathf.Max(0f, energyPerSecond);
-        public float OpenWidth01 => openWidth01;
-        public float ShutWidth01 => shutWidth01;
+        public ModeInputStyle InputStyle => inputStyle;
+        public float WidthBlendSeconds => Mathf.Max(0.05f, widthBlendSeconds);
 
         /// <summary>
-        /// Whether this stroke is free right now. Read per-frame at spend time rather than
-        /// snapshotted at the press: an upgrade is a live state, and a Butterfly that lost Mass 5
-        /// mid-stroke should start paying for the rest of it.
-        ///
-        /// Gates on <c>IsUpgradeActive</c> — the replicated bit — not a raw local level read,
-        /// because what it decides is how much conserved mass ends up in the world.
+        /// The Mass-mode width multiplier at this vessel's Mass level — read through
+        /// <c>ReplicatedLevel</c>, so every peer that lays this Butterfly's wake lays it at the
+        /// SAME width. A local <c>EvaluateLive</c> would read each machine's own copy of the
+        /// level, and element levels never replicate. Integer resolution; the executor eases the
+        /// width between steps anyway.
         /// </summary>
-        public bool IsSpreadFree(IVesselStatus status)
+        public float MassModeWidth(IVesselStatus status) =>
+            Mathf.Max(1f, massModeWidth.EvaluateReplicated(status));
+
+        /// <summary>
+        /// Whether Mass-mode prisms arrive shielded right now. Gates on <c>IsUpgradeActive</c> —
+        /// the replicated bit — never a raw local level read, because what it decides is the tier
+        /// of conserved mass every peer lays.
+        /// </summary>
+        public bool ShieldsInMassMode(IVesselStatus status)
         {
-            if (!massUpgradeMakesSpreadFree) return false;
+            if (!massUpgradeShieldsInMassMode) return false;
             var abilities = status?.ElementalAbilityHandler;
             return abilities != null && abilities.IsUpgradeActive(Element.Mass);
         }
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
-            => execs?.Get<SpreadWingsActionExecutor>()?.Open(this, vesselStatus);
+            => execs?.Get<SpreadWingsActionExecutor>()?.Press(this, vesselStatus);
 
         public override void StopAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
-            => execs?.Get<SpreadWingsActionExecutor>()?.Close(this, vesselStatus);
+            => execs?.Get<SpreadWingsActionExecutor>()?.Release(this, vesselStatus);
     }
 }

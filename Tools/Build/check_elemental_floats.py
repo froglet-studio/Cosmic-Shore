@@ -5,7 +5,9 @@
 (`Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`). It scales in exactly two
 ways:
 
-  * `EvaluateLive(status)` -- the unified read, valid anywhere; and
+  * `EvaluateLive(status)` -- the unified read, valid anywhere (its sibling
+    `EvaluateReplicated(status)` reads the owner's REPLICATED level instead, for a value
+    every peer must agree on, and counts as the same kind of read); and
   * the legacy BOUND path, where `ElementalShipComponent.BindElementalFloats` subscribes
     `ScaleValueWithLevel` so a consumer reading the raw `.Value` field sees the scaled
     number without asking.
@@ -165,13 +167,13 @@ def scan_declarations(scripts_dir):
 
 
 def scan_evaluations(scripts_dir):
-    """Every field name the tree ever calls `EvaluateLive` on, from ANY file.
+    """Every field name the tree ever calls `EvaluateLive` / `EvaluateReplicated` on, from ANY file.
 
     Project-wide on purpose: a `[SerializeField]` on an SO is routinely read by its executor
     through a public accessor or the field itself, so a per-file search would report a live
     float as dead -- which is exactly the direction that gets a gate switched off."""
     live = set()
-    rx = re.compile(r"\b(\w+)\s*\.\s*EvaluateLive\s*\(")
+    rx = re.compile(r"\b(\w+)\s*\.\s*Evaluate(?:Live|Replicated)\s*\(")
     for dirpath, _dirs, files in os.walk(scripts_dir):
         for name in files:
             if not name.endswith(".cs"):
@@ -264,6 +266,11 @@ SELF_TEST_CS = {
     [SerializeField] ElementalFloat liveRamp = new(1f);
     public float Live(IVesselStatus s) => liveRamp.EvaluateLive(s);
 }""",
+    "ReplicatedOnSO.cs": """
+[CreateAssetMenu] public class ReplicatedOnSO : ShipActionSO {
+    [SerializeField] ElementalFloat netRamp = new(1f);
+    public float Net(IVesselStatus s) => netRamp.EvaluateReplicated(s);
+}""",
     "BoundOnComponent.cs": """
 public class BoundOnComponent : ElementalShipComponent {
     [SerializeField] ElementalFloat boundRamp = new(1f);
@@ -286,6 +293,7 @@ def _asset(guid, block):
 SELF_TEST_GUIDS = {
     "InertOnSO.cs":        "a" * 32,
     "LiveOnSO.cs":         "b" * 32,
+    "ReplicatedOnSO.cs":   "d" * 32,
     "BoundOnComponent.cs": "c" * 32,
 }
 
@@ -294,6 +302,8 @@ SELF_TEST_ASSETS = {
     "inert.asset": _asset("a" * 32, _block("deadRamp", 1, 4, 4, 8, 2)),
     # must NOT fire: somebody calls EvaluateLive on it
     "live.asset":  _asset("b" * 32, _block("liveRamp", 1, 1, 1, 2.5, 2)),
+    # must NOT fire: EvaluateReplicated is the same read against the replicated level
+    "net.asset":   _asset("d" * 32, _block("netRamp", 1, 5, 5, 15, 2)),
     # must NOT fire: MonoBehaviour host, so the legacy bound path keeps .Value in step
     "bound.asset": _asset("c" * 32, _block("boundRamp", 1, 1, 1, 2, 4)),
     # must NOT fire: authored off
@@ -333,9 +343,9 @@ def self_test():
         else:
             print("  both real shapes fire (a dead ramp, and one whose field name also "
                   "exists on a")
-            print("  MonoBehaviour); four negative controls -- evaluated, MonoBehaviour-"
-                  "hosted, authored")
-            print("  off, Min == Max -- all stay silent.")
+            print("  MonoBehaviour); five negative controls -- evaluated live, evaluated "
+                  "replicated,")
+            print("  MonoBehaviour-hosted, authored off, Min == Max -- all stay silent.")
         return 0 if ok else 1
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

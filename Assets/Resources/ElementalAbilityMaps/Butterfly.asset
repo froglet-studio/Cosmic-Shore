@@ -16,70 +16,37 @@ MonoBehaviour:
   entries:
   - Element: 1
     AbilityLabel: Scale Dust
-    AbilityDescription: 'PASSIVE. The wings shed dust onto whatever passes through
-      them: an opposing pilot takes an all-element decaying debuff
-      (VesselElementalDebuffBySkimmerEffect, classed VesselContact so an arena ward
-      cannot cancel it) and a living creature''s heart WITHERS
-      (SkimmerWitherLifeformByCrystalEffect, no speed gate - this is the slowest hull
-      in the fleet and an overtake requirement would mean it could never kill
-      anything that was not rooted). Charge is the BITE: the drain magnitude, priced
-      off Broadside''s Strike class. The dust touches only the LIVING - it never
-      removes mass; that is Space''s half.'
+    AbilityDescription: 'DUST MODE (RT). The dust is ONE capsule hanging below the hull, live and drawn as falling motes only while the right trigger has switched the Butterfly into Dust mode. An opposing pilot it touches takes an all-element decaying debuff whose BITE is Charge (VesselElementalDebuffBySkimmerEffect, biteScale 0.5x at rest -> 2x at level 10, classed VesselContact so an arena ward cannot cancel it). An opposing lifeform''s heart it reaches is killed (the wither); an ALLY lifeform is refreshed instead (Nourish - its starvation clock and breeding counter, never its size).'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Monarch
-    UpgradeDescription: The dust bites twice as deep.
+    UpgradeDescription: 'The dust bites twice as deep.'
   - Element: 2
-    AbilityLabel: Spread Wings
-    AbilityDescription: 'HOLD. The wings open and the wake widens from a line of keys
-      into a broad ribbon (SpreadWingsActionSO drives
-      VesselPrismController.SetNormalizedXScale, which lerps over ~1.5s so a stroke
-      reads as a stroke). It COSTS: holding drains the wing-energy meter, which
-      refills only while the wings are shut, so what the pilot composes is WHERE the
-      broad strokes go. Mass''s continuous dial is a different quantity - the trail
-      prism''s VOLUME, authored as the trailVolume ElementalFloat on this vessel''s
-      VesselPrismController (1 -> 2.5 at level 10, cube root per axis). Two
-      quantities, not two dials on one number.'
+    AbilityLabel: Mass / Dust Mode
+    AbilityDescription: 'RIGHT TRIGGER toggles the Butterfly between two modes. MASS mode (the default) lays a WIDE wake: the trail prism widens to 5x at Mass 0 rising to 20x at Mass 15 (SpreadWingsActionSO.massModeWidth, eased over ~1.5s so a stroke reads as a stroke), and the dust is off. DUST mode narrows the wake back to a line of keys and switches the dust capsule on. Mass is the WIDTH of what you paint; the old per-prism trailVolume scaling is off on this hull so the two are not one number counted twice.'
     Input: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Mural
-    UpgradeDescription: Spreading the wings is free - they stay open as long as you
-      hold them.
+    UpgradeLabel: Gilded Wake
+    UpgradeDescription: 'Mass mode lays SHIELDED prisms.'
   - Element: 3
-    AbilityLabel: Wingreach
-    AbilityDescription: 'PASSIVE. Opposing-domain mass that passes through the wings
-      DISSOLVES - the Butterfly reduces enemy volume by soaring over it rather than
-      by shooting it (SkimmerDamagePrismEffect with opposingDomainOnly set, so the
-      wings never eat their own team''s wake). Space is the REACH: the skimmer''s
-      Scale ElementalFloat, authored on the prefab, evaluated live - so a Butterfly
-      that has fed on Space erases a wider swath of territory on every pass. It is
-      the one ability whose whole expression is the vessel''s size.'
+    AbilityLabel: Dust Reach
+    AbilityDescription: 'The dust capsule''s LENGTH is Space (the skimmer''s Space-scaled Scale, elongated along the capsule axis only). What the dust does to MASS: an OWN-domain prism grows along a random axis, or turns DANGEROUS, or turns SHIELDED; an OPPOSING prism is destroyed, shrunk, or stolen. Each prism''s outcome is a deterministic roll of that prism, so every peer agrees.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Broadwing
-    UpgradeDescription: The far-field wings join in - the dissolving swath widens to
-      the outer wing radius.
+    UpgradeLabel: Diamond Dust
+    UpgradeDescription: 'Dust on your own PLAIN mass occasionally raises a SUPER-SHIELD.'
   - Element: 4
     AbilityLabel: Fold
-    AbilityDescription: 'HOLD. The vessel stops and a ghost of it appears; the two
-      sticks place that ghost anywhere in the cell and letting go puts you there.
-      XDiff is the RADIUS (thumbs in = the core, at rest = half way, thumbs out = the
-      membrane - the dual-stick mix already reads 0/0.5/1 for exactly those, so
-      nothing is rescaled), XSum and YSum are its azimuth and elevation, and YDiff
-      goes on rolling the vessel as it always does - which rolls the camera, which
-      carries the whole spherical frame with it. Outside a membrane the hold becomes
-      a REACH along the heading instead. Time''s dial is the RECHARGE, the one dial
-      that means something in both branches.'
+    AbilityDescription: 'HOLD. The vessel stops and a ghost of it reaches out along the heading you arrived on; letting go puts you there. Pitch and yaw are dead for the duration, so a fold cannot be aimed once begun - earning the line BEFORE the press is the whole decision. Every fold leaves a pair of gates standing that your domain can thread. Time''s dial is the RECHARGE.'
     Input: 2
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Far Fold
-    UpgradeDescription: The open-space fold reaches twice as far. Inside a membrane
-      it changes nothing - the cell is already the limit.
+    UpgradeDescription: 'The fold reaches twice as far.'

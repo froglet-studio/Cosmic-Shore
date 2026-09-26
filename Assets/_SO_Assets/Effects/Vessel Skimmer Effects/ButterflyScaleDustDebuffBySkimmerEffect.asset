@@ -15,6 +15,14 @@ MonoBehaviour:
   debuffMagnitude: -0.3333333
   debuffDuration: 4
   elements: 01000000020000000300000004000000
+  biteScale:
+    Enabled: 1
+    Value: 1
+    Min: 0.5
+    Max: 2
+    element: 1
+    UseFloor: 1
+    Floor: 0.25
   upgradeElement: 1
   upgradeBiteMultiplier: 2
   cooldown: 1
