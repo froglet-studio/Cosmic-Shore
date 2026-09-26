@@ -399,7 +399,7 @@ of Time were fixed (Rhino ramp ceiling, Serpent boost speed) and four defensive 
 | 5.9 | **The Scarab's map declared a retired upgrade.** "Armored Switch" was retired with the switch's prism fill on 2026-08-24; the map went on naming it, so every surface that asks the map reported a wired Mass 5. Entry corrected to an `(open design slot)` that records the retirement, and its `AbilityDescription` corrected (Mass scales the RING RADIUS, not a fill that no longer exists) | **SHIPPED** |
 | 5.10 | The remaining gaps are DESIGN gaps, not wiring. Five when this row was written; **three** after the scope + rifle branch merged and filled the Serpent's Charge and Space: **Rhino Charge + Space, Serpent Mass**. Report: **`FLEET_GAPS.md`** — and re-run `element_ability_table.py --gaps` rather than trusting either count | **OPEN — design** |
 | 5.11a | **A shared `ShipActionSO` mutated its own serialized field at runtime — and the dangerous copy was dead code.** `GrowSkimmerActionSO.ApplyMaxSizeDebuff` writes `maxSize.Value = original * multiplier`, awaits, then writes it back — on a SHARED asset, so in multiplayer two Rhinos debuffed at overlapping times race on one number and the second restore writes the FIRST one's already-multiplied value back as "original". This is the exact last-initializer-wins hazard `ARCHITECTURE.md §2(a)` and the vessel contract both name as their cautionary tale, and it predates this branch — found by D1 while proving the `Enabled: 0` flip on that same field is a no-op. Measured: **nothing calls it.** There are TWO methods by that name — the live caller (`VesselChangeSkimmerSizeByProjectileEffectSO`) holds a `ShieldSkimmerScaleConfigSO`, a different class whose version writes a private runtime `_maxScaleMultiplier` and never touches a serialized field. The uncalled one is deleted, which also unblocked 5.7's `maxSize`. **Sequel (Sep 2026):** the live one is deleted too, with the control-theft tier (`Docs/ELEMENTAL_ECONOMY.md §9`) — and it shared the hazard as well as the name, since ONE `ShieldSkimmerScaleConfig.asset` drives every Rhino, so writing runtime state on it still let one hit shrink every Rhino's blade. Runtime state made it safer, not safe | **SHIPPED** |
-| 5.11b | What survives 5.11a: `ShieldSkimmerScaleConfigSO` still keeps its debuff latch and multiplier on the SHARED asset, so two Rhinos still share one debuff and the second one's press is swallowed by `if (_isMaxSizeDebuffed) return` — its own comment says so. The fix is per-vessel state in the driver. **Establish first whether the debuff changes anything on screen**: that config's `prismMaxScale` is tooltipped *"the driver no longer reads it"*, so the answer may be no, and that is a playtest rather than a read | **OPEN — needs a playtest before a fix** |
+| 5.11b | **CLOSED by the control-theft tier (Sep 2026).** What survived 5.11a was `ShieldSkimmerScaleConfigSO`'s own debuff latch and multiplier on the SHARED asset, so two Rhinos shared one debuff and the second press was swallowed by `if (_isMaxSizeDebuffed) return`. Its only caller — `VesselChangeSkimmerSizeBySparrowFullAutoProjectileEffect` — is deleted with the control tier (`Docs/ELEMENTAL_ECONOMY.md §9`), so `ApplyMaxSizeDebuff`, `_isMaxSizeDebuffed` and `_maxScaleMultiplier` are gone and `MaxScale`/`PrismMaxScale` are the authored values. The playtest this row asked for is moot: the answer to *"does the debuff change anything on screen"* is now **nothing does** | **CLOSED — the mechanic was removed rather than fixed** |
 
 ## Rhino follow-ups (opened by `cece/serene-goodall-338ctt`)
 
@@ -416,3 +416,60 @@ of Time were fixed (Rhino ramp ceiling, Serpent boost speed) and four defensive 
   pair set, so under `ForceLegacyBoxInteraction` the Rhino gets the entry beat (jiggle + thud) and
   no sustained drag/grind. Acceptable while the shell tier is the shipped path; revisit if that
   flag is ever flipped on in a build.
+
+## Elemental economy follow-ups (opened by `cece/sweet-planck-1apw8u`)
+
+Logged, not acted on — each carries the measurement, per `/refactor`'s rule that a row with no
+measurement attached is worse than no row.
+
+- **`SlowExplosionImpactorDataContainer` is now EMPTY, so three abilities have no vessel-facing
+  effect.** Measured: `vesselExplosionEffects: []` and `explosionPrismEffects: []`, referenced by
+  `AOESlowExplosion.prefab` (the Rhino's sword crystal burst + the Rhino's vessel crystal blast)
+  and `AOEShieldedRingSpawner.prefab` (the Squirrel's vessel crystal blast). It held exactly one
+  effect (`VesselChangeSpeedByExplosionEffect`, an input mute) and that effect broke the
+  control-theft law, so emptying it was correct — but a blast that reaches a pilot and does nothing
+  is a hole, not a neutral outcome. The sanctioned filling is a Debuff-class
+  `VesselCombatHitByExplosionEffectSO` plus a drain priced through
+  `Tools/Build/author_combat_debuff_magnitudes.py`, which is a Broadside **pricing** decision, not
+  a wiring change. The container and both prefabs are deliberately KEPT: a dangling container
+  reference is worse than an empty one.
+- **`ScriptableEventSkimmerDebuffApplied` / `SkimmerDebuffPayload` have no producer.** Measured: the
+  only raiser was `VesselDamageBySkimmerEffectSO` (deleted); the only consumer is
+  `RhinoVesselHUDController.ShowDebuffTimer`, whose readout is ALREADY dark for an unrelated reason
+  (the ability lockup's retire sweep switched the Rhino's whole root-level status cluster off —
+  `Docs/ABILITY_LOCKUP.md`). Kept as a wire rather than deleted: it is the generic *"a skimmer
+  debuffed you"* vehicle and the next Debuff-class skimmer effect is its producer. Deciding between
+  "wire the next producer" and "delete channel + handler + payload" is a design call, not a cleanup.
+- **`ShieldSkimmerScaleConfigSO.prismMaxScale` / `PrismMaxScale` have no reader.** Measured: a
+  project-wide grep finds the `[SerializeField]`, the accessor, and nothing else (the unrelated
+  `BreakwaterStationBuilder.PrismMaxScale` is a different constant). Its only consumer was the
+  retired max-size debuff. Kept as serialized data rather than dropped inside a removal commit, so
+  the value is recoverable if the blade ever regains a prism-growth cap; delete it in a pass that
+  can also drop the key from `ShieldSkimmerScaleConfig.asset`.
+- **Six of `Rhino.prefab`'s eight `SkimmerImpactor` overrides are INERT and one of them is mine.**
+  Measured on the merged tree: that instance overrides `skimmerImpactorDataContainer` (the ONLY
+  field the script still declares), plus `skimmerPrismEffectsSO.Array.size`/`data[0..2]`,
+  `vesselSkimmerEffectsSO.Array.size`/`data[0]` and `skimmerPrismStayEffectsSO.Array.size` — and all
+  four of those field names are COMMENTED OUT in `SkimmerImpactor.cs` (three inline effect lists
+  plus a `// TODO -> Add to the container` stay-list). This branch removed the three entries that
+  pointed at a deleted effect; the remaining six are the same class and still read as wiring. Note
+  the surviving `vesselSkimmerEffectsSO.data[0]` points at the haptics effect, which IS live — via
+  the CONTAINER, not via this override. Removing them is a prefab-YAML edit with no behaviour to
+  change, and the real fix is to finish the container migration the comments describe.
+- **Two mode generators are red and were red before this branch** — proven by running both at
+  `origin/bleeding-edge`: `author_dogfight_assets.py --check` fails its asset-key validation on
+  `CallToActionTargetType` (a field the call-to-action retirement deleted from `SO_ArcadeGame`, so
+  re-running it would re-introduce a retired key), and `author_wildlife_liberation_assets.py`
+  aborts on the spent one-shot `controller field block not found in donor scene`. Both are already
+  recorded in CLAUDE.md as part of the six-red-generator finding. This branch touched both files
+  (a comment correction; and re-pointing the `Runtime Cell Data.asset` anchor off the removed
+  `OnFaunaHeartsChanged` onto `OnFaunaWaveSpawned`, which the abort still runs past) and does not
+  widen the failure.
+- **`check_using_directives.py` reports a false positive on a member named `Element`.**
+  `LifeformHeartSizeTests.cs` declares `public int Element;` in a nested struct and the gate reads
+  it as an unqualified use of `CosmicShore.Data.Element`. Proven pre-existing: the identifiers are
+  byte-identical at the base tip and the file compiles today, so a genuine missing `using` would be
+  a standing editor error. It surfaced only because a one-line prose edit pulled the file into the
+  gate's changed-file scope. This is the false-positive class CLAUDE.md already documents for that
+  gate (`Key`, `Direction`, `Frame`, `Stats`); the fix is to make the gate skip identifiers in a
+  declarator's NAME position, not to add a `using` that nothing needs.

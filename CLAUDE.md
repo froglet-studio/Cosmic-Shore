@@ -1288,7 +1288,11 @@ stopped looking.** Measured instances, all from rows somebody had written down c
 fields, behaviour-neutral" was ONE live field whose conversion would have silently switched off an
 ability (another system was WRITING it); "needs the editor" was wrong about which half was dangerous
 (the serialized DATA was); a documented shared-SO hazard was DEAD CODE with a live twin of the same
-method name on a different class; "five open design slots" was three; an audit's twelve
+method name on a different class (and the twin that survived that measurement shared the hazard as
+well as the name, so it went too — *"the dangerous one is dead code" is a finding about one copy,
+never a clearance for the other*); "wired into the Rhino" was a prefab-instance override on a field
+the script no longer declares, so the effect had never run once and Unity will never prune the line
+that says otherwise; "five open design slots" was three; an audit's twelve
 disagreements were five. So the skill's first deliverable is a MEASUREMENT, not a plan — and it
 carries the rest of what that costs: the guid-ownership sweep (never `grep -rl | head -1`), the rule
 that **incompleteness is a REPORT and inconsistency is a FIX** and the two must never be conflated,
