@@ -90,7 +90,7 @@ namespace CosmicShore.ScriptableObjects
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor, DisplayName);
+            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
             var toy = go.AddComponent<CellSelectorToy>();
             toy.Configure(this);
             toy.Initialize(this, context, placement);

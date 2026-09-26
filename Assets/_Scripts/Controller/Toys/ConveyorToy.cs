@@ -1,6 +1,5 @@
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -15,8 +14,8 @@ namespace CosmicShore.Gameplay
     ///
     /// Three things end the wander and all do the same thing (see <see cref="WanderwayRun"/>): the
     /// return station at the tail of your tether, another pass through this toy, and the overview
-    /// button (or gamepad Start), which drops freestyle. The label flips to show which way the next
-    /// pass will toggle it; the emblem's orbit speed carries the live state.
+    /// button (or gamepad Start), which drops freestyle. A pass reblooms the toy, and
+    /// the emblem's orbit speed carries the live state (a toy carries no text).
     ///
     /// The belt is a closed system: its whole conserved stock is built ONCE, behind a load veil, on
     /// the first wander, and every arrival after that is transport (the same mass, endlessly
@@ -38,18 +37,11 @@ namespace CosmicShore.Gameplay
         MicrosceneConveyor _conveyor;
         WanderwayRun _run;
         bool _conveyorPrimed;   // the stock is built ONCE - a later wander resumes, never re-primes
-        TMP_Text _label;
 
         public void Configure(ConveyorConfig cfg) => _cfg = cfg;
 
         protected override void OnInitialized()
         {
-            _label = GetComponentInChildren<TMP_Text>(true);
-
-            // Show the "off" affordance from the start so the first pass reads as a switch.
-            if (_label)
-                _label.text = $"{DisplayName}\n<size=60%>fly through to wander</size>";
-
             AttachEmblem(new EmblemSource(this), OrbitStopped);
         }
 
@@ -182,7 +174,7 @@ namespace CosmicShore.Gameplay
             if (_run && _run.IsRunning)
             {
                 _run.End(returnToCell: true);
-                return; // End raises the callback that flips the label
+                return; // End raises the callback that reblooms the toy
             }
 
             if (!_cfg.PrismPrefab)
@@ -239,7 +231,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Flip the toy's look so the player can read the belt state at a glance - and know the
         /// next pass toggles it the other way. The STATE itself is carried by the emblem's orbit
-        /// speed (see <see cref="Update"/>); this just retexts the label and reblooms to signal the
+        /// speed (see <see cref="Update"/>); this just reblooms to signal the
         /// in-place change (the established flip-set pattern).
         ///
         /// It used to also write <c>_body.sharedMaterial.color</c> - which was the SHARED, cached
@@ -249,11 +241,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ShowState(bool on)
         {
-            if (_label)
-                _label.text = on
-                    ? $"{DisplayName}\n<size=60%>wandering - fly through to come home</size>"
-                    : $"{DisplayName}\n<size=60%>fly through to wander</size>";
-
             Rebloom();
         }
     }

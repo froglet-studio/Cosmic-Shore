@@ -939,7 +939,6 @@ namespace CosmicShore.Gameplay
             if (bodySphere)
                 ToyFactory.AddSphereBody(go.transform, radius, accent);
             if (model) model.transform.SetParent(go.transform, false);
-            ToyFactory.AddRingedLabel(go.transform, label, accent, ringRadius, radius);
 
             var station = go.AddComponent<ToyMatrixStation>();
             station.Bind(Context);
