@@ -90,6 +90,11 @@ stale card. The one sanctioned opt-out for a real screenshot is `HAND_CAPTURED` 
 - **A course generator needs the controller's inputs** (`InnerRadius`/`OuterRadius` from
   `ResolveShell`, gate count from `EndConditionOverrides`, per-lap split): `Generate` with bare
   `ForIntensity` settings returns null.
+- **A merge of the base branch can stale a card you never touched.** The card is a pure function
+  of shipped generators, courses and assets, so ANY upstream edit to one of them moves it: merging
+  `bleeding-edge` into this skill's own branch staled Headlong's card because a parallel branch had
+  retuned `HeadlongCircuit.cs`. Run `--check` after every merge (not only after your own edits),
+  re-render just the named card, and LOOK at it before committing - a re-render is a new picture.
 - **Seeds are int32.** Mask derived seeds to non-negative 31 bits on both sides of the boundary.
 
 ## 4. What this is NOT
