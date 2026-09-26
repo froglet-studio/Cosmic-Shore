@@ -19,7 +19,7 @@ MonoBehaviour:
   petalCellHeight: 88
   petalFlowerSize: 60
   iconBoxSize: 60
-  cardPitch: 116
+  cardPitch: 128
   rowMarginRight: 40
   rowMarginBottom: 44
   chipHeight: 24

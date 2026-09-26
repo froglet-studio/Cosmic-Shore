@@ -52,6 +52,9 @@ namespace CosmicShore.Editor
         /// <summary>How far the two plates may drift from mirror heights before it reads as a coffin.</summary>
         const float MaxPlateImbalance = 0.25f;
 
+        // The style's geometry is authored in reference px at 1920x1080.
+        const float ReferenceWidth = 1920f;
+
         [MenuItem("FrogletTools/Vessels/Audit Ability Lockups")]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Ability lockup: style sanity + per-vessel icon fit inside the totem card.")]
@@ -183,6 +186,23 @@ namespace CosmicShore.Editor
                 report.AppendLine($"  ✗ cards sit {betweenCards:0.#} apart but a totem's own plates sit " +
                                   $"{style.cellGap} apart - the row groups the wrong way and four cards " +
                                   "read as one strip.");
+                problems++;
+            }
+
+            // The pitch is the dial somebody reaches for to space the cards, and nothing else in the
+            // style says how WIDE the row it lays out ends up. Card count comes from the view's own
+            // display orders, so adding a core ability tightens this rather than invalidating it.
+            int widestRow = VesselHUDView.AbilityDisplayOrder.Length +
+                            VesselHUDView.CoreAbilityDisplayOrder.Length;
+            float fromRightEdge = (widestRow - 1) * style.cardPitch + style.plateWidth + style.rowMarginRight;
+            report.AppendLine($"       widest row {widestRow} cards → {fromRightEdge:0.#} px from the right " +
+                              $"edge ({fromRightEdge / ReferenceWidth:P0} of a {ReferenceWidth:0} reference canvas)");
+            if (fromRightEdge >= ReferenceWidth * 0.5f)
+            {
+                float maxPitch = (ReferenceWidth * 0.5f - style.rowMarginRight - style.plateWidth) / (widestRow - 1);
+                report.AppendLine($"  ✗ that crosses the middle of the screen, where the bottom-centre HUD " +
+                                  $"lives, and on a narrower aspect it runs off the left. Max pitch at " +
+                                  $"{widestRow} cards: {maxPitch:0.#}.");
                 problems++;
             }
             if (!Mathf.Approximately(style.chipGap, style.cellGap))

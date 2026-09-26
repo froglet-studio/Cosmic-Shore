@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using UnityEngine;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 
 namespace CosmicShore.Tests
 {
@@ -19,6 +20,9 @@ namespace CosmicShore.Tests
     public class AbilityLockupStyleTests
     {
         const float MinMarginPx = 8f;
+
+        // The style's own header says its geometry is authored in reference px at 1920x1080.
+        const float ReferenceWidth = 1920f;
 
         static AbilityLockupStyleSO Load()
         {
@@ -162,6 +166,28 @@ namespace CosmicShore.Tests
             Assert.Greater(betweenCards, s.cellGap,
                 $"cards sit {betweenCards} apart but a totem's own plates sit {s.cellGap} apart - " +
                 "the row would group the wrong way");
+        }
+
+        [Test]
+        public void Row_StaysInsideTheRightHalfOfTheScreen()
+        {
+            var s = Load();
+
+            // The pitch is a dial somebody reaches for to space the cards, and nothing else in the
+            // style says how WIDE the row it lays out ends up. The widest row the fleet authors is
+            // read from the view's own two display orders rather than typed, so adding a core
+            // ability tightens this automatically instead of quietly invalidating it.
+            int cards = VesselHUDView.AbilityDisplayOrder.Length +
+                        VesselHUDView.CoreAbilityDisplayOrder.Length;
+            float rowWidth = (cards - 1) * s.cardPitch + s.plateWidth;
+            float fromRightEdge = rowWidth + s.rowMarginRight;
+
+            Assert.Less(fromRightEdge, ReferenceWidth * 0.5f,
+                $"{cards} cards at pitch {s.cardPitch} reach {fromRightEdge} from the right edge of " +
+                $"a {ReferenceWidth}-wide reference canvas - past half the screen the row crosses " +
+                "the middle, where the bottom-centre HUD lives, and on a narrower aspect it runs " +
+                "off the left. Max pitch at this card count: " +
+                $"{(ReferenceWidth * 0.5f - s.rowMarginRight - s.plateWidth) / (cards - 1):0.#}");
         }
 
         [Test]

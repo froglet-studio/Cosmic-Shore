@@ -401,6 +401,34 @@ defects were real, both present as *this card is bigger than the others*, and th
 told them apart was measuring the frame instead of reading the source. *Measure the picture before
 re-reading the code that draws it.*
 
+## Seventh pass (2026-09-26): the row's spacing, doubled fleet-wide
+
+Once the four authored cards stopped drawing at 0.7 they drew at their real 104-unit plate width, so
+the air between them closed from the ~43 units the shrunk cards left to the 12 the pitch actually
+lays out — and the row read as one strip. The spacing was doubled on request:
+`AbilityLockupStyle.cardPitch` **116 → 128**, i.e. the gap between adjacent plates 12 → 24, which is
+`plateWidth + 2 × cellGap` → `plateWidth + 4 × cellGap`.
+
+**It is ONE field on the shared style asset, which is the whole reason the request "do that for all
+vessels, this should be consistent" needed no per-vessel work**: the lockup owns the row on every
+hull (`Docs/ABILITY_LOCKUP.md`), a vessel cannot author its own pitch, and the element flowers ride
+the same columns — so both halves of every totem move together and consistency is by construction
+rather than by six edits that could drift.
+
+What it costs: the Squirrel's five-card row now spans **616 units** against 568, reaching **656 of a
+1920 reference canvas** (34%) once `rowMarginRight` is counted. Nothing else moves — plate geometry,
+icon kerning, chip placement and the generated Space readout are all absolute and unchanged, which
+`check_squirrel_card_fit.py` re-confirms.
+
+**The pitch had no ceiling and now has one.** It is the dial somebody reaches for to space the cards
+and nothing in the style said how wide the row it lays out ends up, so both `AbilityLockupStyleTests`
+and the auditor now assert `(cards − 1) × cardPitch + plateWidth + rowMarginRight` stays inside the
+right half of the reference canvas — past the middle the row crosses the bottom-centre HUD, and on a
+narrower aspect it runs off the left. The card count is read from `VesselHUDView`'s own
+`AbilityDisplayOrder` + `CoreAbilityDisplayOrder` rather than typed, so **adding a core ability
+tightens the bound automatically instead of quietly invalidating it** — the same argument as deriving
+an icon's scale from `iconBoxSize`. Max pitch at five cards: **204**.
+
 ## Findings worth more than the change
 
 **1. `superSteal` already existed and nobody passed it.** `PrismTeamManager.Steal`'s third parameter
@@ -503,6 +531,10 @@ Nothing below has been run; there is no Unity in this session.
    toggle freestyle) and look again — that is the path that used to snap the four authored hosts
    back to the prefab's 0.7, and it only shows after an `OnDisable`. If a card shrinks, its
    `AbilityButtonPressJuice` captured a rest before `PlaceHost` wrote one.
+6i. **The row's spacing** — the seventh pass. The gap between two adjacent plates must read as
+   clearly wider than the gap between a card's own two plates (24 against 6), on EVERY vessel, not
+   just this one: open the Dolphin, Scarab and Sparrow HUDs too and confirm their rows moved with
+   it. Then confirm the leftmost card is still comfortably clear of the screen's middle.
 7. **Iron Grip** — skim an opposing **shielded** prism below Space 5: it should lose its shield and
    keep its domain. At Space 5: it should change domain **and keep the shield**. Then confirm a
    **super**-shielded prism is refused at both levels.

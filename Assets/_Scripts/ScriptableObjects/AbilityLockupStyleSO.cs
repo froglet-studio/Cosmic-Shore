@@ -75,11 +75,13 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Row (the lockup owns the whole row, on every vessel)")]
         [Tooltip("Centre-to-centre distance between cards. One number for the fleet - a vessel " +
-                 "cannot space its own row. Authored as plateWidth + 2x cellGap, so the space " +
-                 "BETWEEN totems is exactly twice the space WITHIN one: the same relationship as " +
-                 "inter-word against inter-letter spacing, and what makes four cards read as four " +
-                 "objects rather than one strip.")]
-        [Min(1f)] public float cardPitch = 116f;
+                 "cannot space its own row, so the spacing is consistent by construction. Authored " +
+                 "as plateWidth + 4x cellGap, so the space BETWEEN totems is four times the space " +
+                 "WITHIN one: the same relationship as inter-word against inter-letter spacing, and " +
+                 "what makes four cards read as four objects rather than one strip. It was 2x " +
+                 "(pitch 116) until the rest-scale fix let the four authored cards draw at their " +
+                 "real 104 width and closed the row up.")]
+        [Min(1f)] public float cardPitch = 128f;
 
         [Tooltip("Distance from the screen's RIGHT edge to the right edge of the last card.")]
         public float rowMarginRight = 40f;
