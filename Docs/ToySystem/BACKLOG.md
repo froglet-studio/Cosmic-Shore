@@ -285,7 +285,7 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   autopilot window it will drift toward `MinimumSpeed`; fine for the seamless-handoff goal, tune
   if a longer hold is wanted.
 
-## Lifeform Matrix follow-ups
+## Spawn Matrix follow-ups
 
 **Kingdom pass (shipped) — verification, none of it play-verified:**
 
@@ -533,7 +533,7 @@ unchanged by this work.
   `ToyEmblem` — raise `SatelliteRadiusBodies` first, then `OrbitRadiusBodies`, but the outer extent
   (`OrbitRadiusBodies + SatelliteRadiusBodies`) × R must stay under the 42u trigger radius.
 - **Two pre-existing material leaks, deliberately left in scope-free.** `VesselChangerToy.BuildStation`
-  and `LifeformMatrixToy.AddSpeciesModel` still call the COLOUR overload of `ToyModelBuilder.TryBuild`
+  and `SpawnMatrixToy.AddSpeciesModel` still call the COLOUR overload of `ToyModelBuilder.TryBuild`
   on the matrix-station path, orphaning one `Material` per model per matrix open (UnityEngine.Objects
   are never GC'd). The new `Material` overload — which the emblems use, and which lets one owner
   share and destroy a single material — makes adopting the same pattern there a small follow-up. Not
@@ -610,7 +610,7 @@ becomes more pressing, not less, if more grown-environment cells ship.
 
 ## Vessel matrices — live hulls (2026-08-25)
 
-Stations in the vessel changer and the Lifeform Matrix hangar now show the ACTUAL ship
+Stations in the vessel changer and the Spawn Matrix hangar now show the ACTUAL ship
 (`ToyVesselRoster.TryBuildLiveHull`) rather than a flat silhouette, with the vessel vision band
 supplying the domain read (`Docs/VESSEL_VISION.md`, `Docs/ToySystem/ARCHITECTURE.md` § "Vessel
 Changer"). Open items:
@@ -698,7 +698,7 @@ Follow-ups, none blocking:
   density-grid centroids, and a thinned world's own mass competes with the hull's tight
   cluster. If playtests show waves ignoring the Ark, the honest lever is the grid (hull
   plates are dense and re-filed every 2.5 s), not a scripted goal.
-- **An AI companion released from the Lifeform Matrix stays home** during a voyage (it is
+- **An AI companion released from the Spawn Matrix stays home** during a voyage (it is
   not leashed, not teleported). Fine for v1; a future pass could invite the whole party's
   vessels aboard.
 - **The Arkway and the Wanderway can technically run together** — same class as two conveyor

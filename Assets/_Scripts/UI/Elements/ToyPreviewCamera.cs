@@ -56,7 +56,7 @@ namespace CosmicShore.UI
     /// the two previews can never photograph each other.</para>
     ///
     /// <para><b>And it can WATCH — a live thing in the world the toy just made.</b> A Spawn press
-    /// on the Lifeform Matrix releases a creature into the cell, and telling the player it
+    /// on the Spawn Matrix releases a creature into the cell, and telling the player it
     /// happened is weaker than showing it: <see cref="Watch"/> turns the camera onto that object
     /// where it landed, at a radius the option states (the creature blooms in from zero, so its
     /// own bounds say nothing on the frame it appears), and goes back to the toy when the target

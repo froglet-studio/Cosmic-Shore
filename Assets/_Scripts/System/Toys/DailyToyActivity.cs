@@ -187,7 +187,7 @@ namespace CosmicShore.Core
                 // Only the TOP LAYER, and that is a stated limit rather than an oversight: every
                 // toy that offers an activity today offers it flat (the gallery's sixteen canvases,
                 // the Wanderway's one "Wander", the Arkway's one "Set sail"), while walking every
-                // BRANCH to look for a nested one would pay the Lifeform Matrix's whole species
+                // BRANCH to look for a nested one would pay the Spawn Matrix's whole species
                 // enumeration to draw a menu button. A toy that nests its activities is not in this
                 // pool; widening it is one recursive call, at that cost.
                 _optionScratch.Clear();

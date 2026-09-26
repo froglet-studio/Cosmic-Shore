@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// game - is fast), and the multi-second world build happens only when a player flies into
     /// a model and asks for it.
     /// </summary>
-    public sealed class CellSelectorToy : MatrixToy, IToyShellSurface
+    public sealed class CellSelectorToy : MatrixToy
     {
         CellSelectorToyDefinitionSO _def;
 
@@ -38,7 +38,6 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<CellConfigDataSO, CellMiniatureBuilder.Miniature> _miniatures = new();
 
         // The configs the open matrix is showing, index-aligned with _stationRoots.
-        readonly List<CellConfigDataSO> _offered = new();
         readonly List<Transform> _stationRoots = new();
         Cell _offeringCell;
 
@@ -137,23 +136,79 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        // ── The one declaration ──────────────────────────────────────────────
+
+        /// <summary>
+        /// The cell's own rotation, the world you are in flagged as current. Unlike the vessel
+        /// changer the current row stays ACTIONABLE and keeps its station: choosing the world you
+        /// are already in IS the freestyle reset, which is why this toy does not set
+        /// <see cref="MatrixToy.WorldOmitsCurrentOption"/>.
+        /// </summary>
+        protected override void BuildOptions(List<ToyShellOption> into)
+        {
+            var cell = HostCell;
+            if (!cell) return;
+
+            var authored = _def ? _def.Cells : null;
+            var source = authored is { Count: > 0 } ? authored : cell.AvailableConfigs;
+            if (source == null) return;
+
+            var seen = new HashSet<CellConfigDataSO>();
+            foreach (var config in source)
+            {
+                if (!config || !seen.Add(config)) continue;
+
+                var capturedConfig = config;
+                var capturedCell = cell;
+                bool isCurrent = config == cell.Config;
+
+                into.Add(new ToyShellOption
+                {
+                    Label = DisplayNameOf(config),
+                    Detail = isCurrent
+                        ? "you are here - choose it again to reset"
+                        : config.EnvironmentPrefab ? ""
+                        : Cell.IsBareCanvas(config) ? "no environment"
+                        // Environment-free is how a world is BUILT, not what it CONTAINS: this
+                        // one has no lay to picture because its whole world is GROWN from its
+                        // spawn profile (Docs/ECOSYSTEM.md §36.10, met by a third reader).
+                        : "grown, not laid",
+                    Accent = Definition ? Definition.AccentColor : Color.white,
+                    IsCurrent = isCurrent,
+                    Payload = capturedConfig,
+                    Apply = () => SelectCell(capturedCell, capturedConfig),
+                    BuildPreview = parent => BuildShellPreview(capturedConfig, parent),
+                });
+            }
+        }
+
         // ── Layout ───────────────────────────────────────────────────────────
 
-        protected override int StationCount => _offered.Count;
         protected override float StationSpacing => _def.StationSpacing;
         protected override float StationRadius => _def.StationRadius;
         protected override float MatrixDistanceFactor => _def.MatrixDistanceFactor;
 
         protected override void OnActivated(IVesselStatus localVessel)
         {
-            if (IsMatrixOpen)
+            if (!IsMatrixOpen)
             {
-                CloseMatrix();
-                return;
+                // Latched for the stations to label "current" against, and refused outright
+                // mid-swap: the cell then has no settled identity, so a matrix built now would
+                // mislabel which world is current (and which pass is the reset).
+                _offeringCell = HostCell;
+                if (!_offeringCell)
+                {
+                    CSDebug.LogWarning("[CellSelector] No active Cell in the scene - nothing to select.");
+                    return;
+                }
+                if (_offeringCell.IsSwappingConfig)
+                {
+                    CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                        "[CellSelector] A cell swap is in flight - try again once it settles.");
+                    return;
+                }
+                _stationRoots.Clear();
             }
-
-            // Resolve what to offer BEFORE the base opens - StationCount reads from it.
-            if (!ResolveOffer()) return;
             base.OnActivated(localVessel);
         }
 
@@ -172,51 +227,14 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>
-        /// Fill <see cref="_offered"/> with the cells to show. The definition's explicit list when
-        /// authored, else the host Cell's own rotation - reading the Cell is the default on
-        /// purpose, since it is the single source of truth for what this scene's cell can be.
-        /// </summary>
-        bool ResolveOffer()
-        {
-            _offered.Clear();
-            _stationRoots.Clear();
-            _offeringCell = HostCell;
-
-            if (!_offeringCell)
-            {
-                CSDebug.LogWarning("[CellSelector] No active Cell in the scene - nothing to select.");
-                return false;
-            }
-            if (_offeringCell.IsSwappingConfig)
-            {
-                // Mid-swap the cell has no settled identity, so a matrix built now would
-                // mislabel which world is current (and which pass is the reset).
-                CSDebug.LogVerbose(CSLogChannel.ToyBox, "[CellSelector] A cell swap is in flight - try again once it settles.");
-                return false;
-            }
-
-            var authored = _def ? _def.Cells : null;
-            var source = authored is { Count: > 0 } ? authored : _offeringCell.AvailableConfigs;
-            if (source == null) return false;
-
-            foreach (var config in source)
-                if (config && !_offered.Contains(config))
-                    _offered.Add(config);
-
-            if (_offered.Count != 0) return true;
-            CSDebug.LogWarning($"[CellSelector] Cell {_offeringCell.ID} lists no CellConfigs - nothing to select.");
-            return false;
-        }
-
         // ── Stations: the model, and nothing but the model ───────────────────
 
-        protected override void BuildStation(int index, Transform parent, Vector3 position, float radius)
+        protected override void BuildStation(ToyShellOption option, Transform parent, Vector3 position, float radius)
         {
-            var config = _offered[index];
-            bool isCurrent = config == _offeringCell.Config;
+            var config = (CellConfigDataSO)option.Payload;
+            bool isCurrent = option.IsCurrent;
 
-            var station = CreateStation(parent, position, DisplayNameOf(config), radius * 1.6f);
+            var station = CreateStation(option, parent, position, DisplayNameOf(config), radius * 1.6f);
             _stationRoots.Add(station.transform);
 
             // No shell, no cage: the scale model is the station. It streams in after every
@@ -239,17 +257,15 @@ namespace CosmicShore.Gameplay
                     haloSpin.Configure(Vector3.forward, -15f);
             }
 
-            var capturedConfig = config;
-            var capturedCell = _offeringCell;
-            station.OnVesselPassed = () => SelectCell(capturedCell, capturedConfig);
+            // The action is the option's own Apply, wired by CreateStation - see MatrixToy.
         }
 
         protected override void OnMatrixOpened()
         {
             var pending = new List<(Transform host, CellConfigDataSO config)>();
-            for (int i = 0; i < _offered.Count && i < _stationRoots.Count; i++)
-                if (_offered[i].EnvironmentPrefab)
-                    pending.Add((_stationRoots[i], _offered[i]));
+            for (int i = 0; i < WorldOptions.Count && i < _stationRoots.Count; i++)
+                if (WorldOptions[i].Payload is CellConfigDataSO config && config.EnvironmentPrefab)
+                    pending.Add((_stationRoots[i], config));
 
             CancelStream();
             _streamCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
@@ -257,7 +273,7 @@ namespace CosmicShore.Gameplay
 
             if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
-                    $"[CellSelector] {_offered.Count} cells offered " +
+                    $"[CellSelector] {WorldOptions.Count} cells offered " +
                     $"(current: {DisplayNameOf(_offeringCell.Config)}); {pending.Count} scale models building.");
         }
 
@@ -309,58 +325,19 @@ namespace CosmicShore.Gameplay
 
         // ── App-shell face ───────────────────────────────────────────────────
 
-        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+        // There is no second option list here: MatrixToy answers the window with this toy's own
+        // BuildOptions above.
 
-        // Mid-swap the cell has no settled identity, so the list would mislabel which world is
-        // current - the same reason ResolveOffer refuses to open the matrix then.
-        bool IToyShellSurface.ShellAvailable
+        /// <summary>
+        /// Mid-swap the cell has no settled identity, so nothing can honestly be labelled
+        /// current - the same reason a pass refuses to open the matrix then.
+        /// </summary>
+        protected override bool ShellAvailable
         {
             get
             {
                 var cell = HostCell;
                 return cell && !cell.IsSwappingConfig;
-            }
-        }
-
-        /// <summary>
-        /// The cell's own rotation, the world you are in flagged as current. Choosing it is the
-        /// freestyle RESET, exactly as flying its haloed model is - so unlike the other surfaces
-        /// the current row stays actionable.
-        /// </summary>
-        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
-        {
-            var cell = HostCell;
-            if (!cell) return;
-
-            var authored = _def ? _def.Cells : null;
-            var source = authored is { Count: > 0 } ? authored : cell.AvailableConfigs;
-            if (source == null) return;
-
-            var seen = new HashSet<CellConfigDataSO>();
-            foreach (var config in source)
-            {
-                if (!config || !seen.Add(config)) continue;
-
-                var capturedConfig = config;
-                var capturedCell = cell;
-                bool isCurrent = config == cell.Config;
-
-                into.Add(new ToyShellOption
-                {
-                    Label = DisplayNameOf(config),
-                    Detail = isCurrent
-                        ? "you are here - choose it again to reset"
-                        : config.EnvironmentPrefab ? ""
-                        : Cell.IsBareCanvas(config) ? "no environment"
-                        // Environment-free is how a world is BUILT, not what it CONTAINS: this
-                        // one has no lay to picture because its whole world is GROWN from its
-                        // spawn profile (Docs/ECOSYSTEM.md §36.10, met by a third reader).
-                        : "grown, not laid",
-                    Accent = Definition ? Definition.AccentColor : Color.white,
-                    IsCurrent = isCurrent,
-                    Apply = () => SelectCell(capturedCell, capturedConfig),
-                    BuildPreview = parent => BuildShellPreview(capturedConfig, parent),
-                });
             }
         }
 

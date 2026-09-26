@@ -415,7 +415,7 @@ merge without a conflict in that file. Do not edit it on this branch for that re
   on an Urchin (today only Cellular Duel's ownership swap) would throw and leave the vessel
   uncontrollable.
 - **`ram: 1` is a FLEET-WIDE AI change made for one mode.** `Urchin.prefab` is shared, so every
-  AI Urchin in every context — the menu lava-lamp autopilot, the Lifeform Matrix's vessel hangar,
+  AI Urchin in every context — the menu lava-lamp autopilot, the Spawn Matrix's vessel hangar,
   any future mode that does not lock its hull — now flies at full throttle whenever it is lined
   up on its objective, not just here. It has the Rhino's precedent and it is AI-only, so no human
   pilot is affected; if it ever needs to be narrower, the honest lever is a per-mode setter rather

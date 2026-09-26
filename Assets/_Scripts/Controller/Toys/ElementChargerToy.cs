@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// <para>Elements are told apart by SHAPE, never by colour (colour belongs to domains): every
     /// crystal wears the toy's one accent material and each station's ring is Neutral.</para>
     /// </summary>
-    public sealed class ElementChargerToy : MatrixToy, IToyShellSurface
+    public sealed class ElementChargerToy : MatrixToy
     {
         /// <summary>The level range <see cref="ResourceSystem.GetLevel"/> reports (normalized
         /// -0.5..1.5 × 10).</summary>
@@ -49,6 +49,11 @@ namespace CosmicShore.Gameplay
 
         ElementChargerToyDefinitionSO _def;
 
+        // The station bodies of the OPEN matrix, by element - so a grant can punch the station it
+        // came from. Empty while the matrix is shut, which is what makes the punch a no-op when
+        // the grant arrives from the menu window instead.
+        readonly Dictionary<Element, Transform> _stationBodies = new();
+
         public void Configure(ElementChargerToyDefinitionSO definition) => _def = definition;
 
         int LevelsPerPass => _def ? _def.LevelsPerPass : 5;
@@ -64,11 +69,13 @@ namespace CosmicShore.Gameplay
             => Mathf.Clamp(currentLevel + Mathf.Max(0, levelsPerPass), MinLevel, MaxLevel);
 
         /// <summary>
-        /// Which element station <paramref name="index"/> of the row carries. The row is built along
-        /// the toy's own +right, and the toy FACES the cell centre - so for a pilot flying out from
-        /// the centre through the toy (the approach the matrix is laid for), the toy's +right is the
-        /// pilot's LEFT and index 0 lands on the pilot's right. Reversing the index is what puts
-        /// Charge on the left as you arrive, reading the way the HUD does.
+        /// Which element grid SLOT <paramref name="index"/> of the row carries. The row is built
+        /// along the toy's own +right, and the toy FACES the cell centre - so for a pilot flying
+        /// out from the centre through the toy (the approach the matrix is laid for), the toy's
+        /// +right is the pilot's LEFT and slot 0 lands on the pilot's right. Reversing the slot is
+        /// what puts Charge on the left as you arrive, reading the way the HUD does. The options
+        /// themselves stay in HUD order (the window reads them that way); <see cref="StationSlot"/>
+        /// is where the reversal is applied, and it is this function's inverse.
         /// </summary>
         public static Element ElementAtStation(int index)
             => Elements[Mathf.Clamp(Elements.Length - 1 - index, 0, Elements.Length - 1)];
@@ -124,7 +131,6 @@ namespace CosmicShore.Gameplay
 
         // ── Layout: one row, charge → time ───────────────────────────────────
 
-        protected override int StationCount => Elements.Length;
         protected override float StationSpacing => _def ? _def.StationSpacing : 60f;
         protected override float StationRadius => Placement.BodyRadius > 0.01f ? Placement.BodyRadius : 20f;
         protected override float MatrixDistanceFactor => _def ? _def.MatrixDistanceFactor : 3f;
@@ -132,10 +138,13 @@ namespace CosmicShore.Gameplay
         /// <summary>The elements are an ORDERED set, so they sit on one line rather than a 2×2.</summary>
         protected override int MatrixColumns(int count) => count;
 
-        protected override void BuildStation(int index, Transform parent, Vector3 position, float radius)
+        /// <summary>Options are in HUD order; the row is laid reversed (see <see cref="ElementAtStation"/>).</summary>
+        protected override int StationSlot(int index, int count) => count - 1 - index;
+
+        protected override void BuildStation(ToyShellOption option, Transform parent, Vector3 position, float radius)
         {
-            var element = ElementAtStation(index);
-            var station = CreateStation(parent, position, element.ToString(), radius * 1.6f);
+            if (option.Payload is not Element element) return;
+            var station = CreateStation(option, parent, position, element.ToString(), radius * 1.6f);
 
             var body = new GameObject("Body").transform;
             body.SetParent(station.transform, false);
@@ -148,11 +157,24 @@ namespace CosmicShore.Gameplay
             else
                 ToyFactory.AddSphereBody(body, radius, Definition.AccentColor);
 
-            station.OnVesselPassed = () =>
-            {
-                if (Grant(element))
-                    Punch(body, this.GetCancellationTokenOnDestroy()).Forget();
-            };
+            // The action is the option's own Apply, wired by CreateStation - see MatrixToy. The
+            // punch lives inside that Apply (ChargeAndAcknowledge), so the station and the window
+            // run the same code.
+            _stationBodies[element] = body;
+        }
+
+        protected override void OnMatrixClosed() => _stationBodies.Clear();
+
+        /// <summary>
+        /// The option's Apply, for BOTH surfaces: charge, and - if the matrix is open - let that
+        /// element's station acknowledge it. From the window the matrix is usually shut and the
+        /// punch is simply skipped.
+        /// </summary>
+        void ChargeAndAcknowledge(Element element)
+        {
+            if (!Grant(element)) return;
+            if (_stationBodies.TryGetValue(element, out var body) && body)
+                Punch(body, this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         // ── The grant ────────────────────────────────────────────────────────
@@ -202,13 +224,11 @@ namespace CosmicShore.Gameplay
             if (body) body.localScale = Vector3.one;
         }
 
-        // ── App-shell face ───────────────────────────────────────────────────
-
-        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+        // ── The one declaration ──────────────────────────────────────────────
 
         // Mid vessel-swap there is no hull to charge; the card greys out rather than offering a
         // grant that would land on nothing.
-        bool IToyShellSurface.ShellAvailable
+        protected override bool ShellAvailable
         {
             get
             {
@@ -222,7 +242,7 @@ namespace CosmicShore.Gameplay
         /// at. It does not need freestyle: element levels live on the vessel, so a charge applied
         /// from the menu is still there when you take the stick.
         /// </summary>
-        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
+        protected override void BuildOptions(List<ToyShellOption> into)
         {
             var resources = ResolveLocalVessel()?.ResourceSystem;
             Color accent = Definition ? Definition.AccentColor : Color.white;
@@ -244,7 +264,8 @@ namespace CosmicShore.Gameplay
                     Detail = detail,
                     Accent = accent,
                     CommitVerb = "Charge",
-                    Apply = () => Grant(captured),
+                    Payload = captured,
+                    Apply = () => ChargeAndAcknowledge(captured),
                     BuildPreview = parent => BuildShellPreview(captured, parent),
                 });
             }

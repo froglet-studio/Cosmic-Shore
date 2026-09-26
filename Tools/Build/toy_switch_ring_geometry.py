@@ -52,11 +52,11 @@ TEXT_TYPES = re.compile(r"\b(TMP_Text|TextMeshPro|TextMeshProUGUI|TextMesh|Unity
 # `CreateBareRoot(..., radius * 1.6f)` is the shared station trigger factor, repeated at every
 # station builder. A VARIANT station uses the plain `StationRadius` like the species and hangar
 # rows: it used to be `StationRadius * (1 + 0.35 * (L - 1))`, but lifeform levels are retired
-# (Docs/ECOSYSTEM.md §40) and LifeformMatrixToy.BuildVariantGrid now passes `_def.StationRadius`.
+# (Docs/ECOSYSTEM.md §40) and SpawnMatrixToy.BuildVariantGrid now passes `_def.StationRadius`.
 # The variant's own crystal is scaled by its authored heart size, which is a MODEL-child scale
 # and does not touch the station radius this file models.
 STATION_TRIGGER_FACTOR = 1.6
-# LifeformMatrixToy.BuildKingdomGrid: the KINGDOM row (Fauna / Flora / Vessels) is half again the
+# SpawnMatrixToy.BuildKingdomGrid: the KINGDOM row (Fauna / Flora / Vessels) is half again the
 # radius of the species stations behind it, so the first row you meet is the biggest thing there.
 LIFEFORM_KINGDOM_FACTOR = 1.5
 # DomainChangerToySet.HubBodyFraction: its slots are switches now (the cone body they used to wear
@@ -104,7 +104,7 @@ def main() -> int:
 
     cell = asset("Toy_CellSelector")
     vessel = asset("Toy_VesselChanger")
-    life = asset("Toy_LifeformMatrix")
+    life = asset("Toy_SpawnMatrix")
     paint = asset("Toy_Painting")
 
     cell_r = serialized_float(cell, "stationRadius", 18)

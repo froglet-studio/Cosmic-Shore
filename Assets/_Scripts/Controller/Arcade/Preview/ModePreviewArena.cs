@@ -328,7 +328,7 @@ namespace CosmicShore.Gameplay
         /// which left LifeformsKilled cards with nothing to hunt. The card authors a SMALL
         /// species and a tiny count (<see cref="ModePreviewDefinitionSO.PreviewFauna"/>),
         /// released through the canonical <see cref="CellLifeSpawnerBase"/> path on a runtime
-        /// clone - the Lifeform Matrix bench's idiom - so each creature registers in the cell's
+        /// clone - the Spawn Matrix bench's idiom - so each creature registers in the cell's
         /// lifeform book and the strike retires it with the world. Released in
         /// <see cref="Domains.Blue"/>: the neutral sentinel is hostile to every pilot, so
         /// anyone's rounds land. Ecology protocol: a bounded explicit release (production, which

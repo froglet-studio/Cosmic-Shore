@@ -303,7 +303,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     20 units behind the hull. That is 4× smaller than the next-smallest trail in the fleet
     (Squirrel 3.09, Serpent 3.00, Manta 5.00, Dolphin 12.00) and at any distance it reads as
     *no trail at all* — which is how it was found, via an AI Rhino released by the freestyle
-    Lifeform Matrix's hangar.
+    Spawn Matrix's hangar.
 
     **Do not fix the ordering on its own — it would make the Rhino worse.** `Step` clamps
     `XScaler`/`YScaler`/`ZScaler` against `maxSize` but never clamps `Gap`, and

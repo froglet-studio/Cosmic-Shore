@@ -1360,7 +1360,7 @@ Shared `MultiplayerHUD`. Team crystals-remaining + team panels; **deliberately n
 `Assets/_Scripts/UI/MenuMiniGameHUD.cs`; hierarchy `Menu_Main → UI_Refactored → Game UI`. The entire freestyle HUD is:
 - **One button** — the same domain-volume hex gauge, top-right; tapping it (or gamepad **Start**) exits freestyle back to the menu.
 - The **vessel HUD** (per-vessel gauges + element flowers + ability row, §3.6) — reparented in and shown/hidden with the freestyle transitions, re-shown after a mid-freestyle vessel swap.
-- The **Vessel Selection Panel**: seven scene-placed vessel cards (Rhino, Dolphin, Manta, Squirrel, Serpent, Sparrow, **Urchin — which has no vessel HUD**), Resume/Pause buttons. Opening it re-engages autopilot; Resume performs a networked vessel swap and restores control after ~600ms.
+- ~~The **Vessel Selection Panel**~~ — **RETIRED 2026-09-23.** Seven scene-placed vessel cards (Rhino, Dolphin, Manta, Squirrel, Serpent, Sparrow, Urchin), never updated for the Scarab or the Butterfly. This entry described it as if it opened; measured, its GameObject was `m_IsActive: 0`, `Awake` called `ui.Hide()`, and `Open()` had zero callers in C# and zero persistent listeners — so it was unreachable, and its staleness could never surface. Hull selection is the **Vessel Changer toy** (fly it, or open it in the menu Toy Box).
 - The **pause menu**, instantiated at runtime and pre-warmed.
 - No score, no timer, no toasts, no ready button, no countdown, no end condition — by design (freestyle is a toybox).
 
@@ -1624,7 +1624,7 @@ Rules already in force going forward (from the doc): one canvas asset; variants 
 | **Settings scripts** | Legacy `SettingsModal.cs` shim + live `GameSettingsPanelController` on the same prefab; four generations of options-panel prefabs exist |
 | **Legacy player-count buttons vs `IntStepper`** | Both alive (loadout view vs configure modal) |
 | **Two sibling folders `UI/View/` and `UI/Views/`** | `Views/` also contains `PlayerDataService` — a data service filed under views |
-| **Dead-but-present** | `VesselSelectionPanelController` (legacy, GUID referenced nowhere), `KeyboardMouseInputStrategy`, retired `AddFriendPanel`/`FriendInfoEntry`, `MIgration_Prefabs (DELETE LATER)/` folder with a duplicate `ModalWindows.prefab` |
+| **Dead-but-present** | ~~`VesselSelectionPanelController`~~ (deleted 2026-09-23 with the whole vessel-selection panel cluster), `KeyboardMouseInputStrategy`, retired `AddFriendPanel`/`FriendInfoEntry`, `MIgration_Prefabs (DELETE LATER)/` folder with a duplicate `ModalWindows.prefab` |
 
 ### 5.2.1 The second game-over panel — F6, resolved 2026-09-08
 
@@ -1846,7 +1846,7 @@ Every distinct screen/state to capture for full visual coverage. Recommended: ca
 
 - [ ] Menu → freestyle transition mid-fade (chrome fading, camera blending)
 - [ ] Freestyle flight — the minimal HUD: hex-gauge button + vessel HUD, per vessel (see H)
-- [ ] Vessel Selection Panel open (7 cards incl. **Urchin**, selected marker, Resume/Pause)
+- [ ] Vessel Changer toy: fly it in freestyle AND open it in the menu Toy Box — the same hull list, the same swap (the scene-authored vessel-selection panel was retired 2026-09-23)
 - [ ] Freestyle pause menu (runtime-instantiated variant — note it differs from the in-game one)
 - [ ] The domain-volume hex gauge in distinct fill states (early cell vs a full/frenzied cell)
 - [ ] A toy interaction moment (switch ring + matrix bloom — world geometry, for visual-language context)

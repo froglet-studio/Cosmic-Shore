@@ -1488,7 +1488,7 @@ namespace CosmicShore.Gameplay
         /// <para><b>Every producer must ask the CELL, never the config</b> - the same rule, for
         /// the same reason, as <see cref="ResolveFaunaPopulation"/>. Flora has FOUR producers
         /// (<c>RandomLifeSpawner</c>, <c>IntensityWiseLifeSpawner</c>, <c>Flora.TryReproduce</c>
-        /// and the freestyle <c>Microscene</c> conveyor / Lifeform Matrix toy), and which
+        /// and the freestyle <c>Microscene</c> conveyor / Spawn Matrix toy), and which
         /// SPAWNER a biome runs is decided by an unrelated field - <c>CellTypeChoiceOptions</c>
         /// <c>.IntensityWise</c> silently swaps the class - so a density rule implemented in one
         /// producer is dead code in exactly the modes that asked for it. The cell is the one

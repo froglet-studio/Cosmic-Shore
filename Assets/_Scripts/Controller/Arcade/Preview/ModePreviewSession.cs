@@ -904,7 +904,7 @@ namespace CosmicShore.Gameplay
         /// A DUMMY OPPONENT for a mode that needs one - Joust previews as a joust, not a solo lap.
         ///
         /// <para>Reuses <see cref="MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion"/> -
-        /// the Lifeform Matrix's release chain, an ordinary networked AI player - rather than any
+        /// the Spawn Matrix's release chain, an ordinary networked AI player - rather than any
         /// parallel bot. Server-only: the companion replicates to the party and only the host may
         /// spawn. The request is fire-and-forget with no handle back, so the new player is FOUND:
         /// the AI set is snapshotted first and the arrival is whoever appears that was not there

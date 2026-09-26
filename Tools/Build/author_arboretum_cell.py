@@ -53,7 +53,7 @@ Ladder      derived from ONE set of ratios against the mature garden, so every t
 
 WHAT IT DELIBERATELY IS NOT: a forest. There is no EnvironmentPrefab and no second producer -
 the cell IS its twenty specimens, the way the Lattice cell IS its twelve colonies. It is also
-not the Lifeform Matrix bench, which lines the same species up in a row for comparison; this
+not the Spawn Matrix bench, which lines the same species up in a row for comparison; this
 is a WORLD you fly through and meet them in.
 
 WHY THE BORROMEAN FOUR BELONG HERE: the species is the one in the project whose four elements

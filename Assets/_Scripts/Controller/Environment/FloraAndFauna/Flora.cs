@@ -91,7 +91,7 @@ namespace CosmicShore.Gameplay
         public virtual bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into) => false;
 
         // Optional pinned planting spot. Plant() implementations normally disperse the flora
-        // across the cell; a caller that needs it to root at a KNOWN spot (the Lifeform Matrix
+        // across the cell; a caller that needs it to root at a KNOWN spot (the Spawn Matrix
         // toy's spawn-here stations) sets this before Initialize and Plant() honors it.
         Vector3? _plantPositionOverride;
 

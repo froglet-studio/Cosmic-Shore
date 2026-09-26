@@ -637,7 +637,7 @@ version:
   (`Resources/Codex.asset` → `ToyPortraitLibrary`), so a flat card is a picture of the thing the
   player flies at, and re-baking an emblem re-skins the menu with nothing to re-wire.
 - Options can **expand** rather than act, because a toy is already a tree in the world (a matrix
-  unfolds into stations; the Lifeform Matrix unfolds again into species and elements).
+  unfolds into stations; the Spawn Matrix unfolds again into species and elements).
 - An option that only means something with the player flying — Wanderway, Arkway, Connect the
   Dots — is marked `RequiresFreestyle`. The modal closes, enters freestyle through
   `MenuCrystalClickHandler`, waits for `OnGameStateTransitionEnd`, and only then applies. It waits
@@ -704,7 +704,7 @@ for its own spent-attempt state.
 
 **Stated limit: only a toy's TOP LAYER is in the pool.** Every toy that offers an activity today
 offers it flat (the gallery's sixteen canvases, the Wanderway's one *Wander*, the Arkway's one
-*Set sail*), while walking every branch to find a nested one would pay the Lifeform Matrix's whole
+*Set sail*), while walking every branch to find a nested one would pay the Spawn Matrix's whole
 species enumeration to draw a menu button. A toy that nests its activities is not in this pool;
 widening it is one recursive call, at that cost.
 
@@ -722,7 +722,7 @@ applies it. Three things about it are load-bearing:
   a beat between so a hull respawn has settled before a veiled cell build starts on top of it. Both
   toys already refuse a second pass while their own swap is in flight, so the beat buys the *read*
   (you see your hull change, then the world change) rather than correctness.
-- **A random DESCENT, not an enumeration.** The Lifeform Matrix is three layers deep, so
+- **A random DESCENT, not an enumeration.** The Spawn Matrix is three layers deep, so
   enumerating its leaves would expand every species of every kingdom to make one choice. A descent
   expands one branch per layer — and "pick a random thing from this toy" is what a descent means.
   It does not backtrack: a branch that turns out to hold no setting costs that toy its turn rather
@@ -1002,7 +1002,7 @@ model and returning early would leave the camera framing a destroyed transform.
 
 #### A branch opens in place, and the way back is a row
 
-The Lifeform Matrix is a tree in the world — kingdom, then species, then element — so it is a tree
+The Spawn Matrix is a tree in the world — kingdom, then species, then element — so it is a tree
 here. The way out is a **synthesized back row** at the top of the list rather than a control
 somebody has to author, which also means it composes with the one card template the designer drew.
 Only the **first** layer is ever rebuilt from the surface: a deeper one came from an option's
@@ -1094,7 +1094,7 @@ not a switch either. The caption now comes off the option (`ToyShellOption.Commi
 | Toy | Verb | Why |
 |---|---|---|
 | Cell Selector | **SWITCH** | you move to another world |
-| Lifeform Matrix (an element row) | **SPAWN** | a population is released into the cell and lives there |
+| Spawn Matrix (an element row) | **SPAWN** | a population is released into the cell and lives there |
 | Connect the Dots | **START** (a live canvas: PAUSE / RESUME) | the window closes and the player is flying its first gate |
 | Wanderway / Arkway | **START** (running: COME HOME / END) | the same — a run, not a place |
 | Domain Changer | *none* | the rows apply on the press; a button that could never light is not drawn |
@@ -1116,7 +1116,7 @@ every toy whose rows are things rather than states:
 - **Connect the Dots** builds each painting in miniature — the same `MiniaturePaintingBuilder`
   the gallery station and the emblem use, at the station's own radius, so the picture in the
   window IS the station the player would fly to.
-- **Lifeform Matrix** builds the species' own display model for a species row, and for an element
+- **Spawn Matrix** builds the species' own display model for a species row, and for an element
   row that model with the element's crystal seated at its authored heart size — exactly what the
   variant station shows and what Spawn will release.
 - The cell selector and the vessel changer are unchanged (their scale model and live hull).
@@ -1132,10 +1132,20 @@ object where it landed in the cell, and goes back to the toy when the target die
 moves on. It is optional in the way `BuildPreview` is: a domain change or a cell swap makes
 nothing to watch and answers null.
 
-**The Lifeform Matrix offers Fauna and Flora here, not Vessels.** The world bench still opens its
-hangar; the flat surface is a *lifeform* release bench — one picture, one Spawn — and a wingman is
-neither a lifeform nor something the spawn picture can show landing. The hangar is reached through
-Navigate.
+**The Spawn Matrix offers all three kingdoms here — Fauna, Flora AND Vessels.** It used to
+offer the first two, on the reasoning that the flat surface is a *lifeform* release bench and a
+wingman is neither a lifeform nor something the spawn picture can show landing. **That was an
+argument about the PICTURE, and it cost the window a whole branch of the bench** — releasing an
+AI wingman is an action a window can offer perfectly well, and it is the same `ReleaseCompanion`
+call the station makes. Corrected 2026-09-23 under the toy system's *one declaration* law
+(`Docs/ToySystem/ARCHITECTURE.md` § "One declaration"): the window walks the same `Kingdoms` +
+`HasContent` filter the world's kingdom row walks, so it cannot lose one again.
+
+A hull release is the one option here with **no** `WatchAfterApply`, and that is the honest
+answer rather than an omission: `ReleaseCompanion` is a ServerRpc, so on a party client there is
+no object to turn the picture onto and only the server can say whether a companion appeared. The
+window keeps its picture on the hull that was asked for. *A window may decline to WATCH something;
+it may not decline to OFFER it.*
 
 ### 4.1.5 Back steps back ONE layer; only the top layer's Back closes the window
 
@@ -1160,7 +1170,7 @@ is allowed to SEE, not by how often it looks.**
 ### 4.1.7a The window re-opens on the variant you last committed
 
 Opening a toy from the grid re-descends to the variant the player last pressed Switch / Spawn
-/ Start on - the Lifeform Matrix opens on Fauna > Shark > Charge with SPAWN lit, the cell
+/ Start on - the Spawn Matrix opens on Fauna > Shark > Charge with SPAWN lit, the cell
 selector on the world last switched to. `ToyPreferenceStore` (`_Scripts/System/Preferences/`)
 keeps, per toy, the PATH to that option: the labels of the branches opened below the top layer
 and the leaf's own. A toy's options are built at runtime and carry no ids, so the label IS the

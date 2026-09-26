@@ -104,6 +104,9 @@ namespace CosmicShore.Gameplay
         public event Action<InputEvents> OnInputEventStopped;
         IVesselStatus vesselStatus;
         bool _subscribedToInputPaused;
+        // The status the pause handler is attached to - recorded so a re-init (which may hand
+        // this vessel a different player) detaches from the right one before re-binding.
+        IInputStatus _pauseSource;
 
         // ONE SUBSCRIPTION, EVER - and the latch is what enforces it, because a C# delegate
         // happily holds the same handler twice and nothing reports it.
@@ -118,8 +121,10 @@ namespace CosmicShore.Gameplay
         // That is invisible on almost everything the fleet binds, because a HELD ability started
         // twice is the same ability held - which is exactly why it went unnoticed. It is NOT
         // invisible on a one-shot that SPENDS: the Sparrow's skyburst charged the tank twice and
-        // launched two rockets from one pull of the trigger. A duplicate release is equally
-        // silent, so the pair is latched together rather than only the press.
+        // launched two rockets from one pull of the trigger, and the Butterfly's right trigger -
+        // a TOGGLE - flipped Mass -> Dust -> Mass on every pull and read as a dead button. A
+        // duplicate release is equally silent, so the pair is latched together rather than only
+        // the press.
         bool _subscribedToInputEvents;
 
         void SubscribeToInputEvents()
@@ -147,9 +152,10 @@ namespace CosmicShore.Gameplay
             // The event lives on the Player, so it's GC'd with it - skip the unsubscribe.
             if (_subscribedToInputPaused && vesselStatus?.Player is UnityEngine.Object obj && obj != null)
             {
-                vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;
-                _subscribedToInputPaused = false;
+                if (_pauseSource != null) _pauseSource.OnToggleInputPaused -= OnToggleInputPaused;
             }
+            _subscribedToInputPaused = false;
+            _pauseSource = null;
         }
 
         public override void OnNetworkDespawn()
@@ -222,9 +228,18 @@ namespace CosmicShore.Gameplay
             ShipHelper.InitializeShipControlActions(vesselStatus, _gamepadActionOverrides, _gamepadOverrideActions);
             ShipHelper.InitializeClassResourceActions(_resourceEventClassActions, _classResourceActions);
 
+            // The same one-subscription rule for the PAUSE event: Initialize re-runs on a live
+            // vessel, and a second += here makes every pause toggle subscribe and unsubscribe the
+            // button channels twice. Detach from whatever status we were listening to first.
+            if (_subscribedToInputPaused && _pauseSource != null)
+                _pauseSource.OnToggleInputPaused -= OnToggleInputPaused;
+            _subscribedToInputPaused = false;
+            _pauseSource = null;
+
             if (vesselStatus.IsLocalUser)
             {
-                vesselStatus.InputStatus.OnToggleInputPaused += OnToggleInputPaused;
+                _pauseSource = vesselStatus.InputStatus;
+                _pauseSource.OnToggleInputPaused += OnToggleInputPaused;
                 _subscribedToInputPaused = true;
             }
         }
@@ -311,8 +326,12 @@ namespace CosmicShore.Gameplay
         {
             if (!_subscribedToInputPaused) return;
             _subscribedToInputPaused = false;
-            if (vesselStatus?.Player is UnityEngine.Object obj && obj != null)
-                vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;
+            // Detach from the status we RECORDED, not from whatever vesselStatus resolves to now -
+            // they are the same here (called before the pointer moves), and recording it is what
+            // keeps Initialize's own re-bind and this pair from ever disagreeing.
+            if (_pauseSource != null && vesselStatus?.Player is UnityEngine.Object obj && obj != null)
+                _pauseSource.OnToggleInputPaused -= OnToggleInputPaused;
+            _pauseSource = null;
         }
 
         /// <summary>
@@ -322,7 +341,8 @@ namespace CosmicShore.Gameplay
         public void AttachInputPause()
         {
             if (_subscribedToInputPaused || vesselStatus == null || !vesselStatus.IsLocalUser) return;
-            vesselStatus.InputStatus.OnToggleInputPaused += OnToggleInputPaused;
+            _pauseSource = vesselStatus.InputStatus;
+            _pauseSource.OnToggleInputPaused += OnToggleInputPaused;
             _subscribedToInputPaused = true;
         }
 

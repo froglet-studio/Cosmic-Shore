@@ -114,7 +114,7 @@ namespace CosmicShore.Gameplay
         /// Walk one random path down a toy's option tree and return the leaf, or null when the toy
         /// offers no setting to change.
         ///
-        /// <para>A random DESCENT rather than an enumeration of every leaf: the Lifeform Matrix is
+        /// <para>A random DESCENT rather than an enumeration of every leaf: the Spawn Matrix is
         /// three layers deep (kingdom, species, element), so enumerating it would expand every
         /// species of every kingdom to make one choice, where a descent expands one branch per
         /// layer. "Pick a random thing from this toy" is also what a descent actually means.</para>

@@ -1169,6 +1169,22 @@ namespace CosmicShore.Gameplay
         // Growth Methods
         public void Grow(float amount = 1) => scaleAnimator.Grow(amount);
 
+        /// <summary>
+        /// Grow (or, with a negative component, shrink) this prism by an arbitrary per-axis
+        /// <paramref name="delta"/> on the one growth engine — the target moves and the clock
+        /// carries the visual there (Docs/PRISM_ANIMATION.md), exactly as <see cref="Grow"/>
+        /// does along <see cref="GrowthVector"/>. The result is clamped per axis by the prism's
+        /// own scale window, so nothing can be driven to zero or past its ceiling. Used by the
+        /// Butterfly's dust, which grows a prism along a direction it rolls rather than the
+        /// authored growth axis.
+        /// </summary>
+        public void GrowAlong(Vector3 delta)
+        {
+            if (scaleAnimator is null || !scaleAnimator.enabled) return;
+            scaleAnimator.SetTargetScale(scaleAnimator.TargetScale + delta);
+            scaleAnimator.BeginGrowthAnimation();
+        }
+
         // Collision Handling
         protected void OnTriggerEnter(Collider other)
         {

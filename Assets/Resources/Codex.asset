@@ -5853,9 +5853,9 @@ MonoBehaviour:
         Value: A fanned train of real peafowl geometry. 3D data by YahooJAPAN (CC-BY
           4.0).
         Authored: 0
-  - Id: tool.lifeform-matrix
+  - Id: tool.spawn-matrix
     Kingdom: 3
-    DisplayName: Lifeform Matrix
+    DisplayName: Spawn Matrix
     Tagline: The release bench. Fly through for the three kingdoms - Fauna, Flora,
       Vessels. A kingdom opens its species row; a species opens its four elements;
       a variant spawns it live. A vessel releases an AI companion in your domain.
@@ -5868,7 +5868,7 @@ MonoBehaviour:
     SourceConfig: {fileID: 11400000, guid: 6b3d92c47ae14f08b5c1e0d7f3a2958c, type: 2}
     AccentColor: {r: 0.75, g: 1, b: 0.85, a: 1}
     UnlockedByDefault: 1
-    DiscoveryKey: use.tool.lifeform-matrix
+    DiscoveryKey: use.tool.spawn-matrix
     PreviewYaw: -28
     PreviewPitch: 16
     PreviewPadding: 1.05

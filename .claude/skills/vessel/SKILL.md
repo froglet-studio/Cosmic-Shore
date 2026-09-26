@@ -526,7 +526,77 @@ applies to new abilities, new resources on the meter list, and anything that add
     Serpent's view still pointed `shieldIcon` at the long-unbound Seed Wall readout, which would
     have reappeared as old art in the row's own corner. Before binding a first icon, list every
     object reference on the HUD-root components and null the ones that point at retired UI.
+39. **A new vessel subclasses five or six abstract bases at once, and an unimplemented abstract
+    member is invisible to every gate this repo has.** `ButterflyHUDView : VesselHUDView` never
+    implemented the abstract `Initialize()`. It passed ten green gates, a compile-and-RUN geometry
+    harness and a Roslyn syntax pass over every changed file, and failed in the editor on the
+    human's first open — `CS0534`. CLAUDE.md already states why: *a check that cannot resolve a
+    type cannot see errors ABOUT that type*, and the failure is worse than silent. When Roslyn
+    cannot resolve a base type (every `VesselHUDView`, `VesselAnimation`, `ShipActionSO`,
+    `ShipActionExecutorBase` and effect base lives in the `Assembly-CSharp` monolith) it
+    **abandons class-body binding and reports nothing**, which reads exactly like clean.
 
+    So a new vessel does this BEFORE writing a subclass, not after:
+
+    - **Run `python3 Tools/Build/check_abstract_member_implementations.py`.** Written for exactly
+      this bug; it reproduces it by file and line, and it is `--self-test` negative-controlled.
+      It is textual and matches on member NAME, so it catches `CS0534` and NOT `CS0115` (an
+      override whose *signature* drifted). Which means:
+    - **Enumerate the base's abstract/virtual surface first and copy each signature verbatim.**
+      One line per base: `grep -n "abstract\|virtual" <base>.cs`. Do it for every base the
+      vessel touches — a vessel typically adds subclasses of `VesselHUDView` (abstract
+      `Initialize()`), `VesselHUDController`, `VesselAnimation` (abstract `AssignTransforms`,
+      `PerformShipPuppetry`), `ShipActionSO` (abstract `StartAction`, `StopAction`),
+      `ShipActionExecutorBase`, and one or two effect SOs (`VesselSkimmerEffectsSO.Execute`
+      and friends) — and check the INTERFACES the same way (`CS0535` is the same blind spot;
+      `IProceduralHullSource.BuildPreviewPieces`, `IProceduralElementMorphSource`'s two
+      properties).
+    - **Then verify every EXTERNAL member the new files touch** the same way, because `CS1061`
+      is in that set too: `grep -n` the declaring type for each accessor you used
+      (`ResourceSystem.OnResourceChanged` is `Action<int, float, float>`;
+      `Crystal.EmbeddedIn` is `ILifeFormEntity`, not `LifeForm`). It is ten minutes and it is
+      the only thing standing between you and the editor.
+
+    **The failure has a signature worth recognising: a gate battery that is entirely green on a
+    branch with 2,000 new lines of C# is evidence about SYNTAX and nothing else.** Say which
+    class of error each gate covers when you hand the work back, rather than reporting "all
+    checks pass". (Butterfly, 2026-09-22.)
+
+
+40. **The registrations a vessel's SETUP TOOL cannot write are the ones that get missed — and
+    the toybox roster is the one that matters.** A new vessel's editor setup tool authors every
+    registration that is an ASSET: the `Vessel Prefab Container`, `DefaultNetworkPrefabs`, the
+    `SO_Classlist_*` lists, the camera settings, the class asset. So nobody ever has to remember
+    those. **`ToyVesselRoster.Default` is CODE** (`Assets/_Scripts/Controller/Toys/
+    ToyVesselRoster.cs`), a hand-written array, and it is what the freestyle **Vessel Changer**
+    and the **Spawn Matrix's hangar** both offer from. A hull missing from it cannot be flown
+    in freestyle at all.
+
+    It fails in the worst available way: **silently and invisibly.** There is no error, no
+    warning and no empty station — the matrix is simply one ship smaller than the fleet, which
+    is indistinguishable from a matrix that is correct. The Butterfly shipped with every asset
+    registration its tool writes and no roster entry, and the only way anyone would have found
+    out is by flying the changer and noticing an absence.
+
+    So, for every new vessel, in the SAME branch that designs it:
+
+    - **Add the class to `ToyVesselRoster.Default`.** Do it when you add the enum member, not
+      when the prefab is authored — the prefab is authored later, in the editor, by the human.
+    - **That is safe because declaration and availability are separate.** Toys that ACT on a
+      hull call `ToyVesselRoster.ResolveOffered(Context, ...)`, which drops any class the prefab
+      container has no prefab for, so a declared-but-unbuilt vessel is simply not offered yet
+      rather than being offered as a swap that resolves to nothing. **Use `ResolveOffered`, not
+      `Resolve`, in any new toy that swaps, releases or previews a hull** — bare `Resolve` is for
+      documenting the roster (the codex harvester), not for acting on it.
+    - **The gate is `ToyVesselRosterCoverageTests`**, which reads the prefab container and
+      requires every registered vessel to be in the roster. It asks the question in the
+      direction that cannot fire early, so it goes green the moment the vessel is designed and
+      red the moment it becomes spawnable without becoming offerable.
+
+    The general shape, worth more than the roster: **a registration that lives in code is one an
+    asset-writing tool cannot perform, so it is the one a checklist has to carry — and enumerate
+    the whole set by asking which lists name a vessel, not by reading the list of lists somebody
+    wrote down last time.** (Butterfly, 2026-09-22.)
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
@@ -732,6 +802,15 @@ is now a different mode, and the doc's measured ladder is the first thing to go 
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
+- **Run the out-of-editor gates FIRST, and name what each one covers.** In particular
+  `python3 Tools/Build/check_abstract_member_implementations.py` — written after a new vessel
+  shipped a `CS0534` past every other gate (rule 39). The rest:
+  `check_conditional_compilation`, `check_enum_member_references`, `check_switch_label_collisions`,
+  `check_self_referential_locals`, `check_console_logging`, `check_using_directives`,
+  `check_elemental_floats`. **All green is a claim about SYNTAX plus those specific defect
+  classes — it is not a compile.** Everything needing a symbol table (a member that does not
+  exist, an override whose signature drifted, an argument mismatch) is still editor-only, so say
+  so when you hand back rather than reporting "all checks pass".
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
   **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (which measures shape MAGNITUDE,
   not labels), **Audit Vessel Construction** (guid ownership · nested-instance reachability ·

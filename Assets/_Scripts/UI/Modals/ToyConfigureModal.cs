@@ -40,7 +40,7 @@ namespace CosmicShore.UI
     /// a property of what the option does. Switch is drawn only for a list that has something for
     /// it to commit, so the domain changer never shows a button that can never light up.</para>
     ///
-    /// <para><b>A branch opens in place.</b> The Lifeform Matrix is a tree in the world — kingdom,
+    /// <para><b>A branch opens in place.</b> The Spawn Matrix is a tree in the world — kingdom,
     /// then species, then element — so it is a tree here, and the way back out is a synthesized
     /// row at the top of the list rather than a control somebody has to author. Only the FIRST
     /// layer is ever rebuilt from the surface: the deeper ones came from an option's

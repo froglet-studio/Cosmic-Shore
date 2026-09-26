@@ -569,7 +569,7 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
    Verified producers, easiest first:
    - **Cleave** — every one of its four arenas salts `PrismKind.Danger` traps through its
      own structure (pane rims, wave crests, cage ribs, ribbon cornices), in all three domains.
-   - **The worm colony** (Lifeform Matrix toy, Menu_Main freestyle) — its head/tail
+   - **The worm colony** (Spawn Matrix toy, Menu_Main freestyle) — its head/tail
      capital segments carry danger prisms (`WormSegmentFauna`).
    - **Dangerous flora** (`AssembledFlora`, `growthInfo.IsDangerous`) and the AOE danger
      hemisphere (`AOEDangerHemisphereBlocks`).

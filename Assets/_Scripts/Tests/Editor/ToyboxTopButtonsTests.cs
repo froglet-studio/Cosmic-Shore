@@ -100,7 +100,7 @@ namespace CosmicShore.Tests
                 Leaf("Ruby", appliesOnSelect: true), Leaf("Gold", appliesOnSelect: true));
             Surface("Vessel Changer", ToyCategory.Pilot,
                 Leaf("Squirrel", current: true, readOnly: true), Leaf("Manta"), Leaf("Rhino"));
-            Surface("Lifeform Matrix", ToyCategory.Creation,
+            Surface("Spawn Matrix", ToyCategory.Creation,
                 Branch("Fauna", Branch("Shark", Leaf("Charge"), Leaf("Mass"))),
                 Branch("Flora", Branch("Gyroid", Leaf("Time"))));
             Surface("Connect the Dots", ToyCategory.Creation,

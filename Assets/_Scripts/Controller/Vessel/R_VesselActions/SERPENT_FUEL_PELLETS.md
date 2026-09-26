@@ -103,7 +103,7 @@ harness; the prefab edits were checked for dangling local fileIDs; every offline
 6. Raise Time (debug harness `TimeTestHarness` on `ResourceSystem`) → each burn lasts longer
    (4.8 s at Time 10). Speed per pellet does not change.
 7. Put an **AI** Serpent in a match (any arena card with AI backfill that allows the Serpent, or
-   Lifeform Matrix → Vessels → Serpent): it now boosts visibly every ~8 s.
+   Spawn Matrix → Vessels → Serpent): it now boosts visibly every ~8 s.
 8. MPPM two clients: both see the other Serpent's boost (speed replicates through the transform).
 
 ## Follow-ups

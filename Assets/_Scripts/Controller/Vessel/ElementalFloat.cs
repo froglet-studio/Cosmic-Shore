@@ -143,6 +143,30 @@ namespace CosmicShore.Gameplay
             set { name = value; }
         }
 
+        /// <summary>The element this value scales with (<see cref="Element.None"/> when unset).</summary>
+        public Element ScaledElement => element;
+
+        /// <summary>
+        /// Evaluate at the vessel's REPLICATED integer level
+        /// (<c>R_VesselElementalAbilityHandler.ReplicatedLevel</c>) rather than its local one, so
+        /// every peer computes the SAME number. Use it wherever the value decides an outcome other
+        /// machines also simulate — conserved mass laid on every peer, a drain applied on the
+        /// victim's machine. <see cref="EvaluateLive"/> reads each machine's own copy of the level,
+        /// and element levels never replicate.
+        ///
+        /// <para>Two costs, both stated: integer resolution (the HUD flowers' resolution), and the
+        /// deficit band reads as level 0, since the replicated level is clamped to 0..15. Falls
+        /// back to <see cref="EvaluateLive"/> off-vessel, where there is nothing to agree with.</para>
+        /// </summary>
+        public float EvaluateReplicated(IVesselStatus status)
+        {
+            if (!Enabled) return Value;
+            var abilities = status?.ElementalAbilityHandler;
+            if (abilities == null) return EvaluateLive(status);
+            float value = EvaluateAtNormalizedLevel(abilities.ReplicatedLevel(element) / 10f);
+            return value;
+        }
+
         public IVessel Vessel
         {
             set

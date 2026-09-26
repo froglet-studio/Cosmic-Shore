@@ -67,6 +67,7 @@ config entry's `everyN` says how often the total must cross a multiple before th
 | `BroadsideQuarter` (112) / `BroadsideHalf` (113) / `BroadsideLeadChanged` (114) | `BroadsideController` | `{0}` domain, `{1}` points, `{2}` target |
 | `BroadsideVerbHint` (115) / `BroadsideCloseHint` (116) | controller config (idle hints) | — |
 | `RegattaRailHint` (110) / `RegattaLaneHint` (111) | controller config (idle hints) | — |
+| `WaystationRingHint` (117) / `WaystationFoldHint` (118) | controller config (idle hints) | — |
 
 The Dog Fight (57-59), Bends (60-62), Cleave (50-52) and Wildlife Liberation (53-56)
 milestone situations are posted by their controllers; only Dog Fight and The Bends author them
@@ -89,8 +90,9 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | `GameToastConfig_WreckingBall` | WreckingBall (54) | `{0} has wrecked {1} prisms` (`everyN` 250), the lead-change beat, two idle hints (forge a ball / dash beside the forest), `Comeback system is on` — authored by `author_wrecking_ball_assets.py` |
 | `GameToastConfig_Regatta` | Regatta (56) | two idle hints (the rail in your colour is the racing line; ride it / skim it / fly beside it), `Comeback system is on` — authored by `author_regatta_assets.py` |
 | `GameToastConfig_Broadside` | Broadside (57) | `{0} landed a hit!` (every hit), the quarter / half / lead-change milestones, two idle hints that name the VERB rather than the hull (seven hulls share four verbs, and a hint per hull is seven hints nobody reads), `Comeback system is on` — authored by `author_broadside_assets.py` |
+| `GameToastConfig_Waystation` | Waystation (58) | TWO IDLE HINTS AND NOTHING ELSE (thread every ring around you; hold the fold and aim at the next cluster). The absence is the decision: the gate-race platform has NO gate-threaded hook, so a milestone or lead-change situation would have no poster — and an enum member nothing raises reads exactly like a feature. An idle hint needs no poster at all, which is why Regatta authored only hints too. Authored by `author_waystation_assets.py` |
 | `GameToastConfig_Undertow` | Undertow (55) | `{0} dragged a rival through the undertow!` (every bend), `{0} has drowned {1} creatures` (`everyN` 3), the quarter / half / lead-change milestones, an idle dash hint, `Comeback system is on` — authored by `author_undertow_assets.py` |
-| `GameToastLibrary` | — | shared + the seven mode configs |
+| `GameToastLibrary` | — | shared + every mode config above |
 | `GameToastSettings` | — | slide-in, age dim, retention cap, auto-scroll |
 
 Adding a mode = create a `GameToastConfigSO` (menu: `ScriptableObjects/UI/Game Toast

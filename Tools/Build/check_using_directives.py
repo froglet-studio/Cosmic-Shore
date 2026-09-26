@@ -71,6 +71,13 @@ FIELD_DECL = re.compile(_HEAD + r"([A-Z]\w*)[ \t]*(?==>|=[^=]|;|\{)", re.M)
 # A type mention: an identifier starting uppercase, not preceded by a dot (which would make it a
 # member access or an already-qualified name).
 MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
+# An ASSIGNMENT TARGET is never a type: C# has no syntax in which a type name is the left side of
+# `=`. So `Element = element,` (an object-initializer member), `Foo = 1` inside an attribute, and a
+# plain field write are all member references that happen to share a type's name. Excluded shapes
+# matter: `==` is a comparison, `=>` is an expression body or a lambda, and a compound operator
+# (`+=`) leaves a non-`=` char before the sign so it never reaches here. A qualified target
+# (`ThemeManager.Current = x`) masks `Current`, not `ThemeManager`, which still needs its using.
+ASSIGN_TARGET = re.compile(r"(?<![\w.])([A-Z]\w*)([ \t]*=(?![=>]))", re.M)
 
 COMMENT = re.compile(r"//.*?$|/\*.*?\*/", re.S | re.M)
 STRING = re.compile(r'"(?:\\.|[^"\\])*"|\$@?"(?:[^"]|"")*"')
@@ -178,6 +185,7 @@ def check_file(path, decls):
     # own TYPE is still reported. See METHOD_DECL / FIELD_DECL.
     own.update(METHOD_DECL.findall(src))
     scan = FIELD_DECL.sub(lambda m: m.group(0)[:m.start(1) - m.start(0)], src)
+    scan = ASSIGN_TARGET.sub(lambda m: " " * len(m.group(1)) + m.group(2), scan)
 
     bad = []
     for name in sorted(set(MENTION.findall(scan))):
@@ -234,6 +242,14 @@ def self_test():
          "a FIELD's TYPE is a reference even though its name is a declarator"),
         ("namespace CosmicShore.Gameplay {\nclass A {\n    public WidgetSO WidgetSO;\n}\n}", 1,
          "a field named after its OWN type still reports the TYPE"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() {\n        var v = new B { WidgetSO = 1 };\n    }\n}\n}", 0,
+         "an OBJECT-INITIALIZER member sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    int x;\n    void Ok() {\n        WidgetSO = 1;\n    }\n}\n}", 0,
+         "...and neither is any other assignment TARGET -- a type can never be assigned to"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() {\n        var v = WidgetSO;\n    }\n}\n}", 1,
+         "...but the RIGHT side of an assignment is still a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() {\n        var v = (WidgetSO == null);\n    }\n}\n}", 1,
+         "`==` is a comparison, not an assignment target"),
     ]
     ok = True
     for src, want, label in cases:

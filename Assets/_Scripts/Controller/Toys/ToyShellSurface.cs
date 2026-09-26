@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// <para>An option is either a LEAF (<see cref="Apply"/> does the thing) or a BRANCH
     /// (<see cref="Expand"/> yields the next layer). The two shapes exist because that is exactly
     /// what a toy already is in the world: a <see cref="MatrixToy"/> unfolds into stations, and the
-    /// Lifeform Matrix unfolds again into species and then variants. Modelling the shell as one
+    /// Spawn Matrix unfolds again into species and then variants. Modelling the shell as one
     /// flat list would have flattened a tree the player already knows is a tree.</para>
     /// </summary>
     public sealed class ToyShellOption
@@ -136,6 +136,20 @@ namespace CosmicShore.Gameplay
         /// EnvironmentFree boot exists to avoid.</para>
         /// </summary>
         public Func<Transform, GameObject> BuildPreview;
+
+        /// <summary>
+        /// The toy's own handle on the thing this option names - the <c>CellConfigDataSO</c>, the
+        /// <c>VesselClassType</c>, the <c>PaintingDefinitionSO</c>. Opaque to every reader except
+        /// the toy that set it.
+        ///
+        /// <para>It exists so ONE option list can serve both surfaces. A fly-through station has
+        /// to build a model of what it offers, and before this the toy kept a second, parallel
+        /// list of its own subjects for that - which is precisely the thing that can disagree with
+        /// the window's list. With the subject riding the option, the matrix and the Toy Box are
+        /// reading the same rows (<c>MatrixToy</c>, and Docs/ToySystem/ARCHITECTURE.md
+        /// § "One declaration").</para>
+        /// </summary>
+        public object Payload;
 
         /// <summary>The next layer down, or null when this option is a leaf.</summary>
         public Func<List<ToyShellOption>> Expand;

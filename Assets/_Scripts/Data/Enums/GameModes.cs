@@ -247,9 +247,19 @@ namespace CosmicShore.Data
         // on ScoringMetric.CombatPoints. See _Scripts/Controller/Arcade/BROADSIDE.md.
         Broadside = 57,
 
+        // Waystation (58): the Butterfly-only migration race. The course is a chain of
+        // CLUSTERS - tight knots of switch rings - laid far apart in the cell. Inside a cluster
+        // you FLY, on the fleet's slowest hull and its widest turning circle; between clusters
+        // you FOLD, and the Fold has exactly one degree of freedom, the heading you leave on. So
+        // the last ring of a cluster is also the aiming device for the next jump, and threading
+        // it on the right LINE is worth more than threading it fast. First DOMAIN whose LEAD
+        // RUNNER threads the last ring wins, on ScoringMetric.SwitchesThreaded - the gate-race
+        // platform, reused whole. See _Scripts/Controller/Arcade/WAYSTATION.md.
+        Waystation = 58,
+
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 54) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 55) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

@@ -186,6 +186,15 @@ run the `/reorient` skill first and act on its verdict before shipping.
   and deciding, for that entry specifically, which variant it is — then run the consumer over
   every entry, theirs included. *Whenever a merge touches a container you retyped, the entries you
   did not write are the ones that are still the old type.*
+- **A clean auto-merge can leave TWO bookkeepers for one subscription.** When your branch and the
+  base both fix the same binding from different directions, the edits often land in different
+  methods and git merges them without a marker. This branch recorded the pause-event source in a
+  new `_pauseSource` field (so `Initialize` detaches from the right `InputStatus`); the base added
+  `DetachInputPause`/`AttachInputPause` for a mid-match pilot swap that re-read
+  `vesselStatus.InputStatus` instead. Both compile; they disagree about WHICH status holds the
+  handler the moment the pointer moves. After any merge, grep the auto-merged files for fields and
+  methods that touch the same event/flag and make them share ONE record — `git diff HEAD -- <file>`
+  on every auto-merged file you also edited is the cheap way to see what arrived beside your code.
 - **"Keep both sides" is right for list entries and WRONG inside a chain.** Resolving conflicts by
   concatenating HEAD and theirs works for independent fields, list items and doc paragraphs. It
   produces invalid code when both sides are links in one expression: two halves of a `&&` chain

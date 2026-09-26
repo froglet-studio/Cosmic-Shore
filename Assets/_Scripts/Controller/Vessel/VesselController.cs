@@ -64,6 +64,7 @@ namespace CosmicShore.Gameplay
             PrismOcclusionCorridor.ClearTarget(transform);
             VesselSpeedTunnel.ClearTarget(transform);
             VesselRearView.ClearTarget(transform);
+            VesselPlacementView.ClearTarget(transform);
             OnBeforeDestroyed?.Invoke();
 
             // The base is what tears down this behaviour's NetworkVariables. An override that
@@ -173,6 +174,7 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
                 VesselVisionShading.SetLocalVessel(transform);
                 VesselRearView.SetTarget(transform);
+                VesselPlacementView.SetTarget(transform);
             }
 
             // NO HIGH-POLY PRISM MORPH IS GRANTED HERE, and that is the design rather than an
@@ -223,14 +225,30 @@ namespace CosmicShore.Gameplay
         
         public Transform Transform => transform;
 
-        public void Teleport(Transform targetTransform) =>
+        public void Teleport(Transform targetTransform)
+        {
+            // Counted like a SetPose: this writes the transform directly, and anything watching
+            // the vessel's motion has to be able to tell a jump from a fast frame.
+            VesselStatus?.VesselTransformer?.NotifyTeleported();
             ShipHelper.Teleport(transform, targetTransform);
+        }
 
         public void SetResourceLevels(ResourceCollection resources) =>
             VesselStatus.ResourceSystem.InitializeElementLevels(resources);
 
-        public void SetShipUp(float angle) =>
-            VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
+        /// <summary>
+        /// Roll the visible ship about its own forward axis — the mobile device-orientation path.
+        ///
+        /// <para>The handle is an AUTHORED child (<c>VesselStatus.orientationHandle</c>) and a
+        /// vessel can ship without one, so this used to throw for such a hull — on a phone only,
+        /// on the frame the device was flipped, from a call site that has nothing to say about
+        /// vessel wiring. A hull with no handle simply has nothing to roll.</para>
+        /// </summary>
+        public void SetShipUp(float angle)
+        {
+            var handle = VesselStatus.OrientationHandle;
+            if (handle) handle.transform.localRotation = Quaternion.Euler(0, 0, angle);
+        }
 
         public void DisableSkimmer()
         {
@@ -312,12 +330,30 @@ namespace CosmicShore.Gameplay
             VesselStatus.ResetForPlay();
         }
 
+        /// <summary>
+        /// Put this vessel somewhere. The write travels to every peer, because a teleport that
+        /// only happened on one machine is a vessel in two places.
+        ///
+        /// <para><b>A CLIENT may move its OWN vessel</b>, and that route is the reason this is
+        /// three branches rather than one. <c>SetPose_ClientRpc</c> is a ClientRpc, which only a
+        /// server may send — so every client-owned teleport (the Butterfly's Fold, a fold gate
+        /// transit, the Wanderway's return) reached this method on a party guest, hit the ClientRpc
+        /// and did nothing but log. The owner now asks the server, which broadcasts exactly as
+        /// before.</para>
+        ///
+        /// <para>The SERVER branch is deliberately kept as it was rather than folded into the
+        /// ServerRpc the way the slowed-transform pair is: a ServerRpc invoked on the server is
+        /// still dispatched through the network layer, and every existing caller here is a
+        /// host-side teleport that should not pay a tick for a route it does not need.</para>
+        ///
+        /// <para>A peer that is neither the server nor the owner writes nothing. It is not that
+        /// machine's vessel to move, and it will receive the pose like everybody else.</para>
+        /// </summary>
         public void SetPose(Pose pose)
         {
-            if (IsSpawned)
-                SetPose_ClientRpc(pose);
-            else
-                SetPose_Local(pose);
+            if (!IsSpawned) { SetPose_Local(pose); return; }
+            if (IsServer)   { SetPose_ClientRpc(pose); return; }
+            if (IsOwner)      SetPose_ServerRpc(pose);
         }
 
         public void ChangePlayer(IPlayer player)
@@ -343,6 +379,7 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
                 VesselVisionShading.SetLocalVessel(transform);
                 VesselRearView.SetTarget(transform);
+                VesselPlacementView.SetTarget(transform);
             }
             else
             {
@@ -350,6 +387,7 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.ClearTarget(transform);
                 VesselVisionShading.ClearLocalVessel(transform);
                 VesselRearView.ClearTarget(transform);
+                VesselPlacementView.ClearTarget(transform);
             }
 
             // The HUD is OPTIONAL on a hull, exactly as Initialize treats it: the Urchin ships
@@ -436,6 +474,11 @@ namespace CosmicShore.Gameplay
             AddSlowedShipTransformToGameData_Local();
         void AddSlowedShipTransformToGameData_Local() =>
             gameData?.SlowedShipTransforms.Add(transform);
+
+        // RequireOwnership is left ON: this is the "I am moving MY OWN vessel" route, and the
+        // server already has its own direct branch for moving anybody's.
+        [ServerRpc]
+        void SetPose_ServerRpc(Pose pose) => SetPose_ClientRpc(pose);
 
         [ClientRpc]
         void SetPose_ClientRpc(Pose pose) => SetPose_Local(pose);

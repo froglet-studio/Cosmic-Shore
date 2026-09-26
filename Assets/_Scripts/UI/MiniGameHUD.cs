@@ -421,6 +421,12 @@ namespace CosmicShore.UI
                     // is mine next" - the gates are deliberately all neutral, so nothing in the
                     // shared world says whose turn a ring is.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Switchback");
+                case GameModes.Waystation:
+                    // Same provider, and it matters MORE here than in any other gate race: a
+                    // cluster is a knot of identical rings a few hundred units across, and the
+                    // one you owe is the only thing telling you which way out of the knot your
+                    // next FOLD is aimed from.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Waystation");
                 case GameModes.Headlong:
                     // Same provider: it asks whichever GateRaceController is in the scene, and on
                     // a lapped circuit "your next gate" is the only thing that distinguishes two

@@ -144,6 +144,17 @@ python3 Tools/Build/render_card_backgrounds.py --check    # the card's backgroun
 python3 Tools/Build/author_card_backgrounds.py --strict   # every live card wears its own
 ```
 
+**After the generator runs, the open Editor has NOT seen the build-scene registration.**
+`ProjectSettings/EditorBuildSettings.asset` is outside the AssetDatabase, so Unity reads it once
+at project open and never again. The card then renders normally and fails at the moment a player
+commits to it - *"has not been added to the build settings scenes in build list"*, about a list
+that on disk contains the scene - and the next project-settings save writes the stale in-memory
+list back over the file and deletes the registration. `BuildSceneListReconciler` repairs it on
+every domain reload, so pulling the branch or touching a script is enough; **FrogletTools > Game
+Modes > Reconcile Build Scene List** is the same check run deliberately, with a report. General rule: *a settings file
+outside the AssetDatabase is one the Editor owns for the whole session; an external write to it is
+not a change, it is a change that has not happened yet.*
+
 These are syntax-level. What stays editor-only: a member that does not exist, an override whose
 signature drifted, an argument mismatch - and everything about how the mode PLAYS. Say so.
 

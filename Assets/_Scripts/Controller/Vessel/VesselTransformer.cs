@@ -508,8 +508,30 @@ public class VesselTransformer : MonoBehaviour
         }
 
         // ----------------------------- Public Controls -----------------------------
+        /// <summary>
+        /// How many times this vessel has been TELEPORTED — a discontinuous pose write rather
+        /// than travel. Monotonic; only ever compared for CHANGE, never for magnitude.
+        ///
+        /// <para>It exists because a system that watches a vessel's motion cannot tell a jump
+        /// from a fast frame by looking at the distance. <c>GateRaceController</c> sweeps
+        /// <c>prev -> cur</c> against the next ring and guards with a plausible-speed step, which
+        /// rejects a LONG teleport by accident and credits a SHORT one — so the Butterfly's Fold
+        /// could thread a gate it never flew through. A counter makes it a FACT the mover states
+        /// rather than a magnitude the watcher guesses at, and a watcher that compares counts is
+        /// correct across any frame ordering and any number of jumps in one frame.</para>
+        /// </summary>
+        public int TeleportCount { get; private set; }
+
+        /// <summary>
+        /// Say that this vessel jumped. For a discontinuity that does NOT go through
+        /// <see cref="SetPose"/> — <c>VesselController.Teleport</c> writes the transform directly
+        /// through <c>VesselHelper</c>.
+        /// </summary>
+        public void NotifyTeleported() => TeleportCount++;
+
         public void SetPose(Pose pose)
         {
+            TeleportCount++;
             transform.SetPositionAndRotation(pose.position, pose.rotation);
             accumulatedRotation = pose.rotation;
 
