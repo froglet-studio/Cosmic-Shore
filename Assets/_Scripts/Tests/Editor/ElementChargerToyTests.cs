@@ -9,19 +9,23 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The Element Charger toy: its grant is a crystal's grant (a base-level raise in the resource
-    /// system's own units), its row reads charge → time for the pilot flying out through it, and
+    /// The Element Charger toy: its grant is a crystal's grant (whole petals onto the base level), its row reads charge → time for the pilot flying out through it, and
     /// it ships in the toybox on a ring angle no other toy occupies.
     /// </summary>
     public class ElementChargerToyTests
     {
         [Test]
-        public void Grant_IsIntegerLevelsInNormalizedUnits()
+        public void Definition_DefaultsToOnePassToTheLevelFiveUpgrade()
         {
-            // The resource system reports levels as floor(normalized x 10), so five levels is 0.5.
-            Assert.AreEqual(0.5f, ElementChargerToy.NormalizedGrant(5), 1e-6f);
-            Assert.AreEqual(0.1f, ElementChargerToy.NormalizedGrant(1), 1e-6f);
-            Assert.AreEqual(0f, ElementChargerToy.NormalizedGrant(-3), "a negative grant must never drain");
+            // Five whole petals: one pass from rest reaches the level-5 ability upgrade, two reach
+            // the sustained ceiling (10). The grant is always at least one petal.
+            var def = ScriptableObject.CreateInstance<ElementChargerToyDefinitionSO>();
+            try
+            {
+                Assert.AreEqual(5, def.LevelsPerPass);
+                Assert.GreaterOrEqual(def.LevelsPerPass, 1);
+            }
+            finally { Object.DestroyImmediate(def); }
         }
 
         [Test]

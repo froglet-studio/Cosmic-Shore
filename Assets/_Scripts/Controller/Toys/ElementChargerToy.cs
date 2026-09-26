@@ -13,8 +13,9 @@ namespace CosmicShore.Gameplay
     /// four element crystals blooms out ahead; fly a crystal and your vessel's level in that
     /// element rises. Another pass through the toy folds the row away.
     ///
-    /// <para>The grant is a CRYSTAL's grant: a raise of the vessel's persistent base level through
-    /// <see cref="ResourceSystem.AdjustLevel"/>, the one write every elemental crystal pickup makes.
+    /// <para>The grant is a CRYSTAL's grant: a raise of the vessel's persistent base level, in whole
+    /// petals, through <see cref="ResourceSystem.GrantPetals"/> - the base-level write every crystal
+    /// pickup and every steal's receiving half ends in.
     /// So the HUD flowers bloom, a level-5 upgrade unlocks and the hull morphs through their own
     /// subscriptions, and the maintained-mechanism law holds with nothing added here - a base
     /// raised past 10 is overcharge, and the resource system bleeds it back to 10.</para>
@@ -33,9 +34,6 @@ namespace CosmicShore.Gameplay
         /// -0.5..1.5 × 10).</summary>
         public const int MinLevel = -5;
         public const int MaxLevel = 15;
-
-        /// <summary>Integer levels per normalized unit - the resource system's own scale.</summary>
-        const int LevelScale = 10;
 
         const float PunchSeconds = 0.35f;
         const float PunchScale = 1.35f;
@@ -56,9 +54,6 @@ namespace CosmicShore.Gameplay
         int LevelsPerPass => _def ? _def.LevelsPerPass : 5;
 
         // ── The pure part (edit-mode tested) ─────────────────────────────────
-
-        /// <summary>The normalized amount one pass adds to a base level.</summary>
-        public static float NormalizedGrant(int levelsPerPass) => Mathf.Max(0, levelsPerPass) / (float)LevelScale;
 
         /// <summary>
         /// The integer level a pass would leave <paramref name="currentLevel"/> at - clamped to the
@@ -179,7 +174,9 @@ namespace CosmicShore.Gameplay
             }
 
             int before = resources.GetLevel(element);
-            resources.AdjustLevel(element, NormalizedGrant(LevelsPerPass));
+            // Whole petals, through the same door a steal's receiving half uses: one petal is one
+            // integer level, one flower step and one crystal at world scale 1.
+            resources.GrantPetals(element, LevelsPerPass);
             CSDebug.LogVerbose(CSLogChannel.ToyBox,
                 $"[ElementCharger] {element} {before} -> {resources.GetLevel(element)}.");
             return true;

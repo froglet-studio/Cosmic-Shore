@@ -663,13 +663,19 @@ blooms out ahead (`MatrixToy`, with the new `MatrixColumns` override laying them
 instead of a 2x2); fly a crystal and your vessel's level in that element rises by
 `levelsPerPass` (authored 5). Another pass through the toy folds the row away.
 
-- **The grant is a crystal's grant.** It is `ResourceSystem.AdjustLevel(element, levels / 10)` on
-  the local vessel - the same persistent BASE-level raise an elemental crystal pickup makes. So the
+- **The grant is a crystal's grant.** It is `ResourceSystem.GrantPetals(element, levels)` on the
+  local vessel - whole petals onto the persistent BASE level, the same raise an elemental crystal
+  pickup and a steal's receiving half make. So the
   HUD flowers, the level-5 ability upgrades and the hull morphs all react through their own
   `OnElementLevelChange` subscriptions with nothing wired for this toy, and the
   **maintained-mechanism law holds for free**: a base raised past 10 is overcharge, and
   `RecoverBaseLevels` bleeds it back to 10. One pass from rest reaches the level-5 upgrade, a second
-  reaches the sustained ceiling, a third is felt in the 10..15 band and drains.
+  reaches the sustained ceiling, a third is felt in the 10..15 band and drains (one level per five seconds).
+- **It is a SOURCE in the elemental economy, and it is fenced to freestyle.** A match's economy has
+  lifeforms as its only source (`Docs/ELEMENTAL_ECONOMY.md` §2.1); the charger mints petals from
+  nothing, which is fine only because nothing it grants can reach a match - menu vessels are
+  despawned on the way into a game scene and a match seeds fresh hulls. Do not put this toy, or its
+  grant, in any scored scene.
 - **No networking of its own.** Element levels are simulated on the OWNING machine and never
   replicate; a toy only ever fires for the local pilot, whose machine is the owner. Levels belong
   to the HULL, so a vessel swap starts the new hull at its own levels.

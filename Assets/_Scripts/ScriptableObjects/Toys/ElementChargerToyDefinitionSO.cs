@@ -11,7 +11,7 @@ namespace CosmicShore.ScriptableObjects
     /// crystal and your vessel's level in that element rises by <see cref="LevelsPerPass"/>.
     ///
     /// <para>The grant is exactly what collecting an elemental crystal does - a raise of the
-    /// vessel's persistent BASE level through <see cref="ResourceSystem.AdjustLevel"/> - so every
+    /// vessel's persistent BASE level in whole petals (<see cref="ResourceSystem.GrantPetals"/>) - so every
     /// consumer (HUD flowers, level-5 ability upgrades, hull morphs) reacts through its ordinary
     /// subscription with nothing wired for this toy. It inherits the maintained-mechanism law for
     /// free: a base raised past level 10 is overcharge, and <c>RecoverBaseLevels</c> bleeds it back
