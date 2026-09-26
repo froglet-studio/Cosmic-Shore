@@ -14,13 +14,14 @@ WHAT IT WRITES
 --------------
 TWO petal children per card - `GenrePetal` and `GenrePetalSecondary`, each a
 RectTransform + CanvasRenderer + Image - in the card's BOTTOM-LEFT corner at ~87x87 px
-on a 275x203 card, on the same 0.02 margin the existing bottom row uses.
+on a 275x203 card, sharing FavoriteIcon's vertical centre so the two read as one pair in
+opposite lower corners (see SLOTS for what that costs at the bottom edge).
 
 The second sits ABOVE the first rather than beside it, and that is the load-bearing
 part of the layout: nearly every card has ONE genre, so a horizontal pair would either
 push the primary off its place on every card or leave a gap where the second would be.
 Stacked, a single-genre card always draws in the same corner and a two-genre card grows
-upward. At this size two stacked petals are 90% of the card's height, so the second one
+upward. At this size two stacked petals are 91% of the card's height, so the second one
 DOES cross the title band - stated rather than designed around, because exactly one
 shipped card (Brood Rush) has a second genre and the Arena roster it belongs to is being
 treated separately anyway.
@@ -54,13 +55,21 @@ assert (ROOT / "Assets").is_dir(), f"ROOT is wrong: {ROOT}"
 GAMECARD_SCRIPT_GUID = "dbaebc1ed836d1847b41976e206448f5"
 IMAGE_SCRIPT_GUID = "fe87c0e1cc204ed48ad3b37840f39efc"
 
-# Bottom-left corner of the 275x203 card: ~87x87 px each, on the 0.02 margin the bottom
-# row (AvatarSpace / VesselIcon / FavoriteIcon) already uses. The second is stacked
-# directly above the first with a 0.045 gap (the old 3.65 px gap, scaled with the petal).
+# Bottom-left corner of the 275x203 card, ~87x87 px each, on the 0.02 margin the bottom
+# row already uses - and CENTRED ON THE SAME y AS FavoriteIcon, so the petal and the star
+# read as one pair in opposite lower corners. The star's band is y 0.02-0.2978, centre
+# 0.1588889; the petal is 0.43 tall, so it spans that centre +/- 0.215 and consequently
+# hangs 11.37 px BELOW the card rect. That is deliberate and it is bounded: `Background`
+# is a 313x208 plate offset off the card's top-left and reaches 11.48 px below the rect,
+# so the petal lands 0.11 px inside the plate's own bottom edge. It does cross `Border`
+# (the arcade-card frame, which IS the card rect) and draws over it, since it is the last
+# child - a badge clipped to the corner rather than a thing inside the frame.
+#
+# The second is stacked ABOVE the first with the old 3.65 px gap scaled by the same 2.5.
 # (field name, anchorMin, anchorMax)
 SLOTS = [
-    ("GenrePetal", (0.02, 0.02), (0.3375, 0.45)),
-    ("GenrePetalSecondary", (0.02, 0.495), (0.3375, 0.925)),
+    ("GenrePetal", (0.02, -0.0561111), (0.3375, 0.3738889)),
+    ("GenrePetalSecondary", (0.02, 0.4188889), (0.3375, 0.8488889)),
 ]
 
 TARGETS = [

@@ -361,13 +361,21 @@ horizontal pair would either push the primary off its place on every card or lea
 the second would be. Stacked, a single-genre card always draws in the same corner and a two-genre
 card grows upward.
 
-**Its SIZE is what the layout costs, and both costs are stated rather than designed around.** The
-petal is `~87x87` px on a `275x203` card (x 0.02-0.3375, y 0.02-0.45), on the same 0.02 margin the
-bottom row already uses - so it lies over **AvatarSpace**, the party-pick chip row, which is empty
-on every card nobody in the party has picked and is drawn UNDER the petal when it is not. And two
-stacked petals are 90% of the card's height, so the second one crosses the **title** band: exactly
-one shipped card (Brood Rush) has a second genre, and the Arena roster it belongs to is being
-treated separately. Neither overlap can eat a press - both Images are `m_RaycastTarget: 0`.
+**It shares FavoriteIcon's vertical centre, so the petal and the star are one pair in opposite
+lower corners.** That is the whole of why the y is what it is: the star's band is y 0.02-0.2978,
+centre **0.1588889**, and the petal is 0.43 of the card tall, so it spans that centre +/- 0.215.
+
+**Its SIZE is what the layout costs, and all three costs are stated rather than designed around.**
+The petal is `~87x87` px on a `275x203` card. Centring 87 px on a 56 px band puts **11.37 px of it
+below the card rect** - bounded, because `Background` is a 313x208 plate offset off the card's
+top-left that reaches 11.48 px below the rect, so the petal lands **0.11 px inside the plate's own
+bottom edge**. It does cross `Border` (the arcade-card frame, which *is* the card rect) and draws
+over it, being the last child: a badge clipped to the corner rather than a thing inside the frame.
+It also lies over **AvatarSpace**, the party-pick chip row - empty on every card nobody in the
+party has picked, and drawn *under* the petal when it is not. And two stacked petals are 91% of the
+card's height, so the second one crosses the **title** band: exactly one shipped card (Brood Rush)
+has a second genre, and the Arena roster it belongs to is being treated separately. None of the
+three overlaps can eat a press - both Images are `m_RaycastTarget: 0`.
 
 **It is a RULE, so it lives in code** (`ModeGenre`, in the extracted `CosmicShore.Data` leaf
 assembly beside the enums it relates) rather than in an authored table an editor can contradict -
