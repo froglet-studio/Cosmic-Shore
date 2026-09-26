@@ -57,7 +57,23 @@ Code read at `aaa1517fe`; none of these explains it:
 - The `freeze` hold is released on every scene change.
 - The planting band cannot collapse, since a 490u nucleus is inside the 0.76 × membrane band.
 
-**Open until a console log from an intensity-1 launch names it.** S3 stays unmeasured until then.
+**It has now happened twice, not once.** The first S3 run (`diag`, 2026-09-25 06:22, labelled
+`S3_Rampage1`) was read at the time as intensity 4, because its 9,862 prism entities matched intensity
+4's seeded forest (9,830). That match was a coincidence. The run has **no spindle renderer at all**
+(115 enabled renderers, none on a `SpindleMaterial_Phase*`), and every Rampage species grows spindles, so
+there was no forest. Its prisms were the Dolphins' own trails after 445 s. The real intensity-4 run
+(2026-09-25 23:37) has ~21,000 spindle renderers. So two launches that were most likely intensity 1
+(the first one is not confirmed) both grew no flora and no fauna.
+
+**Why fauna are missing too, once flora are.** In an IntensityWise cell the fauna loop seeds only while
+`Cell.FaunaSpawningEnabled`, i.e. while the cell holds ENVIRONMENT volume (trail + flora). Trails count,
+so fauna should still seed off the Dolphins' trails. That they did not either points at the spawner itself
+(never started, or its coroutines dead) rather than at planting alone.
+
+**The next measurement is `cells S3_Rampage1`** (new at `CellStateReport.cs`). It dumps every cell's
+bootstrap state, running spawner, phase, volumes and per-species counts against their caps to JSON,
+and names the first fingerprint it finds. Take it 30 s into an intensity-1 launch, with the Unity
+console's error count visible. S3 stays unmeasured until the bug is fixed.
 
 **Against the target, only S5 misses.** The target is 60 fps in a Development build with no
 frame over 50 ms, and the editor runs about 2–3× slower than a build.

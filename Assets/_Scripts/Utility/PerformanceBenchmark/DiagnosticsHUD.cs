@@ -240,6 +240,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             RegisterCommand(FreezeCommand, EcologyFreezeSwitch.Handle);
             RegisterCommand(ABComparison.CommandName, HandleABCommand);
             RegisterCommand(ProfilerCapture.CommandName, HandleProfCommand);
+            RegisterCommand(CellStateReport.CommandName, CellStateReport.Handle);
         }
 
         void OnDestroy()
@@ -251,6 +252,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             UnregisterCommand(FreezeCommand);
             UnregisterCommand(ABComparison.CommandName);
             UnregisterCommand(ProfilerCapture.CommandName);
+            UnregisterCommand(CellStateReport.CommandName);
             _abStopRequested = true;
 #if UNITY_EDITOR
             _profStopRequested = true;

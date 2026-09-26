@@ -1123,6 +1123,33 @@ namespace CosmicShore.Gameplay
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetDiagnosticProductionHold() => DiagnosticProductionHold = false;
 
+        // ---------------------------------------------------------------------
+        // Diagnostic read-outs - the DiagnosticsHUD `cells` console command.
+        // Read-only views of the private bootstrap state, so "why is this cell empty?" is one
+        // command rather than a code read. Nothing here changes behaviour.
+        // ---------------------------------------------------------------------
+
+        /// <summary>True once the first-crystal bootstrap has run: cytoplasm spawned, life spawner started.</summary>
+        public bool IsPostInitialized => postInitilized;
+
+        /// <summary>True while that bootstrap waits on a config this peer could not choose yet.</summary>
+        public bool IsPostInitDeferred => postInitDeferred;
+
+        /// <summary>The running life spawner's class name, or null when none runs.</summary>
+        public string ActiveSpawnerName => activeSpawner?.GetType().Name;
+
+        /// <summary>How this cell picks its config (Random / IntensityWise / EnvironmentFree).</summary>
+        public string ConfigChoiceName => cellTypeChoiceOptions.ToString();
+
+        /// <summary>
+        /// Live ENVIRONMENT volume (trail + flora; fauna bodies excluded) - the floor the
+        /// IntensityWise fauna loop needs above zero before it seeds anything.
+        /// </summary>
+        public float LiveEnvironmentVolume
+        {
+            get { EnsureVolumeFresh(); return liveEnvVolumeTotal; }
+        }
+
         /// <summary>
         /// Fauna aggression level derived from <see cref="Phase"/> - a 1:1 mapping now
         /// that flora are no longer staggered on separate rungs:
