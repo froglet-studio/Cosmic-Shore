@@ -109,11 +109,22 @@ namespace CosmicShore.UI
         /// Hands every card the input its ability is bound to. An ability with no button
         /// (<c>FullSpeedStraightAction</c>) is passive and its chip stays blank, which is the
         /// contract the row has always had.
+        ///
+        /// <para>The two kinds of card answer "which control?" from two places, and that follows
+        /// from where the fact lives rather than from taste: an ELEMENTAL ability's input is in the
+        /// vessel's <c>ElementalAbilityMapSO</c> entry, and a NON-elemental one has no map entry at
+        /// all, so its binding names it. Both are one authored fact with the glyph derived from
+        /// it.</para>
         /// </summary>
         private void SeedAbilityControls()
         {
+            if (!baseView) return;
+
+            // Non-elemental cards first, so a vessel with no ability map still gets its chips.
+            baseView.SeedCoreAbilityControls();
+
             var map = _abilityHandler ? _abilityHandler.Map : null;
-            if (map == null || !baseView) return;
+            if (map == null) return;
 
             foreach (var entry in map.Entries)
                 if (entry != null) baseView.SetAbilityControl(entry.Element, entry.Input);

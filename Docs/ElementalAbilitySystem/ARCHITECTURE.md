@@ -28,7 +28,8 @@ a reader: no writes, no ship contract, no Unity. Skill: `/element-ability-table`
 
 Note it covers **four** scaling channels, not one: the map's generic multiplier, bespoke
 `…AtRest<Element>`/`…AtFull<Element>` endpoints on an action or effect SO, an `ElementalFloat`
-(pure serialized data with no call site at all — the Squirrel's Mass slot is only this), and a
+(pure serialized data with no call site at all — the Manta's Mass slot is only this; the
+Squirrel's was too until its 2026-09-24 re-cut fixed that trail at a constant), and a
 direct `GetLevel(Element.X)` read feeding a lerp beside it (the Urchin's Slip is only this). A
 grep for `ElementalScaling` sees at most half of them.
 
@@ -244,8 +245,7 @@ which applies three independent layers so the signal survives any per-vessel pre
 | Element badge | That element's **petal**, in the level-5 **white**, blooms in at a corner of the icon (withers out on re-lock — nothing pops in or out) | Always. It is a *child* of the icon, so views that repaint the icon colour every frame cannot stomp it. Sprite + white come from `ElementalBarsConfigSO`, so level 5 reads as the same "all petals white" the flower shows |
 | Tint + persistent scale bump | Icon tints to `upgradeHighlightColor` and rests at `upgradeHighlightScale`, with a one-shot unlock punch | Vessels whose icon colour is otherwise static. Set `tintIconOnUpgrade = false` where the icon colour is a live gameplay gauge |
 
-**Vessels whose icons are live gauges** (the Squirrel: tube cooldown fill, drift lean, impact flash,
-heat tint) must override `SetAbilityUpgraded` and re-anchor their own captured rest scales to
+**Vessels whose icons are live gauges** (the Squirrel: ring cooldown, impact flash) must override `SetAbilityUpgraded` and re-anchor their own captured rest scales to
 `AbilityIconRestScale(element)` — otherwise the view's own tweens settle back to the *pre-upgrade*
 scale and wipe the bump. `SquirrelVesselHUDView` is the reference implementation.
 

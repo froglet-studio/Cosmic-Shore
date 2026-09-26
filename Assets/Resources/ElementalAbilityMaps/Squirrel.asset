@@ -15,56 +15,62 @@ MonoBehaviour:
   vesselClass: 6
   entries:
   - Element: 1
-    AbilityLabel: Skimming
-    AbilityDescription: Charge raises the boost energy gained per prism-skimmer
-      collision (SkimmerBoostPrismEffectSO.chargeEnergyMultiplier, x1 -> x2 at level
-      10 floored at x0.25, read live per hit);
-      at level 5 danger prisms grant the 10x energy bonus (below it they pay base
-      energy - the bonus is earned, no longer always on).
-    Input: 0
-    UnlockLevel: 5
-    RelockBelowLevel: 4
-    LatchPolicy: 0
-    UpgradeLabel: Live Wire
-    UpgradeDescription: Danger prisms grant 10x boost energy when skimmed.
-  - Element: 2
-    AbilityLabel: Trail Volume
-    AbilityDescription: Mass raises the VOLUME of each trail prism laid (authored
-      on the prism controller's trailVolume ElementalFloat, 1 -> 2.5 at level 10,
-      cube root per axis);
-      at level 5 trail prisms arrive shielded.
-    Input: 12
-    UnlockLevel: 5
-    RelockBelowLevel: 4
-    LatchPolicy: 0
-    UpgradeLabel: Heavy Trail
-    UpgradeDescription: Trail prisms arrive shielded (one-hit ablative armor).
-  - Element: 3
-    AbilityLabel: Skimmer Reach
-    AbilityDescription: 'Space grows the skimmer sphere (authored on the skimmer''s
-      Scale ElementalFloat, 15 -> 30 at level 10, evaluated live). BASE joust
-      (no upgrade needed) - joust any lifeform''s crystal while moving faster than
-      it to wither opposing-domain creatures; at level 5 the joust also SHEPHERDS
-      allies - an own-domain lifeform is NOURISHED instead (ILifeFormEntity.Nourish:
-      its starvation clock resets and its birth counter advances). It used to LEVEL
-      the ally; per-individual lifeform levels were retired by Docs/ECOSYSTEM.md 40.'
+    AbilityLabel: Crystal Joust
+    AbilityDescription: BASE (no upgrade needed) - joust a lifeform's crystal while
+      moving faster than it to wither opposing-domain creatures, freeing the heart
+      and auto-collecting it. Charge SCALING IS AN OPEN HOLE - the joust has no
+      elemental parameter yet; it is deferred to the branch that reworks the joust,
+      and this row is deliberately left without one rather than given a placeholder.
+      At level 5 the joust also SHEPHERDS allies - an own-domain lifeform is
+      NOURISHED instead (ILifeFormEntity.Nourish - its starvation clock resets and
+      its birth counter advances).
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Shepherd
-    UpgradeDescription: Jousting an ally lifeform's crystal levels it up (body
-      and crystal grow, max level 5) instead of doing nothing.
-  - Element: 4
+    UpgradeDescription: Jousting an OWN-domain lifeform's crystal nourishes it
+      instead of doing nothing.
+  - Element: 2
     AbilityLabel: Boost Ring
-    AbilityDescription: 'Time shortens the boost-ring cooldown (authored on
-      SquirrelTubeActionSO.cooldownMultiplierAtFullTime, x0.5 at level 10). Time
-      deliberately does NOT touch this hull''s boost speed:
-      VesselTransformer.BoostSpeedMultiplier is left disabled on Squirrel.prefab.
-      At level 5 each deploy lays a second ring.'
+    AbilityDescription: Deploy a ring of conserved prism mass ahead of the vessel -
+      the Squirrel's mass-creation ability, which is why it sits on Mass. Mass
+      shortens the deploy cooldown (SquirrelTubeActionSO.cooldownMultiplierAtFullMass,
+      x1 at rest -> x0.5 at level 10, floored), so a heavier pilot lays rings more
+      often. At level 5 each deploy lays a second ring.
     Input: 11
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Twin Rings
     UpgradeDescription: The boost ring deploys with a second ring.
+  - Element: 3
+    AbilityLabel: Steal
+    AbilityDescription: Skim a prism to STEAL it into your own domain. Space grows
+      the skimmer sphere (authored on the skimmer's Scale ElementalFloat, 15 -> 30
+      at level 10, evaluated live), and the sphere IS the steal reach - a bigger
+      skimmer converts more mass per pass. BASE - an opposing SHIELDED prism only
+      loses its shield and keeps its domain. At level 5 the steal goes through the
+      shield - the prism changes hands AND keeps its armour. Super-shielded mass
+      stays invulnerable at every level.
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Iron Grip
+    UpgradeDescription: Shielded prisms are stolen outright and keep their shield,
+      instead of merely being stripped of it.
+  - Element: 4
+    AbilityLabel: Skimming
+    AbilityDescription: Time raises the boost energy gained per prism-skimmer
+      collision (SkimmerBoostPrismEffectSO.energyMultiplier, x1 -> x2 at level 10
+      floored at x0.25, read live per hit). Skim energy is the Squirrel's speed, so
+      the element that makes the pilot faster owns it. At level 5 danger prisms
+      grant the 10x energy bonus (below it they pay base energy - the bonus is
+      earned, no longer always on).
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Live Wire
+    UpgradeDescription: Danger prisms grant 10x boost energy when skimmed.

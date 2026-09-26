@@ -78,6 +78,7 @@ namespace CosmicShore.UI
         }
 
         readonly Dictionary<Element, Slot> _slots = new();
+        readonly Dictionary<CoreAbility, Slot> _coreSlots = new();
         bool _built;
 
         public bool IsBuilt => _built;
@@ -107,6 +108,18 @@ namespace CosmicShore.UI
 
             if (!hudView) hudView = GetComponent<VesselHUDView>();
             if (!hudView || !hudView.TryGetAbilityIcon(element, out var icon) || !icon) return 1f;
+
+            return s.IconScaleFor(AuthoredIconSize(icon.rectTransform));
+        }
+
+        /// <summary>The same kerning for a non-elemental card's icon.</summary>
+        public float CoreIconContentScale(CoreAbility ability)
+        {
+            var s = ResolveStyle();
+            if (!s) return 1f;
+
+            if (!hudView) hudView = GetComponent<VesselHUDView>();
+            if (!hudView || !hudView.TryGetCoreAbilityIcon(ability, out var icon) || !icon) return 1f;
 
             return s.IconScaleFor(AuthoredIconSize(icon.rectTransform));
         }
@@ -165,8 +178,19 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // A vessel whose readout is a live MEASUREMENT builds its icon here rather than
+            // authoring one, so the row can find it in the pass below like any other. No-op on
+            // every vessel that authors all of its art.
+            hudView.EnsureGeneratedAbilityIcons();
+
+            // ...and the one card no vessel gets to skip. Not a virtual and not opt-in: every hull
+            // can fly through a crystal, so every hull has this card - with a LOCKED plate on the
+            // three that do nothing with one yet.
+            hudView.EnsureOmniCrystalCard();
+
             var row = ResolveRow();
             var order = VesselHUDView.AbilityDisplayOrder;
+            var coreOrder = VesselHUDView.CoreAbilityDisplayOrder;
 
             // Three passes, and the SEPARATION is load-bearing. A vessel's meter is not always
             // authored on the card its ability belongs to (the Squirrel's boost fill sits under the
@@ -176,6 +200,47 @@ namespace CosmicShore.UI
             // silently, and only on the vessels whose authoring drifted.
             var hosts = new Dictionary<Element, RectTransform>();
             var icons = new Dictionary<Element, Image>();
+            var coreHosts = new Dictionary<CoreAbility, RectTransform>();
+            var coreIcons = new Dictionary<CoreAbility, Image>();
+
+            // The NON-elemental cards first, at NEGATIVE slot indices, so they land one pitch further
+            // left per card and the elemental columns never move. A vessel that binds none of them
+            // (every vessel but the Squirrel today) emits nothing at all here.
+            int coreCount = 0;
+            for (int i = 0; i < coreOrder.Length; i++)
+            {
+                var ability = coreOrder[i];
+                var emblemSprite = style ? style.EmblemFor(ability) : null;
+                hudView.TryGetCoreAbilityEmblem(ability, out var emblem);
+
+                // A core card is DROPPED entirely only when the fleet has nothing to say about it:
+                // no art, no meter and no emblem. The omni crystal card always has an emblem, so
+                // every vessel draws it - locked where that hull has no omni ability yet, which is
+                // the honest state and what a locked card is for.
+                bool hasIcon = hudView.TryGetCoreAbilityIcon(ability, out var icon) && icon;
+                if (!hasIcon && !emblem && !emblemSprite) continue;
+
+                var host = hasIcon
+                    ? icon.rectTransform.parent as RectTransform
+                    : ResolveLockedHost(row, ability.ToString());
+                if (!host || host == row) continue;
+
+                // The LAST entry in the display order sits nearest Charge: index -1, then -2 leftward.
+                PlaceHost(row, host, -(coreOrder.Length - i), order.Length);
+
+                var slot = BuildSlot($"AbilityLockup_{ability}", host, hasIcon ? icon : null,
+                                     Element.None, emblem, emblemSprite);
+                if (slot == null) continue;
+
+                if (hasIcon)
+                {
+                    NormaliseIcon(icon.rectTransform);
+                    coreIcons[ability] = icon;
+                }
+                coreHosts[ability] = host;
+                _coreSlots[ability] = slot;
+                coreCount++;
+            }
 
             for (int i = 0; i < order.Length; i++)
             {
@@ -189,7 +254,8 @@ namespace CosmicShore.UI
 
                 PlaceHost(row, host, i, order.Length);
 
-                var slot = BuildSlot(element, host, hasIcon ? icon : null);
+                var slot = BuildSlot($"AbilityLockup_{element}", host, hasIcon ? icon : null, element,
+                                     emblem: null, emblemSprite: null);
                 if (slot == null) continue;
 
                 if (hasIcon) NormaliseIcon(icon.rectTransform);
@@ -199,7 +265,20 @@ namespace CosmicShore.UI
                 _slots[element] = slot;
             }
 
-            foreach (var pair in _slots) AdoptGauge(pair.Key, pair.Value);
+            foreach (var pair in _coreSlots)
+                if (hudView.TryGetCoreAbilityGauge(pair.Key, out var gauge))
+                    AdoptGauge(pair.Value, gauge);
+
+            foreach (var pair in _slots)
+                if (hudView.TryGetAbilityGauge(pair.Key, out var gauge))
+                    AdoptGauge(pair.Value, gauge);
+
+            foreach (var pair in _coreSlots)
+            {
+                if (!coreHosts.TryGetValue(pair.Key, out var host)) continue;
+                coreIcons.TryGetValue(pair.Key, out var icon);
+                RetireLegacyChrome(host, pair.Value, icon);
+            }
 
             foreach (var pair in _slots)
             {
@@ -210,7 +289,7 @@ namespace CosmicShore.UI
 
             DockElementFlowers();
 
-            RetireLegacyHudContent(row, anyIconBound: icons.Count > 0);
+            RetireLegacyHudContent(row, anyIconBound: icons.Count + coreIcons.Count > 0);
 
             _built = true;
         }
@@ -272,8 +351,18 @@ namespace CosmicShore.UI
 
         /// <summary>A host for a slot the vessel has no ability for yet.</summary>
         RectTransform ResolveLockedHost(RectTransform row, Element element)
+            => ResolveLockedHost(row, element.ToString());
+
+        /// <summary>
+        /// The same, for a NON-elemental card. Keyed on a string rather than on the enum so the two
+        /// callers share one body: the omni crystal card exists on every vessel and most vessels
+        /// have no art for it, so a core card has to be able to be locked exactly as an elemental
+        /// one is - which it could not before, because the core pass simply skipped a binding with
+        /// no icon and the card vanished rather than reading as undesigned.
+        /// </summary>
+        RectTransform ResolveLockedHost(RectTransform row, string key)
         {
-            string name = $"LockedSlot_{element}";
+            string name = $"LockedSlot_{key}";
             var host = row.Find(name) as RectTransform;
             if (host) return host;
 
@@ -289,6 +378,15 @@ namespace CosmicShore.UI
         ///
         /// <para>The HOST is moved rather than the icon so that the button, its touch target, its
         /// press juice and any gauge children all travel together and keep working.</para>
+        ///
+        /// <para><b>Normalising the scale is not enough on its own</b>: a component that CACHES the
+        /// host's rest scale caches whatever the prefab authored, because its <c>Awake</c> runs
+        /// long before this does - and then writes that stale value back on its next release or
+        /// disable. Every Squirrel ability button is authored at 0.7 and carries
+        /// <see cref="AbilityButtonPressJuice"/>, so four of its five cards sat permanently at 0.7
+        /// beside the one card with no juice on it, which reads as that ONE card being oversized.
+        /// The juice now captures lazily, and this hands it the new rest outright so an instance
+        /// that already captured is corrected without waiting for a press.</para>
         /// </summary>
         void PlaceHost(RectTransform row, RectTransform host, int index, int count)
         {
@@ -298,21 +396,62 @@ namespace CosmicShore.UI
             host.sizeDelta = new Vector2(style.plateWidth, style.abilityCellHeight);
             host.localScale = Vector3.one;
             host.localRotation = Quaternion.identity;
+            if (host.TryGetComponent<AbilityButtonPressJuice>(out var juice))
+                juice.SetRestScale(Vector3.one);
+            // The row is pinned to the screen's bottom-right, so a card's x is measured LEFTWARD
+            // from that corner. index is signed: 0..count-1 are the elemental columns and NEGATIVE
+            // values are the non-elemental cards beyond Charge, one pitch apart each.
             host.anchoredPosition = new Vector2(
                 -(count - 1 - index) * style.cardPitch - style.plateWidth * 0.5f,
                 style.abilityCellHeight * 0.5f);
-            host.SetSiblingIndex(index);
+            host.SetSiblingIndex(Mathf.Max(0, index));
         }
 
+        /// <summary>
+        /// Lands an ability icon in the middle of its card at the fleet's ONE drawn size, whatever
+        /// size the prefab authored for it.
+        ///
+        /// <para><b>The scale write is load-bearing and used to be missing.</b> It was left to
+        /// <c>VesselHUDController</c>'s upgrade seeding, which writes
+        /// <c>VesselHUDView.AbilityIconRestScale</c> for every ELEMENT - so an elemental icon was
+        /// kerned a moment after the row was built and a NON-elemental one, which no element ever
+        /// seeds, never was. It therefore drew at its authored size (80) in a cell sized for 60,
+        /// a third larger than its neighbours, on the one card in the row nothing else touches.
+        /// Writing it here makes the row correct the instant it is laid out, and the seeding pass
+        /// then writes the identical value - nothing is upgraded at build time, so the rest scale
+        /// IS the content scale.</para>
+        /// </summary>
         void NormaliseIcon(RectTransform iconRT)
         {
             iconRT.anchorMin = iconRT.anchorMax = iconRT.pivot = new Vector2(0.5f, 0.5f);
             iconRT.anchoredPosition = Vector2.zero;
+            iconRT.localScale = Vector3.one * style.IconScaleFor(AuthoredIconSize(iconRT));
         }
 
-        Slot BuildSlot(Element element, RectTransform host, Image icon)
+        /// <summary>
+        /// Builds one card. <paramref name="flowerElement"/> of <see cref="Element.None"/> is the
+        /// NON-elemental case - the sentinel is what that member is for - and the element cell is
+        /// then present only if the card has an EMBLEM to put in it, the rect otherwise collapsing
+        /// to the ability cell alone.
+        ///
+        /// <para>So there are three shapes, and the upper cell is the thing that differs: an
+        /// elemental card (flower), the omni crystal card (emblem), and the drift (neither). The
+        /// emblem and the flower share the socket, the plate, the bloom and the Y arithmetic -
+        /// what differs is only WHAT is docked, because a flower is a level readout and an emblem
+        /// is a name.</para>
+        ///
+        /// <para>The Y arithmetic is what makes the two kinds line up, and it is exact rather than
+        /// eyeballed: an elemental card is <c>PlateHeight</c> tall, offset up by
+        /// <c>CardCenterOffsetY</c>, with its ability plate at <c>-CardCenterOffsetY</c> - so that
+        /// plate's centre sits at the HOST's origin. A core card is <c>abilityCellHeight</c> tall at
+        /// offset zero with its plate at zero, which is the same place. The control chip hangs off
+        /// the card's own bottom edge either way, so the chips line up for the same reason.</para>
+        /// </summary>
+        Slot BuildSlot(string cardName, RectTransform host, Image icon, Element flowerElement,
+                       Image emblem, Sprite emblemSprite)
         {
-            string cardName = $"AbilityLockup_{element}";
+            bool withElementCell = flowerElement != Element.None || emblem || emblemSprite;
+
             var card = host.Find(cardName) as RectTransform;
             if (!card)
             {
@@ -324,31 +463,35 @@ namespace CosmicShore.UI
             card.anchorMin = card.anchorMax = card.pivot = new Vector2(0.5f, 0.5f);
             card.localRotation = Quaternion.identity;
             card.localScale = Vector3.one;
-            card.sizeDelta = new Vector2(style.plateWidth, style.PlateHeight);
-            card.anchoredPosition = new Vector2(0f, style.CardCenterOffsetY);
+            float cardHeight = withElementCell ? style.PlateHeight : style.abilityCellHeight;
+            card.sizeDelta = new Vector2(style.plateWidth, cardHeight);
+            card.anchoredPosition = new Vector2(0f, withElementCell ? style.CardCenterOffsetY : 0f);
             card.SetSiblingIndex(0);   // behind the icon; UGUI draws siblings in order
 
             var slot = new Slot { Card = card, Locked = !icon };
 
             float narrow = style.NarrowEdgeFraction;
             float elementY = style.FlowerLocalY;
-            float abilityY = style.AbilityPlateLocalY;
+            float abilityY = withElementCell ? style.AbilityPlateLocalY : 0f;
 
-            // Sibling order IS draw order, and a bloom has to sit BEHIND the plate it haloes - so
-            // each bloom is a sibling placed before its plate rather than a child of it. Building
-            // them in this order is the whole layering contract.
-            slot.ElementBloom = ResolveChildImage(card, "ElementBloom", style.bloomSprite);
-            SetCellRect(slot.ElementBloom.rectTransform, elementY,
-                        style.plateWidth + style.bloomPadding * 2f,
-                        style.petalCellHeight + style.bloomPadding * 2f);
-            slot.ElementBloom.color = WithAlpha(style.bloomColor, 0f);   // nothing glows at rest
+            if (withElementCell)
+            {
+                // Sibling order IS draw order, and a bloom has to sit BEHIND the plate it haloes - so
+                // each bloom is a sibling placed before its plate rather than a child of it. Building
+                // them in this order is the whole layering contract.
+                slot.ElementBloom = ResolveChildImage(card, "ElementBloom", style.bloomSprite);
+                SetCellRect(slot.ElementBloom.rectTransform, elementY,
+                            style.plateWidth + style.bloomPadding * 2f,
+                            style.petalCellHeight + style.bloomPadding * 2f);
+                slot.ElementBloom.color = WithAlpha(style.bloomColor, 0f);   // nothing glows at rest
 
-            // The element plate narrows UPWARD and the ability plate narrows DOWNWARD, so the pair
-            // meets wide-edge to wide-edge across the gap and reads as one waisted object.
-            slot.ElementPlate = ResolveTrapezoid(card, "ElementPlate", narrow, 1f);
-            SetCellRect(slot.ElementPlate.rectTransform, elementY, style.plateWidth, style.petalCellHeight);
-            slot.ElementPlate.color = slot.Locked ? style.lockedPlateColor : style.plateColor;
-            ApplySlantEdge(slot.ElementPlate, slot.Locked, upgraded: false);
+                // The element plate narrows UPWARD and the ability plate narrows DOWNWARD, so the pair
+                // meets wide-edge to wide-edge across the gap and reads as one waisted object.
+                slot.ElementPlate = ResolveTrapezoid(card, "ElementPlate", narrow, 1f);
+                SetCellRect(slot.ElementPlate.rectTransform, elementY, style.plateWidth, style.petalCellHeight);
+                slot.ElementPlate.color = slot.Locked ? style.lockedPlateColor : style.plateColor;
+                ApplySlantEdge(slot.ElementPlate, slot.Locked, upgraded: false);
+            }
 
             slot.AbilityBloom = ResolveChildImage(card, "AbilityBloom", style.bloomSprite);
             SetCellRect(slot.AbilityBloom.rectTransform, abilityY,
@@ -405,8 +548,12 @@ namespace CosmicShore.UI
             SetCellRect(slot.Flash.rectTransform, abilityY, style.plateWidth, style.abilityCellHeight);
             slot.Flash.color = WithAlpha(style.pressFlashColor, 0f);
 
-            slot.FlowerSocket = ResolveFlowerSocket(card, element);
-            slot.ChipSocket = ResolveChipSocket(card);
+            if (flowerElement != Element.None)
+                slot.FlowerSocket = ResolveFlowerSocket(card, flowerElement);
+            else if (withElementCell)
+                ResolveEmblem(card, emblem, emblemSprite);
+
+            slot.ChipSocket = ResolveChipSocket(card, cardHeight);
             return slot;
         }
 
@@ -479,9 +626,9 @@ namespace CosmicShore.UI
         /// no gameplay wiring changes - only where and how it draws. The legacy ring and its frame
         /// are retired with the rest of the host's chrome.
         /// </summary>
-        void AdoptGauge(Element element, Slot slot)
+        void AdoptGauge(Slot slot, Image gauge)
         {
-            if (slot.Locked || !hudView.TryGetAbilityGauge(element, out var gauge) || !gauge) return;
+            if (slot.Locked || !gauge) return;
 
             var rt = gauge.rectTransform;
             if (rt.parent != slot.GaugeClip) rt.SetParent(slot.GaugeClip, false);
@@ -747,7 +894,46 @@ namespace CosmicShore.UI
             return socket;
         }
 
-        RectTransform ResolveChipSocket(RectTransform card)
+        /// <summary>
+        /// Docks a non-elemental card's upper-plate MARK. An authored <paramref name="emblem"/> is
+        /// re-homed (the same reasoning as an authored flower container: moving the transform keeps
+        /// whatever the vessel put in it); otherwise one is built from the fleet-wide sprite.
+        ///
+        /// <para>It is deliberately NOT tinted. The emblem answers "what is this card", which is
+        /// the same answer on every hull and for every domain - and the omni crystal in particular
+        /// belongs to nobody until somebody takes it, so painting it a team colour would be a
+        /// claim the crystal itself never makes (<c>Docs/PALETTE.md §2.2</c>: a crystal's colour
+        /// says who may COLLECT it).</para>
+        /// </summary>
+        RectTransform ResolveEmblem(RectTransform card, Image emblem, Sprite emblemSprite)
+        {
+            const string emblemName = "ElementEmblem";
+
+            if (!emblem)
+            {
+                emblem = ResolveChildImage(card, emblemName, emblemSprite);
+            }
+            else if (emblem.transform.parent != card)
+            {
+                emblem.transform.SetParent(card, false);
+            }
+
+            // An Image with no sprite draws a SOLID QUAD, which on a plate this size is the plate
+            // painted over. Nothing to draw means draw nothing.
+            emblem.enabled = emblem.sprite;
+            emblem.color = Color.white;
+            emblem.raycastTarget = false;
+
+            var rt = emblem.rectTransform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(style.petalFlowerSize, style.petalFlowerSize);
+            rt.anchoredPosition = new Vector2(0f, style.FlowerLocalY);
+            rt.localScale = Vector3.one;
+            rt.localRotation = Quaternion.identity;
+            return rt;
+        }
+
+        RectTransform ResolveChipSocket(RectTransform card, float cardHeight)
         {
             const string name = "ControlChip";
             var socket = card.Find(name) as RectTransform;
@@ -760,7 +946,7 @@ namespace CosmicShore.UI
 
             socket.anchorMin = socket.anchorMax = socket.pivot = new Vector2(0.5f, 0.5f);
             socket.sizeDelta = new Vector2(style.plateWidth, style.chipHeight);
-            socket.anchoredPosition = new Vector2(0f, -style.PlateHeight * 0.5f - style.chipGap - style.chipHeight * 0.5f);
+            socket.anchoredPosition = new Vector2(0f, -cardHeight * 0.5f - style.chipGap - style.chipHeight * 0.5f);
             socket.localScale = Vector3.one;
             socket.localRotation = Quaternion.identity;
             return socket;
@@ -874,7 +1060,18 @@ namespace CosmicShore.UI
         /// </summary>
         public void SetAbilityCooldown(Element element, float remaining01)
         {
-            if (!_slots.TryGetValue(element, out var slot) || !style) return;
+            if (_slots.TryGetValue(element, out var slot)) SetSlotCooldown(slot, remaining01);
+        }
+
+        /// <summary>The same recharge veil on a NON-elemental card.</summary>
+        public void SetCoreAbilityCooldown(CoreAbility ability, float remaining01)
+        {
+            if (_coreSlots.TryGetValue(ability, out var slot)) SetSlotCooldown(slot, remaining01);
+        }
+
+        void SetSlotCooldown(Slot slot, float remaining01)
+        {
+            if (!style) return;
 
             remaining01 = Mathf.Clamp01(remaining01);
             bool active = remaining01 > 0.0001f;
@@ -887,7 +1084,7 @@ namespace CosmicShore.UI
             if (!slot.CooldownSweep)
             {
                 if (!active) return;                                // never fired: build nothing
-                BuildCooldownOverlay(element, slot);
+                BuildCooldownOverlay(slot);
                 if (!slot.CooldownSweep) return;
             }
 
@@ -905,13 +1102,17 @@ namespace CosmicShore.UI
         public bool IsOnCooldown(Element element)
             => _slots.TryGetValue(element, out var slot) && slot.OnCooldown;
 
+        /// <summary>True while this non-elemental ability is drawn as recharging.</summary>
+        public bool IsCoreOnCooldown(CoreAbility ability)
+            => _coreSlots.TryGetValue(ability, out var slot) && slot.OnCooldown;
+
         /// <summary>
         /// The cooldown veil is the ONE piece of the lockup that lives outside the card: it has to
         /// darken the ICON as well as the plate, and the icon is a later sibling of the card, so a
         /// child of the card could only ever draw behind it. It is parented to the host and pushed
         /// to the end of the sibling list instead.
         /// </summary>
-        void BuildCooldownOverlay(Element element, Slot slot)
+        void BuildCooldownOverlay(Slot slot)
         {
             var host = slot.Card.parent as RectTransform;
             if (!host) return;
@@ -991,8 +1192,17 @@ namespace CosmicShore.UI
         /// </summary>
         public void SetAbilityControl(Element element, InputEvents input)
         {
-            if (!_slots.TryGetValue(element, out var slot)) return;
+            if (_slots.TryGetValue(element, out var slot)) SetSlotControl(slot, input);
+        }
 
+        /// <summary>The same chip on a NON-elemental card.</summary>
+        public void SetCoreAbilityControl(CoreAbility ability, InputEvents input)
+        {
+            if (_coreSlots.TryGetValue(ability, out var slot)) SetSlotControl(slot, input);
+        }
+
+        void SetSlotControl(Slot slot, InputEvents input)
+        {
             slot.PadBinding = InputHintBindingMap.BindingFor(input, keyboard: false);
             slot.KeyBinding = InputHintBindingMap.BindingFor(input, keyboard: true);
             RefreshChip(slot);
@@ -1005,6 +1215,7 @@ namespace CosmicShore.UI
             _chipKeyboard = keyboard;
             _chipDeviceKnown = true;
             foreach (var slot in _slots.Values) RefreshChip(slot);
+            foreach (var slot in _coreSlots.Values) RefreshChip(slot);
         }
 
         bool _chipKeyboard;
@@ -1094,7 +1305,24 @@ namespace CosmicShore.UI
 
         void SetPressed(Element element, bool pressed, bool releaseImmediately)
         {
-            if (!_slots.TryGetValue(element, out var slot) || !style || !slot.Flash) return;
+            if (_slots.TryGetValue(element, out var slot)) SetSlotPressed(slot, pressed, releaseImmediately);
+        }
+
+        /// <summary>The same press signal on a NON-elemental card.</summary>
+        public void SetCoreAbilityPressed(CoreAbility ability, bool pressed)
+        {
+            if (_coreSlots.TryGetValue(ability, out var slot)) SetSlotPressed(slot, pressed, false);
+        }
+
+        /// <summary>A one-shot flash of a NON-elemental card.</summary>
+        public void PlayCoreAbilityFlash(CoreAbility ability)
+        {
+            if (_coreSlots.TryGetValue(ability, out var slot)) SetSlotPressed(slot, true, true);
+        }
+
+        void SetSlotPressed(Slot slot, bool pressed, bool releaseImmediately)
+        {
+            if (!style || !slot.Flash) return;
 
             // A one-shot flash is not a HOLD: PlayPressFlash presses and releases in the same call,
             // so latching the chip on it would leave the control drawn as held for good.
@@ -1224,7 +1452,13 @@ namespace CosmicShore.UI
                 slot.Tween?.Kill();
                 slot.FlashTween?.Kill();
             }
+            foreach (var slot in _coreSlots.Values)
+            {
+                slot.Tween?.Kill();
+                slot.FlashTween?.Kill();
+            }
             _slots.Clear();
+            _coreSlots.Clear();
         }
     }
 }

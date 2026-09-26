@@ -52,6 +52,9 @@ namespace CosmicShore.Editor
         /// <summary>How far the two plates may drift from mirror heights before it reads as a coffin.</summary>
         const float MaxPlateImbalance = 0.25f;
 
+        // The style's geometry is authored in reference px at 1920x1080.
+        const float ReferenceWidth = 1920f;
+
         [MenuItem("FrogletTools/Vessels/Audit Ability Lockups")]
         [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
             Description = "Ability lockup: style sanity + per-vessel icon fit inside the totem card.")]
@@ -185,6 +188,40 @@ namespace CosmicShore.Editor
                                   "read as one strip.");
                 problems++;
             }
+
+            // The pitch is the dial somebody reaches for to space the cards, and nothing else in the
+            // style says how WIDE the row it lays out ends up. Card count comes from the view's own
+            // display orders, so adding a core ability tightens this rather than invalidating it.
+            int widestRow = VesselHUDView.AbilityDisplayOrder.Length +
+                            VesselHUDView.CoreAbilityDisplayOrder.Length;
+            float fromRightEdge = (widestRow - 1) * style.cardPitch + style.plateWidth + style.rowMarginRight;
+            report.AppendLine($"       widest row {widestRow} cards → {fromRightEdge:0.#} px from the right " +
+                              $"edge ({fromRightEdge / ReferenceWidth:P0} of a {ReferenceWidth:0} reference canvas)");
+            if (fromRightEdge >= ReferenceWidth * 0.5f)
+            {
+                float maxPitch = (ReferenceWidth * 0.5f - style.rowMarginRight - style.plateWidth) / (widestRow - 1);
+                report.AppendLine($"  ✗ that crosses the middle of the screen, where the bottom-centre HUD " +
+                                  $"lives, and on a narrower aspect it runs off the left. Max pitch at " +
+                                  $"{widestRow} cards: {maxPitch:0.#}.");
+                problems++;
+            }
+            // A core card's upper cell exists only if the style gives it a mark. An unauthored
+            // emblem is not a blank plate - it is no plate, so the omni crystal card quietly
+            // becomes the same shape as the drift's and stops saying what it is.
+            if (!style.EmblemFor(CoreAbility.OmniCrystal))
+            {
+                report.AppendLine("  ✗ no coreAbilityEmblems row for OmniCrystal - its card would " +
+                                  "draw with NO upper cell, which is the drift's shape, not its own.");
+                problems++;
+            }
+            for (int i = 0; i < style.coreAbilityEmblems.Count; i++)
+            {
+                if (style.coreAbilityEmblems[i].sprite) continue;
+                report.AppendLine($"  ✗ coreAbilityEmblems[{i}] ({style.coreAbilityEmblems[i].ability}) " +
+                                  "has no sprite - it declares an upper cell and then leaves it empty.");
+                problems++;
+            }
+
             if (!Mathf.Approximately(style.chipGap, style.cellGap))
             {
                 report.AppendLine($"  ✗ chipGap {style.chipGap} has drifted from cellGap {style.cellGap} - " +
@@ -326,9 +363,62 @@ namespace CosmicShore.Editor
 
             report.AppendLine($"  {vessel,-10} ✓ {sizes.Count} slot(s); {normalising}. " +
                               "Row position, pitch, cell size and host scale are taken over by the lockup.");
+
+            // An unbound elemental slot is NOT a defect and this audit cannot tell its two causes
+            // apart, because only one of them exists in the asset: an ability nobody has designed
+            // yet (the card renders LOCKED) and a readout the vessel GENERATES at runtime
+            // (VesselHUDView.EnsureGeneratedAbilityIcons - the Squirrel's steal reach). Naming the
+            // count is what stops "3 slot(s)" reading as a complete row.
+            if (sizes.Count < VesselHUDView.AbilityDisplayOrder.Length)
+            {
+                var unbound = VesselHUDView.AbilityDisplayOrder
+                    .Where(e => !(view.TryGetAbilityIcon(e, out var i) && i))
+                    .ToList();
+                report.AppendLine($"             {unbound.Count} slot(s) bind no authored icon " +
+                                  $"({string.Join(", ", unbound)}) - either undesigned (drawn LOCKED) " +
+                                  "or generated at runtime by the view. Check the vessel in play.");
+            }
+
+            ReportCoreCards(view, style, report);
             ReportGauges(vessel, view, report);
             ReportLegacyContent(view, report);
             return problems;
+        }
+
+        /// <summary>
+        /// The NON-elemental cards this vessel binds, if any. They sit LEFT of the four elemental
+        /// ones and carry no element cell, so an icon on one has the whole ability cell to itself and
+        /// is measured against the same narrow edge. Reported rather than required: most vessels bind
+        /// none, and an absent core card is an absence of a claim, not a defect.
+        /// </summary>
+        static void ReportCoreCards(VesselHUDView view, AbilityLockupStyleSO style, StringBuilder report)
+        {
+            foreach (var ability in VesselHUDView.CoreAbilityDisplayOrder)
+            {
+                var emblem = style ? style.EmblemFor(ability) : null;
+                string cell = emblem ? $"emblem '{emblem.name}'" : "no element cell";
+
+                if (!view.TryGetCoreAbilityIcon(ability, out var icon) || !icon)
+                {
+                    // An icon is resolved at BUILD time on a card the lockup generates, so an
+                    // asset read cannot tell "this hull has no omni ability" from "its icon has
+                    // not been generated yet". Say which question is open rather than either
+                    // answer - the omniAbilitySprite field is the one that decides it.
+                    if (emblem)
+                        report.AppendLine($"             core card '{ability}' ({cell}): no icon bound on " +
+                                          "the ASSET - draws LOCKED unless this vessel authors an " +
+                                          "omniAbilitySprite, which the lockup turns into one at build time");
+                    continue;
+                }
+
+                float authored = AuthoredIconSize(icon.rectTransform, out bool readable);
+                string size = readable ? $"{authored:0} → {style.iconBoxSize}" : "size unreadable";
+                bool hasGauge = view.TryGetCoreAbilityGauge(ability, out var gauge) && gauge;
+
+                report.AppendLine($"             core card '{ability}' ({cell}, left of Charge): " +
+                                  $"{icon.name} {size}" +
+                                  (hasGauge ? $", gauge {gauge.name}" : ", no gauge"));
+            }
         }
 
         /// <summary>

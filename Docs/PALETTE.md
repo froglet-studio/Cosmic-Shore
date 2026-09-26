@@ -268,6 +268,191 @@ reads as *not implemented* rather than as mis-tinted. The caller falls back inst
 (`ToyFactory.CtaLime`). One consumer today: the Switchback gate ring's `Next` switch signal
 (`Docs/ToySystem/ARCHITECTURE.md` § "The switch").
 
+### 2.6 And the same trap on DANGER — `GetDangerSignalColor` (2026-09-26)
+
+The third sibling, needed the first time a UI surface had to say *this is danger mass*: the
+Squirrel's Boost Ring icon, whose ring is made of danger prisms (`SQUIRREL_ELEMENT_RECUT.md`
+§ "Fourth pass"; its team-coloured companion was cut in the fifth, the danger tint was not).
+
+The danger tier has **no colour fields of its own** (§ "The danger tier borrows the shielded base")
+— it is the domain's SHIELDED base face under the shared, domain-independent
+`EnvironmentColors.Danger` rim, and the RIM is the half that says dangerous. So that is what the
+accessor returns, normalised the way the other two are:
+
+| source | shipped `OriginalColorSetSO` value |
+|---|---|
+| `EnvironmentColors.Danger` raw | (1.4979, 0.00585, 0.00685, **a: 0**) |
+| `GetDangerSignalColor()` | (1.0, 0.0039, 0.0046, a: 1) |
+
+**Two traps in one field, and the second is the one to carry.** It is HDR (peak 1.498), so a raw
+read clips in UI; and its **alpha is authored 0**, exactly like the CTA pair — so a raw read is
+also fully transparent, which is worse than wrong, because a transparent tint is indistinguishable
+from a tint that never ran. `GetDangerSignalColor` therefore forces alpha 1 and gates on the PEAK
+rather than on the alpha (which is what `GetCtaSignalColor` gates on), and returns alpha 0 when the
+palette authors no danger colour at all — `CosmicWaveColorSetSO` and `PastelColorSetSO` both author
+(0,0,0,0) — so a caller keeps what it had rather than painting something black, per §2.4's rule.
+`ThemeManagerDataContainerSO.GetDangerSignalColor()` is the null-safe wrapper with the same
+contract.
+
+### 2.7 And on SHIELDED — `GetShieldedSignalColor` (2026-09-26)
+
+The fourth sibling, and the first where the trap is neither HDR nor alpha but **darkness**. The
+Squirrel's OMNI CRYSTAL card draws a ring of shielded prisms and wants to be the colour those prisms
+will actually be, so it reads the shielded tier's **base face** — the half that carries the tier's
+domain hue (§ "The danger tier borrows the shielded base" explains why it is the base and not the
+rim).
+
+| domain | `ShieldedOutsideBlockColor` raw | normalised to peak 1 | reads as |
+|---|---|---|---|
+| Jade | (0.0868, 0.2367, 0.4843) | (0.179, 0.489, 1.000) | blue |
+| Ruby | (0.3346, 0.1639, 0.4751) | (0.704, 0.345, 1.000) | violet |
+| Gold | (0.3134, 0.2099, 0.0821) | (1.000, 0.670, 0.262) | amber |
+
+> ⚠ **That middle column is no longer what `GetShieldedSignalColor()` returns** — §2.9 corrects it,
+> because normalising the authored base face is still not the colour shielded mass renders as. The
+> shipped answers are the authored colours converted linear->gamma: Jade (0.326, 0.524, 0.725),
+> Ruby (0.614, 0.442, 0.719), Gold (0.596, 0.495, 0.317).
+
+Every one of those is SDR with alpha 1 — so neither of §2.5's and §2.6's traps fires — and every one
+peaks **under 0.49**, which on a near-black plate is a smudge. It is authored that way *correctly*:
+on a prism a bright `ShieldedInsideBlockColor` rim (peak 1.5) sits over it, and the pair is what the
+player sees. A UI slot composes nothing, so it gets the base alone and the tier goes dark. Alpha 0
+back when the domain authors no shielded base, per §2.4.
+
+**General shape, now FOUR for four: a colour authored FOR A SHADER is not a colour a UI slot may
+read.** The shader composes it (a crystal lerps dull→bright by fresnel; a prism takes the rim over
+the base), tolerates HDR, and never looks at alpha. Each of these four fields has caught somebody out,
+and — worth noting — in three *different* ways: black (§2.4), a dark hue read as the wrong colour
+(§2.5), HDR **and** transparent (§2.6), and simply too dark to see (§2.7). So the rule is not "watch
+for HDR" or "watch for alpha": it is that when a HUD wants to speak the palette's language, add a
+`*SignalColor` accessor rather than reading the field, whatever the field looks like.
+
+**And having the accessor is still not enough** — §2.8 is the same family's fifth trap, where the
+field and the accessor are both correct and the *argument* is a sentinel.
+
+### 2.8 The fifth trap is the ARGUMENT, not the field — `Domains.Blue` has a real row (2026-09-26)
+
+§§2.4–2.7 are all about a colour being unreadable once a UI slot composes nothing. This one is the
+opposite shape and it shipped: the field was fine, the accessor was fine, and the **domain handed in**
+was the no-team sentinel.
+
+`SO_ColorSet` authors **four** `DomainColorSet` blocks — Jade, Ruby, Gold and **Blue** — and
+`TryGetColorSetByDomain` maps `Domains.Blue` to the fourth and returns `true`. But `Domains.Blue` is
+simultaneously the platform's *"no team / not yet picked / neutral entity"* sentinel, never present in
+`GameDataSO.ActiveDomains`, and **no code path can put a human on it**. So a domain-keyed accessor
+asked about an unresolved pilot answers with a real, saturated colour:
+
+| accessor | Blue's answer | how it reads next to the three playable domains |
+|---|---|---|
+| `GetDomainUIColor` / `GetDomainSignalColor` | (0.400, 0.500, 1.000) | a soft blue — plausible next to Jade's teal |
+| `GetShieldedSignalColor` | **(0.000, 0.000, 1.000)** | hue **exactly 240°**, saturation **1.000**, zero green |
+
+The Squirrel's omni crystal card shipped painted that second one. It was reported as *"blue regardless
+of which domain I picked"* and the correction that identified it is the useful part: **it was reported
+as NOT being Jade's** — Jade's shielded signal is hue 217°, saturation 0.82, green 0.489, i.e. *more
+green and less saturated*. A pure hue-240 fully-saturated blue is not a colour anything in the
+playable palette produces, which is what makes it identifiable.
+
+**The general rule: a sentinel that has a row in a lookup table gets a plausible answer, so a lookup
+that failed to resolve does not render as a failure — it renders as a different team.** That is worse
+than the other four traps in this section, because a black or transparent slot reads as *not
+implemented* and gets reported, while a saturated wrong hue reads as *implemented and mis-tinted* and
+gets rationalised.
+
+**And the sentinel is unusually hard to spot on JADE specifically, which is why the white-when-unresolved
+contract is load-bearing rather than tidy.** Jade's shielded tier is blue on *both* halves and sits only
+**22.6°** of hue from the sentinel, while Jade's *identity* colour — the teal players actually recognise
+as Jade — is 41° away in the other direction:
+
+| | normalised | hue | sat |
+|---|---|---|---|
+| Jade shielded **base** (what `GetShieldedSignalColor` reads) | (0.179, 0.489, 1.000) | 217.4° | 0.821 |
+| Jade shielded **rim** (`ShieldedInsideBlockColor`, over it on a prism) | (0.336, 0.528, 1.000) | 222.7° | 0.664 |
+| Jade **identity** (`TrailHighlightColor`) | (0.067, 1.000, 0.947) | 176.6° | 0.933 |
+| Blue / the sentinel | (0.000, 0.000, 1.000) | 240.0° | 1.000 |
+
+So a *correct* Jade card and the sentinel bug are indistinguishable at 60 px, and the only thing that
+separates "this is Jade" from "this never resolved" is that an unresolved read renders **white**. The
+icon is honest — Jade's shielded mass really is blue, on every palette that authors it (`CosmicWave`
+and `Pastel` author alpha 0 and are correctly refused, so `OriginalColorSetSO` is the only live answer
+and `ThemeManager` never swaps it). If a card should say WHICH DOMAIN rather than WHAT THE MASS IS,
+that is `GetDomainSignalColor` and a different promise.
+
+The refusal belongs to the **CALLER**, not to the accessor: "no pilot can fly Blue" is a fact about
+pilots, and a neutral mine or an uncommitted crystal legitimately wants to know what colour no-team
+is, so the palette stays a pure palette read. A HUD that means *this pilot's domain* tests for the
+sentinel itself and treats it as "not resolved yet" — alpha 0, keep your white, and keep looking
+(`SquirrelVesselHUDController.ResolveShieldedColor`). Two executors already used exactly that idiom
+from the other direction before this — `EchoSightActionExecutor` and `SniperShotActionExecutor` both
+write `status?.Player != null ? status.Domain : Domains.Blue`, i.e. **Blue already MEANS unresolved in
+this codebase** — which is the whole reason it must never be looked up as a colour.
+
+### 2.9 The sixth trap is COLOUR SPACE — and it is §3, met by a UI slot (2026-09-26)
+
+§2.7 added `GetShieldedSignalColor` so a HUD could say *"this is shielded mass, in this domain"*
+without reading a shader field raw. It shipped, then shipped twice more, and the icon still did not
+match the prisms beside it. **All three rounds were one mistake: a palette float is a LINEAR
+intensity and a UI `Image.color` is GAMMA.**
+
+The project is Linear (`m_ActiveColorSpace: 1`), so §3 above already said the stored floats are
+linear intensities. What §3 did not say is what happens when one is handed to a `Graphic`. Measured
+off a screenshot, two independent confirmations that a UI colour maps **1:1 to display bytes**:
+
+| authored | renders as |
+|---|---|
+| `ElementalBarsConfigSO.blueColor` (0.220, 0.510, 1.000) | (56, 130, 255) |
+| the shielded icon's old answer (0.179, 0.489, 1.000) | (46, 125, 255) |
+
+So the conversion was simply missing. `Color.gamma` is the fix — Unity's own transfer, so it cannot
+drift from the engine — and **the proof it is the right one is the HUE**:
+
+| Jade shielded base face | hue | sat | val |
+|---|---|---|---|
+| the raw field, read as bytes | (22, 60, 123) | 210.3 | 0.550 | 0.482 |
+| **converted, what ships** | **(83, 134, 185)** | **210.3** | 0.550 | 0.725 |
+| the previous answer (peak-normalised) | (46, 125, 255) | 217.3 | 0.821 | 1.000 |
+| **the prisms, measured on screen** | (95, 176, 254) | **209.4** | 0.626 | 0.996 |
+
+**Under one degree.** The 8° the old answer sat away had been written down in this very document as
+an ACES hue shift; it was the missing conversion. A wrong hypothesis does not land within a degree.
+
+**Two things the accessor used to do are gone, and both were compensating rather than doing a job.**
+It normalised the brightest channel to 1 on the stated grounds that the field is *"too dark for a UI
+slot"* — **it is not dark, it is linear** — and that normalisation is what pushed the result to hue
+217.3°, which is `blueColor` to within **0.3°**: on the same HUD row, the colour that means *two
+upgrades in*. A 0.25 lerp toward white then modelled bloom + ACES on top of that. Converted honestly
+the value is legible (brightness 0.725), sits 0.230 of saturation clear of that ladder rung, and
+needs neither.
+
+Shipped: **Jade (83, 134, 185) · Ruby (156, 113, 183) · Gold (152, 126, 81)**.
+
+Three things generalise:
+
+> **1. A colour that looks too dark for UI may just be in the wrong space.** Reach for the conversion
+> before reaching for a brightness correction — a correction tuned on an unconverted value is tuned
+> on a different colour, and it moves hue as well as brightness.
+
+> **2. `ElementalBarsConfigSO`'s five ladder colours are the HUD's VOCABULARY** (fire = deficit,
+> grey = 0, white = +1, blue = +2, lime = +3), and any new HUD tint has to be checked against them.
+> Here the collision was *manufactured by the bug* — but it is invisible in every source file, since
+> it exists only on screen, in one row, at one size.
+
+> **3. When a report is about a COLOUR, sample the frame.** Two colours 0.3° apart are identical in
+> a diff and different on a screen, and three passes of correct reasoning about the asset could not
+> see what one screenshot measured. `Docs/DIAGNOSTICS.md`'s *Report On-Screen UI* rule, one step out.
+
+⚠ **The three sibling accessors still normalise a linear value the same way and are deliberately
+left alone.** Their job is an unmistakable SIGNAL rather than a match to something in the world, and
+their shipped appearance was judged by eye; changing them would move the Echo Sight, the vessel
+vision band and every domain-tinted HUD slot at once. The exposure is real but the blast radius is
+a separate decision — note that the error's SIZE grows with how far apart a colour's channels are
+(Jade's shielded base shifts 7°, Jade's trail highlight only 0.2°), so a bright saturated signal
+colour is barely affected.
+
+`ShieldedSignalColorTests` reads the shipped assets and gates the hue match, the conversion contract
+(convert, do not normalise, do not lift), the ladder clearance, the sentinel refusal and per-domain
+hue separation.
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)

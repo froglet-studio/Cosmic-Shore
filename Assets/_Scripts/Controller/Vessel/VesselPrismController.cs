@@ -5,6 +5,7 @@ using CosmicShore.Utility;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Serialization;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Data;
 using System.Linq;
@@ -39,15 +40,19 @@ namespace CosmicShore.Gameplay
 
         [Header("Elemental (per-vessel, authored on the prefab)")]
         [Tooltip("MASS -> trail prism VOLUME multiplier (evaluated live each spawn). Authored as " +
-                 "an ElementalFloat on the vessel prefab (the Squirrel maps it to Mass, 1 -> 2.5); " +
+                 "an ElementalFloat on the vessel prefab (the Manta maps it to Mass, 1 -> 2.5; " +
+                 "the Squirrel now fixes it at a constant with Enabled off - see Value); " +
                  "applied as the cube root per axis so prism volume scales linearly with the level. " +
                  "Disabled (1x) on vessels that don't map Mass to their trail.")]
         [SerializeField] ElementalFloat trailVolume = new(1f);
 
-        [Tooltip("MASS level-5 'Heavy Trail': when enabled on this vessel, its trail prisms " +
-                 "arrive shielded while the Mass elemental upgrade is active (regular shield, " +
-                 "never SuperShield - fauna keep their devastate sink).")]
-        [SerializeField] bool massUpgradeShieldsTrail = false;
+        [Tooltip("BASE 'armoured drift line': when enabled on this vessel, prisms laid while " +
+                 "DRIFTING arrive shielded (regular shield, never SuperShield - fauna keep their " +
+                 "devastate sink). NO elemental gate - this was the Squirrel's Mass level-5 " +
+                 "'Heavy Trail' until Mass took the boost ring; the drift line is armoured for " +
+                 "every pilot now, which is what keeps a reason to drift.")]
+        [FormerlySerializedAs("massUpgradeShieldsTrail")]
+        [SerializeField] bool driftShieldsTrail = false;
 
         [Tooltip("MASS level-5 'Shielded Turn Trails' (the Manta's Yastri): prisms laid while " +
                  "a hard TURN is held arrive shielded once the Mass upgrade is live (regular " +
@@ -474,14 +479,16 @@ namespace CosmicShore.Gameplay
             }
 
             
-            // Shield. MASS level-5 'Heavy Trail': trail prisms arrive shielded ONLY while
-            // DRIFTING with the Mass upgrade active (per-spawn snapshot; regular shield only).
-            // Straight-line trail stays unshielded - the armor is the drift line's reward.
+            // Shield. BASE 'armoured drift line': trail prisms arrive shielded while DRIFTING,
+            // with NO elemental gate (per-spawn snapshot; regular shield only). Straight-line
+            // trail stays unshielded - the armor is the drift line's reward, and it is the reward
+            // for drifting rather than for levelling, which is why the Mass-5 gate came off.
             // 'Shielded Turn Trails' is the same rule with the drift swapped for a held hard
-            // TURN (the Manta's Yastri, above half intensity) — turning becomes fortifying.
-            if (shielded || ForceShielded || (massUpgradeShieldsTrail
-                             && vesselStatus is { IsDrifting: true }
-                             && vesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true)
+            // TURN (the Manta's Yastri, above half intensity) and KEEPS its Mass-5 gate - that
+            // is the Manta's shipped level-5, and nothing about this hull's re-cut touches it.
+            // ForceShielded is the base branch's unconditional override and composes with both.
+            if (shielded || ForceShielded || (driftShieldsTrail
+                             && vesselStatus is { IsDrifting: true })
                          || (turnUpgradeShieldsTrail
                              && _turnFlare01 >= 0.5f
                              && vesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true))

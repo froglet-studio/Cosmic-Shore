@@ -73,9 +73,20 @@ namespace CosmicShore.Gameplay
                                        debrisSpeedLimit: debrisSpeedLimit);
         }
 
-        public static void Steal(PrismImpactor impactee, IVesselStatus status)
+        /// <summary>
+        /// Take a prism into <paramref name="status"/>'s domain.
+        ///
+        /// <para><paramref name="superSteal"/> is the SHIELD clause, and it is the whole
+        /// difference: an ordinary steal meeting a SHIELDED prism sheds the shield and leaves the
+        /// prism where it was (<see cref="PrismTeamManager.Steal"/>), so armoured mass costs two
+        /// passes and only changes hands on the second. A super steal goes through in one - the
+        /// prism changes domain AND keeps its shield, because nothing in the flip clears
+        /// <c>IsShielded</c>. SUPER-shielded mass is refused either way; breaking that is its own
+        /// opt-in mechanic (the Rhino's energised blade, the Serpent's Pierce).</para>
+        /// </summary>
+        public static void Steal(PrismImpactor impactee, IVesselStatus status, bool superSteal = false)
         {
-            impactee.Prism.Steal(status.PlayerName, status.Domain);
+            impactee.Prism.Steal(status.PlayerName, status.Domain, superSteal);
         }
 
         /// <summary>

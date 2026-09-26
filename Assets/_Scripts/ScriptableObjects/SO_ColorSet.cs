@@ -92,6 +92,97 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
+        /// The DANGER tier at SIGNAL strength - the third sibling of
+        /// <see cref="GetDomainSignalColor"/> and <see cref="GetCtaSignalColor"/>, and needed for
+        /// the same reason: a UI surface that wants to say "danger" must not read a prism colour
+        /// raw.
+        ///
+        /// <para><b>The danger tier has no colour fields of its own</b> (see
+        /// <see cref="GetPrismKindColors"/>): it is the domain's SHIELDED base face under the
+        /// shared, domain-independent <see cref="EnvironmentColorSet.Danger"/> rim, and the RIM is
+        /// the half that says dangerous. So this returns that rim - which the shipped
+        /// <c>OriginalColorSetSO</c> authors HDR at (1.498, 0.006, 0.007) with <b>alpha 0</b>, the
+        /// same trap <see cref="GetCtaSignalColor"/> records. Normalised here to the hue with its
+        /// brightest channel driven to 1 and alpha 1.</para>
+        ///
+        /// <para>Returns alpha 0 when the palette authors no danger colour at all - both inactive
+        /// palettes author (0,0,0,0) - so a caller can keep whatever it already had rather than
+        /// paint something black. A colour accessor that can return black can make a UI element
+        /// vanish, and a vanished element reads as "not implemented" rather than as mis-tinted.</para>
+        /// </summary>
+        public Color GetDangerSignalColor()
+        {
+            var c = EnvironmentColors != null ? EnvironmentColors.Danger : default;
+            float peak = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+            if (peak <= 0.001f) return new Color(0f, 0f, 0f, 0f);
+            return new Color(c.r / peak, c.g / peak, c.b / peak, 1f);
+        }
+
+        /// <summary>
+        /// The domain's SHIELDED base face at SIGNAL strength - the fourth sibling of
+        /// <see cref="GetDomainSignalColor"/>, <see cref="GetCtaSignalColor"/> and
+        /// <see cref="GetDangerSignalColor"/>, and needed for the same reason a third time over:
+        /// a UI surface that has to say "this is SHIELDED mass, in this domain" must not read a
+        /// prism colour raw.
+        ///
+        /// <para>The shielded tier is its rim (<c>ShieldedInsideBlockColor</c>) over its base face
+        /// (<c>ShieldedOutsideBlockColor</c>) - see <see cref="GetPrismKindColors"/> - and it is the
+        /// BASE FACE that carries the tier's domain hue, which is why this reads that half.</para>
+        ///
+        /// <para><b>The whole of the work here is ONE conversion, and getting it wrong cost three
+        /// rounds</b> (<c>Docs/PALETTE.md</c> §2.9). This project is <b>Linear</b>
+        /// (<c>m_ActiveColorSpace: 1</c>) and these fields are <c>[ColorUsage(true, true)]</c>, so
+        /// the floats in the asset are <b>linear intensities</b> - §3. A UI <c>Image.color</c> is
+        /// <b>gamma</b>: measured off a screenshot, <c>ElementalBarsConfigSO.blueColor</c>
+        /// (0.220, 0.510, 1.000) renders as exactly (56, 130, 255) and this accessor's old answer
+        /// rendered as exactly (46, 125, 255) - a 1:1 map from float to display byte. So handing a
+        /// palette float straight to an Image is a SPACE error, and it is not a small one: Jade's
+        /// base face is (22, 60, 123) read as bytes and <b>(83, 134, 185)</b> once converted.</para>
+        ///
+        /// <para>The proof that the conversion is the right one is the HUE. Converted, Jade lands on
+        /// <b>210.3°</b>; Jade shielded prisms MEASURE <b>209.4°</b> on screen (four samples,
+        /// (86,167,253) (94,198,254) (106,178,254) (94,161,254)). Under a degree. The previous
+        /// answer sat at 217.3° and that 8° gap was written down as an ACES hue shift - it was the
+        /// missing conversion.</para>
+        ///
+        /// <para>Two things this accessor USED to do are therefore gone, and both were compensating
+        /// for the space error rather than doing a job. It normalised the brightest channel to 1 on
+        /// the stated grounds that the authored colour is "too dark for a UI slot" - <b>it is not
+        /// dark, it is linear</b>, and the normalisation is what pushed the result to
+        /// (0.179, 0.489, 1.000), hue 217.3°, which is <c>blueColor</c> to within <b>0.3°</b>: the
+        /// colour that means <i>two upgrades in</i> on the very row this icon is drawn on. And a
+        /// 0.25 lerp toward white modelled bloom + ACES on top of that. Converted honestly, the
+        /// value is legible (0.725 brightness), sits 0.230 of saturation clear of that ladder rung,
+        /// and needs neither.</para>
+        ///
+        /// <para>Stated gap: the prisms read BRIGHTER than this (measured value ~1.0 against 0.725)
+        /// because a bright HDR rim sits over the base and blooms. This is the BASE FACE's colour,
+        /// correctly converted - the hue and the tier are right, the bloom is not reproduced, and
+        /// inventing a lift for it is exactly the mistake above.</para>
+        ///
+        /// <para>Alpha 0 when the domain authors no shielded base at all, so a caller keeps
+        /// whatever it already had rather than painting something black - the same contract the
+        /// CTA and danger siblings have, for the same reason.</para>
+        ///
+        /// <para>⚠ The three sibling accessors still normalise a LINEAR value the same way, and are
+        /// deliberately left alone: their job is an unmistakable SIGNAL rather than a match to
+        /// something in the world, and their shipped appearance was judged by eye. Changing them
+        /// would move the Echo Sight, the vessel vision band and every domain-tinted HUD slot at
+        /// once. Recorded in §2.9, not fixed here.</para>
+        /// </summary>
+        public Color GetShieldedSignalColor(Domains domain)
+        {
+            if (!TryGetColorSetByDomain(domain, out var colorSet)) return new Color(0f, 0f, 0f, 0f);
+            var c = colorSet.ShieldedOutsideBlockColor;
+            if (c.a <= 0f || Mathf.Max(c.r, Mathf.Max(c.g, c.b)) <= 0.001f)
+                return new Color(0f, 0f, 0f, 0f);
+
+            // Unity's own linear -> gamma transfer, so this cannot drift from what the engine does.
+            var g = c.gamma;
+            return new Color(g.r, g.g, g.b, 1f);
+        }
+
+        /// <summary>
         /// The per-domain accent for translucent flat-UI card tints (Maelstrom round/player/summary
         /// cards, Connecting-panel domain rank) - deliberately brighter than
         /// <see cref="DomainColorSet.TrailHighlightColor"/> and alpha-tinted so card backgrounds stay

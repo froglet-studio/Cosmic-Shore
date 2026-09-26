@@ -1,7 +1,9 @@
 #if UNITY_EDITOR
 using NUnit.Framework;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 
 namespace CosmicShore.Tests
 {
@@ -20,12 +22,46 @@ namespace CosmicShore.Tests
     {
         const float MinMarginPx = 8f;
 
+        // The style's own header says its geometry is authored in reference px at 1920x1080.
+        const float ReferenceWidth = 1920f;
+
         static AbilityLockupStyleSO Load()
         {
             var style = Resources.Load<AbilityLockupStyleSO>("AbilityLockupStyle");
             Assert.IsNotNull(style, "Resources/AbilityLockupStyle is missing - every vessel would " +
                                     "fall back to un-styled ability icons.");
             return style;
+        }
+
+        [Test]
+        public void Style_GivesEveryCoreAbilityWithAnUpperCellItsEmblem()
+        {
+            var s = Load();
+
+            // The omni crystal card is the one non-elemental card with an upper cell, and the
+            // emblem is WHY it has one: the lockup builds that cell only when it has something to
+            // put in it, so an unauthored emblem does not draw a blank plate - it silently makes
+            // the omni card the same shape as the drift's, and the row stops saying what that
+            // card is. Nothing else in the project can notice that.
+            var omni = s.EmblemFor(CoreAbility.OmniCrystal);
+            Assert.IsNotNull(omni,
+                "AbilityLockupStyle authors no emblem for CoreAbility.OmniCrystal, so its card " +
+                "would draw with no upper cell at all. Add a coreAbilityEmblems row pointing at " +
+                "the omni crystal sprite.");
+
+            // The drift is the negative control and it matters: it proves the emblem is OPT-IN
+            // per ability rather than something every core card gets. A core ability whose card
+            // should be a bare plate must author nothing here.
+            Assert.IsNull(s.EmblemFor(CoreAbility.Drift),
+                "The drift's card is deliberately a bare plate with no upper cell. An emblem row " +
+                "for it would give it one, which is a different card.");
+
+            // Every authored row must actually carry art, or it declares an upper cell and then
+            // leaves it empty - the worst of both shapes.
+            for (int i = 0; i < s.coreAbilityEmblems.Count; i++)
+                Assert.IsNotNull(s.coreAbilityEmblems[i].sprite,
+                    $"coreAbilityEmblems[{i}] ({s.coreAbilityEmblems[i].ability}) has no sprite, " +
+                    "so its card builds an upper cell with nothing in it.");
         }
 
         [Test]
@@ -162,6 +198,28 @@ namespace CosmicShore.Tests
             Assert.Greater(betweenCards, s.cellGap,
                 $"cards sit {betweenCards} apart but a totem's own plates sit {s.cellGap} apart - " +
                 "the row would group the wrong way");
+        }
+
+        [Test]
+        public void Row_StaysInsideTheRightHalfOfTheScreen()
+        {
+            var s = Load();
+
+            // The pitch is a dial somebody reaches for to space the cards, and nothing else in the
+            // style says how WIDE the row it lays out ends up. The widest row the fleet authors is
+            // read from the view's own two display orders rather than typed, so adding a core
+            // ability tightens this automatically instead of quietly invalidating it.
+            int cards = VesselHUDView.AbilityDisplayOrder.Length +
+                        VesselHUDView.CoreAbilityDisplayOrder.Length;
+            float rowWidth = (cards - 1) * s.cardPitch + s.plateWidth;
+            float fromRightEdge = rowWidth + s.rowMarginRight;
+
+            Assert.Less(fromRightEdge, ReferenceWidth * 0.5f,
+                $"{cards} cards at pitch {s.cardPitch} reach {fromRightEdge} from the right edge of " +
+                $"a {ReferenceWidth}-wide reference canvas - past half the screen the row crosses " +
+                "the middle, where the bottom-centre HUD lives, and on a narrower aspect it runs " +
+                "off the left. Max pitch at this card count: " +
+                $"{(ReferenceWidth * 0.5f - s.rowMarginRight - s.plateWidth) / (cards - 1):0.#}");
         }
 
         [Test]

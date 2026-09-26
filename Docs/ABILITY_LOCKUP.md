@@ -255,7 +255,7 @@ to claim, silently, and only on the vessels whose authoring had drifted.
 
 | vessel | slot | meter |
 |---|---|---|
-| Squirrel | **Charge** (Skimming) | `boostFill` — the skim-energy meter. It sits under the skimming button and belongs on the skimming card; a first pass put it on Time, which is the Boost Ring |
+| Squirrel | **Time** (Skimming) | `boostFill` — the skim-energy meter. It is authored under the skimming button and belongs on the card of the ability it reports on, which since the 2026-09 element re-cut is **Time**: skimming is what banks the energy |
 | Sparrow | Time (Afterburner) | `rollChargeIndicator` — the strafing-roll pip, already on the right card |
 | Scarab | Space (Ball Forge) | `energyRing` — authored under the throttle button, re-homed |
 
@@ -477,13 +477,272 @@ ever arrived and (2) meant the answer would have been wrong if one had.
 
 ## Locked slots — the row is always four cards
 
-`AbilityDisplayOrder` is four elements, so the row is four cards, always. A slot the vessel binds no
+`AbilityDisplayOrder` is four elements, so the **elemental** row is four cards, always — a vessel
+may add non-elemental cards to their left (see below), but never fewer than four elemental ones. A slot the vessel binds no
 icon for renders **locked**: both plates quieter, a hairline mark where the icon would be, no gauge
 track, no chip — but, since 2026-09-16, **the cooldown veil if something is driving one** (see
 "The cooldown" above; it is the only state a locked card draws). Deliberately **not a padlock** —
 the ability is not locked to the *player*, it does not exist yet. This is what puts the Rhino (one named ability, three open design slots) on the fleet's UI
 today instead of leaving it on the old one until design lands, and its element flowers dock into the
 locked cards exactly as they would into live ones.
+
+## Non-elemental cards — the extension point, to the LEFT of the four
+
+Not every ability an element could upgrade *is* one. A hull's **engine** — the thing it always has,
+that the other four spend — belongs on the row and has no flower to sit under. Since 2026-09-24 the
+lockup draws those as **core cards**: an ability plate with its gauge, its cooldown veil, its press
+flash and its control chip, and above it an **emblem** or nothing — never a flower. They are keyed on
+`CosmicShore.Data.CoreAbility` (`Drift`, `OmniCrystal`) for the same reason the
+elemental cards are keyed on `Element` — a card is addressed by a compile-time name rather than by a
+string a prefab can typo, and a member added to that enum is the whole of what a new one costs.
+
+**They sit LEFT of the four, in `VesselHUDView.CoreAbilityDisplayOrder`, and that separation is the
+point.** The elemental row must go on reading left-to-right as charge / mass / space / time with
+nothing interleaved, or *"which flower do I fill to upgrade this?"* stops being answered by position
+— which is the whole glance contract. `PlaceHost`'s slot index is therefore **signed**: `0..3` are
+the elemental columns and negative values are the core cards, one `cardPitch` apart each, so adding
+one pushes the set further left and **no elemental column moves**.
+
+**The two kinds line up by arithmetic rather than by eye**, and it is worth stating because it is
+what lets `BuildSlot` serve both from one body. An elemental card is `PlateHeight` tall, offset up by
+`CardCenterOffsetY`, with its ability plate at `-CardCenterOffsetY` — so that plate's centre lands at
+the **host's origin**. A core card is `abilityCellHeight` tall at offset zero with its plate at zero,
+which is the same place. The control chip hangs off the card's own bottom edge either way. Measured
+on the shipped style: ability plate at host Y **+0.0** both ways, chip centre at **−62.0** both ways.
+
+`Element.None` is what selects the ELEMENTAL shape — the sentinel doing the job it exists for —
+rather than a second bool: `BuildSlot(cardName, host, icon, flowerElement, emblem, emblemSprite)`
+skips the flower socket when handed it. Whether there is an upper cell **at all** is then a separate
+question, answered by whether the card has an emblem, so there are **three** shapes and the upper
+cell is the thing that differs:
+
+| card | upper cell | example |
+|---|---|---|
+| elemental | the element **flower** (a level readout) | Charge · Mass · Space · Time |
+| core, with an emblem | a static **mark** (a name) | `OmniCrystal` |
+| core, bare | nothing; the rect collapses to the ability cell | `Drift` |
+
+The emblem shares the socket position, the plate, the bloom and the whole Y arithmetic with the
+flower. What differs is only what is docked, because **a flower is a level readout and an emblem is a
+name** — which is also why the emblem is drawn **untinted**: it answers *what is this card*, the same
+answer on every hull and for every domain.
+
+### The OMNI CRYSTAL card (2026-09-26) — the first emblem, and the first card no vessel may skip
+
+`CoreAbility.OmniCrystal` is what a hull does when it flies through an omni crystal. It is
+non-elemental for the literal reason its name gives — an omni crystal is every element and therefore
+none, so no flower belongs over it — and it is bound to **no input on any vessel and never will be**,
+because collecting a crystal is CONTACT: `FullSpeedStraightAction` (the input enum's zero, this
+project's passive sentinel) maps to no physical control, so the card draws a blank chip.
+
+**It is STRUCTURAL, like the lockup itself.** `VesselHUDView.EnsureOmniCrystalCard` is not virtual
+and not opt-in, and `AbilityLockupView.Build` calls it beside `EnsureGeneratedAbilityIcons` — because
+a card a vessel can forget is a card most vessels will be missing, and *every* vessel can fly through
+a crystal. That needed one change to the core build pass, which previously `continue`d on a binding
+with no icon: a core card now resolves a **locked host** exactly as an elemental one does
+(`ResolveLockedHost(row, key)`, generalised off the enum onto a string so both callers share one
+body). Without it the card would VANISH on a hull with no art rather than read as undesigned.
+
+**The two halves come from different places, and that is the design.** The upper plate's emblem is
+one authored row on the fleet-wide style (`AbilityLockupStyleSO.coreAbilityEmblems`, pointing at
+`ElementIcons/OmniCrystal_Active.png` — the same crystal the Dolphin's Mass card wears), because the
+mark means the same thing on every hull; authoring it per-vessel would be eight chances to disagree
+about one fact. The lower plate's icon is per-vessel (`VesselHUDView.omniAbilitySprite`), because
+what a crystal *does* is a property of the hull.
+
+**An unauthored emblem is not a blank plate — it is NO plate**, which silently makes the omni card
+the same shape as the drift's. Both `AbilityLockupStyleTests` and the auditor assert the row exists,
+with the drift as the negative control (it must author none, which is what proves the emblem is
+opt-in per ability rather than something every core card gets).
+
+Measured off the shipped `vesselCrystalEffects`, what each hull actually does:
+
+| hull | omni crystal | card today |
+|---|---|---|
+| **Squirrel** | lays a ring of **shielded** prisms (`AOEShieldedRingSpawner`) | its own baked icon, tinted |
+| Manta | detonates its planted bombs (Kabloom) | locked |
+| Dolphin | fires its blast, and a resource change | locked |
+| Rhino | a blast, and a resource change | locked |
+| Serpent | a blast | locked |
+| Sparrow | an 8 s debuff **ward** | locked |
+| Urchin | haptics only — nothing a card can draw | locked, permanently |
+| Scarab | **nothing, by design** — its SKIMMER forges the crystal into a ball before the hull reaches it | locked, permanently |
+
+Six of those are art the fleet does not have yet, so they ship LOCKED. That is the honest state and
+exactly what a locked card is for: *an ability that does not exist is not the same as one the player
+has not unlocked, and the locked card says the first.*
+
+#### The Squirrel's icon is a MEASUREMENT of its own ability
+
+`Tools/Build/author_squirrel_shielded_ring_icon.py` (`--check`) bakes it, and it is the sibling of
+`author_squirrel_boost_ring_icon.py` in every respect: the ring's cross-section seen endwise, with
+`prismsPerRing` / `ringRadius` / `prismScale` read out of `AOEShieldedRingSpawner.prefab` (and its
+BASE prefab, since a variant carries only its overrides and reading either file alone gets a
+different ring) rather than restated, so `--check` fails the day the ability is retuned. It also
+fails if `isShielded` ever goes to 0, because the icon would then be describing an ability that does
+not exist.
+
+**The 45° turn is not styling — it is what a shield IS.** `PrismStateManager.ActivateShield` engages
+the CIRCUMSCRIBING octahedron (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE`, read from the shipped
+C#), and an octahedron's cross-section perpendicular to one axis is exactly the box's square turned
+45° and grown to the octahedron's own reach. So a shielded prism reads as a **diamond** where a bare
+one reads as a **square**, and the icon says "shielded" by drawing the armour rather than by being
+told to. Measured at the shipped numbers (8 prisms, radius 8.2, leaf 1.8, scale 3): diamond
+half-diagonal **2.7**, minimum gap between neighbouring shields **1.287** world units — which is
+simultaneously a statement about the icon and about the ability, since two octahedra that
+interpenetrate on screen are what `fit_shield_clearance.py` exists to prevent.
+
+The honest consequence, stated: the boost ring and the shielded ring are **nearly the same figure**
+— both 8 prisms at radius ~8 — so the two icons are each other's 45° rotation and differ only in
+which positions carry diamonds. That is the family resemblance the design asks for, and **colour is
+what tells them apart**: the boost ring wears the palette's DANGER rim (it lays danger prisms) and
+this one wears the pilot's own domain's **shielded base face** at signal strength
+(`SO_ColorSet.GetShieldedSignalColor` → `ThemeManagerDataContainerSO` → `SquirrelVesselHUDController`
+→ `VesselHUDView.SetOmniAbilityTint`).
+
+That accessor is the **fourth** `*SignalColor` sibling and exists for the reason the other three do
+(`Docs/PALETTE.md §2.6`): `ShieldedOutsideBlockColor` is authored DARK by design — Jade's is
+(0.087, 0.237, 0.484) — which is correct on a prism, where a bright rim sits over it, and a
+near-black smudge in a UI slot that composes nothing. Normalised, the three domains land on a clear
+blue, a violet and an amber. Alpha 0 when the palette authors none, so the icon keeps its white
+rather than being painted black.
+
+**There is deliberately no `SetCoreAbilityUpgraded`.** An upgrade is an element reaching level 5, and
+a core ability has no element, so nothing could ever raise it. Everything else a card can do is
+available: `SetCoreAbilityCooldown`, `SetCoreAbilityPressed`, `PlayCoreAbilityFlash`,
+`SetCoreAbilityControl`, and a `gauge` binding adopted exactly as an elemental one is.
+
+**The control chip comes from the BINDING, not from the ability map, and that follows from where the
+fact lives.** An elemental card derives its chip from its `ElementalAbilityMapSO` entry's `Input`
+because that is where an elemental ability's control is authored; a core ability has no map entry at
+all, so `CoreAbilityBinding.input` carries it. Both are still ONE authored fact — *which control* —
+with the glyph derived from it through `InputHintBindingMap` + `ControlGlyphSetSO`, so a wrong label
+stays structurally impossible. `VesselHUDController.SeedAbilityControls` pushes the core ones first,
+which means a vessel with no ability map at all still gets its chips.
+
+**One vessel binds one today.** The Squirrel's **drift** is `CoreAbility.Drift`: core flight, on the
+left trigger, upgraded by nothing — so its icon draws on a card one pitch left of Charge, with its
+chip below it exactly as an elemental card's is. Every other vessel binds none and emits nothing, so
+the row is byte-for-byte what it was.
+
+### The kerning bug a core card exposed
+
+An icon's drawn size is its authored `sizeDelta` times the lockup's kerning scale
+(`AbilityLockupStyleSO.IconScaleFor`, `iconBoxSize / authoredSize`). That scale was written in
+exactly one place — `VesselHUDView.AbilityIconRestScale`, applied by `SetAbilityUpgraded`, which
+`VesselHUDController` seeds **for every ELEMENT**. So every elemental icon was kerned a moment after
+the row was built, and the first non-elemental one, which no element ever seeds, **never was**: it
+drew at its authored 80 in a cell sized for 60, a third larger than its four neighbours, on the one
+card in the row nothing else touches.
+
+The fix is one line in `AbilityLockupView.NormaliseIcon`, which now writes the content scale as it
+centres an icon — so the row is correct the instant it is laid out and the seeding pass writes the
+identical value (nothing is upgraded at build time, so the rest scale IS the content scale). General
+rule: **a value applied only by an event is missing on everything that event does not reach**, and
+the gap shows up on whichever card is outside the loop rather than as an error.
+
+### A vessel may GENERATE an icon rather than author one
+
+`VesselHUDView.EnsureGeneratedAbilityIcons()` is a virtual called by `AbilityLockupView.Build()`
+before the row is laid out, and `BindGeneratedAbilityIcon(element, icon)` is how the vessel points a
+card at what it made. It exists because some readouts are a live **measurement** rather than a
+picture — the Squirrel's skimmer reach, the Dolphin's blast profile — and a measurement drawn as a
+sprite ladder quantizes it and silently stops matching the thing it depicts.
+
+Three rules. An override must be **idempotent** (the lockup may rebuild). It must create its host
+**outside the row**, which `PlaceHost` then re-homes. And an **authored icon always wins** —
+`BindGeneratedAbilityIcon` refuses a slot that already has one, so a generated readout can never
+overwrite a prefab's own art. The default is an empty body, so every other vessel is byte-for-byte
+unchanged.
+
+⚠ The cost is that the **asset** no longer shows the whole row: FrogletTools ▸ Vessels ▸ Audit
+Ability Lockups reads prefabs, and a generated icon does not exist there. The audit therefore names
+the unbound slots and says it cannot tell the two causes apart — *undesigned* (the card renders
+LOCKED) and *generated at runtime* — because only one of them is in the asset. Check that vessel in
+play.
+
+### A generated readout is a CHILD of the bound icon, never a sibling (2026-09-26)
+
+The Squirrel's Space card is the worked example: the bound `Image` is invisible and exists only so
+the card is not LOCKED and the lockup has a rect to kern, while the reach ring and the steal count
+are its **children**. Two things make that the right parenting, and both are general:
+
+- **A child inherits the kerning.** The lockup scales an icon by `iconBoxSize / its authored size`
+  (0.75 on this vessel), and a sibling would need that factor applied by hand and re-applied every
+  time the style asset moves.
+- **A child cannot occlude the art it sits in**, because a UGUI child draws *after* its parent's own
+  Graphic. So the same hook covers a live or palette-driven layer under an icon that is perfectly
+  good art — but only where that art is transparent.
+
+⚠ **The lockup kerns an icon's RECT and cannot see what a generated child DRAWS inside it**, so
+whether a generated card reads at the same size as its four neighbours is the vessel's own problem.
+The Squirrel's first cut put the ring on the icon's centre at a radius that nearly filled the box
+and hung the count off the plate below, and the card read as bigger than the rest of the row — the
+same failure mode as the un-kerned core card, arriving from the other direction and invisible to
+`NormaliseIcon`. `Tools/Build/check_squirrel_card_fit.py` measures the readout's whole span against
+the icon's own box, reading the numbers out of the view, the style asset and the shipped font.
+
+**A generated ACCENT under an authored icon was built here and CUT.** The Boost Ring's sprite is a
+circle of eight prism blocks whose middle is measured empty, and a `PerspectiveTunnelGraphic` drew
+a one-point-perspective tunnel in the pilot's own domain inside that hole — separated from the
+icon's danger tint rather than blended with it, exactly as `Docs/PALETTE.md §4.3` prescribes. It was
+removed on a **look call**: two saturated hues compete on a 60-unit card even when they never touch
+a pixel, and the domain is already said by three other things on the same screen. The mechanism
+above is what survives it — the accent was only ever the parenting rule applied to an authored icon
+instead of a generated one. *Separated is what makes two hues legible; it is not what makes a second
+hue worth having.*
+
+**Nothing in the lockup changed for any of it.** An icon's colour is pushed by the vessel's
+controller (the view holds no `GameDataSO`), and `VesselHUDView.SetAbilityUpgraded` writes an icon's
+SPRITE and SCALE and never its colour — so an icon tint and the upgrade signal cannot collide, on
+this card or any future one.
+
+### A cached rest scale outlives the layout that was cached under it (2026-09-26)
+
+`PlaceHost` normalises a host's scale to 1, with a doc comment saying it normalises "the things a
+prefab is otherwise free to disagree on". **Normalising is not enough on its own**, and the
+Squirrel is where that showed: every one of its four authored ability buttons is authored at
+`localScale 0.7` and carries `AbilityButtonPressJuice`, whose
+
+```csharp
+void Awake() => _restScale = transform.localScale;
+```
+
+ran long before the lockup was built, cached the **0.7**, and wrote it straight back —
+`OnDisable` restored it unconditionally, and a vessel HUD is shown and hidden routinely. So four of
+the Squirrel's five cards sat permanently at 0.7 beside the one host with no juice on it (the
+GENERATED Space host, §"A vessel may GENERATE an icon"), which is the card that kept the size the
+style asks for.
+
+**It was reported as the SPACE card being oversized**, and that reading is the finding: *four wrong
+cards agree with each other, so the one correct card is what looks wrong.* Measured off the report's
+own frame, the four authored cards span **0.693×** the Space card's width at the same scanline —
+the authored 0.7 to three digits — which is what turned a look complaint into an arithmetic one.
+
+Two changes, and the pairing matters. `AbilityButtonPressJuice` now captures **lazily**, at the
+start of a press, and `OnDisable` writes nothing until it has: it can only ever restore a scale it
+took itself, so a layout owner's write survives it anywhere, not just here. And `PlaceHost` calls
+`AbilityButtonPressJuice.SetRestScale(Vector3.one)` on the host it just placed, so an instance that
+already captured is corrected immediately rather than on its first press.
+
+**General rule: a rest scale cached before the thing that OWNS the layout has run is a stale rest
+scale, and it fails by quietly restoring the old value rather than by doing nothing.** That is the
+icon-level rule this document already carries (§"The kerning bug a core card exposed" — a view that
+runs its own scale tweens must re-anchor to `AbilityIconRestScale`) met one level up, at the HOST,
+and the reason it took longer to find is that the icon version fails on ONE card while this one
+fails on every card EXCEPT one. Gated by `Tools/Build/check_rest_scale_capture.py` (`--check`,
+`--self-test`, four negative controls; it names the pre-fix line).
+
+**The fleet was audited and only the Squirrel needed it**, which is worth stating rather than
+assuming: it is the only HUD that authors a non-1 host scale (0.7 on all four buttons plus its core
+card) and the only one carrying `AbilityButtonPressJuice` at all — Dolphin, Scarab and Sparrow
+author their hosts at 1 and carry only `Image` / `Button` / `ResourceDisplay`, none of which touches
+`localScale`; Manta, Rhino, Serpent and the shared `VesselHUDPrefab` bind no icons, so their hosts
+are generated by the lockup at 1. No vessel prefab overrides a HUD host's `m_LocalScale` either (the
+instance-override trap this document records elsewhere). The fix is structural regardless of that
+count — `PlaceHost` corrects any host carrying the juice on whatever vessel it turns up on, and the
+gate fails the build on the next component that caches a scale in `Awake` — so the audit is evidence
+that the correction is COMPLETE today, not the mechanism that makes it complete.
 
 ## Rollout + enforcement (all vessels)
 
@@ -500,8 +759,8 @@ per-vessel art or wiring for a human to supply.
 | Dolphin | 4/4 | ✅ (component also authored on the prefab — explicit, and equivalent) |
 | Scarab | 4/4 | ✅ ensured at runtime; `energyRing` re-homed onto the Space card as its gauge |
 | Sparrow | 4/4 | ✅ ensured at runtime; `rollChargeIndicator` becomes the Time card's gauge |
-| Squirrel | 4/4 | ✅ ensured at runtime; AUTHORED flowers re-homed, `boostFill` re-homed onto **Charge** as the skim-energy gauge, Boost Ring recharge on the standard cooldown |
-| Serpent | 1/4 | ✅ Time card bound (Solid Fuel Pellets — its four pips are the fuel tank); Charge/Mass/Space LOCKED |
+| Squirrel | 4/4 + 2 core | ✅ ensured at runtime; AUTHORED flowers re-homed. Charge = the joust (skull), Mass = boost ring (+ the standard cooldown veil), **Space = GENERATED** (skimmer-reach ring + steal count, built by the view), Time = skimming (+ `boostFill` as its gauge). Two non-elemental cards sit left of Charge: the **omni crystal** (emblem above, shielded-ring icon below) and the **drift** (no upper cell at all), chip **LT** |
+| Serpent | 1/4 | ✅ Time card bound (Solid Fuel Pellets — its four pips are the fuel tank); Charge/Mass/Space LOCKED. Its Charge card DOES draw the cooldown veil — a locked card has a plate, which is all the veil needs |
 | Manta · Rhino | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
 | Urchin | 0/4 | — no HUD prefab exists at all, so there is no view to ensure |
 
@@ -552,7 +811,15 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | Style tokens (single source of truth) | `Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs` |
 | Style asset | `Assets/Resources/AbilityLockupStyle.asset` |
 | The composer | `Assets/_Scripts/UI/View/AbilityLockupView.cs` |
+| Non-elemental card key | `Assets/_Scripts/Data/Enums/CoreAbility.cs` |
+| Non-elemental bindings + order | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `coreAbilities`, `CoreAbilityDisplayOrder`, `SeedCoreAbilityControls` |
+| Generated-icon hook | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `EnsureGeneratedAbilityIcons`, `BindGeneratedAbilityIcon`; called from `AbilityLockupView.Build` |
+| Icon kerning (applied at BUILD) | `Assets/_Scripts/UI/View/AbilityLockupView.cs` — `NormaliseIcon` |
 | The generated plate | `Assets/_Scripts/UI/View/TrapezoidGraphic.cs` |
+| Generated card readouts (a ring) | `Assets/_Scripts/UI/View/ScopeRingGraphic.cs` |
+| Card-fit gate (style + font measured) | `Tools/Build/check_squirrel_card_fit.py` (`--check`, `--self-test`) |
+| Press juice (lazy rest capture) | `Assets/_Scripts/UI/Elements/AbilityButtonPressJuice.cs` — `SetRestScale`, re-anchored by `PlaceHost` |
+| Stale-rest gate | `Tools/Build/check_rest_scale_capture.py` (`--check`, `--self-test`) |
 | Upgrade hook (shared) | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `SetAbilityUpgraded` → `SetUpgraded` |
 | Flower socket injection | `Assets/_Scripts/UI/View/ElementalBarsView.cs` — `TrySetPetalRoot` |
 | Press state + chip binding (shared init) | `Assets/_Scripts/UI/Controller/VesselHUDController.cs` |
@@ -576,7 +843,7 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | `slantEdgeThickness` / `slantEdgeWrap` / `slantEdgeAntialias` | 3 / 14 / 1 | the band on the sloped sides only, how far it wraps around each corner (the whole grade lives on that wrap), and the zero-alpha feather baked on both sides — the antialiasing. `thickness + antialias` must stay ≤ `trapezoidInset` |
 | `petalFlowerSize` | 60 | element flower — authored EQUAL to `iconBoxSize`, because mirrored plates give both marks the same negative space. Guard band: `0.75 ≤ flower/icon ≤ 1.0` |
 | `iconBoxSize` | 60 | the ONE drawn size for every vessel's icons; each icon's scale is derived from it. Multiplies the upgrade bump rather than replacing it |
-| `cardPitch` | 116 | centre-to-centre card spacing — one number for the fleet. Authored as `plateWidth + 2 × cellGap`, so the space **between** totems is exactly twice the space **within** one |
+| `cardPitch` | 128 | centre-to-centre card spacing — one number for the fleet, so the spacing is consistent across every vessel by construction. Authored as `plateWidth + 4 × cellGap`, so the space **between** totems is four times the space **within** one. It was `plateWidth + 2 × cellGap` (116) until the rest-scale fix let the four authored cards draw at their real 104 width and closed the row up. Its ceiling is the ROW: `(cards − 1) × cardPitch + plateWidth + rowMarginRight` must stay inside the right half of the 1920 reference canvas, asserted by both the tests and the auditor against the card count read off `VesselHUDView`'s own two display orders — 656 of 960 today, max pitch 204 |
 | `rowMarginRight` / `rowMarginBottom` | 40 / 44 | where the row sits, from the screen's bottom-right corner. `rowMarginBottom` measures to the **ability plate**, and the chip hangs below it — the row's real bottom margin is `rowMarginBottom − chipGap − chipHeight` (14px) |
 | `chipHeight` / `chipGap` | 24 / 6 | the control chip's socket below the card. `chipGap` is authored **equal to `cellGap`** — the chip is a third element in the same stack, so it clears the ability plate by the same distance the element plate does. `chipGap + chipHeight` must stay under `rowMarginBottom` or every label clips off the screen |
 | `gaugeCellFraction` | 1 | how much of the ability cell the linear gauge fills |
@@ -628,8 +895,9 @@ notches inside the trapezoid.
    Time = LT on the Dolphin; Mass and Space are passive and correctly show none.
 8. **Press.** Hold each bound control. The whole CARD lights and decays on release — and no circular
    glow appears anywhere behind an icon.
-9. **Gauge (Squirrel / Sparrow / Scarab).** Fly a Squirrel and boost: the Time card fills from the
-   bottom in a straight line, inside the icon's cell, over a dim track — no ring anywhere. Sparrow:
+9. **Gauge (Squirrel / Sparrow / Scarab).** Fly a Squirrel and boost: the **Time** card (the skim
+   icon) fills from the bottom in a straight line, inside the icon's cell, over a dim track — no
+   ring anywhere. Sparrow:
    the Time card wipes empty when a strafing roll is spent, refills on re-arm. Scarab: the Space
    card fills with ball energy and goes READY. Confirm each meter is on the card of the ability it
    reports on (boost on Boost Ring, ball energy on Ball Forge), not the one it was authored under.
@@ -641,13 +909,22 @@ notches inside the trapezoid.
     **solid the whole length including the corners**, wrapping a short way onto the top and bottom
     before dissolving; the plate's core stays transparent behind it. Look at the diagonals close up:
     they must be smooth, not stair-stepped. **No band across the middle of the top or bottom edge.**
-12. **Cooldown (Squirrel Time).** Fire the Boost Ring: a dark veil sweeps **clockwise** off the
+12. **Cooldown (Squirrel Mass).** Fire the Boost Ring: a dark veil sweeps **clockwise** off the
     card, over the icon, and clears with a bright flash when it comes back. If it unwinds
     anticlockwise, `fillClockwise` has been "corrected" back to true. The icon itself must NOT sink,
     rise, breathe, tint or wipe any more — if it does, the old animation is still wired.
-13. **Two readouts on one row.** Squirrel Charge shows the linear skim-energy fill; Squirrel Time
-    shows the radial cooldown. Confirm they read as different things at a glance, which is the whole
-    reason the cooldown is radial.
+13. **Two readouts on one row.** Squirrel **Time** shows the linear skim-energy fill; Squirrel
+    **Mass** shows the radial cooldown. Confirm they read as different things at a glance, which is
+    the whole reason the cooldown is radial.
+13a. **The core card (Squirrel).** One card sits a full pitch LEFT of Charge with **no flower above
+    it** — the drift, wearing the drift icon and an **LT** chip below it. Its plate's top edge must
+    line up with the four elemental ability plates, and its icon must be the SAME drawn size as
+    theirs (it was a third larger before the kerning fix — if it looks big again, `NormaliseIcon`
+    has stopped writing the content scale).
+13b. **The generated Space card (Squirrel).** A ring with a number inside it, no sprite anywhere.
+    Collect crystals to raise Space and the ring **grows smoothly** (it is the skimmer's live reach,
+    eased); steal prisms and the number climbs, in your own domain's colour. Neither is authored, so
+    if the card renders LOCKED instead, `EnsureGeneratedAbilityIcons` did not run.
 14. **Vessel swap.** Swap to the Dolphin from another vessel in Menu_Main freestyle and confirm
     exactly one set of cards (Build is idempotent; cards are adopted by name).
 
