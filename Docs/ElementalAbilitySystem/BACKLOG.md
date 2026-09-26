@@ -473,3 +473,30 @@ measurement attached is worse than no row.
   gate's changed-file scope. This is the false-positive class CLAUDE.md already documents for that
   gate (`Key`, `Direction`, `Frame`, `Stats`); the fix is to make the gate skip identifiers in a
   declarator's NAME position, not to add a `using` that nothing needs.
+
+## From the Squirrel omni-crystal card branch (2026-09-26)
+
+- **The three sibling `*SignalColor` accessors still hand a LINEAR value to GAMMA consumers.**
+  `GetShieldedSignalColor` was corrected this branch (`Docs/PALETTE.md §2.9`); its three siblings
+  were deliberately left alone and are a real, measured exposure. Counts and measurements, so the
+  next pass starts from evidence rather than from this row:
+  `GetDomainSignalColor` **16** call sites, `GetDangerSignalColor` **5**, `GetCtaSignalColor` **4**
+  (`grep -rl <name> Assets/_Scripts/`). The error's SIZE scales with how far apart a colour's
+  channels are, which is why it was invisible on the siblings and 7° on the one that broke: Jade's
+  shielded base face shifts **210.3° vs 217.3°** under the conversion, while Jade's
+  `TrailHighlightColor` shifts **176.6° vs 176.4°** — 0.2°, i.e. nothing. **Not a blanket fix.**
+  These accessors' job is an unmistakable SIGNAL rather than a match to something in the world, and
+  their shipped appearance was judged by eye; converting them would move the Echo Sight, the vessel
+  vision band and every domain-tinted HUD slot at once. The work is per-consumer: for each of the
+  25, decide whether it is depicting WORLD MASS (wants the conversion) or naming a TEAM (may keep
+  the normalised signal, and should say so). Note `GetCtaSignalColor` and `GetDangerSignalColor`
+  take no domain, so they are 9 sites of a single decision each.
+  *Shape (`/refactor` §3): a read whose writer is elsewhere — the space a value is in is decided by
+  the consumer, and nothing in the accessor's signature says which one it is written for.*
+
+- **Seven of eight vessels render a LOCKED omni crystal card.** This is **INCOMPLETENESS, not
+  debt** — filing it as cleanup would invite somebody to invent eight icons. Measured: exactly
+  **1** HUD variant authors `omniAbilitySprite` (the Squirrel's shielded ring); the other seven
+  draw the shared emblem above a locked plate, which is the honest state and what a locked card is
+  for. What a crystal DOES is a property of the hull, so each icon is a design decision for that
+  vessel, and the owner has said they will take a pass. No action until then.

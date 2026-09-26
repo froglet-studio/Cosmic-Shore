@@ -524,7 +524,8 @@ one frame after `Initialize` is what the card wore for the rest of the match. It
 **twice**: `SetOmniAbilityTint` (new) and `SetPlayerDomainColor` (pre-existing, which is why the steal
 count and the boost fill had the identical defect and nobody had noticed). Both now go through one
 `RepaintForDomain`, called from `Initialize` and then from `PushDomainPalette` in the existing
-`Update`, which repaints only on a change.
+`Update`, which repaints only on a change. (Both were folded into one `PushPalette` by the tenth
+pass below — named here as the record of what THIS pass shipped, not as current state.)
 
 Polled rather than subscribed, for two reasons worth stating: this controller **already runs an
 `Update`** for the tube cooldown and the steal readout, so the poll is free; and a

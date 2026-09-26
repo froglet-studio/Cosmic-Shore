@@ -310,8 +310,8 @@ rim).
 
 > ⚠ **That middle column is no longer what `GetShieldedSignalColor()` returns** — §2.9 corrects it,
 > because normalising the authored base face is still not the colour shielded mass renders as. The
-> shipped answers are the authored colours converted linear->gamma: Jade (0.325, 0.526, 0.725),
-> Ruby (0.611, 0.442, 0.718), Gold (0.596, 0.495, 0.317).
+> shipped answers are the authored colours converted linear->gamma: Jade (0.326, 0.524, 0.725),
+> Ruby (0.614, 0.442, 0.719), Gold (0.596, 0.495, 0.317).
 
 Every one of those is SDR with alpha 1 — so neither of §2.5's and §2.6's traps fires — and every one
 peaks **under 0.49**, which on a near-black plate is a smudge. It is authored that way *correctly*:

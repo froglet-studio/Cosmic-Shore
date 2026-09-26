@@ -4856,7 +4856,7 @@ scale bump** with a one-shot unlock punch.
   outright: the controller read `vesselStatus.Domain` once at `Initialize` — **twice**, since
   `SetPlayerDomainColor` had the identical defect on the steal count and the boost fill — so it held
   whatever was true one frame after spawn, before the pick replicates. Both now go through one
-  `RepaintForDomain`, POLLED in the `Update` that was already running (free, and no subscription to
+  `PushPalette`, POLLED in the `Update` that was already running (free, and no subscription to
   tear down against a `Player` a vessel swap replaces), gated on `Player` being present because
   `IVesselStatus.Domain` LogErrors when it is not. **That retry then singled out JADE, which is the
   finding's second half**: the latch recorded which domain it had ATTEMPTED to paint rather than

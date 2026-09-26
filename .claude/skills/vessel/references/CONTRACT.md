@@ -240,6 +240,39 @@ mapping to satisfy the auditor** (BACKLOG.md, locked).
 
 ## 5. The four-icon ability row
 
+### 5.0 Tinting a HUD element from the palette — read this before writing any `.color =`
+
+Four traps, all of which have now cost real playtests on this row specifically. They are ordered
+by how hard they are to see.
+
+1. **A palette float is a LINEAR intensity; a UI `Image.color` is GAMMA.** The project is Linear
+   (`m_ActiveColorSpace: 1`), so `SO_ColorSet`'s fields are linear and a `Graphic`'s colour maps
+   1:1 to display bytes. Handing one to the other is a space error that reads as *"too dark"* —
+   and the correction people reach for (normalise the brightest channel to 1) **moves hue**, which
+   is how one icon ended up 0.3° from a colour that already meant something else. Convert with
+   `Color.gamma`; never brighten to compensate. A world-space particle wants the LINEAR value, so
+   the conversion belongs to the CONSUMER, not the field (`Docs/PALETTE.md §2.9`).
+2. **`ElementalBarsConfigSO`'s five ladder colours are this row's VOCABULARY** — fire = deficit,
+   grey = 0, white = +1, blue = +2, lime = +3. Any new tint on a card is drawn inches from a petal
+   saying one of those things, so check the new colour against all five before shipping it. The
+   collision is invisible in every source file: it exists only on screen, in one row, at one size.
+3. **`Domains.Blue` is a SENTINEL with a real palette row**, so a domain-keyed accessor answers an
+   unresolved pilot with a plausible TEAM colour rather than with a failure. A HUD that means *this
+   pilot's domain* refuses the sentinel itself and keeps its white; `Blue` already means
+   *unresolved* elsewhere in this codebase (`EchoSightActionExecutor`, `SniperShotActionExecutor`).
+4. **Do not snapshot the domain at `Initialize`** (CLAUDE.md states it outright) — `NetDomain`
+   initialises to Jade and the pilot's pick replicates later. And when you add the retry, **latch
+   on whether the paint LANDED, not on which domain you attempted**: a palette resolve fails
+   silently while `ThemeManagerData` is unavailable, and a latch keyed on the domain then never
+   retries for the DEFAULT one. That singles out Jade and presents as a Jade bug.
+
+**And when a report is about a COLOUR, sample the frame before re-reading the code that sets it.**
+Two colours 0.3° apart are identical in a diff and different on a screen; three consecutive passes
+of correct reasoning about the asset found three real defects and changed nothing the player saw,
+where one screenshot measured the answer. (`FrogletTools > Diagnostics > Report On-Screen UI` for
+the layout equivalent.)
+
+
 Canon: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1–7.4. The distilled contract:
 
 - Exactly **four icons, lower right, charge → mass → space → time left-to-right** — the same
