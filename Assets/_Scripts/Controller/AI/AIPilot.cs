@@ -261,6 +261,28 @@ namespace CosmicShore.Gameplay
         Func<Vector3?> _driftLookTargetProvider;
 
         /// <summary>
+        /// Move the MODE's steering hooks (<see cref="SetExternalTargetProvider"/> and
+        /// <see cref="SetDriftLookTargetProvider"/>) off <paramref name="source"/> and onto this
+        /// pilot, leaving <paramref name="source"/> with none.
+        ///
+        /// <para>A mode installs its hooks on the AUTOPILOT OF THE HULL each bot spawned in, and
+        /// each hook reads its bot's live <c>Player.Vessel</c>. The arena pilot swap
+        /// (<c>PilotSwap</c>) hands a bot a DIFFERENT hull mid-match, so without this the bot's
+        /// objective stayed on the hull a human had just taken - inert there, since that
+        /// autopilot is off - and the bot flew its new hull on the platform default with no idea
+        /// what the mode wanted (a racing bot seeking crystals instead of rings, a striker that
+        /// never struck). The hooks follow the BOT, which is what they were always about.</para>
+        /// </summary>
+        public void TakeModeHooksFrom(AIPilot source)
+        {
+            if (!source || source == this) return;
+            _externalTargetProvider = source._externalTargetProvider;
+            _driftLookTargetProvider = source._driftLookTargetProvider;
+            source._externalTargetProvider = null;
+            source._driftLookTargetProvider = null;
+        }
+
+        /// <summary>
         /// The control the COMMIT loop drives - the input the commit branch presses to lock the
         /// course and free the nose (on the Dolphin: the drift + charge boost + drift trail trio).
         /// One name for it so the commit branches and the ability-cycler exclusion below can never
@@ -585,6 +607,9 @@ namespace CosmicShore.Gameplay
             // abilities. Clearing first is correct in both cases. Every coroutine this component
             // runs is started below and restarted below, so the sweep is exactly this method's own.
             StopAllCoroutines();
+            foreach (var ability in _activeAbilities)
+                ability.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+            _activeAbilities.Clear();
 
             AutoPilotEnabled = true;
 
@@ -626,11 +651,34 @@ namespace CosmicShore.Gameplay
             ReleaseAimTelegraph();
             EndOrbitBreak();
 
-            foreach (var ability in abilities)
+            // A STOPPED pilot must leave its hull holding NOTHING. That used to be harmless to get
+            // wrong, because the only stop was the menu's freestyle toggle, where the same player
+            // picks the controls straight back up. The arena pilot swap (PilotSwap) hands the hull
+            // to a DIFFERENT pilot mid-flight, and it inherited whatever the autopilot was in the
+            // middle of: a commit drift (course locked on a crystal, nose free - held until the
+            // AI's own steering released it, which never runs again) and a cycled ability still
+            // inside its Duration. Played as "the D-pad sent me into a spin I couldn't get out of".
+            //
+            // The cycled abilities: the old per-ability StopCoroutine was handed a FRESH iterator
+            // and matched nothing (StartAIPilot's comment already says so), so the loops ran on to
+            // the end of whatever Duration they were in. Kill them outright, and stop by hand the
+            // ones that had started - StopAllCoroutines alone would strand those ON.
+            StopAllCoroutines();
+            foreach (var ability in _activeAbilities)
+                ability.Ability.StopAction(actionExecutorRegistry, VesselStatus);
+            _activeAbilities.Clear();
+
+            if (_commitDriftHeld)
             {
-                StopCoroutine(UseAbilityCoroutine(ability));
+                _commitDriftHeld = false;
+                vessel?.StopShipControllerActions(CommitControl);
             }
         }
+
+        // The cycled abilities currently between their StartAction and StopAction, and whether
+        // this pilot is holding the commit drift - the two things StopAIPilot has to give back.
+        readonly HashSet<AIAbility> _activeAbilities = new();
+        bool _commitDriftHeld;
 
         void Update()
         {
@@ -688,6 +736,7 @@ namespace CosmicShore.Gameplay
                 // points, which is exactly the window in which announcing the aim is honest.
                 VesselStatus.Course = desiredDirection;
                 vessel.PerformShipControllerActions(CommitControl);
+                _commitDriftHeld = true;
                 EngageAimTelegraph();
                 desiredDirection = ResolveDriftLookDirection(desiredDirection);
             }
@@ -710,6 +759,7 @@ namespace CosmicShore.Gameplay
                 // longer reach until the cell happens to raise OnCellItemsUpdated, which is a
                 // crystal event and not a "this pilot needs a new goal" event.
                 vessel.StopShipControllerActions(CommitControl);
+                _commitDriftHeld = false;
                 ReleaseAimTelegraph();
 
                 if (_reseekArmed)
@@ -976,7 +1026,9 @@ namespace CosmicShore.Gameplay
             while (AutoPilotEnabled)
             {
                 action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
+                _activeAbilities.Add(action);
                 yield return new WaitForSeconds(action.Duration);
+                _activeAbilities.Remove(action);
                 action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
                 yield return new WaitForSeconds(action.Cooldown);
             }

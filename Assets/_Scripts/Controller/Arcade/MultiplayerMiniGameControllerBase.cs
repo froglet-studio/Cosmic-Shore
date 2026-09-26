@@ -75,6 +75,7 @@ namespace CosmicShore.Gameplay
                     gameData.MatchId,
                     gameData.PartyId,
                     gameData.InviteTriggered,
+                    gameData.IsArenaMatch,
                     startClasses, startIntensities, startLevels
                 );
             }
@@ -860,6 +861,7 @@ namespace CosmicShore.Gameplay
                 gameData.MatchId,
                 gameData.PartyId,
                 gameData.InviteTriggered,
+                gameData.IsArenaMatch,
                 startClasses, startIntensities, startLevels,
                 target
             );
@@ -897,6 +899,7 @@ namespace CosmicShore.Gameplay
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
             int domainCount, bool isMaelstrom, float comebackRate,
             string matchId, string partyId, bool inviteTriggered,
+            bool isArenaMatch,
             int[] startClasses, int[] startIntensities, float[] startLevels,
             ClientRpcParams rpcParams = default)
         {
@@ -918,6 +921,7 @@ namespace CosmicShore.Gameplay
             gameData.RequestedDomainCount = domainCount;
             gameData.IsMaelstromMode = isMaelstrom;
             gameData.ComebackRatePerScoreDeficit = comebackRate;
+            gameData.IsArenaMatch = isArenaMatch;   // arena seating: unique hulls + pilot swap
 
             // The card's per-hull starting element levels (SO_ArcadeGame.StartingElements). A
             // client never runs SyncFromArcadeGame, and element levels are simulated on the
