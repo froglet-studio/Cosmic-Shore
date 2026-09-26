@@ -272,11 +272,12 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameBroadside.asset", G_ASSET["Arcad
   SceneName: MinigameBroadside
   Vessels:
 {VESSEL_ROWS}  MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 6
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
+  ArenaRules: 1
   Tips:
   - Your hull already has a weapon. The card does not hand you one - it pays for the one you brought.
   - A contact strike is worth eight rounds. Closing is the expensive part, so it pays like it.

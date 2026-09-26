@@ -324,6 +324,90 @@ record (intensity, placed AI, domain count, own domain, own hull) and the rules 
 re-validate it are `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.2 - the arena is the arcade pointed
 at another roster, so it inherits the memory with the modal.
 
+### 3.7 Arena seating: six seats, one pilot per hull, and swapping into a teammate's ship
+
+Three rules, all carried by one authored bit on the card - **`SO_ArcadeGame.ArenaRules`**, set on
+the four `ArenaGames` cards and nowhere else (`ArenaSeatingTests` holds both directions) - and
+published at launch as **`GameDataSO.IsArenaMatch`** (by `SyncFromArcadeGame` on the host, by the
+config-sync RPC on a guest, cleared by the menu). It is an explicit bit rather than "the card lists
+several hulls" because that proxy is false: Scurry, Multiplayer Freestyle and the Maelstrom card
+all list several hulls and are not arenas.
+
+**1. Arena cards go up to six pilots.** `MaxPlayersAllowed` is 6 on Astro League (already), Brood
+Rush, Regatta and Broadside; the two Regatta/Broadside generators author the same number. What the
+launch modal actually offers is **`SO_ArcadeGame.MaxSeats`** = `min(MaxPlayersAllowed, distinct
+hulls listed)` under ArenaRules - every `MaxPlayersAllowed` read in `ArcadeGameConfigureModal` now
+goes through it. Brood Rush's spawner was switched from its four authored points to the
+cell-relative ring (`arrangeSpawnPointsAroundCell`), because `GameDataSO.GetRandomSpawnPose`
+REFILLS an exhausted list, so a fifth and sixth pilot would have spawned inside two others;
+Regatta (start line) and Broadside (cell ring) already build N seats.
+
+> **Open decision: Astro League lists three hulls (Rhino, Scarab, Squirrel), so under rule 2 it
+> seats THREE, not six.** Its card still says 6; `MaxSeats` is what caps it. Giving it six seats
+> means listing three more hulls, which is a mode-design call about who can strike a ball, not a
+> wiring one.
+
+**2. One pilot per hull.** Settled in three places, each covering what the one before it cannot:
+
+| where | how | covers |
+|---|---|---|
+| the lobby | SELECT VESSEL is a **claim** (`Player.NetArenaHullClaim`, server-write): `RequestArenaHullClaim` asks, the server grants a hull no other player holds and silently refuses one somebody does. The carousel steps over held hulls, never opens on one, steps off one taken while it is on show, and confirms only when the pilot's OWN claim lands (`TickArenaHullClaim`, 3 s timeout). Released on every card open and close; cleared per scene. | every human who confirmed a hull - i.e. every human, since Start/Ready is dead until they do |
+| the AI draw | `SpawnAIs` seeds a used set from every human's (clamped) hull, and `PickAIVesselType` deals only from what is left; an authored template naming a taken hull is re-drawn | every AI |
+| the human spawn | `ResolveSpawnVesselType` → `ResolveArenaUniqueHull`: a hull already flown by a live vessel is re-dealt to the first free one in card order (`GameDataSO.TryPickFreeHull`) | any path that never came through the lobby (a rematch, a late guest) |
+
+Server-write, because a claim is a CONTEST: two guests can press SELECT on one hull in the same
+frame and only an authority that sees both can hand it to exactly one. A side effect worth knowing:
+every arena match now carries at most one Urchin and one Dolphin, so the fixed-size shader banks
+sized to "the largest Urchin/Dolphin roster" (`PrismCradle.Slots` 4, `PrismLit.Slots` 8) are
+untouched by the six-seat cards.
+
+**3. A human can swap into an AI teammate's hull mid-match** - **D-pad left / right**, keyboard
+**1 / 2** (`PilotSwapGesture`, polled by `InputController`, so local-pilot and pause gated like the
+rear view). Left/1 = previous, right/2 = next, round a ring of the pilot's own hull plus every AI
+teammate's, ordered by vessel NetworkObjectId so every peer walks it identically
+(`PilotSwap.TryPickRingTarget`). Human teammates' hulls are never in the ring.
+
+It is the **Cellular Duel vessel swap generalised** (`IPlayer.ChangeVessel` + `IVessel.ChangePlayer`),
+not a respawn: nothing is spawned or destroyed, the two Players EXCHANGE live hulls, so rule 2
+holds through any number of swaps without being re-checked. Owner detects, server decides,
+everyone applies:
+
+1. `Player.RequestPilotSwap(dir)` (local, 0.75 s debounce) picks the target by VESSEL id and sends
+   `RequestPilotSwap_ServerRpc`.
+2. The server re-validates against its own state (`PilotSwap.TryValidateServer`: arena match, turn
+   running, target hull flown by an AI on the requester's domain, pairing not stale) - so two humans
+   reaching for one AI in the same frame get one swap and one refusal, never a swap with whatever
+   that AI flies by then. It moves ownership (`TransferOwnershipServer`: the AI's hull to the
+   human's client, the human's hull to the server, both `DontDestroyWithOwner` so a pilot who drops
+   after a swap still hands their ship to the AI), rewrites both `NetVesselId`s, and broadcasts
+   `ApplyPilotSwap_ClientRpc`.
+3. Every peer runs `PilotSwap.ApplyLocal`: the server stops the AI's autopilot on the hull it is
+   leaving, both Players change vessels, both hulls `ChangePlayer` (platform laws, HUD, input
+   subscription with held-input release, camera retarget, which machine's transformer simulates),
+   both transformers `AdoptCurrentMotion()` (their integrator state is stale on any machine that was
+   not flying them - without it a hull snaps to an old orientation and lurches from a dead stop), and
+   the server configures and starts the autopilot on the hull the human left
+   (`ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode`, the same config a backfill bot and
+   a departed human's ship get).
+
+**Score follows the PILOT**: `RoundStats` rides the Player and every credit resolves through
+`VesselStatus.Player`, so what you earn in a teammate's hull is yours. Both pilots share a domain, so
+the team total cannot move.
+
+One platform fix rode along because a hull changing machines MID-FLIGHT exposed it (the Duel
+only ever swaps between rounds): `VesselController`'s replica subscription to the owner's
+kinematics NetworkVariables was decided once at spawn and re-added unguarded by `ChangePlayer`, so a
+handed-over hull either ran every replica callback twice or, having become the owner, kept
+overwriting its own simulation from its echoed writes - it is now idempotent and follows ownership
+(`OnGainedOwnership` / `OnLostOwnership`), which also makes the ownership message and the apply RPC
+order-independent.
+
+**Stated limits.** Element levels are simulated on the machine that OWNS a hull and never
+replicate, so a hull that changes machines keeps the levels its new owner's replica held (starting
+elements plus whatever it saw) - crystal-earned levels the previous owner simulated do not travel.
+There is no toast for a swap yet (a `GameToastSituation` is a per-mode asset edit); the camera
+retarget is the only feedback. None of this has been run in the editor.
+
 ## 4. The Toy Box drives the LIVE toys
 
 `ToyboxModal` (`_Scripts/UI/Modals/ToyboxModal.cs`) is the app-shell face of the freestyle

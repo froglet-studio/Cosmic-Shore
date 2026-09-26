@@ -449,8 +449,38 @@ namespace CosmicShore.Gameplay
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;
         void OnIsTranslationRestrictedValueChanged(bool previousValue, bool newValue) => VesselStatus.IsTranslationRestricted = newValue;
         
+        // Guarded so a subscribe/unsubscribe is IDEMPOTENT. A vessel's replica subscription used
+        // to be decided once, at spawn, from its ownership then - and ChangePlayer added a second
+        // unguarded += on every hand-over, so a hull that changed hands mid-match (the Cellular
+        // Duel swap, the arena pilot swap) either ran every replica callback twice or, having
+        // BECOME the owner, kept overwriting its own simulation from its own echoed writes.
+        // Subscription now follows OWNERSHIP (OnGainedOwnership / OnLostOwnership below), and
+        // ChangePlayer's calls are no-ops when the state is already right.
+        bool _netVarsSubscribed;
+
+        /// <summary>
+        /// A hull handed to another machine mid-match (<c>PilotSwap</c>, the Cellular Duel swap)
+        /// stops reading its kinematics off the network the moment it is this machine's to
+        /// simulate - whichever of the ownership message and the swap RPC lands first.
+        /// </summary>
+        public override void OnGainedOwnership()
+        {
+            base.OnGainedOwnership();
+            UnsubscribeFromNetworkVariables();
+        }
+
+        /// <summary>The mirror: a hull this machine no longer owns is driven by its new owner's
+        /// replicated kinematics from here on.</summary>
+        public override void OnLostOwnership()
+        {
+            base.OnLostOwnership();
+            SubscribeToNetworkVariables();
+        }
+
         void SubscribeToNetworkVariables()
         {
+            if (_netVarsSubscribed) return;
+            _netVarsSubscribed = true;
             n_Speed.OnValueChanged += OnSpeedChanged;
             n_Course.OnValueChanged += OnCourseChanged;
             n_BlockRotation.OnValueChanged += OnBlockRotationChanged;
@@ -459,6 +489,8 @@ namespace CosmicShore.Gameplay
         
         void UnsubscribeFromNetworkVariables()
         {
+            if (!_netVarsSubscribed) return;
+            _netVarsSubscribed = false;
             n_Speed.OnValueChanged -= OnSpeedChanged;
             n_Course.OnValueChanged -= OnCourseChanged;
             n_BlockRotation.OnValueChanged -= OnBlockRotationChanged;

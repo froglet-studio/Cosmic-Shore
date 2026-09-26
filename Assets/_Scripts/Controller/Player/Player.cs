@@ -121,6 +121,137 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<MaelstromRosterTicket> NetMaelstromRoster =
             new(MaelstromRosterTicket.None, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+        /// <summary>
+        /// The hull this player has CLAIMED in an arena lobby (<c>SO_ArcadeGame.ArenaRules</c>:
+        /// every hull is flown by one pilot). <see cref="VesselClassType.Random"/> = no claim.
+        ///
+        /// <para>Server-write, because a claim is a CONTEST: two guests can press SELECT VESSEL on
+        /// the same hull in the same frame, and only an authority that sees both can hand it to
+        /// exactly one. Clients ask through <see cref="RequestArenaHullClaim"/>; the server grants
+        /// a hull nobody else holds and silently refuses one somebody does, so a refused pilot
+        /// simply never sees their own claim land and the launch modal steps them off it.
+        /// Everyone-read, so every lobby's carousel can skip hulls another pilot already holds.
+        /// Cleared per scene in <see cref="PrepareForNewScene"/> - a claim is lobby state.</para>
+        /// </summary>
+        public NetworkVariable<VesselClassType> NetArenaHullClaim =
+            new(VesselClassType.Random, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        /// <summary>The hull this player holds in an arena lobby, or Random for none.</summary>
+        public VesselClassType ArenaHullClaim => IsSpawned ? NetArenaHullClaim.Value : VesselClassType.Random;
+
+        /// <summary>
+        /// Ask to hold <paramref name="hull"/> for this arena lobby (Random releases). Owner-only,
+        /// server-arbitrated; see <see cref="NetArenaHullClaim"/>.
+        /// </summary>
+        public void RequestArenaHullClaim(VesselClassType hull)
+        {
+            if (!IsSpawned) return;
+            if (IsServer) { TryGrantArenaHullClaim(hull); return; }
+            if (IsOwner) RequestArenaHullClaim_ServerRpc(hull);
+        }
+
+        [ServerRpc]
+        void RequestArenaHullClaim_ServerRpc(VesselClassType hull) => TryGrantArenaHullClaim(hull);
+
+        void TryGrantArenaHullClaim(VesselClassType hull)
+        {
+            if (!IsServer) return;
+
+            if (hull is VesselClassType.Random or VesselClassType.Any)
+            {
+                NetArenaHullClaim.Value = VesselClassType.Random;
+                return;
+            }
+
+            if (NetArenaHullClaim.Value == hull) return;
+
+            var players = gameData != null ? gameData.Players : null;
+            if (players != null)
+            {
+                for (int i = 0; i < players.Count; i++)
+                {
+                    if (players[i] is not Player other || !other || other == this || !other.IsSpawned) continue;
+                    if (other.NetArenaHullClaim.Value != hull) continue;
+
+                    CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                        $"[Player] Arena hull claim refused: {NetName.Value} asked for {hull}, " +
+                        $"already held by {other.NetName.Value}.");
+                    return;
+                }
+            }
+
+            NetArenaHullClaim.Value = hull;
+        }
+
+        // ── Arena pilot swap (PilotSwap) ──────────────────────────────────────────────────────
+        float _nextPilotSwapRequestTime;   // owner-side debounce
+        float _nextPilotSwapServerTime;    // server-side rate limit
+        readonly List<ulong> _teamHullScratch = new();
+
+        /// <summary>
+        /// Hand this pilot's hull to the AI and take the next (+1) / previous (-1) AI teammate's
+        /// hull round the team's ring (<see cref="PilotSwap"/>). Local human pilot only; a no-op
+        /// outside an arena match or when there is no AI teammate. Returns whether a request was
+        /// sent - the server still decides.
+        /// </summary>
+        public bool RequestPilotSwap(int direction)
+        {
+            if (direction == 0 || !IsLocalUser) return false;
+            if (gameData == null || !gameData.IsArenaMatch) return false;
+            if (Time.unscaledTime < _nextPilotSwapRequestTime) return false;
+            if (Vessel is not UnityEngine.Object hull || !hull) return false;
+
+            PilotSwap.CollectTeamHulls(this, gameData.Players, _teamHullScratch);
+            if (!PilotSwap.TryPickRingTarget(_teamHullScratch, Vessel.VesselNetId, direction, out var target))
+                return false;
+
+            _nextPilotSwapRequestTime = Time.unscaledTime + PilotSwap.CooldownSeconds;
+            RequestPilotSwap_ServerRpc(target);
+            return true;
+        }
+
+        [ServerRpc] // RequireOwnership = true: a pilot can only ever move THEMSELVES
+        void RequestPilotSwap_ServerRpc(ulong targetHullId)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            // Slightly under the client's own debounce, so honest jitter is never refused while a
+            // modified client still cannot churn ownership faster than the design allows.
+            if (Time.unscaledTime < _nextPilotSwapServerTime) return;
+
+            if (!PilotSwap.TryValidateServer(this, targetHullId, gameData, out var ai, out var refusal))
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                    $"[Player] Pilot swap refused for {NetName.Value}: {refusal}.");
+                return;
+            }
+
+            _nextPilotSwapServerTime = Time.unscaledTime + PilotSwap.CooldownSeconds * 0.8f;
+
+            ulong ownHullId = Vessel.VesselNetId;
+            PilotSwap.TransferOwnershipServer(this, ai);
+            NetVesselId.Value = targetHullId;
+            ai.NetVesselId.Value = ownHullId;
+
+            ApplyPilotSwap_ClientRpc(ai.NetworkObjectId);
+        }
+
+        [ClientRpc]
+        void ApplyPilotSwap_ClientRpc(ulong aiPlayerNetId)
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.SpawnManager.SpawnedObjects.TryGetValue(aiPlayerNetId, out var aiObj) ||
+                !aiObj || !aiObj.TryGetComponent(out Player ai))
+            {
+                CSDebug.LogWarning($"[Player] Pilot swap for {NetName.Value}: AI player {aiPlayerNetId} is " +
+                                   "not spawned on this machine; the hulls stay as they were here.");
+                return;
+            }
+
+            PilotSwap.ApplyLocal(this, ai, gameData);
+        }
+
         public Domains Domain { get; private set; } = Domains.Jade;
 
         /// <summary>
@@ -857,6 +988,7 @@ namespace CosmicShore.Gameplay
                 // reads it again it is a stale answer to a question about the NEXT round.
                 NetMaelstromReady.Value = false;
                 NetMaelstromRound.Value = MaelstromRoundTicket.None;
+                NetArenaHullClaim.Value = VesselClassType.Random;
                 // The ROSTER deliberately survives: it is the tournament's, not the round's, and
                 // clearing it here would blank every client's field list on the way into a game
                 // and again on the way back out - which is the bug this channel exists to fix.

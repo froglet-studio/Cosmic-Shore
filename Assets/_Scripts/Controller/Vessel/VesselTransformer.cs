@@ -528,6 +528,25 @@ public class VesselTransformer : MonoBehaviour
         /// </summary>
         public void SetInitialSpeed(float initialSpeed) => speed = initialSpeed;
 
+        /// <summary>
+        /// Take over a hull that is ALREADY IN FLIGHT from wherever it is right now.
+        ///
+        /// <para>A transformer only simulates on the machine that flies its hull; everywhere else
+        /// it is switched off and the hull is posed by replication. So the integrator state it
+        /// keeps for itself - the orientation it is slerping toward, the smoothed scalar speed and
+        /// the vector model's momentum - is stale on every machine that was NOT flying it. A hull
+        /// handed to another pilot mid-match (<c>PilotSwap</c>) would otherwise snap back to that
+        /// stale orientation and lurch from a dead stop on the frame its new simulation starts.
+        /// This re-seeds all three from the live transform and the replicated
+        /// <c>VesselStatus.Speed</c>, which is exactly what every peer is drawing.</para>
+        /// </summary>
+        public void AdoptCurrentMotion()
+        {
+            accumulatedRotation = transform.rotation;
+            if (VesselStatus != null) speed = VesselStatus.Speed;
+            _vectorSeeded = false;   // re-seeds from the live facing and speed on the next move
+        }
+
         public void FlatSpinShip(float YAngle)
         {
             accumulatedRotation = Quaternion.AngleAxis(180, transform.up) * accumulatedRotation;

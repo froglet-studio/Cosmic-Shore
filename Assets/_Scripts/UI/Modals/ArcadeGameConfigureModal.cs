@@ -299,6 +299,7 @@ namespace CosmicShore.UI
             base.Update();
 
             ReconcileClientLobby();
+            TickArenaHullClaim();
 
             var pad = Gamepad.current;
             if (pad == null) return;
@@ -522,6 +523,7 @@ namespace CosmicShore.UI
             _localPlayerReady = false;
             _readyCount = 0;
             _vesselConfirmed = false;
+            ReleaseArenaHullClaim();
 
             // Before anything reads a control: the panel decides WHICH intensity row, domain tiles
             // and Start button the rest of this method is talking about.
@@ -586,7 +588,7 @@ namespace CosmicShore.UI
             if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
             if (!remembered.HasHostTerms) return;
 
-            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers),
+            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxSeats, MaxSupportedPlayers),
                                     MaxMatchSeats);
             var placements = LaunchPreferenceRules.ResolveAiPlacements(
                 remembered.AIDomains, ceiling - BaseSeats);
@@ -864,7 +866,7 @@ namespace CosmicShore.UI
 
             // Placements stack ON TOP of the base seats (humans, floored at the card's minimum) -
             // a min-2 card played solo keeps its balanced auto-AI and a tap adds the THIRD seat.
-            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers),
+            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxSeats, MaxSupportedPlayers),
                                     MaxMatchSeats);
             if (BaseSeats + config.AIDomains.Count >= ceiling)
             {
@@ -1342,7 +1344,7 @@ namespace CosmicShore.UI
                 if (QuestArcadeConstraints.ForcedPlayerCount > 0)
                     config.PlayerCount = Mathf.Clamp(QuestArcadeConstraints.ForcedPlayerCount,
                         Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount),
-                        Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers));
+                        Mathf.Min(game.MaxSeats, MaxSupportedPlayers));
             }
 
             SyncGameDataConfig();
@@ -1413,7 +1415,7 @@ namespace CosmicShore.UI
             // Player count - enforce minimum = party size so host can't select
             // fewer total players than there are humans in the lobby.
             int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
-            int pcMax = Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers);
+            int pcMax = Mathf.Min(game.MaxSeats, MaxSupportedPlayers);
 
             // Pinned for the weekly challenge: min == max, so the stepper renders with both arrows
             // disabled by its own bounds logic and there is no second code path to keep in step.
@@ -1512,6 +1514,13 @@ namespace CosmicShore.UI
             if (!chosen)
                 chosen = _availableShips[0];
 
+            // 5) ARENA: never open on a hull another pilot already holds.
+            if (IsHullHeldByOtherPilot(chosen.Class))
+            {
+                var free = _availableShips.FirstOrDefault(s => !IsHullHeldByOtherPilot(s.Class));
+                if (free) chosen = free;
+            }
+
             _availableShipIndex = _availableShips.IndexOf(chosen);
             SetSelectedShipInternal(chosen);
         }
@@ -1534,9 +1543,16 @@ namespace CosmicShore.UI
         void HandleVesselCycleRequested(int direction)
         {
             if (_vesselConfirmed || _availableShips.Count == 0) return;
+            if (ArenaHullClaimPending) return;
 
             int count = _availableShips.Count;
-            _availableShipIndex = ((_availableShipIndex + direction) % count + count) % count;
+            // Step past hulls another pilot already holds (arena cards only - a no-op otherwise).
+            // At most one lap: if every other hull is held, the carousel stays where it is.
+            for (int step = 0; step < count; step++)
+            {
+                _availableShipIndex = ((_availableShipIndex + direction) % count + count) % count;
+                if (!IsHullHeldByOtherPilot(_availableShips[_availableShipIndex].Class)) break;
+            }
 
             if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
             SetSelectedShipInternal(_availableShips[_availableShipIndex]);
@@ -1545,7 +1561,20 @@ namespace CosmicShore.UI
 
         void HandleVesselConfirmRequested()
         {
-            if (_vesselConfirmed) return;
+            if (_vesselConfirmed || ArenaHullClaimPending) return;
+            if (_availableShipIndex < 0 || _availableShipIndex >= _availableShips.Count) return;
+
+            // ARENA: a hull is flown by one pilot, so SELECT VESSEL is a CLAIM the server
+            // arbitrates (Player.NetArenaHullClaim) - two pilots can press it on one hull in the
+            // same frame. The confirmation lands when this pilot's own claim does
+            // (TickArenaHullClaim); a refusal steps the carousel to the next free hull.
+            if (TryBeginArenaHullClaim(_availableShips[_availableShipIndex])) return;
+
+            ConfirmVesselNow();
+        }
+
+        void ConfirmVesselNow()
+        {
             if (_availableShipIndex < 0 || _availableShipIndex >= _availableShips.Count) return;
 
             _vesselConfirmed = true;
@@ -1556,6 +1585,143 @@ namespace CosmicShore.UI
             SetSelectedShipInternal(_availableShips[_availableShipIndex]);
             RefreshVesselPicker();
             RefreshStartAvailability();
+        }
+
+        // ── Arena hull claims (SO_ArcadeGame.ArenaRules) ─────────────────────────────────────
+        //
+        // On an arena card every hull is flown by exactly ONE pilot, human or AI. The humans settle
+        // it here, in the lobby, before anybody spawns: SELECT VESSEL asks the server to hold the
+        // hull for this pilot (Player.NetArenaHullClaim, server-write, so a contested press has
+        // exactly one winner), and every pilot's carousel steps over a hull somebody else holds.
+        // The AI is dealt from what is left at spawn (ServerPlayerVesselInitializerWithAI), and
+        // the spawner re-checks as a backstop for any path that never came through this lobby.
+
+        const float ArenaHullClaimTimeoutSeconds = 3f;
+
+        VesselClassType _pendingHullClaim = VesselClassType.Random;
+        float _pendingHullClaimDeadline;
+
+        bool ArenaHullsExclusive => _selectedGame && _selectedGame.ArenaRules;
+
+        bool ArenaHullClaimPending => _pendingHullClaim != VesselClassType.Random;
+
+        /// <summary>The local human's own Player, without the stale-cache warning
+        /// <see cref="ResolveLocalOwnedPlayer"/> logs - this one is read every frame.</summary>
+        Player LocalOwnedPlayerQuiet()
+        {
+            if (gameData != null && gameData.LocalPlayer is Player cached && cached
+                && cached.IsOwner && !cached.IsInitializedAsAI)
+                return cached;
+
+            var nm = NetworkManager.Singleton;
+            var playerObj = nm != null ? nm.LocalClient?.PlayerObject : null;
+            return playerObj != null && playerObj.TryGetComponent<Player>(out var resolved) && resolved.IsOwner
+                ? resolved
+                : null;
+        }
+
+        /// <summary>True when an arena card is open and ANOTHER pilot holds <paramref name="hull"/>.</summary>
+        bool IsHullHeldByOtherPilot(VesselClassType hull)
+        {
+            if (!ArenaHullsExclusive || gameData == null) return false;
+
+            var self = LocalOwnedPlayerQuiet();
+            var players = gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                if (players[i] is not Player p || !p || p == self || !p.IsSpawned) continue;
+                if (p.ArenaHullClaim == hull) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Starts a claim when this is an arena card with a networked local pilot. False means no
+        /// contest is possible and the caller confirms at once.
+        /// </summary>
+        bool TryBeginArenaHullClaim(SO_Vessel ship)
+        {
+            if (!ArenaHullsExclusive || !ship) return false;
+
+            var self = LocalOwnedPlayerQuiet();
+            if (!self || !self.IsSpawned) return false;
+
+            if (IsHullHeldByOtherPilot(ship.Class))
+            {
+                if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
+                StepToFreeHull();
+                return true;
+            }
+
+            if (self.ArenaHullClaim == ship.Class) return false;   // already ours: confirm now
+
+            _pendingHullClaim = ship.Class;
+            _pendingHullClaimDeadline = Time.unscaledTime + ArenaHullClaimTimeoutSeconds;
+            self.RequestArenaHullClaim(ship.Class);
+            return true;
+        }
+
+        /// <summary>
+        /// Per frame, while an arena card is open: land a pending claim, step off a hull somebody
+        /// else just took, and keep this pilot's claim released while they have not confirmed.
+        /// </summary>
+        void TickArenaHullClaim()
+        {
+            if (!ArenaHullsExclusive || !_activePanel || _availableShips.Count == 0) return;
+
+            var self = LocalOwnedPlayerQuiet();
+
+            if (ArenaHullClaimPending)
+            {
+                if (self && self.ArenaHullClaim == _pendingHullClaim)
+                {
+                    _pendingHullClaim = VesselClassType.Random;
+                    ConfirmVesselNow();
+                    return;
+                }
+
+                bool refused = IsHullHeldByOtherPilot(_pendingHullClaim);
+                if (refused || Time.unscaledTime > _pendingHullClaimDeadline)
+                {
+                    _pendingHullClaim = VesselClassType.Random;
+                    if (refused) StepToFreeHull();
+                }
+                return;
+            }
+
+            // Not yet confirmed and another pilot has just taken the hull on show: move off it so
+            // the carousel never offers something SELECT cannot grant.
+            if (!_vesselConfirmed && _availableShipIndex >= 0 && _availableShipIndex < _availableShips.Count &&
+                IsHullHeldByOtherPilot(_availableShips[_availableShipIndex].Class))
+                StepToFreeHull();
+        }
+
+        /// <summary>Move the carousel to the next hull nobody else holds (one lap at most).</summary>
+        void StepToFreeHull()
+        {
+            int count = _availableShips.Count;
+            if (count == 0) return;
+
+            int start = Mathf.Clamp(_availableShipIndex, 0, count - 1);
+            for (int step = 1; step <= count; step++)
+            {
+                int i = (start + step) % count;
+                if (IsHullHeldByOtherPilot(_availableShips[i].Class)) continue;
+                if (i == _availableShipIndex) return;
+                _availableShipIndex = i;
+                SetSelectedShipInternal(_availableShips[i]);
+                RefreshVesselPicker();
+                return;
+            }
+        }
+
+        /// <summary>Give back this pilot's arena claim (card opened, closed, or launched).</summary>
+        void ReleaseArenaHullClaim()
+        {
+            _pendingHullClaim = VesselClassType.Random;
+            var self = LocalOwnedPlayerQuiet();
+            if (self && self.IsSpawned && self.ArenaHullClaim != VesselClassType.Random)
+                self.RequestArenaHullClaim(VesselClassType.Random);
         }
 
         /// <summary>
@@ -1658,7 +1824,7 @@ namespace CosmicShore.UI
             if (IsClientMode) return;
 
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            int pcMax = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
+            int pcMax = Mathf.Min(_selectedGame.MaxSeats, MaxSupportedPlayers);
             // A party can be LARGER than the card allows (four humans on a 3-player card), and
             // then effectiveMin > pcMax. Mathf.Clamp resolves an inverted range by returning the
             // MAX, so the count silently came back as fewer players than are actually present -
@@ -2188,7 +2354,7 @@ namespace CosmicShore.UI
                     (int)_selectedGame.Mode,
                     config.Intensity,
                     config.PlayerCount,
-                    _selectedGame.MaxPlayersAllowed,
+                    _selectedGame.MaxSeats,
                     CurrentPartyHumanCount,
                     config.DomainCount);
             }
@@ -2232,6 +2398,7 @@ namespace CosmicShore.UI
             _localPlayerReady = false;
             _readyCount = 0;
             _vesselConfirmed = false;
+            ReleaseArenaHullClaim();
 
             // A satellite arena is the expensive half of the preview - it must never outlive the
             // window somebody was looking at it through.
@@ -2696,6 +2863,7 @@ namespace CosmicShore.UI
 
             _selectedGame = game;
             _vesselConfirmed = false;
+            ReleaseArenaHullClaim();
 
             config.ResetState();
             config.SelectedGame = game;
@@ -2834,6 +3002,7 @@ namespace CosmicShore.UI
 
             _isClientMode = false;
             _vesselConfirmed = false;
+            ReleaseArenaHullClaim();
             _appliedLobbyGeneration = 0;
             DespawnAllChips();
 

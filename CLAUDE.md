@@ -2668,6 +2668,22 @@ and **deleted**: *"a dearer hit must bite harder"* is true by construction, so i
 came back green — *a check nobody has watched fail is a check nobody should trust.*
 See `_Scripts/Controller/Arcade/BROADSIDE.md`.
 
+**ARENA SEATING — six seats, one pilot per hull, and a human can take an AI teammate's ship.**
+One authored bit, `SO_ArcadeGame.ArenaRules` (on the four `ArenaGames` cards and nowhere else,
+published as `GameDataSO.IsArenaMatch`), carries three rules. Arena cards go to
+`MaxPlayersAllowed: 6`, but what the lobby offers is `SO_ArcadeGame.MaxSeats` =
+`min(MaxPlayersAllowed, distinct hulls listed)`, because **every hull is flown by exactly one
+pilot** — settled by a server-arbitrated lobby claim (`Player.NetArenaHullClaim`: SELECT VESSEL is
+a CONTEST two guests can press in one frame), an AI draw from the hulls left, and a spawn-time
+backstop for any path that skipped the lobby. And a human may hand their hull to the AI and take
+an AI teammate's mid-match (**D-pad left/right, keyboard 1/2**, `PilotSwap`) — the Cellular Duel
+vessel exchange generalised, so nothing spawns and hull exclusivity survives any number of swaps;
+score follows the PILOT. Astro League lists three hulls and therefore seats three. General rule it
+records: **a hull that changes machines MID-FLIGHT exposes every piece of simulation state that was
+decided once at spawn** — the vessel's replica NetworkVariable subscription now follows ownership
+(`OnGainedOwnership`/`OnLostOwnership`, idempotent) and the transformer re-seeds its integrator
+(`AdoptCurrentMotion`). `Docs/HomeHub/ARCHITECTURE.md` §3.7.
+
 `WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
 
 Many single-player modes (1, 3-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail. (`Rampage(2)` used to be in this set; it now has a real scene as a multiplayer mode.)

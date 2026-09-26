@@ -300,11 +300,12 @@ g.emit_asset("Assets/_SO_Assets/Games/ArcadeGameRegatta.asset", G_ASSET["ArcadeG
   SceneName: MinigameRegatta
   Vessels:
 {VESSEL_ROWS}  MinPlayersAllowed: 2
-  MaxPlayersAllowed: 4
+  MaxPlayersAllowed: 6
   MinDomainsAllowed: 2
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
+  ArenaRules: 1
   Tips:
   - The rail in YOUR colour is the racing line. Urchins latch onto it, Squirrels skim it.
   - A rail cannot be shot away. Only an energised Rhino sword opens a hole, and riders bridge holes.
