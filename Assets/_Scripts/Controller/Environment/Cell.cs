@@ -1281,6 +1281,17 @@ namespace CosmicShore.Gameplay
                 _volumeSumPending = false;
             }
             if (_volumeSumNative.IsCreated) _volumeSumNative.Dispose();
+
+            // Each density grid owns persistent NativeArrays; SetupDensityGrids disposes the
+            // old set on re-init, but a destroyed cell must free its last set too, or every
+            // cell leaks them once per scene load. Dispose is idempotent, and clearing means
+            // a late re-init can't reach these again.
+            if (countGrids != null)
+            {
+                foreach (var grid in countGrids.Values)
+                    grid?.Dispose();
+                countGrids.Clear();
+            }
         }
 
         void ResetCell()
@@ -2986,7 +2997,8 @@ namespace CosmicShore.Gameplay
                         gridTracked[block] = blockPosition; // remembered for the symmetric remove
 
                         foreach (var t in s_playableDomains)
-                            if (t != registeredDomain) countGrids[t].AddBlockAt(blockPosition);
+                            if (t != registeredDomain && countGrids.TryGetValue(t, out var grid))
+                                grid.AddBlockAt(blockPosition);
 
                         if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                             anyGrid.AddBlockAt(blockPosition);
@@ -3031,7 +3043,8 @@ namespace CosmicShore.Gameplay
             if (gridTracked.Remove(block, out Vector3 filedAt))
             {
                 foreach (Domains t in s_playableDomains)
-                    if (t != registeredDomain) countGrids[t].RemoveBlockAt(filedAt);
+                    if (t != registeredDomain && countGrids.TryGetValue(t, out var grid))
+                        grid.RemoveBlockAt(filedAt);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
                     anyGrid.RemoveBlockAt(filedAt);
