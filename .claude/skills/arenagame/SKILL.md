@@ -168,3 +168,10 @@ fire petals on a handicapped hull, white on a helped one), and everything about 
 - Point a hull's `IconActive` at a codex bake without looking at it: a harvester that reads the
   prefab ASSET photographs what the asset shows, and a hull that builds or hides itself at Awake
   looks like a different ship there (`IProceduralHullSource` is how the Scarab tells it otherwise).
+- Assume every hull on the card carries the same optional components. Arena seating hands LIVE
+  hulls between pilots (`PilotSwap` → `VesselController.ChangePlayer`), which runs a hand-over
+  path against every hull on the card rather than the one a vessel spawned as — and the Urchin
+  ships with **no HUD controller** (`vesselHUDController: {fileID: 0}`). An unguarded dereference
+  there threw halfway through a swap and left the human's hull reading the AI's stick. A
+  hull-handover path must tolerate every optional component the hull's own `Initialize` tolerates
+  (`Docs/HomeHub/ARCHITECTURE.md` §3.9, third playtest).
