@@ -621,63 +621,65 @@ cannot be told apart. If the card should instead say WHICH DOMAIN rather than WH
 lever is `ResolveShieldedColor` reading `GetDomainSignalColor` — a different promise, and a design
 call, not a fix.
 
-## Eleventh pass (2026-09-26): the colour was honest and still wrong, twice over
+## Eleventh pass (2026-09-26): LINEAR floats in a GAMMA slot
 
-The tenth pass shipped and the report came with a **screenshot**, which is what finally settled it —
-three rounds of reading source could not, because the defect existed only on screen. Two observations,
-both correct, both measurable off the frame:
+Three rounds chasing this colour were one mistake. **A palette float is a LINEAR intensity
+(`m_ActiveColorSpace: 1`, `Docs/PALETTE.md §3`) and a UI `Image.color` is GAMMA** — so handing
+`ShieldedOutsideBlockColor` to an Image is a space error, and every correction layered on top was
+compensating for it rather than doing a job.
+
+The report that broke it open came with a **screenshot**, then with the field's own value:
 
 > *"the actual ring of jade shielded prisms is clearly a different color than what you are coloring
 > the icon. also the color on the icon is clearly the exact same blue used to depict an elemental
-> petal with 2 levels of upgrade."*
+> petal with 2 levels of upgrade."* … *"shielded outside block color comes out to 22, 60, 123."*
 
-Sampled from the frame:
+Both true, and the conversion reconciles them:
 
-| | RGB on screen | hue | sat |
-|---|---|---|---|
-| the shielded octahedra (4 samples) | ~(95, 176, 254) | 201–215 | **0.583–0.660** |
-| the omni icon's diamonds | (46, 125, 255) | 217.3 | **0.821** |
-| the Space petal at +2 upgrade | (57, 130, 255) | 217.9 | 0.780 |
+| Jade shielded base face | RGB | hue | sat | val |
+|---|---|---|---|---|
+| the raw field, read as bytes | (22, 60, 123) | 210.3 | 0.550 | 0.482 |
+| **converted — what ships** | **(83, 134, 185)** | **210.3** | 0.550 | 0.725 |
+| the previous answer (peak-normalised) | (46, 125, 255) | 217.3 | 0.821 | 1.000 |
+| **the prisms, measured on screen** | (95, 176, 254) | **209.4** | 0.626 | 0.996 |
 
-**(1) The icon did not depict the mass.** `GetShieldedSignalColor` read the authored base face and
-normalised it, which is faithful to the ASSET and a third of the saturation range from what the
-player sees — because shielded mass is HDR, it blooms, and ACES desaturates anything bright. *A
-shader field is not a UI colour, and neither is the signal-normalised version of it.* Corrected with
-`SO_ColorSet.ShieldedRenderedLift` (0.25, a lerp toward white — the one operation that reproduces the
-measurement while leaving hue alone, so Ruby stays violet and Gold stays amber). Jade now lands on
-saturation 0.616 against the measured 0.626. Residual ~8° of hue, stated rather than chased: ACES
-shifts hue too, and neither authored half supplies that green (rim 222.7°, base+rim composite 219.7°,
-both further away).
+**The conversion lands under one degree from the measured prisms.** The 8° the old answer sat away
+had been written down — in this file and in `PALETTE.md` — as an ACES hue shift. It was the missing
+conversion. *A wrong hypothesis does not land within a degree.*
 
-**(2) The icon wore a colour the HUD already uses to mean something else**, and this is the half that
-generalises. Jade's uncorrected shielded signal is hue **217.3**; `ElementalBarsConfigSO.blueColor` —
-which on the SAME ROW means *this element is two upgrades in* — is hue **217.7**. A 0.3° difference:
-the same blue, by arithmetic. So the card was painted the colour for "+2", eight pixels from a petal
-saying exactly that.
+Two things the accessor used to do are deleted, and both were the compensation:
 
-> **The five petal-ladder colours are the HUD's VOCABULARY** (fire = deficit, grey = 0, white = +1,
-> blue = +2, lime = +3), and any new HUD tint has to be checked against them. A colour read honestly
-> out of the palette can still collide with one that already MEANS something, and the collision is
-> invisible in every source file — it exists only on screen, in one row, at one size.
+- **The peak normalisation**, justified as *"the authored colour is too dark for a UI slot"*. It is
+  not dark, it is **linear**. And that normalisation is what pushed the answer to hue 217.3°, which
+  is `ElementalBarsConfigSO.blueColor` to within **0.3°** — on this very row, the colour that means
+  *two upgrades in*. The petal collision was **manufactured by the bug**, not an independent fact.
+- **A 0.25 lerp toward white**, modelling bloom + ACES on top of the first compensation.
 
-The lift fixes both at once: 0.041 of saturation clear of the ladder becomes 0.164. Shipped values:
-**Jade (98, 157, 255)**, **Ruby (198, 130, 255)**, **Gold (255, 192, 114)**.
+Converted honestly the value is legible (brightness 0.725), sits 0.230 of saturation clear of that
+ladder rung, and needs neither. Shipped: **Jade (83, 134, 185) · Ruby (156, 113, 183) · Gold
+(152, 126, 81)**.
 
-`ShieldedSignalColorTests` reads the shipped assets and gates both — that the signal matches the
-measured rendered saturation, and that no playable domain comes within 0.10 saturation of a ladder
-colour at the same hue. Measured as a watched-fail gate: the suite passes the correction and **fails
-the reported bug** on exactly those two assertions.
+**Stated gap:** the prisms read brighter (measured value ~1.0 against 0.725) because a bright HDR rim
+sits over the base and blooms. This is the base face's colour, correctly converted — right hue, right
+tier, no bloom. Inventing a lift for that is precisely what just went wrong twice.
 
-### What three rounds of this cost, and the rule
+`ShieldedSignalColorTests` gates the hue match against the measurement, the conversion contract
+(convert, do not normalise, do not lift), the ladder clearance, the sentinel refusal and per-domain
+hue separation — read off the shipped assets, so a palette edit that reopens any of it fails.
 
-Rounds nine, ten and eleven each found a REAL defect — the sentinel lookup, the latch, the
-tonemapper/vocabulary pair — and only the third one changed what the player saw. The reason is that
-every one of them presents as the same sentence (*"the icon is the wrong blue"*) and **none of them
-is decidable from source**: two colours 0.3° apart are identical in a diff and different on a screen.
-*When a report is about a COLOUR, sample the frame before reading the code that sets it* — the
-screenshot answered in one measurement what three passes of correct reasoning could not. It is the
-`Report On-Screen UI` rule (`Docs/DIAGNOSTICS.md`) one step further out: a rendered frame is the one
-thing static analysis cannot see, and that includes analysis of the palette it was rendered from.
+### What four rounds cost, and the rules
+
+Rounds nine to twelve each found a real defect — the sentinel lookup, the latch, then this — and only
+the last changed what the player saw. Every one presents as the same sentence (*"the icon is the
+wrong blue"*) and **none is decidable from source**: two colours 0.3° apart are identical in a diff.
+
+- **When a report is about a COLOUR, sample the frame before reading the code that sets it.** The
+  screenshot answered in one measurement what three passes of correct reasoning could not.
+- **A colour that looks too dark for UI may just be in the wrong space** — reach for the conversion
+  before a brightness correction, because a correction tuned on an unconverted value is tuned on a
+  different colour and moves hue as well as brightness.
+- **The five petal-ladder colours are the HUD's vocabulary** and any new HUD tint is checked against
+  them, even when — as here — a collision turns out to be a symptom rather than the disease.
 
 ## Findings worth more than the change
 
@@ -819,8 +821,9 @@ Nothing below has been run; there is no Unity in this session.
    pale ice blue (shipped Jade (98, 157, 255)), not the icon noticeably deeper than the mass. Then
    look along your own ability row: the icon must not match the blue of an element petal at **+2
    upgrades** — raise any element to level 10 and put the two side by side. If they read as one
-   colour, the palette has drifted back into the HUD's vocabulary and `ShieldedSignalColorTests`
-   should be failing.
+   colour, the linear->gamma conversion has been undone and `ShieldedSignalColorTests` should be
+   failing. The icon is deliberately a little DARKER than the prisms (0.725 brightness against
+   their ~1.0): that is the bloom on their HDR rim, not a mismatch.
 7. **Iron Grip** — skim an opposing **shielded** prism below Space 5: it should lose its shield and
    keep its domain. At Space 5: it should change domain **and keep the shield**. Then confirm a
    **super**-shielded prism is refused at both levels.

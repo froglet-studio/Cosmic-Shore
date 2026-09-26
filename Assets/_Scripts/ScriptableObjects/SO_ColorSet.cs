@@ -127,64 +127,60 @@ namespace CosmicShore.ScriptableObjects
         ///
         /// <para>The shielded tier is its rim (<c>ShieldedInsideBlockColor</c>) over its base face
         /// (<c>ShieldedOutsideBlockColor</c>) - see <see cref="GetPrismKindColors"/> - and it is the
-        /// BASE FACE that carries the tier's domain hue, which is why the HUE is read from that
-        /// half. The shipped <c>OriginalColorSetSO</c> authors it dark by design (Jade
-        /// (0.087, 0.237, 0.484), the darkest channel peak in the palette): correct on a prism,
-        /// where a bright rim sits over it, and a near-black smudge in a UI slot that composes
-        /// nothing. So it is normalised to that hue with its brightest channel driven to 1.</para>
+        /// BASE FACE that carries the tier's domain hue, which is why this reads that half.</para>
         ///
-        /// <para><b>And that is still not what the player sees, which is the trap this accessor
-        /// exists to record</b> (<c>Docs/PALETTE.md</c> §2.9). Shielded mass is HDR and BLOOMS, and
-        /// the frame then goes through ACES, which desaturates anything bright. Measured off a
-        /// screenshot of Jade shielded prisms - four samples, modal RGB (86,167,253), (94,198,254),
-        /// (106,178,254), (94,161,254), mean saturation <b>0.626</b> - against this accessor's
-        /// pre-correction answer of <b>0.821</b>. The authored colour and the rendered colour are a
-        /// third of the saturation range apart, so a UI slot that copies the authored one does not
-        /// depict the mass it is drawn to depict.</para>
+        /// <para><b>The whole of the work here is ONE conversion, and getting it wrong cost three
+        /// rounds</b> (<c>Docs/PALETTE.md</c> §2.9). This project is <b>Linear</b>
+        /// (<c>m_ActiveColorSpace: 1</c>) and these fields are <c>[ColorUsage(true, true)]</c>, so
+        /// the floats in the asset are <b>linear intensities</b> - §3. A UI <c>Image.color</c> is
+        /// <b>gamma</b>: measured off a screenshot, <c>ElementalBarsConfigSO.blueColor</c>
+        /// (0.220, 0.510, 1.000) renders as exactly (56, 130, 255) and this accessor's old answer
+        /// rendered as exactly (46, 125, 255) - a 1:1 map from float to display byte. So handing a
+        /// palette float straight to an Image is a SPACE error, and it is not a small one: Jade's
+        /// base face is (22, 60, 123) read as bytes and <b>(83, 134, 185)</b> once converted.</para>
         ///
-        /// <para><see cref="ShieldedRenderedLift"/> models that as a lerp toward white, which is
-        /// the one operation that reproduces the measurement while leaving HUE alone - so Ruby stays
-        /// violet and Gold stays amber rather than every domain drifting toward one ice blue. At
-        /// 0.25 Jade lands on saturation 0.616 against the measured 0.626. The residual is a HUE
-        /// error of ~8 degrees (217.3 against the measured 209.4): ACES shifts hue as well as
-        /// desaturating, and no reading of the two authored halves supplies that green - the rim is
-        /// 222.7 and a base+rim composite 219.7, both further away. Stated rather than chased.</para>
+        /// <para>The proof that the conversion is the right one is the HUE. Converted, Jade lands on
+        /// <b>210.3°</b>; Jade shielded prisms MEASURE <b>209.4°</b> on screen (four samples,
+        /// (86,167,253) (94,198,254) (106,178,254) (94,161,254)). Under a degree. The previous
+        /// answer sat at 217.3° and that 8° gap was written down as an ACES hue shift - it was the
+        /// missing conversion.</para>
         ///
-        /// <para>The correction is ALSO what keeps this accessor out of the HUD's own vocabulary.
-        /// Uncorrected, Jade's shielded signal is (0.179, 0.489, 1.000) at hue 217.3 and
-        /// <c>ElementalBarsConfigSO.blueColor</c> - which on the very same row means <i>this element
-        /// is two upgrades in</i> - is (0.220, 0.510, 1.000) at hue <b>217.7</b>. A 0.3 degree
-        /// difference: the same blue, by arithmetic rather than by coincidence. The lift moves it
-        /// from 0.041 of saturation clear of the ladder to 0.164.</para>
+        /// <para>Two things this accessor USED to do are therefore gone, and both were compensating
+        /// for the space error rather than doing a job. It normalised the brightest channel to 1 on
+        /// the stated grounds that the authored colour is "too dark for a UI slot" - <b>it is not
+        /// dark, it is linear</b>, and the normalisation is what pushed the result to
+        /// (0.179, 0.489, 1.000), hue 217.3°, which is <c>blueColor</c> to within <b>0.3°</b>: the
+        /// colour that means <i>two upgrades in</i> on the very row this icon is drawn on. And a
+        /// 0.25 lerp toward white modelled bloom + ACES on top of that. Converted honestly, the
+        /// value is legible (0.725 brightness), sits 0.230 of saturation clear of that ladder rung,
+        /// and needs neither.</para>
+        ///
+        /// <para>Stated gap: the prisms read BRIGHTER than this (measured value ~1.0 against 0.725)
+        /// because a bright HDR rim sits over the base and blooms. This is the BASE FACE's colour,
+        /// correctly converted - the hue and the tier are right, the bloom is not reproduced, and
+        /// inventing a lift for it is exactly the mistake above.</para>
         ///
         /// <para>Alpha 0 when the domain authors no shielded base at all, so a caller keeps
         /// whatever it already had rather than painting something black - the same contract the
         /// CTA and danger siblings have, for the same reason.</para>
+        ///
+        /// <para>⚠ The three sibling accessors still normalise a LINEAR value the same way, and are
+        /// deliberately left alone: their job is an unmistakable SIGNAL rather than a match to
+        /// something in the world, and their shipped appearance was judged by eye. Changing them
+        /// would move the Echo Sight, the vessel vision band and every domain-tinted HUD slot at
+        /// once. Recorded in §2.9, not fixed here.</para>
         /// </summary>
         public Color GetShieldedSignalColor(Domains domain)
         {
             if (!TryGetColorSetByDomain(domain, out var colorSet)) return new Color(0f, 0f, 0f, 0f);
             var c = colorSet.ShieldedOutsideBlockColor;
-            float peak = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
-            if (c.a <= 0f || peak <= 0.001f) return new Color(0f, 0f, 0f, 0f);
+            if (c.a <= 0f || Mathf.Max(c.r, Mathf.Max(c.g, c.b)) <= 0.001f)
+                return new Color(0f, 0f, 0f, 0f);
 
-            float k = ShieldedRenderedLift;
-            return new Color(
-                Mathf.Lerp(c.r / peak, 1f, k),
-                Mathf.Lerp(c.g / peak, 1f, k),
-                Mathf.Lerp(c.b / peak, 1f, k),
-                1f);
+            // Unity's own linear -> gamma transfer, so this cannot drift from what the engine does.
+            var g = c.gamma;
+            return new Color(g.r, g.g, g.b, 1f);
         }
-
-        /// <summary>
-        /// How far <see cref="GetShieldedSignalColor"/> lifts a shielded hue toward white to reach
-        /// the colour shielded mass RENDERS as, after bloom and ACES. A MEASUREMENT (see that
-        /// method), not a taste setting: 0.25 puts Jade on saturation 0.616 against a measured
-        /// 0.626, inside the 0.583-0.660 spread of the four samples. Re-measure it, do not nudge
-        /// it - and re-measure against the SHIELDED tier specifically, since this is a property of
-        /// how bright HDR mass survives the tonemapper rather than of any one domain.
-        /// </summary>
-        public const float ShieldedRenderedLift = 0.25f;
 
         /// <summary>
         /// The per-domain accent for translucent flat-UI card tints (Maelstrom round/player/summary

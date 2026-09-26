@@ -4773,26 +4773,32 @@ scale bump** with a one-shot unlock punch.
   fact: **Jade's shielded tier is blue on both halves** (base 217.4°, rim 222.7°) and sits 22.6° from
   the sentinel's 240°, while Jade's *identity* teal is 41° away in the other direction — so
   white-when-unresolved is the ONLY thing separating "this is Jade" from "this never resolved".
-  **And the colour was STILL wrong, in two ways a screenshot measured in one pass and three rounds of
-  reading source could not.** (a) *A shader field is not a UI colour, and neither is the
-  signal-normalised version of it* — shielded mass is HDR, blooms, and goes through ACES, which
-  desaturates anything bright, so the octahedra MEASURE saturation 0.583–0.660 on screen against the
-  normalised base face's 0.821. `SO_ColorSet.ShieldedRenderedLift` (0.25, a lerp toward white — the
-  one operation that reproduces the measurement while leaving HUE alone, so Ruby stays violet and
-  Gold stays amber) lands Jade on 0.616; the residual ~8° of hue is stated rather than chased,
-  because ACES shifts hue too and neither authored half supplies that green (rim 222.7°, base+rim
-  composite 219.7°, both further away). (b) **The five `ElementalBarsConfigSO` ladder colours are the
-  HUD's VOCABULARY** (fire = deficit, grey = 0, white = +1, **blue = +2**, lime = +3), and Jade's
-  uncorrected shielded signal was `blueColor` to within **0.3° of hue** — so the card was painted the
-  colour meaning *two upgrades in*, eight pixels from a petal saying exactly that. *A colour read
-  honestly out of the palette can still collide with one the HUD already uses to mean something else,
-  and the collision is invisible in every source file — it exists only on screen, in one row, at one
-  size*, so any new HUD tint is checked against that ladder. One lift fixes both (0.041 saturation
-  clear of the ladder → 0.164); shipped Jade (98,157,255) / Ruby (198,130,255) / Gold (255,192,114),
-  gated by `ShieldedSignalColorTests` against the shipped assets, measured to pass the fix and fail
-  the reported bug. The reporting-loop rule: **when a report is about a COLOUR, sample the frame
-  before reading the code that sets it** — two colours 0.3° apart are identical in a diff and
-  different on a screen (`Docs/DIAGNOSTICS.md`'s *Report On-Screen UI* rule, one step further out).
+  **And the colour was STILL wrong, for one reason underneath both remaining rounds: a palette float
+  is a LINEAR intensity (`m_ActiveColorSpace: 1`) and a UI `Image.color` is GAMMA.** Measured off a
+  screenshot, a UI colour maps 1:1 to display bytes (`blueColor` (0.220, 0.510, 1.000) renders as
+  exactly (56,130,255)), so handing `ShieldedOutsideBlockColor` to an Image skipped the conversion
+  entirely. `Color.gamma` is the fix and **the proof is the HUE**: converted, Jade's base face is
+  (83, 134, 185) at hue **210.3°** against the prisms' measured **209.4°** — under one degree, where
+  the previous answer sat at 217.3°. *That 8° had been written down as an ACES hue shift; it was the
+  missing conversion, and a wrong hypothesis does not land within a degree.* Two corrections layered
+  on top are deleted because both were compensating rather than doing a job: a peak NORMALISATION
+  justified as *"the authored colour is too dark for a UI slot"* — **it is not dark, it is linear** —
+  and a 0.25 lerp toward white modelling bloom + ACES on top of that. The normalisation is also what
+  manufactured the second symptom: it pushed the hue to 217.3°, which is
+  `ElementalBarsConfigSO.blueColor` to within **0.3°**, i.e. the colour that means *two upgrades in*
+  on the very row the icon sits on. Converted honestly it is legible (brightness 0.725) and 0.230 of
+  saturation clear of that rung. Shipped Jade (83,134,185) / Ruby (156,113,183) / Gold (152,126,81),
+  gated by `ShieldedSignalColorTests` against the shipped assets. Three rules: **a colour that looks
+  too dark for UI may just be in the wrong space** — reach for the conversion before a brightness
+  correction, since one tuned on an unconverted value is tuned on a different colour and moves hue
+  too; **the five `ElementalBarsConfigSO` ladder colours are the HUD's VOCABULARY** (fire = deficit,
+  grey = 0, white = +1, blue = +2, lime = +3) and any new HUD tint is checked against them; and
+  **when a report is about a COLOUR, sample the frame before reading the code that sets it** — two
+  colours 0.3° apart are identical in a diff and different on a screen
+  (`Docs/DIAGNOSTICS.md`'s *Report On-Screen UI* rule, one step out). ⚠ The three sibling
+  `*SignalColor` accessors still normalise a linear value and are deliberately unchanged: their job
+  is an unmistakable SIGNAL rather than a world match, and the error's size grows with how far apart
+  a colour's channels are (Jade's shielded base shifts 7°, its trail highlight 0.2°).
   `Docs/PALETTE.md §2.8`, `§2.9`. Two more findings travel
   with it. **An
   extension point that has only ever had one user has only ever been tested for that user's

@@ -27,10 +27,14 @@ namespace CosmicShore.Tests
     /// </summary>
     public class ShieldedSignalColorTests
     {
-        // Measured off a screenshot of Jade shielded prisms: four samples, modal saturations
-        // 0.660 / 0.630 / 0.583 / 0.630, mean 0.626.
-        const float MeasuredRenderedSaturation = 0.626f;
-        const float MeasuredTolerance = 0.06f;   // covers the 0.583-0.660 sample spread
+        // Measured off a screenshot of Jade shielded prisms: four samples, mean (95, 176, 254),
+        // hue 209.4. HUE is the assertion because it is what the linear->gamma conversion buys and
+        // what its absence cost - the pre-fix answer sat 8 degrees away at 217.3 and that gap was
+        // written down as an ACES hue shift. Brightness deliberately is NOT asserted: the prisms
+        // read brighter because a bright HDR rim sits over the base and blooms, and inventing a
+        // lift to match it is the mistake this test exists to prevent.
+        const float MeasuredRenderedHue = 209.4f;
+        const float HueTolerance = 5f;
 
         // Below this the icon and a petal read as the same colour at the ~60px the row draws at.
         // The shipped-and-wrong value cleared blueColor by 0.041; the corrected one clears by 0.164.
@@ -78,12 +82,32 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void JadeMatchesWhatShieldedPrismsRenderAs()
+        public void JadeMatchesTheHueShieldedPrismsRenderAs()
         {
-            float s = Sat(Palette().GetShieldedSignalColor(Domains.Jade));
-            Assert.AreEqual(MeasuredRenderedSaturation, s, MeasuredTolerance,
-                $"Jade's shielded signal is saturation {s:F3}; shielded prisms MEASURE {MeasuredRenderedSaturation:F3} " +
-                "on screen. An icon that copies the authored base face does not depict the mass it draws.");
+            float h = Hue(Palette().GetShieldedSignalColor(Domains.Jade));
+            Assert.Less(Mathf.Abs(Mathf.DeltaAngle(h, MeasuredRenderedHue)), HueTolerance,
+                $"Jade's shielded signal is hue {h:F1}; shielded prisms MEASURE {MeasuredRenderedHue:F1} " +
+                "on screen. A gap here means the linear->gamma conversion is missing or has been " +
+                "undone - a palette float is a LINEAR intensity and Image.color is GAMMA.");
+        }
+
+        [Test]
+        public void TheSignalIsTheAuthoredColourConvertedAndNothingElse()
+        {
+            // The contract, stated independently of the implementation: convert, do not normalise
+            // and do not lift. Both of those shipped, and both were compensating for the missing
+            // conversion rather than doing a job of their own.
+            var palette = Palette();
+            foreach (var domain in Playable)
+            {
+                Assert.IsTrue(palette.TryGetColorSetByDomain(domain, out var set));
+                Color want = set.ShieldedOutsideBlockColor.gamma;
+                Color got = palette.GetShieldedSignalColor(domain);
+                Assert.AreEqual(want.r, got.r, 0.002f, $"{domain} red channel is not the gamma of the authored base face.");
+                Assert.AreEqual(want.g, got.g, 0.002f, $"{domain} green channel is not the gamma of the authored base face.");
+                Assert.AreEqual(want.b, got.b, 0.002f, $"{domain} blue channel is not the gamma of the authored base face.");
+                Assert.AreEqual(1f, got.a, 0.0001f, $"{domain} must report alpha 1 for an authored base face.");
+            }
         }
 
         [Test]
