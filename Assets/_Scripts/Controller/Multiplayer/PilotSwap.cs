@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// ARENA pilot swap: a human hands their hull to the AI and takes over an AI teammate's hull,
-    /// mid-match (<c>Docs/HomeHub/ARCHITECTURE.md</c> §3.7).
+    /// mid-match (<c>Docs/HomeHub/ARCHITECTURE.md</c> §3.9).
     ///
     /// <para><b>It is the Cellular Duel vessel swap, generalised to any two pilots of one team.</b>
     /// Nothing new is spawned and nothing is destroyed: the two Player objects exchange their live

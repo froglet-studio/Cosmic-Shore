@@ -552,11 +552,15 @@ public class VesselTransformer : MonoBehaviour
             accumulatedRotation = Quaternion.AngleAxis(180, transform.up) * accumulatedRotation;
         }
 
-        public void SpinShip(Vector3 newDirection)
-        {
-            if (SafeLookRotation.TryGet(newDirection, out var rotation, this, logError: false))
-                accumulatedRotation = rotation;
-        }
+        // SpinShip(Vector3) - a SNAP re-aim onto a supplied heading - is DELETED (Sep 2026).
+        // Its only three callers were vessel-on-vessel weapon effects (the Sparrow's guns and
+        // rocket, the Urchin's spikes, the Rhino's sword), and **A VESSEL MAY NOT MOVE AN
+        // OPPOSING VESSEL**: being shoved and re-aimed by somebody else's weapon is the one hit
+        // a pilot cannot answer with flying. What a weapon may take from another pilot is their
+        // ELEMENTAL CRYSTALS (Docs/ELEMENTAL_ECONOMY.md). GentleSpinShip below survives because
+        // its callers are a vessel deflecting off MASS it flew into - self-caused, and the
+        // flight model rather than a weapon. Tools/Build/check_vessel_on_vessel_motion.py fails
+        // the build if a victim-facing effect reaches for either of them again.
 
         public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
         {

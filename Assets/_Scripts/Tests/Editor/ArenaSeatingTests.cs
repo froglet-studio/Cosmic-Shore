@@ -12,7 +12,7 @@ using UnityEditor;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// ARENA seating (<see cref="SO_ArcadeGame.ArenaRules"/>, Docs/HomeHub/ARCHITECTURE.md §3.7):
+    /// ARENA seating (<see cref="SO_ArcadeGame.ArenaRules"/>, Docs/HomeHub/ARCHITECTURE.md §3.9):
     /// every hull is flown by one pilot, seats are capped at the hulls a card lists, and a human
     /// can step round a ring of AI teammate hulls. The pieces here are the pure ones every peer
     /// must answer identically - a ring that two machines order differently would send a swap

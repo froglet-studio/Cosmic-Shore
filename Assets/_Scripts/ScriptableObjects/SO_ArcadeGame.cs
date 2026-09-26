@@ -23,7 +23,7 @@ namespace CosmicShore.ScriptableObjects
         [Range(1, 4)] public int MaxIntensity = 4;
 
         [Header("Arena rules")]
-        [Tooltip("ARENA seating (Docs/HomeHub/ARCHITECTURE.md §3.7). On: every hull in this " +
+        [Tooltip("ARENA seating (Docs/HomeHub/ARCHITECTURE.md §3.9). On: every hull in this " +
                  "match is flown by exactly ONE pilot - once a pilot or an AI has a vessel class " +
                  "nobody else may take it - and a human may hand their ship to the AI and take " +
                  "over an AI teammate's hull mid-match (D-pad left/right, keyboard 1/2). Seats " +

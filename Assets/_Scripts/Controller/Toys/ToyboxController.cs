@@ -240,6 +240,10 @@ namespace CosmicShore.Gameplay
                 "vessel_changer", "Vessel Changer", "Fly through to swap your ship.", new Color(1.00f, 0.85f, 0.20f)));
             box.AddToy(MakeDefault<DomainChangerToyDefinitionSO>(
                 "domain_changer", "Domain Changer", "Fly through to change your team colour.", new Color(0.85f, 0.30f, 0.90f)));
+            // Needs no content wiring: its four crystals are read off the ElementalCrystalSet.
+            box.AddToy(MakeDefault<ElementChargerToyDefinitionSO>(
+                "element_charger", "Element Charger", "Fly through to charge your vessel's elements.",
+                new Color(0.90f, 0.95f, 1.00f)));
             // The conveyor's prism prefab is an asset reference the code-built fallback can't
             // supply - its scenes degrade to crystals + lifeforms until the authored asset
             // (FrogletTools > Scene Setup > Setup Freestyle Toybox) wires one.

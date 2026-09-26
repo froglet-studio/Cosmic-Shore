@@ -30,8 +30,7 @@ namespace CosmicShore.Tests
     ///
     ///   <item><b>A heart that clips the collect reward.</b> Heart world scale is read AS
     ///   GAMEPLAY: the collect reward is <c>min(worldScale × levelPerUnitScale,
-    ///   maxLevelGainPerCrystal)</c> and the live domain fauna buff is the same function
-    ///   summed over a domain's living hearts. Past the saturation scale two visibly
+    ///   maxLevelGainPerCrystal)</c>. Past the saturation scale two visibly
     ///   different hearts pay the same — a size the player can see and a reward they cannot
     ///   — which is exactly the property that makes "bigger lifeform, bigger heart, bigger
     ///   kill" true. <c>ElementalCrystalSetSO.MaxSafeHeartWorldScale</c> is the margin under

@@ -140,8 +140,7 @@ namespace CosmicShore.Gameplay
         /// Position ONLY: the heart's size is one curve keyed on LEVEL, applied for every
         /// lifeform at the single gate <see cref="Crystal.SetEmbeddedIn"/>
         /// (Docs/ECOSYSTEM.md §33) — a per-prefab scale here would be a per-prefab REWARD,
-        /// because a crystal's world scale is read as gameplay by both the collect reward
-        /// and the live domain fauna buff.
+        /// because a crystal's world scale is read as gameplay by the collect reward.
         /// </summary>
         void PlaceHeart()
         {

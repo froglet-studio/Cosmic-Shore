@@ -1016,7 +1016,7 @@ oscillating tadpoles · sharks everywhere at once or never resting · a jaw that
 moves, snaps, or leaves its danger prisms behind.
 
 ### QA-ECOLOGY-HERBIVORE-RULES 🟡 — spawn rotation / shielded diet / steering, after the buff merge
-**Source:** PR #631 (verified in-editor *before* `DomainFaunaBuffSystem` landed).
+**Source:** PR #631 (verified in-editor *before* the since-removed `DomainFaunaBuffSystem` landed — `Docs/ECOSYSTEM.md` §15; step 3's petal-bar watch no longer applies).
 1. Lobby/Blob: watch several fauna waves — do groups rotate around the spawn ring, and
    does a full wave hatch?
 2. Skim Race: watch brittlestars pick feed targets around the super-shielded track.
