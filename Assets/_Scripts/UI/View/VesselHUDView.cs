@@ -399,8 +399,61 @@ namespace CosmicShore.UI
         public void SetOmniAbilityTint(Color tint)
         {
             _omniTint = tint;
-            if (_omniAbilityIcon && tint.a > 0f) _omniAbilityIcon.color = tint;
+            if (!_omniAbilityIcon || tint.a <= 0f) return;
+
+            // A collect flash captured the OLD tint as its end value; a repaint mid-flash must
+            // not be undone by it settling, so the flash yields and the new tint lands now.
+            _omniColorTween?.Kill();
+            _omniAbilityIcon.color = tint;
         }
+
+        [Header("Omni crystal card - collect juice")]
+        [Tooltip("Scale the omni card's icon punches to when this hull collects an omni crystal.")]
+        [SerializeField] private float omniCollectPunchScale = 1.35f;
+        [Tooltip("How long the punch and the white flash take to settle back to rest.")]
+        [SerializeField] private float omniCollectDuration = 0.4f;
+        [Tooltip("How far toward white the icon flashes on a collect (0 = no colour flash).")]
+        [SerializeField, Range(0f, 1f)] private float omniCollectWhiteMix = 0.75f;
+
+        /// <summary>
+        /// This hull just COLLECTED an omni crystal - say so on the card that pictures what the
+        /// pickup does. Two beats, on two objects, so neither overwrites the other: the lockup's own
+        /// one-shot press flash lights the card's ability plate (the fleet's "this fired" signal, the
+        /// same one a button press draws), and the icon itself punches and flashes toward white
+        /// before settling back to its tint. Both decay rather than switch off.
+        ///
+        /// <para>A pickup is CONTACT rather than a button, which is why this is pushed by the
+        /// vessel's controller off the crystal event rather than resolved from an input like a
+        /// press - the card is bound to no input at all.</para>
+        ///
+        /// <para>Safe on a hull whose omni card has no art yet: the plate still flashes and there is
+        /// no icon to punch.</para>
+        /// </summary>
+        public void PlayOmniCrystalCollected()
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.PlayCoreAbilityFlash(CoreAbility.OmniCrystal);
+
+            if (!_omniAbilityIcon) return;
+
+            var rt = _omniAbilityIcon.rectTransform;
+            var rest = CoreAbilityIconRestScale(CoreAbility.OmniCrystal);
+            _omniScaleTween?.Kill();
+            rt.localScale = rest * omniCollectPunchScale;
+            _omniScaleTween = rt.DOScale(rest, omniCollectDuration)
+                                .SetEase(Ease.OutBack)
+                                .SetLink(rt.gameObject);
+
+            Color settle = _omniTint.a > 0f ? _omniTint : Color.white;
+            _omniColorTween?.Kill();
+            _omniAbilityIcon.color = Color.Lerp(settle, Color.white, omniCollectWhiteMix);
+            _omniColorTween = _omniAbilityIcon.DOColor(settle, omniCollectDuration)
+                                              .SetEase(Ease.OutQuad)
+                                              .SetLink(_omniAbilityIcon.gameObject);
+        }
+
+        private Tween _omniScaleTween;
+        private Tween _omniColorTween;
 
         const string OmniHostName = "OmniCrystalButton";
 
@@ -753,6 +806,8 @@ namespace CosmicShore.UI
         protected virtual void OnDestroy()
         {
             _fadeTween?.Kill();
+            _omniScaleTween?.Kill();
+            _omniColorTween?.Kill();
             foreach (var tween in _abilityIconTweens.Values)
                 tween?.Kill();
             _abilityIconTweens.Clear();

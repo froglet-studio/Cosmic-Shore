@@ -3202,10 +3202,12 @@ MonoBehaviour:
   colorLerpSpeed: 4
   crystalFlashDuration: 0.5
   fullBoostWhiteMix: 0.3
+  driftingSprite: {fileID: 21300000, guid: 41c9f6e2ec44f0c458351500f1bfacdc, type: 3}
+  doubleDriftingSprite: {fileID: 21300000, guid: 117829e3ccd2f4c439bc98b203359180,
+    type: 3}
   impactIcon: {fileID: 4425814395415128621}
   impactRestColor: {r: 1, g: 1, b: 1, a: 1}
   joustFlashColor: {r: 1, g: 0, b: 0, a: 1}
-  crystalFlashColor: {r: 0.4, g: 0.9, b: 1, a: 1}
   tubeCooldownIcon: {fileID: 8778855275387912087}
   iconPunchDuration: 0.25
   iconPunchScale: 1.4

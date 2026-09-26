@@ -12,7 +12,8 @@ namespace CosmicShore.UI
     /// charge → mass → space → time (the same order as the element flowers above them), plus ONE
     /// non-elemental card to their left.
     ///
-    ///   [core]  drift         (LT, no gauge)                   → no element, no upgrade
+    ///   [core]  drift         (LT, leans with the drift)       → no element, no upgrade
+    ///   [core]  omni crystal  (shielded ring, flashes on pickup) → no element, no upgrade
     ///   Charge → crystal joust (the skull, impactIcon)          → "Shepherd"
     ///   Mass   → boost ring    (danger-tinted)                  → "Twin Rings"
     ///   Space  → steal         (GENERATED: reach ring + count)  → "Iron Grip"
@@ -55,12 +56,23 @@ namespace CosmicShore.UI
     /// <para>Two of these readouts are the LOCKUP's, not this view's: the boost fill (the TIME
     /// card's gauge, because skimming is what banks it) and the Boost Ring's recharge (the fleet's
     /// standard cooldown veil over the MASS card). This view keeps only what is genuinely the
-    /// Squirrel's own: the impact flash, the crystal surge, and the Space readout it builds.</para>
+    /// Squirrel's own: the joust flash, the crystal surge, the drift's response and the Space
+    /// readout it builds.</para>
+    ///
+    /// <para><b>The drift icon RESPONDS again</b> - it swaps to its drifting sprite, tints, swells,
+    /// and LEANS toward the side the nose has swung to, following the drift if it changes sides,
+    /// then settles back on release. The lean is fed per frame by the controller from the ship's
+    /// own frame rather than decided once at drift start, because on the frame a drift engages the
+    /// nose has not yet left the course. The icon is the core binding's, resolved rather than
+    /// re-serialized, so the card and its juice cannot point at two images.</para>
+    ///
+    /// <para><b>An omni crystal pickup lights the OMNI card, not the joust.</b> The two once shared
+    /// one impact icon; since every hull gained an omni crystal card, the pickup belongs on the card
+    /// that pictures what it lays (<see cref="VesselHUDView.PlayOmniCrystalCollected"/>).</para>
     ///
     /// <para>RETIRED with the 2026-09 element re-cut: the overheat gauge (SetOverheatHeat /
     /// JuiceOverheat* had had no callers since the Sparrow's overheat mechanic was deleted - a
-    /// gauge whose meter is gone is a lie, not a spare part). The drift's own icon came BACK in the
-    /// same pass, onto the core card, where it is not competing with an element for a slot.</para>
+    /// gauge whose meter is gone is a lie, not a spare part).</para>
     ///
     /// Its impact icon is a live gameplay gauge repainted per event, and the Mass icon now carries a
     /// palette tint, so colour on this row is already spoken for. That is safe rather than merely
@@ -78,15 +90,32 @@ namespace CosmicShore.UI
         [SerializeField] private float crystalFlashDuration = 0.35f;
         [SerializeField, Range(0f, 1f)] private float fullBoostWhiteMix = 0.3f;
 
-        [Header("Impact (joust + crystal share one icon - the CHARGE card)")]
+        [Header("Drift (the core card - its icon is the core binding's, not a second field)")]
+        [Tooltip("Sprite the drift icon swaps to while a single drift is held. Empty = keep the " +
+                 "authored sprite and respond with lean, tint and punch alone.")]
+        [SerializeField] private Sprite driftingSprite;
+        [Tooltip("Sprite the drift icon swaps to while a SHARP (double) drift is held.")]
+        [SerializeField] private Sprite doubleDriftingSprite;
+        [Tooltip("Tint while a single drift is held.")]
+        [SerializeField] private Color driftColor = new Color(0.7f, 0.9f, 1f, 1f);
+        [Tooltip("Tint while a sharp (double) drift is held.")]
+        [SerializeField] private Color doubleDriftColor = new Color(1f, 0.6f, 0.2f, 1f);
+        [Tooltip("How far the icon leans toward the side the nose has swung to (degrees) - big " +
+                 "enough to read at a glance.")]
+        [SerializeField] private float driftRotationAngle = 45f;
+        [Tooltip("Duration of the lean, tint and punch - long enough to read as a smooth lean, " +
+                 "not a snap.")]
+        [SerializeField] private float driftRotationDuration = 0.45f;
+        [Tooltip("Scale the icon swells to while drifting, relative to its kerned rest scale.")]
+        [SerializeField] private float driftScale = 1.15f;
+
+        [Header("Impact (the joust - the CHARGE card)")]
         [FormerlySerializedAs("dangerRingIcon")]
         [SerializeField] private Image impactIcon;
         [FormerlySerializedAs("normalColor")]
         [SerializeField] private Color impactRestColor = Color.white;
         [FormerlySerializedAs("dangerColor")]
         [SerializeField] private Color joustFlashColor = Color.red;
-        [Tooltip("Flash colour when the impact icon fires from collecting a crystal.")]
-        [SerializeField] private Color crystalFlashColor = new Color(0.4f, 0.9f, 1f, 1f);
 
         [Header("Boost Ring cooldown (Mass slot)")]
         [Tooltip("The Boost Ring ability's icon. Its RECHARGE is drawn by the fleet's standard " +
@@ -146,6 +175,16 @@ namespace CosmicShore.UI
         private Tween _boostScaleTween;
 
         private Vector3 _impactIconOriginalScale;
+
+        // The drift card's icon, resolved off the core binding so there is ONE reference to it.
+        private Image _driftIcon;
+        private Sprite _driftRestSprite;
+        private Color _driftRestColor = Color.white;
+        private bool _drifting;
+        private int _driftSide;                  // -1 left, 0 none yet, +1 right
+        private Tween _driftRotationTween;
+        private Tween _driftColorTween;
+        private Tween _driftScaleTween;
 
         // The generated Space readout. Built once by EnsureGeneratedAbilityIcons.
         private Image _reachIcon;
@@ -313,6 +352,7 @@ namespace CosmicShore.UI
             SetStealCount(0);
             PaintStealCount(_playerDomainColor);
             PaintBoostRing();
+            ResolveDriftIcon();
 
             if (!boostFill) return;
             boostFill.fillAmount = 0f;
@@ -324,6 +364,7 @@ namespace CosmicShore.UI
                 impactIcon.color = impactRestColor;
                 _impactIconOriginalScale = AbilityIconRestScale(Element.Charge);
             }
+
 
             if (tubeCooldownIcon)
             {
@@ -437,11 +478,104 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // Impact icon: ONE icon shared by joust (hit a vessel) and crystal
-        // (hit a crystal). Scale punch + a colour flash keyed to the source.
+        // Drift icon: sprite swap + tint + swell on the way in, a lean
+        // toward the side the nose has swung to while held, and a smooth
+        // return on the way out. The drift is core flight, so this lives on
+        // the non-elemental card rather than competing for an element slot.
+        // ---------------------------------------------------------------
+
+        /// <summary>
+        /// Captures the drift card's icon and its authored rest state. Read off the CORE binding
+        /// (<c>coreAbilities</c>, <see cref="CoreAbility.Drift"/>) rather than a second serialized
+        /// field, so the card and its juice can never be pointed at two different images.
+        /// </summary>
+        void ResolveDriftIcon()
+        {
+            if (!TryGetCoreAbilityIcon(CoreAbility.Drift, out _driftIcon) || !_driftIcon) return;
+            _driftRestSprite = _driftIcon.sprite;
+            _driftRestColor = _driftIcon.color;
+            _drifting = false;
+            _driftSide = 0;
+        }
+
+        /// <summary>
+        /// A drift began. The lean is deliberately NOT decided here: on the frame a drift engages
+        /// the nose has not yet left the course, so any side read now is noise. The controller
+        /// feeds <see cref="SetDriftSide"/> every frame of the drift and the icon leans the moment
+        /// the two actually diverge - which is also what lets it follow a drift that swaps sides.
+        /// </summary>
+        public void JuiceDriftStart(bool isDoubleDrift)
+        {
+            if (!_driftIcon) return;
+
+            var sprite = isDoubleDrift ? doubleDriftingSprite : driftingSprite;
+            if (sprite) _driftIcon.sprite = sprite;
+
+            _driftColorTween?.Kill();
+            _driftColorTween = _driftIcon
+                .DOColor(isDoubleDrift ? doubleDriftColor : driftColor, driftRotationDuration)
+                .SetEase(Ease.OutQuad)
+                .SetLink(_driftIcon.gameObject);
+
+            var rest = CoreAbilityIconRestScale(CoreAbility.Drift);
+            _driftScaleTween?.Kill();
+            _driftScaleTween = _driftIcon.rectTransform
+                .DOScale(rest * driftScale, driftRotationDuration * 0.5f)
+                .SetEase(Ease.OutQuad)
+                .SetLink(_driftIcon.gameObject);
+
+            _drifting = true;
+        }
+
+        /// <summary>
+        /// Which way the nose has swung off the course: -1 left, +1 right, 0 not yet diverged.
+        /// Re-tweens only on a CHANGE of side, so a per-frame push costs nothing while it holds.
+        /// </summary>
+        public void SetDriftSide(int side)
+        {
+            if (!_driftIcon || !_drifting || side == 0 || side == _driftSide) return;
+            _driftSide = side;
+            LeanDriftIcon(side < 0 ? driftRotationAngle : -driftRotationAngle);
+        }
+
+        /// <summary>The drift ended - return the icon to rest with a smooth tween back.</summary>
+        public void JuiceDriftEnd()
+        {
+            if (!_driftIcon) return;
+            _drifting = false;
+            _driftSide = 0;
+
+            if (_driftRestSprite) _driftIcon.sprite = _driftRestSprite;
+            LeanDriftIcon(0f);
+
+            _driftColorTween?.Kill();
+            _driftColorTween = _driftIcon
+                .DOColor(_driftRestColor, colorTweenDuration)
+                .SetEase(Ease.OutQuad)
+                .SetLink(_driftIcon.gameObject);
+
+            _driftScaleTween?.Kill();
+            _driftScaleTween = _driftIcon.rectTransform
+                .DOScale(CoreAbilityIconRestScale(CoreAbility.Drift), driftRotationDuration)
+                .SetEase(Ease.OutQuad)
+                .SetLink(_driftIcon.gameObject);
+        }
+
+        void LeanDriftIcon(float angle)
+        {
+            _driftRotationTween?.Kill();
+            _driftRotationTween = _driftIcon.rectTransform
+                .DOLocalRotate(new Vector3(0f, 0f, angle), driftRotationDuration)
+                .SetEase(Ease.OutCubic)
+                .SetLink(_driftIcon.gameObject);
+        }
+
+        // ---------------------------------------------------------------
+        // Impact icon: the JOUST. Scale punch + a colour flash. An omni crystal
+        // pickup used to flash this icon too (the two once shared one icon);
+        // it now lights the omni crystal card, which pictures what it does.
         // ---------------------------------------------------------------
         public void JuiceJoustImpact() => JuiceImpact(joustFlashColor);
-        public void JuiceCrystalImpact() => JuiceImpact(crystalFlashColor);
 
         public void JuiceImpact(Color flashColor)
         {
@@ -491,6 +625,9 @@ namespace CosmicShore.UI
             _impactScaleTween?.Kill();
             _impactColorTween?.Kill();
             _boostScaleTween?.Kill();
+            _driftRotationTween?.Kill();
+            _driftColorTween?.Kill();
+            _driftScaleTween?.Kill();
         }
     }
 }
