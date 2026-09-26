@@ -804,16 +804,26 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// The ✕ on an AI seat. There is no AI object to remove yet - the bots are spawned in the
-        /// game scene from <c>GameDataSO.RequestedAIDomains</c> (+ balanced top-up) - so kicking
-        /// one is removing its entry from the placement list, which is both what the player means
-        /// and the only representation that cannot go out of step with what actually spawns. The
-        /// seat count then re-derives (never below the card's minimum: a kicked seat the match
-        /// still needs simply turns EMPTY, to be topped up balanced at launch).
+        /// game scene from <c>GameDataSO.RequestedAIDomains</c> - so kicking one is removing its
+        /// entry from the placement list, which is both what the player means and the only
+        /// representation that cannot go out of step with what actually spawns. The seat count
+        /// then re-derives. A seat the card's minimum still needs is not kickable (see
+        /// <see cref="CanKickAi"/>).
         /// </summary>
         void HandleKickAIRequested(int aiOrdinal)
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
             if (aiOrdinal < 0 || aiOrdinal >= config.AIDomains.Count) return;
+
+            // A seat the match still needs cannot be kicked: removing it would only have it
+            // re-placed balanced, i.e. moved somewhere the host did not choose. To MOVE a
+            // required bot, place its replacement first (Add AI) and then kick the old one.
+            if (!CanKickAi)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[ArcadeLaunch] Kick refused - the match needs at least {MinSeats} seats.");
+                return;
+            }
 
             config.AIDomains.RemoveAt(aiOrdinal);
             HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
@@ -821,15 +831,76 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Seats the match holds BEFORE any hand-placed AI: the humans present, floored at the
-        /// card's minimum. The floor matters - a min-2 card played solo already carries one
-        /// balanced auto-AI in that base, and a placement must stack a NEW seat on top of it
-        /// rather than replace it (the auto seat stays, at the balanced pick's domain, and it
-        /// carries no ✕ because there is no placement to remove).
+        /// Seats the match holds BEFORE any AI: the humans present, and nothing else. EVERY AI
+        /// seat is a placement in <c>config.AIDomains</c> - including the seats a card's MINIMUM
+        /// owes, which <see cref="ReconcileAiPlacements"/> places ONCE, domain-balanced, and then
+        /// leaves exactly where it put them.
+        ///
+        /// <para>This used to floor at the card's minimum, so a min-2 card played solo carried
+        /// an UNPLACED auto-AI that was re-balanced on every redraw - it drew no ✕, it could not
+        /// be moved, and each time the host placed a bot the auto seat JUMPED to whichever team
+        /// was now smaller. That made a 3v3 impossible to build by hand: fill one team and the
+        /// auto seat hopped across to the other. A seat the host can see must be a seat the
+        /// host can move.</para>
         /// </summary>
-        int BaseSeats => _selectedGame
+        int BaseSeats => CurrentPartyHumanCount;
+
+        /// <summary>The fewest seats the match may hold: the card's minimum, or the party if it
+        /// is larger. A kick that would drop below it is refused rather than silently re-filled
+        /// with a balanced bot somewhere the host did not choose.</summary>
+        int MinSeats => _selectedGame
             ? Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount)
             : CurrentPartyHumanCount;
+
+        /// <summary>True when one more AI can be kicked without dropping under <see cref="MinSeats"/>.
+        /// Never under a weekly challenge, whose seat count is pinned.</summary>
+        bool CanKickAi => config != null && !_weeklyChallengeLocked &&
+                          BaseSeats + config.AIDomains.Count - 1 >= MinSeats;
+
+        /// <summary>
+        /// Host only. Makes the placement list hold EXACTLY one entry per AI seat the config asks
+        /// for (<c>PlayerCount - humans</c>): surplus placements are dropped from the end (the
+        /// party grew, or the stepper went down), and missing ones are placed domain-balanced
+        /// against the humans and the placements already made - once. After that a seat is
+        /// fixed: nothing re-balances it, and the host moves it with the chip's ✕ and Add AI.
+        /// Returns whether the list changed (so the caller knows to tell the clients).
+        /// </summary>
+        bool ReconcileAiPlacements()
+        {
+            if (IsClientMode || config == null || _selectedGame == null || gameData == null) return false;
+
+            int want = Mathf.Max(0, config.PlayerCount - BaseSeats);
+            bool changed = false;
+
+            while (config.AIDomains.Count > want)
+            {
+                config.AIDomains.RemoveAt(config.AIDomains.Count - 1);
+                changed = true;
+            }
+            if (config.AIDomains.Count == want) return changed;
+
+            var activeDomains = ServerPlayerVesselInitializerWithAI.BuildActiveDomains(
+                Mathf.Max(1, config.DomainCount));
+            if (activeDomains == null || activeDomains.Count == 0) return changed;
+
+            var humans = new List<Player>();
+            foreach (var ip in gameData.Players)
+                if (ip is Player p && p && !p.NetIsAI.Value) humans.Add(p);
+
+            var humanCounts = GameDataSO.BuildHumanCounts(humans, activeDomains);
+            var totalCounts = new Dictionary<Domains, int>(humanCounts);
+            foreach (var placed in config.AIDomains)
+                if (totalCounts.ContainsKey(placed)) totalCounts[placed]++;
+
+            while (config.AIDomains.Count < want)
+            {
+                var domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
+                config.AIDomains.Add(domain);
+                totalCounts[domain] = totalCounts.TryGetValue(domain, out var t) ? t + 1 : 1;
+                changed = true;
+            }
+            return changed;
+        }
 
         /// <summary>
         /// The Add AI toggle. While armed, tapping a domain tile PLACES an AI on that domain
@@ -864,8 +935,9 @@ namespace CosmicShore.UI
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
 
-            // Placements stack ON TOP of the base seats (humans, floored at the card's minimum) -
-            // a min-2 card played solo keeps its balanced auto-AI and a tap adds the THIRD seat.
+            // Placements stack ON TOP of the humans. Every AI already in the lobby is itself a
+            // placement (the card's minimum is placed, not auto-filled), so a min-2 card played
+            // solo already holds one placed bot and a tap adds the THIRD seat.
             int ceiling = MatchSeatCeiling;
             if (BaseSeats + config.AIDomains.Count >= ceiling)
             {
@@ -963,6 +1035,12 @@ namespace CosmicShore.UI
         /// <summary>Redraw the roster from the live config. Cheap; call it whenever either moves.</summary>
         void RefreshRoster()
         {
+            // Host: every AI seat is a placement. Reconciled on every roster redraw because the
+            // seat count moves from several directions (stepper, a guest joining or leaving, a
+            // remembered roster) and each one lands here; a no-op when nothing moved.
+            if (!IsClientMode && ReconcileAiPlacements())
+                BroadcastRosterToClients();
+
             if (!_activePanel || config == null) return;
 
             int humans = CurrentPartyHumanCount;
@@ -1344,10 +1422,11 @@ namespace CosmicShore.UI
                 : LaunchPreferenceRules.ResolveIntensity(
                     rememberedIntensity, game.MinIntensity, game.MaxIntensity, maxUnlocked);
 
-            // Humans only: the card opens with no AI placed (by design call, 2026-08-27) - the
-            // host seats every bot by hand through Add AI. Seats the card's MINIMUM still owes
-            // beyond the humans draw EMPTY and are topped up domain-balanced at launch, so an
-            // un-configured lobby still starts legally.
+            // Humans only: the card opens with no AI of the host's choosing (by design call,
+            // 2026-08-27) - the host seats every further bot by hand through Add AI. Seats the
+            // card's MINIMUM still owes beyond the humans are PLACED domain-balanced by
+            // ReconcileAiPlacements (below, and on every roster redraw) and then stay put: a
+            // visible, kickable seat rather than an auto seat that re-balanced on every redraw.
             config.AIDomains.Clear();
             _addAiArmed = false;
             // The weekly challenge seats the card's MINIMUM - it is a personal objective, and every
@@ -2160,10 +2239,11 @@ namespace CosmicShore.UI
                 seat.Set(dataService != null ? dataService.GetRandomAvatarSprite() : null, false);
 
                 // The ✕ lives ON the chip - this strip IS the roster the player looks at. Only a
-                // placed bot is kickable (a balanced top-up seat has no placement to remove), and
-                // only for the host. The ordinal names the placement, not the seat.
+                // placed bot is kickable (on the host every bot is placed - a balanced chip here is
+                // only a client drawing before the host's roster lands), only for the host, and
+                // only while the match can spare a seat. The ordinal names the placement.
                 int ordinal = i;
-                seat.SetKickable(placedChip && !IsClientMode,
+                seat.SetKickable(placedChip && !IsClientMode && CanKickAi,
                                  () => HandleKickAIRequested(ordinal));
                 _aiChips.Add(seat);
             }
@@ -2719,9 +2799,10 @@ namespace CosmicShore.UI
             // Single source of truth - GameDataSO owns the player count computation
             gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);
 
-            // The host's hand-placed AI domains (Add AI mode). The spawner seats bot i in entry i
-            // and falls back to its balanced pick past the end - covering the empty seats the
-            // card's minimum topped up.
+            // The host's AI domains - one per seat, since every AI seat is a placement. The
+            // spawner seats bot i in entry i; its balanced pick past the end is a backstop for a
+            // path that never reached the lobby, not a seat the host can see.
+            ReconcileAiPlacements();
             gameData.SetRequestedAIDomains(config.AIDomains);
 
             // Domain count - controls how many domains AI can be assigned to

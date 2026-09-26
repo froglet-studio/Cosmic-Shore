@@ -425,6 +425,39 @@ order-independent.
   must leave its hull holding nothing** - harmless to get wrong while the only stop was the menu
   handing the controls straight back to the same player, and not once a hull changes pilots.
 
+**Second playtest: two more, both about state that stayed where it was put.**
+- *"The default AI jumps to the other team."* The seats a card's MINIMUM owes beyond the humans were
+  never placements: `BaseSeats` floored at the minimum, so a min-2 card played solo carried one
+  UNPLACED bot that `RefreshAIPreviewChips` re-balanced on every redraw. It drew no ✕, could not be
+  moved, and every time the host placed a bot it hopped to whichever team was now smaller - so a
+  3v3 could not be built by hand. **Every AI seat is now a placement**: `BaseSeats` is the humans
+  alone, and `ArcadeGameConfigureModal.ReconcileAiPlacements` (host, on every roster redraw and
+  once more at launch) makes `config.AIDomains` hold exactly one entry per AI seat - surplus dropped
+  from the end, missing ones placed domain-balanced ONCE and then left alone. A seat the card's
+  minimum still needs cannot be kicked (`CanKickAi`; its ✕ is hidden) because kicking it would only
+  re-place it somewhere the host did not choose - to move it, Add AI on the new team and then kick
+  the old one. The spawner's balanced top-up survives only as a backstop for a path that skipped
+  the lobby. General rule: **a seat the host can see must be a seat the host can move.**
+- *"The D-pad toggled my ship between AI and me, but never put me in my teammate's."* A swap moves
+  PILOTS between hulls, and three things were still keyed on the hull a pilot started in: the
+  MODE's steering hooks (`AIPilot.SetExternalTargetProvider` / `SetDriftLookTargetProvider`, which
+  Regatta's race line and Astro League's striker install on each bot's SPAWN hull) stayed on the
+  hull the human had just taken, so the bot flew its new hull on the platform default with no idea
+  what the mode wanted - `PilotSwap.ApplyLocal` now hands them across (`AIPilot.TakeModeHooksFrom`);
+  Broadside's AI trigger routine captured each bot's juke and spike components at arm time, so an
+  Urchin a human had taken kept firing on the bot's clock - it now resolves the hull live every
+  sample and does nothing unless the autopilot is flying it; and the action handler's input-pause
+  subscription lived on the PILOT's `InputStatus` but was never moved by `ChangePlayer`, so the
+  pilot who left kept switching the hull's button channels on and off - `DetachInputPause` /
+  `AttachInputPause` now move it across the pointer change (this also fixes the Cellular Duel swap).
+  The autopilot on the taken hull is now stopped wherever it is running, not only on the server.
+  **Stated plainly: which of these produced the reported symptom was not reproduced** - none has
+  been run in the editor - so the local human's machine now VERIFIES its own takeover three frames
+  later (`PilotSwap.VerifyLocalTakeoverAsync`: flying the new hull, its autopilot off, input live,
+  camera following it) and warns naming whichever did not land; the camera, the one piece a player
+  cannot recover by themselves, is re-pointed as well as reported. A server-side refusal is a
+  warning too, since a refused swap and a D-pad that does nothing look identical.
+
 **Stated limits.** Element levels are simulated on the machine that OWNS a hull and never
 replicate, so a hull that changes machines keeps the levels its new owner's replica held (starting
 elements plus whatever it saw) - crystal-earned levels the previous owner simulated do not travel.

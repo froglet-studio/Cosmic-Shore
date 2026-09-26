@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using Cysharp.Threading.Tasks;
 using CosmicShore.Utility;
 using Unity.Netcode;
 
@@ -172,9 +173,12 @@ namespace CosmicShore.Gameplay
 
             bool server = NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer;
 
-            // The AI lets go of its hull BEFORE anybody else takes it. The autopilot only ever runs
-            // on the server (Player.StartPlayer's AI branch), so that is the only place to stop it.
-            if (server) aiHull.ToggleAIPilot(false);
+            // The AI lets go of its hull BEFORE anybody else takes it. The autopilot normally runs
+            // only on the server (Player.StartPlayer's AI branch), but "normally" is not a promise
+            // a swap can lean on: an autopilot left running on the hull a human now flies writes
+            // the stick every frame and the human reads as "still under AI control". Stop it
+            // wherever it is running.
+            if (server || aiHull.VesselStatus.AutoPilotEnabled) aiHull.ToggleAIPilot(false);
 
             human.ChangeVessel(aiHull);
             ai.ChangeVessel(humanHull);
@@ -195,11 +199,16 @@ namespace CosmicShore.Gameplay
             if (server)
             {
                 // The hull the human left is now the AI's: configure it the way a backfill bot is
-                // configured (mode-aware seeking, skill from intensity) and put the pilot in it.
-                if (humanHull is VesselController vc)
+                // configured (mode-aware seeking, skill from intensity), hand it the MODE's
+                // steering hooks the bot carried on its old hull (a race line, a strike plan -
+                // without them it would fly the new hull on the platform default), and put the
+                // pilot in it.
+                var leftPilot = humanHull.VesselStatus.AIPilot;
+                var takenPilot = aiHull.VesselStatus.AIPilot;
+                if (leftPilot)
                 {
-                    var pilot = vc.GetComponentInChildren<AIPilot>();
-                    if (pilot) ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode(pilot, gameData);
+                    ServerPlayerVesselInitializerWithAI.ConfigureAIPilotForMode(leftPilot, gameData);
+                    leftPilot.TakeModeHooksFrom(takenPilot);
                 }
                 humanHull.ToggleAIPilot(true);
             }
@@ -207,6 +216,53 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
                 $"[PilotSwap] {human.Name} took {aiHull.VesselStatus.VesselType} from AI {ai.Name}, " +
                 $"who now flies {humanHull.VesselStatus.VesselType}.");
+
+            if (human.IsLocalUser)
+                VerifyLocalTakeoverAsync(human, aiHull).Forget();
+        }
+
+        /// <summary>
+        /// On the machine of the human who just swapped, check a few frames later that the swap
+        /// actually landed the way the player needs it: they fly the new hull, its autopilot is
+        /// off, their input is live, and the gameplay camera follows it. Each is a separate
+        /// system (Player, AIPilot, InputController, CameraManager) and a swap that half-lands
+        /// reads on screen as ONE symptom - "the D-pad handed my ship to the AI and left me
+        /// watching it" - so a failure is a WARNING that names which one, not a guess.
+        /// </summary>
+        static async UniTaskVoid VerifyLocalTakeoverAsync(Player human, IVessel hull)
+        {
+            await UniTask.DelayFrame(3);
+            if (!human || !IsAlive(hull)) return;
+
+            var problems = new List<string>(4);
+            if (!ReferenceEquals(human.Vessel, hull))
+                problems.Add("the player's Vessel is not the hull they took");
+            if (!ReferenceEquals(hull.VesselStatus.Player, human))
+                problems.Add("the hull's VesselStatus.Player is not the player");
+            if (hull.VesselStatus.AutoPilotEnabled)
+                problems.Add("the hull's autopilot is still running");
+            if (human.InputStatus != null && human.InputStatus.Paused)
+                problems.Add("the player's input is paused");
+
+            var cm = CameraManager.Instance;
+            var follow = hull.VesselStatus.CameraFollowTarget;
+            if (cm != null && follow && cm.PlayerFollowTarget != follow)
+            {
+                // Not a report-only item: the camera is the one piece the player has no other
+                // way to recover, so put it right and say that it had to be.
+                problems.Add($"the gameplay camera was following '{(cm.PlayerFollowTarget ? cm.PlayerFollowTarget.name : "nothing")}' - re-pointed");
+                cm.SetupGamePlayCameras(follow);
+            }
+
+            if (problems.Count == 0)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                    $"[PilotSwap] {human.Name} is flying {hull.VesselStatus.VesselType}: takeover verified.");
+                return;
+            }
+
+            CSDebug.LogWarning($"[PilotSwap] {human.Name}'s takeover of {hull.VesselStatus.VesselType} " +
+                               $"did not fully land: {string.Join("; ", problems)}.");
         }
 
         static bool IsAlive(IVessel vessel) => vessel is UnityEngine.Object o && o;

@@ -222,8 +222,9 @@ namespace CosmicShore.Gameplay
 
             if (!PilotSwap.TryValidateServer(this, targetHullId, gameData, out var ai, out var refusal))
             {
-                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
-                    $"[Player] Pilot swap refused for {NetName.Value}: {refusal}.");
+                // A warning, not a verbose line: a refused swap looks exactly like a D-pad that
+                // does nothing, and the refusal reason is the only thing that tells them apart.
+                CSDebug.LogWarning($"[Player] Pilot swap refused for {NetName.Value}: {refusal}.");
                 return;
             }
 

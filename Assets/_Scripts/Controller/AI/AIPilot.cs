@@ -261,6 +261,28 @@ namespace CosmicShore.Gameplay
         Func<Vector3?> _driftLookTargetProvider;
 
         /// <summary>
+        /// Move the MODE's steering hooks (<see cref="SetExternalTargetProvider"/> and
+        /// <see cref="SetDriftLookTargetProvider"/>) off <paramref name="source"/> and onto this
+        /// pilot, leaving <paramref name="source"/> with none.
+        ///
+        /// <para>A mode installs its hooks on the AUTOPILOT OF THE HULL each bot spawned in, and
+        /// each hook reads its bot's live <c>Player.Vessel</c>. The arena pilot swap
+        /// (<c>PilotSwap</c>) hands a bot a DIFFERENT hull mid-match, so without this the bot's
+        /// objective stayed on the hull a human had just taken - inert there, since that
+        /// autopilot is off - and the bot flew its new hull on the platform default with no idea
+        /// what the mode wanted (a racing bot seeking crystals instead of rings, a striker that
+        /// never struck). The hooks follow the BOT, which is what they were always about.</para>
+        /// </summary>
+        public void TakeModeHooksFrom(AIPilot source)
+        {
+            if (!source || source == this) return;
+            _externalTargetProvider = source._externalTargetProvider;
+            _driftLookTargetProvider = source._driftLookTargetProvider;
+            source._externalTargetProvider = null;
+            source._driftLookTargetProvider = null;
+        }
+
+        /// <summary>
         /// The control the COMMIT loop drives - the input the commit branch presses to lock the
         /// course and free the nose (on the Dolphin: the drift + charge boost + drift trail trio).
         /// One name for it so the commit branches and the ability-cycler exclusion below can never

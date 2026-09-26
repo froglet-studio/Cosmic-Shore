@@ -2684,7 +2684,11 @@ decided once at spawn** — the vessel's replica NetworkVariable subscription no
 (`OnGainedOwnership`/`OnLostOwnership`, idempotent) and the transformer re-seeds its integrator
 (`AdoptCurrentMotion`), and **a stopped autopilot must leave its hull holding nothing** —
 `StopAIPilot` now releases the commit drift and any cycled ability it started, which played as an
-unrecoverable spin the first time a human took over an AI's hull mid-drift. Seat caps live in more
+unrecoverable spin the first time a human took over an AI's hull mid-drift. The same rule holds for
+anything a MODE hangs on a bot: its steering hooks follow the bot across a swap
+(`AIPilot.TakeModeHooksFrom`), never the hull it spawned in. **Every lobby AI seat is a placement**
+(`ReconcileAiPlacements`) - the card's minimum is placed balanced ONCE and then fixed, never re-balanced
+on redraw, because a seat the host can see must be a seat the host can move. Seat caps live in more
 than the card: the launch modal's Add AI ceiling (`MatchSeatCeiling`, 6 on an arena card) and the
 replicated `LobbySnapshot`'s AI slots (6) both had to move with it. `Docs/HomeHub/ARCHITECTURE.md` §3.7.
 

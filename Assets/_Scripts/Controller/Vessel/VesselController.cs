@@ -322,7 +322,12 @@ namespace CosmicShore.Gameplay
 
         public void ChangePlayer(IPlayer player)
         {
+            // The pause subscription belongs to the PILOT, so it has to be moved across the
+            // pointer change: detached from the outgoing pilot while this vessel can still reach
+            // them, re-attached to the incoming one (only if they are the local user).
+            VesselStatus.ActionHandler.DetachInputPause();
             VesselStatus.Player = player;
+            VesselStatus.ActionHandler.AttachInputPause();
 
             // Re-evaluate BOTH platform laws: ChangePlayer hands a LIVE vessel to a different
             // player (the Cellular Duel round-boundary ownership swap), which Initialize never
