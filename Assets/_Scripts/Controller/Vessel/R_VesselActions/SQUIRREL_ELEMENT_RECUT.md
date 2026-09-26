@@ -41,7 +41,7 @@ empty rather than given a placeholder. Do not fill it to green the tool — the 
 | `SquirrelHUDVariant.prefab` | gauge/cooldown/impact re-bound; drift + overheat keys dropped. **Second pass:** the row re-bound to the Images that already carry the right ART, the retired drift placeholder re-pointed at `objective_joust.png`, skimming moved to `coreAbilities`. **Third pass:** skimming came back to TIME with its gauge, the core card became the DRIFT (its sprite restored, `input: 2`), Charge took the skull, and Space unbound so the view can generate it |
 | `CoreAbility.cs` *(new)* | the key of a non-elemental lockup card; `Drift` is its one member |
 | `VesselHUDView.cs` | `CoreAbilityBinding` (+ its own `input`) + `coreAbilities` + `CoreAbilityDisplayOrder`; `TryGetCoreAbility{Icon,Gauge}`; `SetCoreAbility{Cooldown,Pressed,Control}`; `SeedCoreAbilityControls`; `EnsureGeneratedAbilityIcons` / `BindGeneratedAbilityIcon`; the row validator now walks the core cards first |
-| `AbilityLockupView.cs` | core cards: `_coreSlots`, a signed slot index, `BuildSlot(… Element flowerElement)` where `Element.None` means *no element cell*, and the four element-keyed internals refactored to slot-keyed so both kinds share one body. **Third pass:** `Build` calls the generated-icon hook, and `NormaliseIcon` writes the icon's kerning scale |
+| `AbilityLockupView.cs` | core cards: `_coreSlots`, a signed slot index, `BuildSlot(… Element flowerElement)` where `Element.None` means *no element cell*, and the four element-keyed internals refactored to slot-keyed so both kinds share one body. **Third pass:** `Build` calls the generated-icon hook, and `NormaliseIcon` writes the icon's kerning scale. **Sixth pass:** `PlaceHost` re-anchors the host's press juice, because normalising a scale does not reach a component that cached it |
 | `AbilityLockupAuditor.cs` | reports a vessel's core cards, and names the elemental slots that bind no AUTHORED icon (undesigned or generated — the asset cannot tell those apart) |
 | ~~`PerspectiveTunnelGraphic.cs`~~ | the Mass card's accent — **added in the fourth pass and DELETED in the fifth**, with the team colour it drew. Its one finding outlives it: a `Profile` is a parameter struct and never a serialized field, because a missing struct key deserializes as all zeros where a missing float keeps its C# initializer |
 | `SO_ColorSet.cs` | `GetDangerSignalColor()` — the third `*SignalColor` sibling. HDR-normalised, alpha forced to 1, alpha 0 when the palette authors none |
@@ -51,6 +51,8 @@ empty rather than given a placeholder. Do not fill it to green the tool — the 
 | `SquirrelVesselHUDView.cs` | drift + overheat retired (428 → 246 lines); impact rest scale re-anchored to Charge; `SetTubeCooldownReady` → `Element.Mass`. **Third pass:** builds the Space card (`EnsureGeneratedAbilityIcons`), `SetStealReach01` / `SetStealCount`. **Fourth pass:** `SetDangerTint` / `PaintBoostRing`, and the steal count moved below the ring's maximum at a 4-digit-safe size. **Fifth pass:** the tunnel accent removed; `LayOutReachRing` lifts the ring so the whole readout fits the icon's own box |
 | `SquirrelVesselHUDController.cs` | drift juice + its three subscriptions removed; **third pass:** `PushStealReadout` polls the skimmer's reach and `RoundStats.PrismStolen` |
 | `Skimmer.cs` | new `ElementalScale01` — the live reach as a fraction of this skimmer's own authored range |
+| `AbilityButtonPressJuice.cs` | **sixth pass:** captures its rest scale LAZILY instead of in `Awake`, `OnDisable` writes nothing until it has, and `SetRestScale` lets a layout owner re-anchor it. Its `Awake` capture of the prefab's authored 0.7 is what held four of the five cards below the size the style asks for |
+| `Tools/Build/check_rest_scale_capture.py` *(new)* | fails any UI component that captures a scale into a field in `Awake` / `OnEnable` / `Start`; 4 negative controls, and it names the pre-fix line |
 
 ## Second pass (same day): the artwork, and the first non-elemental card
 
@@ -350,6 +352,55 @@ and a generated readout has no authored art to be wrong against. Both failures p
 *this card is bigger than the others* — which is why the report named the wrong one. When a
 generated card reads oversized, check its CONTENT's extent before checking its kerning.
 
+## Sixth pass (2026-09-26): the four cards were the wrong ones
+
+The fifth pass fixed a real defect — the Space card's generated content really did overflow the box
+an authored icon draws in — and it did **not** fix the report. The next frame came back with the
+same sentence, now naming the plates as well: *"both ability and element display are oversized"*.
+Content cannot reach a plate, so the second report was about something else.
+
+**Measuring the frame settled it in one step.** At a single scanline through the row, the four
+authored cards span 115 px and the Space card 166 px, with a uniform 200 px pitch between card
+centres. `115 / 166 = 0.693`. Every Squirrel ability button is authored at `m_LocalScale: 0.7`.
+
+**So Space is the card that is RIGHT.** `AbilityLockupView.PlaceHost` normalises a host to
+`localScale 1`; all four authored hosts carry `AbilityButtonPressJuice`, whose `Awake` cached the
+prefab's 0.7 — long before the lockup runs — and whose `OnDisable` wrote it back unconditionally,
+on every hide of the HUD. The generated `StealReachButton` carries no juice, so it kept the 1.
+*Four wrong cards agree with each other, so the one correct card is what looks wrong.*
+
+| | authored hosts | generated Space host |
+|---|---|---|
+| authored `localScale` | 0.7 | — (created at 1) |
+| `PlaceHost` writes | 1 | 1 |
+| `AbilityButtonPressJuice` | yes — restores its `Awake` capture | none |
+| drawn | **0.7** | **1** |
+| measured in the report's frame | 115 px | 166 px (**ratio 0.693**) |
+
+**The fix is two halves and both are needed.** `AbilityButtonPressJuice` captures **lazily**, at the
+start of a press, and `OnDisable` writes nothing until it has — so it can only ever restore a scale
+it took itself, anywhere it is used, not only here. And `PlaceHost` hands it the new rest outright
+(`SetRestScale(Vector3.one)`), so an instance that already captured is corrected without waiting for
+a press. `Tools/Build/check_rest_scale_capture.py` (`--check`, `--self-test`) fails any UI component
+that captures a scale into a field in `Awake` / `OnEnable` / `Start`; it names the pre-fix line, and
+its four negative controls (a local, a WRITE, a comment, the lazy fix) all hold.
+
+Nothing in the prefab changed. The authored 0.7 stays where it is — absorbing it is what `PlaceHost`
+is for.
+
+### The finding
+
+**A rest scale cached before the thing that OWNS the layout has run is a stale rest scale.** It is
+the icon-level rule this hull already records (§"The kerning bug the core card exposed") met one
+level up, at the HOST — and it hid longer because the icon version breaks ONE card while this one
+breaks every card *except* one, which inverts where a reader looks.
+
+Its companion is about the reporting loop: **when a fix lands and the same sentence comes back,
+the second report is evidence about a different system, not a weaker version of the first.** Both
+defects were real, both present as *this card is bigger than the others*, and the only thing that
+told them apart was measuring the frame instead of reading the source. *Measure the picture before
+re-reading the code that draws it.*
+
 ## Findings worth more than the change
 
 **1. `superSteal` already existed and nobody passed it.** `PrismTeamManager.Steal`'s third parameter
@@ -446,6 +497,12 @@ Nothing below has been run; there is no Unity in this session.
    sprite fills, with the number below it and clear of the plate's bottom edge and the control chip.
    At rest the small ring must leave the number alone. Type a four-digit value into `StealCount` in
    the hierarchy while playing (or steal that many) and confirm it neither wraps nor is clipped.
+6h. **All five cards are the SAME size** — the sixth pass's check, and the fastest one on this list:
+   the four authored plates and the generated Space plate must have the same width and height. Then
+   **press an ability, release it, and hide/show the HUD** (fly into the vessel-changer toy, or
+   toggle freestyle) and look again — that is the path that used to snap the four authored hosts
+   back to the prefab's 0.7, and it only shows after an `OnDisable`. If a card shrinks, its
+   `AbilityButtonPressJuice` captured a rest before `PlaceHost` wrote one.
 7. **Iron Grip** — skim an opposing **shielded** prism below Space 5: it should lose its shield and
    keep its domain. At Space 5: it should change domain **and keep the shield**. Then confirm a
    **super**-shielded prism is refused at both levels.

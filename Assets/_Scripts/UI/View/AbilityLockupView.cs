@@ -348,6 +348,15 @@ namespace CosmicShore.UI
         ///
         /// <para>The HOST is moved rather than the icon so that the button, its touch target, its
         /// press juice and any gauge children all travel together and keep working.</para>
+        ///
+        /// <para><b>Normalising the scale is not enough on its own</b>: a component that CACHES the
+        /// host's rest scale caches whatever the prefab authored, because its <c>Awake</c> runs
+        /// long before this does - and then writes that stale value back on its next release or
+        /// disable. Every Squirrel ability button is authored at 0.7 and carries
+        /// <see cref="AbilityButtonPressJuice"/>, so four of its five cards sat permanently at 0.7
+        /// beside the one card with no juice on it, which reads as that ONE card being oversized.
+        /// The juice now captures lazily, and this hands it the new rest outright so an instance
+        /// that already captured is corrected without waiting for a press.</para>
         /// </summary>
         void PlaceHost(RectTransform row, RectTransform host, int index, int count)
         {
@@ -357,6 +366,8 @@ namespace CosmicShore.UI
             host.sizeDelta = new Vector2(style.plateWidth, style.abilityCellHeight);
             host.localScale = Vector3.one;
             host.localRotation = Quaternion.identity;
+            if (host.TryGetComponent<AbilityButtonPressJuice>(out var juice))
+                juice.SetRestScale(Vector3.one);
             // The row is pinned to the screen's bottom-right, so a card's x is measured LEFTWARD
             // from that corner. index is signed: 0..count-1 are the elemental columns and NEGATIVE
             // values are the non-elemental cards beyond Charge, one pitch apart each.

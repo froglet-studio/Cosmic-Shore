@@ -600,6 +600,42 @@ controller (the view holds no `GameDataSO`), and `VesselHUDView.SetAbilityUpgrad
 SPRITE and SCALE and never its colour — so an icon tint and the upgrade signal cannot collide, on
 this card or any future one.
 
+### A cached rest scale outlives the layout that was cached under it (2026-09-26)
+
+`PlaceHost` normalises a host's scale to 1, with a doc comment saying it normalises "the things a
+prefab is otherwise free to disagree on". **Normalising is not enough on its own**, and the
+Squirrel is where that showed: every one of its four authored ability buttons is authored at
+`localScale 0.7` and carries `AbilityButtonPressJuice`, whose
+
+```csharp
+void Awake() => _restScale = transform.localScale;
+```
+
+ran long before the lockup was built, cached the **0.7**, and wrote it straight back —
+`OnDisable` restored it unconditionally, and a vessel HUD is shown and hidden routinely. So four of
+the Squirrel's five cards sat permanently at 0.7 beside the one host with no juice on it (the
+GENERATED Space host, §"A vessel may GENERATE an icon"), which is the card that kept the size the
+style asks for.
+
+**It was reported as the SPACE card being oversized**, and that reading is the finding: *four wrong
+cards agree with each other, so the one correct card is what looks wrong.* Measured off the report's
+own frame, the four authored cards span **0.693×** the Space card's width at the same scanline —
+the authored 0.7 to three digits — which is what turned a look complaint into an arithmetic one.
+
+Two changes, and the pairing matters. `AbilityButtonPressJuice` now captures **lazily**, at the
+start of a press, and `OnDisable` writes nothing until it has: it can only ever restore a scale it
+took itself, so a layout owner's write survives it anywhere, not just here. And `PlaceHost` calls
+`AbilityButtonPressJuice.SetRestScale(Vector3.one)` on the host it just placed, so an instance that
+already captured is corrected immediately rather than on its first press.
+
+**General rule: a rest scale cached before the thing that OWNS the layout has run is a stale rest
+scale, and it fails by quietly restoring the old value rather than by doing nothing.** That is the
+icon-level rule this document already carries (§"The kerning bug a core card exposed" — a view that
+runs its own scale tweens must re-anchor to `AbilityIconRestScale`) met one level up, at the HOST,
+and the reason it took longer to find is that the icon version fails on ONE card while this one
+fails on every card EXCEPT one. Gated by `Tools/Build/check_rest_scale_capture.py` (`--check`,
+`--self-test`, four negative controls; it names the pre-fix line).
+
 ## Rollout + enforcement (all vessels)
 
 `VesselHUDController.Initialize` — the one method every vessel HUD routes through, on every spawn
@@ -673,6 +709,8 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | The generated plate | `Assets/_Scripts/UI/View/TrapezoidGraphic.cs` |
 | Generated card readouts (a ring) | `Assets/_Scripts/UI/View/ScopeRingGraphic.cs` |
 | Card-fit gate (style + font measured) | `Tools/Build/check_squirrel_card_fit.py` (`--check`, `--self-test`) |
+| Press juice (lazy rest capture) | `Assets/_Scripts/UI/Elements/AbilityButtonPressJuice.cs` — `SetRestScale`, re-anchored by `PlaceHost` |
+| Stale-rest gate | `Tools/Build/check_rest_scale_capture.py` (`--check`, `--self-test`) |
 | Upgrade hook (shared) | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `SetAbilityUpgraded` → `SetUpgraded` |
 | Flower socket injection | `Assets/_Scripts/UI/View/ElementalBarsView.cs` — `TrySetPetalRoot` |
 | Press state + chip binding (shared init) | `Assets/_Scripts/UI/Controller/VesselHUDController.cs` |
