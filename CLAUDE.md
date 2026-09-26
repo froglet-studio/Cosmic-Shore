@@ -5435,6 +5435,9 @@ ones.
   label, no progress readout: the ring and the icon do the lift in the world, and the Toy Box menu
   is where a player learns what a toy is called (`ToyFactory` no longer has a label builder, and
   `Tools/Build/toy_switch_ring_geometry.py --check` fails on any TextMeshPro type in a toy source).
+  **One named exception**: `ToyChoiceLabel` puts SHARE / REPAINT over a finished painting's two
+  completion gates — identical neutral rings that do opposite things (export vs erase), with no menu
+  between the player and the choice — and it is its own file so the check exempts exactly it.
   Drawn by
   `Toy.Initialize` from that collider — not by each toy's builder — so a toy authored
   tomorrow wears one; one explicit opt-out (`Toy.ConfigureSwitchRing`): a smaller radius

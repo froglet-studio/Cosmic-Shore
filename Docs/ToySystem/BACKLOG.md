@@ -165,7 +165,7 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
     toy's paintings list is ever emptied the procedural fallback resets saved progress on its
     first write (totalStrokes mismatch, by design). Acceptable while the committed
     `Toy_Painting.asset` list stays populated; split the ids if that ever changes.
-  - ~~*`BillboardLabel` one-LateUpdate-per-label*~~ - moot: toys carry no text (2026-09-25).
+  - ~~*`BillboardLabel` one-LateUpdate-per-label*~~ - moot: toys carry no text (2026-09-25). The one survivor is `ToyChoiceLabel`'s billboard on the two SHARE / REPAINT words, which exist only while a finished painting waits on the choice.
   - *Toolkit `Rng` vs seeded `System.Random`* (Microscene convention): kept deliberately —
     xorshift32 is stable across .NET runtimes, `System.Random`'s algorithm is not guaranteed.
   - *`CatmullRomPoint` duplicates `SpawnableWaypointTrack.CatmullRom`*: unify in a shared math

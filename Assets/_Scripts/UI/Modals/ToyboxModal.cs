@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -67,6 +69,19 @@ namespace CosmicShore.UI
                  "Leave empty to find it in the scene at Start.")]
         ToyConfigureModal configureModal;
 
+        [Header("Freestyle handoff")]
+        [SerializeField, Tooltip("The scene's freestyle toggle. A shuffle closes the window and " +
+                 "puts the player IN the cell flying the vessel before it re-rolls anything. Leave " +
+                 "empty to find it in the scene at Start.")]
+        MenuCrystalClickHandler crystalClickHandler;
+
+        [SerializeField, Min(1f), Tooltip("Seconds to wait for the freestyle transition to finish " +
+                 "before shuffling anyway.")]
+        float freestyleHandoffTimeout = 8f;
+
+        // The transition bracket a shuffle waits on - the same registration ToyConfigureModal reads.
+        [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
+
         readonly List<ToyboxCard> _cards = new();
 
         [Header("Card reveal")]
@@ -95,6 +110,8 @@ namespace CosmicShore.UI
                 : FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
             if (!configureModal)
                 configureModal = FindFirstObjectByType<ToyConfigureModal>(FindObjectsInactive.Include);
+            if (!crystalClickHandler)
+                crystalClickHandler = FindFirstObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include);
 
             GetComponents(_openSources);
             foreach (var source in _openSources)
@@ -274,11 +291,15 @@ namespace CosmicShore.UI
         /// <summary>
         /// Re-roll every setting the live toys own: a new world, a new domain, a new hull.
         ///
-        /// <para>The window stays OPEN, which is the same thing a cell swap picked from the detail
-        /// window does - the heavy half of a shuffle raises the standard environment veil, and the
-        /// player comes back to a Toy Box that now describes the world they are in. The summary on
-        /// the button is what makes the press legible, since most of what changed is not visible
-        /// from inside a modal.</para>
+        /// <para><b>It puts the player IN the result.</b> A shuffle is a new place to fly, so the
+        /// window closes, the vessel leaves autopilot and the player takes the stick (the same
+        /// handoff <see cref="ToyConfigureModal"/> makes for a variant that needs the player flying),
+        /// and only once that transition has FINISHED does the re-roll run - world last, behind the
+        /// standard environment veil. Staying in the menu would hand the player a new hull, domain
+        /// and world and then leave all three on autopilot behind a window. Waiting on the
+        /// transition's END rather than on <see cref="MenuCrystalClickHandler.IsInFreestyle"/> is
+        /// the configure window's rule for the same reason: that flag flips at the START, while
+        /// input is still paused, and a vessel swap begun then restores control to nobody.</para>
         /// </summary>
         public void ShuffleToyBox()
         {
@@ -305,13 +326,37 @@ namespace CosmicShore.UI
             LastShuffleSummary = "";
             if (shuffleCard) shuffleCard.Bind(this);
 
+            var ct = this.GetCancellationTokenOnDestroy();
+
+            try
+            {
+                await EnterFreestyle(ct);
+            }
+            catch (System.OperationCanceledException)
+            {
+                IsShuffling = false;
+                return;
+            }
+
+            // Re-planned against the toys standing NOW. Entering freestyle builds nothing, but the
+            // wait is several seconds long and a toy can be torn down in it; a pick made against a
+            // destroyed surface would throw out of its Apply.
+            plan = ToyShuffle.Plan();
+            if (plan.Count == 0)
+            {
+                LastShuffleSummary = "NOTHING TO SHUFFLE";
+                IsShuffling = false;
+                if (shuffleCard) shuffleCard.Bind(this);
+                return;
+            }
+
             // Described BEFORE it is applied: an option's own label is read off the live toy, and
             // the cell swap at the end of a plan destroys the toys the earlier picks came from.
             string summary = ToyShuffle.Describe(plan);
 
             try
             {
-                await ToyShuffle.ApplyAsync(plan, this.GetCancellationTokenOnDestroy());
+                await ToyShuffle.ApplyAsync(plan, ct);
                 LastShuffleSummary = summary;
             }
             catch (System.OperationCanceledException)
@@ -326,6 +371,54 @@ namespace CosmicShore.UI
             {
                 IsShuffling = false;
                 if (shuffleCard) shuffleCard.Bind(this);
+            }
+        }
+
+        /// <summary>
+        /// Close the window and hand the player the stick, returning once the freestyle transition
+        /// has finished. Already flying (the Toy Box was opened mid-freestyle): just close. No
+        /// freestyle toggle in the scene: close and shuffle in place, loudly.
+        /// </summary>
+        async UniTask EnterFreestyle(CancellationToken ct)
+        {
+            OnCloseModal();
+
+            if (!crystalClickHandler)
+            {
+                CSDebug.LogWarning("[ToyboxModal] No MenuCrystalClickHandler in the scene, so the " +
+                                   "shuffle ran without putting the player in the cell. Wire the " +
+                                   "scene's freestyle toggle on this modal.");
+                return;
+            }
+
+            if (crystalClickHandler.IsInFreestyle) return;
+
+            bool arrived = false;
+            void OnArrived() => arrived = true;
+
+            var channel = freestyleEvents ? freestyleEvents.OnGameStateTransitionEnd : null;
+            if (channel != null) channel.OnRaised += OnArrived;
+
+            try
+            {
+                crystalClickHandler.ToggleTransition();
+
+                float deadline = Time.unscaledTime + Mathf.Max(1f, freestyleHandoffTimeout);
+                while (!arrived && Time.unscaledTime < deadline)
+                {
+                    if (!crystalClickHandler) return;
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+
+                // A shuffle that waited this long is still worth running - the re-roll is a
+                // setting change, not a run that needs a pilot to start against.
+                if (!arrived)
+                    CSDebug.LogWarning($"[ToyboxModal] Freestyle did not settle within " +
+                                       $"{freestyleHandoffTimeout:0.#}s - shuffling anyway.");
+            }
+            finally
+            {
+                if (channel != null) channel.OnRaised -= OnArrived;
             }
         }
 

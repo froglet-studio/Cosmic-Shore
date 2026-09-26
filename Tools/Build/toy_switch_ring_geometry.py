@@ -34,14 +34,19 @@ TOY_FACTORY = ROOT / "Assets/_Scripts/Controller/Toys/ToyFactory.cs"
 TOYBOX_CONTROLLER = ROOT / "Assets/_Scripts/Controller/Toys/ToyboxController.cs"
 ASSET_DIR = ROOT / "Assets/_SO_Assets/Toys"
 
-# Everything a freestyle toy is built from. ArkwayVoyageHud is the one exempt file: it is the
-# screen-space leash COUNTDOWN (a warning with a clock on it), not text on a toy.
+# Everything a freestyle toy is built from. Two files are exempt, each for a stated reason:
+# ArkwayVoyageHud is the screen-space leash COUNTDOWN (a warning with a clock on it), not text on
+# a toy; ToyChoiceLabel is the painting's SHARE / REPAINT words, two identical neutral rings that
+# do opposite things (export vs erase) at a moment no menu stands between the player and.
 NO_TEXT_SOURCES = [
     ROOT / "Assets/_Scripts/Controller/Toys",
     ROOT / "Assets/_Scripts/ScriptableObjects/Toys",
     ROOT / "Assets/_Scripts/Controller/Environment/Ark.cs",
 ]
-NO_TEXT_EXEMPT = {"ArkwayVoyageHud.cs"}
+NO_TEXT_EXEMPT = {
+    "ArkwayVoyageHud.cs",   # a screen-space HUD, not a toy in the world
+    "ToyChoiceLabel.cs",    # the painting's SHARE / REPAINT choice words - the one sanctioned exception
+}
 TEXT_TYPES = re.compile(r"\b(TMP_Text|TextMeshPro|TextMeshProUGUI|TextMesh|UnityEngine\.UI\.Text)\b")
 
 # `CreateBareRoot(..., radius * 1.6f)` is the shared station trigger factor, repeated at every

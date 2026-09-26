@@ -189,9 +189,14 @@ namespace CosmicShore.Gameplay
         {
             // Choice gates keep a neutral sphere hub - crossing commits a choice, not a trail state,
             // so they must not wear the trail-changer cone.
-            return ToyFactory.CreateGate($"Choice_{text}", transform.parent, position, transform.forward,
+            var gate = ToyFactory.CreateGate($"Choice_{text}", transform.parent, position, transform.forward,
                 ChoiceGateRadius, color, hubIsCone: false,
                 ToySwitchSignal.Neutral, Domains.Blue, Definition, Context, _ => onChosen());
+
+            // The one place a freestyle toy carries text: two identical neutral rings that do
+            // opposite things (export vs erase) need their word - see ToyChoiceLabel.
+            if (gate) ToyChoiceLabel.Add(gate.transform, text, color, ChoiceGateRadius);
+            return gate;
         }
 
         void HandleShareChosen()

@@ -432,11 +432,22 @@ applies it. Three things about it are load-bearing:
 
 It prefers a leaf that is **not** where the player already is, because the cell selector does offer
 the current world (flying it is the freestyle reset) and a shuffle that landed there would read as
-having done nothing. The window stays **open**, matching a cell swap picked from the detail window,
-and the button's second line reports what the last shuffle landed on — which is what makes the
-press legible at all, since most of what changed is not visible from inside a modal. The summary is
-computed **before** the plan is applied, because an option's label is read off a live toy and the
-cell swap at the end of a plan destroys the toys the earlier picks came from.
+having done nothing. The summary is computed **before** the plan is applied, because an option's
+label is read off a live toy and the cell swap at the end of a plan destroys the toys the earlier
+picks came from.
+
+**A shuffle from the menu puts the player IN the result** (2026-09-26, prompter-directed). It used to
+leave the window open and re-roll behind it, which handed the player a new hull, domain and world and
+then left all three on autopilot behind a modal. `ToyboxModal.ShuffleToyBox` now closes the window,
+calls `MenuCrystalClickHandler.ToggleTransition()` and waits for
+`MenuFreestyleEventsContainerSO.OnGameStateTransitionEnd` — the configure window's handoff, and for
+its reason: `IsInFreestyle` flips at the transition's START while input is still paused, so a vessel
+swap begun then restores control to nobody — and only then applies the shuffle. The plan is re-drawn
+after the wait (a toy can be torn down in those seconds, and a pick against a destroyed surface
+throws). Already flying: it just closes and shuffles. A wait that times out still shuffles — a
+re-roll is a setting change, not a run that needs a pilot to start against — and a scene with no
+freestyle toggle shuffles in place with a warning. The button's second line still reports what the
+last shuffle landed on, for the next time the window is opened.
 
 **Nothing here is a cull or a clock.** A cell swap removes mass because a player asked for a new
 world — the same explicit, active event class as flying the station, which is what keeps this inside
