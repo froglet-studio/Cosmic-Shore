@@ -564,6 +564,31 @@ the unbound slots and says it cannot tell the two causes apart — *undesigned* 
 LOCKED) and *generated at runtime* — because only one of them is in the asset. Check that vessel in
 play.
 
+### …or a generated ACCENT under an authored one (2026-09-26)
+
+The same hook covers the other half: a card whose icon is perfectly good **art** but which needs a
+live or palette-driven layer inside it. The Squirrel's Boost Ring is the case — the sprite stays,
+tinted from the palette's danger colour, and a generated `PerspectiveTunnelGraphic` fills its empty
+middle in the pilot's own domain (`SQUIRREL_ELEMENT_RECUT.md` § "Fourth pass").
+
+Two things make that safe, and both are why the accent is a **child of the bound icon** rather than
+a sibling of it:
+
+- **It inherits the kerning.** The lockup scales an icon by `iconBoxSize / its authored size`
+  (0.75 on this vessel), and a sibling would need that factor applied by hand and re-applied every
+  time the style asset moves. A child gets it for free — which is also why the Space card's ring and
+  count are children of theirs.
+- **It cannot occlude the art it sits in.** A UGUI child draws *after* its parent's own Graphic, so
+  an accent is only safe where the icon is transparent. The Boost Ring sprite is a circle of eight
+  prism blocks whose middle is measured empty, so the accent lives entirely in that hole;
+  `Tools/Build/check_squirrel_card_fit.py` asserts it against the PNG rather than trusting the
+  number.
+
+**Nothing in the lockup changed for it.** The colour is pushed by the vessel's controller (the view
+holds no `GameDataSO`), and `VesselHUDView.SetAbilityUpgraded` writes an icon's SPRITE and SCALE and
+never its colour — so an icon tint and the upgrade signal cannot collide, on this card or any
+future one.
+
 ## Rollout + enforcement (all vessels)
 
 `VesselHUDController.Initialize` — the one method every vessel HUD routes through, on every spawn
@@ -635,6 +660,9 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | Generated-icon hook | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `EnsureGeneratedAbilityIcons`, `BindGeneratedAbilityIcon`; called from `AbilityLockupView.Build` |
 | Icon kerning (applied at BUILD) | `Assets/_Scripts/UI/View/AbilityLockupView.cs` — `NormaliseIcon` |
 | The generated plate | `Assets/_Scripts/UI/View/TrapezoidGraphic.cs` |
+| Generated card accent (a tunnel) | `Assets/_Scripts/UI/View/PerspectiveTunnelGraphic.cs` |
+| Generated card readouts (a ring) | `Assets/_Scripts/UI/View/ScopeRingGraphic.cs` |
+| Card-fit gate (sprite + font measured) | `Tools/Build/check_squirrel_card_fit.py` (`--check`, `--self-test`) |
 | Upgrade hook (shared) | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `SetAbilityUpgraded` → `SetUpgraded` |
 | Flower socket injection | `Assets/_Scripts/UI/View/ElementalBarsView.cs` — `TrySetPetalRoot` |
 | Press state + chip binding (shared init) | `Assets/_Scripts/UI/Controller/VesselHUDController.cs` |

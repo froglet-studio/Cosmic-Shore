@@ -47,6 +47,15 @@ namespace CosmicShore.UI
                 ? gameData.ThemeManagerData.GetDomainUIColor(domain)
                 : Color.white;
 
+        // The DANGER tier at signal strength, for the Boost Ring icon - a Boost Ring is made of
+        // danger prisms. Domain-independent, and read from the same ColorSet as everything else
+        // rather than authored on the prefab, so a palette swap moves it. Alpha 0 when the palette
+        // authors no danger colour, which the view reads as "keep what you have".
+        private Color ResolveDangerColor() =>
+            gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDangerSignalColor()
+                : new Color(0f, 0f, 0f, 0f);
+
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
@@ -66,6 +75,7 @@ namespace CosmicShore.UI
             Color playerColor = ResolveDomainColor(vesselStatus.Domain);
 
             view.Initialize();
+            view.SetDangerTint(ResolveDangerColor());
             view.SetPlayerDomainColor(playerColor);
             Subscribe();
             PaintFromStatusFallback();

@@ -92,6 +92,33 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
+        /// The DANGER tier at SIGNAL strength - the third sibling of
+        /// <see cref="GetDomainSignalColor"/> and <see cref="GetCtaSignalColor"/>, and needed for
+        /// the same reason: a UI surface that wants to say "danger" must not read a prism colour
+        /// raw.
+        ///
+        /// <para><b>The danger tier has no colour fields of its own</b> (see
+        /// <see cref="GetPrismKindColors"/>): it is the domain's SHIELDED base face under the
+        /// shared, domain-independent <see cref="EnvironmentColorSet.Danger"/> rim, and the RIM is
+        /// the half that says dangerous. So this returns that rim - which the shipped
+        /// <c>OriginalColorSetSO</c> authors HDR at (1.498, 0.006, 0.007) with <b>alpha 0</b>, the
+        /// same trap <see cref="GetCtaSignalColor"/> records. Normalised here to the hue with its
+        /// brightest channel driven to 1 and alpha 1.</para>
+        ///
+        /// <para>Returns alpha 0 when the palette authors no danger colour at all - both inactive
+        /// palettes author (0,0,0,0) - so a caller can keep whatever it already had rather than
+        /// paint something black. A colour accessor that can return black can make a UI element
+        /// vanish, and a vanished element reads as "not implemented" rather than as mis-tinted.</para>
+        /// </summary>
+        public Color GetDangerSignalColor()
+        {
+            var c = EnvironmentColors != null ? EnvironmentColors.Danger : default;
+            float peak = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+            if (peak <= 0.001f) return new Color(0f, 0f, 0f, 0f);
+            return new Color(c.r / peak, c.g / peak, c.b / peak, 1f);
+        }
+
+        /// <summary>
         /// The per-domain accent for translucent flat-UI card tints (Maelstrom round/player/summary
         /// cards, Connecting-panel domain rank) - deliberately brighter than
         /// <see cref="DomainColorSet.TrailHighlightColor"/> and alpha-tinted so card backgrounds stay

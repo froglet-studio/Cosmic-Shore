@@ -268,6 +268,38 @@ reads as *not implemented* rather than as mis-tinted. The caller falls back inst
 (`ToyFactory.CtaLime`). One consumer today: the Switchback gate ring's `Next` switch signal
 (`Docs/ToySystem/ARCHITECTURE.md` § "The switch").
 
+### 2.6 And the same trap on DANGER — `GetDangerSignalColor` (2026-09-26)
+
+The third sibling, needed the first time a UI surface had to say *this is danger mass*: the
+Squirrel's Boost Ring icon, whose ring is made of danger prisms (`SQUIRREL_ELEMENT_RECUT.md`
+§ "Fourth pass").
+
+The danger tier has **no colour fields of its own** (§ "The danger tier borrows the shielded base")
+— it is the domain's SHIELDED base face under the shared, domain-independent
+`EnvironmentColors.Danger` rim, and the RIM is the half that says dangerous. So that is what the
+accessor returns, normalised the way the other two are:
+
+| source | shipped `OriginalColorSetSO` value |
+|---|---|
+| `EnvironmentColors.Danger` raw | (1.4979, 0.00585, 0.00685, **a: 0**) |
+| `GetDangerSignalColor()` | (1.0, 0.0039, 0.0046, a: 1) |
+
+**Two traps in one field, and the second is the one to carry.** It is HDR (peak 1.498), so a raw
+read clips in UI; and its **alpha is authored 0**, exactly like the CTA pair — so a raw read is
+also fully transparent, which is worse than wrong, because a transparent tint is indistinguishable
+from a tint that never ran. `GetDangerSignalColor` therefore forces alpha 1 and gates on the PEAK
+rather than on the alpha (which is what `GetCtaSignalColor` gates on), and returns alpha 0 when the
+palette authors no danger colour at all — `CosmicWaveColorSetSO` and `PastelColorSetSO` both author
+(0,0,0,0) — so a caller keeps what it had rather than painting something black, per §2.4's rule.
+`ThemeManagerDataContainerSO.GetDangerSignalColor()` is the null-safe wrapper with the same
+contract.
+
+**General shape, now three for three: a colour authored FOR A SHADER is not a colour a UI slot may
+read.** The shader composes it (a crystal lerps dull→bright by fresnel; a prism takes the rim over
+the base), tolerates HDR, and never looks at alpha. Every one of these three fields has now caught
+somebody out in the same way, so the rule is: when a HUD wants to speak the palette's language, add
+a `*SignalColor` accessor rather than reading the field.
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)

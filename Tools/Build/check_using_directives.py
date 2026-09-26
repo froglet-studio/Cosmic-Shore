@@ -95,7 +95,7 @@ def index_declarations():
                 continue
             p = os.path.join(root, f)
             try:
-                src = strip(open(p, encoding="utf-8", errors="ignore").read())
+                src = strip(open(p, encoding="utf-8-sig", errors="ignore").read())
             except OSError:
                 continue
             m = NS.search(src)
@@ -150,7 +150,7 @@ def reachable(ns: str, usings: set) -> set:
 
 
 def check_file(path, decls):
-    src_raw = open(path, encoding="utf-8", errors="ignore").read()
+    src_raw = open(path, encoding="utf-8-sig", errors="ignore").read()
     if ALIAS.search(src_raw):
         return []                      # a using-alias file: out of scope, stay silent
     src = strip(src_raw)
@@ -234,6 +234,14 @@ def self_test():
          "a FIELD's TYPE is a reference even though its name is a declarator"),
         ("namespace CosmicShore.Gameplay {\nclass A {\n    public WidgetSO WidgetSO;\n}\n}", 1,
          "a field named after its OWN type still reports the TYPE"),
+        # 74 of the project's 1,971 .cs files open with a UTF-8 BOM, and \ufeff is category Cf
+        # rather than whitespace - so `^\s*using` could not match the FIRST using directive in any
+        # of them and the gate reported a using that was right there on line 1. A false POSITIVE is
+        # the worse direction for a gate: it is what teaches people to stop reading it.
+        ("\ufeffusing CosmicShore.Utility;\nnamespace CosmicShore.Gameplay { class A { WidgetSO w; } }", 0,
+         "a BOM does not hide the FIRST using directive"),
+        ("\ufeffusing CosmicShore.Data;\nnamespace CosmicShore.Gameplay { class A { WidgetSO w; } }", 1,
+         "...and a BOM'd file with a genuinely missing using is still caught"),
     ]
     ok = True
     for src, want, label in cases:
