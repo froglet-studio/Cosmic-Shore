@@ -4758,7 +4758,22 @@ scale bump** with a one-shot unlock punch.
   whatever was true one frame after spawn, before the pick replicates. Both now go through one
   `RepaintForDomain`, POLLED in the `Update` that was already running (free, and no subscription to
   tear down against a `Player` a vessel swap replaces), gated on `Player` being present because
-  `IVesselStatus.Domain` LogErrors when it is not. `Docs/PALETTE.md §2.8`. Two more findings travel
+  `IVesselStatus.Domain` LogErrors when it is not. **That retry then singled out JADE, which is the
+  finding's second half**: the latch recorded which domain it had ATTEMPTED to paint rather than
+  whether the paint LANDED, and a palette resolve legitimately fails while `ThemeManagerData` is
+  unavailable during the spawn chain — so the retry was gated on the domain CHANGING, and **Jade is
+  `NetDomain`'s own initialiser**, the only value that can already be the recorded one (Ruby and Gold
+  always arrive as a change and always repaint). *A latch that records its input rather than its
+  outcome fails on exactly one input — whichever one is the default — so it presents as a bug about
+  that input rather than about the latch*, the second outing of `/vessel` rule 6 from a new
+  subsystem. `PaletteLanded(domain, resolved)` is a one-line pure static with its OWN suite
+  (`SquirrelHudPaletteLatchTests`) because replacing it with `true` is a **logic** regression: the
+  Roslyn harness compiles it clean and all eight textual gates pass it (measured — 7/7 assertions
+  pass the fix, 4 fail the regression). And the reason none of it was verifiable by eye is a palette
+  fact: **Jade's shielded tier is blue on both halves** (base 217.4°, rim 222.7°) and sits 22.6° from
+  the sentinel's 240°, while Jade's *identity* teal is 41° away in the other direction — so
+  white-when-unresolved is the ONLY thing separating "this is Jade" from "this never resolved".
+  `Docs/PALETTE.md §2.8`. Two more findings travel
   with it. **An
   extension point that has only ever had one user has only ever been tested for that user's
   shape**: the lockup's core pass `continue`d on a binding with no icon where the elemental pass

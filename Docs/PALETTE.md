@@ -354,6 +354,25 @@ than the other four traps in this section, because a black or transparent slot r
 implemented* and gets reported, while a saturated wrong hue reads as *implemented and mis-tinted* and
 gets rationalised.
 
+**And the sentinel is unusually hard to spot on JADE specifically, which is why the white-when-unresolved
+contract is load-bearing rather than tidy.** Jade's shielded tier is blue on *both* halves and sits only
+**22.6°** of hue from the sentinel, while Jade's *identity* colour — the teal players actually recognise
+as Jade — is 41° away in the other direction:
+
+| | normalised | hue | sat |
+|---|---|---|---|
+| Jade shielded **base** (what `GetShieldedSignalColor` reads) | (0.179, 0.489, 1.000) | 217.4° | 0.821 |
+| Jade shielded **rim** (`ShieldedInsideBlockColor`, over it on a prism) | (0.336, 0.528, 1.000) | 222.7° | 0.664 |
+| Jade **identity** (`TrailHighlightColor`) | (0.067, 1.000, 0.947) | 176.6° | 0.933 |
+| Blue / the sentinel | (0.000, 0.000, 1.000) | 240.0° | 1.000 |
+
+So a *correct* Jade card and the sentinel bug are indistinguishable at 60 px, and the only thing that
+separates "this is Jade" from "this never resolved" is that an unresolved read renders **white**. The
+icon is honest — Jade's shielded mass really is blue, on every palette that authors it (`CosmicWave`
+and `Pastel` author alpha 0 and are correctly refused, so `OriginalColorSetSO` is the only live answer
+and `ThemeManager` never swaps it). If a card should say WHICH DOMAIN rather than WHAT THE MASS IS,
+that is `GetDomainSignalColor` and a different promise.
+
 The refusal belongs to the **CALLER**, not to the accessor: "no pilot can fly Blue" is a fact about
 pilots, and a neutral mine or an uncommitted crystal legitimately wants to know what colour no-team
 is, so the palette stays a pure palette read. A HUD that means *this pilot's domain* tests for the

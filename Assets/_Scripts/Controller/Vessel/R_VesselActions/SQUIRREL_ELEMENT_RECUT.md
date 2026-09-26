@@ -556,6 +556,71 @@ fleet one: `DolphinVesselHUDController.ResolveDomainSignalColor()` is called fro
 other HUD controller snapshotting a domain; every other reader in `R_VesselActions/` resolves at USE
 time (per shot, per lay), which is correct.
 
+## Tenth pass (2026-09-26): the ninth pass's own latch singled out Jade
+
+The ninth pass shipped and the report came back: *"gold and ruby were switching to their colors just
+fine, but jade was still returning to blue each time."* One domain wrong and two right is a very
+specific shape, and it names the defect: **the retry latch recorded which domain it had ATTEMPTED to
+paint, not whether the paint LANDED.**
+
+`SetOmniAbilityTint` refuses `tint.a <= 0` — the view keeps its white rather than painting black
+(§2.4's contract) — and `ResolveShieldedColor` returns alpha 0 whenever `gameData.ThemeManagerData`
+is not resolvable yet, which it is not for part of the spawn chain (`gameData` is `[Inject]`, so it is
+populated after `Awake` but before `Start`, while `Initialize` is called from the vessel's own spawn
+chain). So a first push could legitimately fail, leave the card white — and still set
+`_paintedDomain = Jade`. From there the retry was gated on the domain **changing**.
+
+**Jade is `Player.NetDomain`'s own initialiser**, so Jade is the only value that can already be the
+recorded one. Ruby and Gold always arrive as a change and always repaint; Jade never does. *A latch
+that records its input rather than its outcome fails on exactly one input — whichever one is the
+default — which is why this presented as a Jade bug rather than as a latch bug.* It is also the
+**second** instance of a rule the vessel contract already states (`/vessel` rule 6: *resolution
+retries until success; a query that latches on attempt pins null forever*), reached from a different
+subsystem.
+
+Fixed with two independent latches in one `PushPalette` — the danger tint is domain-independent and
+can only ever be waiting on `ThemeManagerData`, the domain tints are additionally waiting on a domain
+— neither closing until the palette actually answered:
+
+```
+_domainPainted = PaletteLanded(live, shielded);   // domain != Blue && resolved.a > 0f
+```
+
+**`Domains.Blue` must not close it either**, for the mirror reason: its shielded tint is refused
+permanently by design, so a latch closed on the sentinel would freeze the card white for the rest of
+the match the moment a pilot was once seen unresolved.
+
+### Why this one is a TEST rather than a comment
+
+`PaletteLanded` is a one-line pure static with its own suite (`SquirrelHudPaletteLatchTests`) because
+**replacing it with `true` is a logic regression, not a type error** — the Roslyn stub harness
+compiles the regression clean, and all eight textual gates pass it. Measured: the suite's 7
+assertions all pass against the shipped predicate and **4 of them fail** against
+`_domainPainted = true`. That is the whole justification for promoting one line to a named function;
+without it the only thing standing between this bug and the next branch is a paragraph.
+
+### And the reason it could not be verified by eye — a palette fact worth knowing
+
+| | normalised | hue | sat |
+|---|---|---|---|
+| Jade shielded **base** (what the card reads) | (0.179, 0.489, 1.000) | 217.4° | 0.821 |
+| Jade shielded **rim** (what sits over it on a prism) | (0.336, 0.528, 1.000) | 222.7° | 0.664 |
+| Jade **identity** (`TrailHighlightColor`, what players call "Jade") | (0.067, 1.000, 0.947) | 176.6° | 0.933 |
+| Blue / the sentinel | (0.000, 0.000, 1.000) | 240.0° | 1.000 |
+
+**Jade's shielded tier is blue on BOTH halves** and sits **22.6° of hue** from the sentinel, while
+Jade's *identity* colour is teal 41° away in the other direction. So a correct Jade card and the bug
+look the same at 60 px, and no palette reading makes Jade's shielded mass teal — the icon is honest,
+it is Jade's trail that is the teal players recognise. Confirmed across all three palettes:
+`CosmicWaveColorSetSO` and `PastelColorSetSO` author their shielded base at **alpha 0** (unauthored,
+correctly refused), so `OriginalColorSetSO` is the only live answer and `ThemeManager` never swaps it.
+
+That is what makes the **white-when-unresolved** contract load-bearing rather than tidy: it is the
+only thing that separates *"this is Jade"* from *"this never resolved"*, because the two colours
+cannot be told apart. If the card should instead say WHICH DOMAIN rather than WHAT THE MASS IS, the
+lever is `ResolveShieldedColor` reading `GetDomainSignalColor` — a different promise, and a design
+call, not a fix.
+
 ## Findings worth more than the change
 
 **1. `superSteal` already existed and nobody passed it.** `PrismTeamManager.Steal`'s third parameter
@@ -682,6 +747,14 @@ Nothing below has been run; there is no Unity in this session.
    identical snapshot defect and are now on the same call. Finally, a card whose domain has not
    resolved yet must render **WHITE**, never blue: a white icon reads as untinted, a saturated one
    reads as a team.
+6l. **Jade specifically** — the tenth pass. The ninth pass's retry latch failed on exactly one
+   domain, and it was the DEFAULT one, so this step is not covered by 6k's cycle test. Start a match
+   **without touching the domain changer at all** (a fresh pilot is Jade) and confirm the omni card
+   is Jade's `(0.179, 0.489, 1.000)` and not white. Then Jade → Ruby → Jade and confirm it comes
+   back. Do not try to tell Jade's card from the old sentinel bug by eye — they are 22.6° of hue
+   apart; **white is the failure state now**, so the question is only *is it coloured at all*. Check
+   the Boost Ring's danger tint in the same breath: it is pushed by the same retry and had the
+   identical exposure.
 7. **Iron Grip** — skim an opposing **shielded** prism below Space 5: it should lose its shield and
    keep its domain. At Space 5: it should change domain **and keep the shield**. Then confirm a
    **super**-shielded prism is refused at both levels.

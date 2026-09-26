@@ -31,10 +31,22 @@ namespace CosmicShore.UI
         private IVesselStatus _vesselStatus;
         private Domains _lastSourceDomain = Domains.Blue;
 
-        // The domain this HUD is currently PAINTED for. default(Domains) is 0, which is not a
-        // member of the enum, so the first poll always repaints - there is no value a real domain
-        // could hold that would be mistaken for "already painted".
+        // The domain this HUD is currently PAINTED for, and whether that paint actually LANDED.
+        // default(Domains) is 0, which is not a member of the enum, so the first poll always
+        // repaints - there is no value a real domain could hold that would be mistaken for
+        // "already painted".
+        //
+        // The bool is the half that matters, and leaving it out is what made JADE the one domain
+        // that stayed wrong while Ruby and Gold worked. A palette resolve fails silently while
+        // `gameData.ThemeManagerData` is not available yet (alpha 0 -> the view keeps its white),
+        // and recording the domain anyway means the retry is gated on the domain CHANGING. Jade is
+        // `Player.NetDomain`'s own initialiser, so Jade is the only value that can be the
+        // already-recorded one - Ruby and Gold always arrive as a change and always repaint. A
+        // latch must record whether the work SUCCEEDED, never merely which input it was attempted
+        // with.
         private Domains _paintedDomain = default;
+        private bool _domainPainted;
+        private bool _dangerPainted;
 
         // Polled each frame to drive the tube cooldown icon in the freed HUD slot.
         private SquirrelTubeActionExecutor _tubeExecutor;
@@ -96,8 +108,7 @@ namespace CosmicShore.UI
             }
 
             view.Initialize();
-            view.SetDangerTint(ResolveDangerColor());
-            RepaintForDomain(vesselStatus.Domain);
+            PushPalette();
             Subscribe();
             PaintFromStatusFallback();
 
@@ -116,22 +127,67 @@ namespace CosmicShore.UI
                 view.SetTubeCooldownReady(1f - _tubeExecutor.CooldownRemaining01);
 
             PushStealReadout();
-            PushDomainPalette();
+            PushPalette();
         }
 
         /// <summary>
-        /// Repaints everything on this HUD that wears the pilot's colour: the omni crystal card's
-        /// shielded-ring icon, the boost fill and the steal count.
+        /// Everything on this HUD that is read out of the palette, pushed until it LANDS.
+        ///
+        /// <para>Two independent latches, because the two colours fail for different reasons: the
+        /// danger tint is domain-INDEPENDENT and can only ever be waiting on
+        /// <c>ThemeManagerData</c>, while the domain tints are additionally waiting on a domain to
+        /// resolve. Neither latch closes until the palette actually answered, which is the whole of
+        /// the fix - see <see cref="_domainPainted"/>.</para>
         /// </summary>
-        private void RepaintForDomain(Domains domain)
+        private void PushPalette()
         {
-            _paintedDomain = domain;
-            view.SetOmniAbilityTint(ResolveShieldedColor(domain));
-            view.SetPlayerDomainColor(ResolveDomainColor(domain));
+            if (!_dangerPainted)
+            {
+                Color danger = ResolveDangerColor();
+                if (danger.a > 0f) { view.SetDangerTint(danger); _dangerPainted = true; }
+            }
+
+            if (_vesselStatus?.Player == null) return;
+
+            Domains live = _vesselStatus.Domain;
+            if (_domainPainted && live == _paintedDomain) return;
+
+            Color shielded = ResolveShieldedColor(live);
+            view.SetOmniAbilityTint(shielded);
+            view.SetPlayerDomainColor(ResolveDomainColor(live));
+
+            _paintedDomain = live;
+            _domainPainted = PaletteLanded(live, shielded);
         }
 
         /// <summary>
-        /// Follows the pilot's LIVE domain rather than the one they had when this HUD was built.
+        /// Whether a palette push actually LANDED and its retry may stop.
+        ///
+        /// <para>Pure, internal and separately tested (<c>SquirrelHudPaletteLatchTests</c>) because
+        /// the defect it encodes is invisible to every offline gate this project has — replacing it
+        /// with <c>true</c> is a logic regression, not a type error, so the Roslyn harness compiles
+        /// it clean. It is also the SECOND instance of a rule the vessel contract already records
+        /// (<i>resolution retries until success; a query that latches on the ATTEMPT pins its first
+        /// answer forever</i>), which is the bar for making a one-line decision a named function.</para>
+        ///
+        /// <para>Two ways a push fails to land, and both must keep the retry open. A resolve of
+        /// alpha 0 means the palette had no answer yet — <c>gameData.ThemeManagerData</c> is not
+        /// available during part of the spawn chain — and the view deliberately keeps its white
+        /// rather than painting black. And <c>Domains.Blue</c> is the no-team sentinel, whose
+        /// shielded tint is refused permanently, so closing the latch on it would freeze the card
+        /// white for the rest of the match the moment a pilot was once seen unresolved.</para>
+        ///
+        /// <para>Getting this wrong singles out exactly ONE domain, which is why it presented as a
+        /// Jade bug rather than as a latch bug: the retry is otherwise gated on the domain
+        /// CHANGING, and Jade is <c>Player.NetDomain</c>'s own initialiser — the only value that can
+        /// already be the recorded one. Ruby and Gold always arrive as a change and always
+        /// repaint.</para>
+        /// </summary>
+        internal static bool PaletteLanded(Domains domain, Color resolved) =>
+            domain != Domains.Blue && resolved.a > 0f;
+
+        /// <summary>
+        /// Why the palette is POLLED rather than pushed once.
         ///
         /// <para>A domain is not decided by the time a vessel spawns: <c>Player.NetDomain</c> is
         /// server-write and initialises to Jade, the owner's own pick arrives later through
@@ -146,17 +202,10 @@ namespace CosmicShore.UI
         /// for the tube cooldown and the steal readout, so the poll is free; and a subscription has
         /// to be torn down against a <c>Player</c> reference that a vessel swap replaces underneath
         /// it, which is the asymmetric-binding failure the vessel contract has paid for three times.
-        /// The read is gated on <c>Player</c> being present because
-        /// <c>IVesselStatus.Domain</c> logs an ERROR when it is not - a per-frame poll through that
-        /// getter would turn one missing reference into console spam.</para>
+        /// The read is gated on <c>Player</c> being present because <c>IVesselStatus.Domain</c>
+        /// logs an ERROR when it is not - a per-frame poll through that getter would turn one
+        /// missing reference into console spam.</para>
         /// </summary>
-        private void PushDomainPalette()
-        {
-            if (_vesselStatus?.Player == null) return;
-
-            Domains live = _vesselStatus.Domain;
-            if (live != _paintedDomain) RepaintForDomain(live);
-        }
 
         /// <summary>
         /// The SPACE card: how far the steal reaches right now, and how much has been taken.
