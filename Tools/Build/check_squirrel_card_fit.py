@@ -1,33 +1,33 @@
 #!/usr/bin/env python3
-"""Measure the Squirrel ability row's two GENERATED readouts against the things they have to fit.
+"""Measure the Squirrel Space card's GENERATED readout against the things it has to fit.
 
-Both live inside a lockup card whose geometry belongs to a shared style asset, and both are laid
-out in the ICON's own authored units while being DRAWN at the lockup's kerning - so every number in
-them is a relationship between three files, and none of the three knows about the other two. This
-is a READER: it writes nothing and only ever reports.
+The reach ring and the steal count live inside a lockup card whose geometry belongs to a shared
+style asset, and both are laid out in the ICON's own authored units while being DRAWN at the
+lockup's kerning - so every number in them is a relationship between three files, and none of the
+three knows about the other two. This is a READER: it writes nothing and only ever reports.
 
 What it proves, and why each one is silent if it breaks:
 
-  1. The Mass card's tunnel accent stays inside the Boost Ring sprite's own HOLE. The hole radius is
-     MEASURED off the shipped PNG rather than assumed, because the whole reason the two colours can
-     sit on one card is that they never touch a pixel (Docs/PALETTE.md 4.3: two saturated hues are
-     separated, never blended). Overlap does not error - it muddies.
+  1. THE WHOLE READOUT FITS THE BOX AN AUTHORED ICON DRAWS IN. This is the check the card was
+     reported for: the lockup kerns an icon's RECT and cannot see what a generated child draws
+     inside it, so a ring at a radius that nearly fills the box and a count hung off the plate
+     below make the card read as bigger than its four neighbours - which is the same failure mode
+     as the un-kerned core card, arriving from the other direction. Nothing clips it and nothing
+     errors; it just looks wrong beside the other four.
 
-  2. Every tunnel ring clears a pixel when drawn, and the gap between neighbours does too. A ring
-     that goes sub-pixel simply stops being visible, which reads as a SHORTER tunnel rather than as
-     a broken one.
+  2. The ring clears a pixel when drawn, and the count never touches it at any Space level - the
+     ring is a live measurement that grows, so the one place the two can collide is at full Space.
 
   3. The steal count fits FOUR digits, measured off the shipped font's own advance table. A wrapped
      or ellipsised number is a wrong reading that looks deliberate.
 
-  4. The steal count sits below the reach ring at its MAXIMUM radius (so it can never compete with
-     the ring) and still lands clear of the ability plate's bottom edge, above the control chip.
-     Overhanging the plate is not clipped by anything, so it would just quietly collide with the
-     chip.
+  4. The count still lands clear of the ability plate's bottom edge, above the control chip. Check 1
+     subsumes this at the shipped numbers and it is kept as the absolute floor: the plate is the
+     thing that actually collides with something, where the icon box is a rule about how the card
+     READS.
 
 Usage: check_squirrel_card_fit.py [--check | --self-test]
 """
-import math
 import os
 import re
 import sys
@@ -36,21 +36,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 assert os.path.isdir(os.path.join(ROOT, "Assets")), f"ROOT is wrong: {ROOT}"
 
 VIEW = "Assets/_Scripts/UI/View/SquirrelVesselHUDView.cs"
-GRAPHIC = "Assets/_Scripts/UI/View/PerspectiveTunnelGraphic.cs"
+RING = "Assets/_Scripts/UI/View/ScopeRingGraphic.cs"
 STYLE = "Assets/Resources/AbilityLockupStyle.asset"
 PREFAB = "Assets/_Prefabs/UI Elements/VesselHUD/SquirrelHUDVariant.prefab"
-SPRITE = "Assets/_Graphics/Design Assests/HUD UI/Squirrel/BoostRingCrossSectionIcon.png"
 FONT = "Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/ALDRICH-REGULAR SDF.asset"
 
 # Drawn-unit floors. Stated here rather than inline so a retune can see what it is trading against.
 MIN_RING_THICKNESS_PX = 0.85    # under this a feathered band stops reading as a line at all
-MIN_RING_GAP_PX = 1.25          # under this two rings read as one thick one
 PLATE_CLEARANCE_PX = 2.0        # air between the count's bottom and the plate's bottom edge
 DIGITS_REQUIRED = 4
 
 
 def read(rel):
-    with open(os.path.join(ROOT, rel), encoding="utf-8", errors="replace") as f:
+    with open(os.path.join(ROOT, rel), encoding="utf-8-sig", errors="replace") as f:
         return f.read()
 
 
@@ -61,37 +59,11 @@ def csfloat(src, name, what):
     return float(m.group(1))
 
 
-def csint(src, name, what):
-    m = re.search(r"\b" + re.escape(name) + r"\s*=\s*(-?\d+)\s*;", src)
-    if not m:
-        raise SystemExit(f"could not read {name} from {what}")
-    return int(m.group(1))
-
-
 def yamlfloat(src, name, what):
     m = re.search(r"^\s*" + re.escape(name) + r":\s*(-?[\d.]+)\s*$", src, re.M)
     if not m:
         raise SystemExit(f"could not read {name} from {what}")
     return float(m.group(1))
-
-
-def measure_sprite_hole():
-    """Radius, as a fraction of the sprite's half-extent, of the empty middle of the ring art."""
-    from PIL import Image
-    im = Image.open(os.path.join(ROOT, SPRITE)).convert("RGBA")
-    w, h = im.size
-    px = im.load()
-    cx, cy = (w - 1) / 2.0, (h - 1) / 2.0
-    half = min(w, h) / 2.0
-    # The smallest radius at which the art starts. Sampled per-pixel; the art is a clean annulus.
-    inner = 1.0
-    for y in range(h):
-        for x in range(w):
-            if px[x, y][3] > 96:
-                r = math.hypot(x - cx, y - cy) / half
-                if r < inner:
-                    inner = r
-    return inner, (w, h)
 
 
 def measure_widest_digit():
@@ -112,8 +84,12 @@ def measure_widest_digit():
     return max(advances), point
 
 
-def icon_size_delta():
-    """The Mass icon's authored rect, read through the prefab's own tubeCooldownIcon reference."""
+def authored_icon_size():
+    """The row's authored icon rect, read through the prefab's own Mass icon reference.
+
+    The Space icon is GENERATED at the same 80x80 the four authored ones measure, so the authored
+    one is what the generated rect has to match - read it rather than retyping it, since the kern
+    this check divides by is the lockup's own iconBoxSize over exactly this number."""
     t = read(PREFAB)
     m = re.search(r"^\s*tubeCooldownIcon:\s*\{fileID:\s*(\d+)\}", t, re.M)
     if not m:
@@ -137,37 +113,30 @@ def icon_size_delta():
 
 
 def gather():
-    """Every number the four checks need, read from the five files that own them."""
+    """Every number the four checks need, read from the four files that own them."""
     view = read(VIEW)
-    graphic = read(GRAPHIC)
+    ring = read(RING)
     style = read(STYLE)
 
-    icon_w, icon_h = icon_size_delta()
-    hole01, sprite_px = measure_sprite_hole()
+    icon_w, icon_h = authored_icon_size()
     widest, point = measure_widest_digit()
     icon_box = yamlfloat(style, "iconBoxSize", STYLE)
 
     return dict(
-        front_r=csfloat(view, "tunnelFrontRadius", VIEW),
-        rings=csint(view, "tunnelRings", VIEW),
-        depth_step=csfloat(view, "tunnelDepthStep", VIEW),
-        front_t=csfloat(view, "tunnelFrontThickness", VIEW),
+        centre_y=csfloat(view, "reachRingCenterY", VIEW),
         reach_max=csfloat(view, "reachRingMaxRadius", VIEW),
         reach_min=csfloat(view, "reachRingMinRadius", VIEW),
+        reach_t=csfloat(view, "reachRingThickness", VIEW),
         font_size=csfloat(view, "stealCountFontSize", VIEW),
         count_gap=csfloat(view, "stealCountGap", VIEW),
         count_h=csfloat(view, "stealCountHeight", VIEW),
-        min_t=csfloat(graphic, "minThickness", GRAPHIC),
-        feather=csfloat(graphic, "feather", GRAPHIC),
+        feather=csfloat(ring, "feather", RING),
         icon_box=icon_box,
         cell_h=yamlfloat(style, "abilityCellHeight", STYLE),
         chip_gap=yamlfloat(style, "chipGap", STYLE),
         icon_w=icon_w,
         icon_h=icon_h,
         kern=icon_box / icon_w,
-        hole01=hole01,
-        hole_r=hole01 * (icon_w / 2.0),
-        sprite_px=sprite_px,
         widest=widest,
         point=point,
     )
@@ -181,37 +150,45 @@ def evaluate(p, verbose=True):
     def say(s):
         out.append(s)
 
+    # Every extent below is in the ICON's authored units, measured from the middle of its box.
+    ring_top = p["centre_y"] + p["reach_max"] + p["feather"]
+    ring_bottom_max = p["centre_y"] - p["reach_max"] - p["feather"]
+    ring_bottom_rest = p["centre_y"] - p["reach_min"] - p["feather"]
+    count_top = p["centre_y"] - p["reach_max"] - p["count_gap"]
+    count_bottom = count_top - p["count_h"]
+    half_box = p["icon_h"] / 2.0
+
     say(f"lockup     iconBoxSize {p['icon_box']:g}  plate height {p['cell_h']:g}  "
         f"chip gap {p['chip_gap']:g}")
     say(f"icon       authored {p['icon_w']:g}x{p['icon_h']:g}  -> kerned x{p['kern']:.3f}")
-    say(f"sprite     {p['sprite_px'][0]}x{p['sprite_px'][1]}  art starts at r {p['hole01']:.3f} "
-        f"= {p['hole_r']:.2f} authored units")
     say(f"font       widest digit advance {p['widest']:.3f} @ {p['point']:g}pt")
+    say(f"\nreadout    (authored units, from the middle of the icon's box)")
+    say(f"     ring lifted to y {p['centre_y']:+g}, r {p['reach_min']:g} at rest -> "
+        f"{p['reach_max']:g} at full Space")
+    say(f"     ring     top {ring_top:+7.2f}   bottom {ring_bottom_max:+7.2f} (full) / "
+        f"{ring_bottom_rest:+7.2f} (rest)")
+    say(f"     count    top {count_top:+7.2f}   bottom {count_bottom:+7.2f}")
 
-    # 1 - the tunnel's outermost edge, feather included, inside the sprite's hole.
-    tunnel_edge = p["front_r"] + p["feather"]
-    say(f"\n[1] tunnel outer edge {tunnel_edge:.2f} vs sprite hole {p['hole_r']:.2f} authored")
-    if tunnel_edge > p["hole_r"]:
-        fails.append(f"the tunnel reaches {tunnel_edge:.2f} into ring art that starts at "
-                     f"{p['hole_r']:.2f} - the danger tint and the team accent would blend")
+    # 1 - the whole readout inside the box an authored icon draws in.
+    say(f"\n[1] readout span {count_bottom:+.2f} .. {ring_top:+.2f} vs the icon's own "
+        f"+/-{half_box:g}")
+    if ring_top > half_box:
+        fails.append(f"the ring reaches {ring_top:.2f} above the icon's centre, past its own "
+                     f"{half_box:g} half-box - the card would read as bigger than its neighbours")
+    if count_bottom < -half_box:
+        fails.append(f"the count reaches {count_bottom:.2f} below the icon's centre, past its own "
+                     f"{half_box:g} half-box - the card would read as bigger than its neighbours")
 
-    # 2 - every ring clears a pixel, and so does every gap between neighbours.
-    say("[2] rings (authored radius / drawn thickness / drawn gap to the next)")
-    prev = None
-    for k in range(p["rings"]):
-        project = 1.0 / (1.0 + k * p["depth_step"])
-        r = p["front_r"] * project
-        th = max(p["min_t"], p["front_t"] * project)
-        drawn_t = th * p["kern"]
-        gap = "" if prev is None else f"{(prev - r) * p['kern']:.2f}px"
-        say(f"     ring {k}: r {r:6.2f}   t {drawn_t:5.2f}px   gap {gap}")
-        if drawn_t < MIN_RING_THICKNESS_PX:
-            fails.append(f"tunnel ring {k} draws {drawn_t:.2f}px thick, under the "
-                         f"{MIN_RING_THICKNESS_PX}px floor - it would not read as a ring")
-        if prev is not None and (prev - r) * p["kern"] < MIN_RING_GAP_PX:
-            fails.append(f"tunnel rings {k-1} and {k} are {(prev - r) * p['kern']:.2f}px apart, "
-                         f"under the {MIN_RING_GAP_PX}px floor - they would read as one band")
-        prev = r
+    # 2 - the ring reads as a ring, and the count never touches it.
+    drawn_t = p["reach_t"] * p["kern"]
+    say(f"[2] ring draws {drawn_t:.2f}px thick; count has {ring_bottom_max - count_top:.2f} "
+        f"of gap under the ring at its widest")
+    if drawn_t < MIN_RING_THICKNESS_PX:
+        fails.append(f"the reach ring draws {drawn_t:.2f}px thick, under the "
+                     f"{MIN_RING_THICKNESS_PX}px floor - it would not read as a ring")
+    if p["count_gap"] < p["feather"]:
+        fails.append(f"the count's gap {p['count_gap']:g} is under the ring's feather "
+                     f"{p['feather']:g} - the number would touch the ring at full Space")
 
     # 3 - four digits fit the count's box, measured off the font.
     per_digit = p["widest"] * p["font_size"] / p["point"]
@@ -223,18 +200,12 @@ def evaluate(p, verbose=True):
             fails.append(f"{n} digits need {w:.1f} of an {p['icon_w']:g} box - the count would "
                          f"overflow")
 
-    # 4 - the count is below the ring's maximum and clear of the plate's bottom.
-    top = p["reach_max"] + p["count_gap"]
-    bottom_drawn = (top + p["count_h"]) * p["kern"]
+    # 4 - the absolute floor: clear of the plate, above the chip.
     plate_half = p["cell_h"] / 2.0
-    say(f"\n[4] count box: top {top:.1f} authored (ring max {p['reach_max']:g}, "
-        f"rest {p['reach_min']:g}), bottom {bottom_drawn:.2f}px vs plate half-height "
-        f"{plate_half:g}px")
-    if p["count_gap"] < p["feather"]:
-        fails.append(f"the count's gap {p['count_gap']:g} is under the ring's feather "
-                     f"{p['feather']:g} - the number would touch the ring at full Space")
-    room = plate_half - bottom_drawn
-    say(f"     clearance below the count: {room:.2f}px (chip starts {p['chip_gap']:g}px below that)")
+    room = plate_half - abs(count_bottom) * p["kern"]
+    say(f"\n[4] count bottom {abs(count_bottom) * p['kern']:.2f}px vs plate half-height "
+        f"{plate_half:g}px - clearance {room:.2f}px "
+        f"(chip starts {p['chip_gap']:g}px below that)")
     if room < PLATE_CLEARANCE_PX:
         fails.append(f"the count's bottom is {room:.2f}px from the plate's edge, under the "
                      f"{PLATE_CLEARANCE_PX}px floor - it would crowd the control chip")
@@ -247,12 +218,16 @@ def evaluate(p, verbose=True):
 # Each control names the check it must trip, so a control that fires the WRONG check is a failure
 # too - the thing that makes a gate trustworthy is watching it fail for the stated reason.
 CONTROLS = [
-    ("tunnel over the ring art", dict(front_r=24.0), "would blend"),
-    ("a far ring gone sub-pixel", dict(front_t=0.9, min_t=0.1), "would not read as a ring"),
-    ("rings crowded together", dict(depth_step=0.08), "read as one band"),
-    ("count sized for three digits", dict(font_size=30.0), "would overflow"),
+    # The shipped-before-this-pass numbers: ring centred at 0 and a count hung off the plate.
+    ("the first cut's centred ring", dict(centre_y=0.0, reach_max=34.0, reach_min=20.0,
+                                          count_gap=1.0),
+     "read as bigger than its neighbours"),
+    ("ring lifted out of the box", dict(centre_y=26.0), "read as bigger than its neighbours"),
+    ("a hairline ring", dict(reach_t=0.5), "would not read as a ring"),
     ("count touching the ring", dict(count_gap=0.0), "would touch the ring"),
-    ("count pushed onto the chip", dict(count_h=30.0), "crowd the control chip"),
+    ("count sized for three digits", dict(font_size=30.0), "would overflow"),
+    ("count pushed onto the chip", dict(centre_y=-20.0, count_h=30.0),
+     "crowd the control chip"),
 ]
 
 

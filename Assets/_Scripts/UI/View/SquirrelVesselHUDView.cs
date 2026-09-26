@@ -14,7 +14,7 @@ namespace CosmicShore.UI
     ///
     ///   [core]  drift         (LT, no gauge)                   → no element, no upgrade
     ///   Charge → crystal joust (the skull, impactIcon)          → "Shepherd"
-    ///   Mass   → boost ring    (danger-tinted + a team tunnel)  → "Twin Rings"
+    ///   Mass   → boost ring    (danger-tinted)                  → "Twin Rings"
     ///   Space  → steal         (GENERATED: reach ring + count)  → "Iron Grip"
     ///   Time   → skimming      (the skim icon + the boost fill) → "Live Wire"
     ///
@@ -34,18 +34,23 @@ namespace CosmicShore.UI
     /// first time anyone retunes the endpoints. The Rhino's skimmer-size icon is the precedent;
     /// this is that idea inside a lockup card.</para>
     ///
-    /// <para><b>The MASS card is painted as DANGER mass with a team-coloured tunnel through
-    /// it.</b> A Boost Ring is made of danger prisms in the pilot's own domain, and the danger tier
-    /// is exactly that composition - a domain-independent hot rim over the domain's shielded base
-    /// (<c>SO_ColorSet.GetPrismKindColors</c>, <c>Docs/PALETTE.md §4.3</c>) - so the icon wears the
-    /// danger rim and the accent inside it wears the team. They are SEPARATED rather than blended,
-    /// which is what §4.3 prescribes for two saturated hues: the sprite is a circle of eight prism
-    /// BLOCKS whose art starts at r 0.520 of its box (measured off the PNG, not assumed) with the
-    /// middle completely empty, so the accent lives entirely in that hole and the two never touch a
-    /// pixel. The accent is a one-point-perspective tunnel with its vanishing point at
-    /// the icon's centre (<see cref="PerspectiveTunnelGraphic"/>), i.e. what the pilot sees flying
-    /// at their own ring: radially symmetric, so it cannot imply a direction the ability does not
-    /// have.</para>
+    /// <para><b>Its whole readout is held inside the box an authored icon would draw in</b>, which
+    /// is not a tidiness rule - the first cut put the ring on the icon's centre at a radius that
+    /// nearly filled it and hung the count off the plate below, and the card read as bigger than
+    /// its four neighbours. The lockup kerns an icon's rect and cannot see what a generated child
+    /// draws inside it, so the fit is this view's to keep: the ring is LIFTED off centre
+    /// (<see cref="reachRingCenterY"/>) and the count hangs from the ring's own bottom, so the two
+    /// share the box vertically instead of sharing a centre. Measured by
+    /// <c>Tools/Build/check_squirrel_card_fit.py</c>.</para>
+    ///
+    /// <para><b>The MASS card is painted as DANGER mass, and nothing else.</b> A Boost Ring is made
+    /// of danger prisms, so the icon wears the palette's danger signal
+    /// (<c>SO_ColorSet.GetDangerSignalColor</c>, <c>Docs/PALETTE.md §2.6</c>) and the card says one
+    /// thing. A team-coloured perspective accent was drawn inside the sprite's own empty middle for
+    /// one pass and was CUT on a look call: two saturated hues on a 60-unit card compete even when
+    /// they are separated rather than blended (§4.3), and the domain is already said by the trail
+    /// the ring lays, by the flower above the card and by the Space card's own count. Danger is the
+    /// fact only this card can state.</para>
     ///
     /// <para>Two of these readouts are the LOCKUP's, not this view's: the boost fill (the TIME
     /// card's gauge, because skimming is what banks it) and the Boost Ring's recharge (the fleet's
@@ -91,38 +96,18 @@ namespace CosmicShore.UI
                  "with their tuning fields: one recharge readout for the fleet beats four per hull.")]
         [SerializeField] private Image tubeCooldownIcon;
 
-        [Header("Boost Ring tunnel accent (Mass slot - GENERATED)")]
-        [Tooltip("Radius of the NEAREST tunnel ring, and where the wall is brightest, in the icon's " +
-                 "own 80-unit box. The sprite's blocks start at r 20.8 of that box (MEASURED off the " +
-                 "PNG by Tools/Build/check_squirrel_card_fit.py), so 17 plus the 1-unit feather " +
-                 "leaves 2.8 units of dark air and the two colours never touch. It was judged at the " +
-                 "size it is read at: 18 crowds the blocks on GOLD, where warm-on-warm has the least " +
-                 "help from hue, and 15 makes the tunnel read as unrelated to the ring around it.")]
-        [SerializeField] private float tunnelFrontRadius = 17f;
-        [Tooltip("TWO reads as depth at this size. Three crowds the core into mush - rendered and " +
-                 "rejected, not assumed.")]
-        [SerializeField, Range(1, 6)] private int tunnelRings = 2;
-        [Tooltip("Depth between rings as a fraction of viewing distance - a longer tunnel " +
-                 "compresses the stack harder toward the vanishing point.")]
-        [SerializeField] private float tunnelDepthStep = 0.62f;
-        [SerializeField] private float tunnelFrontThickness = 2.2f;
-        [SerializeField, Range(0f, 1f)] private float tunnelFrontAlpha = 0.85f;
-        [SerializeField, Range(0.1f, 1f)] private float tunnelDepthFade = 0.62f;
-        [Tooltip("Alpha of the tunnel WALL where it is nearest, fading to nothing as it converges. " +
-                 "This is the foreshortening, and it is what separates a tunnel from a target. " +
-                 "Deliberately low: it is a wash behind the rings, not a fill.")]
-        [SerializeField, Range(0f, 1f)] private float tunnelWallAlpha = 0.12f;
-        [Tooltip("The point of light at the far end. Small and bright - it is what makes the centre " +
-                 "read as somewhere the tunnel goes rather than as a hole in the middle of a ring.")]
-        [SerializeField] private float tunnelCoreRadius = 1.6f;
-        [SerializeField, Range(0f, 1f)] private float tunnelCoreAlpha = 0.95f;
-
         [Header("Steal reach + count (Space slot - GENERATED, see EnsureGeneratedAbilityIcons)")]
+        [Tooltip("How far UP the ring's centre sits from the middle of the icon's box, in the " +
+                 "icon's own units. The ring is lifted so the count has its own room BELOW it " +
+                 "rather than the two sharing one centre - which is what kept the whole readout " +
+                 "inside the same box every authored icon draws in.")]
+        [SerializeField] private float reachRingCenterY = 10f;
         [Tooltip("Ring radius in icon-local units at rest (skimmer at its authored minimum).")]
-        [SerializeField] private float reachRingMinRadius = 20f;
-        [Tooltip("Ring radius in icon-local units at full Space. Kept inside the icon's own 80-unit " +
-                 "box so the lockup's kerning is the only thing that decides its drawn size.")]
-        [SerializeField] private float reachRingMaxRadius = 34f;
+        [SerializeField] private float reachRingMinRadius = 13f;
+        [Tooltip("Ring radius in icon-local units at full Space. The ring's lift plus this plus the " +
+                 "feather must stay inside the icon's own 40-unit half-box, or the card reads as " +
+                 "bigger than its four neighbours - which is what the first cut did.")]
+        [SerializeField] private float reachRingMaxRadius = 21f;
         [SerializeField] private float reachRingThickness = 2.5f;
         [Tooltip("How fast the ring chases the live reach. A skimmer resize is a step, and a ring " +
                  "that steps with it reads as a glitch rather than as a measurement.")]
@@ -132,14 +117,14 @@ namespace CosmicShore.UI
                  "box (73%) and even five digits fit at 91%. It is FIXED rather than auto-sized, " +
                  "because a number that shrinks as it ticks over reads as a glitch.")]
         [SerializeField] private float stealCountFontSize = 20f;
-        [Tooltip("Gap between the reach ring at its MAXIMUM radius and the top of the count, in the " +
-                 "icon's own units. The count sits BELOW the largest the ring can ever get, so it " +
-                 "never competes with the ring when the ring is small - which is most of the time.")]
-        [SerializeField] private float stealCountGap = 1f;
-        [Tooltip("Height of the count's box. It deliberately overhangs the icon's 80-unit rect into " +
-                 "the ability plate's own lower margin, which is empty and unmasked; at the default " +
-                 "numbers its bottom lands 4 drawn units clear of the plate's bottom edge, above " +
-                 "the control chip.")]
+        [Tooltip("Gap between the BOTTOM of the reach ring at its maximum radius and the top of the " +
+                 "count, in the icon's own units. The count sits below the largest the ring can " +
+                 "ever get, so it never competes with the ring when the ring is small - which is " +
+                 "most of the time.")]
+        [SerializeField] private float stealCountGap = 2f;
+        [Tooltip("Height of the count's box. With the ring lifted, this lands inside the icon's " +
+                 "own 80-unit rect, so the readout occupies exactly the box an authored icon " +
+                 "would - the plate's lower margin and the control chip below it stay empty.")]
         [SerializeField] private float stealCountHeight = 18f;
 
         [Header("Icon Juice")]
@@ -170,8 +155,7 @@ namespace CosmicShore.UI
         private float _reachShown01;
         private int _stealCountShown = -1;
 
-        // The generated Mass accent. Built alongside the Space readout.
-        private PerspectiveTunnelGraphic _tunnel;
+        // The Mass card's danger tint, resolved from the palette by the controller.
         private Color _dangerTint = new Color(0f, 0f, 0f, 0f);
 
         /// <summary>
@@ -189,8 +173,6 @@ namespace CosmicShore.UI
         /// </summary>
         public override void EnsureGeneratedAbilityIcons()
         {
-            EnsureBoostRingTunnel();
-
             if (_reachIcon) return;
 
             var host = transform.Find("StealReachButton") as RectTransform;
@@ -215,7 +197,7 @@ namespace CosmicShore.UI
             _reachIcon.raycastTarget = false;
 
             _reachRing = ResolveGeneratedChild<ScopeRingGraphic>(_reachIcon.rectTransform, "ReachRing");
-            StretchGenerated(_reachRing.rectTransform);
+            LayOutReachRing();
             _reachRing.Thickness = reachRingThickness;
             _reachRing.Radius = reachRingMinRadius;
             _reachRing.raycastTarget = false;
@@ -237,10 +219,29 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Lifts the ring off the icon's centre so the count has room under it. The ring is a
+        /// point-anchored rect rather than a stretched one because <see cref="ScopeRingGraphic"/>
+        /// draws about its own <c>rect.center</c> and is shared with the Serpent's scope reticle -
+        /// so the offset belongs to this card's LAYOUT, not to the component.
+        /// </summary>
+        void LayOutReachRing()
+        {
+            var rt = _reachRing.rectTransform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = _reachIcon.rectTransform.sizeDelta;
+            rt.anchoredPosition = new Vector2(0f, reachRingCenterY);
+            rt.localScale = Vector3.one;
+        }
+
+        /// <summary>
         /// The count sits BELOW the reach ring at its MAXIMUM radius rather than inside it. Inside,
         /// it competed with the ring for the same few pixels exactly when the ring was at its
         /// smallest - which is its resting state, i.e. most of a match. Below the largest the ring
         /// can ever get, the two never overlap at any Space level.
+        ///
+        /// <para>It hangs from the ring's own lifted centre rather than from the icon's, so raising
+        /// <see cref="reachRingCenterY"/> moves the ring and the number together and the pair keeps
+        /// the vertical span it was fitted with.</para>
         /// </summary>
         void LayOutStealCount()
         {
@@ -250,39 +251,9 @@ namespace CosmicShore.UI
             // As wide as the icon itself, read from the icon rather than retyped - that width is
             // what the 4-digit fit was measured against.
             rt.sizeDelta = new Vector2(_reachIcon.rectTransform.sizeDelta.x, stealCountHeight);
-            rt.anchoredPosition = new Vector2(0f, -(reachRingMaxRadius + stealCountGap));
+            rt.anchoredPosition =
+                new Vector2(0f, reachRingCenterY - reachRingMaxRadius - stealCountGap);
             rt.localScale = Vector3.one;
-        }
-
-        /// <summary>
-        /// Builds the MASS card's tunnel accent: the team-coloured rings receding into the middle of
-        /// the Boost Ring's own cross-section sprite. A child of the bound icon, so the lockup's
-        /// kerning is the only thing that decides its drawn size - the same reason the Space ring and
-        /// count are children of theirs.
-        ///
-        /// <para>Idempotent, and it does not care whether the icon is authored (this one is) or
-        /// generated: all it needs is the rect the card will kern.</para>
-        /// </summary>
-        void EnsureBoostRingTunnel()
-        {
-            if (_tunnel || !tubeCooldownIcon) return;
-
-            _tunnel = ResolveGeneratedChild<PerspectiveTunnelGraphic>(
-                tubeCooldownIcon.rectTransform, "BoostRingTunnel");
-            StretchGenerated(_tunnel.rectTransform);
-            _tunnel.Configure(new PerspectiveTunnelGraphic.Profile
-            {
-                FrontRadius = tunnelFrontRadius,
-                Rings = tunnelRings,
-                DepthStep = tunnelDepthStep,
-                FrontThickness = tunnelFrontThickness,
-                FrontAlpha = tunnelFrontAlpha,
-                DepthFade = tunnelDepthFade,
-                WallAlpha = tunnelWallAlpha,
-                CoreRadius = tunnelCoreRadius,
-                CoreAlpha = tunnelCoreAlpha,
-            });
-            _tunnel.raycastTarget = false;
         }
 
         static T ResolveGeneratedChild<T>(RectTransform parent, string name) where T : Component
@@ -294,15 +265,6 @@ namespace CosmicShore.UI
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(T));
             go.transform.SetParent(parent, false);
             return go.GetComponent<T>();
-        }
-
-        static void StretchGenerated(RectTransform rt)
-        {
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            rt.localScale = Vector3.one;
         }
 
         /// <summary>
@@ -351,15 +313,6 @@ namespace CosmicShore.UI
             tubeCooldownIcon.color = _dangerTint;
         }
 
-        /// <summary>
-        /// The tunnel inside the Boost Ring wears the pilot's own domain, because that is whose
-        /// prisms the ring is made of. It is the only place on this card the team colour appears, and
-        /// it is spatially separate from the danger tint above rather than blended with it.
-        /// </summary>
-        void PaintBoostRingTunnel(Color domainColor)
-        {
-            if (_tunnel) _tunnel.color = domainColor;
-        }
 
         public override void Initialize()
         {
@@ -370,7 +323,6 @@ namespace CosmicShore.UI
             SetStealCount(0);
             PaintStealCount(_playerDomainColor);
             PaintBoostRing();
-            PaintBoostRingTunnel(_playerDomainColor);
 
             if (!boostFill) return;
             boostFill.fillAmount = 0f;
@@ -433,7 +385,6 @@ namespace CosmicShore.UI
                 boostFill.color = color;
 
             PaintStealCount(color);
-            PaintBoostRingTunnel(color);
         }
 
         public void SetBoostState(float boost01, bool isBoosted, bool isFull,

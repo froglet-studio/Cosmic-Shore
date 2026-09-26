@@ -564,30 +564,41 @@ the unbound slots and says it cannot tell the two causes apart — *undesigned* 
 LOCKED) and *generated at runtime* — because only one of them is in the asset. Check that vessel in
 play.
 
-### …or a generated ACCENT under an authored one (2026-09-26)
+### A generated readout is a CHILD of the bound icon, never a sibling (2026-09-26)
 
-The same hook covers the other half: a card whose icon is perfectly good **art** but which needs a
-live or palette-driven layer inside it. The Squirrel's Boost Ring is the case — the sprite stays,
-tinted from the palette's danger colour, and a generated `PerspectiveTunnelGraphic` fills its empty
-middle in the pilot's own domain (`SQUIRREL_ELEMENT_RECUT.md` § "Fourth pass").
+The Squirrel's Space card is the worked example: the bound `Image` is invisible and exists only so
+the card is not LOCKED and the lockup has a rect to kern, while the reach ring and the steal count
+are its **children**. Two things make that the right parenting, and both are general:
 
-Two things make that safe, and both are why the accent is a **child of the bound icon** rather than
-a sibling of it:
-
-- **It inherits the kerning.** The lockup scales an icon by `iconBoxSize / its authored size`
+- **A child inherits the kerning.** The lockup scales an icon by `iconBoxSize / its authored size`
   (0.75 on this vessel), and a sibling would need that factor applied by hand and re-applied every
-  time the style asset moves. A child gets it for free — which is also why the Space card's ring and
-  count are children of theirs.
-- **It cannot occlude the art it sits in.** A UGUI child draws *after* its parent's own Graphic, so
-  an accent is only safe where the icon is transparent. The Boost Ring sprite is a circle of eight
-  prism blocks whose middle is measured empty, so the accent lives entirely in that hole;
-  `Tools/Build/check_squirrel_card_fit.py` asserts it against the PNG rather than trusting the
-  number.
+  time the style asset moves.
+- **A child cannot occlude the art it sits in**, because a UGUI child draws *after* its parent's own
+  Graphic. So the same hook covers a live or palette-driven layer under an icon that is perfectly
+  good art — but only where that art is transparent.
 
-**Nothing in the lockup changed for it.** The colour is pushed by the vessel's controller (the view
-holds no `GameDataSO`), and `VesselHUDView.SetAbilityUpgraded` writes an icon's SPRITE and SCALE and
-never its colour — so an icon tint and the upgrade signal cannot collide, on this card or any
-future one.
+⚠ **The lockup kerns an icon's RECT and cannot see what a generated child DRAWS inside it**, so
+whether a generated card reads at the same size as its four neighbours is the vessel's own problem.
+The Squirrel's first cut put the ring on the icon's centre at a radius that nearly filled the box
+and hung the count off the plate below, and the card read as bigger than the rest of the row — the
+same failure mode as the un-kerned core card, arriving from the other direction and invisible to
+`NormaliseIcon`. `Tools/Build/check_squirrel_card_fit.py` measures the readout's whole span against
+the icon's own box, reading the numbers out of the view, the style asset and the shipped font.
+
+**A generated ACCENT under an authored icon was built here and CUT.** The Boost Ring's sprite is a
+circle of eight prism blocks whose middle is measured empty, and a `PerspectiveTunnelGraphic` drew
+a one-point-perspective tunnel in the pilot's own domain inside that hole — separated from the
+icon's danger tint rather than blended with it, exactly as `Docs/PALETTE.md §4.3` prescribes. It was
+removed on a **look call**: two saturated hues compete on a 60-unit card even when they never touch
+a pixel, and the domain is already said by three other things on the same screen. The mechanism
+above is what survives it — the accent was only ever the parenting rule applied to an authored icon
+instead of a generated one. *Separated is what makes two hues legible; it is not what makes a second
+hue worth having.*
+
+**Nothing in the lockup changed for any of it.** An icon's colour is pushed by the vessel's
+controller (the view holds no `GameDataSO`), and `VesselHUDView.SetAbilityUpgraded` writes an icon's
+SPRITE and SCALE and never its colour — so an icon tint and the upgrade signal cannot collide, on
+this card or any future one.
 
 ## Rollout + enforcement (all vessels)
 
@@ -660,9 +671,8 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | Generated-icon hook | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `EnsureGeneratedAbilityIcons`, `BindGeneratedAbilityIcon`; called from `AbilityLockupView.Build` |
 | Icon kerning (applied at BUILD) | `Assets/_Scripts/UI/View/AbilityLockupView.cs` — `NormaliseIcon` |
 | The generated plate | `Assets/_Scripts/UI/View/TrapezoidGraphic.cs` |
-| Generated card accent (a tunnel) | `Assets/_Scripts/UI/View/PerspectiveTunnelGraphic.cs` |
 | Generated card readouts (a ring) | `Assets/_Scripts/UI/View/ScopeRingGraphic.cs` |
-| Card-fit gate (sprite + font measured) | `Tools/Build/check_squirrel_card_fit.py` (`--check`, `--self-test`) |
+| Card-fit gate (style + font measured) | `Tools/Build/check_squirrel_card_fit.py` (`--check`, `--self-test`) |
 | Upgrade hook (shared) | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `SetAbilityUpgraded` → `SetUpgraded` |
 | Flower socket injection | `Assets/_Scripts/UI/View/ElementalBarsView.cs` — `TrySetPetalRoot` |
 | Press state + chip binding (shared init) | `Assets/_Scripts/UI/Controller/VesselHUDController.cs` |

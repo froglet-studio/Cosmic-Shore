@@ -272,7 +272,7 @@ reads as *not implemented* rather than as mis-tinted. The caller falls back inst
 
 The third sibling, needed the first time a UI surface had to say *this is danger mass*: the
 Squirrel's Boost Ring icon, whose ring is made of danger prisms (`SQUIRREL_ELEMENT_RECUT.md`
-§ "Fourth pass").
+§ "Fourth pass"; its team-coloured companion was cut in the fifth, the danger tint was not).
 
 The danger tier has **no colour fields of its own** (§ "The danger tier borrows the shielded base")
 — it is the domain's SHIELDED base face under the shared, domain-independent

@@ -43,12 +43,12 @@ empty rather than given a placeholder. Do not fill it to green the tool — the 
 | `VesselHUDView.cs` | `CoreAbilityBinding` (+ its own `input`) + `coreAbilities` + `CoreAbilityDisplayOrder`; `TryGetCoreAbility{Icon,Gauge}`; `SetCoreAbility{Cooldown,Pressed,Control}`; `SeedCoreAbilityControls`; `EnsureGeneratedAbilityIcons` / `BindGeneratedAbilityIcon`; the row validator now walks the core cards first |
 | `AbilityLockupView.cs` | core cards: `_coreSlots`, a signed slot index, `BuildSlot(… Element flowerElement)` where `Element.None` means *no element cell*, and the four element-keyed internals refactored to slot-keyed so both kinds share one body. **Third pass:** `Build` calls the generated-icon hook, and `NormaliseIcon` writes the icon's kerning scale |
 | `AbilityLockupAuditor.cs` | reports a vessel's core cards, and names the elemental slots that bind no AUTHORED icon (undesigned or generated — the asset cannot tell those apart) |
-| `PerspectiveTunnelGraphic.cs` *(new)* | the Mass card's accent: a wall that fades as it converges, two rings at true perspective radii, and a core at the vanishing point. Its `Profile` is a parameter struct and never a serialized field — a missing struct key deserializes as all zeros where a missing float keeps its C# initializer |
+| ~~`PerspectiveTunnelGraphic.cs`~~ | the Mass card's accent — **added in the fourth pass and DELETED in the fifth**, with the team colour it drew. Its one finding outlives it: a `Profile` is a parameter struct and never a serialized field, because a missing struct key deserializes as all zeros where a missing float keeps its C# initializer |
 | `SO_ColorSet.cs` | `GetDangerSignalColor()` — the third `*SignalColor` sibling. HDR-normalised, alpha forced to 1, alpha 0 when the palette authors none |
 | `ThemeManagerDataContainerSO.cs` | the null-safe wrapper for it, beside the two that were already there |
 | `Tools/Build/check_squirrel_card_fit.py` *(new)* | measures both generated cards against the sprite's own alpha, the font's own advance table and the shared style asset; 6 negative controls |
 | `Tools/Build/check_using_directives.py` | reads with `utf-8-sig` — `\ufeff` is not whitespace, so the gate could not see the FIRST using in any of the 74 BOM'd files and reported it missing |
-| `SquirrelVesselHUDView.cs` | drift + overheat retired (428 → 246 lines); impact rest scale re-anchored to Charge; `SetTubeCooldownReady` → `Element.Mass`. **Third pass:** builds the Space card (`EnsureGeneratedAbilityIcons`), `SetStealReach01` / `SetStealCount`. **Fourth pass:** also builds the Mass card's tunnel accent, `SetDangerTint` / `PaintBoostRing` / `PaintBoostRingTunnel`, and the steal count moved below the ring's maximum at a 4-digit-safe size |
+| `SquirrelVesselHUDView.cs` | drift + overheat retired (428 → 246 lines); impact rest scale re-anchored to Charge; `SetTubeCooldownReady` → `Element.Mass`. **Third pass:** builds the Space card (`EnsureGeneratedAbilityIcons`), `SetStealReach01` / `SetStealCount`. **Fourth pass:** `SetDangerTint` / `PaintBoostRing`, and the steal count moved below the ring's maximum at a 4-digit-safe size. **Fifth pass:** the tunnel accent removed; `LayOutReachRing` lifts the ring so the whole readout fits the icon's own box |
 | `SquirrelVesselHUDController.cs` | drift juice + its three subscriptions removed; **third pass:** `PushStealReadout` polls the skimmer's reach and `RoundStats.PrismStolen` |
 | `Skimmer.cs` | new `ElementalScale01` — the live reach as a fraction of this skimmer's own authored range |
 
@@ -181,6 +181,11 @@ in art.
 
 ### The Boost Ring reads as DANGER mass with YOUR tunnel through it
 
+> ⚠ **The tunnel half of this was CUT in the fifth pass below.** The danger tint stays; the
+> team-coloured accent and `PerspectiveTunnelGraphic` are gone. The section is kept as the
+> retirement record, because what it measured is still true of the sprite and the findings under
+> it are what survive.
+
 A Boost Ring is made of danger prisms in the pilot's own domain — and the danger tier is exactly
 that composition: a domain-independent hot rim over the domain's shielded base
 (`SO_ColorSet.GetPrismKindColors`, `Docs/PALETTE.md` § "The danger tier borrows the shielded base").
@@ -232,10 +237,10 @@ at 91%. It is **fixed, not auto-sized** — a number that shrinks as it ticks ov
 and wrapping is off with overflow on, because an overflowing number is a loud fixable fault where a
 wrapped or truncated one is a wrong reading that looks deliberate.
 
-It deliberately overhangs the icon's 80-unit rect into the ability plate's own lower margin, which
+It deliberately overhung the icon's 80-unit rect into the ability plate's own lower margin, which
 is empty and unmasked (the lockup's two `Mask`s are the gauge clip and the cooldown veil, neither of
-them an ancestor of the icon). At the shipped numbers its bottom lands **4.25 drawn px** clear of
-the plate's bottom edge, above the control chip.
+them an ancestor of the icon). ⚠ **That was the defect the fifth pass fixed**: nothing clips a card,
+so overhanging it is possible — and it is what made this card read as bigger than the other four.
 
 ### `Tools/Build/check_squirrel_card_fit.py`
 
@@ -259,9 +264,9 @@ trap `CLAUDE.md` records from the Borromean tool, met again the first time someb
    a transparent tint is indistinguishable from a tint that never ran. Add a `*SignalColor`
    accessor; never read the field.
 2. **A generated accent belongs to the ICON, not to the card** — a child inherits the lockup's
-   kerning for free and can only draw where its parent is transparent, which is exactly the
-   constraint that keeps the danger tint and the team accent from blending. A sibling would need the
-   kerning applied by hand and would be free to cover the art.
+   kerning for free and can only draw where its parent is transparent. A sibling would need the
+   kerning applied by hand and would be free to cover the art. (This survives the tunnel's
+   retirement: the Space card's ring and count are children of theirs for the same two reasons.)
 3. **A serialized STRUCT and a serialized FLOAT fail differently on a prefab nobody re-saved.**
    Unity applies only the keys a file carries, so a missing float field keeps its C# initializer
    (`/vessel` rule 4-i) — but a struct has no field initializers at all, so a missing struct key
@@ -281,6 +286,69 @@ A false POSITIVE is the worse direction for a gate — it is what teaches people
 and this one had been latent for as long as the gate has existed, surfacing only because an edit
 finally pulled a BOM'd file into its changed-file scope. *A gate's blind spots are found by what
 you happen to edit, so widen the scope deliberately once in a while.*
+
+## Fifth pass (2026-09-26): the Mass card says ONE thing, and the Space card fits its box
+
+Two asks from one look at the fourth pass, and they are the same correction from opposite ends: a
+card must read at the size of its neighbours, and it must say one thing.
+
+### Mass: keep the danger, lose the team
+
+The team-coloured tunnel shipped in the fourth pass is **removed**, and `PerspectiveTunnelGraphic`
+is deleted with it rather than left unreferenced — an unreferenced subsystem is eventually mistaken
+for a live feature. The icon keeps its danger tint (`SO_ColorSet.GetDangerSignalColor`,
+`Docs/PALETTE.md §2.6`), which is untouched and still the only UI read of the danger rim.
+
+The measurement that let the two hues share the card was right — the sprite is a ring of eight prism
+blocks starting at r 0.520 with the middle measured empty, so the accent lived entirely in the hole
+and the two never touched a pixel, which is what `Docs/PALETTE.md §4.3` prescribes. **Separated is
+what makes two hues legible; it is not what makes a second hue worth having.** On a card drawn at 60
+units they still compete for the same glance, and the pilot's domain is already said by the trail
+the ring lays, by the element flower above the card, and by the Space card's own count. Danger is
+the one fact only this card can state, so it states it alone.
+
+### Space: the readout fits the box an authored icon draws in
+
+Reported as *the Space containers are oversized like the time ones were* — the same complaint as the
+un-kerned core card, and **not the same cause**. `NormaliseIcon` reaches this card correctly (the
+generated icon is an ordinary bound icon and measures the same 80x80 the four authored ones do); the
+kerning was never missing. What was missing is that **the lockup kerns an icon's RECT and cannot see
+what a generated child DRAWS inside it**. The first cut put the ring on the icon's centre at a
+radius that nearly filled the box and hung the count off the plate *below* it, so the readout spanned
+from +35 to -53 in an icon whose own box is ±40 — 10% taller than the plate itself.
+
+The fix is to stop sharing a centre. The ring is **lifted** (`reachRingCenterY` 10) and the count
+hangs from the ring's own bottom rather than from the icon's middle, so the two split the box
+vertically instead of stacking out of it:
+
+| | before | after |
+|---|---|---|
+| ring centre | 0 | **+10** |
+| ring radius, rest → full | 20 → 34 | **13 → 21** |
+| ring top at full (feather in) | +35 | **+32** |
+| count top → bottom | −35 → −53 | **−13 → −31** |
+| readout span vs the icon's ±40 | **−53 .. +35 (over)** | −31 .. +32 (inside) |
+
+The ring is point-anchored with an offset rather than stretched, because `ScopeRingGraphic` draws
+about its own `rect.center` and is **shared with the Serpent's scope reticle** — the lift belongs to
+this card's layout, not to the component. The count hangs off `reachRingCenterY` too, so moving the
+ring moves the pair and the fitted span survives a retune.
+
+### The gate now measures the thing that was reported
+
+`Tools/Build/check_squirrel_card_fit.py` loses its two tunnel checks and gains the one that matters:
+**the whole readout's span against the icon's own box**. Its first negative control is literally the
+shipped-before-this-pass numbers, and it fires — so the gate would have caught the report. Six
+controls, all firing; it reads the layout from the view, the kerning from the style asset and the
+prefab's rect, and the digit advance from the shipped font's own glyph table, and it writes nothing.
+
+### The finding
+
+**A card's SIZE is two separate questions, and the lockup only answers one of them.** The rect is
+the lockup's (`NormaliseIcon`, applied at build); what is *drawn inside* the rect is the vessel's,
+and a generated readout has no authored art to be wrong against. Both failures present identically —
+*this card is bigger than the others* — which is why the report named the wrong one. When a
+generated card reads oversized, check its CONTENT's extent before checking its kerning.
 
 ## Findings worth more than the change
 
@@ -367,15 +435,17 @@ Nothing below has been run; there is no Unity in this session.
 6e. **Skimming back on Time** — the Time card shows the speed-arrow icon and the boost fill rises
    through IT (a linear fill inside that card), while the **Mass** card is the one the cooldown veil
    sweeps.
-6f. **The Boost Ring is RED with YOUR tunnel in it** — the eight blocks wear the danger red and the
-   middle shows a ring, a dark gap, an inner ring and a bright pip, all in your own domain. Change
-   domain at the freestyle toy and confirm the tunnel follows while the blocks stay red. If the
-   blocks are WHITE, `SetDangerTint` did not arrive or the palette authors no danger colour; if the
-   middle is a filled blob rather than a tunnel, the wall is grading the wrong way.
-6g. **The steal count is below the ring and never touches it** — raise Space to full and confirm the
-   ring at its biggest still clears the number, and that at rest the small ring leaves the number
-   alone. Type a four-digit value into `StealCount` in the hierarchy while playing (or steal that
-   many) and confirm it neither wraps nor is clipped, and still clears the control chip below.
+6f. **The Boost Ring wears the DANGER colour and nothing else** — the eight blocks are hot red and
+   the middle is EMPTY. If the blocks are WHITE, `SetDangerTint` did not arrive or the palette
+   authors no danger colour (`CosmicWaveColorSetSO` and `PastelColorSetSO` both author none, and the
+   accessor then returns alpha 0 so the icon correctly keeps what it had). If anything is drawn in
+   the middle, a `BoostRingTunnel` child survived on the prefab from the fourth pass — it is created
+   by name and the builder is gone, so delete the object.
+6g. **The Space card is no bigger than its four neighbours** — this is the one the pass exists for.
+   Raise Space to full and confirm the ring at its biggest still sits inside the same box the Mass
+   sprite fills, with the number below it and clear of the plate's bottom edge and the control chip.
+   At rest the small ring must leave the number alone. Type a four-digit value into `StealCount` in
+   the hierarchy while playing (or steal that many) and confirm it neither wraps nor is clipped.
 7. **Iron Grip** — skim an opposing **shielded** prism below Space 5: it should lose its shield and
    keep its domain. At Space 5: it should change domain **and keep the shield**. Then confirm a
    **super**-shielded prism is refused at both levels.
