@@ -29,6 +29,24 @@ namespace CosmicShore.Gameplay
             NetworkVariableWritePermission.Owner);
 
         /// <summary>
+        /// Replicated INTEGER element levels, four bits per element (nibble <c>(int)element - 1</c>,
+        /// Charge lowest), each clamped to 0..15 — the deficit band reads as 0. Owner-write, the
+        /// sibling of <see cref="NetElementUnlocks"/> and published from the same place.
+        ///
+        /// <para>It exists because element levels never replicate, so any ability that scales an
+        /// OUTCOME continuously by an element (not merely gates it on an upgrade) resolves
+        /// differently on every peer: a remote copy of the vessel sits at whatever level its
+        /// replica started with. The unlock bits solved that for the qualitative half; this is
+        /// the quantitative half, at integer resolution, which is all an outcome needs and what
+        /// lets owner and peers compute the SAME number. Read it through
+        /// <c>R_VesselElementalAbilityHandler.ReplicatedLevel</c>, never directly.</para>
+        /// </summary>
+        public NetworkVariable<ushort> NetElementLevels = new(
+            0,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
+        /// <summary>
         /// The live SHAPE of the Dolphin's Echo Sight while its owner holds it:
         /// <c>(BlastVolume.Height, TanCorePerUnit, TanGapePerUnit)</c>, or
         /// <see cref="Vector3.zero"/> when nobody is aiming. Owner-write, for the same reason
@@ -392,6 +410,50 @@ namespace CosmicShore.Gameplay
             if (TryFindInput<T>(_gamepadOverrideActions, out inputEvent)) return true;
 
             inputEvent = default;   // meaningless on false - see the summary
+            return false;
+        }
+
+        /// <summary>
+        /// <see cref="TryGetInputForAction{T}"/>, plus the ACTION itself. The same question with
+        /// one more answer, and the extra answer is what stops a caller duplicating the ability's
+        /// tuning: an autonomous pilot that has to decide HOW LONG to hold a held ability needs
+        /// that ability's own numbers, and reading them off its SO keeps the asset the single
+        /// source of them rather than copying a reach speed into a mode's controller — where it
+        /// would be right on the day it was copied and silently stale after the next retune.
+        ///
+        /// Same sweep order and the same contract as its sibling: false for a vessel that binds no
+        /// such ability, and on false neither out parameter means anything.
+        /// </summary>
+        public bool TryGetBoundAction<T>(out T action, out InputEvents inputEvent) where T : class
+        {
+            if (TryFindAction(_shipControlActions, out action, out inputEvent)) return true;
+            if (TryFindAction(_touchOverrideActions, out action, out inputEvent)) return true;
+            if (TryFindAction(_gamepadOverrideActions, out action, out inputEvent)) return true;
+
+            action = null;
+            inputEvent = default;   // meaningless on false - see TryGetInputForAction
+            return false;
+        }
+
+        static bool TryFindAction<T>(Dictionary<InputEvents, List<ShipActionSO>> map,
+                                     out T action, out InputEvents inputEvent) where T : class
+        {
+            action = null;
+            inputEvent = default;
+            if (map == null) return false;
+
+            foreach (var kv in map)
+            {
+                var list = kv.Value;
+                if (list == null) continue;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i] is not T typed) continue;
+                    action = typed;
+                    inputEvent = kv.Key;
+                    return true;
+                }
+            }
             return false;
         }
 
