@@ -287,13 +287,10 @@ scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 #   - the CELL is the barren race cell (one config) - intensity is the COURSE here too.
 #   - the SPAWN RING is EQUATORIAL at 150 outside the nucleus: gate 0 is rotated onto its POLE,
 #     and only a point on the axis is equidistant from every pilot.
-#   - the COMEBACK source is 8 (SwitchesThreaded) and useGolfRules 1 - same metric, same
-#     direction, same kind of race.
+#   - (the comeback source is no longer authored: it reads the scoring rule, 2026-09)
 #   - the AI roster's vesselClass is irrelevant: the card's Vessels list clamps every AI to the
 #     Manta (ServerPlayerVesselInitializerWithAI -> GameDataSO.ClampVesselToGame).
 for probe, why in ((r"^  spawnFormation: 1$", "equatorial spawn ring"),
-                   (r"^  differenceSource: 8$", "comeback reads SwitchesThreaded"),
-                   (r"^  useGolfRules: 1$", "comeback golf direction"),
                    (r"^  cellTypeChoiceOptions: 0$", "single race cell")):
     assert re.search(probe, scene, re.M), f"donor no longer provides: {why}"
 

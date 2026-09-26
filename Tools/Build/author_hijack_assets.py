@@ -137,21 +137,14 @@ COMEBACK_RATE = 0.016
 # its own SphereRadius and respawns on the arena's exact centre (the Dog Fight lesson).
 OMNI_SPAWN_RADIUS = 300
 
-# ScoreDifferenceSource.PrismsStolen - the LIVE stat the comeback layer reads a deficit from.
-#
-# This has to be authored INTO THE SCENE, not left to ElementalComebackSystem.DefaultSourceFor:
-# EnsureExists respects a scene-authored instance as-is (it only calls Bind), so the per-mode
-# default is never consulted in a scene that already carries the component - and the donor's is
-# PrismsDestroyed, which in a mode where nothing is destroyed is a flat zero forever. The
-# comeback layer would have been silently inert, which is exactly the shape of defect the
-# generator's other scene assertions exist to catch.
-COMEBACK_SOURCE = 9
+# (No comeback source: ElementalComebackSystem reads ScoringRuleSO.DomainValue since 2026-09, so
+# the comeback reads PrismsStolen because the SCORE does, and a clone cannot inherit its donor's.)
 
 # ── The three shared-registry IDs, in ONE place ─────────────────────────────
 # A game mode claims three slots in three enums that every other mode also lives in, and NONE of
 # the three fails loudly on a double-claim: C# lets two enum members share a value, so a second
 # mode taking the same ID compiles and silently ALIASES - GameModes.Hijack == the other mode,
-# every switch on it ambiguous, and ScoringMetric/ScoreDifferenceSource reading each other's
+# every switch on it ambiguous, and two ScoringMetric members reading each other's
 # stat. Only GameModes has a tripwire (EnumIntegrityTests' member count), and it catches the
 # COUNT rather than the collision. So the numbers live here, the asserts at the bottom hold the
 # C# to them, and moving a mode off a collision is a three-line edit rather than a hunt.
@@ -520,11 +513,6 @@ scene, n = re.subn(r"  noNucleusSpawnRadius: \d+\n",
                    f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n", scene)
 assert n == 1, f"noNucleusSpawnRadius appeared {n} times"
 
-# 6g. The comeback's LIVE STAT. See COMEBACK_SOURCE - the donor's PrismsDestroyed is a flat
-# zero in a mode that destroys nothing, so the whole comeback layer would never fire.
-scene, n = re.subn(r"  differenceSource: \d+\n",
-                   f"  differenceSource: {COMEBACK_SOURCE}\n", scene)
-assert n == 1, f"differenceSource appeared {n} times"
 
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity.meta",
@@ -677,10 +665,6 @@ if f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n" not in sc:
 if "  spawnFormation: 1\n" not in sc:
     errors.append("scene is not on CellSpawnFormation.EquatorialRing - the yard's rails ring "
                   "the core, so a polar spawn slot faces no rail")
-if f"  differenceSource: {COMEBACK_SOURCE}\n" not in sc:
-    errors.append("scene does not author ScoreDifferenceSource.PrismsStolen - a scene-authored "
-                  "ElementalComebackSystem is respected as-is, so the donor's PrismsDestroyed "
-                  "would leave the comeback layer reading a flat zero deficit all match")
 if f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n" not in sc:
     errors.append("scene lost noNucleusSpawnRadius - this cell has no nucleus, so the omni "
                   "crystal would respawn on the arena's exact centre")
@@ -827,16 +811,6 @@ if not m:
 elif int(m.group(1)) != HIJACK_STEAL_TARGET:
     errors.append(f"DefaultHijackStealTarget ({m.group(1)}) != this script's "
                   f"HIJACK_STEAL_TARGET ({HIJACK_STEAL_TARGET}) - the two must move together")
-
-# The comeback source ordinal must match the C# enum, or the scene points at another stat.
-comeback_cs = read("Assets/_Scripts/Controller/Arcade/ElementalComebackSystem.cs")
-m = re.search(r"PrismsStolen = (\d+),", comeback_cs)
-if not m:
-    errors.append("ElementalComebackSystem.ScoreDifferenceSource.PrismsStolen has no explicit "
-                  "value - the scene serializes an ordinal and cannot be checked against it")
-elif int(m.group(1)) != COMEBACK_SOURCE:
-    errors.append(f"ScoreDifferenceSource.PrismsStolen is {m.group(1)} but the scene authors "
-                  f"{COMEBACK_SOURCE} - the comeback would read a different stat")
 
 # GameModes.Hijack and ScoringMetric.PrismsStolen must exist with the values authored here
 gamemodes_cs = read("Assets/_Scripts/Data/Enums/GameModes.cs")

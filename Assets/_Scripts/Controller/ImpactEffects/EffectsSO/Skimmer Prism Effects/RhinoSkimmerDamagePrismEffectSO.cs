@@ -11,8 +11,12 @@ namespace CosmicShore.Gameplay
     /// <item>Super-shielded prism — POPPED only while the blade is ENERGIZED
     /// (<see cref="IRhinoSwordState.IsEnergized"/>, the hold-the-chop-stance ritual), via the
     /// sanctioned mass-conserving teardown (DeactivateShields → devastating Damage, the
-    /// AstroLeagueArena.ClearEdgeLining precedent). A non-energized blade recoils
-    /// (<see cref="BounceBack"/>) with a dim denied-spark. Set
+    /// AstroLeagueArena.ClearEdgeLining precedent). A non-energized blade BINDS in it rather
+    /// than recoiling: this effect plays the entry beat (a dim denied-spark, the deflection
+    /// jiggle, the punish thud), and <see cref="ShieldSkimmerScaleDriver"/> owns the rest for as
+    /// long as the blade stays inside — slowed turning, a continued shudder, a haptic grind
+    /// (RHINO_ENERGY_SWORD.md § "Binding"). The old <see cref="BounceBack"/> recoil threw the
+    /// ship around and is kept only behind <see cref="recoilWhenDenied"/> as an A/B switch. Set
     /// <see cref="popRequiresEnergizedBlade"/> false to pop ungated (the v2 debug behavior).</item>
     /// </list>
     /// Every prism the sword actually destroys banks energy on the per-vessel
@@ -60,7 +64,14 @@ namespace CosmicShore.Gameplay
                  "hardened targets the sword exists to cut).")]
         [SerializeField] private float energyPerSuperShieldedPrism = 0.12f;
 
-        [Header("Bounce (super-shield contact while the blade is NOT energized)")]
+        [Header("Denied contact (super-shield touched while the blade is NOT energized)")]
+        [Tooltip("OFF (shipped): the blade BINDS — no velocity change, no spin; the prism jiggles, the " +
+                 "pilot feels a thud, and ShieldSkimmerScaleDriver slows the vessel's turn for as long " +
+                 "as the blade stays inside. ON (legacy A/B): the old recoil below throws the ship back " +
+                 "along its course and spins it.")]
+        [SerializeField] private bool recoilWhenDenied;
+
+        [Header("Legacy recoil (only while recoilWhenDenied is ON)")]
         [Tooltip("Multiplier applied to current speed to compute bounce target speed.")]
         [SerializeField] private float bounceSpeedMultiplier = 0.85f;
 
@@ -107,7 +118,20 @@ namespace CosmicShore.Gameplay
                 if (popRequiresEnergizedBlade && !energized)
                 {
                     sword?.NotifyPopDenied(prism.transform.position);
-                    BounceBack(status, prismImpactee);
+                    if (recoilWhenDenied)
+                    {
+                        BounceBack(status, prismImpactee);
+                        return;
+                    }
+
+                    // The ENTRY beat of a bind. The jiggle is photons only — the prism stays
+                    // invulnerable (Prism.AbsorbSuperShieldHit is the one super-shield gate), and
+                    // it is sized by the speed the blade actually struck at. Everything after
+                    // this frame — the drag, the continued shudder, the grind — is the sword
+                    // driver's, because this effect fires once per contact entry.
+                    prism.AbsorbSuperShieldHit(velocity.magnitude);
+                    if (status.IsLocalUser && !status.AutoPilotEnabled)
+                        HapticController.PlayPunish();
                     return;
                 }
 

@@ -121,7 +121,7 @@ platform-law) shaped the final rule set:
 | `IsJukeStrikeWindowOpen` (the steal window) | `Vessel/ScarabJukeController.cs` |
 | `scarabScrambleGoalTarget` live/build/getter, default 10 | `EndConditionOverridesSO` + window + `Resources/EndConditionOverrides.asset` |
 | `GameToastSituation` 63–69 (goal, match point, lead change, forge hint, roll hint, bank goal, cell overload) | `_Scripts/Data/Enums/GameToastSituation.cs` |
-| `case GameModes.ScarabScramble → Goals` | `ElementalComebackSystem.DefaultSourceFor` + `ElementalComebackSystemTests.LiveSourceCases` |
+| comeback reads Goals | `ElementalComebackSystem` → the rule's `DomainValue` (the per-mode `DefaultSourceFor` table was retired 2026-09) |
 | Objective-provider case | `_Scripts/UI/MiniGameHUD.cs` |
 
 ## The Scarab's nucleus seeding, seen from the mode

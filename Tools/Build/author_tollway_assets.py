@@ -1014,10 +1014,6 @@ if sc.count("CrystalsPerPlayer:") != len(CRYSTALS_BY_INTENSITY):
     errors.append(f"scene must author exactly {len(CRYSTALS_BY_INTENSITY)} crystal intensity rows")
 if sc.count("vesselClass: 12") != 4:
     errors.append("scene does not author 4 Scarab AI templates")
-# Goals (2) is what ElementalComebackSystem.DefaultSourceFor returns for this mode; a scene-
-# authored comeback instance is respected as-is and never reconfigured, so the two must agree.
-if "  differenceSource: 2\n" not in sc:
-    errors.append("scene's ElementalComebackSystem is not on ScoreDifferenceSource.Goals")
 
 # Scarab-only must be a SINGLE entry, or the clamps let another hull through
 arcade = files["Assets/_SO_Assets/Games/ArcadeGameTollway.asset"]

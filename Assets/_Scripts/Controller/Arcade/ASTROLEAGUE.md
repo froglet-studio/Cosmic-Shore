@@ -97,7 +97,7 @@ FinishMatch             winner banner (real time) → matchMonitor.ForceEnd()
 - **Final scores**: every player's `Score` = personal `GoalsScored`; the winning
   DOMAIN is the highest goal sum (golden goal guarantees no tie when enabled; with
   overtime disabled, full-time ties break by `ActiveDomains` order).
-- **Comeback**: `ElementalComebackSystem` with `ScoreDifferenceSource.Goals` — buffs
+- **Comeback**: `ElementalComebackSystem` with the rule's `DomainValue` (`Goals`) — buffs
   scale with the TEAM goal deficit (Elementals are the buff fundamental; no bespoke
   rubber-banding).
 
@@ -495,7 +495,7 @@ destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
 | `IcosphereMeshGenerator` (runtime faceted icosphere for the ball mesh) | `_Scripts/Utility/IcosphereMeshGenerator.cs` |
 | `CustomCameraController.Shake` | `_Scripts/Controller/Camera/CustomCameraController.cs` |
 | `SO_ArcadeGame.Min/MaxDomainsAllowed` (+ modal DC bounds) | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs`, `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` |
-| `ScoreDifferenceSource.Goals` | `_Scripts/Controller/Arcade/ElementalComebackSystem.cs` |
+| the rule's `DomainValue` (`Goals`) | `_Scripts/Controller/Arcade/ElementalComebackSystem.cs` |
 | `Cell.NucleusIsControlZone` (nucleus as play geometry, not a claim) | `_Scripts/Controller/Environment/Cell.cs` |
 | `Cell.FaunaExclusionRadius` (the pen's inner wall) + pen-aware birth position | `_Scripts/Controller/Environment/Cell.cs`, `CellLifeSpawnerBase.cs`, `FloraAndFauna/Fauna.cs` |
 

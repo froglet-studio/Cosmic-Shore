@@ -518,7 +518,7 @@ namespace CosmicShore.Gameplay
                 if (prism.Domain == embeddedHealthPrism.Domain) return;
                 // The debris leaves at the creature's own speed. This used to be scaled by
                 // embeddedHealthPrism.Volume to cancel Prism.Explode's divide, but that divide
-                // is a no-op (SetupDestruction pins prismProperties.volume to 1 before it runs)
+                // was always a no-op (pinned to 1; deleted outright in 2026-09)
                 // AND the factor was the volume of the BOID's health prism, not the victim's -
                 // so it survived as a straight, unrelated multiplier on the debris speed.
                 prism.Damage(currentVelocity, embeddedHealthPrism.Domain, _damagerName, true, true);

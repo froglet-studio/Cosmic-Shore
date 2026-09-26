@@ -27,7 +27,7 @@ namespace CosmicShore.ScriptableObjects
         [Serializable]
         public class FaunaSpecies
         {
-            [Tooltip("Species name shown on its station label.")]
+            [Tooltip("Species name, shown in the Toy Box menu.")]
             public string Name = "Tadpole";
             [Tooltip("The per-element configs of this species (one per element it can express). " +
                      "The variant row reads each config's Element; a release runs off a runtime " +
@@ -38,7 +38,7 @@ namespace CosmicShore.ScriptableObjects
         [Serializable]
         public class FloraSpecies
         {
-            [Tooltip("Species name shown on its station label.")]
+            [Tooltip("Species name, shown in the Toy Box menu.")]
             public string Name = "Gyroid";
             [Tooltip("The per-element configs of this species (one per element it can express).")]
             public FloraConfigurationSO[] ElementConfigs;
@@ -81,7 +81,7 @@ namespace CosmicShore.ScriptableObjects
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor, DisplayName);
+            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
             var toy = go.AddComponent<LifeformMatrixToy>();
             toy.Configure(this);
             toy.Initialize(this, context, placement);

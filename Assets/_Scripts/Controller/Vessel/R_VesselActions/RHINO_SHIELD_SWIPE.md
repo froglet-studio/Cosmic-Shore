@@ -211,7 +211,9 @@ but `SetupDestruction` runs first and stands the scale animator **down before re
 volume**. `PrismScaleAnimator.GetCurrentVolume()` gates on `enabled` and returns 0 once it is
 off, so `Mathf.Max(0f, 1f)` pins `prismProperties.volume` to **exactly 1 for every prism,
 regardless of size**, at the moment of the divide. The legacy gain is therefore just `inertia` —
-not `inertia / volume`.
+not `inertia / volume`. *(2026-09: the divide was deleted outright when `SetupDestruction` started
+reading the volume BEFORE disabling the animator, for the destruction stats. Debris behaviour is
+unchanged — the gain was always `inertia`.)*
 
 That matters in two directions:
 

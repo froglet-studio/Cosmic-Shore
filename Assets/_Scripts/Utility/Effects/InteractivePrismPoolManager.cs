@@ -58,9 +58,19 @@ namespace CosmicShore.Utility
             var instance = Get_(position, rotation, parent, worldPositionStays);
             if (instance != null)
             {
+                // -= first: exactly one handler per life, whatever a previous life left behind.
+                instance.OnReturnToPool -= Release;
                 instance.OnReturnToPool += Release;
             }
             return instance;
+        }
+
+        // Runs on EVERY path back into the pool, including the bulk scene-change releases that
+        // bypass Release() - which is where the per-Get handler used to survive and double up
+        // (GenericPoolManager.Release_ has the full story).
+        protected override void OnReturnedToPool(Prism instance)
+        {
+            if (instance) instance.OnReturnToPool -= Release;
         }
 
         public override void Release(Prism instance)

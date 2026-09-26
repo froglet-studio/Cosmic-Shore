@@ -709,7 +709,7 @@ the mode runs. Live/Build split + build auto-restore work like every other mode.
 1.0): prism deficits run ~100× larger than Scurry's crystal deficits (target 2000 vs
 20), so 0.01 keeps the buff curve proportionate — a ~1000-prism team deficit maxes
 the comeback ceiling the way a ~10-crystal deficit does in Scurry. The scene-authored
-`ElementalComebackSystem` uses `ScoreDifferenceSource.PrismsDestroyed` (Score only
+`ElementalComebackSystem` uses the rule's `DomainValue` (`PrismsDestroyed`) (Score only
 lands at game end in this mode, so the Score source would be inert live).
 
 It lands especially well on this vessel: Space widens the cone's reach, Charge shortens
@@ -751,7 +751,7 @@ Added when the mode first shipped:
 | `ScoringMetrics.Read` | `PrismsDestroyed => stats.HostilePrismsDestroyed` |
 | `GameDataSO` | `PrismTargetCount` (+ both runtime resets) |
 | `EndConditionOverridesSO` (+ window + asset) | `rampagePrismTarget` live/build/getter, default 2000 |
-| `ElementalComebackSystem` | `ScoreDifferenceSource.PrismsDestroyed` + `GameModes.Rampage` default-source case |
+| `ElementalComebackSystem` | reads `RampageScoringRule`'s `DomainValue` (`PrismsDestroyed`) |
 | `GameModes` | doc comment on the repurposed `Rampage = 2` |
 
 Added by the Dolphin rework. The three ecology items are **platform fixes, not mode

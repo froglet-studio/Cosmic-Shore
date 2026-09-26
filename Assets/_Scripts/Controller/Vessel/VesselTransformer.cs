@@ -189,7 +189,30 @@ public class VesselTransformer : MonoBehaviour
         /// <see cref="SingleStickVesselTransformer"/>, which is what the Sparrow and Serpent
         /// actually run — a base-only change would not reach either of them.</summary>
         protected float TurnScalar =>
-            VesselStatus != null && VesselStatus.IsTranslationRestricted ? restrictedTurnMultiplier : 1f;
+            (VesselStatus != null && VesselStatus.IsTranslationRestricted ? restrictedTurnMultiplier : 1f)
+            * Mathf.Max(0f, ExternalTurnRateMultiplier);
+
+        /// <summary>
+        /// ROTATION rate multiplier an ABILITY owns while it runs — 1 = no effect. Folded into
+        /// <see cref="TurnScalar"/> (pitch/yaw) and <see cref="RollScalar"/> (roll), so it reaches
+        /// this class's Pitch/Yaw/Roll AND every override (SingleStickVesselTransformer,
+        /// ScarabVesselTransformer) and <see cref="MaxTurnRateDegreesPerSecond"/>, which the AI's
+        /// reachability test reads. Unlike <c>restrictedTurnMultiplier</c> it DOES reach roll: an
+        /// ability that says "you are held" means every axis you could swing on.
+        ///
+        /// One writer at a time, same contract as <see cref="BankIntoTurnSuppressed"/>: the
+        /// setter is responsible for handing it back at 1, and <see cref="ResetTransformer"/>
+        /// clears it so an interrupted ability cannot strand a slowed turn. Its one writer today
+        /// is the Rhino's sword binding in super-shielded mass
+        /// (<c>ShieldSkimmerScaleDriver</c>, RHINO_ENERGY_SWORD.md § "Binding").
+        /// </summary>
+        public float ExternalTurnRateMultiplier { get; set; } = 1f;
+
+        /// <summary>Roll rate scalar for this frame — <see cref="ExternalTurnRateMultiplier"/>
+        /// alone (the translation-restricted stance deliberately does not speed roll). Applied
+        /// by this class's <see cref="Roll"/> and by every override, the same reach
+        /// <see cref="TurnScalar"/> needs.</summary>
+        protected float RollScalar => Mathf.Max(0f, ExternalTurnRateMultiplier);
 
         /// <summary>
         /// While true the transformer applies NO bank-into-turn — an ability owns the roll axis
@@ -428,6 +451,7 @@ public class VesselTransformer : MonoBehaviour
 
             // Movement
             BankIntoTurnSuppressed = false;   // an interrupted ability must not strand the roll axis
+            ExternalTurnRateMultiplier = 1f;  // ...nor a slowed turn
             velocityShift = Vector3.zero;
             _bodyFlaring = true;   // force one rest-state material write on the next pass
 
@@ -729,7 +753,7 @@ public class VesselTransformer : MonoBehaviour
         {
             if (InputStatus == null || BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
-                InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
+                InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * RollScalar * Time.deltaTime,
                 transform.forward) * accumulatedRotation;
         }
 

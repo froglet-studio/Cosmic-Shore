@@ -47,7 +47,7 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 4
     AbilityLabel: Ramp Spool
-    AbilityDescription: Time raises how fast the ramp boost winds the Rhino up to its
+    AbilityDescription: 'Time raises how fast the ramp boost winds the Rhino up to its
       top speed - the same 220/s the executor already scales, from 110/s at rest to
       550/s at full (RampBoostActionSO.timeAccelerationMultiplier). It does not raise
       the ceiling, only how long the run-up to it takes, so a Rhino that keeps the
@@ -55,7 +55,7 @@ MonoBehaviour:
       shipped until the element-scaling unification: the fleet-wide boost read in
       VesselTransformer.CurrentBoostAmount applied this same element to the ceiling
       too, undeclared here and unmodelled by regatta_balance.py. The ceiling is now
-      untouched by Time - BoostSpeedMultiplier is disabled on Rhino.prefab.
+      untouched by Time - BoostSpeedMultiplier is disabled on Rhino.prefab.'
     Input: 0
     UnlockLevel: 5
     RelockBelowLevel: 4

@@ -87,10 +87,10 @@ the property is.
 | MinigameBroodRush | SkimRace | **1770** | layout 1245 · other 458 · script-field 36 · active 16 · button 10 |
 | MinigameSkimRace | SkimRace | **1766** | layout 1247 · other 458 · script-field 37 · active 15 · button 4 |
 | BenchmarkStressTest | CORE | 105 | layout 36 · script-field 27 · button 21 · active 12 |
-| MinigameWildlifeBlitz (SP) | CORE | 105 | layout 36 · script-field 27 · button 21 · active 12 |
+| MinigameWildlifeBlitz (SP, retired 2026-09) | CORE | 105 | layout 36 · script-field 27 · button 21 · active 12 |
 | ArcadeGameMultiplayer2v2CoOpVsAI | CORE | 96 | layout 58 · font-noise 12 · button 11 · script-field 8 |
 | MinigameDuelForCellMultiplayer_Gameplay | CORE | 96 | layout 58 · font-noise 12 · button 11 · script-field 8 |
-| MinigameDuelForTheCell | CORE | 85 | layout 53 · button 13 · active 6 · script-field 5 |
+| MinigameDuelForTheCell (retired 2026-09) | CORE | 85 | layout 53 · button 13 · active 6 · script-field 5 |
 | MinigameFreestyleMultiplayer_Gameplay | CORE | 81 | layout 49 · button 11 · script-field 11 · active 5 |
 | Maelstrom | CORE | 65 | layout 49 · button 10 (+ 8 removed GameObjects) |
 | MinigameWildlifeBlitzMultuplayerCoOp | CORE | 61 | layout 49 · button 10 |

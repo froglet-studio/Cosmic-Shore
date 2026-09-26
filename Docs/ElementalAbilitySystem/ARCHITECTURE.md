@@ -356,14 +356,15 @@ and no `UpgradeLabel`, and its HUD carries 0–2 lower-right icons. (The Manta l
 L5 upgrades; see FLEET_MAPS.md §2 Manta and
 `_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md`. The **Serpent** left it
 2026-09-16 for its Charge and Space rows — the scope + rifle re-cut, FLEET_MAPS.md §2 Serpent and
-`SERPENT_SNIPER_SCOPE.md` — though its Mass row is still open and its HUD still binds NO icons, so
-its four lockup cards render LOCKED and only the Charge card's cooldown veil moves.) Run
+`SERPENT_SNIPER_SCOPE.md` — and 2026-09-25 for its Time row, Solid Fuel Pellets
+(`SERPENT_FUEL_PELLETS.md`), which bound its first icon: the Time card now shows the four-pellet
+fuel tank, while Charge/Mass/Space still render LOCKED and the Charge card's cooldown veil moves.) Run
 **FrogletTools > Vessels > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
 checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
 fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
 silently. The
-remaining flyable HUDs (Rhino, Serpent — whose map is now partly authored but whose icons are
-not — and the Urchin until its row is authored) have no `abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
+remaining flyable HUDs (Rhino, Serpent — 1/4, Time only, since 2026-09-25 — and the Urchin until
+its row is authored) have no or partial `abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
 framework above needs no further changes.
 
 ### 7.3 Gotcha: never write a control hint's SIZE

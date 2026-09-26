@@ -80,9 +80,8 @@ namespace CosmicShore.Data
         //
         // Its one consumer was Drumfire, removed 2026-09. Kept for the same reason PrismsRemaining
         // is: the stat behind it is credited platform-wide already, so a future mode that wants to
-        // score SIZE rather than COUNT needs no new plumbing - only this member and its comeback
-        // pair, ElementalComebackSystem.ScoreDifferenceSource.VolumeDestroyed. Do not remove one
-        // without the other.
+        // score SIZE rather than COUNT needs no new plumbing - only this member (the comeback
+        // reads the rule's DomainValue, so it follows the metric automatically).
         //
         // It is credited by exactly the same path PrismsDestroyed is (StatsManager.
         // CreditPrismDestruction on the server, Player.ReportEnvironmentPrismDestroyed_ServerRpc

@@ -121,6 +121,33 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float burstShakeMaxIntensity = 2.5f;
         [SerializeField] private float burstShakeDuration = 0.4f;
 
+        [Header("Binding (a NON-energized blade inside super-shielded mass)")]
+        [Tooltip("Rotation (pitch/yaw/roll) rate multiplier while the blade is inside a super-shielded prism it " +
+                 "cannot cut — the armour DRAGS on the sword instead of throwing the ship back. " +
+                 "1 = no drag, 0 = the vessel cannot rotate at all while bound. " +
+                 "Replaces the old recoil (RhinoSkimmerDamagePrismEffectSO.recoilWhenDenied).")]
+        [SerializeField, Range(0f, 1f)] private float bindTurnRateMultiplier = 0.3f;
+        [Tooltip("How fast (multiplier units/sec) the turn rate eases DOWN into the bind. High, so " +
+                 "the drag reads as the blade biting on contact.")]
+        [SerializeField] private float bindEngageRate = 8f;
+        [Tooltip("How fast (multiplier units/sec) the turn rate eases back UP once the blade is free. " +
+                 "Lower than the engage rate so breaking free reads as the armour letting go, not as a snap.")]
+        [SerializeField] private float bindReleaseRate = 4f;
+        [Tooltip("Seconds between re-stamping the deflection jiggle on every bound prism, so it keeps " +
+                 "shuddering for as long as the blade is in it (one jiggle lasts " +
+                 "PrismSuperShieldJiggleConfig.duration and starts at its peak). Keep above that " +
+                 "config's minSecondsBetweenStamps or the stamps are gated away.")]
+        [SerializeField] private float bindJiggleIntervalSeconds = 0.2f;
+        [Tooltip("Impact speed handed to each re-stamped jiggle (world units/sec) — sets how hard the " +
+                 "bound prism shudders against PrismSuperShieldJiggleConfig.referenceImpactSpeed.")]
+        [SerializeField] private float bindJiggleImpactSpeed = 90f;
+        [Tooltip("Seconds between grind pulses of the BIND haptic while bound (local human pilot only). " +
+                 "The entry into the armour is the punish thud; this is the texture after it. Keep at " +
+                 "or above the grind clip's 80 ms length (Docs/HAPTICS.md, the cadence floor).")]
+        [SerializeField] private float bindHapticIntervalSeconds = 0.1f;
+        [Tooltip("Strength (0..1) of each grind pulse, before the player's haptics level.")]
+        [SerializeField, Range(0f, 1f)] private float bindHapticStrength = 0.7f;
+
         // Runtime-only debuff multiplier for max sizes
         [NonSerialized] private bool  _isMaxSizeDebuffed;
         [NonSerialized] private float _maxScaleMultiplier = 1f;
@@ -177,6 +204,14 @@ namespace CosmicShore.Gameplay
         public float PopShakeDuration       => Mathf.Max(0f, popShakeDuration);
         public float BurstShakeMaxIntensity => Mathf.Max(0f, burstShakeMaxIntensity);
         public float BurstShakeDuration     => Mathf.Max(0f, burstShakeDuration);
+
+        public float BindTurnRateMultiplier    => Mathf.Clamp01(bindTurnRateMultiplier);
+        public float BindEngageRate            => Mathf.Max(0.01f, bindEngageRate);
+        public float BindReleaseRate           => Mathf.Max(0.01f, bindReleaseRate);
+        public float BindJiggleIntervalSeconds => Mathf.Max(0.02f, bindJiggleIntervalSeconds);
+        public float BindJiggleImpactSpeed     => Mathf.Max(0f, bindJiggleImpactSpeed);
+        public float BindHapticIntervalSeconds => Mathf.Max(0.06f, bindHapticIntervalSeconds);
+        public float BindHapticStrength        => Mathf.Clamp01(bindHapticStrength);
 
         /// <summary>
         /// Temporarily scales the effective max sizes (MaxScale & PrismMaxScale)

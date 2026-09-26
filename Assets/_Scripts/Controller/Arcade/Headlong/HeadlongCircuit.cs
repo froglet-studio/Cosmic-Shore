@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
         public const float RhinoMinimumSpeed = 0f;
 
         /// <summary>`maxBoostMultiplier` on RhinoRampBoostAction.asset.</summary>
-        public const float RhinoMaxBoostMultiplier = 24f;
+        public const float RhinoMaxBoostMultiplier = 16.8f;
 
         /// <summary>`straightnessGraceBand` on RhinoRampBoostAction.asset — the deviation at
         /// which the graded ramp contributes nothing.</summary>
@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
             RhinoThrottleScaler * RhinoMaxBoostMultiplier + RhinoMinimumSpeed;
 
         /// <summary>`RotationThrottleScaler` on Rhino.prefab.</summary>
-        public const float RhinoRotationThrottleScaler = 0.5f;
+        public const float RhinoRotationThrottleScaler = 0.2f;
 
         /// <summary>`YawScaler`/`PitchScaler` on Rhino.prefab (the vessel authors both at 90).</summary>
         public const float RhinoTurnScaler = 90f;
@@ -79,10 +79,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// THE number this whole mode is built around: the tightest circle a Rhino can fly at
-        /// top speed WITHOUT dropping the ramp boost. <b>355.9 u</b> — `MinTurnRadius(1200)` 99.6
-        /// over `BoostStickBudget` 0.28, and pinned by `HeadlongCircuitTests`. (This said "~410 u"
-        /// from the commit that authored the mode; it was never that, at either top speed — 355.9
-        /// now, 356.3 while the Rhino authored a 10 u/s floor.)
+        /// top speed WITHOUT dropping the ramp boost. <b>666.2 u</b> — `MinTurnRadius(840)` 186.5
+        /// over `BoostStickBudget` 0.28, and pinned by `HeadlongCircuitTests`. (355.9 before the
+        /// 2026-09-25 Rhino retune — top speed 1200 -> 840, RotationThrottleScaler 0.5 -> 0.2 —
+        /// and 356.3 while the Rhino authored a 10 u/s floor. It was never the "~410 u" the
+        /// authoring commit claimed.)
         ///
         /// <para>Turn rate is linear in stick, so a pilot holding the boost turns at
         /// <c>BoostStickBudget x omega(v)</c> and therefore flies a circle
@@ -207,7 +208,13 @@ namespace CosmicShore.Gameplay
                 // The SAFETY floor, a little under each level's own hardest target: a corner the
                 // solver overshot is still one a Rhino can hold, at roughly a quarter of top
                 // speed at level 4. It is not the design - CornerProfile is.
-                CornerRadiusFactor = new[] { 0.62f, 0.42f, 0.28f, 0.20f }[i - 1],
+                // Level 1 went 0.62 -> 0.75 when the Rhino's top speed dropped 1200 -> 840 and its
+                // RotationThrottleScaler 0.5 -> 0.2 (2026-09-25): the flat-out radius grew
+                // 355.9 -> 666.2, the fixed 480..1080 shell cannot widen with it, so 0.62 became
+                // the binding limit and level 1 started producing hairpins (0.62 of flat-out,
+                // under HeadlongCircuitTests' 0.70 bar). 0.75 restores the tutorial promise;
+                // levels 2-4 were left alone and are still ordered and binding.
+                CornerRadiusFactor = new[] { 0.75f, 0.42f, 0.28f, 0.20f }[i - 1],
                 // How hard the generator is allowed to work to hit the profile. A tight corner
                 // needs a vertex driven OUT between two driven IN and its two gates pulled
                 // angularly TOGETHER - radius alone cannot do it (on a circle the corner radius

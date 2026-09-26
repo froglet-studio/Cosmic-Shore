@@ -419,7 +419,7 @@ namespace CosmicShore.Gameplay
             Vector3 at = DinghyTarget();
             var placement = new ToyPlacement(at, at + _ark.Forward, body, body * 2.2f);
             var go = ToyFactory.CreateRoot("Arkway_Dinghy", transform, placement,
-                _cfg.ReturnStationColor, "DISEMBARK\n<size=60%>fly through to head home</size>");
+                _cfg.ReturnStationColor);
 
             _dinghy = go.AddComponent<WanderwayReturnToy>();
             _dinghy.Configure(() => End(returnToCell: true));
