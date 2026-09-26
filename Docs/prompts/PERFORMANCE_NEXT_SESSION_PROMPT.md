@@ -17,6 +17,11 @@ anything until steps 1–3 are done and the plan is written down.
 > 3. The human's go-ahead to build.
 >
 > Start from §3.3's "The pick" rather than from Step 1.
+>
+> **Also 2026-09-26: measurement follows §4.7 (industry standard).** Judge in a Development
+> build. `diag` now times named markers per system and records its environment. The Profiler
+> → JSON exporter reads a connected build. Rampage intensity 1 spawning no flora or fauna is an
+> open GAME bug; it needs a console log.
 
 ## Read first, in this order
 

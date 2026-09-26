@@ -43,10 +43,21 @@ Every row is a `diag <label> 15` average. None is a HUD reading.
 \* S1 ran with VSync on (`frameCapVSync 1`), so its FPS and frame time are capped. Its CPU busy
 figure is the one to use. An earlier S4 run (72,583 entities) agrees within 3%.
 
-**The S3 intensity-1 run is invalid.** It had 1,216 prism entities and 66 enabled renderers:
-the forest had not grown. The diag ran at 06:30:03 and the `prof` 10 s later. **Re-run it after
-at least 3 min, once `prisms` reads ~40k.** Until then, the heaviest arcade cell is still
-unmeasured.
+**The S3 intensity-1 run is invalid, and it is a GAME BUG, not a timing mistake.** It had 1,216
+prism entities and 66 enabled renderers. The tester reports (2026-09-26) that **Rampage at
+intensity 1 spawns no cell items at all**, just the vessels flying. Crystals do seem to spawn:
+the renderer list holds 24 renderers on the four Mass crystal materials, i.e. six crystals of
+four shells each, which matches intensity 1's crystal rule. So flora and fauna are what is
+missing.
+
+Code read at `aaa1517fe`; none of these explains it:
+- The config order in `MinigameRampage.unity` is 1, 2, 3, 4.
+- All four configs and spawn profiles resolve, including `Nucleus500.prefab`.
+- The spawn profiles differ from intensity 4 only in the three scale fields.
+- The `freeze` hold is released on every scene change.
+- The planting band cannot collapse, since a 490u nucleus is inside the 0.76 × membrane band.
+
+**Open until a console log from an intensity-1 launch names it.** S3 stays unmeasured until then.
 
 **Against the target, only S5 misses.** The target is 60 fps in a Development build with no
 frame over 50 ms, and the editor runs about 2–3× slower than a build.
@@ -173,6 +184,7 @@ bond), which is why the scenario set gains an S6.
 | 09-23 | Merged bleeding-edge (new boot world: Garland); plan re-derived on the merged tree; target + six scenarios confirmed. `freeze` and `ab` console commands | The confounded spindle test can now be re-run in one state (§4.5) |
 | 09-25 | First spindle `ab` hid 5 of ~68k renderers (the lattice spindles wear their own materials); `renderers hide *text` added | An accidental A/A: ±3.9 ms CPU noise at 3 × 10 s in the menu, so the re-run is 6 × 20 s (§4.5) |
 | 09-25 | S1–S6 `diag`s and the spindle `ab` in S2 + S6; `prof` console command (the Profiler Hierarchy as JSON) | Spindles cost ~+5.3 ms CPU in a grown Lattice; S5 Wildlife Liberation is the worst scenario (50.5 ms) and is not yet attributed — `prof` is how |
+| 09-26 | **Measurement moved to the industry-standard method (§4.7).** `diag` gained per-system marker timings via `ProfilerRecorder` (works in a Development build, no Profiler attached), p50/p95 frame time, the run environment, and the label in its file name. The **Profiler → JSON exporter** covers a connected build or a `.data` file. `diag`/`ab` timestamps are now culture-invariant. **Rampage intensity 1 spawns no flora or fauna**, a game bug, open | Every number from here on says whether it came from the Editor or a build |
 | 09-26 | `prof` on S2, S4, S5 (and an invalid S3 i1). §1.0 recorded, §3.3 re-ranked. Markers inside S5's three script blocks (`aaa1517fe`); `prof` counts `GfxTask_ReadValue` as a wait (`ded51b6ad`) | **Only S5 misses the target.** It is main-thread script: gunfight continuations 20.2 ms (the p99), creature `Update` 13.1, behaviour tick 12.7. Pick: **L8**, gated on one more `prof S5` |
 
 ### 2.1 How the picture changed
@@ -367,10 +379,12 @@ editor window, and screenshots re-typed by hand.
 | **Where does the GC come from?** | Profiler Hierarchy, sort by **GC Alloc** — or `prof <label>` (`topGc` ranks by SELF allocation) | Names the caller |
 | **The Hierarchy as text** | `prof <label> [frames] [root=…] [sort=…]` (§4.5) | `prof_*.json`: averaged tree, top self, top GC, threads, typical + spike frame |
 | **What is issuing draws?** | Frame Debugger | Names the shader / object |
-| **Did my change help?** | Two `diag <label> 15` reports of the **same state**, or Benchmark window **Compare** | Averages, not samples |
+| **Did my change help?** | `freeze on` + `ab "<new>" "<old>" 20 6` in the **same state**; or two `diag <label> 15` reports | A delta with an error bar |
+| **Which system costs what, in a BUILD?** | `diag <label> 15` in a Development build — it times ~23 named markers per frame with `ProfilerRecorder`, no Profiler attached (§4.5) | `markers` block: avg / p50 / p95 / max ms per system |
 | **Is it GPU-bound?** | HUD `Bound` row, after `fps uncap` | |
 | **Prism-only questions** | Lab scene `PrismGridExplosionTest` (`grid`, `lab mix …`) | Fixed population, no Bootstrap |
-| **The real number** | Development build, `-csmbench` | The only number to judge against the target |
+| **The real number** | A Development build, run the §4.7 way, `diag` per scenario | The only number to judge against the target |
+| **The Hierarchy of a BUILD** | Profiler attached to the build → **FrogletTools ▸ Performance ▸ Export Profiler Frames to JSON** | The same `prof_*.json` as the in-Editor command |
 
 ### 4.2 Pre-flight — every time
 
@@ -408,9 +422,14 @@ Three ways to satisfy the rule, simplest first:
 
 - **Benchmark window → Runtime Capture → Copy error log** puts stats, spikes and the script
   methods behind each spike on the clipboard as text.
-- **`diag <label> <seconds>`** writes `Documents/CosmicShore Diagnostics/diag_*.json` and a
-  `.txt` with averages (`avgGcKbPerFrame`, `avgDraws`, CPU/GPU, `prismPath`, and the renderer
-  census taken after sampling).
+- **`diag <label> <seconds>`** writes `Documents/CosmicShore Diagnostics/diag_<scene>_<label>_*.json`
+  and a `.txt`. It holds:
+  - averages: `avgGcKbPerFrame`, `avgDraws`, CPU/GPU, `prismPath`;
+  - the frame's **p50 / p95 / p99**;
+  - the renderer census, taken after sampling;
+  - since 2026-09-26, **per-system timings** (`markers`);
+  - the **run environment** (`environment`): Editor or build, Burst, Profiler, focus, resolution,
+    quality, GPU/CPU.
 - **`prof <label>`** is the text export of the Profiler Hierarchy that Unity does not have
   (§4.5). Screenshots are now only needed for the Timeline view.
 
@@ -465,9 +484,9 @@ Three ways to satisfy the rule, simplest first:
   every path; `topGc`, ranked by **self** allocation — the Profiler's GC column is inclusive, so
   ranking it names `PlayerLoop` rather than the caller; `threads`, busy vs wait for every other
   thread (sampled every 6th frame), which is where a main-thread `Idle` is explained. A sample
-counts as a wait when it is `Idle`, a `WaitFor…`, a `Semaphore.Wait…` or `GfxTask_ReadValue`. That
-last one is the D3D12 task worker blocked on its next command. It has no "Wait" in its name, and
-until `ded51b6ad` it showed that thread as 100% busy for the whole frame. The report also holds two
+  counts as a wait when it is `Idle`, a `WaitFor…`, a `Semaphore.Wait…` or `GfxTask_ReadValue`. That
+  last one is the D3D12 task worker blocked on its next command. It has no "Wait" in its name, and
+  until `ded51b6ad` it showed that thread as 100% busy for the whole frame. The report also holds two
   whole frames, the **typical** (median) and the **spike** (slowest). Those two are picked by
   `PlayerLoop` time, not the whole frame, because in the Editor the slowest whole frame is usually
   an Editor repaint — a test proves the whole-frame pick would choose it. Editor-only rows
@@ -476,6 +495,34 @@ until `ded51b6ad` it showed that thread as 100% busy for the whole frame. The re
   thresholds; `sort` orders siblings. Keep Deep Profile **off** — the report says when it was on,
   because Deep Profile times every managed call and inflates script cost several-fold. Leave the
   Profiler window open on the Hierarchy view; the Record button is driven for you.
+- **Per-system timings in `diag`** (added 2026-09-26; `MarkerBudget` + `MarkerBudgetRecorder`) —
+  every `diag` run times a fixed list of named markers with `ProfilerRecorder`.
+  - **What is timed.** Unity's frame phases (`PlayerLoop`, `BehaviourUpdate`,
+    `CoroutinesDelayedCalls`, `LateBehaviourUpdate`, UniTask `PreLateUpdate`, physics, animators,
+    UI, the URP render total) and this project's hot-path markers (creatures, gunfight,
+    collider LOD, debris).
+  - **What each row says.** Main-thread ms per frame: average, median, p95 and max, over EVERY
+    frame of the run (absent = 0), plus how often the marker ran and its calls per frame.
+  - **It needs no Profiler, so it works in a Development build.** That is the point: it is how a
+    per-system budget is tracked where the target is judged.
+  - **Adding markers:** `diag S5 15 m=Name.One,Name.Two`.
+  - **A name the build does not have** reports `found: false`, so a renamed marker is visible
+    rather than silently absent.
+  - Names are resolved through `ProfilerRecorderHandle.GetAvailable`, never a guessed category:
+    a recorder keyed on the wrong category reads zero without complaint.
+  - The first 3 frames of every `diag` are discarded, and the run's clock and the recorders both
+    restart after them. The command's own frame and the handle enumeration land there.
+  - Stated limit: each recorder keeps its latest 250 frames per second of run and says
+    `truncated` past that.
+- **Export Profiler Frames to JSON** (FrogletTools ▸ Performance, added 2026-09-26) writes
+  whatever the Profiler window holds as the same `prof_*.json`. That covers:
+  - a Development build with the Profiler attached;
+  - a `.data` recording loaded into the Profiler;
+  - Play mode.
+
+  It shares the finishing and saving step with `prof`
+  (`ProfilerFrameReader.Finish` / `Save`), so the two cannot write different reports from the
+  same frames.
 - **A measurement toggle is not a shipped lever.** `renderers hide` switches renderers off in
   one frame — fine for asking what they cost, never acceptable as the fix. If lever L1 ships, a
   spindle leaves the culling population by FADING (continuity of existence), not by a toggle.
@@ -485,7 +532,7 @@ until `ded51b6ad` it showed that thread as 100% busy for the whole frame. The re
 | Command | Does |
 |---|---|
 | `fps uncap` / `fps restore` | Remove / restore the vsync + target-frame-rate cap |
-| `diag [label] [seconds]` | Timed, tagged recording → JSON + TXT |
+| `diag [label] [seconds] [m=A,B]` | Timed, tagged recording → JSON + TXT, with per-system marker timings, p50/p95/p99 and the run environment. `m=` adds markers to the default list |
 | `renderers` | Census: enabled / disabled / visible renderers, by type, top 8 materials |
 | `renderers hide <prefix>` / `renderers hide *<text>` / `renderers show` | Switch off every renderer whose material name starts with `<prefix>` — or, with a leading `*`, CONTAINS `<text>` — then exactly those back on. Use `*Spindle` for the spindle family: the lattice species wear `GyroidSpindleMaterial`, `AssemblySpindleMaterial` and `QuasicrystalSpindleMaterial`, which the prefix `Spindle` misses |
 | `prismpath on\|off\|auto` | Instanced vs legacy prism rendering, live |
@@ -493,7 +540,55 @@ until `ded51b6ad` it showed that thread as 100% busy for the whole frame. The re
 | `grid …` / `lab …` / `bench` | Lab scene only: real prism lattice, mixed populations, explosion benchmark |
 | `freeze on` / `freeze off` | Hold ecology production in every cell (§4.5); released on scene change |
 | `ab "<A>" "<B>" [seconds] [rounds]` | Counterbalanced A/B of two commands → one line of paired deltas + `ab_*.json`; `ab stop` cancels (§4.5) |
-| `prof [label] [frames] [root=…] [sort=…] [min=…] [mingc=…] [depth=…] [top=…]` | Editor only: record + read back Profiler frames → averaged tree, top self time, top allocators, thread busy/wait, typical + spike frame in `prof_*.json`; `prof stop` cancels (§4.5) |
+| `prof [label] [frames] [root=…] [sort=…] [min=…] [mingc=…] [depth=…] [top=…]` | Editor only: record + read back Profiler frames → averaged tree, top self time, top allocators, thread busy/wait, typical + spike frame in `prof_*.json`; `prof stop` cancels (§4.5). For a BUILD, use FrogletTools ▸ Performance ▸ Export Profiler Frames to JSON |
+
+### 4.7 The test protocol (industry standard, adopted 2026-09-26)
+
+This is how professional game teams measure performance, and how this project measures from
+now on. Each rule is here because breaking it has produced a wrong number in this effort.
+
+1. **Budget first.** The target is a **16.7 ms** frame (60 fps) with no frame over 50 ms. Plan
+   to spend **≤ 14 ms** on average. The 2.7 ms of headroom is what absorbs a hitch, a hotter
+   machine, a busier match. Per-system budgets are set once the build numbers exist (step 3).
+   `diag`'s `markers` block is where they will be checked.
+2. **Judge in a Development build on the reference PC. The Editor is for finding and ranking,
+   never for judging.** The Editor adds its own loop (4–19 ms here) and runs scripts as
+   debuggable Mono. The shipped game is a different program. The measurement build:
+   - Development Build **ON**, Script Debugging **OFF**, Deep Profiling Support **OFF**;
+   - Autoconnect Profiler **OFF** for `diag` runs, ON only for a Profiler session;
+   - the **same scripting backend and quality level as the shipped game**;
+   - one fixed window size (1920×1080).
+
+   The project already sets **IL2CPP** for Standalone, and **Frame Timing Stats** is ON; `diag`'s
+   CPU/GPU split needs the latter in a build.
+3. **Control the conditions.** Plugged in, High Performance power plan, other apps closed,
+   window focused, `fps uncap`. `diag` now RECORDS all of these in `environment`, so a number
+   taken under the wrong conditions is visible afterwards.
+4. **Warm up, then measure.** Load the scenario, wait its stated time (§3.1), then measure. The
+   first seconds hold shader compiles, pool fills and growth; `diag` discards its first frames
+   for the same reason.
+5. **Repeat.**
+   - Three `diag` runs per scenario, reloading the scenario between them. Quote the **median of
+     the three**.
+   - If the three differ by more than ~10%, the scenario is not stable. Find out why before
+     quoting it.
+6. **Quote the right statistic.**
+   - **p50 (median) frame** for "how fast": the average is pulled up by hitches.
+   - **p95 / p99** for "how smooth".
+   - **CPU busy** for how much work the CPU did.
+   - FPS alone hides all three.
+7. **Attribute before you fix.**
+   - Profile only the scenario that misses the target.
+   - Hierarchy: `prof` in the Editor, or the exporter for a build.
+   - Your own code gets named markers, then `diag` times them in the build.
+   - Deep Profile finds WHERE, never HOW MUCH.
+8. **Change one thing, prove it in the same state.**
+   - `freeze on`, then `ab "<new>" "<old>" 20 6`.
+   - Quote the delta with its ± standard error. A delta inside twice its error is noise.
+9. **Record everything with its commit SHA** in §1. Keep the raw JSON files; a summary without
+   its data cannot be re-checked.
+10. **Guard what you won.** A nightly benchmark of S1–S6 with a budget per scenario (§3.4) stops
+    a regression from shipping silently.
 
 ---
 
