@@ -417,6 +417,35 @@ byte-identical. Both Images ship with no sprite and `m_Enabled: 0`, because `Gam
 the art and whether there is any at runtime and an enabled Image with no sprite draws a white
 quad; `m_RaycastTarget: 0`, because they are decoration and must never eat the card's own click.
 
+### 3.8 The card background: one screenshot per mode, and why it is a drop folder
+
+`GameCard.UpdateCardView` does `BackgroundImage.sprite = game.CardBackground`, so the backdrop
+is authored per mode on its own `SO_ArcadeGame` (the field is inherited from `SO_Game`). Measured
+across the live roster, **22 of the 25 cards shared FOUR legacy images** from the retired
+single-player era - sixteen of them all wearing `GameCardBackground_Rampage.jpg` - and three had
+none at all, so the grid told the player almost nothing about which world a card leads to.
+
+Each card should instead wear a screenshot of **its own mode at intensity 2**, and the work splits
+cleanly in two. The capture needs the running editor and a built arena, which is play-testing;
+everything after it - import settings, guid, twenty-five inspector drags - is mechanical.
+`Tools/Build/author_card_backgrounds.py` owns the mechanical half: drop a capture at
+`Assets/_Graphics/ARCADE/CardBackgrounds/<CardName>.png` and it writes the `.meta` as a Sprite
+with the same importer settings the shipped backgrounds carry and rewires the matching card.
+`<CardName>` is the card asset's own name with `ArcadeGame` stripped, and the report prints the
+exact filename every card is waiting for, so nothing is guessed.
+
+**The roster is READ, never typed** - the live cards are whatever `ArcadeGames.asset` and
+`ArenaGames.asset` list, so a mode added to either is asked for the day it is added.
+
+**`--check` passes while captures are merely MISSING and fails only on something actually wrong**:
+a card pointing at a capture that is not on disk, a reference whose guid disagrees with the file's
+meta, or - the one that would otherwise be invisible - **a capture file no live card is named for**,
+because a misspelled filename fails by the card silently keeping its old art. Coverage is behind
+`--strict`, which is the flag to put in CI once the twenty-five exist. That split is deliberate:
+*a gate that cannot be passed on the day it lands is noise*, and this one would have failed
+twenty-five times for a reason nobody could act on from a terminal. All four failure modes were
+run as negative controls before the tool shipped.
+
 ## 4. The Toy Box drives the LIVE toys
 
 `ToyboxModal` (`_Scripts/UI/Modals/ToyboxModal.cs`) is the app-shell face of the freestyle
