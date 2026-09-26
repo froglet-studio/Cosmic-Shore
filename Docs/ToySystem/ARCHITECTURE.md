@@ -54,7 +54,7 @@ the same thing as **which fundamental it composes with**:
 
 | Category | What it changes | Composes with | Today |
 |---|---|---|---|
-| **Pilot** | YOU — the hull you fly or the colours you wear. The world is exactly where you left it. | Vessel, Domain | Vessel Changer, Domain Changer |
+| **Pilot** | YOU — the hull you fly, the colours you wear, or the elements your hull carries. The world is exactly where you left it. | Vessel, Domain, Elementals | Vessel Changer, Domain Changer, Element Charger |
 | **World** | WHERE YOU ARE — a world arrives or leaves. The heaviest thing any toy does. | Cells | Cell Selector, Wanderway, Arkway |
 | **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Lifeform Matrix |
 
@@ -89,6 +89,8 @@ this, Pilot → World → Creation. See `Docs/CODEX.md` §3.5.
 | Mini vessel model (hull filter over the above) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
 | Vessel Changer (matrix of ships) | `Assets/_Scripts/Controller/Toys/VesselChangerToy.cs` |
 | Domain Changer set | `Assets/_Scripts/Controller/Toys/DomainChangerToySet.cs` |
+| Element Charger (row of four element crystals) | `Assets/_Scripts/Controller/Toys/ElementChargerToy.cs` |
+| Element Charger config | `Assets/_Scripts/ScriptableObjects/Toys/ElementChargerToyDefinitionSO.cs` |
 | Painting gallery (matrix of paintings) | `Assets/_Scripts/Controller/Toys/PaintingGalleryToy.cs` |
 | Painting station (one per painting) | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
 | Multi-stroke fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/PaintingRunner.cs` |
@@ -653,6 +655,40 @@ is **clamped against that chord** exactly as a matrix station's is against its s
 (`SwapToySetCoordinator.SlotRingRadius` → `ToyFactory.StationRingRadius`). On the menu membrane
 (~984u) the clamp does nothing; on the toybox's no-membrane `fallbackRadius` (300u) it takes the
 ring 42 → 32.9, and without it the two rings would overlap by 17.6u.
+
+### Element Charger (`ElementChargerToy` + `ElementChargerToyDefinitionSO`)
+
+**One toy that opens into the four elements.** Fly it and a single ROW of four element crystals
+blooms out ahead (`MatrixToy`, with the new `MatrixColumns` override laying them on one line
+instead of a 2x2); fly a crystal and your vessel's level in that element rises by
+`levelsPerPass` (authored 5). Another pass through the toy folds the row away.
+
+- **The grant is a crystal's grant.** It is `ResourceSystem.AdjustLevel(element, levels / 10)` on
+  the local vessel - the same persistent BASE-level raise an elemental crystal pickup makes. So the
+  HUD flowers, the level-5 ability upgrades and the hull morphs all react through their own
+  `OnElementLevelChange` subscriptions with nothing wired for this toy, and the
+  **maintained-mechanism law holds for free**: a base raised past 10 is overcharge, and
+  `RecoverBaseLevels` bleeds it back to 10. One pass from rest reaches the level-5 upgrade, a second
+  reaches the sustained ceiling, a third is felt in the 10..15 band and drains.
+- **No networking of its own.** Element levels are simulated on the OWNING machine and never
+  replicate; a toy only ever fires for the local pilot, whose machine is the owner. Levels belong
+  to the HULL, so a vessel swap starts the new hull at its own levels.
+- **The row stays open** after a pass (unlike the vessel changer, which closes because what it
+  offered has changed): charging is something you do several times in a row, and the per-station
+  `ToyMatrixStation` cooldown is what stops one pass charging twice. A pass swells the crystal and
+  settles it back - never a scale-from-zero, which would make it vanish for the regrow.
+- **Order.** The row reads charge -> mass -> space -> time LEFT TO RIGHT for a pilot flying out from
+  the cell centre through the toy - the HUD's order. The matrix lays stations along the toy's
+  +right, which faces the centre, so +right is that pilot's LEFT; `ElementAtStation` reverses the
+  index to put Charge on the left (`ElementChargerToyTests` holds it).
+- **Elements are shape, never colour.** Every crystal is its element's canonical model
+  (`ElementCrystalModelBuilder`) in the toy's ONE accent material, and every station's ring is
+  Neutral. The emblem is core-only: the four crystals on a sub-ring.
+- **App shell.** Four leaves, not `RequiresFreestyle` (a charge from the menu is still on the hull
+  when you take the stick), so it is shuffle-eligible like the Lifeform Matrix's spawns - both are
+  additive acts rather than states, and a shuffle that charges a random element is as honest as
+  one that releases a random creature.
+- **Placement** 150 degrees: between the vessel changer (120) and the Lifeform Matrix (180).
 
 ### Painting / Connect the Dots (`PaintingGalleryToy` + `PaintingToy` + `PaintingRunner`)
 
@@ -1412,6 +1448,7 @@ destroyed toy in the registry, so every subclass override calls base.
 |---|---|---|
 | Domain Changer | all three domains, the one you wear flagged `current` | no |
 | Vessel Changer | the whole collection, the hull you fly flagged `flying` | no |
+| Element Charger | the four elements, each row reading `level N -> N+5` (or `full` at 15); commit verb **Charge** | no |
 | Cell Selector | the cell's own rotation; choosing the current one is still the reset | no |
 | Lifeform Matrix | Fauna / Flora → species → element (the world bench's Vessels hangar is deliberately NOT offered flat — `Docs/HomeHub/ARCHITECTURE.md` §4.1.4); an element row previews the lifeform and the window WATCHES the spawn | no |
 | Connect the Dots | the gallery, with live progress per canvas | **yes** |

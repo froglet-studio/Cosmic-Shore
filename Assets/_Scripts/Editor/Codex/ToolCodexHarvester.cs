@@ -122,6 +122,7 @@ namespace CosmicShore.Editor.Codex
             {
                 case VesselChangerToyDefinitionSO vessels: AddVesselChanger(entry, vessels); return;
                 case DomainChangerToyDefinitionSO: AddDomainChanger(entry); return;
+                case ElementChargerToyDefinitionSO charger: AddElementCharger(entry, charger); return;
                 case CellSelectorToyDefinitionSO cells: AddCellSelector(entry, cells); return;
                 case ConveyorToyDefinitionSO conveyor: AddConveyor(entry, conveyor); return;
                 case ArkwayToyDefinitionSO arkway: AddArkway(entry, arkway); return;
@@ -187,6 +188,30 @@ namespace CosmicShore.Editor.Codex
                 // No image is baked for these, deliberately: the variant IS a colour, and a PNG
                 // of a flat fill is a file that says nothing a swatch does not.
                 variant.AccentColor = ToyFactory.DomainAccentColor(domain);
+                entry.Variants.Add(variant);
+            }
+        }
+
+        static void AddElementCharger(CodexEntry entry, ElementChargerToyDefinitionSO definition)
+        {
+            int levels = definition.LevelsPerPass;
+            CodexHarvester.Add(entry.Stats, "Form",
+                "One station that opens into a row of the four element crystals, charge to time");
+            CodexHarvester.Add(entry.Stats, "Offers", "4 elements — Charge, Mass, Space and Time");
+            CodexHarvester.Add(entry.Stats, "Per pass", Count(levels, "level"));
+            CodexHarvester.Add(entry.Stats, "How it works",
+                "The same raise an elemental crystal gives. Levels past 10 are overcharge and drain " +
+                "back to 10, exactly as a crystal's do");
+            CodexHarvester.Add(entry.Stats, "What it keeps",
+                "Your hull, your domain and the world. A new hull starts at its own levels");
+
+            for (int i = 0; i < ElementChargerToy.MatrixElements.Count; i++)
+            {
+                var element = ElementChargerToy.MatrixElements[i];
+                var variant = Variant(element.ToString(), $"Charge {element} by {Count(levels, "level")}");
+                // The variant IS an element, so it resolves to that element's own ethirion image
+                // at draw time (CodexSO.VariantImage) - nothing is baked for it.
+                variant.Element = element;
                 entry.Variants.Add(variant);
             }
         }

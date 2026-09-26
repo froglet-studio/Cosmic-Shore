@@ -59,6 +59,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected abstract void BuildStation(int index, Transform parent, Vector3 position, float radius);
 
+        /// <summary>
+        /// How many columns a matrix of <paramref name="count"/> stations is laid out in. Default:
+        /// a roughly square grid. A toy whose stations are an ORDERED row (the element charger's
+        /// charge → mass → space → time) overrides it to lay them on one line.
+        /// </summary>
+        protected virtual int MatrixColumns(int count) => Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(count)));
+
         /// <summary>Hook after every station is built (e.g. start streaming their contents).</summary>
         protected virtual void OnMatrixOpened() { }
 
@@ -98,7 +105,7 @@ namespace CosmicShore.Gameplay
             Vector3 right = transform.right;
             Vector3 up = transform.up;
 
-            int cols = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(count)));
+            int cols = Mathf.Clamp(MatrixColumns(count), 1, count);
             int rows = Mathf.CeilToInt(count / (float)cols);
 
             for (int i = 0; i < count; i++)
