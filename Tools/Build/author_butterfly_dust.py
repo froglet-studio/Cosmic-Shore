@@ -423,7 +423,7 @@ MonoBehaviour:
   motesPer100Volume: 3.5
   maxMotesPerSecond: 260
   moteLifetime: 1.1
-  moteSize: {{x: 0.5, y: 1.6}}
+  moteSize: {{x: 2.5, y: 6}}
   fallSpeed: 6
 """
 out[DUST_PREFAB] = dust

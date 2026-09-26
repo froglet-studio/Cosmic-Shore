@@ -122,18 +122,35 @@ namespace CosmicShore.Gameplay
         public event Action<InputEvents> OnInputEventStopped;
         IVesselStatus vesselStatus;
         bool _subscribedToInputPaused;
+        IInputStatus _pauseSource;
 
+        // IDEMPOTENT, and it has to be. Three paths subscribe this handler to the button channels
+        // - VesselController.Initialize and ChangePlayer for the local pilot, and every input
+        // un-pause through OnToggleInputPaused - and nothing orders them. The Player's pause is a
+        // NetworkVariable that PERSISTS across scenes, so whether an un-pause lands after
+        // Initialize depends on history: returning to Menu_Main from a match (paused at the end)
+        // re-inits the vessel (+1) and then StartPlayer un-pauses it (+1 again). A C# event
+        // accepts the same delegate twice, so the handler then ran EVERY press twice. Holds
+        // survive that - a second Engage on a held ability is a no-op - which is why it went
+        // unseen for the whole fleet; a TOGGLE does not, and the Butterfly's right trigger
+        // flipped Mass -> Dust -> Mass on every pull and read as a button that did nothing.
         void SubscribeToInputEvents()
         {
+            if (_subscribedToInputEvents) return;
+            _subscribedToInputEvents = true;
             _onButtonPressed.OnRaised  += OnButtonPressed;
             _onButtonReleased.OnRaised += OnButtonReleased;
         }
 
         void UnsubscribeFromInputEvents()
         {
+            if (!_subscribedToInputEvents) return;
+            _subscribedToInputEvents = false;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
         }
+
+        bool _subscribedToInputEvents;
 
         void OnDisable()
         {
@@ -144,9 +161,10 @@ namespace CosmicShore.Gameplay
             // The event lives on the Player, so it's GC'd with it - skip the unsubscribe.
             if (_subscribedToInputPaused && vesselStatus?.Player is UnityEngine.Object obj && obj != null)
             {
-                vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;
-                _subscribedToInputPaused = false;
+                if (_pauseSource != null) _pauseSource.OnToggleInputPaused -= OnToggleInputPaused;
             }
+            _subscribedToInputPaused = false;
+            _pauseSource = null;
         }
 
         public override void OnNetworkDespawn()
@@ -219,9 +237,19 @@ namespace CosmicShore.Gameplay
             ShipHelper.InitializeShipControlActions(vesselStatus, _gamepadActionOverrides, _gamepadOverrideActions);
             ShipHelper.InitializeClassResourceActions(_resourceEventClassActions, _classResourceActions);
 
+            // Same idempotence as the button channels, for the same reason: Initialize re-runs on
+            // a live vessel (a re-init, the ownership swap), and a second += here would make every
+            // pause toggle subscribe and unsubscribe twice. Detach from whatever status we were
+            // listening to first, since a re-init may hand this vessel a different player.
+            if (_subscribedToInputPaused && _pauseSource != null)
+                _pauseSource.OnToggleInputPaused -= OnToggleInputPaused;
+            _subscribedToInputPaused = false;
+            _pauseSource = null;
+
             if (vesselStatus.IsLocalUser)
             {
-                vesselStatus.InputStatus.OnToggleInputPaused += OnToggleInputPaused;
+                _pauseSource = vesselStatus.InputStatus;
+                _pauseSource.OnToggleInputPaused += OnToggleInputPaused;
                 _subscribedToInputPaused = true;
             }
         }

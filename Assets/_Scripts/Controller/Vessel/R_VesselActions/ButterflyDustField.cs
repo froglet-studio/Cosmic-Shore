@@ -49,7 +49,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float maxMotesPerSecond = 260f;
 
         [SerializeField, Min(0.05f)] float moteLifetime = 1.1f;
-        [SerializeField] Vector2 moteSize = new(0.5f, 1.6f);
+
+        [Tooltip("Mote size range in WORLD units. Sized for the Butterfly's own camera, which sits " +
+                 "~204 units back: at that range a world unit is ~2.6 px at 1080p, so the original " +
+                 "0.5-1.6 motes were 1-4 px and Dust mode read as nothing happening at all.")]
+        [SerializeField] Vector2 moteSize = new(2.5f, 6f);
 
         [Tooltip("Motes drift slowly downward, as dust falls off a wing.")]
         [SerializeField] float fallSpeed = 6f;
