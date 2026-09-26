@@ -119,6 +119,34 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
+        /// The domain's SHIELDED base face at SIGNAL strength - the fourth sibling of
+        /// <see cref="GetDomainSignalColor"/>, <see cref="GetCtaSignalColor"/> and
+        /// <see cref="GetDangerSignalColor"/>, and needed for the same reason a third time over:
+        /// a UI surface that has to say "this is SHIELDED mass, in this domain" must not read a
+        /// prism colour raw.
+        ///
+        /// <para>The shielded tier is its rim (<c>ShieldedInsideBlockColor</c>) over its base face
+        /// (<c>ShieldedOutsideBlockColor</c>) - see <see cref="GetPrismKindColors"/> - and it is the
+        /// BASE FACE that carries the tier's domain hue, which is why this reads that half. The
+        /// shipped <c>OriginalColorSetSO</c> authors it dark by design (Jade
+        /// (0.087, 0.237, 0.484), the darkest channel peak in the palette): correct on a prism,
+        /// where a bright rim sits over it, and a near-black smudge in a UI slot that composes
+        /// nothing. Normalised here to that hue with its brightest channel driven to 1.</para>
+        ///
+        /// <para>Alpha 0 when the domain authors no shielded base at all, so a caller keeps
+        /// whatever it already had rather than painting something black - the same contract the
+        /// CTA and danger siblings have, for the same reason.</para>
+        /// </summary>
+        public Color GetShieldedSignalColor(Domains domain)
+        {
+            if (!TryGetColorSetByDomain(domain, out var colorSet)) return new Color(0f, 0f, 0f, 0f);
+            var c = colorSet.ShieldedOutsideBlockColor;
+            float peak = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+            if (c.a <= 0f || peak <= 0.001f) return new Color(0f, 0f, 0f, 0f);
+            return new Color(c.r / peak, c.g / peak, c.b / peak, 1f);
+        }
+
+        /// <summary>
         /// The per-domain accent for translucent flat-UI card tints (Maelstrom round/player/summary
         /// cards, Connecting-panel domain rank) - deliberately brighter than
         /// <see cref="DomainColorSet.TrailHighlightColor"/> and alpha-tinted so card backgrounds stay

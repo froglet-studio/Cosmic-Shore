@@ -294,11 +294,33 @@ palette authors no danger colour at all — `CosmicWaveColorSetSO` and `PastelCo
 `ThemeManagerDataContainerSO.GetDangerSignalColor()` is the null-safe wrapper with the same
 contract.
 
-**General shape, now three for three: a colour authored FOR A SHADER is not a colour a UI slot may
+### 2.7 And on SHIELDED — `GetShieldedSignalColor` (2026-09-26)
+
+The fourth sibling, and the first where the trap is neither HDR nor alpha but **darkness**. The
+Squirrel's OMNI CRYSTAL card draws a ring of shielded prisms and wants to be the colour those prisms
+will actually be, so it reads the shielded tier's **base face** — the half that carries the tier's
+domain hue (§ "The danger tier borrows the shielded base" explains why it is the base and not the
+rim).
+
+| domain | `ShieldedOutsideBlockColor` raw | `GetShieldedSignalColor()` | reads as |
+|---|---|---|---|
+| Jade | (0.0868, 0.2367, 0.4843) | (0.179, 0.489, 1.000) | blue |
+| Ruby | (0.3346, 0.1639, 0.4751) | (0.704, 0.345, 1.000) | violet |
+| Gold | (0.3134, 0.2099, 0.0821) | (1.000, 0.670, 0.262) | amber |
+
+Every one of those is SDR with alpha 1 — so neither of §2.5's and §2.6's traps fires — and every one
+peaks **under 0.49**, which on a near-black plate is a smudge. It is authored that way *correctly*:
+on a prism a bright `ShieldedInsideBlockColor` rim (peak 1.5) sits over it, and the pair is what the
+player sees. A UI slot composes nothing, so it gets the base alone and the tier goes dark. Alpha 0
+back when the domain authors no shielded base, per §2.4.
+
+**General shape, now FOUR for four: a colour authored FOR A SHADER is not a colour a UI slot may
 read.** The shader composes it (a crystal lerps dull→bright by fresnel; a prism takes the rim over
-the base), tolerates HDR, and never looks at alpha. Every one of these three fields has now caught
-somebody out in the same way, so the rule is: when a HUD wants to speak the palette's language, add
-a `*SignalColor` accessor rather than reading the field.
+the base), tolerates HDR, and never looks at alpha. Each of these four fields has caught somebody out,
+and — worth noting — in three *different* ways: black (§2.4), a dark hue read as the wrong colour
+(§2.5), HDR **and** transparent (§2.6), and simply too dark to see (§2.7). So the rule is not "watch
+for HDR" or "watch for alpha": it is that when a HUD wants to speak the palette's language, add a
+`*SignalColor` accessor rather than reading the field, whatever the field looks like.
 
 ## 3. The colour-space rule (this is the trap)
 

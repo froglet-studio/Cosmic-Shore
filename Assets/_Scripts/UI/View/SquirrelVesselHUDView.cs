@@ -256,16 +256,6 @@ namespace CosmicShore.UI
             rt.localScale = Vector3.one;
         }
 
-        static T ResolveGeneratedChild<T>(RectTransform parent, string name) where T : Component
-        {
-            var existing = parent.Find(name);
-            var found = existing ? existing.GetComponent<T>() : null;
-            if (found) return found;
-
-            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(T));
-            go.transform.SetParent(parent, false);
-            return go.GetComponent<T>();
-        }
 
         /// <summary>
         /// The steal's live reach, 0 at the skimmer's authored resting size and 1 at full Space.

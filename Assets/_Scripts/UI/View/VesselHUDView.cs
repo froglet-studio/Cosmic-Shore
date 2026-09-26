@@ -42,8 +42,13 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// A <b>non-elemental</b> ability's bindings. Same two visuals as an elemental one - an icon
-        /// and an optional meter - and no <see cref="Element"/>, because nothing upgrades it: the
-        /// lockup draws these cards with NO element cell above the plate.
+        /// and an optional meter - and no <see cref="Element"/>, because nothing upgrades it.
+        ///
+        /// <para>Above the plate the card carries an <see cref="emblem"/> if this binding names
+        /// one and NOTHING if it does not, which is the difference between the two cards the fleet
+        /// has: the Squirrel's drift is a bare plate, the omni crystal's is a plate under the
+        /// crystal's own mark. It is never a flower - a flower is a LEVEL readout and there is no
+        /// element here to level.</para>
         /// </summary>
         [Serializable]
         public struct CoreAbilityBinding
@@ -60,6 +65,13 @@ namespace CosmicShore.UI
             [Tooltip("Optional meter for this ability. Re-homed into the card and restyled as the " +
                      "fleet's one gauge; the vessel keeps writing fillAmount on the same Image.")]
             public Image gauge;
+
+            [Tooltip("Optional mark for the card's UPPER plate, where an elemental card carries " +
+                     "its element flower. Leave empty and the card has no upper cell at all - " +
+                     "which is the drift's shape. The omni crystal card names the crystal's own " +
+                     "emblem here, and it is deliberately NOT domain-tinted: an omni crystal " +
+                     "belongs to nobody until somebody takes it.")]
+            public Image emblem;
 
             [Tooltip("The control this ability is bound to, for the card's control chip. An " +
                      "ELEMENTAL card takes this from the vessel's ElementalAbilityMapSO entry; a " +
@@ -84,8 +96,13 @@ namespace CosmicShore.UI
         /// go on reading left-to-right as charge / mass / space / time with nothing interleaved, or
         /// "which flower upgrades this?" stops being answered by position.
         /// </summary>
+        /// <para>The omni crystal sits LAST, i.e. nearest Charge, and that is a layout argument
+        /// rather than a preference: it is the one non-elemental card with an upper cell, so
+        /// putting it against the elemental row makes the upper cells one continuous band and
+        /// leaves the drift's bare plate at the far end. Between them the band would have a hole
+        /// in it.</para>
         public static readonly CoreAbility[] CoreAbilityDisplayOrder =
-            { CoreAbility.Drift };
+            { CoreAbility.Drift, CoreAbility.OmniCrystal };
 
         [Header("Button highlights")] public List<HighlightBinding> highlights = new();
 
@@ -101,6 +118,19 @@ namespace CosmicShore.UI
                  "with an ability plate and NO element flower above it, placed left of the four " +
                  "elemental cards. Empty on most vessels; the Squirrel binds its drift here.")]
         public List<CoreAbilityBinding> coreAbilities = new();
+
+        [Header("Omni crystal card (structural - EVERY vessel has one)")]
+        [Tooltip("What THIS hull does when it flies through an omni crystal, as a picture. The " +
+                 "card itself is not optional and is not authored here - the lockup draws it on " +
+                 "every vessel, with the crystal's own emblem in its upper plate, because every " +
+                 "vessel can fly through a crystal. This is only the LOWER plate's art.\n\n" +
+                 "Leave it EMPTY on a hull whose omni crystal has no picture yet and the card " +
+                 "renders LOCKED, which is the honest state - an ability that does not exist is " +
+                 "not the same as one the player has not unlocked, and the locked card says the " +
+                 "first. Two hulls will always be empty here: the Urchin's crystal branch is " +
+                 "haptics only, and the Scarab's is empty by design because its SKIMMER forges " +
+                 "the crystal into a ball before the hull reaches it.")]
+        [SerializeField] private Sprite omniAbilitySprite;
 
         [Tooltip("Persistent scale an upgraded ability icon rests at while the upgrade is active.")]
         [SerializeField] private float upgradeHighlightScale = 1.15f;
@@ -173,6 +203,19 @@ namespace CosmicShore.UI
                 return true;
             }
             icon = null;
+            return false;
+        }
+
+        /// <summary>The upper-plate mark of a non-elemental ability, if the vessel authored one.</summary>
+        public bool TryGetCoreAbilityEmblem(CoreAbility ability, out Image emblem)
+        {
+            foreach (var binding in coreAbilities)
+            {
+                if (binding.ability != ability || !binding.emblem) continue;
+                emblem = binding.emblem;
+                return true;
+            }
+            emblem = null;
             return false;
         }
 
@@ -303,6 +346,116 @@ namespace CosmicShore.UI
         /// nothing at all, so every other vessel is byte-for-byte unchanged.</para>
         /// </summary>
         public virtual void EnsureGeneratedAbilityIcons() { }
+
+        /// <summary>
+        /// Builds the OMNI CRYSTAL card's lower-plate icon, on every vessel, from the one sprite
+        /// that vessel authors for it. Called by <see cref="AbilityLockupView.Build"/> beside
+        /// <see cref="EnsureGeneratedAbilityIcons"/>.
+        ///
+        /// <para>It is NOT virtual and NOT opt-in, for the same reason the lockup itself is not: a
+        /// card a vessel can forget is a card most vessels will be missing, and every vessel can
+        /// fly through a crystal. The card's UPPER plate is drawn by the lockup from the fleet-wide
+        /// style, so a hull that authors nothing here still gets the crystal emblem and a LOCKED
+        /// plate under it.</para>
+        ///
+        /// <para>Idempotent, and the host is created OUTSIDE the row - the lockup re-homes it -
+        /// so a rebuild finds what it made last time.</para>
+        /// </summary>
+        public void EnsureOmniCrystalCard()
+        {
+            if (!omniAbilitySprite || _omniAbilityIcon) return;
+
+            var host = transform.Find(OmniHostName) as RectTransform;
+            if (!host)
+            {
+                host = new GameObject(OmniHostName, typeof(RectTransform))
+                    .GetComponent<RectTransform>();
+                host.SetParent(transform, false);
+            }
+
+            _omniAbilityIcon = ResolveGeneratedChild<Image>(host, "OmniCrystalIcon");
+            var rt = _omniAbilityIcon.rectTransform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(AuthoredOmniIconSize, AuthoredOmniIconSize);
+            _omniAbilityIcon.sprite = omniAbilitySprite;
+            _omniAbilityIcon.raycastTarget = false;
+            _omniAbilityIcon.color = _omniTint.a > 0f ? _omniTint : Color.white;
+
+            BindCoreAbilityIcon(CoreAbility.OmniCrystal, _omniAbilityIcon);
+        }
+
+        /// <summary>
+        /// Tints the omni crystal card's LOWER icon - what this hull's crystal pickup leaves
+        /// behind. Pushed by the vessel's controller rather than read here, because a view holds no
+        /// <c>GameDataSO</c>; the same shape as every other palette push on this HUD.
+        ///
+        /// <para>Alpha 0 means "the palette authors no such colour", and the icon then KEEPS its
+        /// white rather than being painted black - a black icon reads as "not implemented" where a
+        /// white one reads as untinted (<c>Docs/PALETTE.md §2.4</c>).</para>
+        ///
+        /// <para>The EMBLEM above it is deliberately untouched by this. The emblem is the crystal,
+        /// which belongs to nobody; the icon is what YOUR hull makes of it.</para>
+        /// </summary>
+        public void SetOmniAbilityTint(Color tint)
+        {
+            _omniTint = tint;
+            if (_omniAbilityIcon && tint.a > 0f) _omniAbilityIcon.color = tint;
+        }
+
+        const string OmniHostName = "OmniCrystalButton";
+
+        // The fleet's authored icon size. The lockup kerns whatever it finds to iconBoxSize, so
+        // this only has to be the size the row's other icons are authored at - not a magic number
+        // the card depends on.
+        const float AuthoredOmniIconSize = 80f;
+
+        private Image _omniAbilityIcon;
+        private Color _omniTint = new Color(0f, 0f, 0f, 0f);
+
+        /// <summary>
+        /// Points a NON-elemental card at an icon built at runtime. The core-ability twin of
+        /// <see cref="BindGeneratedAbilityIcon"/>, with the same rule: authored art always wins.
+        /// </summary>
+        protected void BindCoreAbilityIcon(CoreAbility ability, Image icon)
+        {
+            if (!icon) return;
+
+            for (int i = 0; i < coreAbilities.Count; i++)
+            {
+                if (coreAbilities[i].ability != ability) continue;
+                if (coreAbilities[i].icon) return;         // authored art wins
+                var binding = coreAbilities[i];
+                binding.icon = icon;
+                coreAbilities[i] = binding;
+                return;
+            }
+
+            // FullSpeedStraightAction is the input enum's zero and the project's passive sentinel:
+            // collecting a crystal is contact, so this card draws no control chip.
+            coreAbilities.Add(new CoreAbilityBinding
+            {
+                ability = ability,
+                icon = icon,
+                input = InputEvents.FullSpeedStraightAction,
+            });
+        }
+
+        /// <summary>
+        /// Find-or-create a named child carrying <typeparamref name="T"/>. Shared by every
+        /// generated HUD readout so a rebuild is idempotent by NAME rather than by a cached
+        /// reference that a domain reload drops.
+        /// </summary>
+        protected static T ResolveGeneratedChild<T>(RectTransform parent, string name)
+            where T : Component
+        {
+            var existing = parent.Find(name);
+            var found = existing ? existing.GetComponent<T>() : null;
+            if (found) return found;
+
+            var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(T));
+            go.transform.SetParent(parent, false);
+            return go.GetComponent<T>();
+        }
 
         /// <summary>
         /// Points an ELEMENT's card at an icon built at runtime, adding the entry when the vessel

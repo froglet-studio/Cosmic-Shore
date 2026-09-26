@@ -487,8 +487,8 @@ locked cards exactly as they would into live ones.
 Not every ability an element could upgrade *is* one. A hull's **engine** — the thing it always has,
 that the other four spend — belongs on the row and has no flower to sit under. Since 2026-09-24 the
 lockup draws those as **core cards**: an ability plate with its gauge, its cooldown veil, its press
-flash and its control chip, and **no element cell above it at all**. They are keyed on
-`CosmicShore.Data.CoreAbility` (`Drift` is the first and only member today) for the same reason the
+flash and its control chip, and above it an **emblem** or nothing — never a flower. They are keyed on
+`CosmicShore.Data.CoreAbility` (`Drift`, `OmniCrystal`) for the same reason the
 elemental cards are keyed on `Element` — a card is addressed by a compile-time name rather than by a
 string a prefab can typo, and a member added to that enum is the whole of what a new one costs.
 
@@ -506,9 +506,102 @@ the **host's origin**. A core card is `abilityCellHeight` tall at offset zero wi
 which is the same place. The control chip hangs off the card's own bottom edge either way. Measured
 on the shipped style: ability plate at host Y **+0.0** both ways, chip centre at **−62.0** both ways.
 
-`Element.None` is what selects the shape — the sentinel doing the job it exists for — rather than a
-second bool: `BuildSlot(cardName, host, icon, flowerElement)` skips the element bloom, the element
-plate and the flower socket when handed it.
+`Element.None` is what selects the ELEMENTAL shape — the sentinel doing the job it exists for —
+rather than a second bool: `BuildSlot(cardName, host, icon, flowerElement, emblem, emblemSprite)`
+skips the flower socket when handed it. Whether there is an upper cell **at all** is then a separate
+question, answered by whether the card has an emblem, so there are **three** shapes and the upper
+cell is the thing that differs:
+
+| card | upper cell | example |
+|---|---|---|
+| elemental | the element **flower** (a level readout) | Charge · Mass · Space · Time |
+| core, with an emblem | a static **mark** (a name) | `OmniCrystal` |
+| core, bare | nothing; the rect collapses to the ability cell | `Drift` |
+
+The emblem shares the socket position, the plate, the bloom and the whole Y arithmetic with the
+flower. What differs is only what is docked, because **a flower is a level readout and an emblem is a
+name** — which is also why the emblem is drawn **untinted**: it answers *what is this card*, the same
+answer on every hull and for every domain.
+
+### The OMNI CRYSTAL card (2026-09-26) — the first emblem, and the first card no vessel may skip
+
+`CoreAbility.OmniCrystal` is what a hull does when it flies through an omni crystal. It is
+non-elemental for the literal reason its name gives — an omni crystal is every element and therefore
+none, so no flower belongs over it — and it is bound to **no input on any vessel and never will be**,
+because collecting a crystal is CONTACT: `FullSpeedStraightAction` (the input enum's zero, this
+project's passive sentinel) maps to no physical control, so the card draws a blank chip.
+
+**It is STRUCTURAL, like the lockup itself.** `VesselHUDView.EnsureOmniCrystalCard` is not virtual
+and not opt-in, and `AbilityLockupView.Build` calls it beside `EnsureGeneratedAbilityIcons` — because
+a card a vessel can forget is a card most vessels will be missing, and *every* vessel can fly through
+a crystal. That needed one change to the core build pass, which previously `continue`d on a binding
+with no icon: a core card now resolves a **locked host** exactly as an elemental one does
+(`ResolveLockedHost(row, key)`, generalised off the enum onto a string so both callers share one
+body). Without it the card would VANISH on a hull with no art rather than read as undesigned.
+
+**The two halves come from different places, and that is the design.** The upper plate's emblem is
+one authored row on the fleet-wide style (`AbilityLockupStyleSO.coreAbilityEmblems`, pointing at
+`ElementIcons/OmniCrystal_Active.png` — the same crystal the Dolphin's Mass card wears), because the
+mark means the same thing on every hull; authoring it per-vessel would be eight chances to disagree
+about one fact. The lower plate's icon is per-vessel (`VesselHUDView.omniAbilitySprite`), because
+what a crystal *does* is a property of the hull.
+
+**An unauthored emblem is not a blank plate — it is NO plate**, which silently makes the omni card
+the same shape as the drift's. Both `AbilityLockupStyleTests` and the auditor assert the row exists,
+with the drift as the negative control (it must author none, which is what proves the emblem is
+opt-in per ability rather than something every core card gets).
+
+Measured off the shipped `vesselCrystalEffects`, what each hull actually does:
+
+| hull | omni crystal | card today |
+|---|---|---|
+| **Squirrel** | lays a ring of **shielded** prisms (`AOEShieldedRingSpawner`) | its own baked icon, tinted |
+| Manta | detonates its planted bombs (Kabloom) | locked |
+| Dolphin | fires its blast, and a resource change | locked |
+| Rhino | a blast, and a resource change | locked |
+| Serpent | a blast | locked |
+| Sparrow | an 8 s debuff **ward** | locked |
+| Urchin | haptics only — nothing a card can draw | locked, permanently |
+| Scarab | **nothing, by design** — its SKIMMER forges the crystal into a ball before the hull reaches it | locked, permanently |
+
+Six of those are art the fleet does not have yet, so they ship LOCKED. That is the honest state and
+exactly what a locked card is for: *an ability that does not exist is not the same as one the player
+has not unlocked, and the locked card says the first.*
+
+#### The Squirrel's icon is a MEASUREMENT of its own ability
+
+`Tools/Build/author_squirrel_shielded_ring_icon.py` (`--check`) bakes it, and it is the sibling of
+`author_squirrel_boost_ring_icon.py` in every respect: the ring's cross-section seen endwise, with
+`prismsPerRing` / `ringRadius` / `prismScale` read out of `AOEShieldedRingSpawner.prefab` (and its
+BASE prefab, since a variant carries only its overrides and reading either file alone gets a
+different ring) rather than restated, so `--check` fails the day the ability is retuned. It also
+fails if `isShielded` ever goes to 0, because the icon would then be describing an ability that does
+not exist.
+
+**The 45° turn is not styling — it is what a shield IS.** `PrismStateManager.ActivateShield` engages
+the CIRCUMSCRIBING octahedron (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE`, read from the shipped
+C#), and an octahedron's cross-section perpendicular to one axis is exactly the box's square turned
+45° and grown to the octahedron's own reach. So a shielded prism reads as a **diamond** where a bare
+one reads as a **square**, and the icon says "shielded" by drawing the armour rather than by being
+told to. Measured at the shipped numbers (8 prisms, radius 8.2, leaf 1.8, scale 3): diamond
+half-diagonal **2.7**, minimum gap between neighbouring shields **1.287** world units — which is
+simultaneously a statement about the icon and about the ability, since two octahedra that
+interpenetrate on screen are what `fit_shield_clearance.py` exists to prevent.
+
+The honest consequence, stated: the boost ring and the shielded ring are **nearly the same figure**
+— both 8 prisms at radius ~8 — so the two icons are each other's 45° rotation and differ only in
+which positions carry diamonds. That is the family resemblance the design asks for, and **colour is
+what tells them apart**: the boost ring wears the palette's DANGER rim (it lays danger prisms) and
+this one wears the pilot's own domain's **shielded base face** at signal strength
+(`SO_ColorSet.GetShieldedSignalColor` → `ThemeManagerDataContainerSO` → `SquirrelVesselHUDController`
+→ `VesselHUDView.SetOmniAbilityTint`).
+
+That accessor is the **fourth** `*SignalColor` sibling and exists for the reason the other three do
+(`Docs/PALETTE.md §2.6`): `ShieldedOutsideBlockColor` is authored DARK by design — Jade's is
+(0.087, 0.237, 0.484) — which is correct on a prism, where a bright rim sits over it, and a
+near-black smudge in a UI slot that composes nothing. Normalised, the three domains land on a clear
+blue, a violet and an amber. Alpha 0 when the palette authors none, so the icon keeps its white
+rather than being painted black.
 
 **There is deliberately no `SetCoreAbilityUpgraded`.** An upgrade is an element reaching level 5, and
 a core ability has no element, so nothing could ever raise it. Everything else a card can do is

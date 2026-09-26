@@ -429,6 +429,71 @@ narrower aspect it runs off the left. The card count is read from `VesselHUDView
 tightens the bound automatically instead of quietly invalidating it** — the same argument as deriving
 an icon's scale from `iconBoxSize`. Max pitch at five cards: **204**.
 
+## Eighth pass (2026-09-26): the OMNI CRYSTAL card, fleet-wide
+
+The row gained a **sixth** card — `CoreAbility.OmniCrystal`, the second non-elemental one — and it
+is the first card **no vessel may skip**: `VesselHUDView.EnsureOmniCrystalCard` is not virtual and
+not opt-in, called by `AbilityLockupView.Build` beside `EnsureGeneratedAbilityIcons`, because every
+hull can fly through a crystal. Full contract: `Docs/ABILITY_LOCKUP.md` § "The OMNI CRYSTAL card".
+
+**The card introduced the EMBLEM**, which is the one genuinely new idea here. A core card previously
+had no upper cell at all; now it has one if the style names a mark for it. So the lockup draws three
+shapes and the upper cell is what differs — an elemental card's **flower** (a level readout), a core
+card's **emblem** (a name), or nothing (the drift). The emblem shares the socket, the plate, the
+bloom and every bit of the Y arithmetic with the flower; only what is docked differs. It is drawn
+**untinted**, deliberately: an omni crystal belongs to nobody until somebody takes it, which is the
+same thing the crystal's own palette says (`Docs/PALETTE.md §2.2`).
+
+**The two halves come from different places and that is the design.** The emblem is ONE row on the
+fleet-wide style (`AbilityLockupStyleSO.coreAbilityEmblems` → `ElementIcons/OmniCrystal_Active.png`,
+the same crystal the Dolphin's Mass card wears) because the mark means the same thing on every hull;
+the lower icon is per-vessel (`omniAbilitySprite`) because what a crystal *does* is a property of
+the hull. Only the Squirrel authors one today — the other seven render **LOCKED**, which is what a
+locked card is for, and six of them have a real ability waiting for art (the table is in the lockup
+doc).
+
+### The Squirrel's icon is a measurement, not a drawing
+
+`Tools/Build/author_squirrel_shielded_ring_icon.py` (`--check`) is the exact sibling of
+`author_squirrel_boost_ring_icon.py`: the ring's cross-section seen endwise, with every number read
+out of the shipped assets rather than restated — `prismsPerRing` / `ringRadius` / `prismScale` from
+`AOEShieldedRingSpawner.prefab` **and its base prefab** (a variant carries only its overrides, so
+reading either file alone gets a different ring), and `CIRCUMSCRIBING_SCALE` from
+`OctahedronMeshGenerator.cs`. It also fails if `isShielded` ever goes to 0, because the icon would
+then be describing an ability that does not exist.
+
+**The 45° turn the request asked for is what a shield IS.** `ActivateShield` engages the
+circumscribing octahedron, and an octahedron's cross-section perpendicular to one axis is exactly
+the box's square turned 45° and grown to the octahedron's own reach — so a shielded prism reads as a
+**diamond** where a bare one reads as a **square**. At the shipped numbers (8 prisms, radius 8.2,
+leaf 1.8, scale 3) the diamond's half-diagonal is **2.7** and neighbouring shields clear by **1.287**
+world units, which is simultaneously a statement about the icon and about the ability.
+
+**Stated plainly, because it is the interesting cost: the two rings are nearly the same figure.**
+Both are 8 prisms at radius ~8, so the icons are each other's 45° rotation and differ only in which
+positions carry diamonds. That IS the family resemblance the request asked for, and **colour is what
+separates them** — the boost ring wears the palette's DANGER rim, this one wears the pilot's own
+domain's shielded base face at signal strength (`SO_ColorSet.GetShieldedSignalColor`, the fourth
+`*SignalColor` sibling; `Docs/PALETTE.md §2.7`).
+
+### Two findings
+
+**1. A survey that mis-parses reads exactly like a survey.** The first pass at "which hulls do
+something with an omni crystal" used a regex that stopped at the wrong block and reported the
+Dolphin and Urchin as authoring NO crystal effects. Both do. The wrong answer was written into two
+doc comments before it was re-measured, and it was plausible enough to survive review — the Scarab
+really is empty, so one third of the claim was right and carried the other two. *When a survey's
+output is a table, spot-check one row against the file by eye before quoting it.* Corrected: only
+the **Scarab** is empty (by design — its skimmer forges the crystal into a ball before the hull
+reaches it), and the **Urchin** is haptics-only.
+
+**2. A core card with no icon used to VANISH, not lock.** The lockup's core pass `continue`d on a
+binding with no icon, where the elemental pass falls back to a locked host — a difference that
+cost nothing while the only core card was one the Squirrel authors, and would have silently
+deleted the omni card from seven hulls. Both passes now share one `ResolveLockedHost`, generalised
+off the enum onto a string. *An extension point that has only ever had one user has only ever been
+tested for that user's shape.*
+
 ## Findings worth more than the change
 
 **1. `superSteal` already existed and nobody passed it.** `PrismTeamManager.Steal`'s third parameter
@@ -535,6 +600,15 @@ Nothing below has been run; there is no Unity in this session.
    clearly wider than the gap between a card's own two plates (24 against 6), on EVERY vessel, not
    just this one: open the Dolphin, Scarab and Sparrow HUDs too and confirm their rows moved with
    it. Then confirm the leftmost card is still comfortably clear of the screen's middle.
+6j. **The omni crystal card** — the eighth pass, and it must be checked on MORE than this vessel.
+   On the **Squirrel**: a SIXTH card sits between the drift and Charge, its upper plate carrying the
+   omni crystal emblem in plain white (NOT a domain colour, and NOT a flower), its lower plate
+   carrying a ring of eight blue diamonds. Fly through an omni crystal and confirm the ring of
+   shielded prisms it lays is the same colour as the icon. Then switch domain at the domain-changer
+   toy and confirm the icon follows (Jade blue → Ruby violet → Gold amber) while the emblem above it
+   does not change at all. Then open the **Dolphin, Scarab, Sparrow, Manta, Rhino and Serpent** and
+   confirm each has the same card with the same emblem and a LOCKED lower plate — a card that is
+   MISSING on any of them is the failure mode the locked-host fallback was added for.
 7. **Iron Grip** — skim an opposing **shielded** prism below Space 5: it should lose its shield and
    keep its domain. At Space 5: it should change domain **and keep the shield**. Then confirm a
    **super**-shielded prism is refused at both levels.

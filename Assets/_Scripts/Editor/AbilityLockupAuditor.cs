@@ -205,6 +205,23 @@ namespace CosmicShore.Editor
                                   $"{widestRow} cards: {maxPitch:0.#}.");
                 problems++;
             }
+            // A core card's upper cell exists only if the style gives it a mark. An unauthored
+            // emblem is not a blank plate - it is no plate, so the omni crystal card quietly
+            // becomes the same shape as the drift's and stops saying what it is.
+            if (!style.EmblemFor(CoreAbility.OmniCrystal))
+            {
+                report.AppendLine("  ✗ no coreAbilityEmblems row for OmniCrystal - its card would " +
+                                  "draw with NO upper cell, which is the drift's shape, not its own.");
+                problems++;
+            }
+            for (int i = 0; i < style.coreAbilityEmblems.Count; i++)
+            {
+                if (style.coreAbilityEmblems[i].sprite) continue;
+                report.AppendLine($"  ✗ coreAbilityEmblems[{i}] ({style.coreAbilityEmblems[i].ability}) " +
+                                  "has no sprite - it declares an upper cell and then leaves it empty.");
+                problems++;
+            }
+
             if (!Mathf.Approximately(style.chipGap, style.cellGap))
             {
                 report.AppendLine($"  ✗ chipGap {style.chipGap} has drifted from cellGap {style.cellGap} - " +
@@ -378,13 +395,27 @@ namespace CosmicShore.Editor
         {
             foreach (var ability in VesselHUDView.CoreAbilityDisplayOrder)
             {
-                if (!view.TryGetCoreAbilityIcon(ability, out var icon) || !icon) continue;
+                var emblem = style ? style.EmblemFor(ability) : null;
+                string cell = emblem ? $"emblem '{emblem.name}'" : "no element cell";
+
+                if (!view.TryGetCoreAbilityIcon(ability, out var icon) || !icon)
+                {
+                    // An icon is resolved at BUILD time on a card the lockup generates, so an
+                    // asset read cannot tell "this hull has no omni ability" from "its icon has
+                    // not been generated yet". Say which question is open rather than either
+                    // answer - the omniAbilitySprite field is the one that decides it.
+                    if (emblem)
+                        report.AppendLine($"             core card '{ability}' ({cell}): no icon bound on " +
+                                          "the ASSET - draws LOCKED unless this vessel authors an " +
+                                          "omniAbilitySprite, which the lockup turns into one at build time");
+                    continue;
+                }
 
                 float authored = AuthoredIconSize(icon.rectTransform, out bool readable);
                 string size = readable ? $"{authored:0} → {style.iconBoxSize}" : "size unreadable";
                 bool hasGauge = view.TryGetCoreAbilityGauge(ability, out var gauge) && gauge;
 
-                report.AppendLine($"             core card '{ability}' (no element cell, left of Charge): " +
+                report.AppendLine($"             core card '{ability}' ({cell}, left of Charge): " +
                                   $"{icon.name} {size}" +
                                   (hasGauge ? $", gauge {gauge.name}" : ", no gauge"));
             }

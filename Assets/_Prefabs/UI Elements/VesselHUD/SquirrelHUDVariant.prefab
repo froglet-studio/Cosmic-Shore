@@ -3193,6 +3193,7 @@ MonoBehaviour:
     icon: {fileID: 5199230409720723880}
     gauge: {fileID: 0}
     input: 2
+  omniAbilitySprite: {fileID: 21300000, guid: 1631ab3021de7e765a8f5caf88585504, type: 3}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35

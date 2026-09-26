@@ -56,6 +56,16 @@ namespace CosmicShore.UI
                 ? gameData.ThemeManagerData.GetDangerSignalColor()
                 : new Color(0f, 0f, 0f, 0f);
 
+        // The SHIELDED tier's base face at signal strength, for the omni crystal card. Flying a
+        // Squirrel through an omni crystal lays a ring of SHIELDED prisms in the pilot's own
+        // domain (AOEShieldedRingSpawner), so the icon is that ring's cross-section and this is
+        // the colour those prisms will actually be. Domain-KEYED, unlike the danger colour, for
+        // the same reason: the ring wears the pilot's colour and the danger rim wears nobody's.
+        private Color ResolveShieldedColor(Domains domain) =>
+            gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetShieldedSignalColor(domain)
+                : new Color(0f, 0f, 0f, 0f);
+
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
@@ -76,6 +86,7 @@ namespace CosmicShore.UI
 
             view.Initialize();
             view.SetDangerTint(ResolveDangerColor());
+            view.SetOmniAbilityTint(ResolveShieldedColor(vesselStatus.Domain));
             view.SetPlayerDomainColor(playerColor);
             Subscribe();
             PaintFromStatusFallback();

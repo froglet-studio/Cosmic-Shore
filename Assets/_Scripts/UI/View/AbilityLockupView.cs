@@ -183,6 +183,11 @@ namespace CosmicShore.UI
             // every vessel that authors all of its art.
             hudView.EnsureGeneratedAbilityIcons();
 
+            // ...and the one card no vessel gets to skip. Not a virtual and not opt-in: every hull
+            // can fly through a crystal, so every hull has this card - with a LOCKED plate on the
+            // three that do nothing with one yet.
+            hudView.EnsureOmniCrystalCard();
+
             var row = ResolveRow();
             var order = VesselHUDView.AbilityDisplayOrder;
             var coreOrder = VesselHUDView.CoreAbilityDisplayOrder;
@@ -205,20 +210,34 @@ namespace CosmicShore.UI
             for (int i = 0; i < coreOrder.Length; i++)
             {
                 var ability = coreOrder[i];
-                if (!hudView.TryGetCoreAbilityIcon(ability, out var icon) || !icon) continue;
+                var emblemSprite = style ? style.EmblemFor(ability) : null;
+                hudView.TryGetCoreAbilityEmblem(ability, out var emblem);
 
-                var host = icon.rectTransform.parent as RectTransform;
+                // A core card is DROPPED entirely only when the fleet has nothing to say about it:
+                // no art, no meter and no emblem. The omni crystal card always has an emblem, so
+                // every vessel draws it - locked where that hull has no omni ability yet, which is
+                // the honest state and what a locked card is for.
+                bool hasIcon = hudView.TryGetCoreAbilityIcon(ability, out var icon) && icon;
+                if (!hasIcon && !emblem && !emblemSprite) continue;
+
+                var host = hasIcon
+                    ? icon.rectTransform.parent as RectTransform
+                    : ResolveLockedHost(row, ability.ToString());
                 if (!host || host == row) continue;
 
                 // The LAST entry in the display order sits nearest Charge: index -1, then -2 leftward.
                 PlaceHost(row, host, -(coreOrder.Length - i), order.Length);
 
-                var slot = BuildSlot($"AbilityLockup_{ability}", host, icon, Element.None);
+                var slot = BuildSlot($"AbilityLockup_{ability}", host, hasIcon ? icon : null,
+                                     Element.None, emblem, emblemSprite);
                 if (slot == null) continue;
 
-                NormaliseIcon(icon.rectTransform);
+                if (hasIcon)
+                {
+                    NormaliseIcon(icon.rectTransform);
+                    coreIcons[ability] = icon;
+                }
                 coreHosts[ability] = host;
-                coreIcons[ability] = icon;
                 _coreSlots[ability] = slot;
                 coreCount++;
             }
@@ -235,7 +254,8 @@ namespace CosmicShore.UI
 
                 PlaceHost(row, host, i, order.Length);
 
-                var slot = BuildSlot($"AbilityLockup_{element}", host, hasIcon ? icon : null, element);
+                var slot = BuildSlot($"AbilityLockup_{element}", host, hasIcon ? icon : null, element,
+                                     emblem: null, emblemSprite: null);
                 if (slot == null) continue;
 
                 if (hasIcon) NormaliseIcon(icon.rectTransform);
@@ -331,8 +351,18 @@ namespace CosmicShore.UI
 
         /// <summary>A host for a slot the vessel has no ability for yet.</summary>
         RectTransform ResolveLockedHost(RectTransform row, Element element)
+            => ResolveLockedHost(row, element.ToString());
+
+        /// <summary>
+        /// The same, for a NON-elemental card. Keyed on a string rather than on the enum so the two
+        /// callers share one body: the omni crystal card exists on every vessel and most vessels
+        /// have no art for it, so a core card has to be able to be locked exactly as an elemental
+        /// one is - which it could not before, because the core pass simply skipped a binding with
+        /// no icon and the card vanished rather than reading as undesigned.
+        /// </summary>
+        RectTransform ResolveLockedHost(RectTransform row, string key)
         {
-            string name = $"LockedSlot_{element}";
+            string name = $"LockedSlot_{key}";
             var host = row.Find(name) as RectTransform;
             if (host) return host;
 
@@ -400,9 +430,15 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Builds one card. <paramref name="flowerElement"/> of <see cref="Element.None"/> is the
-        /// NON-elemental case - the sentinel is what that member is for - and the element bloom, the
-        /// element plate and the flower socket are all skipped, the card's rect collapsing to the
-        /// ability cell alone.
+        /// NON-elemental case - the sentinel is what that member is for - and the element cell is
+        /// then present only if the card has an EMBLEM to put in it, the rect otherwise collapsing
+        /// to the ability cell alone.
+        ///
+        /// <para>So there are three shapes, and the upper cell is the thing that differs: an
+        /// elemental card (flower), the omni crystal card (emblem), and the drift (neither). The
+        /// emblem and the flower share the socket, the plate, the bloom and the Y arithmetic -
+        /// what differs is only WHAT is docked, because a flower is a level readout and an emblem
+        /// is a name.</para>
         ///
         /// <para>The Y arithmetic is what makes the two kinds line up, and it is exact rather than
         /// eyeballed: an elemental card is <c>PlateHeight</c> tall, offset up by
@@ -411,9 +447,10 @@ namespace CosmicShore.UI
         /// offset zero with its plate at zero, which is the same place. The control chip hangs off
         /// the card's own bottom edge either way, so the chips line up for the same reason.</para>
         /// </summary>
-        Slot BuildSlot(string cardName, RectTransform host, Image icon, Element flowerElement)
+        Slot BuildSlot(string cardName, RectTransform host, Image icon, Element flowerElement,
+                       Image emblem, Sprite emblemSprite)
         {
-            bool withElementCell = flowerElement != Element.None;
+            bool withElementCell = flowerElement != Element.None || emblem || emblemSprite;
 
             var card = host.Find(cardName) as RectTransform;
             if (!card)
@@ -511,7 +548,11 @@ namespace CosmicShore.UI
             SetCellRect(slot.Flash.rectTransform, abilityY, style.plateWidth, style.abilityCellHeight);
             slot.Flash.color = WithAlpha(style.pressFlashColor, 0f);
 
-            if (withElementCell) slot.FlowerSocket = ResolveFlowerSocket(card, flowerElement);
+            if (flowerElement != Element.None)
+                slot.FlowerSocket = ResolveFlowerSocket(card, flowerElement);
+            else if (withElementCell)
+                ResolveEmblem(card, emblem, emblemSprite);
+
             slot.ChipSocket = ResolveChipSocket(card, cardHeight);
             return slot;
         }
@@ -851,6 +892,45 @@ namespace CosmicShore.UI
             socket.localScale = Vector3.one;
             socket.localRotation = Quaternion.identity;
             return socket;
+        }
+
+        /// <summary>
+        /// Docks a non-elemental card's upper-plate MARK. An authored <paramref name="emblem"/> is
+        /// re-homed (the same reasoning as an authored flower container: moving the transform keeps
+        /// whatever the vessel put in it); otherwise one is built from the fleet-wide sprite.
+        ///
+        /// <para>It is deliberately NOT tinted. The emblem answers "what is this card", which is
+        /// the same answer on every hull and for every domain - and the omni crystal in particular
+        /// belongs to nobody until somebody takes it, so painting it a team colour would be a
+        /// claim the crystal itself never makes (<c>Docs/PALETTE.md §2.2</c>: a crystal's colour
+        /// says who may COLLECT it).</para>
+        /// </summary>
+        RectTransform ResolveEmblem(RectTransform card, Image emblem, Sprite emblemSprite)
+        {
+            const string emblemName = "ElementEmblem";
+
+            if (!emblem)
+            {
+                emblem = ResolveChildImage(card, emblemName, emblemSprite);
+            }
+            else if (emblem.transform.parent != card)
+            {
+                emblem.transform.SetParent(card, false);
+            }
+
+            // An Image with no sprite draws a SOLID QUAD, which on a plate this size is the plate
+            // painted over. Nothing to draw means draw nothing.
+            emblem.enabled = emblem.sprite;
+            emblem.color = Color.white;
+            emblem.raycastTarget = false;
+
+            var rt = emblem.rectTransform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(style.petalFlowerSize, style.petalFlowerSize);
+            rt.anchoredPosition = new Vector2(0f, style.FlowerLocalY);
+            rt.localScale = Vector3.one;
+            rt.localRotation = Quaternion.identity;
+            return rt;
         }
 
         RectTransform ResolveChipSocket(RectTransform card, float cardHeight)
