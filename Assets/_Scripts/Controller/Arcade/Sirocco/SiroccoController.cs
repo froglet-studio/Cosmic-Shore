@@ -157,6 +157,14 @@ namespace CosmicShore.Gameplay
 
         void ArmEroders()
         {
+            // The providers below read settings every server frame; without it they would throw
+            // inside AIPilot.Update. Fail safe: bots fly the platform's own crystal seeking.
+            if (settings == null)
+            {
+                CSDebug.LogWarning($"[SiroccoController] no settings asset wired; AI mode hooks not armed.");
+                return;
+            }
+
             Vector3 centre = arenaCell ? arenaCell.transform.position : Vector3.zero;
             _modes.RetrySeconds = settings ? settings.aiModeRetrySeconds : 1f;
 
