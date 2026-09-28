@@ -2,7 +2,7 @@
 
 ## Overview
 
-SkimRace is a competitive crystal-collection racing mode for 1-4 players. Players race along a procedurally generated track, collecting crystals. The first player to collect all crystals wins; losers are ranked by crystals remaining. The mode supports solo play with AI opponents, multiplayer with friends, or mixed human+AI lobbies.
+SkimRace is a competitive crystal-collection racing mode for 1-12 players, all flying the Squirrel. Players race along a procedurally generated track, collecting crystals. The first player to collect all crystals wins; losers are ranked by crystals remaining. The mode supports solo play with AI opponents, multiplayer with friends, or mixed human+AI lobbies.
 
 **Key architectural facts:**
 
@@ -27,9 +27,9 @@ MiniGameControllerBase (MonoBehaviour + NetworkBehaviour)
 
 User selects SkimRace from the Arcade screen. `ArcadeGameConfigureModal` opens with configuration controls:
 
-- **Player Count** (1-4): Constrained by `SO_ArcadeGame.MinPlayers` (1) and `MaxPlayers` (4)
+- **Player Count** (1-12): Constrained by `SO_ArcadeGame.MinPlayersAllowed` (1) and `MaxPlayersAllowed` (12)
 - **Intensity** (1-4): Constrained by `SO_ArcadeGame.MinIntensity` (1) and `MaxIntensity` (4)
-- **Vessel Selection**: From `SO_ArcadeGame.Vessels` list (Squirrel, Manta, Sparrow)
+- **Vessel**: the card's `SO_ArcadeGame.Vessels` list holds the Squirrel alone, so every pilot flies one
 
 ### 2. Player Count & AI Backfill Decision
 
@@ -445,7 +445,7 @@ ugsStatsManager.ReportSkimRaceStats(
 
 | Asset | Type | Key Values |
 |---|---|---|
-| SkimRace game config | `SO_ArcadeGame` | `Mode=SkimRace`, `IsMultiplayer=true`, `MinPlayers=1`, `MaxPlayers=4`, `GolfScoring=true`, `Vessels=[Squirrel, Manta, Sparrow]` |
+| SkimRace game config | `SO_ArcadeGame` | `Mode=SkimRace`, `IsMultiplayer=true`, `MinPlayersAllowed=1`, `MaxPlayersAllowed=12`, `GolfScoring=true`, `Vessels=[Squirrel]` |
 | Arcade config runtime | `ArcadeGameConfigSO` | `Intensity`, `PlayerCount`, `SelectedShip` (runtime state) |
 
 ## Design Notes
@@ -472,4 +472,4 @@ ugsStatsManager.ReportSkimRaceStats(
 
 11. **Client seed poll fallback**: In addition to the `OnValueChanged` callback on `_netTrackSeed`, clients start a polling fallback (`WaitForTrackSeed`) that checks the NetworkVariable every 100ms for up to 5 seconds. This covers edge cases where `OnValueChanged` doesn't fire for the initial sync and the `SpawnTrack_ClientRpc` was sent before the client spawned.
 
-12. **Vessel flexibility**: While Squirrel is the primary racing vessel, SkimRace supports multiple vessel types via `SO_ArcadeGame.Captains`. Players can select any available vessel.
+12. **Squirrel only**: the card lists one hull, so every pilot, human or AI, flies a Squirrel. Its speed is skim energy, which makes the ribbon the mode's real resource. Today's AI does not skim; the plan to make it skim is `Docs/AISystem/SQUIRREL_SKIM.md`.

@@ -3,6 +3,10 @@
 **Files:** `PursuitReachability.cs` (the math), `AIPilot.UpdateOrbitBreak` (the state machine),
 `VesselTransformer.MinTurnRadius` (the live radius), `Tests/Editor/PursuitReachabilityTests.cs`.
 
+**The wider AI system** is documented in `Docs/AISystem/`: an audit of `AIPilot`, the proposed
+architecture, and a roadmap. That architecture keeps this orbit break as it is, and its flight
+controller must re-measure the numbers below (400/400) before it ships.
+
 ---
 
 ## The symptom
