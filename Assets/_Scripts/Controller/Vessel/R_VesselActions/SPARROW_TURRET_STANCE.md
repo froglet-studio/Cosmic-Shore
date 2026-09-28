@@ -16,13 +16,14 @@
 - **`firedPrismState` is the playtest dial**: `Plain` (MASS-5 gates the shield as originally
   designed), `Shielded` (every shot armored — current), `Danger` (round 2's look; bites
   everyone incl. the shooter, suppresses shields — locked law). Read per volley, flip live.
-- **Range quartered from the original** (round 2 halved it, round 3 halves it again — bullets
-  AND turret, shared by design): base speed `FullAutoActionSO.speedValue` (a plain `float` since 2026-09-20) → **375** with
-  the SPACE curve at **9** — authored as `FullAutoActionSO.spaceSpeedMultiplier` on
-  `FullAutoAction.asset` since the 2026-09-18 element-scaling unification moved it off the map's
-  retired generic `MultiplierAtFullLevel` — so **SPACE 0 ≈ 72 u** while **SPACE 15 is
-  still the original 4875 u/s (≈ 931 u)**. Level 10 lands at 3375 u/s. Progression on SPACE is
-  now dramatic: full overcharge reaches 13× the resting range.
+- **Range is FIXED since 2026-09-28** (superseding the quartering below, bullets AND turret,
+  shared by design): `FullAutoActionSO.speedValue` is **1350** u/s and nothing scales it, so both
+  modes reach **257.8 u** (2x the old SPACE-1 range) while the gun is cool, falling linearly with
+  the spread cone to a quarter of that at full heat (`GunSpreadMath.RangeFactor`, applied to
+  muzzle speed so flight time is unchanged — `SPARROW_SPRAY_ACCURACY.md` Rounds 7-8). The SPACE
+  curve that used to scale it (`spaceSpeedMultiplier`, x1 -> x9) is deleted and the Space row is
+  a known hole. *History:* round 2 halved the original range and round 3 halved it again to a
+  375 u/s base (~72 u at SPACE 0, the original 4875 u/s at SPACE 15).
 - **ReverseSuction survives as the alternate visual** (`suctionDurationMultiplier: 5` kept):
   flip `flightVisualization` to 1 to compare again. Its danger/domain palette seam note from
   round 2 still stands if `Danger` is re-enabled.
@@ -308,9 +309,9 @@ forbids. It is now one stamp:
 The easing is the **bullets'** easing. `Projectile.MoveProjectileAsync` steps by
 `cos(t·π/2T)`, so distance travelled is its integral, `v·(2T/π)·sin(t·π/2T)`; the shader
 evaluates the same closed form. A turret prism and a bullet released at the same instant stay
-abreast for the whole flight and stop at the same range (≈ **72 u** at the shipped 375 u/s ×
-0.3 s at SPACE 0 — the figure was ~286 u before round 3 quartered the base speed; at SPACE 10 it
-is ~645 u).
+abreast for the whole flight and stop at the same range (**257.8 u** at the fixed 1350 u/s ×
+0.3 s since 2026-09-28, shrinking with heat to a quarter at full spread — both modes read the same
+`RangeFactor`, so they stay abreast at every heat; it was ≈ 72 u at SPACE 0 on the old 375 u/s base).
 
 ### The prompt's open question, answered
 
@@ -416,8 +417,8 @@ Everything that moves both fire modes lives on **`FullAutoAction.asset`**:
 | Knob | Value | Effect |
 |---|---|---|
 | `firingRate` | **90** (was 30 before round 7) | Volleys/s for guns **and** turret. |
-| `speedValue` | **375** (was 1500 before round 3's quartering) | Muzzle speed base for both, before `spaceSpeedMultiplier` — **×1 at rest, ×9 at SPACE 10**, floored at 0.4. The 0.4 is a FLOOR against the deficit band, never the value at rest; this row said "0.4× at rest" until 2026-09-18, which is the same floor-vs-rest confusion the retired map's `MinMultiplier` invited. |
-| `projectileTime` | **0.3** | Flight time; with the easing curve → ~**72 u** of range at SPACE 0, ~645 u at SPACE 10. |
+| `speedValue` | **1350** (FIXED since 2026-09-28; was 375 × a SPACE curve before) | Muzzle speed for both modes — no element scales it. Multiplied by the heat's `RangeFactor` (1 cool → 0.25 at full spread) at fire time. |
+| `projectileTime` | **0.3** | Flight time; with the easing curve → **257.8 u** of range cool, ~64 u at full spread. |
 | `spread.*` | see `SPARROW_SPRAY_ACCURACY.md` | The accuracy-decay cone, shared by both modes (round 7). |
 
 Turret-only, on **`FullAutoBlockShootAction.asset`**: `blockScale` **(0.8, 0.5, 5)** (before

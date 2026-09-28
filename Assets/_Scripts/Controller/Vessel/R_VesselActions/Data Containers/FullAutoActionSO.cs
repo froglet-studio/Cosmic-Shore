@@ -24,24 +24,21 @@ namespace CosmicShore.Gameplay
         [SerializeField] float projectileTime = 3f;
         [SerializeField] FiringPatterns firingPattern = FiringPatterns.Default;
         [SerializeField] int   energy = 0;
-        /// <summary>The authored muzzle speed. A plain float, and the TYPE is the statement:
-        /// SPACE reaches muzzle speed through <see cref="spaceSpeedMultiplier"/>, and nothing
-        /// scales this base. It was an <c>ElementalFloat</c> whose asset carried an enabled
-        /// 375 -> 4875 SPACE ramp (x13) that had never run — it was read as <c>.Value</c> on a
-        /// ScriptableObject — beside the live x9 multiplier; giving SPACE a second grip on the
-        /// same number is a balance change, not a cleanup.</summary>
-        [SerializeField] float speedValue = 375f;
-
-        /// <summary>SPACE -> muzzle speed: x1 at the resting level, x9 at level 10, floored at x0.4.
-        /// Migrated verbatim from the retired ElementalAbilityMapSO generic
-        /// multiplier (atFull 9, minMultiplier 0.4) — see
-        /// Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md. Lives here, on the
-        /// asset that owns the parameter, so it can only ever scale this one number.
-        /// Never bound (this is a ScriptableObject, and BindElementalFloats reflects only
-        /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
+        /// <summary>
+        /// The muzzle speed - FIXED, and it is what fixes the guns' RANGE. No element reaches it:
+        /// SPACE used to scale it x1 -> x9 through a <c>spaceSpeedMultiplier</c> ElementalFloat,
+        /// which made the guns' reach a function of the Space level, and that grip is retired by
+        /// design (the Space row of the map is a known hole until it is re-cut).
+        ///
+        /// <para>The number is DERIVED, not picked: range is <c>speed x 2T/pi</c> (the flight
+        /// decelerates along a quarter-cosine, <c>Projectile.MoveProjectileAsync</c>), and the
+        /// ask was "a fixed range of 2x the value at Space 1". At Space 1 the retired multiplier
+        /// read <c>LerpUnclamped(1, 9, 0.1) = 1.8</c>, so the Space-1 muzzle speed was
+        /// <c>375 x 1.8 = 675</c> and its range <c>675 x 0.6/pi = 128.9 u</c>. Doubling it by
+        /// SPEED rather than flight TIME gives <b>1350 u/s, 257.8 u</b> - and keeps the number of
+        /// rounds in the air (and so the charge-shell light budget) exactly where it was.</para>
         /// </summary>
-        [SerializeField] ElementalFloat spaceSpeedMultiplier =
-            ElementalFloat.Multiplier(1f, 9f, Element.Space, 0.4f);
+        [SerializeField] float speedValue = 1350f;
 
         [Header("Round Growth (MASS)")]
         [Tooltip("How many times its launch cross-section a round swells to by the END of its " +
@@ -75,15 +72,11 @@ namespace CosmicShore.Gameplay
         public GunSpreadProfile Spread => spread ??= new GunSpreadProfile();
 
         /// <summary>
-        /// The live muzzle speed of one shot: the authored base scaled by the vessel's SPACE
-        /// multiplier, authored on this asset beside the speed it scales. Read per volley at fire time —
-        /// never cached across a hold, and never bound as an ElementalFloat on this shared
-        /// asset (per-vessel state on a shared SO is last-initializer-wins in multiplayer).
+        /// The muzzle speed of one shot. Fixed - see <see cref="speedValue"/>. Kept as a method
+        /// taking the vessel so both fire modes keep one call site if an element is ever given a
+        /// grip on the guns again.
         /// </summary>
-        public float ResolveSpeed(IVesselStatus status)
-        {
-            return speedValue * spaceSpeedMultiplier.EvaluateLive(status);
-        }
+        public float ResolveSpeed(IVesselStatus status) => speedValue;
 
         /// <summary>
         /// How much a round swells over its flight, from the vessel's LIVE Mass level —
