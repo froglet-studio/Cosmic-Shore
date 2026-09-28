@@ -15,6 +15,14 @@ MonoBehaviour:
   debuffMagnitude: -0.08
   buffMagnitude: 0.08
   effectDuration: 3
+  stealScale:
+    Enabled: 0
+    Value: 1
+    Min: 0
+    Max: 0
+    element: 0
+    UseFloor: 0
+    Floor: 0
   requireOvertake: 0
   hapticAmplitude: 0.8
   hapticFrequency: 0.7
