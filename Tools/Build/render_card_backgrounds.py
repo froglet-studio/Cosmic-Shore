@@ -667,6 +667,10 @@ CAMERAS = {
     "Skein": (60, 22, 0.85, 42), "Bloomrush": (200, 6, 0.6, 48), "Redline": (35, 34, 0.88, 42),
     "WreckingBall": (300, 22, 1.1, 40), "Undertow": (205, -14, 0.7, 46), "AstroLeague": (30, 28, 0.9, 42),
     "BroodRush": (25, 20, 1.0, 42), "Regatta": (150, 30, 0.85, 42), "Broadside": (250, 8, 0.58, 48),
+    # The Butterfly's four element games. Dustup shares the Boneyard with Dog Fight / Salvo /
+    # Broadside and Sirocco the forest with Rampage / Bends / Bloomrush, so each gets its own angle.
+    "Waystation": (35, 30, 0.95, 42), "Dustup": (165, 28, 0.62, 46), "Tapestry": (40, 24, 0.95, 42),
+    "Sirocco": (320, 10, 0.66, 46),
 }
 
 # Pilots in the shot: (domain, radius fraction, tilt, start angle, sweep). None = generic trio.
@@ -745,7 +749,57 @@ def recipe(stem, card_path, pal, ends):
                            "color": {"Switchback": [0.4, 0.8, 1.6], "Headlong": [1.4, 0.55, 0.2],
                                      "Redline": [1.5, 0.25, 0.35]}[s]})
             nucleus()
-    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway"):
+    elif s == "Waystation":
+        # COURSE tier through the OFFLINE MIRROR (Tools/Build/waystation_course.py), which its own
+        # --compile proves gate-for-gate against the shipped WaystationCourse.cs - so this is the
+        # shipped course at intensity 2 on the card's seed, not a sketch of one.
+        tier = "COURSE"
+        sys.path.insert(0, str(ROOT / "Tools/Build"))
+        import waystation_course as wc   # noqa: E402
+        T = wc.read_tables()
+        gates, clust, centres, folds, per = wc.generate(stable_seed(s), INTENSITY,
+                                                        ends.get("waystationRingTarget", 24), T)
+        for gp, facing, rad in gates:
+            layers.append({"kind": "ring", "c": list(gp), "n": list(facing), "R": rad, "r": rad * 0.12,
+                           "base": [0.2, 0.25, 0.3], "rim": [0.6, 0.85, 1.4], "emissive": [0.35, 0.55, 0.9]})
+        # The FOLD: a faint thread from each cluster's exit gate to the next cluster's first ring -
+        # the jump the mode is built on, drawn as a dotted line because it is not flown.
+        for k in range(len(clust) - 1):
+            a, b = clust[k][-1], clust[k + 1][0]
+            for j in range(1, 12):
+                pt = v_add(list(a), v_mul(v_sub(list(b), list(a)), j / 12))
+                layers.append({"kind": "sphere", "c": pt, "r": 7.0, "base": [0.3, 0.2, 0.5],
+                               "rim": [1.2, 0.8, 1.8], "emissive": [0.8, 0.5, 1.3], "unbound": True})
+        nucleus()
+    elif s == "Tapestry":
+        # MODEL tier: the arena is the bare Barren cell, so what the card shows is what the mode
+        # PUTS there - Mass-mode wakes, one broad arc per painter, each a run of wide keys at the
+        # shipped key size (26/2 x 5 wide, 1.2 thick, 3.4 long, one per 9 units: BaseScale /
+        # massModeWidth.Min / initialWavelength off Butterfly.prefab). One run has a RAID cut
+        # through it - the gap Dust mode leaves - which is the other half of the mode.
+        tier = "MODEL"
+        rng = Rng(stable_seed(s))
+        rows = []
+        key = [65.0, 1.2, 3.4]
+        for k, dom in enumerate((JADE, RUBY, GOLD, JADE, RUBY, GOLD)):
+            rad = R * rng.range(0.42, 0.72)
+            tilt = rng.range(-0.9, 0.9)
+            a0 = rng.range(0, 2 * math.pi)
+            sweep = rng.range(1.6, 2.6)
+            f = arc([0, 0, 0], rad, a0, a0 + sweep, tilt, bank=0.6)
+            n = int(rad * sweep / 9.0)
+            cut = (int(n * 0.45), int(n * 0.58)) if k == 1 else (n + 1, n + 1)
+            for i in range(n):
+                if cut[0] <= i < cut[1]:
+                    continue
+                t = i / max(1, n - 1)
+                pt = f(t)
+                ahead = f(min(1.0, t + 1.0 / max(1, n)))
+                fwd = v_sub(ahead, pt) if t < 1.0 else v_sub(pt, f(max(0.0, t - 1.0 / max(1, n))))
+                rows.append(prism(pt, fwd, v_norm(pt), key, dom))
+        layers.append({"kind": "prisms", "rows": rows})
+        nucleus()
+    elif s in ("Rampage", "Bends", "Bloomrush", "WreckingBall", "Tollway", "Sirocco"):
         tier = "MODEL"
         layers.append(forest_layer(facts, s, plant_size=R * (0.05 if s == "Tollway" else 0.06)))
         nucleus()
@@ -853,15 +907,16 @@ def recipe(stem, card_path, pal, ends):
         base = base or R
         cam["target"] = [c * base for c in point_frac]
         cam["radius"] = radius_frac * base
-    if s in ("Rampage", "Bends", "Bloomrush"):
-        aim({"Rampage": (0.62, 0.0, 0.3), "Bends": (-0.35, 0.3, 0.55), "Bloomrush": (0.1, -0.45, -0.5)}[s], 0.36)
+    if s in ("Rampage", "Bends", "Bloomrush", "Sirocco"):
+        aim({"Rampage": (0.62, 0.0, 0.3), "Bends": (-0.35, 0.3, 0.55), "Bloomrush": (0.1, -0.45, -0.5),
+             "Sirocco": (-0.5, -0.25, -0.45)}[s], 0.36)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.9})
     elif s == "Hijack":
         aim((0.55, 0.0, 0.55), 0.42, base=900)
     elif s == "SkimRace":
         aim((0.55, -0.1, 0.35), 0.55, base=700)
         stage.update({"centre": cam["target"], "radius": cam["radius"] * 0.8})
-    elif s in ("Switchback", "Headlong", "Redline"):
+    elif s in ("Switchback", "Headlong", "Redline", "Waystation"):
         cam["percentile"] = 0.6
     elif s == "Tollway":
         aim((0.25, 0.1, 0.2), 0.45)
@@ -974,6 +1029,31 @@ def accents(s, layers, stage, cam, pal, R, card_path):
             crystal(jitter(1.0), span * 0.015)
     elif s == "Joust":
         stage["vessels"] = vessels([(JADE, 0.35, 0, 200, 90), (RUBY, 0.35, 0, 20, 90)])
+    elif s == "Dustup":
+        # The Scale Dust: a fall of motes hanging BELOW a Butterfly, with a rival inside it - the
+        # one thing that scores. Drawn as a narrow downward cone of the upper pilot's colour and
+        # the motes in it; the rival takes the bite (a glow in the upper pilot's colour).
+        top = v_add(centre, [span * 0.1, span * 0.35, -span * 0.05])
+        below = v_add(top, [0, -span * 0.45, 0])
+        cone(top, below, 5, JADE, 0.22, 1.0)
+        for k in range(26):
+            f = rng.u()
+            p = v_add(v_add(top, v_mul(v_sub(below, top), f)), v_mul(rng.unit(), span * 0.035 * f))
+            glow(p, span * 0.006, JADE, 1.2, 0.6)
+        glow(v_add(top, [0, -span * 0.3, 0]), span * 0.05, JADE, 0.9, 0.35)
+        stage["vessels"] = vessels([(JADE, 0.25, 10, 30, 70), (RUBY, 0.3, -10, 200, 70)])
+    elif s == "Sirocco":
+        # An EROSION swath: a line of dust motes skimming low across the forest in one colour.
+        a = jitter(0.6)
+        b = v_add(a, v_mul(v_norm(rng.unit()), span * 1.1))
+        for k in range(60):
+            p = v_add(v_add(a, v_mul(v_sub(b, a), k / 59)), v_mul(rng.unit(), span * 0.03))
+            glow(p, span * rng.range(0.006, 0.012), GOLD, 1.2, 0.55)
+    elif s == "Tapestry":
+        # Dust mode over the cut in the Ruby wake: the raid that made the gap.
+        p = jitter(0.2)
+        for k in range(22):
+            glow(v_add(p, v_mul(rng.unit(), span * 0.08 * rng.u())), span * 0.008, GOLD, 1.2, 0.6)
 
 
 def gate_race_controller(card_path):
@@ -997,7 +1077,7 @@ def env_seed(env):
 def end_conditions():
     body = read(ROOT / END_CONDITIONS)
     out = {}
-    for k in ("switchbackGateTarget", "breakwaterStationTarget", "breakwaterLaps"):
+    for k in ("switchbackGateTarget", "breakwaterStationTarget", "breakwaterLaps", "waystationRingTarget"):
         m = re.search(rf"^  {k}: (\d+)", body, re.M)
         if m:
             out[k] = int(m.group(1))

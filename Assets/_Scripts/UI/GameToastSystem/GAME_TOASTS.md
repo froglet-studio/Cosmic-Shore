@@ -68,6 +68,12 @@ config entry's `everyN` says how often the total must cross a multiple before th
 | `BroadsideVerbHint` (115) / `BroadsideCloseHint` (116) | controller config (idle hints) | — |
 | `RegattaRailHint` (110) / `RegattaLaneHint` (111) | controller config (idle hints) | — |
 | `WaystationRingHint` (117) / `WaystationFoldHint` (118) | controller config (idle hints) | — |
+| `DustupQuarter` (119) / `DustupHalf` (120) / `DustupLeadChanged` (121) | `DustupController` | `{0}` domain, `{1}` points, `{2}` target |
+| `DustupAboveHint` (122) | controller config (idle hint) | — |
+| `TapestryLeadChanged` (123) | `TapestryController` (sampled after 20 s, 10 s minimum gap) | `{0}` domain, `{1}` volume standing |
+| `TapestryPaintHint` (124) / `TapestryRaidHint` (125) | controller config (idle hints) | — |
+| `SiroccoLeadChanged` (126) | `SiroccoController` (after 20% of the target) | `{0}` domain, `{1}` prisms, `{2}` target |
+| `SiroccoDustHint` (127) | controller config (idle hint) | — |
 
 The Dog Fight (57-59), Bends (60-62), Cleave (50-52) and Wildlife Liberation (53-56)
 milestone situations are posted by their controllers; only Dog Fight and The Bends author them
@@ -91,6 +97,9 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | `GameToastConfig_Regatta` | Regatta (56) | two idle hints (the rail in your colour is the racing line; ride it / skim it / fly beside it), `Comeback system is on` — authored by `author_regatta_assets.py` |
 | `GameToastConfig_Broadside` | Broadside (57) | `{0} landed a hit!` (every hit), the quarter / half / lead-change milestones, two idle hints that name the VERB rather than the hull (seven hulls share four verbs, and a hint per hull is seven hints nobody reads), `Comeback system is on` — authored by `author_broadside_assets.py` |
 | `GameToastConfig_Waystation` | Waystation (58) | TWO IDLE HINTS AND NOTHING ELSE (thread every ring around you; hold the fold and aim at the next cluster). The absence is the decision: the gate-race platform has NO gate-threaded hook, so a milestone or lead-change situation would have no poster — and an enum member nothing raises reads exactly like a feature. An idle hint needs no poster at all, which is why Regatta authored only hints too. Authored by `author_waystation_assets.py` |
+| `GameToastConfig_Dustup` | Dustup (59) | the quarter / half / lead-change milestones, one idle hint (get ABOVE a rival — the dust hangs below you) |
+| `GameToastConfig_Tapestry` | Tapestry (60) | the lead-change beat, two idle hints (Mass mode paints a wide wake that is score; behind? Dust mode raids their painting) |
+| `GameToastConfig_Sirocco` | Sirocco (61) | `{0} has eroded {1} prisms` (`everyN` 100), the lead-change beat, one idle hint (Dust mode, low and long over the forest) |
 | `GameToastConfig_Undertow` | Undertow (55) | `{0} dragged a rival through the undertow!` (every bend), `{0} has drowned {1} creatures` (`everyN` 3), the quarter / half / lead-change milestones, an idle dash hint, `Comeback system is on` — authored by `author_undertow_assets.py` |
 | `GameToastLibrary` | — | shared + every mode config above |
 | `GameToastSettings` | — | slide-in, age dim, retention cap, auto-scroll |

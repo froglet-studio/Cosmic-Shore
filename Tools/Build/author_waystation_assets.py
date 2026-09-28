@@ -21,6 +21,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import arcade_mode_lib as lib          # noqa: E402
 import waystation_course as course     # noqa: E402
+import butterfly_games_common as common  # noqa: E402
 
 MODE_ID = 58
 RING_TARGET = 24
@@ -112,7 +113,9 @@ g.emit_asset(
       f"  Description: {DESCRIPTION}\n"
       f"  IconActive: {{fileID: 21300000, guid: {lib.CARD_ART['IconActive']}, type: 3}}\n"
       f"  IconInactive: {{fileID: 21300000, guid: {lib.CARD_ART['IconInactive']}, type: 3}}\n"
-      f"  CardBackground: {{fileID: 21300000, guid: {lib.CARD_ART['CardBackground']}, type: 3}}\n"
+      # Whatever the /cardart renderer wrote onto the card, else the placeholder - re-emitting the
+      # placeholder unconditionally would undo a rendered background on every run.
+      f"  CardBackground: {{fileID: 21300000, guid: {common.card_background('Assets/_SO_Assets/Games/ArcadeGameWaystation.asset')}, type: 3}}\n"
       "  GolfScoring: 1\n"
       "  SceneName: MinigameWaystation\n"
       "  Vessels:\n"

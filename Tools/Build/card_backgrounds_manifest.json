@@ -64,13 +64,21 @@
    "track": null,
    "triangles": 194556
   },
+  "Dustup": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16100,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 278200
+  },
   "Headlong": {
    "cell": "Skim Race Cell Config",
    "environment": null,
    "prisms": 0,
    "tier": "COURSE",
    "track": null,
-   "triangles": 8944
+   "triangles": 8908
   },
   "Hijack": {
    "cell": "Switchyard Cell Config 2",
@@ -149,6 +157,14 @@
    "track": "SpawnableConcetricSpheres",
    "triangles": 332032
   },
+  "Sirocco": {
+   "cell": "Rampage Cell Config 2",
+   "environment": null,
+   "prisms": 4478,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 242844
+  },
   "Skein": {
    "cell": "Skein Cell Config 2",
    "environment": "SpawnableSkein2",
@@ -173,6 +189,14 @@
    "track": null,
    "triangles": 20620
   },
+  "Tapestry": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 863,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 80500
+  },
   "Tollway": {
    "cell": "Tollway Cell Config 2",
    "environment": null,
@@ -188,6 +212,14 @@
    "tier": "RUN",
    "track": null,
    "triangles": 301700
+  },
+  "Waystation": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 204148
   },
   "WildlifeLiberation": {
    "cell": "Wildlife Liberation Cell Config 2",
@@ -211,5 +243,5 @@
   768,
   510
  ],
- "source_hash": "1fcf32280c00ffb823e3cc3035ce2fb1db0d7a729136c8dc4b9d001ab0aa3a86"
+ "source_hash": "b05680f41b0b4caf89bdaf59fd9631d7be91cf6098e578eeee26e9f77ad1082e"
 }

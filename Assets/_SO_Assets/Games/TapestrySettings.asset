@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65f02484393f83db0ff9d621af1f80ef, type: 3}
+  m_Name: TapestrySettings
+  m_EditorClassIdentifier:
+  elementalCrystalCountByIntensity:
+  - 24
+  - 16
+  - 10
+  - 6
+  crystalScatterRadius: 900
+  crystalScatterSeed: 60
+  leadAnnounceAfterSeconds: 20
+  leadAnnounceMinGapSeconds: 10
+  progressSampleSeconds: 1
+  aiDecisionSeconds: 6
+  aiRaidDeficitFraction: 0.1
+  aiLateRaidSeconds: 25
+  aiDustHover: 30
+  aiPaintOrbitFraction: 0.6
+  aiPaintOrbitDegreesPerSecond: 6
+  aiCrystalReach: 450
+  aiModeRetrySeconds: 1
