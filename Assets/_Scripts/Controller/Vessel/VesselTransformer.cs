@@ -531,8 +531,16 @@ public class VesselTransformer : MonoBehaviour
 
         public void SetPose(Pose pose)
         {
+            Vector3 from = transform.position;
             TeleportCount++;
             transform.SetPositionAndRotation(pose.position, pose.rotation);
+
+            // Everything that FOLLOWS the vessel - its ribbons and the camera on it - is carried
+            // across the jump here, on every machine, because this is the one place every pose
+            // write lands (TeleportContinuity; a Butterfly fold gate transit is the case that
+            // needed it to be seamless rather than merely correct).
+            float jumpSpeed = VesselStatus != null ? VesselStatus.Speed : speed;
+            TeleportContinuity.OnTeleported(transform, from, pose.position, jumpSpeed);
             accumulatedRotation = pose.rotation;
 
             // A pose write is a teleport, so momentum must follow the new facing rather than the

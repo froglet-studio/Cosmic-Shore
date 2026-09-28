@@ -440,6 +440,8 @@ namespace CosmicShore.Gameplay
                     SyncRenderMesh();
                     SyncRenderMaterial();
                     SyncRenderTransform();
+                    // An entity minted after the super-shield engaged was born at 0.
+                    if (_superShieldMark) SyncSuperShieldMark();
                 }
                 // Batched: applied in one structural change per direction at
                 // LateUpdate (same frame, before rendering). Per-prism toggles were
@@ -596,6 +598,44 @@ namespace CosmicShore.Gameplay
             SyncRenderTransform();
         }
 
+        // True while this prism wears the super-shield (the stellated octahedron). Rendered as
+        // the per-instance _PrismSuperShielded bit, which the Dolphin's Echo Sight reads to
+        // paint every super-shield inside the cone in the danger colour: a crystal blast that
+        // reaches one ENDS there (PrismSpatialIndex.ResolveExplosionHit), so the aim has to say
+        // so. Owned here rather than on the shield component because it has to survive the
+        // companion entity being (re)created after the shield engaged.
+        bool _superShieldMark;
+
+        static readonly int SuperShieldedPropertyId = Shader.PropertyToID("_PrismSuperShielded");
+        static MaterialPropertyBlock s_superShieldBlock;
+
+        /// <summary>
+        /// Sets the super-shield MARK. Called by <see cref="PrismStellatedOctahedronShield"/> as
+        /// its pose goes final in both directions, so the bit follows the shield the player can
+        /// SEE — every path that super-shields a prism engages that shield. A STATE write, once
+        /// per transition, never per frame (the clock-material law has no quarrel with a state
+        /// change that is final the instant it is applied).
+        /// </summary>
+        internal void SetSuperShieldMark(bool superShielded)
+        {
+            if (_superShieldMark == superShielded) return;
+            _superShieldMark = superShielded;
+            SyncSuperShieldMark();
+        }
+
+        void SyncSuperShieldMark()
+        {
+            if (PrismRenderService.SetSuperShieldMark(in RenderHandle, _superShieldMark)) return;
+
+            // Legacy MeshRenderer path (no Entities Graphics on this device): the same bit rides
+            // a property block. Get-modify-set, so any other writer's properties survive.
+            if (meshRenderer == null) return;
+            s_superShieldBlock ??= new MaterialPropertyBlock();
+            meshRenderer.GetPropertyBlock(s_superShieldBlock);
+            s_superShieldBlock.SetFloat(SuperShieldedPropertyId, _superShieldMark ? 1f : 0f);
+            meshRenderer.SetPropertyBlock(s_superShieldBlock);
+        }
+
         /// <summary>
         /// Re-asserts the entity's mesh from this prism's STABLE geometry (settled
         /// shield override, else the live prism mesh, else the authored mesh). Called
@@ -740,6 +780,7 @@ namespace CosmicShore.Gameplay
             ResetState();
             ClearRenderMeshOverride(); // pooled reuse: the entity must not keep a prior life's shield mesh
             PrismRenderService.ClearPrismStamps(in RenderHandle); // nor a prior life's clock-animation stamps
+            SetSuperShieldMark(false); // nor a prior life's super-shield
 
             PlayerName = playerName;
             blockCollider.enabled = false;

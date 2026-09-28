@@ -58,6 +58,7 @@ namespace CosmicShore.Utility
         const string ConfigResourcePath = "PrismOcclusionConfig";
 
         static Transform _target;
+        static Vector3 _viewShift;
         static float _targetRadius;
         static bool _suppressed;
         static PrismOcclusionConfigSO _config;
@@ -66,6 +67,54 @@ namespace CosmicShore.Utility
 
         /// <summary>The vessel the corridor currently opens onto, or null when it is off.</summary>
         public static Transform Target => _target;
+
+        /// <summary>
+        /// Where the corridor opens onto for the VIEW being drawn: the vessel, seen through any
+        /// portal the gameplay camera has not reached yet.
+        ///
+        /// <para>A Butterfly fold gate moves the ship the instant it crosses, while the chase
+        /// camera trails it through the mouth a moment later (<c>CustomCameraController.
+        /// CarryThroughPortal</c>). For that moment the camera and the ship are on opposite sides
+        /// of the world, and a corridor drawn between them would dissolve a tube of prisms across
+        /// the whole arena. The camera is framing the ship at its position mapped BACK through the
+        /// pair, so that is where the corridor must open too — it is still exactly the camera→ship
+        /// segment the pilot is looking down, just measured in the frame the camera is in.</para>
+        /// </summary>
+        public static Vector3 ViewTargetPosition =>
+            _target ? _target.position - _viewShift : Vector3.zero;
+
+        /// <summary>
+        /// Set how far the gameplay camera still has to travel through a portal (zero when it is
+        /// not carrying one). Identity-guarded: only a subject that IS the bound vessel, or one of
+        /// its children (the camera follows the vessel's follow-target child), may set it, so a
+        /// death or replay camera following somebody else cannot move this corridor.
+        /// </summary>
+        public static void SetViewShift(Transform subject, Vector3 shift)
+        {
+            if (!subject || !_target) return;
+            if (subject != _target && !subject.IsChildOf(_target)) return;
+            _viewShift = shift;
+        }
+
+        /// <summary>
+        /// Re-point the published corridor at a world position for ONE render and nothing else —
+        /// the fold gate's window renders the far side from the far side, and there the corridor
+        /// opens onto the ship at its position through THAT portal. A no-op while the corridor is
+        /// off, so it can never switch one on. Pair every call with <see cref="RepublishTarget"/>
+        /// before the gameplay camera draws.
+        /// </summary>
+        public static void PublishTargetPosition(Vector3 worldPosition)
+        {
+            if (!_publishedActive) return;
+            Shader.SetGlobalVector(TargetId, new Vector4(worldPosition.x, worldPosition.y, worldPosition.z, 0f));
+        }
+
+        /// <summary>Restore the corridor's own target after <see cref="PublishTargetPosition"/>.</summary>
+        public static void RepublishTarget()
+        {
+            if (!_publishedActive || !_target) return;
+            PublishTargetPosition(ViewTargetPosition);
+        }
 
         /// <summary>True while the corridor is publishing a live cone.</summary>
         public static bool IsActive => _publishedActive;
@@ -108,6 +157,7 @@ namespace CosmicShore.Utility
         public static void SetTarget(Transform target)
         {
             _target = target;
+            _viewShift = Vector3.zero;
             _targetRadius = target != null ? MeasureCircumscribedRadius(target) : 0f;
         }
 
@@ -214,6 +264,7 @@ namespace CosmicShore.Utility
             if (_target == target)
             {
                 _target = null;
+                _viewShift = Vector3.zero;
                 _targetRadius = 0f;
             }
         }
@@ -222,6 +273,7 @@ namespace CosmicShore.Utility
         public static void ClearTarget()
         {
             _target = null;
+            _viewShift = Vector3.zero;
             _targetRadius = 0f;
         }
 
@@ -236,6 +288,7 @@ namespace CosmicShore.Utility
         static void InstallPublisher()
         {
             _target = null;
+            _viewShift = Vector3.zero;
             _targetRadius = 0f;
             _suppressed = false;
             // Shader globals survive play-mode exit in the editor, so a stale corridor from
@@ -296,7 +349,7 @@ namespace CosmicShore.Utility
                 return;
             }
 
-            Vector3 p = _target.position;
+            Vector3 p = ViewTargetPosition;
             Shader.SetGlobalVector(TargetId, new Vector4(p.x, p.y, p.z, 0f));
             Shader.SetGlobalVector(ParamsId, packed);
             Shader.SetGlobalFloat(NearRadiusId, config.NearRadius(radius));
@@ -305,8 +358,12 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// LateUpdate so the corridor is published after the vessel has moved and after
-        /// Cinemachine has posed the camera for this frame.
+        /// Cinemachine has posed the camera for this frame. Ordered LATE for the same reason: the
+        /// gameplay camera's portal carry (and so <see cref="ViewTargetPosition"/>) is settled in
+        /// that camera's own LateUpdate, and publishing ahead of it would lag a carry by a frame
+        /// at each end — one frame of a corridor drawn across the whole arena.
         /// </summary>
+        [DefaultExecutionOrder(10000)]
         sealed class Publisher : MonoBehaviour
         {
             void LateUpdate() => Publish();

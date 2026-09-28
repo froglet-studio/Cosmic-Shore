@@ -102,7 +102,9 @@ DRAINS = [
      "Manta Kabloom bloom (Mass + Space only)"),
     ("Assets/_SO_Assets/Effects/Vessel Skimmer Effects/VesselOvertakeBySkimmerEffect.asset",
      "strike", "debuffMagnitude", "buffMagnitude", "effectDuration",
-     "Squirrel joust overtake (the ally BUFF mirrors the debuff)"),
+     "Squirrel joust overtake (the ally BUFF mirrors the debuff). The STEAL is additionally "
+     "scaled by the thief's CHARGE (stealScale, x1 at rest -> x2.5 at L10); this row prices the "
+     "x1 base, which is what the Rhino's sword always takes."),
     ("Assets/_SO_Assets/Effects/Vessel Skimmer Effects/RhinoSwordStealBySkimmerEffect.asset",
      "strike", "debuffMagnitude", "buffMagnitude", "effectDuration",
      "Rhino sword contact steal (same type, requireOvertake OFF - a blade connects on its own "

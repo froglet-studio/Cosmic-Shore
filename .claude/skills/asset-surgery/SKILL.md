@@ -1544,6 +1544,21 @@ Two consequences worth carrying:
   that reproduces the shipped failure as a negative control — write that control, because
   a gate for a whole-graph failure is one nobody will otherwise watch fail.
 
+### Trap: an idempotent wirer's "already wired" exit silently skips the slot you just added
+
+Every graph wirer decides "already wired" by finding ONE artifact of its splice (usually its
+first property) and exiting. Extend its recipe with a new slot/property/edge and the fresh-pass
+code is correct — and it never runs, because every shipped graph already has that first
+artifact. `--check` goes green, the HLSL now takes an argument no node feeds, and the graph fails
+the way the ALL-INPUTS-THEN-OUTPUTS trap above describes. So a wirer that GROWS needs an
+**UPGRADE pass**: detect the new artifact separately, and when the old splice is present without
+it, add exactly the new pieces — the property (cloned from a same-FILE donor of the right
+declaration kind: a Hybrid-Per-Instance Vector1 such as `_ShieldMorphDuration` for per-prism
+data), one property node cloned from its sibling, the slot INSERTED ahead of the output in
+`m_Slots`, one edge — then validate slot ORDER against the recipe, not just the slot set.
+`wire_prism_destruction_sight.py`'s `upgrade_super_shield` is the worked example (2026-09-28). It
+also makes the wirer a merge resolver for graphs taken whole from a branch that predates it.
+
 ### Trap: a clean merge can still be a semantic conflict (duplicate members)
 
 Origin: `Flora.LeafSize` (2026-08). Two branches each added the SAME member to
