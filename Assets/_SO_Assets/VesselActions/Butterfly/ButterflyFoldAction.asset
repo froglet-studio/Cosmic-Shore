@@ -23,6 +23,9 @@ MonoBehaviour:
   gateExitClearance: 40
   gateBloomSeconds: 0.45
   gateSettleSeconds: 0.75
+  portalWindowRange: 2500
+  portalWindowFadeSeconds: 0.3
+  portalWindowRenderScale: 0.75
   ghostTravelSpeed: 1400
   departSeconds: 0.22
   arriveSeconds: 0.3

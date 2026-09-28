@@ -310,19 +310,23 @@ replicates. So a transit needs no new networking, cannot double-fire across peer
 decided for you by somebody else's frame. It is the `ReportFaunaKill_ServerRpc` family's shape with
 the report removed, because `SetPose` already travels.
 
-Two properties are preserved on a transit, and together they are what make a portal predictable
-rather than a shuffle:
+A transit carries the pilot's position relative to the near mouth over to the far mouth exactly
+(`FoldGateGeometry.Through` — see § "Seamless transit" below), so:
 
-- **Where in the mouth you entered is where you leave.** The lateral offset inside one ring is
-  re-applied inside the other, so threading near the rim comes out near the rim.
-- **The side you were heading for is the side you come out on**, one `gateExitClearance` along the
-  shared axis. Momentum reads through the gate and a transit never spits a pilot backwards.
+- **Where in the mouth you entered is where you leave.** Threading near the rim comes out near the
+  rim.
+- **The side you were heading for is the side you come out on**, exactly as far past the far plane
+  as your last step took you past the near one. Momentum reads through the gate, a transit never
+  spits a pilot backwards, and there is no lurch on the frame of the jump.
 
 Rotation and speed are untouched. *A gate moves you; it does not fly you.*
 
-Both ends are then **re-seeded at the exit and disarmed**. The re-seed alone is not enough: the far
-gate deposits the pilot one clearance from its own plane, so it has to treat them as somebody
-standing in its mouth — which is what disarming says — until they have flown clear of it.
+Both ends are then **re-seeded and disarmed**. The re-seed alone is not enough: the far gate
+deposits the pilot just past its own plane, so it has to treat them as somebody standing in its
+mouth — which is what disarming says — until they have flown clear of it. (For any step shorter
+than the near zone's depth the arrival point is inside that zone by construction; a longer step,
+a hitch at speed, lands outside it and is harmless, because the pilot is travelling AWAY from the
+far plane.)
 
 ### A transit is a teleport, and every watcher already knows
 
@@ -331,17 +335,18 @@ STATES rather than one a watcher has to infer. `GateRaceController` declines any
 one — which means **a gate cannot thread a race ring**, the rule Waystation needed for the Fold,
 covering the gates with nothing added.
 
-### Stated judgement: the vessel is not withered on a transit, the gates flare
+### Stated judgement: the vessel is not withered on a transit
 
 The Fold itself withers and blooms the hull because a teleport out of open space is a
 disappearance with nothing to explain it. A gate transit is not that: the pilot flies INTO a
-visible ring and OUT of a visible ring, and **the rings are the continuity**. Withering the hull at
-both ends would also put a quarter-second of dead time on a movement option meant to be flown
-through at speed. If a playtest reads it as a pop, the fix is to route the transit through the
-wither/bloom the Fold already owns — not to add a second one.
+visible ring and OUT of a visible ring, and **the rings are the continuity** — and since the
+seamless pass, the ring is a window onto the place you are about to be, so there is no
+disappearance left to cover. Both gates still flare on a transit, which is what tells everybody
+ELSE that somebody went through.
 
 The gates themselves obey the law in full: they bloom in over `gateBloomSeconds` and wither away
-over the same when a fold replaces them.
+over the same when a fold replaces them, and the window inside one fades in over
+`portalWindowFadeSeconds` as it comes into range.
 
 ### The platform fix it needed: a CLIENT may move its own vessel
 
@@ -364,11 +369,17 @@ a route it does not need.
 |---|---|---|
 | `gateRadius` | 55 | mouth radius; the ring is drawn at exactly this |
 | `minGateSeparation` | 300 | shortest fold worth leaving gates for |
-| `gateExitClearance` | 40 | how far past the far plane you emerge, and the depth of the near zone the arming latch reads |
+| `gateExitClearance` | 40 | minimum depth of the near zone the arming latch reads (the zone is at least one `gateRadius` deep). It used to also push an arriving pilot this far past the far plane; a transit now carries the pilot through exactly, so there is no push |
+| `portalWindowRange` | 2500 | furthest the camera may be for a gate to show the far side; also the range over which the second render is paid |
+| `portalWindowFadeSeconds` | 0.3 | how long the far side takes to fade into a ring coming into range |
+| `portalWindowRenderScale` | 0.75 | far-side render resolution as a fraction of the gameplay camera's |
 | `gateBloomSeconds` | 0.45 | bloom in, and wither out when replaced |
 | `gateSettleSeconds` | 0.75 | longest a peer waits for the replicated arrival pose |
 
 ### Verification status
+
+*As of the gate pass; the seamless pass below changed the transit rule and re-proved it — read
+§ "Seamless transit" ▸ Verification status for the current state.*
 
 Authored headless. **Nothing has been run in the editor.**
 
@@ -392,6 +403,125 @@ multiplayer path (the client `SetPose` route in particular, and whether `gateSet
 is long enough for a real peer), whether `minGateSeparation 300` is the right floor against a
 `reachRange` of 1800, and whether teammates being carried off by a gate they flew into by accident
 is a problem in play.
+
+## Seamless transit (2026-09-28)
+
+A transit used to be *correct* and still read as a cut: the ring showed the world behind it, the
+pilot flew through, and on one frame the ship was pushed 40 units forward, the chase camera
+snapped across the arena (its teleport guard fires on any jump over 50 u), the tail and jets drew
+a straight ribbon from one gate to the other, and on a party guest the whole thing happened a
+network round trip late and then yanked the pilot backwards. Each of those is a separate seam, so
+each has its own fix, and together they make the jump a **change of frame with nothing on screen
+to show it**.
+
+### 1. The pose is carried through, not re-laid
+
+`FoldGateGeometry.Through` maps a point's position relative to the near mouth onto the far one —
+lateral offset AND axial depth — so the pilot comes out exactly as far past the far plane as they
+were past the near one. It replaced `Exit`, which re-projected the crossing point onto the far
+plane and then pushed the pilot `gateExitClearance` along the axis: a ~40 u lurch no camera or
+ribbon could hide. Because a pair shares ONE axis (a fold lays both ends from one heading), the
+map is a pure **translation** by `farCentre − nearCentre` — no rotation — which is what lets the
+vessel's attitude, its momentum, and the camera's own smoothing state pass through untouched.
+`FoldGate.Pair` warns if a future caller ever lays the two ends on different axes.
+
+### 2. The mouth is a window
+
+`FoldGatePortalView` renders the world as the gameplay camera would see it if the two mouths were
+one — the camera's pose carried through the pair, the camera's own projection (field of view
+copied live, so the speed tunnel narrows the window too), and an **oblique near plane** on the far
+mouth so nothing between that vantage and the far ring can get into the picture. The ring's window
+surface (`FoldGatePortal.shader`, `Resources/FoldGatePortal.mat`) samples that render at its own
+**screen** position, so each pixel of the window is exactly what the camera would see through it
+on the far side, and the ship flying in is already where it is about to be.
+
+- **Only a gate the viewer's domain may thread shows a window.** A view through the ring is a
+  promise that you can go there; a rival sees an ordinary ring in the Butterfly's colour.
+- **One window at a time** — the nearest threadable gate on screen and in `portalWindowRange`,
+  or unconditionally the gate the camera is being carried through.
+- **It renders with post-processing OFF, in HDR** — the one deliberate exception to
+  `OffscreenCameraSetup`'s rule. Every other off-screen camera draws a picture shown AS a picture;
+  this one is composited INTO the world and then post-processed by the gameplay camera with
+  everything else, so tonemapping it here as well would tonemap it twice.
+- It is the `ConnectingArenaPreview` / Serpent-scope carve-out (`Docs/REAR_VIEW.md §3.1.1`):
+  runtime camera, never tagged MainCamera, disabled and stepped by hand, rendering only into a
+  RenderTexture. It refreshes **every frame** (a window that lagged the camera would shear against
+  the ring as the pilot turned).
+
+### 3. The camera follows the ship through the mouth
+
+`CustomCameraController.CarryThroughPortal`. A chase camera is up to 207 u behind its ship, so
+moving it on the frame of the transit is a cut. Instead it keeps framing the ship at its position
+mapped BACK through the pair — which it sees in the window — and is itself moved across (pose and
+SmoothDamp velocity together, by the same translation) on the frame **the camera** reaches the
+near plane, landing on exactly the vantage the window was rendered from. It hands across early if
+the ship would stop being visible through the mouth (a hard turn, a rim transit), and after
+6 s at most. Identity-guarded: a camera not following that vessel ignores the call, so the
+transit asks the active camera without knowing whose it is — which is also what makes a
+spectator's view seamless.
+
+Two things ride along. The **occlusion corridor** opens onto the ship from the camera's side of
+the portal while a carry is pending (`PrismOcclusionCorridor.SetViewShift` /
+`ViewTargetPosition`), because a corridor drawn between a camera at one gate and a ship at the
+other would dissolve a tube of prisms across the arena; the window render borrows it for its own
+vantage and hands it back. And a **ship half-way through a mouth is drawn on both sides**: the
+window hides everything beyond the near plane and the far render only contains what is beyond the
+far plane, so a straddling hull would be sliced. For the straddle only, the followed ship is posed
+through the pair for the far render (inside the driver's LateUpdate) and back through it for the
+gameplay render during a carry (between `beginCameraRendering` and `endCameraRendering`), and put
+back before anything else runs — a portal's "clone" without a clone.
+
+### 4. Ribbons are cut at the mouths — and at every teleport
+
+`VesselTransformer.SetPose` — the one place every pose write lands, on every machine — now calls
+`TeleportContinuity.OnTeleported`. Every `TrailRenderer` under the vessel is split in two: the
+ribbon laid so far goes to a `TeleportRibbonGhost` that ends where the vessel LEFT and drains from
+its tail at the rate it would have aged out anyway (TrailRenderer hides its per-point ages, so they
+are estimated from arc length at the vessel's speed), and the live renderer starts again where it
+ARRIVED. For a gate transit (`FoldGate.TryResolveTransit`, tolerant so a peer whose replica is a
+little behind still resolves it) the cut points are ON the two mouths, and the camera carry is
+started from the same place. **This covers every teleport, not just gates** — the Fold itself, a
+kickoff park and a Wanderway return no longer streak a ribbon across the world either.
+
+### 5. A client moves its own vessel immediately
+
+`VesselController.SetPose` on an owning client now writes the pose locally FIRST and then asks the
+server, which re-broadcasts to every client except the sender. Before, the owner waited for its
+own request to come back — a party guest kept flying on the old side of the gate for a round trip
+and was then yanked to a pose already a round trip stale. The host path is unchanged.
+
+### Cost and budget
+
+- **Colliders: zero.** No prism, no collider, no mass anywhere in this.
+- **One extra render of the world per frame**, at `portalWindowRenderScale` (0.75) of the gameplay
+  camera's resolution, no shadows / AA / post — only while a threadable gate is on screen within
+  `portalWindowRange`, and for at most one gate. One screen-scaled HDR render target, released
+  whenever no gate is standing.
+- A ribbon ghost per trail per teleport, gone once drained.
+
+### Verification status
+
+**Nothing has been run in the editor.** Proven offline: `Tools/Build/foldgate_harness/` compiles
+and RUNS the shipped `FoldGateGeometry.cs` — now 8 properties and 4 negative controls, including
+that a transit carries position through exactly (worst 3e-5 u over 4000 samples) with the retired
+rule as the control (it lurched 38.8 u), and that the ribbon cut points lie on both planes. The new
+files (`FoldGate.cs`, `FoldGatePortalView.cs`, `TeleportContinuity.cs`, `TeleportRibbonGhost.cs`)
+type-check under Roslyn against a stub of the API they touch, and the standing textual gates pass.
+
+**NOT verified, and each is a playtest question:** that the window registers with the screen on
+every graphics API (it samples by screen position through the built-in `ComputeScreenPos`
+arithmetic, which carries the render-target flip); that URP respects the oblique projection on a
+hand-stepped camera; that the straddling ship's borrowed pose moves a SKINNED hull for the render
+it brackets; that the ribbon ghost's drain reads as the ribbon aging rather than retracting; the
+cost of the second render on a low-end device; every multiplayer path, in particular the new
+owner-first `SetPose` and whether a remote replica's interpolation lands close enough for
+`TryResolveTransit` (tolerance: one mouth diameter).
+
+**Known gaps.** A teammate's hull straddling a mouth is still sliced (only the camera's own ship is
+drawn on both sides). A window only exists for the nearest gate, so a second gate on screen is a
+plain ring. A `VesselTransformer.SetPose` whose start happens to lie in one gate's mouth and whose
+end lands within a mouth diameter of its partner's image is read as a transit (a Fold from inside
+its own old gate is the only plausible way to do that); the cost would be one camera carry.
 
 ### Follow-ups
 

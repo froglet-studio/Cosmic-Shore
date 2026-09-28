@@ -1,6 +1,6 @@
 // Runs the SHIPPED FoldGateGeometry against a simulated pilot, then asserts the properties the
-// Butterfly's gates promise. Six checks and four negative controls; every control must fire, or
-// the check it guards is proving nothing.
+// Butterfly's gates promise. Every negative control must fire, or the check it guards is proving
+// nothing.
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -61,7 +61,7 @@ static class Program
                 if (first) continue;
                 if (!FoldGateGeometry.CrossedMouth(prev, cur, c, ax, R, out var hit)) continue;
 
-                Vector3 exit = FoldGateGeometry.Exit(hit, cur - prev, c, ax, oc, oax, CLEAR);
+                Vector3 exit = FoldGateGeometry.Through(cur, c, ax, oc, oax);
                 Transits++;
                 _last["g0"] = exit; _last["g1"] = exit;
                 _armed.Remove("g0"); _armed.Remove("g1");
@@ -102,50 +102,66 @@ static class Program
                   $"transits={sim.Transits}");
         }
 
-        // 3. A transit always deposits the pilot INSIDE the far gate's near zone -- which is what
-        //    makes disarming at the far end sufficient rather than approximately right.
+        // 3. A transit deposits the pilot INSIDE the far gate's near zone for any step shorter
+        //    than the zone's depth -- which is what makes disarming at the far end sufficient.
         {
             bool allInside = true;
+            float depth = FoldGateGeometry.NearZoneDepth(R, CLEAR);
             var rng = new Random(7);
             for (int i = 0; i < 4000; i++)
             {
-                // a crossing point anywhere in the mouth, a travel direction either way
-                double th = rng.NextDouble() * Math.PI * 2, rr = Math.Sqrt(rng.NextDouble()) * R;
-                Vector3 hit = A + new Vector3((float)(Math.Cos(th) * rr), (float)(Math.Sin(th) * rr), 0);
-                Vector3 travel = AXIS * (rng.NextDouble() < 0.5 ? 1f : -1f) * STEP;
-                Vector3 exit = FoldGateGeometry.Exit(hit, travel, A, AXIS, B, AXIS, CLEAR);
+                // a crossing anywhere in the mouth, either way, with a step up to the zone depth
+                double th = rng.NextDouble() * Math.PI * 2, rr = Math.Sqrt(rng.NextDouble()) * R * 0.95;
+                float sense = rng.NextDouble() < 0.5 ? 1f : -1f;
+                float past = (float)rng.NextDouble() * depth * 0.99f;
+                Vector3 cur = A + new Vector3((float)(Math.Cos(th) * rr), (float)(Math.Sin(th) * rr), 0)
+                                + AXIS * (sense * past);
+                Vector3 exit = FoldGateGeometry.Through(cur, A, AXIS, B, AXIS);
                 if (!FoldGateGeometry.InNearZone(exit, B, AXIS, R, CLEAR)) allInside = false;
             }
-            Check("every exit lands inside the far gate's near zone", allInside);
+            Check("every transit of a step shorter than the zone depth lands inside it", allInside);
         }
-        // 3n. NEGATIVE CONTROL: a clearance past the zone depth would NOT land inside.
+        // 3n. NEGATIVE CONTROL: a step one unit past the zone depth lands outside it.
         {
-            Vector3 exit = FoldGateGeometry.Exit(A, AXIS, A, AXIS, B, AXIS,
-                                                 FoldGateGeometry.NearZoneDepth(R, CLEAR) + 1f);
-            Check("  (control) a clearance past the zone depth lands outside",
+            Vector3 cur = A + AXIS * (FoldGateGeometry.NearZoneDepth(R, CLEAR) + 1f);
+            Vector3 exit = FoldGateGeometry.Through(cur, A, AXIS, B, AXIS);
+            Check("  (control) a step past the zone depth lands outside",
                   !FoldGateGeometry.InNearZone(exit, B, AXIS, R, CLEAR));
         }
 
-        // 4. Lateral offset is preserved: enter near the rim, leave near the rim.
+        // 4. SEAMLESS: the pilot's position relative to the mouth is carried through EXACTLY --
+        //    lateral offset and axial depth alike -- so the jump is a change of frame with no
+        //    lurch in it, and a camera/ribbon carried by the same map lands where it would have.
         {
             float worst = 0f;
-            for (int i = 0; i < 360; i++)
+            var rng = new Random(11);
+            for (int i = 0; i < 4000; i++)
             {
-                double th = i * Math.PI / 180.0;
-                Vector3 hit = A + new Vector3((float)(Math.Cos(th) * R * 0.9f),
-                                              (float)(Math.Sin(th) * R * 0.9f), 0);
-                Vector3 exit = FoldGateGeometry.Exit(hit, AXIS, A, AXIS, B, AXIS, CLEAR);
-                Vector3 inOff = hit - A, outOff = exit - B;
-                outOff = outOff - Vector3.Dot(outOff, AXIS) * AXIS;
-                worst = Math.Max(worst, (inOff - outOff).magnitude);
+                Vector3 rel = new Vector3((float)(rng.NextDouble() * 2 - 1) * R,
+                                          (float)(rng.NextDouble() * 2 - 1) * R,
+                                          (float)(rng.NextDouble() * 2 - 1) * 60f);
+                Vector3 exit = FoldGateGeometry.Through(A + rel, A, AXIS, B, AXIS);
+                worst = Math.Max(worst, ((exit - B) - rel).magnitude);
             }
-            Check("lateral offset is preserved through a transit", worst < 1e-3f, $"worst={worst:E2}u");
+            Check("position relative to the mouth is carried through exactly", worst < 1e-3f,
+                  $"worst={worst:E2}u");
+        }
+        // 4n. NEGATIVE CONTROL: the retired re-projection (hit re-laid on the far plane plus a
+        //     fixed clearance) lurches the pilot along the axis on the frame of the jump.
+        {
+            Vector3 cur = A + new Vector3(10f, -4f, 1.2f);          // 1.2u past the near plane
+            Vector3 hit = A + new Vector3(10f, -4f, 0f);
+            Vector3 oldExit = B + (hit - A) + AXIS * CLEAR;         // what the old rule produced
+            Vector3 seamless = FoldGateGeometry.Through(cur, A, AXIS, B, AXIS);
+            float lurch = Vector3.Dot(oldExit - seamless, AXIS);
+            Check("  (control) the retired rule lurched the pilot forward", lurch > 30f,
+                  $"lurch={lurch:F1}u");
         }
 
         // 5. The side you were heading for is the side you come out on.
         {
-            Vector3 fwd = FoldGateGeometry.Exit(A, AXIS, A, AXIS, B, AXIS, CLEAR);
-            Vector3 back = FoldGateGeometry.Exit(A, AXIS * -1f, A, AXIS, B, AXIS, CLEAR);
+            Vector3 fwd = FoldGateGeometry.Through(A + AXIS * 0.5f, A, AXIS, B, AXIS);
+            Vector3 back = FoldGateGeometry.Through(A - AXIS * 0.5f, A, AXIS, B, AXIS);
             bool ok = Vector3.Dot(fwd - B, AXIS) > 0f && Vector3.Dot(back - B, AXIS) < 0f;
             Check("momentum reads through the gate (sense is preserved)", ok);
         }
@@ -167,15 +183,27 @@ static class Program
                   $"transits={sim.Transits}");
         }
 
-        // 7. A round trip is an involution: out through A, back through B, you are where you were.
+        // 7. A round trip is an involution: through A and back through B, you are where you were.
         {
-            Vector3 hit = A + new Vector3(12f, -7f, 0);
-            Vector3 exit = FoldGateGeometry.Exit(hit, AXIS, A, AXIS, B, AXIS, CLEAR);
-            Vector3 hitBack = B + (exit - B) - Vector3.Dot(exit - B, AXIS) * AXIS;  // back through B
-            Vector3 home = FoldGateGeometry.Exit(hitBack, AXIS * -1f, B, AXIS, A, AXIS, CLEAR);
-            Vector3 want = A + new Vector3(12f, -7f, -CLEAR);
-            Check("a round trip returns you to where you set off, mirrored about the plane",
-                  Vector3.Distance(home, want) < 1e-3f, $"delta={Vector3.Distance(home, want):E2}u");
+            Vector3 p = A + new Vector3(12f, -7f, 3f);
+            Vector3 there = FoldGateGeometry.Through(p, A, AXIS, B, AXIS);
+            Vector3 home = FoldGateGeometry.Through(there, B, AXIS, A, AXIS);
+            Check("a round trip returns you exactly to where you set off",
+                  Vector3.Distance(home, p) < 1e-3f, $"delta={Vector3.Distance(home, p):E2}u");
+        }
+
+        // 8. The mouth points: OnPlane lies on the plane at the pilot's lateral offset, and its
+        //    image through the pair lies on the far plane -- where one ribbon ends and the next
+        //    begins.
+        {
+            Vector3 cur = A + new Vector3(20f, 5f, 2.5f);
+            Vector3 near = FoldGateGeometry.OnPlane(cur, A, AXIS);
+            Vector3 far = FoldGateGeometry.Through(near, A, AXIS, B, AXIS);
+            bool ok = Math.Abs(FoldGateGeometry.Axial(near, A, AXIS)) < 1e-4f
+                   && Math.Abs(FoldGateGeometry.Axial(far, B, AXIS)) < 1e-4f
+                   && Math.Abs(FoldGateGeometry.Lateral(far, B, AXIS)
+                               - FoldGateGeometry.Lateral(cur, A, AXIS)) < 1e-4f;
+            Check("ribbon cut points lie on both planes at the pilot's offset", ok);
         }
 
         Console.WriteLine(failures == 0 ? "\nall checks passed" : $"\n{failures} FAILED");

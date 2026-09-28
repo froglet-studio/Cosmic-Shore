@@ -348,12 +348,26 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>A peer that is neither the server nor the owner writes nothing. It is not that
         /// machine's vessel to move, and it will receive the pose like everybody else.</para>
+        ///
+        /// <para><b>The owning client writes its own pose FIRST, then tells everybody else.</b>
+        /// Before this the owner waited for its own request to come back from the server, so a
+        /// party guest kept flying on the old side of a teleport for a whole round trip and was
+        /// then yanked to a pose that was already a round trip stale — a Butterfly gate transit
+        /// read as a rubber-band on every guest and as seamless only on the host. The server now
+        /// re-broadcasts to every client EXCEPT the one that asked, because that one already has
+        /// it, and applying it a second time a round trip later is exactly the yank being removed.
+        /// (FoldActionExecutor's gate placement already assumed this — "the owner writes the pose
+        /// locally" — and was only true on the host until now.)</para>
         /// </summary>
         public void SetPose(Pose pose)
         {
             if (!IsSpawned) { SetPose_Local(pose); return; }
             if (IsServer)   { SetPose_ClientRpc(pose); return; }
-            if (IsOwner)      SetPose_ServerRpc(pose);
+            if (IsOwner)
+            {
+                SetPose_Local(pose);
+                SetPose_ServerRpc(pose);
+            }
         }
 
         public void ChangePlayer(IPlayer player)
@@ -478,10 +492,24 @@ namespace CosmicShore.Gameplay
         // RequireOwnership is left ON: this is the "I am moving MY OWN vessel" route, and the
         // server already has its own direct branch for moving anybody's.
         [ServerRpc]
-        void SetPose_ServerRpc(Pose pose) => SetPose_ClientRpc(pose);
+        void SetPose_ServerRpc(Pose pose, ServerRpcParams rpc = default)
+        {
+            // Everyone but the sender, which applied the pose before it asked (see SetPose).
+            ulong sender = rpc.Receive.SenderClientId;
+            var ids = NetworkManager.ConnectedClientsIds;
+            var targets = new System.Collections.Generic.List<ulong>(ids.Count);
+            for (int i = 0; i < ids.Count; i++)
+                if (ids[i] != sender) targets.Add(ids[i]);
+            if (targets.Count == 0) return;
+
+            SetPose_ClientRpc(pose, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = targets }
+            });
+        }
 
         [ClientRpc]
-        void SetPose_ClientRpc(Pose pose) => SetPose_Local(pose);
+        void SetPose_ClientRpc(Pose pose, ClientRpcParams rpc = default) => SetPose_Local(pose);
 
         void SetPose_Local(Pose pose) => VesselStatus.VesselTransformer.SetPose(pose);
 
