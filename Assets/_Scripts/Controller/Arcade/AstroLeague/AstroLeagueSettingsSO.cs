@@ -519,8 +519,20 @@ namespace CosmicShore.Gameplay
         public int goalParticleBurst = 120;
 
         [Header("Ball - Speed-Reactive Visuals")]
-        public float minTrailWidth = 0.6f;
-        public float maxTrailWidth = 5f;
+        [Tooltip("Comet-wake width at the HEAD, as a fraction of the ball's DIAMETER, at rest. Stated " +
+                 "relative to the ball because a TrailRenderer's width is world-space and ignores " +
+                 "transform scale - a forged or intensity-scaled ball would otherwise trail a thread.")]
+        public float trailWidthAtRest = 0.7f;
+        [Tooltip("Comet-wake head width (fraction of ball diameter) at speedForMaxVisuals.")]
+        public float trailWidthAtSpeed = 1.25f;
+        [Tooltip("Seconds of wake the ball carries at rest.")]
+        public float trailTimeAtRest = 0.3f;
+        [Tooltip("Seconds of wake the ball carries at speedForMaxVisuals.")]
+        public float trailTimeAtSpeed = 1.1f;
+        [Tooltip("Wake DUST: glowing motes shed into the world per world unit the ball travels at full " +
+                 "speed (scaled by speed; nothing below ~15% speed). They stay where they were shed and " +
+                 "fade, so the path lingers after the ribbon has gone. 0 disables.")]
+        public float wakeDustPerUnit = 0.28f;
         public float minEmissionIntensity = 2.5f;
         public float maxEmissionIntensity = 11f;
         public float minLightRange = 25f;
