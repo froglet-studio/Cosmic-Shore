@@ -480,6 +480,9 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismJiggleStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleParamsOverride { Value = float3.zero });
+                        // Super-shield mark (a STATE bit the Echo Sight reads, not a stamp).
+                        // 0 = not super-shielded, which is every prism until one engages.
+                        em.AddComponentData(prototype, new PrismSuperShieldedOverride { Value = 0f });
                         // Living-mass sway (Docs/ECOSYSTEM.md §47). A ZERO span is an
                         // exact no-op, so every prism that is not part of a living limb
                         // — every trail, every authored environment, every skeleton —
@@ -956,6 +959,22 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismJiggleStartTimeOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismJiggleDurationOverride { Value = 0f });
             em.SetComponentData(handle.Entity, new PrismJiggleParamsOverride { Value = float3.zero });
+        }
+
+        /// <summary>Writes the super-shield MARK (1 = this prism wears the super-shield). A STATE
+        /// bit rather than a clock stamp: written once at the shield's engage and once at its
+        /// drop, never per frame, and deliberately NOT part of <see cref="ClearPrismStamps"/> —
+        /// <c>Prism</c> owns the bit and re-asserts it whenever its companion entity (re)engages.
+        /// Returns false when there is no usable entity (the caller then carries the bit on the
+        /// MeshRenderer instead).</summary>
+        public static bool SetSuperShieldMark(in PrismRenderHandle handle, bool superShielded)
+        {
+            if (!IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSuperShieldedOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity,
+                new PrismSuperShieldedOverride { Value = superShielded ? 1f : 0f });
+            return true;
         }
 
         /// <summary>Stamps the LIVING-MASS SWAY: this prism rides the shear field of the

@@ -1016,3 +1016,54 @@ channel, which is O(1) per frame in total regardless of how many pilots, human o
 6. Fly a **Sparrow** (Dog Fight) with AI opponents and confirm nothing changed: no vessel there
    binds a telegraph, so `TryGetInputForAction` returns false and the AI behaves exactly as before.
 
+
+## 16. 2026-09-28 — a super-shield in your cone glows DANGER: it is where the blast ends
+
+A crystal blast that reaches a **super-shielded** prism stops there. `PrismSpatialIndex
+.ResolveExplosionHit` answers `shouldContinue = false` on the first one the sweep meets — before
+the domain test, so your OWN super-shields stop it too — and `AOEConicExplosion` destroys the blast
+on that frame. The sight used to paint such a prism in the same pale cast as everything it was about
+to take, which is exactly backwards: it was the one prism in the cone that was going to cost you the
+shot. Now **every super-shield inside your own cone glows in the danger colour.**
+
+- **Why a per-PRISM bit, not a material stamp.** The domain gate rides a per-material float because
+  a prism's material IS its domain. The super-shield has no material of its own to stamp: the
+  stellation deliberately keeps the PLAIN team material (`PrismStateManager.ActivateSuperShield`),
+  so the prism graphs could not tell it apart from plain mass at all. The bit is therefore the
+  Hybrid-Per-Instance `_PrismSuperShielded`, carried by the ECS override `PrismSuperShieldedOverride`
+  on the live-prism prototype (a property block on the legacy MeshRenderer path).
+- **It is a STATE write, not an animation.** `PrismStellatedOctahedronShield` sets it as its pose
+  goes final in each direction (`Prism.SetSuperShieldMark(true/false)`), `Prism.Initialize` clears
+  it on pool reuse, and `Prism.ApplyRenderPath` re-asserts it onto a companion entity minted after
+  the shield engaged. Zero per-frame CPU; the clock-material law has no quarrel with a state that
+  is final the instant it is applied. It follows the shield the player can SEE — every path that
+  super-shields a prism (the state manager, the Skim Race track) engages that component.
+- **It TINTS, which the own sight otherwise never does — deliberately.** The sight stays out of the
+  palette's language so it can never be read as mass state; this is the one case where the mark IS
+  about mass state (the prism is a hazard to the weapon you are aiming), so it borrows the danger
+  colour the game already uses for "touching this costs you". It pulls the prism's own colour 75%
+  toward the danger colour and then adds a glow on top (additive red over a blue face would read as
+  purple). The fill is FLAT rather than edge-weighted — a blocker in the core blocks exactly as
+  hard as one on the rim.
+- **The colour is the palette's.** `PrismLit.PublishAimed` writes `_PrismSightBlockerColor` from
+  `SO_ColorSet.GetDangerSignalColor()` every frame the sight is held, so the mark cannot drift from
+  the danger tier. Unpublished (a tool scene with no theme) falls back to the HLSL `#define`.
+- **Own sight only.** A rival's cone does not flag blockers: a red mark inside someone else's aim
+  says "your problem" in the colour that means yours.
+- **Not done, and worth a playtest first:** the prisms BEYOND the first blocker are still lit as
+  though the blast will take them. It will not — it ends at the blocker — but drawing the shadow
+  a blocker casts would need a per-frame ordering the global-uniform shape cannot express, and
+  whether the red mark alone is enough is a look call.
+
+Proof: `Tools/Shaders/verify_prism_sight_composition.py` §5 compiles and RUNS the shipped HLSL —
+red dominates at every depth and at the rim, an unmarked prism is bit-identical to before, a
+marked prism outside the cone is untouched, a marked prism under a PEER cone gets the peer paint
+unchanged, and the published palette colour beats the fallback. Negative control: disable the
+branch and §5 fails (red 0/40). Graph wiring: `Tools/Shaders/wire_prism_destruction_sight.py`
+(an UPGRADE pass adds the property, node, slot and edge to a graph wired before it existed).
+Asserted from assets by `PrismLitTests.TheSuperShieldMarkReachesTheSightFromTheShieldToTheGraph`.
+
+**In-editor verification.** In freestyle on Garland (the boot world carries 69 super-shielded
+prisms), swap to the Dolphin with the Vessel Changer and hold the Echo Sight across a super-shield: it glows red while
+the plain mass around it takes the pale cast. Fire through it and confirm the blast stops there.
+Let it drop (a Rhino sword break) and confirm it stops glowing red on the next sweep.

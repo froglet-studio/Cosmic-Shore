@@ -1871,8 +1871,15 @@ Four properties worth carrying to the next one:
   breaks SRP batching); and the count uniform must be the master sentinel, since unpublished
   globals read as zero and that has to mean "loop does not execute".
 
+- **A per-PRISM fact the shader needs is a STATE bit, not a stamp** (added 2026-09-28). A
+  super-shield inside the own cone glows in the danger colour, because the blast ENDS there — and a
+  super-shielded prism wears the plain team material, so no per-material value can say what it is.
+  The answer is one Hybrid-Per-Instance float (`_PrismSuperShielded`) written once at the shield's
+  engage and once at its drop, owned by `Prism` so it survives the companion entity being re-minted.
+  Not a global (it differs per prism), not a per-frame write (it only changes when the state does).
+
 Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`
-(§14 for the peer channel).
+(§14 for the peer channel, §16 for the blocker mark).
 
 ### 4.7.2 The third citizen of §4.7 — the Urchin's cradle (shipped 2026-09-16, re-cut 2026-09-22)
 
