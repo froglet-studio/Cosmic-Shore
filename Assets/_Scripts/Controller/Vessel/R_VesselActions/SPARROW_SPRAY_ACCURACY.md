@@ -1070,14 +1070,24 @@ Sparrow, fire on input 1.
   rule-9 icon-tint obligations do not apply.
 - **The Space row is a hole (Round 7, by design).** The guns are fixed-range, so SPACE no longer
   scales the Pulsefire Cannons at all. The map's Space entry still names that ability; re-cut it.
+  **Note `element_ability_table.py` reports this row as WIRED** (`scaling wired 4/4`), and that is
+  not the tool lying: SPACE still scales the Sparrow's SKIMMER (`Skimmer.Scale`, 20 -> 40 on
+  `Sparrow.prefab`). The hole is that the ability the row is NAMED for no longer reads the element,
+  which a per-element wiring census cannot see. Its map prose ("Space extends their range
+  dramatically") is now false and is part of the re-cut.
+- **`verify_projectile_charge_field.py` was not re-run for Round 7's 1350 u/s muzzle.** Its
+  `MUZZLE_SPEED` constant was updated, but the script diffs against a baseline revision that is not
+  in this environment's shallow clone. The light budget is a function of rounds ON SCREEN, which the
+  range change leaves identical (flight time is fixed), so no change is expected — run it on a full
+  clone to confirm.
 - **The haptic ramp does not read heat past the first cap.** Saturation still measures the cone
   against the sustainable cap (Round 6's argument), so the collapse is silent in the hands. It is
   also only driven while firing, so a cooling gun is silent — correct, but worth a playtest.
-- **Vessels and mines still tunnel.** Swept detection covers prisms only. A hull is a much bigger
-  target so it matters far less, but a Sparrow round crossing 6.25 u per frame can still slip past
-  a vessel at a glancing angle — and in Dog Fight that is a missed point. Generalizing the sweep to
-  the whole impact system (and to every other fast projectile in the game, not just the Sparrow's)
-  is the natural next step; it is opt-in per prefab precisely so that can be done deliberately.
+- **Mines still tunnel.** Prisms AND vessels are swept now (`sweptVesselDetection` shipped with
+  Dog Fight; it matters more than ever at the fixed 1350 u/s muzzle, ~54 u per 0.04 s physics
+  step), but mines and every other fast projectile in the game outside the Sparrow's guns are not.
+  Generalizing the sweep is still the natural next step; it stays opt-in per prefab so that can be
+  done deliberately.
 - **`placementImmunitySeconds` is now doing more work again.** Round 6 noted 0.2 s was probably too
   long once the hit sphere shrank; at 120 shots/s the shot-vs-shot spacing it guards is tighter
   again. Re-judge it in play rather than assuming either direction.
