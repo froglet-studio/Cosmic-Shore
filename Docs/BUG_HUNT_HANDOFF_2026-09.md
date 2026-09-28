@@ -30,6 +30,7 @@ Confidence scale:
 | 5 | The retired single-player Duel for the Cell and Wildlife Blitz scenes are deleted, along with their vestiges. | see the PR |
 | 6 | **Pool double-release / handler stacking.** `GenericPoolManager` released an instance twice, which put it in the pool twice. That handed the same prism to two callers. The per-Get `OnReturnToPool += Release` handlers also stacked. This is the likely cause of **the Squirrel's boost-ring prisms losing spawn consistency over a session.** | `GenericPoolManager` + 4 subclasses |
 | 7 | `.AsMainThread()` returns to the main thread on the EXCEPTION path too (`try/finally`). A faulted UGS task previously resumed its `catch` block off-thread. | `UniTaskExtensions.cs` |
+| 8 | **`Cell.countGrids` disposed on destroy (was §1.8).** Only re-initialisation disposed the density grids, so each destroyed cell leaked 4 grids × 6 persistent NativeArrays (24 allocations) per scene load. `OnDestroy` now disposes them (idempotent) and clears the map. `AddBlock`/`RemoveBlock` use `TryGetValue` so a prism torn down after its cell cannot throw on the emptied map. Shipped on `Bug_Hunt`. | `Cell.OnDestroy`, `Cell.AddBlock`, `Cell.RemoveBlock` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -113,15 +114,6 @@ Confidence scale:
 - **Fix:** store the window on the entry and prune `now - t > entry.window`.
 - **Note:** Broadside's balance rests on these windows (`BROADSIDE.md`). Re-check the balance model
   after the fix.
-
-### 1.8 `Cell.countGrids` never disposed on destroy — High
-- **Where:** `Assets/_Scripts/Controller/Environment/Cell.cs`, `OnDestroy` (1276). The grids are
-  allocated around 1833-1838.
-- **Bug:** re-initialisation disposes the old grids (1833), but `OnDestroy` does not. Each
-  `BlockCountDensityGrid` owns native memory.
-- **Consequence:** a native leak per cell per scene load. The editor logs "A Native Collection has
-  not been disposed".
-- **Fix:** in `OnDestroy`: `foreach (var g in countGrids.Values) g?.Dispose(); countGrids.Clear();`.
 
 ### 1.9 Analytics timestamps are culture-dependent — High
 - **Where:** `PostHogAnalyticsSink.cs:199`, `AnalyticsServiceFacade.cs:768`. Also sweep
