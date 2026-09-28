@@ -300,16 +300,73 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ShippedShape_EachPlateauIsThreeTimesItsOldLength_AndCollapseIsFiveXBlowout()
+        public void ShippedShape_SixEvenFiveSecondPhases_ToThirtySecondsOfHeat()
         {
-            // The Sparrow's shipped numbers (FullAutoAction.asset): 6 s accurate, 2 s ramp to
-            // 1.5 deg, 6 s plateau, 4 s ramp to 7.5 deg, 6 s plateau, 4 s ramp to 37.5 deg.
-            var shipped = new GunSpreadStages(6f, 0.75f, 1.5f, 6f, 1.5f, 7.5f, 6f, 7.5f, 37.5f);
-            Assert.AreEqual(28f, shipped.SecondsToFullSpread, 1e-4f);
-            Assert.AreEqual(0f, GunSpreadMath.HalfAngleDegrees(6f, shipped), 1e-4f);
-            Assert.AreEqual(1.5f, GunSpreadMath.HalfAngleDegrees(14f, shipped), 1e-4f);
-            Assert.AreEqual(7.5f, GunSpreadMath.HalfAngleDegrees(24f, shipped), 1e-4f);
-            Assert.AreEqual(37.5f, GunSpreadMath.HalfAngleDegrees(28f, shipped), 1e-4f);
+            // The Sparrow's shipped numbers (FullAutoAction.asset): 0 -> 30 heat in six even 5 s
+            // phases - accurate, ramp to 1.5 deg, plateau, ramp to 7.5 deg, plateau, ramp to 37.5.
+            var shipped = new GunSpreadStages(5f, 0.3f, 1.5f, 5f, 1.2f, 7.5f, 5f, 6f, 37.5f);
+            Assert.AreEqual(30f, shipped.SecondsToFullSpread, 1e-4f);
+            Assert.AreEqual(0f, GunSpreadMath.HalfAngleDegrees(5f, shipped), 1e-4f);
+            Assert.AreEqual(1.5f, GunSpreadMath.HalfAngleDegrees(10f, shipped), 1e-4f);
+            Assert.AreEqual(1.5f, GunSpreadMath.HalfAngleDegrees(15f, shipped), 1e-4f);
+            Assert.AreEqual(7.5f, GunSpreadMath.HalfAngleDegrees(20f, shipped), 1e-4f);
+            Assert.AreEqual(7.5f, GunSpreadMath.HalfAngleDegrees(25f, shipped), 1e-4f);
+            Assert.AreEqual(37.5f, GunSpreadMath.HalfAngleDegrees(30f, shipped), 1e-4f);
+
+            // Every transition lands on a 5 s boundary - the heat gauge's marks are evenly spaced.
+            var joins = new System.Collections.Generic.List<float>();
+            shipped.CollectPhaseJoins(joins);
+            Assert.AreEqual(6, joins.Count);
+            for (int i = 0; i < joins.Count; i++)
+                Assert.AreEqual(5f * (i + 1), joins[i], 1e-4f, $"join {i}");
+
+            // A fully-hot gun cools in 6 s at the shipped 5x cooling rate.
+            Assert.AreEqual(6f, shipped.SecondsToFullSpread / 5f, 1e-4f);
+        }
+
+        // ------------------------------------------------------------------ range
+
+        [Test]
+        public void RangeFactor_IsFullAtAColdGun()
+        {
+            Assert.AreEqual(1f, GunSpreadMath.RangeFactor(0f, 37.5f, 0.25f), 1e-6f);
+        }
+
+        [Test]
+        public void RangeFactor_IsTheAuthoredFractionAtTheFinalCap()
+        {
+            Assert.AreEqual(0.25f, GunSpreadMath.RangeFactor(37.5f, 37.5f, 0.25f), 1e-6f);
+        }
+
+        [Test]
+        public void RangeFactor_FallsLinearlyWithTheCone()
+        {
+            // Proportional to spread: halfway to the final cap, halfway to the final range.
+            Assert.AreEqual(0.625f, GunSpreadMath.RangeFactor(18.75f, 37.5f, 0.25f), 1e-6f);
+            // At the shipped sustainable cap (1.5 of 37.5 deg) the gun has lost only 3% of range,
+            // and at the blow-out cap (7.5) 15% - the loss that matters lives in the collapse.
+            Assert.AreEqual(0.97f, GunSpreadMath.RangeFactor(1.5f, 37.5f, 0.25f), 1e-5f);
+            Assert.AreEqual(0.85f, GunSpreadMath.RangeFactor(7.5f, 37.5f, 0.25f), 1e-5f);
+        }
+
+        [Test]
+        public void RangeFactor_HoldsPastTheCap_AndIsInertWithNoCone()
+        {
+            Assert.AreEqual(0.25f, GunSpreadMath.RangeFactor(80f, 37.5f, 0.25f), 1e-6f);
+            Assert.AreEqual(1f, GunSpreadMath.RangeFactor(10f, 0f, 0.25f), 1e-6f);
+            Assert.AreEqual(1f, GunSpreadMath.RangeFactor(37.5f, 37.5f, 1f), 1e-6f);
+        }
+
+        [Test]
+        public void FinalMaxHalfAngle_IsTheWidestCapTheCurveReaches()
+        {
+            Assert.AreEqual(37.5f,
+                new GunSpreadStages(5f, 0.3f, 1.5f, 5f, 1.2f, 7.5f, 5f, 6f, 37.5f).FinalMaxHalfAngleDegrees, 1e-5f);
+            // Collapse switched off -> the blow-out cap is the widest.
+            Assert.AreEqual(7.5f,
+                new GunSpreadStages(5f, 0.3f, 1.5f, 5f, 1.2f, 7.5f, 5f, 0f, 37.5f).FinalMaxHalfAngleDegrees, 1e-5f);
+            // Single ramp -> the sustainable cap.
+            Assert.AreEqual(1.5f, new GunSpreadStages(5f, 0.3f, 1.5f).FinalMaxHalfAngleDegrees, 1e-5f);
         }
 
         // ------------------------------------------------------------------ the cone

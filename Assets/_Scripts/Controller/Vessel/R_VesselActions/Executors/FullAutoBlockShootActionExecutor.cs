@@ -183,9 +183,11 @@ namespace CosmicShore.Gameplay
                     {
                         var abilities = _status?.ElementalAbilityHandler;
 
-                        // Muzzle speed is resolved per volley, not per hold: the SPACE level
-                        // that scales the guns can move mid-press (crystals, comeback buffs).
-                        var shotSpeed = so.ResolveSpeed(_status);
+                        // Muzzle speed is resolved per volley, not per hold: the gun's HEAT —
+                        // which shortens range in proportion to the cone — moves every frame
+                        // of fire. The factor is the bullets' own (one shared GunSprayAccuracy),
+                        // so a turret shot still goes exactly as far as a bullet would.
+                        var shotSpeed = so.ResolveSpeed(_status) * (_spray ? _spray.RangeFactor : 1f);
 
                         // SPACE level-5 'Piercing Bullets' — the SAME gate the cannons use.
                         // Below it the shot is stopped by the first prism it hits and leaves

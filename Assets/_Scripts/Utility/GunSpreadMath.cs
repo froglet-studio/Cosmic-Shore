@@ -86,6 +86,18 @@ namespace CosmicShore.Utility
             BlowsOut && CollapseGrowthDegreesPerSecond > 0f
                      && CollapseMaxHalfAngleDegrees > BlowoutMaxHalfAngleDegrees;
 
+        /// <summary>
+        /// The widest the cone can ever get: the collapse cap when the profile collapses, else
+        /// the blow-out cap when it blows out, else the sustainable cap. The reference the range
+        /// falloff (<see cref="GunSpreadMath.RangeFactor"/>) is measured against, so a profile
+        /// that switches its later stages off still loses its full authored range at the cap it
+        /// actually reaches.
+        /// </summary>
+        public float FinalMaxHalfAngleDegrees =>
+            Collapses ? CollapseMaxHalfAngleDegrees
+            : BlowsOut ? BlowoutMaxHalfAngleDegrees
+            : Mathf.Max(0f, MaxHalfAngleDegrees);
+
         /// <summary>Seconds of held fire to climb the FIRST ramp (excludes the onset window).</summary>
         public float RampSeconds =>
             GrowthDegreesPerSecond > 0f ? MaxHalfAngleDegrees / GrowthDegreesPerSecond : 0f;
@@ -244,6 +256,27 @@ namespace CosmicShore.Utility
             => HalfAngleDegrees(
                 heldSeconds,
                 new GunSpreadStages(onsetSeconds, growthDegreesPerSecond, maxHalfAngleDegrees));
+
+        /// <summary>
+        /// How much of its authored RANGE a round keeps at the current cone, 0..1. Range falls
+        /// LINEARLY with the half-angle — proportional to spread — from the full authored range at
+        /// a cold gun (half-angle 0) to <paramref name="rangeAtFullSpread"/> of it at
+        /// <paramref name="finalMaxHalfAngleDegrees"/>, the widest cap the curve reaches. Past
+        /// that cap it holds rather than extrapolating, so a mis-authored cap can never drive
+        /// range to zero or negative.
+        ///
+        /// Linear in ANGLE, not in heat: the plateaus are flat in both, the ramps move both, so
+        /// the range a pilot has is always the range the cone they can see implies. It is applied
+        /// as a MUZZLE-SPEED factor at the fire site (range = speed x 2T/pi with T fixed), which
+        /// keeps the round's flight TIME — and so the number of rounds in the air and the charge
+        /// shells' light budget — exactly unchanged.
+        /// </summary>
+        public static float RangeFactor(float halfAngleDegrees, float finalMaxHalfAngleDegrees, float rangeAtFullSpread)
+        {
+            if (finalMaxHalfAngleDegrees <= 0f) return 1f;
+            float t = Mathf.Clamp01(halfAngleDegrees / finalMaxHalfAngleDegrees);
+            return Mathf.Lerp(1f, Mathf.Clamp01(rangeAtFullSpread), t);
+        }
 
         /// <summary>
         /// One round's direction: <paramref name="forward"/> deflected to a point inside a cone

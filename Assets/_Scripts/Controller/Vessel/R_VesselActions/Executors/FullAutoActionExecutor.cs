@@ -192,14 +192,15 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                         ? _status.Course * _status.Speed
                         : Vector3.zero;
 
-                    // SPACE → gun range (range = speed × lifetime): read the LIVE element level
-                    // per tick through the vessel's ElementalAbilityMapSO. Never cache across
-                    // the hold and never bind ElementalFloats on the shared SO asset — per-vessel
-                    // state lives in the handler (multiplayer: last-initializer-wins otherwise).
-                    // The resolve lives on the SO so the Turret Stance can adopt the SAME number
-                    // instead of authoring a second copy of it.
+                    // Gun range (range = speed × 2T/π, T fixed): the FIXED authored muzzle speed
+                    // — no element scales it any more — shortened by HEAT. The range factor falls
+                    // linearly with the cone (1 cold → rangeAtFullSpread at the final cap), and
+                    // is applied to SPEED so flight time, and with it rounds-in-flight, is
+                    // unchanged. The resolve lives on the SO so the Turret Stance adopts the SAME
+                    // number, and the factor lives on the shared GunSprayAccuracy so both fire
+                    // modes lose range together.
                     var abilities  = _status?.ElementalAbilityHandler;
-                    var speedValue = so.ResolveSpeed(_status);
+                    var speedValue = so.ResolveSpeed(_status) * (_spray ? _spray.RangeFactor : 1f);
 
                     // SPACE level-5 'Piercing Bullets': below the threshold, bullets are
                     // destroyed on their first prism impact; at 5+ they pierce through.

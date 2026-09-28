@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// <para><b>The clock is HEAT, not hold time.</b> Releasing the trigger no longer resets the
     /// cone: heat builds at one second per second of fire and COOLS at
     /// <see cref="CoolingRateMultiplier"/> times that while the trigger is up, so a pilot who
-    /// fired for eight seconds needs two seconds off to be pin-accurate again. The curve reads
+    /// fired for ten seconds needs two seconds off to be pin-accurate again. The curve reads
     /// heat on its time axis exactly as it used to read hold time. See
     /// <c>R_VesselActions/SPARROW_SPRAY_ACCURACY.md</c>.</para>
     /// </summary>
@@ -34,19 +34,19 @@ namespace CosmicShore.Gameplay
                  "during which the gun is PERFECTLY accurate - the accurate plateau. Heat does " +
                  "not reset on release, it cools at coolingRateMultiplier x the build rate, so " +
                  "a release buys the window back only in proportion to how long you let go.")]
-        [SerializeField, Min(0f)] float onsetSeconds = 6f;
+        [SerializeField, Min(0f)] float onsetSeconds = 5f;
 
         [Tooltip("STAGE 2. Degrees of cone half-angle gained per second of continuous fire, once " +
                  "the onset window has elapsed. Together with the max half-angle this sets how " +
                  "long the first ramp takes: max / growth.")]
-        [SerializeField, Min(0f)] float growthDegreesPerSecond = 0.75f;
+        [SerializeField, Min(0f)] float growthDegreesPerSecond = 0.3f;
 
         [Tooltip("The SUSTAINABLE cap - where the first ramp levels off and the plateau sits. " +
                  "Sized to sit JUST past the point where the spread starts costing you the " +
                  "target you actually wanted: wide enough that everything in the danger zone is " +
                  "taking rounds, narrow enough that a held burst still kills what it is pointed " +
-                 "at. Note this is an ANGLE, so the miss distance grows with range - a Sparrow " +
-                 "at high SPACE shoots much further and therefore groups much wider. Zero " +
+                 "at. Note this is an ANGLE, so the miss distance grows with range - though the " +
+                 "range itself shrinks as the cone opens (rangeAtFullSpread). Zero " +
                  "disables spread entirely (the sanctioned opt-out), blow-out included.")]
         [SerializeField, Min(0f)] float maxHalfAngleDegrees = 1.5f;
 
@@ -55,14 +55,14 @@ namespace CosmicShore.Gameplay
                  "widening again. This is the band a pilot can actually fight in: the gun is " +
                  "as inaccurate as it is ever going to be while still being a gun. Zero welds " +
                  "the two ramps together into one kinked climb.")]
-        [SerializeField, Min(0f)] float plateauSeconds = 6f;
+        [SerializeField, Min(0f)] float plateauSeconds = 5f;
 
         [Tooltip("STAGE 4. Degrees per second on the SECOND ramp, once the plateau expires. " +
                  "Authored FASTER than the first ramp on purpose - the failure accelerates, so " +
                  "the curve reads as a gun losing control rather than one degrading evenly. " +
                  "Zero is the sanctioned opt-out: the cone holds at the sustainable cap " +
                  "forever, which is the single-ramp curve this replaced.")]
-        [SerializeField, Min(0f)] float blowoutGrowthDegreesPerSecond = 1.5f;
+        [SerializeField, Min(0f)] float blowoutGrowthDegreesPerSecond = 1.2f;
 
         [Tooltip("The FINAL cap, as a multiple of the sustainable cap - so the two can never " +
                  "drift apart when the base cap is retuned. At the shipped 5x the gun is area " +
@@ -73,12 +73,12 @@ namespace CosmicShore.Gameplay
         [Header("Collapse")]
         [Tooltip("STAGE 5. Seconds of heat the cone HOLDS at the blow-out cap before it " +
                  "collapses. Zero welds the second and third ramps together.")]
-        [SerializeField, Min(0f)] float collapsePlateauSeconds = 6f;
+        [SerializeField, Min(0f)] float collapsePlateauSeconds = 5f;
 
         [Tooltip("STAGE 6. Degrees per second on the THIRD ramp, once the second plateau " +
                  "expires. Faster again than the blow-out ramp - the failure keeps accelerating. " +
                  "Zero is the sanctioned opt-out: the cone holds at the blow-out cap forever.")]
-        [SerializeField, Min(0f)] float collapseGrowthDegreesPerSecond = 7.5f;
+        [SerializeField, Min(0f)] float collapseGrowthDegreesPerSecond = 6f;
 
         [Tooltip("The COLLAPSE cap, as a multiple of the blow-out cap (so of the sustainable cap " +
                  "too). At the shipped 5x the spread is virtually unusable - the price of never " +
@@ -87,10 +87,18 @@ namespace CosmicShore.Gameplay
 
         [Header("Heat")]
         [Tooltip("How much faster the gun COOLS than it heats. Heat builds at 1 per second of " +
-                 "fire and drops at this many per second while the trigger is up, so at 4 a " +
-                 "pilot who held for 8 s is pin-accurate again after 2 s off. The trigger coming " +
+                 "fire and drops at this many per second while the trigger is up, so at 5 a " +
+                 "fully-hot gun (30 s of heat as shipped) is cold again after 6 s off. The trigger coming " +
                  "up does NOT reset accuracy.")]
-        [SerializeField, Min(0.01f)] float coolingRateMultiplier = 4f;
+        [SerializeField, Min(0.01f)] float coolingRateMultiplier = 5f;
+
+        [Header("Range")]
+        [Tooltip("Fraction of the authored range a round keeps at the FINAL cap (the collapse " +
+                 "cap as shipped). Range falls linearly with the cone's half-angle - " +
+                 "proportional to spread - from full range at a cold gun to this at full spread, " +
+                 "so a hot gun is both wider and shorter. Applied as a muzzle-speed factor, so " +
+                 "flight time and rounds-in-flight are unchanged. 1 disables the falloff.")]
+        [SerializeField, Range(0.05f, 1f)] float rangeAtFullSpread = 0.25f;
 
         [Tooltip("Where inside the cone rounds land. 0.5 = uniform over the disc (the whole " +
                  "danger zone saturates evenly - the default). 1.0 = a dense core with a thin " +
@@ -121,6 +129,9 @@ namespace CosmicShore.Gameplay
         public float PlateauSeconds => plateauSeconds;
         public float BlowoutGrowthDegreesPerSecond => blowoutGrowthDegreesPerSecond;
         public float DistributionBias => distributionBias;
+
+        /// <summary>Range kept at the final cap, 0..1 (see <see cref="GunSpreadMath.RangeFactor"/>).</summary>
+        public float RangeAtFullSpread => Mathf.Clamp01(rangeAtFullSpread);
 
         /// <summary>
         /// The blow-out cap in DEGREES - derived from the sustainable cap, never authored

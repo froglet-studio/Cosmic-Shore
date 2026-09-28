@@ -17,7 +17,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <b>Heat, not hold time.</b> The curve's time axis is HEAT: one second of fire adds one
     /// second of heat, and while the trigger is up heat drains at
-    /// <see cref="GunSpreadProfile.CoolingRateMultiplier"/> times that rate (4x as shipped). The
+    /// <see cref="GunSpreadProfile.CoolingRateMultiplier"/> times that rate (5x as shipped, so a
+    /// fully-hot gun — 30 s of heat — is cold after 6 s off). The
     /// trigger coming up does NOT reset accuracy — a release buys accuracy back only in
     /// proportion to how long the pilot lets go, so spraying and tapping are one continuous
     /// economy rather than two modes with a free reset between them. Heat is capped at the
@@ -57,6 +58,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The cone's current half-angle in degrees. 0 = perfectly accurate.</summary>
         public float HalfAngleDegrees { get; private set; }
+
+        /// <summary>
+        /// Fraction of the authored range a round fired NOW keeps, 1 at a cold gun falling
+        /// linearly with the cone to <see cref="GunSpreadProfile.RangeAtFullSpread"/> at the final
+        /// cap (<see cref="GunSpreadMath.RangeFactor"/>). Both fire executors multiply their muzzle
+        /// speed by it, so the bullets and the Turret Stance's prisms lose range together.
+        /// </summary>
+        public float RangeFactor { get; private set; } = 1f;
 
         /// <summary>Current heat in SECONDS of the curve's time axis, 0..SecondsToFullSpread.</summary>
         public float HeatSeconds => _heatSeconds;
@@ -162,7 +171,10 @@ namespace CosmicShore.Gameplay
                 ? Mathf.Min(full, _heatSeconds + dt)
                 : Mathf.Max(0f, _heatSeconds - dt * _profile.CoolingRateMultiplier);
 
-            HalfAngleDegrees = GunSpreadMath.HalfAngleDegrees(_heatSeconds, _profile.Stages);
+            var stages = _profile.Stages;
+            HalfAngleDegrees = GunSpreadMath.HalfAngleDegrees(_heatSeconds, stages);
+            RangeFactor = GunSpreadMath.RangeFactor(
+                HalfAngleDegrees, stages.FinalMaxHalfAngleDegrees, _profile.RangeAtFullSpread);
 
             Saturation01 = _profile.MaxHalfAngleDegrees > 0f
                 ? Mathf.Clamp01(HalfAngleDegrees / _profile.MaxHalfAngleDegrees)
@@ -201,6 +213,7 @@ namespace CosmicShore.Gameplay
             _holding = false;
             _heatSeconds = 0f;
             HalfAngleDegrees = 0f;
+            RangeFactor = 1f;
             Saturation01 = 0f;
         }
     }

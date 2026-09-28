@@ -1,10 +1,12 @@
 # Sparrow — Spray Accuracy (the walking gun)
 
-> **The rule, in one line:** *the guns run on HEAT. A cold gun is perfect for six seconds of fire;
-> past that the cone opens, levels off at a spread you can still fight in, blows out to five times
-> that, holds, and then collapses to five times THAT — a spread you cannot use. Letting go does not
-> reset it: the gun cools at four times the rate it heats.* (Round 7; the table below it is the
-> Round 6 shape it replaced, kept for the record.)
+> **The rule, in one line:** *the guns run on HEAT, 0 to 30, in six even five-second phases. A cold
+> gun is perfect for five seconds of fire; past that the cone opens, levels off at a spread you can
+> still fight in, blows out to five times that, holds, and then collapses to five times THAT — a
+> spread you cannot use — and every degree it opens costs range, down to a quarter of it at full
+> spread. Letting go does not reset it: the gun cools at five times the rate it heats, so a fully
+> hot gun is cold in six seconds.* (Round 8; the table below it is the Round 6 shape, kept for the
+> record.)
 
 The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle.
 
@@ -15,6 +17,52 @@ The Sparrow's cannons are a **saturation** weapon, not a marksman's rifle.
 | hold past 6 s | it **blows out**: the cone widens again, twice as fast, to **7.5°** at 10 s. You are no longer aiming at anything — you are denying a volume |
 | release and re-pull | full accuracy back, instantly, at any point on that curve. This is the "3-shot burst" the design asks for, and the only counter to the blow-out |
 | collect Mass crystals | rounds swell **harder** as they fly — 3× over a flight at rest, **6× at Mass 10**. The tracer stays a thin pale-blue needle; a see-through charge shell grows around it to exactly the hit radius, drawing **one** blue-and-danger-red bolt across a randomly-oriented great circle — a burst's worth of them is what draws the sphere. Huge projectiles, earned |
+
+---
+
+## Round 8 (2026-09-28): even phases, faster cooling, and range that falls with the cone
+
+Three asks, all on top of Round 7's heat model:
+
+1. **0 → 30 heat, a transition every 5 s.** The six phases are now equal length, so the rates were
+   re-solved against the unchanged caps (1.5° / 7.5° / 37.5°): `onsetSeconds` **5**,
+   `growthDegreesPerSecond` **0.3** (1.5 / 5), `plateauSeconds` **5**,
+   `blowoutGrowthDegreesPerSecond` **1.2** (6 / 5), `collapsePlateauSeconds` **5**,
+   `collapseGrowthDegreesPerSecond` **6** (30 / 5). The caps are unchanged because they are
+   authored as multiples (`blowoutMaxMultiplier` / `collapseMaxMultiplier` 5) of the one
+   sustainable cap. The heat gauge's marks are derived from `CollectPhaseJoins`, so they moved to
+   even sixths (17 / 33 / 50 / 67 / 83%) with nothing re-authored.
+2. **Cooling 4x → 5x.** `coolingRateMultiplier` **5**: 30 s of heat drains in **6 s**. A pilot who
+   fired for ten seconds (the start of the sustainable plateau) is pin-accurate after two off.
+3. **Range proportional to spread, 1/4 at full spread.** A new `spread.rangeAtFullSpread`
+   (**0.25**) and one pure function, `GunSpreadMath.RangeFactor(halfAngle, finalCap, 0.25)` =
+   `Lerp(1, 0.25, halfAngle / finalCap)`, linear in the cone's ANGLE (so a plateau holds its range
+   exactly as it holds its spread), clamped past the cap. `finalCap` is
+   `GunSpreadStages.FinalMaxHalfAngleDegrees` — the widest cap the curve actually reaches, so a
+   profile with its later stages switched off still loses its whole authored range at the cap it
+   does reach. `GunSprayAccuracy.RangeFactor` exposes it and BOTH fire executors multiply their
+   muzzle speed by it (`FullAutoActionExecutor`, `FullAutoBlockShootActionExecutor` — the turret
+   stance's own `range` derives from that same speed, so a turret prism still lands exactly where
+   a bullet would have died). It is applied to SPEED rather than flight time for Round 7's reason:
+   flight time is what fixes the ~54 rounds in the air and the charge-shell light budget.
+
+| heat (s of fire) | cone | range kept | cone radius at that range |
+|---|---|---|---|
+| 0 – 5 | **0°** — perfect | 100% (257.8 u) | 0 |
+| 5 – 10 | opens to **1.5°** (0.3°/s) | → 97% | → 6.5 u |
+| 10 – 15 | holds at 1.5° — the band you can fight in | 97% (250 u) | 6.5 u |
+| 15 – 20 | blows out to **7.5°** (1.2°/s) | → 85% | → 29 u |
+| 20 – 25 | holds at 7.5° — area denial | 85% (219 u) | 29 u |
+| 25 – 30 | **collapses** to **37.5°** (6°/s) | → **25%** | → 49.5 u |
+
+Note what the falloff does to the collapse: the cone at range used to be a ~198 u radius and is
+now ~49.5 u, because the rounds die four times sooner. The spray is still unusable as a weapon —
+37.5° is 37.5° — but it is a short, fat cloud in front of the nose rather than a volume the size of
+an arena. Almost all of the range loss lives in the collapse: the sustainable plateau costs 3% of
+range, the blow-out 15%.
+
+**AI.** Unchanged in effect: `Duration 3` / `Cooldown 0.8` builds 3 s of heat and cools 4 s per
+gap, so an AI Sparrow never leaves the 5 s accurate phase and never loses range.
 
 ---
 
@@ -801,7 +849,7 @@ high-SPACE pilot who never lets go is spraying an 85-unit-radius circle.
 
 ## Reset semantics, and the one subtlety in them
 
-> **SUPERSEDED by Round 7.** Releasing the trigger no longer resets accuracy — the gun cools at 4x
+> **SUPERSEDED by Round 7.** Releasing the trigger no longer resets accuracy — the gun cools at 4x (5x since Round 8)
 > its heating rate instead, and the deferred reset below was deleted with the reset. Kept as the
 > record of why the stance flip was never a free reset.
 
@@ -895,16 +943,17 @@ Everything that moves **both** fire modes lives on `FullAutoAction.asset`:
 | `growthFactorAtRestingMass` | **3** | How many times its launch cross-section a round swells to by the end of its flight at resting Mass. |
 | `growthFactorAtFullMass` | **6** | The same at Mass 10; the curve is linear in level and extrapolated to [-5, 15]. |
 | `speedValue` | **1350** | The FIXED muzzle speed, and therefore the fixed range (`speed x 2T/π` = **257.8 u**, 2x the retired Space-1 range). No element scales it (Round 7). |
-| `spread.onsetSeconds` | **6.0** | **Stage 1.** The accurate plateau: seconds of HEAT (from cold) of PERFECT accuracy. Not refreshed by releasing the trigger — only by cooling. |
-| `spread.growthDegreesPerSecond` | **0.75** | **Stage 2.** How fast the cone opens. The first ramp takes `max/growth` = **2 s**, landing the cap at 4 s of unbroken fire. |
+| `spread.onsetSeconds` | **5.0** | **Stage 1.** The accurate plateau: seconds of HEAT (from cold) of PERFECT accuracy. Not refreshed by releasing the trigger — only by cooling. |
+| `spread.growthDegreesPerSecond` | **0.3** | **Stage 2.** How fast the cone opens. The first ramp takes `max/growth` = **5 s**, landing the cap at 10 s of heat. |
 | `spread.maxHalfAngleDegrees` | **1.5** | The SUSTAINABLE cap and the height of the plateau (≈6.8 u radius at the fixed 257.8 u range). Raise it and held fire starts missing what you aimed at; drop it to 0 to disable spread entirely, blow-out included (sanctioned opt-out). |
-| `spread.plateauSeconds` | **6.0** | **Stage 3.** How long the cone HOLDS at the sustainable cap before blowing out. This is the band a pilot can fight in; 0 welds the two ramps into one kinked climb. |
-| `spread.blowoutGrowthDegreesPerSecond` | **1.5** | **Stage 4.** The second ramp's rate — deliberately 2× the first, so the failure accelerates. 0 is the opt-out: hold at the cap forever, exactly the single-ramp curve. |
+| `spread.plateauSeconds` | **5.0** | **Stage 3.** How long the cone HOLDS at the sustainable cap before blowing out. This is the band a pilot can fight in; 0 welds the two ramps into one kinked climb. |
+| `spread.blowoutGrowthDegreesPerSecond` | **1.2** | **Stage 4.** The second ramp's rate — 4× the first, so the failure accelerates (solved so the ramp takes 5 s, Round 8). 0 is the opt-out: hold at the cap forever, exactly the single-ramp curve. |
 | `spread.blowoutMaxMultiplier` | **5** | The blow-out cap, as a MULTIPLE of the sustainable one (→ 7.5°), so retuning the cap carries the blow-out with it. 1 disables the blow-out (and the collapse). |
 | `spread.collapsePlateauSeconds` | **6.0** | **Stage 5.** Seconds of heat held at the blow-out cap before the collapse. |
-| `spread.collapseGrowthDegreesPerSecond` | **7.5** | **Stage 6.** The third ramp — 5x the blow-out ramp. 0 opts out (hold at the blow-out cap forever). |
-| `spread.collapseMaxMultiplier` | **5** | The collapse cap as a multiple of the blow-out cap (→ **37.5°**). Full spread lands at **28 s** of heat. 1 disables the collapse. |
-| `spread.coolingRateMultiplier` | **4** | Heat lost per second with the trigger up, as a multiple of the build rate. A fully hot gun is cold again after 28/4 = 7 s. |
+| `spread.collapseGrowthDegreesPerSecond` | **6** | **Stage 6.** The third ramp — 5x the blow-out ramp, solved so it takes 5 s. 0 opts out (hold at the blow-out cap forever). |
+| `spread.collapseMaxMultiplier` | **5** | The collapse cap as a multiple of the blow-out cap (→ **37.5°**). Full spread lands at **30 s** of heat. 1 disables the collapse. |
+| `spread.coolingRateMultiplier` | **5** | Heat lost per second with the trigger up, as a multiple of the build rate. A fully hot gun is cold again after 30/5 = 6 s. |
+| `spread.rangeAtFullSpread` | **0.25** | Range kept at the final cap. Range falls linearly with the cone's half-angle from 100% cold to this at full spread (`GunSpreadMath.RangeFactor`), applied as a muzzle-speed factor so flight time is unchanged. 1 disables the falloff (Round 8). |
 | `spread.distributionBias` | **0.5** | 0.5 = uniform over the disc (even saturation). 1.0 = dense core + thin halo. |
 | `spread.hapticFloor01` | **0.15** | Buzz strength before any accuracy is lost — above zero so the gun is felt from round one. |
 | `spread.hapticIntervalAtRest` / `AtMaxSpread` | **0.10 / 0.045** | Pulse cadence at each end of the ramp. The interval is a REQUEST issued on the next frame, so 0.045 is delivered as 0.050 s at 60 fps — exactly the spray clip's length, i.e. back-to-back whole clips rather than the truncation this note used to claim. Do not go lower: duty is already saturated at 100% by 0.030 s and the envelope collapses to a flat hum at one frame (~0.017 s). Measured — see `Docs/HAPTICS.md` § "The cadence floor". Both channels reach their ceiling at the **plateau**, not at the blow-out — see Round 6. |
@@ -961,22 +1010,25 @@ Sparrow, fire on input 1.
 > (the `GamepadRumble` path drives Input System motors) or run on device. The **cone** is fully
 > visible on desktop — the tracers fan out — so the spread mechanic can be judged without one.
 
-> Steps 1–3 below are the **Round 7** shape (heat, 6 s plateaus, collapse, fixed range).
+> Steps 0–3 below are the **Round 8** shape (heat 0–30 in 5 s phases, 5x cooling, range falling
+> with the cone, fixed base range).
 
-0. **Fixed range.** Fire at open space at Space 0 and again after collecting Space crystals: the
-   tracers must die at the SAME distance (~258 u) both times, roughly twice as far as a Space-1
-   Sparrow's used to.
-1. **Burst accuracy from cold.** From a cold gun, a pull of up to **6 s** must be a tight line.
-2. **The six stages.** Hold on a distant wall: a point for **6 s**, a circle growing to 8 s,
-   static to **14 s**, growing again (faster) to 18 s, static to **24 s**, then growing FAST to a
-   huge ~37.5° spray by **28 s** that stays there.
+0. **Fixed base range.** From a cold gun, fire short taps at open space at Space 0 and again after
+   collecting Space crystals: the tracers must die at the SAME distance (~258 u) both times.
+0a. **Range falls with the cone.** Keep holding: the tracers' reach barely moves through the first
+   plateau (~250 u) and the blow-out (~219 u), then pulls in hard during the collapse to about a
+   QUARTER (~65 u) at full spread.
+1. **Burst accuracy from cold.** From a cold gun, a pull of up to **5 s** must be a tight line.
+2. **The six stages.** Hold on a distant wall: a point for **5 s**, a circle growing to **10 s**,
+   static to **15 s**, growing again (faster) to **20 s**, static to **25 s**, then growing FAST to
+   a huge ~37.5° spray by **30 s** that stays there.
 2a. **The HUD.** Watch the Space (guns) card while doing step 2: the gauge rises the whole way and
-   crosses five marks, each lighting up as the heat passes it, in step with the stage changes. The
-   marks must be visible (dim) before you ever fire.
-3. **Release does NOT reset — it cools.** Hold for ~10 s (inside the first plateau), release for
-   **1 s**, re-pull: the cone is still open (heat 10 − 4 = 6 → you are right at the edge). Release
-   for **2.5 s** instead and the re-pull is dead-on. From fully hot, the gauge must drain to empty
-   in ~7 s.
+   crosses five EVENLY spaced marks, each lighting up as the heat passes it, in step with the stage
+   changes. The marks must be visible (dim) before you ever fire.
+3. **Release does NOT reset — it cools.** Hold for ~10 s (the start of the sustainable plateau),
+   release for **1 s**, re-pull: heat 10 − 5 = 5, right at the edge of the accurate phase. Release
+   for **2 s** instead and the re-pull is dead-on. From fully hot, the gauge must drain to empty
+   in ~6 s.
 4. **Stance flip does NOT reset.** Hold fire while flying, open the cone fully, then toggle
    Turret Stance (input 6) **without releasing the trigger**. The prisms must start laying at the
    *open* cone and the heat gauge must not visibly dip.
