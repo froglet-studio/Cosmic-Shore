@@ -115,6 +115,7 @@ namespace CosmicShore.Utility
         static readonly int GapeId = Shader.PropertyToID("_PrismSightGape");
         static readonly int ParamsId = Shader.PropertyToID("_PrismSightParams");
         static readonly int StrengthId = Shader.PropertyToID("_PrismSightStrength");
+        static readonly int BlockerColorId = Shader.PropertyToID("_PrismSightBlockerColor");
 
         // --- every other light (a fixed bank of array slots) ---
         static readonly int BankOriginId = Shader.PropertyToID("_PrismLitPeerApex");
@@ -233,6 +234,14 @@ namespace CosmicShore.Utility
             // Its own scalar rather than Params' spare slot: a fade sharing a vector with the
             // volume's geometry reads fine today and gets misinterpreted six months from now.
             Shader.SetGlobalFloat(StrengthId, strength01);
+
+            // The BLOCKER colour: a super-shield inside this cone ends the blast, so the shader
+            // paints it in the palette's own danger colour (PrismDestructionSight.hlsl § BLOCKERS).
+            // Read from the palette rather than typed into the shader so the mark cannot drift
+            // from the danger tier it borrows. Alpha 0 (no palette yet, or one that authors no
+            // danger colour) tells the shader to use its fallback — never paint black.
+            Shader.SetGlobalVector(BlockerColorId,
+                ColorSet != null ? (Vector4)ColorSet.GetDangerSignalColor() : Vector4.zero);
 
             _publishedAimed = true;
         }

@@ -308,6 +308,24 @@ namespace CosmicShore.ECS
         public float3 Value;
     }
 
+    // -- Prism set: super-shield MARK (the Echo Sight's blocker read) --
+    // 1 while this prism wears the super-shield (the stellated octahedron), 0 otherwise.
+    // Not an animation: a STATE bit, written once when the shield engages and once when it
+    // drops (Prism.SetSuperShieldMark), never per frame — the same "a state change is final at
+    // the instant it is applied" shape as the mesh override it travels with.
+    //
+    // It exists because the super-shield is the one tier the prism graphs cannot otherwise tell
+    // apart: a super-shielded prism draws with the PLAIN team material (PrismStateManager
+    // .ActivateSuperShield keeps the opaque block material so the stellation reads), so no
+    // per-material stamp can carry it. The Dolphin's Echo Sight reads it to paint every
+    // super-shield inside the cone in the danger colour, because a crystal blast that reaches
+    // one ends there (PrismSpatialIndex.ResolveExplosionHit, shouldContinue = false).
+    [MaterialProperty("_PrismSuperShielded")]
+    public struct PrismSuperShieldedOverride : IComponentData
+    {
+        public float Value;
+    }
+
     // ----------------------------------------------------------------------
     // Living-mass sway (Docs/ECOSYSTEM.md §47). A health prism bolted to a swaying
     // spindle reads the LIMB'S OWN shear field, evaluated at its own vertices, so the

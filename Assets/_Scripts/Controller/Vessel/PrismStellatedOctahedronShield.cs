@@ -337,6 +337,9 @@ namespace CosmicShore.Gameplay
             {
                 _prism.SetRenderMeshOverride(_stellatedMesh);
                 _prism.SetExoticVisualActive(false);
+                // The Echo Sight's blocker read: a crystal blast that reaches a super-shield
+                // ENDS there, so the Dolphin's aim paints this prism in the danger colour.
+                _prism.SetSuperShieldMark(true);
             }
         }
 
@@ -356,6 +359,9 @@ namespace CosmicShore.Gameplay
                 rb.mass = _boxMass;
 
             ApplyMaterialOverride(shielded: false);
+
+            if (_prism != null)
+                _prism.SetSuperShieldMark(false);
         }
 
         private void ApplyMaterialOverride(bool shielded)
