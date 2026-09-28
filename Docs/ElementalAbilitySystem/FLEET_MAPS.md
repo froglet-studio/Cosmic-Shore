@@ -58,7 +58,7 @@ day after the channel it referred to had been deleted.
 |---|---|---|---|
 | Dolphin | 4/4 | 4/4 | 4/4 |
 | Sparrow | 4/4 | 4/4 | 4/4 |
-| Squirrel | 4/4 | **3/4** | 4/4 |  *(Charge scaling is a deliberate hole — see the re-cut below)*
+| Squirrel | 4/4 | 4/4 | 4/4 |  *(Charge scaling filled 2026-09-28 — the joust's STEAL; see the re-cut below)*
 | Urchin | 4/4 | 4/4 | 4/4 |
 | Manta | 4/4 | 4/4 | 3/4 |
 | Serpent | 3/4 | 3/4 | 2/4 |
@@ -396,7 +396,7 @@ lifeform, Space is how far your steal reaches.**
 
 | Element | Ability | Input | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|---|---|
-| **Charge** | **Crystal Joust** | passive | **NONE — a deliberate hole.** The joust has no elemental parameter yet; it is deferred to the branch that reworks the joust. `element_ability_table.py` therefore reports `NO SCALING` on this row, and that report is CORRECT — do not fill it to green the tool | **Shepherd** (moved from Space) — `SquirrelVesselWitherLifeformByCrystalEffect.allyUpgradeElement: 3 → 1`. The upgrade now sits on the ability it upgrades |
+| **Charge** | **Crystal Joust** | passive | **Petals stolen per overtake ×1 → ×2.5** (`VesselOvertakeBySkimmerEffectSO.stealScale`, added 2026-09-28 by design request). Read off the THIEF's REPLICATED level, so every peer moves the same petals. ×1 at rest keeps the priced Strike (0.8 petal per element); ×2.5 at level 10 is 2 whole petals per element. Opponent branch only — the ally buff keeps the base. The Rhino's sword shares the type and authors it disabled | **Shepherd** (moved from Space) — `SquirrelVesselWitherLifeformByCrystalEffect.allyUpgradeElement: 3 → 1`. The upgrade now sits on the ability it upgrades |
 | **Mass** | **Boost Ring** (moved from Time) | RT | deploy cooldown ×1 → ×0.5 (`SquirrelTubeActionSO.cooldownMultiplierAtFullMass`, renamed with `[FormerlySerializedAs]`) | **Twin Rings** — `IsUpgradeActive(Element.Time)` → `Element.Mass` in `SquirrelTubeActionExecutor` |
 | **Space** | **Steal** | passive | skimmer `Scale` ElementalFloat 15 → 30, **unchanged** — the sphere IS the steal reach, so the number did not have to move with the label | **Iron Grip** (NEW) — a shielded prism is stolen OUTRIGHT and keeps its armour, instead of only being stripped of the shield |
 | **Time** | **Skimming** (moved from Charge) | passive | skim energy per collision ×1 → ×2 (`SkimmerBoostPrismEffectSO.energyMultiplier`, renamed with `[FormerlySerializedAs]`, `element: 1 → 4`) | **Live Wire** — the danger 10× bonus, now element-addressed by the new authored `dangerBonusElement: 4` instead of a hardcoded `Element.Charge` |
