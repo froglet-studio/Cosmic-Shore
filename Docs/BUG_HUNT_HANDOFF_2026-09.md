@@ -1,5 +1,7 @@
 # Bug Hunt Handoff — September 2026
 
+> Workflow, per-fix reports and the troubleshooting playbook: [`BugHunt/README.md`](BugHunt/README.md) · [`BugHunt/FIX_LOG.md`](BugHunt/FIX_LOG.md).
+
 **For:** whoever picks up the rest of the September 2026 low-blast-radius bug hunt.
 **Branch that fixed the first seven:** `cece/great-albattani-14izai` (PR against `bleeding-edge`).
 **Line numbers:** as of the merge of `bleeding-edge @ 44a9d5fe` into that branch. They will drift;
