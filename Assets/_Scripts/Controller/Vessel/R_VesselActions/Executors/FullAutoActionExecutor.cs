@@ -101,7 +101,7 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         }
 
         // The trigger is down. Idempotent: if the Turret Stance handed the hold over mid-press
-        // this only refreshes the profile, so the accumulated cone survives the mode switch.
+        // this only refreshes the profile; the gun's heat is never reset by the trigger anyway.
         if (_spray) _spray.BeginHold(so.Spread);
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeToken);
@@ -112,8 +112,9 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
     public void End()
     {
-        // Arms the accuracy reset; GunSprayAccuracy applies it in LateUpdate unless a
-        // BeginHold lands first in the same frame (which is what a stance flip does).
+        // The trigger is up: the gun starts COOLING. Accuracy is not reset - heat drains at the
+        // profile's cooling rate (GunSprayAccuracy), so a stance flip's same-frame Stop/Start
+        // costs nothing either way.
         if (_spray) _spray.ReleaseHold();
 
         if (_cts == null)

@@ -12,14 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e69e441921845c0809b6c506eee66e0, type: 3}
   m_Name: FullAutoAction
   m_EditorClassIdentifier: 
-  spaceSpeedMultiplier:
-    Enabled: 1
-    Value: 1
-    Min: 1
-    Max: 9
-    element: 3
-    UseFloor: 1
-    Floor: 0.4
   ammoIndex: 0
   ammoCost: 0
   inherit: 0
@@ -28,16 +20,20 @@ MonoBehaviour:
   projectileTime: 0.3
   firingPattern: 0
   energy: 0
-  speedValue: 375
+  speedValue: 1350
   growthFactorAtRestingMass: 3
   growthFactorAtFullMass: 6
   spread:
-    onsetSeconds: 2
+    onsetSeconds: 6
     growthDegreesPerSecond: 0.75
     maxHalfAngleDegrees: 1.5
-    plateauSeconds: 2
+    plateauSeconds: 6
     blowoutGrowthDegreesPerSecond: 1.5
     blowoutMaxMultiplier: 5
+    collapsePlateauSeconds: 6
+    collapseGrowthDegreesPerSecond: 7.5
+    collapseMaxMultiplier: 5
+    coolingRateMultiplier: 4
     distributionBias: 0.5
     hapticFloor01: 0.15
     hapticIntervalAtRest: 0.1

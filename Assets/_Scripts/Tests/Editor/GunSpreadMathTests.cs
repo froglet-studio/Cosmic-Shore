@@ -194,6 +194,124 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0f, new GunSpreadStages(Onset, Growth, 0f).SecondsToFullSpread, 1e-4f);
         }
 
+        // ------------------------------------------------------- the second plateau and collapse
+
+        const float CollapsePlateau = 3f;              // seconds held at the blow-out cap
+        const float CollapseGrowth = 40f;              // deg/s on the third ramp (faster again)
+        const float CollapseMax = BlowoutMax * 5f;     // the final cap — 5x the blow-out one
+
+        static GunSpreadStages Collapsing => new GunSpreadStages(
+            Onset, Growth, Max, Plateau, BlowoutGrowth, BlowoutMax,
+            CollapsePlateau, CollapseGrowth, CollapseMax);
+
+        static float Collapsing_Angle(float held) => GunSpreadMath.HalfAngleDegrees(held, Collapsing);
+
+        static float CollapsePlateauEnds => BlowoutEnds + CollapsePlateau;
+        static float CollapseEnds => CollapsePlateauEnds + (CollapseMax - BlowoutMax) / CollapseGrowth;
+
+        [Test]
+        public void Collapsing_ReproducesTheBlowoutCurve_UpToTheBlowoutCap()
+        {
+            // Adding a third stage may not move anything a pilot meets before reaching it.
+            for (float t = 0f; t <= BlowoutEnds; t += 0.01f)
+                Assert.AreEqual(Staged_Angle(t), Collapsing_Angle(t), 1e-4f, $"held {t}s");
+        }
+
+        [Test]
+        public void Collapsing_HoldsAtTheBlowoutCap_ForTheSecondPlateau()
+        {
+            Assert.AreEqual(BlowoutMax, Collapsing_Angle(BlowoutEnds), 1e-4f);
+            Assert.AreEqual(BlowoutMax, Collapsing_Angle(BlowoutEnds + CollapsePlateau * 0.5f), 1e-4f);
+            Assert.AreEqual(BlowoutMax, Collapsing_Angle(CollapsePlateauEnds), 1e-4f);
+        }
+
+        [Test]
+        public void Collapsing_RampsAtTheThirdRate_ThenSaturatesAtTheCollapseCap()
+        {
+            Assert.AreEqual(BlowoutMax + CollapseGrowth * 0.25f,
+                            Collapsing_Angle(CollapsePlateauEnds + 0.25f), 1e-3f);
+            Assert.AreEqual(CollapseMax, Collapsing_Angle(CollapseEnds), 1e-3f);
+            Assert.AreEqual(CollapseMax, Collapsing_Angle(CollapseEnds + 3600f), 1e-3f);
+        }
+
+        [Test]
+        public void Collapsing_IsContinuousAndMonotonic()
+        {
+            const float eps = 1e-3f;
+            foreach (var join in new[] { Onset, RampEnds, PlateauEnds, BlowoutEnds, CollapsePlateauEnds, CollapseEnds })
+                Assert.AreEqual(Collapsing_Angle(join - eps), Collapsing_Angle(join + eps), 0.1f,
+                    $"discontinuity at the {join}s join");
+
+            float previous = -1f;
+            for (float t = 0f; t <= CollapseEnds + 2f; t += 0.01f)
+            {
+                float angle = Collapsing_Angle(t);
+                Assert.GreaterOrEqual(angle, previous - 1e-4f, $"cone narrowed at {t}s");
+                previous = angle;
+            }
+        }
+
+        [Test]
+        public void Collapse_RequiresABlowout_AndBothOfItsOwnHalves()
+        {
+            Assert.IsTrue(Collapsing.Collapses);
+            Assert.IsFalse(Staged.Collapses);
+            Assert.IsFalse(new GunSpreadStages(Onset, Growth, Max, Plateau, BlowoutGrowth, BlowoutMax,
+                                               CollapsePlateau, 0f, CollapseMax).Collapses);
+            Assert.IsFalse(new GunSpreadStages(Onset, Growth, Max, Plateau, BlowoutGrowth, BlowoutMax,
+                                               CollapsePlateau, CollapseGrowth, BlowoutMax).Collapses);
+            // No blow-out, no collapse — even with a collapse authored.
+            Assert.IsFalse(new GunSpreadStages(Onset, Growth, Max, Plateau, 0f, BlowoutMax,
+                                               CollapsePlateau, CollapseGrowth, CollapseMax).Collapses);
+        }
+
+        [Test]
+        public void SecondsToFullSpread_IncludesTheCollapse()
+        {
+            Assert.AreEqual(CollapseEnds, Collapsing.SecondsToFullSpread, 1e-3f);
+        }
+
+        [Test]
+        public void PhaseJoins_AreEveryStageBoundary_InOrder_EndingAtFullSpread()
+        {
+            var joins = new System.Collections.Generic.List<float>();
+            Collapsing.CollectPhaseJoins(joins);
+
+            var expected = new[] { Onset, RampEnds, PlateauEnds, BlowoutEnds, CollapsePlateauEnds, CollapseEnds };
+            Assert.AreEqual(expected.Length, joins.Count);
+            for (int i = 0; i < expected.Length; i++)
+                Assert.AreEqual(expected[i], joins[i], 1e-3f, $"join {i}");
+
+            Assert.AreEqual(Collapsing.SecondsToFullSpread, joins[joins.Count - 1], 1e-4f);
+        }
+
+        [Test]
+        public void PhaseJoins_SkipZeroLengthPhases_AndAreEmptyWhenOptedOut()
+        {
+            var joins = new System.Collections.Generic.List<float>();
+
+            // No onset, no plateaus: only the three ramp ends remain, and none coincide.
+            new GunSpreadStages(0f, Growth, Max, 0f, BlowoutGrowth, BlowoutMax,
+                                0f, CollapseGrowth, CollapseMax).CollectPhaseJoins(joins);
+            Assert.AreEqual(3, joins.Count);
+
+            new GunSpreadStages(Onset, Growth, 0f).CollectPhaseJoins(joins);
+            Assert.AreEqual(0, joins.Count);
+        }
+
+        [Test]
+        public void ShippedShape_EachPlateauIsThreeTimesItsOldLength_AndCollapseIsFiveXBlowout()
+        {
+            // The Sparrow's shipped numbers (FullAutoAction.asset): 6 s accurate, 2 s ramp to
+            // 1.5 deg, 6 s plateau, 4 s ramp to 7.5 deg, 6 s plateau, 4 s ramp to 37.5 deg.
+            var shipped = new GunSpreadStages(6f, 0.75f, 1.5f, 6f, 1.5f, 7.5f, 6f, 7.5f, 37.5f);
+            Assert.AreEqual(28f, shipped.SecondsToFullSpread, 1e-4f);
+            Assert.AreEqual(0f, GunSpreadMath.HalfAngleDegrees(6f, shipped), 1e-4f);
+            Assert.AreEqual(1.5f, GunSpreadMath.HalfAngleDegrees(14f, shipped), 1e-4f);
+            Assert.AreEqual(7.5f, GunSpreadMath.HalfAngleDegrees(24f, shipped), 1e-4f);
+            Assert.AreEqual(37.5f, GunSpreadMath.HalfAngleDegrees(28f, shipped), 1e-4f);
+        }
+
         // ------------------------------------------------------------------ the cone
 
         [Test]

@@ -14,22 +14,27 @@ namespace CosmicShore.Gameplay
     /// A turret shot IS a bullet, spread included: it goes where the bullet would have gone,
     /// and where the bullet would have died the prism stays.
     ///
-    /// The shape of the mechanic, in four parts: the gun is PERFECTLY accurate for the onset
-    /// window, then opens to a SUSTAINABLE cap, then holds there for the plateau, then BLOWS OUT
-    /// to a multiple of that cap for as long as the trigger stays down. Release and re-pull and
-    /// it snaps back to pin-accurate, so short bursts stay surgical and only a pilot who never
-    /// lets go ever meets the blow-out. See <c>R_VesselActions/SPARROW_SPRAY_ACCURACY.md</c>.
+    /// The shape of the mechanic: the gun is PERFECTLY accurate for the onset window, then opens
+    /// to a SUSTAINABLE cap and holds there for a plateau, then BLOWS OUT to 5x that cap and holds
+    /// there for a second plateau, then COLLAPSES to 5x the blow-out cap - a spread so wide the
+    /// gun is virtually unusable.
+    ///
+    /// <para><b>The clock is HEAT, not hold time.</b> Releasing the trigger no longer resets the
+    /// cone: heat builds at one second per second of fire and COOLS at
+    /// <see cref="CoolingRateMultiplier"/> times that while the trigger is up, so a pilot who
+    /// fired for eight seconds needs two seconds off to be pin-accurate again. The curve reads
+    /// heat on its time axis exactly as it used to read hold time. See
+    /// <c>R_VesselActions/SPARROW_SPRAY_ACCURACY.md</c>.</para>
     /// </summary>
     [Serializable]
     public class GunSpreadProfile
     {
         [Header("Cone")]
-        [Tooltip("STAGE 1. Grace period at the start of every trigger pull during which the gun " +
-                 "is PERFECTLY accurate. This is what makes tapped and sustained-but-disciplined " +
-                 "bursts surgical - size it to the engagement length that should stay free (at " +
-                 "90 volleys/s, 2 s is ~180 volleys / 360 rounds). Accuracy resets the instant " +
-                 "the trigger comes up, so a release and re-pull buys the whole window again.")]
-        [SerializeField, Min(0f)] float onsetSeconds = 2f;
+        [Tooltip("STAGE 1. Seconds of HEAT (a cold gun, one second of fire = one second of heat) " +
+                 "during which the gun is PERFECTLY accurate - the accurate plateau. Heat does " +
+                 "not reset on release, it cools at coolingRateMultiplier x the build rate, so " +
+                 "a release buys the window back only in proportion to how long you let go.")]
+        [SerializeField, Min(0f)] float onsetSeconds = 6f;
 
         [Tooltip("STAGE 2. Degrees of cone half-angle gained per second of continuous fire, once " +
                  "the onset window has elapsed. Together with the max half-angle this sets how " +
@@ -50,7 +55,7 @@ namespace CosmicShore.Gameplay
                  "widening again. This is the band a pilot can actually fight in: the gun is " +
                  "as inaccurate as it is ever going to be while still being a gun. Zero welds " +
                  "the two ramps together into one kinked climb.")]
-        [SerializeField, Min(0f)] float plateauSeconds = 2f;
+        [SerializeField, Min(0f)] float plateauSeconds = 6f;
 
         [Tooltip("STAGE 4. Degrees per second on the SECOND ramp, once the plateau expires. " +
                  "Authored FASTER than the first ramp on purpose - the failure accelerates, so " +
@@ -60,9 +65,32 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float blowoutGrowthDegreesPerSecond = 1.5f;
 
         [Tooltip("The FINAL cap, as a multiple of the sustainable cap - so the two can never " +
-                 "drift apart when the base cap is retuned. At the shipped 5x the gun stops " +
-                 "being aimable at all and becomes pure area denial; 1 disables the blow-out.")]
+                 "drift apart when the base cap is retuned. At the shipped 5x the gun is area " +
+                 "denial rather than a rifle, and it holds there for the second plateau before " +
+                 "the collapse; 1 disables the blow-out (and with it the collapse).")]
         [SerializeField, Min(1f)] float blowoutMaxMultiplier = 5f;
+
+        [Header("Collapse")]
+        [Tooltip("STAGE 5. Seconds of heat the cone HOLDS at the blow-out cap before it " +
+                 "collapses. Zero welds the second and third ramps together.")]
+        [SerializeField, Min(0f)] float collapsePlateauSeconds = 6f;
+
+        [Tooltip("STAGE 6. Degrees per second on the THIRD ramp, once the second plateau " +
+                 "expires. Faster again than the blow-out ramp - the failure keeps accelerating. " +
+                 "Zero is the sanctioned opt-out: the cone holds at the blow-out cap forever.")]
+        [SerializeField, Min(0f)] float collapseGrowthDegreesPerSecond = 7.5f;
+
+        [Tooltip("The COLLAPSE cap, as a multiple of the blow-out cap (so of the sustainable cap " +
+                 "too). At the shipped 5x the spread is virtually unusable - the price of never " +
+                 "letting the gun cool. 1 disables the collapse.")]
+        [SerializeField, Min(1f)] float collapseMaxMultiplier = 5f;
+
+        [Header("Heat")]
+        [Tooltip("How much faster the gun COOLS than it heats. Heat builds at 1 per second of " +
+                 "fire and drops at this many per second while the trigger is up, so at 4 a " +
+                 "pilot who held for 8 s is pin-accurate again after 2 s off. The trigger coming " +
+                 "up does NOT reset accuracy.")]
+        [SerializeField, Min(0.01f)] float coolingRateMultiplier = 4f;
 
         [Tooltip("Where inside the cone rounds land. 0.5 = uniform over the disc (the whole " +
                  "danger zone saturates evenly - the default). 1.0 = a dense core with a thin " +
@@ -102,15 +130,27 @@ namespace CosmicShore.Gameplay
         public float BlowoutMaxHalfAngleDegrees => maxHalfAngleDegrees * Mathf.Max(1f, blowoutMaxMultiplier);
 
         /// <summary>
+        /// The collapse cap in DEGREES - a multiple of the blow-out cap, derived for the same
+        /// reason <see cref="BlowoutMaxHalfAngleDegrees"/> is.
+        /// </summary>
+        public float CollapseMaxHalfAngleDegrees => BlowoutMaxHalfAngleDegrees * Mathf.Max(1f, collapseMaxMultiplier);
+
+        /// <summary>Heat lost per second while the trigger is up, as a multiple of the build rate.</summary>
+        public float CoolingRateMultiplier => Mathf.Max(0.01f, coolingRateMultiplier);
+
+        /// <summary>
         /// The authored curve, as the pure numbers <see cref="GunSpreadMath"/> consumes. Built
-        /// per read - it is six float copies and the profile is asked once per frame per firing
+        /// per read - it is nine float copies and the profile is asked once per frame per firing
         /// vessel, so caching it would only add a staleness bug when someone retunes in play.
         /// </summary>
         public GunSpreadStages Stages => new GunSpreadStages(
             onsetSeconds, growthDegreesPerSecond, maxHalfAngleDegrees,
-            plateauSeconds, blowoutGrowthDegreesPerSecond, BlowoutMaxHalfAngleDegrees);
+            plateauSeconds, blowoutGrowthDegreesPerSecond, BlowoutMaxHalfAngleDegrees,
+            collapsePlateauSeconds, collapseGrowthDegreesPerSecond, CollapseMaxHalfAngleDegrees);
 
-        /// <summary>Seconds of unbroken fire before the cone reaches its final cap.</summary>
+        /// <summary>Seconds of HEAT at which the cone reaches its final cap - also the heat
+        /// ceiling, so a fully-hot gun needs this / <see cref="CoolingRateMultiplier"/> seconds
+        /// off to be cold again.</summary>
         public float SecondsToFullSpread => Stages.SecondsToFullSpread;
 
         public float HapticFloor01 => hapticFloor01;

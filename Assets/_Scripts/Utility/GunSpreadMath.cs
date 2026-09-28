@@ -10,8 +10,13 @@ namespace CosmicShore.Utility
     ///
     /// Built from <c>GunSpreadProfile</c> (the authoring surface); consumed by
     /// <see cref="GunSpreadMath.HalfAngleDegrees(float, in GunSpreadStages)"/>. Caps are
-    /// ABSOLUTE degrees here — the profile owns the "5x the sustainable cap" multiplier, so the
-    /// blow-out cap can never drift away from the cap it is a multiple of.
+    /// ABSOLUTE degrees here — the profile owns the "5x the sustainable cap" multipliers, so no
+    /// cap can ever drift away from the cap it is a multiple of.
+    ///
+    /// <para>Three spread LEVELS, each reached by a ramp and each held for a plateau: the
+    /// sustainable cap, the blow-out cap, and the COLLAPSE cap — a spread so wide the gun is
+    /// virtually unusable. The time axis is whatever the caller feeds it: the Sparrow feeds HEAT
+    /// (seconds of fire, cooled while the trigger is up), not raw hold time.</para>
     /// </summary>
     public readonly struct GunSpreadStages
     {
@@ -30,8 +35,17 @@ namespace CosmicShore.Utility
         /// <summary>Degrees per second on the second ramp. Zero disables the blow-out entirely.</summary>
         public readonly float BlowoutGrowthDegreesPerSecond;
 
-        /// <summary>The final cap. Must exceed <see cref="MaxHalfAngleDegrees"/> to mean anything.</summary>
+        /// <summary>The blow-out cap. Must exceed <see cref="MaxHalfAngleDegrees"/> to mean anything.</summary>
         public readonly float BlowoutMaxHalfAngleDegrees;
+
+        /// <summary>Seconds the cone holds at <see cref="BlowoutMaxHalfAngleDegrees"/> before it collapses.</summary>
+        public readonly float CollapsePlateauSeconds;
+
+        /// <summary>Degrees per second on the THIRD ramp. Zero disables the collapse entirely.</summary>
+        public readonly float CollapseGrowthDegreesPerSecond;
+
+        /// <summary>The final cap. Must exceed <see cref="BlowoutMaxHalfAngleDegrees"/> to mean anything.</summary>
+        public readonly float CollapseMaxHalfAngleDegrees;
 
         public GunSpreadStages(
             float onsetSeconds,
@@ -39,7 +53,10 @@ namespace CosmicShore.Utility
             float maxHalfAngleDegrees,
             float plateauSeconds = 0f,
             float blowoutGrowthDegreesPerSecond = 0f,
-            float blowoutMaxHalfAngleDegrees = 0f)
+            float blowoutMaxHalfAngleDegrees = 0f,
+            float collapsePlateauSeconds = 0f,
+            float collapseGrowthDegreesPerSecond = 0f,
+            float collapseMaxHalfAngleDegrees = 0f)
         {
             OnsetSeconds = onsetSeconds;
             GrowthDegreesPerSecond = growthDegreesPerSecond;
@@ -47,6 +64,9 @@ namespace CosmicShore.Utility
             PlateauSeconds = plateauSeconds;
             BlowoutGrowthDegreesPerSecond = blowoutGrowthDegreesPerSecond;
             BlowoutMaxHalfAngleDegrees = blowoutMaxHalfAngleDegrees;
+            CollapsePlateauSeconds = collapsePlateauSeconds;
+            CollapseGrowthDegreesPerSecond = collapseGrowthDegreesPerSecond;
+            CollapseMaxHalfAngleDegrees = collapseMaxHalfAngleDegrees;
         }
 
         /// <summary>
@@ -57,9 +77,26 @@ namespace CosmicShore.Utility
         public bool BlowsOut =>
             BlowoutGrowthDegreesPerSecond > 0f && BlowoutMaxHalfAngleDegrees > MaxHalfAngleDegrees;
 
+        /// <summary>
+        /// True when a THIRD ramp is authored on top of a blow-out. Same two-halves rule as
+        /// <see cref="BlowsOut"/>, and it requires the blow-out: there is no collapse without a
+        /// blow-out cap to collapse from.
+        /// </summary>
+        public bool Collapses =>
+            BlowsOut && CollapseGrowthDegreesPerSecond > 0f
+                     && CollapseMaxHalfAngleDegrees > BlowoutMaxHalfAngleDegrees;
+
         /// <summary>Seconds of held fire to climb the FIRST ramp (excludes the onset window).</summary>
         public float RampSeconds =>
             GrowthDegreesPerSecond > 0f ? MaxHalfAngleDegrees / GrowthDegreesPerSecond : 0f;
+
+        /// <summary>Seconds to climb the SECOND ramp. Zero when the profile does not blow out.</summary>
+        public float BlowoutRampSeconds =>
+            BlowsOut ? (BlowoutMaxHalfAngleDegrees - MaxHalfAngleDegrees) / BlowoutGrowthDegreesPerSecond : 0f;
+
+        /// <summary>Seconds to climb the THIRD ramp. Zero when the profile does not collapse.</summary>
+        public float CollapseRampSeconds =>
+            Collapses ? (CollapseMaxHalfAngleDegrees - BlowoutMaxHalfAngleDegrees) / CollapseGrowthDegreesPerSecond : 0f;
 
         /// <summary>Seconds of continuous fire before the cone reaches its FINAL cap.</summary>
         public float SecondsToFullSpread
@@ -71,9 +108,44 @@ namespace CosmicShore.Utility
                 float t = Mathf.Max(0f, OnsetSeconds) + RampSeconds;
                 if (!BlowsOut) return t;
 
-                return t + Mathf.Max(0f, PlateauSeconds)
-                         + (BlowoutMaxHalfAngleDegrees - MaxHalfAngleDegrees) / BlowoutGrowthDegreesPerSecond;
+                t += Mathf.Max(0f, PlateauSeconds) + BlowoutRampSeconds;
+                if (!Collapses) return t;
+
+                return t + Mathf.Max(0f, CollapsePlateauSeconds) + CollapseRampSeconds;
             }
+        }
+
+        /// <summary>
+        /// Every point on the time axis where the curve changes phase — the onset window ending,
+        /// each ramp reaching its cap, each plateau expiring — in ascending order, ending with
+        /// <see cref="SecondsToFullSpread"/>. Zero-length phases are skipped, so no two entries
+        /// coincide. This is what a HUD draws its transition marks from, so it is derived here,
+        /// beside the curve, rather than re-derived by the view.
+        /// </summary>
+        /// <param name="into">Cleared, then filled. At most six entries.</param>
+        public void CollectPhaseJoins(System.Collections.Generic.List<float> into)
+        {
+            into.Clear();
+            if (MaxHalfAngleDegrees <= 0f || GrowthDegreesPerSecond <= 0f) return;
+
+            float t = 0f;
+            void Add(float length)
+            {
+                if (length <= 0f) return;
+                t += length;
+                into.Add(t);
+            }
+
+            Add(Mathf.Max(0f, OnsetSeconds));
+            Add(RampSeconds);
+            if (!BlowsOut) return;
+
+            Add(Mathf.Max(0f, PlateauSeconds));
+            Add(BlowoutRampSeconds);
+            if (!Collapses) return;
+
+            Add(Mathf.Max(0f, CollapsePlateauSeconds));
+            Add(CollapseRampSeconds);
         }
     }
 
@@ -98,13 +170,15 @@ namespace CosmicShore.Utility
     {
         /// <summary>
         /// The cone's half-angle after <paramref name="heldSeconds"/> of continuous fire, as a
-        /// FOUR-part piecewise curve — flat, ramp, plateau, blow-out:
+        /// SIX-part piecewise curve — flat, ramp, plateau, blow-out, plateau, collapse:
         ///
         /// <code>
         ///   1. hold  : 0                                        while t &lt; onset
         ///   2. ramp  : (t-onset) x growth                       up to the sustainable cap
         ///   3. plateau: cap                                     for plateauSeconds
         ///   4. blow-out: cap + excess x blowoutGrowth           up to the blow-out cap
+        ///   5. plateau: blow-out cap                            for collapsePlateauSeconds
+        ///   6. collapse: blow-out cap + excess x collapseGrowth up to the collapse cap
         /// </code>
         ///
         /// The grace window is what keeps tapped bursts pin-accurate. The plateau is the
@@ -141,9 +215,22 @@ namespace CosmicShore.Utility
                 return stages.MaxHalfAngleDegrees;
 
             // 4. the blow-out.
+            float blowoutRamp = stages.BlowoutRampSeconds;
+            if (blowout < blowoutRamp)
+                return stages.MaxHalfAngleDegrees + blowout * stages.BlowoutGrowthDegreesPerSecond;
+
+            // 5. the second plateau — and the terminus for a profile that never collapses.
+            if (!stages.Collapses)
+                return stages.BlowoutMaxHalfAngleDegrees;
+
+            float collapse = blowout - blowoutRamp - Mathf.Max(0f, stages.CollapsePlateauSeconds);
+            if (collapse <= 0f)
+                return stages.BlowoutMaxHalfAngleDegrees;
+
+            // 6. the collapse.
             return Mathf.Min(
-                stages.BlowoutMaxHalfAngleDegrees,
-                stages.MaxHalfAngleDegrees + blowout * stages.BlowoutGrowthDegreesPerSecond);
+                stages.CollapseMaxHalfAngleDegrees,
+                stages.BlowoutMaxHalfAngleDegrees + collapse * stages.CollapseGrowthDegreesPerSecond);
         }
 
         /// <summary>
