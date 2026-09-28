@@ -106,7 +106,7 @@ is keyed on something the platform already treats as canonical:
 
 | Content | Keyed on | Source | New vessel / mode cost |
 |---|---|---|---|
-| **Lesson** — this ship's basic flight | `VesselClassType` | **Derived**: the flight-scheme block (two schemes fleet-wide, chosen by `IsSingleStickControls`) plus the hull's **Time** ability from `ElementalAbilityMapSO` (`AbilityLabel`, `AbilityDescription`, `Input` → `InputHintBindingMap` → `ControlGlyphSetSO` glyph, the chain the ability lockup already uses, so a control label can never be wrong) | **None** — a hull with a filled ability map has a Lesson on day one |
+| **Lesson** — this ship's basic flight | `VesselClassType` | **Derived**: the flight-scheme block (two schemes fleet-wide, chosen by `IsSingleStickControls`) plus the hull's **Time** ability from `ElementalAbilityMapSO` (`AbilityLabel`, `AbilityDescription`, `Input` → `InputHintBindingMap` → `ControlGlyphSetSO` glyph, the chain the ability lockup already uses, so a control label can never be wrong) | **None** — a hull with a filled ability map has a Lesson on day one (its words are authored templates, §4.2.1) |
 | **Mentor** — tips for this ship in this mode | hull tips ⊕ mode tips (per `ScoringMetric` family, overridable per `GameModes`) | **Curated**: authored tip lists. The hull's other three abilities appear as derived "did you know" tips until someone writes better ones | **Near zero** — a new hull gets its derived ability tips; a new mode that reuses a metric gets that family's tips |
 
 Why the Lesson is "flight + Time ability": D1 says the Lesson teaches *basic flight controls*, and
@@ -130,6 +130,31 @@ TipListSO          an ordered tip list; one per metric family, optional per mode
 DrillLibrarySO     Resources/DrillLibrary: metric→TipListSO, mode→override, hull→TipListSO,
                    Mentor ordering policy, the Lesson's skip delay (3 s), per-beat pacing defaults
 ```
+
+### 4.2.1 Every player-facing line is an authored field (project rule: CLAUDE.md § Code Style)
+
+"Derived" in §4.1 describes **where a line's facts come from**, never where its words come from.
+No line the player reads is built out of C# string literals. Every word is a serialized field a
+human can edit, blank or delete without touching code:
+
+| Text | Lives in | Human control |
+|---|---|---|
+| Lesson steps (both flight schemes) | `LessonTemplateSO`: ordered `LessonStep`s, each with `Prompt` + `HintPrompt` | add / edit / reorder / delete steps |
+| The Time-ability step | a `LessonStep` in that template whose prompt is a token template, e.g. `Hold {glyph:Time} to {ability:Time}` | edit the sentence; the tokens resolve from `ElementalAbilityMapSO`, whose `AbilityLabel` / `AbilityDescription` are themselves authored |
+| Per-hull Lesson changes | `DrillLibrarySO` hull entry: optional replacement steps, or a per-step **suppress** flag | override or delete a step for one ship |
+| Mentor tips | `TipListSO` entries (`Prompt`) | add / edit / reorder / delete |
+| "Did you know" ability tips | ONE authored template in `DrillLibrarySO` (`{ability:X} — {abilityDescription:X}, on {glyph:X}`) plus a per-hull, per-element suppress/replace | edit the template or silence the automatic tip for a hull |
+| Chrome — section titles, "Skip", the waiting/hint captions, the "PB" / board labels, empty-state lines | `DrillLibrarySO.Strings` | edit any label |
+
+Three rules make the table hold:
+- An **empty field shows nothing**. That is how a line is deleted; there is no fallback to a
+  hard-coded default.
+- An **unknown token renders visibly as itself** and logs once, so a typo is seen instead of being
+  silently eaten.
+- The **authoring window (§9)** edits all of it in place, so a writer never opens C#.
+
+Text stays ASCII-only while the UI font covers 97 glyphs (CLAUDE.md anti-patterns, TMP font). The
+authoring window flags a non-ASCII character before it can ship as tofu.
 
 `[SerializeReference]` rather than the Quest Graph's per-node sub-assets: a beat is small, owned
 by one list, and never referenced from anywhere else.

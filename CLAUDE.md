@@ -5305,6 +5305,19 @@ shared across scenes.
 - Prefer expression-bodied members for simple accessors: `public Transform Transform => transform;`
 - Anti-spam / cooldown patterns belong in the SO config, not hardcoded
 - Always assign static numeric values to enum members to prevent Unity serialization drift
+- **All player-facing text has a human-facing control (LOCKED rule, every branch).** Every word the
+  player can read is a serialized field on an SO, prefab or component, or in an authored table. A
+  human can add, edit, blank or delete it in the inspector (or an authoring window) without touching
+  code. This is the text twin of the FMOD rule ("every sound is an exposed `EventReference`"). The
+  rule in practice:
+  - **Never** put a C# string literal that reaches a `TMP_Text`, toast, dialogue or button label.
+  - Text whose facts are computed is an **authored template with tokens** (`Hold {glyph:Time} to
+    boost`). Code fills the tokens; a human owns the sentence.
+  - An empty field shows nothing. That is how a line is deleted, so never fall back to a hardcoded
+    default.
+  - **Excluded:** logs, dev/diagnostic overlays and editor-tool UI.
+  - Existing literal-built strings are the **legacy shape**. Move them to authored fields when you
+    touch them. Worked example: `Docs/ModePreview/TRAINING_PLAN.md` §4.2.1.
 - Commit messages follow conventional commits: `type(scope): summary` (see `GIT_RULES.md`)
 
 ## Debugging Methodology
