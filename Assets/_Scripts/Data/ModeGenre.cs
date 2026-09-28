@@ -102,6 +102,7 @@ namespace CosmicShore.Data
                 // removed from the arena to score it: mass changes hands and your holdings grow.
                 case ScoringMetric.PrismsRemaining:
                 case ScoringMetric.PrismsStolen:
+                case ScoringMetric.VolumeRemaining:
                     element = Element.Mass;
                     return true;
 
