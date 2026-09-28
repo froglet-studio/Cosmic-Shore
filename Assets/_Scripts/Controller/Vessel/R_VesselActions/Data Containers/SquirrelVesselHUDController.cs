@@ -16,11 +16,23 @@ namespace CosmicShore.UI
         [Header("Events")]
         [SerializeField] private ScriptableEventBoostChanged boostChanged;
         [SerializeField] private ScriptableEventString joustCollisionEvent;
+        [Tooltip("Omni crystal collected by THIS vessel. Raised by the Squirrel's omni branch " +
+                 "(VesselExplosionByCrystalEffectSO) on the owning machine; lights the omni " +
+                 "crystal card, which pictures what the pickup lays.")]
         [SerializeField] private ScriptableEventVesselImpactor squirrelCrystalExplosionEvent;
-        // The three drift channels (isDrifting / isDoubleDrifting / driftEnded) were removed with
-        // the drift icon juice in the 2026-09 element re-cut: the drift is core flight with no
-        // element, and its readout was sitting on the card that now carries the Boost Ring. The
-        // channels themselves are untouched and still raised by the drift executor.
+
+        // The drift channels, back on the CORE card. They were cut in the 2026-09 element re-cut
+        // because the drift's readout was squatting on the card the Boost Ring wanted; the drift now
+        // has a card of its own, so its response came back with it. No vessel filter is needed
+        // here: DriftActionSO raises these for the locally-owned vessel only.
+        //
+        // isDoubleDrifting must be EventOnDoubleDriftStarted - the channel the drift actions
+        // actually raise. Before the cut it was wired to EventOnSharpDrifting, which NOTHING raises,
+        // so the sharp-drift look had never once fired.
+        [Header("Drift (core card)")]
+        [SerializeField] private ScriptableEventNoParam isDrifting;
+        [SerializeField] private ScriptableEventNoParam isDoubleDrifting;
+        [SerializeField] private ScriptableEventNoParam driftEnded;
 
         [Header("Shared Config")]
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier;
@@ -50,6 +62,12 @@ namespace CosmicShore.UI
 
         // Polled each frame to drive the tube cooldown icon in the freed HUD slot.
         private SquirrelTubeActionExecutor _tubeExecutor;
+
+        // Read while a drift is held, for the side the drift icon leans to. Cached at Initialize
+        // because IVesselStatus.Transform / ShipTransform go through Vessel, whose getter logs an
+        // error rather than answering null - not something to call every frame.
+        private Transform _shipTransform;
+        private bool _drifting;
 
         // NOTE: this controller used to look up the Sparrow's OverheatingActionExecutor to drive
         // SquirrelVesselHUDView's heat gauge/throb. That component only ever existed on
@@ -114,8 +132,9 @@ namespace CosmicShore.UI
 
             // The tube executor lives on a child of the vessel; poll it in Update for the
             // cooldown icon. Local user only (this whole branch is gated on IsLocalUser).
-            _tubeExecutor = vesselStatus.Vessel?.Transform
-                ? vesselStatus.Vessel.Transform.GetComponentInChildren<SquirrelTubeActionExecutor>(true)
+            _shipTransform = vesselStatus.Vessel?.Transform;
+            _tubeExecutor = _shipTransform
+                ? _shipTransform.GetComponentInChildren<SquirrelTubeActionExecutor>(true)
                 : null;
         }
 
@@ -128,6 +147,29 @@ namespace CosmicShore.UI
 
             PushStealReadout();
             PushPalette();
+            if (_drifting) view.SetDriftSide(DriftSide());
+        }
+
+        // Below this the nose has not left the course far enough for a side to mean anything
+        // (the frame a drift engages, the two are still parallel).
+        const float DriftSideDeadband = 0.05f;
+
+        /// <summary>
+        /// Which way the nose has swung off the course, in the SHIP's own frame: -1 left, +1 right,
+        /// 0 not yet diverged. A drift IS nose-vs-course divergence, so the side falls straight out
+        /// of it - when the nose has swung LEFT of the course, the course lies to the ship's right.
+        /// Read in the ship's frame rather than projected onto world up, which only meant anything
+        /// while the ship was level.
+        /// </summary>
+        private int DriftSide()
+        {
+            if (!_shipTransform || _vesselStatus == null) return 0;
+            var course = _vesselStatus.Course;
+            if (course.sqrMagnitude < 1e-6f) return 0;
+
+            float lateral = Vector3.Dot(course.normalized, _shipTransform.right);
+            if (Mathf.Abs(lateral) < DriftSideDeadband) return 0;
+            return lateral > 0f ? -1 : 1;
         }
 
         /// <summary>
@@ -238,6 +280,12 @@ namespace CosmicShore.UI
                 joustCollisionEvent.OnRaised += HandleJoustCollision;
             if (squirrelCrystalExplosionEvent != null)
                 squirrelCrystalExplosionEvent.OnRaised += HandleSquirrelCrystalExplosion;
+            if (isDrifting != null)
+                isDrifting.OnRaised += HandleDriftStarted;
+            if (isDoubleDrifting != null)
+                isDoubleDrifting.OnRaised += HandleDoubleDriftStarted;
+            if (driftEnded != null)
+                driftEnded.OnRaised += HandleDriftEnded;
         }
 
         private void OnDisable()
@@ -248,6 +296,35 @@ namespace CosmicShore.UI
                 joustCollisionEvent.OnRaised -= HandleJoustCollision;
             if (squirrelCrystalExplosionEvent != null)
                 squirrelCrystalExplosionEvent.OnRaised -= HandleSquirrelCrystalExplosion;
+            if (isDrifting != null)
+                isDrifting.OnRaised -= HandleDriftStarted;
+            if (isDoubleDrifting != null)
+                isDoubleDrifting.OnRaised -= HandleDoubleDriftStarted;
+            if (driftEnded != null)
+                driftEnded.OnRaised -= HandleDriftEnded;
+        }
+
+        private void HandleDriftStarted() => BeginDrift(isDoubleDrift: false);
+        private void HandleDoubleDriftStarted() => BeginDrift(isDoubleDrift: true);
+
+        private void BeginDrift(bool isDoubleDrift)
+        {
+            if (!view) return;
+            _drifting = true;
+            view.JuiceDriftStart(isDoubleDrift);
+        }
+
+        private void HandleDriftEnded()
+        {
+            if (!view) return;
+
+            // The single and sharp drifts are two actions and each raises its own end, so
+            // releasing one while the other is still held must not return the icon to rest.
+            // DriftActionSO.StopAction writes IsDrifting from the transformer BEFORE it raises.
+            if (_vesselStatus != null && _vesselStatus.IsDrifting) return;
+
+            _drifting = false;
+            view.JuiceDriftEnd();
         }
 
         private void HandleBoostChanged(BoostChangedPayload payload)
@@ -302,7 +379,6 @@ namespace CosmicShore.UI
             // Shared global event - only react to our own vessel's joust collisions.
             if (playerName != _vesselStatus.PlayerName) return;
 
-            // Joust and crystal share ONE impact icon; flash it with the joust colour.
             view.JuiceJoustImpact();
         }
 
@@ -333,8 +409,10 @@ namespace CosmicShore.UI
 
             view.FlashCrystalSurge();
 
-            // Joust and crystal share ONE impact icon; flash it with the crystal colour.
-            view.JuiceCrystalImpact();
+            // An OMNI crystal: this event is raised by the Squirrel's omni branch and nothing else,
+            // so it lights the card that pictures the shielded ring the pickup lays - not the joust
+            // card, which it used to share an icon with before the omni card existed.
+            view.PlayOmniCrystalCollected();
         }
     }
 }

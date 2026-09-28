@@ -561,14 +561,14 @@ Measured off the shipped `vesselCrystalEffects`, what each hull actually does:
 |---|---|---|
 | **Squirrel** | lays a ring of **shielded** prisms (`AOEShieldedRingSpawner`) | its own baked icon, tinted |
 | Manta | detonates its planted bombs (Kabloom) | locked |
-| Dolphin | fires its blast, and a resource change | locked |
+| **Dolphin** | fires its blast, and a resource change | **generated** — the blast's prism tally, centred, held until the next blast (`DolphinVesselHUDView.EnsureGeneratedAbilityIcons`, over an invisible anchor icon) |
 | Rhino | a blast, and a resource change | locked |
 | Serpent | a blast | locked |
 | Sparrow | an 8 s debuff **ward** | locked |
 | Urchin | haptics only — nothing a card can draw | locked, permanently |
 | Scarab | **nothing, by design** — its SKIMMER forges the crystal into a ball before the hull reaches it | locked, permanently |
 
-Six of those are art the fleet does not have yet, so they ship LOCKED. That is the honest state and
+Five of those are art the fleet does not have yet, so they ship LOCKED. That is the honest state and
 exactly what a locked card is for: *an ability that does not exist is not the same as one the player
 has not unlocked, and the locked card says the first.*
 
