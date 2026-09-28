@@ -487,7 +487,9 @@ namespace CosmicShore.Gameplay
             var go = new GameObject(name);
             var gate = go.AddComponent<FoldGate>();
             gate.Build(_status, _gameData.Players, centre, _gateAxis, so.GateRadius,
-                       so.GateExitClearance, so.GateBloomSeconds, _gameData.ThemeManagerData);
+                       so.GateExitClearance, so.GateBloomSeconds, _gameData.ThemeManagerData,
+                       so.PortalWindowRange, so.PortalWindowFadeSeconds,
+                       so.PortalWindowRenderScale);
             return gate;
         }
 

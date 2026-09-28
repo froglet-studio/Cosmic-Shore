@@ -78,11 +78,29 @@ namespace CosmicShore.Gameplay
                  "degenerate fold and the case where a peer's replicated pose has not landed yet.")]
         [SerializeField, Min(1f)] float minGateSeparation = 300f;
 
-        [Tooltip("How far past the far gate's plane a transiting pilot emerges, world units, " +
-                 "along the sense they were already travelling. Clear of the mouth so arriving " +
-                 "never re-threads, and small enough that a gate reads as something you fly " +
-                 "THROUGH rather than something that launches you.")]
+        [Tooltip("Minimum depth of a gate's 'standing in the mouth' zone, world units (the zone is " +
+                 "at least one mouth radius deep either way). A pilot is only taken by a gate " +
+                 "they have been clear of, so this is how far past the far plane an arriving " +
+                 "pilot must fly before that gate can take them back. It used to also be how far " +
+                 "past the plane a transit DEPOSITED the pilot; a transit now carries the pilot " +
+                 "through exactly (see FoldGateGeometry.Through), so there is no push any more.")]
         [SerializeField, Min(0f)] float gateExitClearance = 40f;
+
+        [Tooltip("Furthest the camera may be from a gate for the gate to show the far side " +
+                 "through its ring, world units. Past this the ring is a plain ring. The window " +
+                 "is a second render of the world, so this is also the range over which that " +
+                 "cost is paid.")]
+        [SerializeField, Min(0f)] float portalWindowRange = 2500f;
+
+        [Tooltip("Seconds the window takes to fade the far side in when a gate comes into range " +
+                 "(continuity of existence: a picture may not pop into a ring any more than the " +
+                 "ring may pop into the world).")]
+        [SerializeField, Min(0.01f)] float portalWindowFadeSeconds = 0.3f;
+
+        [Tooltip("Resolution of the far-side render as a fraction of the gameplay camera's. The " +
+                 "window can fill the screen as a pilot flies into it, so it is not tiny; it is a " +
+                 "second render of the world, so it is not full either.")]
+        [SerializeField, Range(0.25f, 1f)] float portalWindowRenderScale = 0.75f;
 
         [Tooltip("Seconds a gate takes to bloom in, and to wither away when the next fold " +
                  "replaces it. Continuity of existence: a portal may not pop into or out of the " +
@@ -121,6 +139,9 @@ namespace CosmicShore.Gameplay
         public float GateExitClearance => gateExitClearance;
         public float GateBloomSeconds => gateBloomSeconds;
         public float GateSettleSeconds => gateSettleSeconds;
+        public float PortalWindowRange => portalWindowRange;
+        public float PortalWindowFadeSeconds => portalWindowFadeSeconds;
+        public float PortalWindowRenderScale => portalWindowRenderScale;
 
         /// <summary>
         /// The recharge this vessel actually pays, at its live TIME level. Read at USE time, never

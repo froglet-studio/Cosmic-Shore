@@ -160,6 +160,10 @@ camera that renders only into a `RenderTexture`, is left **disabled** and steppe
 resolves `CameraManager`'s active controller and never sees it, `ApplyCameraGraphicsSettings` and
 `SetBackgroundColor` reach only the managed cameras, and `Camera.main` skips it twice over. That is
 the `ConnectingArenaPreview` shape, and `ScopePipView` is the second user of it.
+`FoldGatePortalView` (the Butterfly's fold-gate window, `R_VesselActions/BUTTERFLY_FOLD.md`
+§ "Seamless transit") is the third, and the one that deliberately renders WITHOUT post-processing:
+its picture is composited INTO the world and post-processed by the gameplay camera with everything
+else, so tonemapping it itself would tonemap it twice.
 
 It is posed from the vessel itself — the eye at `1.05 ×` the measured circumscribing hull radius
 past the nose, aimed along the same forward the shot is cast along — so the window cannot become a

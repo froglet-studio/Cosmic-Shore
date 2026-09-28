@@ -44,13 +44,26 @@ namespace CosmicShore.Gameplay
     /// a race ring (<c>GateRaceController</c> declines any step containing a teleport) — the rule
     /// Waystation needed for the Fold covers the gates with nothing added.</para>
     ///
-    /// <para><b>Stated judgement: the VESSEL is not withered on a transit, the GATES flare.</b> The
-    /// Fold itself withers and blooms the hull because a teleport out of open space is a
-    /// disappearance with nothing to explain it. A gate transit is not that — the pilot flies INTO
-    /// a visible ring and OUT of a visible ring, and the rings are the continuity. Withering the
-    /// hull at both ends would also put a quarter-second of dead time on a movement option meant to
-    /// be flown through at speed. If a playtest reads it as a pop, the fix is to route the transit
-    /// through the same wither/bloom the Fold already owns rather than to add a second one.</para>
+    /// <para><b>A transit is SEAMLESS: nothing on screen says the pilot jumped.</b> Four pieces,
+    /// each of which removes one of the ways a teleport shows (<c>BUTTERFLY_FOLD.md</c>
+    /// § "Seamless transit"):</para>
+    /// <list type="number">
+    /// <item><b>The pose is carried through, not re-laid</b> (<see cref="FoldGateGeometry.Through"/>):
+    /// the pilot comes out exactly as far past the far plane as they were past the near one, so
+    /// the jump is a change of frame with no lurch in it.</item>
+    /// <item><b>The mouth is a WINDOW</b>: a gate the viewer's domain may thread shows the far
+    /// side through its ring (<see cref="FoldGatePortalView"/>), rendered from exactly where the
+    /// camera is about to be — so the pilot flies INTO the place they see.</item>
+    /// <item><b>The camera follows the ship through the mouth</b> rather than cutting to it
+    /// (<c>CustomCameraController.CarryThroughPortal</c>): it keeps framing the ship through the
+    /// window until the camera itself reaches the plane, then takes the same map.</item>
+    /// <item><b>Ribbons are cut AT the mouths</b> (<see cref="TeleportContinuity"/>): the tail and
+    /// jets end at the near ring and start again at the far one, instead of drawing one straight
+    /// streak across the arena between them.</item>
+    /// </list>
+    /// <para>The vessel is still NOT withered on a transit — that judgement stands and is now
+    /// stronger: the rings are the continuity and the window is what makes them read as one
+    /// place, so there is no disappearance to cover.</para>
     /// </summary>
     public class FoldGate : MonoBehaviour
     {
@@ -72,6 +85,9 @@ namespace CosmicShore.Gameplay
 
         FoldGate _partner;
         GameObject _ring;
+        MeshRenderer _window;
+        MaterialPropertyBlock _windowBlock;
+        float _windowBlend;
         IReadOnlyList<IPlayer> _players;
 
         bool _retiring;
@@ -90,6 +106,33 @@ namespace CosmicShore.Gameplay
         /// <summary>Mouth radius in world units. The ring is drawn at exactly this.</summary>
         public float RingRadius => _radius;
 
+        /// <summary>The mouth's centre in world space.</summary>
+        public Vector3 Centre => transform.position;
+
+        /// <summary>The mouth's axis (the normal of its plane). Both ends of a pair share it.</summary>
+        public Vector3 Axis => _axis;
+
+        /// <summary>True once <see cref="Retire"/> has run — a closing gate is never a portal.</summary>
+        public bool IsRetiring => _retiring;
+
+        /// <summary>
+        /// The window surface inside the ring, or null if the portal material could not be
+        /// resolved. Shown and hidden only by <see cref="FoldGatePortalView"/>.
+        /// </summary>
+        public MeshRenderer Window => _window;
+
+        /// <summary>How opaque the window currently is, 0 (a plain ring) .. 1 (the far side).</summary>
+        public float WindowBlend => _windowBlend;
+
+        /// <summary>Furthest a camera may be for this gate to show the far side.</summary>
+        public float WindowRange { get; private set; } = 2500f;
+
+        /// <summary>Seconds the far side takes to fade into the ring.</summary>
+        public float WindowFadeSeconds { get; private set; } = 0.3f;
+
+        /// <summary>Far-side render resolution as a fraction of the gameplay camera's.</summary>
+        public float WindowRenderScale { get; private set; } = 0.75f;
+
         /// <summary>The other end. Null until <see cref="Pair"/> runs, and a gate with no partner
         /// is inert rather than broken: the origin gate stands alone for the length of the fold's
         /// wither and arrival, and threading it in that window must do nothing rather than send a
@@ -100,8 +143,13 @@ namespace CosmicShore.Gameplay
         public void Build(IVesselStatus placer, IReadOnlyList<IPlayer> players,
                           Vector3 centre, Vector3 axis, float radius,
                           float exitClearance, float bloomSeconds,
-                          ThemeManagerDataContainerSO theme)
+                          ThemeManagerDataContainerSO theme,
+                          float windowRange, float windowFadeSeconds, float windowRenderScale)
         {
+            WindowRange = Mathf.Max(0f, windowRange);
+            WindowFadeSeconds = Mathf.Max(0.01f, windowFadeSeconds);
+            WindowRenderScale = Mathf.Clamp(windowRenderScale, 0.25f, 1f);
+
             _domain = placer != null ? placer.Domain : Domains.Blue;
             _placerName = placer != null ? placer.PlayerName : string.Empty;
             _players = players;
@@ -119,6 +167,7 @@ namespace CosmicShore.Gameplay
 
             _ring = ToyFactory.AddSwitchRing(transform, _radius, theme,
                                              ToySwitchSignal.Domain, _domain);
+            BuildWindow();
             _bloom = 0f;
             ApplyBloom();
 
@@ -131,6 +180,14 @@ namespace CosmicShore.Gameplay
             if (!a || !b || a == b) return;
             a._partner = b;
             b._partner = a;
+
+            // The camera carry and the window both treat the pair as one frame displaced by a
+            // TRANSLATION (FoldGateGeometry.Through). A fold lays both ends from one heading, so
+            // this holds by construction; say so loudly if a future caller breaks it.
+            if (Vector3.Dot(a._axis, b._axis) < 0.9999f)
+                CSDebug.LogWarning($"[FoldGate] {a._placerName}'s pair was laid on two different " +
+                                   "axes - the window and the camera carry assume one shared " +
+                                   "axis and will read the far side at the wrong angle.");
         }
 
         // A scene unload destroys gates without retiring them; a stale entry would outlive the
@@ -149,6 +206,7 @@ namespace CosmicShore.Gameplay
             if (_retiring) return;
             _retiring = true;
             Live.Remove(this);
+            SetWindow(false, 0f);
             if (_partner && _partner._partner == this) _partner._partner = null;
             _partner = null;
             RetireAsync(Mathf.Max(0.05f, seconds), this.GetCancellationTokenOnDestroy()).Forget();
@@ -211,9 +269,9 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
                 if (first) continue;               // two samples are needed to test a crossing
-                if (!CrossedMouth(prev, cur, out Vector3 hit)) continue;
+                if (!CrossedMouth(prev, cur, out _)) continue;
 
-                Transit(vessel, status, prev, cur, hit);
+                Transit(vessel, status, cur);
                 return;                            // one transit per gate per frame
             }
 
@@ -245,16 +303,15 @@ namespace CosmicShore.Gameplay
             FoldGateGeometry.CrossedMouth(prev, cur, transform.position, _axis, _radius, out hit);
 
         /// <summary>
-        /// Put the pilot through. Two properties are preserved on purpose, because together they
-        /// are what makes a portal predictable rather than a shuffle:
+        /// Put the pilot through. The pilot's position relative to this mouth becomes the same
+        /// position relative to the partner's (<see cref="FoldGateGeometry.Through"/>), so:
         ///
         /// <list type="bullet">
-        /// <item><b>Where in the mouth you entered is where you leave.</b> The lateral offset
-        /// inside this ring is re-applied inside the partner's, so threading near the rim comes out
-        /// near the rim.</item>
-        /// <item><b>The side you were heading for is the side you come out on.</b> The exit is one
-        /// clearance along the shared axis in the SENSE you were travelling, so momentum reads
-        /// through the gate and a transit never spits a pilot backwards.</item>
+        /// <item><b>Where in the mouth you entered is where you leave</b> — threading near the rim
+        /// comes out near the rim.</item>
+        /// <item><b>The side you were heading for is the side you come out on</b>, and exactly as
+        /// far past it as your last step took you — so momentum reads through the gate and there
+        /// is no lurch on the frame of the jump.</item>
         /// </list>
         ///
         /// <para>The pilot's ROTATION and SPEED are untouched. A gate moves you; it does not fly
@@ -266,24 +323,34 @@ namespace CosmicShore.Gameplay
         /// bounce them straight back. That is a detector debounce, not a lifespan — nothing is
         /// removed by it.</para>
         /// </summary>
-        void Transit(IVessel vessel, IVesselStatus status, Vector3 prev, Vector3 cur, Vector3 hit)
+        void Transit(IVessel vessel, IVesselStatus status, Vector3 cur)
         {
             var partner = _partner;
             if (!partner) return;
 
-            Vector3 exit = FoldGateGeometry.Exit(hit, cur - prev,
-                                                 transform.position, _axis,
-                                                 partner.transform.position, partner._axis,
-                                                 _exitClearance);
+            Vector3 exit = FoldGateGeometry.Through(cur, transform.position, _axis,
+                                                    partner.transform.position, partner._axis);
 
+            // The pose write reaches VesselTransformer.SetPose on every peer, and that is where
+            // the rest of the seamlessness happens (TeleportContinuity): the ribbons are cut at
+            // the two mouths and any camera following this ship is carried through. Doing it
+            // THERE rather than here is what makes it true on every machine - a spectator, and a
+            // peer watching a teammate, see the same transit the pilot does.
             vessel.SetPose(new Pose(exit, vessel.Transform.rotation));
 
-            // Both ends are re-seeded at the exit and DISARMED. The re-seed alone is not enough:
-            // the far gate deposits the pilot one clearance from its own plane, so it has to
-            // treat them as somebody standing in its mouth - which is what disarming says - until
-            // they have flown clear of it.
-            _lastPos[vessel] = exit;
-            partner._lastPos[vessel] = exit;
+            // Both ends are re-seeded and DISARMED. The re-seed alone is not enough: the far
+            // gate deposits the pilot just past its own plane, so it has to treat them as
+            // somebody standing in its mouth - which is what disarming says - until they have
+            // flown clear of it.
+            //
+            // Re-seeded at where the vessel ACTUALLY is after the write, not at `exit`: on every
+            // current route the owner's pose lands synchronously, but if it ever did not, seeding
+            // the far position while the hull still sat on the near side would hand the far gate
+            // a segment running back across the world, and a later landing would read as a
+            // crossing. Both ends are disarmed either way, so a deferred landing is harmless.
+            Vector3 now = vessel.Transform.position;
+            _lastPos[vessel] = now;
+            partner._lastPos[vessel] = now;
             _armed.Remove(vessel);
             partner._armed.Remove(vessel);
 
@@ -293,6 +360,156 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.ButterflyFold,
                 $"[FoldGate] {status.PlayerName} threaded {_placerName}'s gate " +
                 $"({Vector3.Distance(transform.position, partner.transform.position):F0}u).");
+        }
+
+        // ---- transit resolution, asked on EVERY peer -----------------------------------------
+
+        /// <summary>
+        /// Was the jump <paramref name="from"/> → <paramref name="to"/> a transit through a
+        /// standing gate pair? Asked by <see cref="TeleportContinuity"/> from inside every pose
+        /// write, on every machine, because only the OWNER runs <see cref="Update"/>'s detector
+        /// and everyone else only sees the pose arrive.
+        ///
+        /// <para><b>Tolerant on purpose.</b> On the owner <paramref name="from"/> is the exact
+        /// sample the detector used, so the map lands on <paramref name="to"/> to float precision.
+        /// On a peer <paramref name="from"/> is the replica's pose when the write arrives, which
+        /// interpolation may have left a little short of — or already a little past — the mouth,
+        /// so the test asks only that the jump is the pair's translation to within a mouth
+        /// diameter. Two gates of one pair are at least <c>MinGateSeparation</c> apart, so no
+        /// ordinary teleport lands within that tolerance by accident.</para>
+        ///
+        /// <para>The mouths returned are points ON the two planes, at the lateral offset the
+        /// vessel went through at — the near one is where a ribbon should end, the far one where
+        /// the next should begin.</para>
+        /// </summary>
+        public static bool TryResolveTransit(Vector3 from, Vector3 to, out FoldGate near,
+                                             out Vector3 departMouth, out Vector3 arriveMouth)
+        {
+            near = null;
+            departMouth = arriveMouth = default;
+            float bestErr = float.MaxValue;
+
+            for (int i = 0; i < Live.Count; i++)
+            {
+                var g = Live[i];
+                if (!g || g._retiring) continue;
+                var p = g._partner;
+                if (!p || p._retiring) continue;
+
+                Vector3 c = g.transform.position;
+                float depth = FoldGateGeometry.NearZoneDepth(g._radius, g._exitClearance);
+                if (Mathf.Abs(FoldGateGeometry.Axial(from, c, g._axis)) > depth * 3f) continue;
+                if (FoldGateGeometry.Lateral(from, c, g._axis) > g._radius * 1.5f) continue;
+
+                Vector3 mapped = FoldGateGeometry.Through(from, c, g._axis, p.transform.position, p._axis);
+                float err = (mapped - to).sqrMagnitude;
+                float tolerance = g._radius * 2f;
+                if (err > tolerance * tolerance || err >= bestErr) continue;
+
+                bestErr = err;
+                near = g;
+                departMouth = FoldGateGeometry.OnPlane(from, c, g._axis);
+                arriveMouth = FoldGateGeometry.Through(departMouth, c, g._axis,
+                                                       p.transform.position, p._axis);
+            }
+            return near != null;
+        }
+
+        // ---- the window --------------------------------------------------------------------
+
+        const string WindowMaterialResourcePath = "FoldGatePortal";
+        static readonly int WindowBlendId = Shader.PropertyToID("_PortalBlend");
+        static Material s_windowMaterial;
+        static Mesh s_windowMesh;
+        static bool s_warnedNoWindowMaterial;
+
+        /// <summary>
+        /// Lay the window surface inside the ring. A child of the RING, so it blooms, withers and
+        /// flares with it for free, and it sits exactly on the mouth's plane - which is the plane
+        /// the far-side render is clipped at, so the picture and the surface agree.
+        ///
+        /// <para>It starts hidden. Only <see cref="FoldGatePortalView"/> shows one, because there
+        /// is one far-side render and it belongs to one gate at a time.</para>
+        /// </summary>
+        void BuildWindow()
+        {
+            if (!_ring) return;
+            if (s_windowMaterial == null)
+            {
+                s_windowMaterial = Resources.Load<Material>(WindowMaterialResourcePath);
+                if (s_windowMaterial == null)
+                {
+                    if (!s_warnedNoWindowMaterial)
+                    {
+                        s_warnedNoWindowMaterial = true;
+                        CSDebug.LogWarning($"[FoldGate] No Resources/{WindowMaterialResourcePath} " +
+                                           "material - fold gates will be plain rings with no " +
+                                           "view of the far side.");
+                    }
+                    return;
+                }
+            }
+            if (s_windowMesh == null) s_windowMesh = BuildWindowMesh();
+
+            var go = new GameObject("PortalWindow");
+            go.transform.SetParent(_ring.transform, false);
+            // The ring mesh's tube centre is at 0.5 in its own units and its inner edge at 0.46;
+            // 0.48 tucks the window's rim under the tube so there is never a gap to see through.
+            go.transform.localScale = Vector3.one * 0.96f;
+
+            go.AddComponent<MeshFilter>().sharedMesh = s_windowMesh;
+            _window = go.AddComponent<MeshRenderer>();
+            _window.sharedMaterial = s_windowMaterial;
+            _window.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _window.receiveShadows = false;
+            _window.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+            _window.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+            _window.forceRenderingOff = true;
+            _windowBlock = new MaterialPropertyBlock();
+            _windowBlend = 0f;
+        }
+
+        /// <summary>
+        /// Show or hide the window at <paramref name="blend"/> opacity. Called by
+        /// <see cref="FoldGatePortalView"/> only.
+        /// </summary>
+        public void SetWindow(bool shown, float blend)
+        {
+            if (!_window) return;
+            _windowBlend = shown ? Mathf.Clamp01(blend) : 0f;
+            bool render = shown && _windowBlend > 0.001f && !_retiring;
+            _window.forceRenderingOff = !render;
+            if (!render) return;
+            _windowBlock.SetFloat(WindowBlendId, _windowBlend);
+            _window.SetPropertyBlock(_windowBlock);
+        }
+
+        /// <summary>A flat unit disc (radius 0.5) in the ring's XY plane, facing its +Z.</summary>
+        static Mesh BuildWindowMesh()
+        {
+            const int segments = 64;
+            var verts = new Vector3[segments + 1];
+            var uvs = new Vector2[segments + 1];
+            var tris = new int[segments * 3];
+            verts[0] = Vector3.zero;
+            uvs[0] = new Vector2(0.5f, 0.5f);
+            for (int i = 0; i < segments; i++)
+            {
+                float a = i * Mathf.PI * 2f / segments;
+                var v = new Vector3(Mathf.Cos(a) * 0.5f, Mathf.Sin(a) * 0.5f, 0f);
+                verts[i + 1] = v;
+                uvs[i + 1] = new Vector2(v.x + 0.5f, v.y + 0.5f);
+                tris[i * 3] = 0;
+                tris[i * 3 + 1] = i + 1;
+                tris[i * 3 + 2] = (i + 1) % segments + 1;
+            }
+            var mesh = new Mesh { name = "FoldGateWindow", hideFlags = HideFlags.HideAndDontSave };
+            mesh.vertices = verts;
+            mesh.uv = uvs;
+            mesh.triangles = tris;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         /// <summary>A visible acknowledgement at BOTH ends — the ring punches and settles. It is

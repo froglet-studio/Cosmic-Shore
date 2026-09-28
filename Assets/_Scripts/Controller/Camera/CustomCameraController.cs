@@ -70,10 +70,174 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The world point the camera frames this frame: the placement anchor if one is set, else
-        /// the follow target's own position.
+        /// the follow target's own position — seen through a portal the camera has not reached yet
+        /// while one is being carried (<see cref="CarryThroughPortal"/>).
         /// </summary>
         private Vector3 FollowPoint =>
-            PlacementAnchor ?? (_followTarget ? _followTarget.position : Vector3.zero);
+            PlacementAnchor ?? (_followTarget ? _followTarget.position - PortalShift : Vector3.zero);
+
+        /// <summary>The transform this camera follows (the vessel's camera follow target).</summary>
+        public Transform FollowTarget => _followTarget;
+
+        // --- Portal carry ---------------------------------------------------------------------
+        //
+        // A portal moves the SHIP the instant it crosses, but a chase camera is tens to hundreds
+        // of units behind it (the Butterfly's is 207). Moving the camera on the same frame is a
+        // cut — the whole picture changes around a ship that has not visibly moved — and letting
+        // the teleport guard snap it is the same cut with the smoothing state thrown away too.
+        // So the camera follows the ship THROUGH the portal instead: it keeps framing where the
+        // ship WOULD be had the two mouths been one (the ship's position mapped back through the
+        // pair), and it is itself moved across on the frame IT reaches the near mouth. Until
+        // then the pilot sees their own ship through the gate's window (FoldGatePortalView),
+        // which is rendered from exactly the far-side vantage this camera is about to take — so
+        // the hand-over is a change of frame with nothing on screen to show it.
+        private bool _carrying;
+        private Vector3 _carryShift;          // far mouth - near mouth, the portal's translation
+        private Vector3 _carryCentre;         // the near mouth
+        private Vector3 _carryNormal;         // the near plane's normal, pointing to the exit side
+        private float _carryRadius;           // the near mouth's radius
+        private float _carryDeadline;
+
+        /// <summary>
+        /// Longest a carry may last. Not a gameplay clock — nothing is added or removed by it —
+        /// but a guard on a presentation state, so a camera that somehow never reaches the mouth
+        /// (a pilot who turns straight back, a follow distance longer than the arena) is handed
+        /// across rather than left framing a point on the wrong side of the world.
+        /// </summary>
+        private const float MaxCarrySeconds = 6f;
+
+        /// <summary>The translation the camera is still waiting to take, or zero.</summary>
+        private Vector3 PortalShift => _carrying ? _carryShift : Vector3.zero;
+
+        /// <summary>True while the camera is still on the near side of a portal its ship has
+        /// already gone through.</summary>
+        public bool IsCarryingThroughPortal => _carrying;
+
+        /// <summary>The portal translation still pending (far mouth minus near mouth), or zero.
+        /// A view of the far side is posed by adding this to the camera's pose.</summary>
+        public Vector3 PendingPortalShift => PortalShift;
+
+        /// <summary>The near mouth of the portal being carried through (valid while
+        /// <see cref="IsCarryingThroughPortal"/>).</summary>
+        public Vector3 CarryMouthCentre => _carryCentre;
+
+        /// <summary>
+        /// The ship this camera follows has just been carried through a portal from the mouth at
+        /// <paramref name="nearCentre"/> to one displaced by <paramref name="shift"/>. Follow it
+        /// through rather than cutting.
+        ///
+        /// <para><b>Identity-guarded</b>: a camera that is not following
+        /// <paramref name="subject"/> (or one of its children) ignores the call, so a transit may
+        /// ask every camera without knowing which one is the player's. Returns whether this
+        /// camera took the carry.</para>
+        ///
+        /// <para>A camera already on the exit side of the mouth — the rear view sits AHEAD of the
+        /// ship, so it went through first — is simply moved across now, which is the same
+        /// hand-over one frame earlier.</para>
+        /// </summary>
+        public bool CarryThroughPortal(Transform subject, Vector3 nearCentre, Vector3 exitNormal,
+                                       float mouthRadius, Vector3 shift)
+        {
+            if (!_followTarget || !subject) return false;
+            if (_followTarget != subject && !_followTarget.IsChildOf(subject)) return false;
+            if (shift.sqrMagnitude < 1e-6f) return false;
+
+            // A carry already in flight is finished first: two portals in a row compose, and the
+            // camera must be in the first one's far frame before it can follow the ship into the
+            // second.
+            if (_carrying) FinishCarry();
+
+            // A placement moves the framed point to an explicit world position; there is no ship
+            // for the camera to trail through the mouth, so hand it across outright.
+            if (PlacementAnchor.HasValue) { ShiftCamera(shift); return true; }
+
+            _carryShift = shift;
+            _carryCentre = nearCentre;
+            _carryNormal = exitNormal.sqrMagnitude > 1e-6f ? exitNormal.normalized : Vector3.forward;
+            _carryRadius = Mathf.Max(0.01f, mouthRadius);
+            _carryDeadline = Time.time + MaxCarrySeconds;
+            _carrying = true;
+
+            // Already through (rear view, or a camera that sits level with the ship): move now.
+            if (CameraHasCrossed()) FinishCarry();
+            else PublishCarryToCorridor();
+            return true;
+        }
+
+        private bool CameraHasCrossed()
+        {
+            // "At the plane" counts as through: a camera within its own near clip of the mouth
+            // would clip the window it is looking through and show the near side for a frame.
+            float nearClip = Camera ? Camera.nearClipPlane : 0.3f;
+            return Vector3.Dot(transform.position - _carryCentre, _carryNormal) >= -nearClip * 2f;
+        }
+
+        /// <summary>
+        /// Would the pilot still see their ship THROUGH the mouth from here? The line from the
+        /// camera to where the ship is framed must pierce the near plane inside the ring. Once it
+        /// does not — the ship turned hard, or went through near the rim and the camera is
+        /// trailing wide — continuing the carry would leave the pilot looking at a ring with no
+        /// ship in it, so the camera is handed across instead.
+        /// </summary>
+        private bool ShipVisibleThroughMouth(Vector3 framed)
+        {
+            float dCam = Vector3.Dot(transform.position - _carryCentre, _carryNormal);
+            float dShip = Vector3.Dot(framed - _carryCentre, _carryNormal);
+            if (dShip <= 0f) return true;                    // ship not yet beyond - nothing to lose
+            if (dCam >= 0f) return true;                     // camera through - handled elsewhere
+            float t = dCam / (dCam - dShip);
+            Vector3 pierce = Vector3.Lerp(transform.position, framed, t);
+            Vector3 rel = pierce - _carryCentre;
+            Vector3 lateral = rel - Vector3.Dot(rel, _carryNormal) * _carryNormal;
+            return lateral.sqrMagnitude <= _carryRadius * _carryRadius;
+        }
+
+        private void TickCarry(Vector3 framed)
+        {
+            if (!_carrying) return;
+            if (CameraHasCrossed() || !ShipVisibleThroughMouth(framed) || Time.time > _carryDeadline)
+                FinishCarry();
+        }
+
+        /// <summary>
+        /// Move the camera through the portal: its pose and its smoothing state together, by the
+        /// portal's own translation. The pair shares one axis, so the map has no rotation — the
+        /// camera keeps its orientation and its SmoothDamp velocity exactly, which is what makes
+        /// the frame after the hand-over continue the frame before it.
+        /// </summary>
+        private void FinishCarry()
+        {
+            if (!_carrying) return;
+            var shift = _carryShift;
+            _carrying = false;
+            _carryShift = Vector3.zero;
+            ShiftCamera(shift);
+            PublishCarryToCorridor();
+        }
+
+        private void ShiftCamera(Vector3 shift)
+        {
+            transform.position += shift;
+            _lastTargetPos += shift;
+        }
+
+        private void CancelCarry()
+        {
+            if (!_carrying) return;
+            _carrying = false;
+            _carryShift = Vector3.zero;
+            PublishCarryToCorridor();
+        }
+
+        /// <summary>
+        /// Tell the occlusion corridor where the ship is framed from this camera's side of any
+        /// portal it is still carrying. Identity-guarded at the corridor, so only a camera
+        /// following the corridor's own vessel can move it.
+        /// </summary>
+        private void PublishCarryToCorridor()
+        {
+            if (_followTarget) PrismOcclusionCorridor.SetViewShift(_followTarget, PortalShift);
+        }
 
         /// <summary>
         /// The offset actually used to pose the camera this frame: the authored one, or its
@@ -112,6 +276,10 @@ namespace CosmicShore.Gameplay
         private void UpdateCamera()
         {
             if (!_followTarget) return;
+
+            // A placement frames an explicit WORLD point, which is not in the frame a carry is
+            // measuring in; the placement view snaps the camera itself, so the carry just ends.
+            if (_carrying && PlacementAnchor.HasValue) CancelCarry();
 
             // The point being FRAMED, which is the vessel unless a placement anchor is set. Every
             // read below is of this rather than of the target's own position — including the
@@ -189,6 +357,11 @@ namespace CosmicShore.Gameplay
 
             _lastTargetPos = followPoint;
 
+            // After the pose is settled and BEFORE shake: the hand-over moves the settled pose,
+            // and the shake is a decoration on top of whichever side of the portal that is.
+            TickCarry(followPoint);
+            PublishCarryToCorridor();
+
             ApplyShake();
         }
 
@@ -244,6 +417,8 @@ namespace CosmicShore.Gameplay
 
         public void SetFollowTarget(Transform target)
         {
+            // A carry belongs to the ship it was started for.
+            if (target != _followTarget) CancelCarry();
             _followTarget = target;
             _lastTargetPos = Vector3.zero;
             _velocity = Vector3.zero;
