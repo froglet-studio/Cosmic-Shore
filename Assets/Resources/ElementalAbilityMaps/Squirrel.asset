@@ -18,9 +18,10 @@ MonoBehaviour:
     AbilityLabel: Crystal Joust
     AbilityDescription: BASE (no upgrade needed) - joust a lifeform's crystal while
       moving faster than it to wither opposing-domain creatures, freeing the heart
-      and auto-collecting it. Charge SCALING IS AN OPEN HOLE - the joust has no
-      elemental parameter yet; it is deferred to the branch that reworks the joust,
-      and this row is deliberately left without one rather than given a placeholder.
+      and auto-collecting it; overtake an opposing PILOT and you steal elemental
+      petals off them. Charge scales how many petals each steal takes
+      (VesselOvertakeBySkimmerEffectSO.stealScale, x1 at rest -> x2.5 at level 10,
+      read from the thief's replicated level so every peer moves the same petals).
       At level 5 the joust also SHEPHERDS allies - an own-domain lifeform is
       NOURISHED instead (ILifeFormEntity.Nourish - its starvation clock resets and
       its birth counter advances).
