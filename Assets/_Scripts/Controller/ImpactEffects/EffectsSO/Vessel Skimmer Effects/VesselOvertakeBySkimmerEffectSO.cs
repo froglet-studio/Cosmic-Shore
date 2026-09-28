@@ -29,6 +29,12 @@ namespace CosmicShore.Gameplay
     /// base level, so it is felt and then gone, and the economy is untouched. That asymmetry is the
     /// design: jousting an enemy MOVES material, jousting a friend only encourages them.</para>
     ///
+    /// <para><b>How much a steal takes scales with the THIEF's element</b>
+    /// (<see cref="stealScale"/>): the Squirrel authors it on CHARGE, so a charged jouster takes
+    /// more petals per overtake. At rest it is x1, which is exactly the price Broadside puts on a
+    /// Strike - so the two hulls that land this verb still take the same petals until one of them
+    /// has earned the difference.</para>
+    ///
     /// <para>Nothing happens to the faster (overtaking) vessel beyond being paid.</para>
     /// </summary>
     [CreateAssetMenu(
@@ -54,6 +60,20 @@ namespace CosmicShore.Gameplay
                  "applies to the opponent branch, which is a permanent transfer with nothing " +
                  "to decay; the authoring tool still reads it to price sustained pressure.")]
         [SerializeField] private float effectDuration = 3f;
+
+        [Header("Steal by element")]
+        [Tooltip("A multiplier on how many petals a STEAL takes, scaled by the THIEF's level in " +
+                 "its element (the Squirrel: CHARGE - Charge is threat, and the joust is the " +
+                 "Squirrel's threat). x1 at rest keeps the priced Strike exactly; the multiplier " +
+                 "is what a charged jouster takes ON TOP of the price. Disabled = x1, which is " +
+                 "the Rhino's sword. Scales the opponent branch ONLY: the ally buff keeps " +
+                 "mirroring the base magnitude, so a friendly overtake can never out-pay an " +
+                 "enemy one. Read through the thief's REPLICATED integer level " +
+                 "(R_VesselElementalAbilityHandler.ReplicatedLevel): the steal runs on the " +
+                 "victim's machine as well as the thief's, element levels never replicate, and " +
+                 "two peers disagreeing about the multiplier is two peers disagreeing about how " +
+                 "many petals left the victim.")]
+        [SerializeField] private ElementalFloat stealScale = new(1f);
 
         [Header("When it lands")]
         [Tooltip("ON (the Squirrel's joust): only the SLOWER vessel is affected, so the effect " +
@@ -133,10 +153,13 @@ namespace CosmicShore.Gameplay
                 // (ResourceSystem.AccrueElementalLoss is the authority, not this call site).
                 // The magnitude is authored negative because it reads as a debuff; a transfer
                 // takes a positive amount, since how much moves has no sign.
+                // How much moves is the priced magnitude times the THIEF's element scale,
+                // snapshotted once per steal so all four elements move at one rate.
                 var thief = impacteeVessel.VesselStatus;
+                float amount = -debuffMagnitude * StealScale(thief);
                 for (int i = 0; i < AllElements.Length; i++)
                     ElementalTransfer.Steal(overtakenStatus, thief, AllElements[i],
-                                            -debuffMagnitude, ElementalDebuffSources.VesselContact);
+                                            amount, ElementalDebuffSources.VesselContact);
             }
 
             // Friendly buff audio: all four elements are buffed at once, so play a
@@ -149,6 +172,9 @@ namespace CosmicShore.Gameplay
                 AudioSystem.Instance?.PlayGameplaySFX(JoustBuffCategoryForElement(element));
             }
         }
+
+        float StealScale(IVesselStatus thief) =>
+            Mathf.Max(0f, stealScale.EvaluateReplicated(thief));
 
         static GameplaySFXCategory JoustBuffCategoryForElement(Element element) => element switch
         {
