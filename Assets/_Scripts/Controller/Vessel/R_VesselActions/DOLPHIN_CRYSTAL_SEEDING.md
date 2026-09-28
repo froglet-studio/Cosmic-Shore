@@ -1054,6 +1054,12 @@ shot. Now **every super-shield inside your own cone glows in the danger colour.*
   though the blast will take them. It will not — it ends at the blocker — but drawing the shadow
   a blocker casts would need a per-frame ordering the global-uniform shape cannot express, and
   whether the red mark alone is enough is a look call.
+- **Known gap (created by this change, deliberately small):** `Prism.ApplyRenderPath` re-asserts
+  the mark onto a companion entity minted after the shield engaged, but NOT onto the legacy
+  MeshRenderer path. So a prism that was super-shielded on the entity path and then FELL BACK to
+  the legacy path (the ECS world torn down mid-life) shows no red until its shield next changes.
+  Fixing it means one re-assert in the legacy branch of `ApplyRenderPath`; not done because the
+  fall-back-mid-life case has no known trigger in shipped play.
 
 Proof: `Tools/Shaders/verify_prism_sight_composition.py` §5 compiles and RUNS the shipped HLSL —
 red dominates at every depth and at the rim, an unmarked prism is bit-identical to before, a

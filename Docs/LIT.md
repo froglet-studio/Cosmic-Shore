@@ -34,7 +34,7 @@ lands, which is a property of the producer, not of the state:
 
 | Producer | Volume | Moment | Lights | Owner |
 |---|---|---|---|---|
-| Echo Sight (Dolphin, Charge) | Cone | **pending** — what the next blast would sweep | everything | `EchoSightActionExecutor` |
+| Echo Sight (Dolphin, Charge) | Cone | **pending** — what the next blast would sweep (a super-shield in it glows DANGER: the blast ends there) | everything | `EchoSightActionExecutor` |
 | Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | everything | `Projectile.PublishFuzeLit` |
 | Explosion passthrough | any | **resolved** — the blast arrived and spared this | **own domain only** | `ExplosionImpactor.PublishLit` |
 

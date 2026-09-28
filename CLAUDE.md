@@ -5063,6 +5063,13 @@ scale bump** with a one-shot unlock punch.
   in `DOLPHIN_CRYSTAL_SEEDING.md` §2.) One general lesson: **a passive ability is bound to no
   input event, so `CollectBoundActions` can never resolve its SO** — wire the config directly on
   the executor; the binding sweep is a fallback, not the path.
+  **A SUPER-SHIELD inside your own cone glows in the DANGER colour** (2026-09-28), because a
+  crystal blast that reaches one ENDS there (`PrismSpatialIndex.ResolveExplosionHit`,
+  `shouldContinue = false`, before the domain test — your own super-shields stop it too). A
+  super-shielded prism wears the plain team material, so the fact rides a per-prism STATE bit
+  (`_PrismSuperShielded`, `Prism.SetSuperShieldMark`, set by the stellated shield in both
+  directions — never per frame) and the colour is the palette's own danger colour, published by
+  `PrismLit`. Own sight only; a rival's cone flags nothing. `DOLPHIN_CRYSTAL_SEEDING.md` §16.
   The prism highlight is the second citizen of the §4.7 global-uniform shape
   (`Docs/PRISM_ANIMATION.md` §4.7.1) — five globals per frame, zero per-prism CPU, and the
   previewed volume is built by the same helper the detonation uses so the two cannot drift. **It
