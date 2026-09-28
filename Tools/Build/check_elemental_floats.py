@@ -19,7 +19,8 @@ contradicts. Three shipped that way and each had never run once:
 
     Rhino   GrowTrailAction.maxSize      Mass   4 -> 8     (live channel: x1 -> x1.5)
     Rhino   GrowSkimmerAction.shrinkRate Charge 6 -> 2     (no live channel at all)
-    Sparrow FullAutoAction.speedValue    Space  375 -> 4875 (live channel: x1 -> x9)
+    Sparrow FullAutoAction.speedValue    Space  375 -> 4875 (live channel: x1 -> x9; both since
+                                                       retired - the guns are fixed-range)
 
 None of them is visible to a compiler, a test or a code review: the data is well-formed, the
 field is the right type, and the number in the inspector is exactly what a designer would

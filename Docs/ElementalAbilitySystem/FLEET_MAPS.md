@@ -114,7 +114,7 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 |---|---|---|
 | Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms, and the warhead spares your own domain's wildlife and pilots (one friendly-fire decision for the whole detonation) |
 | Mass | turret-fired prism stretch (2.5) | *(open again — Shielded Prisms moved to Space 5, 2026-08 round 4)* |
-| Space | gun range (steepened: base halved twice, atFull 9 — SPACE 15 unchanged) | **Piercing Bullets** — shots pierce, and turret prisms arrive SHIELDED with a wider hit sphere (moved from Mass 5, 2026-08 round 4) |
+| Space | **HOLE (2026-09-28)** — gun range is now FIXED (1350 u/s, 257.8 u = 2x the old Space-1 range); SPACE scales nothing on the guns until the row is re-cut (`SPARROW_SPRAY_ACCURACY.md` Round 7) | **Piercing Bullets** — shots pierce, and turret prisms arrive SHIELDED with a wider hit sphere (moved from Mass 5, 2026-08 round 4) |
 | Time | boost SPEED (1.5), consumed by `VesselTransformer.CurrentBoostAmount()` | **Elemental Ward** — while boosting, negative `ApplyElementalEffect` calls are dropped, for every debuff source class (`VesselElementalImmunity.wardedSources: All` → `ResourceSystem.IsImmuneTo`) |
 
 **TIME row, changed 2026-08 — do not restore the old design:**

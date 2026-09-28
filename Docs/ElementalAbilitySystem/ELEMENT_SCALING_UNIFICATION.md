@@ -101,7 +101,7 @@ differ, max delta 0.15, zero at every tenth.
 | Urchin CHARGE → spike reach | `UrchinSpikeActionSO.chargeRangeMultiplier` | 2.5 / 0.4 |
 | Rhino MASS → trail slab ceiling | `GrowTrailActionSO.massMaxSizeMultiplier` | 1.5 / 0.25 |
 | Sparrow MASS → turret prism z-stretch | `FullAutoBlockShootActionSO.massPrismStretchMultiplier` | 2.5 / 0.4 |
-| Sparrow SPACE → muzzle speed | `FullAutoActionSO.spaceSpeedMultiplier` | 9 / 0.4 |
+| Sparrow SPACE → muzzle speed | ~~`FullAutoActionSO.spaceSpeedMultiplier`~~ — **deleted 2026-09-28**, range is fixed (`SPARROW_SPRAY_ACCURACY.md` Round 7) | was 9 / 0.4 |
 | Scarab SPACE → forged ball size | `ScarabBallForge.BallSizeScale` (C#) | 4 / 0.5 |
 | Manta TIME → boost speed (Soar) | `Manta.prefab` `VesselTransformer.BoostSpeedMultiplier` | 1.3 / 0.7 |
 | Sparrow TIME → boost speed | `Sparrow.prefab` `VesselTransformer.BoostSpeedMultiplier` | 1.5 / 0.5 |
