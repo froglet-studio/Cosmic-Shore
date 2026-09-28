@@ -10,6 +10,10 @@
 > "Sword dimensions & scale ownership" section below is driven by that energy meter (no
 > tick decay).
 
+> **Combos** — rapid strings of trigger TAPS (RR, RL, RLR, …) call authored flourishes, with an
+> upgraded set while the blade is energized — live in **`RHINO_SWORD_COMBOS.md`**. They are an
+> overlay: a held trigger is never a tap, so the control model below is unchanged.
+
 The Rhino's ForceFieldSkimmer capsule (the only CapsuleCollider on the vessel — its
 "sword") is puppeteered by the analog triggers. The vessel plays like a swordsman:
 the triggers are reparameterized Manta-style into a difference axis and a sum axis,
