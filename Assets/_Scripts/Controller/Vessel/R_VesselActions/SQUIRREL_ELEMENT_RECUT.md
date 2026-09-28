@@ -8,20 +8,48 @@ owns the thing it is **named** for on this hull:
 
 | Element | Ability | Input | Scaling | L5 |
 |---|---|---|---|---|
-| **Charge** | Crystal Joust | passive | **none — a deliberate hole** | **Shepherd** *(moved from Space)* |
+| **Charge** | Crystal Joust | passive | petals stolen per overtake ×1 → ×2.5 *(2026-09-28)* | **Shepherd** *(moved from Space)* |
 | **Mass** | Boost Ring *(moved from Time)* | RT | cooldown ×1 → ×0.5 | **Twin Rings** |
 | **Space** | Steal | passive | skimmer sphere 15 → 30 *(unchanged)* | **Iron Grip** *(new)* |
 | **Time** | Skimming *(moved from Charge)* | passive | skim energy ×1 → ×2 | **Live Wire** |
 
 Mass's old row — trail VOLUME and the `Heavy Trail` L5 — is **retired to base**, not moved.
 
-## The Charge hole is deliberate
+## Charge scales the STEAL (filled 2026-09-28)
 
-`element_ability_table.py Squirrel` reports **`NO SCALING — this element changes no number`** on the
-Charge row and `scaling wired 3/4` on the header. **That report is correct.** The joust has no
-elemental parameter yet; it is deferred to the branch that reworks the joust, and the row was left
-empty rather than given a placeholder. Do not fill it to green the tool — the design-approval gate
-(`/vessel` §3) applies to inventing a parameter exactly as it applies to inventing an ability.
+The row shipped as a deliberate hole. It is now filled, by design request: **Charge controls how
+many elemental petals (crystals) a joust steals off an overtaken pilot** —
+`VesselOvertakeBySkimmerEffectSO.stealScale`, a multiplier on the priced Strike magnitude.
+
+| Charge level | Multiplier | Taken per element per steal | Over four elements |
+|---|---|---|---|
+| 0 (rest) | ×1 | 0.8 petal (the Broadside Strike price) | 3.2 |
+| 5 | ×1.75 | 1.4 | 5.6 |
+| 10 | ×2.5 | 2.0 | 8.0 |
+
+A steal settles in WHOLE petals and accrues the remainder (`ResourceSystem.AccrueElementalLoss`),
+and it can never take more than the victim holds above level 0, so the multiplier moves more
+material without breaking conservation. Three decisions:
+
+- **It reads the THIEF's REPLICATED level** (`ElementalFloat.EvaluateReplicated`). The steal runs
+  on every peer that dispatches the contact, including the victim's own machine, and element
+  levels never replicate — a local read there would see a remote replica's level and move a
+  different number of petals than the thief's machine credited.
+- **Opponent branch only.** The ally buff keeps mirroring the base magnitude, so a friendly
+  overtake can never out-pay an enemy one.
+- **The Rhino's sword shares the effect type and authors `stealScale` disabled**, so it is
+  unchanged. The two hulls still take identical petals at rest; a charged Squirrel takes more.
+  That is a deliberate break from "a Strike is one verb, priced once" above level 0.
+
+**Not yet verified in the editor.** To check it: in a two-client match (MPPM), give client A's
+Squirrel Charge 10 (Toy Box > Element Charger) and B's Squirrel some petals in every element. A
+overtakes B once: B's flowers should drop two petals in each element on BOTH screens, and A's
+flowers should gain the same. Repeat at Charge 0: 0.8 petal per element, so nothing moves on the
+first overtake and one petal per element moves on the second. The knob is
+`VesselOvertakeBySkimmerEffect.asset > stealScale.Max`.
+
+The elemental 'threat' identity (Charge = threat) now covers both halves of the joust: Shepherd on
+lifeforms, and the steal size on pilots.
 
 ## Files
 
