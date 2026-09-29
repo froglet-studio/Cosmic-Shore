@@ -64,7 +64,7 @@ namespace CosmicShore.Editor
         const string HudVariantPath = "Assets/_Prefabs/UI Elements/VesselHUD/TermiteHUDVariant.prefab";
 
         /// <summary>|followOffset.z| of TermiteCameraSettingsSO — sizes the tail (VESSEL_TAIL_AND_JETS.md).</summary>
-        const float CameraDistance = 110f;
+        const float CameraDistance = 300f;
 
         readonly List<string> _log = new();
         readonly List<string> _unwired = new();

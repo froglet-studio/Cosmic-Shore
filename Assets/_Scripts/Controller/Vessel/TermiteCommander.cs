@@ -12,6 +12,15 @@ namespace CosmicShore.Gameplay
     /// (<see cref="TermiteCommandTransformer"/> is the half every machine runs). Design record:
     /// <c>R_VesselActions/TERMITE.md</c> §4.
     ///
+    /// <para><b>She flies herself.</b> The queen is on AUTOPILOT by default: she roams the cell
+    /// and swings toward any crystal she can reach, so the pilot's hands are free for the deck and
+    /// the view — the first playtest found hand-steering her while reading cards unplayable.
+    /// Pointing is an OVERRIDE, not a job: a click (or the stick) sends her somewhere, she holds
+    /// there for <see cref="pilotHoldSeconds"/>, then the autopilot takes her back. The autopilot
+    /// is hers rather than the fleet's <c>AIPilot</c> on purpose: the fleet autopilot refuses every
+    /// ability press and fights the pilot's stick for the same input fields, and the cards ARE the
+    /// game here.</para>
+    ///
     /// <para><b>Point, and she goes. Drag, and the view turns.</b></para>
     /// <list type="table">
     /// <item><term>Mouse</term><description>Left CLICK a place → she flies there. Left or right
@@ -66,6 +75,19 @@ namespace CosmicShore.Gameplay
         [SerializeField] float zoomPerScrollNotch = 0.1f;
         [SerializeField] float zoomPerSecond = 1.2f;
 
+        [Header("Autopilot")]
+        [Tooltip("The queen flies herself unless the pilot points somewhere.")]
+        [SerializeField] bool autopilot = true;
+        [Tooltip("After reaching a point the PILOT chose, how long she holds there before the " +
+                 "autopilot takes her on again.")]
+        [SerializeField, Min(0f)] float pilotHoldSeconds = 4f;
+        [Tooltip("How often the autopilot looks for a crystal worth swinging toward, seconds.")]
+        [SerializeField, Min(0.25f)] float autopilotRetargetSeconds = 1.5f;
+        [Tooltip("The autopilot only diverts to crystals within this distance, world units.")]
+        [SerializeField, Min(10f)] float crystalSeekRadius = 700f;
+        [Tooltip("Fallback roam radius when the cell has not reported its size yet, world units.")]
+        [SerializeField, Min(50f)] float fallbackRoamRadius = 600f;
+
         [Header("Command marker")]
         [Tooltip("World radius of the ring drawn at the command point.")]
         [SerializeField, Min(0.5f)] float markerRadius = 6f;
@@ -85,6 +107,11 @@ namespace CosmicShore.Gameplay
         float _pinchStart;
         float _zoomAtPinchStart;
         bool _steering;
+
+        bool _pilotCommand;
+        float _pilotHoldUntil = -1f;
+        float _nextAutoRetarget;
+        bool _autoOnCrystal;
 
         LineRenderer _marker;
         float _markerAlpha;
@@ -139,6 +166,7 @@ namespace CosmicShore.Gameplay
                 HandleTouch(cam.Camera);
                 HandlePadAndKeyboard(cam.Camera);
             }
+            TickAutopilot();
 
             _pitch = Mathf.Clamp(_pitch, pitchLimits.x, pitchLimits.y);
             _zoom = Mathf.Clamp(_zoom, zoomLimits.x, zoomLimits.y);
@@ -169,6 +197,9 @@ namespace CosmicShore.Gameplay
             _pitch = 0f;
             _zoom = 1f;
             LastCommandPoint = null;
+            _pilotCommand = false;
+            _pilotHoldUntil = -1f;
+            _nextAutoRetarget = 0f;
         }
 
         void Release()
@@ -183,6 +214,7 @@ namespace CosmicShore.Gameplay
             }
             _camera = null;
             _mouseDown = _mouseDragging = _touchDragging = _steering = false;
+            _pilotCommand = false;
             LastCommandPoint = null;
         }
 
@@ -382,6 +414,92 @@ namespace CosmicShore.Gameplay
             transformer.SetCommandTarget(worldPoint);
             LastCommandPoint = transformer.CommandTarget;
             _markerAlpha = 1f;
+            _pilotCommand = true;
+            _pilotHoldUntil = -1f;
+        }
+
+        // ------------------------------------------------------------------ autopilot
+
+        /// <summary>
+        /// Keep her flying when the pilot is not pointing. A pilot command wins until she has
+        /// arrived and held; then she roams the cell band (outside the nucleus, inside the
+        /// membrane — volume-uniform, so she does not crowd the inner edge) and diverts to the
+        /// nearest crystal she may collect, judged exactly as <c>AIPilot</c> judges one.
+        /// </summary>
+        void TickAutopilot()
+        {
+            if (!autopilot) return;
+
+            if (_pilotCommand)
+            {
+                if (_steering || !transformer.HasArrived) { _pilotHoldUntil = -1f; return; }
+                if (_pilotHoldUntil < 0f) _pilotHoldUntil = Time.time + pilotHoldSeconds;
+                if (Time.time < _pilotHoldUntil) return;
+                _pilotCommand = false;
+                _nextAutoRetarget = 0f;
+            }
+
+            bool needTarget = !transformer.CommandTarget.HasValue || transformer.HasArrived;
+            if (!needTarget && Time.time < _nextAutoRetarget) return;
+            _nextAutoRetarget = Time.time + autopilotRetargetSeconds;
+
+            if (TryFindCrystal(out var crystal))
+            {
+                transformer.SetCommandTarget(crystal);
+                _autoOnCrystal = true;
+                return;
+            }
+
+            // Keep an unfinished roam leg; only a finished one (or a crystal that vanished) needs
+            // a new point.
+            if (!needTarget && !_autoOnCrystal) return;
+            transformer.SetCommandTarget(PickRoamPoint());
+            _autoOnCrystal = false;
+        }
+
+        bool TryFindCrystal(out Vector3 point)
+        {
+            point = default;
+            var cellData = _status.AIPilot ? _status.AIPilot.CellData : null;
+            if (cellData == null || cellData.CellItems == null) return false;
+
+            var myDomain = _status.Domain;
+            float best = crystalSeekRadius * crystalSeekRadius;
+            bool found = false;
+            Vector3 here = transform.position;
+            foreach (var item in cellData.CellItems)
+            {
+                if (!item) continue;
+                if (item.ItemType != ItemType.Buff &&
+                    (item.ItemType != ItemType.Debuff || item.ownDomain == myDomain)) continue;
+                if (item.ItemType == ItemType.Buff && myDomain != Domains.Blue &&
+                    item.ownDomain != Domains.Blue && item.ownDomain != myDomain) continue;
+
+                float d = (item.transform.position - here).sqrMagnitude;
+                if (d >= best) continue;
+                best = d;
+                point = item.transform.position;
+                found = true;
+            }
+            return found;
+        }
+
+        Vector3 PickRoamPoint()
+        {
+            var cellData = _status.AIPilot ? _status.AIPilot.CellData : null;
+            var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
+            if (!cell) cell = Cell.FindNearestActiveCell(transform.position);
+
+            Vector3 centre = cell ? cell.transform.position : transform.position;
+            float inner = cell ? Mathf.Max(80f, cell.ExpectedNucleusWorldRadius * 1.3f) : 0f;
+            float membrane = cell ? cell.MembraneRadius : 0f;
+            float outer = membrane > 0f ? membrane * 0.75f : fallbackRoamRadius;
+            outer = Mathf.Max(outer, inner + 100f);
+
+            // Volume-uniform in the shell: cube root between the cubed walls.
+            float u = Random.value;
+            float r = Mathf.Pow(Mathf.Lerp(inner * inner * inner, outer * outer * outer, u), 1f / 3f);
+            return centre + Random.onUnitSphere * r;
         }
 
         static bool PointerOverUi()
@@ -399,8 +517,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void UpdateMarker(Camera cam)
         {
+            // The marker is the PILOT's promise; the autopilot's own waypoints are not marked.
             var target = transformer.CommandTarget;
-            if (!target.HasValue || cam == null) { FadeMarker(); return; }
+            if (!_pilotCommand || !target.HasValue || cam == null) { FadeMarker(); return; }
 
             EnsureMarker();
             if (!_marker) return;

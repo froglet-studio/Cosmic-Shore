@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TermiteCameraSettingsSO
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.CameraSettingsSO
   mode: 0
-  followOffset: {x: 0, y: 42, z: -110}
+  followOffset: {x: 0, y: 140, z: -300}
   dynamicMinDistance: 10
   dynamicMaxDistance: 40
   followSmoothTime: 0.2

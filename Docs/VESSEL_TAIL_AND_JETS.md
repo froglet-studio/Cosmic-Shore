@@ -230,9 +230,10 @@ animates. Where it does not, the jet is placed at the measured rear of the hull 
 | **Scarab** | −50 | −52.5 | 2.5 | 2 | `(±1.50, 0.10, −4.40)` — the carapace rear |
 | **Manta** | −30 | −31.5 | 1.5 | — | see §5 |
 | **Serpent** | −250 | −262.5 | 12.5 | — | see §5 |
-| **Falcon / Shrike / Termite** | −30 † | −31.5 | 1.5 | — | see §5 |
+| **Falcon / Shrike** | −30 † | −31.5 | 1.5 | — | see §5 |
+| **Termite** | −300 | −315 | 15.0 | — | procedural queen, no jets (`TermiteCameraSettingsSO`, commander overview) |
 
-† no `CameraSettingsSO` of its own. Falcon/Shrike/Termite are flat copies of the Manta and inherit
+† no `CameraSettingsSO` of its own. Falcon/Shrike are flat copies of the Manta and inherit
 its 30; the Grizzly has no sibling and takes 30 as the fleet's mid value. Both are *inherited*, not
 measured — re-derive them when those vessels get real camera settings.
 

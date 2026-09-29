@@ -43,7 +43,7 @@ namespace CosmicShore.UI
             if (!_isLocalPilotHud || !view || !deck) return;
 
             float max = Mathf.Max(0.01f, deck.MaxPheromone);
-            view.SetPheromone(deck.Pheromone / max);
+            view.SetPheromone(deck.Pheromone / max, max);
 
             for (int i = 0; i < s_slots.Length; i++)
             {
@@ -56,11 +56,16 @@ namespace CosmicShore.UI
                 // cost, and a card blocked by anything else (a cap, no mound for workers) is
                 // fully veiled rather than drawn as ready.
                 float remaining;
+                bool blocked = false;
                 if (deck.CanPlayFaceUp(element)) remaining = 0f;
                 else if (card.Cost > 0f && deck.Pheromone < card.Cost)
                     remaining = Mathf.Clamp01(1f - deck.Pheromone / card.Cost);
-                else remaining = 1f;
+                else { remaining = 1f; blocked = true; }
                 View?.SetAbilityCooldown(element, remaining);
+
+                // The readable hand: cost, the wait, a cap that refuses it, and what comes next.
+                var next = deck.TryGetNext(element, out var nextCard) ? nextCard.Card : card.Card;
+                view.SetHandCard(element, card.Cost, remaining, blocked, next);
             }
         }
     }

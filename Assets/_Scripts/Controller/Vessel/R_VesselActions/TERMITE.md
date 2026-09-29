@@ -69,7 +69,22 @@ defect** (0/224 faces front-facing, measured with the same test) — see §10.
 
 ## 4. Commander flight
 
-**You do not fly the queen, you tell her where to go.**
+**She flies herself; you play cards.** First playtest (2026-09-29) called the first cut unplayable:
+hand-steering her while reading a deck was two jobs at once, the cards were too small to read, and
+the camera sat too close. So:
+
+- **Autopilot is the default** (`TermiteCommander.autopilot`). She roams the cell band — outside
+  the nucleus, inside 0.75 of the membrane, volume-uniform — and diverts to the nearest crystal she
+  may collect within `crystalSeekRadius` (700), judged by the same eligibility rule `AIPilot` uses.
+  Pointing (below) is an OVERRIDE: she goes there, holds `pilotHoldSeconds` (4 s), and the
+  autopilot takes her back. Only a pilot's point is marked with the ring, and only a pilot's point
+  becomes `LastCommandPoint` (the Teleport target).
+- **Why not the fleet's `AIPilot`:** it refuses every ability press while enabled
+  (`R_VesselActionHandler.OnButtonPressed` returns on `AutoPilotEnabled`) and it writes the same
+  `InputStatus` stick fields the human's input strategy writes each frame. On this hull the cards ARE
+  the game, so the autopilot is the commander's own and flies through the commanded flight model.
+- **The camera sits at `(0, 140, -300)`** (`TermiteCameraSettingsSO`, ~331 u — was ~118), zoomable
+  0.45x-2.6x. The tail moved with it (`CameraDistance` 300 in the setup tool: z -315, width 15).
 
 | device | point (command) | orbit the view | zoom |
 |---|---|---|---|
@@ -163,6 +178,17 @@ re-home or become escorts. Cap 3.
 
 ## 6. HUD
 
+**The HAND is the deck's readable face** (`TermiteHUDView`, built in code at `Initialize`). The card
+art carries its own name and icon at 128 x 136 px; the fleet row draws an icon in a ~60-unit cell,
+which made the cards unreadable. The hand draws each face-up card at **180 x 191** (1.4x native)
+along the bottom centre, with its pheromone COST in a disc over the folded corner, `next: <card>`
+above it, the control that plays it (the fleet glyph set, same derivation as the lockup chip)
+under it, a top-down veil that drains as the tank fills toward the cost, `MAX` when a cap refuses
+it, and a segmented pheromone bar (one tick per pheromone) with the count. A played card TURNS
+OVER (squeeze, swap face, open, punch). `VesselHUDView.SetAbilityControl` / `SetControlDevice`
+became `virtual` so the hand can mirror the chips. At the 1920 reference the hand spans x
+672..1248, clear of the ability row (x >= 1264).
+
 The three card slots show the **face-up card's front art**, swapped when the card is played (the
 flash is the face changing, the same fact the deck records). The fleet's clockwise depleting veil is
 the **elixir wait** — it depletes as pheromone fills toward the card's cost — and a card blocked by a
@@ -224,7 +250,9 @@ control; the standing gates; `check_elemental_economy` now holds the Termite to 
 
 1. Menu freestyle: swap to the Termite from the Vessel Changer toy; the queen renders right-side-out,
    wings fold at rest and buzz when moving.
-2. Click a point → she flies there and hovers; drag → the view orbits; scroll → zoom.
+2. Without touching anything she roams and swings toward nearby crystals. Click a point → she
+   flies there, holds ~4 s, then roams again; drag → the view orbits; scroll → zoom. The hand at
+   the bottom centre is legible at 1080p and each card shows its cost, next card and button.
 3. RT with >= 3 pheromone -> with no soldiers yet the queen bursts herself; the Charge card turns
    over to Team Crystal. LT -> six soldiers bloom in and destroy nearby opposing mass; the Mass card
    turns to Mound Drones (veiled: no mound yet). Watch the pheromone gauge fall and refill and the

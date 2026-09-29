@@ -264,14 +264,14 @@ namespace CosmicShore.UI
         /// Which physical control fires this ability, so the lockup can draw the control chip from
         /// the fleet's one glyph set instead of from per-vessel authored artwork.
         /// </summary>
-        public void SetAbilityControl(Element element, InputEvents input)
+        public virtual void SetAbilityControl(Element element, InputEvents input)
         {
             var lockups = ResolveAbilityLockups();
             if (lockups) lockups.SetAbilityControl(element, input);
         }
 
         /// <summary>Which device the control chips should speak for.</summary>
-        public void SetControlDevice(bool keyboard)
+        public virtual void SetControlDevice(bool keyboard)
         {
             var lockups = ResolveAbilityLockups();
             if (lockups) lockups.SetControlDevice(keyboard);
