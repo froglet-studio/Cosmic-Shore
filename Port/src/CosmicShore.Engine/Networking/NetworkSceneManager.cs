@@ -78,6 +78,7 @@ namespace CosmicShore.Engine.Networking
             OnLoad?.Invoke(id, sceneName, loadSceneMode, op);
             op.completed += _ =>
             {
+                NetworkManager.Singleton?.SpawnInSceneObjects();
                 var scene = SceneManagement.SceneManager.GetActiveScene();
                 Raise(new SceneEvent { SceneEventType = SceneEventType.LoadComplete, SceneName = sceneName, LoadSceneMode = loadSceneMode, ClientId = id, Scene = scene });
                 OnLoadComplete?.Invoke(id, sceneName, loadSceneMode);

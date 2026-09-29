@@ -116,6 +116,7 @@ namespace CosmicShore.Engine.Networking
         public void SetDirty(bool dirty) { }
 
         internal void RunPostSpawn() => OnNetworkPostSpawn();
+        internal void RunInSceneObjectsSpawned() => OnInSceneObjectsSpawned();
 
         /// <summary>
         /// Ownership transfer (driven by <see cref="Networking.NetworkObject.ChangeOwnership"/>):

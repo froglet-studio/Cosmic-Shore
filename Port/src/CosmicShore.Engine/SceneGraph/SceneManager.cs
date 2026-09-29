@@ -69,6 +69,13 @@ namespace CosmicShore.Engine.SceneManagement
         /// </summary>
         public static ISceneContentBackend Backend { get; set; }
 
+        /// <summary>
+        /// Engine hook: raised just before a Single load unloads the outgoing scene's roots, so
+        /// systems that keep objects alive across loads (Netcode's DestroyWithScene=false objects)
+        /// can move them out first.
+        /// </summary>
+        public static event System.Action<Scene> BeforeSingleLoadUnload;
+
         static void Perform(string sceneName, LoadSceneMode mode)
         {
             var scene = GameLoop.Current?.Scene;
@@ -76,6 +83,7 @@ namespace CosmicShore.Engine.SceneManagement
             {
                 if (mode == LoadSceneMode.Single)
                 {
+                    BeforeSingleLoadUnload?.Invoke(scene);
                     NotifySceneUnloaded(scene);
                     foreach (var root in new System.Collections.Generic.List<GameObject>(scene.GetRootGameObjects()))
                         if (!root.IsDontDestroyOnLoad) Object.DestroyImmediate(root);

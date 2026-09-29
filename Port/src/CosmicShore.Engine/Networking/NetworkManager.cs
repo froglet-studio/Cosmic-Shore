@@ -42,6 +42,8 @@ namespace CosmicShore.Engine.Networking
         void OnEnable()
         {
             if (!EmulateNetcodeLifecycle) return;
+            SceneManagement.SceneManager.BeforeSingleLoadUnload -= MigrateSurvivingObjects;
+            SceneManagement.SceneManager.BeforeSingleLoadUnload += MigrateSurvivingObjects;
             if (DontDestroy) DontDestroyOnLoad(gameObject);
             if (Singleton == null) SetSingleton();
         }
@@ -49,6 +51,7 @@ namespace CosmicShore.Engine.Networking
         void OnDestroy()
         {
             if (!EmulateNetcodeLifecycle) return;
+            SceneManagement.SceneManager.BeforeSingleLoadUnload -= MigrateSurvivingObjects;
             if (IsListening) Shutdown();
             if (ReferenceEquals(Singleton, this)) Singleton = null;
         }
@@ -274,6 +277,7 @@ namespace CosmicShore.Engine.Networking
         /// </summary>
         public bool StartHost()
         {
+            if (NetworkObject.TraceNet) System.Console.WriteLine($"[trace-net] StartHost nm#{GetInstanceID()} listening={IsListening}");
             if (IsListening) return false;
 
             var response = new ConnectionApprovalResponse { Approved = true, CreatePlayerObject = NetworkConfig?.PlayerPrefab != null };
@@ -292,6 +296,7 @@ namespace CosmicShore.Engine.Networking
             if (!ConnectedClientsIds.Contains(0)) ConnectedClientsIds.Add(0);
             OnServerStarted?.Invoke();
             OnClientStarted?.Invoke();
+            if (EmulateNetcodeLifecycle) SpawnInSceneObjects();
             if (EmulateNetcodeLifecycle && response.CreatePlayerObject) SpawnPlayerObject(0, response);
             OnClientConnectedCallback?.Invoke(LocalClientId);
             OnConnectionEvent?.Invoke(this, new ConnectionEventData { ClientId = LocalClientId, EventType = ConnectionEvent.ClientConnected });
@@ -304,6 +309,46 @@ namespace CosmicShore.Engine.Networking
         /// <c>WaitUntil(() =&gt; !IsListening)</c> completes on its first check. Raises no
         /// callbacks (Netcode's local-notification sweep arrives with the transport phase).
         /// </summary>
+        /// <summary>
+        /// Netcode's single-load migration: spawned objects with DestroyWithScene=false (player
+        /// objects, spawned vessels) move to DontDestroyOnLoad before the outgoing scene unloads.
+        /// </summary>
+        void MigrateSurvivingObjects(SceneManagement.Scene outgoing)
+        {
+            if (!IsListening || !ReferenceEquals(Singleton, this) || SpawnManager == null) return;
+            foreach (var o in new System.Collections.Generic.List<NetworkObject>(SpawnManager.SpawnedObjectsList))
+            {
+                if (o == null || o.DestroyWithScene) continue;
+                var root = o.transform.root.gameObject;
+                if (!root.IsDontDestroyOnLoad) DontDestroyOnLoad(root);
+            }
+        }
+
+        /// <summary>
+        /// Netcode's in-scene placed object spawn: every NetworkObject the loaded scene carries
+        /// that is not yet spawned is spawned server-owned (destroyed with its scene), then every
+        /// behaviour on them hears <c>OnInSceneObjectsSpawned</c>. Runs when a networked scene load
+        /// completes and when a host starts over an already-loaded scene. DontDestroyOnLoad objects
+        /// belong to no scene and are left alone; prefab templates are never scene objects.
+        /// </summary>
+        public void SpawnInSceneObjects()
+        {
+            if (!EmulateNetcodeLifecycle || !IsServer) return;
+            var spawned = new System.Collections.Generic.List<NetworkObject>();
+            foreach (var no in FindObjectsByType<NetworkObject>(FindObjectsSortMode.None))
+            {
+                if (no == null || no.IsSpawned) continue;
+                var root = no.transform.root.gameObject;
+                if (root.IsDontDestroyOnLoad) continue;
+                no.IsSceneObject = true;
+                no.SpawnWithOwnership(ServerClientId, destroyWithScene: true);
+                spawned.Add(no);
+            }
+            foreach (var no in spawned)
+                foreach (var b in no.GetComponentsInChildren<NetworkBehaviour>(true))
+                    if (b.IsSpawned) b.RunInSceneObjectsSpawned();
+        }
+
         /// <summary>Instantiates and spawns a connected client's player prefab (Netcode does this during approval).</summary>
         void SpawnPlayerObject(ulong clientId, ConnectionApprovalResponse response)
         {
@@ -334,6 +379,7 @@ namespace CosmicShore.Engine.Networking
             IsListening = false;
             IsServer = false;
             IsClient = false;
+            if (NetworkObject.TraceNet) System.Console.WriteLine($"[trace-net] Shutdown nm#{GetInstanceID()} clearing {ConnectedClients.Count} clients\n{System.Environment.StackTrace}");
             ConnectedClients.Clear();
             ConnectedClientsList.Clear();
             ConnectedClientsIds.Clear();

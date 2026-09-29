@@ -176,6 +176,8 @@ namespace CosmicShore.Engine.Networking
                     behaviour.RunPostSpawn();
         }
 
+        internal static readonly bool TraceNet = System.Environment.GetEnvironmentVariable("CS_PORT_TRACE_NET") == "1";
+
         /// <summary>Spawn as <paramref name="clientId"/>'s player object (records the client → player link).</summary>
         public void SpawnAsPlayerObject(ulong clientId, bool destroyWithScene = false)
         {
@@ -190,6 +192,7 @@ namespace CosmicShore.Engine.Networking
                 nm.ConnectedClientsList.Add(client);
             }
             client.PlayerObject = this;
+            if (TraceNet) System.Console.WriteLine($"[trace-net] player object for client {clientId} = '{name}' (#{NetworkObjectId}) nm#{nm.GetInstanceID()}");
             if (clientId == nm.LocalClientId && nm.LocalClient == null)
                 nm.LocalClient = client;
         }

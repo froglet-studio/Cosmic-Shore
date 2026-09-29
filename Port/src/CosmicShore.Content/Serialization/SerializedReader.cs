@@ -81,7 +81,11 @@ namespace CosmicShore.Content.Serialization
             }
             if (type.IsPrimitive)
             {
-                YScalar.TryLong(node.Scalar, out var lv);
+                long lv;
+                // Unity serializes BitField members (m_CullingMask, m_EventMask, rendering layer
+                // masks) as { serializedVersion, m_Bits } — the integer is m_Bits.
+                if (node is YMap && node["m_Bits"] != null) lv = node.Long("m_Bits");
+                else YScalar.TryLong(node.Scalar, out lv);
                 try { return Convert.ChangeType(lv, type, CultureInfo.InvariantCulture); }
                 catch { return unchecked(Convert.ChangeType((ulong)lv & MaskFor(type), type, CultureInfo.InvariantCulture)); }
             }
