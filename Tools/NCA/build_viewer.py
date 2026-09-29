@@ -21,8 +21,9 @@ EXPERIMENTS = [
     ("growing", "Growing", "Trained from the seed every time. Learns to grow the lizard by step 64–96, but nothing asks it to stop, so past the training window it is free to overgrow or fade."),
     ("persistent", "Persistent", "Trained from a pool of its own earlier results. The lizard becomes an attractor: it grows, then holds its shape for thousands of steps."),
     ("regenerating", "Regenerating", "The pool plus damage: before each training step three samples lose a random disc. The lizard learns to repair itself. Drag across it to test that."),
+    ("swim", "Swimming", "Trained on an 8-frame loop instead of a still. Each sample picks its own phase but must advance one frame every 8 steps, so the cells keep time in their hidden channels with no global clock. Cuts still heal."),
 ]
-SERIES_VARS = {"growing": "--s1", "persistent": "--s2", "regenerating": "--s3"}
+SERIES_VARS = {"growing": "--s1", "persistent": "--s2", "regenerating": "--s3", "swim": "--s4"}
 
 
 def b64(path):
@@ -30,7 +31,7 @@ def b64(path):
         return base64.b64encode(f.read()).decode()
 
 
-def loss_chart(runs):
+def loss_chart(runs, floor=None):
     """Inline SVG: log10 loss vs training step, 50-step moving mean, one line per experiment."""
     W, H, L, R, T, B = 640, 260, 52, 16, 14, 34
     lo, hi = -4.0, -1.0
@@ -58,7 +59,10 @@ def loss_chart(runs):
         out.append(f'<polyline points="{pts}" class="series" style="stroke:var({SERIES_VARS[key]})"/>')
         e = sm[-1]
         out.append(f'<circle cx="{sx(len(lg)-1):.1f}" cy="{sy(max(lo, min(hi, e))):.1f}" r="3.5" style="fill:var({SERIES_VARS[key]})"/>')
-    out.append(f'<text x="{W-R}" y="{H-12}" class="tick" text-anchor="end" dx="0" dy="0"></text>')
+    if floor is not None:
+        y = sy(floor)
+        out.append(f'<line x1="{L}" x2="{W-R}" y1="{y:.1f}" y2="{y:.1f}" class="floor" style="stroke:var(--s4)"/>')
+        out.append(f'<text x="{W-R}" y="{y-6:.1f}" class="tick" text-anchor="end">best any still image can do on the swim loop</text>')
     out.append("</svg>")
     return "".join(out)
 
@@ -78,16 +82,25 @@ def main():
              "loss": np.load(os.path.join(d, "loss.npy")),
              "summary": json.load(open(os.path.join(d, "figures", "summary.json"))),
              "cfg": json.load(open(os.path.join(d, "config.json")))}
-        for fig in ("growth_strip", "regeneration", "rotation"):
+        for fig in ("growth_strip", "regeneration", "rotation", "loop_strip", "damage"):
             p = os.path.join(d, "figures", f"{fig}.png")
             r[fig] = b64(p) if os.path.isfile(p) else None
+        p = os.path.join(d, "figures", "loop.gif")
+        r["loop_gif"] = b64(p) if os.path.isfile(p) else None
+        p = os.path.join(d, "frames.npy")
+        r["frames"] = np.load(p) if os.path.isfile(p) else None
         runs[key] = r
     if not runs:
         sys.exit("no trained runs under Tools/NCA/runs/")
 
-    t = load_emoji("lizard")
-    t = np.pad(t, ((16, 16), (16, 16), (0, 0)))
-    target_b64 = base64.b64encode((np.clip(t, 0, 1) * 255).round().astype(np.uint8).tobytes()).decode()
+    t = np.pad(load_emoji("lizard"), ((16, 16), (16, 16), (0, 0)))[None]
+    enc = lambda a: base64.b64encode((np.clip(a, 0, 1) * 255).round().astype(np.uint8).tobytes()).decode()
+    targets = {k: {"n": 1 if r["frames"] is None else len(r["frames"]),
+                   "d": enc(t if r["frames"] is None else r["frames"])} for k, r in runs.items()}
+    floor = None
+    if "swim" in runs:
+        f = runs["swim"]["frames"]
+        floor = math.log10(float(((f - f.mean(0, keepdims=True)) ** 2).mean()))
 
     weights_js = json.dumps({k: {"w": r["weights"], "steps": len(r["loss"]) - 1} for k, r in runs.items()},
                             separators=(",", ":"))
@@ -102,7 +115,7 @@ def main():
     # Results table: the paper's claims, measured.
     rows = []
     for k, label, _ in EXPERIMENTS:
-        if k not in runs:
+        if k not in runs or "error_at" not in runs[k]["summary"]:
             continue
         s = runs[k]["summary"]
         ea = s["error_at"]
@@ -117,7 +130,7 @@ def main():
 
     figs = []
     for k, label, _ in EXPERIMENTS:
-        if k not in runs:
+        if k not in runs or not runs[k]["growth_strip"]:
             continue
         r = runs[k]
         figs.append(f"""
@@ -141,10 +154,45 @@ def main():
         <div class="strip narrow"><img src="data:image/png;base64,{runs['regenerating']['rotation']}" alt="Lizard grown with perception rotated by 0, 45, 90 and 135 degrees"></div>
       </figure>"""
 
+    anim = ""
+    if "swim" in runs:
+        r, sm = runs["swim"], runs["swim"]["summary"]
+        lg = lambda v: f"{math.log10(max(v, 1e-9)):+.2f}"
+        tempo = lambda v: f"{v:.2f} steps / frame" if v and math.isfinite(v) and v > 0 else "no steady tempo"
+        spf = tempo(sm["measured_steps_per_frame"])
+        dspf = tempo(sm["after_damage_steps_per_frame"])
+        anim = f"""
+    <div class="anim">
+      <h2>Adding time: a lizard that swims</h2>
+      <p class="caption">The same 8,336-parameter cell, trained on an 8-frame loop (a travelling body wave generated from the emoji, head still, tail widest). The loss checks the rollout every 8 steps and asks for consecutive frames starting from whichever frame fits best, so each lizard chooses its phase and must then keep moving. Below, one lizard from a single seed, left, beside the target frame it currently matches, right.</p>
+      <div class="animrow">
+        <figure class="fig"><div class="strip gifbox"><img src="data:image/gif;base64,{r['loop_gif']}" alt="The trained automaton swimming beside the matching target frame"></div></figure>
+        <div class="tablewrap"><table class="kv"><tbody>
+          <tr><th scope=row>Target tempo</th><td>{sm['period_target_steps_per_frame']} steps / frame</td></tr>
+          <tr><th scope=row>Measured tempo, steps 200–3000</th><td>{spf}</td></tr>
+          <tr><th scope=row>Distinct frames visited</th><td>{sm['distinct_frames_visited_after_200']} of {sm['frames']}</td></tr>
+          <tr><th scope=row>Error vs best-matching frame</th><td>{lg(sm['best_frame_error_mean_after_200'])}</td></tr>
+          <tr><th scope=row>Error vs frame its own clock predicts</th><td>{lg(sm['clock_predicted_frame_error_mean'])}</td></tr>
+          <tr><th scope=row>Best any still image can do</th><td>{lg(sm['static_best_image_error'])}</td></tr>
+          <tr><th scope=row>Tail cut at step 400, error 600 steps later</th><td>{lg(sm['after_damage_error_at_600'])}</td></tr>
+          <tr><th scope=row>Tempo after the cut</th><td>{dspf}</td></tr>
+        </tbody></table></div>
+      </div>
+      <figure class="fig">
+        <figcaption><span class="swatch" style="background:var(--s4)"></span>One loop from step 200, every 8 steps (top), over the target frame each one matches (bottom)</figcaption>
+        <div class="strip"><img src="data:image/png;base64,{r['loop_strip']}" alt="Eight consecutive automaton states over their matching target frames"></div>
+      </figure>
+      <figure class="fig">
+        <figcaption><span class="swatch" style="background:var(--s4)"></span>Tail quarter cut at step 400, then 20, 50, 100, 200, 400 and 600 steps later</figcaption>
+        <div class="strip"><img src="data:image/png;base64,{r['damage']}" alt="The swimming lizard regrowing its cut tail"></div>
+      </figure>
+    </div>"""
+
     page = TEMPLATE
     for k, v in {
         "{{EXP_BUTTONS}}": exp_buttons, "{{EXP_NOTES}}": exp_notes, "{{WEIGHTS}}": weights_js,
-        "{{TARGET}}": target_b64, "{{CORE}}": core, "{{CHART}}": loss_chart(runs),
+        "{{TARGETS}}": json.dumps(targets), "{{CORE}}": core, "{{CHART}}": loss_chart(runs, floor),
+        "{{ANIM}}": anim,
         "{{ROWS}}": "".join(rows), "{{FIGS}}": "".join(figs) + regen_fig + rot_fig,
         "{{DEFAULT}}": "regenerating" if "regenerating" in runs else next(iter(runs)),
     }.items():
@@ -164,17 +212,17 @@ TEMPLATE = r"""<title>One-Cell Lizard</title>
 :root {
   --ground: #edf0ea; --surface: #f8faf5; --ink: #1b221d; --muted: #5a645c; --rule: #d2d8cf;
   --accent: #b8501d; --dish: #ffffff;
-  --s1: #7a6fb0; --s2: #2f7f86; --s3: #b8501d;
+  --s1: #7a6fb0; --s2: #2f7f86; --s3: #b8501d; --s4: #2f5fa8;
   --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
   --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --ground: #111713; --surface: #18201b; --ink: #e2e9e1; --muted: #92a095; --rule: #2b362e;
-  --accent: #ef8a4f; --dish: #0b0f0c; --s1: #a79be0; --s2: #5fb8bf; --s3: #ef8a4f; color-scheme: dark } }
+  --accent: #ef8a4f; --dish: #0b0f0c; --s1: #a79be0; --s2: #5fb8bf; --s3: #ef8a4f; --s4: #82a9ea; color-scheme: dark } }
 :root[data-theme="dark"] {
   --ground: #111713; --surface: #18201b; --ink: #e2e9e1; --muted: #92a095; --rule: #2b362e;
-  --accent: #ef8a4f; --dish: #0b0f0c; --s1: #a79be0; --s2: #5fb8bf; --s3: #ef8a4f; color-scheme: dark }
+  --accent: #ef8a4f; --dish: #0b0f0c; --s1: #a79be0; --s2: #5fb8bf; --s3: #ef8a4f; --s4: #82a9ea; color-scheme: dark }
 * { box-sizing: border-box }
 body { background: var(--ground); color: var(--ink); font: 16px/1.55 var(--body); padding-inline: 16px; padding-block: 28px 64px }
 .wrap { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px }
@@ -196,16 +244,17 @@ h2 { font: 700 22px/1.2 var(--display); margin: 0 0 12px; text-wrap: balance }
 .plate .hint { position: absolute; left: 10px; bottom: 8px; font: 12px var(--mono); color: var(--muted); pointer-events: none }
 .axis { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--muted) }
 .panel { display: grid; gap: 20px }
-.tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden }
+.tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden }
 .tabs button { font: 600 14px var(--body); background: var(--surface); color: var(--ink); border: 0; padding: 10px 6px; cursor: pointer; display: flex; gap: 7px; align-items: center; justify-content: center; border-right: 1px solid var(--rule) }
-.tabs button:last-child { border-right: 0 }
+.tabs button:nth-child(2n) { border-right: 0 }
+.tabs button:nth-child(-n+2) { border-bottom: 1px solid var(--rule) }
 .tabs button[aria-selected="true"] { background: var(--ink); color: var(--ground) }
 .tabs button:disabled { opacity: .4; cursor: not-allowed }
 .tabs button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
 .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex: none; margin-right: 6px; vertical-align: 0 }
 .tabs .swatch { margin-right: 0 }
 .note { margin: 0; color: var(--muted); font-size: 15px; min-height: 4.6em }
-.readouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden }
+.readouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden }
 .readouts div { background: var(--surface); padding: 10px 12px; display: grid; gap: 2px }
 .readouts dt { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
 .readouts dd { margin: 0; font: 600 20px var(--mono); font-variant-numeric: tabular-nums }
@@ -224,6 +273,7 @@ input[type=range] { width: 100%; accent-color: var(--accent) }
 .chart .grid { stroke: var(--rule); stroke-width: 1 }
 .chart .drop { stroke: var(--muted); stroke-dasharray: 3 4; stroke-width: 1 }
 .chart .tick { fill: var(--muted); font: 11px var(--mono) }
+.chart .floor { stroke-dasharray: 6 5; stroke-width: 1.5 }
 .chart .series { fill: none; stroke-width: 2; stroke-linejoin: round }
 .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--muted); margin-top: 8px }
 .tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 14px; background: var(--surface) }
@@ -240,6 +290,12 @@ tbody tr:last-child > * { border-bottom: 0 }
 .strip img { display: block; width: 100%; min-width: 640px; max-width: none; height: auto; image-rendering: pixelated }
 .strip.narrow img { width: 60%; min-width: 420px }
 .ticks { font-size: 11px; color: var(--muted) }
+.anim { display: grid; gap: 20px }
+.animrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start }
+@media (max-width: 820px) { .animrow { grid-template-columns: minmax(0, 1fr) } }
+.gifbox img { min-width: 0; width: 100% }
+table.kv th { text-align: left; font-weight: 400; color: var(--muted); white-space: normal }
+table.kv td { font-weight: 600 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto } }
 </style>
 
@@ -262,6 +318,7 @@ tbody tr:last-child > * { border-bottom: 0 }
         <div><dt>Step</dt><dd id="r-step">0</dd></div>
         <div><dt>Alive cells</dt><dd id="r-alive">0</dd></div>
         <div><dt>log₁₀ error</dt><dd id="r-err">–</dd></div>
+        <div><dt>Frame</dt><dd id="r-frame">–</dd></div>
       </dl>
       <div class="controls">
         <label class="row" for="speed">Steps / frame<input id="speed" type="range" min="1" max="8" value="2"><output id="o-speed">2</output></label>
@@ -284,9 +341,9 @@ tbody tr:last-child > * { border-bottom: 0 }
     <div>
       <h2>Training</h2>
       <div class="chart">{{CHART}}
-        <div class="legend"><span><span class="swatch" style="background:var(--s1)"></span>Growing</span><span><span class="swatch" style="background:var(--s2)"></span>Persistent</span><span><span class="swatch" style="background:var(--s3)"></span>Regenerating</span></div>
+        <div class="legend"><span><span class="swatch" style="background:var(--s1)"></span>Growing</span><span><span class="swatch" style="background:var(--s2)"></span>Persistent</span><span><span class="swatch" style="background:var(--s3)"></span>Regenerating</span><span><span class="swatch" style="background:var(--s4)"></span>Swimming (8-frame loop)</span></div>
       </div>
-      <p class="caption">log₁₀ of the pixel MSE against the premultiplied RGBA target after 64–96 steps, 50-step moving mean. Batch 8, Adam, per-variable gradient normalisation, as in the paper.</p>
+      <p class="caption">log₁₀ of the pixel MSE against the premultiplied RGBA target after 64–96 steps (for the swim, averaged over five checkpoints 8 steps apart against consecutive frames), 50-step moving mean. Batch 8, Adam, per-variable gradient normalisation, as in the paper.</p>
     </div>
     <div>
       <h2>What each rule does past its training window</h2>
@@ -297,6 +354,7 @@ tbody tr:last-child > * { border-bottom: 0 }
       <p class="caption">All values log₁₀ MSE against the target from one stochastic rollout. Training only ever sees steps 64–96. The paper's claim is visible in the last three columns: only the pool experiments hold the lizard at step 4000, and only the damaged-pool experiment recovers from a cut.</p>
     </div>
     {{FIGS}}
+    {{ANIM}}
   </section>
 </div>
 
@@ -305,7 +363,7 @@ tbody tr:last-child > * { border-bottom: 0 }
 const RUNS = {{WEIGHTS}};
 const NOTES = {{EXP_NOTES}};
 const G = 72;
-const TARGET = Uint8Array.from(atob("{{TARGET}}"), c => c.charCodeAt(0));
+const TARGETS = Object.fromEntries(Object.entries({{TARGETS}}).map(([k, t]) => [k, { n: t.n, d: Uint8Array.from(atob(t.d), c => c.charCodeAt(0)) }]));
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d'), img = ctx.createImageData(G, G);
 const $ = id => document.getElementById(id);
 let nca = null, exp = null, stepN = 0, running = true, lastAlive = 0;
@@ -332,10 +390,14 @@ let BG = bgRGB();
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => BG = bgRGB());
 new MutationObserver(() => BG = bgRGB()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-function error() {
-  const s = nca.state; let e = 0;
-  for (let i = 0; i < G * G; i++) for (let c = 0; c < 4; c++) { const d = s[i * 16 + c] - TARGET[i * 4 + c] / 255; e += d * d; }
-  return e / (G * G * 4);
+function error() {  // [best error, best frame] over the run's target frames
+  const s = nca.state, T = TARGETS[exp], F = G * G * 4; let best = Infinity, bk = 0;
+  for (let k = 0; k < T.n; k++) {
+    let e = 0;
+    for (let i = 0; i < G * G; i++) for (let c = 0; c < 4; c++) { const d = s[i * 16 + c] - T.d[k * F + i * 4 + c] / 255; e += d * d; }
+    if (e < best) { best = e; bk = k; }
+  }
+  return [best / F, bk];
 }
 function draw() {
   const s = nca.state, d = img.data, v = view.value, hc = v[0] === 'h' ? +v.slice(1) : -1;
@@ -358,7 +420,8 @@ function draw() {
   ctx.putImageData(img, 0, 0);
   $('r-step').textContent = stepN.toLocaleString();
   $('r-alive').textContent = lastAlive.toLocaleString();
-  const e = error(); $('r-err').textContent = e > 0 ? Math.log10(e).toFixed(2) : '–';
+  const [e, k] = error(); $('r-err').textContent = e > 0 ? Math.log10(e).toFixed(2) : '–';
+  $('r-frame').textContent = TARGETS[exp].n > 1 ? (k + 1) + ' / ' + TARGETS[exp].n : '–';
 }
 function frame() {
   if (running) {

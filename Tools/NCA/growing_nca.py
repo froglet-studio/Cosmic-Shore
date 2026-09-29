@@ -56,6 +56,29 @@ EMOJI = {
 
 # ---------------------------------------------------------------- target ---
 
+def emoji_canvas(name: str) -> Image.Image:
+    """The paper's source image: the emoji on a 128x128 RGBA canvas (or any image path)."""
+    if os.path.isfile(name):
+        return Image.open(name).convert("RGBA")
+    ch = EMOJI[name]
+    font = ImageFont.truetype(NOTO_FONT, 109, layout_engine=ImageFont.Layout.BASIC)
+    big = Image.new("RGBA", (160, 160), (0, 0, 0, 0))
+    ImageDraw.Draw(big).text((0, 0), ch, font=font, embedded_color=True)
+    big = big.crop(big.getbbox())
+    img = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+    img.paste(big, ((128 - big.width) // 2, (128 - big.height) // 2))
+    return img
+
+
+def to_target(img: Image.Image, max_size: int = 40) -> np.ndarray:
+    """Thumbnail exactly as the Colab does, then premultiply. -> float32 [H, W, 4]."""
+    img = img.copy()
+    img.thumbnail((max_size, max_size), Image.LANCZOS)  # Colab: PIL.Image.ANTIALIAS
+    a = np.asarray(img, dtype=np.float32) / 255.0
+    a[..., :3] *= a[..., 3:]  # premultiply
+    return a
+
+
 def load_emoji(name: str, max_size: int = 40) -> np.ndarray:
     """Premultiplied RGBA float32 [H, W, 4] in [0, 1].
 
@@ -65,20 +88,7 @@ def load_emoji(name: str, max_size: int = 40) -> np.ndarray:
     same 128x128 canvas, and thumbnails it exactly as the Colab does.
     A path to any RGBA image is also accepted.
     """
-    if os.path.isfile(name):
-        img = Image.open(name).convert("RGBA")
-    else:
-        ch = EMOJI[name]
-        font = ImageFont.truetype(NOTO_FONT, 109, layout_engine=ImageFont.Layout.BASIC)
-        big = Image.new("RGBA", (160, 160), (0, 0, 0, 0))
-        ImageDraw.Draw(big).text((0, 0), ch, font=font, embedded_color=True)
-        big = big.crop(big.getbbox())
-        img = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
-        img.paste(big, ((128 - big.width) // 2, (128 - big.height) // 2))
-    img.thumbnail((max_size, max_size), Image.LANCZOS)  # Colab: PIL.Image.ANTIALIAS
-    a = np.asarray(img, dtype=np.float32) / 255.0
-    a[..., :3] *= a[..., 3:]  # premultiply
-    return a
+    return to_target(emoji_canvas(name), max_size)
 
 
 # ----------------------------------------------------------------- model ---
