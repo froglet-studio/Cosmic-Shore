@@ -173,6 +173,34 @@ public static class Driver
         }
         catch (Exception e) { Check(false, "T7 threw unexpectedly: " + e.Message); }
 
+        // T8 — WINDING. Unity treats a triangle as front-facing when Cross(v1 - v0, v2 - v0)
+        // points at the viewer, and the vessel graph renders FRONT faces only (m_RenderFace 2),
+        // so a face wound against its authored (outward) normals is invisible from outside and
+        // the hull reads inside-out. Every face's front normal must agree with the normals the
+        // form authored for its corners. Wings are double-sided by construction (one face each
+        // way), so they are checked as a pair: exactly half their faces agree.
+        for (int pi = 0; pi < parts.Count; pi++)
+        {
+            var p = parts[pi];
+            int agree = 0, total = 0;
+            foreach (var list in new[] { p.Body, p.Accent })
+                for (int i = 0; i < list.Count; i += 3)
+                {
+                    int a = list[i], b = list[i + 1], c = list[i + 2];
+                    Vector3 face = Vector3.Cross(p.Verts[b] - p.Verts[a], p.Verts[c] - p.Verts[a]);
+                    if (face.sqrMagnitude < 1e-14f) continue;   // a collapsed tip triangle
+                    Vector3 authored = p.Normals[a] + p.Normals[b] + p.Normals[c];
+                    total++;
+                    if (Vector3.Dot(face, authored) > 0f) agree++;
+                }
+            bool wing = pi >= 2;
+            float frac = total == 0 ? 0f : agree / (float)total;
+            if (wing)
+                Check(Mathf.Abs(frac - 0.5f) < 0.02f, $"T8 {p.Name} is double-sided ({agree}/{total} faces front-facing along its normal)");
+            else
+                Check(frac > 0.98f, $"T8 {p.Name} faces OUT ({agree}/{total} faces agree with their normals)");
+        }
+
         int objIndex = Array.IndexOf(args, "--obj");
         if (objIndex >= 0 && objIndex + 1 < args.Length) WriteObj(parts, args[objIndex + 1]);
 

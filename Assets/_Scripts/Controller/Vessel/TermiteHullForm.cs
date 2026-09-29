@@ -278,9 +278,11 @@ namespace CosmicShore.Gameplay
                 {
                     int a = r * stride + i, b = a + 1, c = a + stride, d = c + 1;
                     // The abdomen runs BACKWARD (-z) with ring index, so the winding is the
-                    // mirror of a forward revolution to keep the faces pointing out.
-                    target.Add(a); target.Add(b); target.Add(c);
-                    target.Add(b); target.Add(d); target.Add(c);
+                    // mirror of a forward revolution. Unity's front face is the one whose
+                    // Cross(v1 - v0, v2 - v0) points at the viewer, and the vessel graph draws
+                    // front faces only — the harness's T8 holds every face to its normal.
+                    target.Add(a); target.Add(c); target.Add(b);
+                    target.Add(b); target.Add(c); target.Add(d);
                 }
             }
 
@@ -380,8 +382,8 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < sides; i++)
             {
                 int a = baseIndex + r * stride + i, b = a + 1, c = a + stride, d = c + 1;
-                target.Add(a); target.Add(c); target.Add(b);
-                target.Add(b); target.Add(c); target.Add(d);
+                target.Add(a); target.Add(b); target.Add(c);
+                target.Add(b); target.Add(d); target.Add(c);
             }
         }
 
@@ -432,8 +434,8 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < sides; i++)
             {
                 int a = baseIndex + g * stride + i, b = a + 1, c = a + stride, d = c + 1;
-                target.Add(a); target.Add(c); target.Add(b);
-                target.Add(b); target.Add(c); target.Add(d);
+                target.Add(a); target.Add(b); target.Add(c);
+                target.Add(b); target.Add(d); target.Add(c);
             }
         }
 

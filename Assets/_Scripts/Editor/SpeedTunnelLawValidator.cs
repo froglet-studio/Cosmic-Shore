@@ -259,7 +259,7 @@ namespace CosmicShore.Editor
         }
 
         /// <summary>
-        /// The transformer that is actually enabled. Three prefabs (Falcon, Shrike, Termite)
+        /// The transformer that is actually enabled. Prefabs that once carried (Falcon, Shrike, the retired Termite)
         /// carry two transformer components on the root with one disabled, so taking the first
         /// match would report the dead one.
         /// </summary>

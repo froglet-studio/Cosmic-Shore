@@ -139,7 +139,7 @@ namespace CosmicShore.Editor
         /// four icons in <see cref="VesselHUDView.AbilityDisplayOrder"/>, with nulls for slots whose
         /// adopted widget is missing.
         /// </summary>
-        static Image[] WireRow(VesselHUDView view)
+        internal static Image[] WireRow(VesselHUDView view)
         {
             var root = view.transform;
             var slots = ProfileFor(view);

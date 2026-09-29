@@ -435,6 +435,27 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        /// <summary>
+        /// The first action of type <typeparamref name="T"/> bound to ONE input, resolved exactly
+        /// the way a press on that input would resolve it (device overrides first, then the shared
+        /// map). The per-input form of <see cref="TryGetBoundAction{T}"/>, for an
+        /// <see cref="OwnerPressGate"/> that has to judge the press it is being asked about rather
+        /// than whichever binding of that type a sweep reaches first.
+        /// </summary>
+        public bool TryGetActionOn<T>(InputEvents inputEvent, out T action) where T : class
+        {
+            action = null;
+            if (!HasAction(inputEvent)) return false;
+            var list = ResolveActions(inputEvent);
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] is not T typed) continue;
+                action = typed;
+                return true;
+            }
+            return false;
+        }
+
         static bool TryFindAction<T>(Dictionary<InputEvents, List<ShipActionSO>> map,
                                      out T action, out InputEvents inputEvent) where T : class
         {
@@ -495,6 +516,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void PerformShipControllerActionsReplicated(InputEvents ie)
         {
+            if (!AdmitOwnerPress(ie)) return;
             if (IsSpawned && IsOwner)
                 SendButtonPressed_ServerRpc(ie);
             else
@@ -528,12 +550,34 @@ namespace CosmicShore.Gameplay
             return _shipControlActions.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
         }
 
+        /// <summary>
+        /// An optional OWNER-SIDE veto on a press, consulted exactly where a press ORIGINATES
+        /// (the owner's input and <see cref="PerformShipControllerActionsReplicated"/>) and never
+        /// where it is replayed (the ClientRpc on every peer).
+        ///
+        /// <para>It exists for an ability whose admission depends on a resource only the owner can
+        /// judge exactly — the Termite's pheromone deck (<c>TermiteDeckExecutor</c>, TERMITE.md
+        /// §5). Every press is replayed on every peer, so an ability that refused itself inside
+        /// <c>StartAction</c> would refuse on some machines and not others the moment their
+        /// resource clocks drift by a frame; deciding once, on the owner, BEFORE the press is sent
+        /// means every peer either receives a play or never hears of it. A gate that admits may
+        /// also RESERVE what the play costs, so two presses inside one round trip cannot both be
+        /// admitted against a cost only one of them can pay.</para>
+        ///
+        /// <para>Null on every vessel but the Termite, so the fleet's press path is unchanged.
+        /// Registered and cleared by the component that owns it, identity-checked.</para>
+        /// </summary>
+        public Func<InputEvents, bool> OwnerPressGate { get; set; }
+
+        bool AdmitOwnerPress(InputEvents ie) => OwnerPressGate == null || OwnerPressGate(ie);
+
         void OnButtonPressed(InputEvents ie)
         {
             if (vesselStatus.AutoPilotEnabled)
                 return;
             if (_suppressedInputs.Contains(ie)) return;
             if (IsInputMuted(ie)) return;
+            if (!AdmitOwnerPress(ie)) return;
             if (IsSpawned && IsOwner)
             {
                 SendButtonPressed_ServerRpc(ie);

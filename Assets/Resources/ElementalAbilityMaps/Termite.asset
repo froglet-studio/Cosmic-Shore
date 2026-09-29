@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Termite
+  m_EditorClassIdentifier:
+  vesselClass: 8
+  entries:
+  - Element: 1
+    AbilityLabel: Autothysis / Team Crystal
+    AbilityDescription: 'CARD SLOT (RT). Two cards that alternate: pressing plays the face-up card and turns the other over. AUTOTHYSIS (3 pheromone): every soldier drone within 260u of the queen ruptures in a blast of her domain that destroys opposing mass and drains the opposing pilots it catches (the fleet Debuff-class drain, shared with the Dolphin cone and the Scarab plate); with no soldier near her she bursts herself, smaller. TEAM CRYSTAL (2 pheromone): plants a crystal only her domain may collect, ahead of her. CHARGE is the blast DIAMETER (TermiteChargeCards.power x1 at rest -> x2 at level 10, read at the replicated level) and how far ahead the crystal lands.'
+    Input: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 2
+    AbilityLabel: Queen Drones / Mound Drones
+    AbilityDescription: 'CARD SLOT (LT). QUEEN DRONES (3 pheromone): soldiers that escort the queen and DESTROY opposing mass within 70u of her. MOUND DRONES (4 pheromone, needs a mound): workers that GRAZE opposing mass and carry it home, where her nearest mound lays it back down as her own prisms - one prism in, one prism out, so a worker moves mass between domains and never mints it. Drones are vessel-owned agents, not lifeforms: no heart, no collider, a 36-drone cap. MASS is the drone COUNT (TermiteMassCards.power x1 -> x2: 6 soldiers / 5 workers at rest).'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: Teleport / New Mound
+    AbilityDescription: 'CARD SLOT (X). TELEPORT (2 pheromone): the queen jumps to the point she was last sent to (snapping onto her own mound if one stands within 120u of it), within her reach; with no point commanded she jumps ahead. NEW MOUND (5 pheromone): founds a cathedral mound of her own prisms behind her, 3 at most. A mound lives while any of its prisms stands and falls when an active force removes the last one. SPACE is the jump REACH (220u at rest -> 440u at level 10) and the mound''s founding SEED (24 -> 48 prisms).'
+    Input: 6
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 4
+    AbilityLabel: Pheromone
+    AbilityDescription: 'PASSIVE. The deck''s elixir: a 10-point tank that every card is paid out of, refilling continuously (5 at spawn). TIME is the refill rate - Clash Royale''s own one point per 2.8s at rest, twice that at level 10 (TermitePheromoneAction.regenPerSecond, read at the replicated level so every peer''s clock agrees). Time also scales the queen''s commanded cruise (TermiteCommandTransformer.commandCruiseSpeed, 70 -> 112 u/s). A card is admitted ONCE, on the owning machine, before the press is sent (R_VesselActionHandler.OwnerPressGate).'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 

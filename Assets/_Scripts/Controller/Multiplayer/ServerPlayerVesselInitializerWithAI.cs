@@ -444,7 +444,7 @@ namespace CosmicShore.Gameplay
         /// premise is a mixed grid - fielded eight identical hulls.</para>
         ///
         /// <para>A single-hull card publishes a one-entry list, so the draw is that hull and
-        /// nothing changes for the arcade modes. Classes with no prefab (Termite / Falcon /
+        /// nothing changes for the arcade modes. Classes with no prefab (Falcon /
         /// Shrike) are skipped rather than drawn and failed, so a roster may name a planned hull
         /// without breaking the backfill.</para>
         /// </summary>

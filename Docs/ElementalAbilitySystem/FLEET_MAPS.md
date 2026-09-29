@@ -65,6 +65,7 @@ day after the channel it referred to had been deleted.
 | Scarab | 4/4 | 4/4 | 2/4 |
 | Rhino | 2/4 | 3/4 | 0/4 |
 | **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
+| **Termite** | **4/4** | **4/4 by design** | **0/4 (open)** | *(restored 2026-09-29 as the commander queen — `R_VesselActions/TERMITE.md`. Code + map + headless assets on the branch; its prefab is rebuilt by `FrogletTools ▸ Vessels ▸ Create Termite Vessel`, and until that runs the tool reads the 2024 PROTOTYPE prefab still at that path, so it reports 1/4 scaling. The four channels live on the card-slot SOs (`TermiteChargeCards.power` etc.), the pheromone clock and `TermiteCommandTransformer.commandCruiseSpeed`)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
@@ -537,6 +538,20 @@ mode ball launched by a cavitation cone and a braking wall on the A button — S
 Ablative Wake / Deep Wall / Hair Trigger. A second pass proposed Charge = ball-generation energy
 with **Split Shot**, Mass with **Second Pass**, and Space = juke reach. **The 2026-08-15 markup is
 the record; do not re-litigate from a superseded pass.**
+
+### Termite — commander queen (deck of six cards) — L5 PROPOSALS, not implemented
+
+The quantitative rows are LIVE (see `R_VesselActions/TERMITE.md` §5): Charge = Autothysis blast
+diameter and Team Crystal distance, Mass = drone count, Space = Teleport reach and a mound's seed,
+Time = the pheromone refill rate (and her commanded cruise). All four L5 slots ship EMPTY; these
+are proposals for markup, built only from existing primitives:
+
+| Element | Quantitative (LIVE) | L5 proposal |
+|---|---|---|
+| Charge | Autothysis diameter 60→120, crystal distance 30→60 | **Acid Soldiers** — soldier drones may target SHIELDED mass: a strike sheds the shield (the ordinary `Prism.Damage` shed), a second strike destroys. Still never super-shielded. |
+| Mass | drones per card 6→12 soldiers / 5→10 workers | **Armoured Mounds** — mounds lay their prisms with the REGULAR shield (never super-shield: armoured mass must stay graze-able in two passes). |
+| Space | Teleport reach 220→440, mound seed 24→48 | **Tunnels** — a Teleport that snaps onto one of her own mounds ignores the reach limit. |
+| Time | pheromone 0.357→0.714/s, cruise 70→112 | **Swarm Pace** — drones fly 1.5× faster (tempo, never a bigger tank). |
 
 ## 3. Implementation notes for approved rows
 

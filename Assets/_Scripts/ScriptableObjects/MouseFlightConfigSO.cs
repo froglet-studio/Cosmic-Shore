@@ -5,7 +5,7 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// Feel for the desktop ONE-THUMB flight scheme
     /// (<see cref="CosmicShore.Gameplay.SingleStickMouseInputStrategy"/>): the mouse is the
-    /// single stick a Sparrow / Serpent / Grizzly / Termite / Falcon / Shrike / Scarab flies on.
+    /// single stick a Sparrow / Serpent / Grizzly / Falcon / Shrike / Scarab flies on.
     ///
     /// <para>The mouse hands us a DELTA and the vessel wants a POSITION — a single-stick
     /// transformer reads <c>EasedLeftJoystickPosition</c> every frame, so "how far is the stick

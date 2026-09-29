@@ -162,7 +162,9 @@ namespace CosmicShore.Gameplay
         void SetInitialSpeedFromCommand(float speedNow)
         {
             // The base's own speed seed, so the stick model picks up where the commander left off.
-            if (Vessel != null) Vessel.SetInitialSpeed(speedNow);
+            // LOCAL on purpose: the transformer runs only on the machine that simulates this hull,
+            // and IVessel.SetInitialSpeed sends a ClientRpc, which a client-owned queen may not.
+            SetInitialSpeed(speedNow);
         }
     }
 }

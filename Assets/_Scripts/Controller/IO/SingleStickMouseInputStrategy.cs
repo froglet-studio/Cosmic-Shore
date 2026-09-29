@@ -10,7 +10,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Desktop mouse + keyboard flight for the fleet's ONE-THUMB vessels — the hulls whose
     /// transformer sets <c>IsSingleStickControls</c> and therefore steers off
-    /// <c>EasedLeftJoystickPosition</c> alone: Sparrow, Serpent, Grizzly, Termite, Falcon,
+    /// <c>EasedLeftJoystickPosition</c> alone: Sparrow, Serpent, Grizzly, Falcon,
     /// Shrike (<see cref="SingleStickVesselTransformer"/>) and Scarab
     /// (<see cref="ScarabVesselTransformer"/>).
     ///

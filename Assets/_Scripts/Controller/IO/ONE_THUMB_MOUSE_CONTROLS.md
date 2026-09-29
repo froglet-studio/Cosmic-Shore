@@ -10,7 +10,7 @@ else:
 
 | Vessel | Transformer |
 |---|---|
-| Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike | `SingleStickVesselTransformer` |
+| Sparrow, Serpent, Grizzly, Falcon, Shrike | `SingleStickVesselTransformer` |
 | Scarab | `ScarabVesselTransformer` (single-stick steering, its own throttle integrator) |
 
 ## 1. Why these vessels needed their own scheme
@@ -428,7 +428,7 @@ Both duplicates are excised. The roster now reads:
 
 | Vessel | Transformer | One-thumb |
 |---|---|---|
-| Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike | `SingleStickVesselTransformer` | ✅ |
+| Sparrow, Serpent, Grizzly, Falcon, Shrike | `SingleStickVesselTransformer` | ✅ |
 | Scarab | `ScarabVesselTransformer` | ✅ |
 | Dolphin, Manta, Rhino, Squirrel | `VesselTransformer` | — |
 | Urchin | `GunVesselTransformer` | — |

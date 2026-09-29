@@ -110,7 +110,7 @@ namespace CosmicShore.Gameplay
                 $"the vessel{(string.IsNullOrEmpty(detail) ? string.Empty : $" ({detail})")} is a " +
                 "TWO-stick hull — IsSingleStickControls is false, so it reads the dual-stick mix " +
                 "the mouse cannot drive without cross-talk. If this is a Sparrow, Serpent, " +
-                "Grizzly, Termite, Falcon, Shrike or Scarab, its VesselTransformer is not the " +
+                "Grizzly, Falcon, Shrike or Scarab, its VesselTransformer is not the " +
                 "SingleStick/Scarab one, or Initialize never ran on it.",
             _ => "unknown reason.",
         };

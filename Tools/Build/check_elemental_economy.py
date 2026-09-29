@@ -41,10 +41,12 @@ TRANSFER        = "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/El
 CONTAINER_DIR   = "Assets/_SO_Assets/Effects/Effect Containers"
 VESSEL_PREFABS  = "Assets/_Prefabs/Spacevessels"
 
-# The hulls a player can actually fly. Grizzly/Termite/Falcon/Shrike are unfinished and are not
-# held to the contract - listing them would make the gate permanently red for a reason nobody can
-# act on, which is how a gate stops being read.
-PLAYABLE = ["Manta", "Dolphin", "Rhino", "Serpent", "Sparrow", "Squirrel", "Urchin", "Scarab"]
+# The hulls a player can actually fly. Grizzly/Falcon/Shrike are unfinished and are not held to
+# the contract - listing them would make the gate permanently red for a reason nobody can act on,
+# which is how a gate stops being read. The Termite joined when it was restored as the commander
+# queen (R_VesselActions/TERMITE.md): its anti-vessel verb is the Autothysis blast.
+PLAYABLE = ["Manta", "Dolphin", "Rhino", "Serpent", "Sparrow", "Squirrel", "Urchin", "Scarab",
+            "Termite"]
 
 # Which container carries each hull's anti-vessel weapon. A hull may reach a pilot through more
 # than one; it needs at least one.
@@ -60,6 +62,8 @@ HULL_CONTAINERS = {
     "Dolphin":  ["Explosion Containers/AOEConicExplosionImpactorDataContainer.asset"],
     "Scarab":   ["Explosion Containers/ScarabCavitationExplosionImpactorDataContainer.asset"],
     "Manta":    ["Explosion Containers/MantaBloomExplosionImpactorDataContainer.asset"],
+    # Autothysis: every soldier drone ruptures in this blast (TermiteDeckExecutor.Detonate).
+    "Termite":  ["Explosion Containers/TermiteAutothysisExplosionImpactorDataContainer.asset"],
     # The Serpent has no container-borne anti-vessel verb at all - no skimmer, no projectile, no
     # blast. Its debuff is CODE: the sniper hitscan strips pilots inside its own cone. Asserted
     # against the executor instead, which is why this entry is a path rather than a container.

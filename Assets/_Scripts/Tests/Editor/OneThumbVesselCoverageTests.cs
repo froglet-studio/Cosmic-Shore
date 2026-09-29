@@ -37,8 +37,14 @@ namespace CosmicShore.Tests
         /// <summary>The one-thumb hulls, by prefab name. A vessel is one-thumb because its
         /// transformer sets <c>IsSingleStickControls</c>; this list is the roster that must
         /// stay true, so adding a hull here without giving it such a transformer fails.</summary>
+        ///
+        /// <para>The TERMITE left this list when it was restored as a COMMANDER queen
+        /// (<c>R_VesselActions/TERMITE.md</c> §4): she is flown by pointing, and the one-thumb
+        /// desktop scheme makes the mouse a stick, which is exactly the device a commander points
+        /// with. Her transformer (<c>TermiteCommandTransformer</c>) derives from the base, so she
+        /// resolves the dual-stick scheme and her keyboard/pad sticks steer the command point.</para>
         static readonly string[] OneThumbVessels =
-            { "Sparrow", "Serpent", "Grizzly", "Termite", "Falcon", "Shrike", "Scarab" };
+            { "Sparrow", "Serpent", "Grizzly", "Falcon", "Shrike", "Scarab" };
 
         // Unity fileIDs are SIGNED - a negative anchor is ordinary, and a `&(\d+)` regex
         // silently skips those documents (which is how a first pass of this census lost the
@@ -93,6 +99,7 @@ namespace CosmicShore.Tests
                 [GuidOf("SingleStickVesselTransformer")] = "SingleStickVesselTransformer",
                 [GuidOf("ScarabVesselTransformer")] = "ScarabVesselTransformer",
                 [GuidOf("GunVesselTransformer")] = "GunVesselTransformer",
+                [GuidOf("TermiteCommandTransformer")] = "TermiteCommandTransformer",
             };
 
             foreach (var path in Directory.GetFiles(VesselDir, "*.prefab"))
