@@ -22,6 +22,10 @@ namespace CosmicShore.Player
         PlayerBoot _boot;
         TextureCache _textures;
         FrameTarget _frame;
+        FrameTarget _scene3d;
+        SceneRenderer _sceneRenderer;
+        SkyboxPass _skybox;
+        PostPass _post;
         UguiRenderer _ui;
         TmpTextRenderer _tmp;
         PresentPass _present;
@@ -72,6 +76,10 @@ namespace CosmicShore.Player
             _tmp = new TmpTextRenderer(_gl);
             _ui.Tmp = _tmp;
             _present = new PresentPass(_gl);
+            _scene3d = new FrameTarget(_gl);
+            _sceneRenderer = new SceneRenderer(_gl, _textures);
+            _skybox = new SkyboxPass(_gl);
+            _post = new PostPass(_gl);
 
             _inputBridge = new SilkInputBridge(_window);
             _script.EnsureDevices();
@@ -96,13 +104,10 @@ namespace CosmicShore.Player
             Screen.width = w;
             Screen.height = h;
             _frame.Ensure(w, h);
+            Render3D(w, h);
             _frame.Bind();
-
-            var cam = Camera.main;
-            var c = cam != null ? cam.backgroundColor : Color.black;
-            _gl.ClearColor(ColorSpace.ToLinear(c.r), ColorSpace.ToLinear(c.g), ColorSpace.ToLinear(c.b), 1f);
             _gl.ClearStencil(0);
-            _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+            _gl.Clear(ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
             _ui.Render(w, h);
             _present.Draw(_frame.Color, w, h);
@@ -118,6 +123,28 @@ namespace CosmicShore.Player
                 _boot.Log.PrintSummary();
                 _window.Close();
             }
+        }
+
+        /// <summary>The camera's view into the HDR scene target, then the post stack into the UI frame.</summary>
+        void Render3D(int w, int h)
+        {
+            _scene3d.Ensure(w, h);
+            _scene3d.Bind();
+            var cam = Camera.main;
+            var c = cam != null ? cam.backgroundColor : Color.black;
+            _gl.ClearColor(ColorSpace.ToLinear(c.r), ColorSpace.ToLinear(c.g), ColorSpace.ToLinear(c.b), 1f);
+            _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+            var post = PostSettings.Gameplay;
+            if (cam != null && cam.isActiveAndEnabled)
+            {
+                _skybox.Draw(cam);
+                _sceneRenderer.Render(cam, w, h);
+                float tanY = MathF.Tan(cam.fieldOfView * 0.5f * MathF.PI / 180f);
+                post.TanHalfFovY = tanY;
+                post.TanHalfFovX = tanY * cam.aspect;
+            }
+            else post.Panini = false;
+            _post.Draw(_scene3d.Color, w, h, _frame.Fbo, post);
         }
 
         unsafe void Capture(string path, int w, int h)

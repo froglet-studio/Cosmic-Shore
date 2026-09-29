@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CosmicShore.Content.Scenes;
+using CosmicShore.Content.Serialization;
 using CosmicShore.Content.Yaml;
 using CosmicShore.Engine;
 using CosmicShore.Engine.Injection;
@@ -183,6 +184,7 @@ namespace CosmicShore.Content
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var file = Db.LoadPath(path);
+            if (mode == LoadSceneMode.Single) ApplyRenderSettings(file);
             var loaded = Instantiate(PrefabGraph.Build(Db, file), activate: Options.Activate);
             Loads.Add((scene.name, loaded));
             if (Environment.GetEnvironmentVariable("CS_PORT_VERBOSE") == "1")
@@ -197,6 +199,28 @@ namespace CosmicShore.Content
                 var sceneContainer = RootContainer.CreateChild();
                 foreach (var root in loaded.Roots) Inject(sceneContainer, root);
             }
+        }
+
+        /// <summary>A Single load adopts that scene's lighting environment (document class 104).</summary>
+        void ApplyRenderSettings(AssetFile file)
+        {
+            var doc = file.Documents.FirstOrDefault(d => d.ClassId == 104);
+            if (doc?.Body == null) return;
+            var b = doc.Body;
+            var sky = ObjRef.From(b["m_SkyboxMaterial"]);
+            RenderSettings.skybox = sky.IsNull ? null : Assets.Load<Material>(sky);
+            RenderSettings.fog = b.Int("m_Fog") != 0;
+            if (b["m_FogColor"] != null) RenderSettings.fogColor = SerializedReader.ReadColor(b["m_FogColor"]);
+            RenderSettings.fogMode = (FogMode)b.Int("m_FogMode", 3);
+            RenderSettings.fogDensity = b.Float("m_FogDensity", 0.01f);
+            RenderSettings.fogStartDistance = b.Float("m_LinearFogStart", 0f);
+            RenderSettings.fogEndDistance = b.Float("m_LinearFogEnd", 300f);
+            RenderSettings.ambientMode = (CosmicShore.Engine.Rendering.AmbientMode)b.Int("m_AmbientMode", 0);
+            if (b["m_AmbientSkyColor"] != null) RenderSettings.ambientSkyColor = SerializedReader.ReadColor(b["m_AmbientSkyColor"]);
+            if (b["m_AmbientEquatorColor"] != null) RenderSettings.ambientEquatorColor = SerializedReader.ReadColor(b["m_AmbientEquatorColor"]);
+            if (b["m_AmbientGroundColor"] != null) RenderSettings.ambientGroundColor = SerializedReader.ReadColor(b["m_AmbientGroundColor"]);
+            RenderSettings.ambientIntensity = b.Float("m_AmbientIntensity", 1f);
+            RenderSettings.reflectionIntensity = b.Float("m_ReflectionIntensity", 1f);
         }
 
         LoadedScene Instantiate(PrefabGraph graph, bool activate, Transform parent = null)
