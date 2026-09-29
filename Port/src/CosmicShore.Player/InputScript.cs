@@ -100,6 +100,9 @@ namespace CosmicShore.Player
                     case "renderers":
                         Inspector.Renderers(arg.Trim());
                         break;
+                    case "blast":
+                        Inspector.Blast(int.Parse(arg.Trim(), CultureInfo.InvariantCulture));
+                        break;
                     case "eval":
                         // eval Type.StaticMember[.member…] — read a static chain, this frame.
                         Inspector.PrintStatic(arg);

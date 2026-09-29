@@ -50,6 +50,8 @@ namespace CosmicShore.Content
             Assets = new AssetLoader(Db, Scripts);
             Options = options ?? new InstantiateOptions();
             ReadBuildSettings();
+            ReadGraphicsSettings();
+            RegisterPackageResources();
             IndexResources();
             Assets.Importers[typeof(GameObject)] = LoadPrefabObject;
             Textures = new Textures.TextureImporter(Db);
@@ -99,6 +101,37 @@ namespace CosmicShore.Content
             var doc = UnityYaml.ParseDocuments(File.ReadAllText(path)).FirstOrDefault();
             foreach (var s in doc?.Body["m_Scenes"]?.Items ?? Array.Empty<YNode>())
                 BuildScenes.Add((s.Str("path"), s.Str("guid"), s.Bool("enabled")));
+        }
+
+        /// <summary>
+        /// The project's active render pipeline (ProjectSettings/GraphicsSettings.asset
+        /// m_CustomRenderPipeline): in a build GraphicsSettings.currentRenderPipeline is that URP
+        /// asset, which every SRP-dependent gate (Entities Graphics support included) reads.
+        /// </summary>
+        void ReadGraphicsSettings()
+        {
+            var path = Path.Combine(Db.ProjectRoot, "ProjectSettings", "GraphicsSettings.asset");
+            if (!File.Exists(path)) return;
+            var doc = UnityYaml.ParseDocuments(File.ReadAllText(path)).FirstOrDefault();
+            var r = ObjRef.From(doc?.Body["m_CustomRenderPipeline"]);
+            if (r.IsNull) return;
+            var asset = Assets.Load<CosmicShore.Engine.Rendering.RenderPipelineAsset>(r);
+            if (asset == null)
+            {
+                asset = ScriptableObject.CreateInstance<CosmicShore.Engine.Rendering.UniversalRenderPipelineAsset>();
+                asset.name = Path.GetFileNameWithoutExtension(Db.PathOf(r.Guid) ?? "URP_Asset");
+            }
+            CosmicShore.Engine.Rendering.GraphicsSettings.defaultRenderPipeline = asset;
+        }
+
+        /// <summary>
+        /// Resources that ship inside packages rather than the project (Library/PackageCache is
+        /// not part of the repository): the port stands in for the ones game code loads.
+        /// </summary>
+        static void RegisterPackageResources()
+        {
+            // com.unity.entities.graphics: the sparse uploader the Entities Graphics support probe loads.
+            Resources.Register("SparseUploader", new ComputeShader("SparseUploader", "CopyKernel", "ReplaceKernel"));
         }
 
         void IndexResources()

@@ -17,6 +17,9 @@ namespace CosmicShore.Engine
         /// <summary>Components authored for a UV channel (2 unless a Vector3/Vector4 set was used).</summary>
         public int GetUVDimension(int channel) => _uvDims.TryGetValue(channel, out var d) ? d : 2;
 
+        /// <summary>Render backend: channel 1's full-width values when they were authored wider than 2 (the shield meshes' face centroids), else null. Zero-copy.</summary>
+        public Vector4[] RenderUv1Wide => _uvFull.TryGetValue(1, out var f) && f.Length == vertexCount ? f : null;
+
         /// <summary>Full-width UVs of a channel (x,y from the Vector2 storage when never set wider).</summary>
         public Vector4[] GetUVsFull(int channel)
         {

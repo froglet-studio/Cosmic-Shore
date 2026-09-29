@@ -158,6 +158,29 @@ namespace CosmicShore.Player
             }
         }
 
+        /// <summary>
+        /// <c>blast N</c>: destroys the N live prisms nearest the main camera through the game's own
+        /// <c>Prism.Damage(devastate: true)</c>, blown outward from the camera — the same call an AOE
+        /// blast makes, so the death visual is exactly the game's (debris, stats, audio).
+        /// </summary>
+        public static void Blast(int count)
+        {
+            var cam = Camera.main;
+            if (cam == null) { Console.WriteLine("[blast] no main camera"); return; }
+            var origin = cam.transform.position;
+            var prisms = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Prism>(FindObjectsSortMode.None)
+                .Where(pr => pr && pr.isActiveAndEnabled && !pr.destroyed)
+                .OrderBy(pr => (pr.transform.position - origin).sqrMagnitude)
+                .Take(count)
+                .ToList();
+            foreach (var pr in prisms)
+            {
+                var dir = (pr.transform.position - origin).normalized;
+                pr.Damage(dir * 30f, CosmicShore.Data.Domains.Blue, "script", devastate: true);
+            }
+            Console.WriteLine($"[blast] damaged {prisms.Count} prism(s)");
+        }
+
         public static void PrintStatic(string chain)
         {
             var parts = chain.Split('.');

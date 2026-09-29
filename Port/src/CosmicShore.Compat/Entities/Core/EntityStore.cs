@@ -30,6 +30,10 @@ namespace Unity.Entities
 
         public int Count { get; private set; }
 
+        /// <summary>Slot table size (slot 0 is reserved); for whole-store walks such as the render collection.</summary>
+        internal int SlotCount => _slots.Count;
+        internal Record SlotAt(int index) => _slots[index];
+
         /// <summary>Bumped on every structural change (create/destroy/add/remove); queries use it to cache.</summary>
         public int StructuralVersion { get; private set; }
 

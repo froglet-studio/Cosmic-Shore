@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using CosmicShore.Engine;
+using CosmicShore.Engine.Rendering;
 using Silk.NET.OpenGL;
 using EMatrix = CosmicShore.Engine.Matrix4x4;
 using EVector3 = CosmicShore.Engine.Vector3;
@@ -49,7 +50,14 @@ layout(location=10) in vec4 iGrow;
 layout(location=11) in vec4 iGrowFrac;
 layout(location=12) in vec4 aBoneIdx;
 layout(location=13) in vec4 aBoneW;
+layout(location=14) in vec4 aTangent;
+layout(location=15) in vec4 aUv1;       // TEXCOORD1: the shield meshes' per-face centroid
 uniform mat4 uViewProj;
+uniform samplerBuffer uExt;      // per-instance extended clock block (15 vec4), see SceneRenderer.ExtLayout
+uniform int uPrismGraph;         // 0 none, 1 BlockGraph, 2 ExplodingBlockGraph
+uniform vec2 uExplosive;         // _ExplosiveRotation, _ExplosiveSpead
+uniform float uMaxSqrDist;
+uniform vec3 uCamPos;
 uniform int uSkinned;            // 1: linear-blend skinning, uBones[i] = bone.localToWorld * bindpose[i]
 uniform mat4 uBones[128];
 uniform vec3 uSkinOrigin;
@@ -63,13 +71,140 @@ out vec3 vObjNormal;
 flat out vec4 vDark;
 flat out vec4 vBright;
 flat out vec3 vOrigin;
-void main(){
-  mat4 M = mat4(iM0, iM1, iM2, iM3);
-  vec3 p = aPos;
-  // PrismGrowScale (PrismClockAnimation.hlsl): exponential approach from the stamped fraction.
+flat out float vOpacity;
+flat out vec3 vVelocity;
+// -- The prism graphs' vertex chain (BlockGraph / ExplodingBlockGraph), translated from the
+// project's own PrismClockAnimation.hlsl, PrismSway.hlsl and the Prism Sub Graph / Distance
+// Spread And Colors / Spread Sub Graph / Tangent Slider / Rotate Faces Along Axis subgraphs.
+vec4 X(int k){ return texelFetch(uExt, gl_InstanceID * 15 + k); }
+vec3 rotAxis(vec3 v, vec3 axis, float ang){
+  float l = length(axis);
+  if (!(l > 1e-8)) return v;               // Rotate About Axis normalizes; a zero axis has no rotation
+  axis /= l;
+  float s = sin(ang), c = cos(ang);
+  return v * c + cross(axis, v) * s + axis * (dot(axis, v) * (1.0 - c));
+}
+float jHash(vec3 p){ p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yzx + 33.33); return fract((p.x + p.y) * p.z); }
+void growScale(inout vec3 p){
   if (iGrow.y > 0.0) {
     float t = max(uClock - iGrow.x, 0.0);
     p *= max(vec3(1.0) - (vec3(1.0) - iGrowFrac.xyz) * exp(-iGrow.y * t), vec3(0.0));
+  }
+}
+void main(){
+  mat4 M = mat4(iM0, iM1, iM2, iM3);
+  vec3 p = aPos;
+  vec3 nO = aNormal;
+  vec4 dark = iDark, bright = iBright;
+  float opacity = 1.0;
+  vec3 vel = vec3(0.0);
+  if (uPrismGraph != 0 && uSkinned == 0) {
+    vec3 T = aTangent.xyz;
+    vec3 scale = vec3(length(M[0].xyz), length(M[1].xyz), length(M[2].xyz));
+    mat3 invM = inverse(mat3(M));
+    vec4 e0 = X(0), e3 = X(3), e4 = X(4), e5 = X(5), e6 = X(6), e7 = X(7), e8 = X(8), e9 = X(9);
+    vec4 e10 = X(10), e11 = X(11), e12 = X(12), e13 = X(13), e14 = X(14);
+    // PrismColorLerp: stamped start colours/spread toward the targets, smoothstep eased.
+    vec3 spread = e4.xyz;
+    if (e0.y > 0.0) {
+      float t = smoothstep(0.0, 1.0, clamp((uClock - e0.x) / e0.y, 0.0, 1.0));
+      bright = mix(X(1), bright, t);
+      dark = mix(X(2), dark, t);
+      spread = mix(e3.xyz, spread, t);
+    }
+    // PrismExplosionClock: amount, opacity and the world-space flight carried into object space.
+    vec3 offsetOS = vec3(0.0);
+    float amount = e4.w;
+    opacity = e5.w;
+    vel = e5.xyz;
+    if (e3.w > 0.0) {
+      float t = max(uClock - e0.z, 0.0);
+      amount = e0.w * t;
+      opacity = clamp(1.0 - t / e3.w, 0.0, 1.0);
+      offsetOS += invM * (vel * t);
+    }
+    // PrismFlightClock: walked in from the muzzle under the bullets' cosine easing.
+    vec3 flightWorld = vec3(0.0);
+    if (e7.w > 0.0) {
+      float t = clamp(uClock - e6.w, 0.0, e7.w);
+      float cov = sin(t * 1.5707963 / e7.w);
+      flightWorld = e6.xyz * (0.63661977 * e7.w) * (cov - 1.0);
+      vec3 fo = invM * flightWorld;
+      if (dot(fo, fo) < 1e12) offsetOS += fo;
+    }
+    // Prism Sub Graph: Distance Spread And Colors -> Spread Sub Graph -> Tangent Slider.
+    float sqrDist;
+    if (uPrismGraph == 2) { spread += vec3(amount * uExplosive.y); sqrDist = 1000.0; }
+    else { vec3 d = (M[3].xyz + flightWorld) - uCamPos; sqrDist = dot(d, d); }
+    bool over = sqrDist > uMaxSqrDist;
+    vec3 k = over ? spread * vec3(50.0, 35.0, 20.0) : mix(vec3(-7.0), spread * vec3(50.0, 35.0, 20.0), sqrDist / uMaxSqrDist);
+    vec3 sv = max(k, spread) / scale;
+    vec3 reduced = sv - spread / scale;
+    p = p + sv * nO + 0.5 * reduced * T;
+    // PrismShieldMorph: each face scales about its own centroid (TEXCOORD1).
+    if (e9.y > 0.0) {
+      float t = smoothstep(0.0, 1.0, clamp((uClock - e9.x) / e9.y, 0.0, 1.0));
+      float sh = e9.z < 0.0 ? 1.0 : 0.0;
+      p = aUv1.xyz + mix(t, 1.0 - t, sh) * (p - aUv1.xyz) + sh * t * e9.w * nO;
+    }
+    // PrismSway: first-order bend about the limb, a function of limb height alone.
+    {
+      float tt = uClock * e14.x + e14.y;
+      float zl = e14.z + dot(p, e13.xyz);
+      p += e11.xyz * zl * sin(tt) + e12.xyz * zl * sin(tt * 0.73 + e14.y + 1.5707963) * 0.45;
+    }
+    // Rotate Faces Along Axis (ExplodingBlockGraph): each face spins away about its tangent and
+    // about cross(velocity, normal), in the locally isotropic frame.
+    if (uPrismGraph == 2) {
+      vec3 N = nO;
+      vec3 Pn = dot(p, N) * N;
+      vec3 sMinus = vec3(-0.5) - reduced;
+      vec3 sPlus = vec3(0.5) + reduced + vec3(amount * uExplosive.y);
+      vec3 A = (p - Pn) + 0.5 * sMinus * T;
+      vec3 c = (aUv1.xyz - Pn + 0.5 * sMinus * T) * e12.w;
+      float ang = amount * uExplosive.x;
+      vec3 ax2 = cross(vel, N);
+      vec3 q = rotAxis(rotAxis(scale * (A - c), T, ang), ax2, ang);
+      p = q / scale + Pn + 0.5 * sPlus * T + c;
+      nO = rotAxis(rotAxis(N, T, ang), ax2, ang);
+    }
+    // PrismJiggleClock: the super-shield deflection wobble.
+    if (e11.w > 0.0) {
+      float t = uClock - e10.w;
+      float nl = dot(nO, nO);
+      if (t > 0.0 && t < e11.w && nl > 1e-8 && all(greaterThan(scale, vec3(1e-5)))) {
+        vec3 n = nO * inversesqrt(nl);
+        float u = t / e11.w;
+        float env = (1.0 - u) * exp(-2.5 * u);
+        vec3 origin = M[3].xyz;
+        float sa = jHash(n * 17.0 + origin * 0.013 + e10.w);
+        float sb = jHash(n * 29.0 - origin * 0.017 + e10.w * 1.7 + 11.0);
+        float sg = n.z >= 0.0 ? 1.0 : -1.0;
+        float a = -1.0 / (sg + n.z);
+        float cc = n.x * n.y * a;
+        vec3 tg = vec3(1.0 + sg * n.x * n.x * a, sg * cc, -sg * n.x);
+        vec3 bt = vec3(cc, sg + n.y * n.y * a, -n.y);
+        float phi = e10.y * t + sa * 6.2831853;
+        float theta = 1.5707963 * (0.5 - 0.5 * cos(e10.z * t + sb * 6.2831853));
+        vec3 axis = n * cos(theta) + (tg * cos(phi) + bt * sin(phi)) * sin(theta);
+        float ang = e10.x * env;
+        p = rotAxis(p * scale, axis, ang) / scale;
+        nO = rotAxis(nO / scale, axis, ang) * scale;
+      }
+    }
+    growScale(p);
+    p += offsetOS;
+    // PrismSuctionClock + PrismSuctionConverge: the whole prism lerps toward a world point.
+    if (e8.y > 0.0) {
+      float t = max(uClock - e8.x - e8.w, 0.0);
+      float pr = clamp(t / e8.y, 0.0, 1.0);
+      float state = e8.z < 0.0 ? 1.0 - pr : pr;
+      vec3 loc = (inverse(M) * vec4(e7.xyz, 1.0)).xyz;
+      if (!(dot(loc, loc) < 1e12)) loc = p;
+      p = mix(p, loc, clamp(state, 0.0, 1.0));
+    }
+  } else {
+    growScale(p);
   }
   vec4 w;
   vec3 nrm;
@@ -80,17 +215,19 @@ void main(){
     nrm = transpose(inverse(mat3(S))) * aNormal;
   } else {
     w = M * vec4(p, 1.0);
-    nrm = transpose(inverse(mat3(M))) * aNormal;
+    nrm = transpose(inverse(mat3(M))) * nO;
   }
   vWorld = w.xyz;
   vNormal = nrm;
   vUv = aUv;
   vColor = aColor;
   vObj = p;
-  vObjNormal = aNormal;
+  vObjNormal = nO;
   vOrigin = uSkinned == 1 ? uSkinOrigin : iM3.xyz;
-  vDark = iDark;
-  vBright = iBright;
+  vDark = dark;
+  vBright = bright;
+  vOpacity = opacity;
+  vVelocity = vel;
   gl_Position = uViewProj * w;
 }";
 
@@ -104,6 +241,9 @@ in vec3 vObjNormal;
 flat in vec4 vDark;
 flat in vec4 vBright;
 flat in vec3 vOrigin;
+flat in float vOpacity;
+flat in vec3 vVelocity;
+uniform int uPrismGraph;
 uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal
 uniform vec4 uParam;          // family-specific
 uniform vec4 uColorC;         // family-specific extra colour
@@ -200,7 +340,29 @@ float voronoi(vec2 uv, float angleOffset, float density){
   return best;
 }
 float fresnelNode(vec3 N, vec3 V, float p){ return pow(1.0 - clamp(dot(N, V), 0.0, 1.0), p); }
+// PrismErosionFade (PrismOcclusionCorridor.hlsl): the exploding prism's hard-edged wipe across each face.
+vec3 oHash3(vec3 p3){ p3 = fract(p3 * vec3(0.1031, 0.1030, 0.0973)); p3 += dot(p3, p3.yxz + 33.33); return fract((p3.xxy + p3.yxx) * p3.zyx); }
+float oHash1(vec3 p3){ p3 = fract(p3 * 0.1031); p3 += dot(p3, p3.zyx + 31.32); return fract((p3.x + p3.y) * p3.z); }
+float erosionSurvival(vec2 UV, vec3 vel, float op){
+  if (op >= 1.0) return 1.0;
+  if (op <= 0.0) return 0.0;
+  vec2 uv = UV * 2.0 - 1.0;
+  vec3 e = oHash3(vel);
+  vec3 h = oHash3(e * 64.0 + 17.0);
+  float ang = 6.28318530718 * h.x;
+  vec2 dir = vec2(cos(ang), sin(ang));
+  float w01 = dot(uv, dir) / (abs(dir.x) + abs(dir.y)) * 0.5 + 0.5;
+  float c = dot(uv, vec2(-dir.y, dir.x)) * 2.5 + h.z * 64.0;
+  float ci = floor(c);
+  float cf = c - ci;
+  cf = cf * cf * (3.0 - 2.0 * cf);
+  float jag = mix(oHash1(vec3(ci, h.y * 64.0, e.z * 64.0)), oHash1(vec3(ci + 1.0, h.y * 64.0, e.z * 64.0)), cf);
+  w01 = clamp(w01 + (jag - 0.5) * 0.12, 0.0, 1.0);
+  float thr = (0.15 + smoothstep(-0.02, 1.02, w01) * 0.85) * 0.998 + 0.001;
+  return op >= thr ? 1.0 : 0.0;
+}
 void main(){
+  if (uPrismGraph == 2 && erosionSurvival(vUv, vVelocity, vOpacity) < 0.5) discard;
   vec3 N = normalize(vNormal);
   if (!gl_FrontFacing) N = -N;
   vec3 V = normalize(uCamPos - vWorld);
@@ -216,9 +378,10 @@ void main(){
     float f = pow(1.0 - x, uFresPow);
     vec4 bright = vBright;
     if (uMaxSqrDist > 0.0) {
-      // DistanceSpreadAndColors: the rim sinks toward the base with camera distance.
+      // DistanceSpreadAndColors: the rim sinks toward the base with camera distance
+      // (ExplodingBlockGraph wires a constant 1000 in place of the camera distance).
       vec3 dc = vWorld - uCamPos;
-      float n = dot(dc, dc) / uMaxSqrDist;
+      float n = (uPrismGraph == 2 ? 1000.0 : dot(dc, dc)) / uMaxSqrDist;
       bright = mix(vBright, vDark, n > 1.0 ? 0.9 : n * 0.9);
     }
     col = mix(vDark, bright, f) * tex;
@@ -263,7 +426,7 @@ void main(){
         {
             public uint Vao, Vbo, Ebo;
             public int[] SubmeshStart = Array.Empty<int>(), SubmeshCount = Array.Empty<int>();
-            public object VertsRef, NormRef, UvRef, ColRef;
+            public object VertsRef, NormRef, UvRef, ColRef, TanRef, Uv1Ref;
             public object[] SubRefs = Array.Empty<object>();
             public bool HasColors;
             public bool HasSkin;
@@ -292,7 +455,43 @@ void main(){
             public Vector4 Param;        // family-specific parameters
             public Color ColorC;         // family-specific extra colour
             public float VesselMultiplier;
+            public int PrismGraph;          // 0 none, 1 BlockGraph, 2 ExplodingBlockGraph
+            public float ExplosiveRotation, ExplosiveSpread;
+            public float[] Ext;             // the material's value for every extended clock property
         }
+
+        // The clock / animation properties the prism graphs read beyond the vertex attributes,
+        // packed into a per-instance texture buffer (15 vec4). Each value is the entity's
+        // override when it has one, else the material's (Entities Graphics semantics).
+        const int ExtVec4 = 15, ExtFloats = ExtVec4 * 4;
+        sealed class ExtProp
+        {
+            public string Name; public int Id, Slot, Offset, Count; public bool IsColor;
+            public ExtProp(string name, int offset, int count, bool color = false)
+            { Name = name; Id = Shader.PropertyToID(name); Slot = EntityDrawList.Slot(name); Offset = offset; Count = count; IsColor = color; }
+        }
+        static readonly ExtProp[] ExtLayout =
+        {
+            new("_ColorStartTime", 0, 1), new("_ColorDuration", 1, 1), new("_ExplodeStartTime", 2, 1), new("_ExplodeSpeed", 3, 1),
+            new("_StartBrightColor", 4, 4, true),
+            new("_StartDarkColor", 8, 4, true),
+            new("_StartSpread", 12, 3), new("_ExplodeDuration", 15, 1),
+            new("_Spread", 16, 3), new("_ExplosionAmount", 19, 1),
+            new("_Velocity", 20, 3), new("_Opacity", 23, 1),
+            new("_FlightVelocity", 24, 3), new("_FlightStartTime", 27, 1),
+            new("_Location", 28, 3), new("_FlightDuration", 31, 1),
+            new("_SuctionStartTime", 32, 1), new("_SuctionDuration", 33, 1), new("_SuctionDirection", 34, 1), new("_SuctionGrowDelay", 35, 1),
+            new("_ShieldMorphStartTime", 36, 1), new("_ShieldMorphDuration", 37, 1), new("_ShieldMorphDirection", 38, 1), new("_ShieldMorphOffset", 39, 1),
+            new("_JiggleParams", 40, 3), new("_JiggleStartTime", 43, 1),
+            new("_SwaySpanX", 44, 3), new("_JiggleDuration", 47, 1),
+            new("_SwaySpanY", 48, 3), new("_FacePivotFromCentroid", 51, 1),
+            new("_SwayAxis", 52, 3),
+            new("_SwayTiming", 56, 3),
+        };
+        static readonly int SlotDark = EntityDrawList.Slot("_DarkColor"), SlotBright = EntityDrawList.Slot("_BrightColor");
+        static readonly int SlotGrowStart = EntityDrawList.Slot("_GrowStartTime"), SlotGrowRate = EntityDrawList.Slot("_GrowRate"), SlotGrowFrac = EntityDrawList.Slot("_GrowStartFrac");
+        static Vector4 ToV4(Color c) => new(c.r, c.g, c.b, c.a);
+        static float Comp(in Vector4 v, int k) => k switch { 0 => v.x, 1 => v.y, 2 => v.z, _ => v.w };
 
         struct Item
         {
@@ -304,6 +503,7 @@ void main(){
             public float Distance;
             public bool Skinned;
             public bool WorldSpace;
+            public int Entity; // index into _entities + 1 (0 = a Renderer item)
         }
 
         readonly GL _gl;
@@ -318,6 +518,28 @@ void main(){
         readonly List<List<Item>> _batchPool = new();
         float[] _instanceData = new float[InstanceFloats * 256];
         int _instanceCapacity;
+        float[] _extData = new float[ExtFloats * 256];
+        uint _extBuffer, _extTex;
+        int _extCapacity;
+
+        /// <summary>Uploads this batch's extended blocks to the texture buffer the vertex stage fetches by instance id.</summary>
+        unsafe void UploadExt(int n)
+        {
+            if (_extBuffer == 0) { _extBuffer = _gl.GenBuffer(); _extTex = _gl.GenTexture(); }
+            _gl.BindBuffer(BufferTargetARB.TextureBuffer, _extBuffer);
+            int bytes = n * ExtFloats * sizeof(float);
+            if (bytes > _extCapacity)
+            {
+                _extCapacity = Math.Max(bytes, _extCapacity * 2);
+                _gl.BufferData(BufferTargetARB.TextureBuffer, (nuint)_extCapacity, null, BufferUsageARB.StreamDraw);
+            }
+            fixed (float* p = _extData) _gl.BufferSubData(BufferTargetARB.TextureBuffer, 0, (nuint)bytes, p);
+            _gl.ActiveTexture(TextureUnit.Texture1);
+            _gl.BindTexture(TextureTarget.TextureBuffer, _extTex);
+            _gl.TexBuffer(TextureTarget.TextureBuffer, SizedInternalFormat.Rgba32f, _extBuffer);
+            _gl.ActiveTexture(TextureUnit.Texture0);
+            _gl.BindBuffer(BufferTargetARB.TextureBuffer, 0);
+        }
         int _frame;
 
         static readonly int IdDark = Shader.PropertyToID("_DarkColor"), IdBright = Shader.PropertyToID("_BrightColor");
@@ -376,6 +598,7 @@ void main(){
             SetLighting();
             SetFog();
             _program.Set("uTex", 0);
+            _program.Set("uExt", 1);
 
             _gl.Enable(EnableCap.DepthTest);
             _gl.DepthFunc(DepthFunction.Lequal);
@@ -487,6 +710,34 @@ void main(){
                     else _opaque.Add(item);
                 }
             }
+            CollectEntities(mask, camPos);
+        }
+
+        // ── Entities Graphics: every visible entity the ECS emulation hands over ──
+
+        readonly EntityDrawList _entities = new();
+
+        void CollectEntities(int mask, EVector3 camPos)
+        {
+            _entities.Clear();
+            EntityDraws.Collect?.Invoke(_entities);
+            for (int i = 0; i < _entities.Count; i++)
+            {
+                if ((mask & (1 << _entities.Layers[i])) == 0) continue;
+                var mesh = _entities.Meshes[i];
+                var m = _entities.Materials[i];
+                if (mesh == null || mesh.vertexCount == 0 || m == null) continue;
+                if (!_mats.TryGetValue(m, out var st)) _mats[m] = st = Classify(m);
+                int subs = mesh.RenderSubmeshCount;
+                var item = new Item { Mesh = mesh, Submesh = Math.Clamp(_entities.Submeshes[i], 0, Math.Max(subs - 1, 0)), Material = m, State = st, Entity = i + 1 };
+                if (st.Transparent)
+                {
+                    var mm = _entities.Matrices[i];
+                    item.Distance = (new EVector3(mm.m03, mm.m13, mm.m23) - camPos).sqrMagnitude;
+                    _transparent.Add(item);
+                }
+                else _opaque.Add(item);
+            }
         }
 
         static MatState Classify(Material m)
@@ -577,6 +828,18 @@ void main(){
                 st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.One;
                 st.ZWrite = false; st.Cull = 0; st.Cutoff = -1f;
             }
+            st.PrismGraph = graph == "Shader Graphs/BlockGraph" ? 1 : graph == "Shader Graphs/ExplodingBlockGraph" ? 2 : 0;
+            if (st.PrismGraph != 0)
+            {
+                st.ExplosiveRotation = m.GetFloat("_ExplosiveRotation");
+                st.ExplosiveSpread = m.GetFloat("_ExplosiveSpead"); // [sic] the graph's reference name
+            }
+            st.Ext = new float[ExtFloats];
+            foreach (var p in ExtLayout)
+            {
+                var v = p.Count == 1 ? new Vector4(m.GetFloat(p.Id), 0, 0, 0) : p.IsColor ? ToV4(m.GetColor(p.Id)) : m.GetVector(p.Id);
+                for (int k = 0; k < p.Count; k++) st.Ext[p.Offset + k] = Comp(v, k);
+            }
             return st;
         }
 
@@ -610,6 +873,10 @@ void main(){
             if (_instanceData.Length < n * InstanceFloats) _instanceData = new float[Math.Max(n, _instanceData.Length / InstanceFloats * 2) * InstanceFloats];
             for (int i = 0; i < n; i++)
                 WriteInstance(items[i], i * InstanceFloats);
+            if (_extData.Length < n * ExtFloats) _extData = new float[Math.Max(n, _extData.Length / ExtFloats * 2) * ExtFloats];
+            for (int i = 0; i < n; i++)
+                WriteExt(items[i], i * ExtFloats);
+            UploadExt(n);
 
             _gl.BindVertexArray(entry.Vao);
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _instanceVbo);
@@ -623,9 +890,11 @@ void main(){
                 _gl.BufferSubData(BufferTargetARB.ArrayBuffer, 0, (nuint)bytes, p);
             BindInstanceAttributes();
 
-            if (st.Family == 7) SetCrackleUniforms(first);
+            if (st.Family == 7 && first.Renderer != null) SetCrackleUniforms(first);
             SetSkinUniforms(first, entry);
             _program.Set("uFamily", st.Family);
+            _program.Set("uPrismGraph", st.PrismGraph);
+            _program.Set("uExplosive", st.ExplosiveRotation, st.ExplosiveSpread);
             _program.Set("uFresPow", st.FresPow);
             _program.Set("uMaxSqrDist", st.MaxSqrDist);
             _program.Set("uAlpha", st.Alpha);
@@ -878,7 +1147,9 @@ void main(){
         void WriteInstance(in Item it, int o)
         {
             var d = _instanceData;
-            var m = it.WorldSpace ? CosmicShore.Engine.Matrix4x4.identity : it.Renderer.transform.localToWorldMatrix;
+            int ent = it.Entity - 1;
+            var m = ent >= 0 ? _entities.Matrices[ent]
+                  : it.WorldSpace ? CosmicShore.Engine.Matrix4x4.identity : it.Renderer.transform.localToWorldMatrix;
             // Column-major (GL): column c = (m0c, m1c, m2c, m3c).
             d[o + 0] = m.m00; d[o + 1] = m.m10; d[o + 2] = m.m20; d[o + 3] = m.m30;
             d[o + 4] = m.m01; d[o + 5] = m.m11; d[o + 6] = m.m21; d[o + 7] = m.m31;
@@ -889,7 +1160,16 @@ void main(){
             Color dark = st.Dark, bright = st.Bright;
             float growStart = 0f, growRate = 0f;
             Vector4 frac = new(1, 1, 1, 0);
-            if (it.Renderer.HasPropertyBlock())
+            if (ent >= 0)
+            {
+                // Entities Graphics: [MaterialProperty] overrides, uploaded verbatim.
+                if (st.DarkId != 0 && _entities.TryGet(ent, SlotDark, out var dv)) dark = new Color(dv.x, dv.y, dv.z, dv.w);
+                if (st.BrightId != 0 && _entities.TryGet(ent, SlotBright, out var bv)) bright = new Color(bv.x, bv.y, bv.z, bv.w);
+                if (_entities.TryGet(ent, SlotGrowRate, out var gr)) growRate = gr.x;
+                if (_entities.TryGet(ent, SlotGrowStart, out var gs)) growStart = gs.x;
+                if (_entities.TryGet(ent, SlotGrowFrac, out var gf)) frac = gf;
+            }
+            else if (it.Renderer.HasPropertyBlock())
             {
                 var b = it.Renderer.PropertyBlockFor(it.Submesh);
                 if (b != null)
@@ -907,6 +1187,19 @@ void main(){
             d[o + 20] = bright.r; d[o + 21] = bright.g; d[o + 22] = bright.b; d[o + 23] = bright.a;
             d[o + 24] = growStart; d[o + 25] = growRate; d[o + 26] = 0f; d[o + 27] = 0f;
             d[o + 28] = frac.x; d[o + 29] = frac.y; d[o + 30] = frac.z; d[o + 31] = 0f;
+        }
+
+        /// <summary>The instance's extended clock block: the material's values, patched by the entity's overrides.</summary>
+        void WriteExt(in Item it, int o)
+        {
+            var e = _extData;
+            var defaults = it.State.Ext;
+            Array.Copy(defaults, 0, e, o, ExtFloats);
+            int ent = it.Entity - 1;
+            if (ent < 0 || _entities.Mask[ent] == 0) return;
+            foreach (var p in ExtLayout)
+                if (_entities.TryGet(ent, p.Slot, out var v))
+                    for (int k = 0; k < p.Count; k++) e[o + p.Offset + k] = Comp(v, k);
         }
 
         unsafe void BindInstanceAttributes()
@@ -929,8 +1222,10 @@ void main(){
             var norms = mesh.RenderNormals;
             var uvs = mesh.RenderUv;
             var cols = mesh.RenderColors;
+            var tans = mesh.RenderTangents;
+            var uv1 = mesh.RenderUv1Wide;
             int subs = mesh.RenderSubmeshCount;
-            bool dirty = e.Vao == 0 || !ReferenceEquals(e.VertsRef, verts) || !ReferenceEquals(e.NormRef, norms)
+            bool dirty = e.Vao == 0 || !ReferenceEquals(e.VertsRef, verts) || !ReferenceEquals(e.NormRef, norms) || !ReferenceEquals(e.TanRef, tans) || !ReferenceEquals(e.Uv1Ref, uv1)
                 || !ReferenceEquals(e.UvRef, uvs) || !ReferenceEquals(e.ColRef, cols) || e.SubRefs.Length != subs
                 || !ReferenceEquals(e.SkinRef, mesh.RenderBoneWeights);
             if (!dirty)
@@ -938,16 +1233,21 @@ void main(){
                     if (!ReferenceEquals(e.SubRefs[i], mesh.RenderSubmesh(i))) { dirty = true; break; }
             if (!dirty) return e;
 
-            e.VertsRef = verts; e.NormRef = norms; e.UvRef = uvs; e.ColRef = cols;
+            e.VertsRef = verts; e.NormRef = norms; e.UvRef = uvs; e.ColRef = cols; e.TanRef = tans; e.Uv1Ref = uv1;
             e.SubRefs = new object[subs];
             int n = verts.Length;
             if (n == 0) return null;
-            bool hasN = norms.Length == n, hasUv = uvs.Length == n, hasC = cols.Length == n;
+            bool hasN = norms.Length == n, hasUv = uvs.Length == n, hasC = cols.Length == n, hasT = tans.Length == n;
             e.HasColors = hasC;
-            var data = new float[n * 12];
+            bool hasU1 = uv1 != null && uv1.Length == n;
+            const int VF = 20;
+            var data = new float[n * VF];
             for (int i = 0; i < n; i++)
             {
-                int o = i * 12;
+                int o = i * VF;
+                if (hasT) { data[o + 12] = tans[i].x; data[o + 13] = tans[i].y; data[o + 14] = tans[i].z; data[o + 15] = tans[i].w; }
+                else { data[o + 12] = 1f; data[o + 15] = 1f; }
+                if (hasU1) { data[o + 16] = uv1[i].x; data[o + 17] = uv1[i].y; data[o + 18] = uv1[i].z; data[o + 19] = uv1[i].w; }
                 data[o] = verts[i].x; data[o + 1] = verts[i].y; data[o + 2] = verts[i].z;
                 if (hasN) { data[o + 3] = norms[i].x; data[o + 4] = norms[i].y; data[o + 5] = norms[i].z; }
                 else data[o + 4] = 1f;
@@ -986,11 +1286,13 @@ void main(){
             _gl.BindVertexArray(e.Vao);
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, e.Vbo);
             fixed (float* p = data) _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(data.Length * sizeof(float)), p, BufferUsageARB.StaticDraw);
-            uint stride = 12 * sizeof(float);
+            uint stride = VF * sizeof(float);
             _gl.EnableVertexAttribArray(0); _gl.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, stride, (void*)0);
             _gl.EnableVertexAttribArray(1); _gl.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, stride, (void*)(3 * sizeof(float)));
             _gl.EnableVertexAttribArray(2); _gl.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, stride, (void*)(6 * sizeof(float)));
             _gl.EnableVertexAttribArray(3); _gl.VertexAttribPointer(3, 4, VertexAttribPointerType.Float, false, stride, (void*)(8 * sizeof(float)));
+            _gl.EnableVertexAttribArray(14); _gl.VertexAttribPointer(14, 4, VertexAttribPointerType.Float, false, stride, (void*)(12 * sizeof(float)));
+            _gl.EnableVertexAttribArray(15); _gl.VertexAttribPointer(15, 4, VertexAttribPointerType.Float, false, stride, (void*)(16 * sizeof(float)));
             var bw = mesh.RenderBoneWeights;
             e.HasSkin = bw != null && bw.Length == n;
             e.SkinRef = bw;

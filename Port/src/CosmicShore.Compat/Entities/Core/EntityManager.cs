@@ -25,6 +25,8 @@ namespace Unity.Entities
             _store = store;
         }
 
+        internal EntityStore StoreOrNull => _store;
+
         EntityStore Store => _store ?? throw new InvalidOperationException("EntityManager is default-constructed; take it from World.EntityManager.");
 
         public World World => _world;

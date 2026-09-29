@@ -8,7 +8,8 @@ namespace Unity.Rendering
 {
     /// <summary>
     /// Binds an <see cref="IComponentData"/> to a shader property so its value overrides the
-    /// material per instance (Entities Graphics). Metadata only in the port — no renderer reads it.
+    /// material per instance (Entities Graphics). The draw collection reads it: each such component's
+    /// value reaches the renderer as that property's per-instance value.
     /// </summary>
     [AttributeUsage(AttributeTargets.Struct, AllowMultiple = true)]
     public sealed class MaterialPropertyAttribute : Attribute
@@ -23,7 +24,7 @@ namespace Unity.Rendering
         }
     }
 
-    /// <summary>Tag: the entity is not drawn. (No entity is drawn in the port; the tag is honored as data.)</summary>
+    /// <summary>Tag: the entity is not drawn (the draw collection skips it).</summary>
     public struct DisableRendering : IComponentData { }
 
     /// <summary>Tag the original adds to per-instance-culled entities.</summary>
@@ -169,14 +170,118 @@ namespace Unity.Rendering
     }
 
     /// <summary>
-    /// The Entities Graphics system. The port keeps its registration tables (so
-    /// <c>RegisterMesh</c>/<c>RegisterMaterial</c> hand out stable, reference-counted IDs that
-    /// resolve back to the asset) but DRAWS NOTHING — there is no BatchRendererGroup. It is
-    /// deliberately not created by <see cref="DefaultWorldInitialization"/>, so game code that
-    /// probes for it (PrismRenderService) keeps its MonoBehaviour render path.
+    /// The Entities Graphics system: registration tables (stable, reference-counted
+    /// <c>RegisterMesh</c>/<c>RegisterMaterial</c> IDs that resolve back to the asset) plus the
+    /// draw collection. Every entity that has <see cref="MaterialMeshInfo"/> and a
+    /// <c>LocalToWorld</c>, is not tagged <see cref="DisableRendering"/> or <c>Prefab</c>, and
+    /// resolves to a mesh and material is handed to the renderer through
+    /// <see cref="EntityDraws"/>, carrying every [MaterialProperty] component's value as a
+    /// per-instance override (uploaded verbatim, as the original does).
     /// </summary>
     public class EntitiesGraphicsSystem : SystemBase
     {
+        static readonly List<EntitiesGraphicsSystem> s_live = new();
+
+        protected override void OnCreate()
+        {
+            lock (s_live) s_live.Add(this);
+            EntityDraws.Collect = CollectAll;
+        }
+
+        protected override void OnDestroy()
+        {
+            lock (s_live) s_live.Remove(this);
+        }
+
+        static void CollectAll(EntityDrawList list)
+        {
+            lock (s_live)
+                for (int i = 0; i < s_live.Count; i++) s_live[i].CollectInto(list);
+        }
+
+        sealed class Binding
+        {
+            public int Slot;
+            public Func<object, Vector4> Read;
+        }
+
+        static readonly Dictionary<Type, Binding> s_bindings = new();
+
+        /// <summary>The shader slot + value reader for a component type, or null when it is not a [MaterialProperty] component.</summary>
+        static Binding BindingFor(Type type)
+        {
+            if (s_bindings.TryGetValue(type, out var b)) return b;
+            b = null;
+            var attr = (MaterialPropertyAttribute)Attribute.GetCustomAttribute(type, typeof(MaterialPropertyAttribute));
+            if (attr != null && type.IsValueType)
+            {
+                var fields = type.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+                if (fields.Length == 1)
+                {
+                    var read = BuildReader(type, fields[0]);
+                    if (read != null) b = new Binding { Slot = EntityDrawList.Slot(attr.Name), Read = read };
+                }
+            }
+            s_bindings[type] = b;
+            return b;
+        }
+
+        static Func<object, Vector4> BuildReader(Type owner, System.Reflection.FieldInfo field)
+        {
+            var p = System.Linq.Expressions.Expression.Parameter(typeof(object), "o");
+            var value = System.Linq.Expressions.Expression.Field(System.Linq.Expressions.Expression.Unbox(p, owner), field);
+            var ctor = typeof(Vector4).GetConstructor(new[] { typeof(float), typeof(float), typeof(float), typeof(float) });
+            System.Linq.Expressions.Expression F(System.Linq.Expressions.Expression e, string member)
+                => System.Linq.Expressions.Expression.Convert(System.Linq.Expressions.Expression.Field(e, member), typeof(float));
+            var zero = System.Linq.Expressions.Expression.Constant(0f);
+            System.Linq.Expressions.Expression body;
+            var t = field.FieldType;
+            if (t == typeof(float)) body = System.Linq.Expressions.Expression.New(ctor, value, zero, zero, zero);
+            else if (t == typeof(int) || t == typeof(uint))
+                body = System.Linq.Expressions.Expression.New(ctor, System.Linq.Expressions.Expression.Convert(value, typeof(float)), zero, zero, zero);
+            else if (t == typeof(Unity.Mathematics.float2)) body = System.Linq.Expressions.Expression.New(ctor, F(value, "x"), F(value, "y"), zero, zero);
+            else if (t == typeof(Unity.Mathematics.float3)) body = System.Linq.Expressions.Expression.New(ctor, F(value, "x"), F(value, "y"), F(value, "z"), zero);
+            else if (t == typeof(Unity.Mathematics.float4)) body = System.Linq.Expressions.Expression.New(ctor, F(value, "x"), F(value, "y"), F(value, "z"), F(value, "w"));
+            else return null;
+            return System.Linq.Expressions.Expression.Lambda<Func<object, Vector4>>(body, p).Compile();
+        }
+
+        void CollectInto(EntityDrawList list)
+        {
+            if (World == null || !World.IsCreated) return;
+            var store = World.EntityManager.StoreOrNull;
+            if (store == null) return;
+            for (int i = 1; i < store.SlotCount; i++)
+            {
+                var rec = store.SlotAt(i);
+                if (rec == null || !rec.Alive) continue;
+                var comps = rec.Components;
+                if (!comps.TryGetValue(typeof(MaterialMeshInfo), out var mmiBox)) continue;
+                if (rec.DisabledComponents != null && rec.DisabledComponents.Contains(typeof(MaterialMeshInfo))) continue;
+                if (comps.ContainsKey(typeof(DisableRendering)) || comps.ContainsKey(typeof(Prefab))) continue;
+                if (!comps.TryGetValue(typeof(Unity.Transforms.LocalToWorld), out var ltwBox)) continue;
+
+                var mmi = (MaterialMeshInfo)mmiBox;
+                Mesh mesh; Material material;
+                RenderMeshArray rma = default;
+                bool hasArray = comps.TryGetValue(typeof(RenderMeshArray), out var rmaBox);
+                if (hasArray) rma = (RenderMeshArray)rmaBox;
+                mesh = mmi.IsRuntimeMesh ? GetMesh(mmi.MeshID) : hasArray ? rma.GetMesh(mmi) : null;
+                material = mmi.IsRuntimeMaterial ? GetMaterial(mmi.MaterialID) : hasArray ? rma.GetMaterial(mmi) : null;
+                if (mesh == null || material == null) continue;
+
+                int layer = comps.TryGetValue(typeof(RenderFilterSettings), out var fs) ? ((RenderFilterSettings)fs).Layer : 0;
+                Matrix4x4 m = ((Unity.Transforms.LocalToWorld)ltwBox).Value;
+                int index = list.Add(mesh, material, mmi.SubMesh, in m, layer);
+                foreach (var kv in comps)
+                {
+                    var b = BindingFor(kv.Key);
+                    if (b != null && (rec.DisabledComponents == null || !rec.DisabledComponents.Contains(kv.Key)))
+                        list.Set(index, b.Slot, b.Read(kv.Value));
+                }
+            }
+        }
+
         readonly Dictionary<Mesh, uint> _meshIds = new();
         readonly Dictionary<uint, (Mesh mesh, int refs)> _meshes = new();
         readonly Dictionary<Material, uint> _materialIds = new();

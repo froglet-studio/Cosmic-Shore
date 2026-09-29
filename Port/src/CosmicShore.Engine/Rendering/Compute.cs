@@ -45,8 +45,23 @@ namespace CosmicShore.Engine
     public sealed class ComputeShader : Object
     {
         static bool s_Warned;
-        public int FindKernel(string name) => 0;
-        public bool HasKernel(string name) => false;
+        readonly string[] _kernels;
+
+        /// <summary>A project compute asset: its kernels are not parsed, so every lookup answers kernel 0.</summary>
+        public ComputeShader() { _kernels = null; }
+
+        /// <summary>Port: a compute program known by its kernel names (a package resource the port stands in for).</summary>
+        public ComputeShader(string name, params string[] kernels) { this.name = name; _kernels = kernels ?? Array.Empty<string>(); }
+
+        /// <summary>Index of a kernel; throws for an unknown one (original contract).</summary>
+        public int FindKernel(string name)
+        {
+            if (_kernels == null) return 0;
+            int i = Array.IndexOf(_kernels, name);
+            if (i < 0) throw new ArgumentException($"Kernel '{name}' not found.");
+            return i;
+        }
+        public bool HasKernel(string name) => _kernels == null || Array.IndexOf(_kernels, name) >= 0;
         public void SetBuffer(int kernelIndex, string name, ComputeBuffer buffer) { }
         public void SetBuffer(int kernelIndex, int nameID, ComputeBuffer buffer) { }
         public void SetTexture(int kernelIndex, string name, Texture texture) { }

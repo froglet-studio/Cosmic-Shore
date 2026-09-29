@@ -13,6 +13,7 @@ namespace CosmicShore.Engine
         public Vector3[] RenderVertices => _vertices;
         public Vector3[] RenderNormals => _normals;
         public Vector2[] RenderUv => _uv;
+        public Vector4[] RenderTangents => _tangents;
         public Color[] RenderColors => _colors;
         public BoneWeight[] RenderBoneWeights => _boneWeights;
         public Matrix4x4[] RenderBindposes => _bindposes;

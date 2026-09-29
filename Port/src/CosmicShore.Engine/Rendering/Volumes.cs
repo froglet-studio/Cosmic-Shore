@@ -264,16 +264,27 @@ namespace CosmicShore.Engine.Rendering
     /// <summary>URP pipeline settings the game reads/writes at runtime (render scale, MSAA, upscaling…).</summary>
     public class UniversalRenderPipelineAsset : RenderPipelineAsset
     {
-        public float renderScale { get; set; } = 1f;
-        public int msaaSampleCount { get; set; } = 1;
-        public UpscalingFilterSelection upscalingFilter { get; set; } = UpscalingFilterSelection.Auto;
-        public bool supportsHDR { get; set; } = true;
-        public float shadowDistance { get; set; } = 50f;
-        public bool supportsCameraDepthTexture { get; set; }
-        public bool supportsCameraOpaqueTexture { get; set; }
-        public bool fsrOverrideSharpness { get; set; }
-        public float fsrSharpness { get; set; } = 0.92f;
-        public bool useSRPBatcher { get; set; } = true;
+        [SerializeField] float m_RenderScale = 1f;
+        [SerializeField] int m_MSAA = 1;
+        [SerializeField] UpscalingFilterSelection m_UpscalingFilter = UpscalingFilterSelection.Auto;
+        [SerializeField] bool m_SupportsHDR = true;
+        [SerializeField] float m_ShadowDistance = 50f;
+        [SerializeField] bool m_RequireDepthTexture;
+        [SerializeField] bool m_RequireOpaqueTexture;
+        [SerializeField] bool m_FsrOverrideSharpness;
+        [SerializeField] float m_FsrSharpness = 0.92f;
+        [SerializeField] bool m_UseSRPBatcher = true;
+
+        public float renderScale { get => m_RenderScale; set => m_RenderScale = value; }
+        public int msaaSampleCount { get => m_MSAA; set => m_MSAA = value; }
+        public UpscalingFilterSelection upscalingFilter { get => m_UpscalingFilter; set => m_UpscalingFilter = value; }
+        public bool supportsHDR { get => m_SupportsHDR; set => m_SupportsHDR = value; }
+        public float shadowDistance { get => m_ShadowDistance; set => m_ShadowDistance = value; }
+        public bool supportsCameraDepthTexture { get => m_RequireDepthTexture; set => m_RequireDepthTexture = value; }
+        public bool supportsCameraOpaqueTexture { get => m_RequireOpaqueTexture; set => m_RequireOpaqueTexture = value; }
+        public bool fsrOverrideSharpness { get => m_FsrOverrideSharpness; set => m_FsrOverrideSharpness = value; }
+        public float fsrSharpness { get => m_FsrSharpness; set => m_FsrSharpness = value; }
+        public bool useSRPBatcher { get => m_UseSRPBatcher; set => m_UseSRPBatcher = value; }
     }
 
     /// <summary>URP per-camera data (UniversalAdditionalCameraData).</summary>

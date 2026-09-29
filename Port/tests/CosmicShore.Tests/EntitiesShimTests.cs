@@ -231,7 +231,7 @@ public class EntitiesShimTests : IDisposable
     }
 
     [Fact]
-    public void DefaultWorld_HasNoEntitiesGraphicsSystem_ButOneCanBeCreated()
+    public void DefaultWorld_HasTheEntitiesGraphicsSystem_WithStableRegistrations()
     {
         var previous = World.DefaultGameObjectInjectionWorld;
         var previousFlag = DefaultWorldInitialization.UseCustomBootstrap;
@@ -243,11 +243,10 @@ public class EntitiesShimTests : IDisposable
             {
                 Assert.Same(world, World.DefaultGameObjectInjectionWorld);
                 Assert.True(world.IsCreated);
-                Assert.Null(world.GetExistingSystemManaged<EntitiesGraphicsSystem>());
+                var graphics = world.GetExistingSystemManaged<EntitiesGraphicsSystem>();
+                Assert.NotNull(graphics); // the original's default bootstrap creates it
                 Assert.NotNull(world.GetExistingSystemManaged<SimulationSystemGroup>());
-
-                var graphics = world.GetOrCreateSystemManaged<EntitiesGraphicsSystem>();
-                Assert.Same(graphics, world.GetExistingSystemManaged<EntitiesGraphicsSystem>());
+                Assert.Same(graphics, world.GetOrCreateSystemManaged<EntitiesGraphicsSystem>());
 
                 var mesh = new Mesh();
                 var material = new Material(Shader.Find("Hidden/EntitiesShimTest"));
@@ -271,6 +270,64 @@ public class EntitiesShimTests : IDisposable
                 world.Dispose();
             }
             Assert.Null(World.DefaultGameObjectInjectionWorld);
+        }
+        finally
+        {
+            DefaultWorldInitialization.UseCustomBootstrap = previousFlag;
+            World.DefaultGameObjectInjectionWorld = previous;
+        }
+    }
+
+    [MaterialProperty("_ShimTestTint")]
+    struct ShimTintOverride : IComponentData { public Unity.Mathematics.float4 Value; }
+
+    [Fact]
+    public void DrawCollection_HandsVisibleEntitiesAndTheirOverridesToTheRenderer()
+    {
+        var previous = World.DefaultGameObjectInjectionWorld;
+        var previousFlag = DefaultWorldInitialization.UseCustomBootstrap;
+        DefaultWorldInitialization.UseCustomBootstrap = false;
+        try
+        {
+            var world = DefaultWorldInitialization.Initialize("Default World");
+            try
+            {
+                var graphics = world.GetExistingSystemManaged<EntitiesGraphicsSystem>();
+                var mesh = new Mesh();
+                var material = new Material(Shader.Find("Hidden/EntitiesShimTest"));
+                var info = new MaterialMeshInfo(graphics.RegisterMaterial(material), graphics.RegisterMesh(mesh));
+                var em = world.EntityManager;
+
+                Entity Make(bool hidden)
+                {
+                    var e = em.CreateEntity();
+                    em.AddComponentData(e, info);
+                    em.AddComponentData(e, new Unity.Transforms.LocalToWorld { Value = Matrix4x4.TRS(new Vector3(1, 2, 3), Quaternion.identity, Vector3.one) });
+                    em.AddComponentData(e, new ShimTintOverride { Value = new Unity.Mathematics.float4(0.5f, 0.25f, 1f, 1f) });
+                    if (hidden) em.AddComponentData(e, new DisableRendering());
+                    return e;
+                }
+                Make(hidden: false);
+                Make(hidden: true);
+                var prefab = Make(hidden: false);
+                em.AddComponentData(prefab, new Prefab());
+
+                var list = new EntityDrawList();
+                EntityDraws.Collect(list);
+                Assert.Equal(1, list.Count);
+                Assert.Same(mesh, list.Meshes[0]);
+                Assert.Same(material, list.Materials[0]);
+                Assert.Equal(3f, list.Matrices[0].m23);
+                Assert.True(list.TryGet(0, EntityDrawList.Slot("_ShimTestTint"), out var tint));
+                Assert.Equal(new Vector4(0.5f, 0.25f, 1f, 1f), tint);
+            }
+            finally
+            {
+                world.Dispose();
+            }
+            var empty = new EntityDrawList();
+            EntityDraws.Collect(empty);
+            Assert.Equal(0, empty.Count); // a disposed world's system stops drawing
         }
         finally
         {

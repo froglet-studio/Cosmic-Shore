@@ -55,6 +55,7 @@ namespace CosmicShore.Content.Scenes
             ["172515602e62fb746b5d573b38a5fe58"] = "Volume",
             ["d7fd9488000d3734a9e00ee676215985"] = "VolumeProfile",
             ["a79441f348de89743a2939f4d699eac1"] = "UniversalAdditionalCameraData",
+            ["bf2edee5c58d82540a51f03df9d42094"] = "UniversalRenderPipelineAsset",
             ["0b2db86121404754db890f4c8dfe81b2"] = "Bloom",
             ["97c23e3b12dc18c42a140437e53d3951"] = "Tonemapping",
             ["fb60a22f311433c4c962b888d1393f88"] = "PaniniProjection",

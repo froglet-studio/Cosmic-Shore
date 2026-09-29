@@ -140,11 +140,9 @@ namespace Unity.Entities
     }
 
     /// <summary>
-    /// Creates the default world. Unlike the original, the port creates it with NO systems
-    /// beyond the three root groups: there is no Entities Graphics renderer, so no
-    /// <c>EntitiesGraphicsSystem</c> is created and entity rendering paths (PrismRenderService)
-    /// stay on their MonoBehaviour fallback. A system can still be added explicitly with
-    /// <see cref="World.GetOrCreateSystemManaged{T}"/>.
+    /// Creates the default world: the three root groups plus the package systems the original
+    /// bootstrap adds that the port models — <c>EntitiesGraphicsSystem</c>, which hands visible
+    /// entities to the renderer. A custom bootstrap (ICustomBootstrap) may replace all of it.
     /// </summary>
     public static class DefaultWorldInitialization
     {
@@ -169,11 +167,15 @@ namespace Unity.Entities
             world.GetOrCreateSystemManaged<InitializationSystemGroup>();
             world.GetOrCreateSystemManaged<SimulationSystemGroup>();
             world.GetOrCreateSystemManaged<PresentationSystemGroup>();
+            foreach (var t in GetAllSystems(WorldSystemFilterFlags.Default)) world.GetOrCreateSystemManaged(t);
             return world;
         }
 
-        /// <summary>The system types the original would auto-create. The port auto-creates none, so this is empty.</summary>
-        public static IReadOnlyList<Type> GetAllSystems(WorldSystemFilterFlags filterFlags, bool requireExecuteAlways = false) => Array.Empty<Type>();
+        /// <summary>The package system types the original auto-creates that the port models.</summary>
+        public static IReadOnlyList<Type> GetAllSystems(WorldSystemFilterFlags filterFlags, bool requireExecuteAlways = false)
+            => EditorOnly(filterFlags) ? Array.Empty<Type>() : new[] { typeof(Unity.Rendering.EntitiesGraphicsSystem) };
+
+        static bool EditorOnly(WorldSystemFilterFlags f) => f == WorldSystemFilterFlags.Editor;
 
         public static void AddSystemsToRootLevelSystemGroups(World world, IEnumerable<Type> systemTypes)
         {

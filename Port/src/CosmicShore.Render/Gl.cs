@@ -34,6 +34,10 @@ namespace CosmicShore.Render
 
         uint Compile(ShaderType type, string src, string name)
         {
+            // The source is handed over with its CHARACTER count; a multi-byte UTF-8 character
+            // makes the driver read that many bytes and cut the tail off ("unexpected end of file").
+            for (int i = 0; i < src.Length; i++)
+                if (src[i] > 127) throw new InvalidOperationException($"{name}: shader source must be ASCII (U+{(int)src[i]:X4} at char {i}).");
             uint s = _gl.CreateShader(type);
             _gl.ShaderSource(s, src);
             _gl.CompileShader(s);

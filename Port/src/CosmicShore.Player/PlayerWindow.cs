@@ -95,6 +95,10 @@ namespace CosmicShore.Player
 
             _inputBridge = new SilkInputBridge(_window);
             _script.EnsureDevices();
+            // This device draws Entities Graphics entities (SceneRenderer's entity pass), so the
+            // game's Entities Graphics support probe passes as it does on a desktop GPU. A
+            // headless run never gets here and stays on the MeshRenderer path, like -nographics.
+            SystemInfo.supportsComputeShaders = true;
             _boot = new PlayerBoot();
             _boot.Start(_scene);
             _tmp.Fonts = _boot.Runtime.Fonts;
