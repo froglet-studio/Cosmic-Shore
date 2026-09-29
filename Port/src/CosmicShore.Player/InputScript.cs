@@ -24,7 +24,6 @@ namespace CosmicShore.Player
     {
         readonly SortedDictionary<int, List<string>> _steps = new();
         readonly List<(int frame, Action release)> _releases = new();
-        readonly List<(int until, Action act)> _repeats = new();
         Keyboard _kb;
         Mouse _mouse;
         Gamepad _pad;
@@ -52,16 +51,20 @@ namespace CosmicShore.Player
         /// <summary>Runs the steps due this frame (call before the engine tick).</summary>
         public void BeforeTick(int frame)
         {
-            for (int i = _repeats.Count - 1; i >= 0; i--)
-            {
-                if (_repeats[i].until < frame) { _repeats.RemoveAt(i); continue; }
-                _repeats[i].act();
-            }
             for (int i = _releases.Count - 1; i >= 0; i--)
                 if (_releases[i].frame <= frame) { _releases[i].release(); _releases.RemoveAt(i); }
 
-            if (!_steps.TryGetValue(frame, out var steps)) return;
-            foreach (var step in steps)
+            // Every step due at or before this frame: the window's update and render callbacks are
+            // not 1:1, so a frame index can pass without an update ever seeing it.
+            if (_steps.Count == 0 || _steps.Keys.First() > frame) return;
+            var due = new List<string>();
+            while (_steps.Count > 0 && _steps.Keys.First() <= frame)
+            {
+                int key = _steps.Keys.First();
+                due.AddRange(_steps[key]);
+                _steps.Remove(key);
+            }
+            foreach (var step in due)
             {
                 Console.WriteLine($"[input] frame {frame}: {step}");
                 int sp = step.IndexOf(' ');
@@ -112,9 +115,20 @@ namespace CosmicShore.Player
                         float radius = float.Parse(a[0], CultureInfo.InvariantCulture);
                         int frames = a.Length > 1 ? int.Parse(a[1], CultureInfo.InvariantCulture) : 60;
                         var light = Inspector.LitSphere(radius);
-                        if (light != null) _repeats.Add((frame + frames, light));
+                        if (light != null) ScriptTicker.Run("lit", light, frames);
                         break;
                     }
+                    case "cradle":
+                    {
+                        var a = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        float radius = float.Parse(a[0], CultureInfo.InvariantCulture);
+                        int frames = a.Length > 1 ? int.Parse(a[1], CultureInfo.InvariantCulture) : 60;
+                        var hull = Inspector.CradleHull(radius);
+                        if (hull != null) ScriptTicker.Run("cradle", hull, frames);
+                        break;
+                    }
+                    case "vessels": Inspector.Vessels(); break;
+                    case "slice": Inspector.Slice(int.Parse(arg.Trim(), CultureInfo.InvariantCulture)); break;
                     case "blast":
                         Inspector.Blast(int.Parse(arg.Trim(), CultureInfo.InvariantCulture));
                         break;

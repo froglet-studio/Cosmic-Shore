@@ -62,6 +62,62 @@ uniform int uSkinned;            // 1: linear-blend skinning, uBones[i] = bone.l
 uniform mat4 uBones[128];
 uniform vec3 uSkinOrigin;
 uniform float uClock;
+uniform vec4 uCradleCentre[4];   // _PrismCradleCentre: xyz hull centre, w hull radius
+uniform vec4 uCradleWeight[4];   // _PrismCradleWeight: x strength
+uniform vec4 uCradleParams;      // _PrismCradleParams: (drape reach, exponent, live slots, -)
+uniform vec4 uSliceP0, uSliceP1, uSliceP2, uSliceP3; // PrismSlice material constants (see SetSliceUniforms)
+uniform int uFamily;
+// PrismCradle.hlsl, translated: the last vertex node of both prism graphs. Every vertex inside
+// the drape reach of a riding hull slides along its own radius toward that hull's surface, with
+// the analytic normal of that radial map. Applied in world space (equivalent, since it is last).
+void cradleFalloff(float s, float reach, float e, out float k, out float dk){
+  if (s <= 0.0) { k = 1.0; dk = 0.0; return; }
+  if (s >= reach) { k = 0.0; dk = 0.0; return; }
+  float t = s / reach;
+  float S = t * t * (3.0 - 2.0 * t);
+  float dS = 6.0 * t * (1.0 - t);
+  float u = 1.0 - S;
+  k = pow(u, e);
+  dk = -e * pow(u, e - 1.0) * dS / reach;
+}
+void cradle(inout vec3 pW, inout vec3 nrm){
+  int count = int(uCradleParams.z);
+  float reach = uCradleParams.x;
+  if (count <= 0 || !(reach > 0.0)) return;
+  float expo = max(uCradleParams.y, 1.0);
+  float nl = dot(nrm, nrm);
+  if (!(nl > 1e-12) || !(nl < 1e12)) return;
+  vec3 nW = nrm * inversesqrt(nl);
+  float bestA = 0.0, bestK = 0.0, bestDk = 0.0, bestW = 0.0, bestD = 0.0, bestS = 0.0;
+  vec3 bestDir = nW, bestU = vec3(0.0);
+  for (int i = 0; i < 4; i++) {
+    if (i >= count) break;
+    vec4 slot = uCradleCentre[i];
+    float w = clamp(uCradleWeight[i].x, 0.0, 1.0);
+    if (!(w > 0.0) || !(slot.w > 0.0)) continue;
+    vec3 rad = pW - slot.xyz;
+    float d = length(rad);
+    if (!(d > 1e-4)) continue;
+    float s = d - slot.w;
+    if (s >= reach) continue;
+    float k, dk;
+    cradleFalloff(s, reach, expo, k, dk);
+    float a = k * w;
+    if (a <= bestA) continue;
+    bestA = a; bestK = k; bestDk = dk; bestW = w; bestD = d; bestS = s; bestDir = rad / d; bestU = slot.xyz;
+  }
+  if (!(bestA > 0.0)) return;
+  float f = bestD - bestS * bestK * bestW;
+  vec3 pNew = bestU + bestDir * f;
+  float ra = max(1.0 - bestW * (bestK + bestS * bestDk), 1e-3);
+  float rb = max(f / bestD, 1e-3);
+  float nr = dot(nW, bestDir);
+  vec3 nNew = bestDir * (nr / ra) + (nW - bestDir * nr) / rb;
+  if (!(dot(nNew, nNew) > 1e-12)) nNew = bestDir * (nr >= 0.0 ? 1.0 : -1.0);
+  if (!(dot(pNew, pNew) < 1e12)) return;
+  pW = pNew;
+  nrm = normalize(nNew);
+}
 out vec3 vWorld;
 out vec3 vNormal;
 out vec2 vUv;
@@ -73,7 +129,11 @@ flat out vec4 vBright;
 flat out vec3 vOrigin;
 flat out float vOpacity;
 flat out vec3 vVelocity;
-flat out vec2 vLit;              // (_PrismSuperShielded, _PrismLitDomain) for the destruction sight
+flat out vec2 vLit;
+out vec3 vCutN;                  // slice: the cut face's normal, carried with the half
+out vec4 vCut;                   // slice: (rest depth, far flag, depth fraction, -)
+out vec3 vNoise;                 // slice: dissolve noise position
+flat out vec2 vPhase;            // slice: (dissolve progress, heat)              // (_PrismSuperShielded, _PrismLitDomain) for the destruction sight
 // -- The prism graphs' vertex chain (BlockGraph / ExplodingBlockGraph), translated from the
 // project's own PrismClockAnimation.hlsl, PrismSway.hlsl and the Prism Sub Graph / Distance
 // Spread And Colors / Spread Sub Graph / Tangent Slider / Rotate Faces Along Axis subgraphs.
@@ -92,8 +152,56 @@ void growScale(inout vec3 p){
     p *= max(vec3(1.0) - (vec3(1.0) - iGrowFrac.xyz) * exp(-iGrow.y * t), vec3(0.0));
   }
 }
+// PrismSlice.shader/.hlsl, translated: one half of a prism the Rhino's blade cut. Its far skin
+// is centrally projected onto the cut plane, then the half hinges open about the cut, separates
+// along the cut normal and drifts, all off one clock stamp.
+vec3 sliceRotate(vec3 v, vec3 a, float ang){ float sn = sin(ang), cs = cos(ang); return v * cs + cross(a, v) * sn + a * (dot(a, v) * (1.0 - cs)); }
+void sliceVertex(mat4 M){
+  vec4 timing = X(0), plane = X(1), centre = X(2), pivot = X(3), axis = X(4), drift = X(5);
+  float age = max(uClock - timing.x, 0.0);
+  vec3 pos = aPos;
+  float dp = dot(plane.xyz, aPos) - plane.w;
+  float restDepth = -dp, farFlag = 0.0;
+  if (dp > 0.0) {
+    float dc = dot(plane.xyz, centre.xyz) - plane.w;
+    float denom = dp - dc;
+    float lambda = denom > 1e-6 ? clamp(-dc / denom, 0.0, 1.0) : 1.0;
+    pos = centre.xyz + (aPos - centre.xyz) * lambda;
+    farFlag = 1.0;
+  }
+  vec3 restWS = (M * vec4(pos, 1.0)).xyz;
+  mat3 NM = transpose(inverse(mat3(M)));
+  vec3 skinWS = normalize(NM * aNormal);
+  vec3 cutWS = dot(plane.xyz, plane.xyz) > 1e-12 ? normalize(NM * plane.xyz) : skinWS;
+  float u = age;
+  float separate = 1.0 - exp(-u / max(uSliceP0.x, 1e-4));
+  float open = 1.0 - exp(-u / max(uSliceP0.y, 1e-4));
+  float td = max(uSliceP0.z, 1e-4);
+  float driftAmt = td * (1.0 - exp(-u / td));
+  float ang = axis.w * open;
+  vec3 posWS = pivot.xyz + sliceRotate(restWS - pivot.xyz, axis.xyz, ang) - cutWS * (pivot.w * separate) + drift.xyz * driftAmt;
+  gl_Position = uViewProj * vec4(posWS, 1.0);
+  vWorld = posWS;
+  vNormal = sliceRotate(skinWS, axis.xyz, ang);
+  vCutN = sliceRotate(cutWS, axis.xyz, ang);
+  float cutDepth = farFlag > 0.5 ? 0.0 : max(restDepth, 0.0);
+  vCut = vec4(restDepth, farFlag, cutDepth / max(centre.w, 1e-4), 0.0);
+  vNoise = (mat3(M) * pos) / max(uSliceP2.w, 1e-3) + vec3(17.13, 31.71, 7.37) * timing.z;
+  float progress = 0.0;
+  if (timing.y > 0.0) {
+    float a = clamp(uSliceP1.x, 0.0, 1.0) * timing.y;
+    float b = (1.0 - clamp(uSliceP1.y, 0.0, 1.0)) * timing.y;
+    progress = clamp((age - a) / max(b - a, 1e-4), 0.0, 1.0) * 1.02;
+  }
+  float heat = 1.0 - smoothstep(0.0, max(uSliceP2.y, 1e-3), age);
+  vPhase = vec2(progress, heat);
+  vDark = iDark; vBright = iBright;
+  vUv = aUv; vColor = aColor; vObj = pos; vObjNormal = aNormal; vOrigin = iM3.xyz;
+  vOpacity = 1.0; vVelocity = vec3(0.0); vLit = vec2(0.0);
+}
 void main(){
   mat4 M = mat4(iM0, iM1, iM2, iM3);
+  if (uFamily == 8) { sliceVertex(M); return; }
   vec3 p = aPos;
   vec3 nO = aNormal;
   vec4 dark = iDark, bright = iBright;
@@ -217,6 +325,7 @@ void main(){
   } else {
     w = M * vec4(p, 1.0);
     nrm = transpose(inverse(mat3(M))) * nO;
+    if (uPrismGraph != 0) { vec3 cw = w.xyz; cradle(cw, nrm); w.xyz = cw; }
   }
   vWorld = w.xyz;
   vNormal = nrm;
@@ -246,6 +355,12 @@ flat in vec3 vOrigin;
 flat in float vOpacity;
 flat in vec3 vVelocity;
 flat in vec2 vLit;
+in vec3 vCutN;
+in vec4 vCut;
+in vec3 vNoise;
+flat in vec2 vPhase;
+uniform vec4 uSliceP0, uSliceP1, uSliceP2, uSliceP3;
+uniform vec4 uSliceHot;       // _CutHotColor
 uniform int uPrismGraph;
 uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal
 uniform vec4 uParam;          // family-specific
@@ -281,6 +396,8 @@ uniform float uSightStrength;
 uniform vec4 uSightBlocker;    // _PrismSightBlockerColor (w > 0 = published)
 uniform vec4 uLitApex[8], uLitAxis[8], uLitGape[8], uLitTint[8], uLitShape[8]; // _PrismLitPeer* bank
 uniform int uLitCount;
+uniform int uVesselVision;     // 1: VesselGraph batch (vBright carries _VesselVisionTint)
+uniform vec4 uVisionBand, uVisionShape, uVisionRim, uVisionBreakup; // _VesselVision* globals
 out vec4 frag;
 float cHash1(float n){ return fract(sin(n) * 43758.5453123); }
 float cNoise(float x){ float i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f); return mix(cHash1(i), cHash1(i + 1.0), f); }
@@ -371,6 +488,39 @@ float erosionSurvival(vec2 UV, vec3 vel, float op){
   w01 = clamp(w01 + (jag - 0.5) * 0.12, 0.0, 1.0);
   float thr = (0.15 + smoothstep(-0.02, 1.02, w01) * 0.85) * 0.998 + 0.001;
   return op >= thr ? 1.0 : 0.0;
+}
+// VesselVisionShading.hlsl, translated: a vessel is re-shaded into a flat cel-banded silhouette
+// in its domain colour as a function of its distance from this camera (both edges graded), its
+// interior broken up by object-space angular cells that close with distance, the rim exempt.
+float vvSmooth(float a, float b, float x){ float t = clamp((x - a) / max(b - a, 1e-5), 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
+float vvHash1(vec3 p3){ p3 = fract(p3 * 0.1031); p3 += dot(p3, p3.zyx + 31.32); return fract((p3.x + p3.y) * p3.z); }
+vec3 vesselVision(vec3 base, vec3 P, vec3 Nraw, vec4 tint, vec3 origin, vec3 offsetOS){
+  if (tint.a <= 0.0) return base;
+  float strength = clamp(uVisionShape.x, 0.0, 1.0);
+  if (strength <= 0.0 || uVisionBand.w <= 0.0) return base;
+  float dist = distance(uCamPos, origin);
+  float band = clamp(min(vvSmooth(uVisionBand.x, uVisionBand.y, dist), 1.0 - vvSmooth(uVisionBand.z, uVisionBand.w, dist)), 0.0, 1.0);
+  float amount = band * strength;
+  if (amount <= 0.0) return base;
+  vec3 V = normalize(uCamPos - P);
+  vec3 N = normalize(Nraw);
+  float steps = max(uVisionShape.y, 1.0);
+  float ndv = clamp(dot(N, V), 0.0, 1.0);
+  float tone = mix(clamp(uVisionShape.z, 0.0, 1.0), 1.0, min(floor(ndv * steps), steps - 1.0) / max(steps - 1.0, 1.0));
+  float rim = clamp(vvSmooth(uVisionRim.x, uVisionRim.y, 1.0 - ndv), 0.0, 1.0);
+  vec3 cel = tint.rgb * (tone + rim * max(uVisionRim.z, 0.0)) * max(uVisionShape.w, 0.0);
+  float breakup = 1.0;
+  float cells = uVisionBreakup.x, reach = uVisionBreakup.y, bs = clamp(uVisionBreakup.z, 0.0, 1.0), endD = uVisionBreakup.w;
+  if (bs > 0.0 && reach > 0.0 && cells > 0.0 && dot(offsetOS, offsetOS) >= 1e-8) {
+    float amt = bs * (1.0 - vvSmooth(endD * 0.4, max(endD, 1e-3), dist));
+    if (amt > 0.0) {
+      float coverage = vvSmooth(0.0, max(reach, 1e-3), 1.0 - ndv);
+      vec3 cell = floor(normalize(offsetOS) * cells);
+      float thr = vvHash1(cell + 0.5) * 0.92;
+      breakup = mix(1.0, vvSmooth(thr - 0.03, thr + 0.03, coverage), amt);
+    }
+  }
+  return mix(base, cel, amount * max(breakup, rim));
 }
 // PrismDestructionSight.hlsl, translated: the LIT fundamental. The viewer's own aim lights
 // whole prisms (sampled at the prism's origin) in a pale cool cast, or flags a super-shield in
@@ -499,6 +649,38 @@ vec2 occlusionFade(vec3 P, float baseAlpha, float noseClearance){
   if (alpha >= 1.0) return vec2(alpha, 0.0);
   return vec2(alpha, occShatter(gl_FragCoord.xy, uTime));
 }
+float sliceHash(vec3 p){ p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419)); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float sliceNoise(vec3 x){
+  vec3 i = floor(x), f = x - i, w = f * f * (3.0 - 2.0 * f);
+  float n000 = sliceHash(i), n100 = sliceHash(i + vec3(1,0,0)), n010 = sliceHash(i + vec3(0,1,0)), n110 = sliceHash(i + vec3(1,1,0));
+  float n001 = sliceHash(i + vec3(0,0,1)), n101 = sliceHash(i + vec3(1,0,1)), n011 = sliceHash(i + vec3(0,1,1)), n111 = sliceHash(i + vec3(1,1,1));
+  return mix(mix(mix(n000, n100, w.x), mix(n010, n110, w.x), w.y), mix(mix(n001, n101, w.x), mix(n011, n111, w.x), w.y), w.z);
+}
+vec4 sliceColor(){
+  float progress = vPhase.x, heat = vPhase.y;
+  float value = 1.0;
+  if (progress > 0.0) value = mix(clamp(vCut.z, 0.0, 1.0), clamp(sliceNoise(vNoise), 0.0, 1.0), clamp(uSliceP3.x, 0.0, 1.0));
+  if ((vCut.x < 0.0 && vCut.y < 0.999) || (progress > 0.0 && value < progress)) discard;
+  vec2 occ = occlusionFade(vWorld, 1.0, 0.0);
+  if (occ.x < occ.y) discard;
+  vec3 bright = vBright.rgb;
+  vec3 V = normalize(uCamPos - vWorld);
+  vec3 flesh = mix(bright * uSliceP1.w, uSliceHot.rgb, heat);
+  float fleshShade = mix(1.0, abs(dot(normalize(vCutN), V)), uSliceP2.x);
+  vec3 color;
+  if (!gl_FrontFacing || vCut.y >= 0.999) color = flesh * fleshShade;
+  else {
+    float fres = pow(1.0 - clamp(dot(normalize(vNormal), V), 0.0, 1.0), uSliceP1.z);
+    color = mix(vDark.rgb, bright, fres);
+    float seam = exp(-max(vCut.x, 0.0) / max(uSliceP2.z, 1e-3)) * heat;
+    color = mix(color, uSliceHot.rgb, clamp(seam, 0.0, 1.0));
+  }
+  if (progress > 0.0) {
+    float ember = 1.0 - clamp((value - progress) / max(uSliceP3.y, 1e-4), 0.0, 1.0);
+    color = mix(color, mix(bright * uSliceP3.z, uSliceHot.rgb, uSliceP3.w), ember);
+  }
+  return vec4(color, 1.0);
+}
 void main(){
   if (uPrismGraph != 0) {
     // BlockGraph: corridor(material alpha). ExplodingBlockGraph: the erosion wipe feeds the
@@ -514,7 +696,9 @@ void main(){
   vec3 V = normalize(uCamPos - vWorld);
   vec4 tex = texture(uTex, vUv * uTexST.xy + uTexST.zw);
   vec4 col;
-  if (uFamily == 7) {
+  if (uFamily == 8) {
+    col = sliceColor();
+  } else if (uFamily == 7) {
     vec3 nOS = gl_FrontFacing ? vObjNormal : -vObjNormal;
     col = crackle(vObj, nOS, uCamPosOS - vObj);
   } else if (uFamily == 2) {
@@ -558,6 +742,7 @@ void main(){
     col = vDark * tex;
     col.rgb += uEmission;
   }
+  if (uVesselVision == 1) col.rgb = vesselVision(col.rgb, vWorld, vNormal, vBright, vOrigin, vObj);
   if (uVertexColor == 1) col *= vColor;
   if (col.a < uCutoff) discard;
   if (uFog.x > 0.5) {
@@ -603,9 +788,13 @@ void main(){
             public Vector4 Param;        // family-specific parameters
             public Color ColorC;         // family-specific extra colour
             public float VesselMultiplier;
+            public bool VesselVision;       // VesselGraph: the vision band re-shades it (tint rides the bright slot)
             public int PrismGraph;          // 0 none, 1 BlockGraph, 2 ExplodingBlockGraph
             public float ExplosiveRotation, ExplosiveSpread;
             public float[] Ext;             // the material's value for every extended clock property
+            public ExtProp[] Layout;        // which properties the block carries (prism clock, or the slice stamps)
+            public Vector4 SliceP0, SliceP1, SliceP2, SliceP3; // PrismSlice material constants
+            public Color SliceHot;
         }
 
         // The clock / animation properties the prism graphs read beyond the vertex attributes,
@@ -635,6 +824,12 @@ void main(){
             new("_SwaySpanY", 48, 3), new("_FacePivotFromCentroid", 51, 1),
             new("_SwayAxis", 52, 3), new("_PrismSuperShielded", 55, 1),
             new("_SwayTiming", 56, 3), new("_PrismLitDomain", 59, 1),
+        };
+        // CosmicShore/PrismSlice's per-instance stamps, in the same 15-vec4 block.
+        static readonly ExtProp[] SliceLayout =
+        {
+            new("_SliceTiming", 0, 4), new("_SlicePlane", 4, 4), new("_SliceCentre", 8, 4),
+            new("_SlicePivot", 12, 4), new("_SliceAxis", 16, 4), new("_SliceDrift", 20, 3),
         };
         static readonly int SlotDark = EntityDrawList.Slot("_DarkColor"), SlotBright = EntityDrawList.Slot("_BrightColor");
         static readonly int SlotGrowStart = EntityDrawList.Slot("_GrowStartTime"), SlotGrowRate = EntityDrawList.Slot("_GrowRate"), SlotGrowFrac = EntityDrawList.Slot("_GrowStartFrac");
@@ -739,16 +934,24 @@ void main(){
             _program.Set(uniform, v.x, v.y, v.z);
         }
 
-        void SetGlobalVec4Array(string uniform, int id)
+        void SetGlobalVec4Array(string uniform, int id, int slots = 8)
         {
             Array.Clear(_litScratch);
             var arr = Shader.GetGlobalVectorArray(id);
             if (arr != null)
-                for (int i = 0; i < arr.Length && i < 8; i++)
+                for (int i = 0; i < arr.Length && i < slots; i++)
                 { _litScratch[i * 4] = arr[i].x; _litScratch[i * 4 + 1] = arr[i].y; _litScratch[i * 4 + 2] = arr[i].z; _litScratch[i * 4 + 3] = arr[i].w; }
-            _program.Set4v(uniform, _litScratch, 8);
+            _program.Set4v(uniform, _litScratch, slots);
         }
 
+        static readonly (string, int)[] s_visionGlobals =
+        {
+            ("uVisionBand", Shader.PropertyToID("_VesselVisionBand")), ("uVisionShape", Shader.PropertyToID("_VesselVisionShape")),
+            ("uVisionRim", Shader.PropertyToID("_VesselVisionRim")), ("uVisionBreakup", Shader.PropertyToID("_VesselVisionBreakup")),
+        };
+        static readonly int IdCradleCentre = Shader.PropertyToID("_PrismCradleCentre"), IdCradleWeight = Shader.PropertyToID("_PrismCradleWeight"),
+            IdCradleParams = Shader.PropertyToID("_PrismCradleParams");
+        static readonly int IdVisionTint = Shader.PropertyToID("_VesselVisionTint");
         static readonly int IdOccTarget = Shader.PropertyToID("_PrismOcclusionTarget"), IdOccParams = Shader.PropertyToID("_PrismOcclusionParams"), IdOccNear = Shader.PropertyToID("_PrismOcclusionNearRadius");
 
         public int DrawCalls { get; private set; }
@@ -798,6 +1001,15 @@ void main(){
             _program.Set("uOccParams", occParams.x, occParams.y, occParams.z);
             _program.Set("uOccNear", Shader.GetGlobalFloat(IdOccNear));
             SetSightUniforms();
+            SetGlobalVec4Array("uCradleCentre", IdCradleCentre, 4);
+            SetGlobalVec4Array("uCradleWeight", IdCradleWeight, 4);
+            var cp = Shader.GetGlobalVector(IdCradleParams);
+            _program.Set("uCradleParams", cp.x, cp.y, cp.z, cp.w);
+            foreach (var (u, id) in s_visionGlobals)
+            {
+                var v = Shader.GetGlobalVector(id);
+                _program.Set(u, v.x, v.y, v.z, v.w);
+            }
 
             _gl.Enable(EnableCap.DepthTest);
             _gl.DepthFunc(DepthFunction.Lequal);
@@ -969,6 +1181,17 @@ void main(){
                 st.Family = 5; st.DarkId = IdDullColor; st.BrightId = IdBright;
                 st.Param = new Vector4(m.GetFloat("_CellDensity"), m.GetFloat("_Distance"), m.GetFloat("_Phase"), 0);
             }
+            else if (graph == "CosmicShore/PrismSlice")
+            {
+                st.Family = 8; st.DarkId = IdDark; st.BrightId = IdBright;
+                var mt = m.GetVector("_SliceMotionTimes");
+                var dw = m.GetVector("_SliceDissolveWindow");
+                st.SliceP0 = new Vector4(mt.x, mt.y, mt.z, 0f);
+                st.SliceP1 = new Vector4(dw.x, dw.y, m.GetFloat("_FresnelPower"), m.GetFloat("_CutGlow"));
+                st.SliceP2 = new Vector4(m.GetFloat("_CutShade"), m.GetFloat("_SeamCool"), m.GetFloat("_RimWidth"), m.GetFloat("_DissolveNoiseScale"));
+                st.SliceP3 = new Vector4(m.GetFloat("_DissolveNoise"), m.GetFloat("_EmberBand"), m.GetFloat("_EmberGlow"), m.GetFloat("_EmberWhite"));
+                st.SliceHot = m.GetColor("_CutHotColor");
+            }
             else if (graph == "Shader Graphs/ForcefieldCrackle")
             {
                 st.Family = 7; // hand-written: Blend One One, ZWrite Off, Cull Off (see the fix-up below)
@@ -982,6 +1205,7 @@ void main(){
                 // Base = lerp(Color1, Color2, dot(N,N)) = Color2, times _ColorMultiplier.
                 st.Family = 0; st.DarkId = st.BrightId = IdColor2;
                 st.VesselMultiplier = m.HasStoredProperty(IdColorMul) ? m.GetFloat(IdColorMul) : 1f;
+                st.VesselVision = true;
             }
             else if (m.HasStoredProperty(IdDark) && m.HasStoredProperty(IdBright))
             {
@@ -1029,6 +1253,12 @@ void main(){
             if (m.HasStoredProperty(IdCull)) st.Cull = (int)m.GetFloat(IdCull);
             st.Cutoff = m.HasStoredProperty(IdAlphaClip) && m.GetFloat(IdAlphaClip) >= 0.5f && m.HasStoredProperty(IdCutoff) ? m.GetFloat(IdCutoff) : -1f;
             if (!st.Transparent && st.Cutoff < 0f) { st.Dark.a = 1f; st.Bright.a = 1f; }
+            if (st.Family == 8)
+            {
+                // Hand-written: Queue AlphaTest, Cull Off, ZWrite On; it clips, it does not blend.
+                st.Transparent = false; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.Zero;
+                st.ZWrite = true; st.Cull = 0; st.Cutoff = -1f;
+            }
             if (st.Family == 7)
             {
                 st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.One;
@@ -1041,7 +1271,8 @@ void main(){
                 st.ExplosiveSpread = m.GetFloat("_ExplosiveSpead"); // [sic] the graph's reference name
             }
             st.Ext = new float[ExtFloats];
-            foreach (var p in ExtLayout)
+            st.Layout = st.Family == 8 ? SliceLayout : ExtLayout;
+            foreach (var p in st.Layout)
             {
                 var v = p.Count == 1 ? new Vector4(m.GetFloat(p.Id), 0, 0, 0) : p.IsColor ? ToV4(m.GetColor(p.Id)) : m.GetVector(p.Id);
                 for (int k = 0; k < p.Count; k++) st.Ext[p.Offset + k] = Comp(v, k);
@@ -1097,9 +1328,18 @@ void main(){
             BindInstanceAttributes();
 
             if (st.Family == 7 && first.Renderer != null) SetCrackleUniforms(first);
+            if (st.Family == 8)
+            {
+                _program.Set("uSliceP0", st.SliceP0.x, st.SliceP0.y, st.SliceP0.z, st.SliceP0.w);
+                _program.Set("uSliceP1", st.SliceP1.x, st.SliceP1.y, st.SliceP1.z, st.SliceP1.w);
+                _program.Set("uSliceP2", st.SliceP2.x, st.SliceP2.y, st.SliceP2.z, st.SliceP2.w);
+                _program.Set("uSliceP3", st.SliceP3.x, st.SliceP3.y, st.SliceP3.z, st.SliceP3.w);
+                _program.Set("uSliceHot", st.SliceHot.r, st.SliceHot.g, st.SliceHot.b, st.SliceHot.a);
+            }
             SetSkinUniforms(first, entry);
             _program.Set("uFamily", st.Family);
             _program.Set("uPrismGraph", st.PrismGraph);
+            _program.Set("uVesselVision", st.VesselVision ? 1 : 0);
             _program.Set("uExplosive", st.ExplosiveRotation, st.ExplosiveSpread);
             _program.Set("uFresPow", st.FresPow);
             _program.Set("uMaxSqrDist", st.MaxSqrDist);
@@ -1389,6 +1629,13 @@ void main(){
             if (!st.Transparent && st.Cutoff < 0f) { dark.a = 1f; bright.a = 1f; }
             // Material colours are the linear intensities the GPU receives (Docs/PALETTE.md §3,
             // measured on screen): no de-gamma step.
+            if (st.VesselVision)
+            {
+                // _VesselVisionTint (a per-material-index property block, VesselVisionShading.Stamp);
+                // alpha 0 = nobody stamped this object, so the law leaves it alone.
+                var tb = ent < 0 && it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
+                bright = tb != null && tb.HasColor(IdVisionTint) ? tb.GetColor(IdVisionTint) : new Color(0, 0, 0, 0);
+            }
             d[o + 16] = dark.r; d[o + 17] = dark.g; d[o + 18] = dark.b; d[o + 19] = dark.a;
             d[o + 20] = bright.r; d[o + 21] = bright.g; d[o + 22] = bright.b; d[o + 23] = bright.a;
             d[o + 24] = growStart; d[o + 25] = growRate; d[o + 26] = 0f; d[o + 27] = 0f;
@@ -1403,7 +1650,7 @@ void main(){
             Array.Copy(defaults, 0, e, o, ExtFloats);
             int ent = it.Entity - 1;
             if (ent < 0 || _entities.Mask[ent] == 0) return;
-            foreach (var p in ExtLayout)
+            foreach (var p in it.State.Layout ?? ExtLayout)
                 if (_entities.TryGet(ent, p.Slot, out var v))
                     for (int k = 0; k < p.Count; k++) e[o + p.Offset + k] = Comp(v, k);
         }

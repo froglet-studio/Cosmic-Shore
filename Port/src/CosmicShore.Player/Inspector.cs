@@ -193,13 +193,110 @@ namespace CosmicShore.Player
             var origin = cam.transform.position;
             var prism = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Prism>(FindObjectsSortMode.None)
                 .Where(pr => pr && pr.isActiveAndEnabled && !pr.destroyed)
-                .OrderBy(pr => (pr.transform.position - origin).sqrMagnitude)
+                .OrderBy(pr => ViewCentreScore(cam, pr.transform.position))
                 .FirstOrDefault();
             if (prism == null) { Console.WriteLine("[lit] no prisms"); return null; }
             var centre = prism.transform.position;
             Console.WriteLine($"[lit] sphere r={radius} at {centre}");
             return () => CosmicShore.Utility.PrismLit.PublishLight(
                 0x5C817, CosmicShore.Utility.LitVolume.Sphere(centre, radius), 1f, new Color(1f, 0.25f, 0.2f));
+        }
+
+        /// <summary>
+        /// A test drape for the Urchin cradle: a stand-in hull of <paramref name="radius"/> parked
+        /// just in front of the prism nearest the camera, reported through the game's own
+        /// PrismCradle every frame the returned action runs.
+        /// </summary>
+        public static Action CradleHull(float radius)
+        {
+            var cam = Camera.main;
+            if (cam == null) { Console.WriteLine("[cradle] no main camera"); return null; }
+            var origin = cam.transform.position;
+            var prism = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Prism>(FindObjectsSortMode.None)
+                .Where(pr => pr && pr.isActiveAndEnabled && !pr.destroyed)
+                .OrderBy(pr => ViewCentreScore(cam, pr.transform.position))
+                .FirstOrDefault();
+            if (prism == null) { Console.WriteLine("[cradle] no prisms"); return null; }
+            var hull = new GameObject("ScriptCradleHull");
+            var toCam = (origin - prism.transform.position).normalized;
+            var ls = prism.transform.lossyScale;
+            float half = Mathf.Max(ls.x, Mathf.Max(ls.y, ls.z)) * 0.5f;
+            // Just off the prism's camera-facing surface: inside the drape reach of its near face.
+            hull.transform.position = prism.transform.position + toCam * (half + radius + 2f);
+            var sp = cam.WorldToScreenPoint(prism.transform.position);
+            Console.WriteLine($"[cradle] hull r={radius} at {hull.transform.position} beside {prism.name} (scale {ls}, screen {sp.x:F0},{Screen.height - sp.y:F0})");
+            return () => CosmicShore.Utility.PrismCradle.Publish(0x5C818, hull.transform, radius, 1f);
+        }
+
+        /// <summary>A prism's largest dimension over its distance: roughly the fraction of the view it spans.</summary>
+        static float ApparentSize(Camera cam, CosmicShore.Gameplay.Prism pr)
+        {
+            var ls = pr.transform.lossyScale;
+            float d = (pr.transform.position - cam.transform.position).magnitude;
+            return Mathf.Max(ls.x, Mathf.Max(ls.y, ls.z)) / Mathf.Max(d, 1e-3f);
+        }
+
+        /// <summary>Angle off the view axis, then distance: the prism the camera is looking at.</summary>
+        static float ViewCentreScore(Camera cam, Vector3 p)
+        {
+            var to = p - cam.transform.position;
+            float d = to.magnitude;
+            if (d < 1e-3f || Vector3.Dot(to, cam.transform.forward) <= 0f) return float.MaxValue;
+            return Vector3.Angle(cam.transform.forward, to) * 1000f + d;
+        }
+
+        /// <summary>Every vessel: distance from the camera, screen position, and its vision tint.</summary>
+        public static void Vessels()
+        {
+            var cam = Camera.main;
+            var tintId = Shader.PropertyToID("_VesselVisionTint");
+            var block = new MaterialPropertyBlock();
+            foreach (var v in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.VesselController>(FindObjectsSortMode.None))
+            {
+                var p = v.transform.position;
+                string where = "";
+                if (cam != null)
+                {
+                    var sp = cam.WorldToScreenPoint(p);
+                    where = $" dist {(p - cam.transform.position).magnitude:F0} screen {sp.x:F0},{Screen.height - sp.y:F0}{(sp.z < 0 ? " (behind)" : "")}";
+                }
+                int stamped = 0, total = 0;
+                Color tint = default;
+                foreach (var r in v.GetComponentsInChildren<Renderer>())
+                    for (int i = 0; i < r.sharedMaterials.Length; i++)
+                    {
+                        total++;
+                        r.GetPropertyBlock(block, i);
+                        if (block.HasColor(tintId) && block.GetColor(tintId).a > 0f) { stamped++; tint = block.GetColor(tintId); }
+                    }
+                Console.WriteLine($"[vessels] {v.name} at {p}{where} vision tint {stamped}/{total} {tint}");
+            }
+        }
+
+        /// <summary>
+        /// Cuts the <paramref name="count"/> prisms nearest the centre of view the way the Rhino's
+        /// blade does (Prism.Slice): a plane through each prism's centre, normal along the camera's
+        /// right so the halves part across the screen.
+        /// </summary>
+        public static void Slice(int count)
+        {
+            var cam = Camera.main;
+            if (cam == null) { Console.WriteLine("[slice] no main camera"); return; }
+            var prisms = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Prism>(FindObjectsSortMode.None)
+                .Where(pr => pr && pr.isActiveAndEnabled && !pr.destroyed)
+                .Where(pr => ApparentSize(cam, pr) > 0.03f)   // something you can see being cut
+                .OrderBy(pr => ViewCentreScore(cam, pr.transform.position))
+                .Take(count)
+                .ToList();
+            foreach (var pr in prisms)
+            {
+                var sp = cam.WorldToScreenPoint(pr.transform.position);
+                Console.WriteLine($"[slice]   {pr.name} scale {pr.transform.lossyScale} screen {sp.x:F0},{Screen.height - sp.y:F0} shielded={pr.prismProperties?.IsShielded}/{pr.prismProperties?.IsSuperShielded}");
+            }
+            foreach (var pr in prisms)
+                pr.Slice(cam.transform.forward * 20f, CosmicShore.Data.Domains.Blue, "script",
+                         pr.transform.position, cam.transform.right, devastate: true);
+            Console.WriteLine($"[slice] cut {prisms.Count} prism(s); live slices {CosmicShore.Utility.PrismSlice.LiveSliceCount}");
         }
 
         public static void PrintStatic(string chain)
