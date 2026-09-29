@@ -80,6 +80,8 @@ namespace CosmicShore.Content.Scenes
             ["593a2fe42fa9d37498c96f9a383b6521"] = "NetworkManager",
             ["e651dbb3fbac04af2b8f5abf007ddc23"] = "NetworkPrefabsList",
             ["6960e84d07fb87f47956e7a81d71c4e6"] = "UnityTransport",
+            ["da52bf8bbc1de48cfb221a6ff30f7972"] = "NetworkTransform",
+            ["f6c0be61502bb534f922ebb746851216"] = "NetworkRigidbody",
         };
 
         readonly AssetDatabase _db;

@@ -13,8 +13,8 @@ namespace CosmicShore.Engine.Networking
     ///  • a ServerRpc called on a client is sent to the server and not run locally; on the server
     ///    (host) it runs directly - once the ownership requirement holds;
     ///  • a ClientRpc called on the server is sent to every remote target (ClientRpcParams, else
-    ///    every client) and runs locally only when the host is itself a target; a client may not
-    ///    invoke one;
+    ///    every client) and runs locally only when the host is itself a target; called on a
+    ///    client it silently does nothing;
     ///  • received RPCs are invoked through the same method with interception bypassed, a
     ///    ServerRpcParams argument carrying the sender.
     /// With no transport running every RPC runs locally, the single-process behaviour.
@@ -31,6 +31,8 @@ namespace CosmicShore.Engine.Networking
 
         static readonly Dictionary<(Type, string), Info> s_info = new();
         static readonly HashSet<string> s_warned = new();
+
+        static readonly bool s_trace = Environment.GetEnvironmentVariable("CS_PORT_TRACE_RPC") != null;
 
         [ThreadStatic] static object s_bypassTarget;
         [ThreadStatic] static string s_bypassName;
@@ -86,15 +88,14 @@ namespace CosmicShore.Engine.Networking
                     WarnOnce($"own:{method}", $"[Netcode] Only the owner can invoke a ServerRpc that requires ownership! ({nb.GetType().Name}.{method})");
                     return true;
                 }
+                if (s_trace) Console.WriteLine($"[rpc] -> server {nb.GetType().Name}.{method} #{nb.NetworkObjectId}");
                 NetDriver.SendRpcToServer(Build(nb, info, method, args));
                 return true;
             }
 
-            if (!NetDriver.IsServer)
-            {
-                WarnOnce($"cli:{method}", $"[Netcode] Only the server can invoke a ClientRpc ({nb.GetType().Name}.{method}).");
-                return true;
-            }
+            // A client calling a ClientRpc: the woven method returns without running or logging
+            // (its exec stage is not Execute and there is nobody for a client to send it to).
+            if (!NetDriver.IsServer) return true;
             IReadOnlyList<ulong> targets = null;
             foreach (var a in args)
                 if (a is ClientRpcParams p && p.Send.TargetClientIds != null) { targets = p.Send.TargetClientIds; break; }
@@ -111,6 +112,7 @@ namespace CosmicShore.Engine.Networking
                     else remote.Add(id);
                 }
             }
+            if (s_trace) Console.WriteLine($"[rpc] -> clients{(remote == null ? "" : " [" + string.Join(",", remote) + "]")} {nb.GetType().Name}.{method} #{nb.NetworkObjectId}{(localTargeted ? " (+local)" : "")}");
             NetDriver.SendRpcToClients(Build(nb, info, method, args), remote);
             return !localTargeted;
         }
@@ -167,6 +169,7 @@ namespace CosmicShore.Engine.Networking
                 else
                     args[i] = NetWire.Read(r, pt);
             }
+            if (s_trace) Console.WriteLine($"[rpc] <- {sender} {nb.GetType().Name}.{method} #{objectId}");
             s_bypassTarget = nb;
             s_bypassName = method;
             try { info.Method.Invoke(nb, args); }

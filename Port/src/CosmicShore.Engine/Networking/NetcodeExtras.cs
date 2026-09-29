@@ -199,11 +199,17 @@ namespace CosmicShore.Engine.Networking
 namespace CosmicShore.Engine.Networking.Components
 {
     /// <summary>
-    /// Transform replication (original: NetworkTransform). Single-process there is nothing to
-    /// replicate; the authority split is preserved so the game's authority checks read true.
+    /// Transform replication (original: NetworkTransform). The authority - the server, or the
+    /// owner when <see cref="AuthorityMode"/> is Owner (or a subclass says so, the
+    /// ClientNetworkTransform idiom) - sends its pose; everyone else interpolates.
     /// </summary>
     public class NetworkTransform : NetworkBehaviour
     {
+        public enum AuthorityModes { Server = 0, Owner = 1 }
+
+        /// <summary>Who may move this transform (serialized; the default is Server).</summary>
+        public AuthorityModes AuthorityMode = AuthorityModes.Server;
+
         public bool SyncPositionX = true, SyncPositionY = true, SyncPositionZ = true;
         public bool SyncRotAngleX = true, SyncRotAngleY = true, SyncRotAngleZ = true;
         public bool SyncScaleX = true, SyncScaleY = true, SyncScaleZ = true;
@@ -216,7 +222,7 @@ namespace CosmicShore.Engine.Networking.Components
 
         public bool CanCommitToTransform => OnIsServerAuthoritative() ? IsServer : IsOwner;
         public bool IsServerAuthoritative() => OnIsServerAuthoritative();
-        protected virtual bool OnIsServerAuthoritative() => true;
+        protected virtual bool OnIsServerAuthoritative() => AuthorityMode == AuthorityModes.Server;
 
         public void Teleport(Vector3 newPosition, Quaternion newRotation, Vector3 newScale)
         {
@@ -248,12 +254,18 @@ namespace CosmicShore.Engine.Networking.Components
                 || (s - _sentScale).sqrMagnitude > ScaleThreshold * ScaleThreshold;
             if (!moved) return false;
             _sentOnce = true; _teleportPending = false;
+            PortSent++;
             _sentPos = p; _sentRot = q; _sentScale = s;
             return true;
         }
 
+        /// <summary>Diagnostics: poses received / sent since spawn.</summary>
+        public int PortReceived { get; private set; }
+        public int PortSent { get; private set; }
+
         internal void PortPushState(double time, Vector3 p, Quaternion q, Vector3 s, bool teleport)
         {
+            PortReceived++;
             if (teleport || !Interpolate) _buffer.Clear();
             _buffer.Add((time, p, q, s));
             if (_buffer.Count > 16) _buffer.RemoveAt(0);
@@ -301,11 +313,45 @@ namespace CosmicShore.Engine.Networking.Components
         public void ResetTrigger(int hash) => m_Animator?.ResetTrigger(hash);
     }
 
-    /// <summary>Rigidbody replication (original: NetworkRigidbody).</summary>
+    /// <summary>
+    /// Rigidbody replication (original: NetworkRigidbody). With motion left to the sibling
+    /// NetworkTransform (UseRigidBodyForMotion off - the case every shipped prefab authors), its
+    /// job is the kinematic state: every non-authority copy is kinematic so its local physics
+    /// cannot fight the replicated pose, and it is restored on despawn.
+    /// </summary>
     public class NetworkRigidbody : NetworkBehaviour
     {
         public bool UseRigidBodyForMotion;
         public bool AutoUpdateKinematicState = true;
+        public bool AutoSetKinematicOnDespawn = true;
+
+        Rigidbody _body;
+        NetworkTransform _transform;
+        bool _originalKinematic;
+
+        public override void OnNetworkSpawn()
+        {
+            _body = GetComponent<Rigidbody>();
+            _transform = GetComponent<NetworkTransform>();
+            if (_body == null) return;
+            _originalKinematic = _body.isKinematic;
+            UpdateKinematic();
+        }
+
+        public override void OnGainedOwnership() => UpdateKinematic();
+        public override void OnLostOwnership() => UpdateKinematic();
+
+        public override void OnNetworkDespawn()
+        {
+            if (_body != null && AutoSetKinematicOnDespawn) _body.isKinematic = true;
+        }
+
+        void UpdateKinematic()
+        {
+            if (_body == null || !AutoUpdateKinematicState) return;
+            bool authority = _transform != null ? _transform.CanCommitToTransform : IsServer;
+            _body.isKinematic = authority ? _originalKinematic : true;
+        }
     }
 }
 

@@ -133,6 +133,7 @@ namespace CosmicShore.Player
                     case "vessels": Inspector.Vessels(); break;
                     case "party": Inspector.Party(arg.Trim()); break;
                     case "domain": Inspector.Domain(arg.Trim()); break;
+                    case "arcade": Inspector.Arcade(arg.Trim()); break;
                     case "animators":
                         foreach (var an in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Engine.Animator>(CosmicShore.Engine.FindObjectsSortMode.None))
                             if (an.isActiveAndEnabled && (arg.Length == 0 || an.name.Contains(arg.Trim(), StringComparison.OrdinalIgnoreCase)))

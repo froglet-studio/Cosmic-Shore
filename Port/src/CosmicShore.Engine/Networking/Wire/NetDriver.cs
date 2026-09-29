@@ -123,6 +123,7 @@ namespace CosmicShore.Engine.Networking
             s_dirtyOrigin.Clear();
             s_transforms.Clear();
             s_pendingSceneEvents.Clear();
+            s_deferred.Clear();
             s_clientPaused = false;
             s_serverSceneTransition = false;
         }
@@ -151,6 +152,7 @@ namespace CosmicShore.Engine.Networking
                 catch (Exception ex) { Debug.LogException(ex); }
             }
             if (s_sock == null) return;
+            if (!s_server) ExpireDeferred();
             double now = Now;
             foreach (var nt in s_transforms)
                 if (nt != null && nt.IsSpawned && !IsTransformAuthority(nt)) nt.PortInterpolate(now);
@@ -358,8 +360,63 @@ namespace CosmicShore.Engine.Networking
                     ClientLost(string.IsNullOrEmpty(nm.DisconnectReason) ? "disconnected from server" : nm.DisconnectReason);
                     return;
             }
-            using var r = new BinaryReader(new MemoryStream(e.Payload));
+            ClientMessage(e.Payload);
+        }
+
+        /// <summary>
+        /// A message that names an object this client has not spawned yet (a server RPC or
+        /// variable write from the object's own OnNetworkSpawn can overtake its spawn) - held and
+        /// replayed when the spawn lands, like Netcode's deferred messages, and dropped with a
+        /// warning after the spawn timeout.
+        /// </summary>
+        sealed class Deferred { public ulong Id; public byte[] Payload; public double Since; }
+        static readonly List<Deferred> s_deferred = new();
+        const double SpawnTimeoutSeconds = 10;
+
+        static bool DeferIfUnspawned(Msg kind, byte[] payload)
+        {
+            if (kind != Msg.Rpc && kind != Msg.NetVar && kind != Msg.Ownership && kind != Msg.Parent) return false;
+            if (payload.Length < 9) return false;
+            ulong id = BitConverter.ToUInt64(payload, 1);
+            if (Find(id) != null) return false;
+            s_deferred.Add(new Deferred { Id = id, Payload = payload, Since = Now });
+            return true;
+        }
+
+        static void ReplayDeferred(ulong id)
+        {
+            if (s_deferred.Count == 0) return;
+            List<Deferred> ready = null;
+            for (int i = 0; i < s_deferred.Count; i++)
+                if (s_deferred[i].Id == id) (ready ??= new()).Add(s_deferred[i]);
+            if (ready == null) return;
+            s_deferred.RemoveAll(d => d.Id == id);
+            foreach (var d in ready)
+            {
+                try { ClientMessage(d.Payload); }
+                catch (Exception ex) { Debug.LogException(ex); }
+            }
+        }
+
+        static void ExpireDeferred()
+        {
+            if (s_deferred.Count == 0) return;
+            double now = Now;
+            s_deferred.RemoveAll(d =>
+            {
+                if (now - d.Since < SpawnTimeoutSeconds) return false;
+                Debug.LogWarning($"[Deferred OnSpawn] Deferred messages were received for a trigger of type OnSpawn with key {d.Id}, but that trigger was not received within within {SpawnTimeoutSeconds} second(s).");
+                return true;
+            });
+        }
+
+        static void ClientMessage(byte[] payload)
+        {
+            var nm = s_nm;
+            if (nm == null) return;
+            using var r = new BinaryReader(new MemoryStream(payload));
             var kind = (Msg)r.ReadByte();
+            if (DeferIfUnspawned(kind, payload)) return;
             switch (kind)
             {
                 case Msg.ConnectAccept: ClientAccepted(r); break;
@@ -608,6 +665,7 @@ namespace CosmicShore.Engine.Networking
             if (Trace) Console.WriteLine($"[net] spawn #{id} '{no.name}' owner={owner} player={isPlayer}");
             no.SpawnRemote(id, owner, isPlayer, destroyWithScene);
             RegisterTransforms(no);
+            ReplayDeferred(id);
         }
 
         static void SkipBehaviourState(BinaryReader r)
@@ -887,7 +945,7 @@ namespace CosmicShore.Engine.Networking
                 if (nb is NetworkTransform nt) s_transforms.Remove(nt);
         }
 
-        internal static bool IsTransformAuthority(NetworkTransform nt)
+        public static bool IsTransformAuthority(NetworkTransform nt)
             => nt.IsServerAuthoritative() ? nt.IsServer : nt.IsOwner;
 
         static void SendTransforms()

@@ -284,6 +284,46 @@ namespace CosmicShore.Player
             }
         }
 
+        /// <summary>
+        /// "arcade Bloomrush" presses that mode's arcade card (ArcadeExploreView.SelectGame, the
+        /// card's own click handler); "arcade start" presses Start in the open launch modal. A
+        /// party guest's modal follows the host's pick through the lobby sync, so the guest only
+        /// needs "arcade start".
+        /// </summary>
+        public static void Arcade(string arg)
+        {
+            if (arg == "start")
+            {
+                foreach (var m in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.UI.ArcadeGameConfigureModal>(FindObjectsSortMode.None))
+                {
+                    if (!m.isActiveAndEnabled) continue;
+                    Console.WriteLine("[arcade] start pressed");
+                    m.OnStartGameClicked();
+                }
+                return;
+            }
+            if (arg == "ready")
+            {
+                // The in-game HUD's Ready button (MiniGameHUD wires it to OnReadyClicked).
+                foreach (var c in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.MiniGameControllerBase>(FindObjectsSortMode.None))
+                {
+                    Console.WriteLine($"[arcade] ready pressed ({c.GetType().Name})");
+                    c.OnReadyClicked();
+                }
+                return;
+            }
+            if (!Enum.TryParse<CosmicShore.Data.GameModes>(arg, true, out var mode)) { Console.WriteLine($"[arcade] no mode '{arg}'"); return; }
+            foreach (var v in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.UI.ArcadeExploreView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var game = v.FindGameByMode(mode);
+                if (game == null) continue;
+                Console.WriteLine($"[arcade] card pressed: {game.DisplayName}");
+                v.SelectGame(game);
+                return;
+            }
+            Console.WriteLine($"[arcade] no card for {mode}");
+        }
+
         public static void Vessels()
         {
             var cam = Camera.main;
@@ -309,6 +349,8 @@ namespace CosmicShore.Player
                     }
                 var no = v.GetComponent<NetworkObject>();
                 string net = no != null && no.IsSpawned ? $" net#{no.NetworkObjectId} owner={no.OwnerClientId}{(no.IsOwner ? " (mine)" : "")}" : "";
+                foreach (var nt in v.GetComponentsInChildren<CosmicShore.Engine.Networking.Components.NetworkTransform>(true))
+                    net += $" [{nt.GetType().Name}{(nt.enabled ? "" : " off")}{(nt.IsSpawned ? "" : " unspawned")} auth={NetDriver.IsTransformAuthority(nt)} sent={nt.PortSent} recv={nt.PortReceived}]";
                 Console.WriteLine($"[vessels] {v.name}{net} at {p}{where} vision tint {stamped}/{total} {tint}");
             }
         }
@@ -374,7 +416,28 @@ namespace CosmicShore.Player
                     if (pending == null) continue;
                     Console.WriteLine("[party] accepting pending invite");
                     mb.GetType().GetMethod("OnAcceptPressed", Any)?.Invoke(mb, null);
+                    return;
                 }
+                // The popup missed it (the invite landed before the menu was up, or it timed
+                // out): a player finds it in the friends panel's Requests section instead - the
+                // panel rehydrates it from HostConnectionService.LastPendingInvite. Open the
+                // panel, then press the party-invite row's Accept.
+                foreach (var row in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.UI.RequestInfoEntry>(FindObjectsSortMode.None))
+                {
+                    if (!row.isActiveAndEnabled || !Equals(row.GetType().GetField("_kind", Any)?.GetValue(row), CosmicShore.UI.RequestInfoEntry.Kind.PartyInvite)) continue;
+                    if ((bool)(row.GetType().GetField("_responded", Any)?.GetValue(row) ?? true)) continue;
+                    Console.WriteLine("[party] accepting invite from the friends panel");
+                    row.GetType().GetMethod("HandleAcceptClicked", Any)?.Invoke(row, null);
+                    return;
+                }
+                if (svc != null && svcType.GetProperty("LastPendingInvite")?.GetValue(svc) != null)
+                    foreach (var panel in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.UI.FriendsListPanel>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                        if (!panel.gameObject.activeSelf)
+                        {
+                            Console.WriteLine("[party] opening the friends panel for a missed invite");
+                            panel.Show();
+                            break;
+                        }
                 return;
             }
             if (parts[0] == "invite" && parts.Length > 1)

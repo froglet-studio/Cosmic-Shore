@@ -325,7 +325,10 @@ namespace CosmicShore.Engine
             foreach (var component in _components)
                 if (component is Networking.NetworkObject no && no.IsSpawned)
                 {
-                    no.Despawn(destroy: false);
+                    // A client never despawns on the network; its copy of an object goes away
+                    // locally when its scene unloads (the server despawns the authority copy).
+                    if (Networking.NetDriver.IsClientOnly) no.DespawnRemote(destroy: false);
+                    else no.Despawn(destroy: false);
                     break;
                 }
 

@@ -85,8 +85,17 @@ namespace CosmicShore.Engine.SceneManagement
                 {
                     BeforeSingleLoadUnload?.Invoke(scene);
                     NotifySceneUnloaded(scene);
-                    foreach (var root in new System.Collections.Generic.List<GameObject>(scene.GetRootGameObjects()))
-                        if (!root.IsDontDestroyOnLoad) Object.DestroyImmediate(root);
+                    // Unity reports the outgoing scene as not loaded while its objects are torn
+                    // down, and teardown code relies on it (Spindle skips killing its plant when
+                    // !gameObject.scene.isLoaded, so a plant's heart is not dropped into a Cell
+                    // that is itself going away).
+                    scene.isLoaded = false;
+                    try
+                    {
+                        foreach (var root in new System.Collections.Generic.List<GameObject>(scene.GetRootGameObjects()))
+                            if (!root.IsDontDestroyOnLoad) Object.DestroyImmediate(root);
+                    }
+                    finally { scene.isLoaded = true; }
                     scene.name = sceneName;
                     scene.RenewHandle();
                     activeSceneChanged?.Invoke(scene, scene);
