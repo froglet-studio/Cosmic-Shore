@@ -71,6 +71,10 @@ class World:
     rho0: float = 6.0       # crowding normaliser (~ sum of w in a packed neighbourhood)
     capacity: int = 640     # particle slots per sample
     sigma: float = 0.85     # render splat width
+    lattice: float = 0.0    # >0: ABLATION - a fixed jittered hex lattice of this spacing fills the
+                            # canvas, slots persist when their state dies (the grid NCA's semantics
+                            # with particle perception); no budding, motion or collision
+    jitter: float = 0.25    # lattice jitter, as a fraction of the spacing
 
 
 class State:
@@ -93,7 +97,29 @@ class State:
         return self.pos.shape[0]
 
 
+def lattice_points(world: World, extent):
+    """Deterministic jittered hex (2D) lattice covering [0, extent)."""
+    a, g = world.lattice, np.random.default_rng(0)
+    pts, row, y = [], 0, 0.0
+    while y < extent[1]:
+        x = a / 2 if row % 2 else 0.0
+        while x < extent[0]:
+            pts.append((x, y)); x += a
+        y += a * math.sqrt(3) / 2; row += 1
+    p = np.array(pts) + g.uniform(-1, 1, (len(pts), 2)) * world.jitter * a
+    return torch.from_numpy(p + a / 2).float()
+
+
 def seed_state(B, world: World, centre, C=16):
+    if world.lattice > 0:
+        assert world.dim == 2, "lattice ablation is 2D only"
+        lat = lattice_points(world, [2 * c for c in centre])
+        world.capacity = len(lat)
+        pos = lat[None].repeat(B, 1, 1)
+        s = torch.zeros(B, len(lat), C)
+        i0 = int(((lat - torch.tensor(centre)) ** 2).sum(-1).argmin())
+        s[:, i0, 3:] = 1.0
+        return State(pos, s, torch.ones(B, len(lat), dtype=torch.bool))
     pos = torch.zeros(B, world.capacity, world.dim)
     pos[:, 0] = torch.tensor(centre, dtype=torch.float32)
     s = torch.zeros(B, world.capacity, C)
@@ -158,7 +184,8 @@ class ParticleNCA(nn.Module):
         n = B * N
         C = self.C
         pos, s, act = st.pos.reshape(n, d), st.s.reshape(n, C), st.active.reshape(n)
-        gi, gj = neighbour_edges(st, W.R)
+        lat = W.lattice > 0
+        gi, gj = self._lattice_edges(st) if lat else neighbour_edges(st, W.R)
         pre = self.alive(s[:, 3], gi, gj, act)
 
         rate = self.fire_rate if fire_rate is None else fire_rate
@@ -166,12 +193,17 @@ class ParticleNCA(nn.Module):
             fire = torch.rand(n, generator=gen) <= rate
         else:
             fire = fire.reshape(n)
-        idx = (pre & fire).nonzero().squeeze(1)
-        feats = self.perceive(pos, s, gi, gj, n).index_select(0, idx)
+        upd = pre & fire
+        idx = upd.nonzero().squeeze(1)
+        e = upd[gi]                                  # perceive only for particles that update
+        feats = self.perceive(pos, s, gi[e], gj[e], n).index_select(0, idx)
         out = F.linear(torch.relu(F.linear(feats, self.w1, self.b1)), self.w2, self.b2)
         ds = torch.zeros(n, C).index_copy(0, idx, out[:, :C])
         v = torch.zeros(n, d).index_copy(0, idx, W.vmax * torch.tanh(out[:, C:]))
         s = s + ds
+        if lat:                    # fixed slots: no motion, no collision, dead slots stay (state 0)
+            keep = pre & self.alive(s[:, 3], gi, gj, act)
+            return State(st.pos, (s * keep[:, None].to(s.dtype)).view(B, N, C), st.active)
         pos = pos + v
 
         # collision (designed): push apart pairs closer than r0 (every active particle, every step)
@@ -188,6 +220,19 @@ class ParticleNCA(nn.Module):
         if bud:
             self.bud(out_st, gi, gj, gen)
         return out_st
+
+    def _lattice_edges(self, st: State):
+        B, N, _ = st.pos.shape
+        key = (B, N)
+        if getattr(self, "_lat_key", None) != key:
+            with torch.no_grad():
+                p0 = st.pos[0]
+                m = (torch.cdist(p0, p0) < self.world.R) & ~torch.eye(N, dtype=torch.bool)
+                i, j = m.nonzero(as_tuple=True)
+                off = (torch.arange(B) * N)[:, None]
+                self._lat_edges = ((i[None] + off).reshape(-1), (j[None] + off).reshape(-1))
+                self._lat_key = key
+        return self._lat_edges
 
     @torch.no_grad()
     def bud(self, st: State, gi, gj, gen=None):
@@ -353,7 +398,7 @@ def sanitize(st: State, seed: State, bound=50.0):
     return int(bad.sum())
 
 
-def ball_damage(st: State, grid, rng):
+def ball_damage(st: State, grid, rng, keep_slots=False):
     """Remove particles in a random disc/ball: centre in the inner half, radius 0.1-0.4 of the
     half-width, the grid cut's rule."""
     d = st.pos.shape[-1]
@@ -362,7 +407,8 @@ def ball_damage(st: State, grid, rng):
         c = ext / 2 + (torch.from_numpy(rng.random(d)).float() - 0.5) * ext / 2
         r = float(rng.random() * 0.3 + 0.1) * float(ext[0]) / 2
         hit = ((st.pos[b] - c) ** 2).sum(-1) < r * r
-        st.active[b] &= ~hit
+        if not keep_slots:
+            st.active[b] &= ~hit
         st.s[b, hit] = 0
 
 
@@ -460,7 +506,7 @@ def train(cfg: PConfig, out_dir: str, resume=False):
             x0.pos[0], x0.s[0], x0.active[0] = seed.pos[0], seed.s[0], seed.active[0]
             if cfg.damage_n:
                 tail = x0.index(torch.arange(cfg.batch_size - cfg.damage_n, cfg.batch_size))
-                ball_damage(tail, grid, rng)
+                ball_damage(tail, grid, rng, keep_slots=world.lattice > 0)
                 x0.pos[-cfg.damage_n:], x0.s[-cfg.damage_n:], x0.active[-cfg.damage_n:] = tail.pos, tail.s, tail.active
             n = int(rng.integers(cfg.min_iter, cfg.max_iter + 1))
 
@@ -688,8 +734,9 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
             x = ca(x)
         pre_err = float(err_of(x).min())
         hit = (x.pos[0, :, 0] > centre[0]) & (x.pos[0, :, 1] > centre[1])
-        removed = int((hit & x.active[0]).sum())
-        x.active[0] &= ~hit
+        removed = int((hit & x.active[0] & (x.s[0, :, 3] > 0.1)).sum())
+        if world.lattice <= 0:
+            x.active[0] &= ~hit
         x.s[0, hit] = 0
         seq, rec, rbest = [x.clone()], [], []
         for i in range(600):
