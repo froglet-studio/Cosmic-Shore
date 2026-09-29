@@ -50,6 +50,9 @@ namespace CosmicShore.Player
                         if (c > 0 && int.TryParse(spec[..c], out int f)) shots[f] = spec[(c + 1)..];
                         break;
                     }
+                    case "--record" when i + 1 < args.Length:
+                        if (!FrameRecorder.TryAdd(args[++i])) Console.WriteLine($"[player] --record expects DIR:FROM-TO[:EVERY], got '{args[i]}'");
+                        break;
                     case "--size" when i + 1 < args.Length:
                     {
                         var wh = args[++i].Split('x');
@@ -63,7 +66,8 @@ namespace CosmicShore.Player
             {
                 if (screenshot != null) shots[frames < 0 ? 180 : frames] = screenshot;
                 if (headless) return RunHeadless(scene, Math.Max(frames < 0 ? 600 : frames, script.LastFrame), quiet, width, height, script, reportRender, dumps);
-                int last = shots.Count > 0 ? shots.Keys.Max() : (frames < 0 ? -1 : frames);
+                int last = Math.Max(shots.Count > 0 ? shots.Keys.Max() : -1, frames);
+                last = Math.Max(last, FrameRecorder.LastFrame);
                 new PlayerWindow(scene, width, height, shots, last, script).Run();
                 return 0;
             }

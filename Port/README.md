@@ -22,6 +22,18 @@ dotnet build
 dotnet test
 ```
 
+## Try it (Windows, from any branch)
+
+From an existing Cosmic Shore clone, on any branch, paste into PowerShell:
+
+```powershell
+git fetch origin cece/focused-planck-cj46y3; & ([scriptblock]::Create((git show FETCH_HEAD:Port/try.ps1) -join "`n"))
+```
+
+`Port/try.ps1` checks this branch out into a sibling worktree (`..\CosmicShore-unityless`), unpacks
+the self-contained build from `dist/`, and launches it. Your own checkout is never touched; running
+it again updates in about a second.
+
 ## Run the real game
 
 `CosmicShore.Player` runs the project's own `Assets/_Scripts` (compiled by `CosmicShore.Live`)

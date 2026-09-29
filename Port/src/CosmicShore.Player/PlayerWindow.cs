@@ -128,7 +128,7 @@ namespace CosmicShore.Player
             if (w <= 0 || h <= 0) return;
             Screen.width = w;
             Screen.height = h;
-            if (_frameIndex + 1 < RenderFrom && !_shots.ContainsKey(_frameIndex + 1))
+            if (_frameIndex + 1 < RenderFrom && !_shots.ContainsKey(_frameIndex + 1) && !FrameRecorder.Wants(_frameIndex + 1))
             {
                 _frameIndex++;
                 return;
@@ -152,6 +152,8 @@ namespace CosmicShore.Player
                 Capture(path, w, h);
                 Console.WriteLine($"screenshot → {path} ({w}x{h}) frame {_frameIndex} — scene {_sceneRenderer.DrawCalls} draws / {_sceneRenderer.Instances} instances, {_lastFrameMs:F0} ms/frame");
             }
+            if (FrameRecorder.TryPath(_frameIndex, out var recPath))
+                Capture(recPath, w, h);
             if (Scripted && _frameIndex >= _lastFrame)
             {
                 _boot.Log.PrintSummary();
