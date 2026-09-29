@@ -358,8 +358,17 @@ threads it. Only the FIRST traversal cell stands behind the veil; the second is 
 `CellConveyor.StandAhead` the moment the voyage opens, streaming in beside live play like every
 later cell — two 10k-prism worlds behind the veil was the 30–90 s blind opening, one is half
 that. A toy pass during the build is IGNORED, not toggled (`ArkwayRun.IsBuilding`), and
-the objective arrow keeps pointing at an Ark that is on screen but further than 900 u
-(`ObjectiveIndicator.HideOnScreenWithin`) — on screen and a speck is not "in view".
+an Ark that is on screen but further than 900 u is MARKED in place by the objective arrow
+(`ObjectiveIndicator.HideOnScreenWithin`) — on screen and a speck is not "in view". It is marked
+where it is rather than pinned to the edge, because a distant Ark sits near screen centre and the
+edge placement's centre-to-target direction there is a few jittering pixels (it read as the arrow
+pointing at the pilot's own ship).
+
+**A voyage holds the bulk creation tier** (`ArkwayRun.HoldCreationTier` →
+`Prism.BeginBulkTransport`), because every laid prism stays hidden until it wins a per-frame
+creation completion and a corridor grows two worlds at once; at the gameplay cap of 6 the backlog
+made later cells show spindles and crystals and no prisms. Trail and wake prisms spend a separate
+budget from environment mass. Record: `Docs/ECOSYSTEM.md` §41.3.5.
 
 **The wake is laid `watchForReveal: false` and armed only AFTER the arena-build bracket.**
 `PrismTrailBuilder.LayOne` otherwise registers every prism with the arena-ready gate's reveal

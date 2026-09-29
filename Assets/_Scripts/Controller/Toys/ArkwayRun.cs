@@ -542,13 +542,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void LogVoyageStart()
         {
-            // Deliberately ALWAYS ON, one line per voyage: this toy has opened on "no Ark" in
-            // four play tests with nothing in the console. It moves to the ToyBox
-            // channel once three consecutive play tests open on a visible Ark (ARKWAY_PLAN.md,
-            // Phase 0).
+            // One line per voyage, on the ToyBox channel since play tests reliably open on a
+            // visible Ark (ARKWAY_PLAN.md, Phase 0). A voyage that fails to reach the player
+            // still warns loudly from End.
+            if (!CSDebug.IsVerbose(CSLogChannel.ToyBox)) return;
             var t = LocalVessel()?.Transform;
             float distance = _ark && t ? Vector3.Distance(_ark.Position, t.position) : -1f;
-            CSDebug.Log(
+            CSDebug.LogVerbose(CSLogChannel.ToyBox,
                 $"[Arkway] Voyage under way. Ark {(_ark ? _ark.TotalCount : 0)} hull prisms, " +
                 $"{distance:F0}u from the vessel, target {_conveyor.CurrentTargetCentre} " +
                 $"({Vector3.Distance(_ark ? _ark.Position : Vector3.zero, _conveyor.CurrentTargetCentre):F0}u away). " +

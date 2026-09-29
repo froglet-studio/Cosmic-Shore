@@ -7592,6 +7592,46 @@ both trail ribbons, marks, withering. **An infinite toy needs a way to answer "w
 from a play test**; the fixes above are the ones that could be found by reading, and the census is
 how the next one gets found by measuring.
 
+### 41.3.5 Later cells had spindles and crystals but no prisms (Sep 2026)
+
+Reported across several play tests: *the first four or so cells loaded fine, the fifth had
+lifeforms with crystals and spindles in the right places but not a single prism*, and later
+*the next cell was missing a lot of prisms and the one after had none*. Two unrelated defects
+presented as that one symptom, and the one that turned out to be the cause was the last one
+looked for.
+
+**The cause: every laid prism waits, INVISIBLE, for a global creation budget.**
+`Prism.CreateBlockCoroutine` keeps a prism's renderer and collider off until it wins one of
+`MaxCreationCompletionsPerFrame` (**6**) completions in that frame — a de-spike for bursts that
+land on one frame. A spindle needs no such budget, so it appears the moment it is created. The
+corridor grows two whole worlds at once while the player watches, so within a few cells the queue
+of initialized-but-hidden prisms ran to thousands; the plants had grown, their prisms existed, and
+none of them had been SHOWN. The same queue held back every trail prism, which is why neither the
+pilot nor the Ark left a trail and the wake arrived in batches.
+
+- `ArkwayRun` holds `Prism.BeginBulkTransport` (64 completions/frame — the tier the Wanderway
+  conveyor already uses) for the whole voyage, released exactly once on every exit
+  (`HoldCreationTier`).
+- **Environment mass and everything else now spend SEPARATE per-frame budgets**, platform-wide:
+  a prism the `EnvironmentPrismPool` issued counts against one, a pilot's trail against the other,
+  so a growing world can never starve a trail again. The Ark's wake is environment-pool mass but a
+  ribbon behind a mover, so it opts into the trail side (`Prism.CompletesAsLiveRibbon`). Worst
+  frame is 2× the tier's cap; the order within each class is unchanged.
+- The per-crossing census reports `awaiting creation N/M`, and a backlog over 3,000 warns once per
+  voyage — the one number that separates "never grew" from "grew and is not yet visible".
+
+**Found on the way, fixed, and NOT the cause:** struck cells used to `Destroy` their environment
+prisms, so the pool minted fresh ones forever (now released through
+`EnvironmentPrismPool.TryRelease`, `Docs/PRISM_ANIMATION.md` C13b); and a pooled `HealthPrism` kept its dead plant, limb and
+fauna back-references into its next life, so an old owner's teardown could reach a re-issued prism.
+`HealthPrism.DetachForPool` severs all three (and the owners' tracker entries) on release, and a
+struck cell's lifeforms are quiesced (`LifeForm.RetireWithWorld`) before the drain so their death
+cascade cannot run against mass that is already in the pool.
+
+General rule: **when something the player can see is present and a sibling is not, ask what the
+missing one has to WAIT for before it is drawn** — a hidden-until-ready gate reads exactly like
+mass that was never made.
+
 ### 41.4 Collider budget (stated per the gate)
 
 Three traversal cells at stride 4 ≈ 8–10k prisms each ≈ **≤ 30k prisms standing** — the
@@ -7623,7 +7663,13 @@ holding a dead SO; that system is removed — §15 — so the hazard and its gua
   (a mid-hierarchy parent pins the arrow in a corner — the note `PaintingRunner` already
   carries). One arrow per voyage, destroyed with it; a painting run standing its own at the same
   time would draw two, the same bounded degenerate class as the Arkway and the Wanderway both
-  running.
+  running. When the Ark is on screen but farther than 900u it is MARKED in place rather than
+  hidden (`ObjectiveIndicator.HideOnScreenWithin`); edge placement there aimed along a
+  near-zero centre-to-target vector and swung around the pilot's own hull.
+- **Frame rate degrades after many cells** (open, reported Sep 2026 after the creation-budget
+  fix). The census (§41.3.4) is the instrument; the first reading to take is whether
+  `tracked prisms`, `env pool issued` or `awaiting creation` climbs cell over cell. Not yet
+  measured, so no cause is claimed.
 - **The Ark's pace is an arrival profile** (added Sep 2026): `arkSpeed × arkCruiseSpeedFactor`
   (18 × 4) in open water, easing to `arkSpeed` across the destination cell's own membrane
   radius, so the deceleration IS entering the cell and the acceleration IS leaving the last

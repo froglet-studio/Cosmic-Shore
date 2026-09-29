@@ -93,14 +93,16 @@ until a voyage opens with the Ark in view every time.
   dropping — dock repose, entrance, arrow, banner, `_running`, `SetUnderway` all wait for it;
   one departure point (`_home`) for the corridor, the Ark and the entrance, with the entrance
   abeam on the port side; a toy pass during the build is ignored rather than toggling the
-  unseen voyage off; the arrow keeps pointing at an on-screen Ark further than 900 u; the host
-  revert can no longer pick a lingering traversal satellite; `LogVoyageStart` is always on;
+  unseen voyage off; an on-screen Ark further than 900 u is marked in place by the arrow; the host
+  revert can no longer pick a lingering traversal satellite; `LogVoyageStart` is on the ToyBox
+  channel now that play tests open on a visible Ark;
   only the FIRST cell stands behind the veil and the second streams in beside live play
   (`CellConveyor.StandAhead`), halving the blind opening.
   Earlier: `Ark.SetUnderway` gates movement; the wake is laid `watchForReveal: false`;
   `PollArenaReady` counts progress, not change; every build exit names its stage.
 - **Still to do:** measure the veil on the Lattice boot world with one cell behind it (target
-  ≤ 20 s); return `LogVoyageStart` to its channel after three consecutive green tests. **The QA
+  ≤ 20 s); find what makes the frame rate fall after many cells (`Docs/ECOSYSTEM.md` §41.5 —
+  read the per-crossing census first). **The QA
   entry is not written by hand** — `Docs/QA/QA_BACKLOG.md` is owned by the `/qa-backlog` skill,
   which scans MERGES on `bleeding-edge` and reads each PR body's "Verification status" section.
   So the entry lands when this branch merges, and what this branch owes it is the honest status
