@@ -270,6 +270,9 @@ uniform vec3 uCamPosOS;
 uniform vec4 uCrackleA, uCrackleB, uRimColor;
 uniform vec4 uCrackleP0;      // arcDensity, arcSharpness, ringThickness, centerFill
 uniform vec4 uCrackleP1;      // rippleSpeed, rimIntensity, rimPower, -
+uniform vec3 uOccTarget;       // _PrismOcclusionTarget: the local pilot's vessel
+uniform vec3 uOccParams;       // _PrismOcclusionParams: (outer radius, inner radius, core alpha); x <= 0 = off
+uniform float uOccNear;        // _PrismOcclusionNearRadius: the frustum's radius at the lens
 out vec4 frag;
 float cHash1(float n){ return fract(sin(n) * 43758.5453123); }
 float cNoise(float x){ float i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f); return mix(cHash1(i), cHash1(i + 1.0), f); }
@@ -361,8 +364,77 @@ float erosionSurvival(vec2 UV, vec3 vel, float op){
   float thr = (0.15 + smoothstep(-0.02, 1.02, w01) * 0.85) * 0.998 + 0.001;
   return op >= thr ? 1.0 : 0.0;
 }
+// PrismOcclusionCorridor.hlsl, translated: the camera->ship frustum inside which prism mass
+// dissolves through the SHATTER screen-door (a cracked lattice of Voronoi walls in pixels),
+// and PrismBackFaceFade, which sharpens alpha on away-facing surfaces. Kernel 4 is the
+// shipped one; the constants are the file's.
+vec2 oHash2(vec2 cell){ vec3 p3 = fract(cell.xyx * vec3(0.1031, 0.1030, 0.0973)); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.xx + p3.yz) * p3.zy); }
+float occSmoother(float t){ t = clamp(t, 0.0, 1.0); return t * t * t * (t * (t * 6.0 - 15.0) + 10.0); }
+float occShatter(vec2 pixel, float time){
+  const float cellPx = 16.26, wallPx = 20.0, morph = 0.3256;
+  vec2 p = pixel / cellPx;
+  vec2 base = floor(p);
+  float phase = time * morph * 6.28318530718;
+  float best = 8.0;
+  vec2 owner = base;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 cell = base + vec2(x, y);
+    vec2 orbit = 0.5 + 0.5 * sin(6.28318530718 * oHash2(cell) + phase);
+    vec2 off = (cell + orbit) - p;
+    float d = dot(off, off);
+    if (d < best) { best = d; owner = cell; }
+  }
+  vec2 h = oHash2(owner);
+  float ang = 6.28318530718 * h.y;
+  float ramp = dot(p - owner, vec2(cos(ang), sin(ang))) * (cellPx / wallPx);
+  return fract(h.x + ramp + time * morph) * 0.998 + 0.001;
+}
+// Returns (alpha, clip threshold).
+vec2 occlusionFade(vec3 P, float baseAlpha, float noseClearance){
+  if (baseAlpha <= 0.0) return vec2(0.0, 1.0);
+  float alpha = baseAlpha;
+  float outerR = uOccParams.x;
+  if (outerR > 0.0) {
+    vec3 axis = uOccTarget - uCamPos;
+    vec3 rel = P - uCamPos;
+    float axisLenSq = dot(axis, axis);
+    if (axisLenSq > 1e-6) {
+      float t = dot(rel, axis) / axisLenSq;
+      float axisLen = sqrt(axisLenSq);
+      float innerR = min(uOccParams.y, outerR);
+      float clearanceT = (outerR * noseClearance) / axisLen;
+      float bandT = (outerR - innerR) / axisLen;
+      float shrink = min(1.0, 0.5 / max(clearanceT + bandT, 1e-4));
+      clearanceT *= shrink;
+      bandT *= shrink;
+      float tSolid = clamp(1.0 - clearanceT, 0.0, 1.0);
+      if (t > 0.0 && t < tSolid) {
+        float dAxis = length(rel - axis * t);
+        float nearR = clamp(uOccNear, 0.0, outerR);
+        float outerAtT = mix(nearR, outerR, t);
+        if (dAxis < outerAtT) {
+          float innerAtT = outerAtT * (innerR / outerR);
+          float clearRadial = 1.0 - occSmoother((dAxis - innerAtT) / max(outerAtT - innerAtT, 1e-4));
+          float band = clamp(bandT, 1e-4, 1.0);
+          float clearAxial = 1.0 - occSmoother((t - (tSolid - band)) / band);
+          alpha = baseAlpha * mix(1.0, uOccParams.z, clearRadial * clearAxial);
+        }
+      }
+    }
+  }
+  if (alpha >= 1.0) return vec2(alpha, 0.0);
+  return vec2(alpha, occShatter(gl_FragCoord.xy, uTime));
+}
 void main(){
-  if (uPrismGraph == 2 && erosionSurvival(vUv, vVelocity, vOpacity) < 0.5) discard;
+  if (uPrismGraph != 0) {
+    // BlockGraph: corridor(material alpha). ExplodingBlockGraph: the erosion wipe feeds the
+    // corridor (debris dissolves flush to the ship: no nose clearance, it has no collider).
+    float baseA = uPrismGraph == 2 ? erosionSurvival(vUv, vVelocity, vOpacity) : vDark.a;
+    vec2 occ = occlusionFade(vWorld, baseA, uPrismGraph == 2 ? 0.0 : 1.0);
+    float a = occ.x;
+    if (a < 1.0 && a > 0.0 && dot(normalize(vNormal), uCamPos - vWorld) < 0.0) a = pow(a, 3.0);
+    if (a < occ.y || a <= 0.0) discard;
+  }
   vec3 N = normalize(vNormal);
   if (!gl_FrontFacing) N = -N;
   vec3 V = normalize(uCamPos - vWorld);
@@ -557,6 +629,7 @@ void main(){
         static readonly int IdGrowStart = Shader.PropertyToID("_GrowStartTime"), IdGrowRate = Shader.PropertyToID("_GrowRate"), IdGrowFrac = Shader.PropertyToID("_GrowStartFrac");
         static readonly int IdSqrDistance = Shader.PropertyToID("_SqrDistance");
         static readonly int IdPrismClock = Shader.PropertyToID("_PrismClock");
+        static readonly int IdOccTarget = Shader.PropertyToID("_PrismOcclusionTarget"), IdOccParams = Shader.PropertyToID("_PrismOcclusionParams"), IdOccNear = Shader.PropertyToID("_PrismOcclusionNearRadius");
 
         public int DrawCalls { get; private set; }
         public int Instances { get; private set; }
@@ -599,6 +672,11 @@ void main(){
             SetFog();
             _program.Set("uTex", 0);
             _program.Set("uExt", 1);
+            var occTarget = Shader.GetGlobalVector(IdOccTarget);
+            var occParams = Shader.GetGlobalVector(IdOccParams);
+            _program.Set("uOccTarget", occTarget.x, occTarget.y, occTarget.z);
+            _program.Set("uOccParams", occParams.x, occParams.y, occParams.z);
+            _program.Set("uOccNear", Shader.GetGlobalFloat(IdOccNear));
 
             _gl.Enable(EnableCap.DepthTest);
             _gl.DepthFunc(DepthFunction.Lequal);
