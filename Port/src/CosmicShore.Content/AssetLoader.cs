@@ -73,6 +73,23 @@ namespace CosmicShore.Content
             return Adapt(result, expected);
         }
 
+        // Unity runs a ScriptableObject's Awake/OnEnable when the asset loads.
+        static void InvokeLoadHooks(ScriptableObject so)
+        {
+            const System.Reflection.BindingFlags f = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+            foreach (var name in new[] { "Awake", "OnEnable" })
+            {
+                for (var t = so.GetType(); t != null && t != typeof(ScriptableObject); t = t.BaseType)
+                {
+                    var m = t.GetMethod(name, f | System.Reflection.BindingFlags.DeclaredOnly, null, Type.EmptyTypes, null);
+                    if (m == null) continue;
+                    try { m.Invoke(so, null); }
+                    catch (System.Reflection.TargetInvocationException e) { Debug.LogException(e.InnerException ?? e); }
+                    break;
+                }
+            }
+        }
+
         static EngineObject Adapt(EngineObject o, Type expected)
         {
             if (o == null) return null;
@@ -100,6 +117,7 @@ namespace CosmicShore.Content
                     so.name = doc.Body.Str("m_Name") ?? type.Name;
                     _cache[(r.Guid, r.FileId)] = so; // before reading: cycles resolve to this instance
                     _reader.ReadInto(so, doc.Body, file);
+                    InvokeLoadHooks(so);
                     return so;
                 }
                 case 21: // Material

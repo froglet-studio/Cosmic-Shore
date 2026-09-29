@@ -224,8 +224,23 @@ namespace CosmicShore.Engine
         /// Original engine contract: returns the asset registered at the Resources-relative
         /// path, or null when nothing (or a different type) is registered there.
         /// </summary>
+        /// <summary>
+        /// Arc E: resolves a Resources-relative path against the project's real
+        /// <c>Resources/</c> folders when nothing was registered explicitly (installed by
+        /// the content bridge; null leaves the registry-only behavior).
+        /// </summary>
+        public static Func<string, Type, Object> ContentLoader;
+
         public static T Load<T>(string path) where T : Object
-            => PathRegistry.TryGetValue(path, out var asset) ? asset as T : null;
+        {
+            if (PathRegistry.TryGetValue(path, out var asset)) return asset as T;
+            if (ContentLoader == null) return null;
+            var loaded = ContentLoader(path, typeof(T));
+            if (loaded != null) PathRegistry[path] = loaded;
+            return loaded as T;
+        }
+
+        public static Object Load(string path) => Load<Object>(path);
 
         public static T[] FindObjectsOfTypeAll<T>() where T : ScriptableObject
         {
@@ -573,8 +588,8 @@ namespace CosmicShore.Engine
     // E7/E8: Object statics that ported code calls.
     public static class ObjectUtilities
     {
-        /// <summary>Single-scene engine: nothing is destroyed on (nonexistent) scene loads.</summary>
-        public static void DontDestroyOnLoad(Object target) { }
+        /// <summary>Forwards to <see cref="Object.DontDestroyOnLoad"/>.</summary>
+        public static void DontDestroyOnLoad(Object target) => Object.DontDestroyOnLoad(target);
 
         public static T FindFirstObjectByType<T>() where T : class
             => GameLoop.Current?.Scene.FindObjectOfType<T>(includeInactive: true);

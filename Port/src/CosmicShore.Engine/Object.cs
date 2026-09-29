@@ -72,8 +72,18 @@ namespace CosmicShore.Engine
             }
         }
 
-        /// <summary>Single-scene engine for now: objects survive (nonexistent) scene loads by default.</summary>
-        public static void DontDestroyOnLoad(Object target) { }
+        /// <summary>
+        /// Marks the target's ROOT GameObject to survive Single scene loads (original
+        /// contract). Arc E: real scene transitions now unload every unmarked root.
+        /// </summary>
+        public static void DontDestroyOnLoad(Object target)
+        {
+            var go = target as GameObject ?? (target as Component)?.gameObject;
+            if (go is null) return;
+            var root = go.transform;
+            while (root.parent is not null) root = root.parent;
+            root.gameObject.dontDestroyOnLoad = true;
+        }
 
         public static T FindFirstObjectByType<T>() where T : class
             => GameLoop.Current?.Scene.FindObjectOfType<T>(includeInactive: true);

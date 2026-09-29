@@ -27,6 +27,10 @@ namespace CosmicShore.Engine
 
         public bool activeSelf { get; private set; } = true;
 
+        /// <summary>Survives Single scene loads (set via <see cref="Object.DontDestroyOnLoad"/> on a root).</summary>
+        internal bool dontDestroyOnLoad;
+        public bool IsDontDestroyOnLoad => dontDestroyOnLoad;
+
         public GameObject(string name = "GameObject")
         {
             var loop = GameLoop.Current

@@ -1,0 +1,253 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using CosmicShore.Content.Scenes;
+using CosmicShore.Content.Yaml;
+using CosmicShore.Engine;
+using CosmicShore.Engine.Injection;
+using CosmicShore.Engine.SceneManagement;
+using EngineObject = CosmicShore.Engine.Object;
+
+namespace CosmicShore.Content
+{
+    /// <summary>
+    /// The port running the Unity project's own content, the way the player does:
+    /// the build scene list from <c>ProjectSettings/EditorBuildSettings.asset</c>,
+    /// real Single/Additive scene loads through <see cref="SceneManager"/>, Reflex-style
+    /// dependency injection (root scopes from <c>Resources/ReflexSettings</c>, a child
+    /// scope per loaded scene), <c>Resources.Load</c> over every <c>Resources/</c> folder,
+    /// and prefab assets materialized as inactive templates for <c>Instantiate</c>.
+    /// </summary>
+    public sealed class ContentRuntime : ISceneContentBackend
+    {
+        public static ContentRuntime Current { get; private set; }
+
+        public readonly AssetDatabase Db;
+        public readonly ScriptTypeMap Scripts;
+        public readonly AssetLoader Assets;
+        public readonly InstantiateOptions Options;
+        public readonly List<(string path, string guid, bool enabled)> BuildScenes = new();
+
+        /// <summary>The root DI container (Reflex project scope), once booted.</summary>
+        public Container RootContainer { get; private set; }
+
+        /// <summary>Every scene load's diagnostics, most recent last.</summary>
+        public readonly List<(string scene, LoadedScene result)> Loads = new();
+
+        readonly Dictionary<string, string> _resources = new(StringComparer.OrdinalIgnoreCase);
+        GameObject _templatesRoot;
+        readonly Dictionary<string, (PrefabGraph graph, LoadedScene loaded)> _prefabTemplates = new(StringComparer.Ordinal);
+
+        public ContentRuntime(string projectRoot, IEnumerable<Assembly> assemblies, InstantiateOptions options = null)
+        {
+            Db = new AssetDatabase(projectRoot);
+            Scripts = new ScriptTypeMap(Db, assemblies.Append(typeof(GameObject).Assembly));
+            Assets = new AssetLoader(Db, Scripts);
+            Options = options ?? new InstantiateOptions();
+            ReadBuildSettings();
+            IndexResources();
+            Assets.Importers[typeof(GameObject)] = LoadPrefabObject;
+        }
+
+        /// <summary>Installs this runtime as the engine's scene + Resources backend.</summary>
+        public void Install()
+        {
+            Current = this;
+            SceneManager.Backend = this;
+            Resources.ContentLoader = LoadResource;
+        }
+
+        void ReadBuildSettings()
+        {
+            var path = Path.Combine(Db.ProjectRoot, "ProjectSettings", "EditorBuildSettings.asset");
+            if (!File.Exists(path)) return;
+            var doc = UnityYaml.ParseDocuments(File.ReadAllText(path)).FirstOrDefault();
+            foreach (var s in doc?.Body["m_Scenes"]?.Items ?? Array.Empty<YNode>())
+                BuildScenes.Add((s.Str("path"), s.Str("guid"), s.Bool("enabled")));
+        }
+
+        void IndexResources()
+        {
+            const string marker = "/Resources/";
+            foreach (var full in Db.AllAssetPaths)
+            {
+                var rel = Db.ProjectRelative(full);
+                int i = rel.LastIndexOf(marker, StringComparison.Ordinal);
+                if (i < 0 || Directory.Exists(full)) continue;
+                var key = rel.Substring(i + marker.Length);
+                var dot = key.LastIndexOf('.');
+                if (dot > 0) key = key.Substring(0, dot);
+                _resources.TryAdd(key, full);
+            }
+        }
+
+        /// <summary>Scene asset path for a name, path or build index string.</summary>
+        public string ResolveScenePath(string nameOrPath)
+        {
+            if (nameOrPath.EndsWith(".unity", StringComparison.OrdinalIgnoreCase))
+                return nameOrPath;
+            foreach (var (p, _, _) in BuildScenes)
+                if (string.Equals(Path.GetFileNameWithoutExtension(p), nameOrPath, StringComparison.OrdinalIgnoreCase))
+                    return p;
+            // Not in the build list — search the project (tool scenes, retired singleplayer scenes).
+            foreach (var full in Db.AllAssetPaths)
+                if (full.EndsWith(".unity", StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(Path.GetFileNameWithoutExtension(full), nameOrPath, StringComparison.OrdinalIgnoreCase))
+                    return Db.ProjectRelative(full);
+            return null;
+        }
+
+        // ── Boot ─────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Reflex project scope: instantiate the root-scope prefabs named in
+        /// <c>Resources/ReflexSettings</c> (persistent), run their installers, build the root container.
+        /// </summary>
+        public void BootRootScopes()
+        {
+            if (!_resources.TryGetValue("ReflexSettings", out var settingsPath)) return;
+            var guid = Db.GuidOf(settingsPath);
+            var doc = Db.Load(guid)?.Documents.FirstOrDefault(d => d.ClassId == 114);
+            var roots = doc?.Body["<RootScopes>k__BackingField"]?.Items ?? Array.Empty<YNode>();
+
+            var installers = new List<IInstaller>();
+            var scopeObjects = new List<GameObject>();
+            foreach (var r in roots)
+            {
+                var prefabRef = ObjRef.From(r);
+                var file = Db.Load(prefabRef.Guid);
+                if (file == null) continue;
+                var loaded = Instantiate(PrefabGraph.Build(Db, file), activate: true);
+                foreach (var root in loaded.Roots)
+                {
+                    EngineObject.DontDestroyOnLoad(root);
+                    scopeObjects.Add(root);
+                    installers.AddRange(root.GetComponentsInChildren<IInstaller>(true));
+                }
+            }
+
+            var builder = new ContainerBuilder();
+            foreach (var installer in installers)
+            {
+                try { installer.InstallBindings(builder); }
+                catch (Exception e) { Debug.LogException(e); }
+            }
+            RootContainer = builder.Build();
+            foreach (var go in scopeObjects) Inject(RootContainer, go);
+        }
+
+        static void Inject(Container container, GameObject go)
+        {
+            try { container.InjectGameObject(go, recursive: true); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
+
+        // ── ISceneContentBackend ─────────────────────────────────────────────
+
+        public void Load(string sceneName, LoadSceneMode mode, Scene scene)
+        {
+            var path = ResolveScenePath(sceneName);
+            if (path == null)
+            {
+                Debug.LogError($"[Content] Scene '{sceneName}' not found in build settings or project.");
+                return;
+            }
+            int index = BuildScenes.FindIndex(s => string.Equals(s.path, path, StringComparison.OrdinalIgnoreCase));
+            if (mode == LoadSceneMode.Single)
+            {
+                scene.name = Path.GetFileNameWithoutExtension(path);
+                if (index >= 0) scene.buildIndex = index;
+            }
+
+            var file = Db.LoadPath(path);
+            var loaded = Instantiate(PrefabGraph.Build(Db, file), activate: Options.Activate);
+            Loads.Add((scene.name, loaded));
+
+            // Reflex scene scope: a child of the root container injects every scene object
+            // (after Awake/OnEnable, before Start — the timing the codebase documents).
+            if (RootContainer != null)
+            {
+                var sceneContainer = RootContainer.CreateChild();
+                foreach (var root in loaded.Roots) Inject(sceneContainer, root);
+            }
+        }
+
+        LoadedScene Instantiate(PrefabGraph graph, bool activate)
+        {
+            var opts = new InstantiateOptions
+            {
+                IncludeScript = Options.IncludeScript,
+                WirePersistentCalls = Options.WirePersistentCalls,
+                Activate = activate,
+            };
+            return new SceneInstantiator(Assets, opts).Instantiate(graph);
+        }
+
+        // ── Resources ────────────────────────────────────────────────────────
+
+        EngineObject LoadResource(string path, Type type)
+        {
+            if (!_resources.TryGetValue(path, out var full)) return null;
+            var guid = Db.GuidOf(full);
+            if (guid == null) return null;
+            var ext = Path.GetExtension(full).ToLowerInvariant();
+            long fileId = ext switch
+            {
+                ".prefab" => MainObjectOfPrefab(guid),
+                ".asset" or ".mat" => MainObjectOfAsset(guid),
+                ".png" or ".jpg" or ".jpeg" or ".tga" or ".psd" => typeof(Sprite).IsAssignableFrom(type) ? 21300000 : 2800000,
+                _ => 0,
+            };
+            if (fileId == 0) return null;
+            return Assets.Load(new ObjRef(fileId, guid, 2), type ?? typeof(EngineObject));
+        }
+
+        long MainObjectOfAsset(string guid)
+        {
+            var f = Db.Load(guid);
+            if (f == null) return 0;
+            var main = f.Documents.FirstOrDefault(d => d.FileId == 11400000 || d.FileId == 2100000)
+                ?? f.Documents.FirstOrDefault(d => !d.Stripped);
+            return main?.FileId ?? 0;
+        }
+
+        long MainObjectOfPrefab(string guid)
+        {
+            var f = Db.Load(guid);
+            if (f == null) return 0;
+            var g = PrefabGraph.Build(Db, f);
+            return g.FindPrefabRoot()?.Id ?? 0;
+        }
+
+        // ── Prefab assets as inactive templates ──────────────────────────────
+
+        EngineObject LoadPrefabObject(ObjRef r)
+        {
+            var path = Db.PathOf(r.Guid);
+            if (path == null || !path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase)) return null;
+            if (GameLoop.Current == null) return null;
+
+            if (!_prefabTemplates.TryGetValue(r.Guid, out var entry))
+            {
+                if (_templatesRoot == null || !_templatesRoot)
+                {
+                    _templatesRoot = new GameObject("__prefab_assets");
+                    _templatesRoot.SetActive(false);
+                    EngineObject.DontDestroyOnLoad(_templatesRoot);
+                }
+                var file = Db.Load(r.Guid);
+                var graph = PrefabGraph.Build(Db, file);
+                _prefabTemplates[r.Guid] = entry = (graph, null); // re-entrancy guard for self-referencing prefabs
+                var loaded = Instantiate(graph, activate: false);
+                foreach (var root in loaded.Roots) root.transform.SetParent(_templatesRoot.transform, false);
+                _prefabTemplates[r.Guid] = entry = (graph, loaded);
+            }
+            if (entry.loaded == null) return null;
+            // 100100000 names the prefab asset itself → its root GameObject.
+            long id = r.FileId == 100100000 ? entry.graph.FindPrefabRoot()?.Id ?? 0 : entry.graph.Resolve(r.FileId);
+            return entry.loaded.ById.TryGetValue(id, out var o) ? o : null;
+        }
+    }
+}

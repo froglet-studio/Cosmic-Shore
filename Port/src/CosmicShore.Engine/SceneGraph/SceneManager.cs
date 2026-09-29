@@ -60,6 +60,33 @@ namespace CosmicShore.Engine.SceneManagement
         static readonly Scene s_noScene = new("");
 
         /// <summary>
+        /// Arc E: the content backend that performs real loads (unload unmarked roots,
+        /// instantiate the scene's serialized content). Null keeps the original minimal
+        /// semantic (re-designate the loop scene + announce) that headless harnesses use.
+        /// </summary>
+        public static ISceneContentBackend Backend { get; set; }
+
+        static void Perform(string sceneName, LoadSceneMode mode)
+        {
+            var scene = GameLoop.Current?.Scene;
+            if (Backend != null && scene != null)
+            {
+                if (mode == LoadSceneMode.Single)
+                {
+                    NotifySceneUnloaded(scene);
+                    foreach (var root in new System.Collections.Generic.List<GameObject>(scene.GetRootGameObjects()))
+                        if (!root.IsDontDestroyOnLoad) Object.DestroyImmediate(root);
+                    scene.name = sceneName;
+                }
+                Backend.Load(sceneName, mode, scene);
+                NotifySceneLoaded(scene, mode);
+                return;
+            }
+            if (scene != null) scene.name = sceneName;
+            NotifySceneLoaded(scene ?? new Scene(sceneName), mode);
+        }
+
+        /// <summary>
         /// The active scene (original contract: <c>UnityEngine.SceneManagement.SceneManager
         /// .GetActiveScene()</c>). One GameLoop owns one Scene, so the current loop's scene
         /// IS the active scene; with no loop running this returns an unnamed placeholder
@@ -82,10 +109,7 @@ namespace CosmicShore.Engine.SceneManagement
         public static async Task LoadSceneAsync(string sceneName, LoadSceneMode mode = LoadSceneMode.Single)
         {
             await GameTask.Yield();
-
-            var scene = GameLoop.Current?.Scene;
-            if (scene != null) scene.name = sceneName;
-            NotifySceneLoaded(scene ?? new Scene(sceneName), mode);
+            Perform(sceneName, mode);
         }
 
         /// <summary>
@@ -94,10 +118,13 @@ namespace CosmicShore.Engine.SceneManagement
         /// Same minimal semantic as <see cref="LoadSceneAsync"/>, applied immediately.
         /// </summary>
         public static void LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single)
-        {
-            var scene = GameLoop.Current?.Scene;
-            if (scene != null) scene.name = sceneName;
-            NotifySceneLoaded(scene ?? new Scene(sceneName), mode);
-        }
+            => Perform(sceneName, mode);
+    }
+
+    /// <summary>Arc E: performs real scene content loads for <see cref="SceneManager"/>.</summary>
+    public interface ISceneContentBackend
+    {
+        /// <summary>Instantiates <paramref name="sceneName"/>'s serialized content into <paramref name="scene"/>.</summary>
+        void Load(string sceneName, LoadSceneMode mode, Scene scene);
     }
 }
