@@ -1,5 +1,5 @@
 using CosmicShore.Engine;
-using Matrix4x4 = CosmicShore.Engine.Rendering.Matrix4x4;
+using Matrix4x4 = CosmicShore.Engine.Matrix4x4;
 
 namespace Unity.Mathematics
 {
