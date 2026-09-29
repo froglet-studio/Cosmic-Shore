@@ -150,6 +150,19 @@ namespace CosmicShore.Gameplay
         /// chatter the drift on and off.</summary>
         const float DriftEngageDepth = 0.1f;
 
+        /// <summary>
+        /// True while the single live thumb is alone because the other was LIFTED (a 2 -&gt; 1
+        /// transition), false when it is alone because it was the FIRST thumb down. On the strip
+        /// only the former raises Left/RightStickAction: those are the Butterfly's Fold and mode
+        /// switch, and off the strip they also fired on a first touch - so putting the right thumb
+        /// down first toggled the Butterfly's mode, and left-thumb-first started a Fold that
+        /// teleported the vessel the moment the second thumb landed. Which thumb a pilot happens
+        /// to touch with first is not a decision; lifting one is.
+        /// </summary>
+        private bool singleThumbFromLift;
+
+        private bool StickEventsAllowed => singleThumbFromLift || !PerfStrip.TouchStickEventsOnLiftOnly;
+
         private bool overdriveDriftEngaged;
         private Vector2 leftRawStick, rightRawStick;
         private Vector2 oneThumbRawStick;
@@ -274,9 +287,12 @@ namespace CosmicShore.Gameplay
             if (prevTouchCount == 1 && touchCount >= 2 && (onlyLeftActive || onlyRightActive))
                 throttleCarry = heldXDiff - 0.5f;
 
+            if (prevTouchCount == 0 && touchCount == 1) singleThumbFromLift = false;
+
             // 2+ → 1: finger lifted, start drifting
             if (prevTouchCount >= 2 && touchCount == 1)
             {
+                singleThumbFromLift = true;
                 // The held throttle already embodies any earlier carry.
                 throttleCarry = 0f;
 
@@ -416,7 +432,7 @@ namespace CosmicShore.Gameplay
 
         private void HandleLeftStick(Vector2 position)
         {
-            if (!leftStickEffectsStarted)
+            if (!leftStickEffectsStarted && StickEventsAllowed)
             {
                 leftStickEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.LeftStickAction);
@@ -430,7 +446,7 @@ namespace CosmicShore.Gameplay
 
         private void HandleRightStick(Vector2 position)
         {
-            if (!rightStickEffectsStarted)
+            if (!rightStickEffectsStarted && StickEventsAllowed)
             {
                 rightStickEffectsStarted = true;
                 inputStatus.OnButtonPressed.Raise(InputEvents.RightStickAction);

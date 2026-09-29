@@ -150,6 +150,20 @@ namespace CosmicShore.Gameplay
             _mainView = null;
 
             var live = FoldGate.Live;
+
+            // Stripped-performance branch: the window is a whole second render of the world every
+            // frame a gate is on screen - which on a phone is exactly the moment the pilot is
+            // threading one. Gates still carry pilots across; the camera cuts over with them
+            // (CustomCameraController.CarryThroughPortal). See PerfStrip.FoldGateWindows.
+            if (!CosmicShore.Utility.PerfStrip.FoldGateWindows)
+            {
+                for (int i = 0; i < live.Count; i++)
+                    if (live[i]) live[i].SetWindow(false, 0f);
+                Shown = null;
+                if (_texture != null) ReleaseTexture();
+                return;
+            }
+
             if (live.Count == 0)
             {
                 Shown = null;

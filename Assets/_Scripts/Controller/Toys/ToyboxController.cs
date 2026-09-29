@@ -136,7 +136,8 @@ namespace CosmicShore.Gameplay
                 if (PerfStrip.LightToysOnly
                     && t is not (CosmicShore.ScriptableObjects.ConveyorToyDefinitionSO
                         or CosmicShore.ScriptableObjects.DomainChangerToyDefinitionSO
-                        or CosmicShore.ScriptableObjects.ElementChargerToyDefinitionSO))
+                        or CosmicShore.ScriptableObjects.ElementChargerToyDefinitionSO
+                        or CosmicShore.ScriptableObjects.VesselChangerToyDefinitionSO))
                     continue;
                 unlocked.Add(t);
             }

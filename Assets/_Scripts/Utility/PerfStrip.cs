@@ -154,6 +154,23 @@ namespace CosmicShore.Utility
         public static bool TouchOverdriveDrift => Enabled;
 
         /// <summary>
+        /// On touch, a single thumb raises Left/RightStickAction only when it is alone because the
+        /// other thumb was LIFTED - never because it was the first one down. Those events are the
+        /// Butterfly's Fold and mode switch; off the strip, touching the screen right-thumb-first
+        /// toggled its mode and left-thumb-first started a Fold. See TouchInputStrategy.
+        /// </summary>
+        public static bool TouchStickEventsOnLiftOnly => Enabled;
+
+        /// <summary>
+        /// Whether a Butterfly fold gate draws its WINDOW onto the far side. Off on the strip: the
+        /// window is one extra render of the whole world per frame while a gate is on screen,
+        /// which on a phone lands exactly when the pilot is threading it. The gates still carry
+        /// pilots across (the gameplay half is untouched); the chase camera cuts across with the
+        /// ship instead of being carried through a window that is not there.
+        /// </summary>
+        public static bool FoldGateWindows => !Enabled;
+
+        /// <summary>
         /// Hide arcade/arena cards whose scene is not in this build. The strip ships a handful of
         /// scenes (see EditorBuildSettings); every other card is a launch that cannot load. Read at
         /// runtime from the build itself (<c>Application.CanStreamedLevelBeLoaded</c>), so enabling a
@@ -176,14 +193,26 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Ship only the LIGHT toys in the freestyle toybox: the conveyor (the reason this build
-        /// exists), the domain changer (two switch rings - repaints your trail and HUD) and the
+        /// exists), the domain changer (two switch rings - repaints your trail and HUD), the
         /// element charger (one station opening into four accent-material crystals - lets a pilot
-        /// feel the Squirrel's element upgrades). Each is a few meshes and no prisms. Skipped: the
-        /// vessel changer (other hulls, not tuned here), and the toys whose whole content is mass
-        /// or ecology this build turns off - painting (trail strokes), cell selector (34-69k-prism
-        /// worlds), spawn matrix (flora/fauna are paused), Arkway (three satellite cells).
+        /// feel the Squirrel's element upgrades) and the vessel changer (its roster narrowed to
+        /// <see cref="ShipsVessel"/>, so it opens onto one hull). Each is a few meshes and no
+        /// prisms until it is opened. Skipped: the toys whose whole content is mass or ecology
+        /// this build cannot afford - painting (trail strokes), cell selector (34-69k-prism
+        /// worlds), spawn matrix (releases flora/fauna/AI), Arkway (three satellite cells).
         /// </summary>
         public static bool LightToysOnly => Enabled;
+
+        /// <summary>
+        /// The hulls this build is tuned for: the Squirrel (two thumbs, the overdrive drift, the
+        /// boost ring on a lift) and the Butterfly (two BINARY abilities, both mapped to a thumb
+        /// lift - which is what makes it the second hull to bring to glass). The vessel changer
+        /// offers exactly these (ToyVesselRoster); every other hull is its own touch design pass.
+        /// </summary>
+        public static bool ShipsVessel(CosmicShore.Data.VesselClassType vessel) =>
+            !Enabled
+            || vessel == CosmicShore.Data.VesselClassType.Squirrel
+            || vessel == CosmicShore.Data.VesselClassType.Butterfly;
 
         /// <summary>
         /// Let a scene keep the post-processing it AUTHORED (see

@@ -60,6 +60,8 @@ namespace CosmicShore.Gameplay
             {
                 if (vessel is VesselClassType.Any or VesselClassType.Random) continue;
                 if (exclude.HasValue && vessel == exclude.Value) continue;
+                // Stripped-performance branch: only the hulls tuned for this build are offered.
+                if (!PerfStrip.ShipsVessel(vessel)) continue;
                 if (!into.Contains(vessel)) into.Add(vessel);
             }
         }

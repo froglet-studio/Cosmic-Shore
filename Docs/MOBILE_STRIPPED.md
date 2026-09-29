@@ -838,3 +838,66 @@ new — both were dead launches before this round too.
 Race; (2) a solo Joust spawns one AI Squirrel on the opposing team; (3) both Squirrels leave a
 ribbon you can skim for speed, and overtaking the AI scores a joust; (4) the match ends at the
 joust target and the scoreboard's Play Again reloads Joust.
+
+## Round 12 — touch controls, Garland, freestyle trails, the Butterfly (2026-09-29)
+
+### Touch: what a thumb does (shared by every hull — `TouchInputStrategy`)
+
+| Gesture | Before | Now |
+|---|---|---|
+| Lift one thumb | The other thumb was mirrored onto both sticks AT ITS CURRENT DEFLECTION. Throttle on this mix is the thumbs' horizontal spread, so at cruise both thumbs sit pushed outward — the remaining one read as a hard yaw toward its own side. Lifting a thumb yanked the vessel. | Every change between one and two thumbs **re-zeroes the sticks where the thumbs are.** The vessel keeps flying straight; steering resumes from wherever the thumbs rest. |
+| Put the thumb back | Its new touch point was a fresh origin, the other thumb kept its deflection — another yank, and neutral thumbs meant half throttle. | Re-zeroed again, and the throttle you had carries back (`throttleCarry`): neutral thumbs = the speed you had, fading out toward full spread or full squeeze so both ends stay reachable. **Lift, fire the boost ring, put the thumb back = straight through the ring at speed.** |
+| Drift (Squirrel) | Lift the right thumb. Half the steering gone, the lift itself pulled the vessel, fixed depth. | **Both thumbs hard over into the turn, then past the rim.** "Turn harder than full lock" — the push past the rim is the drift's analog depth (published on `LeftTriggerAnalog`, the pad trigger's channel; DriftAudio follows it). Both thumbs stay down. `PerfStrip.TouchOverdriveDrift`; the Squirrel binds its drift to `BothSticksAction` on touch. |
+| First thumb down | Raised Left/RightStickAction — for the Butterfly, that toggled Mass/Dust (right thumb first) or started a Fold (left thumb first) that teleported on the second touch. | Those events fire only when a thumb is alone because the other was **lifted** (`PerfStrip.TouchStickEventsOnLiftOnly`). Which thumb happens to land first is not a decision; lifting one is. |
+
+Drift depth is capped by the Squirrel's `touchDriftDepth` **0.35**: every overdrive drift is flown
+at full yaw, so the ceiling is what keeps a hairpin under 90° of slip (where nose thrust starts
+braking). `Tools/Build/touch_drift_slip.py --check` models a 180° hairpin at full overdrive:
+87.6° peak slip, 124% speed carried; 0.5 fails it (negative control run). Dial:
+`DriftOverdriveRadii` (1 stick radius of combined push = full depth) in `TouchInputStrategy`.
+
+### Garland and trails in freestyle
+
+- **Menu_Main boots Garland again** (Round 10's bare boot removed).
+- **Its garden grows.** `PerfStrip.CellLifeRuns`: flora/fauna spawners and flora growth run in the
+  cell config that declares itself the home world (`BootDefault` — Garland only). Garland's roster
+  is hard-capped (4 phyllotactic flora + 3 fauna, 37 heart colliders, mature ≈ 8,100 prisms incl.
+  its 4,259-prism boughs). The races keep their life paused.
+- **A Wanderway run gives Garland back when it ends** — the strip ships no Cell Selector, so a
+  wander used to leave you in the bare canvas for the session.
+- **Freestyle lays trail again — uncapped.** A cap/TTL on the freestyle trail is the rejected cheat
+  (CLAUDE.md, "the menu trail cap"), so it is bounded by the two things the law sanctions: the
+  **food web** (Garland's fauna graze it — its nucleus exterior is voraciously edible) and a
+  **spawner that waits** (`PerfStrip.FreestyleCellPrismBudget` 10,000 live prisms in the cell; the
+  pen lifts at the budget and comes back down at 9,700 once grazing has made room). Nothing is
+  removed to make room. Mature Garland leaves ~1,900 prisms of trail — about two minutes of flight
+  before the pen waits on the fauna. The menu's autopilot lava lamp lays no trail; the flag is set
+  on freestyle enter/exit and reset on every scene load.
+
+### The Butterfly and Waystation
+
+- **The vessel changer ships** (`LightToysOnly`), its roster narrowed by `PerfStrip.ShipsVessel` to
+  the Squirrel and the Butterfly — fly it to swap hulls.
+- **Butterfly on glass**: both abilities are binary, and both land on a thumb lift — **lift the left
+  thumb** to toggle Mass/Dust, **lift the right thumb and hold** to reach a Fold, **put it back** to
+  go. The re-zero means neither lift pulls the vessel off its line.
+- **Fold-gate windows are off** (`PerfStrip.FoldGateWindows`): a window is a whole second render of
+  the world every frame a gate is on screen — exactly when you're threading one. Gates still carry
+  you across; the camera cuts over with the ship instead of being carried through a window.
+- **Waystation** (the Butterfly's Time race) is in the build and appears in the Arcade grid on its
+  own (Round 11's filter). It plays in the Skim Race cell with life paused; the Butterfly lays no
+  wake in a race (trails stay killed outside freestyle and the capped modes).
+
+### Not verified in the editor
+
+No Unity here; the eight out-of-editor gates and `touch_drift_slip.py --check` pass. On device:
+1. Squirrel at cruise, lift the left thumb (boost ring), put it back: no yaw on either edge, still
+   at speed, through the ring.
+2. Both thumbs hard right, push further: the drift engages and deepens with the push; relax and it
+   releases.
+3. Right thumb down first on the Butterfly: nothing toggles. Lift left thumb: Mass/Dust toggles.
+   Lift right thumb, hold, replace: a Fold.
+4. Menu_Main comes up on Garland; flora grows and fauna swim; freestyle leaves a trail; after a
+   long flight the trail pauses rather than anything vanishing, and resumes as fauna graze.
+5. End a Wanderway run: Garland blooms back.
+6. The vessel changer offers the Butterfly; Waystation launches from the Arcade grid.

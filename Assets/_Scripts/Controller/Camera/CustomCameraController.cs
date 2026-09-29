@@ -151,6 +151,11 @@ namespace CosmicShore.Gameplay
             // for the camera to trail through the mouth, so hand it across outright.
             if (PlacementAnchor.HasValue) { ShiftCamera(shift); return true; }
 
+            // Stripped-performance branch: no gate window is rendered (PerfStrip.FoldGateWindows),
+            // and a carry without one frames an empty ring for as long as the camera takes to reach
+            // the mouth. Cut across instead - the ship keeps its place in the frame.
+            if (!CosmicShore.Utility.PerfStrip.FoldGateWindows) { ShiftCamera(shift); return true; }
+
             _carryShift = shift;
             _carryCentre = nearCentre;
             _carryNormal = exitNormal.sqrMagnitude > 1e-6f ? exitNormal.normalized : Vector3.forward;
