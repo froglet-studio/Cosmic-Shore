@@ -21,16 +21,21 @@ namespace CosmicShore.Engine.UI
         public bool ignoreReversedGraphics { get => m_IgnoreReversedGraphics; set => m_IgnoreReversedGraphics = value; }
         public BlockingObjects blockingObjects { get => m_BlockingObjects; set => m_BlockingObjects = value; }
 
+        Camera eventData_camera;
         Canvas m_Canvas;
         Canvas canvas => m_Canvas ??= gameObject.GetComponent<Canvas>();
 
         public override int sortOrderPriority => canvas != null ? canvas.sortingOrder : 0;
+
+        public override Camera eventCamera
+            => canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
 
         public override void Raycast(PointerEventData eventData, List<RaycastResult> resultAppendList)
         {
             if (canvas == null) return;
 
             int drawOrder = 0;
+            eventData_camera = eventCamera;
             WalkGraphics(canvas.transform, eventData.position, resultAppendList, ref drawOrder, isRoot: true);
         }
 
@@ -47,6 +52,14 @@ namespace CosmicShore.Engine.UI
             // consumed by any ported UI; add it when a consumer arrives.
             var group = node.gameObject.GetComponent<CanvasGroup>();
             if (group != null && group.isActiveAndEnabled && !group.blocksRaycasts) return;
+
+            // Original rule: every ICanvasRaycastFilter on the graphic or an ancestor (Mask,
+            // RectMask2D, custom filters) must accept the point, so a scroll viewport clips
+            // hits on everything scrolled out of it. Rejecting here prunes the subtree.
+            foreach (var c in node.gameObject.GetComponents<Component>())
+                if (c is ICanvasRaycastFilter filter && c is Behaviour { isActiveAndEnabled: true }
+                    && !filter.IsRaycastLocationValid(screenPoint, eventData_camera))
+                    return;
 
             foreach (var graphic in node.gameObject.GetComponents<Graphic>())
             {

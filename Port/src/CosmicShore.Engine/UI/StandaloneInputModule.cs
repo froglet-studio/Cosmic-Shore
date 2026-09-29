@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace CosmicShore.Engine.UI
@@ -75,6 +76,13 @@ namespace CosmicShore.Engine.UI
             if (newPressed == e.pointerPress && time - e.clickTime < 0.3f) e.clickCount++;
             else e.clickCount = 1;
             e.clickTime = time;
+
+            if (s_traceUi)
+            {
+                Console.WriteLine($"[trace-ui] down at {position}: {m_RaycastResults.Count} hits, press → {(newPressed != null ? Path(newPressed) : "none")}");
+                for (int i = 0; i < Math.Min(6, m_RaycastResults.Count); i++)
+                    Console.WriteLine($"[trace-ui]   #{i} {Path(m_RaycastResults[i].gameObject)} depth={m_RaycastResults[i].depth} order={m_RaycastResults[i].sortingOrder}");
+            }
 
             e.pointerPress = newPressed;
             e.rawPointerPress = currentOverGo;
@@ -162,6 +170,16 @@ namespace CosmicShore.Engine.UI
         }
 
         // ── internals ────────────────────────────────────────────────
+
+        static readonly bool s_traceUi = Environment.GetEnvironmentVariable("CS_PORT_TRACE_UI") == "1";
+
+        static string Path(GameObject go)
+        {
+            var parts = new System.Collections.Generic.List<string>();
+            for (var t = go.transform; t is not null && parts.Count < 6; t = t.parent) parts.Add(t.name);
+            parts.Reverse();
+            return string.Join("/", parts);
+        }
 
         RaycastResult RaycastAt(Vector2 position)
         {

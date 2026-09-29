@@ -265,9 +265,11 @@ namespace CosmicShore.Content.Textures
                     10907 => RoundedRect("Background", 32, 6f, 10, rimShade: 0.75f),
                     10911 => RoundedRect("InputFieldBackground", 32, 5f, 10, rimShade: 0.72f),
                     10913 => Circle("Knob", 16),
-                    10915 => RoundedRect("UIMask", 32, 6f, 10, rimShade: 1f),
-                    10917 => Arrow("DropdownArrow", 32),
-                    10909 => Check("Checkmark", 64),
+                    // Ids verified against the project's own usage: every ScrollRect "Viewport"
+                    // names 10917, every dropdown "Arrow" 10915, every toggle "Checkmark" 10901.
+                    10917 => RoundedRect("UIMask", 32, 6f, 10, rimShade: 1f),
+                    10915 => Arrow("DropdownArrow", 32),
+                    10901 => Check("Checkmark", 64),
                     _ => null,
                 };
                 Cache[fileId] = s;

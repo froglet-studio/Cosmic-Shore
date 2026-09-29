@@ -26,6 +26,7 @@ namespace CosmicShore.Player
             string scene = null, screenshot = null;
             int frames = -1, width = 1600, height = 900;
             bool headless = false, quiet = false, reportRender = false;
+            var dumps = new System.Collections.Generic.List<string>();
             var script = new InputScript();
             var shots = new System.Collections.Generic.SortedDictionary<int, string>();
             for (int i = 0; i < args.Length; i++)
@@ -38,6 +39,7 @@ namespace CosmicShore.Player
                     case "--headless": headless = true; break;
                     case "--quiet": quiet = true; break;
                     case "--report-render": reportRender = true; break;
+                    case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
                     case "--verbose": CosmicShore.Utility.CSDebug.VerboseChannels = (CosmicShore.Utility.CSLogChannel)~0; break;
                     case "--do" when i + 1 < args.Length: script.Add(args[++i]); break;
                     case "--shot" when i + 1 < args.Length:
@@ -59,7 +61,7 @@ namespace CosmicShore.Player
             try
             {
                 if (screenshot != null) shots[frames < 0 ? 180 : frames] = screenshot;
-                if (headless) return RunHeadless(scene, Math.Max(frames < 0 ? 600 : frames, script.LastFrame), quiet, width, height, script, reportRender);
+                if (headless) return RunHeadless(scene, Math.Max(frames < 0 ? 600 : frames, script.LastFrame), quiet, width, height, script, reportRender, dumps);
                 int last = shots.Count > 0 ? shots.Keys.Max() : (frames < 0 ? -1 : frames);
                 new PlayerWindow(scene, width, height, shots, last, script).Run();
                 return 0;
@@ -72,7 +74,7 @@ namespace CosmicShore.Player
             }
         }
 
-        static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script, bool reportRender)
+        static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script, bool reportRender, System.Collections.Generic.List<string> dumps)
         {
             Screen.width = width;
             Screen.height = height;
@@ -95,6 +97,7 @@ namespace CosmicShore.Player
             Console.WriteLine($"[player] {frames} frames, active scene '{lastScene}', {CosmicShore.Engine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).Length} live behaviours");
             boot.Log.PrintSummary();
             if (reportRender) { RenderInventory.PrintNetwork(); RenderInventory.Print(); }
+            foreach (var d in dumps) UiDump.Print(d);
             foreach (var (k, n) in boot.Log.Unique.OrderByDescending(kv => kv.Value).Take(40))
                 Console.WriteLine($"  ×{n,-4} {k.Replace('\n', ' ')}");
             return 0;

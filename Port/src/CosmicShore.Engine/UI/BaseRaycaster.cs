@@ -24,6 +24,9 @@ namespace CosmicShore.Engine.UI
         /// <summary>Canvas sortingOrder tier for cross-raycaster result ordering.</summary>
         public virtual int sortOrderPriority => 0;
 
+        /// <summary>The camera hits are resolved through (null for screen-space overlay).</summary>
+        public virtual Camera eventCamera => null;
+
         protected override void OnEnable()
         {
             if (!s_Raycasters.Contains(this)) s_Raycasters.Add(this);
