@@ -34,7 +34,7 @@ def b64(path):
 def loss_chart(runs, floor=None):
     """Inline SVG: log10 loss vs training step, 50-step moving mean, one line per experiment."""
     W, H, L, R, T, B = 640, 260, 52, 16, 14, 34
-    lo, hi = -4.0, -1.0
+    lo, hi = -5.0, -1.0
     steps = max((len(r["loss"]) for r in runs.values()), default=1) - 1
     xmax = max(8000, steps)
     sx = lambda s: L + (W - L - R) * s / xmax
@@ -351,7 +351,7 @@ table.kv td { font-weight: 600 }
         <thead><tr><th scope=col>Experiment</th><th scope=col>Train steps</th><th scope=col>Final train loss</th><th scope=col>Error @ 96</th><th scope=col>@ 1000</th><th scope=col>@ 4000</th><th scope=col>Worst cut, 300 steps later</th></tr></thead>
         <tbody>{{ROWS}}</tbody>
       </table></div>
-      <p class="caption">All values log₁₀ MSE against the target from one stochastic rollout. Training only ever sees steps 64–96. The paper's claim is visible in the last three columns: only the pool experiments hold the lizard at step 4000, and only the damaged-pool experiment recovers from a cut.</p>
+      <p class="caption">All values log₁₀ MSE against the target from one stochastic rollout. Training only ever sees steps 64–96. The paper's claim is visible in the last three columns: only the pool experiments hold the lizard at step 4000, and only the damaged-pool experiment reliably recovers from a cut. The persistent rule regrows three of the four cuts outright; after the corner cut it regrows a complete lizard two cells to the left of where it was, which pixel error scores as a failure (shifted back, its error is 10<sup>−4.96</sup>).</p>
     </div>
     {{FIGS}}
     {{ANIM}}
