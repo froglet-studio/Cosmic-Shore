@@ -5,7 +5,7 @@ write down. This is a match, not a training run. Do not press Learn.
 
 Branch: `feat/ai-genetic-training`.
 Editor: Unity `6000.3.17f1`.
-Mode: Skim Race (`GameModes.HexRace`, scene `MinigameHexRace`).
+Mode: Skim Race (`GameModes.SkimRace`, scene `MinigameSkimRace`).
 Hull: Squirrel. The arcade card lists only Squirrel.
 Intensity: **4**.
 
@@ -13,7 +13,7 @@ Intensity: **4**.
 
 The archive has one entry, filed by the 2026-09-29 Learn run:
 
-- Key: `Squirrel_HexRace_I4` (Squirrel, HexRace, intensity 4).
+- Key: `Squirrel_SkimRace_I4` (Squirrel, SkimRace, intensity 4).
 - Archive entry fitness: 277.09552. Generation 0. Notes: `Auto-deploy after 24 episodes`.
 - Sidecar: `Assets/_SO_Assets/AI Training/Exports/SkimRace_Squirrel_I4.json`.
 
@@ -62,7 +62,7 @@ For each race:
 - Whether each AI ship steers and changes speed through the race, or snaps
   (teleports, instant course jumps, score changes with no flight).
 - The console line `[Deploy] … flies the archive`. That line means
-  `TrainingPilot` was installed from `Squirrel_HexRace_I4`. If it is
+  `TrainingPilot` was installed from `Squirrel_SkimRace_I4`. If it is
   absent, the seat is still on `AIPilot` and the match is not against this
   archive.
 

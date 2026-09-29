@@ -5,8 +5,8 @@ Snapshot of branch `feat/ai-genetic-training` after the 2026-09-29 Learn run
 No race finished. Garrett has not flown this archive yet, so this document
 does not record a human result.
 
-Skim Race is `GameModes.HexRace (33)` in `MinigameHexRace`. The vessel is
-locked to Squirrel. The training key is `Squirrel_HexRace_I4`.
+Skim Race is `GameModes.HexRace (33)` in `MinigameSkimRace`. The vessel is
+locked to Squirrel. The training key is `Squirrel_SkimRace_I4`.
 
 ---
 
@@ -72,7 +72,7 @@ The other candidate explanations, checked against this log:
 - **All pilots tied.** False. Fitness spread from 277.10 to about −131.84,
   and crystal counts were 0, 1, 2, or 4.
 - **Archive not installed for a normal match.** False after the save.
-  `Archive.asset` holds `Squirrel_HexRace_I4`. `DeployArchiveInNormalPlay`
+  `Archive.asset` holds `Squirrel_SkimRace_I4`. `DeployArchiveInNormalPlay`
   is on. Intensity 4 flies that genome with no dither. Garrett's steps are
   in `Docs/SKIM_RACE_GARRETT_TEST.md`. Those races have not been played
   here.

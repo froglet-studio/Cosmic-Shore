@@ -209,7 +209,7 @@ Each completed match:
   (`AssetDatabase.SaveAssets`) before the replay is requested. A kill
   after that point keeps the finished match.
 - Calls `MiniGameControllerBase.RequestReplay()`. HexRace reloads
-  `MinigameHexRace`. The scene load destroys the runner. The launcher
+  `MinigameSkimRace`. The scene load destroys the runner. The launcher
   survives and attaches the next genomes to the new roster. The
   platform despawns AI players (`destroyWithScene: false`) before that
   load. The runner does not call `SceneManager.LoadScene` or
@@ -233,7 +233,7 @@ substitute for these steps.
 
 1. Open **FrogletTools → AI Training → Quick Setup** once, so
    `Assets/_SO_Assets/AI Training/` exists. If a previous run already
-   keyed `SessionState` to `Squirrel_HexRace_I4`, delete that asset (or
+   keyed `SessionState` to `Squirrel_SkimRace_I4`, delete that asset (or
    clear its population) before changing size. `EnsureStateInitialized`
    keeps an existing population when the scenario key matches, so a
    later size edit does not resize it.
@@ -248,8 +248,8 @@ substitute for these steps.
    - `[Training] Rollout start. generation=…`
    - `[Training] Rollout recorded.` once per pilot (domain, crystals,
      lineage).
-   - `[Training] Requesting replay via HexRaceController.RequestReplay`
-   - `[MultiplayerController] Scene reload replay - loading MinigameHexRace`
+   - `[Training] Requesting replay via SkimRaceController.RequestReplay`
+   - `[MultiplayerController] Scene reload replay - loading MinigameSkimRace`
 4. After three completed matches the session asset's **Generation** is
    **2** (match 2's start log says `generation=1`, match 3's says
    `generation=2`). **Episodes Completed** counts one evaluation per
