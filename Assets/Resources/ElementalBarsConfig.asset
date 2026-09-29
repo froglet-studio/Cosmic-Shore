@@ -12,6 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 222b0a8be44040c0b38d87e42bfe2fe3, type: 3}
   m_Name: ElementalBarsConfig
   m_EditorClassIdentifier:
+  enforceStandardPlacement: 1
+  standardAnchorMin: {x: 0.5, y: 0.5}
+  standardAnchorMax: {x: 0.5, y: 0.5}
+  standardPivot: {x: 0.5, y: 0}
+  standardAnchoredPosition: {x: 727.2, y: -332}
+  standardSize: {x: 464.5, y: 100}
   petals:
   - element: 1
     petalSprite: {fileID: 21300000, guid: db4eb1e3bdd545509a07a24329965351, type: 3}

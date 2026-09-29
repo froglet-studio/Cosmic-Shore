@@ -258,7 +258,6 @@ namespace CosmicShore.Core
         public void OnNextClicked()
         {
             WaitingForNextPressed = true;
-            CSDebug.Log("On Next Pressed");
         }
 
         public void ResetWaitingForNext() => WaitingForNextPressed = false;

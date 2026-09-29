@@ -53,12 +53,12 @@
 			<destination>{7206f2eb-6cda-4b52-b876-e957f26a0de4}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
+			<destination>{c95e9b13-3e1c-44c7-afa5-c09d8cb1d20c}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{0c9866be-76ae-4399-ab7b-1d3ee2968a59}">
 		<property name="maxVoices">
-			<value>21</value>
+			<value>12</value>
 		</property>
 		<property name="dopplerEnabled">
 			<value>true</value>

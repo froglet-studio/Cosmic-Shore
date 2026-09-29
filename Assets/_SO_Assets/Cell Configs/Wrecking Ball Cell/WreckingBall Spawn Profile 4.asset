@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: WreckingBall Spawn Profile 4
+  m_EditorClassIdentifier:
+  FloraExcludeLocalDomain: 0
+  FloraSpawnVolumeCeiling: 12000
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 0
+  FloraPopulationScale: 0.6
+  FloraPlantBudgetScale: 1
+  FloraPrismScale: 1
+  SupportedFloras:
+  - {fileID: 11400000, guid: 0935e3c1595ebda31cb30ee9f047e3b3, type: 2}
+  - {fileID: 11400000, guid: 865e734e9b49bab087ede0bd94fa095d, type: 2}
+  - {fileID: 11400000, guid: e9072b7700d6aba4c53fcb2ffe2be425, type: 2}
+  - {fileID: 11400000, guid: 4c9bf30dfa79ed7ed259edb3b25d96be, type: 2}
+  - {fileID: 11400000, guid: 2645c718375434dd2ae111640b5e5fa9, type: 2}
+  - {fileID: 11400000, guid: d561aaec03288befe66d0d178a9c0b5c, type: 2}
+  - {fileID: 11400000, guid: a939deec5a5bbf84a77308995247c85c, type: 2}
+  - {fileID: 11400000, guid: e802be65513bfd45c74e0a8fa8f47cef, type: 2}
+  - {fileID: 11400000, guid: 3262e93f70d2d07015257140b64ef088, type: 2}
+  FaunaExcludeLocalDomain: 0
+  InitialFaunaSpawnWaitTime: 10
+  FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: 4
+  BaseFaunaSpawnTime: 30
+  FaunaFoodFloor: 5
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 1
+  SupportedFaunas:
+  - {fileID: 11400000, guid: 178e4d83e2fd4a4bae1ab253d7766ea7, type: 2}
+  - {fileID: 11400000, guid: fb217959401746e1b09cac81ffce665b, type: 2}

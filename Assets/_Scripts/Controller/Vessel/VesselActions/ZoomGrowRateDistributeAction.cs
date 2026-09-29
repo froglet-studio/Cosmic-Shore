@@ -1,6 +1,5 @@
 using UnityEngine;
 using CosmicShore.Gameplay;
-using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -10,7 +9,6 @@ namespace CosmicShore.Gameplay
 
         void Awake()
         {
-            CSDebug.Log("Storing values");
             // var grow = GetComponent<GrowActionBase>();
             // if (grow != null)
             //     grow.SetShrinkRate(sharedRate);

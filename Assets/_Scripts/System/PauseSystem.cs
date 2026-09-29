@@ -9,6 +9,15 @@ namespace CosmicShore.Core
 
         public static event Action OnGamePaused;
         public static event Action OnGameResumed;
+
+        // Exiting play while paused must not make the next session's first pause a no-op.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            Paused = false;
+            OnGamePaused = null;
+            OnGameResumed = null;
+        }
         
         public static void TogglePauseGame(bool pause)
         {

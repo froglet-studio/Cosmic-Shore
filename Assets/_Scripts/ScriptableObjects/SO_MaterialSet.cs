@@ -20,7 +20,6 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] public Material TransparentSuperShieldedBlockMaterial;
         [SerializeField] public Material DangerousBlockMaterial;
         [SerializeField] public Material TransparentDangerousBlockMaterial;
-        [SerializeField] public GameObject BlockSilhouettePrefab; // TODO: Move to separate SO
         [SerializeField] public Material AOEExplosionMaterial;
         [SerializeField] public Material AOEConicExplosionMaterial;
         [SerializeField] public Material SpikeMaterial;

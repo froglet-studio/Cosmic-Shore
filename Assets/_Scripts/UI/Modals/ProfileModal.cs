@@ -1,14 +1,13 @@
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using PlayFab;
-using PlayFab.ClientModels;
+using Cysharp.Threading.Tasks;
+using FMODUnity;
 using Reflex.Attributes;
 using System;
 using System.Collections;
 using System.Security;
 using TMPro;
-using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
@@ -37,7 +36,8 @@ namespace CosmicShore.UI
         [SerializeField] Button cancelDisplayNameButton;
         [SerializeField] TMP_Text displayNameResultMessage;
         [SerializeField] string displayNameDefaultText;
-        [SerializeField] AudioClip TypingAudio;
+        [SerializeField, Tooltip("FMOD event ticked once per character while a random display name types itself in. Leave empty for silence.")]
+        EventReference typingAudioEvent;
         [SerializeField] bool FocusDisplayNameInputFieldEnabled;
 
         Color SuccessMessageOriginalColor;
@@ -154,10 +154,18 @@ namespace CosmicShore.UI
 
         #region Email and Password Login (unchanged behavior)
 
+        /// <summary>
+        /// The session flag this writes is pure <see cref="PlayerPrefs"/>, so the behaviour is
+        /// unchanged by PlayFab's removal — but note that nothing reads it any more: its only
+        /// reader was the PlayFab login path. Kept so the toggle still persists its state rather
+        /// than silently doing nothing; wire it to whatever replaces "stay signed in" on UGS.
+        /// </summary>
         void StayLoggedIn_OnToggled(bool isOn)
         {
-            AuthenticationManager.PlayerSession.IsRemembered = isOn;
+            PlayerSession.IsRemembered = isOn;
         }
+
+        static readonly PlayerSession PlayerSession = new();
 
         SecureString GetPassword(string password)
         {
@@ -175,25 +183,38 @@ namespace CosmicShore.UI
 
         #region Player Profile – Name + Avatar
 
+        /// <summary>
+        /// The word lists used to be PlayFab title data, fetched per press. That fetch could never
+        /// answer once PlayFab was disabled, and the coroutine below waited on it forever — so the
+        /// randomize button spun its busy indicator and never filled the field. They are local
+        /// now: a name generator that needs a backend round trip is a name generator that is
+        /// offline half the time (<c>Docs/PLAYFAB_RETIREMENT.md</c> §1).
+        /// </summary>
+        static readonly string[] NameAdjectives =
+        {
+            "Astral", "Boreal", "Cosmic", "Drifting", "Electric", "Fractal", "Gilded", "Hollow",
+            "Iridescent", "Jaded", "Kinetic", "Luminous", "Molten", "Nebular", "Orbital", "Prismatic",
+            "Quantum", "Radiant", "Solar", "Tidal", "Umbral", "Velvet", "Wandering", "Zephyr",
+        };
+
+        static readonly string[] NameNouns =
+        {
+            "Anchor", "Bloom", "Comet", "Drift", "Ember", "Fathom", "Glider", "Harbor",
+            "Impulse", "Jetty", "Kite", "Lantern", "Marrow", "Nomad", "Orbit", "Pilgrim",
+            "Quarry", "Ripple", "Spindle", "Thorn", "Undertow", "Vector", "Wake", "Zenith",
+        };
+
         string GenerateRandomName()
         {
-            var adjectives = AuthenticationManager.Adjectives;
-            var nouns = AuthenticationManager.Nouns;
             var random = new System.Random();
-            var adjIndex = random.Next(adjectives.Count);
-            var nounIndex = random.Next(nouns.Count);
-            var displayName = $"{adjectives[adjIndex]} {nouns[nounIndex]}";
+            var adjective = NameAdjectives[random.Next(NameAdjectives.Length)];
+            var noun = NameNouns[random.Next(NameNouns.Length)];
 
-            CSDebug.Log($"AuthenticationView - Generated display name: {displayName}");
-            return displayName;
+            return $"{adjective} {noun}";
         }
 
         IEnumerator AssignRandomNameCoroutine()
         {
-            AuthenticationManager.Instance.LoadRandomNameList();
-
-            yield return new WaitUntil(() => AuthenticationManager.Adjectives != null);
-
             if (displayNameInputField && BusyIndicator)
             {
                 displayNameInputField.placeholder.gameObject.SetActive(false);
@@ -206,7 +227,8 @@ namespace CosmicShore.UI
                 if (displayNameInputField)
                 {
                     displayNameInputField.text = randomName.Substring(0, i);
-                    audioSystem.PlaySFXClip(TypingAudio);
+                    if (!typingAudioEvent.IsNull)
+                        audioSystem.PlaySFXEvent(typingAudioEvent);
                 }
 
                 yield return new WaitForSeconds(.075f);
@@ -229,42 +251,57 @@ namespace CosmicShore.UI
             if (!displayNameInputField)
                 return;
 
-            var newName = displayNameInputField.text;
-
-            if (!CheckDisplayNameLength(newName))
-                return;
-
-            if (displayNameResultMessage)
-                displayNameResultMessage.gameObject.SetActive(false);
-
-            // Save via UGS PlayerDataService (primary path)
-            if (playerDataService != null)
-            {
-                playerDataService.SetDisplayName(newName);
-            }
-
-            CacheDisplayNameLocally(newName);
-            UpdatePlayerDisplayNameView(null);
-
-            // Keep the UGS account player name in sync with the Cloud Save display name,
-            // otherwise friends see the auto-generated "Pilot9898" format in their friend list
-            // instead of the name the user just set. Fire-and-forget — non-critical.
-            SyncUgsPlayerNameAsync(newName);
-
-            CSDebug.Log($"Current player display name: {newName}");
+            SetPlayerNameAsync(displayNameInputField.text).Forget();
         }
 
-        async void SyncUgsPlayerNameAsync(string name)
+        async UniTaskVoid SetPlayerNameAsync(string newName)
         {
+            // Local rules first (length, characters, profanity) - instant feedback.
+            // PlayerDataService re-validates and adds the global duplicate check, then
+            // handles the Cloud Save write and the UGS player-name sync itself.
+            var localCheck = DisplayNameValidator.Validate(newName);
+            if (!localCheck.IsValid)
+            {
+                ShowDisplayNameError(localCheck.Message);
+                return;
+            }
+
+            if (setDisplayNameButton) setDisplayNameButton.interactable = false;
+
             try
             {
-                if (AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn)
-                    await AuthenticationService.Instance.UpdatePlayerNameAsync(name);
+                var result = localCheck;
+                if (playerDataService != null)
+                {
+                    result = await playerDataService.TrySetDisplayNameAsync(newName);
+                    if (!result.IsValid)
+                    {
+                        ShowDisplayNameError(result.Message);
+                        return;
+                    }
+                }
+
+                if (displayNameResultMessage)
+                    displayNameResultMessage.gameObject.SetActive(false);
+
+                CacheDisplayNameLocally(result.SanitizedName);
+                UpdatePlayerDisplayNameView();
+
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ProfileModal] Display name set - {result.SanitizedName}");
             }
-            catch (Exception ex)
+            finally
             {
-                CSDebug.LogWarning($"[ProfileModal] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
+                if (setDisplayNameButton) setDisplayNameButton.interactable = true;
             }
+        }
+
+        void ShowDisplayNameError(string message)
+        {
+            if (!displayNameResultMessage)
+                return;
+
+            displayNameResultMessage.text = message;
+            displayNameResultMessage.gameObject.SetActive(true);
         }
 
         void CacheDisplayNameLocally(string name)
@@ -280,8 +317,8 @@ namespace CosmicShore.UI
         {
             var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
 
-            if (displayNameInputField && profile != null && !string.IsNullOrEmpty(profile.displayName))
-                displayNameInputField.text = profile.displayName;
+            if (displayNameInputField && profile != null && !string.IsNullOrEmpty(profile.Identity.DisplayName))
+                displayNameInputField.text = profile.Identity.DisplayName;
 
             HideDisplayNameButtons();
         }
@@ -315,25 +352,15 @@ namespace CosmicShore.UI
 
         private Coroutine _assignRandomNameRunningCoroutine;
 
-        bool CheckDisplayNameLength(string displayName)
-        {
-            if (displayName.Length is <= 25 and >= 3) return true;
-            if (!displayNameResultMessage) return false;
-            displayNameResultMessage.text = "Display name must be between 3 and 25 characters long";
-            displayNameResultMessage.gameObject.SetActive(true);
-
-            return false;
-
-        }
-
         /// <summary>
-        /// Called after PlayFab updates OR local-only edit: 
-        /// we just refresh visuals, **no popup animation**.
+        /// Called after a display-name edit lands: we just refresh visuals, **no popup
+        /// animation**. It used to take PlayFab's `UpdateUserTitleDisplayNameResult` because it
+        /// was that call's completion callback; the name is now written through
+        /// <see cref="PlayerDataService"/> and its one caller passed `null`, so the parameter
+        /// went with the SDK.
         /// </summary>
-        void UpdatePlayerDisplayNameView(UpdateUserTitleDisplayNameResult result)
+        void UpdatePlayerDisplayNameView()
         {
-            CSDebug.Log("Successfully Set Player Display Name (local or PlayFab).");
-
             if (BusyIndicator)
                 BusyIndicator.SetActive(false);
 
@@ -354,9 +381,9 @@ namespace CosmicShore.UI
 
             var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
 
-            var profileDisplayName = (profile == null || string.IsNullOrEmpty(profile.displayName))
+            var profileDisplayName = (profile == null || string.IsNullOrEmpty(profile.Identity.DisplayName))
                 ? "PLAYER"
-                : profile.displayName;
+                : profile.Identity.DisplayName;
 
             if (displayNameInputField)
                 displayNameInputField.text = profileDisplayName;
@@ -386,8 +413,8 @@ namespace CosmicShore.UI
             var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
             string name = null;
 
-            if (profile != null && !string.IsNullOrEmpty(profile.displayName))
-                name = profile.displayName;
+            if (profile != null && !string.IsNullOrEmpty(profile.Identity.DisplayName))
+                name = profile.Identity.DisplayName;
             else if (gameData && !string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
                 name = gameData.LocalPlayerDisplayName;
 
@@ -416,7 +443,7 @@ namespace CosmicShore.UI
             // lookup and its own fallback).
             if (playerDataService != null && playerDataService.CurrentProfile != null)
             {
-                sprite = playerDataService.GetAvatarSprite(playerDataService.CurrentProfile.avatarId);
+                sprite = playerDataService.GetAvatarSprite(playerDataService.CurrentProfile.Identity.AvatarId);
             }
             // Fallback: first icon in the locally-wired list if the service isn't ready.
             else if (profileIconList != null && profileIconList.profileIcons is { Count: > 0 })

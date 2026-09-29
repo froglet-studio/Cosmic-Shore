@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using CosmicShore.Data;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Gameplay;
@@ -12,7 +14,15 @@ namespace CosmicShore.UI
 
         [Header("Executors")]
         [SerializeField] private FireGunActionExecutor fireGunExecutor;
-        [SerializeField] private OverheatingActionExecutor overheatingExecutor;
+
+        [Tooltip("Drives the boost ability icon's charge ring: the Sparrow's boost is indefinite, so " +
+                 "the icon shows whether the once-per-press strafing roll is still available instead " +
+                 "of a heat/boost gauge.")]
+        [SerializeField] private BarrelRollController barrelRollController;
+
+        [Tooltip("The guns' heat/accuracy state. Drives the guns (Space) card's heat gauge and " +
+                 "its phase-transition marks. Resolved off the vessel if left empty.")]
+        [SerializeField] private GunSprayAccuracy gunSprayAccuracy;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventBool stationaryModeChanged;
@@ -20,7 +30,11 @@ namespace CosmicShore.UI
 
         Coroutine _initialAmmoRoutine;
         IVesselStatus _vesselStatus;
-        bool _heatActive;
+
+        bool _pollGunHeat;
+        GunSpreadProfile _paintedProfile;
+        float _paintedFullSpread = -1f;
+        readonly List<float> _phaseJoins = new();
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -37,6 +51,11 @@ namespace CosmicShore.UI
 
         void Subscribe()
         {
+            // Detach-first, BEFORE the pilot gate: a vessel swap re-runs Initialize on live
+            // components, and if the re-init hands this HUD to an AI or a remote player the early
+            // return below must not leave the previous pilot's subscriptions attached.
+            Unsubscribe();
+
             if (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser) return;
 
             if (stationaryModeChanged)
@@ -48,15 +67,17 @@ namespace CosmicShore.UI
             if (onInputEventBlocked)
                 onInputEventBlocked.OnRaised += HandleInputEventBlocked;
 
-            if (overheatingExecutor)
+            if (barrelRollController)
             {
-                overheatingExecutor.OnHeatBuildStarted   += OnHeatBuildStarted;
-                overheatingExecutor.OnOverheated         += OnOverheated;
-                overheatingExecutor.OnHeatDecayStarted   += OnHeatDecayStarted;
-                overheatingExecutor.OnHeatDecayCompleted += OnHeatDecayCompleted;
-
-                view.SetBoostState(overheatingExecutor.Heat01, overheatingExecutor.IsOverheating);
+                barrelRollController.OnRollChargeChanged += HandleRollChargeChanged;
+                view.SetRollCharge(barrelRollController.IsRollArmed
+                    ? RollChargeState.Armed
+                    : RollChargeState.Lapsed);
             }
+
+            if (!gunSprayAccuracy && _vesselStatus is Component vesselComponent)
+                gunSprayAccuracy = vesselComponent.GetComponentInChildren<GunSprayAccuracy>(true);
+            _pollGunHeat = gunSprayAccuracy;
 
             if (fireGunExecutor == null) return;
             fireGunExecutor.OnAmmoChanged += HandleAmmoChanged;
@@ -65,16 +86,25 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            if (_vesselStatus != null && (_vesselStatus.IsInitializedAsAI || !_vesselStatus.IsLocalUser))
-                return;
+            // Unconditional and idempotent — gating teardown on the pilot flags would strand
+            // subscriptions on a vessel that was handed to an AI after it subscribed.
+            Unsubscribe();
 
-            if (overheatingExecutor)
+            if (_initialAmmoRoutine != null)
             {
-                overheatingExecutor.OnHeatBuildStarted   -= OnHeatBuildStarted;
-                overheatingExecutor.OnOverheated         -= OnOverheated;
-                overheatingExecutor.OnHeatDecayStarted   -= OnHeatDecayStarted;
-                overheatingExecutor.OnHeatDecayCompleted -= OnHeatDecayCompleted;
+                StopCoroutine(_initialAmmoRoutine);
+                _initialAmmoRoutine = null;
             }
+        }
+
+        void Unsubscribe()
+        {
+            _pollGunHeat = false;
+            _paintedProfile = null;
+            _paintedFullSpread = -1f;
+
+            if (barrelRollController)
+                barrelRollController.OnRollChargeChanged -= HandleRollChargeChanged;
 
             if (stationaryModeChanged)
                 stationaryModeChanged.OnRaised -= HandleStationaryModeChanged;
@@ -84,26 +114,41 @@ namespace CosmicShore.UI
 
             if (fireGunExecutor != null)
                 fireGunExecutor.OnAmmoChanged -= HandleAmmoChanged;
-
-            if (_initialAmmoRoutine != null)
-                StopCoroutine(_initialAmmoRoutine);
-
-            _heatActive = false;
         }
 
+        /// <summary>
+        /// Heat is continuous (it integrates every frame while firing and while cooling) and has
+        /// no event, so it is POLLED - one float compare per frame on the local pilot's HUD only.
+        /// The phase marks are re-laid only when the profile the heat is measured against changes.
+        /// </summary>
         void Update()
         {
-            if (!_heatActive || !view || !overheatingExecutor) return;
+            if (!_pollGunHeat || !view || !gunSprayAccuracy) return;
 
-            view.SetBoostState(
-                Mathf.Clamp01(overheatingExecutor.Heat01),
-                overheatingExecutor.IsOverheating);
+            var profile = gunSprayAccuracy.Profile;
+            float full = profile?.SecondsToFullSpread ?? 0f;
+            if (profile != _paintedProfile || !Mathf.Approximately(full, _paintedFullSpread))
+            {
+                _paintedProfile = profile;
+                _paintedFullSpread = full;
+                gunSprayAccuracy.CollectPhaseJoins01(_phaseJoins);
+                view.SetGunHeatPhaseJoins(_phaseJoins);
+            }
+
+            view.SetGunHeat(gunSprayAccuracy.Heat01);
         }
 
         private IEnumerator InitialAmmoPaintRoutine()
         {
             yield return null;
             view?.InitializeMissileIcon();
+
+            // Seed the charge gauge from the LIVE tank, not from a resting value: the pilot may
+            // arrive mid-match (a vessel swap, a replay) with a part-charged bay, and a gauge
+            // that starts at zero and then jumps on the next destroyed prism reads as a bug.
+            if (fireGunExecutor != null)
+                view?.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
+
             _initialAmmoRoutine = null;
         }
 
@@ -119,21 +164,31 @@ namespace CosmicShore.UI
             view.SetWeaponMode(isStationary);
         }
 
-        void OnHeatBuildStarted() => _heatActive = true;
-        void OnOverheated()       => _heatActive = true;
-        void OnHeatDecayStarted() => _heatActive = true;
-
-        void OnHeatDecayCompleted()
+        private void HandleRollChargeChanged(RollChargeState state)
         {
-            _heatActive = false;
-            if (overheatingExecutor && view)
-                view.SetBoostState(overheatingExecutor.Heat01, false);
+            if (!view) return;
+            view.SetRollCharge(state);
         }
 
+        /// <summary>
+        /// One ammo change, two readouts: the icon ladder says how many rockets the bay HOLDS,
+        /// the Charge card's gauge says how close the next one is. They are driven from the same
+        /// event so they can never disagree, and the gauge is asked of the executor rather than
+        /// derived here — the shot's cost is the weapon's business, and re-deriving it in the HUD
+        /// is how a UI number drifts from the one the gun spends.
+        /// </summary>
         private void HandleAmmoChanged(float ammo01)
         {
             if (!view) return;
-            view.SetMissilesFromAmmo01(ammo01);
+
+            // The COST comes from the executor, never from the HUD: the icon ladder counts
+            // rockets, and a count re-derived here would drift from the number the gun spends
+            // the moment the weapon's price changes (it just did - a base rocket is half what
+            // it was, so the bay holds four).
+            view.SetMissilesFromAmmo01(ammo01, fireGunExecutor != null ? fireGunExecutor.ShotCost01 : 0f);
+
+            if (fireGunExecutor != null)
+                view.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
         }
     }
 }

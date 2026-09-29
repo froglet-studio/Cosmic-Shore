@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Wildlife Liberation Cell Config 2
+  m_EditorClassIdentifier:
+  CellName: Wildlife Liberation
+  Description: The three-layer jail at intensity 2 - cages at 1050 / 600 / 200 (geo / geo / geo),
+    12696 prisms of bar and 82 danger traps in the core. Holds 519 creatures at
+    seed and up to 1198 (4155 body prisms), every species roaming the whole
+    arena on one shared band (0..1180). NO NUCLEUS
+    by design. PhaseThresholds ride THIS intensity's own baseline; regenerate with
+    Tools/Build/author_wildlife_liberation_assets.py after any change rather than hand-editing.
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 2
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: b931e9f3330180d11415d8e3a0062852, type: 2}
+  EnvironmentPrefab: {fileID: 5260000000000403, guid: c40d189de57d5bb2a494dc97695b8d34, type: 3}
+  EnvironmentIntensity: 2
+  SenseRadiusOverride: 1200
+  PhaseThresholds:
+    RestlessEnter: 13396
+    RestlessExit: 13196
+    FrenzyEnter: 16296
+    FrenzyExit: 15696
+    RestlessEnterVolume: 12053535
+    RestlessExitVolume: 12050335
+    FrenzyEnterVolume: 12099935
+    FrenzyExitVolume: 12090335

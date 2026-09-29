@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using Cysharp.Threading.Tasks;
@@ -150,6 +151,16 @@ namespace CosmicShore.Gameplay
             {
                 _intensity = 0f;
                 OnYawsteryIntensityChanged?.Invoke(0f);
+
+                // A cancelled UniTask never runs its tail — clear the turn-trail state here
+                // (the routine's one exit) or an interrupted turn leaves the flare and the
+                // Mass-5 shield window latched on forever.
+                if (_so && _so.DriveTrailFlare && _status != null)
+                {
+                    var prismController = _status.VesselPrismController;
+                    if (prismController) prismController.SetTurnTrail(0f, 0);
+                }
+
                 OnYawsteryEnded?.Invoke();
             }
         }
@@ -201,7 +212,12 @@ namespace CosmicShore.Gameplay
             if (_status.IsTranslationRestricted) return;
 
             float speedFactor = Mathf.Pow(1f + Mathf.Max(0f, _status.Speed) * 0.01f, _so.SpeedExp);
-            float yawPerSec = _so.MaxYawDegPerSec * Mathf.Max(0.0f, _so.SpeedScale) * speedFactor;
+            // Element → parameter, AUTHORED on the SO and disabled on both shipped assets. The
+            // old hardcoded Space read moved with the Manta re-cut: Space now owns Kabloom's blast
+            // radius, and an element read left behind here would have kept scaling the turn
+            // silently (the merge rule — move every element read WITH the ability).
+            float elementMul = _so.TurnRateMultiplier(_status);
+            float yawPerSec = _so.MaxYawDegPerSec * elementMul * Mathf.Max(0.0f, _so.SpeedScale) * speedFactor;
 
             float signed = yawPerSec * (int)_so.Steer;
             float deltaAngle = signed * intensity01 * Time.deltaTime;
@@ -217,6 +233,14 @@ namespace CosmicShore.Gameplay
             }
 
             vesselTransformer.ApplyRotation(deltaAngle, _ship.Transform.up);
+
+            // Yastri: the turn shapes the trail — outer-lane flare + the Mass-5 shield window
+            // follow the held intensity (and its ramp-out back to zero).
+            if (_so.DriveTrailFlare)
+            {
+                var prismController = _status.VesselPrismController;
+                if (prismController) prismController.SetTurnTrail(intensity01, (int)_so.Steer);
+            }
         }
 
         void TryTriggerAnimator(string trigger)

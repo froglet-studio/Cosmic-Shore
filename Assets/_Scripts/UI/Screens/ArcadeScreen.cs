@@ -28,14 +28,20 @@ namespace CosmicShore.UI
         void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();
-            _loadoutCanvasGroup = EnsureCanvasGroup(LoadoutView.gameObject);
-            _exploreCanvasGroup = EnsureCanvasGroup(ExploreView.gameObject);
+            // Both views are OPTIONAL. Arena and Mission are this same screen pointed at a
+            // different roster and author no Loadout tab, so the unguarded dereference threw in
+            // Awake on every one of them - and an Awake that throws leaves the fields BELOW it
+            // unassigned, so ToggleView then threw again on a null explore group. Three red
+            // lines per session, from a tab that is simply not part of those screens.
+            _loadoutCanvasGroup = LoadoutView ? EnsureCanvasGroup(LoadoutView.gameObject) : null;
+            _exploreCanvasGroup = ExploreView ? EnsureCanvasGroup(ExploreView.gameObject) : null;
         }
 
-        void Start()
-        {
-            LoadoutButton.Select();
-        }
+        // No Select() at Start. This component lives on the Arcade MODAL, which is active at
+        // alpha 0 from scene load, so selecting its toggle here handed the EventSystem's
+        // selection to a control inside an invisible window - and pressing A on the HOME screen
+        // opened the first game card. Focus now follows the modal stack (ScreenSwitcher.Refocus)
+        // and lands on this window only when it is actually open.
 
         public void Show()
         {
@@ -68,6 +74,7 @@ namespace CosmicShore.UI
 
         static void SetCanvasGroupVisible(CanvasGroup cg, bool visible)
         {
+            if (!cg) return;
             cg.alpha = visible ? 1f : 0f;
             cg.blocksRaycasts = visible;
             cg.interactable = visible;

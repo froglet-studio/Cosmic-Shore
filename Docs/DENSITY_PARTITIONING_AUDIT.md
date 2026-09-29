@@ -94,10 +94,18 @@ Every active consumer of the density API as of this branch. (Auditing this list 
 | **Fauna (legacy)** Level 2 (Rabid) | `Fauna.cs:105` | `cell.GetDensestRegionAnyDomain()` | Pack converges tightly onto the densest region of any color. No orbit offset — the spec explicitly wants tight convergence. | A **single point** at the densest region across all domains. Peak is correct here. |
 | **LightFauna** Restless / Frozen | `LightFauna.cs:137-138` | `cell.GetExplosionTarget(domain)` | Same as Fauna Level 1, but with per-frame avoidance via `Physics.OverlapSphere`. | Same — seek goal biased toward enemy mass. |
 | **LightFauna** Rabid | `LightFauna.cs:139` | `cell.GetDensestRegionAnyDomain()` | Same as Fauna Level 2. | Single point at densest region across all domains. |
-| **WormManager** | `WormManager.cs:88` | `cell.GetExplosionTarget(domain)` | Sets one worm-head target for the whole worm chain. | Single point. Stability matters more than precision — if the worm retargets every 0.5s onto a wildly different point, the worm thrashes. |
+| **WormFauna** (was WormManager — deleted in the kaiju rebuild) | `WormFauna.cs` (inherits `Fauna.ResolveGoal`) | `cell.GetExplosionTarget(domain)` / `GetDensestRegionAnyDomain()` | One goal for the whole worm chain via the base fauna goal coroutine. | Single point. Stability matters more than precision — if the worm retargets every 0.5s onto a wildly different point, the worm thrashes. |
 | **ShardToggleAction** | `ShardToggleAction.cs:45` | `cell.GetExplosionTarget(domain)` | `shardFieldBus.BroadcastPointAtPosition()` — every shard in the field points at the returned location. | Single point. A *direction* would be acceptable too — the consumer translates the point into a direction internally. |
 | **AIPilot** | `AIPilot.cs:406` *(commented out)* | `cell.GetExplosionTarget(activeCell.ControllingTeam)` | Was: "pick a target near the winning team's mass." Currently disabled. | Single point (when re-enabled). |
 | **TestHarnessOctreeDensitySearch** | `TestHarnessOctreeDensitySearch.cs:36-38` | `cell.GetExplosionTarget(t)` for each team | Smoke-test prints. | N/A — diagnostic. |
+
+> **Update (2026-08-15) — one consumer retired.** The **ShardToggleAction** row above is now
+> historical: the Dolphin's shard toggle was removed (superseded by Echo Sight), and
+> `ShardToggleAction.cs`, `ShardToggleActionSO`, `ShardToggleActionExecutor` and `ShardFieldBus`
+> are deleted, so that file/line reference no longer resolves. **Six** active consumers of
+> `GetExplosionTarget` / `GetDensestRegionAnyDomain` remain. The counts in the observations and
+> API sketch below are left **as audited** per the reading note at the top of this document —
+> read "seven callers" and "worms and shards" as the state at audit time.
 
 ### Observations from the consumer audit
 

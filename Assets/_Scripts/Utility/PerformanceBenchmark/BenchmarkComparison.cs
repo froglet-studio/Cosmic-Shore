@@ -86,7 +86,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 new MetricDelta("Avg Allocated (MB)", bStats.avgAllocatedMemory / (1024f * 1024f), cStats.avgAllocatedMemory / (1024f * 1024f), true, neutralThresholdPercent),
                 new MetricDelta("Total GC (MB)", bStats.totalGcAllocated / (1024f * 1024f), cStats.totalGcAllocated / (1024f * 1024f), true, neutralThresholdPercent),
 
-                // Netcode (lower is better) — so a netcode optimization shows up before/after
+                // Netcode (lower is better) - so a netcode optimization shows up before/after
                 new MetricDelta("Netcode Share (%)", bStats.netcodeSharePercent, cStats.netcodeSharePercent, true, neutralThresholdPercent),
                 new MetricDelta("Avg RPCs/frame", bStats.avgRpcsSent, cStats.avgRpcsSent, true, neutralThresholdPercent),
                 new MetricDelta("Avg NetVars Dirty/frame", bStats.avgNetVarsDirty, cStats.avgNetVarsDirty, true, neutralThresholdPercent),
@@ -142,12 +142,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 sb.AppendLine($"  {d.metricName,-28} {d.baselineValue,10:F2} {d.currentValue,10:F2} {sign + d.absoluteDelta.ToString("F2"),10} {sign + d.percentDelta.ToString("F1") + "%",7}  {verdictStr}");
             }
 
-            // Game load is context, not a pass/fail metric — heavier load isn't a regression.
+            // Game load is context, not a pass/fail metric - heavier load isn't a regression.
             // Shown so a comparison can confirm both runs faced a similar workload.
             var bs = result.baseline.statistics;
             var cs = result.current.statistics;
             sb.AppendLine();
-            sb.AppendLine("  Game Load (context — not scored):");
+            sb.AppendLine("  Game Load (context - not scored):");
             sb.AppendLine($"    {"Avg Prisms",-22} {bs.avgActivePrisms,10:F0} -> {cs.avgActivePrisms,10:F0}   (peak {bs.peakActivePrisms} -> {cs.peakActivePrisms})");
             sb.AppendLine($"    {"Avg Explosions",-22} {bs.avgActiveExplosions,10:F1} -> {cs.avgActiveExplosions,10:F1}   (peak {bs.peakActiveExplosions} -> {cs.peakActiveExplosions})");
             sb.AppendLine($"    {"Avg Implosions",-22} {bs.avgActiveImplosions,10:F1} -> {cs.avgActiveImplosions,10:F1}   (peak {bs.peakActiveImplosions} -> {cs.peakActiveImplosions})");

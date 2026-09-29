@@ -21,7 +21,7 @@ namespace CosmicShore.UI
 
         public override void AssignModel(ScriptableObject Model)
         {
-            // Captain system removed from vessels — Port screen is inactive.
+            // Captain system removed from vessels - Port screen is inactive.
             sortedCaptains.Clear();
             base.AssignModel(Model);
         }
@@ -74,7 +74,6 @@ namespace CosmicShore.UI
             if (sortedCaptains == null || index < 0 || index >= sortedCaptains.Count)
                 return;
 
-            CSDebug.Log($"Selected {index}");
             shipClassTypeVariable.Value = index;
             OnSelect?.Invoke(sortedCaptains[index]);
 

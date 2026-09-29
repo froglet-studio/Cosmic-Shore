@@ -25,7 +25,7 @@ namespace Obvious.Soap.Editor
             }
             catch (InvalidOperationException)
             {
-                // SerializedProperty iterator moved past all properties — stale
+                // SerializedProperty iterator moved past all properties - stale
                 // serialized state after domain reload or missing script reference.
                 return;
             }

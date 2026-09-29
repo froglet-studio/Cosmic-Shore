@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.UI;
 using CosmicShore.Core;
 using CosmicShore.Utility;
@@ -17,24 +18,28 @@ namespace CosmicShore.Core
 
         public static bool UnlockVessel(SO_Vessel vessel)
         {
-            if (vessel == null || !vessel.IsLocked)
+            // IsLockedByEntitlement, never IsLocked: this GRANTS ownership, and IsLocked reads
+            // false for everything while the master developer unlock is on (the default until
+            // the FTUE is designed), which would make every grant a silent no-op.
+            if (vessel == null || !vessel.IsLockedByEntitlement)
                 return false;
 
             vessel.Unlock();
             PersistUnlockToCloud(vessel.Name, unlocked: true);
-            CSDebug.Log($"VesselUnlockSystem: Unlocked {vessel.Name}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[VesselUnlock] Unlocked {vessel.Name}");
             OnUnlockStateChanged?.Invoke();
             return true;
         }
 
         public static bool LockVessel(SO_Vessel vessel)
         {
-            if (vessel == null || vessel.IsLocked)
+            // Entitlement, not playability - see UnlockVessel.
+            if (vessel == null || vessel.IsLockedByEntitlement)
                 return false;
 
             vessel.Lock();
             PersistUnlockToCloud(vessel.Name, unlocked: false);
-            CSDebug.Log($"VesselUnlockSystem: Locked {vessel.Name}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[VesselUnlock] Locked {vessel.Name}");
             OnUnlockStateChanged?.Invoke();
             return true;
         }
@@ -44,7 +49,9 @@ namespace CosmicShore.Core
         /// </summary>
         public static bool TryPurchaseVessel(SO_Vessel vessel)
         {
-            if (vessel == null || !vessel.IsLocked)
+            // Entitlement, not playability: a purchase must not be refused (nor the crystals
+            // spent) on the strength of a developer gate - see UnlockVessel.
+            if (vessel == null || !vessel.IsLockedByEntitlement)
                 return false;
 
             if (vessel.UnlockCost > 0)
@@ -70,19 +77,38 @@ namespace CosmicShore.Core
         {
             if (vesselList == null) return;
 
+            // A reset returns the player to a FRESH ACCOUNT, not to a locked-out one: the
+            // starter vessel is not an unlock, so it survives.
+            var starters = new HashSet<string>();
             foreach (var vessel in vesselList.VesselList)
             {
                 if (vessel == null) continue;
+
+                if (vessel.OwnedFromStart)
+                {
+                    if (!string.IsNullOrWhiteSpace(vessel.Name))
+                        starters.Add(vessel.Name);
+                    continue;
+                }
+
                 vessel.Lock();
             }
 
-            // Clear cloud data
-            var ds = UGSDataService.Instance;
+            // Clear ownership only. Lifetime per-vessel stats live in the same record now
+            // and are TELEMETRY, not entitlement - a debug unlock reset must not wipe them.
+            // Skipped entirely while the progression backend gate is closed (local-only mode).
+            var ds = ProgressionBackendGate.CloudEnabled ? UGSDataService.Instance : null;
             if (ds?.HangarRepo != null)
             {
-                ds.HangarRepo.Data.UnlockedVessels.Clear();
-                ds.HangarRepo.Data.VesselPreferences.Clear();
+                foreach (var name in new List<string>(ds.HangarRepo.Data.UnlockedVesselNames()))
+                    if (!starters.Contains(name))
+                        ds.HangarRepo.Data.LockVessel(name);
+
+                ds.HangarRepo.Data.SelectedVessel = "";
                 ds.HangarRepo.MarkDirty();
+
+                // Re-seed starters and re-default SelectedVessel in one pass.
+                ds.SyncHangarToVessels();
             }
 
             OnUnlockStateChanged?.Invoke();
@@ -90,11 +116,21 @@ namespace CosmicShore.Core
 
         static void PersistUnlockToCloud(string vesselName, bool unlocked)
         {
+            if (!ProgressionBackendGate.CloudEnabled) return;
+
             var ds = UGSDataService.Instance;
             if (ds?.HangarRepo == null) return;
 
+            if (string.IsNullOrWhiteSpace(vesselName))
+            {
+                // SO_Vessel.Name is authored data and at least one asset ships blank. Persisting
+                // it is what put an empty string in the old flat UnlockedVessels list.
+                CSDebug.LogWarning("[VesselUnlockSystem] Refusing to persist unlock state for a vessel with a blank Name. Fix the SO_Vessel asset.");
+                return;
+            }
+
             if (unlocked)
-                ds.HangarRepo.Data.UnlockVessel(vesselName);
+                ds.HangarRepo.Data.UnlockVessel(vesselName, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
             else
                 ds.HangarRepo.Data.LockVessel(vesselName);
 

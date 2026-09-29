@@ -13,6 +13,14 @@ namespace CosmicShore.Core
         const string ProgressSaveFileName = "training_progress.data";
         static Dictionary<GameModes, TrainingGameProgress> Progress;
 
+        // Re-read the disk store each play session instead of trusting last session's dict.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            Initialized = false;
+            Progress = null;
+        }
+
         static void LoadProgress()
         {
             Progress = DataAccessor.Load<Dictionary<GameModes, TrainingGameProgress>>(ProgressSaveFileName);
@@ -38,7 +46,7 @@ namespace CosmicShore.Core
         {
             if (!Progress.ContainsKey(trainingGame.Game.Mode))
             {
-                SaveProgress(trainingGame.Game.Mode, new TrainingGameProgress(0, null));
+                SaveProgress(trainingGame.Game.Mode, new TrainingGameProgress());
             }
 
             var gameProgress = Progress[trainingGame.Game.Mode];
@@ -103,7 +111,7 @@ namespace CosmicShore.Core
             if (!Progress.ContainsKey(mode))
             {
                 CSDebug.LogWarning($"GetGameProgress did not contain mode:{mode} ");
-                var progress = new TrainingGameProgress(0,null);
+                var progress = new TrainingGameProgress();
                 CSDebug.LogWarning($"GetGameProgress new progress - currentIntensity:{progress.CurrentIntensity}, progress:{progress.Progress} ");
                 SaveProgress(mode, progress);
             }

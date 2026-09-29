@@ -84,7 +84,6 @@ namespace CosmicShore.Core
             {
                 Song song = new Song(so);
                 Playlist.Add(song.Title, song);
-                CSDebug.Log("Song " + song.Title + " added to Playlist");
             }
         }
 
@@ -117,7 +116,7 @@ namespace CosmicShore.Core
         {
             if (audioSystem == null)
             {
-                CSDebug.LogError("[Jukebox] audioSystem was not injected — check AppManager DI registration.");
+                CSDebug.LogError("[Jukebox] audioSystem was not injected - check AppManager DI registration.");
                 return;
             }
             SO_Song so = so_songs[Random.Range(0, so_songs.Length)];

@@ -21,7 +21,7 @@ namespace CosmicShore.UI
 
         void Start()
         {
-            // Captain system removed from vessels — squad system is inactive.
+            // Captain system removed from vessels - squad system is inactive.
             // Keeping this stub to prevent runtime errors until squad is refactored.
             if (AllCaptains.Count > 0)
             {

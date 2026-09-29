@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Manages the UGS Relay session (the live party session used for actual
     /// multiplayer networking).  Responsible for creating, joining, and leaving
-    /// the session — not for Netcode transport.
+    /// the session - not for Netcode transport.
     ///
     /// Lifetime: extracted from <see cref="HostConnectionService"/> in Phase 9.
     /// Implemented by <c>PartySessionService</c> in the Services folder.
@@ -66,6 +66,14 @@ namespace CosmicShore.Gameplay
         UniTask JoinByIdAsync(string sessionId);
 
         /// <summary>
+        /// Joins an existing session by its UGS session ID, optionally as a SPECTATOR.
+        /// A spectator carries the <c>spectator</c> player property so every peer's
+        /// party-member sync (<see cref="IPartyMemberService.SyncFromSession"/>) leaves it out
+        /// of the roster - it is a viewer of the match, never a member of the party.
+        /// </summary>
+        UniTask JoinByIdAsync(string sessionId, bool asSpectator);
+
+        /// <summary>
         /// Leaves the active session gracefully (delete if host, leave if client).
         /// Clears <see cref="ActiveSession"/> to null.
         /// Safe to call even if no session is active.
@@ -81,6 +89,17 @@ namespace CosmicShore.Gameplay
         /// SESSION_CREATION_GRACE_PERIOD_SECONDS) to avoid nulling a freshly-provisioned session.
         /// </remarks>
         UniTask RefreshAsync();
+
+        /// <summary>
+        /// Re-publishes the local player's identity properties (displayName /
+        /// avatarId) on the ACTIVE session's player record. Session player
+        /// properties are otherwise written only at create/join, so a mid-party
+        /// profile rename would leave every peer's roster (party slots) showing
+        /// the stale name. Called by <c>HostConnectionService</c> on profile
+        /// change; no-op when no session is active. Failures are logged and
+        /// swallowed - the name self-heals on the next session (re)join.
+        /// </summary>
+        UniTask UpdateLocalPlayerPropertiesAsync(string displayName, int avatarId);
 
         /// <summary>
         /// Synchronously clears <see cref="ActiveSession"/> without calling the UGS SDK.

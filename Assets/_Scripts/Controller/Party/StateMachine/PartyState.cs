@@ -3,7 +3,7 @@
 // Defines every lifecycle phase a player can be in relative to the party system.
 //
 // How to read this file:
-//   Each enum member represents a STABLE, OBSERVABLE STATE — not a transition.
+//   Each enum member represents a STABLE, OBSERVABLE STATE - not a transition.
 //   Transitions (e.g. "user pressed Accept") live in HostConnectionService and
 //   are validated by PartyStateMachine.  Adding a new state here requires also
 //   adding its legal transitions in PartyStateMachine._legalTransitions.
@@ -29,10 +29,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Joined the global presence lobby (no Relay, no NetworkManager activity).
         ///
-        /// TRANSIENT — auto-advances immediately to <see cref="HostingParty"/> as
+        /// TRANSIENT - auto-advances immediately to <see cref="HostingParty"/> as
         /// <see cref="HostConnectionService"/> creates the local player's solo Relay
         /// session.  This state is never a resting state; players never linger here.
-        /// The presence lobby is the discovery layer only — sending and accepting
+        /// The presence lobby is the discovery layer only - sending and accepting
         /// invites require an active Relay session (<see cref="InParty"/>).
         /// </summary>
         InPresenceLobby = 1,
@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
         /// The local player has sent at least one invite and is waiting for a
         /// recipient to accept.  The local Relay party session ALREADY EXISTS
         /// (transitioned here from <see cref="InParty"/>).  No NetworkManager
-        /// changes happen when entering this state — the host vessel stays alive.
+        /// changes happen when entering this state - the host vessel stays alive.
         /// Transitions to <see cref="InParty"/> when the joiner NM-connects or
         /// when all invites are cancelled.
         /// </summary>
@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The local player has accepted someone else's invite and is in the
         /// process of connecting to the host's Relay session.  Entered from
-        /// <see cref="InParty"/> — the local Relay session is shut down first,
+        /// <see cref="InParty"/> - the local Relay session is shut down first,
         /// then the host's session is joined.  This state covers the period from
         /// "Accept pressed" to "NetworkManager connected" on the host's Relay.
         /// </summary>
@@ -66,7 +66,7 @@ namespace CosmicShore.Gameplay
         HostingParty = 4,
 
         /// <summary>
-        /// The persistent baseline state — every authenticated player has a live
+        /// The persistent baseline state - every authenticated player has a live
         /// Relay-backed party session.  The session may be solo (just the local
         /// player) or multiplayer (with remote members).  The local vessel is
         /// spawned and visible while in this state.

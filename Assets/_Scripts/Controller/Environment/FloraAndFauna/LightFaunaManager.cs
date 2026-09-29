@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            // Poll fallback: covers two scenarios where OnPhaseChanged won't reach us —
+            // Poll fallback: covers two scenarios where OnPhaseChanged won't reach us -
             // (1) the SOAP event asset isn't wired into CellRuntimeDataSO so Raise NREs
             // before the listener gets called, and (2) the manager started after the
             // cell already began accumulating mass (subscription missed the transition).
@@ -69,7 +69,7 @@ namespace CosmicShore.Gameplay
         {
             // Any phase change re-evaluates seeding; MaybeSpawnGroup gates on the cell
             // actually holding mass (FaunaSpawningEnabled). A phase falling back never
-            // culls — existing fauna stay alive and keep consuming until removed.
+            // culls - existing fauna stay alive and keep consuming until removed.
             MaybeSpawnGroup();
         }
 
@@ -97,12 +97,12 @@ namespace CosmicShore.Gameplay
             int count = ComputeBatchSize();
             float radius = Mathf.Max(0f, managerData.spawnRadius);
 
-            // Fauna spawn in the cell's dominant domain — the live leader by per-domain
+            // Fauna spawn in the cell's dominant domain - the live leader by per-domain
             // prism count. Falls back to the manager's own domain when the cell hasn't
             // accrued enough prisms to pick a leader (DominantDomain returns Blue, the
             // "no team" sentinel, on an empty cell, but we shouldn't be spawning there
             // anyway thanks to the phase gate). Existing fauna keep their assigned domain
-            // even as the cell's dominant shifts — only newly-spawned fauna track it.
+            // even as the cell's dominant shifts - only newly-spawned fauna track it.
             Domains spawnDomain = cell ? cell.DominantDomain : Domains.Blue;
             if (spawnDomain == Domains.Blue) spawnDomain = domain;
 
@@ -118,6 +118,22 @@ namespace CosmicShore.Gameplay
                 fauna.LightFaunaManager = this;
                 fauna.Phase = managerData.phaseIncrease * i;
                 fauna.Initialize(cell);
+
+                // The replication seam, for the one fauna producer that does not go through
+                // CellLifeSpawnerBase. A school member gets no config of its own - the MANAGER
+                // is the thing the spawner bound a lineage to - so this resolves to
+                // NeutralizeStray, which is the correct reading: a school is simulated locally
+                // on every peer and its members are never replicated. Neutralizing is not
+                // cosmetic. QuadFish.prefab and TadPoleFauna.prefab carry a NetworkObject, and
+                // an UN-SPAWNED one is adopted by Netcode as an in-scene object keyed on a hash
+                // every instance of a prefab shares - so a school of two breaks synchronization
+                // for every later joiner. See Docs/PartySystem/BUGS.md B16 and B5.
+                //
+                // Dormant today rather than absent: no shipped multiplayer cell wires a
+                // LightFaunaManager population (SO_Mission_Protect and two tool scenes do).
+                // Adding one consumer is what would ship it, which is exactly why it is closed
+                // here instead of being left to the sweep at connection approval.
+                FaunaNetworkSync.ServerSpawn(fauna);
 
                 activeFauna.Add(fauna);
             }
@@ -144,6 +160,22 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Drop a creature from the roster WITHOUT destroying it - the removal half of
+        /// <see cref="RemoveFauna"/> for a creature whose destruction belongs to somebody else.
+        /// A replicated fauna is destroyed by its NetworkObject despawn on the server, and by
+        /// nobody at all on a client; a manager that also called Destroy would be a second
+        /// owner of one object's lifetime.
+        /// </summary>
+        public void Deregister(LightFauna fauna)
+        {
+            if (!activeFauna.Contains(fauna)) return;
+            activeFauna.Remove(fauna);
+
+            if (managerData && activeFauna.Count < ComputeBatchSize() / 2)
+                SpawnGroup();
+        }
+
         public void RemoveFauna(LightFauna fauna)
         {
             if (activeFauna.Contains(fauna))
@@ -153,7 +185,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Replenish when the live count drops below half of what cell load currently
-            // calls for. This makes the trigger respond to prism availability — a cell
+            // calls for. This makes the trigger respond to prism availability - a cell
             // saturated with prisms repopulates fauna sooner than a sparse one.
             if (managerData && activeFauna.Count < ComputeBatchSize() / 2)
                 SpawnGroup();
@@ -178,7 +210,7 @@ namespace CosmicShore.Gameplay
             int baseCount = Mathf.Max(0, managerData.spawnCount);
             int extra = 0;
 
-            // Guard cellData explicitly — Fauna.cell property dereferences cellData.Cell
+            // Guard cellData explicitly - Fauna.cell property dereferences cellData.Cell
             // and would NRE if the SO link isn't wired in the inspector.
             if (cellData != null && cellData.Cell != null && managerData.extraFaunaPerHundredPrisms > 0)
                 extra = (cellData.Cell.LiveBlockCount / 100) * managerData.extraFaunaPerHundredPrisms;

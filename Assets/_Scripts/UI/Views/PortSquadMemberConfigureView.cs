@@ -26,8 +26,10 @@ namespace CosmicShore.UI
             captainSelectView.OnSelect += SelectCaptain;
         }
 
-        void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
+
             shipSelectionView.OnSelect -= captainSelectView.AssignModel;
             shipSelectionView.OnSelect -= squadMemberCard.SetShip;
 

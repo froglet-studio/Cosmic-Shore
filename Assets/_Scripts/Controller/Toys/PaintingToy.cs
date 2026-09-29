@@ -1,20 +1,21 @@
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
-using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// One "fly by numbers" painting station. Its label shows the painting's name and live progress;
-    /// flying through it starts (or resumes) the painting's <see cref="PaintingRunner"/> at a fixed
-    /// world anchor — a monument-in-progress you can leave and come back to (across vessel swaps,
-    /// other paintings, other game modes, and sessions — the saved drawing state regrows). Re-flying
+    /// One "connect the dots" painting station. It carries no text - the station IS the painting in
+    /// miniature, and its name and progress live in the Toy Box menu. Flying through it starts (or
+    /// resumes) the painting's <see cref="PaintingRunner"/> at a fixed
+    /// world anchor - a monument-in-progress you can leave and come back to (across vessel swaps,
+    /// other paintings, other game modes, and sessions - the saved drawing state regrows). Re-flying
     /// the toy while a run is active benches/resumes it ("put the brush down"); once a masterpiece
     /// is finished it offers two fly-through choice gates: SHARE (export the web reconstruction to
     /// the platform share sheet) or REPAINT (clear the canvas and start fresh).
     ///
-    /// Toy-faithful: no score, no timer, no fail state — progress is the only readout, and the
+    /// Toy-faithful: no score, no timer, no fail state - progress is the only readout, and the
     /// painted trail is conserved mass like any other.
     /// </summary>
     public class PaintingToy : Toy
@@ -26,28 +27,62 @@ namespace CosmicShore.Gameplay
         PaintingDefinitionSO _painting;
         Vector3 _anchorPosition;
         Quaternion _anchorRotation;
-        TMP_Text _label;
+        Transform _runParent;
 
         PaintingRunner _runner;
         GameObject _shareGate;
         GameObject _repaintGate;
 
+        /// <summary>
+        /// Live runs, keyed by painting id. A run OUTLIVES its station: the gallery matrix folds
+        /// away when you fly the gallery toy again, and a canvas in progress must neither be
+        /// abandoned nor duplicated when it unfolds. A fresh station re-adopts the run for its
+        /// painting instead of starting a second one on the same canvas.
+        /// </summary>
+        static readonly System.Collections.Generic.Dictionary<string, PaintingRunner> ActiveRuns = new();
+
         public void Configure(PaintingDefinitionSO painting, Vector3 anchorPosition, Quaternion anchorRotation,
-            TMP_Text label)
+            Transform runParent = null)
         {
             _painting = painting;
             _anchorPosition = anchorPosition;
             _anchorRotation = anchorRotation;
-            _label = label;
+            _runParent = runParent;
         }
 
-        protected override void OnInitialized() => RefreshLabel();
+        protected override void OnInitialized()
+        {
+            AdoptLiveRun();
+        }
+
+        /// <summary>Re-attach to this painting's run if one survived a matrix fold.</summary>
+        void AdoptLiveRun()
+        {
+            if (_painting == null) return;
+            if (!ActiveRuns.TryGetValue(_painting.PaintingId, out var live) || !live)
+            {
+                ActiveRuns.Remove(_painting.PaintingId);
+                return;
+            }
+            _runner = live;
+            _runner.Finished += HandleRunnerFinished;
+        }
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            // The run keeps going without us (it is parented outside the matrix) - just stop
+            // listening for its end.
+            if (!_runner) return;
+            _runner.Finished -= HandleRunnerFinished;
+        }
 
         protected override void OnActivated(IVesselStatus localVessel)
         {
             if (_painting == null)
             {
-                CosmicShore.Utility.CSDebug.LogWarning("[PaintingToy] No painting assigned — nothing to paint.");
+                CosmicShore.Utility.CSDebug.LogWarning("[PaintingToy] No painting assigned - nothing to paint.");
                 return;
             }
 
@@ -55,7 +90,6 @@ namespace CosmicShore.Gameplay
             {
                 if (!_runner.IsCelebrating)
                     _runner.ToggleBench();
-                RefreshLabel();
                 return;
             }
 
@@ -66,10 +100,9 @@ namespace CosmicShore.Gameplay
             int resume = PaintingProgressStore.GetStrokesCompleted(_painting.PaintingId, total);
             if (resume >= total)
             {
-                // Finished masterpiece — offer the choice gates instead of acting immediately.
+                // Finished masterpiece - offer the choice gates instead of acting immediately.
                 if (!_shareGate && !_repaintGate)
                     SpawnCompletionChoices();
-                RefreshLabel();
                 return;
             }
 
@@ -80,27 +113,57 @@ namespace CosmicShore.Gameplay
         {
             DespawnChoices();
 
-            var go = new GameObject($"PaintingRunner_{_painting.PaintingId}");
-            go.transform.SetParent(transform.parent, false);
-            _runner = go.AddComponent<PaintingRunner>();
-            _runner.ProgressChanged += RefreshLabel;
+            _runner = CreateRun(_painting, Definition, Context, _anchorPosition, _anchorRotation,
+                                _runParent ? _runParent : transform.parent, resumeFromStroke);
             _runner.Finished += HandleRunnerFinished;
-            _runner.Begin(_painting, Definition, Context, _anchorPosition, _anchorRotation, resumeFromStroke);
-            RefreshLabel();
+        }
+
+        /// <summary>
+        /// This painting's live run, or null. Public to the toybox so the GALLERY can answer the
+        /// app shell's "what is in progress?" without owning a second copy of the run book.
+        /// </summary>
+        internal static PaintingRunner LiveRun(string paintingId)
+        {
+            if (string.IsNullOrEmpty(paintingId)) return null;
+            if (!ActiveRuns.TryGetValue(paintingId, out var live) || !live)
+            {
+                ActiveRuns.Remove(paintingId);
+                return null;
+            }
+            return live;
+        }
+
+        /// <summary>
+        /// Start a painting's run and file it in the run book - the one implementation, shared by
+        /// this station and by the gallery's app-shell face. A run is parented OUTSIDE the gallery
+        /// matrix (<paramref name="runParent"/> is the toybox root) so folding the matrix away
+        /// mid-painting leaves the canvas untouched, and a later station re-adopts it rather than
+        /// starting a second run on the same canvas.
+        /// </summary>
+        internal static PaintingRunner CreateRun(PaintingDefinitionSO painting, ToyDefinitionSO definition,
+            ToyContext context, Vector3 anchorPosition, Quaternion anchorRotation, Transform runParent,
+            int resumeFromStroke)
+        {
+            var go = new GameObject($"PaintingRunner_{painting.PaintingId}");
+            go.transform.SetParent(runParent, false);
+            var runner = go.AddComponent<PaintingRunner>();
+            ActiveRuns[painting.PaintingId] = runner;
+            runner.Begin(painting, definition, context, anchorPosition, anchorRotation, resumeFromStroke);
+            return runner;
         }
 
         void HandleRunnerFinished()
         {
-            // The runner destroys itself right after this — drop it and re-label from the store.
+            // The runner destroys itself right after this - drop it and re-label from the store.
+            if (_painting != null) ActiveRuns.Remove(_painting.PaintingId);
             _runner = null;
-            RefreshLabel();
         }
 
         protected override void Update()
         {
-            base.Update(); // the base's exit-gated re-arm — shadowing it would deaden the station
+            base.Update(); // the base's exit-gated re-arm - shadowing it would deaden the station
 
-            // The choice gates are a freestyle offer — fold them away when the player returns to
+            // The choice gates are a freestyle offer - fold them away when the player returns to
             // the menu, so the lava lamp never drifts through a stale SHARE/REPAINT pair.
             if ((_shareGate || _repaintGate)
                 && Context?.IsFreestyleActive != null && !Context.IsFreestyleActive())
@@ -124,15 +187,21 @@ namespace CosmicShore.Gameplay
 
         GameObject SpawnChoiceGate(string text, Vector3 position, Color color, System.Action onChosen)
         {
-            // Choice gates keep a neutral sphere hub — crossing commits a choice, not a trail state,
+            // Choice gates keep a neutral sphere hub - crossing commits a choice, not a trail state,
             // so they must not wear the trail-changer cone.
-            return ToyFactory.CreateGate($"Choice_{text}", transform.parent, position, transform.forward,
-                ChoiceGateRadius, color, text, hubIsCone: false, null, Definition, Context, _ => onChosen());
+            var gate = ToyFactory.CreateGate($"Choice_{text}", transform.parent, position, transform.forward,
+                ChoiceGateRadius, color, hubIsCone: false,
+                ToySwitchSignal.Neutral, Domains.Blue, Definition, Context, _ => onChosen());
+
+            // The one place a freestyle toy carries text: two identical neutral rings that do
+            // opposite things (export vs erase) need their word - see ToyChoiceLabel.
+            if (gate) ToyChoiceLabel.Add(gate.transform, text, color, ChoiceGateRadius);
+            return gate;
         }
 
         void HandleShareChosen()
         {
-            // Gates stay up — the player can share again, or go on to repaint.
+            // Gates stay up - the player can share again, or go on to repaint.
             if (!PaintingShareExporter.TryExport(_painting, Context, out string path)) return;
             PaintingShareExporter.Share(path, _painting.DisplayName);
 
@@ -154,40 +223,6 @@ namespace CosmicShore.Gameplay
             if (_repaintGate) ToyFactory.ScaleOutAndDestroy(_repaintGate, ChoiceDespawnSeconds).Forget();
             _shareGate = null;
             _repaintGate = null;
-        }
-
-        // ── Label ────────────────────────────────────────────────────────────
-
-        void RefreshLabel()
-        {
-            if (!_label || _painting == null) return;
-
-            _painting.EnsureStrokes();
-            int total = Mathf.Max(1, _painting.Strokes.Count);
-
-            if (_runner)
-            {
-                int pct = Mathf.RoundToInt(100f * _runner.StrokesCompleted / Mathf.Max(1, _runner.StrokeCount));
-                _label.text = _runner.IsCelebrating
-                    ? $"{_painting.DisplayName}\nMASTERPIECE"
-                    : _runner.IsBenched
-                        ? $"{_painting.DisplayName}\n{pct}% — PAUSED"
-                        : $"{_painting.DisplayName}\n{pct}%";
-                return;
-            }
-
-            int done = PaintingProgressStore.GetStrokesCompleted(_painting.PaintingId, total);
-            int times = PaintingProgressStore.GetTimesCompleted(_painting.PaintingId);
-            if (done >= total)
-                _label.text = _shareGate || _repaintGate
-                    ? $"{_painting.DisplayName}\nSHARE it or REPAINT?"
-                    : $"{_painting.DisplayName}\nCOMPLETE — fly through for options";
-            else if (done > 0)
-                _label.text = $"{_painting.DisplayName}\nresume {Mathf.RoundToInt(100f * done / total)}%";
-            else
-                _label.text = times > 0
-                    ? $"{_painting.DisplayName}\npainted ×{times}"
-                    : _painting.DisplayName;
         }
     }
 }

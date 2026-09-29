@@ -5,7 +5,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Shared staggered scale + fade entrance for score widgets. Returns the
-    /// DOTween <see cref="Sequence"/> so the caller can kill it on destroy — the
+    /// DOTween <see cref="Sequence"/> so the caller can kill it on destroy - the
     /// only state lives with the caller, so this stays a stateless helper.
     /// Used by <see cref="PlayerScoreEntry"/> and <see cref="PlayerScoreCard"/>.
     /// </summary>

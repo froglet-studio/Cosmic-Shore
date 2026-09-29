@@ -13,9 +13,6 @@ namespace CosmicShore.Gameplay
     public class CameraManager : Singleton<CameraManager>
     {
         [SerializeField]
-        CellRuntimeDataSO cellData;
-
-        [SerializeField]
         SceneNameListSO _sceneNameList;
 
         [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
@@ -34,10 +31,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private CinemachineCamera mainMenuCamera;
         [SerializeField] private Transform endCameraFollowTarget;
         [SerializeField] private Transform endCameraLookAtTarget;
-        [SerializeField] private float startTransitionDistance = 40f;
 
         private Transform _playerFollowTarget;
-        private const int ActivePriority = 10;
 
         public Transform PlayerFollowTarget
         {
@@ -63,7 +58,7 @@ namespace CosmicShore.Gameplay
 
             // Keep FOV + post-process AA on the managed cameras in sync with the settings panel,
             // live. The cameras are children of this manager (not spawned with the vessel), so this
-            // is the spawn-proof place to apply — no per-camera scene reference needed.
+            // is the spawn-proof place to apply - no per-camera scene reference needed.
             DisplayGraphicsSettings.OnFieldOfViewChanged += HandleCameraGraphicsChanged;
             DisplayGraphicsSettings.OnAnySettingChanged += HandleCameraGraphicsChanged;
         }
@@ -152,7 +147,7 @@ namespace CosmicShore.Gameplay
             _deathCamera?.SetFollowTarget(_playerFollowTarget);
 
             SetCloseCameraActive();
-            // Use the camera we just activated directly — Camera.main can return null in the
+            // Use the camera we just activated directly - Camera.main can return null in the
             // first frame after a scene transition because the tag-based lookup hasn't
             // observed the newly-activated GameObject yet.
             var activeCam = (_playerCamera as CustomCameraController)?.Camera;
@@ -190,17 +185,71 @@ namespace CosmicShore.Gameplay
             _themeManagerData.SetBackgroundColor(Camera.main);
         }
 
+        /// <summary>
+        /// Activate the end camera as a MANUALLY-DRIVEN replay camera - the shared "replay
+        /// camera" for modes that replay a moment (e.g. Astro League goal replays: a fixed
+        /// broadcast vantage that PANS to the action rather than chasing it). The follow target
+        /// is cleared so <see cref="CustomCameraController"/>'s own follow loop leaves the
+        /// transform alone; the caller poses the returned rig transform every frame and calls
+        /// <see cref="RestoreGameplayCamera"/> when done. Returns null when no end camera exists.
+        /// </summary>
+        public Transform BeginManualReplayCamera()
+        {
+            if (endCamera == null) return null;
+            if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
+
+            endCamera.SetFollowTarget(null);
+            // The ONE sanctioned suppression of the prism occlusion corridor
+            // (Docs/PRISM_ANIMATION.md §4.7): a manually-posed replay camera is a broadcast
+            // vantage that is not looking at the local ship, so a camera→ship capsule would
+            // cut a hole through unrelated mass. This is a narrow, symmetric hold — NOT an
+            // opt-out: the binding on the vessel stays, and RestoreGameplayCamera lifts it.
+            PrismOcclusionCorridor.SetSuppressed(true);
+            // Same shape, same reason, for the speed-tunnel law (Docs/SPEED_TUNNEL.md): the
+            // replay camera is posed by hand and AstroLeagueGoalReplay reads its field of view
+            // to fit the shot, so a live FOV write would fight the pose AND silently mis-frame
+            // the replay. A hold, not an opt-out — the vessel binding survives it.
+            VesselSpeedTunnel.SetSuppressed(true);
+            SetEndCameraActive();
+            ApplyCameraGraphicsSettings();
+            return endCamera.transform;
+        }
+
+        /// <summary>Vertical field of view of the replay/end camera (fit-the-shot framing math).</summary>
+        public float ReplayCameraFieldOfView =>
+            endCamera != null && endCamera.Camera != null ? endCamera.Camera.fieldOfView : 60f;
+
+        /// <summary>
+        /// Return from the replay/end camera to the gameplay follow camera (which still holds its
+        /// vessel follow target), snapped so no stale replay framing bleeds into play.
+        /// </summary>
+        public void RestoreGameplayCamera()
+        {
+            // Lifting the holds is UNCONDITIONAL and comes FIRST. A replay can finish after its
+            // scene has torn down — AstroLeagueGoalReplay.OnDestroy cancels playback, but the
+            // pending untokened UniTask.Yield resumes a frame later and runs its finally — and by
+            // then _playerFollowTarget is a destroyed Transform. Returning before the lifts would
+            // latch BOTH platform laws off for the rest of the session: these statics are
+            // otherwise only reset by their RuntimeInitializeOnLoadMethod installers, which run
+            // once per app launch, not per scene load. Lifting with no vessel bound is a no-op
+            // (both drivers gate on a live target), so there is nothing to protect here.
+            PrismOcclusionCorridor.SetSuppressed(false);
+            VesselSpeedTunnel.SetSuppressed(false);
+
+            if (_playerFollowTarget == null) return;
+            SetCloseCameraActive();
+            SnapPlayerCameraToTarget();
+        }
+
         public void SetMainMenuCameraActive()
         {
+            // The menu view is the Menu_Main scene camera, driven directly by
+            // MainMenuCameraController (a plain-transform rig - no Cinemachine). The legacy
+            // "CM Main Menu" vCam is explicitly kept OFF so no CinemachineBrain anywhere has
+            // a live camera to grab; this method's job is simply to clear every gameplay
+            // camera off the top of the scene camera.
             if (mainMenuCamera != null)
-            {
-                mainMenuCamera.Priority = ActivePriority;
-                mainMenuCamera.gameObject.SetActive(true);
-            }
-            else
-            {
-                CSDebug.LogWarning("[CameraManager] Main menu camera is not assigned!");
-            }
+                mainMenuCamera.gameObject.SetActive(false);
 
             if (_playerCamera is CustomCameraController pcc)
                 pcc.Deactivate();
@@ -210,13 +259,6 @@ namespace CosmicShore.Gameplay
                 endCamera.Deactivate();
 
             _activeController = null;
-            Invoke("LookAtCrystal", 1f);
-        }
-
-        void LookAtCrystal()
-        {
-            if (mainMenuCamera && cellData != null)
-                mainMenuCamera.LookAt = cellData.CrystalTransform;
         }
 
         public void SetCloseCameraActive() => SetActiveCamera(_playerCamera);
@@ -237,11 +279,93 @@ namespace CosmicShore.Gameplay
                 mainMenuCamera.gameObject.SetActive(false);
         }
 
+        // ── Windowed player camera (mode preview) ────────────────────────────
+
+        Camera _windowedCamera;
+        Transform _windowedPreviousTarget;
+
+        /// <summary>
+        /// Point the ordinary gameplay camera at <paramref name="target"/> and render it into
+        /// <paramref name="renderTexture"/> instead of the screen — the mode preview's "the game
+        /// is playing in that window" view.
+        ///
+        /// <para>Deliberately NOT <see cref="SetupGamePlayCameras"/>: that routes through
+        /// <c>SetActiveCamera</c>, which deactivates every other managed camera and claims
+        /// <c>_activeController</c>. A windowed camera is an ADDITIONAL view, not the active one —
+        /// the menu keeps whatever camera is drawing the screen, and nothing else's idea of "the
+        /// active camera" changes. Using the real gameplay rig is what makes the window show the
+        /// real game: the occlusion corridor and the speed tunnel are already bound to it.</para>
+        ///
+        /// <para>Returns null when there is no player camera to lend.</para>
+        /// </summary>
+        public Camera BeginWindowedPlayerCamera(Transform target, RenderTexture renderTexture)
+        {
+            if (_playerCamera == null || renderTexture == null) return null;
+            if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
+
+            _windowedPreviousTarget = _playerFollowTarget;
+
+            _playerFollowTarget = target;
+            _playerCamera.SetFollowTarget(target);
+
+            if (target && target.TryGetComponent(out VesselCameraCustomizer customizer))
+                customizer.Configure(_playerCamera);
+
+            _playerCamera.Activate();
+            if (_playerCamera is CustomCameraController pcc)
+            {
+                pcc.SnapToTarget();
+                _windowedCamera = pcc.Camera;
+            }
+
+            if (_windowedCamera)
+            {
+                _windowedCamera.targetTexture = renderTexture;
+                _themeManagerData.SetBackgroundColor(_windowedCamera);
+            }
+
+            ApplyCameraGraphicsSettings();
+            return _windowedCamera;
+        }
+
+        /// <summary>
+        /// Give the gameplay camera back: clear the render texture, restore the follow target it
+        /// had, and stand it down. Safe to call when no windowed camera is running.
+        /// </summary>
+        public void EndWindowedPlayerCamera()
+        {
+            if (_windowedCamera)
+            {
+                _windowedCamera.targetTexture = null;
+                _windowedCamera = null;
+            }
+
+            _playerFollowTarget = _windowedPreviousTarget;
+
+            // Test the OBJECT, never the interface reference. ICameraController is an interface,
+            // and `?.` on an interface ref does NOT route through Unity's overloaded == - so a
+            // DESTROYED CustomCameraController is still non-null here and every call below throws
+            // "has been destroyed but you are still trying to access it". That is what aborted the
+            // mode-preview unwind on scene close, leaving the rest of the teardown unrun
+            // (reported as "[ModePreview] Unwinding the ScarabScramble preview hit: ..."). This
+            // path runs precisely when things are being destroyed, so it must be destroy-safe.
+            var playerCamera = _playerCamera is UnityEngine.Object pcObj && pcObj ? _playerCamera : null;
+
+            playerCamera?.SetFollowTarget(_windowedPreviousTarget);
+            _windowedPreviousTarget = null;
+
+            // Only stand it down if it is not the view the game is actually using: in a gameplay
+            // scene this same rig IS the screen camera, and a preview must never be able to
+            // switch it off there.
+            if (_activeController != _playerCamera)
+                playerCamera?.Deactivate();
+        }
+
         public ICameraController GetActiveController() => _activeController;
 
         /// <summary>
         /// Deactivates all managed cameras (player, death, end) without activating a replacement.
-        /// Used by the menu to hand control to the Cinemachine-driven main menu camera.
+        /// Used by the menu to hand control to the scene camera driven by MainMenuCameraController.
         /// </summary>
         public void DeactivateAllCameras()
         {

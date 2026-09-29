@@ -68,7 +68,7 @@ namespace CosmicShore.Gameplay
                         activationButtonImage.gameObject.SetActive(false);
                         break;
                 }
-                CSDebug.Log("A DualShock controller is connected.");
+                CSDebug.LogVerbose(CSLogChannel.Input, "[ControllerButtonPress] DualShock controller connected");
             }
             else if (Gamepad.current is XInputController)
             {
@@ -90,7 +90,7 @@ namespace CosmicShore.Gameplay
                         activationButtonImage.gameObject.SetActive(false);
                         break;
                 }
-                CSDebug.Log("An Xbox controller is connected.");
+                CSDebug.LogVerbose(CSLogChannel.Input, "[ControllerButtonPress] Xbox controller connected");
             }
             else
             {
@@ -100,6 +100,15 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            // The appshell-owns-the-gamepad signal: ScreenSwitcher's freestyle gate turns
+            // sendNavigationEvents off while the player is flying a vessel. This component
+            // polls the pad directly (bypassing the EventSystem), so it must consult the
+            // same gate — otherwise appshell buttons (e.g. the daily-challenge card) keep
+            // firing off vessel ability presses during freestyle. Screens are only FADED in
+            // freestyle, so the ScreenIsActive checks below do not cover this.
+            if (eventSystem && !eventSystem.sendNavigationEvents)
+                return;
+
             // Remove the null check -> after making sure every place of ControllerButtonPress has a canvas group
             // reference added to them
 

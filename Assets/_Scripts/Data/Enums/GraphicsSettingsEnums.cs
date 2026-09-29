@@ -6,20 +6,20 @@ namespace CosmicShore.Data
     /// <summary>How the game window is presented. Maps to <see cref="UnityEngine.FullScreenMode"/>.</summary>
     public enum DisplayModeSetting
     {
-        // ExclusiveFullScreen — true fullscreen, lowest latency, but slow alt-tab.
+        // ExclusiveFullScreen - true fullscreen, lowest latency, but slow alt-tab.
         Fullscreen = 0,
-        // FullScreenWindow — borderless; the PC/Steam default for instant alt-tab.
+        // FullScreenWindow - borderless; the PC/Steam default for instant alt-tab.
         Borderless = 1,
-        // Windowed — draggable window.
+        // Windowed - draggable window.
         Windowed = 2,
     }
 
     /// <summary>VSync count written to <see cref="UnityEngine.QualitySettings.vSyncCount"/>.</summary>
     public enum VSyncSetting
     {
-        Off = 0,   // 0 — uncapped present, can tear, burns CPU/GPU on unseen frames.
-        On = 1,    // 1 — present every VBlank (locks to refresh).
-        Half = 2,  // 2 — present every other VBlank (half refresh).
+        Off = 0,   // 0 - uncapped present, can tear, burns CPU/GPU on unseen frames.
+        On = 1,    // 1 - present every VBlank (locks to refresh).
+        Half = 2,  // 2 - present every other VBlank (half refresh).
     }
 
     /// <summary>
@@ -47,15 +47,15 @@ namespace CosmicShore.Data
     {
         Off = 0,
         FXAA = 1,   // Fast, post-process, cheapest, slightly soft.
-        SMAA = 2,   // Sharper post-process AA — good default for our shader edges.
+        SMAA = 2,   // Sharper post-process AA - good default for our shader edges.
         MSAA2x = 3,
         MSAA4x = 4,
         MSAA8x = 5,
-        TAA = 6,    // Temporal — best coverage, needs motion vectors, can ghost.
+        TAA = 6,    // Temporal - best coverage, needs motion vectors, can ghost.
     }
 
     /// <summary>
-    /// GPU upscaling filter (URP <c>UpscalingFilterSelection</c>). Low priority for us — we are
+    /// GPU upscaling filter (URP <c>UpscalingFilterSelection</c>). Low priority for us - we are
     /// CPU-bound, so upscaling mostly buys GPU headroom we already have. Kept for weak iGPUs.
     /// </summary>
     public enum UpscalingSetting
@@ -67,7 +67,7 @@ namespace CosmicShore.Data
     }
 
     /// <summary>
-    /// CPU-side simulation density — the real framerate lever on this engine. Lowers how many
+    /// CPU-side simulation density - the real framerate lever on this engine. Lowers how many
     /// living things are *spawned/simulated* (spawn rate + seed floor), never how much existing
     /// mass survives. Conserved-mass-safe: it tunes production, it does not impose decay.
     /// </summary>
@@ -86,8 +86,10 @@ namespace CosmicShore.Data
     }
 
     /// <summary>
-    /// Aggressiveness of the existing <c>AdaptiveAnimationManager</c> frame-skip (1x..12x).
-    /// Higher = drop animation update rate sooner under CPU load instead of dropping frames.
+    /// Aggressiveness of adaptive animation throttling under CPU load. Currently
+    /// INERT: its consumer (the retired CPU animation-manager frame-skip) was
+    /// deleted when prism animation moved to the GPU clock (Docs/PRISM_ANIMATION.md);
+    /// the setting persists for save-data compatibility and future adaptive systems.
     /// </summary>
     public enum AdaptivePerformanceSetting
     {

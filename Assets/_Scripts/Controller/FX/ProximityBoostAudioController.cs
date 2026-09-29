@@ -5,12 +5,13 @@ using CosmicShore.UI;
 using FMOD.Studio;
 using FMODUnity;
 using Obvious.Soap;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay.Audio
 {
     /// <summary>
-    /// Drives an FMOD SFX layer for the Squirrel's proximity-speed gain — the
+    /// Drives an FMOD SFX layer for the Squirrel's proximity-speed gain - the
     /// boost the vessel earns when its <see cref="Skimmer"/> is in proximity
     /// with crystals or with another ship's trail prisms. Both proximity
     /// sources funnel through <see cref="ScriptableEventBoostChanged"/>:
@@ -36,7 +37,7 @@ namespace CosmicShore.Gameplay.Audio
     ///   - Only runs for the local user's vessel
     ///     (<see cref="onlyAudibleToController"/>).
     ///   - Optionally restricted to a single vessel class (Squirrel by
-    ///     default — racing/drift class).
+    ///     default - racing/drift class).
     ///   - Loop instance volume is tied to <see cref="GameSetting.SFXLevel"/>
     ///     and muted by <c>SFXEnabled</c>.
     ///   - Loop instance is paused on disable, resumed on enable, and
@@ -53,7 +54,7 @@ namespace CosmicShore.Gameplay.Audio
         [Header("FMOD Events")]
         [SerializeField, Tooltip(
             "Optional one-shot FMOD event fired every time the vessel's " +
-            "BoostMultiplier rises (i.e. every successful skim — crystal " +
+            "BoostMultiplier rises (i.e. every successful skim - crystal " +
             "vacuum or trail-prism contact). Leave unassigned to suppress " +
             "per-tick SFX and rely solely on the boost loop layer below.")]
         EventReference boostTickEvent;
@@ -96,7 +97,7 @@ namespace CosmicShore.Gameplay.Audio
         [Header("Boost Changed Event")]
         [SerializeField, Tooltip(
             "SOAP event raised whenever the vessel's BoostMultiplier " +
-            "changes — emitted by SkimmerBoostPrismEffectSO and any other " +
+            "changes - emitted by SkimmerBoostPrismEffectSO and any other " +
             "skimmer effect that grants proximity speed. This is the " +
             "single source of truth this controller listens on; both the " +
             "trail-proximity and crystal-proximity boosts come through here.")]
@@ -136,7 +137,7 @@ namespace CosmicShore.Gameplay.Audio
 
         [SerializeField, Tooltip(
             "Force the loop instance to attach to the FMOD listener " +
-            "instead of the ship transform — keeps it always audible " +
+            "instead of the ship transform - keeps it always audible " +
             "regardless of camera distance. No effect when " +
             "onlyAudibleToController is true (since only local vessels " +
             "create instances anyway).")]
@@ -157,7 +158,7 @@ namespace CosmicShore.Gameplay.Audio
         [Header("Vessel Gating")]
         [SerializeField, Tooltip(
             "When true, this controller only runs for the configured " +
-            "vessel class (Squirrel by default — racing/drift). Other " +
+            "vessel class (Squirrel by default - racing/drift). Other " +
             "vessel classes never react to the boost SOAP event. Turn " +
             "off if you want every vessel that earns proximity boost to " +
             "use the same SFX.")]
@@ -189,7 +190,7 @@ namespace CosmicShore.Gameplay.Audio
         bool _localGateResolved;
         bool _subscribed;
 
-        // Last raw multiplier we observed — used to detect rising edges
+        // Last raw multiplier we observed - used to detect rising edges
         // independent of normalisation, so we don't miss a tick if base /
         // max change at runtime.
         float _lastRawMultiplier = float.NaN;
@@ -264,8 +265,8 @@ namespace CosmicShore.Gameplay.Audio
             // stop the loop. The next rising edge will recreate it.
             if (target <= loopStopThreshold && _smoothedAmount <= loopStopThreshold)
             {
-                if (debugLog)
-                    Debug.Log($"[ProximityBoostAudio] '{name}' boost decayed to base — stopping loop.", this);
+                if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                    CSDebug.LogVerbose(CSLogChannel.Audio, $"[ProximityBoostAudio] '{name}' boost decayed to base - stopping loop.", this);
                 StopAndReleaseLoop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
             }
         }
@@ -276,11 +277,11 @@ namespace CosmicShore.Gameplay.Audio
             {
                 _classGateChecked = true;
                 _classGatePass = !restrictToVesselClass || _status.VesselType == targetVesselClass;
-                if (!_classGatePass && debugLog)
+                if (!_classGatePass && debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
                 {
-                    Debug.Log(
+                    CSDebug.LogVerbose(CSLogChannel.Audio,
                         $"[ProximityBoostAudio] '{name}' vessel class is " +
-                        $"{_status.VesselType}, not {targetVesselClass} — disabling.",
+                        $"{_status.VesselType}, not {targetVesselClass} - disabling.",
                         this);
                 }
             }
@@ -308,8 +309,8 @@ namespace CosmicShore.Gameplay.Audio
             {
                 _localGatePass = false;
                 _localGateResolved = true;
-                if (debugLog)
-                    Debug.Log($"[ProximityBoostAudio] '{name}' is remote/AI; disabling.", this);
+                if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                    CSDebug.LogVerbose(CSLogChannel.Audio, $"[ProximityBoostAudio] '{name}' is remote/AI; disabling.", this);
                 enabled = false;
             }
         }
@@ -324,7 +325,7 @@ namespace CosmicShore.Gameplay.Audio
             // The SOAP event is global; every vessel (incl. the remote owner's
             // per-frame DecayBoost) raises it. Filter by source-vessel identity so
             // we only react to our own vessel's boost. Robust where two vessels
-            // momentarily share a multiplier — the old multiplier-match filter
+            // momentarily share a multiplier - the old multiplier-match filter
             // mis-fired in that case.
             if (payload.VesselStatus != null && payload.VesselStatus != _status) return;
 
@@ -339,12 +340,6 @@ namespace CosmicShore.Gameplay.Audio
             {
                 FireTickOneShot();
                 EnsureLoopStarted();
-
-                if (debugLog)
-                    Debug.Log(
-                        $"[ProximityBoostAudio] '{name}' tick — mult {prev:F2} → {payload.BoostMultiplier:F2} " +
-                        $"(norm {ComputeNormalisedAmount(payload.BoostMultiplier):F2}).",
-                        this);
             }
 
             // Snap target so Update() can smooth toward it. Initial value
@@ -358,7 +353,7 @@ namespace CosmicShore.Gameplay.Audio
         /// <summary>
         /// Plays the configured tick one-shot event at the ship's position
         /// with the SFX slider volume applied. Independent of the loop
-        /// instance — FMOD owns its lifetime and frees the instance after
+        /// instance - FMOD owns its lifetime and frees the instance after
         /// playback finishes.
         ///
         /// Routed through <see cref="FMODOneShotVolumeHelper"/> rather than
@@ -383,15 +378,8 @@ namespace CosmicShore.Gameplay.Audio
             if (boostLoopEvent.IsNull) return;
             if (_loopStarted && _loopInstance.isValid()) return;
 
-            _loopInstance = RuntimeManager.CreateInstance(boostLoopEvent);
-            if (!_loopInstance.isValid())
-            {
-                Debug.LogError(
-                    $"[ProximityBoostAudio] Failed to create FMOD instance for '{boostLoopEvent}'. " +
-                    $"Is its bank auto-loaded (FMOD -> Edit Settings -> Load Banks)?",
-                    this);
+            if (!FmodSafe.TryCreateInstance(boostLoopEvent, out _loopInstance, this))
                 return;
-            }
 
             // Resolve the boost amount parameter.
             _hasAmountParam = false;
@@ -405,7 +393,7 @@ namespace CosmicShore.Gameplay.Audio
             }
             else
             {
-                Debug.LogWarning(
+                CSDebug.LogWarning(
                     $"[ProximityBoostAudio] Event '{boostLoopEvent}' has no parameter " +
                     $"named '{boostAmountParameterName}'. Loop will play but " +
                     $"intensity won't drive it.",
@@ -426,7 +414,7 @@ namespace CosmicShore.Gameplay.Audio
             _loopStarted = startResult == FMOD.RESULT.OK;
             if (!_loopStarted)
             {
-                Debug.LogError(
+                CSDebug.LogError(
                     $"[ProximityBoostAudio] '{name}' start() returned {startResult} on '{boostLoopEvent}'. " +
                     $"Boost loop SFX won't play.",
                     this);
@@ -435,8 +423,8 @@ namespace CosmicShore.Gameplay.Audio
                 return;
             }
 
-            if (debugLog)
-                Debug.Log($"[ProximityBoostAudio] '{name}' boost loop START (amount={_smoothedAmount:F2}).", this);
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[ProximityBoostAudio] '{name}' boost loop START (amount={_smoothedAmount:F2}).", this);
         }
 
         float ComputeNormalisedAmount(float rawMultiplier)
@@ -484,7 +472,7 @@ namespace CosmicShore.Gameplay.Audio
                 }
             }
 
-            RuntimeManager.AttachInstanceToGameObject(_loopInstance, target);
+            FmodSafe.Attach(_loopInstance, target.gameObject);
             _loopAttachMode = mode;
         }
 
@@ -497,13 +485,7 @@ namespace CosmicShore.Gameplay.Audio
 
         void StopAndReleaseLoop(FMOD.Studio.STOP_MODE stopMode)
         {
-            if (_loopInstance.isValid())
-            {
-                if (_loopStarted)
-                    _loopInstance.stop(stopMode);
-                _loopInstance.release();
-                _loopInstance.clearHandle();
-            }
+            FmodSafe.StopAndRelease(ref _loopInstance, _loopStarted, stopMode);
             _loopStarted = false;
             _hasAmountParam = false;
             _loopAttachMode = AttachMode.None;
@@ -519,17 +501,8 @@ namespace CosmicShore.Gameplay.Audio
         float ResolveSFXVolume()
         {
             if (!tieVolumeToSFXSlider)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            var gs = GameSetting.Instance;
-            if (gs == null)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            if (!gs.SFXEnabled)
-                return 0f;
-
-            float slider = Mathf.Clamp01(gs.SFXLevel);
-            return Mathf.Clamp(slider * baseVolumeMultiplier, 0f, 2f);
+                return Mathf.Clamp(baseVolumeMultiplier, 0f, AudioVolumeMath.MaxBaseMultiplier);
+            return AudioSystem.ResolveSfxInstanceVolume(baseVolumeMultiplier);
         }
 
         void OnSFXLevelChanged(float level) => ApplySFXVolume();

@@ -123,7 +123,6 @@
     <tr><td class="k">displayName</td><td>On profile edit (username setup panel / profile modal)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">avatarId</td><td>On avatar change in profile</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">crystalBalance</td><td>On earn (reward claim, grants) and on spend (vessel unlock) — <code>AddCrystals</code> / <code>TrySpendCrystals</code></td><td><span class="st st-live">LIVE</span></td></tr>
-    <tr><td class="k">xp</td><td>Every game end (+25 participation XP via <code>ParticipationXpAwarder</code>) + manual awards</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">unlockedRewardIds</td><td>On XP-track reward claim (<code>UnlockReward</code>); union-merged with cloud on load</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">firstSeenUtc</td><td>Stamped once when the account profile is first created (cohorting / retention)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">styleTag</td><td>Recomputed at game end from telemetry aggregates; also set as UGS Analytics user property</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
@@ -153,12 +152,13 @@
   <p class="cat-sub">All written at <strong>game end</strong> by <code>UGSStatsManager</code> (fed by per-mode score trackers + <code>VesselTelemetry</code>). Cloud Save 2s debounce; leaderboard submits immediate.</p>
   <table class="t">
     <tr><th>Data</th><th>Destination</th><th>Updated when</th><th>Status</th></tr>
-    <tr><td class="k">Per-mode-per-intensity bests (Blitz &amp; CrystalCapture scores, HexRace &amp; Joust times)</td><td class="w">PLAYER_STATS_PROFILE</td><td>Game end — only when the previous best is beaten</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">Per-mode-per-intensity bests (Blitz &amp; Scurry scores, SkimRace &amp; Joust times)</td><td class="w">PLAYER_STATS_PROFILE</td><td>Game end — only when the previous best is beaten</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">LastLoginTick</td><td class="w">PLAYER_STATS_PROFILE</td><td>Every stats save (piggybacks)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">LifetimeCrystalsCollected</td><td class="w">PLAYER_STATS_PROFILE</td><td>Never — deprecated field, remove in P3 schema cleanup</td><td><span class="st st-fix">FIX · P3</span></td></tr>
     <tr><td class="k">Per-vessel lifetime (GamesPlayed, BestDriftTime, BestBoostTime, TotalPrismsDamaged)</td><td class="w">VESSEL_STATS</td><td>Every game end (<code>ReportVesselTelemetry</code>)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">Vessel counters — Sparrow: PrismBlocksShot, SkyburstMissilesShot, DangerBlocksSpawned · Squirrel: JoustsWon, PrismsStolen, BestCleanStreak</td><td class="w">VESSEL_STATS · Counters dict</td><td>Every game end; dict extends per-vessel with no schema change</td><td><span class="st st-live">LIVE</span></td></tr>
-    <tr><td class="k">4 leaderboards × intensity (HexRace, Blitz, Joust, CrystalCapture)</td><td class="w">UGS Leaderboards (IDs from LeaderboardConfigSO)</td><td>Game end, immediate async submit</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">Weekly challenge completion time (one board for the whole game)</td><td class="w">UGS Leaderboards &mdash; id <code>weekly_challenge</code></td><td>On completing the week&rsquo;s challenge; never on a DNF</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">4 leaderboards &times; intensity (SkimRace, Blitz, Joust, Scurry)</td><td class="w">UGS Leaderboards (IDs from LeaderboardConfigSO)</td><td>Game end, immediate async submit</td><td><span class="st st-none">RETIRED &mdash; deleted 2026-09; bests stay in MODE_STATS</span></td></tr>
     <tr><td class="k">Telemetry extensions (input intensity, direction changes, near-prism passes, ability usage)</td><td class="w">VESSEL_STATS Counters + game_completed params</td><td>Accumulated per turn, emitted at game end</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
   </table>
 </div>
@@ -170,7 +170,7 @@
     <tr><th>Data</th><th>Store · writer</th><th>Updated when</th><th>Status</th></tr>
     <tr><td class="k">Daily challenge (TicketBalance, GameMode, Intensity, HighScore, 3× reward tiers)</td><td class="w">PlayerPrefs + PlayFab (CatalogManager tickets, DailyRewardHandler) · DailyChallengeSystem</td><td>DEFERRED — coupled to the disabled PlayFab economy; revisit when PlayFab is reworked. Repo (DAILY_CHALLENGE) is wired and ready.</td><td><span class="st st-pending">DEFERRED</span></td></tr>
     <tr><td class="k">Favorited minigames</td><td class="w">today: game_favorites.data (local file) → target: cloud · FavoriteSystem</td><td>Migration HELD for Unity review (no cloud key/model yet — folded into the held migration pass).</td><td><span class="st st-pending">migration held</span></td></tr>
-    <tr><td class="k">Quest / UserJourney stage</td><td class="w">QuestSystem + UserJourneySystem (in-memory chain; emits no analytics)</td><td>On matching UserAction (view screen, play game…)</td><td><span class="st st-planned">PLANNED · P2 (event only)</span></td></tr>
+    <tr><td class="k">Quest phase / completion</td><td class="w">QuestGraphRunner + FTUEEventManager (emits no analytics; QuestSystem/UserJourneySystem are deleted)</td><td>On matching UserAction (view screen, play game…)</td><td><span class="st st-planned">PLANNED · P2 (event only)</span></td></tr>
   </table>
 </div>
 
@@ -202,7 +202,7 @@
     <tr><td class="k">crystals_earned · crystals_spent · crystal_spend_blocked · vessel_unlocked · crystal_balance_snapshot</td><td>Economy mutations / session end (amount, source, balance)</td><td class="w">PlayerDataService (facade), HangarVesselDetailView, facade session-end</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">game_first_launched · menu_ready · freestyle_entered · mode_unlocked · intensity_unlocked · setting_changed</td><td>Activation funnel + control scheme</td><td class="w">facade (first-launch, freestyle SOAP, 9 GameSetting events), MainMenuController, GameModeProgressionService</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">friend_request_sent/received · friend_added · party_invite_sent/received · party_joined · minigame_favorited · share_triggered</td><td>Social loop</td><td class="w">facade ← FriendsDataSO + HostConnectionDataSO SOAP events + FavoriteSystem.OnFavoriteChanged; SnsShare (facade)</td><td><span class="st st-live">LIVE</span></td></tr>
-    <tr><td class="k">quest_completed · repeated_game_fail · player_won (param)</td><td>Retention loops + win/loss</td><td class="w">QuestSystem (facade); facade derives fail-streak + win from GameDataSO at game_completed</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">quest_completed · repeated_game_fail · player_won (param)</td><td>Retention loops + win/loss</td><td class="w">GameModeProgressionService (facade); facade derives fail-streak + win from GameDataSO at game_completed</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">daily_challenge_started / completed / skipped · training_tier_claimed</td><td>Retention loops (need cloud migration first)</td><td class="w">DailyChallengeSystem, TrainingGameProgressSystem</td><td><span class="st st-planned">PLANNED · P3</span></td></tr>
     <tr><td class="k">cloud_save_failed</td><td>A Cloud Save write exhausts all retries while online (once per failure episode)</td><td class="w">UGSCloudSaveProvider.OnSaveFailed → facade</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">pilot_recruited · vessel_upgraded · episode_* · style telemetry</td><td>VDemo systems</td><td class="w">CaptainManager (re-enabled), EpisodeProgress, VesselTelemetry</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>

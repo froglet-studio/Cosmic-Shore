@@ -106,7 +106,7 @@ species up to its seed floor (bootstrap + extinction recovery). See ECOSYSTEM.md
 
 **Two test scenes wired** (`Docs/ECOSYSTEM.md` §7.2):
 - *Menu_Main* freestyle toy box (Blob Cell) — vibrant, indefinitely watchable.
-- *Skim Race* / `MinigameHexRace` (Skim Race Cell) — fauna graze AI trail-obstacle
+- *Skim Race* / `MinigameSkimRace` (Skim Race Cell) — fauna graze AI trail-obstacle
   buildup so framerate recovers at late laps / high player counts.
 
 **Universal ecosystem HUD.** `DomainVolumeHexGraphic` + `DomainVolumeIndicator` are
@@ -121,7 +121,7 @@ live per-domain counts + `Cell.ResolvedThresholds` — already platform-generic.
 (enum-drift guards for `FaunaDiet`/`CellPhase`/`CellAggressionLevel`).
 
 **Two spawners coexist:** `RandomLifeSpawner` (most scenes) and
-`IntensityWiseLifeSpawner` (WildlifeBlitz + Tournament, `cellTypeChoiceOptions: 1`).
+`IntensityWiseLifeSpawner` (WildlifeBlitz + Maelstrom, `cellTypeChoiceOptions: 1`).
 They have diverged. Do not delete either; reconcile them (work item 1).
 
 ---
@@ -143,7 +143,7 @@ every cheat with an emergent force.** Start at the top.
 2. **Reconcile the two spawners into one config-driven spawner.**
    Fold `IntensityWiseLifeSpawner`'s intensity behavior into `RandomLifeSpawner`
    (or a shared base) behind config flags, so all scenes run one spawner whose
-   behavior is data-selected. Keep WildlifeBlitz/Tournament behavior intact; migrate
+   behavior is data-selected. Keep WildlifeBlitz/Maelstrom behavior intact; migrate
    them onto the unified path. Tests for both behaviors.
 
 3. **Generalize "diet" into a composable prey-selector.**

@@ -1,0 +1,884 @@
+---
+name: vessel
+description: Use for ANY work on a Cosmic Shore vessel class — creating or registering a new vessel, vessel abilities/actions/executors (R_VesselActions), elemental ability maps and level-5 upgrades, vessel HUDs (the four-icon ability row, control hints, gauges, controller/view pairs), elemental petal bars, hull morphs / blend shapes / rig swaps, skimmers and impact-effect containers, or vessel prefab wiring (camera, telemetry, customization) on Manta, Dolphin, Rhino, Serpent, Sparrow, Squirrel, Urchin, Grizzly, Termite, Falcon, or Shrike. Loads the fleet-wide vessel contract (4 abilities × 4 elements × 4 icons), the audit tools, and the per-subsystem checklists so vessel work stops re-deriving the requirements each time. Trigger when editing Assets/_Scripts/Controller/Vessel/**, vessel HUD files under Assets/_Scripts/UI/**, Assets/_Prefabs/Spacevessels/**, Assets/Resources/ElementalAbilityMaps/**, or Docs/ElementalAbilitySystem/**.
+---
+
+# Vessel Class Protocol
+
+You are working on a **vessel** — one of the 11 classes that are the player-facing fundamental of
+Cosmic Shore. Every vessel satisfies one fleet-wide contract, and that contract has historically
+been **re-derived from scratch on every vessel branch**, at real cost: on the Dolphin elemental
+pass, three of four commits were corrections, and the branch re-discovered rules the fleet had
+already paid for once — asymmetric event bindings (three separate instances), a
+permanently-latched init race, a gauge bound to a meter that never raises events, doc/asset
+drift within the branch itself. This skill exists so that never happens again. Follow it
+exactly.
+
+## 1. The contract (what every vessel is)
+
+> **Four abilities, each mapped to one of the four elements, each with a level-5 upgrade, each
+> shown as one of four HUD icons in charge → mass → space → time order** — plus the element
+> flowers, the hull morphs, the impact/skimmer effect containers, and the registration set that
+> makes the vessel spawnable. Element conventions: **Space = reach/presence · Time =
+> rate/mobility · Charge = threat/energy · Mass = size/volume.** One parameter per element.
+
+The full clause-by-clause checklist — requirements, enforcing mechanism, key files, wiring
+steps, and the recorded failure modes per subsystem — is in
+**`references/CONTRACT.md`** (this directory). Read the section(s) for the subsystem you are
+touching before editing; read all of it when creating or completing a vessel.
+
+| Your task touches… | Read CONTRACT.md § | Plus canon |
+|---|---|---|
+| New vessel / spawning / prefab wiring | §1 Registration | CLAUDE.md ▸ Player Spawning |
+| Abilities, actions, executors, input | §2 Actions | `R_VesselActions/*.md` for that ability |
+| Element scaling, map assets, L5 upgrades | §3 Map, §4 Elementals | `Docs/ElementalAbilitySystem/ARCHITECTURE.md` + `FLEET_MAPS.md` |
+| HUD icons, hints, gauges, HUD lifecycle | §5 Ability row, §8 HUD pair | ARCHITECTURE.md §7.1–7.4 |
+| Petal flowers / hull morphs / rig or FBX | §6 Bars, §7 Morphs | CLAUDE.md ▸ Elemental Bars / Hull Morphs; `Docs/VESSEL_CONSTRUCTION.md` |
+| Prefab construction, model swaps, deleting a model | — | **`Docs/VESSEL_CONSTRUCTION.md`** (guid ownership, nested-instance parenting, what the unreferenced rigs carry) |
+| Tails, jets, vessel FX mounts | — | `Docs/VESSEL_TAIL_AND_JETS.md` |
+| Collisions, crystals, skimmers, jousting | §9 Impact effects | CLAUDE.md ▸ Impact Effects; `RHINO_SHIELD_SWIPE.md` |
+| Docs, shipping, verification | §10 Paper trail | `GIT_RULES.md`, `Docs/UNITY_VERIFICATION_CHECKLIST.md` |
+
+## 2. Establish ground truth before editing (docs drift; assets + code do not)
+
+Fleet-status tables go stale — CLAUDE.md's fleet table, `ARCHITECTURE.md` §3.2's field list, and
+`FLEET_MAPS.md` proposals have each contradicted the shipped assets at some point. **The map
+asset, the prefab, and the code are the record.** Before changing a vessel:
+
+0. Run **`python3 Tools/Build/element_ability_table.py {Vessel}`** (~1s, reader, no Unity)
+   — it performs steps 1-2 for you and prints, per element: the declared ability and input,
+   the L5 upgrade AND the call site that actually gates it, and every live scaling channel
+   with its authored numbers. It flags an `UpgradeLabel` with no gate, a
+   a RETIRED generic map multiplier still authored, and a gate a serialized bool switches off on
+   this hull. `--gaps` for the whole fleet. Details: the `/element-ability-table` skill.
+1. Read `Assets/Resources/ElementalAbilityMaps/{Vessel}.asset` — what is actually authored?
+   `(open design slot)` + `Input: 0` + empty `UpgradeLabel` = the design does not exist yet.
+2. Read the vessel prefab (`Assets/_Prefabs/Spacevessels/{Vessel}.prefab`) for the real wiring —
+   including HUD icons that live in the **vessel** prefab, not the HUD variant (the Rhino's row
+   was missed for exactly this reason), and `m_Modifications` overrides on nested prefabs.
+3. Run (or, since you cannot run Unity, reason from the source of) the fleet auditors:
+   **FrogletTools > Vessels > Wire Vessel Ability Row** (`VesselAbilityRowWirer` — builds or repairs
+   ANY vessel's four-icon row from nothing at the fleet-standard bands; idempotent, never touches
+   sprites, adopts authored gauges by name. This is the mechanical half of taking a vessel from 0/4
+   to 4/4 once its map is designed),
+   **FrogletTools > Vessels > Audit Vessel Ability Rows**, **Audit Vessel Skimmers** and **Audit
+   Vessel Elemental Morphs** — all asset-only, all reuse the exact runtime discovery code, so
+   report and game cannot disagree.
+4. **Per-vessel NUMBERS come from the prefab, never the class default.** Reasoning about a
+   vessel's speed, boost, or scaling from the `VesselTransformer` field initializers you can
+   see in the `.cs` will be wrong for whichever vessel overrides them — the Manta serializes
+   `DefaultThrottleScaler: 180` against a class default of 50, so its cruise is 180 and its
+   boosted top 720, not 60/210. Read the prefab YAML. (And note `ThrottleScaler`/`MinimumSpeed`
+   are `[HideInInspector] public` runtime mirrors that serialize STALE garbage — `0` on most
+   prefabs — and are only correct after `ResetTransformer()`; the authored truth is the
+   `Default*` pair.)
+4-i. **…and a SILENT prefab is not an unset one — check whether the KEY is present before you
+   trust either source.** Unity writes a component's serialized fields when it last saved that
+   prefab, then runs field initializers first and applies only the keys the YAML actually
+   carries. So a field added to the C# AFTER a prefab was last written appears nowhere in that
+   prefab, and the **initializer is the shipped value**. `Scarab.prefab`'s
+   `ScarabVesselTransformer` block is exactly this: it serializes only the inherited
+   `VesselTransformer` fields, and six Scarab-specific knobs (`baseTopSpeed`,
+   `accelerationPerSecond`, `coastDragPerSecond`, `doubleTapWindowSeconds`, `dashSpeed`,
+   `dashDurationSeconds`) are absent, so tuning them means editing the C#. This is the converse
+   of rule 4, not an exception to it — the rule is about which source is AUTHORITATIVE, and
+   reading a silent prefab as "unset" is as wrong as reading a class default over a real
+   override. Two consequences: `grep <field> <prefab>` returning nothing is a RESULT, not a
+   miss; and the moment anyone opens that prefab in the editor and saves, Unity writes all the
+   missing keys at their then-current values and the prefab becomes authoritative — so say in
+   the doc which source is live today.
+4a. **…and the AUTHORED number is not the EFFECTIVE one — trace the consumer before you tune
+   against it.** Reading the field is only half the job; a tuning request is about the value
+   that reaches the screen. `VesselTransformer.CurrentBoostAmount()` multiplies
+   `BoostMultiplier` **by** `ChargedBoostCharge`, and both are `BoostMultiplierFrom(...)` of the
+   same meter — so a charged boost applies `maxBoostMultiplier` **squared**, and the Dolphin's
+   real ceiling was `50 × 2² + 10 = 210` while its own design doc described a single ×2 (110).
+   Tuning off the authored field would have missed by a factor of two. Read the formula that
+   consumes the number — `ComputeThrottleTarget`, `EvaluateLive`, `ElementalScaling.Multiplier`
+   — and write the derived value into the doc so the next pass starts from the effective number.
+   Corollary: when the code and a design doc disagree, **the code is the record and the doc is
+   the bug** — but do NOT correct the code inside a tuning branch. Halving a vessel's boost is
+   its own change with its own retune; document the discrepancy, log it as a follow-up, and tune
+   against shipped behaviour.
+4b. **…and the EFFECTIVE number may never have been AUTHORED by anyone — find the line that
+   CHOSE it before you match a second system to it.** The Sparrow's bullets flew a hit sphere of
+   world diameter 12. Three assets were tuned to that number "for parity", a config default and
+   a design doc both recorded it as deliberate — and nothing had chosen it: a `SphereCollider`
+   takes the **largest** lossy-scale component, so the tracer's `(1.5, 1.5, 20)` stretch turned
+   `m_Radius 0.3` into a 6.0-world-radius ball, 8× the projectile's visible 0.75 cross-section.
+   The accident then propagated for two playtest rounds and produced its own downstream bugs (a
+   spray in which every shot destroyed the previous prism). Before adopting a measured constant
+   as a target, grep for the line that assigns it; if the number only ever emerges from
+   arithmetic — a scale product, a clamp ceiling, a default — treat it as a bug candidate, not a
+   spec. Collider sizes specifically: `worldRadius = m_Radius × max(|sx|,|sy|,|sz|)`, and sweep
+   sibling prefabs for the same authored value.
+5. Grep by **class name**, not file name — the vessel layer renamed Ship→Vessel in file names
+   only: `VesselActionSO.cs` declares `ShipActionSO`, `VesselHelper.cs` declares `ShipHelper`,
+   `R_VesselElementStatsHandler.cs` declares `R_ShipElementStatsHandler`, `VesselActions.cs`
+   declares `enum ShipActions`.
+6. **Re-fetch any branch you cite immediately before asserting its state** — branches and
+   bleeding-edge move mid-session. This skill's own fleet snapshot went stale twice while being
+   written: the Dolphin branch grew its row-wiring commit between research and verification, and
+   a tooling refactor renamed every editor menu before ship.
+
+## 3. The design-approval gate (do not break this)
+
+**Never invent an element→ability→input mapping or a level-5 upgrade to fill an open slot or to
+green the auditor.** Open slots on Manta/Dolphin/Rhino/Serpent-class maps are blocked on
+**design, not wiring**: proposals live in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 and are
+un-implemented until Garrett marks them up. If your task requires a mapping that isn't approved,
+STOP and ask (AskUserQuestion), presenting the FLEET_MAPS proposal for that row. The same gate
+applies to new abilities, new resources on the meter list, and anything that adds a fundamental.
+
+## 4. Implement — the rules that keep getting relearned
+
+1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
+   MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
+   **"Stateless" includes not WRITING your own serialized field for a while** — the shape that
+   slips through is a temporary effect implemented as save-multiply-await-restore, because each
+   step reads as correct in isolation and the asset is back to normal when it finishes.
+   `GrowSkimmerActionSO.ApplyMaxSizeDebuff` did this (`maxSize.Value = original * mul`, await,
+   write it back) on an asset every Rhino shares, so two debuffed pilots race and the second
+   restore stores the FIRST one's already-multiplied value as "original" — the effect then never
+   fully lifts. `_isMaxSizeDebuffed` was an early-out on the SO, which guards one caller and is
+   itself shared state. (Both methods by that name are now gone — the dead one with BACKLOG
+   5.11a, the live one with the control-theft tier, `Docs/ELEMENTAL_ECONOMY.md §9`. The shape is
+   the lesson, not the file.) A temporary per-vessel modifier belongs in the executor and is applied at
+   use time; the SO's number is the baseline and never moves. (BACKLOG 5.11 — found by a ship
+   pass, not by a gate: nothing in this project can see a shared-asset write.)
+2. **Read element scaling at use time** (`ElementalFloat.EvaluateLive(status)`), never cache at
+   init. **Scaling is PARAMETER-addressed: one `ElementalFloat` on the asset or component that owns
+   the number.** There is no generic per-element multiplier — `handler.Multiplier(element)` and the
+   map's `MultiplierAtFullLevel`/`MinMultiplier` were removed 2026-09-18, along with the
+   "pin it to 1" convention that was the only safe way to use them. A multiplier is just an
+   `ElementalFloat` whose `Min` is 1 (`ElementalFloat.Multiplier(atRest, atFull, element, floor)`),
+   and it needs a FLOOR or the deficit band inverts it. `Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`.
+3. **Outcome-affecting upgrades gate on `IsUpgradeActive(element)`** (replicated
+   `NetElementUnlocks` bits on `R_VesselActionHandler`) — never a raw local level read, which
+   desyncs the prismscape across peers. Per-use snapshot at fire/use time.
+4. **All buffs/debuffs route through Elementals** (`ResourceSystem.ApplyElementalEffect`), and
+   no sustained mechanism may HOLD a level above 10 (the maintained-mechanism law, LOCKED).
+5. **Event bindings are one symmetric Rebind/Unbind pair** on OnEnable/OnDisable, detach-first
+   in Initialize (vessel swaps re-run Initialize on live components) — and the detach must sit
+   **ABOVE** the pilot gate, not below it: `Subscribe() { if (IsAI || !IsLocalUser) return; …}`
+   strands the previous pilot's handlers the moment a re-init hands that vessel to an AI or a
+   remote owner. Teardown (`OnDisable`) is unconditional and idempotent for the same reason. Gated
+   on
+   `IsInitializedAsAI || !IsLocalUser` for HUD/pilot-only surfaces, and sender-filtered on
+   shared SOAP channels. This exact bug shipped three times on one branch.
+6. **Executor→SO resolution retries until success** — `R_VesselActionHandler.Initialize` runs
+   executors *before* populating its binding maps, so a first-frame query that latches on
+   attempt (not success) pins null forever. Resolve lazily via `CollectBoundActions` — **but
+   only for an ability that HAS an input.** See rule 20: a passive ability is in no binding
+   map, so that sweep can never find its SO.
+7. **One authored number per displayed quantity.** A HUD readout adopts the gameplay component's
+   value (`RiptideAnimation.MaxJawAngleDegrees` pattern); never author a "keep in step" copy.
+   Bind HUD gauges **by name** with index fallback, and only to resources whose writers raise
+   the per-resource event.
+8. **Fork shared effect SOs before changing behavior** (the skim effect is shared with other
+   vessels), and remember an effect executes **only if wired into the vessel's
+   Impactor Data Container** — existing-but-unwired assets do nothing.
+9. **Gauge-style ability icons**: `tintIconOnUpgrade = false` + override `SetAbilityUpgraded`
+   re-anchoring every captured rest scale to `AbilityIconRestScale(element)` — or the view's own
+   tweens erase the upgrade bump (`SquirrelVesselHUDView` is the reference).
+10. **Author HUD content into prefabs** — runtime-created petals/rows are the loud fallback, not
+    the contract. Clean console in play mode IS part of compliance. Respect platform laws on
+    every vessel surface: continuity of existence (even previews bloom/wither),
+    MaterialPropertyBlock over `renderer.material`, fail-loud SOAP, implicit-bool over `??` for
+    UnityEngine.Object.
+11. **A skimmer only skims if `VesselStatus` points AT it.** `VesselController.Initialize`
+    initializes **only** `NearFieldSkimmer`/`FarFieldSkimmer`, and `SkimmerImpactor` drops every
+    contact while `skimmer.IsInitialized` is false — so a vessel can carry a flawless skimmer
+    (trigger sphere, kinematic rigidbody, `ImpactCollider`, container, layer 7) and skim nothing,
+    silently, because the reference points at a disabled twin. Run **Audit Vessel Skimmers**
+    first; never conclude from the prefab looking right.
+12. **Before removing a "redundant" writer, enumerate ALL writers of that meter.** A resource can
+    be fed by both `ResourceSystem`'s per-second `resourceGainRate` and an action executor, and
+    an executor's own cooldown can block its path entirely — so deleting the passive trickle
+    "because gain should come from the ability" left the Dolphin's boost with no working fill
+    path at all. The trickle and `rechargeCooldownSeconds` had to move together. Grep every
+    writer, then change the set. **The same enumeration is required to FREEZE a quantity**, and
+    there the answer is per-writer rather than all-or-nothing: the Dolphin's drift speed hold
+    pins the throttle-derived cruise `speed` but deliberately leaves `throttleMultiplier`
+    (impact slows) and `velocityShift` (knockback/AOE) live — freezing those too would have
+    quietly made a drifting vessel immune to danger prisms, which is a LOCKED-design violation
+    hiding inside a feel change. List every writer, then say per writer whether the freeze
+    covers it, and record that list in the doc.
+13. **A cancelled UniTask never runs its tail.** `catch (OperationCanceledException) { }` means
+    any status the routine set *before* its loop stays set forever. Interrupting a discharge left
+    `BoostMultiplier`/`IsBoosting` frozen — a permanent free speed bonus. Restore that state in
+    the routine's *starter*, not only in its completion path.
+14. **A HUD controller must never reach for another vessel's executor by TYPE.**
+    `GetComponentInChildren<SomeOtherVesselsExecutor>(true)` compiles fine, returns null on every
+    vessel that isn't the one carrying it, and the gauge it feeds then simply never moves — no
+    error, no warning, nothing to notice. `SquirrelVesselHUDController` polled the Sparrow-only
+    `OverheatingActionExecutor` for its heat gauge for the component's entire life; the gauge was
+    dead the whole time and the bug only surfaced when the Sparrow branch DELETED the type and the
+    Squirrel stopped compiling. If a HUD needs a signal, bind it on the vessel's OWN component (a
+    serialized reference on that vessel's prefab, so a missing wire is visible in the inspector) or
+    route it through SOAP. Auditing tip: any `GetComponentInChildren<T>` in a per-vessel HUD
+    controller is worth one grep — if `T`'s script GUID appears in exactly one vessel prefab and
+    that is not this vessel, the call is dead.
+15. **A gauge whose METER is deleted becomes a lie, not a spare part.** Removing the mechanic
+    behind a HUD readout leaves an icon that still looks live. Either give it a new signal from the
+    same ability (the Sparrow's heat ring became a binary strafing-roll charge pip) or remove it —
+    never leave it stuck at a constant. If the new signal is BINARY, keep it visibly binary (0 or 1
+    plus a transition); a partial fill on a pip reads as a meter and reopens the question you just
+    closed. Drive it from a sibling image, never the ability icon itself, or you collide with the
+    four-icon upgrade tint/badge (rule 9).
+16. **Intervene in the flight model at `VesselTransformer.StepTowardTarget`, not at
+    `ComputeThrottleTarget`.** Four transformers exist (`VesselTransformer`,
+    `SingleStickVesselTransformer` — what the Sparrow and Serpent actually run —
+    `GunVesselTransformer`, `CommandVesselTransformer`) and the first two carry their own
+    `MoveShip` AND their own `ComputeThrottleTarget`, so a change written into the target reaches
+    only the vessels running the class you edited (the single-stick override ignores `XDiff` and
+    the throttle-scaler multiplier entirely). `AdvanceSpeed` is the one line both `MoveShip`s call, but it is NOT the bottom any
+    more: since the vector model landed, `AdvanceSpeed` is a one-line wrapper over
+    **`StepTowardTarget`**, the shared pure step BOTH models run through (the vector path reaches
+    it from `ComputeNoseAcceleration`, never from `AdvanceSpeed`). So a rule written into
+    `AdvanceSpeed` today silently misses every `vectorFlightModel` hull — the Squirrel and the
+    Scarab. `StepTowardTarget` is the real choke point, and it is where the Dolphin's drift speed
+    hold and `MinimumThrottleBrake` (the terminal approach that makes a zero throttle target land
+    on an actual stop — `R_VesselActions/SQUIRREL_DRIFT.md` §3.5) both sit. Note the two hulls
+    that escape it ENTIRELY, for different reasons: the Scarab overrides
+    `ComputeNoseAcceleration` wholesale (it integrates rather than tracking a target), and every
+    one-thumb hull's `ComputeThrottleTarget` has no throttle axis in it at all, so it can never
+    command zero. Two companions of `speed` need the same treatment when you
+    touch it: the `toggleManualThrottle` lerp is a SECOND throttle channel living in each
+    `MoveShip` (no shipped prefab enables it — check before assuming your change covered it), and
+    `_speedTrackingRate` is a latched ramp state (the Rhino's ramp boost) that a naive early-return
+    can silently consume.
+
+17. **A `UniTask.Delay(1/rate)` fire loop quantizes to WHOLE FRAMES**, so an authored rate is
+    silently `min(rate, framerate)` — a 60 fps client fires twice as fast as a 30 fps one, and
+    the rate simply cannot exceed the frame rate. It looks correct at any rate whose interval
+    happens to straddle two frames (30/s at 60 fps was right by luck for a year). Owe fire in
+    SECONDS and pay it off in whole volleys (`owed += Time.deltaTime`; fire `floor(owed/interval)`),
+    capping the per-tick catch-up and DROPPING the excess so a hitch never discharges as a burst.
+18. **Never draw from `UnityEngine.Random` in a per-shot hot path.** It is global state that
+    deterministic systems seed (`Random.InitState` for the SkimRace track), so a gun rolling it
+    120×/s makes their output depend on how long someone held a trigger. Use a pure integer hash
+    of a per-shot serial: no global state, and peers that agree on the shot count agree on the
+    result — which matters wherever the spawned object is local and unreplicated.
+19. **Weapon "feel" complaints are usually a CEILING, not a tuning value.** Before re-tuning,
+    find what caps output per unit of input: prisms have no HP (one hit = one kill) and a
+    sub-upgrade round dies on its first impact, so a Sparrow's ceiling is exactly *rounds/s*.
+    Rate, spread and accuracy all multiply a 1:1 relationship and cannot break it — only pierce
+    depth, chain effects, or **size** can, and size wins because destruction footprint goes as the
+    SQUARE of the radius. Say which ceiling you found before proposing numbers.
+20. **A PASSIVE ability is bound to no input event, so `CollectBoundActions` can never resolve
+    its SO.** The binding maps are keyed by `InputEvents`; an ability with no input is in none
+    of them, so the lazy sweep of rule 6 returns null forever and the executor silently runs on
+    its field initializers — an ability that looks wired, logs nothing, and is tuned by an asset
+    nobody is reading. Wire the config **directly on the executor** as a `[SerializeField]`, so a
+    missing wire is visible in the inspector, and keep the sweep only as a fallback for a vessel
+    that still lists the action against an input. (Dolphin crystal seeding, 2026-08-14.)
+21. **An ability that wants the camera's FOV must move the speed tunnel's HOME, never
+    `Camera.fieldOfView`.** `VesselSpeedTunnel` owns FOV fleet-wide and is the only writer. A
+    direct write fails two ways, both silent: while the tunnel is engaged it is overwritten every
+    frame, and when the tunnel ENGAGES it captures whatever FOV it finds as the home to restore
+    later — so a live zoom is baked in permanently and the player never gets their FOV back.
+    Camera POSE is free (the law is explicitly a no-camera-distance-change effect); FOV is not.
+    And before adding a public FOV surface to that law for one vessel, check the ability still
+    earns it without the zoom — the Dolphin's Echo Sight did, and the surface was reverted.
+22. **A shared impact effect is PER-VESSEL WIRING. Audit which containers list it — never infer
+    it from the class existing, from an asset existing, or from a doc saying it happens.** An
+    effect only runs for a vessel whose `VesselImpactorDataContainerSO` array actually contains
+    it, and a missing entry is *totally silent*: no null, no warning, just a consequence that
+    never occurs. `VesselChangeSpeedByPrismEffectSO` shipped absent from the Dolphin (whose
+    `DolphinVesselChangeSpeedByPrism` asset existed and was referenced by **no** container) and
+    from the Sparrow (no asset at all, in the one vessel Dog Fight flies) — so neither slowed on
+    any prism, danger included, for the fleet's whole life. **An orphaned effect asset is the
+    tell**, and it is one sweep: map every `*.asset.meta` GUID to its name, then check which
+    GUIDs appear inside the six `VesselContainers/*.asset` arrays. Anything of that script type
+    that appears in none is authored-but-dead. Do the same sweep for TUNING once wired —
+    per-vessel instances drift apart silently, and a prism should read the same whichever hull
+    hits it. (Dolphin/Sparrow/Manta prism slow, 2026-08-15.)
+23. **An impact effect must not scale a SERIALIZED authored field on `VesselStatus` in place.**
+    Check whether the property is runtime bookkeeping or a serialized value with an authored
+    default before writing it. `BoostMultiplier` is `[SerializeField] boostMultiplier = 4` and is
+    what boost sources that don't write it fall back to (`BoostActionSO` only flips `IsBoosting`;
+    `VesselResetBoostPrismEffectSO` restores it to an authored base) — so "halve the boost on a
+    ram" applied to it ratchets the vessel's authored number toward 1 a little further on every
+    collision, permanently, with nothing in the game to restore it. Scale the RESOURCE METER
+    instead and let the executor re-derive; a creeping, unrecoverable nerf is indistinguishable
+    from a tuning problem for as long as anyone will look. (Dolphin boost ram, 2026-08-14.)
+
+24. **Puppetry amplitudes are FLEET-SCALE — 14-26 degrees is invisible.** A new vessel whose
+    animation swings its parts through "a believable" 15-25 deg reads at chase-camera distance
+    as *no puppeteering at all*, and the report you get back is "the ship feels dead", not "the
+    numbers are small". `RhinoAnimation` is the calibration: wings and engines swing through
+    `yawAnimationScaler = 80` deg, the fuselage through 25. Match that order of magnitude, and
+    drive the parts that should answer to FLIGHT rather than to the stick off
+    `VesselStatus.Speed`, so they keep moving under a boost or a danger-prism slow the stick
+    knows nothing about.
+    **Corollary — a part's arc must be SIGNED through its rest pose** when its two ends mean two
+    states. Rotating "toward rest" as speed rises can only reach the pose the mesh was authored
+    in, which is usually neither state you wanted: legs meant to read gear-down-when-slow /
+    tucked-at-speed need `Lerp(+hang, -tuck, speed01)`, not `splay * (1 - speed01)`.
+    (Scarab hull, 2026-08-15.)
+
+25. **A named accessor that LOOKS like a geometry is often one factor of it.** Rules 4a/4b cover
+    an authored number that isn't the effective one; this is its sibling — a property whose name
+    promises the real dimension while its body carries only the base term, with the multipliers
+    applied at the *use* site. `VesselPrismController.TrailZScale` is `BaseScale.z` alone, but a
+    laid trail prism is `BaseScale.z × ZScaler × boostScale × ∛(MASS volume multiplier)`. The
+    `waitTillOutsideSkimmer` clearance delay divided by the accessor, so an upgraded vessel's
+    prism collider switched on while the prism was still inside the ship — and the symptom
+    ("I clip my own trail after upgrading") points at collision code, not at a scale accessor
+    three files away. **Read the accessor's BODY and compare it to the expression at the spawn
+    site**; if the spawn site multiplies and the accessor does not, the accessor is a base term
+    and every consumer sizing real geometry off it is wrong by the same factor. When you fix one,
+    document the accessor as a base term so the next reader does not re-adopt it.
+    (Self-trail contact, 2026-08-17.)
+
+26. **RE-SCOPING an L5 upgrade means finding and switching OFF the old one — the map's prose is
+    not the wiring.** An `ElementalAbilityMapSO` entry's `UpgradeLabel`/`UpgradeDescription` is
+    documentation; the upgrade itself lives in whatever SO gates on `IsUpgradeActive(<element>)`.
+    Re-author the map alone and the element now grants TWO upgrades, with the map describing only
+    the new one — a balance change invisible in the diff and in the HUD. So: grep
+    `IsUpgradeActive` across the effect/action SOs, resolve each hit's per-vessel ASSET, and
+    confirm which ones name the element you are re-scoping. (Dolphin Time 5, 2026-08-18: the
+    retired "Live Current" was `_dangerBonusElement: 4` on
+    `DolphinSkimmerChangeResourceByPrismEffect` and had to be set back to `None`.)
+    **Two effects can describe the same sentence and be different mechanisms.** "Danger prisms
+    pay more" is `SkimmerBoostPrismEffect.dangerEnergyMultiplier` (10x, BOOST, hardcoded to the
+    CHARGE upgrade, platform-wide) *and* `SkimmerChangeResourceByPrismEffectSO._dangerBonusElement`
+    (per-asset element, a different RESOURCE). CLAUDE.md and the fleet map each described one of
+    them; reading either alone gives a confident wrong answer about which gate you are moving.
+
+27. **Before writing "X still lands" about an upgrade's SCOPE, read that vessel's own effect
+    containers.** The platform's danger-prism paragraph lists slow + elemental drain + boost
+    reset + input mute, and it is tempting to inherit that list wholesale into a per-vessel
+    upgrade description. Per-vessel reality differs: the Dolphin carries the slow and an energy
+    halving, its boost effect is a `retainedFraction` halving that deliberately **skips its
+    correction while drifting** (i.e. exactly inside a drift-gated ward's window), and the input
+    mute (`SparrowDebuffByRhinoDangerPrismEffectSO`) is wired into **no container on any
+    vessel**. Resolve every guid in the vessel's `VesselImpactorDataContainerSO` /
+    `SkimmerImpactorDataContainerSO` and read the effects you are about to make claims about —
+    the ship protocol's "find the PRODUCER" rule, aimed at your own new prose rather than at
+    inherited docs. (Dolphin Drift Ward, 2026-08-18.)
+
+28. **MERGING two abilities merges their ELEMENTS and their L5s — an element carries exactly
+    one level-5, so a merge forces a choice.** Two abilities on two triggers own two elements;
+    fold them into one and you have a spare element that must be given a REAL parameter (not left
+    dangling, and not left scaling the merged ability as a second dial nobody documented), and two
+    level-5 upgrades competing for one slot. Resolve both explicitly and say so in the map's
+    `UpgradeDescription`: either FUSE them when they are two halves of one idea (the Urchin's
+    "Overcharge" became +1 cascade generation **and** no reach falloff, absorbing the retired
+    SPACE-5 "Deep Cascade") or drop one on the record. Also move every element READ with the
+    ability — the `ElementalFloat`'s own `element` field, and any `ElementalScaling` /
+    `GetLevel(Element.X)` read inside the SO, are the half that silently keeps pointing at the
+    old element (the Urchin's Charge reach multiplier went 2.0 → 2.5 to inherit what Space had
+    authored). Run `element_ability_table.py {Vessel}` after the move: the ability's row must
+    name the NEW element and the old element's row must go back to `NO SCALING`.
+    (Urchin trigger merge, 2026-08-18.)
+
+29. **Clearing a state flag mid-routine: check what the REST of that frame still reads off it.**
+    An ability that ends a mode part-way through a frame (`VesselStatus.IsAttached = false;
+    AttachedPrism = null;` inside the ride's own `Slide()`) leaves the remaining ~30 lines running
+    against the state it just deleted. The Urchin's end-of-ribbon launch survived only because
+    `RideSurfaceOffset` happens to read `trailFollower.AttachedPrism` rather than
+    `VesselStatus.AttachedPrism` and null-guards it — one line's difference from an NRE on every
+    launch. Grep the rest of the method for every field you nulled before you null it, and prefer
+    letting the next frame's edge detector do the teardown over unwinding in place.
+    **Its companion:** a state-machine exit that clears BOTH sides of a mirrored flag at once
+    makes the edge-detecting branch unreachable. `GunVesselTransformer` had a path that set
+    `VesselStatus.IsAttached = false` *and* its own `attached = false` in the same block, so the
+    `else if (!IsAttached && attached)` that runs `EndRide` could never fire for it — `_rideMode`
+    stayed stale and the ride camera stayed pulled in for the rest of the vessel's life, silently,
+    since the vessel still flew. Route every exit through one method.
+
+30. **A pooled-object teardown must prove the object is still YOURS.** An ability that keeps a
+    `List<Prism>` of what it laid and returns them at a turn boundary will, sooner or later, hold
+    a prism that died mid-match, went back to the pool, and was handed to a different lay site —
+    at which point the teardown yanks live mass out from under its new owner. `p.destroyed` does
+    not catch it (the recycled prism is alive). Test IDENTITY, not liveness: keep the `Trail`s you
+    laid into and skip anything whose `Prism.Trail` is no longer one of them, since pool reuse
+    clears membership (`Prism.ResetState`) and the next lay stamps its own.
+    `SquirrelTubeActionExecutor` still carries the unguarded version — do not copy it verbatim.
+
+31. **A DEFENSIVE ability is a MODE-level rule in every mode where its vessel is mandatory — and
+    the comeback system hands it to whoever is LOSING.** The fleet has mono-vessel modes (Bends +
+    Rampage = Dolphin, Dog Fight + Wildlife Liberation = Sparrow, Astro League + Cleave = Rhino,
+    Scarab Scramble = Scarab), so a ward / immunity / invulnerability authored as one vessel's
+    upgrade is simultaneously a rule that every pilot in those modes holds. Ask the question the
+    per-vessel view cannot: **does this ability deny the thing a mono-vessel mode SCORES on?** The
+    Dolphin's Time-5 Drift Ward, held as an unscoped elemental-debuff immunity, denied the crystal
+    blast's debuff — the entire scoring event of The Bends — and because
+    `ElementalComebackSystem` unlocks L5 by DEFICIT, falling one bend behind out of three bought
+    the trailing pilot a hard counter to the only way they could be scored on. Nothing errored;
+    they simply became unscoreable. Two follow-on rules: **check the mode's `ScoringRuleSO` and
+    its scoring EFFECT, not just the mode doc** (here `VesselCombatHitByExplosionEffectSO`'s
+    `requireDebuffableVictim` correctly refused to score an event that did not happen, which turned
+    a defensive bug into a silent scoring bug), and **when the ability must keep its promise, scope
+    the promise rather than gating the ability out of the mode** — a per-mode carve-out is the
+    thing to avoid; classing the EVENT (`ElementalDebuffSources`) and masking the GRANT keeps one
+    rule for the whole platform. More generally: **a bare bool platform state grows a scope the
+    moment a third holder wants to promise less than the first two.** When you add that scope,
+    make "everything" `~0` rather than the OR of today's members (it is serialized on prefabs and
+    must cover a class added later) and give unclassified events their own default bucket, so
+    neither adding a class nor forgetting to classify one can silently widen a narrow grant.
+    (Dolphin Drift Ward scoping, 2026-08-19.)
+
+32. **An ability that ROTATES the vessel shares an axis with the flight model, and the two ADD —
+    check whether the ability's TRIGGER correlates with the flight model's peak output on that
+    axis.** This is rules 4a/4b's third face: there the authored number was not the effective one
+    because a *consumer* multiplied it or because nothing ever *chose* it; here the number is
+    applied exactly as authored and still describes nothing on screen, because a **sibling writer**
+    adds a bigger term of the same kind. The Sparrow's strafing roll applied its authored 15° root
+    bank through `ApplyRotation(angle, transform.forward)` — correct call, correct sign, correct
+    axis — while `SingleStickVesselTransformer.Roll()` applied `-stick.x × (speed ×
+    RotationThrottleScaler + RollScaler)` about the *same* axis. The roll's trigger is a **full
+    stick deflection**, i.e. exactly the input that maximises the bank: `33.5 °/s` at cruise
+    (20.1° over the 0.6 s roll) and `41.0 °/s` boosting (24.6°), against 15° the other way. Net
+    was a few degrees of bank INTO the turn, so the pilot's horizon tilted AGAINST the spin and
+    the whole feature read as absent for as long as it shipped. **Do not answer this by raising
+    the number** — the sum depends on speed and on whether the pilot keeps holding the stick, so
+    a bigger number is a bigger lie. Hand the axis over for the ability's duration
+    (`VesselTransformer.BankIntoTurnSuppressed`, the same "an ability owns one transformer
+    property while it runs" shape as `BlockRotationOverride`), suppress only the axis you are
+    writing, and honour the flag in **every** `Roll()` body — the overrides do not call base, so a
+    base-only gate reaches neither the Sparrow nor the Serpent (rule 16's trap, in the roll axis
+    this time). Three companions worth carrying: **the camera reads the ROOT's rotation**, so a
+    root-level roll is the horizon tilt the pilot actually feels and a visual-child spin is not;
+    **advance a cosmetic rotation by the DELTA of the animation's own easing curve** rather than a
+    flat `dt / duration`, or the tilt drifts across a spin that is easing and the total overshoots
+    on the frame that ends the loop; and **grep for the structural twin before you close the
+    branch** — `ScarabJukeController` is a near-copy of `BarrelRollController` and carries the
+    identical defect (recorded in `Docs/ElementalAbilitySystem/BACKLOG.md`, deliberately not fixed
+    in the Sparrow's branch because it is another vessel's play-tested feel).
+    (Sparrow strafing roll, 2026-08-25.)
+
+33. **A type that crosses the gameplay→UI boundary belongs in the `CosmicShore.Data` leaf, and the
+    COMPILER is the only thing that will tell you.** A per-vessel HUD view does not necessarily
+    import `CosmicShore.Gameplay` — `SparrowHUDView` imports `CosmicShore.Data`, `DG.Tweening`,
+    `UnityEngine*` and nothing else — so an enum declared beside its gameplay owner (the ordinary,
+    correct home for a single-owner enum: `DriftThrottlePolicy`, `MenuCameraRigKind`,
+    `FloraSiteKind`) is invisible to the view that has to switch on it. Put a cross-layer enum in
+    `_Scripts/Data/Enums/` (namespace `CosmicShore.Data`): every UI view already imports it,
+    `Assembly-CSharp` auto-references the asmdef so gameplay needs one `using`, and the direction
+    stays legal for the assembly split. **Nothing static catches the wrong home** — it is a plain
+    `CS0246` at compile time, which a session with no editor never sees. Type-check the files you
+    actually wrote against a stub harness before committing (`asset-surgery` §4); that is what
+    caught this one.
+    (Sparrow roll-charge state, 2026-08-25.)
+
+34. **A projectile's RANGE is not `speed × projectileTime` — it is `speed × 2T/π`, because the
+    flight decelerates.** `Projectile.MoveProjectileAsync` advances by `Velocity × Δt × cos(π·t /
+    2T)`, which integrates to `v·2T/π ≈ 0.6366·v·T`: a round covers **64%** of the distance the
+    obvious product predicts, and it arrives at rest rather than at speed. This is rules 4a/4b in
+    a third guise — the authored numbers (`speedValue 375`, `projectileTime 0.3`) are both real
+    and both correct, and the quantity a design doc cares about is neither of them. The trap is
+    unusually sharp because the *stale-looking* value is the right one: the Sparrow doc's "~72 u
+    at SPACE 0" reads as drift against an asset saying 375 × 0.3 = 112.5, and a ship-protocol
+    doc-drift sweep will try to "fix" it. **Before correcting any range, reach, or
+    time-to-target figure, read the movement loop for a shaping factor** — and when you write a
+    new one, write the derivation next to it so the next sweep can check it in one line rather
+    than re-deriving it from the integral.
+
+35. **A derivation that collapses two facts into one is a statement about the cases that existed
+    when it was written — and it goes on compiling after you add the case that separates them.**
+    `GunVesselTransformer.SeedTrailRide` set `_facingSign = (int)trailFollower.Direction`, which
+    is correct and unremarkable: `_facingSign` means *does the NOSE agree with the trail's index
+    order*, the follower's `Direction` means *does TRAVEL agree with it*, and those are the same
+    fact for as long as the vessel can only fly nose-first. Giving the Urchin reverse made them
+    different facts, and the seed then claimed a pilot backing into a ribbon was already pointing
+    the way they were travelling — so the rail would have fired them off the way they CAME, in
+    the same breath it caught them, while they were still asking to keep backing up. The fix is a
+    COMPOSITION (`nose vs index = (travel vs index) × (nose vs travel)`), not a sign flip. Nothing
+    reports this class: it is invisible on every forward attach, so the old code passes every test
+    that existed and the new case is the only one that fails. **When you add a degree of freedom to
+    a vessel, grep for the places that read one of its old consequences as a proxy for another** —
+    facing vs. travel, throttle vs. speed, nose vs. course — and ask of each whether the two were
+    ever really one thing or merely always equal.
+
+36. **A negative control has to be chosen INSIDE the band where the thing you changed can
+    matter, or it proves nothing and says so loudly.** The reverse brake's own contract is that
+    the exponential lerp owns the fast fall and the constant rate owns only the tail, so the
+    symmetric flag can only change an answer BELOW the crossover `rate / LERP_AMOUNT` (21.67 u/s
+    on an Urchin at 65 u/s over 2 s). A control asserting "the flag changes the answer" at
+    -300 and -40 u/s therefore failed 2 of 3 — the flag was working perfectly and the test was
+    asking about speeds at which it cannot apply. The repaired control sweeps the whole range and
+    asserts BOTH directions (every case below the crossover differs, every case above is
+    bit-identical), which is a stronger statement than the original intended and is also the
+    thing to re-read before anyone retunes `minimumThrottleBrakeSeconds`. **Derive where your
+    change is reachable before you pick the numbers you test it at** — and prefer a swept control
+    that states the boundary over a handful of hand-picked points, because a hand-picked point
+    that lands outside the reachable band is indistinguishable from a broken feature.
+37. **`ShipActionSO.StopAction` fires on button RELEASE — for a PRESS-and-forget ability it must
+    be a no-op, or the ability silently never works for the AI.** `R_VesselActionHandler` calls
+    `StopAction` on every release, and `AIPilot.UseAbilityCoroutine` does Start → wait `Duration`
+    → Stop; the Serpent authors `Duration: 0`, so its Stop landed the same frame as its Start. The
+    Serpent's fuel pellets cancelled every burn in `StopAction`, which (a) made the ability's whole
+    point — overlapping burns — impossible for a human, who cannot press again without releasing,
+    and (b) zeroed EVERY AI burn, so AI Serpents never boosted and nothing reported it. When an
+    ability's effect has its own clock, give it no release semantics at all; decide this per
+    ability rather than inheriting a Start/Stop pair because the base class has one. And when
+    several instances of an effect may be live at once, track them as END TIMES retired in
+    `Update` (rule 13's stranded-tail trap cannot arise) and make the stacking formula ADDITIVE in
+    the thing the player feels: `1 + (m − 1) × n`, not `m × n`, if "four at once is four times
+    one" is the promise (`SERPENT_FUEL_PELLETS.md`).
+38. **Binding a vessel's FIRST ability icon changes how the lockup treats the rest of its HUD.**
+    With zero icons bound `AbilityLockupView` clears every drawing child of the HUD root; with one
+    or more it SPARES any root branch a HUD-root component still references. So the first binding
+    can resurrect retired UI through a stale serialized reference nobody was reading — the
+    Serpent's view still pointed `shieldIcon` at the long-unbound Seed Wall readout, which would
+    have reappeared as old art in the row's own corner. Before binding a first icon, list every
+    object reference on the HUD-root components and null the ones that point at retired UI.
+39. **A new vessel subclasses five or six abstract bases at once, and an unimplemented abstract
+    member is invisible to every gate this repo has.** `ButterflyHUDView : VesselHUDView` never
+    implemented the abstract `Initialize()`. It passed ten green gates, a compile-and-RUN geometry
+    harness and a Roslyn syntax pass over every changed file, and failed in the editor on the
+    human's first open — `CS0534`. CLAUDE.md already states why: *a check that cannot resolve a
+    type cannot see errors ABOUT that type*, and the failure is worse than silent. When Roslyn
+    cannot resolve a base type (every `VesselHUDView`, `VesselAnimation`, `ShipActionSO`,
+    `ShipActionExecutorBase` and effect base lives in the `Assembly-CSharp` monolith) it
+    **abandons class-body binding and reports nothing**, which reads exactly like clean.
+
+    So a new vessel does this BEFORE writing a subclass, not after:
+
+    - **Run `python3 Tools/Build/check_abstract_member_implementations.py`.** Written for exactly
+      this bug; it reproduces it by file and line, and it is `--self-test` negative-controlled.
+      It is textual and matches on member NAME, so it catches `CS0534` and NOT `CS0115` (an
+      override whose *signature* drifted). Which means:
+    - **Enumerate the base's abstract/virtual surface first and copy each signature verbatim.**
+      One line per base: `grep -n "abstract\|virtual" <base>.cs`. Do it for every base the
+      vessel touches — a vessel typically adds subclasses of `VesselHUDView` (abstract
+      `Initialize()`), `VesselHUDController`, `VesselAnimation` (abstract `AssignTransforms`,
+      `PerformShipPuppetry`), `ShipActionSO` (abstract `StartAction`, `StopAction`),
+      `ShipActionExecutorBase`, and one or two effect SOs (`VesselSkimmerEffectsSO.Execute`
+      and friends) — and check the INTERFACES the same way (`CS0535` is the same blind spot;
+      `IProceduralHullSource.BuildPreviewPieces`, `IProceduralElementMorphSource`'s two
+      properties).
+    - **Then verify every EXTERNAL member the new files touch** the same way, because `CS1061`
+      is in that set too: `grep -n` the declaring type for each accessor you used
+      (`ResourceSystem.OnResourceChanged` is `Action<int, float, float>`;
+      `Crystal.EmbeddedIn` is `ILifeFormEntity`, not `LifeForm`). It is ten minutes and it is
+      the only thing standing between you and the editor.
+
+    **The failure has a signature worth recognising: a gate battery that is entirely green on a
+    branch with 2,000 new lines of C# is evidence about SYNTAX and nothing else.** Say which
+    class of error each gate covers when you hand the work back, rather than reporting "all
+    checks pass". (Butterfly, 2026-09-22.)
+
+
+40. **The registrations a vessel's SETUP TOOL cannot write are the ones that get missed — and
+    the toybox roster is the one that matters.** A new vessel's editor setup tool authors every
+    registration that is an ASSET: the `Vessel Prefab Container`, `DefaultNetworkPrefabs`, the
+    `SO_Classlist_*` lists, the camera settings, the class asset. So nobody ever has to remember
+    those. **`ToyVesselRoster.Default` is CODE** (`Assets/_Scripts/Controller/Toys/
+    ToyVesselRoster.cs`), a hand-written array, and it is what the freestyle **Vessel Changer**
+    and the **Spawn Matrix's hangar** both offer from. A hull missing from it cannot be flown
+    in freestyle at all.
+
+    It fails in the worst available way: **silently and invisibly.** There is no error, no
+    warning and no empty station — the matrix is simply one ship smaller than the fleet, which
+    is indistinguishable from a matrix that is correct. The Butterfly shipped with every asset
+    registration its tool writes and no roster entry, and the only way anyone would have found
+    out is by flying the changer and noticing an absence.
+
+    So, for every new vessel, in the SAME branch that designs it:
+
+    - **Add the class to `ToyVesselRoster.Default`.** Do it when you add the enum member, not
+      when the prefab is authored — the prefab is authored later, in the editor, by the human.
+    - **That is safe because declaration and availability are separate.** Toys that ACT on a
+      hull call `ToyVesselRoster.ResolveOffered(Context, ...)`, which drops any class the prefab
+      container has no prefab for, so a declared-but-unbuilt vessel is simply not offered yet
+      rather than being offered as a swap that resolves to nothing. **Use `ResolveOffered`, not
+      `Resolve`, in any new toy that swaps, releases or previews a hull** — bare `Resolve` is for
+      documenting the roster (the codex harvester), not for acting on it.
+    - **The gate is `ToyVesselRosterCoverageTests`**, which reads the prefab container and
+      requires every registered vessel to be in the roster. It asks the question in the
+      direction that cannot fire early, so it goes green the moment the vessel is designed and
+      red the moment it becomes spawnable without becoming offerable.
+
+    The general shape, worth more than the roster: **a registration that lives in code is one an
+    asset-writing tool cannot perform, so it is the one a checklist has to carry — and enumerate
+    the whole set by asking which lists name a vessel, not by reading the list of lists somebody
+    wrote down last time.** (Butterfly, 2026-09-22.)
+
+### 4.x Placing prisms from a vessel ability — shield sizing
+
+An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)
+inherits two traps that have each cost a round-trip:
+
+- **`AdmitTargetScale` goes AFTER `Initialize`**, never before — `Initialize` -> `ResetState` ->
+  `RestoreAuthoredScaleWindow()` undoes the widening and re-clamps against the restored window.
+  The interactive prism pool's window is `(0.5,0.5,0.5)..(40,10,10)`, so a stated size outside it
+  is silently trimmed with no error anywhere.
+- **A shielded or super-shielded prism is 3x the box it replaces**, and the two tiers differ:
+  the octahedron's vertices are ON THE AXES, the stella octangula's spikes are at the CUBE
+  CORNERS (circumsphere `3S*sqrt(3)`, i.e. `sqrt(3)` bigger than its own bounding box). Size from
+  the measure the design cares about and derive it from `CIRCUMSCRIBING_SCALE`. Full table:
+  the `asset-surgery` skill, "Trap: a SHIELD's size is not the prism's size".
+- **Anything you keep a PRISM REFERENCE in must be identity-tested before you act on it later.**
+  Rule 30's trail-membership test only exists for prisms in a `Trail`; an ability that lays loose
+  prisms (a switch's membrane, a ring, a placed structure) has no such stamp, and `p.destroyed` is
+  useless because the recycled prism is ALIVE. Use `prismProperties.TimeCreated`: `Prism.Initialize`
+  re-stamps it on every pool issue, so remembering `(prism, laidAt)` and skipping any entry whose
+  stamp has moved is an exact "same object AND same life" test. Without it, tearing your own
+  structure down destroys live mass belonging to whoever the pool handed it to.
+- **When a value has both a FLOOR and an invariant-preserving CEILING, the ceiling must be applied
+  LAST.** A generated structure whose no-overlap guarantee comes from clipping each element into
+  its own region loses that guarantee entirely if a "minimum size" clamp runs afterwards — the
+  clamp cheerfully pushes an element back out of the region, and nothing announces it. Order the
+  clamps so the invariant wins, and prove it with a test that sets the floor absurdly high.
+- **ROTATING a super-shielded prism changes how far it reaches in your plane**, so a pose is a
+  clearance change. Axis-aligned it reaches `1.5S*sqrt(2)` in-plane; aim a spike into the plane
+  (e.g. `(1,1,1)` at a target) and the reach becomes the full `1.5S*sqrt(3)` — 22.5% more, for
+  free, with nothing to warn you. Re-derive the clearance whenever you re-pose one, and compute
+  its silhouette as the projected hull of its eight spike tips rather than a hard-coded octagon,
+  which is only the outline of an AXIS-ALIGNED sun.
+
+### 4.x2 A `[Range]` on a vessel action's SO is a drawer, not a constraint
+
+`RangeAttribute` is a **property drawer**: it clamps in the inspector and not at deserialization.
+So a serialized value outside its own range is LIVE — the Serpent's `coneHalfAngleDegrees` carried
+`[Range(0.05f, 5f)]` and shipped an authored **10** that worked perfectly, and would have snapped
+to 5 the first time a human clicked that asset. The failure is a retune nobody performed, arriving
+on whoever next opens the inspector, with no diff and no console line.
+
+Two consequences whenever you author an asset value by script (a generator, `sed`, a hand edit of
+the YAML): check it against the field's own attribute, and when you widen a design past a range,
+widen the `[Range]` in the same commit. `[Min]` behaves identically — it is also just a drawer.
+
+### 4.y Spawning a vessel outside the turn flow (a toy, a rig, a mid-match release)
+
+Anything that spawns a vessel somewhere other than the standard spawn-then-turn-start chain
+inherits four traps. All four presented as "the ship is there but does nothing / has no trail",
+which is the least diagnostic symptom in the fleet.
+
+- **A vessel released at speed 0 lays NO TRAIL, and the reason is a threshold you cannot see
+  from the vessel.** `VesselPrismController`'s spawn loop only lays a prism above **3 u/s**, and
+  the pair-init hands every vessel a dead stop (`GameDataSO.AddPlayer` -> `Player.ResetForPlay`
+  -> `VesselController.ResetForPlay` zeroes `Speed`). The menu vessel SWAP already solves this -
+  `SetPose` then `SetInitialSpeed`, in that order - so copy both halves, not just the pose.
+- **The AI's own drift PINS the cruise speed at the value the vessel carried in**
+  (`VesselTransformer.StepTowardTarget`, `_driftSpeedHeld`; the vector model's equivalent is
+  `DriftThrottlePolicy.Locked`). A bot that drifts before it has accelerated stays pinned near
+  zero *indefinitely* - so the trail never comes on at all rather than coming on late. Whichever
+  hull's authored `AIPilot.abilities` entry is a drift exposes this first (today: the Dolphin).
+- **`Player.StartPlayer` ALREADY runs the autopilot branch for a player whose `NetIsAI` is set** -
+  `ToggleAIPilot(true)` + `ToggleInputPause(true)`. Calling a second `ToggleAIPilot(true)` on top
+  (e.g. the menu's `ActivateAutopilot`, which exists for the HUMAN menu vessel, where StartPlayer
+  deliberately does not touch autopilot) used to duplicate every `UseAbilityCoroutine` forever.
+  `AIPilot.StartAIPilot` now sweeps its own coroutines first, so it is idempotent - **by clearing,
+  not by an `if (AutoPilotEnabled) return`**, because `OnDisable` leaves that flag true while Unity
+  kills the coroutines, and an early-out would refuse to restart them on the next enable.
+- **A SERVER-OWNED `Player` carries the HOST's `OwnerClientId`**, so its spawn event is
+  indistinguishable from the host's own and the human spawn path will try to give it a second
+  vessel. Call `ServerPlayerVesselInitializer.ClaimExternallySpawnedPlayer` in the SAME frame as
+  `NetworkObject.Spawn()` - `Player.OnNetworkSpawn` raises the event from inside that call. And
+  the AI Player prefab needs no scene reference: `NetworkManager.NetworkConfig.PlayerPrefab` IS
+  the prefab every game scene wires by hand into `aiPlayerPrefab`.
+
+### 4.z Sizing a vessel's FX — a jet has TWO sizes and the documented dial reaches ONE
+
+`VesselTail.widthScale` / `VesselJet.widthScale` are the fleet's documented "this hull is a
+different size" dial, and `VesselFXWidth.Apply` walks **`TrailRenderer`s and nothing else**. A jet
+is not a trail renderer: `VesselJet.prefab` nests `vfx_Projectile_02`, which is **three
+`scalingMode: Hierarchy` particle systems beside one `Trail`**. So the plumes — most of what a jet
+actually draws — take their size from the **transform chain**, which is precisely the thing a
+`TrailRenderer` ignores and therefore precisely the thing `widthScale` was written not to be.
+
+- **A jet that authors no `m_LocalScale` renders at `(1,1,1)` x whatever its MOUNT inherited**,
+  which is nobody's decision. The Urchin's hang on engine nodes carrying a **1.75** scale and
+  shipped at **8.75x the reference girth and 40x its length** — the largest plumes in the fleet on
+  the smallest hull with the closest camera — while its ribbon sat correctly at 0.334 the whole
+  time. That split is why it survived review: half the jet was right, and the half that was wrong
+  had no dial pointing at it.
+- **The plume's dial is `m_LocalScale` on the jet instance**, target
+  **`(0.6, 0.6, 0.13) x |followOffset.z| / 20`** — the value BOTH hand-tuned hulls (Dolphin,
+  Squirrel) author, scaled by the camera ratio the ribbon already uses. Divide back through the
+  mount's own scale if it has one.
+- **Scale the TRANSFORM, not the particle module**, and only because these systems are
+  `Hierarchy`-scaled: it moves particle size, emission shape, particle speed AND the nested
+  `Trail` child's standoff together. `startSizeMultiplier` would move one of the four.
+- Audit rather than remember: *FrogletTools > Vessels > Audit Vessel Tails and Jets* reports each
+  hull's effective plume against its camera-derived target and flags `UNSIZED`. Sparrow, Rhino,
+  Grizzly and Scarab are still unsized — known, deliberate, recorded in the doc's follow-ups.
+
+**The general shape, which is not about jets:** *when one object's size (or colour, or lifetime)
+is set by two unrelated mechanisms, a dial that reaches one of them reads as a dial that reaches
+the object.* Before tuning any per-vessel FX number, enumerate what the component the number lives
+on actually walks, and compare it against everything the prefab draws. Full record:
+`Docs/VESSEL_TAIL_AND_JETS.md` §3.
+
+### 4.aa Building a HUD instrument so its FAILURE is diagnostic
+
+A vessel instrument is verified by a human at the editor, so the only thing you ever get back is a
+sentence. Design the change so that sentence can only mean one thing. The Serpent's scope eyepiece
+cost **eight** rounds and five of them bought nothing, because the report was the same four words
+every time: *"I don't see the pip."*
+
+- **Never replace a surface and re-point it in one change.** Round 4 swapped the window's component
+  (`RawImage` -> a generated circular `MaskableGraphic`), its aspect, its pivot and its hierarchy
+  AND re-pointed its camera. It stopped rendering, and *"I don't see it"* is the identical report
+  whether the surface broke or the camera did. Rounds 5 and 6 each found a REAL defect (URP camera
+  defaults; a `Canvas.enabled` toggle that freezes UGUI rebuilds) and neither changed anything on
+  screen, because neither was about the half that broke. The pilot resolved it in one sentence the
+  source could not: *"you were showing the pip fine when you had the vessel view in it."* Round 7
+  restored the working surface verbatim and kept only the new camera. **If you must do both, do them
+  in two commits so the next report can name one.**
+- **When a component renders and only its SHAPE is wrong, subclass it and override the geometry.**
+  `ScopePetalImage : RawImage` overrides `OnPopulateMesh` and nothing else, inheriting the texture
+  property, the white-texture fallback, material handling and the whole canvas rebuild path — so
+  the only thing that can be wrong is the vertex list, and a bad emit reads as a **wrong shape**,
+  which a pilot can report, instead of an **absence**, which they cannot. Writing a fresh
+  `MaskableGraphic` puts every one of those back on the table; the one that was written that way
+  never rendered and the reason was never diagnosed.
+- **Hide a generated graphic by its GameObject, never by `Canvas.enabled`.** A `Graphic` caches its
+  canvas in `m_Canvas`, and `IsActive()` is `base.IsActive() && m_Canvas != null` — so every
+  `SetVerticesDirty` is a silent no-op while that cache is null, and `OnCanvasHierarchyChanged`
+  nulls the cache and THEN tests `IsActive()`, which is false *because it just nulled it*, so it
+  never re-caches in either direction. The instrument freezes at its first-frame values and keeps
+  drawing them, which looks like a working instrument until you watch it move. Assert it through
+  `IsActive()`, never through the `canvas` PROPERTY, whose getter re-caches on read and heals the
+  thing you were testing.
+- **Three mechanics for a generated, non-rectangular instrument**, each of which fails as a
+  plausible wrong picture rather than as an error:
+  - **Positions ARE the UVs** when the outline is normalised over its own bounding box — that is
+    what lets a shaped window sample a render target with nothing squashed and nothing cropped
+    (the shape IS the crop), and it is why such a window wants a SQUARE target.
+  - **A shaped window cannot bound its own furniture by its bounding box.** Every radius drawn
+    inside it clamps to the shape's measured **inradius**; half the rect puts a reticle or a ring
+    outside the glass wherever the outline tapers.
+  - **A corner sharper than a right angle needs a MITER, not a bisector.** An antialiasing feather
+    offset along the bisector is `sin(theta/2)` too thin at the point — at a 72-degree apex that is
+    41% — and the apex is exactly where the eye lands first.
+- **Derive a shape's constants from its outline, never transcribe them.** `ScopePetalGeometry`
+  computes inradius, circumradius and area in a static constructor by walking its own edges, so
+  re-tracing the sprite moves the picture, the frame, the reticle cap and the recharge ring
+  together. Cite the RATIOS in prose (`0.59x the half-side`) and leave the raw values in the code
+  where they recompute.
+- **An instrument whose only rendering is its VALUE has no rendering at its extremes** — and the
+  extremes are the two readings the player needs. A bare recharge fill draws nothing on the frame
+  the shot fires and nothing once it is ready, which is indistinguishable from an instrument nobody
+  drives. Give it a bed (a dim full ring the fill runs over) and draw READY as a complete bright
+  ring rather than as the absence of one.
+
+- **When nothing you wrote renders, reach for a component that PROVABLY renders.** After four
+  rounds of *"still no reticle"* every generated mark in the Serpent's eyepiece had been read,
+  re-read and argued about from source, and none of it could be told apart from the others. What
+  settled it was a **PROBE**: the same mark drawn a second time out of plain `UnityEngine.UI.Image`
+  quads. A sprite-less `Image` falls through to `Graphic.OnPopulateMesh` and emits one quad filling
+  its rect, so it shares no geometry code with a hand-written `MaskableGraphic` and only the canvas,
+  the parent and the draw order with it — which makes **one** playtest separate *the generated
+  geometry never reaches the screen* from *nothing parented under this thing does*. Build the probe
+  to state the same numbers as the real mark and draw it last, so the report is about the
+  COMPONENTS rather than about the values.
+- **Ship ONE candidate fix per report, or budget a second observation.** The probe landed in the
+  same commit as a second plausible fix (the generated rects went from zero-sized to full-size), the
+  report came back *"this is good, I saw it and it changes size nicely"*, and it names neither — so
+  the scaffolding has to stay until one more observation with the probe switched off says whether
+  the real mark draws. That is the sibling of the surface/camera rule above and it costs the same
+  thing: **when two changes could each be the one that worked, the report cannot tell them apart.**
+  If you do ship both, make the cheaper-to-undo one switchable in a line and write the experiment
+  down while you still remember what it would prove.
+
+**The general shape:** *an instrument's failure mode is the vocabulary of the bug report you will
+get.* Before you change one, ask what a pilot could say if it went wrong, and whether that sentence
+would point at one thing. If it would not, split the change.
+
+### 4.ab Retuning a vessel's SPEED or TURN constants moves a MODE, not just the hull
+
+A game mode cut against a vessel's own geometry holds a **compile-time copy** of that vessel's
+numbers, and nothing tells you it is there. The Rhino is the worked example (2026-09-25: top speed
+to 70% via `RhinoRampBoostAction.maxBoostMultiplier` 24 -> 16.8, `RotationThrottleScaler` 0.5 ->
+0.2). That one prefab + asset edit had to be carried into:
+
+- `HeadlongCircuitSettings` (`RhinoMaxBoostMultiplier`, `RhinoRotationThrottleScaler`) — held in
+  step by `RhinoRampGradingTests`, which fails if you change one side only;
+- `HeadlongCircuitTests`' flat-out constants — and, because the flat-out circle nearly DOUBLED in a
+  fixed shell, the ladder itself (level 1's `CornerRadiusFactor` 0.62 -> 0.75 to stay hairpin-free);
+- `Tools/Build/regatta_course_measurements.json`'s `sourceHash`, which hashes `HeadlongCircuit.cs`
+  (shared by Regatta's course) — `author_regatta_assets.py --check` goes red on any edit there even
+  when every measurement is byte-identical.
+
+Grep the vessel's constant NAMES and its numbers across `_Scripts/Controller/Arcade/` and
+`Tools/Build/` before calling a retune done; a mode whose course was proven against the old curve
+is now a different mode, and the doc's measured ladder is the first thing to go stale.
+
+## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
+
+- **Run the out-of-editor gates FIRST, and name what each one covers.** In particular
+  `python3 Tools/Build/check_abstract_member_implementations.py` — written after a new vessel
+  shipped a `CS0534` past every other gate (rule 39). The rest:
+  `check_conditional_compilation`, `check_enum_member_references`, `check_switch_label_collisions`,
+  `check_self_referential_locals`, `check_console_logging`, `check_using_directives`,
+  `check_elemental_floats`. **All green is a claim about SYNTAX plus those specific defect
+  classes — it is not a compile.** Everything needing a symbol table (a member that does not
+  exist, an override whose signature drifted, an argument mismatch) is still editor-only, so say
+  so when you hand back rather than reporting "all checks pass".
+- State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
+  **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (which measures shape MAGNITUDE,
+  not labels), **Audit Vessel Construction** (guid ownership · nested-instance reachability ·
+  duplicate coincident hull renderers), plus **Wire Elemental Petal Bars** (or **Bake Elemental
+  Petal Bars Into All Vessel HUDs**), **Plan Vessel Rig Swap** and its writer **Swap Vessel Rig**
+  where relevant. Vessel-impactor container wiring still has no in-editor auditor, but do NOT
+  hand that half back as play-mode-only: run the rule-22 sweep yourself first (GUID → name over
+  `*.asset.meta`, then cross-reference the six `VesselContainers/*.asset` arrays) and print the
+  per-vessel table — which vessels carry the effect, which are missing it, and whether the wired
+  ones share tuning. That is a static, seconds-long check that catches the entire "authored but
+  never wired" class before a human ever opens Unity; play-mode checks (prism hit, crystal
+  collect ×1, no NREs) then confirm the wiring you already proved exists.
+- **Check that the feedback you are asking a human to judge is OBSERVABLE before you ask.** A
+  skim's three signals are each individually invisible on a desktop editor: the haptic is a
+  NO-OP (NiceVibrations does nothing there), the beam VFX only draws if the skimmed prism
+  authored a `ParticleEffect` (several prefabs, incl. the menu trail prism, leave it empty —
+  and `Instantiate(null)` throws inside a `.Forget()`ed UniTaskVoid, so it fails invisibly),
+  and a gauge that moves a tenth of its range per event reads as nothing. "I feel no X" then
+  carries **zero** information about whether X is wired, and three round-trips can be spent
+  debugging a chain that was working. Enumerate the signals, ask which of them can actually
+  reach the human on their platform, and add a discrete unmistakable beat if the answer is
+  none.
+- Give numbered in-editor verification steps: scene, action, concrete observable, the SO knobs
+  to tune, and an MPPM two-client step wherever replicated state (unlock bits, swaps) changed.
+- Anything you could not editor-verify gets a 🔴 entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`
+  (what landed / verify steps / first-pass tuning table) — never only a PR body or chat.
+- Never claim something works that you have not seen work.
+
+## 6. Update the paper trail (the drift you don't fix becomes the next branch's bug)
+
+When vessel work ships, update in the same branch: `FLEET_MAPS.md` (§1 live table + §2 proposal
+→ APPROVED + SHIPPED, Squirrel-style), `ARCHITECTURE.md` §7.2 fleet status, `BACKLOG.md` item →
+SHIPPED with deltas, **CLAUDE.md's fleet-status table** (the Dolphin branch updated FLEET_MAPS
+but not CLAUDE.md — don't repeat that), the map asset's `UpgradeLabel`/`UpgradeDescription`, and
+a co-located design doc `Assets/_Scripts/Controller/Vessel/R_VesselActions/{FEATURE}.md`
+(overview + Files table + tuning-knobs table + "## In-editor verification" + "## Follow-ups";
+`RHINO_SHIELD_SWIPE.md` is the exemplar). Delete stale serialized blocks left by script-field
+renames, and use `[FormerlySerializedAs]` when renaming container fields.
+
+## 7. Growing the contract (how a vessel requirement becomes enforced)
+
+When a new fleet-wide vessel requirement emerges, don't leave it as tribal knowledge — walk it
+up the enforcement ladder the shipped systems use:
+
+1. **Single source**: one code constant or Resources-loaded config SO
+   (`VesselHUDView.AbilityDisplayOrder`, `ElementalBarsConfigSO`) — never per-prefab fields.
+2. **Author-time**: `OnValidate` normalization + an editor-conditional validator called from the
+   runtime init path (`ValidateAbilityIconRow` pattern).
+3. **Runtime**: warn-and-degrade with the fix named in the warning
+   (`CreateDefaultElementBars` pattern) — visible degradation, never silent, never a crash.
+4. **Fleet audit**: an asset-only `FrogletTools > Vessels` auditor (`[MenuItem]` + `[FrogletTool(FrogletToolCategory.Vessels, ...)]` so it shows in the master window) that reuses the exact runtime
+   discovery code (`VesselElementalMorphAuditor` pattern).
+5. **Record it**: CLAUDE.md + this skill's CONTRACT.md + the ship checklist.
+
+**Worked example (2026-08):** the skimmer half of that gap is now closed —
+`VesselSkimmerAudit` (`FrogletTools > Vessels > Audit Vessel Skimmers`) walks every vessel
+prefab's `NearFieldSkimmer`/`FarFieldSkimmer` to its GameObject and checks active state up the
+whole ancestor chain, the impactor/`ImpactCollider`/trigger-collider/`Rigidbody` the trigger path
+needs, and whether the container holds prism effects; when a container asks for the forcefield
+crackle it also checks the `ForcefieldCrackleController` + its `overlayRenderer`, because that
+effect needs **three** pieces across three files and returns silently without any of them.
+
+Remaining gap, next candidate: **vessel-impactor container wiring** (null containers, orphaned
+effect assets, an effect authored but never added to the vessel's container) still has only
+runtime symptoms.
+
+## 8. Commit
+
+Conventional commits per `GIT_RULES.md` (`type(scope): summary`, imperative, ≤72 chars, .meta
+files included); one logical change per branch; develop on the feature branch; open a PR only
+when asked.

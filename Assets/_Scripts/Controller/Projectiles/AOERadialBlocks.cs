@@ -13,8 +13,8 @@ namespace CosmicShore.Gameplay
 {
     public class AOERadialBlocks : AOEConicExplosion
     {
-        // Scale both ray radius and block size in Z
-        private ElementalFloat depthScale = new(1f);
+        /// <summary>This blast LAYS prisms - see <see cref="AOEExplosion.CreatesMass"/>.</summary>
+        public override bool CreatesMass => true;
 
         [SerializeField] private float growthRate = .05f;
 
@@ -47,8 +47,12 @@ namespace CosmicShore.Gameplay
         {
             base.Initialize(initStruct);
 
-            baseBlockScale.z *= depthScale.Value;
-            maxRadius        *= depthScale.Value;
+            // A `private ElementalFloat depthScale = new(1f)` used to scale these two here.
+            // It carried no [SerializeField], so it was never serialized, never bound and
+            // permanently 1 -- and because both lines multiply INSTANCE fields on a POOLED
+            // component, a value other than 1 would have compounded on every reuse. Removed:
+            // an ElementalFloat nothing can author is a constant wearing a scaling channel's
+            // clothes, and the next reader believes it.
 
             rayDirection = coneContainer.transform.forward;
             scaleCurve ??= AnimationCurve.Linear(0, 1, 1, 0.5f);
@@ -60,8 +64,15 @@ namespace CosmicShore.Gameplay
         {
             try
             {
-                // FIRST: Run the conic explosion visuals from parent
-                base.ExplodeAsync(ct).Forget();
+                // CREATION-ONLY: the skyburst's destructive work is the spherical
+                // AOEExplosion the detonator spawns alongside this object. Running the
+                // parent's conic sweep here as well produced a SECOND destructive
+                // explosion whose live trigger collider kept re-hitting / re-shielding
+                // prisms — including the radial blocks laid below — for the full
+                // ExplosionDuration (authored 50 s on the skyburst prefab: the
+                // "explosion that never resolves"). This object now only deposits the
+                // radial prism rays, then retires.
+                DisableConicExplosion();
 
                 // wait: primary delay + secondary delay
                 float wait = Mathf.Max(0f, ExplosionDelay) + Mathf.Max(0f, SecondaryExplosionDelay);
@@ -74,7 +85,7 @@ namespace CosmicShore.Gameplay
                 for (int ray = 0; ray < numberOfRays; ray++)
                 {
                     ct.ThrowIfCancellationRequested();
-                    if (!this) return; // guard against base conic animation destroying gameObject
+                    if (!this) return;
 
                     Trail trail = new Trail();
                     trails.Add(trail);
@@ -84,11 +95,33 @@ namespace CosmicShore.Gameplay
                     // Small frame delay to distribute work
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
+
+                // All rays deposited. Block growth is owned by the prisms themselves
+                // (Prism.Initialize bloom + a detached static fallback grower), so the
+                // spawner can go away. Initialize reparented us under the runtime
+                // coneContainer — destroy that so nothing leaks.
+                if (this)
+                    Destroy(coneContainer ? coneContainer : gameObject);
             }
             catch (OperationCanceledException)
             {
                 // Explosion cancelled
             }
+        }
+
+        /// <summary>
+        /// Kills the inherited destructive-explosion machinery: the trigger collider and
+        /// impactor (so nothing gets re-hit or re-shielded) and the cone sweep visual.
+        /// The base ExplodeAsync is never run, so nothing scales or animates either.
+        /// </summary>
+        private void DisableConicExplosion()
+        {
+            if (TryGetComponent<Collider>(out var triggerCollider))
+                triggerCollider.enabled = false;
+            if (TryGetComponent<ExplosionImpactor>(out var impactor))
+                impactor.enabled = false;
+            if (TryGetComponent<MeshRenderer>(out var coneVisual))
+                coneVisual.enabled = false;
         }
 
         // ----------------------------------------------------------------------
@@ -174,15 +207,14 @@ namespace CosmicShore.Gameplay
             if (shielded)
                 prism.prismProperties.IsShielded = true;
 
-            // Start at zero scale
-            prism.transform.localScale = Vector3.zero;
-
-            // built-in growth (if Prism supports it)
+            // The one growth engine (Docs/PRISM_ANIMATION.md): TargetScale is the
+            // initial condition; SetGrowthRate pushes the rate through to the
+            // animator (a bare growthRate field write is dead on pooled prisms —
+            // the field is only read in Prism.Awake). The former bespoke
+            // GrowToScale fallback raced the real engine with per-frame
+            // localScale writes that never reached the instanced render path.
             prism.TargetScale = targetScale;
-            prism.growthRate  = growthRate;
-
-            // fallback grower in case Prism doesn't auto grow
-            GrowToScale(prism.transform, targetScale, growthRate).Forget();
+            prism.SetGrowthRate(growthRate);
 
             prism.Initialize(Vessel?.VesselStatus?.PlayerName ?? "UnknownPlayer");
 
@@ -192,22 +224,5 @@ namespace CosmicShore.Gameplay
             return prism;
         }
 
-        // ----------------------------------------------------------------------
-        // Block growth without coroutine
-        // ----------------------------------------------------------------------
-
-        private static async UniTaskVoid GrowToScale(Transform tr, Vector3 target, float rate)
-        {
-            rate = Mathf.Max(1e-5f, rate);
-
-            while (tr && (tr.localScale - target).sqrMagnitude > 0.0001f)
-            {
-                tr.localScale = Vector3.MoveTowards(tr.localScale, target, rate);
-                await UniTask.Yield();
-            }
-
-            if (tr)
-                tr.localScale = target;
-        }
     }
 }

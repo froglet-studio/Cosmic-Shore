@@ -1,0 +1,3 @@
+# Live ledger data is machine-local; only shared/ (published through the
+# Stage & Push tab of FrogletTools > Diagnostics > Bug Ledger) is tracked.
+local/

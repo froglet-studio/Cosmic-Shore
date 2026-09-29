@@ -1,12 +1,55 @@
 using System;
-using System.Collections;
-using CosmicShore.Gameplay;
+using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
-    public class ShieldSkimmerScaleDriver : MonoBehaviour
+    /// <summary>
+    /// The Rhino energy sword's brain. Owns the sword transform's SCALE and the sword's
+    /// energy/energize state, and implements <see cref="IRhinoSwordState"/> so the shared
+    /// impact-effect SOs can read/drive it via <c>Skimmer.SwordState</c>.
+    ///
+    /// The sword's ORDINARY cutting is UNGATED — it always damages prisms on contact
+    /// (that logic lives in <c>RhinoSkimmerDamagePrismEffectSO</c>). Two things live here:
+    ///
+    /// ENERGY — the Rhino's Shield resource (<see cref="shieldIndex"/>, normalized 0..1,
+    /// no passive decay: a meter you fill and spend):
+    ///  • GAIN: the prism effect banks energy per prism the sword destroys (an omni-crystal
+    ///    pickup also sets it to full via the Rhino's vessel crystal effect).
+    ///  • SPEND: energizing costs <see cref="ShieldSkimmerScaleConfigSO.EnergizeCostFraction"/>;
+    ///    an elemental-crystal hit (<see cref="TriggerCrystalBurst"/>) bursts the blade in all
+    ///    three dimensions scaled by the energy at that instant, then drains it all.
+    ///
+    /// ENERGIZE — the supershield key. Holding the both-triggers lower/chop stance
+    /// (<see cref="SetInStance"/>, fed by <see cref="ShieldSwipeActionExecutor"/>) for
+    /// <c>EnergizeHoldSeconds</c> spends the cost and ignites the blade: while
+    /// <see cref="IsEnergized"/> the damage effect POPS super-shielded prisms instead of
+    /// bouncing. Leaving the stance starts the <c>EnergizedTailSeconds</c> countdown, then
+    /// <c>EnergizeCooldownSeconds</c> locks re-charging. On the ignition edge the standing
+    /// blade contacts are RE-DISPATCHED (both the box-trigger overlaps and the shell-tier
+    /// pairs) so a super-shielded prism already resting against the blade pops without
+    /// needing a fresh OnTriggerEnter.
+    ///
+    /// BINDING — a NON-energized blade inside super-shielded mass it cannot cut does not recoil;
+    /// the armour DRAGS on it. While the shell tier reports the blade inside one or more live
+    /// super-shielded prisms (<see cref="PrismShellContactManager.CollectSuperShieldedContactsForOwner"/>)
+    /// the vessel's rotation rate (pitch, yaw AND roll) eases down to <c>BindTurnRateMultiplier</c>
+    /// (<see cref="VesselTransformer.ExternalTurnRateMultiplier"/>), every bound prism keeps
+    /// shuddering (the deflection jiggle, re-stamped through <see cref="Prism.AbsorbSuperShieldHit"/>
+    /// — photons only, the prism stays invulnerable), and the local human pilot feels a grind
+    /// (<see cref="HapticController.PlayBind"/>). Leaving the prism eases the turn rate back.
+    /// The ENTRY beat (first jiggle + punish thud) is the damage effect's. See
+    /// <c>RHINO_ENERGY_SWORD.md</c> § "Binding".
+    ///
+    /// The resting length reflects stored energy (Y-only elongation from the Space-driven
+    /// elemental base — the same meter the Rhino HUD draws through <see cref="OnScaleChanged"/>).
+    /// All LOOK is delegated to the prefab-authored <see cref="RhinoSwordFXController"/> on the
+    /// blade root. Sets <c>Skimmer.HasExternalScaleDriver</c> so the Skimmer's own elemental
+    /// scale write stands down. The swipe pose (rotation/position) is owned by
+    /// <see cref="ShieldSwipeActionExecutor"/> — only scale is ours. See <c>RHINO_ENERGY_SWORD.md</c>.
+    /// </summary>
+    public class ShieldSkimmerScaleDriver : MonoBehaviour, IRhinoSwordState
     {
         [Header("Refs")]
         [SerializeField] private ResourceSystem resourceSystem;
@@ -15,209 +58,409 @@ namespace CosmicShore.Gameplay
         [Header("Config")]
         [SerializeField] private ShieldSkimmerScaleConfigSO config;
 
-        [Header("Shield Resource Index (normalized 0..1)")]
-        [SerializeField] private int shieldIndex = 0;
+        [Header("Energy Resource Index (Shield, normalized 0..1)")]
+        [SerializeField] private int shieldIndex = 1;
 
+        /// <summary>Fires each frame with (currentWorldLength, restingLength, maxLength) — the Rhino
+        /// HUD reads it as a 0..1 energy meter.</summary>
         public event Action<float, float, float> OnScaleChanged;
 
-        private enum CrystalState { None, Armed, Holding }
+        Skimmer _skimmer;
+        SkimmerImpactor _skimmerImpactor;
+        RhinoSwordFXController _fx;
+        bool _fxWarned;
 
-        CrystalState _crystalState = CrystalState.None;
-        float _crystalHoldEndTime;
+        Vector3 _authoredShape; // local X/Y/Z silhouette captured from the Skimmer
 
-        float _targetWorld;
-        float _prevShield01;
-        float _noDecayUntil;     // time until which no decay is allowed (reset delay / crystal hold)
+        // ── crystal burst ──
+        enum BurstPhase { None, Growing, Holding, Returning }
+        BurstPhase _burst = BurstPhase.None;
+        Vector3 _burstTargetLocal;
+        float _burstHoldEnd;
 
-        Coroutine _tickLoop;
+        // ── energize (the supershield key) ──
+        RhinoSwordEnergizePhase _energize = RhinoSwordEnergizePhase.Idle;
+        float _chargeStart, _tailEnd, _cooldownEnd;
+        bool _tailCounting;
+        bool _inStance;
 
-        float BaseScale  => config.BaseScale;
-        float MaxScale   =>config.MaxScale;
-        float PrismMax   => config.PrismMaxScale;
-        float StepUnits  => config.StepScaleUnits;
-        float TickSecs   => config.TickSeconds;
-        float ResetDelay => config.ResetDelaySeconds;
-        float HoldSecs   => config.CrystalHoldSeconds;
-        float PrismGrow  => config.PrismGrowSpeed;
-        float CrystalGrow=> config.CrystalGrowSpeed;
-        float Shrink     => config.ShrinkSpeed;
-        float HoldEps    => config.MaxHoldEpsilon;
+        // ── binding (a non-energized blade inside super-shielded mass) ──
+        readonly List<Prism> _bound = new(4);
+        float _bindTurnMultiplier = 1f;
+        VesselTransformer _turnOwner;   // the transformer we are currently slowing, if any
+        bool _wasBound;
+        float _nextBindJiggle, _nextBindHaptic;
 
-        float Range => Mathf.Max(0.0001f, MaxScale - BaseScale);
-        float Step01 => StepUnits / Range;
+        // Sword capsules (Skimmer.ElongateYOnly): the resting length grows only local Y and
+        // preserves the authored X/Z silhouette; the crystal burst overrides all three dims.
+        bool YOnly => _skimmer && _skimmer.ElongateYOnly;
 
-        float PrismCap01
+        // Resting size is the skimmer's live elemental (Space-driven) scale — element levels
+        // lengthen the sword and energy growth composes on top. Falls back to the config value.
+        float BaseScale => _skimmer ? Mathf.Max(0.01f, _skimmer.LiveElementalScale) : config.BaseScale;
+        // Keep max ≥ base: the two come from different sources (base = skimmer's live elemental
+        // scale, max = config), so a large elemental scale must never invert the resting clamp.
+        float MaxScale  => Mathf.Max(config.MaxScale, BaseScale);
+        float Range     => Mathf.Max(0.0001f, MaxScale - BaseScale);
+
+        public float MinScale => BaseScale;
+        public float CurrentScale => skimmerRoot
+            ? (YOnly ? skimmerRoot.lossyScale.y : skimmerRoot.lossyScale.x)
+            : BaseScale;
+
+        /// <summary>Current energize phase (for FX and any future HUD readout).</summary>
+        public RhinoSwordEnergizePhase EnergizePhase => _energize;
+
+        /// <summary>Charge progress 0..1 while Charging (0 otherwise).</summary>
+        public float Charge01 => _energize == RhinoSwordEnergizePhase.Charging && config != null
+            ? Mathf.Clamp01((Time.time - _chargeStart) / config.EnergizeHoldSeconds)
+            : 0f;
+
+        // ── IRhinoSwordState ──
+        public bool IsEnergized => _energize == RhinoSwordEnergizePhase.Energized;
+        public float Energy01 => GetShield01();
+
+        public void AddEnergy(float amount01)
+        {
+            if (amount01 == 0f) return;
+            SetShield01(GetShield01() + amount01);
+        }
+
+        public void SetInStance(bool inStance) => _inStance = inStance;
+
+        public void NotifyPrismDestroyed(bool superShielded, Vector3 prismWorldPosition)
+        {
+            Fx?.NotifyKill(superShielded, prismWorldPosition);
+        }
+
+        public void NotifyPopDenied(Vector3 prismWorldPosition)
+        {
+            Fx?.NotifyPopDenied(prismWorldPosition);
+        }
+
+        public void TriggerCrystalBurst()
+        {
+            if (config == null || !skimmerRoot) return;
+            float energy = Mathf.Clamp01(GetShield01());
+            float factor = Mathf.Lerp(1f, config.CrystalBurstFactorAtFullEnergy, energy);
+
+            // A burst only ever GROWS the blade: the length target starts from the authored
+            // silhouette × factor but never drops below the current length (a Space-lengthened
+            // blade at low energy must not contract), and never exceeds the (debuff-aware)
+            // MaxScale unless the blade is already longer.
+            float parentY = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.y : 1f;
+            float currentWorldY = skimmerRoot.lossyScale.y;
+            float burstWorldY = Mathf.Max(currentWorldY, _authoredShape.y * parentY * factor);
+            burstWorldY = Mathf.Min(burstWorldY, Mathf.Max(MaxScale, currentWorldY));
+
+            _burstTargetLocal = new Vector3(
+                _authoredShape.x * factor,
+                burstWorldY / Mathf.Max(0.0001f, parentY),
+                _authoredShape.z * factor);
+            _burst = BurstPhase.Growing;
+
+            Fx?.NotifyCrystalBurst(energy);
+
+            SetShield01(0f); // hitting a crystal consumes ALL energy
+        }
+
+        RhinoSwordFXController Fx
         {
             get
             {
-                float cap = (PrismMax - BaseScale) / Range;
-                return Mathf.Clamp01(cap);
+                if (_fx) return _fx;
+                if (skimmerRoot) skimmerRoot.TryGetComponent(out _fx);
+                if (!_fx && !_fxWarned)
+                {
+                    _fxWarned = true;
+                    CSDebug.LogWarning($"[{nameof(ShieldSkimmerScaleDriver)}] No {nameof(RhinoSwordFXController)} " +
+                                       $"on '{(skimmerRoot ? skimmerRoot.name : "<null>")}' — the sword runs with no " +
+                                       "blade FX (heat ramp, ignition, sparks). Author one on the blade root prefab.");
+                }
+                return _fx;
             }
         }
-
-        public float MinScale => BaseScale;
-        public float CurrentScale => skimmerRoot ? skimmerRoot.lossyScale.x : BaseScale;
 
         void Awake()
         {
             if (!skimmerRoot) skimmerRoot = transform;
-            _targetWorld = CurrentScale;
+            skimmerRoot.TryGetComponent(out _skimmer);
+            skimmerRoot.TryGetComponent(out _skimmerImpactor);
+            if (_skimmer) _skimmer.SwordState = this;
+            _authoredShape = skimmerRoot.localScale;
         }
 
         void OnEnable()
         {
-            if (!resourceSystem) return;
+            if (_skimmer)
+            {
+                _skimmer.HasExternalScaleDriver = true;
+                _skimmer.SwordState = this;
+                // Skimmer.Awake has run (all Awakes precede all OnEnables on a fresh instance),
+                // so the authored silhouette is captured and valid here.
+                _authoredShape = _skimmer.AuthoredShape;
+            }
 
-            _prevShield01 = GetShield01();
-            UpdateTargetFromShield(_prevShield01);
-
-            resourceSystem.OnResourceChanged += OnResourceChanged;
-
-            if (_tickLoop == null)
-                _tickLoop = StartCoroutine(TickLoop());
+            // Pooled/re-enabled vessels start clean.
+            _burst = BurstPhase.None;
+            _energize = RhinoSwordEnergizePhase.Idle;
+            _inStance = false;
+            _tailCounting = false;
+            _cooldownEnd = 0f;
+            _bindTurnMultiplier = 1f;
+            _wasBound = false;
         }
 
         void OnDisable()
         {
-            if (resourceSystem)
-                resourceSystem.OnResourceChanged -= OnResourceChanged;
-
-            if (_tickLoop != null) StopCoroutine(_tickLoop);
-            _tickLoop = null;
-        }
-
-        void OnResourceChanged(int index, float current, float max)
-        {
-            if (index != shieldIndex) return;
-
-            float now   = Time.time;
-            float cur01 = Mathf.Clamp01(current);
-
-            if (cur01 >= 0.999f && _prevShield01 < 0.999f)
-            {
-                _crystalState = CrystalState.Armed;
-                _crystalHoldEndTime = 0f;
-
-                _noDecayUntil = float.PositiveInfinity;
-            }
-
-            switch (_crystalState)
-            {
-                case CrystalState.Armed or CrystalState.Holding when cur01 < 0.999f:
-                    SetShield01(1f);
-                    cur01 = 1f;
-                    break;
-                case CrystalState.None:
-                {
-                    bool increased = cur01 > _prevShield01 + 0.0001f;
-                    if (increased)
-                    {
-                        _noDecayUntil = now + ResetDelay;
-                    }
-
-                    break;
-                }
-            }
-
-            _prevShield01 = cur01;
-            
-            if (_crystalState != CrystalState.Holding)
-                UpdateTargetFromShield(cur01);
+            if (_skimmer) _skimmer.HasExternalScaleDriver = false;
+            ReleaseTurn();
         }
 
         void Update()
         {
-            if (!skimmerRoot) return;
+            if (!skimmerRoot || config == null) return;
+            float dt = Time.deltaTime;
 
-            if (_crystalState == CrystalState.Holding)
+            UpdateEnergize();
+            UpdateBind(dt);
+            UpdateScale(dt);
+            Fx?.Tick(Mathf.Clamp01(GetShield01()), _energize, Charge01, dt);
+        }
+
+        // ── energize ──────────────────────────────────────────────────────────
+        void UpdateEnergize()
+        {
+            float now = Time.time;
+            float cost = config.EnergizeCostFraction;
+
+            switch (_energize)
             {
-                SetWorldUniform(MaxScale);
-                OnScaleChanged?.Invoke(MaxScale, BaseScale, MaxScale);
+                case RhinoSwordEnergizePhase.Idle:
+                    if (_inStance && now >= _cooldownEnd && GetShield01() >= cost)
+                        SetEnergizePhase(RhinoSwordEnergizePhase.Charging, now);
+                    break;
+
+                case RhinoSwordEnergizePhase.Charging:
+                    if (!_inStance || GetShield01() < cost)
+                        SetEnergizePhase(RhinoSwordEnergizePhase.Idle, now);
+                    else if (now - _chargeStart >= config.EnergizeHoldSeconds)
+                    {
+                        SetShield01(GetShield01() - cost); // ignition spends the fraction
+                        SetEnergizePhase(RhinoSwordEnergizePhase.Energized, now);
+                    }
+                    break;
+
+                case RhinoSwordEnergizePhase.Energized:
+                    if (_inStance)
+                    {
+                        _tailCounting = false; // holding the stance keeps it lit
+                    }
+                    else if (!_tailCounting)
+                    {
+                        _tailCounting = true;
+                        _tailEnd = now + config.EnergizedTailSeconds;
+                    }
+                    else if (now >= _tailEnd)
+                    {
+                        _cooldownEnd = now + config.EnergizeCooldownSeconds;
+                        SetEnergizePhase(RhinoSwordEnergizePhase.Cooldown, now);
+                    }
+                    break;
+
+                case RhinoSwordEnergizePhase.Cooldown:
+                    if (now >= _cooldownEnd)
+                        SetEnergizePhase(RhinoSwordEnergizePhase.Idle, now);
+                    break;
+            }
+        }
+
+        void SetEnergizePhase(RhinoSwordEnergizePhase phase, float now)
+        {
+            if (_energize == phase) return;
+            _energize = phase;
+
+            switch (phase)
+            {
+                case RhinoSwordEnergizePhase.Charging:
+                    _chargeStart = now;
+                    break;
+                case RhinoSwordEnergizePhase.Energized:
+                    _tailCounting = false;
+                    // A super-shielded prism already RESTING against the blade gets no fresh
+                    // OnTriggerEnter (and its shell-tier pair was dispatched once on entry),
+                    // so the ignition edge re-runs the standing contacts through the same
+                    // effect chains — the pop the player just paid for lands immediately.
+                    RedispatchStandingBladeContacts();
+                    break;
+            }
+
+            Fx?.NotifyEnergizePhaseChanged(phase);
+        }
+
+        void RedispatchStandingBladeContacts()
+        {
+            if (!_skimmerImpactor) return;
+            _skimmerImpactor.ReapplyPrismEffectsToOverlapping();
+            PrismShellContactManager.RedispatchPairsForOwner(_skimmerImpactor);
+        }
+
+        // ── binding ───────────────────────────────────────────────────────────
+        void UpdateBind(float dt)
+        {
+            var status = _skimmer ? _skimmer.VesselStatus : null;
+
+            _bound.Clear();
+            // An energized blade POPS super-shields on contact (and the ignition edge re-dispatches
+            // standing contacts), so it is never bound — anything left in the pair set this frame
+            // is about to pop.
+            bool bound = !IsEnergized && _skimmerImpactor && _skimmer && _skimmer.IsInitialized
+                         && PrismShellContactManager.CollectSuperShieldedContactsForOwner(_skimmerImpactor, _bound) > 0;
+
+            float target = bound ? config.BindTurnRateMultiplier : 1f;
+            float rate = target < _bindTurnMultiplier ? config.BindEngageRate : config.BindReleaseRate;
+            _bindTurnMultiplier = Mathf.MoveTowards(_bindTurnMultiplier, target, rate * dt);
+            ApplyTurn(status);
+
+            if (!bound)
+            {
+                _wasBound = false;
                 return;
             }
 
-            float nowWorld = CurrentScale;
-
-            float speed;
-            if (_targetWorld >= nowWorld)
+            float now = Time.time;
+            if (!_wasBound)
             {
-                speed = (_crystalState == CrystalState.Armed) ? CrystalGrow : PrismGrow;
-            }
-            else
-            {
-                speed = Shrink;
-            }
-            
-            _targetWorld = Mathf.Clamp(_targetWorld, BaseScale, MaxScale);
-
-            float nextWorld = Mathf.MoveTowards(nowWorld, _targetWorld, speed * Time.deltaTime);
-
-            if (_crystalState == CrystalState.Armed &&
-                Mathf.Abs(nextWorld - MaxScale) <= HoldEps)
-            {
-                _crystalState = CrystalState.Holding;
-                _crystalHoldEndTime = Time.time + HoldSecs;
-
-                _noDecayUntil = _crystalHoldEndTime;
-
-                nextWorld = MaxScale;
+                // The damage effect already played the ENTRY beat (first jiggle + punish thud), so
+                // the texture starts one interval later rather than stacking on top of it.
+                _wasBound = true;
+                _nextBindJiggle = now + config.BindJiggleIntervalSeconds;
+                _nextBindHaptic = now + config.BindHapticIntervalSeconds;
             }
 
-            SetWorldUniform(nextWorld);
-            OnScaleChanged?.Invoke(nextWorld, BaseScale, MaxScale);
+            if (now >= _nextBindJiggle)
+            {
+                _nextBindJiggle = now + config.BindJiggleIntervalSeconds;
+                float speed = config.BindJiggleImpactSpeed;
+                for (int i = 0; i < _bound.Count; i++)
+                    _bound[i].AbsorbSuperShieldHit(speed);
+            }
+
+            if (now >= _nextBindHaptic)
+            {
+                _nextBindHaptic = now + config.BindHapticIntervalSeconds;
+                if (status != null && status.IsLocalUser && !status.AutoPilotEnabled)
+                    HapticController.PlayBind(config.BindHapticStrength);
+            }
         }
 
-        IEnumerator TickLoop()
+        // Single writer of VesselTransformer.ExternalTurnRateMultiplier for this vessel: writes
+        // while the drag is non-trivial and hands it back at exactly 1 once it has eased out.
+        void ApplyTurn(IVesselStatus status)
         {
-            var wait = new WaitForSeconds(TickSecs);
-
-            while (true)
+            var transformer = status?.VesselTransformer;
+            if (!transformer || _bindTurnMultiplier >= 0.9999f)
             {
-                yield return wait;
+                ReleaseTurn();
+                return;
+            }
 
-                float now = Time.time;
+            if (_turnOwner && _turnOwner != transformer) ReleaseTurn();
+            transformer.ExternalTurnRateMultiplier = _bindTurnMultiplier;
+            _turnOwner = transformer;
+        }
 
-                // If holding from crystal, do not decay until hold time is over.
-                if (_crystalState == CrystalState.Holding)
+        void ReleaseTurn()
+        {
+            if (_turnOwner) _turnOwner.ExternalTurnRateMultiplier = 1f;
+            _turnOwner = null;
+        }
+
+        // ── scale ─────────────────────────────────────────────────────────────
+        void UpdateScale(float dt)
+        {
+            if (_burst != BurstPhase.None)
+            {
+                UpdateBurst(dt);
+                return;
+            }
+
+            // Resting length reflects stored energy (Y-only, world units).
+            float energy = Mathf.Clamp01(GetShield01());
+            float targetWorldY = Mathf.Clamp(BaseScale + energy * Range, BaseScale, MaxScale);
+            float nowWorldY = skimmerRoot.lossyScale.y;
+            float speed = (targetWorldY >= nowWorldY) ? config.PrismGrowSpeed : config.ShrinkSpeed;
+            float nextWorldY = Mathf.MoveTowards(nowWorldY, targetWorldY, speed * dt);
+
+            SetLengthWorldY(nextWorldY);
+            OnScaleChanged?.Invoke(nextWorldY, BaseScale, MaxScale);
+        }
+
+        void UpdateBurst(float dt)
+        {
+            Vector3 cur = skimmerRoot.localScale;
+
+            switch (_burst)
+            {
+                case BurstPhase.Growing:
                 {
-                    if (now < _crystalHoldEndTime)
-                        continue;
-
-                    // Hold finished – go back to normal and allow decay.
-                    _crystalState = CrystalState.None;
+                    var next = Vector3.MoveTowards(cur, _burstTargetLocal, config.CrystalBurstGrowSpeed * dt);
+                    skimmerRoot.localScale = next;
+                    if ((next - _burstTargetLocal).sqrMagnitude < 0.0025f)
+                    {
+                        skimmerRoot.localScale = _burstTargetLocal;
+                        _burst = BurstPhase.Holding;
+                        _burstHoldEnd = Time.time + config.CrystalBurstHoldSeconds;
+                    }
+                    break;
                 }
+                case BurstPhase.Holding:
+                    skimmerRoot.localScale = _burstTargetLocal;
+                    if (Time.time >= _burstHoldEnd) _burst = BurstPhase.Returning;
+                    break;
 
-                // Respect reset delay (or +∞ while in Armed state).
-                if (now < _noDecayUntil)
-                    continue;
-
-                float cur01 = GetShield01();
-                if (cur01 <= 0f)
-                    continue;
-
-                // Decay Shield by same step size as prism growth.
-                float next01 = Mathf.Max(0f, cur01 - Step01);
-                SetShield01(next01);
-
-                _prevShield01 = next01;
-
-                if (_crystalState != CrystalState.Holding)
-                    UpdateTargetFromShield(next01);
+                case BurstPhase.Returning:
+                {
+                    Vector3 rest = RestLocalScale();
+                    var back = Vector3.MoveTowards(cur, rest, config.CrystalBurstReturnSpeed * dt);
+                    skimmerRoot.localScale = back;
+                    if ((back - rest).sqrMagnitude < 0.0025f) _burst = BurstPhase.None;
+                    break;
+                }
             }
+
+            // The HUD reads this as the ENERGY meter, so during a burst report the energy-based
+            // resting length (energy just drained to 0), not the transient ballooned Y — otherwise
+            // the meter pegs full for the whole hold while the tank is actually empty.
+            float energyNow = Mathf.Clamp01(GetShield01());
+            float restWorldY = Mathf.Clamp(BaseScale + energyNow * Range, BaseScale, MaxScale);
+            OnScaleChanged?.Invoke(restWorldY, BaseScale, MaxScale);
         }
 
-        void UpdateTargetFromShield(float shield01)
+        Vector3 RestLocalScale()
         {
-            _targetWorld = BaseScale + Mathf.Clamp01(shield01) * Range;
+            float energy = Mathf.Clamp01(GetShield01());
+            float targetWorldY = Mathf.Clamp(BaseScale + energy * Range, BaseScale, MaxScale);
+            float parentY = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.y : 1f;
+            return new Vector3(_authoredShape.x, targetWorldY / Mathf.Max(0.0001f, parentY), _authoredShape.z);
         }
 
-        void SetWorldUniform(float world)
+        void SetLengthWorldY(float worldY)
         {
-            float parent = (skimmerRoot.parent) ? skimmerRoot.parent.lossyScale.x : 1f;
-            float local  = world / Mathf.Max(0.0001f, parent);
+            if (YOnly)
+            {
+                float parentY = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.y : 1f;
+                float localY = worldY / Mathf.Max(0.0001f, parentY);
+                skimmerRoot.localScale = new Vector3(_authoredShape.x, localY, _authoredShape.z);
+                return;
+            }
+
+            float parent = skimmerRoot.parent ? skimmerRoot.parent.lossyScale.x : 1f;
+            float local = worldY / Mathf.Max(0.0001f, parent);
             skimmerRoot.localScale = new Vector3(local, local, local);
         }
 
+        // ── energy resource ───────────────────────────────────────────────────
         float GetShield01()
         {
             if (!resourceSystem) return 0f;

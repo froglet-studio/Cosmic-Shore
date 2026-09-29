@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4544ecfd2206413e915b80129b81e54b, type: 3}
   m_Name: Painting_Rainbow
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
-  paintingId: 
-  displayName: Painting
-  description: 
+  paintingId: painting_rainbow
+  displayName: Rainbow
+  description: Three bands, three colours - ride the gates.
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4
   sourceShapeScale: 2.5
-  preset: 1
-  presetSize: 420
+  preset: 2
+  presetSize: 700
   reachThreshold: 30

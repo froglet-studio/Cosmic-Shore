@@ -16,7 +16,7 @@
 //   fetched by the caller) and writes to the SOAP data container.
 //
 // LIFETIME:
-//   Pure C# — no MonoBehaviour.  Instantiated as a field on
+//   Pure C# - no MonoBehaviour.  Instantiated as a field on
 //   HostConnectionService for Phases 10-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
@@ -38,12 +38,12 @@ namespace CosmicShore.Gameplay
     /// to keep party-slot UI in sync.
     ///
     /// <para>
-    /// Does NOT call any UGS SDK or touch NetworkManager — it only reads from
+    /// Does NOT call any UGS SDK or touch NetworkManager - it only reads from
     /// <c>ISession.Players</c> (already refreshed by <see cref="IPartySessionService"/>)
     /// and mutates the <see cref="HostConnectionDataSO.PartyMembers"/> list.
     /// </para>
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>
@@ -99,7 +99,7 @@ namespace CosmicShore.Gameplay
             if (!string.IsNullOrEmpty(_connectionData.LocalPlayerData.PlayerId))
                 _connectionData.PartyMembers?.Add(_connectionData.LocalPlayerData);
 
-            Debug.Log("[PartyMemberService] Seeded PartyMembers with local player.");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Seeded PartyMembers with local player.");
         }
 
         /// <inheritdoc/>
@@ -107,24 +107,54 @@ namespace CosmicShore.Gameplay
         {
             if (_connectionData.PartyMembers == null) return System.Array.Empty<string>();
 
-            // Build a fast-lookup set of current session player IDs.
+            // Build a fast-lookup set of current session player IDs. A SPECTATOR is in the
+            // session (it needs the Relay seat to watch) but is never a party member: it is
+            // left out of this set too, so a member who turns spectator is REMOVED below
+            // exactly as if they had left.
             var sessionPlayerIds = new HashSet<string>();
             foreach (var p in session.Players)
-                sessionPlayerIds.Add(p.Id);
+                if (!PartySessionService.IsSpectator(p))
+                    sessionPlayerIds.Add(p.Id);
 
-            // Add players that are in the session but not yet in the SOAP list.
+            // Add players that are in the session but not yet in the SOAP list;
+            // refresh identity (displayName/avatarId) on members already present.
             var joinedPlayerIds = new List<string>();
             foreach (var p in session.Players)
             {
                 if (string.IsNullOrEmpty(p.Id) || p.Id == localPlayerId) continue;
+                if (PartySessionService.IsSpectator(p)) continue;
 
                 var memberData = ReadMemberData(p);
-                if (!_connectionData.PartyMembers.Contains(memberData))
+
+                int existingIdx = -1;
+                for (int i = 0; i < _connectionData.PartyMembers.Count; i++)
+                {
+                    if (_connectionData.PartyMembers[i].PlayerId == p.Id) { existingIdx = i; break; }
+                }
+
+                if (existingIdx < 0)
                 {
                     _connectionData.PartyMembers.Add(memberData);
                     _eventBus.RaisePartyMemberJoined(memberData);
                     joinedPlayerIds.Add(p.Id);
-                    Debug.Log($"[PartyMemberService] Member joined: {memberData.DisplayName} ({p.Id})");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyMemberService] Member joined: {memberData.DisplayName} ({p.Id})");
+                }
+                else
+                {
+                    var existing = _connectionData.PartyMembers[existingIdx];
+                    if (existing.DisplayName != memberData.DisplayName ||
+                        existing.AvatarId    != memberData.AvatarId)
+                    {
+                        // Identity refresh (mid-party rename), NOT a membership
+                        // change: RemoveAt + Insert fires the list's item events
+                        // (party slot UI repaints) WITHOUT raising the SOAP
+                        // member-joined/left events, so no invite-clear or
+                        // state-machine side effects trigger. Same pattern as
+                        // HostConnectionService.RefreshOnlinePlayersDiff.
+                        _connectionData.PartyMembers.RemoveAt(existingIdx);
+                        _connectionData.PartyMembers.Insert(existingIdx, memberData);
+                        CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyMemberService] Member identity refreshed: '{existing.DisplayName}' -> '{memberData.DisplayName}' ({p.Id})");
+                    }
                 }
             }
 
@@ -138,7 +168,7 @@ namespace CosmicShore.Gameplay
                 {
                     _connectionData.PartyMembers.RemoveAt(i);
                     _eventBus.RaisePartyMemberLeft(member);
-                    Debug.Log($"[PartyMemberService] Member left: {member.DisplayName} ({member.PlayerId})");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyMemberService] Member left: {member.DisplayName} ({member.PlayerId})");
                 }
             }
 
@@ -149,7 +179,7 @@ namespace CosmicShore.Gameplay
         public void ClearSilent()
         {
             _connectionData.PartyMembers?.Clear();
-            Debug.Log("[PartyMemberService] Party members cleared (silent).");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Party members cleared (silent).");
         }
 
         /// <inheritdoc/>
@@ -165,7 +195,7 @@ namespace CosmicShore.Gameplay
                 _eventBus.RaisePartyMemberLeft(member);
             }
 
-            Debug.Log("[PartyMemberService] Party members cleared with Left events.");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Party members cleared with Left events.");
         }
 
         /// <inheritdoc/>

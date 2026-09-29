@@ -44,16 +44,14 @@ namespace CosmicShore.Gameplay
         void DisableSkimmer();
         void SetBoostMultiplier (float boostMultiplier);
         void SetShipMaterial(Material material);
-        void SetBlockSilhouettePrefab(GameObject prefab);
         void SetAOEExplosionMaterial(Material material);
         void SetAOEConicExplosionMaterial(Material material);
         void SetSkimmerMaterial(Material material);
-        void SetTrailColors(Color highlightColor, Color coreColor);
+        void SetTailAndJetColors(Color highlightColor, Color coreColor);
         void BindElementalFloat(string name, Element element);
         // void PerformButtonActions(int buttonNumber);
         void ToggleAIPilot(bool toggle);
         void StartVessel();
-        bool AllowClearPrismInitialization();
         void DestroyVessel();
         void ResetForPlay();
         void SetPose(Pose pose);

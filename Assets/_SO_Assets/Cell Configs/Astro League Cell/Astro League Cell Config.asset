@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   CellName: Astro League
   Description: Hypersea-soccer arena cell with a trail-grazing food web — fauna spawn
-    in the controlling color, hunt opposing trail, and at Frenzy graze any-domain mass.
+    in the controlling color and the forager crew grazes any-domain trail. The nucleus here
+    is the ricochet COURT, declared play geometry rather than a control zone, so the pitch is
+    edible at all; the crew waits outside the court and is released when the volume ladder
+    leaves Calm. See Docs/ECOSYSTEM.md §25.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -26,13 +29,13 @@ MonoBehaviour:
     type: 3}
   CellModifiers: []
   SpawnProfile: {fileID: 11400000, guid: f37a525d67994012b78a221b97fbc1cf, type: 2}
-  SenseRadiusOverride: 1000
+  SenseRadiusOverride: 1300
   PhaseThresholds:
-    RestlessEnter: 500
-    RestlessExit: 400
-    FrenzyEnter: 1500
-    FrenzyExit: 1200
-    RestlessEnterVolume: 400
-    RestlessExitVolume: 300
-    FrenzyEnterVolume: 1500
-    FrenzyExitVolume: 1200
+    RestlessEnter: 1280
+    RestlessExit: 1220
+    FrenzyEnter: 2810
+    FrenzyExit: 2700
+    RestlessEnterVolume: 182000
+    RestlessExitVolume: 180000
+    FrenzyEnterVolume: 385000
+    FrenzyExitVolume: 382000

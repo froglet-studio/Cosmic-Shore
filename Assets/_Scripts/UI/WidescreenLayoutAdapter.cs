@@ -39,7 +39,7 @@ namespace CosmicShore.UI
             float screenAspect = (float)Screen.width / Screen.height;
             if (screenAspect <= maxAspectRatio)
             {
-                // Within allowed aspect ratio — fill the screen
+                // Within allowed aspect ratio - fill the screen
                 _rt.anchorMin = Vector2.zero;
                 _rt.anchorMax = Vector2.one;
                 _rt.offsetMin = Vector2.zero;

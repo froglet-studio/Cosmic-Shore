@@ -1,9 +1,9 @@
 using CosmicShore.Gameplay;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Utility;
 using UnityEngine;
 using System.Linq;
+using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     public class WallAssembler : Assembler
@@ -60,6 +60,10 @@ namespace CosmicShore.Gameplay
 
         private float snapDistance = .2f;
         float separationDistance = 2f;
+
+        /// <summary>Lattice spacing this assembler bonds at. Read-only, for pure PREVIEWS of
+        /// the growth pattern (flora icons) that must never instantiate anything.</summary>
+        public float SeparationDistance => separationDistance;
         [SerializeField] int colliderTheshold = 25;
         [SerializeField] float radius = 40f;
         bool isStopped = true;
@@ -203,7 +207,7 @@ namespace CosmicShore.Gameplay
                     Quaternion newRotation = CalculateRotation(site);
 
                     // Occupancy via PrismSpatialIndex.TryReserve instead of
-                    // Physics.CheckBox — same fix as GyroidAssembler.GetGrowthInfo:
+                    // Physics.CheckBox - same fix as GyroidAssembler.GetGrowthInfo:
                     // the physics probe couldn't see prisms inside their 0.6s
                     // disabled-collider spawn window (and localScale here was the
                     // *animating* value, near-zero through grow-in). The claim is
@@ -308,7 +312,6 @@ namespace CosmicShore.Gameplay
                     yield return new WaitForSeconds(1f);
                     if (TopIsBonded && BottomIsBonded)
                     {
-                        //CSDebug.Log("Bonded Top and Bottom");
                         StopAllCoroutines();
                         Prism.Grow();
                         if (TopMate.Mate.MateList.Count < 2)
@@ -392,7 +395,7 @@ namespace CosmicShore.Gameplay
             SiteType bondee = SiteType.Right;
 
             // Candidates come from the spatial index (the canonical prism population)
-            // instead of the allocating Physics.OverlapSphere — wall blocks only ever
+            // instead of the allocating Physics.OverlapSphere - wall blocks only ever
             // mate with prisms, all of which register on spawn. The threshold now
             // counts prisms rather than raw colliders; in a wall context those were
             // the same population.
@@ -437,7 +440,6 @@ namespace CosmicShore.Gameplay
                     if (siteType == SiteType.Top &&
                         (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude < snapDistance)
                     {
-                        //CSDebug.Log("ReFound MateRight");
                         mateComponent.Prism.ActivateShield();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Right };
                     }
@@ -445,7 +447,6 @@ namespace CosmicShore.Gameplay
                     if (siteType == SiteType.Bottom &&
                         (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude < snapDistance)
                     {
-                        //CSDebug.Log("ReFound MateLeft");
                         mateComponent.Prism.MakeDangerous();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Left };
                     }
@@ -458,7 +459,6 @@ namespace CosmicShore.Gameplay
                         float distance = (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude;
                         if (distance < closestDistance)
                         {
-                            //CSDebug.Log("Found MateRight");
                             closestDistance = distance;
                             closest = mateComponent;
                             bondee = SiteType.Right;
@@ -469,7 +469,6 @@ namespace CosmicShore.Gameplay
                         float distance = (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude;
                         if (distance < closestDistance)
                         {
-                            //CSDebug.Log("Found MateLeft");
                             closestDistance = distance;
                             closest = mateComponent;
                             bondee = SiteType.Left;
@@ -502,7 +501,7 @@ namespace CosmicShore.Gameplay
                 targetPos,
                 moveSpeed * Time.deltaTime
             );
-            // Steered blocks must keep the spatial index honest — AOE, occupancy and
+            // Steered blocks must keep the spatial index honest - AOE, occupancy and
             // mate-finding all read the stored position, not the transform.
             if (mate.Mate.Prism) mate.Mate.Prism.NotifyPositionChanged();
 
@@ -582,8 +581,6 @@ namespace CosmicShore.Gameplay
             BottomMate = default;
             RightMate = null;
             LeftMate  = null;
-        
-            CSDebug.Log("WallAssembler stopped bonding");
         }
 
         public void StopAssembly()
@@ -604,7 +601,6 @@ namespace CosmicShore.Gameplay
             LeftMate.StopAssembly();
             RightMate.StopAssembly();
             isStopped = true;
-            CSDebug.Log("Assembly Stopped");
         }
     }
 }

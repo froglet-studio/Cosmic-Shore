@@ -120,7 +120,7 @@ namespace CosmicShore.Core
                 AuthenticationService.Instance.ClearSessionToken();
         }
 
-        // Provider stubs — delegated to facade
+        // Provider stubs - delegated to facade
         public Task SignInWithGoogleAsync(string idToken) => Task.CompletedTask;
         public Task SignInWithAppleAsync(string identityToken) => Task.CompletedTask;
         public Task SignInWithFacebookAsync(string accessToken) => Task.CompletedTask;
@@ -134,7 +134,7 @@ namespace CosmicShore.Core
         void Log(string msg)
         {
             if (verboseLogs)
-                CSDebug.Log($"[AuthController] {msg}");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthController] {msg}");
         }
     }
 }

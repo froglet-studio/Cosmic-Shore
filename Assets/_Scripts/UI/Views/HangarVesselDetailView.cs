@@ -30,7 +30,7 @@ namespace CosmicShore.UI
         [SerializeField] private Button vibeButton;
 
         [Header("Tab Button Backgrounds")]
-        [Tooltip("Child BG GameObject on each tab button — enabled when selected.")]
+        [Tooltip("Child BG GameObject on each tab button - enabled when selected.")]
         [SerializeField] private GameObject generalButtonBG;
         [SerializeField] private GameObject[] abilityButtonBGs = new GameObject[4];
 
@@ -213,7 +213,8 @@ namespace CosmicShore.UI
             var progression = GameModeProgressionService.Instance;
             if (progression != null && !progression.IsVesselHangarUnlocked())
             {
-                ToastNotificationAPI.Show("Vessel Hangars LOCKED!");
+                CSDebug.Log("[Hangar] Vessel unlocks LOCKED — the hangar opens once every game-mode " +
+                            "quest in the chain is done (CC/HexRace/Joust maxed + Maelstrom unlocked).");
                 return;
             }
 
@@ -241,7 +242,7 @@ namespace CosmicShore.UI
             if (VesselUnlockSystem.TryPurchaseVessel(_currentShip))
             {
                 _analytics?.RecordVesselUnlocked(_currentShip.Name, cost, VesselUnlockSystem.GetCurrencyBalance());
-                CSDebug.Log($"Purchased vessel: {_currentShip.Name}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[HangarVesselDetailView] Purchased vessel - {_currentShip.Name}");
                 CloseUnlockPanel();
                 RefreshLockState();
             }

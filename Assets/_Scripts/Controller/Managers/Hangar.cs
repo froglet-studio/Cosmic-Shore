@@ -80,7 +80,6 @@ namespace CosmicShore.Gameplay
 
             var materialSet = _themeManagerData.TeamMaterialSets[team];
             vessel.SetShipMaterial(materialSet.ShipMaterial);
-            vessel.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
             vessel.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
             vessel.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
             vessel.SetSkimmerMaterial(materialSet.SkimmerMaterial);

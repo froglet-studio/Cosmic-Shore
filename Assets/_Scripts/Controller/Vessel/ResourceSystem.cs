@@ -126,10 +126,13 @@ namespace CosmicShore.Gameplay
 
         [Header("Elemental Recovery")]
         [Tooltip("Elements passively return to the [0,10] resting band: an overcharge above level 10 " +
-                 "drains back down to 10, and a deficit below level 0 fills back up to 0 — symmetric ends. " +
-                 "Rate is in normalized units per second (0.1 = one integer level per second). " +
-                 "Set 0 to disable the drift.")]
-        [SerializeField, Min(0f)] float elementalRecoveryRate = 0.05f;
+                 "drains back down to 10, and a deficit below level 0 fills back up to 0 - symmetric ends. " +
+                 "Rate is in normalized units per second (0.1 = one integer level per second), so the " +
+                 "shipped 0.02 is ONE LEVEL PER FIVE SECONDS: slow enough that a pilot gets to enjoy an " +
+                 "overcharge and to feel a punishment, rather than watching either evaporate. " +
+                 "Set 0 to disable the drift. NOTE four prefabs (Sparrow, Squirrel, Rhino, Dolphin) " +
+                 "SERIALIZE this field, so changing the initializer alone splits the fleet - move them too.")]
+        [SerializeField, Min(0f)] float elementalRecoveryRate = 0.02f;
 
         public delegate void ElementLevelChange(Element element, int level);
         public event ElementLevelChange OnElementLevelChange;
@@ -138,38 +141,102 @@ namespace CosmicShore.Gameplay
         const float MaxElementalLevel = 1.5f;
         const int   LevelScale = 10;
 
+        /// <summary>
+        /// ONE PETAL: one integer element level, in the normalized units this class works in.
+        /// It is the quantum of the elemental economy - one step of the HUD flower, one
+        /// <see cref="IncrementLevel"/>, and exactly one ejected crystal at world scale 1
+        /// (<c>SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain</c> is
+        /// <c>lossyScale * 0.1</c>). Named here so the transfer path, the crystal ejector and
+        /// the drain table all quote the same constant instead of three loose 0.1s.
+        /// </summary>
+        public const float PetalNormalized = 1f / LevelScale;
+
         // Passive recovery pulls each element's BASE level back into the [0,10] resting band.
         // Above the upper bound it drains down to it; below the lower bound it fills up to it;
         // inside the band the level holds so ordinary crystal progress stays stable.
-        const float RestingBandLower = 0f; // integer level 0  — deficits recover up to here
-        const float RestingBandUpper = 1f; // integer level 10 — overcharge drains down to here
+        const float RestingBandLower = 0f; // integer level 0  - deficits recover up to here
+        const float RestingBandUpper = 1f; // integer level 10 - overcharge drains down to here
 
         static readonly Element[] AllElements =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
-        // Base (persistent) levels — written by crystals, the comeback system, init, etc.
+        // Base (persistent) levels - written by crystals, the comeback system, init, etc.
         Dictionary<Element, float> ElementalLevels = new();
 
         // Temporary, decaying modifiers layered on top of the base levels.
         readonly List<ElementalEffect> _activeEffects = new();
         readonly Dictionary<Element, float> _elementModifiers = new();
+        // Comeback bonus layer — composited into the effective level WITHOUT touching the
+        // crystal-earned base. (The comeback system previously wrote the base via
+        // SetElementLevel every tick, erasing crystal progression within a second.)
+        // Single-writer: ElementalComebackSystem.
+        readonly Dictionary<Element, float> _comebackModifiers = new();
         // Last integer level emitted per element, so OnElementLevelChange only fires on real changes.
         readonly Dictionary<Element, int> _emittedLevels = new();
 
         public void InitializeElementLevels(ResourceCollection resourceGroup)
         {
+            // A re-seed is a new life for this vessel's elements, so any fraction of a petal that
+            // was knocked loose but had not yet settled dies with the old ones. Without this a
+            // vessel could carry 0.09 of a petal of accrued damage across a turn boundary and lose
+            // a whole level to the first grazing hit of the next one.
+            ClearPendingElementalLoss();
+
             ElementalLevels[Element.Charge] = resourceGroup.Charge;
             ElementalLevels[Element.Mass]   = resourceGroup.Mass;
             ElementalLevels[Element.Space]  = resourceGroup.Space;
             ElementalLevels[Element.Time]   = resourceGroup.Time;
+
+            // A (re)seed is a real level change to every subscriber (HUD flowers, ability
+            // unlock state, hull morphs), so route it through the dedup'd emit. NOTE: both
+            // historical SetResourceLevels call sites (MiniGame.SetupTurn's turn reset,
+            // Hangar's captain assignment) are currently commented out - the live initial
+            // seed is Start(). This emit exists so any revived re-seed path repaints
+            // consumers instead of leaving them stuck on the previous levels.
+            foreach (var element in AllElements)
+                EmitElementLevel(element);
         }
 
-        /// <summary>Effective level = base level + active temporary modifiers, clamped to range.</summary>
+        // THE MAINTAINED-MECHANISM LAW: no sustained/held mechanism may HOLD an element above
+        // integer level 10 (normalized 1.0). The overcharge band (10..15] is reserved for
+        // transients, and everything in it drains back to (at most) 10:
+        // - temporary effects (ApplyElementalEffect) decay to zero on their own;
+        // - crystal-earned base overcharge bleeds down via RecoverBaseLevels;
+        // - the comeback bonus fills toward the ceiling and never past it.
+        // The player always gets to FEEL a reward above 10, and the drain always restores the
+        // headroom to feel the next one.
+        //
+        // The law governs whatever sustained mechanisms EXIST. A fourth one, the domain fauna
+        // buff (living fauna hearts empowering their whole domain's vessels), was removed in
+        // Sep 2026 - it granted standing power for nothing but having fauna alive - and the law
+        // simply lost that clause. Do not rebuild it: Docs/ECOSYSTEM.md §15.
+        const float SustainedCeiling = 1.0f;
+
+        /// <summary>Effective level = base + temporary modifiers + capped comeback bonus,
+        /// clamped to range. The maintained comeback layer only fills toward
+        /// <see cref="SustainedCeiling"/> (level 10); only transients reach the 10..15 band.</summary>
         float GetEffectiveLevel(Element element)
         {
             float baseLevel = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
             float modifier  = _elementModifiers.TryGetValue(element, out var m) ? m : 0f;
-            return Mathf.Clamp(baseLevel + modifier, MinElementalLevel, MaxElementalLevel);
+            float comeback  = _comebackModifiers.TryGetValue(element, out var c) ? c : 0f;
+
+            return CompositeEffectiveLevel(baseLevel, modifier, comeback);
+        }
+
+        /// <summary>
+        /// Pure layer compositing (edit-mode tested by <c>ElementalLayerCompositingTests</c>):
+        /// temporary effects ride on top of the
+        /// persistent base (the only path into the overcharge band, together with base
+        /// overcharge); the comeback bonus fills the room below the sustained ceiling above
+        /// everything else; the result clamps to the element range.
+        /// </summary>
+        public static float CompositeEffectiveLevel(
+            float baseLevel, float tempModifier, float comebackBonus)
+        {
+            float earned = baseLevel + tempModifier;
+            float comeback = Mathf.Min(comebackBonus, Mathf.Max(0f, SustainedCeiling - earned));
+            return Mathf.Clamp(earned + comeback, MinElementalLevel, MaxElementalLevel);
         }
 
         public int GetLevel(Element element)
@@ -197,16 +264,265 @@ namespace CosmicShore.Gameplay
             EmitElementLevel(element);
         }
 
+        /********************************************************/
+        /*  THE ELEMENTAL ECONOMY: a debuff MOVES, it does not decay */
+        /********************************************************/
+
+        // A vessel-on-vessel debuff used to be a temporary modifier that decayed back to zero, so
+        // nothing was ever really lost and nothing was ever really gained. It is now a TRANSFER out
+        // of this vessel's persistent base level - stolen by the attacker, or knocked loose into the
+        // world as collectable crystals. Two rules are what make that CONSERVING rather than merely
+        // permanent, and both live here because both are facts about the victim:
+        //
+        //   1. NOTHING PARTIAL EVER LEAVES. A hit accrues against a pending pool; a petal only comes
+        //      off the base level when that pool reaches a WHOLE one. A petal is one integer level,
+        //      which is one step of the HUD flower and exactly one crystal at world scale 1 - so the
+        //      flower's step, the crystal and the loss are all the same event, and the player reads
+        //      the transfer without being told about it. The remainder stays pending and is spent by
+        //      the next hit, so ten cheap hits take exactly what one dear hit worth the same total
+        //      takes. Without this a 0.1-petal bullet would have to mint a 0.1-scale speck of a
+        //      crystal ninety times a second.
+        //
+        //   2. YOU CANNOT TAKE WHAT IS NOT THERE. The take is clamped to what the victim holds ABOVE
+        //      resting level 0, so a stripped pilot has nothing left to give and an attacker can
+        //      never be handed a petal that did not exist. This is the whole of why the economy
+        //      balances: the base band [0, 10] IS the pot, and every transfer is a move inside it.
+        //
+        // Consequence worth stating: the deficit band [-5, 0) is now reachable by TRANSIENTS ONLY -
+        // the exact mirror of the overcharge rule above, and for the same reason. A permanent loss
+        // bottoms out at empty; only a decaying effect can push a pilot below it.
+        //
+        // The immunity gate is honoured here exactly as it is in ApplyElementalEffect, so a warded
+        // pilot loses nothing AND yields nothing - which is what keeps the scoring effects that ask
+        // `requireDebuffableVictim` agreeing with what actually happened.
+        readonly Dictionary<Element, float> _pendingLoss = new();
+
+        /// <summary>
+        /// How much of <paramref name="element"/> this vessel could actually lose right now: what
+        /// its base level holds above resting level 0, in normalized units. The ceiling on any
+        /// single transfer out of it.
+        /// </summary>
+        public float TakeableLevel(Element element)
+        {
+            float held = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
+            return Mathf.Max(0f, held - RestingBandLower);
+        }
+
+        /// <summary>
+        /// Accrue <paramref name="normalizedAmount"/> of pending loss against <paramref name="element"/>
+        /// and settle it in WHOLE petals. Returns how many petals actually came loose - already
+        /// removed from this vessel's base level - so the caller can hand exactly that many to an
+        /// attacker or eject exactly that many crystals. Returns 0 when the vessel is warded against
+        /// <paramref name="source"/>, when it holds nothing left to lose, or when the accrual has not
+        /// yet reached a whole petal.
+        /// </summary>
+        public int AccrueElementalLoss(Element element, float normalizedAmount, ElementalDebuffSources source)
+        {
+            if (normalizedAmount <= 0f) return 0;
+
+            // The same gate ApplyElementalEffect's negative branch runs. A ward stops the transfer
+            // outright rather than merely softening it: no loss, no crystal, no theft.
+            if (IsImmuneTo(source)) return 0;
+
+            float takeable = TakeableLevel(element);
+            if (takeable < PetalNormalized)
+            {
+                // Nothing left to give - drop any stale remainder so it cannot be spent later
+                // against petals this vessel has since re-earned.
+                _pendingLoss.Remove(element);
+                return 0;
+            }
+
+            _pendingLoss.TryGetValue(element, out float pending);
+            pending += Mathf.Min(normalizedAmount, takeable);
+
+            // Epsilon because these amounts are sums of authored floats (0.01 x 10 is not 0.1), and
+            // a petal that lands a ULP short would otherwise never settle.
+            const float Epsilon = 1e-4f;
+            int petals = Mathf.FloorToInt((pending + Epsilon) / PetalNormalized);
+            petals = Mathf.Min(petals, Mathf.FloorToInt((takeable + Epsilon) / PetalNormalized));
+
+            if (petals <= 0)
+            {
+                _pendingLoss[element] = pending;
+                return 0;
+            }
+
+            _pendingLoss[element] = Mathf.Max(0f, pending - petals * PetalNormalized);
+            AdjustLevel(element, -petals * PetalNormalized);
+            return petals;
+        }
+
+        /// <summary>
+        /// Hands this vessel <paramref name="petals"/> whole petals of <paramref name="element"/> -
+        /// the receiving half of a steal. Deliberately NOT gated by debuff immunity: a ward stops
+        /// what is done TO a pilot, never what they take from someone else.
+        /// </summary>
+        public void GrantPetals(Element element, int petals)
+        {
+            if (petals <= 0) return;
+            AdjustLevel(element, petals * PetalNormalized);
+        }
+
+        /// <summary>Drops every un-settled fractional loss (turn reset / scene change), so a new
+        /// match cannot settle a petal accrued in the previous one.</summary>
+        public void ClearPendingElementalLoss() => _pendingLoss.Clear();
+
+        /// <summary>
+        /// Sets the comeback bonus for an element (normalized units, ≥ 0). Composites into the
+        /// effective level on top of the crystal-earned base instead of overwriting it, so
+        /// crystal progression and comeback buffs coexist. Pass 0 to remove the bonus.
+        /// Single-writer: ElementalComebackSystem.
+        /// </summary>
+        public void SetComebackModifier(Element element, float normalizedBonus)
+        {
+            normalizedBonus = Mathf.Max(0f, normalizedBonus);
+            _comebackModifiers.TryGetValue(element, out var current);
+            if (Mathf.Approximately(current, normalizedBonus)) return;
+
+            if (normalizedBonus == 0f) _comebackModifiers.Remove(element);
+            else _comebackModifiers[element] = normalizedBonus;
+            EmitElementLevel(element);
+        }
+
+        /// <summary>Clears all comeback bonuses (turn/game end).</summary>
+        public void ClearComebackModifiers()
+        {
+            if (_comebackModifiers.Count == 0) return;
+            _comebackModifiers.Clear();
+            foreach (var element in AllElements)
+                EmitElementLevel(element);
+        }
+
+        /********************************************/
+        /*  ELEMENTAL DEBUFF IMMUNITY (general)     */
+        /********************************************/
+
+        // Every buff/debuff in the game routes through ApplyElementalEffect (CLAUDE.md, Elementals
+        // fundamental), so ONE gate there is the whole of "immune to elemental debuffs". The state is
+        // deliberately vessel-agnostic and source-keyed: any system can hold it, holders cannot clear
+        // each other's grant, and nothing about it is Sparrow-, Serpent- or Dolphin-specific. The
+        // shared declarative driver is VesselElementalImmunity; read the state through
+        // IVesselStatus.IsImmuneToElementalDebuff.
+        //
+        // Scope: it blocks NEGATIVE effects only - buffs still land while immune - and it PREVENTS new
+        // debuffs rather than cleansing live ones (a cleanse would make the state a spammable purge
+        // instead of a shield; live debuffs keep decaying on their own).
+        //
+        // A grant is held against a SET OF SOURCE CLASSES (ElementalDebuffSources), not as a bare
+        // bool, because "immune to danger prisms" and "immune to an opposing pilot's weapon" are
+        // different promises and one bool cannot tell them apart. The Dolphin's Time-5 Drift Ward is
+        // the case that forced the distinction: unscoped, it also cancelled the Dolphin crystal
+        // blast, which is the entire scoring event of The Bends - a mode in which every pilot is a
+        // Dolphin. A debuff names ONE class and a grant holds a MASK; the debuff is blocked iff the
+        // two overlap, so a narrow ward can never be widened by a class added later.
+        //
+        // NOT gated: AdjustLevel. That is the persistent crystal/comeback progression writer, not the
+        // debuff channel; collecting a crystal is a player action, not something to be immune to.
+        readonly Dictionary<UnityEngine.Object, ElementalDebuffSources> _debuffImmunityGrants = new();
+
+        // Scratch list for pruning destroyed grantors without allocating during the sweep. Per
+        // instance rather than static: the sweep is re-entrancy-safe today only because nothing
+        // inside it calls out, and one list per vessel costs nothing to make that unconditional.
+        readonly List<UnityEngine.Object> _deadGrantors = new();
+
+        /// <summary>
+        /// The union of every standing grant's warded source classes — what this vessel is currently
+        /// immune to. <see cref="ElementalDebuffSources.None"/> when nothing is held. For HUD / VFX /
+        /// diagnostics; gameplay should ask <see cref="IsImmuneTo"/> about a specific class.
+        /// </summary>
+        public ElementalDebuffSources ImmuneDebuffSources
+        {
+            get
+            {
+                if (_debuffImmunityGrants.Count == 0) return ElementalDebuffSources.None;
+
+                // A destroyed grantor cannot hold immunity (safety net for a holder that never revoked).
+                _deadGrantors.Clear();
+                var union = ElementalDebuffSources.None;
+                foreach (var grant in _debuffImmunityGrants)
+                {
+                    if (!grant.Key) { _deadGrantors.Add(grant.Key); continue; }
+                    union |= grant.Value;
+                }
+                for (int i = 0; i < _deadGrantors.Count; i++)
+                    _debuffImmunityGrants.Remove(_deadGrantors[i]);
+                _deadGrantors.Clear();
+
+                return union;
+            }
+        }
+
+        /// <summary>
+        /// Does a ward covering <paramref name="wardedSources"/> stop a debuff of class
+        /// <paramref name="source"/>? The whole of the scoping rule, kept static and pure so it is
+        /// directly testable (<c>ElementalDebuffWardTests</c>) — the failure this guards against
+        /// (a ward silently covering a class it was never earned against) is invisible in play.
+        /// </summary>
+        public static bool WardStops(ElementalDebuffSources wardedSources, ElementalDebuffSources source) =>
+            (wardedSources & source) != 0;
+
+        /// <summary>
+        /// True while some system wards this vessel against <paramref name="source"/> — the one
+        /// predicate the debuff gate and every gameplay reader asks. Pass the class that is about to
+        /// land, never <see cref="ElementalDebuffSources.All"/>: with mask semantics that asks "immune
+        /// to ANY class?", which is a different (and almost never the intended) question.
+        /// </summary>
+        public bool IsImmuneTo(ElementalDebuffSources source) =>
+            WardStops(ImmuneDebuffSources, source);
+
+        /// <summary>
+        /// Raised when the union of warded sources changes, for HUD / VFX consumers. Carries the new
+        /// union — <see cref="ElementalDebuffSources.None"/> means no immunity is held.
+        /// </summary>
+        public event Action<ElementalDebuffSources> OnElementalImmunityChanged;
+
+        /// <summary>
+        /// Grant or revoke elemental-debuff immunity from ONE source. Source-keyed rather than a bare
+        /// bool so two concurrent holders (e.g. an ability and a mode) can't stomp each other; the
+        /// vessel is immune to a class while any grant covering it stands. Pass the granting component
+        /// as <paramref name="source"/> and revoke it in that component's OnDisable/OnDestroy.
+        /// <para><paramref name="wardedSources"/> is what the grant wards against. It defaults to
+        /// <see cref="ElementalDebuffSources.All"/> so an unqualified grant means what it always
+        /// did — narrow it to promise less.</para>
+        /// </summary>
+        public void SetElementalDebuffImmunity(UnityEngine.Object source, bool immune,
+            ElementalDebuffSources wardedSources = ElementalDebuffSources.All)
+        {
+            if (!source) return;
+
+            var was = ImmuneDebuffSources;
+
+            if (immune && wardedSources != ElementalDebuffSources.None)
+                _debuffImmunityGrants[source] = wardedSources;
+            else
+                _debuffImmunityGrants.Remove(source);
+
+            var now = ImmuneDebuffSources;
+            if (now != was)
+                OnElementalImmunityChanged?.Invoke(now);
+        }
+
         /// <summary>
         /// Standardized elemental buff/debuff. Positive <paramref name="magnitude"/> buffs the
-        /// element, negative debuffs it — the two are fully symmetric.
+        /// element, negative debuffs it - the two are fully symmetric.
         /// <para><paramref name="duration"/> &gt; 0 → temporary: applied as a modifier that decays
         /// linearly back to zero over <paramref name="duration"/> seconds, leaving the base level
         /// untouched so persistent progress (crystals, comeback, etc.) is preserved.</para>
         /// <para><paramref name="duration"/> &lt;= 0 → permanent: added straight to the base level.</para>
+        /// <para>Negative magnitudes are dropped entirely while this vessel is warded against
+        /// <paramref name="source"/> - see the immunity block above. <paramref name="source"/> names
+        /// WHAT is applying the debuff so a narrow ward (the Dolphin's danger-prism-only Drift Ward)
+        /// can be told from a total one; leaving it unnamed lands in
+        /// <see cref="ElementalDebuffSources.Other"/>, which only a ward covering everything blocks.
+        /// It is ignored for buffs.</para>
         /// </summary>
-        public void ApplyElementalEffect(Element element, float magnitude, float duration)
+        public void ApplyElementalEffect(Element element, float magnitude, float duration,
+            ElementalDebuffSources source = ElementalDebuffSources.Other)
         {
+            // The one gate for the general elemental-debuff immunity state. Buffs are unaffected.
+            if (magnitude < 0f && IsImmuneTo(source)) return;
+
             if (duration <= 0f)
             {
                 AdjustLevel(element, magnitude);
@@ -226,7 +542,7 @@ namespace CosmicShore.Gameplay
         // Passively pulls each element's persistent base level back toward the [0,10] resting band.
         // Symmetric with the temporary-effect decay: an overcharge above level 10 bleeds back down to
         // 10, and a deficit below level 0 fills back up to 0, both at elementalRecoveryRate per second.
-        // Levels already inside the band are left untouched, so ordinary progress is stable — this only
+        // Levels already inside the band are left untouched, so ordinary progress is stable - this only
         // removes the excess so parking at the level-15 cap yields no lasting benefit over level 10.
         void RecoverBaseLevels(float dt)
         {
@@ -236,7 +552,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < AllElements.Length; i++)
             {
                 var element = AllElements[i];
-                // A live test-harness override pins the level — don't fight it.
+                // A live test-harness override pins the level - don't fight it.
                 if (HarnessValueFor(element) != 0f) continue;
                 if (!ElementalLevels.TryGetValue(element, out var baseLevel)) continue;
 

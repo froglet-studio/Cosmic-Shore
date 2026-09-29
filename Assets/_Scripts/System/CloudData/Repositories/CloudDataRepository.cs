@@ -7,7 +7,7 @@ namespace CosmicShore.Core
 {
     /// <summary>
     /// Base repository with debounced save logic.
-    /// Open/Closed: derive a new repository per data domain — no modifications needed here.
+    /// Open/Closed: derive a new repository per data domain - no modifications needed here.
     /// Single Responsibility: handles only load/save lifecycle and debouncing.
     /// Liskov Substitution: any derived repository can substitute for this base.
     /// </summary>
@@ -23,6 +23,14 @@ namespace CosmicShore.Core
 
         public T Data => _data;
         public bool IsLoaded { get; private set; }
+
+        /// <summary>
+        /// True when <see cref="Data"/> came from the cloud or the local last-known-good snapshot -
+        /// i.e. somebody once SAVED it. False while it is the fresh <c>new T()</c> default a missing
+        /// key falls back to. Consumers that merge cloud state over local state (GameSetting) need
+        /// the distinction: a default nobody wrote must never overwrite a value the player chose.
+        /// </summary>
+        public bool HasPersistedData { get; private set; }
         public bool IsDirty => _dirty;
         public abstract string CloudKey { get; }
         public event Action OnDataChanged;
@@ -40,7 +48,26 @@ namespace CosmicShore.Core
             if (cloudData != null)
             {
                 _data = cloudData;
+                HasPersistedData = true;
                 OnAfterLoad(_data);
+
+                // Refresh the last-known-good local snapshot so the NEXT launch can
+                // restore this key even with no network (Steam offline mode).
+                LocalCloudDataCache.Save(CloudKey, _data);
+            }
+            else
+            {
+                // Cloud unavailable (offline / not signed in) or key missing - fall back
+                // to the last-known-good local snapshot so the player still gets their
+                // profile, unlocks, episodes and settings. Cloud always wins when it
+                // answers; this branch only runs when it did not.
+                var cached = LocalCloudDataCache.TryLoad<T>(CloudKey);
+                if (cached != null)
+                {
+                    _data = cached;
+                    HasPersistedData = true;
+                    OnAfterLoad(_data);
+                }
             }
 
             IsLoaded = true;
@@ -56,6 +83,12 @@ namespace CosmicShore.Core
 
         public async Task<bool> SaveAsync(CancellationToken ct = default)
         {
+            // Mirror to the local snapshot FIRST, unconditionally - a save that fails
+            // upstream (offline) still lands on disk, so progress made this session
+            // survives a quit and is readable on the next offline launch.
+            LocalCloudDataCache.Save(CloudKey, _data);
+            HasPersistedData = true;
+
             return await _provider.SaveAsync(CloudKey, _data, ct);
         }
 
@@ -97,7 +130,7 @@ namespace CosmicShore.Core
                     {
                         // Provider already retried with backoff. Keep the data dirty so
                         // the finally-reloop, the next mutation, network recovery, or an
-                        // app-pause flush retries it — never drop a pending change.
+                        // app-pause flush retries it - never drop a pending change.
                         _dirty = true;
                         break;
                     }

@@ -7,13 +7,13 @@ using System.Linq;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Spawns prisms along the edges of a geodesic polyhedron — a spherene.
+    /// Spawns prisms along the edges of a geodesic polyhedron - a spherene.
     ///
     /// Starting from an icosahedron (20 triangles, 12 vertices), each triangle is
     /// recursively subdivided and projected onto the sphere. Blocks are placed along
     /// every edge, creating a cage-like lattice with icosahedral symmetry.
     ///
-    /// The result looks like a Buckminster Fuller dome — or a fullerene / carbon
+    /// The result looks like a Buckminster Fuller dome - or a fullerene / carbon
     /// nanotube end-cap. At subdivision 0 it's a clean icosahedron with 30 edges;
     /// at subdivision 2 it's 320 edges forming a dense geodesic sphere.
     ///

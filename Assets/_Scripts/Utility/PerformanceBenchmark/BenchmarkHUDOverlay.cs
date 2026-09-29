@@ -8,7 +8,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 {
     /// <summary>
     /// Lightweight on-screen performance overlay (FPS / frame time / CPU-GPU split + bound
-    /// verdict / draw calls / GC / memory / gameplay load). Independent of a benchmark run —
+    /// verdict / draw calls / GC / memory / gameplay load). Independent of a benchmark run -
     /// drop it on any GameObject (e.g. a DontDestroyOnLoad bootstrap object) to eyeball
     /// regressions live.
     ///
@@ -27,7 +27,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         [Tooltip("How often the on-screen text is rebuilt, in seconds.")]
         [SerializeField, Range(0.1f, 2f)] private float refreshInterval = 0.25f;
 
-        [Tooltip("Optional GameDataSO — when assigned, vessel/player counts are shown.")]
+        [Tooltip("Optional GameDataSO - when assigned, vessel/player counts are shown.")]
         [SerializeField] private GameDataSO gameData;
 
         [SerializeField] private bool showGameLoad = true;

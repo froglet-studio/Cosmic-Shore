@@ -9,7 +9,7 @@ using System.Linq;
 namespace CosmicShore.Gameplay
 {
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Pack = 1)]
-    public struct Entity
+    public struct BoidEntity
     {
         public int type;
         public Vector3 position;
@@ -41,8 +41,8 @@ namespace CosmicShore.Gameplay
 
         private ComputeBuffer readBuffer;
         private ComputeBuffer writeBuffer;
-        public List<Entity> entities = new List<Entity>();
-        private Entity[] entityArray;
+        public List<BoidEntity> entities = new List<BoidEntity>();
+        private BoidEntity[] entityArray;
         private Prism[] boids; // Array to keep track of boid game objects
 
         int kernel;
@@ -67,15 +67,14 @@ namespace CosmicShore.Gameplay
             {
                 if (!block.CompareTag("FaunaPrefab")) // Assuming "FaunaPrefab" is the tag for boid trail blocks
                 {
-                    Entity blockEntity = new Entity
+                    BoidEntity blockEntity = new BoidEntity
                     {
-                        type = Entity.ENTITY_TYPE_BLOCK,
+                        type = BoidEntity.ENTITY_TYPE_BLOCK,
                         position = block.transform.position,
                         velocity = Vector3.zero, // Trail blocks don't move on their own
                         goalDirection = Vector3.zero,
                         team = (int)block.Domain
                     };
-                    CSDebug.Log($"team {(int)block.Domain}");
 
                     // Add blockEntity to the entities list
                     entities.Add(blockEntity);
@@ -86,7 +85,7 @@ namespace CosmicShore.Gameplay
 
         private void InitializeEntities()
         {
-            entities = new List<Entity>(numberOfBoids);
+            entities = new List<BoidEntity>(numberOfBoids);
 
             boids = new Prism[numberOfBoids]; // Initialize the boids array
 
@@ -94,16 +93,15 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < numberOfBoids; i++)
             {
                 Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
-                CSDebug.Log("Instantiating boid number: " + i);
                 Prism newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
                 newBoid.transform.SetParent(transform);
                 newBoid.Initialize();
 
                 boids[i] = newBoid; // Store the boid game object reference
 
-                Entity newEntity = new Entity
+                BoidEntity newEntity = new BoidEntity
                 {
-                    type = Entity.ENTITY_TYPE_BOID,
+                    type = BoidEntity.ENTITY_TYPE_BOID,
                     position = spawnPosition,
                     velocity = newBoid.transform.forward,
                     goalDirection = globalGoal.position - spawnPosition,
@@ -140,14 +138,14 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < entityArray.Length; i++)
             {
-                Entity entity = entityArray[i];
+                BoidEntity entity = entityArray[i];
 
                 if (entity.position == new Vector3(9999.0f, 9999.0f, 9999.0f))
                 {
                     CSDebug.LogError("NaN detected by shader for entity at index: " + i);
                 }
 
-                if (entity.type == Entity.ENTITY_TYPE_BOID)
+                if (entity.type == BoidEntity.ENTITY_TYPE_BOID)
                 {
                     boids[i].transform.position = entity.position;
                     SafeLookRotation.TrySet(boids[i].transform, entity.velocity, boids[i], logError: false);
@@ -171,9 +169,9 @@ namespace CosmicShore.Gameplay
                 Vector4 currentWeights = CalculateTeamWeights();
                 for (int i = 0; i < entityArray.Length; i++)
                 {
-                    if (entityArray[i].type == Entity.ENTITY_TYPE_BOID)
+                    if (entityArray[i].type == BoidEntity.ENTITY_TYPE_BOID)
                     {
-                        Entity entity = entityArray[i];
+                        BoidEntity entity = entityArray[i];
                         entity.teamWeights = currentWeights;
                         entityArray[i] = entity;
                     }
@@ -218,7 +216,7 @@ namespace CosmicShore.Gameplay
             {
                 if (item.TryGetComponent(out Prism prism) && !item.CompareTag("FaunaPrefab"))
                 {
-                    // argmin over distance == argmin over squared distance — no sqrt needed.
+                    // argmin over distance == argmin over squared distance - no sqrt needed.
                     float sqrDistance = (position - item.transform.position).sqrMagnitude;
                     if (sqrDistance < closestDistance)
                     {
@@ -239,9 +237,9 @@ namespace CosmicShore.Gameplay
             newBoid.transform.SetParent(transform);
             newBoid.Initialize();
 
-            Entity newEntity = new Entity
+            BoidEntity newEntity = new BoidEntity
             {
-                type = Entity.ENTITY_TYPE_BOID,
+                type = BoidEntity.ENTITY_TYPE_BOID,
                 position = position,
                 velocity = direction,
                 goalDirection = globalGoal.position - position,

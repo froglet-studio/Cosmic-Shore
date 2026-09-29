@@ -4,8 +4,8 @@ using CosmicShore.Core;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Utility;
 using System;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -31,7 +31,6 @@ namespace CosmicShore.Gameplay
 
         private bool _explosionNullified;
         private Coroutine _explodeRoutine;
-        Material _tempMaterial;
 
         private void Start()
         {
@@ -78,13 +77,14 @@ namespace CosmicShore.Gameplay
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.MineExplode, transform.position);
             foreach (var modelData in mineModels)
             {
-                _tempMaterial = new Material(modelData.explodingMaterial);
-                var spentCrystal = Instantiate(SpentMinePrefab);
-                spentCrystal.transform.SetPositionAndRotation(transform.position, transform.rotation);
-                spentCrystal.GetComponent<Renderer>().material = _tempMaterial;
-                spentCrystal.transform.localScale = transform.lossyScale;
+                // Impact assigns the shared exploding material and animates its
+                // shader state via MaterialPropertyBlock — no per-explosion clone.
+                var impact = SpentCrystalPoolManager.GetPooledOrInstantiate(
+                    SpentMinePrefab, transform.position, transform.rotation);
+                if (!impact) continue;
 
-                spentCrystal.GetComponent<Impact>()?.HandleImpact(velocity, _tempMaterial, "");
+                impact.transform.localScale = transform.lossyScale;
+                impact.HandleImpact(velocity, modelData.explodingMaterial, "");
             }
             // Invoke(nameof(DestroyMine));
             DestroyMine();
@@ -92,7 +92,6 @@ namespace CosmicShore.Gameplay
 
         private void DestroyMine()
         {
-            CSDebug.Log("Mine Exploding");
             Destroy(gameObject);
         }
     }

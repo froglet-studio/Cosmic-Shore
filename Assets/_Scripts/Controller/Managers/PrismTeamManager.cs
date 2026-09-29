@@ -3,6 +3,7 @@ using System;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     public class PrismTeamManager : MonoBehaviour
@@ -51,6 +52,21 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        public void ResetToNeutralForReuse()
+        {
+            if (!prism) prism = GetComponent<Prism>();
+            if (!materialAnimator) materialAnimator = GetComponent<MaterialPropertyAnimator>();
+
+            currentDomain = Domains.Blue;
+
+            if (!TryResolveMaterials(Domains.Blue, out var trans, out var opaque))
+            {
+                CSDebug.LogError("No Blue materials for environment-pool reuse", this);
+                return;
+            }
+            materialAnimator.BindMaterialsImmediate(trans, opaque);
+        }
+
         public void ChangeTeam(Domains newDomain)
         {
             if (Domain != newDomain)
@@ -77,54 +93,64 @@ namespace CosmicShore.Gameplay
 
             playerName ??= "No name";
 
-            // TODO - Raise events about steal.
-                
-            onPrismStolen.Raise(
-                new PrismStats
-                {
-                    OwnName = playerName,
-                    Volume = prism.Volume,
-                    AttackerName = prism.PlayerName
-                });
-
-            /*if (CellControlManager.Instance)
+            // Capture the payload BEFORE the flip (AttackerName is the PREVIOUS owner), but
+            // RAISE it after: the raise runs its listeners inline, so a throwing listener - or
+            // an unwired event slot on a prism variant - used to abort the steal itself, and
+            // the caller's whole effect chain with it (the Urchin's chain volley runs AFTER the
+            // steal in the same effect list). The steal is gameplay; the event is reporting.
+            // Reporting must never be able to veto gameplay.
+            var stolenStats = new PrismStats
             {
-                CellControlManager.Instance.StealBlock(newDomain, prism.prismProperties);
-            }*/
+                OwnName = playerName,
+                Volume = prism.Volume,
+                AttackerName = prism.PlayerName
+            };
 
             ChangeTeam(newDomain);
+
+            onPrismStolen.Raise(stolenStats);
         }
 
         private void HandleTeamChange(Domains oldDomain, Domains newDomain)
         {
-            if (prism.prismProperties.IsDangerous)
+            if (!TryResolveMaterials(newDomain, out var trans, out var opaque))
             {
-                materialAnimator.UpdateMaterial(
-                    _themeManagerData.GetTeamTransparentDangerousBlockMaterial(newDomain),
-                    _themeManagerData.GetTeamDangerousBlockMaterial(newDomain)
-                );
+                CSDebug.LogError($"No materials found for team {newDomain}", this);
+                return;
             }
-            else if (prism.prismProperties.IsShielded)
+            materialAnimator.UpdateMaterial(trans, opaque);
+        }
+
+        bool TryResolveMaterials(Domains domain, out Material transparent, out Material opaque)
+        {
+            transparent = null;
+            opaque = null;
+            if (!_themeManagerData) return false;
+            if (!prism) prism = GetComponent<Prism>();
+            if (!prism || prism.prismProperties == null) return false;
+
+            var props = prism.prismProperties;
+            if (props.IsDangerous)
             {
-                materialAnimator.UpdateMaterial(
-                    _themeManagerData.GetTeamTransparentShieldedBlockMaterial(newDomain),
-                    _themeManagerData.GetTeamShieldedBlockMaterial(newDomain)
-                );
+                transparent = _themeManagerData.GetTeamTransparentDangerousBlockMaterial(domain);
+                opaque = _themeManagerData.GetTeamDangerousBlockMaterial(domain);
             }
-            else if (prism.prismProperties.IsSuperShielded)
+            else if (props.IsShielded)
             {
-                materialAnimator.UpdateMaterial(
-                    _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(newDomain),
-                    _themeManagerData.GetTeamSuperShieldedBlockMaterial(newDomain)
-                );  
+                transparent = _themeManagerData.GetTeamTransparentShieldedBlockMaterial(domain);
+                opaque = _themeManagerData.GetTeamShieldedBlockMaterial(domain);
+            }
+            else if (props.IsSuperShielded)
+            {
+                transparent = _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(domain);
+                opaque = _themeManagerData.GetTeamSuperShieldedBlockMaterial(domain);
             }
             else
             {
-                materialAnimator.UpdateMaterial(
-                    _themeManagerData.GetTeamTransparentBlockMaterial(newDomain),
-                    _themeManagerData.GetTeamBlockMaterial(newDomain)
-                );
+                transparent = _themeManagerData.GetTeamTransparentBlockMaterial(domain);
+                opaque = _themeManagerData.GetTeamBlockMaterial(domain);
             }
+            return transparent != null && opaque != null;
         }
     }
 }

@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Butterfly
+  m_EditorClassIdentifier:
+  vesselClass: 13
+  entries:
+  - Element: 1
+    AbilityLabel: Scale Dust
+    AbilityDescription: 'DUST MODE (RT). The dust is ONE capsule hanging below the hull, live and drawn as falling motes only while the right trigger has switched the Butterfly into Dust mode. An opposing pilot it touches takes an all-element decaying debuff whose BITE is Charge (VesselElementalDebuffBySkimmerEffect, biteScale 0.5x at rest -> 2x at level 10, classed VesselContact so an arena ward cannot cancel it). An opposing lifeform''s heart it reaches is killed (the wither); an ALLY lifeform is refreshed instead (Nourish - its starvation clock and breeding counter, never its size).'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Monarch
+    UpgradeDescription: 'The dust bites twice as deep.'
+  - Element: 2
+    AbilityLabel: Mass / Dust Mode
+    AbilityDescription: 'RIGHT TRIGGER toggles the Butterfly between two modes. MASS mode (the default) lays a WIDE wake: the trail prism widens to 5x at Mass 0 rising to 20x at Mass 15 (SpreadWingsActionSO.massModeWidth, eased over ~1.5s so a stroke reads as a stroke), and the dust is off. DUST mode narrows the wake back to a line of keys and switches the dust capsule on. Mass is the WIDTH of what you paint; the old per-prism trailVolume scaling is off on this hull so the two are not one number counted twice.'
+    Input: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Gilded Wake
+    UpgradeDescription: 'Mass mode lays SHIELDED prisms.'
+  - Element: 3
+    AbilityLabel: Dust Reach
+    AbilityDescription: 'The dust capsule''s LENGTH is Space (the skimmer''s Space-scaled Scale, elongated along the capsule axis only). What the dust does to MASS: an OWN-domain prism grows along a random axis, or turns DANGEROUS, or turns SHIELDED; an OPPOSING prism is destroyed, shrunk, or stolen. Each prism''s outcome is a deterministic roll of that prism, so every peer agrees.'
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Diamond Dust
+    UpgradeDescription: 'Dust on your own PLAIN mass occasionally raises a SUPER-SHIELD.'
+  - Element: 4
+    AbilityLabel: Fold
+    AbilityDescription: 'HOLD. The vessel stops and a ghost of it reaches out along the heading you arrived on; letting go puts you there. Pitch and yaw are dead for the duration, so a fold cannot be aimed once begun - earning the line BEFORE the press is the whole decision. Every fold leaves a pair of gates standing that your domain can thread. Time''s dial is the RECHARGE.'
+    Input: 2
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Far Fold
+    UpgradeDescription: 'The fold reaches twice as far.'

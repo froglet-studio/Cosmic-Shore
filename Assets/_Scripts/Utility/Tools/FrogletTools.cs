@@ -37,10 +37,6 @@ namespace CosmicShore.Utility
         static void LegacyRecordingStudio() =>
             EditorSceneManager.OpenScene("Assets/_Scenes/Tools/Recording Studio.unity", OpenSceneMode.Single);
 
-        [MenuItem("FrogletTools/Legacy/PlayFabSandbox", false, 203)]
-        static void LegacyPlayFabSandbox() =>
-            EditorSceneManager.OpenScene("Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity", OpenSceneMode.Single);
-
         static void PersistLogPrefs()
         {
             EditorPrefs.SetBool("CSDebug_LogEnabled", CSDebug.LogEnabled);
@@ -74,7 +70,7 @@ namespace CosmicShore.Utility
 
             var go = new GameObject("[AOEBenchmarkRunner]");
             go.AddComponent<AOEBenchmarkRunner>();
-            Debug.Log("[FrogletTools] AOE Benchmark started — check Console for results.");
+            Debug.Log("[FrogletTools] AOE Benchmark started - check Console for results.");
         }
     }
 }

@@ -5,6 +5,11 @@ using System.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
+
+// The options types live in Unity.Services.CloudSave.Models.Data.Player and are aliased per type
+// rather than imported wholesale, because that namespace's members collide with the deprecated
+// top-level ones (CS0104) - the same convention, for the same reason, as DisplayNameRegistry.cs.
+using PlayerDeleteOptions = Unity.Services.CloudSave.Models.Data.Player.DeleteOptions;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Newtonsoft.Json;
@@ -29,6 +34,15 @@ namespace CosmicShore.Core
         /// across background retry cycles in between.
         /// </summary>
         static readonly HashSet<string> _failedKeys = new();
+
+        // A key failing at play exit must not suppress the next session's first failure toast;
+        // AnalyticsServiceFacade's constructor subscription to OnSaveFailed has no matching -=.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _failedKeys.Clear();
+            OnSaveFailed = null;
+        }
 
         /// <summary>
         /// Raised once when a key's save exhausts all retries while the provider is
@@ -58,14 +72,23 @@ namespace CosmicShore.Core
         {
             if (!IsAvailable)
             {
-                Debug.LogWarning($"[UGSCloudSaveProvider] Cannot load '{key}' — not available.");
+                Debug.LogWarning($"[UGSCloudSaveProvider] Cannot load '{key}' - not available.");
                 return null;
             }
 
             try
             {
                 var keys = new HashSet<string> { key };
-                var result = await CloudSaveService.Instance.Data.Player.LoadAsync(keys);
+                // .AsMainThread() - Docs/THREADING.md. Without it this continuation, and
+                // therefore EVERYTHING awaiting the load above it, resumes on the ThreadPool.
+                // `UGSDataService.InitializeAsync` then runs `SyncHangarToVessels()` there, which
+                // touches SO_Vessel assets and throws EnsureRunningOnMainThread - so the boot
+                // never sets IsInitialized and the auth scene waits forever.
+                //
+                // It hid because a load that answers from a warm cache can complete synchronously
+                // and stay on the calling thread: the bug only shows on a FRESH sign-in with no
+                // cached data, which is exactly "I cleared PlayerPrefs and now it hangs".
+                var result = await CloudSaveService.Instance.Data.Player.LoadAsync(keys).AsMainThread();
 
                 if (result.TryGetValue(key, out var item))
                 {
@@ -78,7 +101,7 @@ namespace CosmicShore.Core
                     catch
                     {
                         // Fallback: a value stored as a JSON string (legacy JsonUtility writes).
-                        // Use Newtonsoft, NOT JsonUtility — JsonUtility silently drops
+                        // Use Newtonsoft, NOT JsonUtility - JsonUtility silently drops
                         // Dictionary<,> fields, which would wipe stats/progression on re-save.
                         var json = item.Value.GetAs<string>();
                         if (!string.IsNullOrEmpty(json))
@@ -94,11 +117,56 @@ namespace CosmicShore.Core
             return null;
         }
 
+        /// <summary>
+        /// Deletes one key from this player's cloud save.
+        ///
+        /// <para>A key that is not there is a SUCCESS, not a failure - "make this gone" and "this
+        /// was already gone" are the same outcome to the caller, and reporting the second as an
+        /// error would make a full wipe complain about every key the player happened never to have
+        /// written. The SDK throws for a missing key rather than returning a flag, which is why
+        /// this catches rather than checks.</para>
+        ///
+        /// <para>No retry loop, unlike <see cref="SaveAsync"/>: a save is debounced gameplay
+        /// progress that must survive a blip, while a delete is a deliberate one-off a human is
+        /// watching. Failing loudly and letting them press it again is better than a silent
+        /// backoff that hides which keys actually went.</para>
+        /// </summary>
+        public async Task<bool> DeleteAsync(string key, CancellationToken ct = default)
+        {
+            if (!IsAvailable) return false;
+
+            try
+            {
+                // The options argument is passed EXPLICITLY. Omitting it does not select an
+                // option-less overload - it binds to the deprecated
+                // DeleteAsync(string, Unity.Services.CloudSave.DeleteOptions) through that
+                // overload's default argument, which is where the CS0618 came from.
+                await CloudSaveService.Instance.Data.Player
+                    .DeleteAsync(key, new PlayerDeleteOptions()).AsMainThread();
+                ct.ThrowIfCancellationRequested();
+                _failedKeys.Remove(key);
+                return true;
+            }
+            catch (OperationCanceledException) { return false; }
+            catch (CloudSaveException e) when (e.Reason == CloudSaveExceptionReason.NotFound)
+            {
+                // Never existed - the caller wanted it gone, and it is. The PUBLIC exception with
+                // its typed Reason, not the internal HTTP one: an internal type is not part of the
+                // package's contract and can be renamed by a patch release.
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[UGSCloudSaveProvider] Delete '{key}' failed: {e.Message}");
+                return false;
+            }
+        }
+
         public async Task<bool> SaveAsync<T>(string key, T data, CancellationToken ct = default) where T : class
         {
             if (!IsAvailable)
             {
-                // Offline / not signed in — expected. Stay silent; the repository keeps
+                // Offline / not signed in - expected. Stay silent; the repository keeps
                 // the data dirty and the debounce loop retries once we reconnect.
                 return false;
             }
@@ -117,12 +185,12 @@ namespace CosmicShore.Core
 
                 try
                 {
-                    await CloudSaveService.Instance.Data.Player.SaveAsync(payload);
+                    await CloudSaveService.Instance.Data.Player.SaveAsync(payload).AsMainThread();
 
                     if (alreadyFailing)
                     {
                         _failedKeys.Remove(key);
-                        Debug.Log($"[UGSCloudSaveProvider] Save '{key}' recovered.");
+                        CSDebug.LogVerbose(CSLogChannel.CloudData, $"[UGSCloudSaveProvider] Save '{key}' recovered.");
                     }
                     return true;
                 }
@@ -139,7 +207,7 @@ namespace CosmicShore.Core
             if (!alreadyFailing)
             {
                 _failedKeys.Add(key);
-                // Toast + analytics touch Unity/SOAP state — marshal to main thread.
+                // Toast + analytics touch Unity/SOAP state - marshal to main thread.
                 await MainThreadDispatcher.SwitchToMainThreadAsync();
                 Debug.LogError($"[UGSCloudSaveProvider] Save '{key}' failed after {RetryBackoffMs.Length + 1} attempts: {last?.Message}");
                 ToastNotificationAPI.Show($"Failed to save data: {last?.Message}");

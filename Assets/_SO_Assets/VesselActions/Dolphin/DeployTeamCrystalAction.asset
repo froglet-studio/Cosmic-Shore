@@ -11,10 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cdeee81af29d430c84a1ff518c94f971, type: 3}
   m_Name: DeployTeamCrystalAction
-  m_EditorClassIdentifier: 
-  forwardOffset: 150
-  fadeValue: 0.5
-  rayMask:
-    serializedVersion: 2
-    m_Bits: 0
+  m_EditorClassIdentifier:
   cooldown: 30
+  minCooldown: 4
+  bandInnerFraction: 0.1
+  bandOuterFraction: 0.9
+  cellessSeedRadius: 600
+  maxLiveSeeded: 8
+  cooldownMultiplierAtFullMass: 0.5
+  minCooldownMultiplier: 0.35

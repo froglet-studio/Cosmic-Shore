@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
+  m_Name: Hesperides Tendril Flora Config Data
+  m_EditorClassIdentifier:
+  FloraPrefab: {fileID: 7514956980722975813, guid: 6a74ca1c30e05f9e311977a264ec5a55, type: 3}
+  SpawnProbability: 1
+  InitialSpawnCount: 20
+  OverrideDefaultPlantPeriod: 1
+  NewPlantPeriod: 9
+  PopulationSize: 20
+  MaxLivePopulation: 30
+  GrowthPerOffspring: 50
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 60
+  PreferredSites: 2
+  Element: 2
+  Variant:
+    Enabled: 1
+    LeafSize: {x: 2.97, y: 7.29, z: 1.1}
+    GrowPeriod: 0.91
+    ShieldPeriod: 0.0
+    MaxTotalSpawnedObjects: 144
+    PlantRadiusCellFraction: 0.5
+  SpreadElements: 1
+  ElementPalette:
+  - {fileID: 11400000, guid: 5b64944b81691f465735bd0a969e4d3a, type: 2}
+  - {fileID: 11400000, guid: a3180b4a6df35fe482db094cd9418b6b, type: 2}
+  - {fileID: 11400000, guid: c408a1b8caed658f2d12c55d7bb235a7, type: 2}
+  - {fileID: 11400000, guid: 000b83422a748f6434eaeeecc2be7400, type: 2}

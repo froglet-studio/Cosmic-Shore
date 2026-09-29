@@ -10,7 +10,7 @@ namespace CosmicShore.Gameplay
     /// <see cref="DataAccessor"/> in persistentDataPath, loaded lazily, saved on every change.
     ///
     /// Progress is stroke-granular and strictly ordered (strokes are flown in author order), so an
-    /// entry is just "how many strokes are done" plus the stroke count it was saved against — if a
+    /// entry is just "how many strokes are done" plus the stroke count it was saved against - if a
     /// painting's stroke list changes across builds, its progress resets rather than mis-mapping.
     /// Note the painted prisms themselves live only as long as the scene; after a restart the
     /// completed strokes render as "done" ghost lines and the credit is kept.
@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
         {
             if (string.IsNullOrEmpty(paintingId)) return 0;
             if (!Data.paintings.TryGetValue(paintingId, out var e) || e == null) return 0;
-            if (e.totalStrokes != totalStrokes) return 0; // painting changed across builds — start over
+            if (e.totalStrokes != totalStrokes) return 0; // painting changed across builds - start over
             return Math.Clamp(e.strokesCompleted, 0, totalStrokes);
         }
 

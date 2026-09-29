@@ -17,11 +17,14 @@ namespace CosmicShore.UI
         [SerializeField] private Image countdownDisplay;
         [SerializeField] private Button readyButton;
         [SerializeField] private GameObject pip;
-        [SerializeField] private GameObject silhouette;
-        [SerializeField] private GameObject trailDisplay;
         [SerializeField] private CanvasGroup connectingPanelCanvasGroup;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private TMP_Text lifeFormCounter;
+
+        [Header("Objective")]
+        [Tooltip("Top-left goal stack - the mode's objective, named, with its target. Optional: " +
+                 "a HUD without one keeps writing roundTimeDisplay and nothing changes.")]
+        [SerializeField] private GoalStack goalStack;
 
         [Header("Connecting Panel")]
         [SerializeField] private ConnectingPanel connectingPanel;
@@ -36,6 +39,15 @@ namespace CosmicShore.UI
 
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
+
+        [Header("Style (optional)")]
+        // Wiring proof only (Docs/STYLE_FOUNDATION.md §11). Nothing reads this yet: the literals
+        // in this file and its siblings are still literals, and swapping them for tokens is a
+        // separate, reviewed pass. Read it through UITheme.Resolve/Spacing/StaggerFor, which
+        // fall back to the authored §11 values when this reference is empty.
+        [SerializeField] private UIThemeSO theme;
+
+        public UIThemeSO Theme => theme;
 
         public Transform PlayerScoreContainer => playerScoreContainer;
         public PlayerScoreEntry PlayerScoreEntryPrefab => playerScoreEntryPrefab;
@@ -59,7 +71,17 @@ namespace CosmicShore.UI
         }
 
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
-        public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
+        public GoalStack GoalStack => goalStack;
+
+        // Misnamed since long before the goal stack: every turn monitor raises this with the
+        // metric REMAINING, not a time - only the six TimeBasedTurnMonitor scenes send a clock.
+        // roundTimeDisplay is kept and still written (its ring is switched off, not deleted) so
+        // the reference stays valid and a HUD wired the old way is unaffected.
+        public void UpdateCountdownTimer(string message)
+        {
+            if (roundTimeDisplay) roundTimeDisplay.text = message;
+            if (goalStack) goalStack.SetMonitorPayload(message);
+        }
         public void UpdateLifeFormCounter(string message) 
         {
             if (lifeFormCounter)
@@ -181,8 +203,6 @@ namespace CosmicShore.UI
         public TMP_Text RightNumberDisplay => rightNumberDisplay;
         public Button ReadyButton => readyButton;
         public GameObject Pip => pip;
-        public GameObject Silhouette => silhouette;
-        public GameObject TrailDisplay => trailDisplay;
 
         private void OnDestroy()
         {

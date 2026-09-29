@@ -36,7 +36,7 @@ namespace CosmicShore.UI
         [SerializeField] private SO_ProfileIconList profileIcons;
 
         [Header("Timing")]
-        [Tooltip("Seconds the bottom-left popup stays before it auto-HIDES. Hiding does NOT decline — " +
+        [Tooltip("Seconds the bottom-left popup stays before it auto-HIDES. Hiding does NOT decline - " +
                  "the invite remains in the FriendsListPanel Requests list, and the host's pending " +
                  "invite clears on its own outgoing-invite timeout.")]
         [SerializeField] private float autoHideSeconds = 3f;
@@ -58,7 +58,7 @@ namespace CosmicShore.UI
             if (canvasGroup == null)
                 canvasGroup = GetComponent<CanvasGroup>();
 
-            // Start visually hidden — the GO must stay active so OnEnable
+            // Start visually hidden - the GO must stay active so OnEnable
             // can subscribe to the OnInviteReceived SOAP event.
             ShowPanel(false);
 
@@ -68,15 +68,11 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            DebugExtensions.LogColored(
-                "[INVITE-UI] PartyInviteNotificationPanel.OnEnable — subscribing to OnInviteReceived",
-                Color.magenta);
             if (connectionData?.OnInviteReceived != null)
                 connectionData.OnInviteReceived.OnRaised += OnInviteReceived;
             else
-                DebugExtensions.LogErrorColored(
-                    "[INVITE-UI] connectionData or OnInviteReceived is NULL — cannot subscribe!",
-                    Color.red);
+                CSDebug.LogError(
+                    "[INVITE-UI] connectionData or OnInviteReceived is NULL - cannot subscribe");
 
             // Also dismiss the popup if the same invite is resolved from a
             // different panel (e.g. FriendsListPanel Accept/Decline buttons).
@@ -118,9 +114,9 @@ namespace CosmicShore.UI
             _timer += Time.unscaledDeltaTime;
             if (_timer >= autoHideSeconds)
             {
-                // Auto-HIDE only — do NOT decline. The invite stays in the FriendsListPanel
+                // Auto-HIDE only - do NOT decline. The invite stays in the FriendsListPanel
                 // Requests list for its own lifetime; the host's pending clears via its timeout.
-                // (A newer invite would have already replaced _pendingInvite + reset the timer —
+                // (A newer invite would have already replaced _pendingInvite + reset the timer -
                 // latest-wins is inherent in OnInviteReceived.)
                 _pendingInvite = null;
                 _timer = 0f;
@@ -140,10 +136,9 @@ namespace CosmicShore.UI
 
         private void OnInviteReceived(PartyInviteData invite)
         {
-            DebugExtensions.LogColored(
-                $"[INVITE-UI] OnInviteReceived! From: {invite.HostDisplayName}, " +
-                $"SessionId: {invite.PartySessionId}",
-                Color.green);
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[INVITE-UI] OnInviteReceived from {invite.HostDisplayName}, " +
+                $"SessionId: {invite.PartySessionId}");
 
             _pendingInvite = invite;
             _timer = 0f;
@@ -215,7 +210,7 @@ namespace CosmicShore.UI
             }
             else
             {
-                Debug.LogWarning("[PartyInviteNotificationPanel] PartyInviteController not available.");
+                CSDebug.LogWarning("[PartyInviteNotificationPanel] PartyInviteController not available.");
                 ShowPanel(false);
             }
         }

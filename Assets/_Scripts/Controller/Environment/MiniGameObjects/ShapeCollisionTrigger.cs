@@ -4,7 +4,8 @@ using UnityEngine;
 
 /// <summary>
 /// Attached at runtime to a spawned shape container by SpawnableShapeBase.
-/// Detects vessel collision and fires ShapeSignEvents to start shape drawing mode.
+/// Detects vessel collision and fires ShapeSignEvents (no scored drawing-mode
+/// subscriber as of C15 2026-08-25; the painting toy is the live successor).
 /// Collision is disabled until SetReady(true) is called (after gradual spawn completes).
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]

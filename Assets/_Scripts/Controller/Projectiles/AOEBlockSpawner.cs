@@ -27,7 +27,9 @@ namespace CosmicShore.Gameplay
                     var rotation = Quaternion.LookRotation(Vessel.VesselStatus.Course, Vessel.Transform.up);
                     var team = Vessel.VesselStatus.Domain;
 
-                    spawnable.Spawn(position, rotation, team, (int)Vessel.VesselStatus.Speed);
+                    // No intensity: the ring geometry is speed-independent by design (the old
+                    // speed-as-intensity pass tilted the ring closed at low speed).
+                    spawnable.Spawn(position, rotation, team);
 
                     await UniTask.Delay(TimeSpan.FromSeconds(delayBetweenSpawns), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
                 }
@@ -35,6 +37,14 @@ namespace CosmicShore.Gameplay
                 await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
             }
             catch (OperationCanceledException) { }
+            finally
+            {
+                // The rings are pooled prisms parented under the Boost pool, so this spawner shell
+                // has nothing left to own once spawning finishes - destroy it instead of leaking an
+                // empty AOE object per hit (same lifecycle as AOEDangerHemisphereBlocks).
+                if (!ct.IsCancellationRequested && this != null)
+                    Destroy(gameObject);
+            }
         }
     }
 }

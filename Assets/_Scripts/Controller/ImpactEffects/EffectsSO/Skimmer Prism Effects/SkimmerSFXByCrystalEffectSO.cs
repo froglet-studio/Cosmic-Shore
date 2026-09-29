@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
         public override void Execute(SkimmerImpactor impactor, CrystalImpactor crystalImpactee)
         {
             // Play at the skimmer's world position so FMOD 3D attenuation and
-            // panning reflect where the skim actually happened — AI skims on
+            // panning reflect where the skim actually happened - AI skims on
             // the far side of the map are quiet; nearby ones are loud.
             AudioSystem.Instance?.PlayGameplaySFX(category, impactor.transform.position);
         }

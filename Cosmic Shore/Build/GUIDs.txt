@@ -1,0 +1,75 @@
+{ddcf0e06-466d-4a76-a442-d98541b57b7e} bank:/Master
+{45d22ed2-3716-0634-220b-537bb0467de6} bank:/Master.strings
+{3b7e8e6a-defe-46c2-8201-c749ea9220ba} bank:/SFX
+{1cb7eac1-59ec-4e22-850e-31ed48adf13e} bus:/
+{f01f6fe1-eafc-49f4-bea1-89e913b2c2ab} bus:/Reverb
+{c4d6e9dd-cccb-4e2e-83d8-fb037cff1d69} event:/Engine stuff/Base sounds/Charge
+{2b9d52ee-bcc0-45e3-83d6-7cbe8e848f9e} event:/Engine stuff/Base sounds/Layer 2
+{7d4f02b7-c072-4d30-8436-ddbef3518eb7} event:/Engine stuff/Base sounds/Mass
+{05c73e9c-d556-4a1d-a268-e26c182454ae} event:/Engine stuff/Base sounds/Space
+{b6e8ca72-664d-4ff3-ad7d-23999488da61} event:/Engine stuff/Base sounds/Stress
+{4c38bbab-c38c-42bf-8eac-3f2cc7652507} event:/Engine stuff/Base sounds/Time
+{942c0807-260e-4954-8d1c-c321d5b954b3} event:/Engine stuff/space ship engine main
+{10e1c214-2d0b-4b6f-a94e-759c9828221f} event:/SFX/Drift
+{9bb05a89-34b8-47e4-b433-2f616a9aa46d} event:/SFX/Loops/Charge tadpole
+{403f1b40-e570-418c-b665-63f6b3e13ff6} event:/SFX/Loops/Goal
+{3e4723e6-5c3a-462c-9cb1-d9a535c92c07} event:/SFX/Loops/Mass Tadpole
+{73e86f10-09e1-45ee-b1ee-9b901a807110} event:/SFX/Loops/Mass brittle star
+{1a9a548d-326a-4e24-aa01-5bd03f440d1f} event:/SFX/Loops/Mass shark
+{53fa3f31-b55c-41a3-85a2-d23d7235b3d6} event:/SFX/Loops/Space Tadpole
+{203faec3-28b1-43f8-b1a8-8cd2a54c4d60} event:/SFX/Loops/Time Tadpole
+{497aba84-20c1-49f9-9b42-7b657b029ab5} event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip
+{59f0cd35-6a01-4476-9879-318f40186599} event:/SFX/Oneshots/Gameplay sfx/Boost Activate
+{4f80c998-77d4-4f53-8c58-0833d4b3b790} event:/SFX/Oneshots/Gameplay sfx/Charge Joust
+{46e44604-3c6a-4726-8de0-af47fbad242c} event:/SFX/Oneshots/Gameplay sfx/Charge comeback
+{61a3e88c-c17c-4e92-a143-fe00a8f0edd5} event:/SFX/Oneshots/Gameplay sfx/Creature Death
+{1f167642-c975-462c-83e6-70670f74e0cc} event:/SFX/Oneshots/Gameplay sfx/Creature colide
+{538641da-7aa6-4e3c-b3b9-cd4b35a5ddb6} event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
+{6b4b035c-9652-43a9-a24a-051c6aff057f} event:/SFX/Oneshots/Gameplay sfx/Energy Gain
+{cd96dd42-7476-43e7-84c3-8924de99ab30} event:/SFX/Oneshots/Gameplay sfx/Explosion
+{980f5994-e9fc-42d8-9867-9a1f7a83cb02} event:/SFX/Oneshots/Gameplay sfx/Game End
+{35480224-bb01-4091-af81-ff361c240cb1} event:/SFX/Oneshots/Gameplay sfx/Gun Fire
+{735c8ab9-a426-481e-87cb-d0fa59c70433} event:/SFX/Oneshots/Gameplay sfx/Mass joust
+{802ab04a-a932-47be-81ef-d946ab2d8994} event:/SFX/Oneshots/Gameplay sfx/Massshark spawn
+{f67cd473-9f68-4e9b-bf1d-82a2e380e733} event:/SFX/Oneshots/Gameplay sfx/Mine Explode
+{3105289d-2d30-4d61-b884-0096ce289cc6} event:/SFX/Oneshots/Gameplay sfx/Pause Close
+{cbecbe59-ca10-4f89-80cb-b74952861df7} event:/SFX/Oneshots/Gameplay sfx/Pause Open
+{6f839313-b353-40fc-84f0-57e0b2177295} event:/SFX/Oneshots/Gameplay sfx/Projectile Launch
+{63f53be0-b485-4823-8dca-45f37542f31b} event:/SFX/Oneshots/Gameplay sfx/Score Reveal
+{c901fa24-30ee-4117-a51d-00f6699057d6} event:/SFX/Oneshots/Gameplay sfx/Shield Activate
+{be383bbf-79e0-4210-b4d1-39b9fe7c2fe7} event:/SFX/Oneshots/Gameplay sfx/Shield Deactivate
+{0a70c49e-da1c-4049-8e10-d6451d61f60b} event:/SFX/Oneshots/Gameplay sfx/Skim
+{baa54cbe-4ff9-4e34-a3d6-bc986933c062} event:/SFX/Oneshots/Gameplay sfx/Space Joust
+{7e4a866a-8fc2-48e0-91c2-bf5746305146} event:/SFX/Oneshots/Gameplay sfx/Space Joust friend
+{fb35ff2b-1245-4633-bd92-c9409083e6d4} event:/SFX/Oneshots/Gameplay sfx/Speed burst
+{b53293f0-ca2a-4c06-82f4-7fc501161a11} event:/SFX/Oneshots/Gameplay sfx/Time Joust
+{1287b2bb-3366-4b7d-9af2-74f4f016b7d5} event:/SFX/Oneshots/Gameplay sfx/Track collide
+{c0e31b04-b51d-4585-9760-fbc7585b955a} event:/SFX/Oneshots/Gameplay sfx/Vessel impact
+{ac9ebdf2-3d4e-4cdc-bb40-e910edcf3413} event:/SFX/Oneshots/Gameplay sfx/charge Joust friend 2
+{ef7aa1db-908b-411c-bf34-bc9a5c59b359} event:/SFX/Oneshots/Gameplay sfx/mass Joust friend
+{6764c033-e012-4cd7-90a2-9151d56a7003} event:/SFX/Oneshots/Gameplay sfx/masss comeback'
+{e14c18c7-356e-47be-99bc-500cc0a7992a} event:/SFX/Oneshots/Gameplay sfx/space comeback
+{1caaf3c1-68d2-4236-834f-62decdef6703} event:/SFX/Oneshots/Gameplay sfx/time Joust friend
+{88152e3a-7d05-454a-80a8-8d3cc382dff9} event:/SFX/Oneshots/Gameplay sfx/time comeback
+{a1d7d2cf-5c41-40c8-8913-832dbeffe5e2} event:/SFX/Oneshots/Gameplay sfx/trigger off
+{7b5ece48-1865-4772-8dd1-f8dbd97f04d0} event:/SFX/Oneshots/Menu/BigReward
+{69d21aaf-4e71-4ba8-945a-2728d4c7fe1e} event:/SFX/Oneshots/Menu/Close View
+{18a8d3bb-a4f7-49d6-b19e-9e65ef6b246c} event:/SFX/Oneshots/Menu/Confirmed
+{621cdf5c-d5d1-42c0-bfd7-810abf32a324} event:/SFX/Oneshots/Menu/Denied
+{b4e7b7ab-ca4f-462f-ac93-8d5ddf082160} event:/SFX/Oneshots/Menu/LetsGo
+{f9971431-304b-473f-aedb-e8e241a1a1c1} event:/SFX/Oneshots/Menu/OpenView
+{2b2b2c92-e547-484d-8838-6861b1eb79ca} event:/SFX/Oneshots/Menu/Option Click
+{8507e136-087e-4351-acea-8785f798cfbc} event:/SFX/Oneshots/Menu/RedeemTicket
+{0ebc709d-69d8-4020-a08d-688973357519} event:/SFX/Oneshots/Menu/SmallReward
+{58b81c16-4c18-414b-8843-ef9692077eaf} event:/SFX/Oneshots/Menu/SwitchScreen
+{eff63c7d-eed6-4c46-80ac-84dc10aed752} event:/SFX/Oneshots/Menu/SwitchView
+{f7985232-e443-4146-a726-9ef2dcfcc91f} event:/SFX/Oneshots/Menu/Upgrade
+{366da96a-6b21-48f3-9f1c-9999c17aecdf} parameter:/Charge
+{73f3eada-1e19-4ad2-b9e2-786a82eb3767} parameter:/Drift amount
+{a170b8d6-8fcb-4b3f-b817-ee662e459848} parameter:/Energy
+{9337c229-187d-4904-adbc-966636ba89e5} parameter:/Mass
+{c862edb5-c7ed-48a3-b8a3-da229af30863} parameter:/Space
+{b528af60-6451-495a-9b69-5389a6e709ba} parameter:/Speed
+{d2a1f6c6-d530-4365-891f-dfe93708f5d2} parameter:/Tilt Acel
+{c2cd9777-2180-48da-84d8-65044f693f13} parameter:/Time
+{ed585945-c087-4a0a-86c1-b0a8dc2a84c9} parameter:/Trigger let go

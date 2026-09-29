@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4544ecfd2206413e915b80129b81e54b, type: 3}
   m_Name: Painting_Star
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
-  paintingId: 
-  displayName: Painting
-  description: 
+  paintingId: painting_star
+  displayName: Star
+  description: One clean stroke - a warm-up canvas.
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4
   sourceShapeScale: 2.5
   preset: 1
-  presetSize: 420
+  presetSize: 840
   reachThreshold: 30

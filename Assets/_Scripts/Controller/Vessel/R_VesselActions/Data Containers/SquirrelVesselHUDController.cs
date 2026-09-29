@@ -2,7 +2,6 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using DG.Tweening;
 using Obvious.Soap;
 using Reflex.Attributes;
 using UnityEngine;
@@ -17,7 +16,20 @@ namespace CosmicShore.UI
         [Header("Events")]
         [SerializeField] private ScriptableEventBoostChanged boostChanged;
         [SerializeField] private ScriptableEventString joustCollisionEvent;
+        [Tooltip("Omni crystal collected by THIS vessel. Raised by the Squirrel's omni branch " +
+                 "(VesselExplosionByCrystalEffectSO) on the owning machine; lights the omni " +
+                 "crystal card, which pictures what the pickup lays.")]
         [SerializeField] private ScriptableEventVesselImpactor squirrelCrystalExplosionEvent;
+
+        // The drift channels, back on the CORE card. They were cut in the 2026-09 element re-cut
+        // because the drift's readout was squatting on the card the Boost Ring wanted; the drift now
+        // has a card of its own, so its response came back with it. No vessel filter is needed
+        // here: DriftActionSO raises these for the locally-owned vessel only.
+        //
+        // isDoubleDrifting must be EventOnDoubleDriftStarted - the channel the drift actions
+        // actually raise. Before the cut it was wired to EventOnSharpDrifting, which NOTHING raises,
+        // so the sharp-drift look had never once fired.
+        [Header("Drift (core card)")]
         [SerializeField] private ScriptableEventNoParam isDrifting;
         [SerializeField] private ScriptableEventNoParam isDoubleDrifting;
         [SerializeField] private ScriptableEventNoParam driftEnded;
@@ -28,20 +40,74 @@ namespace CosmicShore.UI
 
         [Inject] private GameDataSO gameData;
 
-        [Header("Flash Durations")]
-        [SerializeField] private float joustFlashDuration = 1f;
-        [SerializeField] private float shieldFlashDuration = 1f;
-
         private IVesselStatus _vesselStatus;
         private Domains _lastSourceDomain = Domains.Blue;
-        private Tween _joustFlashTween;
-        private Tween _shieldFlashTween;
 
-        // Single source of truth — the same ColorSet the vessels and prisms use (R5).
+        // The domain this HUD is currently PAINTED for, and whether that paint actually LANDED.
+        // default(Domains) is 0, which is not a member of the enum, so the first poll always
+        // repaints - there is no value a real domain could hold that would be mistaken for
+        // "already painted".
+        //
+        // The bool is the half that matters, and leaving it out is what made JADE the one domain
+        // that stayed wrong while Ruby and Gold worked. A palette resolve fails silently while
+        // `gameData.ThemeManagerData` is not available yet (alpha 0 -> the view keeps its white),
+        // and recording the domain anyway means the retry is gated on the domain CHANGING. Jade is
+        // `Player.NetDomain`'s own initialiser, so Jade is the only value that can be the
+        // already-recorded one - Ruby and Gold always arrive as a change and always repaint. A
+        // latch must record whether the work SUCCEEDED, never merely which input it was attempted
+        // with.
+        private Domains _paintedDomain = default;
+        private bool _domainPainted;
+        private bool _dangerPainted;
+
+        // Polled each frame to drive the tube cooldown icon in the freed HUD slot.
+        private SquirrelTubeActionExecutor _tubeExecutor;
+
+        // Read while a drift is held, for the side the drift icon leans to. Cached at Initialize
+        // because IVesselStatus.Transform / ShipTransform go through Vessel, whose getter logs an
+        // error rather than answering null - not something to call every frame.
+        private Transform _shipTransform;
+        private bool _drifting;
+
+        // NOTE: this controller used to look up the Sparrow's OverheatingActionExecutor to drive
+        // SquirrelVesselHUDView's heat gauge/throb. That component only ever existed on
+        // Sparrow.prefab, so the lookup returned null on every Squirrel and the gauge never moved.
+        // The view's SetOverheatHeat / JuiceOverheat* are now gone too (2026-09) - an undriven
+        // gauge sitting on an ability card is a lie, not a spare part, and the card it sat on is
+        // the CHARGE card, which now carries the crystal joust.
+
+        // Single source of truth - the same ColorSet the vessels and prisms use (R5).
         private Color ResolveDomainColor(Domains domain) =>
             gameData != null && gameData.ThemeManagerData != null
                 ? gameData.ThemeManagerData.GetDomainUIColor(domain)
                 : Color.white;
+
+        // The DANGER tier at signal strength, for the Boost Ring icon - a Boost Ring is made of
+        // danger prisms. Domain-independent, and read from the same ColorSet as everything else
+        // rather than authored on the prefab, so a palette swap moves it. Alpha 0 when the palette
+        // authors no danger colour, which the view reads as "keep what you have".
+        private Color ResolveDangerColor() =>
+            gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDangerSignalColor()
+                : new Color(0f, 0f, 0f, 0f);
+
+        // The SHIELDED tier's base face at signal strength, for the omni crystal card. Flying a
+        // Squirrel through an omni crystal lays a ring of SHIELDED prisms in the pilot's own
+        // domain (AOEShieldedRingSpawner), so the icon is that ring's cross-section and this is
+        // the colour those prisms will actually be. Domain-KEYED, unlike the danger colour, for
+        // the same reason: the ring wears the pilot's colour and the danger rim wears nobody's.
+        //
+        // Domains.Blue is REFUSED rather than looked up, and that is the whole of why this card
+        // shipped the wrong colour. Blue is the platform's "no team / not yet picked" sentinel AND
+        // a real row in the palette, whose ShieldedOutsideBlockColor is authored (0, 0, 0.549) -
+        // at signal strength a pure hue-240 blue, MORE saturated and with LESS green than Jade's
+        // (0.179, 0.489, 1.000). So a domain that had not resolved yet did not render as a failure,
+        // it rendered as a plausible team colour, which is the one outcome a palette read must not
+        // have (Docs/PALETTE.md §2.8). Alpha 0 = "keep your white", which reads as untinted (§2.4).
+        private Color ResolveShieldedColor(Domains domain) =>
+            domain != Domains.Blue && gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetShieldedSignalColor(domain)
+                : new Color(0f, 0f, 0f, 0f);
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -59,12 +125,148 @@ namespace CosmicShore.UI
                 return;
             }
 
-            Color playerColor = ResolveDomainColor(vesselStatus.Domain);
-
             view.Initialize();
-            view.SetPlayerDomainColor(playerColor);
+            PushPalette();
             Subscribe();
             PaintFromStatusFallback();
+
+            // The tube executor lives on a child of the vessel; poll it in Update for the
+            // cooldown icon. Local user only (this whole branch is gated on IsLocalUser).
+            _shipTransform = vesselStatus.Vessel?.Transform;
+            _tubeExecutor = _shipTransform
+                ? _shipTransform.GetComponentInChildren<SquirrelTubeActionExecutor>(true)
+                : null;
+        }
+
+        private void Update()
+        {
+            if (!view) return;
+            if (_tubeExecutor != null)
+                // Fill grows 0 -> 1 as the ability recharges (ready = full + bright).
+                view.SetTubeCooldownReady(1f - _tubeExecutor.CooldownRemaining01);
+
+            PushStealReadout();
+            PushPalette();
+            if (_drifting) view.SetDriftSide(DriftSide());
+        }
+
+        // Below this the nose has not left the course far enough for a side to mean anything
+        // (the frame a drift engages, the two are still parallel).
+        const float DriftSideDeadband = 0.05f;
+
+        /// <summary>
+        /// Which way the nose has swung off the course, in the SHIP's own frame: -1 left, +1 right,
+        /// 0 not yet diverged. A drift IS nose-vs-course divergence, so the side falls straight out
+        /// of it - when the nose has swung LEFT of the course, the course lies to the ship's right.
+        /// Read in the ship's frame rather than projected onto world up, which only meant anything
+        /// while the ship was level.
+        /// </summary>
+        private int DriftSide()
+        {
+            if (!_shipTransform || _vesselStatus == null) return 0;
+            var course = _vesselStatus.Course;
+            if (course.sqrMagnitude < 1e-6f) return 0;
+
+            float lateral = Vector3.Dot(course.normalized, _shipTransform.right);
+            if (Mathf.Abs(lateral) < DriftSideDeadband) return 0;
+            return lateral > 0f ? -1 : 1;
+        }
+
+        /// <summary>
+        /// Everything on this HUD that is read out of the palette, pushed until it LANDS.
+        ///
+        /// <para>Two independent latches, because the two colours fail for different reasons: the
+        /// danger tint is domain-INDEPENDENT and can only ever be waiting on
+        /// <c>ThemeManagerData</c>, while the domain tints are additionally waiting on a domain to
+        /// resolve. Neither latch closes until the palette actually answered, which is the whole of
+        /// the fix - see <see cref="_domainPainted"/>.</para>
+        /// </summary>
+        private void PushPalette()
+        {
+            if (!_dangerPainted)
+            {
+                Color danger = ResolveDangerColor();
+                if (danger.a > 0f) { view.SetDangerTint(danger); _dangerPainted = true; }
+            }
+
+            if (_vesselStatus?.Player == null) return;
+
+            Domains live = _vesselStatus.Domain;
+            if (_domainPainted && live == _paintedDomain) return;
+
+            Color shielded = ResolveShieldedColor(live);
+            view.SetOmniAbilityTint(shielded);
+            view.SetPlayerDomainColor(ResolveDomainColor(live));
+
+            _paintedDomain = live;
+            _domainPainted = PaletteLanded(live, shielded);
+        }
+
+        /// <summary>
+        /// Whether a palette push actually LANDED and its retry may stop.
+        ///
+        /// <para>Pure, internal and separately tested (<c>SquirrelHudPaletteLatchTests</c>) because
+        /// the defect it encodes is invisible to every offline gate this project has — replacing it
+        /// with <c>true</c> is a logic regression, not a type error, so the Roslyn harness compiles
+        /// it clean. It is also the SECOND instance of a rule the vessel contract already records
+        /// (<i>resolution retries until success; a query that latches on the ATTEMPT pins its first
+        /// answer forever</i>), which is the bar for making a one-line decision a named function.</para>
+        ///
+        /// <para>Two ways a push fails to land, and both must keep the retry open. A resolve of
+        /// alpha 0 means the palette had no answer yet — <c>gameData.ThemeManagerData</c> is not
+        /// available during part of the spawn chain — and the view deliberately keeps its white
+        /// rather than painting black. And <c>Domains.Blue</c> is the no-team sentinel, whose
+        /// shielded tint is refused permanently, so closing the latch on it would freeze the card
+        /// white for the rest of the match the moment a pilot was once seen unresolved.</para>
+        ///
+        /// <para>Getting this wrong singles out exactly ONE domain, which is why it presented as a
+        /// Jade bug rather than as a latch bug: the retry is otherwise gated on the domain
+        /// CHANGING, and Jade is <c>Player.NetDomain</c>'s own initialiser — the only value that can
+        /// already be the recorded one. Ruby and Gold always arrive as a change and always
+        /// repaint.</para>
+        /// </summary>
+        internal static bool PaletteLanded(Domains domain, Color resolved) =>
+            domain != Domains.Blue && resolved.a > 0f;
+
+        /// <summary>
+        /// Why the palette is POLLED rather than pushed once.
+        ///
+        /// <para>A domain is not decided by the time a vessel spawns: <c>Player.NetDomain</c> is
+        /// server-write and initialises to Jade, the owner's own pick arrives later through
+        /// <c>RequestSetDomain_ServerRpc</c>, and the match's active set can move a human again at
+        /// spawn (<c>NormalizeUnassignedHumans</c>). CLAUDE.md states the rule outright - <i>do not
+        /// snapshot domain at component-creation time</i> - and this controller was snapshotting it
+        /// twice, so the omni card and the steal count both held whatever was true one frame after
+        /// <c>Initialize</c>.</para>
+        ///
+        /// <para>Polled off the live <c>Player.Domain</c> mirror rather than subscribed to
+        /// <c>NetDomain.OnValueChanged</c> for two reasons: this controller already runs an Update
+        /// for the tube cooldown and the steal readout, so the poll is free; and a subscription has
+        /// to be torn down against a <c>Player</c> reference that a vessel swap replaces underneath
+        /// it, which is the asymmetric-binding failure the vessel contract has paid for three times.
+        /// The read is gated on <c>Player</c> being present because <c>IVesselStatus.Domain</c>
+        /// logs an ERROR when it is not - a per-frame poll through that getter would turn one
+        /// missing reference into console spam.</para>
+        /// </summary>
+
+        /// <summary>
+        /// The SPACE card: how far the steal reaches right now, and how much has been taken.
+        ///
+        /// <para>Both are POLLED rather than pushed, and for different reasons. The reach is a
+        /// continuous function of an element level that nothing raises an event for - it moves with
+        /// every crystal, every temporary effect and every comeback buff - and the count lives on a
+        /// server-write <c>NetworkVariable</c> (<c>RoundStats.n_PrismStolen</c>), so the owner of a
+        /// steal learns about its own steal by reading it back. A per-frame read of two fields is
+        /// the cheap half of this controller's Update; the view repaints only on a change.</para>
+        /// </summary>
+        private void PushStealReadout()
+        {
+            var skimmer = _vesselStatus?.NearFieldSkimmer;
+            if (skimmer) view.SetStealReach01(skimmer.ElementalScale01);
+
+            if (gameData != null && _vesselStatus != null &&
+                gameData.TryGetRoundStats(_vesselStatus.PlayerName, out var stats) && stats != null)
+                view.SetStealCount(stats.PrismStolen);
         }
 
         private void Subscribe()
@@ -74,35 +276,55 @@ namespace CosmicShore.UI
 
             if (boostChanged != null)
                 boostChanged.OnRaised += HandleBoostChanged;
-            if (isDrifting != null)
-                isDrifting.OnRaised += UpdateDrift;
-            if (isDoubleDrifting != null)
-                isDoubleDrifting.OnRaised += UpdateDoubleDrift;
             if (joustCollisionEvent != null)
                 joustCollisionEvent.OnRaised += HandleJoustCollision;
             if (squirrelCrystalExplosionEvent != null)
                 squirrelCrystalExplosionEvent.OnRaised += HandleSquirrelCrystalExplosion;
+            if (isDrifting != null)
+                isDrifting.OnRaised += HandleDriftStarted;
+            if (isDoubleDrifting != null)
+                isDoubleDrifting.OnRaised += HandleDoubleDriftStarted;
             if (driftEnded != null)
-                driftEnded.OnRaised += OnDriftEnded;
+                driftEnded.OnRaised += HandleDriftEnded;
         }
 
         private void OnDisable()
         {
-            _joustFlashTween?.Kill();
-            _shieldFlashTween?.Kill();
-
             if (boostChanged != null)
                 boostChanged.OnRaised -= HandleBoostChanged;
-            if (isDrifting != null)
-                isDrifting.OnRaised -= UpdateDrift;
-            if (isDoubleDrifting != null)
-                isDoubleDrifting.OnRaised -= UpdateDoubleDrift;
             if (joustCollisionEvent != null)
                 joustCollisionEvent.OnRaised -= HandleJoustCollision;
             if (squirrelCrystalExplosionEvent != null)
                 squirrelCrystalExplosionEvent.OnRaised -= HandleSquirrelCrystalExplosion;
+            if (isDrifting != null)
+                isDrifting.OnRaised -= HandleDriftStarted;
+            if (isDoubleDrifting != null)
+                isDoubleDrifting.OnRaised -= HandleDoubleDriftStarted;
             if (driftEnded != null)
-                driftEnded.OnRaised -= OnDriftEnded;
+                driftEnded.OnRaised -= HandleDriftEnded;
+        }
+
+        private void HandleDriftStarted() => BeginDrift(isDoubleDrift: false);
+        private void HandleDoubleDriftStarted() => BeginDrift(isDoubleDrift: true);
+
+        private void BeginDrift(bool isDoubleDrift)
+        {
+            if (!view) return;
+            _drifting = true;
+            view.JuiceDriftStart(isDoubleDrift);
+        }
+
+        private void HandleDriftEnded()
+        {
+            if (!view) return;
+
+            // The single and sharp drifts are two actions and each raises its own end, so
+            // releasing one while the other is still held must not return the icon to rest.
+            // DriftActionSO.StopAction writes IsDrifting from the transformer BEFORE it raises.
+            if (_vesselStatus != null && _vesselStatus.IsDrifting) return;
+
+            _drifting = false;
+            view.JuiceDriftEnd();
         }
 
         private void HandleBoostChanged(BoostChangedPayload payload)
@@ -154,15 +376,10 @@ namespace CosmicShore.UI
         private void HandleJoustCollision(string playerName)
         {
             if (!view) return;
-            // Shared global event — only react to our own vessel's joust collisions.
+            // Shared global event - only react to our own vessel's joust collisions.
             if (playerName != _vesselStatus.PlayerName) return;
 
-            _joustFlashTween?.Kill();
-            view.UpdateDangerIcon(true);
-            _joustFlashTween = DOVirtual.DelayedCall(joustFlashDuration, () =>
-            {
-                if (view) view.UpdateDangerIcon(false);
-            });
+            view.JuiceJoustImpact();
         }
 
         private void PaintFromStatusFallback()
@@ -185,24 +402,6 @@ namespace CosmicShore.UI
                 Color.white, false);
         }
 
-        private void UpdateDrift()
-        {
-            if (!view) return;
-            view.UpdateDriftIcon(true, false);
-        }
-
-        private void UpdateDoubleDrift()
-        {
-            if (!view || _vesselStatus == null) return;
-            view.UpdateDriftIcon(true, true);
-        }
-
-        private void OnDriftEnded()
-        {
-            if (!view) return;
-            view.UpdateDriftIcon(false, false);
-        }
-
         private void HandleSquirrelCrystalExplosion(VesselImpactor vesselImpactor)
         {
             if (!view || vesselImpactor.Vessel.VesselStatus.PlayerName != _vesselStatus.PlayerName)
@@ -210,12 +409,10 @@ namespace CosmicShore.UI
 
             view.FlashCrystalSurge();
 
-            _shieldFlashTween?.Kill();
-            view.UpdateShieldColor(true);
-            _shieldFlashTween = DOVirtual.DelayedCall(shieldFlashDuration, () =>
-            {
-                if (view) view.UpdateShieldColor(false);
-            });
+            // An OMNI crystal: this event is raised by the Squirrel's omni branch and nothing else,
+            // so it lights the card that pictures the shielded ring the pickup lays - not the joust
+            // card, which it used to share an icon with before the omni card existed.
+            view.PlayOmniCrystalCollected();
         }
     }
 }

@@ -11,7 +11,5 @@ namespace CosmicShore.UI
 
         void ShowHUD();
         void HideHUD();
-
-        void SetBlockPrefab(UnityEngine.GameObject prefab);
     }
 }

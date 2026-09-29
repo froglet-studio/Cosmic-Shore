@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -13,7 +14,9 @@ namespace CosmicShore.Editor
         private List<KeyValuePair<Texture2D, long>> sortedTextures;
         private int topN = 10;
 
-        [MenuItem("Tools/Runtime Texture Memory Usage")]
+        [MenuItem("FrogletTools/Performance/Runtime Texture Memory Usage")]
+        [FrogletTool(FrogletToolCategory.Performance, Importance = 3,
+            Description = "Live texture memory while playing.")]
         public static void ShowWindow()
         {
             GetWindow<RuntimeTextureMemoryUsageWindow>("Runtime Texture Memory Usage");

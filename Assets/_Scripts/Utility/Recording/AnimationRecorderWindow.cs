@@ -142,7 +142,7 @@ namespace CosmicShore.Utility
         /// Creates the menu item "Window/Animation Recorder" and sets it to open the Animation Recorder
         /// window when activated.
         /// </summary>
-        [MenuItem("Window/Animation Recorder")]
+        [MenuItem("FrogletTools/Misc/Animation Recorder")]
         public static void ShowWindow()
         {
             EditorWindow recorder = EditorWindow.GetWindow(typeof(AnimationRecorder), false, AnimationRecorderName);

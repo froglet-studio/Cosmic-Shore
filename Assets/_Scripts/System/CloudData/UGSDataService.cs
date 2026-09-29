@@ -16,7 +16,7 @@ namespace CosmicShore.Core
     /// <summary>
     /// Unified facade for all player cloud data.
     /// Single Responsibility: orchestrates initialization and provides typed access
-    ///                        to every data domain — does not own any domain logic.
+    ///                        to every data domain - does not own any domain logic.
     /// Dependency Inversion: depends on ICloudSaveProvider and ICloudDataRepository
     ///                       interfaces, not concrete UGS types.
     ///
@@ -39,16 +39,16 @@ namespace CosmicShore.Core
 
         // ── Repositories ──
         PlayerProfileRepository _profile;
-        PlayerStatsRepository _stats;
-        VesselStatsRepository _vesselStats;
+        ModeStatsRepository _modeStats;
         GameProgressionRepository _progression;
         HangarRepository _hangar;
         EpisodeProgressRepository _episodes;
         PlayerSettingsRepository _settings;
-        DailyChallengeRepository _dailyChallenge;
+        WeeklyChallengeRepository _weeklyChallenge;
         TrainingProgressRepository _training;
         SquadRepository _squad;
         LoadoutRepository _loadout;
+        QuestProgressRepository _questGraph;
 
         ICloudSaveProvider _provider;
         List<ICloudDataWriter> _allRepos;
@@ -60,29 +60,29 @@ namespace CosmicShore.Core
 
         // Read-only accessors (for UI / query-only consumers)
         public ICloudDataReader<PlayerProfileData> Profile => _profile;
-        public ICloudDataReader<PlayerStatsProfile> Stats => _stats;
-        public ICloudDataReader<VesselStatsCloudData> VesselStats => _vesselStats;
+        public ICloudDataReader<ModeStatsCloudData> ModeStats => _modeStats;
         public ICloudDataReader<GameModeProgressionData> Progression => _progression;
         public ICloudDataReader<HangarCloudData> Hangar => _hangar;
         public ICloudDataReader<EpisodeProgressCloudData> Episodes => _episodes;
         public ICloudDataReader<PlayerSettingsCloudData> Settings => _settings;
-        public ICloudDataReader<DailyChallengeCloudData> DailyChallenge => _dailyChallenge;
+        public ICloudDataReader<WeeklyChallengeCloudData> WeeklyChallenge => _weeklyChallenge;
         public ICloudDataReader<TrainingProgressCloudData> TrainingProgress => _training;
         public ICloudDataReader<SquadCloudData> Squad => _squad;
         public ICloudDataReader<LoadoutCloudData> Loadout => _loadout;
+        public ICloudDataReader<QuestProgressCloudData> QuestGraph => _questGraph;
 
         // Typed write access (for game systems that mutate + mark dirty)
         public PlayerProfileRepository ProfileRepo => _profile;
-        public PlayerStatsRepository StatsRepo => _stats;
-        public VesselStatsRepository VesselStatsRepo => _vesselStats;
+        public ModeStatsRepository ModeStatsRepo => _modeStats;
         public GameProgressionRepository ProgressionRepo => _progression;
         public HangarRepository HangarRepo => _hangar;
         public EpisodeProgressRepository EpisodesRepo => _episodes;
         public PlayerSettingsRepository SettingsRepo => _settings;
-        public DailyChallengeRepository DailyChallengeRepo => _dailyChallenge;
+        public WeeklyChallengeRepository WeeklyChallengeRepo => _weeklyChallenge;
         public TrainingProgressRepository TrainingProgressRepo => _training;
         public SquadRepository SquadRepo => _squad;
         public LoadoutRepository LoadoutRepo => _loadout;
+        public QuestProgressRepository QuestGraphRepo => _questGraph;
 
         void Awake()
         {
@@ -122,6 +122,8 @@ namespace CosmicShore.Core
             {
                 if (!IsInitialized)
                     await InitializeAsync();
+                else if (_offlineInitialized)
+                    await ReloadFromCloudAfterLateSignInAsync();
             }
             catch (Exception e)
             {
@@ -132,44 +134,97 @@ namespace CosmicShore.Core
         void CreateRepositories()
         {
             _profile = new PlayerProfileRepository(_provider);
-            _stats = new PlayerStatsRepository(_provider);
-            _vesselStats = new VesselStatsRepository(_provider);
+            _modeStats = new ModeStatsRepository(_provider);
             _progression = new GameProgressionRepository(_provider);
             _hangar = new HangarRepository(_provider);
             _episodes = new EpisodeProgressRepository(_provider);
             _settings = new PlayerSettingsRepository(_provider);
-            _dailyChallenge = new DailyChallengeRepository(_provider);
+            _weeklyChallenge = new WeeklyChallengeRepository(_provider);
             _training = new TrainingProgressRepository(_provider);
             _squad = new SquadRepository(_provider);
             _loadout = new LoadoutRepository(_provider);
+            _questGraph = new QuestProgressRepository(_provider);
 
             _allRepos = new List<ICloudDataWriter>
             {
-                _profile, _stats, _vesselStats, _progression,
+                _profile, _modeStats, _progression,
                 _hangar, _episodes, _settings,
-                _dailyChallenge, _training, _squad, _loadout
+                _weeklyChallenge, _training, _squad, _loadout, _questGraph
             };
+        }
+
+        /// <summary>
+        /// True when the repositories were initialized WITHOUT a signed-in cloud provider -
+        /// every key answered from the <see cref="LocalCloudDataCache"/> snapshot (or fresh
+        /// defaults). Set by <see cref="InitializeOfflineAsync"/>; cleared once a late
+        /// sign-in reconciles against the cloud.
+        /// </summary>
+        bool _offlineInitialized;
+
+        /// <summary>
+        /// Offline-session init (see <see cref="OfflineModeService"/>): runs the exact same
+        /// load pipeline as the online path, but with the provider unavailable each
+        /// repository falls back to its last-known-good local snapshot - so the player still
+        /// gets their display name, unlocked vessels, unlocked episodes, game progression and
+        /// settings with no network at all. <c>OnInitialized</c> fires as usual, which is what
+        /// lets PlayerDataService merge the cached profile through its ordinary path.
+        /// </summary>
+        public async Task InitializeOfflineAsync(CancellationToken ct = default)
+        {
+            if (IsInitialized) return;
+
+            _offlineInitialized = true;
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] Offline init - loading repositories from local snapshots...");
+            await InitializeAsync(ct);
+        }
+
+        /// <summary>
+        /// Reconciles an offline-initialized session after a LATE sign-in (network recovered
+        /// and auth retried). Clean repositories re-load from the cloud (cloud wins);
+        /// repositories carrying unsaved offline progress are left alone - their debounced
+        /// save loop flushes them up now that the provider is available. Each reloaded
+        /// repository raises its own OnDataChanged, so live consumers refresh.
+        /// </summary>
+        async Task ReloadFromCloudAfterLateSignInAsync(CancellationToken ct = default)
+        {
+            _offlineInitialized = false;
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] Late sign-in after offline init - reconciling clean repositories from cloud...");
+
+            var loads = new List<Task>();
+            foreach (var repo in _allRepos)
+                if (!repo.IsDirty && repo is ICloudDataReloadable reloadable)
+                    loads.Add(reloadable.LoadAsync(ct));
+
+            // SyncHangarToVessels() below touches SO_Vessel assets, so the continuation has to
+            // be back on the main thread. Docs/THREADING.md.
+            await Task.WhenAll(loads).AsMainThread();
+            SyncHangarToVessels();
         }
 
         public async Task InitializeAsync(CancellationToken ct = default)
         {
             if (IsInitialized) return;
 
-            CSDebug.Log("[UGSDataService] Loading all repositories from cloud...");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] Loading all repositories from cloud...");
 
+            // Marshalled back to the MAIN THREAD. Without it this continuation runs on the
+            // ThreadPool, SyncHangarToVessels() below touches SO_Vessel assets there, and
+            // EnsureRunningOnMainThread throws - which HandleSignedIn's async-void catch swallows,
+            // so IsInitialized is never set, OnInitialized never fires, and the auth scene waits
+            // forever on a flag that can no longer become true. Docs/THREADING.md.
             await Task.WhenAll(
                 _profile.LoadAsync(ct),
-                _stats.LoadAsync(ct),
-                _vesselStats.LoadAsync(ct),
+                _modeStats.LoadAsync(ct),
                 _progression.LoadAsync(ct),
                 _hangar.LoadAsync(ct),
                 _episodes.LoadAsync(ct),
                 _settings.LoadAsync(ct),
-                _dailyChallenge.LoadAsync(ct),
+                _weeklyChallenge.LoadAsync(ct),
                 _training.LoadAsync(ct),
                 _squad.LoadAsync(ct),
-                _loadout.LoadAsync(ct)
-            );
+                _loadout.LoadAsync(ct),
+                _questGraph.LoadAsync(ct)
+            ).AsMainThread();
 
             // Restore vessel unlock state from cloud → SO_Vessel assets
             SyncHangarToVessels();
@@ -177,12 +232,12 @@ namespace CosmicShore.Core
             IsInitialized = true;
             OnInitialized?.Invoke();
 
-            CSDebug.Log("[UGSDataService] All repositories loaded successfully.");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] All repositories loaded successfully.");
         }
 
         public async Task FlushAllAsync(CancellationToken ct = default)
         {
-            // Only flush repositories with pending changes — clean repos would
+            // Only flush repositories with pending changes - clean repos would
             // otherwise re-upload an unchanged payload on every flush.
             var tasks = new List<Task>();
             foreach (var repo in _allRepos)
@@ -190,30 +245,30 @@ namespace CosmicShore.Core
                     tasks.Add(repo.SaveAsync(ct));
 
             if (tasks.Count > 0)
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(tasks).AsMainThread();
         }
 
         public async Task<bool> ResetAllDataAsync(CancellationToken ct = default)
         {
             try
             {
-                CSDebug.Log("[UGSDataService] Resetting all player data...");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] Resetting all player data...");
 
                 await Task.WhenAll(
                     _profile.ResetAsync(ct),
-                    _stats.ResetAsync(ct),
-                    _vesselStats.ResetAsync(ct),
+                    _modeStats.ResetAsync(ct),
                     _progression.ResetAsync(ct),
                     _hangar.ResetAsync(ct),
                     _episodes.ResetAsync(ct),
                     _settings.ResetAsync(ct),
-                    _dailyChallenge.ResetAsync(ct),
+                    _weeklyChallenge.ResetAsync(ct),
                     _training.ResetAsync(ct),
                     _squad.ResetAsync(ct),
-                    _loadout.ResetAsync(ct)
-                );
+                    _loadout.ResetAsync(ct),
+                    _questGraph.ResetAsync(ct)
+                ).AsMainThread();
 
-                CSDebug.Log("[UGSDataService] All player data reset successfully.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] All player data reset successfully.");
                 return true;
             }
             catch (Exception e)
@@ -224,22 +279,115 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Restores vessel SO_Vessel.isLocked states from cloud data.
+        /// Reconciles vessel ownership between the authored SO_Vessel assets and HANGAR_DATA,
+        /// in both directions:
+        ///
+        /// <list type="bullet">
+        ///   <item>Starters (<c>SO_Vessel.OwnedFromStart</c>) are seeded INTO the cloud record.
+        ///   Without this the player's one free vessel never appears in HANGAR_DATA, because
+        ///   <c>VesselUnlockSystem.UnlockVessel</c> early-returns on an already-unlocked vessel
+        ///   and so never persists it - which is why the Squirrel was missing from every
+        ///   player's hangar payload.</item>
+        ///   <item>Purchases recorded in the cloud are applied back onto the assets.</item>
+        ///   <item><c>SelectedVessel</c> falls back to the starter when the player has never
+        ///   opened the vessel panel - the only writer is a deliberate pick, so before the first
+        ///   one the field read as null.</item>
+        /// </list>
+        ///
         /// Called automatically after initialization and available publicly for re-sync.
         /// </summary>
         public void SyncHangarToVessels()
         {
+            // Symmetric with the gated hangar WRITE paths (VesselUnlockSystem): while the
+            // progression backend gate is closed, a stale cloud record must not resurrect
+            // vessel unlocks on every sign-in — instead, normalize to the STARTER set so a
+            // fresh session always begins with only the Squirrel flyable (SO_Vessel lock
+            // state is runtime-mutable and lingers across editor play sessions otherwise).
+            if (!ProgressionBackendGate.CloudEnabled)
+            {
+                ApplyStarterUnlocks();
+                return;
+            }
+
             if (vesselList == null || _hangar?.Data == null) return;
+
+            var hangar = _hangar.Data;
+            long nowUtcMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            string firstStarter = null;
+            bool changed = false;
+
+            foreach (var vessel in vesselList.VesselList)
+            {
+                if (vessel == null || string.IsNullOrWhiteSpace(vessel.Name)) continue;
+
+                if (vessel.OwnedFromStart)
+                {
+                    firstStarter ??= vessel.Name;
+
+                    if (!hangar.IsVesselUnlocked(vessel.Name))
+                    {
+                        hangar.UnlockVessel(vessel.Name, nowUtcMs);
+                        changed = true;
+                    }
+                }
+
+                if (hangar.IsVesselUnlocked(vessel.Name))
+                    vessel.Unlock();
+            }
+
+            // Prefer a vessel the player actually owns; fall back to the starter.
+            if (string.IsNullOrWhiteSpace(hangar.SelectedVessel) ||
+                !hangar.IsVesselUnlocked(hangar.SelectedVessel))
+            {
+                string fallback = firstStarter ?? FirstUnlockedName(hangar);
+                if (!string.IsNullOrWhiteSpace(fallback) && hangar.SelectedVessel != fallback)
+                {
+                    hangar.SelectedVessel = fallback;
+                    changed = true;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(hangar.PreferredVessel))
+            {
+                // Nothing flown yet, so "most hours played" has no real answer - derive one from
+                // the records rather than leaving it empty. Real flight time overwrites it later.
+                hangar.RecomputePreferredVessel();
+                changed |= !string.IsNullOrWhiteSpace(hangar.PreferredVessel);
+            }
+
+            if (changed)
+                _hangar.MarkDirty();
+
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[UGSDataService] Synced hangar for {vesselList.VesselList.Count} vessels - " +
+                        $"{hangar.UnlockedVesselCount()} unlocked, selected '{hangar.SelectedVessel}'.");
+        }
+
+        static string FirstUnlockedName(HangarCloudData hangar)
+        {
+            foreach (var name in hangar.UnlockedVesselNames())
+                return name;
+            return null;
+        }
+
+        /// <summary>
+        /// Local-only testing baseline: the Squirrel (the FTUE / menu vessel) is unlocked,
+        /// every other vessel is locked until earned. Applied at sign-in while the backend
+        /// gate is closed, and by the quest editor's full progress reset.
+        /// </summary>
+        public void ApplyStarterUnlocks()
+        {
+            if (vesselList == null) return;
 
             foreach (var vessel in vesselList.VesselList)
             {
                 if (vessel == null) continue;
-
-                if (_hangar.Data.IsVesselUnlocked(vessel.Name))
+                if (vessel.Class == CosmicShore.Data.VesselClassType.Squirrel)
                     vessel.Unlock();
+                else
+                    vessel.Lock();
             }
 
-            CSDebug.Log($"[UGSDataService] Synced hangar unlock state for {vesselList.VesselList.Count} vessels.");
+            CSDebug.Log("[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only).");
         }
     }
 }

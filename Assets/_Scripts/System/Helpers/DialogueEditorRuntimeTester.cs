@@ -11,7 +11,6 @@ using CosmicShore.Utility;
 //     {
 //         public static void Test(DialogueSet set)
 //         {
-//             CSDebug.Log($"[TestInEditor] Playing Dialogue Set: {set.name} ({set.lines.Count} lines)");
 //
 // #if UNITY_EDITOR
 //             if (!Application.isPlaying)

@@ -50,7 +50,7 @@ namespace CosmicShore.UI
                 {
                     var def = GetDefaultType();
                     if (verboseLogging)
-                        CSDebug.Log($"[ShipSelectionView] Normalizing selected vessel from {current} to {def}.");
+                        CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ShipSelectionView] Normalizing selected vessel from {current} to {def}");
 
                     gameData.selectedVesselClass.Value = def;
                     if (gameData.VesselClassSelectedIndex != null)
@@ -83,7 +83,7 @@ namespace CosmicShore.UI
             }
 
             if (verboseLogging)
-                CSDebug.Log($"[ShipSelectionView] Built ships lookup with {_shipsByClass.Count} entries.");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ShipSelectionView] Built ships lookup - entries={_shipsByClass.Count}");
         }
 
         bool IsValidSelectedType(VesselClassType type)
@@ -143,15 +143,12 @@ namespace CosmicShore.UI
                 if (!_shipsByClass.TryGetValue(slot.vesselType, out var ship) || !ship)
                 {
                     if (verboseLogging)
-                        CSDebug.Log($"[ShipSelectionView] No ship in catalog for {slot.vesselType}, hiding slot {i}.");
+                        CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ShipSelectionView] No ship in catalog for {slot.vesselType} - hiding slot {i}");
                     slot.itemView.Clear();
                     continue;
                 }
 
                 bool isSelected = (selectedType == slot.vesselType);
-
-                if (verboseLogging)
-                    CSDebug.Log($"[ShipSelectionView] Slot {i} ({slot.vesselType}) → {ship.Name} (selected={isSelected})");
 
                 var capturedType = slot.vesselType;
                 var capturedShip = ship;
@@ -168,8 +165,6 @@ namespace CosmicShore.UI
             // Prevent selecting locked vessels
             if (ship != null && ship.IsLocked)
             {
-                if (verboseLogging)
-                    CSDebug.Log($"[ShipSelectionView] Blocked selection of locked vessel {vesselType}");
                 return;
             }
 
@@ -180,9 +175,6 @@ namespace CosmicShore.UI
                 if (gameData.VesselClassSelectedIndex != null)
                     gameData.VesselClassSelectedIndex.Value = (int)vesselType;
             }
-
-            if (verboseLogging)
-                CSDebug.Log($"[ShipSelectionView] Clicked {vesselType}, index {(int)vesselType}");
 
             OnSelect?.Invoke(ship);
             _menuAudio?.PlayAudio();

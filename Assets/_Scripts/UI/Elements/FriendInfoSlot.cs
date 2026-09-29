@@ -17,13 +17,34 @@ namespace CosmicShore.UI
         [SerializeField] private Image avatarIcon;
         [SerializeField] private Button addButton;
         [SerializeField] private TMP_Text displayNameText;
-        [Tooltip("Kick (✕) button — shown only on an occupied REMOTE member slot when " +
+        [Tooltip("Kick (✕) button - shown only on an occupied REMOTE member slot when " +
                  "the local player is the party host. Click removes that member from the party.")]
         [SerializeField] private Button kickButton;
+
+        [Tooltip("Optional. The animated domain halo drawn behind the avatar. Leave EMPTY - " +
+                 "the slot builds and binds one itself so every slot carries the signal with " +
+                 "no scene wiring to forget. Assign only to override the generated one.")]
+        [SerializeField] private PartySlotDomainGlow domainGlow;
 
         string _playerId;
         bool _isLocalPlayer;
         Action<string> _onKick;
+
+        void Awake()
+        {
+            EnsureDomainGlow();
+        }
+
+        /// <summary>
+        /// Builds the domain halo behind this slot's avatar if one is not already authored.
+        /// Structural rather than opt-in: a slot that quietly lacks the halo is a slot whose
+        /// pilot has no visible team, and there is no per-slot reason to ever want that.
+        /// </summary>
+        void EnsureDomainGlow()
+        {
+            if (domainGlow == null && avatarIcon != null)
+                domainGlow = PartySlotDomainGlow.EnsureFor(avatarIcon);
+        }
 
         /// <summary>Whether this slot has a player assigned.</summary>
         public bool IsOccupied => !string.IsNullOrEmpty(_playerId);
@@ -34,13 +55,29 @@ namespace CosmicShore.UI
         /// <summary>Whether this is the local player's slot (slot 0).</summary>
         public bool IsLocalPlayer => _isLocalPlayer;
 
-        /// <summary>Underlying GameObject of the display-name text — used by
+        /// <summary>Underlying GameObject of the display-name text - used by
         /// container widgets to detect shared-reference wiring bugs.</summary>
         public GameObject DisplayNameTextGO => displayNameText ? displayNameText.gameObject : null;
 
-        /// <summary>Underlying GameObject of the avatar icon — used by
+        /// <summary>Underlying GameObject of the avatar icon - used by
         /// container widgets to detect shared-reference wiring bugs.</summary>
         public GameObject AvatarIconGO => avatarIcon ? avatarIcon.gameObject : null;
+
+        /// <summary>
+        /// Paints this slot's halo in the seated pilot's domain colour, or hides it when that
+        /// pilot's domain is not resolvable (<paramref name="domainColour"/> null). Cheap and
+        /// idempotent, so the owning panel can push the LIVE domain every tick rather than
+        /// snapshotting one at population time - domain is re-picked mid-lobby and a snapshot
+        /// would go stale silently.
+        /// </summary>
+        public void SetDomainGlow(Color? domainColour)
+        {
+            EnsureDomainGlow();
+            if (domainGlow == null) return;
+
+            if (domainColour.HasValue) domainGlow.Show(domainColour.Value);
+            else                       domainGlow.Hide();
+        }
 
         /// <summary>
         /// Configures this slot as the local player's slot.
@@ -57,7 +94,7 @@ namespace CosmicShore.UI
             if (addButton)
                 addButton.gameObject.SetActive(false);
 
-            // You can never kick yourself — the local slot has no ✕.
+            // You can never kick yourself - the local slot has no ✕.
             if (kickButton)
                 kickButton.gameObject.SetActive(false);
         }
@@ -113,6 +150,9 @@ namespace CosmicShore.UI
 
             if (kickButton)
                 kickButton.gameObject.SetActive(false);
+
+            // An empty slot has no pilot and therefore no domain.
+            SetDomainGlow(null);
         }
 
         /// <summary>
@@ -176,7 +216,7 @@ namespace CosmicShore.UI
         {
             if (!displayNameText) return;
 
-            // Occupied slot — always surface *something* so the text GameObject
+            // Occupied slot - always surface *something* so the text GameObject
             // doesn't stay inactive and swallow the label. Empty/null names can
             // arrive transiently when a remote member's DISPLAY_NAME_KEY
             // property is still propagating; show a "Pilot" placeholder until

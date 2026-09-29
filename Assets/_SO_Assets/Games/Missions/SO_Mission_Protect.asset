@@ -64,12 +64,12 @@ MonoBehaviour:
   - threatName: SpaceGyroid
     threatLevel: 4
     weight: 2
-    threatPrefab: {fileID: 8186157953239024494, guid: 64c1c3612f071b946a3f70e8a65496db,
+    threatPrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
       type: 3}
     spawnMode: 0
   - threatName: TimeGyroid
     threatLevel: 5
     weight: 1
-    threatPrefab: {fileID: 8186157953239024494, guid: 64c1c3612f071b946a3f70e8a65496db,
+    threatPrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
       type: 3}
     spawnMode: 0

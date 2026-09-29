@@ -5,20 +5,22 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
     /// <summary>
     /// One-click setup for the freestyle <b>Toybox</b> in Menu_Main. It:
-    ///   1. authors the four built-in toy definitions (Fly-by-Numbers painting, Vessel Changer,
-    ///      Domain Changer, Wanderway conveyor) under <c>Assets/_SO_Assets/Toys/</c> plus the
-    ///      painting gallery under <c>Assets/_SO_Assets/Toys/Paintings/</c>,
+    ///   1. authors the built-in toy definitions (Connect-the-Dots painting, Vessel Changer,
+    ///      Domain Changer, Wanderway conveyor, Cell Selector, Arkway) under
+    ///      <c>Assets/_SO_Assets/Toys/</c> plus the painting gallery under
+    ///      <c>Assets/_SO_Assets/Toys/Paintings/</c>,
     ///   2. creates/loads a <see cref="ToyboxSO"/> at <c>Assets/Resources/Toybox.asset</c> and
     ///      registers the toys on it, and
     ///   3. adds a <see cref="ToyboxController"/> to the Menu_Main scene (on the object carrying
     ///      <c>MenuCrystalClickHandler</c>, else a new root) and points it at the toybox.
     ///
-    /// Idempotent — safe to re-run (re-runs also fill newly-added unset content fields and append
+    /// Idempotent - safe to re-run (re-runs also fill newly-added unset content fields and append
     /// missing gallery paintings). The painting toy spawns one <see cref="PaintingToy"/> station
     /// per painting, each driving a multi-stroke <see cref="PaintingRunner"/>.
     /// See Docs/ToySystem/ARCHITECTURE.md.
@@ -31,14 +33,16 @@ namespace CosmicShore.Editor
         const string ToyboxAssetPath = "Assets/Resources/Toybox.asset";
         const string MenuScenePath = "Assets/_Scenes/Menu_Main.unity";
 
-        [MenuItem("Tools/Cosmic Shore/Setup Freestyle Toybox")]
+        [MenuItem("FrogletTools/Scene Setup/Setup Freestyle Toybox")]
+        [FrogletTool(FrogletToolCategory.SceneSetup, Importance = 4,
+            Description = "Author the freestyle toybox assets and wire them into Menu_Main.")]
         static void SetupToybox()
         {
             var gallery = CreatePaintingGallery();
             var painting = LoadOrCreateToy<PaintingToyDefinitionSO>(
-                "Toy_Painting", "painting", "Fly by Numbers", "Paint monuments with your trail.",
+                "Toy_Painting", "painting", "Connect the Dots", "Connect the dots to paint 3D masterpieces with your trail.",
                 new Color(0.20f, 0.90f, 1.00f), 0f);
-            AssignPaintings(painting, gallery); // always — migrates pre-gallery Toy_Painting assets too
+            AssignPaintings(painting, gallery); // always - migrates pre-gallery Toy_Painting assets too
             var vessel = LoadOrCreateToy<VesselChangerToyDefinitionSO>(
                 "Toy_VesselChanger", "vessel_changer", "Vessel Changer", "Fly through to swap your ship.",
                 new Color(1.00f, 0.85f, 0.20f), 120f);
@@ -48,9 +52,31 @@ namespace CosmicShore.Editor
             var conveyor = LoadOrCreateToy<ConveyorToyDefinitionSO>(
                 "Toy_Conveyor", "conveyor", "Wanderway", "Fly through to summon an endless trail of little worlds.",
                 new Color(0.35f, 1.00f, 0.55f), 60f, AssignConveyorContent);
+            // No content wiring: with no cells authored the toy reads the containing Cell's own
+            // CellConfigs rotation, which is the single source of truth for this scene's cell.
+            var cellSelector = LoadOrCreateToy<CellSelectorToyDefinitionSO>(
+                "Toy_CellSelector", "cell_selector", "Cell Selector",
+                "Fly through to pick the world you fly in - or reset it.",
+                new Color(0.55f, 0.75f, 1.00f), 300f);
+            // The cellular Wanderway: cells drawn from the host cell's own rotation, so like the
+            // cell selector it needs no cell list - only the Ark's hull prism.
+            // 210, not 180: the hand-authored Toy_SpawnMatrix already sits at 180, and two
+            // toys on one angle stack at the same point of the membrane ring.
+            var arkway = LoadOrCreateToy<ArkwayToyDefinitionSO>(
+                "Toy_Arkway", "arkway", "Arkway",
+                "Fly through to escort an Ark on a voyage through the cells.",
+                new Color(1.00f, 0.55f, 0.30f), 210f, AssignArkwayContent);
+
+            // 150: between the vessel changer (120) and the hand-authored Spawn Matrix (180),
+            // so the three toys that change YOUR vessel sit together on the ring.
+            var elementCharger = LoadOrCreateToy<ElementChargerToyDefinitionSO>(
+                "Toy_ElementCharger", "element_charger", "Element Charger",
+                "Fly through to charge your vessel's elements.",
+                new Color(0.90f, 0.95f, 1.00f), 150f);
 
             var toybox = LoadOrCreateToybox();
-            RegisterToys(toybox, new ToyDefinitionSO[] { painting, vessel, domain, conveyor });
+            RegisterToys(toybox, new ToyDefinitionSO[]
+                { painting, vessel, domain, conveyor, cellSelector, arkway, elementCharger });
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -58,17 +84,25 @@ namespace CosmicShore.Editor
             bool wiredScene = AddControllerToMenuScene(toybox);
 
             EditorUtility.DisplayDialog("Setup Freestyle Toybox",
-                "Toybox ready with 4 toys (Fly by Numbers, Vessel Changer, Domain Changer, Wanderway).\n\n" +
+                "Toybox ready with 7 toys (Connect the Dots, Vessel Changer, Domain Changer, Wanderway, " +
+                "Cell Selector, Arkway, Element Charger).\n\n" +
                 $"• Toy assets:  {ToysFolder}/\n" +
-                $"• Paintings:   {PaintingsFolder}/ (Star, Rainbow, Saturn, Taj Mahal)\n" +
+                $"• Paintings:   {PaintingsFolder}/ (16 masterpieces: Star → Taj Mahal → Torus Knot, " +
+                "Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix, Almighty " +
+                "Mountain, Starry Night, Lion's Head, Peacock)\n" +
                 $"• Toybox:      {ToyboxAssetPath}\n" +
                 (wiredScene
                     ? "• ToyboxController added to Menu_Main and saved.\n"
-                    : "• Could not auto-add the ToyboxController — add it to the Menu_Main 'Game' object manually.\n") +
-                "\nAll four toys work as-is. The vessel changer shows mini ship models; the domain " +
+                    : "• Could not auto-add the ToyboxController - add it to the Menu_Main 'Game' object manually.\n") +
+                "\nAll seven toys work as-is. The vessel changer shows mini ship models; the domain " +
                 "changer shows the two colours you're not; the painting toy spawns one station per " +
-                "painting (multi-stroke, multi-domain fly-by-numbers with start gates that recolour " +
-                "your trail); the Wanderway conveyor streams shuffled microscenes ahead of your flight path.\n" +
+                "painting (multi-stroke, multi-domain connect-the-dots with start gates that recolour " +
+                "your trail); the Wanderway conveyor streams shuffled microscenes ahead of your flight " +
+                "path; the Cell Selector blooms a matrix of mini-cells that swap (or reset) the world " +
+                "you fly in; the Arkway opens a corridor of whole cells and an Ark that sails them; the " +
+                "Element Charger opens a row of four element crystals that raise your vessel's levels.\n\n" +
+                "REMINDER: set the Menu_Main Cell's 'Cell Type Choice Options' to EnvironmentFree so " +
+                "freestyle boots empty and the heavy worlds stay opt-in.\n" +
                 "See Docs/ToySystem/ARCHITECTURE.md.",
                 "OK");
         }
@@ -104,7 +138,7 @@ namespace CosmicShore.Editor
             }
 
             // Always fill any UNSET content references (each 'extra' assignment guards for unset), so
-            // re-running the tool wires newly-added fields — e.g. the conveyor's omniCrystalPrefab —
+            // re-running the tool wires newly-added fields - e.g. the conveyor's omniCrystalPrefab -
             // onto an already-authored asset without clobbering user customisations.
             if (extra != null)
             {
@@ -204,6 +238,17 @@ namespace CosmicShore.Editor
                     effectsProp.arraySize = 1;
                     effectsProp.GetArrayElementAtIndex(0).objectReferenceValue = effect;
                 }
+            }
+        }
+
+        static void AssignArkwayContent(SerializedObject so)
+        {
+            // The Ark's hull prism: the same plain environment prism the conveyor lays.
+            var prismProp = so.FindProperty("prismPrefab");
+            if (prismProp != null && !prismProp.objectReferenceValue)
+            {
+                var prism = AssetDatabase.LoadAssetAtPath<Prism>("Assets/_Prefabs/Trails/SpawnablePrism.prefab");
+                if (prism) prismProp.objectReferenceValue = prism;
             }
         }
 

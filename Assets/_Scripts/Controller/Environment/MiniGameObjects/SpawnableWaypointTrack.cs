@@ -163,9 +163,12 @@ public class SpawnableWaypointTrack : SpawnableBase
                 block.transform.localPosition = position;
                 block.transform.localRotation = rotation;
                 block.TargetScale = blockScale;
-                block.Trail = trail;
                 block.Initialize();
+                block.AssignTrail(trail);   // AFTER Initialize - reset clears membership
                 trail.Add(block);
+                // Custom loop bypasses PrismTrailBuilder.LayOne — register with the arena-ready
+                // gate so track blocks can't pop in after the connecting screen drops.
+                PrismTrailBuilder.WatchForReveal(block);
 
                 totalBlocks++;
             }
@@ -173,8 +176,10 @@ public class SpawnableWaypointTrack : SpawnableBase
 
         trails.Add(trail);
 
-        CSDebug.Log($"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
-           $"{totalBlocks} total blocks, spline={spline}, approximate length: {EstimateTrackLength(intensityLevel):F0} units");
+        if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
+                $"{totalBlocks} total blocks, spline={spline}, approximate length: {EstimateTrackLength(intensityLevel):F0} units");
 
         return container;
     }
@@ -205,7 +210,7 @@ public class SpawnableWaypointTrack : SpawnableBase
     /// but yield each block's position/rotation/scale instead of instantiating
     /// a prefab. Used by editor preview tools to draw the track layout without
     /// running the runtime Prism lifecycle (which collapses prisms to scale
-    /// zero in edit mode and depends on the PrismScaleManager singleton).
+    /// zero in edit mode and depends on runtime-only prism systems).
     /// </summary>
     public IEnumerable<PreviewBlock> GetPreviewBlocks(int intensityLevelArg)
     {

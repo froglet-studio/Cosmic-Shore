@@ -14,7 +14,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// <see cref="ProfilerRecorder"/> stats once per frame and writes them to a CSV under
     /// <c>persistentDataPath/ProfilerCaptures/</c>, plus a compact summary .txt at the end.
     ///
-    /// Raw numbers only — no scoring/grading (unlike the benchmark Runner). Built for long
+    /// Raw numbers only - no scoring/grading (unlike the benchmark Runner). Built for long
     /// (minutes-long) gameplay captures: the CSV lets you pinpoint WHICH frames spike and
     /// WHICH subsystem owns them (render vs GC vs CPU/physics), so you can then deep-profile
     /// just those frames.
@@ -25,7 +25,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// measures.
     ///
     /// Access (any of):
-    ///  - Editor menu: Tools > Cosmic Shore > Profiler CSV Logger > Start / Stop &amp; Save / Open Folder
+    ///  - Editor menu: FrogletTools > Performance > Profiler CSV Logger> Start / Stop &amp; Save / Open Folder
     ///  - Add this component to a scene/bootstrap object with autoStartOnEnable = true (logs a
     ///    whole play session hands-free, writes on play-exit).
     ///  - Call ProfilerCsvLogger.StartCapture() / StopCapture() from code.
@@ -85,7 +85,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder _triangles;
         ProfilerRecorder _vertices;
         ProfilerRecorder _gcAlloc;           // bytes / frame
-        ProfilerRecorder _physicsSendEvents; // ns — may be unavailable on some Unity versions
+        ProfilerRecorder _physicsSendEvents; // ns - may be unavailable on some Unity versions
 
         // Optional named script markers -> one extra ms column each.
         ProfilerRecorder[] _markerRecorders;
@@ -116,7 +116,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         void OnDisable()
         {
             // Covers play-mode exit (DontDestroyOnLoad host is disabled/destroyed) and
-            // component removal — make sure an in-flight capture is saved.
+            // component removal - make sure an in-flight capture is saved.
             if (_capturing) End();
         }
 
@@ -165,7 +165,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _csvPath = Path.Combine(dir, $"perf_{namePart}_{stamp}.csv");
 
             _capturing = true;
-            Debug.Log($"[ProfilerCsvLogger] Capture STARTED — scene '{_sceneName}'. Writing to:\n{_csvPath}");
+            Debug.Log($"[ProfilerCsvLogger] Capture STARTED - scene '{_sceneName}'. Writing to:\n{_csvPath}");
         }
 
         void Update()
@@ -303,7 +303,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             try { File.WriteAllText(summaryPath, summary); }
             catch (Exception e) { Debug.LogWarning($"[ProfilerCsvLogger] Summary write failed: {e.Message}"); }
 
-            Debug.Log($"[ProfilerCsvLogger] Capture STOPPED — {_frameMs.Count} frames.\n" +
+            Debug.Log($"[ProfilerCsvLogger] Capture STOPPED - {_frameMs.Count} frames.\n" +
                       $"CSV:     {_csvPath}\nSummary: {summaryPath}\n\n{summary}");
             return _csvPath;
         }
@@ -357,7 +357,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (_markerColumns != null && _markerColumns.Length > 0)
             {
                 sb.AppendLine();
-                sb.AppendLine("script markers (ms — avg / p95 / max, % of avg frame):");
+                sb.AppendLine("script markers (ms - avg / p95 / max, % of avg frame):");
                 for (int m = 0; m < _markerColumns.Length; m++)
                 {
                     var s = _markerSamples[m];
@@ -376,7 +376,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             sb.AppendLine();
             sb.AppendLine("Read: a worst frame with tris/draws far above the render median => render/geometry-bound; " +
-                          "high gcKB => GC; neither => CPU (scripts/physics) — check the script-marker columns / deep-profile that frame.");
+                          "high gcKB => GC; neither => CPU (scripts/physics) - check the script-marker columns / deep-profile that frame.");
             return sb.ToString();
         }
 

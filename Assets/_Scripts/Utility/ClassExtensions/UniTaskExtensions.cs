@@ -21,7 +21,7 @@ namespace CosmicShore.Utility
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // AsMainThread — UGS / Netcode await boundary helper
+        // AsMainThread - UGS / Netcode await boundary helper
         // ─────────────────────────────────────────────────────────────────────
         //
         // UGS-SDK and Netcode Tasks complete on the .NET ThreadPool, so code
@@ -33,43 +33,50 @@ namespace CosmicShore.Utility
         //
         // UniTask's own primitives are unreliable on this UniTask version
         // (com.cysharp.unitask@86b6e6a2e286):
-        //   • SwitchToMainThread() — awaiter's IsCompleted returns true from
+        //   • SwitchToMainThread() - awaiter's IsCompleted returns true from
         //     ThreadPool → continuation runs inline on ThreadPool.
-        //   • Yield(PlayerLoopTiming.Update) — yields, but the resumption is not
+        //   • Yield(PlayerLoopTiming.Update) - yields, but the resumption is not
         //     guaranteed on the main thread because UniTask intentionally bypasses
         //     SynchronizationContext (Cysharp/UniTask#319, #561, #151).
         //
         // We marshal through Unity's own SynchronizationContext via
         // MainThreadDispatcher, which is properly main-thread-bound.
         //
-        // Usage: `await someTask.AsMainThread();` — encodes "this is a
+        // Usage: `await someTask.AsMainThread();` - encodes "this is a
         // cross-thread call, resume on main thread" at the call boundary so
         // callers don't have to remember a separate Yield/Switch line.
+        //
+        // BOTH OUTCOMES marshal. The switch lives in a `finally`, so a FAULTED or
+        // cancelled task also resumes on the main thread before its exception
+        // reaches the caller's `catch`. Until 2026-09 only the success path did:
+        // every `catch` after `await x.AsMainThread()` ran wherever the UGS task
+        // faulted - so a sign-in failure raised its SOAP failure event off the main
+        // thread, and a retry loop's catch that logged NetworkDiagnostics (which
+        // reads Application/Time state) threw inside the catch and aborted the retry.
+        // An exception is exactly when a caller is most likely to touch UI.
 
         public static async UniTask AsMainThread(this Task task)
         {
-            await task;
-            await MainThreadDispatcher.SwitchToMainThreadAsync();
+            try { await task; }
+            finally { await MainThreadDispatcher.SwitchToMainThreadAsync(); }
         }
 
         public static async UniTask<T> AsMainThread<T>(this Task<T> task)
         {
-            var result = await task;
-            await MainThreadDispatcher.SwitchToMainThreadAsync();
-            return result;
+            try { return await task; }
+            finally { await MainThreadDispatcher.SwitchToMainThreadAsync(); }
         }
 
         public static async UniTask AsMainThread(this UniTask task)
         {
-            await task;
-            await MainThreadDispatcher.SwitchToMainThreadAsync();
+            try { await task; }
+            finally { await MainThreadDispatcher.SwitchToMainThreadAsync(); }
         }
 
         public static async UniTask<T> AsMainThread<T>(this UniTask<T> task)
         {
-            var result = await task;
-            await MainThreadDispatcher.SwitchToMainThreadAsync();
-            return result;
+            try { return await task; }
+            finally { await MainThreadDispatcher.SwitchToMainThreadAsync(); }
         }
     }
 }

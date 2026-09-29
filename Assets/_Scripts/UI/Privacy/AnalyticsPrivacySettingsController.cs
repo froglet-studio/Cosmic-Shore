@@ -40,7 +40,7 @@ namespace CosmicShore.UI
             {
                 // Reflect current state without firing the change handler.
                 consentToggle.SetIsOnWithoutNotify(_analytics.ConsentGranted);
-                // Under-13 players can't enable collection — lock the toggle off.
+                // Under-13 players can't enable collection - lock the toggle off.
                 consentToggle.interactable = _analytics.AgeEligible;
                 consentToggle.onValueChanged.AddListener(OnConsentToggled);
             }
@@ -67,7 +67,7 @@ namespace CosmicShore.UI
         void OnDeleteDataClicked()
         {
             _analytics?.RequestDataDeletion();
-            // Deletion revokes consent — reflect that in the toggle.
+            // Deletion revokes consent - reflect that in the toggle.
             if (consentToggle != null)
                 consentToggle.SetIsOnWithoutNotify(false);
         }

@@ -11,10 +11,20 @@ namespace CosmicShore.Core
         static List<GameModes> FavoriteGames;
         static bool Initialized = false;
 
+        // Re-read the disk store each play session, and drop AnalyticsServiceFacade's
+        // un-removable constructor-lambda subscription with it.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            FavoriteGames = null;
+            Initialized = false;
+            OnFavoriteChanged = null;
+        }
+
         const string GameFavoritesSaveFileName = "game_favorites.data";
 
         /// <summary>Raised after a favorite toggle. Args: (game, isNowFavorited).
-        /// AnalyticsServiceFacade subscribes — keeps this static utility decoupled from UI.</summary>
+        /// AnalyticsServiceFacade subscribes - keeps this static utility decoupled from UI.</summary>
         public static event Action<GameModes, bool> OnFavoriteChanged;
 
         public static void Init()

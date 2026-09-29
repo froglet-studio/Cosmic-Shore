@@ -34,8 +34,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -54, y: -12}
-  m_SizeDelta: {x: 35.9603, y: 25}
+  m_AnchoredPosition: {x: -129.6, y: -28.800001}
+  m_SizeDelta: {x: 86.304726, y: 60.000004}
   m_Pivot: {x: 0, y: 0}
 --- !u!222 &6597217681364657473
 CanvasRenderer:
@@ -93,17 +93,18 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 12
+  m_fontSize: 28.8
   m_fontSizeBase: 12
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 8
-  m_fontSizeMax: 12
+  m_fontSizeMin: 19.2
+  m_fontSizeMax: 28.800001
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -225,8 +226,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -14.4, y: -12.5}
-  m_SizeDelta: {x: 88.9444, y: 25}
+  m_AnchoredPosition: {x: -34.56, y: -30.000002}
+  m_SizeDelta: {x: 213.46657, y: 60.000004}
   m_Pivot: {x: 0, y: 0}
 --- !u!222 &5344748540482263063
 CanvasRenderer:
@@ -284,17 +285,18 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 10
+  m_fontSize: 24
   m_fontSizeBase: 8.72
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 8
-  m_fontSizeMax: 10
+  m_fontSizeMin: 19.2
+  m_fontSizeMax: 24
   m_fontStyle: 0
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -362,8 +364,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -7}
-  m_SizeDelta: {x: 15, y: 15}
+  m_AnchoredPosition: {x: 0, y: -16.800001}
+  m_SizeDelta: {x: 36, y: 36}
   m_Pivot: {x: 0, y: 0}
 --- !u!222 &4536149853425102308
 CanvasRenderer:

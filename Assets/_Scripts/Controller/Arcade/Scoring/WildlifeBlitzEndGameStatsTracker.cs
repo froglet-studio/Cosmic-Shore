@@ -46,12 +46,12 @@ namespace CosmicShore.Gameplay
 
         void LogFinalStats(bool didWin, float elapsedTime, float finalScore)
         {
-            CSDebug.Log("========================================");
-            CSDebug.Log($"<color=cyan>📊 WILDLIFE BLITZ - FINAL STATS</color>");
-            CSDebug.Log($"<color=yellow>⏱️  Time Taken:</color> {FormatTime(elapsedTime)}");
-            CSDebug.Log(didWin ? $"<color=green>🏆 VICTORY!</color>" : $"<color=red>❌ DEFEAT</color>");
-            CSDebug.Log($"<color=white>🎯 Final Ranked Score:</color> {finalScore}");
-            CSDebug.Log("========================================");
+            if (!CSDebug.IsVerbose(CSLogChannel.ArcadeMatch)) return;
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                "[WildlifeBlitzEndGameStats] Final stats" +
+                $"\n  result={(didWin ? "victory" : "defeat")}" +
+                $"\n  time={FormatTime(elapsedTime)}" +
+                $"\n  rankedScore={finalScore}");
         }
         
         public static string FormatTime(float seconds)

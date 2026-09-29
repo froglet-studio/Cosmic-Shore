@@ -1,5 +1,10 @@
 # Plan: Refactor Shape Spawning into Freestyle SegmentSpawner Pipeline
 
+> **Status 2026-08-25:** the scored drawing mode this plan hands off to
+> (`ShapeDrawingManager`) was **deleted** (C15 / Prompt 15). `SegmentSpawner` +
+> spawnable shapes + `ShapeDefinition` remain. The painting toy is the successor.
+> Recover the scored flow from git if a scored minigame is wanted.
+
 ## Goal
 Replace the static lobby-based shape selection (ModeSelectTrigger / ShapeSign text objects) with shapes that are **spawnable 3D objects** (made of prisms) living inside the SegmentSpawner rotation alongside helixes, ellipsoids, etc. When the vessel collides with a shape, it triggers shape drawing mode.
 

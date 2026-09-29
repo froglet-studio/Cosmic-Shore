@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="AudioFile" id="{69559eb9-8972-495d-b674-1299a30d0c0e}">
+		<property name="assetPath">
+			<value>VGMSampColl - Sample 3.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>1</value>
+		</property>
+		<property name="length">
+			<value>0.25968253968253968</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{10bfe9dd-695d-4131-b664-efde45fc55f0}</destination>
+		</relationship>
+	</object>
+</objects>

@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
     /// Server-authoritative match clock for Astro League. Counts down regulation time and
     /// pushes the "M:SS" (or "OT") readout to every peer through the shared turn-monitor
     /// display channel, pauses during kickoffs/celebrations via <see cref="SetClockPaused"/>,
-    /// and reports expiry to the match controller — which decides between full time and
+    /// and reports expiry to the match controller - which decides between full time and
     /// golden-goal overtime. The turn only ends when the controller calls
     /// <see cref="ForceEnd"/>; <see cref="CheckForEndOfTurn"/> is server-gated like the other
     /// network turn monitors.
@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
         public void ConfigureDuration(float seconds) => remainingSeconds = Mathf.Max(1f, seconds);
 
         /// <summary>
-        /// Server: halts/resumes the countdown without touching the TurnMonitor loop —
+        /// Server: halts/resumes the countdown without touching the TurnMonitor loop -
         /// base Pause() stalls the async loop until Resume, so kickoff/celebration freezes
         /// go through this flag instead and the display keeps refreshing.
         /// </summary>

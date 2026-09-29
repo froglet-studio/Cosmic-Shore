@@ -18,10 +18,10 @@ The one rule that explains the whole design:
 ```
 ┌─────────────────────────────── EDITOR (UnityEditor, #if UNITY_EDITOR) ───────────────────────────────┐
 │                                                                                                       │
-│   PerformanceBenchmarkWindow  ──tabs──►  Runtime Capture │ Sweep │ History │ Compare                  │
-│        │                                                                                              │
-│        │ starts / reads                         enriches spikes (off game thread)                    │
-│        ▼                                              ▲                                               │
+│   PerformanceBenchmarkWindow  ──tabs──►  Runtime Capture │ Sweep │ History │ Compare │ Load Insights  │
+│        │                                                                              │               │
+│        │ starts / reads                         enriches spikes (off game thread)     │ LoadInsightsTab│
+│        ▼                                              ▲                               ▼               │
 │   SpikeAnalyzer (ProfilerDriver / HierarchyFrameDataView — editor-only marker self-time)             │
 │        │                                                                                              │
 │   EditorUIStyles · BenchmarkHistory · BenchmarkComparer · BenchmarkAutoStart                          │
@@ -30,11 +30,18 @@ The one rule that explains the whole design:
                   ▼                                                  │
 ┌─────────────────────────────── RUNTIME (MonoBehaviours, exist in Play Mode) ─────────────────────────┐
 │                                                                                                       │
-│   PerformanceBenchmarkRunner  ◄── the only measurer (end-of-frame, zero-alloc)                       │
+│   PerformanceBenchmarkRunner  ◄── the only FRAME measurer (end-of-frame, zero-alloc)                 │
 │        ├─ samples FrameSnapshot/frame  ── ProfilerRecorder (Render/Memory/Physics) + FrameTimingMgr   │
 │        ├─ GameLoadSampler   ── prisms / VFX / vessels / players from gameplay singletons              │
 │        ├─ NetMarkers        ── CSM.Net.* markers + RPC/NetVar/bytes counters (read back as recorders) │
 │        └─ on stop ─► BenchmarkStatistics ─► BenchmarkAnalysis (score+grade+hints) ─► BenchmarkReport  │
+│                                                                                                       │
+│   LoadInsights (static)  ◄── the LOAD-WINDOW measurer: spans from pipeline call sites                 │
+│        ├─ armed via PlayerPrefs; BeginLoad at game launch → CompleteLoad at arena complete            │
+│        ├─ exact wall-clock attribution (innermost active span wins; sums to 100%) + hot-path          │
+│        │  accumulators (per-item stage totals inside big spans) + hints                               │
+│        └─ LoadInsightsRuntime (host, editor+dev builds): frame stalls, error capture, netcode scene   │
+│           events (client trigger), in-flight snapshot every 5s, abort/timeout rails                   │
 │                                                                                                       │
 │   ManualSweepSession   ── Sweep companion: error/exception log + F8 marks (near-zero overhead)        │
 │                                                                                                       │
@@ -47,11 +54,18 @@ The one rule that explains the whole design:
                   ▼
 ┌─────────────────────────────── STORAGE (plain JSON / text on disk) ──────────────────────────────────┐
 │   persistentDataPath/Benchmarks/*.json   (+ benchmark_index.json, _collect_lastrun, _sweep_lastrun)   │
+│   persistentDataPath/Benchmarks/LoadInsights/load_*.json + .txt (+ _loadinsights_inflight.json)       │
 │   persistentDataPath/PerfRuns/*.json     (dev-build self-capture, origin=DevBuild)                    │
 │   persistentDataPath/ProfilerCaptures/*.csv (+ _summary.txt)                                          │
 │   Documents/CosmicShore Diagnostics/diag_*.json (+ .txt)  (DiagnosticsHUD)                            │
 └───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+> The "one measurer" rule now has a deliberate second instance: `PerformanceBenchmarkRunner` owns
+> **steady-state frame cost**, `LoadInsights` owns the **load window** (launch → playable). They
+> never overlap in responsibility: the runner samples frames forever-shaped, the load recorder
+> attributes a bounded window to causes. Both follow the same pattern — gameplay code writes
+> markers/spans, the tool reads and persists reports, the window is a front-end.
 
 ---
 
@@ -231,6 +245,13 @@ fps,label}` come from `ManualSweepSession`.
 - `DiagnosticsHUD` → own `ProfilerRecorder`s + `NetMarkers` + UTP RTT → `Documents/…/diag_*.json`.
 - `BenchmarkBuildAutoRunner` (`-csmbench`) → `PerformanceBenchmarkRunner` (fixed run) →
   `PerfRuns/*.json` → History *Import External Run*.
+- Pipeline code (`GameDataSO.InvokeGameLaunch/InvokeClientReady`, `SceneLoader`, vessel/AI
+  initializers, `Cell`, life/segment/crystal spawners, `SpawnableBase`, `PrismTrailBuilder.LayOne`
+  stage accumulators, pools) →
+  `LoadInsights.BeginLoad / Measure / Mark / Count / AccumulateSample / CompleteLoad` (write) ←
+  read by `LoadInsightsTab` (live status + report) and persisted as `LoadInsights/load_*.json + .txt`.
+- `LoadInsightsRuntime` → Unity + Netcode scene events (client-side BeginLoad trigger, marks),
+  `Application.logMessageReceived` (errors), per-frame stall feed, in-flight snapshot/recovery.
 
 ---
 

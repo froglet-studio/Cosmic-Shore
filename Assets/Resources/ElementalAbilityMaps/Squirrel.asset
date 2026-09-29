@@ -1,0 +1,77 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Squirrel
+  m_EditorClassIdentifier:
+  vesselClass: 6
+  entries:
+  - Element: 1
+    AbilityLabel: Crystal Joust
+    AbilityDescription: BASE (no upgrade needed) - joust a lifeform's crystal while
+      moving faster than it to wither opposing-domain creatures, freeing the heart
+      and auto-collecting it; overtake an opposing PILOT and you steal elemental
+      petals off them. Charge scales how many petals each steal takes
+      (VesselOvertakeBySkimmerEffectSO.stealScale, x1 at rest -> x2.5 at level 10,
+      read from the thief's replicated level so every peer moves the same petals).
+      At level 5 the joust also SHEPHERDS allies - an own-domain lifeform is
+      NOURISHED instead (ILifeFormEntity.Nourish - its starvation clock resets and
+      its birth counter advances).
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Shepherd
+    UpgradeDescription: Jousting an OWN-domain lifeform's crystal nourishes it
+      instead of doing nothing.
+  - Element: 2
+    AbilityLabel: Boost Ring
+    AbilityDescription: Deploy a ring of conserved prism mass ahead of the vessel -
+      the Squirrel's mass-creation ability, which is why it sits on Mass. Mass
+      shortens the deploy cooldown (SquirrelTubeActionSO.cooldownMultiplierAtFullMass,
+      x1 at rest -> x0.5 at level 10, floored), so a heavier pilot lays rings more
+      often. At level 5 each deploy lays a second ring.
+    Input: 11
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Twin Rings
+    UpgradeDescription: The boost ring deploys with a second ring.
+  - Element: 3
+    AbilityLabel: Steal
+    AbilityDescription: Skim a prism to STEAL it into your own domain. Space grows
+      the skimmer sphere (authored on the skimmer's Scale ElementalFloat, 15 -> 30
+      at level 10, evaluated live), and the sphere IS the steal reach - a bigger
+      skimmer converts more mass per pass. BASE - an opposing SHIELDED prism only
+      loses its shield and keeps its domain. At level 5 the steal goes through the
+      shield - the prism changes hands AND keeps its armour. Super-shielded mass
+      stays invulnerable at every level.
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Iron Grip
+    UpgradeDescription: Shielded prisms are stolen outright and keep their shield,
+      instead of merely being stripped of it.
+  - Element: 4
+    AbilityLabel: Skimming
+    AbilityDescription: Time raises the boost energy gained per prism-skimmer
+      collision (SkimmerBoostPrismEffectSO.energyMultiplier, x1 -> x2 at level 10
+      floored at x0.25, read live per hit). Skim energy is the Squirrel's speed, so
+      the element that makes the pilot faster owns it. At level 5 danger prisms
+      grant the 10x energy bonus (below it they pay base energy - the bonus is
+      earned, no longer always on).
+    Input: 0
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: Live Wire
+    UpgradeDescription: Danger prisms grant 10x boost energy when skimmed.

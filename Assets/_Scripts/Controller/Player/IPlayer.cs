@@ -16,6 +16,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         int AvatarId { get; }
         string PlayerUUID { get; }
+        /// <summary>
+        /// The player's UGS authentication PlayerId, replicated to every peer. Empty for AI.
+        /// This is the real identity - <see cref="PlayerUUID"/> is the display name.
+        ///
+        /// <para><b>It ALLOCATES on every read.</b> The implementation is
+        /// <c>NetUgsPlayerId.Value.ToString()</c> and <c>FixedString64Bytes.ToString()</c> mints a
+        /// managed string each time, so reading it per player per frame is throwaway garbage at
+        /// frame rate. Read it on a tick, or cache it - never in a per-frame loop over the
+        /// roster.</para>
+        /// </summary>
+        string UgsPlayerId { get; }
         IVessel Vessel { get; }
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
@@ -40,11 +51,54 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsNetworkClient { get; }
         /// <summary>
-        /// The locally-owned, non-AI player — the owner client providing input. Equivalent to
+        /// The locally-owned, non-AI player - the owner client providing input. Equivalent to
         /// <see cref="IsMultiplayerOwner"/>; there is no offline single-player (every session is a
         /// Relay host, solo or party) and AI shares the host's owner id, so it is excluded.
         /// </summary>
         bool IsLocalUser { get; }
+        /// <summary>
+        /// The human pilot ON THIS MACHINE — the player whose camera and input this client owns.
+        /// Broader than <see cref="IsLocalUser"/> by exactly one case: the legacy NON-NETWORKED
+        /// single-player spawn path (<see cref="PlayerSpawner"/> → <c>InitializeForSinglePlayerMode</c>,
+        /// used by the single-player minigame scenes) never network-spawns its Player, so
+        /// <c>IsSpawned</c> is false there and <see cref="IsLocalUser"/> reports false for a human.
+        ///
+        /// Use this — never <see cref="IsLocalUser"/> — for anything that must hold in EVERY game
+        /// mode, so a mode cannot opt out of a platform system by using the other spawn path. The
+        /// prism occlusion corridor (Docs/PRISM_ANIMATION.md §4.7) binds on exactly this.
+        /// </summary>
+        bool IsLocalPilot { get; }
+        /// <summary>
+        /// True once THIS player's machine has finished building the arena and is past its own
+        /// connecting screen. The arena is built independently on every peer, so only that
+        /// player's machine can know - it reports through <see cref="ReportArenaReady"/> and the
+        /// answer replicates. A player that is not network-spawned (the legacy single-player
+        /// path) is trivially ready: there is no second machine to wait for.
+        /// </summary>
+        bool IsArenaReady { get; }
+        /// <summary>Announce that this machine's arena build is complete. Owner-side; idempotent.</summary>
+        void ReportArenaReady();
+        /// <summary>
+        /// True once this player has asked for a rematch on the current scoreboard. Replicated
+        /// state, not an event, so the scoreboard can draw a face per vote on every peer - the
+        /// host's above all, since only the host's press actually restarts the match. Always
+        /// false for a player that is not network-spawned (the legacy single-player path): there
+        /// is nobody to ask.
+        /// </summary>
+        bool HasVotedRematch { get; }
+        /// <summary>
+        /// True once this pilot has tapped READY in the Maelstrom hub. Replicated state rather
+        /// than an event, for the same reason as <see cref="HasVotedRematch"/>: the hub draws a
+        /// face per ready press on every peer, and a peer that loaded the hub late still has to
+        /// be able to read who was already waiting. Always false for a player that is not
+        /// network-spawned.
+        /// </summary>
+        bool IsMaelstromReady { get; }
+        /// <summary>
+        /// Announce this pilot's own READY press. Owner-side; the server writes through, a client
+        /// asks on its own player object, which is what establishes whose press it was.
+        /// </summary>
+        void SetMaelstromReady(bool ready);
         /// <summary>
         /// In multiplayer session, this stores the network object id.
         /// </summary>

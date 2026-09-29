@@ -1,0 +1,245 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffaeda0f24124140b024b5ef6912d40d, type: 3}
+  m_Name: ScreenshotDirectorConfig
+  m_EditorClassIdentifier: 
+  outputFolder: 
+  captureHeight: 2160
+  excludedLayers:
+    serializedVersion: 2
+    m_Bits: 96
+  matchGameQuality: 1
+  holdOcclusionCorridor: 1
+  pairSeparation: {x: 10, y: 30}
+  pairChance: 0.85
+  markDistantVessels: 1
+  markDistance: 100
+  hideTailsWithin: 30
+  clearShotSamples: 6
+  clearShotAcceptOccluders: 0
+  concepts:
+  - name: Over the Shoulder
+    weight: 1.2
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 155, y: 205}
+    elevationDegrees: {x: 6, y: 22}
+    distance: {x: 12, y: 39}
+    fieldOfView: {x: 55, y: 68}
+    rollDegrees: {x: -3, y: 3}
+    aimLeadSeconds: {x: 0.05, y: 0.3}
+    framingPitchDegrees: {x: -2, y: 4}
+    markVessels: 1
+  - name: Sidecar
+    weight: 1.4
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 60, y: 120}
+    elevationDegrees: {x: -8, y: 14}
+    distance: {x: 14, y: 51}
+    fieldOfView: {x: 45, y: 62}
+    rollDegrees: {x: -6, y: 6}
+    aimLeadSeconds: {x: 0, y: 0.2}
+    framingPitchDegrees: {x: -3, y: 3}
+    markVessels: 1
+  - name: Sidecar (port)
+    weight: 1.4
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 240, y: 300}
+    elevationDegrees: {x: -8, y: 14}
+    distance: {x: 14, y: 51}
+    fieldOfView: {x: 45, y: 62}
+    rollDegrees: {x: -6, y: 6}
+    aimLeadSeconds: {x: 0, y: 0.2}
+    framingPitchDegrees: {x: -3, y: 3}
+    markVessels: 1
+  - name: Oncoming
+    weight: 1
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: -28, y: 28}
+    elevationDegrees: {x: -6, y: 18}
+    distance: {x: 18, y: 67.5}
+    fieldOfView: {x: 38, y: 55}
+    rollDegrees: {x: -5, y: 5}
+    aimLeadSeconds: {x: 0, y: 0}
+    framingPitchDegrees: {x: -2, y: 2}
+    markVessels: 1
+  - name: Low Chase
+    weight: 1
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 165, y: 195}
+    elevationDegrees: {x: -22, y: -4}
+    distance: {x: 8, y: 27}
+    fieldOfView: {x: 65, y: 82}
+    rollDegrees: {x: -8, y: 8}
+    aimLeadSeconds: {x: 0.1, y: 0.35}
+    framingPitchDegrees: {x: -5, y: 0}
+    markVessels: 1
+  - name: Top Down
+    weight: 0.6
+    framing: 0
+    worldAligned: 1
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: 62, y: 86}
+    distance: {x: 28, y: 105}
+    fieldOfView: {x: 45, y: 65}
+    rollDegrees: {x: -12, y: 12}
+    aimLeadSeconds: {x: 0, y: 0.15}
+    framingPitchDegrees: {x: -2, y: 2}
+    markVessels: 0
+  - name: Static Tracking Cam
+    weight: 1.1
+    framing: 0
+    worldAligned: 1
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: -14, y: 30}
+    distance: {x: 35, y: 150}
+    fieldOfView: {x: 28, y: 45}
+    rollDegrees: {x: -3, y: 3}
+    aimLeadSeconds: {x: 0.15, y: 0.45}
+    framingPitchDegrees: {x: -4, y: 4}
+    markVessels: 0
+  - name: Establishing (banded hull)
+    weight: 0.5
+    framing: 0
+    worldAligned: 1
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: -10, y: 35}
+    distance: {x: 220, y: 520}
+    fieldOfView: {x: 35, y: 60}
+    rollDegrees: {x: -2, y: 2}
+    aimLeadSeconds: {x: 0, y: 0.5}
+    framingPitchDegrees: {x: -5, y: 5}
+    markVessels: 1
+  - name: Front Three-Quarter
+    weight: 0.9
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 30, y: 58}
+    elevationDegrees: {x: -4, y: 20}
+    distance: {x: 11, y: 44}
+    fieldOfView: {x: 34, y: 52}
+    rollDegrees: {x: -4, y: 4}
+    aimLeadSeconds: {x: 0, y: 0.12}
+    framingPitchDegrees: {x: -2, y: 3}
+    markVessels: 1
+  - name: Front Three-Quarter (port)
+    weight: 0.9
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 302, y: 330}
+    elevationDegrees: {x: -4, y: 20}
+    distance: {x: 11, y: 44}
+    fieldOfView: {x: 34, y: 52}
+    rollDegrees: {x: -4, y: 4}
+    aimLeadSeconds: {x: 0, y: 0.12}
+    framingPitchDegrees: {x: -2, y: 3}
+    markVessels: 1
+  - name: Rear Three-Quarter
+    weight: 0.8
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 122, y: 153}
+    elevationDegrees: {x: 0, y: 24}
+    distance: {x: 12, y: 46}
+    fieldOfView: {x: 40, y: 58}
+    rollDegrees: {x: -5, y: 5}
+    aimLeadSeconds: {x: 0.1, y: 0.32}
+    framingPitchDegrees: {x: -2, y: 4}
+    markVessels: 1
+  - name: Rear Three-Quarter (port)
+    weight: 0.8
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 207, y: 238}
+    elevationDegrees: {x: 0, y: 24}
+    distance: {x: 12, y: 46}
+    fieldOfView: {x: 40, y: 58}
+    rollDegrees: {x: -5, y: 5}
+    aimLeadSeconds: {x: 0.1, y: 0.32}
+    framingPitchDegrees: {x: -2, y: 4}
+    markVessels: 1
+  - name: Underside Pass
+    weight: 0.6
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: -58, y: -30}
+    distance: {x: 9, y: 32}
+    fieldOfView: {x: 62, y: 80}
+    rollDegrees: {x: -6, y: 6}
+    aimLeadSeconds: {x: 0, y: 0.18}
+    framingPitchDegrees: {x: -4, y: 1}
+    markVessels: 0
+  - name: Dutch Pass
+    weight: 0.7
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 52, y: 128}
+    elevationDegrees: {x: -16, y: 12}
+    distance: {x: 10, y: 36}
+    fieldOfView: {x: 58, y: 78}
+    rollDegrees: {x: 18, y: 34}
+    aimLeadSeconds: {x: 0, y: 0.22}
+    framingPitchDegrees: {x: -4, y: 4}
+    markVessels: 1
+  - name: Telephoto Isolation
+    weight: 0.7
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: -12, y: 26}
+    distance: {x: 95, y: 150}
+    fieldOfView: {x: 18, y: 28}
+    rollDegrees: {x: -2, y: 2}
+    aimLeadSeconds: {x: 0.1, y: 0.4}
+    framingPitchDegrees: {x: -3, y: 3}
+    markVessels: 1
+  - name: Duo Two-Shot
+    weight: 1.6
+    framing: 1
+    worldAligned: 0
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: 5, y: 20}
+    distance: {x: 30, y: 70}
+    fieldOfView: {x: 48, y: 62}
+    rollDegrees: {x: -4, y: 4}
+    aimLeadSeconds: {x: 0, y: 0.25}
+    framingPitchDegrees: {x: -2, y: 2}
+    markVessels: 1
+  - name: Duo Long Lens
+    weight: 1
+    framing: 1
+    worldAligned: 0
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: 5, y: 20}
+    distance: {x: 90, y: 140}
+    fieldOfView: {x: 26, y: 38}
+    rollDegrees: {x: -2, y: 2}
+    aimLeadSeconds: {x: 0, y: 0.25}
+    framingPitchDegrees: {x: -2, y: 2}
+    markVessels: 1
+  - name: Duo Close Pass
+    weight: 1.2
+    framing: 1
+    worldAligned: 0
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: 5, y: 20}
+    distance: {x: 0, y: 0}
+    fieldOfView: {x: 66, y: 82}
+    rollDegrees: {x: -14, y: 14}
+    aimLeadSeconds: {x: 0, y: 0.25}
+    framingPitchDegrees: {x: -4, y: 4}
+    markVessels: 1

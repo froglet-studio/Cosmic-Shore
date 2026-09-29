@@ -2,11 +2,14 @@
 
 ## Quick Start
 
-1. **Create a config asset**: Right-click in the Project window → Create → CosmicShore → Tools → Benchmark Config
+Setup Procedure:
+1. **Create a config asset**: Right-click in the Project window → Create → ScriptableObjects → Tools → Benchmark Config
 2. **Open the tool**: Menu bar → FrogletTools → Performance Benchmark
 3. **Drag the config** into the "Config" slot
-4. **Enter Play Mode** in the scene you want to measure
-5. **Click "Start Benchmark"** — results appear automatically when it finishes
+
+Test Procedure:
+1. **Enter Play Mode** in the scene you want to measure
+2. **Click "Start Recording"** — results appear automatically when it finishes
 
 Every run is saved to disk. You can compare any two runs in the History tab.
 

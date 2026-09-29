@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Trigger sign that starts the normal segment-spawner gameplay
     /// when the vessel flies through its collider.
-    /// Position, rotation, and scale are set in the editor — this script never touches them.
+    /// Position, rotation, and scale are set in the editor - this script never touches them.
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class FreestyleSign : MonoBehaviour
@@ -51,11 +51,14 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Static event bus for FreestyleSign — keeps sign and controller decoupled.
+    /// Static event bus for FreestyleSign - keeps sign and controller decoupled.
     /// </summary>
     public static class FreestyleSignEvents
     {
         public static event System.Action OnFreestyleSelected;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => OnFreestyleSelected = null;
 
         public static void RaiseFreestyleSelected()
         {

@@ -28,7 +28,8 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// Scale animation state. Only present on actively animating prisms.
-    /// Replaces PrismScaleAnimator + PrismScaleManager Jobs pipeline.
+    /// Replaces the retired CPU scale-animation Jobs pipeline (prisms now animate
+    /// via the clock-material stamps — Docs/PRISM_ANIMATION.md).
     /// Use IEnableableComponent to toggle without structural changes.
     /// </summary>
     public struct ScaleAnimation : IComponentData, IEnableableComponent
@@ -42,7 +43,8 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// Material color/spread animation state. Only present during theme transitions.
-    /// Replaces MaterialPropertyAnimator + MaterialStateManager Jobs pipeline.
+    /// Replaces the retired CPU color-animation Jobs pipeline (prisms now animate
+    /// via the clock-material stamps — Docs/PRISM_ANIMATION.md).
     /// </summary>
     public struct MaterialAnimation : IComponentData, IEnableableComponent
     {

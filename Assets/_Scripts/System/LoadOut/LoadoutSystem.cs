@@ -15,6 +15,17 @@ namespace CosmicShore.Core
 
         static List<ArcadeGameLoadout> gameLoadouts;
 
+        // Init() reassigns the three collections but not the index — reset the whole group so a
+        // session cannot inherit last session's selected slot.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            ActiveLoadoutIndex = 0;
+            activeLoadout = default;
+            loadouts = null;
+            gameLoadouts = null;
+        }
+
         /// <summary>
         /// Loadout configurations automatically saved as the last game play configuration
         /// </summary>
@@ -120,7 +131,7 @@ namespace CosmicShore.Core
         
         public static void SetActiveLoadoutIndex(int index) 
         {
-            CSDebug.Log("Loadout Index changed to " + index);
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[Loadout] Active loadout index changed to " + index);
 
             index = Mathf.Clamp(index, 0, loadouts.Count-1);
             ActiveLoadoutIndex = index;

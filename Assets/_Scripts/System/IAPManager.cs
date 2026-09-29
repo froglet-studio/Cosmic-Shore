@@ -25,6 +25,12 @@ namespace CosmicShore.Core
     /// entitlement on return is "trust the client" until a backend order-verification step is
     /// wired into <see cref="ConfirmPendingPurchase"/>. That seam is intentionally left as the
     /// single grant point so it can be made server-authoritative later.
+    ///
+    /// <para><b>DE-SCOPED for the invite build.</b> <c>OpenCheckout</c> declines while
+    /// <c>SO_CommerceAvailability.AllowRealMoneyCheckout</c> is off, which is its default — so this
+    /// class stays wired, keeps formatting prices, and cannot open a payment page
+    /// (<c>Docs/STEAM_RELEASE_TASKS.md</c> R4). The verification gap above is the reason it must
+    /// stay off until a backend exists, not merely a scheduling one.</para>
     /// </summary>
     public class IAPManager : MonoBehaviour
     {
@@ -46,6 +52,9 @@ namespace CosmicShore.Core
         /// <summary>Raised after a successful (true) / failed (false) entitlement confirmation. Kept for compatibility.</summary>
         public event Action<bool> OnPurchaseComplete;
 
+        // Read only for the offline gate on checkout.
+        [Reflex.Attributes.Inject] CosmicShore.Utility.GameDataSO _gameData;
+
         /// <summary>Raised when a checkout page is opened in the browser. Arg: product id.</summary>
         public event Action<string> OnCheckoutOpened;
 
@@ -63,6 +72,7 @@ namespace CosmicShore.Core
             }
         }
         SO_IAPConfig _runtimeDefaultConfig;
+        bool _reportedDeScopedCheckout;
 
         void Awake()
         {
@@ -73,7 +83,7 @@ namespace CosmicShore.Core
             }
             Instance = this;
 
-            // Web checkout has no SDK handshake — it is ready as soon as a config (real or
+            // Web checkout has no SDK handshake - it is ready as soon as a config (real or
             // default) is resolvable. We are "initialized" whenever we have a base URL to open.
             IsInitialized = !string.IsNullOrWhiteSpace(Config.checkoutBaseUrl) ||
                             !string.IsNullOrWhiteSpace(Config.supportUrl);
@@ -117,6 +127,42 @@ namespace CosmicShore.Core
 
         void OpenCheckout(string productId, string url)
         {
+            // DE-SCOPED: nothing in the invite build sells anything, and external-browser checkout
+            // still has no way to verify an order (see the class comment and
+            // Docs/MENU_PROGRESSION_AND_IAP.md section 5). This is the choke point BOTH entry points
+            // share, so it is where the posture is enforced rather than on either screen - an
+            // un-gated or re-enabled screen still cannot open a payment page. The UI refuses with a
+            // reason of its own; a service has no graphics, so here it declines and says why once.
+            if (!SO_CommerceAvailability.Instance.AllowRealMoneyCheckout)
+            {
+                // Once per session, not per press: unlike the offline gate below this is a build
+                // POSTURE rather than a transient condition, so it would otherwise report the same
+                // unchanging fact on every press for the life of the build. It is still worth saying
+                // once, because reaching here at all means a UI gate was bypassed or lost.
+                if (!_reportedDeScopedCheckout)
+                {
+                    _reportedDeScopedCheckout = true;
+                    CSDebug.LogWarning($"[IAPManager] Real-money checkout is de-scoped for this build - " +
+                                       $"declining '{productId}'. Flip allowRealMoneyCheckout on " +
+                                       "Resources/CommerceAvailability to re-open it.");
+                }
+
+                OnPurchaseComplete?.Invoke(false);
+                return;
+            }
+
+            // OFFLINE session: checkout is a hosted web page. Opening a browser at a URL that
+            // cannot load - and then arming a pending purchase waiting on a confirmation that
+            // can never arrive - is worse than declining. The store UI should be gated
+            // (OfflineUIGate); this is the choke point both purchase entry points share, so
+            // an un-wired screen still cannot start a doomed checkout.
+            if (_gameData != null && _gameData.IsOfflineSession)
+            {
+                CSDebug.LogWarning("[IAPManager] Offline session - purchases are unavailable.");
+                OnPurchaseComplete?.Invoke(false);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(url))
             {
                 CSDebug.LogWarning($"[IAPManager] No checkout URL configured for '{productId}'. " +
@@ -126,14 +172,14 @@ namespace CosmicShore.Core
             }
 
             PendingProductId = productId;
-            CSDebug.Log($"[IAPManager] Opening web checkout for '{productId}': {url}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[IAPManager] Opening web checkout for '{productId}': {url}");
             Application.OpenURL(url);
             OnCheckoutOpened?.Invoke(productId);
         }
 
         /// <summary>
         /// Called by a verification step / UI once the player returns and the purchase is
-        /// confirmed (or rejected). This is the single entitlement-grant seam — make it
+        /// confirmed (or rejected). This is the single entitlement-grant seam - make it
         /// server-authoritative by verifying the order before invoking with success=true.
         /// </summary>
         public void ConfirmPendingPurchase(bool success)
@@ -142,7 +188,7 @@ namespace CosmicShore.Core
             PendingProductId = null;
 
             if (success)
-                CSDebug.Log($"[IAPManager] Purchase confirmed for '{productId}'.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[IAPManager] Purchase confirmed for '{productId}'.");
             else
                 CSDebug.LogWarning($"[IAPManager] Purchase NOT confirmed for '{productId}'.");
 

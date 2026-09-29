@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Hesperides Cell Spawn Profile
+  m_EditorClassIdentifier:
+  FloraExcludeLocalDomain: 0
+  FloraSpawnVolumeCeiling: 12000
+  FloraInitialDelaySeconds: 2
+  FloraSpawnIntervalSeconds: 0.35
+  FaunaExcludeLocalDomain: 0
+  InitialFaunaSpawnWaitTime: 25
+  FaunaSpawnVolumeThreshold: 1
+  BaseFaunaSpawnTime: 30
+  SeedFullWaveEveryTick: 0
+  FaunaFoodFloor: 3000
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 0
+  HerbivoreSpawnPointCount: 4
+  HerbivoreSpawnRadius: 300
+  PredatorSpawnPointCount: 2
+  PredatorSpawnRadius: 480
+  SupportedFloras:
+  - {fileID: 11400000, guid: 05aeba0b9463fd1338d0f885442e2048, type: 2}
+  - {fileID: 11400000, guid: f417365b3a85ba43d599a8be27dd62f0, type: 2}
+  - {fileID: 11400000, guid: a0100b18ef44eed8358873ded59af56f, type: 2}
+  - {fileID: 11400000, guid: 6d0af1c13dbab0a65e33bd38608c5094, type: 2}
+  - {fileID: 11400000, guid: 4675fa496579bcaf8253112ead51eb38, type: 2}
+  - {fileID: 11400000, guid: e82a9bd6fd68ca88774412408de0c9ff, type: 2}
+  - {fileID: 11400000, guid: 18bf6a9ca4db278ce09d1be3eff1fbf4, type: 2}
+  - {fileID: 11400000, guid: f95d5e3154eabc5565af1bde585fa850, type: 2}
+  - {fileID: 11400000, guid: 4e4d2aa57519f8c461f0955dd262a5ea, type: 2}
+  - {fileID: 11400000, guid: b9e2c6e7516a215009922f1d6150a05c, type: 2}
+  SupportedFaunas:
+  - {fileID: 11400000, guid: fb217959401746e1b09cac81ffce665b, type: 2}
+  - {fileID: 11400000, guid: b3e5efaa5053ab748943e4c3433f72d1, type: 2}
+  - {fileID: 11400000, guid: 178e4d83e2fd4a4bae1ab253d7766ea7, type: 2}

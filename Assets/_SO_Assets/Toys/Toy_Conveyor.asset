@@ -23,34 +23,53 @@ MonoBehaviour:
   crystalCollectionEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
   omniCrystalPrefab: {fileID: 0}
-  maxCrystalsPerScene: 1
+  maxCrystalsPerScene: 6
   palette:
-    MonoWeight: 6
-    BandedWeight: 2.2
-    AccentWeight: 1.6
+    MonoWeight: 2.5
+    BandedWeight: 2.5
+    GradientWeight: 1.8
+    AccentWeight: 1.5
+    RadialWeight: 1.5
+    StripeWeight: 1.3
+    MirrorWeight: 1.2
     NeutralVeinWeight: 1.1
     AccentChance: 0.22
     BlueVeinChance: 0.14
-    AllPlainWeight: 10
-    DangerAccentWeight: 2.6
-    ShieldAccentWeight: 1.1
-    LandmarkWeight: 0.5
-    MaxDanger: 8
-    MaxShielded: 3
-    MaxSuperShielded: 1
-    ScaleMoodChance: 0.45
-    ScaleMoodMin: 0.7
-    ScaleMoodMax: 1.6
+    AllPlainWeight: 5
+    DangerAccentWeight: 2
+    DangerStructureWeight: 1.7
+    DangerTipsWeight: 1.7
+    ShieldAccentWeight: 1.2
+    ShieldFrameWeight: 1.2
+    LandmarkWeight: 0.9
+    MaxDanger: 90
+    MaxShielded: 12
+    MaxSuperShielded: 4
+    ScaleMoodChance: 0.6
+    ScaleMoodMin: 0.6
+    ScaleMoodMax: 1.8
+    StretchMoodChance: 0.5
+    StretchMin: 0.65
+    StretchMax: 1.9
+    TaperChance: 0.45
+    TaperTipMin: 0.5
+    TaperTipMax: 1.35
     OmniCrystalChance: 0.16
   lifeformScenes: 1
-  poolSize: 8
-  prismBudgetPerScene: 100
-  sceneRadius: 80
-  sceneSpacing: 170
-  firstSceneDistance: 170
-  aheadTargetScenes: 4
+  poolSize: 20
+  prismBudgetPerScene: 1500
+  sceneRadius: 180
+  sceneSpacing: 520
+  firstSceneDistance: 460
+  aheadTargetScenes: 5
   minSceneIntervalSeconds: 2
-  recycleBehindDistance: 170
+  recycleBehindDistance: 520
   transitionSeconds: 1.2
   turnBreakDegrees: 55
   seed: 0
+  minPlacementDistance: 380
+  offscreenMargin: 80
+  revertCellOnStart: 1
+  tetherPrisms: 100
+  returnStationRadius: 22
+  returnStationColor: {r: 1, g: 0.78, b: 0.25, a: 1}

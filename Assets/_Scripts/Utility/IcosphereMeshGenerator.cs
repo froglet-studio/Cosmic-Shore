@@ -8,7 +8,7 @@ namespace CosmicShore.Utility
     /// a regular icosahedron and projecting every vertex onto the sphere of the
     /// requested radius.
     ///
-    /// Subdivision count drives the poly budget — each level quadruples the face
+    /// Subdivision count drives the poly budget - each level quadruples the face
     /// count: level 0 = 20 tris, 1 = 80, 2 = 320, 3 = 1280. Level 2 is a good
     /// "medium-poly" default: dense enough to read as round, faceted enough that
     /// rotation is clearly visible (see <see cref="AstroLeagueBall"/>).

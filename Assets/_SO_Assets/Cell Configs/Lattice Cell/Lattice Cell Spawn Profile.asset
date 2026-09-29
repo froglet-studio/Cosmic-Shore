@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Lattice Cell Spawn Profile
+  m_EditorClassIdentifier: 
+  FloraExcludeLocalDomain: 1
+  FloraSpawnVolumeCeiling: 12000
+  FloraInitialDelaySeconds: 0
+  FloraSpawnIntervalSeconds: 0
+  FloraPopulationScale: 1
+  FloraPlantBudgetScale: 1
+  SupportedFloras:
+  - {fileID: 11400000, guid: c07e951a8a50a10a44f813dabb17af6b, type: 2}
+  - {fileID: 11400000, guid: 8b09dd1521ffe9964dfb9e181de41dcf, type: 2}
+  - {fileID: 11400000, guid: 65a3bece78ba1c5d9ee64df409a7decf, type: 2}
+  - {fileID: 11400000, guid: 4e941074773b98ed94c74f6eaf2586de, type: 2}
+  - {fileID: 11400000, guid: 7478e2d64278ac2e98551e93ee55f5ee, type: 2}
+  - {fileID: 11400000, guid: 940c9bfef9ddd865bdf897f380a6b614, type: 2}
+  - {fileID: 11400000, guid: ac2fa735ca00d6695deaa94c1a8edb27, type: 2}
+  - {fileID: 11400000, guid: 9ef92befc598d0b3e0136b7581179032, type: 2}
+  - {fileID: 11400000, guid: 270a5588974a865aa77bdddc41355503, type: 2}
+  - {fileID: 11400000, guid: a5f7464fc4dc342ffc2c1d140f2e078e, type: 2}
+  - {fileID: 11400000, guid: f0b06ff37193c0b8cddb0946652954e1, type: 2}
+  - {fileID: 11400000, guid: 54ca4ac86c0f1deea92f685a8d0ea1d0, type: 2}
+  FaunaExcludeLocalDomain: 1
+  InitialFaunaSpawnWaitTime: 20
+  FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: 1
+  BaseFaunaSpawnTime: 5
+  SeedFullWaveEveryTick: 0
+  FaunaFoodFloor: 5
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 0
+  HerbivoreSpawnPointCount: 3
+  HerbivoreSpawnRadius: 700
+  PredatorSpawnPointCount: 0
+  PredatorSpawnRadius: 900
+  SupportedFaunas:
+  - {fileID: 11400000, guid: ee4d0869166fee37b21adbbff9120d6d, type: 2}

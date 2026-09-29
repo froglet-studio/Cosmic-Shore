@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
     /// (FXAA/SMAA/TAA) choice to the Camera it sits on, and keeps them live as the settings change.
     ///
     /// Add it to the gameplay player camera (the plain <see cref="Camera"/> driven by
-    /// <c>CustomCameraController</c>) — FOV sticks there. On a Cinemachine brain camera the FOV is
+    /// <c>CustomCameraController</c>) - FOV sticks there. On a Cinemachine brain camera the FOV is
     /// re-driven by the active vCam each frame (so FOV is a no-op there), but the AA still applies, so
     /// it's safe to add to the menu camera too if you want SMAA/TAA in the menu. MSAA is global (set
     /// on the URP asset by <see cref="DisplayGraphicsSettings"/>), so this only handles the per-camera

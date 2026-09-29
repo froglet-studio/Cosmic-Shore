@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using CosmicShore.Utility;
@@ -21,8 +22,17 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     [Header("Events")]
     [SerializeField] public ScriptableEventNoParam OnMiniGameTurnEnd;
 
+    /// <summary>
+    /// How many volleys one frame may fire at most. It bounds the catch-up after a hitch so a
+    /// stall can never discharge a second of accumulated fire in one frame, and at 4 it still
+    /// sustains the full authored rate down to a quarter of the rate in FPS (60 volleys/s holds
+    /// exactly down to 15 fps).
+    /// </summary>
+    private const int MaxVolleysPerTick = 4;
+
     private IVesselStatus _status;
     private ResourceSystem _resources;
+    private GunSprayAccuracy _spray;
 
     private CancellationTokenSource _cts;
     private CancellationToken _lifetimeToken;
@@ -68,10 +78,12 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
     #endregion
 
     #region Public API
-    public void Begin(FullAutoActionSO so)
+    public void Begin(FullAutoActionSO so, GunSprayAccuracy spray = null)
     {
         // Always stop any previous loop before starting a new one
         End();
+
+        if (spray) _spray = spray;
 
         if (!isActiveAndEnabled)
             return;
@@ -88,6 +100,10 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
             return;
         }
 
+        // The trigger is down. Idempotent: if the Turret Stance handed the hold over mid-press
+        // this only refreshes the profile; the gun's heat is never reset by the trigger anyway.
+        if (_spray) _spray.BeginHold(so.Spread);
+
         _cts = CancellationTokenSource.CreateLinkedTokenSource(_lifetimeToken);
         var token = _cts.Token;
 
@@ -96,6 +112,11 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
     public void End()
     {
+        // The trigger is up: the gun starts COOLING. Accuracy is not reset - heat drains at the
+        // profile's cooling rate (GunSprayAccuracy), so a stance flip's same-frame Stop/Start
+        // costs nothing either way.
+        if (_spray) _spray.ReleaseHold();
+
         if (_cts == null)
             return;
 
@@ -115,8 +136,6 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
     private void OnTurnEndOfMiniGame()
     {
-        // Optional debug:
-        // CSDebug.Log("[FullAutoActionExecutor] Turn end received. Stopping full-auto.");
         End();
     }
     #endregion
@@ -139,7 +158,15 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         var projectileTime  = so.ProjectileTime;
         var   firingPattern   = so.FiringPattern;
         var energy          = so.Energy;
-        var speedValue      = so.SpeedValue.Value;
+
+        // The cadence is a TIME accumulator, not a per-shot delay. A `Delay(interval)` loop
+        // quantizes to whole frames — it can never exceed one volley per frame, so the authored
+        // rate silently became "min(rate, framerate)" and a 30 fps device fired at half the rate
+        // a 60 fps device did. Owing fire in seconds and paying it off in whole volleys makes the
+        // rate frame-rate independent and lets it run past the frame rate, which is the whole
+        // point of a spray: at 60 volleys/s a 60 fps client fires 1 per frame and a 30 fps client
+        // fires 2, and both put the same number of rounds downrange.
+        float owed = interval;   // one volley is owed the instant the trigger goes down
 
         try
         {
@@ -151,57 +178,100 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     return;
                 }
 
-                var res = _resources.Resources[ammoIndex];
+                // Drop debt beyond the per-tick cap rather than carrying it: after a hitch the
+                // gun resumes firing, it does not discharge the stall in a burst.
+                float maxOwed = interval * MaxVolleysPerTick;
+                if (owed > maxOwed) owed = maxOwed;
 
-                if (res.CurrentAmount >= ammoCost)
+                int volleys = (int)(owed / interval);
+                owed -= volleys * interval;
+
+                if (volleys > 0)
                 {
                     var inheritVel = inherit && _status != null
                         ? _status.Course * _status.Speed
                         : Vector3.zero;
 
-                    for (int i = 0, count = muzzles.Length; i < count; i++)
+                    // Gun range (range = speed × 2T/π, T fixed): the FIXED authored muzzle speed
+                    // — no element scales it any more — shortened by HEAT. The range factor falls
+                    // linearly with the cone (1 cold → rangeAtFullSpread at the final cap), and
+                    // is applied to SPEED so flight time, and with it rounds-in-flight, is
+                    // unchanged. The resolve lives on the SO so the Turret Stance adopts the SAME
+                    // number, and the factor lives on the shared GunSprayAccuracy so both fire
+                    // modes lose range together.
+                    var abilities  = _status?.ElementalAbilityHandler;
+                    var speedValue = so.ResolveSpeed(_status) * (_spray ? _spray.RangeFactor : 1f);
+
+                    // SPACE level-5 'Piercing Bullets': below the threshold, bullets are
+                    // destroyed on their first prism impact; at 5+ they pierce through.
+                    var piercing = abilities != null && abilities.IsUpgradeActive(Element.Space);
+
+                    // MASS → in-flight growth. Rounds leave the muzzle small and swell as they
+                    // travel; the swept hit radius grows with them, so the size you see is the
+                    // size that hits. Resolved per tick off the LIVE Mass level.
+                    var growth = so.ResolveGrowthFactor(_status);
+
+                    for (int v = 0; v < volleys && !token.IsCancellationRequested; v++)
                     {
-                        if (token.IsCancellationRequested)
+                        // Re-read per volley — several can be paid off in one tick and each one
+                        // spends ammo, so a hoisted copy would let the last ones fire for free.
+                        if (_resources.Resources[ammoIndex].CurrentAmount < ammoCost)
                             break;
 
-                        if (!gun || !gun.gameObject)
+                        for (int i = 0, count = muzzles.Length; i < count; i++)
                         {
-                            CSDebug.LogError("[FullAutoActionExecutor] Gun destroyed or missing during loop.");
-                            return;
+                            if (token.IsCancellationRequested)
+                                break;
+
+                            if (!gun || !gun.gameObject)
+                            {
+                                CSDebug.LogError("[FullAutoActionExecutor] Gun destroyed or missing during loop.");
+                                return;
+                            }
+
+                            if (!gun.isActiveAndEnabled)
+                            {
+                                // No gun to fire, but don't hard-crash the loop
+                                continue;
+                            }
+
+                            var muzzle = muzzles[i];
+                            if (!muzzle)
+                                continue;
+
+                            // Accuracy decay: every round is deflected somewhere inside the cone
+                            // the held trigger has opened. One roll PER ROUND — two muzzles in
+                            // the same frame scatter independently, which is what turns the
+                            // stream into a widening danger zone instead of two widening lines.
+                            var aim = _spray ? _spray.PerturbAim(muzzle.forward) : muzzle.forward;
+
+                            // detachAfterSpawn: bullets fly in world space instead of staying
+                            // parented to the moving muzzle (which made them swerve with the
+                            // shooter's maneuvers and die with the ship hierarchy mid-flight).
+                            gun.FireGun(
+                                muzzle,
+                                speedValue,
+                                inheritVel,
+                                projectileScale,
+                                true,
+                                projectileTime,
+                                0,
+                                firingPattern,
+                                energy,
+                                detachAfterSpawn: true,
+                                stopOnFirstPrismImpact: !piercing,
+                                aimDirection: aim,
+                                flightGrowthFactor: growth
+                            );
                         }
 
-                        if (!gun.isActiveAndEnabled)
-                        {
-                            // No gun to fire, but don't hard-crash the loop
-                            continue;
-                        }
-
-                        var muzzle = muzzles[i];
-                        if (!muzzle)
-                            continue;
-
-                        gun.FireGun(
-                            muzzle,
-                            speedValue,
-                            inheritVel,
-                            projectileScale,
-                            true,
-                            projectileTime,
-                            0,
-                            firingPattern,
-                            energy
-                        );
+                        _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
+                        OnVolleyFired?.Invoke(_status?.PlayerName);
                     }
-
-                    _resources.ChangeResourceAmount(ammoIndex, -ammoCost);
-                    OnVolleyFired?.Invoke(_status?.PlayerName);
                 }
 
-                await UniTask.Delay(
-                    TimeSpan.FromSeconds(interval),
-                    DelayType.DeltaTime,
-                    PlayerLoopTiming.PreLateUpdate,
-                    token);
+                await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
+                owed += Time.deltaTime;
             }
         }
         catch (OperationCanceledException)
