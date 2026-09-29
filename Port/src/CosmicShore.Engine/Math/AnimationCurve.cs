@@ -97,6 +97,9 @@ namespace CosmicShore.Engine
             float dt = k1.time - k0.time;
             if (dt <= 1e-12f) return k1.value;
 
+            // An infinite tangent is a step: the segment holds its first key (constant keys).
+            if (float.IsInfinity(k0.outTangent) || float.IsInfinity(k1.inTangent)) return k0.value;
+
             float t = (time - k0.time) / dt;
             float t2 = t * t;
             float t3 = t2 * t;

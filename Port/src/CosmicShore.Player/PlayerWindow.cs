@@ -131,6 +131,11 @@ namespace CosmicShore.Player
             if (_frameIndex + 1 < RenderFrom && !_shots.ContainsKey(_frameIndex + 1) && !FrameRecorder.Wants(_frameIndex + 1))
             {
                 _frameIndex++;
+                if (Scripted && _frameIndex >= _lastFrame)
+                {
+                    _boot.Log.PrintSummary();
+                    _window.Close();
+                }
                 return;
             }
             _frame.Ensure(w, h);

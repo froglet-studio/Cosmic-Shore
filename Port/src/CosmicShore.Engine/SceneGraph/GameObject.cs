@@ -220,6 +220,8 @@ namespace CosmicShore.Engine
                 LiveComponents<Light>.Register(light);
             if (component is Canvas canvas)
                 LiveComponents<Canvas>.Register(canvas);
+            if (component is Animator animator)
+                LiveComponents<Animator>.Register(animator);
             if (component is Rigidbody rigidbody)
                 GameLoop.Current.RegisterRigidbody(rigidbody); // E18 dynamics registry (creation order)
             if (component is MonoBehaviour mb)

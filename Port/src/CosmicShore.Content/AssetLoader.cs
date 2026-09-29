@@ -38,9 +38,13 @@ namespace CosmicShore.Content
             Db = db;
             Scripts = scripts;
             _reader = new SerializedReader(this);
+            Animator.ScriptTypeResolver ??= guid => scripts.Resolve(guid);
         }
 
         public SerializedReader Reader => _reader;
+
+        /// <summary>An .anim clip by reference (cached like every asset); null for a model sub-asset clip.</summary>
+        AnimationClip LoadClip(ObjRef r) => Load(r, typeof(AnimationClip)) as AnimationClip;
 
         public T Load<T>(ObjRef r) where T : EngineObject => Load(r, typeof(T)) as T;
 
@@ -70,6 +74,10 @@ namespace CosmicShore.Content
                     var ext = Path.GetExtension(path).ToLowerInvariant();
                     if (ext == ".asset" || ext == ".mat" || ext == ".prefab")
                         result = LoadFromYaml(r, path, expected);
+                    else if (ext == ".controller" && Db.Load(r.Guid) is { } controllerFile)
+                        result = AnimationImport.AnimatorImporter.LoadController(controllerFile, LoadClip);
+                    else if (ext == ".anim" && Db.Load(r.Guid) is { } clipFile)
+                        result = AnimationImport.AnimatorImporter.LoadClip(clipFile);
                     else if (AssetDatabase.IsModelPath(path))
                         result = LoadFromModel(r, expected);
                 }

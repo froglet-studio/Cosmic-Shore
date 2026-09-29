@@ -143,6 +143,7 @@ namespace CosmicShore.Engine
                 Triggers.RunFrame();
                 Coroutines.RunFrame();
                 Scheduler.RunFrame();
+                Animator.TickAll(); // the animation slot: after Update and coroutines, before LateUpdate
                 RunPhase(static mb => mb.HasLateUpdate, static mb => mb.RunLateUpdate());
                 SampleTrails(); // render-time slot: trails record where their transform ended the frame
                 UI.LayoutRebuilder.FlushQueuedRebuilds(); // canvas-update slot: queued UI layout solves after LateUpdate

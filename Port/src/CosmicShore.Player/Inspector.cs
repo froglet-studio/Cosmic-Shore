@@ -139,6 +139,23 @@ namespace CosmicShore.Player
         }
 
         /// <summary>Each object named NAME and every ancestor: rect, anchors, scale, canvas components.</summary>
+        /// <summary><c>buttons FILTER</c>: every active button whose path contains FILTER (or all), with its screen rect and persistent click calls.</summary>
+        public static void Buttons(string filter)
+        {
+            foreach (var b in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Engine.UI.Button>(FindObjectsSortMode.None))
+            {
+                if (!b.isActiveAndEnabled) continue;
+                var path = b.name;
+                for (var t = b.transform.parent; t != null; t = t.parent) path = t.name + "/" + path;
+                if (!string.IsNullOrEmpty(filter) && path.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0) continue;
+                string rect = "";
+                if (b.transform is RectTransform rt) { var c = new Vector3[4]; rt.GetWorldCorners(c); rect = $"({c[0].x:0},{Screen.height - c[2].y:0})-({c[2].x:0},{Screen.height - c[0].y:0})"; }
+                var calls = string.Join("; ", Enumerable.Range(0, b.onClick.GetPersistentEventCount())
+                    .Select(i => $"{b.onClick.GetPersistentTarget(i)?.name}.{b.onClick.GetPersistentMethodName(i)}"));
+                Console.WriteLine($"[button] {path} top-left rect {rect} interactable={b.interactable} calls=[{calls}]");
+            }
+        }
+
         public static void Ancestry(string objectName)
         {
             foreach (var t0 in CosmicShore.Engine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(t => t.name == objectName))
