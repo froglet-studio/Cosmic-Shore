@@ -365,21 +365,37 @@ def rollout_checkpointed(ca, x, n, checks):
     return x, snaps
 
 
-def train(cfg: Config3D, out_dir: str):
+def train(cfg: Config3D, out_dir: str, resume: bool = False):
+    """`resume` continues a run from its last checkpoint in out_dir (the container this runs
+    in can be restarted). The checkpoint is the model, the optimiser moments and the step; the
+    POOL is not saved (512 volumes, ~2.8 GB) and is rebuilt by growing seeds with the
+    checkpoint model for random lengths, so the lizards come back at scattered phases."""
     os.makedirs(out_dir, exist_ok=True)
+    start = 0
+    if resume:
+        cfg = Config3D(**{**asdict(cfg), **json.load(open(os.path.join(out_dir, "config.json"))),
+                          "threads": cfg.threads})
+        st = os.path.join(out_dir, "state.json")
+        start = json.load(open(st))["step"] if os.path.isfile(st) else \
+            len(np.load(os.path.join(out_dir, "loss.npy"))) - 1   # loss.npy is saved with model.pt
     if cfg.threads:
         torch.set_num_threads(cfg.threads)
-    torch.manual_seed(cfg.seed)
-    rng = np.random.default_rng(cfg.seed)
-    fr_np = build_frames(cfg)
+    torch.manual_seed(cfg.seed + start)
+    rng = np.random.default_rng(cfg.seed + start)
+    if resume:
+        fr_np = np.load(os.path.join(out_dir, "frames.npy")).astype(np.float32)
+    else:
+        fr_np = build_frames(cfg)
+        np.save(os.path.join(out_dir, "frames.npy"), fr_np.astype(np.float16))
+        with open(os.path.join(out_dir, "config.json"), "w") as f:
+            json.dump(asdict(cfg), f, indent=2)
     K, D, H, W = fr_np.shape[:4]
     frames = torch.from_numpy(fr_np)
-    np.save(os.path.join(out_dir, "frames.npy"), fr_np.astype(np.float16))
-    with open(os.path.join(out_dir, "config.json"), "w") as f:
-        json.dump(asdict(cfg), f, indent=2)
 
     ca = CA3D(cfg.channel_n, cfg.hidden, cfg.fire_rate)
-    if cfg.init2d:
+    if resume:
+        ca.load_state_dict(torch.load(os.path.join(out_dir, "model.pt")))
+    elif cfg.init2d:
         sd = torch.load(cfg.init2d)
         with torch.no_grad():
             w1 = torch.zeros(cfg.hidden, cfg.channel_n, 4)
@@ -393,8 +409,24 @@ def train(cfg: Config3D, out_dir: str):
     J, P = cfg.window, cfg.period
     shift = torch.arange(J)
     log, t0 = [], time.time()
+    if resume:
+        if os.path.isfile(os.path.join(out_dir, "opt.pt")):
+            opt.load_state_dict(torch.load(os.path.join(out_dir, "opt.pt")))
+        for _ in range(start):
+            sched.step()
+        log = list(np.load(os.path.join(out_dir, "loss.npy")))[:start]
+        if start >= cfg.clock_steps:
+            with torch.no_grad():
+                for b in range(0, cfg.pool_size, 32):
+                    x = seed.repeat(min(32, cfg.pool_size - b), 1, 1, 1, 1)
+                    for _ in range(int(rng.integers(150, 400))):
+                        x = ca(x)
+                    pool[b:b + len(x)] = x
+        print(f"[3d {cfg.target}] resumed at step {start} (lr {opt.param_groups[0]['lr']:.1e}, "
+              f"pool rebuilt in {(time.time() - t0) / 60:.1f}m)", flush=True)
+        t0 = time.time()
 
-    for step in range(cfg.steps + 1):
+    for step in range(start + 1 if resume else 0, cfg.steps + 1):
         clock = step < cfg.clock_steps
         if clock:
             idx = None
@@ -444,10 +476,13 @@ def train(cfg: Config3D, out_dir: str):
         if step % 25 == 0:
             dt = time.time() - t0
             print(f"[3d {cfg.target}] {'clock' if clock else 'pool '} step {step:5d}  loss {L:.5f}  "
-                  f"log10 {math.log10(L):+.3f}  {dt/(step+1):.2f}s/it  elapsed {dt/60:.1f}m", flush=True)
-        if step % 250 == 0 or step == cfg.steps:
+                  f"log10 {math.log10(L):+.3f}  {dt/(step - start + 1):.2f}s/it  elapsed {dt/60:.1f}m", flush=True)
+        if step % 50 == 0 or step == cfg.steps:
             torch.save(ca.state_dict(), os.path.join(out_dir, "model.pt"))
+            torch.save(opt.state_dict(), os.path.join(out_dir, "opt.pt"))
             np.save(os.path.join(out_dir, "loss.npy"), np.array(log))
+            json.dump({"step": step}, open(os.path.join(out_dir, "state.json"), "w"))
+        if step % 250 == 0 or step == cfg.steps:
             ims = [render(x.detach()[i], px=96) for i in range(min(B, 8))]
             Image.fromarray((np.concatenate(ims, 1) * 255).astype(np.uint8)).save(
                 os.path.join(out_dir, f"batch_{step:05d}.png"))
@@ -620,6 +655,7 @@ def main():
     b.add_argument("--threads", type=int, default=0)
     t = sub.add_parser("train")
     t.add_argument("--out", default=None)
+    t.add_argument("--resume", action="store_true", help="continue the run in --out from its last checkpoint")
     for k, v in asdict(Config3D()).items():
         t.add_argument(f"--{k.replace('_', '-')}", type=type(v), default=v)
     fg = sub.add_parser("figures")
@@ -659,7 +695,7 @@ def main():
     elif args.cmd == "train":
         cfg = Config3D(**{k: getattr(args, k) for k in asdict(Config3D())})
         out = args.out or os.path.join(HERE, "runs", f"{cfg.target}3d_swim")
-        train(cfg, out)
+        train(cfg, out, resume=args.resume)
         figures(out)
     elif args.cmd == "figures":
         figures(args.run)
