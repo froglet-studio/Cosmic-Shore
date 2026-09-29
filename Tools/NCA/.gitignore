@@ -1,4 +1,4 @@
-# per-500-step pool snapshots and scratch; the final figures/, weights and loss are kept
-runs/*/batch_*.png
-runs/*.log
+# runs/ is training scratch (checkpoints rewrite every 500 steps). Finished runs are
+# promoted into results/ (weights, loss, figures), which IS tracked.
+runs/
 __pycache__/

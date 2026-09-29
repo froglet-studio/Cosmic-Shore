@@ -66,7 +66,7 @@ def loss_chart(runs):
 def main():
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--runs", default=os.path.join(HERE, "runs"))
+    ap.add_argument("--runs", default=os.path.join(HERE, "results"))
     ap.add_argument("--out", default=os.path.join(HERE, "viewer.html"))
     args = ap.parse_args()
     runs = {}

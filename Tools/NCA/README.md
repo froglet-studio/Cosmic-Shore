@@ -16,6 +16,13 @@ python3 Tools/NCA/verify_js.py --run Tools/NCA/runs/lizard_regenerating
 python3 Tools/NCA/build_viewer.py                                 # -> Tools/NCA/viewer.html
 ```
 
+`runs/` is scratch and ignored by git. A finished run is promoted into `results/<run>/`
+(config, weights, loss, figures), which is what `build_viewer.py` reads and what is
+committed.
+
+```
+```
+
 Requires `torch` (CPU is fine), `numpy`, `pillow`; `node` for `verify_js.py`.
 
 ## What is reproduced, and how faithfully
