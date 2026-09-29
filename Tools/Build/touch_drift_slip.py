@@ -184,6 +184,19 @@ def main():
     # actually runs on touch is the sharp one if any is bound, else the single one.
     tier = next((t for t in tiers if t["sharp"]), tiers[0])
 
+    # VesselTransformer.GetTriggerSum: a touch drift with NO sharp tier bound reads the prefab's
+    # authored touchDriftDepth (0..1) instead of a full pull, and ApplyAnalogDrift lerps from the
+    # no-drift state (mult 1, grip 1) toward the action's full-pull values by that depth.
+    # Upstream collapsed the Squirrel to ONE action whose full pull is the old sharp tier
+    # (2026-09-23), so this depth is now what separates the touch drift from the pad's.
+    depth_m = re.search(r"^  touchDriftDepth: ([\d.]+)", prefab, re.M)
+    depth = float(depth_m.group(1)) if depth_m else 1.0
+    if not tier["sharp"] and depth < 1.0:
+        tier = dict(tier,
+                    name=f"{tier['name']} @ touch depth {depth:g}",
+                    mult=1.0 + (tier["mult"] - 1.0) * depth,
+                    grip=1.0 + (tier["grip"] - 1.0) * depth)
+
     print(f"Squirrel one-thumb TOUCH drift  (YawScaler {yaw:g}, throttle scaler {throttle:g})")
     print(f"  bound touch drift tiers : {', '.join(t['name'] for t in tiers)}")
     print(f"  tier that runs on touch : {tier['name']}  "

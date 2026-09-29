@@ -55,6 +55,13 @@ public class VesselTransformer : MonoBehaviour
              "for the default two-trigger drift where both triggers sum (e.g. Manta).")]
     [SerializeField] bool singleTriggerDrift = false;
 
+    [Tooltip("How deep a TOUCH drift pulls, as a fraction of a full trigger pull (0-1). Touch " +
+             "drift is binary - lifting a thumb has no depth - so without this it always lands on " +
+             "the drift action's FULL-pull tuning, which is authored for a pad pilot who can " +
+             "feather the trigger. 1 = unchanged (the fleet default). Only read when no sharp tier " +
+             "is bound; a sharp tier keeps the binary 1/2 ladder.")]
+    [SerializeField, Range(0f, 1f)] float touchDriftDepth = 1f;
+
     [Tooltip("Hold the cruise speed the vessel carried INTO a drift for the drift's whole " +
              "duration: the throttle stops feeding speed the moment the drift starts, and the " +
              "latched value is flown until it ends. Combined with the course lock (drift damping " +
@@ -744,7 +751,17 @@ public class VesselTransformer : MonoBehaviour
 
             // Non-gamepad fallback: binary intensity
             if (_sharpDriftActive) return 2f;
-            if (_singleDriftActive) return 1f;
+            if (_singleDriftActive)
+            {
+                // A touch drift has no depth to read, so it takes an authored one. A pad pilot
+                // feathers the one drift action from 0 to full; a thumb-lift is always "full",
+                // which on the Squirrel is the old SHARP tier (x1.8 / grip 0.25) and - with the
+                // one-thumb stick mirror on top - slides past 90 degrees of slip, where nose
+                // thrust brakes. Tools/Build/touch_drift_slip.py measures it.
+                return InputStatus.ActiveInputDevice == InputDeviceType.Touch && !_sharpDriftParamsSet
+                    ? touchDriftDepth
+                    : 1f;
+            }
             return 0f;
         }
 

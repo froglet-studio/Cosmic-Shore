@@ -738,3 +738,21 @@ No Unity play-mode run. The numbers above are from the transcribed model, not fr
 gain is the one value expected to need a pass on device: **lower toward 0.5 if a held drift still
 washes speed off, raise toward 0.8 if it reads sluggish** — and re-run
 `python3 Tools/Build/touch_drift_slip.py --check --sweep`, which fails on anything that crosses 90°.
+
+### Round 9 addendum — the resync put the brake back (2026-09-29)
+
+The 1104-commit resync brought upstream's **one-action drift** (2026-09-23): the Squirrel no longer
+binds `SquirrelSharpDriftAction` anywhere, and `SquirrelDriftAction` was retuned to the old sharp
+values (×1.8 / grip 0.25) at FULL trigger pull, with the old ×1.4 / 0.5 sitting at about half pull.
+On a pad that is strictly better — the trigger feathers across the whole range. On **touch** it
+silently re-created exactly the defect Round 9 fixed, because a thumb-lift is binary and binary
+means full pull: 106° peak slip, 73% of speed carried. `touch_drift_slip.py --check` caught it on
+the first run after the merge — which is the reason it reads the shipped assets rather than a copy
+of the numbers.
+
+The fix could no longer live in the asset (the pad owns it now), so it moved to the one place that
+knows the drift has no depth: `VesselTransformer.touchDriftDepth` (default 1, fleet unchanged; the
+Squirrel authors **0.5**). A touch drift with no sharp tier bound reads that depth instead of a
+full pull, landing on ×1.4 / grip 0.625 — the same 111.6 °/s as Round 9 with slightly MORE grip,
+peak slip **81°**, 125% of speed carried. The gate is negative-controlled: at depth 1 it fails.
+

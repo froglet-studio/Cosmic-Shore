@@ -16,7 +16,7 @@ the vector flight model that fixes it, and the numbers.
 |---|---|
 | Input (gamepad) | **Left trigger**, analog. `singleTriggerDrift: 1` on the prefab and ONE drift action bound, so **the drift amount is how far LT is pulled**: 0 = no drift, full pull = the action's full authored drift, linear in between (`GetTriggerSum` returns raw `LeftTriggerAnalog` when no sharp tier is bound) |
 | Drift sound | `DriftAudioController.singleTriggerDepth: 1` on the prefab — the FMOD `Drift Amount` parameter follows the same LT pull (0 feathered → 1 buried), so the sound gets harder as the drift does; keyboard/touch read 1 |
-| Input (touch) | `OnlyLeftStickAction (12)` → binary (full drift), smoothed by `DRIFT_EASE_SPEED` (12/s ≈ 83 ms ramp) so a tap still reads as an analog pull |
+| Input (touch) | `OnlyLeftStickAction (12)` → binary, smoothed by `DRIFT_EASE_SPEED` (12/s ≈ 83 ms ramp) so a tap still reads as an analog pull. A thumb-lift has no DEPTH, so it reads the prefab's **`touchDriftDepth` (0.5)** rather than a full pull — ×1.4 / grip 0.625. Full pull on touch (×1.8 / grip 0.25) plus the one-thumb stick mirror slides past 90° of slip, where nose thrust brakes; `Tools/Build/touch_drift_slip.py --check` measures it and fails at depth 1 |
 | Drift action | `SquirrelDriftAction` — at full pull rotation ×**1.8**, grip **0.25** (the old sharp tier's values; the old ×1.4 / 0.5 single tier now sits at ≈ half pull). `SquirrelSharpDriftAction` is no longer bound (2026-09-23) |
 | Right trigger | **NOT free** — `RightStickAction (1)` is `SquirrelTubeAction` (touch: `OnlyRightStickAction (11)`). The Squirrel keeps its two-stick scissor throttle; do not propose a Scarab-style RT accelerator here |
 
