@@ -130,6 +130,10 @@ namespace CosmicShore.Engine.Networking
         public bool AddHandler(NetworkObject prefab, INetworkPrefabInstanceHandler handler)
             => prefab != null && AddHandler(prefab.gameObject, handler);
 
+        /// <summary>Client spawn: a registered handler instantiates the prefab (null = no handler).</summary>
+        internal GameObject Instantiate(GameObject prefab, ulong owner, Vector3 position, Quaternion rotation)
+            => _handlers.TryGetValue(prefab, out var h) && h.Instantiate(owner, position, rotation) is { } no ? no.gameObject : null;
+
         public bool RemoveHandler(GameObject prefab) => prefab != null && _handlers.Remove(prefab);
         public bool RemoveHandler(NetworkObject prefab) => prefab != null && RemoveHandler(prefab.gameObject);
         public bool ContainsHandler(GameObject prefab) => prefab != null && _handlers.ContainsKey(prefab);
@@ -148,13 +152,27 @@ namespace CosmicShore.Engine.Networking
         public void SendNamedMessage(string name, ulong clientId, FastBufferWriter writer,
             NetworkDelivery delivery = NetworkDelivery.ReliableSequenced)
         {
+            var nm = NetworkManager.Singleton;
+            ulong local = nm != null ? nm.LocalClientId : 0;
+            if (clientId != local && NetDriver.SendNamed(name, clientId, writer.ToArray(), toAll: false)) return;
             if (_named.TryGetValue(name, out var handler))
-                handler(0, new FastBufferReader(writer.ToArray()));
+                handler(local, new FastBufferReader(writer.ToArray()));
         }
 
         public void SendNamedMessageToAll(string name, FastBufferWriter writer,
             NetworkDelivery delivery = NetworkDelivery.ReliableSequenced)
-            => SendNamedMessage(name, 0, writer, delivery);
+        {
+            if (NetDriver.IsServer) NetDriver.SendNamed(name, 0, writer.ToArray(), toAll: true);
+            var nm = NetworkManager.Singleton;
+            if ((nm == null || nm.IsClient) && _named.TryGetValue(name, out var handler))
+                handler(0, new FastBufferReader(writer.ToArray()));
+        }
+
+        /// <summary>A named message arrived from <paramref name="sender"/>.</summary>
+        internal void Deliver(string name, ulong sender, byte[] body)
+        {
+            if (_named.TryGetValue(name, out var handler)) handler(sender, new FastBufferReader(body));
+        }
     }
 
     public enum NetworkDelivery { Unreliable, UnreliableSequenced, Reliable, ReliableSequenced, ReliableFragmentedSequenced }

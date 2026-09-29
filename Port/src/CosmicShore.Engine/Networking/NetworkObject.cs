@@ -51,6 +51,13 @@ namespace CosmicShore.Engine.Networking
         /// <summary>Prefab identity hash (per-instance offline; not a wire hash).</summary>
         [SerializeField] internal uint GlobalObjectIdHash;
 
+        NetworkBehaviour[] _spawnedBehaviours;
+
+        /// <summary>The behaviours as captured at spawn: the order both peers address them by.</summary>
+        internal NetworkBehaviour[] SpawnedBehaviours => _spawnedBehaviours ??= CollectBehaviours();
+
+        internal NetworkBehaviour[] CollectBehaviours() => _spawnedBehaviours = Behaviours;
+
         /// <summary>
         /// True for objects that were placed in a scene rather than spawned from a prefab.
         /// Offline every networked object is spawned by code; authored data only (null = unknown).
@@ -163,17 +170,82 @@ namespace CosmicShore.Engine.Networking
             _spawnedAsObject = true;
             if (GlobalObjectIdHash == 0) GlobalObjectIdHash = (uint)GetInstanceID();
 
-            var behaviours = Behaviours;
+            var behaviours = CollectBehaviours();
+            foreach (var behaviour in behaviours) NetVarBinding.Bind(behaviour);
+            if (nm != null)
+                nm.SpawnManager?.Register(this);
             foreach (var behaviour in behaviours)
                 if (!behaviour.IsSpawned)
                     behaviour.SpawnWithId(objectId, isServer, isClient, isOwner, ownerClientId);
 
-            if (nm != null)
-                nm.SpawnManager?.Register(this);
-
             foreach (var behaviour in behaviours)
                 if (behaviour.IsSpawned)
                     behaviour.RunPostSpawn();
+
+            if (NetDriver.IsServer) NetDriver.OnServerSpawned(this);
+        }
+
+        /// <summary>Client: the server spawned this object (ids and owner come from the wire).</summary>
+        internal void SpawnRemote(ulong objectId, ulong ownerClientId, bool isPlayerObject, bool destroyWithScene)
+        {
+            var nm = NetworkManager.Singleton;
+            DestroyWithScene = destroyWithScene;
+            IsPlayerObject = isPlayerObject;
+            _objectId = objectId;
+            _ownerClientId = ownerClientId;
+            _spawnedAsObject = true;
+            ulong local = LocalClientId;
+            var behaviours = SpawnedBehaviours;
+            foreach (var behaviour in behaviours) NetVarBinding.Bind(behaviour);
+            nm?.SpawnManager?.Register(this);
+            if (isPlayerObject && nm != null)
+            {
+                if (!nm.ConnectedClients.TryGetValue(ownerClientId, out var client))
+                {
+                    client = new NetworkClient { ClientId = ownerClientId };
+                    nm.ConnectedClients[ownerClientId] = client;
+                    nm.ConnectedClientsList.Add(client);
+                }
+                client.PlayerObject = this;
+                if (ownerClientId == local) nm.LocalClient = client;
+            }
+            foreach (var behaviour in behaviours)
+                if (!behaviour.IsSpawned)
+                    behaviour.SpawnWithId(objectId, isServer: false, isClient: true, isOwner: ownerClientId == local, ownerClientId);
+            foreach (var behaviour in behaviours)
+                if (behaviour.IsSpawned)
+                    behaviour.RunPostSpawn();
+        }
+
+        /// <summary>Client: the server despawned this object.</summary>
+        internal void DespawnRemote(bool destroy)
+        {
+            NetworkManager.Singleton?.SpawnManager?.Unregister(this);
+            foreach (var behaviour in SpawnedBehaviours)
+                if (behaviour != null) behaviour.Despawn();
+            _spawnedAsObject = false;
+            if (destroy) Destroy(gameObject);
+        }
+
+        /// <summary>Client: the server changed the owner.</summary>
+        internal void ApplyRemoteOwnership(ulong newOwner)
+        {
+            _ownerClientId = newOwner;
+            ulong local = LocalClientId;
+            foreach (var behaviour in SpawnedBehaviours)
+                behaviour.ApplyOwnership(newOwner, local);
+        }
+
+        void OnDestroy()
+        {
+            if (!_spawnedAsObject) return;
+            // Destroyed while spawned (scene unload, or Destroy without Despawn): despawn first.
+            bool sceneUnload = DestroyWithScene;
+            NetworkManager.Singleton?.SpawnManager?.Unregister(this);
+            if (NetDriver.IsServer) NetDriver.OnServerDespawned(this, true, sceneUnload);
+            foreach (var behaviour in SpawnedBehaviours)
+                if (behaviour != null && behaviour.IsSpawned) behaviour.Despawn();
+            _spawnedAsObject = false;
         }
 
         internal static readonly bool TraceNet = System.Environment.GetEnvironmentVariable("CS_PORT_TRACE_NET") == "1";
@@ -216,10 +288,16 @@ namespace CosmicShore.Engine.Networking
         /// </summary>
         public void ChangeOwnership(ulong newOwnerClientId)
         {
+            if (NetDriver.IsClientOnly)
+            {
+                Debug.LogError("[Netcode] Only the server can change ownership.");
+                return;
+            }
             ulong local = LocalClientId;
             _ownerClientId = newOwnerClientId;
             foreach (var behaviour in Behaviours)
                 behaviour.ApplyOwnership(newOwnerClientId, local);
+            if (NetDriver.IsServer && IsSpawned) NetDriver.OnServerOwnershipChanged(this, newOwnerClientId);
         }
 
         /// <summary>Return ownership to the server.</summary>
@@ -228,7 +306,12 @@ namespace CosmicShore.Engine.Networking
         /// <summary>Re-parent under another transform (single-process: a plain local re-parent).</summary>
         public bool TrySetParent(Transform parent, bool worldPositionStays = true)
         {
+            if (NetDriver.IsClientOnly && IsSpawned) return false; // only the server re-parents a spawned object
             transform.SetParent(parent, worldPositionStays);
+            if (NetDriver.IsServer && IsSpawned)
+                NetDriver.OnServerParentChanged(this, parent != null ? parent.GetComponentInParent<NetworkObject>() : null, worldPositionStays);
+            foreach (var behaviour in SpawnedBehaviours)
+                if (behaviour != null && behaviour.IsSpawned) behaviour.OnNetworkObjectParentChanged(parent != null ? parent.GetComponentInParent<NetworkObject>() : null);
             return true;
         }
 
@@ -248,9 +331,15 @@ namespace CosmicShore.Engine.Networking
 
         public void Despawn(bool destroy = true)
         {
+            if (NetDriver.IsClientOnly && _spawnedAsObject)
+            {
+                Debug.LogError($"[Netcode] Only the server can despawn '{name}'.");
+                return;
+            }
             var nm = NetworkManager.Singleton;
             if (nm != null)
                 nm.SpawnManager?.Unregister(this);
+            if (_spawnedAsObject && NetDriver.IsServer) NetDriver.OnServerDespawned(this, destroy, bySceneUnload: false);
 
             foreach (var behaviour in Behaviours)
                 behaviour.Despawn();

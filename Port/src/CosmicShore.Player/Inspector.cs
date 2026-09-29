@@ -3,6 +3,7 @@ using System.Collections;
 using System.Linq;
 using System.Reflection;
 using CosmicShore.Engine;
+using CosmicShore.Engine.Networking;
 
 namespace CosmicShore.Player
 {
@@ -263,6 +264,26 @@ namespace CosmicShore.Player
         }
 
         /// <summary>Every vessel: distance from the camera, screen position, and its vision tint.</summary>
+        /// <summary>
+        /// "domain Ruby" asks the server for a domain the way the Domain Changer toy does (the
+        /// owner's RequestSetDomain_ServerRpc); "domain" alone prints every player's replicated
+        /// domain as this process sees it.
+        /// </summary>
+        public static void Domain(string arg)
+        {
+            foreach (var p in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Player>(FindObjectsSortMode.None))
+            {
+                if (!p.IsSpawned) continue;
+                if (arg.Length > 0 && p.IsOwner && !p.NetIsAI.Value && Enum.TryParse<CosmicShore.Data.Domains>(arg, true, out var d))
+                {
+                    Console.WriteLine($"[domain] {p.NetName.Value} requests {d}");
+                    p.RequestSetDomain_ServerRpc(d);
+                }
+                else if (arg.Length == 0)
+                    Console.WriteLine($"[domain] {p.NetName.Value} owner={p.OwnerClientId}{(p.IsOwner ? " (mine)" : "")} = {p.NetDomain.Value}");
+            }
+        }
+
         public static void Vessels()
         {
             var cam = Camera.main;
@@ -286,7 +307,9 @@ namespace CosmicShore.Player
                         r.GetPropertyBlock(block, i);
                         if (block.HasColor(tintId) && block.GetColor(tintId).a > 0f) { stamped++; tint = block.GetColor(tintId); }
                     }
-                Console.WriteLine($"[vessels] {v.name} at {p}{where} vision tint {stamped}/{total} {tint}");
+                var no = v.GetComponent<NetworkObject>();
+                string net = no != null && no.IsSpawned ? $" net#{no.NetworkObjectId} owner={no.OwnerClientId}{(no.IsOwner ? " (mine)" : "")}" : "";
+                Console.WriteLine($"[vessels] {v.name}{net} at {p}{where} vision tint {stamped}/{total} {tint}");
             }
         }
 
@@ -314,6 +337,55 @@ namespace CosmicShore.Player
                 pr.Slice(cam.transform.forward * 20f, CosmicShore.Data.Domains.Blue, "script",
                          pr.transform.position, cam.transform.right, devastate: true);
             Console.WriteLine($"[slice] cut {prisms.Count} prism(s); live slices {CosmicShore.Utility.PrismSlice.LiveSliceCount}");
+        }
+
+        /// <summary>
+        /// Party helpers for scripted multi-instance runs: <c>party online</c> lists the presence
+        /// lobby as the game sees it; <c>party invite NAME</c> invites that online player through the
+        /// game's own HostConnectionService.SendInviteAsync (what the Invite button calls).
+        /// </summary>
+        static readonly System.Collections.Generic.HashSet<string> s_invited = new();
+
+        public static void Party(string arg)
+        {
+            var parts = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+            var svcType = AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => { try { return a.GetTypes(); } catch (ReflectionTypeLoadException e) { return e.Types.Where(x => x != null); } })
+                .FirstOrDefault(t => t.Name == "HostConnectionService");
+            var svc = svcType?.GetProperty("Instance", Any)?.GetValue(null);
+            if (svc == null) { Console.WriteLine("[party] no HostConnectionService"); return; }
+            var data = svcType.GetField("connectionData", Any)?.GetValue(svc);
+            var online = data?.GetType().GetField("OnlinePlayers", Any)?.GetValue(data) as IEnumerable;
+            var members = data?.GetType().GetField("PartyMembers", Any)?.GetValue(data) as IEnumerable;
+            string Name(object p) => p?.GetType().GetProperty("DisplayName")?.GetValue(p) as string;
+            string Id(object p) => p?.GetType().GetProperty("PlayerId")?.GetValue(p) as string;
+            if (parts.Length == 0 || parts[0] == "online")
+            {
+                Console.WriteLine($"[party] online: {string.Join(", ", (online ?? Array.Empty<object>()).Cast<object>().Select(p => $"{Name(p)}({Id(p)?[..Math.Min(8, Id(p)?.Length ?? 0)]})"))}");
+                Console.WriteLine($"[party] members: {string.Join(", ", (members ?? Array.Empty<object>()).Cast<object>().Select(p => Name(p)))}");
+                return;
+            }
+            if (parts[0] == "accept")
+            {
+                // Press the invite popup's Accept (a no-op unless an invite is pending).
+                foreach (var mb in CosmicShore.Engine.Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    if (mb.GetType().Name != "PartyInviteNotificationPanel") continue;
+                    var pending = mb.GetType().GetField("_pendingInvite", Any)?.GetValue(mb);
+                    if (pending == null) continue;
+                    Console.WriteLine("[party] accepting pending invite");
+                    mb.GetType().GetMethod("OnAcceptPressed", Any)?.Invoke(mb, null);
+                }
+                return;
+            }
+            if (parts[0] == "invite" && parts.Length > 1)
+            {
+                if (s_invited.Contains(parts[1])) return;
+                var target = (online ?? Array.Empty<object>()).Cast<object>().FirstOrDefault(p => Name(p) == parts[1]);
+                if (target == null) return; // retried by the script until they are online
+                s_invited.Add(parts[1]);
+                svcType.GetMethod("SendInviteAsync", new[] { typeof(string) })?.Invoke(svc, new object[] { Id(target) });
+                Console.WriteLine($"[party] invite sent to {parts[1]}");
+            }
         }
 
         public static void PrintStatic(string chain)

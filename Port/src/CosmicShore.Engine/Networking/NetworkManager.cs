@@ -237,9 +237,51 @@ namespace CosmicShore.Engine.Networking
             IsServer = true;
             IsClient = false;
             IsListening = true;
+            ConnectedClientsIds.Clear();
+            StartTransportServer();
             OnServerStarted?.Invoke();
+            if (EmulateNetcodeLifecycle) SpawnInSceneObjects();
             return true;
         }
+
+        /// <summary>The transport component on this object (its connection data is where a client connects / a server listens).</summary>
+        public Transports.UTP.UnityTransport Transport
+            => (NetworkConfig?.NetworkTransport as Transports.UTP.UnityTransport) ?? GetComponent<Transports.UTP.UnityTransport>();
+
+        void StartTransportServer()
+        {
+            if (!EmulateNetcodeLifecycle || !NetDriver.Enabled) return;
+            var t = Transport;
+            int port = t != null ? t.ConnectionData.Port : 7777;
+            string listen = t != null ? t.ConnectionData.ServerListenAddress : "0.0.0.0";
+            if (NetDriver.StartServer(this, listen, port) && t != null && NetDriver.ListenPort != port)
+                t.ConnectionData = new Transports.UTP.UnityTransport.ConnectionAddressData { Address = t.ConnectionData.Address, Port = (ushort)NetDriver.ListenPort, ServerListenAddress = listen };
+        }
+
+        /// <summary>The registered network prefab whose NetworkObject carries <paramref name="hash"/>.</summary>
+        public GameObject FindNetworkPrefab(uint hash)
+        {
+            var prefabs = NetworkConfig?.Prefabs;
+            if (prefabs != null)
+                foreach (var p in prefabs.Prefabs)
+                {
+                    if (p?.Prefab == null) continue;
+                    if (p.Prefab.GetComponent<NetworkObject>() is { } no && no.GlobalObjectIdHash == hash) return p.Prefab;
+                }
+            var player = NetworkConfig?.PlayerPrefab;
+            if (player != null && player.GetComponent<NetworkObject>() is { } pno && pno.GlobalObjectIdHash == hash) return player;
+            return null;
+        }
+
+        /// <summary>Server: create a newly synchronized client's player object (approval asked for one).</summary>
+        internal void SpawnPlayerObjectFor(ulong clientId, ConnectionApprovalResponse response) => SpawnPlayerObject(clientId, response);
+
+        /// <summary>Client side: another client joined / left (Netcode 2.x peer events).</summary>
+        internal void NotifyPeerConnected(ulong clientId)
+            => OnConnectionEvent?.Invoke(this, new ConnectionEventData { ClientId = clientId, EventType = ConnectionEvent.PeerConnected });
+
+        internal void NotifyPeerDisconnected(ulong clientId)
+            => OnConnectionEvent?.Invoke(this, new ConnectionEventData { ClientId = clientId, EventType = ConnectionEvent.PeerDisconnected });
 
         /// <summary>
         /// Client-only start. Offline there is no remote server to reach, so the client
@@ -248,6 +290,19 @@ namespace CosmicShore.Engine.Networking
         public bool StartClient()
         {
             if (IsListening) return false;
+            if (EmulateNetcodeLifecycle && NetDriver.Enabled)
+            {
+                // A real client: connect, then approval → scene sync → snapshot → connected callbacks.
+                IsServer = false;
+                IsClient = true;
+                IsListening = true;
+                ConnectedClientsIds.Clear();
+                DisconnectReason = string.Empty;
+                var t = Transport;
+                OnClientStarted?.Invoke();
+                NetDriver.StartClient(this, t != null ? t.ConnectionData.Address : "127.0.0.1", t != null ? t.ConnectionData.Port : 7777, NetworkConfig?.ConnectionData);
+                return true;
+            }
             IsServer = false;
             IsClient = true;
             IsListening = true;
@@ -262,6 +317,7 @@ namespace CosmicShore.Engine.Networking
         /// <summary>Server-side kick: removes the client from the tables and raises the disconnect callback.</summary>
         public void DisconnectClient(ulong clientId, string reason = null)
         {
+            if (NetDriver.IsServer) { NetDriver.Kick(clientId, reason); return; }
             ConnectedClientsIds.Remove(clientId);
             if (ConnectedClients.Remove(clientId, out var client))
                 ConnectedClientsList.Remove(client);
@@ -294,6 +350,7 @@ namespace CosmicShore.Engine.Networking
             IsListening = true;
             LocalClientId = 0;
             if (!ConnectedClientsIds.Contains(0)) ConnectedClientsIds.Add(0);
+            StartTransportServer();
             OnServerStarted?.Invoke();
             OnClientStarted?.Invoke();
             if (EmulateNetcodeLifecycle) SpawnInSceneObjects();
@@ -367,11 +424,14 @@ namespace CosmicShore.Engine.Networking
         {
             if (EmulateNetcodeLifecycle && IsListening)
             {
-                // Netcode despawns (and destroys) every dynamically spawned object on shutdown.
+                // Netcode despawns (and destroys) every dynamically spawned object on shutdown. The
+                // transport stops first so the teardown is local and a client may despawn its replicas.
+                NetDriver.Stop();
                 var spawned = new System.Collections.Generic.List<NetworkObject>(SpawnManager.SpawnedObjectsList);
                 foreach (var o in spawned)
                     if (o != null && o.IsSpawned) o.Despawn(destroy: true);
             }
+            NetDriver.Stop();
             bool wasServer = IsServer, wasClient = IsClient, wasListening = IsListening;
             bool wasHost = wasServer && wasClient;
             if (wasListening) OnPreShutdown?.Invoke();

@@ -56,6 +56,12 @@ namespace CosmicShore.Engine.Services
 
         public string PlayerId { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Where an anonymous sign-in gets its identity (the player installs a per-install id, as the
+        /// real service mints one per device); null keeps the fixed placeholder id.
+        /// </summary>
+        public static System.Func<string> AnonymousIdProvider;
+
         public bool IsSignedIn { get; set; }
 
         /// <summary>True when a cached session token allows silent re-authentication.</summary>
@@ -81,7 +87,7 @@ namespace CosmicShore.Engine.Services
         public virtual System.Threading.Tasks.Task SignInAnonymouslyAsync(SignInOptions options = null)
         {
             if (string.IsNullOrEmpty(PlayerId))
-                PlayerId = "local-player";
+                PlayerId = AnonymousIdProvider?.Invoke() ?? "local-player";
             IsSignedIn = true;
             SessionTokenExists = true;
             SignedIn?.Invoke();

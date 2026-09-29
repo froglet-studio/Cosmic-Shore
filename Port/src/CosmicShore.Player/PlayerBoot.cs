@@ -23,6 +23,39 @@ namespace CosmicShore.Player
 
         public static Assembly GameAssembly => typeof(CosmicShore.Core.AppManager).Assembly;
 
+        static void EnableLogChannels(string list)
+        {
+            if (string.IsNullOrWhiteSpace(list)) return;
+            var type = GameAssembly.GetType("CosmicShore.Utility.CSLogChannel") ?? GameAssembly.GetType("CosmicShore.CSLogChannel");
+            var debug = GameAssembly.GetType("CosmicShore.Utility.CSDebug") ?? GameAssembly.GetType("CosmicShore.CSDebug");
+            var field = debug?.GetField("VerboseChannels");
+            if (type == null || field == null) { Console.WriteLine("[player] log channels: CSDebug not found"); return; }
+            long mask = Convert.ToInt64(field.GetValue(null));
+            foreach (var name in list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                if (Enum.TryParse(type, name, true, out var v)) mask |= Convert.ToInt64(v);
+                else Console.WriteLine($"[player] unknown log channel '{name}'");
+            field.SetValue(null, Enum.ToObject(type, mask));
+            Console.WriteLine($"[player] verbose log channels: {field.GetValue(null)}");
+        }
+
+        /// <summary>This install's anonymous player id: minted once and kept, like the real service's device identity.</summary>
+        static string AnonymousPlayerId()
+        {
+            var file = System.IO.Path.Combine(Application.persistentDataPath, "ugs-player-id");
+            try
+            {
+                if (System.IO.File.Exists(file))
+                {
+                    var existing = System.IO.File.ReadAllText(file).Trim();
+                    if (existing.Length > 0) return existing;
+                }
+                var id = Guid.NewGuid().ToString("N").Substring(0, 24);
+                System.IO.File.WriteAllText(file, id);
+                return id;
+            }
+            catch (Exception) { return "local-player"; }
+        }
+
         public void Start(string firstScene)
         {
             var root = AssetDatabase.FindProjectRoot()
@@ -31,6 +64,17 @@ namespace CosmicShore.Player
             Debug.Sink = Log;
             _audio = PlayerAudio.Start(root, Headless);
             CosmicShore.Engine.Networking.NetworkManager.EmulateNetcodeLifecycle = true;
+            // A real transport between players (TCP; COSMIC_SHORE_NET=off keeps one process).
+            CosmicShore.Engine.Networking.NetDriver.Enabled = Environment.GetEnvironmentVariable("COSMIC_SHORE_NET") != "off";
+            CosmicShore.Engine.Services.AuthenticationService.AnonymousIdProvider = AnonymousPlayerId;
+            // Sessions (lobby + relay) through a directory every local/LAN player shares.
+            if (CosmicShore.Engine.Networking.NetDriver.Enabled)
+                CosmicShore.Engine.Networking.MultiplayerService.Instance =
+                    new CosmicShore.Engine.Networking.DirectoryMultiplayerService(CosmicShore.Engine.Networking.DirectoryMultiplayerService.DefaultDirectory);
+            // The game's own verbose log channels (CSDebug.VerboseChannels - the Froglet Toolbox
+            // Logging tab in the editor): COSMIC_SHORE_LOG_CHANNELS=Party,Boot. Only a Debug
+            // (development) build compiles LogVerbose in.
+            EnableLogChannels(Environment.GetEnvironmentVariable("COSMIC_SHORE_LOG_CHANNELS"));
             GameObject.EnforceRequireComponent = true;
             // The player's Cloud Save backend: a store that survives relaunches, as UGS does.
             CosmicShore.Engine.Services.CloudSaveService.Instance =

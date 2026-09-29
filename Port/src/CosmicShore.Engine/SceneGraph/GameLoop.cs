@@ -137,6 +137,7 @@ namespace CosmicShore.Engine
                 Time.Advance(deltaTime);
                 InputSystem.InputSystem.Update(); // commit device state + evaluate actions before any script runs
                 SyncContext.Pump();
+                Networking.NetDriver.EarlyUpdate(); // the transport's receive slot: before any script runs
                 DrainStartQueue();
                 RunFixedSteps();
                 RunPhase(static mb => mb.HasUpdate, static mb => mb.RunUpdate());
@@ -145,6 +146,7 @@ namespace CosmicShore.Engine
                 Scheduler.RunFrame();
                 Animator.TickAll(); // the animation slot: after Update and coroutines, before LateUpdate
                 RunPhase(static mb => mb.HasLateUpdate, static mb => mb.RunLateUpdate());
+                Networking.NetDriver.PostLateUpdate(); // the send slot: dirty variables, transforms
                 SampleTrails(); // render-time slot: trails record where their transform ended the frame
                 UI.LayoutRebuilder.FlushQueuedRebuilds(); // canvas-update slot: queued UI layout solves after LateUpdate
                 Scheduler.RunEndOfFrame();

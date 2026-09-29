@@ -72,6 +72,9 @@ namespace CosmicShore.Engine.Networking
             if (VerifySceneBeforeLoading != null && !VerifySceneBeforeLoading(-1, sceneName, loadSceneMode))
                 return SceneEventProgressStatus.SceneFailedVerification;
 
+            if (NetDriver.IsServer) { NetDriver.ServerLoadScene(this, sceneName, loadSceneMode); return SceneEventProgressStatus.Started; }
+            if (NetDriver.IsClientOnly) return SceneEventProgressStatus.ServerOnlyAction;
+
             var op = SceneManagement.SceneManager.LoadSceneAsync(sceneName, loadSceneMode);
             ulong id = LocalClientId;
             Raise(new SceneEvent { SceneEventType = SceneEventType.Load, SceneName = sceneName, LoadSceneMode = loadSceneMode, ClientId = id, AsyncOperation = op });
@@ -115,5 +118,25 @@ namespace CosmicShore.Engine.Networking
         }
 
         void Raise(SceneEvent e) => OnSceneEvent?.Invoke(e);
+
+        // ── Raise paths for the network driver (server and client halves of a replicated load) ──
+
+        internal void RaiseLoad(ulong clientId, string sceneName, LoadSceneMode mode, AsyncOperation op)
+        {
+            Raise(new SceneEvent { SceneEventType = SceneEventType.Load, SceneName = sceneName, LoadSceneMode = mode, ClientId = clientId, AsyncOperation = op });
+            OnLoad?.Invoke(clientId, sceneName, mode, op);
+        }
+
+        internal void RaiseLoadComplete(ulong clientId, string sceneName, LoadSceneMode mode)
+        {
+            Raise(new SceneEvent { SceneEventType = SceneEventType.LoadComplete, SceneName = sceneName, LoadSceneMode = mode, ClientId = clientId, Scene = SceneManagement.SceneManager.GetActiveScene() });
+            OnLoadComplete?.Invoke(clientId, sceneName, mode);
+        }
+
+        internal void RaiseLoadEventCompleted(ulong clientId, string sceneName, LoadSceneMode mode, List<ulong> done, List<ulong> timedOut)
+        {
+            Raise(new SceneEvent { SceneEventType = SceneEventType.LoadEventCompleted, SceneName = sceneName, LoadSceneMode = mode, ClientId = clientId, ClientsThatCompleted = done, ClientsThatTimedOut = timedOut });
+            OnLoadEventCompleted?.Invoke(sceneName, mode, done, timedOut);
+        }
     }
 }

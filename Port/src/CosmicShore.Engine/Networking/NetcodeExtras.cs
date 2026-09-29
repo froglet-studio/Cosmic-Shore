@@ -22,7 +22,7 @@ namespace CosmicShore.Engine.Networking
     /// <see cref="OnListChanged"/> locally, exactly the callbacks a host observes for its own writes.
     /// </summary>
     [Serializable] // inlined by value on Instantiate, like NetworkVariable (original: NetworkVariableBase)
-    public class NetworkList<T> : IEnumerable<T>, IDisposable
+    public class NetworkList<T> : IEnumerable<T>, IDisposable, INetVar
     {
         public delegate void OnListChangedDelegate(NetworkListEvent<T> changeEvent);
         public event OnListChangedDelegate OnListChanged;
@@ -75,13 +75,87 @@ namespace CosmicShore.Engine.Networking
         public void Clear() { _list.Clear(); Raise(NetworkListEvent<T>.EventType.Clear, default, 0); }
         public bool Contains(T item) => _list.Contains(item);
         public int IndexOf(T item) => _list.IndexOf(item);
-        public void SetDirty(bool isDirty) { }
+        public void SetDirty(bool isDirty) { if (isDirty && _behaviour != null) NetDriver.MarkDirty(this); }
         public void Dispose() { }
         public IEnumerator<T> GetEnumerator() => _list.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+        [NonSerialized] NetworkBehaviour _behaviour;
+        [NonSerialized] int _index;
+        [NonSerialized] List<NetworkListEvent<T>> _pending;
+
         void Raise(NetworkListEvent<T>.EventType type, T value, int index, T previous = default)
-            => OnListChanged?.Invoke(new NetworkListEvent<T> { Type = type, Value = value, Index = index, PreviousValue = previous });
+        {
+            var e = new NetworkListEvent<T> { Type = type, Value = value, Index = index, PreviousValue = previous };
+            if (_behaviour != null && !_applyingRemote)
+            {
+                if (!NetDriver.CanWrite(this)) NetDriver.ReportWritePermission(this);
+                (_pending ??= new()).Add(e);
+                NetDriver.MarkDirty(this);
+            }
+            else if (_behaviour != null && NetDriver.IsServer)
+                (_pending ??= new()).Add(e); // a client's change the server relays onward
+            OnListChanged?.Invoke(e);
+        }
+
+        [NonSerialized] bool _applyingRemote;
+
+        NetworkBehaviour INetVar.Behaviour => _behaviour;
+        int INetVar.Index => _index;
+        void INetVar.Bind(NetworkBehaviour behaviour, int index) { _behaviour = behaviour; _index = index; }
+
+        void INetVar.WriteState(System.IO.BinaryWriter w)
+        {
+            w.Write(_list.Count);
+            foreach (var v in _list) NetWire.Write(w, typeof(T), v);
+        }
+
+        void INetVar.ReadState(System.IO.BinaryReader r, bool notify)
+        {
+            int n = r.ReadInt32();
+            _list.Clear();
+            for (int i = 0; i < n; i++) _list.Add((T)NetWire.Read(r, typeof(T)));
+            if (notify) OnListChanged?.Invoke(new NetworkListEvent<T> { Type = NetworkListEvent<T>.EventType.Full });
+        }
+
+        void INetVar.WriteDelta(System.IO.BinaryWriter w)
+        {
+            var ops = _pending ?? new List<NetworkListEvent<T>>();
+            w.Write(ops.Count);
+            foreach (var e in ops)
+            {
+                w.Write((byte)e.Type);
+                w.Write(e.Index);
+                NetWire.Write(w, typeof(T), e.Value);
+            }
+        }
+
+        void INetVar.ClearDelta() => _pending?.Clear();
+
+        void INetVar.ReadDelta(System.IO.BinaryReader r)
+        {
+            int n = r.ReadInt32();
+            _applyingRemote = true;
+            try
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    var type = (NetworkListEvent<T>.EventType)r.ReadByte();
+                    int index = r.ReadInt32();
+                    var value = (T)NetWire.Read(r, typeof(T));
+                    switch (type)
+                    {
+                        case NetworkListEvent<T>.EventType.Add: Add(value); break;
+                        case NetworkListEvent<T>.EventType.Insert: Insert(Math.Min(index, _list.Count), value); break;
+                        case NetworkListEvent<T>.EventType.Remove: Remove(value); break;
+                        case NetworkListEvent<T>.EventType.RemoveAt: if (index < _list.Count) RemoveAt(index); break;
+                        case NetworkListEvent<T>.EventType.Value: if (index < _list.Count) this[index] = value; break;
+                        case NetworkListEvent<T>.EventType.Clear: Clear(); break;
+                    }
+                }
+            }
+            finally { _applyingRemote = false; }
+        }
     }
 
     /// <summary>Serializable handle to a spawned NetworkBehaviour (original: NetworkBehaviourReference).</summary>
@@ -149,6 +223,61 @@ namespace CosmicShore.Engine.Networking.Components
             transform.position = newPosition;
             transform.rotation = newRotation;
             transform.localScale = newScale;
+            _teleportPending = true;
+        }
+
+        // ── Replication (driven by NetDriver) ──────────────────────────
+        // The authority sends its pose when it moved past the thresholds; everyone else keeps a short
+        // buffer of received poses and renders slightly in the past, interpolating between them.
+
+        [NonSerialized] bool _teleportPending, _sentOnce;
+        [NonSerialized] Vector3 _sentPos, _sentScale;
+        [NonSerialized] Quaternion _sentRot;
+        [NonSerialized] readonly List<(double t, Vector3 p, Quaternion q, Vector3 s)> _buffer = new();
+
+        Vector3 PosNow => InLocalSpace ? transform.localPosition : transform.position;
+        Quaternion RotNow => InLocalSpace ? transform.localRotation : transform.rotation;
+
+        internal bool PortTakeOutgoing(out Vector3 p, out Quaternion q, out Vector3 s, out bool teleport)
+        {
+            p = PosNow; q = RotNow; s = transform.localScale;
+            teleport = _teleportPending;
+            bool moved = !_sentOnce || teleport
+                || (p - _sentPos).sqrMagnitude > PositionThreshold * PositionThreshold
+                || Quaternion.Angle(q, _sentRot) > RotAngleThreshold
+                || (s - _sentScale).sqrMagnitude > ScaleThreshold * ScaleThreshold;
+            if (!moved) return false;
+            _sentOnce = true; _teleportPending = false;
+            _sentPos = p; _sentRot = q; _sentScale = s;
+            return true;
+        }
+
+        internal void PortPushState(double time, Vector3 p, Quaternion q, Vector3 s, bool teleport)
+        {
+            if (teleport || !Interpolate) _buffer.Clear();
+            _buffer.Add((time, p, q, s));
+            if (_buffer.Count > 16) _buffer.RemoveAt(0);
+            if (teleport || !Interpolate || _buffer.Count == 1) Apply(p, q, s);
+        }
+
+        internal void PortInterpolate(double now)
+        {
+            if (_buffer.Count == 0 || !Interpolate) return;
+            uint tick = NetworkManager.Singleton?.NetworkConfig?.TickRate ?? 30;
+            double renderTime = now - 3.0 / Math.Max(1u, tick);
+            while (_buffer.Count > 2 && _buffer[1].t <= renderTime) _buffer.RemoveAt(0);
+            var a = _buffer[0];
+            if (_buffer.Count == 1 || renderTime <= a.t) { Apply(a.p, a.q, a.s); return; }
+            var b = _buffer[1];
+            float f = (float)Math.Clamp((renderTime - a.t) / Math.Max(1e-6, b.t - a.t), 0, 1);
+            Apply(Vector3.Lerp(a.p, b.p, f), Quaternion.Slerp(a.q, b.q, f), Vector3.Lerp(a.s, b.s, f));
+        }
+
+        void Apply(Vector3 p, Quaternion q, Vector3 s)
+        {
+            if (InLocalSpace) { transform.localPosition = p; transform.localRotation = q; }
+            else transform.SetPositionAndRotation(p, q);
+            transform.localScale = s;
         }
 
         public void SetState(Vector3? posIn = null, Quaternion? rotIn = null, Vector3? scaleIn = null, bool teleportDisabled = true)
@@ -231,9 +360,12 @@ namespace CosmicShore.Engine.Networking
 
         public NetworkObjectReference(GameObject gameObject) : this(gameObject.GetComponent<NetworkObject>()) { }
 
+        /// <summary>A reference received over the wire: the id only, resolved through the spawn manager.</summary>
+        internal static NetworkObjectReference FromId(ulong id) => new() { NetworkObjectId = id };
+
         public bool TryGet(out NetworkObject networkObject, NetworkManager networkManager = null)
         {
-            networkObject = _object;
+            networkObject = _object != null && _object ? _object : null;
             if (networkObject == null && (networkManager ?? NetworkManager.Singleton)?.SpawnManager?.SpawnedObjects.TryGetValue(NetworkObjectId, out var o) == true)
                 networkObject = o;
             return networkObject != null;
