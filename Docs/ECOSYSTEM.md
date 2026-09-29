@@ -7239,9 +7239,10 @@ cell selector's own rotation, thinned by `Cell.SatellitePrismStride` — and sen
 through it. The Ark is a new **fundamental** (added at the prompter's explicit request, per
 the CLAUDE.md curation process): a prism-bodied mothership that wears a domain, travels the
 hypersea, and lives or dies by the food web. It is the platform's stepping stone toward
-faction missions. Code: `Ark` (`_Scripts/Controller/Environment/`), `ArkwayToy` /
-`CellConveyor` / `ArkwayRun` / `ArkwayVoyageHud` (`_Scripts/Controller/Toys/`),
-`ArkwayToyDefinitionSO`.
+faction missions. Code: `Ark` (`_Scripts/Controller/Environment/`), `WanderToy` (its **With Ark**
+choice) / `CellConveyor` / `ArkwayRun` / `ArkwayVoyageHud` (`_Scripts/Controller/Toys/`),
+`ArkwaySettingsSO`. The Arkway was its own toy until it merged with the Wanderway into **Wander**
+(`Docs/ToySystem/ARCHITECTURE.md` § "Wander").
 
 ### 41.1 The mechanic is composition, not construction
 
@@ -7524,7 +7525,7 @@ Three things closed it, all in `ArkwayRun`:
   stood relative to one point; and the entrance stands 180 u abeam on the port side — the pilot
   docks starboard — so holding course from the dock cannot thread the way home.
 - **A pass during the build is ignored, not toggled** (`ArkwayRun.IsBuilding`, read by
-  `ArkwayToy.OnActivated`): the pilot is standing on the toy, blind, and "try again" had been
+  `ArkwayToy.OnActivated`, now `WanderToy.OnActivated`): the pilot is standing on the toy, blind, and "try again" had been
   ending the unseen voyage.
 - **Only the FIRST cell stands behind the veil.** `CellConveyor.Begin` stands one cell; the
   second is `CellConveyor.StandAhead`, called as the voyage opens, so it streams in unveiled

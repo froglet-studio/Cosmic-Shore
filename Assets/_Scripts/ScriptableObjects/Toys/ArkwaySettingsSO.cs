@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -7,8 +6,10 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The <b>Arkway</b> toy - the cellular Wanderway, and the first vehicle of the <b>Ark</b>
-    /// fundamental. Fly through it and a VOYAGE begins: a corridor of whole CELLS (real
+    /// The settings for a <b>Wander with an Ark</b> - the Arkway half of the Wander toy
+    /// (<see cref="WanderToyDefinitionSO"/>), the cellular Wanderway, and the first vehicle of the
+    /// <b>Ark</b> fundamental. Not a toy of its own any more: it is one of the Wander toy's two
+    /// choices, and this asset carries that choice's tunables. Choose it and a VOYAGE begins: a corridor of whole CELLS (real
     /// satellite <see cref="CosmicShore.Gameplay.Cell"/>s drawn from the cell selector's own
     /// rotation, built thinned) opens ahead, and an <see cref="CosmicShore.Gameplay.Ark"/> - a
     /// prism-bodied mothership in your domain - sails it at its own unhurried pace. Three cells
@@ -30,8 +31,8 @@ namespace CosmicShore.ScriptableObjects
     /// This is a stepping stone toward faction missions: venturing into the hypersea with, and
     /// for, a mothership.
     /// </summary>
-    [CreateAssetMenu(fileName = "Toy_Arkway", menuName = "ScriptableObjects/Toys/Arkway Toy")]
-    public class ArkwayToyDefinitionSO : ToyDefinitionSO
+    [CreateAssetMenu(fileName = "Wander_WithArk", menuName = "ScriptableObjects/Toys/Wander Settings - With Ark")]
+    public class ArkwaySettingsSO : ScriptableObject
     {
         [Header("Arkway - the Ark")]
         [SerializeField, Tooltip("Prism prefab the Ark's hull is laid from (a plain environment prism, " +
@@ -137,24 +138,16 @@ namespace CosmicShore.ScriptableObjects
                                  "way home never reads as another voyage station.")]
         Color returnStationColor = new(1f, 0.78f, 0.25f, 1f);
 
-        /// <summary>Where you are, by way of an escort: it opens a corridor of whole cells and an
-        /// Ark that sails them, with you sworn to its side.</summary>
-        public override ToyCategory Category => ToyCategory.World;
-
         /// <summary>Authored traversal rotation (empty = read the host cell's own configs).</summary>
         public IReadOnlyList<CellConfigDataSO> Cells => cells;
 
-        public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
+        /// <summary>
+        /// The run's config. <paramref name="displayName"/> is the label the build veil shows;
+        /// the Wander toy owns the name, this asset owns the numbers.
+        /// </summary>
+        public ArkwayConfig BuildConfig(string displayName) => new()
         {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
-            var toy = go.AddComponent<ArkwayToy>();
-            toy.Configure(BuildConfig());
-            toy.Initialize(this, context, placement);
-        }
-
-        ArkwayConfig BuildConfig() => new()
-        {
-            DisplayName = DisplayName,
+            DisplayName = displayName,
             PrismPrefab = prismPrefab,
             ArkSpeed = arkSpeed,
             ArkCruiseSpeedFactor = arkCruiseSpeedFactor,
@@ -176,8 +169,5 @@ namespace CosmicShore.ScriptableObjects
             ReturnStationRadius = returnStationRadius,
             ReturnStationColor = returnStationColor,
         };
-
-        /// <summary>Wires a prism prefab on a runtime-synthesised definition (the zero-config default toybox).</summary>
-        internal void SetRuntimePrismPrefab(Prism prefab) => prismPrefab = prefab;
     }
 }

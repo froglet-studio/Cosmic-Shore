@@ -10,14 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 168c9579a03b46af8d0d0a8e1cf35d10, type: 3}
-  m_Name: Toy_Arkway
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.ArkwayToyDefinitionSO
-  id: arkway
-  displayName: Arkway
-  description: Fly through to escort an Ark on a voyage through the cells.
-  unlockedByDefault: 1
-  placementAngleDegrees: 210
-  accentColor: {r: 1, g: 0.55, b: 0.3, a: 1}
+  m_Name: Wander_WithArk
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.ArkwaySettingsSO
   prismPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9,
     type: 3}
   arkSpeed: 18
