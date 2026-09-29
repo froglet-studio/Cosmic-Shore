@@ -767,7 +767,7 @@ void main(){
             public int Frame;
         }
 
-        struct MatState
+        sealed class MatState
         {
             public int Revision;      // Material.Revision this was derived from; a runtime edit re-derives
             public int Family;
@@ -1880,6 +1880,8 @@ void main(){
             return e;
         }
 
+        readonly List<Light> _lights = new();
+
         void SetLighting()
         {
             // The strongest enabled directional light is the sun; otherwise a soft key light.
@@ -1887,7 +1889,8 @@ void main(){
             if (sun == null || !sun.isActiveAndEnabled)
             {
                 sun = null;
-                foreach (var l in CosmicShore.Engine.Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+                LiveComponents<Light>.CollectActive(_lights);
+                foreach (var l in _lights)
                     if (l.type == LightType.Directional && l.isActiveAndEnabled && (sun == null || l.intensity > sun.intensity)) sun = l;
             }
             EVector3 toLight = sun != null ? -sun.transform.forward : new EVector3(0.3f, 0.8f, -0.5f).normalized;

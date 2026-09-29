@@ -152,6 +152,8 @@ void main(){
         // ── Frame ────────────────────────────────────────────────────────────
 
         /// <summary>Renders every active screen-space canvas into the currently bound framebuffer.</summary>
+        readonly List<Canvas> _canvases = new();
+
         public void Render(int screenWidth, int screenHeight)
         {
             _screenW = screenWidth;
@@ -160,7 +162,8 @@ void main(){
             GraphicsDrawn = 0;
             Tmp?.BeginFrame();
 
-            var canvases = CosmicShore.Engine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+            LiveComponents<Canvas>.CollectActive(_canvases);
+            var canvases = _canvases;
             var layers = new List<(Canvas c, int order, long seq)>();
             long seq = 0;
             foreach (var c in canvases)

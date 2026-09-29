@@ -96,13 +96,13 @@ namespace CosmicShore.Engine
 
         public Vector3 position
         {
-            get => WorldParent is null ? localPosition : WorldParent.TransformPoint(localPosition);
+            get => WorldPosition;
             set => localPosition = WorldParent is null ? value : WorldParent.InverseTransformPoint(value);
         }
 
         public Quaternion rotation
         {
-            get => WorldParent is null ? SelfRotation : WorldParent.rotation * localRotation;
+            get => WorldRotation;
             set
             {
                 if (IsWorldRoot) return; // driven
@@ -110,8 +110,7 @@ namespace CosmicShore.Engine
             }
         }
 
-        public Vector3 lossyScale
-            => WorldParent is null ? localScale : Vector3.Scale(WorldParent.lossyScale, localScale);
+        public Vector3 lossyScale => WorldLossyScale;
 
         public Vector3 forward
         {

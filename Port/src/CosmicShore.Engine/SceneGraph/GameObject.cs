@@ -216,6 +216,10 @@ namespace CosmicShore.Engine
                 GameLoop.Current.Triggers.Register(collider); // trigger-pass registry (creation order)
             if (component is Renderer renderer)
                 Renderer.RegisterLive(renderer); // render backend registry
+            if (component is Light light)
+                LiveComponents<Light>.Register(light);
+            if (component is Canvas canvas)
+                LiveComponents<Canvas>.Register(canvas);
             if (component is Rigidbody rigidbody)
                 GameLoop.Current.RegisterRigidbody(rigidbody); // E18 dynamics registry (creation order)
             if (component is MonoBehaviour mb)
