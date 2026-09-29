@@ -1,3 +1,4 @@
+using Xunit;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -162,6 +163,7 @@ class C5Vessel : IVessel
 // Player — concrete IPlayer NetworkBehaviour
 // ══════════════════════════════════════════════════════════════════════════
 
+[Collection(PlayerDataServiceCollection.Name)]
 public class PlayerC5Tests : IDisposable
 {
     public void Dispose()

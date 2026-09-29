@@ -1,3 +1,4 @@
+using Xunit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -59,6 +60,7 @@ static class C2C3Reflect
 // C2 — PlayerDataService
 // ══════════════════════════════════════════════════════════════════════════
 
+[Collection(PlayerDataServiceCollection.Name)]
 public class PlayerDataServiceC2Tests : IDisposable
 {
     public void Dispose()

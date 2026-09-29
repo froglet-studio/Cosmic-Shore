@@ -6,8 +6,6 @@ using Unity.Jobs;
 // Unity.Collections is mapped to this namespace by the Live source sync.
 namespace CosmicShore.Engine.Collections
 {
-    public enum Allocator { Invalid = 0, None = 1, Temp = 2, TempJob = 3, Persistent = 4, AudioKernel = 5, Domain = 6 }
-    public enum NativeArrayOptions { UninitializedMemory = 0, ClearMemory = 1 }
 
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)] public sealed class ReadOnlyAttribute : Attribute { }
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter)] public sealed class WriteOnlyAttribute : Attribute { }

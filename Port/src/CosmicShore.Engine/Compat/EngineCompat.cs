@@ -41,6 +41,10 @@ namespace CosmicShore.Engine.Networking
     {
         public SendTo Target { get; }
         public bool RequireOwnership;
+        public RpcDelivery Delivery { get; set; } = RpcDelivery.Reliable;
+        public bool DeferLocal { get; set; }
+        public bool AllowTargetOverride { get; set; }
+        public RpcInvokePermission InvokePermission { get; set; } = RpcInvokePermission.Everyone;
         public RpcAttribute(SendTo target) => Target = target;
     }
 

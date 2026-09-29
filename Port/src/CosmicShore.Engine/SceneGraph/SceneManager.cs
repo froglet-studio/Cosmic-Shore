@@ -106,11 +106,59 @@ namespace CosmicShore.Engine.SceneManagement
         /// instantiation arrive with the full loader in the content phase — this does NOT
         /// destroy or create objects, it re-designates the loop-owned scene.
         /// </summary>
-        public static async Task LoadSceneAsync(string sceneName, LoadSceneMode mode = LoadSceneMode.Single)
+        public static AsyncOperation LoadSceneAsync(string sceneName, LoadSceneMode mode = LoadSceneMode.Single)
         {
-            await GameTask.Yield();
-            Perform(sceneName, mode);
+            var op = new AsyncOperation { progress = 0f };
+            _ = Run(op, sceneName, mode);
+            return op;
         }
+
+        public static AsyncOperation LoadSceneAsync(int sceneBuildIndex, LoadSceneMode mode = LoadSceneMode.Single)
+            => LoadSceneAsync(BuildIndexToName?.Invoke(sceneBuildIndex) ?? sceneBuildIndex.ToString(), mode);
+
+        static async Task Run(AsyncOperation op, string sceneName, LoadSceneMode mode)
+        {
+            try
+            {
+                await GameTask.Yield();
+                op.progress = 0.9f;
+                if (!op.allowSceneActivation)
+                {
+                    var gate = new TaskCompletionSource<bool>();
+                    op.ActivationAllowed += () => gate.TrySetResult(true);
+                    if (!op.allowSceneActivation) await gate.Task;
+                }
+                Perform(sceneName, mode);
+                op.Complete();
+            }
+            catch (Exception e) { Debug.LogException(e); op.Fail(e); }
+        }
+
+        /// <summary>Unloads an additive scene's objects (single-scene port: raises sceneUnloaded).</summary>
+        public static AsyncOperation UnloadSceneAsync(Scene scene)
+        {
+            NotifySceneUnloaded(scene);
+            return AsyncOperation.Completed();
+        }
+
+        public static AsyncOperation UnloadSceneAsync(string sceneName) => UnloadSceneAsync(GetSceneByName(sceneName));
+
+        /// <summary>Build-list name lookup (installed by the content runtime).</summary>
+        public static Func<int, string> BuildIndexToName { get; set; }
+
+        public static Scene GetSceneByName(string name)
+        {
+            var active = GetActiveScene();
+            return active != null && string.Equals(active.name, name, StringComparison.OrdinalIgnoreCase) ? active : null;
+        }
+
+        public static int sceneCount => GetActiveScene() != null ? 1 : 0;
+        public static int loadedSceneCount => sceneCount;
+        public static int sceneCountInBuildSettings => BuildSceneCount?.Invoke() ?? 0;
+        public static Func<int> BuildSceneCount { get; set; }
+        public static Scene GetSceneAt(int index) => index == 0 ? GetActiveScene() : null;
+        public static bool SetActiveScene(Scene scene) => scene != null && ReferenceEquals(scene, GetActiveScene());
+        public static void MoveGameObjectToScene(GameObject go, Scene scene) { }
 
         /// <summary>
         /// Synchronous variant (original contract: <c>SceneManager.LoadScene</c> — the
@@ -119,6 +167,9 @@ namespace CosmicShore.Engine.SceneManagement
         /// </summary>
         public static void LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single)
             => Perform(sceneName, mode);
+
+        public static void LoadScene(int sceneBuildIndex, LoadSceneMode mode = LoadSceneMode.Single)
+            => Perform(BuildIndexToName?.Invoke(sceneBuildIndex) ?? sceneBuildIndex.ToString(), mode);
     }
 
     /// <summary>Arc E: performs real scene content loads for <see cref="SceneManager"/>.</summary>

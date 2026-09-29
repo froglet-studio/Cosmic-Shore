@@ -1,3 +1,4 @@
+using Xunit;
 using System;
 using System.Reflection;
 using CosmicShore.Core;
@@ -22,6 +23,7 @@ namespace CosmicShore.Tests;
 // dual-condition gate (OnHostConnectionEstablished AND NM.IsListening).
 // ─────────────────────────────────────────────────────────────────────────────
 
+[Collection(PlayerDataServiceCollection.Name)]
 public class AuthFlowTests : IDisposable
 {
     readonly GameLoop loop = new(nameof(AuthFlowTests));

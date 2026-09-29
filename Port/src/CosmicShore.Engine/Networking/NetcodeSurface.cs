@@ -113,7 +113,7 @@ namespace CosmicShore.Engine.Networking
     public struct FastBufferWriter : IDisposable
     {
         List<byte> _bytes;
-        public FastBufferWriter(int size, Unity.Collections.Allocator allocator, int maxSize = -1) { _bytes = new List<byte>(Math.Max(0, size)); }
+        public FastBufferWriter(int size, CosmicShore.Engine.Collections.Allocator allocator, int maxSize = -1) { _bytes = new List<byte>(Math.Max(0, size)); }
         public int Length => _bytes?.Count ?? 0;
         public void WriteValueSafe(in byte value) => (_bytes ??= new()).Add(value);
         public void WriteValueSafe(in int value) => (_bytes ??= new()).AddRange(BitConverter.GetBytes(value));
@@ -235,34 +235,7 @@ namespace CosmicShore.Engine.Networking
         SpecifiedInParams,
     }
 
-    public enum SendTo
-    {
-        Owner,
-        NotOwner,
-        Server,
-        NotServer,
-        Me,
-        NotMe,
-        Everyone,
-        ClientsAndHost,
-        Authority,
-        NotAuthority,
-        SpecifiedInParams,
-    }
-
     public enum RpcDelivery { Unreliable, Reliable }
     public enum RpcInvokePermission { Everyone, Owner, Server }
 
-    /// <summary>Universal RPC attribute (original: <c>[Rpc(SendTo.X)]</c>). Offline RPCs run locally.</summary>
-    [AttributeUsage(AttributeTargets.Method)]
-    public class RpcAttribute : Attribute
-    {
-        public RpcAttribute(SendTo target) { Target = target; }
-        public SendTo Target { get; }
-        public RpcDelivery Delivery { get; set; } = RpcDelivery.Reliable;
-        public bool RequireOwnership { get; set; }
-        public bool DeferLocal { get; set; }
-        public bool AllowTargetOverride { get; set; }
-        public RpcInvokePermission InvokePermission { get; set; } = RpcInvokePermission.Everyone;
-    }
 }

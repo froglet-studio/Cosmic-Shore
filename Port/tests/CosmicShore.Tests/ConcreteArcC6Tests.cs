@@ -1,3 +1,4 @@
+using Xunit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -683,6 +684,7 @@ public class GameDataAddPlayerC6Tests : IDisposable
 // Adapters — OnInitializeGame flow, profile-name resolution, AI defaults
 // ══════════════════════════════════════════════════════════════════════════
 
+[Collection(PlayerDataServiceCollection.Name)]
 public class SpawnerAdapterC6Tests : IDisposable
 {
     public void Dispose()

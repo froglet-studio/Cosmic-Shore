@@ -1,3 +1,4 @@
+using Xunit;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -18,6 +19,7 @@ namespace CosmicShore.Tests;
 // services-phase regions; they now run through the real CloudData repositories.
 // ─────────────────────────────────────────────────────────────────────────────
 
+[Collection(PlayerDataServiceCollection.Name)]
 public class PlayerDataCloudTests : IDisposable
 {
     readonly GameLoop loop = new(nameof(PlayerDataCloudTests));

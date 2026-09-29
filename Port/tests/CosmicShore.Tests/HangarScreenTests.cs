@@ -1,3 +1,4 @@
+using Xunit;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,7 @@ namespace CosmicShore.Tests;
 // OnUnlockStateChanged (grid re-sorts), and flips the button to UNLOCKED.
 // ─────────────────────────────────────────────────────────────────────────────
 
+[Collection(PlayerDataServiceCollection.Name)]
 public class HangarScreenTests : IDisposable
 {
     readonly GameLoop loop;

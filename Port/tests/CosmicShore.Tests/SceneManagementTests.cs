@@ -48,7 +48,7 @@ public class SceneManagementTests : IDisposable
             // on the PlayerLoop — pump until it settles.
             Task load = null;
             var driver = new GameObject("driver").AddComponent<TickDriver>();
-            driver.Action = () => load = SceneManager.LoadSceneAsync("Menu_Main", LoadSceneMode.Single);
+            driver.Action = () => load = SceneManager.LoadSceneAsync("Menu_Main", LoadSceneMode.Single).AsTask();
             loop.Tick(1f / 60f);
             for (int i = 0; i < 10 && !load.IsCompleted; i++) loop.Tick(1f / 60f);
 
