@@ -56,6 +56,14 @@ namespace CosmicShore.Content
             Fonts = new Fonts.TmpFontLibrary(Db);
             Assets.Importers[typeof(CosmicShore.Engine.UI.TMP_FontAsset)] = LoadFontAsset;
             Audio.MixerImporter.Register(Assets, new Audio.MixerImporter(Db));
+            ChainImporter(typeof(Mesh), r => r.Guid == AssetLoader.BuiltinDefaultGuid ? BuiltinMeshes.ForFileId(r.FileId) : null);
+        }
+
+        /// <summary>Adds an importer for <paramref name="type"/> in front of any already registered (first non-null wins).</summary>
+        public void ChainImporter(Type type, Func<ObjRef, EngineObject> importer)
+        {
+            Assets.Importers.TryGetValue(type, out var previous);
+            Assets.Importers[type] = previous == null ? importer : r => importer(r) ?? previous(r);
         }
 
         /// <summary>A TMP font asset reference (only a MonoBehaviour whose script IS TMP_FontAsset).</summary>
