@@ -188,8 +188,12 @@ namespace CosmicShore.Content
             var loaded = Instantiate(PrefabGraph.Build(Db, file), activate: Options.Activate);
             Loads.Add((scene.name, loaded));
             if (Environment.GetEnvironmentVariable("CS_PORT_VERBOSE") == "1")
+            {
                 foreach (var kv in loaded.MissingScripts.OrderByDescending(k => k.Value))
                     Console.WriteLine($"[content]   no script ×{kv.Value}: {Db.PathOf(kv.Key) ?? kv.Key}");
+                foreach (var w in loaded.Warnings.Distinct())
+                    Console.WriteLine($"[content]   warning: {w}");
+            }
             Console.WriteLine($"[content] {mode} load '{Path.GetFileNameWithoutExtension(path)}' — {loaded.GameObjects} GameObjects, {loaded.Components} components, {sw.ElapsedMilliseconds} ms");
 
             // Reflex scene scope: a child of the root container injects every scene object

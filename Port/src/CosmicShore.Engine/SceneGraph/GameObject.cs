@@ -99,9 +99,14 @@ namespace CosmicShore.Engine
             }
         }
 
+        /// <summary>Diagnostics: CS_PORT_TRACE_ACTIVE=&lt;exact GameObject name&gt; prints a stack for each activation change of that object.</summary>
+        static readonly string s_traceActive = Environment.GetEnvironmentVariable("CS_PORT_TRACE_ACTIVE");
+
         public void SetActive(bool value)
         {
             if (activeSelf == value || destroyedFlag) return;
+            if (s_traceActive != null && name == s_traceActive)
+                Console.Error.WriteLine($"[trace-active] '{name}' SetActive({value}) frame {Time.frameCount}\n{Environment.StackTrace}");
 
             bool parentActive = transform.parent is null || transform.parent.gameObject.activeInHierarchy;
             activeSelf = value;

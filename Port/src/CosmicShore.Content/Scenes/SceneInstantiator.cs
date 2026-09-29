@@ -82,8 +82,14 @@ namespace CosmicShore.Content.Scenes
             _assets = assets;
             _options = options ?? new InstantiateOptions();
             _reader = new SerializedReader(this);
-            // UnityEvents found inside ScriptableObject assets get wired too.
-            _assets.UnityEventSink ??= (e, c, o) => _pendingEvents.Add((e, c, o));
+            // Outside any instantiation, a UnityEvent read from a lazily-loaded asset
+            // (a ScriptableObject pulled in by Resources.Load or a later reference) wires at once.
+            _assets.UnityEventSink ??= WireAssetEventNow;
+        }
+
+        void WireAssetEventNow(object evt, YNode calls, AssetFile origin)
+        {
+            if (_options.WirePersistentCalls) WirePersistentCalls(evt, calls, origin);
         }
 
         public LoadedScene Instantiate(PrefabGraph graph)
@@ -92,7 +98,16 @@ namespace CosmicShore.Content.Scenes
             _result = new LoadedScene();
             _result.Warnings.AddRange(graph.Warnings);
             _pendingEvents.Clear();
+            // While this graph instantiates, asset-borne UnityEvents (ScriptableObjects its
+            // components reference) queue with the scene's own and wire before Awake.
+            var previousSink = _assets.UnityEventSink;
+            _assets.UnityEventSink = (e, c, o) => _pendingEvents.Add((e, c, o));
+            try { return InstantiateCore(graph); }
+            finally { _assets.UnityEventSink = previousSink; }
+        }
 
+        LoadedScene InstantiateCore(PrefabGraph graph)
+        {
             var holder = new GameObject("__content_load_holder");
             holder.SetActive(false);
 
@@ -238,6 +253,7 @@ namespace CosmicShore.Content.Scenes
             }
         }
 
+        static readonly string TraceCall = Environment.GetEnvironmentVariable("CS_PORT_TRACE_CALL");
         static readonly bool TraceParent = Environment.GetEnvironmentVariable("CS_PORT_TRACE_PARENT") == "1";
 
         List<Transform> BuildHierarchy(Transform holder)
@@ -459,6 +475,8 @@ namespace CosmicShore.Content.Scenes
                 if (call.Int("m_CallState", 2) == 0) continue; // Off
                 var targetObj = Resolve(ObjRef.From(call["m_Target"]), typeof(EngineObject), origin) as EngineObject;
                 string methodName = call.Str("m_MethodName");
+                if (TraceCall != null && methodName == TraceCall)
+                    Console.Error.WriteLine($"[trace-call] wire {methodName} on {evt.GetType().Name}#{evt.GetHashCode()} target={(targetObj == null ? "NULL fileID " + ObjRef.From(call["m_Target"]).FileId : targetObj.name + "/" + targetObj.GetType().Name)} origin={origin?.Path}");
                 if (targetObj == null || string.IsNullOrEmpty(methodName)) continue;
                 int mode = call.Int("m_Mode", 1);
                 var args = call["m_Arguments"];
@@ -515,6 +533,8 @@ namespace CosmicShore.Content.Scenes
             {
                 if (target is EngineObject eo && !eo) return null; // destroyed target
                 object[] callArgs = mode switch { 1 => Array.Empty<object>(), 0 => eventValues, _ => new[] { fixedArg } };
+                if (TraceCall != null && methodName == TraceCall)
+                    Console.Error.WriteLine($"[trace-call] invoke {methodName} on {target.name} args=[{string.Join(",", callArgs)}] frame {Time.frameCount}");
                 try { return method.Invoke(target, callArgs); }
                 catch (TargetInvocationException e) { Debug.LogException(e.InnerException ?? e); return null; }
             };
