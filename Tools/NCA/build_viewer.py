@@ -188,11 +188,13 @@ def main():
       </figure>
     </div>"""
 
+    bench3d, script3d = build_3d(args.runs)
+
     page = TEMPLATE
     for k, v in {
         "{{EXP_BUTTONS}}": exp_buttons, "{{EXP_NOTES}}": exp_notes, "{{WEIGHTS}}": weights_js,
         "{{TARGETS}}": json.dumps(targets), "{{CORE}}": core, "{{CHART}}": loss_chart(runs, floor),
-        "{{ANIM}}": anim,
+        "{{ANIM}}": anim, "{{BENCH3D}}": bench3d, "{{SCRIPT3D}}": script3d,
         "{{ROWS}}": "".join(rows), "{{FIGS}}": "".join(figs) + regen_fig + rot_fig,
         "{{DEFAULT}}": "regenerating" if "regenerating" in runs else next(iter(runs)),
     }.items():
@@ -201,6 +203,179 @@ def main():
     with open(out, "w") as f:
         f.write(page)
     print(f"wrote {out} ({len(page)/1024:.0f} KB, runs: {', '.join(runs)})")
+
+
+def build_3d(runs_root):
+    """The 3D swim: a live, orbitable automaton (nca3d_core.js, verified by verify_js3d.py),
+    the target frame it currently matches, and the measured record. Empty if not trained."""
+    d = os.path.join(runs_root, "lizard3d_swim")
+    if not os.path.isfile(os.path.join(d, "weights.json")):
+        return "", ""
+    w = json.load(open(os.path.join(d, "weights.json")))
+    fr = np.load(os.path.join(d, "frames.npy")).astype(np.float32)
+    sm = json.load(open(os.path.join(d, "figures", "summary.json")))
+    img = lambda f: b64(os.path.join(d, "figures", f))
+    lg = lambda v: f"{math.log10(max(v, 1e-9)):+.2f}"
+    tempo = lambda v: f"{v:.2f} steps / frame" if v and math.isfinite(v) and v > 0 else "no steady tempo"
+    frames_b64 = base64.b64encode((np.clip(fr, 0, 1) * 255).round().astype(np.uint8).tobytes()).decode()
+    D, H, W = w["D"], w["H"], w["W"]
+    bench = f"""
+  <section class="bench3d" aria-labelledby="h3d">
+    <div class="h3dhead">
+      <div class="eyebrow">Extension · one more spatial dimension</div>
+      <h2 id="h3d">The lizard in three dimensions</h2>
+      <p class="caption">The same cell with one more axis: it senses its 3×3×3 neighbourhood (identity plus x, y and z gradients, 10,384 parameters), fires at random, and keeps time in its hidden channels. The target is the emoji inflated into a body and swimming a <em>helical</em> wave: the tail sweeps sideways and up-and-down a quarter-cycle apart, so its tip traces a circle, a motion a flat lizard cannot make. {D}×{H}×{W} voxels, running live below.</p>
+    </div>
+    <div class="bench">
+      <div class="dish">
+        <div class="plate plate3d" id="plate3"><canvas id="cv3" width="560" height="560" aria-label="Live 3D automaton, drag to orbit, click to cut"></canvas><span class="hint">drag to orbit · click to cut</span></div>
+      </div>
+      <div class="panel">
+        <dl class="readouts">
+          <div><dt>Step</dt><dd id="r3-step">0</dd></div>
+          <div><dt>Alive voxels</dt><dd id="r3-alive">0</dd></div>
+          <div><dt>log₁₀ error</dt><dd id="r3-err">–</dd></div>
+          <div><dt>Frame</dt><dd id="r3-frame">–</dd></div>
+        </dl>
+        <div class="controls">
+          <label class="row" for="speed3">Steps / frame<input id="speed3" type="range" min="1" max="4" value="1"><output id="o-speed3">1</output></label>
+          <label class="row" for="spin3">Auto-orbit<input id="spin3" type="checkbox" checked><output></output></label>
+        </div>
+        <div class="buttons">
+          <button type="button" class="btn primary" id="b3-play">Pause</button>
+          <button type="button" class="btn" id="b3-seed">Restart from seed</button>
+          <button type="button" class="btn" id="b3-tail">Cut the tail</button>
+        </div>
+        <figure class="fig tgt3"><figcaption>Target frame it matches now</figcaption><canvas id="cv3t" width="220" height="220" aria-label="Matching target frame"></canvas></figure>
+      </div>
+    </div>
+    <div class="animrow">
+      <figure class="fig"><figcaption><span class="swatch" style="background:var(--s4)"></span>Turntable: one lizard (left) beside the target frame it matches (right)</figcaption><div class="strip gifbox"><img src="data:image/gif;base64,{img('turntable.gif')}" alt="3D automaton swimming while the camera orbits"></div></figure>
+      <div class="tablewrap"><table class="kv"><tbody>
+        <tr><th scope=row>Target tempo</th><td>{sm['period_target_steps_per_frame']} steps / frame</td></tr>
+        <tr><th scope=row>Measured tempo, steps 200–2000</th><td>{tempo(sm['measured_steps_per_frame'])}</td></tr>
+        <tr><th scope=row>Distinct frames visited</th><td>{sm['distinct_frames_visited_after_200']} of {sm['frames']}</td></tr>
+        <tr><th scope=row>Error vs best-matching frame</th><td>{lg(sm['best_frame_error_mean_after_200'])}</td></tr>
+        <tr><th scope=row>Error vs frame its own clock predicts</th><td>{lg(sm['clock_predicted_frame_error_mean'])}</td></tr>
+        <tr><th scope=row>Best any still volume can do</th><td>{lg(sm['static_best_image_error'])}</td></tr>
+        <tr><th scope=row>Best vs worst frame gap (log₁₀)</th><td>{sm['best_worst_frame_margin_log10']:.2f}</td></tr>
+        <tr><th scope=row>Tail ball cut at step 400, error 600 steps later</th><td>{lg(sm['after_damage_error_at_600'])}</td></tr>
+        <tr><th scope=row>Tempo after the cut</th><td>{tempo(sm['after_damage_steps_per_frame'])}</td></tr>
+      </tbody></table></div>
+    </div>
+    <figure class="fig"><figcaption><span class="swatch" style="background:var(--s4)"></span>Growth from one voxel: steps 0, 16, 32, 48, 64, 96</figcaption><div class="strip"><img src="data:image/png;base64,{img('growth_strip.png')}" alt="3D lizard growing from a single voxel"></div></figure>
+    <figure class="fig"><figcaption><span class="swatch" style="background:var(--s4)"></span>One loop from step 200, every 8 steps (top), over the target frame each one matches (bottom)</figcaption><div class="strip"><img src="data:image/png;base64,{img('loop_strip.png')}" alt="Eight consecutive 3D states over their matching target frames"></div></figure>
+    <figure class="fig"><figcaption><span class="swatch" style="background:var(--s4)"></span>A ball cut through the tail half at step 400, then 25, 50, 100, 200 and 600 steps later</figcaption><div class="strip"><img src="data:image/png;base64,{img('damage.png')}" alt="3D lizard regrowing after a spherical cut"></div></figure>
+  </section>"""
+    core3d = open(os.path.join(HERE, "nca3d_core.js")).read()
+    script = SCRIPT3D.replace("{{CORE3D}}", core3d).replace("{{W3D}}", json.dumps(w, separators=(",", ":"))) \
+        .replace("{{F3D}}", frames_b64).replace("{{K3D}}", str(len(fr)))
+    return bench, script
+
+
+SCRIPT3D = r"""<script>
+{{CORE3D}}
+(function () {
+  const W3 = {{W3D}}, K3 = {{K3D}};
+  const F3 = Uint8Array.from(atob("{{F3D}}"), c => c.charCodeAt(0));
+  const D = W3.D, H = W3.H, W = W3.W, N = D * H * W, C = W3.channel_n;
+  const $ = id => document.getElementById(id);
+  const cv = $('cv3'), ctx = cv.getContext('2d'), cvt = $('cv3t'), ctxt = cvt.getContext('2d');
+  const nca = makeNCA3D(W3); nca.seed();
+  let az = 0.9, tilt = 0.95, running = true, stepN = 0, alive = 0, spin = true, drawn = [];
+  const A = new Float32Array(N);
+  const L = (() => { const l = [-0.35, -0.55, 0.75], n = Math.hypot(...l); return l.map(v => v / n); })();
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) { spin = false; $('spin3').checked = false; }
+
+  function cssColor(name) {
+    const c = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return c || '#fff';
+  }
+  // Voxel splatting, back to front, orthographic, same camera as nca3d.render().
+  function draw(g, size, get, keep) {
+    const zoom = 0.40, R = zoom * Math.hypot(D, H, W), ppu = size / (2 * R);
+    const st = Math.sin(tilt), ct = Math.cos(tilt), ca = Math.cos(az), sa = Math.sin(az);
+    const fwd = [st * ca, st * sa, -ct];
+    const hint = [-ca, -sa, 0];
+    let right = [fwd[1] * hint[2] - fwd[2] * hint[1], fwd[2] * hint[0] - fwd[0] * hint[2], fwd[0] * hint[1] - fwd[1] * hint[0]];
+    const rn = Math.hypot(...right); right = right.map(v => v / rn);
+    const up = [right[1] * fwd[2] - right[2] * fwd[1], right[2] * fwd[0] - right[0] * fwd[2], right[0] * fwd[1] - right[1] * fwd[0]];
+    for (let i = 0; i < N; i++) A[i] = Math.min(1, Math.max(0, get(i, 3)));
+    const list = [];
+    for (let z = 0; z < D; z++) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = (z * H + y) * W + x; if (A[i] < 0.04) continue;
+      const px = x + 0.5 - W / 2, py = y + 0.5 - H / 2, pz = z + 0.5 - D / 2;
+      list.push([px * fwd[0] + py * fwd[1] + pz * fwd[2], px * right[0] + py * right[1] + pz * right[2],
+                 px * up[0] + py * up[1] + pz * up[2], i, x, y, z]);
+    }
+    list.sort((a, b) => b[0] - a[0]);
+    g.fillStyle = cssColor('--dish'); g.fillRect(0, 0, size, size);
+    const sq = ppu * 1.35;
+    const at = (x, y, z) => (x < 0 || x >= W || y < 0 || y >= H || z < 0 || z >= D) ? 0 : A[(z * H + y) * W + x];
+    if (keep) drawn = [];
+    for (const [, u, v, i, x, y, z] of list) {
+      const nx = -(at(x + 1, y, z) - at(x - 1, y, z)), ny = -(at(x, y + 1, z) - at(x, y - 1, z)), nz = -(at(x, y, z + 1) - at(x, y, z - 1));
+      const nn = Math.hypot(nx, ny, nz);
+      const lam = nn > 1e-3 ? Math.max(0, (nx * L[0] + ny * L[1] + nz * L[2]) / nn) : 0.6;
+      const sh = 0.5 + 0.6 * lam, a = A[i];
+      const r = Math.min(255, 255 * sh * Math.max(0, get(i, 0)) / a), gg = Math.min(255, 255 * sh * Math.max(0, get(i, 1)) / a),
+            b = Math.min(255, 255 * sh * Math.max(0, get(i, 2)) / a);
+      const sx = size / 2 + u * ppu, sy = size / 2 - v * ppu;
+      g.fillStyle = `rgba(${r | 0},${gg | 0},${b | 0},${Math.min(1, a * 1.15).toFixed(3)})`;
+      g.fillRect(sx - sq / 2, sy - sq / 2, sq, sq);
+      if (keep) drawn.push([sx, sy, x, y, z]);
+    }
+  }
+  function bestFrame() {
+    const s = nca.state, M = N * 4; let best = Infinity, bk = 0;
+    for (let k = 0; k < K3; k++) {
+      let e = 0; const o = k * M;
+      for (let i = 0; i < N; i++) for (let c = 0; c < 4; c++) { const d = s[i * C + c] - F3[o + i * 4 + c] / 255; e += d * d; }
+      if (e < best) { best = e; bk = k; }
+    }
+    return [best / M, bk];
+  }
+  let lastErr = [NaN, 0], errTick = 0;
+  function frame() {
+    if (running) { const n = +$('speed3').value; for (let i = 0; i < n; i++) { alive = nca.step(); stepN++; } }
+    if (spin && !dragging) az += 0.006;
+    const s = nca.state;
+    draw(ctx, cv.width, (i, c) => s[i * C + c], true);
+    if ((errTick++ & 3) === 0) lastErr = bestFrame();
+    const o = lastErr[1] * N * 4;
+    draw(ctxt, cvt.width, (i, c) => F3[o + i * 4 + c] / 255, false);
+    $('r3-step').textContent = stepN.toLocaleString();
+    $('r3-alive').textContent = alive.toLocaleString();
+    $('r3-err').textContent = lastErr[0] > 0 ? Math.log10(lastErr[0]).toFixed(2) : '–';
+    $('r3-frame').textContent = (lastErr[1] + 1) + ' / ' + K3;
+    requestAnimationFrame(frame);
+  }
+  // Drag orbits; a click (no drag) cuts a ball around the voxel under the pointer.
+  let dragging = false, moved = 0, lx = 0, ly = 0;
+  cv.addEventListener('pointerdown', e => { dragging = true; moved = 0; lx = e.clientX; ly = e.clientY; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - lx, dy = e.clientY - ly; lx = e.clientX; ly = e.clientY; moved += Math.abs(dx) + Math.abs(dy);
+    az -= dx * 0.01; tilt = Math.min(1.5, Math.max(0.05, tilt - dy * 0.01));
+  });
+  cv.addEventListener('pointerup', e => {
+    dragging = false;
+    if (moved > 5) return;
+    const r = cv.getBoundingClientRect(), px = (e.clientX - r.left) / r.width * cv.width, py = (e.clientY - r.top) / r.height * cv.height;
+    for (let j = drawn.length - 1; j >= 0; j--) {
+      const [sx, sy, x, y, z] = drawn[j];
+      if (Math.abs(sx - px) < 8 && Math.abs(sy - py) < 8) { nca.eraseBall(z, y, x, 6); break; }
+    }
+  });
+  $('speed3').addEventListener('input', () => $('o-speed3').textContent = $('speed3').value);
+  $('spin3').addEventListener('change', () => spin = $('spin3').checked);
+  $('b3-play').addEventListener('click', () => { running = !running; $('b3-play').textContent = running ? 'Pause' : 'Run'; });
+  $('b3-seed').addEventListener('click', () => { nca.seed(); stepN = 0; });
+  $('b3-tail').addEventListener('click', () => nca.eraseBall(D / 2, H * 0.68, W * 0.68, 0.3 * W));
+  requestAnimationFrame(frame);
+})();
+</script>"""
 
 
 TEMPLATE = r"""<title>One-Cell Lizard</title>
@@ -296,6 +471,14 @@ tbody tr:last-child > * { border-bottom: 0 }
 .animrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start }
 @media (max-width: 820px) { .animrow { grid-template-columns: minmax(0, 1fr) } }
 .gifbox img { min-width: 0; width: 100% }
+.bench3d { display: grid; gap: 24px }
+.h3dhead { display: grid; gap: 8px }
+.h3dhead h2 { margin: 0 }
+.plate3d { cursor: grab }
+.plate3d:active { cursor: grabbing }
+.plate3d canvas { image-rendering: auto }
+.tgt3 canvas { width: 160px; height: 160px; border-radius: 8px; border: 1px solid var(--rule); display: block }
+.row input[type=checkbox] { justify-self: start; width: 18px; height: 18px; accent-color: var(--accent) }
 table.kv th { text-align: left; font-weight: 400; color: var(--muted); white-space: normal }
 table.kv td { font-weight: 600 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto } }
@@ -338,6 +521,7 @@ table.kv td { font-weight: 600 }
       </div>
     </div>
   </section>
+  {{BENCH3D}}
 
   <section class="record" aria-label="Training record">
     <div>
@@ -453,6 +637,7 @@ load(start);
 if (matchMedia('(prefers-reduced-motion: reduce)').matches) { $('speed').value = 1; $('o-speed').textContent = 1; }
 requestAnimationFrame(frame);
 </script>
+{{SCRIPT3D}}
 """
 
 if __name__ == "__main__":
