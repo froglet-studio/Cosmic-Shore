@@ -344,17 +344,17 @@ namespace CosmicShore.Utility.AITraining
 
         static bool IsNetworked(GameModes mode)
         {
-            // HexRaceController, MultiplayerJoustController, etc. all extend
+            // SkimRaceController, JoustController, etc. all extend
             // MultiplayerMiniGameControllerBase which is a NetworkBehaviour, so
-            // they require a host. Solo arcade controllers (CellularDuel,
-            // WildlifeBlitz) are local-only. GameModes.Freestyle (7) is retired.
+            // they require a host. The single-player DuelForTheCell/WildlifeBlitz
+            // scenes were retired in 2026-09, and GameModes.Freestyle (7) is retired.
             if (TrainingModeCatalog.TryGet(mode, out _)) return true;
             switch (mode)
             {
                 case GameModes.MultiplayerFreestyle:
-                case GameModes.MultiplayerCellularDuel:
+                case GameModes.OnlineDuelForTheCell:
                 case GameModes.Multiplayer2v2CoOpVsAI:
-                case GameModes.MultiplayerWildlifeBlitzGame:
+                case GameModes.CoOpWildlifeBlitz:
                     return true;
                 default:
                     return false;
@@ -370,11 +370,9 @@ namespace CosmicShore.Utility.AITraining
             switch (mode)
             {
                 case GameModes.MultiplayerFreestyle: return "MinigameFreestyleMultiplayer_Gameplay";
-                case GameModes.MultiplayerCellularDuel: return "MinigameDuelForCellMultiplayer_Gameplay";
-                case GameModes.MultiplayerWildlifeBlitzGame: return "MinigameWildlifeBlitzMultuplayerCoOp";
-                case GameModes.CellularDuel: return "MinigameCellularDuel";
-                case GameModes.WildlifeBlitz: return "MinigameWildlifeBlitz";
-                default: return "MinigameHexRace";
+                case GameModes.OnlineDuelForTheCell: return "MinigameDuelForCellMultiplayer_Gameplay";
+                case GameModes.CoOpWildlifeBlitz: return "MinigameWildlifeBlitzMultuplayerCoOp";
+                default: return "MinigameSkimRace";
             }
         }
 

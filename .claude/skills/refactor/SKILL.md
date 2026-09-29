@@ -214,6 +214,17 @@ capability check is pinned to the SPELLING it was written against, not to the ca
 pilot at all. *Ask which VERB, never which word* — and after a rename or an API tidy, re-run every
 gate that greps, not only the ones that compile.
 
+**3.14 An enum member's NAME is persisted data wherever something builds a string from it.**
+Unity serializes an enum as its INT, so a rename looks free — every asset keeps loading. But a
+key built with `ToString()` or interpolation (`$"{Vessel}_{GameMode}_I{Intensity}"`) and then
+STORED is the name on disk. The `HexRace -> SkimRace` rename orphaned `SessionState.asset`'s
+`ScenarioKey: Squirrel_HexRace_I4`, and the runner resets the population on any key mismatch, so
+the next training run would have silently discarded a whole evaluated generation — no error, just
+a fresh start. After renaming an enum member, grep the ASSETS (`*.asset`, `*.json`, `*.yaml`, save
+data) for the old NAME, not only the code, and grep the code for every `{mode}`/`.ToString()` that
+reaches a serialized string. A key recomputed from serialized ints (`Entry.Key => MakeKey(...)`) is
+safe; a key STORED as a string is not.
+
 ---
 
 ## 4. Sequence the work the measurement dictates

@@ -102,11 +102,11 @@ namespace CosmicShore.Utility.AITraining
         {
             switch (mode)
             {
-                case GameModes.HexRace:
-                case GameModes.MultiplayerCrystalCapture:
-                case GameModes.MultiplayerJoust:
+                case GameModes.SkimRace:
+                case GameModes.Scurry:
+                case GameModes.Joust:
                 case GameModes.Rampage:
-                case GameModes.Ribcage:
+                case GameModes.Cleave:
                 case GameModes.WildlifeLiberation:
                 case GameModes.DogFight:
                 case GameModes.Bends:
@@ -138,17 +138,17 @@ namespace CosmicShore.Utility.AITraining
         {
             switch (mode)
             {
-                case GameModes.HexRace: ApplyHexRaceDefaults(); break;
-                case GameModes.MultiplayerCrystalCapture: ApplyCrystalCaptureDefaults(); break;
-                case GameModes.MultiplayerJoust: ApplyJoustDefaults(); break;
+                case GameModes.SkimRace: ApplyHexRaceDefaults(); break;
+                case GameModes.Scurry: ApplyCrystalCaptureDefaults(); break;
+                case GameModes.Joust: ApplyJoustDefaults(); break;
                 case GameModes.Rampage: ApplyRampageDefaults(); break;
-                case GameModes.Ribcage: ApplyRibcageDefaults(); break;
+                case GameModes.Cleave: ApplyRibcageDefaults(); break;
                 case GameModes.WildlifeLiberation: ApplyWildlifeLiberationDefaults(); break;
                 case GameModes.DogFight: ApplyDogFightDefaults(); break;
                 case GameModes.Bends: ApplyBendsDefaults(); break;
                 case GameModes.ScarabScramble: ApplyScarabScrambleDefaults(); break;
                 case GameModes.Salvo: ApplySalvoDefaults(); break;
-                case GameModes.NucleusRush: ApplyNucleusRushDefaults(); break;
+                case GameModes.BroodRush: ApplyNucleusRushDefaults(); break;
                 case GameModes.AstroLeague: ApplyAstroLeagueDefaults(); break;
                 case GameModes.MultiplayerFreestyle: ApplyFreestyleDefaults(); break;
                 default: ApplyRacingDefaults(); break;

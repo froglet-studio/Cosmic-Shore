@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3dd9dff9d6f4d4e8c2d6f74378d739d, type: 3}
   m_Name: SessionState
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Utility.AITraining.TrainingSessionStateSO
-  ScenarioKey: Squirrel_HexRace_I4
+  ScenarioKey: Squirrel_SkimRace_I4
   LastWriteUtc: 2026-09-29T15:08:32.8585550Z
   EpisodesCompleted: 24
   EpisodesRequested: 24

@@ -569,7 +569,7 @@ namespace CosmicShore.Utility.AITraining
             _fallbackProfile = ScriptableObject.CreateInstance<FitnessProfileSO>();
             _fallbackProfile.name = "Fallback Fitness (in-memory)";
             var mode = scenario != null ? scenario.GameMode : GameModes.Random;
-            if (mode == GameModes.MultiplayerCellularDuel || mode == GameModes.CellularDuel)
+            if (mode == GameModes.OnlineDuelForTheCell || mode == GameModes.DuelForTheCell)
                 _fallbackProfile.ApplyCellularCaptureDefaults();
             else
                 _fallbackProfile.ApplyFor(mode);
