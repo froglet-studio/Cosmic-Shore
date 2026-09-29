@@ -31,10 +31,18 @@ namespace CosmicShore.UI
     /// MiniGameHUD self-attach this to their pause button and hand over the injected
     /// GameDataSO.
     ///
-    /// Reads <see cref="Cell.GetDomainVolume"/>, <see cref="Cell.FrenzyEnterVolume"/>
-    /// and <see cref="Cell.ResolvedThresholds"/> - volume is the spine, so the gauge
-    /// shows exactly the measure that drives the phase ladder; resolves the cell via
-    /// the local player's vessel position, falling back to the nearest active cell.
+    /// Reads <see cref="Cell.GetControlVolume"/>, <see cref="Cell.FrenzyEnterVolume"/>
+    /// and <see cref="Cell.ResolvedThresholds"/> - volume is the spine, so the gauge shows
+    /// exactly the measure that decides the cell. In a cell with NO nucleus control zone that
+    /// is whole-cell volume against the phase ladder (every arcade arena today); in one WITH a
+    /// nucleus control zone it is each domain's share of the nucleus CLAIM, because that is
+    /// what <see cref="Cell.DominantDomain"/> is reading and a gauge must not be able to
+    /// disagree with the control it draws.
+    ///
+    /// The cell is re-resolved on every sample from the local player's vessel position — the one
+    /// whose visible MEMBRANE contains them, falling back to the nearest active cell when they
+    /// are between membranes. It is NOT latched, because the Arkway flies you from one cell into
+    /// the next and a latched gauge stays pinned to the one you started in.
     /// </summary>
     [DisallowMultipleComponent]
     public class DomainVolumeIndicator : MonoBehaviour
@@ -205,16 +213,48 @@ namespace CosmicShore.UI
                 return;
             }
 
-            // Volume is the spine (locked invariant): the gauge reads per-domain live
-            // VOLUME - every prism contributes (trail, flora, fauna bodies) - against
-            // the volume phase ladder, mirroring exactly what drives the cell's phase.
-            float frenzy = cell.FrenzyEnterVolume;
-            float jade = cell.GetDomainVolume(Domains.Jade);
-            float ruby = cell.GetDomainVolume(Domains.Ruby);
-            float gold = cell.GetDomainVolume(Domains.Gold);
+            // Volume is the spine (locked invariant), and the gauge reads the volume that
+            // actually DECIDES this cell - Cell.GetControlVolume, the same source
+            // Cell.DominantDomain reads. That is one branch, not two gauges:
+            //
+            //   • NO nucleus control zone (every arcade arena today): whole-cell live VOLUME -
+            //     every prism contributes, trail, flora and fauna bodies alike - against the
+            //     volume phase ladder, so the wedges mirror exactly what drives the cell's
+            //     phase. Unchanged.
+            //   • WITH a nucleus control zone (Brood Rush, the Arkway's traversal cells): the
+            //     ENVIRONMENT volume laid INSIDE the nucleus - the territorial claim - as each
+            //     domain's SHARE of that claim. The phase ladder is a whole-cell measure and
+            //     says nothing about the claim, so its ring is hidden rather than drawn at a
+            //     scale it does not describe.
+            //
+            // Feeding the whole-cell read into a nucleus cell was the defect: the gauge could
+            // show one domain leading while DominantDomain held the cell for another, with
+            // nothing wrong on either side.
+            float jade = cell.GetControlVolume(Domains.Jade);
+            float ruby = cell.GetControlVolume(Domains.Ruby);
+            float gold = cell.GetControlVolume(Domains.Gold);
 
-            if (frenzy > 0f)
+            if (cell.HasNucleusControlZone)
             {
+                // Share of the claim. An almost-empty nucleus reading as one full wedge is
+                // honest: a single prism in there really does hold the whole cell.
+                float claim = jade + ruby + gold;
+                if (claim > 0f)
+                {
+                    _jadeTarget = jade / claim;
+                    _rubyTarget = ruby / claim;
+                    _goldTarget = gold / claim;
+                }
+                else
+                {
+                    _jadeTarget = _rubyTarget = _goldTarget = 0f;
+                }
+                _hasThresholds = false;
+            }
+            else if (cell.FrenzyEnterVolume > 0f)
+            {
+                float frenzy = cell.FrenzyEnterVolume;
+
                 // Per-domain radial fill = that domain's mass as a fraction of the
                 // frenzy threshold. A single domain reaching the full threshold (which
                 // alone trips frenzy) fills its sector all the way to the centre.
@@ -306,19 +346,44 @@ namespace CosmicShore.UI
         //  Cell + color resolution
         // ------------------------------------------------------------------
 
+        /// <summary>
+        /// The cell the player is in RIGHT NOW, re-resolved on every sample (4 Hz) rather than
+        /// latched.
+        ///
+        /// It used to cache the first answer forever, which is correct exactly while a scene has
+        /// one cell and the player never leaves it — true of every arcade mode, and false of the
+        /// Arkway, whose whole subject is flying from one cell into the next. There the gauge
+        /// stayed pinned to the home cell for the entire voyage: three domain wedges at zero and
+        /// a fauna-spawn ring that never moved, which reads as a broken gauge rather than as a
+        /// gauge reading somewhere else. Two live cell registries (<see cref="Cell.Active"/> via
+        /// the two finders) make the re-read a walk over a handful of cells, so the latch was
+        /// buying almost nothing.
+        ///
+        /// The last good answer is kept as the fallback so the gauge holds its reading through a
+        /// frame where nothing resolves (a cell mid-strike, the vessel mid-swap) instead of
+        /// blanking.
+        /// </summary>
         Cell ResolveCell()
         {
             if (explicitCell) return explicitCell;
-            if (_cachedCell) return _cachedCell;
 
             Transform vesselT = gameData?.LocalPlayer?.Vessel?.Transform;
-            if (vesselT != null)
-            {
-                _cachedCell = Cell.FindCellContaining(vesselT.position);
-                if (_cachedCell) return _cachedCell;
-            }
+            Vector3 at = vesselT != null ? vesselT.position : Vector3.zero;
 
-            _cachedCell = Cell.FindNearestActiveCell(vesselT != null ? vesselT.position : Vector3.zero);
+            // MEMBRANE first, not ContainsPosition. "Which cell am I in" is a question about
+            // the boundary the player can SEE, and ContainsPosition answers with the SENSING
+            // radius, which a config may widen well past the membrane so fauna can find mass
+            // across a big arena (SenseRadiusOverride). That is the right answer for prism
+            // registration and the wrong one for a HUD: a wide-sensing cell can swallow a
+            // neighbouring world and the gauge then reports a cell the player is nowhere near.
+            var inside = Cell.FindCellByMembrane(at);
+            if (inside) return _cachedCell = inside;
+
+            // Outside every membrane (the Arkway's open water between cells): the nearest is
+            // the one being left or approached, which beats blanking the gauge.
+            var nearest = Cell.FindNearestActiveCell(at);
+            if (nearest) return _cachedCell = nearest;
+
             return _cachedCell;
         }
 

@@ -109,19 +109,16 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Get crystal transform for local player (falls back to neutral, then first crystal).
         /// Returns null if no crystal exists.
+        ///
+        /// A cell with NO crystal is an ordinary state, not a fault - Barren, the Arkway's
+        /// satellite cells and every bare-canvas config hold none - and this accessor is read
+        /// PER TICK by every herbivore in the cell (twice per tick at some call sites), so the
+        /// warning it used to log here was a per-frame log with a full managed+native stack
+        /// trace behind it: console spam that measurably cost frame time in an Arkway corridor.
+        /// Every caller already null-checks. Returning null IS the answer.
         /// </summary>
-        public Transform CrystalTransform
-        {
-            get
-            {
-                if (!TryGetLocalCrystal(out Crystal crystal))
-                {
-                    CSDebug.LogWarning("[CellRuntimeDataSO] No local crystal found!");
-                    return null;
-                }
-                return crystal.transform;
-            }
-        }
+        public Transform CrystalTransform =>
+            TryGetLocalCrystal(out Crystal crystal) ? crystal.transform : null;
 
         /// <summary>
         /// Get crystal for local player.
@@ -244,6 +241,11 @@ namespace CosmicShore.Utility
 
             if (Crystals != null)
             {
+                // No per-crystal line here, on any channel: a log inside a per-object loop is
+                // spam on a toy that resets a cell every crossing, and LogVerbose is
+                // [Conditional] - it removes the CALL in a release build but not the argument
+                // evaluation in the Editor, so an interpolated string is built every time even
+                // when the channel is off.
                 for (int i = Crystals.Count - 1; i >= 0; i--)
                 {
                     if (Crystals[i] && Crystals[i].gameObject)

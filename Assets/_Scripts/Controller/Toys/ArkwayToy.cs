@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// voyage resets; otherwise it goes on forever, cell after cell.
     ///
     /// Three things end a voyage and all route through <see cref="ArkwayRun.End"/>: the
-    /// DISEMBARK dinghy trailing the Ark, another pass through this toy, and the overview
+    /// DISEMBARK station standing at the entrance you sailed from, another pass through this toy, and the overview
     /// button (or gamepad Start), which drops freestyle. The Ark falling is the fourth — the
     /// reset. A pass reblooms the toy (it carries no text); the emblem's orbit
     /// speed carries the live state (the Wanderway's own idiom).
@@ -172,10 +172,20 @@ namespace CosmicShore.Gameplay
             }
             if (localVessel?.Vessel == null) return;
 
+            // A pass while the voyage is still BUILDING is ignored, not toggled. The player is
+            // behind the load veil, flying blind, and the toy is right where they are - a
+            // second pass there ended the unseen voyage and the retry ended nothing at all.
+            if (_run && _run.IsBuilding)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    "[ArkwayToy] Pass ignored - the voyage is still building behind the veil.");
+                return;
+            }
+
             // Toggle: a pass while a voyage is live ends it (and brings the player home).
             if (_run && _run.IsRunning)
             {
-                _run.End(returnToCell: true);
+                _run.End(returnToCell: true, "the player flew the Arkway toy again");
                 return; // End raises the callback that reblooms the toy
             }
 
