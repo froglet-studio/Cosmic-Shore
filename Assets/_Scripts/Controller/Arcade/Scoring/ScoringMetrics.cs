@@ -31,6 +31,9 @@ namespace CosmicShore.Gameplay
             // (the per-domain NetworkVariable sum, the HUD column, the goal row, the
             // scoreboard secondary) keeps the single int contract the rest of them share.
             ScoringMetric.VolumeDestroyed   => Mathf.RoundToInt(stats.HostileVolumeDestroyed),
+            // The second float-backed metric, rounded here for the same reason. A LIVE stock -
+            // it falls when a rival takes your mass - so it is the one metric that can go DOWN.
+            ScoringMetric.VolumeRemaining   => Mathf.RoundToInt(Mathf.Max(0f, stats.VolumeRemaining)),
             _                               => 0,
         };
 

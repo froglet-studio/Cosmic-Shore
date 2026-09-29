@@ -31,6 +31,9 @@ MonoBehaviour:
   tollwayTollTarget: 4
   wreckingBallPrismTarget: 1500
   undertowPointTarget: 12
+  dustupPointTarget: 10
+  tapestryRoundSeconds: 150
+  siroccoPrismTarget: 600
   broadsidePointsPerPilot: 100
   salvoPrismTarget: 700
   switchbackGateTarget: 20
@@ -60,6 +63,9 @@ MonoBehaviour:
   tollwayTollTargetBuild: 4
   wreckingBallPrismTargetBuild: 1500
   undertowPointTargetBuild: 12
+  dustupPointTargetBuild: 10
+  tapestryRoundSecondsBuild: 150
+  siroccoPrismTargetBuild: 600
   broadsidePointsPerPilotBuild: 100
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20

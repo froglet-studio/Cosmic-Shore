@@ -24,9 +24,17 @@ leave a surface behind*. Three consequences shape the whole design:
   fleet's longest after the Serpent's 250), so the wingspan and the beat carry the read, and every
   animation amplitude is authored against that distance rather than against a mirror.
 
-### Its mode
+### Its modes
 
-**`Waystation(58)`** — the Butterfly-only migration race, and the only arcade card this hull flies.
+Four arcade cards, **one per element and one per genre petal**: Waystation (Time, below),
+**`Dustup(59)`** (Charge — a dust duel: the capsule hangs below you, so you score by flying OVER a
+rival; `DUSTUP.md`), **`Tapestry(60)`** (Mass — a timed painting war scored on volume standing;
+`TAPESTRY.md`) and **`Sirocco(61)`** (Space — an erosion race through Rampage's forest;
+`SIROCCO.md`). The three later ones changed nothing about the vessel either; they share
+`ButterflyAutopilotModeDriver`, which lets an AI flip Mass/Dust mode through the replicated press
+path and reads the mode back off `SpreadWingsActionExecutor.IsDustMode`.
+
+**`Waystation(58)`** — the Butterfly-only migration race.
 It is cut against the Fold's single degree of freedom (the heading you leave on, after
 `BUTTERFLY_FOLD.md` "One reach, everywhere"): clusters of rings you weave, laid a fold apart, each
 ending in an exit gate that faces the next cluster. Nothing about the vessel was changed for it —

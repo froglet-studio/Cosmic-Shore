@@ -469,6 +469,19 @@ namespace CosmicShore.UI
                     // crystal is the Kabloom trigger — the "cash in now?" half of the mode's
                     // one decision, and exactly what the arrow should point at.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Bloomrush");
+                case GameModes.Dustup:
+                    // The Bends' provider: the nearest pilot this player may dust. The domain
+                    // check is the whole point - the dust spares teammates - and a duel between
+                    // the fleet's two slowest-turning hulls is won by whoever FINDS the other.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Dustup");
+                case GameModes.Tapestry:
+                    // The same provider, answering the RAID half of the mode: the nearest
+                    // opposing pilot is where the freshest opposing paint is, because a pilot's
+                    // wake is laid behind them. The PAINT half needs no arrow - you paint where
+                    // you are.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Tapestry");
+                // Sirocco deliberately has NO arrow, like Cleave: the forest rings the whole
+                // cell, so "where is the thing to erode" has no single answer worth pointing at.
                 default:
                     return null;
             }

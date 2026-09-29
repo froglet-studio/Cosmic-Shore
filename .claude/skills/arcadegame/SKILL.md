@@ -109,6 +109,8 @@ worth more than a creature). Then run it, run it again with `--check` (must pass
 it fail once**: mutate an authored file, `--check` must name it, re-run to restore. A gate
 nobody has watched fail is a gate nobody should trust.
 
+**The card's `CardBackground` is owned by `/cardart`, not by the mode generator** - once the renderer has rewired a card, a generator that re-emits the whole card with `arcade_mode_lib.CARD_ART`'s legacy placeholder silently puts the old backdrop back on every re-run, and `render_card_backgrounds.py --check` then fails on a card nobody touched. Read the field back off the existing asset and emit that (`EXISTING['CardBackground']` in Broadside/Regatta/Undertow/Wrecking Ball, `butterfly_games_common.card_background` for the Butterfly four); fall back to the placeholder only on first bring-up. Waystation shipped without this and clobbered its rendered card the first time its generator ran after `/cardart`. General rule: *a generator that rewrites a whole asset owns every field in it unless it reads back the ones another tool owns.*
+
 **A spent one-shot must STAND DOWN, not abort** - a scene clone that asserts on its donor's
 exact text is right today and is the `author_dogfight_assets.py` trap the day the donor moves;
 when the scene is committed and the donor drifts, guard the clone and keep the checks below it live.
