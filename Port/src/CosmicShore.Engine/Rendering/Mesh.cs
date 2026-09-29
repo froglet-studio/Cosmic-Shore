@@ -94,6 +94,13 @@ namespace CosmicShore.Engine
         }
 
         /// <summary>Per-vertex tangents (xyz + handedness w).</summary>
+        /// <summary>Vertex colors as bytes (a view over <see cref="colors"/>).</summary>
+        public Color32[] colors32
+        {
+            get { var c = colors; if (c == null) return System.Array.Empty<Color32>(); var r = new Color32[c.Length]; for (int i = 0; i < c.Length; i++) r[i] = c[i]; return r; }
+            set { if (value == null) { colors = null; return; } var r = new Color[value.Length]; for (int i = 0; i < value.Length; i++) r[i] = value[i]; colors = r; }
+        }
+
         public Vector4[] tangents
         {
             get => Copy(_tangents);

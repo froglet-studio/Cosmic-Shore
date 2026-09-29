@@ -8,15 +8,30 @@ namespace CosmicShore.Engine.UI
     {
         /// <summary>Position in the graphic's RectTransform local space (canvas units, pivot at origin).</summary>
         public Vector3 position;
+        public Vector3 normal;
+        public Vector4 tangent;
         public Color32 color;
         /// <summary>Texture coordinate (xy); v = 0 is the BOTTOM of the texture.</summary>
         public Vector4 uv0;
+        public Vector4 uv1, uv2, uv3;
+
+        /// <summary>Unity's default vertex: origin, normal -z, tangent +x, white.</summary>
+        public static UIVertex simpleVert = new()
+        {
+            position = Vector3.zero,
+            normal = new Vector3(0f, 0f, -1f),
+            tangent = new Vector4(1f, 0f, 0f, -1f),
+            color = new Color32(255, 255, 255, 255),
+        };
 
         public UIVertex(Vector2 position, Color32 color, Vector2 uv)
         {
             this.position = new Vector3(position.x, position.y, 0f);
+            normal = new Vector3(0f, 0f, -1f);
+            tangent = new Vector4(1f, 0f, 0f, -1f);
             this.color = color;
             uv0 = new Vector4(uv.x, uv.y, 0f, 0f);
+            uv1 = uv2 = uv3 = default;
         }
 
         public override string ToString() => $"({position.x:0.###}, {position.y:0.###}) uv({uv0.x:0.####}, {uv0.y:0.####})";

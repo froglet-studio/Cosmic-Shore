@@ -355,6 +355,9 @@ namespace CosmicShore.Content.Scenes
             if (list == null || list.Count == 0) return;
             var addListener = evt.GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public)
                 .FirstOrDefault(m => m.Name == "AddListener" && m.GetParameters().Length == 1);
+            // Inspector calls go on the PERSISTENT tier when the event type has one (they
+            // survive RemoveAllListeners and run before runtime listeners, like the original).
+            var addPersistent = evt.GetType().GetMethod("AddPersistentListener", BindingFlags.Instance | BindingFlags.Public);
             if (addListener == null) return;
             var actionType = addListener.GetParameters()[0].ParameterType;
             var eventArgs = actionType.IsGenericType ? actionType.GetGenericArguments() : Type.EmptyTypes;
@@ -374,7 +377,9 @@ namespace CosmicShore.Content.Scenes
                     continue;
                 }
                 var del = MakeListener(actionType, eventArgs, invoker);
-                try { addListener.Invoke(evt, new object[] { del }); }
+                if (del != null && del.GetType() != actionType)
+                    del = Delegate.CreateDelegate(actionType, del.Target, del.Method);
+                try { (addPersistent ?? addListener).Invoke(evt, new object[] { del }); }
                 catch (Exception e) { _result.Warnings.Add($"AddListener {methodName}: {e.Message}"); }
             }
         }

@@ -78,6 +78,79 @@ namespace CosmicShore.Engine.UI
 
         protected virtual void OnEnable() => SetAllDirty();
 
+        // ── Mesh generation (the uGUI OnPopulateMesh contract) ──────────────────
+
+        static Texture2D s_WhiteTexture;
+
+        /// <summary>The texture this graphic samples (default: the material's main texture, else white).</summary>
+        public virtual Texture mainTexture => m_Material != null && m_Material.mainTexture != null
+            ? m_Material.mainTexture
+            : (s_WhiteTexture ??= Texture2D.whiteTexture);
+
+        /// <summary>The material actually used to draw (original: material after modifiers).</summary>
+        public virtual Material materialForRendering => material;
+
+        /// <summary>Default UI material stand-in (null: the renderer's own UI pipeline).</summary>
+        public virtual Material defaultMaterial => null;
+
+        /// <summary>Hierarchy draw depth (-1 when not under a canvas).</summary>
+        public int depth => canvas != null ? 0 : -1;
+
+        CanvasRenderer m_CanvasRenderer;
+        public CanvasRenderer canvasRenderer => m_CanvasRenderer ??= gameObject.GetComponent<CanvasRenderer>() ?? gameObject.AddComponent<CanvasRenderer>();
+
+        /// <summary>
+        /// Fills <paramref name="vh"/> with this graphic's geometry in RectTransform local space.
+        /// Default (Unity's base Graphic): one quad over the pixel-adjusted rect in <see cref="color"/>.
+        /// </summary>
+        protected virtual void OnPopulateMesh(VertexHelper vh)
+        {
+            var r = GetPixelAdjustedRect();
+            var v = new Vector4(r.x, r.y, r.x + r.width, r.y + r.height);
+            Color32 c = color;
+            vh.Clear();
+            vh.AddVert(new Vector3(v.x, v.y), c, new Vector2(0f, 0f));
+            vh.AddVert(new Vector3(v.x, v.w), c, new Vector2(0f, 1f));
+            vh.AddVert(new Vector3(v.z, v.w), c, new Vector2(1f, 1f));
+            vh.AddVert(new Vector3(v.z, v.y), c, new Vector2(1f, 0f));
+            vh.AddTriangle(0, 1, 2);
+            vh.AddTriangle(2, 3, 0);
+        }
+
+        /// <summary>Renderer entry point: builds this graphic's mesh, applying <see cref="IMeshModifier"/>s like the canvas update.</summary>
+        public void PopulateMeshForRendering(VertexHelper vh)
+        {
+            vh.Clear();
+            OnPopulateMesh(vh);
+            foreach (var c in gameObject.GetComponents<Component>())
+                if (c is IMeshModifier m && (c is not Behaviour b || b.isActiveAndEnabled)) m.ModifyMesh(vh);
+        }
+
+        /// <summary>The rect in local space (the port does not snap to pixels; pixel-perfect is a render nicety).</summary>
+        public Rect GetPixelAdjustedRect() => rectTransform.rect;
+
+        public Vector2 PixelAdjustPoint(Vector2 point) => point;
+
+        public virtual void Rebuild(CanvasUpdate update) { }
+        public virtual void LayoutComplete() { }
+        public virtual void GraphicUpdateComplete() { }
+        public virtual void SetNativeSize() { }
+
+        public virtual bool Raycast(Vector2 sp, Camera eventCamera) => isActiveAndEnabled && raycastTarget;
+
+        /// <summary>Tweens the CanvasRenderer tint (applied instantly in the port; the renderer multiplies it).</summary>
+        public virtual void CrossFadeColor(Color targetColor, float duration, bool ignoreTimeScale, bool useAlpha)
+            => CrossFadeColor(targetColor, duration, ignoreTimeScale, useAlpha, true);
+        public virtual void CrossFadeColor(Color targetColor, float duration, bool ignoreTimeScale, bool useAlpha, bool useRGB)
+        {
+            var cur = canvasRenderer.GetColor();
+            canvasRenderer.SetColor(new Color(useRGB ? targetColor.r : cur.r, useRGB ? targetColor.g : cur.g, useRGB ? targetColor.b : cur.b, useAlpha ? targetColor.a : cur.a));
+        }
+        public virtual void CrossFadeAlpha(float alpha, float duration, bool ignoreTimeScale) => canvasRenderer.SetAlpha(alpha);
+
+        public virtual void SetRaycastDirty() { }
+        public virtual void SetMaterialDirtyInternal() { }
+
         // Marks even while disabling — the layout above must re-solve WITHOUT this
         // graphic's contribution (same rule as LayoutElement).
         protected virtual void OnDisable() => SetLayoutDirty();
