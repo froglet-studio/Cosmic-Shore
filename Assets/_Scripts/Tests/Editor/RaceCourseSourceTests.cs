@@ -81,6 +81,37 @@ namespace CosmicShore.Tests
             }
         }
 
+        /// <summary>
+        /// The preview's lap clock closes a lap exactly where the match's fold wraps: once per
+        /// pass over the lapped rings, after the lead-in, and the last lap is the race's end.
+        /// </summary>
+        [Test]
+        public void PreviewLapsCloseWhereTheFoldWraps()
+        {
+            for (int rings = 1; rings <= 20; rings++)
+            for (int lead = 0; lead <= 2; lead++)
+            for (int laps = 1; laps <= 4; laps++)
+            {
+                if (lead >= rings) continue;
+                int race = GateRaceController.RaceLengthFor(rings, lead, laps);
+                int closed = 0;
+                for (int t = 1; t <= race; t++)
+                {
+                    bool boundary = ModePreviewGateCourse.IsLapBoundary(t, rings, lead, race);
+                    if (boundary) closed++;
+
+                    // A lap closes on the threading that sends the fold back to the first lapped
+                    // ring - or, on the last one, finishes the race.
+                    bool wraps = t < race &&
+                                 GateRaceController.RingIndexFor(t, rings, lead, laps) == lead &&
+                                 t > lead;
+                    Assert.AreEqual(wraps || t == race, boundary,
+                        $"rings={rings} lead={lead} laps={laps} t={t}");
+                }
+                Assert.AreEqual(laps, closed, $"rings={rings} lead={lead} laps={laps}: laps closed");
+            }
+        }
+
         static void AssertKnob(Dictionary<string, string> knobs, string key, float expected, GameModes mode)
         {
             // Absent = the C# initializer, which reads the same constant the source does.

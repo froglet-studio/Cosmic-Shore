@@ -337,9 +337,24 @@ config.
    crossings with the existing pure `RaceGateRing.CrossedMouth(prev, cur)`, and raises
    `GateThreaded` / `LapCompleted` for the Mentor's Moment conditions and the practice-lap time.
    Local only; the rings retire with the arena.
+
+   **LANDED (2026-09-29).** `Controller/Arcade/Preview/ModePreviewGateCourse.cs`, owned by
+   `ModePreviewSession` (`GateCourse` accessor for the drill). Raised on tap-in, tracks the local
+   vessel while it holds the stick, stops counting (rings stay) on tap-out, struck with the
+   arena, and re-raised on an intensity nudge that keeps the arena standing (the course is
+   per-intensity even where the cell is not). Events: `OnGateThreaded(ring, total)`,
+   `OnLapCompleted(lap, seconds)`, `OnRaceCompleted(seconds)`; a finished race loops. The lap
+   rule (`IsLapBoundary`) is proven against the match's fold in `RaceCourseSourceTests`.
 3. Gate-race preview objectives become `SwitchesThreaded` with a real target, so the launch
    panel's objective box counts gates like every other mode, and the four "OPEN-ENDED" preview
    notes retire.
+
+   **Half landed.** The seven gate-race definitions already author `ObjectiveMetric` 9
+   (`SwitchesThreaded`), so with the local count feeding the runner the objective box now counts
+   gates with no asset edit. `ObjectiveTarget` stays 0 on purpose: the box never shows a target,
+   and a looping race has no finish to stop counting at. The Notes text is generator-owned and
+   still reads OPEN-ENDED; retiring it is an edit to `author_mode_previews.py` /
+   `author_regatta_assets.py`, not to the assets.
 
 ---
 
