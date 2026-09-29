@@ -339,6 +339,7 @@ their paths do not start with `FrogletTools/`.
 |---|---|---|
 | Build | **Pending Tool Changes** | Uncommitted asset output from editor tools. Validate, push, retire. The last gate before a branch ships. |
 | Game Modes | **Game Mode Prefab Kit** | The prefabs a new game-mode scene needs; Add to Scene / Open Prefab / Validate, plus cross-scene drift detection and consolidation. See `Docs/GAMECANVAS.md`. |
+| Game Modes | **AI Training** | Operator surface for overnight genome search: Configure, Learn / Stop, Inspect, Archive, Deploy, and play a normal match against the archive. Keeper. Writes the `Assets/_SO_Assets/AI Training/` set (Quick Setup is idempotent) and records those writes, so it draws the ship panel. See `Assets/_Scripts/Utility/AITraining/README.md` § Operator. |
 | Game Modes | End Game Conditions | The one place win conditions are authored for the domain modes. |
 | Build | Windows x64 (Release / Development), Reveal Build Folder | Player builds. |
 | Ecology | Prism Animation ▸ Validate Clock Wiring / Auto-Wire Clock Properties | The clock-material law gate. |
@@ -369,6 +370,7 @@ their paths do not start with `FrogletTools/`.
 | Pending Tool Changes window | `Assets/_Scripts/Editor/FrogletTools/FrogletToolShipWindow.cs` |
 | git CLI wrapper (quoting-safe, no wildcards) | `Assets/_Scripts/Editor/FrogletTools/FrogletGit.cs` |
 | Prefab kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |
+| AI Training window | `Assets/_Scripts/Utility/AITraining/Editor/TrainingEditorWindow.cs` |
 | Prefab kit validation | `Assets/_Scripts/Editor/FrogletTools/KitValidator.cs` |
 | Scene drift scanner (read-only) | `Assets/_Scripts/Editor/FrogletTools/PrefabInstanceSceneScanner.cs` |
 | Drift fixer (writes via PrefabUtility) | `Assets/_Scripts/Editor/FrogletTools/PrefabDriftFixer.cs` |

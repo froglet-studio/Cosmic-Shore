@@ -95,6 +95,13 @@ namespace CosmicShore.Utility
         /// and is unaffected by this flag.
         /// </summary>
         SparrowStrafingRoll = 1 << 7,
+        /// <summary>
+        /// <c>[Training]</c> — overnight GA bring-up: launch, rollout start, a recorded
+        /// episode, replay handoff, deployment install. Off by default. A watchdog
+        /// timeout, a missing controller, and a failed save stay warnings or errors.
+        /// Nothing in the per-frame fitness sample logs, on this channel or otherwise.
+        /// </summary>
+        AITraining = 1 << 8,
         All = ~0
     }
 
