@@ -140,6 +140,7 @@ namespace CosmicShore.Content.Scenes
             64 => Find("MeshCollider"),
             65 => Find("BoxCollider"),
             82 => Find("AudioSource"),
+            95 => Find("Animator"),
             96 => Find("TrailRenderer"),
             108 => Find("Light"),
             120 => Find("LineRenderer"),

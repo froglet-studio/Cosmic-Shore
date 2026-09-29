@@ -132,12 +132,55 @@ namespace CosmicShore.Content
 
         public IEnumerable<string> AllAssetPaths => _guidToPath.Values;
 
-        /// <summary>Parsed YAML asset file for a guid (scene/prefab/asset/mat/controller…), cached.</summary>
+        /// <summary>
+        /// Parsed YAML asset file for a guid (scene/prefab/asset/mat/controller…), cached.
+        /// A model file (<see cref="IsModelPath"/>) is binary: it loads as a document-less
+        /// file whose objects come from <see cref="LoadModel"/> instead.
+        /// </summary>
         public AssetFile Load(string guid)
         {
             var path = PathOf(guid);
             if (path == null || !File.Exists(path)) return null;
-            return _files.GetOrAdd(guid, g => new AssetFile(path, g, UnityYaml.ParseDocuments(File.ReadAllText(path))));
+            return _files.GetOrAdd(guid, g => IsModelPath(path)
+                ? new AssetFile(path, g, new List<UnityDocument>())
+                : new AssetFile(path, g, UnityYaml.ParseDocuments(File.ReadAllText(path))));
+        }
+
+        // ── Model files ────────────────────────────────────────────────────
+
+        readonly ConcurrentDictionary<string, Lazy<Models.ImportedModel>> _models = new(StringComparer.Ordinal);
+
+        /// <summary>True for a file Unity's ModelImporter owns and the port can import (FBX).</summary>
+        public static bool IsModelPath(string path)
+            => path != null && path.EndsWith(".fbx", StringComparison.OrdinalIgnoreCase);
+
+        public bool IsModel(string guid) => IsModelPath(PathOf(guid));
+
+        /// <summary>
+        /// The model file behind a guid, imported the way Unity's ModelImporter would with its
+        /// <c>.meta</c> settings — parsed lazily on first use and cached, so every prefab that
+        /// nests it and every mesh reference into it share one import (and one set of meshes).
+        /// Null when the guid is not a model or the file fails to import.
+        /// </summary>
+        public Models.ImportedModel LoadModel(string guid)
+        {
+            if (!IsModel(guid)) return null;
+            return _models.GetOrAdd(guid, g => new Lazy<Models.ImportedModel>(() => ImportModel(g))).Value;
+        }
+
+        Models.ImportedModel ImportModel(string guid)
+        {
+            var path = PathOf(guid);
+            try
+            {
+                var settings = Models.ModelImportSettings.FromMeta(Meta(guid));
+                return Models.FbxModelImporter.Import(path, settings, guid);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"[content] model import failed for {ProjectRelative(path)}: {e.Message}");
+                return null;
+            }
         }
 
         /// <summary>Parsed YAML asset file by project-relative or absolute path.</summary>

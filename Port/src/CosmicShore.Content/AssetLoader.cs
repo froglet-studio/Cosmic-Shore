@@ -70,11 +70,57 @@ namespace CosmicShore.Content
                     var ext = Path.GetExtension(path).ToLowerInvariant();
                     if (ext == ".asset" || ext == ".mat" || ext == ".prefab")
                         result = LoadFromYaml(r, path, expected);
+                    else if (AssetDatabase.IsModelPath(path))
+                        result = LoadFromModel(r, expected);
                 }
             }
 
             if (result != null) _cache[key] = result;
             return Adapt(result, expected);
+        }
+
+        /// <summary>
+        /// A sub-asset of a model file: a Mesh by its fileID, or a Material — the project
+        /// material the meta's <c>externalObjects</c> remaps it to, else a default material
+        /// named after the FBX material (what Unity's importer embeds). The model prefab's
+        /// GameObjects/components come through the GameObject importer (prefab templates);
+        /// Avatar and AnimationClip sub-assets are not modelled yet and stay null.
+        /// </summary>
+        EngineObject LoadFromModel(ObjRef r, Type expected)
+        {
+            var model = Db.LoadModel(r.Guid);
+            if (model == null) return null;
+
+            if (model.MeshById.TryGetValue(r.FileId, out var mesh))
+                return expected.IsAssignableFrom(typeof(Mesh)) ? mesh.Mesh : null;
+
+            if (!expected.IsAssignableFrom(typeof(Material))) return null;
+            foreach (var o in model.Scene.ObjectList)
+            {
+                if (o.Kind != "Material" || o.Name == null || Models.ModelFileIds.Material(o.Name) != r.FileId) continue;
+                if (model.Settings.ExternalMaterials.TryGetValue(o.Name, out var ext) && !ext.IsNull)
+                    return Load(ext, typeof(Material));
+                return DefaultModelMaterial(model, o.Name);
+            }
+            return null;
+        }
+
+        static Material DefaultModelMaterial(Models.ImportedModel model, string name)
+        {
+            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = name };
+            foreach (var o in model.Scene.ObjectList)
+            {
+                if (o.Kind != "Material" || o.Name != name) continue;
+                var diffuse = o.HasProp("DiffuseColor") ? o.PropVector("DiffuseColor", 1, 1, 1) : null;
+                if (diffuse != null)
+                {
+                    var c = new Color((float)diffuse[0], (float)diffuse[1], (float)diffuse[2], 1f);
+                    mat.SetColor("_BaseColor", c);
+                    mat.SetColor("_Color", c);
+                }
+                break;
+            }
+            return mat;
         }
 
         // Unity runs a ScriptableObject's Awake/OnEnable when the asset loads.

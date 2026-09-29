@@ -195,7 +195,9 @@ namespace CosmicShore.Content.Models
                     "AllSame" => 0,
                     _ => polyVertex,
                 };
-                if (Reference is "IndexToDirect" or "Index")
+                // A LayerElementMaterial carries no separate index array: its "Materials"
+                // data IS the per-polygon material index, even under IndexToDirect.
+                if ((Reference is "IndexToDirect" or "Index") && Index != null)
                 {
                     if (Index == null || i < 0 || i >= Index.Length) return -1;
                     i = Index[i];

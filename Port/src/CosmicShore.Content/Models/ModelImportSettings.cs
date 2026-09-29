@@ -34,6 +34,10 @@ namespace CosmicShore.Content.Models
         public float MinBoneWeight = 0.001f;
         /// <summary>ModelImporterIndexFormat: 0 Auto, 1 UInt16, 2 UInt32.</summary>
         public int IndexFormat;
+        /// <summary>ModelImporterAnimationType: 0 None, 1 Legacy, 2 Generic, 3 Human. Generic/Human put an Animator on the prefab root.</summary>
+        public int AnimationType = 2;
+        /// <summary>ModelImporterMaterialImportMode: 0 None, 1 Legacy, 2 ImportViaMaterialDescription.</summary>
+        public int MaterialImportMode = 2;
         /// <summary>Material remaps (<c>externalObjects</c>): FBX material name → project material.</summary>
         public readonly Dictionary<string, ObjRef> ExternalMaterials = new(StringComparer.Ordinal);
         /// <summary>Animation clip internal IDs from <c>clipAnimations</c> (name → fileID).</summary>
@@ -71,6 +75,8 @@ namespace CosmicShore.Content.Models
                 s.TangentImportMode = ts.Int("tangentImportMode", 3);
                 s.BlendShapeNormalImportMode = ts.Int("blendShapeNormalImportMode", 1);
             }
+            s.AnimationType = mi.Int("animationType", 2);
+            s.MaterialImportMode = mi["materials"]?.Int("materialImportMode", 2) ?? 2;
             var anim = mi["animations"];
             s.IsReadable = (anim?["isReadable"] ?? mi["isReadable"])?.Scalar == "1";
             foreach (var clip in anim?["clipAnimations"]?.Items ?? Array.Empty<YNode>())

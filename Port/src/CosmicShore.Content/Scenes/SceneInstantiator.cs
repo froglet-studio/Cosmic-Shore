@@ -329,6 +329,28 @@ namespace CosmicShore.Content.Scenes
                 var cam = ObjRef.From(obj.Body["m_Camera"]);
                 if (!cam.IsNull) canvas.worldCamera = Resolve(cam, typeof(Camera), obj.Origin) as Camera;
             }
+            // m_Mesh is the SHARED mesh (the asset): reading it through MeshFilter.mesh would
+            // make the asset the filter's private instance, and SkinnedMeshRenderer has no
+            // member that answers m_Mesh at all.
+            else if (comp is MeshFilter filter && obj.Body["m_Mesh"] != null)
+            {
+                filter.sharedMesh = Resolve(ObjRef.From(obj.Body["m_Mesh"]), typeof(Mesh), obj.Origin) as Mesh;
+            }
+            else if (comp is SkinnedMeshRenderer smr)
+            {
+                if (obj.Body["m_Mesh"] != null)
+                    smr.sharedMesh = Resolve(ObjRef.From(obj.Body["m_Mesh"]), typeof(Mesh), obj.Origin) as Mesh;
+                var weights = obj.Body["m_BlendShapeWeights"]?.Items;
+                if (weights != null)
+                    for (int i = 0; i < weights.Count; i++)
+                        if (YScalar.TryFloat(weights[i].Scalar, out var w)) smr.SetBlendShapeWeight(i, w);
+            }
+            else if (comp is Animator animator && obj.Body["m_Controller"] != null)
+            {
+                var controller = ObjRef.From(obj.Body["m_Controller"]);
+                if (!controller.IsNull)
+                    animator.runtimeAnimatorController = Resolve(controller, typeof(RuntimeAnimatorController), obj.Origin) as RuntimeAnimatorController;
+            }
         }
 
         // ── IReferenceResolver ───────────────────────────────────────────────
@@ -343,8 +365,10 @@ namespace CosmicShore.Content.Scenes
             if (local)
             {
                 long id = _graph.Resolve(reference.FileId);
-                if (!_result.ById.TryGetValue(id, out var o)) return null;
-                return AdaptSceneObject(o, fieldType);
+                if (_result.ById.TryGetValue(id, out var o)) return AdaptSceneObject(o, fieldType);
+                // A model prefab's own guid refs name its SUB-ASSETS (meshes, materials, avatar),
+                // which are not scene objects — the asset loader owns those.
+                if (reference.IsLocal || !AssetDatabase.IsModelPath(_graph.File?.Path)) return null;
             }
             return _assets.Load(reference, fieldType);
         }
