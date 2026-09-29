@@ -1,23 +1,10 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Engine.Injection.Enums;
 
 namespace CosmicShore.Engine.Injection
 {
-    /// <summary>Original contract: Reflex.Enums.Lifetime (placeholder-local values, never serialized).</summary>
-    public enum Lifetime
-    {
-        Transient = 0,
-        Singleton = 1,
-        Scoped = 2,
-    }
-
-    /// <summary>Original contract: Reflex.Enums.Resolution (placeholder-local values, never serialized).</summary>
-    public enum Resolution
-    {
-        Lazy = 0,
-        Eager = 1,
-    }
-
+    using Resolution = CosmicShore.Engine.Injection.Enums.Resolution;
     /// <summary>
     /// Deferred-registration builder (original contract: Reflex.Core.ContainerBuilder —
     /// the surface AppManager.InstallBindings drives). Registrations accumulate here and

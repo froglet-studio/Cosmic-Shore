@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace CosmicShore.Engine
+namespace CosmicShore.Engine.SceneManagement
 {
     /// <summary>
     /// A collection of root GameObjects owned by a <see cref="GameLoop"/>. Multi-scene

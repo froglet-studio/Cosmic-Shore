@@ -8,6 +8,7 @@
   <UsingTask TaskName="SyncUnitySources" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
     <ParameterGroup>
       <SourceDir ParameterType="System.String" Required="true" />
+      <IncludeRoots ParameterType="System.String" Required="true" />
       <OutputDir ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
@@ -38,7 +39,7 @@
           new("Reflex.Attributes", "CosmicShore.Engine.Injection"),
           new("Reflex.Core", "CosmicShore.Engine.Injection"),
           new("Reflex.Injectors", "CosmicShore.Engine.Injection"),
-          new("Reflex.Enums", "CosmicShore.Engine.Injection"),
+          new("Reflex.Enums", "CosmicShore.Engine.Injection.Enums"),
           new("Unity.Collections", "CosmicShore.Engine.Collections"),
           new("Unity.Profiling", "CosmicShore.Engine.Profiling"),
           new("Unity.Services.Friends", "CosmicShore.Engine.Services.Friends"),
@@ -59,6 +60,9 @@
         var usingRx = new Regex(@"^([\s﻿]*)using\s+([A-Za-z_][\w.]*)\s*;", RegexOptions.Compiled);
         var qualified = map.Where(kv => kv.Value != null)
           .Select(kv => (rx: new Regex(@"(?<![\w.])" + Regex.Escape(kv.Key) + @"(?=\.)", RegexOptions.Compiled), to: kv.Value)).ToList();
+        // A qualified reference into a DELETED namespace (UnityEngine.Serialization.FormerlySerializedAs)
+        // resolves to the engine root, where those attributes live.
+        qualified.Insert(0, (new Regex(@"(?<![\w.])UnityEngine\.Serialization(?=\.)", RegexOptions.Compiled), "CosmicShore.Engine"));
 
         string Transform(string text) {
           var lines = text.Split('\n');
@@ -79,7 +83,14 @@
         var dst = Path.GetFullPath(OutputDir);
         var keep = new HashSet<string>(StringComparer.Ordinal);
         int written = 0, total = 0;
-        foreach (var file in Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories)) {
+        var files = new List<string>();
+        foreach (var root in IncludeRoots.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)) {
+          var full = Path.Combine(src, root.Trim());
+          if (File.Exists(full)) files.Add(full);
+          else if (Directory.Exists(full)) files.AddRange(Directory.EnumerateFiles(full, "*.cs", SearchOption.AllDirectories));
+          else Log.LogWarning($"SyncUnitySources: include root '{root}' not found under {src}");
+        }
+        foreach (var file in files) {
           var rel = file.Substring(src.TrimEnd(Path.DirectorySeparatorChar).Length + 1);
           var parts = rel.Split(Path.DirectorySeparatorChar);
           if (parts.Contains("Editor") || parts.Contains("Tests")) continue;
@@ -100,8 +111,13 @@
     </Task>
   </UsingTask>
 
+  <PropertyGroup>
+    <!-- First-party RUNTIME script roots under Assets/ (vendored plugins are shimmed in CosmicShore.Compat instead). -->
+    <LiveScriptRoots>_Scripts;FTUE;ArcadeDPadNav.cs;Resolvers</LiveScriptRoots>
+  </PropertyGroup>
+
   <Target Name="SyncUnitySourcesBeforeBuild" BeforeTargets="BeforeBuild;CoreCompile;CollectPackageReferences">
-    <SyncUnitySources SourceDir="$(MSBuildThisFileDirectory)../../../Assets/_Scripts" OutputDir="$(MSBuildThisFileDirectory)obj/live-src" />
+    <SyncUnitySources SourceDir="$(MSBuildThisFileDirectory)../../../Assets" IncludeRoots="$(LiveScriptRoots)" OutputDir="$(MSBuildThisFileDirectory)obj/live-src" />
     <ItemGroup>
       <Compile Remove="obj/live-src/**/*.cs" />
       <Compile Include="obj/live-src/**/*.cs" />

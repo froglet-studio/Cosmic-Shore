@@ -340,7 +340,7 @@ public class SpawnerConformanceC6Tests
 
         var attr = field.GetCustomAttribute<RequireInterfaceAttribute>();
         Assert.NotNull(attr);
-        Assert.Equal(typeof(IPlayer), attr.requiredType);
+        Assert.Equal(typeof(IPlayer), attr.InterfaceType);
     }
 
     [Fact]

@@ -32,12 +32,13 @@ using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using CosmicShore.Engine.Tasks;
 using CosmicShore.Engine.Injection;
+using CosmicShore.Engine.Injection.Enums;
 using CosmicShore.Engine;
 using CosmicShore.Engine.SceneManagement;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Debug = CosmicShore.Engine.Debug;
-using Resolution = CosmicShore.Engine.Injection.Resolution;
+using Resolution = CosmicShore.Engine.Injection.Enums.Resolution;
 
 namespace CosmicShore.Core
 {

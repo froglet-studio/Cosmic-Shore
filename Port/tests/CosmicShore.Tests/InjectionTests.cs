@@ -1,8 +1,9 @@
 using System;
 using CosmicShore.Engine;
 using CosmicShore.Engine.Injection;
+using CosmicShore.Engine.Injection.Enums;
 // Same alias upstream AppManager carries: the engine also has a screen Resolution type.
-using Resolution = CosmicShore.Engine.Injection.Resolution;
+using Resolution = CosmicShore.Engine.Injection.Enums.Resolution;
 
 namespace CosmicShore.Tests;
 

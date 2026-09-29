@@ -9,21 +9,21 @@ namespace CosmicShore.Engine
     public sealed class SerializeFieldAttribute : Attribute { }
 
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
-    public sealed class HeaderAttribute : Attribute
+    public sealed class HeaderAttribute : PropertyAttribute
     {
         public readonly string header;
         public HeaderAttribute(string header) { this.header = header; }
     }
 
-    [AttributeUsage(AttributeTargets.Field)]
-    public sealed class TooltipAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
+    public sealed class TooltipAttribute : PropertyAttribute
     {
         public readonly string tooltip;
         public TooltipAttribute(string tooltip) { this.tooltip = tooltip; }
     }
 
     [AttributeUsage(AttributeTargets.Field)]
-    public sealed class RangeAttribute : Attribute
+    public sealed class RangeAttribute : PropertyAttribute
     {
         public readonly float min;
         public readonly float max;
@@ -31,7 +31,7 @@ namespace CosmicShore.Engine
     }
 
     [AttributeUsage(AttributeTargets.Field)]
-    public sealed class MinAttribute : Attribute
+    public sealed class MinAttribute : PropertyAttribute
     {
         public readonly float min;
         public MinAttribute(float min) { this.min = min; }
@@ -43,7 +43,7 @@ namespace CosmicShore.Engine
     /// the rest of this file.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    public sealed class MinMaxAttribute : Attribute
+    public sealed class MinMaxAttribute : PropertyAttribute
     {
         public readonly float min;
         public readonly float max;
@@ -51,7 +51,7 @@ namespace CosmicShore.Engine
     }
 
     [AttributeUsage(AttributeTargets.Field)]
-    public sealed class TextAreaAttribute : Attribute
+    public sealed class TextAreaAttribute : PropertyAttribute
     {
         public readonly int minLines;
         public readonly int maxLines;
@@ -83,12 +83,14 @@ namespace CosmicShore.Engine
     public sealed class AddComponentMenuAttribute : Attribute
     {
         public readonly string menuName;
+        public readonly int componentOrder;
         public AddComponentMenuAttribute(string menuName) { this.menuName = menuName; }
+        public AddComponentMenuAttribute(string menuName, int order) { this.menuName = menuName; componentOrder = order; }
     }
 
     /// <summary>HDR/alpha color picker hint for serialized Color fields (inert at runtime).</summary>
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
-    public sealed class ColorUsageAttribute : Attribute
+    public sealed class ColorUsageAttribute : PropertyAttribute
     {
         public readonly bool showAlpha;
         public readonly bool hdr;
@@ -111,8 +113,10 @@ namespace CosmicShore.Engine
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class RequireComponentAttribute : Attribute
     {
-        public readonly Type m_Type0;
+        public readonly Type m_Type0, m_Type1, m_Type2;
         public RequireComponentAttribute(Type requiredComponent) { m_Type0 = requiredComponent; }
+        public RequireComponentAttribute(Type requiredComponent, Type requiredComponent2) { m_Type0 = requiredComponent; m_Type1 = requiredComponent2; }
+        public RequireComponentAttribute(Type requiredComponent, Type requiredComponent2, Type requiredComponent3) { m_Type0 = requiredComponent; m_Type1 = requiredComponent2; m_Type2 = requiredComponent3; }
     }
 
     /// <summary>Forbids adding the same component twice to one GameObject (inert marker; editor tooling enforces it later).</summary>
@@ -122,18 +126,6 @@ namespace CosmicShore.Engine
     /// <summary>Hides a serialized field from inspector tooling (inert marker).</summary>
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class HideInInspectorAttribute : Attribute { }
-
-    /// <summary>
-    /// Constrains an Object-typed serialized field to implementations of an interface
-    /// (port of the SerializeInterface package attribute; inert at runtime — editor
-    /// tooling enforces it later).
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Field)]
-    public sealed class RequireInterfaceAttribute : Attribute
-    {
-        public readonly Type requiredType;
-        public RequireInterfaceAttribute(Type requiredType) { this.requiredType = requiredType; }
-    }
 
     /// <summary>Keeps the annotated member through code stripping (inert marker for now).</summary>
     [AttributeUsage(AttributeTargets.All, Inherited = false)]
@@ -145,5 +137,92 @@ namespace CosmicShore.Engine
     {
         public readonly string menuItem;
         public ContextMenuAttribute(string itemName) { menuItem = itemName; }
+    }
+
+    /// <summary>Base class of inspector property decorators (Header, Range, Tooltip, Space …).</summary>
+    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public abstract class PropertyAttribute : Attribute
+    {
+        public int order { get; set; }
+        protected PropertyAttribute() { }
+        protected PropertyAttribute(bool applyToCollection) { this.applyToCollection = applyToCollection; }
+        public bool applyToCollection { get; }
+    }
+
+    /// <summary>Vertical spacing in the inspector (inert at runtime).</summary>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = true)]
+    public class SpaceAttribute : PropertyAttribute
+    {
+        public readonly float height;
+        public SpaceAttribute() { height = 8f; }
+        public SpaceAttribute(float height) { this.height = height; }
+    }
+
+    /// <summary>Multi-line string field hint (inert).</summary>
+    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public sealed class MultilineAttribute : PropertyAttribute
+    {
+        public readonly int lines;
+        public MultilineAttribute() { lines = 3; }
+        public MultilineAttribute(int lines) { this.lines = lines; }
+    }
+
+    /// <summary>Delayed text/number field hint (inert).</summary>
+    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public sealed class DelayedAttribute : PropertyAttribute { }
+
+    /// <summary>Inspector context-menu item on a field (inert).</summary>
+    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = true)]
+    public sealed class ContextMenuItemAttribute : PropertyAttribute
+    {
+        public readonly string name, function;
+        public ContextMenuItemAttribute(string name, string function) { this.name = name; this.function = function; }
+    }
+
+    /// <summary>Inspector header for grouped inspector-only data (inert).</summary>
+    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public sealed class InspectorNameAttribute : PropertyAttribute
+    {
+        public readonly string displayName;
+        public InspectorNameAttribute(string displayName) { this.displayName = displayName; }
+    }
+
+    /// <summary>Makes a MonoBehaviour's lifecycle run in edit mode too. The port has no edit mode, so it is a marker.</summary>
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    public sealed class ExecuteAlways : Attribute { }
+
+    /// <summary>Legacy edit-mode execution marker.</summary>
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    public sealed class ExecuteInEditMode : Attribute { }
+
+    /// <summary>Help URL for a component (inert).</summary>
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    public sealed class HelpURLAttribute : Attribute
+    {
+        public readonly string URL;
+        public HelpURLAttribute(string url) { URL = url; }
+    }
+
+    /// <summary>Selection base marker (inert).</summary>
+    [AttributeUsage(AttributeTargets.Class, Inherited = true)]
+    public sealed class SelectionBaseAttribute : Attribute { }
+
+    /// <summary>Unity serialization marker for polymorphic managed references.</summary>
+    [AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public sealed class SerializeReference : Attribute { }
+
+    /// <summary>Hides a type from the inspector's icon gizmo (inert).</summary>
+    [AttributeUsage(AttributeTargets.Class, Inherited = true)]
+    public sealed class IconAttribute : Attribute
+    {
+        public readonly string path;
+        public IconAttribute(string path) { this.path = path; }
+    }
+
+    /// <summary>Receives callbacks around serialization; the port's loader calls OnAfterDeserialize after reading fields.</summary>
+    public interface ISerializationCallbackReceiver
+    {
+        void OnBeforeSerialize();
+        void OnAfterDeserialize();
     }
 }
