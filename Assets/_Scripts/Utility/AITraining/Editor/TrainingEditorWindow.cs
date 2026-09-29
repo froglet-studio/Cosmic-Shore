@@ -37,7 +37,7 @@ namespace CosmicShore.Utility.AITraining.Editor
         string _moduleFilter = "";
 
         VesselClassType _archiveVessel = VesselClassType.Squirrel;
-        GameModes _archiveGame = GameModes.HexRace;
+        GameModes _archiveGame = GameModes.SkimRace;
         int _archiveIntensity = 4;
         int _catalogIndex;
 

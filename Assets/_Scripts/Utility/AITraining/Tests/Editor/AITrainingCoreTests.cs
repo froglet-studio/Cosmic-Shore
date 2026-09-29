@@ -190,11 +190,11 @@ namespace CosmicShore.Utility.AITraining.Tests
             var g = TrainingGenome.FromRegistryDefaults();
             g.Set("a", 0.42f);
             arch.Upsert(CosmicShore.Data.VesselClassType.Manta,
-                        CosmicShore.Data.GameModes.HexRace,
+                        CosmicShore.Data.GameModes.SkimRace,
                         4, g, 100f, 5);
             var found = arch.FindBestAvailable(
                 CosmicShore.Data.VesselClassType.Manta,
-                CosmicShore.Data.GameModes.HexRace,
+                CosmicShore.Data.GameModes.SkimRace,
                 4, out int score);
             Assert.AreEqual(4, score);
             Assert.IsNotNull(found);
@@ -207,11 +207,11 @@ namespace CosmicShore.Utility.AITraining.Tests
             var arch = ScriptableObject.CreateInstance<TrainingArchiveSO>();
             var g = TrainingGenome.FromRegistryDefaults();
             arch.Upsert(CosmicShore.Data.VesselClassType.Manta,
-                        CosmicShore.Data.GameModes.HexRace,
+                        CosmicShore.Data.GameModes.SkimRace,
                         4, g, 100f, 5);
             var found = arch.FindBestAvailable(
                 CosmicShore.Data.VesselClassType.Sparrow,
-                CosmicShore.Data.GameModes.HexRace,
+                CosmicShore.Data.GameModes.SkimRace,
                 4, out int score);
             Assert.IsNotNull(found);
             Assert.IsTrue(score < 4, "Score should reflect that the match is partial.");
@@ -310,13 +310,13 @@ namespace CosmicShore.Utility.AITraining.Tests
         public void HexRace_ScoreFromRoundStats_IsNegated()
         {
             Assert.AreEqual(-40f, FitnessProfileSO.SignedRaw(
-                GameModes.HexRace, FitnessProfileSO.ComponentKind.ScoreFromRoundStats, 40f));
+                GameModes.SkimRace, FitnessProfileSO.ComponentKind.ScoreFromRoundStats, 40f));
             Assert.AreEqual(12f, FitnessProfileSO.SignedRaw(
-                GameModes.HexRace, FitnessProfileSO.ComponentKind.CrystalCollection, 12f));
+                GameModes.SkimRace, FitnessProfileSO.ComponentKind.CrystalCollection, 12f));
             Assert.AreEqual(-40f, FitnessProfileSO.SignedRaw(
-                GameModes.MultiplayerJoust, FitnessProfileSO.ComponentKind.ScoreFromRoundStats, 40f));
+                GameModes.Joust, FitnessProfileSO.ComponentKind.ScoreFromRoundStats, 40f));
             Assert.AreEqual(40f, FitnessProfileSO.SignedRaw(
-                GameModes.NucleusRush, FitnessProfileSO.ComponentKind.ScoreFromRoundStats, 40f));
+                GameModes.BroodRush, FitnessProfileSO.ComponentKind.ScoreFromRoundStats, 40f));
             Assert.AreEqual(40f, FitnessProfileSO.SignedRaw(
                 GameModes.AstroLeague, FitnessProfileSO.ComponentKind.ScoreFromRoundStats, 40f));
             Assert.AreEqual(40f, FitnessProfileSO.SignedRaw(
@@ -364,11 +364,11 @@ namespace CosmicShore.Utility.AITraining.Tests
                 }
                 Object.DestroyImmediate(expected);
 
-                bool personal = row.GameMode == GameModes.NucleusRush
+                bool personal = row.GameMode == GameModes.BroodRush
                     || row.GameMode == GameModes.AstroLeague
                     || row.GameMode == GameModes.ScarabScramble;
                 Assert.AreEqual(!personal, FitnessProfileSO.ScoreIsGolf(row.GameMode), row.Token);
-                if (row.GameMode == GameModes.NucleusRush)
+                if (row.GameMode == GameModes.BroodRush)
                     StringAssert.Contains("representative", profile.Description);
             }
         }
@@ -576,24 +576,24 @@ namespace CosmicShore.Utility.AITraining.Tests
             var arch = ScriptableObject.CreateInstance<TrainingArchiveSO>();
             var stored = TrainingGenome.FromRegistryDefaults();
             stored.Set("a", 0.9f);
-            arch.Upsert(CosmicShore.Data.VesselClassType.Squirrel, GameModes.HexRace, 4, stored, 1f, 0);
+            arch.Upsert(CosmicShore.Data.VesselClassType.Squirrel, GameModes.SkimRace, 4, stored, 1f, 0);
             var lower = TrainingGenome.FromRegistryDefaults();
             lower.Set("a", 0.2f);
-            arch.Upsert(CosmicShore.Data.VesselClassType.Squirrel, GameModes.HexRace, 1, lower, 1f, 0);
+            arch.Upsert(CosmicShore.Data.VesselClassType.Squirrel, GameModes.SkimRace, 1, lower, 1f, 0);
 
-            var flown = ArchiveDeployment.ResolveGenome(arch, GameModes.HexRace,
+            var flown = ArchiveDeployment.ResolveGenome(arch, GameModes.SkimRace,
                 CosmicShore.Data.VesselClassType.Sparrow, 1, useStoredGenomeForLowerIntensity: false);
             Assert.AreEqual(0.9f, flown.Get("a"), 0.0001f);
             flown.Set("a", 0.1f);
-            Assert.AreEqual(0.9f, arch.Find(CosmicShore.Data.VesselClassType.Squirrel, GameModes.HexRace, 4).Genome.Get("a"), 0.0001f);
+            Assert.AreEqual(0.9f, arch.Find(CosmicShore.Data.VesselClassType.Squirrel, GameModes.SkimRace, 4).Genome.Get("a"), 0.0001f);
             Assert.AreEqual(1, ArchiveDeployment.FlownIntensity(1, false));
             Assert.AreEqual(4, ArchiveDeployment.FlownIntensity(4, false));
 
-            var opted = ArchiveDeployment.ResolveGenome(arch, GameModes.HexRace,
+            var opted = ArchiveDeployment.ResolveGenome(arch, GameModes.SkimRace,
                 CosmicShore.Data.VesselClassType.Squirrel, 1, useStoredGenomeForLowerIntensity: true);
             Assert.AreEqual(0.2f, opted.Get("a"), 0.0001f);
             Assert.AreEqual(4, ArchiveDeployment.FlownIntensity(1, true));
-            Assert.IsNull(ArchiveDeployment.ResolveGenome(arch, GameModes.HexRace,
+            Assert.IsNull(ArchiveDeployment.ResolveGenome(arch, GameModes.SkimRace,
                 CosmicShore.Data.VesselClassType.Squirrel, 2, useStoredGenomeForLowerIntensity: true));
             Object.DestroyImmediate(arch);
         }
@@ -606,25 +606,25 @@ namespace CosmicShore.Utility.AITraining.Tests
             squirrel.Set("a", 0.8f);
             var manta = TrainingGenome.FromRegistryDefaults();
             manta.Set("a", 0.3f);
-            arch.Upsert(CosmicShore.Data.VesselClassType.Squirrel, GameModes.HexRace, 4, squirrel, 1f, 0);
-            arch.Upsert(CosmicShore.Data.VesselClassType.Manta, GameModes.MultiplayerCrystalCapture, 4, manta, 1f, 0);
-            arch.Upsert(CosmicShore.Data.VesselClassType.Squirrel, GameModes.MultiplayerCrystalCapture, 4, squirrel, 1f, 0);
+            arch.Upsert(CosmicShore.Data.VesselClassType.Squirrel, GameModes.SkimRace, 4, squirrel, 1f, 0);
+            arch.Upsert(CosmicShore.Data.VesselClassType.Manta, GameModes.Scurry, 4, manta, 1f, 0);
+            arch.Upsert(CosmicShore.Data.VesselClassType.Squirrel, GameModes.Scurry, 4, squirrel, 1f, 0);
 
             Assert.AreEqual(CosmicShore.Data.VesselClassType.Squirrel,
-                ArchiveDeployment.ResolveVessel(GameModes.HexRace, CosmicShore.Data.VesselClassType.Sparrow));
-            var locked = ArchiveDeployment.ResolveGenome(arch, GameModes.HexRace,
+                ArchiveDeployment.ResolveVessel(GameModes.SkimRace, CosmicShore.Data.VesselClassType.Sparrow));
+            var locked = ArchiveDeployment.ResolveGenome(arch, GameModes.SkimRace,
                 CosmicShore.Data.VesselClassType.Sparrow, 4, false);
             Assert.AreEqual(0.8f, locked.Get("a"), 0.0001f);
 
             Assert.AreEqual(CosmicShore.Data.VesselClassType.Manta,
-                ArchiveDeployment.ResolveVessel(GameModes.MultiplayerCrystalCapture, CosmicShore.Data.VesselClassType.Manta));
-            var unlocked = ArchiveDeployment.ResolveGenome(arch, GameModes.MultiplayerCrystalCapture,
+                ArchiveDeployment.ResolveVessel(GameModes.Scurry, CosmicShore.Data.VesselClassType.Manta));
+            var unlocked = ArchiveDeployment.ResolveGenome(arch, GameModes.Scurry,
                 CosmicShore.Data.VesselClassType.Manta, 2, false);
             Assert.AreEqual(0.3f, unlocked.Get("a"), 0.0001f);
 
-            Assert.IsNull(ArchiveDeployment.ResolveGenome(arch, GameModes.MultiplayerCrystalCapture,
+            Assert.IsNull(ArchiveDeployment.ResolveGenome(arch, GameModes.Scurry,
                 CosmicShore.Data.VesselClassType.Sparrow, 4, false));
-            Assert.IsNull(ArchiveDeployment.ResolveGenome(null, GameModes.HexRace,
+            Assert.IsNull(ArchiveDeployment.ResolveGenome(null, GameModes.SkimRace,
                 CosmicShore.Data.VesselClassType.Squirrel, 4, false));
             Object.DestroyImmediate(arch);
         }
@@ -701,7 +701,7 @@ namespace CosmicShore.Utility.AITraining.Tests
             state.ScheduleSlotAttempts = 1;
 
             var scenario = ScriptableObject.CreateInstance<TrainingScenarioSO>();
-            scenario.GameMode = GameModes.MultiplayerJoust;
+            scenario.GameMode = GameModes.Joust;
             scenario.Vessel = VesselClassType.Squirrel;
             scenario.Intensity = 4;
             state.ResetForScenario(scenario.Key, scenario);
@@ -778,11 +778,11 @@ namespace CosmicShore.Utility.AITraining.Tests
             hexGenome.Set("a", 0.2f);
             var joustGenome = TrainingGenome.FromRegistryDefaults();
             joustGenome.Set("a", 0.8f);
-            arch.Upsert(VesselClassType.Squirrel, GameModes.HexRace, 4, hexGenome, 1f, 3);
-            arch.Upsert(VesselClassType.Squirrel, GameModes.MultiplayerJoust, 4, joustGenome, 2f, 5);
+            arch.Upsert(VesselClassType.Squirrel, GameModes.SkimRace, 4, hexGenome, 1f, 3);
+            arch.Upsert(VesselClassType.Squirrel, GameModes.Joust, 4, joustGenome, 2f, 5);
 
-            string hexKey = TrainingArchiveSO.MakeKey(VesselClassType.Squirrel, GameModes.HexRace, 4);
-            string joustKey = TrainingArchiveSO.MakeKey(VesselClassType.Squirrel, GameModes.MultiplayerJoust, 4);
+            string hexKey = TrainingArchiveSO.MakeKey(VesselClassType.Squirrel, GameModes.SkimRace, 4);
+            string joustKey = TrainingArchiveSO.MakeKey(VesselClassType.Squirrel, GameModes.Joust, 4);
             Assert.AreNotEqual(hexKey, joustKey);
 
             var schedule = TwoSlotSchedule(2, 4f, 1, 2f);
@@ -790,8 +790,8 @@ namespace CosmicShore.Utility.AITraining.Tests
             var advance = TrainingSchedule.AfterEpisode(schedule, 0, 2, 0d);
             TrainingSchedule.Apply(state, advance);
 
-            Assert.AreEqual(0.2f, arch.Find(VesselClassType.Squirrel, GameModes.HexRace, 4).Genome.Get("a"), 0.0001f);
-            Assert.AreEqual(0.8f, arch.Find(VesselClassType.Squirrel, GameModes.MultiplayerJoust, 4).Genome.Get("a"), 0.0001f);
+            Assert.AreEqual(0.2f, arch.Find(VesselClassType.Squirrel, GameModes.SkimRace, 4).Genome.Get("a"), 0.0001f);
+            Assert.AreEqual(0.8f, arch.Find(VesselClassType.Squirrel, GameModes.Joust, 4).Genome.Get("a"), 0.0001f);
             Assert.AreEqual(2, arch.Entries.Count);
 
             Object.DestroyImmediate(arch);
@@ -819,11 +819,11 @@ namespace CosmicShore.Utility.AITraining.Tests
         {
             var schedule = ScriptableObject.CreateInstance<TrainingScheduleSO>();
             var hex = ScriptableObject.CreateInstance<TrainingScenarioSO>();
-            hex.GameMode = GameModes.HexRace;
+            hex.GameMode = GameModes.SkimRace;
             hex.Vessel = VesselClassType.Squirrel;
             hex.Intensity = 4;
             var joust = ScriptableObject.CreateInstance<TrainingScenarioSO>();
-            joust.GameMode = GameModes.MultiplayerJoust;
+            joust.GameMode = GameModes.Joust;
             joust.Vessel = VesselClassType.Squirrel;
             joust.Intensity = 4;
             schedule.Slots.Add(new TrainingScheduleSO.Slot

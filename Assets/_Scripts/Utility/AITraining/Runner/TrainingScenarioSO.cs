@@ -20,7 +20,7 @@ namespace CosmicShore.Utility.AITraining
     {
         [Header("Identification")]
         public string DisplayName;
-        public GameModes GameMode = GameModes.HexRace;
+        public GameModes GameMode = GameModes.SkimRace;
         public VesselClassType Vessel = VesselClassType.Manta;
         [Range(1, 4)] public int Intensity = 4;
 
@@ -103,7 +103,7 @@ namespace CosmicShore.Utility.AITraining
         void Reset()
         {
             DisplayName = "HexRace · Manta · Flawless";
-            GameMode = GameModes.HexRace;
+            GameMode = GameModes.SkimRace;
             Vessel = VesselClassType.Manta;
             Intensity = 4;
             PopulationSize = 24;
