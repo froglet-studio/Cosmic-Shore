@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb36fcc8535642f8856a9de02fb7b8fc, type: 3}
+  m_Name: TrainingControl
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Utility.AITraining.TrainingControlSO
+  AutoStartOnPlay: 0
+  Scenario: {fileID: 11400000, guid: cdc05f267f4c3f38b741c12be72ab4ce, type: 2}
+  Schedule: {fileID: 0}
+  State: {fileID: 11400000, guid: e283211e0bae64650b48b3f81fd13632, type: 2}
+  Archive: {fileID: 11400000, guid: 5a36478c2c4574b6eab748d38419d0d7, type: 2}
+  Telemetry: {fileID: 11400000, guid: 0fb31f8a1590046d782acf080d3721c8, type: 2}
+  DeployArchiveInNormalPlay: 1
+  UseStoredGenomeForLowerIntensity: 0
+  TargetEpisodes: -1
+  WatchdogSeconds: 120
+  HumanPlaysThisLaunch: 0
+  SimulationTimeScale: 0
+  MuteAudio: 0
+  DisableCameraRendering: 0

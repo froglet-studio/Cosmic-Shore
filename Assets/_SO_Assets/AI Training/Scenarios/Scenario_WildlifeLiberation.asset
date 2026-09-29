@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b513d79f62946e1a8f5e4ed26a96b12, type: 3}
+  m_Name: Scenario_WildlifeLiberation
+  m_EditorClassIdentifier: 
+  DisplayName: "Wildlife Liberation · Sparrow · I4"
+  GameMode: 40
+  Vessel: 11
+  Intensity: 4
+  PopulationSize: 24
+  EliteCount: 4
+  NumericMutationRate: 0.3
+  NumericMutationStrength: 0.18
+  StructuralMutationRate: 0.04
+  NoveltyWeight: 0.15
+  MaxEpisodeSeconds: 120
+  MinEpisodeSeconds: 5
+  OpponentCount: 4
+  OpponentsUseTrainedGenome: 0
+  TargetMode: 0
+  FitnessProfile: {fileID: 11400000, guid: dd8b799d30d542e25a5c8f3000e5a219, type: 2}
+  UseResetForReplay: 1
+  DelayBetweenEpisodes: 1
+  EarlyExitConditions: []
