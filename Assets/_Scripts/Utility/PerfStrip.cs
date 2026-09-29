@@ -34,7 +34,32 @@ namespace CosmicShore.Utility
         /// while a capped trail is active (see <see cref="CappedTrailActive"/>): the conveyor's
         /// breadcrumb (300) or Skim Race's skimmable trail (2000, ≥ two laps).
         /// </summary>
-        public static bool TrailsDisabled => Enabled && !CappedTrailActive && !WanderwayTetherActive;
+        public static bool TrailsDisabled =>
+            Enabled && !CappedTrailActive && !WanderwayTetherActive && !FreestyleTrailActive;
+
+        /// <summary>
+        /// The pilot is flying freestyle in Menu_Main, so vessels lay their trail - UNCAPPED,
+        /// because nothing in freestyle is allowed to age trail mass out (CLAUDE.md: the menu
+        /// trail cap is a rejected cheat, "no cosmetic exemptions"). What bounds it on a phone is
+        /// the pair the law sanctions: the FOOD WEB (Garland's fauna graze trail mass - its life
+        /// runs on the strip, see <see cref="CellLifeRuns"/>) and a SPAWNER THAT WAITS - while the
+        /// cell holds more than <see cref="FreestyleCellPrismBudget"/> live prisms the trail's
+        /// pen is up, and it comes back down once grazing has brought the cell under the budget.
+        /// Nothing is removed to make room; creation just waits. Set by MenuCrystalClickHandler on
+        /// freestyle enter/exit. The menu's autopilot lava lamp lays no trail.
+        /// </summary>
+        public static bool FreestyleTrailActive;
+
+        /// <summary>
+        /// Live prisms (all sources: boughs, garden, creatures, trail) above which the freestyle
+        /// trail waits. Garland mature is ~8,100, so this leaves ~1,900 prisms of trail - about two
+        /// minutes of Squirrel flight - before the pen lifts. The one dial for how much freestyle
+        /// mass a phone carries.
+        /// </summary>
+        public const int FreestyleCellPrismBudget = 10000;
+
+        /// <summary>The pen comes back down this far under the budget (hysteresis).</summary>
+        public const int FreestyleCellPrismResume = 9700;
 
         /// <summary>
         /// A Wanderway run is live: the vessel lays its trail so <c>WanderwayRun</c>'s rolling
@@ -119,6 +144,16 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// Touch drift by stick OVERDRIVE: both thumbs hard over into a turn and then past the rim
+        /// raises BothSticksAction with an analog depth (TouchInputStrategy). Replaces the
+        /// lift-a-thumb drift, which cost half the steering, yanked the vessel on the lift and had
+        /// no depth. A vessel opts in by binding its drift to BothSticksAction on touch (the
+        /// Squirrel does). Off the strip nothing raises it, so no other hull's touch
+        /// bindings change meaning.
+        /// </summary>
+        public static bool TouchOverdriveDrift => Enabled;
+
+        /// <summary>
         /// Hide arcade/arena cards whose scene is not in this build. The strip ships a handful of
         /// scenes (see EditorBuildSettings); every other card is a launch that cannot load. Read at
         /// runtime from the build itself (<c>Application.CanStreamedLevelBeLoaded</c>), so enabling a
@@ -127,13 +162,17 @@ namespace CosmicShore.Utility
         public static bool HideUnbuiltModes => Enabled;
 
         /// <summary>
-        /// Boot Menu_Main into the cell's bare canvas (Barren) instead of its authored boot
-        /// default (Garland, 4,259 laid prisms). Upstream moved the home screen onto Garland so it
-        /// is furnished in the first frame; on this build that is 3.5x the conveyor's whole prism
-        /// budget spent on a menu backdrop, rebuilt behind a load veil on every menu entry. Flip to
-        /// false to get the furnished home screen back and pay for it.
+        /// Whether a cell's LIFE runs - its flora and fauna spawners, and flora growth. The strip
+        /// pauses life everywhere (creation-side only: "not creating mass is allowed"; nothing that
+        /// exists is culled) EXCEPT in the one world authored to be cheap to live in: the config
+        /// that declares itself the home-screen world (<c>CellConfigDataSO.BootDefault</c> - Garland,
+        /// the only asset that sets it). Garland's roster is four phyllotactic flora and three fauna
+        /// on HARD caps (37 always-on heart colliders, mature at ~8,100 prisms including its
+        /// 4,259-prism boughs), and its fauna are also the food web that grazes the freestyle
+        /// trail. The races keep theirs paused: Skim Race and Waystation share a cell whose two
+        /// fauna species would graze the race trail for nothing the race needs.
         /// </summary>
-        public static bool BootBareMenuCell => Enabled;
+        public static bool CellLifeRuns(bool isHomeWorld) => !Enabled || isHomeWorld;
 
         /// <summary>
         /// Ship only the LIGHT toys in the freestyle toybox: the conveyor (the reason this build

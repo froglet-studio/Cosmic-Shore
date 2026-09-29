@@ -401,7 +401,11 @@ namespace CosmicShore.Gameplay
 
             if (_conveyor && _conveyor.IsRunning) _conveyor.StopBelt();
 
-            if (returnToCell) ReturnHome(vessel);
+            if (returnToCell)
+            {
+                ReturnHome(vessel);
+                RestoreHomeWorld(vessel);
+            }
 
             _onEnded?.Invoke();
         }
@@ -421,6 +425,31 @@ namespace CosmicShore.Gameplay
             float speed = Mathf.Max(0f, vessel.Speed);
             vessel.Vessel.SetPose(_home);
             vessel.Vessel.SetInitialSpeed(speed);
+        }
+
+        /// <summary>
+        /// Stripped-performance branch: give the cell back the world the run swapped away. Off
+        /// the strip that is the Cell Selector toy's job, but the strip does not ship that toy -
+        /// so without this a single wander left the pilot in the bare canvas for the rest of the
+        /// session, with Garland unreachable. Ending the run is itself the player's act (the
+        /// return station, the toy, or the overview button), so this is the same explicit swap
+        /// the selector would make, through the same suction/bloom path. Loose trail mass is left
+        /// alone - it is the pilot's, and it is conserved.
+        /// </summary>
+        void RestoreHomeWorld(IVesselStatus vessel)
+        {
+            if (!PerfStrip.Enabled || !_cfg.RevertCellOnStart) return;
+
+            var at = vessel?.Transform ? vessel.Transform.position : transform.position;
+            var cell = Cell.FindCellContaining(at) ?? Cell.FindNearestActiveCell(at);
+            if (!cell || cell.AvailableConfigs == null) return;
+
+            CellConfigDataSO home = null;
+            foreach (var config in cell.AvailableConfigs)
+                if (config && config.BootDefault) { home = config; break; }
+
+            if (home && cell.Config != home)
+                cell.RequestCellSwap(home, clearLooseTrailMass: false);
         }
 
         IVesselStatus LocalVessel()

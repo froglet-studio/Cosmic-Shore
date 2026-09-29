@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Measure the Squirrel's ONE-THUMB touch drift, and fail if it scrubs speed.
+"""Measure the Squirrel's TOUCH drift, and fail if it scrubs speed.
 
 WHY THIS EXISTS
 ---------------
-A touch drift is flown with a single thumb, and TouchInputStrategy mirrors that thumb onto
-both virtual sticks so it can reach the two-thumb turn ceiling.  The vessel ALSO multiplies
-every rotation scaler by the drift's own `Mult` (VesselTransformer.ApplyAnalogDrift).  Those
-two multipliers stack, and each was calibrated as if it were the only one.
+On the stripped Android branch a touch drift is the stick OVERDRIVE: both thumbs hard over into
+a turn (full yaw on the dual-stick mix, Ease(2) = 1.0) and then pushed past the rim, with the
+push beyond the rim as the drift's depth. So a drift is ALWAYS flown at full yaw - and the
+vessel ALSO multiplies every rotation scaler by the drift's own `Mult`
+(VesselTransformer.ApplyAnalogDrift). The authored `touchDriftDepth` is the CEILING the
+overdrive is scaled into, and it is what keeps the two from stacking into a brake.
 
 Past ~90 degrees of SLIP (the angle between the velocity and the nose) the vector flight
 model's nose-ward thrust starts subtracting from the velocity's magnitude -
@@ -16,11 +18,14 @@ only ever felt.
 
 So the invariant is stated and MEASURED rather than eyeballed:
 
-    a held, full-deflection one-thumb drift must not reach 90 degrees of slip
-    within HOLD_SECONDS, and must not end slower than it started.
+    a full-overdrive drift held through a CORNER_DEG hairpin must not reach 90 degrees of
+    slip, and must not end slower than it started.
+
+A corner, not a fixed hold: every drift is at full yaw, and at full yaw a slide past 90 degrees
+is only a matter of time - a two-second hold is a full circle. What a pilot flies is a corner.
 
 Every input is read from the SHIPPED files, so a retune of any one of them is checked:
-  * OneThumbDriftTurnGain   - Assets/_Scripts/Controller/IO/TouchInputStrategy.cs
+  * touchDriftDepth         - Assets/_Prefabs/Spacevessels/Squirrel.prefab (the ceiling)
   * Mult / driftDamping     - the drift action assets bound to the Squirrel's TOUCH override
   * YawScaler               - Assets/_Prefabs/Spacevessels/Squirrel.prefab
 
@@ -46,9 +51,10 @@ LERP_AMOUNT = 1.5
 # The bar.  90 degrees is not a taste threshold - it is where nose thrust changes sign.
 SLIP_LIMIT_DEG = 90.0
 HOLD_SECONDS = 2.0
+CORNER_DEG = 180.0
 
-# InputEvents.OnlyLeftStickAction - the single-thumb event the Squirrel binds its drift to.
-DRIFT_TOUCH_EVENT = 12
+# InputEvents.BothSticksAction - the overdrive event the Squirrel binds its drift to on touch.
+DRIFT_TOUCH_EVENT = 13
 
 
 def read(path: Path) -> str:
@@ -175,67 +181,67 @@ def main():
     prefab = read(SQUIRREL)
     yaw = scalar("YawScaler", prefab, "YawScaler")
     throttle = scalar("DefaultThrottleScaler", prefab, "DefaultThrottleScaler")
-    gain = constant("OneThumbDriftTurnGain")
-
     tiers = touch_drift_actions()
     if not tiers:
         sys.exit("no drift actions found on the Squirrel's touch override")
-    # GetTriggerSum's non-gamepad branch is binary and prefers SHARP, so the tier that
-    # actually runs on touch is the sharp one if any is bound, else the single one.
     tier = next((t for t in tiers if t["sharp"]), tiers[0])
 
-    # VesselTransformer.GetTriggerSum: a touch drift with NO sharp tier bound reads the prefab's
-    # authored touchDriftDepth (0..1) instead of a full pull, and ApplyAnalogDrift lerps from the
-    # no-drift state (mult 1, grip 1) toward the action's full-pull values by that depth.
-    # Upstream collapsed the Squirrel to ONE action whose full pull is the old sharp tier
-    # (2026-09-23), so this depth is now what separates the touch drift from the pad's.
+    # VesselTransformer.GetTriggerSum: a touch drift with NO sharp tier bound reads the overdrive
+    # depth (0..1) scaled by the prefab's touchDriftDepth CEILING, and ApplyAnalogDrift lerps from
+    # the no-drift state (mult 1, grip 1) toward the action's full-pull values by that depth. A
+    # full overdrive therefore runs at exactly the ceiling - the worst case, measured here.
     depth_m = re.search(r"^  touchDriftDepth: ([\d.]+)", prefab, re.M)
     depth = float(depth_m.group(1)) if depth_m else 1.0
     if not tier["sharp"] and depth < 1.0:
         tier = dict(tier,
-                    name=f"{tier['name']} @ touch depth {depth:g}",
+                    name=f"{tier['name']} @ touch ceiling {depth:g}",
                     mult=1.0 + (tier["mult"] - 1.0) * depth,
                     grip=1.0 + (tier["grip"] - 1.0) * depth)
 
-    print(f"Squirrel one-thumb TOUCH drift  (YawScaler {yaw:g}, throttle scaler {throttle:g})")
-    print(f"  bound touch drift tiers : {', '.join(t['name'] for t in tiers)}")
-    print(f"  tier that runs on touch : {tier['name']}  "
-          f"(Mult {tier['mult']:g}, Grip {tier['grip']:g}, sharp={tier['sharp']})")
-    print(f"  OneThumbDriftTurnGain   : {gain:g}")
-
+    gain = 1.0                      # both thumbs hard over: Ease(2) = full yaw, no mirror gain
     x_sum = ease(2.0 * gain)
-    print(f"  commanded yaw at full deflection: "
-          f"{x_sum * yaw * tier['mult']:.1f} deg/s   (Ease({2 * gain:g}) = {x_sum:.4f})")
+    omega = x_sum * yaw * tier["mult"]
+    corner_s = CORNER_DEG / omega
+
+    print(f"Squirrel TOUCH overdrive drift  (YawScaler {yaw:g}, throttle scaler {throttle:g})")
+    print(f"  bound touch drift tiers : {', '.join(t['name'] for t in tiers)}")
+    print(f"  tier at full overdrive  : {tier['name']}  "
+          f"(Mult {tier['mult']:.3g}, Grip {tier['grip']:.3g}, sharp={tier['sharp']})")
+    print(f"  commanded yaw           : {omega:.1f} deg/s -> a {CORNER_DEG:g} deg corner "
+          f"takes {corner_s:.2f} s")
     print()
 
     worst_slip = 0.0
     ok = True
     for xdiff in (0.5, 0.75, 1.0):
         target = xdiff * throttle
-        trace = simulate(yaw, tier["mult"], tier["grip"], gain, target)
+        trace = simulate(yaw, tier["mult"], tier["grip"], gain, target, seconds=corner_s)
         peak = max(s for s, _ in trace)
         worst_slip = max(worst_slip, peak)
         start, end = target, trace[-1][1]
         kept = end / start if start else 0.0
-        flag = "ok " if peak < SLIP_LIMIT_DEG and end >= start else "BAD"
-        ok &= peak < SLIP_LIMIT_DEG and end >= start
-        print(f"  [{flag}] XDiff {xdiff:<4} target {target:5.1f} -> "
+        good = peak < SLIP_LIMIT_DEG and end >= start
+        ok &= good
+        print(f"  [{'ok ' if good else 'BAD'}] XDiff {xdiff:<4} target {target:5.1f} -> "
               f"peak slip {peak:5.1f} deg, speed {start:5.1f} -> {end:5.1f} "
               f"({kept * 100:5.1f}% carried)")
 
     if args.sweep:
-        print("\n  gain sensitivity (XDiff 0.75) - the cliff is at 90 deg:")
-        for g in (0.5, 0.6, 0.7, 0.8, 0.9, 1.0):
-            tr = simulate(yaw, tier["mult"], tier["grip"], g, 0.75 * throttle)
-            print(f"    gain {g:<4} yaw {ease(2 * g) * yaw * tier['mult']:6.1f} deg/s  "
-                  f"peak slip {max(s for s, _ in tr):5.1f} deg  "
+        print(f"\n  ceiling sensitivity (XDiff 0.75, {CORNER_DEG:g} deg corner) - the cliff is at 90 deg:")
+        base = next((t for t in tiers if t["sharp"]), tiers[0])
+        for d in (0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0):
+            m = 1.0 + (base["mult"] - 1.0) * d
+            g = 1.0 + (base["grip"] - 1.0) * d
+            om = x_sum * yaw * m
+            tr = simulate(yaw, m, g, gain, 0.75 * throttle, seconds=CORNER_DEG / om)
+            print(f"    ceiling {d:<4} yaw {om:6.1f} deg/s  peak slip {max(s for s, _ in tr):5.1f} deg  "
                   f"end speed {tr[-1][1]:5.1f}")
 
     if args.check and not ok:
-        print(f"\nFAIL: a held one-thumb drift reaches {worst_slip:.1f} deg of slip "
-              f"(limit {SLIP_LIMIT_DEG:g}) or ends slower than it began.\n"
-              f"Past 90 deg the nose thrust brakes: lower OneThumbDriftTurnGain, raise the "
-              f"tier's driftDamping, or stop binding the SHARP tier to the touch override.")
+        print(f"\nFAIL: a full-overdrive drift through a {CORNER_DEG:g} deg corner reaches "
+              f"{worst_slip:.1f} deg of slip (limit {SLIP_LIMIT_DEG:g}) or ends slower than it began.\n"
+              f"Past 90 deg the nose thrust brakes: lower the Squirrel's touchDriftDepth ceiling "
+              f"or raise the drift action's driftDamping.")
         return 1
     if args.check:
         print("\nOK")

@@ -294,7 +294,8 @@ namespace CosmicShore.Gameplay
 
             while (!ct.IsCancellationRequested)
             {
-                if (spawnerEnabled && !trailPenUp && !vesselStatus.IsAttached && vesselStatus.Speed > 3f)
+                if (spawnerEnabled && !trailPenUp && !vesselStatus.IsAttached && vesselStatus.Speed > 3f
+                    && !StripFreestyleTrailWaits())
                 {
                     if (Mathf.Approximately(Gap, 0f))
                     {
@@ -315,6 +316,36 @@ namespace CosmicShore.Gameplay
                 float finalDelay = ApplyBoostSpawnDelay(clamped);
                 await UniTask.Delay(TimeSpan.FromSeconds(finalDelay), cancellationToken: ct);
             }
+        }
+
+        // ── Freestyle trail budget (stripped-performance branch) ─────────────────
+        // A spawner that WAITS, never a cap: see PerfStrip.FreestyleTrailActive. Only applies while
+        // the trail is running because of freestyle - a race's capped trail and the Wanderway
+        // tether have their own bounds.
+        bool _stripTrailWaiting;
+        Cell _stripCell;
+        float _stripCellRefreshAt;
+
+        bool StripFreestyleTrailWaits()
+        {
+            if (!PerfStrip.FreestyleTrailActive || PerfStrip.CappedTrailActive || PerfStrip.WanderwayTetherActive)
+            {
+                _stripTrailWaiting = false;
+                return false;
+            }
+
+            if (!_stripCell || Time.unscaledTime >= _stripCellRefreshAt)
+            {
+                _stripCellRefreshAt = Time.unscaledTime + 1f;
+                _stripCell = Cell.FindCellContaining(transform.position)
+                             ?? Cell.FindNearestActiveCell(transform.position);
+            }
+            if (!_stripCell) return false;
+
+            int live = _stripCell.LiveBlockCount;
+            if (_stripTrailWaiting) _stripTrailWaiting = live >= PerfStrip.FreestyleCellPrismResume;
+            else _stripTrailWaiting = live >= PerfStrip.FreestyleCellPrismBudget;
+            return _stripTrailWaiting;
         }
 
         async UniTask LerpXScalerAsync(float from, float to, float duration, CancellationToken ct)

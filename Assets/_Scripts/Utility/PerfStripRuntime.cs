@@ -45,7 +45,13 @@ namespace CosmicShore.Utility
             host.AddComponent<PerfStripRuntimeHost>();
             Object.DontDestroyOnLoad(host);
 
-            SceneManager.sceneLoaded += (_, _) => ScheduleApply();
+            SceneManager.sceneLoaded += (_, _) =>
+            {
+                // Freestyle is a Menu_Main state; a scene load ends it whatever path left the
+                // menu, so a race never inherits the uncapped freestyle trail.
+                PerfStrip.FreestyleTrailActive = false;
+                ScheduleApply();
+            };
             ScheduleApply();
         }
 

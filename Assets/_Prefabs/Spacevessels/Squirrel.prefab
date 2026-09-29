@@ -906,7 +906,7 @@ MonoBehaviour:
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.3
   singleTriggerDrift: 1
-  touchDriftDepth: 0.5
+  touchDriftDepth: 0.35
   holdSpeedWhileDrifting: 0
   vectorFlightModel: 1
   driftOvershootCeiling: 1.25
@@ -1127,7 +1127,7 @@ MonoBehaviour:
   _inputEventShipActions: []
   _resourceEventClassActions: []
   _touchActionOverrides:
-  - InputEvent: 12
+  - InputEvent: 13
     ShipActions:
     - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
     - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}

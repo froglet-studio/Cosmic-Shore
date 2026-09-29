@@ -401,11 +401,10 @@ namespace CosmicShore.Gameplay
             base.Initialize(cell);
 
             // Android stripped-performance branch: flora never plant or grow — a creation-side
-            // pause (sanctioned: "not creating mass is allowed; aging it out is not"). Existing
-            // mass is untouched; scene-placed flora sit as inert roots. Covers the menu cell's
-            // 6 scene-placed BranchingFlora, whose otherwise-unbounded growth (12,000-volume
-            // ceiling, 0s intervals) dominates CPU + collider load on a mid phone.
-            if (CosmicShore.Utility.PerfStrip.Enabled)
+            // pause (sanctioned: "not creating mass is allowed; aging it out is not") — except in
+            // the home-screen world, whose roster is hard-capped (PerfStrip.CellLifeRuns).
+            // Existing mass is untouched; a paused flora sits as an inert root.
+            if (!CosmicShore.Utility.PerfStrip.CellLifeRuns(cell && cell.Config && cell.Config.BootDefault))
             {
                 isGrowing = false;
                 return;

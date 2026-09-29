@@ -149,6 +149,23 @@ namespace CosmicShore.Gameplay
 
         #region Transitions
 
+        /// <summary>
+        /// Stripped-performance branch: the trail runs while the pilot flies freestyle (see
+        /// PerfStrip.FreestyleTrailActive). The vessel's spawner declined at spawn - the strip had
+        /// the trail off - and nothing re-asks until a drift toggles, so it is kicked here. On the
+        /// way out it stops creating; what was laid stays (conserved) for the food web.
+        /// </summary>
+        static void SetStripFreestyleTrail(IPlayer player, bool on)
+        {
+            if (!PerfStrip.Enabled) return;
+            PerfStrip.FreestyleTrailActive = on;
+
+            var controller = player?.Vessel?.VesselStatus?.VesselPrismController;
+            if (!controller) return;
+            if (on) controller.StartSpawn();
+            else if (PerfStrip.TrailsDisabled) controller.StopSpawn();
+        }
+
         async UniTaskVoid TransitionToFreestyle()
         {
             _isTransitioning = true;
@@ -162,6 +179,7 @@ namespace CosmicShore.Gameplay
                 PauseSystem.TogglePauseGame(false);
 
             player.Vessel.ToggleAIPilot(false);
+            SetStripFreestyleTrail(player, on: true);
 
             // Hand steering to the player either now or after the blend, depending on the flag.
             // With AI off and input still paused, the vessel cruises forward on MinimumSpeed -
@@ -211,6 +229,7 @@ namespace CosmicShore.Gameplay
 
             player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
+            SetStripFreestyleTrail(player, on: false);
 
             // Control is gone as of the line above, so the segment closes here - not after the
             // blend. Banking it now also means the vessel it is attributed to is still current.
