@@ -42,6 +42,27 @@ namespace CosmicShore.Engine
         Color[] _colors = Array.Empty<Color>();
         readonly List<int[]> _submeshes = new() { Array.Empty<int>() };
         Bounds _bounds;
+        Vector4[] _tangents = Array.Empty<Vector4>();
+        // uv (channel 0) lives in _uv; channels 1..7 (uv2..uv8) here.
+        readonly Vector2[][] _extraUvs = new Vector2[7][];
+        BoneWeight[] _boneWeights = Array.Empty<BoneWeight>();
+        Rendering.Matrix4x4[] _bindposes = Array.Empty<Rendering.Matrix4x4>();
+        readonly List<BlendShape> _blendShapes = new();
+
+        sealed class BlendShapeFrame
+        {
+            public float Weight;
+            public Vector3[] DeltaVertices, DeltaNormals, DeltaTangents;
+        }
+
+        sealed class BlendShape
+        {
+            public string Name;
+            public readonly List<BlendShapeFrame> Frames = new();
+        }
+
+        /// <summary>Original contract: false when the importer did not keep a CPU copy (Read/Write off). Data stays readable headless.</summary>
+        public bool isReadable { get; set; } = true;
 
         /// <summary>Index buffer width (original default UInt16). Data-only headless.</summary>
         public Rendering.IndexFormat indexFormat = Rendering.IndexFormat.UInt16;
@@ -70,6 +91,105 @@ namespace CosmicShore.Engine
         {
             get => Copy(_colors);
             set => _colors = Copy(value);
+        }
+
+        /// <summary>Per-vertex tangents (xyz + handedness w).</summary>
+        public Vector4[] tangents
+        {
+            get => Copy(_tangents);
+            set => _tangents = Copy(value);
+        }
+
+        public Vector2[] uv2 { get => GetUvChannel(1); set => SetUvChannel(1, value); }
+        public Vector2[] uv3 { get => GetUvChannel(2); set => SetUvChannel(2, value); }
+        public Vector2[] uv4 { get => GetUvChannel(3); set => SetUvChannel(3, value); }
+        public Vector2[] uv5 { get => GetUvChannel(4); set => SetUvChannel(4, value); }
+        public Vector2[] uv6 { get => GetUvChannel(5); set => SetUvChannel(5, value); }
+        public Vector2[] uv7 { get => GetUvChannel(6); set => SetUvChannel(6, value); }
+        public Vector2[] uv8 { get => GetUvChannel(7); set => SetUvChannel(7, value); }
+
+        Vector2[] GetUvChannel(int channel) => channel == 0 ? Copy(_uv) : Copy(_extraUvs[channel - 1]);
+
+        void SetUvChannel(int channel, Vector2[] value)
+        {
+            if (channel == 0) _uv = Copy(value);
+            else _extraUvs[channel - 1] = Copy(value);
+        }
+
+        /// <summary>Per-vertex skin weights (up to four influences), parallel to <see cref="vertices"/>.</summary>
+        public BoneWeight[] boneWeights
+        {
+            get => Copy(_boneWeights);
+            set => _boneWeights = Copy(value);
+        }
+
+        /// <summary>Inverse bind matrices, one per bone of the skinned renderer (bone-from-mesh space).</summary>
+        public Rendering.Matrix4x4[] bindposes
+        {
+            get => Copy(_bindposes);
+            set => _bindposes = Copy(value);
+        }
+
+        // ── Blend shapes (original contract) ─────────────────────────
+
+        public int blendShapeCount => _blendShapes.Count;
+
+        public string GetBlendShapeName(int shapeIndex) => _blendShapes[shapeIndex].Name;
+
+        public int GetBlendShapeIndex(string blendShapeName)
+        {
+            for (int i = 0; i < _blendShapes.Count; i++)
+                if (_blendShapes[i].Name == blendShapeName) return i;
+            return -1;
+        }
+
+        public int GetBlendShapeFrameCount(int shapeIndex) => _blendShapes[shapeIndex].Frames.Count;
+
+        public float GetBlendShapeFrameWeight(int shapeIndex, int frameIndex) => _blendShapes[shapeIndex].Frames[frameIndex].Weight;
+
+        /// <summary>Copies a frame's deltas into the caller's arrays (each vertexCount long, or null to skip).</summary>
+        public void GetBlendShapeFrameVertices(int shapeIndex, int frameIndex, Vector3[] deltaVertices, Vector3[] deltaNormals, Vector3[] deltaTangents)
+        {
+            var f = _blendShapes[shapeIndex].Frames[frameIndex];
+            CopyInto(f.DeltaVertices, deltaVertices);
+            CopyInto(f.DeltaNormals, deltaNormals);
+            CopyInto(f.DeltaTangents, deltaTangents);
+        }
+
+        /// <summary>
+        /// Appends a frame to the named shape (creating it). Frame weights must strictly
+        /// increase within a shape and delta arrays must match vertexCount (null = zeros) —
+        /// the original's argument checks.
+        /// </summary>
+        public void AddBlendShapeFrame(string shapeName, float frameWeight, Vector3[] deltaVertices, Vector3[] deltaNormals, Vector3[] deltaTangents)
+        {
+            if (deltaVertices != null && deltaVertices.Length != _vertices.Length)
+                throw new ArgumentException("Blend shape delta vertex count must match the mesh vertex count.", nameof(deltaVertices));
+            int index = GetBlendShapeIndex(shapeName);
+            BlendShape shape;
+            if (index < 0) { shape = new BlendShape { Name = shapeName }; _blendShapes.Add(shape); }
+            else
+            {
+                shape = _blendShapes[index];
+                if (shape.Frames.Count > 0 && frameWeight <= shape.Frames[^1].Weight)
+                    throw new ArgumentException("Blend shape frame weights must be increasing.", nameof(frameWeight));
+            }
+            shape.Frames.Add(new BlendShapeFrame
+            {
+                Weight = frameWeight,
+                DeltaVertices = deltaVertices != null ? Copy(deltaVertices) : new Vector3[_vertices.Length],
+                DeltaNormals = deltaNormals != null ? Copy(deltaNormals) : null,
+                DeltaTangents = deltaTangents != null ? Copy(deltaTangents) : null,
+            });
+        }
+
+        public void ClearBlendShapes() => _blendShapes.Clear();
+
+        static void CopyInto(Vector3[] source, Vector3[] destination)
+        {
+            if (destination == null) return;
+            if (source == null) { Array.Clear(destination, 0, destination.Length); return; }
+            Array.Copy(source, destination, Math.Min(source.Length, destination.Length));
         }
 
         /// <summary>
@@ -127,8 +247,27 @@ namespace CosmicShore.Engine
 
         public void SetUVs(int channel, List<Vector2> uvs)
         {
-            if (channel == 0) _uv = uvs?.ToArray() ?? Array.Empty<Vector2>();
+            if (channel < 0 || channel > 7) throw new ArgumentOutOfRangeException(nameof(channel));
+            SetUvChannel(channel, uvs?.ToArray() ?? Array.Empty<Vector2>());
         }
+
+        public void SetUVs(int channel, Vector2[] uvs)
+        {
+            if (channel < 0 || channel > 7) throw new ArgumentOutOfRangeException(nameof(channel));
+            SetUvChannel(channel, uvs);
+        }
+
+        /// <summary>Fills <paramref name="uvs"/> with the channel's coordinates (cleared first).</summary>
+        public void GetUVs(int channel, List<Vector2> uvs)
+        {
+            if (uvs == null) return;
+            uvs.Clear();
+            if (channel < 0 || channel > 7) return;
+            uvs.AddRange(channel == 0 ? _uv : _extraUvs[channel - 1] ?? Array.Empty<Vector2>());
+        }
+
+        public void SetTangents(List<Vector4> inTangents) => _tangents = inTangents?.ToArray() ?? Array.Empty<Vector4>();
+        public void SetTangents(Vector4[] inTangents) => _tangents = Copy(inTangents);
 
         public void SetColors(List<Color> inColors) => _colors = inColors?.ToArray() ?? Array.Empty<Color>();
 
@@ -204,6 +343,10 @@ namespace CosmicShore.Engine
             _normals = Array.Empty<Vector3>();
             _uv = Array.Empty<Vector2>();
             _colors = Array.Empty<Color>();
+            _tangents = Array.Empty<Vector4>();
+            Array.Clear(_extraUvs, 0, _extraUvs.Length);
+            _boneWeights = Array.Empty<BoneWeight>();
+            _blendShapes.Clear();
             _submeshes.Clear();
             _submeshes.Add(Array.Empty<int>());
             _bounds = new Bounds(Vector3.zero, Vector3.zero);
@@ -220,6 +363,24 @@ namespace CosmicShore.Engine
             destination._normals = Copy(_normals);
             destination._uv = Copy(_uv);
             destination._colors = Copy(_colors);
+            destination._tangents = Copy(_tangents);
+            for (int i = 0; i < _extraUvs.Length; i++) destination._extraUvs[i] = _extraUvs[i] == null ? null : Copy(_extraUvs[i]);
+            destination._boneWeights = Copy(_boneWeights);
+            destination._bindposes = Copy(_bindposes);
+            destination._blendShapes.Clear();
+            foreach (var shape in _blendShapes)
+            {
+                var clone = new BlendShape { Name = shape.Name };
+                foreach (var f in shape.Frames)
+                    clone.Frames.Add(new BlendShapeFrame
+                    {
+                        Weight = f.Weight, DeltaVertices = Copy(f.DeltaVertices),
+                        DeltaNormals = f.DeltaNormals == null ? null : Copy(f.DeltaNormals),
+                        DeltaTangents = f.DeltaTangents == null ? null : Copy(f.DeltaTangents),
+                    });
+                destination._blendShapes.Add(clone);
+            }
+            destination.isReadable = isReadable;
             destination._submeshes.Clear();
             foreach (var sub in _submeshes) destination._submeshes.Add(Copy(sub));
             destination._bounds = _bounds;
@@ -233,6 +394,24 @@ namespace CosmicShore.Engine
             Array.Copy(source, copy, source.Length);
             return copy;
         }
+    }
+
+    /// <summary>
+    /// Original-contract per-vertex skin influence: up to four (bone index, weight) pairs,
+    /// weights normalized and sorted descending by the importer.
+    /// </summary>
+    public struct BoneWeight : IEquatable<BoneWeight>
+    {
+        public int boneIndex0, boneIndex1, boneIndex2, boneIndex3;
+        public float weight0, weight1, weight2, weight3;
+
+        public bool Equals(BoneWeight o)
+            => boneIndex0 == o.boneIndex0 && boneIndex1 == o.boneIndex1 && boneIndex2 == o.boneIndex2 && boneIndex3 == o.boneIndex3
+               && weight0 == o.weight0 && weight1 == o.weight1 && weight2 == o.weight2 && weight3 == o.weight3;
+        public override bool Equals(object obj) => obj is BoneWeight o && Equals(o);
+        public override int GetHashCode() => HashCode.Combine(boneIndex0, boneIndex1, boneIndex2, boneIndex3, weight0, weight1, weight2, weight3);
+        public static bool operator ==(BoneWeight a, BoneWeight b) => a.Equals(b);
+        public static bool operator !=(BoneWeight a, BoneWeight b) => !a.Equals(b);
     }
 
     /// <summary>
