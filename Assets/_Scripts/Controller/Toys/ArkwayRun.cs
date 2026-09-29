@@ -9,10 +9,10 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
-    /// <summary>Tunables for the Arkway, authored on the toy definition.</summary>
+    /// <summary>Tunables for the Arkway (Wander WITH an Ark), authored on <c>ArkwaySettingsSO</c>.</summary>
     public sealed class ArkwayConfig
     {
-        /// <summary>The toy's player-facing name — shown on the build veil ("GROWING ARKWAY…").</summary>
+        /// <summary>The label shown on the build veil; the Wander toy supplies it.</summary>
         public string DisplayName = "ARKWAY";
 
         public Prism PrismPrefab;
@@ -729,8 +729,8 @@ namespace CosmicShore.Gameplay
         /// <see cref="PaintingRunner"/> carries, and the same one-time scene lookup).
         ///
         /// One arrow per live voyage, destroyed with it. A painting run standing its own arrow
-        /// at the same time would draw two — degenerate, and the same bounded class as the
-        /// Arkway and the Wanderway both running (no cross-toy coordinator exists for any pair).
+        /// at the same time would draw two — degenerate, and bounded. (A voyage and a Wanderway
+        /// belt cannot both run: they are the Wander toy's two choices and it starts one at a time.)
         /// </summary>
         void EnsureObjectiveArrow()
         {

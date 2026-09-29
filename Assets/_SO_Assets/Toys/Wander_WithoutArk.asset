@@ -10,14 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 93dc722293f3481da99005aee78dfe74, type: 3}
-  m_Name: Toy_Conveyor
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.ConveyorToyDefinitionSO
-  id: conveyor
-  displayName: Wanderway
-  description: Fly through to summon an endless trail of little worlds.
-  unlockedByDefault: 1
-  placementAngleDegrees: 60
-  accentColor: {r: 0.11635202, g: 0.22510868, b: 1, a: 1}
+  m_Name: Wander_WithoutArk
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.WanderwaySettingsSO
   prismPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9,
     type: 3}
   crystalCollectionEffects:

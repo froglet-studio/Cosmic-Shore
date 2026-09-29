@@ -1,20 +1,24 @@
-using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The microscene conveyor toy - fly through it to start a belt of shuffled, randomized
+    /// The settings for a <b>Wander without an Ark</b> - the Wanderway half of the Wander toy
+    /// (<see cref="WanderToyDefinitionSO"/>). Not a toy of its own any more: the Wanderway and the
+    /// Arkway were one idea told twice ("leave the cell and go wandering"), so they are one toy with
+    /// two choices, and each choice's tunables live on its own settings asset.
+    ///
+    /// <para>What it runs: a belt of shuffled, randomized
     /// microscenes (prism arrangements, elemental-crystal pickups, flora/fauna released into the
     /// cell) blooming in ahead of your flight path. When the pool is populated, the belt recycles
     /// the scene farthest behind into a fresh arrangement ahead - transport of the same conserved
     /// mass (suction out → bloom in), never destruction, with shuffle-bag recipe + domain +
     /// rotation variation so the loop doesn't read as a loop. Toy-faithful: no score, no end
-    /// condition, no timers - the belt advances only with the player's own motion.
+    /// condition, no timers - the belt advances only with the player's own motion.</para>
     /// </summary>
-    [CreateAssetMenu(fileName = "Toy_Conveyor", menuName = "ScriptableObjects/Toys/Conveyor Toy")]
-    public class ConveyorToyDefinitionSO : ToyDefinitionSO
+    [CreateAssetMenu(fileName = "Wander_WithoutArk", menuName = "ScriptableObjects/Toys/Wander Settings - Without Ark")]
+    public class WanderwaySettingsSO : ScriptableObject
     {
         [Header("Conveyor - content")]
         [SerializeField, Tooltip("Prism prefab laid in the scene arrangements (a plain environment prism, " +
@@ -158,21 +162,13 @@ namespace CosmicShore.ScriptableObjects
                  "waits a touch longer for scenes to leave view.")]
         float offscreenMargin = 80f;
 
-        /// <summary>Where you are, by taking you out of it. It hands the host CELL its bare canvas and
-        /// streams a field of structures ahead of you instead.</summary>
-        public override ToyCategory Category => ToyCategory.World;
-
-        public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
+        /// <summary>
+        /// The run's config. <paramref name="displayName"/> is the label the build veil shows
+        /// ("GROWING ..."); the Wander toy owns the name, this asset owns the numbers.
+        /// </summary>
+        public ConveyorConfig BuildConfig(string displayName) => new()
         {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
-            var toy = go.AddComponent<ConveyorToy>();
-            toy.Configure(BuildConfig());
-            toy.Initialize(this, context, placement);
-        }
-
-        ConveyorConfig BuildConfig() => new()
-        {
-            DisplayName = DisplayName,
+            DisplayName = displayName,
             PrismPrefab = prismPrefab,
             OmniCrystalPrefab = omniCrystalPrefab,
             CrystalEffects = crystalCollectionEffects,
@@ -197,8 +193,5 @@ namespace CosmicShore.ScriptableObjects
             ReturnStationRadius = returnStationRadius,
             ReturnStationColor = returnStationColor,
         };
-
-        /// <summary>Wires a prism prefab on a runtime-synthesised definition (the zero-config default toybox).</summary>
-        internal void SetRuntimePrismPrefab(Prism prefab) => prismPrefab = prefab;
     }
 }

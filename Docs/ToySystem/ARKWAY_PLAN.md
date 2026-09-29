@@ -1,6 +1,6 @@
 # The Arkway — a plan for an epic adventure
 
-*Status: proposal, September 2026. Owner: the Arkway toy (`ArkwayToy` / `ArkwayRun` /
+*Status: proposal, September 2026. Owner: the Arkway - Wander's **With Ark** choice (`WanderToy` / `ArkwayRun` /
 `CellConveyor` / `Ark`). Record of what exists: `Docs/ECOSYSTEM.md §41`,
 `Docs/ToySystem/ARCHITECTURE.md § Arkway`. Backlog: `Docs/ToySystem/BACKLOG.md § Arkway`.*
 
@@ -142,7 +142,7 @@ until a voyage opens with the Ark in view every time.
   *count* grid); `populationScale` and `prismStride` per traversal cell; `arkSpeed` and
   `arkCruiseSpeedFactor` (the crossing is the danger — its length in seconds is the difficulty);
   the corridor authored as **LEGS** rather than a flat config list — each entry on
-  `ArkwayToyDefinitionSO.cells` carrying its config *plus* `populationScale`, `prismStride` and
+  `ArkwaySettingsSO.cells` carrying its config *plus* `populationScale`, `prismStride` and
   `InitialFaunaReleaseTier`, with `Barren`-class **harbour legs** inserted between heavy worlds as
   release beats. Escalation and rest then live entirely in Cell data, riding the arrival profile
   as the tension curve, with no scripting and no new fundamental; `RuntimePopulationScale` rising

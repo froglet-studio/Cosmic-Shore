@@ -106,7 +106,9 @@ this, Pilot → World → Creation. See `Docs/CODEX.md` §3.5.
 | Flora icon (growth-pattern simulation) | `Assets/_Scripts/Controller/Toys/FloraIconBuilder.cs` |
 | Growth-preview contract (pure, spawns nothing) | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Flora.cs` (`TryPreviewGrowth`) |
 | Idle spin for toy bodies | `Assets/_Scripts/Controller/Toys/ToyIdleSpin.cs` |
-| Conveyor ("Wanderway") toy | `Assets/_Scripts/Controller/Toys/ConveyorToy.cs` |
+| Wander toy (With Ark / Without Ark) | `Assets/_Scripts/Controller/Toys/WanderToy.cs` + `Assets/_Scripts/ScriptableObjects/Toys/WanderToyDefinitionSO.cs` |
+| Without Ark settings (the Wanderway belt) | `Assets/_Scripts/ScriptableObjects/Toys/WanderwaySettingsSO.cs` → `_SO_Assets/Toys/Wander_WithoutArk.asset` |
+| With Ark settings (the Arkway voyage) | `Assets/_Scripts/ScriptableObjects/Toys/ArkwaySettingsSO.cs` → `_SO_Assets/Toys/Wander_WithArk.asset` |
 | The wander run (canvas + tether + exits) | `Assets/_Scripts/Controller/Toys/WanderwayRun.cs` |
 | Return station at the tether's end | `Assets/_Scripts/Controller/Toys/WanderwayReturnToy.cs` |
 | Conveyor belt runner (+ the load-veil prime) | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
@@ -114,7 +116,6 @@ this, Pilot → World → Creation. See `Docs/CODEX.md` §3.5.
 | Grand assemblies (the monument-scale eight) | `Assets/_Scripts/Controller/Toys/MicroscenePatternsGrand.cs` |
 | Microscene recipe generators (pure) | `Assets/_Scripts/Controller/Toys/MicroscenePatterns.cs` |
 | Microscene structural painter (domain/kind/scale) | `Assets/_Scripts/Controller/Toys/MicroscenePainter.cs` |
-| Arkway (cellular Wanderway) toy | `Assets/_Scripts/Controller/Toys/ArkwayToy.cs` |
 | The voyage run (leash + exits + reset) | `Assets/_Scripts/Controller/Toys/ArkwayRun.cs` |
 | The corridor of traversal cells | `Assets/_Scripts/Controller/Toys/CellConveyor.cs` |
 | The voyage's screen telegraph (leash countdown, banners) | `Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs` |
@@ -302,7 +303,50 @@ reset rather than an environment swap. Prisms owned by a closed toy system (the 
 conveyor transports its own fixed stock, instantiated not pooled) are never touched either way,
 so a cell swap cannot break the conveyor's conservation.
 
-## Arkway (`ArkwayToy` + `ArkwayToyDefinitionSO`) — the cellular Wanderway, and the Ark's first vehicle
+## Wander (`WanderToy` + `WanderToyDefinitionSO`) — one toy, two ways to leave
+
+The Wanderway and the Arkway were two toys and one idea: both take you OUT of the cell into an
+endless run you come home from, both hand the host cell its bare canvas behind the load veil, and
+both end the same ways. They are now **one toy, Wander, with two choices** — a `MatrixToy` whose
+pass blooms two stations (and whose Toy Box window shows the same two as cards):
+
+| Choice | What it runs | Settings asset |
+|---|---|---|
+| **With Ark** | the Arkway voyage — a corridor of cells and an `Ark` in your domain (`ArkwayRun` + `CellConveyor`) | `Wander_WithArk.asset` (`ArkwaySettingsSO`) |
+| **Without Ark** | the Wanderway belt — microscenes ahead, a rolling tether behind (`WanderwayRun` + `MicrosceneConveyor`) | `Wander_WithoutArk.asset` (`WanderwaySettingsSO`) |
+
+The choice is the one thing that differs — *do you want company?* — so it is the one thing the
+player picks. Four rules carry over from the two old toys and one is new:
+
+- **Both settings assets are the OLD definitions, renamed** (`git mv`, guids intact): every tunable
+  kept its value, and only the six `ToyDefinitionSO` identity fields came off them — the name,
+  accent, placement and unlock flag now belong to `Toy_Wander.asset`. They are no longer
+  `ToyDefinitionSO`s at all, so the encyclopedia (which harvests every toy definition in the
+  project) shows one Wander page with two variants rather than two pages.
+- **A pass through the toy ends a live run** exactly as it did on either old toy: with a run
+  going, the toy is a way home rather than a menu (`WanderToy.OnActivated` routes the pass to the
+  run instead of opening the matrix). A pass while the voyage is still building behind the veil
+  is ignored, as before.
+- **Starting a choice folds the matrix first** — the cell it stands in is about to be handed its
+  bare canvas.
+- **The belt's stock is built once** and resumed on every later wander without an Ark.
+- **NEW — one wander at a time.** Both runs revert the cell, raise the veil and own the local
+  trail, so two at once would fight over all three (`ArkwayRun` used to document that pair as an
+  unguarded degenerate case; Wander is now the coordinator it lacked). While one is live, its own
+  row is **Come home** (`IsCurrent`, commit verb "Come home") and the OTHER row is still LISTED —
+  a surface may decline to act, never to offer — with no `Apply` and a detail line saying why.
+
+**The emblem is both halves**: a miniature Ark (built from `Ark.BuildHullLays`, in the local
+player's live domain — the live key rebuilds it on a domain change) as the core, ringed by three
+real microscenes from the belt's own planner. Orbit speed still carries the run state (stopped /
+running but dormant / under way). Each station shows the same model its card previews: the mini
+Ark for With Ark, a microscene archway for Without Ark, both cached on the toy and shared with the
+preview rather than rebuilt per surface.
+
+**Station geometry** is in `Tools/Build/toy_switch_ring_geometry.py` (`Wander station`, spacing
+read off `Toy_Wander.asset`).
+
+## Arkway (Wander **With Ark**: `WanderToy` + `ArkwaySettingsSO`) — the cellular Wanderway, and the Ark's first vehicle
 
 The **Arkway** is the Wanderway's proposition raised one level: where the Wanderway's belt
 recycles prism *assemblies*, the Arkway recycles whole **cells**. Fly the toy and a VOYAGE
@@ -1277,7 +1321,7 @@ hands it to the platform share sheet via the NativeShare plugin. Paintings finis
 drawing-state capture existed fall back to boxes laid along the stroke polylines, so share
 always works.
 
-### Wanderway / Microscene Conveyor (`ConveyorToy` + `MicrosceneConveyor` + `Microscene`)
+### Wanderway / Microscene Conveyor (Wander **Without Ark**: `WanderToy` + `MicrosceneConveyor` + `Microscene`)
 
 Fly through and you **leave for a wander** (`WanderwayRun` — see *The run* below): the cell reverts
 to its bare canvas, the belt builds its **entire conserved stock behind a load veil** (see *Scale*),
@@ -1355,7 +1399,7 @@ live gameplay — the exact failure the cell environments already learned.)
 **Geometry vs. theming (why it stays fresh, not chaotic).** A recipe produces pure *shape* plus
 **structural metadata** — `MicroscenePlan.CloseStructure()` after each gate/strand/tree/wall stamps
 every point with its substructure id + t-along-path — and `MicroscenePainter` then paints each
-scene from a config-authored `MicroscenePalette` (`ConveyorToyDefinitionSO`). Painting keys off the
+scene from a config-authored `MicroscenePalette` (`WanderwaySettingsSO`). Painting keys off the
 structure, never bare indices: **domain schemes** (mono / per-structure rainbow runs /
 gradient-along-flight / accented / radial pinwheel / candy-stripe / port-starboard mirror /
 neutral-veined-with-Blue) always draw from the **full playable triad** — belt prisms are
@@ -1672,9 +1716,10 @@ A station that genuinely cannot go through `CreateStation` — the painting gall
 full `Toy` with its own bloom and exit-gated re-arm — must still invoke that same `Apply` and
 nothing else. That is the one place the rule is a convention, and it is named in the code.
 
-**A single-action toy already had this right** and is the pattern to copy: `ConveyorToy` and
-`ArkwayToy` set `Apply = ActivateFromShell`, which calls their own `OnActivated` — *one
-implementation of "throw this switch", so the shell cannot drift from the ring.*
+**A single-action toy already had this right** and is the pattern to copy: the Wanderway and
+Arkway toys (merged since into Wander) set `Apply = ActivateFromShell`, which called their own
+`OnActivated` — *one implementation of "throw this switch", so the shell cannot drift from the
+ring.* Wander is a `MatrixToy` now, so its two options ride the base's wiring instead.
 
 **The gate is `ToySurfaceParityTests`** (`_Scripts/Tests/Editor/`). It fails when a `MatrixToy`
 subclass re-declares `IToyShellSurface` (which would let it re-implement the window's list and win
@@ -1691,8 +1736,7 @@ own end. Verified as a negative control: all three subclasses failed it before t
 | Cell Selector | the cell's own rotation; choosing the current one is still the reset | no |
 | Spawn Matrix | Fauna / Flora / **Vessels** → species or hull → element; an element row previews the lifeform and the window WATCHES the spawn. The kingdom row walks the same `Kingdoms` + `HasContent` filter the world's does, so it cannot lose one again (it had lost the hangar — see § "One declaration"). A hull release has no `WatchAfterApply`: `ReleaseCompanion` is a ServerRpc, so there is no object to turn the picture onto and claiming one would be a lie on every machine that is not the host | no |
 | Connect the Dots | the gallery, with live progress per canvas | **yes** |
-| Wanderway | one switch: wander / come home | **yes** |
-| Arkway | one switch: set sail / end the voyage | **yes** |
+| Wander | **With Ark** / **Without Ark**; the live one becomes **Come home**, and the other is listed but carries no `Apply` until you are home | **yes** |
 
 Note the asymmetry the flat list has to state in words that the world says by shape: the diegetic
 sets show *everything except where you are now*, because the option you are on has no station. A

@@ -740,7 +740,7 @@ namespace CosmicShore.Editor.Froglet
             // has rather than the one it was duplicated from.
             //
             // Every one is set as a BAND rather than a fixed size. That is not a hedge: a toy's
-            // name runs from "Wanderway" to "Connect the Dots", its description is authored prose
+            // name runs from "Wander" to "Connect the Dots", its description is authored prose
             // of no fixed length, and a fixed size is a promise the content cannot keep - the long
             // ones clip, and a clipped label reads as broken rather than as long. A band takes the
             // ceiling when it fits and steps down when it does not, which is the same answer the
