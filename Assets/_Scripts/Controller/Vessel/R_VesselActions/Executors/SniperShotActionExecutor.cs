@@ -94,6 +94,7 @@ namespace CosmicShore.Gameplay
         // Reused so a shot allocates nothing on the hot path.
         readonly List<Prism> _hits = new();
         readonly List<(Prism prism, float distance)> _ordered = new();
+        readonly List<Transform> _vesselScratch = new();
 
         /// <summary>Seconds until the next shot is available, 0 when ready. Read by the HUD.</summary>
         public float CooldownRemaining => Mathf.Max(0f, _cooldownEndTime - Time.time);
@@ -265,8 +266,85 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            StripVessels(so, origin, direction, stop);
+
             DrawTracer(so, origin, direction, stop, hit);
             PlayReport(so);
+        }
+
+        /// <summary>
+        /// THE SERPENT'S ANTI-VESSEL VERB. The round strips elements from every opposing pilot
+        /// standing in the cone it just tested, and the petals are EJECTED - knocked out of the
+        /// victim's hull as free-for-all crystals rather than handed to the sniper, because a
+        /// ranged verb cannot take what it never touched (<see cref="ElementalTransfer"/>).
+        ///
+        /// <para><b>Why this exists at all.</b> The Serpent was the one hull in the fleet with no
+        /// way to affect another pilot: no skimmer, no projectile container, no blast - its only
+        /// weapon is this hitscan, and the hitscan queried PRISMS and nothing else. So it was
+        /// excluded from Broadside outright, and under the elemental economy it would have been
+        /// the only vessel that could be robbed and could never rob anyone.</para>
+        ///
+        /// <para><b>It reuses the round's OWN cone.</b> The test is
+        /// <see cref="PrismSpatialIndex.ConeContains"/>, the same public predicate
+        /// <c>QueryCone</c> applies to prisms, with the same apex, axis, range, half-angle and
+        /// minimum path radius. One cone, one answer: a pilot the tracer visibly passes through
+        /// cannot be missed by arithmetic that disagrees with the mass around them.</para>
+        ///
+        /// <para><b>It stops where the round stopped.</b> With the shipped unlimited pierce that
+        /// is the full range, but a limited <c>PierceCount</c> parks the round at a prism, and a
+        /// pilot standing behind that prism must not be stripped by a round that never got there.
+        /// </para>
+        ///
+        /// <para>The roster is <see cref="VesselVisionShading.CollectStampedVessels"/> - the
+        /// vision band's own live handle, which that platform law maintains because the law
+        /// depends on it being right, and which excludes the toybox's mini hulls by construction.
+        /// It is a handful of entries, so the sweep is O(pilots) and allocates nothing.</para>
+        /// </summary>
+        void StripVessels(SniperShotActionSO so, Vector3 origin, Vector3 direction, Vector3 stop)
+        {
+            if (so == null || so.VesselStripPerElement <= 0f || _status == null) return;
+
+            float reach = Vector3.Dot(stop - origin, direction);
+            if (reach <= 0f) return;
+
+            float tanHalf = Mathf.Tan(Mathf.Deg2Rad * Mathf.Clamp(so.ConeHalfAngleDegrees, 0f, 89f));
+            Vector3 launch = direction * so.VesselEjectSpeed;
+
+            VesselVisionShading.CollectStampedVessels(_vesselScratch);
+            for (int i = 0; i < _vesselScratch.Count; i++)
+            {
+                var candidate = _vesselScratch[i];
+                if (candidate == null) continue;
+
+                var component = candidate.GetComponentInChildren<VesselStatus>();
+                if (component == null) continue;
+
+                // Typed as the INTERFACE from here on, because Domain is a DEFAULT INTERFACE
+                // MEMBER (IVesselStatus implements it over Player) and a default member is
+                // reachable only through the interface - VesselStatus itself does not declare
+                // one. The Unity null check above is deliberately done on the concrete
+                // reference first: `== null` on an interface-typed variable is a plain
+                // reference compare and misses a destroyed Object.
+                IVesselStatus victim = component;
+
+                // Never yourself, never a team-mate. The own-domain rule is the same one every
+                // other anti-vessel effect in the fleet applies, and it is what stops a Serpent
+                // paying for shooting its own wingman.
+                if (ReferenceEquals(victim, _status)) continue;
+                if (victim.Domain == _status.Domain) continue;
+
+                if (!PrismSpatialIndex.ConeContains(component.transform.position, origin, direction,
+                                                    reach, tanHalf, so.MinPathRadius))
+                    continue;
+
+                // Classed Other: this is a gun round rather than a blast or a contact, so neither
+                // the Explosion nor the VesselContact ward should stop it, and only a pilot warded
+                // against everything is spared.
+                ElementalTransfer.ApplyAll(ElementalTransferForm.Eject, victim, attacker: null,
+                                           so.VesselStripPerElement, launch,
+                                           ElementalDebuffSources.Other);
+            }
+            _vesselScratch.Clear();
         }
 
         /// <summary>

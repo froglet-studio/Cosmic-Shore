@@ -9,7 +9,9 @@ namespace CosmicShore.UI
         [Header("View")]
         [SerializeField] private SerpentVesselHUDView view;
 
-        [Header("Boost (charges)")]
+        [Header("Fuel pellets (Time)")]
+        [Tooltip("The pellet executor whose fuel resource the TIME card's four pips read. " +
+                 "Resolved from the registry when left empty.")]
         [SerializeField] private ConsumeBoostActionExecutor consumeBoostExecutor;
 
         [Header("Shields")]
@@ -39,6 +41,11 @@ namespace CosmicShore.UI
 
         void Subscribe()
         {
+            // Detach FIRST, above the pilot gate: a vessel swap re-runs Initialize on this live
+            // component, and a re-init that hands the hull to an AI must not strand the handler.
+            if (_rs != null) _rs.OnResourceChanged -= HandleResourceChanged;
+            _rs = null;
+
             if (_status.IsInitializedAsAI || !_status.IsLocalUser) return;
             
             if (consumeBoostExecutor == null || sniperShotExecutor == null)
@@ -63,29 +70,13 @@ namespace CosmicShore.UI
                 PushInitialShields();
             }
 
-            if (consumeBoostExecutor == null || view == null) return;
-            consumeBoostExecutor.OnChargesSnapshot += HandleBoostSnapshot;
-            consumeBoostExecutor.OnChargeConsumed  += HandleBoostChargeConsumed;
-
-            HandleBoostSnapshot(
-                consumeBoostExecutor.AvailableCharges,
-                consumeBoostExecutor.MaxCharges
-            );
+            PushPelletFuel();
         }
 
         void OnDisable()
         {
             if (_rs != null)
                 _rs.OnResourceChanged -= HandleResourceChanged;
-
-            if (consumeBoostExecutor != null)
-            {
-                consumeBoostExecutor.OnChargesSnapshot -= HandleBoostSnapshot;
-                consumeBoostExecutor.OnChargeConsumed  -= HandleBoostChargeConsumed;
-            }
-
-            if (view != null)
-                view.ResetBoostPips();
         }
 
         // ---------- Shields ----------
@@ -93,6 +84,13 @@ namespace CosmicShore.UI
         void HandleResourceChanged(int index, float current, float max)
         {
             if (!view) return;
+
+            if (consumeBoostExecutor && index == consumeBoostExecutor.FuelResourceIndex)
+            {
+                PushPelletFuel();
+                return;
+            }
+
             if (index != shieldResourceIndex || max <= 0f) return;
 
             var norm   = Mathf.Clamp01(current / max);
@@ -112,18 +110,18 @@ namespace CosmicShore.UI
             view.SetShieldCount(shields);
         }
 
-        // ---------- Boost pips ----------
+        // ---------- Fuel pellets ----------
 
-        void HandleBoostSnapshot(int available, int max)
+        /// <summary>
+        /// The TIME card's four pips ARE the fuel tank: pip n is lit once the tank holds n pellets,
+        /// and the pellet currently refilling shows its partial fill. Read off the resource itself
+        /// (<see cref="ConsumeBoostActionExecutor.PelletsHeld"/>), never off a counter of presses,
+        /// so the readout and the gate that decides whether a press burns cannot disagree.
+        /// </summary>
+        void PushPelletFuel()
         {
-            if (!view || !DrivesThisHud) return;
-            view.ApplyBoostSnapshot(available, max);
-        }
-
-        void HandleBoostChargeConsumed(int pipIndex, float duration)
-        {
-            if (!view || !DrivesThisHud) return;
-            view.AnimateBoostChargeConsumed(pipIndex, duration);
+            if (!view || !consumeBoostExecutor || !DrivesThisHud) return;
+            view.SetPelletFuel(consumeBoostExecutor.PelletsHeld);
         }
 
         /// <summary>

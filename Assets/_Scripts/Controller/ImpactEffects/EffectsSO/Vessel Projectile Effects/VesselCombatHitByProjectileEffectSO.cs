@@ -77,8 +77,12 @@ namespace CosmicShore.Gameplay
             // The round's own bite, priced off the same list its points come from - ten points
             // to the petal (so ten bullets cost a victim one). Netted against a superseded
             // missile tier, because a direct strike admits over its own blast.
-            CombatHitDrain.Apply(victimStatus, hitClass, supersededRank,
-                                 ElementalDebuffSources.Other);
+            // The round's OWN velocity throws whatever it knocks loose - the same quantity that
+            // throws prism debris, so a petal shot out of a pilot scatters exactly as far as a
+            // prism struck at that speed would have. A ranged verb EJECTS, so the shooter is not
+            // handed the petals; they have to come back through the crystals.
+            CombatHitDrain.Apply(victimStatus, shooterStatus, hitClass, supersededRank,
+                                 projectile.Velocity, ElementalDebuffSources.Other);
 
             onCombatHitLanded.Raise(new CombatHitStats
             {

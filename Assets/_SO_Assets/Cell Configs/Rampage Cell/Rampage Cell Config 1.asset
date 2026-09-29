@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Rampage Cell Config 1
   m_EditorClassIdentifier:
   CellName: Rampage
-  Description: Demolition arena cell, intensity 1 of 4 - a quiet arena you have mostly to yourself: 335
-    seeded plants totalling ~59590 prisms of cacti, spires, pines, rosettes and coral,
+  Description: 'Demolition arena cell, intensity 1 of 4 - a quiet arena you have mostly to yourself:
+    335 seeded plants totalling ~59590 prisms of cacti, spires, pines, rosettes and coral,
     filling the volume from just outside the nucleus out to the membrane, across all three
     domains, each plant one of the four elemental variations. Intensity 4 is the shipped,
     play-tested arena EXACTLY; 1 is that same arena made bigger, denser and easier to hit:
@@ -22,12 +22,12 @@ MonoBehaviour:
     cone and an easier surface to skim), a nucleus at prefab scale 500 (~490u radius), 1x
     the authored wildlife, and - authored in the scene, not here - twice as many crystals as
     players. The nucleus stays clear (the planting band is clamped outside it) and is the
-    crystals' contested ground. The mature forest is ~7,876,018 volume, and this cell's
+    crystals'' contested ground. The mature forest is ~7,876,018 volume, and this cell''s
     VOLUME thresholds are the play-tested intensity-4 ladder scaled by that - so Frenzy sits
     the same 3.70x above the forest at every level. Collider envelope: up to 60,750 prisms
     (LOD-cullable, and the count backstop freezes growth there) plus 500 always-on
     heart-crystal colliders at the plant cap. Pending an in-editor re-measure; regenerate
-    with Tools/Build/rampage_intensity.py rather than hand-editing.
+    with Tools/Build/rampage_intensity.py rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 1
   CellEndGameScore: 0

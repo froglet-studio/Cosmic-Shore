@@ -165,8 +165,7 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
     toy's paintings list is ever emptied the procedural fallback resets saved progress on its
     first write (totalStrokes mismatch, by design). Acceptable while the committed
     `Toy_Painting.asset` list stays populated; split the ids if that ever changes.
-  - *`BillboardLabel` one-LateUpdate-per-label* (~20 in the full toybox): fold into a single
-    manager iterating a static list if the profiler pass flags it (pole-degeneracy guard is in).
+  - ~~*`BillboardLabel` one-LateUpdate-per-label*~~ - moot: toys carry no text (2026-09-25). The one survivor is `ToyChoiceLabel`'s billboard on the two SHARE / REPAINT words, which exist only while a finished painting waits on the choice.
   - *Toolkit `Rng` vs seeded `System.Random`* (Microscene convention): kept deliberately —
     xorshift32 is stable across .NET runtimes, `System.Random`'s algorithm is not guaranteed.
   - *`CatmullRomPoint` duplicates `SpawnableWaypointTrack.CatmullRom`*: unify in a shared math
@@ -286,7 +285,7 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   autopilot window it will drift toward `MinimumSpeed`; fine for the seamless-handoff goal, tune
   if a longer hold is wanted.
 
-## Lifeform Matrix follow-ups
+## Spawn Matrix follow-ups
 
 **Kingdom pass (shipped) — verification, none of it play-verified:**
 
@@ -534,7 +533,7 @@ unchanged by this work.
   `ToyEmblem` — raise `SatelliteRadiusBodies` first, then `OrbitRadiusBodies`, but the outer extent
   (`OrbitRadiusBodies + SatelliteRadiusBodies`) × R must stay under the 42u trigger radius.
 - **Two pre-existing material leaks, deliberately left in scope-free.** `VesselChangerToy.BuildStation`
-  and `LifeformMatrixToy.AddSpeciesModel` still call the COLOUR overload of `ToyModelBuilder.TryBuild`
+  and `SpawnMatrixToy.AddSpeciesModel` still call the COLOUR overload of `ToyModelBuilder.TryBuild`
   on the matrix-station path, orphaning one `Material` per model per matrix open (UnityEngine.Objects
   are never GC'd). The new `Material` overload — which the emblems use, and which lets one owner
   share and destroy a single material — makes adopting the same pattern there a small follow-up. Not
@@ -544,10 +543,8 @@ unchanged by this work.
   the gyroid bond table). The two places they can drift are `BranchingFlora`'s branch step/scale
   falloff and `WallAssembler`'s bond offsets, which are re-expressed rather than shared. If either
   changes, re-check the icon.
-- **Emblem legibility vs. the label position.** The emblem's outer extent (33.4u) and the label
-  height are independent numbers. Since the switch-ring pass the label is *derived* from the ring
-  (`ToyFactory.SwitchRingLabelHeight`) rather than from the body radius, so the pair that has to
-  keep clearing each other is now **emblem outer (33.4u) vs. ring inner (38.6u)** — 5.2u at R=22.
+- **Emblem vs. the ring.** The pair that has to keep clearing each other is **emblem outer
+  (33.4u) vs. ring inner (38.6u)** — 5.2u at R=22 (there is no label any more to clear either).
   If the toybox's `toyBodyRadius` or `toyTriggerRadius` is retuned, re-check that gap.
 
 ## The switch (rings) — known-remaining follow-ups
@@ -613,7 +610,7 @@ becomes more pressing, not less, if more grown-environment cells ship.
 
 ## Vessel matrices — live hulls (2026-08-25)
 
-Stations in the vessel changer and the Lifeform Matrix hangar now show the ACTUAL ship
+Stations in the vessel changer and the Spawn Matrix hangar now show the ACTUAL ship
 (`ToyVesselRoster.TryBuildLiveHull`) rather than a flat silhouette, with the vessel vision band
 supplying the domain read (`Docs/VESSEL_VISION.md`, `Docs/ToySystem/ARCHITECTURE.md` § "Vessel
 Changer"). Open items:
@@ -701,7 +698,7 @@ Follow-ups, none blocking:
   density-grid centroids, and a thinned world's own mass competes with the hull's tight
   cluster. If playtests show waves ignoring the Ark, the honest lever is the grid (hull
   plates are dense and re-filed every 2.5 s), not a scripted goal.
-- **An AI companion released from the Lifeform Matrix stays home** during a voyage (it is
+- **An AI companion released from the Spawn Matrix stays home** during a voyage (it is
   not leashed, not teleported). Fine for v1; a future pass could invite the whole party's
   vessels aboard.
 - **The Arkway and the Wanderway can technically run together** — same class as two conveyor

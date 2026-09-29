@@ -26,3 +26,4 @@ MonoBehaviour:
   proportionalDebris: 1
   restitution: 0.3333333
   debrisSpeedLimit: 200
+  sliceDestroyedPrisms: 1

@@ -91,7 +91,7 @@ namespace CosmicShore.Gameplay
         public virtual bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into) => false;
 
         // Optional pinned planting spot. Plant() implementations normally disperse the flora
-        // across the cell; a caller that needs it to root at a KNOWN spot (the Lifeform Matrix
+        // across the cell; a caller that needs it to root at a KNOWN spot (the Spawn Matrix
         // toy's spawn-here stations) sets this before Initialize and Plant() honors it.
         Vector3? _plantPositionOverride;
 
@@ -750,7 +750,10 @@ namespace CosmicShore.Gameplay
 
         public override void RemoveHealthBlock(HealthPrism healthPrism, string killername = "")
         {
-            base.RemoveHealthBlock(healthPrism);
+            // Forward the killer: dropping it here made every gun/blast/ram flora kill a
+            // killerless death, which LifeForm.Die never raises OnLifeFormDeath for - so
+            // no mode ever credited one (only jousts, which take a different path).
+            base.RemoveHealthBlock(healthPrism, killername);
             isGrowing = false;
         }
 

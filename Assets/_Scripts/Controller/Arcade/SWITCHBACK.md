@@ -42,7 +42,7 @@ that its 110°/s turn rate could not otherwise make, **boost** down the straight
   `GameDataSO.SwitchTargetCount`
 - **Players**: **2–4** with AI backfill. `MinDomainsAllowed = 2` (a race needs a rival)
 - **Vessels**: **Dolphin only** — the single `Vessels` entry drives all three platform clamps
-- **Comeback**: `ScoreDifferenceSource.SwitchesThreaded`, rate **0.5** (a quarter-of-course
+- **Comeback**: the rule's `DomainValue` (`SwitchesThreaded`), rate **0.5** (a quarter-of-course
   deficit ≈ 2.5 element levels)
 - **Config**: `_SO_Assets/Games/ArcadeGameSwitchback.asset`, registered in
   `GameLists/OrganicRematchGames.asset` and `ProgressionConfig.alwaysUnlockedModes`
@@ -567,11 +567,12 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   `GenerateAndBroadcastCourse` adds `ResolveCellCentre()` to every gate before broadcasting, so
   world positions travel and moving or nesting the Cell keeps the course on the arena. The
   fairness argument (gate 1 on the equatorial ring's pole) depends on that offset.
-- **Three sibling scenes carry the same stale-donor comeback source this mode's clone did**
-  (`MinigameDogFight`, `MinigameBends` and `MinigameWildlifeLiberation` all serialize
-  `differenceSource: 3` while `DefaultSourceFor` names `CombatPoints`/`LifeformsKilled`).
-  `ElementalComebackSystem.EnsureExists` respects a scene-authored instance as-is, so those three
-  read a stat their pilots do not move. Not fixed here — it is not this branch's diff — but it is
+- **~~Three sibling scenes carry the same stale-donor comeback source this mode's clone did~~ — FIXED 2026-09 by
+  retiring the setting**: `ElementalComebackSystem` now reads `ScoringRuleSO.DomainValue`, so no
+  scene can author a comeback stat at all (eight scenes were affected, not three). Historical note follows:
+  (`MinigameDogFight`, `MinigameBends` and `MinigameWildlifeLiberation` all serialized
+  `differenceSource: 3` while `DefaultSourceFor` named `CombatPoints`/`LifeformsKilled`).
+  Not fixed here — it is not this branch's diff — but it is
   the same defect and worth a ticket.
 - **The Skim Race cell's `PhaseThresholds` are count-based** (600/480, 2000/1600) with no volume
   keys, inherited from a mode whose vessel lays a different trail. A Dolphin trail here has not

@@ -35,6 +35,24 @@ namespace CosmicShore.UI
                  "empty (Wildlife Blitz).")]
         [SerializeField] SO_VesselList VesselList;
 
+        [Header("Genre Petal")]
+        [Tooltip("The element petal saying what KIND of game this is - a race is TIME, making " +
+                 "or taking mass is MASS, destroying it is SPACE, working other pilots over is " +
+                 "CHARGE. Card IDENTITY like the vessel icon, so it is drawn for every card " +
+                 "from the moment the grid appears.\n\n" +
+                 "Ships with no sprite and DISABLED: the art and the shape are both resolved at " +
+                 "runtime from the mode itself, and an Image left enabled with no sprite draws " +
+                 "a white quad.")]
+        [SerializeField] Image GenrePetal;
+
+        [Tooltip("The SECOND petal, for a mode that is genuinely two kinds of game at once " +
+                 "(Brood Rush lays claim mass and tears the other side's out, so it is MASS and " +
+                 "SPACE). Sits UNDER the first rather than beside it, so a single-genre card - " +
+                 "which is nearly all of them - draws in exactly the place it always did.\n\n" +
+                 "Ships with no sprite and DISABLED, and stays that way on every card whose " +
+                 "genre is one element.")]
+        [SerializeField] Image GenrePetalSecondary;
+
         [Header("Party Picks")]
         [Tooltip("Container the interested party members' avatars are laid out in. The FIRST " +
                  "AvatarIcon under it is the authored template every extra chip is cloned from, " +
@@ -127,6 +145,7 @@ namespace CosmicShore.UI
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
 
             UpdateVesselIcon(game);
+            UpdateGenrePetal(game);
         }
 
         /// <summary>
@@ -183,6 +202,81 @@ namespace CosmicShore.UI
 
             return null;
         }
+
+        /// <summary>
+        /// Draws the element petal (or two) that say what KIND of game this is. Unconditional
+        /// and derived end to end, so a card can never advertise a genre its own end condition
+        /// contradicts: <see cref="ModeGenre"/> answers which of the four kinds a mode is, and
+        /// the fleet's own <see cref="ElementalBarsConfigSO"/> supplies the petal - the same art
+        /// the vessel HUD flowers and the ability lockup's upgrade badge draw, so the card and
+        /// the HUD cannot drift apart on what a Mass petal looks like.
+        ///
+        /// <para>Tinted the lockup's level-5 WHITE rather than a per-element colour, because the
+        /// four petals are already told apart by SHAPE - that is what the flower is built on -
+        /// and a second channel saying the same thing would only compete with the card art.</para>
+        ///
+        /// <para>Draws NOTHING when the mode has no genre (Maelstrom, which draws OTHER modes and
+        /// so has none of its own). Blank is the honest state here, exactly as it is for a vessel
+        /// with no icon - and the SECOND petal is blank on every card but the two-genre ones, so
+        /// a card that draws one petal is saying that is the whole answer.</para>
+        /// </summary>
+        void UpdateGenrePetal(SO_ArcadeGame game)
+        {
+            ResolveGenrePetals(game.Mode, out var primary, out var secondary, out var tint);
+            ApplyPetal(GenrePetal, primary, tint);
+            ApplyPetal(GenrePetalSecondary, secondary, tint);
+        }
+
+        static void ApplyPetal(Image image, Sprite sprite, Color tint)
+        {
+            if (!image) return;
+
+            image.sprite = sprite;
+            if (sprite) image.color = tint;
+            image.enabled = sprite != null;
+        }
+
+        /// <summary>
+        /// The petal art for a mode's genre - one sprite, two, or none.
+        ///
+        /// <para>The metric the fallback reads comes from <see cref="ModePreviewLibrarySO"/>,
+        /// which is where the launch panel's objective box already reads it: a mode's
+        /// <c>ScoringRuleSO</c> lives in its own scene, so the preview definition is the
+        /// platform's only pre-scene answer to "what is this mode scored on". Reading it here
+        /// rather than adding a second table is what keeps the card, the objective box and the
+        /// goal row saying one thing about the modes whose genre IS their metric.</para>
+        ///
+        /// <para>A mode with an explicit row in <see cref="ModeGenre"/> needs no definition at
+        /// all, so a missing one is passed along as a NULL metric rather than short-circuiting -
+        /// and null rather than the enum's zero, because <c>ScoringMetric.Crystals</c> is a real
+        /// answer several cards give.</para>
+        /// </summary>
+        void ResolveGenrePetals(GameModes mode, out Sprite primary, out Sprite secondary,
+                                out Color tint)
+        {
+            primary = null;
+            secondary = null;
+            tint = Color.white;
+
+            if (!_previews) _previews = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+            var definition = _previews ? _previews.Resolve(mode) : null;
+            ScoringMetric? metric = definition ? definition.ObjectiveMetric : (ScoringMetric?)null;
+
+            if (!ModeGenre.TryElementsFor(mode, metric, out var first, out var second)) return;
+
+            if (!_bars) _bars = Resources.Load<ElementalBarsConfigSO>(ElementalBarsConfigSO.ResourcePath);
+            if (!_bars) return;
+
+            tint = _bars.whiteColor;
+            primary = _bars.GetPetalSprite(first);
+            if (second != Element.None) secondary = _bars.GetPetalSprite(second);
+        }
+
+        // Both assets are shipped singletons and the grid rebuilds every card on every refresh
+        // (a favourite toggle repopulates the whole list), so the two lookups are cached per
+        // session rather than per card - the shape ObjectiveIconSetSO.Load already uses.
+        static ModePreviewLibrarySO _previews;
+        static ElementalBarsConfigSO _bars;
 
         /// <summary>
         /// Shows which party members are asking to play this card. Called by the grid whenever

@@ -12,3 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c23dead630c14d6bbcadc4b9a71b8598, type: 3}
   m_Name: SkimmerStealPrismEffect
   m_EditorClassIdentifier: 
+  superStealEnabled: 1
+  superStealElement: 3

@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: UrchinSpikeProjectileImpactContainer
   m_EditorClassIdentifier:
   projectileShipEffects:
-  - {fileID: 11400000, guid: 93ad32717df76b3be50c4e58a1f52ec2, type: 2}
   - {fileID: 11400000, guid: 0f4add668056fcae151af68ec706eb78, type: 2}
   projectilePrismEffects:
   - {fileID: 11400000, guid: ed430dccb1eaefa4a4cbbe5f2a0a88c5, type: 2}

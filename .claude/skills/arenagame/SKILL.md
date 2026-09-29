@@ -116,6 +116,7 @@ Three things the Rhino cost Broadside, each of which a future model will meet ag
 | Decision | The rule |
 |---|---|
 | **Vessels** | Every hull in the list must be able to finish AND win in a human's hands; every hull's kit has been read (§0). Grizzly, Termite, Falcon and Shrike are not shipped playable kits - `arcade_mode_lib.VESSELS` is the roster. **The list IS the gate**: the carousel offers every hull on it and never consults the Hangar's purchase lock (`SO_Vessel.IsLocked` - six of eight class assets author it, and honouring it left two hulls in every arena carousel; `Docs/HomeHub/ARCHITECTURE.md` §3.3). Every listed hull needs `IconActive` + `IconInactive` that are ITS OWN art AND that RESOLVE (`ArenaRosterTests` compares file bytes - the Scarab shipped wearing the Sparrow's bake; `check_vessel_class_icons.py` resolves the guids - the Urchin shipped pointing at deleted art, which draws as a white square). |
+| **Seating** | `ArenaRules: 1` on the card (`ArenaSeatingTests` fails an arena card without it and an arcade card with it). It makes every hull exclusive - a lobby claim per human (`Player.NetArenaHullClaim`, server-arbitrated), an AI draw from the hulls left, a spawn-time backstop - lets a human swap into an AI teammate's hull mid-match (D-pad left/right, keyboard 1/2, `PilotSwap`), and caps seats at `SO_ArcadeGame.MaxSeats` = `min(MaxPlayersAllowed, distinct hulls)`. **So a card seats no more pilots than it lists hulls**: arena cards go to `MaxPlayersAllowed: 6`, and a six-seat arena needs six hulls on its card (Astro League lists three, so it seats three). A scene whose spawner uses authored points needs at least `MaxSeats` of them or `arrangeSpawnPointsAroundCell` - `GetRandomSpawnPose` refills an exhausted list, so extra pilots spawn inside others. `Docs/HomeHub/ARCHITECTURE.md` §3.9. |
 | **Roster** | `g.register_arena_card(card)` - master + `ArenaGames`, never `ArcadeGames`. `check_gamelist_scenes.py` reports the arena grid's coverage. |
 | **Domains** | 2..3 unless the mode has a fixed team shape; a fixed shape (`MaxDomainsAllowed = 2`) excludes the card from the Maelstrom. |
 | **AI templates** | `vesselClass: 0` (Random) in the scene's `aiInitializeDatas`, so `PickAIVesselType` draws the bot's hull from the card and a bot grid is a mixed grid too. **That was true of the templates and FALSE of the draw until 2026-09**: `PickAIVesselType` read the roster through `gameList`, a per-scene `[SerializeField]` that Regatta, Broadside and Dog Fight all leave null, so it fell through to a hardcoded Sparrow and both arena grids were eight identical hulls. It now reads `GameDataSO.AllowedVesselClasses` (published by `SyncFromArcadeGame`, deliberately not cleared by `ResetRuntimeData()`), with unbuilt hulls skipped rather than drawn-and-failed. *A per-scene serialized reference is a per-scene chance to forget - when the fact is already published on a shared runtime object, read it there.* |
@@ -123,6 +124,7 @@ Three things the Rhino cost Broadside, each of which a future model will meet ag
 | **Preview** | `Vessel: -1` - the carousel's pick flies the preview. |
 | **Toasts** | The tutorial is "what does MY hull do here"; an idle hint per verb family, not per hull. |
 | **The doc** | The fleet table (§1) for THIS arena - what each hull does with the structure, what it costs each hull - and the balance table with the residual. |
+| **Card background** | Run `/cardart`: an arena card gets its backdrop rendered from its own intensity-2 arena like an arcade card does. Stage the MIXED grid (several hulls' darts, several verbs) - it is what tells an arena card from the single-hull card that shares its arena (Broadside vs Dog Fight/Salvo in the Boneyard). |
 
 ## 4. The C# an arena card may add
 
@@ -148,6 +150,7 @@ python3 Tools/Build/render_scarab_card_icons.py --check  # the one generated car
 python3 Tools/Build/check_vessel_class_icons.py       # every hull's IconActive/IconInactive resolves (a dangling sprite is a white square)
 python3 Tools/Build/author_arena_launch_panel_layout.py --check  # the SELECT VESSEL button is in the carousel, not on Play
 bash Tools/Build/regatta_course_harness/run.sh        # after ANY edit to a pure course file
+python3 Tools/Build/render_card_backgrounds.py --check   # after ANY arena/course edit: the card must still be that arena
 ```
 
 The editor still owns: whether a hull actually latches / skims / clears the mouth at the speed
@@ -165,3 +168,10 @@ fire petals on a handicapped hull, white on a helped one), and everything about 
 - Point a hull's `IconActive` at a codex bake without looking at it: a harvester that reads the
   prefab ASSET photographs what the asset shows, and a hull that builds or hides itself at Awake
   looks like a different ship there (`IProceduralHullSource` is how the Scarab tells it otherwise).
+- Assume every hull on the card carries the same optional components. Arena seating hands LIVE
+  hulls between pilots (`PilotSwap` → `VesselController.ChangePlayer`), which runs a hand-over
+  path against every hull on the card rather than the one a vessel spawned as — and the Urchin
+  ships with **no HUD controller** (`vesselHUDController: {fileID: 0}`). An unguarded dereference
+  there threw halfway through a swap and left the human's hull reading the AI's stick. A
+  hull-handover path must tolerate every optional component the hull's own `Initialize` tolerates
+  (`Docs/HomeHub/ARCHITECTURE.md` §3.9, third playtest).

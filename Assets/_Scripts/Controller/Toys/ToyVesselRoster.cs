@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
     /// The one place a toy answers <b>"which hulls do I offer, and what does one look like?"</b>
     ///
     /// Two toys ask it and they ask it for opposite reasons - the <see cref="VesselChangerToy"/>
-    /// offers hulls to BECOME (so it excludes the one you are flying), the Lifeform Matrix's
+    /// offers hulls to BECOME (so it excludes the one you are flying), the Spawn Matrix's
     /// VESSELS branch offers hulls to RELEASE as AI companions (so it excludes nothing). The
     /// roster, the meta-value filtering, the de-duplication and the mini-hull build are identical
     /// either way, and a second copy of the curated list is a second list to forget to update
@@ -18,14 +18,30 @@ namespace CosmicShore.Gameplay
     public static class ToyVesselRoster
     {
         /// <summary>
-        /// Curated default so a matrix isn't all eleven ships (four of which are unimplemented
-        /// planned classes). Override per-asset wherever a toy authors its own list.
+        /// Curated default so a matrix isn't every ship in the enum (four of which are
+        /// unimplemented planned classes). Override per-asset wherever a toy authors its own list.
+        ///
+        /// <para><b>A SHIPPING VESSEL BELONGS HERE, and this is a CODE list — so it is the one
+        /// registration a vessel's setup tool cannot perform for you.</b> Every other place a new
+        /// hull has to be named is an asset (<c>Vessel Prefab Container</c>,
+        /// <c>DefaultNetworkPrefabs</c>, the class lists), so the editor tool that authors the
+        /// vessel writes them and there is nothing to remember; this array is not, so it is
+        /// exactly the one that gets missed. A hull the game can SPAWN but the changer does not
+        /// OFFER is unreachable from freestyle, and nothing says so — the matrix simply has one
+        /// fewer station than the fleet has ships. <c>ToyVesselRosterCoverageTests</c> is the
+        /// gate: a vessel registered in the prefab container and absent from here fails the
+        /// build.</para>
+        ///
+        /// <para>Listing a hull before its prefab is authored is safe and deliberate —
+        /// <see cref="ResolveOffered"/> drops any class the prefab container cannot answer for,
+        /// so a declared-but-unbuilt vessel is simply not offered yet rather than being offered
+        /// as a swap that fails.</para>
         /// </summary>
         public static readonly VesselClassType[] Default =
         {
             VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Rhino,
             VesselClassType.Squirrel, VesselClassType.Serpent, VesselClassType.Sparrow,
-            VesselClassType.Urchin, VesselClassType.Scarab,
+            VesselClassType.Urchin, VesselClassType.Scarab, VesselClassType.Butterfly,
         };
 
         /// <summary>
@@ -49,6 +65,63 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// <see cref="Resolve"/>, then minus every class the <paramref name="context"/>'s prefab
+        /// container has no prefab for. <b>This is what a toy that ACTS on a hull must call.</b>
+        ///
+        /// <para>It splits a declaration from an availability: <see cref="Default"/> says which
+        /// hulls the fleet means to offer, and the prefab container says which ones exist on this
+        /// build. Without the split, adding a vessel to the roster in the same branch that
+        /// designs it — which is the only way the roster stays complete, since the prefab is
+        /// authored later in the editor — would put a station in the matrix whose swap resolves
+        /// to nothing (<c>"No Vessel Prefab found"</c>, three LogErrors and no vessel).</para>
+        /// </summary>
+        public static void ResolveOffered(ToyContext context, VesselClassType[] authored,
+            List<VesselClassType> into, VesselClassType? exclude = null)
+        {
+            Resolve(authored, into, exclude);
+
+            var container = context?.VesselPrefabContainer;
+            if (!container) return;
+
+            for (int i = into.Count - 1; i >= 0; i--)
+            {
+                if (container.TryGetShipPrefab(into[i], out _, reportMissing: false)) continue;
+                WarnMissingPrefab(into[i]);
+                into.RemoveAt(i);
+            }
+        }
+
+        /// <summary>
+        /// Say — once per class, per session — that a rostered hull was dropped for want of a
+        /// prefab, and name the fix.
+        ///
+        /// <para><b>This warning is the whole reason the filter is safe.</b> Dropping the hull
+        /// silently would reproduce the exact defect <see cref="Default"/> exists to prevent: a
+        /// matrix one ship shorter than the fleet, with no error, no warning and no empty
+        /// station, which is indistinguishable from a matrix that is correct. It cost a playtest
+        /// to learn that the first time — <b>a filter that hides a fault is the fault wearing a
+        /// deliberate face</b>, and the only thing separating "not authored yet" from "quietly
+        /// broken" is that one of them says so.</para>
+        ///
+        /// <para>Unconditional rather than a <c>CSLogChannel</c>: a rostered hull with no prefab
+        /// is a real fault every time — either its setup tool has not been run on this machine,
+        /// or the prefab container lost an entry — and both are things somebody has to act on.
+        /// Keyed so a matrix that rebuilds on every domain change cannot spam.</para>
+        /// </summary>
+        static void WarnMissingPrefab(VesselClassType vessel)
+        {
+            if (!_warnedMissingPrefab.Add(vessel)) return;
+            CSDebug.LogWarning(
+                $"[ToyVesselRoster] {vessel} is on the toybox roster but the Vessel Prefab " +
+                "Container has no prefab for it, so no station is offered for it in the Vessel " +
+                "Changer or the Spawn Matrix hangar. If this vessel is newly designed, run " +
+                $"FrogletTools > Vessels > Create {vessel} Vessel (it authors the prefab and " +
+                "registers it); otherwise the container has lost its entry.");
+        }
+
+        static readonly HashSet<VesselClassType> _warnedMissingPrefab = new();
+
+        /// <summary>
         /// A display-only mini hull for <paramref name="vessel"/>, built straight from the ship
         /// PREFAB ASSET (never instantiated, so no NetworkObject / VesselStatus / controller ever
         /// runs). Returns false when the context has no prefab registry, the class has no prefab,
@@ -59,7 +132,7 @@ namespace CosmicShore.Gameplay
         {
             model = null;
             var container = context?.VesselPrefabContainer;
-            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab)) return false;
+            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab, reportMissing: false)) return false;
             return VesselModelBuilder.TryBuild(prefab, radius, previewColor, out model);
         }
 
@@ -69,7 +142,7 @@ namespace CosmicShore.Gameplay
         {
             model = null;
             var container = context?.VesselPrefabContainer;
-            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab)) return false;
+            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab, reportMissing: false)) return false;
             return VesselModelBuilder.TryBuild(prefab, radius, shared, out model);
         }
 
@@ -95,7 +168,7 @@ namespace CosmicShore.Gameplay
         {
             model = null;
             var container = context?.VesselPrefabContainer;
-            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab)) return false;
+            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab, reportMissing: false)) return false;
             if (!VesselModelBuilder.TryBuildLive(prefab, radius, DomainMaterial(context), out model))
                 return false;
 
@@ -106,7 +179,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Re-apply the local player's domain to an already-built mini hull, whichever kind it is.
         ///
-        /// <para>One list can hold both kinds (the Lifeform Matrix's <c>_hullBodies</c> holds its
+        /// <para>One list can hold both kinds (the Spawn Matrix's <c>_hullBodies</c> holds its
         /// kingdom glyph and its hangar stations), and they must be re-tinted in OPPOSITE ways: a
         /// flat model owns a preview material, so it is repainted; a live model draws with shared
         /// PROJECT assets, so repainting would recolour every ship in the game permanently. Hence

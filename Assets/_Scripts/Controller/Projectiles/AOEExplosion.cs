@@ -164,8 +164,9 @@ namespace CosmicShore.Gameplay
         /// trigger collider so PhysX never generates the thousands of trigger pairs
         /// that OnTriggerEnter would discard (they're handled by ProcessBatchFrame).
         /// Only TrailBlocks is excluded - vessel pairs must stay live because
-        /// explosion→vessel effects (e.g. VesselChangeSpeedByExplosionEffect) are
-        /// resolved through this collider's OnTriggerEnter, not the batch path.
+        /// explosion→vessel effects (e.g. the Dolphin cone's and the Scarab plate's
+        /// combat-hit report + elemental drain) are resolved through this collider's
+        /// OnTriggerEnter, not the batch path.
         /// </summary>
         protected void ApplyPrismExclusion()
         {

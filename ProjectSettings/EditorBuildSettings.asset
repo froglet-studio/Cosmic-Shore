@@ -17,12 +17,6 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Scenes/Tools/MattsRecording Studio.unity
     guid: 24dd4d7af8c78a14199bc0ab37b17d37
-  - enabled: 1
-    path: Assets/_Scenes/Singleplayer Scenes/MinigameWildlifeBlitz.unity
-    guid: d5418cffe1da8b840bcc2e1a92a7b1db
-  - enabled: 1
-    path: Assets/_Scenes/Singleplayer Scenes/MinigameDuelForTheCell.unity
-    guid: a0793cb7cf4069b44ba82acfddb04f11
   - enabled: 0
     path: Assets/_Scenes/Tools/PhotoBooth.unity
     guid: 88bd9d59331396d44be56d5b782632ee
@@ -110,6 +104,18 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSkein.unity
     guid: 7a176232b6f8f7a3277106d997031bdd
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity
+    guid: 44434b4493159039a94408c64fd2bf38
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameDustup.unity
+    guid: e22eb90422d763de08d219612851e916
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameTapestry.unity
+    guid: 66ee08b9dff6ca4fd973337baf4857af
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameSirocco.unity
+    guid: f3efa5204ad2461ebf22bc57e2170a5a
   m_configObjects:
     com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: d81858d78bc481248ad644af4fc19343,
       type: 2}

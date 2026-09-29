@@ -185,7 +185,7 @@ namespace CosmicShore.Gameplay
             flora.domain = domainOverride ?? PickRandomDomain(excludedDomain);
 
             // A caller-specified position PINS the planting spot - Plant() implementations
-            // honor it instead of dispersing the flora across the cell (the Lifeform Matrix
+            // honor it instead of dispersing the flora across the cell (the Spawn Matrix
             // toy roots the spawn where the player triggered it).
             // An authored planting site also carries the ground's normal, so a plant rooted in a
             // garden bed grows away from the bed instead of toward the cell crystal.
@@ -341,7 +341,7 @@ namespace CosmicShore.Gameplay
             //
             // These used to live in SpawnFaunaBanded, one level up, with a comment asking the
             // next author not to add a spawn site that skipped it. Three sites did anyway - the
-            // arcade mode preview, the Lifeform Matrix toy and the Wanderway conveyor - because
+            // arcade mode preview, the Spawn Matrix toy and the Wanderway conveyor - because
             // they legitimately need placement this method already does and had no reason to
             // suspect a seam lived in a sibling. That is the platform's own rule arriving from a
             // new direction: A RULE ENFORCED AT ONE PRODUCER CAN ONLY EVER SEE THAT PRODUCER.

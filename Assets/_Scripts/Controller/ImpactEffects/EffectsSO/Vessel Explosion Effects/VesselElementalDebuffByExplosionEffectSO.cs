@@ -55,7 +55,11 @@ namespace CosmicShore.Gameplay
                  "asset starts on the class this script already covers.")]
         [SerializeField] private float debuffMagnitude = -0.12f;
 
-        [Tooltip("Seconds over which the temporary debuff decays back to baseline.")]
+        [Tooltip("RETIRED as a decay time. A blast's bite is now a PERMANENT transfer - the " +
+                 "petals are knocked out of the victim as collectable crystals - so there is " +
+                 "nothing left to decay. Kept because author_combat_debuff_magnitudes.py prices " +
+                 "the sustained pressure a saturating attacker can hold a victim at, and that " +
+                 "arithmetic still needs the window this number used to define.")]
         [SerializeField] private float debuffDuration = 4f;
 
         [Tooltip("Which elements the blast drains. The initializer is ALL FOUR — every asset " +
@@ -91,11 +95,27 @@ namespace CosmicShore.Gameplay
                 return;
             _lastEffectTime[rs] = now;
 
-            // Classed Explosion, NOT DangerPrism: a blast is a weapon another pilot aimed, and a
-            // ward earned against the arena must not cancel one (ElementalDebuffSources).
             if (elements == null) return;
+
+            // A BLAST IS A RANGED VERB, so its petals are EJECTED rather than stolen: they are
+            // knocked out of the victim's hull as free-for-all crystals and the pilot who fired
+            // has to go and collect what they shook loose. That is the whole difference between
+            // this and a joust, and it is why a Dolphin cone is an area DENIAL rather than an
+            // area theft.
+            //
+            // The blast's own impact vector throws them - radial for a sphere, the sweep axis for
+            // a plate - so a petal leaves the way the blast was travelling. The same accessor, for
+            // the same reason, that the crystal->ball forge had to adopt.
+            var victim = impactor.Vessel.VesselStatus;
+            Vector3 blastVelocity = impactee ? impactee.BlastImpactVector(impactor.transform.position)
+                                             : Vector3.zero;
+
+            // Classed Explosion, NOT DangerPrism: a blast is a weapon another pilot aimed, and a
+            // ward earned against the arena must not cancel one (ElementalDebuffSources). The
+            // magnitude is authored NEGATIVE (it reads as a debuff); a transfer takes a positive
+            // amount, because how much moves has no sign.
             for (int i = 0; i < elements.Length; i++)
-                rs.ApplyElementalEffect(elements[i], debuffMagnitude, debuffDuration,
+                ElementalTransfer.Eject(victim, elements[i], -debuffMagnitude, blastVelocity,
                                         ElementalDebuffSources.Explosion);
         }
     }

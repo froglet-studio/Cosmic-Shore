@@ -62,7 +62,7 @@ sawn station counts as much as a shot one.
   `BestByDomain`. `BreakwaterScoringRule.asset` will be a **second asset** on the existing
   `GateRaceScoringRuleSO` (was `SwitchbackScoringRuleSO`) — zero new scoring code.
 - **Objective arrow**: `RaceGateObjectiveProvider` (shared), wired in `MiniGameHUD.ResolveObjectiveProvider`.
-- **Comeback**: `ScoreDifferenceSource.SwitchesThreaded` (**8**, reused), rate **0.35** in the model
+- **Comeback**: the rule's `DomainValue` (`SwitchesThreaded`), rate **0.35** in the model
   (a quarter-of-target deficit = 3.5 stations → **2.45** element levels).
 - **Vessels**: **Sparrow only.** **Players**: 2–4 with AI backfill (intended; the card that
   declares it is unwritten).
@@ -191,7 +191,7 @@ verbatim:
 | `Player.ReportSwitchThreaded_ServerRpc(int)` | the client→server half of owner-detects/server-records |
 | `GameDataSO.SwitchTargetCount` | the goal row's target |
 | `ScoringMetrics.BestByDomain` + `ScoringRuleSO.DomainValue` | the lead-runner fold, on the one seam all five domain readers go through |
-| `ScoreDifferenceSource.SwitchesThreaded = 8` | the comeback source (one added `case` in `DefaultSourceFor`) |
+| (comeback) | reads the rule's `DomainValue` — nothing to add (`ScoreDifferenceSource` retired 2026-09) |
 | `ObjectiveIconSet.asset` metric 9 | icon `eae5dbed618cd04cc66a6089b7c2d10d`, label **"Thread switches"** — already present, **no asset edit** |
 | `ModeControlsLibrary.asset` metric 9 | the launch-panel objective icon — already present, **no asset edit** |
 | `GateRaceScoringRuleSO` | a **second asset**, not a second script |
@@ -1409,9 +1409,8 @@ Two further traps it respects, both of which have bitten this repo:
 
 And two things the SCENE has to get right, both verified in the authored file:
 
-- **`differenceSource: 8`** (`SwitchesThreaded`). `ElementalComebackSystem.EnsureExists` **respects
-  a scene-authored instance**, so a stale donor value is not corrected at runtime — which is why
-  three sibling scenes currently read a stat their pilots do not move.
+- ~~**`differenceSource: 8`**~~ — retired 2026-09: the comeback reads `ScoringRuleSO.DomainValue`,
+  so there is no scene-authored comeback source left to get right.
 - **`spawnFormation: 1`** (`EquatorialRing`) with **`spawnRingRadiusFloor: 480`**, the model's own
   `SPAWN_RING_RADIUS`. Without both, the fairness argument above is void: station 1 sits on the
   ring's pole, and under `Symmetric` (0) there is no point equidistant from every spawn.
@@ -1427,7 +1426,7 @@ And two things the SCENE has to get right, both verified in the authored file:
 | `SwitchbackGateRing` → `RaceGateRing` | `git mv` into `Arcade/Racing/` (guid unchanged), primitive `Build` signature |
 | `SwitchbackController` | re-pointed at `RaceGateRing`, call site passes position/axis/radius |
 | `author_switchback_assets.py` | `RaceGateRing`'s path + the `Racing.meta` folder guid, seeded from the **old** name so the shipped `.cs.meta` guid is preserved |
-| `ElementalComebackSystem` | `case GameModes.Breakwater:` falls through to `ScoreDifferenceSource.SwitchesThreaded` |
+| `ElementalComebackSystem` | reads `BreakwaterScoringRule`'s `DomainValue` (the lead-runner fold) |
 | `MiniGameHUD` | `GameModes.Breakwater` → `RaceGateObjectiveProvider` (shared) |
 | `EndConditionOverridesSO` | `breakwaterStationTarget` live/build fields, `GetBreakwaterStationTarget()`, `DefaultBreakwaterStationTarget = 14`, and the four sync/compare paths |
 | `EndConditionOverridesWindow` | the field, the resolved-value row, the build-snapshot row, the help text |

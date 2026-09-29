@@ -797,7 +797,7 @@ namespace CosmicShore.Gameplay
             // the direction anyone coming home is arriving from.
             var placement = new ToyPlacement(at, at + heading, body, body * 2.2f);
             var go = ToyFactory.CreateRoot("Arkway_Entrance", transform, placement,
-                _cfg.ReturnStationColor, "DISEMBARK\n<size=60%>fly through to head home</size>");
+                _cfg.ReturnStationColor);
 
             _entrance = go.AddComponent<WanderwayReturnToy>();
             _entrance.Configure(() => End(returnToCell: true, "the player flew the entrance station"));

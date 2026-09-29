@@ -219,7 +219,7 @@ correlation across two payloads.
 ### 3.2 `HANGAR_DATA` — hangar ⊕ vessel stats, merged
 
 **Tier** PROGRESSION (`Unlocked`) + PREFERENCE (`SelectedVessel`) + TELEMETRY (rest) · **Authority** CLIENT · **Privacy** P0
-**Writers** `VesselUnlockSystem` (unlock), `MenuVesselSelectionPanelController` (selection), `UGSStatsManager.ReportVesselTelemetry` (stats) · **Debounce** 2.0s
+**Writers** `VesselUnlockSystem` (unlock), `VesselChangerToy.SelectVessel` (selection), `UGSStatsManager.ReportVesselTelemetry` (stats) · **Debounce** 2.0s
 
 ```json
 {
@@ -262,6 +262,11 @@ correlation across two payloads.
 - **`SelectedVessel` gets a writer.** It had **none** — the only reference outside the model was a
   read in `LogControlWindow.cs:1130`, which is why the dump showed `""`. Now written on vessel-swap
   confirm (`UGSStatsManager.ReportVesselSelected`), so it is genuinely "last selected by the user"
+  — **and only actually written since 2026-09-23**: the call was originally placed in the freestyle
+  vessel-selection panel, which was measured inactive in the scene with no caller for its `Open()`,
+  so this field had no live writer for the whole of that period. It now rides
+  `VesselChangerToy.SelectVessel`, the one place a player deliberately picks a hull. *A writer added
+  to an unreachable component is not a writer* — check the call site is on a live path
   — **plus a default**, because a deliberate pick is the only writer and a player who never opens
   the vessel panel would still read `null`. `UGSDataService.SyncHangarToVessels` falls it back to the
   starter vessel (below) on every load, and also repairs it if it names a vessel the player does not

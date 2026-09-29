@@ -60,15 +60,23 @@ namespace CosmicShore.Editor
                 new Color(0.55f, 0.75f, 1.00f), 300f);
             // The cellular Wanderway: cells drawn from the host cell's own rotation, so like the
             // cell selector it needs no cell list - only the Ark's hull prism.
-            // 210, not 180: the hand-authored Toy_LifeformMatrix already sits at 180, and two
+            // 210, not 180: the hand-authored Toy_SpawnMatrix already sits at 180, and two
             // toys on one angle stack at the same point of the membrane ring.
             var arkway = LoadOrCreateToy<ArkwayToyDefinitionSO>(
                 "Toy_Arkway", "arkway", "Arkway",
                 "Fly through to escort an Ark on a voyage through the cells.",
                 new Color(1.00f, 0.55f, 0.30f), 210f, AssignArkwayContent);
 
+            // 150: between the vessel changer (120) and the hand-authored Spawn Matrix (180),
+            // so the three toys that change YOUR vessel sit together on the ring.
+            var elementCharger = LoadOrCreateToy<ElementChargerToyDefinitionSO>(
+                "Toy_ElementCharger", "element_charger", "Element Charger",
+                "Fly through to charge your vessel's elements.",
+                new Color(0.90f, 0.95f, 1.00f), 150f);
+
             var toybox = LoadOrCreateToybox();
-            RegisterToys(toybox, new ToyDefinitionSO[] { painting, vessel, domain, conveyor, cellSelector, arkway });
+            RegisterToys(toybox, new ToyDefinitionSO[]
+                { painting, vessel, domain, conveyor, cellSelector, arkway, elementCharger });
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -76,8 +84,8 @@ namespace CosmicShore.Editor
             bool wiredScene = AddControllerToMenuScene(toybox);
 
             EditorUtility.DisplayDialog("Setup Freestyle Toybox",
-                "Toybox ready with 6 toys (Connect the Dots, Vessel Changer, Domain Changer, Wanderway, " +
-                "Cell Selector, Arkway).\n\n" +
+                "Toybox ready with 7 toys (Connect the Dots, Vessel Changer, Domain Changer, Wanderway, " +
+                "Cell Selector, Arkway, Element Charger).\n\n" +
                 $"• Toy assets:  {ToysFolder}/\n" +
                 $"• Paintings:   {PaintingsFolder}/ (16 masterpieces: Star → Taj Mahal → Torus Knot, " +
                 "Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix, Almighty " +
@@ -86,12 +94,13 @@ namespace CosmicShore.Editor
                 (wiredScene
                     ? "• ToyboxController added to Menu_Main and saved.\n"
                     : "• Could not auto-add the ToyboxController - add it to the Menu_Main 'Game' object manually.\n") +
-                "\nAll six toys work as-is. The vessel changer shows mini ship models; the domain " +
+                "\nAll seven toys work as-is. The vessel changer shows mini ship models; the domain " +
                 "changer shows the two colours you're not; the painting toy spawns one station per " +
                 "painting (multi-stroke, multi-domain connect-the-dots with start gates that recolour " +
                 "your trail); the Wanderway conveyor streams shuffled microscenes ahead of your flight " +
                 "path; the Cell Selector blooms a matrix of mini-cells that swap (or reset) the world " +
-                "you fly in; the Arkway opens a corridor of whole cells and an Ark that sails them.\n\n" +
+                "you fly in; the Arkway opens a corridor of whole cells and an Ark that sails them; the " +
+                "Element Charger opens a row of four element crystals that raise your vessel's levels.\n\n" +
                 "REMINDER: set the Menu_Main Cell's 'Cell Type Choice Options' to EnvironmentFree so " +
                 "freestyle boots empty and the heavy worlds stay opt-in.\n" +
                 "See Docs/ToySystem/ARCHITECTURE.md.",

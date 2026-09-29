@@ -507,7 +507,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The player camera, cached and re-resolved only when the cached one dies (scene loads,
         /// vessel swaps). <see cref="Camera.main"/> tag-searches, so it must not run every tick - the
-        /// same pattern as the toy labels' <c>BillboardLabel</c>.
+        /// same pattern as the painting choice labels' billboard (<see cref="ToyChoiceLabel"/>).
         /// </summary>
         Camera ResolveCamera()
         {

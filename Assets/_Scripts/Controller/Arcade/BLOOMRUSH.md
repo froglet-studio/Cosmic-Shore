@@ -57,7 +57,7 @@ rule — a mode whose objective is a crystal must never override crystal seeking
 
 Comeback: `ElementalComebackSystem` maps Bloomrush to `VolumeDestroyed` — the deficit is read
 in the quantity the mode SCORES (a count deficit against a volume score is uncalibratable; the
-platform's `ScoreDifferenceSource.VolumeDestroyed` exists for exactly this pairing). Card rate
+platform's the rule's `DomainValue` (`VolumeDestroyed`) exists for exactly this pairing). Card rate
 0.00036 in volume units: a quarter of the expected winning volume (300 cactus prisms × 75 =
 22,500 → 5,625) buys ~2 element levels, the Dog Fight curve. The generator asserts that a
 quarter-of-expected deficit buys at least one whole level — re-derive from the first playtest's

@@ -1,5 +1,3 @@
-using System;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -23,7 +21,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float baseScale = 30f;      // energy = 0
         [Tooltip("Blade length at FULL energy.")]
         [SerializeField] private float maxScale  = 120f;     // energy = 1
-        [Tooltip("Legacy prism-growth cap, kept only so ApplyMaxSizeDebuff keeps its historical meaning; the driver no longer reads it.")]
+        [Tooltip("Legacy prism-growth cap. Nothing reads PrismMaxScale since the max-size debuff was retired; kept as serialized data rather than dropped in a removal commit.")]
         [SerializeField] private float prismMaxScale = 100f;
 
         [Header("Length Smoothing (world units/sec)")]
@@ -121,21 +119,40 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float burstShakeMaxIntensity = 2.5f;
         [SerializeField] private float burstShakeDuration = 0.4f;
 
-        // Runtime-only debuff multiplier for max sizes
-        [NonSerialized] private bool  _isMaxSizeDebuffed;
-        [NonSerialized] private float _maxScaleMultiplier = 1f;
+        [Header("Binding (a NON-energized blade inside super-shielded mass)")]
+        [Tooltip("Rotation (pitch/yaw/roll) rate multiplier while the blade is inside a super-shielded prism it " +
+                 "cannot cut — the armour DRAGS on the sword instead of throwing the ship back. " +
+                 "1 = no drag, 0 = the vessel cannot rotate at all while bound. " +
+                 "Replaces the old recoil (RhinoSkimmerDamagePrismEffectSO.recoilWhenDenied).")]
+        [SerializeField, Range(0f, 1f)] private float bindTurnRateMultiplier = 0.3f;
+        [Tooltip("How fast (multiplier units/sec) the turn rate eases DOWN into the bind. High, so " +
+                 "the drag reads as the blade biting on contact.")]
+        [SerializeField] private float bindEngageRate = 8f;
+        [Tooltip("How fast (multiplier units/sec) the turn rate eases back UP once the blade is free. " +
+                 "Lower than the engage rate so breaking free reads as the armour letting go, not as a snap.")]
+        [SerializeField] private float bindReleaseRate = 4f;
+        [Tooltip("Seconds between re-stamping the deflection jiggle on every bound prism, so it keeps " +
+                 "shuddering for as long as the blade is in it (one jiggle lasts " +
+                 "PrismSuperShieldJiggleConfig.duration and starts at its peak). Keep above that " +
+                 "config's minSecondsBetweenStamps or the stamps are gated away.")]
+        [SerializeField] private float bindJiggleIntervalSeconds = 0.2f;
+        [Tooltip("Impact speed handed to each re-stamped jiggle (world units/sec) — sets how hard the " +
+                 "bound prism shudders against PrismSuperShieldJiggleConfig.referenceImpactSpeed.")]
+        [SerializeField] private float bindJiggleImpactSpeed = 90f;
+        [Tooltip("Seconds between grind pulses of the BIND haptic while bound (local human pilot only). " +
+                 "The entry into the armour is the punish thud; this is the texture after it. Keep at " +
+                 "or above the grind clip's 80 ms length (Docs/HAPTICS.md, the cadence floor).")]
+        [SerializeField] private float bindHapticIntervalSeconds = 0.1f;
+        [Tooltip("Strength (0..1) of each grind pulse, before the player's haptics level.")]
+        [SerializeField, Range(0f, 1f)] private float bindHapticStrength = 0.7f;
 
         // --- Public API ---
 
         public float BaseScale => baseScale;
 
-        public float MaxScale => Mathf.Max(
-            baseScale,
-            maxScale * Mathf.Max(0.01f, _maxScaleMultiplier));
+        public float MaxScale => Mathf.Max(baseScale, maxScale);
 
-        public float PrismMaxScale => Mathf.Max(
-            baseScale,
-            prismMaxScale * Mathf.Max(0.01f, _maxScaleMultiplier));
+        public float PrismMaxScale => Mathf.Max(baseScale, prismMaxScale);
 
         public float PrismGrowSpeed => prismGrowSpeed;
         public float ShrinkSpeed    => shrinkSpeed;
@@ -178,26 +195,20 @@ namespace CosmicShore.Gameplay
         public float BurstShakeMaxIntensity => Mathf.Max(0f, burstShakeMaxIntensity);
         public float BurstShakeDuration     => Mathf.Max(0f, burstShakeDuration);
 
-        /// <summary>
-        /// Temporarily scales the effective max sizes (MaxScale & PrismMaxScale)
-        /// by <paramref name="sizeMultiplier"/> and restores after <paramref name="durationSeconds"/>.
-        /// NOTE: this mutates THIS ScriptableObject; if multiple skimmers share it, they share the debuff too.
-        /// </summary>
-        public async UniTaskVoid ApplyMaxSizeDebuff(float sizeMultiplier, float durationSeconds)
-        {
-            if (_isMaxSizeDebuffed)
-                return;
+        public float BindTurnRateMultiplier    => Mathf.Clamp01(bindTurnRateMultiplier);
+        public float BindEngageRate            => Mathf.Max(0.01f, bindEngageRate);
+        public float BindReleaseRate           => Mathf.Max(0.01f, bindReleaseRate);
+        public float BindJiggleIntervalSeconds => Mathf.Max(0.02f, bindJiggleIntervalSeconds);
+        public float BindJiggleImpactSpeed     => Mathf.Max(0f, bindJiggleImpactSpeed);
+        public float BindHapticIntervalSeconds => Mathf.Max(0.06f, bindHapticIntervalSeconds);
+        public float BindHapticStrength        => Mathf.Clamp01(bindHapticStrength);
 
-            _isMaxSizeDebuffed = true;
-
-            // Store old multiplier in case we want nested debuffs later.
-            float previous = _maxScaleMultiplier;
-            _maxScaleMultiplier = Mathf.Max(0.01f, sizeMultiplier);
-
-            await UniTask.Delay(TimeSpan.FromSeconds(durationSeconds));
-
-            _maxScaleMultiplier = previous;
-            _isMaxSizeDebuffed = false;
-        }
+        // ApplyMaxSizeDebuff is RETIRED (Sep 2026, Docs/ELEMENTAL_ECONOMY.md §9). The Sparrow's
+        // guns called it to shrink a Rhino's blade for 3s, which is taking a pilot's CONTROLS -
+        // the one class of hit they cannot answer with flying. It also mutated THIS asset, and
+        // ONE asset drives every Rhino, so shooting one pilot shrank every Rhino's sword in the
+        // match. What a weapon may take from another pilot is their elemental PETALS.
+        // The `_maxScaleMultiplier` runtime state went with it, so MaxScale / PrismMaxScale are
+        // now the authored values. Do not reintroduce a debuff here.
     }
 }

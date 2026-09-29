@@ -132,7 +132,11 @@ write does not appear in a grep for the read.
 **3.2 Two members can share a name and not a class.** Two `ApplyMaxSizeDebuff` methods existed;
 one wrote a shared ScriptableObject's serialized field and was the documented hazard, the other
 wrote a private runtime field and was the one anything called. Resolve the caller's
-`[SerializeField]` type.
+`[SerializeField]` type. Its sequel is the reason the distinction was worth making rather than
+merging: the surviving twin ALSO mutated a shared asset (one `ShieldSkimmerScaleConfig` drives
+every Rhino), so writing runtime state made it *safer* and not *safe* — it went too, with the
+control-theft tier (`Docs/ELEMENTAL_ECONOMY.md §9`). **"The dangerous one is dead code" is a
+finding about one copy, never a clearance for the other.**
 
 **3.3 "Referenced by nothing" is a statement about what you searched.** A guid sweep cannot see
 `Resources.Load` **by name**, and it cannot see a C# type reference. `TMP Settings.asset`
@@ -180,6 +184,35 @@ the branch had just deleted.
 **3.10 A one-shot migration `assert` above a generator's validation makes `--check` vacuous.**
 Six of eight mode generators were red and nobody was reading them. A spent one-shot must STAND
 DOWN, not abort. And *a `--check` that never reads the disk is not a check.*
+
+**3.11 "Referenced by SOMETHING" is also a statement about what you searched** — the mirror of
+3.3, and the worse half, because it reads as proof rather than as absence. Unity never prunes a
+prefab-instance modification whose property the script no longer declares, so a **retired
+serialized key is indistinguishable from live wiring in the YAML**: the only reference to
+`VesselPrismSpawnerCooldownBySkimmerEffect` anywhere was a `shipSkimmerEffectsSO` /
+`vesselSkimmerEffectsSO` override on `Rhino.prefab`, and all three of `SkimmerImpactor`'s inline
+effect lists are COMMENTED OUT — it reads a container instead. The effect had **never run once**
+and had looked wired for as long as anybody read the prefab. Ask **which CONTAINER holds this**,
+never which prefab mentions it; and when a claim rests on a prefab override, check that the
+target script still declares that field. (CLAUDE.md records the same shape for the stale `Cell`
+overrides 12 scenes accumulated; this is it met from the effect side.)
+
+**3.12 A container emptied to nothing is a real change to state, not a neutral outcome.** Removing
+the last entry from a list is arithmetically the same edit as removing the second-to-last and
+behaviourally is not: `SlowExplosionImpactorDataContainer` held exactly one effect, so unwiring it
+left the Rhino's sword crystal burst, the Rhino's vessel crystal blast and the Squirrel's vessel
+crystal blast with **no vessel-facing effect at all** — three abilities that now do nothing to a
+pilot. Grade it as a real change and name the hole (and its sanctioned filling) rather than
+letting a removal commit bury it. Keep the empty container rather than deleting it: a dangling
+reference on the prefabs that hold it is worse than an empty one.
+
+**3.13 A refactor that cannot change behaviour can still change a GATE's answer.** A grep-backed
+capability check is pinned to the SPELLING it was written against, not to the capability:
+`check_elemental_economy.py` resolved one hull's anti-vessel verb by grepping for
+`ElementalTransfer.Eject`, so tidying that call into the sanctioned
+`ApplyAll(ElementalTransferForm.Eject, …)` made the gate report the hull as unable to affect a
+pilot at all. *Ask which VERB, never which word* — and after a rename or an API tidy, re-run every
+gate that greps, not only the ones that compile.
 
 ---
 

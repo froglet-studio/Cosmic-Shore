@@ -215,8 +215,8 @@ namespace CosmicShore.Utility
         [Tooltip("WORLD scale this variant's heart (its elemental crystal) renders at - sized " +
                  "to suit THIS creature, so a piranha's heart is a piranha's and a shark's is a " +
                  "shark's. 0 = keep the platform default on ElementalCrystalSet.\n\n" +
-                 "This is a GAMEPLAY number as well as a visual one: the collect reward and the " +
-                 "live domain fauna buff both read the heart's world scale, so a bigger " +
+                 "This is a GAMEPLAY number as well as a visual one: the collect reward reads " +
+                 "the heart's world scale, so a bigger " +
                  "creature's heart is worth more to whoever takes it. The whole authored band " +
                  "must therefore stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale - past " +
                  "it two visibly different hearts pay the same. Authored by " +

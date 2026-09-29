@@ -68,6 +68,9 @@ import os
 import sys
 import uuid
 
+# One shared definition of the §4.7 vertex-morph chain this wirer has to look past.
+from prism_vertex_chain import walk_past_morphs
+
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 GRAPHS = [
     "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
@@ -395,8 +398,13 @@ def validate(docs, expect_wired):
     nrm_block = find_block(docs, VERTEX_NORMAL_BLOCK)
     assert nrm_block, "VertexDescription.Normal block missing"
     nrm_src = sources.get((nrm_block["m_ObjectId"], 0))
+    # Docs/PRISM_ANIMATION.md §4.7 splices vertex MORPHS onto the tail of this chain — the
+    # cradle (§4.7.2), the wake (§4.7.3), and whatever comes next. Walk past any of them: the
+    # vertex they hand the block is the one this node produced. Identified STRUCTURALLY by
+    # prism_vertex_chain, never by name, so the next morph costs no edit here.
+    nrm_src = walk_past_morphs(nrm_src, "Normal", sources, idx)
     assert nrm_src == (cf["m_ObjectId"], 7), \
-        "VertexDescription.Normal is not fed by PrismJiggleClock.OutNormal"
+        "VertexDescription.Normal is not fed by PrismJiggleClock.OutNormal (directly, or through the §4.7 vertex morphs)"
     nrm_in = sources.get((cf["m_ObjectId"], 5))
     assert nrm_in is not None, "PrismJiggleClock.Normal is unconnected"
     assert nrm_in[0] != cf["m_ObjectId"], "PrismJiggleClock.Normal is fed by the splice itself"

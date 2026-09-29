@@ -166,7 +166,7 @@ namespace CosmicShore.Gameplay
             float popSpeedLimit = 0f)
         {
             // Cancel any pending timer before applying new state
-            PrismTimerManager.EnsureInstance().CancelTimers(this);
+            PrismTimerManager.EnsureInstance()?.CancelTimers(this);
 
             // Written unconditionally: a re-shield by a different force must not pop on
             // the previous force's magnitude.
@@ -177,13 +177,13 @@ namespace CosmicShore.Gameplay
 
             if (duration.HasValue)
             {
-                PrismTimerManager.EnsureInstance().ScheduleShieldDeactivation(this, duration.Value);
+                PrismTimerManager.EnsureInstance()?.ScheduleShieldDeactivation(this, duration.Value);
             }
         }
 
         public void ActivateSuperShield()
         {
-            PrismTimerManager.EnsureInstance().CancelTimers(this);
+            PrismTimerManager.EnsureInstance()?.CancelTimers(this);
 
             prism.prismProperties.IsSuperShielded = true;
             prism.prismProperties.IsShielded = false;
@@ -226,11 +226,11 @@ namespace CosmicShore.Gameplay
         public void DeactivateShields(float? delay = null, Vector3 breakVelocity = default,
             float debrisSpeedLimit = 0f)
         {
-            PrismTimerManager.EnsureInstance().CancelTimers(this);
+            PrismTimerManager.EnsureInstance()?.CancelTimers(this);
 
             if (delay.HasValue)
             {
-                PrismTimerManager.EnsureInstance().ScheduleShieldDeactivation(this, delay.Value);
+                PrismTimerManager.EnsureInstance()?.ScheduleShieldDeactivation(this, delay.Value);
             }
             else
             {

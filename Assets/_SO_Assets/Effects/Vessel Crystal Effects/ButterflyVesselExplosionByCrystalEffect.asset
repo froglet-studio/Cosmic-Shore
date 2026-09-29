@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a148940713548a4b5905021dc45785b, type: 3}
+  m_Name: ButterflyVesselExplosionByCrystalEffect
+  m_EditorClassIdentifier: 
+  rhinoCrystalExplosionEvent: {fileID: 0}
+  squirrelCrystalExplosionEvent: {fileID: 0}
+  _aoePrefabs:
+  - {fileID: 8507666106090082206, guid: cb8476adec966e8a9b49e829b48985af, type: 3}
+  _minExplosionScale: 900
+  _maxExplosionScale: 900
+  _resourceIndex: 0
+  _aoeExplosionMaterial: {fileID: 0}
+  _spawnOffset: {x: 0, y: 0, z: 0}
+  _explosionCooldown: 0.15

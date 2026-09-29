@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using Obvious.Soap;
 using UnityEngine;
@@ -19,12 +20,21 @@ namespace CosmicShore.UI
                  "of a heat/boost gauge.")]
         [SerializeField] private BarrelRollController barrelRollController;
 
+        [Tooltip("The guns' heat/accuracy state. Drives the guns (Space) card's heat gauge and " +
+                 "its phase-transition marks. Resolved off the vessel if left empty.")]
+        [SerializeField] private GunSprayAccuracy gunSprayAccuracy;
+
         [Header("Events")]
         [SerializeField] private ScriptableEventBool stationaryModeChanged;
         [SerializeField] private ScriptableEventInputEventBlock onInputEventBlocked;
 
         Coroutine _initialAmmoRoutine;
         IVesselStatus _vesselStatus;
+
+        bool _pollGunHeat;
+        GunSpreadProfile _paintedProfile;
+        float _paintedFullSpread = -1f;
+        readonly List<float> _phaseJoins = new();
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -65,6 +75,10 @@ namespace CosmicShore.UI
                     : RollChargeState.Lapsed);
             }
 
+            if (!gunSprayAccuracy && _vesselStatus is Component vesselComponent)
+                gunSprayAccuracy = vesselComponent.GetComponentInChildren<GunSprayAccuracy>(true);
+            _pollGunHeat = gunSprayAccuracy;
+
             if (fireGunExecutor == null) return;
             fireGunExecutor.OnAmmoChanged += HandleAmmoChanged;
             _initialAmmoRoutine = StartCoroutine(InitialAmmoPaintRoutine());
@@ -85,6 +99,10 @@ namespace CosmicShore.UI
 
         void Unsubscribe()
         {
+            _pollGunHeat = false;
+            _paintedProfile = null;
+            _paintedFullSpread = -1f;
+
             if (barrelRollController)
                 barrelRollController.OnRollChargeChanged -= HandleRollChargeChanged;
 
@@ -96,6 +114,28 @@ namespace CosmicShore.UI
 
             if (fireGunExecutor != null)
                 fireGunExecutor.OnAmmoChanged -= HandleAmmoChanged;
+        }
+
+        /// <summary>
+        /// Heat is continuous (it integrates every frame while firing and while cooling) and has
+        /// no event, so it is POLLED - one float compare per frame on the local pilot's HUD only.
+        /// The phase marks are re-laid only when the profile the heat is measured against changes.
+        /// </summary>
+        void Update()
+        {
+            if (!_pollGunHeat || !view || !gunSprayAccuracy) return;
+
+            var profile = gunSprayAccuracy.Profile;
+            float full = profile?.SecondsToFullSpread ?? 0f;
+            if (profile != _paintedProfile || !Mathf.Approximately(full, _paintedFullSpread))
+            {
+                _paintedProfile = profile;
+                _paintedFullSpread = full;
+                gunSprayAccuracy.CollectPhaseJoins01(_phaseJoins);
+                view.SetGunHeatPhaseJoins(_phaseJoins);
+            }
+
+            view.SetGunHeat(gunSprayAccuracy.Heat01);
         }
 
         private IEnumerator InitialAmmoPaintRoutine()

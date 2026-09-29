@@ -75,12 +75,13 @@ look at it — because that is the question the player is actually asking.
     outliers set `K` for everybody and squash the other eighteen species into the bottom
     of the band.  So the sizing budget is capped; the PLANTING budget is untouched.
 
-WHERE HEART WORLD SCALE IS READ AS GAMEPLAY (all five — check before retuning)
+WHERE HEART WORLD SCALE IS READ AS GAMEPLAY (all four — check before retuning)
 -----------------------------------------------------------------------------
   A. collect reward     SkimmerAdjustElementLevelByCrystalEffectSO.Execute
                         `min(|lossyScale.x| × 0.1, 0.5)` element levels
-  B. live domain buff   DomainFaunaBuffSystem.ComputeHeartValue — the same function,
-                        summed over every LIVING heart of a domain
+                        (this used to be read B as well — the live domain fauna buff,
+                        the same function summed over a domain's living hearts — which
+                        was REMOVED; see Docs/ECOSYSTEM.md §15)
   C. pickup radius      every crystal prefab's root SphereCollider is radius 1, so the
                         world trigger radius EQUALS the root world scale
   D. vacuum speed       Crystal.Vacuum divides by lossyScale.x — a bigger heart is drawn
