@@ -51,6 +51,17 @@ namespace CosmicShore.Utility
         public static bool FreestyleTrailActive;
 
         /// <summary>
+        /// The pilot is flying freestyle in Menu_Main. Freestyle is gameplay, and gameplay gets the
+        /// authored post stack - Bloom, and the Panini that is HALF THE SPEED TUNNEL
+        /// (Docs/SPEED_TUNNEL.md) - which <see cref="PerfStripRuntime"/> otherwise withholds from
+        /// every scene without a minigame controller, i.e. from all of Menu_Main. Kept apart from
+        /// <see cref="FreestyleTrailActive"/> on purpose: "is the trail laid" and "is the pilot
+        /// flying" are different questions that happen to change at the same moment today.
+        /// Set by MenuCrystalClickHandler on freestyle enter/exit; cleared on every scene load.
+        /// </summary>
+        public static bool FreestyleFlying;
+
+        /// <summary>
         /// Live prisms (all sources: boughs, garden, creatures, trail) above which the freestyle
         /// trail waits. Garland mature is ~8,100, so this leaves ~1,900 prisms of trail - about two
         /// minutes of Squirrel flight - before the pen lifts. The one dial for how much freestyle
@@ -144,14 +155,15 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Touch drift by stick OVERDRIVE: both thumbs hard over into a turn and then past the rim
-        /// raises BothSticksAction with an analog depth (TouchInputStrategy). Replaces the
-        /// lift-a-thumb drift, which cost half the steering, yanked the vessel on the lift and had
-        /// no depth. A vessel opts in by binding its drift to BothSticksAction on touch (the
-        /// Squirrel does). Off the strip nothing raises it, so no other hull's touch
-        /// bindings change meaning.
+        /// A touch drift's DEPTH comes from the steering thumb. While one thumb flies because the
+        /// other was lifted for an ability (the Squirrel binds its drift to the RIGHT-thumb lift),
+        /// that thumb's sideways deflection is published on LeftTriggerAnalog - the pad trigger's
+        /// channel - floored so the drift is felt the moment it engages: turn harder, slide deeper.
+        /// Off the strip the channel stays zero on touch, which every reader already takes as a
+        /// full-depth drift, so no other hull changes. It replaces Round 12's two-thumb overdrive
+        /// past the rim, which never drifted on device (see TouchInputStrategy).
         /// </summary>
-        public static bool TouchOverdriveDrift => Enabled;
+        public static bool TouchLiftDriftDepth => Enabled;
 
         /// <summary>
         /// On touch, a single thumb raises Left/RightStickAction only when it is alone because the
@@ -204,8 +216,8 @@ namespace CosmicShore.Utility
         public static bool LightToysOnly => Enabled;
 
         /// <summary>
-        /// The hulls this build is tuned for: the Squirrel (two thumbs, the overdrive drift, the
-        /// boost ring on a lift) and the Butterfly (two BINARY abilities, both mapped to a thumb
+        /// The hulls this build is tuned for: the Squirrel (two thumbs; the boost ring on a left-
+        /// thumb lift, the drift on a right-thumb lift) and the Butterfly (two BINARY abilities, both mapped to a thumb
         /// lift - which is what makes it the second hull to bring to glass). The vessel changer
         /// offers exactly these (ToyVesselRoster); every other hull is its own touch design pass.
         /// </summary>

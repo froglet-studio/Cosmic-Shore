@@ -56,8 +56,8 @@ public class VesselTransformer : MonoBehaviour
     [SerializeField] bool singleTriggerDrift = false;
 
     [Tooltip("CEILING on a TOUCH drift's depth, as a fraction of a full trigger pull (0-1). A " +
-             "touch drift's live depth is the stick overdrive (both thumbs pushed past the rim " +
-             "into a turn) or, for a thumb-lift drift, a full pull - scaled by this, because the " +
+             "touch drift's live depth is the steering thumb's sideways deflection while the " +
+             "other is lifted (stripped branch) or otherwise a full pull - scaled by this, because the " +
              "drift action's FULL-pull tuning is authored for a pad pilot who can feather the " +
              "trigger. 1 = unchanged (the fleet default). Only read when no sharp tier is bound; " +
              "a sharp tier keeps the binary 1/2 ladder.")]
@@ -754,10 +754,10 @@ public class VesselTransformer : MonoBehaviour
             if (_sharpDriftActive) return 2f;
             if (_singleDriftActive)
             {
-                // A touch drift's depth is the stick OVERDRIVE (TouchInputStrategy - how far past
-                // the rim both thumbs are pushed into the turn), published on LeftTriggerAnalog
-                // like the pad's trigger; zero means none was measured (a thumb-LIFT drift on
-                // another hull), which reads as a full pull. Either way it is scaled by the
+                // A touch drift's depth is the STEERING thumb's sideways deflection while the other
+                // is lifted (TouchInputStrategy.UpdateLiftDriftDepth, stripped branch), published
+                // on LeftTriggerAnalog like the pad's trigger; zero means none was measured (off
+                // the strip), which reads as a full pull. Either way it is scaled by the
                 // authored touchDriftDepth CEILING: a full-deflection turn at the Squirrel's full
                 // pull (x1.8 / grip 0.25) slides past 90 degrees of slip, where nose thrust brakes.
                 // Tools/Build/touch_drift_slip.py measures it.

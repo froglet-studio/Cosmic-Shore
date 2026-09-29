@@ -3,12 +3,14 @@
 
 WHY THIS EXISTS
 ---------------
-On the stripped Android branch a touch drift is the stick OVERDRIVE: both thumbs hard over into
-a turn (full yaw on the dual-stick mix, Ease(2) = 1.0) and then pushed past the rim, with the
-push beyond the rim as the drift's depth. So a drift is ALWAYS flown at full yaw - and the
-vessel ALSO multiplies every rotation scaler by the drift's own `Mult`
-(VesselTransformer.ApplyAnalogDrift). The authored `touchDriftDepth` is the CEILING the
-overdrive is scaled into, and it is what keeps the two from stacking into a brake.
+On the stripped Android branch a touch drift is a RIGHT-thumb LIFT: the left thumb flies alone,
+mirrored onto both sticks at OneThumbDriftTurnGain (TouchInputStrategy), and its sideways
+deflection is the drift's depth (floored). So the worst case is the steering thumb at full
+deflection - full one-thumb yaw AND full depth at once - and the vessel ALSO multiplies every
+rotation scaler by the drift's own `Mult` (VesselTransformer.ApplyAnalogDrift). The authored
+`touchDriftDepth` is the CEILING that depth is scaled into, and it is what keeps the two from
+stacking into a brake. (Round 12's two-thumb overdrive past the rim is retired: from cruise it
+was out of reach, and it never drifted on device.)
 
 Past ~90 degrees of SLIP (the angle between the velocity and the nose) the vector flight
 model's nose-ward thrust starts subtracting from the velocity's magnitude -
@@ -18,14 +20,15 @@ only ever felt.
 
 So the invariant is stated and MEASURED rather than eyeballed:
 
-    a full-overdrive drift held through a CORNER_DEG hairpin must not reach 90 degrees of
+    a full-deflection lift drift held through a CORNER_DEG hairpin must not reach 90 degrees of
     slip, and must not end slower than it started.
 
-A corner, not a fixed hold: every drift is at full yaw, and at full yaw a slide past 90 degrees
-is only a matter of time - a two-second hold is a full circle. What a pilot flies is a corner.
+A corner, not a fixed hold: at full deflection a slide past 90 degrees is only a matter of time.
+What a pilot flies is a corner.
 
 Every input is read from the SHIPPED files, so a retune of any one of them is checked:
   * touchDriftDepth         - Assets/_Prefabs/Spacevessels/Squirrel.prefab (the ceiling)
+  * OneThumbDriftTurnGain   - Assets/_Scripts/Controller/IO/TouchInputStrategy.cs
   * Mult / driftDamping     - the drift action assets bound to the Squirrel's TOUCH override
   * YawScaler               - Assets/_Prefabs/Spacevessels/Squirrel.prefab
 
@@ -53,8 +56,9 @@ SLIP_LIMIT_DEG = 90.0
 HOLD_SECONDS = 2.0
 CORNER_DEG = 180.0
 
-# InputEvents.BothSticksAction - the overdrive event the Squirrel binds its drift to on touch.
-DRIFT_TOUCH_EVENT = 13
+# InputEvents.OnlyLeftStickAction - the RIGHT thumb lifted (the left remains), which the Squirrel
+# binds its drift to on touch.
+DRIFT_TOUCH_EVENT = 12
 
 
 def read(path: Path) -> str:
@@ -186,10 +190,11 @@ def main():
         sys.exit("no drift actions found on the Squirrel's touch override")
     tier = next((t for t in tiers if t["sharp"]), tiers[0])
 
-    # VesselTransformer.GetTriggerSum: a touch drift with NO sharp tier bound reads the overdrive
-    # depth (0..1) scaled by the prefab's touchDriftDepth CEILING, and ApplyAnalogDrift lerps from
-    # the no-drift state (mult 1, grip 1) toward the action's full-pull values by that depth. A
-    # full overdrive therefore runs at exactly the ceiling - the worst case, measured here.
+    # VesselTransformer.GetTriggerSum: a touch drift with NO sharp tier bound reads the lift
+    # depth (0..1, the steering thumb's deflection) scaled by the prefab's touchDriftDepth CEILING,
+    # and ApplyAnalogDrift lerps from the no-drift state (mult 1, grip 1) toward the action's
+    # full-pull values by that depth. Full deflection therefore runs at exactly the ceiling AND at
+    # full one-thumb yaw - the worst case, measured here.
     depth_m = re.search(r"^  touchDriftDepth: ([\d.]+)", prefab, re.M)
     depth = float(depth_m.group(1)) if depth_m else 1.0
     if not tier["sharp"] and depth < 1.0:
@@ -198,14 +203,15 @@ def main():
                     mult=1.0 + (tier["mult"] - 1.0) * depth,
                     grip=1.0 + (tier["grip"] - 1.0) * depth)
 
-    gain = 1.0                      # both thumbs hard over: Ease(2) = full yaw, no mirror gain
+    gain = constant("OneThumbDriftTurnGain")   # the mirrored steering thumb at full deflection
     x_sum = ease(2.0 * gain)
     omega = x_sum * yaw * tier["mult"]
     corner_s = CORNER_DEG / omega
 
-    print(f"Squirrel TOUCH overdrive drift  (YawScaler {yaw:g}, throttle scaler {throttle:g})")
+    print(f"Squirrel TOUCH lift drift  (YawScaler {yaw:g}, throttle scaler {throttle:g}, "
+          f"one-thumb gain {gain:g})")
     print(f"  bound touch drift tiers : {', '.join(t['name'] for t in tiers)}")
-    print(f"  tier at full overdrive  : {tier['name']}  "
+    print(f"  tier at full deflection : {tier['name']}  "
           f"(Mult {tier['mult']:.3g}, Grip {tier['grip']:.3g}, sharp={tier['sharp']})")
     print(f"  commanded yaw           : {omega:.1f} deg/s -> a {CORNER_DEG:g} deg corner "
           f"takes {corner_s:.2f} s")
@@ -238,7 +244,7 @@ def main():
                   f"end speed {tr[-1][1]:5.1f}")
 
     if args.check and not ok:
-        print(f"\nFAIL: a full-overdrive drift through a {CORNER_DEG:g} deg corner reaches "
+        print(f"\nFAIL: a full-deflection lift drift through a {CORNER_DEG:g} deg corner reaches "
               f"{worst_slip:.1f} deg of slip (limit {SLIP_LIMIT_DEG:g}) or ends slower than it began.\n"
               f"Past 90 deg the nose thrust brakes: lower the Squirrel's touchDriftDepth ceiling "
               f"or raise the drift action's driftDamping.")

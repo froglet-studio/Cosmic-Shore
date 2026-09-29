@@ -41,8 +41,8 @@ namespace CosmicShore.Gameplay
         // enters the moment a thumb is LIFTED to trigger an ability (a lift is a 2+ -> 1 touch
         // transition, see HandleDriftTransitions: the Squirrel's boost ring, the Butterfly's mode
         // switch and Fold). While it lasts, the live thumb is mirrored onto BOTH virtual sticks
-        // in Reparameterize. On the stripped branch the Squirrel's DRIFT is no longer a lift - it
-        // is the stick overdrive (see UpdateOverdriveDrift).
+        // in Reparameterize. The Squirrel's drift is one of these lifts (the RIGHT thumb); on the
+        // stripped branch the steering thumb also sets its depth (see UpdateLiftDriftDepth).
         private bool oneThumbActive;
         private Vector2 oneThumbStick;
 
@@ -60,8 +60,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Turn authority for the MIX while one thumb flies BECAUSE the other was lifted to fire
-        /// an ability (the boost ring on the Squirrel - drift too, off the stripped branch;
-        /// Yawstery / analog turn boost on the Manta). Lower
+        /// an ability (the Squirrel's boost ring and its drift; Yawstery / analog turn boost on
+        /// the Manta). Lower
         /// than <see cref="OneThumbTurnGain"/> because those abilities MULTIPLY the vessel's own
         /// rotation scalers - <c>VesselTransformer.ApplyAnalogDrift</c> writes
         /// <c>Pitch/Yaw/RollScaler = base x Mult</c> - so the mirror's 2.162x and the ability's
@@ -129,26 +129,25 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private float throttleCarry;
 
-        // ── Drift by OVERDRIVE (stripped-performance branch) ────────────────────
-        // A drift used to be "lift your right thumb": you gave up half your steering to hold it,
-        // the lift itself yanked the vessel, and its depth was a fixed number. On glass the
-        // natural way to ask for MORE turn than full lock is to keep pushing: so a drift is
-        // both thumbs hard over to one side (full yaw on this mix) and then past the rim of the
-        // sticks. How far past is the drift's depth - analog, like the pad's trigger - and both
-        // thumbs stay down the whole time. Raised as BothSticksAction, which the Squirrel binds
-        // its drift to on touch; the drift's authored ceiling is VesselTransformer.touchDriftDepth.
+        // ── Drift depth from the steering thumb (stripped-performance branch) ─────────────────
+        // The Squirrel's touch drift is a thumb LIFT: lift the RIGHT thumb and it drifts while
+        // the left one steers; put it back and the drift ends with the speed carried
+        // (throttleCarry). Round 12 moved it onto a two-thumb "overdrive" past the rim of the
+        // sticks, and on device it never drifted. Throttle on this mix is the thumbs' spread, so
+        // at cruise the thumbs sit on OPPOSITE sides; reaching "both past the rim on the same
+        // side" meant the inside thumb travelling more than two stick radii (~1.2"), and the
+        // first tenth of a radius past the rim bought a drift of 3.5% of the ceiling - nothing a
+        // pilot can feel. What the lift version got wrong was never the lift: it yanked the
+        // vessel (fixed by rebaseSticks) and its depth was a fixed number. So the depth is now the
+        // STEERING thumb's sideways deflection - turn harder, slide deeper - floored so the drift
+        // is felt the instant it engages. Published on LeftTriggerAnalog, the pad trigger's
+        // channel, which VesselTransformer.GetTriggerSum scales by the hull's touchDriftDepth
+        // CEILING and DriftAudioController follows.
 
-        /// <summary>
-        /// Combined push past full yaw, in stick radii, that reads as a full-depth drift. Two
-        /// thumbs hard over is 2 radii of yaw; 2 + this is a full drift. One thumb counts double
-        /// (it is mirrored onto both sticks), so it reaches full depth half a radius past its rim.
-        /// </summary>
-        const float DriftOverdriveRadii = 1f;
-
-        /// <summary>Depth at which an overdrive ENGAGES; it releases only once the push falls
-        /// back inside full yaw - a small hysteresis so a thumb resting on the rim cannot
-        /// chatter the drift on and off.</summary>
-        const float DriftEngageDepth = 0.1f;
+        /// <summary>Depth of a lift drift with the steering thumb centred; the rest of the range
+        /// is bought with sideways deflection and reaches 1 (the hull's ceiling) at the rim.
+        /// Tools/Build/touch_drift_slip.py reads it.</summary>
+        const float LiftDriftDepthFloor = 0.5f;
 
         /// <summary>
         /// True while the single live thumb is alone because the other was LIFTED (a 2 -&gt; 1
@@ -162,10 +161,6 @@ namespace CosmicShore.Gameplay
         private bool singleThumbFromLift;
 
         private bool StickEventsAllowed => singleThumbFromLift || !PerfStrip.TouchStickEventsOnLiftOnly;
-
-        private bool overdriveDriftEngaged;
-        private Vector2 leftRawStick, rightRawStick;
-        private Vector2 oneThumbRawStick;
 
         private bool leftStickEffectsStarted, rightStickEffectsStarted;
         private int leftTouchIndex, rightTouchIndex;
@@ -233,8 +228,8 @@ namespace CosmicShore.Gameplay
             {
                 oneThumbActive = false;
                 throttleCarry = 0f;
-                UpdateOverdriveDrift(0);
                 ResetInput();
+                UpdateLiftDriftDepth();
                 if (!inputStatus.Idle)
                 {
                     inputStatus.Idle = true;
@@ -256,7 +251,7 @@ namespace CosmicShore.Gameplay
                     heldXDiff = inputStatus.XDiff;
                 }
 
-                UpdateOverdriveDrift(touchCount);
+                UpdateLiftDriftDepth();
 
                 PerformSpeedAndDirectionalEffects();
                 if (inputStatus.Idle)
@@ -372,8 +367,8 @@ namespace CosmicShore.Gameplay
                 rightJoystickStart = rightJoystickValue;
             }
 
-            HandleJoystick(ref leftJoystickStart, leftTouchIndex, ref leftNormalizedJoystickPosition, ref leftClampedPosition, out leftRawStick);
-            HandleJoystick(ref rightJoystickStart, rightTouchIndex, ref rightNormalizedJoystickPosition, ref rightClampedPosition, out rightRawStick);
+            HandleJoystick(ref leftJoystickStart, leftTouchIndex, ref leftNormalizedJoystickPosition, ref leftClampedPosition);
+            HandleJoystick(ref rightJoystickStart, rightTouchIndex, ref rightNormalizedJoystickPosition, ref rightClampedPosition);
 
             StopStickEffects();
         }
@@ -411,7 +406,6 @@ namespace CosmicShore.Gameplay
             // value is what used to leak into throttle and roll (see Reparameterize).
             oneThumbActive = true;
             oneThumbStick = useLeft ? leftNormalizedJoystickPosition : rightNormalizedJoystickPosition;
-            oneThumbRawStick = useLeft ? leftRawStick : rightRawStick;
         }
 
         private void ProcessCommandStickControls(Vector2 position)
@@ -440,7 +434,7 @@ namespace CosmicShore.Gameplay
             leftJoystickValue = position;
             leftTouchIndex = 0;
             inputStatus.OneTouchLeft = true;
-            HandleJoystick(ref leftJoystickStart, leftTouchIndex, ref leftNormalizedJoystickPosition, ref leftClampedPosition, out leftRawStick);
+            HandleJoystick(ref leftJoystickStart, leftTouchIndex, ref leftNormalizedJoystickPosition, ref leftClampedPosition);
             rightNormalizedJoystickPosition = Vector3.Lerp(rightNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
         }
 
@@ -454,11 +448,11 @@ namespace CosmicShore.Gameplay
             rightJoystickValue = position;
             rightTouchIndex = 0;
             inputStatus.OneTouchLeft = false;
-            HandleJoystick(ref rightJoystickStart, rightTouchIndex, ref rightNormalizedJoystickPosition, ref rightClampedPosition, out rightRawStick);
+            HandleJoystick(ref rightJoystickStart, rightTouchIndex, ref rightNormalizedJoystickPosition, ref rightClampedPosition);
             leftNormalizedJoystickPosition = Vector3.Lerp(leftNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
         }
 
-        private void HandleJoystick(ref Vector2 joystickStart, int touchIndex, ref Vector2 joystick, ref Vector2 clampedPosition, out Vector2 raw)
+        private void HandleJoystick(ref Vector2 joystickStart, int touchIndex, ref Vector2 joystick, ref Vector2 clampedPosition)
         {
             Touch touch = Touch.activeTouches[touchIndex];
 
@@ -466,10 +460,6 @@ namespace CosmicShore.Gameplay
                 joystickStart = touch.screenPosition;
 
             Vector2 offset = touch.screenPosition - joystickStart;
-
-            // Unclamped, in stick radii: the drift overdrive reads how far PAST the rim a thumb is,
-            // which the clamped value below cannot see.
-            raw = offset / joystickRadius;
             Vector2 clampedOffset = Vector2.ClampMagnitude(offset, joystickRadius);
             clampedPosition = joystickStart + clampedOffset;
 
@@ -558,34 +548,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The drift overdrive (see <see cref="DriftOverdriveRadii"/>). Publishes the depth on
-        /// <c>LeftTriggerAnalog</c> - the channel the pad's drift trigger already uses, which
-        /// VesselTransformer.GetTriggerSum and DriftAudioController read - and raises
-        /// BothSticksAction on engage/release. While engaged the depth is always &gt; 0; zero means
-        /// "no measured depth", which is how a thumb-LIFT drift on another hull still reads as a
-        /// full pull there.
+        /// The lift drift's depth (see <see cref="LiftDriftDepthFloor"/>): while one thumb flies
+        /// because the other was lifted for an ability, its sideways deflection - floored - is
+        /// published on <c>LeftTriggerAnalog</c>; otherwise zero. Only drift readers consume the
+        /// channel on touch (VesselTransformer.GetTriggerSum while a drift is running, and
+        /// DriftAudioController), so a lift that fired a different ability - the Squirrel's boost
+        /// ring, the Butterfly's mode switch - is unaffected by it.
         /// </summary>
-        private void UpdateOverdriveDrift(int touchCount)
+        private void UpdateLiftDriftDepth()
         {
-            float push = 0f;
-            if (touchCount >= 2) push = Mathf.Abs(leftRawStick.x + rightRawStick.x);
-            else if (touchCount == 1 && oneThumbActive) push = 2f * Mathf.Abs(oneThumbRawStick.x);
-
-            float depth = Mathf.Clamp01((push - 2f) / DriftOverdriveRadii);
-            bool gestureOn = PerfStrip.TouchOverdriveDrift;
-
-            if (gestureOn && !overdriveDriftEngaged && depth >= DriftEngageDepth)
-            {
-                overdriveDriftEngaged = true;
-                inputStatus.OnButtonPressed.Raise(InputEvents.BothSticksAction);
-            }
-            else if (overdriveDriftEngaged && (depth <= 0f || !gestureOn))
-            {
-                overdriveDriftEngaged = false;
-                inputStatus.OnButtonReleased.Raise(InputEvents.BothSticksAction);
-            }
-
-            inputStatus.LeftTriggerAnalog = overdriveDriftEngaged ? depth : 0f;
+            float depth = 0f;
+            if (PerfStrip.TouchLiftDriftDepth && OneThumbAbilityActive)
+                depth = Mathf.Lerp(LiftDriftDepthFloor, 1f, Mathf.Clamp01(Mathf.Abs(oneThumbStick.x)));
+            inputStatus.LeftTriggerAnalog = depth;
         }
 
         private void PerformSpeedAndDirectionalEffects()

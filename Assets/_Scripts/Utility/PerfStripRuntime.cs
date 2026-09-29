@@ -50,6 +50,7 @@ namespace CosmicShore.Utility
                 // Freestyle is a Menu_Main state; a scene load ends it whatever path left the
                 // menu, so a race never inherits the uncapped freestyle trail.
                 PerfStrip.FreestyleTrailActive = false;
+                PerfStrip.FreestyleFlying = false;
                 ScheduleApply();
             };
             ScheduleApply();
@@ -97,7 +98,12 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Post-processing is restored for GAMEPLAY scenes and stays off everywhere else.
+        /// Post-processing is restored for GAMEPLAY - every minigame scene, and freestyle flight in
+        /// Menu_Main (<see cref="PerfStrip.FreestyleFlying"/>) - and stays off everywhere else,
+        /// including the menu's own autopilot lava lamp. Freestyle was missing until Round 13: the
+        /// gameplay test was "the scene has a minigame controller", which Menu_Main never has, so
+        /// the one place a phone pilot spends most of their flying had no Panini and therefore only
+        /// half a speed tunnel.
         ///
         /// Two active overrides live on the one persistent Volume (it rides the Bootstrap
         /// PostProcessingManager as DontDestroyOnLoad, so there is no per-scene volume to read):
@@ -121,7 +127,7 @@ namespace CosmicShore.Utility
         static void ApplyPostProcessing()
         {
             bool keepPost = PerfStrip.AllowAuthoredPostProcessing
-                            && IsGameplayScene()
+                            && (PerfStrip.FreestyleFlying || IsGameplayScene())
                             && SceneHasActivePostOverride();
 
             foreach (var cam in AllCamerasIncludingInactive())

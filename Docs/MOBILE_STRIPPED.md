@@ -847,10 +847,10 @@ joust target and the scoreboard's Play Again reloads Joust.
 |---|---|---|
 | Lift one thumb | The other thumb was mirrored onto both sticks AT ITS CURRENT DEFLECTION. Throttle on this mix is the thumbs' horizontal spread, so at cruise both thumbs sit pushed outward — the remaining one read as a hard yaw toward its own side. Lifting a thumb yanked the vessel. | Every change between one and two thumbs **re-zeroes the sticks where the thumbs are.** The vessel keeps flying straight; steering resumes from wherever the thumbs rest. |
 | Put the thumb back | Its new touch point was a fresh origin, the other thumb kept its deflection — another yank, and neutral thumbs meant half throttle. | Re-zeroed again, and the throttle you had carries back (`throttleCarry`): neutral thumbs = the speed you had, fading out toward full spread or full squeeze so both ends stay reachable. **Lift, fire the boost ring, put the thumb back = straight through the ring at speed.** |
-| Drift (Squirrel) | Lift the right thumb. Half the steering gone, the lift itself pulled the vessel, fixed depth. | **Both thumbs hard over into the turn, then past the rim.** "Turn harder than full lock" — the push past the rim is the drift's analog depth (published on `LeftTriggerAnalog`, the pad trigger's channel; DriftAudio follows it). Both thumbs stay down. `PerfStrip.TouchOverdriveDrift`; the Squirrel binds its drift to `BothSticksAction` on touch. |
+| Drift (Squirrel) — **superseded by Round 13** | Lift the right thumb. Half the steering gone, the lift itself pulled the vessel, fixed depth. | **Both thumbs hard over into the turn, then past the rim.** "Turn harder than full lock" — the push past the rim is the drift's analog depth (published on `LeftTriggerAnalog`, the pad trigger's channel; DriftAudio follows it). Both thumbs stay down. `PerfStrip.TouchOverdriveDrift`; the Squirrel binds its drift to `BothSticksAction` on touch. |
 | First thumb down | Raised Left/RightStickAction — for the Butterfly, that toggled Mass/Dust (right thumb first) or started a Fold (left thumb first) that teleported on the second touch. | Those events fire only when a thumb is alone because the other was **lifted** (`PerfStrip.TouchStickEventsOnLiftOnly`). Which thumb happens to land first is not a decision; lifting one is. |
 
-Drift depth is capped by the Squirrel's `touchDriftDepth` **0.35**: every overdrive drift is flown
+*(Superseded by Round 13 — the overdrive never drifted on device and is retired.)* Drift depth was capped by the Squirrel's `touchDriftDepth` **0.35**: every overdrive drift is flown
 at full yaw, so the ceiling is what keeps a hairpin under 90° of slip (where nose thrust starts
 braking). `Tools/Build/touch_drift_slip.py --check` models a 180° hairpin at full overdrive:
 87.6° peak slip, 124% speed carried; 0.5 fails it (negative control run). Dial:
@@ -901,3 +901,79 @@ No Unity here; the eight out-of-editor gates and `touch_drift_slip.py --check` p
    long flight the trail pauses rather than anything vanishing, and resumes as fauna graze.
 5. End a Wanderway run: Garland blooms back.
 6. The vessel changer offers the Butterfly; Waystation launches from the Arcade grid.
+
+## Round 13 — the drift goes back on a thumb, Panini in freestyle (2026-09-29)
+
+Reported after Round 12: *"the post processing still needs the panini. the squirrel didnt drift or
+lay rings. butterfly was good"*.
+
+### The drift: back on the right-thumb lift, with depth from the steering thumb
+
+The two-thumb overdrive (Round 12) is **retired**. It was out of reach in practice: throttle on the
+dual-stick mix is the thumbs' horizontal *spread*, so at cruise the thumbs sit on OPPOSITE sides of
+their origins, and "both thumbs past the rim on the same side" meant the inside thumb travelling
+more than two stick radii (~1.2" at 0.6"/radius). And where it did engage, a tenth of a radius past
+the rim bought 3.5% of the drift's ceiling (`0.35 × 0.1`) — nothing anyone can feel.
+
+What the old lift drift got wrong was never the lift. It yanked the vessel (fixed in Round 12 by
+re-zeroing the sticks on every one↔two-thumb change) and its depth was a constant. So:
+
+| Gesture | Squirrel on touch |
+|---|---|
+| Lift the **left** thumb | Boost ring (`OnlyRightStickAction` 11 — unchanged). Put it back: straight through at speed. |
+| Lift the **right** thumb | **Drift** (`OnlyLeftStickAction` 12), held while it is up. The left thumb steers alone, re-zeroed where it rests (no pull). **How far you steer sideways is how deep it slides** — floored at `LiftDriftDepthFloor` 0.5 so it is felt the instant it engages, full depth at the rim. Put the thumb back: the drift ends and the speed carries. |
+
+The depth is published on `LeftTriggerAnalog` (the pad trigger's channel, `PerfStrip.TouchLiftDriftDepth`)
+by `TouchInputStrategy.UpdateLiftDriftDepth`, and scaled by the Squirrel's `touchDriftDepth` ceiling —
+now **0.5**, up from 0.35, because one-thumb steering (`OneThumbDriftTurnGain` 0.70) turns less than
+the overdrive's full two-thumb yaw. `Tools/Build/touch_drift_slip.py --check` now models the LIFT
+(one thumb at full deflection, the worst case: full yaw and full depth at once): **79.1° peak slip,
+125% speed carried** through a 180° hairpin; the negative control at 0.8 fails (92.4°).
+
+### The ring: not reproduced — so the ability path now heals itself and says what it did
+
+Static inspection found nothing that stops the lift-left event reaching the ring: the event is raised
+(`HandleDriftTransitions`), the Squirrel's touch override binds it, device resolution cannot matter
+(under ANY device the same lift would also have raised `RightStickAction`, which the gamepad
+override binds to the ring), the executor is wired to the right prism channel, and the Boost pool is
+set. Two things were changed anyway, both general:
+
+1. **`R_VesselActionHandler`'s button subscription now follows the pause STATE, not only its
+   EVENTS.** For the local pilot it is meant to listen exactly while input is un-paused; that was
+   kept only by edges (`OnToggleInputPaused`, plus explicit calls at spawn/handover). `n_paused` is
+   a NetworkVariable whose `OnValueChanged` fires on a *change* only, and `OnDisable` dropped both
+   the button channels and the pause source with nothing re-attaching them — a missed edge left the
+   vessel FLYING (flight reads `InputStatus` directly) with every ability silently dead. It is now
+   reconciled once a frame for the local pilot (one bool compare), and `OnEnable` re-attaches the
+   pause source. Fleet-wide, but a no-op wherever the edges already worked.
+2. **An "Abilities" section on the on-screen `DiagnosticsHUD`** (Development builds; compiled out,
+   arguments included, in Release): `listening` (is the handler subscribed), `press` (the last bound
+   press and the device it resolved against — or `ignored (autopilot)` / `suppressed` / `muted`),
+   `unbound` (the last press with no binding — IdleAction and the straight-line gestures land here),
+   `ran` (the last dispatch that reached the actions, with how many), and `boost ring` (`laid Nu
+   ahead` or `cooldown Ns`). Those five rows separate every way "the ability did nothing" can
+   happen, on the phone, where the console is out of reach. The ring's authored shape is worth
+   knowing when reading them: **one** ring of 8 danger prisms, radius 8, 100 u ahead, 20 s cooldown.
+
+### Panini in freestyle
+
+Post-processing on the strip was granted only to scenes with a minigame controller — so never to
+Menu_Main, including **freestyle**, where a phone pilot does most of their flying. The profile's
+Panini (distance 0.7, which the speed tunnel relaxes with speed) needs post on the presenting camera,
+so freestyle had half a speed tunnel. `PerfStrip.FreestyleFlying` (set with the trail flag on
+freestyle enter/exit, cleared on every scene load) now grants the post stack for freestyle's
+duration; the menu's own autopilot lava lamp stays post-free. Cost: freestyle now pays what a race
+already pays (Bloom + Panini on the one presenting camera).
+
+### Not verified in the editor
+
+No Unity here; the eight out-of-editor gates, a Roslyn syntax parse of every changed file, and
+`touch_drift_slip.py --check` pass. On device (Development build, so the overlay is up):
+1. Squirrel, freestyle: lift the **right** thumb — it drifts; steer harder, it slides deeper; put the
+   thumb back — it straightens out at speed.
+2. Lift the **left** thumb — a ring 100 u ahead. If none appears, read the overlay's Abilities rows:
+   `listening no` = subscription; `press` never shows `OnlyRightStickAction` = the gesture; `ran`
+   shows it but `boost ring` does not say `laid` = the executor; `laid` but nothing visible = render.
+3. Freestyle has the Panini curvature at rest and it relaxes as you speed up; the menu lava lamp
+   behind the UI does not.
+4. The Butterfly still toggles on a left lift and folds on a right lift.
