@@ -22,6 +22,26 @@ dotnet build
 dotnet test
 ```
 
+## Run the real game
+
+`CosmicShore.Player` runs the project's own `Assets/_Scripts` (compiled by `CosmicShore.Live`)
+against the engine, loading the real scenes, prefabs, materials, shaders, meshes, fonts and FMOD
+banks straight from `Assets/`:
+
+```bash
+python3 Port/tools/fetch_native.py          # once: the FMOD Studio runtime out of Git LFS
+cd Port
+dotnet run -c Release --project src/CosmicShore.Player
+```
+
+`-c Release` is the customer-shaped player (no `DEVELOPMENT_BUILD` overlay, stripped logging);
+Debug is a Unity development build. Sound comes from the vendor FMOD Studio runtime the project
+ships and the banks its FMOD Studio project built (`Cosmic Shore/Build/Desktop`).
+`COSMIC_SHORE_AUDIO=off` silences it; `COSMIC_SHORE_AUDIO=wav:PATH` records the mix to a WAV.
+On Windows, a clone made with git-lfs already has `fmodstudio.dll`; otherwise run
+`python tools\fetch_native.py --platform win-x64`. Progress and remaining gaps:
+`docs/PROGRESS_2026-09-29.md`.
+
 ## Layout
 
 ```

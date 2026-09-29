@@ -81,13 +81,14 @@ namespace CosmicShore.Player
             Screen.height = height;
             using var boot = new PlayerBoot();
             boot.Log.Quiet = quiet;
+            boot.Headless = true;
             if (!script.IsEmpty) script.EnsureDevices();
             boot.Start(scene);
             string lastScene = SceneManager.GetActiveScene().name;
             for (int f = 0; f < frames; f++)
             {
                 script.BeforeTick(f);
-                boot.Loop.Tick(1f / 60f);
+                boot.Tick(1f / 60f);
                 var active = SceneManager.GetActiveScene().name;
                 if (active != lastScene)
                 {

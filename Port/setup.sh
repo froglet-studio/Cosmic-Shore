@@ -10,5 +10,7 @@ export PATH=/opt/dotnet:$PATH
 echo "installing headless GL (screenshot verification)..."
 apt-get install -y --no-install-recommends xvfb libgl1 libglx-mesa0 libgl1-mesa-dri libglfw3 >/dev/null 2>&1 || true
 cd "$(dirname "$0")"
+echo "fetching the FMOD Studio runtime (Git LFS)..."
+python3 tools/fetch_native.py || echo "  (no FMOD runtime: the player will run silent)"
 dotnet build && dotnet test
 echo "Port toolchain ready — read PORT_PLAN.md 'NEXT UP' and continue the loop."

@@ -109,7 +109,7 @@ namespace CosmicShore.Player
             float step = Scripted ? 1f / 60f : (float)Math.Min(dt, 0.1);
             _inputBridge.BeforeTick();
             _script.BeforeTick(_frameIndex);
-            _boot.Loop.Tick(step);
+            _boot.Tick(step);
             _inputBridge.AfterTick();
         }
 

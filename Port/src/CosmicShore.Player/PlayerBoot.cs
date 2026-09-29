@@ -29,6 +29,7 @@ namespace CosmicShore.Player
                 ?? throw new InvalidOperationException("Unity project not found — run from inside the repository (or set COSMIC_SHORE_PROJECT).");
 
             Debug.Sink = Log;
+            _audio = PlayerAudio.Start(root, Headless);
             CosmicShore.Engine.Networking.NetworkManager.EmulateNetcodeLifecycle = true;
             GameObject.EnforceRequireComponent = true;
             // The player's Cloud Save backend: a store that survives relaunches, as UGS does.
@@ -57,7 +58,24 @@ namespace CosmicShore.Player
             Console.WriteLine($"[player] booted into '{scene}' in {sw.ElapsedMilliseconds} ms");
         }
 
-        public void Dispose() => Loop?.Dispose();
+        /// <summary>A headless run is silent unless COSMIC_SHORE_AUDIO asks otherwise (Unity's -nographics).</summary>
+        public bool Headless { get; set; }
+
+        CosmicShore.Engine.Audio.Fmod.FmodNativeBackend _audio;
+
+        /// <summary>One frame: the game loop, then the audio runtime (after LateUpdate, as FMOD's RuntimeManager runs).</summary>
+        public void Tick(float step)
+        {
+            Loop.Tick(step);
+            CosmicShore.Engine.Audio.Fmod.RuntimeManager.Update();
+        }
+
+        public void Dispose()
+        {
+            Loop?.Dispose();
+            PlayerAudio.Stop(_audio);
+            _audio = null;
+        }
 
         /// <summary>
         /// CS_VERBOSE=All (or a comma list of CSLogChannel names) switches on the game's own

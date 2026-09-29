@@ -53,7 +53,9 @@ namespace CosmicShore.Engine.Audio.Fmod
         {
             uint h1 = 2166136261, h2 = 16777619;
             foreach (char c in name ?? string.Empty) { h1 = (h1 ^ c) * 16777619; h2 = (h2 ^ c) * 2166136261; }
-            return new PARAMETER_ID { data1 = h1, data2 = h2 };
+            var id = new PARAMETER_ID { data1 = h1, data2 = h2 };
+            FmodBackend.RememberName(id, name);
+            return id;
         }
 
         public bool Equals(PARAMETER_ID o) => data1 == o.data1 && data2 == o.data2;
@@ -107,7 +109,7 @@ namespace CosmicShore.Engine.Audio.Fmod
     {
         internal VCAState State;
         public bool isValid() => State != null;
-        public RESULT setVolume(float volume) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Volume = volume; return RESULT.OK; }
+        public RESULT setVolume(float volume) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Volume = volume; FmodBackend.Current?.SetVca(State.Path, volume); return RESULT.OK; }
         public RESULT getVolume(out float volume) { volume = State?.Volume ?? 0f; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
         public RESULT getVolume(out float volume, out float finalvolume) { var r = getVolume(out volume); finalvolume = volume; return r; }
         public RESULT getPath(out string path) { path = State?.Path; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
@@ -124,7 +126,7 @@ namespace CosmicShore.Engine.Audio.Fmod
         internal readonly Dictionary<PARAMETER_ID, float> Globals = new();
 
         public bool isValid() => true;
-        public RESULT setParameterByID(PARAMETER_ID id, float value, bool ignoreseekspeed = false) { Globals[id] = value; return RESULT.OK; }
+        public RESULT setParameterByID(PARAMETER_ID id, float value, bool ignoreseekspeed = false) { Globals[id] = value; FmodBackend.Current?.SetGlobalParameter(FmodBackend.NameOf(id), value); return RESULT.OK; }
         public RESULT getParameterByID(PARAMETER_ID id, out float value) { Globals.TryGetValue(id, out value); return RESULT.OK; }
         public RESULT getParameterByID(PARAMETER_ID id, out float value, out float finalvalue) { Globals.TryGetValue(id, out value); finalvalue = value; return RESULT.OK; }
         public RESULT setParameterByName(string name, float value, bool ignoreseekspeed = false) => setParameterByID(PARAMETER_ID.FromName(name), value);

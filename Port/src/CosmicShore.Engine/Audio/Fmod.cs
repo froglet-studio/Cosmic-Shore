@@ -101,7 +101,9 @@ namespace CosmicShore.Engine.Audio.Fmod
         public RESULT setVolume(float volume)
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
-            State.Volume = volume; return RESULT.OK;
+            State.Volume = volume;
+            FmodBackend.Current?.SetVolume(State, volume);
+            return RESULT.OK;
         }
 
         public RESULT getVolume(out float volume) { volume = State?.Volume ?? 0f; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
@@ -110,7 +112,9 @@ namespace CosmicShore.Engine.Audio.Fmod
         public RESULT set3DAttributes(ATTRIBUTES_3D attributes)
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
-            State.Position = attributes.position; return RESULT.OK;
+            State.Position = attributes.position;
+            FmodBackend.Current?.Set3DAttributes(State, attributes);
+            return RESULT.OK;
         }
 
         public RESULT start()
@@ -119,21 +123,26 @@ namespace CosmicShore.Engine.Audio.Fmod
             if (State.Started && !State.Stopped) return RESULT.OK;
             State.Started = true; State.Stopped = false;
             RuntimeManager.RecordStart(State);
+            FmodBackend.Current?.Start(State);
             return RESULT.OK;
         }
 
         public RESULT stop(STOP_MODE mode)
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
-            State.Stopped = true; return RESULT.OK;
+            State.Stopped = true;
+            FmodBackend.Current?.Stop(State, mode);
+            return RESULT.OK;
         }
 
-        public RESULT setPaused(bool paused) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Paused = paused; return RESULT.OK; }
+        public RESULT setPaused(bool paused) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Paused = paused; FmodBackend.Current?.SetPaused(State, paused); return RESULT.OK; }
         public RESULT getPaused(out bool paused) { paused = State?.Paused ?? false; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
 
         public RESULT getPlaybackState(out PLAYBACK_STATE state)
         {
             state = State == null || !State.Started || State.Stopped ? PLAYBACK_STATE.STOPPED : PLAYBACK_STATE.PLAYING;
+            // The real runtime knows when a one-shot has finished; the local model does not.
+            if (State != null && FmodBackend.Current?.GetPlaybackState(State) is { } live) state = live;
             return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
         }
 
@@ -146,7 +155,9 @@ namespace CosmicShore.Engine.Audio.Fmod
         public RESULT setParameterByID(PARAMETER_ID id, float value, bool ignoreseekspeed = false)
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
-            State.Parameters[id] = value; return RESULT.OK;
+            State.Parameters[id] = value;
+            FmodBackend.Current?.SetParameter(State, FmodBackend.NameOf(id), value, ignoreseekspeed);
+            return RESULT.OK;
         }
 
         public RESULT getParameterByID(PARAMETER_ID id, out float value) => getParameterByID(id, out value, out _);
@@ -167,7 +178,9 @@ namespace CosmicShore.Engine.Audio.Fmod
         public RESULT release()
         {
             if (State == null) return RESULT.ERR_INVALID_HANDLE;
-            State.Released = true; return RESULT.OK;
+            State.Released = true;
+            FmodBackend.Current?.Release(State);
+            return RESULT.OK;
         }
 
         public RESULT clearHandle() { State = null; return RESULT.OK; }
@@ -179,6 +192,7 @@ namespace CosmicShore.Engine.Audio.Fmod
         public string Path;
         public float Volume = 1f;
         public bool Mute;
+        public bool Paused;
     }
 
     /// <summary>
@@ -191,9 +205,10 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         public bool isValid() => State != null;
 
-        public RESULT setVolume(float volume) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Volume = volume; return RESULT.OK; }
-        public RESULT setMute(bool mute) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Mute = mute; return RESULT.OK; }
-        public RESULT setPaused(bool paused) => State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        public RESULT setVolume(float volume) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Volume = volume; Push(); return RESULT.OK; }
+        public RESULT setMute(bool mute) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Mute = mute; Push(); return RESULT.OK; }
+        public RESULT setPaused(bool paused) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Paused = paused; Push(); return RESULT.OK; }
+        void Push() => FmodBackend.Current?.SetBus(State.Path, State.Volume, State.Mute || (State.Path == "bus:/" && RuntimeManager.IsMuted), State.Paused);
         public RESULT getVolume(out float volume) { volume = State?.Volume ?? 0f; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
         public RESULT getMute(out bool mute) { mute = State?.Mute ?? false; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
         public RESULT stopAllEvents(STOP_MODE mode) => State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
@@ -227,7 +242,9 @@ namespace CosmicShore.Engine.Audio.Fmod
         {
             if (reference.IsNull)
                 throw new System.ArgumentException("EventReference is null.", nameof(reference));
-            return new EventInstance { State = new EventInstanceState { Path = reference.Path } };
+            var state = new EventInstanceState { Path = reference.Path };
+            FmodBackend.Current?.Create(state, reference);
+            return new EventInstance { State = state };
         }
 
         public static Bus GetBus(string path)
@@ -240,7 +257,37 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         public static void AttachInstanceToGameObject(EventInstance instance, Transform transform)
         {
-            if (instance.isValid()) instance.State.AttachedTo = transform;
+            if (!instance.isValid()) return;
+            instance.State.AttachedTo = transform;
+            if (!Attached.Contains(instance.State)) Attached.Add(instance.State);
+            if (transform != null) instance.set3DAttributes(RuntimeUtils.To3DAttributes(transform));
+        }
+
+        /// <summary>Instances following a transform (original: RuntimeManager's attached-instance list).</summary>
+        static readonly List<EventInstanceState> Attached = new();
+
+        /// <summary>
+        /// Once per frame, after the game's LateUpdate (original: RuntimeManager's own update):
+        /// attached instances follow their objects, the listener follows its StudioListener (or
+        /// the main camera), and the Studio system runs its command queue.
+        /// </summary>
+        public static void Update()
+        {
+            var backend = FmodBackend.Current;
+            if (backend == null) return;
+            for (int i = Attached.Count - 1; i >= 0; i--)
+            {
+                var s = Attached[i];
+                var t = s.AttachedTo;
+                bool finished = s.Released && backend.GetPlaybackState(s) is null or PLAYBACK_STATE.STOPPED;
+                if (t == null || finished) { Attached.RemoveAt(i); continue; }
+                backend.Set3DAttributes(s, RuntimeUtils.To3DAttributes(t));
+            }
+            int n = 0;
+            foreach (var l in StudioListener.Active)
+                if (l != null && l.isActiveAndEnabled) backend.SetListener(n++, RuntimeUtils.To3DAttributes(l.transform));
+            if (n == 0 && Camera.main != null) backend.SetListener(0, RuntimeUtils.To3DAttributes(Camera.main.transform));
+            backend.Update();
         }
 
         public static void AttachInstanceToGameObject(EventInstance instance, GameObject gameObject)
@@ -254,7 +301,9 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         public static void DetachInstanceFromGameObject(EventInstance instance)
         {
-            if (instance.isValid()) instance.State.AttachedTo = null;
+            if (!instance.isValid()) return;
+            instance.State.AttachedTo = null;
+            Attached.Remove(instance.State);
         }
 
         public static EventInstance CreateInstance(string path) => CreateInstance(new EventReference { Path = path });
@@ -300,8 +349,8 @@ namespace CosmicShore.Engine.Audio.Fmod
         public static bool HaveAllBanksLoaded => true;
         public static bool HasBankLoaded(string bankName) => true;
         public static bool IsMuted { get; private set; }
-        public static void MuteAllEvents(bool muted) => IsMuted = muted;
-        public static void PauseAllEvents(bool paused) { }
+        public static void MuteAllEvents(bool muted) { IsMuted = muted; FmodBackend.Current?.SetBus("bus:/", 1f, muted, false); }
+        public static void PauseAllEvents(bool paused) { FmodBackend.Current?.SetBus("bus:/", 1f, IsMuted, paused); }
         public static void LoadBank(string bankName, bool loadSamples = false) { }
         public static void UnloadBank(string bankName) { }
         public static void WaitForAllSampleLoading() { }
@@ -318,6 +367,7 @@ namespace CosmicShore.Engine.Audio.Fmod
             Vcas.Clear();
             StudioSystem.Globals.Clear();
             StartedInstances.Clear();
+            Attached.Clear();
             FailBusResolution = false;
         }
     }
