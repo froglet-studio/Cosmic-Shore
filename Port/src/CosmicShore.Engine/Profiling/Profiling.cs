@@ -13,6 +13,22 @@ namespace CosmicShore.Engine.Profiling
         public static ProfilerCategory Network => new("Network");
         public static ProfilerCategory Scripts => new("Scripts");
         public static ProfilerCategory Render => new("Render");
+        public static ProfilerCategory Memory => new("Memory");
+        public static ProfilerCategory Physics => new("Physics");
+        public static ProfilerCategory Internal => new("Internal");
+        public static ProfilerCategory Ai => new("Ai");
+        public static ProfilerCategory Animation => new("Animation");
+        public static ProfilerCategory Audio => new("Audio");
+        public static ProfilerCategory Gui => new("Gui");
+        public static ProfilerCategory Input => new("Input");
+        public static ProfilerCategory Lighting => new("Lighting");
+        public static ProfilerCategory Loading => new("Loading");
+        public static ProfilerCategory Particles => new("Particles");
+        public static ProfilerCategory Video => new("Video");
+        public static ProfilerCategory Vr => new("Vr");
+        public static ProfilerCategory FileIO => new("FileIO");
+        public ProfilerCategory(string name, ushort color = 0) : this(name) { }
+        public override string ToString() => Name;
     }
 
     public enum ProfilerMarkerDataUnit { Undefined = 0, TimeNanoseconds = 1, Bytes = 2, Count = 3, Percent = 4 }
