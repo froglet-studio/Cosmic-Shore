@@ -75,6 +75,7 @@ class World:
                             # canvas, slots persist when their state dies (the grid NCA's semantics
                             # with particle perception); no budding, motion or collision
     jitter: float = 0.25    # lattice jitter, as a fraction of the spacing
+    rejitter: bool = False  # lattice ablation: a different jitter for every sample and rollout
 
 
 class State:
@@ -97,9 +98,9 @@ class State:
         return self.pos.shape[0]
 
 
-def lattice_points(world: World, extent):
-    """Deterministic jittered hex (2D) lattice covering [0, extent)."""
-    a, g = world.lattice, np.random.default_rng(0)
+def lattice_points(world: World, extent, g=None):
+    """Jittered hex (2D) lattice covering [0, extent); deterministic unless a generator is given."""
+    a, g = world.lattice, (g or np.random.default_rng(0))
     pts, row, y = [], 0, 0.0
     while y < extent[1]:
         x = a / 2 if row % 2 else 0.0
@@ -115,7 +116,12 @@ def seed_state(B, world: World, centre, C=16):
         assert world.dim == 2, "lattice ablation is 2D only"
         lat = lattice_points(world, [2 * c for c in centre])
         world.capacity = len(lat)
-        pos = lat[None].repeat(B, 1, 1)
+        if world.rejitter:
+            pos = torch.stack([lattice_points(world, [2 * c for c in centre],
+                                              np.random.default_rng(int(torch.randint(1 << 30, (1,)))))
+                               for _ in range(B)])
+        else:
+            pos = lat[None].repeat(B, 1, 1)
         s = torch.zeros(B, len(lat), C)
         i0 = int(((lat - torch.tensor(centre)) ** 2).sum(-1).argmin())
         s[:, i0, 3:] = 1.0
@@ -223,6 +229,17 @@ class ParticleNCA(nn.Module):
 
     def _lattice_edges(self, st: State):
         B, N, _ = st.pos.shape
+        if self.world.rejitter:                      # per-sample lattices: edges per rollout
+            key = (B, N, st.pos.data_ptr(), float(st.pos.detach().sum()))   # addresses get reused
+            if getattr(self, "_lat_key", None) != key:
+                with torch.no_grad():
+                    ii, jj = [], []
+                    for b in range(B):
+                        m = (torch.cdist(st.pos[b], st.pos[b]) < self.world.R) & ~torch.eye(N, dtype=torch.bool)
+                        i, j = m.nonzero(as_tuple=True)
+                        ii.append(i + b * N); jj.append(j + b * N)
+                    self._lat_edges, self._lat_key = (torch.cat(ii), torch.cat(jj)), key
+            return self._lat_edges
         key = (B, N)
         if getattr(self, "_lat_key", None) != key:
             with torch.no_grad():
@@ -466,6 +483,8 @@ def train(cfg: PConfig, out_dir: str, resume=False):
     seed = seed_state(1, world, centre, cfg.channel_n)
     pool = State(seed.pos.repeat(cfg.pool_size, 1, 1), seed.s.repeat(cfg.pool_size, 1, 1),
                  seed.active.repeat(cfg.pool_size, 1))
+    if world.rejitter:
+        pool = seed_state(cfg.pool_size, world, centre, cfg.channel_n)
     log = list(np.load(os.path.join(out_dir, "loss.npy")))[:start] if resume else []
     t0 = time.time()
     good, rollbacks = None, 0
@@ -503,7 +522,8 @@ def train(cfg: PConfig, out_dir: str, resume=False):
             with torch.no_grad():
                 order = torch.argsort(frame_mse(splat(x0, grid, world.sigma), frames).min(1).values, descending=True)
             x0, idx = x0.index(order), idx[order.numpy()]
-            x0.pos[0], x0.s[0], x0.active[0] = seed.pos[0], seed.s[0], seed.active[0]
+            sd = seed_state(1, world, centre, cfg.channel_n) if world.rejitter else seed
+            x0.pos[0], x0.s[0], x0.active[0] = sd.pos[0], sd.s[0], sd.active[0]
             if cfg.damage_n:
                 tail = x0.index(torch.arange(cfg.batch_size - cfg.damage_n, cfg.batch_size))
                 ball_damage(tail, grid, rng, keep_slots=world.lattice > 0)
