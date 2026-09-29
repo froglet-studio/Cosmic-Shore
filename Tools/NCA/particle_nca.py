@@ -36,6 +36,7 @@ position. Dimension-generic: the same code is the 2D lizard and the 3D swimmer.
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import math
 import os
@@ -305,6 +306,9 @@ class PConfig:
     seed: int = 0
     threads: int = 0
     init: str = ""                     # warm start: a particle model.pt (dim-lifted if 2D -> 3D)
+    overflow_w: float = 1.0            # Mordvintsev's texture-NCA overflow loss: state outside [-1, 1]
+    blowup_factor: float = 8.0         # a loss this many times the recent median rolls back
+    snapshot_every: int = 250          # numbered model snapshots, so a late collapse costs nothing
     world: dict = None
 
 
@@ -327,6 +331,26 @@ def build_targets(cfg):
 def frame_mse(img, frames):
     B, K = img.shape[0], frames.shape[0]
     return ((img.reshape(B, 1, -1) - frames.reshape(1, K, -1)) ** 2).mean(-1)
+
+
+def overflow(st: State):
+    """Mean over live particles of how far the state leaves its box: every channel outside
+    [-1, 1], and RGBA outside [0, 1]. The grid NCA never needed this; free particles do - a state
+    that drifts off where nothing looks keeps feeding the MLP until the whole population blows up."""
+    s, a = st.s, st.active.to(st.s.dtype)
+    o = (s - s.clamp(-1, 1)).abs().sum(-1) + (s[..., :4] - s[..., :4].clamp(0, 1)).abs().sum(-1)
+    return (o * a).sum() / a.sum().clamp(min=1)
+
+
+def sanitize(st: State, seed: State, bound=50.0):
+    """In place: any sample whose state is non-finite, out of all bounds, or extinct goes back to
+    the seed, so one bad rollout cannot poison the pool it is written into."""
+    s = st.s
+    bad = ~torch.isfinite(s).all(-1).all(-1) | (s.abs().amax((-1, -2)) > bound) | ~st.active.any(-1)
+    bad |= ~torch.isfinite(st.pos).all(-1).all(-1)
+    for b in bad.nonzero().squeeze(1).tolist():
+        st.pos[b], st.s[b], st.active[b] = seed.pos[0], seed.s[0], seed.active[0]
+    return int(bad.sum())
 
 
 def ball_damage(st: State, grid, rng):
@@ -398,6 +422,9 @@ def train(cfg: PConfig, out_dir: str, resume=False):
                  seed.active.repeat(cfg.pool_size, 1))
     log = list(np.load(os.path.join(out_dir, "loss.npy")))[:start] if resume else []
     t0 = time.time()
+    good, rollbacks = None, 0
+    if resume:
+        rollbacks = json.load(open(os.path.join(out_dir, "state.json"))).get("rollbacks", 0)
     if resume and start >= cfg.clock_steps:          # rebuild the unsaved pool from seeds
         with torch.no_grad():
             for b0 in range(0, cfg.pool_size, 32):
@@ -438,7 +465,7 @@ def train(cfg: PConfig, out_dir: str, resume=False):
             n = int(rng.integers(cfg.min_iter, cfg.max_iter + 1))
 
         checks = [n - (J - 1 - j) * P for j in range(J)]
-        x, snaps = x0, []
+        x, snaps, ovf = x0, [], 0.0
         for i in range(1, n + 1):
             if use_ckpt:
                 p, s_, a = checkpoint(step_fn, x.pos, x.s, x.active.float(), use_reentrant=False)
@@ -448,6 +475,7 @@ def train(cfg: PConfig, out_dir: str, resume=False):
                 x = ca(x)
             if i in checks:
                 snaps.append(splat(x, grid, world.sigma))
+                ovf = ovf + overflow(x) / J
         B = x0.B
         err = torch.stack([frame_mse(im, frames) for im in snaps], 1)        # [B, J, K]
         if K == 1:
@@ -464,6 +492,25 @@ def train(cfg: PConfig, out_dir: str, resume=False):
                 free = cost[torch.arange(B), cost.detach().argmin(1)]
                 loss = torch.cat([seed_cost[:1], free[1:]]).mean()
 
+        fit = loss
+        loss = fit + cfg.overflow_w * ovf
+        L = float(fit)
+        # guard: a non-finite or exploding loss, or a batch that died out, rolls the model and the
+        # optimiser back to the last healthy snapshot instead of stepping into the explosion
+        recent = [v for v in log[-50:] if math.isfinite(v)]
+        med = float(np.median(recent)) if len(recent) >= 10 else float("inf")
+        extinct = not bool(x.active.any())
+        if not math.isfinite(float(loss)) or L > cfg.blowup_factor * med or extinct:
+            rollbacks += 1
+            if good is not None:
+                ca.load_state_dict(good[0]); opt.load_state_dict(good[1])
+            print(f"[particle {cfg.experiment}] step {step}: loss {L:.4g} (median {med:.4g}), "
+                  f"extinct={extinct} -> rolled back to step {good[2] if good else '-'} "
+                  f"(rollback {rollbacks})", flush=True)
+            log.append(med if math.isfinite(med) else L)
+            sched.step()
+            continue
+
         opt.zero_grad(set_to_none=True)
         loss.backward()
         for prm in ca.parameters():
@@ -472,6 +519,8 @@ def train(cfg: PConfig, out_dir: str, resume=False):
         opt.step()
         sched.step()
         xd = x.detach()
+        with torch.no_grad():
+            reset = sanitize(xd, seed)
         if clock:
             if step == cfg.clock_steps - 1:
                 pick = torch.from_numpy(rng.integers(0, B, cfg.pool_size))
@@ -480,18 +529,21 @@ def train(cfg: PConfig, out_dir: str, resume=False):
             ii = torch.from_numpy(idx)
             pool.pos[ii], pool.s[ii], pool.active[ii] = xd.pos, xd.s, xd.active
 
-        L = float(loss)
         log.append(L)
         if step % 25 == 0:
+            good = (copy.deepcopy(ca.state_dict()), copy.deepcopy(opt.state_dict()), step)
             dt = time.time() - t0
             print(f"[particle {cfg.experiment}] {'clock' if clock else 'pool '} step {step:5d}  loss {L:.5f}  "
-                  f"log10 {math.log10(max(L, 1e-12)):+.3f}  particles {int(xd.active.sum(1).float().mean())}  "
+                  f"log10 {math.log10(max(L, 1e-12)):+.3f}  overflow {float(ovf):.4f}  "
+                  f"particles {int(xd.active.sum(1).float().mean())}  reset {reset}  "
                   f"{dt / (step - start + 1):.2f}s/it  elapsed {dt / 60:.1f}m", flush=True)
         if step % 50 == 0 or step == cfg.steps:
             torch.save(ca.state_dict(), os.path.join(out_dir, "model.pt"))
             torch.save(opt.state_dict(), os.path.join(out_dir, "opt.pt"))
             np.save(os.path.join(out_dir, "loss.npy"), np.array(log))
-            json.dump({"step": step}, open(os.path.join(out_dir, "state.json"), "w"))
+            json.dump({"step": step, "rollbacks": rollbacks}, open(os.path.join(out_dir, "state.json"), "w"))
+        if cfg.snapshot_every and step % cfg.snapshot_every == 0:
+            torch.save(ca.state_dict(), os.path.join(out_dir, f"model_{step:05d}.pt"))
         if step % 250 == 0 and world.dim == 2:
             img = to_rgb(splat(xd, grid, world.sigma)).numpy()
             im = Image.fromarray((np.concatenate(list(img), 1) * 255).astype(np.uint8))
@@ -593,6 +645,7 @@ def main():
     t = sub.add_parser("train")
     t.add_argument("--out", default=None)
     t.add_argument("--resume", action="store_true")
+    t.add_argument("--world", default="", help='World overrides as JSON, e.g. \'{"capacity": 900}\'')
     for k, v in asdict(PConfig()).items():
         if k == "world":
             continue
@@ -626,6 +679,7 @@ def main():
             print(f"80 steps fwd+bwd: {time.time() - t0:.2f}s  (particles {int(y.active.sum(1).float().mean())})")
     elif a.cmd == "train":
         cfg = PConfig(**{k: getattr(a, k) for k in asdict(PConfig()) if k != "world"})
+        cfg.world = json.loads(a.world) if a.world else None
         out = a.out or os.path.join(HERE, "runs", f"particle_{cfg.experiment}")
         train(cfg, out, resume=a.resume)
 
