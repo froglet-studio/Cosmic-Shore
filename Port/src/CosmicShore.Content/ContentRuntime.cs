@@ -249,8 +249,14 @@ namespace CosmicShore.Content
         EngineObject LoadPrefabObject(ObjRef r)
         {
             var path = Db.PathOf(r.Guid);
-            if (path == null || !path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase)) return null;
+            if (path == null) return null;
+            bool model = AssetDatabase.IsModelPath(path);
+            if (!model && !path.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase)) return null;
             if (GameLoop.Current == null) return null;
+            // A model file's refs mostly name sub-assets (meshes, materials): only materialize
+            // its model prefab for a ref that names the prefab or one of its objects.
+            if (model && (Db.LoadModel(r.Guid) is not { } imported || !ModelPrefabGraph.OwnsObject(imported, r.FileId)))
+                return null;
 
             if (!_prefabTemplates.TryGetValue(r.Guid, out var entry))
             {

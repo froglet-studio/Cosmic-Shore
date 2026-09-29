@@ -42,7 +42,7 @@ namespace CosmicShore.Content.Scenes
         public readonly List<long> RootOrder = new();
         public readonly List<string> Warnings = new();
 
-        PrefabGraph(AssetFile file) { File = file; }
+        internal PrefabGraph(AssetFile file) { File = file; }
 
         internal static void ApplyModificationForTests(YMap body, string path, string value, YMap refNode, ObjRef r)
             => Builder.ApplyModification(body, path, value, refNode, r);
@@ -77,8 +77,14 @@ namespace CosmicShore.Content.Scenes
 
         // ── Construction ───────────────────────────────────────────────────
 
+        /// <summary>
+        /// Expands a scene/prefab file. A model file (FBX) has no documents; its graph is the
+        /// model prefab Unity's ModelImporter generates (see <see cref="ModelPrefabGraph"/>).
+        /// </summary>
         public static PrefabGraph Build(AssetDatabase db, AssetFile file)
-            => new Builder(db).Build(file, 0);
+            => file != null && AssetDatabase.IsModelPath(file.Path)
+                ? ModelPrefabGraph.Build(db, file)
+                : new Builder(db).Build(file, 0);
 
         sealed class Builder
         {
@@ -125,7 +131,9 @@ namespace CosmicShore.Content.Scenes
             {
                 if (_sourceCache.TryGetValue(guid, out var cached)) return cached;
                 var file = _db.Load(guid);
-                PrefabGraph g = file == null ? null : Build(file, depth + 1);
+                PrefabGraph g = file == null ? null
+                    : AssetDatabase.IsModelPath(file.Path) ? ModelPrefabGraph.Build(_db, file)
+                    : Build(file, depth + 1);
                 _sourceCache[guid] = g;
                 return g;
             }
