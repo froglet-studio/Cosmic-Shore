@@ -39,6 +39,22 @@ namespace CosmicShore.Player
             foreach (var (k, n) in byShader.OrderByDescending(kv => kv.Value)) Console.WriteLine($"    {n,6}  {k}");
             Console.WriteLine("  meshes (top 25):");
             foreach (var (k, n) in meshNames.OrderByDescending(kv => kv.Value).Take(25)) Console.WriteLine($"    {n,6}  {k}");
+
+            // Material values the 3D pass reads, per distinct material (most used first).
+            var matUse = new Dictionary<Material, int>();
+            foreach (var r in renderers)
+                foreach (var m in r.sharedMaterials ?? Array.Empty<Material>())
+                    if (m != null) matUse[m] = matUse.TryGetValue(m, out var n) ? n + 1 : 1;
+            Console.WriteLine("  materials (top 30):");
+            string[] props = { "_DarkColor", "_BrightColor", "_DullCrystalColor", "_BrightCrystalColor", "_Color1", "_Color2", "_BaseColor", "_Color", "_EmissionColor", "_Spread", "_Alpha", "_Surface" };
+            foreach (var (m, n) in matUse.OrderByDescending(kv => kv.Value).Take(30))
+            {
+                var parts = new List<string>();
+                foreach (var p in props)
+                    if (m.HasProperty(p))
+                        parts.Add(p == "_Alpha" || p == "_Surface" ? $"{p}={m.GetFloat(p):0.###}" : p == "_Spread" ? $"{p}={m.GetVector(p)}" : $"{p}={m.GetColor(p)}");
+                Console.WriteLine($"    {n,6}  '{m.name}' [{m.shader?.name}] q={m.renderQueue} {string.Join(" ", parts)}");
+            }
         }
 
         public static void PrintNetwork()

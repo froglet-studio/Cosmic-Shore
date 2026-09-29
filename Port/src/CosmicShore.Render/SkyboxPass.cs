@@ -67,7 +67,7 @@ void main(){
             foreach (var n in ColorProps)
             {
                 var c = sky.GetColor(n);
-                _hyperSea.Set(n, ColorSpace.ToLinear(c.r), ColorSpace.ToLinear(c.g), ColorSpace.ToLinear(c.b), c.a);
+                _hyperSea.Set(n, c.r, c.g, c.b, c.a);
             }
             foreach (var n in VectorProps)
             {

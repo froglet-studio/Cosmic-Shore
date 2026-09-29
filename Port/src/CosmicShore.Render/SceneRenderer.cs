@@ -83,6 +83,7 @@ uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair
 uniform sampler2D uTex;
 uniform vec4 uTexST;
 uniform float uFresPow;
+uniform float uMaxSqrDist;
 uniform vec3 uEmission;
 uniform float uCutoff;
 uniform int uVertexColor;
@@ -100,8 +101,18 @@ void main(){
   vec4 tex = texture(uTex, vUv * uTexST.xy + uTexST.zw);
   vec4 col;
   if (uFamily == 2) {
-    float f = pow(1.0 - clamp(dot(N, V), 0.0, 1.0), uFresPow);
-    col = mix(vDark, vBright, f) * tex;
+    // FresnelPower4: back-facing normals keep a faint term (d+1)*0.2 instead of clamping.
+    float d = dot(N, V);
+    float x = d > 0.0 ? d : (d + 1.0) * 0.2;
+    float f = pow(1.0 - x, uFresPow);
+    vec4 bright = vBright;
+    if (uMaxSqrDist > 0.0) {
+      // DistanceSpreadAndColors: the rim sinks toward the base with camera distance.
+      vec3 dc = vWorld - uCamPos;
+      float n = dot(dc, dc) / uMaxSqrDist;
+      bright = mix(vBright, vDark, n > 1.0 ? 0.9 : n * 0.9);
+    }
+    col = mix(vDark, bright, f) * tex;
   } else if (uFamily == 1) {
     vec4 base = vDark * tex;
     float ndl = max(dot(N, uLightDir), 0.0);
@@ -146,6 +157,7 @@ void main(){
             public bool ZWrite;
             public int Queue;
             public int DarkId, BrightId; // property ids the per-instance colours come from
+            public float MaxSqrDist;     // the prism graph's distance fade (0 = none)
         }
 
         struct Item
@@ -185,6 +197,7 @@ void main(){
         static readonly int IdAlphaClip = Shader.PropertyToID("_AlphaClip"), IdCutoff = Shader.PropertyToID("_Cutoff");
         static readonly int IdColorMul = Shader.PropertyToID("_ColorMultiplier");
         static readonly int IdGrowStart = Shader.PropertyToID("_GrowStartTime"), IdGrowRate = Shader.PropertyToID("_GrowRate"), IdGrowFrac = Shader.PropertyToID("_GrowStartFrac");
+        static readonly int IdSqrDistance = Shader.PropertyToID("_SqrDistance");
         static readonly int IdPrismClock = Shader.PropertyToID("_PrismClock");
 
         public int DrawCalls { get; private set; }
@@ -221,6 +234,9 @@ void main(){
 
             _gl.Enable(EnableCap.DepthTest);
             _gl.DepthFunc(DepthFunction.Lequal);
+            // Unity's front faces wind clockwise; worldToCameraMatrix's Z flip keeps that
+            // true in GL clip space, so GL must be told which winding is front.
+            _gl.FrontFace(FrontFaceDirection.CW);
 
             // Opaque: instanced batches, front-to-back by queue.
             _gl.Disable(EnableCap.Blend);
@@ -251,6 +267,7 @@ void main(){
             }
 
             _gl.DepthMask(true);
+            _gl.FrontFace(FrontFaceDirection.Ccw);
             _gl.Disable(EnableCap.Blend);
             _gl.Disable(EnableCap.CullFace);
             _gl.Disable(EnableCap.DepthTest);
@@ -293,7 +310,12 @@ void main(){
         static MatState Classify(Material m)
         {
             var st = new MatState { FresPow = 4f, TexST = new Vector4(1, 1, 0, 0), Cull = 2, Queue = m.renderQueue };
-            if (m.HasProperty(IdDark) && m.HasProperty(IdBright)) { st.Family = 2; st.DarkId = IdDark; st.BrightId = IdBright; if (m.HasProperty(IdFresPow)) st.FresPow = m.GetFloat(IdFresPow); }
+            if (m.HasProperty(IdDark) && m.HasProperty(IdBright))
+            {
+                st.Family = 2; st.DarkId = IdDark; st.BrightId = IdBright;
+                if (m.HasProperty(IdFresPow)) st.FresPow = m.GetFloat(IdFresPow);
+                if (m.HasProperty(IdSqrDistance)) st.MaxSqrDist = m.GetFloat(IdSqrDistance);
+            }
             else if (m.HasProperty(IdDull) && m.HasProperty(IdBrightCrystal)) { st.Family = 2; st.DarkId = IdDull; st.BrightId = IdBrightCrystal; }
             else if (m.HasProperty(IdDullColor) && m.HasProperty(IdBright)) { st.Family = 2; st.DarkId = IdDullColor; st.BrightId = IdBright; }
             else if (m.HasProperty(IdColor1) && m.HasProperty(IdColor2)) { st.Family = 2; st.DarkId = IdColor1; st.BrightId = IdColor2; st.FresPow = 2f; }
@@ -322,7 +344,7 @@ void main(){
             if (m.HasProperty(IdEmission) && (m.IsKeywordEnabled("_EMISSION") || st.Family == 0))
             {
                 var e = m.GetColor(IdEmission);
-                st.Emission = new EVector3(ColorSpace.ToLinear(e.r), ColorSpace.ToLinear(e.g), ColorSpace.ToLinear(e.b));
+                st.Emission = new EVector3(e.r, e.g, e.b);
             }
 
             bool surfaceTransparent = m.HasProperty(IdSurface) && m.GetFloat(IdSurface) >= 0.5f;
@@ -386,6 +408,7 @@ void main(){
 
             _program.Set("uFamily", st.Family);
             _program.Set("uFresPow", st.FresPow);
+            _program.Set("uMaxSqrDist", st.MaxSqrDist);
             _program.Set("uCutoff", st.Cutoff);
             _program.Set("uTexST", st.TexST.x, st.TexST.y, st.TexST.z, st.TexST.w);
             _program.Set("uVertexColor", entry.HasColors ? 1 : 0);
@@ -434,8 +457,10 @@ void main(){
                 }
             }
             if (!st.Transparent && st.Cutoff < 0f) { dark.a = 1f; bright.a = 1f; }
-            d[o + 16] = ColorSpace.ToLinear(dark.r); d[o + 17] = ColorSpace.ToLinear(dark.g); d[o + 18] = ColorSpace.ToLinear(dark.b); d[o + 19] = dark.a;
-            d[o + 20] = ColorSpace.ToLinear(bright.r); d[o + 21] = ColorSpace.ToLinear(bright.g); d[o + 22] = ColorSpace.ToLinear(bright.b); d[o + 23] = bright.a;
+            // Material colours are the linear intensities the GPU receives (Docs/PALETTE.md §3,
+            // measured on screen): no de-gamma step.
+            d[o + 16] = dark.r; d[o + 17] = dark.g; d[o + 18] = dark.b; d[o + 19] = dark.a;
+            d[o + 20] = bright.r; d[o + 21] = bright.g; d[o + 22] = bright.b; d[o + 23] = bright.a;
             d[o + 24] = growStart; d[o + 25] = growRate; d[o + 26] = 0f; d[o + 27] = 0f;
             d[o + 28] = frac.x; d[o + 29] = frac.y; d[o + 30] = frac.z; d[o + 31] = 0f;
         }

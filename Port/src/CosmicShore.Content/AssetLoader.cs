@@ -178,6 +178,8 @@ namespace CosmicShore.Content
                     var mat = MaterialImporter.Build(doc, file, this);
                     return mat;
                 }
+                case 43: // Mesh
+                    return Models.SerializedMeshImporter.Build(doc.Body);
                 default:
                     return null;
             }
