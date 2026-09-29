@@ -212,6 +212,8 @@ namespace CosmicShore.Player
             var prism = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Prism>(FindObjectsSortMode.None)
                 .Where(pr => pr && pr.isActiveAndEnabled && !pr.destroyed)
                 .OrderBy(pr => ViewCentreScore(cam, pr.transform.position))
+                .Take(40) // the prisms nearest the view centre, then the one that looks biggest
+                .OrderByDescending(pr => ApparentSize(cam, pr))
                 .FirstOrDefault();
             if (prism == null) { Console.WriteLine("[lit] no prisms"); return null; }
             var centre = prism.transform.position;
@@ -233,6 +235,8 @@ namespace CosmicShore.Player
             var prism = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Prism>(FindObjectsSortMode.None)
                 .Where(pr => pr && pr.isActiveAndEnabled && !pr.destroyed)
                 .OrderBy(pr => ViewCentreScore(cam, pr.transform.position))
+                .Take(40) // the prisms nearest the view centre, then the one that looks biggest
+                .OrderByDescending(pr => ApparentSize(cam, pr))
                 .FirstOrDefault();
             if (prism == null) { Console.WriteLine("[cradle] no prisms"); return null; }
             var hull = new GameObject("ScriptCradleHull");
@@ -263,7 +267,6 @@ namespace CosmicShore.Player
             return Vector3.Angle(cam.transform.forward, to) * 1000f + d;
         }
 
-        /// <summary>Every vessel: distance from the camera, screen position, and its vision tint.</summary>
         /// <summary>
         /// "domain Ruby" asks the server for a domain the way the Domain Changer toy does (the
         /// owner's RequestSetDomain_ServerRpc); "domain" alone prints every player's replicated
@@ -324,6 +327,29 @@ namespace CosmicShore.Player
             Console.WriteLine($"[arcade] no card for {mode}");
         }
 
+        /// <summary>
+        /// "stage 900" puts the first vessel that is not the local pilot's straight ahead of the
+        /// camera at that distance, a little off-axis so the local hull does not cover it, facing
+        /// the camera - a fixed subject for checking the vessel vision band's distance ramps.
+        /// </summary>
+        public static void Stage(float distance)
+        {
+            var cam = Camera.main;
+            if (cam == null) { Console.WriteLine("[stage] no camera"); return; }
+            foreach (var v in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.VesselController>(FindObjectsSortMode.None))
+            {
+                var status = v.GetComponent<CosmicShore.Gameplay.IVesselStatus>();
+                if (status?.Player != null && status.Player.IsLocalPilot) continue;
+                var ct = cam.transform;
+                var p = ct.position + ct.forward * distance + ct.right * (distance * 0.12f);
+                v.transform.SetPositionAndRotation(p, Quaternion.LookRotation(ct.up, -ct.forward)); // top toward the camera: a flat hull shows its planform
+                Console.WriteLine($"[stage] {v.name} at {distance:F0} from the camera");
+                return;
+            }
+            Console.WriteLine("[stage] no other vessel");
+        }
+
+        /// <summary>Every vessel: distance from the camera, screen position, and its vision tint.</summary>
         public static void Vessels()
         {
             var cam = Camera.main;
@@ -347,6 +373,10 @@ namespace CosmicShore.Player
                         r.GetPropertyBlock(block, i);
                         if (block.HasColor(tintId) && block.GetColor(tintId).a > 0f) { stamped++; tint = block.GetColor(tintId); }
                     }
+                int drawn = 0, rends = 0;
+                foreach (var r in v.GetComponentsInChildren<Renderer>(true))
+                    if (r is MeshRenderer or SkinnedMeshRenderer) { rends++; if (r.enabled && r.gameObject.activeInHierarchy) drawn++; }
+                where += $" active={v.gameObject.activeInHierarchy} hull {drawn}/{rends} drawn";
                 var no = v.GetComponent<NetworkObject>();
                 string net = no != null && no.IsSpawned ? $" net#{no.NetworkObjectId} owner={no.OwnerClientId}{(no.IsOwner ? " (mine)" : "")}" : "";
                 foreach (var nt in v.GetComponentsInChildren<CosmicShore.Engine.Networking.Components.NetworkTransform>(true))
