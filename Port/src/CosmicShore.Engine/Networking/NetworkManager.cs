@@ -80,12 +80,6 @@ namespace CosmicShore.Engine.Networking
         /// </summary>
         public NetworkSceneManager SceneManager { get; set; } = new();
 
-        public sealed class NetworkSceneManager
-        {
-            public void LoadScene(string sceneName, SceneManagement.LoadSceneMode mode)
-                => SceneManagement.SceneManager.LoadSceneAsync(sceneName, mode).Forget();
-        }
-
         /// <summary>
         /// The local machine's connection record (original surface —
         /// <c>MainMenuController.ApplyMenuVesselClassToHost</c> reaches the host Player
@@ -116,8 +110,122 @@ namespace CosmicShore.Engine.Networking
 
         /// <summary>Transport-driver entry points for the events above (the engine's stand-in for
         /// Netcode's internal raise paths; harnesses/tests may call them directly).</summary>
-        public void NotifyClientDisconnect(ulong clientId) => OnClientDisconnectCallback?.Invoke(clientId);
+        public void NotifyClientDisconnect(ulong clientId)
+        {
+            OnClientDisconnectCallback?.Invoke(clientId);
+            OnConnectionEvent?.Invoke(this, new ConnectionEventData { ClientId = clientId, EventType = ConnectionEvent.ClientDisconnected });
+        }
+
         public void NotifyTransportFailure() => OnTransportFailure?.Invoke();
+
+        /// <summary>Transport-driver entry point: a client finished connecting (raises the connected callbacks).</summary>
+        public void NotifyClientConnected(ulong clientId)
+        {
+            if (!ConnectedClientsIds.Contains(clientId)) ConnectedClientsIds.Add(clientId);
+            OnClientConnectedCallback?.Invoke(clientId);
+            OnConnectionEvent?.Invoke(this, new ConnectionEventData { ClientId = clientId, EventType = ConnectionEvent.ClientConnected });
+        }
+
+        // ── Netcode 2.x surface for the live game code (offline single-process host) ──
+
+        /// <summary>The server's client id — always 0.</summary>
+        public const ulong ServerClientId = 0;
+
+        /// <summary>Configuration record (player prefab, transport, approval payload, tick rate).</summary>
+        public NetworkConfig NetworkConfig { get; set; } = new();
+
+        /// <summary>Raised after the server side starts (StartHost/StartServer).</summary>
+        public event System.Action OnServerStarted;
+
+        /// <summary>Raised after the client side starts (StartHost/StartClient).</summary>
+        public event System.Action OnClientStarted;
+
+        /// <summary>Raised when the server side stops; the argument is "was a host".</summary>
+        public event System.Action<bool> OnServerStopped;
+
+        /// <summary>Raised when the client side stops; the argument is "was a host".</summary>
+        public event System.Action<bool> OnClientStopped;
+
+        /// <summary>Raised per connected client id (the host's own id on StartHost).</summary>
+        public event System.Action<ulong> OnClientConnectedCallback;
+
+        /// <summary>Unified connection-event stream (Netcode 2.x).</summary>
+        public event System.Action<NetworkManager, ConnectionEventData> OnConnectionEvent;
+
+        /// <summary>Raised before Shutdown tears the session down.</summary>
+        public event System.Action OnPreShutdown;
+
+        /// <summary>True between a successful start of the client side and shutdown.</summary>
+        public bool IsConnectedClient => IsListening && IsClient;
+
+        /// <summary>Shutdown is synchronous offline — never observed in progress.</summary>
+        public bool ShutdownInProgress { get; private set; }
+
+        /// <summary>Last disconnect reason (none offline).</summary>
+        public string DisconnectReason { get; set; } = string.Empty;
+
+        /// <summary>Tick system record (rate mirrors <see cref="NetworkConfig.TickRate"/>).</summary>
+        public NetworkTickSystem NetworkTickSystem => _tickSystem ??= new NetworkTickSystem(this);
+        NetworkTickSystem _tickSystem;
+
+        /// <summary>Local clock — the same unsynchronized clock as <see cref="ServerTime"/> offline.</summary>
+        public NetworkTime LocalTime => ServerTime;
+
+        /// <summary>True when this manager is running in distributed-authority mode (never offline).</summary>
+        public bool DistributedAuthorityMode => false;
+
+        /// <summary>Prefab handler registry (instantiation overrides are data-only offline).</summary>
+        public NetworkPrefabHandler PrefabHandler { get; } = new();
+
+        /// <summary>Custom-message manager (loopback offline).</summary>
+        public CustomMessagingManager CustomMessagingManager { get; } = new();
+
+        /// <summary>Registers a prefab into <see cref="NetworkConfig"/>'s prefab list.</summary>
+        public void AddNetworkPrefab(GameObject prefab) => NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = prefab });
+
+        public void RemoveNetworkPrefab(GameObject prefab) => NetworkConfig.Prefabs.Remove(prefab);
+
+        /// <summary>Makes this instance the process singleton (Netcode does this on Awake).</summary>
+        public void SetSingleton() => Singleton = this;
+
+        /// <summary>Server-only start: the local peer is the server and no local client exists.</summary>
+        public bool StartServer()
+        {
+            if (IsListening) return false;
+            IsServer = true;
+            IsClient = false;
+            IsListening = true;
+            OnServerStarted?.Invoke();
+            return true;
+        }
+
+        /// <summary>
+        /// Client-only start. Offline there is no remote server to reach, so the client
+        /// connects to the in-process loopback host: it becomes a listening client with id 0.
+        /// </summary>
+        public bool StartClient()
+        {
+            if (IsListening) return false;
+            IsServer = false;
+            IsClient = true;
+            IsListening = true;
+            LocalClientId = 0;
+            if (!ConnectedClientsIds.Contains(0)) ConnectedClientsIds.Add(0);
+            OnClientStarted?.Invoke();
+            OnClientConnectedCallback?.Invoke(LocalClientId);
+            OnConnectionEvent?.Invoke(this, new ConnectionEventData { ClientId = LocalClientId, EventType = ConnectionEvent.ClientConnected });
+            return true;
+        }
+
+        /// <summary>Server-side kick: removes the client from the tables and raises the disconnect callback.</summary>
+        public void DisconnectClient(ulong clientId, string reason = null)
+        {
+            ConnectedClientsIds.Remove(clientId);
+            if (ConnectedClients.Remove(clientId, out var client))
+                ConnectedClientsList.Remove(client);
+            if (!string.IsNullOrEmpty(reason)) DisconnectReason = reason;
+            NotifyClientDisconnect(clientId);
+        }
 
         /// <summary>
         /// Original-contract host start (single-process host-mode). Runs the local client
@@ -131,7 +239,7 @@ namespace CosmicShore.Engine.Networking
 
             if (ConnectionApprovalCallback != null)
             {
-                var request = new ConnectionApprovalRequest { ClientNetworkId = 0, Payload = System.Array.Empty<byte>() };
+                var request = new ConnectionApprovalRequest { ClientNetworkId = 0, Payload = NetworkConfig?.ConnectionData ?? System.Array.Empty<byte>() };
                 var response = new ConnectionApprovalResponse();
                 ConnectionApprovalCallback(request, response);
                 if (!response.Approved) return false;
@@ -142,6 +250,10 @@ namespace CosmicShore.Engine.Networking
             IsListening = true;
             LocalClientId = 0;
             if (!ConnectedClientsIds.Contains(0)) ConnectedClientsIds.Add(0);
+            OnServerStarted?.Invoke();
+            OnClientStarted?.Invoke();
+            OnClientConnectedCallback?.Invoke(LocalClientId);
+            OnConnectionEvent?.Invoke(this, new ConnectionEventData { ClientId = LocalClientId, EventType = ConnectionEvent.ClientConnected });
             return true;
         }
 
@@ -151,14 +263,21 @@ namespace CosmicShore.Engine.Networking
         /// <c>WaitUntil(() =&gt; !IsListening)</c> completes on its first check. Raises no
         /// callbacks (Netcode's local-notification sweep arrives with the transport phase).
         /// </summary>
-        public void Shutdown()
+        public void Shutdown(bool discardMessageQueue = false)
         {
+            bool wasServer = IsServer, wasClient = IsClient, wasListening = IsListening;
+            bool wasHost = wasServer && wasClient;
+            if (wasListening) OnPreShutdown?.Invoke();
+            ShutdownInProgress = true;
             IsListening = false;
             IsServer = false;
             IsClient = false;
             ConnectedClients.Clear();
             ConnectedClientsList.Clear();
             ConnectedClientsIds.Clear();
+            ShutdownInProgress = false;
+            if (wasListening && wasServer) OnServerStopped?.Invoke(wasHost);
+            if (wasListening && wasClient) OnClientStopped?.Invoke(wasHost);
         }
 
         /// <summary>Original-contract approval request (nested in NetworkManager, as in Netcode).</summary>
@@ -202,11 +321,15 @@ namespace CosmicShore.Engine.Networking
     {
         public System.Collections.Generic.Dictionary<ulong, NetworkObject> SpawnedObjects { get; } = new();
 
+        /// <summary>Set view of the spawned objects (original surface).</summary>
+        public System.Collections.Generic.HashSet<NetworkObject> SpawnedObjectsList { get; } = new();
+
         internal void Register(NetworkObject networkObject)
         {
             ulong id = networkObject.NetworkObjectId;
             if (id != 0)
                 SpawnedObjects[id] = networkObject;
+            SpawnedObjectsList.Add(networkObject);
         }
 
         internal void Unregister(NetworkObject networkObject)
@@ -214,6 +337,33 @@ namespace CosmicShore.Engine.Networking
             ulong id = networkObject.NetworkObjectId;
             if (id != 0)
                 SpawnedObjects.Remove(id);
+            SpawnedObjectsList.Remove(networkObject);
+        }
+
+        /// <summary>The player object owned by <paramref name="clientId"/>, if one was spawned as a player.</summary>
+        public NetworkObject GetPlayerNetworkObject(ulong clientId)
+        {
+            foreach (var obj in SpawnedObjectsList)
+                if (obj != null && obj.IsPlayerObject && obj.OwnerClientId == clientId)
+                    return obj;
+            return null;
+        }
+
+        /// <summary>The local client's player object.</summary>
+        public NetworkObject GetLocalPlayerObject()
+        {
+            var nm = NetworkManager.Singleton;
+            return GetPlayerNetworkObject(nm == null ? 0UL : nm.LocalClientId);
+        }
+
+        /// <summary>Every spawned object owned by <paramref name="clientId"/>.</summary>
+        public NetworkObject[] GetClientOwnedObjects(ulong clientId)
+        {
+            var list = new System.Collections.Generic.List<NetworkObject>();
+            foreach (var obj in SpawnedObjectsList)
+                if (obj != null && obj.OwnerClientId == clientId)
+                    list.Add(obj);
+            return list.ToArray();
         }
     }
 }
