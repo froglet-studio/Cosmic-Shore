@@ -324,6 +324,68 @@ namespace CosmicShore.Utility.AITraining.Tests
         }
 
         [Test]
+        public void SkimRace_ApplyFor_IsSkimRaceProfile_AndRenamedModesDoNotFallThrough()
+        {
+            var profile = ScriptableObject.CreateInstance<FitnessProfileSO>();
+            profile.ApplyFor(GameModes.SkimRace);
+            Assert.AreEqual(3, profile.Entries.Count);
+            Assert.AreEqual(FitnessProfileSO.ComponentKind.CrystalCollection, profile.Entries[0].Kind);
+            Assert.AreEqual(100f, profile.Entries[0].Weight);
+            Assert.AreEqual("Crystals", profile.Entries[0].Label);
+            Assert.AreEqual(FitnessProfileSO.ComponentKind.ScoreFromRoundStats, profile.Entries[1].Kind);
+            Assert.AreEqual(0.1f, profile.Entries[1].Weight);
+            Assert.AreEqual("GolfScore", profile.Entries[1].Label);
+            Assert.AreEqual(FitnessProfileSO.ComponentKind.TimePenalty, profile.Entries[2].Kind);
+            Assert.AreEqual(1f, profile.Entries[2].Weight);
+            Assert.AreEqual("TimePenalty", profile.Entries[2].Label);
+            Assert.IsTrue(FitnessProfileSO.ScoreIsGolf(GameModes.SkimRace));
+            Assert.AreEqual(3, profile.Build().Count);
+
+            var fallback = ScriptableObject.CreateInstance<FitnessProfileSO>();
+            fallback.ApplyRacingDefaults();
+            foreach (var mode in new[] { GameModes.SkimRace, GameModes.Scurry, GameModes.Joust, GameModes.Cleave, GameModes.BroodRush })
+            {
+                profile.ApplyFor(mode);
+                Assert.AreNotEqual(fallback.Description, profile.Description, mode + " fell through to the default profile.");
+                Assert.IsNotEmpty(profile.Entries, mode.ToString());
+            }
+            Object.DestroyImmediate(fallback);
+            Object.DestroyImmediate(profile);
+        }
+
+        /// <summary>
+        /// Raw values from a live Skim Race rollout: Jade, 1 crystal, golf Score
+        /// 115.69, 119.28 s. The line read total=-30.85.
+        /// </summary>
+        [Test]
+        public void SkimRace_Harvest_TotalIsWeightedSum_AndShowsAllThreeTerms()
+        {
+            var profile = ScriptableObject.CreateInstance<FitnessProfileSO>();
+            profile.ApplyFor(GameModes.SkimRace);
+            float[] authored = { 1f, 115.69f, -119.28f };
+
+            var fit = new TrainingFitness { EpisodeSeconds = 119.3f };
+            float expected = 0f;
+            for (int i = 0; i < profile.Entries.Count; i++)
+            {
+                var e = profile.Entries[i];
+                float raw = FitnessProfileSO.SignedRaw(GameModes.SkimRace, e.Kind, authored[i]);
+                fit.Add(e.Label, raw, e.Weight);
+                expected += raw * e.Weight;
+            }
+
+            Assert.AreEqual(-30.849f, fit.Total, 0.001f);
+            Assert.AreEqual(expected, fit.Total, 0.0001f);
+            Assert.AreEqual(fit.Components.Sum(c => c.Weighted), fit.Total, 0.0001f);
+            var line = fit.Summarize();
+            var afterPipe = line.Substring(line.IndexOf('|'));
+            StringAssert.Contains("Crystals=100.0(1.00)", afterPipe);
+            StringAssert.Contains("GolfScore=-11.6(-115.69)", afterPipe);
+            StringAssert.Contains("TimePenalty=-119.3(-119.28)", afterPipe);
+            Object.DestroyImmediate(profile);
+        }
+
+        [Test]
         public void NewMetricKinds_FactoryReturnsAComponent()
         {
             Assert.IsNotNull(FitnessComponentFactory.Create(FitnessProfileSO.ComponentKind.HostilePrismsDestroyed, "p"));
@@ -497,6 +559,155 @@ namespace CosmicShore.Utility.AITraining.Tests
             Object.DestroyImmediate(loaded);
             Object.DestroyImmediate(scenario);
             Object.DestroyImmediate(gd);
+        }
+
+        [Test]
+        public void SessionKey_MatchesOnVesselModeIdAndIntensity()
+        {
+            var scenario = ScriptableObject.CreateInstance<TrainingScenarioSO>();
+            scenario.GameMode = GameModes.SkimRace;
+            scenario.Vessel = VesselClassType.Squirrel;
+            scenario.Intensity = 4;
+
+            Assert.AreEqual("Squirrel_SkimRace_I4", scenario.Key);
+            Assert.IsTrue(scenario.MatchesSessionKey("Squirrel_SkimRace_I4"));
+            Assert.IsTrue(scenario.MatchesSessionKey("Squirrel_HexRace_I4"), "Mode 33 saved before the rename is the same session.");
+
+            Assert.IsFalse(scenario.MatchesSessionKey("Manta_HexRace_I4"), "A different vessel resets.");
+            Assert.IsFalse(scenario.MatchesSessionKey("Squirrel_Scurry_I4"), "A different mode id resets.");
+            Assert.IsFalse(scenario.MatchesSessionKey("Squirrel_MultiplayerJoust_I4"), "A different legacy mode id resets.");
+            Assert.IsFalse(scenario.MatchesSessionKey("Squirrel_HexRace_I3"), "A different intensity resets.");
+            Assert.IsFalse(scenario.MatchesSessionKey(""));
+            Assert.IsFalse(scenario.MatchesSessionKey(null));
+            Assert.IsFalse(scenario.MatchesSessionKey("Squirrel_NotAMode_I4"));
+            Assert.IsFalse(scenario.MatchesSessionKey("Squirrel_HexRace"));
+
+            Assert.IsTrue(TrainingScenarioSO.TryParseKey("Squirrel_HexRace_I4", out var vessel, out var mode, out int intensity));
+            Assert.AreEqual(VesselClassType.Squirrel, vessel);
+            Assert.AreEqual(33, (int)mode);
+            Assert.AreEqual(4, intensity);
+            Object.DestroyImmediate(scenario);
+        }
+
+        [Test]
+        public void Resume_LegacyModeKey_KeepsPopulation_OtherIdentityResets()
+        {
+            var scenario = ScriptableObject.CreateInstance<TrainingScenarioSO>();
+            scenario.ApplyCatalogDefaults(TrainingModeCatalog.Live[0]);
+            Assert.AreEqual(GameModes.SkimRace, scenario.GameMode);
+
+            TrainingSessionStateSO MakeLegacyState()
+            {
+                var s = ScriptableObject.CreateInstance<TrainingSessionStateSO>();
+                s.ResetForScenario(scenario.Key, scenario);
+                var genome = s.Population.Checkout(out int idx);
+                var fit = new TrainingFitness();
+                fit.Add("Crystals", 3f, 1f);
+                s.Population.ReturnFitness(idx, fit, genome);
+                s.RecordEpisode(fit, genome);
+                s.ScenarioKey = "Squirrel_HexRace_I4";
+                return s;
+            }
+
+            int RunAndCountEpisodes(TrainingSessionStateSO s)
+            {
+                var gd = ScriptableObject.CreateInstance<GameDataSO>();
+                var go = new GameObject("legacy-key-runner");
+                var runner = go.AddComponent<TrainingSessionRunner>();
+                runner.Configure(scenario, s, null, null, gd, null);
+                runner.StartSession();
+                int episodes = s.EpisodesCompleted;
+                runner.StopSession();
+                Object.DestroyImmediate(go);
+                Object.DestroyImmediate(gd);
+                return episodes;
+            }
+
+            var legacy = MakeLegacyState();
+            Assert.AreEqual(1, RunAndCountEpisodes(legacy), "Squirrel_HexRace_I4 must resume under SkimRace.");
+            Assert.AreEqual("Squirrel_HexRace_I4", legacy.ScenarioKey);
+
+            var otherIntensity = MakeLegacyState();
+            scenario.Intensity = 3;
+            Assert.AreEqual(0, RunAndCountEpisodes(otherIntensity));
+            scenario.Intensity = 4;
+
+            var otherVessel = MakeLegacyState();
+            scenario.Vessel = VesselClassType.Manta;
+            Assert.AreEqual(0, RunAndCountEpisodes(otherVessel));
+            scenario.Vessel = VesselClassType.Squirrel;
+
+            var otherMode = MakeLegacyState();
+            scenario.GameMode = GameModes.Scurry;
+            Assert.AreEqual(0, RunAndCountEpisodes(otherMode));
+
+            Object.DestroyImmediate(legacy);
+            Object.DestroyImmediate(otherIntensity);
+            Object.DestroyImmediate(otherVessel);
+            Object.DestroyImmediate(otherMode);
+            Object.DestroyImmediate(scenario);
+        }
+
+        /// <summary>
+        /// The checked-in overnight session must resume under today's SkimRace scenario.
+        /// Accepts either the current key or a pre-rename HexRace key via MatchesSessionKey.
+        /// Runs the runner on an in-memory copy so the asset on disk is untouched.
+        /// </summary>
+        [Test]
+        public void Resume_SavedSkimRaceSquirrelSession_FindsCheckedInPopulation()
+        {
+            const string statePath = "Assets/_SO_Assets/AI Training/SessionState.asset";
+            const string archivePath = "Assets/_SO_Assets/AI Training/Archive.asset";
+            var row = TrainingModeCatalog.Live[0];
+            var scenario = AssetDatabase.LoadAssetAtPath<TrainingScenarioSO>(row.ScenarioPath);
+            var saved = AssetDatabase.LoadAssetAtPath<TrainingSessionStateSO>(statePath);
+            var archive = AssetDatabase.LoadAssetAtPath<TrainingArchiveSO>(archivePath);
+            Assert.IsNotNull(scenario, row.ScenarioPath);
+            Assert.IsNotNull(saved, statePath);
+            Assert.IsNotNull(archive, archivePath);
+
+            Assert.AreEqual(33, (int)scenario.GameMode);
+            Assert.AreEqual(VesselClassType.Squirrel, scenario.Vessel);
+            Assert.AreEqual(4, scenario.Intensity);
+            Assert.AreEqual("Squirrel_SkimRace_I4", scenario.Key);
+            Assert.IsFalse(string.IsNullOrEmpty(saved.ScenarioKey));
+            Assert.IsTrue(scenario.MatchesSessionKey(saved.ScenarioKey),
+                $"Checked-in SessionState key '{saved.ScenarioKey}' must match scenario {scenario.Key}.");
+
+            Assert.AreEqual(24, saved.EpisodesCompleted);
+            Assert.AreEqual(0, saved.Population.Generation);
+            Assert.AreEqual(277.09552f, saved.HallOfFameBestFitness, 0.0001f);
+            Assert.IsNotNull(saved.HallOfFameBest);
+
+            var entry = archive.Find(VesselClassType.Squirrel, GameModes.SkimRace, 4);
+            Assert.IsNotNull(entry);
+            Assert.AreEqual(33, (int)entry.GameMode);
+            Assert.AreEqual(4, entry.Intensity);
+            Assert.AreEqual(277.09552f, entry.Fitness, 0.0001f);
+
+            string keyBefore = saved.ScenarioKey;
+            var copy = Object.Instantiate(saved);
+            int populationSize = copy.Population.PopulationSize;
+            string hofBefore = JsonUtility.ToJson(copy.HallOfFameBest);
+            var gd = ScriptableObject.CreateInstance<GameDataSO>();
+            var go = new GameObject("saved-session-runner");
+            var runner = go.AddComponent<TrainingSessionRunner>();
+            runner.Configure(scenario, copy, null, null, gd, null);
+            runner.StartSession();
+            runner.StopSession();
+
+            Assert.AreEqual(24, copy.EpisodesCompleted);
+            Assert.AreEqual(0, copy.Population.Generation);
+            Assert.AreEqual(populationSize, copy.Population.PopulationSize);
+            Assert.AreEqual(277.09552f, copy.HallOfFameBestFitness, 0.0001f);
+            Assert.AreEqual(hofBefore, JsonUtility.ToJson(copy.HallOfFameBest));
+            Assert.AreEqual(keyBefore, copy.ScenarioKey,
+                "Resume must keep the on-disk key (not rewrite or wipe the population).");
+            Assert.IsTrue(scenario.MatchesSessionKey(copy.ScenarioKey));
+
+            Object.DestroyImmediate(go);
+            Object.DestroyImmediate(gd);
+            Object.DestroyImmediate(copy);
         }
 
         [Test]

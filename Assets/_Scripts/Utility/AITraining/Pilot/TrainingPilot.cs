@@ -56,6 +56,11 @@ namespace CosmicShore.Utility.AITraining
         int _episodeFrame;
         int _populationIndexForReporting = -1;
 
+        // Episode tally of stick writes. The runner logs it once at episode end,
+        // so the AITraining channel shows the pilot drove without a per-frame line.
+        int _stickWrites, _throttleWrites;
+        float _steerAbsXSum, _steerAbsYSum, _throttleSum;
+
         public TrainingGenome Genome => _genome;
         public bool EpisodeActive => _episodeActive;
         public int PopulationIndex { get => _populationIndexForReporting; set => _populationIndexForReporting = value; }
@@ -151,6 +156,18 @@ namespace CosmicShore.Utility.AITraining
             _episodeActive = true;
             _episodeStartTime = Time.time;
             _episodeFrame = 0;
+            _stickWrites = _throttleWrites = 0;
+            _steerAbsXSum = _steerAbsYSum = _throttleSum = 0f;
+        }
+
+        /// <summary>Stick writes this episode and their mean magnitudes. Read before EndEpisode.</summary>
+        public string SummarizeStickWrites()
+        {
+            if (_stickWrites == 0) return "sticks writes=0";
+            float n = _stickWrites;
+            return $"sticks writes={_stickWrites} mean|steerX|={_steerAbsXSum / n:F2} " +
+                   $"mean|steerY|={_steerAbsYSum / n:F2} meanThrottle=" +
+                   (_throttleWrites > 0 ? (_throttleSum / _throttleWrites).ToString("F2") : "n/a");
         }
 
         public void EndEpisode()
@@ -325,6 +342,21 @@ namespace CosmicShore.Utility.AITraining
                 _input.YSum = d.SteerLocal.y;
                 _input.YDiff = d.SteerLocal.x;
                 _input.XDiff = d.RequestRam ? 1f : d.Throttle;
+            }
+
+            if (_stickWrites == 0 && CSDebug.IsVerbose(CSLogChannel.AITraining))
+                CSDebug.LogVerbose(CSLogChannel.AITraining,
+                    $"[Training] First stick write. pilot={_status.PlayerName} domain={_status.Domain} " +
+                    $"t={Time.time - _episodeStartTime:F1}s steer=({d.SteerLocal.x:F2},{d.SteerLocal.y:F2}) " +
+                    $"throttle={d.Throttle:F2} singleStick={_status.IsSingleStickControls}");
+            _stickWrites++;
+            _steerAbsXSum += Mathf.Abs(d.SteerLocal.x);
+            _steerAbsYSum += Mathf.Abs(d.SteerLocal.y);
+            // A single-stick vessel is not sent a throttle, so none is tallied.
+            if (!_status.IsSingleStickControls)
+            {
+                _throttleWrites++;
+                _throttleSum += d.RequestRam ? 1f : d.Throttle;
             }
         }
 
