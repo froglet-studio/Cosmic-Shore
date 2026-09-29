@@ -25,6 +25,48 @@ namespace CosmicShore.Engine
         public Vector4 border { get; private set; }
 
         /// <summary>
+        /// Original contract: the sprite's rect on its texture after packing. The port never
+        /// tight-packs or atlases, so it is always <see cref="rect"/> (and the uGUI padding is zero).
+        /// </summary>
+        public Rect textureRect => rect;
+
+        /// <summary>Original contract: true when the sprite lives in an atlas. Never, in the port.</summary>
+        public bool packed => false;
+
+        /// <summary>
+        /// UV rect of the whole sprite on its texture: (xMin, yMin, xMax, yMax), v = 0 at the
+        /// bottom. (0,0,1,1) when the sprite has no texture — the original DataUtility.GetOuterUV.
+        /// </summary>
+        public Vector4 outerUV
+        {
+            get
+            {
+                if (texture == null || texture.width <= 0 || texture.height <= 0) return new Vector4(0f, 0f, 1f, 1f);
+                float w = texture.width, h = texture.height;
+                return new Vector4(rect.xMin / w, rect.yMin / h, rect.xMax / w, rect.yMax / h);
+            }
+        }
+
+        /// <summary>
+        /// UV rect of the 9-slice CENTRE cell (the rect inset by <see cref="border"/>) — the
+        /// original DataUtility.GetInnerUV. Without a texture it is expressed within (0,0,1,1).
+        /// </summary>
+        public Vector4 innerUV
+        {
+            get
+            {
+                if (texture == null || texture.width <= 0 || texture.height <= 0)
+                {
+                    float rw = rect.width > 0f ? rect.width : 1f, rh = rect.height > 0f ? rect.height : 1f;
+                    return new Vector4(border.x / rw, border.y / rh, 1f - border.z / rw, 1f - border.w / rh);
+                }
+                float w = texture.width, h = texture.height;
+                return new Vector4((rect.xMin + border.x) / w, (rect.yMin + border.y) / h,
+                                   (rect.xMax - border.z) / w, (rect.yMax - border.w) / h);
+            }
+        }
+
+        /// <summary>
         /// Factory matching the original engine's creation contract (the subset the port
         /// consumes; extrude/mesh-type are presentation concerns deferred to Arc C).
         /// </summary>

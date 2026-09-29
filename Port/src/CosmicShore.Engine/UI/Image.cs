@@ -14,6 +14,13 @@ namespace CosmicShore.Engine.UI
         public enum Type { Simple = 0, Sliced = 1, Tiled = 2, Filled = 3 }
         public enum FillMethod { Horizontal = 0, Vertical = 1, Radial90 = 2, Radial180 = 3, Radial360 = 4 }
 
+        // Original contract: the fillOrigin value's meaning per fill method (serialized ints).
+        public enum OriginHorizontal { Left = 0, Right = 1 }
+        public enum OriginVertical { Bottom = 0, Top = 1 }
+        public enum Origin90 { BottomLeft = 0, TopLeft = 1, TopRight = 2, BottomRight = 3 }
+        public enum Origin180 { Bottom = 0, Left = 1, Top = 2, Right = 3 }
+        public enum Origin360 { Bottom = 0, Right = 1, Top = 2, Left = 3 }
+
         [SerializeField] Sprite m_Sprite;
         [SerializeField] Type m_Type = Type.Simple;
         [SerializeField] bool m_PreserveAspect;
@@ -21,6 +28,7 @@ namespace CosmicShore.Engine.UI
         [SerializeField] FillMethod m_FillMethod = FillMethod.Radial360;
         [SerializeField] float m_FillAmount = 1f;
         [SerializeField] int m_FillOrigin;
+        [SerializeField] bool m_FillClockwise = true;
         [SerializeField] float m_PixelsPerUnitMultiplier = 1f;
 
         Sprite m_OverrideSprite;
@@ -56,6 +64,9 @@ namespace CosmicShore.Engine.UI
         public bool fillCenter { get => m_FillCenter; set { if (m_FillCenter == value) return; m_FillCenter = value; SetVerticesDirty(); } }
         public FillMethod fillMethod { get => m_FillMethod; set { if (m_FillMethod == value) return; m_FillMethod = value; m_FillOrigin = 0; SetVerticesDirty(); } }
         public int fillOrigin { get => m_FillOrigin; set { if (m_FillOrigin == value) return; m_FillOrigin = value; SetVerticesDirty(); } }
+
+        /// <summary>Radial fills: whether the fill sweeps clockwise (original default: true).</summary>
+        public bool fillClockwise { get => m_FillClockwise; set { if (m_FillClockwise == value) return; m_FillClockwise = value; SetVerticesDirty(); } }
 
         /// <summary>Filled-type progress, clamped [0,1] (boost bars, cooldown rings).</summary>
         public float fillAmount
