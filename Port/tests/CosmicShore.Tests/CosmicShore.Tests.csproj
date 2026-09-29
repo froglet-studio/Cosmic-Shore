@@ -30,6 +30,8 @@
          the tests, so the Silk assemblies/natives that flow into the test output
          transitively are never loaded. -->
     <ProjectReference Include="../../src/CosmicShore.Client/CosmicShore.Client.csproj" />
+    <!-- Package-API shims (EntitiesShimTests exercises the Entities component store). -->
+    <ProjectReference Include="../../src/CosmicShore.Compat/CosmicShore.Compat.csproj" />
   </ItemGroup>
 
 </Project>
