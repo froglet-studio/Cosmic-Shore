@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
@@ -40,8 +41,8 @@ namespace CosmicShore.ScriptableObjects
 
         [SerializeField, Min(0.25f), Tooltip("Station size as a multiple of the toy's own body radius. The " +
                                              "station IS a miniature of its painting, so it has to be big " +
-                                             "enough to identify without reading the label - which is where " +
-                                             "the toybox is heading. Spacing rides along (it is derived from " +
+                                             "enough to identify on sight - toys carry no text labels. " +
+                                             "Spacing rides along (it is derived from " +
                                              "this radius).")]
         float iconScaleBodies = 2f;
 
@@ -50,11 +51,15 @@ namespace CosmicShore.ScriptableObjects
         public float MatrixDistanceFactor => matrixDistanceFactor;
         public float IconScaleBodies => iconScaleBodies;
 
+        /// <summary>It leaves conserved PRISM MASS behind - a painting drawn in your own trail, which stays
+        /// in the cell as ordinary mass the food web can graze.</summary>
+        public override ToyCategory Category => ToyCategory.Creation;
+
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
             // ONE toy. It unfolds into the gallery matrix on a pass and folds it away on the next -
             // the station layout and the monument anchor packing both live on the runtime toy now.
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor, DisplayName);
+            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor);
             var toy = go.AddComponent<PaintingGalleryToy>();
             toy.Configure(this);
             toy.Initialize(this, context, placement);

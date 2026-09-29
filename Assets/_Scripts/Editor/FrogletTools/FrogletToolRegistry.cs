@@ -152,7 +152,7 @@ namespace CosmicShore.Editor.Froglet
             if (Has(hay, "vessel", "ship", "hud", "elemental", "petal", "rig", "ability")) return FrogletToolCategory.Vessels;
             if (Has(hay, "game mode", "gamemode", "minigame", "end game", "endcondition", "end condition", "arcade")) return FrogletToolCategory.GameModes;
             if (Has(hay, "canvas", "toast", "dialogue", "ui", "raycast", "notification")) return FrogletToolCategory.Interface;
-            if (Has(hay, "playfab", "ugs", "product", "leaderboard", "cloud")) return FrogletToolCategory.Services;
+            if (Has(hay, "ugs", "product", "leaderboard", "cloud")) return FrogletToolCategory.Services;
             if (Has(hay, "scene", "setup", "spawn", "photobooth", "recording")) return FrogletToolCategory.SceneSetup;
             return FrogletToolCategory.Misc;
         }

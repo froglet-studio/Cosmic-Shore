@@ -119,6 +119,22 @@ namespace CosmicShore.Gameplay
                 fauna.Phase = managerData.phaseIncrease * i;
                 fauna.Initialize(cell);
 
+                // The replication seam, for the one fauna producer that does not go through
+                // CellLifeSpawnerBase. A school member gets no config of its own - the MANAGER
+                // is the thing the spawner bound a lineage to - so this resolves to
+                // NeutralizeStray, which is the correct reading: a school is simulated locally
+                // on every peer and its members are never replicated. Neutralizing is not
+                // cosmetic. QuadFish.prefab and TadPoleFauna.prefab carry a NetworkObject, and
+                // an UN-SPAWNED one is adopted by Netcode as an in-scene object keyed on a hash
+                // every instance of a prefab shares - so a school of two breaks synchronization
+                // for every later joiner. See Docs/PartySystem/BUGS.md B16 and B5.
+                //
+                // Dormant today rather than absent: no shipped multiplayer cell wires a
+                // LightFaunaManager population (SO_Mission_Protect and two tool scenes do).
+                // Adding one consumer is what would ship it, which is exactly why it is closed
+                // here instead of being left to the sweep at connection approval.
+                FaunaNetworkSync.ServerSpawn(fauna);
+
                 activeFauna.Add(fauna);
             }
 
@@ -142,6 +158,22 @@ namespace CosmicShore.Gameplay
 
                 activeFauna[i].transform.position = transform.position + formationOffset;
             }
+        }
+
+        /// <summary>
+        /// Drop a creature from the roster WITHOUT destroying it - the removal half of
+        /// <see cref="RemoveFauna"/> for a creature whose destruction belongs to somebody else.
+        /// A replicated fauna is destroyed by its NetworkObject despawn on the server, and by
+        /// nobody at all on a client; a manager that also called Destroy would be a second
+        /// owner of one object's lifetime.
+        /// </summary>
+        public void Deregister(LightFauna fauna)
+        {
+            if (!activeFauna.Contains(fauna)) return;
+            activeFauna.Remove(fauna);
+
+            if (managerData && activeFauna.Count < ComputeBatchSize() / 2)
+                SpawnGroup();
         }
 
         public void RemoveFauna(LightFauna fauna)

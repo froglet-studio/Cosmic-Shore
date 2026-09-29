@@ -125,7 +125,7 @@ namespace CosmicShore.Core
 
             if (economy.RedeemedOrderIds.Contains(receipt.OrderId))
             {
-                CSDebug.Log($"[EpisodeToken] Order '{receipt.OrderId}' already redeemed - ignoring replay.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] Order '{receipt.OrderId}' already redeemed - ignoring replay.");
                 return true;
             }
 
@@ -135,7 +135,7 @@ namespace CosmicShore.Core
 
             PersistNow();
 
-            CSDebug.Log($"[EpisodeToken] Granted {receipt.TokenCount} token(s) from {receipt.Provider} " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] Granted {receipt.TokenCount} token(s) from {receipt.Provider} " +
                         $"order '{receipt.OrderId}'. Balance: {economy.EpisodeTokenBalance}");
 
             OnTokensGranted?.Invoke(receipt.TokenCount, economy.EpisodeTokenBalance);
@@ -166,14 +166,14 @@ namespace CosmicShore.Core
 
             if (economy.OwnedEpisodeIds.Contains(episodeId))
             {
-                CSDebug.Log($"[EpisodeToken] '{episodeId}' is already owned - nothing spent.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] '{episodeId}' is already owned - nothing spent.");
                 return false;
             }
 
             int cost = TokensPerEpisode(config);
             if (economy.EpisodeTokenBalance < cost)
             {
-                CSDebug.Log($"[EpisodeToken] Cannot unlock '{episodeId}': need {cost}, have {economy.EpisodeTokenBalance}.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] Cannot unlock '{episodeId}': need {cost}, have {economy.EpisodeTokenBalance}.");
                 return false;
             }
 
@@ -183,7 +183,7 @@ namespace CosmicShore.Core
 
             PersistNow();
 
-            CSDebug.Log($"[EpisodeToken] Unlocked '{episodeId}' for {cost} token(s). " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] Unlocked '{episodeId}' for {cost} token(s). " +
                         $"Balance: {economy.EpisodeTokenBalance}");
 
             OnEpisodeUnlocked?.Invoke(episodeId);

@@ -125,7 +125,6 @@ namespace CosmicShore.Core
                 currentCol = Mathf.Clamp(currentCol, 0, buttonGrid[currentRow].Count - 1);
                 HighlightButton(buttonGrid[currentRow][currentCol]);
             }
-            Debug.Log($"ArcadeDPad - Navigate Up: {currentRow},{currentCol}");
         }
 
         void NavigateDown()
@@ -136,7 +135,6 @@ namespace CosmicShore.Core
                 currentCol = Mathf.Clamp(currentCol, 0, buttonGrid[currentRow].Count - 1);
                 HighlightButton(buttonGrid[currentRow][currentCol]);
             }
-            Debug.Log($"ArcadeDPad - Navigate Down: {currentRow},{currentCol}");
         }
 
         void NavigateLeft()
@@ -146,7 +144,6 @@ namespace CosmicShore.Core
                 currentCol--;
                 HighlightButton(buttonGrid[currentRow][currentCol]);
             }
-            Debug.Log($"ArcadeDPad - Navigate Left: {currentRow},{currentCol}");
         }
 
         void NavigateRight()
@@ -156,7 +153,6 @@ namespace CosmicShore.Core
                 currentCol++;
                 HighlightButton(buttonGrid[currentRow][currentCol]);
             }
-            Debug.Log($"ArcadeDPad - Navigate Right: {currentRow},{currentCol}");
         }
 
         void HighlightButton(Button button)

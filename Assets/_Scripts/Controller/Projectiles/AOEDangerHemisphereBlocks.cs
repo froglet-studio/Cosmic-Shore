@@ -13,6 +13,9 @@ namespace CosmicShore.Gameplay
 {
     public sealed class AOEDangerHemisphereBlocks : AOEExplosion
     {
+        /// <summary>This blast LAYS prisms - see <see cref="AOEExplosion.CreatesMass"/>.</summary>
+        public override bool CreatesMass => true;
+
         [Header("Config")]
         [SerializeField] private DangerHemisphereConfigSO config;
 
@@ -125,7 +128,7 @@ namespace CosmicShore.Gameplay
                     : Mathf.Lerp(1f, 0.5f, tNorm); // fallback
 
                 // Depth scale
-                float depth = config.DepthScale?.Value ?? 1f;
+                float depth = config.DepthScale;
                 Vector3 baseScale = config.BaseBlockScale;
                 baseScale.z *= depth;
 

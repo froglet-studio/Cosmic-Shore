@@ -24,7 +24,21 @@ namespace CosmicShore.Gameplay
         [SerializeField] float projectileTime = 3f;
         [SerializeField] FiringPatterns firingPattern = FiringPatterns.Default;
         [SerializeField] int   energy = 0;
-        [SerializeField] ElementalFloat speedValue;
+        /// <summary>
+        /// The muzzle speed - FIXED, and it is what fixes the guns' RANGE. No element reaches it:
+        /// SPACE used to scale it x1 -> x9 through a <c>spaceSpeedMultiplier</c> ElementalFloat,
+        /// which made the guns' reach a function of the Space level, and that grip is retired by
+        /// design (the Space row of the map is a known hole until it is re-cut).
+        ///
+        /// <para>The number is DERIVED, not picked: range is <c>speed x 2T/pi</c> (the flight
+        /// decelerates along a quarter-cosine, <c>Projectile.MoveProjectileAsync</c>), and the
+        /// ask was "a fixed range of 2x the value at Space 1". At Space 1 the retired multiplier
+        /// read <c>LerpUnclamped(1, 9, 0.1) = 1.8</c>, so the Space-1 muzzle speed was
+        /// <c>375 x 1.8 = 675</c> and its range <c>675 x 0.6/pi = 128.9 u</c>. Doubling it by
+        /// SPEED rather than flight TIME gives <b>1350 u/s, 257.8 u</b> - and keeps the number of
+        /// rounds in the air (and so the charge-shell light budget) exactly where it was.</para>
+        /// </summary>
+        [SerializeField] float speedValue = 1350f;
 
         [Header("Round Growth (MASS)")]
         [Tooltip("How many times its launch cross-section a round swells to by the END of its " +
@@ -52,23 +66,17 @@ namespace CosmicShore.Gameplay
         public float ProjectileTime => projectileTime;
         public FiringPatterns FiringPattern => firingPattern;
         public int Energy => energy;
-        public ElementalFloat SpeedValue => speedValue;
 
         /// <summary>The accuracy-decay cone, shared by both fire modes. Never null — an
         /// all-zero profile is the sanctioned "no spread" opt-out.</summary>
         public GunSpreadProfile Spread => spread ??= new GunSpreadProfile();
 
         /// <summary>
-        /// The live muzzle speed of one shot: the authored base scaled by the vessel's SPACE
-        /// multiplier from its <c>ElementalAbilityMapSO</c>. Read per volley at fire time —
-        /// never cached across a hold, and never bound as an ElementalFloat on this shared
-        /// asset (per-vessel state on a shared SO is last-initializer-wins in multiplayer).
+        /// The muzzle speed of one shot. Fixed - see <see cref="speedValue"/>. Kept as a method
+        /// taking the vessel so both fire modes keep one call site if an element is ever given a
+        /// grip on the guns again.
         /// </summary>
-        public float ResolveSpeed(IVesselStatus status)
-        {
-            var abilities = status?.ElementalAbilityHandler;
-            return speedValue.Value * (abilities ? abilities.Multiplier(Element.Space) : 1f);
-        }
+        public float ResolveSpeed(IVesselStatus status) => speedValue;
 
         /// <summary>
         /// How much a round swells over its flight, from the vessel's LIVE Mass level —

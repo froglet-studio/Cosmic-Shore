@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Regatta
+  m_EditorClassIdentifier:
+  Mode: 56
+  Notes: 'Every intensity is a different circuit (its own seed, mouth and corner floor), so the
+    scale model rebuilds when the intensity row moves. An arena card: the flight preview
+    flies whichever hull the pilot picked in the carousel. The rings are laid by the
+    controller and are not in the scale model; the rails are.'
+  PreviewCell: {fileID: 11400000, guid: 1272c806f122444f525a000ccbcb472b, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 1272c806f122444f525a000ccbcb472b, type: 2}
+  - {fileID: 11400000, guid: 6a8fdec94d8d7c1e55ce2b82f195fb2d, type: 2}
+  - {fileID: 11400000, guid: ff80f22ab0303ace7a1139de2f9f2222, type: 2}
+  - {fileID: 11400000, guid: 1fd418b9587960e42b0cbdb69f7cd2ec, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  Vessel: -1
+  ObjectiveText: Thread the rings in order, laps of the circuit
+  ObjectiveMetric: 9
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 150
+  SpawnRingRadiusFloor: 0
+  SpawnFormation: 1
+  SpawnPoints: []

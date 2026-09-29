@@ -139,6 +139,16 @@ namespace CosmicShore.Gameplay
         static List<Sample> CollectSamples(SpawnableBase prefab, int pointBudget)
         {
             var samples = new List<Sample>(pointBudget);
+            CollectInto(prefab, pointBudget, samples, depth: 0);
+            return samples;
+        }
+
+        /// <summary>How deep a composite spawnable tree is followed. Safety rail, not a tuning.</summary>
+        const int MaxNestingDepth = 4;
+
+        static void CollectInto(SpawnableBase prefab, int pointBudget, List<Sample> samples, int depth)
+        {
+            if (!prefab) return;
 
             // GetTrailData drives the generation; the lay list is the richer read of the same
             // pass (per-PRISM domain, which SpawnTrailData flattens to one domain per trail).
@@ -152,15 +162,27 @@ namespace CosmicShore.Gameplay
                     var lay = lays[i];
                     samples.Add(new Sample(lay.Point.Position, lay.Point.Rotation, lay.Point.Scale, lay.Domain));
                 }
-                return samples;
+                return;
             }
 
-            if (trails == null) return samples;
+            if (trails == null) return;
+
+            // A COMPOSITE spawnable's own points are PLACEMENTS, not geometry - the real build
+            // (SpawnableBase.SpawnChildren) spawns each child at each point, so a model that reads
+            // only the parent's points shows the anchors and none of the structure. Scurry's
+            // intensity-2 arena is the worked example: ConcentricLayersGenerator emits three
+            // origin-anchors and every visible prism belongs to the sphere-shell CHILD, so the
+            // "environment" modelled as three shards stacked at one point, i.e. nothing.
+            if (prefab.NestedChildren is { Count: > 0 } nested && depth < MaxNestingDepth)
+            {
+                CollectComposite(prefab, trails, nested, pointBudget, samples, depth);
+                return;
+            }
 
             int total = 0;
             foreach (var trail in trails)
                 if (trail?.Points != null) total += trail.Points.Length;
-            if (total == 0) return samples;
+            if (total == 0) return;
 
             int fallbackStride = Mathf.Max(1, total / pointBudget);
             int index = 0;
@@ -174,7 +196,57 @@ namespace CosmicShore.Gameplay
                     samples.Add(new Sample(point.Position, point.Rotation, point.Scale, trail.Domain));
                 }
             }
-            return samples;
+        }
+
+        /// <summary>
+        /// Model a composite: sample each child ONCE, then stamp those samples at every parent
+        /// placement, transformed the way <c>SpawnableBase.SpawnChildren</c> transforms the child
+        /// containers - including its scale normalization (scales are divided by the largest
+        /// component when any exceeds 1, so leaf-style absolute scales do not balloon a child).
+        /// </summary>
+        static void CollectComposite(SpawnableBase prefab, SpawnTrailData[] trails,
+                                     IReadOnlyList<SpawnableBase> nested, int pointBudget,
+                                     List<Sample> samples, int depth)
+        {
+            var placements = new List<SpawnPoint>();
+            float maxScaleComponent = 0f;
+            foreach (var trail in trails)
+            {
+                if (trail?.Points == null) continue;
+                foreach (var point in trail.Points)
+                {
+                    placements.Add(point);
+                    maxScaleComponent = Mathf.Max(maxScaleComponent,
+                        Mathf.Max(Mathf.Abs(point.Scale.x),
+                            Mathf.Max(Mathf.Abs(point.Scale.y), Mathf.Abs(point.Scale.z))));
+                }
+            }
+            if (placements.Count == 0) return;
+
+            float scaleNormalizer = maxScaleComponent > 1f ? maxScaleComponent : 1f;
+            int childBudget = Mathf.Max(16, pointBudget / Mathf.Max(1, placements.Count * nested.Count));
+
+            foreach (var child in nested)
+            {
+                if (!child) continue;
+
+                var childSamples = new List<Sample>(childBudget);
+                CollectInto(child, childBudget, childSamples, depth + 1);
+                if (childSamples.Count == 0) continue;
+
+                foreach (var placement in placements)
+                {
+                    var scale = placement.Scale / scaleNormalizer;
+                    foreach (var cs in childSamples)
+                    {
+                        samples.Add(new Sample(
+                            placement.Position + placement.Rotation * Vector3.Scale(scale, cs.Position),
+                            placement.Rotation * cs.Rotation,
+                            Vector3.Scale(scale, cs.Scale),
+                            cs.Domain));
+                    }
+                }
+            }
         }
 
         // ── Signature structures ─────────────────────────────────────────────

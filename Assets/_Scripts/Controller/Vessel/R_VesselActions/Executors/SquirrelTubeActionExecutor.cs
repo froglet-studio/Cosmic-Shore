@@ -89,11 +89,11 @@ namespace CosmicShore.Gameplay
             Vector3 origin = vessel.position + vessel.forward * offset;
             SpawnTube(so, status, new Pose(origin, vessel.rotation));
 
-            // TIME -> cooldown: the boost-ring recharge shortens as the vessel's live Time level
-            // rises (atFull authored on the SO; the generic map Time multiplier stays 1.0 because
-            // VesselTransformer consumes it for boost speed). Deficit Time lengthens it.
+            // MASS -> cooldown: the boost-ring recharge shortens as the vessel's live Mass level
+            // rises (atFull authored on the SO). Deficit Mass lengthens it. The ring is the
+            // Squirrel's mass-CREATION ability, which is why Mass owns how often it can be laid.
             float cooldown = so.Cooldown * ElementalScaling.Multiplier(
-                status, Element.Time, so.CooldownMultiplierAtFullTime, so.MinCooldownMultiplier);
+                status, Element.Mass, so.CooldownMultiplierAtFullMass, so.MinCooldownMultiplier);
             _activeCooldown = cooldown;
             _cooldownEndTime = Time.time + cooldown;
         }
@@ -132,10 +132,10 @@ namespace CosmicShore.Gameplay
             Domains domain = status.Domain;
             int ringsPerFrame = Mathf.Max(1, so.SpawnPerFrame / spec.Segments);
 
-            // TIME level-5 'Twin Rings': the deploy gains extra rings while the Time upgrade is
+            // MASS level-5 'Twin Rings': the deploy gains extra rings while the Mass upgrade is
             // active (per-deploy snapshot - an in-flight tube keeps the rings it was laid with).
             int rings = so.Rings;
-            if (status.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) == true)
+            if (status.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true)
                 rings += so.UpgradeExtraRings;
 
             for (int z = 0; z < rings; z++)

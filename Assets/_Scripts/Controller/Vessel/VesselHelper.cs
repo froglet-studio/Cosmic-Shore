@@ -215,7 +215,7 @@ namespace CosmicShore.Gameplay
             if (themeManagerData.ColorSet != null &&
                 themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var colorSet))
             {
-                vessel.SetTrailColors(colorSet.TrailHighlightColor, colorSet.TrailCoreColor);
+                vessel.SetTailAndJetColors(colorSet.TrailHighlightColor, colorSet.TrailCoreColor);
             }
 
             // Geometries exist only after VesselCustomization.Initialize has run - i.e.

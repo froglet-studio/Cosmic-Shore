@@ -65,7 +65,7 @@ namespace CosmicShore.Editor
                 }
 
                 // The folder also holds sub-prefabs a vessel is BUILT from (Skimmer,
-                // TrailEmpty, PipCamera, jet, GyroidAssemblerPrefab...). They are not
+                // VesselTail, PipCamera, VesselJet, GyroidAssemblerPrefab...). They are not
                 // vessels, they have no corridor of their own, and reporting them as
                 // "UNMEASURABLE" is noise that buries the real rows. VesselController is
                 // the discriminator because it is the exact component whose Initialize

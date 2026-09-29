@@ -22,7 +22,6 @@ namespace CosmicShore.Core
     {
         readonly AuthenticationDataVariable _authDataVariable;
         readonly FriendsDataSO _friendsData;
-        readonly bool _allowLog;
 
         bool _initialized;
         bool _initializing;
@@ -38,11 +37,10 @@ namespace CosmicShore.Core
         public FriendsServiceFacade(
             AuthenticationDataVariable authDataVariable,
             FriendsDataSO friendsData,
-            bool allowLog = false)
+            bool allowLog = false) // Obsolete: logging is gated by CSLogChannel.Party; kept so the AppManager call site compiles.
         {
             _authDataVariable = authDataVariable;
             _friendsData = friendsData;
-            _allowLog = allowLog;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -75,7 +73,7 @@ namespace CosmicShore.Core
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] Initialization failed: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] Initialization failed: {e.Message}");
                 _initializing = false;
             }
         }
@@ -114,7 +112,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] SendFriendRequestByName error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] SendFriendRequestByName error: {e.Message}");
                 throw;
             }
         }
@@ -136,7 +134,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] SendFriendRequest error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] SendFriendRequest error: {e.Message}");
                 throw;
             }
         }
@@ -158,7 +156,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] AcceptFriendRequest error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] AcceptFriendRequest error: {e.Message}");
                 throw;
             }
         }
@@ -180,7 +178,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] DeclineFriendRequest error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] DeclineFriendRequest error: {e.Message}");
                 throw;
             }
         }
@@ -202,7 +200,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] CancelFriendRequest error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] CancelFriendRequest error: {e.Message}");
                 throw;
             }
         }
@@ -228,7 +226,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] RemoveFriend error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] RemoveFriend error: {e.Message}");
                 throw;
             }
         }
@@ -250,7 +248,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] BlockPlayer error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] BlockPlayer error: {e.Message}");
                 throw;
             }
         }
@@ -272,7 +270,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] UnblockPlayer error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] UnblockPlayer error: {e.Message}");
                 throw;
             }
         }
@@ -295,7 +293,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] SetPresence error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] SetPresence error: {e.Message}");
             }
         }
 
@@ -313,7 +311,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] SetAvailability error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] SetAvailability error: {e.Message}");
             }
         }
 
@@ -335,7 +333,7 @@ namespace CosmicShore.Core
             }
             catch (FriendsServiceException e)
             {
-                Debug.LogWarning($"[FriendsServiceFacade] Refresh error: {e.Message}");
+                CSDebug.LogWarning($"[FriendsServiceFacade] Refresh error: {e.Message}");
             }
         }
 
@@ -527,8 +525,7 @@ namespace CosmicShore.Core
 
         void Log(string msg)
         {
-            if (_allowLog)
-                Debug.Log($"[UGS Friends] {msg}");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[UGS Friends] {msg}");
         }
     }
 }

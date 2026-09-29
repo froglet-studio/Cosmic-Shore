@@ -139,8 +139,46 @@
 </head>
 <body>
 
+<!-- ===== SUPERSESSION NOTICE (added 2026-09-11, doc-drift sweep / board item R8) =====
+     This document is Revision 1 and is kept intact as the historical investor artifact.
+     Nothing after this section has been edited — the diff that added it is insertion-only.
+     Revision series and the Revision 2 gap: Docs/STEAM_CHECKPOINT_SERIES.md
+     ================================================================================= -->
+<section class="page">
+  <div style="height:5px; background:#9a5b00; border-radius:3px; margin-bottom:16px;"></div>
+  <div style="font-size:7.6pt; letter-spacing:.16em; text-transform:uppercase;
+              color:#9a5b00; font-weight:700; margin-bottom:7px;">Superseded &middot; Revision 1 of 3</div>
+  <h1 style="font-size:23pt; line-height:1.12; margin:0 0 10px 0; font-weight:800;">
+    This plan is out of date.<br>Read Revision&nbsp;3 instead.</h1>
+  <p style="font-size:9.5pt; line-height:1.5; color:#12141c; margin:0 0 16px 0; max-width:52em;">
+    <b>This document describes a paid Early Access launch. That is no longer the destination.</b>
+    Revision&nbsp;2 (31&nbsp;July&nbsp;2026) replaced it with an <b>invite-only Steam Playtest</b>,
+    and Revision&nbsp;3 (10&nbsp;September&nbsp;2026) is the engineering readiness audit measured
+    against that pivot. Everything after this page is the <b>28&nbsp;July&nbsp;2026</b> record of
+    what was believed then, preserved unedited. Read it as history. Do not plan from it, and do not
+    inherit its launch type, its calendar, or its person-day totals &mdash; every runbook that cited
+    this checkpoint inherited the wrong destination from it, which is why this notice exists.
+  </p>
+  <table style="border-collapse:collapse; font-size:8.5pt; margin-bottom:16px;">
+    <tr><td style="padding:4px 14px 4px 0; color:#5c6373;">Current revision</td>
+        <td style="padding:4px 0;"><code>Docs/STEAM_CHECKPOINT_REV3_READINESS_AUDIT.pdf</code> / <code>.html</code></td></tr>
+    <tr><td style="padding:4px 14px 4px 0; color:#5c6373;">Live work board</td>
+        <td style="padding:4px 0;"><code>Docs/STEAM_RELEASE_TASKS.md</code></td></tr>
+    <tr><td style="padding:4px 14px 4px 0; color:#5c6373;">Revision series</td>
+        <td style="padding:4px 0;"><code>Docs/STEAM_CHECKPOINT_SERIES.md</code></td></tr>
+  </table>
+  <div style="border:1.5px solid #9a5b00; background:#fdf1de; border-radius:5px;
+              padding:9px 12px; font-size:8.5pt; line-height:1.45; max-width:52em;">
+    <b>Revision&nbsp;2 is not in this repository.</b> It exists, but it has never been committed, so
+    the series currently reads 1&nbsp;&rarr;&nbsp;<i>(missing)</i>&nbsp;&rarr;&nbsp;3. The Playtest
+    pivot is therefore only recoverable second-hand, through Revision&nbsp;3 and the work board. If
+    you hold a copy, commit it beside this file rather than re-deriving it.
+  </div>
+</section>
+
 <!-- ================= PAGE 1 : COVER + SUMMARY ================= -->
 <section class="page">
+
   <div class="cover-rule"></div>
   <div class="eyebrow">Investor Checkpoint</div>
   <h1>Cosmic Shore<br>Steam Early Access</h1>
@@ -185,7 +223,7 @@
     converted the remaining plan from roughly ten projects into <strong>six short workstreams</strong>.
   </p>
   <p class="lede">
-    All three core minigames, Tournament mode, the freestyle hub, the netcode and session layer, vessel progression,
+    All three core minigames, Maelstrom mode, the freestyle hub, the netcode and session layer, vessel progression,
     and the telemetry stack are <strong>shipped and playable</strong>. The settings panel, which the prior plan still
     carried as open engineering, was <strong>completed and verified in the repository</strong> during preparation of
     this checkpoint. The residual 100.5 person-days is quest dialogue and data, business setup, build and delivery pipeline, validation
@@ -235,7 +273,7 @@
         <td>Hex Race, Crystal Capture, and Joust across four intensities and one to four players, with domain-aggregated scoring and AI backfill to twelve players. Four bonus modes beyond the original slice: Astro League, Brood Rush, Rampage, Skim Race.</td>
       </tr>
       <tr>
-        <td><b>Tournament mode</b></td>
+        <td><b>Maelstrom mode</b></td>
         <td><span class="pill p-done">Shipped</span></td>
         <td>Live as "Maelstrom". Chains Hex Race into Joust into Crystal Capture, with race-to-six placement scoring, standings, and crystal-wallet credit.</td>
       </tr>
@@ -250,9 +288,9 @@
         <td>Delivered on a stronger stack than planned. The punch list assumed Mirror plus a Steam transport; we shipped UGS Relay with eager per-user sessions, presence lobby, party invites, friends, kick, and disconnect handling. Works on Steam with no Steam transport required.</td>
       </tr>
       <tr>
-        <td><b>Time-to-Tournament</b></td>
+        <td><b>Time-to-Maelstrom</b></td>
         <td><span class="pill p-done">By design</span></td>
-        <td>Tournament is always unlocked and reachable from first boot. The quest chain is the guided progression. One validation pass remains in Workstream C.</td>
+        <td>Maelstrom is always unlocked and reachable from first boot. The quest chain is the guided progression. One validation pass remains in Workstream C.</td>
       </tr>
       <tr>
         <td><b>Vessel progression economy</b></td>
@@ -349,8 +387,8 @@
     <thead><tr><th style="width:5%">#</th><th>Task</th><th style="width:16%">Owner</th><th style="width:9%" class="num">Days</th><th style="width:11%" class="num">Running</th></tr></thead>
     <tbody>
       <tr class="done"><td class="id">C1</td><td>Settings panel prefab wiring &nbsp;<span class="pill p-done">Complete</span> &nbsp;All four tabs verified wired and live in the main menu and pause panel.</td><td class="own">Shombith</td><td class="num">0</td><td class="num">15.0</td></tr>
-      <tr><td class="id">C2</td><td>First-session validation: fresh install, guest sign-in, menu, first Tournament. Confirm the quest chain and controls overlay carry a new player unaided. Observe three to five first-timers and fix only what actually stops them.</td><td class="own">Andrew, Shombith</td><td class="num">3.0</td><td class="num">18.0</td></tr>
-      <tr><td class="id">C3</td><td>Verify the funnel dashboard answers median time-to-Tournament from real sessions</td><td class="own">Ian</td><td class="num">2.0</td><td class="num">20.0</td></tr>
+      <tr><td class="id">C2</td><td>First-session validation: fresh install, guest sign-in, menu, first Maelstrom. Confirm the quest chain and controls overlay carry a new player unaided. Observe three to five first-timers and fix only what actually stops them.</td><td class="own">Andrew, Shombith</td><td class="num">3.0</td><td class="num">18.0</td></tr>
+      <tr><td class="id">C3</td><td>Verify the funnel dashboard answers median time-to-Maelstrom from real sessions</td><td class="own">Ian</td><td class="num">2.0</td><td class="num">20.0</td></tr>
       <tr><td class="id">C4</td><td>De-scope sweep of visible UI. Episode purchase surfaces, store screen, and locked screens receive deliberate coming-soon treatment rather than appearing broken.</td><td class="own">Shombith</td><td class="num">3.0</td><td class="num">23.0</td></tr>
       <tr><td class="id">C5</td><td>Confirm vessel-unlock economy for launch: crystal earn rates against vessel prices, one tuning pass in config</td><td class="own">Shombith</td><td class="num">1.0</td><td class="num">24.0</td></tr>
       <tr><td class="id">C6</td><td>Audio coverage pass: menu bed, freestyle bed, per-minigame beds, UI stings. Fill the gaps that would read as silence in a trailer.</td><td class="own">Charles</td><td class="num">4.0</td><td class="num">28.0</td></tr>
@@ -374,7 +412,7 @@
   <table class="nobreak">
     <thead><tr><th style="width:5%">#</th><th>Task</th><th style="width:18%">Owner</th><th style="width:9%" class="num">Days</th><th style="width:11%" class="num">Running</th></tr></thead>
     <tbody>
-      <tr><td class="id">D1</td><td>Profiling session on the floor machine: four-player Tournament at intensity four. Lock the hardware floor and the frame and memory targets.</td><td class="own">Yash</td><td class="num">3.0</td><td class="num">54.0</td></tr>
+      <tr><td class="id">D1</td><td>Profiling session on the floor machine: four-player Maelstrom at intensity four. Lock the hardware floor and the frame and memory targets.</td><td class="own">Yash</td><td class="num">3.0</td><td class="num">54.0</td></tr>
       <tr><td class="id">D2</td><td><b>Load time, every game mode at every intensity.</b> Measure cold boot to menu and menu to first playable frame across the full mode and intensity matrix, then reduce it. Bootstrap sequence, scene load, and asset warm-up are the candidates. One calendar week, with a published load-time target set alongside the frame and memory targets.</td><td class="own">Shombith, Yash, Andrew</td><td class="num">8.0</td><td class="num">62.0</td></tr>
       <tr><td class="id">D3</td><td>Two-hour soak across freestyle and back-to-back tournaments: memory growth, GC spikes, prism-count ceiling behaviour</td><td class="own">Yash</td><td class="num">2.0</td><td class="num">64.0</td></tr>
       <tr><td class="id">D4</td><td>Multiplayer regression: the existing party and presence suites, plus four-player thirty-minute disconnect and rejoin scenarios</td><td class="own">Andrew</td><td class="num">4.0</td><td class="num">68.0</td></tr>
@@ -391,7 +429,7 @@
       <tr><td class="id">E1</td><td>Positioning one-pager: "Party Game for Pilots", three pillars, Early Access framing</td><td class="own">Caleb</td><td class="num">1.0</td><td class="num">75.0</td></tr>
       <tr><td class="id">E2</td><td>Steam copy pack: short and long description, feature bullets honest about Early Access state, tags, and the Q and A text from A4</td><td class="own">Caleb</td><td class="num">3.0</td><td class="num">78.0</td></tr>
       <tr><td class="id">E3</td><td>Capsule and key art set across all five required sizes. <b>Largest single art item and a gate on A5.</b></td><td class="own">Will</td><td class="num">6.0</td><td class="num">84.0</td></tr>
-      <tr><td class="id">E4</td><td>Five or more screenshots at 1920 by 1080: one per minigame plus Tournament and freestyle</td><td class="own">Will</td><td class="num">1.0</td><td class="num">85.0</td></tr>
+      <tr><td class="id">E4</td><td>Five or more screenshots at 1920 by 1080: one per minigame plus Maelstrom and freestyle</td><td class="own">Will</td><td class="num">1.0</td><td class="num">85.0</td></tr>
       <tr><td class="id">E5</td><td>Trailer version one, sixty seconds or less, plus a thirty-second social cut, captured from the real build and gameplay-first</td><td class="own">Will</td><td class="num">6.0</td><td class="num">91.0</td></tr>
       <tr><td class="id">E6</td><td>Discord live with the invite on the Steam page, plus a basic landing page</td><td class="own">Caleb</td><td class="num">1.0</td><td class="num">92.0</td></tr>
       <tr><td class="id">E7</td><td>One closed playtest of ten to twenty-five people via the Steam beta branch. Validates the upload pipeline, the overlay, and first-session flow in a single beat, and produces quotes and clips for the page.</td><td class="own">Caleb, Shombith / Yash</td><td class="num">4.0</td><td class="num">96.0</td></tr>
@@ -505,7 +543,7 @@
       <p style="font-size:8.3pt;color:var(--muted);margin:0 0 4px;">All six simultaneously true.</p>
       <ol class="dod">
         <li>Steam page live for at least two weeks with final assets, and the build has passed review.</li>
-        <li>A fresh install on the floor machine reaches a completed four-player Tournament, humans and bots, with zero P0 or P1 defects.</li>
+        <li>A fresh install on the floor machine reaches a completed four-player Maelstrom, humans and bots, with zero P0 or P1 defects.</li>
         <li>A fresh account completes the quest chain, with unlocks and progression persisting through Cloud Save.</li>
         <li>Cold boot to playable meets the load-time target in every game mode at every intensity.</li>
         <li>Crash reporting and funnel telemetry visible in dashboards from playtest builds.</li>

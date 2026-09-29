@@ -94,9 +94,10 @@ MATURITY = 0.5
 # ELEMENT), exactly as a fauna lineage does - so a species seeded from ONE plant would grow a
 # whole cell of one element and quietly waste the config's authored element spread. Four
 # independent founders keep several elements in the cell, and double as the extinction floor.
-# (The pick used to carry a rolled spawn LEVEL too; that is retired - every plant seeds at
-# level 1 and earns the rest by reproducing, Docs/ECOSYSTEM.md §34 - so size variety inside a
-# colony now comes from which plants have bred, not from which founder they descend from.)
+# (The pick used to carry a spawn LEVEL too. Lifeform levels are retired outright - a lifeform
+# is its species and its ELEMENT, nothing else, Docs/ECOSYSTEM.md §40 - and a lattice plant's
+# leaf never changes size anyway (Flora.PrismSizeFixedByGrowthRule). So the founders are now
+# the ONLY thing that varies inside a colony, which is precisely why the floor below matters.)
 LATTICE_MIN_FOUNDERS = 4
 
 # Species whose growth rule is a LATTICE: an offspring is handed a real bond site off the
@@ -162,14 +163,36 @@ EXCLUDE = set()
 # of an authored plant - the cell's whole environment IS the colony - so this file's rule
 # (cap = old_single_plant_budget / patch) has no input to work from and would silently shrink
 # them back to the Blob caps.
+#
+# "Garland ": the Garland cell (Docs/ECOSYSTEM.md 48). Its four species are picked for
+# SILHOUETTE at the menu camera's orbit distance and their floors/caps are derived from that
+# cell's own phase ladder, not from an authored opening density - so this file's rule
+# (cap = ISC x 1.5) would quietly re-cut a roster that was solved against a budget.
+#
+# The entries match DIFFERENTLY, and the difference is the point.  "Lattice " and "Garland "
+# name CELLS, and a cell's configs all start with its name, so a prefix is exact.  "Borromean"
+# names a SPECIES, and a species' per-cell configs are named for the CELL first ("Rampage
+# Borromean Flora Mass Config Data") - so a prefix rule would silently hand every adopting
+# cell's copy back to this script, whose model (cap = old_single_plant_budget / patch) has
+# no input to work from on a species whose budget is a MEASURED TABLE per element.  A
+# species owned by its own generator is owned by it WHEREVER the config lives.
 OWNED_ELSEWHERE = {
-    "Lattice ": "Tools/Build/author_lattice_cell.py",
+    "Lattice ": ("prefix", "Tools/Build/author_lattice_cell.py"),
+    "Garland ": ("prefix", "Tools/Build/author_garland_cell.py"),
+    "Borromean": ("species", "Tools/Build/author_borromean_flora_assets.py"),
+    # The Mandelbulb family: four species on one growth rule, each with a MEASURED
+    # per-element budget, so their own generator owns the populations wherever the config
+    # lives.  Matched as a SPECIES (never a prefix) for the reason stated above.
+    "Mandelbulb": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Coral Bloom": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Watershed": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Apollonia": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
 }
 
 
 def owner_of(name):
-    for prefix, script in OWNED_ELSEWHERE.items():
-        if name.startswith(prefix):
+    for token, (kind, script) in OWNED_ELSEWHERE.items():
+        if name.startswith(token) if kind == "prefix" else (token in name):
             return script
     return None
 
@@ -264,7 +287,7 @@ def collect_targets(guids, defaults):
                     referenced.append(target)
 
     # The shared per-element species assets (_SO_Assets/Lifeforms) are the ELEMENT PALETTE and
-    # the Lifeform Matrix toy's source. A lattice species' budget is its element identity, so the
+    # the Spawn Matrix toy's source. A lattice species' budget is its element identity, so the
     # unit-cell shrink has to land there too or the toy keeps spawning the old 1000-prism plant.
     lifeforms = os.path.join(SO, "Lifeforms")
     for name in sorted(os.listdir(lifeforms)):

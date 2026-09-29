@@ -23,6 +23,18 @@ namespace CosmicShore.Utility
         [Header("Spawn Profiles")]
         public SpawnProfileSO SpawnProfile;
 
+        [Header("Boot")]
+        [Tooltip("This is the world a freestyle scene BOOTS into (CellTypeChoiceOptions.EnvironmentFree). " +
+                 "Authored rather than inferred: that mode otherwise picks the first config with no " +
+                 "EnvironmentPrefab, which is a claim about what a config CONTAINS standing in for the " +
+                 "thing actually wanted - how CHEAP it is to build. A config can be both cheap and " +
+                 "prepopulated (Garland: 4,259 prisms, composed for the home-screen camera), and no " +
+                 "content predicate can say so. Set it on exactly ONE config per cell; the first one " +
+                 "found wins and the environment-free scan is the fallback, so a cell that authors none " +
+                 "behaves exactly as before. What it boots is still paid for on EVERY entry to the " +
+                 "scene, behind the standard EnvironmentLoadVeil - see Docs/ECOSYSTEM.md §36.10, §48.")]
+        public bool BootDefault;
+
         [Header("Environment")]
         [Tooltip("Optional authored structural environment spawned once with the cell (a SpawnableBase " +
                  "prefab, e.g. SpawnableAtlantis - the Yggdra cell's garden). Spawned through the " +

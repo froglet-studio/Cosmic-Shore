@@ -31,9 +31,7 @@ MonoBehaviour:
   PredatorSpawnPointCount: 0
   PredatorSpawnRadius: 0
   SupportedFaunas:
-  - {fileID: 11400000, guid: 3553b416244dfb81fe8d69bcc75ec982, type: 2}
-  - {fileID: 11400000, guid: c574c8e2271b73ffbcd7bc46daddac6c, type: 2}
-  - {fileID: 11400000, guid: 13dc890b3089fccf26006e0c849b4745, type: 2}
-  - {fileID: 11400000, guid: c76737c881612127e652c46f79e5e1f7, type: 2}
-  - {fileID: 11400000, guid: 26bd4c71c35816e33d09c963fefa0d2b, type: 2}
-  - {fileID: 11400000, guid: ffb81fdc15b1de2c899da39af01d6553, type: 2}
+  - {fileID: 11400000, guid: 88016e598219c38475a9d14a0a37bd71, type: 2}
+  - {fileID: 11400000, guid: 7b3f2cd96aaab58454be43be4bcd7c79, type: 2}
+  - {fileID: 11400000, guid: 90196a87674fae1aee6b329050765e3a, type: 2}
+  - {fileID: 11400000, guid: 961956e462f41d391a8002f49892eacf, type: 2}

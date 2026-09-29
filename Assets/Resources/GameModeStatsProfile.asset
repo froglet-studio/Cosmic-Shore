@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98359aa6e754415fadc49a7227d64ad9, type: 3}
+  m_Name: GameModeStatsProfile
+  m_EditorClassIdentifier: 
+  defaultStats:
+  - {fileID: 11400000, guid: c9ca3d6eff04d70468aa24ee5b1f561d, type: 2}
+  - {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
+  - {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}
+  perMode:
+  - Mode: 33
+    Stats:
+    - {fileID: 11400000, guid: 5bc14503bfdc4c04ca04d6ba9074e7ff, type: 2}
+    - {fileID: 11400000, guid: a832d934d63484344adce8281a893989, type: 2}
+    - {fileID: 11400000, guid: c9ca3d6eff04d70468aa24ee5b1f561d, type: 2}
+    - {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
+    - {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}
+  - Mode: 34
+    Stats:
+    - {fileID: 11400000, guid: a832d934d63484344adce8281a893989, type: 2}
+    - {fileID: 11400000, guid: be1a9b6401dca924585cd31ff1034c6f, type: 2}
+    - {fileID: 11400000, guid: 3ea71b2eaf0cdbb46a99ddaf04b2d999, type: 2}

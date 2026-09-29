@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using Obvious.Soap;
 using UnityEngine;
@@ -19,12 +20,21 @@ namespace CosmicShore.UI
                  "of a heat/boost gauge.")]
         [SerializeField] private BarrelRollController barrelRollController;
 
+        [Tooltip("The guns' heat/accuracy state. Drives the guns (Space) card's heat gauge and " +
+                 "its phase-transition marks. Resolved off the vessel if left empty.")]
+        [SerializeField] private GunSprayAccuracy gunSprayAccuracy;
+
         [Header("Events")]
         [SerializeField] private ScriptableEventBool stationaryModeChanged;
         [SerializeField] private ScriptableEventInputEventBlock onInputEventBlocked;
 
         Coroutine _initialAmmoRoutine;
         IVesselStatus _vesselStatus;
+
+        bool _pollGunHeat;
+        GunSpreadProfile _paintedProfile;
+        float _paintedFullSpread = -1f;
+        readonly List<float> _phaseJoins = new();
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -65,6 +75,10 @@ namespace CosmicShore.UI
                     : RollChargeState.Lapsed);
             }
 
+            if (!gunSprayAccuracy && _vesselStatus is Component vesselComponent)
+                gunSprayAccuracy = vesselComponent.GetComponentInChildren<GunSprayAccuracy>(true);
+            _pollGunHeat = gunSprayAccuracy;
+
             if (fireGunExecutor == null) return;
             fireGunExecutor.OnAmmoChanged += HandleAmmoChanged;
             _initialAmmoRoutine = StartCoroutine(InitialAmmoPaintRoutine());
@@ -85,6 +99,10 @@ namespace CosmicShore.UI
 
         void Unsubscribe()
         {
+            _pollGunHeat = false;
+            _paintedProfile = null;
+            _paintedFullSpread = -1f;
+
             if (barrelRollController)
                 barrelRollController.OnRollChargeChanged -= HandleRollChargeChanged;
 
@@ -98,10 +116,39 @@ namespace CosmicShore.UI
                 fireGunExecutor.OnAmmoChanged -= HandleAmmoChanged;
         }
 
+        /// <summary>
+        /// Heat is continuous (it integrates every frame while firing and while cooling) and has
+        /// no event, so it is POLLED - one float compare per frame on the local pilot's HUD only.
+        /// The phase marks are re-laid only when the profile the heat is measured against changes.
+        /// </summary>
+        void Update()
+        {
+            if (!_pollGunHeat || !view || !gunSprayAccuracy) return;
+
+            var profile = gunSprayAccuracy.Profile;
+            float full = profile?.SecondsToFullSpread ?? 0f;
+            if (profile != _paintedProfile || !Mathf.Approximately(full, _paintedFullSpread))
+            {
+                _paintedProfile = profile;
+                _paintedFullSpread = full;
+                gunSprayAccuracy.CollectPhaseJoins01(_phaseJoins);
+                view.SetGunHeatPhaseJoins(_phaseJoins);
+            }
+
+            view.SetGunHeat(gunSprayAccuracy.Heat01);
+        }
+
         private IEnumerator InitialAmmoPaintRoutine()
         {
             yield return null;
             view?.InitializeMissileIcon();
+
+            // Seed the charge gauge from the LIVE tank, not from a resting value: the pilot may
+            // arrive mid-match (a vessel swap, a replay) with a part-charged bay, and a gauge
+            // that starts at zero and then jumps on the next destroyed prism reads as a bug.
+            if (fireGunExecutor != null)
+                view?.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
+
             _initialAmmoRoutine = null;
         }
 
@@ -123,10 +170,25 @@ namespace CosmicShore.UI
             view.SetRollCharge(state);
         }
 
+        /// <summary>
+        /// One ammo change, two readouts: the icon ladder says how many rockets the bay HOLDS,
+        /// the Charge card's gauge says how close the next one is. They are driven from the same
+        /// event so they can never disagree, and the gauge is asked of the executor rather than
+        /// derived here — the shot's cost is the weapon's business, and re-deriving it in the HUD
+        /// is how a UI number drifts from the one the gun spends.
+        /// </summary>
         private void HandleAmmoChanged(float ammo01)
         {
             if (!view) return;
-            view.SetMissilesFromAmmo01(ammo01);
+
+            // The COST comes from the executor, never from the HUD: the icon ladder counts
+            // rockets, and a count re-derived here would drift from the number the gun spends
+            // the moment the weapon's price changes (it just did - a base rocket is half what
+            // it was, so the bay holds four).
+            view.SetMissilesFromAmmo01(ammo01, fireGunExecutor != null ? fireGunExecutor.ShotCost01 : 0f);
+
+            if (fireGunExecutor != null)
+                view.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
         }
     }
 }

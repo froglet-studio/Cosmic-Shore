@@ -52,7 +52,6 @@ namespace CosmicShore.UI
 
         public void MakeRewardUnavailable()
         {
-            CSDebug.Log("DailyChallengeRewardButton - SetRewardAvailable");
             CollectedButton.gameObject.SetActive(false);
             NotEarnedButton.gameObject.SetActive(true);
             ClaimButton.gameObject.SetActive(false);
@@ -60,7 +59,6 @@ namespace CosmicShore.UI
 
         public void MakeRewardAvailable()
         {
-            CSDebug.Log("DailyChallengeRewardButton - SetRewardAvailable");
             CollectedButton.gameObject.SetActive(false);
             NotEarnedButton.gameObject.SetActive(false);
             ClaimButton.gameObject.SetActive(true);
@@ -72,12 +70,10 @@ namespace CosmicShore.UI
             switch (RewardButtonType)
             {
                 case RewardButtonType.DailyChallenge:
-                    CSDebug.Log($"DailyChallengeRewardButton - ClaimReward:{RewardTier}");
                     if (DailyChallengeSystem.Instance.ClaimReward(RewardTier))
                         StartCoroutine(PurchaseVisualEffectCoroutine());
                     break;
                 case RewardButtonType.Intensity:
-                    CSDebug.Log($"IntensityRewardButton - ClaimReward:{RewardTier}");
                     TrainingGameProgressSystem.ClaimIntensityTierReward(Reward.GameMode, RewardTier);   // TODO: this should look at the TrainingGame.mode - the reward button mode is to grant the game
                     StartCoroutine(PurchaseVisualEffectCoroutine());
                     break;
@@ -86,7 +82,6 @@ namespace CosmicShore.UI
 
         public void MarkClaimed()
         {
-            CSDebug.Log($"DailyChallengeRewardButton - MarkClaimed:{RewardTier}");
             NotEarnedButton.gameObject.SetActive(false);
             ClaimButton.gameObject.SetActive(false);
             CollectedButton.gameObject.SetActive(true);

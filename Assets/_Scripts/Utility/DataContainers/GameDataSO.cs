@@ -83,7 +83,7 @@ namespace CosmicShore.Utility
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
         public int LocalPlayerAvatarId;
-        public bool IsDailyChallenge;
+        public bool IsWeeklyChallenge;
         public bool IsTraining;
         public bool IsMission;
         public bool IsMultiplayerMode;
@@ -108,8 +108,8 @@ namespace CosmicShore.Utility
         [NonSerialized] public bool GameConfigSynced;
 
         /// <summary>
-        /// True while a Tournament session is in progress (set by
-        /// <see cref="CosmicShore.Gameplay.TournamentController"/> at tournament start,
+        /// True while a Maelstrom session is in progress (set by
+        /// <see cref="CosmicShore.Gameplay.MaelstromController"/> at tournament start,
         /// cleared on tournament end / exit). A peer of the other game-context flags
         /// above. Read by the <see cref="CosmicShore.UI.Scoreboard"/> to swap the
         /// per-game lobby buttons for the tournament Continue flow, and synced to
@@ -119,7 +119,23 @@ namespace CosmicShore.Utility
         /// (it must survive the per-game scene loads); it is cleared in
         /// <see cref="ResetAllData"/> as a quit/session-end safety net.
         /// </summary>
-        public bool IsTournamentMode;
+        public bool IsMaelstromMode;
+
+        /// <summary>
+        /// True while this session is running as an OFFLINE LOCAL HOST - NetworkManager started
+        /// on 127.0.0.1 by <see cref="CosmicShore.Core.OfflineModeService"/> because UGS
+        /// auth / Relay could not be reached (Steam offline mode). Everything downstream runs
+        /// byte-identically to a solo online session; this flag exists so the online-only
+        /// plumbing (matchmaking, party Relay creation) stands down instead of tearing the
+        /// local host out from under a running game.
+        ///
+        /// Single writer: <see cref="CosmicShore.Core.OfflineModeService"/>. Deliberately NOT
+        /// cleared by <see cref="ResetRuntimeData"/> or <see cref="ResetAllData"/> - the offline
+        /// session lasts until the app restarts (re-entering online mid-session requires a full
+        /// re-boot of the party layer; see Docs/OFFLINE_MODE.md §5.1).
+        /// [NonSerialized] so a play-mode session can never bake the flag into the asset.
+        /// </summary>
+        [NonSerialized] public bool IsOfflineSession;
 
         /// <summary>
         /// Number of AI players to backfill in multiplayer when not enough
@@ -127,6 +143,25 @@ namespace CosmicShore.Utility
         /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).
         /// </summary>
         public int RequestedAIBackfillCount;
+
+        /// <summary>
+        /// The DOMAINS the host hand-placed AI into (the launch panel's Add AI mode), in
+        /// placement order. The AI spawner seats bot i in entry i and falls back to its
+        /// balanced pick past the end of the list - so an empty list is exactly the old
+        /// auto-balanced behaviour, and the list never needs to cover the whole backfill
+        /// count. Host-side only: the spawner runs on the server, which is the machine that
+        /// configured the launch. [NonSerialized] like the offline flag so a play-mode
+        /// session can never bake a roster into the asset.
+        /// </summary>
+        [NonSerialized] public List<Domains> RequestedAIDomains = new();
+
+        /// <summary>Replace the placed-AI domain list (cleared when <paramref name="domains"/>
+        /// is null). The launch pipeline's counterpart to <see cref="ConfigurePlayerCounts"/>.</summary>
+        public void SetRequestedAIDomains(IReadOnlyList<Domains> domains)
+        {
+            RequestedAIDomains.Clear();
+            if (domains != null) RequestedAIDomains.AddRange(domains);
+        }
 
         /// <summary>
         /// Levels of ALL FOUR elements a trailing player/team gains per unit of score deficit
@@ -316,12 +351,27 @@ namespace CosmicShore.Utility
         [NonSerialized] public int CombatPointTargetCount;
 
         /// <summary>
+        /// How many gates the Switchback course has - the number a pilot must thread to finish
+        /// it. Published by <c>RaceGateTurnMonitor</c> in StartMonitor (server), synced to
+        /// clients via NetworkVariable.OnValueChanged, and read by
+        /// <see cref="CosmicShore.Gameplay.GateRaceScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout.
+        ///
+        /// Unlike every other target here it is compared against ONE PILOT's count rather than a
+        /// domain sum: all pilots fly the same course, so a domain finishes when its lead runner
+        /// does (GateRaceScoringRuleSO.DomainValue folds by max).
+        /// </summary>
+        [NonSerialized] public int SwitchTargetCount;
+
+        /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
         /// and the "remaining" readout (and, in later commits, the scoreboard + end-game
-        /// cinematic). Transient - re-published on every (re)spawn, so it is intentionally NOT
-        /// cleared by the reset methods.
+        /// cinematic), and by ElementalComebackSystem, whose deficit IS this rule's DomainValue.
+        /// Transient - re-published on every (re)spawn, so it is intentionally NOT cleared by the
+        /// reset methods; MultiplayerMiniGameControllerBase.OnNetworkSpawn nulls it just before
+        /// the subclass publishes, so a rule-less mode can never inherit the previous mode's.
         /// </summary>
         [NonSerialized] public ScoringRuleSO ScoringRule;
 
@@ -334,7 +384,7 @@ namespace CosmicShore.Utility
         {
             if (game == null)
             {
-                Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame - game is NULL!</color>");
+                CSDebug.LogError("[GameDataSO] SyncFromArcadeGame - game is null.");
                 return;
             }
 
@@ -354,7 +404,114 @@ namespace CosmicShore.Utility
                     if (game.Vessels[i] != null)
                         AllowedVesselClasses.Add(game.Vessels[i].Class);
 
+            // The mode's HARD team-shape limit, published for the same reason as the hull list:
+            // it was authored on SO_ArcadeGame and read only by the launch modal, so nothing
+            // server-side could tell "the host chose two domains" (a preference) from "this mode
+            // has exactly two goals" (a rule). Astro League and Brood Rush pin it to 2.
+            MaxDomainsForGame = Mathf.Clamp(game.MaxDomainsAllowed, 1, ActiveDomains.Length);
+
+            // Arena seating (unique hulls + mid-match pilot swap), published for the same reason:
+            // the rule is authored on the card and ENFORCED by the server-side spawner and the
+            // pilot-swap RPC, neither of which can see the card. Shipped to clients by the config
+            // sync RPC so a guest's swap gesture knows whether it means anything here.
+            IsArenaMatch = game.ArenaRules;
+
+            // The card's per-hull starting element levels, published for the same reason as the
+            // hull list and shipped to every client by the config sync RPC: element levels are
+            // simulated on the machine that OWNS a vessel and never replicate, so the guest's own
+            // vessel has to be seeded from the same table the host seeds its replica from.
+            PublishStartingElements(game.StartingElements);
+
             ClampSelectedVesselToGame(game);
+        }
+
+        /// <summary>
+        /// The CURRENT card's per-hull starting element levels
+        /// (<see cref="SO_ArcadeGame.StartingElements"/>), published by
+        /// <see cref="SyncFromArcadeGame"/> on the host and by the config sync RPC on a client.
+        /// Empty means every hull starts at rest, which is every single-hull card and the menu.
+        /// Pre-launch config like <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by
+        /// ResetRuntimeData(), because it has to survive the scene load into the game scene where
+        /// the vessels that read it spawn.
+        /// </summary>
+        public readonly List<VesselStartingElements> StartingElements = new();
+
+        /// <summary>Replace the published starting-element table. Single writers: the card sync
+        /// on the host, the config RPC on a client, the menu's reset.</summary>
+        public void PublishStartingElements(IList<VesselStartingElements> table)
+        {
+            StartingElements.Clear();
+            if (table == null) return;
+            for (int i = 0; i < table.Count; i++)
+                StartingElements.Add(table[i]);
+        }
+
+        /// <summary>
+        /// The element levels a hull of <paramref name="vesselClass"/> starts THIS match at, at
+        /// the selected intensity. False when the card authors no row for it - the caller then
+        /// leaves the vessel at rest rather than writing zeros over a seed some other path made.
+        /// </summary>
+        public bool TryGetStartingElements(VesselClassType vesselClass, out ResourceCollection levels)
+        {
+            int intensity = SelectedIntensity != null ? SelectedIntensity.Value : 1;
+            return VesselStartingElements.TryResolve(StartingElements, vesselClass, intensity, out levels);
+        }
+
+        /// <summary>
+        /// The most domains the CURRENT mode allows (<see cref="SO_ArcadeGame.MaxDomainsAllowed"/>),
+        /// published by <see cref="SyncFromArcadeGame"/>. Distinct from
+        /// <see cref="RequestedDomainCount"/>, which is the host's PREFERENCE within it: a pilot's
+        /// domain pick may widen the count up to this, never past it.
+        ///
+        /// Defaults to the full playable set, which is also the state in Menu_Main before any game
+        /// has been launched. Like <see cref="AllowedVesselClasses"/> it is pre-launch config and is
+        /// deliberately NOT cleared by ResetRuntimeData() - it has to survive the scene load into
+        /// the game scene, where the spawner reads it.
+        /// </summary>
+        [NonSerialized] public int MaxDomainsForGame = 3;
+
+        /// <summary>
+        /// True when the CURRENT card plays by <see cref="SO_ArcadeGame.ArenaRules"/>: every hull
+        /// is flown by exactly one pilot, and a human may swap into an AI teammate's hull mid-match
+        /// (<c>PilotSwap</c>). Published by <see cref="SyncFromArcadeGame"/> on the host and by the
+        /// config sync RPC on a client. Pre-launch config like <see cref="AllowedVesselClasses"/>:
+        /// deliberately NOT cleared by ResetRuntimeData(), because the spawner that enforces it
+        /// runs in the game scene.
+        /// </summary>
+        [NonSerialized] public bool IsArenaMatch;
+
+        /// <summary>
+        /// The first hull this game permits that is NOT in <paramref name="inUse"/>, preferring
+        /// <paramref name="preferred"/> when it is itself free - the one answer to "which hull
+        /// may this pilot have" under <see cref="IsArenaMatch"/>. Order is the card's own list
+        /// order, so identical inputs give identical answers on every machine. False when every
+        /// permitted hull is taken (more seats than hulls, which the launch modal's
+        /// <see cref="SO_ArcadeGame.MaxSeats"/> exists to prevent).
+        /// </summary>
+        public bool TryPickFreeHull(VesselClassType preferred, ICollection<VesselClassType> inUse,
+                                    out VesselClassType hull) =>
+            TryPickFreeHull(AllowedVesselClasses, preferred, inUse, out hull);
+
+        /// <summary>Pure core of <see cref="TryPickFreeHull(VesselClassType, ICollection{VesselClassType}, out VesselClassType)"/>,
+        /// separated so it can be tested without a GameDataSO.</summary>
+        public static bool TryPickFreeHull(IList<VesselClassType> allowed, VesselClassType preferred,
+                                           ICollection<VesselClassType> inUse, out VesselClassType hull)
+        {
+            hull = preferred;
+            bool IsFree(VesselClassType t) => inUse == null || !inUse.Contains(t);
+
+            bool preferredLegal = preferred != VesselClassType.Any && preferred != VesselClassType.Random &&
+                                  (allowed == null || allowed.Count == 0 || allowed.Contains(preferred));
+            if (preferredLegal && IsFree(preferred)) return true;
+
+            if (allowed == null) return false;
+            for (int i = 0; i < allowed.Count; i++)
+            {
+                if (!IsFree(allowed[i])) continue;
+                hull = allowed[i];
+                return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -390,13 +547,13 @@ namespace CosmicShore.Utility
         /// Forces <see cref="selectedVesselClass"/> into the set this game actually allows
         /// (<see cref="SO_ArcadeGame.Vessels"/>). `Vessels` was previously only the UI's list of
         /// CHOICES: nothing validated the selection at launch, so a vessel picked in an earlier
-        /// game persisted into a mode that does not permit it - a Dolphin flew Ribcage, which is
+        /// game persisted into a mode that does not permit it - a Dolphin flew Cleave, which is
         /// Rhino-only, while its AI opponents correctly spawned Rhinos (their class comes from
         /// the scene's own aiInitializeDatas).
         ///
         /// Enforced HERE, at the one call every launch path funnels through, rather than in the
         /// configure modal: the modal's ship picker is only one entry point (rematch, the
-        /// Tournament chain, and a launch whose vessel screen was never opened all bypass it),
+        /// Maelstrom chain, and a launch whose vessel screen was never opened all bypass it),
         /// and a per-mode fork would have to be repeated for every restricted-vessel game.
         /// A single-vessel game therefore cannot be entered in the wrong hull by any route.
         /// </summary>
@@ -408,8 +565,8 @@ namespace CosmicShore.Utility
             var clamped = ClampVesselToGame(current);
             if (clamped == current) return;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
-                      $"clamping selected vessel to {clamped}.</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[GameDataSO] {game.Mode} does not allow {current}; " +
+                      $"clamping selected vessel to {clamped}.");
             selectedVesselClass.Value = clamped;
             if (VesselClassSelectedIndex != null)
                 VesselClassSelectedIndex.Value = (int)clamped;
@@ -429,7 +586,7 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = totalDesired;
             RequestedAIBackfillCount = aiBackfill;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}");
         }
 
 
@@ -593,6 +750,7 @@ namespace CosmicShore.Utility
             PrismTargetCount = 0;
             LifeformTargetCount = 0;
             CombatPointTargetCount = 0;
+            SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -642,6 +800,7 @@ namespace CosmicShore.Utility
             PrismTargetCount = 0;
             LifeformTargetCount = 0;
             CombatPointTargetCount = 0;
+            SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 
@@ -662,7 +821,7 @@ namespace CosmicShore.Utility
         ///
         /// This is needed because scoring is live from the moment the scene's StatsManager
         /// network-spawns - there is no turn gate on <c>StatsManager</c> - while the window
-        /// between that and the first turn is long: the arena builds (Ribcage lays 10-20k prisms),
+        /// between that and the first turn is long: the arena builds (Cleave lays 10-20k prisms),
         /// vessels spawn, and the countdown runs. Anything destroyed in that window used to land
         /// in a player's score, so a match could visibly start with someone above zero.
         ///
@@ -701,8 +860,9 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
             RequestedAIBackfillCount = 0;
+            RequestedAIDomains.Clear();
             RequestedDomainCount = 3;
-            IsTournamentMode = false;
+            IsMaelstromMode = false;
 
             IsReplayReload = false;
 

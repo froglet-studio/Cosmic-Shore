@@ -470,6 +470,21 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>
+        /// Any avatar from the shipped set, chosen at random.
+        ///
+        /// <para>For the AI seats an arcade card previews: a bot has no profile to read an avatar
+        /// from, and giving them all icon 0 makes four seats read as one player repeated.</para>
+        /// </summary>
+        public Sprite GetRandomAvatarSprite()
+        {
+            if (profileIcons == null || profileIcons.profileIcons == null ||
+                profileIcons.profileIcons.Count == 0)
+                return null;
+
+            return profileIcons.profileIcons[UnityEngine.Random.Range(0, profileIcons.profileIcons.Count)].IconSprite;
+        }
+
         public Sprite GetAvatarSprite(int avatarId)
         {
             if (profileIcons == null || profileIcons.profileIcons == null || profileIcons.profileIcons.Count == 0)
@@ -503,7 +518,7 @@ namespace CosmicShore.UI
             OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
             _analytics?.RecordCrystalsEarned(amount, source, CurrentProfile.Economy.CrystalBalance);
-            CSDebug.Log($"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             return CurrentProfile.Economy.CrystalBalance;
         }
 
@@ -522,7 +537,7 @@ namespace CosmicShore.UI
             OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
             _analytics?.RecordCrystalsSpent(amount, source, CurrentProfile.Economy.CrystalBalance);
-            CSDebug.Log($"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             return true;
         }
 
@@ -542,7 +557,7 @@ namespace CosmicShore.UI
             CurrentProfile.Economy.UnlockedRewardIds.Add(rewardId);
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleSave();
-            CSDebug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Reward unlocked: {rewardId}");
         }
 
         /// <summary>
@@ -579,7 +594,7 @@ namespace CosmicShore.UI
                 CurrentProfile.Economy.CrystalBalance += pending;
                 ScheduleSave();
                 OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
-                CSDebug.Log($"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             }
 #endif
         }

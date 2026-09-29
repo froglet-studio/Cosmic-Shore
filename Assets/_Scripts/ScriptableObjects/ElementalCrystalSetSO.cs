@@ -29,30 +29,40 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Default skim-collection effects for runtime-provisioned crystals.</summary>
         public SkimmerCrystalEffectSO[] CollectionEffects => collectionEffects;
 
-        [Header("Heart sizing — ONE curve for every species and every element")]
-        [Tooltip("World scale a LEVEL 1 lifeform heart renders at. This is the single " +
-                 "authority: every lifeform's heart is resized to this curve when it becomes a " +
-                 "heart, so a tadpole's crystal, a shark's and a gyroid's are the same size at " +
-                 "the same level. Species prefabs authored anything from 0.7 to 4 world scale, " +
-                 "which made an identical kill worth 4x more on one species than another (the " +
-                 "collect reward and the domain fauna buff both read the heart's world scale).")]
-        [Min(0.01f)] [SerializeField] float levelOneWorldScale = 3.5f;
-
-        [Tooltip("World scale multiplier per level above 1. Deliberately GENTLE: level is now " +
-                 "EARNED (flora level on reproduction, fauna after a significant amount of " +
-                 "feeding), so the band is a legibility cue rather than a jackpot. Keep " +
-                 "levelOneWorldScale x this^4 under the collect effect's " +
-                 "maxLevelGainPerCrystal / levelPerUnitScale (5.0 world scale at the shipped " +
-                 "0.5 / 0.1), or a level-5 heart is clipped by the cap and levelling stops " +
-                 "paying at the top of the band.")]
-        [Min(1f)] [SerializeField] float worldScalePerLevel = 1.05f;
+        [Header("Heart sizing — the DEFAULT only; a species authors its own")]
+        [Tooltip("World scale a lifeform heart renders at when its species has authored no size " +
+                 "of its own. Every shipped lifeform DOES author one, per element, in its " +
+                 "variant tuning (FaunaVariantTuning/FloraVariantTuning.HeartWorldScale) and " +
+                 "sized to that lifeform's body — so this is the floor under a config nobody " +
+                 "has sized yet, and under the runtime-provisioned misconfiguration path. " +
+                 "3 is the historical flora value, which sits mid-band.")]
+        [Min(0.01f)] [SerializeField] float defaultHeartWorldScale = 3f;
 
         /// <summary>
-        /// The world scale a lifeform heart of <paramref name="level"/> renders at — the one
-        /// function every heart's size passes through (<see cref="LifeFormCrystal.ApplyLevelSize"/>).
+        /// The world scale a heart renders at when its species authors none. There is no level
+        /// curve: a lifeform's heart size is a property of the lifeform (Docs/ECOSYSTEM.md §40.2).
         /// </summary>
-        public float WorldScaleForLevel(int level) => levelOneWorldScale *
-            Mathf.Pow(worldScalePerLevel, Mathf.Clamp(level, 1, Fauna.MaxLifeformLevel) - 1);
+        public float DefaultHeartWorldScale => defaultHeartWorldScale;
+
+        /// <summary>
+        /// The largest heart world scale that still pays its full collect reward.
+        ///
+        /// <para>The reward is <c>min(worldScale × levelPerUnitScale, maxLevelGainPerCrystal)</c>
+        /// (<see cref="CosmicShore.Gameplay.SkimmerAdjustElementLevelByCrystalEffectSO"/>), so at
+        /// the shipped 0.1 / 0.5 it saturates at exactly 5.0 world scale. Heart size is now
+        /// AUTHORED PER LIFEFORM and the reward follows it — a bigger creature's heart is worth
+        /// more — which only works while the whole authored band stays under this ceiling: past
+        /// it, two visibly different hearts pay the same, i.e. a size the player can see and a
+        /// reward they cannot.</para>
+        ///
+        /// <para>The 4% margin is deliberate headroom, not slack:
+        /// <c>Tools/Build/author_lifeform_heart_sizes.py</c> fails the build if any authored
+        /// heart exceeds it. Do NOT answer an overshoot by retuning
+        /// <c>levelPerUnitScale</c> — that constant is shared with every non-lifeform elemental
+        /// crystal (the Wanderway conveyor, Dog Fight's arena scatter). Compress the size
+        /// mapping instead.</para>
+        /// </summary>
+        public const float MaxSafeHeartWorldScale = 4.8f;
 
         // The four droppable elements - Element also has None and Omni, which are NOT valid
         // lifeform powerup elements.

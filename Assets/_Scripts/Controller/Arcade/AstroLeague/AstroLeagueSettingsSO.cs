@@ -168,8 +168,9 @@ namespace CosmicShore.Gameplay
                  "FIXED across shapes and intensities so the lining's volume budget (count x prism " +
                  "volume) stays deterministic. The Astro League Cell Config's phase-volume thresholds " +
                  "are raised by exactly that budget (480 x 62.5 = 30000) - retune them together. " +
-                 "Collider budget: each lining prism holds an always-on convex MeshCollider (the " +
-                 "engaged stellated shield) that collider-LOD cannot reclaim - keep this bounded. " +
+                 "Collider budget: the lining is FREE - a shield swaps the mesh and the mass, never " +
+                 "the collider, so these prisms stay LOD-cullable like any other. What the count does " +
+                 "buy is permanence: super-shielded mass is removable only by an energised blade. " +
                  "480 is the doubling that keeps the rim reading as a line on the (much larger) " +
                  "current court instead of a dotted one.")]
         public int edgePrismCount = 480;
@@ -230,7 +231,7 @@ namespace CosmicShore.Gameplay
         [Header("Vessel Recoil (juice)")]
         [Tooltip("Backward velocity (units/sec) added to a vessel when it strikes the ball, a subtle " +
                  "'bounce off' juice. DEFAULT 0 (OFF): anti-clip is already guaranteed by the ball's own " +
-                 "depenetration (EjectBallFromVessel), so any recoil only fights player control - a " +
+                 "depenetration (EjectBallFromPoint), so any recoil only fights player control - a " +
                  "frictionless ball that keeps bouncing back into a vessel re-fires it every cooldown, " +
                  "stacking toward VesselTransformer.velocityModifierMax (100) and throwing the vessel " +
                  "back 'like crazy'. Dial up only for a deliberate subtle bounce; scaled by hit strength.")]
@@ -382,7 +383,8 @@ namespace CosmicShore.Gameplay
         [Header("Ball - Detonation")]
         [Tooltip("Domain explosion spawned where a ball detonates (the nucleus overload / ball-cap " +
                  "overflow). Coloured by the BALL's domain, and the standard blast rules then " +
-                 "apply: own-domain prisms take a temporary shield (no perceived clipping), other " +
+                 "apply: own-domain prisms are drawn LIT in the blast's domain colour (no " +
+                 "perceived clipping - Docs/LIT.md), other " +
                  "domains are destroyed. Leave EMPTY for a burst with no blast — an unwired slot " +
                  "is a visible TODO, never a borrowed prefab.")]
         public AOEExplosion[] detonationExplosionPrefabs;
@@ -517,8 +519,20 @@ namespace CosmicShore.Gameplay
         public int goalParticleBurst = 120;
 
         [Header("Ball - Speed-Reactive Visuals")]
-        public float minTrailWidth = 0.6f;
-        public float maxTrailWidth = 5f;
+        [Tooltip("Comet-wake width at the HEAD, as a fraction of the ball's DIAMETER, at rest. Stated " +
+                 "relative to the ball because a TrailRenderer's width is world-space and ignores " +
+                 "transform scale - a forged or intensity-scaled ball would otherwise trail a thread.")]
+        public float trailWidthAtRest = 0.7f;
+        [Tooltip("Comet-wake head width (fraction of ball diameter) at speedForMaxVisuals.")]
+        public float trailWidthAtSpeed = 1.25f;
+        [Tooltip("Seconds of wake the ball carries at rest.")]
+        public float trailTimeAtRest = 0.3f;
+        [Tooltip("Seconds of wake the ball carries at speedForMaxVisuals.")]
+        public float trailTimeAtSpeed = 1.1f;
+        [Tooltip("Wake DUST: glowing motes shed into the world per world unit the ball travels at full " +
+                 "speed (scaled by speed; nothing below ~15% speed). They stay where they were shed and " +
+                 "fade, so the path lingers after the ribbon has gone. 0 disables.")]
+        public float wakeDustPerUnit = 0.28f;
         public float minEmissionIntensity = 2.5f;
         public float maxEmissionIntensity = 11f;
         public float minLightRange = 25f;

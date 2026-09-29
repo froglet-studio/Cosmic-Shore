@@ -25,11 +25,27 @@ namespace CosmicShore.Tests
         const string CellPath = "Assets/_Scripts/Controller/Environment/Cell.cs";
         const string HlslPath = "Assets/_Graphics/Materials/Graphs/PrismClockAnimation.hlsl";
 
-        static readonly string[] LiveGraphs =
+        static readonly string[] LiveGraphNames = { "BlockGraph", "ExplodingBlockGraph" };
+
+        /// <summary>
+        /// Resolves a graph by NAME through the same lookup the wiring tool uses
+        /// (<see cref="CosmicShore.Editor.PrismClockGraphWirer.FindGraphPath"/>: Graphs/, then
+        /// Graphs/PrismGraphs/, then an AssetDatabase search).
+        ///
+        /// Hardcoding one folder is what broke this fixture: the prism graphs are split across
+        /// BOTH - BlockGraph and ExplodingBlockGraph sit in Graphs/ while SuctionGraph and
+        /// UnstablePrismGraph sit in Graphs/PrismGraphs/ - and SuctionGraph was asserted at the
+        /// wrong one, so a graph that is present and correct was reported missing. Resolving the
+        /// way the authoring tool resolves means a future tidy-up moves the file without silently
+        /// turning these gates into failures.
+        /// </summary>
+        static string ResolveGraph(string graphName)
         {
-            "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
-            "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph",
-        };
+            string path = CosmicShore.Editor.PrismClockGraphWirer.FindGraphPath(graphName);
+            Assert.IsFalse(string.IsNullOrEmpty(path),
+                $"{graphName}.shadergraph was not found anywhere in the project.");
+            return path;
+        }
 
         static readonly string[] PerInstanceProps =
         {
@@ -40,9 +56,9 @@ namespace CosmicShore.Tests
         [Test]
         public void LiveGraphs_DeclareSuctionPropertiesAndConverge()
         {
-            foreach (var graphPath in LiveGraphs)
+            foreach (var graphName in LiveGraphNames)
             {
-                Assert.IsTrue(File.Exists(graphPath), $"{graphPath} is missing.");
+                string graphPath = ResolveGraph(graphName);
                 string text = File.ReadAllText(graphPath).Replace("\r\n", "\n");
                 var blocks = text.Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -72,8 +88,7 @@ namespace CosmicShore.Tests
         [Test]
         public void SuctionGraph_KeepsClockAndDoesNotCarryConverge()
         {
-            const string path = "Assets/_Graphics/Materials/Graphs/SuctionGraph.shadergraph";
-            Assert.IsTrue(File.Exists(path), $"{path} is missing.");
+            string path = ResolveGraph("SuctionGraph");
             string text = File.ReadAllText(path);
             Assert.IsTrue(text.Contains($"\"m_FunctionName\": \"{FunctionClock}\""),
                 "SuctionGraph lost PrismSuctionClock — fauna consumption VFX would snap.");
@@ -99,10 +114,8 @@ namespace CosmicShore.Tests
                 Assert.IsNotNull(type, $"{typeName} does not exist — StampSuctionClock cannot compile.");
                 Assert.IsTrue(typeof(Unity.Entities.IComponentData).IsAssignableFrom(type),
                     $"{typeName} is not an IComponentData — it can never reach the GPU.");
-                Assert.IsTrue(type.GetCustomAttributes(false)
-                        .Any(a => a.GetType().Name == "MaterialProperty"),
-                    $"{typeName} has lost its [MaterialProperty] attribute — Entities Graphics will " +
-                    "not upload it, so the stamp writes into nothing and the world snaps at drain.");
+                MaterialPropertyAttributeAssert.IsDeclaredOn(type, typeName,
+                    "the stamp writes into nothing and the world snaps at drain.");
             }
 
             const string propsPath = "Assets/_Scripts/Controller/ECS/Rendering/PrismRenderProperties.cs";

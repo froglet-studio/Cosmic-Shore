@@ -4,7 +4,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Gameplay;
-using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
@@ -74,7 +73,6 @@ namespace CosmicShore.UI
 
         public override void SetVirtualItem(VirtualItem virtualItem)
         {
-            CSDebug.Log($"SetVirtualItem - {virtualItem.Name},{virtualItem.Type},{virtualItem.ContentType}");
             this.virtualItem = virtualItem;
             PriceLabel.text = virtualItem.Price[0].Amount.ToString();
             UnavailablePriceLabel.text = virtualItem.Price[0].Amount.ToString();
@@ -109,10 +107,14 @@ namespace CosmicShore.UI
 
         public override void OnClickBuy()
         {
-            CSDebug.LogWarning("OnClickBuy");
+            // The base press carries the commerce gate and opens the modal; it reports whether it
+            // was admitted rather than being asked again, so a refused press stings once. Without
+            // this check the modal would stay closed and then be handed an item anyway, which is
+            // the state that reads as a half-working purchase screen.
             base.OnClickBuy();
-            ConfirmationModal.SetVirtualItem(virtualItem, Purchase);
+            if (!PurchaseAdmitted) return;
 
+            ConfirmationModal.SetVirtualItem(virtualItem, Purchase);
         }
 
         public override void Purchase()

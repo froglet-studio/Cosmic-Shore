@@ -154,9 +154,12 @@ namespace CosmicShore.Gameplay
             // if there is none the disengage simply has no overlay and that must be said
             // once. Own reason key — a disengage can happen with no preceding bloom (a
             // birth-engaged shield dropped later), so the engage warning may never fire.
+            // The REASON, not the render service's status line: this warning fires once for
+            // the whole process, and three of the four refusal gates have nothing to do with
+            // the render service — naming it sent the reader to a healthy subsystem.
             if (!queued)
                 PrismClockDiagnostics.WarnNoRenderEntity("shieldShatter", host,
-                    $"shield debris was refused [service: {PrismRenderService.StatusLine()}]");
+                    $"shield debris was refused because {PrismShieldShatter.LastRefusalReason}");
         }
 
         // -- standalone rig only (see Stamp) ----------------------------------

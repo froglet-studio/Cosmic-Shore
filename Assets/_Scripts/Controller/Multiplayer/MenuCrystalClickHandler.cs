@@ -72,6 +72,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Whether the menu is currently in freestyle state.</summary>
         public bool IsInFreestyle => _isInFreestyle;
 
+        /// <summary>
+        /// True while a menu&lt;-&gt;freestyle blend is still running. Not the same question as
+        /// <see cref="IsInFreestyle"/>, which flips at the START of a transition (deliberately -
+        /// see the comment in TransitionToMenu), so anything that needs "the appshell has actually
+        /// settled" has to ask this instead of inferring it from the flag.
+        /// </summary>
+        public bool IsTransitioning => _isTransitioning;
+
         void OnEnable()
         {
             _cts = new CancellationTokenSource();
@@ -208,6 +216,18 @@ namespace CosmicShore.Gameplay
             // blend. Banking it now also means the vessel it is attributed to is still current.
             FlightClock.OnFreestyleExited();
 
+            // Freestyle is OVER as of the two lines above - what remains is a camera blend, not
+            // flight. Clearing here mirrors the enter path (which sets the flag before raising
+            // its own start event) and is what makes this flag safe to read from the event below:
+            // every subscriber that asks "are we still flying?" while handling
+            // OnMenuStateTransitionStart used to be told YES, because the clear sat after the
+            // await. ScreenSwitcher.HandleExitFreestyle is the one that paid for it - it
+            // recomputes the home hub's visibility from that answer, found freestyle still
+            // "live", and left the hub row faded out and non-interactable with nothing
+            // scheduled to recompute it. ToyboxController already treated
+            // OnMenuStateTransitionStart as the end of freestyle; this brings the flag into line.
+            _isInFreestyle = false;
+
             // Raise SOAP event early so the camera blend starts immediately.
             // The camera controller freezes the CM PlayerCam framing in the vessel's local
             // frame and eases back to the menu framing - runs in parallel with the UI fade.
@@ -223,7 +243,6 @@ namespace CosmicShore.Gameplay
                               ignoreTimeScale: true, cancellationToken: ct));
 
             freestyleEvents.OnMenuStateTransitionEnd.Raise();
-            _isInFreestyle = false;
             _isTransitioning = false;
         }
 
@@ -233,12 +252,17 @@ namespace CosmicShore.Gameplay
         /// Blend duration to use for this transition. When a MainMenuCameraController is
         /// wired, its ActiveTransitionDuration (per-mode) wins - so CrystalOrbit reads long
         /// while vessel-follow modes read short. Otherwise falls back to the serialized value.
+        ///
+        /// <para>Public because it is not only a camera number: with
+        /// <see cref="lockInputDuringEnterTransition"/> set, it is also exactly how long the
+        /// vessel COASTS before the pilot gets the stick. Anything that places the vessel for
+        /// the arrival (the Toy Box's Navigate) has to know that, or it aims at where the ship
+        /// starts instead of where it ends up.</para>
         /// </summary>
-        float CurrentTransitionDuration()
-        {
-            if (cameraController) return cameraController.ActiveTransitionDuration;
-            return cameraTransitionDuration;
-        }
+        public float TransitionDuration =>
+            cameraController ? cameraController.ActiveTransitionDuration : cameraTransitionDuration;
+
+        float CurrentTransitionDuration() => TransitionDuration;
 
         #region Multiplayer Helpers
 

@@ -1,0 +1,435 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6774738432424273872
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5739209271613175231}
+  - component: {fileID: 4820175933061942688}
+  m_Layer: 0
+  m_Name: MandelbulbFlora
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5739209271613175231
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6774738432424273872}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1648936725651798773}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4820175933061942688
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6774738432424273872}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d1f6c0ab8a74f5e9c2d47e1b60f8a31, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
+  healthPrism: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195, type: 3}
+  spindle: {fileID: 5157459880619768690, guid: f7ec1bbfe690a184b935434a6e0dcb7a, type: 3}
+  healthBlocksForMaturity: 1
+  minHealthBlocks: 0
+  shieldPeriod: 0
+  autoInitialize: 1
+  domain: 0
+  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
+  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234, type: 2}
+  leafSize: {x: 3.37, y: 0.2017, z: 2.389}
+  growPeriod: 0.5
+  PlantPeriod: 15
+  stunDuration: 1
+  plantRadiusCellFraction: 0.6
+  plantRadiusCellFractionMin: 0.25
+  formByElement:
+  - Element: 1
+    CrossSection: {x: 0.0203067, y: 0.00767142}
+    Rules:
+      Field: 0
+      SwirlDegrees: 25
+      FieldMix: 0.9
+      Momentum: 0.35
+      StepSize: 0.03
+      MaxSteps: 130
+      LanesPerSeed: 60
+      LaneGap: 0.3
+      HopSeek: 0.3
+      HopJitter: 0.3
+      SeedCount: 70
+      SeedSpreadDegrees: 10
+      MaxTurnDegrees: 30
+      RadiusMin: 0.3
+      RadiusMax: 2
+      MinRun: 8
+      LengthFactor: 0.3
+      GirthTaper: 0.4
+      TwistDegreesPerStep: 12
+      DiveCount: 8
+      DiveStepFraction: 0.4
+      DiveAngleDegrees: 52
+      DiveStopRadius: 0.045
+      DiveMaxSteps: 160
+      DiveSwirlDegrees: 8
+      DiveStrideCeiling: 1.1
+      DiveGirthFloor: 0.7
+      DiveAxisAlign: 1
+      DiveDescent: 0
+      SkeletonSeeds: 0
+      WalkStep: 0.045
+      MinPersistence: 0
+      GirthReference: 0
+      GasketLevels: 0
+      DiscSeeds: 0
+      DiscPad: 0
+      DiscMinRadius: 0
+      RingShrink: 0
+      RingFlatten: 0
+      RingGirthExponent: 0
+      RingSamples: 0
+      GasketOctave: 0
+      DiscRelaxRate: 0
+      RingGirthFloor: 0
+  - Element: 2
+    CrossSection: {x: 0.0453535, y: 0.0611694}
+    Rules:
+      Field: 0
+      SwirlDegrees: 55
+      FieldMix: 0.85
+      Momentum: 0.35
+      StepSize: 0.0372309
+      MaxSteps: 140
+      LanesPerSeed: 70
+      LaneGap: 0.34
+      HopSeek: 0.4
+      HopJitter: 0.25
+      SeedCount: 80
+      SeedSpreadDegrees: 9
+      MaxTurnDegrees: 30
+      RadiusMin: 0.3
+      RadiusMax: 2
+      MinRun: 8
+      LengthFactor: 1
+      GirthTaper: 0.4
+      TwistDegreesPerStep: 12
+      DiveCount: 8
+      DiveStepFraction: 0.4
+      DiveAngleDegrees: 58
+      DiveStopRadius: 0.045
+      DiveMaxSteps: 160
+      DiveSwirlDegrees: 8
+      DiveStrideCeiling: 1.1
+      DiveGirthFloor: 0.7
+      DiveAxisAlign: 1
+      DiveDescent: 0
+      SkeletonSeeds: 0
+      WalkStep: 0
+      MinPersistence: 0
+      GirthReference: 0
+      GasketLevels: 0
+      DiscSeeds: 0
+      DiscPad: 0
+      DiscMinRadius: 0
+      RingShrink: 0
+      RingFlatten: 0
+      RingGirthExponent: 0
+      RingSamples: 0
+      GasketOctave: 0
+      DiscRelaxRate: 0
+      RingGirthFloor: 0
+  - Element: 3
+    CrossSection: {x: 0.0348544, y: 0.00208576}
+    Rules:
+      Field: 5
+      SwirlDegrees: 0
+      FieldMix: 0
+      Momentum: 0.55
+      StepSize: 0.0247124
+      MaxSteps: 150
+      LanesPerSeed: 55
+      LaneGap: 0.34
+      HopSeek: 0.2
+      HopJitter: 0.4
+      SeedCount: 32
+      SeedSpreadDegrees: 11
+      MaxTurnDegrees: 26
+      RadiusMin: 0.3
+      RadiusMax: 2.1
+      MinRun: 10
+      LengthFactor: 1
+      GirthTaper: 0.4
+      TwistDegreesPerStep: 12
+      DiveCount: 8
+      DiveStepFraction: 0.4
+      DiveAngleDegrees: 50
+      DiveStopRadius: 0.045
+      DiveMaxSteps: 160
+      DiveSwirlDegrees: 8
+      DiveStrideCeiling: 1.1
+      DiveGirthFloor: 0.7
+      DiveAxisAlign: 1
+      DiveDescent: 0
+      SkeletonSeeds: 0
+      WalkStep: 0
+      MinPersistence: 0
+      GirthReference: 0
+      GasketLevels: 0
+      DiscSeeds: 0
+      DiscPad: 0
+      DiscMinRadius: 0
+      RingShrink: 0
+      RingFlatten: 0
+      RingGirthExponent: 0
+      RingSamples: 0
+      GasketOctave: 0
+      DiscRelaxRate: 0
+      RingGirthFloor: 0
+  - Element: 4
+    CrossSection: {x: 0.045, y: 0.017}
+    Rules:
+      Field: 1
+      SwirlDegrees: 15
+      FieldMix: 0.95
+      Momentum: 0.25
+      StepSize: 0.03
+      MaxSteps: 110
+      LanesPerSeed: 80
+      LaneGap: 0.26
+      HopSeek: 0
+      HopJitter: 0.3
+      SeedCount: 90
+      SeedSpreadDegrees: 8
+      MaxTurnDegrees: 60
+      RadiusMin: 0.3
+      RadiusMax: 2
+      MinRun: 5
+      LengthFactor: 1
+      GirthTaper: 0.4
+      TwistDegreesPerStep: 12
+      DiveCount: 7
+      DiveStepFraction: 0.4
+      DiveAngleDegrees: 62
+      DiveStopRadius: 0.045
+      DiveMaxSteps: 160
+      DiveSwirlDegrees: 8
+      DiveStrideCeiling: 1.1
+      DiveGirthFloor: 0.7
+      DiveAxisAlign: 1
+      DiveDescent: 0
+      SkeletonSeeds: 0
+      WalkStep: 0
+      MinPersistence: 0
+      GirthReference: 0
+      GasketLevels: 0
+      DiscSeeds: 0
+      DiscPad: 0
+      DiscMinRadius: 0
+      RingShrink: 0
+      RingFlatten: 0
+      RingGirthExponent: 0
+      RingSamples: 0
+      GasketOctave: 0
+      DiscRelaxRate: 0
+      RingGirthFloor: 0
+  shellRadius: 75
+  fieldWidth: 192
+  weightSpread: 1
+  weightSteps: 3
+  maxTotalSpawnedObjects: 4150
+  growthsPerTick: 8
+  maxSpawnsPerFrame: 3
+  plantRadius: 150
+--- !u!1001 &5588088495769702632
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 5739209271613175231}
+    m_Modifications:
+    - target: {fileID: 2965872700150217210, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790464, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_Radius
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790464, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_Name
+      value: SpaceCrystal
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790495, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790495, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: inactiveCrystalMaterial
+      value:
+      objectReference: {fileID: 2100000, guid: 6eea31b551b13184cb148646f27388e8, type: 2}
+    m_RemovedComponents:
+    - {fileID: 6588436222817790466, guid: a4bde9d72595bfb43aa3b791d02f4db8, type: 3}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2321339933426151692}
+    - targetCorrespondingSourceObject: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7383174847063407884}
+  m_SourcePrefab: {fileID: 100100000, guid: a4bde9d72595bfb43aa3b791d02f4db8, type: 3}
+--- !u!1 &1648936725651798766 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+    type: 3}
+  m_PrefabInstance: {fileID: 5588088495769702632}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2321339933426151692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1648936725651798766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3952a371fe646fcbe11bf76ed7434ac, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  Crystal: {fileID: 1648936725651798775}
+  elementalCrystalShipEffects:
+  - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
+--- !u!114 &7383174847063407884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1648936725651798766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  impactorObject: {fileID: 2321339933426151692}
+--- !u!4 &1648936725651798773 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+    type: 3}
+  m_PrefabInstance: {fileID: 5588088495769702632}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1648936725651798775 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6588436222817790495, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+    type: 3}
+  m_PrefabInstance: {fileID: 5588088495769702632}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1648936725651798766}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:

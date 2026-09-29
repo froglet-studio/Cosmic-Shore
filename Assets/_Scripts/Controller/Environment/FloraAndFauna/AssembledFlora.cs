@@ -252,12 +252,19 @@ namespace CosmicShore.Gameplay
         protected override int PrismBudget => maxTotalSpawnedObjects;
 
         /// <summary>
-        /// A LATTICE species: every assembler here (gyroid, SchwarzP, wall) bonds at offsets
-        /// measured in absolute local units, and <c>GyroidAssembler.Start</c> captures the
-        /// prism's target scale once, so a leaf that grows mid-life lays prisms the bond table
-        /// no longer describes - and the plant's own earlier prisms are still the old size.
-        /// Levels are still earned and the heart still grows; the leaf simply does not.
-        /// See <see cref="Flora.PrismSizeFixedByGrowthRule"/> and Docs/ECOSYSTEM.md §33.
+        /// A LATTICE species: every assembler here (gyroid, SchwarzP, quasicrystal, wall)
+        /// bonds at offsets measured in absolute local units, and <c>GyroidAssembler.Start</c>
+        /// captures the prism's target scale once, so a leaf that grows mid-life lays prisms
+        /// the bond table no longer describes - and the plant's own earlier prisms are still
+        /// the old size.
+        ///
+        /// <para>Lifeform LEVELS are retired (Docs/ECOSYSTEM.md §40, which supersedes §33), so
+        /// NOTHING reads this today: a leaf is its authored size for the whole of a plant's
+        /// life, and a heart is authored per element rather than grown. It is kept
+        /// deliberately, as a standing guard against a per-individual scale curve returning on
+        /// some future growth path - this is the species family that could never honour one,
+        /// because two prism sizes cannot tile one lattice.</para>
+        /// See <see cref="Flora.PrismSizeFixedByGrowthRule"/>.
         /// </summary>
         protected override bool PrismSizeFixedByGrowthRule => true;
 
@@ -895,9 +902,10 @@ namespace CosmicShore.Gameplay
                 _hasHomeTile = true;
                 PlaceCrystalAtTileCentre();
                 SchwarzPColonyDiagnostics.Founders++;
-                CSDebug.Log($"[SchwarzPColony] FOUNDER {name}: tile {_homeTile} " +
-                            $"level {frame.Level} ({SchwarzPTileData.SiteCount(frame.Level)} sites) " +
-                            $"lattice #{frame.GetHashCode():X}");
+                CSDebug.LogVerbose(CSLogChannel.SchwarzPColony,
+                    $"[SchwarzPColony] FOUNDER {name}: tile {_homeTile} " +
+                    $"level {frame.Level} ({SchwarzPTileData.SiteCount(frame.Level)} sites) " +
+                    $"lattice #{frame.GetHashCode():X}");
                 return;
             }
         }
@@ -991,9 +999,10 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            CSDebug.Log($"[SchwarzPColony] COMPLETE {name}: tile {_homeTile} " +
-                        $"prisms={healthTracker.Count} - frontier now " +
-                        $"{SchwarzPColonyFrontier.Count(cell, SourceConfig)} open tiles");
+            CSDebug.LogVerbose(CSLogChannel.SchwarzPColony,
+                $"[SchwarzPColony] COMPLETE {name}: tile {_homeTile} " +
+                $"prisms={healthTracker.Count} - frontier now " +
+                $"{SchwarzPColonyFrontier.Count(cell, SourceConfig)} open tiles");
         }
 
         /// <summary>
@@ -1044,9 +1053,10 @@ namespace CosmicShore.Gameplay
             if (born)
             {
                 SchwarzPColonyDiagnostics.Births++;
-                CSDebug.Log($"[SchwarzPColony] BIRTH #{SchwarzPColonyDiagnostics.Births} donor {name}: " +
-                            $"daughter on tile {tile} (frontier " +
-                            $"{SchwarzPColonyFrontier.Count(cell, SourceConfig)} open)");
+                CSDebug.LogVerbose(CSLogChannel.SchwarzPColony,
+                    $"[SchwarzPColony] BIRTH #{SchwarzPColonyDiagnostics.Births} donor {name}: " +
+                    $"daughter on tile {tile} (frontier " +
+                    $"{SchwarzPColonyFrontier.Count(cell, SourceConfig)} open)");
             }
             else
             {
@@ -1364,7 +1374,7 @@ namespace CosmicShore.Gameplay
                 // A discovered (not inherited) centre marks a FOUNDER - it takes on the colony
                 // heartbeat. Invoke (not a coroutine) so Die's StopAllCoroutines can't silence
                 // the report while the husk lingers. lineage=False names a TOY planting (the
-                // Lifeform Matrix stations spawn AssembledFlora clones with no species config)
+                // Spawn Matrix stations spawn AssembledFlora clones with no species config)
                 // - every founder is an independent lattice FRAME, and frames that were never
                 // projected from one another cannot mate, so knowing where each frame came
                 // from is the first question of any "colonies don't match up" report.
@@ -1994,7 +2004,7 @@ namespace CosmicShore.Gameplay
             // instead of the old hard-coded 200m huddle around the crystal. Dispersed,
             // domain-coherent flora clusters are what give fauna schools of different
             // domains genuinely different anti-domain density targets. A pinned position
-            // (the Lifeform Matrix toy's spawn-here stations) wins over dispersal.
+            // (the Spawn Matrix toy's spawn-here stations) wins over dispersal.
             if (TryGetPlantPositionOverride(out var pinned))
             {
                 transform.position = pinned;
@@ -2044,7 +2054,7 @@ namespace CosmicShore.Gameplay
             // without the reset the prism lands at spindle.pos + spindle.rot * worldPos. The
             // legacy code only worked because a spawner flora ran this while still parked at
             // the cell centre (world ~zero, stale local ~zero); any plant created at a real
-            // position - an octagon daughter at her centre, a Lifeform Matrix station - had
+            // position - an octagon daughter at her centre, a Spawn Matrix station - had
             // its seed prism thrown ~2x its own distance from the origin, where the octagon
             // ownership gate then declined every site and the plant never grew.
             // (ExecuteGrowOrder always did this correctly; this path just never copied it.)

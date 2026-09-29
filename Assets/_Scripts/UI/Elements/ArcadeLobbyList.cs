@@ -1,8 +1,12 @@
+using System;
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,10 +18,18 @@ namespace CosmicShore.UI
     /// header slots - but as its own panel with a leave-party button and a
     /// live "X Players Online" counter.
     ///
-    /// Slot 0 is always the local player (avatar + display name).
-    /// Remaining slots render the other <see cref="HostConnectionDataSO.PartyMembers"/>
-    /// in order. Empty slots expose the "+" add button, which opens the
-    /// <see cref="FriendsListPanel"/> (pre-wired in the scene).
+    /// <para><b>Seating is SYNCED, not local.</b> The host holds the first slot and the
+    /// clients follow in join order, identically on every device - see
+    /// <see cref="PartyRoster"/> for why that order is read off Netcode's replicated
+    /// <c>OwnerClientId</c> rather than off the per-device <c>PartyMembers</c> list, which
+    /// seats whoever is looking at it first. Empty slots expose the "+" add button, which
+    /// opens the <see cref="FriendsListPanel"/> (pre-wired in the scene).</para>
+    ///
+    /// <para><b>Each occupied slot wears its pilot's domain</b> as an animated halo behind the
+    /// avatar (<see cref="PartySlotDomainGlow"/>, built by the slot itself). Domain is pushed
+    /// LIVE every frame rather than snapshotted at population time: a pilot re-picks their
+    /// domain from the same modal this panel lives in, and the platform rule is to read the
+    /// live mirror each time rather than cache one at component-creation time.</para>
     ///
     /// All data flows through SOAP events - no direct <see cref="HostConnectionService"/>
     /// references are needed beyond the Leave button callback.
@@ -28,8 +40,16 @@ namespace CosmicShore.UI
         [SerializeField] private HostConnectionDataSO connectionData;
         [SerializeField] private SO_ProfileIconList profileIcons;
 
+        // The live roster of network-spawned players, which is where BOTH synced facts come
+        // from: a member's replicated owner client id (the seat order) and their live domain
+        // (the halo colour). DI rather than a serialized reference so the four scene instances
+        // of this panel need no new wiring.
+        [Inject] private GameDataSO gameData;
+
         [Header("Slots (exactly 4, by design)")]
-        [Tooltip("Slot 0 is reserved for the local player. Slots 1..3 render remote party members.")]
+        [Tooltip("Drawn left-to-right in the SYNCED party order: the host takes slot 0 on every " +
+                 "device, then clients in the order they joined. The local player is NOT pinned " +
+                 "to slot 0 - a client sees itself wherever it joined.")]
         [SerializeField] private FriendInfoSlot[] slots = new FriendInfoSlot[4];
 
         [Header("UI")]
@@ -45,6 +65,38 @@ namespace CosmicShore.UI
 
         /// <summary>Max slots rendered - matches <c>HostConnectionDataSO.MaxPartySlots</c> (4 by design).</summary>
         const int MAX_SLOTS = 4;
+
+        readonly List<PartyRoster.Seat> _seats = new();
+
+        // UgsPlayerId -> what the network says about that pilot. Rebuilt each tick from
+        // gameData.Players; a member with no entry has no live Player on this machine.
+        readonly Dictionary<string, NetFacts> _netFacts = new();
+
+        // Order-independent hash of the (ugs id, client id) pairs plus the host id - i.e. of
+        // everything the SEATING is a function of, and nothing the seating is not (domain is
+        // deliberately excluded; re-tinting must not redraw the row). Compared against the
+        // fingerprint the drawn seating was built from, so the panel re-seats itself the
+        // instant a member's Player spawns or despawns without subscribing every step of the
+        // spawn chain - and costs no sort on the frames where nothing moved.
+        ulong _netFingerprint;
+        ulong _seatedFingerprint;
+        bool  _hasSeated;
+
+        // How often the network facts are re-read. NOT a frame-rate concession in general -
+        // it is specifically because IPlayer.UgsPlayerId is `NetUgsPlayerId.Value.ToString()`,
+        // and FixedString64Bytes.ToString() ALLOCATES: re-reading four pilots every frame is
+        // ~240 throwaway strings a second for a panel that is just sitting open. At 5 Hz the
+        // worst-case lag is a fifth of a second on a tint that eases in over longer than that.
+        const float NET_FACTS_REFRESH_SECONDS = 0.2f;
+        float _nextNetFactsRefresh;
+
+        struct NetFacts
+        {
+            public ulong   ClientId;
+            public Domains Domain;
+        }
+
+        Func<string, ulong> _clientIdLookup;
 
         // ─────────────────────────────────────────────────────────────────────
         // Lifecycle
@@ -107,9 +159,52 @@ namespace CosmicShore.UI
             HostConnectionService.Instance?.ForceRefreshNow();
         }
 
+        void Start()
+        {
+            // [Inject] lands between Awake and Start, so OnEnable's first pass on a
+            // scene-loaded panel runs with a null GameDataSO - which resolves NO client ids
+            // and NO domains, i.e. a roster that is ordered but colourless. Re-seat now that
+            // the container has been read. (Update would heal it a frame later anyway; doing
+            // it here means the panel is never drawn wrong even once.)
+            PopulateSlots();
+        }
+
         void OnDisable()
         {
             UnsubscribeSoap();
+        }
+
+        /// <summary>
+        /// Two jobs, both of which have to be per-frame rather than event-driven.
+        ///
+        /// <para><b>Domain is pushed live.</b> A pilot re-picks their domain from the same
+        /// modal this panel sits in and there is no SOAP channel for "somebody's domain
+        /// changed" - the platform rule is to read the live <c>Player.Domain</c> mirror each
+        /// time rather than snapshot one. The push is four dictionary lookups a frame; the
+        /// underlying READ is throttled (see <see cref="NET_FACTS_REFRESH_SECONDS"/>).</para>
+        ///
+        /// <para><b>Seating heals itself.</b> A member's seat is decided by their replicated
+        /// owner client id, which only exists once their <c>Player</c> object network-spawns -
+        /// several hundred milliseconds after the party event that put them in the list, and on
+        /// no channel this panel could usefully subscribe to. So the network facts are re-read
+        /// on a slow tick and the roster is re-sorted only when their fingerprint moves.</para>
+        /// </summary>
+        void Update()
+        {
+            if (slots == null || slots.Length == 0 || !connectionData) return;
+
+            if (Time.unscaledTime >= _nextNetFactsRefresh)
+            {
+                RebuildNetFacts();
+
+                if (!_hasSeated || _netFingerprint != _seatedFingerprint)
+                {
+                    PopulateSlots();   // re-seats, redraws, and pushes the glows itself
+                    return;
+                }
+            }
+
+            PushDomainGlows();
         }
 
         void SubscribeSoap()
@@ -203,62 +298,94 @@ namespace CosmicShore.UI
             UpdateLeaveButtonState();
         }
 
+        /// <summary>
+        /// Draws the party into the four slots in the SYNCED seating: host first, then clients
+        /// in join order, the same on every device.
+        ///
+        /// <para>Two-pass population (clear the unused slots first, seat everyone second) is
+        /// kept from the original: if scene wiring accidentally shares a TMP_Text or Image
+        /// GameObject between two slots, the occupied slot's activation then runs last and the
+        /// visible name/avatar survive. <see cref="WarnOnSharedSlotReferences"/> reports it.</para>
+        /// </summary>
         void PopulateSlots()
         {
             if (slots == null || slots.Length == 0 || !connectionData) return;
 
-            // Collect remote party members (excluding the local player) in
-            // insertion order so the layout stays stable across refreshes.
-            var remoteMembers = new List<PartyPlayerData>();
-            if (connectionData.PartyMembers != null)
-            {
-                string localId = connectionData.LocalPlayerId;
-                foreach (var m in connectionData.PartyMembers)
-                {
-                    if (m.PlayerId == localId) continue;
-                    remoteMembers.Add(m);
-                }
-            }
+            BuildSeats();
 
-            // Two-pass population: clear empty slots FIRST, then populate
-            // occupied slots. If the scene wiring accidentally shares a
-            // TMP_Text or Image GameObject between two slots, the occupied
-            // slot's SetPlayer / SetAsLocalPlayer activation runs last and
-            // wins over the empty slot's ClearSlot deactivation - so the
-            // visible name/avatar survive the shared-reference case.
             int slotCount = Mathf.Min(slots.Length, MAX_SLOTS);
-            for (int i = 0; i < slotCount; i++)
+            int seatCount = Mathf.Min(_seats.Count, slotCount);
+
+            for (int i = seatCount; i < slotCount; i++)
             {
-                var slot = slots[i];
-                if (slot == null) continue;
-
-                if (i == 0) continue; // local slot is always occupied
-
-                int remoteIdx = i - 1;
-                if (remoteIdx >= remoteMembers.Count)
-                    slot.ClearSlot();
+                // Unity's lifetime-aware null, not `?.` - a destroyed slot is not reference-null.
+                var empty = slots[i];
+                if (empty != null) empty.ClearSlot();
             }
 
-            for (int i = 0; i < slotCount; i++)
+            for (int i = 0; i < seatCount; i++)
             {
                 var slot = slots[i];
                 if (slot == null) continue;
 
-                if (i == 0)
+                var seat = _seats[i];
+
+                if (seat.IsLocal)
                 {
                     PopulateLocalSlot(slot);
                     continue;
                 }
 
-                int remoteIdx = i - 1;
-                if (remoteIdx < remoteMembers.Count)
-                {
-                    var member = remoteMembers[remoteIdx];
-                    // Only the party host can kick, and never itself - these are remote
-                    // member slots (slot 0 is the local player), so host ⇒ kickable.
-                    slot.SetPlayer(member.PlayerId, member.DisplayName, ResolveAvatar(member.AvatarId),
-                        canKick: connectionData.IsPartyHost);
-                }
+                // Only the party host can kick, and never itself - a non-local seat on a host's
+                // screen is therefore always kickable.
+                slot.SetPlayer(
+                    seat.PlayerId,
+                    seat.Member.DisplayName,
+                    ResolveAvatar(seat.Member.AvatarId),
+                    canKick: connectionData.IsPartyHost);
+            }
+
+            _seatedFingerprint = _netFingerprint;
+            _hasSeated         = true;
+
+            PushDomainGlows();
+        }
+
+        /// <summary>
+        /// Builds the synced seating into <see cref="_seats"/>.
+        ///
+        /// <para>The panel draws at most <see cref="MAX_SLOTS"/> seats while the party's
+        /// transport capacity is deliberately one higher (anti-flicker headroom - see
+        /// <c>HostConnectionDataSO.MaxPartySlots</c>), so a transient fifth member can exist.
+        /// If that pushes the LOCAL player past the last drawn slot they are moved INTO it: a
+        /// panel that stops showing you your own party is a worse lie than a momentarily
+        /// imperfect ordering, and the condition clears itself on the next reconcile.</para>
+        /// </summary>
+        void BuildSeats()
+        {
+            RebuildNetFacts();
+
+            _clientIdLookup ??= ResolveClientId;
+
+            PartyRoster.Build(
+                connectionData.PartyMembers,
+                connectionData.LocalPlayerData,
+                ResolveHostClientId(),
+                _clientIdLookup,
+                _seats);
+
+            int drawable = Mathf.Min(slots.Length, MAX_SLOTS);
+            if (_seats.Count <= drawable || drawable <= 0) return;
+
+            int localIdx = -1;
+            for (int i = 0; i < _seats.Count; i++)
+                if (_seats[i].IsLocal) { localIdx = i; break; }
+
+            if (localIdx >= drawable)
+            {
+                var local = _seats[localIdx];
+                _seats.RemoveAt(localIdx);
+                _seats.Insert(drawable - 1, local);
             }
         }
 
@@ -330,10 +457,11 @@ namespace CosmicShore.UI
 
         void HandleProfileChanged(PlayerProfileData _)
         {
-            // Only slot 0 depends on local profile; other slots read from
-            // connectionData.PartyMembers which is owned by HostConnectionService.
-            if (slots == null || slots.Length == 0 || slots[0] == null) return;
-            PopulateLocalSlot(slots[0]);
+            // The local player is no longer pinned to slot 0 - on a client the host sits there
+            // and the local pilot is wherever they joined - so a resolved cloud profile has to
+            // repaint whichever seat is actually theirs. Repopulating is the only statement of
+            // that which cannot go out of step with the seating.
+            PopulateSlots();
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -397,6 +525,99 @@ namespace CosmicShore.UI
         // ─────────────────────────────────────────────────────────────────────
         // Helpers
         // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Rebuilds the UGS-id → (client id, domain) map from the live player roster.
+        ///
+        /// <para>AI are skipped: they carry the HOST's owner client id and an empty UGS id, so
+        /// admitting them would both fail to match any party member and, if one ever did, seat
+        /// a bot in a human's chair.</para>
+        /// </summary>
+        void RebuildNetFacts()
+        {
+            _netFacts.Clear();
+            _nextNetFactsRefresh = Time.unscaledTime + NET_FACTS_REFRESH_SECONDS;
+
+            ulong fingerprint = ResolveHostClientId();
+
+            if (gameData == null || gameData.Players == null)
+            {
+                _netFingerprint = fingerprint;
+                return;
+            }
+
+            for (int i = 0; i < gameData.Players.Count; i++)
+            {
+                var player = gameData.Players[i];
+                if (player == null) continue;
+
+                // GameDataSO.Players can hold destroyed Players between prunes; a destroyed
+                // UnityEngine.Object is not reference-null, so the interface check is not enough.
+                if (player is UnityEngine.Object obj && !obj) continue;
+                if (player.IsInitializedAsAI) continue;
+
+                var ugsId = player.UgsPlayerId;
+                if (string.IsNullOrEmpty(ugsId)) continue;
+
+                var clientId = player.OwnerClientNetId;
+
+                _netFacts[ugsId] = new NetFacts
+                {
+                    ClientId = clientId,
+                    Domain   = player.Domain,
+                };
+
+                // Summed, so the result does not depend on the order gameData.Players happens
+                // to be in - which changes on its own as players are added and pruned.
+                unchecked { fingerprint += (ulong)ugsId.GetHashCode() * 1099511628211UL + clientId + 1UL; }
+            }
+
+            _netFingerprint = fingerprint;
+        }
+
+        ulong ResolveClientId(string ugsPlayerId) =>
+            !string.IsNullOrEmpty(ugsPlayerId) && _netFacts.TryGetValue(ugsPlayerId, out var f)
+                ? f.ClientId
+                : PartyRoster.UnknownClientId;
+
+        /// <summary>
+        /// The client id that means "host". Netcode assigns it to whoever started the session,
+        /// which for a party IS the party host, and every peer reads the same value - so it is
+        /// the one host identity that needs nothing published to agree on.
+        /// </summary>
+        static ulong ResolveHostClientId()
+        {
+            var nm = NetworkManager.Singleton;
+            // NetworkManager.ServerClientId is STATIC - reaching it through the instance is CS0176,
+            // which is what the other seven sites in this repo already avoid by type-qualifying it.
+            return nm != null && nm.IsListening ? NetworkManager.ServerClientId : PartyRoster.UnknownClientId;
+        }
+
+        /// <summary>
+        /// Pushes each drawn seat's LIVE domain colour onto its slot's halo. A seat whose pilot
+        /// has no live <c>Player</c> yet gets no halo rather than a default-coloured one - an
+        /// unresolved pilot painted Jade is confident misinformation, where an absent halo
+        /// reads as "not known yet".
+        /// </summary>
+        void PushDomainGlows()
+        {
+            int seatCount = Mathf.Min(_seats.Count, Mathf.Min(slots.Length, MAX_SLOTS));
+            var colorSet = gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.ColorSet
+                : null;
+
+            for (int i = 0; i < seatCount; i++)
+            {
+                var slot = slots[i];
+                if (slot == null) continue;
+
+                Color? colour = null;
+                if (colorSet != null && _netFacts.TryGetValue(_seats[i].PlayerId, out var facts))
+                    colour = colorSet.GetDomainSignalColor(facts.Domain);
+
+                slot.SetDomainGlow(colour);
+            }
+        }
 
         Sprite ResolveAvatar(int avatarId)
         {

@@ -176,13 +176,29 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region MaxPartySlots
+        #region Party slots
 
         [Test]
-        public void MaxPartySlots_DefaultIsFour()
+        public void MaxPartySlots_DefaultIsTransportCapacity()
         {
-            // Default from [SerializeField] private int maxPartySlots = 4
-            Assert.AreEqual(4, _data.MaxPartySlots);
+            // Capacity, not the game's party size: one spare seat of headroom above the
+            // displayed four, so a transient double-count in the polled member list cannot
+            // throw the fourth invite out as "party full".
+            Assert.AreEqual(6, _data.MaxPartySlots);
+        }
+
+        [Test]
+        public void PartyDisplaySlots_DefaultIsFour()
+        {
+            // What players SEE and what peers publish - a party is four, always.
+            Assert.AreEqual(4, _data.PartyDisplaySlots);
+        }
+
+        [Test]
+        public void PartyDisplaySlots_NeverExceedsCapacity()
+        {
+            // Display must never promise a seat the session cannot hold.
+            Assert.LessOrEqual(_data.PartyDisplaySlots, _data.MaxPartySlots);
         }
 
         #endregion

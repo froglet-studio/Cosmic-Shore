@@ -242,10 +242,9 @@ namespace CosmicShore.Gameplay
 
         private void PerformSpeedAndDirectionalEffects()
         {
-            const float threshold = 0.3f;
-            float sumOfRotations = Mathf.Abs(inputStatus.YDiff) + Mathf.Abs(inputStatus.YSum) + Mathf.Abs(inputStatus.XSum);
-            float deviationFromFullSpeedStraight = (1 - inputStatus.XDiff) + sumOfRotations;
-            float deviationFromMinimumSpeedStraight = inputStatus.XDiff + sumOfRotations;
+            const float threshold = StraightLineGesture.EngageThreshold;
+            float deviationFromFullSpeedStraight = StraightLineGesture.DeviationFromFullSpeedStraight(inputStatus);
+            float deviationFromMinimumSpeedStraight = StraightLineGesture.DeviationFromMinimumSpeedStraight(inputStatus);
 
             if (deviationFromFullSpeedStraight < threshold && !fullSpeedStraightEffectsStarted)
             {

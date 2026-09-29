@@ -18,7 +18,6 @@ namespace CosmicShore.Core
         public void Init()
         {
             //TODO: Init is suppose to grab any relevant components on the game object.
-            CSDebug.Log("RewindBase.Init() is called.");
         }
 
         #region ActiveState

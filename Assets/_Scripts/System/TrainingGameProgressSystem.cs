@@ -46,7 +46,7 @@ namespace CosmicShore.Core
         {
             if (!Progress.ContainsKey(trainingGame.Game.Mode))
             {
-                SaveProgress(trainingGame.Game.Mode, new TrainingGameProgress(0, null));
+                SaveProgress(trainingGame.Game.Mode, new TrainingGameProgress());
             }
 
             var gameProgress = Progress[trainingGame.Game.Mode];
@@ -111,7 +111,7 @@ namespace CosmicShore.Core
             if (!Progress.ContainsKey(mode))
             {
                 CSDebug.LogWarning($"GetGameProgress did not contain mode:{mode} ");
-                var progress = new TrainingGameProgress(0,null);
+                var progress = new TrainingGameProgress();
                 CSDebug.LogWarning($"GetGameProgress new progress - currentIntensity:{progress.CurrentIntensity}, progress:{progress.Progress} ");
                 SaveProgress(mode, progress);
             }

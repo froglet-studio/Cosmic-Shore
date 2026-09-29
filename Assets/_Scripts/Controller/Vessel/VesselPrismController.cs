@@ -5,6 +5,7 @@ using CosmicShore.Utility;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Serialization;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Data;
 using System.Linq;
@@ -39,15 +40,33 @@ namespace CosmicShore.Gameplay
 
         [Header("Elemental (per-vessel, authored on the prefab)")]
         [Tooltip("MASS -> trail prism VOLUME multiplier (evaluated live each spawn). Authored as " +
-                 "an ElementalFloat on the vessel prefab (the Squirrel maps it to Mass, 1 -> 2.5); " +
+                 "an ElementalFloat on the vessel prefab (the Manta maps it to Mass, 1 -> 2.5; " +
+                 "the Squirrel now fixes it at a constant with Enabled off - see Value); " +
                  "applied as the cube root per axis so prism volume scales linearly with the level. " +
                  "Disabled (1x) on vessels that don't map Mass to their trail.")]
         [SerializeField] ElementalFloat trailVolume = new(1f);
 
-        [Tooltip("MASS level-5 'Heavy Trail': when enabled on this vessel, its trail prisms " +
-                 "arrive shielded while the Mass elemental upgrade is active (regular shield, " +
-                 "never SuperShield - fauna keep their devastate sink).")]
-        [SerializeField] bool massUpgradeShieldsTrail = false;
+        [Tooltip("BASE 'armoured drift line': when enabled on this vessel, prisms laid while " +
+                 "DRIFTING arrive shielded (regular shield, never SuperShield - fauna keep their " +
+                 "devastate sink). NO elemental gate - this was the Squirrel's Mass level-5 " +
+                 "'Heavy Trail' until Mass took the boost ring; the drift line is armoured for " +
+                 "every pilot now, which is what keeps a reason to drift.")]
+        [FormerlySerializedAs("massUpgradeShieldsTrail")]
+        [SerializeField] bool driftShieldsTrail = false;
+
+        [Tooltip("MASS level-5 'Shielded Turn Trails' (the Manta's Yastri): prisms laid while " +
+                 "a hard TURN is held arrive shielded once the Mass upgrade is live (regular " +
+                 "shield, never SuperShield). The turn window is whatever drives SetTurnTrail " +
+                 "above half intensity. Off on every vessel whose Mass 5 means something else.")]
+        [SerializeField] bool turnUpgradeShieldsTrail = false;
+
+        [Tooltip("How much fatter the OUTER lane's prisms get at full turn intensity (X " +
+                 "multiplier; 1 disables the flare). Visual flare only — it exaggerates the " +
+                 "bank without changing what the trail is worth.")]
+        [SerializeField, Min(1f)] float turnFlareMaxScale = 2f;
+
+        float _turnFlare01;
+        int _turnFlareLaneSign;
 
         [Header("Gap Settings")]
         public float offset;
@@ -72,6 +91,31 @@ namespace CosmicShore.Gameplay
         public float XScaler = 1f;
         public float YScaler = 1f;
         public float ZScaler = 1f;
+
+        /// <summary>
+        /// A runtime multiplier on the laid prism's WIDTH (x), on top of everything else that
+        /// sizes it. 1 = no change, which is every vessel that never writes it.
+        ///
+        /// <para>It exists because <see cref="SetNormalizedXScale"/> is a NORMALIZED dial capped at
+        /// <see cref="maxBlockScale"/> and eased by an async lerp that restarts on every call - it
+        /// cannot express a width that tracks an element level live, and two lerps in flight write
+        /// the same field on alternating frames. A single owner writing one float per frame can.
+        /// The Butterfly's Mass mode is that owner (<c>SpreadWingsActionExecutor</c>).</para>
+        ///
+        /// <para>A widened prism is STATED rather than grown, so the lay admits it past the
+        /// pool's scale window (<see cref="Prism.AdmitTargetScale"/>, AFTER Initialize) - the
+        /// interactive pool clamps x at 40, and without the admission every width past it is
+        /// trimmed silently, which reads as "the element stopped doing anything".</para>
+        /// </summary>
+        public float WidthMultiplier { get; set; } = 1f;
+
+        /// <summary>
+        /// While set, every prism this controller lays arrives SHIELDED (the regular tier). A
+        /// runtime sibling of the authored <see cref="shielded"/> flag, for an ability that armours
+        /// its trail only while a MODE is live (the Butterfly's Mass-mode level 5). Composes with
+        /// the drift/turn upgrade rules by OR, never replaces them.
+        /// </summary>
+        public bool ForceShielded { get; set; }
 
         // Cancellation
         CancellationTokenSource cts;
@@ -111,6 +155,9 @@ namespace CosmicShore.Gameplay
         // way to an infinite delay, and the ceiling stops a slow lay leaving a prism collider-less
         // (and therefore un-hittable by ANYONE, since this delay is not owner-scoped) for longer
         // than the self-trail grace would have covered anyway.
+        // Keyed by vessel name so one unwired hull cannot spam a loop that runs per prism.
+        static readonly HashSet<string> _warnedNoSkimmer = new();
+
         const float MinClearanceSpeed = 1f;
         const float MaxClearanceWaitSeconds = 2f;
 
@@ -203,6 +250,25 @@ namespace CosmicShore.Gameplay
         {
             ZScaler = Mathf.Max(minBlockScale, maxBlockScale * (1f - Mathf.Abs(amount)));
             wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount));
+        }
+
+        /// <summary>
+        /// Turn-trail state (the Manta's Yastri): while a hard turn is held, the OUTER lane's
+        /// prisms flare fatter with turn intensity — the bank is legible from across the cell
+        /// — and, on a vessel that authors <see cref="turnUpgradeShieldsTrail"/>, prisms laid
+        /// during the turn arrive SHIELDED once the Mass level-5 upgrade is live (regular
+        /// shield only, per-spawn snapshot — the Heavy Trail rule with the drift swapped for
+        /// the turn). Drive it every frame from whatever owns the turn
+        /// (<c>YawsteryActionExecutor</c> on touch, <c>MantaAnalogTurnBoostExecutor</c> on
+        /// gamepad/keyboard); 0 clears it.
+        /// </summary>
+        /// <param name="amount01">Turn intensity, 0..1.</param>
+        /// <param name="turnSign">+1 turning right, -1 turning left — the OUTER lane is the
+        /// opposite wing.</param>
+        public void SetTurnTrail(float amount01, int turnSign)
+        {
+            _turnFlare01 = Mathf.Clamp01(amount01);
+            _turnFlareLaneSign = -turnSign;
         }
 
 
@@ -326,6 +392,17 @@ namespace CosmicShore.Gameplay
             if (volumeMult > 0f && !Mathf.Approximately(volumeMult, 1f))
                 scale *= Mathf.Pow(volumeMult, 1f / 3f);
 
+            bool widened = WidthMultiplier > 1.0001f;
+            if (widened) scale.x *= WidthMultiplier;
+
+            // Yastri flare: the OUTER lane fattens with turn intensity, so a hard bank throws
+            // visibly flared prisms off the outer wing. Applied BEFORE xShift is derived so
+            // the flared rail still nests against the gap edge rather than drifting outboard.
+            if (_turnFlare01 > 0.01f && halfGap != 0f
+                && (int)Mathf.Sign(halfGap) == _turnFlareLaneSign
+                && turnFlareMaxScale > 1f)
+                scale.x *= Mathf.Lerp(1f, turnFlareMaxScale, _turnFlare01);
+
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
             Vector3 pos = transform.position - vesselStatus.Course * offset
@@ -368,11 +445,25 @@ namespace CosmicShore.Gameplay
             // Note this delay hides the prism from EVERYONE, which is why it stays a geometry
             // correction and is not the lever for self-trail contact: that is owner-scoped and
             // lives in SelfTrailContactConfigSO.
-            prism.waitTime = waitTillOutsideSkimmer
+            //
+            // `skimmer` is a per-vessel serialized reference, and an unwired one used to throw
+            // here — on EVERY spawn, from inside the UniTaskVoid spawn loop, which swallows the
+            // exception and ends the loop. That vessel then lays NOTHING for the rest of its
+            // life, which on screen is a ship flying with no trail: the one symptom that reads
+            // as a missing FEATURE rather than as a missing reference. Degrade to the authored
+            // wait and say so once, by vessel, so the next hull authored without it loses a
+            // clearance delay instead of its whole trail.
+            prism.waitTime = waitTillOutsideSkimmer && skimmer
                 ? Mathf.Min((skimmer.transform.localScale.z + scale.z) /
                             Mathf.Max(vesselStatus.Speed, MinClearanceSpeed),
                             MaxClearanceWaitSeconds)
                 : waitTime;
+
+            if (waitTillOutsideSkimmer && !skimmer && _warnedNoSkimmer.Add(name))
+                CSDebug.LogWarning(
+                    $"[VesselPrismController] '{name}' has waitTillOutsideSkimmer on with no " +
+                    "skimmer assigned — laying prisms with the authored wait instead. Wire the " +
+                    "vessel's near-field Skimmer on this component, or switch the flag off.", this);
 
             if (_dangerMode)
             {
@@ -388,11 +479,18 @@ namespace CosmicShore.Gameplay
             }
 
             
-            // Shield. MASS level-5 'Heavy Trail': trail prisms arrive shielded ONLY while
-            // DRIFTING with the Mass upgrade active (per-spawn snapshot; regular shield only).
-            // Straight-line trail stays unshielded - the armor is the drift line's reward.
-            if (shielded || (massUpgradeShieldsTrail
-                             && vesselStatus is { IsDrifting: true }
+            // Shield. BASE 'armoured drift line': trail prisms arrive shielded while DRIFTING,
+            // with NO elemental gate (per-spawn snapshot; regular shield only). Straight-line
+            // trail stays unshielded - the armor is the drift line's reward, and it is the reward
+            // for drifting rather than for levelling, which is why the Mass-5 gate came off.
+            // 'Shielded Turn Trails' is the same rule with the drift swapped for a held hard
+            // TURN (the Manta's Yastri, above half intensity) and KEEPS its Mass-5 gate - that
+            // is the Manta's shipped level-5, and nothing about this hull's re-cut touches it.
+            // ForceShielded is the base branch's unconditional override and composes with both.
+            if (shielded || ForceShielded || (driftShieldsTrail
+                             && vesselStatus is { IsDrifting: true })
+                         || (turnUpgradeShieldsTrail
+                             && _turnFlare01 >= 0.5f
                              && vesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true))
                 prism.prismProperties.IsShielded = true;
 
@@ -400,6 +498,16 @@ namespace CosmicShore.Gameplay
             trail.Add(prism);
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
+
+            // A WIDENED prism is a stated size, not a grown one: admit it past the pool's scale
+            // window AFTER Initialize (whose ResetState restores and re-clamps that window), or
+            // everything past x = 40 is trimmed with no error. Un-widened lays are untouched, so
+            // every vessel that never writes WidthMultiplier is byte-identical.
+            if (widened)
+            {
+                prism.AdmitTargetScale(scale);
+                prism.TargetScale = scale;
+            }
 
             // AFTER Initialize (pool-reuse reset clears membership - AssignTrail's contract).
             // This stamp is what makes a wake block a member of ITS ribbon: without it every

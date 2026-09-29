@@ -207,7 +207,24 @@ namespace CosmicShore.Editor.Froglet
 
         public static FrogletGitResult Run(params string[] args) => RunIn(RepoRoot, args);
 
+        /// <summary><see cref="Run"/> with environment variables. See <see cref="RunInWithEnv"/>.</summary>
+        public static FrogletGitResult RunWithEnv(IEnumerable<KeyValuePair<string, string>> env,
+                                                  params string[] args)
+            => RunInWithEnv(RepoRoot, env, args);
+
         public static FrogletGitResult RunIn(string workingDirectory, params string[] args)
+            => RunInWithEnv(workingDirectory, null, args);
+
+        /// <summary>
+        /// <see cref="RunIn"/> plus environment variables — the only way to reach the
+        /// handful of git behaviours that have no command-line equivalent, chiefly
+        /// <c>GIT_INDEX_FILE</c>. Staging into a THROWAWAY index is what lets a tool
+        /// build a commit out of specific paths without disturbing the human's real
+        /// index, their branch, or their working tree.
+        /// </summary>
+        public static FrogletGitResult RunInWithEnv(string workingDirectory,
+                                                    IEnumerable<KeyValuePair<string, string>> env,
+                                                    params string[] args)
         {
             var argString = BuildArguments(args);
             var display = "git " + argString;
@@ -220,6 +237,9 @@ namespace CosmicShore.Editor.Froglet
                 RedirectStandardError = true,
                 CreateNoWindow = true,
             };
+            if (env != null)
+                foreach (var kv in env)
+                    psi.EnvironmentVariables[kv.Key] = kv.Value;
 
             using (var p = new Process())
             {

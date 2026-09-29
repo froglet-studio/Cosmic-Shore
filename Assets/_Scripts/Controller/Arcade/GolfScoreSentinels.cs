@@ -4,7 +4,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Single source of truth for the "loser / did-not-finish" score sentinels used by the
-    /// time-based golf modes (HexRace, Joust). Golf rules: lower is better, so a non-winner
+    /// time-based golf modes (SkimRace, Joust). Golf rules: lower is better, so a non-winner
     /// gets a large sentinel that always sorts behind any real finish time (elapsed seconds).
     /// Controllers/trackers ENCODE these on game end; scoreboards, end-game controllers and
     /// stats/progression services DECODE them. Centralizing the values + helpers here means
@@ -21,31 +21,31 @@ namespace CosmicShore.Gameplay
         public const float DnfThreshold = 10000f;
 
         /// <summary>
-        /// HexRace losers encode the team's remaining crystals as
+        /// SkimRace losers encode the team's remaining crystals as
         /// <see cref="DnfThreshold"/> + crystalsLeft, so the scoreboard can show the deficit.
         /// </summary>
-        public const float HexRaceLoserBase = DnfThreshold;
+        public const float SkimRaceLoserBase = DnfThreshold;
 
         /// <summary>Joust losers get a flat sentinel (no payload to decode).</summary>
         public const float JoustLoserScore = 99999f;
 
-        /// <summary>Encode a HexRace loser score from the team's remaining crystals.</summary>
-        public static float EncodeHexRaceLoserScore(int crystalsLeft) =>
-            HexRaceLoserBase + Mathf.Max(0, crystalsLeft);
+        /// <summary>Encode a SkimRace loser score from the team's remaining crystals.</summary>
+        public static float EncodeSkimRaceLoserScore(int crystalsLeft) =>
+            SkimRaceLoserBase + Mathf.Max(0, crystalsLeft);
 
-        /// <summary>Decode a HexRace loser score back into the team's remaining crystals.</summary>
-        public static int DecodeHexRaceCrystalsLeft(float score) =>
-            Mathf.Max(0, (int)(score - HexRaceLoserBase));
+        /// <summary>Decode a SkimRace loser score back into the team's remaining crystals.</summary>
+        public static int DecodeSkimRaceCrystalsLeft(float score) =>
+            Mathf.Max(0, (int)(score - SkimRaceLoserBase));
 
-        /// <summary>True for a HexRace loser/DNF score (not a real finish time).</summary>
-        public static bool IsHexRaceLoserScore(float score) => score >= HexRaceLoserBase;
+        /// <summary>True for a SkimRace loser/DNF score (not a real finish time).</summary>
+        public static bool IsSkimRaceLoserScore(float score) => score >= SkimRaceLoserBase;
 
         /// <summary>True for a Joust loser/DNF score (not a real finish time).</summary>
         public static bool IsJoustLoserScore(float score) => score >= JoustLoserScore;
 
         /// <summary>
         /// True if the score is a real finish time (a win) rather than a loser/DNF sentinel,
-        /// for any time-based golf mode. Equivalent to "not a loser score" for HexRace and Joust.
+        /// for any time-based golf mode. Equivalent to "not a loser score" for SkimRace and Joust.
         /// </summary>
         public static bool IsFinishTime(float score) => score < DnfThreshold;
     }

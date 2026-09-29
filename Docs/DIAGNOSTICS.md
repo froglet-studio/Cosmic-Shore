@@ -1,14 +1,39 @@
-# Diagnostics — the crash detector, the shared bug ledger, and compile timing
+# Diagnostics — the crash detector, the shared bug ledger, compile timing, and the on-screen UI report
 
-**FrogletTools ▸ Diagnostics** is one window with four tabs:
+**FrogletTools ▸ Diagnostics** is one window with four tabs, plus one standalone report:
 
 | Tool | Question it answers | Data it writes |
 |---|---|---|
 | **Crash Detector** | *Why did my editor die?* — even when Unity itself never got to say | `Logs/CrashDetector/` (machine-local, gitignored) |
 | **Bug Ledger** (+ its **Stage & Push** tab) | *What is broken right now, and is the fix actually proven?* | `BugLedger/local/` (gitignored live store) → published to the tracked `BugLedger/shared/` only through the Stage & Push tab |
 | **Compile Timing** | *What does an edit cost?* — compile + domain-reload seconds, and which assemblies rebuilt | `Logs/CompileTiming/` (machine-local, gitignored) |
+| **Report On-Screen UI** (menu item, not a tab) | *What is that thing covering my screen?* — every enabled `Graphic` ≥2% of the display, biggest first | nothing — console + clipboard |
 
-The first two are always on. **Compile Timing is opt-in and off by default** — it exists to
+## Report On-Screen UI
+
+**Run it in play mode, on the bad frame.** "There is UI in the way" is a report about a RENDERED
+FRAME, and a rendered frame is the one thing static analysis of scenes and prefabs cannot see: a
+panel is on screen because of the product of several things living in different files — is its
+GameObject active, is its `Graphic` enabled, what did every `CanvasGroup` above it multiply its
+alpha by, which `Canvas` draws it and in what order, and did some controller leave it that way.
+Reading any one of those in isolation invites a confident wrong answer; three of those in a row is
+what this tool is a reaction to.
+
+It lists every enabled `Graphic` covering at least 2% of the display, biggest first, with the full
+hierarchy path, the effective alpha and WHICH `CanvasGroup` set it, whether it eats clicks, its
+texture/sprite, and its canvas — the offender is normally the first line. Two things that are not
+`Graphic`s get their own sections, because both draw over the game and neither appears in a UI
+hierarchy: cameras rendering into a `RenderTexture` or restricted to a partial viewport rect, and
+`VideoPlayer`s set to draw on a camera plane.
+
+The find that paid for it: `GameCanvas/MiniGameHUD/Pip/border`, a `RawImage` reported as
+`tex:NONE` at 55% coverage — a frame graphic whose texture asset had been deleted, so it was
+painting a solid navy quad over half the screen (see CLAUDE.md's anti-pattern entry). It is a
+READER: it writes no assets, so it carries no ship panel.
+
+---
+
+The first three are always on. **Compile Timing is opt-in and off by default** — it exists to
 measure the assembly split (`Docs/ASSEMBLY_SPLIT.md` § Measuring), so it is switched on for a
 measurement run and back off afterwards rather than left recording.
 
@@ -245,7 +270,7 @@ jumps here.
 ### Honest limits
 
 - A clean session only proves the code paths that session exercised. Two clean sessions of menu
-  idling do not validate a HexRace bug — the quota and minimum lengths reduce, not remove, this;
+  idling do not validate a SkimRace bug — the quota and minimum lengths reduce, not remove, this;
   pause validation on an issue you know needs a targeted repro.
 - Signature normalization is best-effort: bare GUID-ish tokens without `0x` survive partially, so
   a message embedding raw GUIDs can split one bug across ids. The frame half usually holds the
@@ -308,6 +333,7 @@ a clean run. Copy that shape.
 | Scoped git publisher (fetch/apply/add/commit/push, off-thread) | `Assets/_Scripts/Editor/Diagnostics/BugLedgerPublisher.cs` |
 | Compile-timing recorder (`[InitializeOnLoad]`, opt-in) | `Assets/_Scripts/Editor/Diagnostics/CompileTimingMonitor.cs` |
 | The window (all four tabs) | `Assets/_Scripts/Editor/Diagnostics/DiagnosticsWindow.cs` |
+| On-screen UI report (reader, play mode only) | `Assets/_Scripts/Editor/Diagnostics/OnScreenUIReport.cs` |
 | Live-store gitignore (committed, self-healed by the tool) | `BugLedger/.gitignore` |
 | Shared signature core (**runtime-safe**) | `Assets/_Scripts/Utility/BugSignature.cs` |
 | Signature determinism tests (edit mode) | `Assets/_Scripts/Tests/Editor/BugSignatureTests.cs` |

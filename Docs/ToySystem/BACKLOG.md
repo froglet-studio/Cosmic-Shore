@@ -165,8 +165,7 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
     toy's paintings list is ever emptied the procedural fallback resets saved progress on its
     first write (totalStrokes mismatch, by design). Acceptable while the committed
     `Toy_Painting.asset` list stays populated; split the ids if that ever changes.
-  - *`BillboardLabel` one-LateUpdate-per-label* (~20 in the full toybox): fold into a single
-    manager iterating a static list if the profiler pass flags it (pole-degeneracy guard is in).
+  - ~~*`BillboardLabel` one-LateUpdate-per-label*~~ - moot: toys carry no text (2026-09-25). The one survivor is `ToyChoiceLabel`'s billboard on the two SHARE / REPAINT words, which exist only while a finished painting waits on the choice.
   - *Toolkit `Rng` vs seeded `System.Random`* (Microscene convention): kept deliberately —
     xorshift32 is stable across .NET runtimes, `System.Random`'s algorithm is not guaranteed.
   - *`CatmullRomPoint` duplicates `SpawnableWaypointTrack.CatmullRom`*: unify in a shared math
@@ -210,7 +209,7 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   screen (fly straight, then hard-turn and reverse: the old ribbon should wait to recycle until
   it has left your view, briefly idling rather than popping away). Watch the `[ECOSIM]` line —
   belt steady-state adds ~420 prisms max.
-- **Tuning dials** (all on `Toy_Conveyor.asset`): `aheadTargetScenes` (field depth, 3-10) +
+- **Tuning dials** (all on `Wander_WithoutArk.asset`): `aheadTargetScenes` (field depth, 3-10) +
   `minSceneIntervalSeconds` (seconds of flight between scenes at speed) are the pacing pair;
   `sceneSpacing` / `recycleBehindDistance` are the low-speed floors; `sceneRadius` + per-recipe
   radii vs. vessel + skimmer size; `transitionSeconds` (suction/bloom read); `poolSize` /
@@ -238,7 +237,7 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   In-editor check: ride the belt and confirm most scenes carry structural colour, danger structures
   read as deliberate hot gates (and slam you on contact — friendly fire is the design), shielded
   ribs shrug off weapon fire, and mono/plain scenes still occur as breathing room. Tune the
-  `Toy_Conveyor.asset` palette weights to taste.
+  `Wander_WithoutArk.asset` palette weights to taste.
 - **Belt audio/VFX.** Suction/bloom currently rides scale only; a whoosh SFX
   (`AudioSystem` gameplay SFX) + a faint particle draw toward the anchor would sell the
   conveyor. Consider a soft chime as a new scene finishes blooming.
@@ -286,7 +285,7 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   autopilot window it will drift toward `MinimumSpeed`; fine for the seamless-handoff goal, tune
   if a longer hold is wanted.
 
-## Lifeform Matrix follow-ups
+## Spawn Matrix follow-ups
 
 **Kingdom pass (shipped) — verification, none of it play-verified:**
 
@@ -330,8 +329,9 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   should read as characters.
 - **`companionSkill` is authored at 0.5** on the menu initializer, since the menu has no intensity
   to derive one from. Tune in play.
-- **The hangar has no "release N" affordance** — one pass, one bot. A held pass or a level-style
-  size telegraph (the way variant stations encode level as size) is the obvious extension.
+- **The hangar has no "release N" affordance** — one pass, one bot. A held pass, or a size
+  telegraph on the station (the way a variant station draws its crystal at that variant's own
+  authored heart size), is the obvious extension.
 
 - **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
   crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
@@ -339,7 +339,8 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   populations (BoidManager path — now all spawn the base tadpole; needs its own config pass
   for per-element identity). (Worms: the legacy trio was deleted; every segment of the
   rebuilt worm colony carries an authored elemental heart — Docs/ECOSYSTEM.md §23.8 — though
-  the colony doesn't yet roll the element × level spread.)
+  the colony doesn't yet roll the element spread. The level half of that spread is retired
+  outright: a lifeform is its species and its element, Docs/ECOSYSTEM.md §40.)
 - **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
   system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
 - **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
@@ -500,7 +501,7 @@ station, its options unfold out ahead; fly it again, they fold away. Architectur
 6. **Squirrel specifically:** ride your own tether (tube-riding attaches a `TrailFollower`). The
    rider must stay on the prism it attached to as the tail recycles — if it races forward along the
    ribbon, the `Trail.OnOldestRemoved` compensation is not firing.
-7. **Tuning knob:** `Toy_Conveyor.asset ▸ tetherPrisms` (100). It is a per-ribbon LENGTH — a
+7. **Tuning knob:** `Wander_WithoutArk.asset ▸ tetherPrisms` (100). It is a per-ribbon LENGTH — a
    double-trail vessel holds 2× the prisms for the same visible tether.
 
 **Collider-budget impact:** *negative* (an improvement). The rolling tether bounds the local
@@ -532,7 +533,7 @@ unchanged by this work.
   `ToyEmblem` — raise `SatelliteRadiusBodies` first, then `OrbitRadiusBodies`, but the outer extent
   (`OrbitRadiusBodies + SatelliteRadiusBodies`) × R must stay under the 42u trigger radius.
 - **Two pre-existing material leaks, deliberately left in scope-free.** `VesselChangerToy.BuildStation`
-  and `LifeformMatrixToy.AddSpeciesModel` still call the COLOUR overload of `ToyModelBuilder.TryBuild`
+  and `SpawnMatrixToy.AddSpeciesModel` still call the COLOUR overload of `ToyModelBuilder.TryBuild`
   on the matrix-station path, orphaning one `Material` per model per matrix open (UnityEngine.Objects
   are never GC'd). The new `Material` overload — which the emblems use, and which lets one owner
   share and destroy a single material — makes adopting the same pattern there a small follow-up. Not
@@ -542,10 +543,8 @@ unchanged by this work.
   the gyroid bond table). The two places they can drift are `BranchingFlora`'s branch step/scale
   falloff and `WallAssembler`'s bond offsets, which are re-expressed rather than shared. If either
   changes, re-check the icon.
-- **Emblem legibility vs. the label position.** The emblem's outer extent (33.4u) and the label
-  height are independent numbers. Since the switch-ring pass the label is *derived* from the ring
-  (`ToyFactory.SwitchRingLabelHeight`) rather than from the body radius, so the pair that has to
-  keep clearing each other is now **emblem outer (33.4u) vs. ring inner (38.6u)** — 5.2u at R=22.
+- **Emblem vs. the ring.** The pair that has to keep clearing each other is **emblem outer
+  (33.4u) vs. ring inner (38.6u)** — 5.2u at R=22 (there is no label any more to clear either).
   If the toybox's `toyBodyRadius` or `toyTriggerRadius` is retuned, re-check that gap.
 
 ## The switch (rings) — known-remaining follow-ups
@@ -562,16 +561,20 @@ unchanged by this work.
   (3) shrink the ringed-label font, which is deliberately left at its historic
   `contentRadius × 1.425` so this pass changed affordance and not typography. **Do not "fix" it by
   lowering the label back onto its own ring.**
-- **The clamp is holding three matrices, not one.** `ToyFactory.MaxRingSpacingFraction` (0.45) is
-  what keeps the Vessel Changer (1.7u between rings), the level-5 Lifeform variants (2.5u) and the
-  Painting gallery (3.9u) from interpenetrating. It cannot go much lower: at 0.36 the Vessel
+- **The clamp is holding two matrices now, not three.** `ToyFactory.MaxRingSpacingFraction` (0.45)
+  is what keeps the Vessel Changer (1.7u between rings) and the Painting gallery (3.9u) from
+  interpenetrating. The third used to be the level-5 Lifeform variant station at 2.5u, whose radius
+  scaled with level; levels are retired (Docs/ECOSYSTEM.md §40) so every variant station is now the
+  plain `StationRadius` with a 48.5u gap, and its clamp is no longer exercised. It cannot go much
+  lower: at 0.36 the Vessel
   Changer's ring inner radius (21.6) would fall *inside* its own 22-radius ship. If a matrix's
   spacing or station radius is retuned, re-run the geometry check in `ARCHITECTURE.md` §
   "The switch" rather than nudging the constant.
 - **Not yet play-verified.** In-editor pass should confirm: every toy root and every matrix station
   blooms in already ringed; the ring reads as the thing you aim at from the far side of the
   membrane; the Cell Selector's current world is legible as *two* rings (outer switch, inner
-  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged; and
+  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged
+  *(superseded — see "The Domain Changer is a switch" below; it is now ringed like everything else)*; and
   the Wanderway return station's hoop turns to face you as you fly back down the tether.
 
 ## Cell Selector — a GROWN cell has no scale model (Aug 2026, Lattice cell)
@@ -607,7 +610,7 @@ becomes more pressing, not less, if more grown-environment cells ship.
 
 ## Vessel matrices — live hulls (2026-08-25)
 
-Stations in the vessel changer and the Lifeform Matrix hangar now show the ACTUAL ship
+Stations in the vessel changer and the Spawn Matrix hangar now show the ACTUAL ship
 (`ToyVesselRoster.TryBuildLiveHull`) rather than a flat silhouette, with the vessel vision band
 supplying the domain read (`Docs/VESSEL_VISION.md`, `Docs/ToySystem/ARCHITECTURE.md` § "Vessel
 Changer"). Open items:
@@ -624,3 +627,84 @@ Changer"). Open items:
 - **Not verified in-editor yet** — the live-hull path, the domain-material swap and the re-tint
   dispatch are machine-type-checked only. See `Docs/VESSEL_VISION.md` § "What a human still has to
   check in the editor", step 6.
+
+## The Domain Changer is a switch, and a switch's shader says what it does (2026-08-28)
+
+The Domain Changer's slots were **cones you flew at**, in the target domain's prism material. That
+shape is now **reserved for a booster** (prompter-directed), so the slots became **switches** — and
+losing the cone's read is what made it worth giving the ring one of its own: every switch is drawn
+in the **prism shader**, and *which prism it is painted as* says what it will do (`ToySwitchSignal`
+→ `ToyFactory.SwitchMaterial`). **A switch wearing a playable domain's colour is one that hands you
+that domain**; everything else is neutral `Domains.Blue`. Design + reasoning:
+`ARCHITECTURE.md` § "The switch" → "What a switch's SHADER says".
+
+Open items:
+
+- **Not play-verified in-editor.** An in-editor pass should confirm: the two Domain Changer slots
+  bloom in as rings in the two domain colours you are *not*, with a hub of the same material at
+  the centre and the name clear above the rim; threading one still changes your domain **and the
+  slot you used visibly repaints to the colour you just left** (the flip is now a material swap on
+  a live ring, `Toy.SetSwitchSignal`, not a rebuilt body); and every other switch in the toybox —
+  toy roots, matrix stations, painting milestones, the SHARE/REPAINT gates, the Wanderway return
+  station — reads as periwinkle-blue prism rather than as its toy's old accent.
+- **Is a Blue prism ring bright enough at membrane range?** The neutral colour is the shipped
+  `BlueColors` pair (dark navy base, periwinkle fresnel rim), which on a thin torus is mostly rim.
+  It is the *right* colour by the platform's own "Blue = no team" rule; whether it is *loud* enough
+  at 984 u is a look question only the editor can answer. If it is not, the lever is the neutral
+  tier (a shielded-Blue ring is brighter), **not** re-tinting one toy's ring back to its accent.
+- **`ScarabSwitch` is the one domain-coloured switch outside the toybox**, and its colour means
+  ownership rather than transformation (`SCARAB.md` §5). It is allow-listed in
+  `ToySwitchVocabularyTests` with that reason. It draws in the LIVE per-domain prism material —
+  `PlaceSwitchActionExecutor` now `[Inject]`s `GameDataSO` and hands the theme to
+  `ScarabSwitch.Build` — so the ring and the dais prisms it pays out are the same asset. **Worth a
+  look in-editor**: that ring changes material (URP Unlit accent → domain prism) in a shipped
+  competitive mode. It should read as a domain-coloured prism hoop; if it reads dark, the prism
+  fresnel is doing what it does on a thin tube and the answer is a brighter tier, not a revert.
+- **The Domain Changer's ring radius is now clamped** against the chord between its slots
+  (`SwapToySetCoordinator.SlotRingRadius`). On the menu membrane that is a no-op; on the toybox's
+  no-membrane `fallbackRadius` (300 u) it takes the ring 42 → 32.9. `Tools/Build/toy_switch_ring_geometry.py`
+  models the fallback case, which is the tight one — re-run it (not the constant) after any change
+  to `anglePerToyDeg`, `toyTriggerRadius` or `fallbackRadius`.
+- **`AstroLeagueBall` has the same latent `_Alpha` trap, untouched.** Its no-prism-material
+  fallback does `new Material(Shader.Find("Shader Graphs/BlockGraph"))` and sets `_Spread` but not
+  `_Alpha`, which the graph defaults to 0. It only fires when no prism material is supplied, so it
+  may never have run — but if an Astro League ball ever renders invisible, that is the line. Not
+  fixed here: it is an Astro League change and this branch has no way to play-verify it.
+- **No booster exists yet.** The cone is reserved, not spent. Whoever builds one inherits
+  `ToyFactory.AddConeBody` at body scale and should say so in the shape-language table.
+
+## Arkway — the cellular Wanderway and the Ark (2026-09-01)
+
+Shipped: the corridor of three satellite traversal cells (`CellConveyor`), the `Ark`
+fundamental's first body (hull = grazeable conserved mass in the player's domain, mover
+contract per frame, cell re-bind via `PrismSpatialIndex.NotifyCellChanged`), the voyage run
+(`ArkwayRun`: leash + recall, disembark dinghy, freestyle-edge exit, Ark-death reset), the
+screen telegraph (`ArkwayVoyageHud`), and the three platform capabilities it stands on
+(`Cell.SatelliteEcologyEnabled`, `Cell.RuntimePopulationScale`,
+`PrismSpatialIndex.NotifyCellChanged`). Record: `Docs/ECOSYSTEM.md §41`.
+
+Follow-ups, none blocking:
+
+- **Takeover feel is untested.** A traversal cell's starting controlling colour is whatever
+  domain dominates its authored environment volume, and out-laying a thinned freestyle world
+  is a real ask. The dials are `prismStride`, `populationScale`, and cell choice (the authored
+  `cells` list); the first playtest should watch whether a cell can flip inside one Ark
+  transit at all. If it can't, consider seeding the corridor from the LIGHTER worlds first
+  (an authored list ordered by volume) before reaching for any new lever.
+- **The Ark's hull volume sways control a little** (~150 prisms in the player's domain).
+  Deliberate — mass wearing a colour in a cell counts, no exemptions — but worth watching:
+  if it reads as self-protection, shrink the hull, don't special-case the books.
+- **Fauna convergence on the Ark is emergent, not guaranteed**: herbivores steer by
+  density-grid centroids, and a thinned world's own mass competes with the hull's tight
+  cluster. If playtests show waves ignoring the Ark, the honest lever is the grid (hull
+  plates are dense and re-filed every 2.5 s), not a scripted goal.
+- **An AI companion released from the Spawn Matrix stays home** during a voyage (it is
+  not leashed, not teleported). Fine for v1; a future pass could invite the whole party's
+  vessels aboard.
+- **The Arkway and the Wanderway can technically run together** — same class as two conveyor
+  definitions coexisting (no cross-toy coordinator exists). Bounded: the belt's stock is
+  instantiated mass and survives every strike/swap by design. If it ever matters, the fix is
+  a toybox-level "one World-category run at a time" rule, not toy-to-toy coupling.
+- **The emblem's mini-Ark rebuild on domain change is streamer-paced** (live key = the local
+  player's domain). If the rebuild ever reads as a pop, the fix is the emblem's cross-fade,
+  which already exists for the core slot.

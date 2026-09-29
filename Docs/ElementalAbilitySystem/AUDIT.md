@@ -40,6 +40,14 @@ the moment of fixing (all carry citations).
 
 ### 1.2 What is broken (all CONFIRMED by adversarial verification)
 
+> **Historical record — measured at the audit, not current.** The 2026-09-18 element-scaling
+> unification fixed items 1 and 2 by DELETING `ElementalFloatBinder` outright (dead, and broken in
+> the two ways #2 describes), so the `ElementalFloatBinder.cs:33` reference below no longer
+> resolves to a file. `ShipActionSO`-hosted `ElementalFloat`s are now read live through
+> `EvaluateLive(status)`, and `Tools/Build/check_elemental_floats.py` fails the build on one that
+> is authored with a real ramp and never evaluated. Do not act on this section; read
+> `ELEMENT_SCALING_UNIFICATION.md` and `FLEET_GAPS.md` for the current state.
+
 1. **The entire SO-side quantitative element→ability layer is dead.**
    `ShipActionSO.Initialize` has the `ElementalFloatBinder.BindAndClone` call commented out with
    "TODO : Not sure what it does" (`VesselActionSO.cs:11-13`). Every `ElementalFloat` inside an
@@ -181,6 +189,10 @@ at."
   _resourceAmount: 1, _overrideAmount: 1`) sits in `SparrowImpactorDataContainer.asset`'s
   `vesselCrystalEffects` — any crystal impact refills Missiles to full (2 rockets). The economy
   is 2 rockets per crystal, as the ability card promises.
+  **SUPERSEDED 2026-09** — that asset is now DELETED. The Sparrow's missiles reload by destroying
+  hostile prisms (`VesselRearmOnPrismDestruction`, 0.01 per prism = 50 per rocket) and the omni crystal grants an
+  elemental-debuff ward instead. The finding above is kept as the dated record it is; do not read
+  its present tense as current wiring.
 - **Dead `Gun` with `projectileFactory: {fileID: 0}`** on the prefab (`Sparrow.prefab:212-227`,
   since Oct 2025) — unreferenced rewire trap; any `FireGun` call on it NREs.
 - Pool return is **delegated entirely to impact end-effects** (`Projectile.cs:197-198`); a

@@ -65,7 +65,7 @@ Maneuvering through the HyperSea is usually a thrilling delight. Knowing where a
 - **Ransack Rally** (1-4 players) — Skim past trails on your way to a biome. Whoever steals more along the way wins.
 - **Freestyle Toybox** (1 player) — No rules, time, or score. Do what you want for as long as you like.
 - **Duel for the Cell** (1v1) — Create mass as trail blocks and disrupt your opponent's. Greatest mass volume wins.
-- **HexRace** (1-4 players) — Crystal-collection racing on procedurally generated tracks. First player to collect all crystals wins. Supports solo with AI opponents, multiplayer with friends, or mixed human+AI lobbies. Intensity scales track complexity (segment count, helix radius). Features elemental comeback mechanics and server-authoritative scoring with golf rules (lower time = better rank).
+- **SkimRace** (1-4 players) — Crystal-collection racing on procedurally generated tracks. First player to collect all crystals wins. Supports solo with AI opponents, multiplayer with friends, or mixed human+AI lobbies. Intensity scales track complexity (segment count, helix radius). Features elemental comeback mechanics and server-authoritative scoring with golf rules (lower time = better rank).
 - **Wildlife Blitz** (1-4 players) — Co-op and competitive variants.
 - **Joust** (multiplayer) — Head-to-head combat mode.
 
@@ -97,7 +97,7 @@ A stepping stone to our future dreams of a multi-biome esport, Duel for the Cell
 - **Camera**: Cinemachine 3.1.2 with per-vessel settings
 - **VFX**: VFX Graph, custom HLSL shaders, Shader Graph, procedural skybox
 - **Input**: Unity Input System with platform-specific strategy pattern (keyboard/mouse, gamepad, touch)
-- **Audio**: Wwise integration + SOAP gameplay SFX events for decoupled audio triggers
+- **Audio**: FMOD Studio (`FMODUnity`) + SOAP gameplay SFX events for decoupled audio triggers
 - **Haptics**: NiceVibrations (mobile)
 - **Animation**: Timeline, DOTween
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance, DOTS Entities (incremental adoption)

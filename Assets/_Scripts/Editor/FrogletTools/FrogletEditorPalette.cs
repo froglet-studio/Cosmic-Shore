@@ -47,6 +47,7 @@ namespace CosmicShore.Editor.Froglet
             { FrogletToolCategory.Services, Magenta },
             { FrogletToolCategory.Misc, Slate },
             { FrogletToolCategory.Diagnostics, Indigo },
+            { FrogletToolCategory.Qa, Cyan },
         };
 
         public static Color ColorFor(FrogletToolCategory c)
@@ -64,6 +65,7 @@ namespace CosmicShore.Editor.Froglet
             FrogletToolCategory.Interface => "Interface",
             FrogletToolCategory.Services => "Services & Data",
             FrogletToolCategory.Diagnostics => "Diagnostics & Health",
+            FrogletToolCategory.Qa => "QA",
             _ => "Misc",
         };
 

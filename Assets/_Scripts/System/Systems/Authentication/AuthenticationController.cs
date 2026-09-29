@@ -134,7 +134,7 @@ namespace CosmicShore.Core
         void Log(string msg)
         {
             if (verboseLogs)
-                CSDebug.Log($"[AuthController] {msg}");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthController] {msg}");
         }
     }
 }

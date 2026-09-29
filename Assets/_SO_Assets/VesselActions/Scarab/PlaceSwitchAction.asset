@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: PlaceSwitchAction
   m_EditorClassIdentifier: 
   resourceIndex: 1
-  chargesPerFullMeter: 3
+  chargesPerFullMeter: 1
+  rechargeSecondsPerCharge: 60
+  chargeRefundOnThread: 1
+  maxLiveSwitches: 1
   placementDistance:
     Enabled: 0
     Value: 150
@@ -27,7 +30,9 @@ MonoBehaviour:
     Min: 1
     Max: 2.5
     element: 2
+  anchorReach: 70
   growthRate: 1
+  retireSeconds: 0.5
   dais:
     PairCount: 5
     BladesPerWing: 25

@@ -54,7 +54,7 @@ namespace CosmicShore.UI
             targetScoreToWin = newTarget;
             
             // ISSUE 1 FIX: Show target value at start
-            CSDebug.Log($"<color=cyan>[WildlifeBlitzHUD] Target set to {targetScoreToWin}</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[WildlifeBlitzHUD] Target set - {targetScoreToWin}");
             UpdateScoreUI();
         }
 
@@ -90,7 +90,7 @@ namespace CosmicShore.UI
             base.OnMiniGameTurnEnd();
             
             // ISSUE 1 FIX: Clear score display at end
-            CSDebug.Log("<color=yellow>[WildlifeBlitzHUD] Round ended - clearing displays</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[WildlifeBlitzHUD] Round ended - clearing displays");
             view.UpdateScoreUI("");
             UpdateLifeformCounterDisplay("");
         }

@@ -17,10 +17,29 @@ namespace CosmicShore.Gameplay
     /// GameDataSO.ComebackRatePerScoreDeficit): bonusLevels = deficit x rate. The comeback
     /// layer can never lift an element above level 10 (ResourceSystem.SustainedCeiling).
     ///
-    /// Scene-authored instances keep their authored score-source settings; a scene without one
-    /// gets it auto-created by MultiplayerMiniGameControllerBase (EnsureExists) with per-mode
-    /// defaults. The optional comeback profile only seeds per-vessel INITIAL levels now - the
-    /// old per-vessel/per-element weights are retired (equal-elements is the law).
+    /// <para><b>The deficit IS the score.</b> A domain's comeback value is read from
+    /// <see cref="ScoringRuleSO.DomainValue"/> on the mode's own published rule
+    /// (<see cref="GameDataSO.ScoringRule"/>) - the one function the HUD's domain boxes, the end
+    /// condition, the winner and the placement order all read. There is no authored "which stat
+    /// does the comeback track" setting any more, so the comeback cannot disagree with the
+    /// score: a mode that scores gunnery catches up on gunnery, a lead-runner race catches up on
+    /// the lead runner, and a mode that folds two stats (Undertow) catches up on both. The rate
+    /// is calibrated in the metric's own units for the same reason.</para>
+    ///
+    /// <para>That setting existed until 2026-09 (<c>ScoreDifferenceSource</c>) and was the bug
+    /// it describes: a scene-authored instance kept its authored value, most mode scenes were
+    /// cloned from a donor, and eight shipped reading the DONOR's stat - The Bends caught up on
+    /// prisms destroyed at 4.0 levels per prism, Wrecking Ball on goals it never scores, Skein
+    /// on prisms stolen. Nothing could see it, because the two answers lived in two places.</para>
+    ///
+    /// <para>The legacy modes that publish no rule (Cellular Duel, co-op Wildlife Blitz,
+    /// Freestyle, 2v2) accumulate <c>Score</c> live through TimePlayedScoring, so the fallback
+    /// sums Score per domain, lower-is-better when the controller runs golf rules. The golf
+    /// flag is handed over by <see cref="EnsureExists"/> on every spawn and is not serialized,
+    /// for the same reason the source is gone.</para>
+    ///
+    /// <para>The optional comeback profile only seeds per-vessel INITIAL levels now - the old
+    /// per-vessel/per-element weights are retired (equal-elements is the law).</para>
     ///
     /// gameData arrives by one of two routes and NEITHER is guaranteed to beat OnEnable: Reflex
     /// injection for a scene-authored instance (populated after Awake), and an explicit Bind for
@@ -31,44 +50,6 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class ElementalComebackSystem : MonoBehaviour
     {
-        /// <summary>
-        /// Which stat to use when calculating who is ahead/behind.
-        /// HexRace tracks elapsed time as Score (same for everyone) so use CrystalsCollected.
-        /// CrystalCapture also uses CrystalsCollected and Rampage PrismsDestroyed - in the
-        /// finish-time-scored modes Score is only assigned at game end (winners a time,
-        /// losers a sentinel), so the Score source would be dead during live play.
-        /// AstroLeague uses GoalsScored.
-        /// </summary>
-        public enum ScoreDifferenceSource
-        {
-            Score,
-            CrystalsCollected,
-            Goals,
-            PrismsDestroyed,
-            PrismsRemaining,
-            /// <summary>
-            /// Wildlife Liberation's fauna kills. Domain-aggregated like every other source
-            /// here - the mode is a domain race, so a player's deficit is their TEAM's deficit
-            /// against the leading colour. (A per-player variant of this source existed while
-            /// the mode was briefly a free-for-all and was removed with it.)
-            /// </summary>
-            LifeformsKilled,
-
-            /// <summary>
-            /// Dog Fight's weighted gunnery score. A team source like every entry above
-            /// LifeformsKilled - Dog Fight pools points per domain - so the trailing SIDE gets
-            /// the buff, not the trailing individual.
-            /// </summary>
-            CombatPoints,
-
-            /// <summary>
-            /// Joust's per-domain summed joust collisions. Joust's Score lands only at game end
-            /// (winner a finish time, losers a sentinel - JoustScoringRuleSO.AssignScores), so
-            /// the Score source would read a flat zero deficit for the whole match.
-            /// </summary>
-            Jousts,
-        }
-
         [Header("Config")]
         [Tooltip("Optional: only per-vessel INITIAL levels are read from the profile now. The " +
                  "comeback strength itself comes from the game's ComebackRatePerScoreDeficit " +
@@ -78,8 +59,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Guarantees a party-game scene has the comeback system (the REQUIRED-component rule).
-        /// A scene-authored instance is respected as-is (only its missing gameData is filled in);
-        /// otherwise one is added to the host and configured with per-mode score-source defaults.
+        /// A scene-authored instance is reused; otherwise one is added to the host. Either way the
+        /// controller's golf flag is handed over here - it only matters for the legacy rule-less
+        /// fallback, and it is deliberately not something a scene can author.
         /// </summary>
         public static ElementalComebackSystem EnsureExists(
             GameObject host, GameDataSO gameData, bool useGolfRules = false)
@@ -87,6 +69,7 @@ namespace CosmicShore.Gameplay
             var existing = FindFirstObjectByType<ElementalComebackSystem>(FindObjectsInactive.Include);
             if (existing)
             {
+                existing.useGolfRules = useGolfRules;
                 existing.Bind(gameData);
                 return existing;
             }
@@ -94,59 +77,18 @@ namespace CosmicShore.Gameplay
             // AddComponent runs OnEnable SYNCHRONOUSLY, before this method can assign anything -
             // so configuration and the gameData handoff both happen after it, and OnEnable is a
             // deliberate no-op while gameData is still null. Bind() is what actually subscribes.
-            // (The same trap is recorded in DomainFaunaBuffSystem.Update.)
             var system = host.AddComponent<ElementalComebackSystem>();
-            system.differenceSource = DefaultSourceFor(gameData);
             system.useGolfRules = useGolfRules;
             system.Bind(gameData);
 
-            CSDebug.Log($"[ElementalComebackSystem] Auto-created for {gameData?.GameMode} " +
-                        $"(source={system.differenceSource}, rate={gameData?.ComebackRatePerScoreDeficit ?? 0f}).");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] Auto-created for {gameData?.GameMode} " +
+                        $"(rate={gameData?.ComebackRatePerScoreDeficit ?? 0f}).");
             return system;
         }
 
-        /// <summary>
-        /// The live score source for a mode. Every mode whose Score is assigned only at game end
-        /// needs the stat it actually accumulates during play, or the deficit reads a flat zero
-        /// for the whole match and the comeback layer silently does nothing.
-        /// </summary>
-        public static ScoreDifferenceSource DefaultSourceFor(GameDataSO gameData)
-        {
-            switch (gameData ? gameData.GameMode : GameModes.Random)
-            {
-                case GameModes.HexRace: // Score is elapsed time - crystals are the honest stat
-                case GameModes.MultiplayerCrystalCapture: // Score lands only at game end (time/sentinel)
-                    return ScoreDifferenceSource.CrystalsCollected;
-                case GameModes.AstroLeague:
-                    return ScoreDifferenceSource.Goals;
-                case GameModes.ScarabScramble: // Score lands only at game end - hoop goals are the live stat
-                    return ScoreDifferenceSource.Goals;
-                case GameModes.NucleusRush: // Score lands only at game end - broods are the live stat
-                    return ScoreDifferenceSource.Goals;
-                case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
-                case GameModes.Ribcage: // same: the race metric is hostile prisms destroyed
-                case GameModes.Salvo:   // same: the Sparrow demolition race
-                    return ScoreDifferenceSource.PrismsDestroyed;
-                case GameModes.WildlifeLiberation: // Score lands only at game end - kills are the live stat
-                    return ScoreDifferenceSource.LifeformsKilled;
-                case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
-                case GameModes.Bends:    // same shape: bends land as CombatPoints, Score at the end
-                    return ScoreDifferenceSource.CombatPoints;
-                case GameModes.MultiplayerJoust: // Score lands only at game end - jousts are the live stat
-                    return ScoreDifferenceSource.Jousts;
-                default:
-                    // The legacy composite/time-scored modes (Cellular Duel, Wildlife Blitz co-op,
-                    // Freestyle, 2v2) accumulate Score live via TimePlayedScoring, so Score is
-                    // the honest source there.
-                    return ScoreDifferenceSource.Score;
-            }
-        }
-
-        [Header("Scoring")]
-        [Tooltip("Which stat drives the comeback calculation")]
-        [SerializeField] ScoreDifferenceSource differenceSource = ScoreDifferenceSource.CrystalsCollected;
-        [Tooltip("For Score source: enable when lower score is better (e.g. race times)")]
-        [SerializeField] bool useGolfRules;
+        // Legacy rule-less fallback only: lower summed Score is better. Handed over by
+        // EnsureExists from the controller on every spawn - never authored (see the class doc).
+        [System.NonSerialized] bool useGolfRules;
 
         [Header("Update Settings")]
         [Tooltip("How often (in seconds) to recalculate comeback buffs")]
@@ -207,7 +149,7 @@ namespace CosmicShore.Gameplay
             _subscribed = true;
 
             if (debugLogging)
-                CSDebug.Log("[ElementalComebackSystem] Subscribed to game events.");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[ElementalComebackSystem] Subscribed to game events.");
         }
 
         void Unsubscribe()
@@ -237,11 +179,11 @@ namespace CosmicShore.Gameplay
 
         void OnTurnStarted()
         {
-            if (debugLogging)
-                CSDebug.Log($"[ElementalComebackSystem] OnTurnStarted fired. " +
+            if (debugLogging && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] OnTurnStarted fired. " +
                           $"Rate={gameData.ComebackRatePerScoreDeficit}, " +
                           $"Players={gameData.Players?.Count ?? 0}, " +
-                          $"Source={differenceSource}");
+                          $"Rule={(gameData.ScoringRule ? gameData.ScoringRule.name : "<none - legacy Score>")}");
 
             _isActive = true;
             _localComebackActive = false;
@@ -264,8 +206,8 @@ namespace CosmicShore.Gameplay
 
                 ApplyInitialValues(rs, config);
 
-                if (debugLogging)
-                    CSDebug.Log($"[ElementalComebackSystem] Initial levels for {player.Name} ({vesselType}): " +
+                if (debugLogging && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                    CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] Initial levels for {player.Name} ({vesselType}): " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }
@@ -274,7 +216,7 @@ namespace CosmicShore.Gameplay
         void OnTurnEnded()
         {
             if (debugLogging && _isActive)
-                CSDebug.Log("[ElementalComebackSystem] Turn ended. Deactivating.");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[ElementalComebackSystem] Turn ended. Deactivating.");
             Deactivate();
         }
 
@@ -358,10 +300,10 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-                if (debugLogging)
-                    CSDebug.Log($"[ElementalComebackSystem] {player.Name}: " +
+                if (debugLogging && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                    CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] {player.Name}: " +
                               $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1}, " +
-                              $"bonus={bonusLevels:F1} → " +
+                              $"bonus={bonusLevels:F1} -> " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }
@@ -398,12 +340,11 @@ namespace CosmicShore.Gameplay
         }
 
         // ---------------------------------------------------------------
-        // Value reading - uses the configured ScoreDifferenceSource
+        // Value reading - the mode's own score, per DOMAIN
         // ---------------------------------------------------------------
-        // Comeback buffs are now keyed off DOMAIN aggregates: a player on the
-        // leading domain doesn't get a comeback buff even if they personally
-        // contribute less than the team leader. The "deficit" each player
-        // experiences is their team's deficit, not their individual one.
+        // Comeback buffs are keyed off DOMAIN values: a player on the leading domain doesn't
+        // get a comeback buff even if they personally contribute less than the team leader.
+        // The "deficit" each player experiences is their team's deficit, not their individual one.
 
         float GetLeaderValue()
         {
@@ -412,12 +353,13 @@ namespace CosmicShore.Gameplay
 
             float leader = 0f;
             bool first = true;
+            bool higherIsBetter = IsHigherBetter(gameData, useGolfRules);
             int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
             for (int i = 0; i < dc; i++)
             {
                 var d = GameDataSO.ActiveDomains[i];
-                float v = ReadDomainValue(d);
-                if (first || (IsHigherBetter() ? v > leader : v < leader))
+                float v = DomainScore(gameData, d);
+                if (first || (higherIsBetter ? v > leader : v < leader))
                 {
                     leader = v;
                     first = false;
@@ -429,56 +371,42 @@ namespace CosmicShore.Gameplay
         float GetPlayerValue(IPlayer player)
         {
             // A player's "value" for comeback purposes is their domain's aggregate.
-            return player != null ? ReadDomainValue(player.Domain) : 0f;
+            return player != null ? DomainScore(gameData, player.Domain) : 0f;
         }
 
-        float ReadDomainValue(Domains domain)
+        /// <summary>
+        /// A domain's comeback value: EXACTLY the mode's score for that domain
+        /// (<see cref="ScoringRuleSO.DomainValue"/>), or the summed live Score for a legacy mode
+        /// that publishes no rule. There is deliberately no third source.
+        /// </summary>
+        public static float DomainScore(GameDataSO gameData, Domains domain)
         {
-            switch (differenceSource)
+            if (gameData == null) return 0f;
+
+            var rule = gameData.ScoringRule;
+            if (rule) return rule.DomainValue(gameData, domain);
+
+            float sum = 0f;
+            var list = gameData.RoundStatsList;
+            if (list == null) return 0f;
+            for (int i = 0, count = list.Count; i < count; i++)
             {
-                case ScoreDifferenceSource.CrystalsCollected:
-                    return gameData.SumCrystalsCollectedByDomain(domain);
-                case ScoreDifferenceSource.Goals:
-                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, domain);
-                case ScoreDifferenceSource.PrismsRemaining:
-                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsRemaining, domain);
-                case ScoreDifferenceSource.PrismsDestroyed:
-                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsDestroyed, domain);
-                case ScoreDifferenceSource.CombatPoints:
-                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.CombatPoints, domain);
-                case ScoreDifferenceSource.LifeformsKilled:
-                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.LifeformsKilled, domain);
-                case ScoreDifferenceSource.Jousts:
-                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Jousts, domain);
-                case ScoreDifferenceSource.Score:
-                    float sum = 0f;
-                    var list = gameData.RoundStatsList;
-                    for (int i = 0, count = list.Count; i < count; i++)
-                    {
-                        var s = list[i];
-                        if (s != null && s.Domain == domain) sum += s.Score;
-                    }
-                    return sum;
-                default:
-                    return 0f;
+                var s = list[i];
+                if (s != null && s.Domain == domain) sum += s.Score;
             }
+            return sum;
         }
 
-        bool IsHigherBetter()
-        {
-            return differenceSource switch
-            {
-                ScoreDifferenceSource.CrystalsCollected => true,
-                ScoreDifferenceSource.Goals => true,
-                ScoreDifferenceSource.PrismsDestroyed => true,
-                ScoreDifferenceSource.PrismsRemaining => true,
-                ScoreDifferenceSource.LifeformsKilled => true,
-                ScoreDifferenceSource.CombatPoints => true,
-                ScoreDifferenceSource.Jousts => true,
-                ScoreDifferenceSource.Score => !useGolfRules,
-                _ => !useGolfRules
-            };
-        }
+        /// <summary>
+        /// A rule's <see cref="ScoringRuleSO.DomainValue"/> is always higher-is-better during
+        /// play - it is what <see cref="ScoringRuleSO.ResolveWinner"/> maximizes. A rule's
+        /// <c>GolfRules</c> flag is about the FINAL Score (finish time / sentinel), which is not
+        /// what the comeback reads. Only the legacy Score fallback honours the golf flag.
+        /// </summary>
+        public static bool IsHigherBetter(GameDataSO gameData, bool legacyGolfRules) =>
+            (gameData != null && gameData.ScoringRule) || !legacyGolfRules;
+
+        bool IsHigherBetter() => IsHigherBetter(gameData, useGolfRules);
 
         float CalculateScoreDifference(float leaderValue, float playerValue)
         {

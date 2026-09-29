@@ -192,7 +192,7 @@ namespace CosmicShore.Core
 
                 if (nm != null && nm.IsServer && nm.SceneManager != null)
                 {
-                    Debug.Log($"[SceneTransition] Server loading network scene: {sceneName}");
+                    CSDebug.LogVerbose(CSLogChannel.Boot, $"[SceneTransition] Server loading network scene: {sceneName}");
                     nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
 
                     // Network scene loads are asynchronous on the server.

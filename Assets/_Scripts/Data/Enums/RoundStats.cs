@@ -46,7 +46,10 @@ namespace CosmicShore.Data
         public event Action<IRoundStats> OnBulletHitsLandedChanged;
         public event Action<IRoundStats> OnMissileHitsLandedChanged;
         public event Action<IRoundStats> OnDebuffHitsLandedChanged;
+        public event Action<IRoundStats> OnStrikeHitsLandedChanged;
         public event Action<IRoundStats> OnCombatPointsChanged;
+        public event Action<IRoundStats> OnSwitchesThreadedChanged;
+        public event Action<IRoundStats> OnFusesBeatenChanged;
 
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -74,6 +77,9 @@ namespace CosmicShore.Data
         float _chargeCrystalValueLocal, _massCrystalValueLocal, _spaceCrystalValueLocal, _timeCrystalValueLocal;
         int _skimmerShipCollisionsLocal, _joustCollisionsLocal, _goalsScoredLocal, _lifeformsKilledLocal;
         int _bulletHitsLandedLocal, _missileHitsLandedLocal, _debuffHitsLandedLocal, _combatPointsLocal;
+        int _strikeHitsLandedLocal;
+        int _switchesThreadedLocal;
+        int _fusesBeatenLocal;
 
         float _fullSpeedStraightAbilityActiveTimeLocal,
             _rightStickAbilityActiveTimeLocal,
@@ -183,7 +189,16 @@ namespace CosmicShore.Data
         readonly NetworkVariable<int> n_DebuffHitsLanded =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
+        readonly NetworkVariable<int> n_StrikeHitsLanded =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<int> n_CombatPoints =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<int> n_SwitchesThreaded =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<int> n_FusesBeaten =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime =
@@ -274,7 +289,10 @@ namespace CosmicShore.Data
             OnBulletHitsLandedChanged = null;
             OnMissileHitsLandedChanged = null;
             OnDebuffHitsLandedChanged = null;
+            OnStrikeHitsLandedChanged = null;
             OnCombatPointsChanged = null;
+            OnSwitchesThreadedChanged = null;
+            OnFusesBeatenChanged = null;
 
             OnFullSpeedStraightAbilityActiveTimeChanged = null;
             OnRightStickAbilityActiveTimeChanged = null;
@@ -697,6 +715,18 @@ namespace CosmicShore.Data
             }
         }
 
+        public int StrikeHitsLanded
+        {
+            get => _strikeHitsLandedLocal;
+            set
+            {
+                _strikeHitsLandedLocal = value;
+                if (IsSpawned && IsServer) n_StrikeHitsLanded.Value = value;
+
+                RaiseSpecific(OnStrikeHitsLandedChanged);
+            }
+        }
+
         public int CombatPoints
         {
             get => _combatPointsLocal;
@@ -706,6 +736,30 @@ namespace CosmicShore.Data
                 if (IsSpawned && IsServer) n_CombatPoints.Value = value;
 
                 RaiseSpecific(OnCombatPointsChanged);
+            }
+        }
+
+        public int SwitchesThreaded
+        {
+            get => _switchesThreadedLocal;
+            set
+            {
+                _switchesThreadedLocal = value;
+                if (IsSpawned && IsServer) n_SwitchesThreaded.Value = value;
+
+                RaiseSpecific(OnSwitchesThreadedChanged);
+            }
+        }
+
+        public int FusesBeaten
+        {
+            get => _fusesBeatenLocal;
+            set
+            {
+                _fusesBeatenLocal = value;
+                if (IsSpawned && IsServer) n_FusesBeaten.Value = value;
+
+                RaiseSpecific(OnFusesBeatenChanged);
             }
         }
 
@@ -864,7 +918,10 @@ namespace CosmicShore.Data
             _bulletHitsLandedLocal      = n_BulletHitsLanded.Value;
             _missileHitsLandedLocal     = n_MissileHitsLanded.Value;
             _debuffHitsLandedLocal      = n_DebuffHitsLanded.Value;
+            _strikeHitsLandedLocal      = n_StrikeHitsLanded.Value;
             _combatPointsLocal          = n_CombatPoints.Value;
+            _switchesThreadedLocal      = n_SwitchesThreaded.Value;
+            _fusesBeatenLocal           = n_FusesBeaten.Value;
 
             _fullSpeedStraightAbilityActiveTimeLocal = n_FullSpeedStraightAbilityActiveTime.Value;
             _rightStickAbilityActiveTimeLocal        = n_RightStickAbilityActiveTime.Value;
@@ -1076,11 +1133,32 @@ namespace CosmicShore.Data
                     RaiseSpecific(OnDebuffHitsLandedChanged);
             };
 
+            n_StrikeHitsLanded.OnValueChanged += (_, v) =>
+            {
+                _strikeHitsLandedLocal = v;
+                if (!IsServer)
+                    RaiseSpecific(OnStrikeHitsLandedChanged);
+            };
+
             n_CombatPoints.OnValueChanged += (_, v) =>
             {
                 _combatPointsLocal = v;
                 if (!IsServer)
                     RaiseSpecific(OnCombatPointsChanged);
+            };
+
+            n_SwitchesThreaded.OnValueChanged += (_, v) =>
+            {
+                _switchesThreadedLocal = v;
+                if (!IsServer)
+                    RaiseSpecific(OnSwitchesThreadedChanged);
+            };
+
+            n_FusesBeaten.OnValueChanged += (_, v) =>
+            {
+                _fusesBeatenLocal = v;
+                if (!IsServer)
+                    RaiseSpecific(OnFusesBeatenChanged);
             };
 
             n_FullSpeedStraightAbilityActiveTime.OnValueChanged += (_, v) =>

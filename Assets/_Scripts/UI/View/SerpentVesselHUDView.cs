@@ -1,8 +1,6 @@
-﻿using System.Collections;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Gameplay;
-using System.Linq;
 namespace CosmicShore.UI
 {
     public class SerpentVesselHUDView : VesselHUDView
@@ -11,7 +9,9 @@ namespace CosmicShore.UI
         [SerializeField] private Sprite[] shieldIconsByCount;
         [SerializeField] private Image   shieldIcon;
 
-        [Header("BOOST Pips")]
+        [Header("Fuel pellet pips (TIME card)")]
+        [Tooltip("The four lit pellets drawn over the TIME icon's slots, top to bottom. Pip n " +
+                 "is full once the tank holds n pellets; the refilling pellet shows its partial fill.")]
         [SerializeField] private Image boostPip1;
         [SerializeField] private Image boostPip2;
         [SerializeField] private Image boostPip3;
@@ -19,11 +19,16 @@ namespace CosmicShore.UI
 
         [Header("Pip Colors")]
         [SerializeField] private Color pipFullColor      = new Color(1f, 1f, 1f, 1f);
-        [SerializeField] private Color pipConsumingColor = new Color(0.3f, 1f, 0.3f, 1f);
         [SerializeField] private Color pipEmptyColor     = new Color(1f, 1f, 1f, 0.25f);
 
-        Image[]    _boostPips;
-        Coroutine[] _pipAnim;
+        [Tooltip("How fast the pips ease toward the tank's real level, in pellets per second. " +
+                 "Fuel refills in one-second steps; this turns each step into a visible pour. " +
+                 "A burn drops the pips at once - spending is never eased.")]
+        [SerializeField, Min(0.01f)] private float pipFillRate = 1.5f;
+
+        Image[] _boostPips;
+        float _pelletsShown = -1f;
+        float _pelletsTarget;
 
         public override void Initialize()
         {
@@ -37,7 +42,6 @@ namespace CosmicShore.UI
             if (_boostPips != null) return;
 
             _boostPips = new[] { boostPip1, boostPip2, boostPip3, boostPip4 };
-            _pipAnim   = _boostPips != null ? new Coroutine[_boostPips.Length] : null;
         }
 
         // ---------- Public API for controller ----------
@@ -76,169 +80,55 @@ namespace CosmicShore.UI
         void InitializeBoostPips()
         {
             BuildBoostPipCache();
-            if (_boostPips == null) return;
-
-            if (_pipAnim != null)
-            {
-                for (var i = 0; i < _pipAnim.Length; i++)
-                    _pipAnim[i] = null;
-            }
-
+            _pelletsShown = -1f;
             foreach (var pip in _boostPips)
             {
                 if (!pip) continue;
-
                 pip.gameObject.SetActive(true);
-                pip.enabled    = true;
-                pip.type       = Image.Type.Filled;
-                pip.fillAmount = 1f;
-                pip.color      = pipFullColor;
+                pip.enabled = true;
+                pip.type = Image.Type.Filled;
             }
+            PaintPips(_pelletsTarget);
         }
 
         /// <summary>
-        /// Snap all pips to match available/max charges.
+        /// The tank's level in pellets - 2.6 is two ready and a third 60% refilled. A drop (a burn)
+        /// lands at once; a rise is poured in over <see cref="pipFillRate"/> so the one-second
+        /// refill ticks read as fuel flowing rather than as a counter jumping.
         /// </summary>
-        public void ApplyBoostSnapshot(int available, int max)
+        public void SetPelletFuel(float pellets)
         {
             BuildBoostPipCache();
+            _pelletsTarget = Mathf.Max(0f, pellets);
+
+            // Spending snaps; an inactive HUD (every hull but the local pilot's) never ticks
+            // Update, so it settles too rather than holding a stale level.
+            if (_pelletsShown < 0f || _pelletsTarget < _pelletsShown || !isActiveAndEnabled)
+                PaintPips(_pelletsTarget);
+        }
+
+        void Update()
+        {
+            if (_pelletsShown < 0f || Mathf.Approximately(_pelletsShown, _pelletsTarget)) return;
+            PaintPips(Mathf.MoveTowards(_pelletsShown, _pelletsTarget, pipFillRate * Time.deltaTime));
+        }
+
+        void PaintPips(float pellets)
+        {
+            _pelletsShown = pellets;
             if (_boostPips == null) return;
 
-            // All full case
-            if (available >= max && _boostPips.Length > 0)
-            {
-                if (_pipAnim != null)
-                {
-                    for (int i = 0; i < _pipAnim.Length; i++)
-                    {
-                        if (_pipAnim[i] != null)
-                            StopCoroutine(_pipAnim[i]);
-                        _pipAnim[i] = null;
-                    }
-                }
-
-                foreach (var pip in _boostPips)
-                {
-                    if (!pip) continue;
-
-                    pip.gameObject.SetActive(true);
-                    pip.enabled    = true;
-                    pip.type       = Image.Type.Filled;
-                    pip.fillAmount = 1f;
-                    pip.color      = pipFullColor;
-                }
-
-                return;
-            }
-
-            // Partial / empty
-            for (var i = 0; i < _boostPips.Length; i++)
+            for (int i = 0; i < _boostPips.Length; i++)
             {
                 var pip = _boostPips[i];
                 if (!pip) continue;
 
-                pip.gameObject.SetActive(true);
-                pip.enabled = true;
-
-                // if already animating, let that finish
-                if (_pipAnim?[i] != null)
-                    continue;
-
-                var full = i < available;
-
-                pip.type       = Image.Type.Filled;
-                pip.fillAmount = full ? 1f : 0f;
-                pip.color      = full ? pipFullColor : pipEmptyColor;
+                float fill = Mathf.Clamp01(pellets - i);
+                pip.fillAmount = fill;
+                pip.color = fill >= 1f ? pipFullColor
+                          : fill > 0f  ? Color.Lerp(pipEmptyColor, pipFullColor, 0.5f)   // refilling: lit, not yet burnable
+                          : pipEmptyColor;
             }
-        }
-
-        /// <summary>
-        /// Animate a single pip being consumed (to empty).
-        /// </summary>
-        public void AnimateBoostChargeConsumed(int pipIndex, float duration)
-        {
-            BuildBoostPipCache();
-            if (_boostPips == null) return;
-            if (pipIndex < 0 || pipIndex >= _boostPips.Length) return;
-
-            var pip = _boostPips[pipIndex];
-            if (!pip) return;
-
-            var from = pip.fillAmount > 0f ? pip.fillAmount : 1f;
-            StartPipAnim(pipIndex, from, 0f, Mathf.Max(0.05f, duration));
-        }
-
-        public void ResetBoostPips()
-        {
-            BuildBoostPipCache();
-            if (_boostPips == null) return;
-
-            if (_pipAnim != null)
-            {
-                for (int i = 0; i < _pipAnim.Length; i++)
-                {
-                    if (_pipAnim[i] != null)
-                        StopCoroutine(_pipAnim[i]);
-                    _pipAnim[i] = null;
-                }
-            }
-
-            foreach (var pip in _boostPips)
-            {
-                if (!pip) continue;
-
-                pip.gameObject.SetActive(true);
-                pip.enabled    = true;
-                pip.type       = Image.Type.Filled;
-                pip.fillAmount = 0f;
-                pip.color      = pipEmptyColor;
-            }
-        }
-
-        // ---------- Internal animation helpers ----------
-
-        void StartPipAnim(int index, float from, float to, float seconds)
-        {
-            if (_boostPips == null) return;
-
-            var pip = _boostPips[index];
-            if (!pip) return;
-
-            if (_pipAnim != null && _pipAnim[index] != null)
-                StopCoroutine(_pipAnim[index]);
-
-            if (_pipAnim != null)
-                _pipAnim[index] = StartCoroutine(CoAnimatePip(index, pip, from, to, seconds));
-            else
-                StartCoroutine(CoAnimatePip(index, pip, from, to, seconds));
-        }
-
-        IEnumerator CoAnimatePip(int index, Image pip, float from, float to, float seconds)
-        {
-            pip.enabled = true;
-            pip.gameObject.SetActive(true);
-            pip.type = Image.Type.Filled;
-
-            var start = Mathf.Clamp01(from);
-            var end   = Mathf.Clamp01(to);
-
-            pip.color      = pipConsumingColor;
-            pip.fillAmount = start;
-
-            var t = 0f;
-            while (t < seconds)
-            {
-                t += Time.deltaTime;
-                var k = Mathf.Clamp01(t / seconds);
-                pip.fillAmount = Mathf.Lerp(start, end, k);
-                yield return null;
-            }
-
-            pip.fillAmount = end;
-            pip.color      = (end >= 1f) ? pipFullColor : pipEmptyColor;
-
-            if (_pipAnim != null)
-                _pipAnim[index] = null;
         }
     }
 }

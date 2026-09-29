@@ -140,8 +140,7 @@ namespace CosmicShore.Gameplay
         /// Position ONLY: the heart's size is one curve keyed on LEVEL, applied for every
         /// lifeform at the single gate <see cref="Crystal.SetEmbeddedIn"/>
         /// (Docs/ECOSYSTEM.md §33) — a per-prefab scale here would be a per-prefab REWARD,
-        /// because a crystal's world scale is read as gameplay by both the collect reward
-        /// and the live domain fauna buff.
+        /// because a crystal's world scale is read as gameplay by the collect reward.
         /// </summary>
         void PlaceHeart()
         {
@@ -207,9 +206,17 @@ namespace CosmicShore.Gameplay
         /// EnsureElementalCrystal keeps a matching authored crystal and replaces a
         /// mismatched one with the set's model for the requested element.
         /// </summary>
-        public void ReprovisionHeart(Element element)
+        public void ReprovisionHeart(Element element, float heartWorldScale = 0f)
         {
             if (_dead || element == Element.None) return;
+            heartElement = element;
+            // The colony's authored heart SIZE travels with its element, for the same reason
+            // the element does: a segment is a member of the population, not a body part, so
+            // it carries the species' heart rather than the platform default. A segment never
+            // gets AssignLineage of its own (the COLONY holds the config), so this forward is
+            // the only channel that reaches it - without it every worm member would render
+            // ElementalCrystalSet.defaultHeartWorldScale (Docs/ECOSYSTEM.md §40.2).
+            ApplyHeartSize(heartWorldScale);
             crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
             if (crystal) crystal.SetEmbeddedIn(this);
             PlaceHeart();

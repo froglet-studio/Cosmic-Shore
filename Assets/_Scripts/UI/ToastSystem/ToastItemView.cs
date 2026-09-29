@@ -58,7 +58,7 @@ namespace CosmicShore.UI
                     n--;
                 }
                 postfixText.text = string.Empty; // clear after countdown
-                onDoneExternal?.Invoke();        // e.g., ConfirmOvercharge
+                onDoneExternal?.Invoke();        // whatever the caller wants run when the toast finishes
                 yield return new WaitForSeconds(0.3f); // small linger
             }
             else

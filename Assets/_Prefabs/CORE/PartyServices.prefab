@@ -82,7 +82,7 @@ MonoBehaviour:
   connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
   shutdownTimeoutSeconds: 5
   connectionTimeoutSeconds: 10
-  sceneLoadTimeoutSeconds: 15
+  joinReadyTimeoutSeconds: 30
 --- !u!114 &962703032153173525
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -8,13 +8,22 @@ using UnityEngine;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Multiplayer HUD shared by HexRace, Joust, and Crystal Capture.
-    /// When the MultiplayerHUDView has the domain-panel wiring assigned (ally /
-    /// opposing containers + DomainScorePanel prefab), the HUD shows one card
-    /// per active domain (Jade / Ruby / Gold) - sum on top, smaller player
-    /// avatars underneath. When the wiring is missing it falls back to the
-    /// legacy per-player layout in PlayerScoreContainer so scenes that haven't
-    /// been updated keep working.
+    /// Multiplayer HUD shared by every domain mode.
+    ///
+    /// With the domain-panel wiring assigned, the top bar is ONE centred row divided into a
+    /// column per active domain (Jade / Ruby / Gold): the team's summed objective score on top,
+    /// that team's player icons directly underneath. The local player's domain is always the
+    /// first column, and the marker for "which one is mine" is that player's chip taking the
+    /// domain colour at full strength - no names anywhere, because an icon already identifies a
+    /// player and a name under one avatar made that column a different height from the rest.
+    ///
+    /// The build order is what produces the layout: the local domain goes into
+    /// <see cref="MultiplayerHUDView.AllyDomainContainer"/> and the others into
+    /// <see cref="MultiplayerHUDView.OpposingDomainsContainer"/>, and in the single-bar layout
+    /// both resolve to the same transform - so this class needs no branch of its own, and a HUD
+    /// still wired the old way (two groups flanking a centred player card) keeps working.
+    /// When the wiring is missing entirely it falls back to the legacy per-player layout in
+    /// PlayerScoreContainer so scenes that haven't been updated keep working.
     /// </summary>
     public class MultiplayerHUD : MiniGameHUD
     {
@@ -308,7 +317,7 @@ namespace CosmicShore.UI
                 bool isLocal = gameData.LocalPlayer != null && p.Name == gameData.LocalPlayer.Name;
                 Sprite avatar = isLocal ? null : ResolveAIAvatarSprite(p.Name);
                 if (avatar == null) avatar = ResolveAvatarSprite(p.AvatarId);
-                panel.AddPlayerIcon(p.Name, avatar, color, isLocal);
+                panel.AddPlayerIcon(avatar, color, isLocal);
             }
 
             _domainPanels[domain] = panel;

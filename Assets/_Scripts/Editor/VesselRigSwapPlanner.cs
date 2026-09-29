@@ -14,11 +14,29 @@ namespace CosmicShore.Editor
     ///
     /// Dolphin, Urchin and Rhino are the fleet's only vessels that cannot morph, and it is not a
     /// wiring oversight: their prefabs wire fundamentally different models (Dolphin_Test = 17
-    /// separate static part meshes, Urchan_Test = 14, and Rhino wires Vessel_Placeholder_1),
+    /// separate static part meshes, Urchan_Test = 14, and Rhino wires Rhino_Test = 7),
     /// none of which carries a single blend shape. Their *_shapekey_with_animations rigs are one
     /// skinned mesh on an armature plus the four element shapes, and each was authored FOR that
     /// vessel's animation script — so once the model is in place the animation re-binds itself by
     /// bone name (<see cref="VesselAnimation.ResolvePart"/>) with no inspector work.
+    ///
+    /// <para><b>The WRITER is <see cref="VesselRigSwapper"/></b> (FrogletTools ▸ Vessels ▸ Swap
+    /// Vessel Rig), added 2026-08-26. Two things this planner asserts were re-measured against the
+    /// rigs when it was written, and one of them was wrong here:</para>
+    /// <list type="bullet">
+    /// <item>The bone mapping below is CORRECT for gameplay volumes — the rig's skin clusters put
+    /// 538 vertices on each of <c>jetT/jetm/jetB</c>, which is exactly an <c>Engine case</c> mesh,
+    /// and top/mid/bottom line up with <c>.1/.2/.3</c>.</item>
+    /// <item>But a JET does not belong on those bones. <c>jetint/jetinm/jetinb</c> skin 712 each —
+    /// the six <c>Engine Left/Right.N</c> inner meshes the shipped hull carries at
+    /// <c>localScale 0.01</c> and therefore never draws. On the rig those are real exhaust bells,
+    /// and that is where a plume comes out of.</item>
+    /// <item>"Colliders must be re-fitted" does NOT hold for the Dolphin: its rig is the shipped
+    /// hull in the same place (bounds agree on all six faces to three decimals), so the volumes are
+    /// re-homed onto bones with their world pose preserved and no number changes. It DOES still
+    /// hold for the Rhino (offset 1.5545 in z, wings re-posed) and the Urchin (uniform 2.105x
+    /// scale). <c>Docs/VESSEL_CONSTRUCTION.md</c> §4.3-§4.4.</item>
+    /// </list>
     ///
     /// This tool REPORTS ONLY — it never writes. The swap itself is a hands-on editor pass: a
     /// SkinnedMeshRenderer's bone list, bindposes, bounds and imported mesh IDs are owned by

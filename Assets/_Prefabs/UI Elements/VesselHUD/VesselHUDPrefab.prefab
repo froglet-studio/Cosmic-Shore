@@ -2046,8 +2046,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87aee9c87b20478c8938cc775a54f19d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xboxIconRoot: {fileID: 1005613640110903854}
-  psIconRoot: {fileID: 2086617415635028028}
-  keyboardTextRoot: {fileID: 0}
-  showXboxSetWhenNoKeyboardRoot: 1
   stickActuationThreshold: 0.25

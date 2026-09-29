@@ -40,10 +40,7 @@ namespace CosmicShore.Utility
         /// </summary>
         public void LogGuid()
         {
-            foreach (var data in m_DataList)
-            {
-                CSDebug.Log($"{data.name} Guid: {data.Guid}");
-            }
+            // Retired: the per-entry GUID dump was console noise. Inspect m_DataList directly.
         }
     }
 }

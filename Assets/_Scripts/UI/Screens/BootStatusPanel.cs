@@ -4,6 +4,7 @@ using Obvious.Soap;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
@@ -79,13 +80,13 @@ namespace CosmicShore.UI
         void ReportMissingWiring()
         {
             if (statusText == null)
-                Debug.LogError("[BootStatusPanel] statusText is not wired in the inspector.", this);
+                CSDebug.LogError("[BootStatusPanel] statusText is not wired in the inspector.", this);
             if (retryButton == null)
-                Debug.LogError("[BootStatusPanel] retryButton is not wired in the inspector.", this);
+                CSDebug.LogError("[BootStatusPanel] retryButton is not wired in the inspector.", this);
             if (inboundRequestEvent == null)
-                Debug.LogError("[BootStatusPanel] inboundRequestEvent is not wired in the inspector.", this);
+                CSDebug.LogError("[BootStatusPanel] inboundRequestEvent is not wired in the inspector.", this);
             if (outboundRetryEvent == null)
-                Debug.LogError("[BootStatusPanel] outboundRetryEvent is not wired in the inspector.", this);
+                CSDebug.LogError("[BootStatusPanel] outboundRetryEvent is not wired in the inspector.", this);
         }
 
         private void HandleRequest(BootStatusRequest req) => Apply(req);
@@ -99,7 +100,7 @@ namespace CosmicShore.UI
             {
                 bool wantRetry = req.Mode == BootStatusMode.Retry;
                 if (wantRetry)
-                    Debug.Log($"[BootStatusPanel] Retry surface shown - \"{req.Text}\"");
+                    CSDebug.LogVerbose(CSLogChannel.Boot, $"[BootStatusPanel] Retry surface shown - \"{req.Text}\"");
                 retryButton.gameObject.SetActive(wantRetry);
                 retryButton.interactable = wantRetry;
             }

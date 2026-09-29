@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
-using Newtonsoft.Json;
-using PlayFab.ClientModels;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
@@ -39,16 +37,6 @@ namespace CosmicShore.Core
         public static Action OnCaptainDataLoaded;
 
         /// <summary>
-        /// Captain Xp key for querying data from PlayFab data storage, not used for PlayFab API calls now.
-        /// </summary>
-        private const string ClassXpKey = "ClassXP";
-
-        /// <summary>
-        /// Encountered Captains key for querying data from PlayFab data storage, not used for PlayFab API calls now.
-        /// </summary>
-        private const string EncounteredCaptainsKey = "EncounteredCaptains";
-
-        /// <summary>
         /// Class Xp Data
         /// Used for storing Captain Xp Data for each Vessel type.
         /// </summary>
@@ -71,20 +59,21 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// A wrapper to get player data for now.
+        /// Was a wrapper around PlayFab's player-data fetch. Captain progression is owned by UGS
+        /// CloudSave now (<c>CaptainProgressCloudData</c>, whose own docstring says it "replaces
+        /// the disabled PlayFab CaptainManager + XpHandler system"), so there is nothing to pull
+        /// here and the in-memory tables below are the whole of this type's state.
         /// </summary>
         public static void LoadCaptainXpData()
         {
-            if (ClassXpData == null)
-            {
-                // For now we don't pass any keys, pull all player data and query locally.
-                PlayerDataController.Instance.GetPlayerData();
-            }
+            ClassXpData ??= new();
+            EncounteredCaptainsData ??= new();
+            OnCaptainDataLoaded?.Invoke();
         }
 
         public static void IssueXP(Captain captain, int amount)
         {
-            CSDebug.Log($"XPHandler.IssueXP {captain.Name}, {amount}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[XpHandler] IssueXP - captain={captain.Name}, {amount}");
 
             if (!ClassXpData.ContainsKey(captain.Vessel.Class))
                 ClassXpData.Add(captain.Vessel.Class, new XpData (0, 0, 0, 0));
@@ -96,15 +85,7 @@ namespace CosmicShore.Core
             xpData.Charge += captain.PrimaryElement == Element.Charge ? amount : 0;
             ClassXpData[captain.Vessel.Class] = xpData;
 
-            // TODO: Security - Move to cloud script and store in internal data
-            var dataContent = new Dictionary<string, string>
-            {
-                { ClassXpKey, JsonConvert.SerializeObject(ClassXpData) }
-            };
-
-            PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
-
-            CSDebug.Log($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
+            OnCaptainDataLoaded?.Invoke();
         }
 
         public static void EncounterCaptain(Captain captain)
@@ -120,15 +101,7 @@ namespace CosmicShore.Core
                 EncounteredCaptainsData[captain.Vessel.Class] = new() { captain.PrimaryElement };
             }
 
-            // TODO: Security && Portability - Move to cloud script and store in internal data
-            var dataContent = new Dictionary<string, string>
-            {
-                { EncounteredCaptainsKey, JsonConvert.SerializeObject(EncounteredCaptainsData) }
-            };
-
-            PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
-
-            CSDebug.Log($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
+            OnCaptainDataLoaded?.Invoke();
         }
 
 
@@ -147,47 +120,9 @@ namespace CosmicShore.Core
             return 0;
         }
         
-        /// <summary>
-        /// Process user data result upon pulling player data, convert the result to Class Xp Data, and log them in the console.
-        /// </summary>
-        /// <param name="result">Query result for player data</param>
-        public static void OnLoadCaptainXpData(GetUserDataResult result)
-        {
-            ClassXpData = ConvertResultToCaptainXpData(result);
-            EncounteredCaptainsData = ConvertResultToEncounteredCaptainData(result);
-
-            foreach (var key in ClassXpData.Keys)
-                CSDebug.Log($"OnLoadCaptainXpData - ClassXpData.ShipClassXpData.Keys: {key}");
-            
-            CSDebug.Log($"OnLoadCaptainXpData - Custom Data: {result.CustomData}");
-
-            OnCaptainDataLoaded?.Invoke();
-        }
-
-        /// <summary>
-        /// A helper class convert player data result to Class Xp Data
-        /// if the data does not exist, return null.
-        /// </summary>
-        /// <param name="result">Player data query result</param>
-        /// <returns></returns>
-        static Dictionary<VesselClassType, XpData> ConvertResultToCaptainXpData(GetUserDataResult result)
-        {
-                return result.Data.ContainsKey(ClassXpKey) ?
-                    (Dictionary<VesselClassType, XpData>)JsonConvert.DeserializeObject(result.Data[ClassXpKey].Value, typeof(Dictionary<VesselClassType, XpData>)) :
-                    new();
-        }
-
-        /// <summary>
-        /// A helper class convert player data result to Encountered Captain Data
-        /// if the data does not exist, return null.
-        /// </summary>
-        /// <param name="result">Player data query result</param>
-        /// <returns></returns>
-        static Dictionary<VesselClassType, List<Element>> ConvertResultToEncounteredCaptainData(GetUserDataResult result)
-        {
-            return result.Data.ContainsKey(EncounteredCaptainsKey) ?
-                (Dictionary<VesselClassType, List<Element>>)JsonConvert.DeserializeObject(result.Data[EncounteredCaptainsKey].Value, typeof(Dictionary<VesselClassType, List<Element>>)) :
-                new();
-        }
+        // Three PlayFab parsers lived here — OnLoadCaptainXpData(GetUserDataResult) and the two
+        // ConvertResultTo* helpers that turned a PlayFab user-data blob into the tables above.
+        // Their only caller was PlayerDataController, whose prefab is in no scene, so they were
+        // unreachable. Removed with PlayFab; persistence belongs to UGS CloudSave.
     }
 }

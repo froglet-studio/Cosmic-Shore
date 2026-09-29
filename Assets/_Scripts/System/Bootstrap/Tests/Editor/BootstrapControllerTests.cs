@@ -1,25 +1,59 @@
 #if UNITY_EDITOR
+using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine.TestTools;
 
 namespace CosmicShore.Core
 {
+    /// <summary>
+    /// Edit-Mode coverage for <see cref="AppManager"/>.
+    ///
+    /// NOTE ON LIFECYCLE: Unity does not call <c>Awake</c> outside Play Mode for a MonoBehaviour
+    /// that isn't <c>[ExecuteAlways]</c>, so no test here may rely on <c>AddComponent</c> or
+    /// <c>SetActive(true)</c> to run bootstrap code. Private methods are invoked explicitly via
+    /// <see cref="EditModeLifecycle"/>. <c>AppManager.Awake</c> itself is only invoked in the
+    /// duplicate-guard test, and only with the manager-resolution sweep pre-neutralised — the
+    /// sweep would otherwise add <c>DontDestroyOnLoad</c> components to whatever scene the
+    /// developer has open.
+    /// </summary>
     [TestFixture]
     public class AppManagerBootstrapTests
     {
+        // Deliberately not 60 (the no-config default) or 120 (the with-config value under test),
+        // so a ConfigurePlatform assertion can never pass on ambient editor state.
+        const int FrameRateSentinel = 33;
+
+        int _savedTargetFrameRate;
+        int _savedVSyncCount;
+        int _savedSleepTimeout;
+
         [SetUp]
         public void SetUp()
         {
             // Reset the static _hasBootstrapped flag before each test.
             ResetHasBootstrapped();
+
+            // These tests write real editor settings. Snapshot them so the suite cannot leave
+            // the developer's editor retuned after a run.
+            _savedTargetFrameRate = Application.targetFrameRate;
+            _savedVSyncCount = QualitySettings.vSyncCount;
+            _savedSleepTimeout = Screen.sleepTimeout;
+
+            Application.targetFrameRate = FrameRateSentinel;
+            QualitySettings.vSyncCount = 0;
         }
 
         [TearDown]
         public void TearDown()
         {
             ResetHasBootstrapped();
+
+            Application.targetFrameRate = _savedTargetFrameRate;
+            QualitySettings.vSyncCount = _savedVSyncCount;
+            Screen.sleepTimeout = _savedSleepTimeout;
         }
 
         static void ResetHasBootstrapped()
@@ -71,74 +105,42 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Awake - Persistent Root
-
-        [Test]
-        public void Awake_NoPersistentRoot_UsesSelf()
-        {
-            var go = new GameObject("TestAppManager");
-            // Don't set _persistentRoot - Awake will use transform as fallback.
-            var manager = go.AddComponent<AppManager>();
-
-            // Verify the persistent root field was set to the manager's own transform.
-            var field = typeof(AppManager)
-                .GetField("_persistentRoot", BindingFlags.Instance | BindingFlags.NonPublic);
-            var persistentRoot = field?.GetValue(manager) as Transform;
-
-            Assert.AreSame(go.transform, persistentRoot);
-
-            Object.DestroyImmediate(go);
-        }
-
-        [Test]
-        public void Awake_WithPersistentRoot_UsesAssigned()
-        {
-            var rootGo = new GameObject("PersistentRoot");
-            var go = new GameObject("TestAppManager");
-
-            // Set the persistent root via serialized field before Awake.
-            // We need to set it before AddComponent, but AddComponent calls Awake immediately.
-            // Instead, we create the component on a disabled GO, set the field, then enable.
-            go.SetActive(false);
-            var manager = go.AddComponent<AppManager>();
-
-            var field = typeof(AppManager)
-                .GetField("_persistentRoot", BindingFlags.Instance | BindingFlags.NonPublic);
-            field?.SetValue(manager, rootGo.transform);
-
-            go.SetActive(true); // Triggers Awake.
-
-            var persistentRoot = field?.GetValue(manager) as Transform;
-            Assert.AreSame(rootGo.transform, persistentRoot);
-
-            Object.DestroyImmediate(go);
-            Object.DestroyImmediate(rootGo);
-        }
-
-        #endregion
-
         #region Awake - Re-entry Guard
 
         [Test]
-        public void Awake_WhenAlreadyBootstrapped_DestroysGameObject()
+        public void Awake_WhenAlreadyBootstrapped_SkipsBootstrapWork()
         {
             SetHasBootstrapped(true);
 
             var go = new GameObject("TestAppManagerDuplicate");
-            go.AddComponent<AppManager>();
+            var manager = go.AddComponent<AppManager>();
 
-            // The Awake should have scheduled destruction. In edit mode, we need DestroyImmediate
-            // but the manager uses Destroy (deferred). Check the object is still valid but
-            // verify the guard path was taken by confirming _persistentRoot was NOT set up.
-            var field = typeof(AppManager)
-                .GetField("_persistentRoot", BindingFlags.Instance | BindingFlags.NonPublic);
-            var manager = go.GetComponent<AppManager>();
+            // Pre-set _resolved so that TryResolveManagersEarly is inert even if the guard ever
+            // regresses. That sweep does FindAnyObjectByType across the open scene and adds a
+            // DontDestroyOnLoad component to everything it finds, so a failing test must not be
+            // able to dirty the developer's scene on its way to reporting the failure.
+            EditModeLifecycle.SetPrivateField(manager, "_resolved", true);
 
-            // In the duplicate path, _persistentRoot is never assigned because
-            // SetupPersistentRoot() is skipped. The field stays at its default (null)
-            // because Destroy(gameObject) is called before SetupPersistentRoot.
-            var persistentRoot = field?.GetValue(manager) as Transform;
-            Assert.IsNull(persistentRoot);
+            // Re-stamped here rather than relied on from SetUp: the editor drives
+            // Application.targetFrameRate itself, so a frame boundary between SetUp and this body
+            // could replace the sentinel. Written immediately before the invoke, nothing can.
+            Application.targetFrameRate = FrameRateSentinel;
+
+            // The guard path calls Destroy(gameObject). In Edit Mode that does NOT throw — Unity
+            // logs an error and declines to destroy — and the Test Framework fails a test on any
+            // unhandled error log, so the expectation has to be declared up front. Matched by
+            // regex because the real message runs to a second line ("Destroying an object in edit
+            // mode destroys it permanently.").
+            LogAssert.Expect(LogType.Error, new Regex("Destroy may not be called from edit mode"));
+
+            EditModeLifecycle.InvokePrivate(manager, "Awake");
+
+            // ConfigurePlatform is the first observable thing after the guard returns. If it had
+            // run with a null config it would have written 60.
+            Assert.AreEqual(FrameRateSentinel, Application.targetFrameRate,
+                "A duplicate AppManager ran ConfigurePlatform - the _hasBootstrapped re-entry " +
+                "guard in Awake did not return early. Two AppManagers bootstrapping is undefined " +
+                "behaviour (see Docs BOOTSTRAP_AUDIT.md).");
 
             Object.DestroyImmediate(go);
         }
@@ -151,16 +153,12 @@ namespace CosmicShore.Core
         public void ConfigurePlatform_NullConfig_SetsDefaultFrameRate()
         {
             var go = new GameObject("TestAppManager");
-            go.SetActive(false);
-
             var manager = go.AddComponent<AppManager>();
 
             // Ensure _bootstrapConfig is null (default).
-            var configField = typeof(AppManager)
-                .GetField("_bootstrapConfig", BindingFlags.Instance | BindingFlags.NonPublic);
-            configField?.SetValue(manager, null);
+            EditModeLifecycle.SetPrivateField(manager, "_bootstrapConfig", null);
 
-            go.SetActive(true); // Triggers Awake -> ConfigurePlatform.
+            EditModeLifecycle.InvokePrivate(manager, "ConfigurePlatform");
 
             Assert.AreEqual(60, Application.targetFrameRate);
 
@@ -176,15 +174,11 @@ namespace CosmicShore.Core
             so.ApplyModifiedPropertiesWithoutUndo();
 
             var go = new GameObject("TestAppManager");
-            go.SetActive(false);
-
             var manager = go.AddComponent<AppManager>();
 
-            var configField = typeof(AppManager)
-                .GetField("_bootstrapConfig", BindingFlags.Instance | BindingFlags.NonPublic);
-            configField?.SetValue(manager, config);
+            EditModeLifecycle.SetPrivateField(manager, "_bootstrapConfig", config);
 
-            go.SetActive(true);
+            EditModeLifecycle.InvokePrivate(manager, "ConfigurePlatform");
 
             Assert.AreEqual(120, Application.targetFrameRate);
 
@@ -201,15 +195,11 @@ namespace CosmicShore.Core
             so.ApplyModifiedPropertiesWithoutUndo();
 
             var go = new GameObject("TestAppManager");
-            go.SetActive(false);
-
             var manager = go.AddComponent<AppManager>();
 
-            var configField = typeof(AppManager)
-                .GetField("_bootstrapConfig", BindingFlags.Instance | BindingFlags.NonPublic);
-            configField?.SetValue(manager, config);
+            EditModeLifecycle.SetPrivateField(manager, "_bootstrapConfig", config);
 
-            go.SetActive(true);
+            EditModeLifecycle.InvokePrivate(manager, "ConfigurePlatform");
 
             Assert.AreEqual(1, QualitySettings.vSyncCount);
 
@@ -247,23 +237,56 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Bootstrap Services List
+        #region Serialized Wiring Contract
 
+        /// <summary>
+        /// The Bootstrap scene wires these two by name. A rename silently unwires them - the
+        /// serialized reference is dropped and nothing reports it, which costs a null config
+        /// (60fps defaults, verbose logging) and a null scene list (hardcoded "Authentication"
+        /// fallback) at runtime.
+        /// </summary>
         [Test]
-        public void BootstrapServices_DefaultsToEmptyList()
+        public void AppManager_DeclaresBootstrapWiringFields()
         {
-            var go = new GameObject("TestAppManager");
-            go.SetActive(false);
-            var manager = go.AddComponent<AppManager>();
+            AssertSerializedField("_bootstrapConfig", typeof(BootstrapConfigSO));
+            AssertSerializedField("_sceneNames", typeof(CosmicShore.Utility.SceneNameListSO));
+        }
 
+        static void AssertSerializedField(string fieldName, System.Type expectedType)
+        {
             var field = typeof(AppManager)
-                .GetField("_bootstrapServices", BindingFlags.Instance | BindingFlags.NonPublic);
-            var services = field?.GetValue(manager) as System.Collections.Generic.List<MonoBehaviour>;
+                .GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
 
-            Assert.IsNotNull(services);
-            Assert.AreEqual(0, services.Count);
+            Assert.IsNotNull(field,
+                $"AppManager no longer declares '{fieldName}'. The Bootstrap scene wires it by " +
+                "name, so a rename drops the serialized reference with nothing reporting it.");
+            Assert.AreEqual(expectedType, field.FieldType,
+                $"AppManager.{fieldName} changed type - the Bootstrap scene's serialized " +
+                "reference will not survive.");
+        }
 
-            Object.DestroyImmediate(go);
+        #endregion
+
+        #region DI Installer Contract
+
+        /// <summary>
+        /// AppManager is the Reflex DI root. If it stops being an installer, every
+        /// <c>[Inject]</c> in the game resolves against an empty container.
+        /// </summary>
+        [Test]
+        public void AppManager_IsReflexInstaller()
+        {
+            var installer = typeof(AppManager).GetInterfaces()
+                .FirstOrDefault(i => i.Name == "IInstaller");
+
+            Assert.IsNotNull(installer,
+                "AppManager must implement Reflex's IInstaller - it is the application's DI root.");
+
+            var install = typeof(AppManager).GetMethod("InstallBindings",
+                BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.IsNotNull(install,
+                "AppManager.InstallBindings is missing - Reflex has nothing to call.");
         }
 
         #endregion

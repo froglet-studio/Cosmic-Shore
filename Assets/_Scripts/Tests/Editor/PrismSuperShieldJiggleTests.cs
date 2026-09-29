@@ -120,10 +120,8 @@ namespace CosmicShore.Tests
                 Assert.IsNotNull(type, $"{typeName} does not exist — StampJiggle cannot compile.");
                 Assert.IsTrue(typeof(Unity.Entities.IComponentData).IsAssignableFrom(type),
                     $"{typeName} is not an IComponentData — it can never reach the GPU.");
-                Assert.IsTrue(type.GetCustomAttributes(false)
-                        .Any(a => a.GetType().Name == "MaterialProperty"),
-                    $"{typeName} has lost its [MaterialProperty] attribute — Entities Graphics will " +
-                    "not upload it, so the stamp writes into nothing and the deflection is silent.");
+                MaterialPropertyAttributeAssert.IsDeclaredOn(type, typeName,
+                    "the stamp writes into nothing and the deflection is silent.");
             }
 
             // The declared reference names must match the graph one-for-one. A graph property with

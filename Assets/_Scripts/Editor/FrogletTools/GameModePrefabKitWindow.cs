@@ -128,6 +128,10 @@ namespace CosmicShore.Editor.Froglet
                 GUILayout.Label("Search", EditorStyles.miniLabel, GUILayout.Width(44));
                 _search = GUILayout.TextField(_search, EditorStyles.toolbarSearchField, GUILayout.MinWidth(120));
                 GUILayout.FlexibleSpace();
+                if (GUILayout.Button(new GUIContent("GameCanvas Unifier",
+                        "One in-game canvas at 1920x1080: fix CORE/GameCanvas.prefab, fix each scene, delete the fork."),
+                        EditorStyles.toolbarButton, GUILayout.Width(124)))
+                    GameCanvasUnifierWindow.Open();
                 if (GUILayout.Button("Select config", EditorStyles.toolbarButton, GUILayout.Width(90)))
                 {
                     Selection.activeObject = _kit;

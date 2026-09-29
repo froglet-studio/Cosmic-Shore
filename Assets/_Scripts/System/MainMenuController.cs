@@ -156,6 +156,15 @@ namespace CosmicShore.Core
             // via the Netcode pipeline. The game-launch path sets it via ConfigurePlayerCounts().
             _gameData.SelectedIntensity.Value = menuIntensity;
 
+            // The last arena card's per-hull starting levels must not follow the player home:
+            // the lava-lamp vessel is the freestyle vessel and starts at rest, and this table
+            // survives the scene load on purpose (GameDataSO.StartingElements).
+            _gameData.PublishStartingElements(null);
+
+            // Same for arena seating: the menu is not a match, so no hull is exclusive and the
+            // pilot-swap gesture has no teammate to reach.
+            _gameData.IsArenaMatch = false;
+
             // The host's Player NetworkObject was spawned in the Auth scene, where
             // gameData.selectedVesselClass was Squirrel (set by AppManager.ConfigureGameData).
             // That value got locked into NetDefaultVesselType in Player.OnNetworkSpawn before
@@ -270,7 +279,7 @@ namespace CosmicShore.Core
 
             var previous = _state;
             _state = newState;
-            CSDebug.Log($"[MainMenuController] {previous} → {newState}");
+            CSDebug.LogVerbose(CSLogChannel.Boot, $"[MainMenuController] {previous} -> {newState}");
             OnStateChanged?.Invoke(newState);
             return true;
         }

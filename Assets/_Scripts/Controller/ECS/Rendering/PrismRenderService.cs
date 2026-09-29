@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -25,12 +26,15 @@ namespace CosmicShore.ECS
     /// Which per-instance override components a companion entity carries.
     /// Prism: color trio + grow / color / flight / shieldMorph / jiggle / suction clocks.
     /// Explosion/Implosion: color trio + the effect shader's animated parameters.
+    /// Slice: color trio + the six slice stamps PrismSlice.shader reads (the Rhino sword's
+    /// cut, Docs/PRISM_ANIMATION.md §4.10).
     /// </summary>
     public enum PrismRenderOverrideSet
     {
         Prism,
         Explosion,
         Implosion,
+        Slice,
     }
 
     /// <summary>
@@ -132,7 +136,7 @@ namespace CosmicShore.ECS
                 if (enabled && !_loggedActive)
                 {
                     _loggedActive = true;
-                    Debug.Log("[PrismRenderService] Instanced prism rendering is ACTIVE (Entities Graphics). " +
+                    CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismRenderService] Instanced prism rendering is ACTIVE (Entities Graphics). " +
                               "If colors look uniform/mixed or explosions are frozen, the prism ShaderGraphs need " +
                               "'Hybrid Per Instance' on their animated properties — see Docs/PRISM_ECS_MIGRATION.md §7.");
                 }
@@ -174,6 +178,12 @@ namespace CosmicShore.ECS
                 if (!_configAssetFound) return "OFF (no PrismRenderConfig asset in Resources)";
                 return "OFF (config: Use Instanced Rendering unchecked)";
             }
+
+            // The device gate comes first: on a GPU whose compute kernels cannot load,
+            // CosmicShoreEntitiesBootstrap creates the world EMPTY on purpose, so the
+            // "missing system" line below would be true but would name the wrong cause.
+            if (!EntitiesGraphicsSupportProbe.IsSupported)
+                return $"OFF (Entities Graphics unsupported on this device: {EntitiesGraphicsSupportProbe.Reason})";
 
             var world = World.DefaultGameObjectInjectionWorld;
             if (world == null || !world.IsCreated) return "OFF (no ECS world at runtime)";
@@ -232,6 +242,21 @@ namespace CosmicShore.ECS
                 _epoch++;
             }
 
+            // Same gate the ICustomBootstrap applies: never construct EntitiesGraphicsSystem
+            // on a device whose compute kernels will not load. Its OnCreate throws, Entities
+            // keeps the half-built system, and the first frame to touch it crashes the process
+            // (Docs/PRISM_ECS_MIGRATION.md §8). The legacy MeshRenderer path is the answer.
+            if (!EntitiesGraphicsSupportProbe.IsSupported)
+            {
+                if (!_loggedWorldBootstrap)
+                {
+                    _loggedWorldBootstrap = true;
+                    CSDebug.LogWarning("[PrismRenderService] Entities Graphics is unsupported on this device (" +
+                                     EntitiesGraphicsSupportProbe.Reason + "); staying on the legacy MeshRenderer path.");
+                }
+                return false;
+            }
+
             var world = World.DefaultGameObjectInjectionWorld;
             if (world == null || !world.IsCreated)
             {
@@ -248,7 +273,7 @@ namespace CosmicShore.ECS
                     if (!_loggedWorldBootstrap)
                     {
                         _loggedWorldBootstrap = true;
-                        Debug.Log("[PrismRenderService] No default ECS world found — bootstrapped one on demand for instanced prism rendering.");
+                        CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismRenderService] No default ECS world found - bootstrapped one on demand for instanced prism rendering.");
                     }
                 }
                 catch (System.Exception e)
@@ -256,7 +281,7 @@ namespace CosmicShore.ECS
                     if (!_loggedWorldBootstrap)
                     {
                         _loggedWorldBootstrap = true;
-                        Debug.LogWarning("[PrismRenderService] Could not bootstrap a default ECS world; staying on the legacy MeshRenderer path. " + e.Message);
+                        CSDebug.LogWarning("[PrismRenderService] Could not bootstrap a default ECS world; staying on the legacy MeshRenderer path. " + e.Message);
                     }
                     return false;
                 }
@@ -455,6 +480,17 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismJiggleStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleParamsOverride { Value = float3.zero });
+                        // Super-shield mark (a STATE bit the Echo Sight reads, not a stamp).
+                        // 0 = not super-shielded, which is every prism until one engages.
+                        em.AddComponentData(prototype, new PrismSuperShieldedOverride { Value = 0f });
+                        // Living-mass sway (Docs/ECOSYSTEM.md §47). A ZERO span is an
+                        // exact no-op, so every prism that is not part of a living limb
+                        // — every trail, every authored environment, every skeleton —
+                        // renders bit-identically to before.
+                        em.AddComponentData(prototype, new PrismSwaySpanXOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismSwaySpanYOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismSwayAxisOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismSwayTimingOverride { Value = float3.zero });
                         // Cell-swap world suction (Docs/PRISM_ANIMATION.md §5 C9). Duration 0
                         // = unstamped identity on live graphs (LegacyState default 0). Location
                         // is the same override the Implosion set already carries — added here
@@ -478,6 +514,17 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismSuctionDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismSuctionDirectionOverride { Value = 1f });
                         em.AddComponentData(prototype, new PrismSuctionGrowDelayOverride { Value = 0f });
+                        break;
+                    case PrismRenderOverrideSet.Slice:
+                        // Zero is the UNSTAMPED state PrismSlice.shader renders as the plain prism
+                        // (zero plane = nothing is beyond the cut, zero motion). Every clone is
+                        // stamped in SpawnSliceDebrisBatch before it is ever made visible.
+                        em.AddComponentData(prototype, new PrismSliceTimingOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSlicePlaneOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSliceCentreOverride { Value = new float4(0f, 0f, 0f, 1f) });
+                        em.AddComponentData(prototype, new PrismSlicePivotOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSliceAxisOverride { Value = float4.zero });
+                        em.AddComponentData(prototype, new PrismSliceDriftOverride { Value = float4.zero });
                         break;
                 }
             }
@@ -553,6 +600,27 @@ namespace CosmicShore.ECS
         static VisibilityFlushHost s_flushHost;
         static readonly Unity.Profiling.ProfilerMarker s_flushMarker = new("PrismRender.VisibilityFlush");
 
+        // Play-mode exit / quit. The DontDestroyOnLoad flush host is torn down with everything
+        // else, but Prism.OnDisable still queues a hide for its entity during that teardown -
+        // re-creating the host then leaks it ("Some objects were not cleaned up when closing
+        // the scene" listing [PrismRenderVisibilityFlush]). Application.quitting also fires on
+        // editor play-mode exit; reset per session (domain reload is disabled in this project).
+        static bool s_quitting;
+
+        /// <summary>True from play-mode exit / application quit until the next session starts.
+        /// Lazily-created prism hosts check it so teardown cascades can't re-spawn them.</summary>
+        public static bool IsQuitting => s_quitting;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetQuitting()
+        {
+            s_quitting = false;
+            Application.quitting -= HandleQuitting;
+            Application.quitting += HandleQuitting;
+        }
+
+        static void HandleQuitting() => s_quitting = true;
+
         /// <summary>
         /// Deferred SetVisible: applied in one batched structural change per direction
         /// at LateUpdate — same frame, before rendering, so nothing is ever visibly
@@ -561,6 +629,9 @@ namespace CosmicShore.ECS
         public static void QueueVisible(in PrismRenderHandle handle, bool visible)
         {
             if (!IsUsable(in handle)) return;
+            // Teardown: the world and every entity are going away with the session, so a
+            // queued hide has nothing left to do - and queuing it would re-create the host.
+            if (s_quitting) return;
             s_pendingVisibility[handle.Entity] = visible;
             EnsureFlushHost();
         }
@@ -568,6 +639,8 @@ namespace CosmicShore.ECS
         static void EnsureFlushHost()
         {
             if (s_flushHost != null) return;
+            // Never spawn a DontDestroyOnLoad host outside play mode or during teardown.
+            if (s_quitting || !Application.isPlaying) return;
             // HideInHierarchy (NOT HideAndDontSave — that exempts the object from
             // play-mode-exit cleanup and leaks one host into edit mode per session).
             var go = new GameObject("[PrismRenderVisibilityFlush]") { hideFlags = HideFlags.HideInHierarchy };
@@ -888,6 +961,57 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismJiggleParamsOverride { Value = float3.zero });
         }
 
+        /// <summary>Writes the super-shield MARK (1 = this prism wears the super-shield). A STATE
+        /// bit rather than a clock stamp: written once at the shield's engage and once at its
+        /// drop, never per frame, and deliberately NOT part of <see cref="ClearPrismStamps"/> —
+        /// <c>Prism</c> owns the bit and re-asserts it whenever its companion entity (re)engages.
+        /// Returns false when there is no usable entity (the caller then carries the bit on the
+        /// MeshRenderer instead).</summary>
+        public static bool SetSuperShieldMark(in PrismRenderHandle handle, bool superShielded)
+        {
+            if (!IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSuperShieldedOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity,
+                new PrismSuperShieldedOverride { Value = superShielded ? 1f : 0f });
+            return true;
+        }
+
+        /// <summary>Stamps the LIVING-MASS SWAY: this prism rides the shear field of the
+        /// limb it is bolted to (Docs/ECOSYSTEM.md §47). Every argument is a constant of the
+        /// attachment, so unlike every other stamp on this service there is no start time and
+        /// no duration — the sway does not end, it is what being alive looks like.
+        ///
+        /// spanX / spanY are the limb's +x / +y in THIS prism's object space times the limb's
+        /// amplitude; axis is the limb's +z as a functional on that space; timing is
+        /// (frequency, phase, the prism origin's height up the limb).</summary>
+        public static bool StampSway(in PrismRenderHandle handle, in float3 spanX, in float3 spanY,
+            in float3 axis, in float3 timing)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSwaySpanXOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismSwaySpanXOverride { Value = spanX });
+            em.SetComponentData(handle.Entity, new PrismSwaySpanYOverride { Value = spanY });
+            em.SetComponentData(handle.Entity, new PrismSwayAxisOverride { Value = axis });
+            em.SetComponentData(handle.Entity, new PrismSwayTimingOverride { Value = timing });
+            return true;
+        }
+
+        /// <summary>Stops a prism swaying. This is a STATE CHANGE, not a settle: it is what
+        /// a lifeform's death does to the skeleton it leaves behind, so the mass the food web
+        /// then grazes is visibly no longer alive. Also pool hygiene.</summary>
+        public static void ClearSwayStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSwaySpanXOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismSwaySpanXOverride { Value = float3.zero });
+            em.SetComponentData(handle.Entity, new PrismSwaySpanYOverride { Value = float3.zero });
+            em.SetComponentData(handle.Entity, new PrismSwayAxisOverride { Value = float3.zero });
+            em.SetComponentData(handle.Entity, new PrismSwayTimingOverride { Value = float3.zero });
+        }
+
         /// <summary>Clears a prism's animation stamps back to the settled state (pool
         /// reuse). Safe no-op when the clock components are absent.</summary>
         public static void ClearPrismStamps(in PrismRenderHandle handle)
@@ -898,6 +1022,7 @@ namespace CosmicShore.ECS
             ClearShieldMorphStamp(in handle);
             ClearJiggleStamp(in handle);
             ClearSuctionClockStamp(in handle);
+            ClearSwayStamp(in handle);
         }
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure
@@ -1172,6 +1297,87 @@ namespace CosmicShore.ECS
                 em.DestroyEntity(arr.GetSubArray(0, n));
             LiveEntityCount = Mathf.Max(0, LiveEntityCount - n);
             arr.Dispose();
+        }
+
+        // ------------------------------------------------------------------
+        // Batched pure-entity SLICE halves — the Rhino sword's death visual
+        // (Docs/PRISM_ANIMATION.md §4.10, PrismSlice.hlsl). The explosion's shape
+        // exactly: one prototype-instantiate + one visibility strip per frame, every
+        // stamp a non-structural SetComponentData, retired in whole batches by
+        // PrismSlice through DestroyDebrisBatch. Two entities per sliced prism, one
+        // per half, both drawing the SHARED HighPolyPrismMesh — so a frame's slices
+        // are one instanced batch however many prisms the blade went through.
+        // ------------------------------------------------------------------
+
+        /// <summary>One half's complete initial conditions. Written once at spawn.</summary>
+        public struct SliceDebrisSpawn
+        {
+            /// <summary>The dead prism's pose. The entity matrix never moves — the GPU moves the half.</summary>
+            public Matrix4x4 LocalToWorld;
+            /// <summary>Raw tier colours — colour-space conversion happens at stamp.</summary>
+            public float4 BrightColor;
+            public float4 DarkColor;
+            /// <summary>(start, life, noise seed, 0). Start is rewritten to the batch's clock.</summary>
+            public float4 Timing;
+            public float4 Plane;
+            public float4 Centre;
+            public float4 Pivot;
+            public float4 Axis;
+            public float4 Drift;
+            /// <summary>Object-space AABB covering every pose the half takes over its life.</summary>
+            public AABB Bounds;
+        }
+
+        /// <summary>
+        /// Spawns every entry of <paramref name="spawns"/> as a slice half in ONE
+        /// prototype-instantiate + ONE batched visibility strip. Entities are appended to
+        /// <paramref name="appendEntitiesTo"/> index-aligned with <paramref name="spawns"/>.
+        /// Returns false — spawning nothing — when the service is off or no world exists;
+        /// the caller then falls back to the ordinary explosion (PrismSlice).
+        /// </summary>
+        public static bool SpawnSliceDebrisBatch(Mesh mesh, Material material, int layer,
+            System.Collections.Generic.List<SliceDebrisSpawn> spawns, float startTime,
+            System.Collections.Generic.List<Entity> appendEntitiesTo)
+        {
+            if (!Enabled || mesh == null || material == null ||
+                spawns == null || spawns.Count == 0 || !TryEnsure())
+                return false;
+
+            var em = _world.EntityManager;
+            var prototype = GetPrototype(layer, PrismRenderOverrideSet.Slice, mesh, material);
+
+            var entities = new Unity.Collections.NativeArray<Entity>(
+                spawns.Count, Unity.Collections.Allocator.Temp);
+            em.Instantiate(prototype, entities);
+            // Born hidden (prototype ships DisableRendering). The stamps below ARE the correct
+            // first frame — the two halves exactly tile the prism at age 0 — so strip at once.
+            em.RemoveComponent(entities, ComponentType.ReadWrite<DisableRendering>());
+
+            var mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh));
+
+            for (int i = 0; i < spawns.Count; i++)
+            {
+                var s = spawns[i];
+                var entity = entities[i];
+                var timing = s.Timing;
+                timing.x = startTime;
+                em.SetComponentData(entity, mmi);
+                em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in s.LocalToWorld) });
+                em.SetComponentData(entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in s.BrightColor) });
+                em.SetComponentData(entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in s.DarkColor) });
+                em.SetComponentData(entity, new PrismSliceTimingOverride { Value = timing });
+                em.SetComponentData(entity, new PrismSlicePlaneOverride { Value = s.Plane });
+                em.SetComponentData(entity, new PrismSliceCentreOverride { Value = s.Centre });
+                em.SetComponentData(entity, new PrismSlicePivotOverride { Value = s.Pivot });
+                em.SetComponentData(entity, new PrismSliceAxisOverride { Value = s.Axis });
+                em.SetComponentData(entity, new PrismSliceDriftOverride { Value = s.Drift });
+                em.SetComponentData(entity, new RenderBounds { Value = s.Bounds });
+                appendEntitiesTo.Add(entity);
+            }
+
+            LiveEntityCount += spawns.Count;
+            entities.Dispose();
+            return true;
         }
 
         // ------------------------------------------------------------------

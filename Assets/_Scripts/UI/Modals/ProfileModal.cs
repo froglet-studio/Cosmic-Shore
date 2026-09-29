@@ -2,8 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
-using PlayFab;
-using PlayFab.ClientModels;
+using FMODUnity;
 using Reflex.Attributes;
 using System;
 using System.Collections;
@@ -37,7 +36,8 @@ namespace CosmicShore.UI
         [SerializeField] Button cancelDisplayNameButton;
         [SerializeField] TMP_Text displayNameResultMessage;
         [SerializeField] string displayNameDefaultText;
-        [SerializeField] AudioClip TypingAudio;
+        [SerializeField, Tooltip("FMOD event ticked once per character while a random display name types itself in. Leave empty for silence.")]
+        EventReference typingAudioEvent;
         [SerializeField] bool FocusDisplayNameInputFieldEnabled;
 
         Color SuccessMessageOriginalColor;
@@ -154,10 +154,18 @@ namespace CosmicShore.UI
 
         #region Email and Password Login (unchanged behavior)
 
+        /// <summary>
+        /// The session flag this writes is pure <see cref="PlayerPrefs"/>, so the behaviour is
+        /// unchanged by PlayFab's removal — but note that nothing reads it any more: its only
+        /// reader was the PlayFab login path. Kept so the toggle still persists its state rather
+        /// than silently doing nothing; wire it to whatever replaces "stay signed in" on UGS.
+        /// </summary>
         void StayLoggedIn_OnToggled(bool isOn)
         {
-            AuthenticationManager.PlayerSession.IsRemembered = isOn;
+            PlayerSession.IsRemembered = isOn;
         }
+
+        static readonly PlayerSession PlayerSession = new();
 
         SecureString GetPassword(string password)
         {
@@ -175,25 +183,38 @@ namespace CosmicShore.UI
 
         #region Player Profile – Name + Avatar
 
+        /// <summary>
+        /// The word lists used to be PlayFab title data, fetched per press. That fetch could never
+        /// answer once PlayFab was disabled, and the coroutine below waited on it forever — so the
+        /// randomize button spun its busy indicator and never filled the field. They are local
+        /// now: a name generator that needs a backend round trip is a name generator that is
+        /// offline half the time (<c>Docs/PLAYFAB_RETIREMENT.md</c> §1).
+        /// </summary>
+        static readonly string[] NameAdjectives =
+        {
+            "Astral", "Boreal", "Cosmic", "Drifting", "Electric", "Fractal", "Gilded", "Hollow",
+            "Iridescent", "Jaded", "Kinetic", "Luminous", "Molten", "Nebular", "Orbital", "Prismatic",
+            "Quantum", "Radiant", "Solar", "Tidal", "Umbral", "Velvet", "Wandering", "Zephyr",
+        };
+
+        static readonly string[] NameNouns =
+        {
+            "Anchor", "Bloom", "Comet", "Drift", "Ember", "Fathom", "Glider", "Harbor",
+            "Impulse", "Jetty", "Kite", "Lantern", "Marrow", "Nomad", "Orbit", "Pilgrim",
+            "Quarry", "Ripple", "Spindle", "Thorn", "Undertow", "Vector", "Wake", "Zenith",
+        };
+
         string GenerateRandomName()
         {
-            var adjectives = AuthenticationManager.Adjectives;
-            var nouns = AuthenticationManager.Nouns;
             var random = new System.Random();
-            var adjIndex = random.Next(adjectives.Count);
-            var nounIndex = random.Next(nouns.Count);
-            var displayName = $"{adjectives[adjIndex]} {nouns[nounIndex]}";
+            var adjective = NameAdjectives[random.Next(NameAdjectives.Length)];
+            var noun = NameNouns[random.Next(NameNouns.Length)];
 
-            CSDebug.Log($"AuthenticationView - Generated display name: {displayName}");
-            return displayName;
+            return $"{adjective} {noun}";
         }
 
         IEnumerator AssignRandomNameCoroutine()
         {
-            AuthenticationManager.Instance.LoadRandomNameList();
-
-            yield return new WaitUntil(() => AuthenticationManager.Adjectives != null);
-
             if (displayNameInputField && BusyIndicator)
             {
                 displayNameInputField.placeholder.gameObject.SetActive(false);
@@ -206,7 +227,8 @@ namespace CosmicShore.UI
                 if (displayNameInputField)
                 {
                     displayNameInputField.text = randomName.Substring(0, i);
-                    audioSystem.PlaySFXClip(TypingAudio);
+                    if (!typingAudioEvent.IsNull)
+                        audioSystem.PlaySFXEvent(typingAudioEvent);
                 }
 
                 yield return new WaitForSeconds(.075f);
@@ -263,9 +285,9 @@ namespace CosmicShore.UI
                     displayNameResultMessage.gameObject.SetActive(false);
 
                 CacheDisplayNameLocally(result.SanitizedName);
-                UpdatePlayerDisplayNameView(null);
+                UpdatePlayerDisplayNameView();
 
-                CSDebug.Log($"Current player display name: {result.SanitizedName}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ProfileModal] Display name set - {result.SanitizedName}");
             }
             finally
             {
@@ -331,13 +353,14 @@ namespace CosmicShore.UI
         private Coroutine _assignRandomNameRunningCoroutine;
 
         /// <summary>
-        /// Called after PlayFab updates OR local-only edit: 
-        /// we just refresh visuals, **no popup animation**.
+        /// Called after a display-name edit lands: we just refresh visuals, **no popup
+        /// animation**. It used to take PlayFab's `UpdateUserTitleDisplayNameResult` because it
+        /// was that call's completion callback; the name is now written through
+        /// <see cref="PlayerDataService"/> and its one caller passed `null`, so the parameter
+        /// went with the SDK.
         /// </summary>
-        void UpdatePlayerDisplayNameView(UpdateUserTitleDisplayNameResult result)
+        void UpdatePlayerDisplayNameView()
         {
-            CSDebug.Log("Successfully Set Player Display Name (local or PlayFab).");
-
             if (BusyIndicator)
                 BusyIndicator.SetActive(false);
 

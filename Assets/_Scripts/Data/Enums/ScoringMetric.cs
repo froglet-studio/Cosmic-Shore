@@ -14,7 +14,7 @@ namespace CosmicShore.Data
         ElementalCrystals = 2,
         Jousts = 3,
         Goals = 4,
-        // Rampage and Ribcage: hostile prisms destroyed (reads
+        // Rampage and Cleave: hostile prisms destroyed (reads
         // IRoundStats.HostilePrismsDestroyed). "Hostile" = everything except your own/your
         // teammates' PLAYER-LAID mass: other domains' trails, plus ALL environment mass
         // (flora/fauna carry non-roster owner names, so StatsManager classifies them hostile
@@ -27,8 +27,8 @@ namespace CosmicShore.Data
         // a cumulative total. The distinction matters for any future mode that wants the
         // ecology to move the score directly: under a cumulative counter nothing that eats
         // your mass can set you back, whereas under this one the swarm chewing your trail
-        // un-scores you. Ribcage was authored on this metric and deliberately moved back to
-        // PrismsDestroyed (see RibcageScoringRuleSO's header for the trade).
+        // un-scores you. Cleave was authored on this metric and deliberately moved back to
+        // PrismsDestroyed (see CleaveScoringRuleSO's header for the trade).
         PrismsRemaining = 6,
         // Wildlife Liberation: fauna a player has KILLED (reads IRoundStats.LifeformsKilled).
         // Fed by CellRuntimeDataSO.OnFaunaKilled -> StatsManager.LifeformKilled, which only
@@ -47,5 +47,60 @@ namespace CosmicShore.Data
         // The one metric whose source is vessel-vs-vessel combat rather than prisms, crystals,
         // or the ecology.
         CombatPoints = 8,
+        // Switchback: gates of the shared course this pilot has THREADED, in order (reads
+        // IRoundStats.SwitchesThreaded). It is simultaneously the progress count and the INDEX
+        // of the gate the pilot must thread next, which is what lets one replicated int carry a
+        // whole race: the server validates a report by comparing the index the owner sends
+        // against its own copy, so a pilot cannot skip a gate and cannot be credited twice.
+        //
+        // The one metric whose domain fold is a MAX rather than a sum
+        // (GateRaceScoringRuleSO.DomainValue): every pilot flies the SAME course, so a
+        // domain's progress is its lead runner's, and summing teammates would hand a two-pilot
+        // domain twice the course.
+        SwitchesThreaded = 9,
+        // Hijack: prisms a player has STOLEN - flipped from another domain to their own
+        // (reads IRoundStats.PrismStolen, which StatsManager.PrismStolen and the
+        // Player.ReportPrismStolen_ServerRpc round-trip have been accumulating in every mode
+        // since long before a mode read it). Cumulative and monotonic like the other race
+        // metrics, and deliberately a COUNT rather than VolumeStolen: a friendly ride GROWS a
+        // prism, so a volume metric would quietly pay a re-stealer more than the pilot who
+        // took it first, and a goal row cannot say a volume. It is the first metric whose
+        // source is OWNERSHIP rather than destruction - nothing is removed from the arena to
+        // score it, which is what lets a whole mode be played inside the conserved-mass law
+        // with no food web and no despawn.
+        PrismsStolen = 10,
+
+        // Available, currently unused by any shipping mode: hostile VOLUME destroyed (reads
+        // IRoundStats.HostileVolumeDestroyed, rounded to the nearest whole unit). The volume twin
+        // of PrismsDestroyed, and the only metric whose underlying stat is a FLOAT - a prism's
+        // worth here is its size, so carving a big structural member out of an arena pays more
+        // than shattering a sliver. Rounding is the only concession: every scoring surface on the
+        // platform (the domain-sum NetworkVariable, the HUD column, the goal row) is an int, and a
+        // volume that reaches six figures loses nothing readable to the fractional part.
+        //
+        // Its one consumer was Drumfire, removed 2026-09. Kept for the same reason PrismsRemaining
+        // is: the stat behind it is credited platform-wide already, so a future mode that wants to
+        // score SIZE rather than COUNT needs no new plumbing - only this member (the comeback
+        // reads the rule's DomainValue, so it follows the metric automatically).
+        //
+        // It is credited by exactly the same path PrismsDestroyed is (StatsManager.
+        // CreditPrismDestruction on the server, Player.ReportEnvironmentPrismDestroyed_ServerRpc
+        // for a client's own environment kills - the volume travels on that RPC), so a client
+        // scores its own demolition correctly with no extra plumbing.
+        VolumeDestroyed = 11,
+
+        // Tapestry: prism VOLUME a player has STANDING on the board right now (reads
+        // IRoundStats.VolumeRemaining, rounded). The volume twin of PrismsRemaining and, like it,
+        // a LIVE STOCK rather than a cumulative total: it rises when you lay or steal mass and
+        // when your mass GROWS (the prism's growth delta is credited to its owner), and it FALLS
+        // when anything destroys, shrinks or steals it - a rival's dust, a ram, a fauna's bite.
+        //
+        // It is VOLUME rather than a count because the mode that uses it is the Butterfly's
+        // MASS game, and Mass on that hull is the WIDTH of the wake (5x at level 0 to 20x at
+        // 15): a count would pay a narrow Dust-mode line exactly as much per second as a wide
+        // Mass-mode brush, which deletes the one decision the mode is built on. A live stock
+        // can fall, so a mode scored on it should be TIMED ("most standing at the whistle")
+        // rather than a first-past-the-post race - Tapestry is.
+        VolumeRemaining = 12,
     }
 }

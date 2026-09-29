@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float explosionDelay    = 0.2f;
 
         [Header("Depth Scaling")]
-        [SerializeField] private ElementalFloat depthScale = new(1f);
+        [SerializeField] private float depthScale = 1f;
 
         [Header("Block Shape")]
         [SerializeField] private Vector3 baseBlockScale = new Vector3(10f, 5f, 5f);
@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
 
         public float ExplosionDuration      => explosionDuration;
         public float ExplosionDelay         => explosionDelay;
-        public ElementalFloat DepthScale    => depthScale;
+        public float DepthScale             => depthScale;
 
         public Vector3 BaseBlockScale       => baseBlockScale;
         public int NumberOfRays             => numberOfRays;

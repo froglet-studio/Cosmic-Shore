@@ -69,10 +69,56 @@ The orchestrator. Auto-creates its own party session on auth sign-in,
 auto-joins the presence lobby for discovery, runs the
 `MAX_REFRESH_ERRORS_BEFORE_RECONNECT` watchdog, and exposes the
 party-level operations (`AcceptInviteAsync`, `LeavePartyKeepHostAsync`,
-`KickPartyMemberAsync`, `EnsurePartySessionAsync`).
+`KickPartyMemberAsync`, `EnsurePartySessionAsync`, `ResetPartyLayerAsync`).
 
 **Single writer to `HostConnectionDataSO`** — every other system reads
 through SOAP events and lists on that data container.
+
+#### Offline sessions stand the party layer down
+
+When `GameDataSO.IsOfflineSession` is set (`OfflineModeService` started a plain
+`127.0.0.1` host because UGS was unreachable — `Docs/OFFLINE_MODE.md`):
+
+- **`EnsurePartySessionAsync` no-ops for the whole session.** Auth can succeed while
+  Relay keeps failing, and this method retries with backoff long after the boot flow
+  has already fallen back — a late success would `ShutdownAsync` the local host out
+  from under a live offline game. Re-entering online is a deliberate re-boot
+  (`ReconnectService`), never an in-place promotion.
+- **`SendInviteAsync` returns early.** There is no presence lobby and no Relay session
+  to invite into; without the guard the call fell through to the no-op above and
+  dereferenced a null session ref.
+
+**This does not relitigate the locked EAGER per-user Relay design.** Offline is the
+*absence* of Relay, entered only when Relay is provably unreachable — not lazy or
+on-first-invite creation. When online, the eager session is created exactly as before.
+
+#### `ResetPartyLayerAsync()` — the clean-slate primitive
+
+Leaves the Relay party session **and** the presence lobby, and returns the state
+machine to `Disconnected`. Two callers, one need: `ReconnectService` before the boot
+chain re-runs, and `OfflineModeService` when an offline session starts.
+
+Leaving the **presence lobby** is the half that is easy to miss and fatal to skip:
+UGS membership is *server-side*, so tearing down `NetworkManager` does not release it,
+and a re-join while still a member is refused with *"player is already a member of the
+lobby"* — HCS then never finishes initialising and no Relay session is ever created.
+It must run **before** the Netcode shutdown, because the leave calls need a live
+transport to reach UGS.
+
+It deliberately does **not** raise `HostConnectionLost` — that drives the boot panel's
+"tap retry" surface, and this teardown is a step inside a transition already covered by
+the loading veil. Fail-soft at every step, and a no-op on a cold offline boot that never
+joined anything.
+
+#### One added state transition
+
+`Reconnecting → InPresenceLobby` is legal. The refresh watchdog
+(`MAX_REFRESH_ERRORS_BEFORE_RECONNECT`) can drop the machine into `Reconnecting` at any
+moment — including while a reconnect or an offline↔online switch is re-running HCS init,
+whose first move is `InPresenceLobby`. Without it that transition was refused and
+initialisation stopped dead. Re-entering through the front door after a drop is a
+legitimate recovery, not a bug to log. (Pre-existing gap; the mode switch made it
+reachable every time.)
 
 Already refactored (the 17-commit work). The remaining party-side
 refactor work targets the orchestrator above it (`PartyInviteController`)
@@ -355,3 +401,37 @@ predicate") — the matrix decides *what to do*, NetDiag only decides *what to l
 - `../PresenceSystem/ARCHITECTURE.md` — presence-lobby layer
 - `../NetworkDiagnostics/ARCHITECTURE.md` — NetDiag overlay used by all party catches
 - `../THREADING.md` — main-thread affinity rules (mandatory for every UGS / Netcode await)
+
+
+## Relay allocation lifetime (2026-09-01) — recycle tried and REVERTED
+
+An idle-session recycle (leave + recreate the solo session after 240s with no peers) was
+landed on the theory that Relay reclaims an allocation whose host sends nothing, and reverted
+the same day: recreating the session goes through `EnsurePartySessionAsync`, which restarts
+the NetworkManager, and a RESTARTED host is exactly the state that cannot get a new guest
+through synchronization (`BUGS.md` B14) — so the recycle manufactured the failure it was
+meant to prevent, every four minutes, with a menu-vessel respawn on top. UTP keeps a bound
+host's allocation alive with its own pings; do not re-land a recycle. Record: `BUGS.md` B11.
+
+## Presence in a game scene (2026-09-01)
+
+`HostConnectionService.Update` used to return outside Menu_Main. It now refreshes the
+presence lobby at `IN_GAME_REFRESH_INTERVAL_SECONDS` (10s) in a game scene and publishes
+presence again when a game scene becomes active, so the match name a peer reads is real
+(`BUGS.md` B15). Invite popups still only render in Menu_Main; an invite noticed mid-match
+surfaces on return, because `OnSceneLoaded(Menu_Main)` resets the fired-invite record.
+
+## A prefab instance is never an in-scene object (2026-09-01)
+
+Netcode adopts every un-spawned NetworkObject in a loaded scene as an IN-SCENE PLACED object
+the moment a machine becomes a server, and indexes in-scene objects by
+`(GlobalObjectIdHash, sceneHandle)`. Two instances of one prefab share that hash, so the second
+one throws out of `PopulateScenePlacedObjects` and leaves that NetworkManager unable to
+synchronize any guest, permanently (`BUGS.md` B16).
+
+The rule this leaves: **anything that instantiates a prefab carrying a NetworkObject either
+spawns it or strips it.** `NetworkSceneObjectGuard` provides both halves —
+`NeutralizeStray(go, reason)` at the creating site, and `Sweep(reason)` immediately before
+every call that starts a NetworkManager (party create, party join, offline `StartHost`, the
+game-scene matchmaking path). Add a `Sweep` to any new pre-start path; call `NeutralizeStray`
+from any new code that instantiates a networked prefab it does not intend to spawn.

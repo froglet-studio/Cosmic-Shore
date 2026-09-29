@@ -118,3 +118,57 @@ documented.
 
 **Touchpoint.** Inline doc comment on `LobbyRefreshScheduler.Boost()`
 or short note in `ARCHITECTURE.md`.
+
+## Party panel readouts
+
+### TODO-10. Per-slot READY state on the party panel
+
+**Why.** The arcade party panel now carries a synced seating and a per-pilot domain
+halo (`Docs/PartySystem/UI.md` § "Seating"), which makes the natural next readout "who
+has confirmed". The request that produced the seating work named it explicitly, with no
+further spec.
+
+**The blocker is not the UI.** `Docs/ArcadeLaunch/ARCHITECTURE.md` records that ready
+lights are deliberately **a COUNT, not an identity** — the sync layer replicates how many
+pilots confirmed, never which. A per-slot tick therefore needs the identity put on the
+wire first; drawing one off the count is a guess that is wrong for every arrangement but
+"the first N seats confirmed".
+
+**Touchpoint.** Whatever publishes the ready count for `ArcadeGameConfigureModal`, then
+`FriendInfoSlot` (which already resolves a seat to a UGS player id, so the slot side is a
+lookup once the identity exists).
+
+### TODO-11. Intensity vote state on the party panel
+
+**Why.** Named alongside TODO-10 in the same request, and unspecified. Nothing in the
+codebase votes on intensity today — `ArcadeGameConfigSO.SelectedIntensity` is a single
+host-side value synced to clients by `MultiplayerMiniGameControllerBase`, so this is a
+new mechanic (who may vote, how ties resolve, whether the host is bound by it) rather
+than a new readout.
+
+**Do not** infer the design from the panel: decide the rule first, then the display.
+
+### TODO-12. Fold the three domain-halo implementations into one component
+
+**Why.** A breathing halo in a pilot's domain colour, drawn behind their avatar, now exists
+**three times**: `ConnectingPlayerRoster` (the load screen's pilot chips),
+`RematchVoteRoster` (the scoreboard's rematch faces) and `PartySlotDomainGlow` (the arcade
+party panel). A player meets all three within minutes of each other, so it is one visual
+with three call sites — and three copies drift.
+
+They already differ in ways nobody decided: the two rosters build their halo inside a
+per-chip wrapper and tick it from their own loop, the party slot ensures its own sibling and
+ticks itself; the rosters' generated fallback sprite uses `Mathf.SmoothStep(0.5f, 1f, d)` —
+which is Unity's *interpolate-between-two-values* overload, so it ramps 0.5 → 0 rather than
+giving the "solid core, feathered rim" its comment claims — while the party slot uses a real
+edge-gated smoothstep with a squared falloff.
+
+**What a shared component owes each caller.** The rosters need a halo that lives inside a
+wrapper they build and is ticked from their loop (they already tick per chip for other
+reasons); the party slot needs one that finds its own place beside an avatar it does not own.
+So the seam is probably the halo's *drawing and tuning*, with placement left to the caller.
+
+**Do not** start by unifying the numbers alone — `PartySlotDomainGlow` already adopted the
+rosters' shipped values, so the three read the same today. The debt is the three copies, and
+the sprite-falloff discrepancy is the evidence it is already costing something.
+

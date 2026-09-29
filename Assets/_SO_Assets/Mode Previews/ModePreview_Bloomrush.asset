@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Bloomrush
+  m_EditorClassIdentifier:
+  Mode: 52
+  Notes: 'Rampage''s cactus forest referenced outright - the mode itself references the same four
+    configs (the Bends precedent), and the forest is identical at every intensity (only the
+    crystal ladder and the fuse vary, neither of which a satellite can draw), so the
+    intensity list is authored but visually static. Volume destroyed fires solo, so the
+    objective COUNTS once a bloom lands; the satellite''s own life spawner is suppressed, so
+    there is nothing to tag - the reef and the crystals are the taste.'
+  PreviewCell: {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: fc20698b2b983f9e1e9c20733ea92760, type: 2}
+  - {fileID: 11400000, guid: 398abbfc433510307e154b76aa4191b4, type: 2}
+  - {fileID: 11400000, guid: 789e13b3381f614d997ba4b7a830ff22, type: 2}
+  - {fileID: 11400000, guid: c6959b0e548d4f26bdde820ca48ac26e, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 0}
+  PreviewFaunaCount: 4
+  Vessel: 1
+  ObjectiveText: Skim the reef, tag wildlife, cash out on a crystal
+  ObjectiveMetric: 11
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 500
+  SpawnRingRadiusFloor: 0
+  SpawnFormation: 0
+  SpawnPoints: []

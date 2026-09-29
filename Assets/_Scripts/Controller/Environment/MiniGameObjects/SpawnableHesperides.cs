@@ -376,7 +376,9 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The orchard gate - the garden's permanent bones. Super-shielded, so no force in the
         /// food web can take it: the gate is still standing whatever the fauna do to the planting.
-        /// Kept small (96 prisms) because super-shielded mass carries an always-on MeshCollider.
+        /// Kept small (96 prisms) because super-shielded mass is removable only by an energised
+        /// blade, so it is permanent furniture - not because of colliders (a shield swaps the mesh,
+        /// never the collider).
         /// </summary>
         void OrchardGate()
         {

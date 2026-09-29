@@ -100,9 +100,9 @@ the in-scene **Benchmark**, which measures real frame cost via the author's
 
 ## Benchmark scene
 
-- **The scene:** `BenchmarkStressTest.unity` (Singleplayer Scenes) is committed to the repo and
-  registered in Build Settings — there is exactly ONE and it is never re-created (the one-shot
-  creation tool has been removed). It was originally cloned from `MinigameWildlifeBlitz`
+- **The scene:** `BenchmarkStressTest.unity` (Singleplayer Scenes) is committed to the repo — there is exactly ONE and it is never re-created (the one-shot
+  creation tool has been removed). **Correction (2026-09): it is NOT in Build Settings or the Linux build profile**, so a Netcode
+  load of it is expected to fail in a player build. It was originally cloned from `MinigameWildlifeBlitz` (retired 2026-09)
   (preserving NetworkObjects, ContainerScope, Cell + RandomLifeSpawner, crystal manager, camera);
   its Cell now runs the menu's Blob Cell Config on all four intensity slots.
 - **Launch:** Settings → Run Benchmark calls `BenchmarkSceneLauncher.LaunchBenchmark()` → sets
@@ -135,7 +135,15 @@ the menu Cinemachine brain camera if you want SMAA/TAA there, or the benchmark-s
 
 Music / SFX / Haptics volume sliders are **min 0, max 1, whole-numbers off, default 1.0**. The legacy
 `AudioSource` path scales ×1/5 internally (the intentional "max .2" attenuation in `AudioSystem`), and
-the FMOD SFX path is `Clamp01(SFXLevel)` — both assume a 0–1 slider.
+the FMOD path is `AudioVolumeMath.InstanceVolume` (mute → 0, else slider × per-emitter trim) — both
+assume a 0–1 slider.
+
+**Persistence is last-writer-wins between PlayerPrefs and the cloud** (`GameSetting.ShouldApplyCloud`,
+stamped by `PlayerPrefKeys.SettingsModifiedUtc` ↔ `PlayerSettingsCloudData.ModifiedUtcTicks`). The
+cloud snapshot used to be applied unconditionally on every launch, which is why a slider set to 0
+came back at 1.0. The level keys are FLOATS — seeding them with `SetInt` made every fresh install read
+0 (silent). A slider prefab talks to `GameSetting` only (`AudioLevelSlider`; the old `Mixer` wrote to
+an FMOD VCA that controls no bus). Record: `Docs/AudioSystem/FMOD_AUDIT.md`.
 
 ## In-game restrictions (real-game pattern)
 

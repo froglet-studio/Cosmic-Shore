@@ -6,6 +6,7 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -117,6 +118,18 @@ namespace CosmicShore.Gameplay
         Vector3 _embedOutward = Vector3.up;
         Vector3 _embedAnchor;
 
+        // How far a studding ball must be shoved off its seed point, as a fraction of its own
+        // radius, before it counts as having LEFT the nucleus surface even though it is not
+        // moving (a vessel depenetration does exactly this). Half a radius: far enough that
+        // physics noise cannot trip it, near enough that the ball is visibly out of the shell.
+        const float NucleusDepartureRadiusFraction = 0.5f;
+
+        // Server-side, ONE WAY: set the first time this ball leaves the nucleus surface and never
+        // cleared. A ball that has been dislodged is a ball, permanently — it can be struck,
+        // blasted, banked and detonated like any other, and it can never be re-seeded into the
+        // shell, which would be the one state a player cannot reach on purpose.
+        bool _releasedFromNucleus;
+
         // While Time.time is below this, ContainWithinBoundary is skipped — see
         // AstroLeagueSettingsSO.nucleusReleaseGraceSeconds. Server-side; containment is server-only.
         float _containmentGraceUntil;
@@ -136,7 +149,30 @@ namespace CosmicShore.Gameplay
             LastTouchDomainServer = domain;
             LastToucherNameServer = toucherName ?? string.Empty;
             WallBouncesSinceTouchServer = 0;
+            // A vessel touch hands the ball's SCORING to that pilot; a blast (no name) leaves it
+            // with whoever had it, so a rival's plate that shoves your ball does not launder the
+            // credit for the mass it goes on to eat.
+            if (!string.IsNullOrEmpty(toucherName)) RecordPilotServer(toucherName);
         }
+
+        /// <summary>
+        /// Server: name the pilot this ball scores for from here on - the forge stamps its maker,
+        /// every vessel strike re-stamps the striker. Read by the prism scan on every peer as the
+        /// attacker name of the mass the ball eats; empty means the ball scores for nobody (the
+        /// Astro League kickoff ball, until somebody hits it).
+        /// </summary>
+        public void RecordPilotServer(string pilotName)
+        {
+            if (IsSpawned && !IsServer) return;
+            var value = new FixedString64Bytes(pilotName ?? string.Empty);
+            if (n_PilotName.Value.Equals(value)) return;
+            n_PilotName.Value = value;
+            _pilotNameCache = pilotName ?? string.Empty;
+        }
+
+        /// <summary>The attacker name stamped on the mass this ball eats: its current pilot, or the
+        /// unrostered "Astro League" for a ball nobody has claimed.</summary>
+        public string PilotName => _pilotNameCache.Length > 0 ? _pilotNameCache : BallAttackerName;
 
         void ResetTouchLedgerServer()
         {
@@ -163,6 +199,14 @@ namespace CosmicShore.Gameplay
         static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        static readonly int TrailColorId = Shader.PropertyToID("_Color");
+        static readonly int TrailIntensityId = Shader.PropertyToID("_Intensity");
+        static readonly int TrailSpeedId = Shader.PropertyToID("_Speed01");
+
+        // Resources/ materials (so their shaders ship). Absent -> the legacy unlit ribbon / square
+        // particles, never an error: a missing look must not cost the ball its gameplay.
+        const string TrailMaterialResourcePath = "BallTrail";
+        const string SparkMaterialResourcePath = "SoftSpark";
 
         bool _usesFresnel; // true when the ball material is the prism BlockGraph shader
 
@@ -191,17 +235,49 @@ namespace CosmicShore.Gameplay
         // and the attacker domain for Prism.Damage. Blue = neutral (no strike yet) → smashes any team's mass.
         readonly NetworkVariable<Domains> n_LastHitDomain =
             new(Domains.Blue, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
-        // EMBEDDED IN THE NUCLEUS (the Scarab's seeding ability, SCARAB.md §4.6): the ball is stuck
-        // in the nucleus surface waiting to be struck loose. Deliberately NOT expressed as n_Frozen:
-        // every vessel-contact gate bails on frozen (a kickoff ball must ignore the ships stacked on
-        // it), and an embedded ball's whole purpose is to BE struck. So it is its own state — physics
-        // integration is skipped like frozen, contact is live like a normal ball.
+        // The PILOT this ball scores for: the last vessel to touch it, seeded with its forger at the
+        // forge. Replicated because the prism scan below runs on EVERY peer (one gate, one answer)
+        // and StatsManager credits a prism kill by the ATTACKER NAME the machine that destroyed it
+        // saw - so a name that lived only on the server would score a client pilot's ball on the
+        // server's copy of the trail and never on the client's copy of the forest (environment
+        // mass is credited by the machine that simulates the attacker, StatsManager.OwnsAttacker).
+        // Before this the ball named itself "Astro League", which is on no roster, so every prism
+        // a ball ate scored for nobody - fine in a hoop game, fatal in a demolition race.
+        readonly NetworkVariable<FixedString64Bytes> n_PilotName =
+            new(default, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // Managed mirror of n_PilotName so the per-prism scan never allocates a string per hit.
+        string _pilotNameCache = string.Empty;
+        // STUDDING THE NUCLEUS (the Scarab's seeding ability, SCARAB.md §4.6): the ball was seeded
+        // part-sunk in the nucleus surface and nothing has dislodged it yet.
+        //
+        // IT IS BOOKKEEPING, NOT A PHYSICS MODE. The ball is an ordinary live body the whole time —
+        // dynamic, contactable, blastable, depenetrated like any other. This flag only says three
+        // things: its containment is suspended (it sits on the wrong side of both volumes), it is
+        // not counted among the cell's LOOSE balls, and the seeding field still has it on its
+        // books. It was a pinned kinematic state for two passes and both of that state's
+        // properties were defects: KINEMATIC meant no blast could move it (the Scarab's own dash
+        // included), and PINNED meant the anchor fought the vessel depenetration every contact
+        // frame, which is what made a seeded ball jitter in and out of the shell.
+        //
+        // It is also ONE WAY (see _releasedFromNucleus): once dislodged, a ball is just a ball.
         readonly NetworkVariable<bool> n_Embedded =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
         // Size factor over the authored base scale (SetSizeScale). Replicated because a forged
         // ball is sized after its spawn payload is built — see SetSizeScale's doc note.
         readonly NetworkVariable<float> n_SizeScale =
             new(1f, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        // WHICH crystal this ball was forged out of, and the pose that crystal was standing in
+        // when it was spent. Replicated for the same reason n_SizeScale is — the stamp happens
+        // AFTER NetworkObject.Spawn, so the spawn payload cannot carry it — and because the
+        // retirement animation must play on EVERY peer, not just the server that minted the ball.
+        //
+        // The POSE has to travel rather than being read back off the crystal, and across the wire
+        // that is not a subtlety: collection and respawn are independent RPC chains, so by the time
+        // a remote peer instantiates the ball its copy of the crystal has usually already moved to
+        // its next home wearing the respawn's identity rotation. See Crystal.CollectPose.
+        readonly NetworkVariable<CrystalForgeOrigin> n_ForgedFrom =
+            new(default, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         float _lastSnapshotTime;
 
@@ -275,6 +351,10 @@ namespace CosmicShore.Gameplay
         // Visuals
         Light ballLight;
         TrailRenderer trail;
+        MaterialPropertyBlock trailMpb;
+        bool _cometTrail;            // true when the BallTrail shader is driving the wake
+        ParticleSystem wakeDust;     // motes shed into the world along the ball's path
+        Vector3 _lastDustPos;        // teleport guard for distance-driven dust
         Renderer ballRenderer;
         MeshFilter meshFilter;
         Mesh _ballMesh; // generated icosphere, owned (destroyed in OnDestroy)
@@ -293,18 +373,28 @@ namespace CosmicShore.Gameplay
         public bool IsFrozen => n_Frozen.Value;
         public bool IsHidden => n_Hidden.Value;
 
-        /// <summary>True while this ball is stuck in the nucleus surface awaiting a strike.</summary>
+        /// <summary>
+        /// True while this ball is still STUDDING the nucleus surface — seeded there and not yet
+        /// dislodged. It is an ordinary live body throughout; this only reports that it has not
+        /// moved off its seed point yet. Once false it never becomes true again for this ball.
+        /// </summary>
         public bool IsEmbeddedOnNucleus => n_Embedded.Value;
 
-        /// <summary>Server: the outward (away-from-cell-centre) normal at this ball's embed point.</summary>
-        public Vector3 EmbedOutwardServer => _embedOutward;
-
         /// <summary>
-        /// Server: raised the instant an embedded ball is struck loose, carrying whether it went
-        /// INWARD (into the nucleus — the court, where balls are of consequence) or OUTWARD (into the
-        /// cytoplasm — where it lives on, bouncing off the nucleus from the outside). The ball resolves
-        /// the direction because only it knows its own embed normal; <c>ScarabNucleusField</c> owns
-        /// what the two directions MEAN, so policy never leaks into the payload.
+        /// Server: raised the instant a studding ball is dislodged BY ANYTHING — a hull, a blade, a
+        /// blast, a shove — carrying whether it went INWARD (into the nucleus, the court, where balls
+        /// are of consequence) or OUTWARD (into the cytoplasm, where it lives on, bouncing off the
+        /// nucleus from the outside).
+        ///
+        /// It is raised from <see cref="TickNucleusDepartureServer"/>, which OBSERVES the ball rather
+        /// than being called by whatever moved it — so no force has to know this ability exists, and
+        /// one added tomorrow is covered for free. The ball resolves the direction because only it
+        /// knows its own embed normal; <c>ScarabNucleusField</c> owns what the two directions MEAN,
+        /// so policy never leaks into the payload.
+        ///
+        /// A SUBSCRIBER MAY DETONATE THE BALL (banking one too many overloads the nucleus, and the
+        /// shipped default takes every live ball with it), which is why it is raised on the closing
+        /// line of the server tick.
         /// </summary>
         public static event System.Action<AstroLeagueBall, bool> OnNucleusReleasedServer;
 
@@ -345,6 +435,16 @@ namespace CosmicShore.Gameplay
             rb.maxAngularVelocity = settings != null ? settings.maxAngularSpeed : 40f;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            // NEVER SLEEP. The ball is DESIGNED to come to rest — `ballDrag` exists so an untouched
+            // ball settles and becomes a thing players contest — and a resting rigidbody sleeps,
+            // which drops it out of the simulation's active set. An AOE blast finds the ball
+            // through a trigger on a collider that has no rigidbody of its own and merely GROWS
+            // (AOECylindricalExplosion reshapes its box each frame); a pair with no awake actor in
+            // it is not something a physics engine owes you an event for. So a settled ball — and
+            // above all a ball studding the nucleus, which never moves at all — is exactly the ball
+            // a blast could silently fail to reach. One always-simulated sphere per live ball is a
+            // cheap price for "every force reaches every ball".
+            rb.sleepThreshold = 0f;
 
             sphereCol = GetComponent<SphereCollider>();
             sphereCol.material = new PhysicsMaterial("AstroLeagueBall")
@@ -366,6 +466,15 @@ namespace CosmicShore.Gameplay
             if (trailBlocksLayer >= 0)
                 sphereCol.excludeLayers = 1 << trailBlocksLayer;
 
+            // NO HIGH-POLY PRISM MORPH IS GRANTED HERE, and that is the design rather than an
+            // omission. A ball carried a travelling ripple for exactly one branch
+            // (.claude/skills/prism-morph) and it was pulled for the reason the same effect came
+            // off the fleet one step earlier: a ball is in play for a WHOLE MATCH, so a ripple
+            // following it is continuous, and an effect strong enough to be an EVENT stops being
+            // one the moment it never stops. The family's residency budget is also shared and
+            // split evenly, so a ball holding slots takes them from whatever is actually saying
+            // something. Do not add an ensure here.
+
             spawnPosition = transform.position;
             _baseScale = transform.localScale;
             SetupVisuals();
@@ -374,6 +483,13 @@ namespace CosmicShore.Gameplay
             // Every peer Awakes its own copy — server, client replica, and no-network local
             // mints alike — so no RPC is needed; the scene showpiece blooms once at load,
             // behind the connecting veil, which is harmless and equally lawful.
+            //
+            // A ball forged out of a CRYSTAL cancels it (ScarabCrystalMorph.Begin): there the
+            // crystal's own body closes onto this ball's hull and the ball takes over at full
+            // size, so the bloom would be a SECOND birth animation playing underneath the first —
+            // the ball growing out of nothing while the crystal is already landing on where it
+            // will end up. Continuity of existence is satisfied either way; what it forbids is
+            // popping into existence, not blooming twice.
             _bloomTimer = settings != null ? settings.spawnBloomSeconds : 0.55f;
         }
 
@@ -424,11 +540,20 @@ namespace CosmicShore.Gameplay
                 ghostTrail.time = 0.35f;
                 ghostTrail.startWidth = trail.startWidth;
                 ghostTrail.endWidth = trail.endWidth;
-                ghostTrail.numCapVertices = trail.numCapVertices;
                 ghostTrail.sharedMaterial = trail.sharedMaterial;
-                ghostTrail.startColor = trail.startColor;
-                ghostTrail.endColor = trail.endColor;
-                ghostTrail.minVertexDistance = trail.minVertexDistance;
+                if (_cometTrail)
+                {
+                    // Same comet shape + the CURRENT tint (the scorer's domain at the goal moment).
+                    ConfigureCometTrail(ghostTrail);
+                    if (trailMpb != null) ghostTrail.SetPropertyBlock(trailMpb);
+                }
+                else
+                {
+                    ghostTrail.numCapVertices = trail.numCapVertices;
+                    ghostTrail.startColor = trail.startColor;
+                    ghostTrail.endColor = trail.endColor;
+                    ghostTrail.minVertexDistance = trail.minVertexDistance;
+                }
                 ghostTrail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 ghostTrail.receiveShadows = false;
                 ghostTrail.generateLightingData = false;
@@ -443,7 +568,6 @@ namespace CosmicShore.Gameplay
             {
                 n_Position.Value = transform.position;
                 ApplyFrozenPhysics(n_Frozen.Value);
-                if (n_Embedded.Value) ApplyEmbeddedPhysics(true);
             }
             else
             {
@@ -464,6 +588,109 @@ namespace CosmicShore.Gameplay
 
             n_Hidden.OnValueChanged += (_, hidden) => ApplyHiddenVisuals(hidden);
             ApplyHiddenVisuals(n_Hidden.Value);
+
+            // The scoring pilot travels as a FixedString; mirror it into a managed string once per
+            // change (not once per prism) - a late joiner reads the current value, a replica that
+            // spawned before the forge stamped it catches the stamp.
+            n_PilotName.OnValueChanged += (_, name) => _pilotNameCache = name.ToString();
+            _pilotNameCache = n_PilotName.Value.ToString();
+
+            // The retirement animation runs on EVERY peer, and the value it needs can arrive
+            // either before this replica spawned (a late joiner) or a frame after it (the server
+            // stamps just past Spawn). Both are covered by reading it now AND subscribing — the
+            // same shape n_SizeScale uses two blocks up, for the same reason.
+            n_ForgedFrom.OnValueChanged += (_, origin) => TryBeginCrystalMorph(origin);
+            TryBeginCrystalMorph(n_ForgedFrom.Value);
+        }
+
+        /// <summary>
+        /// Stamps this ball as forged out of <paramref name="crystal"/>, so every peer plays the
+        /// crystal→ball morph instead of the shared husk spray. Server-side and idempotent; a
+        /// no-network local mint (the freestyle toys) applies it directly, since there the ball is
+        /// never spawned and the NetworkVariable would never deliver.
+        ///
+        /// Call it AFTER the spawn, beside <see cref="SetSizeScale"/> — the two share the
+        /// after-the-payload problem and the same solution.
+        /// </summary>
+        public void MarkForgedFromCrystal(Crystal crystal)
+        {
+            if (crystal == null) return;
+
+            var pose = crystal.CollectPose;
+            var origin = new CrystalForgeOrigin
+            {
+                CrystalId = crystal.Id,
+                Position = pose.position,
+                Rotation = pose.rotation,
+                Scale = crystal.CollectScale,
+                Valid = true,
+            };
+
+            if (IsSpawned && IsServer) n_ForgedFrom.Value = origin;
+            TryBeginCrystalMorph(origin);
+        }
+
+        void TryBeginCrystalMorph(in CrystalForgeOrigin origin)
+        {
+            if (!origin.Valid || _crystalMorph != null) return;
+            _crystalMorph = ScarabCrystalMorph.Begin(this, origin);
+        }
+
+        ScarabCrystalMorph _crystalMorph;
+
+        /// <summary>
+        /// Holds this ball's PHOTONS while the crystal's body is drawing it, and nothing else: the
+        /// collider stays live, the rigidbody keeps simulating, the strike path is unchanged. The
+        /// ball is fully live and strikeable from the frame it is forged — a pilot arriving one
+        /// frame later hits a finished ball — and only its rendering waits.
+        ///
+        /// It is deliberately NOT <see cref="SetHidden"/>, which is replicated GAMEPLAY state (a
+        /// ball parked out of play) and also freezes the body. Here nothing about the ball's
+        /// situation has changed; a different object is drawing it for a third of a second.
+        ///
+        /// ALWAYS paired: the stand-in must clear the hold when it finishes or dies, or the ball is
+        /// invisible for the rest of its life. <see cref="ScarabCrystalMorph"/> clears it from
+        /// OnDestroy as well as on the hand-off, so an interrupted morph cannot strand it.
+        /// </summary>
+        public void SetMorphStandIn(bool active)
+        {
+            if (_morphStandIn == active) return;
+            _morphStandIn = active;
+            if (active) _bloomTimer = 0f;   // the morph IS this ball's birth animation
+            ApplyHiddenVisuals(n_Hidden.Value);
+        }
+
+        bool _morphStandIn;
+
+        /// <summary>The ball's own faceted hull mesh, and the radius it was generated at — the two
+        /// halves a morph needs to land exactly on this ball's surface rather than on an
+        /// approximation of it. Null before <see cref="SetupVisuals"/> has run.</summary>
+        public Mesh HullMesh => _ballMesh;
+
+        /// <summary>Radius the <see cref="HullMesh"/> was generated at, in the ball's own local
+        /// units (the SphereCollider's authored radius). Scale is the transform's business.</summary>
+        public float HullMeshRadius => sphereCol != null ? sphereCol.radius : 0.5f;
+
+        /// <summary>The transform the hull mesh is drawn by — a child of the ball, so a morph
+        /// parented here inherits the ball's motion and spin for free.</summary>
+        public Transform VisualRoot => _visual != null ? _visual : transform;
+
+        /// <summary>
+        /// The prism-fresnel pair this ball is currently drawing with — its base face and its
+        /// fresnel rim (Docs/PALETTE.md). Read off the live MaterialPropertyBlock rather than a
+        /// theme lookup, because the ball animates this pair every frame through its own domain
+        /// phase; a morph that converged on a re-derived colour would land next to the ball's
+        /// colour rather than on it.
+        /// </summary>
+        public bool TryGetShellColours(out Color dark, out Color bright)
+        {
+            dark = default;
+            bright = default;
+            if (mpb == null || ballRenderer == null || !_usesFresnel) return false;
+            ballRenderer.GetPropertyBlock(mpb);
+            dark = mpb.GetColor(DarkColorId);
+            bright = mpb.GetColor(BrightColorId);
+            return true;
         }
 
         void Start()
@@ -547,23 +774,171 @@ namespace CosmicShore.Gameplay
             ballLight.shadows = LightShadows.None;
 
             trail = gameObject.AddComponent<TrailRenderer>();
-            trail.time = 0.3f;
-            trail.startWidth = settings != null ? settings.minTrailWidth : 0.6f;
-            trail.endWidth = 0.1f;
-            trail.numCapVertices = 4;
-            var trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            trailMat.color = primaryColor;
-            MakeTransparent(trailMat);
-            trail.sharedMaterial = trailMat;
-            trail.startColor = primaryColor;
-            trail.endColor = new Color(secondaryColor.r, secondaryColor.g, secondaryColor.b, 0f);
-            trail.minVertexDistance = 0.5f;
+            trail.time = settings != null ? settings.trailTimeAtRest : 0.3f;
+            trail.startWidth = TrailHeadWidth(0f);
+            trail.endWidth = 0f;
+            trailMpb = new MaterialPropertyBlock();
+            var cometMat = Resources.Load<Material>(TrailMaterialResourcePath);
+            _cometTrail = cometMat != null;
+            if (_cometTrail)
+            {
+                trail.sharedMaterial = cometMat;
+                ConfigureCometTrail(trail);
+            }
+            else
+            {
+                // Legacy ribbon — the BallTrail material is missing from Resources.
+                trail.numCapVertices = 4;
+                var trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                trailMat.color = primaryColor;
+                MakeTransparent(trailMat);
+                trail.sharedMaterial = trailMat;
+                trail.startColor = primaryColor;
+                trail.endColor = new Color(secondaryColor.r, secondaryColor.g, secondaryColor.b, 0f);
+                trail.minVertexDistance = 0.5f;
+            }
             trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             trail.receiveShadows = false;
             trail.generateLightingData = false;
 
             auraParticles = CreateParticles("PayloadAura", burstOnly: false);
             impactParticles = CreateParticles("ImpactBurst", burstOnly: true);
+            wakeDust = CreateWakeDust();
+        }
+
+        /// <summary>
+        /// The comet wake's SHAPE, shared by the live ball and its goal-replay ghost so the two can
+        /// never drift: a white gradient whose ALPHA runs 1 (head) → 0 (tail) — the BallTrail shader
+        /// reads it as the position along the trail, not as opacity — and a width curve that swells
+        /// just behind the ball before tapering to a point, so the wake reads as a comet's coma
+        /// growing out of the ball rather than a ribbon starting behind it. Colour is NOT here: it
+        /// rides a property block every frame (<see cref="DriveCometTrail"/>), so a strike re-tints
+        /// the whole wake the instant the ball changes hands.
+        /// </summary>
+        static void ConfigureCometTrail(TrailRenderer target)
+        {
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
+            target.colorGradient = gradient;
+            target.widthCurve = new AnimationCurve(
+                new Keyframe(0f, 0.85f),
+                new Keyframe(0.08f, 1f),
+                new Keyframe(0.35f, 0.72f),
+                new Keyframe(1f, 0f));
+            target.textureMode = LineTextureMode.Stretch;
+            target.alignment = LineAlignment.View;
+            target.numCapVertices = 6;
+            target.numCornerVertices = 3;
+            target.minVertexDistance = 1f;
+        }
+
+        /// <summary>Head width of the wake in WORLD units: a fraction of the ball's diameter.</summary>
+        float TrailHeadWidth(float speedRatio)
+        {
+            float diameter = sphereCol != null ? 2f * BallWorldRadius() : 14f;
+            float rest = settings != null ? settings.trailWidthAtRest : 0.7f;
+            float fast = settings != null ? settings.trailWidthAtSpeed : 1.25f;
+            return diameter * Mathf.Lerp(rest, fast, speedRatio);
+        }
+
+        /// <summary>
+        /// Every frame on every peer: the wake's colour is the ball's LIVE colour (last-hit domain,
+        /// or the neutral rainbow), normalised to full value so the hue stays saturated under ACES
+        /// (Docs/PALETTE.md §4.3 — brightness is spent on the white core, never on the hue).
+        /// </summary>
+        void DriveCometTrail(Color hue, float speedRatio)
+        {
+            float peak = Mathf.Max(hue.r, Mathf.Max(hue.g, hue.b));
+            Color signal = peak > 1e-4f ? hue / peak : Color.white;
+            signal.a = 1f;
+            float flash = currentEmissionBoost > 1f ? Mathf.Min(Mathf.Sqrt(currentEmissionBoost), 2.2f) : 1f;
+            trailMpb.SetColor(TrailColorId, signal);
+            trailMpb.SetFloat(TrailIntensityId, Mathf.Lerp(0.55f, 1.25f, speedRatio) * flash);
+            trailMpb.SetFloat(TrailSpeedId, speedRatio);
+            trail.SetPropertyBlock(trailMpb);
+        }
+
+        /// <summary>
+        /// Wake DUST: soft glowing motes shed into the WORLD by distance travelled, drifting slightly
+        /// and fading out — so a screamer leaves a lingering glitter of its path after the ribbon has
+        /// gone, and a rolling ball leaves nothing. Emits only while the ball draws, and never
+        /// clears: motes already shed always fade out (continuity of existence).
+        /// </summary>
+        ParticleSystem CreateWakeDust()
+        {
+            if (settings == null || settings.wakeDustPerUnit <= 0f) return null;
+
+            var go = new GameObject("WakeDust");
+            go.transform.SetParent(transform, false);
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = ps.main;
+            main.playOnAwake = true;
+            main.loop = true;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.scalingMode = ParticleSystemScalingMode.Local; // sizes set in world units below
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.7f, 1.6f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 4f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.8f, 2.4f);
+            main.maxParticles = 220;
+            main.gravityModifier = 0f;
+
+            var emission = ps.emission;
+            emission.rateOverTime = 0f;
+            emission.rateOverDistance = 0f; // driven by speed in UpdateVisuals
+
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 5f;
+            shape.radiusThickness = 0.35f; // shed from the ball's skin, not its centre
+
+            var noise = ps.noise;
+            noise.enabled = true;
+            noise.strength = 2.5f;
+            noise.frequency = 0.35f;
+            noise.scrollSpeed = 0.4f;
+
+            var sizeOverLifetime = ps.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f,
+                new AnimationCurve(new Keyframe(0f, 0.4f), new Keyframe(0.15f, 1f), new Keyframe(1f, 0f)));
+
+            var colorOverLifetime = ps.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.08f),
+                        new GradientAlphaKey(0.6f, 0.5f), new GradientAlphaKey(0f, 1f) });
+            colorOverLifetime.color = gradient;
+
+            var psRenderer = go.GetComponent<ParticleSystemRenderer>();
+            psRenderer.sharedMaterial = SparkMaterialOrFallback();
+            psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            psRenderer.receiveShadows = false;
+
+            _lastDustPos = transform.position;
+            ps.Play();
+            return ps;
+        }
+
+        Material _sparkFallback;
+
+        /// <summary>The shared SoftSpark material, or a per-ball additive URP particle material.</summary>
+        Material SparkMaterialOrFallback()
+        {
+            var spark = Resources.Load<Material>(SparkMaterialResourcePath);
+            if (spark != null) return spark;
+            if (_sparkFallback != null) return _sparkFallback;
+            _sparkFallback = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+            _sparkFallback.SetFloat("_Surface", 1);
+            _sparkFallback.SetInt("_Blend", 1); // Additive
+            _sparkFallback.SetColor(BaseColorId, Color.white);
+            _sparkFallback.renderQueue = 3100;
+            return _sparkFallback;
         }
 
         static void MakeTransparent(Material mat)
@@ -632,12 +1007,8 @@ namespace CosmicShore.Gameplay
             colorOverLifetime.color = gradient;
 
             var psRenderer = go.GetComponent<ParticleSystemRenderer>();
-            var psMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-            psMat.SetFloat("_Surface", 1);
-            psMat.SetInt("_Blend", 1); // Additive
-            psMat.SetColor(BaseColorId, Color.white);
-            psMat.renderQueue = 3100;
-            psRenderer.sharedMaterial = psMat;
+            // Soft round sparks, not the untextured SQUARE quads URP Particles/Unlit draws.
+            psRenderer.sharedMaterial = SparkMaterialOrFallback();
             psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             return ps;
@@ -666,13 +1037,11 @@ namespace CosmicShore.Gameplay
 
             SampleVesselVelocities();
 
-            if (n_Embedded.Value)
-            {
-                // Pinned: hold the anchor exactly. No integration, no containment, no drag — an
-                // embedded ball is scenery with a hitbox until somebody knocks it loose.
-                transform.position = _embedAnchor;
-            }
-            else if (!n_Frozen.Value)
+            // A BALL STUDDING THE NUCLEUS RUNS THIS BRANCH LIKE ANY OTHER BALL. There is no
+            // pinned state any more: `n_Embedded` is BOOKKEEPING (it suspends containment, keeps
+            // the ball out of the cell's loose-ball count, and tells the seeding field it is still
+            // studding), never a physics mode. See EmbedOnNucleusServer.
+            if (!n_Frozen.Value)
             {
                 // Cap the top speed so strikes can't make the ball run away.
                 if (rb.linearVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
@@ -700,21 +1069,68 @@ namespace CosmicShore.Gameplay
                 _velocityBeforePhysics = rb.linearVelocity;
 
                 // Bounce the ball off the nucleus - its own boundary in any cell, a mode's court
-                // override where one is installed. Skipped briefly after a nucleus release: the
-                // ball starts part-sunk in the shell, which is outside BOTH the court and the
-                // cytoplasm volumes, so containing it on that first frame reads as a radial shove
-                // rather than a hit (SCARAB.md §4.6).
-                if (Time.time >= _containmentGraceUntil)
+                // override where one is installed.
+                //
+                // CONTAINMENT IS THE ONE THING A STUDDING BALL IS EXEMPT FROM, and it is the only
+                // exemption the state has: the ball sits part-sunk in the shell, which is on the
+                // wrong side of BOTH the court and the cytoplasm volumes, so containing it there
+                // would shove it radially out of the surface the moment it was seeded. It resumes
+                // the tick after the ball leaves, and `nucleusReleaseGraceSeconds` then carries it
+                // clear of the shell rather than letting the walls correct it mid-flight — so
+                // leaving reads as a hit in either direction (SCARAB.md §4.6).
+                if (!n_Embedded.Value && Time.time >= _containmentGraceUntil)
                     ContainWithinBoundary();
             }
 
             if (IsSpawned)
             {
                 n_Position.Value = transform.position;
-                bool still = n_Frozen.Value || n_Embedded.Value;
-                n_Velocity.Value = still ? Vector3.zero : rb.linearVelocity;
-                n_AngularVelocity.Value = still ? Vector3.zero : rb.angularVelocity;
+                n_Velocity.Value = n_Frozen.Value ? Vector3.zero : rb.linearVelocity;
+                n_AngularVelocity.Value = n_Frozen.Value ? Vector3.zero : rb.angularVelocity;
             }
+
+            // LAST. A departure announcement can DETONATE this ball (banking one too many
+            // overloads the nucleus, and the shipped default takes every live ball with it), so
+            // nothing may touch this instance afterwards.
+            if (n_Embedded.Value) TickNucleusDepartureServer();
+        }
+
+        /// <summary>
+        /// Server: has this studding ball actually LEFT the nucleus surface? The whole release
+        /// mechanism, and it is a passive OBSERVATION rather than a call any force has to make.
+        ///
+        /// That is the point. A release used to be something each force announced for itself, so a
+        /// force nobody had wired announced nothing — and the ball being KINEMATIC meant such a
+        /// force could not move it either, which is how every AOE blast in the game came to pass
+        /// straight through a seeded ball. It is the same lesson this file already records for the
+        /// forge-time ball cap: A RULE ENFORCED AT ONE PRODUCER CAN ONLY EVER SEE THAT PRODUCER.
+        /// Watching the ball itself sees every force there is, including the ones added later.
+        ///
+        /// "Left" is either real motion or real displacement: a nudge the ball absorbs (below
+        /// `ballRestSpeed`, which the tick above snaps to zero) leaves it studding, exactly as the
+        /// same nudge would leave a ball stopped anywhere else stopped.
+        /// </summary>
+        void TickNucleusDepartureServer()
+        {
+            bool moving = rb.linearVelocity.sqrMagnitude > 0f;
+            float leaveDistance = BallWorldRadius() * NucleusDepartureRadiusFraction;
+            bool displaced = (transform.position - _embedAnchor).sqrMagnitude
+                             > leaveDistance * leaveDistance;
+            if (!moving && !displaced) return;
+
+            n_Embedded.Value = false;
+            _releasedFromNucleus = true;   // one way: a ball never studs the nucleus twice
+
+            // Let whatever freed it carry the ball out of the shell before the walls start
+            // correcting it, so leaving reads as a hit in either direction.
+            _containmentGraceUntil = Time.time
+                + (settings != null ? Mathf.Max(0f, settings.nucleusReleaseGraceSeconds) : 1f);
+            _lastPrismScanPos = transform.position;
+
+            // Which side of its own embed normal it left on — read off the velocity it actually
+            // carries, or off where it ended up when it was shoved rather than struck.
+            Vector3 heading = moving ? rb.linearVelocity : transform.position - _embedAnchor;
+            OnNucleusReleasedServer?.Invoke(this, Vector3.Dot(heading, _embedOutward) < 0f);
         }
 
         /// <summary>
@@ -902,7 +1318,14 @@ namespace CosmicShore.Gameplay
         void ProcessPrismInteractions()
         {
             var index = PrismSpatialIndex.Instance;
-            if (index == null || n_Frozen.Value || n_Hidden.Value)
+            // EMBEDDED joins frozen and hidden here, and it is a FIX rather than a new rule: the
+            // server already skipped the scan for a pinned ball (ServerFixedUpdate resolves prisms
+            // only on the free branch — "scenery with a hitbox until somebody knocks it loose"),
+            // while ClientFixedUpdate ran it for every non-frozen, non-hidden ball. So every peer
+            // but the host was popping shields and destroying the prisms an embedded ball happened
+            // to be sitting in, and — for a ball authored `destroyedBySuperShielded` — stripping
+            // super-shielded structure the host never touched. One gate, one answer, on every peer.
+            if (index == null || n_Frozen.Value || n_Hidden.Value || n_Embedded.Value)
             {
                 _shieldPoppedThisVisit.Clear();
                 _lastPrismScanPos = transform.position;
@@ -986,7 +1409,7 @@ namespace CosmicShore.Gameplay
                         // per-tier multiplier to the drag.
                         if (_shieldPoppedThisVisit.Contains(prism)) continue;
                         eatenMass += Mathf.Max(0f, prism.CurrentVolume);
-                        prism.Damage(ballVel, ballDomain, BallAttackerName);
+                        prism.Damage(ballVel, ballDomain, PilotName);
                     }
                 }
             }
@@ -1308,9 +1731,11 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Server: unified vessel↔ball contact (from both collider paths, Enter AND Stay), layered so
         /// the ball can NEVER clip a vessel and ALWAYS bounces off one:
-        ///   1. Anti-clip - ALWAYS depenetrate the ball out of the hull (EjectBallFromVessel only acts
-        ///      while overlapping), every contact frame. The hull can't pass through the ball even if
-        ///      the pilot keeps driving in, and even for trigger-only ships with no physics depenetration.
+        ///   1. Anti-clip - depenetrate the ball out of the hull (EjectBallFromPoint only acts while
+        ///      overlapping), every contact frame. The hull can't pass through the ball even if the
+        ///      pilot keeps driving in, and even for trigger-only ships with no physics depenetration.
+        ///      The ONE exception is an EMBEDDED ball, which is pinned: it is depenetrated after the
+        ///      strike that frees it, never against the pin (see the note on the eject itself).
         ///   2. Elastic bounce - on every frame the ball is moving INTO the vessel (approach &lt; 0), it
         ///      bounces off (momentum-conserving moving-paddle reflection) + re-colors + spins. This is
         ///      self-limiting (once it bounces away it stops approaching) and self-deduping (a second
@@ -1335,6 +1760,13 @@ namespace CosmicShore.Gameplay
             var blade = ResolveBlade(hitCollider);
             float bladeT = 0f;
             Vector3 strikerVelocity;
+
+            // Where the anti-clip depenetration pushes off, and with what clearance. Captured so
+            // the hull and blade branches can share one call site; it is applied unconditionally,
+            // to a studding ball exactly as to any other, because a studding ball is an ordinary
+            // body and nothing writes its position back (see EmbedOnNucleusServer).
+            Vector3 ejectOrigin;
+            float ejectClear;
 
             // ── A plain SKIM FIELD never strikes the ball ──────────────────────────────────
             // The blade branch below already refuses the Rhino's skim SPHERE for this exact
@@ -1374,13 +1806,17 @@ namespace CosmicShore.Gameplay
 
                 bladeT = blade.NormalizedAlongBlade(ballCenter);
                 strikerVelocity = Vector3.ClampMagnitude(blade.VelocityAt(contactPoint), settings.maxSpeed);
-                EjectBallFromPoint(contactPoint, settings.bladeClearRadius);
+                ejectOrigin = contactPoint;
+                ejectClear = settings.bladeClearRadius;
             }
             else
             {
-                EjectBallFromVessel(root); // anti-clip every frame - independent of the bounce/strike gating
+                ejectOrigin = root.position;
+                ejectClear = settings.vesselClearRadius;
                 strikerVelocity = ResolveStrikerVelocity(vessel);
             }
+
+            EjectBallFromPoint(ejectOrigin, ejectClear); // anti-clip every frame - independent of the bounce/strike gating
 
             // Only respond when the ball is actually moving INTO the vessel - avoids re-launching a ball
             // that has already bounced away (self-limiting) and double-bouncing on the second collider path.
@@ -1408,22 +1844,23 @@ namespace CosmicShore.Gameplay
         public float MaxSpeed => settings != null ? settings.maxSpeed : 220f;
 
         /// <summary>
-        /// Guarantees the ball never overlaps the striking vessel's hull: if the ball center is
-        /// closer than (ball radius + vesselClearRadius) to the vessel root, push it straight out
-        /// to that distance. With the ≥1x launch speed this keeps the ball ahead of the vessel,
-        /// so the vessel mesh can't clip through it - including the trigger-only ships that have
-        /// no physical depenetration barrier. Server position is republished immediately so peers
-        /// see the ejected position without waiting for the next tick.
-        /// </summary>
-        void EjectBallFromVessel(Transform vesselRoot) =>
-            EjectBallFromPoint(vesselRoot.position, settings.vesselClearRadius);
-
-        /// <summary>
-        /// The depenetration above, generalized to any contact origin. A BLADE hit passes the point
-        /// on the sword's centreline nearest the ball with the blade's own (much smaller) clearance:
-        /// pushing off the vessel ROOT cannot protect a 30-120 unit sword, because at a tip strike
-        /// the ball is already far outside the hull's clear radius and the check would no-op while
-        /// the blade sweeps straight through it.
+        /// Guarantees the ball never overlaps what struck it: if the ball centre is closer than
+        /// (ball radius + <paramref name="clearRadius"/>) to <paramref name="origin"/>, push it
+        /// straight out to that distance. With the ≥1x launch speed this keeps the ball ahead of
+        /// the vessel, so the vessel mesh can't clip through it - including the trigger-only ships
+        /// that have no physical depenetration barrier. Server position is republished immediately
+        /// so peers see the ejected position without waiting for the next tick.
+        ///
+        /// A HULL hit passes the vessel root with <c>vesselClearRadius</c>; a BLADE hit passes the
+        /// point on the sword's centreline nearest the ball with the blade's own (much smaller)
+        /// clearance, because pushing off the vessel ROOT cannot protect a 30-120 unit sword: at a
+        /// tip strike the ball is already far outside the hull's clear radius and the check would
+        /// no-op while the blade sweeps straight through it.
+        ///
+        /// NEVER call it on a ball that is still EMBEDDED. The server re-asserts a pinned ball's
+        /// anchor every physics step, so the push is undone on the next tick and the ball reads as
+        /// jumping out of the nucleus surface and snapping back for as long as a hull overlaps it.
+        /// <see cref="VesselContact"/> defers it until the strike has un-pinned the ball.
         /// </summary>
         void EjectBallFromPoint(Vector3 origin, float clearRadius)
         {
@@ -1469,22 +1906,15 @@ namespace CosmicShore.Gameplay
             RecordTouchServer(strikerDomain,
                 vessel.VesselStatus != null ? vessel.VesselStatus.PlayerName : string.Empty);
 
-            // EMBEDDED: this strike knocks the ball out of the nucleus surface rather than batting a
-            // ball already in flight, so it resolves here and returns — the impulse maths below assume
-            // a free body. The push is the striker's own velocity, so how hard you hit it is how fast
-            // it leaves, and WHICH SIDE of the embed normal you hit it from decides where it goes:
-            // outward into the cytoplasm, inward into the nucleus. The steal above already ran, so a
-            // dash can take an enemy's seeded ball and knock it loose in the same contact.
-            if (n_Embedded.Value)
-            {
-                float releaseSpeed = Mathf.Clamp(strikerSpeed, settings.ballRestSpeed, settings.maxSpeed);
-                Vector3 push = strikerVelocity.sqrMagnitude > 1e-4f
-                    ? strikerVelocity.normalized
-                    : -_embedOutward;                       // a dead-stop contact nudges it inward
-                ReleaseFromNucleusServer(push * releaseSpeed);
-                return;
-            }
-
+            // NOTHING HERE KNOWS ABOUT THE NUCLEUS, and that is the design. A ball studding the
+            // nucleus surface is an ordinary body at rest, so it takes the elastic moving-paddle
+            // bounce, the arcade pop, the off-centre torque and the feedback beat below exactly as
+            // any resting ball does; ServerFixedUpdate then NOTICES that it moved and reports the
+            // release. This replaced a short-circuit that carried a SECOND impulse model for the
+            // embedded case (the striker's speed along the striker's heading, floored at
+            // ballRestSpeed, no pop, no spin, no strike RPC) — two models for one contact is one
+            // model too many. The steal above already ran, so a dash can take an enemy's seeded
+            // ball and knock it loose in the same contact.
             Vector3 ballVel = rb.linearVelocity;
 
             // Elastic collision off the moving paddle (momentum-conserving against an infinite-mass
@@ -1526,26 +1956,27 @@ namespace CosmicShore.Gameplay
             // Prisms near the strike are handled by the per-tick ProcessPrismInteractions scan, which
             // already sees the freshly-set domain - no separate strike-time prism pass needed.
 
-            if (!deliberate) return;
-
-            if (finalSpeed > settings.hitstopSpeedThreshold && IsSoloSession())
-                RunHitstopAsync().Forget();
-
-            // THE feedback beat. Before this existed a vessel connecting with the ball produced
-            // nothing at all - no flash, no burst, no shake, no sound - which is the single largest
-            // reason the mode read as unresponsive: the only evidence you had hit the payload was
-            // that it changed direction. Broadcast so every peer sees the hit, and carry the
-            // striking vessel so the pilot who actually connected gets the emphasised shake.
-            if (settings.strikeFeedbackEnabled)
+            if (deliberate)
             {
-                var strikerNo = vessel.Transform != null
-                    ? vessel.Transform.GetComponentInParent<NetworkObject>()
-                    : null;
-                ulong strikerNetId = strikerNo != null ? strikerNo.NetworkObjectId : 0UL;
-                Strike_ClientRpc(contactPoint, n, intensity, strikerNetId, bladeHit && bladeT > 0.66f);
-            }
+                if (finalSpeed > settings.hitstopSpeedThreshold && IsSoloSession())
+                    RunHitstopAsync().Forget();
 
-            OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
+                // THE feedback beat. Before this existed a vessel connecting with the ball produced
+                // nothing at all - no flash, no burst, no shake, no sound - which is the single largest
+                // reason the mode read as unresponsive: the only evidence you had hit the payload was
+                // that it changed direction. Broadcast so every peer sees the hit, and carry the
+                // striking vessel so the pilot who actually connected gets the emphasised shake.
+                if (settings.strikeFeedbackEnabled)
+                {
+                    var strikerNo = vessel.Transform != null
+                        ? vessel.Transform.GetComponentInParent<NetworkObject>()
+                        : null;
+                    ulong strikerNetId = strikerNo != null ? strikerNo.NetworkObjectId : 0UL;
+                    Strike_ClientRpc(contactPoint, n, intensity, strikerNetId, bladeHit && bladeT > 0.66f);
+                }
+
+                OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
+            }
         }
 
         /// <summary>
@@ -1604,6 +2035,13 @@ namespace CosmicShore.Gameplay
             Vector3 kick = impactVector * settings.explosionKickMultiplier;
             if (kick.sqrMagnitude < 1e-6f) return;
 
+            // NOTHING HERE KNOWS ABOUT THE NUCLEUS EITHER. A studding ball is a dynamic body, so
+            // the velocity write below actually moves it and ServerFixedUpdate reports the release
+            // — which is what makes the SCARAB'S DASH work on a seeded ball. Its reach onto a ball
+            // it does not physically touch is the cavitation blast (ScarabJukeController.OnJukeFired
+            // → ScarabCavitationBlast → ExplosionImpactor → here); while the ball was pinned and
+            // KINEMATIC, every line below wrote into a body that does not integrate, so the punch
+            // — and every other blast in the game — passed straight through it.
             Vector3 desired = rb.linearVelocity + kick;
             if (desired.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
                 desired = desired.normalized * settings.maxSpeed;
@@ -1789,8 +2227,39 @@ namespace CosmicShore.Gameplay
 
             if (trail != null)
             {
-                trail.startWidth = Mathf.Lerp(settings.minTrailWidth, settings.maxTrailWidth, speedRatio);
-                trail.time = Mathf.Lerp(0.15f, 0.8f, speedRatio);
+                // The wake blooms in with the ball and swells with the strike pop (visual scale).
+                float visualScale = _visual != null ? _visual.localScale.x : 1f;
+                trail.startWidth = TrailHeadWidth(speedRatio) * visualScale;
+                trail.time = Mathf.Lerp(settings.trailTimeAtRest, settings.trailTimeAtSpeed, speedRatio);
+                if (_cometTrail) DriveCometTrail(emissionColor, speedRatio);
+            }
+
+            if (wakeDust != null)
+            {
+                float worldRadius = BallWorldRadius();
+                var main = wakeDust.main;
+                // Authored against the base 7-unit ball; re-stated whole (never via *Multiplier,
+                // which does not scale both ends of a TwoConstants curve).
+                float k = worldRadius / 7f;
+                main.startSize = new ParticleSystem.MinMaxCurve(0.8f * k, 2.4f * k);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f * k, 4f * k);
+                main.startColor = emissionColor.maxColorComponent > 1e-4f
+                    ? emissionColor / emissionColor.maxColorComponent
+                    : Color.white;
+                var shape = wakeDust.shape;
+                shape.radius = worldRadius;
+                var emission = wakeDust.emission;
+                bool draw = ballRenderer.enabled;
+                // A TELEPORT (kickoff, goal reset, hand-off) is not travel: shedding by distance
+                // across it would lay a line of dust over the whole court. Skip the jump frame.
+                Vector3 here = transform.position;
+                float jump = Mathf.Max(settings.maxSpeed * Time.deltaTime * 3f, worldRadius * 4f);
+                bool teleported = (here - _lastDustPos).sqrMagnitude > jump * jump;
+                _lastDustPos = here;
+                float shed = Mathf.InverseLerp(0.15f, 1f, speedRatio);
+                emission.rateOverDistanceMultiplier = draw && !teleported
+                    ? settings.wakeDustPerUnit * shed * shed / Mathf.Max(0.01f, k)
+                    : 0f;
             }
 
             if (auraParticles != null)
@@ -2051,88 +2520,48 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Server: EMBED this ball in the nucleus surface at <paramref name="surfacePoint"/>, with
-        /// <paramref name="outward"/> pointing away from the cell centre. The ball stops simulating and
-        /// pins to the anchor, but stays contactable — being struck loose is the entire point of it.
+        /// Server: SEED this ball into the nucleus surface at <paramref name="surfacePoint"/>, with
+        /// <paramref name="outward"/> pointing away from the cell centre.
+        ///
+        /// IT IS PLACED, NOT PINNED. The ball is left a completely ordinary live body — dynamic,
+        /// contactable, blastable, depenetrable — that simply happens to be at rest inside a shell
+        /// with no collider in it. The only thing suspended is its containment, because the seed
+        /// point is on the wrong side of both the court and the cytoplasm volumes. Everything else
+        /// about it is a ball, so every force in the game reaches it with no force having to know
+        /// this ability exists.
+        ///
+        /// ONE WAY. A ball that has ever been dislodged refuses to be seeded again
+        /// (<c>_releasedFromNucleus</c>): studding the shell is a state the world puts a ball INTO,
+        /// never one it can fall back into, so a loose ball can never quietly stop behaving like a
+        /// ball because it drifted through the wrong place.
         ///
         /// It keeps its domain and its ownership lock, so a seeded ball is already its Scarab's, and an
         /// enemy who wants it must dash-steal it exactly like any other ball.
         /// </summary>
         public void EmbedOnNucleusServer(Vector3 surfacePoint, Vector3 outward)
         {
-            if (!IsServer) return;
+            if (!IsServer || _releasedFromNucleus) return;
 
             _embedAnchor = surfacePoint;
             _embedOutward = outward.sqrMagnitude > 1e-6f ? outward.normalized : Vector3.up;
 
             SetHiddenServer(false);
-            if (n_Frozen.Value) SetFrozenServer(false); // embedded is its own state, never frozen
+            SetFrozenServer(false);   // a studding ball is a LIVE body, never frozen and never pinned
             n_Embedded.Value = true;
-            ApplyEmbeddedPhysics(true);
 
             SetSpawnPosition(surfacePoint);
             transform.position = surfacePoint;
+            rb.position = surfacePoint;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
             if (IsSpawned)
             {
                 n_Position.Value = surfacePoint;
                 n_Velocity.Value = Vector3.zero;
                 n_AngularVelocity.Value = Vector3.zero;
             }
+            _lastPrismScanPos = surfacePoint;
             if (trail != null) trail.Clear();
-        }
-
-        /// <summary>
-        /// Server: knock an embedded ball loose along <paramref name="velocity"/>. Returns true if it
-        /// went INWARD (toward the cell centre — into the nucleus/court), false if it went OUTWARD into
-        /// the cytoplasm. The caller supplies the push; the ball reports which side of its own embed
-        /// normal that push was on, and raises <see cref="OnNucleusReleasedServer"/> so the field can
-        /// count nucleus entries without duplicating the geometry test.
-        /// </summary>
-        public bool ReleaseFromNucleusServer(Vector3 velocity)
-        {
-            if (!IsServer || !n_Embedded.Value) return false;
-
-            bool inward = Vector3.Dot(velocity, _embedOutward) < 0f;
-
-            n_Embedded.Value = false;
-            ApplyEmbeddedPhysics(false);
-
-            // Let the strike itself carry the ball out of the shell before the walls start
-            // correcting it, so leaving the nucleus reads as a hit in either direction.
-            _containmentGraceUntil = Time.time
-                + (settings != null ? Mathf.Max(0f, settings.nucleusReleaseGraceSeconds) : 1f);
-
-            rb.linearVelocity = velocity;
-            rb.angularVelocity = Vector3.zero;
-            if (IsSpawned)
-            {
-                n_Velocity.Value = velocity;
-                n_AngularVelocity.Value = Vector3.zero;
-            }
-            _lastPrismScanPos = transform.position;
-
-            OnNucleusReleasedServer?.Invoke(this, inward);
-            return inward;
-        }
-
-        /// <summary>
-        /// The embedded twin of <see cref="ApplyFrozenPhysics"/>: kinematic + pinned while embedded,
-        /// dynamic again on release. Deliberately does NOT snap to spawnPosition on the way out — the
-        /// release writes the ball's launch velocity immediately after, and a snap would fight it.
-        /// </summary>
-        void ApplyEmbeddedPhysics(bool embedded)
-        {
-            if (embedded)
-            {
-                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
-                rb.isKinematic = true;
-                transform.position = _embedAnchor;
-            }
-            else if (!n_Frozen.Value)
-            {
-                rb.isKinematic = false;
-                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-            }
         }
 
         /// <summary>
@@ -2154,7 +2583,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// A DOMAIN explosion where the ball died: coloured by the ball's own domain, and carrying
-        /// that domain into the standard blast rules — so own-domain prisms take a temporary shield
+        /// that domain into the standard blast rules — so own-domain prisms are drawn LIT in the blast's domain colour (Docs/LIT.md; a temporary shield until 2026-09)
         /// (the no-perceived-clipping rule) while other domains are destroyed. None of that is new
         /// behaviour; it is what <c>ExplosionImpactor</c> already does with
         /// <c>affectSelf = false, destructive = true</c>, which every shipped blast prefab authors.
@@ -2266,12 +2695,24 @@ namespace CosmicShore.Gameplay
 
         void ApplyHiddenVisuals(bool hidden)
         {
-            if (ballRenderer != null) ballRenderer.enabled = !hidden;
-            if (ballLight != null) ballLight.enabled = !hidden;
+            // A morph stand-in is the OTHER reason this ball may not be drawing itself, and the two
+            // compose: hidden gameplay state OR a crystal currently drawing the body. Folding it in
+            // here rather than at the call sites is what stops a replicated n_Hidden echo — which
+            // arrives on its own schedule — from switching the renderer back on underneath a live
+            // morph.
+            bool draw = !hidden && !_morphStandIn;
+            if (ballRenderer != null) ballRenderer.enabled = draw;
+            if (ballLight != null) ballLight.enabled = draw;
             if (trail != null)
             {
-                trail.emitting = !hidden;
-                if (hidden) trail.Clear();
+                trail.emitting = draw;
+                if (!draw) trail.Clear();
+            }
+            if (wakeDust != null)
+            {
+                // Stop shedding; motes already in the world fade out on their own.
+                var emission = wakeDust.emission;
+                if (!draw) emission.rateOverDistanceMultiplier = 0f;
             }
         }
 
@@ -2299,6 +2740,7 @@ namespace CosmicShore.Gameplay
             // Fresh ball at kickoff: unclaimed until the first strike.
             n_LastHitDomain.Value = Domains.Blue;
             ResetTouchLedgerServer();
+            RecordPilotServer(string.Empty);
             _shieldPoppedThisVisit.Clear();
             _nucleusSideResolved = false;   // teleported: re-read which side of the nucleus it is on
             _lastPrismScanPos = spawnPosition;
@@ -2384,6 +2826,7 @@ namespace CosmicShore.Gameplay
         {
             base.OnDestroy();
             if (_ballMesh != null) Destroy(_ballMesh);
+            if (_sparkFallback != null) Destroy(_sparkFallback);
         }
     }
 }

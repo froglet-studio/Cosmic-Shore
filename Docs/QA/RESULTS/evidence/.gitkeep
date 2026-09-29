@@ -1,0 +1,6 @@
+Evidence for QA sessions. One folder per session file, named after it:
+
+  evidence/2026-08-14-caleb/QA-PRISM-OCCLUSION-magenta.png
+
+Name each file after the item it belongs to and reference it from that item's
+Notes cell. Attach evidence for every FAIL. See Docs/QA/README.md.

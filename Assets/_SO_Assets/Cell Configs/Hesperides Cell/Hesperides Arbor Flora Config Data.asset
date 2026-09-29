@@ -33,8 +33,6 @@ MonoBehaviour:
     ShieldPeriod: 0.0
     MaxTotalSpawnedObjects: 312
     PlantRadiusCellFraction: 0.55
-  InitialLevel: 1
-  LeafScalePerLevel: 1.15
   SpreadElements: 1
   ElementPalette:
   - {fileID: 11400000, guid: 8142092b395852d6b70857945eddf051, type: 2}
