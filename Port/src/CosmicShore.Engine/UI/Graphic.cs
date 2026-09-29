@@ -22,7 +22,7 @@ namespace CosmicShore.Engine.UI
         /// <summary>Custom UI material (null = the default UI material). Arc E: filled from scene data.</summary>
         public virtual Material material
         {
-            get => m_Material;
+            get => m_Material != null ? m_Material : defaultMaterial;
             set { if (ReferenceEquals(m_Material, value)) return; m_Material = value; SetMaterialDirty(); }
         }
 
@@ -91,8 +91,13 @@ namespace CosmicShore.Engine.UI
         /// <summary>The material actually used to draw (original: material after modifiers).</summary>
         public virtual Material materialForRendering => material;
 
-        /// <summary>Default UI material stand-in (null: the renderer's own UI pipeline).</summary>
-        public virtual Material defaultMaterial => null;
+        static Material s_DefaultUI;
+
+        /// <summary>The shared "UI/Default" material every Graphic without its own draws with (original contract).</summary>
+        public static Material defaultGraphicMaterial => s_DefaultUI ??= new Material(Shader.Find("UI/Default")) { name = "Default UI Material" };
+
+        /// <summary>This graphic's fallback when no material is authored (original: <see cref="defaultGraphicMaterial"/>).</summary>
+        public virtual Material defaultMaterial => defaultGraphicMaterial;
 
         /// <summary>Hierarchy draw depth (-1 when not under a canvas).</summary>
         public int depth => canvas != null ? 0 : -1;

@@ -35,6 +35,10 @@ namespace CosmicShore.Player
             CosmicShore.Engine.Services.CloudSaveService.Instance =
                 new CosmicShore.Engine.Services.LocalCloudSaveService(
                     System.IO.Path.Combine(Application.persistentDataPath, "ugs-cloudsave.json"));
+            // The player's Friends backend: an account with no friends yet, as a fresh UGS login reads.
+            CosmicShore.Engine.Services.Friends.FriendsService.Instance ??=
+                new CosmicShore.Engine.Services.Friends.LocalFriendsService();
+            EnableVerboseChannels(Environment.GetEnvironmentVariable("CS_VERBOSE"));
             var sw = Stopwatch.StartNew();
             Loop = new GameLoop("Boot");
             Runtime = new ContentRuntime(root, new[] { GameAssembly, typeof(DG.Tweening.DOTween).Assembly });
@@ -54,6 +58,26 @@ namespace CosmicShore.Player
         }
 
         public void Dispose() => Loop?.Dispose();
+
+        /// <summary>
+        /// CS_VERBOSE=All (or a comma list of CSLogChannel names) switches on the game's own
+        /// verbose log channels — the same toggles FrogletTools > Toolbox > Logging flips in the editor.
+        /// </summary>
+        static void EnableVerboseChannels(string spec)
+        {
+            if (string.IsNullOrWhiteSpace(spec)) return;
+            var debugType = GameAssembly.GetTypes().FirstOrDefault(t => t.Name == "CSDebug");
+            var field = debugType?.GetField("VerboseChannels", BindingFlags.Public | BindingFlags.Static);
+            if (field == null) return;
+            var enumType = field.FieldType;
+            long bits = 0;
+            foreach (var name in spec.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (name.Equals("All", StringComparison.OrdinalIgnoreCase)) { bits = ~0L; break; }
+                if (Enum.TryParse(enumType, name, ignoreCase: true, out var v)) bits |= Convert.ToInt64(v);
+            }
+            field.SetValue(null, Enum.ToObject(enumType, bits));
+        }
     }
 
     /// <summary>Invokes a game assembly's [RuntimeInitializeOnLoadMethod] hooks of one phase.</summary>

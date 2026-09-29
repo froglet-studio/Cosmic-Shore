@@ -21,7 +21,10 @@ namespace CosmicShore.Engine.Networking
     /// new values, locally on write and — once the transport phase lands — on remote
     /// replication). Wire replication plugs into this type in the networking phase;
     /// until then behavior is exact for single-process (host-mode) play.
+    /// [Serializable] like the original (NetworkVariableBase): Instantiate inlines it BY VALUE,
+    /// so two clones of one prefab never share a variable (or its subscribers).
     /// </summary>
+    [System.Serializable]
     public class NetworkVariable<T>
     {
         public delegate void OnValueChangedDelegate(T previousValue, T newValue);

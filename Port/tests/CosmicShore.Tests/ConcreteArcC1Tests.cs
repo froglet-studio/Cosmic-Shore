@@ -722,7 +722,9 @@ public class ConcreteArcC1LeafTests
     {
         var list = ScriptableObject.CreateInstance<SO_ProfileIconList>();
         Assert.Equal(nameof(SO_ProfileIconList), list.name);
-        Assert.Null(list.profileIcons);   // inspector-authored in the original; defaults unset
+        // The serializer's non-null guarantee: a fresh instance's serialized list is empty, never null.
+        Assert.NotNull(list.profileIcons);
+        Assert.Empty(list.profileIcons);
 
         var sprite = new Sprite { name = "icon_07" };
         var icon = new ProfileIcon("Commander", 7, sprite);

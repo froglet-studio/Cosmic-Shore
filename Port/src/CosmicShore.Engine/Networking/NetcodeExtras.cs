@@ -21,6 +21,7 @@ namespace CosmicShore.Engine.Networking
     /// Replicated list (original: NetworkList&lt;T&gt;). Single-process: every mutation raises
     /// <see cref="OnListChanged"/> locally, exactly the callbacks a host observes for its own writes.
     /// </summary>
+    [Serializable] // inlined by value on Instantiate, like NetworkVariable (original: NetworkVariableBase)
     public class NetworkList<T> : IEnumerable<T>, IDisposable
     {
         public delegate void OnListChangedDelegate(NetworkListEvent<T> changeEvent);

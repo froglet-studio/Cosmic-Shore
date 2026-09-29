@@ -205,6 +205,7 @@ namespace CosmicShore.Engine
 
             var component = (Component)Activator.CreateInstance(componentType, nonPublic: true);
             component.gameObject = this;
+            SerializedFieldDefaults.Fill(component); // before Awake: the serializer's non-null guarantee
             _components.Add(component);
             if (component is Collider collider)
                 GameLoop.Current.Triggers.Register(collider); // trigger-pass registry (creation order)
@@ -306,6 +307,16 @@ namespace CosmicShore.Engine
             if (s_traceDestroy != null && name != null && name.Contains(s_traceDestroy, System.StringComparison.OrdinalIgnoreCase))
                 System.Console.WriteLine($"[trace-destroy] '{name}' destroyed at:\n{System.Environment.StackTrace}");
             if (destroyedFlag) return;
+
+            // Netcode contract: destroying a SPAWNED NetworkObject (a scene unload, a Destroy)
+            // despawns it first, so every behaviour gets OnNetworkDespawn before any OnDestroy —
+            // the in-scene spawners unsubscribe their SOAP handlers there.
+            foreach (var component in _components)
+                if (component is Networking.NetworkObject no && no.IsSpawned)
+                {
+                    no.Despawn(destroy: false);
+                    break;
+                }
 
             // Children first (snapshot — destruction mutates the list).
             var children = new List<Transform>(transform.Children);

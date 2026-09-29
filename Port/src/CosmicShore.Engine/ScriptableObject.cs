@@ -20,6 +20,7 @@ namespace CosmicShore.Engine
         {
             var instance = (ScriptableObject)Activator.CreateInstance(type, nonPublic: true);
             instance.name = type.Name;
+            SerializedFieldDefaults.Fill(instance);
             return instance;
         }
     }
