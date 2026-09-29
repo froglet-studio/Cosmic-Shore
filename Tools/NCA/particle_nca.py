@@ -562,6 +562,176 @@ def export(ca, cfg, path):
     json.dump(data, open(path, "w"))
 
 
+# ---------------------------------------------------------------- figures ---
+
+def load_run(run_dir, model="model.pt"):
+    saved = json.load(open(os.path.join(run_dir, "config.json")))
+    cfg = PConfig(**saved)
+    world = World(**cfg.world)
+    ca = ParticleNCA(world, cfg.channel_n, cfg.hidden, cfg.fire_rate)
+    ca.load_state_dict(torch.load(os.path.join(run_dir, model)))
+    frames = torch.from_numpy(np.load(os.path.join(run_dir, "frames.npy")).astype(np.float32))
+    return cfg, ca, frames
+
+
+def view(st: State, grid, sigma):
+    """What the loss sees, as an image: 2D the splat over white, 3D the splat volume rendered."""
+    img = splat(st, grid, sigma)
+    if len(grid) == 2:
+        return to_rgb(img)[0].numpy()
+    from nca3d import render
+    return render(img[0])
+
+
+def dots(st: State, grid, scale=4):
+    """2D only: every particle as a dot in its own colour (alpha over white); dormant particles
+    (alpha <= 0.1, the budding fringe) as faint grey. This is the collision automaton's actual
+    state - the splat is only how the loss reads it."""
+    from PIL import ImageDraw
+    H, W = grid
+    im = Image.new("RGB", (W * scale, H * scale), (255, 255, 255))
+    dr = ImageDraw.Draw(im)
+    act = st.active[0]
+    pos, s = st.pos[0][act].numpy(), st.s[0][act].numpy()
+    rr = 0.55 * scale
+    for (x, y), c in zip(pos, s):
+        a = float(np.clip(c[3], 0, 1))
+        if a <= 0.1:
+            col, r = (205, 205, 205), rr * 0.6
+        else:
+            rgb = np.clip(1 - a + np.clip(c[:3], 0, 1), 0, 1)
+            col, r = tuple(int(v * 255) for v in rgb), rr
+        cx, cy = x * scale, y * scale
+        dr.ellipse([cx - r, cy - r, cx + r, cy + r], fill=col)
+    return np.asarray(im, np.float32) / 255.0
+
+
+def figures(run_dir, seed=1, horizon=None, model="model.pt"):
+    torch.manual_seed(seed)
+    cfg, ca, frames = load_run(run_dir, model)
+    world = ca.world
+    K, grid = frames.shape[0], tuple(frames.shape[1:-1])
+    P, d = cfg.period, world.dim
+    horizon = horizon or (3000 if d == 2 else 1500)
+    centre = [g / 2 for g in reversed(grid)]
+    fig = os.path.join(run_dir, "figures")
+    os.makedirs(fig, exist_ok=True)
+    sig = world.sigma
+
+    def err_of(st):
+        return frame_mse(splat(st, grid, sig), frames)[0].numpy()
+
+    # 1. Long rollout from one seed: best-frame error, which frame, particle count.
+    keep_t = (0, 16, 32, 48, 64, 96, 200)
+    x = seed_state(1, world, centre, cfg.channel_n)
+    table, count, keep = [], [], {}
+    with torch.no_grad():
+        for t in range(horizon + 1):
+            table.append(err_of(x))
+            count.append(int(x.active.sum()))
+            if t in keep_t or (K > 1 and 200 <= t < 200 + K * P):
+                keep[t] = x.clone()
+            x = ca(x)
+    table = np.stack(table)
+    best, berr = table.argmin(1), table.min(1)
+    tt = np.arange(horizon + 1)
+    mean_frame = frames.mean(0, keepdim=True)
+    static_err = float(((mean_frame - frames) ** 2).mean()) if K > 1 else None
+
+    # 2. Growth strip: splat on top, particles underneath (2D) / rendered volume (3D).
+    grow = [view(keep[t], grid, sig) for t in keep_t]
+    row = np.concatenate(grow, 1)
+    if d == 2:
+        up = np.repeat(np.repeat(row, 3, 0), 3, 1)
+        dt = np.concatenate([dots(keep[t], grid, 3) for t in keep_t], 1)
+        row = np.concatenate([up, np.ones((6, up.shape[1], 3)), dt], 0)
+    im = Image.fromarray((row * 255).astype(np.uint8))
+    im.save(os.path.join(fig, "growth_strip.png"))
+    if d == 2:
+        Image.fromarray((dots(keep[200], grid, 8) * 255).astype(np.uint8)).save(os.path.join(fig, "particles.png"))
+
+    # 3. One loop against the target frame it best matches (animated runs).
+    fit = None
+    if K > 1:
+        ph = np.unwrap(best * 2 * np.pi / K) * K / (2 * np.pi)
+        fit = np.polyfit(tt[200:], ph[200:], 1)
+        ts = list(range(200, 200 + K * P, P))
+        tgt = (lambda f: to_rgb(f).numpy()) if d == 2 else (lambda f: __import__("nca3d").render(f))
+        top = np.concatenate([view(keep[t], grid, sig) for t in ts], 1)
+        bot = np.concatenate([tgt(frames[best[t]]) for t in ts], 1)
+        im = Image.fromarray((np.concatenate([top, np.ones((2, top.shape[1], 3)), bot], 0) * 255).astype(np.uint8))
+        if d == 2:
+            im = im.resize((im.width * 3, im.height * 3), Image.NEAREST)
+        im.save(os.path.join(fig, "loop_strip.png"))
+
+    # 4. GIF: splat | particles (2D), or the rendered volume (3D).
+    gif, n_gif = [], (300 if K == 1 else 200 + 4 * K * P)
+    x = seed_state(1, world, centre, cfg.channel_n)
+    with torch.no_grad():
+        for t in range(n_gif):
+            if t < 120 or t % 2 == 0:
+                if d == 2:
+                    left = np.asarray(Image.fromarray((view(x, grid, sig) * 255).astype(np.uint8)).resize(
+                        (grid[1] * 4, grid[0] * 4), Image.NEAREST), np.float32) / 255
+                    gif.append(np.concatenate([left, np.ones((grid[0] * 4, 4, 3)), dots(x, grid, 4)], 1))
+                else:
+                    gif.append(view(x, grid, sig))
+            x = ca(x)
+    write_gif(gif, os.path.join(fig, "loop.gif" if K > 1 else "grow.gif"), scale=1, ms=33)
+
+    # 5. Damage: remove every particle in the lower-right quarter (the grid cut) at step 400,
+    #    or a ball through the tail in 3D, and watch it heal for 600 steps.
+    torch.manual_seed(seed + 1)
+    x = seed_state(1, world, centre, cfg.channel_n)
+    with torch.no_grad():
+        for _ in range(400):
+            x = ca(x)
+        pre_err = float(err_of(x).min())
+        hit = (x.pos[0, :, 0] > centre[0]) & (x.pos[0, :, 1] > centre[1])
+        removed = int((hit & x.active[0]).sum())
+        x.active[0] &= ~hit
+        x.s[0, hit] = 0
+        seq, rec, rbest = [x.clone()], [], []
+        for i in range(600):
+            x = ca(x)
+            e = err_of(x)
+            rec.append(float(e.min())); rbest.append(int(e.argmin()))
+            if i + 1 in (20, 50, 100, 200, 400, 600):
+                seq.append(x.clone())
+    row = np.concatenate([view(s_, grid, sig) for s_ in seq], 1)
+    im = Image.fromarray((row * 255).astype(np.uint8))
+    if d == 2:
+        im = im.resize((im.width * 3, im.height * 3), Image.NEAREST)
+    im.save(os.path.join(fig, "damage.png"))
+
+    summary = {
+        "experiment": cfg.experiment, "dimensions": d, "frames": K, "model": model,
+        "particles_at": {str(t): count[t] for t in (0, 32, 64, 96, 200, 1000, horizon) if t <= horizon},
+        "particles_mean_after_200": float(np.mean(count[200:])),
+        "best_frame_error_at": {str(t): float(berr[t]) for t in (64, 96, 200, 1000, horizon) if t <= horizon},
+        "best_frame_error_mean_after_200": float(berr[200:].mean()),
+        "best_frame_error_max_after_200": float(berr[200:].max()),
+        "damage_removed_particles": removed,
+        "error_before_damage": pre_err,
+        "after_damage_error_at": {str(k): rec[k - 1] for k in (20, 50, 100, 200, 600)},
+    }
+    if K > 1:
+        slope = fit[0]
+        summary.update({
+            "period_target_steps_per_frame": P,
+            "measured_steps_per_frame": float(1 / slope) if abs(slope) > 1e-6 else None,
+            "static_best_image_error": static_err,
+            "distinct_frames_visited_after_200": int(len(set(best[200:].tolist()))),
+        })
+        rph = np.unwrap(np.array(rbest[300:]) * 2 * np.pi / K) * K / (2 * np.pi)
+        rs = float(np.polyfit(np.arange(len(rph)), rph, 1)[0])
+        summary["after_damage_steps_per_frame"] = float(1 / rs) if abs(rs) > 1e-6 else None
+    np.save(os.path.join(fig, "rollout.npy"), np.stack([best, berr, np.array(count)]))
+    json.dump(summary, open(os.path.join(fig, "summary.json"), "w"), indent=2)
+    print(json.dumps(summary, indent=2))
+    return summary
+
+
 # -------------------------------------------------------------- selftest ---
 
 def selftest():
@@ -652,6 +822,8 @@ def main():
         t.add_argument(f"--{k.replace('_', '-')}", type=type(v), default=v)
     fg = sub.add_parser("figures")
     fg.add_argument("--run", required=True)
+    fg.add_argument("--model", default="model.pt")
+    fg.add_argument("--horizon", type=int, default=0)
     a = ap.parse_args()
     if a.cmd == "selftest":
         selftest()
@@ -677,6 +849,8 @@ def main():
             loss = frame_mse(splat(y, grid, world.sigma), fr).mean()
             opt.zero_grad(); loss.backward(); opt.step()
             print(f"80 steps fwd+bwd: {time.time() - t0:.2f}s  (particles {int(y.active.sum(1).float().mean())})")
+    elif a.cmd == "figures":
+        figures(a.run, horizon=a.horizon or None, model=a.model)
     elif a.cmd == "train":
         cfg = PConfig(**{k: getattr(a, k) for k in asdict(PConfig()) if k != "world"})
         cfg.world = json.loads(a.world) if a.world else None
