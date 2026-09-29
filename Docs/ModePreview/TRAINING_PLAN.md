@@ -137,14 +137,19 @@ DrillLibrarySO     Resources/DrillLibrary: metric→TipListSO, mode→override, 
 No line the player reads is built out of C# string literals. Every word is a serialized field a
 human can edit, blank or delete without touching code:
 
-| Text | Lives in | Human control |
-|---|---|---|
-| Lesson steps (both flight schemes) | `LessonTemplateSO`: ordered `LessonStep`s, each with `Prompt` + `HintPrompt` | add / edit / reorder / delete steps |
-| The Time-ability step | a `LessonStep` in that template whose prompt is a token template, e.g. `Hold {glyph:Time} to {ability:Time}` | edit the sentence; the tokens resolve from `ElementalAbilityMapSO`, whose `AbilityLabel` / `AbilityDescription` are themselves authored |
-| Per-hull Lesson changes | `DrillLibrarySO` hull entry: optional replacement steps, or a per-step **suppress** flag | override or delete a step for one ship |
-| Mentor tips | `TipListSO` entries (`Prompt`) | add / edit / reorder / delete |
-| "Did you know" ability tips | ONE authored template in `DrillLibrarySO` (`{ability:X} — {abilityDescription:X}, on {glyph:X}`) plus a per-hull, per-element suppress/replace | edit the template or silence the automatic tip for a hull |
-| Chrome — section titles, "Skip", the waiting/hint captions, the "PB" / board labels, empty-state lines | `DrillLibrarySO.Strings` | edit any label |
+| Text | Lives in | Human control | Where to find it (Project search) |
+|---|---|---|---|
+| Lesson steps (both flight schemes) | `LessonTemplateSO`: ordered `LessonStep`s, each with `Prompt` + `HintPrompt` | add / edit / reorder / delete steps | `LessonTemplate_TwoThumb` and `LessonTemplate_OneThumb` in `Assets/_SO_Assets/Drills/Lessons/` (search `t:LessonTemplateSO`) |
+| The Time-ability step | a `LessonStep` in that template whose prompt is a token template, e.g. `Hold {glyph:Time} to {ability:Time}` | edit the sentence; the tokens resolve from `ElementalAbilityMapSO`, whose `AbilityLabel` / `AbilityDescription` are themselves authored | the sentence: the same `LessonTemplate_*` asset. The ability name/description: `Assets/Resources/ElementalAbilityMaps/<Vessel>.asset`, Time entry (search the vessel name, e.g. `Dolphin`, or `t:ElementalAbilityMapSO`) |
+| Per-hull Lesson changes | `DrillLibrarySO` hull entry: optional replacement steps, or a per-step **suppress** flag | override or delete a step for one ship | `Assets/Resources/DrillLibrary.asset`, *Hull Overrides* list (search `DrillLibrary`) |
+| Mentor tips | `TipListSO` entries (`Prompt`) | add / edit / reorder / delete | `Tips_<MetricFamily>` (e.g. `Tips_SwitchesThreaded`), optional `Tips_<Mode>` / `Tips_<Vessel>`, in `Assets/_SO_Assets/Drills/Tips/` (search `t:TipListSO`) |
+| "Did you know" ability tips | ONE authored template in `DrillLibrarySO` (`{ability:X} - {abilityDescription:X}, on {glyph:X}`) plus a per-hull, per-element suppress/replace | edit the template or silence the automatic tip for a hull | the template: `DrillLibrary.asset`, *Ability Tip Template* field. Per-hull silence: same asset, *Hull Overrides*. The facts it quotes: the vessel's `ElementalAbilityMaps/<Vessel>.asset` |
+| Chrome — section titles, "Skip", the waiting/hint captions, the "PB" / board labels, empty-state lines | `DrillLibrarySO.Strings` | edit any label | `DrillLibrary.asset`, *Strings* block |
+
+**Only the ability maps exist today.** Every other asset in this table is PLANNED, not yet built;
+the names and folders above are fixed here so the table stays a real map when they land. The
+authoring window (§9, **FrogletTools > Game Modes > Drill Authoring**) will open all of them from
+one place.
 
 Three rules make the table hold:
 - An **empty field shows nothing**. That is how a line is deleted; there is no fallback to a
