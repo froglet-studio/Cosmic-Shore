@@ -131,10 +131,12 @@ namespace CosmicShore.Gameplay
             var unlocked = new List<ToyDefinitionSO>();
             foreach (var t in box.UnlockedToys())
             {
-                // Android stripped-performance branch: only the conveyor toy ships. Skipping the
-                // other three drops their idle cost — most notably the vessel-changer set, which
-                // builds six mini-ship preview models. Squirrel stays the (only) menu vessel.
-                if (PerfStrip.ConveyorOnlyToybox && !(t is CosmicShore.ScriptableObjects.ConveyorToyDefinitionSO))
+                // Android stripped-performance branch: only the light toys ship (see
+                // PerfStrip.LightToysOnly for what each costs and why the rest stay out).
+                if (PerfStrip.LightToysOnly
+                    && t is not (CosmicShore.ScriptableObjects.ConveyorToyDefinitionSO
+                        or CosmicShore.ScriptableObjects.DomainChangerToyDefinitionSO
+                        or CosmicShore.ScriptableObjects.ElementChargerToyDefinitionSO))
                     continue;
                 unlocked.Add(t);
             }

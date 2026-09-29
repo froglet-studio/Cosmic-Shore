@@ -114,6 +114,25 @@ namespace CosmicShore.Gameplay
 
             RevertCellToBareCanvas(localVessel);
             ArmTether();
+            SetStripTrail(localVessel, on: true);
+        }
+
+        /// <summary>
+        /// Stripped-performance branch: the strip kills the vessel's trail at
+        /// <see cref="VesselPrismController.StartSpawn"/>, which would leave the tether - and so the
+        /// return station riding its tail - empty. Lift the kill for the life of the run and kick
+        /// the spawner (it declined once already and nothing re-asks until a drift toggles), then
+        /// put it back on the way out. A no-op off the strip: there the trail was never stopped.
+        /// </summary>
+        void SetStripTrail(IVesselStatus vessel, bool on)
+        {
+            if (!PerfStrip.Enabled) return;
+            PerfStrip.WanderwayTetherActive = on;
+
+            var controller = vessel?.VesselPrismController;
+            if (!controller) return;
+            if (on) controller.StartSpawn();
+            else if (PerfStrip.TrailsDisabled) controller.StopSpawn();
         }
 
         /// <summary>
@@ -378,6 +397,7 @@ namespace CosmicShore.Gameplay
             var vessel = LocalVessel();
             FlushWithering();
             DestroyReturnToy();
+            SetStripTrail(vessel, on: false);
 
             if (_conveyor && _conveyor.IsRunning) _conveyor.StopBelt();
 

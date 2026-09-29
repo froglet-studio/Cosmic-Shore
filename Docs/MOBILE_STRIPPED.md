@@ -756,3 +756,60 @@ Squirrel authors **0.5**). A touch drift with no sharp tier bound reads that dep
 full pull, landing on ×1.4 / grip 0.625 — the same 111.6 °/s as Round 9 with slightly MORE grip,
 peak slip **81°**, 125% of speed carried. The gate is negative-controlled: at depth 1 it fails.
 
+
+## Round 10 — re-evaluating the frame after the 1,104-commit resync (2026-09-29)
+
+The resync brought in a lot of platform work that runs on every frame or every menu entry. Each item
+was measured against the three experiences this build exists for (Squirrel freestyle, the
+Wanderway, Skim Race). Four were paying for nothing, one was broken, two cheap toys came back.
+
+### Cut or fixed
+
+| # | What | Why | Change |
+|---|------|-----|--------|
+| 1 | **Wanderway had no way home** | `WanderwayRun`'s return station rides the TAIL of the vessel's own trail (the rolling tether). The strip kills the trail at `StartSpawn`, so the tail never existed and the station never planted — the run could only be left through the overview button. | `PerfStrip.WanderwayTetherActive`: `WanderwayRun.Begin` lifts the trail kill and kicks the spawner, `End` puts it back. The tether is already bounded (100 prisms, recycled into its own pool — fixed memory), so it does not use the Skim Race FIFO. |
+| 2 | **Menu_Main booted Garland** | Upstream made `Garland Cell Config` the `BootDefault`: 4,259 laid prisms at every Menu_Main entry (boot and every return from a race) — 3.5x this build's whole Wanderway belt, for a backdrop behind the menu. The run swaps to the bare canvas anyway. | `PerfStrip.BootBareMenuCell`: `Cell.ResolveBootIndex` prefers the bare canvas (Barren) under the strip. Flip it off to get the furnished home screen back. |
+| 3 | **Skim Race lost Bloom + Panini after load** | Upstream's load-screen preview (`ConnectingArenaPreview`) mutes the gameplay camera and restores "exactly what it had". It captures the flag while the camera still carries the MENU's value (no post — the menu authors none) and restores that after the strip's deferred passes have granted post for the race — so the race ran without the two effects Round 6 kept it for. | `RestoreGameplayCamera` re-queues the strip's camera passes (`PerfStripRuntime.ScheduleApply`), so the scene decides again. |
+| 4 | **Skim Race trail scaled with seats** | The 2,000-prism cap is per VESSEL and the card seats up to 12 with AI backfill: 24,000 live prisms worst case. | One race-wide budget: `PerfStrip.SkimRaceTrailPrismsPerVessel` — 1-3 vessels keep 2,000 each, 4 → 1,500, 6 → 1,000, 8+ → 800 (one lap). Worst case 9,600. Quick Play (solo) is unchanged. |
+| 5 | **`SkimRaceController.OnDestroy` hid the base** | The strip's own `void OnDestroy()` (CS0114) hid `NetworkBehaviour.OnDestroy`, so the controller's NetworkVariables never disposed — a native leak per race (`ArcadeConfigSyncManager` records the same finding). | Now `public override` + `base.OnDestroy()`. |
+| 6 | **Top-bar glow breathed forever** | `DomainScorePanel` runs an endless DOFade loop per domain column: a UI colour change every frame is a HUD canvas re-batch every frame of the race, for a decoration. | Under the strip the glow rests at its tint and still punches on a score change; only the idle breath is dropped. |
+
+### Brought back (cheap)
+
+`PerfStrip.ConveyorOnlyToybox` became **`LightToysOnly`**: the toybox now also ships the
+**domain changer** (two switch rings — repaints your trail and HUD) and the **element charger**
+(one station opening into four accent-material crystals — lets a pilot actually reach the
+Squirrel's level-5 upgrades). Both are a handful of meshes and no prisms. Still out: the vessel
+changer (other hulls are not tuned here), painting (it IS trail), cell selector (34-69k-prism
+worlds), spawn matrix (flora/fauna are paused) and Arkway (three satellite cells).
+
+### Measured and kept (free or near-free)
+
+- **Prism shader splices** (occlusion corridor, Lit, cradle): every one early-outs on a UNIFORM
+  (`Params.x <= 0 && peerCount <= 0`, `count <= 0`), so they cost a branch per pixel when idle.
+  `PrismLit` publishes nothing when no light is live.
+- **Vessel vision band, speed tunnel**: a few `SetGlobal*` per frame.
+- **The arcade card's preview window**: the looking phase is a SCALE MODEL (one mesh, no prisms);
+  shadows are unsupported in `URP_Asset`, and post only follows `Camera.main`, which the menu does
+  not grant. Tap-in borrows the gameplay camera rather than adding one.
+- **Upstream retired the picture-in-picture camera** (`Pip` is default-off): the Squirrel's
+  `PipCamera` no longer renders a second view into a RenderTexture every frame. A free GPU win.
+- The belt stays at 1,200 resident prisms against upstream's 30,000.
+
+### Candidates to bring in next (not done — each needs the editor)
+
+1. **Joust** — Squirrel-only, the Squirrel's own verb, and its arena is the **Barren** cell (no
+   authored world, no flora/fauna): the cheapest arena in the game. Needs its scene enabled, a
+   launch entry beside Quick Play, and the same capped-trail hook `SkimRaceController` has
+   (without a trail an empty cell has nothing to skim).
+2. **The static skybox** — still the biggest missing piece of the look; bake it in the editor
+   (FrogletTools ▸ Bake Static HyperSea Skybox) and commit the material. One texture sample.
+3. **Render scale** — if MSAA + FXAA still read soft/jaggy on device, the next lever is
+   `m_RenderScale` 0.8 → 0.9 (+27% pixels) or the FSR upscaler; measure first.
+
+### Not verified in the editor
+
+No Unity here. The eight out-of-editor gates pass; nothing has been compiled against the real
+assemblies. Check on device: (1) a Wanderway run plants a return station behind you that you can
+fly back into; (2) Menu_Main comes up on an empty cell; (3) a Skim Race shows bloom and the speed
+tunnel's bend after the load screen drops; (4) the toybox shows three toys.

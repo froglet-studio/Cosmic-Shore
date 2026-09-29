@@ -207,6 +207,12 @@ namespace CosmicShore.UI
             _glowBreath?.Kill();
             if (glowBreathDepth <= 0f || glowBreathPeriod <= 0f) return;
 
+            // Stripped-performance branch: an endless alpha loop dirties the HUD canvas EVERY
+            // frame, so it re-batches every frame of the race for a decoration. The glow still
+            // rests at its tint and still punches on a score change (PunchGlow fades back to rest
+            // on its own); only the idle breath goes.
+            if (CosmicShore.Utility.PerfStrip.Enabled) return;
+
             // Yoyo between the two ends of the swing, starting from the DIM end so a freshly
             // built bar brightens into view instead of fading out of it.
             float lo = Mathf.Clamp01(glowRestAlpha * (1f - glowBreathDepth));

@@ -64,10 +64,26 @@ namespace CosmicShore.Gameplay
             CosmicShore.Utility.PerfStrip.CappedTrailActive = true;
         }
 
-        void OnDestroy()
+        // The cap is PER VESSEL (each VesselPrismController keeps its own FIFO), and the arcade
+        // card seats up to 12 with AI backfill - 12 x 2000 is 24,000 live prisms. So the per-vessel
+        // cap is a share of one race-wide budget, floored at a lap. Refined here rather than in
+        // Awake because the injected GameDataSO is not populated until after Awake; vessels do
+        // not start their spawners until the countdown, long after Start.
+        void Start()
         {
-            if (!CosmicShore.Utility.PerfStrip.Enabled) return;
-            CosmicShore.Utility.PerfStrip.CappedTrailActive = false;
+            if (!CosmicShore.Utility.PerfStrip.Enabled || !gameData || !gameData.SelectedPlayerCount) return;
+            CosmicShore.Utility.PerfStrip.CappedTrailLimit =
+                CosmicShore.Utility.PerfStrip.SkimRaceTrailPrismsPerVessel(gameData.SelectedPlayerCount.Value);
+        }
+
+        // OVERRIDE, never a new method: NetworkBehaviour.OnDestroy disposes this controller's
+        // NetworkVariables (native allocations). Declared bare it HID the base (CS0114) and leaked
+        // them once per race - see ArcadeConfigSyncManager.OnDestroy for the same finding.
+        public override void OnDestroy()
+        {
+            if (CosmicShore.Utility.PerfStrip.Enabled)
+                CosmicShore.Utility.PerfStrip.CappedTrailActive = false;
+            base.OnDestroy();
         }
 
         public override void OnNetworkSpawn()

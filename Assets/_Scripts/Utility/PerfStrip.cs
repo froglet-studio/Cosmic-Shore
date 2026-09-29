@@ -34,18 +34,28 @@ namespace CosmicShore.Utility
         /// while a capped trail is active (see <see cref="CappedTrailActive"/>): the conveyor's
         /// breadcrumb (300) or Skim Race's skimmable trail (2000, ≥ two laps).
         /// </summary>
-        public static bool TrailsDisabled => Enabled && !CappedTrailActive;
+        public static bool TrailsDisabled => Enabled && !CappedTrailActive && !WanderwayTetherActive;
+
+        /// <summary>
+        /// A Wanderway run is live: the vessel lays its trail so <c>WanderwayRun</c>'s rolling
+        /// tether exists. The tether IS the run's way home — the return station rides its tail, and
+        /// with no trail there is no tail, so the station never plants. It is already bounded
+        /// (<c>tetherPrisms</c>, recycled into its own pool — fixed memory), so it does NOT use the
+        /// capped-trail FIFO below; the run owns the cap. Set by <c>WanderwayRun.Begin</c>, cleared
+        /// by <c>WanderwayRun.End</c>.
+        /// </summary>
+        public static bool WanderwayTetherActive;
 
         /// <summary>
         /// Capped-trail mode: vessels lay their trail, FIFO-capped at <see cref="CappedTrailLimit"/>
         /// prisms — past the cap the OLDEST prism is consumed via the sanctioned Prism.Consume
         /// (implode-toward-target) path, never a silent despawn, so the continuity law's
         /// visible-transition requirement is met. The cap was explicitly authorized by the design
-        /// owner for this branch (2026-07-07). Two writers:
-        ///   • ConveyorToy — breadcrumb home (limit 300, prisms implode into the tail-riding switch);
-        ///   • HexRaceController ("Skim Race") — the skimmable race trail (limit 2000: the track is
-        ///     ~4000u per circuit and the Squirrel lays a prism every 5–7u ⇒ ~600–800 prisms/lap,
-        ///     so 2000 guarantees AT LEAST two laps of trail to skim after lap one).
+        /// owner for this branch (2026-07-07). One writer today: SkimRaceController - the
+        /// skimmable race trail (the track is ~4000u per circuit and the Squirrel lays a prism
+        /// every 5–7u ⇒ ~600–800 prisms/lap, so 2000 guarantees AT LEAST two laps of trail to skim
+        /// after lap one; shared across vessels by <see cref="SkimRaceTrailPrismsPerVessel"/>).
+        /// The conveyor's old breadcrumb writer is superseded by <see cref="WanderwayTetherActive"/>.
         /// </summary>
         public static bool CappedTrailActive;
 
@@ -55,8 +65,46 @@ namespace CosmicShore.Utility
         /// <summary>Skim Race trail cap — sized to always cover ≥ 2 laps (see CappedTrailActive doc).</summary>
         public const int SkimRaceTrailPrisms = 2000;
 
-        /// <summary>Show only the conveyor toy in the freestyle toybox; skip the other three.</summary>
-        public static bool ConveyorOnlyToybox => Enabled;
+        /// <summary>
+        /// Race-wide live-trail budget, shared by every vessel in a Skim Race. Up to three vessels
+        /// each keep the full two-lap <see cref="SkimRaceTrailPrisms"/>; past that the share shrinks
+        /// toward <see cref="SkimRaceTrailFloorPrisms"/> (one lap) instead of multiplying.
+        /// </summary>
+        public const int SkimRaceTrailBudget = 6000;
+
+        /// <summary>One lap of trail (~600–800 prisms/lap) — the least a race vessel keeps.</summary>
+        public const int SkimRaceTrailFloorPrisms = 800;
+
+        /// <summary>
+        /// Per-vessel Skim Race cap for a race of <paramref name="vessels"/>: 1–3 → 2000,
+        /// 4 → 1500, 6 → 1000, 8+ → 800. Worst case (12 seats) is 9,600 live prisms where a flat
+        /// per-vessel cap allowed 24,000.
+        /// </summary>
+        public static int SkimRaceTrailPrismsPerVessel(int vessels)
+        {
+            int share = SkimRaceTrailBudget / System.Math.Max(1, vessels);
+            return System.Math.Clamp(share, SkimRaceTrailFloorPrisms, SkimRaceTrailPrisms);
+        }
+
+        /// <summary>
+        /// Boot Menu_Main into the cell's bare canvas (Barren) instead of its authored boot
+        /// default (Garland, 4,259 laid prisms). Upstream moved the home screen onto Garland so it
+        /// is furnished in the first frame; on this build that is 3.5x the conveyor's whole prism
+        /// budget spent on a menu backdrop, rebuilt behind a load veil on every menu entry. Flip to
+        /// false to get the furnished home screen back and pay for it.
+        /// </summary>
+        public static bool BootBareMenuCell => Enabled;
+
+        /// <summary>
+        /// Ship only the LIGHT toys in the freestyle toybox: the conveyor (the reason this build
+        /// exists), the domain changer (two switch rings - repaints your trail and HUD) and the
+        /// element charger (one station opening into four accent-material crystals - lets a pilot
+        /// feel the Squirrel's element upgrades). Each is a few meshes and no prisms. Skipped: the
+        /// vessel changer (other hulls, not tuned here), and the toys whose whole content is mass
+        /// or ecology this build turns off - painting (trail strokes), cell selector (34-69k-prism
+        /// worlds), spawn matrix (flora/fauna are paused), Arkway (three satellite cells).
+        /// </summary>
+        public static bool LightToysOnly => Enabled;
 
         /// <summary>
         /// Let a scene keep the post-processing it AUTHORED (see

@@ -1803,6 +1803,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         int ResolveBootIndex()
         {
+            // Stripped-performance branch: boot the BARE canvas, not the authored boot default.
+            // Garland is cheap by desktop standards and still lays 4,259 prisms (GameObject +
+            // collider each) at every Menu_Main entry - boot and every return from Skim Race -
+            // which is 3.5x the whole Wanderway belt this build is capped at, for a backdrop
+            // behind the menu. The run swaps to the bare canvas anyway. See PerfStrip.BootBareMenuCell.
+            if (PerfStrip.BootBareMenuCell)
+                for (int i = 0; i < CellConfigs.Count; i++)
+                    if (IsBareCanvas(CellConfigs[i]))
+                        return i;
+
             for (int i = 0; i < CellConfigs.Count; i++)
                 if (CellConfigs[i] && CellConfigs[i].BootDefault)
                     return i;

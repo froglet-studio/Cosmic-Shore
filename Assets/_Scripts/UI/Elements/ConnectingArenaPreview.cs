@@ -462,6 +462,12 @@ namespace CosmicShore.UI
                 data.renderPostProcessing = _suppressedPost;
 
             _suppressed = null;
+
+            // Stripped-performance branch: the value captured at suppression is the MENU's (the
+            // strip grants post only in scenes that author it, and a load panel goes up before the
+            // strip's deferred passes reach the gameplay scene's camera). Restoring it would switch
+            // the race's Bloom + Panini off for the whole match, so let the strip decide again.
+            if (PerfStrip.Enabled) PerfStripRuntime.ScheduleApply();
         }
 
         void EnsureRenderTexture()
