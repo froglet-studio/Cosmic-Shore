@@ -85,4 +85,80 @@ public class AnimatorPlaybackTests : System.IDisposable
         var curve = new AnimationCurve(new Keyframe(0f, 0f, 0f, float.PositiveInfinity), new Keyframe(1f, 1f, float.PositiveInfinity, 0f));
         Assert.Equal(0f, curve.Evaluate(0.5f));
     }
+
+    static AnimationClip PosClip(float x)
+    {
+        var clip = new AnimationClip { name = $"x={x}", length = 1f / 24f };
+        clip.Bindings.Add(new ClipBinding
+        {
+            Path = "part", ClassId = 4, Attribute = "m_LocalPosition.x",
+            Curve = new AnimationCurve(new Keyframe(0f, x), new Keyframe(1f / 24f, x)),
+        });
+        return clip;
+    }
+
+    [Fact]
+    public void Simple1D_InterpolatesBetweenBracketingThresholds()
+    {
+        var tree = new BlendTree { Type = BlendTreeType.Simple1D, ParameterX = "s" };
+        tree.Children.Add(new BlendTreeChild { Clip = PosClip(0f), Threshold = 0f });
+        tree.Children.Add(new BlendTreeChild { Clip = PosClip(10f), Threshold = 1f });
+        tree.Children.Add(new BlendTreeChild { Clip = PosClip(30f), Threshold = 2f });
+        var w = new float[3];
+        BlendTreeWeights.Compute(tree, 1.25f, 0f, _ => 0f, w);
+        Assert.Equal(new[] { 0f, 0.75f, 0.25f }, w);
+        BlendTreeWeights.Compute(tree, 9f, 0f, _ => 0f, w);
+        Assert.Equal(new[] { 0f, 0f, 1f }, w);
+    }
+
+    [Fact]
+    public void FreeformCartesian_IsExactAtEachChild_AndSumsToOne()
+    {
+        var tree = new BlendTree { Type = BlendTreeType.FreeformCartesian2D };
+        var pts = new[] { new Vector2(0, 1), new Vector2(0, -1), new Vector2(1, 0), new Vector2(-1, 0) };
+        foreach (var p in pts) tree.Children.Add(new BlendTreeChild { Clip = PosClip(0f), Position = p });
+        var w = new float[4];
+        for (int i = 0; i < pts.Length; i++)
+        {
+            BlendTreeWeights.Compute(tree, pts[i].x, pts[i].y, _ => 0f, w);
+            Assert.Equal(1f, w[i], 4);
+        }
+        BlendTreeWeights.Compute(tree, 0.3f, 0.2f, _ => 0f, w);
+        Assert.Equal(1f, w[0] + w[1] + w[2] + w[3], 4);
+        Assert.True(w[2] > w[3] && w[0] > w[1]);
+    }
+
+    [Fact]
+    public void DirectTree_WeightsByParameter_AndFillsTheRestFromTheDefault()
+    {
+        var inner = new BlendTree { Type = BlendTreeType.Simple1D, ParameterX = "Pitch" };
+        inner.Children.Add(new BlendTreeChild { Clip = PosClip(-4f), Threshold = -1f });
+        inner.Children.Add(new BlendTreeChild { Clip = PosClip(4f), Threshold = 1f });
+        var direct = new BlendTree { Type = BlendTreeType.Direct };
+        direct.Children.Add(new BlendTreeChild { Tree = inner, DirectParameter = "Blend" });
+        var layer = new AnimatorLayerData();
+        layer.States.Add(new AnimatorStateData { Name = "Blend Tree", NameHash = Animator.StringToHash("Blend Tree"), Tree = direct, TimeParameter = "Blend" });
+        var controller = new AnimatorController();
+        controller.Layers.Add(layer);
+
+        var go = new GameObject("vessel");
+        var part = new GameObject("part");
+        part.transform.SetParent(go.transform, false);
+        part.transform.localPosition = new Vector3(2f, 0f, 0f);   // the rest pose
+        var animator = go.AddComponent<Animator>();
+        animator.runtimeAnimatorController = controller;
+
+        animator.SetFloat("Pitch", 1f);
+        _loop.Run(2, 1f / 60f);
+        Assert.Equal(2f, part.transform.localPosition.x, 3);    // Blend = 0: the tree carries no weight
+
+        animator.SetFloat("Blend", 1f);
+        _loop.Run(2, 1f / 60f);
+        Assert.Equal(4f, part.transform.localPosition.x, 3);
+
+        animator.SetFloat("Blend", 0.5f);
+        animator.SetFloat("Pitch", 0f);
+        _loop.Run(2, 1f / 60f);
+        Assert.Equal(1f, part.transform.localPosition.x, 3);    // 0.5 * 0 + 0.5 * rest
+    }
 }

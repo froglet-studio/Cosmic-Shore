@@ -79,10 +79,11 @@ namespace CosmicShore.Content.Models
         /// (FBX SDK's documented evaluation; pre/post rotations are XYZ-ordered).
         /// </summary>
         public static DMat4 LocalMatrix(FbxObject m)
+            => LocalMatrix(m, V(m.PropVector("Lcl Translation")), V(m.PropVector("Lcl Rotation")), V(m.PropVector("Lcl Scaling", 1, 1, 1)));
+
+        /// <summary>The same evaluation with the animatable Lcl channels supplied (an animation sample).</summary>
+        public static DMat4 LocalMatrix(FbxObject m, DVec3 t, DVec3 r, DVec3 s)
         {
-            var t = V(m.PropVector("Lcl Translation"));
-            var r = V(m.PropVector("Lcl Rotation"));
-            var s = V(m.PropVector("Lcl Scaling", 1, 1, 1));
             long order = m.PropLong("RotationOrder");
             var rOff = V(m.PropVector("RotationOffset"));
             var rPiv = V(m.PropVector("RotationPivot"));
@@ -142,7 +143,7 @@ namespace CosmicShore.Content.Models
         {
             counts.TryGetValue(path, out int occ);
             counts[path] = occ + 1;
-            var node = new ModelNode { Name = name, Path = path, PathOccurrence = occ, Parent = parent, Source = src };
+            var node = new ModelNode { Name = name, Path = path, PathOccurrence = occ, Parent = parent, Source = src, TopLevel = topLevel };
             var local = LocalMatrix(src);
             if (topLevel && !model.Settings.BakeAxisConversion) local = model.AxisConversion * local;
             node.LocalMatrix = ToUnity(local, model.UnitScale);

@@ -131,6 +131,11 @@ namespace CosmicShore.Player
                         break;
                     }
                     case "vessels": Inspector.Vessels(); break;
+                    case "animators":
+                        foreach (var an in CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Engine.Animator>(CosmicShore.Engine.FindObjectsSortMode.None))
+                            if (an.isActiveAndEnabled && (arg.Length == 0 || an.name.Contains(arg.Trim(), StringComparison.OrdinalIgnoreCase)))
+                                Console.WriteLine("[animator] " + an.DebugSummary());
+                        break;
                     case "slice": Inspector.Slice(int.Parse(arg.Trim(), CultureInfo.InvariantCulture)); break;
                     case "blast":
                         Inspector.Blast(int.Parse(arg.Trim(), CultureInfo.InvariantCulture));

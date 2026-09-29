@@ -52,6 +52,8 @@ namespace CosmicShore.Content.Models
         public ModelNode Parent;
         public readonly List<ModelNode> Children = new();
         public FbxObject Source;
+        /// <summary>A node connected to the FBX scene root: it carries the axis conversion in its local transform.</summary>
+        public bool TopLevel;
 
         public Vector3 LocalPosition;
         public Quaternion LocalRotation = Quaternion.identity;

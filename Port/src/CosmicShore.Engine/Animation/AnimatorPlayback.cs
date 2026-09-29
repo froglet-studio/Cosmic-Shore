@@ -55,6 +55,7 @@ namespace CosmicShore.Engine
 
         sealed class Slot
         {
+            public int Index;
             public ClipBinding Binding;
             public Func<float> Get;
             public Action<float> Set;
@@ -74,9 +75,24 @@ namespace CosmicShore.Engine
             public AnimatorController BoundController;
             public LayerRuntime[] Layers = Array.Empty<LayerRuntime>();
             public readonly Dictionary<string, Slot> Slots = new(StringComparer.Ordinal);
-            public readonly Dictionary<string, float> Values = new(StringComparer.Ordinal);
+            public readonly List<Slot> SlotList = new();
+            /// <summary>Transforms a rotation slot writes: renormalized after every write pass.</summary>
+            public readonly List<Transform> RotationTargets = new();
+            /// <summary>Each clip's curves indexed by slot (null = the clip does not animate that slot).</summary>
+            public readonly Dictionary<AnimationClip, AnimationCurve[]> ClipCurves = new();
+            public float[] Values = Array.Empty<float>(), Acc = Array.Empty<float>(), Cover = Array.Empty<float>();
+            public bool[] Has = Array.Empty<bool>();
+            public readonly List<MotionSample> Samples = new();
             public bool PlayedSinceTick;
             public int LastTickFrame = int.MinValue;
+        }
+
+        struct MotionSample
+        {
+            public AnimationClip Clip;
+            public float Weight;
+            public float TimeScale;
+            public float Time;
         }
 
         static readonly ConditionalWeakTable<Animator, Runtime> s_state = new();
@@ -189,13 +205,13 @@ namespace CosmicShore.Engine
                 int idx = states.FindIndex(s => s.NameHash == hash || s.FullPathHash == hash);
                 if (idx < 0) continue;
                 var lr = st.Layers[li];
-                float len = Length(states[idx]);
+                float len = StateLength(states[idx]);
                 if (transition > 0f && lr.Current >= 0)
                 {
                     lr.Next = idx;
                     lr.NextTime = normalizedTime * len;
                     lr.TransitionElapsed = 0f;
-                    lr.TransitionDuration = fixedDuration ? transition : transition * Length(states[lr.Current]);
+                    lr.TransitionDuration = fixedDuration ? transition : transition * StateLength(states[lr.Current]);
                 }
                 else
                 {
@@ -225,16 +241,16 @@ namespace CosmicShore.Engine
             return Info(st.BoundController.Layers[layerIndex], lr.Next, lr.NextTime);
         }
 
-        static AnimatorStateInfo Info(AnimatorLayerData layer, int index, float time)
+        AnimatorStateInfo Info(AnimatorLayerData layer, int index, float time)
         {
             if (index < 0 || index >= layer.States.Count) return default;
             var s = layer.States[index];
-            float len = Length(s);
+            float len = StateLength(s);
             return new AnimatorStateInfo
             {
                 shortNameHash = s.NameHash, fullPathHash = s.FullPathHash, tagHash = s.TagHash,
-                normalizedTime = len > 0f ? time / len : 0f, length = len, speed = s.Speed, speedMultiplier = 1f,
-                loop = s.Clip != null && s.Clip.isLooping,
+                normalizedTime = Normalized(s, time, len), length = len, speed = s.Speed, speedMultiplier = 1f,
+                loop = IsLooping(s),
             };
         }
 
@@ -254,7 +270,6 @@ namespace CosmicShore.Engine
             var st = State;
             st.Floats.Clear(); st.Ints.Clear(); st.Bools.Clear(); st.Triggers.Clear(); st.PlayedWithoutController.Clear();
             st.BoundController = null;
-            st.Slots.Clear();
             Bind();
         }
 
@@ -265,10 +280,36 @@ namespace CosmicShore.Engine
         public void StopRecording() { }
         public void WriteDefaultValues()
         {
-            foreach (var slot in State.Slots.Values) slot.Set(slot.Default);
+            foreach (var slot in State.SlotList) slot.Set(slot.Default);
         }
         public void MarkMaterialsDirty() { }
         public Transform GetBoneTransform(HumanBodyBones humanBoneId) => null;
+
+        /// <summary>Port diagnostics: controller, current state, float parameters and how far the pose is from rest.</summary>
+        public string DebugSummary()
+        {
+            var st = State;
+            if (!Bind()) return $"{name}: no controller";
+            var c = st.BoundController;
+            var sb = new System.Text.StringBuilder();
+            sb.Append($"{name} [{c.name}]");
+            for (int li = 0; li < c.Layers.Count; li++)
+            {
+                var lr = st.Layers[li];
+                sb.Append($" L{li}={(lr.Current >= 0 ? c.Layers[li].States[lr.Current].Name : "-")}");
+            }
+            foreach (var p in c.Parameters)
+                if (p.type == AnimatorControllerParameterType.Float) sb.Append($" {p.name}={GetFloat(p.name):0.###}");
+            float maxDev = 0f; string maxKey = null;
+            foreach (var slot in st.SlotList)
+            {
+                float v; try { v = slot.Get(); } catch (Exception) { continue; }
+                float d = MathF.Abs(v - slot.Default);
+                if (d > maxDev) { maxDev = d; maxKey = slot.Binding.Path + ":" + slot.Binding.Attribute; }
+            }
+            sb.Append($" slots={st.SlotList.Count} maxDeviation={maxDev:0.####} at {maxKey}");
+            return sb.ToString();
+        }
 
         // ── Frame ──────────────────────────────────────────────────────
 
@@ -318,7 +359,40 @@ namespace CosmicShore.Engine
             }
         }
 
-        static float Length(AnimatorStateData s) => s.Clip != null && s.Clip.length > 0f ? s.Clip.length : 1f;
+        /// <summary>A state's duration: its clip's length, or a blend tree's weight-averaged child length.</summary>
+        float StateLength(AnimatorStateData s)
+        {
+            if (s.Tree != null)
+            {
+                var samples = new List<MotionSample>();
+                GatherTree(s.Tree, 1f, 1f, samples);
+                float sum = 0f, wsum = 0f;
+                foreach (var m in samples)
+                {
+                    if (m.Clip == null || m.Clip.length <= 0f) continue;
+                    sum += m.Weight * m.Clip.length / (m.TimeScale > 0f ? m.TimeScale : 1f);
+                    wsum += m.Weight;
+                }
+                return wsum > 0f && sum > 0f ? sum / wsum : 1f;
+            }
+            return s.Clip != null && s.Clip.length > 0f ? s.Clip.length : 1f;
+        }
+
+        float Normalized(AnimatorStateData s, float time, float len)
+            => !string.IsNullOrEmpty(s.TimeParameter) ? GetFloat(s.TimeParameter) : len > 0f ? time / len : 0f;
+
+        static bool IsLooping(AnimatorStateData s)
+        {
+            if (s.Clip != null) return s.Clip.isLooping;
+            return s.Tree != null && AnyLooping(s.Tree);
+        }
+
+        static bool AnyLooping(BlendTree t)
+        {
+            foreach (var c in t.Children)
+                if (c.Clip != null ? c.Clip.isLooping : c.Tree != null && AnyLooping(c.Tree)) return true;
+            return false;
+        }
 
         float StateSpeed(AnimatorStateData s)
             => s.Speed * (string.IsNullOrEmpty(s.SpeedParameter) ? 1f : GetFloat(s.SpeedParameter));
@@ -343,14 +417,14 @@ namespace CosmicShore.Engine
             }
 
             lr.CurrentTime += dt * StateSpeed(cur);
-            float len = Length(cur);
-            float norm = lr.CurrentTime / len;
+            float len = StateLength(cur);
+            float norm = Normalized(cur, lr.CurrentTime, len);
             var taken = Pick(layer.AnyStateTransitions, norm, lr.Current, anyState: true) ?? Pick(cur.Transitions, norm, lr.Current, anyState: false);
             if (taken == null) return;
             int dst = taken.Destination >= 0 && taken.Destination < layer.States.Count
                 ? taken.Destination
                 : Math.Clamp(layer.DefaultState, 0, layer.States.Count - 1);
-            float dstLen = Length(layer.States[dst]);
+            float dstLen = StateLength(layer.States[dst]);
             float duration = taken.HasFixedDuration ? taken.Duration : taken.Duration * len;
             if (duration <= 0f)
             {
@@ -412,8 +486,9 @@ namespace CosmicShore.Engine
         void Apply(AnimatorController c)
         {
             var st = State;
-            var values = st.Values;
-            values.Clear();
+            int n = st.SlotList.Count;
+            var values = st.Values; var has = st.Has; var acc = st.Acc; var cover = st.Cover;
+            Array.Clear(has, 0, n);
             for (int li = 0; li < c.Layers.Count; li++)
             {
                 var lr = st.Layers[li];
@@ -424,49 +499,116 @@ namespace CosmicShore.Engine
                 AnimatorStateData next = lr.Next >= 0 ? c.Layers[li].States[lr.Next] : null;
                 float w = next == null ? 0f : Math.Clamp(lr.TransitionDuration > 0f ? lr.TransitionElapsed / lr.TransitionDuration : 1f, 0f, 1f);
 
-                // Everything the controller binds takes part: write-defaults fills what a state does not animate.
-                foreach (var slot in st.Slots.Values)
+                var samples = st.Samples;
+                samples.Clear();
+                GatherState(cur, lr.CurrentTime, 1f - w, samples);
+                if (next != null) GatherState(next, lr.NextTime, w, samples);
+                Array.Clear(acc, 0, n);
+                Array.Clear(cover, 0, n);
+                foreach (var m in samples)
                 {
-                    bool inCur = Sample(cur, lr.CurrentTime, slot, out float a);
-                    bool inNext = next != null && Sample(next, lr.NextTime, slot, out _);
-                    if (!inCur && !cur.WriteDefaults && !inNext && li == 0) continue;
-                    if (!inCur) a = slot.Default;
-                    float v = a;
-                    if (next != null)
+                    if (m.Weight <= 0f || m.Clip == null) continue;
+                    var curves = CurvesOf(m.Clip);
+                    float len = m.Clip.length;
+                    float t = len <= 0f ? 0f : m.Clip.isLooping ? PositiveMod(m.Time, len) : Math.Clamp(m.Time, 0f, len);
+                    for (int i = 0; i < curves.Length; i++)
                     {
-                        float b = inNext && Sample(next, lr.NextTime, slot, out var nb) ? nb : slot.Default;
-                        v = a + (b - a) * w;
+                        var curve = curves[i];
+                        if (curve == null) continue;
+                        acc[i] += m.Weight * curve.Evaluate(t);
+                        cover[i] += m.Weight;
                     }
-                    if (li > 0)
+                }
+
+                // Everything the controller binds takes part: write-defaults fills what a state does not animate.
+                bool writeDefaults = cur.WriteDefaults || (next != null && next.WriteDefaults);
+                for (int i = 0; i < n; i++)
+                {
+                    var slot = st.SlotList[i];
+                    bool animated = cover[i] > 0f;
+                    if (li == 0)
                     {
-                        if (!inCur && !inNext) continue; // a higher layer only overrides what it animates
-                        float lower = values.TryGetValue(slot.Binding.Key, out var lv) ? lv : slot.Default;
-                        v = lower + (v - lower) * layerWeight;
+                        if (!animated && !writeDefaults) continue;
+                        values[i] = acc[i] + Math.Max(0f, 1f - cover[i]) * slot.Default;
+                        has[i] = true;
                     }
-                    values[slot.Binding.Key] = v;
+                    else
+                    {
+                        if (!animated) continue; // a higher layer only overrides what it animates
+                        float lower = has[i] ? values[i] : slot.Default;
+                        float v = acc[i] + Math.Max(0f, 1f - cover[i]) * lower;
+                        values[i] = lower + (v - lower) * layerWeight;
+                        has[i] = true;
+                    }
                 }
             }
-            foreach (var kv in values)
+            for (int i = 0; i < n; i++)
             {
-                var slot = st.Slots[kv.Key];
-                try { slot.Set(slot.IsBool ? (kv.Value > 0.5f ? 1f : 0f) : kv.Value); }
+                if (!has[i]) continue;
+                var slot = st.SlotList[i];
+                try { slot.Set(slot.IsBool ? (values[i] > 0.5f ? 1f : 0f) : values[i]); }
                 catch (Exception) { /* a destroyed target: the next Rebind drops it */ }
+            }
+            // Rotation curves are written a component at a time and blended as a weighted sum:
+            // restore unit length once every component is in (the original engine does the same).
+            foreach (var t in st.RotationTargets)
+            {
+                if (t == null) continue;
+                var q = t.localRotation;
+                float mag = MathF.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+                if (mag > 1e-6f && MathF.Abs(mag - 1f) > 1e-6f)
+                    t.localRotation = new Quaternion(q.x / mag, q.y / mag, q.z / mag, q.w / mag);
             }
         }
 
-        static bool Sample(AnimatorStateData s, float time, Slot slot, out float value)
+        /// <summary>The clips a state plays this frame, with their blend weights and local times.</summary>
+        void GatherState(AnimatorStateData s, float time, float weight, List<MotionSample> into)
         {
-            value = 0f;
-            var clip = s.Clip;
-            if (clip == null) return false;
-            ClipBinding match = null;
-            foreach (var b in clip.Bindings)
-                if (b.Key == slot.Binding.Key) { match = b; break; }
-            if (match == null) return false;
-            float len = clip.length;
-            float t = len <= 0f ? 0f : clip.isLooping ? PositiveMod(time, len) : Math.Clamp(time, 0f, len);
-            value = match.Curve.Evaluate(t);
-            return true;
+            if (weight <= 0f) return;
+            if (s.Tree != null)
+            {
+                float len = StateLength(s);
+                float norm = Normalized(s, time, len);
+                int start = into.Count;
+                GatherTree(s.Tree, weight, 1f, into);
+                for (int i = start; i < into.Count; i++)
+                {
+                    var m = into[i];
+                    m.Time = m.Clip != null ? norm * m.Clip.length : 0f;
+                    into[i] = m;
+                }
+                return;
+            }
+            if (s.Clip == null) return;
+            float t = !string.IsNullOrEmpty(s.TimeParameter) ? GetFloat(s.TimeParameter) * s.Clip.length : time;
+            into.Add(new MotionSample { Clip = s.Clip, Weight = weight, TimeScale = 1f, Time = t });
+        }
+
+        void GatherTree(BlendTree tree, float weight, float timeScale, List<MotionSample> into)
+        {
+            var kids = tree.Children;
+            if (kids.Count == 0 || weight <= 0f) return;
+            Span<float> w = kids.Count <= 64 ? stackalloc float[kids.Count] : new float[kids.Count];
+            BlendTreeWeights.Compute(tree, GetFloat(tree.ParameterX ?? ""), GetFloat(tree.ParameterY ?? ""),
+                p => GetFloat(p ?? ""), w);
+            for (int i = 0; i < kids.Count; i++)
+            {
+                if (w[i] <= 0f) continue;
+                var k = kids[i];
+                float ts = timeScale * (k.TimeScale == 0f ? 1f : k.TimeScale);
+                if (k.Tree != null) GatherTree(k.Tree, weight * w[i], ts, into);
+                else if (k.Clip != null) into.Add(new MotionSample { Clip = k.Clip, Weight = weight * w[i], TimeScale = ts });
+            }
+        }
+
+        AnimationCurve[] CurvesOf(AnimationClip clip)
+        {
+            var st = State;
+            if (st.ClipCurves.TryGetValue(clip, out var arr)) return arr;
+            arr = new AnimationCurve[st.SlotList.Count];
+            foreach (var slot in st.SlotList) arr[slot.Index] = clip.CurveFor(slot.Binding.Key);
+            st.ClipCurves[clip] = arr;
+            return arr;
         }
 
         static float PositiveMod(float x, float m) { float r = x % m; return r < 0f ? r + m : r; }
@@ -486,22 +628,44 @@ namespace CosmicShore.Engine
                 st.Layers[i] = new LayerRuntime { Weight = st.LayerWeights.TryGetValue(i, out var w) ? w : (i == 0 ? 1f : c.Layers[i].DefaultWeight) };
             }
             st.Slots.Clear();
+            st.SlotList.Clear();
+            st.ClipCurves.Clear();
+            st.RotationTargets.Clear();
+            var clips = new List<AnimationClip>();
             foreach (var layer in c.Layers)
                 foreach (var s in layer.States)
                 {
-                    if (s.Clip == null) continue;
-                    foreach (var b in s.Clip.Bindings)
-                    {
-                        if (st.Slots.ContainsKey(b.Key)) continue;
-                        var slot = AnimatorBindings.Resolve(transform, b);
-                        if (slot.set == null) continue;
-                        float def = 0f;
-                        try { def = slot.get(); } catch (Exception) { }
-                        st.Slots[b.Key] = new Slot { Binding = b, Get = slot.get, Set = slot.set, Default = def, IsBool = slot.isBool };
-                    }
+                    if (s.Clip != null) clips.Add(s.Clip);
+                    if (s.Tree != null) CollectClips(s.Tree, clips);
                 }
+            foreach (var clip in clips)
+                foreach (var b in clip.Bindings)
+                {
+                    if (st.Slots.ContainsKey(b.Key)) continue;
+                    var slot = AnimatorBindings.Resolve(transform, b);
+                    if (slot.set == null) continue;
+                    float def = 0f;
+                    try { def = slot.get(); } catch (Exception) { }
+                    var s = new Slot { Index = st.SlotList.Count, Binding = b, Get = slot.get, Set = slot.set, Default = def, IsBool = slot.isBool };
+                    st.Slots[b.Key] = s;
+                    st.SlotList.Add(s);
+                    if ((b.ClassId == 4 || b.ClassId == 224) && b.Attribute.StartsWith("m_LocalRotation", StringComparison.Ordinal)
+                        && (string.IsNullOrEmpty(b.Path) ? transform : transform.Find(b.Path)) is { } rt && !st.RotationTargets.Contains(rt))
+                        st.RotationTargets.Add(rt);
+                }
+            int n = st.SlotList.Count;
+            st.Values = new float[n]; st.Acc = new float[n]; st.Cover = new float[n]; st.Has = new bool[n];
             ResetToDefaults();
             return true;
+        }
+
+        static void CollectClips(BlendTree t, List<AnimationClip> into)
+        {
+            foreach (var k in t.Children)
+            {
+                if (k.Clip != null) into.Add(k.Clip);
+                if (k.Tree != null) CollectClips(k.Tree, into);
+            }
         }
     }
 
@@ -546,6 +710,14 @@ namespace CosmicShore.Engine
                         _ => default,
                     };
                 }
+            }
+
+            if (b.ClassId == 137 && head == "blendShape" && part != null && go.GetComponent<SkinnedMeshRenderer>() is { } smr)
+            {
+                // "blendShape.<name>": resolved to the mesh's shape index once, at bind.
+                int idx = smr.sharedMesh ? smr.sharedMesh.GetBlendShapeIndex(part) : -1;
+                if (idx < 0) return default;
+                return (() => smr.GetBlendShapeWeight(idx), v => smr.SetBlendShapeWeight(idx, v), false);
             }
 
             Component comp = null;

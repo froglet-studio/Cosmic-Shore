@@ -43,7 +43,7 @@ namespace CosmicShore.Content
 
         public SerializedReader Reader => _reader;
 
-        /// <summary>An .anim clip by reference (cached like every asset); null for a model sub-asset clip.</summary>
+        /// <summary>An .anim clip or a model sub-asset clip by reference (cached like every asset).</summary>
         AnimationClip LoadClip(ObjRef r) => Load(r, typeof(AnimationClip)) as AnimationClip;
 
         public T Load<T>(ObjRef r) where T : EngineObject => Load(r, typeof(T)) as T;
@@ -92,7 +92,8 @@ namespace CosmicShore.Content
         /// material the meta's <c>externalObjects</c> remaps it to, else a default material
         /// named after the FBX material (what Unity's importer embeds). The model prefab's
         /// GameObjects/components come through the GameObject importer (prefab templates);
-        /// Avatar and AnimationClip sub-assets are not modelled yet and stay null.
+        /// AnimationClip sub-assets are cut from the FBX takes (<see cref="Models.FbxAnimationImporter"/>);
+        /// Avatar sub-assets are not modelled (a Generic avatar only maps paths, which bind directly).
         /// </summary>
         EngineObject LoadFromModel(ObjRef r, Type expected)
         {
@@ -101,6 +102,9 @@ namespace CosmicShore.Content
 
             if (model.MeshById.TryGetValue(r.FileId, out var mesh))
                 return expected.IsAssignableFrom(typeof(Mesh)) ? mesh.Mesh : null;
+
+            if (expected.IsAssignableFrom(typeof(AnimationClip)) && Models.FbxAnimationImporter.ImportClip(model, r.FileId) is { } clip)
+                return clip;
 
             if (!expected.IsAssignableFrom(typeof(Material))) return null;
             foreach (var o in model.Scene.ObjectList)

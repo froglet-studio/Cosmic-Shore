@@ -8,6 +8,15 @@ namespace CosmicShore.Content.Models
     /// The ModelImporter settings of a model's <c>.meta</c> that change what the importer
     /// produces. Defaults are Unity's; every field is read from the meta when present.
     /// </summary>
+    /// <summary>One entry of a model meta's <c>clipAnimations</c>.</summary>
+    public sealed class ModelClipSettings
+    {
+        public string Name = "", TakeName = "";
+        public long InternalId;
+        public float FirstFrame, LastFrame;
+        public bool LoopTime;
+    }
+
     public sealed class ModelImportSettings
     {
         public float GlobalScale = 1f;
@@ -42,6 +51,10 @@ namespace CosmicShore.Content.Models
         public readonly Dictionary<string, ObjRef> ExternalMaterials = new(StringComparer.Ordinal);
         /// <summary>Animation clip internal IDs from <c>clipAnimations</c> (name → fileID).</summary>
         public readonly Dictionary<string, long> ClipIds = new(StringComparer.Ordinal);
+        /// <summary>The meta's <c>clipAnimations</c>: which take each clip cuts, and where.</summary>
+        public readonly List<ModelClipSettings> Clips = new();
+        /// <summary>animations.animationDoNotImport / importAnimation.</summary>
+        public bool ImportAnimation = true;
 
         public static ModelImportSettings FromMeta(YMap meta)
         {
@@ -78,11 +91,22 @@ namespace CosmicShore.Content.Models
             s.AnimationType = mi.Int("animationType", 2);
             s.MaterialImportMode = mi["materials"]?.Int("materialImportMode", 2) ?? 2;
             var anim = mi["animations"];
+            s.ImportAnimation = mi.Int("importAnimation", 1) != 0;
             s.IsReadable = (anim?["isReadable"] ?? mi["isReadable"])?.Scalar == "1";
             foreach (var clip in anim?["clipAnimations"]?.Items ?? Array.Empty<YNode>())
             {
                 var name = clip.Str("name");
-                if (name != null && YScalar.TryLong(clip.Str("internalID"), out var id) && id != 0) s.ClipIds[name] = id;
+                YScalar.TryLong(clip.Str("internalID"), out var id);
+                if (name != null && id != 0) s.ClipIds[name] = id;
+                s.Clips.Add(new ModelClipSettings
+                {
+                    Name = name ?? "",
+                    TakeName = clip.Str("takeName") ?? name ?? "",
+                    InternalId = id,
+                    FirstFrame = clip.Float("firstFrame"),
+                    LastFrame = clip.Float("lastFrame"),
+                    LoopTime = clip.Bool("loopTime"),
+                });
             }
             foreach (var e in mi["externalObjects"]?.Items ?? Array.Empty<YNode>())
             {

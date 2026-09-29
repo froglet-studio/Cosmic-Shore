@@ -11,8 +11,9 @@ namespace CosmicShore.Content.AnimationImport
     /// state machines (flattened), states with a clip motion, state and Any State transitions with
     /// exit time / fixed or normalized duration / offset / parameter conditions, write-defaults and
     /// speed parameters; clips' float curves plus position, scale, euler and rotation curves split
-    /// into per-axis bindings. Blend trees and FBX sub-asset clips are not modelled: such a state
-    /// plays nothing (its motion stays null), and everything else in the controller still runs.
+    /// into per-axis bindings; blend-tree motions (1D, 2D simple/freeform directional, freeform
+    /// cartesian, direct; nested) and "motion time" parameters. A clip that lives inside a model
+    /// file comes through <c>loadClip</c> like any other (see <c>Models.FbxAnimationImporter</c>).
     /// </summary>
     public static class AnimatorImporter
     {
@@ -59,8 +60,10 @@ namespace CosmicShore.Content.AnimationImport
                         WriteDefaults = sd.Body.Bool("m_WriteDefaultValues", true),
                         SpeedParameter = sd.Body.Bool("m_SpeedParameterActive") ? sd.Body.Str("m_SpeedParameter") : null,
                     };
+                    if (sd.Body.Bool("m_TimeParameterActive") && sd.Body.Str("m_TimeParameter") is { Length: > 0 } tp) st.TimeParameter = tp;
                     var motion = ObjRef.From(sd.Body["m_Motion"]);
                     if (!motion.IsNull && !motion.IsLocal) st.Clip = loadClip(motion);
+                    else if (!motion.IsNull && motion.IsLocal) st.Tree = ReadTree(file, motion.FileId, loadClip, clips, 0);
                     if (st.Clip != null) clips.Add(st.Clip);
                     layer.States.Add(st);
                 }
@@ -80,6 +83,37 @@ namespace CosmicShore.Content.AnimationImport
             if (controller.Layers.Count > 0) controller.Layers[0].DefaultWeight = 1f;
             controller.animationClips = clips.ToArray();
             return controller;
+        }
+
+        /// <summary>A BlendTree document (class 206) and, recursively, its child trees.</summary>
+        static BlendTree ReadTree(AssetFile file, long fileId, Func<ObjRef, AnimationClip> loadClip, List<AnimationClip> clips, int depth)
+        {
+            var d = file.Get(fileId);
+            if (d == null || d.ClassId != 206 || depth > 16) return null;
+            var b = d.Body;
+            var tree = new BlendTree
+            {
+                Name = b.Str("m_Name") ?? "BlendTree",
+                Type = (BlendTreeType)b.Int("m_BlendType"),
+                ParameterX = b.Str("m_BlendParameter") ?? "",
+                ParameterY = b.Str("m_BlendParameterY") ?? "",
+                NormalizedBlendValues = b.Bool("m_NormalizedBlendValues"),
+            };
+            foreach (var c in b["m_Childs"]?.Items ?? Array.Empty<YNode>())
+            {
+                var child = new BlendTreeChild
+                {
+                    Threshold = c.Float("m_Threshold"),
+                    Position = new Vector2(c["m_Position"]?.Float("x") ?? 0f, c["m_Position"]?.Float("y") ?? 0f),
+                    TimeScale = c.Float("m_TimeScale", 1f),
+                    DirectParameter = c.Str("m_DirectBlendParameter") ?? "",
+                };
+                var m = ObjRef.From(c["m_Motion"]);
+                if (!m.IsNull && !m.IsLocal) { child.Clip = loadClip(m); if (child.Clip != null) clips.Add(child.Clip); }
+                else if (!m.IsNull) child.Tree = ReadTree(file, m.FileId, loadClip, clips, depth + 1);
+                tree.Children.Add(child);
+            }
+            return tree;
         }
 
         static void CollectStates(AssetFile file, UnityDocument sm, List<UnityDocument> into, HashSet<long> seen)
