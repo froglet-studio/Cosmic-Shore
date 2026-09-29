@@ -29,6 +29,9 @@ namespace CosmicShore.Content.Yaml
         public long Long(string key, long fallback = 0)
             => YScalar.TryLong(this[key]?.Scalar, out var v) ? v : fallback;
 
+        /// <summary>Deep copy (prefab expansion mutates per-instance copies of cached source trees).</summary>
+        public abstract YNode Clone();
+
         public bool Bool(string key, bool fallback = false)
         {
             var s = this[key]?.Scalar;
@@ -43,6 +46,7 @@ namespace CosmicShore.Content.Yaml
         public YScalar(string value) { Value = value ?? string.Empty; }
         public override string Scalar => Value;
         public override string ToString() => Value;
+        public override YNode Clone() => this; // immutable
 
         public static bool TryFloat(string s, out float f)
         {
@@ -70,6 +74,14 @@ namespace CosmicShore.Content.Yaml
     {
         public readonly List<YNode> List = new();
         public override IReadOnlyList<YNode> Items => List;
+
+        public override YNode Clone()
+        {
+            var c = new YSeq();
+            c.List.Capacity = List.Count;
+            foreach (var n in List) c.List.Add(n.Clone());
+            return c;
+        }
     }
 
     public sealed class YMap : YNode
@@ -103,6 +115,51 @@ namespace CosmicShore.Content.Yaml
         }
 
         public bool Has(string key) => this[key] != null;
+
+        /// <summary>Replaces the value for <paramref name="key"/>, or appends it.</summary>
+        public void Set(string key, YNode value)
+        {
+            for (int i = 0; i < Entries.Count; i++)
+            {
+                if (Entries[i].Key != key) continue;
+                Entries[i] = new KeyValuePair<string, YNode>(key, value);
+                if (_index != null) _index[key] = value;
+                return;
+            }
+            Add(key, value);
+        }
+
+        public bool Remove(string key)
+        {
+            for (int i = 0; i < Entries.Count; i++)
+            {
+                if (Entries[i].Key != key) continue;
+                Entries.RemoveAt(i);
+                _index?.Remove(key);
+                return true;
+            }
+            return false;
+        }
+
+        public override YNode Clone()
+        {
+            var c = new YMap();
+            c.Entries.Capacity = Entries.Count;
+            foreach (var e in Entries) c.Entries.Add(new KeyValuePair<string, YNode>(e.Key, e.Value.Clone()));
+            return c;
+        }
+
+        public static YMap Ref(long fileId, string guid = null, int type = 0)
+        {
+            var m = new YMap();
+            m.Add("fileID", new YScalar(fileId.ToString(CultureInfo.InvariantCulture)));
+            if (!string.IsNullOrEmpty(guid))
+            {
+                m.Add("guid", new YScalar(guid));
+                m.Add("type", new YScalar(type.ToString(CultureInfo.InvariantCulture)));
+            }
+            return m;
+        }
     }
 
     /// <summary>One <c>--- !u!classID &amp;fileID [stripped]</c> document.</summary>

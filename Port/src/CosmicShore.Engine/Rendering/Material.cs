@@ -63,6 +63,8 @@ namespace CosmicShore.Engine
             foreach (var kv in source._vectors) _vectors[kv.Key] = kv.Value;
             foreach (var kv in source._ints) _ints[kv.Key] = kv.Value;
             foreach (var keyword in source._keywords) _keywords.Add(keyword);
+            foreach (var kv in source._textures) _textures[kv.Key] = kv.Value;
+            foreach (var kv in source._textureST) _textureST[kv.Key] = kv.Value;
             renderQueue = source.renderQueue;
         }
 
@@ -86,6 +88,26 @@ namespace CosmicShore.Engine
         public void SetVector(int nameID, Vector4 value) => _vectors[nameID] = value;
         public Vector4 GetVector(string propertyName) => GetVector(Shader.PropertyToID(propertyName));
         public Vector4 GetVector(int nameID) => _vectors.TryGetValue(nameID, out var v) ? v : Vector4.zero;
+
+        readonly Dictionary<int, Texture> _textures = new();
+        readonly Dictionary<int, Vector4> _textureST = new();
+
+        /// <summary>Texture slot (Arc E: filled from a .mat's m_TexEnvs by the content bridge).</summary>
+        public void SetTexture(string propertyName, Texture value) => _textures[Shader.PropertyToID(propertyName)] = value;
+        public void SetTexture(int nameID, Texture value) => _textures[nameID] = value;
+        public Texture GetTexture(string propertyName) => GetTexture(Shader.PropertyToID(propertyName));
+        public Texture GetTexture(int nameID) => _textures.TryGetValue(nameID, out var t) ? t : null;
+
+        /// <summary>Texture tiling (xy) + offset (zw) for a slot — original _ST convention.</summary>
+        public void SetTextureScaleOffset(string propertyName, Vector4 st) => _textureST[Shader.PropertyToID(propertyName)] = st;
+        public Vector4 GetTextureScaleOffset(string propertyName)
+            => _textureST.TryGetValue(Shader.PropertyToID(propertyName), out var v) ? v : new Vector4(1f, 1f, 0f, 0f);
+
+        public Texture mainTexture
+        {
+            get => GetTexture("_MainTex") ?? GetTexture("_BaseMap");
+            set => SetTexture("_MainTex", value);
+        }
 
         public void SetInt(string propertyName, int value) => _ints[Shader.PropertyToID(propertyName)] = value;
         public int GetInt(string propertyName) => _ints.TryGetValue(Shader.PropertyToID(propertyName), out var v) ? v : 0;

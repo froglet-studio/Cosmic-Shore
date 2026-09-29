@@ -14,8 +14,16 @@ namespace CosmicShore.Engine.UI
     /// </summary>
     public abstract class Graphic : MonoBehaviour
     {
+        [SerializeField] protected Material m_Material;
         [SerializeField] protected Color m_Color = Color.white;
         [SerializeField] bool m_RaycastTarget = true;
+
+        /// <summary>Custom UI material (null = the default UI material). Arc E: filled from scene data.</summary>
+        public virtual Material material
+        {
+            get => m_Material;
+            set { if (ReferenceEquals(m_Material, value)) return; m_Material = value; SetMaterialDirty(); }
+        }
 
         RectTransform m_RectTransform;
 
