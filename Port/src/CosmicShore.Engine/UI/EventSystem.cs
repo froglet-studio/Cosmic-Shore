@@ -23,6 +23,17 @@ namespace CosmicShore.Engine.UI
 
         public GameObject currentSelectedGameObject { get; private set; }
 
+        /// <summary>The module driving this event system (first enabled <see cref="BaseInputModule"/> on it).</summary>
+        public BaseInputModule currentInputModule
+        {
+            get
+            {
+                foreach (var m in gameObject.GetComponents<BaseInputModule>())
+                    if (m.isActiveAndEnabled) return m;
+                return null;
+            }
+        }
+
         bool m_SelectionGuard;
 
         void OnEnable()

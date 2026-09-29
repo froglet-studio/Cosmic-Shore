@@ -20,7 +20,33 @@ namespace CosmicShore.Engine.Services
     /// observable contract (identity set, token cached, SignedIn raised) without a
     /// wire; the real SDK binding replaces the bodies at the services phase.
     /// </summary>
-    public class AuthenticationService
+    /// <summary>The service surface (original: Unity.Services.Authentication.IAuthenticationService).</summary>
+    public interface IAuthenticationService
+    {
+        string PlayerName { get; }
+        string PlayerId { get; }
+        bool IsSignedIn { get; }
+        bool IsAuthorized { get; }
+        bool IsExpired { get; }
+        bool SessionTokenExists { get; }
+        string AccessToken { get; }
+        string Profile { get; }
+        event System.Action SignedIn;
+        event System.Action<RequestFailedException> SignInFailed;
+        event System.Action SignedOut;
+        event System.Action Expired;
+        System.Threading.Tasks.Task SignInAnonymouslyAsync(SignInOptions options = null);
+        void SignOut(bool clearCredentials = false);
+        void ClearSessionToken();
+        void SwitchProfile(string profile);
+        System.Threading.Tasks.Task<string> GetPlayerNameAsync(bool autoGenerate = true);
+        System.Threading.Tasks.Task<string> UpdatePlayerNameAsync(string playerName);
+        System.Threading.Tasks.Task DeleteAccountAsync();
+    }
+
+    public class SignInOptions { public bool CreateAccount { get; set; } = true; }
+
+    public class AuthenticationService : IAuthenticationService
     {
         /// <summary>Settable so harnesses can swap in a configured instance; never null.</summary>
         public static AuthenticationService Instance { get; set; } = new();
@@ -52,7 +78,7 @@ namespace CosmicShore.Engine.Services
         /// configured, caches the session token, and raises <see cref="SignedIn"/> —
         /// the same observable sequence the real SDK produces.
         /// </summary>
-        public virtual System.Threading.Tasks.Task SignInAnonymouslyAsync()
+        public virtual System.Threading.Tasks.Task SignInAnonymouslyAsync(SignInOptions options = null)
         {
             if (string.IsNullOrEmpty(PlayerId))
                 PlayerId = "local-player";
@@ -63,7 +89,7 @@ namespace CosmicShore.Engine.Services
         }
 
         /// <summary>Sign out, keeping the cached session token (the real SDK's default).</summary>
-        public virtual void SignOut()
+        public virtual void SignOut(bool clearCredentials = false)
         {
             IsSignedIn = false;
             PlayerId = string.Empty;
@@ -77,7 +103,7 @@ namespace CosmicShore.Engine.Services
         /// Async name read (original contract: the SDK fetches the stored player name).
         /// The shim returns the local mirror.
         /// </summary>
-        public virtual System.Threading.Tasks.Task<string> GetPlayerNameAsync()
+        public virtual System.Threading.Tasks.Task<string> GetPlayerNameAsync(bool autoGenerate = true)
             => System.Threading.Tasks.Task.FromResult(PlayerName);
 
         /// <summary>
@@ -88,6 +114,19 @@ namespace CosmicShore.Engine.Services
         {
             PlayerName = name;
             return System.Threading.Tasks.Task.FromResult(name);
+        }
+
+        public bool IsAuthorized => IsSignedIn;
+        public bool IsExpired { get; set; }
+        public string AccessToken => IsSignedIn ? "local-access-token" : null;
+        public string Profile { get; private set; } = "default";
+        public void SwitchProfile(string profile) => Profile = profile;
+
+        public virtual System.Threading.Tasks.Task DeleteAccountAsync()
+        {
+            SignOut(true);
+            ClearSessionToken();
+            return System.Threading.Tasks.Task.CompletedTask;
         }
 
         /// <summary>Harness entry: raise <see cref="SignInFailed"/> as the SDK would.</summary>

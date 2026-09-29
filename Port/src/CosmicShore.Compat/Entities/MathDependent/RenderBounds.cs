@@ -7,32 +7,6 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 
-namespace Unity.Mathematics
-{
-    /// <summary>
-    /// Center/extents box. Ships in the Entities package (not Unity.Mathematics) under the
-    /// Unity.Mathematics namespace, so it lives with the Entities shim.
-    /// </summary>
-    public struct AABB
-    {
-        public float3 Center;
-        public float3 Extents;
-
-        public float3 Size => Extents * 2f;
-        public float3 Min => Center - Extents;
-        public float3 Max => Center + Extents;
-
-        public bool Contains(float3 point)
-        {
-            float3 min = Min, max = Max;
-            return point.x >= min.x && point.x <= max.x &&
-                   point.y >= min.y && point.y <= max.y &&
-                   point.z >= min.z && point.z <= max.z;
-        }
-
-        public override string ToString() => $"AABB(Center:{Center}, Extents:{Extents})";
-    }
-}
 
 namespace Unity.Rendering
 {

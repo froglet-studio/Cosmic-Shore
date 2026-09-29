@@ -126,6 +126,7 @@ namespace CosmicShore.Engine
             try
             {
                 Time.Advance(deltaTime);
+                InputSystem.InputSystem.Update(); // commit device state + evaluate actions before any script runs
                 SyncContext.Pump();
                 DrainStartQueue();
                 RunFixedSteps();

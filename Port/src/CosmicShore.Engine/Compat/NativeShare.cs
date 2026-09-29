@@ -19,8 +19,21 @@ public class NativeShare
     public NativeShare SetText(string text) { _text = text; return this; }
     public NativeShare SetTitle(string title) { _title = title; return this; }
 
+    public enum ShareResult { Unknown = 0, Shared = 1, NotShared = 2 }
+    public delegate void ShareResultCallback(ShareResult result, string shareTarget);
+    ShareResultCallback _callback;
+
+    public NativeShare SetUrl(string url) { _text += (string.IsNullOrEmpty(_text) ? "" : " ") + url; return this; }
+    public NativeShare AddEmailRecipient(string emailAddress) => this;
+    public NativeShare AddTarget(string androidPackageName, string androidClassName = null) => this;
+    public NativeShare SetCallback(ShareResultCallback callback) { _callback = callback; return this; }
+    public static bool TargetExists(string androidPackageName, string androidClassName = null) => false;
+    public static bool FindTarget(out string androidPackageName, out string androidClassName, string packageNameRegex, string classNameRegex = null)
+    { androidPackageName = null; androidClassName = null; return false; }
+
     public void Share()
     {
+        _callback?.Invoke(ShareResult.Unknown, null);
         CosmicShore.Engine.Debug.Log(
             $"[NativeShare] (headless no-op) subject='{_subject}', files=[{string.Join(", ", _files)}]");
     }

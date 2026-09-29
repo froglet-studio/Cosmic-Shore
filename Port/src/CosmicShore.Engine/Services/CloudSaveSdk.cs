@@ -48,7 +48,10 @@ namespace CosmicShore.Engine.Services
     /// <summary>One loaded key's payload (original contract: Unity.Services.CloudSave.Models.Item).</summary>
     public class Item
     {
+        public string Key { get; set; }
         public IDeserializable Value { get; }
+        public string WriteLock { get; set; } = string.Empty;
+        public System.DateTime? Modified { get; set; }
         public Item(IDeserializable value) => Value = value;
     }
 
@@ -57,6 +60,20 @@ namespace CosmicShore.Engine.Services
     {
         Task<Dictionary<string, Item>> LoadAsync(HashSet<string> keys);
         Task SaveAsync(Dictionary<string, object> data);
+
+        // Default members keep hand-written fakes compiling; the local service overrides them.
+        Task<Dictionary<string, Item>> LoadAsync(HashSet<string> keys, Models.Data.Player.LoadOptions options) => LoadAsync(keys);
+        Task<Dictionary<string, string>> SaveAsync(IDictionary<string, object> data, Models.Data.Player.SaveOptions options)
+        {
+            var copy = new Dictionary<string, object>(data);
+            return SaveAsync(copy).ContinueWith(_ => new Dictionary<string, string>());
+        }
+        Task DeleteAsync(string key, Models.Data.Player.DeleteOptions options = null) => Task.CompletedTask;
+        Task DeleteAllAsync(Models.Data.Player.DeleteAllOptions options = null) => Task.CompletedTask;
+        Task<List<Models.ItemKey>> ListAllKeysAsync(Models.Data.Player.ListAllKeysOptions options = null)
+            => Task.FromResult(new List<Models.ItemKey>());
+        Task<List<Models.EntityData>> QueryAsync(Models.Query query, Models.Data.Player.QueryOptions options = null)
+            => Task.FromResult(new List<Models.EntityData>());
     }
 
     /// <summary>Original contract: Unity.Services.CloudSave.Internal.IDataService (the <c>Data.Player</c> hop).</summary>
@@ -110,6 +127,55 @@ namespace CosmicShore.Engine.Services
             foreach (var kv in data)
                 _store[kv.Key] = JsonSerializer.Serialize(kv.Value, CloudSaveJson.Options);
             return Task.CompletedTask;
+        }
+
+        public Task<Dictionary<string, string>> SaveAsync(IDictionary<string, object> data, Models.Data.Player.SaveOptions options)
+        {
+            var writeLocks = new Dictionary<string, string>();
+            foreach (var kv in data)
+            {
+                _store[kv.Key] = JsonSerializer.Serialize(kv.Value, CloudSaveJson.Options);
+                writeLocks[kv.Key] = System.Guid.NewGuid().ToString("N");
+            }
+            return Task.FromResult(writeLocks);
+        }
+
+        public Task DeleteAsync(string key, Models.Data.Player.DeleteOptions options = null)
+        {
+            _store.Remove(key);
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAllAsync(Models.Data.Player.DeleteAllOptions options = null)
+        {
+            _store.Clear();
+            return Task.CompletedTask;
+        }
+
+        public Task<List<Models.ItemKey>> ListAllKeysAsync(Models.Data.Player.ListAllKeysOptions options = null)
+        {
+            var keys = new List<Models.ItemKey>();
+            foreach (var k in _store.Keys) keys.Add(new Models.ItemKey(k, string.Empty, System.DateTime.UtcNow));
+            return Task.FromResult(keys);
+        }
+
+        /// <summary>Only the local player exists offline: a query can match only this player's own data.</summary>
+        public Task<List<Models.EntityData>> QueryAsync(Models.Query query, Models.Data.Player.QueryOptions options = null)
+        {
+            var results = new List<Models.EntityData>();
+            if (query?.Fields == null) return Task.FromResult(results);
+            foreach (var f in query.Fields)
+            {
+                if (!_store.TryGetValue(f.Key, out var json)) return Task.FromResult(results);
+                var stored = JsonSerializer.Deserialize<object>(json, CloudSaveJson.Options)?.ToString();
+                bool eq = string.Equals(stored, f.Value?.ToString(), System.StringComparison.Ordinal);
+                if ((f.Op == Models.FieldFilter.OpOptions.EQ) != eq) return Task.FromResult(results);
+            }
+            var data = new List<Item>();
+            foreach (var k in query.ReturnKeys ?? new HashSet<string>())
+                if (_store.TryGetValue(k, out var j)) data.Add(new Item(new JsonDeserializable(j)) { Key = k });
+            results.Add(new Models.EntityData(AuthenticationService.Instance?.PlayerId ?? "local", data));
+            return Task.FromResult(results);
         }
     }
 }

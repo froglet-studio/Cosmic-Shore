@@ -28,6 +28,8 @@ namespace CosmicShore.Engine
         /// (readers: AdaptiveAnimationManager's frame-interval throttle).
         /// </summary>
         public static float realtimeSinceStartup => unscaledTime;
+        public static double realtimeSinceStartupAsDouble => unscaledTime;
+        public static double unscaledTimeAsDouble => unscaledTime;
         public static float fixedDeltaTime { get; set; } = 0.02f;
         public static float timeScale { get; set; } = 1f;
         public static int frameCount { get; private set; }

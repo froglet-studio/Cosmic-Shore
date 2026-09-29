@@ -31,7 +31,7 @@ namespace CosmicShore.Engine.UI
     /// cross-fading over fadeDuration — steady-state colors are identical; the fade
     /// arrives with the Arc-C render loop's tweening.
     /// </summary>
-    public class Selectable : MonoBehaviour,
+    public class Selectable : UIBehaviour,
         IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler,
         ISelectHandler, IDeselectHandler, IMoveHandler
     {
@@ -98,7 +98,7 @@ namespace CosmicShore.Engine.UI
             }
         }
 
-        protected virtual void OnEnable()
+        protected override void OnEnable()
         {
             if (!s_Selectables.Contains(this)) s_Selectables.Add(this);
             // If nothing wired the target graphic, adopt one on this object (original
@@ -107,7 +107,7 @@ namespace CosmicShore.Engine.UI
             DoStateTransition(currentSelectionState);
         }
 
-        protected virtual void OnDisable()
+        protected override void OnDisable()
         {
             s_Selectables.Remove(this);
             m_IsPointerInside = false;

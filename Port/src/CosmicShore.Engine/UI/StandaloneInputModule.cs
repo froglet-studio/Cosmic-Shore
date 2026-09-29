@@ -20,7 +20,7 @@ namespace CosmicShore.Engine.UI
     /// - Pointer-down deselects the current selection unless the press lands on it
     ///   (the pressed Selectable then selects itself in OnPointerDown).
     /// </summary>
-    public class StandaloneInputModule : MonoBehaviour
+    public class StandaloneInputModule : BaseInputModule
     {
         EventSystem m_EventSystem;
         EventSystem eventSystem => m_EventSystem ??= gameObject.GetComponent<EventSystem>();

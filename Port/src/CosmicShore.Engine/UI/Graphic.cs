@@ -12,7 +12,7 @@ namespace CosmicShore.Engine.UI
     /// <see cref="rectTransform"/> converts the host's Transform in place on first read
     /// (the Arc-A AddComponent conversion), which is the same end state.
     /// </summary>
-    public abstract class Graphic : MonoBehaviour
+    public abstract class Graphic : UIBehaviour
     {
         [SerializeField] protected Material m_Material;
         [SerializeField] protected Color m_Color = Color.white;
@@ -76,7 +76,7 @@ namespace CosmicShore.Engine.UI
         /// <summary>Material rebind hook — no-op until the Arc-C renderer consumes it.</summary>
         public virtual void SetMaterialDirty() { }
 
-        protected virtual void OnEnable() => SetAllDirty();
+        protected override void OnEnable() => SetAllDirty();
 
         // ── Mesh generation (the uGUI OnPopulateMesh contract) ──────────────────
 
@@ -153,7 +153,7 @@ namespace CosmicShore.Engine.UI
 
         // Marks even while disabling — the layout above must re-solve WITHOUT this
         // graphic's contribution (same rule as LayoutElement).
-        protected virtual void OnDisable() => SetLayoutDirty();
+        protected override void OnDisable() => SetLayoutDirty();
     }
 
     /// <summary>

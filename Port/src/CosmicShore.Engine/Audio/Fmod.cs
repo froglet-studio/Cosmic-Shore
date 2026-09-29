@@ -32,9 +32,10 @@ namespace CosmicShore.Engine.Audio.Fmod
     /// </summary>
     public struct EventReference
     {
+        public GUID Guid;
         public string Path;
 
-        public bool IsNull => string.IsNullOrEmpty(Path);
+        public bool IsNull => string.IsNullOrEmpty(Path) && Guid.IsNull;
 
         public override string ToString() => IsNull ? "(null EventReference)" : Path;
     }
@@ -59,7 +60,10 @@ namespace CosmicShore.Engine.Audio.Fmod
         public Vector3 Position;
         public Transform AttachedTo;
         public bool Started;
+        public bool Stopped;
+        public bool Paused;
         public bool Released;
+        public readonly Dictionary<PARAMETER_ID, float> Parameters = new();
     }
 
     /// <summary>
@@ -74,27 +78,78 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         public bool isValid() => State != null;
 
-        public void setVolume(float volume)
+        public RESULT setVolume(float volume)
         {
-            if (State != null) State.Volume = volume;
+            if (State == null) return RESULT.ERR_INVALID_HANDLE;
+            State.Volume = volume; return RESULT.OK;
         }
 
-        public void set3DAttributes(ATTRIBUTES_3D attributes)
+        public RESULT getVolume(out float volume) { volume = State?.Volume ?? 0f; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+
+        public RESULT set3DAttributes(ATTRIBUTES_3D attributes)
         {
-            if (State != null) State.Position = attributes.position;
+            if (State == null) return RESULT.ERR_INVALID_HANDLE;
+            State.Position = attributes.position; return RESULT.OK;
         }
 
-        public void start()
+        public RESULT start()
         {
-            if (State == null || State.Started) return;
-            State.Started = true;
+            if (State == null) return RESULT.ERR_INVALID_HANDLE;
+            if (State.Started && !State.Stopped) return RESULT.OK;
+            State.Started = true; State.Stopped = false;
             RuntimeManager.RecordStart(State);
+            return RESULT.OK;
         }
 
-        public void release()
+        public RESULT stop(STOP_MODE mode)
         {
-            if (State != null) State.Released = true;
+            if (State == null) return RESULT.ERR_INVALID_HANDLE;
+            State.Stopped = true; return RESULT.OK;
         }
+
+        public RESULT setPaused(bool paused) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Paused = paused; return RESULT.OK; }
+        public RESULT getPaused(out bool paused) { paused = State?.Paused ?? false; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+
+        public RESULT getPlaybackState(out PLAYBACK_STATE state)
+        {
+            state = State == null || !State.Started || State.Stopped ? PLAYBACK_STATE.STOPPED : PLAYBACK_STATE.PLAYING;
+            return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        }
+
+        public RESULT getDescription(out EventDescription description)
+        {
+            description = State == null ? default : new EventDescription { Path = State.Path };
+            return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        }
+
+        public RESULT setParameterByID(PARAMETER_ID id, float value, bool ignoreseekspeed = false)
+        {
+            if (State == null) return RESULT.ERR_INVALID_HANDLE;
+            State.Parameters[id] = value; return RESULT.OK;
+        }
+
+        public RESULT getParameterByID(PARAMETER_ID id, out float value) => getParameterByID(id, out value, out _);
+
+        public RESULT getParameterByID(PARAMETER_ID id, out float value, out float finalvalue)
+        {
+            value = 0f;
+            if (State != null) State.Parameters.TryGetValue(id, out value);
+            finalvalue = value;
+            return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        }
+
+        public RESULT setParameterByName(string name, float value, bool ignoreseekspeed = false)
+            => setParameterByID(PARAMETER_ID.FromName(name), value, ignoreseekspeed);
+
+        public RESULT getParameterByName(string name, out float value) => getParameterByID(PARAMETER_ID.FromName(name), out value);
+
+        public RESULT release()
+        {
+            if (State == null) return RESULT.ERR_INVALID_HANDLE;
+            State.Released = true; return RESULT.OK;
+        }
+
+        public RESULT clearHandle() { State = null; return RESULT.OK; }
     }
 
     /// <summary>Shared state behind <see cref="Bus"/> handle copies.</summary>
@@ -115,19 +170,12 @@ namespace CosmicShore.Engine.Audio.Fmod
 
         public bool isValid() => State != null;
 
-        public void setVolume(float volume)
-        {
-            if (State != null) State.Volume = volume;
-        }
-
-        public void setMute(bool mute)
-        {
-            if (State != null) State.Mute = mute;
-        }
-
-        public void getVolume(out float volume) => volume = State?.Volume ?? 0f;
-
-        public void getMute(out bool mute) => mute = State?.Mute ?? false;
+        public RESULT setVolume(float volume) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Volume = volume; return RESULT.OK; }
+        public RESULT setMute(bool mute) { if (State == null) return RESULT.ERR_INVALID_HANDLE; State.Mute = mute; return RESULT.OK; }
+        public RESULT setPaused(bool paused) => State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
+        public RESULT getVolume(out float volume) { volume = State?.Volume ?? 0f; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT getMute(out bool mute) { mute = State?.Mute ?? false; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT stopAllEvents(STOP_MODE mode) => State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK;
     }
 
     /// <summary>Thrown when a bus cannot be resolved (original contract: FMOD.Studio bank/bus lookup failure).</summary>
@@ -174,12 +222,80 @@ namespace CosmicShore.Engine.Audio.Fmod
             if (instance.isValid()) instance.State.AttachedTo = transform;
         }
 
+        public static void AttachInstanceToGameObject(EventInstance instance, GameObject gameObject)
+            => AttachInstanceToGameObject(instance, gameObject != null ? gameObject.transform : null);
+
+        public static void AttachInstanceToGameObject(EventInstance instance, Transform transform, bool nonRigidbodyVelocity)
+            => AttachInstanceToGameObject(instance, transform);
+
+        public static void AttachInstanceToGameObject(EventInstance instance, GameObject gameObject, Rigidbody rigidbody)
+            => AttachInstanceToGameObject(instance, gameObject);
+
+        public static void DetachInstanceFromGameObject(EventInstance instance)
+        {
+            if (instance.isValid()) instance.State.AttachedTo = null;
+        }
+
+        public static EventInstance CreateInstance(string path) => CreateInstance(new EventReference { Path = path });
+        public static EventInstance CreateInstance(GUID guid) => CreateInstance(new EventReference { Guid = guid });
+
+        public static void PlayOneShot(EventReference reference, Vector3 position = default)
+        {
+            if (reference.IsNull) return;
+            var i = CreateInstance(reference);
+            i.set3DAttributes(RuntimeUtils.To3DAttributes(position));
+            i.start(); i.release();
+        }
+
+        public static void PlayOneShot(string path, Vector3 position = default) => PlayOneShot(new EventReference { Path = path }, position);
+
+        public static void PlayOneShotAttached(EventReference reference, GameObject gameObject)
+        {
+            if (reference.IsNull) return;
+            var i = CreateInstance(reference);
+            AttachInstanceToGameObject(i, gameObject);
+            i.start(); i.release();
+        }
+
+        public static void PlayOneShotAttached(string path, GameObject gameObject) => PlayOneShotAttached(new EventReference { Path = path }, gameObject);
+
+        static readonly Dictionary<string, VCAState> Vcas = new();
+
+        public static VCA GetVCA(string path)
+        {
+            if (FailBusResolution) throw new VCANotFoundException(path);
+            if (!Vcas.TryGetValue(path, out var state)) Vcas[path] = state = new VCAState { Path = path };
+            return new VCA { State = state };
+        }
+
+        public static EventDescription GetEventDescription(EventReference reference) => new() { Path = reference.Path ?? string.Empty };
+        public static EventDescription GetEventDescription(string path) => new() { Path = path };
+
+        /// <summary>Studio system (global parameters, bus/VCA lookups).</summary>
+        public static StudioSystem StudioSystem { get; } = new StudioSystem();
+
+        /// <summary>No FMOD runtime exists offline; the port's is always "initialized" (it never tears down mid-quit).</summary>
+        public static bool IsInitialized => true;
+        public static bool HaveAllBanksLoaded => true;
+        public static bool HasBankLoaded(string bankName) => true;
+        public static bool IsMuted { get; private set; }
+        public static void MuteAllEvents(bool muted) => IsMuted = muted;
+        public static void PauseAllEvents(bool paused) { }
+        public static void LoadBank(string bankName, bool loadSamples = false) { }
+        public static void UnloadBank(string bankName) { }
+        public static void WaitForAllSampleLoading() { }
+
+        /// <summary>Original: the RuntimeManager MonoBehaviour singleton. The port has no component; this is a stand-in handle.</summary>
+        public static object Instance => StudioSystem;
+
         internal static void RecordStart(EventInstanceState state) => StartedInstances.Add(state);
 
         /// <summary>Clears buses, the started log, and the failure seam (test isolation).</summary>
         public static void ResetForTests()
         {
             Buses.Clear();
+            Vcas.Clear();
+            StudioSystem.Globals.Clear();
             StartedInstances.Clear();
             FailBusResolution = false;
         }

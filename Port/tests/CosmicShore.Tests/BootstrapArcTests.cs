@@ -133,7 +133,7 @@ public class BootstrapArcTests : IDisposable
 
     sealed class FailingAuthService : AuthenticationService
     {
-        public override Task SignInAnonymouslyAsync()
+        public override Task SignInAnonymouslyAsync(CosmicShore.Engine.Services.SignInOptions options = null)
             => throw new RequestFailedException(401, "invalid credentials");
     }
 

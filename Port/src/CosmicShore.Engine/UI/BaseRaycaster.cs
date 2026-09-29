@@ -8,7 +8,7 @@ namespace CosmicShore.Engine.UI
     /// <see cref="EventSystem.RaycastAll"/> walks the registry. Registration order is
     /// creation order — deterministic, same convention as the trigger pass.
     /// </summary>
-    public abstract class BaseRaycaster : MonoBehaviour
+    public abstract class BaseRaycaster : UIBehaviour
     {
         static readonly List<BaseRaycaster> s_Raycasters = new();
 
@@ -24,11 +24,11 @@ namespace CosmicShore.Engine.UI
         /// <summary>Canvas sortingOrder tier for cross-raycaster result ordering.</summary>
         public virtual int sortOrderPriority => 0;
 
-        protected virtual void OnEnable()
+        protected override void OnEnable()
         {
             if (!s_Raycasters.Contains(this)) s_Raycasters.Add(this);
         }
 
-        protected virtual void OnDisable() => s_Raycasters.Remove(this);
+        protected override void OnDisable() => s_Raycasters.Remove(this);
     }
 }

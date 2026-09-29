@@ -98,16 +98,6 @@ namespace CosmicShore.Engine
         public ColorUsageAttribute(bool showAlpha, bool hdr) { this.showAlpha = showAlpha; this.hdr = hdr; }
     }
 
-    /// <summary>
-    /// Previous serialized name of a field — read by the asset pipeline (content phase)
-    /// to migrate data written under the old name.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
-    public sealed class FormerlySerializedAsAttribute : Attribute
-    {
-        public readonly string oldName;
-        public FormerlySerializedAsAttribute(string oldName) { this.oldName = oldName; }
-    }
 
     /// <summary>Declares component dependencies (enforced by editor tooling later; inert at runtime).</summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
@@ -221,5 +211,19 @@ namespace CosmicShore.Engine
     {
         void OnBeforeSerialize();
         void OnAfterDeserialize();
+    }
+}
+
+namespace CosmicShore.Engine.Serialization
+{
+    /// <summary>
+    /// Previous serialized name of a field (original: UnityEngine.Serialization.FormerlySerializedAsAttribute)
+    /// — read by the asset pipeline to migrate data written under the old name.
+    /// </summary>
+    [System.AttributeUsage(System.AttributeTargets.Field, AllowMultiple = true)]
+    public sealed class FormerlySerializedAsAttribute : System.Attribute
+    {
+        public FormerlySerializedAsAttribute(string oldName) { this.oldName = oldName; }
+        public string oldName { get; }
     }
 }

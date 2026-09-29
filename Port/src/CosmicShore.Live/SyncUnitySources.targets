@@ -20,7 +20,7 @@
       <Code Type="Fragment" Language="cs"><![CDATA[
         // Longest first; null = delete the using line.
         var map = new List<KeyValuePair<string, string>> {
-          new("UnityEngine.Serialization", null),
+          new("UnityEngine.Serialization", "CosmicShore.Engine.Serialization"),
           new("UnityEngine.UI", "CosmicShore.Engine.UI"),
           new("UnityEngine.EventSystems", "CosmicShore.Engine.UI"),
           new("UnityEngine.SceneManagement", "CosmicShore.Engine.SceneManagement"),

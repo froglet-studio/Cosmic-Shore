@@ -6,6 +6,7 @@
        Assets/_Scripts compile unchanged (see tools/sync_unity_sources.py). -->
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);COSMICSHORE_COMPAT_MATH</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
