@@ -69,6 +69,53 @@ namespace CosmicShore.Gameplay
         public Vector3? PlacementAnchor { get; set; }
 
         /// <summary>
+        /// While set, the camera poses its follow offset in THIS world-space frame instead of the
+        /// follow target's own rotation — the Termite queen's commander view, where the pilot
+        /// ORBITS the perspective by dragging and the queen turns underneath it
+        /// (<c>R_VesselActions/TERMITE.md</c> §4). Driven only by <c>TermiteCommander</c>;
+        /// nothing else may write it.
+        ///
+        /// <para>A commander hull is steered by POINTING rather than by the stick, so the queen's
+        /// heading changes whenever she sets off for a new point. A chase camera bolted to that
+        /// heading would swing the whole picture every time the pilot clicks, which is the one
+        /// thing a pilot choosing where to go next cannot afford — so the frame the camera sits in
+        /// belongs to the pilot's drag, and the queen's heading is only what she is doing.</para>
+        ///
+        /// <para>Applied at the point of use (<see cref="CameraFrame"/>), never by writing
+        /// <see cref="_followTarget"/> or <see cref="_followOffset"/> — the rule
+        /// <see cref="RearView"/> and <see cref="PlacementAnchor"/> already record: every system
+        /// that re-applies a <c>CameraSettingsSO</c> keeps working, and a commander that forgets to
+        /// clear it on teardown leaves a camera that still frames the right ship.</para>
+        ///
+        /// <para>It composes with the rear view (the z-mirror of the offset is still a mirror in
+        /// the commander frame) and yields to a placement anchor, which frames an explicit point
+        /// in the VESSEL's frame by design.</para>
+        /// </summary>
+        public Quaternion? CommanderFrame { get; set; }
+
+        /// <summary>
+        /// Scale on the posed follow offset while <see cref="CommanderFrame"/> is set — the
+        /// commander's scroll / pinch zoom. Applied at the point of use for the same reason the
+        /// frame is; ignored (treated as 1) whenever no commander frame is set, so no other vessel
+        /// or system can be affected by a stale value. Driven only by <c>TermiteCommander</c>.
+        /// </summary>
+        public float CommanderZoom { get; set; } = 1f;
+
+        /// <summary>The offset actually posed this frame: <see cref="EffectiveOffset"/>, scaled by
+        /// the commander zoom while a commander frame is live.</summary>
+        private Vector3 PosedOffset =>
+            CommanderFrame.HasValue && !PlacementAnchor.HasValue
+                ? EffectiveOffset * Mathf.Max(0.1f, CommanderZoom)
+                : EffectiveOffset;
+
+        /// <summary>The rotation the follow offset is posed in this frame: the commander's orbit
+        /// frame if one is set (and no placement is), else the follow target's own rotation.</summary>
+        private Quaternion CameraFrame =>
+            CommanderFrame.HasValue && !PlacementAnchor.HasValue
+                ? CommanderFrame.Value
+                : (_followTarget ? _followTarget.rotation : Quaternion.identity);
+
+        /// <summary>
         /// The world point the camera frames this frame: the placement anchor if one is set, else
         /// the follow target's own position — seen through a portal the camera has not reached yet
         /// while one is being carried (<see cref="CarryThroughPortal"/>).
@@ -293,7 +340,9 @@ namespace CosmicShore.Gameplay
             if (_lastTargetPos == Vector3.zero)
                 _lastTargetPos = followPoint;
 
-            Vector3 desiredPos = followPoint + _followTarget.rotation * EffectiveOffset;
+            Quaternion frame = CameraFrame;
+            Vector3 frameUp = frame * Vector3.up;
+            Vector3 desiredPos = followPoint + frame * PosedOffset;
             Vector3 shipDelta = followPoint - _lastTargetPos;
 
             // Teleport guard: on a kickoff park / fresh spawn the follow target jumps a long way in one
@@ -303,7 +352,7 @@ namespace CosmicShore.Gameplay
             if (shipDelta.sqrMagnitude > teleportStep * teleportStep)
             {
                 transform.position = desiredPos;
-                if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var snapRot, this, logError: false))
+                if (SafeLookRotation.TryGet(followPoint - transform.position, frameUp, out var snapRot, this, logError: false))
                     transform.rotation = snapRot;
                 _velocity = Vector3.zero;
                 _lateralDominance = 0f;
@@ -311,8 +360,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            float fwd = Vector3.Dot(shipDelta, _followTarget.forward);
-            float lat = Vector3.Dot(shipDelta, _followTarget.right);
+            float fwd = Vector3.Dot(shipDelta, frame * Vector3.forward);
+            float lat = Vector3.Dot(shipDelta, frame * Vector3.right);
 
             // How lateral the ship's motion is (0 = pure forward, 1 = pure strafe), LOW-PASS FILTERED so
             // it can't flip frame-to-frame. The old code hard-SNAPPED the camera when |lat| > |fwd| and
@@ -339,7 +388,7 @@ namespace CosmicShore.Gameplay
                 );
             }
 
-            if (!SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (!SafeLookRotation.TryGet(followPoint - transform.position, frameUp, out var targetRot, this, logError: false))
                 targetRot = transform.rotation;
 
             if (_disableRotationLerp)
@@ -433,9 +482,10 @@ namespace CosmicShore.Gameplay
             if (!_followTarget) return;
 
             Vector3 followPoint = FollowPoint;
-            transform.position = followPoint + _followTarget.rotation * EffectiveOffset;
+            Quaternion frame = CameraFrame;
+            transform.position = followPoint + frame * PosedOffset;
 
-            if (SafeLookRotation.TryGet(followPoint - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (SafeLookRotation.TryGet(followPoint - transform.position, frame * Vector3.up, out var targetRot, this, logError: false))
                 transform.rotation = targetRot;
 
             _lastTargetPos = followPoint;
