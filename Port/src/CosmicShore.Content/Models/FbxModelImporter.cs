@@ -650,9 +650,15 @@ namespace CosmicShore.Content.Models
                 int boneIndex = node.Bones.Count;
                 node.Bones.Add(bone);
 
-                var transform = DMat4.FromArray(cluster.Node.DoubleArray("Transform"));
+                // Bindpose = the bone's global at bind time, inverted, times the mesh node's
+                // global — i.e. mesh space → bone space. Built from TransformLink and the
+                // imported node hierarchy rather than from the cluster's "Transform": that field
+                // is the mesh's global matrix in the FBX spec, but the Blender exporter (every
+                // skinned model in this project) writes link⁻¹·meshGlobal there, so reading it
+                // as the spec says applies link⁻¹ twice and folds the hull onto its bones.
                 var link = DMat4.FromArray(cluster.Node.DoubleArray("TransformLink"));
-                var bind = ToUnity(link.Inverse() * transform, model.UnitScale);
+                var linkGlobal = model.Settings.BakeAxisConversion ? link : model.AxisConversion * link;
+                var bind = ToUnity(linkGlobal, model.UnitScale).Inverse() * node.ModelMatrix;
                 bindposes.Add(ToEngine(bind));
 
                 var idx = cluster.Node.IntArray("Indexes");

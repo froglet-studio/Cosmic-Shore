@@ -84,6 +84,20 @@ namespace CosmicShore.Player
                     case "pad":
                         Tap(PadButton(arg), frame, 2);
                         break;
+                    case "inspect":
+                    {
+                        // inspect OBJECT COMPONENT — every field of that component, this frame.
+                        var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        Inspector.Print(parts[0], parts.Length > 1 ? parts[1] : null);
+                        break;
+                    }
+                    case "renderers":
+                        Inspector.Renderers(arg.Trim());
+                        break;
+                    case "eval":
+                        // eval Type.StaticMember[.member…] — read a static chain, this frame.
+                        Inspector.PrintStatic(arg);
+                        break;
                     default:
                         Console.WriteLine($"[input] unknown action '{verb}'");
                         break;

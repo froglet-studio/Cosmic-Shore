@@ -92,11 +92,41 @@ namespace CosmicShore.Engine
         public bool skinnedMotionVectors { get; set; } = true;
         public bool forceMatrixRecalculationPerRender { get; set; }
 
+        /// <summary>
+        /// The skinned hull's bounds in ROOT-BONE space (original contract: the imported AABB is
+        /// the bind-pose mesh expressed in the root bone's frame, which is why a caller scales it
+        /// by rootBone.lossyScale). Falls back to mesh space when there is no root bone in the skin.
+        /// </summary>
         public override Bounds localBounds
         {
-            get => _localBoundsOverride ?? (sharedMesh ? sharedMesh.bounds : new Bounds(Vector3.zero, Vector3.one));
+            get
+            {
+                if (_localBoundsOverride.HasValue) return _localBoundsOverride.Value;
+                if (!sharedMesh) return new Bounds(Vector3.zero, Vector3.one);
+                int root = rootBone != null && bones != null ? Array.IndexOf(bones, rootBone) : -1;
+                var bindposes = sharedMesh.bindposes;
+                if (root < 0 || bindposes == null || root >= bindposes.Length) return sharedMesh.bounds;
+                if (_rootBoundsMesh != sharedMesh || _rootBoundsBone != root)
+                {
+                    var bp = bindposes[root];
+                    var verts = sharedMesh.vertices;
+                    Vector3 lo = Vector3.one * float.MaxValue, hi = Vector3.one * float.MinValue;
+                    foreach (var v in verts)
+                    {
+                        var p = bp.MultiplyPoint3x4(v);
+                        lo = Vector3.Min(lo, p); hi = Vector3.Max(hi, p);
+                    }
+                    _rootBounds = verts.Length > 0 ? new Bounds((lo + hi) * 0.5f, hi - lo) : sharedMesh.bounds;
+                    _rootBoundsMesh = sharedMesh; _rootBoundsBone = root;
+                }
+                return _rootBounds;
+            }
             set => _localBoundsOverride = value;
         }
+
+        Bounds _rootBounds;
+        Mesh _rootBoundsMesh;
+        int _rootBoundsBone = -1;
 
         public void BakeMesh(Mesh mesh, bool useScale) => BakeMesh(mesh);
         public int GetBlendShapeCount() => sharedMesh ? sharedMesh.blendShapeCount : 0;
