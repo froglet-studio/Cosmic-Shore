@@ -69,8 +69,14 @@ namespace CosmicShore.Render
         /// <summary>Lays out (or reuses) and draws <paramref name="text"/>. Leaves this pass's program bound.</summary>
         public void Draw(TMP_Text text, float groupAlpha, Vector4 clip, float screenW, float screenH)
         {
-            if (string.IsNullOrEmpty(text.text)) return;
             if (text.transform is not RectTransform rt) return;
+            Draw(text, rt, groupAlpha, clip, screenW, screenH);
+        }
+
+        /// <summary>Lays out <paramref name="text"/> but places it in <paramref name="rt"/> (legacy Text draws through its TMP twin).</summary>
+        public void Draw(TMP_Text text, RectTransform rt, float groupAlpha, Vector4 clip, float screenW, float screenH)
+        {
+            if (string.IsNullOrEmpty(text.text) || rt == null) return;
             var rect = rt.rect;
             var layout = Layout(text, rect);
             if (layout == null || layout.quads.Count == 0) return;

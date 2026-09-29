@@ -94,8 +94,16 @@ namespace CosmicShore.Engine.UI
         /// glyph advances); otherwise a metric estimate: average advance 0.55 em, line height
         /// 1.15 em × lineSpacing, rich-text tags excluded.
         /// </summary>
-        public virtual float preferredWidth => (Measure?.Invoke(this) ?? EstimateSize()).x;
-        public virtual float preferredHeight => (Measure?.Invoke(this) ?? EstimateSize()).y;
+        public virtual float preferredWidth => (Measure?.Invoke(this) ?? TwinSize() ?? EstimateSize()).x;
+        public virtual float preferredHeight => (Measure?.Invoke(this) ?? TwinSize() ?? EstimateSize()).y;
+
+        /// <summary>The TMP twin's measurement (see <see cref="LegacyTextProxy"/>), when a default font resolves.</summary>
+        Vector2? TwinSize()
+        {
+            var twin = LegacyTextProxy.For(this);
+            var v = twin.GetPreferredValues();
+            return v == Vector2.zero && !string.IsNullOrEmpty(m_Text) ? null : v;
+        }
 
         /// <summary>Backend measurement hook (installed by the renderer's legacy text builder).</summary>
         public static Func<Text, Vector2> Measure;

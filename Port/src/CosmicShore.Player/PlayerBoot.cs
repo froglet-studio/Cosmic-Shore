@@ -31,6 +31,10 @@ namespace CosmicShore.Player
             Debug.Sink = Log;
             CosmicShore.Engine.Networking.NetworkManager.EmulateNetcodeLifecycle = true;
             GameObject.EnforceRequireComponent = true;
+            // The player's Cloud Save backend: a store that survives relaunches, as UGS does.
+            CosmicShore.Engine.Services.CloudSaveService.Instance =
+                new CosmicShore.Engine.Services.LocalCloudSaveService(
+                    System.IO.Path.Combine(Application.persistentDataPath, "ugs-cloudsave.json"));
             var sw = Stopwatch.StartNew();
             Loop = new GameLoop("Boot");
             Runtime = new ContentRuntime(root, new[] { GameAssembly, typeof(DG.Tweening.DOTween).Assembly });

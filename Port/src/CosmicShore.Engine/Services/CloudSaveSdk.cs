@@ -15,6 +15,8 @@
 // the local service at the services phase.
 // ─────────────────────────────────────────────────────────────────────────────
 
+using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -109,6 +111,46 @@ namespace CosmicShore.Engine.Services
     public sealed class LocalCloudSaveService : ICloudSaveService, ICloudSaveDataApi, IPlayerDataApi
     {
         readonly Dictionary<string, string> _store = new();
+        readonly string _path;
+        readonly object _gate = new();
+
+        /// <summary>An empty in-memory store (tests, harnesses).</summary>
+        public LocalCloudSaveService() { }
+
+        /// <summary>
+        /// A store that persists to <paramref name="path"/> — the player's stand-in for the
+        /// Cloud Save backend, so a second launch finds what the first one saved exactly as
+        /// it would on UGS.
+        /// </summary>
+        public LocalCloudSaveService(string path)
+        {
+            _path = path;
+            try
+            {
+                if (File.Exists(path))
+                {
+                    var saved = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(path));
+                    if (saved != null) foreach (var kv in saved) _store[kv.Key] = kv.Value;
+                }
+            }
+            catch (Exception e) { Debug.LogWarning($"[CloudSave] Local store at '{path}' unreadable ({e.Message}) - starting empty."); }
+        }
+
+        void Persist()
+        {
+            if (_path == null) return;
+            lock (_gate)
+            {
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(_path));
+                    string tmp = _path + ".tmp";
+                    File.WriteAllText(tmp, JsonSerializer.Serialize(_store));
+                    File.Move(tmp, _path, overwrite: true);
+                }
+                catch (Exception e) { Debug.LogWarning($"[CloudSave] Could not persist local store: {e.Message}"); }
+            }
+        }
 
         public ICloudSaveDataApi Data => this;
         public IPlayerDataApi Player => this;
@@ -126,6 +168,7 @@ namespace CosmicShore.Engine.Services
         {
             foreach (var kv in data)
                 _store[kv.Key] = JsonSerializer.Serialize(kv.Value, CloudSaveJson.Options);
+            Persist();
             return Task.CompletedTask;
         }
 
@@ -137,18 +180,21 @@ namespace CosmicShore.Engine.Services
                 _store[kv.Key] = JsonSerializer.Serialize(kv.Value, CloudSaveJson.Options);
                 writeLocks[kv.Key] = System.Guid.NewGuid().ToString("N");
             }
+            Persist();
             return Task.FromResult(writeLocks);
         }
 
         public Task DeleteAsync(string key, Models.Data.Player.DeleteOptions options = null)
         {
             _store.Remove(key);
+            Persist();
             return Task.CompletedTask;
         }
 
         public Task DeleteAllAsync(Models.Data.Player.DeleteAllOptions options = null)
         {
             _store.Clear();
+            Persist();
             return Task.CompletedTask;
         }
 

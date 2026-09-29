@@ -380,10 +380,11 @@ void main(){
 
         void DrawText(Component text, float alpha, Vector4 clip)
         {
-            if (text is TMP_Text tmp && Tmp != null)
+            if (Tmp != null && (text is TMP_Text || text is Text))
             {
                 Flush();
-                Tmp.Draw(tmp, alpha, clip, _screenW, _screenH);
+                if (text is TMP_Text tmp) Tmp.Draw(tmp, alpha, clip, _screenW, _screenH);
+                else Tmp.Draw(LegacyTextProxy.For((Text)text), (RectTransform)text.transform, alpha, clip, _screenW, _screenH);
                 // Back to the uGUI program + state.
                 _program.Use();
                 _program.Set("uScreen", _screenW, _screenH);
