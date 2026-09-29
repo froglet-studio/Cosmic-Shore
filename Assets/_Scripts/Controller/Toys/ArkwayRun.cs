@@ -159,6 +159,23 @@ namespace CosmicShore.Gameplay
         bool _hasHome;
         bool _running;
         bool _beginning;
+
+        // The voyage holds Prism's BULK-TRANSPORT creation tier for as long as it runs. A
+        // corridor grows whole worlds CONTINUOUSLY while the player is watching - two cells at
+        // once, each tens of thousands of prisms at cap - and at the gameplay cap of 6 creation
+        // completions a frame the backlog outgrew the budget within a few cells: every prism
+        // existed, was initialized and was waiting its turn, INVISIBLE, while its spindle (which
+        // needs no budget) stood in place. That is the whole "spindles and crystals but no
+        // prisms" report. Held once, released exactly once (HoldCreationTier is idempotent).
+        bool _creationTierHeld;
+
+        void HoldCreationTier(bool hold)
+        {
+            if (hold == _creationTierHeld) return;
+            _creationTierHeld = hold;
+            if (hold) Prism.BeginBulkTransport();
+            else Prism.EndBulkTransport();
+        }
         bool _wasFreestyle;
         float _nextTickAt;
         float _leashBreachedAt = -1f;
@@ -204,6 +221,8 @@ namespace CosmicShore.Gameplay
             if (localVessel?.Transform == null) return;
 
             _beginning = true;
+            _warnedCreationBacklog = false;
+            HoldCreationTier(true);
             _home = new Pose(localVessel.Transform.position, localVessel.Transform.rotation);
             _hasHome = true;
 
@@ -264,6 +283,7 @@ namespace CosmicShore.Gameplay
                         CSDebug.LogWarning("[Arkway] The corridor could not stand its first cells - " +
                                            "no voyage. (CellConveyor warned above with the reason.)");
                         _beginning = false;
+                        HoldCreationTier(false);
                         _stage = "idle";
                         _onEnded?.Invoke();
                         return;
@@ -407,6 +427,7 @@ namespace CosmicShore.Gameplay
             finally
             {
                 _beginning = false;
+                if (!_running) HoldCreationTier(false); // any exit that did not reach the sea
             }
         }
 
@@ -541,8 +562,25 @@ namespace CosmicShore.Gameplay
         /// recycling stopped working, and no amount of reading the code substitutes for seeing
         /// them climb.
         /// </summary>
+        // Warned once per voyage: the backlog below is the diagnostic, not a per-cell nag.
+        bool _warnedCreationBacklog;
+
+        // A backlog this deep takes several seconds to show even at the voyage's raised tier.
+        const int CreationBacklogWarnThreshold = 3000;
+
         void LogCensus()
         {
+            int pending = _conveyor.CountPendingCreation(out int total);
+            if (pending > CreationBacklogWarnThreshold && !_warnedCreationBacklog)
+            {
+                _warnedCreationBacklog = true;
+                CSDebug.LogWarning(
+                    $"[Arkway] {pending} of {total} corridor prisms are laid but still waiting for their " +
+                    "creation completion (invisible until then). The corridor is growing faster than " +
+                    "Prism's per-frame creation budget can show it - lower the voyage's population " +
+                    "scale or raise its prism stride.");
+            }
+
             if (!CSDebug.IsVerbose(CSLogChannel.ToyBox)) return;
             var pen = LocalVessel()?.VesselPrismController;
             int trail = pen && pen.Trail != null ? pen.Trail.TrailList.Count : 0;
@@ -550,7 +588,8 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.ToyBox,
                 $"[Arkway] {_conveyor.Census()}, ark hull {(_ark ? _ark.AliveCount : 0)}/" +
                 $"{(_ark ? _ark.TotalCount : 0)}, wake {(_ark ? _ark.WakeCount : 0)}, " +
-                $"trail {trail}+{trail2}, marks {_trailMarks.Count}, withering {_withering.Count}");
+                $"trail {trail}+{trail2}, marks {_trailMarks.Count}, withering {_withering.Count}, " +
+                $"awaiting creation {pending}/{total}");
         }
 
         /// <summary>
@@ -925,6 +964,7 @@ namespace CosmicShore.Gameplay
             _generation++; // a Begin still in flight must not resurrect this voyage
             _running = false;
             _beginning = false;
+            HoldCreationTier(false);
             _leashBreachedAt = -1f;
             _hud?.HideCountdown();
 
@@ -987,6 +1027,7 @@ namespace CosmicShore.Gameplay
             // Scene teardown: never call back into the toy (it may already be destroyed).
             _onEnded = null;
             End(returnToCell: false, "ArkwayRun destroyed");
+            HoldCreationTier(false); // End early-returns when idle; the hold must never leak
         }
     }
 }

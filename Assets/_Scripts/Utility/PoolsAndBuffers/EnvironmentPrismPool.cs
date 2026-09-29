@@ -223,6 +223,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>True for a prism this pool minted and has not forgotten (parked or live).</summary>
+        public static bool IsIssued(Prism prism) => prism && s_issued.ContainsKey(prism);
+
         public static void ForgetDestroyed(Prism prism)
         {
             if (!prism) return;

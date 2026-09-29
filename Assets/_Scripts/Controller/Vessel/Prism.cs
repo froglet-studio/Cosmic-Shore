@@ -753,6 +753,7 @@ namespace CosmicShore.Gameplay
 
             destroyed = false;
             devastated = false;
+            CompletesAsLiveRibbon = false; // pool reuse: the next life states its own class
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
             _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag
             // Pool reuse: a prism whose scale window was widened for an AUTHORED size
@@ -887,6 +888,24 @@ namespace CosmicShore.Gameplay
 
         static int s_creationCompletionsThisFrame;
 
+        // Completions spent this frame by mass the ENVIRONMENT pool issued (flora, laid
+        // worlds). Counted separately from everything else - a pilot's trail, an Ark's wake,
+        // a projectile's cairn - because the two share one budget otherwise, and a growing
+        // world easily queues thousands of completions: at 6/frame an environment backlog put
+        // every newly laid trail prism behind it, so a pilot flying past a growing forest laid
+        // a trail that never appeared (the Arkway report: "neither the Ark nor I left a trail").
+        // Each class gets the tier's full count, so the worst frame is 2x the authored cap -
+        // still a slice, and the order within each class is unchanged.
+        static int s_environmentCompletionsThisFrame;
+
+        /// <summary>
+        /// This life is a LIVE RIBBON laid behind a single mover (the Ark's wake), not bulk
+        /// world growth, even though the environment pool issued it: it completes on the
+        /// pilot-mass budget so a growing world cannot hold it back. Set by the laying site
+        /// after Initialize; cleared on every reuse.
+        /// </summary>
+        public bool CompletesAsLiveRibbon { get; set; }
+
         // Milliseconds of creation-completion work spent this frame. Only read while a WATCHED
         // load gate states a time slice (PrismTrailBuilder.LoadGateCreationBudgetMsOverride):
         // the connecting screen now shows the arena being built, so the covered-screen premise
@@ -929,12 +948,18 @@ namespace CosmicShore.Gameplay
             // AOE registry and cell grids.
             if (destroyed) yield break;
 
+            // Read once, AFTER the first yield so a laying site can still mark this life as a
+            // live ribbon (CompletesAsLiveRibbon) after Initialize. Membership cannot change
+            // while the prism waits (a release parks it inactive, which stops this coroutine).
+            bool isEnvironmentMass = !CompletesAsLiveRibbon && EnvironmentPrismPool.IsIssued(this);
+
             while (true)
             {
                 if (s_creationBudgetFrame != Time.frameCount)
                 {
                     s_creationBudgetFrame = Time.frameCount;
                     s_creationCompletionsThisFrame = 0;
+                    s_environmentCompletionsThisFrame = 0;
                     s_creationSpentMs = 0.0;
                 }
 
@@ -957,14 +982,18 @@ namespace CosmicShore.Gameplay
                         : s_bulkTransportsInFlight > 0
                             ? BulkTransportCreationCompletionsPerFrame
                             : MaxCreationCompletionsPerFrame;
-                    if (s_creationCompletionsThisFrame < creationBudget)
+                    int spent = isEnvironmentMass
+                        ? s_environmentCompletionsThisFrame
+                        : s_creationCompletionsThisFrame;
+                    if (spent < creationBudget)
                         break;
                 }
 
                 yield return null;
                 if (destroyed) yield break; // killed while waiting for budget
             }
-            s_creationCompletionsThisFrame++;
+            if (isEnvironmentMass) s_environmentCompletionsThisFrame++;
+            else s_creationCompletionsThisFrame++;
 
             // Measured across the WHOLE completion (visibility, growth stamp, SOAP raise,
             // spatial registration) rather than one block of it - a slice that only counts

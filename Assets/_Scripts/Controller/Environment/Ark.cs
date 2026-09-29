@@ -377,6 +377,9 @@ namespace CosmicShore.Gameplay
                 new PrismLay(pose, _wakeDomain), _wakeRoot, _wakeTrail, WakeOwnerId,
                 watchForReveal: false);
             if (!prism) return;
+            // The wake is a ribbon behind a mover: it must not queue behind a growing
+            // corridor's flora for its creation completion.
+            prism.CompletesAsLiveRibbon = true;
 
             // LayOne writes localPosition - the wake root sits at the world origin unrotated,
             // so local IS world here. Stated rather than assumed: a future parent with a pose

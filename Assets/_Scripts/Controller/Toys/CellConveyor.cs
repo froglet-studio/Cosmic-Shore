@@ -617,6 +617,36 @@ namespace CosmicShore.Gameplay
         /// nothing in a normal session and answers "what is growing?" in the one that is
         /// getting slower — which is a question no amount of reading the code settles.
         /// </summary>
+        readonly List<Prism> _censusScratch = new();
+
+        /// <summary>
+        /// How many prisms under the standing cells are laid and initialized but have not yet
+        /// COMPLETED creation - i.e. are waiting, invisible, for Prism's per-frame creation
+        /// budget. A spindle needs no such budget, so a cell whose prisms are all pending reads
+        /// as "spindles and crystals but no prisms". This is the one number that separates a
+        /// world that never grew from one that grew and is still waiting to be SHOWN.
+        /// </summary>
+        public int CountPendingCreation(out int total)
+        {
+            int pending = 0;
+            total = 0;
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                var root = _cells[i].Root;
+                if (!root) continue;
+                root.GetComponentsInChildren(false, _censusScratch);
+                for (int j = 0; j < _censusScratch.Count; j++)
+                {
+                    var prism = _censusScratch[j];
+                    if (!prism || prism.destroyed) continue;
+                    total++;
+                    if (!prism.IsCreationComplete) pending++;
+                }
+            }
+            _censusScratch.Clear();
+            return pending;
+        }
+
         public string Census()
         {
             int prisms = 0;
