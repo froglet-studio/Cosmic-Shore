@@ -52,8 +52,10 @@ out vec3 vWorld;
 out vec3 vNormal;
 out vec2 vUv;
 out vec4 vColor;
+out vec3 vObj;
 flat out vec4 vDark;
 flat out vec4 vBright;
+flat out vec3 vOrigin;
 void main(){
   mat4 M = mat4(iM0, iM1, iM2, iM3);
   vec3 p = aPos;
@@ -67,6 +69,8 @@ void main(){
   vNormal = transpose(inverse(mat3(M))) * aNormal;
   vUv = aUv;
   vColor = aColor;
+  vObj = p;
+  vOrigin = iM3.xyz;
   vDark = iDark;
   vBright = iBright;
   gl_Position = uViewProj * w;
@@ -77,9 +81,15 @@ in vec3 vWorld;
 in vec3 vNormal;
 in vec2 vUv;
 in vec4 vColor;
+in vec3 vObj;
 flat in vec4 vDark;
 flat in vec4 vBright;
-uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair
+flat in vec3 vOrigin;
+uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal
+uniform vec4 uParam;          // family-specific
+uniform vec4 uColorC;         // family-specific extra colour
+uniform float uAlpha;         // family-specific alpha
+uniform float uTime;
 uniform sampler2D uTex;
 uniform vec4 uTexST;
 uniform float uFresPow;
@@ -94,6 +104,22 @@ uniform vec3 uAmbient;
 uniform vec4 uFogColor;
 uniform vec4 uFog;            // mode, density, start, end (mode 0 = off)
 out vec4 frag;
+// Voronoi as Shader Graph's Voronoi node documents it (random cell offsets animated by AngleOffset).
+vec2 voronoiRandom(vec2 uv, float offset){
+  uv = fract(sin(vec2(dot(uv, vec2(15.27, 99.41)), dot(uv, vec2(47.63, 89.98)))) * 46839.32);
+  return vec2(sin(uv.y * offset) * 0.5 + 0.5, cos(uv.x * offset) * 0.5 + 0.5);
+}
+float voronoi(vec2 uv, float angleOffset, float density){
+  vec2 g = floor(uv * density), f = fract(uv * density);
+  float best = 8.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 lattice = vec2(x, y);
+    vec2 o = voronoiRandom(lattice + g, angleOffset);
+    best = min(best, distance(lattice + o, f));
+  }
+  return best;
+}
+float fresnelNode(vec3 N, vec3 V, float p){ return pow(1.0 - clamp(dot(N, V), 0.0, 1.0), p); }
 void main(){
   vec3 N = normalize(vNormal);
   if (!gl_FrontFacing) N = -N;
@@ -113,6 +139,24 @@ void main(){
       bright = mix(vBright, vDark, n > 1.0 ? 0.9 : n * 0.9);
     }
     col = mix(vDark, bright, f) * tex;
+  } else if (uFamily == 3) {
+    // SnowGraph: colour + a gradient along the object's own axis, fixed opacity.
+    col = vec4(clamp(vDark.rgb + dot(vObj, uParam.xyz), 0.0, 1.0), uAlpha);
+  } else if (uFamily == 4) {
+    // CageGraph: straight colour -> graph rim colour by Fresnel(1.91), material alpha.
+    col = vec4(mix(vDark.rgb, uColorC.rgb, fresnelNode(N, V, uParam.x)), uAlpha);
+  } else if (uFamily == 5) {
+    // SpindleGraph: animated Voronoi cells, dense up close and thinning out to nothing at _Distance.
+    float dist = length(uCamPos - vOrigin);
+    float near = dist < uParam.y ? 1.0 - dist / uParam.y : 0.0;
+    float v = voronoi(vUv + vec2(0.0, 0.5), sin(uParam.z + uTime), dist * uParam.x * near);
+    col = vec4(vDark.rgb * (1.0 - v) + vBright.rgb * v, pow(clamp(v, 0.0, 1.0), (dist / max(uParam.y, 1e-3) + 0.1) * 10.0));
+  } else if (uFamily == 6) {
+    // CrystalGraph: overlay a white fresnel onto the dull colour, fade to bright + transparent with distance.
+    float fr = fresnelNode(N, -V, 0.32);
+    vec3 over = mix(vDark.rgb, mix(vec3(1.0), 2.0 * vDark.rgb, step(vDark.rgb, vec3(0.5))), fr);
+    float t = clamp(length(uCamPos - vWorld) / 1000.0 - 0.2, 0.0, 1.0);
+    col = vec4(mix(over, vBright.rgb, t), 1.0 - t);
   } else if (uFamily == 1) {
     vec4 base = vDark * tex;
     float ndl = max(dot(N, uLightDir), 0.0);
@@ -158,6 +202,10 @@ void main(){
             public int Queue;
             public int DarkId, BrightId; // property ids the per-instance colours come from
             public float MaxSqrDist;     // the prism graph's distance fade (0 = none)
+            public float Alpha;          // graph alpha property (snow opacity, cage alpha)
+            public Vector4 Param;        // family-specific parameters
+            public Color ColorC;         // family-specific extra colour
+            public float VesselMultiplier;
         }
 
         struct Item
@@ -227,6 +275,7 @@ void main(){
             _program.Use();
             _program.Set("uViewProj", ToNumerics(viewProj));
             _program.Set("uClock", Shader.GetGlobalFloat(IdPrismClock) is var clk && clk > 0 ? clk : Time.time);
+            _program.Set("uTime", Time.time);
             SetVec3("uCamPos", camPos);
             SetLighting();
             SetFog();
@@ -309,8 +358,38 @@ void main(){
 
         static MatState Classify(Material m)
         {
-            var st = new MatState { FresPow = 4f, TexST = new Vector4(1, 1, 0, 0), Cull = 2, Queue = m.renderQueue };
-            if (m.HasProperty(IdDark) && m.HasProperty(IdBright))
+            var st = new MatState { FresPow = 4f, TexST = new Vector4(1, 1, 0, 0), Cull = 2, Queue = m.renderQueue, Alpha = 1f };
+            string graph = m.shader?.name ?? "";
+            if (graph == "Shader Graphs/SnowGraph")
+            {
+                st.Family = 3; st.DarkId = st.BrightId = IdColor;
+                st.Alpha = m.GetFloat("_Opacity");
+                var v = m.HasProperty("_Vector3") ? m.GetVector("_Vector3") : new Vector4(0, 0, 0.65f, 0);
+                st.Param = v;
+            }
+            else if (graph == "Shader Graphs/CageGraph")
+            {
+                st.Family = 4; st.DarkId = st.BrightId = Shader.PropertyToID("_Straight_Color");
+                st.Alpha = m.GetFloat("_alpha");
+                st.Param = new Vector4(1.91f, 0, 0, 0);
+                st.ColorC = new Color(0.1086654f, 0.5329778f, 1.0504318f, 1f); // the graph's rim ColorNode
+            }
+            else if (graph == "Shader Graphs/SpindleGraph")
+            {
+                st.Family = 5; st.DarkId = IdDullColor; st.BrightId = IdBright;
+                st.Param = new Vector4(m.GetFloat("_CellDensity"), m.GetFloat("_Distance"), m.GetFloat("_Phase"), 0);
+            }
+            else if (graph == "Shader Graphs/CrystalGraph")
+            {
+                st.Family = 6; st.DarkId = IdDull; st.BrightId = IdBrightCrystal;
+            }
+            else if (graph == "Shader Graphs/VesselGraph")
+            {
+                // Base = lerp(Color1, Color2, dot(N,N)) = Color2, times _ColorMultiplier.
+                st.Family = 0; st.DarkId = st.BrightId = IdColor2;
+                st.VesselMultiplier = m.HasProperty(IdColorMul) ? m.GetFloat(IdColorMul) : 1f;
+            }
+            else if (m.HasProperty(IdDark) && m.HasProperty(IdBright))
             {
                 st.Family = 2; st.DarkId = IdDark; st.BrightId = IdBright;
                 if (m.HasProperty(IdFresPow)) st.FresPow = m.GetFloat(IdFresPow);
@@ -329,11 +408,7 @@ void main(){
 
             st.Dark = st.DarkId != 0 ? m.GetColor(st.DarkId) : Color.white;
             st.Bright = st.BrightId != 0 ? m.GetColor(st.BrightId) : Color.white;
-            if (st.Family == 2 && st.DarkId == IdColor1 && m.HasProperty(IdColorMul))
-            {
-                float k = m.GetFloat(IdColorMul);
-                if (k > 0f) { st.Dark = Mul(st.Dark, k); st.Bright = Mul(st.Bright, k); }
-            }
+            if (st.VesselMultiplier > 0f) { st.Dark = Mul(st.Dark, st.VesselMultiplier); st.Bright = st.Dark; }
 
             st.Tex = m.HasProperty(IdBaseMap) ? m.GetTexture(IdBaseMap) : m.GetTexture(IdMainTex);
             if (st.Tex != null)
@@ -409,6 +484,9 @@ void main(){
             _program.Set("uFamily", st.Family);
             _program.Set("uFresPow", st.FresPow);
             _program.Set("uMaxSqrDist", st.MaxSqrDist);
+            _program.Set("uAlpha", st.Alpha);
+            _program.Set("uParam", st.Param.x, st.Param.y, st.Param.z, st.Param.w);
+            _program.Set("uColorC", st.ColorC.r, st.ColorC.g, st.ColorC.b, st.ColorC.a);
             _program.Set("uCutoff", st.Cutoff);
             _program.Set("uTexST", st.TexST.x, st.TexST.y, st.TexST.z, st.TexST.w);
             _program.Set("uVertexColor", entry.HasColors ? 1 : 0);
