@@ -1,0 +1,110 @@
+<Project>
+  <!-- Copies the REAL Assets/_Scripts (runtime code: no Editor/ or Tests/ folders) into
+       obj/live-src with the port's mechanical namespace substitutions applied (README
+       "using-directive substitutions"), so the game compiles UNCHANGED against the port
+       engine + CosmicShore.Compat. Never writes under Assets/. Incremental: a file is
+       rewritten only when its transformed text differs. The namespace table is the ONE
+       place a new substitution is added. -->
+  <UsingTask TaskName="SyncUnitySources" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <SourceDir ParameterType="System.String" Required="true" />
+      <OutputDir ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        // Longest first; null = delete the using line.
+        var map = new List<KeyValuePair<string, string>> {
+          new("UnityEngine.Serialization", null),
+          new("UnityEngine.UI", "CosmicShore.Engine.UI"),
+          new("UnityEngine.EventSystems", "CosmicShore.Engine.UI"),
+          new("UnityEngine.SceneManagement", "CosmicShore.Engine.SceneManagement"),
+          new("UnityEngine.Events", "CosmicShore.Engine.Events"),
+          new("UnityEngine.InputSystem", "CosmicShore.Engine.InputSystem"),
+          new("UnityEngine.Rendering.Universal", "CosmicShore.Engine.Rendering"),
+          new("UnityEngine.Rendering", "CosmicShore.Engine.Rendering"),
+          new("UnityEngine.Profiling", "CosmicShore.Engine.Profiling"),
+          new("UnityEngine.Pool", "CosmicShore.Engine.Pool"),
+          new("UnityEngine.Assertions", "CosmicShore.Engine.Assertions"),
+          new("UnityEngine.Audio", "CosmicShore.Engine.Audio"),
+          new("UnityEngine", "CosmicShore.Engine"),
+          new("TMPro", "CosmicShore.Engine.UI"),
+          new("Obvious.Soap", "CosmicShore.Engine.Soap"),
+          new("Unity.Netcode", "CosmicShore.Engine.Networking"),
+          new("Reflex.Attributes", "CosmicShore.Engine.Injection"),
+          new("Reflex.Core", "CosmicShore.Engine.Injection"),
+          new("Reflex.Injectors", "CosmicShore.Engine.Injection"),
+          new("Reflex.Enums", "CosmicShore.Engine.Injection"),
+          new("Unity.Collections", "CosmicShore.Engine.Collections"),
+          new("Unity.Profiling", "CosmicShore.Engine.Profiling"),
+          new("Unity.Services.Friends", "CosmicShore.Engine.Services.Friends"),
+          new("Unity.Services.Leaderboards", "CosmicShore.Engine.Services.Leaderboards"),
+          new("Unity.Services.Authentication", "CosmicShore.Engine.Services"),
+          new("Unity.Services.Core", "CosmicShore.Engine.Services"),
+          new("FMODUnity", "CosmicShore.Engine.Audio.Fmod"),
+        };
+        // A using of a SUB-namespace of a mapped root keeps its tail (Unity.Netcode.Components ->
+        // CosmicShore.Engine.Networking.Components); exact matches take the table value.
+        string MapNs(string ns) {
+          foreach (var kv in map) {
+            if (ns == kv.Key) return kv.Value ?? "";
+            if (ns.StartsWith(kv.Key + ".") && kv.Value != null) return kv.Value + ns.Substring(kv.Key.Length);
+          }
+          return null;
+        }
+        var usingRx = new Regex(@"^([\s﻿]*)using\s+([A-Za-z_][\w.]*)\s*;", RegexOptions.Compiled);
+        var qualified = map.Where(kv => kv.Value != null)
+          .Select(kv => (rx: new Regex(@"(?<![\w.])" + Regex.Escape(kv.Key) + @"(?=\.)", RegexOptions.Compiled), to: kv.Value)).ToList();
+
+        string Transform(string text) {
+          var lines = text.Split('\n');
+          for (int i = 0; i < lines.Length; i++) {
+            var m = usingRx.Match(lines[i]);
+            if (!m.Success) continue;
+            var mapped = MapNs(m.Groups[2].Value);
+            if (mapped == null) continue;
+            var indent = m.Groups[1].Value.Replace("﻿", "");
+            lines[i] = mapped.Length == 0 ? "" : indent + "using " + mapped + ";" + (lines[i].EndsWith("\r") ? "\r" : "");
+          }
+          text = string.Join("\n", lines);
+          foreach (var (rx, to) in qualified) text = rx.Replace(text, to);
+          return text;
+        }
+
+        var src = Path.GetFullPath(SourceDir);
+        var dst = Path.GetFullPath(OutputDir);
+        var keep = new HashSet<string>(StringComparer.Ordinal);
+        int written = 0, total = 0;
+        foreach (var file in Directory.EnumerateFiles(src, "*.cs", SearchOption.AllDirectories)) {
+          var rel = file.Substring(src.TrimEnd(Path.DirectorySeparatorChar).Length + 1);
+          var parts = rel.Split(Path.DirectorySeparatorChar);
+          if (parts.Contains("Editor") || parts.Contains("Tests")) continue;
+          total++;
+          var outPath = Path.Combine(dst, rel);
+          keep.Add(outPath);
+          var text = Transform(File.ReadAllText(file));
+          if (File.Exists(outPath) && File.ReadAllText(outPath) == text) continue;
+          Directory.CreateDirectory(Path.GetDirectoryName(outPath));
+          File.WriteAllText(outPath, text);
+          written++;
+        }
+        if (Directory.Exists(dst))
+          foreach (var stale in Directory.EnumerateFiles(dst, "*.cs", SearchOption.AllDirectories).Where(f => !keep.Contains(f)).ToList())
+            File.Delete(stale);
+        Log.LogMessage(MessageImportance.High, $"SyncUnitySources: {total} scripts, {written} rewritten");
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="SyncUnitySourcesBeforeBuild" BeforeTargets="BeforeBuild;CoreCompile;CollectPackageReferences">
+    <SyncUnitySources SourceDir="$(MSBuildThisFileDirectory)../../../Assets/_Scripts" OutputDir="$(MSBuildThisFileDirectory)obj/live-src" />
+    <ItemGroup>
+      <Compile Remove="obj/live-src/**/*.cs" />
+      <Compile Include="obj/live-src/**/*.cs" />
+    </ItemGroup>
+  </Target>
+</Project>

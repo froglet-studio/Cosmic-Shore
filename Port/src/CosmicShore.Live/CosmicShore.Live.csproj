@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- EXPERIMENT: the REAL Assets/_Scripts, mechanically namespace-substituted by
+       tools/sync_unity_sources.py into obj/live-src, compiled against the port engine. -->
+  <PropertyGroup>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS0414;CS0169;CS0649;CS0067;CS0618;CS0162;CS0219;CS8321;CS0108;CS0114</NoWarn>
+  </PropertyGroup>
+  <Import Project="SyncUnitySources.targets" />
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <ProjectReference Include="../CosmicShore.Compat/CosmicShore.Compat.csproj" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+</Project>

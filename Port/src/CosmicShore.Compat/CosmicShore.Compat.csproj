@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- First-party, behavior-level re-implementations of the third-party/package APIs the
+       Unity game code compiles against (UniTask, DOTween, Unity.Mathematics, Jobs/Burst,
+       Entities, FMOD, …) — written from documented behavior, never copied source. Each
+       package lives in its own folder under its ORIGINAL namespace so the real
+       Assets/_Scripts compile unchanged (see tools/sync_unity_sources.py). -->
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+  </ItemGroup>
+</Project>
