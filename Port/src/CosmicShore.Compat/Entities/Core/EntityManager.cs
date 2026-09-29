@@ -95,7 +95,9 @@ namespace Unity.Entities
                 if (root == Entity.Null) root = CloneOne(store, srcEntity);
                 var rootGroup = new BufferStorage<LinkedEntityGroup>();
                 foreach (var c in clones) rootGroup.Items.Add(new LinkedEntityGroup { Value = c });
-                store.Get(root).Components[typeof(LinkedEntityGroup)] = rootGroup;
+                var rootRecord = store.Get(root);
+                rootRecord.Components[typeof(LinkedEntityGroup)] = rootGroup;
+                rootRecord.Shape++;
                 return root;
             }
             return CloneOne(store, srcEntity);
@@ -121,6 +123,7 @@ namespace Unity.Entities
             }
             if (src.DisabledComponents != null && src.DisabledComponents.Count > 0)
                 record.DisabledComponents = new HashSet<Type>(src.DisabledComponents);
+            record.Shape++;
             return dst;
         }
 
@@ -138,7 +141,7 @@ namespace Unity.Entities
             var type = componentType.ManagedType ?? throw new ArgumentException("ComponentType has no type.");
             if (record.Components.ContainsKey(type)) return false;
             record.Components[type] = DefaultValueFor(type);
-            Store.MarkStructural();
+            Store.MarkStructural(record);
             return true;
         }
 
@@ -166,7 +169,7 @@ namespace Unity.Entities
             var record = Store.Get(entity);
             bool added = !record.Components.ContainsKey(typeof(T));
             record.Components[typeof(T)] = componentData;
-            if (added) Store.MarkStructural();
+            if (added) Store.MarkStructural(record);
             return added;
         }
 
@@ -178,7 +181,7 @@ namespace Unity.Entities
             var type = componentType.ManagedType;
             if (!record.Components.Remove(type)) return false;
             record.DisabledComponents?.Remove(type);
-            Store.MarkStructural();
+            Store.MarkStructural(record);
             return true;
         }
 
@@ -221,7 +224,7 @@ namespace Unity.Entities
             var record = Store.Get(entity);
             bool added = !record.Components.ContainsKey(componentData.GetType());
             record.Components[componentData.GetType()] = componentData;
-            if (added) Store.MarkStructural();
+            if (added) Store.MarkStructural(record);
         }
 
         public T GetComponentObject<T>(Entity entity)
@@ -244,7 +247,7 @@ namespace Unity.Entities
             bool had = record.Components.ContainsKey(type);
             if (!had && !addIfMissing) throw MissingComponent(type, entity);
             record.Components[type] = value;
-            if (!had) Store.MarkStructural();
+            if (!had) Store.MarkStructural(record);
         }
 
         // Enableable ------------------------------------------------------------
@@ -269,6 +272,7 @@ namespace Unity.Entities
             if (!record.Components.ContainsKey(type)) throw MissingComponent(type, entity);
             if (value) record.DisabledComponents?.Remove(type);
             else (record.DisabledComponents ??= new HashSet<Type>()).Add(type);
+            record.Shape++;
         }
 
         // Entity enable (Disabled tag, propagated through LinkedEntityGroup) ------
@@ -321,7 +325,7 @@ namespace Unity.Entities
             }
             var storage = new BufferStorage<T>();
             record.Components[typeof(T)] = storage;
-            Store.MarkStructural();
+            Store.MarkStructural(record);
             return new DynamicBuffer<T>(storage);
         }
 

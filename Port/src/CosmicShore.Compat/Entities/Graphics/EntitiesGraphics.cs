@@ -246,6 +246,47 @@ namespace Unity.Rendering
             return System.Linq.Expressions.Expression.Lambda<Func<object, Vector4>>(body, p).Compile();
         }
 
+        /// <summary>
+        /// What one entity draws with, derived from its component SET (not its values): whether it
+        /// draws at all, and which components carry [MaterialProperty] values. Cached on the
+        /// record against its shape, so the per-frame walk reads values without re-scanning
+        /// every component of every entity.
+        /// </summary>
+        sealed class DrawPlan
+        {
+            public bool Draw, HasArray, HasFilter;
+            public Type[] BoundTypes;
+            public Binding[] Bindings;
+        }
+
+        static DrawPlan PlanFor(Unity.Entities.EntityStore.Record rec)
+        {
+            if (rec.ShapeCacheShape == rec.Shape && rec.ShapeCache is DrawPlan cached) return cached;
+            var comps = rec.Components;
+            var dis = rec.DisabledComponents;
+            var plan = new DrawPlan
+            {
+                Draw = comps.ContainsKey(typeof(MaterialMeshInfo))
+                    && (dis == null || !dis.Contains(typeof(MaterialMeshInfo)))
+                    && !comps.ContainsKey(typeof(DisableRendering)) && !comps.ContainsKey(typeof(Prefab))
+                    && comps.ContainsKey(typeof(Unity.Transforms.LocalToWorld)),
+                HasArray = comps.ContainsKey(typeof(RenderMeshArray)),
+                HasFilter = comps.ContainsKey(typeof(RenderFilterSettings)),
+            };
+            var types = new List<Type>();
+            var bindings = new List<Binding>();
+            foreach (var kv in comps)
+            {
+                var b = BindingFor(kv.Key);
+                if (b != null && (dis == null || !dis.Contains(kv.Key))) { types.Add(kv.Key); bindings.Add(b); }
+            }
+            plan.BoundTypes = types.ToArray();
+            plan.Bindings = bindings.ToArray();
+            rec.ShapeCache = plan;
+            rec.ShapeCacheShape = rec.Shape;
+            return plan;
+        }
+
         void CollectInto(EntityDrawList list)
         {
             if (World == null || !World.IsCreated) return;
@@ -255,30 +296,22 @@ namespace Unity.Rendering
             {
                 var rec = store.SlotAt(i);
                 if (rec == null || !rec.Alive) continue;
+                var plan = PlanFor(rec);
+                if (!plan.Draw) continue;
                 var comps = rec.Components;
-                if (!comps.TryGetValue(typeof(MaterialMeshInfo), out var mmiBox)) continue;
-                if (rec.DisabledComponents != null && rec.DisabledComponents.Contains(typeof(MaterialMeshInfo))) continue;
-                if (comps.ContainsKey(typeof(DisableRendering)) || comps.ContainsKey(typeof(Prefab))) continue;
-                if (!comps.TryGetValue(typeof(Unity.Transforms.LocalToWorld), out var ltwBox)) continue;
-
-                var mmi = (MaterialMeshInfo)mmiBox;
-                Mesh mesh; Material material;
-                RenderMeshArray rma = default;
-                bool hasArray = comps.TryGetValue(typeof(RenderMeshArray), out var rmaBox);
-                if (hasArray) rma = (RenderMeshArray)rmaBox;
-                mesh = mmi.IsRuntimeMesh ? GetMesh(mmi.MeshID) : hasArray ? rma.GetMesh(mmi) : null;
-                material = mmi.IsRuntimeMaterial ? GetMaterial(mmi.MaterialID) : hasArray ? rma.GetMaterial(mmi) : null;
+                var mmi = (MaterialMeshInfo)comps[typeof(MaterialMeshInfo)];
+                RenderMeshArray rma = plan.HasArray ? (RenderMeshArray)comps[typeof(RenderMeshArray)] : default;
+                Mesh mesh = mmi.IsRuntimeMesh ? GetMesh(mmi.MeshID) : plan.HasArray ? rma.GetMesh(mmi) : null;
+                Material material = mmi.IsRuntimeMaterial ? GetMaterial(mmi.MaterialID) : plan.HasArray ? rma.GetMaterial(mmi) : null;
                 if (mesh == null || material == null) continue;
 
-                int layer = comps.TryGetValue(typeof(RenderFilterSettings), out var fs) ? ((RenderFilterSettings)fs).Layer : 0;
-                Matrix4x4 m = ((Unity.Transforms.LocalToWorld)ltwBox).Value;
+                int layer = plan.HasFilter ? ((RenderFilterSettings)comps[typeof(RenderFilterSettings)]).Layer : 0;
+                Matrix4x4 m = ((Unity.Transforms.LocalToWorld)comps[typeof(Unity.Transforms.LocalToWorld)]).Value;
                 int index = list.Add(mesh, material, mmi.SubMesh, in m, layer);
-                foreach (var kv in comps)
-                {
-                    var b = BindingFor(kv.Key);
-                    if (b != null && (rec.DisabledComponents == null || !rec.DisabledComponents.Contains(kv.Key)))
-                        list.Set(index, b.Slot, b.Read(kv.Value));
-                }
+                var bt = plan.BoundTypes;
+                var bs = plan.Bindings;
+                for (int k = 0; k < bt.Length; k++)
+                    list.Set(index, bs[k].Slot, bs[k].Read(comps[bt[k]]));
             }
         }
 

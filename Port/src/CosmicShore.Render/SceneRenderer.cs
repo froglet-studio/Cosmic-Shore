@@ -857,6 +857,7 @@ void main(){
         readonly List<Renderer> _renderers = new();
         readonly List<Item> _opaque = new(), _transparent = new();
         readonly Dictionary<Material, MatState> _mats = new(ReferenceEqualityComparer.Instance);
+        readonly Dictionary<Material, MatState> _ribbonMats = new(ReferenceEqualityComparer.Instance);
         readonly Dictionary<(Mesh, int, Material), List<Item>> _batches = new();
         readonly List<List<Item>> _batchPool = new();
         float[] _instanceData = new float[InstanceFloats * 256];
@@ -984,7 +985,12 @@ void main(){
             _camPos = camPos;
             int mask = camera.cullingMask;
 
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            SetFrustum(viewProj);
+            _cullClock = Shader.GetGlobalFloat(IdPrismClock) is var cc && cc > 0 ? cc : Time.time;
             Collect(mask, camPos);
+            long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+            _writeTicks = 0;
 
             _program.Use();
             _program.Set("uViewProj", ToNumerics(viewProj));
@@ -1080,13 +1086,27 @@ void main(){
             _gl.Disable(EnableCap.CullFace);
             _gl.Disable(EnableCap.DepthTest);
             _gl.BindVertexArray(0);
+            if (s_timing)
+            {
+                long t2 = System.Diagnostics.Stopwatch.GetTimestamp();
+                _gl.Finish();
+                long t3 = System.Diagnostics.Stopwatch.GetTimestamp();
+                double ms(long a) => a * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                if (_frame % 30 == 0)
+                    Console.WriteLine($"[render] collect {ms(t1 - t0):F1} ms (renderers {ms(t1 - t0 - _entityTicks):F1}, ECS hand-over {ms(_entityHandTicks):F1} of {_entities.Count}, entity cull {ms(_entityTicks - _entityHandTicks):F1}), instance writes+uploads {ms(_writeTicks):F1} ms, submit {ms(t2 - t1 - _writeTicks):F1} ms, GPU wait {ms(t3 - t2):F1} ms — {Instances} instances, {DrawCalls} draws, {_opaque.Count + _transparent.Count} collected");
+            }
         }
+
+        static readonly bool s_timing = Environment.GetEnvironmentVariable("COSMIC_SHORE_RENDER_TIMING") == "1";
+        long _writeTicks;
 
         void Collect(int mask, EVector3 camPos)
         {
             _opaque.Clear();
             _transparent.Clear();
-            _mats.Clear();
+            // The cache re-derives an edited material on its own (Material.Revision); a periodic
+            // purge only lets go of materials nothing draws with any more.
+            if (_frame % 600 == 0) { _mats.Clear(); _ribbonMats.Clear(); }
             Renderer.CollectLive(_renderers);
             foreach (var r in _renderers)
             {
@@ -1103,6 +1123,7 @@ void main(){
                 Mesh mesh = r is SkinnedMeshRenderer s ? s.sharedMesh : r.GetComponent<MeshFilter>()?.sharedMesh;
                 if (mesh == null || mesh.vertexCount == 0) continue;
                 if (r is SkinnedMeshRenderer morphing && mesh.blendShapeCount > 0) mesh = Morphed(morphing, mesh);
+                bool visible = r is SkinnedMeshRenderer || InFrustum(mesh, r.transform.localToWorldMatrix);
                 var mats = r.sharedMaterials;
                 int subs = mesh.RenderSubmeshCount;
                 for (int i = 0; i < mats.Length && i < Math.Max(subs, 1); i++)
@@ -1110,6 +1131,9 @@ void main(){
                     var m = mats[i];
                     if (m == null) continue;
                     var st = StateFor(m);
+                    // Frustum culling (Unity culls every renderer against the camera first).
+                    // Vertex-animated prism families move geometry off their transform: never culled.
+                    if (!visible && st.PrismGraph == 0 && st.Family != 8) continue;
                     var item = new Item { Renderer = r, Mesh = mesh, Submesh = Math.Min(i, subs - 1), Material = m, State = st,
                         Skinned = r is SkinnedMeshRenderer sk && sk.bones is { Length: > 0 and <= MaxBones } && mesh.RenderBoneWeights.Length == mesh.vertexCount
                                   && mesh.RenderBindposes.Length >= sk.bones.Length };
@@ -1121,17 +1145,95 @@ void main(){
                     else _opaque.Add(item);
                 }
             }
+            long te = System.Diagnostics.Stopwatch.GetTimestamp();
             CollectEntities(mask, camPos);
+            _entityTicks = System.Diagnostics.Stopwatch.GetTimestamp() - te;
         }
+
+        long _entityTicks, _entityHandTicks;
 
         // ── Entities Graphics: every visible entity the ECS emulation hands over ──
 
         readonly EntityDrawList _entities = new();
 
+        // ── Frustum culling ──
+
+        readonly System.Numerics.Vector4[] _planes = new System.Numerics.Vector4[6];
+        float _cullClock;
+        static readonly int SlotFlightStart = EntityDrawList.Slot("_FlightStartTime"), SlotFlightDuration = EntityDrawList.Slot("_FlightDuration");
+        static readonly int SlotSuctionStart = EntityDrawList.Slot("_SuctionStartTime"), SlotSuctionDuration = EntityDrawList.Slot("_SuctionDuration");
+        sealed class MeshSphere { public Vector3[] Source; public EVector3 Centre; public float Radius; }
+        readonly ConditionalWeakTable<Mesh, MeshSphere> _spheres = new();
+
+        /// <summary>The six clip planes of <paramref name="vp"/> (Gribb–Hartmann), normalised; inside = dot >= 0.</summary>
+        void SetFrustum(CosmicShore.Engine.Matrix4x4 vp)
+        {
+            var r0 = new System.Numerics.Vector4(vp.m00, vp.m01, vp.m02, vp.m03);
+            var r1 = new System.Numerics.Vector4(vp.m10, vp.m11, vp.m12, vp.m13);
+            var r2 = new System.Numerics.Vector4(vp.m20, vp.m21, vp.m22, vp.m23);
+            var r3 = new System.Numerics.Vector4(vp.m30, vp.m31, vp.m32, vp.m33);
+            _planes[0] = r3 + r0; _planes[1] = r3 - r0; _planes[2] = r3 + r1;
+            _planes[3] = r3 - r1; _planes[4] = r3 + r2; _planes[5] = r3 - r2;
+            for (int i = 0; i < 6; i++)
+            {
+                var p = _planes[i];
+                float len = MathF.Sqrt(p.X * p.X + p.Y * p.Y + p.Z * p.Z);
+                _planes[i] = len > 1e-12f ? p / len : p;
+            }
+        }
+
+        /// <summary>A bounding sphere of the mesh's own vertices (object space), cached per vertex buffer.</summary>
+        MeshSphere SphereOf(Mesh mesh)
+        {
+            var verts = mesh.RenderVertices;
+            var s = _spheres.GetOrCreateValue(mesh);
+            if (ReferenceEquals(s.Source, verts)) return s;
+            s.Source = verts;
+            if (verts.Length == 0) { s.Centre = default; s.Radius = 0f; return s; }
+            var min = verts[0]; var max = verts[0];
+            foreach (var v in verts) { min = Vector3.Min(min, v); max = Vector3.Max(max, v); }
+            var c = (min + max) * 0.5f;
+            float r2 = 0f;
+            foreach (var v in verts) r2 = MathF.Max(r2, (v - c).sqrMagnitude);
+            s.Centre = new EVector3(c.x, c.y, c.z);
+            s.Radius = MathF.Sqrt(r2);
+            return s;
+        }
+
+        static readonly bool s_noCull = Environment.GetEnvironmentVariable("COSMIC_SHORE_NO_CULL") == "1";
+
+        bool InFrustum(Mesh mesh, in CosmicShore.Engine.Matrix4x4 m)
+        {
+            if (s_noCull) return true;
+            var sph = SphereOf(mesh);
+            var c = m.MultiplyPoint3x4(sph.Centre);
+            float sx = new EVector3(m.m00, m.m10, m.m20).magnitude, sy = new EVector3(m.m01, m.m11, m.m21).magnitude, sz = new EVector3(m.m02, m.m12, m.m22).magnitude;
+            // Margin: sway, jiggle, cradle and grow all stay near the rest shape.
+            float r = sph.Radius * MathF.Max(sx, MathF.Max(sy, sz)) * 1.25f + 1f;
+            for (int i = 0; i < 6; i++)
+            {
+                var p = _planes[i];
+                if (p.X * c.x + p.Y * c.y + p.Z * c.z + p.W < -r) return false;
+            }
+            return true;
+        }
+
+        bool EntityVisible(int i, Mesh mesh, in MatState st)
+        {
+            if (st.PrismGraph == 2 || st.Family == 8) return true;     // debris / slice halves fly off their transform
+            if (_entities.TryGet(i, SlotFlightDuration, out var fd) && fd.x > 0f
+                && _entities.TryGet(i, SlotFlightStart, out var fs) && _cullClock < fs.x + fd.x) return true;
+            if (_entities.TryGet(i, SlotSuctionDuration, out var sd) && sd.x > 0f
+                && _entities.TryGet(i, SlotSuctionStart, out var ss) && _cullClock >= ss.x) return true;
+            return InFrustum(mesh, _entities.Matrices[i]);
+        }
+
         void CollectEntities(int mask, EVector3 camPos)
         {
             _entities.Clear();
+            long th = System.Diagnostics.Stopwatch.GetTimestamp();
             EntityDraws.Collect?.Invoke(_entities);
+            _entityHandTicks = System.Diagnostics.Stopwatch.GetTimestamp() - th;
             for (int i = 0; i < _entities.Count; i++)
             {
                 if ((mask & (1 << _entities.Layers[i])) == 0) continue;
@@ -1139,6 +1241,7 @@ void main(){
                 var m = _entities.Materials[i];
                 if (mesh == null || mesh.vertexCount == 0 || m == null) continue;
                 var st = StateFor(m);
+                if (!EntityVisible(i, mesh, st)) continue;
                 int subs = mesh.RenderSubmeshCount;
                 var item = new Item { Mesh = mesh, Submesh = Math.Clamp(_entities.Submeshes[i], 0, Math.Max(subs - 1, 0)), Material = m, State = st, Entity = i + 1 };
                 if (st.Transparent)
@@ -1307,6 +1410,7 @@ void main(){
             var st = first.State;
 
             int n = items.Count;
+            long tw = System.Diagnostics.Stopwatch.GetTimestamp();
             if (_instanceData.Length < n * InstanceFloats) _instanceData = new float[Math.Max(n, _instanceData.Length / InstanceFloats * 2) * InstanceFloats];
             for (int i = 0; i < n; i++)
                 WriteInstance(items[i], i * InstanceFloats);
@@ -1326,6 +1430,7 @@ void main(){
             fixed (float* p = _instanceData)
                 _gl.BufferSubData(BufferTargetARB.ArrayBuffer, 0, (nuint)bytes, p);
             BindInstanceAttributes();
+            _writeTicks += System.Diagnostics.Stopwatch.GetTimestamp() - tw;
 
             if (st.Family == 7 && first.Renderer != null) SetCrackleUniforms(first);
             if (st.Family == 8)
@@ -1481,13 +1586,13 @@ void main(){
 
             var mats = r.sharedMaterials;
             var m = mats is { Length: > 0 } && mats[0] != null ? mats[0] : DefaultLineMaterial;
-            if (!_mats.TryGetValue(m, out var st) || st.Revision != m.Revision)
+            if (!_ribbonMats.TryGetValue(m, out var st) || st.Revision != m.Revision)
             {
-                _mats[m] = st = Classify(m);
+                st = Classify(m);
                 // A line/trail is a translucent strip whatever its material queue says; cull nothing.
                 if (!st.Transparent) { st.Transparent = true; st.Src = BlendingFactor.SrcAlpha; st.Dst = BlendingFactor.OneMinusSrcAlpha; st.ZWrite = false; }
                 st.Cull = 0;
-                _mats[m] = st;
+                _ribbonMats[m] = st;
             }
             var item = new Item { Renderer = r, Mesh = mesh, Submesh = 0, Material = m, State = st, WorldSpace = true,
                                   Distance = (r.transform.position - camPos).sqrMagnitude };

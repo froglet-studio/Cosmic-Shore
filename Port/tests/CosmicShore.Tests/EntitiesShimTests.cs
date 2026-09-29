@@ -282,6 +282,63 @@ public class EntitiesShimTests : IDisposable
     struct ShimTintOverride : IComponentData { public Unity.Mathematics.float4 Value; }
 
     [Fact]
+    public void DrawCollection_CachedPlanFollowsStructuralChanges_NotValueWrites()
+    {
+        var previous = World.DefaultGameObjectInjectionWorld;
+        var previousFlag = DefaultWorldInitialization.UseCustomBootstrap;
+        DefaultWorldInitialization.UseCustomBootstrap = false;
+        try
+        {
+            var world = DefaultWorldInitialization.Initialize("Default World");
+            try
+            {
+                var graphics = world.GetExistingSystemManaged<EntitiesGraphicsSystem>();
+                var mesh = new Mesh();
+                var material = new Material(Shader.Find("Hidden/EntitiesShimTest"));
+                var em = world.EntityManager;
+                var e = em.CreateEntity();
+                em.AddComponentData(e, new MaterialMeshInfo(graphics.RegisterMaterial(material), graphics.RegisterMesh(mesh)));
+                em.AddComponentData(e, new Unity.Transforms.LocalToWorld { Value = Matrix4x4.identity });
+                int tint = EntityDrawList.Slot("_ShimTestTint");
+
+                int Count(out bool tinted, out Vector4 value)
+                {
+                    var list = new EntityDrawList();
+                    EntityDraws.Collect(list);
+                    value = default;
+                    tinted = list.Count > 0 && list.TryGet(0, tint, out value);
+                    return list.Count;
+                }
+
+                Assert.Equal(1, Count(out var t0, out _));
+                Assert.False(t0);
+
+                em.AddComponentData(e, new ShimTintOverride { Value = new Unity.Mathematics.float4(1, 0, 0, 1) });
+                Assert.Equal(1, Count(out var t1, out var v1));   // a newly added binding is picked up
+                Assert.True(t1);
+                Assert.Equal(new Vector4(1, 0, 0, 1), v1);
+
+                em.SetComponentData(e, new ShimTintOverride { Value = new Unity.Mathematics.float4(0, 1, 0, 1) });
+                Count(out _, out var v2);                            // a value write reaches the cached plan
+                Assert.Equal(new Vector4(0, 1, 0, 1), v2);
+
+                em.AddComponentData(e, new DisableRendering());
+                Assert.Equal(0, Count(out _, out _));                // hidden
+                em.RemoveComponent<DisableRendering>(e);
+                Assert.Equal(1, Count(out _, out _));                // shown again
+                em.DestroyEntity(e);
+                Assert.Equal(0, Count(out _, out _));
+            }
+            finally { world.Dispose(); }
+        }
+        finally
+        {
+            World.DefaultGameObjectInjectionWorld = previous;
+            DefaultWorldInitialization.UseCustomBootstrap = previousFlag;
+        }
+    }
+
+    [Fact]
     public void DrawCollection_HandsVisibleEntitiesAndTheirOverridesToTheRenderer()
     {
         var previous = World.DefaultGameObjectInjectionWorld;

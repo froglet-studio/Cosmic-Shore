@@ -109,11 +109,15 @@ namespace CosmicShore.Player
             float step = Scripted ? 1f / 60f : (float)Math.Min(dt, 0.1);
             _inputBridge.BeforeTick();
             _script.BeforeTick(_frameIndex);
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             _boot.Tick(step);
+            if (s_timing && _frameIndex % 30 == 0)
+                Console.WriteLine($"[tick] simulation {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms (frame {_frameIndex})");
             _inputBridge.AfterTick();
         }
 
         double _lastFrameMs;
+        static readonly bool s_timing = Environment.GetEnvironmentVariable("COSMIC_SHORE_RENDER_TIMING") == "1";
         readonly System.Diagnostics.Stopwatch _frameClock = System.Diagnostics.Stopwatch.StartNew();
 
         void OnRender(double dt)

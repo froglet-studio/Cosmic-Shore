@@ -22,6 +22,11 @@ namespace Unity.Entities
             public string Name;
             public readonly Dictionary<Type, object> Components = new();
             public HashSet<Type> DisabledComponents;
+            /// <summary>Bumped when THIS entity's component set or enabled set changes (never by a value write).</summary>
+            public int Shape;
+            /// <summary>A consumer's cache keyed on <see cref="Shape"/> (the render hand-over's draw plan).</summary>
+            public object ShapeCache;
+            public int ShapeCacheShape = -1;
         }
 
         // Slot 0 is reserved so Entity.Null (0:0) never names a live entity.
@@ -57,6 +62,7 @@ namespace Unity.Entities
             record.Name = null;
             record.Components.Clear();
             record.DisabledComponents?.Clear();
+            record.Shape++;
             Count++;
             StructuralVersion++;
             return new Entity { Index = index, Version = record.Version };
@@ -90,6 +96,7 @@ namespace Unity.Entities
             record.Alive = false;
             record.Components.Clear();
             record.DisabledComponents?.Clear();
+            record.Shape++;
             record.Name = null;
             _free.Push(entity.Index);
             Count--;
@@ -97,6 +104,9 @@ namespace Unity.Entities
         }
 
         public void MarkStructural() => StructuralVersion++;
+
+        /// <summary>A structural change to one entity: the global version and that entity's shape.</summary>
+        public void MarkStructural(Record record) { StructuralVersion++; record.Shape++; }
 
         public IEnumerable<Entity> All()
         {
@@ -116,6 +126,7 @@ namespace Unity.Entities
                 r.Alive = false;
                 r.Components.Clear();
                 r.DisabledComponents?.Clear();
+                r.Shape++;
                 _free.Push(i);
             }
             Count = 0;
