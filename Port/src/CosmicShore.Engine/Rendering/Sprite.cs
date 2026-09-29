@@ -82,5 +82,9 @@ namespace CosmicShore.Engine
                 border = border,
             };
         }
+
+        /// <summary>Overload with an explicit mesh type (the full-rect/tight choice only shapes the mesh).</summary>
+        public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border = default, bool generateFallbackPhysicsShape = false)
+            => Create(texture, rect, pivot, pixelsPerUnit, extrude, border);
     }
 }

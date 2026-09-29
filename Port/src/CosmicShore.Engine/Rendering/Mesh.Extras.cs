@@ -83,6 +83,9 @@ namespace CosmicShore.Engine
             => SetVertices(inVertices.GetRange(start, length));
         public void SetVertices(Vector3[] inVertices, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
             => SetVertices(new ArraySegment<Vector3>(inVertices, start, length).ToArray());
+        public void SetNormals(System.Collections.Generic.List<Vector3> inNormals, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            => SetNormals(inNormals.GetRange(start, length).ToArray());
+
         public void SetNormals(Vector3[] inNormals, int start, int length, MeshUpdateFlags flags = MeshUpdateFlags.Default)
             => SetNormals(new ArraySegment<Vector3>(inNormals, start, length).ToArray());
 

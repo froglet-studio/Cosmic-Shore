@@ -235,7 +235,7 @@ namespace CosmicShore.Client
             _graphicCount = 0;
             _textCount = 0;
             foreach (var graphic in Object.FindObjectsByType<Graphic>(FindObjectsSortMode.None))
-                if (graphic.isActiveAndEnabled) _graphicCount++;
+                if (graphic.isActiveAndEnabled && graphic is not TMP_Text) _graphicCount++;
             foreach (var text in Object.FindObjectsByType<TMP_Text>(FindObjectsSortMode.None))
                 if (text is Behaviour { isActiveAndEnabled: true }) _textCount++;
         }

@@ -56,7 +56,7 @@ namespace CosmicShore.Client
             {
                 foreach (var graphic in node.gameObject.GetComponents<Graphic>())
                 {
-                    if (!graphic.isActiveAndEnabled) continue;
+                    if (!graphic.isActiveAndEnabled || graphic is TMP_Text) continue;
                     rect.GetWorldCorners(s_Corners); // BL, TL, TR, BR — screen pixels
                     float x = s_Corners[0].x, y = s_Corners[0].y;
                     float w = s_Corners[3].x - s_Corners[0].x;

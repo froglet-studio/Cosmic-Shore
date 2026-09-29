@@ -204,6 +204,22 @@ namespace Cysharp.Threading.Tasks
         public static UniTask ToUniTask(this Task task, bool useCurrentSynchronizationContext = true) => UniTaskInterop.FromTask(task, useCurrentSynchronizationContext);
         public static UniTask<T> ToUniTask<T>(this Task<T> task, bool useCurrentSynchronizationContext = true) => UniTaskInterop.FromTask(task, useCurrentSynchronizationContext);
 
+        /// <summary>Awaits an engine operation (scene load, instantiate, asset load). Cancelling abandons the wait, not the operation (original contract).</summary>
+        public static UniTask ToUniTask(this CosmicShore.Engine.AsyncOperation asyncOperation, IProgress<float> progress = null,
+            PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default, bool cancelImmediately = false)
+            => UniTaskInterop.FromTask(asyncOperation.WaitAsync(cancellationToken), true);
+
+        /// <summary>Awaits a web request; a non-success result throws <see cref="CosmicShore.Engine.Networking.UnityWebRequestException"/> (original contract).</summary>
+        public static async UniTask<CosmicShore.Engine.Networking.UnityWebRequest> ToUniTask(this CosmicShore.Engine.Networking.UnityWebRequestAsyncOperation asyncOperation,
+            IProgress<float> progress = null, PlayerLoopTiming timing = PlayerLoopTiming.Update, CancellationToken cancellationToken = default, bool cancelImmediately = false)
+        {
+            await UniTaskInterop.FromTask(asyncOperation.WaitAsync(cancellationToken), true);
+            var request = asyncOperation.webRequest;
+            if (request.result != CosmicShore.Engine.Networking.UnityWebRequest.Result.Success)
+                throw new CosmicShore.Engine.Networking.UnityWebRequestException(request);
+            return request;
+        }
+
         public static async Task AsTask(this UniTask task) => await task;
         public static async Task<T> AsTask<T>(this UniTask<T> task) => await task;
 

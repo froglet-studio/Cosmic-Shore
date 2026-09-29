@@ -44,12 +44,27 @@ namespace CosmicShore.Engine.Audio.Fmod
     public struct ATTRIBUTES_3D
     {
         public Vector3 position;
+        public Vector3 velocity;
+        public Vector3 forward;
+        public Vector3 up;
     }
 
     /// <summary>Conversion helpers (original contract: FMODUnity.RuntimeUtils).</summary>
     public static class RuntimeUtils
     {
-        public static ATTRIBUTES_3D To3DAttributes(Vector3 position) => new() { position = position };
+        public static ATTRIBUTES_3D To3DAttributes(Vector3 position) => new() { position = position, forward = Vector3.forward, up = Vector3.up };
+
+        public static ATTRIBUTES_3D To3DAttributes(Transform transform, Rigidbody rigidbody = null)
+            => transform == null ? To3DAttributes(Vector3.zero) : new ATTRIBUTES_3D
+            {
+                position = transform.position,
+                forward = transform.forward,
+                up = transform.up,
+                velocity = rigidbody != null ? rigidbody.linearVelocity : Vector3.zero,
+            };
+
+        public static ATTRIBUTES_3D To3DAttributes(GameObject gameObject, Rigidbody rigidbody = null)
+            => To3DAttributes(gameObject != null ? gameObject.transform : null, rigidbody);
     }
 
     /// <summary>Shared state behind <see cref="EventInstance"/> handle copies.</summary>
@@ -63,6 +78,8 @@ namespace CosmicShore.Engine.Audio.Fmod
         public bool Stopped;
         public bool Paused;
         public bool Released;
+        static int s_nextId;
+        public readonly int Id = System.Threading.Interlocked.Increment(ref s_nextId);
         public readonly Dictionary<PARAMETER_ID, float> Parameters = new();
     }
 
@@ -76,7 +93,10 @@ namespace CosmicShore.Engine.Audio.Fmod
     {
         internal EventInstanceState State;
 
-        public bool isValid() => State != null;
+        public bool isValid() => State != null && !State.Released;
+
+        /// <summary>The native handle (non-zero and unique per live instance; zero when invalid).</summary>
+        public System.IntPtr handle => State == null ? System.IntPtr.Zero : (System.IntPtr)State.Id;
 
         public RESULT setVolume(float volume)
         {
@@ -85,6 +105,7 @@ namespace CosmicShore.Engine.Audio.Fmod
         }
 
         public RESULT getVolume(out float volume) { volume = State?.Volume ?? 0f; return State == null ? RESULT.ERR_INVALID_HANDLE : RESULT.OK; }
+        public RESULT getVolume(out float volume, out float finalvolume) { var r = getVolume(out volume); finalvolume = volume; return r; }
 
         public RESULT set3DAttributes(ATTRIBUTES_3D attributes)
         {

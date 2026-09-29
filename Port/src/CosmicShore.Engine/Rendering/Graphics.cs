@@ -44,6 +44,20 @@ namespace CosmicShore.Engine
     /// </summary>
     public static class Graphics
     {
+        /// <summary>
+        /// Installed by the GL renderer: performs a GPU copy (optionally through a material).
+        /// Headless it bumps the destination's version so a reader sees fresh contents.
+        /// </summary>
+        public static Action<Texture, RenderTexture, Material, int> BlitHook;
+
+        public static void Blit(Texture source, RenderTexture dest) => Blit(source, dest, null, -1);
+        public static void Blit(Texture source, RenderTexture dest, Material mat, int pass = -1)
+        {
+            if (BlitHook != null) BlitHook(source, dest, mat, pass);
+            dest?.MarkModified();
+        }
+        public static void Blit(Texture source, Material mat, int pass = -1) => Blit(source, null, mat, pass);
+
         public const int MaxRecordedSubmissions = 16;
 
         /// <summary>One recorded RenderMeshInstanced call.</summary>

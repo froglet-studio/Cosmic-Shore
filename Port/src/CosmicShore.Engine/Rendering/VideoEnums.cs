@@ -1,6 +1,4 @@
-// UnityEngine.Video's value types. VideoPlayer and VideoClip themselves are ENGINE types
-// (CosmicShore.Engine.Video, owned by the engine) — do not define them here, or every file that
-// imports both CosmicShore.Engine and CosmicShore.Engine.Video goes ambiguous (CS0104).
+// UnityEngine.Video's value types, owned by the engine beside VideoPlayer/VideoClip.
 // Numeric values are frozen to the original's so serialized scenes/prefabs read back unchanged.
 namespace CosmicShore.Engine.Video
 {

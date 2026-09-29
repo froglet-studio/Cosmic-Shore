@@ -31,6 +31,21 @@ namespace CosmicShore.Engine.InputSystem
         public bool synthetic { get; protected set; }
         public bool noisy { get; protected set; }
 
+        /// <summary>The layout the control was built from ("Button", "Stick", "Gamepad" …).</summary>
+        public virtual string layout
+        {
+            get
+            {
+                var n = GetType().Name;
+                return n.EndsWith("Control", System.StringComparison.Ordinal) && n.Length > 7 ? n.Substring(0, n.Length - 7) : n;
+            }
+        }
+
+        readonly List<InternedString> _usages = new();
+        /// <summary>Usage tags (e.g. "PrimaryAction", "Submit"); on a device, its role ("LeftHand").</summary>
+        public ReadOnlyArray<InternedString> usages => new(_usages.ToArray());
+        public void AddUsage(string usage) { var u = new InternedString(usage); if (!_usages.Contains(u)) _usages.Add(u); }
+
         /// <summary>Control path, e.g. <c>/Keyboard/w</c>.</summary>
         public string path => parent == null ? "/" + name : parent.path + "/" + name;
 

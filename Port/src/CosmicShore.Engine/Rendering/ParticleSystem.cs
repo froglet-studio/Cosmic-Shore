@@ -132,7 +132,8 @@ namespace CosmicShore.Engine
 
             public bool shapeEnabled = true;
             public ParticleSystemShapeType shapeType = ParticleSystemShapeType.Cone;
-            public float radius = 1f, angle = 25f, arc = 360f, radiusThickness = 1f, length = 5f, randomDirectionAmount, sphericalDirectionAmount;
+            public float radius = 1f, angle = 25f, arc = 360f, radiusThickness = 1f, length = 5f, donutRadius = 0.2f, randomDirectionAmount, sphericalDirectionAmount;
+            public Vector3 boxThickness;
             public Vector3 shapePosition, shapeRotation, shapeScale = Vector3.one;
             public Mesh shapeMesh;
             public MeshRenderer shapeMeshRenderer;
@@ -324,6 +325,8 @@ namespace CosmicShore.Engine
             public Vector3 position { get => s.shapePosition; set => s.shapePosition = value; }
             public Vector3 rotation { get => s.shapeRotation; set => s.shapeRotation = value; }
             public Vector3 scale { get => s.shapeScale; set => s.shapeScale = value; }
+            public Vector3 boxThickness { get => s.boxThickness; set => s.boxThickness = value; }
+            public float donutRadius { get => s.donutRadius; set => s.donutRadius = value; }
             public Mesh mesh { get => s.shapeMesh; set => s.shapeMesh = value; }
             public MeshRenderer meshRenderer { get => s.shapeMeshRenderer; set => s.shapeMeshRenderer = value; }
             public SkinnedMeshRenderer skinnedMeshRenderer { get => s.shapeSkinnedMeshRenderer; set => s.shapeSkinnedMeshRenderer = value; }

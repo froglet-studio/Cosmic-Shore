@@ -246,13 +246,40 @@ namespace CosmicShore.Engine
 
         public static Object Load(string path) => Load<Object>(path);
 
-        public static T[] FindObjectsOfTypeAll<T>() where T : ScriptableObject
+        public static T[] FindObjectsOfTypeAll<T>() where T : Object
         {
             var results = new List<T>();
             foreach (var asset in Registry)
                 if (asset is T match) results.Add(match);
+            foreach (var asset in PathRegistry.Values)
+                if (asset is T match && !results.Contains(match)) results.Add(match);
+            // Scene objects (active and inactive) are part of "all loaded objects" too.
+            if (!typeof(ScriptableObject).IsAssignableFrom(typeof(T)))
+                foreach (var o in Object.FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    if (!results.Contains(o)) results.Add(o);
             return results.ToArray();
         }
+
+        /// <summary>
+        /// Resolves every asset of a Resources-relative FOLDER (installed by the content
+        /// bridge; null falls back to the explicit registry).
+        /// </summary>
+        public static Func<string, Type, Object[]> ContentFolderLoader;
+
+        public static T[] LoadAll<T>(string path) where T : Object
+        {
+            var results = new List<T>();
+            string prefix = string.IsNullOrEmpty(path) ? string.Empty : path.TrimEnd('/') + "/";
+            foreach (var (key, asset) in PathRegistry)
+                if ((prefix.Length == 0 || key.StartsWith(prefix, StringComparison.Ordinal)) && asset is T match && !results.Contains(match))
+                    results.Add(match);
+            if (ContentFolderLoader != null)
+                foreach (var asset in ContentFolderLoader(path, typeof(T)) ?? Array.Empty<Object>())
+                    if (asset is T match && !results.Contains(match)) results.Add(match);
+            return results.ToArray();
+        }
+
+        public static Object[] LoadAll(string path) => LoadAll<Object>(path);
     }
 
     public enum CursorLockMode { None = 0, Locked = 1, Confined = 2 }
@@ -375,6 +402,8 @@ namespace CosmicShore.Engine
     /// </summary>
     public class Rigidbody : Component
     {
+        /// <summary>Mass-normalized kinetic energy below which the body may sleep (0 = never sleeps).</summary>
+        public float sleepThreshold = 0.005f;
         public bool isKinematic;
         public bool useGravity;
         public float mass = 1f;

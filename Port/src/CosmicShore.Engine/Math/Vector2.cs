@@ -40,6 +40,8 @@ namespace CosmicShore.Engine
         public float magnitude => MathF.Sqrt(x * x + y * y);
         public float sqrMagnitude => x * x + y * y;
 
+        public float SqrMagnitude() => x * x + y * y;
+
         public Vector2 normalized
         {
             get

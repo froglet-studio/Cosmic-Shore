@@ -21,6 +21,7 @@
         // Longest first; null = delete the using line.
         var map = new List<KeyValuePair<string, string>> {
           new("UnityEngine.Serialization", "CosmicShore.Engine.Serialization"),
+          new("UnityEngine.Networking", "CosmicShore.Engine.Networking"),
           new("UnityEngine.UI", "CosmicShore.Engine.UI"),
           new("UnityEngine.EventSystems", "CosmicShore.Engine.UI"),
           new("UnityEngine.SceneManagement", "CosmicShore.Engine.SceneManagement"),

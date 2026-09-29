@@ -224,6 +224,15 @@ namespace CosmicShore.Engine.Collections
             return l.Count;
         }
 
+        /// <summary>Removes the single value the iterator points at; iteration may continue from it (original contract).</summary>
+        public void Remove(NativeParallelMultiHashMapIterator<TKey> it)
+        {
+            if (!_box.map.TryGetValue(it.key, out var l) || it.index < 0 || it.index >= l.Count) return;
+            l.RemoveAt(it.index);
+            _box.count--;
+            if (l.Count == 0) _box.map.Remove(it.key);
+        }
+
         public void Clear() { _box.map.Clear(); _box.count = 0; }
         public bool ContainsKey(TKey key) => _box.map.ContainsKey(key);
         public int CountValuesForKey(TKey key) => _box.map.TryGetValue(key, out var l) ? l.Count : 0;

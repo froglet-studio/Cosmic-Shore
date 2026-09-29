@@ -349,7 +349,7 @@ namespace CosmicShore.Engine.UI
     /// <see cref="TmpLayout"/>; rendering is <see cref="TmpSdfShader"/> /
     /// <see cref="TmpSoftwareRaster"/>. Substitution: `using TMPro;` → `using CosmicShore.Engine.UI;`.
     /// </summary>
-    public abstract class TMP_Text : Behaviour
+    public abstract partial class TMP_Text : MaskableGraphic
     {
         /// <summary>The 'kern' OpenType feature tag as TMP serializes it (little-endian "kern").</summary>
         public const uint KernFeatureTag = 0x6E72656B;
@@ -409,17 +409,17 @@ namespace CosmicShore.Engine.UI
 
         // ── public surface (TMP property names) ───────────────────────────────────────
 
-        public string text
+        public virtual string text
         {
             get => m_text;
-            set => m_text = value ?? string.Empty;
+            set { m_text = value ?? string.Empty; m_havePropertiesChanged = true; }
         }
 
         /// <summary>Font color (TMP overrides Graphic.color to read/write m_fontColor).</summary>
-        public Color color
+        public override Color color
         {
             get => m_fontColor;
-            set { m_fontColor = value; m_fontColor32 = value; }
+            set { m_fontColor = value; m_fontColor32 = value; m_havePropertiesChanged = true; }
         }
 
         public float fontSize
@@ -536,16 +536,6 @@ namespace CosmicShore.Engine.UI
     public class TextMeshPro : TMP_Text
     {
         public TextMeshPro() { m_isOrthographic = false; }
-    }
-
-    /// <summary>
-    /// Data-only input-field shim (original contract: TMPro.TMP_InputField — the slice
-    /// ported controllers read/write: the entered text plus interactability via Behaviour).
-    /// A render/input layer binds it later; tests set <see cref="text"/> directly.
-    /// </summary>
-    public class TMP_InputField : Behaviour
-    {
-        public string text = string.Empty;
     }
 
     /// <summary>Canvas (UGUI) TextMeshPro component.</summary>

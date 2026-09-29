@@ -511,6 +511,16 @@ namespace CosmicShore.Engine.InputSystem
 
         public ReadOnlyArray<InputActionMap> actionMaps => new(m_Maps.ToArray());
         public ReadOnlyArray<InputControlScheme> controlSchemes => new(m_Schemes.ToArray());
+
+        /// <summary>Index of the named control scheme (case-insensitive), or -1 (original contract).</summary>
+        public int FindControlSchemeIndex(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return -1;
+            for (int i = 0; i < m_Schemes.Count; i++)
+                if (string.Equals(m_Schemes[i].name, name, StringComparison.OrdinalIgnoreCase)) return i;
+            return -1;
+        }
+
         public IEnumerable<InputBinding> bindings => m_Maps.SelectMany(m => m.bindings);
         public InputBinding? bindingMask { get; set; }
         public ReadOnlyArray<InputDevice>? devices { get; set; }

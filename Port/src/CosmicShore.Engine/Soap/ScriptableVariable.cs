@@ -54,6 +54,9 @@ namespace CosmicShore.Engine.Soap
         public void ForceNotify() => OnValueChanged?.Invoke(_value);
 
         public override string ToString() => $"{name}: {_value}";
+
+        /// <summary>SOAP contract: a variable reads as its value wherever a T is expected.</summary>
+        public static implicit operator T(ScriptableVariable<T> variable) => variable is null ? default : variable.Value;
     }
 
     // Common concrete variable types, mirroring the original asset menu set.

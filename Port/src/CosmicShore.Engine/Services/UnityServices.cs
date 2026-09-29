@@ -62,3 +62,38 @@ namespace CosmicShore.Engine.Services
             : base(message, innerException) => ErrorCode = errorCode;
     }
 }
+
+namespace CosmicShore.Engine.Services
+{
+    /// <summary>Why a Cloud Save request failed (original contract: Unity.Services.CloudSave.CloudSaveExceptionReason).</summary>
+    public enum CloudSaveExceptionReason
+    {
+        Unknown = 0, NoInternetConnection = 1, ProjectIdMissing = 2, PlayerIdMissing = 3, AccessTokenMissing = 4,
+        InvalidArgument = 5, Unauthorized = 6, KeyLimitExceeded = 7, NotFound = 8, TooManyRequests = 9,
+        ServiceUnavailable = 10, Conflict = 11, Forbidden = 12,
+    }
+
+    /// <summary>A typed Cloud Save failure (original contract: Unity.Services.CloudSave.CloudSaveException).</summary>
+    public class CloudSaveException : RequestFailedException
+    {
+        public CloudSaveExceptionReason Reason { get; }
+
+        public CloudSaveException(CloudSaveExceptionReason reason, int errorCode, string message, System.Exception innerException = null)
+            : base(errorCode, message, innerException) => Reason = reason;
+    }
+
+    /// <summary>Raised when the request failed validation (original contract).</summary>
+    public class CloudSaveValidationException : CloudSaveException
+    {
+        public CloudSaveValidationException(CloudSaveExceptionReason reason, int errorCode, string message, System.Exception innerException = null)
+            : base(reason, errorCode, message, innerException) { }
+    }
+
+    /// <summary>Raised when the service rate-limited the caller (original contract).</summary>
+    public class CloudSaveRateLimitedException : CloudSaveException
+    {
+        public float RetryAfter { get; }
+        public CloudSaveRateLimitedException(CloudSaveExceptionReason reason, int errorCode, string message, float retryAfter, System.Exception innerException = null)
+            : base(reason, errorCode, message, innerException) => RetryAfter = retryAfter;
+    }
+}

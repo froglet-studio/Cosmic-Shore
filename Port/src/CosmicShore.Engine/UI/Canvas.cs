@@ -25,6 +25,7 @@ namespace CosmicShore.Engine
         public RenderMode renderMode = RenderMode.ScreenSpaceOverlay;
         public int sortingOrder;
         public bool overrideSorting;
+        public bool pixelPerfect;
         public Camera worldCamera;
 
         /// <summary>
