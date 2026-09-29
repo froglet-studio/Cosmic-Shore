@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
@@ -161,6 +162,24 @@ namespace CosmicShore.Gameplay
             Vector3 rel = hit - c;
             Vector3 lateral = rel - Vector3.Dot(rel, Axis) * Axis;
             return lateral.sqrMagnitude <= Radius * Radius;
+        }
+
+        /// <summary>
+        /// An EARLIER ring standing in exactly the place of gate <paramref name="index"/>, or null -
+        /// the one ring a coincident gate forwards its drawing to (Skein's course opens and closes
+        /// on the same collar). Shared by the match and the arcade preview so both draw one hoop.
+        /// Within a unit: two gates from the SAME expression coincide exactly or not at all.
+        /// </summary>
+        public static RaceGateRing FindCoincident(IReadOnlyList<RaceGate> course,
+                                                  IReadOnlyList<RaceGateRing> rings, int index)
+        {
+            for (int j = 0; j < index && j < rings.Count; j++)
+            {
+                if ((course[j].Position - course[index].Position).sqrMagnitude > 1f) continue;
+                if (Mathf.Abs(course[j].Radius - course[index].Radius) > 1f) continue;
+                if (rings[j]) return rings[j];
+            }
+            return null;
         }
 
         /// <summary>

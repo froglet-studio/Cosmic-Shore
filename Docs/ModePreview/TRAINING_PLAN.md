@@ -314,6 +314,25 @@ config.
    exactly as the match does. Done as a pure move (same seeds give the same courses), the existing
    course tests prove it changed nothing; one new test per mode asserts the controller and the
    preview get identical gates for the same seed.
+
+   **LANDED (2026-09-29).** `RaceCourseSource` (`Controller/Arcade/Racing/`) plus one sealed
+   source per mode (`SwitchbackCourseSource`, `HeadlongCourseSource`, `RedlineCourseSource`,
+   `BreakwaterCourseSource`, `SkeinCourseSource`, `RegattaCourseSource`, `WaystationCourseSource`
+   - Waystation arrived upstream after this plan was written). A controller now supplies only
+   `ModeName` and `CreateCourseSource()`, copying its serialized knobs onto the source; the
+   preview calls `RaceCourseSource.For(mode)`, which carries the shipped defaults. Two proofs,
+   split by what can run where:
+   - `Tools/Build/race_course_source_harness/run.sh` compiles the shipped sources with Roslyn
+     and compares them BIT FOR BIT against the pre-extraction controller bodies: 1,600 course
+     pairs, 24,080 gates, 0 differences (negative controls: a 1-unit nudge to Switchback's first
+     gate fails 320 pairs; Breakwater's inner fallback 420 -> 480 fails 160).
+   - `RaceCourseSourceTests` (editor) reads the seven scene files and fails if a scene serializes
+     a course knob that differs from the source default - which is what would make the preview's
+     course silently stop being the match's. Measured today: every scene authors the defaults
+     (Breakwater's inner fallback is 420, and its source says so).
+   Stated gap: Breakwater's STATIONS (the dishes, `OnCourseRaised`) are not part of the source,
+   so its preview would show rings without dishes until the station prefab is reachable from the
+   preview definition.
 2. **`ModePreviewGateCourse`** stands `RaceGateRing`s in the preview arena from a local seed, tests
    crossings with the existing pure `RaceGateRing.CrossedMouth(prev, cur)`, and raises
    `GateThreaded` / `LapCompleted` for the Mentor's Moment conditions and the practice-lap time.

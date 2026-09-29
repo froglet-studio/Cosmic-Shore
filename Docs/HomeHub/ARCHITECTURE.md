@@ -439,7 +439,7 @@ lerped to rim by fresnel - the prism shader's defining read). Every card states 
 | tier | cards | what is drawn |
 |---|---|---|
 | RUN | Cleave, Wildlife Liberation, Undertow, Dog Fight, Salvo, Broadside, Hijack, Skein, Regatta, Skim Race, Joust, Scurry | the shipped generator's own lay list, prism for prism (Swell 14,277, Switchyard 3,978, concentric shells 24,966 - each the documented count) |
-| COURSE | Switchback, Headlong, Redline, Breakwater | the shipped course generator at intensity 2 on the card's fixed seed, shell and gate count mirrored from `GateRaceController.BuildCourse` |
+| COURSE | Switchback, Headlong, Redline, Breakwater | the shipped course generator at intensity 2 on the card's fixed seed, shell and gate count mirrored from the mode's `RaceCourseSource` (`SwitchbackCourseSource` etc.) |
 | MODEL | Rampage, Bends, Bloomrush, Wrecking Ball, Tollway, Scarab Scramble, Astro League, Brood Rush | what exists only at runtime: the planting measured as the preview measures it with each plant a species glyph, or a court read off the controller's own settings asset |
 | MONTAGE | Maelstrom | slanted strips of the cards of the modes it can draw at intensity 2 (its cumulative ladder) |
 

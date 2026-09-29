@@ -215,7 +215,9 @@ landed with a full extraction — `GateRaceController` (abstract) with `Switchba
 and `RaceCourseGeometry`. The seam turned out to be four members, not two: `ModeName`,
 `LapsPerRace`, `BuildCourse(seed, gateCount, inner, outer)` and `AuthoredGateTarget()`. The
 monitor reads `GateRaceController.AuthoritativeGateCount` and *deliberately does not know which
-overrides key its mode uses* — which is precisely the objection above, answered.
+overrides key its mode uses* — which is precisely the objection above, answered. (Since 2026-09
+those four collapse to `ModeName` + `CreateCourseSource()`: the course recipe lives on
+`BreakwaterCourseSource`, which the arcade preview reads too.)
 
 So the reasoning here was not wrong about the cost, it was wrong about the count: at two modes a
 seam holding two constants is hard to justify, and at three it is the only thing keeping them from

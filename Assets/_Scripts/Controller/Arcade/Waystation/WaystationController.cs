@@ -65,45 +65,7 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Waystation";
 
-        public override int AuthoredGateTarget()
-        {
-            var overrides = EndConditionOverridesSO.Instance;
-            int asked = overrides != null
-                ? overrides.GetWaystationRingTarget()
-                : EndConditionOverridesSO.DefaultWaystationRingTarget;
-
-            // ROUNDED UP to whole clusters, and rounded up HERE rather than in the course: this
-            // is the number the turn monitor publishes as the finish line before a course
-            // exists, so the two have to agree from the first frame. A target that named a ring
-            // the course never laid would be a match that cannot end.
-            int per = WaystationCourseSettings.ForIntensity(Intensity).RingsPerCluster;
-            return WaystationCourse.ClusterCount(asked, per) * Mathf.Max(1, per);
-        }
-
-        /// <summary>
-        /// An open chain of clusters. Unlike Switchback's walk this CANNOT fail — a cluster is a
-        /// capped-turn walk from its own centre and a hop is a deflected step clamped back into
-        /// the shell, so there is nothing for a tight shell to make impossible. There is
-        /// therefore no back-off here and no shortened course: what comes back is always the
-        /// count <see cref="AuthoredGateTarget"/> already promised.
-        /// </summary>
-        protected override List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
-        {
-            var settings = WaystationCourseSettings.ForIntensity(Intensity);
-            settings.InnerRadius = inner;
-            settings.OuterRadius = outer;
-            settings.RingTarget = Mathf.Max(settings.RingsPerCluster, gateCount);
-            settings.FirstClusterDirection = Vector3.up;   // the equatorial spawn ring's pole
-
-            var course = WaystationCourse.Generate(seed, settings);
-            if (course != null && course.Count > 0) return course;
-
-            CourseFailureDetail =
-                $"WaystationCourse returned nothing for {settings.RingTarget} rings in shell " +
-                $"{inner:F0}..{outer:F0} - it has no failure path, so this is a settings fault " +
-                "(RingsPerCluster or RingTarget at zero).";
-            return null;
-        }
+        protected override RaceCourseSource CreateCourseSource() => new WaystationCourseSource();
 
         // ── The autopilot's Fold ──────────────────────────────────────────
 

@@ -126,7 +126,7 @@ units and the turn can only bend by 80°.
 **Containment is now a property of the construction.** Every cluster centre lies *exactly* on one
 sphere and a hop is a **geodesic step** on it, so the chain cannot leave however long it runs.
 There is no clamp, no rejection, no retry and no failure path — which is also why
-`WaystationController.BuildCourse` never backs off and always returns the ring count it promised.
+`WaystationCourseSource.Build` never backs off and always returns the ring count it promised.
 
 ### 3. A coil ring cannot be an aiming device
 

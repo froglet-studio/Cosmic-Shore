@@ -38,9 +38,10 @@ namespace CosmicShore.Gameplay
     /// it against its own copy of the count, so a pilot can neither skip a gate nor be paid
     /// twice for one.</para>
     ///
-    /// <para>A subclass supplies three things and inherits the rest: the mode's NAME (for logs),
-    /// its COURSE (<see cref="BuildCourse"/>), and whether that course WRAPS
-    /// (<see cref="LapsPerRace"/>).</para>
+    /// <para>A subclass supplies two things and inherits the rest: the mode's NAME (for logs)
+    /// and its COURSE SOURCE (<see cref="CreateCourseSource"/>) - the one definition of the
+    /// course, its laps, its lead-in and its authored length, which the arcade card's preview
+    /// reads too (<see cref="RaceCourseSource"/>).</para>
     /// </summary>
     public abstract class GateRaceController : MultiplayerDomainGamesController
     {
@@ -57,16 +58,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("Course shell, outer edge. 0.9 x the CapsuleMembrane's authored radius (1200), " +
                  "measured rather than read because Cell.MembraneRadius returns 0 until the " +
                  "membrane has spawned and the course is generated before that.")]
-        [SerializeField, Min(1f)] protected float courseOuterRadius = 1080f;
+        [SerializeField, Min(1f)] protected float courseOuterRadius = RaceCourseSource.DefaultOuterRadius;
 
         [Tooltip("Course shell, inner edge, used only when the cell cannot be resolved. " +
                  "Normally derived as the nucleus radius x Inner Radius Nucleus Factor.")]
-        [SerializeField, Min(1f)] protected float courseInnerRadiusFallback = 480f;
+        [SerializeField, Min(1f)] protected float courseInnerRadiusFallback = RaceCourseSource.DefaultInnerRadiusFallback;
 
         [Tooltip("How far outside the nucleus the course's inner shell sits. The nucleus is the " +
                  "crystal respawn volume and the Dolphin's own seeding band's inner clamp; a gate " +
                  "inside it would sit in the middle of that traffic.")]
-        [SerializeField, Min(1f)] protected float innerRadiusNucleusFactor = 1.22f;
+        [SerializeField, Min(1f)] protected float innerRadiusNucleusFactor = RaceCourseSource.DefaultInnerRadiusNucleusFactor;
 
 
         [Tooltip("Seconds a gate's ring takes to bloom in. Detection is live at the full mouth " +
@@ -161,11 +162,36 @@ namespace CosmicShore.Gameplay
         protected abstract string ModeName { get; }
 
         /// <summary>
+        /// This mode's course, built from this scene's serialized knobs. Everything about the
+        /// course lives on the source rather than on the controller, so the arcade preview -
+        /// which never loads this scene - can ask the same question with the shipped defaults
+        /// (<see cref="RaceCourseSource.For"/>). A subclass copies its own serialized knobs onto
+        /// the source it returns; the shell knobs are copied by the base.
+        /// </summary>
+        protected abstract RaceCourseSource CreateCourseSource();
+
+        RaceCourseSource _courseSource;
+
+        /// <summary>The course source, created once from this scene's knobs.</summary>
+        protected RaceCourseSource CourseSource
+        {
+            get
+            {
+                if (_courseSource != null) return _courseSource;
+                _courseSource = CreateCourseSource();
+                _courseSource.OuterRadius = courseOuterRadius;
+                _courseSource.InnerRadiusFallback = courseInnerRadiusFallback;
+                _courseSource.InnerRadiusNucleusFactor = innerRadiusNucleusFactor;
+                return _courseSource;
+            }
+        }
+
+        /// <summary>
         /// Laps of the ring set that make one race. 1 = an open chain flown once (Switchback);
         /// more = a closed circuit (Headlong), where the ring count and the RACE LENGTH stop
-        /// being the same number.
+        /// being the same number. Answered by the course source.
         /// </summary>
-        protected virtual int LapsPerRace => 1;
+        protected int LapsPerRace => CourseSource.LapsPerRace(Intensity);
 
         /// <summary>
         /// Rings at the FRONT of the course that are threaded ONCE and never come round again -
@@ -183,7 +209,7 @@ namespace CosmicShore.Gameplay
         /// <para>At 0 every expression below collapses to what it was, algebraically - which is
         /// why Switchback and Headlong are untouched by this.</para>
         /// </summary>
-        protected virtual int LeadInGates => 0;
+        protected int LeadInGates => CourseSource.LeadInGates;
 
         /// <summary>Gate-threadings that finish the race - the target the monitor ends on.</summary>
         protected int RaceLength => RaceLengthFor(_rings.Count, LeadInGates, LapsPerRace);
@@ -232,11 +258,28 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The mode's course, in CELL-LOCAL coordinates, or null if it cannot be built.
-        /// <paramref name="gateCount"/> is the authored target; a mode whose course wraps should
-        /// treat it as the RACE length and lay <c>gateCount / LapsPerRace</c> rings.
+        /// The mode's course, in CELL-LOCAL coordinates, or null if it cannot be built - asked of
+        /// the course source with this match's intensity and cell config.
         /// </summary>
-        protected abstract List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer);
+        List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
+        {
+            var request = new RaceCourseRequest(seed, Intensity, gateCount, inner, outer,
+                                                ResolveCourseConfig());
+            var course = CourseSource.Build(request, out string failure);
+            if (course == null) CourseFailureDetail = failure;
+            return course;
+        }
+
+        /// <summary>
+        /// The config a course that is a property of its ARENA reads (Skein's cable, Regatta's
+        /// rails): the cell's EXPECTED config, never <c>Config</c>, which latches a second after
+        /// the first build attempt. A mode whose course is pure geometry ignores it.
+        /// </summary>
+        protected virtual CellConfigDataSO ResolveCourseConfig()
+        {
+            var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
+            return cell != null ? cell.ExpectedConfig : null;
+        }
 
         /// <summary>
         /// Why the last <see cref="BuildCourse"/> returned null, in one sentence, for the ONE
@@ -278,8 +321,7 @@ namespace CosmicShore.Gameplay
             // ExpectedNucleusWorldRadius measures the CONFIG's nucleus prefab without
             // instantiating it, so unlike NucleusWorldRadius it answers correctly this early.
             float nucleus = cell != null ? cell.ExpectedNucleusWorldRadius : 0f;
-            inner = nucleus > 0f ? nucleus * innerRadiusNucleusFactor : courseInnerRadiusFallback;
-            outer = Mathf.Max(inner + 120f, courseOuterRadius);
+            CourseSource.ResolveShell(nucleus, out inner, out outer);
         }
 
         protected readonly List<RaceGate> _course = new();
@@ -477,12 +519,13 @@ namespace CosmicShore.Gameplay
         /// <see cref="EndConditionOverridesSO"/> (FrogletTools &gt; Game Modes &gt; End Game
         /// Conditions; never a per-scene field).
         ///
-        /// <para>Abstract rather than defaulted, and public rather than protected, for the same
-        /// reason: <c>RaceGateTurnMonitor</c> asks the CONTROLLER instead of reading a key of its
-        /// own, so the monitor never has to know which mode it is monitoring - and a new gate
-        /// race cannot silently inherit another mode's finish line.</para>
+        /// <para>Public, and answered by the mode's own course source, for the same reason:
+        /// <c>RaceGateTurnMonitor</c> asks the CONTROLLER instead of reading a key of its own, so
+        /// the monitor never has to know which mode it is monitoring - and because
+        /// <see cref="CreateCourseSource"/> is abstract, a new gate race cannot silently inherit
+        /// another mode's finish line.</para>
         /// </summary>
-        public abstract int AuthoredGateTarget();
+        public int AuthoredGateTarget() => CourseSource.AuthoredGateTarget(Intensity);
 
 
         [ServerRpc(RequireOwnership = false)]
@@ -596,16 +639,8 @@ namespace CosmicShore.Gameplay
         /// a unit of another gate is one gate, and two distinct gates a unit apart would be a
         /// course bug in their own right.</para>
         /// </summary>
-        RaceGateRing FindCoincidentRing(IReadOnlyList<RaceGate> course, int index)
-        {
-            for (int j = 0; j < index && j < _rings.Count; j++)
-            {
-                if ((course[j].Position - course[index].Position).sqrMagnitude > 1f) continue;
-                if (Mathf.Abs(course[j].Radius - course[index].Radius) > 1f) continue;
-                if (_rings[j]) return _rings[j];
-            }
-            return null;
-        }
+        RaceGateRing FindCoincidentRing(IReadOnlyList<RaceGate> course, int index) =>
+            RaceGateRing.FindCoincident(course, _rings, index);
 
         void ClearCourse()
         {

@@ -55,74 +55,21 @@ namespace CosmicShore.Gameplay
 
         protected override string ModeName => "Regatta";
 
-        /// <summary>Laps = authored gate threadings / the arena's rings per lap. ONE authority:
-        /// the arena lays exactly RingsPerLap rings, the target is authored once in the end-game
-        /// conditions, and the generator asserts the target is a whole number of laps.</summary>
-        protected override int LapsPerRace =>
-            Mathf.Max(1, AuthoredGateTarget() / RegattaCourse.RingsPerLap);
-
-        public override int AuthoredGateTarget()
-        {
-            var overrides = EndConditionOverridesSO.Instance;
-            return overrides != null
-                ? overrides.GetRegattaGateTarget()
-                : EndConditionOverridesSO.DefaultRegattaGateTarget;
-        }
-
-        /// <summary>
-        /// The arena's rings, cell-local. <paramref name="seed"/>, <paramref name="inner"/> and
-        /// <paramref name="outer"/> are IGNORED by design: the circuit is a property of the ARENA
-        /// (the rails are laid through it), authored on the cell config, so a seed or a shell
-        /// invented here could only disagree with it. <paramref name="gateCount"/> is honoured
-        /// through <see cref="LapsPerRace"/>.
-        /// </summary>
-        protected override List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
-        {
-            if (!TryResolveArena(out var arena, out string why))
-            {
-                // Reported, not logged: the platform retries this every frame until its window
-                // closes, and until then this is simply "not yet".
-                CourseFailureDetail = why;
-                return null;
-            }
-
-            if (gateCount % RegattaCourse.RingsPerLap != 0)
-                CSDebug.LogWarning($"[Regatta] Authored target {gateCount} is not a whole number of " +
-                                   $"{RegattaCourse.RingsPerLap}-ring laps; racing " +
-                                   $"{LapsPerRace} lap(s). Author a multiple of {RegattaCourse.RingsPerLap}.");
-
-            return arena.BuildGatesNow();
-        }
+        protected override RaceCourseSource CreateCourseSource() => new RegattaCourseSource();
 
         /// <summary>
         /// The arena prefab, off the cell's EXPECTED config - never <c>Config</c>, which is a latch
-        /// that lands a second after this runs (SKEIN.md 13.2). Requires an IntensityWise cell,
-        /// whose choice is derivable from the intensity the server already holds.
+        /// that lands a second after the first build attempt (SKEIN.md 13.2). Requires an
+        /// IntensityWise cell, whose choice is derivable from the intensity the server holds.
         /// </summary>
-        bool TryResolveArena(out SpawnableRegattaRails arena, out string why)
+        protected override CellConfigDataSO ResolveCourseConfig()
         {
-            arena = null;
             var cell = arenaCell != null ? arenaCell : FindAnyObjectByType<Cell>();
-            var config = cell != null ? cell.ExpectedConfig : null;
-
-            if (config == null)
-            {
-                why = "No Cell whose config is knowable - the circuit's seed lives on the cell " +
-                      "config's arena prefab. A Regatta cell must be IntensityWise.";
-                return false;
-            }
-
-            arena = config.EnvironmentPrefab as SpawnableRegattaRails;
-            if (arena == null)
-            {
-                why = $"The cell config '{config.name}' authors no SpawnableRegattaRails " +
-                      "EnvironmentPrefab, so there are no rails to hang rings on.";
-                return false;
-            }
-
-            why = null;
-            return true;
+            return cell != null ? cell.ExpectedConfig : null;
         }
+
+        bool TryResolveArena(out SpawnableRegattaRails arena, out string why) =>
+            RegattaCourseSource.TryResolveArena(ResolveCourseConfig(), out arena, out why);
 
         /// <summary>
         /// Everyone starts on a ring behind gate 0, pointed through it. The platform's cell ring
