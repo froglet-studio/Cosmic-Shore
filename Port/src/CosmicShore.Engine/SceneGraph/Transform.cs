@@ -78,20 +78,40 @@ namespace CosmicShore.Engine
             return null;
         }
 
+        /// <summary>
+        /// True when this transform's world pose is DRIVEN rather than composed through its
+        /// parent — a root screen-space Canvas (original contract: the engine places an overlay
+        /// canvas over the screen whatever it is parented under, e.g. a vessel HUD canvas that
+        /// lives inside the 3D vessel). World math then treats it as a root.
+        /// </summary>
+        internal virtual bool IsWorldRoot => false;
+
+        /// <summary>The world rotation of a driven root (identity for a screen-space canvas).</summary>
+        internal virtual Quaternion DrivenWorldRotation => localRotation;
+
+        /// <summary>The parent world math composes through (null for a driven root).</summary>
+        Transform WorldParent => IsWorldRoot ? null : parent;
+
+        Quaternion SelfRotation => IsWorldRoot ? DrivenWorldRotation : localRotation;
+
         public Vector3 position
         {
-            get => parent is null ? localPosition : parent.TransformPoint(localPosition);
-            set => localPosition = parent is null ? value : parent.InverseTransformPoint(value);
+            get => WorldParent is null ? localPosition : WorldParent.TransformPoint(localPosition);
+            set => localPosition = WorldParent is null ? value : WorldParent.InverseTransformPoint(value);
         }
 
         public Quaternion rotation
         {
-            get => parent is null ? localRotation : parent.rotation * localRotation;
-            set => localRotation = parent is null ? value : Quaternion.Inverse(parent.rotation) * value;
+            get => WorldParent is null ? SelfRotation : WorldParent.rotation * localRotation;
+            set
+            {
+                if (IsWorldRoot) return; // driven
+                localRotation = parent is null ? value : Quaternion.Inverse(parent.rotation) * value;
+            }
         }
 
         public Vector3 lossyScale
-            => parent is null ? localScale : Vector3.Scale(parent.lossyScale, localScale);
+            => WorldParent is null ? localScale : Vector3.Scale(WorldParent.lossyScale, localScale);
 
         public Vector3 forward
         {

@@ -3,7 +3,8 @@ namespace CosmicShore.Engine
     public partial class Transform
     {
         public Matrix4x4 localToWorldMatrix
-            => parent is null ? Matrix4x4.TRS(localPosition, localRotation, localScale)
+            => IsWorldRoot ? Matrix4x4.TRS(localPosition, DrivenWorldRotation, localScale)
+             : parent is null ? Matrix4x4.TRS(localPosition, localRotation, localScale)
                               : parent.localToWorldMatrix * Matrix4x4.TRS(localPosition, localRotation, localScale);
 
         public Matrix4x4 worldToLocalMatrix => localToWorldMatrix.inverse;

@@ -54,6 +54,9 @@ namespace CosmicShore.Player
                         extra = $" rootBone={(s.rootBone != null ? s.rootBone.name + " lossy=" + s.rootBone.lossyScale : "null")} bones={s.bones?.Length ?? 0} bind={mesh?.bindposes?.Length ?? 0} localBounds={s.localBounds}";
                         extra += " skinnedWorld=" + SkinnedWorldBounds(s, mesh);
                     }
+                    if (r is TrailRenderer tr)
+                        extra = $" trail pos={tr.transform.position} n={tr.positionCount} time={tr.time} width={tr.widthMultiplier} emitting={tr.emitting}"
+                              + (tr.positionCount > 0 ? $" first={tr.GetPosition(0)} last={tr.GetPosition(tr.positionCount - 1)}" : "");
                     Console.WriteLine($"    {path} [{r.GetType().Name}] enabled={r.enabled} active={r.gameObject.activeInHierarchy} " +
                         $"mesh={(mesh != null ? mesh.name + " v=" + mesh.vertexCount + " b=" + mesh.bounds : "null")} lossy={r.transform.lossyScale} " +
                         $"mats=[{string.Join(",", (r.sharedMaterials ?? Array.Empty<Material>()).Select(m => m == null ? "null" : m.name + "<" + m.shader?.name + ">"))}]{extra}");
@@ -108,6 +111,51 @@ namespace CosmicShore.Player
             var b0 = s.bones.Length > 0 && s.bones[0] != null ? s.bones[0] : null;
             return $"center={(lo + hi) * 0.5f} size={hi - lo} restDeviation={worstErr:0.###}@{worst}"
                  + (b0 != null ? $" bone0={b0.name} lossy={b0.lossyScale} bp0scale=({new Vector3(bp[0].GetColumn(0).magnitude, bp[0].GetColumn(1).magnitude, bp[0].GetColumn(2).magnitude)})" : "");
+        }
+
+        /// <summary>Every live trail/line renderer: owner path, sample span, width and material.</summary>
+        public static void Trails()
+        {
+            var cam = Camera.main;
+            foreach (var r in CosmicShore.Engine.Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+            {
+                if (r is not TrailRenderer && r is not LineRenderer) continue;
+                string path = r.name;
+                for (var t = r.transform.parent; t != null; t = t.parent) path = t.name + "/" + path;
+                int n = r is TrailRenderer tr ? tr.positionCount : ((LineRenderer)r).positionCount;
+                Vector3 P(int i) => r is TrailRenderer t2 ? t2.GetPosition(i) : ((LineRenderer)r).GetPosition(i);
+                float w = r is TrailRenderer t3 ? t3.widthMultiplier : ((LineRenderer)r).widthMultiplier;
+                string span = n > 0 ? $" first={P(0)} last={P(n - 1)}" : "";
+                string ahead = "";
+                if (cam != null && n > 0)
+                {
+                    int front = 0;
+                    for (int i = 0; i < n; i++) if (Vector3.Dot(P(i) - cam.transform.position, cam.transform.forward) > 0f) front++;
+                    ahead = $" inFront={front}/{n}";
+                }
+                var m = r.sharedMaterials is { Length: > 0 } ms ? ms[0] : null;
+                Console.WriteLine($"[trail] {path} enabled={r.enabled} active={r.gameObject.activeInHierarchy} n={n} width={w}{span}{ahead} mat={(m != null ? m.name + "<" + m.shader?.name + ">" : "null")}");
+            }
+        }
+
+        /// <summary>Each object named NAME and every ancestor: rect, anchors, scale, canvas components.</summary>
+        public static void Ancestry(string objectName)
+        {
+            foreach (var t0 in CosmicShore.Engine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(t => t.name == objectName))
+            {
+                Console.WriteLine($"[ancestry] '{objectName}' active={t0.gameObject.activeInHierarchy}");
+                for (var t = t0; t != null; t = t.parent)
+                {
+                    string rect = "";
+                    if (t is RectTransform rt)
+                    {
+                        var c = new Vector3[4]; rt.GetWorldCorners(c);
+                        rect = $" rect=({c[0].x:0},{c[0].y:0})-({c[2].x:0},{c[2].y:0}) aMin={rt.anchorMin} aMax={rt.anchorMax} pivot={rt.pivot} size={rt.sizeDelta} pos={rt.anchoredPosition}";
+                    }
+                    var comps = string.Join(",", t.GetComponents<Component>().Where(c => c is not Transform).Select(c => c.GetType().Name));
+                    Console.WriteLine($"  {t.name}{rect} localScale={t.localScale} rot={t.localRotation.eulerAngles} [{comps}]");
+                }
+            }
         }
 
         public static void PrintStatic(string chain)

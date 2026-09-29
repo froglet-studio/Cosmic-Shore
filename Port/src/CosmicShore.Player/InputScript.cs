@@ -91,6 +91,12 @@ namespace CosmicShore.Player
                         Inspector.Print(parts[0], parts.Length > 1 ? parts[1] : null);
                         break;
                     }
+                    case "ancestry":
+                        Inspector.Ancestry(arg.Trim());
+                        break;
+                    case "trails":
+                        Inspector.Trails();
+                        break;
                     case "renderers":
                         Inspector.Renderers(arg.Trim());
                         break;

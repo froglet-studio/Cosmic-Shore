@@ -369,4 +369,31 @@ public class EngineUiGeometryTests : IDisposable
         nestedRt.sizeDelta = new Vector2(100f, 100f);
         Assert.Equal(100f, nestedRt.rect.width);
     }
+
+    // A vessel's HUD canvas lives INSIDE the 3D vessel. A root screen-space canvas is placed over
+    // the screen whatever it is parented under; composing it through the vessel's yaw mirrored the
+    // whole ability row off-screen.
+    [Fact]
+    public void OverlayCanvasUnderARotated3DParent_StillCoversTheScreen()
+    {
+        var vessel = new GameObject("Vessel");
+        vessel.transform.position = new Vector3(40f, -12f, 300f);
+        vessel.transform.rotation = Quaternion.Euler(0f, 315f, 10f);
+        vessel.transform.localScale = new Vector3(2f, 2f, 2f);
+
+        var canvasGo = new GameObject("ShipHUDContainer", typeof(RectTransform));
+        canvasGo.transform.SetParent(vessel.transform, worldPositionStays: false);
+        canvasGo.AddComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+        var canvasRect = (RectTransform)canvasGo.transform;
+
+        var hud = MakeRect("HUD", canvasRect);
+        hud.anchorMin = Vector2.zero; hud.anchorMax = Vector2.one;
+        hud.sizeDelta = Vector2.zero;
+
+        var corners = new Vector3[4];
+        hud.GetWorldCorners(corners);
+        AssertVec(new Vector2(0f, 0f), corners[0]);
+        AssertVec(new Vector2(1280f, 720f), corners[2]);
+        Assert.Equal(Quaternion.identity, canvasRect.rotation);
+    }
 }

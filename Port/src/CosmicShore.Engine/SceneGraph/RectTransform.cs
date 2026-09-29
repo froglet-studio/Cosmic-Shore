@@ -57,6 +57,10 @@ namespace CosmicShore.Engine
             }
         }
 
+        /// <summary>A root screen-space canvas is placed over the screen, not composed through its parent.</summary>
+        internal override bool IsWorldRoot => DrivingCanvas != null;
+        internal override Quaternion DrivenWorldRotation => Quaternion.identity;
+
         /// <summary>The pivot's rest point (anchor reference) in parent-local space.</summary>
         Vector2 AnchorReferencePoint
         {
