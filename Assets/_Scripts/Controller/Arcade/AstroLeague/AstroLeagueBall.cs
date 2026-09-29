@@ -199,6 +199,14 @@ namespace CosmicShore.Gameplay
         static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        static readonly int TrailColorId = Shader.PropertyToID("_Color");
+        static readonly int TrailIntensityId = Shader.PropertyToID("_Intensity");
+        static readonly int TrailSpeedId = Shader.PropertyToID("_Speed01");
+
+        // Resources/ materials (so their shaders ship). Absent -> the legacy unlit ribbon / square
+        // particles, never an error: a missing look must not cost the ball its gameplay.
+        const string TrailMaterialResourcePath = "BallTrail";
+        const string SparkMaterialResourcePath = "SoftSpark";
 
         bool _usesFresnel; // true when the ball material is the prism BlockGraph shader
 
@@ -343,6 +351,10 @@ namespace CosmicShore.Gameplay
         // Visuals
         Light ballLight;
         TrailRenderer trail;
+        MaterialPropertyBlock trailMpb;
+        bool _cometTrail;            // true when the BallTrail shader is driving the wake
+        ParticleSystem wakeDust;     // motes shed into the world along the ball's path
+        Vector3 _lastDustPos;        // teleport guard for distance-driven dust
         Renderer ballRenderer;
         MeshFilter meshFilter;
         Mesh _ballMesh; // generated icosphere, owned (destroyed in OnDestroy)
@@ -528,11 +540,20 @@ namespace CosmicShore.Gameplay
                 ghostTrail.time = 0.35f;
                 ghostTrail.startWidth = trail.startWidth;
                 ghostTrail.endWidth = trail.endWidth;
-                ghostTrail.numCapVertices = trail.numCapVertices;
                 ghostTrail.sharedMaterial = trail.sharedMaterial;
-                ghostTrail.startColor = trail.startColor;
-                ghostTrail.endColor = trail.endColor;
-                ghostTrail.minVertexDistance = trail.minVertexDistance;
+                if (_cometTrail)
+                {
+                    // Same comet shape + the CURRENT tint (the scorer's domain at the goal moment).
+                    ConfigureCometTrail(ghostTrail);
+                    if (trailMpb != null) ghostTrail.SetPropertyBlock(trailMpb);
+                }
+                else
+                {
+                    ghostTrail.numCapVertices = trail.numCapVertices;
+                    ghostTrail.startColor = trail.startColor;
+                    ghostTrail.endColor = trail.endColor;
+                    ghostTrail.minVertexDistance = trail.minVertexDistance;
+                }
                 ghostTrail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 ghostTrail.receiveShadows = false;
                 ghostTrail.generateLightingData = false;
@@ -753,23 +774,171 @@ namespace CosmicShore.Gameplay
             ballLight.shadows = LightShadows.None;
 
             trail = gameObject.AddComponent<TrailRenderer>();
-            trail.time = 0.3f;
-            trail.startWidth = settings != null ? settings.minTrailWidth : 0.6f;
-            trail.endWidth = 0.1f;
-            trail.numCapVertices = 4;
-            var trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            trailMat.color = primaryColor;
-            MakeTransparent(trailMat);
-            trail.sharedMaterial = trailMat;
-            trail.startColor = primaryColor;
-            trail.endColor = new Color(secondaryColor.r, secondaryColor.g, secondaryColor.b, 0f);
-            trail.minVertexDistance = 0.5f;
+            trail.time = settings != null ? settings.trailTimeAtRest : 0.3f;
+            trail.startWidth = TrailHeadWidth(0f);
+            trail.endWidth = 0f;
+            trailMpb = new MaterialPropertyBlock();
+            var cometMat = Resources.Load<Material>(TrailMaterialResourcePath);
+            _cometTrail = cometMat != null;
+            if (_cometTrail)
+            {
+                trail.sharedMaterial = cometMat;
+                ConfigureCometTrail(trail);
+            }
+            else
+            {
+                // Legacy ribbon — the BallTrail material is missing from Resources.
+                trail.numCapVertices = 4;
+                var trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                trailMat.color = primaryColor;
+                MakeTransparent(trailMat);
+                trail.sharedMaterial = trailMat;
+                trail.startColor = primaryColor;
+                trail.endColor = new Color(secondaryColor.r, secondaryColor.g, secondaryColor.b, 0f);
+                trail.minVertexDistance = 0.5f;
+            }
             trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             trail.receiveShadows = false;
             trail.generateLightingData = false;
 
             auraParticles = CreateParticles("PayloadAura", burstOnly: false);
             impactParticles = CreateParticles("ImpactBurst", burstOnly: true);
+            wakeDust = CreateWakeDust();
+        }
+
+        /// <summary>
+        /// The comet wake's SHAPE, shared by the live ball and its goal-replay ghost so the two can
+        /// never drift: a white gradient whose ALPHA runs 1 (head) → 0 (tail) — the BallTrail shader
+        /// reads it as the position along the trail, not as opacity — and a width curve that swells
+        /// just behind the ball before tapering to a point, so the wake reads as a comet's coma
+        /// growing out of the ball rather than a ribbon starting behind it. Colour is NOT here: it
+        /// rides a property block every frame (<see cref="DriveCometTrail"/>), so a strike re-tints
+        /// the whole wake the instant the ball changes hands.
+        /// </summary>
+        static void ConfigureCometTrail(TrailRenderer target)
+        {
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
+            target.colorGradient = gradient;
+            target.widthCurve = new AnimationCurve(
+                new Keyframe(0f, 0.85f),
+                new Keyframe(0.08f, 1f),
+                new Keyframe(0.35f, 0.72f),
+                new Keyframe(1f, 0f));
+            target.textureMode = LineTextureMode.Stretch;
+            target.alignment = LineAlignment.View;
+            target.numCapVertices = 6;
+            target.numCornerVertices = 3;
+            target.minVertexDistance = 1f;
+        }
+
+        /// <summary>Head width of the wake in WORLD units: a fraction of the ball's diameter.</summary>
+        float TrailHeadWidth(float speedRatio)
+        {
+            float diameter = sphereCol != null ? 2f * BallWorldRadius() : 14f;
+            float rest = settings != null ? settings.trailWidthAtRest : 0.7f;
+            float fast = settings != null ? settings.trailWidthAtSpeed : 1.25f;
+            return diameter * Mathf.Lerp(rest, fast, speedRatio);
+        }
+
+        /// <summary>
+        /// Every frame on every peer: the wake's colour is the ball's LIVE colour (last-hit domain,
+        /// or the neutral rainbow), normalised to full value so the hue stays saturated under ACES
+        /// (Docs/PALETTE.md §4.3 — brightness is spent on the white core, never on the hue).
+        /// </summary>
+        void DriveCometTrail(Color hue, float speedRatio)
+        {
+            float peak = Mathf.Max(hue.r, Mathf.Max(hue.g, hue.b));
+            Color signal = peak > 1e-4f ? hue / peak : Color.white;
+            signal.a = 1f;
+            float flash = currentEmissionBoost > 1f ? Mathf.Min(Mathf.Sqrt(currentEmissionBoost), 2.2f) : 1f;
+            trailMpb.SetColor(TrailColorId, signal);
+            trailMpb.SetFloat(TrailIntensityId, Mathf.Lerp(0.55f, 1.25f, speedRatio) * flash);
+            trailMpb.SetFloat(TrailSpeedId, speedRatio);
+            trail.SetPropertyBlock(trailMpb);
+        }
+
+        /// <summary>
+        /// Wake DUST: soft glowing motes shed into the WORLD by distance travelled, drifting slightly
+        /// and fading out — so a screamer leaves a lingering glitter of its path after the ribbon has
+        /// gone, and a rolling ball leaves nothing. Emits only while the ball draws, and never
+        /// clears: motes already shed always fade out (continuity of existence).
+        /// </summary>
+        ParticleSystem CreateWakeDust()
+        {
+            if (settings == null || settings.wakeDustPerUnit <= 0f) return null;
+
+            var go = new GameObject("WakeDust");
+            go.transform.SetParent(transform, false);
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = ps.main;
+            main.playOnAwake = true;
+            main.loop = true;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.scalingMode = ParticleSystemScalingMode.Local; // sizes set in world units below
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.7f, 1.6f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 4f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.8f, 2.4f);
+            main.maxParticles = 220;
+            main.gravityModifier = 0f;
+
+            var emission = ps.emission;
+            emission.rateOverTime = 0f;
+            emission.rateOverDistance = 0f; // driven by speed in UpdateVisuals
+
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 5f;
+            shape.radiusThickness = 0.35f; // shed from the ball's skin, not its centre
+
+            var noise = ps.noise;
+            noise.enabled = true;
+            noise.strength = 2.5f;
+            noise.frequency = 0.35f;
+            noise.scrollSpeed = 0.4f;
+
+            var sizeOverLifetime = ps.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f,
+                new AnimationCurve(new Keyframe(0f, 0.4f), new Keyframe(0.15f, 1f), new Keyframe(1f, 0f)));
+
+            var colorOverLifetime = ps.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.08f),
+                        new GradientAlphaKey(0.6f, 0.5f), new GradientAlphaKey(0f, 1f) });
+            colorOverLifetime.color = gradient;
+
+            var psRenderer = go.GetComponent<ParticleSystemRenderer>();
+            psRenderer.sharedMaterial = SparkMaterialOrFallback();
+            psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            psRenderer.receiveShadows = false;
+
+            _lastDustPos = transform.position;
+            ps.Play();
+            return ps;
+        }
+
+        Material _sparkFallback;
+
+        /// <summary>The shared SoftSpark material, or a per-ball additive URP particle material.</summary>
+        Material SparkMaterialOrFallback()
+        {
+            var spark = Resources.Load<Material>(SparkMaterialResourcePath);
+            if (spark != null) return spark;
+            if (_sparkFallback != null) return _sparkFallback;
+            _sparkFallback = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+            _sparkFallback.SetFloat("_Surface", 1);
+            _sparkFallback.SetInt("_Blend", 1); // Additive
+            _sparkFallback.SetColor(BaseColorId, Color.white);
+            _sparkFallback.renderQueue = 3100;
+            return _sparkFallback;
         }
 
         static void MakeTransparent(Material mat)
@@ -838,12 +1007,8 @@ namespace CosmicShore.Gameplay
             colorOverLifetime.color = gradient;
 
             var psRenderer = go.GetComponent<ParticleSystemRenderer>();
-            var psMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-            psMat.SetFloat("_Surface", 1);
-            psMat.SetInt("_Blend", 1); // Additive
-            psMat.SetColor(BaseColorId, Color.white);
-            psMat.renderQueue = 3100;
-            psRenderer.sharedMaterial = psMat;
+            // Soft round sparks, not the untextured SQUARE quads URP Particles/Unlit draws.
+            psRenderer.sharedMaterial = SparkMaterialOrFallback();
             psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             return ps;
@@ -2062,8 +2227,39 @@ namespace CosmicShore.Gameplay
 
             if (trail != null)
             {
-                trail.startWidth = Mathf.Lerp(settings.minTrailWidth, settings.maxTrailWidth, speedRatio);
-                trail.time = Mathf.Lerp(0.15f, 0.8f, speedRatio);
+                // The wake blooms in with the ball and swells with the strike pop (visual scale).
+                float visualScale = _visual != null ? _visual.localScale.x : 1f;
+                trail.startWidth = TrailHeadWidth(speedRatio) * visualScale;
+                trail.time = Mathf.Lerp(settings.trailTimeAtRest, settings.trailTimeAtSpeed, speedRatio);
+                if (_cometTrail) DriveCometTrail(emissionColor, speedRatio);
+            }
+
+            if (wakeDust != null)
+            {
+                float worldRadius = BallWorldRadius();
+                var main = wakeDust.main;
+                // Authored against the base 7-unit ball; re-stated whole (never via *Multiplier,
+                // which does not scale both ends of a TwoConstants curve).
+                float k = worldRadius / 7f;
+                main.startSize = new ParticleSystem.MinMaxCurve(0.8f * k, 2.4f * k);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f * k, 4f * k);
+                main.startColor = emissionColor.maxColorComponent > 1e-4f
+                    ? emissionColor / emissionColor.maxColorComponent
+                    : Color.white;
+                var shape = wakeDust.shape;
+                shape.radius = worldRadius;
+                var emission = wakeDust.emission;
+                bool draw = ballRenderer.enabled;
+                // A TELEPORT (kickoff, goal reset, hand-off) is not travel: shedding by distance
+                // across it would lay a line of dust over the whole court. Skip the jump frame.
+                Vector3 here = transform.position;
+                float jump = Mathf.Max(settings.maxSpeed * Time.deltaTime * 3f, worldRadius * 4f);
+                bool teleported = (here - _lastDustPos).sqrMagnitude > jump * jump;
+                _lastDustPos = here;
+                float shed = Mathf.InverseLerp(0.15f, 1f, speedRatio);
+                emission.rateOverDistanceMultiplier = draw && !teleported
+                    ? settings.wakeDustPerUnit * shed * shed / Mathf.Max(0.01f, k)
+                    : 0f;
             }
 
             if (auraParticles != null)
@@ -2512,6 +2708,12 @@ namespace CosmicShore.Gameplay
                 trail.emitting = draw;
                 if (!draw) trail.Clear();
             }
+            if (wakeDust != null)
+            {
+                // Stop shedding; motes already in the world fade out on their own.
+                var emission = wakeDust.emission;
+                if (!draw) emission.rateOverDistanceMultiplier = 0f;
+            }
         }
 
         /// <summary>
@@ -2624,6 +2826,7 @@ namespace CosmicShore.Gameplay
         {
             base.OnDestroy();
             if (_ballMesh != null) Destroy(_ballMesh);
+            if (_sparkFallback != null) Destroy(_sparkFallback);
         }
     }
 }

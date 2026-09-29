@@ -291,7 +291,13 @@ def working_tree_files():
     # the element-scaling branch: 10 of 18 changed files seen, including two of the three files
     # whose whole edit was adding a `using`. Same disease as the stale-base bug below, so the same
     # rule applies: a gate must not be able to shrink its own scope by accident. -z never quotes.
-    rc, out = _git(["status", "--porcelain", "-z"])
+    #
+    # --untracked-files=all, for the same reason again: without it git reports a brand-new FOLDER
+    # as one record ("Arcade/Dustup/") rather than the files in it, and a directory does not end in
+    # ".cs" either. So every file of a new feature that lives in a new folder - which is most of
+    # them - was skipped while the scope line still said "+ uncommitted" (measured on the Butterfly
+    # element-games branch: 13 files seen of 26, every miss inside a new folder).
+    rc, out = _git(["status", "--porcelain", "-z", "--untracked-files=all"])
     if rc != 0:
         return []
     # With -z each record is `XY PATH`, NUL-separated. A rename/copy emits TWO records --

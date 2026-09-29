@@ -15,7 +15,7 @@ same course in ORDER, and the first **DOMAIN** whose **LEAD RUNNER** threads the
 | Turn monitor | `RaceGateTurnMonitor` — the platform's, which asks the controller |
 | Target | `EndConditionOverridesSO.waystationRingTarget` (24) |
 | Comeback | `ScoreDifferenceSource.SwitchesThreaded`, rate **0.4** |
-| Cell | `Barren` — the same shell-only cell Switchback runs in |
+| Cell | `Skim Race Cell Config` — the same cell Switchback runs in (standard 392u nucleus, which is where the course's `[412, 1060]` shell comes from; no flora, two fauna species grazing the trail) |
 | Offline authority | `Tools/Build/waystation_course.py` (`--check`, `--self-test`, `--compile`) |
 | Compile harness | `Tools/Build/waystation_harness/` — compiles and RUNS the shipped course C# |
 | Generator | `Tools/Build/author_waystation_assets.py` (`--check`) |

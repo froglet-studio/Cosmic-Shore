@@ -88,5 +88,19 @@ namespace CosmicShore.Data
         // for a client's own environment kills - the volume travels on that RPC), so a client
         // scores its own demolition correctly with no extra plumbing.
         VolumeDestroyed = 11,
+
+        // Tapestry: prism VOLUME a player has STANDING on the board right now (reads
+        // IRoundStats.VolumeRemaining, rounded). The volume twin of PrismsRemaining and, like it,
+        // a LIVE STOCK rather than a cumulative total: it rises when you lay or steal mass and
+        // when your mass GROWS (the prism's growth delta is credited to its owner), and it FALLS
+        // when anything destroys, shrinks or steals it - a rival's dust, a ram, a fauna's bite.
+        //
+        // It is VOLUME rather than a count because the mode that uses it is the Butterfly's
+        // MASS game, and Mass on that hull is the WIDTH of the wake (5x at level 0 to 20x at
+        // 15): a count would pay a narrow Dust-mode line exactly as much per second as a wide
+        // Mass-mode brush, which deletes the one decision the mode is built on. A live stock
+        // can fall, so a mode scored on it should be TIMED ("most standing at the whistle")
+        // rather than a first-past-the-post race - Tapestry is.
+        VolumeRemaining = 12,
     }
 }

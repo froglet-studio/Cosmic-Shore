@@ -12,8 +12,9 @@ namespace CosmicShore.Editor
     /// <summary>
     /// One-click setup for the freestyle <b>Toybox</b> in Menu_Main. It:
     ///   1. authors the built-in toy definitions (Connect-the-Dots painting, Vessel Changer,
-    ///      Domain Changer, Wanderway conveyor, Cell Selector, Arkway) under
-    ///      <c>Assets/_SO_Assets/Toys/</c> plus the painting gallery under
+    ///      Domain Changer, Wander, Cell Selector, Element Charger) under
+    ///      <c>Assets/_SO_Assets/Toys/</c> - Wander with its two settings assets,
+    ///      <c>Wander_WithArk</c> and <c>Wander_WithoutArk</c> - plus the painting gallery under
     ///      <c>Assets/_SO_Assets/Toys/Paintings/</c>,
     ///   2. creates/loads a <see cref="ToyboxSO"/> at <c>Assets/Resources/Toybox.asset</c> and
     ///      registers the toys on it, and
@@ -49,24 +50,22 @@ namespace CosmicShore.Editor
             var domain = LoadOrCreateToy<DomainChangerToyDefinitionSO>(
                 "Toy_DomainChanger", "domain_changer", "Domain Changer", "Fly through to change your team colour.",
                 new Color(0.85f, 0.30f, 0.90f), 240f);
-            var conveyor = LoadOrCreateToy<ConveyorToyDefinitionSO>(
-                "Toy_Conveyor", "conveyor", "Wanderway", "Fly through to summon an endless trail of little worlds.",
-                new Color(0.35f, 1.00f, 0.55f), 60f, AssignConveyorContent);
+            // Wander: one toy, two choices. Each choice's tunables live on its own settings asset
+            // (the Wanderway belt WITHOUT an Ark, the Arkway voyage WITH one); the toy only names
+            // them. 60 is the angle the Wanderway held before the two were merged.
+            var withoutArk = LoadOrCreateSettings<WanderwaySettingsSO>("Wander_WithoutArk", AssignConveyorContent);
+            var withArk = LoadOrCreateSettings<ArkwaySettingsSO>("Wander_WithArk", AssignArkwayContent);
+            var wander = LoadOrCreateToy<WanderToyDefinitionSO>(
+                "Toy_Wander", "wander", "Wander",
+                "Leave the cell and go wandering - with an Ark, or without one.",
+                new Color(0.35f, 1.00f, 0.55f), 60f,
+                so => AssignWanderSettings(so, withoutArk, withArk));
             // No content wiring: with no cells authored the toy reads the containing Cell's own
             // CellConfigs rotation, which is the single source of truth for this scene's cell.
             var cellSelector = LoadOrCreateToy<CellSelectorToyDefinitionSO>(
                 "Toy_CellSelector", "cell_selector", "Cell Selector",
                 "Fly through to pick the world you fly in - or reset it.",
                 new Color(0.55f, 0.75f, 1.00f), 300f);
-            // The cellular Wanderway: cells drawn from the host cell's own rotation, so like the
-            // cell selector it needs no cell list - only the Ark's hull prism.
-            // 210, not 180: the hand-authored Toy_SpawnMatrix already sits at 180, and two
-            // toys on one angle stack at the same point of the membrane ring.
-            var arkway = LoadOrCreateToy<ArkwayToyDefinitionSO>(
-                "Toy_Arkway", "arkway", "Arkway",
-                "Fly through to escort an Ark on a voyage through the cells.",
-                new Color(1.00f, 0.55f, 0.30f), 210f, AssignArkwayContent);
-
             // 150: between the vessel changer (120) and the hand-authored Spawn Matrix (180),
             // so the three toys that change YOUR vessel sit together on the ring.
             var elementCharger = LoadOrCreateToy<ElementChargerToyDefinitionSO>(
@@ -76,7 +75,7 @@ namespace CosmicShore.Editor
 
             var toybox = LoadOrCreateToybox();
             RegisterToys(toybox, new ToyDefinitionSO[]
-                { painting, vessel, domain, conveyor, cellSelector, arkway, elementCharger });
+                { painting, vessel, domain, wander, cellSelector, elementCharger });
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -84,8 +83,8 @@ namespace CosmicShore.Editor
             bool wiredScene = AddControllerToMenuScene(toybox);
 
             EditorUtility.DisplayDialog("Setup Freestyle Toybox",
-                "Toybox ready with 7 toys (Connect the Dots, Vessel Changer, Domain Changer, Wanderway, " +
-                "Cell Selector, Arkway, Element Charger).\n\n" +
+                "Toybox ready with 6 toys (Connect the Dots, Vessel Changer, Domain Changer, Wander, " +
+                "Cell Selector, Element Charger).\n\n" +
                 $"• Toy assets:  {ToysFolder}/\n" +
                 $"• Paintings:   {PaintingsFolder}/ (16 masterpieces: Star → Taj Mahal → Torus Knot, " +
                 "Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix, Almighty " +
@@ -94,12 +93,13 @@ namespace CosmicShore.Editor
                 (wiredScene
                     ? "• ToyboxController added to Menu_Main and saved.\n"
                     : "• Could not auto-add the ToyboxController - add it to the Menu_Main 'Game' object manually.\n") +
-                "\nAll seven toys work as-is. The vessel changer shows mini ship models; the domain " +
+                "\nAll six toys work as-is. The vessel changer shows mini ship models; the domain " +
                 "changer shows the two colours you're not; the painting toy spawns one station per " +
                 "painting (multi-stroke, multi-domain connect-the-dots with start gates that recolour " +
-                "your trail); the Wanderway conveyor streams shuffled microscenes ahead of your flight " +
-                "path; the Cell Selector blooms a matrix of mini-cells that swap (or reset) the world " +
-                "you fly in; the Arkway opens a corridor of whole cells and an Ark that sails them; the " +
+                "your trail); Wander opens two stations - without an Ark it streams shuffled microscenes " +
+                "ahead of your flight path, with an Ark it opens a corridor of whole cells and an Ark " +
+                "that sails them; the Cell Selector blooms a matrix of mini-cells that swap (or reset) " +
+                "the world you fly in; the " +
                 "Element Charger opens a row of four element crystals that raise your vessel's levels.\n\n" +
                 "REMINDER: set the Menu_Main Cell's 'Cell Type Choice Options' to EnvironmentFree so " +
                 "freestyle boots empty and the heavy worlds stay opt-in.\n" +
@@ -149,6 +149,38 @@ namespace CosmicShore.Editor
             }
 
             return asset;
+        }
+
+        /// <summary>
+        /// Load or create a settings asset (not a toy - it is not listed in the toybox) and fill
+        /// its unset content references with <paramref name="extra"/>.
+        /// </summary>
+        static T LoadOrCreateSettings<T>(string fileName, System.Action<SerializedObject> extra) where T : ScriptableObject
+        {
+            EnsureFolder(ToysFolder);
+            string path = $"{ToysFolder}/{fileName}.asset";
+
+            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (!asset)
+            {
+                asset = ScriptableObject.CreateInstance<T>();
+                AssetDatabase.CreateAsset(asset, path);
+            }
+
+            var so = new SerializedObject(asset);
+            extra?.Invoke(so);
+            if (so.ApplyModifiedProperties())
+                EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
+        /// <summary>Point the Wander toy at its two settings assets, filling only unset slots.</summary>
+        static void AssignWanderSettings(SerializedObject so, WanderwaySettingsSO withoutArk, ArkwaySettingsSO withArk)
+        {
+            var without = so.FindProperty("withoutArk");
+            if (without != null && !without.objectReferenceValue) without.objectReferenceValue = withoutArk;
+            var with = so.FindProperty("withArk");
+            if (with != null && !with.objectReferenceValue) with.objectReferenceValue = withArk;
         }
 
         // ── Painting gallery assets ──────────────────────────────────────────
@@ -270,6 +302,13 @@ namespace CosmicShore.Editor
         {
             var so = new SerializedObject(toybox);
             var list = so.FindProperty("toys");
+
+            // Drop entries that no longer resolve to a toy - a retired toy type (the Wanderway and
+            // Arkway definitions became Wander's settings assets) leaves a reference that loads as
+            // null, and a null slot in the toybox is a toy that silently never spawns.
+            for (int i = list.arraySize - 1; i >= 0; i--)
+                if (!list.GetArrayElementAtIndex(i).objectReferenceValue)
+                    list.DeleteArrayElementAtIndex(i);
 
             var existing = new HashSet<Object>();
             for (int i = 0; i < list.arraySize; i++)

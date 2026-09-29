@@ -49,3 +49,6 @@ MonoBehaviour:
   - metric: 11
     icon: {fileID: 21300000, guid: 1b0ad5308ae3f2fa66eb52770f0294e5, type: 3}
     label: Tear out volume
+  - metric: 12
+    icon: {fileID: 21300000, guid: 8f3d80c46ba1e4d252a55197c063fbc0, type: 3}
+    label: Hold volume

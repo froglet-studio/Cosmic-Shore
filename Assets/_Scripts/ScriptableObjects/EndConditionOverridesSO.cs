@@ -78,6 +78,21 @@ namespace CosmicShore.ScriptableObjects
         /// (UndertowScoringRuleSO), so 12 is four clean bends, twelve kills, or any mix.</summary>
         public const int DefaultUndertowPointTarget = 12;
 
+        /// <summary>Dustup point target used when <see cref="dustupPointTarget"/> is 0. One
+        /// DUSTING - an opposing Butterfly caught in your Scale Dust - is one point
+        /// (DustupScoringRuleSO), so 10 is ten clean passes over a rival.</summary>
+        public const int DefaultDustupPointTarget = 10;
+
+        /// <summary>Tapestry round length in seconds, used when <see cref="tapestryRoundSeconds"/>
+        /// is 0. Tapestry is TIMED - its score is a live stock (mass standing), which can fall, so
+        /// "most standing at the whistle" is the only honest end condition.</summary>
+        public const int DefaultTapestryRoundSeconds = 150;
+
+        /// <summary>Sirocco hostile-prism target used when <see cref="siroccoPrismTarget"/> is 0.
+        /// Far under Rampage's 2000: the dust takes one prism in three it touches, where a Dolphin
+        /// cone takes hundreds at once.</summary>
+        public const int DefaultSiroccoPrismTarget = 600;
+
         /// <summary>Broadside points PER PILOT used when <see cref="broadsidePointsPerPilot"/>
         /// is 0. The mixed-fleet brawl prices a hit by its VERB (BroadsideScoringRuleSO): a round
         /// is 1, a contact strike 8, an area debuff 12, a rocket 10/20/30 by how close it got.
@@ -293,6 +308,20 @@ namespace CosmicShore.ScriptableObjects
                  "1, summed across the domain's pilots. 0 = default (12).")]
         [Min(0)] public int undertowPointTarget = 12;
 
+        [Tooltip("Dustup: POINTS a DOMAIN needs to win (race to N). One dusting - an opposing " +
+                 "Butterfly passing through your Scale Dust - is one point, summed across the " +
+                 "domain's pilots. 0 = default (10).")]
+        [Min(0)] public int dustupPointTarget = 10;
+
+        [Tooltip("Tapestry: round length in SECONDS. The mode is timed - the domain with the most " +
+                 "prism volume STANDING when the clock runs out wins. 0 = default (150).")]
+        [Min(0)] public int tapestryRoundSeconds = 150;
+
+        [Tooltip("Sirocco: hostile prisms (Rampage's cactus forest, rival trails, fauna bodies) a " +
+                 "DOMAIN must destroy with the Scale Dust to win (race to N); your own team's " +
+                 "mass never counts. 0 = default (600).")]
+        [Min(0)] public int siroccoPrismTarget = 600;
+
         [Tooltip("Broadside: points PER PILOT on a domain. The number a domain actually races " +
                  "to is this x (1 + 0.6 x (teamSize - 1)) - 100/160/220/280 for a 1/2/3/4 pilot " +
                  "team - because a second pilot roughly doubles a side's scoring rate. Every " +
@@ -329,6 +358,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int tollwayTollTargetBuild = 8;
         [Min(0)] public int wreckingBallPrismTargetBuild = 1500;
         [Min(0)] public int undertowPointTargetBuild = 12;
+        [Min(0)] public int dustupPointTargetBuild = 10;
+        [Min(0)] public int tapestryRoundSecondsBuild = 150;
+        [Min(0)] public int siroccoPrismTargetBuild = 600;
         [Min(0)] public int broadsidePointsPerPilotBuild = 100;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
@@ -568,6 +600,30 @@ namespace CosmicShore.ScriptableObjects
             undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget;
 
         /// <summary>
+        /// Dustup point target ("first domain to N dustings"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultDustupPointTarget"/>. Compared against a DOMAIN's summed
+        /// CombatPoints.
+        /// </summary>
+        public int GetDustupPointTarget() =>
+            dustupPointTarget > 0 ? dustupPointTarget : DefaultDustupPointTarget;
+
+        /// <summary>
+        /// Tapestry round length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultTapestryRoundSeconds"/>. Read by TapestryTimeTurnMonitor at
+        /// StartMonitor on every peer, so the clock and the whistle cannot disagree.
+        /// </summary>
+        public int GetTapestryRoundSeconds() =>
+            tapestryRoundSeconds > 0 ? tapestryRoundSeconds : DefaultTapestryRoundSeconds;
+
+        /// <summary>
+        /// Sirocco prism target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultSiroccoPrismTarget"/>. Compared against a DOMAIN's
+        /// summed destruction count, so teammates pool.
+        /// </summary>
+        public int GetSiroccoPrismTarget() =>
+            siroccoPrismTarget > 0 ? siroccoPrismTarget : DefaultSiroccoPrismTarget;
+
+        /// <summary>
         /// Broadside points PER PILOT: the configured value when &gt; 0, otherwise
         /// <see cref="DefaultBroadsidePointsPerPilot"/>. Feed it to
         /// <see cref="GetBroadsidePointTarget"/> - this is not itself a target.
@@ -626,6 +682,10 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
                 GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
                 GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
+                GameModes.Dustup                    => GetDustupPointTarget(),
+                GameModes.Sirocco                   => GetSiroccoPrismTarget(),
+                // Tapestry is TIMED (tapestryRoundSeconds): it has no race target, so it is
+                // deliberately absent here and reads as "no target", like Bloomrush.
                 // Per PILOT, not a total - the race target scales with team size and is only known at
                 // runtime, so the editor's authored-target readout shows the rate.
                 GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
@@ -676,6 +736,9 @@ namespace CosmicShore.ScriptableObjects
             tollwayTollTarget == tollwayTollTargetBuild &&
             wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
             undertowPointTarget == undertowPointTargetBuild &&
+            dustupPointTarget == dustupPointTargetBuild &&
+            tapestryRoundSeconds == tapestryRoundSecondsBuild &&
+            siroccoPrismTarget == siroccoPrismTargetBuild &&
             broadsidePointsPerPilot == broadsidePointsPerPilotBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
@@ -706,6 +769,9 @@ namespace CosmicShore.ScriptableObjects
             tollwayTollTarget = tollwayTollTargetBuild;
             wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
             undertowPointTarget = undertowPointTargetBuild;
+            dustupPointTarget = dustupPointTargetBuild;
+            tapestryRoundSeconds = tapestryRoundSecondsBuild;
+            siroccoPrismTarget = siroccoPrismTargetBuild;
             broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
         }
 
@@ -737,6 +803,9 @@ namespace CosmicShore.ScriptableObjects
             tollwayTollTargetBuild = tollwayTollTarget;
             wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
             undertowPointTargetBuild = undertowPointTarget;
+            dustupPointTargetBuild = dustupPointTarget;
+            tapestryRoundSecondsBuild = tapestryRoundSeconds;
+            siroccoPrismTargetBuild = siroccoPrismTarget;
             broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
         }
     }
