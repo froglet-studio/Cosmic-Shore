@@ -644,9 +644,9 @@ namespace CosmicShore.Engine
             => GameLoop.Current?.Scene.FindObjectOfType<T>(includeInactive: true);
 
         /// <summary>
-        /// Clone an asset or object graph. ScriptableObjects shallow-clone (the AIPilot
-        /// profile path); GameObjects/Components clone structurally with field copies
-        /// (the pool path). Full prefab factories arrive with the content phase.
+        /// Clone an asset or object graph. ScriptableObjects clone by value (containers and
+        /// plain classes inlined, Object references shared); GameObjects/Components clone
+        /// structurally with field copies (the pool path).
         /// </summary>
         public static T InstantiateObject<T>(T original) where T : Object
         {
@@ -676,6 +676,13 @@ namespace CosmicShore.Engine
                 {
                     var clone = (ScriptableObject)CloneViaMemberwise(so);
                     clone.name = so.name + "(Clone)";
+                    // The original round-trips an asset through its serializer: containers and
+                    // [Serializable] plain classes come back as fresh copies, while references to
+                    // other engine Objects (sub-assets included) stay shared.
+                    var none = new Dictionary<object, object>(ReferenceEqualityComparer.Instance);
+                    for (Type t = so.GetType(); t != null && t != typeof(ScriptableObject); t = t.BaseType)
+                        foreach (var field in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+                            RemapField(clone, field, none);
                     return clone as T;
                 }
                 case GameObject go:

@@ -26,6 +26,7 @@ namespace CosmicShore.Player
         SceneRenderer _sceneRenderer;
         SkyboxPass _skybox;
         PostPass _post;
+        readonly CosmicShore.Engine.Rendering.VolumeStack _volumes = new();
         UguiRenderer _ui;
         TmpTextRenderer _tmp;
         PresentPass _present;
@@ -159,9 +160,10 @@ namespace CosmicShore.Player
             var c = cam != null ? cam.backgroundColor : Color.black;
             _gl.ClearColor(ColorSpace.ToLinear(c.r), ColorSpace.ToLinear(c.g), ColorSpace.ToLinear(c.b), 1f);
             _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
-            var post = PostSettings.Gameplay;
+            var post = new PostSettings();
             if (cam != null && cam.isActiveAndEnabled)
             {
+                post = PostSettings.For(cam, _volumes);
                 _skybox.Draw(cam);
                 _sceneRenderer.Render(cam, w, h);
                 float tanY = MathF.Tan(cam.fieldOfView * 0.5f * MathF.PI / 180f);
@@ -206,7 +208,7 @@ namespace CosmicShore.Player
                 _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
                 if (cam.clearFlags == CameraClearFlags.Skybox) _skybox.Draw(cam);
                 _sceneRenderer.Render(cam, w, h);
-                var settings = PostSettings.Gameplay;
+                var settings = PostSettings.For(cam, _volumes);
                 float tanY = MathF.Tan(cam.fieldOfView * 0.5f * MathF.PI / 180f);
                 settings.TanHalfFovY = tanY;
                 settings.TanHalfFovX = tanY * cam.aspect;

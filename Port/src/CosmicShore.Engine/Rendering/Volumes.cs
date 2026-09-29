@@ -8,7 +8,8 @@ namespace CosmicShore.Engine.Rendering
     /// <summary>A blendable post-process setting with an override toggle.</summary>
     public abstract class VolumeParameter
     {
-        public bool overrideState { get; set; }
+        [SerializeField] protected bool m_OverrideState;
+        public bool overrideState { get => m_OverrideState; set => m_OverrideState = value; }
         public void Override(object value) { overrideState = true; SetBoxed(value); }
         internal abstract void SetBoxed(object value);
         internal abstract object GetBoxed();
@@ -17,7 +18,7 @@ namespace CosmicShore.Engine.Rendering
     [Serializable]
     public class VolumeParameter<T> : VolumeParameter
     {
-        protected T m_Value;
+        [SerializeField] protected T m_Value;
         public VolumeParameter() { }
         public VolumeParameter(T value, bool overrideState = false) { m_Value = value; this.overrideState = overrideState; }
         public virtual T value { get => m_Value; set => m_Value = value; }
@@ -133,11 +134,29 @@ namespace CosmicShore.Engine.Rendering
         public float weight = 1f;
         public float blendDistance;
 
+        /// <summary>
+        /// This volume's own profile (original contract): the first read builds a private
+        /// profile holding a copy of every shared component, so runtime edits never touch the asset.
+        /// </summary>
         public VolumeProfile profile
         {
-            get => _instance ??= sharedProfile != null ? Instantiate(sharedProfile) : ScriptableObject.CreateInstance<VolumeProfile>();
+            get
+            {
+                if (_instance != null) return _instance;
+                _instance = ScriptableObject.CreateInstance<VolumeProfile>();
+                if (sharedProfile != null)
+                {
+                    _instance.name = sharedProfile.name;
+                    foreach (var c in sharedProfile.components)
+                        if (c != null) _instance.components.Add(Instantiate(c));
+                }
+                return _instance;
+            }
             set => _instance = value;
         }
+
+        /// <summary>The profile the renderer reads: the instance once one exists, else the shared asset.</summary>
+        public VolumeProfile profileRef => _instance != null ? _instance : sharedProfile;
 
         public VolumeProfile sharedProfileRef { get => sharedProfile; set => sharedProfile = value; }
         public bool HasInstantiatedProfile() => _instance != null;
@@ -168,6 +187,7 @@ namespace CosmicShore.Engine.Rendering
         public ColorParameter tint = new(Color.white);
         public BoolParameter highQualityFiltering = new(false);
         public ClampedIntParameter skipIterations = new(1, 0, 16);
+        public VolumeParameter<BloomDownscaleMode> downscale = new(BloomDownscaleMode.Half);
         public ClampedIntParameter maxIterations = new(6, 2, 8);
         public TextureParameter dirtTexture = new(null);
         public MinFloatParameter dirtIntensity = new(0f, 0f);
@@ -221,6 +241,17 @@ namespace CosmicShore.Engine.Rendering
         public ClampedFloatParameter scale = new(1f, 0.01f, 5f);
     }
 
+    // Components the project's profiles author that the port does not render; they load so
+    // a profile's component list matches the asset (TryGet finds them, overrides round-trip).
+    [Serializable] public sealed class ColorCurves : VolumeComponent { }
+    [Serializable] public sealed class LiftGammaGain : VolumeComponent { }
+    [Serializable] public sealed class ShadowsMidtonesHighlights : VolumeComponent { }
+    [Serializable] public sealed class SplitToning : VolumeComponent { }
+    [Serializable] public sealed class ChannelMixer : VolumeComponent { }
+    [Serializable] public sealed class ColorLookup : VolumeComponent { }
+    [Serializable] public sealed class ScreenSpaceLensFlare : VolumeComponent { }
+    [Serializable] public sealed class ProbeVolumesOptions : VolumeComponent { }
+
     [Serializable] public sealed class FilmGrain : VolumeComponent { public ClampedFloatParameter intensity = new(0f, 0f, 1f); }
     [Serializable] public sealed class MotionBlur : VolumeComponent { public ClampedFloatParameter intensity = new(0f, 0f, 1f); }
     [Serializable] public sealed class DepthOfField : VolumeComponent { public MinFloatParameter focusDistance = new(10f, 0.1f); }
@@ -248,7 +279,10 @@ namespace CosmicShore.Engine.Rendering
     /// <summary>URP per-camera data (UniversalAdditionalCameraData).</summary>
     public class UniversalAdditionalCameraData : MonoBehaviour
     {
-        public bool renderPostProcessing { get; set; } = true;
+        [SerializeField] bool m_RenderPostProcessing;
+        [SerializeField] LayerMask m_VolumeLayerMask = 1;
+        [SerializeField] bool m_RenderShadows = true;
+        public bool renderPostProcessing { get => m_RenderPostProcessing; set => m_RenderPostProcessing = value; }
         public AntialiasingMode antialiasing { get; set; }
         public AntialiasingQuality antialiasingQuality { get; set; } = AntialiasingQuality.High;
         public CameraOverrideOption requiresDepthOption { get; set; } = CameraOverrideOption.UsePipelineSettings;
@@ -256,8 +290,8 @@ namespace CosmicShore.Engine.Rendering
         public bool requiresDepthTexture { get; set; }
         public bool requiresColorTexture { get; set; }
         public CameraRenderType renderType { get; set; }
-        public bool renderShadows { get; set; } = true;
-        public LayerMask volumeLayerMask { get; set; } = 1;
+        public bool renderShadows { get => m_RenderShadows; set => m_RenderShadows = value; }
+        public LayerMask volumeLayerMask { get => m_VolumeLayerMask; set => m_VolumeLayerMask = value; }
         public Transform volumeTrigger { get; set; }
         public bool stopNaN { get; set; }
         public bool dithering { get; set; }

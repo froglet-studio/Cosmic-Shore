@@ -11,18 +11,48 @@ namespace CosmicShore.Render
         public bool Bloom;
         public float BloomThreshold, BloomIntensity, BloomScatter, BloomClamp;
         public System.Numerics.Vector3 BloomTint;
-        public int BloomMaxIterations;
+        public int BloomMaxIterations, BloomSkipIterations;
+        public bool BloomQuarterRes;
         public bool Panini;
         public float PaniniDistance, PaniniCropToFit;
         public float TanHalfFovX, TanHalfFovY;
 
-        /// <summary>The gameplay profile (GamePlay PostProcessing Profile.asset) the game ships.</summary>
-        public static PostSettings Gameplay => new()
+        /// <summary>
+        /// The post state one camera renders with: nothing unless the camera's URP data turns
+        /// post-processing on (the original's per-camera switch — the connecting panel's arena
+        /// preview renders without it), otherwise the blended volume stack's Bloom and Panini.
+        /// </summary>
+        public static PostSettings For(CosmicShore.Engine.Camera camera, CosmicShore.Engine.Rendering.VolumeStack stack)
         {
-            Bloom = true, BloomThreshold = 0.2f, BloomIntensity = 2.5f, BloomScatter = 0.7f, BloomClamp = 0.5f,
-            BloomTint = System.Numerics.Vector3.One, BloomMaxIterations = 6,
-            Panini = true, PaniniDistance = 0.7f, PaniniCropToFit = 1f,
-        };
+            var s = new PostSettings();
+            if (camera == null) return s;
+            var data = camera.GetComponent<CosmicShore.Engine.Rendering.UniversalAdditionalCameraData>();
+            if (data == null || !data.renderPostProcessing) return s;
+            stack.Update(camera.transform.position, data.volumeLayerMask.value);
+
+            var bloom = stack.GetComponent<CosmicShore.Engine.Rendering.Bloom>();
+            if (bloom != null && bloom.intensity.value > 0f)
+            {
+                s.Bloom = true;
+                s.BloomThreshold = bloom.threshold.value;
+                s.BloomIntensity = bloom.intensity.value;
+                s.BloomScatter = bloom.scatter.value;
+                s.BloomClamp = bloom.clamp.value;
+                var t = bloom.tint.value;
+                s.BloomTint = new System.Numerics.Vector3(t.r, t.g, t.b);
+                s.BloomMaxIterations = bloom.maxIterations.value;
+                s.BloomSkipIterations = bloom.skipIterations.value;
+                s.BloomQuarterRes = bloom.downscale.value == CosmicShore.Engine.Rendering.BloomDownscaleMode.Quarter;
+            }
+            var panini = stack.GetComponent<CosmicShore.Engine.Rendering.PaniniProjection>();
+            if (panini != null && panini.distance.value > 0f)
+            {
+                s.Panini = true;
+                s.PaniniDistance = panini.distance.value;
+                s.PaniniCropToFit = panini.cropToFit.value;
+            }
+            return s;
+        }
     }
 
     /// <summary>
@@ -144,7 +174,7 @@ void main(){
             uint bloomTex = 0;
             if (s.Bloom && s.BloomIntensity > 0f)
             {
-                Ensure(w, h, s.BloomMaxIterations);
+                Ensure(w, h, s.BloomMaxIterations, s.BloomSkipIterations, s.BloomQuarterRes);
                 // Prefilter into level 0 (half res).
                 Bind(_down[0]);
                 _prefilter.Use();
@@ -240,13 +270,22 @@ void main(){
             _gl.Viewport(0, 0, (uint)rt.W, (uint)rt.H);
         }
 
-        void Ensure(int w, int h, int maxIterations)
+        /// <summary>
+        /// The bloom mip chain (original rule): the prefilter runs at half (or quarter)
+        /// resolution, the chain length is floor(log2(max side) - 1) less the skipped final
+        /// iterations, clamped to [1, max iterations].
+        /// </summary>
+        int _lw0;
+
+        void Ensure(int w, int h, int maxIterations, int skipIterations, bool quarter)
         {
-            int levels = Math.Clamp((int)MathF.Floor(MathF.Log2(Math.Max(w, h) / 2f)) - 1, 1, Math.Max(1, maxIterations));
-            if (w == _w && h == _h && levels == _levels) return;
+            int div = quarter ? 4 : 2;
+            int lw = Math.Max(1, w / div), lh = Math.Max(1, h / div);
+            int iterations = (int)MathF.Floor(MathF.Log2(Math.Max(lw, lh)) - 1f);
+            int levels = Math.Clamp(iterations - skipIterations, 1, Math.Max(1, maxIterations));
+            if (w == _w && h == _h && levels == _levels && lw == _lw0) return;
             Release();
-            _w = w; _h = h; _levels = levels;
-            int lw = Math.Max(1, w / 2), lh = Math.Max(1, h / 2);
+            _w = w; _h = h; _levels = levels; _lw0 = lw;
             for (int i = 0; i < levels; i++)
             {
                 _down.Add(Make(lw, lh));
