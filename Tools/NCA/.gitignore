@@ -1,0 +1,4 @@
+# per-500-step pool snapshots and scratch; the final figures/, weights and loss are kept
+runs/*/batch_*.png
+runs/*.log
+__pycache__/
