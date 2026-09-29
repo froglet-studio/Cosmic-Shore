@@ -29,6 +29,7 @@ namespace CosmicShore.Content
         public readonly AssetLoader Assets;
         public readonly InstantiateOptions Options;
         public readonly Textures.TextureImporter Textures;
+        public readonly Fonts.TmpFontLibrary Fonts;
         public readonly List<(string path, string guid, bool enabled)> BuildScenes = new();
 
         /// <summary>The root DI container (Reflex project scope), once booted.</summary>
@@ -52,12 +53,25 @@ namespace CosmicShore.Content
             Assets.Importers[typeof(GameObject)] = LoadPrefabObject;
             Textures = new Textures.TextureImporter(Db);
             CosmicShore.Content.Textures.TextureImporter.Register(Assets, Textures);
+            Fonts = new Fonts.TmpFontLibrary(Db);
+            Assets.Importers[typeof(CosmicShore.Engine.UI.TMP_FontAsset)] = LoadFontAsset;
+        }
+
+        /// <summary>A TMP font asset reference (only a MonoBehaviour whose script IS TMP_FontAsset).</summary>
+        EngineObject LoadFontAsset(ObjRef r)
+        {
+            var doc = Db.Load(r.Guid)?.Get(r.FileId);
+            if (doc == null || doc.TypeName != "MonoBehaviour") return null;
+            var script = ObjRef.From(doc.Body["m_Script"]);
+            if (script.Guid != CosmicShore.Content.Fonts.TmpFontLibrary.FontAssetScriptGuid) return null;
+            return Fonts.LoadRef(r);
         }
 
         /// <summary>Installs this runtime as the engine's scene + Resources backend.</summary>
         public void Install()
         {
             Current = this;
+            Fonts.ApplyToGlobalSettings();
             SceneManager.Backend = this;
             Resources.ContentLoader = LoadResource;
         }

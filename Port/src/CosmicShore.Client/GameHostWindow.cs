@@ -34,6 +34,7 @@ namespace CosmicShore.Client
         TextureCache _textures;
         FrameTarget _frame;
         UguiRenderer _ui;
+        TmpTextRenderer _tmp;
         PresentPass _present;
         int _frameIndex;
         readonly Stopwatch _clock = new();
@@ -74,6 +75,8 @@ namespace CosmicShore.Client
             _textures = new TextureCache(_gl);
             _frame = new FrameTarget(_gl);
             _ui = new UguiRenderer(_gl, _textures);
+            _tmp = new TmpTextRenderer(_gl);
+            _ui.Tmp = _tmp;
             _present = new PresentPass(_gl);
 
             var root = AssetDatabase.FindProjectRoot()
@@ -86,6 +89,7 @@ namespace CosmicShore.Client
                     IncludeScript = t => _scripts || t.Namespace?.StartsWith("CosmicShore.Engine", StringComparison.Ordinal) == true,
                 });
             _runtime.Install();
+            _tmp.Fonts = _runtime.Fonts;
             if (_boot) _runtime.BootRootScopes();
             SceneManager.LoadScene(_scene);
             var load = _runtime.Loads.LastOrDefault().result;
@@ -121,7 +125,7 @@ namespace CosmicShore.Client
             if (_screenshotPath != null && _frameIndex == _screenshotFrame)
             {
                 Capture(_screenshotPath, w, h);
-                Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}, ui draws {_ui.DrawCalls}, graphics {_ui.GraphicsDrawn}");
+                Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}, ui draws {_ui.DrawCalls}+{_tmp.DrawCalls} text, graphics {_ui.GraphicsDrawn}, texts {_tmp.TextsDrawn}, layouts {_tmp.Layouts}");
                 _window.Close();
             }
         }

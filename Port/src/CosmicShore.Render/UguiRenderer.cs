@@ -117,6 +117,9 @@ void main(){
 
         public IUiTextProvider Text { get; set; }
 
+        /// <summary>TextMeshPro pass (layout + SDF shading); null = TMP draws nothing.</summary>
+        public TmpTextRenderer Tmp { get; set; }
+
         /// <summary>Draw calls issued in the last frame (diagnostics).</summary>
         public int DrawCalls { get; private set; }
         public int GraphicsDrawn { get; private set; }
@@ -153,6 +156,7 @@ void main(){
             _screenH = screenHeight;
             DrawCalls = 0;
             GraphicsDrawn = 0;
+            Tmp?.BeginFrame();
 
             var canvases = CosmicShore.Engine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
             var layers = new List<(Canvas c, int order, long seq)>();
@@ -370,6 +374,19 @@ void main(){
 
         void DrawText(Component text, float alpha, Vector4 clip)
         {
+            if (text is TMP_Text tmp && Tmp != null)
+            {
+                Flush();
+                Tmp.Draw(tmp, alpha, clip, _screenW, _screenH);
+                // Back to the uGUI program + state.
+                _program.Use();
+                _program.Set("uScreen", _screenW, _screenH);
+                _program.Set("uTex", 0);
+                _gl.ActiveTexture(TextureUnit.Texture0);
+                _batchTexture = 0;
+                GraphicsDrawn++;
+                return;
+            }
             if (Text == null) return;
             _text.Vertices.Clear();
             _text.Indices.Clear();
