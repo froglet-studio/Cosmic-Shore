@@ -34,6 +34,72 @@ namespace CosmicShore.Engine
 
         static readonly Dictionary<int, string> PropertyNames = new();
 
+        // ── Declared properties (read from the shader source by the content layer) ──
+
+        static System.Func<string, IReadOnlyList<KeyValuePair<string, object>>> s_catalog;
+        static int s_catalogGeneration;
+        List<KeyValuePair<string, object>> _declaredList;
+        Dictionary<int, object> _declared;
+        int _declaredGeneration = -1;
+
+        /// <summary>
+        /// Port hook: resolves a shader name to its declared properties (name → default value:
+        /// float, Color, Vector4, or null for a texture) in declaration order, or null when the
+        /// shader's source is not available. Set by the content layer.
+        /// </summary>
+        public static System.Func<string, IReadOnlyList<KeyValuePair<string, object>>> PropertyCatalog
+        {
+            get => s_catalog;
+            set { s_catalog = value; s_catalogGeneration++; }
+        }
+
+        Dictionary<int, object> Declared
+        {
+            get
+            {
+                if (_declaredGeneration == s_catalogGeneration) return _declared;
+                _declaredGeneration = s_catalogGeneration;
+                _declared = null; _declaredList = null;
+                var props = s_catalog?.Invoke(name);
+                if (props == null) return null;
+                _declared = new Dictionary<int, object>();
+                _declaredList = new List<KeyValuePair<string, object>>();
+                foreach (var kv in props)
+                    if (_declared.TryAdd(PropertyToID(kv.Key), kv.Value)) _declaredList.Add(kv);
+                return _declared;
+            }
+        }
+
+        /// <summary>True when this shader's source declares the property.</summary>
+        public bool DeclaresProperty(int nameID) => Declared?.ContainsKey(nameID) == true;
+
+        /// <summary>The declared default of a property (float, Color, Vector4; null for textures).</summary>
+        public bool TryGetDefault(int nameID, out object value)
+        {
+            value = null;
+            var d = Declared;
+            return d != null && d.TryGetValue(nameID, out value) && value != null;
+        }
+
+        /// <summary>Index of a declared property, or -1 (original contract).</summary>
+        public int FindPropertyIndex(string propertyName)
+        {
+            _ = Declared;
+            if (_declaredList == null) return -1;
+            for (int i = 0; i < _declaredList.Count; i++)
+                if (_declaredList[i].Key == propertyName) return i;
+            return -1;
+        }
+
+        /// <summary>Number of declared properties (0 when the shader's source is unknown).</summary>
+        public int GetPropertyCount() { _ = Declared; return _declaredList?.Count ?? 0; }
+
+        public string GetPropertyName(int propertyIndex)
+        {
+            _ = Declared;
+            return _declaredList != null && propertyIndex >= 0 && propertyIndex < _declaredList.Count ? _declaredList[propertyIndex].Key : null;
+        }
+
         /// <summary>Reverse lookup of <see cref="PropertyToID"/> (port helper).</summary>
         public static string PropertyName(int id) => PropertyNames.TryGetValue(id, out var n) ? n : $"_Property{id}";
     }
@@ -85,17 +151,34 @@ namespace CosmicShore.Engine
         public void SetColor(string propertyName, Color value) => _colors[Shader.PropertyToID(propertyName)] = value;
         public void SetColor(int nameID, Color value) => _colors[nameID] = value;
         public Color GetColor(string propertyName) => GetColor(Shader.PropertyToID(propertyName));
-        public Color GetColor(int nameID) => _colors.TryGetValue(nameID, out var v) ? v : Color.white;
+        public Color GetColor(int nameID)
+        {
+            if (_colors.TryGetValue(nameID, out var v)) return v;
+            if (shader is not null && shader.TryGetDefault(nameID, out var d))
+                return d switch { Color c => c, Vector4 w => new Color(w.x, w.y, w.z, w.w), float f => new Color(f, f, f, f), _ => Color.white };
+            return Color.white;
+        }
 
         public void SetFloat(string propertyName, float value) => _floats[Shader.PropertyToID(propertyName)] = value;
         public void SetFloat(int nameID, float value) => _floats[nameID] = value;
         public float GetFloat(string propertyName) => GetFloat(Shader.PropertyToID(propertyName));
-        public float GetFloat(int nameID) => _floats.TryGetValue(nameID, out var v) ? v : 0f;
+        public float GetFloat(int nameID)
+        {
+            if (_floats.TryGetValue(nameID, out var v)) return v;
+            if (shader is not null && shader.TryGetDefault(nameID, out var d) && d is float f) return f;
+            return 0f;
+        }
 
         public void SetVector(string propertyName, Vector4 value) => _vectors[Shader.PropertyToID(propertyName)] = value;
         public void SetVector(int nameID, Vector4 value) => _vectors[nameID] = value;
         public Vector4 GetVector(string propertyName) => GetVector(Shader.PropertyToID(propertyName));
-        public Vector4 GetVector(int nameID) => _vectors.TryGetValue(nameID, out var v) ? v : Vector4.zero;
+        public Vector4 GetVector(int nameID)
+        {
+            if (_vectors.TryGetValue(nameID, out var v)) return v;
+            if (shader is not null && shader.TryGetDefault(nameID, out var d))
+                return d switch { Vector4 w => w, Color c => new Vector4(c.r, c.g, c.b, c.a), _ => Vector4.zero };
+            return Vector4.zero;
+        }
 
         readonly Dictionary<int, Texture> _textures = new();
         readonly Dictionary<int, Vector4> _textureST = new();
@@ -132,7 +215,18 @@ namespace CosmicShore.Engine
         public bool IsKeywordEnabled(string keyword) => _keywords.Contains(keyword);
 
         public bool HasProperty(string propertyName) => HasProperty(Shader.PropertyToID(propertyName));
+        /// <summary>
+        /// Original contract: true when the SHADER declares the property, whether or not this
+        /// material has a value saved for it (a property added to a graph after the material
+        /// was last saved still exists). Falls back to the stored values when the shader's
+        /// declarations are unknown.
+        /// </summary>
         public bool HasProperty(int nameID)
+            => HasStoredProperty(nameID) || (shader is not null && shader.DeclaresProperty(nameID));
+
+        /// <summary>Port helper: true only when this material carries its own value (the renderer's classification reads this).</summary>
+        public bool HasStoredProperty(string propertyName) => HasStoredProperty(Shader.PropertyToID(propertyName));
+        public bool HasStoredProperty(int nameID)
             => _colors.ContainsKey(nameID) || _floats.ContainsKey(nameID)
             || _vectors.ContainsKey(nameID) || _ints.ContainsKey(nameID);
 

@@ -78,8 +78,6 @@ namespace CosmicShore.Engine
         public static bool IsKeywordEnabled(string keyword) => GlobalKeywords.Contains(keyword);
         public static void WarmupAllShaders() { }
 
-        public int FindPropertyIndex(string propertyName) => -1;
-        public int GetPropertyCount() => 0;
     }
 
     public partial class Material

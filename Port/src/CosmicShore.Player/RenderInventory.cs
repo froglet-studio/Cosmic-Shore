@@ -55,7 +55,7 @@ namespace CosmicShore.Player
             {
                 var parts = new List<string>();
                 foreach (var p in props)
-                    if (m.HasProperty(p))
+                    if (m.HasStoredProperty(p))
                         parts.Add(p == "_Alpha" || p == "_Surface" ? $"{p}={m.GetFloat(p):0.###}" : p == "_Spread" ? $"{p}={m.GetVector(p)}" : $"{p}={m.GetColor(p)}");
                 Console.WriteLine($"    {n,6}  '{m.name}' [{m.shader?.name}] q={m.renderQueue} {string.Join(" ", parts)}");
             }

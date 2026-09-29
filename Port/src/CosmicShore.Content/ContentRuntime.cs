@@ -59,7 +59,12 @@ namespace CosmicShore.Content
             Audio.MixerImporter.Register(Assets, new Audio.MixerImporter(Db));
             ChainImporter(typeof(Mesh), r => r.Guid == AssetLoader.BuiltinDefaultGuid ? BuiltinMeshes.ForFileId(r.FileId) : null);
             ChainImporter(typeof(Material), r => r.Guid == AssetLoader.BuiltinExtraGuid ? BuiltinMaterials.ForFileId(r.FileId) : null);
+            ShaderProperties = new Shaders.ShaderPropertyCatalog(Db);
+            Shader.PropertyCatalog = ShaderProperties.For;
         }
+
+        /// <summary>The shaders' declared properties (what Material.HasProperty and unset-property reads answer from).</summary>
+        public Shaders.ShaderPropertyCatalog ShaderProperties { get; }
 
         /// <summary>Adds an importer for <paramref name="type"/> in front of any already registered (first non-null wins).</summary>
         public void ChainImporter(Type type, Func<ObjRef, EngineObject> importer)

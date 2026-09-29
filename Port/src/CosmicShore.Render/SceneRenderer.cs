@@ -497,7 +497,7 @@ void main(){
             {
                 st.Family = 3; st.DarkId = st.BrightId = IdColor;
                 st.Alpha = m.GetFloat("_Opacity");
-                var v = m.HasProperty("_Vector3") ? m.GetVector("_Vector3") : new Vector4(0, 0, 0.65f, 0);
+                var v = m.HasStoredProperty("_Vector3") ? m.GetVector("_Vector3") : new Vector4(0, 0, 0.65f, 0);
                 st.Param = v;
             }
             else if (graph == "Shader Graphs/CageGraph")
@@ -524,22 +524,22 @@ void main(){
             {
                 // Base = lerp(Color1, Color2, dot(N,N)) = Color2, times _ColorMultiplier.
                 st.Family = 0; st.DarkId = st.BrightId = IdColor2;
-                st.VesselMultiplier = m.HasProperty(IdColorMul) ? m.GetFloat(IdColorMul) : 1f;
+                st.VesselMultiplier = m.HasStoredProperty(IdColorMul) ? m.GetFloat(IdColorMul) : 1f;
             }
-            else if (m.HasProperty(IdDark) && m.HasProperty(IdBright))
+            else if (m.HasStoredProperty(IdDark) && m.HasStoredProperty(IdBright))
             {
                 st.Family = 2; st.DarkId = IdDark; st.BrightId = IdBright;
-                if (m.HasProperty(IdFresPow)) st.FresPow = m.GetFloat(IdFresPow);
-                if (m.HasProperty(IdSqrDistance)) st.MaxSqrDist = m.GetFloat(IdSqrDistance);
+                if (m.HasStoredProperty(IdFresPow)) st.FresPow = m.GetFloat(IdFresPow);
+                if (m.HasStoredProperty(IdSqrDistance)) st.MaxSqrDist = m.GetFloat(IdSqrDistance);
             }
-            else if (m.HasProperty(IdDull) && m.HasProperty(IdBrightCrystal)) { st.Family = 2; st.DarkId = IdDull; st.BrightId = IdBrightCrystal; }
-            else if (m.HasProperty(IdDullColor) && m.HasProperty(IdBright)) { st.Family = 2; st.DarkId = IdDullColor; st.BrightId = IdBright; }
-            else if (m.HasProperty(IdColor1) && m.HasProperty(IdColor2)) { st.Family = 2; st.DarkId = IdColor1; st.BrightId = IdColor2; st.FresPow = 2f; }
+            else if (m.HasStoredProperty(IdDull) && m.HasStoredProperty(IdBrightCrystal)) { st.Family = 2; st.DarkId = IdDull; st.BrightId = IdBrightCrystal; }
+            else if (m.HasStoredProperty(IdDullColor) && m.HasStoredProperty(IdBright)) { st.Family = 2; st.DarkId = IdDullColor; st.BrightId = IdBright; }
+            else if (m.HasStoredProperty(IdColor1) && m.HasStoredProperty(IdColor2)) { st.Family = 2; st.DarkId = IdColor1; st.BrightId = IdColor2; st.FresPow = 2f; }
             else
             {
                 string sh = m.shader?.name ?? "";
                 st.Family = sh.Contains("Lit") && !sh.Contains("Unlit") || sh == "Standard" || sh.StartsWith("Legacy Shaders/Diffuse") ? 1 : 0;
-                st.DarkId = m.HasProperty(IdBaseColor) ? IdBaseColor : m.HasProperty(IdColor) ? IdColor : 0;
+                st.DarkId = m.HasStoredProperty(IdBaseColor) ? IdBaseColor : m.HasStoredProperty(IdColor) ? IdColor : 0;
                 st.BrightId = st.DarkId;
             }
 
@@ -547,30 +547,30 @@ void main(){
             st.Bright = st.BrightId != 0 ? m.GetColor(st.BrightId) : Color.white;
             if (st.VesselMultiplier > 0f) { st.Dark = Mul(st.Dark, st.VesselMultiplier); st.Bright = st.Dark; }
 
-            st.Tex = m.HasProperty(IdBaseMap) ? m.GetTexture(IdBaseMap) : m.GetTexture(IdMainTex);
+            st.Tex = m.HasStoredProperty(IdBaseMap) ? m.GetTexture(IdBaseMap) : m.GetTexture(IdMainTex);
             if (st.Tex != null)
             {
-                var stv = m.GetTextureScaleOffset(m.HasProperty(IdBaseMap) ? "_BaseMap" : "_MainTex");
+                var stv = m.GetTextureScaleOffset(m.HasStoredProperty(IdBaseMap) ? "_BaseMap" : "_MainTex");
                 st.TexST = stv;
             }
-            if (m.HasProperty(IdEmission) && (m.IsKeywordEnabled("_EMISSION") || st.Family == 0))
+            if (m.HasStoredProperty(IdEmission) && (m.IsKeywordEnabled("_EMISSION") || st.Family == 0))
             {
                 var e = m.GetColor(IdEmission);
                 st.Emission = new EVector3(e.r, e.g, e.b);
             }
 
-            bool surfaceTransparent = m.HasProperty(IdSurface) && m.GetFloat(IdSurface) >= 0.5f;
+            bool surfaceTransparent = m.HasStoredProperty(IdSurface) && m.GetFloat(IdSurface) >= 0.5f;
             st.Transparent = surfaceTransparent || m.renderQueue >= 2501;
             st.Src = st.Transparent ? BlendingFactor.SrcAlpha : BlendingFactor.One;
             st.Dst = st.Transparent ? BlendingFactor.OneMinusSrcAlpha : BlendingFactor.Zero;
-            if (st.Transparent && m.HasProperty(IdSrc) && m.HasProperty(IdDst))
+            if (st.Transparent && m.HasStoredProperty(IdSrc) && m.HasStoredProperty(IdDst))
             {
                 st.Src = Blend((int)m.GetFloat(IdSrc));
                 st.Dst = Blend((int)m.GetFloat(IdDst));
             }
-            st.ZWrite = m.HasProperty(IdZWrite) ? m.GetFloat(IdZWrite) >= 0.5f : !st.Transparent;
-            if (m.HasProperty(IdCull)) st.Cull = (int)m.GetFloat(IdCull);
-            st.Cutoff = m.HasProperty(IdAlphaClip) && m.GetFloat(IdAlphaClip) >= 0.5f && m.HasProperty(IdCutoff) ? m.GetFloat(IdCutoff) : -1f;
+            st.ZWrite = m.HasStoredProperty(IdZWrite) ? m.GetFloat(IdZWrite) >= 0.5f : !st.Transparent;
+            if (m.HasStoredProperty(IdCull)) st.Cull = (int)m.GetFloat(IdCull);
+            st.Cutoff = m.HasStoredProperty(IdAlphaClip) && m.GetFloat(IdAlphaClip) >= 0.5f && m.HasStoredProperty(IdCutoff) ? m.GetFloat(IdCutoff) : -1f;
             if (!st.Transparent && st.Cutoff < 0f) { st.Dark.a = 1f; st.Bright.a = 1f; }
             if (st.Family == 7)
             {
@@ -667,8 +667,8 @@ void main(){
         {
             var m = it.Material;
             var b = it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
-            float F(int id) => b != null && b.HasFloat(id) ? b.GetFloat(id) : m.HasProperty(id) ? m.GetFloat(id) : 0f;
-            Color C(int id) => b != null && b.HasColor(id) ? b.GetColor(id) : m.HasProperty(id) ? m.GetColor(id) : Color.black;
+            float F(int id) => b != null && b.HasFloat(id) ? b.GetFloat(id) : m.HasStoredProperty(id) ? m.GetFloat(id) : 0f;
+            Color C(int id) => b != null && b.HasColor(id) ? b.GetColor(id) : m.HasStoredProperty(id) ? m.GetColor(id) : Color.black;
             var f = IdCrackleFloats;
             _program.Set("uCrackleP0", F(f[0]), F(f[1]), F(f[2]), F(f[3]));
             _program.Set("uCrackleP1", F(f[4]), F(f[5]), F(f[6]), 0f);
