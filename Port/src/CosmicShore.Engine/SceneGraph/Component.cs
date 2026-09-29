@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace CosmicShore.Engine
 {
     /// <summary>Base for everything attachable to a <see cref="GameObject"/>.</summary>
-    public abstract class Component : Object
+    public abstract partial class Component : Object
     {
         public GameObject gameObject { get; internal set; }
 

@@ -8,7 +8,7 @@ namespace CosmicShore.Engine
     /// Creating one requires an active <see cref="GameLoop"/> (fail loud — no hidden
     /// global fallbacks).
     /// </summary>
-    public sealed class GameObject : Object
+    public sealed partial class GameObject : Object
     {
         readonly List<Component> _components = new();
 
