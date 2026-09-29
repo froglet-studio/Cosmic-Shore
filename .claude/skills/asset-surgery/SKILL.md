@@ -1343,6 +1343,27 @@ resolves every `SO_Class_*` icon against the `.meta` set; `--self-test` fires on
 empty guid). When a surface reads as a blank rectangle, grep the guid it names BEFORE reading the
 component — the component is correct.
 
+### Trap: an untextured URP Particles/Unlit material draws SQUARE particles — same family, one layer over
+
+`new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"))` with no `_BaseMap` draws
+each particle as a solid QUAD, which reads as confetti rather than sparks. Every runtime-built
+particle system on `AstroLeagueBall` shipped that way. The fix is a shape in the SHADER, not a
+texture: `Resources/SoftSpark.mat` (`CosmicShore/SoftSpark`, a radial falloff with a white-hot core
+off the quad's UV, tinted by vertex colour) — load it from `Resources/` so the shader ships, since a
+`Shader.Find` on a shader nothing references is stripped from a player build. Grep for the bare
+`Shader.Find(".../Particles/Unlit")` pattern when a VFX reads as "cheap".
+
+### Technique: preview a hand-written shader's LOOK offline before the editor sees it
+
+A fragment function is a pure function of (uv, vertex colour, a few uniforms, `_Time`), so it
+transcribes into numpy line for line: parametrise the mesh in image space (for a trail, column =
+along-trail age, row = across-width coordinate scaled by the width curve), evaluate the transcribed
+fragment per pixel, tonemap with ACES, and render the OLD look beside the new one at the same scale.
+It is the cheapest way to make a look call honestly without an editor, and it catches the dumb
+failures (a term that never reaches the screen, an effect too faint to read at its real pixel size).
+State plainly that it is a render of the MATH, not a capture — it proves the shape, not the
+compile, the render state or the bloom.
+
 ### Technique: MEASURE a prefab's real size offline (transform tree + nested instances + FBX bounds)
 
 "How big is this thing?" is answerable without Unity, and the naive version is wrong by ~7x on
