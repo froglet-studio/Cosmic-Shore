@@ -1,9 +1,18 @@
 using CosmicShore.Data;
+using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// THE ELEMENTAL BITE OF A LANDED HIT, DERIVED FROM WHAT THAT HIT IS WORTH.
+    /// THE ELEMENTAL TRANSFER A LANDED HIT CAUSES, DERIVED FROM WHAT THAT HIT IS WORTH.
+    ///
+    /// <para><b>A hit no longer DRAINS, it MOVES.</b> What this table decides is the SIZE of the
+    /// transfer; where the petals go is <see cref="ElementalTransfer.FormFor"/>'s business, and for
+    /// every class in this table the answer is EJECT - all four are ranged verbs, so their petals
+    /// are knocked out of the victim's hull as free-for-all crystals rather than handed to the
+    /// shooter. The victim's own <c>ResourceSystem.AccrueElementalLoss</c> settles it in whole
+    /// petals and clamps it to what they actually hold, so nothing partial and nothing imaginary
+    /// ever leaves.</para>
     ///
     /// <para>The spec is one sentence — <i>a hit debuffs its victim in proportion to the points
     /// it scores</i> — and one constant: <b>ten points is one petal, on every element the hit
@@ -48,12 +57,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Ten points buy one petal. The whole rule.</summary>
         public const float PointsPerLevel = 10f;
 
-        /// <summary>Seconds over which the drain decays back to baseline. Matches the shipped
-        /// per-asset explosion drains, so a bullet's bite and a cone's bite fade alike.</summary>
+        /// <summary>
+        /// RETIRED as a decay time and kept as the ACCRUAL's own name for "one hit's worth".
+        /// A transfer is permanent, so there is nothing to decay; what used to be a four-second
+        /// fade is now a petal that either came loose or did not. Retained because the authoring
+        /// tool prices the sustained pressure a saturating attacker can hold a victim at, and that
+        /// arithmetic still needs the window the old decay defined.
+        /// </summary>
         public const float DurationSeconds = 4f;
-
-        static readonly Element[] Elements =
-            { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
         /// <summary>
         /// The fleet price of a hit class, in points. It is the SAME list Broadside authors
@@ -112,23 +123,41 @@ namespace CosmicShore.Gameplay
         /// the DIFFERENCE is applied — exactly as <c>CombatHitScoring</c> credits only the
         /// difference in points.
         /// </param>
-        public static void Apply(IVesselStatus victim, CombatHitClass hitClass, int supersededRank,
-                                 ElementalDebuffSources source)
+        /// <param name="attacker">
+        /// The shooter, for a class whose form is a STEAL. Every class in this table ejects, so it
+        /// is unused today and taken anyway: the parameter is what stops the next contact verb
+        /// added here from silently burning its petals because there was nowhere to send them.
+        /// </param>
+        /// <param name="impactVelocity">
+        /// The velocity of the thing that landed - the round's own <c>Projectile.Velocity</c>, or
+        /// <c>ExplosionImpactor.BlastImpactVector</c> for a blast. It throws the ejected crystals,
+        /// exactly as the same quantity throws prism debris, so a fast hit scatters a pilot's
+        /// petals across the arena and a graze drops them underfoot.
+        /// </param>
+        /// <returns>Whole petals that actually moved, summed over the four elements.</returns>
+        public static int Apply(IVesselStatus victim, IVesselStatus attacker, CombatHitClass hitClass,
+                                int supersededRank, Vector3 impactVelocity,
+                                ElementalDebuffSources source)
         {
-            if (victim == null) return;
+            if (victim == null) return 0;
 
             float magnitude = PerElementFor(hitClass);
-            if (magnitude >= 0f) return;                 // per-weapon class, or an unpriced one
+            if (magnitude >= 0f) return 0;                 // per-weapon class, or an unpriced one
 
             if (supersededRank > 0)
                 magnitude -= PerElementFor(ClassForMissileRank(supersededRank));
-            if (magnitude >= 0f) return;                 // nothing left to take
+            if (magnitude >= 0f) return 0;                 // nothing left to take
 
-            var resources = victim.ResourceSystem;
-            if (resources == null) return;
-
-            for (int i = 0; i < Elements.Length; i++)
-                resources.ApplyElementalEffect(Elements[i], magnitude, DurationSeconds, source);
+            // PerElementFor is signed NEGATIVE (it is a debuff); the transfer takes a positive
+            // amount, because "how much moves" has no sign - the destination decides who is worse
+            // off. Flipping it here rather than in the table keeps the table readable as prices.
+            return ElementalTransfer.ApplyAll(FormFor(hitClass), victim, attacker,
+                                              -magnitude, impactVelocity, source);
         }
+
+        /// <summary>Where this class's petals go. Thin passthrough so a call site never has to
+        /// know that the rule lives in <see cref="ElementalTransfer"/>.</summary>
+        public static ElementalTransferForm FormFor(CombatHitClass hitClass) =>
+            ElementalTransfer.FormFor(hitClass);
     }
 }

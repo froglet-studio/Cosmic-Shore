@@ -299,6 +299,7 @@ namespace CosmicShore.UI
             base.Update();
 
             ReconcileClientLobby();
+            TickArenaHullClaim();
 
             var pad = Gamepad.current;
             if (pad == null) return;
@@ -522,6 +523,7 @@ namespace CosmicShore.UI
             _localPlayerReady = false;
             _readyCount = 0;
             _vesselConfirmed = false;
+            ReleaseArenaHullClaim();
 
             // Before anything reads a control: the panel decides WHICH intensity row, domain tiles
             // and Start button the rest of this method is talking about.
@@ -586,8 +588,7 @@ namespace CosmicShore.UI
             if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
             if (!remembered.HasHostTerms) return;
 
-            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers),
-                                    MaxMatchSeats);
+            int ceiling = MatchSeatCeiling;
             var placements = LaunchPreferenceRules.ResolveAiPlacements(
                 remembered.AIDomains, ceiling - BaseSeats);
 
@@ -803,16 +804,26 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// The ✕ on an AI seat. There is no AI object to remove yet - the bots are spawned in the
-        /// game scene from <c>GameDataSO.RequestedAIDomains</c> (+ balanced top-up) - so kicking
-        /// one is removing its entry from the placement list, which is both what the player means
-        /// and the only representation that cannot go out of step with what actually spawns. The
-        /// seat count then re-derives (never below the card's minimum: a kicked seat the match
-        /// still needs simply turns EMPTY, to be topped up balanced at launch).
+        /// game scene from <c>GameDataSO.RequestedAIDomains</c> - so kicking one is removing its
+        /// entry from the placement list, which is both what the player means and the only
+        /// representation that cannot go out of step with what actually spawns. The seat count
+        /// then re-derives. A seat the card's minimum still needs is not kickable (see
+        /// <see cref="CanKickAi"/>).
         /// </summary>
         void HandleKickAIRequested(int aiOrdinal)
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
             if (aiOrdinal < 0 || aiOrdinal >= config.AIDomains.Count) return;
+
+            // A seat the match still needs cannot be kicked: removing it would only have it
+            // re-placed balanced, i.e. moved somewhere the host did not choose. To MOVE a
+            // required bot, place its replacement first (Add AI) and then kick the old one.
+            if (!CanKickAi)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[ArcadeLaunch] Kick refused - the match needs at least {MinSeats} seats.");
+                return;
+            }
 
             config.AIDomains.RemoveAt(aiOrdinal);
             HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
@@ -820,15 +831,76 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Seats the match holds BEFORE any hand-placed AI: the humans present, floored at the
-        /// card's minimum. The floor matters - a min-2 card played solo already carries one
-        /// balanced auto-AI in that base, and a placement must stack a NEW seat on top of it
-        /// rather than replace it (the auto seat stays, at the balanced pick's domain, and it
-        /// carries no ✕ because there is no placement to remove).
+        /// Seats the match holds BEFORE any AI: the humans present, and nothing else. EVERY AI
+        /// seat is a placement in <c>config.AIDomains</c> - including the seats a card's MINIMUM
+        /// owes, which <see cref="ReconcileAiPlacements"/> places ONCE, domain-balanced, and then
+        /// leaves exactly where it put them.
+        ///
+        /// <para>This used to floor at the card's minimum, so a min-2 card played solo carried
+        /// an UNPLACED auto-AI that was re-balanced on every redraw - it drew no ✕, it could not
+        /// be moved, and each time the host placed a bot the auto seat JUMPED to whichever team
+        /// was now smaller. That made a 3v3 impossible to build by hand: fill one team and the
+        /// auto seat hopped across to the other. A seat the host can see must be a seat the
+        /// host can move.</para>
         /// </summary>
-        int BaseSeats => _selectedGame
+        int BaseSeats => CurrentPartyHumanCount;
+
+        /// <summary>The fewest seats the match may hold: the card's minimum, or the party if it
+        /// is larger. A kick that would drop below it is refused rather than silently re-filled
+        /// with a balanced bot somewhere the host did not choose.</summary>
+        int MinSeats => _selectedGame
             ? Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount)
             : CurrentPartyHumanCount;
+
+        /// <summary>True when one more AI can be kicked without dropping under <see cref="MinSeats"/>.
+        /// Never under a weekly challenge, whose seat count is pinned.</summary>
+        bool CanKickAi => config != null && !_weeklyChallengeLocked &&
+                          BaseSeats + config.AIDomains.Count - 1 >= MinSeats;
+
+        /// <summary>
+        /// Host only. Makes the placement list hold EXACTLY one entry per AI seat the config asks
+        /// for (<c>PlayerCount - humans</c>): surplus placements are dropped from the end (the
+        /// party grew, or the stepper went down), and missing ones are placed domain-balanced
+        /// against the humans and the placements already made - once. After that a seat is
+        /// fixed: nothing re-balances it, and the host moves it with the chip's ✕ and Add AI.
+        /// Returns whether the list changed (so the caller knows to tell the clients).
+        /// </summary>
+        bool ReconcileAiPlacements()
+        {
+            if (IsClientMode || config == null || _selectedGame == null || gameData == null) return false;
+
+            int want = Mathf.Max(0, config.PlayerCount - BaseSeats);
+            bool changed = false;
+
+            while (config.AIDomains.Count > want)
+            {
+                config.AIDomains.RemoveAt(config.AIDomains.Count - 1);
+                changed = true;
+            }
+            if (config.AIDomains.Count == want) return changed;
+
+            var activeDomains = ServerPlayerVesselInitializerWithAI.BuildActiveDomains(
+                Mathf.Max(1, config.DomainCount));
+            if (activeDomains == null || activeDomains.Count == 0) return changed;
+
+            var humans = new List<Player>();
+            foreach (var ip in gameData.Players)
+                if (ip is Player p && p && !p.NetIsAI.Value) humans.Add(p);
+
+            var humanCounts = GameDataSO.BuildHumanCounts(humans, activeDomains);
+            var totalCounts = new Dictionary<Domains, int>(humanCounts);
+            foreach (var placed in config.AIDomains)
+                if (totalCounts.ContainsKey(placed)) totalCounts[placed]++;
+
+            while (config.AIDomains.Count < want)
+            {
+                var domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
+                config.AIDomains.Add(domain);
+                totalCounts[domain] = totalCounts.TryGetValue(domain, out var t) ? t + 1 : 1;
+                changed = true;
+            }
+            return changed;
+        }
 
         /// <summary>
         /// The Add AI toggle. While armed, tapping a domain tile PLACES an AI on that domain
@@ -854,7 +926,8 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Place one AI on <paramref name="domain"/> - the armed Add AI mode's answer to a domain
-        /// tile tap. Capacity is the HOUSE match size (4 seats total, humans included) further
+        /// tile tap. Capacity is the HOUSE match size (<see cref="MatchSeatCeiling"/>: 4 seats, 6 on an
+        /// arena card, humans included) further
         /// clamped by the card; a full house refuses quietly (the roster already shows every seat
         /// taken).
         /// </summary>
@@ -862,10 +935,10 @@ namespace CosmicShore.UI
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
 
-            // Placements stack ON TOP of the base seats (humans, floored at the card's minimum) -
-            // a min-2 card played solo keeps its balanced auto-AI and a tap adds the THIRD seat.
-            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers),
-                                    MaxMatchSeats);
+            // Placements stack ON TOP of the humans. Every AI already in the lobby is itself a
+            // placement (the card's minimum is placed, not auto-filled), so a min-2 card played
+            // solo already holds one placed bot and a tap adds the THIRD seat.
+            int ceiling = MatchSeatCeiling;
             if (BaseSeats + config.AIDomains.Count >= ceiling)
             {
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
@@ -928,6 +1001,27 @@ namespace CosmicShore.UI
         /// fill toggle used the same four; a lobby of twelve bots is not what Add AI means.</summary>
         const int MaxMatchSeats = 4;
 
+        /// <summary>The house size for an ARENA card (<see cref="SO_ArcadeGame.ArenaRules"/>), whose
+        /// cards go to six. Also what <c>ArcadeConfigSyncManager.LobbySnapshot.MaxAiSlots</c> is
+        /// sized against (one seat is always the host, so six AI slots is one spare).</summary>
+        const int MaxArenaSeats = 6;
+
+        /// <summary>
+        /// How many seats Add AI (and a remembered roster) may fill on the open card: the card's own
+        /// <see cref="SO_ArcadeGame.MaxSeats"/> under the house size - FOUR for an ordinary card and
+        /// SIX for an arena card. The arena went to six seats in the card assets while this stayed
+        /// a flat four, so the stepper offered six and Add AI refused the fourth bot.
+        /// </summary>
+        int MatchSeatCeiling
+        {
+            get
+            {
+                if (!_selectedGame) return MaxMatchSeats;
+                int house = _selectedGame.ArenaRules ? MaxArenaSeats : MaxMatchSeats;
+                return Mathf.Min(Mathf.Min(_selectedGame.MaxSeats, MaxSupportedPlayers), house);
+            }
+        }
+
         /// <summary>How many of the Jade→Ruby→Gold prefix the placed list needs (a Gold placement
         /// needs all three). Blue never occurs here - the tiles only offer real domains.</summary>
         static int DomainPrefixCount(List<Domains> placed)
@@ -941,6 +1035,12 @@ namespace CosmicShore.UI
         /// <summary>Redraw the roster from the live config. Cheap; call it whenever either moves.</summary>
         void RefreshRoster()
         {
+            // Host: every AI seat is a placement. Reconciled on every roster redraw because the
+            // seat count moves from several directions (stepper, a guest joining or leaving, a
+            // remembered roster) and each one lands here; a no-op when nothing moved.
+            if (!IsClientMode && ReconcileAiPlacements())
+                BroadcastRosterToClients();
+
             if (!_activePanel || config == null) return;
 
             int humans = CurrentPartyHumanCount;
@@ -1322,10 +1422,11 @@ namespace CosmicShore.UI
                 : LaunchPreferenceRules.ResolveIntensity(
                     rememberedIntensity, game.MinIntensity, game.MaxIntensity, maxUnlocked);
 
-            // Humans only: the card opens with no AI placed (by design call, 2026-08-27) - the
-            // host seats every bot by hand through Add AI. Seats the card's MINIMUM still owes
-            // beyond the humans draw EMPTY and are topped up domain-balanced at launch, so an
-            // un-configured lobby still starts legally.
+            // Humans only: the card opens with no AI of the host's choosing (by design call,
+            // 2026-08-27) - the host seats every further bot by hand through Add AI. Seats the
+            // card's MINIMUM still owes beyond the humans are PLACED domain-balanced by
+            // ReconcileAiPlacements (below, and on every roster redraw) and then stay put: a
+            // visible, kickable seat rather than an auto seat that re-balanced on every redraw.
             config.AIDomains.Clear();
             _addAiArmed = false;
             // The weekly challenge seats the card's MINIMUM - it is a personal objective, and every
@@ -1342,7 +1443,7 @@ namespace CosmicShore.UI
                 if (QuestArcadeConstraints.ForcedPlayerCount > 0)
                     config.PlayerCount = Mathf.Clamp(QuestArcadeConstraints.ForcedPlayerCount,
                         Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount),
-                        Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers));
+                        Mathf.Min(game.MaxSeats, MaxSupportedPlayers));
             }
 
             SyncGameDataConfig();
@@ -1413,7 +1514,7 @@ namespace CosmicShore.UI
             // Player count - enforce minimum = party size so host can't select
             // fewer total players than there are humans in the lobby.
             int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
-            int pcMax = Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers);
+            int pcMax = Mathf.Min(game.MaxSeats, MaxSupportedPlayers);
 
             // Pinned for the weekly challenge: min == max, so the stepper renders with both arrows
             // disabled by its own bounds logic and there is no second code path to keep in step.
@@ -1512,6 +1613,13 @@ namespace CosmicShore.UI
             if (!chosen)
                 chosen = _availableShips[0];
 
+            // 5) ARENA: never open on a hull another pilot already holds.
+            if (IsHullHeldByOtherPilot(chosen.Class))
+            {
+                var free = _availableShips.FirstOrDefault(s => !IsHullHeldByOtherPilot(s.Class));
+                if (free) chosen = free;
+            }
+
             _availableShipIndex = _availableShips.IndexOf(chosen);
             SetSelectedShipInternal(chosen);
         }
@@ -1534,9 +1642,16 @@ namespace CosmicShore.UI
         void HandleVesselCycleRequested(int direction)
         {
             if (_vesselConfirmed || _availableShips.Count == 0) return;
+            if (ArenaHullClaimPending) return;
 
             int count = _availableShips.Count;
-            _availableShipIndex = ((_availableShipIndex + direction) % count + count) % count;
+            // Step past hulls another pilot already holds (arena cards only - a no-op otherwise).
+            // At most one lap: if every other hull is held, the carousel stays where it is.
+            for (int step = 0; step < count; step++)
+            {
+                _availableShipIndex = ((_availableShipIndex + direction) % count + count) % count;
+                if (!IsHullHeldByOtherPilot(_availableShips[_availableShipIndex].Class)) break;
+            }
 
             if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
             SetSelectedShipInternal(_availableShips[_availableShipIndex]);
@@ -1545,7 +1660,20 @@ namespace CosmicShore.UI
 
         void HandleVesselConfirmRequested()
         {
-            if (_vesselConfirmed) return;
+            if (_vesselConfirmed || ArenaHullClaimPending) return;
+            if (_availableShipIndex < 0 || _availableShipIndex >= _availableShips.Count) return;
+
+            // ARENA: a hull is flown by one pilot, so SELECT VESSEL is a CLAIM the server
+            // arbitrates (Player.NetArenaHullClaim) - two pilots can press it on one hull in the
+            // same frame. The confirmation lands when this pilot's own claim does
+            // (TickArenaHullClaim); a refusal steps the carousel to the next free hull.
+            if (TryBeginArenaHullClaim(_availableShips[_availableShipIndex])) return;
+
+            ConfirmVesselNow();
+        }
+
+        void ConfirmVesselNow()
+        {
             if (_availableShipIndex < 0 || _availableShipIndex >= _availableShips.Count) return;
 
             _vesselConfirmed = true;
@@ -1556,6 +1684,143 @@ namespace CosmicShore.UI
             SetSelectedShipInternal(_availableShips[_availableShipIndex]);
             RefreshVesselPicker();
             RefreshStartAvailability();
+        }
+
+        // ── Arena hull claims (SO_ArcadeGame.ArenaRules) ─────────────────────────────────────
+        //
+        // On an arena card every hull is flown by exactly ONE pilot, human or AI. The humans settle
+        // it here, in the lobby, before anybody spawns: SELECT VESSEL asks the server to hold the
+        // hull for this pilot (Player.NetArenaHullClaim, server-write, so a contested press has
+        // exactly one winner), and every pilot's carousel steps over a hull somebody else holds.
+        // The AI is dealt from what is left at spawn (ServerPlayerVesselInitializerWithAI), and
+        // the spawner re-checks as a backstop for any path that never came through this lobby.
+
+        const float ArenaHullClaimTimeoutSeconds = 3f;
+
+        VesselClassType _pendingHullClaim = VesselClassType.Random;
+        float _pendingHullClaimDeadline;
+
+        bool ArenaHullsExclusive => _selectedGame && _selectedGame.ArenaRules;
+
+        bool ArenaHullClaimPending => _pendingHullClaim != VesselClassType.Random;
+
+        /// <summary>The local human's own Player, without the stale-cache warning
+        /// <see cref="ResolveLocalOwnedPlayer"/> logs - this one is read every frame.</summary>
+        Player LocalOwnedPlayerQuiet()
+        {
+            if (gameData != null && gameData.LocalPlayer is Player cached && cached
+                && cached.IsOwner && !cached.IsInitializedAsAI)
+                return cached;
+
+            var nm = NetworkManager.Singleton;
+            var playerObj = nm != null ? nm.LocalClient?.PlayerObject : null;
+            return playerObj != null && playerObj.TryGetComponent<Player>(out var resolved) && resolved.IsOwner
+                ? resolved
+                : null;
+        }
+
+        /// <summary>True when an arena card is open and ANOTHER pilot holds <paramref name="hull"/>.</summary>
+        bool IsHullHeldByOtherPilot(VesselClassType hull)
+        {
+            if (!ArenaHullsExclusive || gameData == null) return false;
+
+            var self = LocalOwnedPlayerQuiet();
+            var players = gameData.Players;
+            for (int i = 0; i < players.Count; i++)
+            {
+                if (players[i] is not Player p || !p || p == self || !p.IsSpawned) continue;
+                if (p.ArenaHullClaim == hull) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Starts a claim when this is an arena card with a networked local pilot. False means no
+        /// contest is possible and the caller confirms at once.
+        /// </summary>
+        bool TryBeginArenaHullClaim(SO_Vessel ship)
+        {
+            if (!ArenaHullsExclusive || !ship) return false;
+
+            var self = LocalOwnedPlayerQuiet();
+            if (!self || !self.IsSpawned) return false;
+
+            if (IsHullHeldByOtherPilot(ship.Class))
+            {
+                if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
+                StepToFreeHull();
+                return true;
+            }
+
+            if (self.ArenaHullClaim == ship.Class) return false;   // already ours: confirm now
+
+            _pendingHullClaim = ship.Class;
+            _pendingHullClaimDeadline = Time.unscaledTime + ArenaHullClaimTimeoutSeconds;
+            self.RequestArenaHullClaim(ship.Class);
+            return true;
+        }
+
+        /// <summary>
+        /// Per frame, while an arena card is open: land a pending claim, step off a hull somebody
+        /// else just took, and keep this pilot's claim released while they have not confirmed.
+        /// </summary>
+        void TickArenaHullClaim()
+        {
+            if (!ArenaHullsExclusive || !_activePanel || _availableShips.Count == 0) return;
+
+            var self = LocalOwnedPlayerQuiet();
+
+            if (ArenaHullClaimPending)
+            {
+                if (self && self.ArenaHullClaim == _pendingHullClaim)
+                {
+                    _pendingHullClaim = VesselClassType.Random;
+                    ConfirmVesselNow();
+                    return;
+                }
+
+                bool refused = IsHullHeldByOtherPilot(_pendingHullClaim);
+                if (refused || Time.unscaledTime > _pendingHullClaimDeadline)
+                {
+                    _pendingHullClaim = VesselClassType.Random;
+                    if (refused) StepToFreeHull();
+                }
+                return;
+            }
+
+            // Not yet confirmed and another pilot has just taken the hull on show: move off it so
+            // the carousel never offers something SELECT cannot grant.
+            if (!_vesselConfirmed && _availableShipIndex >= 0 && _availableShipIndex < _availableShips.Count &&
+                IsHullHeldByOtherPilot(_availableShips[_availableShipIndex].Class))
+                StepToFreeHull();
+        }
+
+        /// <summary>Move the carousel to the next hull nobody else holds (one lap at most).</summary>
+        void StepToFreeHull()
+        {
+            int count = _availableShips.Count;
+            if (count == 0) return;
+
+            int start = Mathf.Clamp(_availableShipIndex, 0, count - 1);
+            for (int step = 1; step <= count; step++)
+            {
+                int i = (start + step) % count;
+                if (IsHullHeldByOtherPilot(_availableShips[i].Class)) continue;
+                if (i == _availableShipIndex) return;
+                _availableShipIndex = i;
+                SetSelectedShipInternal(_availableShips[i]);
+                RefreshVesselPicker();
+                return;
+            }
+        }
+
+        /// <summary>Give back this pilot's arena claim (card opened, closed, or launched).</summary>
+        void ReleaseArenaHullClaim()
+        {
+            _pendingHullClaim = VesselClassType.Random;
+            var self = LocalOwnedPlayerQuiet();
+            if (self && self.IsSpawned && self.ArenaHullClaim != VesselClassType.Random)
+                self.RequestArenaHullClaim(VesselClassType.Random);
         }
 
         /// <summary>
@@ -1658,7 +1923,7 @@ namespace CosmicShore.UI
             if (IsClientMode) return;
 
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
-            int pcMax = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
+            int pcMax = Mathf.Min(_selectedGame.MaxSeats, MaxSupportedPlayers);
             // A party can be LARGER than the card allows (four humans on a 3-player card), and
             // then effectiveMin > pcMax. Mathf.Clamp resolves an inverted range by returning the
             // MAX, so the count silently came back as fewer players than are actually present -
@@ -1974,10 +2239,11 @@ namespace CosmicShore.UI
                 seat.Set(dataService != null ? dataService.GetRandomAvatarSprite() : null, false);
 
                 // The ✕ lives ON the chip - this strip IS the roster the player looks at. Only a
-                // placed bot is kickable (a balanced top-up seat has no placement to remove), and
-                // only for the host. The ordinal names the placement, not the seat.
+                // placed bot is kickable (on the host every bot is placed - a balanced chip here is
+                // only a client drawing before the host's roster lands), only for the host, and
+                // only while the match can spare a seat. The ordinal names the placement.
                 int ordinal = i;
-                seat.SetKickable(placedChip && !IsClientMode,
+                seat.SetKickable(placedChip && !IsClientMode && CanKickAi,
                                  () => HandleKickAIRequested(ordinal));
                 _aiChips.Add(seat);
             }
@@ -2188,7 +2454,7 @@ namespace CosmicShore.UI
                     (int)_selectedGame.Mode,
                     config.Intensity,
                     config.PlayerCount,
-                    _selectedGame.MaxPlayersAllowed,
+                    _selectedGame.MaxSeats,
                     CurrentPartyHumanCount,
                     config.DomainCount);
             }
@@ -2232,6 +2498,7 @@ namespace CosmicShore.UI
             _localPlayerReady = false;
             _readyCount = 0;
             _vesselConfirmed = false;
+            ReleaseArenaHullClaim();
 
             // A satellite arena is the expensive half of the preview - it must never outlive the
             // window somebody was looking at it through.
@@ -2532,9 +2799,10 @@ namespace CosmicShore.UI
             // Single source of truth - GameDataSO owns the player count computation
             gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);
 
-            // The host's hand-placed AI domains (Add AI mode). The spawner seats bot i in entry i
-            // and falls back to its balanced pick past the end - covering the empty seats the
-            // card's minimum topped up.
+            // The host's AI domains - one per seat, since every AI seat is a placement. The
+            // spawner seats bot i in entry i; its balanced pick past the end is a backstop for a
+            // path that never reached the lobby, not a seat the host can see.
+            ReconcileAiPlacements();
             gameData.SetRequestedAIDomains(config.AIDomains);
 
             // Domain count - controls how many domains AI can be assigned to
@@ -2696,6 +2964,7 @@ namespace CosmicShore.UI
 
             _selectedGame = game;
             _vesselConfirmed = false;
+            ReleaseArenaHullClaim();
 
             config.ResetState();
             config.SelectedGame = game;
@@ -2834,6 +3103,7 @@ namespace CosmicShore.UI
 
             _isClientMode = false;
             _vesselConfirmed = false;
+            ReleaseArenaHullClaim();
             _appliedLobbyGeneration = 0;
             DespawnAllChips();
 

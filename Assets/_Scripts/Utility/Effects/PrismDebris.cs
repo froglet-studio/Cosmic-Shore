@@ -131,6 +131,12 @@ namespace CosmicShore.Utility
 
         static TickHost s_host;
 
+        // Play-mode exit / quit: death cascades still running from OnDisable/OnDestroy must not
+        // re-create the host after it was destroyed ("Some objects were not cleaned up when
+        // closing the scene" listing [PrismDebris]). Application.quitting also fires on editor
+        // play-mode exit; ResetStatics clears it for the next session.
+        static bool s_quitting;
+
         // After a failed batch spawn (world vanished between request and drain),
         // hold new requests for a few seconds instead of accepting and silently
         // dropping them again. There is no pooled death fallback (D4). Time-based
@@ -165,6 +171,9 @@ namespace CosmicShore.Utility
             s_sourcePrefab = null;
             s_host = null;
             s_suspendedUntil = 0f;
+            s_quitting = false;
+            Application.quitting -= HandleQuitting;
+            Application.quitting += HandleQuitting;
 
             s_pendingImplosions.Clear();
             s_pendingImplosionTargets.Clear();
@@ -179,6 +188,8 @@ namespace CosmicShore.Utility
             s_impSourcePrefab = null;
             s_implosionSuspendedUntil = 0f;
         }
+
+        static void HandleQuitting() => s_quitting = true;
 
         /// <summary>
         /// Points the debris system at the pooled effect prefab it must match.
@@ -222,6 +233,18 @@ namespace CosmicShore.Utility
             material = s_material;
             minSpeed = s_minSpeed;
             maxSpeed = s_maxSpeed;
+            return s_configured;
+        }
+
+        /// <summary>
+        /// The explosion debris' render layer, for the one other death visual that stands in for
+        /// an explosion: the Rhino sword's slice (<see cref="PrismSlice"/>), whose halves must be
+        /// culled and camera-masked exactly as the debris they replace would have been. False while
+        /// unconfigured — the slice then refuses and the factory explodes the prism.
+        /// </summary>
+        internal static bool TryGetExplosionLayer(out int layer)
+        {
+            layer = s_layer;
             return s_configured;
         }
 
@@ -276,7 +299,7 @@ namespace CosmicShore.Utility
             Color bright, Color dark, Vector3 velocity, float speedLimitOverride,
             PrismKind kind = PrismKind.Plain)
         {
-            if (!s_configured || !PrismRenderService.Enabled) return false;
+            if (!s_configured || !PrismRenderService.Enabled || s_quitting) return false;
             if (Time.unscaledTime < s_suspendedUntil) return false;
 
             if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
@@ -336,7 +359,7 @@ namespace CosmicShore.Utility
         public static bool TryRequestImplosion(Vector3 position, Quaternion rotation, Vector3 scale,
             Color bright, Color dark, Transform target)
         {
-            if (!s_impConfigured || !PrismRenderService.Enabled) return false;
+            if (!s_impConfigured || !PrismRenderService.Enabled || s_quitting) return false;
             if (Time.unscaledTime < s_implosionSuspendedUntil) return false;
             // A suction with nothing to converge on is not an implosion. StartImplosion
             // (and the retired factory deferred drain) guarded the same way — drop
@@ -396,6 +419,7 @@ namespace CosmicShore.Utility
         static void EnsureHost()
         {
             if (s_host != null) return;
+            if (s_quitting || !Application.isPlaying) return;
             // HideInHierarchy, NOT HideAndDontSave — same reasoning as the render
             // service's visibility flush host (play-mode-exit cleanup applies).
             var go = new GameObject("[PrismDebris]") { hideFlags = HideFlags.HideInHierarchy };

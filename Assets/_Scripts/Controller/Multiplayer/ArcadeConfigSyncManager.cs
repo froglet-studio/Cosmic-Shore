@@ -92,15 +92,17 @@ namespace CosmicShore.Gameplay
         /// The host's open lobby as one value: which card, at what intensity, how many seats,
         /// how many domains, and which domains the host has placed an AI on. <c>Generation</c>
         /// climbs on every OPEN so a close-and-reopen of the same card still reads as a new
-        /// open on a peer that never saw the close. AI placements ride as four fixed slots
+        /// open on a peer that never saw the close. AI placements ride as six fixed slots
         /// rather than an array so the struct stays unmanaged (a NetworkVariable compares and
-        /// copies it by value): a match seats at most <c>ArcadeGameConfigureModal.MaxMatchSeats</c>
-        /// (4), and one of those is always the host, so four slots is one more than can ever be
-        /// used.
+        /// copies it by value): a match seats at most <c>ArcadeGameConfigureModal.MaxArenaSeats</c>
+        /// (6, an arena card; every other card stops at <c>MaxMatchSeats</c>, 4), and one of those
+        /// is always the host, so six slots is one more than can ever be used. It was four until
+        /// the arena went to six seats - and a fifth placement was then TRUNCATED here, so the
+        /// guests' roster silently disagreed with the host's.
         /// </summary>
         public struct LobbySnapshot : INetworkSerializable, System.IEquatable<LobbySnapshot>
         {
-            public const int MaxAiSlots = 4;
+            public const int MaxAiSlots = 6;
 
             public int  Generation;
             public bool IsOpen;
@@ -119,7 +121,7 @@ namespace CosmicShore.Gameplay
             /// </summary>
             public int  HumanCount;
             public int  AiCount;
-            public int  Ai0, Ai1, Ai2, Ai3;
+            public int  Ai0, Ai1, Ai2, Ai3, Ai4, Ai5;
 
             public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
             {
@@ -136,6 +138,8 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref Ai1);
                 serializer.SerializeValue(ref Ai2);
                 serializer.SerializeValue(ref Ai3);
+                serializer.SerializeValue(ref Ai4);
+                serializer.SerializeValue(ref Ai5);
             }
 
             public bool Equals(LobbySnapshot o) =>
@@ -144,7 +148,8 @@ namespace CosmicShore.Gameplay
                 DomainCount == o.DomainCount && HumanCount == o.HumanCount && SameAi(o);
 
             public bool SameAi(LobbySnapshot o) =>
-                AiCount == o.AiCount && Ai0 == o.Ai0 && Ai1 == o.Ai1 && Ai2 == o.Ai2 && Ai3 == o.Ai3;
+                AiCount == o.AiCount && Ai0 == o.Ai0 && Ai1 == o.Ai1 && Ai2 == o.Ai2 && Ai3 == o.Ai3 &&
+                Ai4 == o.Ai4 && Ai5 == o.Ai5;
 
             /// <summary>The placed AI domains as the modal consumes them (Domains as ints, placement order).</summary>
             public int[] PlacedAiDomains()
@@ -165,9 +170,11 @@ namespace CosmicShore.Gameplay
                 Ai1 = n > 1 ? placed[1] : 0;
                 Ai2 = n > 2 ? placed[2] : 0;
                 Ai3 = n > 3 ? placed[3] : 0;
+                Ai4 = n > 4 ? placed[4] : 0;
+                Ai5 = n > 5 ? placed[5] : 0;
             }
 
-            int Slot(int i) => i switch { 0 => Ai0, 1 => Ai1, 2 => Ai2, _ => Ai3 };
+            int Slot(int i) => i switch { 0 => Ai0, 1 => Ai1, 2 => Ai2, 3 => Ai3, 4 => Ai4, _ => Ai5 };
         }
 
         /// <summary>Server-written; every peer reads. See the class summary for why this is state.</summary>

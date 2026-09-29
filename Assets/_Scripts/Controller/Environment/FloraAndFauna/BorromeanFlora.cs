@@ -177,7 +177,7 @@ namespace CosmicShore.Gameplay
 
         public override void Plant()
         {
-            // A pinned position (the Lifeform Matrix toy's spawn-here stations) wins over
+            // A pinned position (the Spawn Matrix toy's spawn-here stations) wins over
             // dispersal, exactly as it does for every other family.
             if (TryGetPlantPositionOverride(out var pinned))
                 transform.position = pinned;

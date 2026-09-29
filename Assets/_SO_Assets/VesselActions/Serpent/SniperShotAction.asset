@@ -18,6 +18,8 @@ MonoBehaviour:
   coneHalfAngleDegrees: 1.5
   minPathRadius: 6
   pierceCount: 0
+  vesselStripPerElement: 0.1
+  vesselEjectSpeed: 45
   debrisSpeed: 90
   debrisSpeedLimit: 120
   beamSeconds: 0.35

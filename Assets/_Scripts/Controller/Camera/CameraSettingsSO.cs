@@ -30,7 +30,18 @@ namespace CosmicShore.Gameplay
         public bool  disableSmoothing = false;
         
         public float nearClipPlane = 0.3f;
-        public float farClipPlane  = 1000f;
+
+        /// <summary>
+        /// The whole fleet ships 12000, and this initializer is the value a NEW vessel gets: it
+        /// was 1000, so a vessel whose camera asset is authored without naming this field came out
+        /// with a twelfth of the fleet's draw distance. The Butterfly shipped that way — 1000 does
+        /// not even cross a standard 1200-radius cell (2400 across), so the far wall of the arena
+        /// was clipped away and it read as the draw distance collapsing on that one hull.
+        /// 12000 clears the largest arena the game ships (Cleave's 3600-radius membrane, ~7200
+        /// across, plus the Serpent's 250-unit camera setback) with room to spare.
+        /// Held by `Tools/Build/check_vessel_camera_farclip.py`.
+        /// </summary>
+        public float farClipPlane  = 12000f;
 
         [Tooltip("Enable smooth zoom-out on button hold")]
         public bool enableAdaptiveZoom;

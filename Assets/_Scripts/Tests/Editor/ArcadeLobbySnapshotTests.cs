@@ -71,14 +71,31 @@ namespace CosmicShore.Tests
             CollectionAssert.AreEqual(new[] { 1, 2 }, lobby.PlacedAiDomains());
         }
 
-        /// <summary>Placements past the four replicated slots truncate rather than corrupt.</summary>
+        /// <summary>Placements past the six replicated slots truncate rather than corrupt.</summary>
         [Test]
         public void PlacedAiTruncatesToTheReplicatedSlots()
         {
             var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
-            lobby.SetPlacedAiDomains(new[] { 1, 2, 3, 1, 2 });
+            lobby.SetPlacedAiDomains(new[] { 1, 2, 3, 1, 2, 3, 1 });
             Assert.AreEqual(ArcadeConfigSyncManager.LobbySnapshot.MaxAiSlots, lobby.AiCount);
-            Assert.AreEqual(4, lobby.PlacedAiDomains().Length);
+            Assert.AreEqual(6, lobby.PlacedAiDomains().Length);
+        }
+
+        /// <summary>
+        /// A six-seat arena card played solo places FIVE AI, and every one of them must reach a
+        /// guest's roster in order - the slots were four until the arena went to six seats.
+        /// </summary>
+        [Test]
+        public void FiveArenaAiPlacementsRoundTrip()
+        {
+            var lobby = new ArcadeConfigSyncManager.LobbySnapshot();
+            var placed = new[] { 1, 2, 1, 2, 1 };
+            lobby.SetPlacedAiDomains(placed);
+            CollectionAssert.AreEqual(placed, lobby.PlacedAiDomains());
+
+            var other = new ArcadeConfigSyncManager.LobbySnapshot();
+            other.SetPlacedAiDomains(new[] { 1, 2, 1, 2, 2 });
+            Assert.IsFalse(lobby.SameAi(other), "the fifth slot must take part in equality");
         }
     }
 }

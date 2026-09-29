@@ -180,6 +180,11 @@ namespace CosmicShore.Gameplay
             if (!prism.gameObject.activeSelf && prism.transform.parent == s_host)
                 return true;
 
+            // A prism in the pool belongs to nobody: sever the plant, limb and fauna
+            // back-references (and the owners' tracker entries) before it can be re-issued.
+            if (prism is HealthPrism healthPrism)
+                healthPrism.DetachForPool();
+
             prism.ClearSuctionClockStamp();
             if (PrismRenderService.IsHandleUsable(in prism.RenderHandle))
                 PrismRenderService.ClearPrismStamps(in prism.RenderHandle);
@@ -197,6 +202,29 @@ namespace CosmicShore.Gameplay
             stack.Push(prism);
             return true;
         }
+
+        /// <summary>
+        /// How many prisms this pool has handed out and not had back. It only ever falls
+        /// when a caller releases or forgets one, so a producer that DESTROYS issued mass
+        /// (rather than releasing it) shows up here as a number that only climbs - which is
+        /// the one question a "why did this world lay nothing?" report cannot answer on its
+        /// own. Diagnostic only; nothing branches on it.
+        /// </summary>
+        public static int IssuedCount => s_issued.Count;
+
+        /// <summary>Prisms parked inactive and ready to re-issue, across every prefab.</summary>
+        public static int ParkedCount
+        {
+            get
+            {
+                int n = 0;
+                foreach (var stack in s_stacks.Values) n += stack.Count;
+                return n;
+            }
+        }
+
+        /// <summary>True for a prism this pool minted and has not forgotten (parked or live).</summary>
+        public static bool IsIssued(Prism prism) => prism && s_issued.ContainsKey(prism);
 
         public static void ForgetDestroyed(Prism prism)
         {

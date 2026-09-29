@@ -17,10 +17,15 @@ namespace CosmicShore.Gameplay
     /// <see cref="Cell.SatellitePrismStride"/>) drawn from the cell selector's rotation and
     /// tuned for the voyage:
     ///
-    ///   • <see cref="Cell.NucleusIsControlZone"/> = false - control is whole-cell VOLUME and
-    ///     the herbivore diet is the legacy opposing-domain rule, which is the toy's whole
-    ///     mechanic: out-lay a cell and its fauna waves spawn in your colour and cannot eat the
-    ///     Ark; lose the volume and the waves hunt it.
+    ///   • An ORDINARY CELL: it keeps its authored nucleus AND its control zone (the shipped
+    ///     default), and it is handed a CRYSTAL at its core. So control is the nucleus claim -
+    ///     lay environment mass through the core to take the cell and its fauna waves spawn in
+    ///     your colour - and the herbivore diet is the shipped SPATIAL rule: the nucleus is
+    ///     sanctuary and everything outside it is voraciously grazed by any domain. The Ark's
+    ///     hull is ordinary mass sailing that exterior, so it is FOOD the whole crossing and
+    ///     safe only under the core it is making for. Nothing here is bespoke: it is the
+    ///     nucleus-cell ecology as shipped, and both halves of the toy - who owns the cell, and
+    ///     what the swarm does to your ship - fall out of it.
     ///   • <see cref="Cell.SatelliteEcologyEnabled"/> = true - unlike a preview, a traversal
     ///     cell RUNS its life spawner (the food web is the point), scaled down by
     ///     <see cref="Cell.RuntimePopulationScale"/>.
@@ -65,6 +70,15 @@ namespace CosmicShore.Gameplay
         Vector3 _heading = Vector3.forward;
         int _targetIndex;          // index into _cells of the cell the Ark is sailing toward
 
+        // Worlds struck but not yet fully drained. A strike hands back a NEW world-space root
+        // that is deliberately NOT parented to anything the conveyor owns (so the cell can be
+        // destroyed immediately while its mass drains a slice per frame) - which also means
+        // nothing else can collect it. If the drain is cancelled (the toybox root torn down
+        // mid-retire) the root would survive with its whole world in it, so it is tracked and
+        // swept on teardown. The general shape: an object deliberately orphaned for the
+        // duration of an async is an object whose async no longer owns its cleanup.
+        readonly List<GameObject> _retiringRoots = new();
+
         // Drains in flight - a COUNT, not a bool: a routine off-screen retire and a voyage-end
         // sweep can overlap, and a bool that either one clears reopens Update's one-at-a-time
         // gate while the other still runs.
@@ -98,9 +112,23 @@ namespace CosmicShore.Gameplay
         public bool HasCells => _cells.Count > 0;
 
         /// <summary>
-        /// Stand the first two traversal cells (current + next) down the player's heading.
-        /// Call inside the run's arena-build bracket: the environment lays join the raised
-        /// veil's hold and the veil releases when everything is laid, created and grown.
+        /// Raised as a traversal cell is struck, BEFORE its drain runs. The run listens so the
+        /// player's own trail mass laid in (and on the way to) that cell goes with it — a struck
+        /// world takes its loose trail mass with it, exactly as
+        /// <see cref="Cell.RequestCellSwap"/>'s <c>clearLooseTrailMass</c> does for a world swap.
+        /// That is what makes the corridor explorable indefinitely rather than accumulating an
+        /// unbounded ribbon behind it.
+        /// </summary>
+        public event System.Action CellRetired;
+
+        /// <summary>
+        /// Stand the FIRST traversal cell down the player's heading. Call inside the run's
+        /// arena-build bracket: its environment lay joins the raised veil's hold and the veil
+        /// releases when it is laid, created and grown. Only ONE cell stands behind the veil —
+        /// the second is <see cref="StandAhead"/>, called once the screen is open, so it streams
+        /// in beside live play exactly as every later cell does. Two 10k-prism worlds behind
+        /// the veil was a 30–90 s blind opening (`Docs/ECOSYSTEM.md` §41.3.3.3); one is half that,
+        /// and a satellite build beside live play is what a satellite build is for.
         /// </summary>
         public bool Begin(ArkwayConfig cfg, Container container, Vector3 origin, Vector3 heading)
         {
@@ -126,7 +154,9 @@ namespace CosmicShore.Gameplay
             if (!_template) _template = Cell.FindNearestActiveCell(origin);
             if (!_template || !_template.RuntimeData)
             {
-                CSDebug.LogWarning("[Arkway] No scene cell to clone traversal cells from - no voyage.");
+                CSDebug.LogWarning($"[Arkway] No scene cell to clone traversal cells from " +
+                                   $"(template {(_template ? _template.name : "null")}, runtime " +
+                                   $"{(_template && _template.RuntimeData ? "ok" : "null")}) - no voyage.");
                 return false;
             }
 
@@ -138,9 +168,29 @@ namespace CosmicShore.Gameplay
             float hostRadius = Mathf.Max(1200f, _template.MembraneRadius);
             Vector3 first = origin + _heading * (hostRadius + _cfg.CellSpacing * 0.5f);
 
-            if (!StandCell(first)) return false;
-            StandCell(NextCentreFrom(first));
+            if (!StandCell(first))
+            {
+                CSDebug.LogWarning("[Arkway] The FIRST traversal cell could not be stood - no voyage.");
+                return false;
+            }
             return _cells.Count > 0;
+        }
+
+        /// <summary>
+        /// Stand one more cell beyond the last standing one — the voyage's second cell, stood
+        /// UNVEILED once the screen is open. Idempotent in effect: <see cref="AdvancePastTarget"/>
+        /// retries a missing next cell on its own, so a failure here only costs a warning.
+        /// </summary>
+        public bool StandAhead()
+        {
+            if (_cells.Count == 0) return false;
+            if (!StandCell(NextCentreFrom(_cells[^1].Centre)))
+            {
+                CSDebug.LogWarning("[Arkway] The second traversal cell could not be stood - the " +
+                                   "corridor will retry when the Ark reaches the first.");
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
@@ -221,6 +271,8 @@ namespace CosmicShore.Gameplay
             cellGo.transform.localPosition = Vector3.zero;
             cellGo.transform.localRotation = Quaternion.identity;
 
+            StripAccumulatedContent(cellGo.transform);
+
             // A runtime Instantiate gets no dependency injection, and the whole of
             // Controller/Environment relies on being present at load - inject or the cell's
             // spawners come up with null GameData and refuse to run.
@@ -249,17 +301,23 @@ namespace CosmicShore.Gameplay
             cell.SatellitePrismStride = Mathf.Max(1, _cfg.PrismStride);
             cell.SatelliteEcologyEnabled = true;
             cell.RuntimePopulationScale = Mathf.Clamp(_cfg.PopulationScale, 0.1f, 1f);
-            // Whole-cell volume control + the legacy opposing-domain diet: the state the
-            // ecology already supports for a cell with no claim (Docs/ECOSYSTEM.md §25.1),
-            // and the spine of the Arkway's protect-the-Ark mechanic.
-            cell.NucleusIsControlZone = false;
+            // NucleusIsControlZone is deliberately LEFT AT ITS DEFAULT (true). A traversal cell
+            // is an ordinary cell, not a mode's borrowed play geometry: its nucleus is a claim
+            // to contest, its interior is fauna sanctuary, and its exterior is the feeding
+            // ground the Ark has to cross. Collapsing the control zone (which this used to do)
+            // made the whole cell legacy opposing-domain territory, which is what left the Ark
+            // untouchable by any swarm wearing its own colour.
 
             if (!cell.InitializeSatellite(config))
             {
+                CSDebug.LogWarning($"[Arkway] Traversal cell '{config.CellName}' refused " +
+                                   "InitializeSatellite - stand aborted (the Cell warned above with the reason).");
                 Destroy(root);
                 Destroy(runtime);
                 return false;
             }
+
+            SpawnCoreCrystal(runtime, root.transform);
 
             _cells.Add(new TraversalCell
             {
@@ -275,6 +333,111 @@ namespace CosmicShore.Gameplay
                     $"[Arkway] Traversal cell stood: {config.CellName} at {centre} " +
                     $"(stride {cell.SatellitePrismStride}, populations x{cell.RuntimePopulationScale:0.##}).");
             return true;
+        }
+
+        /// <summary>
+        /// A traversal cell must START EMPTY.
+        ///
+        /// The corridor clones the LIVE SCENE CELL — there is no prefab to instantiate at
+        /// runtime, and the scene cell is the only thing that carries the right prefab, runtime
+        /// shape and component wiring — but a live cell ACCUMULATES: <see cref="Cell"/> parents
+        /// its authored environment to itself, every lifeform heart the food web drops is
+        /// re-homed onto it (<see cref="Crystal.ActivateCrystal"/>,
+        /// <see cref="Crystal.DetachHeartToCell"/>), and anything a mode or toy parents there
+        /// stays. Cloning it verbatim copies all of that into EVERY traversal cell, three
+        /// standing at a time, for the whole voyage — so a session that has been running a while
+        /// makes each new cell more expensive than the last, which is exactly the shape of "the
+        /// world got sparser and the frame rate got worse".
+        ///
+        /// So the clone is stripped of world CONTENT and keeps only the cell's own structure.
+        /// The doomed branches are re-parented into an INACTIVE scrap root first and destroyed
+        /// with it: <c>Destroy</c> alone defers to end of frame, and <c>root.SetActive(true)</c>
+        /// runs a few lines later would wake every one of them (a cloned Prism registering with
+        /// the spatial index, a cloned Crystal joining <c>Crystal.Active</c>) before the deferred
+        /// destroy took them away again.
+        ///
+        /// Deliberately a DENYLIST of content types rather than an allowlist of components: the
+        /// cell's own structure is whatever the prefab author put there and must survive
+        /// untouched, while the things that accumulate are a short, knowable list.
+        /// </summary>
+        static void StripAccumulatedContent(Transform cellRoot)
+        {
+            GameObject scrap = null;
+            int stripped = 0;
+
+            // Depth-first over the clone; a branch that is stripped is not descended into.
+            var stack = new Stack<Transform>();
+            for (int i = cellRoot.childCount - 1; i >= 0; i--) stack.Push(cellRoot.GetChild(i));
+
+            while (stack.Count > 0)
+            {
+                var t = stack.Pop();
+                if (!t) continue;
+
+                if (t.GetComponent<Prism>() || t.GetComponent<Crystal>() ||
+                    t.GetComponent<LifeForm>() || t.GetComponent<Toy>() ||
+                    t.GetComponent<Unity.Netcode.NetworkObject>())
+                {
+                    if (!scrap)
+                    {
+                        scrap = new GameObject("ArkwayCell_StrippedContent");
+                        scrap.SetActive(false);
+                    }
+                    t.SetParent(scrap.transform, false);
+                    stripped++;
+                    continue;
+                }
+
+                for (int i = t.childCount - 1; i >= 0; i--) stack.Push(t.GetChild(i));
+            }
+
+            if (!scrap) return;
+            Destroy(scrap);
+            CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                $"[Arkway] Traversal cell clone stripped of {stripped} accumulated object(s).");
+        }
+
+        /// <summary>
+        /// Give a traversal cell the CRYSTAL every cell has: one omni crystal at the core,
+        /// inside the nucleus - the canonical omni volume (Docs/ECOSYSTEM.md §27: the nucleus
+        /// IS the crystal volume, and a crystal that respawns elsewhere makes the nucleus
+        /// marker a lie). A satellite gets none by itself, because a scene cell's crystals come
+        /// from a <see cref="CrystalManager"/> and a satellite has no manager feeding it, so
+        /// this is the one thing the corridor has to hand its cells.
+        ///
+        /// It is a real crystal, not a marker: registered in the satellite's OWN runtime
+        /// (never the scene asset's list), collectable by anyone, and it blooms in through the
+        /// crystal's own fade rather than popping. It is also what makes the cell's core worth
+        /// flying to, which is the same place the Ark is heading and the one place the food web
+        /// cannot follow it.
+        ///
+        /// One always-on trigger collider per standing cell - three in steady state.
+        ///
+        /// The prefab's own serialized <c>cellData</c> still points at the shared asset, so its
+        /// self-removal on destroy may miss this list; <see cref="CellRuntimeDataSO.PruneDestroyed"/>
+        /// makes that self-healing. Same accepted trade the mode preview's crystals make.
+        /// </summary>
+        void SpawnCoreCrystal(CellRuntimeDataSO runtime, Transform parent)
+        {
+            var prefab = _cfg?.CrystalPrefab;
+            if (!prefab)
+            {
+                var library = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+                prefab = library ? library.OmniCrystalPrefab : null;
+            }
+            if (!prefab)
+            {
+                CSDebug.LogWarning("[Arkway] No crystal prefab (definition, and no omni crystal on " +
+                                   "Resources/ModePreviewLibrary) - the traversal cell's core is bare.");
+                return;
+            }
+
+            var crystal = Instantiate(prefab, parent);
+            crystal.transform.localPosition = Vector3.zero;   // the cell's core
+            crystal.gameObject.SetActive(true);
+            crystal.enabled = true;
+            crystal.DeactivateModels();                        // the crystal's own fade-in bloom
+            if (runtime) runtime.AddCrystalToList(crystal);
         }
 
         /// <summary>
@@ -384,11 +547,34 @@ namespace CosmicShore.Gameplay
             // BELOW the target shifts every later index down by one.
             int index = _cells.IndexOf(record);
             _cells.Remove(record);
+            CellRetired?.Invoke();
             if (index >= 0 && index < _targetIndex)
                 _targetIndex = Mathf.Max(0, _targetIndex - 1);
 
             GameObject retiring = null;
             if (record.Cell) retiring = record.Cell.StrikeSatelliteWorld();
+            if (retiring)
+            {
+                _retiringRoots.Add(retiring);
+
+                // Quiesce the struck world before the drain, which runs over MANY frames.
+                // Cell.StrikeSatelliteWorld re-parents the cell's lifeforms onto this root -
+                // which is NOT under record.Root - so they outlive the Destroy calls below by
+                // the whole length of the drain, and go on running their behaviour coroutines
+                // against a destroyed Cell, a destroyed CellRuntimeDataSO and a spatial index
+                // whose bindings for this cell have already been cleared. Deactivating the
+                // root stops every Update and coroutine under it in one call, so the drain
+                // costs only its own Destroys. The cell is off-screen by the retirement gate,
+                // so nothing is watched popping out and the continuity law is untouched;
+                // Destroy still reaches an inactive object, and GetComponentsInChildren below
+                // already passes includeInactive.
+                // The world goes as a whole, so nothing in it DIES: without this each plant
+                // ran its full death path (sound, crystal, DamageAll over its tracker) when the
+                // root was destroyed at the end of the drain.
+                foreach (var lifeForm in retiring.GetComponentsInChildren<LifeForm>(true))
+                    if (lifeForm) lifeForm.RetireWithWorld();
+                retiring.SetActive(false);
+            }
 
             if (record.Root) Destroy(record.Root);
             if (record.Runtime) Destroy(record.Runtime);
@@ -399,12 +585,80 @@ namespace CosmicShore.Gameplay
                 var prisms = retiring.GetComponentsInChildren<Prism>(true);
                 for (int i = 0; i < prisms.Length; i++)
                 {
-                    if (prisms[i]) Destroy(prisms[i].gameObject);
+                    var prism = prisms[i];
+                    if (!prism) continue;
+
+                    // A struck world holds mass from TWO pools, and only one of them was
+                    // handled. Cell.StrikeSatelliteWorld returns the vessel-trail prisms
+                    // (the ones carrying a pool-return delegate) before handing this root
+                    // over - but the AUTHORED ENVIRONMENT and every flora HealthPrism come
+                    // from EnvironmentPrismPool, whose membership is an issued dictionary
+                    // rather than a delegate, so they arrive here still issued. Destroying
+                    // them leaks the issue record and forces the next cell to mint its whole
+                    // environment from scratch: ~10k Instantiate + ~10k Destroy per corridor
+                    // advance, which is most of what the corridor costs. Cell's own swap
+                    // drain (ReleaseRetiredWorld) has always released them; this path was
+                    // written from the mode preview's teardown, which has no environment
+                    // pool to return to, and inherited the omission.
+                    if (!EnvironmentPrismPool.TryRelease(prism))
+                        Destroy(prism.gameObject);
+
                     if ((i + 1) % PrismsPerFrame == 0)
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
+                _retiringRoots.Remove(retiring);
                 Destroy(retiring);
             }
+        }
+
+        /// <summary>
+        /// One line naming everything the corridor is holding. Off by default (channel
+        /// <see cref="CSLogChannel.ToyBox"/>) and raised once per advance, so it costs
+        /// nothing in a normal session and answers "what is growing?" in the one that is
+        /// getting slower — which is a question no amount of reading the code settles.
+        /// </summary>
+        readonly List<Prism> _censusScratch = new();
+
+        /// <summary>
+        /// How many prisms under the standing cells are laid and initialized but have not yet
+        /// COMPLETED creation - i.e. are waiting, invisible, for Prism's per-frame creation
+        /// budget. A spindle needs no such budget, so a cell whose prisms are all pending reads
+        /// as "spindles and crystals but no prisms". This is the one number that separates a
+        /// world that never grew from one that grew and is still waiting to be SHOWN.
+        /// </summary>
+        public int CountPendingCreation(out int total)
+        {
+            int pending = 0;
+            total = 0;
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                var root = _cells[i].Root;
+                if (!root) continue;
+                root.GetComponentsInChildren(false, _censusScratch);
+                for (int j = 0; j < _censusScratch.Count; j++)
+                {
+                    var prism = _censusScratch[j];
+                    if (!prism || prism.destroyed) continue;
+                    total++;
+                    if (!prism.IsCreationComplete) pending++;
+                }
+            }
+            _censusScratch.Clear();
+            return pending;
+        }
+
+        public string Census()
+        {
+            int prisms = 0;
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                var cell = _cells[i].Cell;
+                if (cell) prisms += cell.LiveBlockCount;
+            }
+            return $"cells {_cells.Count} (target {_targetIndex}), tracked prisms {prisms}, " +
+                   $"draining {_drains}, retiring roots {_retiringRoots.Count}, bag {_bag.Count}, " +
+                   $"env pool {EnvironmentPrismPool.IssuedCount} issued / " +
+                   $"{EnvironmentPrismPool.ParkedCount} parked";
         }
 
         /// <summary>
@@ -442,6 +696,24 @@ namespace CosmicShore.Gameplay
                 if (record.Runtime) Destroy(record.Runtime);
             }
             _cells.Clear();
+
+            // Anything a cancelled drain orphaned. Not a scene-unload concern (that sweeps
+            // everything anyway) - it is the toybox root being torn down while the scene lives.
+            for (int i = 0; i < _retiringRoots.Count; i++)
+            {
+                var root = _retiringRoots[i];
+                if (!root) continue;
+
+                // Same two-pool rule as the drain: the environment pool's host is
+                // DontDestroyOnLoad, so returning this mass keeps the pool whole for the
+                // next voyage instead of leaving issue records pointing at dead objects.
+                var orphaned = root.GetComponentsInChildren<Prism>(true);
+                for (int p = 0; p < orphaned.Length; p++)
+                    if (orphaned[p]) EnvironmentPrismPool.TryRelease(orphaned[p]);
+
+                Destroy(root);
+            }
+            _retiringRoots.Clear();
         }
     }
 }

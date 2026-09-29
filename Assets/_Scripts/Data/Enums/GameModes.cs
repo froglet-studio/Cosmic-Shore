@@ -18,7 +18,7 @@ namespace CosmicShore.Data
         // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
         // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
         // "Lava-Lamp Mode"). Do not reuse ID 7.
-        DuelForTheCell = 8,
+        DuelForTheCell = 8,        // single-player scene retired 2026-09; id kept (never reuse)
         DashNGrab = 9,
         CellularBrawl = 10,
         Denial = 11,
@@ -36,7 +36,7 @@ namespace CosmicShore.Data
         BotDuel = 23,
         Curvatious = 24,
         MazeRun = 25,
-        WildlifeBlitz = 26,
+        WildlifeBlitz = 26,        // single-player scene retired 2026-09; still set by BenchmarkSceneLauncher
         ProtectMission = 27,
         MultiplayerFreestyle = 28,
         OnlineDuelForTheCell = 29,
@@ -247,9 +247,42 @@ namespace CosmicShore.Data
         // on ScoringMetric.CombatPoints. See _Scripts/Controller/Arcade/BROADSIDE.md.
         Broadside = 57,
 
+        // Waystation (58): the Butterfly-only migration race. The course is a chain of
+        // CLUSTERS - tight knots of switch rings - laid far apart in the cell. Inside a cluster
+        // you FLY, on the fleet's slowest hull and its widest turning circle; between clusters
+        // you FOLD, and the Fold has exactly one degree of freedom, the heading you leave on. So
+        // the last ring of a cluster is also the aiming device for the next jump, and threading
+        // it on the right LINE is worth more than threading it fast. First DOMAIN whose LEAD
+        // RUNNER threads the last ring wins, on ScoringMetric.SwitchesThreaded - the gate-race
+        // platform, reused whole. See _Scripts/Controller/Arcade/WAYSTATION.md.
+        Waystation = 58,
+
+        // Dustup (59): the Butterfly's CHARGE game - a dust duel. The Butterfly carries no gun;
+        // its one weapon is the Scale Dust capsule hanging BELOW the hull in Dust mode, so a
+        // rival is hit by flying OVER them. Every rival the dust passes through takes the
+        // Charge-scaled all-element bite and pays one DUSTING (a Strike-class combat hit); first
+        // DOMAIN to the point target wins, on ScoringMetric.CombatPoints. Fought in Dog Fight's
+        // Boneyard. See _Scripts/Controller/Arcade/DUSTUP.md.
+        Dustup = 59,
+
+        // Tapestry (60): the Butterfly's MASS game - a TIMED painting war. Mass mode lays a wake
+        // 5x-20x wide; Dust mode raids a rival's painting (destroying, shrinking or stealing
+        // what it touches). The score is the mass a domain has STANDING when the clock runs out
+        // (ScoringMetric.VolumeRemaining) - a live stock, so every raid moves two scores at
+        // once. Fought in the bare Barren cell, with no food web. See
+        // _Scripts/Controller/Arcade/TAPESTRY.md.
+        Tapestry = 60,
+
+        // Sirocco (61): the Butterfly's SPACE game - an erosion race through Rampage's cactus
+        // forest. The dust's LENGTH is Space, and on opposing mass it destroys, shrinks or
+        // steals; first DOMAIN to destroy the hostile-prism target wins on
+        // ScoringMetric.PrismsDestroyed (Rampage's metric and machinery). See
+        // _Scripts/Controller/Arcade/SIROCCO.md.
+        Sirocco = 61,
+
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 54) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 59) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

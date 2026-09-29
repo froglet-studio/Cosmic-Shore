@@ -493,7 +493,7 @@ are bounded by `MaxLivePopulation`.
 | `OnThreaded` + `Live` roster + `PlacerName`/`PlacerDomain`/`RingRadius` | `Vessel/R_VesselActions/ScarabSwitch.cs` |
 | Switch charge RECHARGE (60 s), ONE-ring ceiling, single charge, threading refund | `PlaceSwitchActionSO` / `PlaceSwitchActionExecutor` / `PlaceSwitchAction.asset` / `Scarab.prefab` (see `SCARAB.md §5.2`) |
 | `tollwayTollTarget` live/build/getter/window rows, default 4 | `EndConditionOverridesSO` + `EndConditionOverridesWindow` + `Resources/EndConditionOverrides.asset` |
-| `case GameModes.Tollway → Goals` | `ElementalComebackSystem.DefaultSourceFor` + `ElementalComebackSystemTests.LiveSourceCases` |
+| comeback reads Goals | `ElementalComebackSystem` → the rule's `DomainValue` (the per-mode `DefaultSourceFor` table was retired 2026-09) |
 | Objective-provider case | `_Scripts/UI/MiniGameHUD.cs` |
 | `GameToastSituation` 70–75 (toll, chain, match point, lead change, ring hint, no-anchor refusal) | `_Scripts/Data/Enums/GameToastSituation.cs` |
 | Charge-count re-tint only on a CHANGE, plus the Mass row's **cooldown veil** | `_Scripts/UI/Controller/ScarabHUDController.cs` |

@@ -76,10 +76,18 @@ namespace CosmicShore.Gameplay
         /// <b>This is not a general-purpose trail cap.</b> Passive removal of trail mass is
         /// forbidden platform-wide (CLAUDE.md ▸ <i>Mass is conserved</i> / <i>Don't cheat
         /// emergence</i>; the reverted <c>maxTrailBlocks</c> ring buffer is the named
-        /// counter-example). The ONE caller is <see cref="WanderwayRun"/>'s rolling tether, an
-        /// explicitly authorized carve-out for the Wanderway's infinite-runner illusion — see the
-        /// exception recorded in <c>Docs/ECOSYSTEM.md</c> §0. Do not call it from anywhere else,
-        /// and do not generalise it into a length limit on <see cref="Add"/>.
+        /// counter-example). It has exactly TWO callers, each an explicit, player-opted piece of
+        /// toy apparatus — never a clock:
+        ///
+        ///   • <see cref="WanderwayRun"/>'s rolling tether — the authorized carve-out for that
+        ///     toy's infinite-runner illusion, recorded in <c>Docs/ECOSYSTEM.md</c> §0.
+        ///   • <see cref="ArkwayRun"/>'s corridor recycling — the ribbon laid in a traversal cell
+        ///     is struck WITH that cell, which is the rule <see cref="Cell.RequestCellSwap"/>
+        ///     already applies to loose trail mass in a swapped world, per cell rather than per
+        ///     swap. No timer, no length limit: a cell retiring is what removes it.
+        ///
+        /// Do not call it from anywhere else, and do not generalise it into a length limit on
+        /// <see cref="Add"/>.
         /// </summary>
         /// <returns>The removed prism, or null when the trail is empty.</returns>
         public Prism RemoveOldest()

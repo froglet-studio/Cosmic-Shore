@@ -113,8 +113,53 @@ namespace CosmicShore.Gameplay
             return i is >= 0 and < 4 ? (byte)(1 << i) : (byte)0;
         }
 
+        /// <summary>
+        /// This vessel's INTEGER level for <paramref name="element"/>, clamped to 0..15, and the
+        /// SAME number on every peer: the owner (and offline play) reads its own ResourceSystem,
+        /// a remote peer reads the owner's published <c>NetElementLevels</c>. Use this — never a
+        /// local <c>GetLevel</c> — wherever an element continuously scales an OUTCOME that other
+        /// machines also simulate (a wake's width, a debuff's bite). Integer resolution is the
+        /// price of agreement, and it is the resolution the HUD flowers already show.
+        /// </summary>
+        public int ReplicatedLevel(Element element)
+        {
+            int nibble = (int)element - 1;
+            if (nibble is < 0 or > 3) return 0;
+            if (_netActions && _netActions.IsSpawned && !_netActions.IsOwner)
+                return (_netActions.NetElementLevels.Value >> (nibble * 4)) & 0xF;
+            return _resources ? Mathf.Clamp(_resources.GetLevel(element), 0, 15) : 0;
+        }
+
+        // The level events only fire on a CHANGE, and a vessel's first levels are often seeded
+        // before its NetworkObject spawns (arena StartingElements land in VesselController
+        // .Initialize), when an owner-write is not yet possible. So the owner re-asserts every
+        // frame; PublishLevel writes only when a nibble actually differs, so a settled vessel
+        // costs four integer compares and no network traffic.
+        void LateUpdate()
+        {
+            if (!_initialized || !_resources || !_netActions
+                || !_netActions.IsSpawned || !_netActions.IsOwner) return;
+            foreach (var element in AllElements)
+                PublishLevel(element, _resources.GetLevel(element));
+        }
+
+        void PublishLevel(Element element, int level)
+        {
+            if (!_netActions || !_netActions.IsSpawned || !_netActions.IsOwner) return;
+            int nibble = (int)element - 1;
+            if (nibble is < 0 or > 3) return;
+            int shift = nibble * 4;
+            int packed = _netActions.NetElementLevels.Value;
+            int next = (packed & ~(0xF << shift)) | (Mathf.Clamp(level, 0, 15) << shift);
+            if (next != packed) _netActions.NetElementLevels.Value = (ushort)next;
+        }
+
         void HandleElementLevelChanged(Element element, int level)
         {
+            // Published BEFORE the map gate below: a level is a fact about the vessel whether or
+            // not this element has an upgrade entry.
+            PublishLevel(element, level);
+
             var entry = _map ? _map.GetEntry(element) : null;
             if (entry == null) return;
 

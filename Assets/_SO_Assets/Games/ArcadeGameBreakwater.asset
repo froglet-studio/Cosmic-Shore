@@ -24,7 +24,7 @@ MonoBehaviour:
     takes it.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
-  CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  CardBackground: {fileID: 21300000, guid: 27da394175bf45e78d44bd1f80c449f5, type: 3}
   GolfScoring: 1
   SceneName: MinigameBreakwater
   Vessels:

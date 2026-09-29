@@ -452,7 +452,7 @@ the two presentation methods are its own, and each has the same shape as
 | `AssignScores` | winning domain's players get the finish time; everyone else a sentinel encoding *their team's* deficit, so losing teammates tie |
 | `BuildResults` | golf order is team-major by construction; individual kills order teammates, name is the final tiebreak |
 
-`ElementalComebackSystem` uses `ScoreDifferenceSource.LifeformsKilled`, domain-aggregated like
+`ElementalComebackSystem` uses the rule's `DomainValue` (`LifeformsKilled`), domain-aggregated like
 every other source — a player's deficit is their team's deficit against the leading colour.
 
 ## Sparrow-only
@@ -619,7 +619,7 @@ the band and the PhaseThresholds cannot drift apart.
 | `IRoundStats` / `RoundStats` | `LifeformsKilled` (+ event, + server-write NetworkVariable, + `Cleanup`) |
 | `ScoringMetric` / `ScoringMetrics.Read` | `LifeformsKilled = 7` |
 | `GameDataSO` | `LifeformTargetCount` |
-| `ElementalComebackSystem` | `ScoreDifferenceSource.LifeformsKilled`, domain-aggregated like every other source |
+| `ElementalComebackSystem` | the rule's `DomainValue` (`LifeformsKilled`), domain-aggregated like every other source |
 | `EndConditionOverridesSO` (+ window + asset) | `wildlifeKillTarget` live/build/getter, default 500 |
 | `GameToastSituation` | `WildlifeHuntQuarter = 53`, `WildlifeHuntHalf = 54`, `WildlifeLeadChanged = 55`, `WildlifeCoreBreached = 56` |
 | `ServerPlayerVesselInitializerWithAI` | clamps the AI's vessel class into the mode's allowed set |

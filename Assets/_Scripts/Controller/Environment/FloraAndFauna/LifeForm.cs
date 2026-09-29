@@ -284,6 +284,28 @@ namespace CosmicShore.Gameplay
             CheckIfDead(killerName);
         }
 
+        /// <summary>Drops a prism from this lifeform's tracker with NO death check - the prism
+        /// is leaving for the pool (<see cref="HealthPrism.DetachForPool"/>), not dying. A
+        /// retired world's lifeforms must not later act on mass that already belongs to
+        /// somebody else.</summary>
+        public void ForgetHealthBlock(HealthPrism healthPrism)
+        {
+            if (healthPrism) healthTracker?.Remove(healthPrism);
+        }
+
+        /// <summary>
+        /// The world this lifeform lives in is being retired as a whole (an Arkway cell strike):
+        /// no death, no crystal drop, no death sound - the world goes, and the lifeform with it.
+        /// Without this every plant in a struck cell ran the full <c>Die</c> path as its root
+        /// was destroyed, one creature-death SFX each.
+        /// </summary>
+        public void RetireWithWorld()
+        {
+            isCleaningUp = true;
+            dying = true;
+            StopAllCoroutines();
+        }
+
         // --- Spindle Management (delegates to SpindleTracker) ---
 
         public void AddSpindle(Spindle spindle)

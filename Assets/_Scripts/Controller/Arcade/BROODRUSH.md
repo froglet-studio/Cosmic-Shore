@@ -36,7 +36,7 @@ fundamentals — the first mode where the **ecosystem itself is the scoreboard**
   NetworkVariable → `GameDataSO.GoalTargetCount`, ends the turn via
   `rule.IsObjectiveReached`
 - **Domains**: exactly two (`SO_ArcadeGame.MinDomainsAllowed = MaxDomainsAllowed = 2`);
-  players 2–4 (1v1 or 2v2, AI backfill)
+  players 2–6 (1v1, 2v2 or 3v3, AI backfill; ARENA seating - one pilot per hull, and the card lists six - so a full lobby is every hull once. Spawns on the cell-relative ring since the six-seat change: four authored points cannot seat six. Docs/HomeHub/ARCHITECTURE.md §3.9)
 - **Config**: `_SO_Assets/Games/ArcadeGameBroodRush.asset` (registered in
   `GameLists/OrganicRematchGames.asset`)
 
@@ -112,7 +112,7 @@ Authored ONLY via **FrogletTools ▸ Game Modes ▸ End Game Conditions**
 - Exterior trail is bait: it feeds the *controller's* brood (any-domain voracious
   grazing) and pulls the swarm around the map, but never scores. Time in the nucleus
   is time not spent harvesting crystals from withered fauna (elemental powerups).
-- The comeback system (`ElementalComebackSystem`, `ScoreDifferenceSource.Goals`) buffs
+- The comeback system (`ElementalComebackSystem`, the rule's `DomainValue` (`Goals`)) buffs
   the trailing team's elementals, sized to the brood deficit.
 
 ## Shared-Code Touchpoints (added for this mode)

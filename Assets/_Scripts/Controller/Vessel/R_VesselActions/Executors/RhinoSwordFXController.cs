@@ -238,6 +238,28 @@ namespace CosmicShore.Gameplay
                            config.BurstShakeDuration);
         }
 
+        /// <summary>
+        /// A trigger combo started (RHINO_SWORD_COMBOS.md): a flash plus a crackle strung along
+        /// the blade — the hit flash for a two-press combo, the pop flash for a finisher, and a
+        /// denser, hotter string when the blade is energized. No camera shake: combos are
+        /// frequent, and a shake that fires on every flourish stops meaning anything.
+        /// </summary>
+        public void NotifyCombo(bool finisher, bool energized)
+        {
+            if (config == null) return;
+            Flash(finisher || energized ? config.PopFlashAmount : config.HitFlashAmount);
+
+            if (!crackle) return;
+            int sites = Mathf.Max(1, energized ? config.IgniteCrackleSites : Mathf.CeilToInt(config.IgniteCrackleSites * 0.5f));
+            float intensity = energized ? config.IgniteCrackleIntensity : config.SparkIntensity;
+            float seconds = finisher ? config.IgniteCrackleSeconds : config.SparkSeconds;
+            for (int i = 0; i < sites; i++)
+            {
+                float t = sites == 1 ? 1f : (float)i / (sites - 1);
+                crackle.AddImpact(PointAlongBlade(t), seconds, intensity, config.SparkWorldRadius);
+            }
+        }
+
         // ── internals ──────────────────────────────────────────────────────────
 
         /// <summary>Kick an impact flash; stronger pulses override weaker ones mid-decay.</summary>

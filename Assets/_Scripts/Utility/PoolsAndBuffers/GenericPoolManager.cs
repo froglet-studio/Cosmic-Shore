@@ -135,10 +135,16 @@ namespace CosmicShore.Utility
             // exception storm that tanked dense modes like Joust intensity 3) and,
             // once the callers were null-guarded, as silently-skipped VFX (a death
             // that fails to animate — a continuity-of-existence violation).
+            //
+            // Also never hand back an instance that is ALREADY OUT. Release is idempotent now
+            // (see Release_), so a duplicate stack entry can no longer be created - but one made
+            // earlier in the session would hand the same object to two owners (a prism pulled
+            // out of a live boost ring into the next one). A tracked instance is live by
+            // definition; its stale stack entry is dropped, the live object is left alone.
             var instance = pool.Get();
-            for (int guard = 0; !instance && guard < 16; guard++)
+            for (int guard = 0; (!instance || _activeObjects.Contains(instance)) && guard < 16; guard++)
                 instance = pool.Get();
-            if (!instance) return default;
+            if (!instance || _activeObjects.Contains(instance)) return default;
 
             // [Optimization] Add to tracking set
             _activeObjects.Add(instance);
@@ -151,16 +157,30 @@ namespace CosmicShore.Utility
 
         protected void Release_(T instance)
         {
-            if (!instance) return;
-            
-            // [Optimization] Remove from tracking set
-            if (_activeObjects.Contains(instance))
-                _activeObjects.Remove(instance);
+            // IDEMPOTENT: an instance this pool is not tracking as out is already back (or was
+            // never ours), and releasing it again would push a SECOND stack entry for one object
+            // (collectionCheck is off). That is exactly what happened after every scene change:
+            // ReleaseAllActive returns everything without going through the subclass's Release,
+            // so the per-Get `OnReturnToPool += Release` handler survived; the next Get added
+            // another, and one ReturnToPool() then released the object twice. Two later Gets
+            // handed the same prism to two owners - boost/tube ring prisms went missing or jumped
+            // between rings, worse after every transition.
+            if (!instance || !_activeObjects.Remove(instance)) return;
+
+            OnReturnedToPool(instance);
 
             // Clean hierarchy before disabling
-            instance.transform.SetParent(transform); 
+            instance.transform.SetParent(transform);
             pool.Release(instance);
         }
+
+        /// <summary>
+        /// Called for EVERY instance going back into the pool - through <see cref="Release_"/> and
+        /// through both bulk paths (<see cref="ReleaseAllActive"/>, <see cref="ReleaseAllActiveAsync"/>),
+        /// which bypass the subclass's <c>Release</c>. Detach whatever the subclass attached in its
+        /// <c>Get</c> here, or the bulk paths leave it attached to a pooled object.
+        /// </summary>
+        protected virtual void OnReturnedToPool(T instance) { }
 
         /// <summary>
         /// [Optimization] Returns all active objects to the pool over time to prevent CPU spikes/Network Timeouts.
@@ -177,6 +197,7 @@ namespace CosmicShore.Utility
                 if (item)
                 {
                     // Direct release to pool (bypass _activeObjects check since we already cleared it)
+                    OnReturnedToPool(item);
                     item.transform.SetParent(transform);
                     pool.Release(item);
                 }
@@ -208,6 +229,7 @@ namespace CosmicShore.Utility
             {
                 if (item && item.gameObject.activeSelf)
                 {
+                    OnReturnedToPool(item);
                     item.transform.SetParent(transform);
                     pool.Release(item);
                     count++;

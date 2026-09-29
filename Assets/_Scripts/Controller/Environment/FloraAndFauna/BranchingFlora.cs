@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
         {
             base.Initialize(cell);
 
-            // CrystalTransform is null in a cell that holds no crystal (it logs and returns null),
+            // CrystalTransform is null in a cell that holds no crystal (a normal state),
             // so resolve it ONCE and fall back to the plant's own growth axis - a crystal-less
             // cell should grow an unaimed plant, not throw on the first one it seeds.
             var crystalTransform = cellData ? cellData.CrystalTransform : null;
@@ -244,7 +244,7 @@ namespace CosmicShore.Gameplay
 
         public override void Plant()
         {
-            // A pinned position (the Lifeform Matrix toy's spawn-here stations) wins over dispersal.
+            // A pinned position (the Spawn Matrix toy's spawn-here stations) wins over dispersal.
             if (TryGetPlantPositionOverride(out var pinned))
             {
                 transform.position = pinned;

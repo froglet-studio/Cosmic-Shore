@@ -368,7 +368,7 @@ Post-Reload (via InitializeAfterDelay):
 
 `ElementalComebackSystem` (attached in scene alongside `SkimRaceController`):
 
-- **Source**: `ScoreDifferenceSource.CrystalsCollected` — tracks crystal gap between players
+- **Source**: the rule's `DomainValue` (`CrystalsCollected`) — tracks crystal gap between players
 - **Effect**: Losing players receive elemental buffs proportional to their crystal deficit
 - **Example**: With `SpaceWeight=1`, a player 4 crystals behind the leader gets Space element +4, growing their skimmer
 - **Update interval**: Recalculates every 1 second
