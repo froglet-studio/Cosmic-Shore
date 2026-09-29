@@ -506,6 +506,13 @@ namespace CosmicShore.Utility.AITraining
             _watchdogStartTime = Time.unscaledTime;
             _episodeWallStart = Time.unscaledTime;
 
+            // HexRace (and the other domain modes) sit on the Ready button until a
+            // human presses it. An all-AI rollout has nobody to press it, so the
+            // ships stay stationary, the pilot never builds a context, and the
+            // 120s cap records crystals 0 / time 0. This is the same public button
+            // the HUD wires — not a score write and not a mode rule change.
+            PressMatchReady();
+
             Trace($"[Training] Rollout start. generation={state.Population.Generation} " +
                   $"evaluations={state.EpisodesCompleted} pilots={_activePilots.Count}");
 
@@ -514,6 +521,25 @@ namespace CosmicShore.Utility.AITraining
                 telemetry.OnEpisodeStarted?.Raise();
                 telemetry.RaiseAnyChange();
             }
+        }
+
+        void PressMatchReady()
+        {
+            if (gameData == null || gameData.LocalPlayer == null)
+            {
+                Trace("[Training] Match ready not pressed — local player is not on the roster yet.");
+                return;
+            }
+
+            var controller = FindAnyObjectByType<MiniGameControllerBase>();
+            if (controller == null)
+            {
+                Trace("[Training] Match ready not pressed — no game controller in the scene.");
+                return;
+            }
+
+            Trace("[Training] Pressing match ready.");
+            controller.OnReadyClicked();
         }
 
         bool ShouldTrainPlayer(IPlayer player)
@@ -576,6 +602,13 @@ namespace CosmicShore.Utility.AITraining
                 };
                 if (ctx != null)
                 {
+                    // The pilot stamps EpisodeTime only on frames it actually ticks.
+                    // A ship held stationary (ready screen, countdown) never ticks, so
+                    // the context clock stays 0 while this runner's clock is the
+                    // episode. TimePenalty reads the context. Carry the runner clock
+                    // across before Evaluate.
+                    ctx.EpisodeTime = Mathf.Max(ctx.EpisodeTime, fitness.EpisodeSeconds);
+
                     // Match weights from the active profile (asset or fallback) so the
                     // breakdown reported in telemetry matches what selection actually used.
                     var profile = scenario.FitnessProfile != null ? scenario.FitnessProfile : EnsureFallbackFitnessProfile();

@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: SessionState
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Utility.AITraining.TrainingSessionStateSO
   ScenarioKey: Squirrel_HexRace_I4
-  LastWriteUtc: 2026-09-29T15:08:32.8585550Z
-  EpisodesCompleted: 24
-  EpisodesRequested: 24
+  LastWriteUtc: 2026-09-29T13:21:43.1242800Z
+  EpisodesCompleted: 0
+  EpisodesRequested: 0
   Population:
     populationSize: 24
     eliteCount: 4
@@ -25,8 +25,8 @@ MonoBehaviour:
     noveltyWeight: 0.15
     tournamentSize: 3
     generation: 0
-    evaluationsThisGen: 24
-    nextCheckoutIndex: 24
+    evaluationsThisGen: 0
+    nextCheckoutIndex: 0
     population:
     - geneNames:
       - target.aggressiveness
@@ -126,9 +126,9 @@ MonoBehaviour:
       - BoostManagement
       - AbilityScheduler
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -21.15895
-      NoveltyScore: 1
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -230,9 +230,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -121.15895
-      NoveltyScore: 13
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -334,9 +334,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -129.14642
-      NoveltyScore: 14.5
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -437,9 +437,9 @@ MonoBehaviour:
       - BoostManagement
       - AbilityScheduler
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -22.904495
-      NoveltyScore: 16.333334
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -540,9 +540,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: 277.09552
-      NoveltyScore: 15.75
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -644,9 +644,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -129.21335
-      NoveltyScore: 16.4
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -746,9 +746,9 @@ MonoBehaviour:
       - BoostManagement
       - AbilityScheduler
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -24.980011
-      NoveltyScore: 15.666667
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -849,9 +849,9 @@ MonoBehaviour:
       - BoostManagement
       - AbilityScheduler
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -24.980011
-      NoveltyScore: 12.428572
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -953,9 +953,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -129.32045
-      NoveltyScore: 15.625
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -1057,9 +1057,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -126.39535
-      NoveltyScore: 15.555555
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -1161,9 +1161,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -126.39535
-      NoveltyScore: 16
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -1265,9 +1265,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -129.24643
-      NoveltyScore: 17
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -1368,9 +1368,9 @@ MonoBehaviour:
       - BoostManagement
       - AbilityScheduler
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -28.644562
-      NoveltyScore: 15.9
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -1470,9 +1470,9 @@ MonoBehaviour:
       - BoostManagement
       - AbilityScheduler
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: 71.35544
-      NoveltyScore: 16.5
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -1574,9 +1574,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -129.25645
-      NoveltyScore: 15.5
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -1677,9 +1677,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -129.9404
-      NoveltyScore: 17.1
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -1780,9 +1780,9 @@ MonoBehaviour:
       - BoostManagement
       - AbilityScheduler
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -29.940392
-      NoveltyScore: 15.7
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -1883,9 +1883,9 @@ MonoBehaviour:
       - BoostManagement
       - AbilityScheduler
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -29.24495
-      NoveltyScore: 14.5
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -1987,9 +1987,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -131.84128
-      NoveltyScore: 15.7
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -2090,9 +2090,9 @@ MonoBehaviour:
       - BoostManagement
       - AbilityScheduler
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -131.84128
-      NoveltyScore: 17.4
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -2193,9 +2193,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -129.46652
-      NoveltyScore: 17.5
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -2297,9 +2297,9 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -33.66465
-      NoveltyScore: 15.1
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -2399,9 +2399,9 @@ MonoBehaviour:
       - BoostManagement
       - AbilityScheduler
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -33.66465
-      NoveltyScore: 16.2
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
     - geneNames:
       - target.aggressiveness
@@ -2503,145 +2503,50 @@ MonoBehaviour:
       - AbilityScheduler
       - ThreatEngagement
       GenerationBorn: 0
-      EvaluationCount: 1
-      Fitness: -129.2014
-      NoveltyScore: 15
+      EvaluationCount: 0
+      Fitness: 0
+      NoveltyScore: 0
       Lineage: 
-    behaviorArchive: 5a2eca0eeabf9ae4df31d2524add33e1efbde55fd43336f149f687074ab39e63d2707422d443d6f59169560fbcc0a40250ea9b3be7e14c788a64f34762d12fdc38eb4060d9e536abcd84440e121e778fd72c8871f7ed5178b598794e53cf549a
+    behaviorArchive: 
   HallOfFameBest:
-    geneNames:
-    - target.aggressiveness
-    - target.deadzone
-    - target.lead_seconds
-    - target.steer_weight
-    - avoid.radius
-    - avoid.strength
-    - avoid.standoff
-    - avoid.arc_dot
-    - avoid.steer_weight
-    - throttle.base
-    - throttle.ramp_per_second
-    - throttle.ramp_cap
-    - throttle.brake_distance
-    - throttle.brake_strength
-    - throttle.ram_dot
-    - drift.enter_dot
-    - drift.exit_seconds
-    - drift.speed_floor
-    - skim.standoff
-    - skim.radius
-    - skim.strength
-    - skim.friendly_only
-    - boost.min_charge
-    - boost.min_clear_distance
-    - boost.lock_dot
-    - boost.hold_seconds
-    - boost.cooldown
-    - ability.btn1.cooldown
-    - ability.btn1.fire_locked
-    - ability.btn1.fire_threatened
-    - ability.btn1.lock_dot
-    - ability.btn2.cooldown
-    - ability.btn2.fire_locked
-    - ability.btn2.fire_threatened
-    - ability.btn2.lock_dot
-    - ability.btn3.cooldown
-    - ability.btn3.fire_locked
-    - ability.btn3.fire_threatened
-    - ability.btn3.lock_dot
-    - ability.hold_seconds
-    - threat.engage
-    - threat.evade
-    - threat.engagement_range
-    - threat.steer_weight
-    geneValues:
-    - 57.68493
-    - 0.9206774
-    - 0.32651442
-    - 0.4001292
-    - 37.539764
-    - 0.025387913
-    - 17.771055
-    - 0.17257184
-    - 0.58142126
-    - 0.33218583
-    - 0.02122737
-    - 0.16167514
-    - 5.719371
-    - 0.8202709
-    - 0.7989023
-    - 0.8639047
-    - 1.1064779
-    - 20.174503
-    - 28.090708
-    - 97.97121
-    - 0.039159432
-    - 0.601656
-    - 0.6850563
-    - 24.704601
-    - 0.9898995
-    - 1.4232932
-    - 5.381719
-    - 10.24874
-    - 0.9677688
-    - 0.82310426
-    - 0.92516786
-    - 12.412239
-    - 0.071878195
-    - 0.11741936
-    - 0.70649946
-    - 5.797367
-    - 0.7268046
-    - 0.0894475
-    - 0.7280415
-    - 0.5766914
-    - 0.28150827
-    - 0.096105814
-    - 179.87129
-    - 0.39398777
-    enabledModules:
-    - TargetSeeking
-    - ObstacleAvoidance
-    - ThrottleControl
-    - Skim
-    - BoostManagement
-    - AbilityScheduler
-    - ThreatEngagement
+    geneNames: []
+    geneValues: []
+    enabledModules: []
     GenerationBorn: 0
     EvaluationCount: 0
     Fitness: 0
     NoveltyScore: 0
     Lineage: 
-  HallOfFameBestFitness: 277.09552
+  HallOfFameBestFitness: -Infinity
   FitnessHistory:
     Capacity: 256
-    Head: 24
-    Count: 24
+    Head: 0
+    Count: 0
     Values:
-    - -21.15895
-    - -121.15895
-    - -129.14642
-    - -22.904495
-    - 277.09552
-    - -129.21335
-    - -24.980011
-    - -24.980011
-    - -129.32045
-    - -126.39535
-    - -126.39535
-    - -129.24643
-    - -28.644562
-    - 71.35544
-    - -129.25645
-    - -129.9404
-    - -29.940392
-    - -29.24495
-    - -131.84128
-    - -131.84128
-    - -129.46652
-    - -33.66465
-    - -33.66465
-    - -129.2014
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
     - 0
     - 0
     - 0

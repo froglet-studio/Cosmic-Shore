@@ -1,274 +1,195 @@
 # Skim Race AI — Status Report
 
-Snapshot of the working tree on branch `feat/ai-genetic-training`, 2026-09-29. Read-only
-report: nothing here was retuned, and none of it is committed.
+Snapshot of branch `feat/ai-genetic-training` after the 2026-09-29 Learn run
+(Editor `6000.3.17f1`). One generation of evaluations is saved and deployed.
+No race finished. Garrett has not flown this archive yet, so this document
+does not record a human result.
 
-**Bottom line:** the genetic-training loop runs end to end, but it has not yet produced a
-trained Squirrel for Skim Race. The deployment archive is empty, so "Play against trained AI"
-currently installs nothing and the AI opponents are the stock `AIPilot`. Nobody has shown this
-AI beating a human.
-
-Skim Race is `GameModes.HexRace (33)` in `MinigameHexRace`. The vessel is locked to Squirrel,
-and the training key is `Squirrel_HexRace_I4`.
+Skim Race is `GameModes.HexRace (33)` in `MinigameHexRace`. The vessel is
+locked to Squirrel. The training key is `Squirrel_HexRace_I4`.
 
 ---
 
-## 1. Current behavior
+## 1. The scored run
 
-### What Learn does
+Learn was pressed with the `AITraining` log channel on. The host seat
+`Joseph` was on autopilot. The runner pressed the public Ready button
+(`MiniGameControllerBase.OnReadyClicked`), the countdown started, and the
+ships flew through `TrainingPilot` only.
 
-1. `TrainingAutoLauncher` boots Menu_Main and launches an all-AI HexRace with
-   `GameDataSO.IsTraining` set.
-2. The host seat is flipped to autopilot, and `TrainingSessionRunner` checks out genomes from
-   the population (round-robin) into `TrainingPilot`s.
-3. An episode ends when `OnMiniGameEnd`/`OnMiniGameTurnEnd` fires or `MaxEpisodeSeconds`
-   elapses. `EndEpisodeInternal` then does three things:
-   - scores each pilot against `FitnessProfile_HexRace`;
-   - calls `TrainingPopulation.ReturnFitness` and `state.RecordEpisode`;
-   - updates the hall of fame, runs `SaveAssets`, and requests a replay (a scene reload).
-4. Once every member of a generation has been evaluated, `Evolve` produces the next
-   generation.
+| Field | Value |
+|---|---|
+| Generation | 0 (`evaluationsThisGen` 24; `Evolve` did not run) |
+| Episodes completed | 24 finished evaluations (8 matches × 3 genomes) |
+| Best fitness | **277.09552** |
+| Best rollout | generation 0, evaluation 5, domain Gold, 4 crystals, t = 120.1 s |
+| Breakdown | `Crystals=400.0(4.00) GolfScore=-2.8(-28.21) TimePenalty=-120.1(-120.08)` |
+| Any crystal collected | Yes. 11 of 24 evaluations collected at least one. The most in one evaluation was 4. The 24 evaluations together collected 15. |
+| SessionState LastWriteUtc | 2026-09-29T15:08:32Z |
+| Archive entry | Squirrel / HexRace / intensity 4, fitness 277.09552, generation 0, notes `Auto-deploy after 24 episodes` |
+| Export | `Assets/_SO_Assets/AI Training/Exports/SkimRace_Squirrel_I4.json` |
 
-### What a rollout records
+`TrainingGenome.Clone()` zeros `Fitness`, `EvaluationCount`, and
+`NoveltyScore` on the copy stored inside the archive entry and the hall of
+fame. The score that deployment and this document use is the archive
+**entry** fitness, 277.09552, which matches the population member
+`ReturnFitness` updated (evaluation count 1, novelty 15.75). The JSON
+carries that population member, genes included. The genes in the archive
+match it.
 
-For each pilot in each episode:
-- the fitness total, which is the sum of each component's raw value times its weight;
-- a running-mean fitness on that genome, plus its evaluation count;
-- a 32-bit behavior hash, which goes into the novelty archive;
-- the episode count and fitness history in `SessionState.asset`.
+The three fitness terms were not tied. Totals in this generation ran from
+277.10 down to about −131.84. No fitness component was added. The profile
+is still crystals × 100, negated golf score × 0.1, and time penalty × 1.
 
-### What "Play against trained AI" installs
+`Population.generation` stayed 0 because the session stopped when
+`EpisodesCompleted` hit the operator target of 24, which is the end of
+generation 0's evaluations and before the next checkout, where `Evolve`
+breeds generation 1.
 
-`TrainingDeploymentService` listens on `OnPlayerPairInitialized`. It skips in three cases:
-`DeployArchiveInNormalPlay` is off, `IsTraining` is set, or the seat is the human's.
+### Why the finish benchmark is unmet
 
-For any other seat it installs a genome only when `Archive.asset` has a matching entry. Locked
-modes resolve their hull through `TrainingModeCatalog`. At intensity 4 the genome is used raw;
-intensities 1–3 get a dithered copy.
+Every one of the 24 evaluations ended at about 120.0–120.3 seconds of
+**game** time. The trainer's episode cap fired. No `[TIMEOUT]` watchdog
+line was logged, and no episode ended because a domain reached the crystal
+target.
 
-`TrainingControl.asset` has `DeployArchiveInNormalPlay: 1`, so deployment is switched on.
+Intensity 4's authored target is 54 crystals (27 waypoints × 2 laps;
+`EndConditionOverrides` leaves HexRace on that auto-calc). The best single
+pilot collected 4. In that same match the other two seats collected 1 and
+0, on other domains. A domain sum of 4 is short of 54.
 
-### Is there a Squirrel HexRace I4 genome in the Archive?
+Golf numbers in the rollout lines are the live race clock HexRace writes
+onto round stats during the race, then negated. They are small and they
+grew across the session. They are not a winner's finish time and they are
+not the 10000-plus-remaining loser score, which is written only when a
+domain actually finishes. The cap ended the match while the race was still
+open.
 
-**No.** `Archive.asset` contains `Entries: []`. The lookup key is `Squirrel_HexRace_I4`
-(`TrainingArchiveSO.MakeKey`: vessel, mode, intensity). With nothing to install, the AI
-seats in a normal Skim Race stay on `AIPilot`.
+The other candidate explanations, checked against this log:
 
-### Export
+- **Host seat not on autopilot.** False for this run. The launcher logged
+  `Host seat 'Joseph' is on autopilot for this rollout.`
+- **All pilots tied.** False. Fitness spread from 277.10 to about −131.84,
+  and crystal counts were 0, 1, 2, or 4.
+- **Archive not installed for a normal match.** False after the save.
+  `Archive.asset` holds `Squirrel_HexRace_I4`. `DeployArchiveInNormalPlay`
+  is on. Intensity 4 flies that genome with no dither. Garrett's steps are
+  in `Docs/SKIM_RACE_GARRETT_TEST.md`. Those races have not been played
+  here.
 
-`Assets/_SO_Assets/AI Training/Exports/SkimRace_Squirrel_I4.json` was **not written**.
+`SimulationTimeScale` was 8 for the run (the clamp ceiling). The `t=120s`
+figures are game time, about 15 wall-clock seconds per episode. The whole
+generation took about two minutes of wall clock. Those operator fields were
+put back afterwards: time scale 0, target episodes −1, mute audio off,
+camera rendering on. `WatchdogSeconds` stays 120.
 
-The archive has no HexRace Squirrel intensity-4 entry. The fallback, `SessionState`
-`HallOfFameBest`, is also empty (`geneNames` / `geneValues` / `enabledModules` are empty
-lists, fitness −Infinity, episodes completed 0). No genome was invented. The 24 genomes
-in the saved population were left in `SessionState.asset`; none has been evaluated, and
-none was copied out as an opponent.
+### The discarded zero run
 
-Playtest steps for that empty-archive match: `Docs/SKIM_RACE_GARRETT_TEST.md`.
+An earlier Learn pass in the same editor session recorded nine evaluations
+at total 0.00 with an empty-looking breakdown (crystals 0, time 0) at
+t = 120. HexRace sits on Ready until a human presses it. With nobody
+pressing it, every vessel stayed stationary, `TrainingPilot` returned
+before it built a context, and `EpisodeTime` stayed 0. That pass was wiped
+by copying the population-3 / 20-second proof YAML back onto
+`SessionState.asset` and `Archive.asset` before the scored run. The proof
+copies themselves were kept:
 
-### Deploy path (confirmed, unchanged)
+- `Assets/_SO_Assets/AI Training/Exports/SessionState_proof_pop3_20s.yaml`
+- `Assets/_SO_Assets/AI Training/Exports/Archive_proof_pop3_20s.yaml`
 
-A normal HexRace does not set `IsTraining`. `TrainingDeploymentService` then runs only
-when `TrainingControlSO.DeployArchiveInNormalPlay` is on (it is: `1` in
-`TrainingControl.asset`) and only for seats with `IsInitializedAsAI`. The human host
-seat is skipped.
+The scored run is the one in the live assets. Two additions made it able
+to score: the runner presses Ready once per episode (the same public button
+the HUD wires; no score write, no crystal RPC, no course write), and
+`EpisodeTime` is filled from the episode clock when the pilot never stamped
+it. Harvest order is unchanged: the context is read before `EndEpisode()`.
 
-`ArchiveDeployment.TryInstall` looks up `Squirrel_HexRace_I4` (HexRace is vessel-locked
-to Squirrel in `TrainingModeCatalog`; `UseStoredGenomeForLowerIntensity` is off, so the
-lookup intensity is always 4). No entry returns false and leaves `AIPilot` running.
-An entry stops `AIPilot` (`StopAIPilot`, then `enabled = false`) before
-`TrainingPilot` is added. Play intensity 4 sets `TrainingPilot.Intensity` to 4.
-`IntensityDitherer` level 4 is identity: dropout, noise, reaction delay, and ability
-skip are 0, and throttle scale is 1. The pilot still writes only sticks and
-`PerformShipControllerActions` / `StopShipControllerActions`.
+---
 
-### Key configured values (as they stand on disk)
+## 2. What is configured now
 
 | Source | PopulationSize | EliteCount | MaxEpisodeSeconds |
 |---|---|---|---|
-| `Scenario_HexRace.asset` | **3** | **2** | **20** (Min 5) |
-| `TrainingModeCatalog` (HexRace row, per the catalog test) | 24 | — | 120 |
-| `SessionState.asset` saved population | 24 | 4 | — |
+| `Scenario_HexRace.asset` | **24** | **4** | **120** |
+| `TrainingModeCatalog` HexRace row | 24 | — | 120 |
 
-`Scenario_HexRace` at population 3 / 20 seconds is the loop proof, not a trained champion. It shows the trainer can launch, fly, score, and advance a generation. It is not a genome that has raced, and it is not a claim that the AI beats a human.
+Vessel Squirrel (6), mode HexRace (33), intensity 4. The old 3 / 2 / 20
+numbers were the reload-loop proof. They live in the YAML copies above.
+The live scenario is the catalog contract.
 
-Other `Scenario_HexRace` values:
+Other scenario fields were left as authored: numeric mutation 0.3 / 0.18,
+structural mutation 0.04, novelty weight 0.15, opponent count 3,
+`OpponentsUseTrainedGenome` off, `UseResetForReplay` on, minimum episode
+5 seconds.
 
-| Field | Value |
-|---|---|
-| NumericMutationRate | 0.3 |
-| NumericMutationStrength | 0.18 |
-| StructuralMutationRate | 0.04 |
-| NoveltyWeight | 0.15 |
-| OpponentCount | 3 |
-| OpponentsUseTrainedGenome | 0 |
-| UseResetForReplay | 1 |
-| DelayBetweenEpisodes | 1 |
+`TrainingControl` after the run: `DeployArchiveInNormalPlay` 1,
+`UseStoredGenomeForLowerIntensity` 0, `TargetEpisodes` −1,
+`WatchdogSeconds` 120, `AutoStartOnPlay` 0, `HumanPlaysThisLaunch` 0,
+`SimulationTimeScale` 0.
 
-`TrainingControl` has `WatchdogSeconds: 120` and `TargetEpisodes: -1` (unbounded).
+### Input-only pilot
 
-### State of `SessionState.asset`
+`TrainingPilot` writes `IInputStatus` sticks and
+`PerformShipControllerActions` / `StopShipControllerActions`. It does not
+write `Course`, pose, teleport, speed, rigidbody, transform, or score.
+`InputOnlyContractTests` enforces that. HexRace rules, the crystal target,
+and golf scoring were not changed.
 
-| Field | Value |
-|---|---|
-| ScenarioKey | `Squirrel_HexRace_I4` |
-| LastWriteUtc | 2026-09-29T13:21:43Z |
-| EpisodesCompleted / EpisodesRequested | 0 / 0 |
-| Generation / evaluationsThisGen / nextCheckoutIndex | 0 / 0 / 0 |
-| Genomes | 24, every one with EvaluationCount 0 and Fitness 0 |
-| HallOfFameBestFitness | −Infinity |
-
-So no scored rollout has been saved.
-
-The saved population size (24/4) does not match the scenario (3/2). There are two possible
-explanations, and I did not confirm either:
-- The runner's `overrideScenarioDefaults` path, which defaults to 24/4, was used.
-- The state was written by something other than a Learn run using this scenario.
-
-**The whole `Assets/_SO_Assets/AI Training/` folder is untracked in git**, including the
-scenario, profile, archive, state and control assets.
-
----
-
-## 2. Training approach
-
-### Genetic algorithm (`TrainingPopulation`)
-
-- **Selection:** population members are ranked by `Fitness + NoveltyScore × noveltyWeight`.
-  - The top `eliteCount` members carry over unchanged. The field default is 4; the scenario
-    sets 2.
-  - The remaining slots are filled by tournament selection with `tournamentSize` 3.
-- **Crossover:** takes two tournament winners and produces a child genome.
-- **Mutation:**
-  - Numeric: each gene is perturbed with probability rate 0.3 by an amount scaled by strength
-    0.18.
-  - Structural: rate 0.04.
-- **Fitness bookkeeping:** after each generation, non-elite fitness is reset to 0, so every
-  member is re-evaluated.
-- **Novelty:** the archive holds up to 256 behavior hashes. A genome's score is its mean
-  Hamming distance to that archive, weighted by 0.15.
-
-### HexRace fitness recipe (`FitnessProfile_HexRace`)
+### Fitness recipe (`FitnessProfile_HexRace`)
 
 | Component | Weight | Raw value |
 |---|---|---|
 | Crystals collected | 100 | count |
-| GolfScore | 0.1 | HexRace score, **negated** (golf rules: lower is better) |
+| GolfScore | 0.1 | HexRace score, negated |
 | TimePenalty | 1 | −EpisodeTime (seconds) |
 
-### Input-only pilot (`TrainingPilot`)
-
-- The pilot's only outputs are `IInputStatus` stick values and
-  `PerformShipControllerActions` / `StopShipControllerActions`, which is exactly what a human
-  controls.
-- It has no write access to `Course`, `SetPose`, teleport, `SetInitialSpeed`, rigidbody,
-  transform or score.
-- `InputOnlyContractTests` enforces this.
+Best-genome arithmetic: 4 × 100 + 0.1 × (−28.21) + (−120.08) = 277.10.
 
 ---
 
-## 3. Known blockers
+## 3. What is still open
 
-1. **The harvest fix is tested but has not been confirmed in a live run.**
-   - Previously, `EndEpisodeInternal` read fitness *after* `pilot.EndEpisode()` had cleared
-     the context, so every rollout recorded a total of 0.00.
-   - The reorder (`GetCurrentContextOrNull()` before `EndEpisode()`) is in the working tree.
-     It is uncommitted and covered by two new tests, both passing:
-     `EndEpisode_ClearsContextThatHarvestMustReadFirst` and
-     `FitnessHarvest_ReadsContextBeforeEndEpisode`.
-   - No Learn run since the fix has shown non-zero fitness in the console or in
-     `SessionState`.
-2. **The scenario's sizes are proof-of-concept sizes, not training sizes.**
-   `Scenario_HexRace` is 3 pilots / 20 s, while the catalog expects 24 / 120.
-   - A 3-member population with 2 elites has one non-elite slot per generation, which leaves
-     almost no selection pressure.
-   - 20 s is too short to complete a Skim Race lap at intensity 4.
-3. **`Catalog_EveryLiveMode_HasScenarioAndProfileMatchingApplyFor` fails** with
-   `HexRace Expected: 24 But was: 3`. This is the asset mismatch from item 2. It was
-   deliberately left unfixed; the asset has not been changed.
-4. **A 20 s timeout with zero crystals flattens the fitness landscape.**
-   - When no pilot collects a crystal, the score is dominated by TimePenalty ≈ −20, and every
-     pilot lands on roughly the same value.
-   - At that point the GA is ranking mostly on novelty and noise, not on racing.
-5. **No playtest against a human.** The README playtest matrix still reads "Not flown", and
-   the overnight queue has not been flown either. Nothing shows this AI beats Garrett, or any
-   human, in Skim Race.
-6. **Nothing is deployed.** The Archive is empty, and the hall of fame is empty, so no
-   export file was written (see §1). `Docs/SKIM_RACE_GARRETT_TEST.md` is the match a
-   human can start anyway; the AI seats in that match are stock `AIPilot`.
-7. **The assets are not in version control.** Everything under `Assets/_SO_Assets/AI Training/`
-   is untracked, so the configuration would not reach another machine.
-
-Deferred items carried from the consolidation doc:
-- `PrismSensor` uses `OverlapSphere` instead of `PrismSpatialIndex`.
-- There is no separate GA flag apart from `IsTraining`.
-- `Debug.Log` traces remain instead of `CSLogChannel`.
+1. **No domain finished a race.** The 120-second cap arrived with the best
+   pilot at 4 crystals and the intensity-4 target at 54. A longer episode,
+   or more generations of the same 120-second episodes, is a later
+   decision. This generation did not breed a second one.
+2. **Garrett has not flown the archive.** A normal Skim Race at intensity 4
+   is how that gets recorded. See `Docs/SKIM_RACE_GARRETT_TEST.md`.
+3. **Prompt 3's catalog failure is stale.** That run saw
+   `Scenario_HexRace.PopulationSize` at 3. The asset is now 24. The catalog
+   test was not re-run after the change.
+4. Deferred from the consolidation notes, still true where they were true
+   before this run: `PrismSensor` uses `OverlapSphere`; there is no GA flag
+   separate from `IsTraining`. Learn rollouts now go through
+   `CSLogChannel.AITraining` (off unless the Learn hook or the logging
+   window turns the bit on).
 
 ---
 
 ## 4. Failed approaches
 
-- **Reading fitness after the context was cleared.** Every episode scored 0.00, so the GA was
-  effectively selecting at random. Fixed in the working tree (§3.1).
-- **Treating the 3-pilot / 20 s proof run as training.** That configuration proves only that
-  the loop mechanics work: launch, pilots, eval counter, replay. It cannot produce a
-  competitive racer. The README itself says fitness will be near zero at that size.
-- **Any Course / teleport / pose / score write.** These are banned. They would let the AI
-  "win" without flying the vessel the way a human does, and `InputOnlyContractTests` rejects
-  them. Do not reintroduce them.
+- **Reading fitness after the context was cleared.** Every episode scored
+  0.00. Harvest now reads the context first. The scored run's breakdown
+  lines are the live proof.
+- **Leaving HexRace on Ready.** Nine evaluations scored 0.00 because the
+  ships never left the stationary gate. Ready is now pressed by the
+  trainer. Those nine scores were discarded; the proof YAML is the record
+  of the session that existed before that pass.
+- **Treating 3 pilots / 20 seconds as a champion.** That size proved the
+  reload loop. The live scenario is 24 / 120.
+- **Course, teleport, pose, or score writes.** Banned. They would record a
+  result the vessel did not fly.
 
 ---
 
-## 5. Next steps (in order)
+## 5. Prompt log
 
-1. **Export and document (Prompt 2) — done, with nothing to export.**
-   - Archive and hall of fame are both empty. `Exports/SkimRace_Squirrel_I4.json` was not
-     created. SessionState and Archive were not overwritten.
-   - Garrett’s match steps are in `Docs/SKIM_RACE_GARRETT_TEST.md`. Until an archive entry
-     exists, that match is against `AIPilot`.
-2. **Verify (Prompt 3) — done.** Editor `6000.3.17f1` compiled and ran the named
-   tests. Six passed. `Catalog_EveryLiveMode_HasScenarioAndProfileMatchingApplyFor`
-   failed as expected (`HexRace Expected: 24 But was: 3`). `Scenario_HexRace` was
-   not edited. Full list: §6.
-3. **Commit and push the fallback package (Prompt 4).** This covers the harvest fix, the
-   tests, this doc, and the `AI Training` assets folder.
-4. **Real Learn run (Prompt 5).**
-   - Scenario at 24 population / 4 elites / 120 s. This needs explicit sign-off to edit
-     `Scenario_HexRace`, and it also clears the Catalog test failure.
-   - Confirm non-zero, rising fitness across generations.
-   - Promote the best genome into the Archive under `Squirrel_HexRace_I4`.
-   - Confirm it is installed in normal play at intensity 4.
-   - Commit.
-5. **Validate against Garrett.** Run repeated normal-rules Skim Races and record the results.
-   Until that happens, make no claim that the AI wins.
-
----
-
-## 6. Editor verification (Prompt 3)
-
-Run in the open editor on 2026-09-29. `GET /api/editor_status` reported
-`status: ready`, `compiling: false`, `playMode: stopped`,
-`unityVersion: 6000.3.17f1`, project `/Users/studyholic/Cosmic-Shore`.
-
-`unity command run_tests` was refused: this Editor's Unity Pipeline package is
-too old to parse command lines. The tests were posted to the local exec API
-as edit-mode `run_tests` with a `testName` filter. `com.unity.pipeline` was
-not upgraded. Each filter matched exactly one test.
-
-| Test | Result |
-|---|---|
-| `EndEpisode_ClearsContextThatHarvestMustReadFirst` | Passed |
-| `FitnessHarvest_ReadsContextBeforeEndEpisode` | Passed |
-| `Population_EvolveMonotonicInExpectation` | Passed |
-| `Loop_ThreeMatchesAtPopulationSize_IncrementsGeneration` | Passed |
-| `InputOnly_PilotPoliciesAndSensors_DoNotCallBannedApis` | Passed |
-| `HexRace_ScoreFromRoundStats_IsNegated` | Passed |
-| `Catalog_EveryLiveMode_HasScenarioAndProfileMatchingApplyFor` | Failed |
-
-Catalog failure message: `HexRace Expected: 24 But was: 3`. That is
-`Scenario_HexRace.PopulationSize` still at 3. The asset was not changed.
-
-The two harvest tests passing in this editor is the compile-and-load proof
-that the reorder (`GetCurrentContextOrNull()` before `EndEpisode()`) is in
-the running domain. It is still not a live Learn run: `SessionState` remains
-at 0 episodes and fitness has not been shown non-zero in play.
+1. Status report written from the then-empty archive.
+2. Garrett's match doc written while the archive was empty.
+3. Editor `6000.3.17f1` compiled. Six named tests passed. The catalog test
+   failed at population 3, which was the asset at that time.
+4. The fallback package was committed locally as `de854a9fe`. The push in
+   that pass failed authentication. This document's later commit is the
+   one that carries the trained archive.
+5. This run. Scenario set to 24 / 4 / 120. One generation of 24 evaluations
+   saved. Best fitness 277.09552. Crystals were collected. The finish
+   benchmark is unmet because every episode hit the time cap first.

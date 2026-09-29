@@ -16,13 +16,13 @@ MonoBehaviour:
   GameMode: 33
   Vessel: 6
   Intensity: 4
-  PopulationSize: 3
-  EliteCount: 2
+  PopulationSize: 24
+  EliteCount: 4
   NumericMutationRate: 0.3
   NumericMutationStrength: 0.18
   StructuralMutationRate: 0.04
   NoveltyWeight: 0.15
-  MaxEpisodeSeconds: 20
+  MaxEpisodeSeconds: 120
   MinEpisodeSeconds: 5
   OpponentCount: 3
   OpponentsUseTrainedGenome: 0

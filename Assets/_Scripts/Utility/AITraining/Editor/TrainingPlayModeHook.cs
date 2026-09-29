@@ -30,6 +30,12 @@ namespace CosmicShore.Utility.AITraining.Editor
         {
             switch (change)
             {
+                case PlayModeStateChange.ExitingEditMode:
+                    // Domain reload restores verbose channels from EditorPrefs.
+                    // Arm the training channel here, before that reload, so the
+                    // first rollout line is audible when Learn auto-starts.
+                    ArmTrainingLogChannel();
+                    break;
                 case PlayModeStateChange.EnteredPlayMode:
                     HandleEntered();
                     break;
@@ -40,6 +46,16 @@ namespace CosmicShore.Utility.AITraining.Editor
                     ClearTrainingFlag();
                     break;
             }
+        }
+
+        static void ArmTrainingLogChannel()
+        {
+            var control = FindControlAsset();
+            if (control == null || !control.AutoStartOnPlay) return;
+            const string key = "CSDebug_VerboseChannels";
+            int bits = EditorPrefs.GetInt(key, 0) | (int)CSLogChannel.AITraining;
+            EditorPrefs.SetInt(key, bits);
+            CSDebug.VerboseChannels |= CSLogChannel.AITraining;
         }
 
         static void HandleEntered()
