@@ -50,7 +50,7 @@ namespace CosmicShore.Content.Scenes
             ["2da0c512f12947e489f739169773d7ca"] = "TMP_InputField",
             ["7b743370ac3e4ec2a1668f5455a8ef8a"] = "TMP_Dropdown",
             // com.unity.inputsystem — the port's UI input module stands in.
-            ["01614664b831546d2ae94a42149d80ac"] = "StandaloneInputModule",
+            ["01614664b831546d2ae94a42149d80ac"] = "InputSystemUIInputModule",
             // com.unity.netcode.gameobjects
             ["d5a57f767e5e46a458fc5d3c628d0cbb"] = "NetworkObject",
             ["593a2fe42fa9d37498c96f9a383b6521"] = "NetworkManager",

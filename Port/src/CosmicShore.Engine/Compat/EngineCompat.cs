@@ -225,6 +225,21 @@ namespace CosmicShore.Engine
         public static void Clear() { Registry.Clear(); PathRegistry.Clear(); }
 
         /// <summary>
+        /// Original contract: the engine's built-in resources. The one a player script can ask
+        /// for is the legacy runtime font ("LegacyRuntime.ttf", formerly "Arial.ttf").
+        /// </summary>
+        public static T GetBuiltinResource<T>(string path) where T : Object => (T)GetBuiltinResource(typeof(T), path);
+
+        public static Object GetBuiltinResource(Type type, string path)
+        {
+            if (typeof(Font).IsAssignableFrom(type))
+                return s_BuiltinFont ??= new Font { name = System.IO.Path.GetFileNameWithoutExtension(path ?? "LegacyRuntime"), fontNames = new[] { "Arial" }, fontSize = 14 };
+            return null;
+        }
+
+        static Font s_BuiltinFont;
+
+        /// <summary>
         /// Original engine contract: returns the asset registered at the Resources-relative
         /// path, or null when nothing (or a different type) is registered there.
         /// </summary>

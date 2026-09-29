@@ -328,6 +328,10 @@ void main(){
         void DrawGraphic(Graphic g, float alpha, Vector4 clip, bool forceVisible)
         {
             var color = g.color;
+            // The CanvasRenderer colour (Selectable tints, CrossFadeColor/CrossFadeAlpha) is a
+            // multiplier over the graphic's vertices. Read it without adding a component.
+            var crColor = g.TryGetComponent<CanvasRenderer>(out var cr) ? cr.GetColor() : EngineColor.white;
+            alpha *= crColor.a;
             float a = color.a * alpha;
             if (a <= 0.0005f && !forceVisible) return;
             var rt = g.rectTransform;
@@ -366,6 +370,7 @@ void main(){
             {
                 var p = tf.TransformPoint(v.position);
                 EngineColor vc = v.color;
+                vc = new EngineColor(vc.r * crColor.r, vc.g * crColor.g, vc.b * crColor.b, vc.a);
                 var lc = ColorSpace.Linear(vc);
                 lc.W *= alpha;
                 Push(p.x, p.y, v.uv0.x, v.uv0.y, lc, clip, default, default, 0f);

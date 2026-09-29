@@ -191,13 +191,14 @@ namespace CosmicShore.Content
             }
         }
 
-        LoadedScene Instantiate(PrefabGraph graph, bool activate)
+        LoadedScene Instantiate(PrefabGraph graph, bool activate, Transform parent = null)
         {
             var opts = new InstantiateOptions
             {
                 IncludeScript = Options.IncludeScript,
                 WirePersistentCalls = Options.WirePersistentCalls,
                 Activate = activate,
+                Parent = parent,
             };
             return new SceneInstantiator(Assets, opts).Instantiate(graph);
         }
@@ -265,8 +266,7 @@ namespace CosmicShore.Content
                 var graph = PrefabGraph.Build(Db, file);
                 long buildMs = sw.ElapsedMilliseconds;
                 _prefabTemplates[r.Guid] = entry = (graph, null); // re-entrancy guard for self-referencing prefabs
-                var loaded = Instantiate(graph, activate: false);
-                foreach (var root in loaded.Roots) root.transform.SetParent(_templatesRoot.transform, false);
+                var loaded = Instantiate(graph, activate: false, parent: _templatesRoot.transform);
                 _prefabTemplates[r.Guid] = entry = (graph, loaded);
                 PrefabTemplateCount++;
                 if (s_traceTemplates)

@@ -13,7 +13,24 @@ namespace CosmicShore.Engine
     {
         public string sourcePath;
         public int fontSize = 16;
+
+        /// <summary>The OS font names this dynamic font was requested with (original: fontNames).</summary>
+        public string[] fontNames { get; set; } = Array.Empty<string>();
+        public bool dynamic => true;
+        public int lineHeight => (int)MathF.Round(fontSize * 1.15f);
+
+        /// <summary>Original contract: a dynamic font backed by installed OS fonts, first name wins.</summary>
+        public static Font CreateDynamicFontFromOSFont(string fontname, int size)
+            => CreateDynamicFontFromOSFont(new[] { fontname }, size);
+
+        public static Font CreateDynamicFontFromOSFont(string[] fontnames, int size)
+            => new() { name = fontnames is { Length: > 0 } ? fontnames[0] : "Arial", fontNames = fontnames ?? Array.Empty<string>(), fontSize = size };
+
+        public static string[] GetOSInstalledFontNames() => new[] { "Arial", "Liberation Sans", "DejaVu Sans" };
     }
+
+    public enum HorizontalWrapMode { Wrap = 0, Overflow = 1 }
+    public enum VerticalWrapMode { Truncate = 0, Overflow = 1 }
 
     /// <summary>Capsule-shaped collider (data; the trigger pass treats it as its bounds).</summary>
     public class CapsuleCollider : Collider
@@ -61,6 +78,37 @@ namespace CosmicShore.Engine.UI
         public Font font { get => m_FontData.m_Font; set => m_FontData.m_Font = value; }
         public int fontSize { get => m_FontData.m_FontSize; set => m_FontData.m_FontSize = value; }
         public TextAnchor alignment { get => (TextAnchor)m_FontData.m_Alignment; set => m_FontData.m_Alignment = (int)value; }
+        public FontStyle fontStyle { get => (FontStyle)m_FontData.m_FontStyle; set { m_FontData.m_FontStyle = (int)value; SetVerticesDirty(); } }
+        public bool supportRichText { get => m_FontData.m_RichText; set { m_FontData.m_RichText = value; SetVerticesDirty(); } }
+        public float lineSpacing { get => m_FontData.m_LineSpacing; set { m_FontData.m_LineSpacing = value; SetVerticesDirty(); } }
+        public bool resizeTextForBestFit { get => m_FontData.m_BestFit; set => m_FontData.m_BestFit = value; }
+        public int resizeTextMinSize { get => m_FontData.m_MinSize; set => m_FontData.m_MinSize = value; }
+        public int resizeTextMaxSize { get => m_FontData.m_MaxSize; set => m_FontData.m_MaxSize = value; }
+        public bool alignByGeometry { get => m_FontData.m_AlignByGeometry; set => m_FontData.m_AlignByGeometry = value; }
+        public HorizontalWrapMode horizontalOverflow { get => (HorizontalWrapMode)m_FontData.m_HorizontalOverflow; set { m_FontData.m_HorizontalOverflow = (int)value; SetVerticesDirty(); } }
+        public VerticalWrapMode verticalOverflow { get => (VerticalWrapMode)m_FontData.m_VerticalOverflow; set { m_FontData.m_VerticalOverflow = (int)value; SetVerticesDirty(); } }
+
+        /// <summary>
+        /// Layout size of the text (original: preferredWidth/Height via the TextGenerator).
+        /// Measured by the registered backend when one is installed (the renderer knows the
+        /// glyph advances); otherwise a metric estimate: average advance 0.55 em, line height
+        /// 1.15 em × lineSpacing, rich-text tags excluded.
+        /// </summary>
+        public virtual float preferredWidth => (Measure?.Invoke(this) ?? EstimateSize()).x;
+        public virtual float preferredHeight => (Measure?.Invoke(this) ?? EstimateSize()).y;
+
+        /// <summary>Backend measurement hook (installed by the renderer's legacy text builder).</summary>
+        public static Func<Text, Vector2> Measure;
+
+        Vector2 EstimateSize()
+        {
+            string plain = supportRichText ? System.Text.RegularExpressions.Regex.Replace(m_Text ?? string.Empty, "<[^>]*>", string.Empty) : m_Text ?? string.Empty;
+            var lines = plain.Split('\n');
+            int longest = 0;
+            foreach (var l in lines) longest = Math.Max(longest, l.Length);
+            float size = fontSize > 0 ? fontSize : 14;
+            return new Vector2(longest * size * 0.55f, lines.Length * size * 1.15f * (lineSpacing > 0 ? lineSpacing : 1f));
+        }
     }
 
     /// <summary>Radio-group container for Toggles (original contract: ToggleGroup).</summary>

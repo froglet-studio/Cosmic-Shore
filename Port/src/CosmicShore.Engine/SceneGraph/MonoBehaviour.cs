@@ -75,10 +75,15 @@ namespace CosmicShore.Engine
             }
         }
 
+        /// <summary>Diagnostics: CS_PORT_TRACE_DISABLE=&lt;type-name fragment&gt; prints a stack for matching OnDisable calls.</summary>
+        static readonly string s_traceDisable = Environment.GetEnvironmentVariable("CS_PORT_TRACE_DISABLE");
+
         void DisableNow()
         {
             if (!enabledRun) return;
             enabledRun = false;
+            if (s_traceDisable != null && GetType().Name.Contains(s_traceDisable, StringComparison.Ordinal))
+                Console.WriteLine($"[trace] OnDisable {GetType().Name} on '{name}' (activeInHierarchy={gameObject.activeInHierarchy}, destroyed={destroyedFlag})\n{Environment.StackTrace}");
             InvokeGuarded(hooks.OnDisable);
             GameLoop.Current?.UnregisterBehaviour(this);
         }

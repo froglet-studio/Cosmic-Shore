@@ -179,9 +179,12 @@ namespace CosmicShore.Engine.Networking
 
         public Task<ISession> CreateSessionAsync(SessionOptions options)
         {
-            var session = new LocalSession(
-                $"local-session-{++s_nextId}",
-                options?.MaxPlayers ?? 0);
+            var session = new LocalSession($"local-session-{++s_nextId}", options);
+            // A Relay-networked session brings its NetworkManager up as host — the SDK's
+            // network handler does this before CreateSessionAsync completes. In one process the
+            // "relay" is the local host itself.
+            if (options?.UseRelay == true && NetworkManager.Singleton is { } nm && !nm.IsListening)
+                nm.StartHost();
             return Task.FromResult<ISession>(session);
         }
 
@@ -193,14 +196,41 @@ namespace CosmicShore.Engine.Networking
         public Task<QuerySessionsResults> QuerySessionsAsync(QuerySessionsOptions options)
             => Task.FromResult(new QuerySessionsResults(new List<ISessionInfo>()));
 
+        /// <summary>The local player's roster entry: the signed-in UGS identity plus its writable properties.</summary>
+        sealed class LocalRosterPlayer : IPlayer
+        {
+            readonly Dictionary<string, PlayerProperty> _properties = new();
+            public LocalRosterPlayer(string id, IDictionary<string, PlayerProperty> initial)
+            {
+                Id = id;
+                if (initial != null) foreach (var kv in initial) _properties[kv.Key] = kv.Value;
+            }
+            public string Id { get; }
+            public IReadOnlyDictionary<string, PlayerProperty> Properties => _properties;
+            public void SetProperty(string key, PlayerProperty property)
+            {
+                if (property == null) _properties.Remove(key);
+                else _properties[key] = property;
+            }
+        }
+
         sealed class LocalSession : IHostSession
         {
             readonly List<IReadOnlyPlayer> _players = new();
+            readonly bool _networked;
+            readonly LocalRosterPlayer _self;
+            bool _closed;
 
-            public LocalSession(string id, int maxPlayers)
+            public LocalSession(string id, SessionOptions options)
             {
                 Id = id;
-                MaxPlayers = maxPlayers;
+                MaxPlayers = options?.MaxPlayers ?? 0;
+                _networked = options?.UseRelay == true;
+                string playerId = Services.AuthenticationService.Instance?.PlayerId;
+                _self = new LocalRosterPlayer(string.IsNullOrEmpty(playerId) ? "local-player" : playerId, options?.PlayerProperties);
+                _players.Add(_self);
+                if (options?.SessionProperties != null)
+                    foreach (var kv in options.SessionProperties) Properties[kv.Key] = kv.Value;
             }
 
             public string Id { get; }
@@ -208,16 +238,26 @@ namespace CosmicShore.Engine.Networking
             public bool IsHost => true;
             public int MaxPlayers { get; }
             public int PlayerCount => _players.Count;
-            public event Action Deleted { add { } remove { } }
+            public Dictionary<string, SessionProperty> Properties { get; } = new();
+            public event Action Deleted;
             public event Action<string> PlayerLeaving { add { } remove { } }
             public IReadOnlyList<IReadOnlyPlayer> Players => _players;
-            public IPlayer CurrentPlayer => null;
+            public IPlayer CurrentPlayer => _closed ? null : _self;
             public Task RefreshAsync() => Task.CompletedTask;
             public Task SaveCurrentPlayerDataAsync() => Task.CompletedTask;
-            public Task LeaveAsync() => Task.CompletedTask;
+            public Task LeaveAsync() { Close(); return Task.CompletedTask; }
             public IHostSession AsHost() => this;
-            public Task DeleteAsync() => Task.CompletedTask;
+            public Task DeleteAsync() { Close(); Deleted?.Invoke(); return Task.CompletedTask; }
             public Task RemovePlayerAsync(string playerId) => Task.CompletedTask;
+
+            void Close()
+            {
+                if (_closed) return;
+                _closed = true;
+                _players.Clear();
+                // Leaving a networked session stops its NetworkManager (SDK network handler contract).
+                if (_networked && NetworkManager.Singleton is { IsListening: true } nm) nm.Shutdown();
+            }
         }
     }
 }

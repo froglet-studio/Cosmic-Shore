@@ -351,9 +351,12 @@ namespace CosmicShore.Engine.UI
         /// <summary>
         /// The original's per-character validation rules. Returns <c>'\0'</c> to reject.
         /// </summary>
-        protected char Validate(string text, int pos, char ch)
+        protected char Validate(string text, int pos, char ch) => ValidateChar(m_CharacterValidation, m_RegexValue, text, pos, ch);
+
+        /// <summary>The per-character rules, shared with the legacy <see cref="InputField"/>.</summary>
+        internal static char ValidateChar(CharacterValidation rule, string regex, string text, int pos, char ch)
         {
-            switch (m_CharacterValidation)
+            switch (rule)
             {
                 case CharacterValidation.None:
                     return ch;
@@ -365,7 +368,7 @@ namespace CosmicShore.Engine.UI
                     bool minusAllowed = pos == 0 && text.IndexOf('-') < 0;
                     if (ch >= '0' && ch <= '9') return pos == 0 && text.StartsWith("-") ? '\0' : ch;
                     if (ch == '-' && minusAllowed) return ch;
-                    if (m_CharacterValidation == CharacterValidation.Decimal && (ch == '.' || ch == ',') && text.IndexOf('.') < 0 && text.IndexOf(',') < 0)
+                    if (rule == CharacterValidation.Decimal && (ch == '.' || ch == ',') && text.IndexOf('.') < 0 && text.IndexOf(',') < 0)
                         return ch;
                     return '\0';
                 }
@@ -395,7 +398,7 @@ namespace CosmicShore.Engine.UI
                     return '\0';
                 }
                 case CharacterValidation.Regex:
-                    return string.IsNullOrEmpty(m_RegexValue) || System.Text.RegularExpressions.Regex.IsMatch(ch.ToString(), m_RegexValue) ? ch : '\0';
+                    return string.IsNullOrEmpty(regex) || System.Text.RegularExpressions.Regex.IsMatch(ch.ToString(), regex) ? ch : '\0';
                 default:
                     return ch;
             }

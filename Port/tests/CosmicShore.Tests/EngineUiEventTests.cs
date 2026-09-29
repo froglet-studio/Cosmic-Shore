@@ -333,17 +333,17 @@ public class EngineUiEventTests : IDisposable
 
         var p = new Vector2(150f, 150f);
         module.PointerDown(p);
-        Assert.Equal(button.colors.pressedColor, image.color);     // ColorTint while held
+        Assert.Equal(button.colors.pressedColor, image.canvasRenderer.GetColor());     // ColorTint while held
 
         module.PointerUp(p);
         Assert.Equal(1, clicks);
-        Assert.Equal(button.colors.selectedColor, image.color);    // pressing selected it
+        Assert.Equal(button.colors.selectedColor, image.canvasRenderer.GetColor());    // pressing selected it
 
         button.interactable = false;                               // gate closes
         module.PointerDown(p);
         module.PointerUp(p);
         Assert.Equal(1, clicks);
-        Assert.Equal(button.colors.disabledColor, image.color);
+        Assert.Equal(button.colors.disabledColor, image.canvasRenderer.GetColor());
     }
 
     [Fact]

@@ -179,8 +179,11 @@ public class MultiplayerSessionTests : IDisposable
 
         Pump(() => rig.GameData.ActiveSession != null);
 
-        // The local host was shut down for the intentional local→Relay transition.
-        Assert.False(rig.Nm.IsListening);
+        // The local host was shut down for the intentional local→Relay transition, and the
+        // Relay-networked session brought it back up as host (the SDK network handler starts
+        // the NetworkManager before CreateSessionAsync completes).
+        Assert.True(rig.Nm.IsListening);
+        Assert.True(rig.Nm.IsHost);
 
         // LocalMultiplayerService: queries see nothing, so the flow converges on
         // hosting a fresh in-process session with a deterministic id.

@@ -24,6 +24,13 @@ namespace CosmicShore.Content.Scenes
 
         /// <summary>Activate the loaded hierarchy (runs Awake/OnEnable). Default true.</summary>
         public bool Activate = true;
+
+        /// <summary>
+        /// Where the loaded roots end up (null = the scene root). An inactive parent keeps an
+        /// un-activated load dormant: prefab-asset templates go straight from the inactive
+        /// holder to the inactive template root, so no Awake/OnEnable ever runs on an asset.
+        /// </summary>
+        public Transform Parent;
     }
 
     /// <summary>What a load produced, for diagnostics and lookups.</summary>
@@ -161,11 +168,21 @@ namespace CosmicShore.Content.Scenes
                     WirePersistentCalls(evt, calls, origin);
             _pendingEvents.Clear();
 
-            // 7. Activate (Awake/OnEnable over the whole, fully wired tree), then un-hold.
-            if (_options.Activate) holder.SetActive(true);
+            // 7. Un-hold, then activate (Awake/OnEnable over the fully wired tree). Each root
+            //    moves to its final place while still dormant — its authored active flag is
+            //    parked — so Awake runs with the object where Unity has it (a root in the scene):
+            //    DontDestroyOnLoad(gameObject) in Awake must mark THIS root, not the holder.
+            var authoredActive = new List<bool>(roots.Count);
             foreach (var root in roots)
-                root.SetParent(null, false);
+            {
+                authoredActive.Add(root.gameObject.activeSelf);
+                if (_options.Activate) root.gameObject.SetActive(false);
+                root.SetParent(_options.Parent, false);
+            }
             Destroy(holder);
+            if (_options.Activate)
+                for (int i = 0; i < roots.Count; i++)
+                    if (authoredActive[i]) roots[i].gameObject.SetActive(true);
 
             _result.Roots.AddRange(roots.Select(r => r.gameObject));
             return _result;

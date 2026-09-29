@@ -8,6 +8,11 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);CS0414;CS0169;CS0649;CS0067;CS0618;CS0162;CS0219;CS8321;CS0108;CS0114;SYSLIB0011</NoWarn>
   </PropertyGroup>
+  <!-- A Debug build of the port is a Unity DEVELOPMENT build: CSDebug.Log/LogVerbose and every
+       #if DEVELOPMENT_BUILD diagnostic compile in. Release mirrors a release player (stripped). -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DefineConstants>$(DefineConstants);DEVELOPMENT_BUILD</DefineConstants>
+  </PropertyGroup>
   <Import Project="SyncUnitySources.targets" />
   <ItemGroup>
     <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />

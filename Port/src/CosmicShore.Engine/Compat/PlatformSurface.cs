@@ -625,6 +625,11 @@ namespace CosmicShore.Engine
         public static void DrawTexture(Rect position, Texture image, ScaleMode scaleMode, bool alphaBlend = true, float imageAspect = 0f) { }
         public static void BeginGroup(Rect position) { }
         public static void EndGroup() { }
+        public delegate void WindowFunction(int id);
+        public static Rect Window(int id, Rect clientRect, WindowFunction func, string text) => clientRect;
+        public static Rect Window(int id, Rect clientRect, WindowFunction func, string text, GUIStyle style) => clientRect;
+        public static void DragWindow() { }
+        public static void DragWindow(Rect position) { }
     }
 
     public enum ScaleMode { StretchToFill = 0, ScaleAndCrop = 1, ScaleToFit = 2 }
@@ -634,6 +639,11 @@ namespace CosmicShore.Engine
         public static void Label(string text, params GUILayoutOption[] options) { }
         public static void Label(string text, GUIStyle style, params GUILayoutOption[] options) { }
         public static bool Button(string text, params GUILayoutOption[] options) => false;
+        public static bool Button(string text, GUIStyle style, params GUILayoutOption[] options) => false;
+        public static void Box(string text, params GUILayoutOption[] options) { }
+        public static void Box(string text, GUIStyle style, params GUILayoutOption[] options) { }
+        public static Rect Window(int id, Rect screenRect, GUI.WindowFunction func, string text, params GUILayoutOption[] options) => screenRect;
+        public static Rect Window(int id, Rect screenRect, GUI.WindowFunction func, string text, GUIStyle style, params GUILayoutOption[] options) => screenRect;
         public static bool Toggle(bool value, string text, params GUILayoutOption[] options) => value;
         public static void BeginArea(Rect screenRect) { }
         public static void EndArea() { }

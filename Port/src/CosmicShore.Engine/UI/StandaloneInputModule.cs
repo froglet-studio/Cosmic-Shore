@@ -23,7 +23,7 @@ namespace CosmicShore.Engine.UI
     public class StandaloneInputModule : BaseInputModule
     {
         EventSystem m_EventSystem;
-        EventSystem eventSystem => m_EventSystem ??= gameObject.GetComponent<EventSystem>();
+        protected EventSystem eventSystem => m_EventSystem ??= gameObject.GetComponent<EventSystem>();
 
         PointerEventData m_PointerData;
         readonly List<RaycastResult> m_RaycastResults = new();

@@ -106,6 +106,7 @@ namespace CosmicShore.Engine
         public GUIStyle() { }
         public GUIStyle(GUIStyle other) { if (other != null) { fontSize = other.fontSize; alignment = other.alignment; richText = other.richText; wordWrap = other.wordWrap; } }
         public int fontSize { get; set; }
+        public Font font { get; set; }
         public FontStyle fontStyle { get; set; }
         public TextAnchor alignment { get; set; }
         public bool richText { get; set; }

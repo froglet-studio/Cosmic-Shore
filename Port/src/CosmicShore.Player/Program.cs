@@ -10,7 +10,11 @@ namespace CosmicShore.Player
     /// game take it from there.
     ///
     ///   CosmicShore [--scene NAME] [--size WxH] [--screenshot out.png] [--frames N]
-    ///   CosmicShore --headless [--frames N] [--scene NAME] [--quiet]
+    ///               [--shot FRAME:out.png]... [--do FRAME:ACTION]...
+    ///   CosmicShore --headless [--frames N] [--scene NAME] [--quiet] [--do FRAME:ACTION]...
+    ///
+    /// --verbose opens every CSDebug log channel (a development build's bring-up traces).
+    /// --do scripts input (see <see cref="InputScript"/>); --shot captures extra frames.
     ///
     /// --headless ticks the engine with no window at a fixed 60 Hz for N frames (default
     /// 600) and prints a scene/log summary — the fast loop for chasing boot problems.
@@ -22,6 +26,8 @@ namespace CosmicShore.Player
             string scene = null, screenshot = null;
             int frames = -1, width = 1600, height = 900;
             bool headless = false, quiet = false;
+            var script = new InputScript();
+            var shots = new System.Collections.Generic.SortedDictionary<int, string>();
             for (int i = 0; i < args.Length; i++)
             {
                 switch (args[i])
@@ -31,6 +37,15 @@ namespace CosmicShore.Player
                     case "--frames" when i + 1 < args.Length: int.TryParse(args[++i], out frames); break;
                     case "--headless": headless = true; break;
                     case "--quiet": quiet = true; break;
+                    case "--verbose": CosmicShore.Utility.CSDebug.VerboseChannels = (CosmicShore.Utility.CSLogChannel)~0; break;
+                    case "--do" when i + 1 < args.Length: script.Add(args[++i]); break;
+                    case "--shot" when i + 1 < args.Length:
+                    {
+                        var spec = args[++i];
+                        int c = spec.IndexOf(':');
+                        if (c > 0 && int.TryParse(spec[..c], out int f)) shots[f] = spec[(c + 1)..];
+                        break;
+                    }
                     case "--size" when i + 1 < args.Length:
                     {
                         var wh = args[++i].Split('x');
@@ -42,8 +57,10 @@ namespace CosmicShore.Player
 
             try
             {
-                if (headless) return RunHeadless(scene, frames < 0 ? 600 : frames, quiet, width, height);
-                new PlayerWindow(scene, width, height, screenshot, frames < 0 ? 180 : frames).Run();
+                if (screenshot != null) shots[frames < 0 ? 180 : frames] = screenshot;
+                if (headless) return RunHeadless(scene, Math.Max(frames < 0 ? 600 : frames, script.LastFrame), quiet, width, height, script);
+                int last = shots.Count > 0 ? shots.Keys.Max() : (frames < 0 ? -1 : frames);
+                new PlayerWindow(scene, width, height, shots, last, script).Run();
                 return 0;
             }
             catch (Exception e)
@@ -54,16 +71,18 @@ namespace CosmicShore.Player
             }
         }
 
-        static int RunHeadless(string scene, int frames, bool quiet, int width, int height)
+        static int RunHeadless(string scene, int frames, bool quiet, int width, int height, InputScript script)
         {
             Screen.width = width;
             Screen.height = height;
             using var boot = new PlayerBoot();
             boot.Log.Quiet = quiet;
+            if (!script.IsEmpty) script.EnsureDevices();
             boot.Start(scene);
             string lastScene = SceneManager.GetActiveScene().name;
             for (int f = 0; f < frames; f++)
             {
+                script.BeforeTick(f);
                 boot.Loop.Tick(1f / 60f);
                 var active = SceneManager.GetActiveScene().name;
                 if (active != lastScene)

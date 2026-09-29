@@ -131,8 +131,10 @@ namespace CosmicShore.Engine.UI
                         SelectionState.Disabled => m_Colors.disabledColor,
                         _ => m_Colors.normalColor,
                     };
-                    // Instant apply (see class doc) — the original CrossFades over fadeDuration.
-                    m_TargetGraphic.color = tint * m_Colors.colorMultiplier;
+                    // Original contract: the tint is a CanvasRenderer colour multiplied over the
+                    // graphic's own colour (a teal button stays teal, dimmed when disabled) —
+                    // never a write to Graphic.color. Applied instantly (see class doc).
+                    m_TargetGraphic.CrossFadeColor(tint * m_Colors.colorMultiplier, 0f, true, true);
                     break;
 
                 case Transition.SpriteSwap:

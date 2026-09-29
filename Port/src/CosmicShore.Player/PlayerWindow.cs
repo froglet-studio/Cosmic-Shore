@@ -12,8 +12,9 @@ namespace CosmicShore.Player
     public sealed class PlayerWindow
     {
         readonly string _scene;
-        readonly string _screenshotPath;
-        readonly int _screenshotFrame;
+        readonly System.Collections.Generic.SortedDictionary<int, string> _shots;
+        readonly int _lastFrame;
+        readonly InputScript _script;
         readonly int _width, _height;
 
         IWindow _window;
@@ -24,16 +25,22 @@ namespace CosmicShore.Player
         UguiRenderer _ui;
         TmpTextRenderer _tmp;
         PresentPass _present;
+        SilkInputBridge _inputBridge;
         int _frameIndex;
 
-        public PlayerWindow(string scene, int width, int height, string screenshotPath, int screenshotFrame)
+        /// <param name="lastFrame">Close after this frame (-1 = run until the window closes).</param>
+        public PlayerWindow(string scene, int width, int height,
+            System.Collections.Generic.SortedDictionary<int, string> shots, int lastFrame, InputScript script)
         {
             _scene = scene;
             _width = width;
             _height = height;
-            _screenshotPath = screenshotPath;
-            _screenshotFrame = screenshotFrame;
+            _shots = shots;
+            _lastFrame = lastFrame;
+            _script = script;
         }
+
+        bool Scripted => _lastFrame >= 0;
 
         public void Run()
         {
@@ -51,6 +58,7 @@ namespace CosmicShore.Player
             _window.Render += OnRender;
             _window.Run();
             _boot?.Dispose();
+            _inputBridge?.Dispose();
         }
 
         void OnLoad()
@@ -65,6 +73,8 @@ namespace CosmicShore.Player
             _ui.Tmp = _tmp;
             _present = new PresentPass(_gl);
 
+            _inputBridge = new SilkInputBridge(_window);
+            _script.EnsureDevices();
             _boot = new PlayerBoot();
             _boot.Start(_scene);
             _tmp.Fonts = _boot.Runtime.Fonts;
@@ -72,8 +82,11 @@ namespace CosmicShore.Player
 
         void OnUpdate(double dt)
         {
-            float step = _screenshotPath != null ? 1f / 60f : (float)Math.Min(dt, 0.1);
+            float step = Scripted ? 1f / 60f : (float)Math.Min(dt, 0.1);
+            _inputBridge.BeforeTick();
+            _script.BeforeTick(_frameIndex);
             _boot.Loop.Tick(step);
+            _inputBridge.AfterTick();
         }
 
         void OnRender(double dt)
@@ -95,10 +108,13 @@ namespace CosmicShore.Player
             _present.Draw(_frame.Color, w, h);
 
             _frameIndex++;
-            if (_screenshotPath != null && _frameIndex == _screenshotFrame)
+            if (_shots.TryGetValue(_frameIndex, out var path))
             {
-                Capture(_screenshotPath, w, h);
-                Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}");
+                Capture(path, w, h);
+                Console.WriteLine($"screenshot → {path} ({w}x{h}) frame {_frameIndex}");
+            }
+            if (Scripted && _frameIndex >= _lastFrame)
+            {
                 _boot.Log.PrintSummary();
                 _window.Close();
             }

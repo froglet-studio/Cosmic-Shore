@@ -49,7 +49,6 @@ namespace CosmicShore.Engine
 
         // Per-frame scratch (reused to avoid steady-state allocation).
         readonly List<Collider> _live = new();
-        readonly List<int> _liveTriggerIndices = new(); // ascending indices into _live
         readonly List<(Collider a, Collider b)> _discovered = new();
         readonly HashSet<(Collider a, Collider b)> _current = new();
 
@@ -73,39 +72,20 @@ namespace CosmicShore.Engine
 
             // 2. Current overlap set — (i, j), i < j, at least one trigger.
             //
-            //    Perf (behavior-preserving): only pairs containing at least one trigger can
-            //    produce events, so instead of the naive O(n²) cross product the scan walks
-            //    trigger indices — for a trigger at i, every j > i; for a non-trigger at i,
-            //    only triggers at j > i (via the ascending _liveTriggerIndices cursor). The
-            //    sequence of qualifying pairs visited is IDENTICAL to the naive i<j scan
-            //    (lexicographic over registration order), so discovery order — and therefore
-            //    enter-event order — is unchanged. This keeps the pass linear-ish in scenes
-            //    dominated by non-trigger colliders (e.g. thousands of conserved trail
-            //    prisms vs. a handful of crystal/skimmer triggers).
+            //    Broadphase: every live collider's shape is resolved to world space ONCE per
+            //    frame (the hierarchy walk used to be repeated per pair), then a sort-and-sweep
+            //    on x finds the pairs whose AABBs touch. Candidates are sorted back into
+            //    (i, j) registration order before the exact test, so discovery order — and so
+            //    the enter-event stream — is identical to the exhaustive i<j scan it replaces.
+            //    Arenas with tens of thousands of trigger prisms stay near-linear.
             _discovered.Clear();
             _current.Clear();
-            _liveTriggerIndices.Clear();
-            for (int i = 0; i < _live.Count; i++)
-                if (_live[i].isTrigger)
-                    _liveTriggerIndices.Add(i);
-
-            int triggerCursor = 0; // first entry in _liveTriggerIndices whose index is > i
-            for (int i = 0; i < _live.Count; i++)
+            BuildShapes();
+            SweepCandidates();
+            foreach (long key in _candidates)
             {
-                var a = _live[i];
-                while (triggerCursor < _liveTriggerIndices.Count && _liveTriggerIndices[triggerCursor] <= i)
-                    triggerCursor++;
-
-                if (a.isTrigger)
-                {
-                    for (int j = i + 1; j < _live.Count; j++)
-                        TestPair(a, _live[j]);
-                }
-                else
-                {
-                    for (int t = triggerCursor; t < _liveTriggerIndices.Count; t++)
-                        TestPair(a, _live[_liveTriggerIndices[t]]);
-                }
+                int i = (int)(key >> 32), j = (int)(key & 0xFFFFFFFF);
+                TestPair(i, j);
             }
 
             // 3. Exits first: previously-active pairs that separated, disabled, or died.
@@ -134,15 +114,127 @@ namespace CosmicShore.Engine
             }
         }
 
-        /// <summary>Overlap-test one (earlier, later) registration-order pair (≥1 side is a trigger).</summary>
-        void TestPair(Collider a, Collider b)
+        /// <summary>Exact-test one (earlier, later) registration-order pair (≥1 side is a trigger).</summary>
+        void TestPair(int i, int j)
         {
+            var a = _live[i];
+            var b = _live[j];
             if (ReferenceEquals(a.gameObject, b.gameObject)) return;
-            if (!Overlaps(a, b)) return;
+            if (!ShapesOverlap(in _shapes[i], in _shapes[j])) return;
 
             var pair = (a, b);
             _current.Add(pair);
             _discovered.Add(pair);
+        }
+
+        // ── Broadphase ───────────────────────────────────────────────
+
+        enum ShapeKind : byte { None, Sphere, Box }
+
+        /// <summary>A collider's world-space shape for this frame (mesh colliders are their bounds box).</summary>
+        struct Shape
+        {
+            public ShapeKind Kind;
+            public Vector3 Center, Extents; // Extents = radius on every axis for spheres
+            public float Radius;
+            public bool Trigger;
+        }
+
+        Shape[] _shapes = Array.Empty<Shape>();
+        int[] _order = Array.Empty<int>();
+        readonly List<int> _sweepActive = new();
+        readonly List<long> _candidates = new();
+
+        void BuildShapes()
+        {
+            int n = _live.Count;
+            if (_shapes.Length < n) { _shapes = new Shape[Math.Max(n, _shapes.Length * 2)]; _order = new int[_shapes.Length]; }
+            for (int i = 0; i < n; i++)
+            {
+                var c = _live[i];
+                ref var sh = ref _shapes[i];
+                sh.Trigger = c.isTrigger;
+                switch (c)
+                {
+                    case SphereCollider sphere:
+                        sh.Kind = ShapeKind.Sphere;
+                        sh.Center = sphere.transform.TransformPoint(sphere.center);
+                        sh.Radius = WorldRadius(sphere);
+                        sh.Extents = new Vector3(sh.Radius, sh.Radius, sh.Radius);
+                        break;
+                    case BoxCollider box:
+                        sh.Kind = ShapeKind.Box;
+                        (sh.Center, sh.Extents) = BoxBounds(box);
+                        break;
+                    case MeshCollider mesh when TryMeshBounds(mesh, out var mc, out var me):
+                        sh.Kind = ShapeKind.Box;
+                        sh.Center = mc;
+                        sh.Extents = me;
+                        break;
+                    default:
+                        sh.Kind = ShapeKind.None; // no overlap test exists for this shape
+                        break;
+                }
+            }
+        }
+
+        void SweepCandidates()
+        {
+            _candidates.Clear();
+            int n = _live.Count, m = 0;
+            for (int i = 0; i < n; i++)
+                if (_shapes[i].Kind != ShapeKind.None) _order[m++] = i;
+            var shapes = _shapes;
+            Array.Sort(_order, 0, m, Comparer<int>.Create((x, y) =>
+            {
+                int c = (shapes[x].Center.x - shapes[x].Extents.x).CompareTo(shapes[y].Center.x - shapes[y].Extents.x);
+                return c != 0 ? c : x.CompareTo(y);
+            }));
+
+            _sweepActive.Clear();
+            for (int k = 0; k < m; k++)
+            {
+                int e = _order[k];
+                ref readonly var se = ref _shapes[e];
+                float minX = se.Center.x - se.Extents.x;
+                for (int t = _sweepActive.Count - 1; t >= 0; t--)
+                {
+                    int a = _sweepActive[t];
+                    ref readonly var sa = ref _shapes[a];
+                    if (sa.Center.x + sa.Extents.x < minX)
+                    {
+                        _sweepActive[t] = _sweepActive[^1];
+                        _sweepActive.RemoveAt(_sweepActive.Count - 1);
+                        continue;
+                    }
+                    if (!sa.Trigger && !se.Trigger) continue;
+                    if (Mathf.Abs(sa.Center.y - se.Center.y) > sa.Extents.y + se.Extents.y) continue;
+                    if (Mathf.Abs(sa.Center.z - se.Center.z) > sa.Extents.z + se.Extents.z) continue;
+                    int lo = Math.Min(a, e), hi = Math.Max(a, e);
+                    _candidates.Add(((long)lo << 32) | (uint)hi);
+                }
+                _sweepActive.Add(e);
+            }
+            _candidates.Sort();
+        }
+
+        /// <summary>The exact tests, over the frame's resolved shapes (same rules as <see cref="Overlaps"/>).</summary>
+        static bool ShapesOverlap(in Shape a, in Shape b)
+        {
+            if (a.Kind == ShapeKind.Sphere && b.Kind == ShapeKind.Sphere)
+            {
+                float r = a.Radius + b.Radius;
+                return (a.Center - b.Center).sqrMagnitude <= r * r;
+            }
+            if (a.Kind == ShapeKind.Box && b.Kind == ShapeKind.Box)
+                return AabbAabb(a.Center, a.Extents, b.Center, b.Extents);
+            ref readonly var s = ref a.Kind == ShapeKind.Sphere ? ref a : ref b;
+            ref readonly var box = ref a.Kind == ShapeKind.Sphere ? ref b : ref a;
+            var closest = new Vector3(
+                Mathf.Clamp(s.Center.x, box.Center.x - box.Extents.x, box.Center.x + box.Extents.x),
+                Mathf.Clamp(s.Center.y, box.Center.y - box.Extents.y, box.Center.y + box.Extents.y),
+                Mathf.Clamp(s.Center.z, box.Center.z - box.Extents.z, box.Center.z + box.Extents.z));
+            return (s.Center - closest).sqrMagnitude <= s.Radius * s.Radius;
         }
 
         // ── Dispatch ─────────────────────────────────────────────────
