@@ -488,7 +488,7 @@ table.kv td { font-weight: 600 }
   <header>
     <div class="eyebrow">Growing Neural Cellular Automata · reproduction</div>
     <h1>A lizard grown from <em>one cell</em></h1>
-    <p class="lede">Every pixel below runs the same 8,336-parameter rule, sees only its 3×3 neighbours, and fires at random half the time. Starting from a single live cell, the rule grows the Noto lizard emoji. This is a CPU PyTorch reproduction of <a href="https://distill.pub/2020/growing-ca/">Mordvintsev et al., Distill 2020</a>, running live in your browser, plus one extension: the same cell trained on an animated loop, so the lizard swims.</p>
+    <p class="lede">Every pixel below runs the same 8,336-parameter rule, sees only its 3×3 neighbours, and fires at random half the time. Starting from a single live cell, the rule grows the Noto lizard emoji. This is a CPU PyTorch reproduction of <a href="https://distill.pub/2020/growing-ca/">Mordvintsev et al., Distill 2020</a>, running live in your browser, plus two extensions: the same cell trained on an animated loop, so the lizard swims, and that swim with one more spatial dimension.</p>
   </header>
 
   <section class="bench" aria-label="Live automaton">

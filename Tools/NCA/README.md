@@ -127,6 +127,55 @@ best/worst frame margin). Pinning the phase to birth for the first stage breaks 
 symmetry. The yardstick for "is it really moving" is the best any STILL image can do
 against the loop — 10⁻²·⁷² for the swim — and training goes under it within 250 steps.
 
+## One more spatial dimension (`nca3d.py`)
+
+The same cell with one more axis: identity plus x, y **and z** Sobel gradients over the
+3×3×3 neighbourhood (/32, so a unit ramp reads 1, as the 2D /8 does), 16 channels,
+64 → 128 → 16 (10,384 parameters), stochastic update, 3×3×3 alive mask. The target is
+the emoji INFLATED into a body (half-thickness ∝ √distance-to-edge, so the spine is thick
+and the toes thin) on a 22×44×44 grid, swimming a **helical** travelling wave: displaced
+sideways by sin(phase) and in depth by cos(phase), so the tail traces a circle — a motion a
+flat lizard cannot make. Same two-stage training as the 2D swim, with spherical cuts.
+
+```
+python3 Tools/NCA/nca3d.py selftest
+python3 Tools/NCA/nca3d.py train --init2d Tools/NCA/results/lizard_swim/model.pt --clock-steps 1000
+python3 Tools/NCA/nca3d.py train --resume --out Tools/NCA/runs/lizard3d_swim   # after a restart
+python3 Tools/NCA/verify_js3d.py --run Tools/NCA/results/lizard3d_swim
+```
+
+**Making it tractable on CPU** took three exact reductions, each held equal to the dense
+formulation by `selftest`: perception evaluated only at alive-and-firing cells (a 27-voxel
+gather times the fixed stencil as a 27×4 matrix); every step cropped to bbox(alpha > 0.1)
++ 2 (outside it the state is zero before and after, so computing there is waste); and a
+separable alive test instead of `max_pool3d`. Plus per-step activation checkpointing to
+keep memory at one state per step. 19 s → 4 s per training iteration.
+
+**Warm start from the 2D swimmer.** `--init2d` copies a 2D model's identity/gx/gy weights
+into the 3D layout with the z weights at zero — the 2D swimmer embedded as a point in the
+bigger space. In a 100-step A/B it reached 10⁻³·⁰³ against 10⁻²·⁵⁹ from zero init, already
+under the 10⁻²·⁸⁴ still-volume floor: the 2D clock transfers.
+
+**Checkpoint/resume.** A container restart killed the first attempt at step 1425; training
+now saves model, Adam moments and step every 50 steps, and `--resume` rebuilds the (unsaved,
+~2.8 GB) pool by growing seeds with the checkpoint model for random lengths.
+
+### Result (3500 steps: 1000 clock + 2500 pool, warm-started from the 2D swim)
+
+| measured over steps 200–2000 of one rollout from a seed | |
+|---|---|
+| tempo (target 8 steps / frame) | **8.49** steps / frame |
+| frames visited | 8 of 8, in order |
+| error vs best-matching frame | 10⁻³·⁵¹ (10⁻³·⁶¹ at step 2000) |
+| error vs the frame its own fitted clock predicts | 10⁻³·⁴⁹ |
+| best any still volume can do against the loop | 10⁻²·⁸⁴ |
+| best / worst frame gap | 1.16 (log₁₀; the 2D swim's was 0.95) |
+| ball cut through the tail half at step 400, error 600 steps later | 10⁻³·³⁸, regrown by ~50 steps |
+| tempo after the cut | 8.47 steps / frame |
+
+The browser runner (`nca3d_core.js`) matches torch to 5.6e-7 over 60 steps, with a
+z-derivative sign flip as the negative control (5.2e-1).
+
 ## Where this is meant to go (not started)
 
 The reproduction is the floor. The obvious routes from it toward flora, roughly in the

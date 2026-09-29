@@ -1,0 +1,24 @@
+{
+  "grid_dhw": [
+    22,
+    44,
+    44
+  ],
+  "frames": 8,
+  "period_target_steps_per_frame": 8,
+  "measured_steps_per_frame": 8.487183081768698,
+  "distinct_frames_visited_after_200": 8,
+  "best_frame_error_mean_after_200": 0.000311411073198542,
+  "clock_predicted_frame_error_mean": 0.0003213274176232517,
+  "best_worst_frame_margin_log10": 1.1614378690719604,
+  "static_best_image_error": 0.0014442704850807786,
+  "best_frame_error_at": {
+    "64": 0.0002207896177424118,
+    "96": 0.0005278074531815946,
+    "200": 0.00024129518715199083,
+    "1000": 0.00028173948521725833,
+    "2000": 0.00024480122374370694
+  },
+  "after_damage_error_at_600": 0.0004193945787847042,
+  "after_damage_steps_per_frame": 8.470859927367217
+}
