@@ -28,6 +28,7 @@ namespace CosmicShore.Player
                 rt.GetWorldCorners(c);
                 rect = $" rect=({c[0].x:0},{c[0].y:0})-({c[2].x:0},{c[2].y:0}) aMin={rt.anchorMin} aMax={rt.anchorMax} pivot={rt.pivot} size={rt.sizeDelta} pos={rt.anchoredPosition} scale={rt.localScale}";
             }
+            else rect = $" world={t.position} fwd={t.forward} scale={t.lossyScale}";
             var comps = string.Join(",", go.GetComponents<Component>().Where(c => c is not Transform).Select(c => c.GetType().Name + (c is Behaviour b && !b.enabled ? "(off)" : "")));
             Console.WriteLine($"{new string(' ', level * 2)}- {t.name} active={go.activeSelf}/{go.activeInHierarchy}{rect} [{comps}]");
             foreach (var img in go.GetComponents<CosmicShore.Engine.UI.Image>())

@@ -303,6 +303,7 @@ void main(){
             public MatState State;
             public float Distance;
             public bool Skinned;
+            public bool WorldSpace;
         }
 
         readonly GL _gl;
@@ -349,6 +350,9 @@ void main(){
         /// <summary>Draws the scene as seen by <paramref name="camera"/> into the bound target.</summary>
         EVector3 _camPos;
         readonly List<Item> _run = new(), _skinnedOpaque = new();
+        sealed class TGroup { public readonly List<Item> Items = new(); public int Queue; public float Far; }
+        readonly Dictionary<(object, int, object, int, int), TGroup> _tGroups = new();
+        readonly List<TGroup> _tGroupPool = new(), _tOrder = new();
         readonly float[] _boneData = new float[MaxBones * 16];
 
         public void Render(Camera camera, int width, int height)
@@ -402,23 +406,39 @@ void main(){
             _run.Clear();
 
             // Transparent: back to front, one at a time.
-            _transparent.Sort((a, b) => a.State.Queue != b.State.Queue ? a.State.Queue.CompareTo(b.State.Queue) : b.Distance.CompareTo(a.Distance));
             _gl.Enable(EnableCap.Blend);
-            // Order is exact (queue, then back to front); consecutive items that share mesh,
-            // submesh and material draw as one instanced call — the same blend order, far fewer calls.
-            _run.Clear();
+            // Transparent: grouped by render state (queue, mesh, submesh, material), each group
+            // back to front, groups ordered by queue then by their farthest member. A group draws
+            // as ONE instanced call — the arena's 11k cactus spindles (eight phase materials,
+            // interleaved in depth) would otherwise be tens of thousands of calls a frame. The
+            // cost is cross-group order between overlapping translucent surfaces of different
+            // materials; per-object effects (the crackle shield, skinned meshes) stay single.
+            foreach (var g in _tGroups.Values) { g.Items.Clear(); _tGroupPool.Add(g); }
+            _tGroups.Clear();
+            _tOrder.Clear();
+            int solo = 0;
             foreach (var it in _transparent)
             {
-                if (_run.Count > 0)
+                bool single = it.State.Family == 7 || it.Skinned;
+                var key = single ? ((object)it.Mesh, it.Submesh, (object)it.Material, it.State.Queue, ++solo)
+                                 : ((object)it.Mesh, it.Submesh, (object)it.Material, it.State.Queue, 0);
+                if (!_tGroups.TryGetValue(key, out var group))
                 {
-                    var head = _run[0];
-                    bool same = head.State.Family != 7 && !head.Skinned && !it.Skinned && ReferenceEquals(head.Mesh, it.Mesh)
-                                && head.Submesh == it.Submesh && ReferenceEquals(head.Material, it.Material);
-                    if (!same) { DrawBatch(_run); _run.Clear(); }
+                    if (_tGroupPool.Count > 0) { group = _tGroupPool[^1]; _tGroupPool.RemoveAt(_tGroupPool.Count - 1); }
+                    else group = new TGroup();
+                    group.Queue = it.State.Queue; group.Far = 0f;
+                    _tGroups[key] = group;
+                    _tOrder.Add(group);
                 }
-                _run.Add(it);
+                group.Items.Add(it);
+                if (it.Distance > group.Far) group.Far = it.Distance;
             }
-            if (_run.Count > 0) { DrawBatch(_run); _run.Clear(); }
+            _tOrder.Sort((a, b) => a.Queue != b.Queue ? a.Queue.CompareTo(b.Queue) : b.Far.CompareTo(a.Far));
+            foreach (var g in _tOrder)
+            {
+                if (g.Items.Count > 1) g.Items.Sort((a, b) => b.Distance.CompareTo(a.Distance));
+                DrawBatch(g.Items);
+            }
 
             _gl.DepthMask(true);
             _gl.FrontFace(FrontFaceDirection.Ccw);
@@ -437,6 +457,11 @@ void main(){
             foreach (var r in _renderers)
             {
                 if (!r.enabled || r.forceRenderingOff) continue;
+                if (r is TrailRenderer || r is LineRenderer)
+                {
+                    CollectRibbon(r, mask, camPos);
+                    continue;
+                }
                 if (r is not MeshRenderer && r is not SkinnedMeshRenderer) continue;
                 var go = r.gameObject;
                 if ((mask & (1 << go.layer)) == 0 || !go.activeInHierarchy) continue;
@@ -670,6 +695,92 @@ void main(){
             fixed (float* p = _impactScratch) _gl.Uniform4(_program.Loc(name), 16, p);
         }
 
+        // ── Trails and lines: a camera-facing ribbon rebuilt each frame from the recorded points ──
+
+        readonly ConditionalWeakTable<Renderer, Mesh> _ribbons = new();
+        readonly List<EVector3> _ribbonPts = new();
+        static Material s_defaultLine;
+
+        /// <summary>Unity's Default-Line stand-in: unlit, alpha-blended, tinted by the vertex colour.</summary>
+        static Material DefaultLineMaterial => s_defaultLine ??= new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended")) { name = "Default-Line", renderQueue = 3000 };
+
+        void CollectRibbon(Renderer r, int mask, EVector3 camPos)
+        {
+            var go = r.gameObject;
+            if ((mask & (1 << go.layer)) == 0 || !go.activeInHierarchy || go.isPrefabAsset) return;
+            _ribbonPts.Clear();
+            float widthMul; AnimationCurve curve; Gradient gradient; bool loop = false;
+            if (r is TrailRenderer trail)
+            {
+                // Newest point last; the ribbon runs from the emitter (u = 0) to the oldest point (u = 1).
+                for (int i = trail.positionCount - 1; i >= 0; i--) _ribbonPts.Add(trail.GetPosition(i));
+                if (trail.emitting && go.activeInHierarchy) _ribbonPts.Insert(0, r.transform.position);
+                widthMul = trail.widthMultiplier; curve = trail.widthCurve; gradient = trail.colorGradient;
+            }
+            else
+            {
+                var line = (LineRenderer)r;
+                for (int i = 0; i < line.positionCount; i++)
+                    _ribbonPts.Add(line.useWorldSpace ? line.GetPosition(i) : r.transform.TransformPoint(line.GetPosition(i)));
+                widthMul = line.widthMultiplier; curve = line.widthCurve; gradient = line.colorGradient; loop = line.loop;
+            }
+            if (loop && _ribbonPts.Count > 2) _ribbonPts.Add(_ribbonPts[0]);
+            int n = _ribbonPts.Count;
+            if (n < 2) return;
+
+            float total = 0f;
+            for (int i = 1; i < n; i++) total += (_ribbonPts[i] - _ribbonPts[i - 1]).magnitude;
+            if (total <= 1e-5f) return;
+
+            var verts = new EVector3[n * 2];
+            var cols = new Color[n * 2];
+            var uvs = new Vector2[n * 2];
+            var tris = new int[(n - 1) * 6];
+            float along = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                if (i > 0) along += (_ribbonPts[i] - _ribbonPts[i - 1]).magnitude;
+                float u = along / total;
+                var p = _ribbonPts[i];
+                var tangent = _ribbonPts[Math.Min(i + 1, n - 1)] - _ribbonPts[Math.Max(i - 1, 0)];
+                var side = EVector3.Cross(tangent, camPos - p);
+                float len = side.magnitude;
+                side = len > 1e-6f ? side / len : EVector3.up;
+                float halfWidth = 0.5f * widthMul * (curve != null ? curve.Evaluate(u) : 1f);
+                verts[i * 2] = p - side * halfWidth;
+                verts[i * 2 + 1] = p + side * halfWidth;
+                var c = gradient != null ? gradient.Evaluate(u) : Color.white;
+                cols[i * 2] = c; cols[i * 2 + 1] = c;
+                uvs[i * 2] = new Vector2(u, 0f); uvs[i * 2 + 1] = new Vector2(u, 1f);
+                if (i < n - 1)
+                {
+                    int o = i * 6, a = i * 2;
+                    tris[o] = a; tris[o + 1] = a + 2; tris[o + 2] = a + 1;
+                    tris[o + 3] = a + 1; tris[o + 4] = a + 2; tris[o + 5] = a + 3;
+                }
+            }
+            var mesh = _ribbons.GetValue(r, _ => new Mesh { name = "ribbon" });
+            mesh.Clear();
+            mesh.vertices = verts;
+            mesh.colors = cols;
+            mesh.uv = uvs;
+            mesh.triangles = tris;
+
+            var mats = r.sharedMaterials;
+            var m = mats is { Length: > 0 } && mats[0] != null ? mats[0] : DefaultLineMaterial;
+            if (!_mats.TryGetValue(m, out var st))
+            {
+                _mats[m] = st = Classify(m);
+                // A line/trail is a translucent strip whatever its material queue says; cull nothing.
+                if (!st.Transparent) { st.Transparent = true; st.Src = BlendingFactor.SrcAlpha; st.Dst = BlendingFactor.OneMinusSrcAlpha; st.ZWrite = false; }
+                st.Cull = 0;
+                _mats[m] = st;
+            }
+            var item = new Item { Renderer = r, Mesh = mesh, Submesh = 0, Material = m, State = st, WorldSpace = true,
+                                  Distance = (r.transform.position - camPos).sqrMagnitude };
+            _transparent.Add(item);
+        }
+
         sealed class MorphState { public Mesh Clone; public Mesh Source; public float[] Weights = Array.Empty<float>(); }
         readonly ConditionalWeakTable<SkinnedMeshRenderer, MorphState> _morphs = new();
         readonly ConditionalWeakTable<Mesh, Dictionary<(int, int), (EVector3[] V, EVector3[] N)>> _deltas = new();
@@ -769,7 +880,7 @@ void main(){
         void WriteInstance(in Item it, int o)
         {
             var d = _instanceData;
-            var m = it.Renderer.transform.localToWorldMatrix;
+            var m = it.WorldSpace ? CosmicShore.Engine.Matrix4x4.identity : it.Renderer.transform.localToWorldMatrix;
             // Column-major (GL): column c = (m0c, m1c, m2c, m3c).
             d[o + 0] = m.m00; d[o + 1] = m.m10; d[o + 2] = m.m20; d[o + 3] = m.m30;
             d[o + 4] = m.m01; d[o + 5] = m.m11; d[o + 6] = m.m21; d[o + 7] = m.m31;

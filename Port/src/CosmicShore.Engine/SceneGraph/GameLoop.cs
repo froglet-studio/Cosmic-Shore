@@ -106,6 +106,15 @@ namespace CosmicShore.Engine
             if (!_destroyQueue.Contains(obj)) _destroyQueue.Add(obj);
         }
 
+        readonly List<TrailRenderer> _trailScratch = new();
+
+        void SampleTrails()
+        {
+            Renderer.CollectLiveTrails(_trailScratch);
+            foreach (var trail in _trailScratch)
+                if (trail.enabled) trail.Sample();
+        }
+
         sealed class BehaviourOrderComparer : IComparer<MonoBehaviour>
         {
             public static readonly BehaviourOrderComparer Instance = new();
@@ -135,6 +144,7 @@ namespace CosmicShore.Engine
                 Coroutines.RunFrame();
                 Scheduler.RunFrame();
                 RunPhase(static mb => mb.HasLateUpdate, static mb => mb.RunLateUpdate());
+                SampleTrails(); // render-time slot: trails record where their transform ended the frame
                 UI.LayoutRebuilder.FlushQueuedRebuilds(); // canvas-update slot: queued UI layout solves after LateUpdate
                 Scheduler.RunEndOfFrame();
                 FlushDestroyQueue();

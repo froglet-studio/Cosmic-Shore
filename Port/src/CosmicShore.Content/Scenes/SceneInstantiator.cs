@@ -356,6 +356,46 @@ namespace CosmicShore.Content.Scenes
                     for (int i = 0; i < weights.Count; i++)
                         if (YScalar.TryFloat(weights[i].Scalar, out var w)) smr.SetBlendShapeWeight(i, w);
             }
+            else if (comp is TrailRenderer trail)
+            {
+                var b = obj.Body;
+                trail.time = b.Float("m_Time", trail.time);
+                trail.minVertexDistance = b.Float("m_MinVertexDistance", trail.minVertexDistance);
+                trail.emitting = b.Int("m_Emitting", 1) != 0;
+                trail.autodestruct = b.Int("m_Autodestruct") != 0;
+                if (b["m_Parameters"] is YMap par)
+                {
+                    trail.widthMultiplier = par.Float("widthMultiplier", 1f);
+                    if (par["widthCurve"] != null) trail.widthCurve = SerializedReader.ReadCurve(par["widthCurve"]);
+                    if (par["colorGradient"] != null) trail.colorGradient = SerializedReader.ReadGradient(par["colorGradient"]);
+                    trail.numCornerVertices = par.Int("numCornerVertices");
+                    trail.numCapVertices = par.Int("numCapVertices");
+                    trail.alignment = (LineAlignment)par.Int("alignment");
+                    trail.textureMode = (LineTextureMode)par.Int("textureMode");
+                }
+            }
+            else if (comp is LineRenderer line)
+            {
+                var b = obj.Body;
+                line.useWorldSpace = b.Int("m_UseWorldSpace", 1) != 0;
+                line.loop = b.Int("m_Loop") != 0;
+                var pts = b["m_Positions"]?.Items;
+                if (pts != null)
+                {
+                    line.positionCount = pts.Count;
+                    for (int i = 0; i < pts.Count; i++) line.SetPosition(i, V3(pts[i]));
+                }
+                if (b["m_Parameters"] is YMap par)
+                {
+                    line.widthMultiplier = par.Float("widthMultiplier", 1f);
+                    if (par["widthCurve"] != null) line.widthCurve = SerializedReader.ReadCurve(par["widthCurve"]);
+                    if (par["colorGradient"] != null) line.colorGradient = SerializedReader.ReadGradient(par["colorGradient"]);
+                    line.numCornerVertices = par.Int("numCornerVertices");
+                    line.numCapVertices = par.Int("numCapVertices");
+                    line.alignment = (LineAlignment)par.Int("alignment");
+                    line.textureMode = (LineTextureMode)par.Int("textureMode");
+                }
+            }
             else if (comp is Animator animator && obj.Body["m_Controller"] != null)
             {
                 var controller = ObjRef.From(obj.Body["m_Controller"]);

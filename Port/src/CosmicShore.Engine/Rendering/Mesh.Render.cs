@@ -23,7 +23,27 @@ namespace CosmicShore.Engine
     public partial class Renderer
     {
         static readonly List<Renderer> s_live = new();
-        internal static void RegisterLive(Renderer r) => s_live.Add(r);
+        static readonly List<TrailRenderer> s_trails = new();
+        internal static void RegisterLive(Renderer r)
+        {
+            s_live.Add(r);
+            if (r is TrailRenderer t) s_trails.Add(t);
+        }
+
+        /// <summary>Every trail that still exists (destroyed entries pruned).</summary>
+        public static void CollectLiveTrails(List<TrailRenderer> into)
+        {
+            into.Clear();
+            int w = 0;
+            for (int i = 0; i < s_trails.Count; i++)
+            {
+                var r = s_trails[i];
+                if (r.destroyedFlag || r.gameObject == null || r.gameObject.destroyedFlag) continue;
+                s_trails[w++] = r;
+                into.Add(r);
+            }
+            s_trails.RemoveRange(w, s_trails.Count - w);
+        }
 
         /// <summary>
         /// Every renderer that still exists, for the render backend (destroyed entries are

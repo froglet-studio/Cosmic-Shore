@@ -52,6 +52,9 @@ namespace CosmicShore.Player
 
         bool Scripted => _lastFrame >= 0;
 
+        /// <summary>--render-from N: skip drawing before frame N (a test run ticks through menus fast, then renders).</summary>
+        public static int RenderFrom;
+
         public void Run()
         {
             var options = WindowOptions.Default with
@@ -116,6 +119,11 @@ namespace CosmicShore.Player
             if (w <= 0 || h <= 0) return;
             Screen.width = w;
             Screen.height = h;
+            if (_frameIndex + 1 < RenderFrom && !_shots.ContainsKey(_frameIndex + 1))
+            {
+                _frameIndex++;
+                return;
+            }
             _frame.Ensure(w, h);
             // Enabled cameras aimed at a RenderTexture draw every frame (the preview window, the
             // connecting panel's arena view) before the screen camera, as the original does.

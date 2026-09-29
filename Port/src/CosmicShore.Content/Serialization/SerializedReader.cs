@@ -173,7 +173,7 @@ namespace CosmicShore.Content.Serialization
             return new Color32((byte)n.Int("r"), (byte)n.Int("g"), (byte)n.Int("b"), (byte)n.Int("a", 255));
         }
 
-        static AnimationCurve ReadCurve(YNode n)
+        internal static AnimationCurve ReadCurve(YNode n)
         {
             var curve = new AnimationCurve();
             foreach (var k in n["m_Curve"]?.Items ?? Array.Empty<YNode>())
@@ -181,7 +181,7 @@ namespace CosmicShore.Content.Serialization
             return curve;
         }
 
-        static Gradient ReadGradient(YNode n)
+        internal static Gradient ReadGradient(YNode n)
         {
             var g = new Gradient();
             int nc = n.Int("m_NumColorKeys", 2), na = n.Int("m_NumAlphaKeys", 2);
