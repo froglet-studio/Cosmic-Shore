@@ -377,8 +377,8 @@ namespace CosmicShore.Utility
             // Touchpoint 3: the analytic end (pool return), on both outcomes so the
             // pool flow never wedges.
             var timers = PrismTimerManager.EnsureInstance();
-            timers.CancelScheduledActions(this);
-            timers.ScheduleAction(this, MaxDuration, OnEffectComplete);
+            timers?.CancelScheduledActions(this);
+            timers?.ScheduleAction(this, MaxDuration, OnEffectComplete);
         }
 
         /// <summary>

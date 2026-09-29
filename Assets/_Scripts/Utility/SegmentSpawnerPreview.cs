@@ -19,7 +19,7 @@ namespace CosmicShore.Utility
     /// The proxy hierarchy uses <see cref="HideFlags.DontSave"/> so it never
     /// persists to the scene asset and is destroyed on disable / mode change.
     ///
-    /// Currently understands <see cref="SpawnableWaypointTrack"/> (the HexRace
+    /// Currently understands <see cref="SpawnableWaypointTrack"/> (the SkimRace
     /// track spawnable). Other <see cref="SpawnableBase"/> subclasses can be
     /// added by extending <c>BuildPreview</c>.
     ///
@@ -40,7 +40,7 @@ namespace CosmicShore.Utility
         }
 
         [Tooltip("Mesh shape drawn at each block position. None tears down the " +
-                 "preview entirely. SuperShielded matches the HexRace default.")]
+                 "preview entirely. SuperShielded matches the SkimRace default.")]
         [SerializeField] private PreviewShape preview = PreviewShape.SuperShielded;
 
         [Tooltip("Intensity level (1-4) to preview. Track shape varies per intensity.")]

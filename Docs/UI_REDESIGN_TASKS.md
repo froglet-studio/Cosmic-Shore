@@ -12,16 +12,16 @@ Maintained by the `ui-redesign-tracker` skill. Do not hand-edit the status table
 
 | ID | Task | Status | Depends on | Branch | PR | Completed |
 |---|---|---|---|---|---|---|
-| T1 | Safe area component | IN PROGRESS | — | `claude/safe-area-fitter-component-wrmdva` | #777 | |
+| T1 | Safe area component | DONE | — | `claude/safe-area-fitter-component-wrmdva` + `claude/safeareafitter-canvas-audit-sj1cxp` | #777 | 2026-09-08 |
 | T2 | Finish canvas resolution migration | TODO | — | | | |
-| T3 | Unify GameCanvas fork | TODO | T2 | | | |
+| T3 | Unify GameCanvas fork | DONE | T2 | via the GameCanvas Unifier (`5a4a003a`, `7e7494ea`) | | 2026-09-08 |
 | T4 | UIThemeSO + literal inventory | DONE | — | `claude/uithemeso-style-foundation-00fll9` | #795 | 2026-08-25 |
 | T5 | Download & install TMP fonts | TODO | — | | | |
 | T6 | TMP Style Sheet + Aldrich audit | TODO | T5 | | | |
 | T7 | Component sprite kit | TODO | — | | | |
 | T8 | SO_ColorSet consumer audit | TODO | — | | | |
 
-**Critical path:** T2 → T3 is the long pole. T1, T4, T5, T7 are independent and can run in parallel. T6 needs T5's font assets to exist.
+**Critical path:** ~~T2 → T3 is the long pole.~~ **T3 is done and T2 is not** — the Unifier delivered T3's end state and T2's GameCanvas criterion with it, so what remains of T2 (SplashScreen, Loadout Container, three sign prefabs, PhotoBooth) no longer blocks anything and is independent work. T5 → T6 is now the only real chain. T1 and T4 are closed.
 
 ---
 
@@ -36,7 +36,7 @@ Acceptance criteria:
 - [x] Caches last-applied rect — no per-frame work when unchanged
 - [x] Full-screen safeArea (desktop) is a no-op
 - [x] `androidRenderOutsideSafeArea` confirmed still enabled
-- [x] Not yet applied to any shipping prefab
+- [x] ~~Not yet applied to any shipping prefab~~ — **superseded, see the apply note below**
 - [x] Test scene demonstrates the two-layer contract
 
 **Deliverables:**
@@ -109,13 +109,39 @@ Acceptance criteria:
 > **floor, authored as padding** — i.e. it ratifies this task's deviation. Status and criteria are
 > unchanged; re-check the verification-checklist aspect list before closing.
 
+> **Applied (branch `claude/safeareafitter-canvas-audit-sj1cxp`).** The "not yet applied to any
+> shipping prefab" criterion above is superseded: every canvas that carries player-facing UI now
+> carries the split. The per-layer decision table — which layers are content, which are deliberately
+> full-bleed, and why some host the component while others get a fitted parent — is
+> `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3, and Style Foundation §8 no longer says "ships dormant"
+> (v0.3.3). Run the `ui-redesign-tracker` skill to re-verify the criteria and move the status row;
+> this branch did not hand-edit it.
+
+> **Status moved to DONE by the `ui-redesign-tracker` skill, 2026-09-11** (doc-drift sweep, board
+> item R8). Verified against the working tree, not against the claim above: `SafeAreaFitter`'s guid
+> `2c1afdc693c3463281f69af27bf7461c` is carried by `_Prefabs/CORE/GameCanvas.prefab`,
+> `_Prefabs/UI Elements/In Game/ConnectingPanel.prefab`, `_Scenes/Menu_Main.unity`,
+> `_Scenes/Bootstrap.unity` and `_Scenes/Authentication.unity` — so the "not yet applied" criterion
+> is genuinely superseded rather than merely reported as such. `androidRenderOutsideSafeArea: 1` at
+> `ProjectSettings/ProjectSettings.asset:74`. The apply landed in `67e902bf` (2026-09-08), which is
+> the completion date recorded in the status table.
+>
+> **`[~]` still open, and it is the same one T4 carries:** no Unity compile has happened in any
+> session that touched this task. The edit-mode suite (`SafeAreaFitterTests.cs`, 8 tests over the
+> two pure statics) was executed out of editor; the component itself has never been compiled by
+> Unity. That is the one thing a human still owes this task.
+>
+> **Not a component, so do not look for it in prefabs:** `SafeAreaLayer` is a `static class`, and
+> its guid appears in no scene or prefab by design. It is called from three sites —
+> `EnvironmentLoadVeil.cs:101`, `VesselHUDController.cs:53`, `PrivacyConsentOverlay.cs:127`.
+
 ## T2 — Finish canvas resolution migration
 
 **Spec:** Style Foundation §5 · **Audit ref:** §1.3
 
 Acceptance criteria:
 - [ ] `_Prefabs/CORE/GameCanvas.prefab` at 1920×1080 / PPU 240
-- [ ] `_Prefabs/GameCanvas-HexRace.prefab` at 1920×1080 / PPU 240
+- [ ] `_Prefabs/GameCanvas-SkimRace.prefab` at 1920×1080 / PPU 240
 - [ ] `_Scenes/Singleplayer Scenes/SplashScreen.unity` migrated
 - [ ] `_Prefabs/UI Elements/Loadout Container.prefab` migrated
 - [ ] `CanvasUpgraderUpgradedPrefabs.txt` respected — no double pass (×5.76 check)
@@ -131,6 +157,29 @@ Acceptance criteria:
 > §8 defers mobile — so that criterion is currently unbacked and needs a design call before it is
 > actioned. Status and criteria are unchanged.
 
+> **Re-checked 2026-09-11 and deliberately left `TODO`** (doc-drift sweep, board item R8). The sweep
+> that closed T1 and T3 expected T2 to have been carried along with them, since T3 depends on it. It
+> has not been. Measured from the serialized files:
+>
+> | Criterion | State on 2026-09-11 |
+> |---|---|
+> | `CORE/GameCanvas.prefab` at 1920×1080 / PPU 240 | **met** — but delivered by **T3's** Unifier, which enforces the canvas contract as part of the re-point, not by this task |
+> | `GameCanvas-SkimRace.prefab` at 1920×1080 / PPU 240 | **moot** — T3 deleted the fork (`5a4a003a`) |
+> | `SplashScreen.unity` migrated | **not met** — still `m_ReferenceResolution: {x: 800, y: 450}` at line 249 |
+> | `Loadout Container.prefab` migrated | **not met** — still `{x: 800, y: 600}` at line 310 |
+> | Android max aspect 2.1 → 2.4 | **not met** — `androidMaxAspectRatio: 2.1` at `ProjectSettings.asset:172`, and per the v0.3 note above this criterion is currently unbacked |
+> | No reference resolution outside 1920×1080 project-wide | **not met** — 16 of 28 canvas scalers are off-spec |
+>
+> Of those 16, **six are first-party and in scope**: `SplashScreen.unity` (800×450),
+> `Loadout Container.prefab`, `_Scenes/Tools/PhotoBooth.unity`, and the three sign prefabs
+> `StarShapeSign` / `HeartShapeSign` / `LightningShapeSign` (all 800×600). The other ten are
+> third-party demo content — NiceVibrations, the TextMesh Pro examples, QuickScenePro — and are
+> **not** this task's to migrate.
+>
+> The trap in this skill's T2 note still applies to whoever picks it up: check
+> `CanvasUpgraderUpgradedPrefabs.txt` before running the upgrader, or a double pass compounds ×5.76
+> and reads as a layout bug rather than a migration bug.
+
 **Deliverables:**
 **Findings:**
 **Deviations from spec:**
@@ -142,21 +191,51 @@ Acceptance criteria:
 **Spec:** `Docs/GAMECANVAS.md` · **Audit ref:** §5.1
 
 Acceptance criteria:
-- [ ] Prefab Kit Validate run, output recorded
-- [ ] Prefab Kit Consolidate run
-- [ ] Identical overrides (~1,734) pushed into the prefab
-- [ ] **One scene only** re-placed, diff reported, explicit go-ahead received before the rest
-- [ ] Override count per canvas instance below 25 in each migrated scene
-- [ ] `statsToTrack` preserved per mode (the one real per-mode value)
-- [ ] Joust toast feed rect normalised from ~(-1416, -463)
-- [ ] 8 cross-asset dangling refs into the CORE prefab resolved
-- [ ] Dangling `CountdownDisplay` ref into never-instantiated `MiniGameHUD.prefab` resolved
-- [ ] All six modes launch and reach the Ready gate
-- [ ] End-game scoreboard renders in each mode
+- [~] Prefab Kit Validate run, output recorded — editor action; the out-of-editor gate below stands in for the end state
+- [~] Prefab Kit Consolidate run — editor action, same
+- [x] Identical overrides (~1,734) pushed into the prefab — gate reports no override walls on any of the 15 scenes
+- [~] **One scene only** re-placed, diff reported, explicit go-ahead received before the rest — a process criterion; not decidable from the tree
+- [x] Override count per canvas instance below 25 in each migrated scene — gate asserts *zero* non-default overrides, which is stricter
+- [x] `statsToTrack` preserved per mode (the one real per-mode value)
+- [x] Joust toast feed rect normalised from ~(-1416, -463)
+- [x] 8 cross-asset dangling refs into the CORE prefab resolved — no file references the fork guid
+- [x] Dangling `CountdownDisplay` ref into never-instantiated `MiniGameHUD.prefab` resolved
+- [~] All six modes launch and reach the Ready gate — play session
+- [~] End-game scoreboard renders in each mode — play session
 
 **Deliverables:**
+- `Assets/_Prefabs/CORE/GameCanvas.prefab` — the single source of truth for all 15 game-mode
+  canvases, authored at 1920×1080 / PPU 240 with `AdaptiveCanvasScaler` on the root.
+- **`Assets/_Prefabs/GameCanvas-SkimRace.prefab` deleted** (`5a4a003a`). No `.unity`, `.prefab` or
+  `.asset` file references its guid `abd30ad4cfca9ae4a8aecfde9f650cf3` any more.
+- `Assets/Resources/GameModeStatsProfile.asset` + `GameModeStatsProfileSO.cs` — the one genuine
+  per-mode value lifted out of the scenes. `defaultStats` plus `perMode` entries for Mode 33
+  (SkimRace) and Mode 34 (Joust). **Zero** `statsToTrack` overrides remain in any scene.
+- `Assets/_Scripts/Editor/FrogletTools/GameCanvasUnifier.cs` — the in-editor tool that performed it.
+- `Tools/Build/gamecanvas_unification_report.py` — the gate, `--check`.
+
 **Findings:**
+- **T3 shipped while its stated dependency T2 is still open, and that is not an ordering mistake.**
+  The Unifier enforces the canvas contract (1920×1080, Scale-With-Screen-Size, `AdaptiveCanvasScaler`)
+  on the CORE prefab itself as part of the re-point, so it delivered T2's *GameCanvas* criterion as a
+  side effect. The rest of T2's migration list is untouched — see T2's own note. The `Depends on`
+  cell is left as the historical record.
+- **The gate is stricter than the criterion it satisfies.** The criterion asked for "below 25"
+  overrides per canvas instance; `check()` fails on *any* non-default override, and additionally on
+  any removed GameObject, removed component or scene-added component — the structural edits that
+  `Docs/GAMECANVAS.md` §9 records as the real reason the fork existed.
+- **Verified 2026-09-11 by re-running the gate, not by reading the claim:**
+  `python3 Tools/Build/gamecanvas_unification_report.py --check` →
+  `GameCanvas unification gate: OK (15 scenes on Assets/_Prefabs/CORE/GameCanvas.prefab, fork gone, no override walls)`, exit 0.
+
 **Deviations from spec:**
+- **The go-ahead gate cannot be evidenced from the repository.** The criterion required one scene to
+  be re-placed, its diff reported, and explicit approval received before the remaining fourteen. The
+  end state is correct and the gate proves it, but whether that approval sequence happened is not
+  recoverable from the tree. Recorded here rather than ticked, per this skill's own T3 trap note.
+- **Four criteria remain `[~]`** (two editor actions, two play-session checks). This matches the bar
+  T4 was closed at — every remaining criterion `[~]` with an out-of-editor proof standing in — rather
+  than being a looser one invented for this task.
 
 ---
 
@@ -223,9 +302,10 @@ Acceptance criteria:
 - 16 literals need a token §11 does not have: local-player row highlight (6), positive/gain green
   (2), secondary text, tertiary text, input placeholder, hyperlink, toast surface, gauge normal,
   gauge threshold, locked-card tint. Queued as #10–#12 below.
-- **Three editor-inspector files sit outside an `Editor/` folder** — `LeaderboardConfigSOEditor.cs`,
-  `UniversalStatsProviderEditor.cs`, `Model/MinigameHUDInspector.cs`. A `CLAUDE.md`
-  conditional-compilation concern, not a style one. Flagged, not touched.
+- **Two editor-inspector files sit outside an `Editor/` folder** — `UniversalStatsProviderEditor.cs`,
+  `Model/MinigameHUDInspector.cs`. A `CLAUDE.md` conditional-compilation concern, not a style one.
+  Flagged, not touched. (`LeaderboardConfigSOEditor.cs` was the third; it was deleted with the
+  per-mode leaderboard path.)
 - **The audit tool's first version was blind to its own branch.** Its numeric-argument test was
   `^[0-9.]+f?$`, which rejects `0xE6`, so the 20 `new Color32(0x…)` literals *this task added* went
   uncounted and the total read a clean 167. Caught by running the cross-cutting "no new colour
@@ -377,7 +457,7 @@ Anything found during implementation that needs a design decision. The implement
 | 7 | Typography art | T5/T6 | ~~Display, Body small and the three Data roles are spec-authored, not on the source page.~~ **RESOLVED — kept, and marked as such.** §4's table now daggers those five rows with a footnote stating they carry no guide backing and are open to revision in a way the transcribed six are not. | RESOLVED |
 | 8 | Typography art | — | ~~The button caps rule has a documented exception that v0.3 dropped.~~ **RESOLVED — caps is unconditional; the exception is retired with the Port screen** (already cut from the overhaul). §4 records the decision so it is not relitigated. | RESOLVED |
 | 9 | Typography art | T5 | ~~A live countdown renders in the button face, not a Data role.~~ **RESOLVED — `<mspace>` generalised.** It now applies to any live-updating numeric in **any** face, not just the Aldrich Data roles. `X` is per-face, `TabularText` takes the face as a parameter, and T5 reports the digit advance for **both** Aldrich and Chakra Petch SemiBold. | RESOLVED |
-| 10 | T4 impl | T8 | **Local-player leaderboard row highlight has no token.** `#1AB2B2` teal, 6 sites across `LeaderboardsMenu` and `DailyChallengeLeaderboardView`. §10.10 specifies only a `*` marker — the teal is undocumented. Is it CTA (§3 "focus, selection"), a new token, or should the `*` be the only marker? | OPEN |
+| 10 | T4 impl | T8 | **Local-player leaderboard row highlight has no token.** `#1AB2B2` teal — 3 sites in `LeaderboardsMenu`, since `DailyChallengeLeaderboardView` (the other 3) was deleted with the PlayFab-era daily challenge. §10.10 specifies only a `*` marker — the teal is undocumented. Is it CTA (§3 "focus, selection"), a new token, or should the `*` be the only marker? | OPEN |
 | 11 | T4 impl | T8 | **No positive/gain hue.** `#33FF66` in `ScoreNumberAnimator` / `HUDAnimationSettingsSO` for a score increase. §2's gap table proposes `danger` and reuses CTA for *attention*, but never names a **gain** green distinct from CTA. Does gain reuse CTA, or is CTA reserved for interactivity? | OPEN |
 | 12 | T4 impl | T8 | **§11 has one text colour and the UI uses four.** `PrivacyConsentOverlay` needs secondary (`#C2C7D4`), tertiary (`#99A1B2`), placeholder (`#737887`) and a hyperlink (`#59B8F2`); `ToastNotificationManager` needs a neutral toast surface (`#1A1A26`, where both §11 surfaces are blue-tinted); `ResourceDisplay` needs gauge normal + threshold; `GameCard` needs the locked-card tint §10.6 calls "grey" without a value. 16 literals total. Add tokens, or re-theme these onto the existing eight? | OPEN |
 

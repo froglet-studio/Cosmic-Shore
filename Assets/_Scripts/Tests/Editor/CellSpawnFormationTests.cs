@@ -201,5 +201,60 @@ namespace CosmicShore.Tests
             Assert.Less(sum.magnitude / poses.Length, 0.1f,
                 "12-player formation clumped to one side of the cell.");
         }
+
+        // ── BuildFacingRing: "everyone lined up on ONE thing" ─────────────
+        //
+        // The claim this formation makes is FAIRNESS BY SYMMETRY rather than by tuning, so it
+        // is the claim the tests state: same distance, same aim, no authored phase.
+
+        static readonly Vector3 Target = new(-40f, 120f, 260f);
+        static readonly Vector3 Axis = new(0.3f, -0.5f, 0.81f);
+        const float Standoff = 220f;
+        const float RingRadius = 90f;
+
+        static Pose[] Ring(int count) =>
+            CellSpawnFormation.BuildFacingRing(count, Target, Axis, Standoff, RingRadius);
+
+        [Test]
+        public void FacingRing_EveryPilotIsTheSameDistanceFromTheTarget()
+        {
+            float expected = Mathf.Sqrt(Standoff * Standoff + RingRadius * RingRadius);
+
+            for (int count = 1; count <= 6; count++)
+                foreach (var pose in Ring(count))
+                    Assert.AreEqual(expected, Vector3.Distance(pose.position, Target), 1e-2f,
+                        $"A {count}-pilot start line is not equidistant - the start is not fair.");
+        }
+
+        [Test]
+        public void FacingRing_EveryPilotFacesTheTarget()
+        {
+            foreach (var pose in Ring(4))
+            {
+                Vector3 toTarget = (Target - pose.position).normalized;
+                Assert.AreEqual(1f, Vector3.Dot(pose.rotation * Vector3.forward, toTarget), 1e-3f,
+                    "A pilot on the start line is not aimed at the gate they must thread.");
+            }
+        }
+
+        [Test]
+        public void FacingRing_StandsBehindTheTargetAlongItsAxis()
+        {
+            Vector3 axis = Axis.normalized;
+            foreach (var pose in Ring(4))
+                Assert.AreEqual(-Standoff, Vector3.Dot(pose.position - Target, axis), 1e-2f,
+                    "The start line must sit BEHIND the gate, or flying forward misses it.");
+        }
+
+        [Test]
+        public void FacingRing_PhaseIsDerivedFromTheAxis_SoItIsReproducible()
+        {
+            var first = Ring(4);
+            var second = Ring(4);
+
+            for (int i = 0; i < first.Length; i++)
+                Assert.AreEqual(0f, Vector3.Distance(first[i].position, second[i].position), Tolerance,
+                    "Start-line slots must be stable - nothing about them is authored or rolled.");
+        }
     }
 }

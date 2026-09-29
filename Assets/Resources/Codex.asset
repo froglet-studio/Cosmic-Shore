@@ -1123,7 +1123,7 @@ MonoBehaviour:
     LockAutoHarvest: 0
     Stats:
     - Label: Behaviour
-      Value: "Swimmer \u2014 steers to a goal on its own"
+      Value: "Shoals \u2014 separation, cohesion and a shared goal"
       Authored: 0
     - Label: Diet
       Value: "Herbivore \u2014 grazes prism mass (flora canopy and vessel trails)"
@@ -5150,7 +5150,10 @@ MonoBehaviour:
     Kingdom: 3
     DisplayName: Domain Changer
     Tagline: Fly through to change your team colour.
-    Description: 
+    Description: 'Two switches, each wearing the colour of a domain you are not flying.
+      Thread one and it is yours: your hull, your trail and every prism you lay from
+      that moment belong to that domain. The switch you used flips to the colour
+      you just gave up, so the way back is always the ring you came through.'
     Image: {fileID: 21300000, guid: 5efd3da02cf9dfd4295b08dd839f741c, type: 3}
     SourcePrefab: {fileID: 0}
     SourceConfig: {fileID: 11400000, guid: 4c1c78b17b430f7489c9bc1697aac444, type: 2}
@@ -5166,8 +5169,8 @@ MonoBehaviour:
     LockAutoHarvest: 0
     Stats:
     - Label: Kind
-      Value: "Pilot \u2014 it changes YOU. The hull you fly or the colours you wear;
-        the world is exactly where you left it"
+      Value: "Pilot \u2014 it changes YOU. The hull you fly, the colours you wear or
+        the elements your hull carries; the world is exactly where you left it"
       Authored: 0
     - Label: Activation
       Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume,
@@ -5229,11 +5232,108 @@ MonoBehaviour:
       - Label: What it does
         Value: Fly this colour
         Authored: 0
+  - Id: tool.element-charger
+    Kingdom: 3
+    DisplayName: Element Charger
+    Tagline: Fly through to charge your vessel's elements.
+    Description: 'One station that opens into a row of the four element crystals, charge
+      to time, the way your HUD reads them. Fly a crystal and your hull gains five
+      levels of that element - the same raise a crystal pickup gives, so your flowers
+      bloom and your level-5 upgrades wake up. Charge past ten and the overcharge
+      drains back down, exactly as a crystal''s does.'
+    Image: {fileID: 0}
+    SourcePrefab: {fileID: 0}
+    SourceConfig: {fileID: 11400000, guid: f3d4f07785da4b4383e4391bc15ab6a2, type: 2}
+    AccentColor: {r: 0.9, g: 0.95, b: 1, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: use.tool.element-charger
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    Group: "1 \xB7 Pilot"
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Kind
+      Value: "Pilot \u2014 it changes YOU. The hull you fly, the colours you wear or the elements your hull carries; the world is exactly where you left it"
+      Authored: 0
+    - Label: Activation
+      Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume, drawn at its own radius, so what you can see is what you can cross"
+      Authored: 0
+    - Label: Objective
+      Value: "None. A tool has no score, no end condition and nothing on a clock \u2014 it is a thing to play with for as long as you like"
+      Authored: 0
+    - Label: In your toybox
+      Value: "Yes \u2014 unlocked from the start"
+      Authored: 0
+    - Label: Found at
+      Value: "Out by the cell membrane, at 150\xB0 around the cell"
+      Authored: 0
+    - Label: Form
+      Value: "One station that opens into a row of the four element crystals, charge to time"
+      Authored: 0
+    - Label: Offers
+      Value: "4 elements \u2014 Charge, Mass, Space and Time"
+      Authored: 0
+    - Label: Per pass
+      Value: "5 levels"
+      Authored: 0
+    - Label: How it works
+      Value: "The same raise an elemental crystal gives. Levels past 10 are overcharge and drain back to 10, exactly as a crystal's do"
+      Authored: 0
+    - Label: What it keeps
+      Value: "Your hull, your domain and the world. A new hull starts at its own levels"
+      Authored: 0
+    Variants:
+    - Label: Charge
+      Element: 1
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Raise your Charge by 5 levels
+        Authored: 0
+    - Label: Mass
+      Element: 2
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Raise your Mass by 5 levels
+        Authored: 0
+    - Label: Space
+      Element: 3
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Raise your Space by 5 levels
+        Authored: 0
+    - Label: Time
+      Element: 4
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Raise your Time by 5 levels
+        Authored: 0
   - Id: tool.vessel-changer
     Kingdom: 3
     DisplayName: Vessel Changer
     Tagline: Fly through to swap your ship.
-    Description: 
+    Description: 'A hangar that unfolds out of one station: a turning model of every
+      hull in the fleet, laid out along the outward radial. Fly at one and you become
+      it, mid-flight, keeping your position, your speed and your domain. It is the
+      fastest way to feel how differently the fleet flies.'
     Image: {fileID: 21300000, guid: f284e1a9bdef6804a99ce9e48bfa89cd, type: 3}
     SourcePrefab: {fileID: 0}
     SourceConfig: {fileID: 11400000, guid: 8614dd33bd0f06c4080f9da67854074c, type: 2}
@@ -5249,8 +5349,8 @@ MonoBehaviour:
     LockAutoHarvest: 0
     Stats:
     - Label: Kind
-      Value: "Pilot \u2014 it changes YOU. The hull you fly or the colours you wear;
-        the world is exactly where you left it"
+      Value: "Pilot \u2014 it changes YOU. The hull you fly, the colours you wear or
+        the elements your hull carries; the world is exactly where you left it"
       Authored: 0
     - Label: Activation
       Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume,
@@ -5370,13 +5470,41 @@ MonoBehaviour:
       - Label: What it does
         Value: Swap into this class
         Authored: 0
+  - Id: tool.arkway
+    Kingdom: 3
+    DisplayName: Arkway
+    Tagline: Fly through to escort an Ark on a voyage through the cells.
+    Description: 'Escort an Ark: a prism-bodied mothership that wears a domain, sails
+      a corridor of cells at its own unhurried pace, and lives or dies by the food
+      web like anything else in the hypersea. You are leashed to its side for the
+      voyage. The cells ahead of it are built as it goes and the ones behind are
+      struck, so an Arkway run is a place that exists only while you are in it.'
+    Image: {fileID: 21300000, guid: 7c982fddd190aff488ffbc43d7016b7d, type: 3}
+    SourcePrefab: {fileID: 0}
+    SourceConfig: {fileID: 11400000, guid: d85a7bce8eb442abbd2d17a05397bd33, type: 2}
+    AccentColor: {r: 1, g: 0.55, b: 0.3, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: use.tool.arkway
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    Group: "2 \xB7 World"
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats: []
+    Variants: []
   - Id: tool.cell-selector
     Kingdom: 3
     DisplayName: Cell Selector
     Tagline: The freestyle world picker - and the freestyle reset. Fly through for
       a matrix of mini-cells; fly a mini-cell to become that world. Fly the one you
       are already in to reset it.
-    Description: 
+    Description: 'Every world the lava lamp can be, standing as a scale model you
+      fly around and choose between. Pick one and the old world is suctioned away
+      while the new one grows in behind the veil: nothing pops in or out. Picking
+      the world you are already in is the freestyle reset, because the same cycle
+      takes the mass you have accumulated with it.'
     Image: {fileID: 21300000, guid: 402274b84242e2c419babc61c86c58fc, type: 3}
     SourcePrefab: {fileID: 0}
     SourceConfig: {fileID: 11400000, guid: 2d94c7a6f81e4b53ae67d0925cf3b8a1, type: 2}
@@ -5430,7 +5558,11 @@ MonoBehaviour:
     Kingdom: 3
     DisplayName: Wanderway
     Tagline: Fly through to summon an endless trail of little worlds.
-    Description: 
+    Description: Leave the cell and go wandering. The world ahead of you is assembled
+      as you fly - gate runs, orchards, torus knots, cathedrals, drowned cities -
+      out of one fixed stock of prisms that recycles from behind you into the distance
+      ahead, so it never ends and never grows. Your trail becomes a rolling tether
+      with the way home riding its tail.
     Image: {fileID: 21300000, guid: 44b9c6faf238c4041b0573026a9cf203, type: 3}
     SourcePrefab: {fileID: 0}
     SourceConfig: {fileID: 11400000, guid: 3c1bc1b829fa4f7ea2c153842659d24d, type: 2}
@@ -5493,7 +5625,10 @@ MonoBehaviour:
     Kingdom: 3
     DisplayName: Connect the Dots
     Tagline: Connect the dots to paint 3D masterpieces with your trail.
-    Description: 
+    Description: 'A gallery of paintings you draw with your trail. Each one is a
+      flight path: follow the gates in order, take the colour each stroke asks for,
+      and the prisms you lay ARE the picture. It remembers every stroke you finished,
+      so a painting is something you can come back to.'
     Image: {fileID: 21300000, guid: 1799a448ed70b634ba47d70d141bb90e, type: 3}
     SourcePrefab: {fileID: 0}
     SourceConfig: {fileID: 11400000, guid: f8ebb1b53a0d3784f94f1f72bbacdbe1, type: 2}
@@ -5553,7 +5688,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: 3e68cf96fbac330479adabdfb9898a9e, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: 4652e042ef14035448a6577a3a4452e0, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5563,7 +5698,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: 75164b5f01fe35749849270b64f06492, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: 4e7641482c2c0564fbf8b9050e3675be, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5573,7 +5708,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: a4afb1bc94270cf4e95deadf8a6b632a, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: 92274405f3776274fb3782c0064094f4, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5583,7 +5718,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: 1a76d1b9545e2324193258d2a14ecbdb, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: a5e7eeef57e0026419123ec043077ad2, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5593,7 +5728,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: 1405d07b12a9494c87f34f3b568ef96f, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: ecf88ef89f110d24e8b0a3be1edb1e27, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5613,7 +5748,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: e87008e31fd243bd9c9dc3323533459c, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: da7491ea97ffa804c88655c6e474cb83, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5623,7 +5758,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: cbac0c1d41af4a3abef1bb53c04e6c4c, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: 640a96c29e47ee24d88b89b47fc52911, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5634,7 +5769,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: 53855a5423d2432a9757783640271a44, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: 6b6b63e4a0bedcb4c8f5d67338d0f7ce, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5645,7 +5780,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: 2bd8d42d4c5a4715be5f026f234bd896, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: 8833ed51dbae9a34993d796c94676430, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5656,7 +5791,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: f0549bf1cab34176b1c94aa5387b21eb, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: c4af60f82956e6b4a90bdf818c9cae52, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5667,7 +5802,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: 3599450b068f45e0a5a6006ca52f6c47, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: 8b0d05d4af95f7341b08e6316333bdb4, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5678,7 +5813,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: d32f6e0e48ae4d8b9f46a809e09cb452, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: b3ffcf671cb7fbb4a84fd9a97f315590, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5689,7 +5824,7 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: ba9d6c3dfc884aefb434920a2958c833, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: 03a53586ca1d56449b143ebae1c923de, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
@@ -5711,26 +5846,29 @@ MonoBehaviour:
       Element: 0
       SourceConfig: {fileID: 11400000, guid: a38fa7d176e549be97fa8ac045bdab8a, type: 2}
       SourcePrefab: {fileID: 0}
-      Image: {fileID: 0}
+      Image: {fileID: 21300000, guid: 025c74d1e125160428290265210fbb76, type: 3}
       AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: What it does
         Value: A fanned train of real peafowl geometry. 3D data by YahooJAPAN (CC-BY
           4.0).
         Authored: 0
-  - Id: tool.lifeform-matrix
+  - Id: tool.spawn-matrix
     Kingdom: 3
-    DisplayName: Lifeform Matrix
+    DisplayName: Spawn Matrix
     Tagline: The release bench. Fly through for the three kingdoms - Fauna, Flora,
       Vessels. A kingdom opens its species row; a species opens its four elements;
       a variant spawns it live. A vessel releases an AI companion in your domain.
-    Description: 
+    Description: 'The release bench. Three kingdoms open out of it - Fauna, Flora
+      and Vessels - and inside each, a species and the four elements it comes in.
+      Release one and that population is yours no longer: it lives, feeds, breeds
+      and starves in the cell on its own terms.'
     Image: {fileID: 21300000, guid: 601651507d53ea4408ef4abcaf486d2b, type: 3}
     SourcePrefab: {fileID: 0}
     SourceConfig: {fileID: 11400000, guid: 6b3d92c47ae14f08b5c1e0d7f3a2958c, type: 2}
     AccentColor: {r: 0.75, g: 1, b: 0.85, a: 1}
     UnlockedByDefault: 1
-    DiscoveryKey: use.tool.lifeform-matrix
+    DiscoveryKey: use.tool.spawn-matrix
     PreviewYaw: -28
     PreviewPitch: 16
     PreviewPadding: 1.05

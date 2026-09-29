@@ -132,6 +132,17 @@ namespace CosmicShore.Gameplay
                  "generation deeper AND stops losing reach as it spreads.")]
         [SerializeField] bool chainsOnChargeUpgrade;
 
+        /// <summary>CHARGE -> spike reach: x1 at the resting level, x2.5 at level 10, floored at x0.4.
+        /// Migrated verbatim from the retired ElementalAbilityMapSO generic
+        /// multiplier (atFull 2.5, minMultiplier 0.4) — see
+        /// Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md. Lives here, on the
+        /// asset that owns the parameter, so it can only ever scale this one number.
+        /// Never bound (this is a ScriptableObject, and BindElementalFloats reflects only
+        /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
+        /// </summary>
+        [SerializeField] ElementalFloat chargeRangeMultiplier =
+            ElementalFloat.Multiplier(1f, 2.5f, Element.Charge, 0.4f);
+
         public FiringPatterns FiringPattern => firingPattern;
         public bool RepeatWhileHeld => repeatWhileHeld;
         public int AmmoIndex => ammoIndex;
@@ -185,8 +196,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float ResolveRangeScale(IVesselStatus status)
         {
-            var abilities = status?.ElementalAbilityHandler;
-            return abilities ? abilities.Multiplier(Element.Charge) : 1f;
+            return chargeRangeMultiplier.EvaluateLive(status);
         }
 
         /// <summary>

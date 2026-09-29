@@ -13,6 +13,18 @@ namespace CosmicShore.Utility
     public class FloraConfigurationSO : ScriptableObject
     {
         public Flora FloraPrefab;
+
+        [Tooltip("Replicate this species' PLANTING decisions - which species, where, which " +
+                 "domain, which element - so every peer's forest stands in the same places. " +
+                 "GROWTH stays LOCAL and is expected to differ per peer: a plant's shape is " +
+                 "emergent from the local spatial index (it reserves against this peer's own " +
+                 "occupancy, trails included), so a shared seed could not make the shapes match " +
+                 "and is deliberately not attempted. Off = today's fully client-local forest.\n\n" +
+                 "The prefab must also carry NetworkObject-free replication through the CELL's " +
+                 "FloraNetworkSync (the Cell holds the slot list; flora carry no NetworkObject of " +
+                 "their own), and the cell must have that component; without it this flag is " +
+                 "inert, so a half-wired species degrades to local, never to broken.")]
+        public bool NetworkSynced = false;
         [MinMax(0f, 1f)]
         public float SpawnProbability;
         public int InitialSpawnCount;
@@ -335,8 +347,8 @@ namespace CosmicShore.Utility
                  "to suit THIS plant, so a rosette's heart is a rosette's and a gyroid " +
                  "octagon's is an octagon's. 0 = keep the platform default on " +
                  "ElementalCrystalSet.\n\n" +
-                 "This is a GAMEPLAY number as well as a visual one: the collect reward and the " +
-                 "live domain fauna buff both read the heart's world scale, so a bigger plant's " +
+                 "This is a GAMEPLAY number as well as a visual one: the collect reward reads " +
+                 "the heart's world scale, so a bigger plant's " +
                  "heart is worth more to whoever takes it. The whole authored band must " +
                  "therefore stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale - past it " +
                  "two visibly different hearts pay the same. Authored by " +

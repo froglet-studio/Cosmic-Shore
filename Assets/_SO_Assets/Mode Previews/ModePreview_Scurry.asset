@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_Scurry
   m_EditorClassIdentifier: 
   Mode: 35
-  Notes: 'Scurry = MultiplayerCrystalCapture(35). Its cell GROWS its world from the
+  Notes: 'Scurry = Scurry(35). Its cell GROWS its world from the
     spawn profile (no EnvironmentPrefab), which the satellite bootstrap runs. OPEN-ENDED:
     the crystals it races for are CrystalManager''s, which is scene-level - wiring
     a satellite crystal source is the noted follow-up.'

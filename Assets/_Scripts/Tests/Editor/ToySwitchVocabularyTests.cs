@@ -35,9 +35,14 @@ namespace CosmicShore.Tests
             ["PaintingRunner.cs"] =
                 "the painting's stroke-start gates - crossing one sets the stroke's domain",
             ["ScarabSwitch.cs"] =
-                "the Scarab's placed switch - the one wearer OUTSIDE the toybox, where the colour " +
-                "names the domain the switch belongs to (SCARAB.md section 5). Nothing in that " +
-                "mode changes a pilot's domain, so the two readings never share a screen.",
+                "the Scarab's placed switch - the first wearer OUTSIDE the toybox, where the " +
+                "colour names the domain the switch belongs to (SCARAB.md section 5). Nothing in " +
+                "that mode changes a pilot's domain, so the two readings never share a screen.",
+            ["FoldGate.cs"] =
+                "the Butterfly's fold gate - the second such wearer (BUTTERFLY_FOLD.md section 6). " +
+                "The colour says WHO MAY THREAD IT, which is a claim about the gate and not about " +
+                "the pilot: a gate never changes anyone's domain, it only declines pilots who are " +
+                "not already in it.",
         };
 
         // Files that NAME the member without requesting a switch.
@@ -56,13 +61,26 @@ namespace CosmicShore.Tests
 
         // ── The structural half ──────────────────────────────────────────────
 
+        /// <summary>
+        /// Every signal EXCEPT <see cref="ToySwitchSignal.Domain"/>, enumerated from the enum
+        /// rather than listed. The reservation is "only Domain may wear a playable domain", and a
+        /// test that names the members it knows about stops testing the law the moment a member is
+        /// added - which is exactly what happened when <see cref="ToySwitchSignal.Next"/> landed
+        /// and this file still only knew Neutral.
+        /// </summary>
+        static IEnumerable<ToySwitchSignal> NonDomainSignals =>
+            System.Enum.GetValues(typeof(ToySwitchSignal))
+                       .Cast<ToySwitchSignal>()
+                       .Where(s => s != ToySwitchSignal.Domain);
+
         [Test]
-        public void NeutralSwitchIsAlwaysBlue_WhateverDomainTheCallerPasses()
+        public void ANonDomainSwitchIsAlwaysBlue_WhateverDomainTheCallerPasses()
         {
-            foreach (Domains domain in System.Enum.GetValues(typeof(Domains)))
-                Assert.AreEqual(Domains.Blue, ToyFactory.SwitchDomain(ToySwitchSignal.Neutral, domain),
-                    $"A Neutral switch asked for {domain} must still be painted Blue - the signal " +
-                    "picks the colour, never the caller.");
+            foreach (var signal in NonDomainSignals)
+                foreach (Domains domain in System.Enum.GetValues(typeof(Domains)))
+                    Assert.AreEqual(Domains.Blue, ToyFactory.SwitchDomain(signal, domain),
+                        $"A {signal} switch asked for {domain} must still be painted Blue - the " +
+                        "signal picks the colour, never the caller, and only Domain claims one.");
         }
 
         [Test]
@@ -81,20 +99,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void NeutralAndPlayableSwitchColoursAreDistinguishable()
+        public void UnreservedAndPlayableSwitchColoursAreDistinguishable()
         {
             // No theme wired: the fixed fallback palette. Neutral must not be mistakable for a
             // playable domain, or the reservation says nothing on screen.
-            Color neutral = ToyFactory.SwitchColor(null, ToySwitchSignal.Neutral, Domains.Blue);
-            foreach (var domain in GameDataSO.ActiveDomains)
+            foreach (var signal in NonDomainSignals)
             {
-                Color playable = ToyFactory.SwitchColor(null, ToySwitchSignal.Domain, domain);
-                float delta = Mathf.Abs(neutral.r - playable.r)
-                            + Mathf.Abs(neutral.g - playable.g)
-                            + Mathf.Abs(neutral.b - playable.b);
-                Assert.Greater(delta, 0.5f,
-                    $"The neutral switch colour is too close to {domain}'s ({delta:F2} summed " +
-                    "channel distance) - a player cannot read the reservation off it.");
+                Color unreserved = ToyFactory.SwitchColor(null, signal, Domains.Blue);
+                foreach (var domain in GameDataSO.ActiveDomains)
+                {
+                    Color playable = ToyFactory.SwitchColor(null, ToySwitchSignal.Domain, domain);
+                    float delta = Mathf.Abs(unreserved.r - playable.r)
+                                + Mathf.Abs(unreserved.g - playable.g)
+                                + Mathf.Abs(unreserved.b - playable.b);
+                    Assert.Greater(delta, 0.5f,
+                        $"The {signal} switch colour is too close to {domain}'s ({delta:F2} summed " +
+                        "channel distance) - a player cannot read the reservation off it.");
+                }
             }
         }
 

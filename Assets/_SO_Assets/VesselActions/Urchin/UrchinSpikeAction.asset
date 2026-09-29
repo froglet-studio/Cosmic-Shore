@@ -12,6 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d866cc32d654069a046cc9a58a60730, type: 3}
   m_Name: UrchinSpikeAction
   m_EditorClassIdentifier:
+  chargeRangeMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 1
+    UseFloor: 1
+    Floor: 0.4
   firingPattern: 2
   repeatWhileHeld: 0
   barrageSpikeCount: 36

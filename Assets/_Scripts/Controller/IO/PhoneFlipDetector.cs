@@ -29,7 +29,7 @@ namespace CosmicShore.Gameplay
                     currentOrientation = ScreenOrientation.LandscapeLeft;
                     onPhoneFlip(PhoneFlipState);
 
-                    CSDebug.Log($"PhoneFlipDetector Phone flip state change detected - new flip state: {PhoneFlipState}");
+                    CSDebug.LogVerbose(CSLogChannel.Input, $"[PhoneFlipDetector] Phone flip state change - flipState={PhoneFlipState}");
                 }
                 else if (UnityEngine.Input.acceleration.y > 0 && !PhoneFlipState)
                 {
@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
                     currentOrientation = ScreenOrientation.LandscapeRight;
                     onPhoneFlip(PhoneFlipState);
 
-                    CSDebug.Log($"PhoneFlipDetectorPhone flip state change detected - new flip state: {PhoneFlipState}");
+                    CSDebug.LogVerbose(CSLogChannel.Input, $"[PhoneFlipDetector] Phone flip state change - flipState={PhoneFlipState}");
                 }
             }
         }

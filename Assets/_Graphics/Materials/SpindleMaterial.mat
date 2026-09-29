@@ -133,6 +133,8 @@ Material:
     - _SrcBlend: 5
     - _SrcBlendAlpha: 1
     - _Surface: 1
+    - _SwayAmplitude: 0.08
+    - _SwayFrequency: 1.4
     - _WorkflowMode: 1
     - _ZTest: 4
     - _ZWrite: 1

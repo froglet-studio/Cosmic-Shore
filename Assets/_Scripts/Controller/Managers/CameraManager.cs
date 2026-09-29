@@ -341,14 +341,24 @@ namespace CosmicShore.Gameplay
             }
 
             _playerFollowTarget = _windowedPreviousTarget;
-            _playerCamera?.SetFollowTarget(_windowedPreviousTarget);
+
+            // Test the OBJECT, never the interface reference. ICameraController is an interface,
+            // and `?.` on an interface ref does NOT route through Unity's overloaded == - so a
+            // DESTROYED CustomCameraController is still non-null here and every call below throws
+            // "has been destroyed but you are still trying to access it". That is what aborted the
+            // mode-preview unwind on scene close, leaving the rest of the teardown unrun
+            // (reported as "[ModePreview] Unwinding the ScarabScramble preview hit: ..."). This
+            // path runs precisely when things are being destroyed, so it must be destroy-safe.
+            var playerCamera = _playerCamera is UnityEngine.Object pcObj && pcObj ? _playerCamera : null;
+
+            playerCamera?.SetFollowTarget(_windowedPreviousTarget);
             _windowedPreviousTarget = null;
 
             // Only stand it down if it is not the view the game is actually using: in a gameplay
             // scene this same rig IS the screen camera, and a preview must never be able to
             // switch it off there.
             if (_activeController != _playerCamera)
-                _playerCamera?.Deactivate();
+                playerCamera?.Deactivate();
         }
 
         public ICameraController GetActiveController() => _activeController;

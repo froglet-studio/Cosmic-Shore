@@ -122,10 +122,12 @@ namespace CosmicShore.Editor.Codex
             {
                 case VesselChangerToyDefinitionSO vessels: AddVesselChanger(entry, vessels); return;
                 case DomainChangerToyDefinitionSO: AddDomainChanger(entry); return;
+                case ElementChargerToyDefinitionSO charger: AddElementCharger(entry, charger); return;
                 case CellSelectorToyDefinitionSO cells: AddCellSelector(entry, cells); return;
                 case ConveyorToyDefinitionSO conveyor: AddConveyor(entry, conveyor); return;
+                case ArkwayToyDefinitionSO arkway: AddArkway(entry, arkway); return;
                 case PaintingToyDefinitionSO paintings: AddPaintingGallery(entry, paintings); return;
-                case LifeformMatrixToyDefinitionSO bench: AddLifeformMatrix(entry, bench); return;
+                case SpawnMatrixToyDefinitionSO bench: AddSpawnMatrix(entry, bench); return;
 
                 default:
                     report.Warnings.Add(
@@ -160,7 +162,7 @@ namespace CosmicShore.Editor.Codex
                 // The real ship prefab, so the icon is the hull rather than a label. Resolved from
                 // the same container the spawn pipeline uses - a second roster here would be a
                 // second thing to keep in step with the fleet.
-                if (container && container.TryGetShipPrefab(hull, out var prefab) && prefab)
+                if (container && container.TryGetShipPrefab(hull, out var prefab, reportMissing: false) && prefab)
                     variant.SourcePrefab = prefab.gameObject;
                 entry.Variants.Add(variant);
             }
@@ -186,6 +188,30 @@ namespace CosmicShore.Editor.Codex
                 // No image is baked for these, deliberately: the variant IS a colour, and a PNG
                 // of a flat fill is a file that says nothing a swatch does not.
                 variant.AccentColor = ToyFactory.DomainAccentColor(domain);
+                entry.Variants.Add(variant);
+            }
+        }
+
+        static void AddElementCharger(CodexEntry entry, ElementChargerToyDefinitionSO definition)
+        {
+            int levels = definition.LevelsPerPass;
+            CodexHarvester.Add(entry.Stats, "Form",
+                "One station that opens into a row of the four element crystals, charge to time");
+            CodexHarvester.Add(entry.Stats, "Offers", "4 elements — Charge, Mass, Space and Time");
+            CodexHarvester.Add(entry.Stats, "Per pass", Count(levels, "level"));
+            CodexHarvester.Add(entry.Stats, "How it works",
+                "The same raise an elemental crystal gives. Levels past 10 are overcharge and drain " +
+                "back to 10, exactly as a crystal's do");
+            CodexHarvester.Add(entry.Stats, "What it keeps",
+                "Your hull, your domain and the world. A new hull starts at its own levels");
+
+            for (int i = 0; i < ElementChargerToy.MatrixElements.Count; i++)
+            {
+                var element = ElementChargerToy.MatrixElements[i];
+                var variant = Variant(element.ToString(), $"Raise your {element} by {Count(levels, "level")}");
+                // The variant IS an element, so it resolves to that element's own ethirion image
+                // at draw time (CodexSO.VariantImage) - nothing is baked for it.
+                variant.Element = element;
                 entry.Variants.Add(variant);
             }
         }
@@ -258,6 +284,39 @@ namespace CosmicShore.Editor.Codex
                 "tool, or leaving freestyle");
         }
 
+        static void AddArkway(CodexEntry entry, ArkwayToyDefinitionSO definition)
+        {
+            // Read by NAME, same trade as the conveyor: the definition exposes no accessors for
+            // these numbers, and adding some purely for the codex would couple the runtime to it.
+            var config = new SerializedObject(definition);
+            float spacing = Float(config, "cellSpacing");
+            float speed = Float(config, "arkSpeed");
+            float grace = Float(config, "leashGraceSeconds");
+
+            CodexHarvester.Add(entry.Stats, "Form",
+                "A voyage — the tool opens a corridor of whole cells and an Ark, a prism-bodied " +
+                "mothership in your colour, sails it at its own unhurried pace");
+            CodexHarvester.Add(entry.Stats, "The corridor",
+                "Three cells stand at once — previous, current, next — drawn from the cell " +
+                "selector's own worlds, recycled forever as the Ark advances");
+            CodexHarvester.Add(entry.Stats, "The fight",
+                "Each cell's fauna spawn in whichever colour holds its volume. Take a cell and " +
+                "its waves protect the Ark; lose it and they hunt the Ark's hull, which is " +
+                "ordinary mass they can eat");
+            CodexHarvester.Add(entry.Stats, "The leash",
+                grace > 0f
+                    ? $"Stay within a cell radius of the Ark. Stray and a {grace:0}-second " +
+                      "countdown runs before the Ark recalls you to its side"
+                    : "Stay within a cell radius of the Ark");
+            if (speed > 0f && spacing > 0f)
+                CodexHarvester.Add(entry.Stats, "The pace",
+                    $"The Ark cruises at {speed:0} units a second, cells about {spacing:N0} apart " +
+                    "— the voyage's clock is the ship, not a timer");
+            CodexHarvester.Add(entry.Stats, "Getting back",
+                "Four ways: the disembark dinghy trailing the Ark, another pass through the " +
+                "tool, leaving freestyle — or the Ark falling, which resets the voyage");
+        }
+
         static void AddPaintingGallery(CodexEntry entry, PaintingToyDefinitionSO definition)
         {
             var paintings = AuthoredPaintings(definition);
@@ -291,7 +350,7 @@ namespace CosmicShore.Editor.Codex
             }
         }
 
-        static void AddLifeformMatrix(CodexEntry entry, LifeformMatrixToyDefinitionSO definition)
+        static void AddSpawnMatrix(CodexEntry entry, SpawnMatrixToyDefinitionSO definition)
         {
             int fauna = definition.Fauna?.Count(s => s != null) ?? 0;
             int flora = definition.Flora?.Count(s => s != null) ?? 0;
@@ -365,8 +424,8 @@ namespace CosmicShore.Editor.Codex
         static string CategoryLine(ToyCategory category) => category switch
         {
             ToyCategory.Pilot =>
-                "Pilot — it changes YOU. The hull you fly or the colours you wear; the world is " +
-                "exactly where you left it",
+                "Pilot — it changes YOU. The hull you fly, the colours you wear or the elements " +
+                "your hull carries; the world is exactly where you left it",
             ToyCategory.World =>
                 "World — it changes WHERE YOU ARE. A world arrives or leaves, which is the " +
                 "heaviest thing any tool does",
@@ -395,6 +454,13 @@ namespace CosmicShore.Editor.Codex
             var prop = config.FindProperty(field);
             return prop != null && prop.propertyType == SerializedPropertyType.Boolean &&
                    prop.boolValue;
+        }
+
+        static float Float(SerializedObject config, string field)
+        {
+            var prop = config.FindProperty(field);
+            return prop != null && prop.propertyType == SerializedPropertyType.Float
+                ? prop.floatValue : 0f;
         }
     }
 }

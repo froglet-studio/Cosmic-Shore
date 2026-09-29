@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -75,11 +78,13 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Row (the lockup owns the whole row, on every vessel)")]
         [Tooltip("Centre-to-centre distance between cards. One number for the fleet - a vessel " +
-                 "cannot space its own row. Authored as plateWidth + 2x cellGap, so the space " +
-                 "BETWEEN totems is exactly twice the space WITHIN one: the same relationship as " +
-                 "inter-word against inter-letter spacing, and what makes four cards read as four " +
-                 "objects rather than one strip.")]
-        [Min(1f)] public float cardPitch = 116f;
+                 "cannot space its own row, so the spacing is consistent by construction. Authored " +
+                 "as plateWidth + 4x cellGap, so the space BETWEEN totems is four times the space " +
+                 "WITHIN one: the same relationship as inter-word against inter-letter spacing, and " +
+                 "what makes four cards read as four objects rather than one strip. It was 2x " +
+                 "(pitch 116) until the rest-scale fix let the four authored cards draw at their " +
+                 "real 104 width and closed the row up.")]
+        [Min(1f)] public float cardPitch = 128f;
 
         [Tooltip("Distance from the screen's RIGHT edge to the right edge of the last card.")]
         public float rowMarginRight = 40f;
@@ -132,6 +137,23 @@ namespace CosmicShore.ScriptableObjects
                  "lockup still needs - the plates are generated geometry (TrapezoidGraphic), because " +
                  "a trapezoid has no 9-slice and a sprited one would freeze the slant into the art.")]
         public Sprite bloomSprite;
+
+        [Tooltip("The mark a NON-ELEMENTAL card wears in its UPPER plate, where an elemental card " +
+                 "carries its element flower. One row per core ability that has one; an ability " +
+                 "with no row here has no upper cell at all, which is the Squirrel drift's shape. " +
+                 "It lives on the fleet-wide style rather than on a vessel because the mark means " +
+                 "the same thing on every hull - the OMNI CRYSTAL emblem says 'this is what you " +
+                 "get for flying through a crystal' whoever you are flying - so authoring it " +
+                 "per-vessel would be eight chances to disagree about one fact.")]
+        public List<CoreAbilityEmblem> coreAbilityEmblems = new();
+
+        /// <summary>The mark <paramref name="ability"/>'s card wears above its plate, or null.</summary>
+        public Sprite EmblemFor(CoreAbility ability)
+        {
+            for (int i = 0; i < coreAbilityEmblems.Count; i++)
+                if (coreAbilityEmblems[i].ability == ability) return coreAbilityEmblems[i].sprite;
+            return null;
+        }
 
         [Header("Colours - resting")]
         [Tooltip("Plate fill. Near-black and translucent so the arena reads through the row. " +
@@ -243,5 +265,22 @@ namespace CosmicShore.ScriptableObjects
 
         public float IconScaleFor(float authoredSize)
             => authoredSize > 0.01f ? iconBoxSize / authoredSize : 1f;
+
+        /// <summary>
+        /// One core ability's upper-plate mark. A tiny type rather than two parallel lists,
+        /// because a list of abilities and a list of sprites can fall out of step and a list of
+        /// pairs cannot.
+        /// </summary>
+        [Serializable]
+        public struct CoreAbilityEmblem
+        {
+            [Tooltip("Which non-elemental card wears this mark.")]
+            public CoreAbility ability;
+
+            [Tooltip("White + alpha, like every other lockup sprite. Drawn UNTINTED - the emblem " +
+                     "says what the card IS, and a domain tint would say who owns it, which for " +
+                     "an omni crystal is nobody until somebody takes it.")]
+            public Sprite sprite;
+        }
     }
 }

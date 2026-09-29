@@ -77,7 +77,8 @@ namespace CosmicShore.Gameplay
             RegisterStat(prismsDamagedStat);
             RegisterStatsExtended();
 
-            Debug.Log($"[VesselTelemetry] {GetType().Name} Awake - " +
+            if (CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[VesselTelemetry] {GetType().Name} Awake - " +
                 $"registered {_allStats.Count} stat(s), " +
                 $"gameData={(gameData != null ? "OK" : "NULL")}, " +
                 $"drift={(longestDriftStat != null ? "OK" : "NULL")}, " +
@@ -140,7 +141,8 @@ namespace CosmicShore.Gameplay
             }
 
             IsTracking = true;
-            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnStarted - " +
+            if (CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[VesselTelemetry] {GetType().Name} HandleTurnStarted - " +
                 $"tracking {Vessel.VesselType} for player '{Vessel.PlayerName}', " +
                 $"{_allStats.Count} stat(s) registered");
             OnTurnStartedExtended();
@@ -152,7 +154,8 @@ namespace CosmicShore.Gameplay
             FinalizeInProgressBoost();
             IsTracking = false;
             OnTurnEndedExtended();
-            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnEnded - " +
+            if (CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[VesselTelemetry] {GetType().Name} HandleTurnEnded - " +
                 $"drift={MaxDriftTime:F2}s, boost={MaxBoostTime:F2}s, prismsDmg={PrismsDamaged}");
         }
 

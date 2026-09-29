@@ -56,6 +56,16 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("'Waiting for others…' label, shown after this player confirms.")]
         protected GameObject waitingForOthersLabel;
 
+        [Header("Weekly challenge (optional)")]
+        [SerializeField, Tooltip("Opens this week's leaderboard. Shown ONLY while the card is " +
+                                 "open as the weekly challenge - the board ranks completion times " +
+                                 "for the week's objective, which an ordinary card has none of.")]
+        protected Button leaderboardButton;
+
+        [SerializeField, Tooltip("Why Start is unavailable, e.g. 'ALREADY PLAYED THIS WEEK'. " +
+                                 "Optional: without it the button simply greys out.")]
+        protected TMPro.TMP_Text startUnavailableLabel;
+
         [Header("Own window (optional)")]
         [SerializeField, Tooltip("Set ONLY when this panel lives in its own modal window rather " +
                                  "than inside ArcadeGameConfigureModal's. The panel then opens and " +
@@ -81,11 +91,29 @@ namespace CosmicShore.UI
 
         bool _suppressFillToggleCallback;
 
+        // Null = draw the card's own description and tips. Non-null = draw this line instead.
+        // Held rather than written straight into the briefing because Bind() re-fills the block
+        // from the card every time the panel is re-bound.
+        string _briefingOverride;
+
+        // False hides the panel's Add AI control outright, and keeps RefreshRoster from putting
+        // it back the next time the roster redraws.
+        bool _addAIAvailable = true;
+
+        // False greys the Start button out. Held as STATE for the same reason _addAIAvailable is:
+        // the modal's ready-up path re-SetActives the Start button, so a one-shot write would be
+        // undone by the next redraw.
+        bool _startAvailable = true;
+
         /// <summary>The ✕ on an AI seat: remove the placed AI with this ordinal.</summary>
         public event Action<int> OnKickAIRequested;
 
         /// <summary>The Add AI mode toggle moved. True = domain taps now place AI.</summary>
         public event Action<bool> OnAddAIModeChanged;
+
+        /// <summary>The leaderboard button was pressed. The modal opens the window; the panel does
+        /// not know one exists.</summary>
+        public event Action OnLeaderboardRequested;
 
         /// <summary>
         /// Raised when this panel's OWN window was closed by its own controls, so the modal can run
@@ -153,11 +181,43 @@ namespace CosmicShore.UI
                 gameNameText.text = game ? game.DisplayName : string.Empty;
 
             if (briefing)
-                briefing.Show(game);
+            {
+                if (_briefingOverride != null)
+                    briefing.Show(_briefingOverride, null);
+                else
+                    briefing.Show(game);
+            }
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[ArcadeLaunch] {GetType().Name} bound to '{(game ? game.DisplayName : "none")}' " +
                 $"at intensity {intensity}.");
+        }
+
+        /// <summary>
+        /// Replace the briefing with ONE line, or restore the card's own description and tips with
+        /// null. The weekly challenge uses it: the card's own copy sells the mode, and what a
+        /// player opening a weekly challenge needs to read is which challenge it is.
+        /// </summary>
+        public virtual void SetBriefingOverride(string line)
+        {
+            _briefingOverride = line;
+            if (!briefing) return;
+
+            if (line != null) briefing.Show(line, null);
+            else briefing.Show(Game);
+        }
+
+        /// <summary>
+        /// Whether this panel may offer Add AI at all. False hides the control and keeps
+        /// <see cref="RefreshRoster"/> from restoring it - the roster redraw is what would
+        /// otherwise put a hidden control back on the next tick.
+        /// </summary>
+        public virtual void SetAddAIAvailable(bool available)
+        {
+            _addAIAvailable = available;
+            if (fillWithAIToggle && !available)
+                fillWithAIToggle.gameObject.SetActive(false);
+            if (lobbyRow) lobbyRow.SetAddAIModeSilently(false);
         }
 
         /// <summary>The intensity changed while this panel is up.</summary>
@@ -177,8 +237,8 @@ namespace CosmicShore.UI
             // and without this gate a client saw a live ADD AI control whose taps went nowhere.
             if (fillWithAIToggle)
             {
-                fillWithAIToggle.gameObject.SetActive(isHost);
-                fillWithAIToggle.interactable = isHost;
+                fillWithAIToggle.gameObject.SetActive(isHost && _addAIAvailable);
+                fillWithAIToggle.interactable = isHost && _addAIAvailable;
             }
         }
 
@@ -207,9 +267,60 @@ namespace CosmicShore.UI
         /// <summary>Ready-up state: the Start button and the waiting label are mutually exclusive.</summary>
         public virtual void SetReadyUpState(bool confirmed)
         {
-            if (startButton) startButton.gameObject.SetActive(!confirmed);
+            if (startButton)
+            {
+                startButton.gameObject.SetActive(!confirmed);
+                // Re-asserted, because this is the redraw that would otherwise hand a spent
+                // weekly challenge a live Start button back.
+                startButton.interactable = _startAvailable;
+            }
             if (waitingForOthersLabel) waitingForOthersLabel.SetActive(confirmed);
         }
+
+        /// <summary>
+        /// Whether this card can be STARTED. False greys the button and shows
+        /// <paramref name="reason"/> beside it.
+        ///
+        /// <para><b>Greyed, never hidden.</b> A missing Start button reads as a broken modal; a
+        /// dead one with "ALREADY PLAYED THIS WEEK" next to it explains itself. That matters here
+        /// because the whole point of still being able to OPEN a spent weekly challenge is to
+        /// reach the leaderboard, and a window that looks broken is one nobody explores.</para>
+        ///
+        /// <para>It drives <c>interactable</c> rather than active state on purpose: the modal's
+        /// ready-up path owns the button's ACTIVE state and toggles it freely, so a hide here
+        /// would be undone on the next redraw. Nothing else in the project writes Start's
+        /// <c>interactable</c>, which makes it a channel this can own outright.</para>
+        /// </summary>
+        public virtual void SetStartAvailable(bool available, string reason = null)
+        {
+            _startAvailable = available;
+
+            if (startButton) startButton.interactable = available;
+
+            if (startUnavailableLabel)
+            {
+                startUnavailableLabel.gameObject.SetActive(!available && !string.IsNullOrEmpty(reason));
+                if (!available && !string.IsNullOrEmpty(reason)) startUnavailableLabel.text = reason;
+            }
+        }
+
+        /// <summary>
+        /// Whether this card offers the weekly leaderboard. Passed either way, never only switched
+        /// ON: the panel is a shared scene object, so a button shown for a challenge has to be
+        /// taken back when the next ordinary card opens - the same rule
+        /// <see cref="SetAddAIAvailable"/> records.
+        /// </summary>
+        public virtual void SetLeaderboardAvailable(bool available)
+        {
+            if (leaderboardButton) leaderboardButton.gameObject.SetActive(available);
+        }
+
+        /// <summary>Wired by the modal, so a panel prefab needs no onClick of its own.</summary>
+        public Button LeaderboardButton => leaderboardButton;
+
+        /// <summary>Raise <see cref="OnLeaderboardRequested"/>. Public so the button can also be
+        /// wired straight to it in the inspector.</summary>
+        public void RequestLeaderboard() => OnLeaderboardRequested?.Invoke();
 
         /// <summary>
         /// Grey out the controls only the host owns (intensity, the fill toggle). Domain and Start
@@ -262,7 +373,8 @@ namespace CosmicShore.UI
 
         /// <summary>Whether Add AI placement mode is currently armed.</summary>
         public virtual bool AddAIModeArmed =>
-            fillWithAIToggle ? fillWithAIToggle.isOn : lobbyRow && lobbyRow.AddAIModeArmed;
+            _addAIAvailable && (fillWithAIToggle ? fillWithAIToggle.isOn
+                                                 : lobbyRow && lobbyRow.AddAIModeArmed);
         void RaiseHostModalClosed() => OnHostModalClosed?.Invoke();
     }
 }

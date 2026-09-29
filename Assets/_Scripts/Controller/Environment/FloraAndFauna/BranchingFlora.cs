@@ -71,6 +71,24 @@ namespace CosmicShore.Gameplay
                     maxTotalSpawnedObjects * tuning.MaxTotalSpawnedObjectsScale + 0.5f));
         }
 
+        /// <summary>
+        /// The ASSEMBLY half of the Mass/Space law (<c>Flora.ElementalReachScale</c>). This
+        /// family's leaf DOES carry a length, so the leaf transform already lengthens a Space
+        /// needle - but the branch STEP is a separate authored distance, and leaving it alone
+        /// would stretch the prisms past the gaps they are meant to span. Scaling the step with
+        /// them keeps a Space plant a wider skeleton and a Mass plant a compact block, rather
+        /// than either one changing how densely its own branches are packed.
+        /// </summary>
+        protected override void OnElementResolved()
+        {
+            base.OnElementResolved();
+
+            float reach = ElementalReachScale;
+            if (Mathf.Approximately(reach, 1f)) return;
+
+            branchingScaleFactor *= reach;
+        }
+
         public override void Initialize(Cell cell)
         {
             base.Initialize(cell);
@@ -226,7 +244,7 @@ namespace CosmicShore.Gameplay
 
         public override void Plant()
         {
-            // A pinned position (the Lifeform Matrix toy's spawn-here stations) wins over dispersal.
+            // A pinned position (the Spawn Matrix toy's spawn-here stations) wins over dispersal.
             if (TryGetPlantPositionOverride(out var pinned))
             {
                 transform.position = pinned;

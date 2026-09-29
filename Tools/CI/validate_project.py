@@ -54,7 +54,6 @@ EXCLUDED_PREFIXES = (
     "Assets/ProfileAnalyzer/",
     "Assets/TextMesh Pro/",
     "Assets/Unity Assests/",   # sic: vendored Unity sample assets
-    "Assets/Wwise/",
     "Assets/StreamingAssets/",
 )
 

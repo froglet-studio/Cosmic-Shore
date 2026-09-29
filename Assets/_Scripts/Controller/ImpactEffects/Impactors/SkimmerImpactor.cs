@@ -323,7 +323,33 @@ namespace CosmicShore.Gameplay
                     // (e.g. the Rhino sword's crystal burst) would fire on it, repeatedly, since
                     // the heart's collider never gets disabled by a collection.
                     var crystal = crystalImpactor.Crystal;
-                    if (crystal == null || crystal.IsEmbedded || crystal.IsExploding) return;
+                    if (crystal == null || crystal.IsExploding) return;
+
+                    // A LIVING lifeform's embedded heart is NOT a pickup, and the collectability
+                    // guard below declines it on purpose. It IS a surface a skimmer can act on —
+                    // the Butterfly's wings wither the hearts they pass through — so it gets its
+                    // OWN list rather than a widened crystal arm: widening would hand every
+                    // shipped skimmer crystal effect (the Rhino sword's burst) a heart it has
+                    // never reacted to, repeatedly, since a heart's collider is never disabled
+                    // by a collection. Every other vessel leaves the new list empty, so this is
+                    // a no-op fleet-wide.
+                    if (crystal.IsEmbedded)
+                    {
+                        var lifeformEffects = skimmerImpactorDataContainer.SkimmerLifeformCrystalEffects;
+                        if (!DoesEffectExist(lifeformEffects)) return;
+                        // Latched: a skimmer sphere overlaps a heart for many frames, and a
+                        // skimmer is several colliders on some hulls.
+                        if (!TryLatchCrystalImpact(crystal)) return;
+                        for (int i = 0; i < lifeformEffects.Length; i++)
+                        {
+                            if (IsEffectSlotEmpty(lifeformEffects[i], skimmerImpactorDataContainer,
+                                    nameof(SkimmerImpactorDataContainerSO.SkimmerLifeformCrystalEffects), i))
+                                continue;
+                            var le = lifeformEffects[i];
+                            RunEffectIsolated(() => le.Execute(this, crystal), le);
+                        }
+                        return;
+                    }
 
                     bool elemental = crystalImpactor is ElementalCrystalImpactor;
 
@@ -343,6 +369,30 @@ namespace CosmicShore.Gameplay
                 }
             }
         }
+
+        /// <summary>
+        /// True exactly once per crystal per latch window — false for the duplicate hits a
+        /// skimmer generates while a heart sits inside its sphere. Mirrors
+        /// <c>VesselImpactor</c>'s own latch (same window, same shape); the two are separate
+        /// tables on purpose, so a vessel and its own skimmer sweeping the same heart are two
+        /// events rather than one racing the other.
+        /// </summary>
+        bool TryLatchCrystalImpact(Crystal crystal)
+        {
+            if (!crystal) return true;   // no identity to latch on — let it through
+
+            int id = crystal.GetInstanceID();
+            float now = Time.time;
+            if (_lastCrystalImpactTime.TryGetValue(id, out var last)
+                && now - last < CrystalImpactLatchSeconds)
+                return false;
+
+            _lastCrystalImpactTime[id] = now;
+            return true;
+        }
+
+        const float CrystalImpactLatchSeconds = 0.5f;
+        readonly Dictionary<int, float> _lastCrystalImpactTime = new();
 
         /// <summary>
         /// Shell-contact exit — mirrors the prism branch of OnTriggerExit (the skim

@@ -51,7 +51,7 @@ namespace CosmicShore.Gameplay
                 filePath = null;
                 return false;
             }
-            CSDebug.Log($"[PaintingShareExporter] Wrote {records.Count}-prism reconstruction to {filePath}");
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[PaintingShareExporter] Wrote {records.Count}-prism reconstruction to {filePath}");
             return true;
         }
 
@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
         {
 #if UNITY_EDITOR || UNITY_STANDALONE
             Application.OpenURL("file:///" + filePath.Replace('\\', '/'));
-            CSDebug.Log($"[PaintingShareExporter] Opened reconstruction in browser: {filePath}");
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[PaintingShareExporter] Opened reconstruction in browser: {filePath}");
 #else
             try
             {

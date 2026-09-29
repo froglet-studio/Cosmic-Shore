@@ -60,7 +60,7 @@ namespace CosmicShore.Core
             }
 
             gameData.ResourceCollection = vessel != null ? vessel.InitialResourceLevels : new ResourceCollection(.5f, .5f, .5f, .5f);
-            gameData.IsDailyChallenge = false;
+            gameData.IsWeeklyChallenge = false;
             gameData.IsTraining = false;
             gameData.IsMission = true;
             gameData.IsMultiplayerMode = false;
@@ -96,7 +96,7 @@ namespace CosmicShore.Core
             }
 
             gameData.ResourceCollection = shipResources;
-            gameData.IsDailyChallenge = isDailyChallenge;
+            gameData.IsWeeklyChallenge = isDailyChallenge;
             gameData.IsTraining = false;
             gameData.IsMission = false;
             gameData.GameMode = gameMode;
@@ -156,7 +156,7 @@ namespace CosmicShore.Core
             }
 
             gameData.ResourceCollection = shipResources;
-            gameData.IsDailyChallenge = isDailyChallenge;
+            gameData.IsWeeklyChallenge = isDailyChallenge;
             gameData.IsTraining = !isDailyChallenge;
             gameData.IsMission = false;
             gameData.IsMultiplayerMode = false;

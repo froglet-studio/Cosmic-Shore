@@ -14,6 +14,16 @@ namespace CosmicShore.UI
         [SerializeField] private Sprite[] missileIcons;
         [SerializeField] private Image missileIcon;
 
+        [Tooltip("Seconds the missile charge gauge takes to travel to a new value. Short - the " +
+                 "gauge moves once per prism destroyed, so anything long would still be catching " +
+                 "up when the next one lands - but never zero: nothing on this HUD pops.")]
+        [SerializeField] private float missileChargeTweenDuration = 0.12f;
+
+        [Tooltip("Extra time the gauge takes to travel when it RESETS (a rocket was just earned, " +
+                 "so the fill runs off the top and starts again from empty). Slower than an " +
+                 "ordinary step because it is the beat worth seeing.")]
+        [SerializeField] private float missileChargeResetTweenDuration = 0.3f;
+
         [Header("Strafing Roll Charge")]
         [Tooltip("The ring on the boost ability icon. This is NOT a gauge — the boost has no heat and " +
                  "no meter any more. It is a binary charge pip for the strafing roll: full = a roll is " +
@@ -45,6 +55,18 @@ namespace CosmicShore.UI
         [SerializeField] private Image weaponModeIcon;
         [SerializeField] private Sprite[] weaponModeIcons = new Sprite[2];
 
+        [Header("Gun Heat")]
+        [Tooltip("Thickness, in canvas units, of the marks drawn across the guns card's heat " +
+                 "gauge at each phase transition of the spread curve (accuracy lost, each cap " +
+                 "reached, each plateau expiring).")]
+        [SerializeField, Min(0.5f)] private float gunHeatMarkThickness = 2f;
+
+        [Tooltip("A phase mark the heat has already passed - the gun is at or beyond that stage.")]
+        [SerializeField] private Color gunHeatMarkPassedColor = new(1f, 1f, 1f, 0.95f);
+
+        [Tooltip("A phase mark still ahead of the heat.")]
+        [SerializeField] private Color gunHeatMarkAheadColor = new(1f, 1f, 1f, 0.35f);
+
         [Header("Blocked Input Highlights")]
         [SerializeField] private Color blockedInputColor = Color.red;
         [SerializeField] private float blockedPulseDuration = 0.4f;
@@ -52,6 +74,14 @@ namespace CosmicShore.UI
         readonly Dictionary<InputEvents, Tween> _blockTweens = new();
         private Tween _rollChargeTween;
         private Tween _rollPunchTween;
+        private Tween _missileChargeTween;
+        private float _missileCharge = -1f;
+
+        const string GunHeatGaugeName = "GunHeatGauge";
+        private Image _gunHeatGauge;
+        private float _gunHeat = -1f;
+        readonly List<float> _gunHeatJoins = new();
+        readonly List<Image> _gunHeatMarks = new();
 
         public override void Initialize()
         {
@@ -90,21 +120,85 @@ namespace CosmicShore.UI
             missileIcon.enabled = true;
         }
 
-        public void SetMissilesFromAmmo01(float ammo01)
+        /// <summary>
+        /// How close the NEXT rocket is, 0..1, on the Charge card's gauge — the ability lockup
+        /// has already re-homed that Image into the card and masked it to the trapezoid, so this
+        /// only ever writes <c>fillAmount</c>, exactly like every other vessel's meter.
+        ///
+        /// <para>Distinct from <see cref="SetMissilesFromAmmo01"/>, which says how many rockets
+        /// the bay HOLDS: the icon ladder is the count, this is the charge. Earning a rocket
+        /// therefore fills this to the top and starts it again from empty — the reset IS the
+        /// signal that one was created, so it is deliberately given its own longer travel rather
+        /// than snapping.</para>
+        /// </summary>
+        public void SetMissileCharge(float charge01)
+        {
+            if (!TryGetAbilityGauge(Element.Charge, out var gauge) || !gauge) return;
+
+            charge01 = Mathf.Clamp01(charge01);
+            if (Mathf.Approximately(charge01, _missileCharge)) return;
+
+            // A DROP means the RACK changed - a rocket rolled over into the bay, or one was
+            // fired - so the bar is starting again rather than stepping. That is worth watching,
+            // and a rise is one prism's worth, which is not.
+            bool reset = charge01 < _missileCharge;
+            _missileCharge = charge01;
+
+            _missileChargeTween?.Kill();
+            _missileChargeTween = gauge
+                .DOFillAmount(charge01, reset ? missileChargeResetTweenDuration
+                                              : missileChargeTweenDuration)
+                .SetEase(reset ? Ease.InOutQuad : Ease.OutQuad)
+                .SetLink(gauge.gameObject);
+        }
+
+        /// <summary>
+        /// How many rockets the bay HOLDS right now, drawn from the authored icon ladder.
+        ///
+        /// <para><b>It counts ROCKETS, not tank fraction.</b> It used to spread <c>ammo01</c>
+        /// across the sprite range and ROUND, which conflates two different quantities and was
+        /// wrong even at the old one-cost weapon: at cost 0.5 a 0.75-full tank holds ONE rocket
+        /// and <c>round(0.75 x 2)</c> drew TWO. Now it is <c>floor(ammo / cost)</c> — the same
+        /// arithmetic <see cref="CosmicShore.Gameplay.FireGunActionExecutor.ChargeToNextShot"/>
+        /// takes the fractional part of, so the ladder and the charge gauge are two readings of
+        /// one division and cannot disagree.</para>
+        ///
+        /// <para>The count is CLAMPED to the art: the ladder has three sprites (0/1/2) while the
+        /// bay now holds four base rockets, so a full bay reads as the top sprite. That
+        /// under-reports rather than lying about which rocket is next, and closing it is an ART
+        /// task (five sprites), not a code one.</para>
+        /// </summary>
+        /// <param name="cost01">One BASE shot's cost as a fraction of the full tank. 0 =
+        /// unknown, in which case the ladder falls back to the tank fraction it used to show.</param>
+        public void SetMissilesFromAmmo01(float ammo01, float cost01)
         {
             if (!missileIcon || missileIcons == null || missileIcons.Length == 0)
                 return;
 
-            var maxState = missileIcons.Length - 1;
-            var state = Mathf.Clamp(
-                Mathf.RoundToInt(Mathf.Clamp01(ammo01) * maxState),
-                0, maxState);
-
-            var sprite = missileIcons[state];
+            var sprite = missileIcons[LadderState(ammo01, cost01, missileIcons.Length)];
             if (!sprite) return;
 
             missileIcon.sprite = sprite;
             missileIcon.enabled = true;
+        }
+
+        /// <summary>
+        /// Which rung of the icon ladder a tank shows, as a pure function so it can be tested
+        /// without a canvas — the sibling of
+        /// <see cref="CosmicShore.Gameplay.FireGunActionExecutor.ChargeToNextShot"/>, which takes
+        /// the FRACTIONAL part of the same division.
+        /// </summary>
+        /// <param name="ammo01">How full the tank is, 0..1.</param>
+        /// <param name="cost01">One BASE shot's cost as a fraction of the tank; 0 = unknown.</param>
+        /// <param name="ladderLength">How many sprites the ladder has (rung 0 = empty).</param>
+        public static int LadderState(float ammo01, float cost01, int ladderLength)
+        {
+            int maxState = Mathf.Max(0, ladderLength - 1);
+            ammo01 = Mathf.Clamp01(ammo01);
+
+            return cost01 > 0f
+                ? Mathf.Clamp(Mathf.FloorToInt(ammo01 / cost01), 0, maxState)
+                : Mathf.Clamp(Mathf.RoundToInt(ammo01 * maxState), 0, maxState);
         }
 
         #endregion
@@ -143,6 +237,112 @@ namespace CosmicShore.UI
             _rollPunchTween = rollChargeIndicator.rectTransform
                 .DOPunchScale(Vector3.one * rollSpendPunchScale, rollChargeTweenDuration * 2f, 1, 0.5f)
                 .SetLink(rollChargeIndicator.gameObject);
+        }
+
+        #endregion
+
+        #region Gun Heat
+
+        /// <summary>
+        /// The guns card (SPACE - the Pulsefire Cannons) carries the gun's HEAT as the fleet's
+        /// linear gauge. The HUD prefab authors no meter for it, so one is generated here and
+        /// bound into the Space entry; the lockup then re-homes it into the card and masks it to
+        /// the plate exactly like an authored gauge. An authored gauge always wins, and nothing is
+        /// generated for a card with no icon (a locked card refuses a gauge).
+        ///
+        /// <para>Idempotent: the lockup may rebuild, and after the first build the gauge no
+        /// longer lives under this transform, so it is held by reference.</para>
+        /// </summary>
+        public override void EnsureGeneratedAbilityIcons()
+        {
+            for (int i = 0; i < abilityIcons.Count; i++)
+            {
+                var binding = abilityIcons[i];
+                if (binding.element != Element.Space) continue;
+                if (!binding.icon || binding.gauge) return;   // locked card, or authored art wins
+
+                if (!_gunHeatGauge)
+                {
+                    var host = (RectTransform)transform;
+                    _gunHeatGauge = ResolveGeneratedChild<Image>(host, GunHeatGaugeName);
+                    _gunHeatGauge.raycastTarget = false;
+                    _gunHeatGauge.type = Image.Type.Filled;
+                    _gunHeatGauge.fillMethod = Image.FillMethod.Vertical;
+                    _gunHeatGauge.fillOrigin = (int)Image.OriginVertical.Bottom;
+                    _gunHeatGauge.fillAmount = 0f;
+                }
+
+                binding.gauge = _gunHeatGauge;
+                abilityIcons[i] = binding;
+                return;
+            }
+        }
+
+        /// <summary>
+        /// How hot the guns are, 0..1 of the heat ceiling (the spread curve's full-collapse
+        /// point). Written straight onto the gauge: heat is a continuous value that already moves
+        /// smoothly (it integrates frame by frame), so a tween would only lag it.
+        /// </summary>
+        public void SetGunHeat(float heat01)
+        {
+            if (!TryGetAbilityGauge(Element.Space, out var gauge) || !gauge) return;
+
+            heat01 = Mathf.Clamp01(heat01);
+            if (Mathf.Approximately(heat01, _gunHeat)) return;
+            _gunHeat = heat01;
+
+            gauge.fillAmount = heat01;
+            PaintGunHeatMarks();
+        }
+
+        /// <summary>
+        /// Where the spread curve changes phase, as fractions of the heat ceiling - one mark is
+        /// drawn across the gauge at each. Marks the heat has passed are bright, marks still ahead
+        /// are dim, so the card says WHICH stage the gun is in (accurate / first cap / blow-out /
+        /// collapse) and how far it is to the next, not just how hot it is.
+        /// </summary>
+        public void SetGunHeatPhaseJoins(List<float> joins01)
+        {
+            if (!TryGetAbilityGauge(Element.Space, out var gauge) || !gauge) return;
+
+            _gunHeatJoins.Clear();
+            if (joins01 != null) _gunHeatJoins.AddRange(joins01);
+
+            var parent = gauge.rectTransform;
+            for (int i = 0; i < _gunHeatJoins.Count; i++)
+            {
+                if (i >= _gunHeatMarks.Count || !_gunHeatMarks[i])
+                {
+                    var mark = ResolveGeneratedChild<Image>(parent, $"HeatPhaseMark{i}");
+                    mark.raycastTarget = false;
+                    if (i < _gunHeatMarks.Count) _gunHeatMarks[i] = mark;
+                    else _gunHeatMarks.Add(mark);
+                }
+
+                var img = _gunHeatMarks[i];
+                img.gameObject.SetActive(true);
+                var rt = img.rectTransform;
+                rt.anchorMin = new Vector2(0f, _gunHeatJoins[i]);
+                rt.anchorMax = new Vector2(1f, _gunHeatJoins[i]);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = new Vector2(0f, gunHeatMarkThickness);
+            }
+
+            for (int i = _gunHeatJoins.Count; i < _gunHeatMarks.Count; i++)
+                if (_gunHeatMarks[i]) _gunHeatMarks[i].gameObject.SetActive(false);
+
+            PaintGunHeatMarks();
+        }
+
+        void PaintGunHeatMarks()
+        {
+            float heat = Mathf.Max(0f, _gunHeat);
+            for (int i = 0; i < _gunHeatJoins.Count && i < _gunHeatMarks.Count; i++)
+                if (_gunHeatMarks[i])
+                    _gunHeatMarks[i].color = heat >= _gunHeatJoins[i]
+                        ? gunHeatMarkPassedColor
+                        : gunHeatMarkAheadColor;
         }
 
         #endregion
@@ -224,6 +424,7 @@ namespace CosmicShore.UI
             base.OnDestroy();
             _rollChargeTween?.Kill();
             _rollPunchTween?.Kill();
+            _missileChargeTween?.Kill();
             foreach (var tween in _blockTweens.Values)
                 tween?.Kill();
             _blockTweens.Clear();

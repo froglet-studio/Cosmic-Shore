@@ -12,9 +12,13 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 
 | ID | Title | Confidence | Status |
 |----|-------|-----------|--------|
-| B1 | `ArgumentOutOfRangeException` (LobbyPatcher) spam at game start | High (cause) | 🟢 (needs Editor retest) |
-| B4 | TC1 second invite not delivered + party members vanish from 3rd player's panel | High, needs retest | 🔴 |
-| B6 | TC3 NRE (`WrappedLobbyService`) + empty online/request lists | Medium | 🔴 |
+| B1 | `ArgumentOutOfRangeException` (LobbyPatcher) spam at game start | High (cause) | 🟡 |
+| B4 | TC1 second invite not delivered + party members vanish from 3rd player's panel | One proven cause fixed; needs retest | 🟡 |
+| B6 | TC3 NRE (`WrappedLobbyService`) + empty online/request lists | Medium | 🟡 |
+
+*(Table corrected 2026-09-11: it read 🟢/🔴/🔴 while B1's and B6's own entries
+below both said 🟡. Keep the row and the entry in step — a status only the index
+carries is one nobody acts on.)*
 
 > **Working order.** Diagnostics-first. The presence-lobby cluster (B4,
 > B6) is the locked-design area — read `ARCHITECTURE.md` and
@@ -191,7 +195,69 @@ for the discovery context.
 
 ---
 
-## B4 — TC1: second invite not delivered + party members vanish from 3rd player's online panel 🔴
+## B4 — TC1: second invite not delivered + party members vanish from 3rd player's online panel 🟡 (a proven cause fixed 2026-09-11; MPPM retest required)
+
+**Both halves of this symptom are ONE fact: the third player is in a DIFFERENT
+presence lobby.** Invites travel as a lobby player-property, so a player who cannot
+see VP1's row cannot receive VP1's invite either — "the invite never arrived" and
+"their rows vanished" are the same split observed from two directions. Fixing the
+split is the whole bug; there is no separate invite-delivery defect to look for.
+(Confirmed by reading the receive path: with VP1 visible, `TryFindIncomingInvite` →
+`TryRaiseIncomingInvite` raises for a recipient who has never been invited by that
+host, and the case where it does not — a *re-*invite after an accept or decline —
+is B12, fixed.)
+
+**A second cause found and fixed, 2026-09-11 — the converge itself was evicting
+people.** `ConvergeToCanonicalAsync` released its non-canonical lobby through
+`DeleteOwnLobbyQuietlyAsync`, which DELETES when we are the host. That helper was
+written for the simultaneous-create race — a lobby created milliseconds ago that we
+are alone in — and the periodic converge (every
+`PRESENCE_CONVERGE_INTERVAL_SECONDS`, 4 s, on every client) reuses it on a lobby
+that may hold anybody. So a host migrating to canonical destroyed the lobby its
+other occupants were sitting in:
+
+1. their `ISession` handle is dead, so every `RefreshAsync` throws;
+2. `RefreshOnlinePlayersDiff` cannot run, so their online list FREEZES — which is
+   precisely "VP1/VP3's rows vanish from VP2's panel";
+3. after `MAX_REFRESH_ERRORS_BEFORE_RECONNECT` (3) they hit `ForceReset` →
+   `JoinOrCreateAsync` → possibly a private throwaway lobby, plus a
+   `RaiseHostConnectionLost` that puts "Connection lost" on the boot-status panel.
+   `ARCHITECTURE.md` § "ForceReset semantics" calls a false ForceReset *the main
+   historical failure surface* — and this was a path that manufactured one.
+
+The fix defers the migration while the lobby we host still has other players in it.
+Nobody needs the host to move first: every occupant runs the same converge on the
+same throttle against the same query, so they migrate themselves, and once they
+have, the host is alone and converges normally — deleting an empty lobby, which is
+what the release is for. The split heals one interval later instead of evicting a
+room. Terminating by construction: members of a non-canonical lobby always migrate,
+only its host ever waits. `DeleteOwnLobbyQuietlyAsync` now states the contract it
+was silently carrying.
+
+**General rule worth carrying past this bug:** *a teardown written for an object we
+just created will eventually be applied to one other people are living in.* Same
+shape as the producer-side rules recorded in `CLAUDE.md` — the helper's own log line
+still said "releasing race-lost lobby" while it was deleting a populated one.
+
+**Status is 🟡, not 🟢, and deliberately so.** The eviction is proved from source and
+fixed, but it was never the *named* hypothesis here, and this entry's own two
+earlier hypotheses (the convergence pause, the property reset) were BOTH addressed
+on 2026-07-16 and never retested. Nothing here has been run in the editor. Until a
+tagged MPPM retest passes, treat the split as possibly still reachable by a route
+nobody has named.
+
+**What the retest has to do** (H10's): three UNIQUELY TAGGED players. VP1 + VP3
+party up, then VP1 invites VP2. Watch for `Converged to canonical presence lobby` on
+each instance and confirm all three settle on ONE lobby id; a
+`Deferring converge to …` line on the host of an occupied lobby is the new guard
+working, and should be followed by a normal converge within a few seconds. No
+instance should show `Connection lost` or a burst of refresh errors during the
+merge.
+
+*Original hypotheses and the 2026-07-16 fix record follow — still the right place
+to start if the split survives this.*
+
+### Original entry
 
 **Symptom.** VP1 invites VP3 → accept → ok (party of 2). VP1 then
 invites VP2 → **VP2 never gets the invite**, and VP1/VP3's rows (shown
@@ -317,4 +383,7 @@ the write/delta-path symptom. Overlay classifies the read-path NRE
 Method: see `../README.md` § "How we work bugs". This is the fragile,
 locked-design area — read `ARCHITECTURE.md` and
 `../PartySystem/ARCHITECTURE.md` first. Presence-side priority order:
-**B1 retest → B4 → B6**.
+**B1 retest → B4 retest → B6**. As of 2026-09-11 all three are 🟡 and all
+three are waiting on a RETEST rather than on analysis: B1 and B6 are the two
+surfaces of one SDK stale-index defect whose noise is silenced, and B4 has a
+cause fixed in source that has never been run. Retest before writing code.

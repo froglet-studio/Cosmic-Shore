@@ -20,7 +20,6 @@ namespace CosmicShore.Core
 
         public static string GetGameplayUserActionLabel(GameModes gameMode, VesselClassType vesselType, int intensity)
         {
-            CSDebug.Log($"GetGameplayUserActionLabel: {gameMode}_{vesselType}_{intensity}");
             return $"{gameMode}_{vesselType}_{intensity}";
         }
     }

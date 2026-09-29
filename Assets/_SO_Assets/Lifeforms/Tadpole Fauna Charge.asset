@@ -23,7 +23,7 @@ MonoBehaviour:
   Element: 1
   Variant:
     Enabled: 1
-    HeartWorldScale: 2.068
+    HeartWorldScale: 2.298
     BaseBodyScale: 0.7
     BodyPrismScale: {x: 0, y: 0, z: 0}
     BodyMaterial: {fileID: 0}

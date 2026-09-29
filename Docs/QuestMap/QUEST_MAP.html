@@ -1,0 +1,450 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Cosmic Shore — Main Quest / FTUE Progression Map</title>
+<style>
+  :root{
+    --bg:#14161B; --panel:#1B1E25; --panel-2:#20242D; --line:#2C313C;
+    --text:#E6E9F0; --muted:#98A1B3; --faint:#6B7385;
+    --flow:#6B7BE8; --present:#2FB8A6; --gameplay:#A66BD8; --gate:#4A8FE0;
+    --guide:#D9B14A; --prog:#E08A3C; --terminal:#4CAF6E; --warn:#E0704A;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;margin:0;padding:0}
+  .wrap{max-width:1180px;margin:0 auto;padding:34px 28px 64px}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:22px;display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--guide);font-weight:600}
+  h1{font-size:26px;margin:6px 0 6px;text-wrap:balance;font-weight:650}
+  .sub{color:var(--muted);max-width:64ch;margin:0;font-size:13.5px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{background:var(--panel-2);border:1px solid var(--line);color:var(--text);font-size:12px;padding:7px 12px;border-radius:6px;cursor:pointer}
+  .btn:hover{border-color:var(--faint)}
+  .btn.warn{color:var(--warn)}
+  .hint{font-size:11.5px;color:var(--faint);width:100%;text-align:right}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:16px 0 26px;padding:11px 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+  .legend .k{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
+  .dot{width:10px;height:10px;border-radius:3px;flex:none}
+  [contenteditable]{border-radius:4px;padding:0 3px;min-width:14px}
+  [contenteditable]:hover{background:rgba(255,255,255,.045)}
+  [contenteditable]:focus{outline:1.5px solid var(--gate);background:rgba(255,255,255,.06)}
+  .btn:focus-visible,select:focus-visible{outline:1.5px solid var(--gate)}
+  .phase{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:16px;overflow:hidden}
+  .phead{display:flex;align-items:center;gap:11px;padding:11px 14px;background:var(--panel-2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .pnum{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--bg);background:var(--terminal);border-radius:5px;padding:5px 8px;letter-spacing:.05em;flex:none}
+  .pname{font-size:16px;font-weight:650}
+  .pgate{font-size:12.5px;color:var(--muted);margin-left:auto}
+  .pgate b{color:var(--gate);font-weight:600}
+  .pctl{display:flex;gap:4px}
+  .ictl{background:none;border:1px solid transparent;color:var(--faint);font-size:12px;width:24px;height:24px;border-radius:5px;cursor:pointer;line-height:1}
+  .ictl:hover{color:var(--text);border-color:var(--line);background:var(--panel)}
+  .ictl.x:hover{color:var(--warn)}
+  .pbody{padding:12px 14px 13px}
+  .row{display:flex;align-items:stretch;gap:26px;overflow-x:auto;padding:4px 2px 8px;min-height:64px}
+  .row + .row{margin-top:4px}
+  .node{flex:none;width:158px;background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--faint);border-radius:7px;padding:6px 9px 7px;position:relative;cursor:grab}
+  .node:not(:first-child)::before{content:"→";position:absolute;left:-21px;top:50%;transform:translateY(-50%);color:var(--faint);font-size:14px}
+  .node.dragging{opacity:.4}
+  .node .xr{position:absolute;top:2px;right:2px;display:none}
+  .node:hover .xr{display:block}
+  .node select{appearance:none;background:transparent;border:none;color:inherit;font:600 10px/1.2 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:.07em;text-transform:uppercase;padding:0;margin:0 0 3px;cursor:pointer;max-width:100%}
+  .node .n{font-size:12.5px;line-height:1.35;display:block}
+  .node .d{font-size:11px;color:var(--faint);display:block;margin-top:2px;min-height:13px}
+  .addnode{flex:none;width:44px;border:1px dashed var(--line);border-radius:7px;background:none;color:var(--faint);font-size:18px;cursor:pointer}
+  .addnode:hover{color:var(--text);border-color:var(--faint)}
+  .rowctl{display:flex;gap:8px;margin-top:2px}
+  .rowctl .btn{font-size:11px;padding:4px 9px}
+  .c-flow{border-left-color:var(--flow)} .c-flow select{color:var(--flow)}
+  .c-present{border-left-color:var(--present)} .c-present select{color:var(--present)}
+  .c-gameplay{border-left-color:var(--gameplay)} .c-gameplay select{color:var(--gameplay)}
+  .c-gate{border-left-color:var(--gate)} .c-gate select{color:var(--gate)}
+  .c-guide{border-left-color:var(--guide)} .c-guide select{color:var(--guide)}
+  .c-prog{border-left-color:var(--prog)} .c-prog select{color:var(--prog)}
+  .c-terminal{border-left-color:var(--terminal)} .c-terminal select{color:var(--terminal)}
+  .pnote{font-size:12.5px;color:var(--muted);margin:8px 2px 0;max-width:100ch}
+  .addphase{width:100%;padding:12px;background:none;border:1px dashed var(--line);border-radius:10px;color:var(--faint);font-size:13px;cursor:pointer;margin-bottom:16px}
+  .addphase:hover{color:var(--text);border-color:var(--faint)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px}
+  @media (max-width:820px){.grid2{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .card h2{font-size:13px;margin:0 0 10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:650}
+  .card ul{margin:0;padding-left:18px}
+  .card li{margin-bottom:9px;font-size:13.5px;color:var(--text);position:relative;padding-right:22px}
+  .card li .ictl{position:absolute;right:-6px;top:-2px;display:none}
+  .card li:hover .ictl{display:block}
+  .card p{font-size:13.5px;color:var(--muted)}
+  .pipeline{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font:12.5px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .pipeline .box{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:6px 9px}
+  .pipeline .box.src{border-color:var(--guide);color:var(--guide)}
+  .pipeline .sep{color:var(--faint)}
+  footer{margin-top:32px;color:var(--faint);font-size:12px;border-top:1px solid var(--line);padding-top:14px}
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <span class="eyebrow">Cosmic Shore · Quest Graph — design reference</span>
+    <h1>Main Quest (FTUE) Progression Map</h1>
+    <p class="sub">Click any text to edit it. Drag nodes to reorder, use the dropdown on a node to recolor its category, ✕ to remove, + to add. Edits autosave in this browser — <b>Save Map as HTML</b> bakes your data into a file you can share or commit.</p>
+  </div>
+  <div class="toolbar">
+    <button class="btn" id="saveHtmlBtn" title="Download this page with your current data baked in — share that file with other designers">Save Map as HTML</button>
+    <button class="btn" id="exportBtn">Export JSON</button>
+    <button class="btn" id="importBtn">Import JSON</button>
+    <button class="btn warn" id="resetBtn">Reset to this file's data</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+    <span class="hint" id="saveHint">edits save automatically</span>
+  </div>
+</header>
+
+<div class="legend">
+  <span class="k"><span class="dot" style="background:var(--flow)"></span>Flow / pacing</span>
+  <span class="k"><span class="dot" style="background:var(--present)"></span>Instruction &amp; dialogue</span>
+  <span class="k"><span class="dot" style="background:var(--gameplay)"></span>Gameplay control</span>
+  <span class="k"><span class="dot" style="background:var(--gate)"></span>Wait / gate</span>
+  <span class="k"><span class="dot" style="background:var(--guide)"></span>CTA breadcrumb</span>
+  <span class="k"><span class="dot" style="background:var(--prog)"></span>Progression write</span>
+  <span class="k"><span class="dot" style="background:var(--terminal)"></span>Phase / quest end</span>
+</div>
+
+<div id="phases"></div>
+<button class="addphase" id="addPhaseBtn">+ Add phase</button>
+
+<div class="grid2">
+  <div class="card">
+    <h2>One system — how the graph drives everything</h2>
+    <div class="pipeline">
+      <span class="box src">Quest Graph (source of truth)</span><span class="sep">→</span>
+      <span class="box">CTA breadcrumbs</span><span class="sep">·</span>
+      <span class="box">GameModeProgressionService (unlocks / intensity)</span><span class="sep">·</span>
+      <span class="box">Dialogue system</span><span class="sep">·</span>
+      <span class="box">UGS cloud save (per node)</span>
+    </div>
+    <p style="margin-top:12px">While a quest is running, the graph owns guidance (the service’s auto-breadcrumb is suppressed). Gates listen to the progression service’s own events, so intensity tiers and claims stay exactly as the quest-track UI shows them. Every completed node is recorded per player in UGS — resume lands mid-phase, and the funnel shows where players drop off.</p>
+  </div>
+  <div class="card">
+    <h2>Assumptions &amp; open questions <button class="ictl" id="addQBtn" title="Add item" style="display:inline;position:static">＋</button></h2>
+    <ul id="questions"></ul>
+  </div>
+</div>
+
+<footer>Working reference for the Quest Graph editor · edits autosave locally; “Save Map as HTML” produces a shareable file with the data embedded (a copy lives in the repo at Docs/QuestMap/) · Cosmic Shore, Froglet Inc.</footer>
+</div>
+
+<script type="application/json" id="mapdata">{"rev": 1, "state": {"phases": [{"name": "Onboarding & Crystal Capture — Flight School", "gate": "entry: first launch", "note": "Flight school: every correct action pulses a success haptic; every completed step is recorded to UGS; the exit happens ONLY on B — never forced early. Instruction beats map to keyed CanvasGroup panels on QuestInstructionView: speed_up, slow_down, look_around, drift, skim, exit_freestyle (built with the ControlIcons sprites).", "rows": [[{"cat": "gameplay", "type": "EnterFreestyle", "name": "Camera → player vessel", "detail": "first beat · on menu ready"}, {"cat": "present", "type": "Instruction", "name": "Sticks OUTWARD → speed up", "detail": "panel: speed_up"}, {"cat": "gate", "type": "WaitForInput", "name": "Full speed", "detail": ""}, {"cat": "present", "type": "Instruction", "name": "Sticks INWARD → slow down", "detail": "panel: slow_down"}, {"cat": "gate", "type": "WaitForInput", "name": "Minimum speed", "detail": ""}, {"cat": "present", "type": "Instruction", "name": "Move stick → look around", "detail": "panel: look_around"}, {"cat": "gate", "type": "WaitForInput", "name": "Steer", "detail": ""}], [{"cat": "present", "type": "Instruction", "name": "LT + RT → drift", "detail": "panel: drift"}, {"cat": "gate", "type": "WaitForDrift", "name": "drift held 0.4s", "detail": ""}, {"cat": "present", "type": "Instruction", "name": "Skim prisms — boost!", "detail": "panel: skim"}, {"cat": "gate", "type": "WaitForSkim", "name": "10 prisms · live counter", "detail": ""}, {"cat": "present", "type": "Instruction", "name": "Press B to exit", "detail": "panel: exit_freestyle"}, {"cat": "gate", "type": "WaitForInput", "name": "B (Button3)", "detail": ""}, {"cat": "gate", "type": "ExitFreestyle", "name": "forced exit · only on B", "detail": ""}], [{"cat": "guide", "type": "CTA", "name": "Arcade menu", "detail": ""}, {"cat": "gameplay", "type": "LockModes", "name": "Only Crystal Capture", "detail": ""}, {"cat": "guide", "type": "CTA", "name": "Crystal Capture card", "detail": "intensity 2 via UI"}, {"cat": "gate", "type": "WaitGamePlayed", "name": "CC @ intensity 2", "detail": ""}, {"cat": "guide", "type": "CTA", "name": "Profile screen", "detail": ""}, {"cat": "present", "type": "Dialogue", "name": "Maps tour + “Intensity 4 unlocks the next mode”", "detail": ""}, {"cat": "guide", "type": "CTA", "name": "Arcade → CC card", "detail": "intensity 3 via UI"}, {"cat": "gate", "type": "WaitGamePlayed", "name": "CC @ intensity 3", "detail": ""}, {"cat": "present", "type": "Instruction", "name": "Friends & invites tour", "detail": "placeholder until UI"}, {"cat": "terminal", "type": "Phase End", "name": "→ Phase 1", "detail": ""}]]}, {"name": "Unlock HexRace", "gate": "entry gate: CC intensity 4 unlocked", "note": "Pattern: gate on intensity milestone → guide to profile → claim → reward dialogue → guide back to arcade → play. Later phases repeat this shape.", "rows": [[{"cat": "gate", "type": "WaitIntensity", "name": "Crystal Capture reaches tier 4", "detail": ""}, {"cat": "guide", "type": "CTA", "name": "Profile screen", "detail": ""}, {"cat": "present", "type": "Dialogue", "name": "Profile explainer", "detail": ""}, {"cat": "gate", "type": "WaitModeUnlocked", "name": "Player claims HexRace", "detail": "unlocks to intensity 3"}, {"cat": "present", "type": "Dialogue", "name": "Reward reveal", "detail": "lines on node"}, {"cat": "guide", "type": "CTA", "name": "Arcade → HexRace card", "detail": ""}, {"cat": "gate", "type": "WaitGamePlayed", "name": "HexRace", "detail": ""}, {"cat": "terminal", "type": "Phase End", "name": "→ Phase 2", "detail": ""}]]}, {"name": "Unlock Joust", "gate": "entry gate: HexRace intensity 4", "note": "", "rows": [[{"cat": "gate", "type": "WaitIntensity", "name": "HexRace tier 4", "detail": ""}, {"cat": "guide", "type": "CTA", "name": "Profile", "detail": ""}, {"cat": "gate", "type": "WaitModeUnlocked", "name": "Claim Joust", "detail": ""}, {"cat": "present", "type": "Dialogue", "name": "Reward reveal", "detail": ""}, {"cat": "guide", "type": "CTA", "name": "Arcade → Joust card", "detail": ""}, {"cat": "gate", "type": "WaitGamePlayed", "name": "Joust", "detail": ""}, {"cat": "terminal", "type": "Phase End", "name": "→ Phase 3", "detail": ""}]]}, {"name": "Unlock Maelstrom", "gate": "entry gate: Joust intensity 4", "note": "", "rows": [[{"cat": "gate", "type": "WaitIntensity", "name": "Joust tier 4", "detail": ""}, {"cat": "guide", "type": "CTA", "name": "Profile", "detail": ""}, {"cat": "gate", "type": "WaitModeUnlocked", "name": "Claim Maelstrom", "detail": "GameModes.Tournament"}, {"cat": "present", "type": "Dialogue", "name": "Reward reveal", "detail": ""}, {"cat": "guide", "type": "CTA", "name": "Arcade → Maelstrom card", "detail": ""}, {"cat": "gate", "type": "WaitGamePlayed", "name": "Maelstrom", "detail": ""}, {"cat": "terminal", "type": "Phase End", "name": "→ Phase 4", "detail": ""}]]}, {"name": "Vessel Unlock Tour", "gate": "entry: after Maelstrom played", "note": "", "rows": [[{"cat": "guide", "type": "CTA", "name": "Hangar screen", "detail": ""}, {"cat": "present", "type": "Dialogue", "name": "Vessel unlock tour", "detail": ""}, {"cat": "gate", "type": "WaitUserAction", "name": "Vessel unlocked", "detail": "fired by hangar UI"}, {"cat": "present", "type": "Dialogue", "name": "Reward reveal", "detail": ""}, {"cat": "terminal", "type": "Phase End", "name": "→ Phase 5", "detail": ""}]]}, {"name": "Episodes & Beyond — Finale", "gate": "entry: vessel unlocked", "note": "", "rows": [[{"cat": "guide", "type": "CTA", "name": "Episodes screen", "detail": ""}, {"cat": "present", "type": "Dialogue", "name": "“You can also buy new game modes”", "detail": ""}, {"cat": "terminal", "type": "Quest End", "name": "FTUE complete · saved to UGS", "detail": ""}]]}], "questions": ["Q1 — RESOLVED: intensity gates default to tier 4 (tiers 1–3 open from the start; the player can play intensity 3 immediately).", "New CTA targets added: Profile (500), Episodes (600), Maelstrom card (437) + user actions ViewProfileMenu / ViewEpisodeMenu / UnlockVessel — wire CallToActionTarget components on those UI elements when built.", "Dialogue beats are SELF-CONTAINED: lines are authored directly on the Dialogue node and shown on the DialogueSetUI panel — the legacy dialogue system (DialogueManager/DialogueSet assets) is not used by the Main Quest.", "Friends-invite tour is an instruction placeholder until that panel has a CTA target.", "Skim counter rides the skim-boost event and counts boost INCREASES only (the channel also fires on decay) — at max boost, skims stop raising the multiplier, so keep the target comfortably low (10 is fine)."]}}</script>
+<script>
+(() => {
+"use strict";
+const CATS = [
+  ["flow","FLOW"],["present","PRESENT"],["gameplay","GAMEPLAY"],["gate","GATE"],
+  ["guide","CTA"],["prog","PROGRESS"],["terminal","END"],
+];
+const N = (cat,type,name,detail="") => ({cat,type,name,detail});
+
+const DEFAULT = {
+  phases: [
+    { name:"Onboarding & Crystal Capture — Flight School", gate:"entry: first launch",
+      note:"Flight school: every correct action pulses a success haptic; every completed step is recorded to UGS; the exit happens ONLY on B — never forced early. Instruction beats map to keyed CanvasGroup panels on QuestInstructionView: speed_up, slow_down, look_around, drift, skim, exit_freestyle (built with the ControlIcons sprites).",
+      rows: [
+        [ N("gameplay","EnterFreestyle","Camera → player vessel","first beat · on menu ready"),
+          N("present","Instruction","Sticks OUTWARD → speed up","panel: speed_up"), N("gate","WaitForInput","Full speed"),
+          N("present","Instruction","Sticks INWARD → slow down","panel: slow_down"), N("gate","WaitForInput","Minimum speed"),
+          N("present","Instruction","Move stick → look around","panel: look_around"), N("gate","WaitForInput","Steer") ],
+        [ N("present","Instruction","LT + RT → drift","panel: drift"), N("gate","WaitForDrift","drift held 0.4s"),
+          N("present","Instruction","Skim prisms — boost!","panel: skim"), N("gate","WaitForSkim","10 prisms · live counter"),
+          N("present","Instruction","Press B to exit","panel: exit_freestyle"), N("gate","WaitForInput","B (Button3)"),
+          N("gate","ExitFreestyle","forced exit · only on B") ],
+        [ N("guide","CTA","Arcade menu"), N("gameplay","LockModes","Only Crystal Capture"),
+          N("guide","CTA","Crystal Capture card","intensity 2 via UI"), N("gate","WaitGamePlayed","CC @ intensity 2"),
+          N("guide","CTA","Profile screen"), N("present","Dialogue","Maps tour + “Intensity 4 unlocks the next mode”"),
+          N("guide","CTA","Arcade → CC card","intensity 3 via UI"), N("gate","WaitGamePlayed","CC @ intensity 3"),
+          N("present","Instruction","Friends & invites tour","placeholder until UI"), N("terminal","Phase End","→ Phase 1") ],
+      ]},
+    { name:"Unlock HexRace", gate:"entry gate: CC intensity 4 unlocked (see Q1)",
+      note:"Pattern: gate on intensity milestone → guide to profile → claim → reward dialogue → guide back to arcade → play. Later phases repeat this shape.",
+      rows: [
+        [ N("gate","WaitIntensity","Crystal Capture reaches tier 4"), N("guide","CTA","Profile screen"),
+          N("present","Dialogue","Profile explainer"), N("gate","WaitModeUnlocked","Player claims HexRace","unlocks to intensity 3"),
+          N("present","Dialogue","Reward reveal","lines on node"), N("guide","CTA","Arcade → HexRace card"),
+          N("gate","WaitGamePlayed","HexRace"), N("terminal","Phase End","→ Phase 2") ],
+      ]},
+    { name:"Unlock Joust", gate:"entry gate: HexRace intensity 4",
+      note:"",
+      rows: [
+        [ N("gate","WaitIntensity","HexRace tier 4"), N("guide","CTA","Profile"),
+          N("gate","WaitModeUnlocked","Claim Joust"), N("present","Dialogue","Reward reveal"),
+          N("guide","CTA","Arcade → Joust card"), N("gate","WaitGamePlayed","Joust"),
+          N("terminal","Phase End","→ Phase 3") ],
+      ]},
+    { name:"Unlock Maelstrom", gate:"entry gate: Joust intensity 4",
+      note:"",
+      rows: [
+        [ N("gate","WaitIntensity","Joust tier 4"), N("guide","CTA","Profile"),
+          N("gate","WaitModeUnlocked","Claim Maelstrom","GameModes.Tournament"), N("present","Dialogue","Reward reveal"),
+          N("guide","CTA","Arcade → Maelstrom card"), N("gate","WaitGamePlayed","Maelstrom"),
+          N("terminal","Phase End","→ Phase 4") ],
+      ]},
+    { name:"Vessel Unlock Tour", gate:"entry: after Maelstrom played",
+      note:"",
+      rows: [
+        [ N("guide","CTA","Hangar screen"), N("present","Dialogue","Vessel unlock tour"),
+          N("gate","WaitUserAction","Vessel unlocked","fired by hangar UI"), N("present","Dialogue","Reward reveal"),
+          N("terminal","Phase End","→ Phase 5") ],
+      ]},
+    { name:"Episodes & Beyond — Finale", gate:"entry: vessel unlocked",
+      note:"",
+      rows: [
+        [ N("guide","CTA","Episodes screen"), N("present","Dialogue","“You can also buy new game modes”"),
+          N("terminal","Quest End","FTUE complete · saved to UGS") ],
+      ]},
+  ],
+  questions: [
+    "Q1 — intensity gate: Phase 1 was described as starting “if the player has unlocked intensity 3”, but the Phase-0 dialogue teaches “intensity 4 unlocks the next mode” (matching the shipped rule: tiers 1–3 open by default, tier 4 is gated). The tool defaults the gate to tier 4 — it’s one field on the node if intended otherwise.",
+    "New CTA targets added: Profile (500), Episodes (600), Maelstrom card (437) + user actions ViewProfileMenu / ViewEpisodeMenu / UnlockVessel — wire CallToActionTarget components on those UI elements when built.",
+    "Dialogue beats are SELF-CONTAINED: lines are authored directly on the Dialogue node and shown on the DialogueSetUI panel — the legacy dialogue system (DialogueManager/DialogueSet assets) is not used by the Main Quest.",
+    "Friends-invite tour is an instruction placeholder until that panel has a CTA target.",
+    "Skim counter rides the skim-boost event and counts boost INCREASES only (the channel also fires on decay) — at max boost, skims stop raising the multiplier, so keep the target comfortably low (10 is fine).",
+  ],
+};
+
+const KEY = "csQuestMap.v2";
+let embedded = null;
+try{
+  const raw = JSON.parse(document.getElementById("mapdata").textContent);
+  if(raw && raw.state && Array.isArray(raw.state.phases)) embedded = raw;
+}catch(e){}
+let baseRev = embedded ? (embedded.rev || 0) : 0;
+let state = load();
+let drag = null; // {p, r, i}
+
+function fileData(){ return embedded ? JSON.parse(JSON.stringify(embedded.state)) : JSON.parse(JSON.stringify(DEFAULT)); }
+function load(){
+  // Local edits win only if they were made on top of THIS file revision;
+  // a newer shared file (different rev) replaces stale local edits.
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      if(s && s.state && Array.isArray(s.state.phases) && s.baseRev === baseRev) return s.state;
+    }
+  }catch(e){}
+  return fileData();
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify({baseRev, state})); flashHint("saved"); }
+  catch(e){ flashHint("save failed"); }
+}
+function saveAsHtml(){
+  baseRev = Date.now();
+  document.getElementById("mapdata").textContent = JSON.stringify({rev: baseRev, state});
+  save();
+  const html = "<!doctype html>\n" + document.documentElement.outerHTML;
+  const blob = new Blob([html], {type:"text/html"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "cosmic-shore-quest-map.html";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  flashHint("map file saved");
+}
+let hintTimer;
+function flashHint(t){
+  const el = document.getElementById("saveHint");
+  el.textContent = t;
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(()=> el.textContent = "edits save automatically", 1200);
+}
+
+function editable(tag, cls, obj, key, placeholder){
+  const el = document.createElement(tag);
+  if(cls) el.className = cls;
+  el.contentEditable = "true";
+  el.spellcheck = false;
+  el.textContent = obj[key] || "";
+  el.dataset.placeholder = placeholder || "";
+  el.addEventListener("input", () => { obj[key] = el.textContent; save(); });
+  el.addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); el.blur(); } });
+  return el;
+}
+function ctl(label, title, onClick, extraClass){
+  const b = document.createElement("button");
+  b.className = "ictl" + (extraClass ? " " + extraClass : "");
+  b.textContent = label;
+  b.title = title;
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function renderNode(chip, p, r, i){
+  const el = document.createElement("div");
+  el.className = "node c-" + chip.cat;
+  el.draggable = true;
+
+  const sel = document.createElement("select");
+  sel.title = "Node category";
+  for(const [val, label] of CATS){
+    const o = document.createElement("option");
+    o.value = val; o.textContent = label + " · " + (val === chip.cat ? chip.type || "node" : label.toLowerCase());
+    if(val === chip.cat) o.selected = true;
+    sel.appendChild(o);
+  }
+  // Show the node TYPE as the visible select text via first option trick is messy — use type text next to it instead.
+  sel.innerHTML = "";
+  for(const [val, label] of CATS){
+    const o = document.createElement("option");
+    o.value = val; o.textContent = label;
+    if(val === chip.cat) o.selected = true;
+    sel.appendChild(o);
+  }
+  sel.addEventListener("change", () => {
+    chip.cat = sel.value;
+    el.className = "node c-" + chip.cat;
+    save();
+  });
+
+  const typeEl = editable("span", "n", chip, "type");
+  typeEl.style.cssText = "font:600 10px/1.2 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.07em;text-transform:uppercase;display:inline-block;margin:0 0 3px 4px;color:inherit;opacity:.85";
+
+  const head = document.createElement("div");
+  head.style.cssText = "display:flex;align-items:baseline";
+  head.appendChild(sel); head.appendChild(typeEl);
+
+  el.appendChild(head);
+  el.appendChild(editable("span", "n", chip, "name"));
+  el.appendChild(editable("span", "d", chip, "detail"));
+  el.appendChild(ctl("✕", "Remove node", () => { state.phases[p].rows[r].splice(i,1); save(); render(); }, "x xr"));
+
+  el.addEventListener("dragstart", e => { drag = {p, r, i}; el.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; });
+  el.addEventListener("dragend", () => { drag = null; el.classList.remove("dragging"); });
+  el.addEventListener("dragover", e => e.preventDefault());
+  el.addEventListener("drop", e => {
+    e.preventDefault(); e.stopPropagation();
+    if(!drag) return;
+    const chipData = state.phases[drag.p].rows[drag.r].splice(drag.i, 1)[0];
+    let ti = i;
+    if(drag.p === p && drag.r === r && drag.i < i) ti = i - 1;
+    state.phases[p].rows[r].splice(ti, 0, chipData);
+    drag = null; save(); render();
+  });
+  return el;
+}
+
+function renderPhase(phase, p){
+  const sec = document.createElement("section");
+  sec.className = "phase";
+
+  const head = document.createElement("div");
+  head.className = "phead";
+  const num = document.createElement("span");
+  num.className = "pnum"; num.textContent = "PHASE " + p;
+  head.appendChild(num);
+  head.appendChild(editable("span", "pname", phase, "name"));
+  head.appendChild(editable("span", "pgate", phase, "gate"));
+
+  const pc = document.createElement("div");
+  pc.className = "pctl";
+  pc.appendChild(ctl("▲","Move phase up",()=>{ if(p>0){ [state.phases[p-1],state.phases[p]]=[state.phases[p],state.phases[p-1]]; save(); render(); } }));
+  pc.appendChild(ctl("▼","Move phase down",()=>{ if(p<state.phases.length-1){ [state.phases[p+1],state.phases[p]]=[state.phases[p],state.phases[p+1]]; save(); render(); } }));
+  pc.appendChild(ctl("✕","Delete phase",()=>{ if(confirm("Delete phase "+p+" ('"+(phase.name||"")+"')?")){ state.phases.splice(p,1); save(); render(); } },"x"));
+  head.appendChild(pc);
+  sec.appendChild(head);
+
+  const body = document.createElement("div");
+  body.className = "pbody";
+  phase.rows.forEach((row, r) => {
+    const rowEl = document.createElement("div");
+    rowEl.className = "row";
+    row.forEach((chip, i) => rowEl.appendChild(renderNode(chip, p, r, i)));
+
+    const add = document.createElement("button");
+    add.className = "addnode"; add.textContent = "＋"; add.title = "Add node";
+    add.addEventListener("click", () => { row.push(N("gate","Node","New step")); save(); render(); });
+    rowEl.appendChild(add);
+
+    rowEl.addEventListener("dragover", e => e.preventDefault());
+    rowEl.addEventListener("drop", e => {
+      e.preventDefault();
+      if(!drag) return;
+      const chipData = state.phases[drag.p].rows[drag.r].splice(drag.i,1)[0];
+      row.push(chipData);
+      drag = null; save(); render();
+    });
+    body.appendChild(rowEl);
+  });
+
+  const rc = document.createElement("div");
+  rc.className = "rowctl";
+  const addRow = document.createElement("button");
+  addRow.className = "btn"; addRow.textContent = "+ row";
+  addRow.addEventListener("click", () => { phase.rows.push([]); save(); render(); });
+  rc.appendChild(addRow);
+  if(phase.rows.length > 1){
+    const rmRow = document.createElement("button");
+    rmRow.className = "btn"; rmRow.textContent = "– empty rows";
+    rmRow.addEventListener("click", () => { phase.rows = phase.rows.filter(r => r.length); if(!phase.rows.length) phase.rows=[[]]; save(); render(); });
+    rc.appendChild(rmRow);
+  }
+  body.appendChild(rc);
+
+  const note = editable("p", "pnote", phase, "note");
+  body.appendChild(note);
+  sec.appendChild(body);
+  return sec;
+}
+
+function render(){
+  const host = document.getElementById("phases");
+  host.innerHTML = "";
+  state.phases.forEach((phase, p) => host.appendChild(renderPhase(phase, p)));
+
+  const ql = document.getElementById("questions");
+  ql.innerHTML = "";
+  state.questions.forEach((q, i) => {
+    const li = document.createElement("li");
+    const span = document.createElement("span");
+    span.contentEditable = "true"; span.spellcheck = false; span.textContent = q;
+    span.addEventListener("input", () => { state.questions[i] = span.textContent; save(); });
+    li.appendChild(span);
+    li.appendChild(ctl("✕","Remove",()=>{ state.questions.splice(i,1); save(); render(); },"x"));
+    ql.appendChild(li);
+  });
+}
+
+document.getElementById("addPhaseBtn").addEventListener("click", () => {
+  state.phases.push({ name:"New phase", gate:"entry gate: …", note:"", rows:[[ N("gate","Node","First step"), N("terminal","Phase End","→ next phase") ]] });
+  save(); render();
+});
+document.getElementById("addQBtn").addEventListener("click", () => { state.questions.push("New note"); save(); render(); });
+
+document.getElementById("exportBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "cosmic-shore-quest-map.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+document.getElementById("importBtn").addEventListener("click", () => document.getElementById("importFile").click());
+document.getElementById("importFile").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const s = JSON.parse(reader.result);
+      if(!s || !Array.isArray(s.phases)) throw new Error("not a quest map");
+      state = s; save(); render(); flashHint("imported");
+    }catch(err){ alert("Import failed: " + err.message); }
+  };
+  reader.readAsText(file);
+  e.target.value = "";
+});
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if(confirm("Discard your local edits and restore this file's embedded data?")){
+    state = fileData();
+    save(); render();
+  }
+});
+document.getElementById("saveHtmlBtn").addEventListener("click", saveAsHtml);
+
+render();
+})();
+</script>

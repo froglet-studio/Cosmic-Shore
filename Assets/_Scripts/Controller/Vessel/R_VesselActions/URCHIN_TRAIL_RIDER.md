@@ -217,6 +217,18 @@ was left describing the retired one): `GunVesselTransformer` keeps a latched `_f
 initial direction from the arrival Course; nothing named `attachDirection` or `SetRideSign`
 ships — those were round 4's names.
 
+**And the seed is COMPOSED, since the Urchin learned to fly backwards**
+(`URCHIN_REVERSE_FLIGHT.md`). `_facingSign` means *does the NOSE agree with the ribbon's
+index-order heading*, and the follower's latched `Direction` is *does TRAVEL agree with it* — the
+same fact only while the vessel is flying nose-first. `SeedTrailRide` now multiplies the two:
+`nose vs index = (travel vs index) × (nose vs travel)`. Uncomposed it is invisible on a forward
+attach and wrong on every reverse one, because a pilot backing into a ribbon is holding the stick
+BACK, the grind reads that as "go opposite my nose", and an uncomposed seed claims the nose already
+points the way they are travelling — so the rail fires them off the way they came in the same
+breath it catches them. That is the exact mirror of the defect the seed was written to fix, which
+is the general shape worth carrying: **a derivation that collapses two facts into one is a
+statement about the cases that existed when it was written.**
+
 **2. Attach snapped the rider to the block's start.** `percentTowardNextBlock = 0` (a 2023
 TODO) — a visible backwards jump at every latch. Now seeded by projecting the vessel's actual
 touch position onto the segment ahead.
@@ -499,7 +511,7 @@ Round 13's pool-reuse clear in `ResetState` established that trail membership is
 (the Squirrel's crystal ring), `SpawnableFlower`, `SpawnableCord`, `SpawnableDartBoard`,
 `SpawnableRaceTrack` and `SpawnableWaypointTrack` — so every prism they laid came out
 container-less, classified by census as a 0D Singleton, and routed to the MARBLE. That is the
-"strange behavior" on a ring, and it was a real regression well beyond the Urchin: the HexRace
+"strange behavior" on a ring, and it was a real regression well beyond the Urchin: the SkimRace
 waypoint track and race track lost their `Trail` too, which `Skimmer` and
 `SkimmerAlignPrismEffectSO` both read for trail alignment. All six now call
 `Prism.AssignTrail` after `Initialize`.
@@ -588,7 +600,7 @@ of its two ribbons as a **helix braided around its flight path**, radius ≥ ~9.
 skim-widened). Every ride line at a fixed offset from the spine along each block's lay-time
 right inherits that helix: the block centres (ridden before round 9) and the inner edge (what
 round 9's `RidePoint` chose as "the width-independent line") alike. Following a 9.25u-radius
-helix at 150 u/s IS orbiting like crazy — in every round so far, under every transformer.
+helix at 300 u/s IS orbiting like crazy — in every round so far, under every transformer.
 
 The fix was exact in intent and WRONG in mechanism *(see round 13 — the block-right
 reconstruction fails under `BlockRotationOverride`; the lay now stamps the offset)*: `RidePoint` undoes the **entire** lay offset —
@@ -671,7 +683,7 @@ block and the frame's last block won. One smoothed target turns every cliff — 
 throttle change, release — into a deceleration you can feel.
 
 That replaced the per-block time-accounting walk entirely (`LookAhead` + the `while` loop). A
-frame covers ~2.5u at full grind (150 u/s at 60 fps) against blocks 4u and longer, so treating
+frame covers ~5u at full grind (300 u/s at 60 fps) against blocks 4-8u, so treating
 speed as constant across a frame costs nothing measurable — and it removed `LookAhead`'s
 "fewer than two blocks" early-out, which fought the hole bridging by refusing to move at all
 on a sparsely-surviving ribbon.
@@ -949,7 +961,7 @@ topologies is now something the pilot can *feel*.
 
 ### The speed carry — momentum outlives the ride
 
-A friendly grind runs at **150 u/s** against the Urchin's ~50 u/s free-flight top
+A friendly grind runs at **300 u/s** against the Urchin's 65 u/s free-flight top
 (`DefaultThrottleScaler` 50, `DefaultMinimumSpeed` 0), so handing the vessel straight back to
 `ComputeThrottleTarget` would delete two thirds of its speed in a frame. Instead:
 
@@ -961,10 +973,10 @@ A friendly grind runs at **150 u/s** against the Urchin's ~50 u/s free-flight to
   replacement**: the pilot's throttle takes over the instant it can beat the decaying carry, and a
   boost during the glide is not thrown away.
 - `TickCarriedSpeed` bleeds the carry toward the natural target at a constant
-  `detachSpeedDecayRate` (**12 u/s**, so 150 → 50 spends ~8 seconds), then clears it. Constant-rate
+  `detachSpeedDecayRate` (**36 u/s**, so the kicked 360 → 65 spends ~8 seconds), then clears it. Constant-rate
   rather than exponential so the glide has a readable slope and actually *lands*.
 
-**Only EXCESS is carried.** A ride slower than the pilot's own cruise — hostile terrain at 10 u/s —
+**Only EXCESS is carried.** A ride slower than the pilot's own cruise — hostile terrain at 20 u/s —
 hands over nothing, so this can never brake a vessel and can never become a free speed floor. It is
 strictly momentum the pilot already had.
 
@@ -999,6 +1011,80 @@ unconditionally, *above* any pilot gate, because `Initialize` re-runs on a live 
 vessel changes hands (a swap, a Cellular Duel ownership change) and a ghost left running would
 restore the previous pilot's colliders onto the new one at an arbitrary moment.
 
+## The cradle (rounds 23-24): the mass drapes over the hull while you ride
+
+While the Urchin is **riding** — `GunVesselTransformer.IsRiding`: attached with a live ride kernel
+under it, which is false the moment a launch, a Slip or a cleared trail lets go — the mass around
+it **drapes** over the hull. Every vertex within `drapeReach` of the hull's SURFACE slides along
+its own radius toward that surface: mass inside the hull closes onto it (so a prism you are buried
+in envelopes you rather than clipping through you), mass just outside rises to meet it, and mass
+past the reach is perfectly still. In free flight, and in the glide after a launch, nothing moves.
+It reads as being cradled by the mass you are grinding.
+
+**Two earlier cuts of this moved the prism's own triangles and were both rejected on look.** The
+first swung whole FACES (*"it brought the whole rectangular face, when it should only grab one
+triangle"*); the second swung individual WEDGES — the four triangles fanned from a face's centre —
+with the nearest landing on the hull and its three neighbours coming partway. Both were exactly
+what was asked for, both were proven correct by the harness, and both read as **facets hinging**,
+first at full strength and then again after a 10x tone-down. That is the finding to carry: *a
+deformation is only as smooth as the surface it moves, and 24 triangles is not a surface.* No
+rigid per-triangle motion could have looked like fabric, so the fix is more surface and a smoother
+map — not another tuning pass.
+
+**So a handful of prisms get more surface, and only while it matters.** `HighPolyPrismMesh` builds
+the identical solid subdivided 16x per face axis (3,072 triangles against the authored 24, same
+extents, same flat per-face normals, same face-local UV0 — at rest you cannot tell them apart), and
+`PrismCradle` swaps it onto the prisms near a riding hull through `Prism.SetRenderMeshOverride`,
+the platform's own shared-mesh handoff. Three things make that affordable and invisible: the swap
+happens where the drape provably cannot have moved anything (`residencyMargin` beyond
+`hullRadius + drapeReach`), the mesh is SHARED so the swapped prisms stay in one instanced batch,
+and it is budgeted at `maxResidentPrisms` (24, nearest first). A prism already holding an override —
+a settled shield's octahedron — is declined outright, and the cradle only ever clears an override
+that is still its own, so a prism shielded mid-ride keeps its armour.
+
+It is a **§4.7 global-uniform effect** (`Docs/PRISM_ANIMATION.md §4.7.2`), which is the whole
+reason the deformation is affordable on a 42,000-prism cell: `PrismCradleSource` — ensured on the
+hull by `GunVesselTransformer.Initialize`, so no prefab wiring can omit it — reports the hull's
+transform, its radius and an eased strength every frame it is riding; `PrismCradle` packs up to
+four riding hulls into three shader globals in `LateUpdate` (sampling the position there, after the
+transformer has moved the vessel, so a 300 u/s grind is never published a frame stale); and
+`PrismCradle.hlsl` does every bit of the geometry in the prism VERTEX stage, spliced last on both
+live-prism graphs. There is no per-prism CPU work per frame, no material swap and no collider.
+
+Five things to know when it looks wrong:
+
+- **The whole deformation is one line, and it reads only position and normal.** With `rad = p − U`,
+  `d = |rad|`, `s = d − R`: `p' = U + (rad/d)·(d − s·k(s)·w)`. Nothing about triangles, adjacency,
+  tangents or UVs enters it — so it is correct on ANY mesh, including a prism just outside the
+  residency band that is still drawing its authored 24 triangles. Such a prism is COARSE, never
+  wrong. If the drape looks blocky on something, check whether it is resident (budget, or a long
+  prism whose CENTRE is outside the radius — the spatial index keys on centres), not whether the
+  maths is right.
+- **There is no seam at the reach, by construction.** The falloff is C1 at both ends, so the
+  displacement, its derivative and the normal correction all vanish exactly at `drapeReach`. The
+  reach is the width of the lip the mass rises into, not a cutoff — widening it makes the drape
+  broader and softer, never bigger at the edge.
+- **The radius is a CONSTANT of the vessel, not a tuning of the feel.** `PrismCradleSource.
+  hullRadius` is 0 by default, which measures the hull's circumscribing radius once (the same
+  measurement the occlusion corridor sizes itself with) on the first ride and caches it. Author a
+  number there if the measured sphere reads too big — the draped mass settles exactly on it.
+- **Subdivision is in PARAMETER space.** A prism with a wild aspect ratio gets proportionally
+  coarser tessellation along its long axis. Trail slabs, rail bars and ribcage struts are modest;
+  a 60x1x1 lattice strut is not, and would drape coarsely along its length. Recorded, not solved.
+- **The ride state is local to the simulating machine.** A remote Urchin's transformer is inactive
+  on your machine and never attaches, so you see no cradle around another pilot's hull. The host
+  sees it around every AI's.
+
+`Tools/Shaders/verify_prism_cradle.py` compiles the shipped HLSL with clang++ and proves ten
+properties: identity with no hull and beyond the reach, the wrap landing on the surface along the
+outward radial, the lip never reaching past the surface and the map never folding, radial purity,
+**the normal proven by CONVERGENCE RATE** (halving the test patch quarters the error — the
+signature of an exact derivative, where a single tolerance would only have measured which patch
+size was picked), no seam at the reach, affinity in the weight, the dominant slot with two hulls,
+and a negative control that PLATEAUS instead of converging when the Jacobian's radial term is
+neutered. `Tools/Shaders/wire_prism_cradle.py --check` proves the splice. Nothing has been run in
+the editor yet.
+
 ## Files
 
 | Role | File |
@@ -1017,6 +1103,11 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | Vessel impact container | `_SO_Assets/Effects/Effect Containers/VesselContainers/UrchinImpactorDataContainer.asset` — `[Haptics, Attach, Damage, ElementalDebuffByDanger]` |
 | Element map | `Assets/Resources/ElementalAbilityMaps/Urchin.asset` |
 | Prefab wiring | `_Prefabs/Spacevessels/Urchin.prefab`: `GunVesselTransformer` + `TrailFollower` (1D) + `BlockscapeFollower` (2D) |
+| The cradle — vessel half | `Controller/Vessel/PrismCradleSource.cs` (ensured by `GunVesselTransformer.Initialize`; reads `IsRiding`; eases strength; measures the radius once) |
+| The cradle — publisher | `Utility/PrismCradle.cs` (4-slot frame-stamped bank → `_PrismCradleCentre[]`, `_PrismCradleWeight[]`, `_PrismCradleParams`, flushed in LateUpdate — AND the residency pass that swaps the high-poly mesh onto the nearest prisms and hands it back) |
+| The cradle — geometry | `Utility/HighPolyPrismMesh.cs` (the identical solid subdivided per face, shared + cached per subdivision, hard edges, face-local UV0, per-face centroid in TEXCOORD1) |
+| The cradle — shader | `_Graphics/Materials/Graphs/PrismCradle.hlsl` (`PrismCradleDeform`: Position, Normal → OutPosition, OutNormal — nothing else), spliced LAST on BlockGraph + ExplodingBlockGraph by `Tools/Shaders/wire_prism_cradle.py`; proven by `Tools/Shaders/verify_prism_cradle.py`. It is the LAST node on the vertex chain and `PrismClockWiringValidator` asserts both of its feeders, because a second morph spliced after it would ripple the very vertices the drape had just closed onto the hull and re-open the hole — so any future member of the family goes in FRONT of this one |
+| The cradle — tuning | `ScriptableObjects/PrismCradleConfigSO.cs` → `Assets/Resources/PrismCradleConfig.asset` |
 
 ## Tuning knobs
 
@@ -1043,9 +1134,19 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | `rimWrapMargin` | `BlockscapeFollower` (C# default **1**) | How far past the ground's footprint (× its largest extent) the rim wrap completes. |
 | `ghostSecondsAtRestingTime` / `AtFullTime` | `UrchinSlipAction.asset` | 0.6 → 1.6. `GhostSecondsForLevel` is linear in level, anchored at 0 and 10, **extrapolated** across `[-5, 15]`, floored at 0. |
 | `detachImpulse` | `UrchinSlipAction.asset` | **0** — off. Raise if a detach should visibly leave the ribbon rather than sliding off it. |
-| `detachSpeedDecayRate` | `GunVesselTransformer` (C# default **12**) | u/s bleed-off of the speed carried off a ride. 150 → the ~50 cruise takes ~8 s. Constant-rate, so the glide has a readable slope and lands rather than trailing off. Only ever removes EXCESS. |
+| `detachSpeedDecayRate` | `GunVesselTransformer` (C# default **36**) | u/s bleed-off of the speed carried off a ride. The kicked 360 → the 65 cruise takes ~8 s. A RATE, so it does not scale itself: left at the old 12 the same glide would run 25 s, which reads as a permanent speed bonus rather than as momentum. Constant-rate, so the glide has a readable slope and lands rather than trailing off. Only ever removes EXCESS. |
+| `endLaunchSpeedKick` | `GunVesselTransformer` (C# default **1.2**) | What running OUT of ribbon multiplies the grind speed by on the way into free flight. Along the exit TANGENT only — every launch in the game is aimed by geometry, so a lateral impulse would throw the pilot off the thing the arena aimed them at. 1 restores the old behaviour. Does NOT apply to a Slip or to a trail cleared under the rider: those are letting go, not being thrown. |
 | `endLaunchReattachGrace` | `GunVesselTransformer` (C# default **0.35**) | Seconds after an end-of-ribbon launch during which THAT ribbon cannot re-latch. Scoped to the one trail, so the next rail you aim for still takes you. |
 | `armGunsOnAttach` | `VesselAttachPrismEffect.asset` | on |
+| `drapeReach` | `Resources/PrismCradleConfig.asset` | **6** u past the hull's SURFACE at which the drape reaches zero — the width of the lip the mass rises into, not a cutoff (the falloff is C1 at both ends, so there is no seam there to widen away from). Mass INSIDE the hull is fully wrapped whatever this says. |
+| `drapeExponent` | `Resources/PrismCradleConfig.asset` | **1.5** — the silkiness. 1 is a broad soft drape that starts rising a long way out; larger pulls the fabric tight against the hull with a longer flat tail. Floored at 1: below that the falloff's derivative diverges at the far edge and puts a crease exactly where the effect is supposed to vanish without one. |
+| `maxStrength` | `Resources/PrismCradleConfig.asset` | **1** — the ceiling the eased strength runs to. The map is affine in it, so 0.5 is the same drape at half depth, never a differently-shaped one. THE dial for "the effect is too strong"; never tone it down with the reach, which decides WHICH mass is involved rather than how far it goes. |
+| `subdivision` | `Resources/PrismCradleConfig.asset` | **16** quads per face axis on the swapped mesh (3,072 triangles against the authored 24). THIS is what buys the drape a surface to bend — two earlier rounds moved the authored triangles and read as facets hinging. |
+| `maxResidentPrisms` | `Resources/PrismCradleConfig.asset` | **24** — the whole performance budget of the feature, across every riding Urchin, nearest first (~74k triangles at the shipped subdivision). "A handful of prisms" is what makes the high-poly swap affordable at all. |
+| `residencyMargin` | `Resources/PrismCradleConfig.asset` | **2** u beyond `hullRadius + drapeReach` at which a prism gains the high-poly mesh. It is what makes the swap INVISIBLE: a prism changes geometry only while every one of its vertices is provably unmoved. Never 0 — that puts the swap exactly on the boundary and makes a float comparison decide whether the player sees it. |
+| `engageSeconds` / `releaseSeconds` | `Resources/PrismCradleConfig.asset` | **0.25 / 0.4** s ease of the cradle's strength on attach / detach. Never 0: that is the one-frame snap the ease exists to remove. |
+| `hullRadius` | `PrismCradleSource` (C# default **0** = measured once from the hull) | The sphere the draped mass settles on. A constant of the vessel, not of the feel. |
+| `PRISM_CRADLE_MIN_RADIAL` | `PrismCradle.hlsl` (`#define 1e-3`) | The floor on the radial stretch when inverting the Jacobian. At full strength inside the hull the true value is 0 (the interior collapses onto the sphere) and this floor is what turns that into "the normal is the sphere's" rather than a divide by zero. The harness's negative control drives this to 1.0 to prove the radial term is load-bearing. |
 | `skipWhileAttached` | `VesselDamagePrismEffect.asset` | **on** — the platform guard. Turning it off restores the 2023 bug for every attaching vessel. |
 
 The two `GunVesselTransformer` fields marked "C# default" are **not serialized on
@@ -1067,6 +1168,16 @@ lookup over a few blocks' radius, allocation-free via a shared scratch list). Pe
 honest price of continuous ground tracking: the smoothed plane must know the nearest prism every
 frame to turn facets into arcs. It is bounded by the search radius (~2.5 ground extents), runs
 only while attached to a surface, and at most a handful of vessels can ever be rolling at once.
+
+The cradle adds **no colliders**: the deformation is three global shader writes per frame while an
+Urchin rides, whatever the prism count, evaluated as a few dozen vertex-stage instructions inside
+the same instanced batch. Its real cost is VERTICES, and it is bounded by authoring rather than by
+the arena: `maxResidentPrisms` (24) prisms hold the high-poly mesh at `subdivision` 16, which is
+**~74,000 triangles** on top of the cell's own load, and the mesh is SHARED so those prisms are one
+batch. The CPU side is one `PrismSpatialIndex.QuerySphere` per riding hull per frame over a
+~15 u sphere, a sort of what it returns, and a set difference — no allocation after the first
+frame, and nothing at all when no Urchin is riding. Lower `maxResidentPrisms` first if it ever
+needs to come down; `subdivision` second.
 
 The one budget-adjacent effect is indirect and belongs to the ecology rather than to physics:
 `FinalBlockSlideEffects` calls `Prism.Restore()` on a destroyed prism and `Prism.Grow()` on a
@@ -1154,7 +1265,7 @@ Nothing below can be checked without play mode.
     attached. (Only a rider still moving when the ribbon runs out is launched.)
 16d. **A LOOP is still infinite.** Ride a boost ring / omnicrystal ring (a closed ribbon). It must
     never launch you — a loop wraps rather than reflecting.
-16e. **The carry does not survive a life.** Launch off a ribbon at 150 and, while still gliding,
+16e. **The carry does not survive a life.** Launch off a ribbon at 360 and, while still gliding,
     end the turn / respawn / swap vessels. The new life must start at its ordinary cruise, not at
     the carried speed.
 17. **Refused attach.** Touch a prism with no trail (an environment/flora prism, a fauna body
@@ -1182,6 +1293,45 @@ Nothing below can be checked without play mode.
     `PrismStolen` / `VolumeStolen`. This is the same `Player.ReportPrismStolen_ServerRpc` path the
     spikes use, and before it a client's steals scored nothing at all — for every steal source in
     the game, not just the Urchin.
+
+### The CRADLE (never run — this is its only gate)
+
+The drape is the branch's deliverable and **nothing about how it LOOKS has been verified**.
+Everything offline could prove is proven (`Tools/Shaders/verify_prism_cradle.py`: the map is
+the map, the normal is its analytic derivative by convergence rate, nothing folds, there is no
+seam at the reach, and a no-slot frame is bit-identical pass-through). Whether it READS is
+this list.
+
+24. **It appears at all.** Ride any ribbon. The prisms within ~6 units of the hull's surface
+    should close over the ship like cloth — inside the hull rising out to meet it, outside
+    sliding in to touch it. Flat nothing means the graph is unwired (`FrogletTools > Ecology >
+    Prism Animation` reports it) or the config's `enabled` is off.
+25. **The SWAP is invisible.** Watch the prisms AHEAD of the ride, at the far edge of the
+    effect, as you approach them. A prism must never visibly change shape, shade or silhouette
+    as it enters the effect — the high-poly mesh is handed over outside the volume the drape
+    can move anything (`residencyMargin` 2 on top of `drapeReach` 6). A pop there is the one
+    failure the whole invisible-swap argument rests on.
+26. **The surface is SMOOTH, not faceted.** This is what two rejected rounds were about: if
+    the motion reads as flat triangles HINGING rather than as a bending surface, the mesh
+    override is not landing (the prism is still drawing its authored 24 triangles) — raise
+    `subdivision` only after checking the override, because a smaller hinge is still a hinge.
+27. **The LIGHTING follows the bend.** Look along the draped prisms at a grazing angle. The
+    shading must move with the surface; a bent surface lit as if it were still flat reads as a
+    sticker sliding over geometry and means the analytic normal is not reaching the graph.
+28. **Only a handful of prisms are dense.** `PrismCradle.ResidentPrismCount` peaks at the
+    authored 24. In a CROWDED trail (ride back through your own dense ribbon) it must stay at
+    24 and the dense prisms must be the ones around the hull — not an arbitrary two dozen.
+29. **It leaves NOTHING behind.** Slip off the ribbon, fly away, and look at the prisms you
+    were just riding: every one must be back to its authored shape, unbent. Then detach at
+    speed, at a launch, and by destroying the prism under you — three different exits.
+30. **A shielded prism keeps its shield.** Ride a MASS-5 Urchin's own armoured trail. A prism
+    that shields WHILE you are draping it must show its octahedron, not a box: the cradle
+    hands the override slot over and must not take it back.
+31. **Stop and start.** Ride, slip, ride again, then exit play mode and re-enter. No prism may
+    come back deformed and no error may fire on the transition — the reset drops bookkeeping
+    only, deliberately without touching prisms that no longer exist.
+32. **Nothing else in the fleet changed.** Fly any other hull through mass: no drape, and no
+    change to how prisms look. The cradle is granted by `GunVesselTransformer` alone.
 
 ## Follow-ups
 
@@ -1224,3 +1374,73 @@ Nothing below can be checked without play mode.
 - **No AI path.** `AIPilot` has no notion of attaching, so an AI Urchin never rides. It will
   attach on incidental contact and then sit on the ribbon at zero throttle, which is worth
   checking before shipping AI-backfilled Urchin matches.
+
+---
+
+## The 2026-09 speed pass — and what a vessel's speed turned out to be attached to
+
+Three asks, one retune: **launch off trails a bit, double the rail speed, +30% free flight.**
+
+| | was | now | where |
+|---|---|---|---|
+| Friendly / destroyed grind | 150 | **300** | `Urchin.prefab`, BOTH followers |
+| Hostile grind | 10 | **20** | ditto — the **15× cliff is the mechanic**, so it scales with the rest |
+| Free-flight cruise | 50 | **65** | `DefaultThrottleScaler` |
+| End-of-ribbon launch | ride speed | **×1.2** | `GunVesselTransformer.endLaunchSpeedKick` |
+| Carry bleed-off | 12 u/s | **36 u/s** | `detachSpeedDecayRate` |
+
+Four things are worth carrying out of it.
+
+**The kick is along the exit TANGENT and nothing else.** Every launch in the game is aimed by
+GEOMETRY — Hijack places its burrs at `900/cos 12.5° = 921.9 u` on the rail-end tangent, Skein
+trims every break until its tangent passes within 12 u of a foreign rail — so a lateral or
+vertical impulse would throw the pilot off the very thing the arena aimed them at. A scalar on the
+carried speed changes how fast the ray is flown and not the ray, so every one of those proofs
+survives untouched.
+
+**It applies to being THROWN, not to letting go.** `EndRide` is the single exit and three things
+reach it: running out of ribbon, Slip, and a trail cleared under the rider. Only the first is a
+launch. `_pendingLaunchKick` is set by `LaunchOffRibbonEnd` and consumed in `EndRide`, one shot,
+cleared by `ClearLaunchState` — so it cannot survive a life, and the "an Urchin keeps its speed
+when it lets go" rule stays one rule with one implementation.
+
+**A RATE does not scale itself, and that is what nearly shipped a permanent speed bonus.**
+`detachSpeedDecayRate` is u/s, so doubling the speed it bleeds FROM doubles how long it takes:
+360 → 65 at the old 12 u/s is **25 seconds**, during which the pilot never returns to cruise and
+the glide stops reading as momentum at all. The feel was tuned as a ~8 s landing, so the rate
+moved with the speeds. *When a speed changes, the things that scale automatically are the ones
+written as times; the ones written as rates and distances all need finding by hand.*
+
+**The rail speed reaches further than the vessel.** Skein's whole arena is authored in the
+pilot's TIMES — how long a rail lasts, how long the hole after it takes to cross, how long they
+have to pick the next strand — so doubling the grind moved every distance in
+`Tools/Build/skein_budget.py`. Details in `SKEIN.md §14`; the short version is that the three
+constants already written as `seconds × speed` re-derived themselves and the three written as
+distances each had to be found, one of which (`END_AIM_MAX`) would have silently collapsed the
+launch window to a single point.
+
+### ⚠ Open risk: latching is a PhysX trigger, and the vessel now crosses more per tick
+
+`TryBeginRide` runs off `VesselAttachPrismEffectSO`, i.e. a hull↔prism trigger contact, and PhysX
+samples a trigger once per fixed step (0.04 s). At the old 150 u/s that was 6 u of travel per
+sample against a 6 u prism cross-section — already exactly marginal. At 300 it is 12 u, and off a
+kicked launch 14.4 u.
+
+**It has since been MEASURED, and the reassuring half of this paragraph was half right.** The
+hope was that a shallow approach saves it: a rail is a continuous tube (8 u of prism extent
+against 8 u of spacing), so a ray crossing at angle θ to its axis is inside for `2R/sin θ` rather
+than for one cross-section. That is true and it is not enough. `skein_budget.py`'s
+`measure_attach_latch` computes it per break from the arena's own recorded arrival angles and
+glide ranges: arrivals are capped at 60° and run a median 48.5°, giving chords of **7.5–8.6 u**
+against a step of **10.2–12.2 u** at the speed a launched pilot is actually doing when it meets
+the rail. At most one sample can land inside a chord shorter than the step, so
+`P(latch) = min(1, chord/step)` is exact — and it comes out at **81–87%**, i.e. roughly **one
+aimed launch in six slips past the rail it was aimed at**.
+
+Survivable, because the pilot is still gliding and still pointed at the cable and catches it on a
+later pass — and still the mode's signature move landing five times in six. The remedy is the one
+the Sparrow's rounds already have — a swept overlap on the attach path
+(`sweptVesselDetection`'s twin, via the existing `ImpactorBase.AcceptImpacteeFromSweep` seam) —
+and **not** a bigger collider: closing it that way needs a cross-section near 8, and at MASS 5 a
+rail's armour reaches `1.5 × leafSize`, so two lanes' shields would meet. Full derivation and the
+measured `(7,7,8)`/`(8,8,8)` trade: `Assets/_Scripts/Controller/Arcade/SKEIN.md` § 7.

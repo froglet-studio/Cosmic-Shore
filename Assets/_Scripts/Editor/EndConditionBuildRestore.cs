@@ -28,7 +28,7 @@ namespace CosmicShore.Editor
 
             Debug.Log(
                 "[EndConditionOverrides] Auto-restored Live end-game counts to the Build baseline for this build " +
-                $"(HexRace {cfg.hexRaceCrystalCount}, Crystal Capture {cfg.crystalCaptureCrystalCount}, " +
+                $"(SkimRace {cfg.hexRaceCrystalCount}, Crystal Capture {cfg.crystalCaptureCrystalCount}, " +
                 $"Joust {cfg.joustCount}, Maelstrom {cfg.maelstromWinTarget}).");
         }
     }

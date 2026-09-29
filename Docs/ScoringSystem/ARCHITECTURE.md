@@ -105,7 +105,7 @@ End condition, winner, and per-domain sums now live in the mode's `ScoringRuleSO
 | `MultiplayerHUDView` | `_Scripts/UI/View/MultiplayerHUDView.cs` | `allyDomainContainer`, `opposingDomainsContainer`, `domainPanelPrefab` |
 | `DomainScorePanel` | `_Scripts/UI/Elements/DomainScorePanel.cs` | Per-team sum + avatar row |
 | `PlayerScoreEntry` | `_Scripts/UI/Elements/PlayerScoreEntry.cs` | Live per-player card (also reused as avatar chip) |
-| `ObjectiveIndicator` | `_Scripts/UI/…` | Off-screen objective pointer (auto-created HexRace/Joust) |
+| `ObjectiveIndicator` | `_Scripts/UI/…` | Off-screen objective pointer (auto-created SkimRace/Joust) |
 | `CurrentScore` | `_Scripts/UI/CurrentScore.cs` | Special case: volume-difference (Jade − Ruby) display |
 
 ### Layout switch
@@ -144,7 +144,7 @@ RoundStats NetworkVariable (server write, replicated)
            └─[legacy]► PlayerScoreEntry.UpdateScore( GetInitialCardValue(stats) )
 ```
 - `GetInitialCardValue(stats)` = `gameData.ScoringRule.LiveMetric(stats)` — the
-  per-mode metric (HexRace/CrystalCapture → Crystals, Joust → Jousts), used by the
+  per-mode metric (SkimRace/Scurry → Crystals, Joust → Jousts), used by the
   **legacy per-player** card. `SumStatByDomain(domain)` no longer re-sums on the
   client — it returns the **server-synced** `GameDataSO.GetDomainMetricSum(domain)`
   (BUGS.md B9; see the subsection below).
@@ -166,7 +166,7 @@ representation that misplaced a client's own icon.
   ally domain + domain count), so it rebuilds when a player MOVES domains, not only when
   the SET of domains changes.
 - **Values (server-synced, "Approach B").** `MultiplayerDomainGamesController` (base of
-  HexRace / Joust / CrystalCapture) runs a throttled (0.1s) **server** coroutine that
+  SkimRace / Joust / Scurry) runs a throttled (0.1s) **server** coroutine that
   writes `ScoringMetrics.SumByDomain(gameData, rule.Metric, ActiveDomains[i])` into three
   `NetworkVariable<int>`; every peer mirrors them into `GameDataSO.SetDomainMetricSum`
   (→ `OnDomainMetricSumsChanged`), and `MultiplayerHUD.SumStatByDomain` returns
@@ -237,8 +237,8 @@ is no longer consumed; the scoreboard cards read `gameData.Results` (`BuildResul
 
 ### Dynamic stats providers
 `ScoreboardStatsProvider` (abstract) → `GetStats() : List<StatData>`, rendered as
-`StatRowUI` rows under the cards. Implementations: `HexRaceStatsProvider`,
-`MultiplayerJoustStatsProvider`, `MultiplayerCrystalCaptureStatsProvider`,
+`StatRowUI` rows under the cards. Implementations: `SkimRaceStatsProvider`,
+`JoustStatsProvider`, `ScurryStatsProvider`,
 `WildlifeBlitzStatsProvider`, and the generic `UniversalStatsProvider`
 (`StatModuleSO`-bound). All in `_Scripts/Controller/Arcade/` or `_Scripts/UI/`.
 
@@ -253,16 +253,16 @@ end-game cinematic was removed; `EndGameSequencer` now just raises the scoreboar
 
 | Mode (id) | `ScoringRuleSO` | Metric | Sort | Winner / loser score | Reveal (`BuildReveal`) |
 |---|---|---|---|---|---|
-| **HexRace** (33) | `HexRaceScoringRuleSO` | Crystals | golf ↑, tiebreak `CrystalsCollected`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + crystals-left) → "{N} Crystals Left" | VICTORY/RACE TIME • DEFEAT/CRYSTALS LEFT |
+| **SkimRace** (33) | `SkimRaceScoringRuleSO` | Crystals | golf ↑, tiebreak `CrystalsCollected`↓ | finish time `MM:SS:CS` / `EncodeSkimRaceLoserScore` (10000 + crystals-left) → "{N} Crystals Left" | VICTORY/RACE TIME • DEFEAT/CRYSTALS LEFT |
 | **Joust** (34) | `JoustScoringRuleSO` | Jousts | golf ↑, tiebreak `JoustCollisions`↓ | finish time `MM:SS:CS` / `JoustLoserScore` (99999) → "{N} Jousts Left" (domain deficit) | VICTORY/WON BY N JOUSTS • DEFEAT/LOST BY N JOUSTS |
-| **Crystal Capture** (35) | `CrystalCaptureScoringRuleSO` | Crystals | golf ↑, tiebreak `CrystalsCollected`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + crystals-left) → "{N} Crystals Left"; secondary "{N} Crystals" | VICTORY/CAPTURE TIME • DEFEAT/CRYSTALS LEFT |
-| **Rampage** (2) | `RampageScoringRuleSO` | PrismsDestroyed | golf ↑, tiebreak `HostilePrismsDestroyed`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + prisms-left) → "{N} Prisms Left"; secondary "{N} Prisms" | VICTORY/RAMPAGE TIME • DEFEAT/PRISMS LEFT |
+| **Crystal Capture** (35) | `ScurryScoringRuleSO` | Crystals | golf ↑, tiebreak `CrystalsCollected`↓ | finish time `MM:SS:CS` / `EncodeSkimRaceLoserScore` (10000 + crystals-left) → "{N} Crystals Left"; secondary "{N} Crystals" | VICTORY/CAPTURE TIME • DEFEAT/CRYSTALS LEFT |
+| **Rampage** (2) | `RampageScoringRuleSO` | PrismsDestroyed | golf ↑, tiebreak `HostilePrismsDestroyed`↓ | finish time `MM:SS:CS` / `EncodeSkimRaceLoserScore` (10000 + prisms-left) → "{N} Prisms Left"; secondary "{N} Prisms" | VICTORY/RAMPAGE TIME • DEFEAT/PRISMS LEFT |
 | **Cellular Duel** (29) | — (no rule) | `Score` | points ↓ | `"{N}"` | `EndGameSequencer`; `DuelForCellScoreboard` |
 | **Wildlife Blitz** co-op (32) | — (no rule) | `Score` | base | base | `CoOpScoreBoard` + `EndGameSequencer` |
 
-> **Loser sentinels (centralized).** Golf modes encode a DNF loser score — HexRace /
+> **Loser sentinels (centralized).** Golf modes encode a DNF loser score — SkimRace /
 > Crystal Capture / Rampage `10000 + team-metric-remaining` (all three share
-> `EncodeHexRaceLoserScore`; the "HexRace" naming is legacy), Joust `99999` — via the one
+> `EncodeSkimRaceLoserScore`; the "SkimRace" naming is legacy), Joust `99999` — via the one
 > `GolfScoreSentinels` helper (`Encode…` / `IsFinishTime`), the single documented source
 > after `REFACTOR.md` R4. The rule's `AssignScores` writes it; `BuildResults` decodes it
 > into `ScoreText`.
@@ -299,7 +299,7 @@ end-game cinematic was removed; `EndGameSequencer` now just raises the scoreboar
   condition, metric, winner, per-player score, ranked results, and reveal all live in
   its `ScoringRuleSO`. The HUD and scoreboard are mode-agnostic and consume
   the rule's output (`gameData.Results`, `BuildReveal`, `LiveMetric`) — do **not** subclass
-  them per mode (the old `HexRaceHUD` / `*Scoreboard` / `*EndGameController` subclasses were
+  them per mode (the old `SkimRaceHUD` / `*Scoreboard` / `*EndGameController` subclasses were
   removed, R10).
 - **Golf vs points** is a per-mode flag on the rule (`ScoringRuleSO.golfRules`), not a
   base special case.
@@ -371,7 +371,7 @@ subclasses any more, and **no end-game cinematic** (`EndGameSequencer` raises th
 | In-game MP HUD / view | `_Scripts/UI/MultiplayerHUD.cs`, `_Scripts/UI/View/MultiplayerHUDView.cs` |
 | In-game MP domain-sum sync (server→clients) | `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs` (NetworkVariable sums → `GameDataSO.SetDomainMetricSum`) |
 | In-game widgets | `_Scripts/UI/Elements/DomainScorePanel.cs`, `_Scripts/UI/Elements/PlayerScoreEntry.cs` |
-| **Per-mode scoring rule** (the only per-mode code) | `_Scripts/Controller/Arcade/Scoring/ScoringRuleSO.cs` (+ `HexRace`/`Joust`/`CrystalCapture` `ScoringRuleSO`), `ScoringMetrics.cs` |
+| **Per-mode scoring rule** (the only per-mode code) | `_Scripts/Controller/Arcade/Scoring/ScoringRuleSO.cs` (+ `SkimRace`/`Joust`/`Scurry` `ScoringRuleSO`), `ScoringMetrics.cs` |
 | Ranked-results types | `_Scripts/Data/Structs/ScoreResult.cs`, `_Scripts/Controller/Arcade/ScoreResultBuilder.cs`, `_Scripts/Controller/Arcade/Scoring/ScoreReveal.cs` |
 | End-game scoreboard | `_Scripts/UI/Scoreboard.cs` (reads `gameData.Results`), `_Scripts/UI/PlayerScoreCard.cs` |
 | Non-rule scoreboards | `_Scripts/UI/DuelForCellScoreboard.cs`, `CoOpScoreBoard.cs` (rule modes use the base `Scoreboard`) |
@@ -383,11 +383,11 @@ subclasses any more, and **no end-game cinematic** (`EndGameSequencer` raises th
 
 ## 11. Cross-references
 
-- Per-mode scoring/end-game detail: `_Scripts/Controller/Arcade/HEXRACE.md`,
-  `JOUST.md`, `CRYSTAL_CAPTURE.md`.
+- Per-mode scoring/end-game detail: `_Scripts/Controller/Arcade/SKIMRACE.md`,
+  `JOUST.md`, `SCURRY.md`.
 - Scene/mode inventory + scoring summary: `Docs/SCENES.md`.
 - Domain semantics + domain-aggregated scoring: `CLAUDE.md` § "Team Domains" and
-  the HexRace section.
+  the SkimRace section.
 - RPC continuation threading (if score sync ever touches UGS/Netcode `Task`s):
   `Docs/THREADING.md`.
 

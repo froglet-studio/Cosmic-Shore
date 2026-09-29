@@ -25,7 +25,7 @@ order (Jade → Ruby → Gold) so identical inputs produce identical AI distribu
 
 ## Domain-aggregated scoring
 
-HexRace, Joust, and Crystal Capture all end on a **per-domain** sum rather than per-player. At most
+SkimRace, Joust, and Crystal Capture all end on a **per-domain** sum rather than per-player. At most
 three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The turn
 monitor ends the turn when any active domain's summed total reaches the target, so a human and their
 AI teammates cross the line together.

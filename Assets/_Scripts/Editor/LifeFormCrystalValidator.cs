@@ -24,7 +24,7 @@ namespace CosmicShore.Editor
     /// which is the floor under an unsized config rather than a size anyone chose for that
     /// species. Nothing logs at runtime, nothing looks wrong on the asset, and the species
     /// just renders (and pays) the same heart as every other unsized one - heart world scale
-    /// is read AS GAMEPLAY by the collect reward and the live domain fauna buff.</para>
+    /// is read AS GAMEPLAY by the collect reward.</para>
     ///
     /// Read-only. Run via FrogletTools ▸ Validation ▸ Validate Lifeform Crystals.
     /// </summary>
@@ -157,7 +157,7 @@ namespace CosmicShore.Editor
                 Debug.LogWarning($"[LifeFormCrystal] {path}: Variant authors no HeartWorldScale (0 is the " +
                     $"'not authored' sentinel), so this {noun}'s heart falls back to the platform default " +
                     $"({LifeFormCrystal.DefaultHeartWorldScale} world scale). Heart world scale is read as " +
-                    "GAMEPLAY - the collect reward and the live domain fauna buff both size off it - so an " +
+                    "GAMEPLAY - the collect reward sizes off it - so an " +
                     "unsized species pays the same as every other unsized species.", config);
                 return 1;
             }

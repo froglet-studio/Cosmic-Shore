@@ -1,0 +1,1151 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80297f0e643a4fc29678db12756af97d, type: 3}
+  m_Name: RhinoSwordComboLibrary
+  m_EditorClassIdentifier:
+  pressThreshold: 0.5
+  releaseThreshold: 0.2
+  comboWindowSeconds: 0.35
+  tapMaxHoldSeconds: 0.3
+  chordWindowSeconds: 0.08
+  finisherLockoutFraction: 0.7
+  blendInSeconds: 0.06
+  blendOutSeconds: 0.18
+  combos:
+  - sequence: RR
+    energized: 0
+    displayName: Twin Fang
+    durationSeconds: 0.7
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.22
+      yaw: 95
+      roll: 85
+      pitch: 10
+      thrust: 0
+    - time: 0.42
+      yaw: 25
+      roll: 15
+      pitch: -30
+      thrust: 0
+    - time: 0.72
+      yaw: 115
+      roll: 95
+      pitch: 45
+      thrust: 0.15
+    - time: 1
+      yaw: 40
+      roll: 30
+      pitch: 10
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LL
+    energized: 0
+    displayName: Rising Crescent
+    durationSeconds: 0.75
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.28
+      yaw: -80
+      roll: -60
+      pitch: 55
+      thrust: 0
+    - time: 0.55
+      yaw: -45
+      roll: -25
+      pitch: -40
+      thrust: 0
+    - time: 0.8
+      yaw: -15
+      roll: -10
+      pitch: -75
+      thrust: 0
+    - time: 1
+      yaw: -25
+      roll: -15
+      pitch: -20
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RL
+    energized: 0
+    displayName: Scissor
+    durationSeconds: 0.65
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.28
+      yaw: 90
+      roll: 90
+      pitch: 15
+      thrust: 0
+    - time: 0.52
+      yaw: 0
+      roll: 0
+      pitch: 55
+      thrust: 0.25
+    - time: 0.82
+      yaw: -95
+      roll: -90
+      pitch: 15
+      thrust: 0
+    - time: 1
+      yaw: -30
+      roll: -25
+      pitch: 5
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LR
+    energized: 0
+    displayName: Hook and Draw
+    durationSeconds: 0.75
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.28
+      yaw: -70
+      roll: -100
+      pitch: -25
+      thrust: 0
+    - time: 0.55
+      yaw: 10
+      roll: 20
+      pitch: 40
+      thrust: 0
+    - time: 0.82
+      yaw: 85
+      roll: 60
+      pitch: 70
+      thrust: 0.35
+    - time: 1
+      yaw: 40
+      roll: 30
+      pitch: 30
+      thrust: 0.1
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RRR
+    energized: 0
+    displayName: Cyclone
+    durationSeconds: 0.9
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.18
+      yaw: 90
+      roll: 55
+      pitch: -25
+      thrust: 0
+    - time: 0.42
+      yaw: 180
+      roll: 50
+      pitch: -30
+      thrust: 0
+    - time: 0.66
+      yaw: 270
+      roll: 50
+      pitch: -30
+      thrust: 0
+    - time: 0.86
+      yaw: 360
+      roll: 45
+      pitch: -10
+      thrust: 0
+    - time: 1
+      yaw: 380
+      roll: 20
+      pitch: 5
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LLL
+    energized: 0
+    displayName: Windmill
+    durationSeconds: 0.85
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.22
+      yaw: -30
+      roll: -90
+      pitch: 10
+      thrust: 0
+    - time: 0.46
+      yaw: -30
+      roll: -180
+      pitch: 10
+      thrust: 0
+    - time: 0.72
+      yaw: -30
+      roll: -270
+      pitch: 10
+      thrust: 0
+    - time: 1
+      yaw: -15
+      roll: -360
+      pitch: 0
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RLR
+    energized: 0
+    displayName: Figure Eight
+    durationSeconds: 0.9
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.17
+      yaw: 80
+      roll: 70
+      pitch: 20
+      thrust: 0
+    - time: 0.34
+      yaw: 0
+      roll: 0
+      pitch: -35
+      thrust: 0
+    - time: 0.5
+      yaw: -80
+      roll: -70
+      pitch: 20
+      thrust: 0
+    - time: 0.67
+      yaw: 0
+      roll: 0
+      pitch: 60
+      thrust: 0
+    - time: 0.84
+      yaw: 80
+      roll: 70
+      pitch: 20
+      thrust: 0
+    - time: 1
+      yaw: 30
+      roll: 20
+      pitch: 0
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LRL
+    energized: 0
+    displayName: Serpent Weave
+    durationSeconds: 0.85
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.2
+      yaw: -70
+      roll: -50
+      pitch: 50
+      thrust: 0.2
+    - time: 0.4
+      yaw: -10
+      roll: -10
+      pitch: -40
+      thrust: 0
+    - time: 0.6
+      yaw: 70
+      roll: 50
+      pitch: 50
+      thrust: 0.2
+    - time: 0.8
+      yaw: 10
+      roll: 10
+      pitch: -40
+      thrust: 0
+    - time: 1
+      yaw: -50
+      roll: -40
+      pitch: 30
+      thrust: 0.3
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RRL
+    energized: 0
+    displayName: Rising Reversal
+    durationSeconds: 0.9
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.18
+      yaw: 70
+      roll: 70
+      pitch: 40
+      thrust: 0
+    - time: 0.33
+      yaw: 30
+      roll: 20
+      pitch: 0
+      thrust: 0
+    - time: 0.5
+      yaw: 110
+      roll: 110
+      pitch: -10
+      thrust: 0
+    - time: 0.72
+      yaw: 0
+      roll: 0
+      pitch: -95
+      thrust: 0
+    - time: 0.88
+      yaw: -90
+      roll: -80
+      pitch: 20
+      thrust: 0
+    - time: 1
+      yaw: -40
+      roll: -30
+      pitch: 10
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LLR
+    energized: 0
+    displayName: Low Sweep Uppercut
+    durationSeconds: 0.9
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.18
+      yaw: -60
+      roll: -40
+      pitch: 65
+      thrust: 0
+    - time: 0.33
+      yaw: -20
+      roll: -10
+      pitch: 30
+      thrust: 0
+    - time: 0.5
+      yaw: -90
+      roll: -60
+      pitch: 75
+      thrust: 0
+    - time: 0.74
+      yaw: 40
+      roll: 20
+      pitch: 40
+      thrust: 0
+    - time: 0.9
+      yaw: 90
+      roll: 60
+      pitch: -60
+      thrust: 0
+    - time: 1
+      yaw: 40
+      roll: 30
+      pitch: -20
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RLL
+    energized: 0
+    displayName: Crosscut Spiral
+    durationSeconds: 0.9
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.2
+      yaw: 90
+      roll: 90
+      pitch: 10
+      thrust: 0
+    - time: 0.44
+      yaw: -30
+      roll: -120
+      pitch: 30
+      thrust: 0
+    - time: 0.66
+      yaw: -90
+      roll: -200
+      pitch: 40
+      thrust: 0
+    - time: 0.86
+      yaw: -100
+      roll: -300
+      pitch: 20
+      thrust: 0
+    - time: 1
+      yaw: -50
+      roll: -360
+      pitch: 0
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LRR
+    energized: 0
+    displayName: Lunge
+    durationSeconds: 0.85
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.2
+      yaw: -60
+      roll: -60
+      pitch: 10
+      thrust: 0
+    - time: 0.4
+      yaw: 80
+      roll: 80
+      pitch: 30
+      thrust: 0
+    - time: 0.6
+      yaw: 40
+      roll: 30
+      pitch: 60
+      thrust: 0.1
+    - time: 0.8
+      yaw: 0
+      roll: 0
+      pitch: 72
+      thrust: 0.6
+    - time: 0.9
+      yaw: 0
+      roll: 0
+      pitch: 70
+      thrust: 0.6
+    - time: 1
+      yaw: 10
+      roll: 5
+      pitch: 30
+      thrust: 0.1
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RR
+    energized: 1
+    displayName: Thunder Fang
+    durationSeconds: 0.85
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.16
+      yaw: 105
+      roll: 95
+      pitch: 15
+      thrust: 0
+    - time: 0.3
+      yaw: 30
+      roll: 20
+      pitch: -35
+      thrust: 0
+    - time: 0.46
+      yaw: 125
+      roll: 100
+      pitch: 55
+      thrust: 0.25
+    - time: 0.6
+      yaw: 100
+      roll: 30
+      pitch: -40
+      thrust: 0
+    - time: 0.8
+      yaw: 95
+      roll: 0
+      pitch: -200
+      thrust: 0
+    - time: 1
+      yaw: 60
+      roll: 25
+      pitch: -350
+      thrust: 0.1
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LL
+    energized: 1
+    displayName: Eclipse Crescent
+    durationSeconds: 0.95
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.2
+      yaw: -90
+      roll: -70
+      pitch: 65
+      thrust: 0
+    - time: 0.4
+      yaw: -50
+      roll: -30
+      pitch: -45
+      thrust: 0
+    - time: 0.58
+      yaw: -20
+      roll: -10
+      pitch: -80
+      thrust: 0
+    - time: 0.74
+      yaw: -80
+      roll: -60
+      pitch: -30
+      thrust: 0.2
+    - time: 0.88
+      yaw: -120
+      roll: -100
+      pitch: 40
+      thrust: 0.5
+    - time: 1
+      yaw: -40
+      roll: -30
+      pitch: 10
+      thrust: 0.1
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RL
+    energized: 1
+    displayName: Shear Storm
+    durationSeconds: 0.85
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.16
+      yaw: 100
+      roll: 95
+      pitch: 15
+      thrust: 0
+    - time: 0.32
+      yaw: -100
+      roll: -95
+      pitch: 30
+      thrust: 0.2
+    - time: 0.5
+      yaw: 100
+      roll: 95
+      pitch: 45
+      thrust: 0
+    - time: 0.68
+      yaw: -100
+      roll: -95
+      pitch: 60
+      thrust: 0.3
+    - time: 0.84
+      yaw: 0
+      roll: 0
+      pitch: 80
+      thrust: 0.7
+    - time: 1
+      yaw: -35
+      roll: -30
+      pitch: 20
+      thrust: 0.1
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LR
+    energized: 1
+    displayName: Hook Lance
+    durationSeconds: 0.9
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.2
+      yaw: -80
+      roll: -120
+      pitch: -30
+      thrust: 0
+    - time: 0.4
+      yaw: -20
+      roll: -40
+      pitch: 30
+      thrust: 0
+    - time: 0.58
+      yaw: 60
+      roll: 60
+      pitch: 75
+      thrust: 0.5
+    - time: 0.76
+      yaw: 90
+      roll: 150
+      pitch: 80
+      thrust: 1
+    - time: 0.9
+      yaw: 70
+      roll: 90
+      pitch: 60
+      thrust: 0.6
+    - time: 1
+      yaw: 40
+      roll: 30
+      pitch: 20
+      thrust: 0.1
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RRR
+    energized: 1
+    displayName: Tempest
+    durationSeconds: 1.1
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.12
+      yaw: 90
+      roll: 60
+      pitch: -25
+      thrust: 0
+    - time: 0.26
+      yaw: 200
+      roll: 55
+      pitch: -35
+      thrust: 0
+    - time: 0.4
+      yaw: 330
+      roll: 55
+      pitch: -35
+      thrust: 0
+    - time: 0.54
+      yaw: 460
+      roll: 55
+      pitch: -35
+      thrust: 0
+    - time: 0.68
+      yaw: 590
+      roll: 55
+      pitch: -35
+      thrust: 0
+    - time: 0.84
+      yaw: 720
+      roll: 50
+      pitch: -10
+      thrust: 0
+    - time: 1
+      yaw: 740
+      roll: 25
+      pitch: 20
+      thrust: 0.3
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LLL
+    energized: 1
+    displayName: Hurricane Wheel
+    durationSeconds: 1.05
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.14
+      yaw: -35
+      roll: -100
+      pitch: 10
+      thrust: 0
+    - time: 0.28
+      yaw: -35
+      roll: -200
+      pitch: 15
+      thrust: 0
+    - time: 0.42
+      yaw: -35
+      roll: -300
+      pitch: 15
+      thrust: 0
+    - time: 0.56
+      yaw: -35
+      roll: -400
+      pitch: 15
+      thrust: 0
+    - time: 0.7
+      yaw: -35
+      roll: -500
+      pitch: 15
+      thrust: 0
+    - time: 0.86
+      yaw: -35
+      roll: -620
+      pitch: 10
+      thrust: 0
+    - time: 1
+      yaw: -25
+      roll: -720
+      pitch: 30
+      thrust: 0.3
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RLR
+    energized: 1
+    displayName: Infinity Blade
+    durationSeconds: 1.1
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.1
+      yaw: 90
+      roll: 80
+      pitch: 20
+      thrust: 0
+    - time: 0.2
+      yaw: 0
+      roll: 0
+      pitch: -40
+      thrust: 0
+    - time: 0.3
+      yaw: -90
+      roll: -80
+      pitch: 20
+      thrust: 0
+    - time: 0.4
+      yaw: 0
+      roll: 0
+      pitch: 65
+      thrust: 0.3
+    - time: 0.52
+      yaw: 90
+      roll: 80
+      pitch: 20
+      thrust: 0
+    - time: 0.62
+      yaw: 0
+      roll: 0
+      pitch: -40
+      thrust: 0
+    - time: 0.72
+      yaw: -90
+      roll: -80
+      pitch: 20
+      thrust: 0
+    - time: 0.84
+      yaw: 0
+      roll: 0
+      pitch: 65
+      thrust: 0.3
+    - time: 0.93
+      yaw: 95
+      roll: 90
+      pitch: 25
+      thrust: 0
+    - time: 1
+      yaw: 40
+      roll: 30
+      pitch: 5
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LRL
+    energized: 1
+    displayName: Hydra Weave
+    durationSeconds: 1.05
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.14
+      yaw: -75
+      roll: -55
+      pitch: 55
+      thrust: 0.4
+    - time: 0.28
+      yaw: -10
+      roll: -10
+      pitch: -45
+      thrust: 0
+    - time: 0.42
+      yaw: 75
+      roll: 55
+      pitch: 55
+      thrust: 0.4
+    - time: 0.56
+      yaw: 10
+      roll: 10
+      pitch: -45
+      thrust: 0
+    - time: 0.7
+      yaw: -75
+      roll: -55
+      pitch: 55
+      thrust: 0.4
+    - time: 0.84
+      yaw: -20
+      roll: -15
+      pitch: -95
+      thrust: 0
+    - time: 1
+      yaw: -40
+      roll: -30
+      pitch: 70
+      thrust: 0.6
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RRL
+    energized: 1
+    displayName: Meteor Reversal
+    durationSeconds: 1.05
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.12
+      yaw: 75
+      roll: 75
+      pitch: 45
+      thrust: 0
+    - time: 0.24
+      yaw: 30
+      roll: 20
+      pitch: 0
+      thrust: 0
+    - time: 0.36
+      yaw: 120
+      roll: 115
+      pitch: -15
+      thrust: 0
+    - time: 0.48
+      yaw: 20
+      roll: 10
+      pitch: -70
+      thrust: 0
+    - time: 0.58
+      yaw: -90
+      roll: -10
+      pitch: -60
+      thrust: 0
+    - time: 0.72
+      yaw: -95
+      roll: 0
+      pitch: -200
+      thrust: 0
+    - time: 0.86
+      yaw: -95
+      roll: 0
+      pitch: -380
+      thrust: 0
+    - time: 0.95
+      yaw: -80
+      roll: -40
+      pitch: -420
+      thrust: 0.4
+    - time: 1
+      yaw: -45
+      roll: -35
+      pitch: -390
+      thrust: 0.2
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LLR
+    energized: 1
+    displayName: Skyfall Uppercut
+    durationSeconds: 1.05
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.14
+      yaw: -70
+      roll: -50
+      pitch: 70
+      thrust: 0
+    - time: 0.26
+      yaw: -25
+      roll: -10
+      pitch: 30
+      thrust: 0
+    - time: 0.4
+      yaw: -100
+      roll: -70
+      pitch: 80
+      thrust: 0.3
+    - time: 0.56
+      yaw: 40
+      roll: 20
+      pitch: 40
+      thrust: 0
+    - time: 0.7
+      yaw: 100
+      roll: 70
+      pitch: -70
+      thrust: 0
+    - time: 0.84
+      yaw: 80
+      roll: 60
+      pitch: -200
+      thrust: 0
+    - time: 1
+      yaw: 45
+      roll: 35
+      pitch: -330
+      thrust: 0.5
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: RLL
+    energized: 1
+    displayName: Vortex Spiral
+    durationSeconds: 1.1
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.14
+      yaw: 95
+      roll: 95
+      pitch: 10
+      thrust: 0
+    - time: 0.3
+      yaw: -30
+      roll: -140
+      pitch: 30
+      thrust: 0
+    - time: 0.46
+      yaw: -80
+      roll: -260
+      pitch: 40
+      thrust: 0
+    - time: 0.62
+      yaw: -100
+      roll: -380
+      pitch: 40
+      thrust: 0.2
+    - time: 0.78
+      yaw: -110
+      roll: -500
+      pitch: 30
+      thrust: 0.2
+    - time: 0.9
+      yaw: -90
+      roll: -640
+      pitch: 20
+      thrust: 0
+    - time: 1
+      yaw: -50
+      roll: -720
+      pitch: 10
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+  - sequence: LRR
+    energized: 1
+    displayName: Piercing Charge
+    durationSeconds: 1.05
+    keys:
+    - time: 0
+      yaw: 0
+      roll: 0
+      pitch: 0
+      thrust: 0
+    - time: 0.14
+      yaw: -70
+      roll: -70
+      pitch: 10
+      thrust: 0
+    - time: 0.28
+      yaw: 90
+      roll: 90
+      pitch: 30
+      thrust: 0
+    - time: 0.42
+      yaw: 30
+      roll: 20
+      pitch: 70
+      thrust: 0.8
+    - time: 0.54
+      yaw: 20
+      roll: 10
+      pitch: 65
+      thrust: 0.1
+    - time: 0.66
+      yaw: 0
+      roll: 0
+      pitch: 72
+      thrust: 1
+    - time: 0.8
+      yaw: 120
+      roll: 60
+      pitch: -30
+      thrust: 0
+    - time: 1
+      yaw: 60
+      roll: 40
+      pitch: -10
+      thrust: 0
+    sound:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 

@@ -105,6 +105,25 @@ namespace CosmicShore.Gameplay
                 _onPrismSpawnedEventChannel.OnEventReturn += OnPrismSpawnedEventRaised;
             
             mpb = new MaterialPropertyBlock();
+
+            // Configure the debris pipelines HERE rather than leaving it to the first
+            // death that needs one.
+            //
+            // The per-request calls in SpawnExplosion / SpawnImplosion are how the config
+            // TRACKS a pool swap, and they were also the only thing that ever established
+            // it — so until the first prism exploded, PrismDebris.TryGetExplosionConfig
+            // answered false. That is invisible on the death path itself (the first
+            // explosion configures and then proceeds) and NOT invisible to the OTHER
+            // producer of explosion debris: a shield disengaging before any prism has died
+            // was refused outright, and the strict-mode diagnostic is warn-once, so one
+            // early shatter could silence the report for the whole session.
+            //
+            // General shape: a lazily-established shared config is established by whichever
+            // consumer happens to run first, so a SECOND consumer inherits that ordering as
+            // a hidden precondition. Establish it where the thing that owns the pools comes
+            // up, and let the lazy calls go on tracking changes.
+            CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null);
+            CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null);
         }
 
         private void OnDisable()
@@ -255,11 +274,26 @@ namespace CosmicShore.Gameplay
         
         GameObject SpawnExplosion(PrismEventData data)
         {
+            bool configured = CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null);
+
+            // A CUT (the Rhino sword, Docs/PRISM_ANIMATION.md §4.10) is tried first and falls
+            // through to the ordinary explosion on any refusal — the slice budget is full, its
+            // config is off, the cut is degenerate — so a blade kill never loses its visual. It
+            // wears the same tier palette the explosion would have.
+            if (configured && data.SliceNormal.sqrMagnitude > 1e-8f &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var sliceBright, out var sliceDark) &&
+                CosmicShore.Utility.PrismSlice.TryRequest(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    sliceBright, sliceDark, data.Velocity, data.SlicePoint, data.SliceNormal))
+            {
+                return null;
+            }
+
             // Batched pure-entity debris is the ONLY death-explosion carrier (D4).
             // The pool prefab stays the authored CONFIG source (mesh / material /
             // layer / clamp / duration). The factory never Get()s explosionPool
             // for this type. Callers treat a null spawn as fire-and-forget.
-            if (CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null) &&
+            if (configured &&
                 TryGetTeamColors(data.ownDomain, data.Kind, out var bright, out var dark) &&
                 CosmicShore.Utility.PrismDebris.TryRequestExplosion(
                     data.SpawnPosition, data.Rotation, data.Scale,

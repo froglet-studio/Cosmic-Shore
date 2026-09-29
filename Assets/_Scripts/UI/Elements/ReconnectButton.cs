@@ -116,7 +116,7 @@ namespace CosmicShore.UI
         {
             if (_reconnect == null || _reconnect.IsReconnecting) return;
 
-            CSDebug.Log("[ReconnectButton] Retry connection tapped.");
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[ReconnectButton] Retry connection tapped.");
             _reconnect.ReconnectAsync().Forget();
         }
     }

@@ -318,7 +318,10 @@ def main():
         print(f"  intensity {i}: {p}")
 
     print()
-    print("always-on mesh colliders (shielded + super-shielded), per intensity:")
+    # NOT a collider line: a shield swaps the MESH and the mass, never the collider, so these
+    # prisms stay LOD-cullable like any other. What the ration bounds is inedible,
+    # near-permanent mass (see Tools/Build/check_shield_collider_claims.py).
+    print("armoured prisms (shielded + super-shielded), per intensity - ZERO extra colliders:")
     for i, row in enumerate(rows, start=1):
         armored = row["shielded"] + row["super_shielded"]
         print(f"  intensity {i}: {armored} of {row['total']:,}  ({100.0 * armored / row['total']:.2f}%)")

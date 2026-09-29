@@ -22,12 +22,12 @@ namespace CosmicShore.UI
 
         private void OnMiniGameRoundStarted()
         {
-            DebugExtensions.LogColored("OnMiniGameRoundStarted", Color.cyan);
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[TestMiniGameEvents] OnMiniGameRoundStarted");
         }
 
         private void OnMiniGameRoundEnd()
         {
-            DebugExtensions.LogColored("OnMiniGameRoundEnd", Color.cyan);
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[TestMiniGameEvents] OnMiniGameRoundEnd");
         }
     }
 }

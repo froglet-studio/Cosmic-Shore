@@ -41,7 +41,8 @@ namespace CosmicShore.Gameplay
     public static class PrismTrailBuilder
     {
         /// <summary>The one place a prism is born into a trail. Kind is applied AFTER Initialize.</summary>
-        public static Prism LayOne(Prism prefab, PrismLay e, Transform parent, Trail trail, string ownerId)
+        public static Prism LayOne(Prism prefab, PrismLay e, Transform parent, Trail trail, string ownerId,
+            bool admitAuthoredScale = false)
         {
             // Load Time Insights hot-path breakdown: per-stage accumulators (NOT per-item spans —
             // a 25k-prism lay would blow the span budget). Inert (t stays 0) unless a load
@@ -52,7 +53,7 @@ namespace CosmicShore.Gameplay
             var block = EnvironmentPrismPool.Get(prefab, parent);
             t = LoadInsights.AccumulateSample("Prism lay: pool Get + component Awakes", t);
 
-            ConfigureLaid(block, e, trail, ownerId, t);
+            ConfigureLaid(block, e, trail, ownerId, t, admitAuthoredScale);
             return block;
         }
 
@@ -62,7 +63,8 @@ namespace CosmicShore.Gameplay
         /// definition of the prism spawn contract with the per-item path (the drift surface the
         /// environment audit flagged — now it cannot diverge).
         /// </summary>
-        static void ConfigureLaid(Prism block, in PrismLay e, Trail trail, string ownerId, long t)
+        static void ConfigureLaid(Prism block, in PrismLay e, Trail trail, string ownerId, long t,
+            bool admitAuthoredScale)
         {
             block.ChangeTeam(e.Domain);
             block.ownerID = ownerId;
@@ -75,6 +77,30 @@ namespace CosmicShore.Gameplay
 
             block.Initialize();
             t = LoadInsights.AccumulateSample("Prism lay: Initialize (reset + grow coroutine start)", t);
+
+            // A lay STATES a size, so a caller may widen the animator's clamp to admit it.
+            // PrismScaleAnimator.SetTargetScale clamps PER AXIS into the prefab's serialized
+            // [minScale, maxScale] INSIDE the setter, with no log and no return value — so an
+            // authored 132-long plank on a prefab whose maxScale is 100 becomes a 100-long plank
+            // and nothing anywhere reports the difference (Docs/PRISM_ANIMATION.md; three passes
+            // of flora fitting measured and shipped sizes the engine never used).
+            //
+            // It is OPT-IN rather than always, because the environment prism prefab is shared by
+            // ~30 spawnables: admitting a size one of them is currently relying on the clamp to
+            // cut is a behaviour change for THAT spawnable, not for the one asking. Only ever
+            // WIDENS, and pool reuse restores the authored window.
+            //
+            // AFTER Initialize, and that ordering is load-bearing (ScarabSwitch.TryLay records
+            // the same trap): Initialize → ResetState → RestoreAuthoredScaleWindow() undoes any
+            // widening and then re-clamps the target against the restored window, so a size
+            // stated before Initialize is silently trimmed twice over. The plain path above is
+            // deliberately left where it is so an un-admitting caller lays byte-for-byte as before.
+            if (admitAuthoredScale)
+            {
+                block.AdmitTargetScale(e.Point.Scale);
+                block.TargetScale = e.Point.Scale;
+                t = LoadInsights.AccumulateSample("Prism lay: authored-scale admission", t);
+            }
 
             // AFTER Initialize: pool-reuse reset clears trail membership, so a stamp made
             // before it is silently wiped (AssignTrail's contract).
@@ -107,11 +133,12 @@ namespace CosmicShore.Gameplay
 
         // ── Sync ─────────────────────────────────────────────────────────────
 
-        public static void LaySync(Prism prefab, IReadOnlyList<PrismLay> elems, Transform parent, Trail trail, string ownerPrefix)
+        public static void LaySync(Prism prefab, IReadOnlyList<PrismLay> elems, Transform parent, Trail trail,
+            string ownerPrefix, bool admitAuthoredScale = false)
         {
             if (!prefab) return;
             for (int i = 0; i < elems.Count; i++)
-                LayOne(prefab, elems[i], parent, trail, $"{ownerPrefix}::{i}");
+                LayOne(prefab, elems[i], parent, trail, $"{ownerPrefix}::{i}", admitAuthoredScale);
         }
 
         /// <summary>Convenience overload for the single-domain, plain-kind environment path.</summary>
@@ -178,8 +205,10 @@ namespace CosmicShore.Gameplay
             s_lastLayDone = -1;
             s_lastGrowRemaining = -1;
             s_lastProgressTime = 0f;
+            ResetLaidBounds();
             UseBatchedInstantiate = true;
             LoadGateLayBudgetOverrideMs = 0f;
+            LoadGateCreationBudgetMsOverride = 0f;
         }
 
         // All budgeted lays draw from ONE per-frame time pool, so three concurrently-streaming
@@ -206,7 +235,7 @@ namespace CosmicShore.Gameplay
         static readonly List<Prism> s_growWatch = new(1024);
 
         // Builds announced (BeginArenaBuild) but not yet executed — covers the window where a
-        // controller is still WAITING to build (e.g. HexRace's netcode track-seed wait) and no
+        // controller is still WAITING to build (e.g. SkimRace's netcode track-seed wait) and no
         // lay has started, which absence-of-activity checks would misread as "arena done".
         static int s_pendingArenaBuilds;
 
@@ -239,7 +268,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Announce an arena build whose SegmentSpawner.Initialize happens LATER than scene
-        /// start (e.g. HexRace initializes only after the netcode track seed arrives). While
+        /// start (e.g. SkimRace initializes only after the netcode track seed arrives). While
         /// any build is pending, the arena-ready gate stays closed even though no lay has
         /// started yet. Pair with exactly one <see cref="EndArenaBuild"/>.
         /// </summary>
@@ -274,6 +303,16 @@ namespace CosmicShore.Gameplay
                 // Fresh readout for this load: purge last match's (destroyed) entries so the
                 // panel never shows a stale grow count during the dwell.
                 SweepGrowWatch();
+                // ...and a fresh extent, or the preview frames last match's arena.
+                ResetLaidBounds();
+            }
+            else
+            {
+                // Both slices belong to the hold that stated them. Clearing here means an
+                // aborted or cancelled hold cannot leak its tempo into the next load - the
+                // veil's own clears stay as the explicit statement of intent.
+                LoadGateLayBudgetOverrideMs = 0f;
+                LoadGateCreationBudgetMsOverride = 0f;
             }
             EndSettleSpan();
         }
@@ -402,6 +441,73 @@ namespace CosmicShore.Gameplay
         public static float LayProgress =>
             s_layQueuedTotal <= 0 ? 1f : Mathf.Clamp01((float)s_layDoneTotal / s_layQueuedTotal);
 
+        // ── Laid extent (what the loading screen's preview frames) ──────────
+
+        // Running world-space AABB of everything this builder has laid since the hold began.
+        //
+        // A cell reports its MEMBRANE radius, which is the playfield BOUNDARY - a shell that is
+        // routinely several times bigger than the mass inside it. Framing a camera on that frames
+        // the shell: the membrane fills the viewport by construction and the arena is a speck in
+        // the middle of it (Scurry, measured). What a loading preview is actually trying to show
+        // is the thing being BUILT, so the extent has to be measured from the build.
+        //
+        // Accumulated in each lay's LOCAL space (a float compare per prism, free on the hot path)
+        // and pushed into world space once per clone batch - 8 TransformPoints per 256 prisms -
+        // so the shot grows with the arena instead of being sampled once against nothing.
+        static bool s_laidBoundsValid;
+        static Vector3 s_laidMin, s_laidMax;
+
+        /// <summary>Forget the measured extent (a new load is starting).</summary>
+        public static void ResetLaidBounds()
+        {
+            s_laidBoundsValid = false;
+            s_laidMin = Vector3.zero;
+            s_laidMax = Vector3.zero;
+        }
+
+        static void EncapsulateLaidWorld(in Vector3 p)
+        {
+            if (!s_laidBoundsValid)
+            {
+                s_laidMin = s_laidMax = p;
+                s_laidBoundsValid = true;
+                return;
+            }
+            s_laidMin = Vector3.Min(s_laidMin, p);
+            s_laidMax = Vector3.Max(s_laidMax, p);
+        }
+
+        // Push a lay's local AABB through its parent. All 8 CORNERS, never just min/max: a rotated
+        // or non-uniformly scaled parent maps the corners of a box to a box that neither original
+        // corner is on, and taking two of them silently under-measures the arena.
+        static void FlushLocalBounds(Transform parent, in Vector3 localMin, in Vector3 localMax)
+        {
+            if (!parent) return;
+            for (int i = 0; i < 8; i++)
+            {
+                var corner = new Vector3(
+                    (i & 1) == 0 ? localMin.x : localMax.x,
+                    (i & 2) == 0 ? localMin.y : localMax.y,
+                    (i & 4) == 0 ? localMin.z : localMax.z);
+                EncapsulateLaidWorld(parent.TransformPoint(corner));
+            }
+        }
+
+        /// <summary>
+        /// The world-space extent of everything laid since the hold began - the arena as BUILT,
+        /// which is what a loading preview wants to frame, rather than the cell's boundary.
+        /// False until at least one prism has been laid.
+        /// </summary>
+        public static bool TryGetLaidBounds(out Vector3 center, out float radius)
+        {
+            center = Vector3.zero;
+            radius = 0f;
+            if (!s_laidBoundsValid) return false;
+            center = (s_laidMin + s_laidMax) * 0.5f;
+            radius = (s_laidMax - s_laidMin).magnitude * 0.5f;
+            return radius > 0.001f;
+        }
+
         static bool BudgetExhausted(float budgetMs)
         {
             if (Time.frameCount != s_budgetFrame)
@@ -478,7 +584,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static async UniTask LayBudgetedAsync(Prism prefab, IReadOnlyList<PrismLay> elems,
             Transform parent, Trail trail, string ownerPrefix, float budgetMsPerFrame,
-            List<Prism> collected = null, CancellationToken ct = default)
+            List<Prism> collected = null, CancellationToken ct = default, bool admitAuthoredScale = false)
         {
             if (!prefab || elems == null || elems.Count == 0) return;
 
@@ -499,6 +605,11 @@ namespace CosmicShore.Gameplay
             // ConfigureLaid accumulators). No-op when not recording.
             int laySpan = LoadInsights.Begin(LoadInsightCategory.Environment,
                 $"Streamed prism lay ({ownerPrefix}, {count} prisms)");
+            // Local-space extent of THIS lay, flushed into the shared world AABB once per batch.
+            var localMin = Vector3.positiveInfinity;
+            var localMax = Vector3.negativeInfinity;
+            bool measured = false;
+
             try
             {
                 int i = 0;
@@ -518,8 +629,16 @@ namespace CosmicShore.Gameplay
                         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                         long acc = LoadInsights.AccumulateStart();
                         if (acc != 0L) LoadInsights.Count("Prisms laid during load");
-                        ConfigureLaid(block, elems[i + k], trail, $"{ownerPrefix}::{i + k}", acc);
+                        ConfigureLaid(block, elems[i + k], trail, $"{ownerPrefix}::{i + k}", acc,
+                            admitAuthoredScale);
                         collected?.Add(block);
+
+                        // Local pose, read straight off the plan - no transform resolve, no
+                        // world-matrix recompute on the hot path.
+                        var local = elems[i + k].Point.Position;
+                        localMin = Vector3.Min(localMin, local);
+                        localMax = Vector3.Max(localMax, local);
+                        measured = true;
                         s_budgetSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * s_msPerTick;
                         s_layDoneTotal++;
 
@@ -531,10 +650,12 @@ namespace CosmicShore.Gameplay
                     }
 
                     i += batch;
+                    if (measured) FlushLocalBounds(parent, localMin, localMax);
                 }
             }
             finally
             {
+                if (measured) FlushLocalBounds(parent, localMin, localMax);
                 s_activeBudgetedLays--;
                 LoadInsights.End(laySpan);
             }
@@ -564,5 +685,26 @@ namespace CosmicShore.Gameplay
         /// whoever holds the gate; cleared with the hold.
         /// </summary>
         public static float LoadGateLayBudgetOverrideMs { get; set; }
+
+        /// <summary>
+        /// Per-frame TIME slice for prism CREATION completions while the gate holds, in
+        /// milliseconds. 0 = keep <see cref="Prism"/>'s full covered-screen completion count.
+        ///
+        /// <para>The gate's full-tempo numbers - the 250ms lay slice above and Prism's
+        /// 512-completions-per-frame drain - are both sized on the premise that NOBODY IS
+        /// WATCHING, which stops being true the moment the loading screen shows the arena
+        /// growing (the connecting panel's live preview and progress bar). A watched hold
+        /// therefore states its own slices. Both dials are work-CONSERVING: the same prisms are
+        /// laid and created either way, so a smaller slice costs only the extra per-frame
+        /// overhead of finishing over more frames, and buys a frame rate the view can be read
+        /// at.</para>
+        ///
+        /// <para>Stated in milliseconds rather than as a completion count for the same reason
+        /// laying is: per-prism completion cost varies with scene size and collider density, so
+        /// a count cannot hold a frame budget on two different machines - a time budget can.</para>
+        ///
+        /// <para>Owned by whoever holds the gate; cleared with the hold.</para>
+        /// </summary>
+        public static float LoadGateCreationBudgetMsOverride { get; set; }
     }
 }

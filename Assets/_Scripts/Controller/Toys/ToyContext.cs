@@ -23,6 +23,14 @@ namespace CosmicShore.Gameplay
         public VesselPrefabContainer VesselPrefabContainer;
 
         /// <summary>
+        /// The scene's Reflex container, for toys that INSTANTIATE injected prefabs at runtime
+        /// (the Arkway clones satellite cells, whose spawners carry [Inject] fields that are
+        /// null without an explicit InjectRecursive - the same reason ModePreviewSession
+        /// carries one). Null-tolerant: toys that never instantiate injected content ignore it.
+        /// </summary>
+        public Reflex.Core.Container Container;
+
+        /// <summary>
         /// True only while the local player is flying freestyle (not autopilot/menu). Toys are
         /// visible in the lava lamp but stay inert until the player takes control, so a drifting
         /// autopilot vessel never trips them.

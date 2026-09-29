@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -132,6 +133,107 @@ namespace CosmicShore.UI
 
         // ── States (driven by the session) ───────────────────────────────────
 
+        /// <summary>
+        /// Whether tapping the live window may hand the player the stick. False makes the window
+        /// a LOOK-ONLY view: the arena still plays under AI, but the focus button is dead and the
+        /// hint is hidden, so nothing offers a control the surface will not give.
+        ///
+        /// <para>The weekly challenge sets this: its whole point is one attempt at a fixed ask, and
+        /// a free flight in the same arena on the way in is both a rehearsal and a way to
+        /// accidentally spend the pad while the modal is still open.</para>
+        /// </summary>
+        public void SetFocusEnabled(bool enabled)
+        {
+            if (_focusEnabled == enabled) return;
+            _focusEnabled = enabled;
+
+            // Taking the affordance away mid-flight has to take the FLIGHT away too, or the
+            // player keeps a stick the window no longer admits to offering.
+            if (!enabled && HasFocus) ReleaseFocus();
+
+            Apply(_state);
+        }
+
+        bool _focusEnabled = true;
+
+        /// <summary>
+        /// Build whatever this window needs and does not have: the render surface, the button
+        /// that asks for focus, and the status label.
+        ///
+        /// <para>For a window AUTHORED in a prefab (the arcade modal's) every field is already set
+        /// and this is a no-op - it only ever fills gaps. It exists for the Maelstrom hub, whose
+        /// preview panel is a plain rect in a scene that is re-laid regularly: a window that
+        /// silently renders nothing because one of three references was not dragged in is the
+        /// failure mode this whole screen has already shipped once (its countdown component was
+        /// never placed at all). Structural beats authored wherever the authored version has no
+        /// art to preserve, and a render surface has none.</para>
+        ///
+        /// <para>Safe to call repeatedly.</para>
+        /// </summary>
+        public void EnsureSurface()
+        {
+            var host = transform as RectTransform;
+            if (!host)
+            {
+                CSDebug.LogError("[ModePreviewWindow] EnsureSurface needs a RectTransform - this " +
+                                 "window is not on a UI object, so it cannot build its surface.");
+                return;
+            }
+
+            if (!surface)
+            {
+                var go = new GameObject("PreviewSurface", typeof(RectTransform), typeof(RawImage));
+                var rect = (RectTransform)go.transform;
+                rect.SetParent(host, false);
+                Stretch(rect);
+
+                surface = go.GetComponent<RawImage>();
+                surface.color = Color.white;
+                surface.enabled = false;   // nothing to draw until a camera says so
+            }
+
+            _surfaceRect = surface.rectTransform;
+
+            if (!focusButton)
+            {
+                // On the surface itself, so the whole frame is the target. A RawImage is a
+                // Graphic, so it raycasts - no extra transparent Image is needed.
+                focusButton = surface.gameObject.GetComponent<Button>();
+                if (!focusButton) focusButton = surface.gameObject.AddComponent<Button>();
+                focusButton.targetGraphic = surface;
+                focusButton.transition = Selectable.Transition.None;
+                focusButton.onClick.RemoveListener(HandleFocusButton);
+                focusButton.onClick.AddListener(HandleFocusButton);
+            }
+
+            if (!statusLabel)
+            {
+                var go = new GameObject("PreviewStatus", typeof(RectTransform));
+                var rect = (RectTransform)go.transform;
+                rect.SetParent(host, false);
+                Stretch(rect);
+
+                var label = go.AddComponent<TextMeshProUGUI>();
+                label.alignment = TextAlignmentOptions.Center;
+                label.raycastTarget = false;
+                label.fontSize = 28f;
+                label.color = new Color(1f, 1f, 1f, 0.65f);
+                statusLabel = label;
+            }
+
+            // Re-assert whatever state the window is in, now that it has the pieces to show it.
+            Apply(_state);
+        }
+
+        static void Stretch(RectTransform rect)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.localScale = Vector3.one;
+        }
+
         /// <summary>"LEVEL PREVIEW NOT AVAILABLE" — no definition, or the build failed.</summary>
         public void ShowUnavailable()
         {
@@ -176,7 +278,7 @@ namespace CosmicShore.UI
             if (statusLabel)
                 statusLabel.gameObject.SetActive(state is State.Unavailable or State.Loading);
 
-            if (focusButton) focusButton.interactable = live;
+            if (focusButton) focusButton.interactable = live && _focusEnabled;
             RefreshHint();
         }
 
@@ -184,7 +286,7 @@ namespace CosmicShore.UI
 
         void HandleFocusButton()
         {
-            if (_state != State.Live || HasFocus) return;
+            if (!_focusEnabled || _state != State.Live || HasFocus) return;
             OnFocusRequested?.Invoke();
         }
 
@@ -254,7 +356,7 @@ namespace CosmicShore.UI
 
         void RefreshHint()
         {
-            if (focusHint) focusHint.SetActive(_state == State.Live && !HasFocus);
+            if (focusHint) focusHint.SetActive(_focusEnabled && _state == State.Live && !HasFocus);
         }
 
         // ── Render texture ───────────────────────────────────────────────────

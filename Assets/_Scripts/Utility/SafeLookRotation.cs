@@ -11,6 +11,11 @@ namespace CosmicShore.Utility
     {
         private const float EPSILON = 0.000001f;
 
+        // Callers (boid steering, worm slither) can hit a zero forward every frame while a
+        // creature is stationary, so the warning is one-shot per context object.
+        static readonly System.Collections.Generic.HashSet<int> _warnedContexts = new();
+        static bool _warnedNullContext;
+
         public static bool TryGet(Vector3 forward, Vector3 up, out Quaternion rotation, Object context = null, bool logError = true)
         {
             if (forward.sqrMagnitude > EPSILON)
@@ -21,10 +26,21 @@ namespace CosmicShore.Utility
 
             rotation = Quaternion.identity;
 
-            if (logError)
-                DebugExtensions.LogWarningColored($"ZERO LOOK ROTATION detected on {(context ? context.name : "unknown object")}", Color.magenta);
+            if (logError && ShouldWarn(context))
+                CSDebug.LogWarning($"[SafeLookRotation] ZERO LOOK ROTATION detected on {(context ? context.name : "unknown object")}", context);
 
             return false;
+        }
+
+        static bool ShouldWarn(Object context)
+        {
+            if (!context)
+            {
+                if (_warnedNullContext) return false;
+                _warnedNullContext = true;
+                return true;
+            }
+            return _warnedContexts.Add(context.GetInstanceID());
         }
 
         public static bool TryGet(Vector3 forward, out Quaternion rotation, Object context = null, bool logError = true) =>

@@ -11,6 +11,9 @@ namespace CosmicShore.Gameplay
 {
     public class AOEBlockCreation : AOEExplosion
     {
+        /// <summary>This blast LAYS prisms - see <see cref="AOEExplosion.CreatesMass"/>.</summary>
+        public override bool CreatesMass => true;
+
         [Header("Block Creation")]
         [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
         [SerializeField] protected bool shielded = true;

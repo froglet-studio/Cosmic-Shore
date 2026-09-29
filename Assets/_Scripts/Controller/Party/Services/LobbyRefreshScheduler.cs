@@ -29,6 +29,7 @@
 //   Main-thread only.
 // ─────────────────────────────────────────────────────────────────────────────
 
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -142,7 +143,7 @@ namespace CosmicShore.Gameplay
         public void Boost()
         {
             _boostedUntil = Time.unscaledTime + BOOST_WINDOW_SECONDS;
-            Debug.Log($"[LobbyRefreshScheduler] Boosted - fast refresh until +{BOOST_WINDOW_SECONDS:F0}s");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[LobbyRefreshScheduler] Boosted - fast refresh until +{BOOST_WINDOW_SECONDS:F0}s");
         }
 
         /// <summary>

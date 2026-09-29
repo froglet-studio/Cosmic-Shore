@@ -51,7 +51,7 @@ MonoBehaviour:
     Space: 0.5
     Time: 0.5
   ThemeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
-  SceneName: MinigameHexRace
+  SceneName: MinigameSkimRace
   GameMode: 0
   LocalPlayerDisplayName: 
   LocalPlayerAvatarId: 0

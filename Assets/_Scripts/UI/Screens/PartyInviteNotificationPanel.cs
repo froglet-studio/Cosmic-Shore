@@ -68,15 +68,11 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            DebugExtensions.LogColored(
-                "[INVITE-UI] PartyInviteNotificationPanel.OnEnable - subscribing to OnInviteReceived",
-                Color.magenta);
             if (connectionData?.OnInviteReceived != null)
                 connectionData.OnInviteReceived.OnRaised += OnInviteReceived;
             else
-                DebugExtensions.LogErrorColored(
-                    "[INVITE-UI] connectionData or OnInviteReceived is NULL - cannot subscribe!",
-                    Color.red);
+                CSDebug.LogError(
+                    "[INVITE-UI] connectionData or OnInviteReceived is NULL - cannot subscribe");
 
             // Also dismiss the popup if the same invite is resolved from a
             // different panel (e.g. FriendsListPanel Accept/Decline buttons).
@@ -140,10 +136,9 @@ namespace CosmicShore.UI
 
         private void OnInviteReceived(PartyInviteData invite)
         {
-            DebugExtensions.LogColored(
-                $"[INVITE-UI] OnInviteReceived! From: {invite.HostDisplayName}, " +
-                $"SessionId: {invite.PartySessionId}",
-                Color.green);
+            CSDebug.LogVerbose(CSLogChannel.Party,
+                $"[INVITE-UI] OnInviteReceived from {invite.HostDisplayName}, " +
+                $"SessionId: {invite.PartySessionId}");
 
             _pendingInvite = invite;
             _timer = 0f;
@@ -215,7 +210,7 @@ namespace CosmicShore.UI
             }
             else
             {
-                Debug.LogWarning("[PartyInviteNotificationPanel] PartyInviteController not available.");
+                CSDebug.LogWarning("[PartyInviteNotificationPanel] PartyInviteController not available.");
                 ShowPanel(false);
             }
         }

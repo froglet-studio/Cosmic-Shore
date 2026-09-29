@@ -1,4 +1,7 @@
 using System.Collections;
+using CosmicShore.Core;
+using CosmicShore.Gameplay.Audio;
+using FMODUnity;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -33,10 +36,14 @@ namespace CosmicShore.UI
         [SerializeField] bool DoShrinkRoutine = true;
         [SerializeField] float JitterAmount = 0.1f;
         [SerializeField] float TargetAlpha = 0f; // Target alpha for fade
-        [SerializeField] AudioClip targetReachedClip; // Audio clip
-        [SerializeField] AudioClip onTriggerClip; // Audio clip
-        [SerializeField] AudioSource audioSource; // Reference to the AudioSource component
-        [SerializeField] float AudioVolume = 1.0f; // Volume for the audio clip
+        [Header("Audio")]
+        [SerializeField, Tooltip("FMOD event played when the last icon lands on the target. Leave empty for silence.")]
+        EventReference targetReachedEvent;
+        [SerializeField, Tooltip("FMOD event played when the burst is fired. Leave empty for silence.")]
+        EventReference onTriggerEvent;
+        [SerializeField, Tooltip("Per-emitter volume trim, multiplied into the player's SFX level.")]
+        float AudioVolume = 1.0f;
+        [Header("Target pulse")]
         [SerializeField] Vector2 TargetPulseMultiplier = new Vector2(1.5f, 1.5f); // Size to pulse to
         [SerializeField] float PulseDuration = 0.5f; // Duration of the pulse
 
@@ -49,13 +56,23 @@ namespace CosmicShore.UI
             sourceInitialSize = Source.rectTransform.sizeDelta;
         }
 
+        /// <summary>
+        /// One place both of this emitter's sounds go out through, so the SFX slider and the
+        /// per-emitter trim can never be applied to one and not the other. Goes through
+        /// <see cref="AudioSystem.ResolveSfxInstanceVolume"/> rather than
+        /// <c>RuntimeManager.PlayOneShot</c>, which takes no per-instance volume and therefore
+        /// ignores the slider whenever the FMOD bus fails to resolve.
+        /// </summary>
+        void PlayEvent(EventReference reference)
+        {
+            if (reference.IsNull) return;
+            FMODOneShotVolumeHelper.PlaySFXOneShot(
+                reference, Vector3.zero, AudioSystem.ResolveSfxInstanceVolume(AudioVolume));
+        }
+
         public void EmitIcons()
         {
-            // Play the trigger audio clip
-            if (onTriggerClip != null && audioSource != null)
-            {
-                audioSource.PlayOneShot(onTriggerClip, AudioVolume);
-            }
+            PlayEvent(onTriggerEvent);
 
             // Reset arrived count
             arrivedCount = 0;
@@ -181,10 +198,7 @@ namespace CosmicShore.UI
             arrivedCount++;
 
             // Play the audio clip when the image reaches its target
-            if (targetReachedClip != null && audioSource != null)
-            {
-                audioSource.PlayOneShot(targetReachedClip, AudioVolume);
-            }
+            PlayEvent(targetReachedEvent);
 
             // Start the Target pulsing coroutine when the first image arrives
             if (arrivedCount == 1)

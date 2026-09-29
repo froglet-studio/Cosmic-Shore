@@ -170,8 +170,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  explosionShipEffectsSO: []
-  explosionPrismEffectsSO: []
+  explosionImpactorDataContainer: {fileID: 11400000, guid: 6b1f4a2d90c74e3f8a5c7d1e2b64f083,
+    type: 2}
   affectSelf: 0
   destructive: 1
   devastating: 0

@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
         {
             base.StartMonitor();
 
-            CSDebug.Log($"[NetworkJoustMonitor] StartMonitor - IsServer={IsServer}, " +
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[NetworkJoustMonitor] StartMonitor - IsServer={IsServer}, " +
                 $"CollisionsNeeded={CollisionsNeeded}, " +
                 $"Players={gameData.RoundStatsList.Count}, " +
                 $"Names=[{string.Join(", ", gameData.RoundStatsList.Select(s => s.Name))}]");

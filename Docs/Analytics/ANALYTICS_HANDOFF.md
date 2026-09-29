@@ -100,7 +100,7 @@ exists to enable.
 
 ### 2.4 Why `MODE_STATS` matters more than it looks
 
-Before, `WildlifeBlitz`, `HexRace`, `Joust` and `CrystalCapture` each had their own class
+Before, `WildlifeBlitz`, `SkimRace`, `Joust` and `Scurry` each had their own class
 holding the same idea under four different field names — `HighScores`,
 `BestMultiplayerRaceTimes`, `BestRaceTimes`, `HighScores` — two of them `int` and two `float`.
 
@@ -424,11 +424,13 @@ Data consent framework, and per Unity's own changelog, mixing the two throws at 
 to be an all-at-once cutover reconciled with the existing consent/age gate — its own change,
 with in-editor verification.
 
-**Scoring direction lives in one table** in `UGSStatsManager` rather than in config.
-`LeaderboardConfigSO` has no direction field and the controller's `UseGolfRules` is not
-reachable at report time. This is consolidation, not new duplication — the old code hardcoded
-exactly the same branching — but the real fix is publishing `SO_Game.GolfScoring` onto
-`GameDataSO` so both read one value.
+**Scoring direction lives in one table** in `UGSStatsManager` rather than in config. The
+config that might have carried it (`LeaderboardConfigSO`) had no direction field and has
+since been deleted outright with the per-mode leaderboard path; the controller's
+`UseGolfRules` is not reachable at report time. This is consolidation, not new duplication —
+the old code hardcoded exactly the same branching — but the real fix is publishing
+`SO_Game.GolfScoring` onto `GameDataSO` so both read one value. Note the table now feeds
+only Cloud Save bests: nothing here submits to a leaderboard any more.
 
 **`IPlayer.PlayerUUID` is still the display name.** It is load-bearing for AOE block ownership
 strings, so repointing it at the real id would be a gameplay change smuggled into an analytics

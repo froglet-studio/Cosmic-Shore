@@ -112,7 +112,7 @@ namespace CosmicShore.Core
 
             if (_purchaseInFlight)
             {
-                CSDebug.Log("[EpisodeToken] Purchase already in flight - ignoring.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, "[EpisodeToken] Purchase already in flight - ignoring.");
                 return;
             }
 
@@ -124,7 +124,7 @@ namespace CosmicShore.Core
             }
 
             _purchaseInFlight = true;
-            CSDebug.Log($"[EpisodeToken] Purchase started: {bundle.productId} " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] Purchase started: {bundle.productId} " +
                         $"({config.FormatTokens(bundle.tokenCount)}, {config.FormatPrice(bundle.displayPriceUsd)})");
 
             _provider.PurchaseAsync(bundle, receipt =>
@@ -170,7 +170,7 @@ namespace CosmicShore.Core
 
         void Finish(bool success, string message)
         {
-            if (!success) CSDebug.Log($"[EpisodeToken] {message}");
+            if (!success) CSDebug.LogVerbose(CSLogChannel.CloudData, $"[EpisodeToken] {message}");
             OnPurchaseFinished?.Invoke(success, message);
         }
     }

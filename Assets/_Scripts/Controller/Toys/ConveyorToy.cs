@@ -1,5 +1,5 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -14,14 +14,14 @@ namespace CosmicShore.Gameplay
     ///
     /// Three things end the wander and all do the same thing (see <see cref="WanderwayRun"/>): the
     /// return station at the tail of your tether, another pass through this toy, and the overview
-    /// button (or gamepad Start), which drops freestyle. The label flips to show which way the next
-    /// pass will toggle it; the emblem's orbit speed carries the live state.
+    /// button (or gamepad Start), which drops freestyle. A pass reblooms the toy, and
+    /// the emblem's orbit speed carries the live state (a toy carries no text).
     ///
     /// The belt is a closed system: its whole conserved stock is built ONCE, behind a load veil, on
     /// the first wander, and every arrival after that is transport (the same mass, endlessly
     /// re-arranged). No score, no end condition - wander as long as you like.
     /// </summary>
-    public class ConveyorToy : Toy
+    public class ConveyorToy : Toy, IToyShellSurface
     {
         /// <summary>The recipes the emblem shows: a gate run, a tunnel, an archway, a torus knot.</summary>
         static readonly int[] EmblemRecipes = { 0, 2, 16, 30 };
@@ -37,18 +37,11 @@ namespace CosmicShore.Gameplay
         MicrosceneConveyor _conveyor;
         WanderwayRun _run;
         bool _conveyorPrimed;   // the stock is built ONCE - a later wander resumes, never re-primes
-        TMP_Text _label;
 
         public void Configure(ConveyorConfig cfg) => _cfg = cfg;
 
         protected override void OnInitialized()
         {
-            _label = GetComponentInChildren<TMP_Text>(true);
-
-            // Show the "off" affordance from the start so the first pass reads as a switch.
-            if (_label)
-                _label.text = $"{DisplayName}\n<size=60%>fly through to wander</size>";
-
             AttachEmblem(new EmblemSource(this), OrbitStopped);
         }
 
@@ -120,6 +113,52 @@ namespace CosmicShore.Gameplay
             Emblem.SetOrbitRate(!running ? OrbitStopped : freestyle ? OrbitFlowing : OrbitDormant);
         }
 
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        bool IToyShellSurface.ShellAvailable => _cfg != null;
+
+        /// <summary>
+        /// One option, because the toy is one switch: the wander is on or it is off. It needs the
+        /// player at the stick (the belt streams ahead of a flight path and the tether is your own
+        /// trail), so the shell enters freestyle first and then throws the same switch a pass
+        /// through the ring throws.
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(System.Collections.Generic.List<ToyShellOption> into)
+        {
+            bool running = _run && _run.IsRunning;
+
+            into.Add(new ToyShellOption
+            {
+                Label = running ? "Come home" : "Wander",
+                Detail = running
+                    ? "end the wander and return to the cell"
+                    : "leave for an endless belt of little worlds",
+                Accent = Definition ? Definition.AccentColor : Color.white,
+                IsCurrent = running,
+                RequiresFreestyle = true,
+                // A run is STARTED, not switched to: the window closes and the player is flying.
+                CommitVerb = running ? "Come home" : "Start",
+                Apply = ActivateFromShell,
+            });
+        }
+
+        /// <summary>
+        /// The shell's press, routed through the toy's own activation so there is exactly one
+        /// implementation of "throw this switch" - the shell cannot drift from the ring.
+        /// </summary>
+        void ActivateFromShell()
+        {
+            var vessel = ResolveLocalVessel();
+            if (vessel == null)
+            {
+                CSDebug.LogWarning("[ConveyorToy] No local vessel to send wandering.");
+                return;
+            }
+            OnActivated(vessel);
+        }
+
         protected override void OnActivated(IVesselStatus localVessel)
         {
             if (_cfg == null)
@@ -135,7 +174,7 @@ namespace CosmicShore.Gameplay
             if (_run && _run.IsRunning)
             {
                 _run.End(returnToCell: true);
-                return; // End raises the callback that flips the label
+                return; // End raises the callback that reblooms the toy
             }
 
             if (!_cfg.PrismPrefab)
@@ -192,7 +231,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Flip the toy's look so the player can read the belt state at a glance - and know the
         /// next pass toggles it the other way. The STATE itself is carried by the emblem's orbit
-        /// speed (see <see cref="Update"/>); this just retexts the label and reblooms to signal the
+        /// speed (see <see cref="Update"/>); this just reblooms to signal the
         /// in-place change (the established flip-set pattern).
         ///
         /// It used to also write <c>_body.sharedMaterial.color</c> - which was the SHARED, cached
@@ -202,11 +241,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ShowState(bool on)
         {
-            if (_label)
-                _label.text = on
-                    ? $"{DisplayName}\n<size=60%>wandering - fly through to come home</size>"
-                    : $"{DisplayName}\n<size=60%>fly through to wander</size>";
-
             Rebloom();
         }
     }

@@ -8,7 +8,7 @@ them. This script reads the shape straight out of the scene files (never hand-co
   - Joust / Scurry author `spawnableByIntensity` - four prefabs, one per intensity - which maps
     1:1 onto TrackSpawnablesByIntensity.
   - Skim Race's track is a scene-local SpawnableWaypointTrack (an object, not a prefab), so it
-    was baked once into Assets/_Prefabs/Environment/Spawners/HexRaceWaypointTrack.prefab; the
+    was baked once into Assets/_Prefabs/Environment/Spawners/SkimRaceWaypointTrack.prefab; the
     preview references that single intensity-aware entry. If the scene's track is ever retuned,
     re-bake the prefab (the bake is a verbatim copy of the component body) and re-run this.
 
@@ -22,14 +22,14 @@ SCENES = os.path.join(ROOT, 'Assets', '_Scenes')
 PREVIEWS = os.path.join(ROOT, 'Assets', '_SO_Assets', 'Mode Previews')
 SEGMENT_SPAWNER_GUID = 'b5d3599573f5d3348865c8d5efe8c29f'
 HEXRACE_TRACK_PREFAB = os.path.join(ROOT, 'Assets', '_Prefabs', 'Environment', 'Spawners',
-                                    'HexRaceWaypointTrack.prefab')
+                                    'SkimRaceWaypointTrack.prefab')
 
 # mode preview asset -> scene that stands its arena (None = the baked prefab case)
 PLAN = {
     'ModePreview_Joust.asset': os.path.join(SCENES, 'Multiplayer Scenes',
                                             'MinigameJoust_Gameplay.unity'),
     'ModePreview_Scurry.asset': os.path.join(SCENES, 'Multiplayer Scenes',
-                                             'MinigameCrystalCaptureMultiplayer_Gameplay.unity'),
+                                             'MinigameScurryMultiplayer_Gameplay.unity'),
     'ModePreview_SkimRace.asset': None,
 }
 

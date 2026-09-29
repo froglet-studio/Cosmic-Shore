@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <b>The hit class is authored, not inferred.</b> One script serves both weapons: drop
     /// this asset into the full-auto container marked <see cref="CombatHitClass.Bullet"/> and
-    /// into the skyburst container marked <see cref="CombatHitClass.Missile"/>. Nothing here
+    /// into the skyburst container marked <see cref="CombatHitClass.MissileDirect"/>. Nothing here
     /// inspects a prefab name or a projectile type to guess.
     /// </summary>
     [CreateAssetMenu(
@@ -70,14 +70,26 @@ namespace CosmicShore.Gameplay
             string shooterName = shooterStatus.PlayerName;
             string victimName = victimStatus.PlayerName;
 
-            if (!VesselCombatHitLatch.TryAdmit(shooterName, victimName, hitClass, sameVictimCooldownSeconds))
+            if (!VesselCombatHitLatch.TryAdmit(shooterName, victimName, hitClass,
+                                               sameVictimCooldownSeconds, out int supersededRank))
                 return;
+
+            // The round's own bite, priced off the same list its points come from - ten points
+            // to the petal (so ten bullets cost a victim one). Netted against a superseded
+            // missile tier, because a direct strike admits over its own blast.
+            // The round's OWN velocity throws whatever it knocks loose - the same quantity that
+            // throws prism debris, so a petal shot out of a pilot scatters exactly as far as a
+            // prism struck at that speed would have. A ranged verb EJECTS, so the shooter is not
+            // handed the petals; they have to come back through the crystals.
+            CombatHitDrain.Apply(victimStatus, shooterStatus, hitClass, supersededRank,
+                                 projectile.Velocity, ElementalDebuffSources.Other);
 
             onCombatHitLanded.Raise(new CombatHitStats
             {
                 ShooterName = shooterName,
                 VictimName = victimName,
                 HitClass = hitClass,
+                SupersededRank = supersededRank,
             });
         }
     }

@@ -334,12 +334,51 @@ their paths do not start with `FrogletTools/`.
 
 ---
 
+## Standing debt — the `Tools/Build/author_*.py` family's `--check`
+
+A generator's whole claim is *the script is the source, the assets are the build*, and that claim
+rests entirely on `--check` failing when an asset drifts. **Measured 2026-09-25 over the whole
+family: 53 generators — 35 green, 11 RED, 7 un-runnable here** (`ModuleNotFoundError: No module
+named 'numpy'`, an environment gap rather than a defect; keep those two classes apart before
+quoting a number).
+
+```sh
+for f in Tools/Build/author_*.py; do printf '%-46s ' "$(basename $f)";   timeout 180 python3 "$f" --check >/dev/null 2>&1 && echo OK || echo RED; done
+```
+
+RED as of that measurement: `author_bends_assets`, `author_dogfight_assets`,
+`author_flora_populations`, `author_goal_stack`, `author_hijack_assets`,
+`author_mode_controls_library`, `author_salvo_assets`, `author_switchback_assets`,
+`author_tollway_assets`, `author_toybox_layout`, `author_wildlife_liberation_assets`.
+
+They fall in two classes, both recorded in `CLAUDE.md`'s own anti-pattern list and neither
+noticed at the time it was created:
+
+- **A spent one-shot `assert` above the validation.** The generator clones a donor scene first and
+  validates afterwards; the donor moves on, the migration's `assert` fires, and it takes every
+  check below it with it — *a gate that ABORTS looks exactly like a gate that passes if nobody
+  reads its output.* The fix is to make the one-shot STAND DOWN (guard the step, register the
+  already-committed output so the downstream checks describe the shipped artifact), never to
+  delete the checks.
+- **An asset key a platform change deleted while the generator that authors it was left
+  untouched.** A generator is a second place every schema change has to land, and it does not fail
+  at the time of the change — it fails months later, on somebody else's branch, the next time
+  anyone runs it. Re-running one of these currently RE-INTRODUCES the retired key.
+
+**Glob `author_*.py`, not `author_*_assets.py`** — the narrow form sees 15 of the 53 and misses
+every generator whose output is not a mode's asset set. **Do not attribute a red to your own
+branch without an A/B** against a clean base worktree; on the measurement above the reds are
+upstream and the measuring branch touched no `Tools/Build/` file at all.
+
+---
+
 ## Tool index
 
 | Lane | Tool | What it is for |
 |---|---|---|
 | Build | **Pending Tool Changes** | Uncommitted asset output from editor tools. Validate, push, retire. The last gate before a branch ships. |
 | Game Modes | **Game Mode Prefab Kit** | The prefabs a new game-mode scene needs; Add to Scene / Open Prefab / Validate, plus cross-scene drift detection and consolidation. See `Docs/GAMECANVAS.md`. |
+| Game Modes | **GameCanvas Unifier** | Absorb a forked in-game canvas into `CORE/GameCanvas.prefab`, re-point every scene onto it, and delete the fork. **Keeper, half spent.** The migration half (Absorb / Re-point / Delete fork) has run: the fork is gone and all 15 domain scenes are on CORE, so those buttons are dormant until another canvas forks. What stays live is **Fix prefab** — it enforces the canvas contract (1920x1080, Scale-With-Screen-Size, `AdaptiveCanvasScaler`, smart re-anchor through the Canvas Upgrader's own passes), strips missing scripts before saving, and **reverts any nested-instance override that NULLS a script-declared reference**, which is the class of bug that silently broke the domain picker and, later, every toast in the game — and **Fix scene**, which reverts redundant overrides. Note Unity cannot revert an override whose target no longer exists in the prefab; those have to come out of the scene YAML, which `gamecanvas_unification_report.py` reports. WRITER: records to the ledger, draws the ship panel. See `Docs/GAMECANVAS.md` §9. |
 | Game Modes | End Game Conditions | The one place win conditions are authored for the domain modes. |
 | Build | Windows x64 (Release / Development), Reveal Build Folder | Player builds. |
 | Ecology | Prism Animation ▸ Validate Clock Wiring / Auto-Wire Clock Properties | The clock-material law gate. |
@@ -373,6 +412,7 @@ their paths do not start with `FrogletTools/`.
 | Pending Tool Changes window | `Assets/_Scripts/Editor/FrogletTools/FrogletToolShipWindow.cs` |
 | git CLI wrapper (quoting-safe, no wildcards) | `Assets/_Scripts/Editor/FrogletTools/FrogletGit.cs` |
 | Prefab kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |
+| GameCanvas Unifier (window / engine) | `Assets/_Scripts/Editor/FrogletTools/GameCanvasUnifierWindow.cs`, `GameCanvasUnifier.cs` |
 | Prefab kit validation | `Assets/_Scripts/Editor/FrogletTools/KitValidator.cs` |
 | Scene drift scanner (read-only) | `Assets/_Scripts/Editor/FrogletTools/PrefabInstanceSceneScanner.cs` |
 | Drift fixer (writes via PrefabUtility) | `Assets/_Scripts/Editor/FrogletTools/PrefabDriftFixer.cs` |

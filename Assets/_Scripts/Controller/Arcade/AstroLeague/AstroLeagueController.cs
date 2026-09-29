@@ -100,8 +100,8 @@ namespace CosmicShore.Gameplay
         protected override bool UseGolfRules => false;
         protected override bool UseSceneReloadForReplay => true;
 
-        // End-game runs through OnTurnEndedCustom → SyncFinalScores_ClientRpc (HexRace/Joust/
-        // CrystalCapture pattern); suppress the base turn→round→game flow so we don't get a
+        // End-game runs through OnTurnEndedCustom → SyncFinalScores_ClientRpc (SkimRace/Joust/
+        // Scurry pattern); suppress the base turn→round→game flow so we don't get a
         // duplicate InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
@@ -650,7 +650,7 @@ namespace CosmicShore.Gameplay
             matchMonitor.ForceEnd(); // → turn end → OnTurnEndedCustom computes + syncs final scores
         }
 
-        // ── Server-authoritative game end (HexRace/Joust/CrystalCapture pattern) ──
+        // ── Server-authoritative game end (SkimRace/Joust/Scurry pattern) ──
 
         protected override void OnTurnEndedCustom()
         {

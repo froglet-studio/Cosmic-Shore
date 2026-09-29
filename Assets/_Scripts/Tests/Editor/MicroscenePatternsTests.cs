@@ -141,8 +141,9 @@ namespace CosmicShore.Tests
         [Test]
         public void Theming_RespectsCollider_BudgetCapsOnShieldedPrisms()
         {
-            // Shielded / supershielded prisms carry an always-on convex MeshCollider the collider-LOD
-            // cannot reclaim, so the palette caps them per scene (danger is capped for readability).
+            // The palette caps the shielded tiers per scene for GEOMETRY (a shield reaches 1.5x
+            // leafSize) and for the food web (armoured mass is never food), not for colliders - a
+            // shield swaps the mesh, never the collider (danger is capped for readability).
             // The painter's EnforceKindCaps backstop must hold for EVERY scheme it can roll.
             var pal = MicroscenePalette.Default;
             for (int recipe = 0; recipe < MicroscenePatterns.RecipeCount; recipe++)

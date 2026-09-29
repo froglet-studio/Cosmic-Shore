@@ -19,7 +19,8 @@ namespace CosmicShore.UI
     ///
     /// <para><b>Kicking an AI is removing its placement.</b> There is no AI to remove yet — the
     /// bots are spawned by <c>ServerPlayerVesselInitializerWithAI</c> from
-    /// <c>GameDataSO.RequestedAIDomains</c> (+ balanced top-up to the card's minimum) once the
+    /// <c>GameDataSO.RequestedAIDomains</c> (one entry per AI seat - the card's minimum is placed
+    /// too, balanced once and then fixed) once the
     /// scene loads — so the ✕ on an AI seat removes that entry from the placement list, which is
     /// exactly what the player means and the only representation that cannot go out of step with
     /// what spawns.</para>
@@ -87,12 +88,11 @@ namespace CosmicShore.UI
         /// Draw the roster.
         /// </summary>
         /// <param name="gameData">Source of the live human players. Null draws generic seats.</param>
-        /// <param name="totalPlayers">Seats the match will hold (humans + placed AI + any empty
-        /// seats the card's minimum will top up at launch).</param>
+        /// <param name="totalPlayers">Seats the match will hold (humans + placed AI).</param>
         /// <param name="humanCount">How many of those seats are humans.</param>
         /// <param name="aiDomains">The placed AIs, in placement order - each seat wears its
-        /// domain's signal colour. Null or short means the remaining seats draw EMPTY (they will
-        /// be topped up balanced at launch).</param>
+        /// domain's signal colour. Null or short (a client before the host's roster lands) means
+        /// the remaining seats draw EMPTY.</param>
         /// <param name="readyCount">How many humans have confirmed.</param>
         /// <param name="localReady">Whether the LOCAL player has confirmed — known exactly.</param>
         /// <param name="isHost">Only the host may kick or place AI.</param>

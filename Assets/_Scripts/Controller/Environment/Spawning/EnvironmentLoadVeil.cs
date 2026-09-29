@@ -1,4 +1,5 @@
 using TMPro;
+using CosmicShore.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -29,6 +30,7 @@ namespace CosmicShore.Gameplay
 
         string _label = "ENVIRONMENT";
         CanvasGroup _group;
+        RectTransform _content;
         TextMeshProUGUI _title;
         TextMeshProUGUI _progress;
         bool _released;
@@ -91,6 +93,13 @@ namespace CosmicShore.Gameplay
             backImage.color = new Color(0.02f, 0.03f, 0.06f, 1f);
             Stretch(back.GetComponent<RectTransform>());
 
+            // The backdrop bleeds and the labels do not - the safe-area split of
+            // Docs/UI_ARCHITECTURE_AUDIT.md §1.3. An occluding veil that stopped at the safe area
+            // would show strips of the half-built world under the cutout, which is the one thing
+            // it exists to prevent; the labels are full-stretch centred text, so a long world name
+            // reaches the cutout on a notched phone.
+            _content = SafeAreaLayer.Create(transform);
+
             _title = MakeLabel("Title", 44f, new Vector2(0f, 60f));
             _progress = MakeLabel("Progress", 26f, new Vector2(0f, 0f));
         }
@@ -98,7 +107,7 @@ namespace CosmicShore.Gameplay
         TextMeshProUGUI MakeLabel(string name, float size, Vector2 offset)
         {
             var go = new GameObject(name, typeof(TextMeshProUGUI));
-            go.transform.SetParent(transform, false);
+            go.transform.SetParent(_content ? _content : transform, false);
             var text = go.GetComponent<TextMeshProUGUI>();
             text.fontSize = size;
             text.alignment = TextAlignmentOptions.Center;

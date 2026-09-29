@@ -21,7 +21,7 @@ MonoBehaviour:
   Element: 3
   Variant:
     Enabled: 1
-    HeartWorldScale: 1.372
+    HeartWorldScale: 1.525
     LeafSize: {x: 1.3, y: 1.3, z: 2}
     GrowPeriod: 1.8
     ShieldPeriod: 0.0

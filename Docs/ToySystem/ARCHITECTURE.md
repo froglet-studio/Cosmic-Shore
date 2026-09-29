@@ -14,8 +14,9 @@ composes with the existing fundamentals rather than working around them:
 | **Vessel** | the Vessel Changer toy cycles the player's ship via the existing networked swap |
 | **Domain** | the Domain Changer toy cycles the player's team colour via the server RPC |
 | **Prisms / Mass** | the Painting toy lays a *conserved-mass* prism pattern (no caps/TTLs); the Wanderway conveyor transports a fixed stock of conserved prisms |
-| **Cells** | toys are placed relative to the Cell membrane (read, never duplicated); Wanderway lifeforms spawn *into* the cell as ordinary citizens |
-| **Flora & Fauna / Crystals** | Wanderway meadow/menagerie scenes release flora/fauna through the canonical cell spawn sequences and lay skimmable elemental crystals |
+| **Cells** | toys are placed relative to the Cell membrane (read, never duplicated); Wanderway lifeforms spawn *into* the cell as ordinary citizens; the Arkway stands whole satellite Cells (the mode preview's machinery) as its corridor |
+| **Flora & Fauna / Crystals** | Wanderway meadow/menagerie scenes release flora/fauna through the canonical cell spawn sequences and lay skimmable elemental crystals; the Arkway's traversal cells run their real fauna waves, which attack or defend the Ark by the shipped diet rules |
+| **Ark** | the Arkway is the Ark fundamental's first vehicle: a prism-bodied mothership whose pace is the voyage's clock and whose hull is grazeable conserved mass |
 
 A toy imposes no decay, no timer, and no win/lose — consistent with *Mass is conserved*
 and *don't cheat emergence*.
@@ -53,9 +54,9 @@ the same thing as **which fundamental it composes with**:
 
 | Category | What it changes | Composes with | Today |
 |---|---|---|---|
-| **Pilot** | YOU — the hull you fly or the colours you wear. The world is exactly where you left it. | Vessel, Domain | Vessel Changer, Domain Changer |
-| **World** | WHERE YOU ARE — a world arrives or leaves. The heaviest thing any toy does. | Cells | Cell Selector, Wanderway |
-| **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Lifeform Matrix |
+| **Pilot** | YOU — the hull you fly, the colours you wear, or the elements your hull carries. The world is exactly where you left it. | Vessel, Domain, Elementals | Vessel Changer, Domain Changer, Element Charger |
+| **World** | WHERE YOU ARE — a world arrives or leaves. The heaviest thing any toy does. | Cells | Cell Selector, Wanderway, Arkway |
+| **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Spawn Matrix |
 
 It is **abstract and declared in code**, never a serialized field: a toy's category is a property
 of what it *does*, and an authored field is a field that can disagree with the behaviour underneath
@@ -88,6 +89,8 @@ this, Pilot → World → Creation. See `Docs/CODEX.md` §3.5.
 | Mini vessel model (hull filter over the above) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
 | Vessel Changer (matrix of ships) | `Assets/_Scripts/Controller/Toys/VesselChangerToy.cs` |
 | Domain Changer set | `Assets/_Scripts/Controller/Toys/DomainChangerToySet.cs` |
+| Element Charger (row of four element crystals) | `Assets/_Scripts/Controller/Toys/ElementChargerToy.cs` |
+| Element Charger config | `Assets/_Scripts/ScriptableObjects/Toys/ElementChargerToyDefinitionSO.cs` |
 | Painting gallery (matrix of paintings) | `Assets/_Scripts/Controller/Toys/PaintingGalleryToy.cs` |
 | Painting station (one per painting) | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
 | Multi-stroke fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/PaintingRunner.cs` |
@@ -111,15 +114,20 @@ this, Pilot → World → Creation. See `Docs/CODEX.md` §3.5.
 | Grand assemblies (the monument-scale eight) | `Assets/_Scripts/Controller/Toys/MicroscenePatternsGrand.cs` |
 | Microscene recipe generators (pure) | `Assets/_Scripts/Controller/Toys/MicroscenePatterns.cs` |
 | Microscene structural painter (domain/kind/scale) | `Assets/_Scripts/Controller/Toys/MicroscenePainter.cs` |
+| Arkway (cellular Wanderway) toy | `Assets/_Scripts/Controller/Toys/ArkwayToy.cs` |
+| The voyage run (leash + exits + reset) | `Assets/_Scripts/Controller/Toys/ArkwayRun.cs` |
+| The corridor of traversal cells | `Assets/_Scripts/Controller/Toys/CellConveyor.cs` |
+| The voyage's screen telegraph (leash countdown, banners) | `Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs` |
+| The Ark (the fundamental's body) | `Assets/_Scripts/Controller/Environment/Ark.cs` |
 | Placement + lifecycle | `Assets/_Scripts/Controller/Toys/ToyboxController.cs` |
 | Per-toy config (abstract) | `Assets/_Scripts/ScriptableObjects/Toys/ToyDefinitionSO.cs` |
 | Vessel/Domain/Painting configs | `Assets/_Scripts/ScriptableObjects/Toys/*ToyDefinitionSO.cs` |
 | Toybox registry + unlock state | `Assets/_Scripts/ScriptableObjects/Toys/ToyboxSO.cs` |
 | One-click editor setup | `Assets/_Scripts/Editor/ToyboxSetupTool.cs` |
 
-## Lifeform Matrix (`LifeformMatrixToy` + `LifeformMatrixToyDefinitionSO`)
+## Spawn Matrix (`SpawnMatrixToy` + `SpawnMatrixToyDefinitionSO`)
 
-The **release bench** — everything you can let loose into the cell (`Toy_LifeformMatrix.asset`,
+The **release bench** — everything you can let loose into the cell (`Toy_SpawnMatrix.asset`,
 placement angle 180°). Its root wears an emblem (see "Toy-root emblems"): a core of the four
 element crystal MODELS — elements have SHAPE signatures, never colours — orbited by its three
 KINGDOMS.
@@ -215,6 +223,23 @@ differ in exactly one argument — the changer excludes the hull you are flying 
 become one of the others), the hangar excludes nothing (a wingman in the ship you are flying is a
 perfectly good thing to ask for). Author `vesselRoster` on the definition to override the default.
 
+**A shipping vessel belongs in that default, and it is the one vessel registration that is CODE
+rather than an asset.** Every other place a new hull has to be named — the `Vessel Prefab
+Container`, `DefaultNetworkPrefabs`, the `SO_Classlist_*` lists, the camera settings — is written
+by that vessel's own editor setup tool, so nobody has to remember them; `ToyVesselRoster.Default`
+is a hand-written array, which makes it exactly the one that gets missed. And it is missed
+**silently**: there is no error, no warning and no empty station, the matrix is simply one ship
+smaller than the fleet, and the player-visible symptom is that the new hull cannot be flown in
+freestyle at all. `ToyVesselRosterCoverageTests` is the gate — every vessel in the prefab
+container must be in the roster.
+
+**Declaration and availability are separate**, which is what lets the roster be complete in the
+branch that DESIGNS a vessel rather than the one that authors its prefab: a toy that ACTS on a
+hull calls `ToyVesselRoster.ResolveOffered(Context, …)`, which drops any class the prefab
+container cannot answer for, so a declared-but-unbuilt hull is not offered yet rather than
+offered as a swap that resolves to nothing. Bare `Resolve` is for DOCUMENTING the roster (the
+codex harvester); anything that swaps, releases or previews a hull uses `ResolveOffered`.
+
 ## Cell Selector (`CellSelectorToy` + `CellSelectorToyDefinitionSO`)
 
 The freestyle **world picker** — and the freestyle **reset** (`Toy_CellSelector.asset`,
@@ -231,7 +256,7 @@ so adding a world is a config-asset + scene-array change, never a toy change.)
 Fly the toy (a sphere ringed by three empty little worlds — they stay empty because filling
 them would mean generating environments at menu boot, the exact cost this toy defers) and a
 matrix of **mini-cells** blooms outward, `matrixDistanceFactor` × `stationSpacing` clear of the
-toy along the outward radial: you fly AT the toy and keep going, and the choices are ahead — the Lifeform Matrix's "fly at a wall of choices" pattern, now sharing
+toy along the outward radial: you fly AT the toy and keep going, and the choices are ahead — the Spawn Matrix's "fly at a wall of choices" pattern, now sharing
 `ToyMatrixStation`. Fly a mini-cell and the cell becomes that world. **Fly the mini-cell of the
 world you are already in and you get the same cycle on the same config — that is the reset.**
 What a pass costs is told by **shape**, not by a word (see "Station icons"): the world you are
@@ -276,6 +301,56 @@ tracks — the vessels' accumulated freestyle trail — which is what makes a se
 reset rather than an environment swap. Prisms owned by a closed toy system (the Wanderway
 conveyor transports its own fixed stock, instantiated not pooled) are never touched either way,
 so a cell swap cannot break the conveyor's conservation.
+
+## Arkway (`ArkwayToy` + `ArkwayToyDefinitionSO`) — the cellular Wanderway, and the Ark's first vehicle
+
+The **Arkway** is the Wanderway's proposition raised one level: where the Wanderway's belt
+recycles prism *assemblies*, the Arkway recycles whole **cells**. Fly the toy and a VOYAGE
+begins — a corridor of real satellite `Cell`s (the mode preview's own machinery:
+`BindSatelliteRuntime` → `InitializeSatellite`, thinned by `SatellitePrismStride`, injected via
+`ToyContext.Container`) opens ahead, three standing at once (**previous / current / next**),
+drawn shuffle-bag from the cell selector's own rotation (the definition may author an explicit
+list; empty reads `Cell.AvailableConfigs` minus environment-free entries). An **Ark** — a
+prism-bodied mothership in the player's domain, the new fundamental's first body — sails the
+corridor at its own unhurried pace. It is the stepping stone toward faction missions: venturing
+into the hypersea with, and for, a mothership.
+
+**The fight is the shipped ecology, composed** (full record: `Docs/ECOSYSTEM.md` §41). Each
+traversal cell sets `NucleusIsControlZone = false`, so control is whole-cell VOLUME and the
+herbivore diet is the legacy opposing-domain rule; each runs its REAL fauna waves
+(`Cell.SatelliteEcologyEnabled`, the one opt-in through the preview's structure-only gate,
+scaled by `Cell.RuntimePopulationScale`). The Ark's hull is ordinary grazeable conserved mass
+laid through `PrismTrailBuilder`: fauna of another domain eat it, fauna of its own never do —
+so *protecting the Ark IS taking the cell*, with no aggro system anywhere. The Ark moves the
+way fauna move (one container transform + the `Prism.NotifyPositionChanged` mover contract per
+frame, plus `PrismSpatialIndex.NotifyCellChanged` on a coarse cadence so the local food web is
+always the one that can see it).
+
+**The leash**: stay within a cell radius of the Ark (`CellConveyor.CurrentCellRadius` ×
+`leashRadiusFactor`, membrane-read-per-tick with the 0-until-spawned fallback). Beyond it a
+telegraphed countdown runs on `ArkwayVoyageHud` — a programmatic screen overlay, because
+`GameToastAPI` renders nothing in Menu_Main and a leash telegraph must reach a player who is by
+definition far from every world label — and then the Ark RECALLS you to its side (pen-up around
+the `SetPose`, the mode preview's teleport idiom). The voyage never ends over distance.
+
+**Four exits, one path** (`ArkwayRun.End`): the DISEMBARK dinghy trailing the Ark (a
+`WanderwayReturnToy` gliding behind the stern, neutral ring — coming home grants no domain);
+another pass through the toy; leaving freestyle (the same `IsFreestyleActive` edge the
+Wanderway watches); and the Ark falling — the food web eating its last hull prism — which
+RESETS the toy. End reposes the player home FIRST, withers the Ark out (then destroy-drains
+it like environment mass — hull prisms carry no pool-return handler), and QUEUES every
+standing cell for the same off-screen-gated retirement the mid-voyage advance uses
+(`StrikeSatelliteWorld` + the 150-per-frame drain, one cell at a time as it leaves view); the
+next voyage's Begin force-strikes any remainder only behind its raised veil. Mid-voyage, the
+cell two-behind retires only once its whole membrane sphere is outside the camera frustum —
+the microscene conveyor's own removal gate, applied at voyage end too.
+
+Like the Wanderway, starting a voyage hands the host cell its bare canvas
+(`Cell.BareCanvasConfig` via `RequestCellSwap`); the first two cells and the Ark's hull build
+behind one `EnvironmentLoadVeil` hold (`BeginArenaBuild` bracketed in a `finally`), and later
+cells stream in unveiled beside live play — which is what a satellite build is for. Collider
+budget: three cells at stride 4 ≈ ≤30k prisms, the Wanderway-stock envelope, against a
+bare-canvas home world.
 
 ## The "one toy, then many" pattern (`MatrixToy`)
 
@@ -447,10 +522,24 @@ it is the ring itself carrying the meaning in its shader (see "The switch"). The
 `SwapToySetCoordinator.SlotsWearSwitchRing` exemption is deleted with it; what the coordinator
 carries now is `SlotRingRadius`, the same neighbour clamp every matrix station uses.
 
-**Labels stay for now**, hung clear above the switch ring (`ToyFactory.AddRingedLabel` — the font
-is unchanged, only the height moved). They come off once the ring-distance legibility pass
-confirms each toy is identifiable without them — a separate, gated change, and now a more likely
-one, since the ring carries the far read the label used to.
+**Toys carry NO text** (2026-09-25, prompter-directed). Every world label is gone — toy roots,
+matrix stations, domain slots, painting stations and their stroke gates, the Wanderway return
+station, the Arkway dinghy, the Ark's hull readout and the pole switches — and with them
+`ToyFactory.AddLabel`, `AddRingedLabel`, `SwitchRingLabelHeight` and `BillboardLabel`, so a new toy
+cannot grow one back without re-adding the builder. The switch ring and the icon do the lift in the
+world; the **Toy Box menu** is where a player learns a toy's name (`ToyDefinitionSO.DisplayName`, and
+every variant's `ToyShellOption.Label`, both still live — they are the menu's text). Stated cost: the
+Ark's hull fraction is read off the hull itself losing prisms.
+
+**Two exceptions, each for a stated reason, and the geometry check exempts exactly those two files.**
+`ArkwayVoyageHud` is the screen-space leash COUNTDOWN — a warning with a clock on it, not a name on a
+toy. `ToyChoiceLabel` (2026-09-26, prompter-directed, after the first no-text pass removed it) is the
+word over a finished painting's **SHARE** and **REPAINT** gates: two identical neutral rings with
+identical sphere hubs, appearing side by side, that do OPPOSITE things — one exports the picture, one
+erases it — at a moment no menu stands between the player and the choice. Colour alone (cyan vs the
+gallery accent) could not say which of the two throws the painting away. It is its own file, not a
+`ToyFactory` builder, so the rule stays "no toy carries text" with a named, greppable exception rather
+than a label API any toy could reach for.
 
 ### Layout tuning (matrix scale & distance)
 
@@ -493,7 +582,12 @@ primitive meshes (the skimmer sphere, scaled 15–60× — it otherwise dominate
 and crushed the hull to an invisible speck; this is why only Rhino, the one ship whose skimmer
 has no builtin sphere, used to render), anything named skimmer/trail/jet/forcefield/crackle/pip/
 vfx, and inactive/disabled renderers (read via `activeSelf` up the chain — `activeInHierarchy` is
-always false on a prefab asset). Vessels whose body isn't statically extractable fall back to the
+always false on a prefab asset). **Disabled AT RUNTIME is not disabled on the asset**: the Scarab
+hides its wrapped Sparrow model in `Awake` and builds its real hull there too, so the asset shows
+an enabled Sparrow and an empty MeshFilter — the mini Scarab was a Sparrow. `ToyModelBuilder` now
+skips `IProceduralElementMorphSource.HiddenLegacyModelRoot` and harvests `IProceduralHullSource`
+pieces (minted meshes owned by a `ToyMintedMeshes` on the model), so a mini hull is the ship the
+player will fly. Vessels whose body isn't statically extractable fall back to the
 labelled tinted sphere.
 
 **A station shows the ACTUAL ship; a glyph stays flat.** The mini hulls used to be painted with
@@ -504,7 +598,7 @@ now, so the fill is retired for anything you fly AT:
 
 | | Built by | Materials | Domain read |
 |---|---|---|---|
-| **Station** (vessel-changer matrix, Lifeform Matrix hangar) | `ToyVesselRoster.TryBuildLiveHull` | the ship's **own** materials, with the domain-role slots swapped for the live domain ship material | the vision band's mark, stamped via `VesselVisionShading.StampDisplayModel` |
+| **Station** (vessel-changer matrix, Spawn Matrix hangar) | `ToyVesselRoster.TryBuildLiveHull` | the ship's **own** materials, with the domain-role slots swapped for the live domain ship material | the vision band's mark, stamped via `VesselVisionShading.StampDisplayModel` |
 | **Glyph** (a toy's emblem, the kingdom icons) | `ToyVesselRoster.TryBuildHull` | one flat, self-lit preview fill | the fill's own colour |
 
 The split is a distance argument, and the geometry already made it: a vessel matrix blooms
@@ -516,7 +610,7 @@ choosing at range, arriving at a ship. A glyph sits *on* the toy, inside the ban
 where the mark is correctly zero and where a real hull would be a black blob, so it keeps the fill.
 
 **Two kinds of mini hull must be re-tinted in opposite ways, and one list holds both** (the
-Lifeform Matrix's `_hullBodies` carries its kingdom glyph *and* its hangar stations). A flat model
+Spawn Matrix's `_hullBodies` carries its kingdom glyph *and* its hangar stations). A flat model
 owns a preview material built for it, so a domain change repaints that material. A **live** model
 draws with shared **project assets** — repainting one would recolour every ship in the game,
 permanently, in the editor. So live models carry a `ToyLiveHull` marker and everything routes
@@ -544,7 +638,9 @@ follow the domain changer.
 **Lost-control fix:** the swap pipeline drops the new vessel into autopilot with input paused
 (that's why the old toy left you unable to steer). `VesselChangerToy.RestoreControlAfterSwap`
 waits for `IsSwapping` to clear, then re-hands freestyle control — mirroring
-`MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync`.
+the retired freestyle vessel-selection panel's `RestoreFreestyleAfterSwapAsync` (that panel was
+deleted 2026-09-23 — measured inactive in the scene with no caller for its `Open()`, so this toy
+had been the only live restorer for some time).
 
 **HUD after swap.** `VesselController.Initialize` creates every vessel's HUD **hidden**, and the
 only menu code that shows the local HUD fires on *entering* freestyle — which a swap doesn't do.
@@ -578,6 +674,46 @@ is **clamped against that chord** exactly as a matrix station's is against its s
 (`SwapToySetCoordinator.SlotRingRadius` → `ToyFactory.StationRingRadius`). On the menu membrane
 (~984u) the clamp does nothing; on the toybox's no-membrane `fallbackRadius` (300u) it takes the
 ring 42 → 32.9, and without it the two rings would overlap by 17.6u.
+
+### Element Charger (`ElementChargerToy` + `ElementChargerToyDefinitionSO`)
+
+**One toy that opens into the four elements.** Fly it and a single ROW of four element crystals
+blooms out ahead (`MatrixToy`, with the new `MatrixColumns` override laying them on one line
+instead of a 2x2); fly a crystal and your vessel's level in that element rises by
+`levelsPerPass` (authored 5). Another pass through the toy folds the row away.
+
+- **The grant is a crystal's grant.** It is `ResourceSystem.GrantPetals(element, levels)` on the
+  local vessel - whole petals onto the persistent BASE level, the same raise an elemental crystal
+  pickup and a steal's receiving half make. So the
+  HUD flowers, the level-5 ability upgrades and the hull morphs all react through their own
+  `OnElementLevelChange` subscriptions with nothing wired for this toy, and the
+  **maintained-mechanism law holds for free**: a base raised past 10 is overcharge, and
+  `RecoverBaseLevels` bleeds it back to 10. One pass from rest reaches the level-5 upgrade, a second
+  reaches the sustained ceiling, a third is felt in the 10..15 band and drains (one level per five seconds).
+- **It is a SOURCE in the elemental economy, and it is fenced to freestyle.** A match's economy has
+  lifeforms as its only source (`Docs/ELEMENTAL_ECONOMY.md` §2.1); the charger mints petals from
+  nothing, which is fine only because nothing it grants can reach a match - menu vessels are
+  despawned on the way into a game scene and a match seeds fresh hulls. Do not put this toy, or its
+  grant, in any scored scene.
+- **No networking of its own.** Element levels are simulated on the OWNING machine and never
+  replicate; a toy only ever fires for the local pilot, whose machine is the owner. Levels belong
+  to the HULL, so a vessel swap starts the new hull at its own levels.
+- **The row stays open** after a pass (unlike the vessel changer, which closes because what it
+  offered has changed): charging is something you do several times in a row, and the per-station
+  `ToyMatrixStation` cooldown is what stops one pass charging twice. A pass swells the crystal and
+  settles it back - never a scale-from-zero, which would make it vanish for the regrow.
+- **Order.** The row reads charge -> mass -> space -> time LEFT TO RIGHT for a pilot flying out from
+  the cell centre through the toy - the HUD's order. The matrix lays stations along the toy's
+  +right, which faces the centre, so +right is that pilot's LEFT; `ElementAtStation` reverses the
+  index to put Charge on the left (`ElementChargerToyTests` holds it).
+- **Elements are shape, never colour.** Every crystal is its element's canonical model
+  (`ElementCrystalModelBuilder`) in the toy's ONE accent material, and every station's ring is
+  Neutral. The emblem is core-only: the four crystals on a sub-ring.
+- **App shell.** Four leaves, not `RequiresFreestyle` (a charge from the menu is still on the hull
+  when you take the stick), so it is shuffle-eligible like the Spawn Matrix's spawns - both are
+  additive acts rather than states, and a shuffle that charges a random element is as honest as
+  one that releases a random creature.
+- **Placement** 150 degrees: between the vessel changer (120) and the Spawn Matrix (180).
 
 ### Painting / Connect the Dots (`PaintingGalleryToy` + `PaintingToy` + `PaintingRunner`)
 
@@ -629,8 +765,8 @@ painting in miniature (`MiniaturePaintingBuilder`: 5 SIGNATURE strokes — see "
 tinted, on a slow turntable) — a sphere only as fallback for stroke-less paintings. The sixteen
 stations arrange as a roughly-square matrix cluster at the toybox slot (columns along the ring
 tangent, rows climbing the off-plane vertical), and the monuments anchor behind their column in
-vertical tiers — a wall of masterpieces. Every toy label (stations, gates, all toys) wears
-`BillboardLabel`, facing the camera each frame so text reads from any approach.
+vertical tiers — a wall of masterpieces. No station or gate carries text (see "Toys carry NO
+text").
 
 Rows 5–11 are built by composition from **`PaintingStrokeToolkit`** (below); rows 12–16 are
 **baked from real references** by the offline **painting pipeline** (`Tools/PaintingPipeline/` —
@@ -765,7 +901,7 @@ it, so a toy authored tomorrow wears one without anybody remembering to add it (
 bloom-in and the exit-gated re-arm live there). The ring is a child of the toy root, so it blooms in
 with the toy; it carries **no collider of its own** and costs one shared static mesh, one renderer
 and one `ToyIdleSpin` per station. Light `ToyMatrixStation`s (which are not `Toy`s) get theirs from
-`MatrixToy.CreateStation` / `LifeformMatrixToy.CreateStation`.
+`MatrixToy.CreateStation` / `SpawnMatrixToy.CreateStation`.
 
 **Exactly one opt-out** now, explicit, `Toy.ConfigureSwitchRing(radius)` *before* `Initialize`:
 
@@ -786,6 +922,33 @@ and is gone: that toy is a switch now.)*
 |---|---|---|---|
 | `Neutral` | `Domains.Blue`'s plain prism material — the platform's existing "no team / neutral entity" sentinel | *thread me and something happens* | every toy root, every matrix station, the painting's milestones and its SHARE/REPAINT gates, the Wanderway return station |
 | `Domain` | that domain's plain prism material | *threading me makes your trail this domain* | the Domain Changer's slots; the painting's **stroke-start gates** (crossing one calls `RequestStrokeDomain`, so it really does hand you one) |
+| `Next` | the free-pickup LIME (`SO_ColorSet.GetCtaSignalColor`) on the prism shader | *this is the switch YOU are meant to thread next* | Switchback's gates — the local pilot's next one only |
+
+**`Next` is the first PER-VIEWER signal, and that is what makes it legal.** Every other signal
+describes the switch itself and reads the same on every screen; this one describes the
+RELATIONSHIP between the switch and whoever is looking at it, so it is set locally and never
+replicated. It is therefore only available where the geometry already belongs to one viewer —
+Switchback builds its course independently on every machine, so a gate object is already
+per-viewer and nothing shared is repainted. It makes no domain claim, so `ToyFactory.SwitchDomain`
+keeps it on `Domains.Blue` and the reservation below is untouched: **lime is not a playable
+domain's colour and never can be** (measured against the shipped `OriginalColorSetSO`: 0.94 summed
+channel distance to the nearest domain UI colour, against a 0.5 gate `ToySwitchVocabularyTests`
+now asserts for *every* non-`Domain` signal rather than for `Neutral` alone — a reservation test
+that names the members it knows about stops testing the law the moment one is added).
+
+**It reads the CTA at SIGNAL strength, and reading `DarkCTA` raw is the trap.** A CTA pair is
+authored for a CRYSTAL, and a crystal composes both halves — `lerp(dull, bright, (1−N·V)⁴)`, so
+`BrightCTA` is a ~2.5% rim and `DarkCTA` is ~93% of the surface (`Docs/PALETTE.md` §2.2). **A
+switch ring is a prism**, which has no such composition, so the dull half alone renders the
+shipped (0.28, 0.50, 0.08) as a dark olive rather than as lime. `SO_ColorSet.GetCtaSignalColor` —
+the sibling of `GetDomainSignalColor`, and normalised the same way — drives the CTA hue's
+brightest channel to 1, giving (0.5625, 1, 0.1562). That also settles a disagreement the raw read
+had created: the no-theme fallback is (0.55, 0.95, 0.15), which is **0.069** from the normalised
+value and was **0.79** from the raw one, and *a fallback that does not match what it falls back
+FROM is not a fallback*. It returns alpha 0 for a palette that authors no CTA at all — both
+inactive palettes author it (0,0,0,0) — so the caller falls back rather than painting the ring
+black, per the rule `GetDomainSignalColor` already records: a colour accessor that can return
+black can make an element vanish, and a vanished element reads as *not implemented*.
 
 **The reservation:** *a switch wearing a playable domain's colour is one that hands you that
 domain.* Nothing else in the toybox may wear one. Half of that is structural and needs no
@@ -810,11 +973,15 @@ player has every reason to read as Gold and Jade. Painting the rest Blue is not 
 (that lives on each toy's label, hub, emblem and content) but the thing that makes the domain
 colours mean something when they do appear.
 
-**The one wearer outside the toybox** is the Scarab's placed switch, where the domain colour names
-the domain the switch *belongs* to rather than one it grants (`SCARAB.md` §5 — whose colour it is
-decides who it pays). Nothing in that mode changes a pilot's domain, so the two readings never
-share a screen; it is listed in the test's allow-list with that reason. Do not add a third toybox
-wearer without settling which reading wins. It draws in the **live** per-domain prism material —
+**Two wearers sit outside the toybox**, and both say something about the SWITCH rather than about
+the pilot. The Scarab's placed switch is the first: the domain colour names the domain the switch
+*belongs* to rather than one it grants (`SCARAB.md` §5 — whose colour it is decides who it pays).
+The Butterfly's **fold gate** is the second, one notch further out: there the colour names **who
+may thread it** (`BUTTERFLY_FOLD.md` § "Every fold leaves a PAIR OF GATES standing"). A gate
+declines a pilot who is not already in its domain and can never put anyone into one, so it is a
+gate on use rather than a grant. Nothing in either case changes a pilot's domain, so the two
+readings never share a screen; both are listed in the test's allow-list with their reason. Do not
+add a toybox wearer without settling which reading wins. It draws in the **live** per-domain prism material —
 the same asset the dais prisms it pays out are laid in, so the two cannot drift — reached by
 injecting `GameDataSO` into `PlaceSwitchActionExecutor` (the vessel is DI-injected on spawn, the
 same door `ScarabCavitationBlast` on that hull already comes through). That let it drop a
@@ -1249,6 +1416,13 @@ submitted the (still touch-interactable) vessel HUD.
 Definitions with `placementAngleDegrees < 0` (the default) auto-distribute evenly around the
 ring so they stay far apart; set a specific angle per toy to pin it.
 
+The **poles** are not part of the ring. After placing the toys the controller builds two larger
+`ToyboxPoleSwitch`es at `center +/- up * radius` - today's activity above, shuffle below - which
+are the world face of the Toy Box's two top buttons (`Docs/HomeHub/ARCHITECTURE.md` §4.0.6). They
+are not toys, have no definition, and do not register with the app shell. Threading the north one
+TAKES you to today's activity: it starts it and puts your vessel in front of the ring it asks you
+to thread next (`ToyShellOption.Arrival`).
+
 ## Toybox & unlock state
 
 `ToyboxSO` is the registry: a list of `ToyDefinitionSO` + an id→bool unlock map.
@@ -1264,6 +1438,194 @@ ring so they stay far apart; set a specific angle per toy to pin it.
   at runtime (the `ElementalBarsView` "zero-wire by default" precedent). So the system works
   the moment `ToyboxController` is in the scene, before any assets are authored.
 
+## The app-shell face — the Toy Box modal
+
+Every toy is also reachable **flat**, from the home screen's Toy Box, and that surface is not a
+copy of this one. `ToyboxModal` asks the LIVE toys what they offer and calls back into them:
+"change your domain" in the menu is literally `DomainChangerToySet.Apply`, the call the ring
+makes. A table of toy actions in the UI layer would be a second authority on the same state — the
+failure the single-writer rule exists to prevent — and would drift the first time a toy changed.
+
+The contract is three members (`_Scripts/Controller/Toys/ToyShellSurface.cs`):
+
+```csharp
+public interface IToyShellSurface
+{
+    ToyDefinitionSO ShellDefinition { get; }   // name, tagline, accent, category
+    bool ShellAvailable { get; }               // false mid cell-swap / mid vessel-swap
+    void BuildShellOptions(List<ToyShellOption> into);
+}
+```
+
+A `ToyShellOption` is either a **leaf** (`Apply` does the thing) or a **branch** (`Expand` yields
+the next layer). Both shapes exist because that is what a toy already is in the world: a
+`MatrixToy` unfolds into stations, and the Spawn Matrix unfolds again into species and
+elements. Flattening it in the menu would flatten something the player already reads as nested.
+
+**Registration is automatic.** `Toy.Initialize` registers `this` if it implements the interface,
+and `Toy.OnDestroy` unregisters — the one method every toy passes through, so there is nothing
+per-toy to remember. Station toys (a gallery's `PaintingToy`, a flip-set's `SwapToy`) deliberately
+do NOT implement it: the shell lists TOYS, not their unfolded choices. A `SwapToySetCoordinator`
+registers itself instead of its slots, because the slots hold no option state.
+
+`Toy.OnDestroy` is `protected virtual` for that reason — a subclass that hides it would leave a
+destroyed toy in the registry, so every subclass override calls base.
+
+### One declaration — the station and the window cannot disagree
+
+> **A toy declares its choices ONCE. The fly-into station and the menu Toy Box window are two
+> INPUTS to that one declaration. They may differ in how an option is DRAWN — a station shows the
+> real hull at arena range, a window shows a small preview — never in which options exist or in
+> what pressing one does.**
+
+The interface above was always meant to deliver that (*"the shell asks the LIVE toy rather than
+carrying its own table"*), and it delivered half of it: the menu could not invent an action a toy
+did not have. What it did not prevent was the toy writing **the list twice** — once for its
+stations and once for `BuildShellOptions` — which is what every matrix toy did, and which agreed
+only by coincidence. Measured before the fix:
+
+| toy | the two enumerations | agreed? |
+|---|---|---|
+| Cell Selector | `ResolveOffer` (dedup by `List.Contains`) vs the shell re-walking the same source (dedup by `HashSet`) | yes — two transcriptions of one rule, by luck |
+| Painting gallery | both index `_gallery` | yes |
+| Vessel Changer | the roster minus your hull vs the roster with your hull flagged | by design, but nothing said so |
+| **Spawn Matrix** | world: Fauna / Flora / **Vessels** · window: Fauna / Flora | **NO — the window had silently lost a whole kingdom** |
+
+That last row is the general case, and its reasoning is the part worth recognising: the hangar was
+omitted on the argument that *"a hull is neither a lifeform nor something the spawn picture can
+show landing"* — **an argument about the PICTURE that cost the window an entire branch of the
+bench**. Releasing an AI wingman is an action a window can offer perfectly well, and it is the
+same `ReleaseCompanion` call the station makes. *When a surface drops an option for presentation
+reasons, it stops being the same surface.*
+
+**`MatrixToy` now makes it structural.** A subclass overrides `BuildOptions(List<ToyShellOption>)`
+and nothing else about its choices:
+
+- the base builds the matrix from that list (`WorldOptions[i]` **is** station *i*);
+- the base answers `IToyShellSurface.BuildShellOptions` with the same call — non-virtual, so there
+  is nowhere to put a second opinion;
+- `MatrixToy.CreateStation` takes the option and wires `station.OnVesselPassed = option.Apply`, so
+  the station's action **is** the window's action rather than a second lambda that agrees;
+- `ToyShellOption.Payload` carries the toy's own subject (the config, the class, the definition),
+  which is what lets one list serve a flat row and a flown-to station without a parallel list of
+  subjects beside it — that parallel list was the thing that could drift.
+
+**Exactly one difference may be declared**, `MatrixToy.WorldOmitsCurrentOption`: the Vessel
+Changer sets it (flying your own hull would swap it for itself), the Cell Selector does not
+(choosing the world you are in IS the freestyle reset, so its station is real and wears a halo).
+One named bool, reviewable and tested — not a hand-filtered second enumeration.
+
+A station that genuinely cannot go through `CreateStation` — the painting gallery's, which is a
+full `Toy` with its own bloom and exit-gated re-arm — must still invoke that same `Apply` and
+nothing else. That is the one place the rule is a convention, and it is named in the code.
+
+**A single-action toy already had this right** and is the pattern to copy: `ConveyorToy` and
+`ArkwayToy` set `Apply = ActivateFromShell`, which calls their own `OnActivated` — *one
+implementation of "throw this switch", so the shell cannot drift from the ring.*
+
+**The gate is `ToySurfaceParityTests`** (`_Scripts/Tests/Editor/`). It fails when a `MatrixToy`
+subclass re-declares `IToyShellSurface` (which would let it re-implement the window's list and win
+over the base), when one wires `OnVesselPassed` itself, or when `MatrixToy` stops holding up its
+own end. Verified as a negative control: all three subclasses failed it before this pass.
+
+### What each toy offers
+
+| Toy | Options | Needs freestyle? |
+|---|---|---|
+| Domain Changer | all three domains, the one you wear flagged `current` | no |
+| Vessel Changer | the whole collection, the hull you fly flagged `flying` | no |
+| Element Charger | the four elements, each row reading `level N -> N+5` (or `full` at 15); commit verb **Charge** | no |
+| Cell Selector | the cell's own rotation; choosing the current one is still the reset | no |
+| Spawn Matrix | Fauna / Flora / **Vessels** → species or hull → element; an element row previews the lifeform and the window WATCHES the spawn. The kingdom row walks the same `Kingdoms` + `HasContent` filter the world's does, so it cannot lose one again (it had lost the hangar — see § "One declaration"). A hull release has no `WatchAfterApply`: `ReleaseCompanion` is a ServerRpc, so there is no object to turn the picture onto and claiming one would be a lie on every machine that is not the host | no |
+| Connect the Dots | the gallery, with live progress per canvas | **yes** |
+| Wanderway | one switch: wander / come home | **yes** |
+| Arkway | one switch: set sail / end the voyage | **yes** |
+
+Note the asymmetry the flat list has to state in words that the world says by shape: the diegetic
+sets show *everything except where you are now*, because the option you are on has no station. A
+flat list cannot say that by omission — dropping the row would leave the player unable to see what
+they are on — so the current row is present, flagged, and carries no `Apply`.
+
+**A toy whose whole activation is flying** routes through freestyle. The modal closes, calls
+`MenuCrystalClickHandler.ToggleTransition()`, waits for
+`MenuFreestyleEventsContainerSO.OnGameStateTransitionEnd`, and only then applies. It waits on that
+event and not on `IsInFreestyle` because the flag flips at the START of the transition, while the
+vessel's input is still paused and the camera is still blending — a run begun then would start
+against a vessel nobody is flying yet.
+
+Two of those three route straight back through `OnActivated`, so there is exactly one
+implementation of "throw this switch" — the single-action pattern § "One declaration" names as
+the one to copy. The gallery is the exception worth reading: it walks the
+same decision tree `PaintingToy.OnActivated` walks (live run → bench, unfinished → resume,
+finished → the SHARE/REPAINT gates), against the same run book, via
+`PaintingToy.CreateRun`/`LiveRun`. A **finished** canvas is the one case a flat list cannot
+answer, because its choices are fly-through gates in the world — so the shell opens the gallery
+matrix and hands the player the station that carries them.
+
+The list is built WITHOUT generating strokes: the late gallery pays a real curl-noise generation
+on first stroke access (which is why the toy's own emblem is restricted to the four on-ramp
+canvases), so the detail line reads the progress store and any live run, and `EnsureStrokes` is
+paid in `BeginFromShell`, at the same moment flying the gallery would have paid it.
+
+### A name that excludes part of what a system does will be used to justify excluding it
+
+> **When a system grows past its name, the growth should provoke a RENAME — never an inconsistent
+> omission. A name is not a label on a system; it is the shortest argument anybody makes about
+> that system's scope, and it is the one they reach for when a surface is inconvenient to
+> implement.**
+
+This toy was called the **Lifeform Matrix** and it has offered THREE kingdoms since the hangar
+landed — Fauna, Flora and **Vessels**. Two of those are lifeforms and one is not. Nobody decided
+the menu window should drop the hangar; the name simply made dropping it read as tidy rather than
+as a defect, and the omission survived review on an argument about the PICTURE (*a hull is not a
+lifeform, and the spawn preview cannot show one landing*) that was never about the picture at all.
+The § "One declaration" pass made the disparity structurally impossible. This rename removes the
+thing that licensed it.
+
+It is **Spawn Matrix** (`SpawnMatrixToy`, `SpawnMatrixToyDefinitionSO`, `Toy_SpawnMatrix.asset`,
+id `spawn-matrix`). Three candidates were weighed and the reasons are the reusable part:
+
+- **"Mass"** collides with a fundamental. `Mass` is conserved prism mass AND an elemental — a
+  *Mass Spawner* reads as a thing that lays prisms, which is the painting toy's job, and as a
+  thing that hands out the Mass element, which is the crystal economy's. A name that is already
+  load-bearing elsewhere cannot carry a second meaning quietly.
+- **"Threat"** is false for two kingdoms out of three. A plant is not a threat, and a hull
+  release is an AI companion in **your own domain** — an ally. Naming a system for what one
+  third of it does is the same mistake one notch over.
+- **"Spawn"** is what the toy itself already says. Every kingdom commits with
+  `ToyShellOption.CommitVerb = "Spawn"` — fauna, flora and the hangar alike — so the button under
+  the player's thumb has read SPAWN for all three since the parity pass. It names the **ACT**
+  rather than the taxonomy, which is what makes it survive a fourth kingdom: there is no reading
+  of "Spawn Matrix" under which some future thing you can spawn does not belong in it.
+
+"Matrix" is kept deliberately. The Cell has its own population producers
+(`CellLifeSpawnerBase`, `RandomLifeSpawner`, `IntensityWiseLifeSpawner`) and those ARE the
+ecology running itself; this is the player's bench, and the word is what tells them apart at a
+glance in a grep.
+
+Two costs, stated rather than hidden. `ToyConfigureModal.RememberKey` is the definition
+**asset's name**, so the rename clears this toy's last-committed variant memory once per player
+(`ToyPreferenceStore`, `Docs/HomeHub/ARCHITECTURE.md` §4.1.7a) — a one-time reset of which row
+the window re-opens on, nothing else. And `CodexEntry.Id` is derived from the toy's `id`, so the
+codex page's key moved with it; the asset is updated in place (`tool.spawn-matrix`,
+`use.tool.spawn-matrix`) so a **Scan & Merge** is a no-op rather than an orphan plus a new page.
+`DiscoveryKey` has no runtime reader yet, so no player progress rides on it today — which is the
+window in which a key like this is free to move, and it closes the moment one does.
+
+### The 2D art is the encyclopedia's
+
+`ToyPortraitLibrary` resolves the portrait **FrogletTools ▸ Interface ▸ Codex** already bakes from
+each toy's own `ToyEmblem` grammar (`Docs/CODEX.md` §3.5). So the flat card is a picture of the
+thing the player flies at, re-baking an emblem re-skins the menu with nothing to re-wire, and no
+second icon set is authored.
+
+Matched on the toy's own **definition asset** (`CodexEntry.SourceConfig`), never on a name — a toy
+has no prefab, and the config is what the harvester keyed the entry on. A display-name pass is the
+fallback for the code-built default toybox, whose definitions are `CreateInstance`d at runtime and
+match no asset reference; it degrades to no portrait rather than to the wrong one.
+
+Full surface + scene wiring: `Docs/HomeHub/ARCHITECTURE.md`.
+
 ## Adding a new toy
 
 1. Add a `Toy` subclass with the behaviour (`OnActivated(IVesselStatus localVessel)`), or a
@@ -1276,6 +1638,10 @@ ring so they stay far apart; set a specific angle per toy to pin it.
 3. Add the new definition asset to the `ToyboxSO` (or to `BuildDefaultToybox` for a built-in).
 4. Add a case to `ToolCodexHarvester.AddKindFacts` so the encyclopedia can say what the toy
    offers, then run **FrogletTools ▸ Interface ▸ Codex** ▸ *Scan & Merge* and *Bake Missing*.
+   The bake is also what gives the toy its app-shell portrait.
+5. Implement `IToyShellSurface` so the toy appears in the app shell's Toy Box (see "The app-shell
+   face" above). Optional — a toy without it is simply freestyle-only — but the shell is where a
+   toy is discoverable, so skipping it should be a decision rather than an omission.
 
 The framework never changes — definitions are polymorphic factories, so there is no central switch
 in the toy system itself. Step 4 is the one place a new toy is named outside its own files, and it
@@ -1314,7 +1680,7 @@ Selector still works, it just is not the only place the load is paid.
   change, AI-companion release) go over the network, through the existing server-authoritative
   paths. This matches the "local-only freestyle toggle, network-replicated vessel behaviour"
   model in CLAUDE.md.
-- **The Lifeform Matrix's VESSELS branch is server-authoritative**, unlike its flora/fauna
+- **The Spawn Matrix's VESSELS branch is server-authoritative**, unlike its flora/fauna
   branches. That is not an inconsistency: lifeforms are already client-local by construction
   (every peer runs its own spawner off local `Random` rolls — `Docs/ECOSYSTEM.md`), while a
   vessel is a `NetworkObject` with a `Player`, so there is no such thing as a local one. It
@@ -1324,9 +1690,9 @@ Selector still works, it just is not the only place the load is paid.
 
 ## Status & follow-up
 
-The framework + **six toys** are in (Vessel Changer, Domain Changer, Painting, the Wanderway
-microscene conveyor, the Lifeform Matrix — now three-kingdom, with an AI-companion hangar — and
-the Cell Selector),
+The framework + **the toys** are in (Vessel Changer, Domain Changer, Element Charger, Painting,
+the Wanderway microscene conveyor, the Spawn Matrix — now three-kingdom, with an AI-companion
+hangar — the Cell Selector, and the Arkway),
 plus the vessel-changer second-pass fixes above: mini-model hull rendering,
 exit-gated re-arm + slow flip re-grow, swap continuity (domain / pose / speed), recolour-on-domain,
 HUD-after-swap, and gamepad-Start / input-ownership. The conveyor has been through two adversarial
@@ -1337,11 +1703,11 @@ the authoring environment) — an in-editor pass is the last step before/after m
 recipe/pacing tuning + audio, unlock persistence, tests) is tracked in **`BACKLOG.md`**, grouped so
 each area can be its own branch.
 
-### Files touched — Lifeform Matrix kingdom pass (for review)
+### Files touched — Spawn Matrix kingdom pass (for review)
 
 | Area | Files |
 |---|---|
-| The hierarchy (kingdom → species/hangar → variant) | `Controller/Toys/LifeformMatrixToy.cs`, `ScriptableObjects/Toys/LifeformMatrixToyDefinitionSO.cs` (`vesselRoster`), `_SO_Assets/Toys/Toy_LifeformMatrix.asset` |
+| The hierarchy (kingdom → species/hangar → variant) | `Controller/Toys/SpawnMatrixToy.cs`, `ScriptableObjects/Toys/SpawnMatrixToyDefinitionSO.cs` (`vesselRoster`), `_SO_Assets/Toys/Toy_SpawnMatrix.asset` |
 | Shared vessel roster + hull builder (recycled from the changer) | `Controller/Toys/ToyVesselRoster.cs` (new), `Controller/Toys/VesselChangerToy.cs` |
 | AI companion release (server-authoritative) | `Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs` (`RequestSpawnAiCompanion`), `Controller/Multiplayer/ClientPlayerVesselInitializer.cs` (`RequestAiCompanion_ServerRpc`, `OnAiCompanionRequested`) |
 | Externally-spawned player claim | `Controller/Multiplayer/ServerPlayerVesselInitializer.cs` (`ClaimExternallySpawnedPlayer`), `Controller/Multiplayer/ServerPlayerVesselInitializerWithAI.cs` |
@@ -1364,7 +1730,7 @@ each area can be its own branch.
 | Environment-free boot | `Controller/Environment/Cell.cs` (`CellTypeChoiceOptions.EnvironmentFree`, `FirstEnvironmentFreeIndex`), `_Scenes/Menu_Main.unity` |
 | Runtime cell swap | `Controller/Environment/Cell.cs` (`AvailableConfigs`, `RequestCellSwap`, `SwapCellConfigRoutine`, `ReleaseRetiredWorld`, `RetireWorldIntoSuctionRoot`, `SetVesselTrailsDetached`, `SpawnVisuals(spawnEnvironment)`) |
 | The toy | `Controller/Toys/CellSelectorToy.cs`, `ScriptableObjects/Toys/CellSelectorToyDefinitionSO.cs` |
-| Shared matrix station (extracted) | `Controller/Toys/ToyMatrixStation.cs`, `Controller/Toys/LifeformMatrixToy.cs` |
+| Shared matrix station (extracted) | `Controller/Toys/ToyMatrixStation.cs`, `Controller/Toys/SpawnMatrixToy.cs` |
 | Registration | `Controller/Toys/ToyboxController.cs`, `Editor/ToyboxSetupTool.cs`, `_SO_Assets/Toys/Toy_CellSelector.asset`, `Resources/Toybox.asset` |
 
 ### Files touched — vessel-changer pass (for review)

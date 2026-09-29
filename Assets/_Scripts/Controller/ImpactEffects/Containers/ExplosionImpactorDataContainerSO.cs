@@ -19,5 +19,14 @@ namespace CosmicShore.Gameplay
         /// the same crystal must not start minting Astro League balls.
         /// </summary>
         public ExplosionCrystalEffectSO[] explosionCrystalEffects;
+
+        /// <summary>
+        /// What this blast does to a LIVING lifeform's embedded crystal — its heart. Empty on
+        /// every blast in the fleet except the Sparrow's missile warhead, which jousts the
+        /// creatures it engulfs (the Squirrel's own death, reached by an explosion). Authored per
+        /// blast for the same reason the crystal row is: a Dolphin cone sweeping through a shoal
+        /// must not start killing it just because a missile does.
+        /// </summary>
+        public ExplosionLifeformCrystalEffectSO[] explosionLifeformCrystalEffects;
     }
 }

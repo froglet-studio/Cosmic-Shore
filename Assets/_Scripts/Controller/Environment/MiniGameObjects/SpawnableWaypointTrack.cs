@@ -176,8 +176,10 @@ public class SpawnableWaypointTrack : SpawnableBase
 
         trails.Add(trail);
 
-        CSDebug.Log($"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
-           $"{totalBlocks} total blocks, spline={spline}, approximate length: {EstimateTrackLength(intensityLevel):F0} units");
+        if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
+                $"{totalBlocks} total blocks, spline={spline}, approximate length: {EstimateTrackLength(intensityLevel):F0} units");
 
         return container;
     }

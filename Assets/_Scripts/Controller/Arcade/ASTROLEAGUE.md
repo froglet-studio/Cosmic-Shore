@@ -7,7 +7,7 @@ translated to Cosmic Shore, rebuilt on the multiplayer domain-games stack. Two d
 (Jade defends -Z, Ruby defends +Z) fight to slam a glowing billiard-physics payload
 through the opposing goal portal inside a wireframe arena suspended in the HyperSea.
 1-6 players (2v2/3v3 with AI backfill) through the same single unified Netcode scene as
-HexRace / Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
+SkimRace / Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 
 **It is Rhino-only.** The Rhino's ForceFieldSkimmer capsule is a real, analog-trigger-
 puppeteered sword (`R_VesselActions/RHINO_SHIELD_SWIPE.md`), and the ball resolves a
@@ -36,13 +36,13 @@ any vessel without a swinging skimmer.
   card's list is the whole mechanism — `GameDataSO.ClampVesselToGame` is applied on BOTH
   the human path (`ResolveSpawnVesselType`) and the AI path
   (`ServerPlayerVesselInitializerWithAI`), so AI can never field an illegal hull. Same
-  pattern as Ribcage. Do not add a mode-local vessel check.
+  pattern as Cleave. Do not add a mode-local vessel check.
 
 ## Class Inventory (`_Scripts/Controller/Arcade/AstroLeague/`)
 
 | Class | Role |
 |---|---|
-| `AstroLeagueController` | Match director (server-authoritative): kickoffs, goal attribution, celebrations, golden-goal overtime, winner banner, AI striker arming, final-score sync (HexRace/Joust/CC `SyncFinalScores_ClientRpc` pattern) |
+| `AstroLeagueController` | Match director (server-authoritative): kickoffs, goal attribution, celebrations, golden-goal overtime, winner banner, AI striker arming, final-score sync (SkimRace/Joust/CC `SyncFinalScores_ClientRpc` pattern) |
 | `AstroLeagueBall` | Server-simulated billiard payload (`NetworkBehaviour`). Server owns a real non-kinematic rigidbody with full **angular dynamics**; clients dead-reckon from replicated position + velocity + **angular velocity** NetworkVariables (the kinematic replica free-spins so the faceted icosphere's tumble shows everywhere). Vessel hits are a **momentum-conserving elastic bounce off the moving hull** (off-center → spin) and the ball can never clip a vessel. Carries the **last-striker's domain** (`n_LastHitDomain`) which drives the ball tint and the selective prism interaction (own color → pass through + shield; opposing unshielded → slow by mass + destroy; opposing shielded → unshield + leave). The ball bounces elastically only off the **court boundary (`AstroLeagueBoundary`) and vessels**, never off prisms. Strike velocity comes from server-side per-vessel transform sampling (vessels are transform-driven, so rigidbody velocity and remote `VesselStatus.Speed` are useless) — EXCEPT through a swinging skimmer, where the contact resolves on the BLADE and takes that point's true velocity from `SkimmerSwingKinematics` (the Rhino's sword). Impact juice replicates via ClientRpc, including the **vessel-strike beat** (`Strike_ClientRpc`: flash + visual-child pop + burst + striker-emphasised shake + audio) that the mode previously had no equivalent of at all |
 | `AstroLeagueMatchMonitor` | `TurnMonitor` match clock, server-authoritative ("M:SS"/"OT" pushed by ClientRpc on the shared display channel). Pauses during celebrations; the controller decides full-time vs overtime; turn ends only on `ForceEnd()` |
 | `AstroLeagueGoal` | Accurate goal detector (server-gated): per-tick polls the ball for a genuine INWARD crossing of the goal-line plane WITHIN the mouth circle (no fat-trigger false positives, teleport-guarded); reports to `AstroLeagueController.HandleGoalServer` — attribution lives in the controller |
@@ -97,7 +97,7 @@ FinishMatch             winner banner (real time) → matchMonitor.ForceEnd()
 - **Final scores**: every player's `Score` = personal `GoalsScored`; the winning
   DOMAIN is the highest goal sum (golden goal guarantees no tie when enabled; with
   overtime disabled, full-time ties break by `ActiveDomains` order).
-- **Comeback**: `ElementalComebackSystem` with `ScoreDifferenceSource.Goals` — buffs
+- **Comeback**: `ElementalComebackSystem` with the rule's `DomainValue` (`Goals`) — buffs
   scale with the TEAM goal deficit (Elementals are the buff fundamental; no bespoke
   rubber-banding).
 
@@ -299,6 +299,26 @@ back to, and own-goaling is a matter of pass DIRECTION, already handled by aimin
   reads as "unclaimed"; it resets to neutral on every kickoff. Falls back to
   `Shader.Find("Shader Graphs/BlockGraph")`, then URP/Lit, if the material is unwired.
   Scaled to world radius ≈ 7 for a chunky billiard feel and a precise strike target.
+- **Comet wake.** The ball's `TrailRenderer` draws with `CosmicShore/BallTrail`
+  (`_Graphics/Materials/Graphs/BallTrail.shader`, loaded as `Resources/BallTrail.mat` so it
+  ships): an additive plasma comet — domain halo, white-hot core, three braided filaments that
+  start converged at the ball and unravel down the wake (spread driven by speed), and energy
+  packets flowing tail-ward. It replaced a 0.6–5-unit flat URP/Unlit ribbon behind a 14-unit
+  ball that was painted the SPAWN colour once and never re-tinted. Three rules: (1) the wake's
+  width is a fraction of the ball's DIAMETER (`trailWidthAtRest`/`AtSpeed`), because a
+  TrailRenderer's width is world-space and ignores transform scale, so a forged or
+  intensity-scaled ball would otherwise trail a thread; it also multiplies by the visual child's
+  scale, so it blooms in with the ball and swells with the strike pop; (2) colour rides a
+  property block every frame off the ball's LIVE colour (normalised to full value — brightness
+  goes to the white core, never the hue, `Docs/PALETTE.md §4.3`), so a strike re-tints the
+  whole wake; (3) the gradient's ALPHA is the shader's along-trail coordinate (1 head → 0 tail),
+  not opacity, which makes the shader independent of texture mode and trail orientation. The
+  goal-replay ghost dresses from the same `ConfigureCometTrail` + current property block.
+  **Wake dust** (`wakeDustPerUnit`): soft motes shed into the world by distance travelled,
+  scaled by speed (none below ~15%), skipped on a teleport frame so a kickoff/reset never lays a
+  line across the court, never cleared on hide (continuity of existence). All three of the
+  ball's particle systems now draw with `Resources/SoftSpark.mat` — URP Particles/Unlit with no
+  texture draws solid SQUARE quads. Missing materials fall back to the legacy look, never an error.
 - **The ball is a FIRST-CLASS entity: it resolves prisms by a per-tick spatial scan, NOT by
   physics collisions.** This is the crux. Prism colliders are LOD-culled away from vessels,
   and a fast ball tunnels past tiny box colliders — so collision-driven prism interaction
@@ -433,9 +453,14 @@ channel, wired in-scene). Long axis along the edge, inset `edgePrismInset × sca
 - **Ball + fauna ignore it.** The ball's prism scan skips super-shielded prisms entirely (never
   popped, never eaten, no drag); fauna already skip shielded prey. Vessels DO collide with the
   lining's stellated shields — the rim is physically real.
-- **Collider budget:** +240 always-on convex MeshColliders per peer (the engaged stellated shield
-  swaps off the LOD-cullable BoxCollider). Static, bounded by `edgePrismCount`; precedent: the Skim
-  Race track super-shields its entire spawned track the same way. Zero new physics queries.
+- **Collider budget:** **+0**. The lining is 240 prisms per peer and every one keeps its
+  LOD-cullable `BoxCollider`, because a shield swaps the MESH and the mass, never the collider —
+  `shieldMeshCollider.enabled = true` appears nowhere in the project (four sites, all `= false`),
+  and the shield components' `sharedMesh` writes land on the MeshFilter, so there is not even a
+  convex cook. (This line used to read "+240 always-on convex MeshColliders".) Precedent: the Skim
+  Race track super-shields its entire spawned track the same way. Zero new physics queries. What
+  the lining DOES cost is permanence — super-shielded mass is removable only by an energised
+  blade — and that is the reason to keep `edgePrismCount` bounded.
 - **Continuity/mass:** lining prisms bloom in via the pooled spawn; the only removal is the
   animated `Damage` teardown on an arena rebuild (late-arriving match config on a client).
 
@@ -475,7 +500,7 @@ scoreboard) owns that moment.
 ## Replay
 
 `UseSceneReloadForReplay = true` — Play Again performs a full network scene reload
-(HexRace/CC pattern). All match state, ball, arena, and accumulated trail mass are
+(SkimRace/CC pattern). All match state, ball, arena, and accumulated trail mass are
 destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
 
 ## Shared-Code Touchpoints (added for this mode)
@@ -490,7 +515,7 @@ destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
 | `IcosphereMeshGenerator` (runtime faceted icosphere for the ball mesh) | `_Scripts/Utility/IcosphereMeshGenerator.cs` |
 | `CustomCameraController.Shake` | `_Scripts/Controller/Camera/CustomCameraController.cs` |
 | `SO_ArcadeGame.Min/MaxDomainsAllowed` (+ modal DC bounds) | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs`, `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` |
-| `ScoreDifferenceSource.Goals` | `_Scripts/Controller/Arcade/ElementalComebackSystem.cs` |
+| the rule's `DomainValue` (`Goals`) | `_Scripts/Controller/Arcade/ElementalComebackSystem.cs` |
 | `Cell.NucleusIsControlZone` (nucleus as play geometry, not a claim) | `_Scripts/Controller/Environment/Cell.cs` |
 | `Cell.FaunaExclusionRadius` (the pen's inner wall) + pen-aware birth position | `_Scripts/Controller/Environment/Cell.cs`, `CellLifeSpawnerBase.cs`, `FloraAndFauna/Fauna.cs` |
 
@@ -611,7 +636,7 @@ atmospheric/territorial — including the boundary surface itself — lives on t
     Astro-League-specific **low-population** copies of the Skim Race foragers — Tadpole
     `PopulationSize 4`/`MaxLivePopulation 8`, Brittlestar `2`/`4` (≈ **12 live fauna** cap, ⅕ of the
     Skim Race 40+16=56 swarm) — so the arena reads as an ambient ecosystem, not a cloud. They are
-    separate assets because the originals are still live in HexRace (via the Skim Race cell) and
+    separate assets because the originals are still live in SkimRace (via the Skim Race cell) and
     must keep their large populations. Churn is also gentled on the profile:
     `BaseFaunaSpawnTime 30`, `FaunaSpawnIntervalSeconds 2`, `InitialFaunaSpawnWaitTime 8`. Diet is opposing
     prism mass; the **phase/aggression ladder** decides reach: at **Restless/L1** they hunt the
@@ -619,7 +644,7 @@ atmospheric/territorial — including the boundary surface itself — lives on t
     region and graze even the controlling color — the requested "frenzy eats same-domain mass."
   - `SenseRadiusOverride = 2000` — a fixed sphere that covers the arena at every intensity
     (the intensity-4 court's farthest corner is ≈ 1280 from center; 2000 has margin). Decoupled from
-    the visual membrane, exactly like Skim Race's 3000 over the HexRace track.
+    the visual membrane, exactly like Skim Race's 3000 over the SkimRace track.
   - **Phase thresholds — authored in VOLUME, now tuned for RHINO trail, riding a structural
     floor.** A Rhino trail prism is only **≈ 0.75 volume** (`BaseScale (3,3,0.5)`, `Gap 2` → a
     `(0.5, 3, 0.5)` sliver), and it lays two per spawn. The gameplay window is **Restless +600 /
@@ -652,6 +677,6 @@ atmospheric/territorial — including the boundary surface itself — lives on t
   `Fauna.Die`); the only prism sinks are the ball (an active force) and fauna consumption.
   No decay, no lifespan.
 - **Networking:** fauna + trail prisms are client-local (no `NetworkObject`) — each peer
-  runs its own cell/spawner over its own trail copies, matching the Skim Race/HexRace model.
+  runs its own cell/spawner over its own trail copies, matching the Skim Race/SkimRace model.
   Phase can diverge slightly across clients (a known ecosystem caveat); fine for this
   per-client environmental layer.

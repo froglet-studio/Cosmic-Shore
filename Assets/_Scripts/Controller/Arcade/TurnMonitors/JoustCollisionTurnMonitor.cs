@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
             collisionsNeeded = overrides != null ? overrides.GetJoustCount() : EndConditionOverridesSO.DefaultJoustCount;
 
             // Publish the joust target so the controller (and Phase B: scoreboard) can read
-            // it from one place - mirrors HexRace's CrystalTargetCount. A scene constant, so
+            // it from one place - mirrors SkimRace's CrystalTargetCount. A scene constant, so
             // every peer writes the same value (R10).
             gameData.JoustTargetCount = collisionsNeeded;
 

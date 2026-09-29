@@ -183,9 +183,11 @@ namespace CosmicShore.Gameplay
                     {
                         var abilities = _status?.ElementalAbilityHandler;
 
-                        // Muzzle speed is resolved per volley, not per hold: the SPACE level
-                        // that scales the guns can move mid-press (crystals, comeback buffs).
-                        var shotSpeed = so.ResolveSpeed(_status);
+                        // Muzzle speed is resolved per volley, not per hold: the gun's HEAT —
+                        // which shortens range in proportion to the cone — moves every frame
+                        // of fire. The factor is the bullets' own (one shared GunSprayAccuracy),
+                        // so a turret shot still goes exactly as far as a bullet would.
+                        var shotSpeed = so.ResolveSpeed(_status) * (_spray ? _spray.RangeFactor : 1f);
 
                         // SPACE level-5 'Piercing Bullets' — the SAME gate the cannons use.
                         // Below it the shot is stopped by the first prism it hits and leaves
@@ -212,7 +214,7 @@ namespace CosmicShore.Gameplay
                         // live Mass level. Volume = x·y·z of lossyScale, so the stretch feeds
                         // Cell.LiveVolume — "volume is the spine".
                         var blockScale = so.BlockScale;
-                        blockScale.z *= abilities ? abilities.Multiplier(Element.Mass) : 1f;
+                        blockScale.z *= so.MassPrismStretchMultiplier(_status);
 
                         // Distance the shot covers before its lifetime ends. The bullets' mover
                         // eases each step by cos(t·π/2T), so the range is that integral —
@@ -700,7 +702,7 @@ namespace CosmicShore.Gameplay
                             suctionShot.EffectDuration - suctionShot.FlightTime - RevealOverlapSeconds);
                         var shot = suctionShot;
                         PrismTimerManager.EnsureInstance()
-                            .ScheduleAction(this, delay, () => CreateSuctionPrism(shot));
+                            ?.ScheduleAction(this, delay, () => CreateSuctionPrism(shot));
                     }
                 }
             }

@@ -6,6 +6,7 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -148,7 +149,30 @@ namespace CosmicShore.Gameplay
             LastTouchDomainServer = domain;
             LastToucherNameServer = toucherName ?? string.Empty;
             WallBouncesSinceTouchServer = 0;
+            // A vessel touch hands the ball's SCORING to that pilot; a blast (no name) leaves it
+            // with whoever had it, so a rival's plate that shoves your ball does not launder the
+            // credit for the mass it goes on to eat.
+            if (!string.IsNullOrEmpty(toucherName)) RecordPilotServer(toucherName);
         }
+
+        /// <summary>
+        /// Server: name the pilot this ball scores for from here on - the forge stamps its maker,
+        /// every vessel strike re-stamps the striker. Read by the prism scan on every peer as the
+        /// attacker name of the mass the ball eats; empty means the ball scores for nobody (the
+        /// Astro League kickoff ball, until somebody hits it).
+        /// </summary>
+        public void RecordPilotServer(string pilotName)
+        {
+            if (IsSpawned && !IsServer) return;
+            var value = new FixedString64Bytes(pilotName ?? string.Empty);
+            if (n_PilotName.Value.Equals(value)) return;
+            n_PilotName.Value = value;
+            _pilotNameCache = pilotName ?? string.Empty;
+        }
+
+        /// <summary>The attacker name stamped on the mass this ball eats: its current pilot, or the
+        /// unrostered "Astro League" for a ball nobody has claimed.</summary>
+        public string PilotName => _pilotNameCache.Length > 0 ? _pilotNameCache : BallAttackerName;
 
         void ResetTouchLedgerServer()
         {
@@ -175,6 +199,14 @@ namespace CosmicShore.Gameplay
         static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        static readonly int TrailColorId = Shader.PropertyToID("_Color");
+        static readonly int TrailIntensityId = Shader.PropertyToID("_Intensity");
+        static readonly int TrailSpeedId = Shader.PropertyToID("_Speed01");
+
+        // Resources/ materials (so their shaders ship). Absent -> the legacy unlit ribbon / square
+        // particles, never an error: a missing look must not cost the ball its gameplay.
+        const string TrailMaterialResourcePath = "BallTrail";
+        const string SparkMaterialResourcePath = "SoftSpark";
 
         bool _usesFresnel; // true when the ball material is the prism BlockGraph shader
 
@@ -203,6 +235,18 @@ namespace CosmicShore.Gameplay
         // and the attacker domain for Prism.Damage. Blue = neutral (no strike yet) → smashes any team's mass.
         readonly NetworkVariable<Domains> n_LastHitDomain =
             new(Domains.Blue, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // The PILOT this ball scores for: the last vessel to touch it, seeded with its forger at the
+        // forge. Replicated because the prism scan below runs on EVERY peer (one gate, one answer)
+        // and StatsManager credits a prism kill by the ATTACKER NAME the machine that destroyed it
+        // saw - so a name that lived only on the server would score a client pilot's ball on the
+        // server's copy of the trail and never on the client's copy of the forest (environment
+        // mass is credited by the machine that simulates the attacker, StatsManager.OwnsAttacker).
+        // Before this the ball named itself "Astro League", which is on no roster, so every prism
+        // a ball ate scored for nobody - fine in a hoop game, fatal in a demolition race.
+        readonly NetworkVariable<FixedString64Bytes> n_PilotName =
+            new(default, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // Managed mirror of n_PilotName so the per-prism scan never allocates a string per hit.
+        string _pilotNameCache = string.Empty;
         // STUDDING THE NUCLEUS (the Scarab's seeding ability, SCARAB.md §4.6): the ball was seeded
         // part-sunk in the nucleus surface and nothing has dislodged it yet.
         //
@@ -222,6 +266,18 @@ namespace CosmicShore.Gameplay
         // ball is sized after its spawn payload is built — see SetSizeScale's doc note.
         readonly NetworkVariable<float> n_SizeScale =
             new(1f, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        // WHICH crystal this ball was forged out of, and the pose that crystal was standing in
+        // when it was spent. Replicated for the same reason n_SizeScale is — the stamp happens
+        // AFTER NetworkObject.Spawn, so the spawn payload cannot carry it — and because the
+        // retirement animation must play on EVERY peer, not just the server that minted the ball.
+        //
+        // The POSE has to travel rather than being read back off the crystal, and across the wire
+        // that is not a subtlety: collection and respawn are independent RPC chains, so by the time
+        // a remote peer instantiates the ball its copy of the crystal has usually already moved to
+        // its next home wearing the respawn's identity rotation. See Crystal.CollectPose.
+        readonly NetworkVariable<CrystalForgeOrigin> n_ForgedFrom =
+            new(default, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         float _lastSnapshotTime;
 
@@ -295,6 +351,10 @@ namespace CosmicShore.Gameplay
         // Visuals
         Light ballLight;
         TrailRenderer trail;
+        MaterialPropertyBlock trailMpb;
+        bool _cometTrail;            // true when the BallTrail shader is driving the wake
+        ParticleSystem wakeDust;     // motes shed into the world along the ball's path
+        Vector3 _lastDustPos;        // teleport guard for distance-driven dust
         Renderer ballRenderer;
         MeshFilter meshFilter;
         Mesh _ballMesh; // generated icosphere, owned (destroyed in OnDestroy)
@@ -406,6 +466,15 @@ namespace CosmicShore.Gameplay
             if (trailBlocksLayer >= 0)
                 sphereCol.excludeLayers = 1 << trailBlocksLayer;
 
+            // NO HIGH-POLY PRISM MORPH IS GRANTED HERE, and that is the design rather than an
+            // omission. A ball carried a travelling ripple for exactly one branch
+            // (.claude/skills/prism-morph) and it was pulled for the reason the same effect came
+            // off the fleet one step earlier: a ball is in play for a WHOLE MATCH, so a ripple
+            // following it is continuous, and an effect strong enough to be an EVENT stops being
+            // one the moment it never stops. The family's residency budget is also shared and
+            // split evenly, so a ball holding slots takes them from whatever is actually saying
+            // something. Do not add an ensure here.
+
             spawnPosition = transform.position;
             _baseScale = transform.localScale;
             SetupVisuals();
@@ -414,6 +483,13 @@ namespace CosmicShore.Gameplay
             // Every peer Awakes its own copy — server, client replica, and no-network local
             // mints alike — so no RPC is needed; the scene showpiece blooms once at load,
             // behind the connecting veil, which is harmless and equally lawful.
+            //
+            // A ball forged out of a CRYSTAL cancels it (ScarabCrystalMorph.Begin): there the
+            // crystal's own body closes onto this ball's hull and the ball takes over at full
+            // size, so the bloom would be a SECOND birth animation playing underneath the first —
+            // the ball growing out of nothing while the crystal is already landing on where it
+            // will end up. Continuity of existence is satisfied either way; what it forbids is
+            // popping into existence, not blooming twice.
             _bloomTimer = settings != null ? settings.spawnBloomSeconds : 0.55f;
         }
 
@@ -464,11 +540,20 @@ namespace CosmicShore.Gameplay
                 ghostTrail.time = 0.35f;
                 ghostTrail.startWidth = trail.startWidth;
                 ghostTrail.endWidth = trail.endWidth;
-                ghostTrail.numCapVertices = trail.numCapVertices;
                 ghostTrail.sharedMaterial = trail.sharedMaterial;
-                ghostTrail.startColor = trail.startColor;
-                ghostTrail.endColor = trail.endColor;
-                ghostTrail.minVertexDistance = trail.minVertexDistance;
+                if (_cometTrail)
+                {
+                    // Same comet shape + the CURRENT tint (the scorer's domain at the goal moment).
+                    ConfigureCometTrail(ghostTrail);
+                    if (trailMpb != null) ghostTrail.SetPropertyBlock(trailMpb);
+                }
+                else
+                {
+                    ghostTrail.numCapVertices = trail.numCapVertices;
+                    ghostTrail.startColor = trail.startColor;
+                    ghostTrail.endColor = trail.endColor;
+                    ghostTrail.minVertexDistance = trail.minVertexDistance;
+                }
                 ghostTrail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 ghostTrail.receiveShadows = false;
                 ghostTrail.generateLightingData = false;
@@ -503,6 +588,109 @@ namespace CosmicShore.Gameplay
 
             n_Hidden.OnValueChanged += (_, hidden) => ApplyHiddenVisuals(hidden);
             ApplyHiddenVisuals(n_Hidden.Value);
+
+            // The scoring pilot travels as a FixedString; mirror it into a managed string once per
+            // change (not once per prism) - a late joiner reads the current value, a replica that
+            // spawned before the forge stamped it catches the stamp.
+            n_PilotName.OnValueChanged += (_, name) => _pilotNameCache = name.ToString();
+            _pilotNameCache = n_PilotName.Value.ToString();
+
+            // The retirement animation runs on EVERY peer, and the value it needs can arrive
+            // either before this replica spawned (a late joiner) or a frame after it (the server
+            // stamps just past Spawn). Both are covered by reading it now AND subscribing — the
+            // same shape n_SizeScale uses two blocks up, for the same reason.
+            n_ForgedFrom.OnValueChanged += (_, origin) => TryBeginCrystalMorph(origin);
+            TryBeginCrystalMorph(n_ForgedFrom.Value);
+        }
+
+        /// <summary>
+        /// Stamps this ball as forged out of <paramref name="crystal"/>, so every peer plays the
+        /// crystal→ball morph instead of the shared husk spray. Server-side and idempotent; a
+        /// no-network local mint (the freestyle toys) applies it directly, since there the ball is
+        /// never spawned and the NetworkVariable would never deliver.
+        ///
+        /// Call it AFTER the spawn, beside <see cref="SetSizeScale"/> — the two share the
+        /// after-the-payload problem and the same solution.
+        /// </summary>
+        public void MarkForgedFromCrystal(Crystal crystal)
+        {
+            if (crystal == null) return;
+
+            var pose = crystal.CollectPose;
+            var origin = new CrystalForgeOrigin
+            {
+                CrystalId = crystal.Id,
+                Position = pose.position,
+                Rotation = pose.rotation,
+                Scale = crystal.CollectScale,
+                Valid = true,
+            };
+
+            if (IsSpawned && IsServer) n_ForgedFrom.Value = origin;
+            TryBeginCrystalMorph(origin);
+        }
+
+        void TryBeginCrystalMorph(in CrystalForgeOrigin origin)
+        {
+            if (!origin.Valid || _crystalMorph != null) return;
+            _crystalMorph = ScarabCrystalMorph.Begin(this, origin);
+        }
+
+        ScarabCrystalMorph _crystalMorph;
+
+        /// <summary>
+        /// Holds this ball's PHOTONS while the crystal's body is drawing it, and nothing else: the
+        /// collider stays live, the rigidbody keeps simulating, the strike path is unchanged. The
+        /// ball is fully live and strikeable from the frame it is forged — a pilot arriving one
+        /// frame later hits a finished ball — and only its rendering waits.
+        ///
+        /// It is deliberately NOT <see cref="SetHidden"/>, which is replicated GAMEPLAY state (a
+        /// ball parked out of play) and also freezes the body. Here nothing about the ball's
+        /// situation has changed; a different object is drawing it for a third of a second.
+        ///
+        /// ALWAYS paired: the stand-in must clear the hold when it finishes or dies, or the ball is
+        /// invisible for the rest of its life. <see cref="ScarabCrystalMorph"/> clears it from
+        /// OnDestroy as well as on the hand-off, so an interrupted morph cannot strand it.
+        /// </summary>
+        public void SetMorphStandIn(bool active)
+        {
+            if (_morphStandIn == active) return;
+            _morphStandIn = active;
+            if (active) _bloomTimer = 0f;   // the morph IS this ball's birth animation
+            ApplyHiddenVisuals(n_Hidden.Value);
+        }
+
+        bool _morphStandIn;
+
+        /// <summary>The ball's own faceted hull mesh, and the radius it was generated at — the two
+        /// halves a morph needs to land exactly on this ball's surface rather than on an
+        /// approximation of it. Null before <see cref="SetupVisuals"/> has run.</summary>
+        public Mesh HullMesh => _ballMesh;
+
+        /// <summary>Radius the <see cref="HullMesh"/> was generated at, in the ball's own local
+        /// units (the SphereCollider's authored radius). Scale is the transform's business.</summary>
+        public float HullMeshRadius => sphereCol != null ? sphereCol.radius : 0.5f;
+
+        /// <summary>The transform the hull mesh is drawn by — a child of the ball, so a morph
+        /// parented here inherits the ball's motion and spin for free.</summary>
+        public Transform VisualRoot => _visual != null ? _visual : transform;
+
+        /// <summary>
+        /// The prism-fresnel pair this ball is currently drawing with — its base face and its
+        /// fresnel rim (Docs/PALETTE.md). Read off the live MaterialPropertyBlock rather than a
+        /// theme lookup, because the ball animates this pair every frame through its own domain
+        /// phase; a morph that converged on a re-derived colour would land next to the ball's
+        /// colour rather than on it.
+        /// </summary>
+        public bool TryGetShellColours(out Color dark, out Color bright)
+        {
+            dark = default;
+            bright = default;
+            if (mpb == null || ballRenderer == null || !_usesFresnel) return false;
+            ballRenderer.GetPropertyBlock(mpb);
+            dark = mpb.GetColor(DarkColorId);
+            bright = mpb.GetColor(BrightColorId);
+            return true;
         }
 
         void Start()
@@ -586,23 +774,171 @@ namespace CosmicShore.Gameplay
             ballLight.shadows = LightShadows.None;
 
             trail = gameObject.AddComponent<TrailRenderer>();
-            trail.time = 0.3f;
-            trail.startWidth = settings != null ? settings.minTrailWidth : 0.6f;
-            trail.endWidth = 0.1f;
-            trail.numCapVertices = 4;
-            var trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            trailMat.color = primaryColor;
-            MakeTransparent(trailMat);
-            trail.sharedMaterial = trailMat;
-            trail.startColor = primaryColor;
-            trail.endColor = new Color(secondaryColor.r, secondaryColor.g, secondaryColor.b, 0f);
-            trail.minVertexDistance = 0.5f;
+            trail.time = settings != null ? settings.trailTimeAtRest : 0.3f;
+            trail.startWidth = TrailHeadWidth(0f);
+            trail.endWidth = 0f;
+            trailMpb = new MaterialPropertyBlock();
+            var cometMat = Resources.Load<Material>(TrailMaterialResourcePath);
+            _cometTrail = cometMat != null;
+            if (_cometTrail)
+            {
+                trail.sharedMaterial = cometMat;
+                ConfigureCometTrail(trail);
+            }
+            else
+            {
+                // Legacy ribbon — the BallTrail material is missing from Resources.
+                trail.numCapVertices = 4;
+                var trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+                trailMat.color = primaryColor;
+                MakeTransparent(trailMat);
+                trail.sharedMaterial = trailMat;
+                trail.startColor = primaryColor;
+                trail.endColor = new Color(secondaryColor.r, secondaryColor.g, secondaryColor.b, 0f);
+                trail.minVertexDistance = 0.5f;
+            }
             trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             trail.receiveShadows = false;
             trail.generateLightingData = false;
 
             auraParticles = CreateParticles("PayloadAura", burstOnly: false);
             impactParticles = CreateParticles("ImpactBurst", burstOnly: true);
+            wakeDust = CreateWakeDust();
+        }
+
+        /// <summary>
+        /// The comet wake's SHAPE, shared by the live ball and its goal-replay ghost so the two can
+        /// never drift: a white gradient whose ALPHA runs 1 (head) → 0 (tail) — the BallTrail shader
+        /// reads it as the position along the trail, not as opacity — and a width curve that swells
+        /// just behind the ball before tapering to a point, so the wake reads as a comet's coma
+        /// growing out of the ball rather than a ribbon starting behind it. Colour is NOT here: it
+        /// rides a property block every frame (<see cref="DriveCometTrail"/>), so a strike re-tints
+        /// the whole wake the instant the ball changes hands.
+        /// </summary>
+        static void ConfigureCometTrail(TrailRenderer target)
+        {
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
+            target.colorGradient = gradient;
+            target.widthCurve = new AnimationCurve(
+                new Keyframe(0f, 0.85f),
+                new Keyframe(0.08f, 1f),
+                new Keyframe(0.35f, 0.72f),
+                new Keyframe(1f, 0f));
+            target.textureMode = LineTextureMode.Stretch;
+            target.alignment = LineAlignment.View;
+            target.numCapVertices = 6;
+            target.numCornerVertices = 3;
+            target.minVertexDistance = 1f;
+        }
+
+        /// <summary>Head width of the wake in WORLD units: a fraction of the ball's diameter.</summary>
+        float TrailHeadWidth(float speedRatio)
+        {
+            float diameter = sphereCol != null ? 2f * BallWorldRadius() : 14f;
+            float rest = settings != null ? settings.trailWidthAtRest : 0.7f;
+            float fast = settings != null ? settings.trailWidthAtSpeed : 1.25f;
+            return diameter * Mathf.Lerp(rest, fast, speedRatio);
+        }
+
+        /// <summary>
+        /// Every frame on every peer: the wake's colour is the ball's LIVE colour (last-hit domain,
+        /// or the neutral rainbow), normalised to full value so the hue stays saturated under ACES
+        /// (Docs/PALETTE.md §4.3 — brightness is spent on the white core, never on the hue).
+        /// </summary>
+        void DriveCometTrail(Color hue, float speedRatio)
+        {
+            float peak = Mathf.Max(hue.r, Mathf.Max(hue.g, hue.b));
+            Color signal = peak > 1e-4f ? hue / peak : Color.white;
+            signal.a = 1f;
+            float flash = currentEmissionBoost > 1f ? Mathf.Min(Mathf.Sqrt(currentEmissionBoost), 2.2f) : 1f;
+            trailMpb.SetColor(TrailColorId, signal);
+            trailMpb.SetFloat(TrailIntensityId, Mathf.Lerp(0.55f, 1.25f, speedRatio) * flash);
+            trailMpb.SetFloat(TrailSpeedId, speedRatio);
+            trail.SetPropertyBlock(trailMpb);
+        }
+
+        /// <summary>
+        /// Wake DUST: soft glowing motes shed into the WORLD by distance travelled, drifting slightly
+        /// and fading out — so a screamer leaves a lingering glitter of its path after the ribbon has
+        /// gone, and a rolling ball leaves nothing. Emits only while the ball draws, and never
+        /// clears: motes already shed always fade out (continuity of existence).
+        /// </summary>
+        ParticleSystem CreateWakeDust()
+        {
+            if (settings == null || settings.wakeDustPerUnit <= 0f) return null;
+
+            var go = new GameObject("WakeDust");
+            go.transform.SetParent(transform, false);
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = ps.main;
+            main.playOnAwake = true;
+            main.loop = true;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.scalingMode = ParticleSystemScalingMode.Local; // sizes set in world units below
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.7f, 1.6f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 4f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.8f, 2.4f);
+            main.maxParticles = 220;
+            main.gravityModifier = 0f;
+
+            var emission = ps.emission;
+            emission.rateOverTime = 0f;
+            emission.rateOverDistance = 0f; // driven by speed in UpdateVisuals
+
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 5f;
+            shape.radiusThickness = 0.35f; // shed from the ball's skin, not its centre
+
+            var noise = ps.noise;
+            noise.enabled = true;
+            noise.strength = 2.5f;
+            noise.frequency = 0.35f;
+            noise.scrollSpeed = 0.4f;
+
+            var sizeOverLifetime = ps.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f,
+                new AnimationCurve(new Keyframe(0f, 0.4f), new Keyframe(0.15f, 1f), new Keyframe(1f, 0f)));
+
+            var colorOverLifetime = ps.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.08f),
+                        new GradientAlphaKey(0.6f, 0.5f), new GradientAlphaKey(0f, 1f) });
+            colorOverLifetime.color = gradient;
+
+            var psRenderer = go.GetComponent<ParticleSystemRenderer>();
+            psRenderer.sharedMaterial = SparkMaterialOrFallback();
+            psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            psRenderer.receiveShadows = false;
+
+            _lastDustPos = transform.position;
+            ps.Play();
+            return ps;
+        }
+
+        Material _sparkFallback;
+
+        /// <summary>The shared SoftSpark material, or a per-ball additive URP particle material.</summary>
+        Material SparkMaterialOrFallback()
+        {
+            var spark = Resources.Load<Material>(SparkMaterialResourcePath);
+            if (spark != null) return spark;
+            if (_sparkFallback != null) return _sparkFallback;
+            _sparkFallback = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+            _sparkFallback.SetFloat("_Surface", 1);
+            _sparkFallback.SetInt("_Blend", 1); // Additive
+            _sparkFallback.SetColor(BaseColorId, Color.white);
+            _sparkFallback.renderQueue = 3100;
+            return _sparkFallback;
         }
 
         static void MakeTransparent(Material mat)
@@ -671,12 +1007,8 @@ namespace CosmicShore.Gameplay
             colorOverLifetime.color = gradient;
 
             var psRenderer = go.GetComponent<ParticleSystemRenderer>();
-            var psMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-            psMat.SetFloat("_Surface", 1);
-            psMat.SetInt("_Blend", 1); // Additive
-            psMat.SetColor(BaseColorId, Color.white);
-            psMat.renderQueue = 3100;
-            psRenderer.sharedMaterial = psMat;
+            // Soft round sparks, not the untextured SQUARE quads URP Particles/Unlit draws.
+            psRenderer.sharedMaterial = SparkMaterialOrFallback();
             psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             return ps;
@@ -1077,7 +1409,7 @@ namespace CosmicShore.Gameplay
                         // per-tier multiplier to the drag.
                         if (_shieldPoppedThisVisit.Contains(prism)) continue;
                         eatenMass += Mathf.Max(0f, prism.CurrentVolume);
-                        prism.Damage(ballVel, ballDomain, BallAttackerName);
+                        prism.Damage(ballVel, ballDomain, PilotName);
                     }
                 }
             }
@@ -1895,8 +2227,39 @@ namespace CosmicShore.Gameplay
 
             if (trail != null)
             {
-                trail.startWidth = Mathf.Lerp(settings.minTrailWidth, settings.maxTrailWidth, speedRatio);
-                trail.time = Mathf.Lerp(0.15f, 0.8f, speedRatio);
+                // The wake blooms in with the ball and swells with the strike pop (visual scale).
+                float visualScale = _visual != null ? _visual.localScale.x : 1f;
+                trail.startWidth = TrailHeadWidth(speedRatio) * visualScale;
+                trail.time = Mathf.Lerp(settings.trailTimeAtRest, settings.trailTimeAtSpeed, speedRatio);
+                if (_cometTrail) DriveCometTrail(emissionColor, speedRatio);
+            }
+
+            if (wakeDust != null)
+            {
+                float worldRadius = BallWorldRadius();
+                var main = wakeDust.main;
+                // Authored against the base 7-unit ball; re-stated whole (never via *Multiplier,
+                // which does not scale both ends of a TwoConstants curve).
+                float k = worldRadius / 7f;
+                main.startSize = new ParticleSystem.MinMaxCurve(0.8f * k, 2.4f * k);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f * k, 4f * k);
+                main.startColor = emissionColor.maxColorComponent > 1e-4f
+                    ? emissionColor / emissionColor.maxColorComponent
+                    : Color.white;
+                var shape = wakeDust.shape;
+                shape.radius = worldRadius;
+                var emission = wakeDust.emission;
+                bool draw = ballRenderer.enabled;
+                // A TELEPORT (kickoff, goal reset, hand-off) is not travel: shedding by distance
+                // across it would lay a line of dust over the whole court. Skip the jump frame.
+                Vector3 here = transform.position;
+                float jump = Mathf.Max(settings.maxSpeed * Time.deltaTime * 3f, worldRadius * 4f);
+                bool teleported = (here - _lastDustPos).sqrMagnitude > jump * jump;
+                _lastDustPos = here;
+                float shed = Mathf.InverseLerp(0.15f, 1f, speedRatio);
+                emission.rateOverDistanceMultiplier = draw && !teleported
+                    ? settings.wakeDustPerUnit * shed * shed / Mathf.Max(0.01f, k)
+                    : 0f;
             }
 
             if (auraParticles != null)
@@ -2220,7 +2583,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// A DOMAIN explosion where the ball died: coloured by the ball's own domain, and carrying
-        /// that domain into the standard blast rules — so own-domain prisms take a temporary shield
+        /// that domain into the standard blast rules — so own-domain prisms are drawn LIT in the blast's domain colour (Docs/LIT.md; a temporary shield until 2026-09)
         /// (the no-perceived-clipping rule) while other domains are destroyed. None of that is new
         /// behaviour; it is what <c>ExplosionImpactor</c> already does with
         /// <c>affectSelf = false, destructive = true</c>, which every shipped blast prefab authors.
@@ -2332,12 +2695,24 @@ namespace CosmicShore.Gameplay
 
         void ApplyHiddenVisuals(bool hidden)
         {
-            if (ballRenderer != null) ballRenderer.enabled = !hidden;
-            if (ballLight != null) ballLight.enabled = !hidden;
+            // A morph stand-in is the OTHER reason this ball may not be drawing itself, and the two
+            // compose: hidden gameplay state OR a crystal currently drawing the body. Folding it in
+            // here rather than at the call sites is what stops a replicated n_Hidden echo — which
+            // arrives on its own schedule — from switching the renderer back on underneath a live
+            // morph.
+            bool draw = !hidden && !_morphStandIn;
+            if (ballRenderer != null) ballRenderer.enabled = draw;
+            if (ballLight != null) ballLight.enabled = draw;
             if (trail != null)
             {
-                trail.emitting = !hidden;
-                if (hidden) trail.Clear();
+                trail.emitting = draw;
+                if (!draw) trail.Clear();
+            }
+            if (wakeDust != null)
+            {
+                // Stop shedding; motes already in the world fade out on their own.
+                var emission = wakeDust.emission;
+                if (!draw) emission.rateOverDistanceMultiplier = 0f;
             }
         }
 
@@ -2365,6 +2740,7 @@ namespace CosmicShore.Gameplay
             // Fresh ball at kickoff: unclaimed until the first strike.
             n_LastHitDomain.Value = Domains.Blue;
             ResetTouchLedgerServer();
+            RecordPilotServer(string.Empty);
             _shieldPoppedThisVisit.Clear();
             _nucleusSideResolved = false;   // teleported: re-read which side of the nucleus it is on
             _lastPrismScanPos = spawnPosition;
@@ -2450,6 +2826,7 @@ namespace CosmicShore.Gameplay
         {
             base.OnDestroy();
             if (_ballMesh != null) Destroy(_ballMesh);
+            if (_sparkFallback != null) Destroy(_sparkFallback);
         }
     }
 }

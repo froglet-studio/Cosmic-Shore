@@ -66,6 +66,14 @@ namespace CosmicShore.Gameplay
         UniTask JoinByIdAsync(string sessionId);
 
         /// <summary>
+        /// Joins an existing session by its UGS session ID, optionally as a SPECTATOR.
+        /// A spectator carries the <c>spectator</c> player property so every peer's
+        /// party-member sync (<see cref="IPartyMemberService.SyncFromSession"/>) leaves it out
+        /// of the roster - it is a viewer of the match, never a member of the party.
+        /// </summary>
+        UniTask JoinByIdAsync(string sessionId, bool asSpectator);
+
+        /// <summary>
         /// Leaves the active session gracefully (delete if host, leave if client).
         /// Clears <see cref="ActiveSession"/> to null.
         /// Safe to call even if no session is active.
