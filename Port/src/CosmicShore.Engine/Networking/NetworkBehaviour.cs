@@ -51,6 +51,88 @@ namespace CosmicShore.Engine.Networking
         public virtual void OnNetworkSpawn() { }
         public virtual void OnNetworkDespawn() { }
 
+        // ── Netcode 2.x surface for the live game code (offline single-process host) ──
+
+        /// <summary>The NetworkManager this behaviour belongs to — the process singleton offline.</summary>
+        public NetworkManager NetworkManager => NetworkManager.Singleton;
+
+        /// <summary>True when this behaviour's object is the local client's player object.</summary>
+        public bool IsLocalPlayer => IsSpawned && IsOwner && NetworkObject.IsPlayerObject;
+
+        /// <summary>True when the owner is the server (client id 0).</summary>
+        public bool IsOwnedByServer => OwnerClientId == NetworkManager.ServerClientId;
+
+        /// <summary>Client-server topology: the server holds authority.</summary>
+        public bool HasAuthority => IsServer;
+
+        /// <summary>True when the local peer is the session owner (the host, offline).</summary>
+        public bool IsSessionOwner => IsServer;
+
+        /// <summary>Index of this behaviour among its object's behaviours.</summary>
+        public ushort NetworkBehaviourId
+        {
+            get
+            {
+                var all = gameObject.GetComponentsInChildren<NetworkBehaviour>(includeInactive: true);
+                for (int i = 0; i < all.Length; i++)
+                    if (ReferenceEquals(all[i], this)) return (ushort)i;
+                return 0;
+            }
+        }
+
+        /// <summary>RPC target helper (Rpc/SendTo API). Local invocation semantics offline.</summary>
+        public RpcTarget RpcTarget { get; } = new RpcTarget();
+
+        /// <summary>Invoked after <see cref="OnNetworkSpawn"/> on every behaviour of the object.</summary>
+        protected virtual void OnNetworkPostSpawn() { }
+
+        /// <summary>Invoked when the local peer gains ownership of this object.</summary>
+        public virtual void OnGainedOwnership() { }
+
+        /// <summary>Invoked when the local peer loses ownership of this object.</summary>
+        public virtual void OnLostOwnership() { }
+
+        /// <summary>Invoked on every ownership change with the previous and current owner.</summary>
+        protected virtual void OnOwnershipChanged(ulong previous, ulong current) { }
+
+        /// <summary>Invoked when the object is re-parented under another NetworkObject.</summary>
+        public virtual void OnNetworkObjectParentChanged(NetworkObject parentNetworkObject) { }
+
+        /// <summary>Invoked after in-scene objects finish spawning (scene synchronization).</summary>
+        protected virtual void OnInSceneObjectsSpawned() { }
+
+        /// <summary>Invoked when a late-joining client finishes synchronizing.</summary>
+        protected virtual void OnNetworkSessionSynchronized() { }
+
+        /// <summary>Resolves a spawned NetworkObject by id through the singleton's spawn manager.</summary>
+        protected NetworkObject GetNetworkObject(ulong networkId)
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return null;
+            return nm.SpawnManager.SpawnedObjects.TryGetValue(networkId, out var obj) ? obj : null;
+        }
+
+        /// <summary>Marks replicated state dirty — replication is local offline, so a no-op.</summary>
+        public void SetDirty(bool dirty) { }
+
+        internal void RunPostSpawn() => OnNetworkPostSpawn();
+
+        /// <summary>
+        /// Ownership transfer (driven by <see cref="Networking.NetworkObject.ChangeOwnership"/>):
+        /// updates the owner id/flag and raises the gained/lost/changed callbacks.
+        /// </summary>
+        internal void ApplyOwnership(ulong newOwner, ulong localClientId)
+        {
+            ulong previous = OwnerClientId;
+            bool wasOwner = IsOwner;
+            OwnerClientId = newOwner;
+            IsOwner = newOwner == localClientId;
+            if (!IsSpawned) return;
+            if (wasOwner && !IsOwner) OnLostOwnership();
+            if (!wasOwner && IsOwner) OnGainedOwnership();
+            if (previous != newOwner) OnOwnershipChanged(previous, newOwner);
+        }
+
         /// <summary>
         /// E17 (C4): virtual destroy hook matching the original Netcode NetworkBehaviour
         /// surface — ported subclasses write <c>public override void OnDestroy()</c>
