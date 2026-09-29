@@ -177,7 +177,8 @@ TEMPLATE = r"""<title>One-Cell Lizard</title>
   --accent: #ef8a4f; --dish: #0b0f0c; --s1: #a79be0; --s2: #5fb8bf; --s3: #ef8a4f; color-scheme: dark }
 * { box-sizing: border-box }
 body { background: var(--ground); color: var(--ink); font: 16px/1.55 var(--body); padding-inline: 16px; padding-block: 28px 64px }
-.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 40px }
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px }
+.wrap > *, .record > *, .panel > *, .dish > * { min-width: 0 }
 .mono { font-family: var(--mono) }
 header { display: grid; gap: 10px }
 .eyebrow { font: 600 12px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted) }
@@ -217,7 +218,7 @@ input[type=range] { width: 100%; accent-color: var(--accent) }
 .btn { font: 600 14px var(--body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff }
 
-.record { display: grid; gap: 28px }
+.record { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px }
 .chart { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 16px; overflow-x: auto }
 .chart svg { width: 100%; min-width: 480px; height: auto; display: block }
 .chart .grid { stroke: var(--rule); stroke-width: 1 }
