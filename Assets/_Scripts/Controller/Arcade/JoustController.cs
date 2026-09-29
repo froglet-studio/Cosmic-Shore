@@ -27,6 +27,33 @@ namespace CosmicShore.Gameplay
         // InvokeMiniGameEnd from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
+        // ── Stripped-performance branch: Joust trail ─────────────────────────
+        // Trails are strip-disabled globally, and Joust is played in the EMPTY Barren cell, so the
+        // only thing on the field to skim for speed is the other pilots' ribbon - without it every
+        // Squirrel cruises at the same pace and there is nothing to out-run a rival with. Same
+        // capped-trail mode Skim Race uses: set in Awake (before any vessel starts its spawner),
+        // refined per seat count in Start (the injected GameDataSO is not live in Awake), cleared
+        // on the way out. Past the cap the oldest prism implodes in place via Prism.Consume.
+        void Awake()
+        {
+            if (!PerfStrip.Enabled) return;
+            PerfStrip.CappedTrailLimit = PerfStrip.JoustTrailPrisms;
+            PerfStrip.CappedTrailActive = true;
+        }
+
+        void Start()
+        {
+            if (!PerfStrip.Enabled || !gameData || !gameData.SelectedPlayerCount) return;
+            PerfStrip.CappedTrailLimit = PerfStrip.JoustTrailPrismsPerVessel(gameData.SelectedPlayerCount.Value);
+        }
+
+        // OVERRIDE, never a new method: NetworkBehaviour.OnDestroy disposes the NetworkVariables.
+        public override void OnDestroy()
+        {
+            if (PerfStrip.Enabled) PerfStrip.CappedTrailActive = false;
+            base.OnDestroy();
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

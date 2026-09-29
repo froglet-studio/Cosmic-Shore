@@ -232,7 +232,8 @@ namespace CosmicShore.UI
             // SO_GameList, because that list is also the roster the tournament pool and the
             // client-side mode lookup read.
             var sortedGames = new List<SO_ArcadeGame>(
-                filteredGames.Where(g => g && g.Mode != CosmicShore.Data.GameModes.Maelstrom));
+                filteredGames.Where(g => g && g.Mode != CosmicShore.Data.GameModes.Maelstrom
+                                           && IsLaunchableInThisBuild(g)));
             sortedGames.Sort((x, y) =>
             {
                 int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));
@@ -356,6 +357,16 @@ namespace CosmicShore.UI
                     rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
             }
         }
+
+        /// <summary>
+        /// Stripped-performance branch: a card whose scene is not in this build is a launch that
+        /// cannot load, so it is not drawn. Asked of the BUILD (<c>Application.CanStreamedLevelBeLoaded</c>
+        /// is true exactly for enabled build-list scenes), never of a hand-kept list, so enabling a
+        /// mode's scene is the whole of bringing its card back. A no-op off the strip.
+        /// </summary>
+        public static bool IsLaunchableInThisBuild(SO_ArcadeGame game) =>
+            !PerfStrip.HideUnbuiltModes
+            || (!string.IsNullOrEmpty(game.SceneName) && Application.CanStreamedLevelBeLoaded(game.SceneName));
 
         /// <summary>
         /// Grow the grid until it can show every game on the roster.

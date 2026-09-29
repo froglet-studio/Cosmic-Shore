@@ -798,10 +798,7 @@ worlds), spawn matrix (flora/fauna are paused) and Arkway (three satellite cells
 
 ### Candidates to bring in next (not done — each needs the editor)
 
-1. **Joust** — Squirrel-only, the Squirrel's own verb, and its arena is the **Barren** cell (no
-   authored world, no flora/fauna): the cheapest arena in the game. Needs its scene enabled, a
-   launch entry beside Quick Play, and the same capped-trail hook `SkimRaceController` has
-   (without a trail an empty cell has nothing to skim).
+1. ~~**Joust**~~ — brought in, Round 11.
 2. **The static skybox** — still the biggest missing piece of the look; bake it in the editor
    (FrogletTools ▸ Bake Static HyperSea Skybox) and commit the material. One texture sample.
 3. **Render scale** — if MSAA + FXAA still read soft/jaggy on device, the next lever is
@@ -813,3 +810,31 @@ No Unity here. The eight out-of-editor gates pass; nothing has been compiled aga
 assemblies. Check on device: (1) a Wanderway run plants a return station behind you that you can
 fly back into; (2) Menu_Main comes up on an empty cell; (3) a Skim Race shows bloom and the speed
 tunnel's bend after the load screen drops; (4) the toybox shows three toys.
+
+## Round 11 — Joust (2026-09-29)
+
+Joust is the second mode on the strip. It earned the slot on cost: it is **Squirrel-only**, its
+verb is the Squirrel's own (overtake a slower rival with your skimmer), and its arena is the
+**Barren** cell — no authored environment, no flora, no fauna — the cheapest arena in the game.
+Its scene's `BigMembraneVariant` skybox model is already switched off
+(`disable_scene_skybox_model.py --check`), and it instances the same `CORE/GameCanvas` as Skim
+Race, so it inherits the same Bloom + Panini grant.
+
+| # | Change | Where |
+|---|--------|-------|
+| 1 | Scene enabled in the build (5 scenes now: Bootstrap, Authentication, Menu_Main, Skim Race, Joust) | `ProjectSettings/EditorBuildSettings.asset` |
+| 2 | **Capped trail for Joust.** In an empty cell the only thing to skim for speed is the other pilots' ribbon; with the strip's trail kill every Squirrel would cruise at one pace and there is nothing to out-run a rival with. Same mode Skim Race uses: set in `Awake`, sized per seat in `Start`, cleared in an `OnDestroy` OVERRIDE. | `JoustController`, `PerfStrip.JoustTrailPrismsPerVessel` — 2-3 seats 1,200 each, 4 → 1,000, 8 → 500, 10+ → 400; worst case (12 seats) 4,800 live prisms |
+| 3 | **The arcade grid only shows modes this build can load.** Before this, the Arcade hub drew every card in the game (~25) and only Skim Race's scene shipped — every other card was a launch that could not load. Now a card is drawn only if `Application.CanStreamedLevelBeLoaded(card.SceneName)`: asked of the BUILD, so enabling a scene is the whole of bringing a card back. The weekly challenge card reads "UNAVAILABLE" when this week's draw is an unbuilt mode. | `ArcadeExploreView.IsLaunchableInThisBuild`, `WeeklyChallengeCard.Redraw`, `PerfStrip.HideUnbuiltModes` |
+| 4 | Shared budget helper: both modes size their per-vessel cap as a share of one match-wide budget. | `PerfStrip.CappedTrailPrismsPerVessel` |
+
+**How to reach it:** HOME → Arcade → Joust (the grid now holds Joust and Skim Race). Joust needs
+at least 2 players and 2 domains, so a solo launch backfills one AI Squirrel on the other team.
+
+**Known gaps, not fixed here:** the Arena hub now opens an empty grid (no arena mode is in the
+build), and the Maelstrom control still points at a scene that is not in the build. Neither is
+new — both were dead launches before this round too.
+
+**Not verified in the editor.** Check on device: (1) the Arcade grid shows exactly Joust and Skim
+Race; (2) a solo Joust spawns one AI Squirrel on the opposing team; (3) both Squirrels leave a
+ribbon you can skim for speed, and overtaking the AI scores a joust; (4) the match ends at the
+joust target and the scoreboard's Play Again reloads Joust.

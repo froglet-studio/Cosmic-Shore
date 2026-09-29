@@ -51,10 +51,13 @@ namespace CosmicShore.Utility
         /// prisms — past the cap the OLDEST prism is consumed via the sanctioned Prism.Consume
         /// (implode-toward-target) path, never a silent despawn, so the continuity law's
         /// visible-transition requirement is met. The cap was explicitly authorized by the design
-        /// owner for this branch (2026-07-07). One writer today: SkimRaceController - the
-        /// skimmable race trail (the track is ~4000u per circuit and the Squirrel lays a prism
-        /// every 5–7u ⇒ ~600–800 prisms/lap, so 2000 guarantees AT LEAST two laps of trail to skim
-        /// after lap one; shared across vessels by <see cref="SkimRaceTrailPrismsPerVessel"/>).
+        /// owner for this branch (2026-07-07). Two writers, one per shipped mode:
+        ///   • SkimRaceController - the skimmable race trail (the track is ~4000u per circuit and the
+        ///     Squirrel lays a prism every 5–7u ⇒ ~600–800 prisms/lap, so 2000 guarantees AT LEAST
+        ///     two laps to skim after lap one; shared across vessels by
+        ///     <see cref="SkimRaceTrailPrismsPerVessel"/>);
+        ///   • JoustController - the ribbon a pilot skims for speed in an empty cell
+        ///     (<see cref="JoustTrailPrismsPerVessel"/>).
         /// The conveyor's old breadcrumb writer is superseded by <see cref="WanderwayTetherActive"/>.
         /// </summary>
         public static bool CappedTrailActive;
@@ -80,11 +83,48 @@ namespace CosmicShore.Utility
         /// 4 → 1500, 6 → 1000, 8+ → 800. Worst case (12 seats) is 9,600 live prisms where a flat
         /// per-vessel cap allowed 24,000.
         /// </summary>
-        public static int SkimRaceTrailPrismsPerVessel(int vessels)
+        public static int SkimRaceTrailPrismsPerVessel(int vessels) =>
+            CappedTrailPrismsPerVessel(vessels, SkimRaceTrailBudget, SkimRaceTrailFloorPrisms, SkimRaceTrailPrisms);
+
+        /// <summary>
+        /// Joust's per-vessel trail ceiling. Joust has no laps - its trail is what a pilot skims to
+        /// out-run the rival it is about to overtake, in an EMPTY cell (Barren: no environment, no
+        /// flora or fauna), so without a trail there is nothing to skim and no speed to joust with.
+        /// A Squirrel lays a prism every 5-7u, so 1,200 is roughly the last minute of flight.
+        /// </summary>
+        public const int JoustTrailPrisms = 1200;
+
+        /// <summary>Joust race-wide live-trail budget, shared across every seat.</summary>
+        public const int JoustTrailBudget = 4000;
+
+        /// <summary>The least a Joust vessel keeps - enough ribbon behind it to be worth skimming.</summary>
+        public const int JoustTrailFloorPrisms = 400;
+
+        /// <summary>
+        /// Joust per-vessel cap: 2-3 vessels → 1,200, 4 → 1,000, 8 → 500, 10+ → 400. Worst case
+        /// (12 seats) is 4,800 live prisms.
+        /// </summary>
+        public static int JoustTrailPrismsPerVessel(int vessels) =>
+            CappedTrailPrismsPerVessel(vessels, JoustTrailBudget, JoustTrailFloorPrisms, JoustTrailPrisms);
+
+        /// <summary>
+        /// A per-vessel capped-trail length as a share of one match-wide <paramref name="budget"/>,
+        /// clamped to [<paramref name="floor"/>, <paramref name="ceiling"/>]. The cap is enforced per
+        /// <c>VesselPrismController</c>, so without the share it multiplies with the seat count.
+        /// </summary>
+        public static int CappedTrailPrismsPerVessel(int vessels, int budget, int floor, int ceiling)
         {
-            int share = SkimRaceTrailBudget / System.Math.Max(1, vessels);
-            return System.Math.Clamp(share, SkimRaceTrailFloorPrisms, SkimRaceTrailPrisms);
+            int share = budget / System.Math.Max(1, vessels);
+            return System.Math.Clamp(share, floor, ceiling);
         }
+
+        /// <summary>
+        /// Hide arcade/arena cards whose scene is not in this build. The strip ships a handful of
+        /// scenes (see EditorBuildSettings); every other card is a launch that cannot load. Read at
+        /// runtime from the build itself (<c>Application.CanStreamedLevelBeLoaded</c>), so enabling a
+        /// mode's scene is the whole of bringing its card back - no second list to keep in step.
+        /// </summary>
+        public static bool HideUnbuiltModes => Enabled;
 
         /// <summary>
         /// Boot Menu_Main into the cell's bare canvas (Barren) instead of its authored boot

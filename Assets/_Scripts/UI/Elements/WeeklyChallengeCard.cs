@@ -127,7 +127,14 @@ namespace CosmicShore.UI
             var service = WeeklyChallengeService.Instance;
             var challenge = service != null ? service.ThisWeek : default(WeeklyChallenge);
 
-            if (!challenge.IsValid)
+            // Stripped-performance branch: this week's draw may be a mode whose scene is not in
+            // this build - the same dead launch the grid hides, so it reads the same way as "no
+            // challenge" rather than as a live card that cannot load.
+            var drawnCard = challenge.IsValid && _exploreView != null
+                ? _exploreView.FindGameByMode(challenge.GameMode) : null;
+            bool unbuilt = drawnCard && !ArcadeExploreView.IsLaunchableInThisBuild(drawnCard);
+
+            if (!challenge.IsValid || unbuilt)
             {
                 // No catalog, or every entry filtered out. Say so rather than showing a live-looking
                 // card that does nothing when pressed.
