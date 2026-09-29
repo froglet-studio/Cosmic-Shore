@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Arc E — the content bridge. Reads the Unity project's own Assets/ tree
+       (scenes, prefabs, .meta guids, textures, TMP fonts, materials, meshes) so the
+       port renders the game's REAL content instead of hand-authored placeholders.
+       Read-only: nothing here ever writes into the Unity project. -->
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CosmicShore.Tests" />
+    <InternalsVisibleTo Include="CosmicShore.Client" />
+  </ItemGroup>
+
+</Project>
