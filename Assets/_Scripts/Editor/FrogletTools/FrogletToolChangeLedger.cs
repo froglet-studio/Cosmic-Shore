@@ -43,6 +43,13 @@ namespace CosmicShore.Editor.Froglet
 
         static Ledger _cache;
 
+        /// <summary>
+        /// Bumped on every write. A ship panel caches its git status and would otherwise go on
+        /// showing "no uncommitted changes" after the very tool it is drawn under has just
+        /// recorded its output — it compares this against the version it last read.
+        /// </summary>
+        public static int Version { get; private set; }
+
         static string FilePath => Path.Combine(FrogletGit.RepoRoot, "Library", FileName);
 
         // ── Recording ────────────────────────────────────────────────────────────
@@ -61,6 +68,9 @@ namespace CosmicShore.Editor.Froglet
                 entry.paths.Add(normalized);
                 Save(ledger);
             }
+            // A re-run records paths it already knows but has just made dirty again, so the
+            // version moves even when the ledger file does not.
+            else Version++;
         }
 
         public static void Record(string toolName, IEnumerable<string> assetPaths)
@@ -80,6 +90,7 @@ namespace CosmicShore.Editor.Froglet
             }
 
             if (dirty) Save(ledger);
+            else Version++;
         }
 
         /// <summary>Record the asset a Unity object lives in. Silently ignores scene objects.</summary>
@@ -280,6 +291,7 @@ namespace CosmicShore.Editor.Froglet
         static void Save(Ledger ledger)
         {
             _cache = ledger;
+            Version++;
             try
             {
                 var dir = Path.GetDirectoryName(FilePath);

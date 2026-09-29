@@ -452,8 +452,8 @@ namespace CosmicShore.Editor
             Set(status, "vesselHUDController", hud);
             // NO skimmer, by design: a commander does not skim, and none of her four abilities
             // reads skim state. VesselController.Initialize tolerates both references empty.
-            Set(status, "_nearFieldSkimmer", (UnityEngine.Object)null);
-            Set(status, "_farFieldSkimmer", (UnityEngine.Object)null);
+            Clear(status, "_nearFieldSkimmer");
+            Clear(status, "_farFieldSkimmer");
         }
 
         void WireTransformer(VesselTransformer t)
@@ -485,7 +485,8 @@ namespace CosmicShore.Editor
             // dial on the trail would be the double-dip the convention forbids.
             SetElementalFloat(p, "trailVolume", Element.Mass, min: 1f, max: 2f);
             DisableElementalFloat(p, "trailVolume");
-            Set(p, "massUpgradeShieldsTrail", false);
+            // Renamed from massUpgradeShieldsTrail (FormerlySerializedAs keeps old prefabs).
+            Set(p, "driftShieldsTrail", false);
             Set(p, "turnUpgradeShieldsTrail", false);
             CopyReferenceFromVessel(p, "_onPrismSpawnedEventChannel", SquirrelPrefabPath,
                                     "prism spawn event channel");
@@ -806,6 +807,23 @@ namespace CosmicShore.Editor
                     return;
                 default: Unwired($"{target.GetType().Name}.{field}", "unsupported value type"); return;
             }
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>
+        /// Deliberately EMPTY an object reference. <see cref="Set"/> reports a null value as
+        /// UNWIRED because a null there almost always means a lookup failed; a reference this
+        /// vessel is designed NOT to have is a different statement and must not read as a gap.
+        /// </summary>
+        void Clear(UnityEngine.Object target, string field)
+        {
+            if (!target) { Unwired(field, "target is null"); return; }
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            if (p == null) { Unwired($"{target.GetType().Name}.{field}", "property not found"); return; }
+            if (p.propertyType != SerializedPropertyType.ObjectReference)
+            { Unwired($"{target.GetType().Name}.{field}", "not an object reference"); return; }
+            p.objectReferenceValue = null;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 

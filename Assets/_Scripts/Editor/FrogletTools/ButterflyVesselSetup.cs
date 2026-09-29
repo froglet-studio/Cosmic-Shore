@@ -522,7 +522,7 @@ namespace CosmicShore.Editor
             // status does not point at is permanently inert dead weight, silently (the Dolphin
             // shipped that way for its whole life). ONE skimmer: the far field is empty.
             if (dust) Set(status, "_nearFieldSkimmer", dust.GetComponentInChildren<Skimmer>(true));
-            Set(status, "_farFieldSkimmer", (UnityEngine.Object)null);
+            Clear(status, "_farFieldSkimmer");
         }
 
         void WireController(VesselController controller) =>
@@ -577,7 +577,8 @@ namespace CosmicShore.Editor
             SetElementalFloat(p, "trailVolume", Element.Mass, min: 1f, max: 2.5f);
             DisableElementalFloat(p, "trailVolume");
             // Mass 5 armours the wake through ForceShielded (Mass mode only), not these flags.
-            Set(p, "massUpgradeShieldsTrail", false);
+            // Renamed from massUpgradeShieldsTrail (FormerlySerializedAs keeps old prefabs).
+            Set(p, "driftShieldsTrail", false);
             Set(p, "turnUpgradeShieldsTrail", false);
 
             CopyReferenceFromVessel(p, "_onPrismSpawnedEventChannel", SquirrelPrefabPath,
@@ -936,6 +937,23 @@ namespace CosmicShore.Editor
                     return;
                 default: Unwired($"{target.GetType().Name}.{field}", "unsupported value type"); return;
             }
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>
+        /// Deliberately EMPTY an object reference. <see cref="Set"/> reports a null value as
+        /// UNWIRED because a null there almost always means a lookup failed; a reference this
+        /// vessel is designed NOT to have is a different statement and must not read as a gap.
+        /// </summary>
+        void Clear(UnityEngine.Object target, string field)
+        {
+            if (!target) { Unwired(field, "target is null"); return; }
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            if (p == null) { Unwired($"{target.GetType().Name}.{field}", "property not found"); return; }
+            if (p.propertyType != SerializedPropertyType.ObjectReference)
+            { Unwired($"{target.GetType().Name}.{field}", "not an object reference"); return; }
+            p.objectReferenceValue = null;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 

@@ -86,6 +86,7 @@ namespace CosmicShore.Editor.Froglet
         internal List<string> CachedUntouched = new();
         internal string CachedBranch = string.Empty;
         internal double CachedStamp;
+        internal int CachedLedgerVersion = -1;
         internal bool ShowDetail;
         internal string LastMessage = string.Empty;
         internal bool LastMessageIsError;
@@ -576,9 +577,14 @@ namespace CosmicShore.Editor.Froglet
         /// </summary>
         static void RefreshIfStale(FrogletToolShipContext ctx, bool force)
         {
-            if (!force && ctx.CachedStamp > 0) return;
+            // A tool that just recorded new output invalidates the cache: without this the panel
+            // under a Build button reads its git status once, before the build, and then tells
+            // the human there is nothing to push.
+            if (!force && ctx.CachedStamp > 0
+                && ctx.CachedLedgerVersion == FrogletToolChangeLedger.Version) return;
 
             ctx.CachedStamp = EditorApplication.timeSinceStartup;
+            ctx.CachedLedgerVersion = FrogletToolChangeLedger.Version;
             ctx.CachedBranch = FrogletGit.CurrentBranch();
 
             // Publish the tool's own scripts to the ledger, so Pending Tool Changes can retire it
