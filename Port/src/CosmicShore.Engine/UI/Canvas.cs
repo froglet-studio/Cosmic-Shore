@@ -20,6 +20,7 @@ namespace CosmicShore.Engine
     /// pass, so <see cref="scaleFactor"/> PULLS from the scaler on read. Steady-state
     /// values are identical; the port is simply never stale.
     /// </summary>
+    [RequireComponent(typeof(RectTransform))]
     public class Canvas : Behaviour
     {
         public RenderMode renderMode = RenderMode.ScreenSpaceOverlay;

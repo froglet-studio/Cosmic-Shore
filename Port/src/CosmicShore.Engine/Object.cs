@@ -86,7 +86,7 @@ namespace CosmicShore.Engine
         }
 
         public static T FindFirstObjectByType<T>() where T : class
-            => GameLoop.Current?.Scene.FindObjectOfType<T>(includeInactive: true);
+            => GameLoop.Current?.Scene.FindObjectOfType<T>(includeInactive: false);
 
         /// <summary>
         /// Original API: "any" relaxes the ordering guarantee of "first". The headless
@@ -105,7 +105,7 @@ namespace CosmicShore.Engine
         /// so <paramref name="sortMode"/> is accepted for signature parity but not applied.
         /// </summary>
         public static T[] FindObjectsByType<T>(FindObjectsSortMode sortMode) where T : class
-            => GameLoop.Current?.Scene.FindObjectsOfType<T>(includeInactive: true).ToArray()
+            => GameLoop.Current?.Scene.FindObjectsOfType<T>(includeInactive: false).ToArray()
                ?? System.Array.Empty<T>();
 
         /// <summary>Clone an asset or object graph (see ObjectUtilities for semantics).</summary>

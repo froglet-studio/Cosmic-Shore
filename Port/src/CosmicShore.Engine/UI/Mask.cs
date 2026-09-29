@@ -6,6 +6,7 @@ namespace CosmicShore.Engine.UI
     /// arrives with the Arc-C renderer; until then the component carries the authored
     /// flag so scene transcription round-trips (e.g. the GameEventFeed viewport).
     /// </summary>
+    [RequireComponent(typeof(RectTransform))]
     public class Mask : MonoBehaviour
     {
         [SerializeField] bool m_ShowMaskGraphic = true;
@@ -18,6 +19,7 @@ namespace CosmicShore.Engine.UI
     /// node's rect without stencil cost — the standard scroll-viewport clipper (the
     /// toast container authors one). Headless data surface until Arc C clips for real.
     /// </summary>
+    [RequireComponent(typeof(RectTransform))]
     public class RectMask2D : MonoBehaviour
     {
         [SerializeField] Vector4 m_Padding;

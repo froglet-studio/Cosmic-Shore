@@ -195,7 +195,7 @@ namespace CosmicShore.Content.Scenes
                         return null;
                     }
                     if (!_options.IncludeScript(type)) { _result.SkippedComponents++; return null; }
-                    try { return go.AddComponent(type); }
+                    try { using (GameObject.ComponentGraphRestoreScope()) return go.AddComponent(type); }
                     catch (Exception e)
                     {
                         _result.Warnings.Add($"AddComponent<{type.Name}> on '{go.name}': {e.Message}");
@@ -211,7 +211,7 @@ namespace CosmicShore.Content.Scenes
                         _result.SkippedBuiltIns[key] = _result.SkippedBuiltIns.TryGetValue(key, out var n) ? n + 1 : 1;
                         return null;
                     }
-                    try { return go.GetComponent(type) ?? go.AddComponent(type); }
+                    try { using (GameObject.ComponentGraphRestoreScope()) return go.GetComponent(type) ?? go.AddComponent(type); }
                     catch (Exception e)
                     {
                         _result.Warnings.Add($"AddComponent<{type.Name}> on '{go.name}': {e.Message}");

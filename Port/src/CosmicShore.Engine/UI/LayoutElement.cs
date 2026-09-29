@@ -5,6 +5,7 @@ namespace CosmicShore.Engine.UI
     /// any other value overrides what siblings report at lower priority.
     /// <see cref="ignoreLayout"/> opts the element out of its parent group entirely.
     /// </summary>
+    [RequireComponent(typeof(RectTransform))]
     public class LayoutElement : MonoBehaviour, ILayoutElement, ILayoutIgnorer
     {
         [SerializeField] bool m_IgnoreLayout;

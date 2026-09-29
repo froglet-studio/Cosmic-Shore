@@ -10,6 +10,7 @@ namespace CosmicShore.Engine.UI
     /// screen-space canvases). A nested Canvas owns its own subtree: the walk stops
     /// there, matching the original's per-canvas graphic registry.
     /// </summary>
+    [RequireComponent(typeof(Canvas))]
     public class GraphicRaycaster : BaseRaycaster
     {
         public enum BlockingObjects { None = 0, TwoD = 1, ThreeD = 2, All = 3 }

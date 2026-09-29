@@ -49,7 +49,7 @@ namespace CosmicShore.Engine.Networking
         public bool SpawnWithObservers { get; set; } = true;
 
         /// <summary>Prefab identity hash (per-instance offline; not a wire hash).</summary>
-        public uint GlobalObjectIdHash { get; set; }
+        [SerializeField] internal uint GlobalObjectIdHash;
 
         /// <summary>
         /// True for objects that were placed in a scene rather than spawned from a prefab.

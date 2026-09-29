@@ -11,6 +11,7 @@ namespace CosmicShore.Engine.UI
     /// use. Groups are themselves <see cref="ILayoutElement"/>s, so nesting composes:
     /// a parent group sizes a child group by the child's own computed inputs.
     /// </summary>
+    [RequireComponent(typeof(RectTransform))]
     public abstract class LayoutGroup : MonoBehaviour, ILayoutElement, ILayoutGroup
     {
         [SerializeField] protected RectOffset m_Padding = new();

@@ -12,6 +12,7 @@ namespace CosmicShore.Engine.UI
     /// <see cref="rectTransform"/> converts the host's Transform in place on first read
     /// (the Arc-A AddComponent conversion), which is the same end state.
     /// </summary>
+    [RequireComponent(typeof(RectTransform)), RequireComponent(typeof(CanvasRenderer))]
     public abstract class Graphic : UIBehaviour
     {
         [SerializeField] protected Material m_Material;

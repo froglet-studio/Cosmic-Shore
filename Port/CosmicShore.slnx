@@ -8,6 +8,7 @@
     <Project Path="src/CosmicShore.Engine/CosmicShore.Engine.csproj" />
     <Project Path="src/CosmicShore.Game/CosmicShore.Game.csproj" />
     <Project Path="src/CosmicShore.Live/CosmicShore.Live.csproj" />
+    <Project Path="src/CosmicShore.Player/CosmicShore.Player.csproj" />
     <Project Path="src/CosmicShore.Render/CosmicShore.Render.csproj" />
   </Folder>
   <Folder Name="/tests/">

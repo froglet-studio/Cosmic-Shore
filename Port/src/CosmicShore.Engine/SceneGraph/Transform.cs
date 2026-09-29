@@ -191,6 +191,12 @@ namespace CosmicShore.Engine
         public void SetParent(Transform newParent, bool worldPositionStays = true)
         {
             if (newParent == this || ReferenceEquals(newParent, parent)) return;
+            if (newParent is not null && newParent.IsChildOf(this))
+            {
+                // Original contract: a transform cannot become a child of its own descendant.
+                Debug.LogError($"Cannot set the parent of '{name}' to its own child '{newParent.name}'.");
+                return;
+            }
 
             bool wasActive = gameObject.activeInHierarchy;
             Vector3 worldPos = default;

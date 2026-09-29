@@ -29,6 +29,15 @@ namespace CosmicShore.Engine
 
         /// <summary>Survives Single scene loads (set via <see cref="Object.DontDestroyOnLoad"/> on a root).</summary>
         internal bool dontDestroyOnLoad;
+
+        /// <summary>
+        /// True for a prefab ASSET (the content loader's inactive templates): it lives outside
+        /// every scene, so Find*/FindObjectsByType never return it — Unity's contract.
+        /// </summary>
+        public bool isPrefabAsset { get; private set; }
+
+        /// <summary>Marks this root as a prefab asset (content loader only).</summary>
+        public void MarkAsPrefabAsset() => isPrefabAsset = true;
         public bool IsDontDestroyOnLoad => dontDestroyOnLoad;
 
         public GameObject(string name = "GameObject")
@@ -124,10 +133,58 @@ namespace CosmicShore.Engine
 
         public T AddComponent<T>() where T : Component => (T)AddComponent(typeof(T));
 
+        [ThreadStatic] static int t_restoreDepth;
+
+        /// <summary>
+        /// When true, <see cref="AddComponent(Type)"/> honours [RequireComponent] the way a Unity
+        /// player does. The player turns it on; the legacy hand-assembled test/sim harnesses
+        /// (which attach every sibling themselves, in an order they choose) keep the default off,
+        /// the same split as <c>NetworkManager.EmulateNetcodeLifecycle</c>.
+        /// </summary>
+        public static bool EnforceRequireComponent { get; set; }
+
+        /// <summary>
+        /// While open, <see cref="AddComponent(Type)"/> adds exactly what it is asked for — no
+        /// [RequireComponent] dependencies. Used by paths that restore a serialized component
+        /// graph verbatim (scene/prefab instantiation, Instantiate's clone), where every required
+        /// component is already in the data and an auto-added one would be a duplicate.
+        /// </summary>
+        public static IDisposable ComponentGraphRestoreScope() => new RestoreScope();
+
+        sealed class RestoreScope : IDisposable
+        {
+            bool _open = true;
+            public RestoreScope() => t_restoreDepth++;
+            public void Dispose() { if (_open) { _open = false; t_restoreDepth--; } }
+        }
+
+        /// <summary>Original contract: adding a component first adds whatever its [RequireComponent]s name.</summary>
+        [ThreadStatic] static HashSet<Type> t_adding;
+
+        void AddRequiredComponents(Type componentType)
+        {
+            t_adding ??= new HashSet<Type>();
+            if (!t_adding.Add(componentType)) return; // mutual requirement: the outer add supplies it
+            try
+            {
+            foreach (RequireComponentAttribute req in componentType.GetCustomAttributes(typeof(RequireComponentAttribute), inherit: true))
+                foreach (var t in new[] { req.m_Type0, req.m_Type1, req.m_Type2 })
+                {
+                    if (t == null || t.IsAbstract || t.IsInterface || !typeof(Component).IsAssignableFrom(t)) continue;
+                    if (typeof(Transform).IsAssignableFrom(t) ? t.IsInstanceOfType(transform) : GetComponent(t) != null) continue;
+                    if (t_adding.Contains(t)) continue;
+                    AddComponent(t);
+                }
+            }
+            finally { t_adding.Remove(componentType); }
+        }
+
         public Component AddComponent(Type componentType)
         {
             if (!typeof(Component).IsAssignableFrom(componentType))
                 throw new ArgumentException($"{componentType.Name} is not a Component.");
+            if (EnforceRequireComponent && t_restoreDepth == 0 && !typeof(Transform).IsAssignableFrom(componentType))
+                AddRequiredComponents(componentType);
 
             // Transform-derived types (RectTransform) CONVERT the existing transform in
             // place rather than adding a second one (original contract: a GameObject has
@@ -240,8 +297,12 @@ namespace CosmicShore.Engine
         // ── Destruction ──────────────────────────────────────────────
 
         /// <summary>Immediate recursive destruction (children first, then components).</summary>
+        static readonly string s_traceDestroy = System.Environment.GetEnvironmentVariable("CS_PORT_TRACE_DESTROY");
+
         internal void DestroyNow()
         {
+            if (s_traceDestroy != null && name != null && name.Contains(s_traceDestroy, System.StringComparison.OrdinalIgnoreCase))
+                System.Console.WriteLine($"[trace-destroy] '{name}' destroyed at:\n{System.Environment.StackTrace}");
             if (destroyedFlag) return;
 
             // Children first (snapshot — destruction mutates the list).

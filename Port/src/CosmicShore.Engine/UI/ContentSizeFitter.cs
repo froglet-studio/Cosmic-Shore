@@ -6,6 +6,7 @@ namespace CosmicShore.Engine.UI
     /// size, and this self-controller applies it via SetSizeWithCurrentAnchors. Runs before
     /// sibling group controllers in the control pass (ILayoutSelfController ordering).
     /// </summary>
+    [RequireComponent(typeof(RectTransform))]
     public class ContentSizeFitter : MonoBehaviour, ILayoutSelfController
     {
         public enum FitMode

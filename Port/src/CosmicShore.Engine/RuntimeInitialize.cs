@@ -19,7 +19,10 @@ namespace CosmicShore.Engine
     [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = false)]
     public sealed class RuntimeInitializeOnLoadMethodAttribute : System.Attribute
     {
+        /// <summary>When the method runs (original default: AfterSceneLoad).</summary>
+        public RuntimeInitializeLoadType loadType { get; set; } = RuntimeInitializeLoadType.AfterSceneLoad;
+
         public RuntimeInitializeOnLoadMethodAttribute() { }
-        public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType loadType) { }
+        public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType loadType) { this.loadType = loadType; }
     }
 }

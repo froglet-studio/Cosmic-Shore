@@ -700,7 +700,9 @@ namespace CosmicShore.Engine
         static GameObject CloneGameObject(GameObject source)
         {
             var map = new Dictionary<object, object>(ReferenceEqualityComparer.Instance);
-            var clone = CloneHierarchy(source, map, isRoot: true);
+            GameObject clone;
+            using (GameObject.ComponentGraphRestoreScope())
+                clone = CloneHierarchy(source, map, isRoot: true);
             RemapClonedReferences(map);
             return clone;
         }

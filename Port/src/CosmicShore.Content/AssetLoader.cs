@@ -53,7 +53,11 @@ namespace CosmicShore.Content
             EngineObject result = null;
             foreach (var kv in Importers)
             {
-                if (!expected.IsAssignableFrom(kv.Key) && !kv.Key.IsAssignableFrom(expected)) continue;
+                // A prefab reference can name the GameObject OR a component on it (a field typed
+                // as the component, or as an interface a component implements) — Unity resolves
+                // all of them through the prefab asset.
+                bool viaPrefab = kv.Key == typeof(GameObject) && (typeof(Component).IsAssignableFrom(expected) || expected.IsInterface);
+                if (!viaPrefab && !expected.IsAssignableFrom(kv.Key) && !kv.Key.IsAssignableFrom(expected)) continue;
                 result = kv.Value(r);
                 if (result != null) break;
             }
@@ -95,7 +99,10 @@ namespace CosmicShore.Content
             if (o == null) return null;
             if (expected.IsInstanceOfType(o)) return o;
             // Asset refs to a prefab's GameObject read into a component-typed field.
-            if (o is GameObject go && typeof(Component).IsAssignableFrom(expected)) return go.GetComponent(expected);
+            bool componentLike = typeof(Component).IsAssignableFrom(expected) || expected.IsInterface;
+            if (o is GameObject go && componentLike) return go.GetComponent(expected) as EngineObject;
+            if (o is Component c && componentLike) return c.gameObject.GetComponent(expected) as EngineObject;
+            if (o is Component c2 && expected == typeof(GameObject)) return c2.gameObject;
             return null;
         }
 

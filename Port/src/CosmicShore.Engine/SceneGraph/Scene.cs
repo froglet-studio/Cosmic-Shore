@@ -56,6 +56,7 @@ namespace CosmicShore.Engine.SceneManagement
         {
             foreach (var root in _roots.ToArray())
             {
+                if (root.isPrefabAsset) continue;
                 var found = root.GetComponentInChildren<T>(includeInactive);
                 if (found != null) return found;
             }
@@ -67,7 +68,7 @@ namespace CosmicShore.Engine.SceneManagement
         {
             var results = new List<T>();
             foreach (var root in _roots.ToArray())
-                results.AddRange(root.GetComponentsInChildren<T>(includeInactive));
+                if (!root.isPrefabAsset) results.AddRange(root.GetComponentsInChildren<T>(includeInactive));
             return results;
         }
     }

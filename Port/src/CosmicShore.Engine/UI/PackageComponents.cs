@@ -90,6 +90,7 @@ namespace CosmicShore.Engine.UI
     }
 
     /// <summary>Keeps a RectTransform at an aspect ratio (original contract: AspectRatioFitter).</summary>
+    [RequireComponent(typeof(RectTransform))]
     public class AspectRatioFitter : MonoBehaviour
     {
         public enum AspectMode { None = 0, WidthControlsHeight = 1, HeightControlsWidth = 2, FitInParent = 3, EnvelopeParent = 4 }

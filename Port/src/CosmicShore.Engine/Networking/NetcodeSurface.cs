@@ -4,41 +4,91 @@ using System.Collections.Generic;
 namespace CosmicShore.Engine.Networking
 {
     /// <summary>
-    /// Original-contract NetworkConfig. Offline it is data only: the single-process host reads
-    /// <see cref="ConnectionData"/> as its own approval payload and <see cref="PlayerPrefab"/> is
-    /// what live code instantiates for AI players; nothing is sent anywhere.
+    /// Original-contract NetworkConfig, laid out with Netcode's serialized field names so the
+    /// NetworkManager prefab deserializes whole (player prefab, transport, prefab lists, tick
+    /// rate, approval). <see cref="ConnectionData"/> is the payload the local client presents
+    /// to connection approval.
     /// </summary>
+    [Serializable]
     public sealed class NetworkConfig
     {
-        public GameObject PlayerPrefab { get; set; }
-        public NetworkTransport NetworkTransport { get; set; }
-        public byte[] ConnectionData { get; set; } = Array.Empty<byte>();
-        public bool ConnectionApproval { get; set; } = true;
-        public uint TickRate { get; set; } = 30;
-        public bool EnableSceneManagement { get; set; } = true;
-        public bool ForceSamePrefabs { get; set; } = true;
-        public bool RecycleNetworkIds { get; set; } = true;
-        public int ClientConnectionBufferTimeout { get; set; } = 10;
-        public NetworkTopologyTypes NetworkTopology { get; set; } = NetworkTopologyTypes.ClientServer;
-        public NetworkPrefabs Prefabs { get; } = new NetworkPrefabs();
+        public ushort ProtocolVersion;
+        public NetworkTransport NetworkTransport;
+        public GameObject PlayerPrefab;
+        public NetworkPrefabs Prefabs = new();
+        public uint TickRate = 30;
+        public int ClientConnectionBufferTimeout = 10;
+        public bool ConnectionApproval = true;
+        [NonSerialized] public byte[] ConnectionData = Array.Empty<byte>();
+        public bool EnableTimeResync;
+        public int TimeResyncInterval = 30;
+        public bool EnsureNetworkVariableLengthSafety;
+        public bool EnableSceneManagement = true;
+        public bool ForceSamePrefabs = true;
+        public bool RecycleNetworkIds = true;
+        public float NetworkIdRecycleDelay = 120f;
+        public int LoadSceneTimeOut = 120;
+        public float SpawnTimeout = 10f;
+        public bool EnableNetworkLogs = true;
+        public NetworkTopologyTypes NetworkTopology = NetworkTopologyTypes.ClientServer;
+        public bool UseCMBService;
+        public bool AutoSpawnPlayerPrefabClientSide = true;
     }
 
     public enum NetworkTopologyTypes { ClientServer = 0, DistributedAuthority = 1 }
 
-    /// <summary>One registered network prefab (original: <c>NetworkPrefab</c>).</summary>
+    public enum NetworkPrefabOverride { None = 0, Prefab = 1, Hash = 2 }
+
+    /// <summary>One registered network prefab (original: <c>NetworkPrefab</c>, serialized field names).</summary>
+    [Serializable]
     public sealed class NetworkPrefab
     {
-        public GameObject Prefab { get; set; }
-        public GameObject SourcePrefabToOverride { get; set; }
-        public GameObject OverridingTargetPrefab { get; set; }
-        public uint SourceHashToOverride { get; set; }
+        public NetworkPrefabOverride Override;
+        public GameObject Prefab;
+        public GameObject SourcePrefabToOverride;
+        public uint SourceHashToOverride;
+        public GameObject OverridingTargetPrefab;
     }
 
-    /// <summary>The prefab registry (original: <c>NetworkPrefabs</c>).</summary>
+    /// <summary>
+    /// A prefab list asset (original: <c>NetworkPrefabsList</c> ScriptableObject — the
+    /// "DefaultNetworkPrefabs" asset the NetworkManager references).
+    /// </summary>
+    public class NetworkPrefabsList : ScriptableObject
+    {
+        [SerializeField] internal bool IsDefault;
+        [SerializeField] internal List<NetworkPrefab> List = new();
+
+        public IReadOnlyList<NetworkPrefab> PrefabList => List;
+
+        public void Add(NetworkPrefab prefab) { if (prefab != null && !List.Contains(prefab)) List.Add(prefab); }
+        public void Remove(NetworkPrefab prefab) => List.Remove(prefab);
+        public bool Contains(GameObject prefab) { foreach (var p in List) if (p.Prefab == prefab) return true; return false; }
+    }
+
+    /// <summary>
+    /// The prefab registry (original: <c>NetworkPrefabs</c>): prefabs added at runtime plus
+    /// every entry of the referenced <see cref="NetworkPrefabsLists"/>.
+    /// </summary>
+    [Serializable]
     public sealed class NetworkPrefabs
     {
-        readonly List<NetworkPrefab> _prefabs = new();
-        public IReadOnlyList<NetworkPrefab> Prefabs => _prefabs;
+        public List<NetworkPrefabsList> NetworkPrefabsLists = new();
+        [NonSerialized] readonly List<NetworkPrefab> _prefabs = new();
+
+        public IReadOnlyList<NetworkPrefab> Prefabs
+        {
+            get
+            {
+                if (NetworkPrefabsLists == null || NetworkPrefabsLists.Count == 0) return _prefabs;
+                var all = new List<NetworkPrefab>(_prefabs);
+                foreach (var list in NetworkPrefabsLists)
+                    if (list != null)
+                        foreach (var p in list.PrefabList)
+                            if (p?.Prefab != null && !all.Exists(e => e.Prefab == p.Prefab)) all.Add(p);
+                return all;
+            }
+        }
 
         public bool Add(NetworkPrefab prefab)
         {
@@ -49,7 +99,7 @@ namespace CosmicShore.Engine.Networking
 
         public bool Contains(GameObject prefab)
         {
-            foreach (var p in _prefabs)
+            foreach (var p in Prefabs)
                 if (p.Prefab == prefab) return true;
             return false;
         }

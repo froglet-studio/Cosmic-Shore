@@ -13,6 +13,7 @@ namespace CosmicShore.Engine.UI
     /// presentation), and drag-release velocity is not inferred from pointer history
     /// — the project only ever sets velocity programmatically.
     /// </summary>
+    [RequireComponent(typeof(RectTransform))]
     public class ScrollRect : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IScrollHandler
     {
         public enum MovementType { Unrestricted = 0, Elastic = 1, Clamped = 2 }

@@ -327,3 +327,51 @@ public class TmpDropdownPopupTests : IDisposable
         Assert.False(dd.IsExpanded);
     }
 }
+
+[Collection(InputSystemGlobalsCollection.Name)]
+public class RequireComponentTests : IDisposable
+{
+    [RequireComponent(typeof(RcB))] public class RcA : MonoBehaviour { }
+    [RequireComponent(typeof(RcA))] public class RcB : MonoBehaviour { }
+    [RequireComponent(typeof(CanvasGroup))] public class RcPanel : MonoBehaviour { }
+
+    readonly GameLoop _loop = new();
+    public RequireComponentTests() => GameObject.EnforceRequireComponent = true;
+    public void Dispose() { GameObject.EnforceRequireComponent = false; _loop.Dispose(); }
+
+    [Fact]
+    public void AddComponent_AddsRequiredSiblings_Once()
+    {
+        var go = new GameObject("rc");
+        go.AddComponent<RcPanel>();
+        Assert.NotNull(go.GetComponent<CanvasGroup>());
+        go.AddComponent<RcPanel>();
+        Assert.Single(go.GetComponents<CanvasGroup>());
+    }
+
+    [Fact]
+    public void MutualRequirements_Terminate_WithOneOfEach()
+    {
+        var go = new GameObject("rc");
+        go.AddComponent<RcA>();
+        Assert.Single(go.GetComponents<RcA>());
+        Assert.Single(go.GetComponents<RcB>());
+    }
+
+    [Fact]
+    public void Canvas_OnAPlainTransform_BecomesARectTransform()
+    {
+        var go = new GameObject("canvas");
+        go.AddComponent<Canvas>();
+        Assert.IsType<RectTransform>(go.transform);
+    }
+
+    [Fact]
+    public void RestoreScope_AddsExactlyWhatItIsAskedFor()
+    {
+        var go = new GameObject("rc");
+        using (GameObject.ComponentGraphRestoreScope())
+            go.AddComponent<RcPanel>();
+        Assert.Null(go.GetComponent<CanvasGroup>());
+    }
+}

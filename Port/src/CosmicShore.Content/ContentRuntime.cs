@@ -55,6 +55,7 @@ namespace CosmicShore.Content
             CosmicShore.Content.Textures.TextureImporter.Register(Assets, Textures);
             Fonts = new Fonts.TmpFontLibrary(Db);
             Assets.Importers[typeof(CosmicShore.Engine.UI.TMP_FontAsset)] = LoadFontAsset;
+            Audio.MixerImporter.Register(Assets, new Audio.MixerImporter(Db));
         }
 
         /// <summary>A TMP font asset reference (only a MonoBehaviour whose script IS TMP_FontAsset).</summary>
@@ -119,8 +120,11 @@ namespace CosmicShore.Content
         // ── Boot ─────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Reflex project scope: instantiate the root-scope prefabs named in
-        /// <c>Resources/ReflexSettings</c> (persistent), run their installers, build the root container.
+        /// Reflex project scope: build the root container from the root-scope prefabs named in
+        /// <c>Resources/ReflexSettings</c>. Reflex runs <c>InstallBindings</c> on the prefab
+        /// ASSETS — it never instantiates them — so the installers run on the inactive prefab
+        /// templates (serialized fields populated, no Awake), and the live objects those
+        /// installers configure are the ones the first scene brings (e.g. Bootstrap's AppManager).
         /// </summary>
         public void BootRootScopes()
         {
@@ -130,19 +134,11 @@ namespace CosmicShore.Content
             var roots = doc?.Body["<RootScopes>k__BackingField"]?.Items ?? Array.Empty<YNode>();
 
             var installers = new List<IInstaller>();
-            var scopeObjects = new List<GameObject>();
             foreach (var r in roots)
             {
                 var prefabRef = ObjRef.From(r);
-                var file = Db.Load(prefabRef.Guid);
-                if (file == null) continue;
-                var loaded = Instantiate(PrefabGraph.Build(Db, file), activate: true);
-                foreach (var root in loaded.Roots)
-                {
-                    EngineObject.DontDestroyOnLoad(root);
-                    scopeObjects.Add(root);
-                    installers.AddRange(root.GetComponentsInChildren<IInstaller>(true));
-                }
+                if (Assets.Load(new ObjRef(100100000, prefabRef.Guid, 3), typeof(GameObject)) is not GameObject template) continue;
+                installers.AddRange(template.GetComponentsInChildren<IInstaller>(true));
             }
 
             var builder = new ContainerBuilder();
@@ -152,7 +148,6 @@ namespace CosmicShore.Content
                 catch (Exception e) { Debug.LogException(e); }
             }
             RootContainer = builder.Build();
-            foreach (var go in scopeObjects) Inject(RootContainer, go);
         }
 
         static void Inject(Container container, GameObject go)
@@ -245,6 +240,11 @@ namespace CosmicShore.Content
 
         // ── Prefab assets as inactive templates ──────────────────────────────
 
+        static readonly bool s_traceTemplates = Environment.GetEnvironmentVariable("CS_PORT_TRACE_TEMPLATES") == "1";
+
+        /// <summary>How many prefab assets have been materialized as templates.</summary>
+        public int PrefabTemplateCount { get; private set; }
+
         EngineObject LoadPrefabObject(ObjRef r)
         {
             var path = Db.PathOf(r.Guid);
@@ -257,14 +257,20 @@ namespace CosmicShore.Content
                 {
                     _templatesRoot = new GameObject("__prefab_assets");
                     _templatesRoot.SetActive(false);
+                    _templatesRoot.MarkAsPrefabAsset();
                     EngineObject.DontDestroyOnLoad(_templatesRoot);
                 }
+                var sw = System.Diagnostics.Stopwatch.StartNew();
                 var file = Db.Load(r.Guid);
                 var graph = PrefabGraph.Build(Db, file);
+                long buildMs = sw.ElapsedMilliseconds;
                 _prefabTemplates[r.Guid] = entry = (graph, null); // re-entrancy guard for self-referencing prefabs
                 var loaded = Instantiate(graph, activate: false);
                 foreach (var root in loaded.Roots) root.transform.SetParent(_templatesRoot.transform, false);
                 _prefabTemplates[r.Guid] = entry = (graph, loaded);
+                PrefabTemplateCount++;
+                if (s_traceTemplates)
+                    Console.WriteLine($"[content] template {Path.GetFileName(path)}: {loaded.GameObjects} GOs, graph {buildMs} ms, total {sw.ElapsedMilliseconds} ms (inclusive)");
             }
             if (entry.loaded == null) return null;
             // 100100000 names the prefab asset itself → its root GameObject.

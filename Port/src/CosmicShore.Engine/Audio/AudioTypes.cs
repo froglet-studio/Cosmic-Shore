@@ -1,3 +1,4 @@
+using System;
 // ─────────────────────────────────────────────────────────────────────────────
 // AudioTypes.cs — engine surface for the Unity audio types the ported
 // AudioSystem's LEGACY lane drives (original contracts: UnityEngine.AudioClip,
@@ -85,15 +86,85 @@ namespace CosmicShore.Engine.Audio
     public class AudioMixer : Object
     {
         readonly Dictionary<string, float> _values = new();
+        readonly Dictionary<string, float> _defaults = new();
+        HashSet<string> _exposed;
+        readonly List<AudioMixerGroup> _groups = new();
+        readonly List<AudioMixerSnapshot> _snapshots = new();
+
+        public AudioMixerGroup outputAudioMixerGroup { get; set; }
+        public AudioMixerUpdateMode updateMode { get; set; } = AudioMixerUpdateMode.Normal;
+
+        /// <summary>
+        /// Declares the exposed parameters with their start-snapshot values (the importer does
+        /// this from the .mixer asset). Once declared, Set/GetFloat on any other name returns
+        /// false — the original's behaviour for a parameter that was never exposed.
+        /// </summary>
+        public void DeclareExposed(string name, float startValue)
+        {
+            (_exposed ??= new HashSet<string>(StringComparer.Ordinal)).Add(name);
+            _defaults[name] = startValue;
+        }
+
+        public void AddGroup(AudioMixerGroup group) { group.audioMixer = this; _groups.Add(group); }
+        public void AddSnapshot(AudioMixerSnapshot snapshot) { snapshot.audioMixer = this; _snapshots.Add(snapshot); }
+
+        bool Known(string name) => _exposed == null || _exposed.Contains(name);
 
         public bool SetFloat(string name, float value)
         {
+            if (!Known(name)) return false;
             _values[name] = value;
             return true;
         }
 
-        public bool GetFloat(string name, out float value) => _values.TryGetValue(name, out value);
+        public bool GetFloat(string name, out float value)
+        {
+            if (_values.TryGetValue(name, out value)) return true;
+            if (_defaults.TryGetValue(name, out value)) return true;
+            value = 0f;
+            return false;
+        }
 
-        public bool ClearFloat(string name) => _values.Remove(name);
+        /// <summary>Returns control of the parameter to the snapshots (original contract).</summary>
+        public bool ClearFloat(string name)
+        {
+            if (!Known(name)) return false;
+            _values.Remove(name);
+            return true;
+        }
+
+        /// <summary>Groups whose path ("Master/Music") contains the sub-path, case-insensitively.</summary>
+        public AudioMixerGroup[] FindMatchingGroups(string subPath)
+        {
+            var result = new List<AudioMixerGroup>();
+            foreach (var g in _groups)
+                if (string.IsNullOrEmpty(subPath) || g.path.IndexOf(subPath, StringComparison.OrdinalIgnoreCase) >= 0) result.Add(g);
+            return result.ToArray();
+        }
+
+        public AudioMixerSnapshot FindSnapshot(string name)
+        {
+            foreach (var s in _snapshots) if (string.Equals(s.name, name, StringComparison.Ordinal)) return s;
+            return null;
+        }
+
+        public void TransitionToSnapshots(AudioMixerSnapshot[] snapshots, float[] weights, float timeToReach) { }
+    }
+
+    public enum AudioMixerUpdateMode { Normal = 0, UnscaledTime = 1 }
+
+    /// <summary>A routing group inside a mixer (original contract: UnityEngine.Audio.AudioMixerGroup).</summary>
+    public class AudioMixerGroup : Object
+    {
+        public AudioMixer audioMixer { get; internal set; }
+        /// <summary>Slash-separated path from the master group, e.g. "Master/Music".</summary>
+        public string path { get; set; } = string.Empty;
+    }
+
+    /// <summary>A stored mixer state (original contract: UnityEngine.Audio.AudioMixerSnapshot).</summary>
+    public class AudioMixerSnapshot : Object
+    {
+        public AudioMixer audioMixer { get; internal set; }
+        public void TransitionTo(float timeToReach) { }
     }
 }

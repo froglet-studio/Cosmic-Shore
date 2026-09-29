@@ -10,6 +10,7 @@ namespace CosmicShore.Engine.UI
     /// pulls <see cref="ComputeScaleFactor"/> on read instead — identical steady-state
     /// values, never stale.
     /// </summary>
+    [RequireComponent(typeof(Canvas))]
     public class CanvasScaler : MonoBehaviour
     {
         public enum ScaleMode

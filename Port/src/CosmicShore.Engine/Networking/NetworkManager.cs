@@ -15,6 +15,44 @@ namespace CosmicShore.Engine.Networking
     {
         public static NetworkManager Singleton { get; set; }
 
+        /// <summary>
+        /// When true (the player turns it on), instances follow Netcode's own lifecycle: a
+        /// NetworkManager starts idle (not listening, no clients), registers itself as
+        /// <see cref="Singleton"/> on enable and survives scene loads, and <see cref="StartHost"/>
+        /// runs connection approval and spawns the local player object. Off (the default) keeps
+        /// the always-listening single-process stand-in the headless test harness is built on.
+        /// </summary>
+        public static bool EmulateNetcodeLifecycle { get; set; }
+
+        /// <summary>The prefab's serialized "NetworkConfig:" block; adopted as <see cref="NetworkConfig"/> on Awake.</summary>
+        [SerializeField, CosmicShore.Engine.Serialization.FormerlySerializedAs("NetworkConfig")] internal NetworkConfig NetworkConfigSerialized;
+        public bool RunInBackground = true;
+        public bool DontDestroy = true;
+
+        void Awake()
+        {
+            if (!EmulateNetcodeLifecycle) return;
+            if (NetworkConfigSerialized != null) NetworkConfig = NetworkConfigSerialized;
+            IsServer = false;
+            IsClient = false;
+            IsListening = false;
+            ConnectedClientsIds.Clear();
+        }
+
+        void OnEnable()
+        {
+            if (!EmulateNetcodeLifecycle) return;
+            if (DontDestroy) DontDestroyOnLoad(gameObject);
+            if (Singleton == null) SetSingleton();
+        }
+
+        void OnDestroy()
+        {
+            if (!EmulateNetcodeLifecycle) return;
+            if (IsListening) Shutdown();
+            if (ReferenceEquals(Singleton, this)) Singleton = null;
+        }
+
         public bool IsServer { get; set; } = true;
         public bool IsClient { get; set; } = true;
         public bool IsHost => IsServer && IsClient;
@@ -134,6 +172,7 @@ namespace CosmicShore.Engine.Networking
         /// <summary>Configuration record (player prefab, transport, approval payload, tick rate).</summary>
         public NetworkConfig NetworkConfig { get; set; } = new();
 
+
         /// <summary>Raised after the server side starts (StartHost/StartServer).</summary>
         public event System.Action OnServerStarted;
 
@@ -237,10 +276,11 @@ namespace CosmicShore.Engine.Networking
         {
             if (IsListening) return false;
 
-            if (ConnectionApprovalCallback != null)
+            var response = new ConnectionApprovalResponse { Approved = true, CreatePlayerObject = NetworkConfig?.PlayerPrefab != null };
+            if (ConnectionApprovalCallback != null && (NetworkConfig == null || NetworkConfig.ConnectionApproval || !EmulateNetcodeLifecycle))
             {
                 var request = new ConnectionApprovalRequest { ClientNetworkId = 0, Payload = NetworkConfig?.ConnectionData ?? System.Array.Empty<byte>() };
-                var response = new ConnectionApprovalResponse();
+                response = new ConnectionApprovalResponse();
                 ConnectionApprovalCallback(request, response);
                 if (!response.Approved) return false;
             }
@@ -252,6 +292,7 @@ namespace CosmicShore.Engine.Networking
             if (!ConnectedClientsIds.Contains(0)) ConnectedClientsIds.Add(0);
             OnServerStarted?.Invoke();
             OnClientStarted?.Invoke();
+            if (EmulateNetcodeLifecycle && response.CreatePlayerObject) SpawnPlayerObject(0, response);
             OnClientConnectedCallback?.Invoke(LocalClientId);
             OnConnectionEvent?.Invoke(this, new ConnectionEventData { ClientId = LocalClientId, EventType = ConnectionEvent.ClientConnected });
             return true;
@@ -263,8 +304,29 @@ namespace CosmicShore.Engine.Networking
         /// <c>WaitUntil(() =&gt; !IsListening)</c> completes on its first check. Raises no
         /// callbacks (Netcode's local-notification sweep arrives with the transport phase).
         /// </summary>
+        /// <summary>Instantiates and spawns a connected client's player prefab (Netcode does this during approval).</summary>
+        void SpawnPlayerObject(ulong clientId, ConnectionApprovalResponse response)
+        {
+            var prefab = NetworkConfig?.PlayerPrefab;
+            if (response.PlayerPrefabHash is uint hash)
+                foreach (var p in NetworkConfig.Prefabs.Prefabs)
+                    if (p.Prefab != null && p.Prefab.GetComponent<NetworkObject>() is { } no && no.GlobalObjectIdHash == hash) { prefab = p.Prefab; break; }
+            if (prefab == null) return;
+            var go = Instantiate(prefab, response.Position ?? Vector3.zero, response.Rotation ?? Quaternion.identity);
+            var netObj = go.GetComponent<NetworkObject>();
+            if (netObj == null) { Debug.LogError($"[Netcode] Player prefab '{prefab.name}' has no NetworkObject."); return; }
+            netObj.SpawnAsPlayerObject(clientId, destroyWithScene: false);
+        }
+
         public void Shutdown(bool discardMessageQueue = false)
         {
+            if (EmulateNetcodeLifecycle && IsListening)
+            {
+                // Netcode despawns (and destroys) every dynamically spawned object on shutdown.
+                var spawned = new System.Collections.Generic.List<NetworkObject>(SpawnManager.SpawnedObjectsList);
+                foreach (var o in spawned)
+                    if (o != null && o.IsSpawned) o.Despawn(destroy: true);
+            }
             bool wasServer = IsServer, wasClient = IsClient, wasListening = IsListening;
             bool wasHost = wasServer && wasClient;
             if (wasListening) OnPreShutdown?.Invoke();
