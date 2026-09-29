@@ -291,6 +291,8 @@ tbody tr:last-child > * { border-bottom: 0 }
 .strip.narrow img { width: 60%; min-width: 420px }
 .ticks { font-size: 11px; color: var(--muted) }
 .anim { display: grid; gap: 20px }
+.anim h2 { margin: 0 }
+.anim > .caption { margin: -8px 0 0 }
 .animrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start }
 @media (max-width: 820px) { .animrow { grid-template-columns: minmax(0, 1fr) } }
 .gifbox img { min-width: 0; width: 100% }
@@ -303,7 +305,7 @@ table.kv td { font-weight: 600 }
   <header>
     <div class="eyebrow">Growing Neural Cellular Automata · reproduction</div>
     <h1>A lizard grown from <em>one cell</em></h1>
-    <p class="lede">Every pixel below runs the same 8,336-parameter rule, sees only its 3×3 neighbours, and fires at random half the time. Starting from a single live cell, the rule grows the Noto lizard emoji. This is a CPU PyTorch reproduction of <a href="https://distill.pub/2020/growing-ca/">Mordvintsev et al., Distill 2020</a>, running live in your browser.</p>
+    <p class="lede">Every pixel below runs the same 8,336-parameter rule, sees only its 3×3 neighbours, and fires at random half the time. Starting from a single live cell, the rule grows the Noto lizard emoji. This is a CPU PyTorch reproduction of <a href="https://distill.pub/2020/growing-ca/">Mordvintsev et al., Distill 2020</a>, running live in your browser, plus one extension: the same cell trained on an animated loop, so the lizard swims.</p>
   </header>
 
   <section class="bench" aria-label="Live automaton">

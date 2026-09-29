@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from growing_nca import load_run, make_seed  # noqa: E402
+from growing_nca import CAModel, make_seed  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -51,14 +51,15 @@ def main():
     ap.add_argument("--run", required=True)
     ap.add_argument("--steps", type=int, default=60)
     a = ap.parse_args()
-    cfg, ca = load_run(a.run)
-    # JSON weights are rounded to 1e-6; load the SAME rounded weights into torch.
+    # Built from weights.json alone (rounded to 1e-6, as the JS sees them), so any run
+    # directory works: static or animated.
     w = json.load(open(os.path.join(a.run, "weights.json")))
+    ca = CAModel(w["channel_n"], w["hidden"], w["fire_rate"])
     with torch.no_grad():
         ca.w1.copy_(torch.tensor(w["w1"])); ca.b1.copy_(torch.tensor(w["b1"]))
         ca.w2.copy_(torch.tensor(w["w2"])); ca.b2.copy_(torch.tensor(w["b2"]))
         g = w["grid"]
-        x = make_seed(1, g, g, cfg.channel_n)
+        x = make_seed(1, g, g, w["channel_n"])
         for _ in range(a.steps):
             x = ca(x, fire_rate=1.0)
     ref = x[0].numpy().reshape(-1)

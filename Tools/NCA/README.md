@@ -102,6 +102,23 @@ Two-stage training (the docstring has the detail):
    frames from whichever start frame fits best, so each lizard keeps its own phase, keeps
    moving, and heals when cut.
 
+### Result (8000 steps: 1500 clock + 6500 pool, warm-started from the regenerating lizard)
+
+| measured over steps 200–3000 of one rollout from a seed | |
+|---|---|
+| tempo (target 8 steps / frame) | **8.75** steps / frame |
+| frames visited | 8 of 8, in order, indefinitely |
+| error vs best-matching frame | 10⁻³·²³ |
+| error vs the frame its own fitted clock predicts | 10⁻³·¹⁹ |
+| best any still image can do against the loop | 10⁻²·⁷² |
+| tail quarter cut at step 400, error 600 steps later | 10⁻³·²⁷, tail regrown by ~50 steps |
+| tempo after the cut | 8.78 steps / frame |
+
+It runs about 9% slow, which is expected: with each cell firing half the time, the
+consensus clock is a noisy average and nothing penalises a slightly long period across
+the 32-step checkpoint window. The spots are softer than the static lizard's, which is
+the price of 12 hidden channels now also carrying a clock.
+
 **Stage 2 alone collapses, and that is the finding worth keeping.** A blurred average
 lizard is equally close to every frame, so a phase-free loss gives the gradient no
 consistent direction to start oscillating; from scratch it settled on one frame and never
