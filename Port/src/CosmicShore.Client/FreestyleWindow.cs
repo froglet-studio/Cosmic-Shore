@@ -16,6 +16,7 @@ using Quaternion = CosmicShore.Engine.Quaternion;
 using Vector2 = CosmicShore.Engine.Vector2;
 using Vector3 = CosmicShore.Engine.Vector3;
 using Random = System.Random;
+using TextureWrapMode = Silk.NET.OpenGL.TextureWrapMode;
 
 namespace CosmicShore.Client
 {

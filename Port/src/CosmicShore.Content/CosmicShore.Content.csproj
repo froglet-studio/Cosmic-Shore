@@ -17,4 +17,8 @@
     <InternalsVisibleTo Include="CosmicShore.Client" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="StbImageSharp" Version="2.30.16" />
+  </ItemGroup>
+
 </Project>

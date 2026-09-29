@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Silk.NET.OpenGL;
+using TextureWrapMode = Silk.NET.OpenGL.TextureWrapMode;
 
 namespace CosmicShore.Client
 {
