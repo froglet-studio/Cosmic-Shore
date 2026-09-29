@@ -469,6 +469,15 @@ what the carve-out silently broke — see the traps below.
   and it uses the whole band. Do NOT answer an overshoot by retuning `levelPerUnitScale` — it is
   shared with every non-lifeform elemental crystal (the Wanderway conveyor, Dog Fight's arena
   scatter). Compress the mapping instead.
+- **"Spindles and crystals but no prisms" is a prism WAITING to be drawn, not a prism that was
+  never made.** `Prism.CreateBlockCoroutine` keeps every laid prism's renderer and collider off
+  until it wins a per-frame creation completion (6/frame at gameplay tier); spindles and crystals
+  need none. Anything that grows worlds continuously in live play (the Arkway corridor) outruns 6
+  a frame within minutes and the backlog shows up as whole cells of bare limbs. Two sessions of
+  owner-aliasing and pool fixes went in before this was checked. Count `!IsCreationComplete`
+  prisms under the root FIRST (`CellConveyor.CountPendingCreation`); the answer to a real backlog
+  is a creation tier (`Prism.BeginBulkTransport`) or less growth, never a hidden-state hack.
+  Environment-pool mass and trail mass now spend separate budgets (`Docs/ECOSYSTEM.md` §41.3.5).
 
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals
