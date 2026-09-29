@@ -764,6 +764,10 @@ namespace CosmicShore.Engine
                 if (component is Transform) continue;
                 var copy = clone.AddComponent(component.GetType());
                 CopyFields(component, copy);
+                // The authored m_Enabled travels with the clone (Behaviour state sits below the
+                // field copy): a prefab's disabled Image/script stays disabled in every instance.
+                if (component is Behaviour sourceBehaviour && copy is Behaviour copyBehaviour)
+                    copyBehaviour.enabled = sourceBehaviour.enabled;
                 map[component] = copy;
             }
 

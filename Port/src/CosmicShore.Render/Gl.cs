@@ -84,8 +84,16 @@ namespace CosmicShore.Render
             }
         }
 
+        /// <summary>Resolves a GPU-produced texture (a camera's RenderTexture) to its GL handle; 0 = not rendered yet.</summary>
+        public Func<EngineTexture, uint> External;
+
         public uint Get(EngineTexture texture)
         {
+            if (texture is RenderTexture && External != null)
+            {
+                uint external = External(texture);
+                if (external != 0) return external;
+            }
             if (texture is not Texture2D t2 || !t2.HasPixels) return White;
             var data = t2.GetRawTextureData();
             if (_entries.TryGetValue(texture, out var e) && ReferenceEquals(e.Data, data)) return e.Handle;

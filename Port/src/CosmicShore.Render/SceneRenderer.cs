@@ -32,6 +32,7 @@ namespace CosmicShore.Render
     public sealed class SceneRenderer : IDisposable
     {
         const int InstanceFloats = 32; // mat4 + dark + bright + grow + growFrac
+        const int MaxBones = 128;
 
         const string Vert = @"#version 330 core
 layout(location=0) in vec3 aPos;
@@ -46,13 +47,19 @@ layout(location=8) in vec4 iDark;
 layout(location=9) in vec4 iBright;
 layout(location=10) in vec4 iGrow;
 layout(location=11) in vec4 iGrowFrac;
+layout(location=12) in vec4 aBoneIdx;
+layout(location=13) in vec4 aBoneW;
 uniform mat4 uViewProj;
+uniform int uSkinned;            // 1: linear-blend skinning, uBones[i] = bone.localToWorld * bindpose[i]
+uniform mat4 uBones[128];
+uniform vec3 uSkinOrigin;
 uniform float uClock;
 out vec3 vWorld;
 out vec3 vNormal;
 out vec2 vUv;
 out vec4 vColor;
 out vec3 vObj;
+out vec3 vObjNormal;
 flat out vec4 vDark;
 flat out vec4 vBright;
 flat out vec3 vOrigin;
@@ -64,13 +71,24 @@ void main(){
     float t = max(uClock - iGrow.x, 0.0);
     p *= max(vec3(1.0) - (vec3(1.0) - iGrowFrac.xyz) * exp(-iGrow.y * t), vec3(0.0));
   }
-  vec4 w = M * vec4(p, 1.0);
+  vec4 w;
+  vec3 nrm;
+  if (uSkinned == 1) {
+    mat4 S = uBones[int(aBoneIdx.x)] * aBoneW.x + uBones[int(aBoneIdx.y)] * aBoneW.y
+           + uBones[int(aBoneIdx.z)] * aBoneW.z + uBones[int(aBoneIdx.w)] * aBoneW.w;
+    w = S * vec4(p, 1.0);
+    nrm = transpose(inverse(mat3(S))) * aNormal;
+  } else {
+    w = M * vec4(p, 1.0);
+    nrm = transpose(inverse(mat3(M))) * aNormal;
+  }
   vWorld = w.xyz;
-  vNormal = transpose(inverse(mat3(M))) * aNormal;
+  vNormal = nrm;
   vUv = aUv;
   vColor = aColor;
   vObj = p;
-  vOrigin = iM3.xyz;
+  vObjNormal = aNormal;
+  vOrigin = uSkinned == 1 ? uSkinOrigin : iM3.xyz;
   vDark = iDark;
   vBright = iBright;
   gl_Position = uViewProj * w;
@@ -82,6 +100,7 @@ in vec3 vNormal;
 in vec2 vUv;
 in vec4 vColor;
 in vec3 vObj;
+in vec3 vObjNormal;
 flat in vec4 vDark;
 flat in vec4 vBright;
 flat in vec3 vOrigin;
@@ -103,7 +122,68 @@ uniform vec3 uLightColor;
 uniform vec3 uAmbient;
 uniform vec4 uFogColor;
 uniform vec4 uFog;            // mode, density, start, end (mode 0 = off)
+// ForcefieldCrackle (first-party ForcefieldCrackle.hlsl, translated): impacts from the controller's property block.
+uniform vec4 uImpactPos[16];
+uniform vec4 uImpactParams[16];
+uniform int uImpactCount;
+uniform vec3 uCamPosOS;
+uniform vec4 uCrackleA, uCrackleB, uRimColor;
+uniform vec4 uCrackleP0;      // arcDensity, arcSharpness, ringThickness, centerFill
+uniform vec4 uCrackleP1;      // rippleSpeed, rimIntensity, rimPower, -
 out vec4 frag;
+float cHash1(float n){ return fract(sin(n) * 43758.5453123); }
+float cNoise(float x){ float i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f); return mix(cHash1(i), cHash1(i + 1.0), f); }
+float cFbm(float x, int oct){ float v = 0.0, a = 0.5, fr = 1.0; for (int o = 0; o < oct; o++){ v += a * (cNoise(x * fr) * 2.0 - 1.0); fr *= 2.17; a *= 0.5; } return v; }
+vec4 crackle(vec3 posOS, vec3 nOS, vec3 viewOS){
+  vec3 fragDir = normalize(posOS);
+  float NdotV = clamp(dot(normalize(nOS), normalize(viewOS)), 0.0, 1.0);
+  float fresnel = pow(1.0 - NdotV, uCrackleP1.z) * uCrackleP1.y;
+  vec3 em = uRimColor.rgb * fresnel;
+  if (uImpactCount <= 0) return vec4(em, fresnel);
+  float total = 0.0; vec3 totalColor = vec3(0.0);
+  for (int i = 0; i < 16; i++) {
+    vec4 ip = uImpactPos[i], pa = uImpactParams[i];
+    float maxLife = pa.z; if (maxLife <= 0.0) continue;
+    float intensity = pa.x, angR = pa.y, elapsed = ip.w;
+    float life = clamp(elapsed / maxLife, 0.0, 1.0);
+    float timeFade = pow(1.0 - life, 1.5);
+    vec3 idir = normalize(ip.xyz);
+    float angle = acos(clamp(dot(fragDir, idir), -1.0, 1.0));
+    vec3 tangent = normalize(cross(idir, vec3(0.123, 0.456, 0.789)));
+    vec3 bitangent = cross(idir, tangent);
+    float azimuth = atan(dot(fragDir, bitangent), dot(fragDir, tangent));
+    float expanded = clamp(life * uCrackleP1.x, 0.0, 1.0);
+    float waveAngle = angR * 3.14159 * expanded;
+    float ringW = angR * uCrackleP0.z;
+    float behind = waveAngle - angle;
+    float band = smoothstep(-ringW * 0.1, 0.0, behind) * smoothstep(ringW, 0.0, behind);
+    band *= step(angle, waveAngle + ringW * 0.2);
+    float center = smoothstep(angR * 3.14159 * uCrackleP0.w, 0.0, angle) * (1.0 - life * life);
+    float env = max(band, center);
+    if (env < 0.001) continue;
+    int arcCount = int(uCrackleP0.x);
+    float arcC = 0.0, heat = 0.0, sh = uCrackleP0.y;
+    for (int a = 0; a < 20; a++) {
+      if (a >= arcCount) break;
+      float baseA = (float(a) / float(arcCount)) * 6.28318 + cHash1(float(i) * 7.3 + 0.5) * 6.28318;
+      float dA = azimuth - baseA; dA = dA - 6.28318 * floor(dA / 6.28318 + 0.5);
+      float ni = angle * 15.0 + float(a) * 13.7 + float(i) * 5.3;
+      float wob = cFbm(ni, 4) * 0.3 * (angle + 0.1);
+      float sub = cFbm(ni * 2.3 + 100.0, 3) * 0.15 * angle;
+      float ad = abs(dA - wob), ads = abs(dA - wob - sub);
+      float line = exp(-ad * ad / (sh * sh));
+      float subl = exp(-ads * ads / (sh * sh * 4.0)) * 0.4;
+      float arc = max(line, subl) * smoothstep(0.0, 0.05, angle);
+      arcC = max(arcC, arc); heat = max(heat, line);
+    }
+    float c = env * arcC * timeFade * intensity;
+    vec3 ac = mix(uCrackleB.rgb, uCrackleA.rgb, heat * heat) * (1.0 + heat * 2.0);
+    total += c; totalColor += ac * c;
+  }
+  total = clamp(total, 0.0, 1.0);
+  em = total > 0.001 ? (totalColor / max(total, 0.001)) * total + uRimColor.rgb * fresnel : uRimColor.rgb * fresnel;
+  return vec4(em, clamp(total + fresnel, 0.0, 1.0));
+}
 // Voronoi as Shader Graph's Voronoi node documents it (random cell offsets animated by AngleOffset).
 vec2 voronoiRandom(vec2 uv, float offset){
   uv = fract(sin(vec2(dot(uv, vec2(15.27, 99.41)), dot(uv, vec2(47.63, 89.98)))) * 46839.32);
@@ -126,7 +206,10 @@ void main(){
   vec3 V = normalize(uCamPos - vWorld);
   vec4 tex = texture(uTex, vUv * uTexST.xy + uTexST.zw);
   vec4 col;
-  if (uFamily == 2) {
+  if (uFamily == 7) {
+    vec3 nOS = gl_FrontFacing ? vObjNormal : -vObjNormal;
+    col = crackle(vObj, nOS, uCamPosOS - vObj);
+  } else if (uFamily == 2) {
     // FresnelPower4: back-facing normals keep a faint term (d+1)*0.2 instead of clamping.
     float d = dot(N, V);
     float x = d > 0.0 ? d : (d + 1.0) * 0.2;
@@ -183,6 +266,9 @@ void main(){
             public object VertsRef, NormRef, UvRef, ColRef;
             public object[] SubRefs = Array.Empty<object>();
             public bool HasColors;
+            public bool HasSkin;
+            public uint SkinVbo;
+            public object SkinRef;
             public int Frame;
         }
 
@@ -216,6 +302,7 @@ void main(){
             public Material Material;
             public MatState State;
             public float Distance;
+            public bool Skinned;
         }
 
         readonly GL _gl;
@@ -260,6 +347,10 @@ void main(){
         }
 
         /// <summary>Draws the scene as seen by <paramref name="camera"/> into the bound target.</summary>
+        EVector3 _camPos;
+        readonly List<Item> _run = new(), _skinnedOpaque = new();
+        readonly float[] _boneData = new float[MaxBones * 16];
+
         public void Render(Camera camera, int width, int height)
         {
             _frame++;
@@ -268,6 +359,7 @@ void main(){
             var proj = camera.projectionMatrix;
             var viewProj = proj * view;
             var camPos = camera.transform.position;
+            _camPos = camPos;
             int mask = camera.cullingMask;
 
             Collect(mask, camPos);
@@ -293,6 +385,7 @@ void main(){
             _batches.Clear();
             foreach (var it in _opaque)
             {
+                if (it.Skinned) { _skinnedOpaque.Add(it); continue; }
                 var key = (it.Mesh, it.Submesh, it.Material);
                 if (!_batches.TryGetValue(key, out var list))
                 {
@@ -304,16 +397,28 @@ void main(){
             }
             foreach (var kv in _batches)
                 DrawBatch(kv.Value);
+            foreach (var it in _skinnedOpaque) { _run.Clear(); _run.Add(it); DrawBatch(_run); }
+            _skinnedOpaque.Clear();
+            _run.Clear();
 
             // Transparent: back to front, one at a time.
             _transparent.Sort((a, b) => a.State.Queue != b.State.Queue ? a.State.Queue.CompareTo(b.State.Queue) : b.Distance.CompareTo(a.Distance));
             _gl.Enable(EnableCap.Blend);
-            var one = new List<Item>(1) { default };
+            // Order is exact (queue, then back to front); consecutive items that share mesh,
+            // submesh and material draw as one instanced call — the same blend order, far fewer calls.
+            _run.Clear();
             foreach (var it in _transparent)
             {
-                one[0] = it;
-                DrawBatch(one);
+                if (_run.Count > 0)
+                {
+                    var head = _run[0];
+                    bool same = head.State.Family != 7 && !head.Skinned && !it.Skinned && ReferenceEquals(head.Mesh, it.Mesh)
+                                && head.Submesh == it.Submesh && ReferenceEquals(head.Material, it.Material);
+                    if (!same) { DrawBatch(_run); _run.Clear(); }
+                }
+                _run.Add(it);
             }
+            if (_run.Count > 0) { DrawBatch(_run); _run.Clear(); }
 
             _gl.DepthMask(true);
             _gl.FrontFace(FrontFaceDirection.Ccw);
@@ -338,6 +443,7 @@ void main(){
                 if (go.isPrefabAsset) continue;
                 Mesh mesh = r is SkinnedMeshRenderer s ? s.sharedMesh : r.GetComponent<MeshFilter>()?.sharedMesh;
                 if (mesh == null || mesh.vertexCount == 0) continue;
+                if (r is SkinnedMeshRenderer morphing && mesh.blendShapeCount > 0) mesh = Morphed(morphing, mesh);
                 var mats = r.sharedMaterials;
                 int subs = mesh.RenderSubmeshCount;
                 for (int i = 0; i < mats.Length && i < Math.Max(subs, 1); i++)
@@ -345,7 +451,9 @@ void main(){
                     var m = mats[i];
                     if (m == null) continue;
                     if (!_mats.TryGetValue(m, out var st)) _mats[m] = st = Classify(m);
-                    var item = new Item { Renderer = r, Mesh = mesh, Submesh = Math.Min(i, subs - 1), Material = m, State = st };
+                    var item = new Item { Renderer = r, Mesh = mesh, Submesh = Math.Min(i, subs - 1), Material = m, State = st,
+                        Skinned = r is SkinnedMeshRenderer sk && sk.bones is { Length: > 0 and <= MaxBones } && mesh.RenderBoneWeights.Length == mesh.vertexCount
+                                  && mesh.RenderBindposes.Length >= sk.bones.Length };
                     if (st.Transparent)
                     {
                         item.Distance = (r.transform.position - camPos).sqrMagnitude;
@@ -378,6 +486,10 @@ void main(){
             {
                 st.Family = 5; st.DarkId = IdDullColor; st.BrightId = IdBright;
                 st.Param = new Vector4(m.GetFloat("_CellDensity"), m.GetFloat("_Distance"), m.GetFloat("_Phase"), 0);
+            }
+            else if (graph == "Shader Graphs/ForcefieldCrackle")
+            {
+                st.Family = 7; // hand-written: Blend One One, ZWrite Off, Cull Off (see the fix-up below)
             }
             else if (graph == "Shader Graphs/CrystalGraph")
             {
@@ -435,6 +547,11 @@ void main(){
             if (m.HasProperty(IdCull)) st.Cull = (int)m.GetFloat(IdCull);
             st.Cutoff = m.HasProperty(IdAlphaClip) && m.GetFloat(IdAlphaClip) >= 0.5f && m.HasProperty(IdCutoff) ? m.GetFloat(IdCutoff) : -1f;
             if (!st.Transparent && st.Cutoff < 0f) { st.Dark.a = 1f; st.Bright.a = 1f; }
+            if (st.Family == 7)
+            {
+                st.Transparent = true; st.Src = BlendingFactor.One; st.Dst = BlendingFactor.One;
+                st.ZWrite = false; st.Cull = 0; st.Cutoff = -1f;
+            }
             return st;
         }
 
@@ -481,6 +598,8 @@ void main(){
                 _gl.BufferSubData(BufferTargetARB.ArrayBuffer, 0, (nuint)bytes, p);
             BindInstanceAttributes();
 
+            if (st.Family == 7) SetCrackleUniforms(first);
+            SetSkinUniforms(first, entry);
             _program.Set("uFamily", st.Family);
             _program.Set("uFresPow", st.FresPow);
             _program.Set("uMaxSqrDist", st.MaxSqrDist);
@@ -507,6 +626,144 @@ void main(){
                 (void*)(entry.SubmeshStart[first.Submesh] * sizeof(uint)), (uint)n, 0);
             DrawCalls++;
             Instances += n;
+        }
+
+        static readonly int IdImpactPos = Shader.PropertyToID("_ImpactPositions"), IdImpactParams = Shader.PropertyToID("_ImpactParams"), IdImpactCount = Shader.PropertyToID("_ImpactCount");
+        static readonly int IdCrackleA = Shader.PropertyToID("_CrackleColorA"), IdCrackleB = Shader.PropertyToID("_CrackleColorB"), IdRimColor = Shader.PropertyToID("_FresnelRimColor");
+        static readonly int[] IdCrackleFloats =
+        {
+            Shader.PropertyToID("_ArcDensity"), Shader.PropertyToID("_ArcSharpness"), Shader.PropertyToID("_RingThickness"), Shader.PropertyToID("_CenterFillAmount"),
+            Shader.PropertyToID("_RippleSpeed"), Shader.PropertyToID("_FresnelRimIntensity"), Shader.PropertyToID("_FresnelRimPower"),
+        };
+        readonly float[] _impactScratch = new float[64];
+
+        /// <summary>The crackle's per-renderer state: the controller's property block, else the material.</summary>
+        void SetCrackleUniforms(in Item it)
+        {
+            var m = it.Material;
+            var b = it.Renderer.HasPropertyBlock() ? it.Renderer.PropertyBlockFor(it.Submesh) : null;
+            float F(int id) => b != null && b.HasFloat(id) ? b.GetFloat(id) : m.HasProperty(id) ? m.GetFloat(id) : 0f;
+            Color C(int id) => b != null && b.HasColor(id) ? b.GetColor(id) : m.HasProperty(id) ? m.GetColor(id) : Color.black;
+            var f = IdCrackleFloats;
+            _program.Set("uCrackleP0", F(f[0]), F(f[1]), F(f[2]), F(f[3]));
+            _program.Set("uCrackleP1", F(f[4]), F(f[5]), F(f[6]), 0f);
+            var a = C(IdCrackleA); _program.Set("uCrackleA", a.r, a.g, a.b, a.a);
+            var bc = C(IdCrackleB); _program.Set("uCrackleB", bc.r, bc.g, bc.b, bc.a);
+            var rc = C(IdRimColor); _program.Set("uRimColor", rc.r, rc.g, rc.b, rc.a);
+            int count = (int)F(IdImpactCount);
+            _program.Set("uImpactCount", count);
+            UploadVec4Array("uImpactPos", b?.GetVectorArray(IdImpactPos));
+            UploadVec4Array("uImpactParams", b?.GetVectorArray(IdImpactParams));
+            var camOS = it.Renderer.transform.InverseTransformPoint(_camPos);
+            _gl.Uniform3(_program.Loc("uCamPosOS"), camOS.x, camOS.y, camOS.z);
+        }
+
+        unsafe void UploadVec4Array(string name, Vector4[] values)
+        {
+            Array.Clear(_impactScratch);
+            if (values != null)
+                for (int i = 0; i < Math.Min(16, values.Length); i++)
+                {
+                    _impactScratch[i * 4] = values[i].x; _impactScratch[i * 4 + 1] = values[i].y;
+                    _impactScratch[i * 4 + 2] = values[i].z; _impactScratch[i * 4 + 3] = values[i].w;
+                }
+            fixed (float* p = _impactScratch) _gl.Uniform4(_program.Loc(name), 16, p);
+        }
+
+        sealed class MorphState { public Mesh Clone; public Mesh Source; public float[] Weights = Array.Empty<float>(); }
+        readonly ConditionalWeakTable<SkinnedMeshRenderer, MorphState> _morphs = new();
+        readonly ConditionalWeakTable<Mesh, Dictionary<(int, int), (EVector3[] V, EVector3[] N)>> _deltas = new();
+
+        /// <summary>
+        /// Blend shapes (the elemental hull morphs): the shared mesh's positions and normals plus each
+        /// weighted shape's delta (weight 0..100 against the frame weights, interpolating between frames),
+        /// baked into a per-renderer copy only when the weights change.
+        /// </summary>
+        Mesh Morphed(SkinnedMeshRenderer smr, Mesh mesh)
+        {
+            var weights = smr.RenderBlendShapeWeights;
+            bool any = false;
+            foreach (var kv in weights) if (kv.Value != 0f && kv.Key >= 0 && kv.Key < mesh.blendShapeCount) { any = true; break; }
+            if (!any) return mesh;
+            var state = _morphs.GetOrCreateValue(smr);
+            int count = mesh.blendShapeCount;
+            bool changed = !ReferenceEquals(state.Source, mesh) || state.Weights.Length != count;
+            if (!changed)
+                for (int i = 0; i < count; i++)
+                    if (state.Weights[i] != smr.GetBlendShapeWeight(i)) { changed = true; break; }
+            if (!changed && state.Clone != null) return state.Clone;
+
+            if (state.Clone == null || !ReferenceEquals(state.Source, mesh))
+            {
+                state.Clone = new Mesh { name = mesh.name + " (morph)" };
+                smr.BakeMesh(state.Clone); // a full copy of the shared mesh's buffers
+                state.Source = mesh;
+            }
+            if (state.Weights.Length != count) state.Weights = new float[count];
+            var baseV = mesh.RenderVertices;
+            var baseN = mesh.RenderNormals;
+            var v = (EVector3[])baseV.Clone();
+            var nrm = baseN.Length == baseV.Length ? (EVector3[])baseN.Clone() : null;
+            var cache = _deltas.GetOrCreateValue(mesh);
+            for (int shape = 0; shape < count; shape++)
+            {
+                float w = smr.GetBlendShapeWeight(shape);
+                state.Weights[shape] = w;
+                if (w == 0f) continue;
+                int frames = mesh.GetBlendShapeFrameCount(shape);
+                if (frames == 0) continue;
+                // Which frame pair brackets the weight (original: frames are ordered by weight).
+                int hi = 0;
+                while (hi < frames - 1 && mesh.GetBlendShapeFrameWeight(shape, hi) < w) hi++;
+                float wHi = mesh.GetBlendShapeFrameWeight(shape, hi);
+                float wLo = hi > 0 ? mesh.GetBlendShapeFrameWeight(shape, hi - 1) : 0f;
+                float t = Math.Abs(wHi - wLo) > 1e-6f ? (w - wLo) / (wHi - wLo) : 1f;
+                AddDelta(mesh, cache, shape, hi, t, v, nrm);
+                if (hi > 0) AddDelta(mesh, cache, shape, hi - 1, 1f - t, v, nrm);
+            }
+            state.Clone.vertices = v;
+            if (nrm != null) state.Clone.normals = nrm;
+            return state.Clone;
+        }
+
+        static void AddDelta(Mesh mesh, Dictionary<(int, int), (EVector3[] V, EVector3[] N)> cache, int shape, int frame, float k,
+            EVector3[] v, EVector3[] n)
+        {
+            if (!cache.TryGetValue((shape, frame), out var d))
+            {
+                var dv = new EVector3[mesh.vertexCount];
+                var dn = new EVector3[mesh.vertexCount];
+                mesh.GetBlendShapeFrameVertices(shape, frame, dv, dn, null);
+                cache[(shape, frame)] = d = (dv, dn);
+            }
+            for (int i = 0; i < v.Length && i < d.V.Length; i++) v[i] += d.V[i] * k;
+            if (n != null)
+                for (int i = 0; i < n.Length && i < d.N.Length; i++) n[i] += d.N[i] * k;
+        }
+
+        unsafe void SetSkinUniforms(in Item it, MeshEntry entry)
+        {
+            if (!it.Skinned || !entry.HasSkin || it.Renderer is not SkinnedMeshRenderer smr)
+            {
+                _program.Set("uSkinned", 0);
+                return;
+            }
+            var bones = smr.bones;
+            var bind = it.Mesh.RenderBindposes;
+            for (int i = 0; i < bones.Length; i++)
+            {
+                var b = bones[i];
+                var m = b != null ? b.localToWorldMatrix * bind[i] : smr.transform.localToWorldMatrix;
+                int o = i * 16;
+                _boneData[o + 0] = m.m00; _boneData[o + 1] = m.m10; _boneData[o + 2] = m.m20; _boneData[o + 3] = m.m30;
+                _boneData[o + 4] = m.m01; _boneData[o + 5] = m.m11; _boneData[o + 6] = m.m21; _boneData[o + 7] = m.m31;
+                _boneData[o + 8] = m.m02; _boneData[o + 9] = m.m12; _boneData[o + 10] = m.m22; _boneData[o + 11] = m.m32;
+                _boneData[o + 12] = m.m03; _boneData[o + 13] = m.m13; _boneData[o + 14] = m.m23; _boneData[o + 15] = m.m33;
+            }
+            fixed (float* p = _boneData) _gl.UniformMatrix4(_program.Loc("uBones"), (uint)bones.Length, false, p);
+            _program.Set("uSkinned", 1);
+            var origin = smr.transform.position;
+            _gl.Uniform3(_program.Loc("uSkinOrigin"), origin.x, origin.y, origin.z);
         }
 
         void WriteInstance(in Item it, int o)
@@ -565,7 +822,8 @@ void main(){
             var cols = mesh.RenderColors;
             int subs = mesh.RenderSubmeshCount;
             bool dirty = e.Vao == 0 || !ReferenceEquals(e.VertsRef, verts) || !ReferenceEquals(e.NormRef, norms)
-                || !ReferenceEquals(e.UvRef, uvs) || !ReferenceEquals(e.ColRef, cols) || e.SubRefs.Length != subs;
+                || !ReferenceEquals(e.UvRef, uvs) || !ReferenceEquals(e.ColRef, cols) || e.SubRefs.Length != subs
+                || !ReferenceEquals(e.SkinRef, mesh.RenderBoneWeights);
             if (!dirty)
                 for (int i = 0; i < subs; i++)
                     if (!ReferenceEquals(e.SubRefs[i], mesh.RenderSubmesh(i))) { dirty = true; break; }
@@ -624,6 +882,29 @@ void main(){
             _gl.EnableVertexAttribArray(1); _gl.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, stride, (void*)(3 * sizeof(float)));
             _gl.EnableVertexAttribArray(2); _gl.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, stride, (void*)(6 * sizeof(float)));
             _gl.EnableVertexAttribArray(3); _gl.VertexAttribPointer(3, 4, VertexAttribPointerType.Float, false, stride, (void*)(8 * sizeof(float)));
+            var bw = mesh.RenderBoneWeights;
+            e.HasSkin = bw != null && bw.Length == n;
+            e.SkinRef = bw;
+            if (e.HasSkin)
+            {
+                var skin = new float[n * 8];
+                for (int i = 0; i < n; i++)
+                {
+                    int o = i * 8;
+                    skin[o] = bw[i].boneIndex0; skin[o + 1] = bw[i].boneIndex1; skin[o + 2] = bw[i].boneIndex2; skin[o + 3] = bw[i].boneIndex3;
+                    skin[o + 4] = bw[i].weight0; skin[o + 5] = bw[i].weight1; skin[o + 6] = bw[i].weight2; skin[o + 7] = bw[i].weight3;
+                }
+                if (e.SkinVbo == 0) e.SkinVbo = _gl.GenBuffer();
+                _gl.BindBuffer(BufferTargetARB.ArrayBuffer, e.SkinVbo);
+                fixed (float* sp = skin) _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(skin.Length * sizeof(float)), sp, BufferUsageARB.StaticDraw);
+                _gl.EnableVertexAttribArray(12); _gl.VertexAttribPointer(12, 4, VertexAttribPointerType.Float, false, 8 * sizeof(float), (void*)0);
+                _gl.EnableVertexAttribArray(13); _gl.VertexAttribPointer(13, 4, VertexAttribPointerType.Float, false, 8 * sizeof(float), (void*)(4 * sizeof(float)));
+            }
+            else
+            {
+                _gl.DisableVertexAttribArray(12);
+                _gl.DisableVertexAttribArray(13);
+            }
             _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, e.Ebo);
             fixed (uint* p = idx) _gl.BufferData(BufferTargetARB.ElementArrayBuffer, (nuint)(idx.Length * sizeof(uint)), p, BufferUsageARB.StaticDraw);
             _gl.BindVertexArray(0);

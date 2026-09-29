@@ -195,6 +195,8 @@ namespace CosmicShore.Engine
             {
                 // Original contract: a transform cannot become a child of its own descendant.
                 Debug.LogError($"Cannot set the parent of '{name}' to its own child '{newParent.name}'.");
+                if (System.Environment.GetEnvironmentVariable("CS_PORT_TRACE_PARENT") == "1")
+                    System.Console.WriteLine($"[trace-parent] {System.Environment.StackTrace}");
                 return;
             }
 

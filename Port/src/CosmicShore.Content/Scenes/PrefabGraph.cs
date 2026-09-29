@@ -42,6 +42,19 @@ namespace CosmicShore.Content.Scenes
         public readonly List<long> RootOrder = new();
         public readonly List<string> Warnings = new();
 
+        /// <summary>
+        /// (instance, source object) → the id that object carries here. Normally the XOR id; when
+        /// that collides with an object already in the graph (an authored fileID that happens to
+        /// equal a derived one — Sparrow.prefab's root GameObject equals its HUD instance root's
+        /// derived id), a fresh id is assigned. Unity resolves nested objects by
+        /// (m_PrefabInstance, m_CorrespondingSourceObject), never by the derived number.
+        /// </summary>
+        readonly Dictionary<(long, long), long> _instanceIds = new();
+
+        /// <summary>The id the object <paramref name="sourceId"/> of instance <paramref name="instanceId"/> carries in this graph.</summary>
+        public long MapInstance(long instanceId, long sourceId)
+            => _instanceIds.TryGetValue((instanceId, sourceId), out var id) ? id : Xor(instanceId, sourceId);
+
         internal PrefabGraph(AssetFile file) { File = file; }
 
         internal static void ApplyModificationForTests(YMap body, string path, string value, YMap refNode, ObjRef r)
@@ -62,6 +75,15 @@ namespace CosmicShore.Content.Scenes
             => Objects.TryGetValue(Resolve(id), out var o) && !o.Removed ? o : null;
 
         public static long Xor(long instanceId, long sourceId) => (instanceId ^ sourceId) & IdMask;
+
+        // Per-instance source graph, so an owning stripped doc can resolve through the source's own aliases.
+        readonly Dictionary<long, PrefabGraph> _instanceSources = new();
+        readonly HashSet<long> _reserved = new();
+
+        internal long MapInstanceResolved(long instanceId, long sourceId)
+            => _instanceSources.TryGetValue(instanceId, out var src)
+                ? MapInstance(instanceId, src.Resolve(sourceId))
+                : Xor(instanceId, sourceId);
 
         /// <summary>The single root GameObject of a prefab graph (the GameObject whose transform has no parent).</summary>
         public GraphObject FindPrefabRoot()
@@ -99,6 +121,7 @@ namespace CosmicShore.Content.Scenes
                 if (depth > 12) { g.Warnings.Add($"prefab nesting too deep at {file.Path}"); return g; }
 
                 var instances = new List<UnityDocument>();
+                var stripped = new List<UnityDocument>();
                 foreach (var d in file.Documents)
                 {
                     if (d.ClassId == 1001) { instances.Add(d); continue; }
@@ -110,9 +133,7 @@ namespace CosmicShore.Content.Scenes
                     }
                     if (d.Stripped)
                     {
-                        var src = ObjRef.From(d.Body["m_CorrespondingSourceObject"]);
-                        var pi = ObjRef.From(d.Body["m_PrefabInstance"]);
-                        if (!pi.IsNull) g.Aliases[d.FileId] = Xor(pi.FileId, src.FileId);
+                        stripped.Add(d);
                         continue;
                     }
                     g.Objects[d.FileId] = new GraphObject
@@ -123,6 +144,15 @@ namespace CosmicShore.Content.Scenes
 
                 foreach (var pi in instances)
                     ExpandInstance(g, pi, depth);
+
+                // Stripped documents alias the instance object they stand for — resolved through the
+                // instance map, so a collision-renamed object is still found.
+                foreach (var d in stripped)
+                {
+                    var src = ObjRef.From(d.Body["m_CorrespondingSourceObject"]);
+                    var pi = ObjRef.From(d.Body["m_PrefabInstance"]);
+                    if (!pi.IsNull) g.Aliases[d.FileId] = g.MapInstanceResolved(pi.FileId, src.FileId);
+                }
 
                 return g;
             }
@@ -150,14 +180,32 @@ namespace CosmicShore.Content.Scenes
                 }
 
                 long piId = pi.FileId;
+                g._instanceSources[piId] = src;
+
+                // 0. Assign every source object its id here (derived; fresh on collision).
+                foreach (var so in src.Objects.Values)
+                {
+                    if (so.Removed) continue;
+                    long nid = Xor(piId, so.Id);
+                    if (g.Objects.ContainsKey(nid))
+                    {
+                        long fresh = nid;
+                        do fresh = (long)(((ulong)fresh * 6364136223846793005UL + 1442695040888963407UL) & (ulong)IdMask);
+                        while (fresh == 0 || g.Objects.ContainsKey(fresh) || g._reserved.Contains(fresh));
+                        g.Warnings.Add($"derived id {nid} of &{so.Id} in instance &{piId} collides in {g.File.Path}; using {fresh}");
+                        nid = fresh;
+                    }
+                    g._instanceIds[(piId, so.Id)] = nid;
+                    g._reserved.Add(nid);
+                }
 
                 // 1. Copy every source object into our id space, re-mapping its local refs.
                 foreach (var so in src.Objects.Values)
                 {
                     if (so.Removed) continue;
-                    long nid = Xor(piId, so.Id);
+                    long nid = g.MapInstance(piId, so.Id);
                     var body = (YMap)so.Body.Clone();
-                    RemapLocalRefs(body, src, piId);
+                    RemapLocalRefs(body, src, g, piId);
                     g.Objects[nid] = new GraphObject
                     {
                         Id = nid, ClassId = so.ClassId, TypeName = so.TypeName, Body = body, Origin = so.Origin,
@@ -165,14 +213,18 @@ namespace CosmicShore.Content.Scenes
                 }
                 // The source's own aliases (its stripped docs for deeper nesting) become ours too.
                 foreach (var kv in src.Aliases)
-                    g.Aliases[Xor(piId, kv.Key)] = Xor(piId, src.Resolve(kv.Key));
+                {
+                    long key = Xor(piId, kv.Key);
+                    if (!g.Objects.ContainsKey(key)) // never let an alias shadow a real object's id
+                        g.Aliases[key] = g.MapInstance(piId, src.Resolve(kv.Key));
+                }
 
                 // 2. The instance root's parent.
                 var parentRef = ObjRef.From(mod["m_TransformParent"]);
                 var srcRoot = src.FindPrefabRoot();
                 if (srcRoot != null)
                 {
-                    var rootGo = g.Objects[Xor(piId, srcRoot.Id)];
+                    var rootGo = g.Objects[g.MapInstance(piId, srcRoot.Id)];
                     var rootTf = FindTransformOf(g, rootGo);
                     if (rootTf != null)
                         rootTf.Body.Set("m_Father", YMap.Ref(parentRef.FileId));
@@ -182,7 +234,7 @@ namespace CosmicShore.Content.Scenes
                 foreach (var m in mod["m_Modifications"]?.Items ?? Array.Empty<YNode>())
                 {
                     var target = ObjRef.From(m["target"]);
-                    long tid = Xor(piId, src.Resolve(target.FileId));
+                    long tid = g.MapInstance(piId, src.Resolve(target.FileId));
                     if (!g.Objects.TryGetValue(tid, out var obj))
                     {
                         // Targets a component the source no longer has (stale override) — Unity ignores it too.
@@ -198,12 +250,12 @@ namespace CosmicShore.Content.Scenes
                 // 4. Removed components / GameObjects.
                 foreach (var r in mod["m_RemovedComponents"]?.Items ?? Array.Empty<YNode>())
                 {
-                    long id = Xor(piId, src.Resolve(ObjRef.From(r).FileId));
+                    long id = g.MapInstance(piId, src.Resolve(ObjRef.From(r).FileId));
                     if (g.Objects.TryGetValue(id, out var o)) o.Removed = true;
                 }
                 foreach (var r in mod["m_RemovedGameObjects"]?.Items ?? Array.Empty<YNode>())
                 {
-                    long id = Xor(piId, src.Resolve(ObjRef.From(r).FileId));
+                    long id = g.MapInstance(piId, src.Resolve(ObjRef.From(r).FileId));
                     if (g.Objects.TryGetValue(id, out var o)) RemoveGameObjectTree(g, o);
                 }
             }
@@ -242,21 +294,21 @@ namespace CosmicShore.Content.Scenes
 
             // Every local ref {fileID: f} (no guid) inside a source object's body points into the
             // source file's id space; move it into ours.
-            static void RemapLocalRefs(YNode node, PrefabGraph src, long piId)
+            static void RemapLocalRefs(YNode node, PrefabGraph src, PrefabGraph g, long piId)
             {
                 if (node is YMap map)
                 {
                     if (map.Entries.Count <= 3 && map["fileID"] is YScalar fid && map["guid"] == null)
                     {
                         if (YScalar.TryLong(fid.Value, out var f) && f != 0)
-                            map.Set("fileID", new YScalar(Xor(piId, src.Resolve(f)).ToString(CultureInfo.InvariantCulture)));
+                            map.Set("fileID", new YScalar(g.MapInstance(piId, src.Resolve(f)).ToString(CultureInfo.InvariantCulture)));
                         return;
                     }
-                    for (int i = 0; i < map.Entries.Count; i++) RemapLocalRefs(map.Entries[i].Value, src, piId);
+                    for (int i = 0; i < map.Entries.Count; i++) RemapLocalRefs(map.Entries[i].Value, src, g, piId);
                 }
                 else if (node is YSeq seq)
                 {
-                    foreach (var n in seq.List) RemapLocalRefs(n, src, piId);
+                    foreach (var n in seq.List) RemapLocalRefs(n, src, g, piId);
                 }
             }
 

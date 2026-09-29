@@ -127,6 +127,9 @@ namespace CosmicShore.Engine
         public float GetBlendShapeWeight(int index)
             => _blendShapeWeights.TryGetValue(index, out var w) ? w : 0f;
 
+        /// <summary>Renderer view: every blend-shape weight set on this renderer (index → weight, 0..100).</summary>
+        public IReadOnlyDictionary<int, float> RenderBlendShapeWeights => _blendShapeWeights;
+
         /// <summary>
         /// Original contract: snapshot the current deformed state into <paramref name="mesh"/>.
         /// Headless, no skinning ever runs, so the snapshot IS the shared mesh — a deep copy

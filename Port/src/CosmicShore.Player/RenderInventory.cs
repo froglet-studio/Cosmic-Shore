@@ -22,6 +22,7 @@ namespace CosmicShore.Player
 
             var byKind = new Dictionary<string, int>();
             var byShader = new Dictionary<string, int>();
+            var rare = new List<string>();
             var meshNames = new Dictionary<string, int>();
             foreach (var r in renderers)
             {
@@ -32,7 +33,10 @@ namespace CosmicShore.Player
                 var mats = r.sharedMaterials ?? Array.Empty<Material>();
                 if (mats.Length == 0) Bump(byShader, "(no materials)");
                 foreach (var m in mats) Bump(byShader, m == null ? "(null material)" : m.shader?.name ?? "(no shader)");
+                if (rare.Count < 40 && mesh != null && (mats.Any(m => m == null) || mesh.name is "Sphere" or "Node" or "Cube"))
+                    rare.Add($"{Path(r.transform)} mesh={mesh.name} mats=[{string.Join(",", mats.Select(m => m == null ? "null" : m.name))}] scale={r.transform.lossyScale} enabled={r.enabled}");
             }
+            if (rare.Count > 0) { Console.WriteLine("  notable renderers:"); foreach (var line in rare) Console.WriteLine("    " + line); }
             Console.WriteLine("  renderers:");
             foreach (var (k, n) in byKind.OrderByDescending(kv => kv.Value)) Console.WriteLine($"    {n,6}  {k}");
             Console.WriteLine("  shaders:");
@@ -69,5 +73,12 @@ namespace CosmicShore.Player
         }
 
         static void Bump(Dictionary<string, int> d, string k) => d[k] = d.TryGetValue(k, out var n) ? n + 1 : 1;
+        static string Path(Transform t)
+        {
+            var parts = new List<string>();
+            for (int i = 0; t != null && i < 5; t = t.parent, i++) parts.Insert(0, t.name);
+            return string.Join("/", parts);
+        }
     }
+
 }

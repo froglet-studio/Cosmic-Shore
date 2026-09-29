@@ -32,6 +32,12 @@ namespace CosmicShore.Player
         SilkInputBridge _inputBridge;
         int _frameIndex;
 
+        /// <summary>A camera's off-screen target: the HDR scene it draws into and the post-processed result the UI samples.</summary>
+        sealed class RtTarget { public FrameTarget Scene, Out; public int Frame = -1; }
+        readonly System.Runtime.CompilerServices.ConditionalWeakTable<RenderTexture, RtTarget> _rt = new();
+        readonly System.Collections.Generic.Dictionary<(int, int), PostPass> _rtPost = new();
+        bool _inFrame;
+
         /// <param name="lastFrame">Close after this frame (-1 = run until the window closes).</param>
         public PlayerWindow(string scene, int width, int height,
             System.Collections.Generic.SortedDictionary<int, string> shots, int lastFrame, InputScript script)
@@ -80,6 +86,8 @@ namespace CosmicShore.Player
             _sceneRenderer = new SceneRenderer(_gl, _textures);
             _skybox = new SkyboxPass(_gl);
             _post = new PostPass(_gl);
+            _textures.External = t => t is RenderTexture rt && _rt.TryGetValue(rt, out var target) ? target.Out.Color : 0u;
+            Camera.RenderRequested = cam => { if (cam != null && cam.targetTexture != null) RenderToTexture(cam, force: true); };
 
             _inputBridge = new SilkInputBridge(_window);
             _script.EnsureDevices();
@@ -97,13 +105,22 @@ namespace CosmicShore.Player
             _inputBridge.AfterTick();
         }
 
+        double _lastFrameMs;
+        readonly System.Diagnostics.Stopwatch _frameClock = System.Diagnostics.Stopwatch.StartNew();
+
         void OnRender(double dt)
         {
+            _lastFrameMs = _frameClock.Elapsed.TotalMilliseconds;
+            _frameClock.Restart();
             int w = _window.FramebufferSize.X, h = _window.FramebufferSize.Y;
             if (w <= 0 || h <= 0) return;
             Screen.width = w;
             Screen.height = h;
             _frame.Ensure(w, h);
+            // Enabled cameras aimed at a RenderTexture draw every frame (the preview window, the
+            // connecting panel's arena view) before the screen camera, as the original does.
+            foreach (var cam in Camera.allCameras)
+                if (cam.targetTexture != null) RenderToTexture(cam, force: false);
             Render3D(w, h);
             _frame.Bind();
             _gl.ClearStencil(0);
@@ -116,7 +133,7 @@ namespace CosmicShore.Player
             if (_shots.TryGetValue(_frameIndex, out var path))
             {
                 Capture(path, w, h);
-                Console.WriteLine($"screenshot → {path} ({w}x{h}) frame {_frameIndex}");
+                Console.WriteLine($"screenshot → {path} ({w}x{h}) frame {_frameIndex} — scene {_sceneRenderer.DrawCalls} draws / {_sceneRenderer.Instances} instances, {_lastFrameMs:F0} ms/frame");
             }
             if (Scripted && _frameIndex >= _lastFrame)
             {
@@ -130,7 +147,7 @@ namespace CosmicShore.Player
         {
             _scene3d.Ensure(w, h);
             _scene3d.Bind();
-            var cam = Camera.main;
+            var cam = ScreenCamera();
             var c = cam != null ? cam.backgroundColor : Color.black;
             _gl.ClearColor(ColorSpace.ToLinear(c.r), ColorSpace.ToLinear(c.g), ColorSpace.ToLinear(c.b), 1f);
             _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
@@ -145,6 +162,50 @@ namespace CosmicShore.Player
             }
             else post.Panini = false;
             _post.Draw(_scene3d.Color, w, h, _frame.Fbo, post);
+        }
+
+        /// <summary>The camera that draws to the screen: Camera.main, else the deepest enabled camera with no target texture.</summary>
+        static Camera ScreenCamera()
+        {
+            var main = Camera.main;
+            if (main != null && main.targetTexture == null) return main;
+            Camera best = null;
+            foreach (var c in Camera.allCameras)
+                if (c.targetTexture == null && (best == null || c.depth > best.depth)) best = c;
+            return best;
+        }
+
+        /// <summary>Draw <paramref name="cam"/> into its target texture (skybox, scene, the gameplay post stack).</summary>
+        void RenderToTexture(Camera cam, bool force)
+        {
+            var rt = cam.targetTexture;
+            if (rt == null || rt.width <= 0 || rt.height <= 0 || _inFrame) return;
+            var target = _rt.GetValue(rt, _ => new RtTarget { Scene = new FrameTarget(_gl), Out = new FrameTarget(_gl) });
+            // One draw per camera per presented frame unless the game explicitly asks (Camera.Render()).
+            if (!force && target.Frame == _frameIndex) return;
+            target.Frame = _frameIndex;
+            int w = rt.width, h = rt.height;
+            target.Scene.Ensure(w, h);
+            target.Out.Ensure(w, h);
+            if (!_rtPost.TryGetValue((w, h), out var post)) _rtPost[(w, h)] = post = new PostPass(_gl);
+
+            _inFrame = true;
+            try
+            {
+                target.Scene.Bind();
+                var c = cam.backgroundColor;
+                _gl.ClearColor(ColorSpace.ToLinear(c.r), ColorSpace.ToLinear(c.g), ColorSpace.ToLinear(c.b), c.a);
+                _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+                if (cam.clearFlags == CameraClearFlags.Skybox) _skybox.Draw(cam);
+                _sceneRenderer.Render(cam, w, h);
+                var settings = PostSettings.Gameplay;
+                float tanY = MathF.Tan(cam.fieldOfView * 0.5f * MathF.PI / 180f);
+                settings.TanHalfFovY = tanY;
+                settings.TanHalfFovX = tanY * cam.aspect;
+                post.Draw(target.Scene.Color, w, h, target.Out.Fbo, settings);
+                rt.MarkModified();
+            }
+            finally { _inFrame = false; }
         }
 
         unsafe void Capture(string path, int w, int h)

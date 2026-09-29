@@ -67,6 +67,18 @@ public class SerializerContractTests
     }
 
     [Fact]
+    public void Instantiate_KeepsTheTemplatesDisabledBehaviours()
+    {
+        using var loop = new GameLoop();
+        var template = new GameObject("Row", typeof(RectTransform));
+        template.SetActive(false);
+        var image = template.AddComponent<Image>();
+        image.enabled = false; // the AbilityControlRow's root Image is authored m_Enabled: 0
+        var clone = Object.Instantiate(template);
+        Assert.False(clone.GetComponent<Image>().enabled);
+    }
+
+    [Fact]
     public void DestroyingASpawnedNetworkObject_DespawnsItFirst()
     {
         using var loop = new GameLoop();

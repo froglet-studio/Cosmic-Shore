@@ -238,6 +238,8 @@ namespace CosmicShore.Content.Scenes
             }
         }
 
+        static readonly bool TraceParent = Environment.GetEnvironmentVariable("CS_PORT_TRACE_PARENT") == "1";
+
         List<Transform> BuildHierarchy(Transform holder)
         {
             var transforms = new Dictionary<long, (Transform t, GraphObject obj)>();
@@ -285,6 +287,15 @@ namespace CosmicShore.Content.Scenes
             void Attach(long id, Transform parent)
             {
                 var (t, obj) = transforms[id];
+                if (TraceParent && parent != null && parent.IsChildOf(t))
+                {
+                    long fid = 0; foreach (var kv in transforms) if (ReferenceEquals(kv.Value.t, parent)) fid = kv.Key;
+                    Console.WriteLine($"[trace-parent] attach id={id} '{t.name}' origin={obj.Origin?.Path} under id={fid} '{parent.name}'; father-raw={ObjRef.From(obj.Body["m_Father"]).FileId}");
+                    var fobj = transforms[fid].obj;
+                    var chain = new List<string>(); for (var a = parent; a != null; a = a.parent) { long aid = 0; foreach (var kv in transforms) if (ReferenceEquals(kv.Value.t, a)) aid = kv.Key; chain.Add($"{a.name}#{aid}"); }
+                    Console.WriteLine("[trace-parent]   chain " + string.Join(" <- ", chain));
+                    Console.WriteLine($"[trace-parent]   parent origin={fobj.Origin?.Path} father-raw={ObjRef.From(fobj.Body["m_Father"]).FileId} resolved={_graph.Resolve(ObjRef.From(fobj.Body["m_Father"]).FileId)}");
+                }
                 t.SetParent(parent, false);
                 ApplyTransform(t, obj.Body);
                 if (childrenOf.TryGetValue(id, out var kids))

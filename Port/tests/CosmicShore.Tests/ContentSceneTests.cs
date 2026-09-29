@@ -23,6 +23,30 @@ namespace CosmicShore.Tests
         }
 
         [Fact]
+        public void DerivedInstanceIdCollidingWithAnAuthoredId_GetsItsOwnObject()
+        {
+            // Sparrow.prefab's root GameObject (&8279817603024118164) equals the derived id of its
+            // nested HUD instance's root GameObject (2707401190942586943 ^ 6302028140178659755).
+            // Both must survive as separate objects, and the HUD must hang under ShipHUDContainer.
+            if (ContentYamlTests.ProjectRoot == null) return;
+            var db = ContentYamlTests.Db;
+            var graph = PrefabGraph.Build(db, db.LoadPath("Assets/_Prefabs/Spacevessels/Sparrow.prefab"));
+            Assert.Equal(PrefabGraph.Xor(6302028140178659755, 2707401190942586943), 8279817603024118164);
+
+            var vesselRoot = graph.Get(8279817603024118164);
+            Assert.NotNull(vesselRoot);
+            Assert.Equal("Sparrow", vesselRoot.Body.Str("m_Name"));
+            long hudGoId = graph.MapInstance(6302028140178659755, 2707401190942586943);
+            Assert.NotEqual(8279817603024118164, hudGoId);
+            Assert.Equal("SparrowHUDVariant", graph.Get(hudGoId).Body.Str("m_Name"));
+
+            // The owning file's stripped alias for the HUD root transform resolves to the HUD, not the vessel.
+            var hudTf = graph.Get(434181841133139353);
+            Assert.Equal(hudGoId, graph.Resolve(ObjRef.From(hudTf.Body["m_GameObject"]).FileId));
+            Assert.Equal(2285003040825308999, graph.Resolve(ObjRef.From(hudTf.Body["m_Father"]).FileId));
+        }
+
+        [Fact]
         public void MenuMainInstantiatesItsUiTree()
         {
             if (ContentYamlTests.ProjectRoot == null) return;
