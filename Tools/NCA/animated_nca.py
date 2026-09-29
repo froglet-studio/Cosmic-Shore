@@ -9,19 +9,26 @@ and alive mask as growing_nca.py; only the target and the loss change.
 
 The problem an animation adds is TIME. A static target is a fixed point; an animation is a
 limit cycle, and the cells have no clock: each one fires at random half the time and sees
-only its 3x3 neighbours. So the loss must demand that the pattern ADVANCE without telling
-it where in the loop it is:
+only its 3x3 neighbours. Training is two stages.
 
-  * the rollout is checked at J instants, P steps apart, ending at the last step;
-  * checkpoint j is compared with frame (k0 + j) mod K;
-  * k0 is whichever start frame fits the whole window best (chosen per sample, no gradient).
+STAGE 1 — clock from birth (clock_steps). Every sample is a fresh seed and checkpoint t is
+compared with frame (t // period) % frames, counted from the seed. There is exactly one
+right frame at every checkpoint, which is what breaks the symmetry below.
 
-So each sample picks its own phase, but must then move forward one frame per P steps. A
-frozen image cannot satisfy that, because consecutive frames differ. A pool sample keeps
-whatever phase it had, which is how the loop survives from one training step to the next.
+STAGE 2 — pool + damage, phase-free. The rollout is checked at `window` instants, `period`
+steps apart; checkpoint j is compared with frame (k0 + j) % frames, where k0 is whichever
+start frame fits the window best (per sample, no gradient). Each pool lizard keeps its own
+phase but must keep advancing, and three per batch are cut, so the loop must also heal. The
+seed sample stays on its birth clock.
 
-A seed has not grown yet at the early checkpoints, so for the seed sample only checkpoints
-at step >= min_seed_check count (the paper's own horizon is 64-96 steps).
+Why stage 1 exists (measured, runs/lizard_swim_collapsed_v1): phase-free training from
+scratch COLLAPSES. A blurred average lizard is equally close to every frame, so the
+best-start rule gives the gradient no consistent direction to oscillate in; at step 1000 the
+automaton matched frame 4 at every step from 200 to 400 with a 0.13 log10 best/worst margin.
+With stage 1, 250 steps already advance through the frames in order (margin 0.62).
+
+`--init` warm-starts from a trained growing_nca model (the weights are shape-compatible),
+which skips relearning growth. That is a deliberate departure from the paper's zero-init.
 """
 from __future__ import annotations
 
@@ -130,6 +137,10 @@ class AnimConfig:
     period: int = 8            # CA steps per animation frame
     window: int = 5            # checkpoints per rollout (window spans (window-1)*period steps)
     min_seed_check: int = 64
+    clock_steps: int = 1500    # stage 1: seed-only, frame = (t // period) % frames counted from birth
+    clock_min_iter: int = 96   # stage 1 rollout length (every checkpoint lands after growth)
+    clock_max_iter: int = 128
+    init: str = ""             # optional warm start: a growing_nca model.pt (weights are shape-compatible)
     channel_n: int = 16
     hidden: int = 128
     target_size: int = 40
@@ -175,6 +186,8 @@ def train(cfg: AnimConfig, out_dir: str):
         json.dump(asdict(cfg), f, indent=2)
 
     ca = CAModel(cfg.channel_n, cfg.hidden, cfg.fire_rate)
+    if cfg.init:
+        ca.load_state_dict(torch.load(cfg.init))
     opt = torch.optim.Adam(ca.parameters(), lr=cfg.lr, eps=1e-7)
     sched = torch.optim.lr_scheduler.MultiStepLR(opt, [cfg.lr_drop_step], 0.1)
     seed = make_seed(1, H, W, cfg.channel_n)
@@ -184,32 +197,45 @@ def train(cfg: AnimConfig, out_dir: str):
     log, t0 = [], time.time()
 
     for step in range(cfg.steps + 1):
-        idx = rng.choice(cfg.pool_size, cfg.batch_size, replace=False)
-        x0 = pool[idx].clone()
-        with torch.no_grad():
-            order = torch.argsort(frame_mse(x0, frames).min(1).values, descending=True)
-        x0, idx = x0[order], idx[order.numpy()]
-        x0[:1] = seed
-        if cfg.damage_n:
-            x0[-cfg.damage_n:] *= circle_damage(cfg.damage_n, H, W, rng)
+        clock = step < cfg.clock_steps
+        if clock:
+            # Stage 1: every sample is a fresh seed on the SAME clock, so there is one right
+            # frame at every checkpoint and averaging frames is never a safe answer.
+            idx = None
+            x0 = seed.repeat(cfg.batch_size, 1, 1, 1)
+            n = int(rng.integers(cfg.clock_min_iter, cfg.clock_max_iter + 1))
+        else:
+            idx = rng.choice(cfg.pool_size, cfg.batch_size, replace=False)
+            x0 = pool[idx].clone()
+            with torch.no_grad():
+                order = torch.argsort(frame_mse(x0, frames).min(1).values, descending=True)
+            x0, idx = x0[order], idx[order.numpy()]
+            x0[:1] = seed
+            if cfg.damage_n:
+                x0[-cfg.damage_n:] *= circle_damage(cfg.damage_n, H, W, rng)
+            n = int(rng.integers(cfg.min_iter, cfg.max_iter + 1))
 
-        n = int(rng.integers(cfg.min_iter, cfg.max_iter + 1))
         checks = [n - (J - 1 - j) * P for j in range(J)]
         x, snaps = x0, []
         for i in range(1, n + 1):
             x = ca(x)
             if i in checks:
                 snaps.append(x)
+        B = x0.shape[0]
         S = torch.stack(snaps, 1)                                   # [B, J, H, W, C]
-        err = frame_mse(S.flatten(0, 1), frames).view(len(idx), J, K)  # [B, J, K]
-        valid = torch.ones(len(idx), J)
-        valid[0] = torch.tensor([float(c >= cfg.min_seed_check) for c in checks])
-        # cost[b, k0] = mean over valid j of err[b, j, (k0 + j) % K]
-        kk = (torch.arange(K)[:, None] + shift[None]) % K             # [K, J]
-        gathered = err[:, shift[None, :].expand(K, J), kk]            # [B, K, J]
-        cost = (gathered * valid[:, None]).sum(-1) / valid.sum(-1, keepdim=True)
-        k0 = cost.detach().argmin(1)
-        loss = cost[torch.arange(len(idx)), k0].mean()
+        err = frame_mse(S.flatten(0, 1), frames).view(B, J, K)      # [B, J, K]
+        born = torch.tensor([(c // P) % K for c in checks])         # frame due, counted from birth
+        seed_valid = torch.tensor([float(c >= cfg.min_seed_check) for c in checks])
+        seed_cost = (err[:, shift, born] * seed_valid).sum(-1) / seed_valid.sum().clamp(min=1)  # [B]
+        if clock:
+            loss = seed_cost.mean()
+        else:
+            # Pool samples: phase-free. cost[b, k0] = mean_j err[b, j, (k0 + j) % K]
+            kk = (torch.arange(K)[:, None] + shift[None]) % K       # [K, J]
+            cost = err[:, shift[None, :].expand(K, J), kk].mean(-1)  # [B, K]
+            free = cost[torch.arange(B), cost.detach().argmin(1)]
+            free = torch.cat([seed_cost[:1], free[1:]])             # the seed stays on its birth clock
+            loss = free.mean()
 
         opt.zero_grad(set_to_none=True)
         loss.backward()
@@ -218,13 +244,17 @@ def train(cfg: AnimConfig, out_dir: str):
                 prm.grad /= prm.grad.norm() + 1e-8
         opt.step()
         sched.step()
-        pool[idx] = x.detach()
+        if clock:
+            if step == cfg.clock_steps - 1:  # hand the stage-1 lizards to the pool
+                pool[:] = x.detach()[rng.integers(0, B, cfg.pool_size)]
+        else:
+            pool[idx] = x.detach()
 
         L = float(loss)
         log.append(L)
         if step % 50 == 0:
             dt = time.time() - t0
-            print(f"[anim {cfg.gif or cfg.target}] step {step:5d}  loss {L:.5f}  log10 {math.log10(L):+.3f}  "
+            print(f"[anim {cfg.gif or cfg.target}] {'clock' if clock else 'pool '} step {step:5d}  loss {L:.5f}  log10 {math.log10(L):+.3f}  "
                   f"{dt/(step+1):.2f}s/it  elapsed {dt/60:.1f}m", flush=True)
         if step % 500 == 0 or step == cfg.steps:
             torch.save(ca.state_dict(), os.path.join(out_dir, "model.pt"))

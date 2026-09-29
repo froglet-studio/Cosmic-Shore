@@ -81,6 +81,35 @@ training curves, a measured-results table and the figures.
 The JS step is written as the reference for an eventual C#/HLSL port: it is one
 per-cell function of the 3×3 neighbourhood, which is exactly a compute-shader kernel.
 
+## Adding time: an animated target (`animated_nca.py`)
+
+The same 8,336-parameter cell, trained on a LOOP instead of a still: by default an 8-frame
+travelling body wave generated from the emoji itself (head still, tail widest, one
+wavelength per loop), or any animated GIF via `--gif`. It has to become a limit cycle with
+no clock — each cell fires at random and sees only its neighbours — so the cells must keep
+time in their hidden channels and keep each other in step.
+
+```
+python3 Tools/NCA/animated_nca.py target --out swim.gif                    # preview the loop
+python3 Tools/NCA/animated_nca.py train --init Tools/NCA/results/lizard_regenerating/model.pt
+python3 Tools/NCA/animated_nca.py train --gif some_animation.gif --frames 12
+```
+
+Two-stage training (the docstring has the detail):
+
+1. **Clock from birth.** Seeds only; the checkpoint at step t must show frame ⌊t/8⌋ mod 8.
+2. **Pool + damage, phase-free.** Five checkpoints 8 steps apart must match consecutive
+   frames from whichever start frame fits best, so each lizard keeps its own phase, keeps
+   moving, and heals when cut.
+
+**Stage 2 alone collapses, and that is the finding worth keeping.** A blurred average
+lizard is equally close to every frame, so a phase-free loss gives the gradient no
+consistent direction to start oscillating; from scratch it settled on one frame and never
+moved (kept as `runs/lizard_swim_collapsed_v1` locally, measured with a 0.13 log10
+best/worst frame margin). Pinning the phase to birth for the first stage breaks that
+symmetry. The yardstick for "is it really moving" is the best any STILL image can do
+against the loop — 10⁻²·⁷² for the swim — and training goes under it within 250 steps.
+
 ## Where this is meant to go (not started)
 
 The reproduction is the floor. The obvious routes from it toward flora, roughly in the
