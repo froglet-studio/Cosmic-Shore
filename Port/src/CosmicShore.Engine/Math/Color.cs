@@ -4,7 +4,7 @@ namespace CosmicShore.Engine
 {
     /// <summary>RGBA color, components in [0,1], matching the ported code's expected API surface.</summary>
     [Serializable]
-    public struct Color : IEquatable<Color>
+    public partial struct Color : IEquatable<Color>
     {
         public float r;
         public float g;

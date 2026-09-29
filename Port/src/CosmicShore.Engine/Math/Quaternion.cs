@@ -9,7 +9,7 @@ namespace CosmicShore.Engine
     /// values from the Unity-era assets remain valid.
     /// </summary>
     [Serializable]
-    public struct Quaternion : IEquatable<Quaternion>
+    public partial struct Quaternion : IEquatable<Quaternion>
     {
         public float x;
         public float y;

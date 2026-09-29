@@ -27,7 +27,18 @@ namespace CosmicShore.Engine.SceneManagement
         /// </summary>
         public bool isLoaded { get; internal set; } = true;
 
-        internal Scene(string name) { this.name = name; }
+        internal Scene(string name) { this.name = name; handle = ++s_nextHandle; }
+
+        static int s_nextHandle;
+
+        /// <summary>Unique per loaded scene instance (original: Scene.handle); renewed on every Single load.</summary>
+        public int handle { get; private set; }
+        internal void RenewHandle() => handle = ++s_nextHandle;
+
+        public string path => $"Assets/_Scenes/{name}.unity";
+        public bool isDirty => false;
+        public bool IsValid() => !string.IsNullOrEmpty(name) || _roots.Count > 0;
+        public void GetRootGameObjects(List<GameObject> rootGameObjects) { rootGameObjects.Clear(); rootGameObjects.AddRange(_roots); }
 
         public IReadOnlyList<GameObject> GetRootGameObjects() => _roots;
 

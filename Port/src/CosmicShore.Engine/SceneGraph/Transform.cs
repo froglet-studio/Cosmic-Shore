@@ -20,7 +20,7 @@ namespace CosmicShore.Engine
     /// properties rather than fields. <see cref="localRotation"/> stays a plain field:
     /// nothing drives it.
     /// </summary>
-    public class Transform : Component, IEnumerable
+    public partial class Transform : Component, IEnumerable
     {
         readonly List<Transform> _children = new();
 

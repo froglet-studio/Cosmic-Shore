@@ -135,7 +135,7 @@ namespace CosmicShore.Client
             var cam = Camera.main;
             if (cam == null) return new System.Numerics.Vector3(0f, 0f, 0f);
             var c = cam.backgroundColor;
-            return new System.Numerics.Vector3(ColorSpace.ToLinear(c.r), ColorSpace.ToLinear(c.g), ColorSpace.ToLinear(c.b));
+            return new System.Numerics.Vector3(CosmicShore.Render.ColorSpace.ToLinear(c.r), CosmicShore.Render.ColorSpace.ToLinear(c.g), CosmicShore.Render.ColorSpace.ToLinear(c.b));
         }
 
         unsafe void Capture(string path, int w, int h)

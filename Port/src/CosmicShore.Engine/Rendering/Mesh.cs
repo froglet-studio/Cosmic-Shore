@@ -34,7 +34,7 @@ namespace CosmicShore.Engine
     ///     tail. <see cref="SetTriangles(int[], int)"/> auto-grows to submesh+1 (small
     ///     port convenience over the original's set-count-first requirement, documented).
     /// </summary>
-    public class Mesh : Object
+    public partial class Mesh : Object
     {
         Vector3[] _vertices = Array.Empty<Vector3>();
         Vector3[] _normals = Array.Empty<Vector3>();

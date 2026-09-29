@@ -16,7 +16,7 @@ namespace CosmicShore.Engine
     /// sites resolve it through <c>using CosmicShore.Engine.Rendering;</c> — the same
     /// directive the original's <c>using UnityEngine.Rendering;</c> maps to.
     /// </summary>
-    public struct Matrix4x4 : IEquatable<Matrix4x4>
+    public partial struct Matrix4x4 : IEquatable<Matrix4x4>
     {
         public float m00, m01, m02, m03;
         public float m10, m11, m12, m13;

@@ -8,7 +8,7 @@ namespace CosmicShore.Engine
     /// compares equal to null and converts to <c>false</c>, even though the managed
     /// reference still exists.
     /// </summary>
-    public abstract class Object
+    public abstract partial class Object
     {
         public virtual string name { get; set; }
 

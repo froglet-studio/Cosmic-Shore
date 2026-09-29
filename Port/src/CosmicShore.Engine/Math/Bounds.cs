@@ -62,6 +62,36 @@ namespace CosmicShore.Engine
                 && point.z >= lo.z && point.z <= hi.z;
         }
 
+        /// <summary>Slab-test ray intersection; distance is from the ray origin (0 when it starts inside).</summary>
+        public bool IntersectRay(Ray ray, out float distance)
+        {
+            distance = 0f;
+            float tMin = float.NegativeInfinity, tMax = float.PositiveInfinity;
+            Vector3 o = ray.origin, d = ray.direction, mn = min, mx = max;
+            for (int i = 0; i < 3; i++)
+            {
+                float oi = o[i], di = d[i];
+                if (MathF.Abs(di) < 1e-12f) { if (oi < mn[i] || oi > mx[i]) return false; continue; }
+                float t1 = (mn[i] - oi) / di, t2 = (mx[i] - oi) / di;
+                if (t1 > t2) (t1, t2) = (t2, t1);
+                tMin = MathF.Max(tMin, t1); tMax = MathF.Min(tMax, t2);
+                if (tMin > tMax) return false;
+            }
+            if (tMax < 0f) return false;
+            distance = tMin < 0f ? 0f : tMin;
+            return true;
+        }
+
+        public bool IntersectRay(Ray ray) => IntersectRay(ray, out _);
+
+        public Vector3 ClosestPoint(Vector3 point) => new(
+            Mathf.Clamp(point.x, min.x, max.x), Mathf.Clamp(point.y, min.y, max.y), Mathf.Clamp(point.z, min.z, max.z));
+
+        public float SqrDistance(Vector3 point) => (ClosestPoint(point) - point).sqrMagnitude;
+
+        public void Expand(float amount) { var e = extents; e += new Vector3(amount, amount, amount) * 0.5f; extents = e; }
+        public void Expand(Vector3 amount) { extents += amount * 0.5f; }
+
         public bool Intersects(Bounds other)
         {
             Vector3 aMin = min, aMax = max, bMin = other.min, bMax = other.max;

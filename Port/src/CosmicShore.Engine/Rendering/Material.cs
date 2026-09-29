@@ -7,7 +7,7 @@ namespace CosmicShore.Engine
     /// (`Shader.PropertyToID` for MaterialPropertyBlock-style access). The actual
     /// shading backend arrives in the presentation phase.
     /// </summary>
-    public sealed class Shader : Object
+    public sealed partial class Shader : Object
     {
         static readonly Dictionary<string, int> PropertyIds = new();
         static readonly Dictionary<string, Shader> Registry = new();
@@ -25,9 +25,17 @@ namespace CosmicShore.Engine
         public static int PropertyToID(string name)
         {
             if (!PropertyIds.TryGetValue(name, out int id))
+            {
                 PropertyIds[name] = id = PropertyIds.Count + 1;
+                PropertyNames[id] = name;
+            }
             return id;
         }
+
+        static readonly Dictionary<int, string> PropertyNames = new();
+
+        /// <summary>Reverse lookup of <see cref="PropertyToID"/> (port helper).</summary>
+        public static string PropertyName(int id) => PropertyNames.TryGetValue(id, out var n) ? n : $"_Property{id}";
     }
 
     /// <summary>
@@ -36,7 +44,7 @@ namespace CosmicShore.Engine
     /// Set/Get by name or ID. Rendering interpretation arrives in the presentation
     /// phase; until then materials are pure data and fully testable.
     /// </summary>
-    public class Material : Object
+    public partial class Material : Object
     {
         public Shader shader;
 

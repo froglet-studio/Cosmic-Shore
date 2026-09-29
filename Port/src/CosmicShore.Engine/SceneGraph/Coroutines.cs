@@ -31,11 +31,18 @@ namespace CosmicShore.Engine
     /// polled once per frame at the resume point; an already-true predicate still
     /// costs one frame of suspension, like the runner's other yields).
     /// </summary>
-    public sealed class WaitUntil : YieldInstruction
+    public class WaitUntil : YieldInstruction
     {
         internal readonly Func<bool> predicate;
         public WaitUntil(Func<bool> predicate)
             => this.predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
+    }
+
+    /// <summary>Suspends a coroutine while the predicate reports true (original: WaitWhile).</summary>
+    public sealed class WaitWhile : WaitUntil
+    {
+        public WaitWhile(Func<bool> predicate) : base(Negate(predicate)) { }
+        static Func<bool> Negate(Func<bool> p) { if (p == null) throw new ArgumentNullException(nameof(p)); return () => !p(); }
     }
 
     /// <summary>Handle returned by StartCoroutine; yield it to await completion.</summary>

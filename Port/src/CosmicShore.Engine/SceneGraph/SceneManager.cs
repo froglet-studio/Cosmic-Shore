@@ -38,6 +38,9 @@ namespace CosmicShore.Engine.SceneManagement
         /// </summary>
         public static event Action<Scene> sceneUnloaded;
 
+        /// <summary>Raised when the active scene changes (original: activeSceneChanged(previous, next)).</summary>
+        public static event Action<Scene, Scene> activeSceneChanged;
+
         /// <summary>Announce a completed scene unload to all subscribers.</summary>
         public static void NotifySceneUnloaded(Scene scene) => sceneUnloaded?.Invoke(scene);
 
@@ -77,6 +80,8 @@ namespace CosmicShore.Engine.SceneManagement
                     foreach (var root in new System.Collections.Generic.List<GameObject>(scene.GetRootGameObjects()))
                         if (!root.IsDontDestroyOnLoad) Object.DestroyImmediate(root);
                     scene.name = sceneName;
+                    scene.RenewHandle();
+                    activeSceneChanged?.Invoke(scene, scene);
                 }
                 Backend.Load(sceneName, mode, scene);
                 NotifySceneLoaded(scene, mode);

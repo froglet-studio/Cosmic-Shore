@@ -66,16 +66,16 @@ namespace CosmicShore.Engine
 {
     public enum ScreenOrientation { Unknown = 0, Portrait = 1, PortraitUpsideDown = 2, LandscapeLeft = 3, LandscapeRight = 4, AutoRotation = 5 }
     public enum DeviceType { Unknown = 0, Handheld = 1, Console = 2, Desktop = 3 }
-    public enum RuntimePlatform { WindowsPlayer = 2, OSXPlayer = 1, LinuxPlayer = 13, Android = 11, IPhonePlayer = 8 }
+    public enum RuntimePlatform { OSXEditor = 0, OSXPlayer = 1, WindowsPlayer = 2, WindowsEditor = 7, IPhonePlayer = 8, Android = 11, LinuxPlayer = 13, LinuxEditor = 16, WebGLPlayer = 17, WSAPlayerX86 = 18, WSAPlayerX64 = 19, WSAPlayerARM = 20, PS4 = 25, XboxOne = 27, tvOS = 31, Switch = 32, Stadia = 34, GameCoreXboxSeries = 36, GameCoreXboxOne = 37, PS5 = 38, EmbeddedLinuxArm64 = 39, VisionOS = 47 }
 
-    public struct Resolution
+    public partial struct Resolution
     {
         public int width;
         public int height;
         public int refreshRate;
     }
 
-    public static class Screen
+    public static partial class Screen
     {
         public static int width = 1280;
         public static int height = 720;
@@ -97,12 +97,12 @@ namespace CosmicShore.Engine
     }
 
     /// <summary>Original contract: UnityEngine.QualitySettings (the slice ported bootstrap config drives).</summary>
-    public static class QualitySettings
+    public static partial class QualitySettings
     {
         public static int vSyncCount;
     }
 
-    public static class SystemInfo
+    public static partial class SystemInfo
     {
         public static DeviceType deviceType = DeviceType.Desktop;
 
@@ -123,7 +123,7 @@ namespace CosmicShore.Engine
         public UnityException(string message, Exception innerException) : base(message, innerException) { }
     }
 
-    public static class Application
+    public static partial class Application
     {
         public static bool isPlaying = true;
         public static bool isMobilePlatform => platform is RuntimePlatform.Android or RuntimePlatform.IPhonePlayer;
@@ -212,7 +212,7 @@ namespace CosmicShore.Engine
     }
 
     /// <summary>Asset lookups. Backed by an explicit registry until the content phase wires real loading.</summary>
-    public static class Resources
+    public static partial class Resources
     {
         static readonly List<ScriptableObject> Registry = new();
         static readonly Dictionary<string, Object> PathRegistry = new();
@@ -272,12 +272,13 @@ namespace CosmicShore.Engine
         public Collider collider;
     }
 
-    /// <summary>Collision queries return no hits until the physics design lands (phase 2).</summary>
-    public static class Physics
+    /// <summary>Collision queries over the loop's collider registry (spheres exact, boxes/meshes as world AABBs).</summary>
+    public static partial class Physics
     {
         public static bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance = float.PositiveInfinity)
-        { hitInfo = default; return false; }
-        public static bool Raycast(Vector3 origin, Vector3 direction, float maxDistance = float.PositiveInfinity) => false;
+            => Raycast(origin, direction, out hitInfo, maxDistance, DefaultRaycastLayers);
+        public static bool Raycast(Vector3 origin, Vector3 direction, float maxDistance = float.PositiveInfinity)
+            => Raycast(origin, direction, out _, maxDistance, DefaultRaycastLayers);
 
         /// <summary>
         /// Original-contract sphere query against every registered collider (trigger and

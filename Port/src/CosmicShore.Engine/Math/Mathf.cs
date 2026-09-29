@@ -7,7 +7,7 @@ namespace CosmicShore.Engine
     /// Semantics match the original engine behavior (Approximately epsilon scaling,
     /// Repeat/PingPong wrapping, SmoothDamp critically-damped spring).
     /// </summary>
-    public static class Mathf
+    public static partial class Mathf
     {
         public const float PI = (float)Math.PI;
         public const float Deg2Rad = PI / 180f;

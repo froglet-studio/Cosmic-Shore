@@ -146,13 +146,69 @@ namespace CosmicShore.Engine
                 Debug.LogError($"Invoke: no zero-argument method '{methodName}' on {GetType().Name}.", this);
                 return;
             }
-            StartCoroutine(InvokeRoutine(method, time));
+            var routine = InvokeRoutine(method, time);
+            (_invokes ??= new()).Add((methodName, routine));
+            StartCoroutine(routine);
         }
 
         System.Collections.IEnumerator InvokeRoutine(System.Reflection.MethodInfo method, float time)
         {
             yield return new WaitForSeconds(time);
             method.Invoke(this, null);
+            RemoveInvoke(method.Name, null);
+        }
+
+        System.Collections.Generic.List<(string name, System.Collections.IEnumerator routine)> _invokes;
+
+        void RemoveInvoke(string name, System.Collections.IEnumerator routine)
+        {
+            if (_invokes == null) return;
+            for (int i = _invokes.Count - 1; i >= 0; i--)
+                if (_invokes[i].name == name && (routine == null || _invokes[i].routine == routine)) { _invokes.RemoveAt(i); if (routine != null) return; }
+        }
+
+        /// <summary>Calls a zero-argument method after <paramref name="time"/> and then every <paramref name="repeatRate"/> seconds (original contract).</summary>
+        public void InvokeRepeating(string methodName, float time, float repeatRate)
+        {
+            var method = GetType().GetMethod(methodName,
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
+            if (method == null || method.GetParameters().Length != 0)
+            {
+                Debug.LogError($"InvokeRepeating: no zero-argument method '{methodName}' on {GetType().Name}.", this);
+                return;
+            }
+            var routine = RepeatRoutine(method, time, repeatRate);
+            (_invokes ??= new()).Add((methodName, routine));
+            StartCoroutine(routine);
+        }
+
+        System.Collections.IEnumerator RepeatRoutine(System.Reflection.MethodInfo method, float time, float repeatRate)
+        {
+            yield return new WaitForSeconds(time);
+            while (true)
+            {
+                method.Invoke(this, null);
+                yield return repeatRate > 0f ? new WaitForSeconds(repeatRate) : null;
+            }
+        }
+
+        /// <summary>Cancels every pending Invoke / InvokeRepeating on this behaviour (or only <paramref name="methodName"/>).</summary>
+        public void CancelInvoke(string methodName = null)
+        {
+            if (_invokes == null) return;
+            for (int i = _invokes.Count - 1; i >= 0; i--)
+            {
+                if (methodName != null && _invokes[i].name != methodName) continue;
+                if (_invokes[i].routine != null) StopCoroutine(_invokes[i].routine);
+                _invokes.RemoveAt(i);
+            }
+        }
+
+        public bool IsInvoking(string methodName = null)
+        {
+            if (_invokes == null) return false;
+            foreach (var i in _invokes) if (methodName == null || i.name == methodName) return true;
+            return false;
         }
 
         System.Threading.CancellationTokenSource _destroyCts;

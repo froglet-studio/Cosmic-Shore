@@ -5,7 +5,7 @@ namespace CosmicShore.Engine
 {
     /// <summary>Original-contract animation keyframe: time/value plus Hermite tangents.</summary>
     [Serializable]
-    public struct Keyframe
+    public partial struct Keyframe
     {
         public float time;
         public float value;

@@ -343,8 +343,9 @@ public class AstroLeagueTests
         // Seed chosen for a tied regulation (validated sweep; re-swept 2026-07-07 after the
         // court-boundary drift changed ball trajectories) — full time ties, the monitor
         // reports expiry, the controller enters overtime, and the first overtime goal ends
-        // the match immediately (sudden death).
-        var result = RunMatch(players: 4, seed: 2);
+        // the match immediately (sudden death). Re-swept 2026-09-29 when Random moved to a
+        // xorshift128 generator: seeds 3, 7, 8, 11, 12 tie regulation.
+        var result = RunMatch(players: 4, seed: 3);
 
         Assert.True(result.Finished);
         Assert.Empty(result.EngineErrors);

@@ -24,7 +24,7 @@ namespace CosmicShore.Engine
     /// (RawImage.SetNativeSize, Sprite geometry); Arc E adds the sampler state an importer
     /// or a GPU upload needs (<see cref="filterMode"/>, <see cref="wrapModeU"/>/<see cref="wrapModeV"/>).
     /// </summary>
-    public abstract class Texture : Object
+    public abstract partial class Texture : Object
     {
         public virtual int width { get; set; }
         public virtual int height { get; set; }
@@ -72,7 +72,7 @@ namespace CosmicShore.Engine
     /// A texture built with the size-only constructor has no pixels (<see cref="HasPixels"/>
     /// is false) — headless code that only needs dimensions keeps working unchanged.
     /// </summary>
-    public class Texture2D : Texture
+    public partial class Texture2D : Texture
     {
         byte[] m_Data;
 
@@ -152,7 +152,7 @@ namespace CosmicShore.Engine
         public Color GetPixel(int x, int y) => GetPixel32(x, y);
 
         /// <summary>No-op (original contract: uploads pending CPU edits to the GPU; the port uploads lazily).</summary>
-        public void Apply(bool updateMipmaps = true, bool makeNoLongerReadable = false) { }
+        public void Apply(bool updateMipmaps = true, bool makeNoLongerReadable = false) => updateCount++;
 
         static Texture2D s_White;
 

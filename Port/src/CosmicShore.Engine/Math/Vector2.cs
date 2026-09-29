@@ -4,7 +4,7 @@ namespace CosmicShore.Engine
 {
     /// <summary>2-component float vector matching the ported code's expected API surface.</summary>
     [Serializable]
-    public struct Vector2 : IEquatable<Vector2>
+    public partial struct Vector2 : IEquatable<Vector2>
     {
         public float x;
         public float y;

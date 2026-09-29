@@ -41,7 +41,7 @@ namespace CosmicShore.Engine
     /// is notified first. No RNG, no hashing of unstable values — identical scenes produce
     /// identical event streams.
     /// </summary>
-    public sealed class TriggerPass
+    public sealed partial class TriggerPass
     {
         readonly List<Collider> _colliders = new();                    // registration order
         readonly List<(Collider a, Collider b)> _activePairs = new();  // established order

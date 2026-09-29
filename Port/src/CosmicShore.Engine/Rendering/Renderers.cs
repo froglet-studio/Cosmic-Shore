@@ -10,7 +10,7 @@ namespace CosmicShore.Engine
     /// does NOT clone — the engine has no instancing leak to defend against, and
     /// ported gameplay treats the returned instance as the thing to mutate.
     /// </summary>
-    public class Renderer : Component
+    public partial class Renderer : Component
     {
         public bool enabled = true;
 
@@ -111,11 +111,11 @@ namespace CosmicShore.Engine
         public void GetPropertyBlock(MaterialPropertyBlock dest) => dest.CopyFrom(_propertyBlock);
     }
 
-    public class MeshRenderer : Renderer
+    public partial class MeshRenderer : Renderer
     {
     }
 
-    public class SkinnedMeshRenderer : Renderer
+    public partial class SkinnedMeshRenderer : Renderer
     {
         readonly Dictionary<int, float> _blendShapeWeights = new();
 
@@ -145,7 +145,7 @@ namespace CosmicShore.Engine
     /// buffer, widths, endpoint colors, and cap/corner tessellation counts that ported
     /// code writes; a render backend draws from the same state later.
     /// </summary>
-    public class LineRenderer : Renderer
+    public partial class LineRenderer : Renderer
     {
         public bool useWorldSpace = true;
         public bool loop;
@@ -196,7 +196,7 @@ namespace CosmicShore.Engine
         }
     }
 
-    public class TrailRenderer : Renderer
+    public partial class TrailRenderer : Renderer
     {
         public bool emitting = true;
         public float time;
@@ -224,7 +224,7 @@ namespace CosmicShore.Engine
             set => _colorGradient = value ?? new Gradient();
         }
 
-        public void Clear() { }
+        public void Clear() => _points.Clear();
     }
 
     /// <summary>Original-engine light types (UnityEngine.LightType, values frozen). Data-only headless.</summary>

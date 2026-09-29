@@ -4,7 +4,7 @@ namespace CosmicShore.Engine
 {
     /// <summary>4-component float vector (shader params, homogeneous coords).</summary>
     [Serializable]
-    public struct Vector4 : IEquatable<Vector4>
+    public partial struct Vector4 : IEquatable<Vector4>
     {
         public float x;
         public float y;
