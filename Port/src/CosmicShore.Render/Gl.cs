@@ -57,6 +57,7 @@ namespace CosmicShore.Render
         public void Set(string n, int v) => _gl.Uniform1(Loc(n), v);
         public void Set(string n, float x, float y) => _gl.Uniform2(Loc(n), x, y);
         public void Set(string n, float x, float y, float z) => _gl.Uniform3(Loc(n), x, y, z);
+        public unsafe void Set4v(string n, float[] values, int count) { fixed (float* p = values) _gl.Uniform4(Loc(n), (uint)count, p); }
         public void Set(string n, float x, float y, float z, float w) => _gl.Uniform4(Loc(n), x, y, z, w);
         public unsafe void Set(string n, System.Numerics.Matrix4x4 m) => _gl.UniformMatrix4(Loc(n), 1, false, (float*)&m);
 

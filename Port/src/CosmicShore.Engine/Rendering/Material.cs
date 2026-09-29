@@ -112,7 +112,12 @@ namespace CosmicShore.Engine
     /// </summary>
     public partial class Material : Object
     {
-        public Shader shader;
+        Shader _shader;
+        public Shader shader { get => _shader; set { _shader = value; Revision++; } }
+
+        /// <summary>Bumped by every mutation, so a renderer caching what it derived from this
+        /// material knows when a runtime SetFloat/SetColor/shader swap must be re-read.</summary>
+        public int Revision { get; private set; }
 
         readonly Dictionary<int, Color> _colors = new();
         readonly Dictionary<int, float> _floats = new();
@@ -140,6 +145,7 @@ namespace CosmicShore.Engine
             foreach (var kv in source._textures) _textures[kv.Key] = kv.Value;
             foreach (var kv in source._textureST) _textureST[kv.Key] = kv.Value;
             renderQueue = source.renderQueue;
+            Revision++;
         }
 
         public Color color
@@ -148,8 +154,8 @@ namespace CosmicShore.Engine
             set => SetColor(ColorId, value);
         }
 
-        public void SetColor(string propertyName, Color value) => _colors[Shader.PropertyToID(propertyName)] = value;
-        public void SetColor(int nameID, Color value) => _colors[nameID] = value;
+        public void SetColor(string propertyName, Color value) { _colors[Shader.PropertyToID(propertyName)] = value; Revision++; }
+        public void SetColor(int nameID, Color value) { _colors[nameID] = value; Revision++; }
         public Color GetColor(string propertyName) => GetColor(Shader.PropertyToID(propertyName));
         public Color GetColor(int nameID)
         {
@@ -159,8 +165,8 @@ namespace CosmicShore.Engine
             return Color.white;
         }
 
-        public void SetFloat(string propertyName, float value) => _floats[Shader.PropertyToID(propertyName)] = value;
-        public void SetFloat(int nameID, float value) => _floats[nameID] = value;
+        public void SetFloat(string propertyName, float value) { _floats[Shader.PropertyToID(propertyName)] = value; Revision++; }
+        public void SetFloat(int nameID, float value) { _floats[nameID] = value; Revision++; }
         public float GetFloat(string propertyName) => GetFloat(Shader.PropertyToID(propertyName));
         public float GetFloat(int nameID)
         {
@@ -169,8 +175,8 @@ namespace CosmicShore.Engine
             return 0f;
         }
 
-        public void SetVector(string propertyName, Vector4 value) => _vectors[Shader.PropertyToID(propertyName)] = value;
-        public void SetVector(int nameID, Vector4 value) => _vectors[nameID] = value;
+        public void SetVector(string propertyName, Vector4 value) { _vectors[Shader.PropertyToID(propertyName)] = value; Revision++; }
+        public void SetVector(int nameID, Vector4 value) { _vectors[nameID] = value; Revision++; }
         public Vector4 GetVector(string propertyName) => GetVector(Shader.PropertyToID(propertyName));
         public Vector4 GetVector(int nameID)
         {
@@ -184,13 +190,13 @@ namespace CosmicShore.Engine
         readonly Dictionary<int, Vector4> _textureST = new();
 
         /// <summary>Texture slot (Arc E: filled from a .mat's m_TexEnvs by the content bridge).</summary>
-        public void SetTexture(string propertyName, Texture value) => _textures[Shader.PropertyToID(propertyName)] = value;
-        public void SetTexture(int nameID, Texture value) => _textures[nameID] = value;
+        public void SetTexture(string propertyName, Texture value) { _textures[Shader.PropertyToID(propertyName)] = value; Revision++; }
+        public void SetTexture(int nameID, Texture value) { _textures[nameID] = value; Revision++; }
         public Texture GetTexture(string propertyName) => GetTexture(Shader.PropertyToID(propertyName));
         public Texture GetTexture(int nameID) => _textures.TryGetValue(nameID, out var t) ? t : null;
 
         /// <summary>Texture tiling (xy) + offset (zw) for a slot — original _ST convention.</summary>
-        public void SetTextureScaleOffset(string propertyName, Vector4 st) => _textureST[Shader.PropertyToID(propertyName)] = st;
+        public void SetTextureScaleOffset(string propertyName, Vector4 st) { _textureST[Shader.PropertyToID(propertyName)] = st; Revision++; }
         public Vector4 GetTextureScaleOffset(string propertyName)
             => _textureST.TryGetValue(Shader.PropertyToID(propertyName), out var v) ? v : new Vector4(1f, 1f, 0f, 0f);
 
@@ -200,7 +206,7 @@ namespace CosmicShore.Engine
             set => SetTexture("_MainTex", value);
         }
 
-        public void SetInt(string propertyName, int value) => _ints[Shader.PropertyToID(propertyName)] = value;
+        public void SetInt(string propertyName, int value) { _ints[Shader.PropertyToID(propertyName)] = value; Revision++; }
         public int GetInt(string propertyName) => _ints.TryGetValue(Shader.PropertyToID(propertyName), out var v) ? v : 0;
 
         // ── Keywords + render queue (E18 — data-only, read by a future backend) ──
@@ -208,10 +214,11 @@ namespace CosmicShore.Engine
         readonly HashSet<string> _keywords = new();
 
         /// <summary>Render queue (original default 2000/Geometry; transparency setup code writes 3000+).</summary>
-        public int renderQueue = 2000;
+        int _renderQueue = 2000;
+        public int renderQueue { get => _renderQueue; set { _renderQueue = value; Revision++; } }
 
-        public void EnableKeyword(string keyword) => _keywords.Add(keyword);
-        public void DisableKeyword(string keyword) => _keywords.Remove(keyword);
+        public void EnableKeyword(string keyword) { if (_keywords.Add(keyword)) Revision++; }
+        public void DisableKeyword(string keyword) { if (_keywords.Remove(keyword)) Revision++; }
         public bool IsKeywordEnabled(string keyword) => _keywords.Contains(keyword);
 
         public bool HasProperty(string propertyName) => HasProperty(Shader.PropertyToID(propertyName));
@@ -254,6 +261,7 @@ namespace CosmicShore.Engine
             vectorKeys.UnionWith(end._vectors.Keys);
             foreach (var key in vectorKeys)
                 _vectors[key] = Vector4.Lerp(start.GetVector(key), end.GetVector(key), t);
+            Revision++;
         }
     }
 }

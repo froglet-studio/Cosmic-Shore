@@ -73,6 +73,7 @@ flat out vec4 vBright;
 flat out vec3 vOrigin;
 flat out float vOpacity;
 flat out vec3 vVelocity;
+flat out vec2 vLit;              // (_PrismSuperShielded, _PrismLitDomain) for the destruction sight
 // -- The prism graphs' vertex chain (BlockGraph / ExplodingBlockGraph), translated from the
 // project's own PrismClockAnimation.hlsl, PrismSway.hlsl and the Prism Sub Graph / Distance
 // Spread And Colors / Spread Sub Graph / Tangent Slider / Rotate Faces Along Axis subgraphs.
@@ -228,6 +229,7 @@ void main(){
   vBright = bright;
   vOpacity = opacity;
   vVelocity = vel;
+  vLit = uPrismGraph != 0 ? vec2(X(13).w, X(14).w) : vec2(0.0);
   gl_Position = uViewProj * w;
 }";
 
@@ -243,6 +245,7 @@ flat in vec4 vBright;
 flat in vec3 vOrigin;
 flat in float vOpacity;
 flat in vec3 vVelocity;
+flat in vec2 vLit;
 uniform int uPrismGraph;
 uniform int uFamily;          // 0 unlit, 1 lit, 2 fresnel pair, 3 snow, 4 cage, 5 voronoi cells, 6 crystal
 uniform vec4 uParam;          // family-specific
@@ -273,6 +276,11 @@ uniform vec4 uCrackleP1;      // rippleSpeed, rimIntensity, rimPower, -
 uniform vec3 uOccTarget;       // _PrismOcclusionTarget: the local pilot's vessel
 uniform vec3 uOccParams;       // _PrismOcclusionParams: (outer radius, inner radius, core alpha); x <= 0 = off
 uniform float uOccNear;        // _PrismOcclusionNearRadius: the frustum's radius at the lens
+uniform vec3 uSightApex, uSightAxis, uSightGape, uSightParams; // the viewer's OWN aim (_PrismSight*)
+uniform float uSightStrength;
+uniform vec4 uSightBlocker;    // _PrismSightBlockerColor (w > 0 = published)
+uniform vec4 uLitApex[8], uLitAxis[8], uLitGape[8], uLitTint[8], uLitShape[8]; // _PrismLitPeer* bank
+uniform int uLitCount;
 out vec4 frag;
 float cHash1(float n){ return fract(sin(n) * 43758.5453123); }
 float cNoise(float x){ float i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f); return mix(cHash1(i), cHash1(i + 1.0), f); }
@@ -363,6 +371,72 @@ float erosionSurvival(vec2 UV, vec3 vel, float op){
   w01 = clamp(w01 + (jag - 0.5) * 0.12, 0.0, 1.0);
   float thr = (0.15 + smoothstep(-0.02, 1.02, w01) * 0.85) * 0.998 + 0.001;
   return op >= thr ? 1.0 : 0.0;
+}
+// PrismDestructionSight.hlsl, translated: the LIT fundamental. The viewer's own aim lights
+// whole prisms (sampled at the prism's origin) in a pale cool cast, or flags a super-shield in
+// the danger colour; otherwise up to eight peer lights (cone / sphere / cylinder) blend by
+// weight-averaged hue at the brightness of the strongest, desaturated toward white.
+float sightEdge(float d, float r){ return mix(0.35, 1.0, pow(clamp(d / r, 0.0, 1.0), 2.0)); }
+float sightFillCone(vec3 P, vec3 apex, vec3 axis, vec3 gape, vec3 prm){
+  if (prm.x <= 0.0) return 0.0;
+  vec3 rel = P - apex;
+  float s = dot(rel, axis);
+  if (s <= 0.0 || s > prm.x) return 0.0;
+  float core = prm.y * s;
+  if (core <= 0.0) return 0.0;
+  vec3 radial = rel - axis * s;
+  float halfLen = prm.z * s;
+  float along = dot(radial, gape);
+  float d = length(radial - gape * clamp(along, -halfLen, halfLen));
+  if (d > core) return 0.0;
+  return sightEdge(d, core);
+}
+float litFill(vec3 P, vec3 o, vec3 axis, vec3 gape, vec3 prm, float shape){
+  if (prm.x <= 0.0) return 0.0;
+  if (shape >= 2.0) {
+    if (prm.y <= 0.0) return 0.0;
+    vec3 rel = P - o;
+    float s = dot(rel, axis);
+    float axial = prm.z > 0.0 ? abs(s) : s;
+    if (axial < 0.0 || axial > prm.x) return 0.0;
+    float d = length(rel - axis * s);
+    if (d > prm.y) return 0.0;
+    return sightEdge(d, prm.y);
+  }
+  if (shape >= 1.0) {
+    vec3 rel = P - o;
+    float d2 = dot(rel, rel);
+    if (d2 > prm.x * prm.x) return 0.0;
+    return sightEdge(sqrt(d2), prm.x);
+  }
+  return sightFillCone(P, o, axis, gape, prm);
+}
+vec3 destructionSight(vec3 base, vec3 P, float domain, float superShielded){
+  if (uSightParams.x > 0.0 && uSightStrength > 0.0) {
+    float own = sightFillCone(P, uSightApex, uSightAxis, uSightGape, uSightParams) * uSightStrength;
+    if (own > 0.0) {
+      if (superShielded > 0.5) {
+        vec3 blocker = uSightBlocker.w > 0.0 ? uSightBlocker.xyz : vec3(1.0, 0.06, 0.05);
+        return mix(base, blocker, 0.75 * uSightStrength) + blocker * (uSightStrength * 0.9);
+      }
+      return base + vec3(0.45, 0.70, 1.0) * (own * 0.7);
+    }
+  }
+  vec3 weighted = vec3(0.0);
+  float total = 0.0, peak = 0.0;
+  for (int i = 0; i < 8; i++) {
+    if (i >= uLitCount) break;
+    vec4 tag = uLitShape[i];
+    if (tag.y > 0.0 && tag.y != domain) continue;
+    vec4 a = uLitApex[i], x = uLitAxis[i], g = uLitGape[i], t = uLitTint[i];
+    float w = litFill(P, a.xyz, x.xyz, g.xyz, vec3(a.w, x.w, g.w), tag.x) * t.a;
+    if (w <= 0.0) continue;
+    weighted += mix(t.rgb, vec3(1.0), 0.4) * w;
+    total += w;
+    peak = max(peak, w);
+  }
+  if (total <= 0.0) return base;
+  return base + (weighted / total) * (peak * 0.55);
 }
 // PrismOcclusionCorridor.hlsl, translated: the camera->ship frustum inside which prism mass
 // dissolves through the SHATTER screen-door (a cracked lattice of Voronoi walls in pixels),
@@ -457,6 +531,7 @@ void main(){
       bright = mix(vBright, vDark, n > 1.0 ? 0.9 : n * 0.9);
     }
     col = mix(vDark, bright, f) * tex;
+    if (uPrismGraph != 0) col.rgb = destructionSight(col.rgb, vOrigin, vLit.y, vLit.x);
   } else if (uFamily == 3) {
     // SnowGraph: colour + a gradient along the object's own axis, fixed opacity.
     col = vec4(clamp(vDark.rgb + dot(vObj, uParam.xyz), 0.0, 1.0), uAlpha);
@@ -509,6 +584,7 @@ void main(){
 
         struct MatState
         {
+            public int Revision;      // Material.Revision this was derived from; a runtime edit re-derives
             public int Family;
             public Color Dark, Bright; // linear
             public float FresPow;
@@ -557,8 +633,8 @@ void main(){
             new("_JiggleParams", 40, 3), new("_JiggleStartTime", 43, 1),
             new("_SwaySpanX", 44, 3), new("_JiggleDuration", 47, 1),
             new("_SwaySpanY", 48, 3), new("_FacePivotFromCentroid", 51, 1),
-            new("_SwayAxis", 52, 3),
-            new("_SwayTiming", 56, 3),
+            new("_SwayAxis", 52, 3), new("_PrismSuperShielded", 55, 1),
+            new("_SwayTiming", 56, 3), new("_PrismLitDomain", 59, 1),
         };
         static readonly int SlotDark = EntityDrawList.Slot("_DarkColor"), SlotBright = EntityDrawList.Slot("_BrightColor");
         static readonly int SlotGrowStart = EntityDrawList.Slot("_GrowStartTime"), SlotGrowRate = EntityDrawList.Slot("_GrowRate"), SlotGrowFrac = EntityDrawList.Slot("_GrowStartFrac");
@@ -629,6 +705,50 @@ void main(){
         static readonly int IdGrowStart = Shader.PropertyToID("_GrowStartTime"), IdGrowRate = Shader.PropertyToID("_GrowRate"), IdGrowFrac = Shader.PropertyToID("_GrowStartFrac");
         static readonly int IdSqrDistance = Shader.PropertyToID("_SqrDistance");
         static readonly int IdPrismClock = Shader.PropertyToID("_PrismClock");
+        static readonly int IdSightApex = Shader.PropertyToID("_PrismSightApex"), IdSightAxis = Shader.PropertyToID("_PrismSightAxis"),
+            IdSightGape = Shader.PropertyToID("_PrismSightGape"), IdSightParams = Shader.PropertyToID("_PrismSightParams"),
+            IdSightStrength = Shader.PropertyToID("_PrismSightStrength"), IdSightBlocker = Shader.PropertyToID("_PrismSightBlockerColor");
+        static readonly int IdLitApex = Shader.PropertyToID("_PrismLitPeerApex"), IdLitAxis = Shader.PropertyToID("_PrismLitPeerAxis"),
+            IdLitGape = Shader.PropertyToID("_PrismLitPeerGape"), IdLitTint = Shader.PropertyToID("_PrismLitPeerTint"),
+            IdLitShape = Shader.PropertyToID("_PrismLitPeerShape"), IdLitCount = Shader.PropertyToID("_PrismLitPeerCount");
+        readonly float[] _litScratch = new float[8 * 4];
+
+        /// <summary>The Lit fundamental's globals: the viewer's own aim plus the eight-slot peer bank.</summary>
+        void SetSightUniforms()
+        {
+            SetGlobalVec3("uSightApex", IdSightApex);
+            SetGlobalVec3("uSightAxis", IdSightAxis);
+            SetGlobalVec3("uSightGape", IdSightGape);
+            SetGlobalVec3("uSightParams", IdSightParams);
+            _program.Set("uSightStrength", Shader.GetGlobalFloat(IdSightStrength));
+            var b = Shader.GetGlobalVector(IdSightBlocker);
+            _program.Set("uSightBlocker", b.x, b.y, b.z, b.w);
+            int count = Math.Clamp((int)Shader.GetGlobalFloat(IdLitCount), 0, 8);
+            _program.Set("uLitCount", count);
+            if (count == 0) return;
+            SetGlobalVec4Array("uLitApex", IdLitApex);
+            SetGlobalVec4Array("uLitAxis", IdLitAxis);
+            SetGlobalVec4Array("uLitGape", IdLitGape);
+            SetGlobalVec4Array("uLitTint", IdLitTint);
+            SetGlobalVec4Array("uLitShape", IdLitShape);
+        }
+
+        void SetGlobalVec3(string uniform, int id)
+        {
+            var v = Shader.GetGlobalVector(id);
+            _program.Set(uniform, v.x, v.y, v.z);
+        }
+
+        void SetGlobalVec4Array(string uniform, int id)
+        {
+            Array.Clear(_litScratch);
+            var arr = Shader.GetGlobalVectorArray(id);
+            if (arr != null)
+                for (int i = 0; i < arr.Length && i < 8; i++)
+                { _litScratch[i * 4] = arr[i].x; _litScratch[i * 4 + 1] = arr[i].y; _litScratch[i * 4 + 2] = arr[i].z; _litScratch[i * 4 + 3] = arr[i].w; }
+            _program.Set4v(uniform, _litScratch, 8);
+        }
+
         static readonly int IdOccTarget = Shader.PropertyToID("_PrismOcclusionTarget"), IdOccParams = Shader.PropertyToID("_PrismOcclusionParams"), IdOccNear = Shader.PropertyToID("_PrismOcclusionNearRadius");
 
         public int DrawCalls { get; private set; }
@@ -677,6 +797,7 @@ void main(){
             _program.Set("uOccTarget", occTarget.x, occTarget.y, occTarget.z);
             _program.Set("uOccParams", occParams.x, occParams.y, occParams.z);
             _program.Set("uOccNear", Shader.GetGlobalFloat(IdOccNear));
+            SetSightUniforms();
 
             _gl.Enable(EnableCap.DepthTest);
             _gl.DepthFunc(DepthFunction.Lequal);
@@ -776,7 +897,7 @@ void main(){
                 {
                     var m = mats[i];
                     if (m == null) continue;
-                    if (!_mats.TryGetValue(m, out var st)) _mats[m] = st = Classify(m);
+                    var st = StateFor(m);
                     var item = new Item { Renderer = r, Mesh = mesh, Submesh = Math.Min(i, subs - 1), Material = m, State = st,
                         Skinned = r is SkinnedMeshRenderer sk && sk.bones is { Length: > 0 and <= MaxBones } && mesh.RenderBoneWeights.Length == mesh.vertexCount
                                   && mesh.RenderBindposes.Length >= sk.bones.Length };
@@ -805,7 +926,7 @@ void main(){
                 var mesh = _entities.Meshes[i];
                 var m = _entities.Materials[i];
                 if (mesh == null || mesh.vertexCount == 0 || m == null) continue;
-                if (!_mats.TryGetValue(m, out var st)) _mats[m] = st = Classify(m);
+                var st = StateFor(m);
                 int subs = mesh.RenderSubmeshCount;
                 var item = new Item { Mesh = mesh, Submesh = Math.Clamp(_entities.Submeshes[i], 0, Math.Max(subs - 1, 0)), Material = m, State = st, Entity = i + 1 };
                 if (st.Transparent)
@@ -818,9 +939,16 @@ void main(){
             }
         }
 
+        /// <summary>The cached state for a material, re-derived whenever the material was edited at runtime.</summary>
+        MatState StateFor(Material m)
+        {
+            if (!_mats.TryGetValue(m, out var st) || st.Revision != m.Revision) _mats[m] = st = Classify(m);
+            return st;
+        }
+
         static MatState Classify(Material m)
         {
-            var st = new MatState { FresPow = 4f, TexST = new Vector4(1, 1, 0, 0), Cull = 2, Queue = m.renderQueue, Alpha = 1f };
+            var st = new MatState { Revision = m.Revision, FresPow = 4f, TexST = new Vector4(1, 1, 0, 0), Cull = 2, Queue = m.renderQueue, Alpha = 1f };
             string graph = m.shader?.name ?? "";
             if (graph == "Shader Graphs/SnowGraph")
             {
@@ -1113,7 +1241,7 @@ void main(){
 
             var mats = r.sharedMaterials;
             var m = mats is { Length: > 0 } && mats[0] != null ? mats[0] : DefaultLineMaterial;
-            if (!_mats.TryGetValue(m, out var st))
+            if (!_mats.TryGetValue(m, out var st) || st.Revision != m.Revision)
             {
                 _mats[m] = st = Classify(m);
                 // A line/trail is a translucent strip whatever its material queue says; cull nothing.

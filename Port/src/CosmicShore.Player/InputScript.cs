@@ -24,6 +24,7 @@ namespace CosmicShore.Player
     {
         readonly SortedDictionary<int, List<string>> _steps = new();
         readonly List<(int frame, Action release)> _releases = new();
+        readonly List<(int until, Action act)> _repeats = new();
         Keyboard _kb;
         Mouse _mouse;
         Gamepad _pad;
@@ -51,6 +52,11 @@ namespace CosmicShore.Player
         /// <summary>Runs the steps due this frame (call before the engine tick).</summary>
         public void BeforeTick(int frame)
         {
+            for (int i = _repeats.Count - 1; i >= 0; i--)
+            {
+                if (_repeats[i].until < frame) { _repeats.RemoveAt(i); continue; }
+                _repeats[i].act();
+            }
             for (int i = _releases.Count - 1; i >= 0; i--)
                 if (_releases[i].frame <= frame) { _releases[i].release(); _releases.RemoveAt(i); }
 
@@ -100,6 +106,15 @@ namespace CosmicShore.Player
                     case "renderers":
                         Inspector.Renderers(arg.Trim());
                         break;
+                    case "lit":
+                    {
+                        var a = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        float radius = float.Parse(a[0], CultureInfo.InvariantCulture);
+                        int frames = a.Length > 1 ? int.Parse(a[1], CultureInfo.InvariantCulture) : 60;
+                        var light = Inspector.LitSphere(radius);
+                        if (light != null) _repeats.Add((frame + frames, light));
+                        break;
+                    }
                     case "blast":
                         Inspector.Blast(int.Parse(arg.Trim(), CultureInfo.InvariantCulture));
                         break;

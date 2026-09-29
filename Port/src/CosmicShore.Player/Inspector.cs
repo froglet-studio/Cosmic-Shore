@@ -181,6 +181,27 @@ namespace CosmicShore.Player
             Console.WriteLine($"[blast] damaged {prisms.Count} prism(s)");
         }
 
+        /// <summary>
+        /// A test light for the Lit fundamental: a sphere of <paramref name="radius"/> on the prism
+        /// nearest the camera, reported through the game's own PrismLit every frame the returned
+        /// action runs (a light nobody reports fades out).
+        /// </summary>
+        public static Action LitSphere(float radius)
+        {
+            var cam = Camera.main;
+            if (cam == null) { Console.WriteLine("[lit] no main camera"); return null; }
+            var origin = cam.transform.position;
+            var prism = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Prism>(FindObjectsSortMode.None)
+                .Where(pr => pr && pr.isActiveAndEnabled && !pr.destroyed)
+                .OrderBy(pr => (pr.transform.position - origin).sqrMagnitude)
+                .FirstOrDefault();
+            if (prism == null) { Console.WriteLine("[lit] no prisms"); return null; }
+            var centre = prism.transform.position;
+            Console.WriteLine($"[lit] sphere r={radius} at {centre}");
+            return () => CosmicShore.Utility.PrismLit.PublishLight(
+                0x5C817, CosmicShore.Utility.LitVolume.Sphere(centre, radius), 1f, new Color(1f, 0.25f, 0.2f));
+        }
+
         public static void PrintStatic(string chain)
         {
             var parts = chain.Split('.');

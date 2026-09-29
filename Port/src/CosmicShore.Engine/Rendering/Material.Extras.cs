@@ -113,15 +113,15 @@ namespace CosmicShore.Engine
         public int GetInteger(string name) => GetInt(name);
         public int GetInteger(int nameID) => GetInt(nameID);
 
-        public void SetMatrix(string name, Matrix4x4 value) => _matrices[Shader.PropertyToID(name)] = value;
-        public void SetMatrix(int nameID, Matrix4x4 value) => _matrices[nameID] = value;
+        public void SetMatrix(string name, Matrix4x4 value) { _matrices[Shader.PropertyToID(name)] = value; Revision++; }
+        public void SetMatrix(int nameID, Matrix4x4 value) { _matrices[nameID] = value; Revision++; }
         public Matrix4x4 GetMatrix(string name) => GetMatrix(Shader.PropertyToID(name));
         public Matrix4x4 GetMatrix(int nameID) => _matrices.TryGetValue(nameID, out var m) ? m : Matrix4x4.identity;
 
-        public void SetFloatArray(string name, float[] values) => _floatArrays[Shader.PropertyToID(name)] = (float[])values.Clone();
-        public void SetFloatArray(int nameID, float[] values) => _floatArrays[nameID] = (float[])values.Clone();
-        public void SetVectorArray(string name, Vector4[] values) => _vectorArrays[Shader.PropertyToID(name)] = (Vector4[])values.Clone();
-        public void SetVectorArray(int nameID, Vector4[] values) => _vectorArrays[nameID] = (Vector4[])values.Clone();
+        public void SetFloatArray(string name, float[] values) { _floatArrays[Shader.PropertyToID(name)] = (float[])values.Clone(); Revision++; }
+        public void SetFloatArray(int nameID, float[] values) { _floatArrays[nameID] = (float[])values.Clone(); Revision++; }
+        public void SetVectorArray(string name, Vector4[] values) { _vectorArrays[Shader.PropertyToID(name)] = (Vector4[])values.Clone(); Revision++; }
+        public void SetVectorArray(int nameID, Vector4[] values) { _vectorArrays[nameID] = (Vector4[])values.Clone(); Revision++; }
         public float[] GetFloatArray(int nameID) => _floatArrays.TryGetValue(nameID, out var a) ? a : null;
         public Vector4[] GetVectorArray(int nameID) => _vectorArrays.TryGetValue(nameID, out var a) ? a : null;
 
@@ -145,7 +145,7 @@ namespace CosmicShore.Engine
         public string[] shaderKeywords
         {
             get => new List<string>(_keywords).ToArray();
-            set { _keywords.Clear(); if (value != null) foreach (var k in value) _keywords.Add(k); }
+            set { _keywords.Clear(); if (value != null) foreach (var k in value) _keywords.Add(k); Revision++; }
         }
 
         public void SetKeyword(string keyword, bool value) { if (value) EnableKeyword(keyword); else DisableKeyword(keyword); }
@@ -167,6 +167,7 @@ namespace CosmicShore.Engine
             foreach (var kv in mat._textures) _textures[kv.Key] = kv.Value;
             foreach (var kv in mat._textureST) _textureST[kv.Key] = kv.Value;
             foreach (var kv in mat._matrices) _matrices[kv.Key] = kv.Value;
+            Revision++;
         }
 
         public void CopyMatchingPropertiesFromMaterial(Material mat) => CopyPropertiesFromMaterial(mat);
