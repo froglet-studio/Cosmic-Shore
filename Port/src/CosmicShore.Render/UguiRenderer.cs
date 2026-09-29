@@ -8,6 +8,7 @@ using EngineVector3 = CosmicShore.Engine.Vector3;
 using EngineColor = CosmicShore.Engine.Color;
 using Rect = CosmicShore.Engine.Rect;
 using Vector4 = System.Numerics.Vector4;
+using PrimitiveType = Silk.NET.OpenGL.PrimitiveType;
 
 namespace CosmicShore.Render
 {

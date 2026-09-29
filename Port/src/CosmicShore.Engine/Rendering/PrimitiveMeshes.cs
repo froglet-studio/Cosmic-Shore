@@ -18,10 +18,10 @@ namespace CosmicShore.Engine
     /// </summary>
     internal static class PrimitiveMeshes
     {
-        static readonly Dictionary<Rendering.PrimitiveType, Mesh> _shared = new();
+        static readonly Dictionary<CosmicShore.Engine.PrimitiveType, Mesh> _shared = new();
         static readonly object _gate = new(); // xunit runs test classes in parallel; guard the shared cache
 
-        internal static Mesh GetShared(Rendering.PrimitiveType type)
+        internal static Mesh GetShared(CosmicShore.Engine.PrimitiveType type)
         {
             lock (_gate)
             {
@@ -30,12 +30,12 @@ namespace CosmicShore.Engine
 
                 Mesh mesh = type switch
                 {
-                    Rendering.PrimitiveType.Cube => BuildCube(),
-                    Rendering.PrimitiveType.Sphere => BuildIcosphere(subdivisions: 2, radius: 0.5f),
-                    Rendering.PrimitiveType.Capsule => BuildCapsule(radius: 0.5f, cylinderHalfHeight: 0.5f, segments: 16, hemisphereRings: 6),
-                    Rendering.PrimitiveType.Cylinder => BuildCylinder(radius: 0.5f, halfHeight: 1f, segments: 16),
-                    Rendering.PrimitiveType.Plane => BuildPlane(halfSize: 5f),
-                    Rendering.PrimitiveType.Quad => BuildQuad(),
+                    CosmicShore.Engine.PrimitiveType.Cube => BuildCube(),
+                    CosmicShore.Engine.PrimitiveType.Sphere => BuildIcosphere(subdivisions: 2, radius: 0.5f),
+                    CosmicShore.Engine.PrimitiveType.Capsule => BuildCapsule(radius: 0.5f, cylinderHalfHeight: 0.5f, segments: 16, hemisphereRings: 6),
+                    CosmicShore.Engine.PrimitiveType.Cylinder => BuildCylinder(radius: 0.5f, halfHeight: 1f, segments: 16),
+                    CosmicShore.Engine.PrimitiveType.Plane => BuildPlane(halfSize: 5f),
+                    CosmicShore.Engine.PrimitiveType.Quad => BuildQuad(),
                     _ => throw new ArgumentOutOfRangeException(nameof(type)),
                 };
                 mesh.name = type.ToString();

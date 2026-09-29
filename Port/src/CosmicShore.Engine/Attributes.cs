@@ -127,9 +127,6 @@ namespace CosmicShore.Engine
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class HideInInspectorAttribute : Attribute { }
 
-    /// <summary>Keeps the annotated member through code stripping (inert marker for now).</summary>
-    [AttributeUsage(AttributeTargets.All, Inherited = false)]
-    public sealed class PreserveAttribute : Attribute { }
 
     /// <summary>Surfaces a method in the component's inspector context menu (inert marker; editor tooling reads it later).</summary>
     [AttributeUsage(AttributeTargets.Method)]

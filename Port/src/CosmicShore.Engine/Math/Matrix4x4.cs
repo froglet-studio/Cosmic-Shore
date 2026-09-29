@@ -1,6 +1,6 @@
 using System;
 
-namespace CosmicShore.Engine.Rendering
+namespace CosmicShore.Engine
 {
     /// <summary>
     /// Original-contract 4×4 transformation matrix (the mesh arc). Field layout matches

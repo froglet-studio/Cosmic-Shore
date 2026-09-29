@@ -1,4 +1,4 @@
-namespace CosmicShore.Engine
+namespace CosmicShore.Engine.Video
 {
     /// <summary>
     /// Stand-in for <c>UnityEngine.Video.VideoClip</c> (engine addition for Arc F

@@ -2,6 +2,7 @@ using CosmicShore.Engine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using System;
+using CosmicShore.Engine.Video;
 namespace CosmicShore.ScriptableObjects
 {
     [System.Serializable]

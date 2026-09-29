@@ -21,6 +21,7 @@ using CosmicShore.Engine.Injection;
 using CosmicShore.Engine.Networking;
 using CosmicShore.Engine;
 using CosmicShore.Engine.UI;
+using CosmicShore.Engine.Video;
 
 namespace CosmicShore.UI
 {

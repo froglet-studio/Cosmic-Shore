@@ -6,6 +6,7 @@ using CosmicShore.Engine.UI;
 using Silk.NET.OpenGL;
 using Rect = CosmicShore.Engine.Rect;
 using Vector4 = System.Numerics.Vector4;
+using PrimitiveType = Silk.NET.OpenGL.PrimitiveType;
 
 namespace CosmicShore.Render
 {

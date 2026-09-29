@@ -1,5 +1,6 @@
 using System.Runtime.Serialization;
 using CosmicShore.Engine;
+using CosmicShore.Engine.Scripting;
 
 namespace CosmicShore.ScriptableObjects
 {

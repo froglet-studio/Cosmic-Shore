@@ -64,13 +64,13 @@ namespace CosmicShore.Engine
         /// mesh bounds (Cube = unit box, Capsule/Cylinder = (1, 2, 1), Plane/Quad = flat)
         /// — box approximations until real capsule/mesh primitive colliders land.
         /// </summary>
-        public static GameObject CreatePrimitive(Rendering.PrimitiveType type)
+        public static GameObject CreatePrimitive(CosmicShore.Engine.PrimitiveType type)
         {
             var go = new GameObject(type.ToString());
             var mesh = PrimitiveMeshes.GetShared(type);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>();
-            if (type == Rendering.PrimitiveType.Sphere)
+            if (type == CosmicShore.Engine.PrimitiveType.Sphere)
                 go.AddComponent<SphereCollider>().radius = 0.5f;
             else
                 go.AddComponent<BoxCollider>().size = mesh.bounds.size;

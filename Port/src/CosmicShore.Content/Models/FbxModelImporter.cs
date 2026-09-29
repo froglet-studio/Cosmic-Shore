@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using CosmicShore.Engine;
-using Matrix4x4 = CosmicShore.Engine.Rendering.Matrix4x4;
+using Matrix4x4 = CosmicShore.Engine.Matrix4x4;
 
 namespace CosmicShore.Content.Models
 {

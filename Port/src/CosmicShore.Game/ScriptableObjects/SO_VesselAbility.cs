@@ -1,4 +1,5 @@
 using CosmicShore.Engine;
+using CosmicShore.Engine.Video;
 
 [CreateAssetMenu(fileName = "New Ability", menuName = "CosmicShore/Vessel/VesselAbility", order = 4)]
 public class SO_VesselAbility : ScriptableObject

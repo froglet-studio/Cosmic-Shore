@@ -12,7 +12,10 @@ namespace CosmicShore.Engine.Rendering
         TwoSided = 2,
         ShadowsOnly = 3,
     }
+}
 
+namespace CosmicShore.Engine
+{
     /// <summary>
     /// Original-engine primitive shapes (UnityEngine.PrimitiveType) for
     /// <see cref="GameObject.CreatePrimitive"/>. Numeric values frozen to the original.

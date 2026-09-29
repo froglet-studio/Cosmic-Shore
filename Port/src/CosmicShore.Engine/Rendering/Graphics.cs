@@ -52,11 +52,11 @@ namespace CosmicShore.Engine
             public readonly RenderParams renderParams;
             public readonly Mesh mesh;
             public readonly int submeshIndex;
-            public readonly Rendering.Matrix4x4[] instanceData;
+            public readonly CosmicShore.Engine.Matrix4x4[] instanceData;
             public readonly int instanceCount;
 
             internal InstancedDrawSubmission(in RenderParams rparams, Mesh mesh, int submeshIndex,
-                Rendering.Matrix4x4[] instanceData, int instanceCount)
+                CosmicShore.Engine.Matrix4x4[] instanceData, int instanceCount)
             {
                 renderParams = rparams;
                 this.mesh = mesh;
@@ -98,7 +98,7 @@ namespace CosmicShore.Engine
         /// Headless: records the submission.
         /// </summary>
         public static void RenderMeshInstanced(in RenderParams rparams, Mesh mesh, int submeshIndex,
-            Rendering.Matrix4x4[] instanceData, int instanceCount = -1, int startInstance = 0)
+            CosmicShore.Engine.Matrix4x4[] instanceData, int instanceCount = -1, int startInstance = 0)
         {
             if (mesh is null || instanceData is null) return;
             int available = Math.Max(0, instanceData.Length - Math.Max(0, startInstance));

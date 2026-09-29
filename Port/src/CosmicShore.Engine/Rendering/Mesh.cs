@@ -46,7 +46,7 @@ namespace CosmicShore.Engine
         // uv (channel 0) lives in _uv; channels 1..7 (uv2..uv8) here.
         readonly Vector2[][] _extraUvs = new Vector2[7][];
         BoneWeight[] _boneWeights = Array.Empty<BoneWeight>();
-        Rendering.Matrix4x4[] _bindposes = Array.Empty<Rendering.Matrix4x4>();
+        CosmicShore.Engine.Matrix4x4[] _bindposes = Array.Empty<CosmicShore.Engine.Matrix4x4>();
         readonly List<BlendShape> _blendShapes = new();
 
         sealed class BlendShapeFrame
@@ -124,7 +124,7 @@ namespace CosmicShore.Engine
         }
 
         /// <summary>Inverse bind matrices, one per bone of the skinned renderer (bone-from-mesh space).</summary>
-        public Rendering.Matrix4x4[] bindposes
+        public CosmicShore.Engine.Matrix4x4[] bindposes
         {
             get => Copy(_bindposes);
             set => _bindposes = Copy(value);
