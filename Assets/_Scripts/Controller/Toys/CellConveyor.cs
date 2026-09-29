@@ -568,6 +568,11 @@ namespace CosmicShore.Gameplay
                 // so nothing is watched popping out and the continuity law is untouched;
                 // Destroy still reaches an inactive object, and GetComponentsInChildren below
                 // already passes includeInactive.
+                // The world goes as a whole, so nothing in it DIES: without this each plant
+                // ran its full death path (sound, crystal, DamageAll over its tracker) when the
+                // root was destroyed at the end of the drain.
+                foreach (var lifeForm in retiring.GetComponentsInChildren<LifeForm>(true))
+                    if (lifeForm) lifeForm.RetireWithWorld();
                 retiring.SetActive(false);
             }
 

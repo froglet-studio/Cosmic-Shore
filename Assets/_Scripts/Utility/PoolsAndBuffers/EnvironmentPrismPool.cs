@@ -180,6 +180,11 @@ namespace CosmicShore.Gameplay
             if (!prism.gameObject.activeSelf && prism.transform.parent == s_host)
                 return true;
 
+            // A prism in the pool belongs to nobody: sever the plant, limb and fauna
+            // back-references (and the owners' tracker entries) before it can be re-issued.
+            if (prism is HealthPrism healthPrism)
+                healthPrism.DetachForPool();
+
             prism.ClearSuctionClockStamp();
             if (PrismRenderService.IsHandleUsable(in prism.RenderHandle))
                 PrismRenderService.ClearPrismStamps(in prism.RenderHandle);
