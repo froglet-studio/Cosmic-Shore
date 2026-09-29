@@ -181,5 +181,18 @@ namespace CosmicShore.Tests
             Assert.Equal(42, smr.bones.Length);
             Assert.True(smr.bones.All(b => b.IsChildOf(clone.transform)), "bones re-map into the clone");
         }
+
+        [Fact]
+        public void BuiltinDefaultLine_ResolvesToOneSharedMaterial()
+        {
+            if (ContentYamlTests.ProjectRoot == null) return;
+            using var loop = new GameLoop("ModelPrefabTests");
+            var runtime = new ContentRuntime(ContentYamlTests.ProjectRoot, new[] { typeof(GameObject).Assembly });
+            var line = runtime.Assets.Load<Material>(new ObjRef(10306, AssetLoader.BuiltinExtraGuid, 0));
+            Assert.NotNull(line);
+            Assert.Equal("Default-Line", line.name);
+            Assert.Same(line, runtime.Assets.Load<Material>(new ObjRef(10306, AssetLoader.BuiltinExtraGuid, 0)));
+            Assert.Null(runtime.Assets.Load<Material>(new ObjRef(10999, AssetLoader.BuiltinExtraGuid, 0)));
+        }
     }
 }

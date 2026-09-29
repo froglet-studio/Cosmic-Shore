@@ -114,6 +114,7 @@ void main(){
         int _stencilDepth;
         float _screenW, _screenH;
         readonly UIMesh _mesh = new();
+        readonly VertexHelper _vh = new();
         readonly UiTextGeometry _text = new();
 
         public IUiTextProvider Text { get; set; }
@@ -338,7 +339,26 @@ void main(){
 
             _mesh.Clear();
             uint tex;
-            switch (g)
+            if (Graphic.BuildsOwnMesh(g.GetType()))
+            {
+                // A Graphic subclass that builds its own geometry (a generated trapezoid, ring,
+                // petal...) — including Image/RawImage subclasses that replace the base quad —
+                // draws exactly what its OnPopulateMesh (+ any IMeshModifiers) emits, as uGUI does.
+                _vh.Clear();
+                g.PopulateMeshForRendering(_vh);
+                var verts = _vh.Vertices;
+                for (int i = 0; i < verts.Count; i++) _mesh.vertices.Add(verts[i]);
+                var inds = _vh.Indices;
+                for (int i = 0; i < inds.Count; i++) _mesh.indices.Add(inds[i]);
+                CosmicShore.Engine.Texture t = g switch
+                {
+                    RawImage ri => ri.texture,
+                    Image im => im.overrideSprite?.texture,
+                    _ => g.mainTexture,
+                };
+                tex = t != null && !ReferenceEquals(t, Texture2D.whiteTexture) ? _textures.Get(t) : _textures.White;
+            }
+            else switch (g)
             {
                 case Image image:
                     ImageMesh.Populate(_mesh, image);

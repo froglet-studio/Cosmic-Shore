@@ -699,10 +699,8 @@ void main(){
 
         readonly ConditionalWeakTable<Renderer, Mesh> _ribbons = new();
         readonly List<EVector3> _ribbonPts = new();
-        static Material s_defaultLine;
-
-        /// <summary>Unity's Default-Line stand-in: unlit, alpha-blended, tinted by the vertex colour.</summary>
-        static Material DefaultLineMaterial => s_defaultLine ??= new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended")) { name = "Default-Line", renderQueue = 3000 };
+        /// <summary>Unity's Default-Line: what a Line/TrailRenderer with no material draws with.</summary>
+        static Material DefaultLineMaterial => BuiltinMaterials.DefaultLine;
 
         void CollectRibbon(Renderer r, int mask, EVector3 camPos)
         {

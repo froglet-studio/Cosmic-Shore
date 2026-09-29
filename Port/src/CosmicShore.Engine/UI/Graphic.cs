@@ -123,6 +123,24 @@ namespace CosmicShore.Engine.UI
             vh.AddTriangle(2, 3, 0);
         }
 
+        static readonly System.Collections.Generic.Dictionary<System.Type, bool> s_ownMesh = new();
+
+        /// <summary>
+        /// True when <paramref name="graphicType"/> (a subclass of Image and RawImage included)
+        /// overrides <see cref="OnPopulateMesh"/> — its geometry is whatever that override emits,
+        /// not a built-in quad/sprite layout. Cached per type.
+        /// </summary>
+        public static bool BuildsOwnMesh(System.Type graphicType)
+        {
+            if (s_ownMesh.TryGetValue(graphicType, out var yes)) return yes;
+            var m = graphicType.GetMethod(nameof(OnPopulateMesh),
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+                null, new[] { typeof(VertexHelper) }, null);
+            yes = m != null && m.DeclaringType != typeof(Graphic);
+            s_ownMesh[graphicType] = yes;
+            return yes;
+        }
+
         /// <summary>Renderer entry point: builds this graphic's mesh, applying <see cref="IMeshModifier"/>s like the canvas update.</summary>
         public void PopulateMeshForRendering(VertexHelper vh)
         {

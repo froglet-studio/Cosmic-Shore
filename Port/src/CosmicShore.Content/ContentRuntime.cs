@@ -58,6 +58,7 @@ namespace CosmicShore.Content
             Assets.Importers[typeof(CosmicShore.Engine.UI.TMP_FontAsset)] = LoadFontAsset;
             Audio.MixerImporter.Register(Assets, new Audio.MixerImporter(Db));
             ChainImporter(typeof(Mesh), r => r.Guid == AssetLoader.BuiltinDefaultGuid ? BuiltinMeshes.ForFileId(r.FileId) : null);
+            ChainImporter(typeof(Material), r => r.Guid == AssetLoader.BuiltinExtraGuid ? BuiltinMaterials.ForFileId(r.FileId) : null);
         }
 
         /// <summary>Adds an importer for <paramref name="type"/> in front of any already registered (first non-null wins).</summary>
