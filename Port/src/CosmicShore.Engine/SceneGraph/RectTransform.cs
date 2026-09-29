@@ -84,6 +84,9 @@ namespace CosmicShore.Engine
                     float scale = driver.scaleFactor;
                     if (scale <= 0f) scale = 1f;
                     size = new Vector2(Screen.width / scale, Screen.height / scale);
+                    // A screen-space root canvas DRIVES its RectTransform: pivot is centred
+                    // (the serialized value is a stale 0 — Arc E loads it from scene data).
+                    return new Rect(-0.5f * size.x, -0.5f * size.y, size.x, size.y);
                 }
                 else
                 {

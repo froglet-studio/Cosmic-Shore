@@ -28,6 +28,7 @@ namespace CosmicShore.Content
         public readonly ScriptTypeMap Scripts;
         public readonly AssetLoader Assets;
         public readonly InstantiateOptions Options;
+        public readonly Textures.TextureImporter Textures;
         public readonly List<(string path, string guid, bool enabled)> BuildScenes = new();
 
         /// <summary>The root DI container (Reflex project scope), once booted.</summary>
@@ -49,6 +50,8 @@ namespace CosmicShore.Content
             ReadBuildSettings();
             IndexResources();
             Assets.Importers[typeof(GameObject)] = LoadPrefabObject;
+            Textures = new Textures.TextureImporter(Db);
+            CosmicShore.Content.Textures.TextureImporter.Register(Assets, Textures);
         }
 
         /// <summary>Installs this runtime as the engine's scene + Resources backend.</summary>

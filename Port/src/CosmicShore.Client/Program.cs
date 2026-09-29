@@ -33,6 +33,9 @@ namespace CosmicShore.Client
             int players = 4;
             int target = 6;
             string screenshot = null;
+            string scene = null;
+            int width = 1920, height = 1080;
+            bool scripts = true, boot = true;
             int screenshotFrame = 240;
 
             for (int i = 0; i < args.Length; i++)
@@ -51,11 +54,27 @@ namespace CosmicShore.Client
                     case "--target" when i + 1 < args.Length: int.TryParse(args[++i], out target); break;
                     case "--screenshot" when i + 1 < args.Length: screenshot = args[++i]; break;
                     case "--frames" when i + 1 < args.Length: int.TryParse(args[++i], out screenshotFrame); break;
+                    case "--scene" when i + 1 < args.Length: scene = args[++i]; break;
+                    case "--size" when i + 1 < args.Length:
+                    {
+                        var wh = args[++i].Split('x');
+                        if (wh.Length == 2) { int.TryParse(wh[0], out width); int.TryParse(wh[1], out height); }
+                        break;
+                    }
+                    case "--no-scripts": scripts = false; break;
+                    case "--no-boot": boot = false; break;
                 }
             }
 
             try
             {
+                if (mode == "game")
+                {
+                    // Arc E: the Unity project's own content, loaded and rendered by the port.
+                    new GameHostWindow(scene ?? "Menu_Main", width, height, scripts, boot, screenshot, screenshotFrame).Run();
+                    return 0;
+                }
+
                 if (mode == "uidemo")
                 {
                     Console.WriteLine("UI demo — engine canvas rendered through the Arc-C bridge");

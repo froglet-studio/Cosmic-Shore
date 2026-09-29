@@ -12,6 +12,9 @@
     <!-- Arc G: the windowed mode host drives the SAME round worlds the CLI proves
          headlessly (HexRaceRoundHandle et al. live with their CLI drivers). -->
     <ProjectReference Include="../CosmicShore.Cli/CosmicShore.Cli.csproj" />
+    <!-- Arc E: real project content + the port renderer. -->
+    <ProjectReference Include="../CosmicShore.Content/CosmicShore.Content.csproj" />
+    <ProjectReference Include="../CosmicShore.Render/CosmicShore.Render.csproj" />
   </ItemGroup>
 
   <ItemGroup>
