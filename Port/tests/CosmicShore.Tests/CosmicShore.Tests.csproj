@@ -19,6 +19,8 @@
     <ProjectReference Include="../../src/CosmicShore.Engine/CosmicShore.Engine.csproj" />
     <ProjectReference Include="../../src/CosmicShore.Data/CosmicShore.Data.csproj" />
     <ProjectReference Include="../../src/CosmicShore.Game/CosmicShore.Game.csproj" />
+    <!-- Package-API shims (DOTweenShimTests exercises the DG.Tweening re-implementation). -->
+    <ProjectReference Include="../../src/CosmicShore.Compat/CosmicShore.Compat.csproj" />
     <!-- Arc E: the content bridge reads the real Unity Assets/ tree. -->
     <ProjectReference Include="../../src/CosmicShore.Content/CosmicShore.Content.csproj" />
     <!-- port-m2: HeadlessRoundTests drives the CLI's HexRaceRound orchestration in-process. -->
