@@ -76,6 +76,9 @@ class World:
                             # with particle perception); no budding, motion or collision
     jitter: float = 0.25    # lattice jitter, as a fraction of the spacing
     rejitter: bool = False  # lattice ablation: a different jitter for every sample and rollout
+    corrected: bool = False # arrangement-independent perception: true weighted mean, and the
+                            # least-squares (moment-corrected SPH) gradient, exact for linear fields
+    reg: float = 0.05       # corrected-gradient moment regulariser (times the identity)
 
 
 class State:
@@ -172,9 +175,17 @@ class ParticleNCA(nn.Module):
         dx, r2, w, g = self._pairs(pos, gi, gj)
         rho = torch.zeros(n).index_add(0, gi, w)
         gs = torch.zeros(n).index_add(0, gi, g)
-        mean = torch.zeros(n, C).index_add(0, gi, w[:, None] * s[gj]) / (1 + rho)[:, None]
-        grad = torch.zeros(n, d, C).index_add(
-            0, gi, (g[:, None, None] * (dx / R)[:, :, None]) * (s[gj] - s[gi])[:, None, :]) / (1 + gs)[:, None, None]
+        u = dx / R
+        wsum = torch.zeros(n, C).index_add(0, gi, w[:, None] * s[gj])
+        gsum = torch.zeros(n, d, C).index_add(0, gi, (g[:, None, None] * u[:, :, None]) * (s[gj] - s[gi])[:, None, :])
+        if self.world.corrected:
+            mean = wsum / (rho + 1e-3)[:, None]
+            M = torch.zeros(n, d, d).index_add(0, gi, g[:, None, None] * u[:, :, None] * u[:, None, :])
+            M = M + self.world.reg * torch.eye(d)
+            grad = torch.linalg.solve(M, gsum)
+        else:
+            mean = wsum / (1 + rho)[:, None]
+            grad = gsum / (1 + gs)[:, None, None]
         # feature order: [own C][mean C][grad: for each channel c, its d components] [rho]
         return torch.cat([s, mean, grad.transpose(1, 2).reshape(n, C * d), (rho / self.world.rho0)[:, None]], 1)
 
@@ -869,6 +880,27 @@ def selftest():
     z = ca(z)
     assert int(z.active.sum()) == 0, "an invisible particle survived / budded"
     print("selftest budding OK")
+    # 7. corrected perception: on a RANDOM arrangement the gradient of a linear field is exact
+    #    (up to the regulariser) at interior particles; the plain estimator is not. Both dims.
+    for d in (2, 3):
+        g = torch.Generator().manual_seed(3)
+        N = 700 if d == 2 else 1500
+        pos = torch.rand(1, N, d, generator=g) * 16
+        a = torch.randn(d, generator=g)
+        s = torch.zeros(1, N, 16); s[0, :, 5] = pos[0] @ a
+        st = State(pos, s, torch.ones(1, N, dtype=torch.bool))
+        gi, gj = neighbour_edges(st, 3.0)
+        errs = {}
+        for corr in (False, True):
+            ca = ParticleNCA(World(dim=d, corrected=corr, reg=1e-4))
+            f = ca.perceive(pos.reshape(N, d), s.reshape(N, 16), gi, gj, N)
+            grad = f[:, 32:32 + 16 * d].reshape(N, 16, d)[:, 5]
+            inner = ((pos[0] > 4) & (pos[0] < 12)).all(-1)
+            rel = (grad[inner] / 3.0 - a).norm(dim=-1) / a.norm()
+            errs[corr] = float(rel.max())
+        assert errs[True] < 1e-2, errs
+        assert errs[False] > 0.2, errs                  # negative control
+        print(f"selftest d={d} corrected gradient OK  max rel err {errs[True]:.1e}  (plain {errs[False]:.2f})")
 
 
 # -------------------------------------------------------------------- cli ---
