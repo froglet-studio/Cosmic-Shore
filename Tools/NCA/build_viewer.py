@@ -189,12 +189,14 @@ def main():
     </div>"""
 
     bench3d, script3d = build_3d(args.runs)
+    benchp, scriptp = build_particles(args.runs)
 
     page = TEMPLATE
     for k, v in {
         "{{EXP_BUTTONS}}": exp_buttons, "{{EXP_NOTES}}": exp_notes, "{{WEIGHTS}}": weights_js,
         "{{TARGETS}}": json.dumps(targets), "{{CORE}}": core, "{{CHART}}": loss_chart(runs, floor),
         "{{ANIM}}": anim, "{{BENCH3D}}": bench3d, "{{SCRIPT3D}}": script3d,
+        "{{BENCHP}}": benchp, "{{SCRIPTP}}": scriptp,
         "{{ROWS}}": "".join(rows), "{{FIGS}}": "".join(figs) + regen_fig + rot_fig,
         "{{DEFAULT}}": "regenerating" if "regenerating" in runs else next(iter(runs)),
     }.items():
@@ -271,6 +273,189 @@ def build_3d(runs_root):
     script = SCRIPT3D.replace("{{CORE3D}}", core3d).replace("{{W3D}}", json.dumps(w, separators=(",", ":"))) \
         .replace("{{F3D}}", frames_b64).replace("{{K3D}}", str(len(fr)))
     return bench, script
+
+
+PARTICLE_RUNS = [("regenerating", "Lizard", "particle_regenerating"), ("swim2d", "Swimming", "particle_swim2d")]
+
+
+def build_particles(runs_root):
+    """The collision automaton: a live 2D particle lizard (particle_core.js, verified by
+    verify_particle_js.py) you can cut, its render as the loss sees it, and the record."""
+    runs = {}
+    for key, label, name in PARTICLE_RUNS:
+        d = os.path.join(runs_root, name)
+        if not (os.path.isfile(os.path.join(d, "weights.json")) and os.path.isfile(os.path.join(d, "figures", "summary.json"))):
+            continue
+        fr = np.load(os.path.join(d, "frames.npy")).astype(np.float32)
+        runs[key] = {"label": label, "dir": d, "w": json.load(open(os.path.join(d, "weights.json"))),
+                     "sm": json.load(open(os.path.join(d, "figures", "summary.json"))),
+                     "K": len(fr), "f": base64.b64encode((np.clip(fr, 0, 1) * 255).round().astype(np.uint8).tobytes()).decode()}
+    if not runs:
+        return "", ""
+    lg = lambda v: f"{math.log10(max(v, 1e-9)):+.2f}"
+    img = lambda r, f: b64(os.path.join(r["dir"], "figures", f))
+    tabs = "".join(f'<button type="button" role="tab" data-prun="{k}" aria-selected="false">{r["label"]}</button>'
+                   for k, r in runs.items())
+    figs, tables = [], []
+    for k, r in runs.items():
+        sm = r["sm"]
+        sh = sm.get("shift_corrected", {})
+        rows = [("Particles, step 96 / 3000", f"{sm['particles_at'].get('96', '–')} / {sm['particles_at'].get('3000', '–')}"),
+                ("Error at step 96 (grown)", lg(sm['best_frame_error_at']['96']))]
+        if sh:
+            rows += [("Shape held: error at 1000 / 3000, best shift", f"{lg(sh['1000']['error'])} / {lg(sh['3000']['error'])}"),
+                     ("Body drift by step 1000 / 3000", f"{sh['1000']['drift_px']:.1f} / {sh['3000']['drift_px']:.1f} px")]
+        rows += [("Error in place, steps 200–3000, mean", lg(sm['best_frame_error_mean_after_200'])),
+                (f"Quarter cut at 400 ({sm['damage_removed_particles']} particles): error before", lg(sm['error_before_damage'])),
+                ("… 20 / 100 / 200 steps later", " / ".join(lg(sm['after_damage_error_at'][s]) for s in ('20', '100', '200')))]
+        if r["K"] > 1:
+            rows += [("Target tempo", f"{sm['period_target_steps_per_frame']} steps / frame"),
+                     ("Measured tempo", f"{sm['measured_steps_per_frame']:.2f} steps / frame" if sm.get('measured_steps_per_frame') else "no steady tempo"),
+                     ("Best any still image can do", lg(sm['static_best_image_error']))]
+        body = "".join(f"<tr><th scope=row>{a}</th><td>{b}</td></tr>" for a, b in rows)
+        tables.append(f'<div class="tablewrap" data-pshow="{k}"><table class="kv"><tbody>{body}</tbody></table></div>')
+        figs.append(f"""<div class="pfigs" data-pshow="{k}">
+      <figure class="fig"><figcaption><span class="swatch" style="background:var(--s2)"></span>From one particle: steps 0, 16, 32, 48, 64, 96, 200 — the loss's view (top) and the particles themselves (bottom; grey = dormant buds)</figcaption><div class="strip"><img src="data:image/png;base64,{img(r, 'growth_strip.png')}" alt="Particle lizard growing from one particle"></div></figure>
+      <figure class="fig"><figcaption><span class="swatch" style="background:var(--s2)"></span>Every particle in the lower-right quarter removed at step 400, then 20, 50, 100, 200, 400 and 600 steps later</figcaption><div class="strip"><img src="data:image/png;base64,{img(r, 'damage.png')}" alt="Particle lizard regrowing its cut quarter"></div></figure>
+    </div>""")
+    bench = f"""
+  <section class="benchp" aria-labelledby="hp">
+    <div class="h3dhead">
+      <div class="eyebrow">Extension · from cellular to collision</div>
+      <h2 id="hp">The lizard as a collision automaton</h2>
+      <p class="caption">No grid. Each particle has a position and the same sixteen channels; each step it senses only the particles within three units, and the learned rule returns a state change and a velocity. Designed physics does the rest: close pairs push apart, a particle with no living neighbour dies, and a visible particle short of neighbours buds a dormant child. The loss reads the particles through a soft splat onto the same 72×72 target. Running live below — drag across it to cut particles out.</p>
+    </div>
+    <div class="bench">
+      <div class="dish">
+        <div class="plate" id="platep"><canvas id="cvp" width="576" height="576" aria-label="Live particle automaton, drag to cut"></canvas><span class="hint">drag to cut · double-click to seed</span></div>
+      </div>
+      <div class="panel">
+        {'<div class="tabs ptabs" role="tablist" aria-label="Particle experiment">' + tabs + '</div>' if len(runs) > 1 else ''}
+        <dl class="readouts">
+          <div><dt>Step</dt><dd id="rp-step">0</dd></div>
+          <div><dt>Particles</dt><dd id="rp-n">0</dd></div>
+          <div><dt>Visible</dt><dd id="rp-vis">0</dd></div>
+          <div><dt>log₁₀ error</dt><dd id="rp-err">–</dd></div>
+        </dl>
+        <div class="controls">
+          <label class="row" for="speedp">Steps / frame<input id="speedp" type="range" min="1" max="6" value="2"><output id="o-speedp">2</output></label>
+          <label class="row" for="brushp">Cut radius<input id="brushp" type="range" min="2" max="16" value="6"><output id="o-brushp">6</output></label>
+          <label class="row" for="viewp">View<select id="viewp"><option value="dots">Particles</option><option value="splat">What the loss sees</option></select><output></output></label>
+        </div>
+        <div class="buttons">
+          <button type="button" class="btn primary" id="bp-play">Pause</button>
+          <button type="button" class="btn" id="bp-seed">Restart from seed</button>
+          <button type="button" class="btn" id="bp-cut">Cut a quarter</button>
+        </div>
+        {''.join(tables)}
+      </div>
+    </div>
+    {''.join(figs)}
+  </section>"""
+    core = open(os.path.join(HERE, "particle_core.js")).read()
+    pdata = {k: {"w": r["w"], "K": r["K"], "f": r["f"]} for k, r in runs.items()}
+    script = SCRIPTP.replace("{{COREP}}", core).replace("{{PDATA}}", json.dumps(pdata, separators=(",", ":"))) \
+        .replace("{{PDEFAULT}}", next(iter(runs)))
+    return bench, script
+
+
+SCRIPTP = r"""<script>
+{{COREP}}
+(function () {
+  const PD = {{PDATA}};
+  const $ = id => document.getElementById(id);
+  const cv = $('cvp'), g = cv.getContext('2d'), G = 72, S = cv.width / G;
+  const off = document.createElement('canvas'); off.width = G; off.height = G;
+  const og = off.getContext('2d'), oimg = og.createImageData(G, G);
+  let key, ca, W, frames, K, step = 0, running = true, errTxt = '–';
+  const img = new Float32Array(G * G * 4);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function rgb(c) { const e = document.createElement('div'); e.style.color = c; document.body.appendChild(e);
+    const m = getComputedStyle(e).color.match(/\d+(\.\d+)?/g).map(Number); e.remove(); return m.slice(0, 3); }
+  let BG = [255, 255, 255], MUTED = [150, 150, 150];
+  function theme() { BG = rgb(css('--dish') || '#fff'); MUTED = rgb(css('--muted') || '#888'); }
+  function load(k) {
+    key = k; const d = PD[k]; W = d.w.world; K = d.K;
+    const raw = Uint8Array.from(atob(d.f), c => c.charCodeAt(0));
+    frames = new Float32Array(raw.length); for (let i = 0; i < raw.length; i++) frames[i] = raw[i] / 255;
+    ca = makeParticleNCA(d.w); ca.seed([G / 2, G / 2]); step = 0;
+    document.querySelectorAll('.ptabs [data-prun]').forEach(b => b.setAttribute('aria-selected', b.dataset.prun === k));
+    document.querySelectorAll('[data-pshow]').forEach(e => e.hidden = e.dataset.pshow !== k);
+  }
+  // the same Gaussian splat as particle_nca.splat (premultiplied RGBA, cell centre k + 0.5)
+  function splat() {
+    img.fill(0);
+    const sg = W.sigma, rad = Math.ceil(2.2 * sg), inv = 1 / (2 * sg * sg), C = ca.C;
+    for (let i = 0; i < ca.cap; i++) {
+      if (!ca.act[i]) continue;
+      const px = ca.pos[i * 2], py = ca.pos[i * 2 + 1], bx = Math.floor(px), by = Math.floor(py);
+      for (let oy = -rad; oy <= rad; oy++) for (let ox = -rad; ox <= rad; ox++) {
+        const cx = bx + ox, cy = by + oy; if (cx < 0 || cy < 0 || cx >= G || cy >= G) continue;
+        const dx = cx + 0.5 - px, dy = cy + 0.5 - py, w = Math.exp(-(dx * dx + dy * dy) * inv), o = (cy * G + cx) * 4;
+        for (let c = 0; c < 4; c++) img[o + c] += w * ca.s[i * C + c];
+      }
+    }
+  }
+  function error() {
+    let best = Infinity; const n = G * G * 4;
+    for (let k = 0; k < K; k++) { let e = 0; const o = k * n; for (let i = 0; i < n; i++) { const d = img[i] - frames[o + i]; e += d * d; }
+      best = Math.min(best, e / n); }
+    return best;
+  }
+  function draw() {
+    const view = $('viewp').value;
+    if (view === 'splat') {
+      for (let i = 0; i < G * G; i++) { const a = Math.min(1, Math.max(0, img[i * 4 + 3]));
+        for (let c = 0; c < 3; c++) oimg.data[i * 4 + c] = Math.min(255, BG[c] * (1 - a) + 255 * Math.min(1, Math.max(0, img[i * 4 + c])));
+        oimg.data[i * 4 + 3] = 255; }
+      og.putImageData(oimg, 0, 0); g.imageSmoothingEnabled = false; g.drawImage(off, 0, 0, cv.width, cv.height); return;
+    }
+    g.fillStyle = `rgb(${BG})`; g.fillRect(0, 0, cv.width, cv.height);
+    const C = ca.C;
+    for (let i = 0; i < ca.cap; i++) {
+      if (!ca.act[i]) continue;
+      const a = Math.min(1, Math.max(0, ca.s[i * C + 3])), x = ca.pos[i * 2] * S, y = ca.pos[i * 2 + 1] * S;
+      let col, r;
+      if (a <= 0.1) { col = `rgba(${MUTED},0.45)`; r = 0.32 * S; }
+      else { const c = [0, 1, 2].map(k => Math.min(255, 255 * Math.max(0, ca.s[i * C + k]) / a) | 0);   // the particle's own colour (un-premultiplied)
+             col = `rgb(${c})`; r = 0.6 * S; }
+      g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, 6.2832); g.fill();
+    }
+  }
+  function readouts() {
+    let vis = 0; for (let i = 0; i < ca.cap; i++) if (ca.act[i] && ca.s[i * ca.C + 3] > 0.1) vis++;
+    $('rp-step').textContent = step; $('rp-n').textContent = ca.count(); $('rp-vis').textContent = vis; $('rp-err').textContent = errTxt;
+  }
+  function frame() {
+    if (running) for (let i = 0; i < +$('speedp').value; i++) { ca.step(); step++; }
+    splat();
+    if (step % 4 === 0 || !running) { const e = error(); errTxt = e > 0 ? Math.log10(e).toFixed(2) : '–'; }
+    draw(); readouts();
+    if (visibleOnPage) requestAnimationFrame(frame); else pending = false;
+  }
+  let visibleOnPage = true, pending = true;
+  new IntersectionObserver(es => { visibleOnPage = es[0].isIntersecting;
+    if (visibleOnPage && !pending) { pending = true; requestAnimationFrame(frame); } }).observe(cv);
+  function toWorld(ev) { const r = cv.getBoundingClientRect(); return [(ev.clientX - r.left) / r.width * G, (ev.clientY - r.top) / r.height * G]; }
+  let cutting = false;
+  cv.addEventListener('pointerdown', ev => { cutting = true; cv.setPointerCapture(ev.pointerId); ca.eraseBall(toWorld(ev), +$('brushp').value); });
+  cv.addEventListener('pointermove', ev => { if (cutting) ca.eraseBall(toWorld(ev), +$('brushp').value); });
+  cv.addEventListener('pointerup', () => cutting = false);
+  cv.addEventListener('dblclick', ev => { ca.seed(toWorld(ev)); step = 0; });
+  $('bp-play').onclick = () => { running = !running; $('bp-play').textContent = running ? 'Pause' : 'Play'; };
+  $('bp-seed').onclick = () => { ca.seed([G / 2, G / 2]); step = 0; };
+  $('bp-cut').onclick = () => { for (let i = 0; i < ca.cap; i++) if (ca.act[i] && ca.pos[i * 2] > G / 2 && ca.pos[i * 2 + 1] > G / 2) {
+      ca.act[i] = 0; ca.s.fill(0, i * ca.C, (i + 1) * ca.C); } };
+  for (const id of ['speedp', 'brushp']) { const o = $('o-' + id); const f = () => o.textContent = $(id).value; $(id).oninput = f; f(); }
+  document.querySelectorAll('.ptabs [data-prun]').forEach(b => b.onclick = () => load(b.dataset.prun));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  theme(); load('{{PDEFAULT}}');
+  if (reduce) { running = false; $('bp-play').textContent = 'Play'; for (let i = 0; i < 200; i++) { ca.step(); step++; } }
+  requestAnimationFrame(frame);
+})();
+</script>"""
 
 
 SCRIPT3D = r"""<script>
@@ -471,7 +656,9 @@ tbody tr:last-child > * { border-bottom: 0 }
 .animrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start }
 @media (max-width: 820px) { .animrow { grid-template-columns: minmax(0, 1fr) } }
 .gifbox img { min-width: 0; width: 100% }
-.bench3d { display: grid; gap: 24px }
+.bench3d, .benchp { display: grid; gap: 24px }
+.pfigs { display: grid; gap: 18px }
+.ptabs { grid-template-columns: repeat(2, minmax(0, 1fr)) }
 .h3dhead { display: grid; gap: 8px }
 .h3dhead h2 { margin: 0 }
 .plate3d { cursor: grab }
@@ -522,6 +709,7 @@ table.kv td { font-weight: 600 }
     </div>
   </section>
   {{BENCH3D}}
+  {{BENCHP}}
 
   <section class="record" aria-label="Training record">
     <div>
@@ -638,6 +826,7 @@ if (matchMedia('(prefers-reduced-motion: reduce)').matches) { $('speed').value =
 requestAnimationFrame(frame);
 </script>
 {{SCRIPT3D}}
+{{SCRIPTP}}
 """
 
 if __name__ == "__main__":

@@ -676,11 +676,23 @@ def dots(st: State, grid, scale=4):
         if a <= 0.1:
             col, r = (205, 205, 205), rr * 0.6
         else:
-            rgb = np.clip(1 - a + np.clip(c[:3], 0, 1), 0, 1)
+            rgb = np.clip(c[:3] / a, 0, 1)                 # the particle's own colour (un-premultiplied)
             col, r = tuple(int(v * 255) for v in rgb), rr
         cx, cy = x * scale, y * scale
         dr.ellipse([cx - r, cy - r, cx + r, cy + r], fill=col)
     return np.asarray(im, np.float32) / 255.0
+
+
+def shift_corrected(img, frames, reach=20):
+    """2D: the best error over integer shifts (and frames) - is the SHAPE held, whatever
+    position the body has drifted to - plus how far the best shift is, in pixels."""
+    best = (float("inf"), 0, 0)
+    for dy in range(-reach, reach + 1):
+        for dx in range(-reach, reach + 1):
+            e = float(frame_mse(torch.roll(img, (dy, dx), (0, 1))[None], frames).min())
+            if e < best[0]:
+                best = (e, dy, dx)
+    return {"error": best[0], "drift_px": float(math.hypot(best[1], best[2]))}
 
 
 def figures(run_dir, seed=1, horizon=None, model="model.pt"):
@@ -701,13 +713,16 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
     # 1. Long rollout from one seed: best-frame error, which frame, particle count.
     keep_t = (0, 16, 32, 48, 64, 96, 200)
     x = seed_state(1, world, centre, cfg.channel_n)
-    table, count, keep = [], [], {}
+    table, count, keep, shifted = [], [], {}, {}
+    shift_t = [t for t in (200, 1000, horizon) if t <= horizon] if d == 2 else []
     with torch.no_grad():
         for t in range(horizon + 1):
             table.append(err_of(x))
             count.append(int(x.active.sum()))
             if t in keep_t or (K > 1 and 200 <= t < 200 + K * P):
                 keep[t] = x.clone()
+            if t in shift_t:
+                shifted[t] = shift_corrected(splat(x, grid, sig)[0], frames)
             x = ca(x)
     table = np.stack(table)
     best, berr = table.argmin(1), table.min(1)
@@ -784,6 +799,7 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
 
     summary = {
         "experiment": cfg.experiment, "dimensions": d, "frames": K, "model": model,
+        "shift_corrected": {str(t): v for t, v in shifted.items()},
         "particles_at": {str(t): count[t] for t in (0, 32, 64, 96, 200, 1000, horizon) if t <= horizon},
         "particles_mean_after_200": float(np.mean(count[200:])),
         "best_frame_error_at": {str(t): float(berr[t]) for t in (64, 96, 200, 1000, horizon) if t <= horizon},

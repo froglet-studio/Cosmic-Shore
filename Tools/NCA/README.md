@@ -250,6 +250,16 @@ treadmill of budding at one edge and dying at the other (with the learned veloci
 off it drifts *faster*, so the rule was already fighting it). More training anchored it —
 2 px over 3000 steps by step 2500 — without any designed restoring force.
 
+The browser runner (`particle_core.js`) matches torch to 7.6e-6 over 20 steps on a grown
+colony, with the collision push and the corrected perception each flipped as negative
+controls, **and** on a lone seed beside one dormant child (1.8e-7). That second case is
+there because the first shipped runner passed the grown-colony check while killing 11 of
+40 colonies in their first 3–7 steps: it wrote each particle's own alpha into a
+`Uint8Array` before taking the neighbourhood max, truncating 0.96 to 0. A grown colony
+never notices (some neighbour is always visible); a seed next to its first bud is kept
+alive by nothing but its own alpha. *A verifier that starts from a mature state cannot see
+bugs that only matter at birth.*
+
 A result nobody trained for: at step 500 some colonies bud a **second lizard** off the
 first. The loss punishes it (the target is one lizard), but it is behaviour a particle
 system has and a grid cannot.

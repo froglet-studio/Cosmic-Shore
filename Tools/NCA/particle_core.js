@@ -29,11 +29,11 @@ function makeParticleNCA(weights) {
     }
     ei = Int32Array.from(a); ej = Int32Array.from(b);
   }
+  const amax = new Float32Array(cap);   // float scratch: out is a Uint8Array and would truncate alpha
   function aliveMask(st, out) {
-    for (let i = 0; i < cap; i++) out[i] = st[i * C + 3];
-    const m = Float32Array.from(out);
-    for (let e = 0; e < ei.length; e++) { const v = st[ej[e] * C + 3]; if (v > m[ei[e]]) m[ei[e]] = v; }
-    for (let i = 0; i < cap; i++) out[i] = act[i] && m[i] > 0.1 ? 1 : 0;
+    for (let i = 0; i < cap; i++) amax[i] = st[i * C + 3];
+    for (let e = 0; e < ei.length; e++) { const v = st[ej[e] * C + 3]; if (v > amax[ei[e]]) amax[ei[e]] = v; }
+    for (let i = 0; i < cap; i++) out[i] = act[i] && amax[i] > 0.1 ? 1 : 0;
   }
 
   function step(opts) {
