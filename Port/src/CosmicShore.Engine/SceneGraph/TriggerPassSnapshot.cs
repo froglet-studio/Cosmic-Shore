@@ -81,7 +81,7 @@ namespace CosmicShore.Engine
                 if (!collider.isActiveAndEnabled) continue;
                 // Registration sequence in the high word, position in the low: a primitive
                 // sort with no delegate and no dictionary lookup per comparison.
-                _keys[n] = (_seq[collider] << 32) | (uint)n;
+                _keys[n] = (collider.TriggerSeq << 32) | (uint)n;
                 scratch.Add(collider);
                 n++;
             }
@@ -179,7 +179,7 @@ namespace CosmicShore.Engine
 
         Comparison<Collider> _bySeqOrLastCache;
         Comparison<Collider> _bySeqOrLast => _bySeqOrLastCache ??= (a, b) =>
-            (_seq.TryGetValue(a, out long sa) ? sa : long.MaxValue).CompareTo(_seq.TryGetValue(b, out long sb) ? sb : long.MaxValue);
+            (a.TriggerSeq > 0 ? a.TriggerSeq : long.MaxValue).CompareTo(b.TriggerSeq > 0 ? b.TriggerSeq : long.MaxValue);
 
         // ── Sphere / capsule / box ─────────────────────────────────────
 

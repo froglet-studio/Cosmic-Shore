@@ -7,6 +7,13 @@ namespace CosmicShore.Engine
     {
         public GameObject gameObject { get; internal set; }
 
+        /// <summary>
+        /// A collider's registration order in the trigger pass (0 = not registered). On the
+        /// base class on purpose: Instantiate copies fields only below the engine base
+        /// classes, so a clone never inherits its source's place in line.
+        /// </summary>
+        internal long TriggerSeq;
+
         public Transform transform => gameObject.transform;
 
         /// <summary>Component name proxies its GameObject's name (original engine contract).</summary>

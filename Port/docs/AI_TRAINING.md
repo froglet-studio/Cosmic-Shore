@@ -132,6 +132,37 @@ enough to tell genomes apart — and prefer `KEY.robust.json`. `--evals 2` or mo
 generation is the in-loop version of the same cure; the port's speed is what makes it
 affordable.
 
+## Seats: what the trainer was actually selecting
+
+The runner hands genomes to `gameData.Players` in checkout order, so in the game's own loop
+genome *i* always flies seat *i* mod 3 of its match, against the same neighbours. **Seats are
+not equal.** Over the replay data (fixed seats):
+
+| | seat 0 | seat 1 | seat 2 |
+|---|---|---|---|
+| port, crystals / match (144 flights each) | 1.10 | 1.03 | **0.51** |
+| Unity, crystals / match (8 flights each) | 0.62 | 1.12 | **0.12** |
+
+The two engines agree on the asymmetry, which is itself a fidelity result. And because
+`Evolve` re-sorts elites into indices 0–3 every generation, an elite keeps its seat forever:
+its fitness measures the seat as much as the genome.
+
+A seat-balanced head-to-head (`--train eval`, each genome rotated through every seat and
+opponent, 24 flights each, 4 processes):
+
+| genome | crystals / match | |
+|---|---|---|
+| Unity's hall of fame (one 277 flight) | 0.50 ± 0.13 | |
+| port 15-generation hall of fame (one 1080 flight) | 1.25 ± 0.23 | |
+| port 15-generation "robust best" (3.9 over 16 flights in training) | 0.54 ± 0.13 | seat-inflated |
+| a typical Unity generation-0 genome (-21 in Unity) | **1.46 ± 0.16** | |
+
+**Unity's deployed best genome flies worse than an ordinary random one** once seats are
+balanced. This is a property of the trainer, not of either engine. The parallel trainer now
+shuffles each worker's slice before every pass (the merge still replays in the original order,
+and flights are harvested by genome identity), so every flight lands in a random seat against
+random opponents.
+
 ## Known gaps
 
 - Headless runs have no Entities Graphics device, so prism clock animation is off (visual only;

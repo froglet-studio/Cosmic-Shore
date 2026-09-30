@@ -59,9 +59,9 @@ namespace CosmicShore.Engine
         // was most of the pass. Registration order is kept by sequence number and restored by
         // sorting the (small) live set, so discovery order is unchanged.
         readonly HashSet<Collider> _enabled = new(ReferenceEqualityComparer.Instance);
-        // Kept here, not on the collider: Instantiate copies a collider's fields onto its clone
-        // after the clone registers, which would hand the clone its source's place in line.
-        readonly Dictionary<Collider, long> _seq = new(ReferenceEqualityComparer.Instance);
+        // Registration order lives on Component.TriggerSeq: Instantiate's field copy stops at the
+        // engine base classes, so a clone keeps its OWN place in line (a field declared on
+        // Collider would be copied from the source after the clone registered).
         long _nextSeq;
 
         public TriggerPass() { }
@@ -69,7 +69,7 @@ namespace CosmicShore.Engine
         internal void Register(Collider collider)
         {
             if (_colliders.Contains(collider)) return;
-            _seq[collider] = ++_nextSeq;
+            collider.TriggerSeq = ++_nextSeq;
             _colliders.Add(collider);
             if (collider.enabled) { _enabled.Add(collider); NoteArrived(collider); }
         }
@@ -78,7 +78,7 @@ namespace CosmicShore.Engine
         {
             _colliders.Remove(collider);
             _enabled.Remove(collider);
-            _seq.Remove(collider);
+            collider.TriggerSeq = 0;
         }
 
         // COSMIC_SHORE_VERIFY_TRIGGERS=1: every 30 frames, rebuild the live set by walking every
