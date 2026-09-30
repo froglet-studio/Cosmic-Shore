@@ -366,9 +366,10 @@ That one command:
 3. **picks** the best snapshot: every 250-step snapshot is rolled out from 4 seeds for 1000 steps
    (`particle_nca.score_snapshot`), and it keeps the lowest in-place error among snapshots with no
    extinctions and every seed within 20% of the target tempo;
-4. **promotes** it to `results/prism_swim3d`, makes the figures, runs the JS verifier (skipped if
-   `node` is missing), rebuilds `viewer.html`, and **commits and pushes** to the current branch
-   (`--no-push` to stop before git).
+4. **promotes** it to `results/prism_swim3d_gpu` (its own folder, so it never collides with the
+   CPU run's snapshots in `results/prism_swim3d`; the viewer shows the GPU result when present),
+   makes the figures, runs the JS verifier (skipped if `node` is missing), pulls the branch,
+   rebuilds `viewer.html`, and **commits and pushes** (`--no-push` to stop before git).
 
 `python Tools/NCA/gpu_run.py check` runs only step 1. `--device mps` for Apple silicon. Every
 `particle_nca.py train` / `figures` call also takes `--device cuda` directly. Machines without

@@ -318,7 +318,8 @@ def build_status(root):
         extra = f", drifts {sh['drift_px']:.0f} px per 1000 steps" if sh else ""
         rows.append((state, "Collision swim", "hp", f"A bolder stroke (amplitude 16); {where}",
                      (f"{tempo:.1f} steps / frame" if tempo else "no steady tempo yet") + extra))
-    pp, ppt = sm("prism_swim3d"), st("prism_swim3d")
+    pname = "prism_swim3d_gpu" if sm("prism_swim3d_gpu") else "prism_swim3d"
+    pp, ppt = sm(pname), st(pname)
     if pp:
         state = "run" if (ppt and ppt.get("training")) else "done"
         where = f"training, showing step {ppt['step']} of {ppt['of']}" if state == "run" else "trained"
@@ -355,7 +356,9 @@ def build_prisms(runs_root):
     """The prism swim: 3D particles whose visible state is a Cosmic Shore prism, running live in
     three.js (particle_core.js + prism_core.js, verified by verify_particle_js.py --prism)."""
     import prism_render as pr
-    d = os.path.join(runs_root, "prism_swim3d")
+    d = os.path.join(runs_root, "prism_swim3d_gpu")          # a GPU result (gpu_run.py) wins over the CPU run
+    if not os.path.isfile(os.path.join(d, "figures", "summary.json")):
+        d = os.path.join(runs_root, "prism_swim3d")
     if not (os.path.isfile(os.path.join(d, "weights.json")) and os.path.isfile(os.path.join(d, "figures", "summary.json"))):
         return "", ""
     w = json.load(open(os.path.join(d, "weights.json")))

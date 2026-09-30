@@ -32,7 +32,7 @@ sys.path.insert(0, HERE)
 import particle_nca as pn  # noqa: E402
 
 RUN = os.path.join(HERE, "runs", "prism_swim3d_gpu")
-RESULT = os.path.join(HERE, "results", "prism_swim3d")
+RESULT = os.path.join(HERE, "results", "prism_swim3d_gpu")   # its own folder: never collides with the CPU run's snapshots
 INIT = os.path.join(HERE, "results", "particle_swim2d", "model.pt")
 
 
@@ -178,9 +178,23 @@ def viewer():
     subprocess.run([sys.executable, os.path.join(HERE, "build_viewer.py")], check=True)
 
 
+def git_root():
+    return subprocess.check_output(["git", "rev-parse", "--show-toplevel"], cwd=HERE, text=True).strip()
+
+
+def pull():
+    """Bring in whatever the cloud session pushed meanwhile, BEFORE the viewer is rebuilt, so the
+    rebuilt page carries both and the push fast-forwards (the GPU result has its own folder)."""
+    banner("pull the branch")
+    root = git_root()
+    branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=root, text=True).strip()
+    subprocess.run(["git", "checkout", "--", "Tools/NCA/viewer.html"], cwd=root)     # regenerated below anyway
+    subprocess.run(["git", "pull", "--ff-only", "origin", branch], cwd=root, check=True)
+
+
 def push(best):
     banner("commit and push")
-    root = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], cwd=HERE, text=True).strip()
+    root = git_root()
     branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=root, text=True).strip()
     rel = lambda p: os.path.relpath(p, root)
     subprocess.run(["git", "add", rel(RESULT), rel(os.path.join(HERE, "viewer.html"))], cwd=root, check=True)
@@ -226,6 +240,8 @@ def main():
         best, why, n = pick(a.device, a.steps)
         promote(a.device, best, why, n, a.steps)
         ok = verify()
+        if not a.no_push:
+            pull()
         viewer()
         if not ok:
             sys.exit("JS verifier failed - result promoted locally but not pushed")
