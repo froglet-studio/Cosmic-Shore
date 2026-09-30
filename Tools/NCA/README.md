@@ -229,6 +229,27 @@ to noise is the average — a blob. The fix is the standard one from SPH, the mo
 weighted mean, which is exact for linear fields on **any** arrangement (selftest: 4e-5 in
 2D, 2e-4 in 3D, with the plain estimator as its negative control). It is `World.corrected`.
 
+### Result: the lizard, as a collision automaton (4000 steps, corrected perception)
+
+`results/particle_regenerating`: grow from one particle, persist, regenerate. Zero
+rollbacks. Same metric as the grid run (mean squared error over the 72×72 RGBA target):
+
+| | grid NCA (4000 steps) | particle NCA (4000 steps) |
+|---|---|---|
+| training loss | 10^-3.45 | 10^-2.68 |
+| grown, step 96 | 10^-3.20 | 10^-2.74 |
+| held, steps 200–3000 | 10^-4.38, pinned | shape 10^-2.63 to -2.86 (3 seeds), drifting ~1 px / 850 steps |
+| quarter cut at step 400 | regrows | back to its pre-cut error (10^-2.80) by 200 steps later |
+| particles | 5184 cells | ~430, stable from step 96 to 3000 |
+
+It is the lizard: legs, curled tail, back stripe, and it heals. It is about 20× less
+precise than the grid, which trained twice as long here and has no renderer in the way (a
+free fit through this splat bottoms out at 10^-4.6). The one thing a grid cannot do and
+this does is **move**: at step 1250 the whole body slid sideways at 0.006 px/step, a
+treadmill of budding at one edge and dying at the other (with the learned velocity switched
+off it drifts *faster*, so the rule was already fighting it). More training anchored it —
+2 px over 3000 steps by step 2500 — without any designed restoring force.
+
 A result nobody trained for: at step 500 some colonies bud a **second lizard** off the
 first. The loss punishes it (the target is one lizard), but it is behaviour a particle
 system has and a grid cannot.
