@@ -19,6 +19,20 @@ namespace CosmicShore.Engine
 
         bool _wValid;
         long _wStamp, _wParentStamp;
+        /// <summary>
+        /// A destroyed transform's world cache must not keep its old parent reachable: the
+        /// cache holds the parent it was computed against, and a destroyed object's shell can
+        /// outlive its scene through any script field that still points at it (in Unity that
+        /// shell holds nothing native). Forgetting the parent also invalidates the cache.
+        /// </summary>
+        internal Transform WorldCacheParent => _wParentRef;
+
+        internal void ReleaseWorldCacheForDestroy()
+        {
+            _wParentRef = null;
+            _wValid = false;
+        }
+
         Transform _wParentRef;
         Vector3 _cLocalPos, _cLocalScale;
         Quaternion _cSelfRot;

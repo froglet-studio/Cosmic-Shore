@@ -109,6 +109,7 @@ namespace CosmicShore.Player
             else InstallTrain(scenario);
 
             _startEpisodes = (int)Get(_state, "EpisodesCompleted");
+            if (_mode == Mode.Train) SyncRunMeta();
             Set(_control, "TargetEpisodes", -1); // the host decides when to stop; -1 keeps the runner going
 
             var go = new GameObject("[Training AutoLauncher]");
@@ -166,9 +167,11 @@ namespace CosmicShore.Player
             if (completed != _lastReported)
             {
                 _lastReported = completed;
+                LeakScan.Sample();
                 if (completed > 0)
                     Console.WriteLine($"[train] frame {frame}: {completed} episodes · best {Get(_state, "HallOfFameBestFitness"):0.##} · " +
-                                      $"gen {Get(Get(_state, "Population"), "generation")} · {(Seconds - _wallStart):0.0}s wall");
+                                      $"gen {Get(Get(_state, "Population"), "generation")} · {(Seconds - _wallStart):0.0}s wall · " +
+                                      $"heap {GC.GetTotalMemory(false) >> 20} MB · rss {Environment.WorkingSet >> 20} MB");
             }
 
             if (_mode == Mode.Replay)

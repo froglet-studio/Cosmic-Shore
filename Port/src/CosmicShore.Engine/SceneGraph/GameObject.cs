@@ -383,7 +383,7 @@ namespace CosmicShore.Engine
                 component.DestroyComponentNow();
             _components.Clear();
 
-            if (transform.parent is null) scene?.RemoveRoot(this);
+            if (transform.parent is null) { scene?.RemoveRoot(this); transform.ReleaseWorldCacheForDestroy(); }
             else transform.SetParentForDestroy();
 
             destroyedFlag = true;

@@ -229,8 +229,18 @@ namespace CosmicShore.Engine.Audio.Fmod
     {
         static readonly Dictionary<string, BusState> Buses = new();
 
-        /// <summary>Every one-shot that reached start(), oldest first (port-only observability).</summary>
+        /// <summary>
+        /// The most recent one-shots that reached start(), oldest first (port-only
+        /// observability). Bounded: a long headless run starts thousands of events per match,
+        /// so the log keeps the last <see cref="StartedLogCapacity"/> and the full history lives
+        /// in <see cref="StartedTotal"/> and <see cref="StartedByPath"/>.
+        /// </summary>
         public static readonly List<EventInstanceState> StartedInstances = new();
+        public const int StartedLogCapacity = 4096;
+        /// <summary>Every start() since the last reset.</summary>
+        public static long StartedTotal { get; private set; }
+        /// <summary>start() count per event path since the last reset ("(unresolved)" when there is none).</summary>
+        public static readonly Dictionary<string, long> StartedByPath = new();
 
         /// <summary>
         /// Test seam: when true, <see cref="GetBus"/> throws — models banks
@@ -358,7 +368,14 @@ namespace CosmicShore.Engine.Audio.Fmod
         /// <summary>Original: the RuntimeManager MonoBehaviour singleton. The port has no component; this is a stand-in handle.</summary>
         public static object Instance => StudioSystem;
 
-        internal static void RecordStart(EventInstanceState state) => StartedInstances.Add(state);
+        internal static void RecordStart(EventInstanceState state)
+        {
+            StartedTotal++;
+            string key = state.Path ?? "(unresolved)";
+            StartedByPath[key] = StartedByPath.TryGetValue(key, out var n) ? n + 1 : 1;
+            StartedInstances.Add(state);
+            if (StartedInstances.Count > StartedLogCapacity) StartedInstances.RemoveRange(0, StartedLogCapacity / 2);
+        }
 
         /// <summary>Clears buses, the started log, and the failure seam (test isolation).</summary>
         public static void ResetForTests()
@@ -367,6 +384,8 @@ namespace CosmicShore.Engine.Audio.Fmod
             Vcas.Clear();
             StudioSystem.Globals.Clear();
             StartedInstances.Clear();
+            StartedByPath.Clear();
+            StartedTotal = 0;
             Attached.Clear();
             FailBusResolution = false;
         }

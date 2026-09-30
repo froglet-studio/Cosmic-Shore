@@ -268,6 +268,7 @@ namespace CosmicShore.Engine
         {
             parent?._children.Remove(this);
             _parent = null;
+            ReleaseWorldCacheForDestroy();
             GameObject.BumpHierarchyEpoch();
             MarkMoved();
         }

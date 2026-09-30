@@ -60,13 +60,8 @@ namespace CosmicShore.Player
         public static void Stop(FmodNativeBackend backend)
         {
             if (backend == null) return;
-            var started = new System.Collections.Generic.Dictionary<string, int>();
-            foreach (var st in RuntimeManager.StartedInstances)
-            {
-                string key = st.Path ?? "(unresolved)";
-                started[key] = started.TryGetValue(key, out var c) ? c + 1 : 1;
-            }
-            Console.WriteLine($"[fmod] {RuntimeManager.StartedInstances.Count} event start(s), {started.Count} distinct:");
+            var started = RuntimeManager.StartedByPath;
+            Console.WriteLine($"[fmod] {RuntimeManager.StartedTotal} event start(s), {started.Count} distinct:");
             foreach (var kv in System.Linq.Enumerable.OrderByDescending(started, kv => kv.Value))
                 Console.WriteLine($"[fmod]   {kv.Value,5}  {kv.Key}");
             if (ReferenceEquals(FmodBackend.Current, backend)) FmodBackend.Current = null;

@@ -25,11 +25,31 @@ namespace CosmicShore.Engine
     {
         static readonly List<Renderer> s_live = new();
         static readonly List<TrailRenderer> s_trails = new();
+        static int s_liveCompactAt = 4096, s_trailsCompactAt = 256;
+        internal static int RegisteredCount => s_live.Count;
+
         internal static void RegisterLive(Renderer r)
         {
             s_live.Add(r);
             if (r is TrailRenderer t) s_trails.Add(t);
             r.MarkRenderDirty();
+            // The render backend prunes destroyed renderers as it walks them, but a headless run
+            // never renders — without this, every renderer a scene reload destroys stays
+            // reachable forever. Compacting whenever the list doubles past its last live size
+            // keeps registration amortized O(1).
+            if (s_live.Count >= s_liveCompactAt) s_liveCompactAt = Math.Max(4096, 2 * Compact(s_live));
+            if (s_trails.Count >= s_trailsCompactAt) s_trailsCompactAt = Math.Max(256, 2 * Compact(s_trails));
+        }
+
+        static bool Gone(Renderer r) => r.destroyedFlag || r.gameObject == null || r.gameObject.destroyedFlag;
+
+        static int Compact<T>(List<T> list) where T : Renderer
+        {
+            int w = 0;
+            for (int i = 0; i < list.Count; i++)
+                if (!Gone(list[i])) list[w++] = list[i];
+            list.RemoveRange(w, list.Count - w);
+            return w;
         }
 
         /// <summary>Every trail that still exists (destroyed entries pruned).</summary>

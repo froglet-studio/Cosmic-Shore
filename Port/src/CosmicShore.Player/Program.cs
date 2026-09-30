@@ -13,7 +13,7 @@ namespace CosmicShore.Player
     ///               [--shot FRAME:out.png]... [--do FRAME:ACTION]...
     ///   CosmicShore --headless [--frames N] [--scene NAME] [--quiet] [--do FRAME:ACTION]...
     ///   CosmicShore --train [train|replay|eval] [--episodes N] [--repeats K] [--scenario NAME] [--train-out DIR]
-    ///               [--seed S] [--frames CAP] [--workers N] [--evals K] [--generations G]
+    ///               [--seed S] [--frames CAP] [--workers N] [--evals K] [--generations G] [--recycle-mb MB]
     ///
     /// --verbose opens every CSDebug log channel (a development build's bring-up traces).
     /// --do scripts input (see <see cref="InputScript"/>); --shot captures extra frames.
@@ -42,7 +42,8 @@ namespace CosmicShore.Player
             bool wantTrain = false;
             int trainEpisodes = 0, trainRepeats = 1, seed = int.MinValue;
             int workers = 1, worker = -1, evals = 1, generations = 0;
-            string trainDir = null;
+            string trainDir = null, resume = null;
+            int recycleMb = 2500;
             var evalGenomes = new System.Collections.Generic.List<string>();
             int flights = 12;
             string trainOut = null, trainScenario = null;
@@ -78,6 +79,8 @@ namespace CosmicShore.Player
                     case "--evals" when i + 1 < args.Length: int.TryParse(args[++i], out evals); break;
                     case "--generations" when i + 1 < args.Length: int.TryParse(args[++i], out generations); break;
                     case "--train-dir" when i + 1 < args.Length: trainDir = args[++i]; break;
+                    case "--resume" when i + 1 < args.Length: resume = args[++i]; break;
+                    case "--recycle-mb" when i + 1 < args.Length: int.TryParse(args[++i], out recycleMb); break;
                     case "--genome" when i + 1 < args.Length: evalGenomes.Add(args[++i]); break;
                     case "--flights" when i + 1 < args.Length: int.TryParse(args[++i], out flights); break;
                     case "--report-render": reportRender = true; break;
@@ -118,17 +121,18 @@ namespace CosmicShore.Player
                     if (trainMode == TrainingHost.Mode.Train)
                     {
                         trainDir ??= System.IO.Path.Combine(trainOut ?? System.IO.Path.Combine(Environment.CurrentDirectory, "training"), "run");
-                        if (worker < 0) // the launching process is worker 0 and starts the rest
+                        if (worker < 0) // the launching process supervises; every worker is a child
                         {
-                            worker = 0;
                             if (System.IO.Directory.Exists(trainDir)) System.IO.Directory.Delete(trainDir, recursive: true);
                             System.IO.Directory.CreateDirectory(trainDir);
-                            TrainingWorkers.Spawn(args, workers, trainDir, evoSeed);
+                            return TrainingWorkers.Supervise(args, Math.Max(1, workers), trainDir, evoSeed);
                         }
                         train.ConfigureParallel(workers, worker, evals, generations, evoSeed, trainDir);
+                        train.ConfigureLifecycle(resume, recycleMb);
                     }
                     // Training is headless: a window would only cap the tick rate at vsync.
-                    return RunHeadless(scene, frames < 0 ? int.MaxValue : frames, quiet, width, height, script, reportRender, dumps, train);
+                    int result = RunHeadless(scene, frames < 0 ? int.MaxValue : frames, quiet, width, height, script, reportRender, dumps, train);
+                    return train.Recycle ? TrainingWorkers.RecycleExitCode : result;
                 }
                 if (headless) return RunHeadless(scene, Math.Max(frames < 0 ? 600 : frames, script.LastFrame), quiet, width, height, script, reportRender, dumps);
                 int last = Math.Max(shots.Count > 0 ? shots.Keys.Max() : -1, frames);

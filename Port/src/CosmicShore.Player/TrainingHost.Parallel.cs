@@ -46,8 +46,32 @@ namespace CosmicShore.Player
         readonly Dictionary<object, int> _originalIndex = new(ReferenceEqualityComparer.Instance);
         int _pass;
         bool _submitted;
-        int _gensDone;
         double _genWallStart;
+        // The run's first generation and the episode count it started from: generation and
+        // episode limits are counted from here, so a worker that is recycled mid-run and
+        // resumed from a checkpoint stops where the others do.
+        int _firstGen;
+        string _resume;
+        long _recycleBytes;
+
+        /// <summary>
+        /// True when this worker left to shed memory at a generation boundary; its state is in
+        /// <see cref="CheckpointPath"/> and the supervisor restarts it with --resume. The game
+        /// leaks scene objects across reloads in ways Unity survives (a telemetry component
+        /// subscribed to a static event is only unsubscribed at a turn end a watchdog-ended
+        /// training match never raises, and it holds its vessel and whole trail), so a long run
+        /// needs a hard bound rather than a hunt for every such reference.
+        /// </summary>
+        public bool Recycle { get; private set; }
+        string CheckpointPath => Path.Combine(_dir, $"ckpt_w{_worker}.json");
+        string MetaPath => Path.Combine(_dir, "meta.txt");
+
+        /// <summary>Resume from a checkpoint and/or recycle past a working-set limit (call before Install).</summary>
+        public void ConfigureLifecycle(string resume, int recycleMb)
+        {
+            _resume = resume;
+            _recycleBytes = recycleMb > 0 ? recycleMb * (1L << 20) : 0;
+        }
 
         /// <summary>Parallel train settings (call before Install).</summary>
         public void ConfigureParallel(int workers, int worker, int evals, int generations, int evoSeed, string dir)
@@ -68,6 +92,15 @@ namespace CosmicShore.Player
             if (string.IsNullOrEmpty(_dir)) _dir = Path.Combine(_outDir ?? ".", "run");
             Directory.CreateDirectory(_dir);
             _game.GetType(Ns + "PolicyBootstrap")?.GetMethod("EnsureInitialized")?.Invoke(null, null);
+            if (!string.IsNullOrEmpty(_resume))
+            {
+                JsonUtility.FromJsonOverwrite(File.ReadAllText(_resume), _state);
+                // A resumed worker must not replay the tracks its previous incarnation flew:
+                // its gameplay stream continues from the generation it resumes at (deterministic).
+                int resumedGen = (int)Get(Get(_state, "Population"), "generation");
+                CosmicShore.Engine.Random.InitState(unchecked(_evoSeed + _worker * 7919 + resumedGen * 104729));
+                Console.WriteLine($"[train] worker {_worker}: resumed at generation {Get(Get(_state, "Population"), "generation")} from {_resume}");
+            }
 
             // The runner resets a state that belongs to another scenario at StartSession; do it
             // here instead, under the shared seed, so every worker starts from the same population.
@@ -243,8 +276,7 @@ namespace CosmicShore.Player
                 ExportTrained();
             }
 
-            _gensDone++;
-            if ((_generations > 0 && _gensDone >= _generations)
+            if ((_generations > 0 && gen - _firstGen + 1 >= _generations)
                 || (_episodes > 0 && (int)Get(_state, "EpisodesCompleted") - _startEpisodes >= _episodes))
             {
                 if (_worker == 0) File.WriteAllText(DonePath, gen.ToString(CultureInfo.InvariantCulture));
@@ -252,7 +284,43 @@ namespace CosmicShore.Player
                 return;
             }
             Evolve();
+            if (_recycleBytes > 0 && Environment.WorkingSet > _recycleBytes)
+            {
+                // Every worker holds the identical evolved population here, so this worker's own
+                // state is the checkpoint: nothing to coordinate, the others simply wait for its
+                // next results as they would for any slow worker.
+                string json = JsonUtility.ToJson(_state);
+                File.WriteAllText(CheckpointPath + ".tmp", json);
+                File.Move(CheckpointPath + ".tmp", CheckpointPath, overwrite: true);
+                Console.WriteLine($"[train] worker {_worker}: recycling at {Environment.WorkingSet >> 20} MB (limit {_recycleBytes >> 20} MB), " +
+                                  $"checkpoint generation {Get(Get(_state, "Population"), "generation")}");
+                Recycle = true;
+                Done = true;
+                return;
+            }
             BeginGeneration();
+        }
+
+        /// <summary>Wall time since the run began — across recycles, from when the run's meta file was written.</summary>
+        double RunWallSeconds()
+            => File.Exists(MetaPath) ? (DateTime.UtcNow - File.GetLastWriteTimeUtc(MetaPath)).TotalSeconds : Seconds - _wallStart;
+
+        /// <summary>First process writes where the run started; a resumed one reads it back.</summary>
+        void SyncRunMeta()
+        {
+            if (!string.IsNullOrEmpty(_resume) && File.Exists(MetaPath))
+            {
+                var parts = File.ReadAllText(MetaPath).Split(' ');
+                _firstGen = int.Parse(parts[0], CultureInfo.InvariantCulture);
+                _startEpisodes = int.Parse(parts[1], CultureInfo.InvariantCulture);
+                return;
+            }
+            _firstGen = _generationAtStart;
+            if (_worker == 0 && !File.Exists(MetaPath))
+            {
+                File.WriteAllText(MetaPath + ".tmp", string.Create(CultureInfo.InvariantCulture, $"{_firstGen} {_startEpisodes}"));
+                File.Move(MetaPath + ".tmp", MetaPath, overwrite: true);
+            }
         }
 
         /// <summary>TrainingPopulation.Evolve under a random state every worker shares, then restored.</summary>
@@ -280,7 +348,7 @@ namespace CosmicShore.Player
             string path = Path.Combine(_outDir, key + ".progress.csv");
             if (!File.Exists(path)) File.WriteAllText(path, "generation,flights,mean_flight,best_flight,best_genome_mean,hall_of_fame,generation_wall_s,total_wall_s\n");
             File.AppendAllText(path, string.Create(CultureInfo.InvariantCulture,
-                $"{gen},{flights},{meanFlight:0.###},{bestFlight:0.###},{bestMean:0.###},{Get(_state, "HallOfFameBestFitness"):0.###},{wall:0.#},{Seconds - _wallStart:0.#}\n"));
+                $"{gen},{flights},{meanFlight:0.###},{bestFlight:0.###},{bestMean:0.###},{Get(_state, "HallOfFameBestFitness"):0.###},{wall:0.#},{RunWallSeconds():0.#}\n"));
         }
 
         /// <summary>The deployable result after every generation: the archive entry Unity's AI flies, and its JSON sidecars.</summary>
