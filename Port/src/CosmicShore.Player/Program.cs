@@ -12,7 +12,7 @@ namespace CosmicShore.Player
     ///   CosmicShore [--scene NAME] [--size WxH] [--screenshot out.png] [--frames N]
     ///               [--shot FRAME:out.png]... [--do FRAME:ACTION]...
     ///   CosmicShore --headless [--frames N] [--scene NAME] [--quiet] [--do FRAME:ACTION]...
-    ///   CosmicShore --train [train|replay] [--episodes N] [--repeats K] [--scenario NAME] [--train-out DIR]
+    ///   CosmicShore --train [train|replay|eval] [--episodes N] [--repeats K] [--scenario NAME] [--train-out DIR]
     ///               [--seed S] [--frames CAP] [--workers N] [--evals K] [--generations G]
     ///
     /// --verbose opens every CSDebug log channel (a development build's bring-up traces).
@@ -24,7 +24,8 @@ namespace CosmicShore.Player
     /// --train runs the game's own AI genetic training headless (see <see cref="TrainingHost"/>);
     /// "replay" re-scores the generation the session asset scored in Unity and reports the disparity.
     /// "train" evolves generation by generation over --workers processes (one per core), each
-    /// genome flown --evals times per generation.
+    /// genome flown --evals times per generation. "eval" flies the --genome FILE(s) --flights
+    /// times each, racing each other, and reports each one's mean fitness and standard error.
     /// </summary>
     public static class Program
     {
@@ -42,6 +43,8 @@ namespace CosmicShore.Player
             int trainEpisodes = 0, trainRepeats = 1, seed = int.MinValue;
             int workers = 1, worker = -1, evals = 1, generations = 0;
             string trainDir = null;
+            var evalGenomes = new System.Collections.Generic.List<string>();
+            int flights = 12;
             string trainOut = null, trainScenario = null;
             for (int i = 0; i < args.Length; i++)
             {
@@ -56,7 +59,12 @@ namespace CosmicShore.Player
                     case "--train":
                         wantTrain = true;
                         if (i + 1 < args.Length && !args[i + 1].StartsWith("--"))
-                            trainMode = args[++i].Equals("replay", StringComparison.OrdinalIgnoreCase) ? TrainingHost.Mode.Replay : TrainingHost.Mode.Train;
+                            trainMode = args[++i].ToLowerInvariant() switch
+                            {
+                                "replay" => TrainingHost.Mode.Replay,
+                                "eval" => TrainingHost.Mode.Eval,
+                                _ => TrainingHost.Mode.Train,
+                            };
                         break;
                     case "--episodes" when i + 1 < args.Length: int.TryParse(args[++i], out trainEpisodes); break;
                     case "--train-out" when i + 1 < args.Length: trainOut = args[++i]; break;
@@ -68,6 +76,8 @@ namespace CosmicShore.Player
                     case "--evals" when i + 1 < args.Length: int.TryParse(args[++i], out evals); break;
                     case "--generations" when i + 1 < args.Length: int.TryParse(args[++i], out generations); break;
                     case "--train-dir" when i + 1 < args.Length: trainDir = args[++i]; break;
+                    case "--genome" when i + 1 < args.Length: evalGenomes.Add(args[++i]); break;
+                    case "--flights" when i + 1 < args.Length: int.TryParse(args[++i], out flights); break;
                     case "--report-render": reportRender = true; break;
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
                     case "--verbose": CosmicShore.Utility.CSDebug.VerboseChannels = (CosmicShore.Utility.CSLogChannel)~0; break;
@@ -102,6 +112,7 @@ namespace CosmicShore.Player
                 if (wantTrain)
                 {
                     train = new TrainingHost(trainMode, trainEpisodes, trainOut, trainScenario, trainRepeats);
+                    if (trainMode == TrainingHost.Mode.Eval) train.ConfigureEval(evalGenomes, flights);
                     if (trainMode == TrainingHost.Mode.Train)
                     {
                         trainDir ??= System.IO.Path.Combine(trainOut ?? System.IO.Path.Combine(Environment.CurrentDirectory, "training"), "run");

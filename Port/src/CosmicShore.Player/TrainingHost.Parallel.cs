@@ -264,6 +264,31 @@ namespace CosmicShore.Player
                 });
             }
             Export(new StringBuilder());
+            ExportRobustBest();
+        }
+
+        /// <summary>
+        /// The game's hall of fame keeps the best running mean at the moment of a flight, so a
+        /// genome's FIRST lucky flight can hold it forever — and in Skim Race one genome's flights
+        /// range from 0 to 12 crystals. The robust pick is the best mean among genomes flown at
+        /// least <c>max(4, 2K)</c> times (elites accumulate flights across generations).
+        /// Written beside the hall-of-fame file as KEY.robust.json (same GenomeJson format).
+        /// </summary>
+        void ExportRobustBest()
+        {
+            int minFlights = Math.Max(4, 2 * _evals);
+            object best = null; float bestMean = float.NegativeInfinity; int bestN = 0;
+            foreach (var g in Genomes())
+            {
+                int n = (int)Get(g, "EvaluationCount");
+                float f = (float)Get(g, "Fitness");
+                if (n >= minFlights && f > bestMean) { best = g; bestMean = f; bestN = n; }
+            }
+            if (best == null) return;
+            string key = (string)Get(Get(_control, "Scenario"), "Key");
+            string path = Path.Combine(_outDir, key + ".robust.json");
+            _game.GetType(Ns + "GenomeJson")!.GetMethod("SaveToFile")!.Invoke(null, new[] { best, path });
+            Console.WriteLine($"[train] robust best: mean {bestMean:0.0} over {bestN} flights -> {path}");
         }
     }
 }

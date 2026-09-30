@@ -37,7 +37,7 @@ namespace CosmicShore.Player
     /// </summary>
     public sealed partial class TrainingHost
     {
-        public enum Mode { Train, Replay }
+        public enum Mode { Train, Replay, Eval }
 
         const string ControlPath = "Assets/_SO_Assets/AI Training/TrainingControl.asset";
         const string Ns = "CosmicShore.Utility.AITraining.";
@@ -102,6 +102,7 @@ namespace CosmicShore.Player
             Console.WriteLine($"[train] scenario {Get(scenario, "Key")} · mode {_mode} · state '{Name(_state)}' · archive '{Name(_archive)}'");
 
             if (_mode == Mode.Replay) PrepareReplay(scenario);
+            else if (_mode == Mode.Eval) InstallEval(scenario);
             else InstallTrain(scenario);
 
             _startEpisodes = (int)Get(_state, "EpisodesCompleted");
@@ -185,6 +186,7 @@ namespace CosmicShore.Player
                     }
                 }
             }
+            else if (_mode == Mode.Eval) PollEval(frame);
             else PollTrain(frame);
         }
 
