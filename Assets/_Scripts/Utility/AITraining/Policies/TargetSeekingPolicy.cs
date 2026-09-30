@@ -20,6 +20,11 @@ namespace CosmicShore.Utility.AITraining
         const string GeneLead = "target.lead_seconds";
         const string GeneSteerWeight = "target.steer_weight";
 
+        // AIPilot caps the same divisor at its _maxDistance (50). Dividing by the raw squared
+        // range instead made the turn vanish past a few units: a crystal 100 units off gave
+        // under one degree of input, so the vessel flew straight past every crystal on the track.
+        public const float MaxSteerDivisor = 50f;
+
         float _aggressiveness;
         float _deadzone;
         float _lead;
@@ -62,7 +67,7 @@ namespace CosmicShore.Utility.AITraining
             // this preserves the calibration of the rest of the input pipeline.
             Vector3 localCross = ctx.Vessel.Transform.InverseTransformDirection(cross);
 
-            float sqr = Mathf.Max(toTarget.sqrMagnitude, 1f);
+            float sqr = Mathf.Clamp(toTarget.sqrMagnitude, 1f, MaxSteerDivisor);
             float angle = Mathf.Asin(Mathf.Clamp(localCross.sqrMagnitude * _aggressiveness / sqr, -1f, 1f)) * Mathf.Rad2Deg;
 
             float yaw = Mathf.Clamp(angle * localCross.y, -1f, 1f);

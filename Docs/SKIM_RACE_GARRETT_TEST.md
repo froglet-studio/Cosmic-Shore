@@ -11,18 +11,44 @@ Intensity: **4**.
 
 ## What you will fly against
 
-The archive has one entry, filed by the 2026-09-29 Learn run:
+The archive has one entry, filed by the Prompt 6 Learn pass (2026-09-29):
 
 - Key: `Squirrel_SkimRace_I4` (Squirrel, SkimRace, intensity 4).
-- Archive entry fitness: 277.09552. Generation 0. Notes: `Auto-deploy after 24 episodes`.
+- Archive entry fitness: 974.2953. Generation 2. Notes: `Deployed after 72 episodes`.
 - Sidecar: `Assets/_SO_Assets/AI Training/Exports/SkimRace_Squirrel_I4.json`.
 
-That genome was the best of 24 evaluations. It collected 4 crystals in
-120.1 seconds of game time. Every evaluation in that generation ended on
-the trainer's 120-second cap. Intensity 4's crystal target is 54, so that
-run did not finish a race. Your matches are the first time this archive is
-asked to race under normal rules, with a human in the host seat and no
-episode cap from the trainer.
+That genome was the best of 72 evaluations. It collected 11 crystals in a
+120-second training episode. Intensity 4's crystal target is 54. The
+training fitness is not a race score.
+
+## Benchmark
+
+Garrett's bar: a Skim Race score of **110 or better** (lower is better; the
+winner's score is the finish time), or a win against Garrett.
+
+**Status: unmet.** Nobody has flown against this archive yet. In the
+automated races below the host seat had no input, and the best AI score was
+207.00.
+
+## Automated races (host seat not flown)
+
+Setup matched the steps below: arcade Skim Race, Squirrel, intensity 4,
+player count 4, **Use archive in normal play** on, **Store a genome per
+intensity** off. Learn was not pressed, and neither was **Play against
+trained AI**. All three AI seats logged `[Deploy] … flies the archive`. An
+editor script pressed Ready once. The host seat then sat with no input, so
+these are not Garrett results.
+
+| Race | Winner (domain) | Score | Crystals (AI seats) | Host crystals | AI stalled at 0? |
+|---|---|---|---|---|---|
+| 1 | Ruby | 223.73 | Ruby 36 + 18, Gold 2 | 1 | No |
+| 2 | Ruby | 207.00 | Ruby 41 + 13, Gold 4 | 0 | No |
+| 3 | Ruby | 208.26 | Ruby 37 + 17, Gold 3 | 0 | No |
+
+The benchmark is unmet: no score reached 110, and no race was finished
+within 70 s. Before the steering fix, the generation-1 archive did not
+finish in 240 s. One race ended with every AI at 0 crystals, and the other
+with every AI at 1.
 
 A normal HexRace does not set `IsTraining`. With **Use archive in normal
 play** on, AI seats install `TrainingPilot` from this entry and stop
@@ -66,6 +92,6 @@ For each race:
   absent, the seat is still on `AIPilot` and the match is not against this
   archive.
 
-Write the numbers down as they happened. A training fitness of 277.10 is
-four crystals minus the time penalty inside a capped episode. It is not a
+Write the numbers down as they happened. A training fitness of 974.30 is
+eleven crystals minus the time penalty inside a capped episode. It is not a
 race result.

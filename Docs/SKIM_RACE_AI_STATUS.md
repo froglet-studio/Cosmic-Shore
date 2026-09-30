@@ -1,16 +1,103 @@
 # Skim Race AI — Status Report
 
-Snapshot of branch `feat/ai-genetic-training` after the 2026-09-29 Learn run
-(Editor `6000.3.17f1`). One generation of evaluations is saved and deployed.
-No race finished. Garrett has not flown this archive yet, so this document
-does not record a human result.
+Snapshot of branch `feat/ai-genetic-training` after the Prompt 6 run of
+2026-09-29 (Editor `6000.3.17f1`). The population is at generation 2
+(72 evaluations), and that genome is deployed. Normal arcade races now
+finish, but **Garrett's bar is unmet**: no race scored 110 or better. The
+best winning score was 207.00. The 70-second target for collecting all
+crystals is also unmet; the fastest finish took 206.8 s. Garrett has not
+flown this archive, so this document does not record a human result, and
+it does not claim the AI beat Garrett.
 
 Skim Race is `GameModes.HexRace (33)` in `MinigameSkimRace`. The vessel is
 locked to Squirrel. The training key is `Squirrel_SkimRace_I4`.
 
 ---
 
-## 1. The scored run
+## 0. Prompt 6 — measured against Garrett's bar
+
+Garrett's bar is a Skim Race score of 110 or better (golf rules: the score
+is the finish time, and lower is better), or a win against Garrett. The
+training fitness is not that score.
+
+### Steering fix found before the run
+
+The user tested the generation-1 archive before this prompt. The AIs were
+not idle; they flew past the crystals. The cause was in
+`TargetSeekingPolicy.Decide`. It divided the steering cross product by the
+raw squared range to the target. `AIPilot` caps that divisor at its
+`_maxDistance` (50). Without the cap, a crystal 100 units away produced
+less than a degree of stick input. The policy now clamps the divisor to
+`[1, 50]` (`TargetSeekingPolicy.MaxSteerDivisor`). This is still
+input-only: sticks only, no course, pose or score writes.
+
+### Learn pass
+
+Learn stayed on. Squirrel, intensity 4, population 24, elite 4, episode cap
+120 s, time scale 8. The scenario key was `Squirrel_SkimRace_I4`. The pass
+resumed from the saved session at 48 episodes / generation 1 and stopped
+after 24 more evaluations.
+
+| Field | Value |
+|---|---|
+| Episodes completed | 72 (48 → 72) |
+| Generation | 2 |
+| Hall-of-fame fitness | **974.2953** (evaluation 61, Ruby, 11 crystals, t = 120.0 s) |
+| Crystals per evaluation, this generation | Ruby 2–11, Gold 5–10, Jade 0–1 |
+| Archive entry | Squirrel / SkimRace (33) / intensity 4, fitness 974.2953, generation 2, notes `Deployed after 72 episodes` |
+| Export | `Assets/_SO_Assets/AI Training/Exports/SkimRace_Squirrel_I4.json` (re-exported) |
+| Proof YAML | untouched |
+
+Every evaluation still ended on the 120 s cap. No training episode reached
+the 54-crystal target.
+
+### Normal arcade races
+
+These were run the way Garrett will run them. Arcade Skim Race card,
+Squirrel, intensity 4, player count 4 (1 human + 3 AI backfill), **Use
+archive in normal play** on, **Store a genome per intensity** off.
+`IsTraining` was false. Learn was not pressed, and neither was **Play
+against trained AI**. Every AI seat logged `[Deploy] … flies the archive
+(Squirrel, SkimRace, play intensity 4)`. Crystal target: 54. An editor
+script launched each race and pressed Ready once. **The host seat
+(`Joseph`) had no input**, so its results are not a human result.
+
+Results with the generation-2 archive, after the steering fix:
+
+| Race | Winner | Winning score | Ruby AI seats (crystals) | Gold AI seat | Host (Jade) | AI stalled at 0? |
+|---|---|---|---|---|---|---|
+| 1 | Ruby | 223.73 | 36 + 18 = 54 | 2 (score 10052) | 1 (10053) | No |
+| 2 | Ruby | 207.00 | 41 + 13 = 54 | 4 (10050) | 0 (10054) | No |
+| 3 | Ruby | 208.26 | 37 + 17 = 54 | 3 (10051) | 0 (10054) | No |
+
+Races 1 and 2 took 223.5 s and 206.8 s of game time. Race 3 took 208.4 s.
+
+Results with the generation-1 archive, before the fix (fitness 277.0955,
+capped by the script at 240 s):
+
+| Race | Finished | AI crystals | Score at cap | AI stalled at 0? |
+|---|---|---|---|---|
+| A | No | 0, 0, 0 | 240.02 (race clock) | Yes. All three AIs were moving (speed ≈ 30) but collected nothing. |
+| B | No | 1, 1, 1 | 239.92 (race clock) | No, 1 each |
+
+**Verdict: benchmark unmet.** Scores after the fix: 223.73, 207.00, 208.26.
+None of them is 110 or better, and no race finished within 70 s.
+
+### What the races show
+
+- The two Ruby seats share a domain, so their crystals add up toward 54.
+  One seat carries the load (36–41) and the other collects 13–18.
+- The lone Gold seat collected only 2–4 crystals per race, at logged
+  speeds of 178–260. The Ruby seats flew at 30–67. The Gold seat appears
+  to be boosting past crystals it cannot turn into. This is observed, not
+  yet diagnosed.
+- In training, the third seat (Jade) collected 0–1 crystals in every
+  match. A genome evaluated on that seat scores about −129 regardless of
+  its genes, which adds noise to selection.
+
+---
+
+## 1. The generation-0 run (earlier record)
 
 Learn was pressed with the `AITraining` log channel on. The host seat
 `Joseph` was on autopilot. The runner pressed the public Ready button
@@ -190,6 +277,11 @@ Best-genome arithmetic: 4 × 100 + 0.1 × (−28.21) + (−120.08) = 277.10.
 4. The fallback package was committed locally as `de854a9fe`. The push in
    that pass failed authentication. This document's later commit is the
    one that carries the trained archive.
-5. This run. Scenario set to 24 / 4 / 120. One generation of 24 evaluations
+5. Scenario set to 24 / 4 / 120. One generation of 24 evaluations
    saved. Best fitness 277.09552. Crystals were collected. The finish
-   benchmark is unmet because every episode hit the time cap first.
+   benchmark was unmet because every episode hit the time cap first.
+6. Steering divisor capped in `TargetSeekingPolicy`. Learn resumed from
+   48 to 72 episodes (generation 2, fitness 974.2953), then deployed and
+   re-exported. Three normal arcade races finished with Ruby winning at
+   223.73 / 207.00 / 208.26. Garrett's bar (110) and the 70-second target
+   are both unmet.
