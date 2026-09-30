@@ -199,6 +199,14 @@ namespace CosmicShore.Engine
         public static bool PhaseTiming;
         readonly Dictionary<string, long> _phaseTicks = new();
 
+        /// <summary>Diagnostics: add a sub-phase's wall time to the current report (no-op unless <see cref="PhaseTiming"/>).</summary>
+        internal static void AddPhase(string phase, long ticks)
+        {
+            if (!PhaseTiming || Current is not { } loop) return;
+            loop._phaseTicks.TryGetValue(phase, out long sum);
+            loop._phaseTicks[phase] = sum + ticks;
+        }
+
         void Lap(ref long mark, string phase)
         {
             long now = System.Diagnostics.Stopwatch.GetTimestamp();

@@ -52,12 +52,58 @@ namespace CosmicShore.Engine
         readonly List<(Collider a, Collider b)> _discovered = new();
         readonly HashSet<(Collider a, Collider b)> _current = new();
 
+        // Colliders whose own enabled flag is set: the only ones a frame can find live. A grown
+        // arena registers ~50k colliders of which ~1.3k are live (a prism's collider stays off
+        // until its creation completes), and walking all of them every frame to find those
+        // was most of the pass. Registration order is kept by sequence number and restored by
+        // sorting the (small) live set, so discovery order is unchanged.
+        readonly HashSet<Collider> _enabled = new(ReferenceEqualityComparer.Instance);
+        // Kept here, not on the collider: Instantiate copies a collider's fields onto its clone
+        // after the clone registers, which would hand the clone its source's place in line.
+        readonly Dictionary<Collider, long> _seq = new(ReferenceEqualityComparer.Instance);
+        long _nextSeq;
+        readonly Comparison<Collider> _bySeq;
+
+        public TriggerPass() => _bySeq = (a, b) => _seq[a].CompareTo(_seq[b]);
+
         internal void Register(Collider collider)
         {
+            if (_colliders.Contains(collider)) return;
+            _seq[collider] = ++_nextSeq;
             _colliders.Add(collider);
+            if (collider.enabled) _enabled.Add(collider);
         }
 
-        internal void Unregister(Collider collider) => _colliders.Remove(collider);
+        internal void Unregister(Collider collider)
+        {
+            _colliders.Remove(collider);
+            _enabled.Remove(collider);
+            _seq.Remove(collider);
+        }
+
+        // COSMIC_SHORE_VERIFY_TRIGGERS=1: every 30 frames, rebuild the live set by walking every
+        // registered collider (the former way) and report any difference, in order.
+        static readonly bool s_verify = Environment.GetEnvironmentVariable("COSMIC_SHORE_VERIFY_TRIGGERS") == "1";
+        readonly List<Collider> _verifyLive = new();
+
+        void VerifyLive()
+        {
+            _verifyLive.Clear();
+            foreach (var c in _colliders) if (c.isActiveAndEnabled) _verifyLive.Add(c);
+            bool same = _verifyLive.Count == _live.Count;
+            for (int i = 0; same && i < _live.Count; i++) same = ReferenceEquals(_verifyLive[i], _live[i]);
+            Console.WriteLine($"[verify-triggers] frame {Time.frameCount}: {_live.Count} live vs {_verifyLive.Count} walked, {(same ? "identical order" : "DIFFERENT")}");
+        }
+
+        /// <summary>A registered collider's enabled flag changed.</summary>
+        internal void SetEnabled(Collider collider, bool enabled)
+        {
+            if (!_colliders.Contains(collider)) return;
+            if (enabled) _enabled.Add(collider);
+            else _enabled.Remove(collider);
+        }
+
+
 
         /// <summary>
         /// Registration-ordered collider set with O(1) add/remove/contains. It was a plain
@@ -90,14 +136,18 @@ namespace CosmicShore.Engine
 
         internal void RunFrame()
         {
-            if (_colliders.Count == 0 && _activePairs.Count == 0) return;
+            if (_enabled.Count == 0 && _activePairs.Count == 0) return;
 
             // 1. Snapshot live participants in registration order. Colliders added by
             //    callbacks during this pass join next frame.
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             _live.Clear();
-            foreach (var collider in _colliders)
+            foreach (var collider in _enabled)
                 if (collider.isActiveAndEnabled)
                     _live.Add(collider);
+            _live.Sort(_bySeq);
+            if (s_verify && Time.frameCount % 30 == 0) VerifyLive();
+            long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
 
             // 2. Current overlap set — (i, j), i < j, at least one trigger.
             //
@@ -110,12 +160,21 @@ namespace CosmicShore.Engine
             _discovered.Clear();
             _current.Clear();
             BuildShapes();
+            long t2 = System.Diagnostics.Stopwatch.GetTimestamp();
             SweepCandidates();
+            long t3 = System.Diagnostics.Stopwatch.GetTimestamp();
             foreach (long key in _candidates)
             {
                 int i = (int)(key >> 32), j = (int)(key & 0xFFFFFFFF);
                 TestPair(i, j);
             }
+            long t4 = System.Diagnostics.Stopwatch.GetTimestamp();
+            GameLoop.AddPhase("  trig.live", t1 - t0);
+            GameLoop.AddPhase("  trig.shapes", t2 - t1);
+            GameLoop.AddPhase("  trig.sweep", t3 - t2);
+            GameLoop.AddPhase("  trig.pairs", t4 - t3);
+            if (GameLoop.PhaseTiming && Time.frameCount % 30 == 0)
+                Console.WriteLine($"[triggers] {_colliders.Count} registered, {_enabled.Count} enabled, {_live.Count} live, {_candidates.Count} candidates, {_activePairs.Count} active pairs");
 
             // 3. Exits first: previously-active pairs that separated, disabled, or died.
             if (_activePairs.Count > 0)

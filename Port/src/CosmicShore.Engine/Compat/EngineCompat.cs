@@ -560,6 +560,12 @@ namespace CosmicShore.Engine
         /// </summary>
         public virtual Bounds bounds => new Bounds(transform.position, Vector3.zero);
 
+        internal override void OnEnabledChanged(bool value)
+        {
+            base.OnEnabledChanged(value);
+            GameLoop.Current?.Triggers.SetEnabled(this, value);
+        }
+
         internal override void DestroyComponentNow()
         {
             // Leave the trigger-pass registry; pairs still tracking this collider fire
