@@ -376,6 +376,9 @@ class PConfig:
     min_iter: int = 64
     max_iter: int = 96
     damage_n: int = 3
+    pool_seeds: int = 1                # pool stage: how many batch slots are fresh seeds held to the
+                                       # birth clock (1 = the paper's single re-seed); >1 keeps an
+                                       # animated rule's tempo anchored while the pool teaches persistence
     seed: int = 0
     threads: int = 0
     init: str = ""                     # warm start: a particle model.pt (dim-lifted if 2D -> 3D)
@@ -533,8 +536,9 @@ def train(cfg: PConfig, out_dir: str, resume=False):
             with torch.no_grad():
                 order = torch.argsort(frame_mse(splat(x0, grid, world.sigma), frames).min(1).values, descending=True)
             x0, idx = x0.index(order), idx[order.numpy()]
-            sd = seed_state(1, world, centre, cfg.channel_n) if world.rejitter else seed
-            x0.pos[0], x0.s[0], x0.active[0] = sd.pos[0], sd.s[0], sd.active[0]
+            for q in range(max(1, cfg.pool_seeds)):
+                sd = seed_state(1, world, centre, cfg.channel_n) if world.rejitter else seed
+                x0.pos[q], x0.s[q], x0.active[q] = sd.pos[0], sd.s[0], sd.active[0]
             if cfg.damage_n:
                 tail = x0.index(torch.arange(cfg.batch_size - cfg.damage_n, cfg.batch_size))
                 ball_damage(tail, grid, rng, keep_slots=world.lattice > 0)
@@ -567,7 +571,8 @@ def train(cfg: PConfig, out_dir: str, resume=False):
                 kk = (torch.arange(K)[:, None] + shift[None]) % K
                 cost = err[:, shift[None, :].expand(K, J), kk].mean(-1)
                 free = cost[torch.arange(B), cost.detach().argmin(1)]
-                loss = torch.cat([seed_cost[:1], free[1:]]).mean()
+                ns = max(1, cfg.pool_seeds)
+                loss = torch.cat([seed_cost[:ns], free[ns:]]).mean()
 
         fit = loss
         loss = fit + cfg.overflow_w * ovf
