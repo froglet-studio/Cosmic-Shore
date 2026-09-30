@@ -56,6 +56,31 @@ sys.path.insert(0, HERE)
 from growing_nca import load_emoji, write_gif  # noqa: E402
 
 
+# ----------------------------------------------------------------- device ---
+
+DEVICE = torch.device("cpu")
+
+
+def set_device(name="cpu"):
+    """Run everything on `name` ("cpu", "cuda", "cuda:1", "mps"). Every tensor the model and trainer
+    create goes to this device (torch's default device); numpy crossings copy back explicitly.
+    Returns the device actually used."""
+    global DEVICE
+    dev = torch.device(name)
+    if dev.type == "cuda" and not torch.cuda.is_available():
+        sys.exit(f"--device {name}: this torch has no CUDA (torch {torch.__version__}). "
+                 "Install a CUDA build: https://pytorch.org/get-started/locally/")
+    if dev.type == "mps" and not torch.backends.mps.is_available():
+        sys.exit(f"--device {name}: MPS is not available on this machine")
+    DEVICE = dev
+    torch.set_default_device(dev)
+    return dev
+
+
+def _np(x):
+    return x.detach().cpu().numpy()
+
+
 # ------------------------------------------------------------------ world ---
 
 @dataclass
@@ -111,7 +136,7 @@ def lattice_points(world: World, extent, g=None):
             pts.append((x, y)); x += a
         y += a * math.sqrt(3) / 2; row += 1
     p = np.array(pts) + g.uniform(-1, 1, (len(pts), 2)) * world.jitter * a
-    return torch.from_numpy(p + a / 2).float()
+    return torch.from_numpy(p + a / 2).float().to(DEVICE)
 
 
 def seed_state(B, world: World, centre, C=16):
@@ -476,7 +501,7 @@ def ball_damage(st: State, grid, rng, keep_slots=False):
     d = st.pos.shape[-1]
     ext = torch.tensor(list(reversed(grid)), dtype=torch.float32)       # (W, H[, D])
     for b in range(st.B):
-        c = ext / 2 + (torch.from_numpy(rng.random(d)).float() - 0.5) * ext / 2
+        c = ext / 2 + (torch.from_numpy(rng.random(d)).float().to(DEVICE) - 0.5) * ext / 2
         r = float(rng.random() * 0.3 + 0.1) * float(ext[0]) / 2
         hit = ((st.pos[b] - c) ** 2).sum(-1) < r * r
         if not keep_slots:
@@ -516,7 +541,7 @@ def train(cfg: PConfig, out_dir: str, resume=False):
     world = make_world(cfg)
     cfg.world = asdict(world)
     fr_np = build_targets(cfg).astype(np.float32)
-    frames = torch.from_numpy(fr_np)
+    frames = torch.from_numpy(fr_np).to(DEVICE)
     K, grid = fr_np.shape[0], fr_np.shape[1:-1]
     centre = [g / 2 for g in reversed(grid)]                 # (x, y[, z])
     if not resume:
@@ -525,9 +550,9 @@ def train(cfg: PConfig, out_dir: str, resume=False):
 
     ca = ParticleNCA(world, cfg.channel_n, cfg.hidden, cfg.fire_rate)
     if resume:
-        ca.load_state_dict(torch.load(os.path.join(out_dir, "model.pt")))
+        ca.load_state_dict(torch.load(os.path.join(out_dir, "model.pt"), map_location=DEVICE))
     elif cfg.init:
-        sd = torch.load(cfg.init)
+        sd = torch.load(cfg.init, map_location=DEVICE)
         out, Fw = sd["b2"].shape[0], sd["w1"].shape[1]          # out = C + d, Fw = C (2 + d) + 1
         d_old = next(dd for dd in (2, 3) if (out - dd) * (2 + dd) + 1 == Fw)
         c_old = out - d_old
@@ -539,7 +564,7 @@ def train(cfg: PConfig, out_dir: str, resume=False):
     opt = torch.optim.Adam(ca.parameters(), lr=cfg.lr, eps=1e-7)
     sched = torch.optim.lr_scheduler.MultiStepLR(opt, [cfg.lr_drop_step], 0.1)
     if resume and os.path.isfile(os.path.join(out_dir, "opt.pt")):
-        opt.load_state_dict(torch.load(os.path.join(out_dir, "opt.pt")))
+        opt.load_state_dict(torch.load(os.path.join(out_dir, "opt.pt"), map_location=DEVICE))
     for _ in range(start):
         sched.step()
 
@@ -582,10 +607,10 @@ def train(cfg: PConfig, out_dir: str, resume=False):
             n = int(rng.integers(cfg.clock_min_iter, cfg.clock_max_iter + 1))
         else:
             idx = rng.choice(cfg.pool_size, cfg.batch_size, replace=False)
-            x0 = pool.index(torch.from_numpy(idx)).clone()
+            x0 = pool.index(torch.from_numpy(idx).to(DEVICE)).clone()
             with torch.no_grad():
                 order = torch.argsort(frame_mse(render(x0), frames).min(1).values, descending=True)
-            x0, idx = x0.index(order), idx[order.numpy()]
+            x0, idx = x0.index(order), idx[_np(order)]
             for q in range(max(1, cfg.pool_seeds)):
                 sd = seed_state(1, world, centre, cfg.channel_n) if world.rejitter else seed
                 x0.pos[q], x0.s[q], x0.active[q] = sd.pos[0], sd.s[0], sd.active[0]
@@ -664,10 +689,10 @@ def train(cfg: PConfig, out_dir: str, resume=False):
             reset = sanitize(xd, seed)
         if clock:
             if step == cfg.clock_steps - 1:
-                pick = torch.from_numpy(rng.integers(0, B, cfg.pool_size))
+                pick = torch.from_numpy(rng.integers(0, B, cfg.pool_size)).to(DEVICE)
                 pool = xd.index(pick).clone()
         else:
-            ii = torch.from_numpy(idx)
+            ii = torch.from_numpy(idx).to(DEVICE)
             pool.pos[ii], pool.s[ii], pool.active[ii] = xd.pos, xd.s, xd.active
 
         log.append(L)
@@ -686,7 +711,7 @@ def train(cfg: PConfig, out_dir: str, resume=False):
         if cfg.snapshot_every and step % cfg.snapshot_every == 0:
             torch.save(ca.state_dict(), os.path.join(out_dir, f"model_{step:05d}.pt"))
         if step % 250 == 0 and world.dim == 2:
-            img = to_rgb(splat(xd, grid, world.sigma)).numpy()
+            img = _np(to_rgb(splat(xd, grid, world.sigma)))
             im = Image.fromarray((np.concatenate(list(img), 1) * 255).astype(np.uint8))
             im.resize((im.width * 3, im.height * 3), Image.NEAREST).save(os.path.join(out_dir, f"batch_{step:05d}.png"))
 
@@ -696,8 +721,8 @@ def train(cfg: PConfig, out_dir: str, resume=False):
 
 def export(ca, cfg, path):
     data = {"channel_n": ca.C, "hidden": ca.hidden, "fire_rate": ca.fire_rate, "world": asdict(ca.world),
-            "w1": ca.w1.detach().numpy().round(6).tolist(), "b1": ca.b1.detach().numpy().round(6).tolist(),
-            "w2": ca.w2.detach().numpy().round(6).tolist(), "b2": ca.b2.detach().numpy().round(6).tolist(),
+            "w1": _np(ca.w1).round(6).tolist(), "b1": _np(ca.b1).round(6).tolist(),
+            "w2": _np(ca.w2).round(6).tolist(), "b2": _np(ca.b2).round(6).tolist(),
             "experiment": cfg.experiment, "frames": cfg.frames, "period": cfg.period,
             "feature_order": "[own C][neighbour mean C][gradient: channel-major, d components each][rho/rho0]"}
     json.dump(data, open(path, "w"))
@@ -710,18 +735,52 @@ def load_run(run_dir, model="model.pt"):
     cfg = PConfig(**saved)
     world = World(**cfg.world)
     ca = ParticleNCA(world, cfg.channel_n, cfg.hidden, cfg.fire_rate)
-    ca.load_state_dict(torch.load(os.path.join(run_dir, model)))
-    frames = torch.from_numpy(np.load(os.path.join(run_dir, "frames.npy")).astype(np.float32))
+    ca.load_state_dict(torch.load(os.path.join(run_dir, model), map_location=DEVICE))
+    frames = torch.from_numpy(np.load(os.path.join(run_dir, "frames.npy")).astype(np.float32)).to(DEVICE)
     return cfg, ca, frames
+
+
+@torch.no_grad()
+def score_snapshot(run_dir, model="model.pt", seeds=3, horizon=1000, burn=200):
+    """How good is one checkpoint as a SWIMMER, from several seeds rolled out together in one batch:
+    per-seed tempo (steps per frame, from the unwrapped best-frame phase), in-place error against
+    the best-matching frame after `burn`, and the best-to-worst frame gap (does it pass through
+    distinct poses, or sit on an average). What `gpu_run.py` ranks snapshots by."""
+    torch.manual_seed(0)
+    cfg, ca, frames = load_run(run_dir, model)
+    K, grid = frames.shape[0], tuple(frames.shape[1:-1])
+    render = make_render(cfg, ca.world, grid)
+    x = seed_state(seeds, ca.world, [g / 2 for g in reversed(grid)], cfg.channel_n)
+    best, err, gap = [], [], []
+    for _ in range(horizon):
+        x = ca(x)
+        e = frame_mse(render(x), frames)                              # [seeds, K]
+        best.append(_np(e.argmin(1))); err.append(_np(e.min(1).values))
+        gap.append(_np(torch.log10(e.max(1).values) - torch.log10(e.min(1).values)))
+    best, err, gap = np.stack(best, 1), np.stack(err, 1), np.stack(gap, 1)       # [seeds, T]
+    alive = _np(x.active.any(1))
+    if not alive.any():
+        return {"model": model, "extinct": seeds, "tempo": [], "target_tempo": cfg.period,
+                "log10_error": float("inf"), "frame_gap": 0.0, "particles": 0}
+    best, err, gap = best[alive], err[alive], gap[alive]
+    tt = np.arange(horizon)
+    tempo = []
+    for sidx in range(len(best)):
+        ph = np.unwrap(best[sidx] * 2 * np.pi / K) * K / (2 * np.pi)
+        slope = np.polyfit(tt[burn:], ph[burn:], 1)[0]
+        tempo.append(float(1 / slope) if abs(slope) > 1e-6 else float("inf"))
+    return {"model": model, "extinct": int(seeds - alive.sum()), "tempo": tempo, "target_tempo": cfg.period,
+            "log10_error": float(np.log10(err[:, burn:].mean())), "frame_gap": float(gap[:, burn:].mean()),
+            "particles": int(x.active.sum(1)[x.active.any(1)].float().mean())}
 
 
 def view(st: State, grid, sigma):
     """What the loss sees, as an image: 2D the splat over white, 3D the splat volume rendered."""
     img = splat(st, grid, sigma)
     if len(grid) == 2:
-        return to_rgb(img)[0].numpy()
+        return _np(to_rgb(img)[0])
     from nca3d import render
-    return render(img[0])
+    return render(img[0].cpu())
 
 
 def dots(st: State, grid, scale=4):
@@ -733,7 +792,7 @@ def dots(st: State, grid, scale=4):
     im = Image.new("RGB", (W * scale, H * scale), (255, 255, 255))
     dr = ImageDraw.Draw(im)
     act = st.active[0]
-    pos, s = st.pos[0][act].numpy(), st.s[0][act].numpy()
+    pos, s = _np(st.pos[0][act]), _np(st.s[0][act])
     rr = 0.55 * scale
     for (x, y), c in zip(pos, s):
         a = float(np.clip(c[3], 0, 1))
@@ -776,7 +835,7 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
     render = make_render(cfg, world, grid)
 
     def err_of(st):
-        return frame_mse(render(st), frames)[0].numpy()
+        return _np(frame_mse(render(st), frames)[0])
 
     def vw(st):
         return pr.raytrace(pr.prism_table(st), grid, px=200, zoom=0.34) if prism else view(st, grid, sig)
@@ -819,7 +878,7 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
         ph = np.unwrap(best * 2 * np.pi / K) * K / (2 * np.pi)
         fit = np.polyfit(tt[200:], ph[200:], 1)
         ts = list(range(200, 200 + K * P, P))
-        tgt = (lambda f: to_rgb(f).numpy()) if d == 2 else (lambda f: __import__("nca3d").render(f, px=200, zoom=0.34))
+        tgt = (lambda f: _np(to_rgb(f))) if d == 2 else (lambda f: __import__("nca3d").render(f.cpu(), px=200, zoom=0.34))
         top = np.concatenate([vw(keep[t]) for t in ts], 1)
         bot = np.concatenate([tgt(frames[best[t]]) for t in ts], 1)
         im = Image.fromarray((np.concatenate([top, np.ones((2, top.shape[1], 3)), bot], 0) * 255).astype(np.uint8))
@@ -1013,6 +1072,7 @@ def main():
     t.add_argument("--out", default=None)
     t.add_argument("--resume", action="store_true")
     t.add_argument("--world", default="", help='World overrides as JSON, e.g. \'{"capacity": 900}\'')
+    t.add_argument("--device", default="cpu", help="cpu | cuda | cuda:N | mps")
     for k, v in asdict(PConfig()).items():
         if k == "world":
             continue
@@ -1021,6 +1081,7 @@ def main():
     fg.add_argument("--run", required=True)
     fg.add_argument("--model", default="model.pt")
     fg.add_argument("--horizon", type=int, default=0)
+    fg.add_argument("--device", default="cpu", help="cpu | cuda | cuda:N | mps")
     a = ap.parse_args()
     if a.cmd == "selftest":
         selftest()
@@ -1047,11 +1108,13 @@ def main():
             opt.zero_grad(); loss.backward(); opt.step()
             print(f"80 steps fwd+bwd: {time.time() - t0:.2f}s  (particles {int(y.active.sum(1).float().mean())})")
     elif a.cmd == "figures":
+        set_device(a.device)
         figures(a.run, horizon=a.horizon or None, model=a.model)
     elif a.cmd == "train":
         cfg = PConfig(**{k: getattr(a, k) for k in asdict(PConfig()) if k != "world"})
         cfg.world = json.loads(a.world) if a.world else None
         out = a.out or os.path.join(HERE, "runs", f"particle_{cfg.experiment}")
+        set_device(a.device)
         train(cfg, out, resume=a.resume)
 
 

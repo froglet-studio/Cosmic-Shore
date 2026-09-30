@@ -60,6 +60,11 @@ def emoji_canvas(name: str) -> Image.Image:
     """The paper's source image: the emoji on a 128x128 RGBA canvas (or any image path)."""
     if os.path.isfile(name):
         return Image.open(name).convert("RGBA")
+    if not os.path.isfile(NOTO_FONT):          # a machine without the font: the bundled render
+        bundled = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", f"{name}.png")
+        if os.path.isfile(bundled):
+            return Image.open(bundled).convert("RGBA")
+        raise SystemExit(f"no {NOTO_FONT} and no assets/{name}.png - install Noto Color Emoji or add the render")
     ch = EMOJI[name]
     font = ImageFont.truetype(NOTO_FONT, 109, layout_engine=ImageFont.Layout.BASIC)
     big = Image.new("RGBA", (160, 160), (0, 0, 0, 0))

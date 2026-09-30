@@ -1,0 +1,6 @@
+# Install torch for your GPU first (https://pytorch.org/get-started/locally/), e.g. CUDA 12.x:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+torch>=2.1
+numpy
+pillow
+# optional: node (any recent version) on PATH, for verify_particle_js.py

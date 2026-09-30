@@ -136,8 +136,8 @@ def _st(logits):
 def rotation(s):
     """[..., 3, 3] rotation (columns = the prism's local axes in world) from channels 26-31.
     Zero channels are the identity."""
-    a = s[..., 26:29] + torch.tensor([1.0, 0.0, 0.0])
-    b = s[..., 29:32] + torch.tensor([0.0, 1.0, 0.0])
+    a = s[..., 26:29] + torch.tensor([1.0, 0.0, 0.0], device=s.device)
+    b = s[..., 29:32] + torch.tensor([0.0, 1.0, 0.0], device=s.device)
     r1 = a / a.norm(dim=-1, keepdim=True).clamp(min=1e-6)
     b = b - (r1 * b).sum(-1, keepdim=True) * r1
     r2 = b / b.norm(dim=-1, keepdim=True).clamp(min=1e-6)
@@ -153,7 +153,7 @@ def decode(s):
     """-> colour [...,3] (straight-through), tier one-hot [...,4] (straight-through), half-extents
     [...,3], rotation [...,3,3], presence [...]."""
     pd, pt = _st(s[..., 16:19]), _st(s[..., 19:23])
-    colour = torch.einsum("...d,...t,dtc->...c", pd, pt, COLOURS)
+    colour = torch.einsum("...d,...t,dtc->...c", pd, pt, COLOURS.to(s.device))
     return colour, pt, half_extents(s), rotation(s), s[..., 3].clamp(0, 1)
 
 
@@ -175,14 +175,15 @@ def gauges(u):
 _OFFS = {}
 
 
-def _offsets(rad):
+def _offsets(rad, device=None):
     """Integer offsets within a ball of radius `rad` (voxels), nearest first."""
-    if rad not in _OFFS:
+    key = (rad, str(device))
+    if key not in _OFFS:
         r = int(math.ceil(rad))
-        g = torch.stack(torch.meshgrid(*[torch.arange(-r, r + 1, dtype=torch.float32)] * 3, indexing="ij"), -1).reshape(-1, 3)
+        g = torch.stack(torch.meshgrid(*[torch.arange(-r, r + 1, dtype=torch.float32, device=device)] * 3, indexing="ij"), -1).reshape(-1, 3)
         g = g[(g ** 2).sum(-1) <= rad * rad]
-        _OFFS[rad] = g[torch.argsort((g ** 2).sum(-1))]
-    return _OFFS[rad]
+        _OFFS[key] = g[torch.argsort((g ** 2).sum(-1))]
+    return _OFFS[key]
 
 
 def tier_radius(t):
@@ -205,20 +206,21 @@ def prism_splat(st, grid):
     colour, pt, h, R, a = decode(s[live])
     tier = pt.detach().argmax(-1)
     bidx = torch.div(live, N, rounding_mode="floor")
-    logT = torch.zeros(B * size)
-    wsum = torch.zeros(B * size)
-    csum = torch.zeros(B * size, 3)
+    dev = pos.device
+    logT = torch.zeros(B * size, device=dev)
+    wsum = torch.zeros(B * size, device=dev)
+    csum = torch.zeros(B * size, 3, device=dev)
     for t in range(4):
         sel = (tier == t).nonzero().squeeze(1)
         if len(sel) == 0:
             continue
-        off = _offsets(tier_radius(t))                                   # [O, 3]
+        off = _offsets(tier_radius(t), pos.device)                       # [O, 3]
         p = pos[live[sel]]                                               # [n, 3]
         cells = torch.floor(p.detach())[:, None, :] + off[None]          # [n, O, 3]
         dx = cells + 0.5 - p[:, None, :]
         u = torch.einsum("noc,ncj->noj", dx, R[sel]) / h[sel][:, None, :]    # local, in half-extents
         d = (gauges(u) * pt[sel][:, None, :]).sum(-1)                   # straight-through tier blend
-        face = (pt[sel] * torch.tensor(FACE)).sum(-1)                   # [n]
+        face = (pt[sel] * torch.tensor(FACE, device=pos.device)).sum(-1)   # [n]
         hg = h[sel].prod(-1) ** (1 / 3)
         x = (0.5 + (1 - d) * (face * hg)[:, None] / EDGE).clamp(0, 1)   # signed depth below the surface, in ramps
         k = x * x * (3 - 2 * x)                                          # [n, O] soft occupancy
@@ -239,11 +241,12 @@ def prism_splat(st, grid):
 def prism_table(st, b=0):
     """Numpy per-prism rows for sample b: pos(3) half-extents(3) rotation(9, row-major) domain tier alpha."""
     act = st.active[b]
-    s = st.s[b][act]
+    s = st.s[b][act].detach().cpu()
+    pos = st.pos[b][act].detach().cpu()
     with torch.no_grad():
         h, R = half_extents(s), rotation(s)
         dom, tier = s[:, 16:19].argmax(-1), s[:, 19:23].argmax(-1)
-    return np.concatenate([st.pos[b][act].numpy(), h.numpy(), R.reshape(-1, 9).numpy(),
+    return np.concatenate([pos.numpy(), h.numpy(), R.reshape(-1, 9).numpy(),
                            dom[:, None].float().numpy(), tier[:, None].float().numpy(),
                            s[:, 3:4].clamp(0, 1).numpy()], 1).astype(np.float32)
 

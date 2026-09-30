@@ -338,6 +338,34 @@ them as three.js instanced meshes from `prism_core.js`, which `verify_particle_j
 equal to `prism_render.prism_table` (decode error 2e-7, no domain or tier mismatches) on top of
 the usual runner check.
 
+## Running on a GPU (`gpu_run.py`)
+
+The cloud session this was built in has four CPU cores and no GPU, which is why the prism run
+backpropagates only the last 48 steps at batch 4. On a GPU it does not have to:
+
+    git pull
+    pip install -r Tools/NCA/requirements.txt      # torch: the CUDA build for your card first
+    python Tools/NCA/gpu_run.py
+
+That one command:
+
+1. **checks** the device against the CPU on one step and one loss gradient from the same state
+   (identical survivors, positions and states within 1e-3, gradient within 1%) and refuses to
+   train on a device that disagrees;
+2. **trains** the prism swim with full backprop, batch 8, capacity 360, 4500 steps
+   (`--steps` to change), in `runs/prism_swim3d_gpu` - re-running resumes;
+3. **picks** the best snapshot: every 250-step snapshot is rolled out from 4 seeds for 1000 steps
+   (`particle_nca.score_snapshot`), and it keeps the lowest in-place error among snapshots with no
+   extinctions and every seed within 20% of the target tempo;
+4. **promotes** it to `results/prism_swim3d`, makes the figures, runs the JS verifier (skipped if
+   `node` is missing), rebuilds `viewer.html`, and **commits and pushes** to the current branch
+   (`--no-push` to stop before git).
+
+`python Tools/NCA/gpu_run.py check` runs only step 1. `--device mps` for Apple silicon. Every
+`particle_nca.py train` / `figures` call also takes `--device cuda` directly. Machines without
+the Noto Color Emoji font use the bundled `assets/lizard.png` (the same 128x128 render; the
+prism target built from it is byte-identical).
+
 ## Related work
 
 The particle automaton itself is not new. **Kim, Pajouheshgar, Süsstrunk, Jakob, Park,
