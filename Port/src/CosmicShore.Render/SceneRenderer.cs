@@ -974,7 +974,19 @@ void main(){
         readonly List<TGroup> _tGroupPool = new(), _tOrder = new();
         readonly float[] _boneData = new float[MaxBones * 16];
 
+        /// <summary>
+        /// Draw one camera. The whole draw is a read-only transform pass (nothing here writes a
+        /// transform), so each world pose is validated once for the collect AND the instance
+        /// writes that follow it, instead of re-walking its parent chain per read.
+        /// </summary>
         public void Render(Camera camera, int width, int height)
+        {
+            CosmicShore.Engine.Transform.BeginReadOnlyPass();
+            try { RenderCamera(camera, width, height); }
+            finally { CosmicShore.Engine.Transform.EndReadOnlyPass(); }
+        }
+
+        void RenderCamera(Camera camera, int width, int height)
         {
             _frame++;
             DrawCalls = Instances = 0;
@@ -988,11 +1000,9 @@ void main(){
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             SetFrustum(viewProj);
             _cullClock = Shader.GetGlobalFloat(IdPrismClock) is var cc && cc > 0 ? cc : Time.time;
-            CosmicShore.Engine.Transform.BeginReadOnlyPass();
-            try { Collect(mask, camPos); }
-            finally { CosmicShore.Engine.Transform.EndReadOnlyPass(); }
+            Collect(mask, camPos);
             long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
-            _writeTicks = 0;
+            _writeTicks = 0; _instTicks = 0; _extTicks = 0;
 
             _program.Use();
             _program.Set("uViewProj", ToNumerics(viewProj));
@@ -1095,13 +1105,13 @@ void main(){
                 long t3 = System.Diagnostics.Stopwatch.GetTimestamp();
                 double ms(long a) => a * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
                 if (_frame % 30 == 0)
-                    Console.WriteLine($"[render] collect {ms(t1 - t0):F1} ms (renderers {ms(t1 - t0 - _entityTicks):F1}, ECS hand-over {ms(_entityHandTicks):F1} of {_entities.Count}, entity cull {ms(_entityTicks - _entityHandTicks):F1}), instance writes+uploads {ms(_writeTicks):F1} ms, submit {ms(t2 - t1 - _writeTicks):F1} ms, GPU wait {ms(t3 - t2):F1} ms — {Instances} instances, {DrawCalls} draws, {_opaque.Count + _transparent.Count} collected"
+                    Console.WriteLine($"[render] collect {ms(t1 - t0):F1} ms (renderers {ms(t1 - t0 - _entityTicks):F1}, ECS hand-over {ms(_entityHandTicks):F1} of {_entities.Count}, entity cull {ms(_entityTicks - _entityHandTicks):F1}), instance writes+uploads {ms(_writeTicks):F1} ms (instances {ms(_instTicks):F1}, clock blocks {ms(_extTicks):F1}), submit {ms(t2 - t1 - _writeTicks):F1} ms, GPU wait {ms(t3 - t2):F1} ms — {Instances} instances, {DrawCalls} draws, {_opaque.Count + _transparent.Count} collected"
                         + $" [renderers: {_cLive} live, {_cShown} tested; walk {ms(_cLoop):F1}]");
             }
         }
 
         static readonly bool s_timing = Environment.GetEnvironmentVariable("COSMIC_SHORE_RENDER_TIMING") == "1";
-        long _writeTicks;
+        long _writeTicks, _instTicks, _extTicks;
 
         void Collect(int mask, EVector3 camPos)
         {
@@ -1626,9 +1636,12 @@ void main(){
             if (_instanceData.Length < n * InstanceFloats) _instanceData = new float[Math.Max(n, _instanceData.Length / InstanceFloats * 2) * InstanceFloats];
             for (int i = 0; i < n; i++)
                 WriteInstance(items[i], i * InstanceFloats);
+            long tx = System.Diagnostics.Stopwatch.GetTimestamp();
+            _instTicks += tx - tw;
             if (_extData.Length < n * ExtFloats) _extData = new float[Math.Max(n, _extData.Length / ExtFloats * 2) * ExtFloats];
             for (int i = 0; i < n; i++)
                 WriteExt(items[i], i * ExtFloats);
+            _extTicks += System.Diagnostics.Stopwatch.GetTimestamp() - tx;
             UploadExt(n);
 
             _gl.BindVertexArray(entry.Vao);

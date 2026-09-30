@@ -71,15 +71,20 @@ namespace CosmicShore.Engine
         public void GetPropertyBlock(MaterialPropertyBlock dest, int materialIndex)
             => dest.CopyFrom(_indexedBlocks.TryGetValue(materialIndex, out var b) ? b : null);
 
-        public bool HasPropertyBlock() => PropertyBlockFor(-1) != null || _indexedBlocks.Count > 0;
+        // The renderer-wide block is stored null when empty (SetPropertyBlock), so presence is a
+        // field test. Both accessors are allocation-free: the render backend asks for every drawn
+        // renderer every frame (it used to mint and copy a block per ask).
+        public bool HasPropertyBlock() => _propertyBlock != null || _indexedBlocks.Count > 0;
 
-        /// <summary>The block that applies to submesh <paramref name="materialIndex"/> (index block wins; renderer-wide otherwise).</summary>
+        /// <summary>
+        /// The block that applies to submesh <paramref name="materialIndex"/> (index block wins;
+        /// renderer-wide otherwise), or null. The stored block itself: READ ONLY — write through
+        /// SetPropertyBlock.
+        /// </summary>
         public MaterialPropertyBlock PropertyBlockFor(int materialIndex)
         {
-            if (materialIndex >= 0 && _indexedBlocks.TryGetValue(materialIndex, out var b)) return b;
-            var whole = new MaterialPropertyBlock();
-            GetPropertyBlock(whole);
-            return whole.isEmpty ? null : whole;
+            if (materialIndex >= 0 && _indexedBlocks.Count > 0 && _indexedBlocks.TryGetValue(materialIndex, out var b)) return b;
+            return _propertyBlock is { isEmpty: false } whole ? whole : null;
         }
     }
 
