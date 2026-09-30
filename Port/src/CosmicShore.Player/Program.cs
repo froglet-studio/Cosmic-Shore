@@ -13,7 +13,7 @@ namespace CosmicShore.Player
     ///               [--shot FRAME:out.png]... [--do FRAME:ACTION]...
     ///   CosmicShore --headless [--frames N] [--scene NAME] [--quiet] [--do FRAME:ACTION]...
     ///   CosmicShore --train [train|replay] [--episodes N] [--repeats K] [--scenario NAME] [--train-out DIR]
-    ///               [--seed S] [--frames CAP]
+    ///               [--seed S] [--frames CAP] [--workers N] [--evals K] [--generations G]
     ///
     /// --verbose opens every CSDebug log channel (a development build's bring-up traces).
     /// --do scripts input (see <see cref="InputScript"/>); --shot captures extra frames.
@@ -23,6 +23,8 @@ namespace CosmicShore.Player
     ///
     /// --train runs the game's own AI genetic training headless (see <see cref="TrainingHost"/>);
     /// "replay" re-scores the generation the session asset scored in Unity and reports the disparity.
+    /// "train" evolves generation by generation over --workers processes (one per core), each
+    /// genome flown --evals times per generation.
     /// </summary>
     public static class Program
     {
@@ -38,6 +40,8 @@ namespace CosmicShore.Player
             TrainingHost.Mode trainMode = TrainingHost.Mode.Train;
             bool wantTrain = false;
             int trainEpisodes = 0, trainRepeats = 1, seed = int.MinValue;
+            int workers = 1, worker = -1, evals = 1, generations = 0;
+            string trainDir = null;
             string trainOut = null, trainScenario = null;
             for (int i = 0; i < args.Length; i++)
             {
@@ -59,6 +63,11 @@ namespace CosmicShore.Player
                     case "--scenario" when i + 1 < args.Length: trainScenario = args[++i]; break;
                     case "--repeats" when i + 1 < args.Length: int.TryParse(args[++i], out trainRepeats); break;
                     case "--seed" when i + 1 < args.Length: int.TryParse(args[++i], out seed); break;
+                    case "--workers" when i + 1 < args.Length: int.TryParse(args[++i], out workers); break;
+                    case "--worker" when i + 1 < args.Length: int.TryParse(args[++i], out worker); break;
+                    case "--evals" when i + 1 < args.Length: int.TryParse(args[++i], out evals); break;
+                    case "--generations" when i + 1 < args.Length: int.TryParse(args[++i], out generations); break;
+                    case "--train-dir" when i + 1 < args.Length: trainDir = args[++i]; break;
                     case "--report-render": reportRender = true; break;
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
                     case "--verbose": CosmicShore.Utility.CSDebug.VerboseChannels = (CosmicShore.Utility.CSLogChannel)~0; break;
@@ -83,13 +92,28 @@ namespace CosmicShore.Player
             }
 
             // A fixed seed makes a run reproducible (UnityEngine.Random otherwise seeds from the clock).
-            if (seed != int.MinValue) CosmicShore.Engine.Random.InitState(seed);
+            // A training run always has one: its workers must evolve under the same seed.
+            if (wantTrain && trainMode == TrainingHost.Mode.Train && seed == int.MinValue) seed = Environment.TickCount & 0x7FFFFFFF;
+            int evoSeed = seed;
+            if (seed != int.MinValue) CosmicShore.Engine.Random.InitState(unchecked(seed + Math.Max(0, worker) * 7919));
             try
             {
                 if (screenshot != null) shots[frames < 0 ? 180 : frames] = screenshot;
                 if (wantTrain)
                 {
                     train = new TrainingHost(trainMode, trainEpisodes, trainOut, trainScenario, trainRepeats);
+                    if (trainMode == TrainingHost.Mode.Train)
+                    {
+                        trainDir ??= System.IO.Path.Combine(trainOut ?? System.IO.Path.Combine(Environment.CurrentDirectory, "training"), "run");
+                        if (worker < 0) // the launching process is worker 0 and starts the rest
+                        {
+                            worker = 0;
+                            if (System.IO.Directory.Exists(trainDir)) System.IO.Directory.Delete(trainDir, recursive: true);
+                            System.IO.Directory.CreateDirectory(trainDir);
+                            TrainingWorkers.Spawn(args, workers, trainDir, evoSeed);
+                        }
+                        train.ConfigureParallel(workers, worker, evals, generations, evoSeed, trainDir);
+                    }
                     // Training is headless: a window would only cap the tick rate at vsync.
                     return RunHeadless(scene, frames < 0 ? int.MaxValue : frames, quiet, width, height, script, reportRender, dumps, train);
                 }

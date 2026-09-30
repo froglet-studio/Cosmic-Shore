@@ -35,7 +35,7 @@ namespace CosmicShore.Player
     /// Everything is by reflection: the AITraining types exist only when the port is compiled
     /// against an Assets/ tree that has them (-p:LiveAssetsDir=...).
     /// </summary>
-    public sealed class TrainingHost
+    public sealed partial class TrainingHost
     {
         public enum Mode { Train, Replay }
 
@@ -102,6 +102,7 @@ namespace CosmicShore.Player
             Console.WriteLine($"[train] scenario {Get(scenario, "Key")} · mode {_mode} · state '{Name(_state)}' · archive '{Name(_archive)}'");
 
             if (_mode == Mode.Replay) PrepareReplay(scenario);
+            else InstallTrain(scenario);
 
             _startEpisodes = (int)Get(_state, "EpisodesCompleted");
             Set(_control, "TargetEpisodes", -1); // the host decides when to stop; -1 keeps the runner going
@@ -184,7 +185,7 @@ namespace CosmicShore.Player
                     }
                 }
             }
-            else if (_episodes > 0 && completed >= _episodes) Finish(frame);
+            else PollTrain(frame);
         }
 
         void Finish(int frame)
