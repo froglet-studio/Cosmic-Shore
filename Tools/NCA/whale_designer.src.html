@@ -1,0 +1,390 @@
+<title>Prism Whale Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f5f6; --panel: #ffffff; --fg: #17202a; --muted: #5a6672; --line: #d8dee3;
+  --accent: #0d6f8f; --accent-fg: #ffffff; --dish: #e8eef2; --ok: #1d7a4a; --bad: #b3261e; --warn: #8a5a00;
+  --chip: #eef2f4; --track: #cfd8de;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1418; --panel: #151d23; --fg: #e3e9ee; --muted: #93a1ad; --line: #2a353e;
+  --accent: #3fb3d6; --accent-fg: #06141a; --dish: #0a1116; --ok: #5cc98c; --bad: #ff8a80; --warn: #e8b54a;
+  --chip: #1c262d; --track: #34414b; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #151d23; --fg: #e3e9ee; --muted: #93a1ad; --line: #2a353e;
+  --accent: #3fb3d6; --accent-fg: #06141a; --dish: #0a1116; --ok: #5cc98c; --bad: #ff8a80; --warn: #e8b54a;
+  --chip: #1c262d; --track: #34414b; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-inline: 16px; padding-block: 18px 40px }
+.wrap { max-width: 1320px; margin: 0 auto }
+header h1 { font-family: var(--display); font-weight: 700; font-size: 1.9rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+header p { margin: 4px 0 16px; color: var(--muted); max-width: 70ch }
+.layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 18px; align-items: start }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr } }
+.stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+@media (max-width: 900px) { .stage { position: static } }
+.view { position: relative; background: var(--dish); border: 1px solid var(--line); border-radius: 10px; overflow: hidden }
+canvas#cv { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: none; cursor: grab }
+canvas#cv:active { cursor: grabbing }
+.viewbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+  border-radius: 7px; padding: 6px 11px; cursor: pointer }
+.btn:hover { border-color: var(--accent) }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.btn.on { border-color: var(--accent); color: var(--accent) }
+.frame { display: flex; align-items: center; gap: 8px; flex: 1 1 220px; min-width: 0 }
+.frame input { flex: 1; min-width: 0 }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0 }
+.stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted) }
+.stat .v { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 17px; font-weight: 600 }
+.stat .v.ok { color: var(--ok) } .stat .v.bad { color: var(--bad) } .stat .v.warn { color: var(--warn) }
+.census { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px }
+.census span { background: var(--chip); border-radius: 999px; padding: 2px 9px 2px 4px; display: inline-flex; gap: 5px; align-items: center }
+.dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,.2) }
+.dot.t2 { transform: rotate(45deg) scale(.8) }
+.dot.t1 { box-shadow: inset 0 0 0 2px #ff3b2f }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0 }
+.panel h2 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 8px }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px }
+details { border-top: 1px solid var(--line); padding: 6px 0 }
+details:first-of-type { border-top: 0 }
+summary { cursor: pointer; font-family: var(--display); font-weight: 500; font-size: 1rem; padding: 4px 0; list-style-position: inside }
+.row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) 4.6em; gap: 8px; align-items: center; padding: 3px 0 }
+.row label { font-size: 13px; color: var(--muted) }
+.row input[type=range] { width: 100%; accent-color: var(--accent) }
+.row input[type=number] { width: 100%; font: 13px var(--mono); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 5px; padding: 2px 4px }
+.row.tog { grid-template-columns: 9.5em 1fr }
+.cpick { display: grid; grid-template-columns: repeat(3, 26px); gap: 4px }
+.cpick button { width: 26px; height: 22px; border-radius: 4px; border: 1px solid rgba(0,0,0,.25); cursor: pointer; padding: 0; position: relative }
+.cpick button.t1::after { content: ""; position: absolute; inset: 4px; border: 2px solid #ff3b2f; border-radius: 2px }
+.cpick button.t2::after { content: ""; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; background: rgba(255,255,255,.75); transform: translate(-50%,-50%) rotate(45deg) }
+.cpick button[aria-pressed=true] { outline: 2px solid var(--fg); outline-offset: 1px }
+.crow { display: grid; grid-template-columns: 9.5em auto; gap: 8px; align-items: center; padding: 4px 0 }
+.crow label { font-size: 13px; color: var(--muted) }
+.send { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px }
+.send textarea { width: 100%; min-height: 58px; font: 13px var(--body); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; resize: vertical; box-sizing: border-box }
+.send .btns { display: flex; flex-wrap: wrap; gap: 8px }
+.status { font-size: 13px; color: var(--muted) }
+.status.ok { color: var(--ok) } .status.bad { color: var(--bad) }
+.legend { font-size: 12px; color: var(--muted) }
+.hint { font-size: 12px; color: var(--muted); margin: 2px 0 6px }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Prism Whale</h1>
+  <p>The target for the learned prism automaton: a humpback built only from what the game can draw — boxes and danger boxes in three domains, and shield octahedra. Shape it, check it has no intersecting prisms on any swim frame, then send it.</p>
+</header>
+
+<div class="layout">
+  <section class="stage" aria-label="Preview">
+    <div class="view"><canvas id="cv" aria-label="3D preview of the whale; drag to orbit, scroll to zoom"></canvas></div>
+    <div class="viewbar">
+      <button class="btn primary" id="play" type="button">Pause</button>
+      <div class="frame"><span class="legend">frame</span><input id="frame" type="range" min="0" max="7" step="1" value="0" aria-label="Swim frame"><span class="mono" id="frameo">1/8</span></div>
+      <button class="btn" data-view="side" type="button">Side</button>
+      <button class="btn" data-view="top" type="button">Top</button>
+      <button class="btn" data-view="front" type="button">Front</button>
+      <button class="btn" data-view="three" type="button">3/4</button>
+      <button class="btn on" id="gridbtn" type="button" aria-pressed="true">Grid box</button>
+      <button class="btn on" id="hitbtn" type="button" aria-pressed="true">Mark hits</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Prisms</div><div class="v" id="s-n">–</div></div>
+      <div class="stat"><div class="k">Intersections</div><div class="v" id="s-hit">–</div></div>
+      <div class="stat"><div class="k">Fits grid</div><div class="v" id="s-fit">–</div></div>
+      <div class="stat"><div class="k">Extent (x·y·z)</div><div class="v" id="s-size" style="font-size:14px">–</div></div>
+      <div class="stat"><div class="k">Half-extent</div><div class="v" id="s-h" style="font-size:14px">–</div></div>
+      <div class="stat"><div class="k">Mean aspect</div><div class="v" id="s-asp">–</div></div>
+    </div>
+    <div class="census" id="census" aria-label="Prisms by appearance"></div>
+    <p class="legend" id="notes"></p>
+  </section>
+
+  <section class="panel" aria-label="Parameters">
+    <h2>Parameters</h2>
+    <div class="presets" id="presets"></div>
+    <div id="groups"></div>
+    <div class="send">
+      <label class="legend" for="note">Note for Claude (optional)</label>
+      <textarea id="note" placeholder="What you were going for, what to keep, what still looks off…"></textarea>
+      <div class="btns">
+        <button class="btn primary" id="sendbtn" type="button">Send to Claude</button>
+        <button class="btn" id="copybtn" type="button">Copy JSON</button>
+        <button class="btn" id="resetbtn" type="button">Reset to Humpback</button>
+      </div>
+      <div class="status" id="sendstatus" role="status">Not sent yet.</div>
+      <textarea id="copyfield" hidden readonly aria-label="Parameters as JSON"></textarea>
+    </div>
+  </section>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/*WHALE_MODEL*/
+</script>
+<script>
+(function () {
+  const W = window.WhaleModel, $ = id => document.getElementById(id);
+  const PALETTE = /*PALETTE*/;                     // [domain][tier] display colour (gamma), tiers plain|danger|shield
+  const DOM = ["Jade", "Ruby", "Gold"], TIER = ["plain", "danger", "shield"];
+  const CAPACITY = 360;                             // the automaton's particle budget
+
+  // ---- parameter spec: [key, label, min, max, step] | [key, label, 'toggle'] | [key, label, 'colour'] ----
+  const SPEC = [
+    ["Body", [
+      ["length", "Length", 30, 80, 1], ["girth", "Girth", 0.06, 0.18, 0.005], ["girthPeak", "Widest at", 0.15, 0.5, 0.01],
+      ["headRound", "Head bluntness", 0.2, 1.2, 0.01], ["tailTaper", "Tail taper", 0.8, 3, 0.05], ["peduncle", "Tail stock", 0.04, 0.3, 0.01],
+      ["flatten", "Height / width", 0.55, 1.2, 0.01], ["bellyDrop", "Belly drop", 0, 0.4, 0.01], ["noseCap", "Nose cap", "toggle"]]],
+    ["Plates", [
+      ["ringSpacing", "Ring spacing", 1.8, 5, 0.05], ["arcSpacing", "Plate spacing", 1.8, 5, 0.05],
+      ["plateLength", "Plate length", 0.4, 1, 0.01], ["plateWidth", "Plate width", 0.4, 1, 0.01],
+      ["plateThickness", "Thickness", 0.5, 2, 0.05], ["gap", "Gap", 0, 0.6, 0.01], ["stagger", "Stagger rings", "toggle"],
+      ["core", "Core lattice", "toggle"], ["coreSpacing", "Core cube size", 2, 6, 0.1]]],
+    ["Flippers", [
+      ["flipperLength", "Length", 0.05, 0.4, 0.005], ["flipperChord", "Chord", 0.03, 0.14, 0.005], ["flipperPos", "Position", 0.15, 0.5, 0.01],
+      ["flipperSweep", "Sweep back °", -10, 70, 1], ["flipperDroop", "Droop °", -20, 60, 1], ["flipperTaper", "Tip taper", 0.1, 1, 0.01],
+      ["flipperThickness", "Thickness", 0.5, 2, 0.05], ["finSpacing", "Fin plate size", 1.4, 4, 0.05]]],
+    ["Dorsal fin", [
+      ["dorsal", "Dorsal fin", "toggle"], ["dorsalHeight", "Height", 0.01, 0.2, 0.005], ["dorsalChord", "Chord", 0.03, 0.16, 0.005],
+      ["dorsalPos", "Position", 0.4, 0.85, 0.01], ["dorsalSweep", "Rake °", 0, 60, 1]]],
+    ["Flukes", [
+      ["flukeSpan", "Span", 0.12, 0.45, 0.005], ["flukeChord", "Chord", 0.04, 0.18, 0.005], ["flukeSweep", "Sweep °", 0, 55, 1],
+      ["flukeNotch", "Notch", 0, 1, 0.01], ["flukeTaper", "Tip taper", 0.1, 1, 0.01]]],
+    ["Colours", [
+      ["back", "Back", "colour"], ["belly", "Belly", "colour"], ["countershade", "Waterline", -0.9, 0.9, 0.01],
+      ["pleats", "Throat pleats", "toggle"], ["pleatColor", "Pleat stripe", "colour"], ["pleatEnd", "Pleats reach", 0.1, 0.7, 0.01],
+      ["mouth", "Mouth line", "toggle"], ["mouthColor", "Mouth", "colour"], ["mouthEnd", "Mouth length", 0.05, 0.35, 0.01],
+      ["mouthAngle", "Mouth height °", -60, 30, 1], ["mouthBand", "Mouth width °", 4, 40, 1],
+      ["eye", "Eyes", "toggle"], ["eyeColor", "Eye", "colour"], ["eyePos", "Eye position", 0.05, 0.3, 0.005], ["eyeAngle", "Eye height °", -40, 50, 1],
+      ["fins", "Flippers", "colour"], ["finEdge", "Flipper edge", "colour"], ["dorsalColor", "Dorsal fin", "colour"],
+      ["flukeColor", "Flukes", "colour"], ["coreColor", "Core", "colour"]]],
+    ["Swim", [
+      ["frames", "Frames", 4, 16, 1], ["swimAmp", "Heave", 0, 0.12, 0.002], ["swimWave", "Wavelength", 0.5, 2.5, 0.01],
+      ["swimEnv", "Tail emphasis", 0.5, 4, 0.05], ["flukePitch", "Fluke pitch °", 0, 45, 1], ["flipperFlap", "Flipper flap °", 0, 40, 1]]],
+    ["Training grid (voxels)", [
+      ["gridX", "Length (x)", 48, 128, 2], ["gridY", "Height (y)", 24, 64, 2], ["gridZ", "Width (z)", 24, 80, 2]]],
+  ];
+
+  const HUMPBACK = Object.assign({}, W.DEFAULTS);
+  const PRESETS = {
+    "Humpback": {},
+    "Blue whale": { length: 64, girth: 0.08, girthPeak: 0.28, headRound: 0.4, tailTaper: 1.4, flatten: 0.75, bellyDrop: 0.12,
+      flipperLength: 0.1, flipperChord: 0.05, flipperPos: 0.28, flipperSweep: 30, flipperDroop: 20, dorsalHeight: 0.02, dorsalChord: 0.05,
+      dorsalPos: 0.76, flukeSpan: 0.24, flukeChord: 0.08, back: [0, 0], belly: [0, 2], pleatColor: [0, 1], pleatEnd: 0.5,
+      mouthColor: [0, 1], fins: [0, 0], finEdge: [0, 2], gridX: 96, gridY: 32, gridZ: 40 },
+    "Orca": { length: 44, girth: 0.14, girthPeak: 0.32, headRound: 0.7, tailTaper: 1.8, peduncle: 0.12, flatten: 0.85, bellyDrop: 0.1,
+      ringSpacing: 2.6, arcSpacing: 2.6, flipperLength: 0.13, flipperChord: 0.1, flipperPos: 0.3, flipperSweep: 12, flipperDroop: 35,
+      flipperTaper: 0.8, dorsalHeight: 0.16, dorsalChord: 0.1, dorsalPos: 0.48, dorsalSweep: 8, flukeSpan: 0.3, flukeChord: 0.11,
+      back: [1, 0], belly: [2, 2], countershade: -0.3, pleats: 0, mouth: 0, eyeColor: [2, 2], eyePos: 0.16, eyeAngle: 14,
+      fins: [1, 0], finEdge: [1, 0], dorsalColor: [1, 0], flukeColor: [1, 0], coreColor: [1, 0], swimAmp: 0.06, gridX: 72, gridY: 36, gridZ: 40 },
+    "Chunky (fewer prisms)": { ringSpacing: 3.8, arcSpacing: 3.8, coreSpacing: 4.6, finSpacing: 3, plateThickness: 1 },
+  };
+
+  let P = Object.assign({}, HUMPBACK);
+  try { const d = JSON.parse(localStorage.getItem("whale-draft") || "null"); if (d && typeof d === "object") P = Object.assign({}, HUMPBACK, d); } catch (e) {}
+  let hadDraft = false;
+  try { hadDraft = !!localStorage.getItem("whale-draft"); } catch (e) {}
+
+  // ---- controls ---------------------------------------------------------------------------
+  const inputs = {};
+  const hex = c => "#" + c.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0")).join("");
+  function buildControls() {
+    const g = $("groups");
+    SPEC.forEach(([name, rows], gi) => {
+      const det = document.createElement("details"); if (gi === 0) det.open = true;
+      det.innerHTML = `<summary>${name}</summary>`;
+      rows.forEach(([key, label, a, b, step]) => {
+        const id = "p-" + key;
+        if (a === "toggle") {
+          const r = document.createElement("div"); r.className = "row tog";
+          r.innerHTML = `<label for="${id}">${label}</label><input type="checkbox" id="${id}">`;
+          const cb = r.querySelector("input"); cb.addEventListener("change", () => { P[key] = cb.checked ? 1 : 0; changed(); });
+          inputs[key] = { set: v => cb.checked = !!v }; det.appendChild(r);
+        } else if (a === "colour") {
+          const r = document.createElement("div"); r.className = "crow";
+          r.innerHTML = `<label>${label}</label><div class="cpick" role="group" aria-label="${label} colour"></div>`;
+          const box = r.querySelector(".cpick"), btns = [];
+          for (let t = 0; t < 3; t++) for (let d = 0; d < 3; d++) {
+            const bt = document.createElement("button"); bt.type = "button"; bt.className = "t" + t;
+            bt.style.background = hex(PALETTE[d][t]); bt.title = DOM[d] + " " + TIER[t];
+            bt.setAttribute("aria-label", label + ": " + DOM[d] + " " + TIER[t]);
+            bt.addEventListener("click", () => { P[key] = [d, t]; set(P[key]); changed(); });
+            btns.push([bt, d, t]); box.appendChild(bt);
+          }
+          const set = v => btns.forEach(([bt, d, t]) => bt.setAttribute("aria-pressed", v && v[0] === d && v[1] === t ? "true" : "false"));
+          inputs[key] = { set }; det.appendChild(r);
+        } else {
+          const r = document.createElement("div"); r.className = "row";
+          r.innerHTML = `<label for="${id}">${label}</label><input type="range" id="${id}" min="${a}" max="${b}" step="${step}"><input type="number" min="${a}" max="${b}" step="${step}" aria-label="${label} value">`;
+          const [rg, nb] = r.querySelectorAll("input");
+          const upd = v => { v = +v; if (!isFinite(v)) return; P[key] = v; rg.value = v; nb.value = v; changed(); };
+          rg.addEventListener("input", () => upd(rg.value)); nb.addEventListener("change", () => upd(nb.value));
+          inputs[key] = { set: v => { rg.value = v; nb.value = v; } }; det.appendChild(r);
+        }
+      });
+      g.appendChild(det);
+    });
+    for (const name of Object.keys(PRESETS)) {
+      const bt = document.createElement("button"); bt.className = "btn"; bt.type = "button"; bt.textContent = name;
+      bt.addEventListener("click", () => { P = Object.assign({}, HUMPBACK, PRESETS[name]); syncInputs(); changed(); });
+      $("presets").appendChild(bt);
+    }
+  }
+  function syncInputs() { for (const k in inputs) inputs[k].set(P[k]); }
+
+  // ---- three.js stage ---------------------------------------------------------------------
+  const cv = $("cv");
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, 1.6, 1, 1000);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445066, 0.8));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.7); sun.position.set(30, 60, 40); scene.add(sun);
+  const MAXN = 2400;
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.06, flatShading: true });
+  const meshes = [new THREE.BoxGeometry(2, 2, 2), new THREE.OctahedronGeometry(W.SHIELD)].map(g => {
+    const m = new THREE.InstancedMesh(g, mat, MAXN); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    m.setColorAt(0, new THREE.Color(1, 1, 1)); m.count = 0; scene.add(m); return m;
+  });
+  const gridBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)),
+    new THREE.LineBasicMaterial({ color: 0x7f8c96, transparent: true, opacity: 0.6 }));
+  scene.add(gridBox);
+  const COL = PALETTE.map(row => row.map(c => new THREE.Color(c[0], c[1], c[2]).convertSRGBToLinear()));
+  const HIT = new THREE.Color(1, 0, 0.85).convertSRGBToLinear();
+  const M = new THREE.Matrix4();
+  let rep = null, frameK = 0, playing = !matchMedia("(prefers-reduced-motion: reduce)").matches, az = 0.75, el = 0.35, dist = 150, lastTick = 0;
+  let showGrid = true, showHits = true;
+
+  function draw() {
+    if (!rep) return;
+    const f = rep.frames[frameK % rep.frames.length], off = rep.offset, hit = new Set();
+    if (showHits) for (const [i, j] of rep.pairs[frameK % rep.frames.length]) { hit.add(i); hit.add(j); }
+    const n = [0, 0];
+    f.forEach((q, i) => {
+      const k = q.tier === 2 ? 1 : 0, j = n[k]++;
+      if (j >= MAXN) return;
+      const R = q.R, h = q.h;
+      M.set(R[0] * h[0], R[1] * h[1], R[2] * h[2], q.p[0] + off[0],
+            R[3] * h[0], R[4] * h[1], R[5] * h[2], q.p[1] + off[1],
+            R[6] * h[0], R[7] * h[1], R[8] * h[2], q.p[2] + off[2], 0, 0, 0, 1);
+      meshes[k].setMatrixAt(j, M); meshes[k].setColorAt(j, hit.has(i) ? HIT : COL[q.dom][q.tier]);
+    });
+    meshes.forEach((m, i) => { m.count = Math.min(n[i], MAXN); m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+    gridBox.visible = showGrid; gridBox.scale.set(P.gridX, P.gridY, P.gridZ);
+    camera.position.set(Math.cos(el) * Math.cos(az) * dist, Math.sin(el) * dist, Math.cos(el) * Math.sin(az) * dist);
+    camera.lookAt(0, 0, 0);
+    renderer.render(scene, camera);
+    $("frame").value = frameK; $("frameo").textContent = (frameK + 1) + "/" + rep.frames.length;
+  }
+  function resize() {
+    const w = cv.clientWidth || 640, h = cv.clientHeight || 400;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); draw();
+  }
+  function loop(t) {
+    if (playing && rep && t - lastTick > 140) { frameK = (frameK + 1) % rep.frames.length; lastTick = t; draw(); }
+    requestAnimationFrame(loop);
+  }
+  let drag = null;
+  cv.addEventListener("pointerdown", e => { drag = [e.clientX, e.clientY, az, el]; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", e => { if (!drag) return; az = drag[2] + (e.clientX - drag[0]) * 0.01; el = Math.max(-1.5, Math.min(1.5, drag[3] + (e.clientY - drag[1]) * 0.01)); draw(); });
+  cv.addEventListener("pointerup", () => { drag = null; });
+  cv.addEventListener("wheel", e => { e.preventDefault(); dist = Math.max(40, Math.min(400, dist * Math.exp(e.deltaY * 0.001))); draw(); }, { passive: false });
+  const VIEWS = { side: [Math.PI / 2, 0.02], top: [Math.PI / 2, 1.5], front: [0.0, 0.08], three: [0.75, 0.35] };
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { [az, el] = VIEWS[b.dataset.view]; draw(); }));
+  $("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; };
+  if (!playing) $("play").textContent = "Play";
+  $("frame").addEventListener("input", e => { frameK = +e.target.value; playing = false; $("play").textContent = "Play"; draw(); });
+  const toggle = (id, fn) => $(id).addEventListener("click", () => { const on = fn(); $(id).classList.toggle("on", on); $(id).setAttribute("aria-pressed", on); draw(); });
+  toggle("gridbtn", () => (showGrid = !showGrid));
+  toggle("hitbtn", () => (showHits = !showHits));
+  function theme() { scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--dish").trim() || "#e8eef2"); draw(); }
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", theme);
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  window.addEventListener("resize", resize);
+
+  // ---- rebuild + stats --------------------------------------------------------------------
+  let pending = null;
+  function changed() {
+    try { localStorage.setItem("whale-draft", JSON.stringify(P)); } catch (e) {}
+    clearTimeout(pending); pending = setTimeout(rebuild, 60);
+  }
+  function rebuild() {
+    rep = W.report(P);
+    $("frame").max = rep.frames.length - 1; frameK = frameK % rep.frames.length;
+    const worstFrame = Math.max(...rep.overlapsPerFrame);
+    const setv = (id, text, cls) => { const e = $(id); e.textContent = text; e.className = "v" + (cls ? " " + cls : ""); };
+    setv("s-n", rep.count, rep.count > CAPACITY ? "warn" : "");
+    setv("s-hit", worstFrame === 0 ? "0" : worstFrame + " (" + rep.worstDepth.toFixed(2) + ")", worstFrame === 0 ? "ok" : "bad");
+    setv("s-fit", rep.fits ? "yes" : "no", rep.fits ? "ok" : "bad");
+    setv("s-size", rep.size.map(v => v.toFixed(0)).join("·") + " / " + rep.grid.join("·"));
+    setv("s-h", rep.hmin.toFixed(2) + "–" + rep.hmax.toFixed(2), rep.outOfRange ? "warn" : "");
+    setv("s-asp", rep.meanAspect.toFixed(2));
+    const c = $("census"); c.textContent = "";
+    Object.entries(rep.census).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => {
+      const [d, t] = k.split(" "), di = DOM.indexOf(d), ti = TIER.indexOf(t);
+      const s = document.createElement("span");
+      s.innerHTML = `<i class="dot t${ti}" style="background:${hex(PALETTE[di][ti])}"></i>`;
+      s.appendChild(document.createTextNode(k + " " + v)); c.appendChild(s);
+    });
+    const notes = [];
+    if (worstFrame) notes.push("Intersections are counted on the worst frame (deepest overlap in voxels in brackets) and shown in magenta.");
+    if (rep.count > CAPACITY) notes.push(`More than ${CAPACITY} prisms: over the automaton's particle budget — raise plate spacing or drop the core.`);
+    if (rep.outOfRange) notes.push(rep.outOfRange + ` prisms are outside the automaton's half-extent range ${W.HMIN}–${W.HMAX} voxels.`);
+    if (!rep.fits) notes.push("The whale (over every frame) does not fit the training grid: shrink it or enlarge the grid.");
+    notes.push("A voxel is 1 unit; thin plates render as partial voxels in training.");
+    $("notes").textContent = notes.join(" ");
+    draw();
+  }
+
+  // ---- send / copy / reset ---------------------------------------------------------------
+  function payload() {
+    return { params: P, summary: { prisms: rep.count, worstFrameIntersections: Math.max(...rep.overlapsPerFrame), fits: rep.fits,
+      extent: rep.size.map(v => +v.toFixed(2)), census: rep.census }, note: $("note").value.slice(0, 2000) };
+  }
+  $("copybtn").onclick = async () => {
+    const text = JSON.stringify(payload(), null, 1), fld = $("copyfield");
+    try { await navigator.clipboard.writeText(text); $("sendstatus").textContent = "Copied the parameters as JSON."; $("sendstatus").className = "status ok"; }
+    catch (e) { fld.hidden = false; fld.value = text; fld.focus(); fld.select(); $("sendstatus").textContent = "Select-all is ready: copy the field below."; }
+  };
+  $("resetbtn").onclick = () => { P = Object.assign({}, HUMPBACK); syncInputs(); changed(); };
+  $("sendbtn").disabled = true;
+  (async () => {
+    const db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+    if (!db) { $("sendstatus").textContent = "Sending is unavailable here (sign in on claude.ai). Use Copy JSON and paste it to Claude."; $("sendbtn").disabled = true; return; }
+    let user = null; try { user = await window.claude.use("user"); } catch (e) {}
+    const ref = db.doc("targets/whale");
+    $("sendbtn").disabled = false;
+    let first = true;
+    ref.onSnapshot(snap => {
+      if (!snap.exists) { $("sendstatus").textContent = "Not sent yet."; first = false; return; }
+      const d = snap.data();
+      $("sendstatus").textContent = "Last sent " + new Date(d.savedAt).toLocaleString() + " — " + (d.summary ? d.summary.prisms + " prisms." : "");
+      $("sendstatus").className = "status ok";
+      if (first && !hadDraft && d.params) { P = Object.assign({}, HUMPBACK, d.params); syncInputs(); changed(); if (d.note) $("note").value = d.note; }
+      first = false;
+    }, () => { $("sendstatus").textContent = "Could not read the saved target."; });
+    $("sendbtn").onclick = async () => {
+      $("sendbtn").disabled = true; $("sendstatus").textContent = "Sending…"; $("sendstatus").className = "status";
+      try {
+        const body = Object.assign(payload(), { savedAt: Date.now(), by: user ? await user.id() : null });
+        await ref.set(body);
+        try { await db.collection("targets/whale/versions").doc(String(body.savedAt)).set(body); } catch (e) {}
+      } catch (e) {
+        $("sendstatus").textContent = "Send failed (" + (e && e.code || "error") + "). Copy JSON works as a fallback."; $("sendstatus").className = "status bad";
+      }
+      $("sendbtn").disabled = false;
+    };
+  })();
+
+  buildControls(); syncInputs(); theme(); resize(); rebuild(); requestAnimationFrame(loop);
+})();
+</script>

@@ -1,0 +1,97 @@
+{
+ "gridX": 88,
+ "gridY": 36,
+ "gridZ": 44,
+ "length": 56,
+ "girth": 0.11,
+ "girthPeak": 0.3,
+ "headRound": 0.55,
+ "tailTaper": 1.6,
+ "peduncle": 0.1,
+ "flatten": 0.8,
+ "bellyDrop": 0.18,
+ "noseCap": 1,
+ "ringSpacing": 2.8,
+ "arcSpacing": 2.8,
+ "plateLength": 0.9,
+ "plateWidth": 0.9,
+ "plateThickness": 0.8,
+ "gap": 0.15,
+ "stagger": 1,
+ "core": 1,
+ "coreSpacing": 3.4,
+ "flipperLength": 0.28,
+ "flipperChord": 0.07,
+ "flipperPos": 0.3,
+ "flipperSweep": 35,
+ "flipperDroop": 25,
+ "flipperTaper": 0.35,
+ "flipperThickness": 0.9,
+ "finSpacing": 1.9,
+ "dorsal": 1,
+ "dorsalHeight": 0.05,
+ "dorsalChord": 0.08,
+ "dorsalPos": 0.66,
+ "dorsalSweep": 40,
+ "flukeSpan": 0.3,
+ "flukeChord": 0.1,
+ "flukeSweep": 28,
+ "flukeNotch": 0.35,
+ "flukeTaper": 0.4,
+ "back": [
+  0,
+  0
+ ],
+ "belly": [
+  2,
+  0
+ ],
+ "countershade": -0.15,
+ "pleats": 1,
+ "pleatColor": [
+  2,
+  2
+ ],
+ "pleatEnd": 0.45,
+ "mouth": 1,
+ "mouthColor": [
+  1,
+  1
+ ],
+ "mouthEnd": 0.2,
+ "mouthAngle": -20,
+ "mouthBand": 14,
+ "fins": [
+  0,
+  0
+ ],
+ "finEdge": [
+  2,
+  0
+ ],
+ "flukeColor": [
+  0,
+  0
+ ],
+ "dorsalColor": [
+  0,
+  0
+ ],
+ "coreColor": [
+  0,
+  0
+ ],
+ "eye": 1,
+ "eyeColor": [
+  1,
+  2
+ ],
+ "eyePos": 0.14,
+ "eyeAngle": 8,
+ "frames": 8,
+ "swimAmp": 0.05,
+ "swimWave": 1.1,
+ "swimEnv": 2.2,
+ "flukePitch": 22,
+ "flipperFlap": 12
+}
