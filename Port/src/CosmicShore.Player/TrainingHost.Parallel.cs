@@ -40,6 +40,11 @@ namespace CosmicShore.Player
         int[] _lastN = Array.Empty<int>();
         float[] _lastF = Array.Empty<float>();
         List<float>[] _mine = Array.Empty<List<float>>();
+        // Genome object → its index at the start of the generation (the index the merge uses).
+        // The live list is re-ordered within this worker's slice between passes, so a genome is
+        // tracked by identity, never by where it currently sits.
+        readonly Dictionary<object, int> _originalIndex = new(ReferenceEqualityComparer.Instance);
+        int _pass;
         bool _submitted;
         int _gensDone;
         double _genWallStart;
@@ -108,6 +113,10 @@ namespace CosmicShore.Player
             _lastN = genomes.Select(g => (int)Get(g, "EvaluationCount")).ToArray();
             _lastF = genomes.Select(g => (float)Get(g, "Fitness")).ToArray();
             _mine = genomes.Select(_ => new List<float>()).ToArray();
+            _originalIndex.Clear();
+            for (int i = 0; i < genomes.Count; i++) _originalIndex[genomes[i]] = i;
+            _pass = 0;
+            ShuffleSlice(); // after the snapshot: the merge replays in the original order
             _submitted = false;
             _genWallStart = Seconds;
         }
@@ -122,7 +131,16 @@ namespace CosmicShore.Player
 
             Harvest();
             if ((int)Get(population, "nextCheckoutIndex") >= _rangeEnd)
-                Set(population, "nextCheckoutIndex", _rangeStart); // keep serving this slice
+            {
+                // A pass over the slice is done. Serve it again in a new order: the runner hands
+                // genome i the (i mod racers)-th seat of a match with slice neighbours as
+                // opponents, and seats are NOT equal (measured: seat 2 flies ~half the crystals
+                // of seats 0 and 1, in Unity and in the port alike), so a fixed order would score
+                // the seat, not the genome.
+                _pass++;
+                ShuffleSlice();
+                Set(population, "nextCheckoutIndex", _rangeStart);
+            }
 
             if (!_submitted && Enumerable.Range(_rangeStart, _rangeEnd - _rangeStart).All(i => _mine[i].Count >= _evals))
             {
@@ -147,11 +165,12 @@ namespace CosmicShore.Player
         void Harvest()
         {
             var genomes = Genomes();
-            for (int i = _rangeStart; i < _rangeEnd && i < genomes.Count; i++)
+            for (int slot = _rangeStart; slot < _rangeEnd && slot < genomes.Count; slot++)
             {
-                int n = (int)Get(genomes[i], "EvaluationCount");
+                if (!_originalIndex.TryGetValue(genomes[slot], out int i)) continue;
+                int n = (int)Get(genomes[slot], "EvaluationCount");
                 if (n <= _lastN[i]) continue;
-                float f = (float)Get(genomes[i], "Fitness");
+                float f = (float)Get(genomes[slot], "Fitness");
                 int added = n - _lastN[i];
                 float perFlight = added == 1
                     ? _lastF[i] + (f - _lastF[i]) * n
@@ -160,6 +179,23 @@ namespace CosmicShore.Player
                 _lastN[i] = n;
                 _lastF[i] = f;
             }
+        }
+
+        /// <summary>Deterministic re-order of this worker's slice in the live list (a rotation plus a shuffle).</summary>
+        void ShuffleSlice()
+        {
+            var list = (System.Collections.IList)Get(Get(_state, "Population"), "population");
+            int len = _rangeEnd - _rangeStart;
+            if (len < 2) return;
+            var rng = new System.Random(unchecked(_evoSeed * 31 + _generationAtStart * 1009 + _worker * 97 + _pass));
+            var slice = new object[len];
+            for (int j = 0; j < len; j++) slice[j] = list[_rangeStart + j];
+            for (int j = len - 1; j > 0; j--)
+            {
+                int k = rng.Next(j + 1);
+                (slice[j], slice[k]) = (slice[k], slice[j]);
+            }
+            for (int j = 0; j < len; j++) list[_rangeStart + j] = slice[j];
         }
 
         void MergeAndEvolve(int frame)
