@@ -1,1 +1,1 @@
-{"training": true, "step": 3250, "of": 4500, "latest_step": 3250, "note": "after the learning-rate drop at step 3000: swims at 8.2 steps per frame against a target of 8"}
+{"training": false, "step": 4250, "of": 4500, "note": "best of the last snapshots on 4 seeds: 8.3-8.5 steps per frame, no extinctions"}

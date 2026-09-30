@@ -279,10 +279,19 @@ birth clock, learning rate dropped 10x at step 3000.
 | 1750 | 10.5 / 9.9 / 16.6 (3 seeds) | 10^-1.75 | ~6 px |
 | 3250 (after the lr drop) | 8.2 / 8.2 / 8.2 | 10^-2.32 | ~1 px |
 | 4000 | 8.9 / 8.9 / 8.9 | 10^-2.54 | 0-1 px |
+| **4250 (shipped)** | **8.34-8.48 (4 seeds)** | **10^-2.57** | **~1 px** |
+| 4500 (final) | 8.66-8.72 | 10^-2.32 | |
 
-Step 3250 is the shipped snapshot: shape 10^-2.52 at step 1000 with the drift removed, and a
-quarter cut (98 particles) back to 10^-2.55 within 100 steps, still swimming at 8.4 steps per
-frame. Before the drop the rule kept trading tempo against shape; after it, both held.
+Step 4250 is the shipped result, picked by `particle_nca.score_snapshot` (4 seeds rolled out
+together, 1000 steps; no colony died): on the long figures rollout it swims at 8.48 steps per
+frame, holds its shape at 10^-2.66 (step 1000) and 10^-2.49 (step 3000) with the drift removed,
+drifts 3 px in 3000 steps, and after a quarter cut (106 particles) is back near its pre-cut
+error within 100 steps, still at 8.58 steps per frame. Before the learning-rate drop the rule
+kept trading tempo against shape; after it, both held. Scoring the whole batch at once also
+surfaced something the three hand-picked seeds had not: at step 3250, one of two colonies started
+under `torch.manual_seed(0)` died in infancy (a batch of four under the same seed lost none) -
+early extinction is rare, but it happens, so the scorer counts it and `gpu_run.py` rejects any
+snapshot that shows it.
 
 ## Prisms: the collision automaton in the game's vocabulary (`prism_render.py`, `--experiment prism3d`)
 
