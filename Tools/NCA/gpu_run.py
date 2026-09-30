@@ -79,7 +79,7 @@ def check(device):
         y = m(st, fire=fire.to(dev), bud=False)
         loss = pn.frame_mse(pn.make_render(cfg, world, grid)(y), frames.to(dev)).mean()
         loss.backward()
-        return y.pos.detach().cpu(), y.s.detach().cpu(), y.active.cpu(), float(loss), m.w1.grad.cpu()
+        return y.pos.detach().cpu(), y.s.detach().cpu(), y.active.cpu(), float(loss.detach()), m.w1.grad.cpu()
 
     t0 = time.time(); a = run("cpu"); tc = time.time() - t0
     t0 = time.time(); b = run(device); b = run(device); td = (time.time() - t0) / 2
@@ -203,6 +203,16 @@ def main():
     ap.add_argument("--run", default=RUN, help="training directory (default runs/prism_swim3d_gpu)")
     a = ap.parse_args()
     RUN = a.run
+    if a.device.startswith("cuda") and not torch.cuda.is_available():
+        sys.exit(f"torch {torch.__version__} cannot see a CUDA GPU.\n"
+                 + ("  This is the CPU-only build ('+cpu'). Replace it with a CUDA build, e.g.:\n"
+                    "    pip uninstall -y torch\n"
+                    "    pip install torch --index-url https://download.pytorch.org/whl/cu128\n"
+                    "  (pick the CUDA version for your driver at https://pytorch.org/get-started/locally/ ;\n"
+                    "   `nvidia-smi` shows the highest CUDA version your driver supports)\n"
+                    if "+cpu" in torch.__version__ else
+                    "  Check the NVIDIA driver (`nvidia-smi`) and that this torch's CUDA version is supported by it.\n")
+                 + '  Then: python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name())"')
     print(f"torch {torch.__version__}, device {a.device}" +
           (f" ({torch.cuda.get_device_name()})" if a.device.startswith("cuda") and torch.cuda.is_available() else ""))
     if a.stage in ("all", "check"):
