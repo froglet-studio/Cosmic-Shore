@@ -44,7 +44,8 @@ function makeParticleNCA(weights) {
     // perception accumulators, per particle
     const rho = new Float32Array(cap), gs = new Float32Array(cap);
     const mean = new Float32Array(cap * C), grad = new Float32Array(cap * d * C);
-    cnt.fill(0); cen.fill(0);
+    const mom = new Float32Array(cap * d * d);   // corrected perception: sum g u u^T
+    cnt.fill(0); cen.fill(0); mom.fill(0);
     for (let e = 0; e < ei.length; e++) {
       const i = ei[e], j = ej[e];
       let r2 = 0; const dx = [0, 0, 0];
@@ -52,11 +53,31 @@ function makeParticleNCA(weights) {
       const q = Math.max(0, 1 - r2 / R2), w = q * q * q, g = q * q;
       rho[i] += w; gs[i] += g; cnt[i] += 1;
       for (let k = 0; k < d; k++) cen[i * d + k] += dx[k];
+      if (W.corrected) for (let a = 0; a < d; a++) for (let b = 0; b < d; b++) mom[(i * d + a) * d + b] += g * (dx[a] / W.R) * (dx[b] / W.R);
       for (let c = 0; c < C; c++) {
         mean[i * C + c] += w * s[j * C + c];
         const diff = s[j * C + c] - s[i * C + c];
         for (let k = 0; k < d; k++) grad[(i * d + k) * C + c] += g * (dx[k] / W.R) * diff;
       }
+    }
+    const gsol = new Float32Array(d * C), A = new Float64Array(d * (d + C));
+    function solveMoment(i) {
+      const m = d + C;
+      for (let a = 0; a < d; a++) {
+        for (let b = 0; b < d; b++) A[a * m + b] = mom[(i * d + a) * d + b] + (a === b ? W.reg : 0);
+        for (let c = 0; c < C; c++) A[a * m + d + c] = grad[(i * d + a) * C + c];
+      }
+      for (let col = 0; col < d; col++) {
+        let piv = col;
+        for (let r = col + 1; r < d; r++) if (Math.abs(A[r * m + col]) > Math.abs(A[piv * m + col])) piv = r;
+        if (piv !== col) for (let q = 0; q < m; q++) { const tmp = A[col * m + q]; A[col * m + q] = A[piv * m + q]; A[piv * m + q] = tmp; }
+        for (let r = 0; r < d; r++) {
+          if (r === col) continue;
+          const fct = A[r * m + col] / A[col * m + col];
+          for (let q = col; q < m; q++) A[r * m + q] -= fct * A[col * m + q];
+        }
+      }
+      for (let k = 0; k < d; k++) for (let c = 0; c < C; c++) gsol[k * C + c] = A[k * m + d + c] / A[k * m + k];
     }
     ns.set(s); npos.set(pos);
     for (let i = 0; i < cap; i++) {
@@ -64,8 +85,14 @@ function makeParticleNCA(weights) {
       if (!(rnd() <= rate)) continue;
       let f = 0;
       for (let c = 0; c < C; c++) feat[f++] = s[i * C + c];
-      for (let c = 0; c < C; c++) feat[f++] = mean[i * C + c] / (1 + rho[i]);
-      for (let c = 0; c < C; c++) for (let k = 0; k < d; k++) feat[f++] = grad[(i * d + k) * C + c] / (1 + gs[i]);
+      if (W.corrected) {
+        for (let c = 0; c < C; c++) feat[f++] = mean[i * C + c] / (rho[i] + 1e-3);
+        solveMoment(i);
+        for (let c = 0; c < C; c++) for (let k = 0; k < d; k++) feat[f++] = gsol[k * C + c];
+      } else {
+        for (let c = 0; c < C; c++) feat[f++] = mean[i * C + c] / (1 + rho[i]);
+        for (let c = 0; c < C; c++) for (let k = 0; k < d; k++) feat[f++] = grad[(i * d + k) * C + c] / (1 + gs[i]);
+      }
       feat[f++] = rho[i] / W.rho0;
       for (let h = 0; h < HID; h++) {
         let a = b1[h]; const o = h * F;

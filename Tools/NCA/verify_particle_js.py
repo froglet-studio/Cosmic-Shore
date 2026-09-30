@@ -25,6 +25,7 @@ let src = fs.readFileSync(process.argv[2], 'utf8');
 if (process.argv[5] === 'flip') src = src.replace('push[i * d + k] -= W.rep', 'push[i * d + k] += W.rep');
 const m = {}; new Function('module', src)(m);
 const w = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+if (process.argv[5] === 'plain') w.world.corrected = false;
 const st = JSON.parse(fs.readFileSync(process.argv[6], 'utf8'));
 const ca = m.exports.makeParticleNCA(w);
 ca.pos.set(st.pos); ca.s.set(st.s); ca.act.set(st.act);
@@ -67,6 +68,7 @@ def main():
         return json.loads(out)
     try:
         good, bad = run(), run("flip")
+        plain = run("plain") if world.corrected else None
     finally:
         os.remove(js); os.remove(stp)
     act = x.active[0].numpy()
@@ -77,10 +79,14 @@ def main():
         s = np.array(o["s"], np.float32).reshape(-1, 16)[act]
         return max(float(np.abs(p - x.pos[0].numpy()[act]).max()), float(np.abs(s - x.s[0].numpy()[act]).max()))
     e, eb = err(good), err(bad)
-    print(f"particles {int(act.sum())} | JS vs torch after {a.steps} steps: max abs err {e:.2e}  "
-          f"(collision-flip negative control {eb:.2e})")
+    print(f"particles {int(act.sum())} | corrected={world.corrected} | JS vs torch after {a.steps} steps: "
+          f"max abs err {e:.2e}  (collision-flip negative control {eb:.2e})")
     assert e < 1e-3, "JS particle runner disagrees with torch"
     assert eb > 1e-2, "negative control did not fire"
+    if plain is not None:
+        ep = err(plain)
+        print(f"corrected-perception negative control (JS with plain perception): {ep:.2e}")
+        assert ep > 1e-2, "corrected-perception negative control did not fire"
     print("OK")
 
 
