@@ -4,6 +4,13 @@ namespace CosmicShore.Engine
     {
         public Matrix4x4 localToWorldMatrix => WorldMatrix;
 
+        /// <summary>
+        /// Port engine extension: a stamp that changes whenever this transform's world pose
+        /// changes (its own local pose or any ancestor's). Lets a cache of world-derived data
+        /// be reused while the stamp holds.
+        /// </summary>
+        public long WorldStamp => EnsureWorld();
+
         public Matrix4x4 worldToLocalMatrix => localToWorldMatrix.inverse;
 
         /// <summary>Local vector → world vector (rotation + scale, no translation).</summary>

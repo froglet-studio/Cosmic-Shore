@@ -1096,7 +1096,7 @@ void main(){
                 double ms(long a) => a * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
                 if (_frame % 30 == 0)
                     Console.WriteLine($"[render] collect {ms(t1 - t0):F1} ms (renderers {ms(t1 - t0 - _entityTicks):F1}, ECS hand-over {ms(_entityHandTicks):F1} of {_entities.Count}, entity cull {ms(_entityTicks - _entityHandTicks):F1}), instance writes+uploads {ms(_writeTicks):F1} ms, submit {ms(t2 - t1 - _writeTicks):F1} ms, GPU wait {ms(t3 - t2):F1} ms — {Instances} instances, {DrawCalls} draws, {_opaque.Count + _transparent.Count} collected"
-                        + $" [renderers: {_cLive} live, {_cEnabled} enabled, {_cShown} shown; loop {ms(_cLoop):F1} = mesh {ms(_cMesh):F1} + cull {ms(_cCull):F1} + materials {ms(_cMat):F1}]");
+                        + $" [renderers: {_cLive} live, {_cShown} tested; walk {ms(_cLoop):F1}]");
             }
         }
 
@@ -1110,61 +1110,236 @@ void main(){
             // The cache re-derives an edited material on its own (Material.Revision); a periodic
             // purge only lets go of materials nothing draws with any more.
             if (_frame % 600 == 0) { _mats.Clear(); _ribbonMats.Clear(); _spheres.Clear(); }
-            Renderer.CollectLive(_renderers);
-            _cLive = _renderers.Count; _cEnabled = 0; _cShown = 0;
-            long tm0 = System.Diagnostics.Stopwatch.GetTimestamp(), tMesh = 0, tCull = 0, tMat = 0;
-            foreach (var r in _renderers)
-            {
-                if (!r.enabled || r.forceRenderingOff) continue;
-                _cEnabled++;
-                if (r is TrailRenderer || r is LineRenderer)
-                {
-                    CollectRibbon(r, mask, camPos);
-                    continue;
-                }
-                if (r is not MeshRenderer && r is not SkinnedMeshRenderer) continue;
-                var go = r.gameObject;
-                if ((mask & (1 << go.layer)) == 0 || !go.activeInHierarchy) continue;
-                if (go.isPrefabAsset) continue;
-                _cShown++;
-                long ta = s_timing ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
-                Mesh mesh = r is SkinnedMeshRenderer s ? s.sharedMesh : r.GetComponent<MeshFilter>()?.sharedMesh;
-                if (mesh == null || mesh.vertexCount == 0) continue;
-                if (r is SkinnedMeshRenderer morphing && mesh.blendShapeCount > 0) mesh = Morphed(morphing, mesh);
-                long tb = s_timing ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
-                bool visible = r is SkinnedMeshRenderer || InFrustum(mesh, r.transform.localToWorldMatrix);
-                long tc = s_timing ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
-                tMesh += tb - ta; tCull += tc - tb;
-                var mats = r.sharedMaterials;
-                int subs = mesh.RenderSubmeshCount;
-                for (int i = 0; i < mats.Length && i < Math.Max(subs, 1); i++)
-                {
-                    var m = mats[i];
-                    if (m == null) continue;
-                    var st = StateFor(m);
-                    // Frustum culling (Unity culls every renderer against the camera first).
-                    // Vertex-animated prism families move geometry off their transform: never culled.
-                    if (!visible && st.PrismGraph == 0 && st.Family != 8) continue;
-                    var item = new Item { Renderer = r, Mesh = mesh, Submesh = Math.Min(i, subs - 1), Material = m, State = st,
-                        Skinned = r is SkinnedMeshRenderer sk && sk.bones is { Length: > 0 and <= MaxBones } && mesh.RenderBoneWeights.Length == mesh.vertexCount
-                                  && mesh.RenderBindposes.Length >= sk.bones.Length };
-                    if (st.Transparent)
-                    {
-                        item.Distance = (r.transform.position - camPos).sqrMagnitude;
-                        _transparent.Add(item);
-                    }
-                    else _opaque.Add(item);
-                }
-                if (s_timing) tMat += System.Diagnostics.Stopwatch.GetTimestamp() - tc;
-            }
-            if (s_census && _frame % 30 == 0) RendererCensus();
+            _cShown = 0;
+            long tm0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (s_slowCollect) CollectAllRenderers(mask, camPos);
+            else CollectSlotted(mask, camPos);
+            if (s_census && _frame % 30 == 0) { Renderer.CollectLive(_renderers); RendererCensus(); }
             long te = System.Diagnostics.Stopwatch.GetTimestamp();
-            _cMesh = tMesh; _cCull = tCull; _cMat = tMat; _cLoop = te - tm0;
+            _cLoop = te - tm0;
+            if (s_verifyCull && _frame % 30 == 0) VerifySlotted(mask, camPos);
             CollectEntities(mask, camPos);
             _entityTicks = System.Diagnostics.Stopwatch.GetTimestamp() - te;
         }
 
+        /// <summary>The per-frame walk of every live renderer (COSMIC_SHORE_SLOW_COLLECT=1, and the verify reference).</summary>
+        void CollectAllRenderers(int mask, EVector3 camPos)
+        {
+            Renderer.CollectLive(_renderers);
+            _cLive = _renderers.Count;
+            foreach (var r in _renderers) EmitRenderer(r, mask, camPos, knownVisible: false);
+        }
+
+        /// <summary>
+        /// One renderer's draw items: the full per-renderer test (enabled, layer, activity, mesh,
+        /// frustum, materials). <paramref name="knownVisible"/>: the caller already proved its
+        /// cached bounds are in the frustum, so the sphere test is skipped.
+        /// </summary>
+        void EmitRenderer(Renderer r, int mask, EVector3 camPos, bool knownVisible)
+        {
+            if (!r.enabled || r.forceRenderingOff) return;
+            if (r is TrailRenderer || r is LineRenderer)
+            {
+                CollectRibbon(r, mask, camPos);
+                return;
+            }
+            if (r is not MeshRenderer && r is not SkinnedMeshRenderer) return;
+            var go = r.gameObject;
+            if (go is null || (mask & (1 << go.layer)) == 0 || !go.activeInHierarchy) return;
+            if (go.isPrefabAsset) return;
+            _cShown++;
+            Mesh mesh = r is SkinnedMeshRenderer s ? s.sharedMesh : r.GetComponent<MeshFilter>()?.sharedMesh;
+            if (mesh == null || mesh.vertexCount == 0) return;
+            if (r is SkinnedMeshRenderer morphing && mesh.blendShapeCount > 0) mesh = Morphed(morphing, mesh);
+            bool visible = knownVisible || r is SkinnedMeshRenderer || InFrustum(mesh, r.transform.localToWorldMatrix);
+            var mats = r.sharedMaterials;
+            int subs = mesh.RenderSubmeshCount;
+            for (int i = 0; i < mats.Length && i < Math.Max(subs, 1); i++)
+            {
+                var m = mats[i];
+                if (m == null) continue;
+                var st = StateFor(m);
+                // Frustum culling (Unity culls every renderer against the camera first).
+                // Vertex-animated prism families move geometry off their transform: never culled.
+                if (!visible && st.PrismGraph == 0 && st.Family != 8) continue;
+                var item = new Item { Renderer = r, Mesh = mesh, Submesh = Math.Min(i, subs - 1), Material = m, State = st,
+                    Skinned = r is SkinnedMeshRenderer sk && sk.bones is { Length: > 0 and <= MaxBones } && mesh.RenderBoneWeights.Length == mesh.vertexCount
+                              && mesh.RenderBindposes.Length >= sk.bones.Length };
+                if (st.Transparent)
+                {
+                    item.Distance = (r.transform.position - camPos).sqrMagnitude;
+                    _transparent.Add(item);
+                }
+                else _opaque.Add(item);
+            }
+        }
+
+        // ── The slot table ──
+        // Every live renderer holds a slot. A CULLABLE slot (a mesh renderer whose materials
+        // all draw where its transform puts them) caches its world bounding sphere; each frame
+        // only the slots whose sphere is in the frustum touch their renderer at all. Everything
+        // else (skinned, ribbons, UI-parented, vertex-animated families) is an ALWAYS slot that
+        // takes the full per-renderer test every frame. A slot is rebuilt only when the engine
+        // reports its renderer changed (Renderer.TrackChanges: any transform write in its
+        // ancestry, a reparent, a material or mesh assignment); a cached sphere also re-derives
+        // when its mesh's vertex buffer is replaced. Enabled, layer and activity are not cached:
+        // they are tested when a slot is visible, so they can never go stale. The whole table is
+        // rebuilt from the live list every 600 frames, which is also what reclaims slots of
+        // renderers destroyed while off screen. COSMIC_SHORE_VERIFY_CULL=1 compares the result
+        // with the full walk every 30 frames.
+        const byte SlotFree = 0, SlotIgnore = 1, SlotCull = 2, SlotAlways = 3;
+        struct SlotBounds { public float X, Y, Z, R; }
+        Renderer[] _sRenderer = new Renderer[1024];
+        byte[] _sKind = new byte[1024];
+        SlotBounds[] _sBounds = new SlotBounds[1024];
+        Mesh[] _sMesh = new Mesh[1024];
+        Vector3[][] _sVerts = new Vector3[1024][];
+        int _slotCount;
+        readonly Stack<int> _freeSlots = new();
+        readonly List<Renderer> _dirtyRenderers = new();
+
+        static readonly bool s_slowCollect = Environment.GetEnvironmentVariable("COSMIC_SHORE_SLOW_COLLECT") == "1";
+        static readonly bool s_verifyCull = Environment.GetEnvironmentVariable("COSMIC_SHORE_VERIFY_CULL") == "1";
+
+        void CollectSlotted(int mask, EVector3 camPos)
+        {
+            if (!Renderer.TrackChanges || _frame % 600 == 0) RebuildSlots();
+            Renderer.DrainDirty(_dirtyRenderers);
+            foreach (var r in _dirtyRenderers) UpdateSlot(r);
+            _cLive = _slotCount - _freeSlots.Count;
+
+            for (int i = 0; i < _slotCount; i++)
+            {
+                byte kind = _sKind[i];
+                if (kind == SlotCull)
+                {
+                    if (!s_noCull)
+                    {
+                        if (!ReferenceEquals(_sMesh[i].RenderVertices, _sVerts[i])) RefreshBounds(i);
+                        var b = _sBounds[i];
+                        bool outside = false;
+                        for (int p = 0; p < 6; p++)
+                        {
+                            var pl = _planes[p];
+                            if (pl.X * b.X + pl.Y * b.Y + pl.Z * b.Z + pl.W < -b.R) { outside = true; break; }
+                        }
+                        if (outside) continue;
+                    }
+                    var r = _sRenderer[i];
+                    if (r.IsDestroyed) { FreeSlot(i); continue; }
+                    EmitRenderer(r, mask, camPos, knownVisible: true);
+                }
+                else if (kind == SlotAlways)
+                {
+                    var r = _sRenderer[i];
+                    if (r.IsDestroyed) { FreeSlot(i); continue; }
+                    EmitRenderer(r, mask, camPos, knownVisible: false);
+                }
+            }
+        }
+
+        void RebuildSlots()
+        {
+            Array.Clear(_sRenderer, 0, _slotCount);
+            Array.Clear(_sMesh, 0, _slotCount);
+            Array.Clear(_sVerts, 0, _slotCount);
+            Array.Clear(_sKind, 0, _slotCount);
+            _slotCount = 0;
+            _freeSlots.Clear();
+            Renderer.TrackChanges = true;
+            Renderer.CollectLive(_renderers);
+            foreach (var r in _renderers) UpdateSlot(r);
+        }
+
+        void FreeSlot(int i)
+        {
+            if (_sKind[i] == SlotFree) return;
+            if (_sRenderer[i] is { } r && r.PortRenderSlot == i) r.PortRenderSlot = -1;
+            _sRenderer[i] = null; _sMesh[i] = null; _sVerts[i] = null; _sKind[i] = SlotFree;
+            _freeSlots.Push(i);
+        }
+
+        void UpdateSlot(Renderer r)
+        {
+            int i = r.PortRenderSlot;
+            bool owned = i >= 0 && i < _slotCount && ReferenceEquals(_sRenderer[i], r);
+            if (r.IsDestroyed || r.gameObject is null || r.gameObject.IsDestroyed)
+            {
+                if (owned) FreeSlot(i);
+                return;
+            }
+            if (!owned)
+            {
+                if (_freeSlots.Count > 0) i = _freeSlots.Pop();
+                else
+                {
+                    if (_slotCount == _sRenderer.Length)
+                    {
+                        int n = _sRenderer.Length * 2;
+                        Array.Resize(ref _sRenderer, n); Array.Resize(ref _sKind, n); Array.Resize(ref _sBounds, n);
+                        Array.Resize(ref _sMesh, n); Array.Resize(ref _sVerts, n);
+                    }
+                    i = _slotCount++;
+                }
+                _sRenderer[i] = r;
+                r.PortRenderSlot = i;
+            }
+            _sKind[i] = ClassifySlot(r, out var mesh);
+            _sMesh[i] = mesh;
+            if (_sKind[i] == SlotCull) RefreshBounds(i);
+        }
+
+        byte ClassifySlot(Renderer r, out Mesh mesh)
+        {
+            mesh = null;
+            if (r is TrailRenderer || r is LineRenderer || r is SkinnedMeshRenderer) return SlotAlways;
+            if (r is not MeshRenderer) return SlotIgnore;
+            mesh = r.GetComponent<MeshFilter>()?.sharedMesh;
+            if (mesh == null) return SlotIgnore; // assigning a mesh marks the renderer dirty
+            for (var t = r.transform; t is not null; t = t.parent)
+                if (t is RectTransform) return SlotAlways; // anchor-derived poses report no writes
+            foreach (var m in r.sharedMaterials)
+                if (m != null) { var st = StateFor(m); if (st.PrismGraph != 0 || st.Family == 8) return SlotAlways; }
+            return SlotCull;
+        }
+
+        void RefreshBounds(int i)
+        {
+            var mesh = _sMesh[i];
+            var m = _sRenderer[i].transform.localToWorldMatrix;
+            var sph = SphereOf(mesh);
+            var c = m.MultiplyPoint3x4(sph.Centre);
+            float sx = new EVector3(m.m00, m.m10, m.m20).magnitude, sy = new EVector3(m.m01, m.m11, m.m21).magnitude, sz = new EVector3(m.m02, m.m12, m.m22).magnitude;
+            // Same margin as InFrustum: sway, jiggle, cradle and grow all stay near the rest shape.
+            _sBounds[i] = new SlotBounds { X = c.x, Y = c.y, Z = c.z, R = sph.Radius * MathF.Max(sx, MathF.Max(sy, sz)) * 1.25f + 1f };
+            _sVerts[i] = mesh.RenderVertices;
+        }
+
+        readonly List<Item> _verifyOpaque = new(), _verifyTransparent = new();
+
+        /// <summary>COSMIC_SHORE_VERIFY_CULL: rerun the full walk and report any draw item one path has and the other lacks.</summary>
+        void VerifySlotted(int mask, EVector3 camPos)
+        {
+            _verifyOpaque.Clear(); _verifyOpaque.AddRange(_opaque); _verifyOpaque.AddRange(_transparent);
+            int ribbonO = _opaque.Count, ribbonT = _transparent.Count;
+            _opaque.Clear(); _transparent.Clear();
+            CollectAllRenderers(mask, camPos);
+            var reference = new HashSet<(Renderer, int, Material)>();
+            foreach (var it in _opaque) reference.Add((it.Renderer, it.Submesh, it.Material));
+            foreach (var it in _transparent) reference.Add((it.Renderer, it.Submesh, it.Material));
+            var fast = new HashSet<(Renderer, int, Material)>();
+            foreach (var it in _verifyOpaque) fast.Add((it.Renderer, it.Submesh, it.Material));
+            int missing = 0, extra = 0; string sample = null;
+            foreach (var k in reference) if (!fast.Contains(k)) { missing++; sample ??= "missing " + k.Item1.name; }
+            foreach (var k in fast) if (!reference.Contains(k)) { extra++; sample ??= "extra " + k.Item1.name; }
+            Console.WriteLine($"[verify-cull] frame {_frame}: {fast.Count} slotted vs {reference.Count} walked, {missing} missing, {extra} extra{(sample != null ? " (" + sample + ")" : "")}");
+            // Draw what the slotted path chose, so verification never changes the picture.
+            _opaque.Clear(); _transparent.Clear();
+            foreach (var it in _verifyOpaque) (it.State.Transparent ? _transparent : _opaque).Add(it);
+        }
+
         long _entityTicks, _entityHandTicks;
+
         int _cLive, _cEnabled, _cShown;
         static readonly bool s_census = Environment.GetEnvironmentVariable("CS_PORT_TRACE_RENDERERS") != null;
 

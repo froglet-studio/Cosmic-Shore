@@ -441,6 +441,7 @@ namespace CosmicShore.Engine
             {
                 _sharedMesh = value;
                 _instance = null; // a fresh instance is cloned from the new shared mesh on next .mesh get
+                gameObject?.MarkRenderersDirty();
             }
         }
 
@@ -452,12 +453,14 @@ namespace CosmicShore.Engine
                 _instance = new Mesh { name = (_sharedMesh ? _sharedMesh.name : "Mesh") + " Instance" };
                 if (_sharedMesh) _sharedMesh.CopyTo(_instance);
                 _sharedMesh = _instance;
+                gameObject?.MarkRenderersDirty();
                 return _instance;
             }
             set
             {
                 _instance = value;
                 _sharedMesh = value;
+                gameObject?.MarkRenderersDirty();
             }
         }
     }

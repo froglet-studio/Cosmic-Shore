@@ -29,6 +29,7 @@ namespace CosmicShore.Engine
         {
             s_live.Add(r);
             if (r is TrailRenderer t) s_trails.Add(t);
+            r.MarkRenderDirty();
         }
 
         /// <summary>Every trail that still exists (destroyed entries pruned).</summary>

@@ -14,6 +14,12 @@ namespace CosmicShore.Engine
     {
         public bool enabled = true;
 
+        /// <summary>
+        /// Port engine extension: the render backend's per-renderer cache slot (-1 = none yet).
+        /// Owned by the backend; gameplay never reads or writes it.
+        /// </summary>
+        public int PortRenderSlot { get; set; } = -1;
+
         /// <summary>Shadow casting mode (original default: On). Data-only until a render backend reads it.</summary>
         public Rendering.ShadowCastingMode shadowCastingMode = Rendering.ShadowCastingMode.On;
 
@@ -68,13 +74,13 @@ namespace CosmicShore.Engine
         public Material[] materials
         {
             get => _materials;
-            set => _materials = value ?? System.Array.Empty<Material>();
+            set { _materials = value ?? System.Array.Empty<Material>(); MarkRenderDirty(); }
         }
 
         public Material[] sharedMaterials
         {
             get => _materials;
-            set => _materials = value ?? System.Array.Empty<Material>();
+            set { _materials = value ?? System.Array.Empty<Material>(); MarkRenderDirty(); }
         }
 
         public Material material
@@ -84,6 +90,7 @@ namespace CosmicShore.Engine
             {
                 if (_materials.Length == 0) _materials = new Material[1];
                 _materials[0] = value;
+                MarkRenderDirty();
             }
         }
 

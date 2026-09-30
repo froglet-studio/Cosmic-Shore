@@ -17,16 +17,22 @@ namespace CosmicShore.Engine
     /// Unsealed for <see cref="RectTransform"/> (the UI geometry core), which derives
     /// <see cref="localPosition"/> (and, when driven by a root Canvas,
     /// <see cref="localScale"/>) from its anchor state — hence those two are virtual
-    /// properties rather than fields. <see cref="localRotation"/> stays a plain field:
-    /// nothing drives it.
+    /// properties rather than fields. <see cref="localRotation"/> is a plain property (it
+    /// was a field; it became a property so a write can report a pose change).
     /// </summary>
     public partial class Transform : Component, IEnumerable
     {
         readonly List<Transform> _children = new();
 
-        public virtual Vector3 localPosition { get; set; } = Vector3.zero;
-        public Quaternion localRotation = Quaternion.identity;
-        public virtual Vector3 localScale { get; set; } = Vector3.one;
+        Vector3 _localPosition = Vector3.zero;
+        Quaternion _localRotation = Quaternion.identity;
+        Vector3 _localScale = Vector3.one;
+
+        // Every local write reports a possible world-pose change (MarkMoved: a no-op unless a
+        // render backend tracks changes; see RenderChangeTracking).
+        public virtual Vector3 localPosition { get => _localPosition; set { _localPosition = value; MarkMoved(); } }
+        public Quaternion localRotation { get => _localRotation; set { _localRotation = value; MarkMoved(); } }
+        public virtual Vector3 localScale { get => _localScale; set { _localScale = value; MarkMoved(); } }
 
         Transform _parent;
 
@@ -233,6 +239,7 @@ namespace CosmicShore.Engine
 
             _parent = newParent;
             GameObject.BumpHierarchyEpoch();
+            MarkMoved();
 
             if (newParent is not null) newParent._children.Add(this);
             else gameObject.scene?.AddRoot(gameObject);
@@ -262,6 +269,7 @@ namespace CosmicShore.Engine
             parent?._children.Remove(this);
             _parent = null;
             GameObject.BumpHierarchyEpoch();
+            MarkMoved();
         }
 
         /// <summary>
@@ -297,6 +305,7 @@ namespace CosmicShore.Engine
             old._children.Clear();
             old._parent = null;
             GameObject.BumpHierarchyEpoch();
+            MarkMoved();
 
             localRotation = oldLocalRotation;
             localScale = oldLocalScale;
