@@ -98,6 +98,9 @@ namespace CosmicShore.Player
             Set(_control, "Schedule", null);
             _state = Get(_control, "State");
             _archive = Get(_control, "Archive");
+            _runtime = runtime;
+            _statePath = ReferencedAssetPath(runtime, ControlPath, "State");
+            _archivePath = ReferencedAssetPath(runtime, ControlPath, "Archive");
             var scenario = Get(_control, "Scenario");
             Console.WriteLine($"[train] scenario {Get(scenario, "Key")} · mode {_mode} · state '{Name(_state)}' · archive '{Name(_archive)}'");
 
@@ -303,6 +306,8 @@ namespace CosmicShore.Player
                 File.WriteAllText(replayPath, rows.ToString());
                 sb.AppendLine($"[train] wrote {replayPath}");
             }
+            ExportAsset(sb, _state, _statePath, key + ".SessionState.asset");
+            ExportAsset(sb, _archive, _archivePath, key + ".Archive.asset");
             string statePath = Path.Combine(_outDir, key + ".state.json");
             File.WriteAllText(statePath, JsonUtility.ToJson(_state, true));
             sb.AppendLine($"[train] wrote {statePath}");
@@ -312,6 +317,50 @@ namespace CosmicShore.Player
                 File.WriteAllText(archivePath, JsonUtility.ToJson(_archive, true));
                 sb.AppendLine($"[train] wrote {archivePath}");
             }
+        }
+
+        string _statePath, _archivePath;
+        ContentRuntime _runtime;
+
+        static Func<CosmicShore.Engine.Object, string> ReferenceWriter(ContentRuntime runtime)
+            => o => runtime.Assets.TryGetReference(o, out var r) ? $"{{fileID: {r.FileId}, guid: {r.Guid}, type: {r.Type}}}" : null;
+
+        /// <summary>The project path of the asset a field of another asset references (e.g. TrainingControl.State).</summary>
+        static string ReferencedAssetPath(ContentRuntime runtime, string ownerPath, string field)
+        {
+            var file = runtime.Db.Load(runtime.Db.GuidOf(ownerPath));
+            var body = file?.Documents.FirstOrDefault(d => d.TypeName == "MonoBehaviour")?.Body;
+            var r = ObjRef.From(body?[field]);
+            return r.IsNull ? null : runtime.Db.PathOf(r.Guid);
+        }
+
+        /// <summary>
+        /// The asset as the editor would write it (UnityYamlWriter), next to the JSON: copy it
+        /// over the project's asset (keeping its .meta) and Unity reads the port's result.
+        /// </summary>
+        void ExportAsset(StringBuilder sb, object asset, string sourcePath, string fileName)
+        {
+            if (asset == null || sourcePath == null || !File.Exists(sourcePath)) return;
+            string text = CosmicShore.Content.Serialization.UnityYamlWriter.WriteScriptableObject(asset, File.ReadAllText(sourcePath), ReferenceWriter(_runtime));
+            string path = Path.Combine(_outDir, fileName);
+            File.WriteAllText(path, text);
+            sb.AppendLine($"[train] wrote {path}  (drop-in for {Path.GetFileName(sourcePath)})");
+        }
+
+        /// <summary>
+        /// --yaml-roundtrip ASSET OUT: load an asset through the content runtime and write it back
+        /// with UnityYamlWriter — the golden check that the writer writes what the editor wrote.
+        /// </summary>
+        public static int YamlRoundTrip(string assetPath, string outPath)
+        {
+            var root = AssetDatabase.FindProjectRoot() ?? throw new InvalidOperationException("no project");
+            using var loop = new GameLoop("roundtrip");
+            var runtime = new ContentRuntime(root, new[] { PlayerBoot.GameAssembly });
+            var rel = Path.GetRelativePath(root, Path.GetFullPath(assetPath)).Replace('\\', '/');
+            var asset = LoadAsset(runtime, rel) ?? throw new InvalidOperationException($"could not load {rel}");
+            File.WriteAllText(outPath, CosmicShore.Content.Serialization.UnityYamlWriter.WriteScriptableObject(asset, File.ReadAllText(assetPath), ReferenceWriter(runtime)));
+            Console.WriteLine($"[roundtrip] {rel} ({asset.GetType().Name}) -> {outPath}");
+            return 0;
         }
 
         // ── Assets ─────────────────────────────────────

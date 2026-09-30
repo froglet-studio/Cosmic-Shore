@@ -56,6 +56,8 @@ namespace CosmicShore.Player
                     case "--headless": headless = true; break;
                     case "--render-from" when i + 1 < args.Length: int.TryParse(args[++i], out PlayerWindow.RenderFrom); break;
                     case "--quiet": quiet = true; break;
+                    case "--yaml-roundtrip" when i + 2 < args.Length:
+                        return TrainingHost.YamlRoundTrip(args[i + 1], args[i + 2]);
                     case "--train":
                         wantTrain = true;
                         if (i + 1 < args.Length && !args[i + 1].StartsWith("--"))

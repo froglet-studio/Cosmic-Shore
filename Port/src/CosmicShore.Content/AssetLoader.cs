@@ -48,6 +48,23 @@ namespace CosmicShore.Content
 
         public T Load<T>(ObjRef r) where T : EngineObject => Load(r, typeof(T)) as T;
 
+        /// <summary>The reference an already-loaded asset object was loaded from (for writing it back).</summary>
+        public bool TryGetReference(EngineObject obj, out ObjRef reference)
+        {
+            foreach (var kv in _cache)
+                if (ReferenceEquals(kv.Value, obj))
+                {
+                    var path = Db.PathOf(kv.Key.Item1);
+                    string ext = path == null ? "" : System.IO.Path.GetExtension(path).ToLowerInvariant();
+                    // type 2: an asset the editor serialized as YAML (.asset/.mat/.prefab...); 3: an imported file (models, textures).
+                    int type = ext is ".asset" or ".mat" or ".prefab" or ".controller" or ".anim" or ".unity" ? 2 : 3;
+                    reference = new ObjRef(kv.Key.Item2, kv.Key.Item1, type);
+                    return true;
+                }
+            reference = default;
+            return false;
+        }
+
         public EngineObject Load(ObjRef r, Type expected)
         {
             if (r.IsNull || string.IsNullOrEmpty(r.Guid)) return null;
