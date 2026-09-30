@@ -326,8 +326,9 @@ def build_status(root):
         if ppt and ppt.get("note"):
             where += f" ({ppt['note']})"
         tempo = pp.get("measured_steps_per_frame")
+        ok = tempo is not None and math.isfinite(tempo) and 0 < tempo < 4 * pp.get("period_target_steps_per_frame", 8)
         rows.append((state, "Prism 3D swim", "hprism", f"3D particles that can only be Cosmic Shore prisms; {where}",
-                     f"{tempo:.1f} steps / frame" if tempo else "no steady tempo yet"))
+                     f"{tempo:.1f} steps / frame" if ok else "grows and holds colour; not swimming yet"))
     else:
         live = os.path.join(os.path.dirname(os.path.abspath(root)), "runs", "prism_swim3d", "state.json")
         if os.path.isfile(live):

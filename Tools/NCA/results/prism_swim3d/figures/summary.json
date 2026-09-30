@@ -1,0 +1,55 @@
+{
+  "experiment": "prism3d",
+  "dimensions": 3,
+  "frames": 8,
+  "model": "model.pt",
+  "shift_corrected": {},
+  "particles_at": {
+    "0": 1,
+    "32": 150,
+    "64": 168,
+    "96": 199,
+    "200": 280,
+    "600": 280
+  },
+  "particles_mean_after_200": 280.0,
+  "best_frame_error_at": {
+    "64": 0.006796948611736298,
+    "96": 0.006206866353750229,
+    "200": 0.007913014851510525,
+    "600": 0.012135665863752365
+  },
+  "best_frame_error_mean_after_200": 0.010276290588080883,
+  "best_frame_error_max_after_200": 0.012426760047674179,
+  "damage_removed_particles": 83,
+  "error_before_damage": 0.010696286335587502,
+  "after_damage_error_at": {
+    "20": 0.008971694856882095,
+    "50": 0.009242254309356213,
+    "100": 0.009321969002485275,
+    "200": 0.008944947272539139,
+    "600": 0.01076442375779152
+  },
+  "prism_census_t200": {
+    "Jade-plain": 10,
+    "Jade-shield": 30,
+    "Jade-super": 25,
+    "Ruby-plain": 3,
+    "Ruby-shield": 13,
+    "Ruby-super": 11,
+    "Gold-plain": 1,
+    "Gold-shield": 2,
+    "Gold-super": 4
+  },
+  "prism_half_extent_t200": {
+    "mean": 0.9111799597740173,
+    "min": 0.6596285700798035,
+    "max": 1.1228337287902832,
+    "mean_aspect": 1.3307214975357056
+  },
+  "period_target_steps_per_frame": 8,
+  "measured_steps_per_frame": -1769.31182087579,
+  "static_best_image_error": 0.004137777257710695,
+  "distinct_frames_visited_after_200": 3,
+  "after_damage_steps_per_frame": -2931.5635179154397
+}
