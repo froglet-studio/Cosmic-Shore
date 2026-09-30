@@ -345,7 +345,7 @@ def static_target(name="lizard", size=40, pad=16):
 
 def swim2d_target(cfg):
     from animated_nca import AnimConfig, build_frames
-    return build_frames(AnimConfig(frames=cfg.frames, period=cfg.period))  # [K, 72, 72, 4]
+    return build_frames(AnimConfig(frames=cfg.frames, period=cfg.period, amp=cfg.amp))  # [K, 72, 72, 4]
 
 
 def swim3d_target(cfg):
@@ -360,6 +360,7 @@ class PConfig:
     experiment: str = "regenerating"   # regenerating | swim2d | swim3d
     frames: int = 8
     period: int = 8
+    amp: float = 6.0                   # swim2d body-wave amplitude (animated_nca's units; 6 = the grid swim)
     window: int = 5
     min_seed_check: int = 64
     clock_steps: int = 0
