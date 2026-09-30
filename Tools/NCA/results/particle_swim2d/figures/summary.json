@@ -1,0 +1,47 @@
+{
+  "experiment": "swim2d",
+  "dimensions": 2,
+  "frames": 8,
+  "model": "model.pt",
+  "shift_corrected": {
+    "200": {
+      "error": 0.0030215014703571796,
+      "drift_px": 1.0
+    },
+    "1000": {
+      "error": 0.0034559096675366163,
+      "drift_px": 6.324555320336759
+    }
+  },
+  "particles_at": {
+    "0": 1,
+    "32": 138,
+    "64": 441,
+    "96": 478,
+    "200": 501,
+    "1000": 535
+  },
+  "particles_mean_after_200": 524.2734082397004,
+  "best_frame_error_at": {
+    "64": 0.003226572647690773,
+    "96": 0.0028937705792486668,
+    "200": 0.00413695489987731,
+    "1000": 0.022614194080233574
+  },
+  "best_frame_error_mean_after_200": 0.012910284101963043,
+  "best_frame_error_max_after_200": 0.022614194080233574,
+  "damage_removed_particles": 112,
+  "error_before_damage": 0.004607893526554108,
+  "after_damage_error_at": {
+    "20": 0.00877251848578453,
+    "50": 0.007891201414167881,
+    "100": 0.008786792866885662,
+    "200": 0.01368909701704979,
+    "600": 0.021966010332107544
+  },
+  "period_target_steps_per_frame": 8,
+  "measured_steps_per_frame": 10.373646305138795,
+  "static_best_image_error": 0.005188613198697567,
+  "distinct_frames_visited_after_200": 8,
+  "after_damage_steps_per_frame": 15.735576435537618
+}

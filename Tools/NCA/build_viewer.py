@@ -162,7 +162,7 @@ def main():
         spf = tempo(sm["measured_steps_per_frame"])
         dspf = tempo(sm["after_damage_steps_per_frame"])
         anim = f"""
-    <div class="anim">
+    <div class="anim" id="swim">
       <h2>Adding time: a lizard that swims</h2>
       <p class="caption">The same 8,336-parameter cell, trained on an 8-frame loop (a travelling body wave generated from the emoji, head still, tail widest). The loss checks the rollout every 8 steps and asks for consecutive frames starting from whichever frame fits best, so each lizard chooses its phase and must then keep moving. Below, one lizard from a single seed, left, beside the target frame it currently matches, right.</p>
       <div class="animrow">
@@ -190,13 +190,14 @@ def main():
 
     bench3d, script3d = build_3d(args.runs)
     benchp, scriptp = build_particles(args.runs)
+    status = build_status(args.runs)
 
     page = TEMPLATE
     for k, v in {
         "{{EXP_BUTTONS}}": exp_buttons, "{{EXP_NOTES}}": exp_notes, "{{WEIGHTS}}": weights_js,
         "{{TARGETS}}": json.dumps(targets), "{{CORE}}": core, "{{CHART}}": loss_chart(runs, floor),
         "{{ANIM}}": anim, "{{BENCH3D}}": bench3d, "{{SCRIPT3D}}": script3d,
-        "{{BENCHP}}": benchp, "{{SCRIPTP}}": scriptp,
+        "{{BENCHP}}": benchp, "{{SCRIPTP}}": scriptp, "{{STATUS}}": status,
         "{{ROWS}}": "".join(rows), "{{FIGS}}": "".join(figs) + regen_fig + rot_fig,
         "{{DEFAULT}}": "regenerating" if "regenerating" in runs else next(iter(runs)),
     }.items():
@@ -275,6 +276,62 @@ def build_3d(runs_root):
     return bench, script
 
 
+def build_status(root):
+    """'Where things stand': one row per strand, headline read from that run's own summary.json,
+    so the page can never claim a result the committed run does not carry."""
+    def sm(name):
+        p = os.path.join(root, name, "figures", "summary.json")
+        return json.load(open(p)) if os.path.isfile(p) else None
+    def st(name):
+        p = os.path.join(root, name, "status.json")
+        return json.load(open(p)) if os.path.isfile(p) else None
+    lg = lambda v: f"10<sup>{math.log10(max(v, 1e-9)):.2f}</sup>"
+    rows = []
+    g = sm("lizard_regenerating")
+    if g:
+        rows.append(("done", "Grid lizard", "#grid", "Grows from one cell, holds its shape and regrows any cut",
+                     f"holds at {lg(g['error_at']['4000'])}"))
+    s = sm("lizard_swim")
+    if s:
+        rows.append(("done", "Grid swim", "#swim", "The same cell trained on an eight-frame body wave",
+                     f"{s['measured_steps_per_frame']:.2f} steps / frame, beats a still image"))
+    s3 = sm("lizard3d_swim")
+    if s3:
+        rows.append(("done", "3D swim", "h3d", "One more spatial dimension: a helical stroke in a 22×44×44 volume",
+                     f"{s3['measured_steps_per_frame']:.2f} steps / frame, heals a tail cut"))
+    p = sm("particle_regenerating")
+    if p:
+        sh = p.get("shift_corrected", {})
+        held = f", shape {lg(sh['3000']['error'])} at step 3000" if "3000" in sh else ""
+        rows.append(("done", "Collision lizard", "hp", "No grid: particles that only sense and push their neighbours",
+                     f"grown by step 96{held}, heals a quarter cut"))
+    ps, pst = sm("particle_swim2d"), st("particle_swim2d")
+    if ps:
+        state = "run" if (pst and pst.get("training")) else "done"
+        where = f"training, showing step {pst['step']} of {pst['of']}" if state == "run" else "trained"
+        if pst and pst.get("note"):
+            where += f" ({pst['note']})"
+        tempo = ps.get("measured_steps_per_frame")
+        sh = ps.get("shift_corrected", {}).get("1000")
+        extra = f", drifts {sh['drift_px']:.0f} px per 1000 steps" if sh else ""
+        rows.append((state, "Collision swim", "hp", f"A bolder stroke (amplitude 16); {where}",
+                     (f"{tempo:.1f} steps / frame" if tempo else "no steady tempo yet") + extra))
+    rows.append(("todo", "Collision 3D swim", "", "Particles in a volume, warm-started from the collision swim", "not started"))
+    label = {"done": "Done", "run": "Training", "todo": "Next"}
+    body = "".join(
+        f'<li class="ledger-row"><span class="chip chip-{s_}">{label[s_]}</span>'
+        f'<span class="ledger-name">{f"<a href={chr(34)}#{a.lstrip(chr(35))}{chr(34)}>{n}</a>" if a else n}</span>'
+        f'<span class="ledger-what">{w}</span><span class="ledger-num">{v}</span></li>'
+        for s_, n, a, w, v in rows)
+    import datetime
+    day = datetime.datetime.utcnow().strftime("%-d %B %Y")
+    return f"""
+  <section class="ledger" aria-labelledby="hstatus">
+    <div class="ledger-head"><h2 id="hstatus">Where things stand</h2><span class="mono ledger-date">updated {day}</span></div>
+    <ul class="ledger-list">{body}</ul>
+  </section>"""
+
+
 PARTICLE_RUNS = [("regenerating", "Lizard", "particle_regenerating"), ("swim2d", "Swimming", "particle_swim2d")]
 
 
@@ -287,7 +344,11 @@ def build_particles(runs_root):
         if not (os.path.isfile(os.path.join(d, "weights.json")) and os.path.isfile(os.path.join(d, "figures", "summary.json"))):
             continue
         fr = np.load(os.path.join(d, "frames.npy")).astype(np.float32)
-        runs[key] = {"label": label, "dir": d, "w": json.load(open(os.path.join(d, "weights.json"))),
+        stp = os.path.join(d, "status.json")
+        status = json.load(open(stp)) if os.path.isfile(stp) else None
+        if status and status.get("training"):
+            label = f"{label} · training, step {status['step']}"
+        runs[key] = {"label": label, "status": status, "dir": d, "w": json.load(open(os.path.join(d, "weights.json"))),
                      "sm": json.load(open(os.path.join(d, "figures", "summary.json"))),
                      "K": len(fr), "f": base64.b64encode((np.clip(fr, 0, 1) * 255).round().astype(np.uint8).tobytes()).decode()}
     if not runs:
@@ -297,15 +358,24 @@ def build_particles(runs_root):
     tabs = "".join(f'<button type="button" role="tab" data-prun="{k}" aria-selected="false">{r["label"]}</button>'
                    for k, r in runs.items())
     figs, tables = [], []
+
+    def loopfig(r):
+        if r["K"] == 1 or not os.path.isfile(os.path.join(r["dir"], "figures", "loop_strip.png")):
+            return ""
+        return (f'<figure class="fig"><figcaption><span class="swatch" style="background:var(--s2)"></span>'
+                f'One stroke from step 200, every {r["w"]["period"]} steps (top), over the target frame each one matches (bottom)</figcaption>'
+                f'<div class="strip"><img src="data:image/png;base64,{img(r, "loop_strip.png")}" alt="Consecutive particle-swim states over their matching target frames"></div></figure>')
     for k, r in runs.items():
         sm = r["sm"]
-        sh = sm.get("shift_corrected", {})
-        rows = [("Particles, step 96 / 3000", f"{sm['particles_at'].get('96', '–')} / {sm['particles_at'].get('3000', '–')}"),
+        pa = sm["particles_at"]; late = max(pa, key=int)
+        rows = [(f"Particles, step 96 / {late}", f"{pa.get('96', '–')} / {pa[late]}"),
                 ("Error at step 96 (grown)", lg(sm['best_frame_error_at']['96']))]
+        sh = sm.get("shift_corrected", {})
         if sh:
-            rows += [("Shape held: error at 1000 / 3000, best shift", f"{lg(sh['1000']['error'])} / {lg(sh['3000']['error'])}"),
-                     ("Body drift by step 1000 / 3000", f"{sh['1000']['drift_px']:.1f} / {sh['3000']['drift_px']:.1f} px")]
-        rows += [("Error in place, steps 200–3000, mean", lg(sm['best_frame_error_mean_after_200'])),
+            ks = [k_ for k_ in ("1000", "3000") if k_ in sh]
+            rows += [(f"Shape held at step {' / '.join(ks)}, drift removed", " / ".join(lg(sh[k_]['error']) for k_ in ks)),
+                     (f"Body drift by step {' / '.join(ks)}", " / ".join(f"{sh[k_]['drift_px']:.1f}" for k_ in ks) + " px")]
+        rows += [(f"Error in place, steps 200–{late}, mean", lg(sm['best_frame_error_mean_after_200'])),
                 (f"Quarter cut at 400 ({sm['damage_removed_particles']} particles): error before", lg(sm['error_before_damage'])),
                 ("… 20 / 100 / 200 steps later", " / ".join(lg(sm['after_damage_error_at'][s]) for s in ('20', '100', '200')))]
         if r["K"] > 1:
@@ -317,6 +387,7 @@ def build_particles(runs_root):
         figs.append(f"""<div class="pfigs" data-pshow="{k}">
       <figure class="fig"><figcaption><span class="swatch" style="background:var(--s2)"></span>From one particle: steps 0, 16, 32, 48, 64, 96, 200 — the loss's view (top) and the particles themselves (bottom; grey = dormant buds)</figcaption><div class="strip"><img src="data:image/png;base64,{img(r, 'growth_strip.png')}" alt="Particle lizard growing from one particle"></div></figure>
       <figure class="fig"><figcaption><span class="swatch" style="background:var(--s2)"></span>Every particle in the lower-right quarter removed at step 400, then 20, 50, 100, 200, 400 and 600 steps later</figcaption><div class="strip"><img src="data:image/png;base64,{img(r, 'damage.png')}" alt="Particle lizard regrowing its cut quarter"></div></figure>
+      {loopfig(r)}
     </div>""")
     bench = f"""
   <section class="benchp" aria-labelledby="hp">
@@ -334,7 +405,7 @@ def build_particles(runs_root):
         <dl class="readouts">
           <div><dt>Step</dt><dd id="rp-step">0</dd></div>
           <div><dt>Particles</dt><dd id="rp-n">0</dd></div>
-          <div><dt>Visible</dt><dd id="rp-vis">0</dd></div>
+          <div><dt id="rp-vis-l">Visible</dt><dd id="rp-vis">0</dd></div>
           <div><dt>log₁₀ error</dt><dd id="rp-err">–</dd></div>
         </dl>
         <div class="controls">
@@ -351,6 +422,18 @@ def build_particles(runs_root):
       </div>
     </div>
     {''.join(figs)}
+    <div class="h3dhead">
+      <h2>Why the first particle lizard was a blob</h2>
+      <p class="caption">The first runs trained stably and grew a pale diagonal ellipse: the right colour and heading, no legs. Each run below removes one suspect (log₁₀ training loss at the step shown). The culprit was the gradient each particle senses: summed over whatever neighbours happen to be nearby, it is wrong by up to 91% even for a straight ramp, so on free particles it is noise and the answer to noise is an average. The least-squares gradient from particle fluid simulation is exact on any arrangement.</p>
+    </div>
+    <div class="diag"><table><thead><tr><th scope="col">Run</th><th scope="col">Step 250</th><th scope="col">500</th><th scope="col">750</th><th scope="col">What it shows</th></tr></thead><tbody>
+      <tr><th scope="row">Free particles, speed cap 0.6</th><td>−1.84</td><td>−1.91</td><td>−1.91</td><td>the blob</td></tr>
+      <tr><th scope="row">Free particles, speed cap 0.15 / 0</th><td>−1.81 / −1.83</td><td>−1.87 / −1.90</td><td>–</td><td>not motion</td></tr>
+      <tr><th scope="row">Fit the render straight to the lizard</th><td colspan="3">−3.5 on a lattice, −4.6 free</td><td>not the renderer</td></tr>
+      <tr><th scope="row">Fixed jittered lattice, grid rules</th><td>−1.79</td><td>−1.93</td><td>−2.27</td><td>grows legs: the sensing can learn it</td></tr>
+      <tr><th scope="row">Same lattice, re-jittered every time</th><td>−1.83</td><td>−1.99</td><td>−2.04</td><td>a random arrangement slows it</td></tr>
+      <tr class="win"><th scope="row">Free particles, corrected gradient</th><td>−1.96</td><td>−2.13</td><td>−2.21</td><td>the blob is gone</td></tr>
+    </tbody></table></div>
   </section>"""
     core = open(os.path.join(HERE, "particle_core.js")).read()
     pdata = {k: {"w": r["w"], "K": r["K"], "f": r["f"]} for k, r in runs.items()}
@@ -397,10 +480,11 @@ SCRIPTP = r"""<script>
       }
     }
   }
+  let bestK = -1;
   function error() {
     let best = Infinity; const n = G * G * 4;
     for (let k = 0; k < K; k++) { let e = 0; const o = k * n; for (let i = 0; i < n; i++) { const d = img[i] - frames[o + i]; e += d * d; }
-      best = Math.min(best, e / n); }
+      if (e / n < best) { best = e / n; bestK = k; } }
     return best;
   }
   function draw() {
@@ -425,7 +509,8 @@ SCRIPTP = r"""<script>
   }
   function readouts() {
     let vis = 0; for (let i = 0; i < ca.cap; i++) if (ca.act[i] && ca.s[i * ca.C + 3] > 0.1) vis++;
-    $('rp-step').textContent = step; $('rp-n').textContent = ca.count(); $('rp-vis').textContent = vis; $('rp-err').textContent = errTxt;
+    $('rp-step').textContent = step; $('rp-n').textContent = ca.count(); $('rp-err').textContent = errTxt;
+    $('rp-vis-l').textContent = K > 1 ? 'Frame' : 'Visible'; $('rp-vis').textContent = K > 1 ? (bestK < 0 ? '–' : bestK + 1) : vis;
   }
   function frame() {
     if (running) for (let i = 0; i < +$('speedp').value; i++) { ca.step(); step++; }
@@ -573,16 +658,19 @@ TEMPLATE = r"""<title>One-Cell Lizard</title>
   --ground: #edf0ea; --surface: #f8faf5; --ink: #1b221d; --muted: #5a645c; --rule: #d2d8cf;
   --accent: #b8501d; --dish: #ffffff;
   --s1: #7a6fb0; --s2: #2f7f86; --s3: #b8501d; --s4: #2f5fa8;
+  --ok: #2c7a4b; --ok-bg: #dcefe1; --run: #8a5a00; --run-bg: #f6e7c4; --todo: #5a645c; --todo-bg: #e3e8e0;
   --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
   --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --ground: #111713; --surface: #18201b; --ink: #e2e9e1; --muted: #92a095; --rule: #2b362e;
-  --accent: #ef8a4f; --dish: #0b0f0c; --s1: #a79be0; --s2: #5fb8bf; --s3: #ef8a4f; --s4: #82a9ea; color-scheme: dark } }
+  --accent: #ef8a4f; --dish: #0b0f0c; --s1: #a79be0; --s2: #5fb8bf; --s3: #ef8a4f; --s4: #82a9ea;
+  --ok: #7fd49b; --ok-bg: #1d3325; --run: #f2c46b; --run-bg: #3a2f14; --todo: #92a095; --todo-bg: #232c26; color-scheme: dark } }
 :root[data-theme="dark"] {
   --ground: #111713; --surface: #18201b; --ink: #e2e9e1; --muted: #92a095; --rule: #2b362e;
-  --accent: #ef8a4f; --dish: #0b0f0c; --s1: #a79be0; --s2: #5fb8bf; --s3: #ef8a4f; --s4: #82a9ea; color-scheme: dark }
+  --accent: #ef8a4f; --dish: #0b0f0c; --s1: #a79be0; --s2: #5fb8bf; --s3: #ef8a4f; --s4: #82a9ea;
+  --ok: #7fd49b; --ok-bg: #1d3325; --run: #f2c46b; --run-bg: #3a2f14; --todo: #92a095; --todo-bg: #232c26; color-scheme: dark }
 * { box-sizing: border-box }
 body { background: var(--ground); color: var(--ink); font: 16px/1.55 var(--body); padding-inline: 16px; padding-block: 28px 64px }
 .wrap { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px }
@@ -657,8 +745,30 @@ tbody tr:last-child > * { border-bottom: 0 }
 @media (max-width: 820px) { .animrow { grid-template-columns: minmax(0, 1fr) } }
 .gifbox img { min-width: 0; width: 100% }
 .bench3d, .benchp { display: grid; gap: 24px }
+.ledger { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px }
+.ledger-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px }
+.ledger-head h2 { margin: 0 }
+.ledger-date { font-size: 12px; color: var(--muted) }
+.ledger-list { list-style: none; margin: 0; padding: 0; display: grid }
+.ledger-row { display: grid; grid-template-columns: 6.5em minmax(8em, 11em) minmax(0, 1fr) minmax(0, auto); gap: 6px 14px; align-items: baseline; padding: 9px 0; border-top: 1px solid var(--rule) }
+.ledger-row:first-child { border-top: 0 }
+.ledger-name { font-weight: 700 }
+.ledger-name a { color: var(--ink); text-decoration-color: var(--rule); text-underline-offset: 3px }
+.ledger-what { color: var(--muted); font-size: 15px; min-width: 0 }
+.ledger-num { font: 13px var(--mono); font-variant-numeric: tabular-nums; text-align: right; min-width: 0 }
+.chip { justify-self: start; font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 5px 8px; border-radius: 999px }
+.chip-done { color: var(--ok); background: var(--ok-bg) }
+.chip-run { color: var(--run); background: var(--run-bg) }
+.chip-todo { color: var(--todo); background: var(--todo-bg) }
+@media (max-width: 720px) { .ledger-row { grid-template-columns: 6.5em minmax(0, 1fr) } .ledger-what, .ledger-num { grid-column: 2 } .ledger-num { text-align: left } }
+.diag { overflow-x: auto; border: 1px solid var(--rule); border-radius: 14px; background: var(--surface) }
+.diag td:last-child, .diag th:last-child { text-align: left; white-space: normal; min-width: 16em; font-family: var(--body) }
+.diag thead th:first-child { text-align: left }
+.diag tr.win th, .diag tr.win td { color: var(--ok); font-weight: 700 }
+[hidden] { display: none !important }
 .pfigs { display: grid; gap: 18px }
 .ptabs { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+.ptabs button { border-bottom: 0 !important }
 .h3dhead { display: grid; gap: 8px }
 .h3dhead h2 { margin: 0 }
 .plate3d { cursor: grab }
@@ -675,10 +785,11 @@ table.kv td { font-weight: 600 }
   <header>
     <div class="eyebrow">Growing Neural Cellular Automata · reproduction</div>
     <h1>A lizard grown from <em>one cell</em></h1>
-    <p class="lede">Every pixel below runs the same 8,336-parameter rule, sees only its 3×3 neighbours, and fires at random half the time. Starting from a single live cell, the rule grows the Noto lizard emoji. This is a CPU PyTorch reproduction of <a href="https://distill.pub/2020/growing-ca/">Mordvintsev et al., Distill 2020</a>, running live in your browser, plus two extensions: the same cell trained on an animated loop, so the lizard swims, and that swim with one more spatial dimension.</p>
+    <p class="lede">Every pixel below runs the same 8,336-parameter rule, sees only its 3×3 neighbours, and fires at random half the time. Starting from a single live cell, the rule grows the Noto lizard emoji. This is a CPU PyTorch reproduction of <a href="https://distill.pub/2020/growing-ca/">Mordvintsev et al., Distill 2020</a>, running live in your browser, plus three extensions: the same cell trained on an animated loop, so the lizard swims; that swim with one more spatial dimension; and the cell taken off the grid entirely, as free particles that only sense and push their neighbours.</p>
   </header>
+  {{STATUS}}
 
-  <section class="bench" aria-label="Live automaton">
+  <section class="bench" id="grid" aria-label="Live automaton">
     <div class="dish">
       <div class="plate" id="plate"><canvas id="cv" width="72" height="72" aria-label="72 by 72 cell grid"></canvas><span class="hint">drag to cut · double-click to seed</span></div>
       <div class="axis"><span>0</span><span>36</span><span>72 cells</span></div>
@@ -749,11 +860,11 @@ function load(key) {
   exp = key;
   nca = makeNCA(RUNS[key].w, G, G);
   nca.seed(); stepN = 0;
-  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.exp === key));
+  document.querySelectorAll('.tabs [data-exp]').forEach(b => b.setAttribute('aria-selected', b.dataset.exp === key));
   $('note').textContent = NOTES[key];
   try { localStorage.setItem('nca-exp', key) } catch (e) {}
 }
-document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => !b.disabled && load(b.dataset.exp)));
+document.querySelectorAll('.tabs [data-exp]').forEach(b => b.addEventListener('click', () => !b.disabled && load(b.dataset.exp)));
 
 function bgRGB() {
   const c = getComputedStyle(document.documentElement).getPropertyValue('--dish').trim();
