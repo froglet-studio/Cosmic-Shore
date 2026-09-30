@@ -21,8 +21,8 @@ MonoBehaviour:
   DeployArchiveInNormalPlay: 1
   UseStoredGenomeForLowerIntensity: 0
   TargetEpisodes: -1
-  WatchdogSeconds: 120
+  WatchdogSeconds: 300
   HumanPlaysThisLaunch: 0
-  SimulationTimeScale: 0
+  SimulationTimeScale: 8
   MuteAudio: 0
   DisableCameraRendering: 0

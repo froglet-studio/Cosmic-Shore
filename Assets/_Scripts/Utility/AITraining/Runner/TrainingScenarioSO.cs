@@ -75,6 +75,18 @@ namespace CosmicShore.Utility.AITraining
             DistanceAtLeast = 5,
         }
 
+        /// <summary>
+        /// Intensity-4 Skim Race crystal target. A pilot who reaches it can
+        /// close the episode once AssignScores has written the finish time.
+        /// </summary>
+        public const int HexRaceCrystalTarget = 54;
+
+        /// <summary>
+        /// Long enough for a domain to collect the intensity-4 target. The
+        /// 120s default ended every evaluation before a finish time existed.
+        /// </summary>
+        public const float HexRaceMaxEpisodeSeconds = 240f;
+
         public string Key => $"{Vessel}_{GameMode}_I{Intensity}";
 
         /// <summary>
@@ -132,8 +144,10 @@ namespace CosmicShore.Utility.AITraining
 
         /// <summary>
         /// Stamps the vessel, match size, and seek mode from the mode catalog.
-        /// Leaves the overnight population and episode defaults alone and clears
-        /// early-exit gates so a golf match is not closed before AssignScores.
+        /// HexRace also stamps the finish window and a crystal early-exit at
+        /// the intensity-4 target. Every other row clears early-exit gates and
+        /// leaves the episode cap alone, so a golf match is not closed before
+        /// AssignScores.
         /// </summary>
         public void ApplyCatalogDefaults(TrainingModeCatalog.Row row)
         {
@@ -143,7 +157,23 @@ namespace CosmicShore.Utility.AITraining
             Intensity = 4;
             OpponentCount = row.PlayerCount;
             TargetMode = row.TargetMode;
-            EarlyExitConditions = new List<EarlyExit>();
+            if (row.GameMode == GameModes.SkimRace)
+            {
+                MaxEpisodeSeconds = HexRaceMaxEpisodeSeconds;
+                EarlyExitConditions = new List<EarlyExit>
+                {
+                    new()
+                    {
+                        Kind = TerminationKind.CrystalsAtLeast,
+                        IntegerThreshold = HexRaceCrystalTarget,
+                        FloatThreshold = 0f,
+                    },
+                };
+            }
+            else
+            {
+                EarlyExitConditions = new List<EarlyExit>();
+            }
         }
 
         /// <summary>

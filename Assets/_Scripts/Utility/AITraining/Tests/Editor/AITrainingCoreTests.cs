@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Utility.AITraining.Editor;
@@ -395,6 +396,71 @@ namespace CosmicShore.Utility.AITraining.Tests
         }
 
         [Test]
+        public void HexRace_FinisherAt70_OutranksCapSitterAndHallOfFame()
+        {
+            var profile = ScriptableObject.CreateInstance<FitnessProfileSO>();
+            profile.ApplyFor(GameModes.SkimRace);
+            float finisher = HexRaceRecipe(profile, crystals: 54f, score: 70f, episodeTime: 70f);
+            float capScoreZero = HexRaceRecipe(profile, crystals: 11f, score: 0f, episodeTime: 240f);
+            float capLiveClock = HexRaceRecipe(profile, crystals: 11f, score: 240f, episodeTime: 240f);
+            Assert.AreEqual(5323f, finisher, 0.01f);
+            Assert.AreEqual(860f, capScoreZero, 0.01f);
+            Assert.AreEqual(836f, capLiveClock, 0.01f);
+            Assert.Greater(finisher, capScoreZero);
+            Assert.Greater(finisher, capLiveClock);
+            Assert.Greater(finisher, 974.2953f);
+            Object.DestroyImmediate(profile);
+        }
+
+        static float HexRaceRecipe(FitnessProfileSO profile, float crystals, float score, float episodeTime)
+        {
+            float total = 0f;
+            foreach (var entry in profile.Entries)
+            {
+                float raw = entry.Kind switch
+                {
+                    FitnessProfileSO.ComponentKind.CrystalCollection => crystals,
+                    FitnessProfileSO.ComponentKind.ScoreFromRoundStats =>
+                        FitnessProfileSO.ScoreIsGolf(GameModes.SkimRace) ? -score : score,
+                    FitnessProfileSO.ComponentKind.TimePenalty => -episodeTime,
+                    _ => 0f,
+                };
+                total += raw * entry.Weight;
+            }
+            return total;
+        }
+
+        [Test]
+        public void ApplyCatalogDefaults_HexRace_SetsFinishWindow()
+        {
+            var scenario = ScriptableObject.CreateInstance<TrainingScenarioSO>();
+            scenario.MaxEpisodeSeconds = 120f;
+            scenario.ApplyCatalogDefaults(TrainingModeCatalog.Live[0]);
+            Assert.AreEqual(GameModes.SkimRace, scenario.GameMode);
+            Assert.AreEqual(TrainingScenarioSO.HexRaceMaxEpisodeSeconds, scenario.MaxEpisodeSeconds);
+            Assert.AreEqual(1, scenario.EarlyExitConditions.Count);
+            Assert.AreEqual(TrainingScenarioSO.TerminationKind.CrystalsAtLeast, scenario.EarlyExitConditions[0].Kind);
+            Assert.AreEqual(TrainingScenarioSO.HexRaceCrystalTarget, scenario.EarlyExitConditions[0].IntegerThreshold);
+            Object.DestroyImmediate(scenario);
+        }
+
+        [Test]
+        public void ApplyCatalogDefaults_OtherModes_LeaveCapAndClearEarlyExit()
+        {
+            var scenario = ScriptableObject.CreateInstance<TrainingScenarioSO>();
+            scenario.MaxEpisodeSeconds = 120f;
+            scenario.EarlyExitConditions = new List<TrainingScenarioSO.EarlyExit>
+            {
+                new() { Kind = TrainingScenarioSO.TerminationKind.CrystalsAtLeast, IntegerThreshold = 1 },
+            };
+            scenario.ApplyCatalogDefaults(TrainingModeCatalog.Live[1]);
+            Assert.AreNotEqual(GameModes.SkimRace, scenario.GameMode);
+            Assert.AreEqual(120f, scenario.MaxEpisodeSeconds);
+            Assert.AreEqual(0, scenario.EarlyExitConditions.Count);
+            Object.DestroyImmediate(scenario);
+        }
+
+        [Test]
         public void Catalog_EveryLiveMode_HasScenarioAndProfileMatchingApplyFor()
         {
             Assert.AreEqual(12, TrainingModeCatalog.Live.Count);
@@ -410,8 +476,19 @@ namespace CosmicShore.Utility.AITraining.Tests
                 Assert.AreEqual(row.PlayerCount, scenario.OpponentCount, row.Token);
                 Assert.AreEqual(row.TargetMode, scenario.TargetMode, row.Token);
                 Assert.AreEqual(24, scenario.PopulationSize, row.Token);
-                Assert.AreEqual(120f, scenario.MaxEpisodeSeconds, row.Token);
-                Assert.IsTrue(scenario.EarlyExitConditions == null || scenario.EarlyExitConditions.Count == 0, row.Token);
+                if (row.GameMode == GameModes.SkimRace)
+                {
+                    Assert.AreEqual(TrainingScenarioSO.HexRaceMaxEpisodeSeconds, scenario.MaxEpisodeSeconds, row.Token);
+                    Assert.AreEqual(1, scenario.EarlyExitConditions.Count, row.Token);
+                    Assert.AreEqual(TrainingScenarioSO.TerminationKind.CrystalsAtLeast, scenario.EarlyExitConditions[0].Kind, row.Token);
+                    Assert.AreEqual(TrainingScenarioSO.HexRaceCrystalTarget, scenario.EarlyExitConditions[0].IntegerThreshold, row.Token);
+                    Assert.AreEqual(0f, scenario.EarlyExitConditions[0].FloatThreshold, row.Token);
+                }
+                else
+                {
+                    Assert.AreEqual(120f, scenario.MaxEpisodeSeconds, row.Token);
+                    Assert.IsTrue(scenario.EarlyExitConditions == null || scenario.EarlyExitConditions.Count == 0, row.Token);
+                }
                 Assert.AreSame(profile, scenario.FitnessProfile, row.Token);
 
                 var expected = ScriptableObject.CreateInstance<FitnessProfileSO>();
@@ -674,16 +751,16 @@ namespace CosmicShore.Utility.AITraining.Tests
             Assert.IsTrue(scenario.MatchesSessionKey(saved.ScenarioKey),
                 $"Checked-in SessionState key '{saved.ScenarioKey}' must match scenario {scenario.Key}.");
 
-            Assert.AreEqual(24, saved.EpisodesCompleted);
-            Assert.AreEqual(0, saved.Population.Generation);
-            Assert.AreEqual(277.09552f, saved.HallOfFameBestFitness, 0.0001f);
+            Assert.AreEqual(72, saved.EpisodesCompleted);
+            Assert.AreEqual(2, saved.Population.Generation);
+            Assert.AreEqual(974.29535f, saved.HallOfFameBestFitness, 0.0001f);
             Assert.IsNotNull(saved.HallOfFameBest);
 
             var entry = archive.Find(VesselClassType.Squirrel, GameModes.SkimRace, 4);
             Assert.IsNotNull(entry);
             Assert.AreEqual(33, (int)entry.GameMode);
             Assert.AreEqual(4, entry.Intensity);
-            Assert.AreEqual(277.09552f, entry.Fitness, 0.0001f);
+            Assert.AreEqual(974.29535f, entry.Fitness, 0.0001f);
 
             string keyBefore = saved.ScenarioKey;
             var copy = Object.Instantiate(saved);
@@ -696,10 +773,10 @@ namespace CosmicShore.Utility.AITraining.Tests
             runner.StartSession();
             runner.StopSession();
 
-            Assert.AreEqual(24, copy.EpisodesCompleted);
-            Assert.AreEqual(0, copy.Population.Generation);
+            Assert.AreEqual(72, copy.EpisodesCompleted);
+            Assert.AreEqual(2, copy.Population.Generation);
             Assert.AreEqual(populationSize, copy.Population.PopulationSize);
-            Assert.AreEqual(277.09552f, copy.HallOfFameBestFitness, 0.0001f);
+            Assert.AreEqual(974.29535f, copy.HallOfFameBestFitness, 0.0001f);
             Assert.AreEqual(hofBefore, JsonUtility.ToJson(copy.HallOfFameBest));
             Assert.AreEqual(keyBefore, copy.ScenarioKey,
                 "Resume must keep the on-disk key (not rewrite or wipe the population).");
@@ -1024,6 +1101,372 @@ namespace CosmicShore.Utility.AITraining.Tests
                 "_Scripts/Utility/AITraining/Runner/TrainingAutoLauncher.cs"));
             StringAssert.Contains("public void Relaunch()", launcher);
             StringAssert.Contains("InvokeGameLaunch", launcher);
+        }
+
+        [Test]
+        public void Genome_Get_ClampsArchivedCrawlThrottleBaseToFloor()
+        {
+            GeneRegistry.Clear();
+            new ThrottleControlPolicy().RegisterGenes();
+
+            // Simulate Archive gen-2 chromosome without going through Set (which clamps on write).
+            var g = JsonUtility.FromJson<TrainingGenome>(
+                "{\"geneNames\":[\"throttle.base\"],\"geneValues\":[0.47435406],\"enabledModules\":[]}");
+
+            Assert.AreEqual(0.85f, g.Get("throttle.base"), 1e-5f);
+        }
+
+        [Test]
+        public void ThrottleControl_ArchivedCrawlBase_DoesNotEmitStuckHalfThrottle()
+        {
+            GeneRegistry.Clear();
+            var policy = new ThrottleControlPolicy();
+            policy.RegisterGenes();
+
+            var g = JsonUtility.FromJson<TrainingGenome>(
+                "{\"geneNames\":[\"throttle.base\",\"throttle.ramp_per_second\",\"throttle.ramp_cap\"," +
+                "\"throttle.brake_distance\",\"throttle.brake_strength\",\"throttle.ram_dot\"]," +
+                "\"geneValues\":[0.47435406,0,0.14658935,15.064491,0.7519777,0.8781556]," +
+                "\"enabledModules\":[\"ThrottleControl\"]}");
+
+            policy.OnEpisodeStart(g);
+            var ctx = new DecisionContext
+            {
+                HasTarget = true,
+                DotForwardObjective = 0f,
+                Position = Vector3.zero,
+                Forward = Vector3.forward,
+            };
+            var output = policy.Decide(ctx);
+
+            Assert.GreaterOrEqual(output.Throttle, 0.85f);
+            Assert.AreNotEqual(0.47435406f, output.Throttle);
+        }
+
+        [Test]
+        public void Genome_Get_ClampsArchivedCrawlAggressivenessToFloor()
+        {
+            GeneRegistry.Clear();
+            new TargetSeekingPolicy().RegisterGenes();
+
+            var g = JsonUtility.FromJson<TrainingGenome>(
+                "{\"geneNames\":[\"target.aggressiveness\",\"target.steer_weight\"]," +
+                "\"geneValues\":[20,0.58],\"enabledModules\":[]}");
+
+            Assert.AreEqual(TargetSeekingPolicy.AggressivenessFloor, g.Get("target.aggressiveness"), 1e-5f);
+            Assert.AreEqual(TargetSeekingPolicy.SteerWeightFloor, g.Get("target.steer_weight"), 1e-5f);
+        }
+
+        [Test]
+        public void Genome_Get_ClampsBoostClearAndLockDotToCeilings()
+        {
+            GeneRegistry.Clear();
+            new BoostManagementPolicy().RegisterGenes();
+
+            var g = JsonUtility.FromJson<TrainingGenome>(
+                "{\"geneNames\":[\"boost.min_clear_distance\",\"boost.lock_dot\"]," +
+                "\"geneValues\":[80,0.99],\"enabledModules\":[]}");
+
+            Assert.LessOrEqual(g.Get("boost.min_clear_distance"), 45f);
+            Assert.LessOrEqual(g.Get("boost.lock_dot"), 0.96f);
+        }
+
+        [Test]
+        public void ThrottleControl_RequestRam_WhenLockedOnTarget()
+        {
+            GeneRegistry.Clear();
+            var policy = new ThrottleControlPolicy();
+            policy.RegisterGenes();
+
+            var g = JsonUtility.FromJson<TrainingGenome>(
+                "{\"geneNames\":[\"throttle.base\",\"throttle.ramp_per_second\",\"throttle.ramp_cap\"," +
+                "\"throttle.brake_distance\",\"throttle.brake_strength\",\"throttle.ram_dot\"]," +
+                "\"geneValues\":[0.95,0,0,0,0,0.88]," +
+                "\"enabledModules\":[\"ThrottleControl\"]}");
+
+            policy.OnEpisodeStart(g);
+            var locked = policy.Decide(new DecisionContext
+            {
+                HasTarget = true,
+                DotForwardObjective = 0.9f,
+                Position = Vector3.zero,
+                Forward = Vector3.forward,
+            });
+            Assert.IsTrue(locked.RequestRam);
+            Assert.AreEqual(1f, locked.Throttle, 1e-5f);
+
+            var offAxis = policy.Decide(new DecisionContext
+            {
+                HasTarget = true,
+                DotForwardObjective = 0.5f,
+                Position = Vector3.zero,
+                Forward = Vector3.forward,
+            });
+            Assert.IsFalse(offAxis.RequestRam);
+        }
+
+        [Test]
+        public void ThrottleControl_CrystalChase_SkipsForwardPrismBrake()
+        {
+            GeneRegistry.Clear();
+            var policy = new ThrottleControlPolicy();
+            policy.RegisterGenes();
+
+            // Archive-like brake: strength 0.75 inside 15u would crush 0.95 → ~0.24 without the skip.
+            var g = JsonUtility.FromJson<TrainingGenome>(
+                "{\"geneNames\":[\"throttle.base\",\"throttle.ramp_per_second\",\"throttle.ramp_cap\"," +
+                "\"throttle.brake_distance\",\"throttle.brake_strength\",\"throttle.ram_dot\"]," +
+                "\"geneValues\":[0.95,0,0,15,0.75,0.99]," +
+                "\"enabledModules\":[\"ThrottleControl\"]}");
+            policy.OnEpisodeStart(g);
+
+            var ctx = new DecisionContext
+            {
+                HasTarget = true,
+                TargetKind = TargetKind.Crystal,
+                DotForwardObjective = 0.5f,
+                Position = Vector3.zero,
+                Forward = Vector3.forward,
+            };
+            ctx.NearbyPrisms.Add(new PrismInfo { Position = Vector3.forward * 5f, Range = 5f });
+
+            var chasing = policy.Decide(ctx);
+            Assert.GreaterOrEqual(chasing.Throttle, 0.85f);
+
+            ctx.TargetKind = TargetKind.None;
+            ctx.HasTarget = false;
+            var braking = policy.Decide(ctx);
+            Assert.Less(braking.Throttle, 0.5f);
+        }
+
+        [Test]
+        public void TargetSensor_SourceUsesCrystalActiveAndCanBeCollected()
+        {
+            string src = System.IO.File.ReadAllText(System.IO.Path.Combine(Application.dataPath,
+                "_Scripts/Utility/AITraining/Sensors/TargetSensor.cs"));
+            StringAssert.Contains("Crystal.Active", src);
+            StringAssert.Contains("CanBeCollected", src);
+            StringAssert.DoesNotContain("CellItems", src);
+        }
+
+        [Test]
+        public void TrainingDeployment_InstallsAllAiSeatsOnAnyPairEvent()
+        {
+            string src = System.IO.File.ReadAllText(System.IO.Path.Combine(Application.dataPath,
+                "_Scripts/Utility/AITraining/Pilot/TrainingDeploymentService.cs"));
+            StringAssert.Contains("IsInitializedAsAI", src);
+            // Must not filter AI seats by OwnerClientNetId / PlayerNetId — that left one
+            // backfill on AIPilot while the other flew the archive.
+            StringAssert.DoesNotContain("OwnerClientNetId", src);
+            StringAssert.DoesNotContain("PlayerNetId", src);
+        }
+
+        [Test]
+        public void TrainingDeployment_EnsuresAiReadyOnTurnStart()
+        {
+            string src = System.IO.File.ReadAllText(System.IO.Path.Combine(Application.dataPath,
+                "_Scripts/Utility/AITraining/Pilot/TrainingDeploymentService.cs"));
+            // Archive BeginEpisode never unstations — a Vessel-null StartPlayer leaves
+            // IsStationary true forever (Ruby at 0). Turn start must clear it, and a
+            // 1 Hz heartbeat must keep asserting for the life of the turn.
+            StringAssert.Contains("OnMiniGameTurnStarted", src);
+            StringAssert.Contains("OnMiniGameTurnEnd", src);
+            StringAssert.Contains("EnsureAiPilotsReady", src);
+            StringAssert.Contains("KeepAiPilotsReady", src);
+            StringAssert.Contains("IsStationary", src);
+            StringAssert.Contains("StartPlayer", src);
+            StringAssert.Contains("BeginEpisode", src);
+        }
+
+        [Test]
+        public void BoostManagement_CrystalChase_SkipsPathClearance()
+        {
+            GeneRegistry.Clear();
+            var policy = new BoostManagementPolicy();
+            policy.RegisterGenes();
+
+            // min_clear 25 would refuse boost with a prism at 5u in the forward arc.
+            // Archive-like lock_dot 0.9 would also refuse at Dot 0.6 — crystal chase
+            // must still engage (Decide caps lock to CrystalLockDotCeiling).
+            var g = JsonUtility.FromJson<TrainingGenome>(
+                "{\"geneNames\":[\"boost.min_charge\",\"boost.min_clear_distance\",\"boost.lock_dot\"," +
+                "\"boost.hold_seconds\",\"boost.cooldown\"]," +
+                "\"geneValues\":[0.1,25,0.9,1,2]," +
+                "\"enabledModules\":[\"BoostManagement\"]}");
+            policy.OnEpisodeStart(g);
+
+            var ctx = new DecisionContext
+            {
+                EpisodeTime = 1f,
+                ChargedBoostCharge = 1f,
+                HasTarget = true,
+                TargetKind = TargetKind.Crystal,
+                DotForwardObjective = 0.95f,
+                Position = Vector3.zero,
+                Forward = Vector3.forward,
+            };
+            ctx.NearbyPrisms.Add(new PrismInfo { Position = Vector3.forward * 5f, Range = 5f });
+
+            var chasing = policy.Decide(ctx);
+            Assert.IsNotNull(chasing.RequestActionsStart);
+            Assert.Contains(InputEvents.FullSpeedStraightAction, chasing.RequestActionsStart);
+
+            GeneRegistry.Clear();
+            var blocked = new BoostManagementPolicy();
+            blocked.RegisterGenes();
+            blocked.OnEpisodeStart(g);
+            ctx.TargetKind = TargetKind.EnemyVessel;
+            var refused = blocked.Decide(ctx);
+            Assert.IsTrue(refused.RequestActionsStart == null ||
+                          !refused.RequestActionsStart.Contains(InputEvents.FullSpeedStraightAction));
+        }
+
+        [Test]
+        public void BoostManagement_CrystalChase_OpensEngageWindowAndHoldsLonger()
+        {
+            GeneRegistry.Clear();
+            var policy = new BoostManagementPolicy();
+            policy.RegisterGenes();
+
+            // Archive gen-2 numbers: lock 0.92, hold 0.35, cooldown 2.59.
+            var g = JsonUtility.FromJson<TrainingGenome>(
+                "{\"geneNames\":[\"boost.min_charge\",\"boost.min_clear_distance\",\"boost.lock_dot\"," +
+                "\"boost.hold_seconds\",\"boost.cooldown\"]," +
+                "\"geneValues\":[0.4,25,0.92,0.35,2.59]," +
+                "\"enabledModules\":[\"BoostManagement\"]}");
+            policy.OnEpisodeStart(g);
+
+            // Dot 0.55 is below archive lock_dot 0.92 — crystal chase must still engage.
+            var ctx = new DecisionContext
+            {
+                EpisodeTime = 1f,
+                ChargedBoostCharge = 1f,
+                HasTarget = true,
+                TargetKind = TargetKind.Crystal,
+                DotForwardObjective = 0.55f,
+                Position = Vector3.zero,
+                Forward = Vector3.forward,
+            };
+            var start = policy.Decide(ctx);
+            Assert.IsNotNull(start.RequestActionsStart);
+            Assert.Contains(InputEvents.FullSpeedStraightAction, start.RequestActionsStart);
+
+            // Archive hold 0.35s would release at t=1.4 — crystal floor is 2.0s.
+            ctx.EpisodeTime = 1.4f;
+            var stillHeld = policy.Decide(ctx);
+            Assert.IsTrue(stillHeld.RequestActionsStop == null ||
+                          !stillHeld.RequestActionsStop.Contains(InputEvents.FullSpeedStraightAction));
+
+            ctx.EpisodeTime = 3.1f; // 1 + 2.0 hold floor
+            var released = policy.Decide(ctx);
+            Assert.IsNotNull(released.RequestActionsStop);
+            Assert.Contains(InputEvents.FullSpeedStraightAction, released.RequestActionsStop);
+
+            // Cooldown ceiling 0.25 — ready again at 3.1 + 0.25 = 3.35, not 3.1 + 2.59.
+            ctx.EpisodeTime = 3.4f;
+            ctx.DotForwardObjective = 0.55f;
+            var reengage = policy.Decide(ctx);
+            Assert.IsNotNull(reengage.RequestActionsStart);
+            Assert.Contains(InputEvents.FullSpeedStraightAction, reengage.RequestActionsStart);
+        }
+
+        [Test]
+        public void TrainingPilot_SourceClearsStationaryDuringEpisode()
+        {
+            string src = System.IO.File.ReadAllText(System.IO.Path.Combine(Application.dataPath,
+                "_Scripts/Utility/AITraining/Pilot/TrainingPilot.cs"));
+            // Must not early-return on IsStationary while an episode is active —
+            // that is the Ruby-at-0 freeze. Clear the flag every frame instead.
+            StringAssert.Contains("IsStationary = false", src);
+            StringAssert.DoesNotContain("if (_status.IsStationary) return;", src);
+            StringAssert.Contains("Player.Domain", src);
+        }
+
+        [Test]
+        public void DriftPolicy_CrystalTarget_RefusesEnterAndStopsIfDrifting()
+        {
+            GeneRegistry.Clear();
+            var policy = new DriftPolicy();
+            policy.RegisterGenes();
+            policy.OnEpisodeStart(TrainingGenome.FromRegistryDefaults());
+
+            var enter = policy.Decide(new DecisionContext
+            {
+                HasTarget = true,
+                TargetKind = TargetKind.Crystal,
+                DotForwardObjective = 1f,
+                Speed = 100f,
+                IsDrifting = false,
+            });
+            Assert.IsFalse(enter.RequestDrift);
+
+            var stop = policy.Decide(new DecisionContext
+            {
+                HasTarget = true,
+                TargetKind = TargetKind.Crystal,
+                DotForwardObjective = 1f,
+                Speed = 100f,
+                IsDrifting = true,
+            });
+            Assert.IsFalse(stop.RequestDrift);
+            Assert.IsNotNull(stop.RequestActionsStop);
+            Assert.Greater(stop.RequestActionsStop.Count, 0);
+        }
+
+        [Test]
+        public void ObstacleAvoidance_AimedAtCrystal_StandsDown()
+        {
+            GeneRegistry.Clear();
+            var policy = new ObstacleAvoidancePolicy();
+            policy.RegisterGenes();
+            policy.OnEpisodeStart(TrainingGenome.FromRegistryDefaults());
+
+            // Stand-down is before the prism loop — no Vessel required.
+            var empty = policy.Decide(new DecisionContext
+            {
+                HasTarget = true,
+                TargetKind = TargetKind.Crystal,
+                DotForwardObjective = 0.9f,
+            });
+            Assert.AreEqual(0f, empty.SteerWeight, 1e-5f);
+
+            var withPrisms = new DecisionContext
+            {
+                HasTarget = true,
+                TargetKind = TargetKind.Crystal,
+                DotForwardObjective = 0.9f,
+            };
+            withPrisms.NearbyPrisms.Add(new PrismInfo { Position = Vector3.forward * 5f, Range = 5f });
+            var aimed = policy.Decide(withPrisms);
+            Assert.AreEqual(0f, aimed.SteerWeight, 1e-5f);
+        }
+
+        [Test]
+        public void TargetSeekingPolicy_SourceContainsOrbitBreakAndDeadzoneKeepsBlendWeight()
+        {
+            string src = System.IO.File.ReadAllText(System.IO.Path.Combine(Application.dataPath,
+                "_Scripts/Utility/AITraining/Policies/TargetSeekingPolicy.cs"));
+            StringAssert.Contains("MaxSteerDivisor", src);
+            StringAssert.Contains("AggressivenessFloor", src);
+            StringAssert.Contains("OrbitDetector", src);
+            StringAssert.Contains("PursuitReachability", src);
+            // Deadzone must keep full SteerWeight — a 0.25× cut lets avoidance own the blend.
+            StringAssert.Contains("SteerWeight = _steerWeight", src);
+            StringAssert.DoesNotContain("SteerWeight = _steerWeight * 0.25f", src);
+        }
+
+        [Test]
+        public void ArchiveChampion_DriftModuleDisabled()
+        {
+            var arch = AssetDatabase.LoadAssetAtPath<TrainingArchiveSO>(
+                "Assets/_SO_Assets/AI Training/Archive.asset");
+            Assert.IsNotNull(arch);
+            var entry = arch.Find(VesselClassType.Squirrel, GameModes.SkimRace, 4);
+            Assert.IsNotNull(entry);
+            Assert.IsFalse(entry.Genome.IsModuleEnabled("Drift"));
+            Assert.IsTrue(entry.Genome.IsModuleEnabled("TargetSeeking"));
+            Assert.GreaterOrEqual(entry.Genome.Get("target.aggressiveness"),
+                TargetSeekingPolicy.AggressivenessFloor);
         }
 
         static TrainingScheduleSO TwoSlotSchedule(int hexEpisodes, float hexHours, int joustEpisodes, float joustHours)

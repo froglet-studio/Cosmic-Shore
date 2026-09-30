@@ -9,7 +9,9 @@ namespace CosmicShore.Utility.AITraining
     /// Picks a target each frame based on the configured TargetMode. The training
     /// pilot owns one TargetSensor; the scenario chooses which mode it should run in.
     ///
-    /// Crystals/buffs come from CellRuntimeDataSO. Enemies come from GameDataSO.Players.
+    /// Crystals come from <see cref="Crystal.Active"/> filtered by
+    /// <see cref="Crystal.CanBeCollected"/> — the same live set Skim Race scoring
+    /// uses. Enemies come from GameDataSO.Players.
     /// </summary>
     public class TargetSensor : ITrainingSensor
     {
@@ -62,19 +64,21 @@ namespace CosmicShore.Utility.AITraining
 
             Vector3 crystalPos = default;
             float crystalDist = float.PositiveInfinity;
-            if (wantCrystal && _cellData != null && _cellData.CellItems != null)
+            if (wantCrystal)
             {
-                foreach (var item in _cellData.CellItems)
+                // Crystal.Active is maintained OnEnable/OnDisable. The cell's item
+                // list can hold stale / MissingReference entries across scene reuse
+                // and can lag a collected crystal while it explodes — both read as
+                // "no target" or a chase of a point already passed.
+                var active = Crystal.Active;
+                for (int i = 0; i < active.Count; i++)
                 {
-                    if (item == null) continue;
-                    if (item.ItemType != ItemType.Buff &&
-                        (item.ItemType != ItemType.Debuff || item.ownDomain == myDomain)) continue;
-                    if (item.ItemType == ItemType.Buff
-                        && myDomain != Domains.Blue
-                        && item.ownDomain != Domains.Blue
-                        && item.ownDomain != myDomain) continue;
-                    float d = Vector3.SqrMagnitude(item.transform.position - myPos);
-                    if (d < crystalDist) { crystalDist = d; crystalPos = item.transform.position; }
+                    Crystal crystal = active[i];
+                    if (crystal == null) continue;
+                    if (crystal.IsExploding) continue;
+                    if (!crystal.CanBeCollected(myDomain)) continue;
+                    float d = Vector3.SqrMagnitude(crystal.transform.position - myPos);
+                    if (d < crystalDist) { crystalDist = d; crystalPos = crystal.transform.position; }
                 }
             }
 

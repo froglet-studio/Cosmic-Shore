@@ -58,7 +58,7 @@ namespace CosmicShore.Utility.AITraining
             new(GameModes.SkimRace, "HexRace", "HexRace · Squirrel · I4",
                 VesselClassType.Squirrel, true, 3, TargetSensor.TargetMode.ClosestCrystal,
                 "MinigameSkimRace",
-                "Domain sum of crystals ends the race. Fitness uses this pilot's CrystalsCollected. Golf Score is shared by the domain and negated."),
+                "Domain sum of crystals ends the race. Fitness uses this pilot's CrystalsCollected. Golf Score is shared by the domain and negated. Episode cap is 240s; a pilot at the intensity-4 target (54) can end the episode once AssignScores has written the finish time."),
             new(GameModes.Scurry, "CrystalCapture", "Crystal Capture · Squirrel · I4",
                 VesselClassType.Squirrel, false, 4, TargetSensor.TargetMode.ClosestCrystal,
                 "MinigameScurryMultiplayer_Gameplay",

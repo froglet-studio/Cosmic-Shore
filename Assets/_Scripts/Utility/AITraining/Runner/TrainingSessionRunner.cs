@@ -413,10 +413,16 @@ namespace CosmicShore.Utility.AITraining
 
         bool CheckEarlyExitConditions()
         {
-            // Golf modes write Score in AssignScores at the domain objective.
-            // An individual stat gate closes the rollout before that write.
-            if (FitnessProfileSO.ScoreIsGolf(scenario.GameMode)) return false;
             if (scenario.EarlyExitConditions == null || scenario.EarlyExitConditions.Count == 0)
+                return false;
+            // Golf modes write Score in AssignScores at the domain objective.
+            // Closing on a crystal count before that write harvests the live
+            // clock as the golf term. A loser sentinel is written in the same
+            // pass as the winner's finish time, so it is the signal that the
+            // finish time is already on the stats. A split finish that no
+            // single pilot reaches the crystal gate still ends through
+            // OnMiniGameEnd, which runs after AssignScores.
+            if (FitnessProfileSO.ScoreIsGolf(scenario.GameMode) && !GolfAssignScoresHasRun())
                 return false;
             foreach (var pilot in _activePilots)
             {
@@ -425,6 +431,17 @@ namespace CosmicShore.Utility.AITraining
                 {
                     if (Matches(stats, cond)) return true;
                 }
+            }
+            return false;
+        }
+
+        bool GolfAssignScoresHasRun()
+        {
+            if (gameData == null || gameData.RoundStatsList == null) return false;
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats != null && stats.Score >= GolfScoreSentinels.DnfThreshold)
+                    return true;
             }
             return false;
         }

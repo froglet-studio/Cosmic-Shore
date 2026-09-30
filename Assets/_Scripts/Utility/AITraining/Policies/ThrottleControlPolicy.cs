@@ -30,12 +30,16 @@ namespace CosmicShore.Utility.AITraining
 
         public void RegisterGenes()
         {
-            GeneRegistry.Register(ModuleName, new GeneSpec(GeneBase, 0.3f, 1f, 0.65f));
-            GeneRegistry.Register(ModuleName, new GeneSpec(GeneRamp, 0f, 0.05f, 0.005f));
+            // Floor cruise high enough that a Squirrel (DefaultThrottleScaler 60) cannot
+            // crawl at ~28 u/s. Archive gen-2 shipped throttle.base ≈ 0.47; Get() clamps
+            // it on read so old chromosomes still fly at least Min.
+            GeneRegistry.Register(ModuleName, new GeneSpec(GeneBase, 0.85f, 1f, 0.95f));
+            GeneRegistry.Register(ModuleName, new GeneSpec(GeneRamp, 0f, 0.05f, 0.01f));
             GeneRegistry.Register(ModuleName, new GeneSpec(GeneRampCap, 0f, 0.4f, 0.2f));
             GeneRegistry.Register(ModuleName, new GeneSpec(GeneBrakeThreshold, 0f, 40f, 12f));
             GeneRegistry.Register(ModuleName, new GeneSpec(GeneBrakeStrength, 0f, 1f, 0.5f));
-            GeneRegistry.Register(ModuleName, new GeneSpec(GeneRamThreshold, 0.7f, 0.99f, 0.94f));
+            // Floor low enough that a Squirrel still rams while lining up (archive gen-2 ≈ 0.88).
+            GeneRegistry.Register(ModuleName, new GeneSpec(GeneRamThreshold, 0.7f, 0.95f, 0.88f));
         }
 
         public void OnEpisodeStart(TrainingGenome genome)
@@ -54,26 +58,40 @@ namespace CosmicShore.Utility.AITraining
             _currentRamp = Mathf.Min(_currentRamp + _ramp * Time.deltaTime, _rampCap);
             float throttle = Mathf.Clamp01(_base + _currentRamp);
 
-            // Brake when there's a prism close in front of us.
-            float closestFwdRange = float.PositiveInfinity;
-            foreach (var p in ctx.NearbyPrisms)
+            // Brake when there's a prism close in front of us — but NOT while chasing
+            // a crystal. Trail mass is dense in Skim Race; archive brake_strength ~0.75
+            // crushed cruise to a crawl through every ribbon between crystals. Obstacle
+            // avoidance already stands down when aimed at a crystal; this matches that.
+            bool chasingCrystal = ctx.HasTarget && ctx.TargetKind == TargetKind.Crystal;
+            if (!chasingCrystal)
             {
-                if (p.Range > _brakeDist) continue;
-                Vector3 toP = p.Position - ctx.Position;
-                if (Vector3.Dot(toP.normalized, ctx.Forward) < 0.5f) continue;
-                if (p.Range < closestFwdRange) closestFwdRange = p.Range;
-            }
-            if (!float.IsPositiveInfinity(closestFwdRange))
-            {
-                float t = 1f - Mathf.Clamp01(closestFwdRange / _brakeDist);
-                throttle = Mathf.Lerp(throttle, throttle * (1f - _brakeStrength), t);
+                float closestFwdRange = float.PositiveInfinity;
+                foreach (var p in ctx.NearbyPrisms)
+                {
+                    if (p.Range > _brakeDist) continue;
+                    Vector3 toP = p.Position - ctx.Position;
+                    if (Vector3.Dot(toP.normalized, ctx.Forward) < 0.5f) continue;
+                    if (p.Range < closestFwdRange) closestFwdRange = p.Range;
+                }
+                if (!float.IsPositiveInfinity(closestFwdRange))
+                {
+                    float t = 1f - Mathf.Clamp01(closestFwdRange / _brakeDist);
+                    throttle = Mathf.Lerp(throttle, throttle * (1f - _brakeStrength), t);
+                }
             }
 
             // Ram bonus: if we're locked on the target, push to full speed.
-            if (ctx.HasTarget && ctx.DotForwardObjective >= _ramDot)
+            // RequestRam also forces XDiff=1 on dual-stick vessels (TrainingPilot.ApplyToInputStatus).
+            bool ram = ctx.HasTarget && ctx.DotForwardObjective >= _ramDot;
+            if (ram)
                 throttle = 1f;
 
-            return new DecisionOutput { Throttle = throttle, ThrottleWeight = 1f };
+            return new DecisionOutput
+            {
+                Throttle = throttle,
+                ThrottleWeight = 1f,
+                RequestRam = ram
+            };
         }
     }
 }

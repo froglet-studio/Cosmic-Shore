@@ -15,11 +15,15 @@ The archive has one entry, filed by the Prompt 6 Learn pass (2026-09-29):
 
 - Key: `Squirrel_SkimRace_I4` (Squirrel, SkimRace, intensity 4).
 - Archive entry fitness: 974.2953. Generation 2. Notes: `Deployed after 72 episodes`.
-- Sidecar: `Assets/_SO_Assets/AI Training/Exports/SkimRace_Squirrel_I4.json`.
+- Sidecar: `Assets/_SO_Assets/AI Training/Exports/SkimRace_Squirrel_I4.json` (matches the entry).
 
-That genome was the best of 72 evaluations. It collected 11 crystals in a
-120-second training episode. Intensity 4's crystal target is 54. The
-training fitness is not a race score.
+This genome is **not** a training finisher. The Prompt 9 Learn pass ran 72
+more evaluations (generations 3 to 5). None reached 54 crystals or ended
+before the 240 s cap, and the best rollout collected 28 crystals. That
+pass's generation-5 auto-deploy was lost when the Editor restarted on a full
+disk, so the archive is still the generation-2 entry above. Intensity 4's
+crystal target is 54. The training fitness is not a race score. See
+`SKIM_RACE_AI_STATUS.md` §0c.
 
 ## Benchmark
 
@@ -92,6 +96,6 @@ For each race:
   absent, the seat is still on `AIPilot` and the match is not against this
   archive.
 
-Write the numbers down as they happened. A training fitness of 974.30 is
-eleven crystals minus the time penalty inside a capped episode. It is not a
-race result.
+Write the numbers down as they happened. A training fitness such as 974.30
+is crystals × 100 minus the time and golf penalties inside a capped episode.
+It is not a race result.

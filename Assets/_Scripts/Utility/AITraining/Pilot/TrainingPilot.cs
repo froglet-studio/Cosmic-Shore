@@ -197,7 +197,14 @@ namespace CosmicShore.Utility.AITraining
             // seat is paused on purpose so the keyboard does not fight this pilot.
             // The pilot is the writer of the sticks, so the pause flag is not a
             // reason to sit idle.
-            if (_status.IsStationary) return;
+            //
+            // IsStationary gates VesselTransformer.MoveShip. Archive deploy can
+            // leave a seat frozen when StartPlayer raced Vessel-null — clearing
+            // once at turn-start is not enough if something re-sets it mid-match
+            // (Ruby stuck at 0 while Gold still flies). An active episode owns
+            // the sticks; keep the transformer live every frame.
+            if (_status.IsStationary)
+                _status.IsStationary = false;
 
             // 1) Build the per-frame context.
             BuildContext();
@@ -238,7 +245,10 @@ namespace CosmicShore.Utility.AITraining
             _ctx.Clear();
             _ctx.Vessel = _vessel;
             _ctx.VesselStatus = _status;
-            _ctx.MyDomain = _status.Domain;
+            // Prefer Player.Domain — IVesselStatus.Domain defaults to Jade when
+            // Player is null, which makes a Ruby seat hunt Jade crystals that
+            // CanBeCollected(Ruby) refuses. Read the live player mirror first.
+            _ctx.MyDomain = _status.Player != null ? _status.Player.Domain : _status.Domain;
             _ctx.PlayerName = _status.PlayerName;
 
             var t = _vessel.Transform;
@@ -247,7 +257,12 @@ namespace CosmicShore.Utility.AITraining
             _ctx.Up = t.up;
             _ctx.Right = t.right;
             _ctx.Speed = _status.Speed;
-            _ctx.Velocity = t.forward * _status.Speed;
+            // Course is the direction of travel (differs from the nose during a drift). Orbit
+            // break and reachability tests need TRAVEL direction, not the nose.
+            Vector3 course = _status.Course;
+            _ctx.Velocity = course.sqrMagnitude > 1e-4f
+                ? course.normalized * _status.Speed
+                : t.forward * _status.Speed;
             _ctx.IsBoosting = _status.IsBoosting;
             _ctx.IsDrifting = _status.IsDrifting;
             _ctx.IsStationary = _status.IsStationary;

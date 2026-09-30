@@ -39,6 +39,18 @@ namespace CosmicShore.Utility.AITraining
         {
             var output = DecisionOutput.Zero;
 
+            // Crystal hunting needs continuous Course corrections. Drift locks Course, which
+            // is exactly how a Skim Race AI ends up orbiting a crystal at 0 collections.
+            if (ctx.TargetKind == TargetKind.Crystal)
+            {
+                if (ctx.IsDrifting)
+                {
+                    output = output.RequestStop(InputEvents.LeftStickAction);
+                    _driftSince = -1f;
+                }
+                return output;
+            }
+
             bool wantDrift = ctx.HasTarget
                           && ctx.DotForwardObjective >= _enterDot
                           && ctx.Speed >= _speedFloor;

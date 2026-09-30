@@ -63,21 +63,21 @@ MonoBehaviour:
       - threat.engagement_range
       - threat.steer_weight
       geneValues:
-      - 20
-      - 0.9307139
+      - 120
+      - 0.94
       - 1.1212465
-      - 0.5787283
+      - 0.95
       - 40.913445
       - 0.10021349
       - 27.631458
       - 0.4645537
-      - 0.9468485
-      - 0.47435406
+      - 0.35
+      - 0.95
       - 0
       - 0.14658935
       - 15.064491
       - 0.7519777
-      - 0.8781556
+      - 0.88
       - 0.9538038
       - 2.4718792
       - 16.563656
@@ -85,9 +85,9 @@ MonoBehaviour:
       - 110.40338
       - 0.19669197
       - 0.17614794
-      - 0.79095805
-      - 80
-      - 0.98923945
+      - 0.4
+      - 25
+      - 0.92
       - 0.34753996
       - 2.591294
       - 1.2037504
@@ -111,7 +111,6 @@ MonoBehaviour:
       - TargetSeeking
       - ObstacleAvoidance
       - ThrottleControl
-      - Drift
       - Skim
       - BoostManagement
       - AbilityScheduler
@@ -123,4 +122,4 @@ MonoBehaviour:
     Fitness: 974.29535
     Generation: 2
     TrainedUtc: 2026-09-30T00:58:32.2324940Z
-    Notes: Deployed after 72 episodes
+    Notes: SkimRace chase — orbit break, gene floors, Drift off, deadzone keeps blend weight, avoid stands down when aimed
