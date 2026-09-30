@@ -232,22 +232,55 @@ namespace CosmicShore.Player
             var cam = Camera.main;
             if (cam == null) { Console.WriteLine("[cradle] no main camera"); return null; }
             var origin = cam.transform.position;
+            // A prism the camera sees up close: in view, within a short band, largest on screen.
+            // (The drape reach is a few units, so a distant prism shows nothing at all.)
             var prism = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Prism>(FindObjectsSortMode.None)
                 .Where(pr => pr && pr.isActiveAndEnabled && !pr.destroyed)
-                .OrderBy(pr => ViewCentreScore(cam, pr.transform.position))
-                .Take(40) // the prisms nearest the view centre, then the one that looks biggest
+                .Where(pr =>
+                {
+                    float d = (pr.transform.position - origin).magnitude;
+                    if (d < 4f || d > 160f) return false;
+                    var vp = cam.WorldToViewportPoint(pr.transform.position);
+                    return vp.z > 0f && vp.x > 0.2f && vp.x < 0.8f && vp.y > 0.2f && vp.y < 0.8f;
+                })
                 .OrderByDescending(pr => ApparentSize(cam, pr))
                 .FirstOrDefault();
-            if (prism == null) { Console.WriteLine("[cradle] no prisms"); return null; }
+            if (prism == null) { Console.WriteLine("[cradle] no prism close enough"); return null; }
             var hull = new GameObject("ScriptCradleHull");
             var toCam = (origin - prism.transform.position).normalized;
             var ls = prism.transform.lossyScale;
-            float half = Mathf.Max(ls.x, Mathf.Max(ls.y, ls.z)) * 0.5f;
-            // Just off the prism's camera-facing surface: inside the drape reach of its near face.
-            hull.transform.position = prism.transform.position + toCam * (half + radius + 2f);
+            float half = Mathf.Min(ls.x, Mathf.Min(ls.y, ls.z)) * 0.5f;
+            // Sunk 40% of its radius into the prism's camera-facing side: the drape closes the
+            // face over the part the hull clips through and lifts the rim within reach to meet it.
+            hull.transform.position = prism.transform.position + toCam * (half + radius * 0.6f);
             var sp = cam.WorldToScreenPoint(prism.transform.position);
-            Console.WriteLine($"[cradle] hull r={radius} at {hull.transform.position} beside {prism.name} (scale {ls}, screen {sp.x:F0},{Screen.height - sp.y:F0})");
+            Console.WriteLine($"[cradle] hull r={radius} at {hull.transform.position} beside {prism.name} " +
+                $"(scale {ls}, {(prism.transform.position - origin).magnitude:F0} u away, screen {sp.x:F0},{Screen.height - sp.y:F0})");
             return () => CosmicShore.Utility.PrismCradle.Publish(0x5C818, hull.transform, radius, 1f);
+        }
+
+        /// <summary>
+        /// "lookat &lt;distance&gt;": stand the camera rig down and frame the largest live prism in
+        /// the scene from <paramref name="distance"/> prism-sizes away, three-quarter on. For
+        /// close-up checks of per-prism shading (the cradle drape) wherever the pilot is.
+        /// </summary>
+        public static void LookAt(float distance)
+        {
+            var cam = Camera.main;
+            if (cam == null) { Console.WriteLine("[lookat] no main camera"); return; }
+            foreach (var mb in cam.GetComponentsInParent<MonoBehaviour>())
+                if (mb.enabled) { mb.enabled = false; Console.WriteLine($"[lookat] stood down {mb.GetType().Name}"); }
+            var prism = CosmicShore.Engine.Object.FindObjectsByType<CosmicShore.Gameplay.Prism>(FindObjectsSortMode.None)
+                .Where(pr => pr && pr.isActiveAndEnabled && !pr.destroyed)
+                .OrderByDescending(pr => { var l = pr.transform.lossyScale; return Mathf.Min(l.x, Mathf.Min(l.y, l.z)); })
+                .FirstOrDefault();
+            if (prism == null) { Console.WriteLine("[lookat] no prisms"); return; }
+            var ls = prism.transform.lossyScale;
+            float size = Mathf.Max(ls.x, Mathf.Max(ls.y, ls.z));
+            var dir = (prism.transform.forward + prism.transform.up * 0.6f + prism.transform.right * 0.4f).normalized;
+            cam.transform.position = prism.transform.position + dir * size * distance;
+            cam.transform.rotation = Quaternion.LookRotation(prism.transform.position - cam.transform.position, prism.transform.up);
+            Console.WriteLine($"[lookat] {prism.name} scale {ls} at {prism.transform.position}; camera {size * distance:F1} u back");
         }
 
         /// <summary>A prism's largest dimension over its distance: roughly the fraction of the view it spans.</summary>

@@ -130,6 +130,8 @@ namespace CosmicShore.Player
                         if (hull != null) ScriptTicker.Run("cradle", hull, frames);
                         break;
                     }
+                    case "timescale": Time.timeScale = float.Parse(arg.Trim(), CultureInfo.InvariantCulture); Console.WriteLine($"[input] timeScale {Time.timeScale}"); break;
+                    case "lookat": Inspector.LookAt(float.Parse(arg.Trim(), CultureInfo.InvariantCulture)); break;
                     case "vessels": Inspector.Vessels(); break;
                     case "party": Inspector.Party(arg.Trim()); break;
                     case "domain": Inspector.Domain(arg.Trim()); break;
