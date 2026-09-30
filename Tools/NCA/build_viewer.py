@@ -328,7 +328,13 @@ def build_status(root):
         rows.append((state, "Prism 3D swim", "hprism", f"3D particles that can only be Cosmic Shore prisms; {where}",
                      f"{tempo:.1f} steps / frame" if tempo else "no steady tempo yet"))
     else:
-        rows.append(("todo", "Prism 3D swim", "", "3D particles that can only be Cosmic Shore prisms", "not started"))
+        live = os.path.join(os.path.dirname(os.path.abspath(root)), "runs", "prism_swim3d", "state.json")
+        if os.path.isfile(live):
+            n = json.load(open(live))["step"]
+            rows.append(("run", "Prism 3D swim", "", "3D particles that can only be Cosmic Shore prisms; "
+                         "training (a GPU run is also set up: gpu_run.py)", f"step {n}, no snapshot yet"))
+        else:
+            rows.append(("todo", "Prism 3D swim", "", "3D particles that can only be Cosmic Shore prisms", "not started"))
     rows.append(("done", "Is this new?", "hrelated", "What else has been built, and what this adds", "closest: Kim et al. 2026"))
     label = {"done": "Done", "run": "Training", "todo": "Next"}
     body = "".join(
@@ -783,6 +789,7 @@ SCRIPTPRISM = r"""<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r
   const cv = $('cvpr');
   const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.outputEncoding = THREE.sRGBEncoding;   // palette colours are converted to linear below
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 1, 400);
   camera.up.set(0, -1, 0);                       // image rows run down +y; the camera sits on -z
@@ -809,8 +816,9 @@ SCRIPTPRISM = r"""<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r
   const mat = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.08, flatShading: true });
   const geos = [new THREE.BoxGeometry(2, 2, 2), new THREE.OctahedronGeometry(S), stellaGeometry(), new THREE.BoxGeometry(0.5, 0.5, 0.5)];
   const meshes = geos.map((g, i) => { const m = new THREE.InstancedMesh(g, i === 3 ? new THREE.MeshStandardMaterial({ color: 0x9aa39c, roughness: 0.8 }) : mat, cap);
-    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.count = 0; scene.add(m); return m; });
-  for (let i = 0; i < 3; i++) meshes[i].setColorAt(0, new THREE.Color(1, 1, 1));
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    if (i < 3) m.setColorAt(0, new THREE.Color(1, 1, 1));   // sizes the colour buffer from count: before count = 0
+    m.count = 0; scene.add(m); return m; });
   const shapeOf = [0, 0, 1, 2];                  // plain, danger -> box; shield -> octahedron; super -> stella
   const COL = PD.colours.map(row => row.map(c => new THREE.Color(c[0], c[1], c[2]).convertSRGBToLinear()));
   const M = new THREE.Matrix4(), dec = { h: [0, 0, 0], R: new Array(9) };
