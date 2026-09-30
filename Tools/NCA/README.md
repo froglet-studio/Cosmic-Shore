@@ -176,6 +176,63 @@ now saves model, Adam moments and step every 50 steps, and `--resume` rebuilds t
 The browser runner (`nca3d_core.js`) matches torch to 5.6e-7 over 60 steps, with a
 z-derivative sign flip as the negative control (5.2e-1).
 
+## From cellular to collision (`particle_nca.py`)
+
+The grid NCA is a *cellular* automaton: every cell of a fixed lattice runs the rule. Boids
+is a designed *collision* automaton: free agents that only ever respond to the neighbours
+they are near. This step trains the NCA's cell as a collision automaton. A particle has a
+continuous position and the same 16 channels; each step it perceives the particles inside
+radius `R` and the learned rule returns a state change **and a velocity**.
+
+```
+python3 Tools/NCA/particle_nca.py selftest
+python3 Tools/NCA/particle_nca.py train --experiment regenerating --world '{"capacity": 900, "corrected": true}'
+python3 Tools/NCA/particle_nca.py figures --run Tools/NCA/runs/particle_regenerating
+python3 Tools/NCA/verify_particle_js.py --run Tools/NCA/runs/particle_regenerating
+```
+
+What is learned vs designed:
+
+| | learned (the MLP, 10k parameters) | designed physics (`World`) |
+|---|---|---|
+| state | `ds` from [own, neighbour mean, neighbour gradient, crowding] | alive iff a neighbour within `R` has alpha > 0.1, before and after |
+| motion | a velocity, capped at `vmax` | collisions push apart pairs closer than `r0` |
+| numbers | — | a visible particle short of `k_bud` neighbours **buds** a dormant (all-zero) child `r_bud` away from its neighbours' centroid — exactly an empty grid cell next to life |
+
+The loss reads the particles through a differentiable Gaussian splat onto the same 72×72
+target, so every experiment of the grid NCA is directly comparable. Kernels are the
+standard SPH ones, `w = (1-r²/R²)³` for the mean and `(1-r²/R²)²` for the gradient.
+
+### Why the first cut only ever grew a blob, and the fix
+
+The first two runs are recorded because the way they failed is the finding. One exploded
+(loss 0.011 → 1e24 in 50 steps, then extinct), and gained the texture-NCA *overflow loss*,
+a rollback-to-last-healthy guard and numbered snapshots. The other trained stably and grew
+a pale diagonal ellipse — the right colour and heading, no legs — for a thousand steps.
+Each ablation below removes one suspect:
+
+| run (log10 loss) | step 250 | 500 | 750 | what it rules in or out |
+|---|---|---|---|---|
+| free particles, `vmax` 0.6 | -1.84 | -1.91 | -1.91 | the blob |
+| free particles, `vmax` 0.15 / 0 | -1.81 / -1.83 | -1.87 / -1.90 | — | **not motion** |
+| direct fit of the splat to the lizard (no automaton) | | | | -3.5 fixed lattice, -4.6 free: **not the renderer** |
+| fixed jittered lattice, slots persist (grid semantics, particle perception) | -1.79 | -1.93 | **-2.27, legs** | perception can learn it |
+| the same lattice re-jittered per sample and rollout | -1.83 | -1.99 | -2.04 | a random arrangement slows it |
+| **free particles, corrected perception** | **-1.96** | **-2.13** | | the blob is gone |
+
+The cause was the gradient feature. `Σ g·dx·(sⱼ−sᵢ)/(1+Σg)` reads a field differently
+depending on where the neighbours happen to sit: on a random arrangement it is wrong by up
+to **91 %** (2D) / **94 %** (3D) *for a linear field*. On a fixed lattice that error is the
+same every rollout and gets learned around; on free particles it is noise, and the answer
+to noise is the average — a blob. The fix is the standard one from SPH, the moment-corrected
+(least-squares) gradient `∇s = M⁻¹ Σ g·dx·(sⱼ−sᵢ)` with `M = Σ g·dx·dxᵀ`, plus a true
+weighted mean, which is exact for linear fields on **any** arrangement (selftest: 4e-5 in
+2D, 2e-4 in 3D, with the plain estimator as its negative control). It is `World.corrected`.
+
+A result nobody trained for: at step 500 some colonies bud a **second lizard** off the
+first. The loss punishes it (the target is one lizard), but it is behaviour a particle
+system has and a grid cannot.
+
 ## Where this is meant to go (not started)
 
 The reproduction is the floor. The obvious routes from it toward flora, roughly in the
