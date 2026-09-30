@@ -50,6 +50,10 @@ namespace CosmicShore.Engine
         internal void HandleHierarchyActive(bool active)
         {
             if (destroyedFlag) return;
+            // Original contract: deactivating the object stops its coroutines (disabling the
+            // component alone does not). The runner relies on this instead of re-testing every
+            // coroutine's owner every frame.
+            if (!active) GameLoop.Current?.Coroutines.StopAll(this);
             if (active)
             {
                 WakeIfNeeded();
@@ -235,6 +239,7 @@ namespace CosmicShore.Engine
         internal override void DestroyComponentNow()
         {
             if (destroyedFlag) return;
+            GameLoop.Current?.Coroutines.StopAll(this);
             if (enabledRun) DisableNow();
             if (awoken) InvokeGuarded(hooks.OnDestroy);
             if (_destroyCts is { IsCancellationRequested: false })

@@ -129,6 +129,35 @@ public class CoroutineTests
         loop.Run(1, 1f / 60f);
         Assert.Equal(new[] { "b2", "a3" }, log);
     }
+    [Fact]
+    public void Deactivation_StopsCoroutines_ComponentDisableDoesNot_AndNothingResumes()
+    {
+        using var loop = new GameLoop();
+        var log = new List<string>();
+        var parent = new GameObject("parent");
+        var go = new GameObject("t");
+        go.transform.SetParent(parent.transform);
+        var t = go.AddComponent<TickerProbe>();
+        t.Log = log;
+        loop.Run(2, 1f / 60f);
+
+        var handle = t.StartCoroutine(t.Tick("x"));
+        t.enabled = false;                  // disabling the component keeps it running
+        log.Clear(); loop.Run(1, 1f / 60f);
+        Assert.Equal(new[] { "x" }, log);
+        t.enabled = true;
+
+        parent.SetActive(false);            // an ancestor deactivates: stopped at once
+        Assert.True(handle.Done);
+        parent.SetActive(true);             // and it does not resume
+        log.Clear(); loop.Run(2, 1f / 60f);
+        Assert.Empty(log);
+
+        var h2 = t.StartCoroutine(t.Tick("y"));
+        Object.Destroy(t);                  // destroying the component stops it too
+        loop.Run(1, 1f / 60f);
+        Assert.True(h2.Done);
+    }
 }
 
 public class ResourceSystemTests

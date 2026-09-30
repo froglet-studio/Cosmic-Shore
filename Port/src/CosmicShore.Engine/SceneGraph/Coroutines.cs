@@ -105,6 +105,10 @@ namespace CosmicShore.Engine
                 list.Add(entry);
             }
             if (!Step(entry)) Kill(entry); // synchronous run to first yield (original contract)
+            // Started on an inactive object: it ran to its first yield and ends there (it would
+            // never resume). Deactivation otherwise stops coroutines as it happens (StopAll from
+            // MonoBehaviour.HandleHierarchyActive / DestroyComponentNow).
+            else if (owner is not null && !owner.gameObject.activeInHierarchy) Kill(entry);
             return entry.Handle;
         }
 
@@ -182,6 +186,22 @@ namespace CosmicShore.Engine
             _stepCost.Clear();
         }
 
+        static readonly bool s_verify = Environment.GetEnvironmentVariable("COSMIC_SHORE_VERIFY_COROUTINES") == "1";
+
+        /// <summary>Every live coroutine's owner must be active: anything else means a deactivation path skipped StopAll.</summary>
+        void VerifyOwners()
+        {
+            int live = 0, bad = 0; string sample = null;
+            foreach (var e in _entries)
+            {
+                if (e.Removed || e.Owner is null) continue;
+                live++;
+                if (!e.Owner.IsDestroyed && e.Owner.gameObject is { } go && !go.IsDestroyed && !go.activeInHierarchy)
+                { bad++; sample ??= $"{e.Owner.GetType().Name} on '{go.name}' ({e.Root?.GetType().Name})"; }
+            }
+            Console.WriteLine($"[verify-coroutines] frame {Time.frameCount}: {live} live, {bad} with an inactive owner{(sample != null ? " e.g. " + sample : "")}");
+        }
+
         internal void RunFrame()
         {
             // Index loop tolerant of StartCoroutine during stepping (appends).
@@ -190,9 +210,11 @@ namespace CosmicShore.Engine
                 var entry = _entries[i];
                 if (entry.Removed) continue;
 
-                // Owner died or its object went inactive: coroutine ends permanently.
+                // Owner died: coroutine ends permanently. (Deactivation and component destruction
+                // stop coroutines as they happen, so no per-frame activity walk is needed here;
+                // COSMIC_SHORE_VERIFY_COROUTINES=1 audits that.)
                 if (entry.Owner is null || entry.Owner.IsDestroyed || entry.Owner.gameObject is null
-                    || entry.Owner.gameObject.IsDestroyed || !entry.Owner.gameObject.activeInHierarchy)
+                    || entry.Owner.gameObject.IsDestroyed)
                 {
                     Kill(entry);
                     continue;
@@ -228,6 +250,7 @@ namespace CosmicShore.Engine
                 if (!alive) Kill(entry);
             }
             if (s_trace && Time.frameCount % 300 == 0) TraceCensus();
+            if (s_verify && Time.frameCount % 30 == 0) VerifyOwners();
 
             if (_removed > 0)
             {
