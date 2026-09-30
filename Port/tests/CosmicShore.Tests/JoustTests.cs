@@ -319,7 +319,7 @@ public class JoustTests
 
         try
         {
-            loop.Tick(Dt); // trigger pass: Slow's bubble enters Fast's skimmer sphere
+            loop.Tick(Time.fixedDeltaTime); // one physics step = one trigger pass: Slow's bubble enters Fast's skimmer sphere
 
             // The joust credits the SKIMMER OWNER (the faster vessel) — JOUST.md §Collision Chain.
             Assert.Equal(1, fast.Player.RoundStats.JoustCollisions);

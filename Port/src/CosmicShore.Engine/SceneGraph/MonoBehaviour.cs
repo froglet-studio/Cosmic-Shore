@@ -115,6 +115,15 @@ namespace CosmicShore.Engine
             catch (Exception e) { Debug.LogException(e, this); }
         }
 
+        internal bool HasTriggerStay => hooks?.TriggerStay != null;
+
+        internal void RunTriggerStay(Collider other)
+        {
+            if (hooks?.TriggerStay is not { } hook) return;
+            try { hook(this, other); }
+            catch (Exception e) { Debug.LogException(e, this); }
+        }
+
         internal void RunTriggerExit(Collider other)
         {
             if (hooks?.TriggerExit is not { } hook) return;

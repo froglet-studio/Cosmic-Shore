@@ -10,7 +10,7 @@ namespace CosmicShore.Engine
     /// OnDisable/OnDestroy) by name via reflection — any visibility, zero args — so ported
     /// behaviours keep their original private method signatures verbatim. Compiled to
     /// delegates and cached per concrete type. Trigger messages
-    /// (OnTriggerEnter/OnTriggerExit, single <see cref="Collider"/> arg) are discovered the
+    /// (OnTriggerEnter/OnTriggerStay/OnTriggerExit, single <see cref="Collider"/> arg) are discovered the
     /// same way for the <see cref="TriggerPass"/>.
     /// </summary>
     internal sealed class LifecycleHooks
@@ -25,6 +25,7 @@ namespace CosmicShore.Engine
         public Action<MonoBehaviour> OnDestroy;
         public Action<MonoBehaviour, Collider> TriggerEnter;
         public Action<MonoBehaviour, Collider> TriggerExit;
+        public Action<MonoBehaviour, Collider> TriggerStay;
         public int ExecutionOrder;
 
         static readonly ConcurrentDictionary<Type, LifecycleHooks> Cache = new();
@@ -45,6 +46,7 @@ namespace CosmicShore.Engine
                 OnDestroy = Find(type, "OnDestroy"),
                 TriggerEnter = FindTrigger(type, "OnTriggerEnter"),
                 TriggerExit = FindTrigger(type, "OnTriggerExit"),
+                TriggerStay = FindTrigger(type, "OnTriggerStay"),
                 ExecutionOrder = type.GetCustomAttribute<DefaultExecutionOrderAttribute>()?.order ?? 0,
             };
             return hooks;

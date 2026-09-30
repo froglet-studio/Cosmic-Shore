@@ -202,13 +202,18 @@
   <PropertyGroup>
     <!-- First-party RUNTIME script roots under Assets/ (vendored plugins are shimmed in CosmicShore.Compat instead). -->
     <LiveScriptRoots>_Scripts;FTUE;ArcadeDPadNav.cs;Resolvers</LiveScriptRoots>
+    <!-- Which Unity project's Assets/ to compile. Default: this checkout's. Point it at another worktree
+         (e.g. a bleeding-edge checkout) with -p:LiveAssetsDir=... and give it its own LiveSrcDir so two
+         source trees never share one sync directory. -->
+    <LiveAssetsDir Condition="'$(LiveAssetsDir)' == ''">$(MSBuildThisFileDirectory)../../../Assets</LiveAssetsDir>
+    <LiveSrcDir Condition="'$(LiveSrcDir)' == ''">obj/live-src</LiveSrcDir>
   </PropertyGroup>
 
   <Target Name="SyncUnitySourcesBeforeBuild" BeforeTargets="BeforeBuild;CoreCompile;CollectPackageReferences">
-    <SyncUnitySources SourceDir="$(MSBuildThisFileDirectory)../../../Assets" IncludeRoots="$(LiveScriptRoots)" OutputDir="$(MSBuildThisFileDirectory)obj/live-src" />
+    <SyncUnitySources SourceDir="$(LiveAssetsDir)" IncludeRoots="$(LiveScriptRoots)" OutputDir="$(MSBuildThisFileDirectory)$(LiveSrcDir)" />
     <ItemGroup>
-      <Compile Remove="obj/live-src/**/*.cs" />
-      <Compile Include="obj/live-src/**/*.cs" />
+      <Compile Remove="obj/live-src*/**/*.cs" />
+      <Compile Include="$(LiveSrcDir)/**/*.cs" />
     </ItemGroup>
   </Target>
 </Project>

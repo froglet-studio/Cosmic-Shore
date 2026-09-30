@@ -71,6 +71,7 @@ namespace CosmicShore.Engine
                     "A GameLoop already exists. The engine runs exactly one loop per process — dispose the old one first.");
             Current = this;
             Time.Reset();
+            Physics.ResetSettings();
             // Fresh-world reset for static UI state (same rationale as Time.Reset):
             // loop disposal skips OnDisable, so the old world's registrations and
             // queued marks would otherwise leak into this one.
@@ -168,8 +169,6 @@ namespace CosmicShore.Engine
                 if (PhaseTiming) Lap(ref mark, "fixed");
                 RunPhase(_update, static mb => mb.RunUpdate());
                 if (PhaseTiming) Lap(ref mark, "update");
-                Triggers.RunFrame();
-                if (PhaseTiming) Lap(ref mark, "triggers");
                 Coroutines.RunFrame();
                 if (PhaseTiming) Lap(ref mark, "coroutines");
                 Scheduler.RunFrame();
@@ -252,6 +251,13 @@ namespace CosmicShore.Engine
                 {
                     RunPhase(_fixedUpdate, static mb => mb.RunFixedUpdate());
                     IntegrateRigidbodies(Time.fixedDeltaTime);
+                    // The physics step's contact pass (Unity: FixedUpdate → Physics.Simulate, which
+                    // sends OnTrigger* messages). Triggers are a SAMPLE at the fixed rate — 25 Hz in
+                    // this project — not once per rendered frame: a frame with no fixed step fires
+                    // no trigger message at all, and a fast body can cross a thin trigger between two.
+                    long tmark = PhaseTiming ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+                    Triggers.RunFrame();
+                    if (PhaseTiming) AddPhase("triggers", System.Diagnostics.Stopwatch.GetTimestamp() - tmark);
                 }
                 finally { Time.ExitFixedPhase(); }
             }

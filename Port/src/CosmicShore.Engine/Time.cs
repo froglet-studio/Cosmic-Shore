@@ -1,3 +1,5 @@
+using System;
+
 namespace CosmicShore.Engine
 {
     /// <summary>
@@ -30,7 +32,15 @@ namespace CosmicShore.Engine
         public static float realtimeSinceStartup => unscaledTime;
         public static double realtimeSinceStartupAsDouble => unscaledTime;
         public static double unscaledTimeAsDouble => unscaledTime;
+        /// <summary>The physics step (ProjectSettings/TimeManager "Fixed Timestep"; 0.02 until the project's is read).</summary>
         public static float fixedDeltaTime { get; set; } = 0.02f;
+
+        /// <summary>
+        /// The longest a frame's deltaTime may report (TimeManager "Maximum Allowed Timestep").
+        /// Unbounded until a project's settings are read: a bare harness that ticks one long
+        /// step means that step.
+        /// </summary>
+        public static float maximumDeltaTime { get; set; } = float.PositiveInfinity;
         public static float timeScale { get; set; } = 1f;
         public static int frameCount { get; private set; }
         public static bool inFixedTimeStep => _inFixedPhase;
@@ -39,7 +49,9 @@ namespace CosmicShore.Engine
         public static void Advance(float unscaledDelta)
         {
             unscaledDeltaTime = unscaledDelta;
-            _frameDeltaTime = unscaledDelta * timeScale;
+            // The engine clamps a hitch to maximumDeltaTime, so a long frame cannot run an
+            // unbounded burst of fixed steps (Unity's contract: deltaTime <= maximumDeltaTime).
+            _frameDeltaTime = MathF.Min(unscaledDelta, maximumDeltaTime) * timeScale;
             unscaledTime += unscaledDeltaTime;
             time += _frameDeltaTime;
             frameCount++;
@@ -58,6 +70,10 @@ namespace CosmicShore.Engine
             unscaledTime = 0f;
             timeScale = 1f;
             frameCount = 0;
+            // A fresh world starts from the engine defaults; a project's TimeManager is read
+            // after the loop exists (ContentRuntime), so its step never leaks into the next world.
+            fixedDeltaTime = 0.02f;
+            maximumDeltaTime = float.PositiveInfinity;
         }
     }
 }

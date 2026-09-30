@@ -157,8 +157,12 @@ namespace CosmicShore.Engine
             // Snapshot: callbacks may mutate the component list.
             var components = _components.ToArray();
             foreach (var component in components)
+            {
                 if (component is MonoBehaviour mb)
                     mb.HandleHierarchyActive(active);
+                else if (active && component is Collider collider && collider.enabled)
+                    GameLoop.Current?.Triggers.NoteArrived(collider); // enters the physics scene now, at its current pose
+            }
 
             // Snapshot the children too — Awake/OnEnable in the recursion may
             // legally add or reparent siblings (original contract: hierarchy

@@ -26,6 +26,17 @@ namespace CosmicShore.Engine
     }
 
     /// <summary>
+    /// The listener's global switches (original contract: UnityEngine.AudioListener).
+    /// Legacy AudioSource playback is silent in the port and FMOD owns real audio,
+    /// so these are held state that callers can read back; nothing else consumes them.
+    /// </summary>
+    public class AudioListener : Behaviour
+    {
+        public static bool pause;
+        public static float volume = 1f;
+    }
+
+    /// <summary>
     /// Plays back an <see cref="AudioClip"/> (original contract:
     /// UnityEngine.AudioSource). Play/Stop toggle <see cref="isPlaying"/>;
     /// <see cref="PlayOneShot(AudioClip)"/> records the shot so behavior

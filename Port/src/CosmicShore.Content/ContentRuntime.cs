@@ -51,6 +51,8 @@ namespace CosmicShore.Content
             Options = options ?? new InstantiateOptions();
             ReadBuildSettings();
             ReadGraphicsSettings();
+            ReadTimeSettings();
+            ReadPhysicsSettings();
             RegisterPackageResources();
             IndexResources();
             Assets.Importers[typeof(GameObject)] = LoadPrefabObject;
@@ -101,6 +103,53 @@ namespace CosmicShore.Content
             var doc = UnityYaml.ParseDocuments(File.ReadAllText(path)).FirstOrDefault();
             foreach (var s in doc?.Body["m_Scenes"]?.Items ?? Array.Empty<YNode>())
                 BuildScenes.Add((s.Str("path"), s.Str("guid"), s.Bool("enabled")));
+        }
+
+        /// <summary>
+        /// ProjectSettings/TimeManager.asset: the physics step, the delta-time clamp and the
+        /// initial time scale. The step is gameplay, not configuration — this project runs
+        /// physics (and so every OnTrigger* message) at 0.04 s, and the engine default of 0.02
+        /// doubled the rate every trigger was sampled at.
+        /// </summary>
+        void ReadTimeSettings()
+        {
+            var body = ReadSettingsBody("TimeManager.asset");
+            if (body == null) return;
+            if (TryFloat(body["Fixed Timestep"], out float step) && step > 0f) Time.fixedDeltaTime = step;
+            if (TryFloat(body["Maximum Allowed Timestep"], out float max) && max > 0f) Time.maximumDeltaTime = max;
+            if (TryFloat(body["m_TimeScale"], out float scale) && scale >= 0f) Time.timeScale = scale;
+        }
+
+        /// <summary>ProjectSettings/DynamicsManager.asset: gravity, and which transform poses and triggers a query sees.</summary>
+        void ReadPhysicsSettings()
+        {
+            var body = ReadSettingsBody("DynamicsManager.asset");
+            if (body == null) return;
+            if (body["m_QueriesHitTriggers"] != null) Physics.queriesHitTriggers = body.Bool("m_QueriesHitTriggers");
+            if (body["m_AutoSyncTransforms"] != null) Physics.autoSyncTransforms = body.Bool("m_AutoSyncTransforms");
+            if (body["m_Gravity"] is YMap g) Physics.gravity = new Vector3(g.Float("x"), g.Float("y"), g.Float("z"));
+        }
+
+        YNode ReadSettingsBody(string file)
+        {
+            var path = Path.Combine(Db.ProjectRoot, "ProjectSettings", file);
+            if (!File.Exists(path)) return null;
+            return UnityYaml.ParseDocuments(File.ReadAllText(path)).FirstOrDefault()?.Body;
+        }
+
+        /// <summary>A plain number, or a Rational map ({m_Count, m_Rational: {m_Numerator, m_Denominator}}) as newer editors write the step.</summary>
+        static bool TryFloat(YNode node, out float value)
+        {
+            value = 0f;
+            if (node is YScalar sc) return YScalar.TryFloat(sc.Value, out value);
+            if (node is YMap m && m["m_Rational"] is YMap r)
+            {
+                float den = r.Float("m_Denominator");
+                if (den <= 0f) return false;
+                value = r.Float("m_Numerator") / den;
+                return true;
+            }
+            return false;
         }
 
         /// <summary>

@@ -344,8 +344,10 @@ public class AstroLeagueTests
         // court-boundary drift changed ball trajectories) — full time ties, the monitor
         // reports expiry, the controller enters overtime, and the first overtime goal ends
         // the match immediately (sudden death). Re-swept 2026-09-29 when Random moved to a
-        // xorshift128 generator: seeds 3, 7, 8, 11, 12 tie regulation.
-        var result = RunMatch(players: 4, seed: 3);
+        // xorshift128 generator: seeds 3, 7, 8, 11, 12 tie regulation. Re-swept 2026-09-30 when
+        // physics moved into the fixed step and OnTriggerStay began reaching the ball's vessel
+        // handler: seeds 5, 10, 23 (of 1-30) tie regulation and are decided by sudden death.
+        var result = RunMatch(players: 4, seed: 5);
 
         Assert.True(result.Finished);
         Assert.Empty(result.EngineErrors);

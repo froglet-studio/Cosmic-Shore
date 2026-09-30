@@ -4,16 +4,16 @@ using System.Collections.Generic;
 namespace CosmicShore.Engine
 {
     /// <summary>
-    /// Phase-2 minimal trigger physics: per-frame overlap detection between registered
-    /// colliders with OnTriggerEnter/OnTriggerExit dispatch on enter/exit transitions.
+    /// Trigger physics: overlap detection between registered colliders with
+    /// OnTriggerEnter/OnTriggerStay/OnTriggerExit dispatch.
     ///
-    /// Timing — the pass runs once per <see cref="GameLoop.Tick"/>, immediately AFTER the
-    /// Update phase (and before coroutines/scheduler/LateUpdate). The original engine
-    /// delivers contacts during its fixed-step physics phase before Update; this port runs
-    /// headless at a fixed Tick delta, so a per-frame pass after Update gives the same
-    /// fixed-cadence contact stream while seeing the transforms gameplay code (AIPilot →
-    /// VesselTransformer) wrote this frame — contacts land on the frame the overlap is
-    /// first visible, not one frame late.
+    /// Timing — the pass is the physics step: it runs inside each fixed step, after
+    /// FixedUpdate (the original engine's Physics.Simulate), at Time.fixedDeltaTime — the
+    /// project's TimeManager step, 0.04 s here. A contact is therefore a SAMPLE taken at
+    /// that rate, not once per rendered frame: a frame with no fixed step fires nothing,
+    /// and a body fast enough to cross a trigger between two steps is never seen. The same
+    /// step's shapes are the scene every physics query answers from until the next step
+    /// (see TriggerPassSnapshot).
     ///
     /// Semantics (original-engine contract, minimal subset):
     ///   • A pair produces trigger events iff at least one collider has
@@ -28,7 +28,8 @@ namespace CosmicShore.Engine
     ///   • OnTriggerExit fires when an overlapping pair separates, AND when either side is
     ///     destroyed or disabled mid-overlap — the surviving side is notified with the
     ///     (possibly already destroyed) other collider as the argument.
-    ///   • OnTriggerStay is NOT dispatched (out of phase-2 scope).
+    ///   • OnTriggerStay fires every physics step for every pair still touching, after the
+    ///     step's exits and enters (a pair's first Stay lands in its Enter step).
     ///
     /// Shapes — exact sphere-sphere; boxes are treated as world-space AABBs (rotation is
     /// ignored: center transformed through the hierarchy, extents scaled by |lossyScale|).
@@ -62,16 +63,15 @@ namespace CosmicShore.Engine
         // after the clone registers, which would hand the clone its source's place in line.
         readonly Dictionary<Collider, long> _seq = new(ReferenceEqualityComparer.Instance);
         long _nextSeq;
-        readonly Comparison<Collider> _bySeq;
 
-        public TriggerPass() => _bySeq = (a, b) => _seq[a].CompareTo(_seq[b]);
+        public TriggerPass() { }
 
         internal void Register(Collider collider)
         {
             if (_colliders.Contains(collider)) return;
             _seq[collider] = ++_nextSeq;
             _colliders.Add(collider);
-            if (collider.enabled) _enabled.Add(collider);
+            if (collider.enabled) { _enabled.Add(collider); NoteArrived(collider); }
         }
 
         internal void Unregister(Collider collider)
@@ -99,7 +99,7 @@ namespace CosmicShore.Engine
         internal void SetEnabled(Collider collider, bool enabled)
         {
             if (!_colliders.Contains(collider)) return;
-            if (enabled) _enabled.Add(collider);
+            if (enabled) { _enabled.Add(collider); NoteArrived(collider); }
             else _enabled.Remove(collider);
         }
 
@@ -141,11 +141,7 @@ namespace CosmicShore.Engine
             // 1. Snapshot live participants in registration order. Colliders added by
             //    callbacks during this pass join next frame.
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            _live.Clear();
-            foreach (var collider in _enabled)
-                if (collider.isActiveAndEnabled)
-                    _live.Add(collider);
-            _live.Sort(_bySeq);
+            SnapshotLive();
             if (s_verify && Time.frameCount % 30 == 0) VerifyLive();
             long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
 
@@ -162,6 +158,9 @@ namespace CosmicShore.Engine
             BuildShapes();
             long t2 = System.Diagnostics.Stopwatch.GetTimestamp();
             SweepCandidates();
+            // This step's shapes become the scene every query answers from until the next step
+            // (committed before dispatch: a trigger callback that queries sees this step).
+            CommitQuerySnapshot(_sweptCount);
             long t3 = System.Diagnostics.Stopwatch.GetTimestamp();
             foreach (long key in _candidates)
             {
@@ -199,6 +198,19 @@ namespace CosmicShore.Engine
                 if (!_activeSet.Add(pair)) continue;
                 _activePairs.Add(pair);
                 Dispatch(pair.a, pair.b, enter: true);
+            }
+
+            // 5. Stays: every pair still touching after this step, in established order —
+            //    including a pair that entered this step (the original engine reports the
+            //    first Stay in the same simulation step as the Enter). Only behaviours that
+            //    declare OnTriggerStay are visited, and nothing is allocated per pair.
+            int stays = _activePairs.Count;
+            for (int p = 0; p < stays && p < _activePairs.Count; p++)
+            {
+                var (a, b) = _activePairs[p];
+                if (!_current.Contains((a, b))) continue; // left during this step's callbacks
+                DispatchStay(a, b);
+                DispatchStay(b, a);
             }
         }
 
@@ -266,18 +278,12 @@ namespace CosmicShore.Engine
             }
         }
 
+        int _sweptCount;
+
         void SweepCandidates()
         {
             _candidates.Clear();
-            int n = _live.Count, m = 0;
-            for (int i = 0; i < n; i++)
-                if (_shapes[i].Kind != ShapeKind.None) _order[m++] = i;
-            var shapes = _shapes;
-            Array.Sort(_order, 0, m, Comparer<int>.Create((x, y) =>
-            {
-                int c = (shapes[x].Center.x - shapes[x].Extents.x).CompareTo(shapes[y].Center.x - shapes[y].Extents.x);
-                return c != 0 ? c : x.CompareTo(y);
-            }));
+            int m = _sweptCount = SortShapesByMinX();
 
             _sweepActive.Clear();
             for (int k = 0; k < m; k++)
@@ -333,6 +339,16 @@ namespace CosmicShore.Engine
             DispatchTo(b, a, enter);
         }
 
+        static void DispatchStay(Collider receiver, Collider other)
+        {
+            var go = receiver.gameObject;
+            if (go is null || go.IsDestroyed || !go.activeInHierarchy) return;
+            var components = go.Components;
+            for (int i = 0; i < components.Count; i++)
+                if (components[i] is MonoBehaviour { HasTriggerStay: true } mb && !mb.IsDestroyed)
+                    mb.RunTriggerStay(other);
+        }
+
         /// <summary>Notify every receiving behaviour on <paramref name="receiver"/>'s GameObject, passing <paramref name="other"/>.</summary>
         static void DispatchTo(Collider receiver, Collider other, bool enter)
         {
@@ -362,17 +378,7 @@ namespace CosmicShore.Engine
         /// colliders; inactive/disabled colliders are skipped.
         /// </summary>
         internal int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results)
-        {
-            int count = 0;
-            foreach (var collider in _colliders)
-            {
-                if (count >= results.Length) break;
-                if (!collider.isActiveAndEnabled) continue;
-                if (!SphereOverlapsCollider(position, radius, collider)) continue;
-                results[count++] = collider;
-            }
-            return count;
-        }
+            => OverlapSphereNonAlloc(position, radius, results, ~0, QueryTriggerInteraction.Collide);
 
         /// <summary>
         /// Layer-masked non-alloc sphere query — backs
@@ -382,54 +388,30 @@ namespace CosmicShore.Engine
         /// set in <paramref name="layerMask"/>.
         /// </summary>
         internal int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask)
-        {
-            int count = 0;
-            foreach (var collider in _colliders)
-            {
-                if (count >= results.Length) break;
-                if (!collider.isActiveAndEnabled) continue;
-                if ((layerMask & (1 << collider.gameObject.layer)) == 0) continue;
-                if (!SphereOverlapsCollider(position, radius, collider)) continue;
-                results[count++] = collider;
-            }
-            return count;
-        }
+            => OverlapSphereNonAlloc(position, radius, results, layerMask, QueryTriggerInteraction.Collide);
 
         /// <summary>
         /// Allocating sphere query with layer filtering — backs
         /// <see cref="Physics.OverlapSphere(Vector3, float, int)"/>. Same contract as
         /// the non-alloc variant (registration order, trigger AND non-trigger,
-        /// inactive skipped) plus the original engine's layer-mask filter: a collider
-        /// qualifies when the bit for its GameObject's layer is set in the mask.
+        /// inactive skipped) plus the original engine's layer-mask filter.
         /// </summary>
         internal Collider[] OverlapSphere(Vector3 position, float radius, int layerMask)
         {
-            var results = new List<Collider>();
-            foreach (var collider in _colliders)
-            {
-                if (!collider.isActiveAndEnabled) continue;
-                if ((layerMask & (1 << collider.gameObject.layer)) == 0) continue;
-                if (!SphereOverlapsCollider(position, radius, collider)) continue;
-                results.Add(collider);
-            }
-            return results.ToArray();
+            var buffer = new Collider[Math.Max(16, _enabled.Count)];
+            int n = OverlapSphereNonAlloc(position, radius, buffer, layerMask, QueryTriggerInteraction.Collide);
+            Array.Resize(ref buffer, n);
+            return buffer;
         }
 
         /// <summary>
         /// Box occupancy query — backs <see cref="Physics.CheckBox"/>. True when any
-        /// registered, active collider overlaps the box. Like the trigger pass's box
+        /// collider in the query scene overlaps the box. Like the trigger pass's box
         /// handling, the probe is a world-space AABB (orientation ignored — phase-2
-        /// deviation, see class doc); OBB support arrives with the full physics phase.
+        /// deviation, see class doc).
         /// </summary>
         internal bool CheckBox(Vector3 center, Vector3 halfExtents)
-        {
-            foreach (var collider in _colliders)
-            {
-                if (!collider.isActiveAndEnabled) continue;
-                if (BoxOverlapsCollider(center, halfExtents, collider)) return true;
-            }
-            return false;
-        }
+            => OverlapBox(center, halfExtents, ~0, QueryTriggerInteraction.Collide).Length > 0;
 
         static bool BoxOverlapsCollider(Vector3 center, Vector3 extents, Collider collider)
         {

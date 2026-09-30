@@ -17,42 +17,6 @@ namespace CosmicShore.Engine
             return true;
         }
 
-        internal int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask, QueryTriggerInteraction qti)
-        {
-            int count = 0;
-            foreach (var collider in _colliders)
-            {
-                if (count >= results.Length) break;
-                if (!Accepts(collider, layerMask, qti)) continue;
-                if (!SphereOverlapsCollider(position, radius, collider)) continue;
-                results[count++] = collider;
-            }
-            return count;
-        }
-
-        /// <summary>Capsule = swept sphere; tested at the segment point nearest each collider's bounds.</summary>
-        internal int OverlapCapsuleNonAlloc(Vector3 p0, Vector3 p1, float radius, Collider[] results, int layerMask, QueryTriggerInteraction qti)
-        {
-            int count = 0;
-            foreach (var collider in _colliders)
-            {
-                if (count >= results.Length) break;
-                if (!Accepts(collider, layerMask, qti)) continue;
-                var near = ClosestOnSegment(p0, p1, collider.bounds.center);
-                if (!SphereOverlapsCollider(near, radius, collider)) continue;
-                results[count++] = collider;
-            }
-            return count;
-        }
-
-        internal Collider[] OverlapBox(Vector3 center, Vector3 halfExtents, int layerMask, QueryTriggerInteraction qti)
-        {
-            var list = new List<Collider>();
-            foreach (var collider in _colliders)
-                if (Accepts(collider, layerMask, qti) && BoxOverlapsCollider(center, halfExtents, collider)) list.Add(collider);
-            return list.ToArray();
-        }
-
         static Vector3 ClosestOnSegment(Vector3 a, Vector3 b, Vector3 p)
         {
             var ab = b - a;
@@ -60,35 +24,6 @@ namespace CosmicShore.Engine
             if (len2 < 1e-12f) return a;
             float t = Mathf.Clamp01(Vector3.Dot(p - a, ab) / len2);
             return a + ab * t;
-        }
-
-        /// <summary>Nearest hit along a ray (spheres exact; boxes/meshes as their world AABB).</summary>
-        internal bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hit, float maxDistance, int layerMask, QueryTriggerInteraction qti)
-        {
-            hit = default;
-            float best = maxDistance;
-            bool found = false;
-            foreach (var collider in _colliders)
-            {
-                if (!Accepts(collider, layerMask, qti)) continue;
-                if (!RayCollider(origin, direction, collider, out float d, out Vector3 n) || d > best) continue;
-                best = d; found = true;
-                hit = new RaycastHit { collider = collider, distance = d, point = origin + direction * d, normal = n };
-            }
-            return found;
-        }
-
-        internal RaycastHit[] RaycastAll(Vector3 origin, Vector3 direction, float maxDistance, int layerMask, QueryTriggerInteraction qti)
-        {
-            var list = new List<RaycastHit>();
-            foreach (var collider in _colliders)
-            {
-                if (!Accepts(collider, layerMask, qti)) continue;
-                if (RayCollider(origin, direction, collider, out float d, out Vector3 n) && d <= maxDistance)
-                    list.Add(new RaycastHit { collider = collider, distance = d, point = origin + direction * d, normal = n });
-            }
-            list.Sort((a, b) => a.distance.CompareTo(b.distance));
-            return list.ToArray();
         }
 
         static bool RayCollider(Vector3 o, Vector3 d, Collider c, out float dist, out Vector3 normal)
@@ -124,7 +59,16 @@ namespace CosmicShore.Engine
         public static bool queriesHitTriggers = true;
         public static Vector3 gravity = new(0f, -9.81f, 0f);
         public static bool autoSyncTransforms;
-        public static void SyncTransforms() { }
+
+        /// <summary>The engine defaults, for a fresh world (the project's DynamicsManager is read after).</summary>
+        internal static void ResetSettings()
+        {
+            queriesHitTriggers = true;
+            gravity = new Vector3(0f, -9.81f, 0f);
+            autoSyncTransforms = false;
+        }
+        /// <summary>Moves every collider in the query scene to its transform's current pose (see TriggerPass snapshot).</summary>
+        public static void SyncTransforms() => Pass?.SyncQuerySnapshot();
 
         static TriggerPass Pass => GameLoop.Current?.Triggers;
 

@@ -131,6 +131,7 @@ namespace CosmicShore.Content.Serialization
             if (type.IsArray)
             {
                 var elem = type.GetElementType();
+                if (node is YScalar blob && TryDecodeHexBlob(blob.Value, elem, out var decoded)) return decoded;
                 var items = node.Items;
                 var arr = Array.CreateInstance(elem, items.Count);
                 for (int i = 0; i < items.Count; i++) arr.SetValue(ReadValue(items[i], elem, null, origin), i);
@@ -141,6 +142,11 @@ namespace CosmicShore.Content.Serialization
                 var elem = type.GetGenericArguments()[0];
                 var list = (IList)(existing ?? Activator.CreateInstance(type));
                 list.Clear();
+                if (node is YScalar blob && TryDecodeHexBlob(blob.Value, elem, out var decoded))
+                {
+                    foreach (var v in decoded) list.Add(v);
+                    return list;
+                }
                 foreach (var item in node.Items) list.Add(ReadValue(item, elem, null, origin));
                 return list;
             }
@@ -154,6 +160,47 @@ namespace CosmicShore.Content.Serialization
                 return obj;
             }
             return existing;
+        }
+
+        /// <summary>
+        /// Unity writes a serialized array of a primitive integer type as ONE scalar: the
+        /// elements' little-endian bytes in lowercase hex (e.g. an int[] of zeros is
+        /// "00000000..."). An empty array is the empty scalar. Read as a list of items it
+        /// comes back EMPTY, which is how a ring buffer loaded from an asset indexed past its end.
+        /// </summary>
+        public static bool TryDecodeHexBlob(string hex, Type elem, out Array result)
+        {
+            result = null;
+            int size = elem == typeof(byte) || elem == typeof(sbyte) || elem == typeof(bool) ? 1
+                : elem == typeof(short) || elem == typeof(ushort) || elem == typeof(char) ? 2
+                : elem == typeof(int) || elem == typeof(uint) || elem == typeof(float) ? 4
+                : elem == typeof(long) || elem == typeof(ulong) || elem == typeof(double) ? 8 : 0;
+            if (size == 0 || hex == null) return false;
+            hex = hex.Trim();
+            if (hex.Length % (size * 2) != 0) return false;
+            for (int i = 0; i < hex.Length; i++)
+                if (!Uri.IsHexDigit(hex[i])) return false;
+            byte[] bytes = Convert.FromHexString(hex);
+            int n = bytes.Length / size;
+            result = Array.CreateInstance(elem, n);
+            for (int i = 0; i < n; i++)
+            {
+                int o = i * size;
+                object v = elem == typeof(byte) ? bytes[o]
+                    : elem == typeof(sbyte) ? (sbyte)bytes[o]
+                    : elem == typeof(bool) ? bytes[o] != 0
+                    : elem == typeof(short) ? BitConverter.ToInt16(bytes, o)
+                    : elem == typeof(ushort) ? BitConverter.ToUInt16(bytes, o)
+                    : elem == typeof(char) ? (char)BitConverter.ToUInt16(bytes, o)
+                    : elem == typeof(int) ? BitConverter.ToInt32(bytes, o)
+                    : elem == typeof(uint) ? BitConverter.ToUInt32(bytes, o)
+                    : elem == typeof(float) ? BitConverter.ToSingle(bytes, o)
+                    : elem == typeof(long) ? BitConverter.ToInt64(bytes, o)
+                    : elem == typeof(ulong) ? BitConverter.ToUInt64(bytes, o)
+                    : (object)BitConverter.ToDouble(bytes, o);
+                result.SetValue(v, i);
+            }
+            return true;
         }
 
         static ulong MaskFor(Type t) => t == typeof(byte) || t == typeof(sbyte) ? 0xFF

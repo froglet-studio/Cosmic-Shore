@@ -194,7 +194,9 @@ static class ContactRig
 
 public class TriggerPassTests
 {
-    const float Dt = 1f / 60f;
+    // One tick = one physics step: triggers are sampled in the fixed step (Unity's
+    // Physics.Simulate), so a tick shorter than fixedDeltaTime may carry no trigger pass.
+    const float Dt = 0.02f;
 
     [Fact]
     public void Enter_FiresOnceOnBothSides_WithTheOtherCollider()
@@ -393,7 +395,9 @@ public class TriggerPassTests
 
 public class ContactImpactDispatchTests
 {
-    const float Dt = 1f / 60f;
+    // One tick = one physics step: triggers are sampled in the fixed step (Unity's
+    // Physics.Simulate), so a tick shorter than fixedDeltaTime may carry no trigger pass.
+    const float Dt = 0.02f;
 
     [Fact]
     public void VesselOverPrism_RealContact_RunsVesselPrismEffects_Once()
