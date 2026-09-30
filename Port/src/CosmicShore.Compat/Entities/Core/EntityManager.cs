@@ -97,6 +97,7 @@ namespace Unity.Entities
                 foreach (var c in clones) rootGroup.Items.Add(new LinkedEntityGroup { Value = c });
                 var rootRecord = store.Get(root);
                 rootRecord.Components[typeof(LinkedEntityGroup)] = rootGroup;
+                rootRecord.ValueVersion++;
                 rootRecord.Shape++;
                 return root;
             }
@@ -120,6 +121,7 @@ namespace Unity.Entities
             {
                 if (kv.Key == typeof(Prefab)) continue;
                 record.Components[kv.Key] = EntityStore.CopyValue(kv.Value);
+                record.ValueVersion++;
             }
             if (src.DisabledComponents != null && src.DisabledComponents.Count > 0)
                 record.DisabledComponents = new HashSet<Type>(src.DisabledComponents);
@@ -141,6 +143,7 @@ namespace Unity.Entities
             var type = componentType.ManagedType ?? throw new ArgumentException("ComponentType has no type.");
             if (record.Components.ContainsKey(type)) return false;
             record.Components[type] = DefaultValueFor(type);
+            record.ValueVersion++;
             Store.MarkStructural(record);
             return true;
         }
@@ -169,6 +172,7 @@ namespace Unity.Entities
             var record = Store.Get(entity);
             bool added = !record.Components.ContainsKey(typeof(T));
             record.Components[typeof(T)] = componentData;
+            record.ValueVersion++;
             if (added) Store.MarkStructural(record);
             return added;
         }
@@ -211,6 +215,7 @@ namespace Unity.Entities
             if (!record.Components.ContainsKey(typeof(T)))
                 throw MissingComponent(typeof(T), entity);
             record.Components[typeof(T)] = componentData;
+            record.ValueVersion++;
         }
 
         internal static ArgumentException MissingComponent(Type type, Entity entity) =>
@@ -224,6 +229,7 @@ namespace Unity.Entities
             var record = Store.Get(entity);
             bool added = !record.Components.ContainsKey(componentData.GetType());
             record.Components[componentData.GetType()] = componentData;
+            record.ValueVersion++;
             if (added) Store.MarkStructural(record);
         }
 
@@ -247,6 +253,7 @@ namespace Unity.Entities
             bool had = record.Components.ContainsKey(type);
             if (!had && !addIfMissing) throw MissingComponent(type, entity);
             record.Components[type] = value;
+            record.ValueVersion++;
             if (!had) Store.MarkStructural(record);
         }
 
@@ -325,6 +332,7 @@ namespace Unity.Entities
             }
             var storage = new BufferStorage<T>();
             record.Components[typeof(T)] = storage;
+            record.ValueVersion++;
             Store.MarkStructural(record);
             return new DynamicBuffer<T>(storage);
         }

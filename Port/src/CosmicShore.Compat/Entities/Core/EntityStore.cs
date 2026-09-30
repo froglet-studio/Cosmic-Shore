@@ -27,6 +27,10 @@ namespace Unity.Entities
             /// <summary>A consumer's cache keyed on <see cref="Shape"/> (the render hand-over's draw plan).</summary>
             public object ShapeCache;
             public int ShapeCacheShape = -1;
+            /// <summary>Bumped on every component value write to this entity (with <see cref="Shape"/>, a consumer's cache key).</summary>
+            public int ValueVersion;
+            /// <summary>A consumer's cache keyed on (<see cref="Shape"/>, <see cref="ValueVersion"/>): the render hand-over's resolved draw.</summary>
+            public object DrawCache;
         }
 
         // Slot 0 is reserved so Entity.Null (0:0) never names a live entity.

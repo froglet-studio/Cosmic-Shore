@@ -287,6 +287,26 @@ namespace Unity.Rendering
             return plan;
         }
 
+        /// <summary>
+        /// One entity's resolved draw, cached on its record against (system, shape, value version,
+        /// registry version): a static prism - most of a grown arena - then skips the boxed
+        /// component lookups and binding reads every frame and costs one version compare.
+        /// </summary>
+        sealed class DrawCache
+        {
+            public object Owner;
+            public int Shape, Value, Registry;
+            public bool Draw;
+            public Mesh Mesh;
+            public Material Material;
+            public int Submesh, Layer;
+            public Matrix4x4 Matrix;
+            public int[] Slots;
+            public Vector4[] Values;
+        }
+
+        int _registryVersion;
+
         void CollectInto(EntityDrawList list)
         {
             if (World == null || !World.IsCreated) return;
@@ -296,23 +316,69 @@ namespace Unity.Rendering
             {
                 var rec = store.SlotAt(i);
                 if (rec == null || !rec.Alive) continue;
-                var plan = PlanFor(rec);
-                if (!plan.Draw) continue;
-                var comps = rec.Components;
-                var mmi = (MaterialMeshInfo)comps[typeof(MaterialMeshInfo)];
-                RenderMeshArray rma = plan.HasArray ? (RenderMeshArray)comps[typeof(RenderMeshArray)] : default;
-                Mesh mesh = mmi.IsRuntimeMesh ? GetMesh(mmi.MeshID) : plan.HasArray ? rma.GetMesh(mmi) : null;
-                Material material = mmi.IsRuntimeMaterial ? GetMaterial(mmi.MaterialID) : plan.HasArray ? rma.GetMaterial(mmi) : null;
-                if (mesh == null || material == null) continue;
-
-                int layer = plan.HasFilter ? ((RenderFilterSettings)comps[typeof(RenderFilterSettings)]).Layer : 0;
-                Matrix4x4 m = ((Unity.Transforms.LocalToWorld)comps[typeof(Unity.Transforms.LocalToWorld)]).Value;
-                int index = list.Add(mesh, material, mmi.SubMesh, in m, layer);
-                var bt = plan.BoundTypes;
-                var bs = plan.Bindings;
-                for (int k = 0; k < bt.Length; k++)
-                    list.Set(index, bs[k].Slot, bs[k].Read(comps[bt[k]]));
+                if (rec.DrawCache is not DrawCache c || !ReferenceEquals(c.Owner, this) || c.Shape != rec.Shape
+                    || c.Value != rec.ValueVersion || c.Registry != _registryVersion)
+                    c = Resolve(rec);
+                else if (s_verify && CosmicShore.Engine.Time.frameCount % 30 == 0) VerifyCache(rec, c);
+                if (!c.Draw) continue;
+                int index = list.Add(c.Mesh, c.Material, c.Submesh, in c.Matrix, c.Layer);
+                var slots = c.Slots; var values = c.Values;
+                for (int k = 0; k < slots.Length; k++) list.Set(index, slots[k], values[k]);
             }
+        }
+
+        // COSMIC_SHORE_VERIFY_ENTITIES=1: every 30 frames, re-resolve each cache hit from its
+        // components and report any field the cache got wrong.
+        static readonly bool s_verify = System.Environment.GetEnvironmentVariable("COSMIC_SHORE_VERIFY_ENTITIES") == "1";
+        int _verifyFrame = -1, _verifyChecked, _verifyStale;
+
+        void VerifyCache(Unity.Entities.EntityStore.Record rec, DrawCache cached)
+        {
+            int frame = CosmicShore.Engine.Time.frameCount;
+            if (_verifyFrame != frame)
+            {
+                if (_verifyFrame >= 0) System.Console.WriteLine($"[verify-entities] frame {_verifyFrame}: {_verifyChecked} cached draws checked, {_verifyStale} stale");
+                _verifyFrame = frame; _verifyChecked = 0; _verifyStale = 0;
+            }
+            var keep = rec.DrawCache;
+            rec.DrawCache = null;
+            var fresh = Resolve(rec);
+            rec.DrawCache = keep;
+            _verifyChecked++;
+            bool same = fresh.Draw == cached.Draw && (!fresh.Draw || (ReferenceEquals(fresh.Mesh, cached.Mesh) && ReferenceEquals(fresh.Material, cached.Material)
+                && fresh.Submesh == cached.Submesh && fresh.Layer == cached.Layer && fresh.Matrix.Equals(cached.Matrix)
+                && System.Linq.Enumerable.SequenceEqual(fresh.Values, cached.Values)));
+            if (!same && _verifyStale++ == 0) System.Console.WriteLine($"[verify-entities] stale cache on '{rec.Name}'");
+        }
+
+        DrawCache Resolve(Unity.Entities.EntityStore.Record rec)
+        {
+            var c = rec.DrawCache as DrawCache;
+            if (c == null || !ReferenceEquals(c.Owner, this)) rec.DrawCache = c = new DrawCache { Owner = this };
+            c.Shape = rec.Shape; c.Value = rec.ValueVersion; c.Registry = _registryVersion;
+            c.Draw = false;
+            var plan = PlanFor(rec);
+            if (!plan.Draw) return c;
+            var comps = rec.Components;
+            var mmi = (MaterialMeshInfo)comps[typeof(MaterialMeshInfo)];
+            RenderMeshArray rma = plan.HasArray ? (RenderMeshArray)comps[typeof(RenderMeshArray)] : default;
+            Mesh mesh = mmi.IsRuntimeMesh ? GetMesh(mmi.MeshID) : plan.HasArray ? rma.GetMesh(mmi) : null;
+            Material material = mmi.IsRuntimeMaterial ? GetMaterial(mmi.MaterialID) : plan.HasArray ? rma.GetMaterial(mmi) : null;
+            if (mesh == null || material == null) return c;
+
+            c.Draw = true;
+            c.Mesh = mesh; c.Material = material; c.Submesh = mmi.SubMesh;
+            c.Layer = plan.HasFilter ? ((RenderFilterSettings)comps[typeof(RenderFilterSettings)]).Layer : 0;
+            c.Matrix = ((Unity.Transforms.LocalToWorld)comps[typeof(Unity.Transforms.LocalToWorld)]).Value;
+            var bt = plan.BoundTypes;
+            var bs = plan.Bindings;
+            if (c.Slots == null || c.Slots.Length != bt.Length) { c.Slots = new int[bt.Length]; c.Values = new Vector4[bt.Length]; }
+            for (int k = 0; k < bt.Length; k++)
+            {
+                c.Slots[k] = bs[k].Slot;
+                c.Values[k] = bs[k].Read(comps[bt[k]]);
+            }
+            return c;
         }
 
         readonly Dictionary<Mesh, uint> _meshIds = new();
@@ -359,6 +425,7 @@ namespace Unity.Rendering
 
         public void UnregisterMesh(BatchMeshID meshID)
         {
+            _registryVersion++;
             if (!_meshes.TryGetValue(meshID.value, out var e)) return;
             if (e.refs > 1) { _meshes[meshID.value] = (e.mesh, e.refs - 1); return; }
             _meshes.Remove(meshID.value);
@@ -367,6 +434,7 @@ namespace Unity.Rendering
 
         public void UnregisterMaterial(BatchMaterialID materialID)
         {
+            _registryVersion++;
             if (!_materials.TryGetValue(materialID.value, out var e)) return;
             if (e.refs > 1) { _materials[materialID.value] = (e.material, e.refs - 1); return; }
             _materials.Remove(materialID.value);
