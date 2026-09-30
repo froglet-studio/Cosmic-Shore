@@ -232,6 +232,7 @@ namespace CosmicShore.Engine
             if (parent is null) gameObject.scene?.RemoveRoot(gameObject);
 
             _parent = newParent;
+            GameObject.BumpHierarchyEpoch();
 
             if (newParent is not null) newParent._children.Add(this);
             else gameObject.scene?.AddRoot(gameObject);
@@ -260,6 +261,7 @@ namespace CosmicShore.Engine
         {
             parent?._children.Remove(this);
             _parent = null;
+            GameObject.BumpHierarchyEpoch();
         }
 
         /// <summary>
@@ -294,6 +296,7 @@ namespace CosmicShore.Engine
             }
             old._children.Clear();
             old._parent = null;
+            GameObject.BumpHierarchyEpoch();
 
             localRotation = oldLocalRotation;
             localScale = oldLocalScale;

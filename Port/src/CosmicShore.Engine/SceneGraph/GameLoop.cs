@@ -47,9 +47,19 @@ namespace CosmicShore.Engine
         int _loopThreadId = -1;
         public bool IsOnLoopThread => Environment.CurrentManagedThreadId == _loopThreadId;
 
-        readonly List<MonoBehaviour> _behaviours = new();   // sorted by (ExecutionOrder, sequence)
+        // One list per per-frame hook, each sorted by (ExecutionOrder, sequence). A
+        // behaviour is filed only in the lists whose hook its type declares, so a phase
+        // walks exactly the behaviours it will invoke. The former single list walked
+        // every enabled behaviour for every phase AND every fixed step, which at a grown
+        // arena's ~20k prisms (most of which declare no per-frame hook at all) was the
+        // largest self-time in the frame. Relative order inside each phase is unchanged:
+        // the same total order, restricted to the behaviours that run in it.
+        readonly List<MonoBehaviour> _update = new();
+        readonly List<MonoBehaviour> _lateUpdate = new();
+        readonly List<MonoBehaviour> _fixedUpdate = new();
         readonly Queue<MonoBehaviour> _startQueue = new();
         readonly List<Object> _destroyQueue = new();
+        readonly HashSet<Object> _destroyQueued = new(ReferenceEqualityComparer.Instance);
         MonoBehaviour[] _scratch = new MonoBehaviour[64];
         long _sequenceCounter;
         float _fixedAccumulator;
@@ -80,30 +90,43 @@ namespace CosmicShore.Engine
 
         internal void RegisterBehaviour(MonoBehaviour mb)
         {
-            int index = _behaviours.BinarySearch(mb, BehaviourOrderComparer.Instance);
-            if (index < 0) index = ~index;
-            _behaviours.Insert(index, mb);
+            if (mb.HasUpdate) Insert(_update, mb);
+            if (mb.HasLateUpdate) Insert(_lateUpdate, mb);
+            if (mb.HasFixedUpdate) Insert(_fixedUpdate, mb);
         }
 
         internal void UnregisterBehaviour(MonoBehaviour mb)
         {
+            if (mb.HasUpdate) Remove(_update, mb);
+            if (mb.HasLateUpdate) Remove(_lateUpdate, mb);
+            if (mb.HasFixedUpdate) Remove(_fixedUpdate, mb);
+        }
+
+        static void Insert(List<MonoBehaviour> list, MonoBehaviour mb)
+        {
+            int index = list.BinarySearch(mb, BehaviourOrderComparer.Instance);
+            if (index < 0) index = ~index;
+            list.Insert(index, mb);
+        }
+
+        static void Remove(List<MonoBehaviour> list, MonoBehaviour mb)
+        {
             // Binary search over the (ExecutionOrder, sequence) total order — `sequence` is
             // unique per behaviour, so an exact comparer hit can only be this behaviour.
-            // Replaces the former List.Remove linear scan, which made mass teardown
-            // (e.g. wiping a race's accumulated prism field on restart) quadratic in
-            // scene size. Behavior-preserving: same element removed, same list order kept.
-            int index = _behaviours.BinarySearch(mb, BehaviourOrderComparer.Instance);
-            if (index >= 0 && ReferenceEquals(_behaviours[index], mb))
-                _behaviours.RemoveAt(index);
+            // A linear List.Remove made mass teardown (wiping a race's accumulated prism
+            // field on restart) quadratic in scene size.
+            int index = list.BinarySearch(mb, BehaviourOrderComparer.Instance);
+            if (index >= 0 && ReferenceEquals(list[index], mb))
+                list.RemoveAt(index);
             else
-                _behaviours.Remove(mb); // defensive fallback (should not happen)
+                list.Remove(mb); // defensive fallback (should not happen)
         }
 
         internal void QueueStart(MonoBehaviour mb) => _startQueue.Enqueue(mb);
 
         internal void QueueDestroy(Object obj)
         {
-            if (!_destroyQueue.Contains(obj)) _destroyQueue.Add(obj);
+            if (_destroyQueued.Add(obj)) _destroyQueue.Add(obj);
         }
 
         readonly List<TrailRenderer> _trailScratch = new();
@@ -134,28 +157,67 @@ namespace CosmicShore.Engine
             SynchronizationContext.SetSynchronizationContext(SyncContext);
             try
             {
+                long mark = PhaseTiming ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                 Time.Advance(deltaTime);
                 InputSystem.InputSystem.Update(); // commit device state + evaluate actions before any script runs
                 SyncContext.Pump();
                 Networking.NetDriver.EarlyUpdate(); // the transport's receive slot: before any script runs
                 DrainStartQueue();
+                if (PhaseTiming) Lap(ref mark, "start");
                 RunFixedSteps();
-                RunPhase(static mb => mb.HasUpdate, static mb => mb.RunUpdate());
+                if (PhaseTiming) Lap(ref mark, "fixed");
+                RunPhase(_update, static mb => mb.RunUpdate());
+                if (PhaseTiming) Lap(ref mark, "update");
                 Triggers.RunFrame();
+                if (PhaseTiming) Lap(ref mark, "triggers");
                 Coroutines.RunFrame();
+                if (PhaseTiming) Lap(ref mark, "coroutines");
                 Scheduler.RunFrame();
+                if (PhaseTiming) Lap(ref mark, "tasks");
                 Animator.TickAll(); // the animation slot: after Update and coroutines, before LateUpdate
-                RunPhase(static mb => mb.HasLateUpdate, static mb => mb.RunLateUpdate());
+                if (PhaseTiming) Lap(ref mark, "animator");
+                RunPhase(_lateUpdate, static mb => mb.RunLateUpdate());
+                if (PhaseTiming) Lap(ref mark, "late");
                 Networking.NetDriver.PostLateUpdate(); // the send slot: dirty variables, transforms
                 SampleTrails(); // render-time slot: trails record where their transform ended the frame
                 UI.LayoutRebuilder.FlushQueuedRebuilds(); // canvas-update slot: queued UI layout solves after LateUpdate
                 Scheduler.RunEndOfFrame();
                 FlushDestroyQueue();
+                if (PhaseTiming) Lap(ref mark, "destroy");
             }
             finally
             {
                 SynchronizationContext.SetSynchronizationContext(previousContext);
             }
+        }
+
+        /// <summary>
+        /// Diagnostics: when set, <see cref="Tick"/> accumulates wall time per loop phase
+        /// (start, fixed, update, triggers, coroutines, tasks, animator, late, destroy) until
+        /// <see cref="TakePhaseReport"/> drains it. Off by default and branch-only when off.
+        /// </summary>
+        public static bool PhaseTiming;
+        readonly Dictionary<string, long> _phaseTicks = new();
+
+        void Lap(ref long mark, string phase)
+        {
+            long now = System.Diagnostics.Stopwatch.GetTimestamp();
+            _phaseTicks.TryGetValue(phase, out long sum);
+            _phaseTicks[phase] = sum + (now - mark);
+            mark = now;
+        }
+
+        /// <summary>Per-phase milliseconds since the last call, averaged over <paramref name="frames"/>.</summary>
+        public string TakePhaseReport(int frames)
+        {
+            var parts = new List<string>();
+            foreach (var kv in _phaseTicks)
+            {
+                double ms = kv.Value * 1000.0 / System.Diagnostics.Stopwatch.Frequency / Math.Max(1, frames);
+                if (ms >= 0.05) parts.Add($"{kv.Key} {ms:F1}");
+            }
+            _phaseTicks.Clear();
+            return string.Join(", ", parts);
         }
 
         /// <summary>Tick a fixed number of frames at a fixed delta (deterministic harness driving).</summary>
@@ -180,7 +242,7 @@ namespace CosmicShore.Engine
                 Time.EnterFixedPhase();
                 try
                 {
-                    RunPhase(static mb => mb.HasFixedUpdate, static mb => mb.RunFixedUpdate());
+                    RunPhase(_fixedUpdate, static mb => mb.RunFixedUpdate());
                     IntegrateRigidbodies(Time.fixedDeltaTime);
                 }
                 finally { Time.ExitFixedPhase(); }
@@ -205,18 +267,19 @@ namespace CosmicShore.Engine
             }
         }
 
-        void RunPhase(Func<MonoBehaviour, bool> hasHook, Action<MonoBehaviour> invoke)
+        void RunPhase(List<MonoBehaviour> phase, Action<MonoBehaviour> invoke)
         {
             // Snapshot: callbacks may register/unregister behaviours mid-phase.
-            int count = _behaviours.Count;
+            int count = phase.Count;
+            if (count == 0) return;
             if (_scratch.Length < count) _scratch = new MonoBehaviour[Math.Max(count, _scratch.Length * 2)];
-            _behaviours.CopyTo(_scratch, 0);
+            phase.CopyTo(_scratch, 0);
 
             for (int i = 0; i < count; i++)
             {
                 var mb = _scratch[i];
                 if (mb.destroyedFlag || !mb.isActiveAndEnabled || !mb.started) continue;
-                if (hasHook(mb)) invoke(mb);
+                invoke(mb);
             }
             Array.Clear(_scratch, 0, count);
         }
@@ -226,6 +289,7 @@ namespace CosmicShore.Engine
             if (_destroyQueue.Count == 0) return;
             var toDestroy = _destroyQueue.ToArray();
             _destroyQueue.Clear();
+            _destroyQueued.Clear();
             foreach (var obj in toDestroy)
             {
                 switch (obj)

@@ -78,9 +78,20 @@ namespace CosmicShore.Engine
             public float WaitUntilUnscaledTime = -1f;
             public Func<bool> WaitPredicate;
             public Coroutine WaitingOn;
+            public bool Removed;
         }
 
+        // Every live coroutine in start order (the resume order), plus an index by owner.
+        //
+        // Both used to be one list with RemoveAt/linear scans, which was quadratic twice
+        // over in a grown arena: every prism's pool reset calls StopAllCoroutines (a scan
+        // of EVERY live coroutine, thousands of them), and every coroutine that finished
+        // shifted the whole list down by one. A stop now flags the entry and unlinks it
+        // from its owner's short list; the resume list is compacted once, in order, at the
+        // end of the frame. Resume order and every Done transition are unchanged.
         readonly List<Entry> _entries = new();
+        readonly Dictionary<MonoBehaviour, List<Entry>> _byOwner = new(ReferenceEqualityComparer.Instance);
+        int _removed;
 
         public Coroutine Start(MonoBehaviour owner, IEnumerator routine)
         {
@@ -88,19 +99,33 @@ namespace CosmicShore.Engine
             var entry = new Entry { Owner = owner, Root = routine, Handle = new Coroutine() };
             entry.Frames.Push(routine);
             _entries.Add(entry);
-            Step(entry); // synchronous run to first yield (original contract)
+            if (owner is not null)
+            {
+                if (!_byOwner.TryGetValue(owner, out var list)) _byOwner[owner] = list = new List<Entry>(2);
+                list.Add(entry);
+            }
+            if (!Step(entry)) Kill(entry); // synchronous run to first yield (original contract)
             return entry.Handle;
+        }
+
+        void Kill(Entry entry)
+        {
+            if (entry.Removed) return;
+            entry.Removed = true;
+            entry.Handle.Done = true;
+            _removed++;
+            if (entry.Owner is not null && _byOwner.TryGetValue(entry.Owner, out var list))
+            {
+                list.Remove(entry);
+                if (list.Count == 0) _byOwner.Remove(entry.Owner);
+            }
         }
 
         public void Stop(MonoBehaviour owner, Coroutine handle)
         {
-            for (int i = _entries.Count - 1; i >= 0; i--)
-                if (_entries[i].Handle == handle && _entries[i].Owner == owner)
-                {
-                    _entries[i].Handle.Done = true;
-                    _entries.RemoveAt(i);
-                    return;
-                }
+            if (owner is null || !_byOwner.TryGetValue(owner, out var list)) return;
+            for (int i = list.Count - 1; i >= 0; i--)
+                if (list[i].Handle == handle) { Kill(list[i]); return; }
         }
 
         /// <summary>
@@ -110,23 +135,51 @@ namespace CosmicShore.Engine
         /// </summary>
         public void Stop(MonoBehaviour owner, IEnumerator routine)
         {
-            for (int i = _entries.Count - 1; i >= 0; i--)
-                if (ReferenceEquals(_entries[i].Root, routine) && ReferenceEquals(_entries[i].Owner, owner))
-                {
-                    _entries[i].Handle.Done = true;
-                    _entries.RemoveAt(i);
-                    return;
-                }
+            if (owner is null || !_byOwner.TryGetValue(owner, out var list)) return;
+            for (int i = list.Count - 1; i >= 0; i--)
+                if (ReferenceEquals(list[i].Root, routine)) { Kill(list[i]); return; }
         }
 
         public void StopAll(MonoBehaviour owner)
         {
-            for (int i = _entries.Count - 1; i >= 0; i--)
-                if (ReferenceEquals(_entries[i].Owner, owner))
-                {
-                    _entries[i].Handle.Done = true;
-                    _entries.RemoveAt(i);
-                }
+            if (owner is null || !_byOwner.Remove(owner, out var list)) return;
+            foreach (var entry in list)
+            {
+                if (entry.Removed) continue;
+                entry.Removed = true;
+                entry.Handle.Done = true;
+                _removed++;
+            }
+        }
+
+        // Diagnostics: CS_PORT_TRACE_CO=1 prints the live coroutine census and which
+        // coroutine bodies the stepping time went to, every 300 frames.
+        static readonly bool s_trace = Environment.GetEnvironmentVariable("CS_PORT_TRACE_CO") != null;
+        readonly Dictionary<string, (long ticks, int steps)> _stepCost = new();
+
+        void Account(Entry entry, long ticks)
+        {
+            string key = entry.Root?.GetType().Name ?? "?";
+            _stepCost.TryGetValue(key, out var v);
+            _stepCost[key] = (v.ticks + ticks, v.steps + 1);
+        }
+
+        void TraceCensus()
+        {
+            int sleeping = 0, predicate = 0, waiting = 0;
+            foreach (var e in _entries)
+            {
+                if (e.Removed) continue;
+                if (e.WaitUntilTime >= 0f || e.WaitUntilUnscaledTime >= 0f) sleeping++;
+                else if (e.WaitPredicate != null) predicate++;
+                else if (e.WaitingOn != null) waiting++;
+            }
+            var top = new List<KeyValuePair<string, (long ticks, int steps)>>(_stepCost);
+            top.Sort((a, b) => b.Value.ticks.CompareTo(a.Value.ticks));
+            Console.WriteLine($"[co] frame {Time.frameCount}: {_entries.Count} live ({sleeping} timed, {predicate} predicate, {waiting} awaiting); step ms/300f: " +
+                string.Join(", ", top.GetRange(0, Math.Min(6, top.Count)).ConvertAll(
+                    kv => $"{kv.Key} {kv.Value.ticks * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F0}/{kv.Value.steps}")));
+            _stepCost.Clear();
         }
 
         internal void RunFrame()
@@ -135,13 +188,13 @@ namespace CosmicShore.Engine
             for (int i = 0; i < _entries.Count; i++)
             {
                 var entry = _entries[i];
+                if (entry.Removed) continue;
 
                 // Owner died or its object went inactive: coroutine ends permanently.
                 if (entry.Owner is null || entry.Owner.IsDestroyed || entry.Owner.gameObject is null
                     || entry.Owner.gameObject.IsDestroyed || !entry.Owner.gameObject.activeInHierarchy)
                 {
-                    entry.Handle.Done = true;
-                    _entries.RemoveAt(i--);
+                    Kill(entry);
                     continue;
                 }
 
@@ -169,8 +222,17 @@ namespace CosmicShore.Engine
                     entry.WaitingOn = null;
                 }
 
-                if (!Step(entry))
-                    _entries.RemoveAt(i--);
+                long t0 = s_trace ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+                bool alive = Step(entry);
+                if (s_trace) Account(entry, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
+                if (!alive) Kill(entry);
+            }
+            if (s_trace && Time.frameCount % 300 == 0) TraceCensus();
+
+            if (_removed > 0)
+            {
+                _entries.RemoveAll(static e => e.Removed);
+                _removed = 0;
             }
         }
 

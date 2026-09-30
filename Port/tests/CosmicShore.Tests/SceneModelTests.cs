@@ -340,4 +340,38 @@ public class TransformTests
         b.transform.SetParent(null);
         Assert.Equal(2, loop.Scene.rootCount);
     }
+
+    [Fact]
+    public void ActiveInHierarchy_TracksEveryChainChange_ThroughTheCache()
+    {
+        using var loop = new GameLoop();
+        var root = new GameObject("root");
+        var mid = new GameObject("mid");
+        var leaf = new GameObject("leaf");
+        mid.transform.SetParent(root.transform);
+        leaf.transform.SetParent(mid.transform);
+        var other = new GameObject("other");
+
+        Assert.True(leaf.activeInHierarchy);
+        root.SetActive(false);
+        Assert.False(mid.activeInHierarchy);
+        Assert.False(leaf.activeInHierarchy);   // grandparent change reaches a cached leaf
+        root.SetActive(true);
+        Assert.True(leaf.activeInHierarchy);
+
+        other.SetActive(false);
+        mid.transform.SetParent(other.transform);   // reparent under an inactive parent
+        Assert.False(leaf.activeInHierarchy);
+        Assert.True(root.activeInHierarchy);
+        mid.transform.SetParent(null);
+        Assert.True(leaf.activeInHierarchy);
+
+        leaf.SetActive(false);
+        Assert.False(leaf.activeInHierarchy);
+        Assert.True(mid.activeInHierarchy);
+
+        leaf.SetActive(true);
+        Object.DestroyImmediate(mid);
+        Assert.False(mid.activeInHierarchy);        // destroyed reads false
+    }
 }

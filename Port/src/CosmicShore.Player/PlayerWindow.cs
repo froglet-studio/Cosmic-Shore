@@ -110,10 +110,24 @@ namespace CosmicShore.Player
             _inputBridge.BeforeTick();
             _script.BeforeTick(_frameIndex);
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            CosmicShore.Engine.GameLoop.PhaseTiming = s_timing;
             _boot.Tick(step);
             if (s_timing && _frameIndex % 30 == 0)
-                Console.WriteLine($"[tick] simulation {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms (frame {_frameIndex})");
+                Console.WriteLine($"[tick] simulation {(System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency:F1} ms (frame {_frameIndex})"
+                    + $" | avg/30: {CosmicShore.Engine.GameLoop.Current?.TakePhaseReport(30)} | {GcReport()}");
             _inputBridge.AfterTick();
+        }
+
+        int _gc0, _gc1, _gc2; TimeSpan _gcPause;
+
+        /// <summary>GC activity since the last report: collections per generation and pause ms per frame.</summary>
+        string GcReport()
+        {
+            int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
+            var pause = GC.GetTotalPauseDuration();
+            string r = $"gc {g0 - _gc0}/{g1 - _gc1}/{g2 - _gc2} pause {(pause - _gcPause).TotalMilliseconds / 30:F1}/f heap {GC.GetTotalMemory(false) >> 20} MB";
+            _gc0 = g0; _gc1 = g1; _gc2 = g2; _gcPause = pause;
+            return r;
         }
 
         double _lastFrameMs;

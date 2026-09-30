@@ -88,15 +88,50 @@ namespace CosmicShore.Engine
 
         public override string name { get => base.name; set => base.name = value; }
 
-        public bool activeInHierarchy
+        public bool activeInHierarchy => !destroyedFlag && ChainActive();
+
+        // ── activeInHierarchy cache ───────────────────────────────────
+        // The chain answer (every ancestor's activeSelf) is memoised per object against a
+        // global epoch that any activeSelf or parent change bumps. It was a parent walk on
+        // every call, and every isActiveAndEnabled goes through it: in a grown arena that is
+        // tens of thousands of walks down deep flora hierarchies per frame. After a bump an
+        // object recomputes through its parent's (memoised) answer, so siblings share one
+        // walk. Semantics are unchanged: a cached value is only ever read at the epoch it
+        // was computed at, and nothing the chain depends on can change without a bump.
+        static long s_hierarchyEpoch;
+        long _chainEpoch = -1;
+        bool _chainActive;
+        static readonly List<GameObject> s_chainScratch = new();
+
+        /// <summary>Invalidate every cached activeInHierarchy answer (an activeSelf or parent changed).</summary>
+        internal static void BumpHierarchyEpoch() => s_hierarchyEpoch++;
+
+        bool ChainActive()
         {
-            get
+            long epoch = s_hierarchyEpoch;
+            if (_chainEpoch == epoch) return _chainActive;
+
+            // Walk up to the first ancestor with a current answer (or the root), then fill
+            // the answers back down. Iterative: flora and worm chains can be deep.
+            var path = s_chainScratch;
+            int baseCount = path.Count; // reentrancy-safe: never happens, but never corrupts
+            bool above = true;
+            for (GameObject go = this; go is not null; )
             {
-                if (destroyedFlag) return false;
-                for (Transform t = transform; t is not null; t = t.parent)
-                    if (!t.gameObject.activeSelf) return false;
-                return true;
+                if (go._chainEpoch == epoch) { above = go._chainActive; break; }
+                path.Add(go);
+                var parent = go.transform?.parent;
+                go = parent?.gameObject;
             }
+            for (int i = path.Count - 1; i >= baseCount; i--)
+            {
+                var go = path[i];
+                above = above && go.activeSelf;
+                go._chainActive = above;
+                go._chainEpoch = epoch;
+            }
+            path.RemoveRange(baseCount, path.Count - baseCount);
+            return _chainActive;
         }
 
         /// <summary>Diagnostics: CS_PORT_TRACE_ACTIVE=&lt;exact GameObject name&gt; prints a stack for each activation change of that object.</summary>
@@ -110,6 +145,7 @@ namespace CosmicShore.Engine
 
             bool parentActive = transform.parent is null || transform.parent.gameObject.activeInHierarchy;
             activeSelf = value;
+            BumpHierarchyEpoch();
 
             // Effective state only changes when every ancestor is active.
             if (parentActive) NotifyHierarchyActiveChanged(value);

@@ -80,6 +80,55 @@ public class CoroutineTests
         loop.Run(120, 1f / 60f);
         Assert.Equal(3, probe.Ticks); // coroutine died with its object
     }
+    class TickerProbe : MonoBehaviour
+    {
+        public List<string> Log;
+        public IEnumerator Tick(string tag)
+        {
+            while (true) { Log.Add(tag); yield return null; }
+        }
+    }
+
+    [Fact]
+    public void Stops_AreScopedToTheirOwner_AndResumeOrderIsStartOrder()
+    {
+        using var loop = new GameLoop();
+        var log = new List<string>();
+        var a = new GameObject("a").AddComponent<TickerProbe>();
+        var b = new GameObject("b").AddComponent<TickerProbe>();
+        a.Log = log; b.Log = log;
+        loop.Run(2, 1f / 60f); // let Start drain
+
+        var a1 = a.StartCoroutine(a.Tick("a1"));
+        var b1 = b.StartCoroutine(b.Tick("b1"));
+        var a2 = a.StartCoroutine(a.Tick("a2"));
+        var b2 = b.StartCoroutine(b.Tick("b2"));
+        log.Clear();
+        loop.Run(1, 1f / 60f);
+        Assert.Equal(new[] { "a1", "b1", "a2", "b2" }, log);
+
+        b.StopCoroutine(b1);
+        Assert.True(b1.Done);
+        log.Clear();
+        loop.Run(1, 1f / 60f);
+        Assert.Equal(new[] { "a1", "a2", "b2" }, log);
+
+        a.StopAllCoroutines();
+        Assert.True(a1.Done && a2.Done);
+        Assert.False(b2.Done);
+        log.Clear();
+        loop.Run(1, 1f / 60f);
+        Assert.Equal(new[] { "b2" }, log);
+
+        // A stop issued by another owner's handle is a no-op (original contract).
+        a.StopCoroutine(b2);
+        Assert.False(b2.Done);
+        // Restarting after StopAll works and appends in start order.
+        a.StartCoroutine(a.Tick("a3"));
+        log.Clear();
+        loop.Run(1, 1f / 60f);
+        Assert.Equal(new[] { "b2", "a3" }, log);
+    }
 }
 
 public class ResourceSystemTests

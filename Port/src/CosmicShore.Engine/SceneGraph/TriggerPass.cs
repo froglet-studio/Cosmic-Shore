@@ -43,7 +43,7 @@ namespace CosmicShore.Engine
     /// </summary>
     public sealed partial class TriggerPass
     {
-        readonly List<Collider> _colliders = new();                    // registration order
+        readonly OrderedColliderSet _colliders = new();                // registration order
         readonly List<(Collider a, Collider b)> _activePairs = new();  // established order
         readonly HashSet<(Collider a, Collider b)> _activeSet = new();
 
@@ -54,10 +54,39 @@ namespace CosmicShore.Engine
 
         internal void Register(Collider collider)
         {
-            if (!_colliders.Contains(collider)) _colliders.Add(collider);
+            _colliders.Add(collider);
         }
 
         internal void Unregister(Collider collider) => _colliders.Remove(collider);
+
+        /// <summary>
+        /// Registration-ordered collider set with O(1) add/remove/contains. It was a plain
+        /// list, whose Contains-before-Add and linear Remove made every prism a grown arena
+        /// lays or retires an O(n) scan of every live collider — at ~20k prisms, a tenth of
+        /// the frame. Enumeration order is still exactly registration order, which the pass
+        /// relies on for a deterministic enter-event stream.
+        /// </summary>
+        sealed class OrderedColliderSet
+        {
+            readonly LinkedList<Collider> _order = new();
+            readonly Dictionary<Collider, LinkedListNode<Collider>> _nodes = new(ReferenceEqualityComparer.Instance);
+
+            public int Count => _order.Count;
+            public bool Contains(Collider c) => _nodes.ContainsKey(c);
+            public void Add(Collider c)
+            {
+                if (_nodes.ContainsKey(c)) return;
+                _nodes[c] = _order.AddLast(c);
+            }
+            public bool Remove(Collider c)
+            {
+                if (!_nodes.Remove(c, out var node)) return false;
+                _order.Remove(node);
+                return true;
+            }
+            public void Clear() { _order.Clear(); _nodes.Clear(); }
+            public LinkedList<Collider>.Enumerator GetEnumerator() => _order.GetEnumerator();
+        }
 
         internal void RunFrame()
         {

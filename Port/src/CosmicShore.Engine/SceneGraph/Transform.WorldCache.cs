@@ -37,8 +37,36 @@ namespace CosmicShore.Engine
         static bool Same(in Quaternion a, in Quaternion b)
             => Same(a.x, b.x) && Same(a.y, b.y) && Same(a.z, b.z) && Same(a.w, b.w);
 
+        // ── Read-only passes ─────────────────────────────────────────
+        // A renderer reads the world pose of every drawn transform — and every ancestor of it —
+        // once per frame, and validation re-walks the chain to the root on EVERY read (it has
+        // to: localRotation is a public field no setter can intercept). Inside a read-only pass
+        // nothing may write a transform, so a transform validated once in the pass is trusted
+        // for the rest of it; siblings then share their ancestors' walk. Outside a pass the
+        // cache behaves exactly as before.
+        static long s_passCounter, s_passEpoch;
+        long _passValidated;
+
+        /// <summary>
+        /// Port engine extension: begin a pass in which no transform is written (the render
+        /// backend's collect). World poses are validated once per transform per pass.
+        /// </summary>
+        public static void BeginReadOnlyPass() => s_passEpoch = ++s_passCounter;
+
+        /// <summary>End the read-only pass begun by <see cref="BeginReadOnlyPass"/>.</summary>
+        public static void EndReadOnlyPass() => s_passEpoch = 0;
+
         /// <summary>Brings the cached world pose up to date and returns its stamp.</summary>
         long EnsureWorld()
+        {
+            long pass = s_passEpoch;
+            if (pass != 0 && _passValidated == pass && _wValid) return _wStamp;
+            long stamp = ValidateWorld();
+            if (pass != 0) _passValidated = pass;
+            return stamp;
+        }
+
+        long ValidateWorld()
         {
             var wp = WorldParent;
             long pStamp = 0;

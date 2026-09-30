@@ -988,7 +988,9 @@ void main(){
             long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             SetFrustum(viewProj);
             _cullClock = Shader.GetGlobalFloat(IdPrismClock) is var cc && cc > 0 ? cc : Time.time;
-            Collect(mask, camPos);
+            CosmicShore.Engine.Transform.BeginReadOnlyPass();
+            try { Collect(mask, camPos); }
+            finally { CosmicShore.Engine.Transform.EndReadOnlyPass(); }
             long t1 = System.Diagnostics.Stopwatch.GetTimestamp();
             _writeTicks = 0;
 
@@ -1093,7 +1095,8 @@ void main(){
                 long t3 = System.Diagnostics.Stopwatch.GetTimestamp();
                 double ms(long a) => a * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
                 if (_frame % 30 == 0)
-                    Console.WriteLine($"[render] collect {ms(t1 - t0):F1} ms (renderers {ms(t1 - t0 - _entityTicks):F1}, ECS hand-over {ms(_entityHandTicks):F1} of {_entities.Count}, entity cull {ms(_entityTicks - _entityHandTicks):F1}), instance writes+uploads {ms(_writeTicks):F1} ms, submit {ms(t2 - t1 - _writeTicks):F1} ms, GPU wait {ms(t3 - t2):F1} ms — {Instances} instances, {DrawCalls} draws, {_opaque.Count + _transparent.Count} collected");
+                    Console.WriteLine($"[render] collect {ms(t1 - t0):F1} ms (renderers {ms(t1 - t0 - _entityTicks):F1}, ECS hand-over {ms(_entityHandTicks):F1} of {_entities.Count}, entity cull {ms(_entityTicks - _entityHandTicks):F1}), instance writes+uploads {ms(_writeTicks):F1} ms, submit {ms(t2 - t1 - _writeTicks):F1} ms, GPU wait {ms(t3 - t2):F1} ms — {Instances} instances, {DrawCalls} draws, {_opaque.Count + _transparent.Count} collected"
+                        + $" [renderers: {_cLive} live, {_cEnabled} enabled, {_cShown} shown; loop {ms(_cLoop):F1} = mesh {ms(_cMesh):F1} + cull {ms(_cCull):F1} + materials {ms(_cMat):F1}]");
             }
         }
 
@@ -1106,11 +1109,14 @@ void main(){
             _transparent.Clear();
             // The cache re-derives an edited material on its own (Material.Revision); a periodic
             // purge only lets go of materials nothing draws with any more.
-            if (_frame % 600 == 0) { _mats.Clear(); _ribbonMats.Clear(); }
+            if (_frame % 600 == 0) { _mats.Clear(); _ribbonMats.Clear(); _spheres.Clear(); }
             Renderer.CollectLive(_renderers);
+            _cLive = _renderers.Count; _cEnabled = 0; _cShown = 0;
+            long tm0 = System.Diagnostics.Stopwatch.GetTimestamp(), tMesh = 0, tCull = 0, tMat = 0;
             foreach (var r in _renderers)
             {
                 if (!r.enabled || r.forceRenderingOff) continue;
+                _cEnabled++;
                 if (r is TrailRenderer || r is LineRenderer)
                 {
                     CollectRibbon(r, mask, camPos);
@@ -1120,10 +1126,15 @@ void main(){
                 var go = r.gameObject;
                 if ((mask & (1 << go.layer)) == 0 || !go.activeInHierarchy) continue;
                 if (go.isPrefabAsset) continue;
+                _cShown++;
+                long ta = s_timing ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                 Mesh mesh = r is SkinnedMeshRenderer s ? s.sharedMesh : r.GetComponent<MeshFilter>()?.sharedMesh;
                 if (mesh == null || mesh.vertexCount == 0) continue;
                 if (r is SkinnedMeshRenderer morphing && mesh.blendShapeCount > 0) mesh = Morphed(morphing, mesh);
+                long tb = s_timing ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
                 bool visible = r is SkinnedMeshRenderer || InFrustum(mesh, r.transform.localToWorldMatrix);
+                long tc = s_timing ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+                tMesh += tb - ta; tCull += tc - tb;
                 var mats = r.sharedMaterials;
                 int subs = mesh.RenderSubmeshCount;
                 for (int i = 0; i < mats.Length && i < Math.Max(subs, 1); i++)
@@ -1144,13 +1155,36 @@ void main(){
                     }
                     else _opaque.Add(item);
                 }
+                if (s_timing) tMat += System.Diagnostics.Stopwatch.GetTimestamp() - tc;
             }
+            if (s_census && _frame % 30 == 0) RendererCensus();
             long te = System.Diagnostics.Stopwatch.GetTimestamp();
+            _cMesh = tMesh; _cCull = tCull; _cMat = tMat; _cLoop = te - tm0;
             CollectEntities(mask, camPos);
             _entityTicks = System.Diagnostics.Stopwatch.GetTimestamp() - te;
         }
 
         long _entityTicks, _entityHandTicks;
+        int _cLive, _cEnabled, _cShown;
+        static readonly bool s_census = Environment.GetEnvironmentVariable("CS_PORT_TRACE_RENDERERS") != null;
+
+        /// <summary>Diagnostics (CS_PORT_TRACE_RENDERERS): the enabled renderers by object name and material, largest groups first.</summary>
+        void RendererCensus()
+        {
+            var groups = new Dictionary<string, int>();
+            foreach (var r in _renderers)
+            {
+                if (!r.enabled || r.forceRenderingOff || !r.gameObject.activeInHierarchy) continue;
+                string n = r.gameObject.name;
+                int cut = n.IndexOf(" (", StringComparison.Ordinal); if (cut > 0) n = n[..cut];
+                var m = r.sharedMaterials; string key = $"{r.GetType().Name} {n} [{(m.Length > 0 && m[0] != null ? m[0].name : "-")}]";
+                groups[key] = groups.TryGetValue(key, out int c) ? c + 1 : 1;
+            }
+            var top = new List<KeyValuePair<string, int>>(groups);
+            top.Sort((a, b) => b.Value.CompareTo(a.Value));
+            Console.WriteLine("[renderers] " + string.Join(", ", top.GetRange(0, Math.Min(8, top.Count)).ConvertAll(kv => $"{kv.Key}={kv.Value}")));
+        }
+        long _cMesh, _cCull, _cMat, _cLoop;
 
         // ── Entities Graphics: every visible entity the ECS emulation hands over ──
 
@@ -1163,7 +1197,10 @@ void main(){
         static readonly int SlotFlightStart = EntityDrawList.Slot("_FlightStartTime"), SlotFlightDuration = EntityDrawList.Slot("_FlightDuration");
         static readonly int SlotSuctionStart = EntityDrawList.Slot("_SuctionStartTime"), SlotSuctionDuration = EntityDrawList.Slot("_SuctionDuration");
         sealed class MeshSphere { public Vector3[] Source; public EVector3 Centre; public float Radius; }
-        readonly ConditionalWeakTable<Mesh, MeshSphere> _spheres = new();
+        // A plain reference-keyed dictionary: this is read for every drawn renderer every frame,
+        // and a ConditionalWeakTable lookup costs several times as much. Cleared with the
+        // material caches (below), so meshes nothing draws any more are let go.
+        readonly Dictionary<Mesh, MeshSphere> _spheres = new(ReferenceEqualityComparer.Instance);
 
         /// <summary>The six clip planes of <paramref name="vp"/> (Gribb–Hartmann), normalised; inside = dot >= 0.</summary>
         void SetFrustum(CosmicShore.Engine.Matrix4x4 vp)
@@ -1186,7 +1223,7 @@ void main(){
         MeshSphere SphereOf(Mesh mesh)
         {
             var verts = mesh.RenderVertices;
-            var s = _spheres.GetOrCreateValue(mesh);
+            if (!_spheres.TryGetValue(mesh, out var s)) _spheres[mesh] = s = new MeshSphere();
             if (ReferenceEquals(s.Source, verts)) return s;
             s.Source = verts;
             if (verts.Length == 0) { s.Centre = default; s.Radius = 0f; return s; }

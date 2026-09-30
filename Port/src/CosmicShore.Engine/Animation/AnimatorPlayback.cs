@@ -316,9 +316,28 @@ namespace CosmicShore.Engine
         static readonly List<Animator> s_tick = new();
 
         /// <summary>Advances and applies every active Animator (called once per frame by the game loop).</summary>
+        static readonly bool s_traceAnim = Environment.GetEnvironmentVariable("CS_PORT_TRACE_ANIM") != null;
+
+        static void TraceCensus()
+        {
+            int live = 0; long slots = 0;
+            var top = new List<(int n, string name)>();
+            foreach (var a in s_tick)
+            {
+                if (!a.isActiveAndEnabled) continue;
+                live++;
+                int n = a.State.SlotList.Count; slots += n;
+                top.Add((n, a.gameObject.name + ":" + (a.State.BoundController?.name ?? "-")));
+            }
+            top.Sort((x, y) => y.n.CompareTo(x.n));
+            Console.WriteLine($"[anim] frame {Time.frameCount}: {live} live animators, {slots} slots; top: " +
+                string.Join(", ", top.GetRange(0, Math.Min(4, top.Count)).ConvertAll(t => $"{t.name}={t.n}")));
+        }
+
         public static void TickAll()
         {
             LiveComponents<Animator>.CollectActive(s_tick);
+            if (s_traceAnim && Time.frameCount % 300 == 0) TraceCensus();
             foreach (var a in s_tick)
             {
                 if (!a.isActiveAndEnabled) continue;
