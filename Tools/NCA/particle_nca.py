@@ -357,7 +357,7 @@ def swim3d_target(cfg):
 
 @dataclass
 class PConfig:
-    experiment: str = "regenerating"   # regenerating | swim2d | swim3d
+    experiment: str = "regenerating"   # regenerating | swim2d | swim3d | prism3d
     frames: int = 8
     period: int = 8
     amp: float = 6.0                   # swim2d body-wave amplitude (animated_nca's units; 6 = the grid swim)
@@ -386,11 +386,18 @@ class PConfig:
     overflow_w: float = 1.0            # Mordvintsev's texture-NCA overflow loss: state outside [-1, 1]
     blowup_factor: float = 8.0         # a loss this many times the recent median rolls back
     snapshot_every: int = 250          # numbered model snapshots, so a late collapse costs nothing
+    bptt: int = 0                      # >0: backpropagate through only the last this-many rollout
+                                       # steps (earlier steps run without a graph) - the loss checks
+                                       # span (window-1)*period steps, so 48 covers them with margin
     world: dict = None
 
 
 def make_world(cfg) -> World:
-    base = {"swim3d": World(dim=3, R=2.6, r0=1.3, k_bud=26, rho0=10.0, capacity=900, sigma=0.8)}.get(cfg.experiment, World())
+    base = {"swim3d": World(dim=3, R=2.6, r0=1.3, k_bud=26, rho0=10.0, capacity=900, sigma=0.8),
+            # prisms: the swim3d world scaled 1.35x to a 1.8-voxel resting prism (kernel sums and
+            # neighbour counts are scale-free, so k_bud and rho0 carry over)
+            "prism3d": World(dim=3, R=3.5, r0=1.75, r_bud=1.75, vmax=0.8, k_bud=26, rho0=10.0,
+                             capacity=400, corrected=True)}.get(cfg.experiment, World())
     if cfg.world:
         for k, v in cfg.world.items():
             setattr(base, k, v)
@@ -402,7 +409,40 @@ def build_targets(cfg):
         return static_target()
     if cfg.experiment == "swim2d":
         return swim2d_target(cfg)
+    if cfg.experiment == "prism3d":
+        from prism_render import prism_target
+        return prism_target(cfg)
     return swim3d_target(cfg)
+
+
+def make_render(cfg, world, grid):
+    """The loss's view of a state: prisms for prism3d, the RGBA Gaussian splat otherwise."""
+    if cfg.experiment == "prism3d":
+        from prism_render import prism_splat
+        return lambda st: prism_splat(st, grid)
+    return lambda st: splat(st, grid, world.sigma)
+
+
+def widen_channels(sd, C_old, C_new, d, hidden=128, gain=0.5):
+    """A C_old-channel model's weights in a C_new-channel layout: the old channels keep every weight,
+    the new channels' state/velocity outputs start at zero (so the old behaviour is unchanged until
+    the loss moves them) and their inputs get small random weights (so they can matter once it does)."""
+    Fo = C_old * (2 + d) + 1
+    w1o = sd["w1"]
+    w1 = torch.empty(hidden, C_new * (2 + d) + 1)
+    nn.init.xavier_uniform_(w1)
+    w1 *= gain
+    for blk in range(2):                                      # own, mean
+        w1[:, blk * C_new:blk * C_new + C_old] = w1o[:, blk * C_old:(blk + 1) * C_old]
+    g_old = w1o[:, 2 * C_old:2 * C_old + d * C_old].view(hidden, C_old, d)
+    g_new = w1[:, 2 * C_new:2 * C_new + d * C_new].view(hidden, C_new, d).clone()
+    g_new[:, :C_old] = g_old
+    w1[:, 2 * C_new:2 * C_new + d * C_new] = g_new.reshape(hidden, C_new * d)
+    w1[:, -1] = w1o[:, Fo - 1]
+    w2 = torch.zeros(C_new + d, hidden); b2 = torch.zeros(C_new + d)
+    w2[:C_old], b2[:C_old] = sd["w2"][:C_old], sd["b2"][:C_old]
+    w2[C_new:], b2[C_new:] = sd["w2"][C_old:], sd["b2"][C_old:]
+    return {"w1": w1, "b1": sd["b1"], "w2": w2, "b2": b2}
 
 
 def frame_mse(img, frames):
@@ -470,6 +510,9 @@ def train(cfg: PConfig, out_dir: str, resume=False):
         torch.set_num_threads(cfg.threads)
     torch.manual_seed(cfg.seed + start)
     rng = np.random.default_rng(cfg.seed + start)
+    if cfg.experiment == "prism3d":
+        from prism_render import CHANNELS
+        cfg.channel_n = CHANNELS
     world = make_world(cfg)
     cfg.world = asdict(world)
     fr_np = build_targets(cfg).astype(np.float32)
@@ -485,8 +528,13 @@ def train(cfg: PConfig, out_dir: str, resume=False):
         ca.load_state_dict(torch.load(os.path.join(out_dir, "model.pt")))
     elif cfg.init:
         sd = torch.load(cfg.init)
-        if sd["w1"].shape[1] != ca.w1.shape[1]:
-            sd = lift_2d_to_3d(sd, cfg.channel_n, cfg.hidden)
+        out, Fw = sd["b2"].shape[0], sd["w1"].shape[1]          # out = C + d, Fw = C (2 + d) + 1
+        d_old = next(dd for dd in (2, 3) if (out - dd) * (2 + dd) + 1 == Fw)
+        c_old = out - d_old
+        if d_old != world.dim:
+            sd = lift_2d_to_3d(sd, c_old, cfg.hidden)
+        if c_old != cfg.channel_n:
+            sd = widen_channels(sd, c_old, cfg.channel_n, world.dim, cfg.hidden)
         ca.load_state_dict(sd)
     opt = torch.optim.Adam(ca.parameters(), lr=cfg.lr, eps=1e-7)
     sched = torch.optim.lr_scheduler.MultiStepLR(opt, [cfg.lr_drop_step], 0.1)
@@ -519,6 +567,7 @@ def train(cfg: PConfig, out_dir: str, resume=False):
     P = cfg.period
     shift = torch.arange(J)
     use_ckpt = world.dim == 3
+    render = make_render(cfg, world, grid)
 
     def step_fn(pos, s, act_f):
         st = ca(State(pos, s, act_f > 0.5), bud=False)
@@ -535,7 +584,7 @@ def train(cfg: PConfig, out_dir: str, resume=False):
             idx = rng.choice(cfg.pool_size, cfg.batch_size, replace=False)
             x0 = pool.index(torch.from_numpy(idx)).clone()
             with torch.no_grad():
-                order = torch.argsort(frame_mse(splat(x0, grid, world.sigma), frames).min(1).values, descending=True)
+                order = torch.argsort(frame_mse(render(x0), frames).min(1).values, descending=True)
             x0, idx = x0.index(order), idx[order.numpy()]
             for q in range(max(1, cfg.pool_seeds)):
                 sd = seed_state(1, world, centre, cfg.channel_n) if world.rejitter else seed
@@ -549,6 +598,15 @@ def train(cfg: PConfig, out_dir: str, resume=False):
         checks = [n - (J - 1 - j) * P for j in range(J)]
         x, snaps, ovf = x0, [], 0.0
         for i in range(1, n + 1):
+            if cfg.bptt and i <= n - cfg.bptt:
+                with torch.no_grad():
+                    x = ca(x)
+                if i == n - cfg.bptt:
+                    x = x.detach()
+                if i in checks:
+                    snaps.append(render(x))
+                    ovf = ovf + overflow(x) / J
+                continue
             if use_ckpt:
                 p, s_, a = checkpoint(step_fn, x.pos, x.s, x.active.float(), use_reentrant=False)
                 x = State(p, s_, a > 0.5)
@@ -556,7 +614,7 @@ def train(cfg: PConfig, out_dir: str, resume=False):
             else:
                 x = ca(x)
             if i in checks:
-                snaps.append(splat(x, grid, world.sigma))
+                snaps.append(render(x))
                 ovf = ovf + overflow(x) / J
         B = x0.B
         err = torch.stack([frame_mse(im, frames) for im in snaps], 1)        # [B, J, K]
@@ -712,9 +770,16 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
     fig = os.path.join(run_dir, "figures")
     os.makedirs(fig, exist_ok=True)
     sig = world.sigma
+    prism = cfg.experiment == "prism3d"
+    if prism:
+        import prism_render as pr
+    render = make_render(cfg, world, grid)
 
     def err_of(st):
-        return frame_mse(splat(st, grid, sig), frames)[0].numpy()
+        return frame_mse(render(st), frames)[0].numpy()
+
+    def vw(st):
+        return pr.raytrace(pr.prism_table(st), grid, px=200, zoom=0.34) if prism else view(st, grid, sig)
 
     # 1. Long rollout from one seed: best-frame error, which frame, particle count.
     keep_t = (0, 16, 32, 48, 64, 96, 200)
@@ -737,7 +802,7 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
     static_err = float(((mean_frame - frames) ** 2).mean()) if K > 1 else None
 
     # 2. Growth strip: splat on top, particles underneath (2D) / rendered volume (3D).
-    grow = [view(keep[t], grid, sig) for t in keep_t]
+    grow = [vw(keep[t]) for t in keep_t]
     row = np.concatenate(grow, 1)
     if d == 2:
         up = np.repeat(np.repeat(row, 3, 0), 3, 1)
@@ -754,8 +819,8 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
         ph = np.unwrap(best * 2 * np.pi / K) * K / (2 * np.pi)
         fit = np.polyfit(tt[200:], ph[200:], 1)
         ts = list(range(200, 200 + K * P, P))
-        tgt = (lambda f: to_rgb(f).numpy()) if d == 2 else (lambda f: __import__("nca3d").render(f))
-        top = np.concatenate([view(keep[t], grid, sig) for t in ts], 1)
+        tgt = (lambda f: to_rgb(f).numpy()) if d == 2 else (lambda f: __import__("nca3d").render(f, px=200, zoom=0.34))
+        top = np.concatenate([vw(keep[t]) for t in ts], 1)
         bot = np.concatenate([tgt(frames[best[t]]) for t in ts], 1)
         im = Image.fromarray((np.concatenate([top, np.ones((2, top.shape[1], 3)), bot], 0) * 255).astype(np.uint8))
         if d == 2:
@@ -773,7 +838,7 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
                         (grid[1] * 4, grid[0] * 4), Image.NEAREST), np.float32) / 255
                     gif.append(np.concatenate([left, np.ones((grid[0] * 4, 4, 3)), dots(x, grid, 4)], 1))
                 else:
-                    gif.append(view(x, grid, sig))
+                    gif.append(vw(x))
             x = ca(x)
     write_gif(gif, os.path.join(fig, "loop.gif" if K > 1 else "grow.gif"), scale=1, ms=33)
 
@@ -797,7 +862,7 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
             rec.append(float(e.min())); rbest.append(int(e.argmin()))
             if i + 1 in (20, 50, 100, 200, 400, 600):
                 seq.append(x.clone())
-    row = np.concatenate([view(s_, grid, sig) for s_ in seq], 1)
+    row = np.concatenate([vw(s_) for s_ in seq], 1)
     im = Image.fromarray((row * 255).astype(np.uint8))
     if d == 2:
         im = im.resize((im.width * 3, im.height * 3), Image.NEAREST)
@@ -815,6 +880,17 @@ def figures(run_dir, seed=1, horizon=None, model="model.pt"):
         "error_before_damage": pre_err,
         "after_damage_error_at": {str(k): rec[k - 1] for k in (20, 50, 100, 200, 600)},
     }
+    if prism:                      # what the prisms chose to be, at step 200
+        tab = pr.prism_table(keep[200])
+        tab = tab[tab[:, 17] > 0.1]
+        np.save(os.path.join(fig, "prisms_t200.npy"), tab)
+        summary["prism_census_t200"] = {
+            f"{pr.DOMAINS[a]}-{pr.TIERS[b]}": int(((tab[:, 15] == a) & (tab[:, 16] == b)).sum())
+            for a in range(3) for b in range(4) if ((tab[:, 15] == a) & (tab[:, 16] == b)).any()}
+        ext = tab[:, 3:6]
+        summary["prism_half_extent_t200"] = {"mean": float(ext.mean()), "min": float(ext.min()),
+                                             "max": float(ext.max()),
+                                             "mean_aspect": float((ext.max(1) / ext.min(1)).mean())}
     if K > 1:
         slope = fit[0]
         summary.update({

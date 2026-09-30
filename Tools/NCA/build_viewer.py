@@ -190,6 +190,7 @@ def main():
 
     bench3d, script3d = build_3d(args.runs)
     benchp, scriptp = build_particles(args.runs)
+    benchpr, scriptpr = build_prisms(args.runs)
     status = build_status(args.runs)
 
     page = TEMPLATE
@@ -198,6 +199,7 @@ def main():
         "{{TARGETS}}": json.dumps(targets), "{{CORE}}": core, "{{CHART}}": loss_chart(runs, floor),
         "{{ANIM}}": anim, "{{BENCH3D}}": bench3d, "{{SCRIPT3D}}": script3d,
         "{{BENCHP}}": benchp, "{{SCRIPTP}}": scriptp, "{{STATUS}}": status,
+        "{{BENCHPRISM}}": benchpr, "{{SCRIPTPRISM}}": scriptpr, "{{RELATED}}": RELATED,
         "{{ROWS}}": "".join(rows), "{{FIGS}}": "".join(figs) + regen_fig + rot_fig,
         "{{DEFAULT}}": "regenerating" if "regenerating" in runs else next(iter(runs)),
     }.items():
@@ -316,7 +318,18 @@ def build_status(root):
         extra = f", drifts {sh['drift_px']:.0f} px per 1000 steps" if sh else ""
         rows.append((state, "Collision swim", "hp", f"A bolder stroke (amplitude 16); {where}",
                      (f"{tempo:.1f} steps / frame" if tempo else "no steady tempo yet") + extra))
-    rows.append(("todo", "Collision 3D swim", "", "Particles in a volume, warm-started from the collision swim", "not started"))
+    pp, ppt = sm("prism_swim3d"), st("prism_swim3d")
+    if pp:
+        state = "run" if (ppt and ppt.get("training")) else "done"
+        where = f"training, showing step {ppt['step']} of {ppt['of']}" if state == "run" else "trained"
+        if ppt and ppt.get("note"):
+            where += f" ({ppt['note']})"
+        tempo = pp.get("measured_steps_per_frame")
+        rows.append((state, "Prism 3D swim", "hprism", f"3D particles that can only be Cosmic Shore prisms; {where}",
+                     f"{tempo:.1f} steps / frame" if tempo else "no steady tempo yet"))
+    else:
+        rows.append(("todo", "Prism 3D swim", "", "3D particles that can only be Cosmic Shore prisms", "not started"))
+    rows.append(("done", "Is this new?", "hrelated", "What else has been built, and what this adds", "closest: Kim et al. 2026"))
     label = {"done": "Done", "run": "Training", "todo": "Next"}
     body = "".join(
         f'<li class="ledger-row"><span class="chip chip-{s_}">{label[s_]}</span>'
@@ -329,6 +342,116 @@ def build_status(root):
   <section class="ledger" aria-labelledby="hstatus">
     <div class="ledger-head"><h2 id="hstatus">Where things stand</h2><span class="mono ledger-date">updated {day}</span></div>
     <ul class="ledger-list">{body}</ul>
+  </section>"""
+
+
+def build_prisms(runs_root):
+    """The prism swim: 3D particles whose visible state is a Cosmic Shore prism, running live in
+    three.js (particle_core.js + prism_core.js, verified by verify_particle_js.py --prism)."""
+    import prism_render as pr
+    d = os.path.join(runs_root, "prism_swim3d")
+    if not (os.path.isfile(os.path.join(d, "weights.json")) and os.path.isfile(os.path.join(d, "figures", "summary.json"))):
+        return "", ""
+    w = json.load(open(os.path.join(d, "weights.json")))
+    sm = json.load(open(os.path.join(d, "figures", "summary.json")))
+    stp = os.path.join(d, "status.json")
+    status = json.load(open(stp)) if os.path.isfile(stp) else None
+    img = lambda f: b64(os.path.join(d, "figures", f))
+    has = lambda f: os.path.isfile(os.path.join(d, "figures", f))
+    lg = lambda v: f"{math.log10(max(v, 1e-9)):+.2f}"
+    tempo = lambda v: f"{v:.2f} steps / frame" if v and math.isfinite(v) and v > 0 else "no steady tempo"
+    census = sm.get("prism_census_t200", {})
+    cen = " · ".join(f"{k.replace('-', ' ')} {v}" for k, v in sorted(census.items(), key=lambda kv: -kv[1]))
+    ext = sm.get("prism_half_extent_t200", {})
+    pa = sm["particles_at"]; late = max(pa, key=int)
+    rows = [("Target tempo", f"{sm['period_target_steps_per_frame']} steps / frame"),
+            (f"Measured tempo, steps 200–{late}", tempo(sm.get("measured_steps_per_frame"))),
+            (f"Prisms, step 96 / {late}", f"{pa.get('96', '–')} / {pa[late]}"),
+            ("Error vs best-matching frame, after step 200", lg(sm["best_frame_error_mean_after_200"])),
+            ("Best any still volume can do", lg(sm["static_best_image_error"])),
+            (f"Quarter cut at 400 ({sm['damage_removed_particles']} prisms): error before", lg(sm["error_before_damage"])),
+            ("… 20 / 100 / 200 steps later", " / ".join(lg(sm["after_damage_error_at"][s]) for s in ("20", "100", "200"))),
+            ("What the prisms chose to be, step 200", cen or "–"),
+            ("Half-extent, mean (min–max) · mean aspect", f"{ext['mean']:.2f} ({ext['min']:.2f}–{ext['max']:.2f}) · {ext['mean_aspect']:.2f}" if ext else "–")]
+    table = "".join(f"<tr><th scope=row>{a}</th><td>{b}</td></tr>" for a, b in rows)
+    note = ""
+    if status and status.get("training"):
+        note = f'<p class="caption"><strong>Still training</strong> — this is step {status["step"]} of {status["of"]}{": " + status["note"] if status.get("note") else ""}. The page updates as it improves.</p>'
+    figs = []
+    if has("growth_strip.png"):
+        figs.append(("From one prism: steps 0, 16, 32, 48, 64, 96, 200", "growth_strip.png", "Prism lizard growing from one particle"))
+    if has("loop_strip.png"):
+        figs.append((f"One stroke from step 200, every {w['period']} steps (top), over the target frame each one matches (bottom, the palette-quantised voxel target)", "loop_strip.png", "Consecutive prism-swim states over their matching target frames"))
+    if has("damage.png"):
+        figs.append(("Every prism in one quarter removed at step 400, then 20, 50, 100, 200, 400 and 600 steps later", "damage.png", "Prism lizard regrowing its cut quarter"))
+    figh = "".join(f'<figure class="fig"><figcaption><span class="swatch" style="background:var(--s4)"></span>{c}</figcaption>'
+                   f'<div class="strip"><img src="data:image/png;base64,{img(f)}" alt="{a}"></div></figure>' for c, f, a in figs)
+    gif = (f'<figure class="fig"><figcaption><span class="swatch" style="background:var(--s4)"></span>Growing and swimming, rendered as exact prisms with each tier\'s base face and fresnel rim</figcaption>'
+           f'<div class="strip gifbox"><img src="data:image/gif;base64,{img("loop.gif")}" alt="Prism lizard growing and swimming"></div></figure>') if has("loop.gif") else ""
+    swatches = "".join(
+        f'<li><span class="pswatch" style="background:rgb({",".join(str(int(v * 255)) for v in pr.palette_colours()[a, b])})"></span>'
+        f'{pr.DOMAINS[a]} {pr.TIERS[b] if pr.TIERS[b] != "super" else "super-shield"}</li>'
+        for a in range(3) for b in range(4))
+    bench = f"""
+  <section class="benchp" aria-labelledby="hprism">
+    <div class="h3dhead">
+      <div class="eyebrow">Extension · collision, in three dimensions, in the game's vocabulary</div>
+      <h2 id="hprism">The lizard made of prisms</h2>
+      <p class="caption">The collision automaton in a volume, with one constraint: every particle is a Cosmic Shore prism, and all it can show is what a prism can show. It picks a <strong>domain</strong> (Jade, Ruby, Gold), a <strong>tier</strong> (a plain box, a danger box, a shield octahedron or a super-shield stella octangula — the game's own shapes, at the game's 3× circumscribing scale, so a shield really does cost 4.5× the volume), an <strong>orientation</strong> and <strong>three half-extents</strong>. Colour and tier are discrete: training renders the argmax and sends its gradient through the softmax, so the rule can never show a prism the game could not draw. The target is the helical swim with its colours quantised to the twelve appearances. Running live below; drag to orbit.</p>
+      {note}
+    </div>
+    <div class="bench">
+      <div class="dish">
+        <div class="plate plate3d" id="platepr"><canvas id="cvpr" width="560" height="560" aria-label="Live prism automaton, drag to orbit"></canvas><span class="hint">drag to orbit</span></div>
+        <ul class="palette" aria-label="The twelve prism appearances">{swatches}</ul>
+      </div>
+      <div class="panel">
+        <dl class="readouts">
+          <div><dt>Step</dt><dd id="rpr-step">0</dd></div>
+          <div><dt>Prisms</dt><dd id="rpr-n">0</dd></div>
+          <div><dt>Buds</dt><dd id="rpr-bud">0</dd></div>
+          <div><dt>Shields</dt><dd id="rpr-sh">0</dd></div>
+        </dl>
+        <div class="controls">
+          <label class="row" for="speedpr">Steps / frame<input id="speedpr" type="range" min="1" max="4" value="1"><output id="o-speedpr">1</output></label>
+          <label class="row" for="spinpr">Auto-orbit<input id="spinpr" type="checkbox" checked><output></output></label>
+        </div>
+        <div class="buttons">
+          <button type="button" class="btn primary" id="bpr-play">Pause</button>
+          <button type="button" class="btn" id="bpr-seed">Restart from seed</button>
+          <button type="button" class="btn" id="bpr-cut">Cut a quarter</button>
+          <button type="button" class="btn" id="bpr-tail">Cut the tail</button>
+        </div>
+        <p class="census mono" id="rpr-census" aria-live="off"></p>
+        <div class="tablewrap"><table class="kv"><tbody>{table}</tbody></table></div>
+      </div>
+    </div>
+    {gif}
+    {figh}
+  </section>"""
+    grid = list(np.load(os.path.join(d, "frames.npy"), mmap_mode="r").shape[1:4])      # (D, H, W)
+    pdata = {"w": w, "colours": pr.palette_colours().round(4).tolist(), "grid": grid}
+    script = SCRIPTPRISM.replace("{{COREP}}", open(os.path.join(HERE, "particle_core.js")).read()) \
+        .replace("{{PRISMCORE}}", open(os.path.join(HERE, "prism_core.js")).read()) \
+        .replace("{{PRDATA}}", json.dumps(pdata, separators=(",", ":")))
+    return bench, script
+
+
+RELATED = """
+  <section class="related" aria-labelledby="hrelated">
+    <h2 id="hrelated">Is this new?</h2>
+    <p class="caption">A search of the literature, closest first. The particle automaton itself is not new: Kim et al. built essentially the same model independently and published it this year. What this page adds on top of it appears to be new: growth by budding, a learned periodic stroke on free particles, and a primitive vocabulary taken from a game.</p>
+    <ol class="rel">
+      <li><strong><a href="https://arxiv.org/abs/2601.16096">Neural Particle Automata</a></strong> — Kim, Pajouheshgar, Süsstrunk, Jakob, Park, 2026 (SIGGRAPH). NCA on free particles with corrected SPH perception, a learned position update, a Gaussian-splat loss and regeneration; in 3D each particle decodes a rotated, anisotropic Gaussian. <em>Not there:</em> a fixed particle count (no budding), no designed collision, no animated target, free Gaussians rather than a discrete vocabulary.</li>
+      <li><strong><a href="https://arxiv.org/abs/2301.10497">E(n)-equivariant Graph NCA</a></strong> — Gala, Grattarola, Quaeghebeur, TMLR 2024. Isotropic graph NCA with coordinate updates; pattern formation, not a rendered body.</li>
+      <li><strong><a href="https://arxiv.org/abs/2110.14237">Learning Graph Cellular Automata</a></strong> — Grattarola, Livi, Alippi, NeurIPS 2021. Learned rules on arbitrary graphs, including a boids imitation task.</li>
+      <li><strong><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12577699/">Sensorimotor Lenia</a></strong> — Hamon et al., Science Advances 2025. Gradient-searched Lenia creatures that move and reconstitute after damage: the nearest thing to self-maintaining locomotion, on a grid and without a target animation.</li>
+      <li><strong><a href="https://arxiv.org/abs/2211.11417">DyNCA</a></strong> (CVPR 2023) and <strong><a href="https://meshnca.github.io/">Mesh NCA</a></strong> (SIGGRAPH 2024) — Pajouheshgar et al. NCA trained on motion, as dynamic textures on grids and meshes rather than a body grown from a seed.</li>
+      <li><strong><a href="https://github.com/Something94807/anim_nca">AnimNCA</a></strong> — an unreviewed hobby repository: a grid NCA that loops a walk cycle on fixed frame slots. Close to the grid swim here, without the phase-free loss or learned tempo.</li>
+      <li><strong><a href="https://arxiv.org/abs/2103.08737">Growing 3D Artefacts and Functional Machines</a></strong> — Sudhakaran et al., ALIFE 2021. 3D grid NCA over ~50 discrete Minecraft block types: the precedent for a constrained vocabulary, static and on a grid.</li>
+      <li><strong><a href="https://google-research.github.io/self-organising-systems/particle-lenia/">Particle Lenia</a></strong> (Mordvintsev, Niklasson, Randazzo 2022) and Particle Life — particle life from hand-designed energies, not trained toward a target.</li>
+      <li><strong>Engineering morphogenesis of cell clusters with differentiable programming</strong> — Deshpande et al., 2024. Differentiable cells that divide, optimised toward growth goals: the precedent for division, without an image loss.</li>
+    </ol>
   </section>"""
 
 
@@ -648,6 +771,116 @@ SCRIPT3D = r"""<script>
 </script>"""
 
 
+SCRIPTPRISM = r"""<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+{{COREP}}
+{{PRISMCORE}}
+(function () {
+  if (typeof THREE === 'undefined') return;
+  const PD = {{PRDATA}};
+  const $ = id => document.getElementById(id);
+  const [GD, GH, GW] = PD.grid, CEN = [GW / 2, GH / 2, GD / 2];
+  const cv = $('cvpr');
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(32, 1, 1, 400);
+  camera.up.set(0, -1, 0);                       // image rows run down +y; the camera sits on -z
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445066, 0.75));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(-20, -30, -40); scene.add(sun);
+  const S = 3.0;                                 // the game's circumscribing shield scale
+  function stellaGeometry() {                    // union of two tetrahedra, vertices at S * (+-1, +-1, +-1)
+    const A = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]], pts = [];
+    for (const sgn of [1, -1]) {
+      const v = A.map(p => p.map(c => c * S * sgn));
+      for (const [a, b, c] of [[0, 1, 2], [0, 3, 1], [0, 2, 3], [1, 3, 2]]) {
+        const p = [v[a], v[b], v[c]];
+        const n = new THREE.Vector3().subVectors(new THREE.Vector3(...p[1]), new THREE.Vector3(...p[0]))
+          .cross(new THREE.Vector3().subVectors(new THREE.Vector3(...p[2]), new THREE.Vector3(...p[0])));
+        const cen = new THREE.Vector3(...p[0]).add(new THREE.Vector3(...p[1])).add(new THREE.Vector3(...p[2]));
+        if (n.dot(cen) < 0) p.reverse();         // outward winding
+        p.forEach(q => pts.push(...q));
+      }
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    g.computeVertexNormals(); return g;
+  }
+  const cap = PD.w.world.capacity;
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.42, metalness: 0.08, flatShading: true });
+  const geos = [new THREE.BoxGeometry(2, 2, 2), new THREE.OctahedronGeometry(S), stellaGeometry(), new THREE.BoxGeometry(0.5, 0.5, 0.5)];
+  const meshes = geos.map((g, i) => { const m = new THREE.InstancedMesh(g, i === 3 ? new THREE.MeshStandardMaterial({ color: 0x9aa39c, roughness: 0.8 }) : mat, cap);
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.count = 0; scene.add(m); return m; });
+  for (let i = 0; i < 3; i++) meshes[i].setColorAt(0, new THREE.Color(1, 1, 1));
+  const shapeOf = [0, 0, 1, 2];                  // plain, danger -> box; shield -> octahedron; super -> stella
+  const COL = PD.colours.map(row => row.map(c => new THREE.Color(c[0], c[1], c[2]).convertSRGBToLinear()));
+  const M = new THREE.Matrix4(), dec = { h: [0, 0, 0], R: new Array(9) };
+  let ca, step = 0, running = !matchMedia('(prefers-reduced-motion: reduce)').matches, az = -0.35, el = 0.55, dist = 95, visible = true;
+  $('spinpr').checked = running;
+  function seed() { ca = makeParticleNCA(PD.w); ca.seed(CEN); step = 0; }
+  function css(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function theme() { scene.background = new THREE.Color(css('--dish') || '#ffffff'); }
+  function draw() {
+    const n = [0, 0, 0, 0], C = ca.C, cen = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let shields = 0;
+    for (let i = 0; i < ca.cap; i++) {
+      if (!ca.act[i]) continue;
+      const px = ca.pos[i * 3], py = ca.pos[i * 3 + 1], pz = ca.pos[i * 3 + 2];
+      decodePrism(ca.s, C, i, dec);
+      if (dec.alpha <= 0.1) { M.makeTranslation(px, py, pz); meshes[3].setMatrixAt(n[3]++, M); continue; }
+      const R = dec.R, h = dec.h, k = shapeOf[dec.tier], j = n[k]++;
+      M.set(R[0] * h[0], R[1] * h[1], R[2] * h[2], px,
+            R[3] * h[0], R[4] * h[1], R[5] * h[2], py,
+            R[6] * h[0], R[7] * h[1], R[8] * h[2], pz, 0, 0, 0, 1);
+      meshes[k].setMatrixAt(j, M); meshes[k].setColorAt(j, COL[dec.dom][dec.tier]);
+      cen[dec.dom * 4 + dec.tier]++; if (dec.tier >= 2) shields++;
+    }
+    meshes.forEach((m, i) => { m.count = n[i]; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+    const eye = new THREE.Vector3(Math.sin(el) * Math.cos(az), Math.sin(el) * Math.sin(az), -Math.cos(el)).multiplyScalar(dist);
+    camera.position.set(CEN[0] + eye.x, CEN[1] + eye.y, CEN[2] + eye.z); camera.lookAt(CEN[0], CEN[1], CEN[2]);
+    renderer.render(scene, camera);
+    $('rpr-step').textContent = step; $('rpr-n').textContent = n[0] + n[1] + n[2]; $('rpr-bud').textContent = n[3]; $('rpr-sh').textContent = shields;
+    if (step % 10 === 0) {
+      const parts = [];
+      cen.forEach((v, q) => { if (v) parts.push([v, PRISM.DOMAINS[q >> 2] + ' ' + (PRISM.TIERS[q & 3] === 'super' ? 'super-shield' : PRISM.TIERS[q & 3])]); });
+      $('rpr-census').textContent = parts.sort((a, b) => b[0] - a[0]).map(([v, s]) => s + ' ' + v).join(' · ');
+    }
+  }
+  function resize() { const w = cv.clientWidth || 560; renderer.setSize(w, w, false); camera.aspect = 1; camera.updateProjectionMatrix(); }
+  function frame() {
+    if (visible) {
+      if (running) for (let i = 0; i < +$('speedpr').value; i++) { ca.step(); step++; }
+      if ($('spinpr').checked && !drag) az += 0.004;
+      draw();
+    }
+    requestAnimationFrame(frame);
+  }
+  let drag = null;
+  cv.addEventListener('pointerdown', e => { drag = [e.clientX, e.clientY, az, el]; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', e => { if (!drag) return; az = drag[2] - (e.clientX - drag[0]) * 0.01; el = Math.min(1.25, Math.max(-1.25, drag[3] + (e.clientY - drag[1]) * 0.01)); });
+  cv.addEventListener('pointerup', () => { drag = null; });
+  $('speedpr').addEventListener('input', e => $('o-speedpr').textContent = e.target.value);
+  $('bpr-play').onclick = () => { running = !running; $('bpr-play').textContent = running ? 'Pause' : 'Play'; };
+  $('bpr-seed').onclick = seed;
+  $('bpr-cut').onclick = () => {
+    for (let i = 0; i < ca.cap; i++) if (ca.act[i] && ca.pos[i * 3] > CEN[0] && ca.pos[i * 3 + 1] > CEN[1]) { ca.act[i] = 0; ca.s.fill(0, i * ca.C, (i + 1) * ca.C); }
+  };
+  $('bpr-tail').onclick = () => {             // a ball around the particle farthest from the body's centroid
+    let m = [0, 0, 0], c = 0, far = -1, fd = -1;
+    for (let i = 0; i < ca.cap; i++) if (ca.act[i]) { for (let k = 0; k < 3; k++) m[k] += ca.pos[i * 3 + k]; c++; }
+    if (!c) return; m = m.map(v => v / c);
+    for (let i = 0; i < ca.cap; i++) if (ca.act[i]) { const q = (ca.pos[i * 3] - m[0]) ** 2 + (ca.pos[i * 3 + 1] - m[1]) ** 2 + (ca.pos[i * 3 + 2] - m[2]) ** 2; if (q > fd) { fd = q; far = i; } }
+    ca.eraseBall([ca.pos[far * 3], ca.pos[far * 3 + 1], ca.pos[far * 3 + 2]], 7);
+  };
+  if ('IntersectionObserver' in window) new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(cv);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  window.addEventListener('resize', resize);
+  if (!running) $('bpr-play').textContent = 'Play';
+  theme(); resize(); seed(); frame();
+})();
+</script>"""
+
+
 TEMPLATE = r"""<title>One-Cell Lizard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -715,6 +948,12 @@ input[type=range] { width: 100%; accent-color: var(--accent) }
 .btn { font: 600 14px var(--body); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff }
 
+.palette { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5em, 1fr)); gap: 4px 12px; font: 12px var(--mono); color: var(--muted) }
+.palette li { display: flex; align-items: center; gap: 6px }
+.pswatch { width: 12px; height: 12px; border-radius: 2px; flex: none; border: 1px solid var(--rule) }
+.census { margin: 0; font-size: 12px; color: var(--muted); min-height: 3em }
+.related .rel { margin: 0; padding-left: 1.3em; display: grid; gap: 10px; max-width: 78ch }
+.related .rel a { color: var(--ink) }
 .record { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px }
 .chart { background: var(--surface); border: 1px solid var(--rule); border-radius: 14px; padding: 16px; overflow-x: auto }
 .chart svg { width: 100%; min-width: 480px; height: auto; display: block }
@@ -821,6 +1060,8 @@ table.kv td { font-weight: 600 }
   </section>
   {{BENCH3D}}
   {{BENCHP}}
+  {{BENCHPRISM}}
+  {{RELATED}}
 
   <section class="record" aria-label="Training record">
     <div>
@@ -938,6 +1179,7 @@ requestAnimationFrame(frame);
 </script>
 {{SCRIPT3D}}
 {{SCRIPTP}}
+{{SCRIPTPRISM}}
 """
 
 if __name__ == "__main__":

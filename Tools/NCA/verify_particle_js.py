@@ -5,6 +5,9 @@ random parts), and compare every position and channel.
     python3 Tools/NCA/verify_particle_js.py --run Tools/NCA/results/particle_regenerating
 
 Negative control: the JS with the collision push sign flipped must DISAGREE.
+
+A 32-channel prism model (prism_render) additionally holds prism_core.js's decode - domain, tier,
+half-extents, rotation, presence - equal to prism_render.prism_table on the grown state.
 """
 import argparse
 import json
@@ -44,7 +47,10 @@ def main():
     # a lone seed beside one dormant child: here a particle's OWN alpha (below 1) is the only
     # thing keeping it alive - the case a grown colony never exercises (a JS runner that stored
     # alpha in a Uint8Array killed the seed here and 11/40 colonies went extinct in 3-7 steps)
-    ok &= verify(a, 1, negative=False, lone=True)
+    if json.load(open(os.path.join(a.run, "weights.json")))["world"]["dim"] == 2:
+        ok &= verify(a, 1, negative=False, lone=True)
+    if json.load(open(os.path.join(a.run, "weights.json")))["channel_n"] == 32:
+        ok &= verify_prism_decode(a)
     print("OK" if ok else "FAIL")
     assert ok
 
@@ -60,7 +66,7 @@ def verify(a, grow, negative, lone=False):
     grid = 72 if world.dim == 2 else None
     centre = [36.0, 36.0] if world.dim == 2 else [22.0, 22.0, 11.0]
     with torch.no_grad():
-        x = seed_state(1, world, centre)
+        x = seed_state(1, world, centre, w["channel_n"])
         for _ in range(grow):
             x = ca(x, fire_rate=1.0, bud=False) if lone else ca(x)
         if lone:
@@ -94,7 +100,7 @@ def verify(a, grow, negative, lone=False):
         if not np.array_equal(np.array(o["act"], bool), act):
             return float("inf")
         p = np.array(o["pos"], np.float32).reshape(-1, world.dim)[act]
-        s = np.array(o["s"], np.float32).reshape(-1, 16)[act]
+        s = np.array(o["s"], np.float32).reshape(-1, w["channel_n"])[act]
         return max(float(np.abs(p - x.pos[0].numpy()[act]).max()), float(np.abs(s - x.s[0].numpy()[act]).max()))
     e = err(good)
     neg = f"  (collision-flip negative control {err(bad):.2e})" if negative else ""
@@ -110,6 +116,42 @@ def verify(a, grow, negative, lone=False):
         print(f"corrected-perception negative control (JS with plain perception): {ep:.2e}")
         assert ep > 1e-2, "corrected-perception negative control did not fire"
     return True
+
+
+DECODE_JS = r"""
+const fs = require('fs'); const m = {};
+new Function('module', fs.readFileSync(process.argv[2], 'utf8'))(m);
+const s = Float32Array.from(JSON.parse(fs.readFileSync(process.argv[3], 'utf8'))), rows = [];
+for (let i = 0; i < s.length / 32; i++) { const o = { h: [0, 0, 0], R: new Array(9) }; m.exports.decodePrism(s, 32, i, o);
+  rows.push([...o.h, ...o.R, o.dom, o.tier, o.alpha]); }
+process.stdout.write(JSON.stringify(rows));
+"""
+
+
+def verify_prism_decode(a):
+    import prism_render as pr
+    w = json.load(open(os.path.join(a.run, "weights.json")))
+    world = World(**w["world"])
+    ca = ParticleNCA(world, w["channel_n"], w["hidden"], w["fire_rate"])
+    with torch.no_grad():
+        for k in ("w1", "b1", "w2", "b2"):
+            getattr(ca, k).copy_(torch.tensor(w[k]))
+    torch.manual_seed(0)
+    with torch.no_grad():
+        x = seed_state(1, world, [22.0, 22.0, 11.0], 32)
+        for _ in range(a.grow):
+            x = ca(x)
+    tab = pr.prism_table(x)
+    st = os.path.join(HERE, "_prism_s.json"); js = os.path.join(HERE, "_prism_d.js")
+    json.dump(x.s[0][x.active[0]].reshape(-1).tolist(), open(st, "w")); open(js, "w").write(DECODE_JS)
+    try:
+        out = np.array(json.loads(subprocess.check_output(["node", js, os.path.join(HERE, "prism_core.js"), st])))
+    finally:
+        os.remove(st); os.remove(js)
+    e = max(float(np.abs(out[:, 0:12] - tab[:, 3:15]).max()), float(np.abs(out[:, 14] - tab[:, 17]).max()))
+    mis = int((out[:, 12] != tab[:, 15]).sum() + (out[:, 13] != tab[:, 16]).sum())
+    print(f"prism decode, {len(tab)} prisms: max abs err {e:.2e}, domain/tier mismatches {mis}")
+    return e < 1e-4 and mis == 0
 
 
 if __name__ == "__main__":

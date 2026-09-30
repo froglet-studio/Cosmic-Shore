@@ -264,6 +264,96 @@ A result nobody trained for: at step 500 some colonies bud a **second lizard** o
 first. The loss punishes it (the target is one lizard), but it is behaviour a particle
 system has and a grid cannot.
 
+### The swim, as a collision automaton (`--experiment swim2d --amp 16`)
+
+The same particles, trained on the eight-frame body wave. At the grid's amplitude (6 px) it
+could not learn to move, and the reason was measurable rather than mysterious: neighbouring
+target frames differ by 10^-2.78 while the particle lizard's own precision is about 10^-2.7, so
+there is no signal to follow. At amplitude 16 a still image can do no better than 10^-2.28,
+which leaves the same half-decade of headroom the grid swim had. Warm-started from the particle
+lizard, 1500 clock steps from birth then pool training, three fresh seeds per batch held to the
+birth clock, learning rate dropped 10x at step 3000.
+
+| checkpoint | tempo (target 8) | error vs best frame, in place | drift / 1000 steps |
+|---|---|---|---|
+| 1750 | 10.5 / 9.9 / 16.6 (3 seeds) | 10^-1.75 | ~6 px |
+| 3250 (after the lr drop) | 8.2 / 8.2 / 8.2 | 10^-2.32 | ~1 px |
+| 4000 | 8.9 / 8.9 / 8.9 | 10^-2.54 | 0-1 px |
+
+Step 3250 is the shipped snapshot: shape 10^-2.52 at step 1000 with the drift removed, and a
+quarter cut (98 particles) back to 10^-2.55 within 100 steps, still swimming at 8.4 steps per
+frame. Before the drop the rule kept trading tempo against shape; after it, both held.
+
+## Prisms: the collision automaton in the game's vocabulary (`prism_render.py`, `--experiment prism3d`)
+
+3D particles whose visible state can only say what a Cosmic Shore prism can say. The 16-channel
+layout is kept (alpha is still channel 3, so the alive and budding rules are unchanged) and 16
+channels are added:
+
+| channels | meaning |
+|---|---|
+| 16-18 | domain logits: Jade, Ruby, Gold |
+| 19-22 | tier logits: plain box, danger box, shield octahedron, super-shield stella octangula |
+| 23-25 | half-extents, `0.9 * exp(0.4 * tanh(c))`: 0.60-1.34 voxels per axis |
+| 26-31 | rotation, 6D two-column representation (zero = identity) |
+
+- **Colours are the live palette** (`OriginalColorSetSO`): each (domain, tier) is the base face
+  lifted 35% toward its fresnel rim, linear -> gamma; danger is the shielded base under the
+  danger rim, exactly as `Docs/PALETTE.md` §2.1 composes it. Twelve appearances.
+- **Discrete by construction.** Domain and tier are straight-through one-hots: the loss renders
+  the argmax, the gradient goes through the softmax. A trained rule can never show a colour or
+  shape the game could not draw.
+- **Shapes are the game's containment tests**, as gauges in half-extent units: box `max|u|`,
+  octahedron `|u|_1 / 3`, stella the min over its two tetrahedra of the max of four face forms,
+  both shields at the game's circumscribing scale 3. The stella gauge agrees with
+  `StellatedOctahedronMeshGenerator.ContainsPointLocal` on 200,000 random points, and the Monte
+  Carlo volumes come out 8 : 36 : 109 against the exact 8 : 36 : 108. Shielding a prism really
+  does cost 4.5x its volume and super-shielding 13.5x, so the rule pays for a shield in the loss.
+- **Rendering is solid-prism compositing.** Occupancy is a C1 smoothstep ramp one voxel wide
+  across the surface (the exact box filter of a flat face; the first cut used a logistic edge,
+  whose tail tripled a small prism's rendered volume), combined as a union
+  `1 - prod(1 - k a)` with an occupancy-weighted colour, so overlapping prisms occlude rather
+  than add. Each prism rasterises only the offset ball its own tier can reach.
+- **The target** is the 3D helical swim with every voxel repainted in its nearest appearance
+  (CIELAB) after a 36° hue rotation. Without the rotation every green lands on Gold. With it the
+  lizard is Jade plain boxes (body), Gold shield octahedra and Gold super-shield stellae
+  (spots, belly), and Jade stellae (pale features): colour and shape are coupled through the
+  tier, so the target dictates where the big shapes go.
+- **Amplitude 5**, from the same signal-to-noise argument as the 2D swim: at the 3D default
+  (2.2 voxels) neighbouring frames differ by exactly the still-volume floor, 10^-2.7.
+- **Scale.** The lizard is ~955 voxels, so prisms rest at 1.8 voxels (a couple of hundred
+  particles); at 1.2 voxels the grid cannot tell a box from an octahedron anyway. The world is
+  the swim3d world scaled 1.35x (R 3.5, r0 1.75), capacity 280.
+- **Cost.** A rollout step backpropagated costs ~0.35 s at 8x400 particles, i.e. ~40 s per
+  training step. The shipped run backpropagates only the last 48 steps (`--bptt 48`; the five
+  loss checks span 32), batch 4, capacity 280.
+- **Warm start** from the 2D particle swim: `lift_2d_to_3d` gives the gradient a zero z
+  component, then `widen_channels` adds the 16 prism channels with zero output rows, so the
+  widened model is bit-identical to the lifted one until the loss moves it (checked: one step,
+  identical fire mask, zero difference in every position and channel).
+
+`raytrace` renders figures as exact prisms (ray-convex-polytope intersection per piece, depth
+buffered, base face lit Lambert plus the rim toward grazing angles). The browser bench draws
+them as three.js instanced meshes from `prism_core.js`, which `verify_particle_js.py` holds
+equal to `prism_render.prism_table` (decode error 2e-7, no domain or tier mismatches) on top of
+the usual runner check.
+
+## Related work
+
+The particle automaton itself is not new. **Kim, Pajouheshgar, Süsstrunk, Jakob, Park,
+"Neural Particle Automata"** (arXiv 2601.16096, SIGGRAPH 2026) independently built the same base
+model: NCA on free particles, SPH perception with a moment-corrected gradient, a learned
+position update, a Gaussian-splat loss, regeneration, and a 3D version whose particles decode
+rotated anisotropic Gaussians. What this directory adds, as far as a literature search finds:
+growth by budding (their particle count is fixed), a designed collision force, a learned
+periodic stroke on free particles (animated NCA exists only on grids: DyNCA and Mesh NCA as
+textures, AnimNCA as an unreviewed walk cycle), and a discrete primitive vocabulary taken from a
+game (the nearest precedent is Sudhakaran et al.'s Minecraft block types, on a voxel grid).
+Other neighbours: Gala et al., E(n)-equivariant graph NCA (TMLR 2024); Grattarola et al.,
+Learning Graph Cellular Automata (NeurIPS 2021); Hamon et al., Sensorimotor Lenia (Science
+Advances 2025) for self-maintaining locomotion; Particle Lenia and Particle Life (hand-designed,
+not trained); Deshpande et al. 2024 for differentiable cell division.
+
 ## Where this is meant to go (not started)
 
 The reproduction is the floor. The obvious routes from it toward flora, roughly in the
