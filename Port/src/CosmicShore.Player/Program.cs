@@ -42,7 +42,7 @@ namespace CosmicShore.Player
             bool wantTrain = false;
             int trainEpisodes = 0, trainRepeats = 1, seed = int.MinValue;
             int workers = 1, worker = -1, evals = 1, generations = 0;
-            string trainDir = null, resume = null;
+            string trainDir = null, resume = null, evalPopulation = null;
             int recycleMb = 2500;
             var evalGenomes = new System.Collections.Generic.List<string>();
             int flights = 12;
@@ -83,6 +83,7 @@ namespace CosmicShore.Player
                     case "--recycle-mb" when i + 1 < args.Length: int.TryParse(args[++i], out recycleMb); break;
                     case "--genome" when i + 1 < args.Length: evalGenomes.Add(args[++i]); break;
                     case "--flights" when i + 1 < args.Length: int.TryParse(args[++i], out flights); break;
+                    case "--population" when i + 1 < args.Length: evalPopulation = args[++i]; break;
                     case "--report-render": reportRender = true; break;
                     case "--dump-ui" when i + 1 < args.Length: dumps.Add(args[++i]); break;
                     case "--verbose": CosmicShore.Utility.CSDebug.VerboseChannels = (CosmicShore.Utility.CSLogChannel)~0; break;
@@ -117,7 +118,7 @@ namespace CosmicShore.Player
                 if (wantTrain)
                 {
                     train = new TrainingHost(trainMode, trainEpisodes, trainOut, trainScenario, trainRepeats);
-                    if (trainMode == TrainingHost.Mode.Eval) train.ConfigureEval(evalGenomes, flights);
+                    if (trainMode == TrainingHost.Mode.Eval) train.ConfigureEval(evalGenomes, flights, evalPopulation);
                     if (trainMode == TrainingHost.Mode.Train)
                     {
                         trainDir ??= System.IO.Path.Combine(trainOut ?? System.IO.Path.Combine(Environment.CurrentDirectory, "training"), "run");

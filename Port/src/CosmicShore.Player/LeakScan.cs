@@ -113,7 +113,7 @@ namespace CosmicShore.Player
                     if (prismType != null && prismType.IsInstanceOfType(o) && (eo.IsDestroyed || ((CosmicShore.Engine.Component)o).gameObject?.IsDestroyed == true))
                     {
                         destroyedPrisms++;
-                        if (found.Count < 4) found.Add(o);
+                        found.Add(o);
                         continue;
                     }
                     lastEo = o; via = "";
@@ -145,21 +145,36 @@ namespace CosmicShore.Player
                     queue.Enqueue((v, lastEo, via.Length < 200 ? via + "." + fi.Name : via));
                 }
             }
-            Console.WriteLine($"[leakscan] {destroyedPrisms} destroyed prisms reachable; chains:");
+            // Attribute every destroyed prism to the static root and the first live holder on its
+            // chain, and print one example chain per holder.
+            var byHolder = new Dictionary<string, (int count, string chain)>();
             foreach (var p in found)
             {
                 var chain = new List<string>();
+                string holder = null;
                 object cur = p;
-                for (int k = 0; k < 40 && cur != null; k++)
+                for (int k = 0; k < 60 && cur != null; k++)
                 {
-                    if (cur is string rootName) { chain.Add("static " + rootName); break; }
-                    var label = cur is CosmicShore.Engine.Component c ? $"{c.GetType().Name}@'{c.gameObject?.name}'{(c.IsDestroyed || c.gameObject?.IsDestroyed == true ? "(destroyed)" : "")}"
-                              : cur is CosmicShore.Engine.GameObject g ? $"GO '{g.name}'{(g.IsDestroyed ? "(destroyed)" : "")}" : cur.GetType().Name;
+                    if (cur is string rootName) { chain.Add("static " + rootName); holder ??= rootName; break; }
+                    bool dead = cur is CosmicShore.Engine.Object d && (d.IsDestroyed || (cur as CosmicShore.Engine.Component)?.gameObject?.IsDestroyed == true);
+                    var label = cur is CosmicShore.Engine.Component c ? $"{c.GetType().Name}@'{c.gameObject?.name}'{(dead ? "(destroyed)" : "")}"
+                              : cur is CosmicShore.Engine.GameObject g ? $"GO '{g.name}'{(dead ? "(destroyed)" : "")}" : cur.GetType().Name;
                     if (!parents.TryGetValue(cur, out var pv)) { chain.Add(label + " <- ?"); break; }
+                    // The first LIVE engine object up the chain is what holds the dead ones.
+                    if (holder == null && !dead && cur is CosmicShore.Engine.Object) holder = $"{label} .{pv.via}";
                     chain.Add($"{label} <-{pv.via}- ");
                     cur = pv.parent;
                 }
-                Console.WriteLine("[leakscan]   " + string.Join("", chain));
+                holder ??= "?";
+                string key = System.Text.RegularExpressions.Regex.Replace(holder, @"'[^']*\(Clone\)'", "'*(Clone)'");
+                byHolder.TryGetValue(key, out var e);
+                byHolder[key] = (e.count + 1, e.chain ?? string.Join("", chain));
+            }
+            Console.WriteLine($"[leakscan] {destroyedPrisms} destroyed prisms reachable, by first live holder:");
+            foreach (var kv in byHolder.OrderByDescending(kv => kv.Value.count).Take(10))
+            {
+                Console.WriteLine($"[leakscan]   {kv.Value.count,7}  {kv.Key}");
+                Console.WriteLine($"[leakscan]            {(kv.Value.chain.Length > 700 ? kv.Value.chain[..700] + "..." : kv.Value.chain)}");
             }
         }
 

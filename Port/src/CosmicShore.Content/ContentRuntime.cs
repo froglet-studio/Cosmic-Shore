@@ -42,7 +42,7 @@ namespace CosmicShore.Content
         /// keep every unloaded scene's object graph alive across a long run of Single loads.
         /// </summary>
         public readonly List<(string scene, LoadedScene result)> Loads = new();
-        public const int LoadHistory = 2;
+        public const int LoadHistory = 1;
 
         readonly Dictionary<string, string> _resources = new(StringComparer.OrdinalIgnoreCase);
         GameObject _templatesRoot;
