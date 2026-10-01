@@ -208,7 +208,7 @@
  "std_passed": 4,
  "rest_passed": 5,
  "complete": true,
- "seconds": 74.1,
+ "seconds": 81.9,
  "cfg": {
   "sense": 3.0,
   "lookahead": 10.0,
@@ -262,6 +262,7 @@
   "tell_jitter": 0.7,
   "tell_swirl": 0.25,
   "pre_gap": 0.08,
-  "native": 1
+  "native": 1,
+  "fear": 4.0
  }
 }

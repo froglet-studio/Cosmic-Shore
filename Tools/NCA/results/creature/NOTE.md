@@ -92,7 +92,10 @@ scored frames during the encounter at which the body is still strictly closest t
 
 ## What a player sees (`showcase.html`, one scripted life per plan; drag to orbit, click events)
 
-Grow from 16 into a 280-tadpole school. Fly at it: a white startle wave runs through the school before you arrive
+(B, `showcase_field.html`) Same as below on crisp bodies of the plans' own headcounts, and the last act is a
+predator ship hovering beside the creature eating its majority one tadpole at a time: the swarm stops breeding,
+shivers just before the balance tips, and re-forms as the new majority's animal while lime crystals of the eaten
+drift around the ship. (A, `showcase.html`:) Grow from 16 into a 280-tadpole school. Fly at it: a white startle wave runs through the school before you arrive
 and it opens a tunnel along your path; the pufferfish swells and its gold plates turn red and spiky; the jellyfish
 pulses away in jets; the dragonfly's Time units dart and, if you loiter, swarm around your ship like gnats and stream
 home when you go. Cruise past a whale and it turns and follows. Ram it: the whale is too heavy to dodge (you carve a
@@ -128,7 +131,24 @@ spikes, the escort (which also moves field's body frame, `mem.anchor`), the pre-
 * Every encounter keeps the body its own plan in 100% of frames; fly-by worst own-plan score 5.5-11 (inert 2-6),
   back within 4-9 steps; ram heal 1.04-1.19 (field regrows to the plan's headcount).
 * Escort over 144 voxels of ship travel: whale 35.6, dragonfly 18.3, jellyfish/pufferfish 0 (inert 0).
-* Strike (`swarm_probe`, 8 seeds, `heal_field.json`): heal 1.15 / 1.05 / 1.08 / 1.08, mean residual damage
+* **Fear suppresses breeding** (`fear=4`, default for B): while the shell's swarm threat is up, a step lays and
+  molts nothing with probability min(1, 4 x threat) - production gating, nothing culled. Eater probe
+  (`field_eater.json`: a ship hovers 0.8 RMS radii off the body and eats the majority element nearest-first, 1 or
+  2 per step, until the new majority leads by 10%; then it leaves and the body has 150 steps):
+
+  | | whale | jellyfish | pufferfish | dragonfly |
+  |---|---|---|---|---|
+  | fear OFF, eating up to 400 / 800 | never switches | never | never | never |
+  | **fear ON, 1/step** | **-> jellyfish** (110 eaten) | **-> pufferfish** (36) | **-> dragonfly** (108) | **-> jellyfish** (38) |
+  | fear ON, 2/step | -> jellyfish (112) | -> pufferfish (38) | -> dragonfly (110) | -> jellyfish (40) |
+
+  Every switch ends at the new plan's own headcount and is the closest plan 150 steps later; the **pre-tell shiver
+  starts 3-9 steps before the majority flips**. (The dragonfly becomes the jellyfish because Space, not Mass, is its
+  runner-up - the majority rule.) Stopping the instant the majority flips by 1 tadpole was not enough for the small
+  plans (they flipped back) - the eater has to win by a margin, which reads as a fight. Cost: after a RAM the
+  frightened body re-forms more slowly (whale 44 steps vs 4 without fear; others 8-28). The 16-test yardstick is
+  unaffected (no ship: threat 0): still 13/13 feasible.
+* Strike (`swarm_probe`, 8 seeds, `heal_field.json`, measured before fear was on; no ship -> unaffected): heal 1.15 / 1.05 / 1.08 / 1.08, mean residual damage
   **-0.65** (it comes back BETTER than before; evo body: +0.84).
 * Gradual predation (`field_gradual.json`, 1 / 2 / 4 majority tadpoles eaten per step): **no plan ever switches**
   (the dragonfly flips at step 37 under 4/step and flips straight back) - field's laying toward the plan's headcount
@@ -155,7 +175,10 @@ no Burst/SIMD). Field's own body port (`field_port/FieldSwarmCore.cs`, 0.1-0.6 m
    It is body-agnostic: port it as a Burst job over the fauna spatial index and put it on top of **field's** slot
    bodies (crisp shapes, C# port exists, 0.1-0.6 ms) — measured above as (B), the best of everything tried. Give
    the body a `calm` input (field's `desired *= 1 - 0.8*startle`) so it stops defending its shape while startled.
-2. If the learned body is kept, its lay homeostat makes a swarm nearly unconvertible by gradual predation (good for a
+2. **Fear suppresses breeding** (measured on B above) is what makes "eat its majority and it becomes another
+   animal" actually happen in play; without it both bodies are unconvertible by a nibbling predator. It is one
+   probability on the body's lay/molt step driven by the shell's `Threat` (exposed by the C# port).
+   Old note: if the learned body is kept, its lay homeostat makes a swarm nearly unconvertible by gradual predation (good for a
    "boss" creature, bad for the "eat its majority" fantasy). Tune its gain per game mode, or let a player-visible
    event (a crystal steal, an ability) suppress laying for a few seconds.
 3. Fix the yardstick's blind spot: add a gradual-predation switch test (cull over time, score shape 120 steps
