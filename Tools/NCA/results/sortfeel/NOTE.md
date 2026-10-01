@@ -126,14 +126,14 @@ sort W->D 6.74, J->D 6.68, P->D 6.02, own 3.78; v1 8.04 (1/3), 7.53, 6.42, 4.58;
   known `lose_majority` quirk: dragonfly -> whale leaves Space the majority and it correctly grows a
   jellyfish, 8.75).
 
-## 5. Probe (`probe.json`, vessel strike, seed 11)
+## 5. Probe (`probe.json` = v2, vessel strike, seed 11; whale/jellyfish/pufferfish identical in v1 and v2)
 
 | plan | before | killed | right after | after 120 steps | heal | sort's heal |
 |---|---|---|---|---|---|---|
 | whale | 1.67 | 78 of 181 | 15.87 | 1.64 | 1.00 | 1.05 |
 | jellyfish | 3.02 | 21 of 83 | 8.77 | 2.85 | 1.03 | 1.05 |
 | pufferfish | 0.98 | 46 of 169 | 9.39 | 1.50 | 0.94 | 1.04 |
-| dragonfly | 5.77 | 28 of 72 | 23.88 | 4.71 | 1.06 | 1.05 |
+| dragonfly (v2) | 5.12 | 27 of 72 | 23.69 | 3.87 | 1.07 | 1.05 |
 
 Healing is kept: every plan refills to its full headcount and to (about) its pre-strike score; the
 pufferfish settles 0.5 above its before-value (still far under the bar), the others at or better.
@@ -161,9 +161,8 @@ Risk to check in the viewer: coherence 0.09 is gas-like; if it reads as fizz rat
   as a penalty with margins) but these parameters are hand-picked from a 10-point screen, not searched.
 - **dragonfly -> jellyfish** still fails (9.0, as in sort): domain conservation, not shape. Not touched.
 - **v1's whale -> dragonfly at seed 23 = 8.04 (sort 6.74)**: a genuine regression of switches INTO the dragonfly
-  (+0.4 to +1.3 at seed 23). FIXED in v2 by the first of the fixes I listed: a per-plan dead zone (m0 = 0.4 for the dragonfly,
-  whose bodies are already as flat as its plan at 0.46 vs 0.49); wander 0.03; or let the CMA pass re-tune k_well /
-  well_clip against the dead zone.
+  (+0.4 to +1.3 at seed 23). FIXED in v2 by a per-plan dead zone: m0 = 0 on the dragonfly plan (0.4 also
+  passes, 7.60 at 2/3). The probe and rollout files without `_v1` are v2.
 - Locality unchanged: "mixed" — the body centre is still a swarm-wide average (sort's default).
 
 ## Recommendation
