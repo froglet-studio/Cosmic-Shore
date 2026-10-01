@@ -1,0 +1,134 @@
+{
+ "best": {
+  "mean_passed": 8.0,
+  "passed": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ],
+  "mean_fitness": 8.185
+ },
+ "without_sw_lay": {
+  "mean_passed": 5.0,
+  "passed": [
+   4,
+   4,
+   6,
+   5,
+   5,
+   5,
+   5,
+   6,
+   5,
+   6,
+   5,
+   5,
+   6,
+   4,
+   5,
+   4
+  ],
+  "mean_fitness": 5.097
+ },
+ "without_sw_egg": {
+  "mean_passed": 7.688,
+  "passed": [
+   8,
+   8,
+   8,
+   7,
+   7,
+   8,
+   8,
+   8,
+   8,
+   7,
+   8,
+   7,
+   8,
+   8,
+   8,
+   7
+  ],
+  "mean_fitness": 7.86
+ },
+ "without_sw_out": {
+  "mean_passed": 8.0,
+  "passed": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ],
+  "mean_fitness": 8.186
+ },
+ "without_sw_swirl": {
+  "mean_passed": 8.0,
+  "passed": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ],
+  "mean_fitness": 8.206
+ },
+ "base_g2_all_off": {
+  "mean_passed": 4.25,
+  "passed": [
+   5,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   4,
+   5,
+   4,
+   4,
+   5,
+   4,
+   5,
+   4
+  ],
+  "mean_fitness": 4.344
+ }
+}
