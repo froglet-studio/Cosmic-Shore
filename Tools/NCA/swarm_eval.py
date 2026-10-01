@@ -274,6 +274,9 @@ def load_model(spec):
             k_, v_ = kv.split("=")
             kw[k_] = float(v_) if "." in v_ else int(v_)
         return lm.load(path, **kw)
+    if kind == "lite_posinfo2":           # path[?fire_k=4&homeo_every=8&frame_every=4&half=1]
+        import lite_posinfo2_model as lm
+        return lm.from_spec(path)
     raise ValueError(spec)
 
 
