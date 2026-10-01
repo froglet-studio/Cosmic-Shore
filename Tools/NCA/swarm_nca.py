@@ -337,7 +337,26 @@ class SwarmRule(nn.Module):
         h = torch.relu(F.linear(h, self.w2, self.b2)) + h
         return F.linear(h, self.w3, self.b3)
 
+    NAN_DUMP = os.environ.get("NCA_NAN_DUMP", "")   # a path: on the first finite -> non-finite step, save it there
+
     def forward(self, sw: Swarm, gen=None, bud=True, fire=None):
+        if not SwarmRule.NAN_DUMP:
+            return self._step(sw, gen, bud, fire)
+        finite = lambda x: bool(torch.isfinite(x.s).all()) and bool(torch.isfinite(x.pos).all())
+        ok_in = finite(sw)
+        gstate = gen.get_state().clone() if gen is not None else None
+        before = sw.clone() if ok_in else None
+        out = self._step(sw, gen, bud, fire)
+        if ok_in and not finite(out):
+            bad = (~torch.isfinite(out.s)).any(-1) | (~torch.isfinite(out.pos)).any(-1)
+            torch.save(dict(sw={a: getattr(before, a).detach().cpu() for a in Swarm.FIELDS}, gen=gstate,
+                            rule={k: v.detach().cpu() for k, v in self.state_dict().items()}, world=asdict(self.world),
+                            hidden=self.hidden, bud=bud, bad=bad.nonzero().tolist()), SwarmRule.NAN_DUMP)
+            print(f"NAN DUMP: a finite swarm went non-finite in one step ({int(bad.sum())} particles); saved {SwarmRule.NAN_DUMP}", flush=True)
+            SwarmRule.NAN_DUMP = ""
+        return out
+
+    def _step(self, sw: Swarm, gen=None, bud=True, fire=None):
         W = self.world
         B, N, _ = sw.pos.shape
         n = B * N
