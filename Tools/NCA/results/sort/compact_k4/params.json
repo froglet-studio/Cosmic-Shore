@@ -1,0 +1,51 @@
+{
+ "cfg": {
+  "K": 4,
+  "per_well": 6,
+  "cov_scale": 1.506361145030099,
+  "k_well": 1.0,
+  "well_clip": 0.8354325764319843,
+  "r0": 2.6891868215597965,
+  "k_rep": 0.3122408306634446,
+  "R_adh": 7.0,
+  "a_same": -0.05,
+  "a_elem": -0.017085886105852762,
+  "a_role": -0.013731889013750841,
+  "a_other": -0.03721383329737811,
+  "swap": 0.6726259351824826,
+  "r_swap": 3.6464498190361163,
+  "swap_margin": 0.0,
+  "inertia": 0.7867145864447059,
+  "vmax": [
+   0.8,
+   0.8,
+   0.8,
+   2.0
+  ],
+  "local_centre": 0,
+  "centre_relax": 0.04,
+  "centre_iters": 3,
+  "lap_every": 0,
+  "lap_elems": [
+   3
+  ],
+  "fate": 1,
+  "swirl_time": 0.0,
+  "dwell": 12,
+  "lay_rate": 0.15,
+  "lay_max": 5,
+  "r_bud": 2.6,
+  "fill_tol": 0.15,
+  "p_cross": 0.08932981374715337,
+  "hatch_steps": 3,
+  "over": 0.9916901648637434,
+  "molt": 1,
+  "molt_rate": 0.03,
+  "transfer": 1,
+  "role_every": 10,
+  "seed": 0
+ },
+ "model": "sort_model.SortSwarm",
+ "vec": "runs/sort/cma_k4/best.npy",
+ "set": "K=4,per_well=6,molt=1"
+}
