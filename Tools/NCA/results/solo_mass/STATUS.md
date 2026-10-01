@@ -1,13 +1,13 @@
 # solo_mass status
 
-- updated: 2026-10-01 13:03 UTC
-- step: 130 / 3000
-- rule_latest.pt from: Tools/NCA/runs/swarm_solo_mass/rule_00100.pt
+- updated: 2026-10-01 13:49 UTC
+- step: 750 / 3000
+- rule_latest.pt from: Tools/NCA/runs/swarm_solo_mass/rule_00700.pt
 
 ```
-   90 loss   16.863 T52  4.1s rev0.00 s6 | ma>ma  18.95 n280 d0
-  100 loss   13.650 T90  5.5s rev0.00 s7 | ma>ma  13.74 n280 d0
-  110 loss   15.000 T69  4.1s rev0.00 s6 | ma>ma  18.68 n280 d0
-  120 loss   15.750 T52  3.4s rev0.00 s8 | ma>ma  21.60 n134 d0
-  130 loss   11.632 T52  4.0s rev0.00 s6 | ma>ma   7.50 n280 d0
+  710 loss   14.814 T53  3.5s rev0.00 s5 | ma>ma  11.14 n280 d0
+  720 loss   14.876 T93  4.5s rev0.00 s6 | ma>ma  18.12 n280 d0
+  730 loss   12.767 T88  4.5s rev0.00 s6 | ma>ma  11.97 n280 d0
+  740 loss   12.784 T82  5.0s rev0.00 s7 | ma>ma  15.44 n280 d0
+  750 loss   13.115 T65  4.2s rev0.00 s6 | ma>ma  13.24 n280 d0
 ```
