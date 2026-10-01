@@ -343,3 +343,8 @@ def make(**kw):
     cfg = ComboCfg(**{k: (type(getattr(ComboCfg, k))(v) if not isinstance(getattr(ComboCfg, k), str) else v)
                       for k, v in kw.items()})
     return ComboBoid(sn.World(), cfg)
+
+
+def load(path):
+    import json
+    return ComboBoid(sn.World(), ComboCfg(**json.load(open(path))["cfg"]))

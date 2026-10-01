@@ -251,6 +251,9 @@ def load_model(spec):
         import hgrid_hybrid as hh
         return hh.HybridRule(sn.load_rule(os.path.join(sn.HERE, meta["rule"]) if not os.path.isabs(meta["rule"]) else meta["rule"]),
                              cfg, meta.get("shed", 1))
+    if kind == "combo":
+        import combo_model as cm
+        return cm.load(path)
     raise ValueError(spec)
 
 
