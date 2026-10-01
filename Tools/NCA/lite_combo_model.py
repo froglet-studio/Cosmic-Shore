@@ -35,6 +35,7 @@ class LiteCfg(cm.ComboCfg):
     molt_every: int = 1
     fine_ease: float = 1.0
     vec: int = 0
+    mig_frac: int = 0       # also restrict the migrant search to this step's share (off: everyone, every step)
 
 
 class LiteComboBoid(cm.ComboBoid):
@@ -109,6 +110,8 @@ class LiteComboBoid(cm.ComboBoid):
         return d
 
     def step(self, sw, gen=None, train=False):
+        if bool((sw.clock == 0).all()):
+            self._dcache, self._t = None, 0          # a new rollout: forget the last one's coasting state
         out = super().step(sw, gen, train)
         self._t += 1
         return out
@@ -187,7 +190,7 @@ class LiteComboBoidSub(LiteComboBoid):
 
     def migrate(self, out, pos0, live):
         k = max(1, self.cfg.frac_k)
-        if k == 1:
+        if k == 1 or not self.cfg.mig_frac:
             return super().migrate(out, pos0, live)
         # migrants are re-chosen only for this step's share; the search is O(k_mig x M), cheap, but the
         # O(n x M) own_want sweep is the cost, so restrict rows to the selected share
