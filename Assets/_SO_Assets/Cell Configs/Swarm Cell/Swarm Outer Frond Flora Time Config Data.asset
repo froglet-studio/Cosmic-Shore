@@ -15,11 +15,11 @@ MonoBehaviour:
   FloraPrefab: {fileID: 7514956980722975813, guid: d6d46fa85e530440efddea15c7a09bf2, type: 3}
   NetworkSynced: 0
   SpawnProbability: 1
-  InitialSpawnCount: 10
+  InitialSpawnCount: 80
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 2147483647
-  PopulationSize: 10
-  MaxLivePopulation: 16
+  PopulationSize: 80
+  MaxLivePopulation: 160
   GrowthPerOffspring: 120
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 20

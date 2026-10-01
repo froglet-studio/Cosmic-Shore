@@ -26,11 +26,11 @@ MonoBehaviour:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SpawnProfile: {fileID: 11400000, guid: 02633d3f53225652894dc5c3b785ce53, type: 2}
   PhaseThresholds:
-    RestlessEnter: 2800
-    RestlessExit: 2100
-    FrenzyEnter: 19500
-    FrenzyExit: 17100
-    RestlessEnterVolume: 447000
-    RestlessExitVolume: 332000
-    FrenzyEnterVolume: 3193000
-    FrenzyExitVolume: 2809000
+    RestlessEnter: 26800
+    RestlessExit: 19900
+    FrenzyEnter: 191200
+    FrenzyExit: 168300
+    RestlessEnterVolume: 4453000
+    RestlessExitVolume: 3308000
+    FrenzyEnterVolume: 31805000
+    FrenzyExitVolume: 27988000

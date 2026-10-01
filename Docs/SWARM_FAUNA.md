@@ -127,8 +127,8 @@ newborns).
 
 ## 3. Feeding, laying and starvation
 
-Every tadpole may bite: `BitersPerStep` (12) members per step, round-robin, query
-`PrismSpatialIndex.QuerySphere` within `BiteRadius` (7 world units). A prism is food when it is a
+Every tadpole may bite: `BitersPerStep` (96) members per step, round-robin, query
+`PrismSpatialIndex.QuerySphere` within `BiteRadius` (10 world units). A prism is food when it is a
 flora `HealthPrism` (never another fauna's body, never a dying plant), not shielded, and
 `IsPreyForMe` (outside the nucleus every domain is prey). The bite is a `Consume` toward the biter
 (the suction death visual), and its **volume** lands in the swarm's stomach **under the plant's
@@ -139,7 +139,19 @@ prism's own volume (Charge 20.4, Mass 40.3, Space 22.2, Time 12.8), so eaten mas
 swarm mass 1:1. If the stomach lacks *e*, the egg can be paid out of OTHER elements' food at
 `CrossElementCost` (2) times the price. Which element is laid is decided by the body plan (the
 element with the largest deficit that still has a parent); food decides only whether it can be
-afforded. A full stomach (`StomachEggs`, 24 eggs) stops grazing.
+afforded. A full stomach (`StomachEggs`, 240 eggs) stops grazing. Laying runs at `LayRate` 0.2 of the
+headcount per step, at most `LayMax` 16 per step (10 Hz), whenever the stomach can pay.
+
+**Hatching is budgeted, laying is not.** A laid member is alive in the sim at once, but its
+GameObject is queued and given a body under `MaxSpawnsPerFrame` (48), a budget shared by EVERY
+swarm in the cell — so a whole cell of swarms seeding together, or a burst of laying, never puts
+more than 48 `Instantiate`s in one frame. A queued member is simply not drawn and cannot be hit
+or bite until it hatches (normally the same or next frame).
+
+**A wounded swarm holds its eggs** (`KillLayHoldSeconds`, 2 s). Every kill postpones laying, so a
+burst of kills is a window the body cannot refill. At the overtuned lay rate this is load-bearing:
+without it a fed dragonfly survives 80 Time kills in 4 s unchanged; with it, 53 kills in the same
+burst morph it into a jellyfish (harness test 3c, both halves asserted).
 
 Goal-seeking: the swarm swims to the nearest living flora heart inside its band (via
 `FloraHeartRegistry`), and a plant it has sat beside for 10 s without landing a bite is
@@ -157,19 +169,19 @@ Selector** toy (a bare station: like Lattice and the Arboretum, a grown world ha
 
 | band (world radius) | swarm starts as | flora to eat (floor / cap) | food relation |
 |---|---|---|---|
-| inner 430–600 | **whale** (Mass) | Arbor, Mass (6 / 10) | own element — grows fast, hardest to convert |
-| middle 660–840 | **dragonfly** (Time) | Spire, Space (8 / 14) | cross — grows at half rate, and Space food is the jellyfish's element |
-| outer 900–1120 | **pufferfish** (Charge) | Frond, Time (10 / 16) | cross — grows at half rate |
+| inner 430–600 | **whale** (Mass) | Arbor, Mass (48 / 100) | own element — grows fast, hardest to convert |
+| middle 660–840 | **dragonfly** (Time) | Spire, Space (64 / 140) | cross — grows at half rate, and Space food is the jellyfish's element |
+| outer 900–1120 | **pufferfish** (Charge) | Frond, Time (80 / 160) | cross — grows at half rate |
 
-Bands are disjoint, so the three populations stay separated in the cytoplasm. Each swarm config is
-`InitialSpawnCount / PopulationSize / MaxLivePopulation = 1`; a new swarm hatches with
-`SeedMembers` (24) tadpoles at its plan's own mix and grows by eating. Flora use the shipped
+Bands are disjoint, so the three populations stay separated in the cytoplasm. Each band holds a
+SCHOOL of swarms: `InitialSpawnCount / PopulationSize / MaxLivePopulation = 8`; a new swarm
+hatches with `SeedMembers` (96, clamped to its plan's size) tadpoles at its plan's own mix and grows by eating. Flora use the shipped
 canonical phyllotactic species through `ElementPalette` + per-cell band overrides; they reproduce
 (`GrowthPerOffspring` = 0.8 × budget) so a grazed feeding ground regrows.
 
-**Volume ladder — MODELLED, not measured.** RestlessEnter/Exit 447,000 / 332,000, FrenzyEnter/Exit
-3,193,000 / 2,809,000 (counts 2,800 / 2,100 / 19,500 / 17,100), derived by
-`author_swarm_fauna.py` from a model of the mature cell (~7,762 prisms, ~1,276,815 volume):
+**Volume ladder — MODELLED, not measured.** RestlessEnter/Exit 4,453,000 / 3,308,000, FrenzyEnter/Exit
+31,805,000 / 27,988,000 (counts 26,800 / 19,900 / 191,200 / 168,300), derived by
+`author_swarm_fauna.py` from a model of the mature cell (~76,468 prisms, ~12,721,711 volume):
 Restless early, Frenzy above the mature cell. The phyllotactic per-prism volume in that model is
 an approximation (leaf cross-section × segment). **Re-measure in the editor** (FrogletTools >
 Ecology > Measure Cell Environment Baselines, then a few minutes of growth) and re-author.
@@ -178,10 +190,17 @@ Ecology > Measure Cell Environment Baselines, then a few minutes of growth) and 
 
 | | always-on | notes |
 |---|---|---|
-| tadpole hearts at cap | **576** | 3 swarms × 192 (each swarm's cap is the largest plan; a swarm only reaches it as a whale) |
-| flora hearts at cap | **40** | 10 + 14 + 16 |
-| **total always-on** | **616** | vs the Lattice cell's 1,080 (the largest shipped); asserted by the author script |
-| tadpole body prisms | ≤576 | ordinary prism colliders, one per member |
+| tadpole hearts at cap | **4,608** | 24 swarms × 192 (each swarm's cap is the largest plan; a swarm only reaches it as a whale) |
+| flora hearts at cap | **400** | 100 + 140 + 160 |
+| **total always-on** | **5,008** | **4.6× the Lattice cell's 1,080** — see the overtune note below |
+| tadpole body prisms | ≤4,608 | ordinary prism colliders, one per member |
+
+**OVERTUNE PASS (user-authorized: "the next order of magnitude across the board").** This cell
+deliberately breaks the collider budget every other cell is held to: 5,008 always-on hearts
+against the Lattice cell's 1,080, and a mature cell (~76k prisms) above Atlantis' ~69k. The author
+script's gate is restated as an explicit `OVERTUNE_HEART_CEILING` (6,000), so it still fails if the
+numbers drift further. **It is unprofiled.** The dials to bring it back, cheapest first:
+`SWARMS_PER_BAND` (each swarm is up to 192 hearts), the flora caps, then `SeedMembers`/`LayRate`.
 
 Realistic load is lower: a dragonfly is 76 and a jellyfish 88. The cell authors no environment
 prisms at all.
@@ -197,7 +216,7 @@ prisms at all.
 3. Fly to the **Cell Selector** toy (a ring near the membrane, World group). Fly through it; a row
    of stations blooms outward. Fly into the station for **Swarm** (a bare station — no miniature).
    The world suctions out and the Swarm cell grows in behind the loading veil.
-4. Wait ~6 s (`InitialFaunaSpawnWaitTime`). Three swarms of 24 tadpoles hatch, one in each band,
+4. Wait ~6 s (`InitialFaunaSpawnWaitTime`). Twenty-four swarms of up to 96 tadpoles hatch, eight in each band,
    and flora seed around them. **Look for:** each swarm already reads as a sparse ghost of its
    creature; it swims nose-first; newborn tadpoles grow in, never pop.
 5. **Feeding:** watch a swarm reach a plant. Prisms suction off the plant into tadpoles; the
@@ -218,7 +237,7 @@ prisms at all.
    then the body swirls into the new creature while swimming; mismatched members visibly molt
    (heart shrinks, re-grows in the new element's colour/shape, body prism re-forms). The Ecology
    log prints the morph.
-9. **Profiler:** with all three swarms grown, record `SwarmFauna.Update` cost per frame.
+9. **Profiler:** with the swarms grown, record `SwarmFauna.Update` cost per frame.
 10. **Starvation (long):** a swarm that cannot reach food (e.g. after its plants are grazed out)
     begins shedding members after 90 s; each withers to a crystal and leaves its body prism.
 
@@ -277,9 +296,10 @@ Things the game port taught, for whoever iterates the field model:
 5. **Funded laying makes the feeding ground the strategy layer.** Cross-element eggs at 2× mean
    a swarm grows at half rate on foreign food, and food of a rival element is effectively a slow
    push toward that element (the dragonfly grazing Space flora). The research's free laying
-   (0.04 / 4) is replaced by LayRate 0.02 / LayMax 2 gated on the stomach.
+   (0.04 / 4) was first replaced by LayRate 0.02 / LayMax 2 gated on the stomach; the overtune pass
+   runs 0.2 / 16, which only stays morphable because kills hold laying (test 3c).
 6. **Stomach cap.** Without one, a grown swarm strips its feeding ground for nothing; capping at
-   24 eggs leaves grazing pressure proportional to growth.
+   24 eggs (240 after the overtune pass) leaves grazing pressure proportional to growth.
 7. **Kills needed** (from the harness): dragonfly 36 Time → jellyfish; jellyfish 30 Space →
    pufferfish; whale 102 Mass → jellyfish; pufferfish 101 Charge → dragonfly. Small creatures are
    the accessible morphs; the big ones are bosses.

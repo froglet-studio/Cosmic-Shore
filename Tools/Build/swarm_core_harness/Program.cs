@@ -146,6 +146,25 @@ static class Program
             Check(switches == 0, "a fed dragonfly out-lays one ship's kill rate (the feeding ground is the second lever)");
         }
 
+        Console.WriteLine("\n3c. OVERTUNED laying (LayRate 0.2 / LayMax 16, bottomless food): a burst of kills morphs it ONLY because a wounded swarm holds its eggs");
+        foreach (int hold in new[] { 0, 20 })
+        {
+            var c = Make(plans, 3, seed: 9); Run(c, 600);   // dragonfly, fed
+            c.C.LayRate = 0.2f; c.C.LayMax = 16; c.C.KillLayHoldSteps = hold;
+            Run(c, 100);
+            int killed = 0, switches = 0;
+            for (int t = 0; t < 300; t++)
+            {
+                if (t < 40) for (int q = 0, i = 0; i < c.Cap && q < 2; i++) if (c.Alive[i] && c.Elem[i] == 3) { c.Kill(i); killed++; q++; }
+                c.Step(Array.Empty<SwarmPredator>());
+                foreach (var ev in c.Events) if (ev.Kind == SwarmEventKind.Switched) switches++;
+                c.Events.Clear();
+            }
+            Console.WriteLine($"  hold {hold,2} steps: killed {killed} Time in a 4 s burst -> plan {c.Plan.Kind}, n={c.AliveCount}, {switches} switches");
+            if (hold == 0) Check(switches == 0, "without the hold, an overtuned fed swarm out-lays a burst (the regression the hold fixes)");
+            else Check(switches == 1 && c.Plan.Kind != plans[3].Kind, "with the hold, the same burst morphs it");
+        }
+
         Console.WriteLine("\n4. vessel reaction: a ship flies straight through the body (no kills)");
         foreach (bool react in new[] { true, false })
         {

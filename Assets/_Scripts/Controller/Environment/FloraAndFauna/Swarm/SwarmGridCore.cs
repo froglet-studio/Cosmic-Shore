@@ -79,6 +79,10 @@ namespace CosmicShore.Gameplay
         public float CrossCost = 2f;
         /// <summary>Eggs at most per step (research: unlimited).</summary>
         public int LayMaxPerStep = int.MaxValue;
+        /// <summary>GAME: a WOUNDED swarm holds its eggs - every kill postpones laying this many steps
+        /// (SwarmFieldParams.KillLayHoldSteps, the same rule): a burst of kills is a window the body
+        /// cannot refill, which is what keeps a morph reachable against a fed swarm. 0 = research.</summary>
+        public int KillLayHoldSteps = 0;
         /// <summary>Turn the plan into the body's heading (swimming). False = the research's fixed frame.</summary>
         public bool Oriented = true;
         public float Cruise = 0.25f, Turn = 0.03f;
@@ -126,7 +130,7 @@ namespace CosmicShore.Gameplay
 
         readonly Random _rng;
         readonly int _g3, _maxN;
-        int _chg = -1000000000;
+        int _chg = -1000000000, _layHoldUntil;
         // grids
         readonly float[] _dd, _a, _tmp, _def;   // 13 x G^3 (12 for _a/_tmp)
         // per-member scratch
@@ -201,6 +205,7 @@ namespace CosmicShore.Gameplay
         public void Kill(int i)
         {
             if (i < 0 || i >= Cap || !Active[i]) return;
+            if (C.KillLayHoldSteps > 0) _layHoldUntil = Math.Max(_layHoldUntil, Clock + C.KillLayHoldSteps);
             Active[i] = false; Hatched[i] = false; Hunger[i] = 0; Startle[i] = 0; Vel[i] = Vector3.Zero;
             Array.Clear(Look, i * LOOK, LOOK);
         }
@@ -250,7 +255,7 @@ namespace CosmicShore.Gameplay
         public void Seed(int planElement, int count, Vector3 anchor, Vector3 heading)
         {
             var plan = Plans[planElement];
-            count = Math.Min(count, Cap);
+            count = Math.Min(count, Math.Min(Cap, plan.N));   // never more than the creature holds
             var em = LargestRemainder(plan.Mix, count, true);
             var dm = C.DomainSlots ? LargestRemainder(plan.SlotMix, count, true) : new[] { count, 0, 0 };
             SeedWith(em, dm, anchor, 2f);
@@ -523,8 +528,8 @@ namespace CosmicShore.Gameplay
 
             Clock++;
 
-            // ── laying into the deficits (hgrid_boid.FieldBoid._lay)
-            Lay(have, wanted, centre, swell);
+            // ── laying into the deficits (hgrid_boid.FieldBoid._lay) - unless the body is wounded
+            if (Clock >= _layHoldUntil) Lay(have, wanted, centre, swell);
 
             // ── the fine morphogen (hgrid2_model.Boid2.fine_disp)
             FineLayer(plan, swell);

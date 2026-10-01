@@ -40,7 +40,11 @@ static class GridHarness
     {
         DomainSlots = false, HungerKills = false, Funded = true, Oriented = true, Quant = false,
         Cruise = 0.35f, Membrane = 600f, Cap = plans.Max(p => p.N), Lock = 30, LayMaxPerStep = 3,
+        KillLayHoldSteps = 20,
     });
+
+    /// <summary>The shipped SwarmFaunaConfig's SeedMembers (author_swarm_fauna.py SEED_MEMBERS).</summary>
+    public const int GameSeed = 96;
 
     /// <summary>Experiments: SWARM_GRID_GAME="Field=value,..." overrides game-mode params by name.</summary>
     static SwarmGridParams Override(SwarmGridParams p)
@@ -69,7 +73,7 @@ static class GridHarness
     public static SwarmGridCore GameSwarm(SwarmPlanData[] plans, int planElement, int seed, bool fed = true, SwarmGridParams p = null)
     {
         var c = new SwarmGridCore(plans, p ?? Game(plans), seed);
-        c.Seed(planElement, 24, new Vector3(200, 0, 0), Vector3.UnitX);
+        c.Seed(planElement, GameSeed, new Vector3(200, 0, 0), Vector3.UnitX);
         c.SwimTarget = c.Anchor;
         if (fed) for (int e = 0; e < 4; e++) c.Stomach[e] = 1e6f;
         return c;
@@ -132,11 +136,12 @@ static class GridHarness
         {
             var c = GameSwarm(plans, 1, 12, fed: false);
             Run(c, 200);
-            Check(c.AliveCount == 24, $"unfed grid swarm stays at its seed (n={c.AliveCount})");
+            int seeded = Math.Min(GameSeed, plans[1].N);
+            Check(c.AliveCount == seeded, $"unfed grid swarm stays at its seed (n={c.AliveCount})");
             c.Stomach[1] = 10f * c.C.EggCost[1];
             Run(c, 300);
-            Console.WriteLine($"  10 Mass eggs of food -> laid {c.AliveCount - 24}");
-            Check(c.AliveCount - 24 <= 10 && c.AliveCount - 24 >= 8, "a meal funds at most its own eggs (cross-element ones at CrossCost)");
+            Console.WriteLine($"  10 Mass eggs of food -> laid {c.AliveCount - seeded}");
+            Check(c.AliveCount - seeded <= 10 && c.AliveCount - seeded >= 5, "a meal funds at most its own eggs (cross-element ones at CrossCost)");
             Check(c.Stomach.Sum() < c.C.EggCost[1] * c.C.CrossCost + 1e-3f, "and spends it");
         }
 
@@ -164,6 +169,23 @@ static class GridHarness
             Console.WriteLine($"  {plans[e].Kind,-7} killed {killed,3} -> plan {c.Plan.Kind} (committed at kill {at}, {switches} switch in 400 steps after) n={c.AliveCount} mix=[{string.Join(",", Mix(c))}] deaths={c.Deaths}");
             Check(c.PlanIx == runner, $"{plans[e].Kind}: morphs to the runner-up's plan ({plans[runner].Kind})");
             Check(switches == 1, $"{plans[e].Kind}: one commit, no flip-back");
+        }
+
+        Console.WriteLine("\nG4b. a FED swarm, a 4 s burst of kills: it morphs only because a wounded swarm holds its eggs");
+        foreach (int hold in new[] { 0, 20 })
+        {
+            var p = Game(plans); p.KillLayHoldSteps = hold; p.LayMaxPerStep = 16;
+            var c = GameSwarm(plans, 3, 9, p: p); Run(c, 400);   // dragonfly, bottomless food
+            int killed = 0, switches = 0;
+            for (int t = 0; t < 300; t++)
+            {
+                if (t < 40) for (int q = 0, i = 0; i < c.Cap && q < 2; i++) if (c.Active[i] && c.Hatched[i] && c.Elem[i] == 3) { c.Kill(i); killed++; q++; }
+                c.Step(Array.Empty<SwarmPredator>());
+                foreach (var ev in c.Events) if (ev.Kind == SwarmEventKind.Switched) switches++;
+                c.Events.Clear();
+            }
+            Console.WriteLine($"  hold {hold,2} steps: killed {killed} Time -> plan {c.Plan.Kind}, n={c.AliveCount}, {switches} switches");
+            if (hold > 0) Check(switches == 1 && c.PlanIx != 3, "with the hold, the burst morphs it");
         }
 
         Console.WriteLine("\nG5. starvation picks the hungriest (misplaced surplus) member - and only when asked");

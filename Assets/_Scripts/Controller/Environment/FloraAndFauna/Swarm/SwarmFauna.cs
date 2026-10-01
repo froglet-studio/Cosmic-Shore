@@ -55,6 +55,10 @@ namespace CosmicShore.Gameplay
         Flora _goalPlant;
         float _atPlantSince = -1f;
         readonly Dictionary<Flora, float> _barren = new();
+        // Laid/seeded members waiting for a hatch slot (alive in the sim, no GameObject yet). The
+        // budget is shared cell-wide: every swarm draws from the same per-frame allowance.
+        readonly Queue<int> _pending = new();
+        static int s_spawnFrame = -1, s_spawnsThisFrame;
 
         /// <summary>The live sim (null before the first frame).</summary>
         public ISwarmCore Core => _core;
@@ -122,7 +126,8 @@ namespace CosmicShore.Gameplay
             _core.Seed(SwarmFaunaConfigSO.ToIndex(_startElement), config.SeedMembers, anchor, Sim(tangent.normalized));
             _core.SwimTarget = anchor;
             for (int i = 0; i < n; i++)
-                if (_core.Alive[i]) SpawnMember(i, -1);
+                if (_core.Alive[i]) _pending.Enqueue(i);
+            HatchPending();
 
             _lastFedTime = Time.time;
             StartLoop();
@@ -151,6 +156,7 @@ namespace CosmicShore.Gameplay
             var p = new SwarmFieldParams
             {
                 LayRate = config.LayRate, LayMax = config.LayMax,
+                KillLayHoldSteps = Mathf.RoundToInt(config.KillLayHoldSeconds * config.TickHz),
                 Cruise = config.Cruise, Turn = config.TurnPerStep,
                 Membrane = SimMembrane(host),
                 CrossCost = config.CrossElementCost,
@@ -175,6 +181,7 @@ namespace CosmicShore.Gameplay
                 Noise = config.GridNoise, PLay = config.GridLayChance, PCross = config.GridCrossChance,
                 LayMaxPerStep = config.GridLayMaxPerStep, KFine = config.GridKFine, Sigma = config.GridSigma,
                 KFF = config.GridFeedForward, Lock = config.GridPlanLock,
+                KillLayHoldSteps = Mathf.RoundToInt(config.KillLayHoldSeconds * config.TickHz),
                 Periods = new[]
                 {
                     Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.x)), Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.y)),
@@ -224,6 +231,23 @@ namespace CosmicShore.Gameplay
             _prevFace[i] = _core.Facing[i];
         }
 
+        /// <summary>
+        /// Give queued members their bodies, within the cell-wide per-frame budget. A queued index
+        /// that died or was already given a body in the meantime is skipped.
+        /// </summary>
+        void HatchPending()
+        {
+            int frame = Time.frameCount;
+            if (s_spawnFrame != frame) { s_spawnFrame = frame; s_spawnsThisFrame = 0; }
+            while (_pending.Count > 0 && s_spawnsThisFrame < config.MaxSpawnsPerFrame)
+            {
+                int i = _pending.Dequeue();
+                if (i < 0 || i >= _members.Length || !_core.Alive[i] || _members[i]) continue;
+                SpawnMember(i, -1);
+                s_spawnsThisFrame++;
+            }
+        }
+
         /// <summary>A member died (any path). The body re-solves its homes around the hole.</summary>
         public void HandleMemberDeath(SwarmTadpoleFauna member)
         {
@@ -265,6 +289,7 @@ namespace CosmicShore.Gameplay
             }
             if (steps == config.MaxStepsPerFrame && _acc > _dt) _acc = _dt;   // drop time, never spiral
 
+            HatchPending();
             Render(Mathf.Clamp01(_acc / _dt));
         }
 
@@ -284,7 +309,7 @@ namespace CosmicShore.Gameplay
                 switch (ev.Kind)
                 {
                     case SwarmEventKind.Laid:
-                        SpawnMember(ev.Index, ev.Other);
+                        _pending.Enqueue(ev.Index);
                         break;
                     case SwarmEventKind.MoltBegan:
                         if (_members[ev.Index]) _members[ev.Index].SetShape(ShapeFor(ev.Index, ev.Other), PrismZ(ev.Index, ev.Other));

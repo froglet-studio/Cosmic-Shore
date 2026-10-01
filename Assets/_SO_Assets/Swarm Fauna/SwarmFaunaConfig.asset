@@ -21,22 +21,24 @@ MonoBehaviour:
   UnitScale: 2
   TickHz: 10
   MaxStepsPerFrame: 3
-  SeedMembers: 24
-  BiteRadius: 7
-  BitersPerStep: 12
+  SeedMembers: 96
+  BiteRadius: 10
+  BitersPerStep: 96
   EggVolume: {x: 20.45, y: 40.31, z: 22.18, w: 12.8}
   CrossElementCost: 2
-  StomachEggs: 24
-  LayRate: 0.02
-  LayMax: 2
+  StomachEggs: 240
+  LayRate: 0.2
+  LayMax: 16
+  MaxSpawnsPerFrame: 48
+  KillLayHoldSeconds: 2
   StarvationSeconds: 90
-  ShedIntervalSeconds: 4
+  ShedIntervalSeconds: 1
   ExtinctLingerSeconds: 10
   Cruise: 0.35
   TurnPerStep: 0.03
   WanderReach: 300
   VesselRadius: 9
-  SenseMargin: 220
+  SenseMargin: 400
   DangerEnter: 0.45
   DangerExit: 0.15
   HeartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}

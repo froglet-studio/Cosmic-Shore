@@ -80,7 +80,9 @@ TADPOLE_MB_FID = "5945480239701989318"     # TadPoleFauna's Boid MB fileID, kept
 # ── the sim (research units; Docs/SWARM_FAUNA.md "Findings for the research") ─────────────
 UNIT_SCALE = 2.0          # world units per voxel
 TICK_HZ = 10.0
-SEED_MEMBERS = 24
+SEED_MEMBERS = 96         # OVERTUNE (x4): a hatchling swarm is already a half-built creature
+SWARMS_PER_BAND = 8       # OVERTUNE (x8): each shell holds a school of swarms, not one
+MAX_SPAWNS_PER_FRAME = 48 # cell-wide budget of tadpole Instantiates per frame (queued past it)
 PRISM_SCALE = 1.0
 HEARTS = {"Charge": 2.298, "Mass": 1.737, "Space": 2.298, "Time": 1.737}  # = Tadpole Fauna * (read below)
 
@@ -92,11 +94,11 @@ ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 REGIONS = [
     # name,   band (world),   start,   plan,     model,    ground species, ground element, canonical asset, plants floor/cap
     dict(key="Inner", band=(430, 600), start="Mass", plan="whale", model="Grid",
-         flora="Arbor", food="Mass", canon="Arbor Flora Mass", floor=6, cap=10),
+         flora="Arbor", food="Mass", canon="Arbor Flora Mass", floor=48, cap=100),
     dict(key="Middle", band=(660, 840), start="Time", plan="dragonfly", model="Field",
-         flora="Spire", food="Space", canon="Spire Flora Space", floor=8, cap=14),
+         flora="Spire", food="Space", canon="Spire Flora Space", floor=64, cap=140),
     dict(key="Outer", band=(900, 1120), start="Charge", plan="pufferfish", model="Grid",
-         flora="Frond", food="Time", canon="Frond Flora Time", floor=10, cap=16),
+         flora="Frond", food="Time", canon="Frond Flora Time", floor=80, cap=160),
 ]
 MODEL_ID = {"Field": 0, "Grid": 1}
 # the grid model's game settings (SwarmGridCore; research hgrid2 values unless noted)
@@ -111,6 +113,10 @@ FLORA_SPREAD = 120
 # ladder ratios (against the modelled mature cell; see ladder())
 RESTLESS_ENTER, RESTLESS_EXIT, FRENZY_ENTER, FRENZY_EXIT = 0.35, 0.26, 2.5, 2.2
 LATTICE_HEART_COLLIDERS = 1080
+# OVERTUNE PASS (user-authorized, "the next order of magnitude across the board"): this cell
+# deliberately exceeds the Lattice cell's heart-collider budget. The gate is restated as an explicit
+# overtune ceiling so it still FAILS if the numbers drift further, and the doc states the cost.
+OVERTUNE_HEART_CEILING = 6000
 ATLANTIS_PRISMS = 69000
 
 
@@ -362,12 +368,12 @@ def config_asset(eggs, model="Field"):
         f"  TadpolePrefab: {{fileID: {TADPOLE_MB_FID}, guid: {guid(rel(os.path.join(PREFAB_DIR, 'SwarmTadpole.prefab')))}, type: 3}}\n"
         f"  UnitScale: {_g(UNIT_SCALE)}\n  TickHz: {_g(TICK_HZ)}\n  MaxStepsPerFrame: 3\n"
         f"  SeedMembers: {SEED_MEMBERS}\n"
-        "  BiteRadius: 7\n  BitersPerStep: 12\n"
+        "  BiteRadius: 10\n  BitersPerStep: 96\n"
         f"  EggVolume: {v4(egg)}\n"
-        "  CrossElementCost: 2\n  StomachEggs: 24\n  LayRate: 0.02\n  LayMax: 2\n"
-        "  StarvationSeconds: 90\n  ShedIntervalSeconds: 4\n  ExtinctLingerSeconds: 10\n"
+        f"  CrossElementCost: 2\n  StomachEggs: 240\n  LayRate: 0.2\n  LayMax: 16\n  MaxSpawnsPerFrame: {MAX_SPAWNS_PER_FRAME}\n  KillLayHoldSeconds: 2\n"
+        "  StarvationSeconds: 90\n  ShedIntervalSeconds: 1\n  ExtinctLingerSeconds: 10\n"
         "  Cruise: 0.35\n  TurnPerStep: 0.03\n  WanderReach: 300\n"
-        "  VesselRadius: 9\n  SenseMargin: 220\n  DangerEnter: 0.45\n  DangerExit: 0.15\n"
+        "  VesselRadius: 9\n  SenseMargin: 400\n  DangerEnter: 0.45\n  DangerExit: 0.15\n"
         f"  HeartWorldScale: {v4(HEARTS)}\n"
         f"  PrismScale: {_g(PRISM_SCALE)}\n  HeartPrismGap: 0.6\n  BirthBloomSeconds: 0.8\n  MoltHeartSeconds: 0.5\n"
         + grid +
@@ -407,9 +413,9 @@ def fauna_asset(r):
     lo, hi = r["band"]
     return SO_HEADER % (SO_SCRIPT["fauna"], fauna_name(r)) + (
         f"  FaunaPrefab: {{fileID: {ROOT_MB_FID}, guid: {guid(rel(os.path.join(PREFAB_DIR, anchor_name(r['model']))))}, type: 3}}\n"
-        "  InitialSpawnCount: 1\n  PopulationSize: 1\n  SpawnProbability: 1\n  NetworkSynced: 0\n"
+        f"  InitialSpawnCount: {SWARMS_PER_BAND}\n  PopulationSize: {SWARMS_PER_BAND}\n  SpawnProbability: 1\n  NetworkSynced: 0\n"
         "  FeedsPerOffspring: 0\n  OffspringPerBirth: 1\n  ReproductionCooldownSeconds: 10\n"
-        "  MaxLivePopulation: 1\n  ReleaseTier: 0\n"
+        f"  MaxLivePopulation: {SWARMS_PER_BAND}\n  ReleaseTier: 0\n"
         f"  BandInnerRadius: {lo}\n  BandOuterRadius: {hi}\n  CenterFocusBias: 0\n"
         f"  Element: {ELEMENT_ID[r['start']]}\n"
         "  Variant:\n    Enabled: 0\n"
@@ -452,7 +458,7 @@ def model(plans):
         tot["volume"] += plants * c["budget"] * per
         tot["plants_max"] += plants
     cap = max(p["n"] for p in plans.values())
-    tot["tadpoles"] = cap * len(REGIONS)
+    tot["tadpoles"] = cap * len(REGIONS) * SWARMS_PER_BAND
     tot["prisms"] += tot["tadpoles"]
     tot["volume"] += tot["tadpoles"] * max(eggs.values())
     tot["hearts"] = tot["plants_max"] + tot["tadpoles"]
@@ -593,8 +599,8 @@ def verify(out, tot, rows):
         problems.append("the cell must host both models side by side (field and grid)")
     if any(r["food"] == "Charge" for r in REGIONS):
         problems.append("a Charge feeding ground is no food at all (armoured leaves)")
-    if tot["hearts"] >= LATTICE_HEART_COLLIDERS:
-        problems.append(f"{tot['hearts']} always-on heart colliders >= the Lattice cell's {LATTICE_HEART_COLLIDERS}")
+    if tot["hearts"] >= OVERTUNE_HEART_CEILING:
+        problems.append(f"{tot['hearts']} always-on heart colliders >= the overtune ceiling {OVERTUNE_HEART_CEILING}")
     # the prefab really is stripped of its network layer and its authored crystal
     tp = out[os.path.join(PREFAB_DIR, "SwarmTadpole.prefab")]
     for bad, what in (("d5a57f767e5e46a458fc5d3c628d0cbb", "NetworkObject"), ("818b214228314119900f4d9860f0762d", "FaunaNetworkSync"),
