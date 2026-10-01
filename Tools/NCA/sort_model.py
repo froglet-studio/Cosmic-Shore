@@ -73,6 +73,7 @@ class SortCfg:
     centre_relax: float = 0.04  # leak toward own position (small: the estimate is mostly the neighbours')
     centre_iters: int = 3       # consensus rounds per step (a tadpole only talks to neighbours each round)
     lap_every: int = 0          # >0: every this many steps the runners' fates advance one well along their
+    lap_clip: float = 2.0       # chemotaxis cap for lap runners (Time's top speed)
     lap_elems: tuple = (3,)     #     type's loop (Time runs laps; occupancy - and so the score - is unchanged)
     fate: int = 1              # 1: each tadpole commits to ONE well of its type (the most under-occupied at birth)
     swirl_time: float = 0.0    # Time runners circulate (rad/step about the body's major axis); look only
@@ -346,7 +347,10 @@ class SortSwarm:
             E[orph], G[orph] = Eb, Gb
         step = -cfg.k_well * G
         nrm = np.linalg.norm(step, axis=1, keepdims=True)
-        step = step * np.minimum(1, cfg.well_clip / np.maximum(nrm, 1e-9))
+        clip = np.full((len(idx), 1), cfg.well_clip)
+        if cfg.lap_every:
+            clip[np.isin(elem[idx], cfg.lap_elems)] = cfg.lap_clip      # runners sprint between wells
+        step = step * np.minimum(1, clip / np.maximum(nrm, 1e-9))
         # --- neighbours: collision, adhesion, swaps
         P = pos[idx]
         dx = P[None] - P[:, None]                          # j - i
