@@ -1,0 +1,154 @@
+[
+ {
+  "mass": {
+   "loss": 8.08,
+   "n": 189,
+   "home_err": 10.4
+  },
+  "space": {
+   "loss": 6.75,
+   "n": 94,
+   "home_err": 13.4
+  },
+  "charge": {
+   "loss": 6.7,
+   "n": 179,
+   "home_err": 10.5
+  },
+  "overlap": 0.0,
+  "t": 50
+ },
+ {
+  "mass": {
+   "loss": 5.71,
+   "n": 192,
+   "home_err": 5.1
+  },
+  "space": {
+   "loss": 4.95,
+   "n": 89,
+   "home_err": 21.5
+  },
+  "charge": {
+   "loss": 3.9,
+   "n": 179,
+   "home_err": 14.6
+  },
+  "overlap": 0.0,
+  "t": 100
+ },
+ {
+  "mass": {
+   "loss": 5.81,
+   "n": 192,
+   "home_err": 7.6
+  },
+  "space": {
+   "loss": 5.91,
+   "n": 89,
+   "home_err": 25.6
+  },
+  "charge": {
+   "loss": 3.7,
+   "n": 179,
+   "home_err": 16.5
+  },
+  "overlap": 0.0,
+  "t": 150
+ },
+ {
+  "mass": {
+   "loss": 4.62,
+   "n": 192,
+   "home_err": 15.9
+  },
+  "space": {
+   "loss": 5.21,
+   "n": 89,
+   "home_err": 30.2
+  },
+  "charge": {
+   "loss": 3.44,
+   "n": 179,
+   "home_err": 13.8
+  },
+  "overlap": 0.0,
+  "t": 200
+ },
+ {
+  "mass": {
+   "loss": 3.32,
+   "n": 192,
+   "home_err": 21.9
+  },
+  "space": {
+   "loss": 5.75,
+   "n": 89,
+   "home_err": 35.2
+  },
+  "charge": {
+   "loss": 6.54,
+   "n": 179,
+   "home_err": 11.4
+  },
+  "overlap": 0.0,
+  "t": 250
+ },
+ {
+  "mass": {
+   "loss": 3.42,
+   "n": 192,
+   "home_err": 19.2
+  },
+  "space": {
+   "loss": 4.88,
+   "n": 89,
+   "home_err": 37.2
+  },
+  "charge": {
+   "loss": 6.18,
+   "n": 179,
+   "home_err": 15.9
+  },
+  "overlap": 0.0,
+  "t": 300
+ },
+ {
+  "mass": {
+   "loss": 3.91,
+   "n": 192,
+   "home_err": 13.0
+  },
+  "space": {
+   "loss": 5.62,
+   "n": 89,
+   "home_err": 36.9
+  },
+  "charge": {
+   "loss": 4.42,
+   "n": 179,
+   "home_err": 18.5
+  },
+  "overlap": 0.0,
+  "t": 350
+ },
+ {
+  "mass": {
+   "loss": 3.87,
+   "n": 192,
+   "home_err": 7.8
+  },
+  "space": {
+   "loss": 7.76,
+   "n": 89,
+   "home_err": 32.4
+  },
+  "charge": {
+   "loss": 3.12,
+   "n": 179,
+   "home_err": 16.3
+  },
+  "overlap": 0.0,
+  "t": 400
+ }
+]

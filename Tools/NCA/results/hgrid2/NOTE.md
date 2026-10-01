@@ -126,11 +126,18 @@ descriptive: they separate a school (hgrid2 0.63) from a gas-like swarm (evo, ev
 
 * **The ship writes into the same field** (above): one extra channel, no new creature rule; the reaction
   (part, then re-close) is emergent from flee + the existing deficit.
-* **A cell-scale morphogen herding several swarms**: not built. The design falls out of finding 4 - the
-  coarse grid now only carries composition and could be a CELL-sized field shared by all swarms in a
-  cell (a territory/attraction channel the Cell owns, written by the nucleus claim), while each swarm's
-  body accuracy lives in its own per-swarm fine layer + migrants. Recommend prototyping as a cell grid at
-  ~2x the coarse cell size with one "come here" channel per domain.
+* **A cell-scale morphogen herding several swarms** (`hgrid2_cell.py`, `cell.json`, `cell_fast.json`):
+  three swarms (whale, jellyfish, pufferfish) in one cell. The Cell owns one 24^3 field of 8-voxel cells:
+  a SHARED density channel (each swarm is pushed down the gradient of the OTHERS' density) and a home per
+  swarm. The first version pushed members toward home and failed (home error grew to 45): the body's own
+  fine field, anchored on its centroid, pulled it back. What works is letting the Cell write WHERE the body
+  is - the swarm's morphogen centre walks toward its home (<= 0.3 voxel/step, never leading the body by
+  more than 6) and the body swims after its own field. With homes orbiting the cell (~87 voxels in 600
+  steps): every swarm stays within 2.5-7 voxels of its moving home, bodies stay accurate (1.4-4.4), and
+  zero tadpoles ever sit within 2.5 voxels of another swarm. Limit: at 2.5x that speed (0.36 voxel/step)
+  the bodies lag 8-37 voxels and the jellyfish loosens to 7.8 - herd at <= ~0.15-0.2 voxel/step.
+  This is the shape for the game: the Cell writes territories / a nucleus orbit / "flee the ship" into
+  one field; creatures never know about each other.
 * **Cost at game scale** (per swarm per update, n <= 200 tadpoles, M <= 192 plan units):
   fine layer ~ n x M Gaussians (~40k exp + 120k mul-add); migrants ~ k x M for the few migrants;
   starvation/laying O(n); the coarse grid 16^3 x 12 classes = 49k floats (200 KB) splatted from 8n
@@ -155,11 +162,14 @@ descriptive: they separate a school (hgrid2 0.63) from a gas-like swarm (evo, ev
    lock are each a few dozen lines, O(n x M), no assignment solver. Drop coarse-grid steering (finding 4).
 2. **Ship the evo body + grid as the "wilder" species variant** - it is the lead's preferred motion and
    now accurate on 13/16 (dragonfly switches 8.3-9.8 are the gap; the designed boid passes them).
-   Next try: give the evolved body's Time units feed-forward at full gain and a slower dragonfly frame.
+   Tried this round: feed-forward gain, frame period, fine gain, migrant threshold, starvation rate and
+   small-element slack - the three dragonfly switches move between 6.8 and 10 with seed and setting, i.e.
+   they sit ON the bar (about 2.2 of each is the domain floor, finding 2). Fixing the yardstick's domain
+   floor would very likely take the evo body to 16/16.
 3. **Fix the yardstick's 2-slot domain search** (finding 1) and decide whether the dragonfly domain
    floor (finding 2) should be scored at all - it penalises every whale/puffer -> dragonfly by ~2.
-4. **Game:** prototype the ship-threat channel on the C# port, then the cell-level shared morphogen
-   (several swarms, one territory field). Measure fun in the editor: the parting-and-closing reaction
+4. **Game:** port the ship-threat channel and the cell-level anchor + shared-density field with the C#
+   creature (both are a few grid ops per cell per update); herd at <= 0.2 voxel/step. Measure fun in the editor: the parting-and-closing reaction
    and the one-by-one withering are the two moments most worth watching.
 
 ## Files
@@ -170,4 +180,4 @@ descriptive: they separate a school (hgrid2 0.63) from a gas-like swarm (evo, ev
 feed-forward only, 6/15). `evo_grid/`: the same set for the evo body + grid.
 Code: `hgrid2_model.py`, `hgrid2_evo.py`, `hgrid2_eval.py` (score + publish), `hgrid2_diag.py` (per-term),
 `hgrid2_sweep.py`, `hgrid2_switch.py`, `hgrid2_robust.py`, `hgrid2_feelcal.py`, `hgrid2_feelsweep.py`,
-`hgrid2_ship.py`, `swarm_feel.py`.
+`hgrid2_ship.py`, `hgrid2_cell.py`, `swarm_feel.py`. `cell.json` / `cell_fast.json`: the herding runs.

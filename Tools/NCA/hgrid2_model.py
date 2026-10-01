@@ -232,6 +232,16 @@ class Boid2(hb.FieldBoid):
                 p = [0, 1, 2]
             sw.dmap[b] = torch.tensor(p)
 
+    anchor = None        # [B,3] or None: the fine layer's centre, written by an outer field (the Cell herding swarms)
+
+    def fine_centre(self, pos0, lf):
+        if self.anchor is not None:
+            return self.anchor
+        cen = (pos0 * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
+        if self.cfg.quant:
+            cen = torch.round(cen / self.cfg.cell) * self.cfg.cell
+        return cen
+
     def spatial_dmap(self, sw, live, changed):
         """For samples whose plan just changed: the slot->domain perm maximising the overlap between
         each domain's actual density and its slot's wanted density, among perms that are within 10% of
@@ -303,9 +313,7 @@ class Boid2(hb.FieldBoid):
     def migrate(self, out, pos0, live):
         cfg = self.cfg
         lf = live.float()
-        cen = (pos0 * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
-        if cfg.quant:
-            cen = torch.round(cen / cfg.cell) * cfg.cell
+        cen = self.fine_centre(pos0, lf)
         tg = self.fine_targets(out, cen)
         nm = 0
         for b in range(out.B):
@@ -347,9 +355,7 @@ class Boid2(hb.FieldBoid):
         it has turned far enough that trading no longer gains, it simply stops."""
         cfg = self.cfg
         lf = live.float()
-        cen = (pos0 * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
-        if cfg.quant:
-            cen = torch.round(cen / cfg.cell) * cfg.cell
+        cen = self.fine_centre(pos0, lf)
         tg = self.fine_targets(out, cen)
         nswap = 0
         for b in range(out.B):
@@ -402,9 +408,7 @@ class Boid2(hb.FieldBoid):
         cfg = self.cfg
         B, N, _ = out.pos.shape
         lf = live.float()
-        cen = (pos0 * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
-        if cfg.quant:
-            cen = torch.round(cen / cfg.cell) * cfg.cell
+        cen = self.fine_centre(pos0, lf)
         tg = self.fine_targets(out, cen)
         disp = torch.zeros_like(out.pos)
         for b in range(B):
