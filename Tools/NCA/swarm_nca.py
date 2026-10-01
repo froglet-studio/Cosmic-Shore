@@ -160,7 +160,7 @@ class World:
     k_bud: int = 7            # lay while fewer neighbours than this within r_lay
     r_lay: float = 4.0        # crowding radius for laying (a sheet at target spacing has ~6)
     p_bud: float = 0.2        # per-step laying probability for an eligible parent
-    p_mut: float = 0.02       # an egg is another element (domain never changes)
+    p_mut: float = 0.005      # an egg is another element (domain never changes)
     egg_life: int = 6         # an egg that has not hatched after this many steps is gone (it never lived)
     rho0: float = 8.0         # crowding normaliser
     capacity: int = 360       # tadpole slots per sample
