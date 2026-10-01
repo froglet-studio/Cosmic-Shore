@@ -144,8 +144,8 @@ def build_swarm(results_root, gallery_dir=None):
         d = os.path.join(results_root, n)
         if not os.path.isdir(d):
             continue
-        cands += [d] if _is_run(d) else [os.path.join(d, m) for m in sorted(os.listdir(d))
-                                         if os.path.isdir(os.path.join(d, m)) and _is_run(os.path.join(d, m))]
+        cands += ([d] if _is_run(d) else []) + [os.path.join(d, m) for m in sorted(os.listdir(d))
+                                                 if os.path.isdir(os.path.join(d, m)) and _is_run(os.path.join(d, m))]
     cands = sorted(cands, key=_rank)
     if not cands:
         return "", ""
