@@ -53,12 +53,8 @@ def _curve(log_path):
 def _rank(d):
     """Most tests passed first (own plan x4, switch x4), then the lowest divergence over them."""
     sm = json.load(open(os.path.join(d, "summary.json")))
-    cross, sw = sm["cross"], sm.get("switch", {})
-    correct = sum(min(cross[k], key=cross[k].get) == k for k in KINDS)
-    close = sum(cross[k][k] for k in KINDS)
-    for v in sw.values():
-        correct += min(v["cross"], key=v["cross"].get) == v["to"]
-        close += v["cross"][v["to"]]
+    import swarm_nca
+    correct, close = swarm_nca.tests_passed(sm)
     return (-correct, close)
 
 

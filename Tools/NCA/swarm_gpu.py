@@ -121,12 +121,7 @@ def score(summary):
     """Lower is better. First: how many of the eight tests pass - each seeding grows closest to its OWN
     plan (4), and after losing its majority each swarm ends closest to the NEW majority's plan (4).
     Then: how close, summed over the same eight."""
-    cross, sw = summary["cross"], summary.get("switch", {})
-    correct = sum(min(cross[k], key=cross[k].get) == k for k in sn.KINDS)
-    close = sum(cross[k][k] for k in sn.KINDS)
-    for k, v in sw.items():
-        correct += min(v["cross"], key=v["cross"].get) == v["to"]
-        close += v["cross"][v["to"]]
+    correct, close = sn.tests_passed(summary)
     return (8 - correct) * 1000 + close, correct
 
 

@@ -1145,6 +1145,23 @@ def rollout(rule, steps=240, every=5, seed=7, L=None, switch_steps=240):
     return data, summary
 
 
+def tests_passed(summary):
+    """The 8 tests: each seeding grows closest to its own plan (4), and after losing its majority each
+    swarm ends closest to the new majority's plan (4). A test passes only if the swarm is alive and its
+    plan is STRICTLY closest - an extinct swarm scores the sentinel 100 against every plan, and a tie
+    must not count as a pass. Returns (passed, summed divergence over the 8 wanted plans)."""
+    def ok(row, want, n):
+        others = [v for k, v in row.items() if k != want]
+        return n > 0 and row[want] < 99.9 and row[want] < min(others) - 1e-6
+    cross, cen, sw = summary["cross"], summary.get("census", {}), summary.get("switch", {})
+    passed = sum(ok(cross[k], k, cen.get(k, {}).get("n", 1)) for k in KINDS)
+    close = sum(cross[k][k] for k in KINDS)
+    for v in sw.values():
+        passed += ok(v["cross"], v["to"], v.get("census", {}).get("n", 1))
+        close += v["cross"][v["to"]]
+    return passed, close
+
+
 def pack(data, steps=240):
     """int16 quantisation for the viewer: positions x50, extents/vectors x1000."""
     import base64
