@@ -962,7 +962,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                 inf = infos[k][0]
                 rec[k] = dict(plan=plans[i * cfg.per_kind], sink=round(inf["sink"], 3), count=round(inf.get("count", 0), 3), n=c["n"],
                               el=c["elements"], dom=c["domains"], deaths=c["deaths"], frame=inf["frame"],
-                              speed=inf.get("speed"))
+                              speed=inf.get("speed"), **{x: round(inf[x], 3) for x in ("mix", "con", "gap", "survive") if x in inf})
             log.write(json.dumps(rec) + "\n"); log.flush()
             print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s rev{rev:.2f} | " + " | ".join(
                 f"{k[:2]}>{rec[k]['plan'][:2]} {rec[k]['sink']:6.2f} n{rec[k]['n']:3d} d{rec[k]['deaths']}" for k in KINDS), flush=True)
