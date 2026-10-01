@@ -137,22 +137,16 @@
   -0.8375346040109826
  ],
  "sw_head": [
-  0.5
+  -0.1722665826284943
  ],
  "h_head": [
-  0.3,
-  0.3,
-  0.3,
-  0.3
+  -1.172338834214485,
+  -0.8075683832472264,
+  0.3285495917849059,
+  0.8656652825929797
  ],
  "k_head": [
-  1.5
+  1.564276686305408
  ],
- "sw_hsel": [
-  0.5
- ],
- "t_hsel": [
-  0.1
- ],
- "_describe": "behaviours on: ['sw_lay', 'sw_egg']\nlay gate k=2.72 b=-0.02 | egg share=0.183 beta=4.90 | lock margin=0.017\ndesired share D[majority -> C M S T]:\n  Charge majority: 0.74 0.05 0.05 0.17   (plan charge: 0.73 0.01 0.09 0.17)\n  Mass   majority: 0.01 0.87 0.11 0.02   (plan mass: 0.10 0.66 0.13 0.11)\n  Space  majority: 0.28 0.04 0.65 0.03   (plan space: 0.28 0.02 0.61 0.08)\n  Time   majority: 0.01 0.04 0.01 0.94   (plan time: 0.03 0.04 0.24 0.70)\nB6 regrowth on=True gain=1.40\nB7 wound on=False gain=1.07 focus=0.24 ema rate=0.091\nB8 headcount on=True k=1.50 targets charge=242 mass=259 space=119 time=103 | B8b selective=True past deficit 0.10"
+ "_describe": "behaviours on: ['sw_lay', 'sw_egg']\nlay gate k=2.72 b=-0.02 | egg share=0.183 beta=4.90 | lock margin=0.017\ndesired share D[majority -> C M S T]:\n  Charge majority: 0.74 0.05 0.05 0.17   (plan charge: 0.73 0.01 0.09 0.17)\n  Mass   majority: 0.01 0.87 0.11 0.02   (plan mass: 0.10 0.66 0.13 0.11)\n  Space  majority: 0.28 0.04 0.65 0.03   (plan space: 0.28 0.02 0.61 0.08)\n  Time   majority: 0.01 0.04 0.01 0.94   (plan time: 0.03 0.04 0.24 0.70)\nB6 regrowth on=True gain=1.40\nB7 wound on=False gain=1.07 focus=0.24 ema rate=0.091\nB8 headcount on=False k=1.56 targets charge=55 mass=86 space=122 time=181"
 }

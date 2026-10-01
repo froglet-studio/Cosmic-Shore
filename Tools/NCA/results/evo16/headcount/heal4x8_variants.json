@@ -1,0 +1,83 @@
+{
+ "seeds": [
+  7700,
+  7701,
+  7702,
+  7703,
+  7704,
+  7705,
+  7706,
+  7707
+ ],
+ "strikes": 4,
+ "results": {
+  "runs/evo16/cand_hs06t1.npy": {
+   "mass": {
+    "heal_mean": 0.277,
+    "heal_ge_half": 0.41,
+    "before": 18.38,
+    "cut": 19.83,
+    "rec": 19.26,
+    "n": 32
+   },
+   "space": {
+    "heal_mean": -0.067,
+    "heal_ge_half": 0.41,
+    "before": 15.27,
+    "cut": 19.79,
+    "rec": 18.59,
+    "n": 32
+   },
+   "charge": {
+    "heal_mean": 0.421,
+    "heal_ge_half": 0.5,
+    "before": 13.91,
+    "cut": 16.32,
+    "rec": 14.85,
+    "n": 32
+   },
+   "time": {
+    "heal_mean": 0.329,
+    "heal_ge_half": 0.53,
+    "before": 26.34,
+    "cut": 30.0,
+    "rec": 28.43,
+    "n": 32
+   }
+  },
+  "runs/evo16/cand_hs03t2.npy": {
+   "mass": {
+    "heal_mean": 0.107,
+    "heal_ge_half": 0.38,
+    "before": 18.23,
+    "cut": 19.89,
+    "rec": 19.25,
+    "n": 32
+   },
+   "space": {
+    "heal_mean": -0.014,
+    "heal_ge_half": 0.19,
+    "before": 15.38,
+    "cut": 20.75,
+    "rec": 20.2,
+    "n": 32
+   },
+   "charge": {
+    "heal_mean": 0.283,
+    "heal_ge_half": 0.47,
+    "before": 13.76,
+    "cut": 16.06,
+    "rec": 14.58,
+    "n": 32
+   },
+   "time": {
+    "heal_mean": 0.272,
+    "heal_ge_half": 0.34,
+    "before": 26.71,
+    "cut": 30.75,
+    "rec": 29.24,
+    "n": 32
+   }
+  }
+ }
+}
