@@ -586,6 +586,39 @@ the overflow; `smax` in the log (largest |state|) shows whether it is happening.
 `NCA_NAN_DUMP=<path>`, the first step that turns a finite swarm non-finite is saved so it can be
 replayed.
 
+**Root cause: state runaway, confirmed.** In E7's step-250 pool nearly every sample sat at the
+±1000 clamp on many channels, including the death channel (31); only fresh seeds stayed below
+310. A tadpole dies when that channel passes 1, so a runaway rule kills its whole swarm. E2b's
+first scored result (step 1000) was exactly that: every swarm extinct. The clamp only hides the
+runaway, and a clamped state passes no gradient, so it cannot repair a pool that is already
+pinned.
+
+The fix is the overflow loss of the original NCA work:
+
+- `w_over` adds the mean over live particles of `sum(relu(|s| - over_band))`, with
+  `over_band = 5`.
+- Started from the warm start (E8 = e6 + `w_over=1`), the largest |state| fell from 40 to under 10
+  within 60 steps, with full-size swarms and lower loss. Resumed from an already-pinned pool, the
+  penalty swamped the loss and the swarms collapsed.
+
+So every run before the F series trained on runaway pools.
+
+**Scoring fix.** An extinct swarm scores the sentinel 100 against every plan. The old scorer took
+`min()` over that tie, landed on "mass", and published E2b's all-extinct result as "2/8 tests
+pass". A single `tests_passed()` now requires the swarm alive, below the sentinel and strictly
+closest to the wanted plan. The GPU job's publisher and the viewer's ranking both use it.
+
+**F series** (all with `w_over=1`, branches `cece/swarm-exp-f*`):
+
+| Tag | Fixes |
+|---|---|
+| f1 | sticky labels |
+| f2 | + laying gate |
+| f3 | + contrastive loss |
+| f5 | + laying gate + scale-invariant loss |
+| f7 | all four |
+| e8 (local) | sticky labels + scale-invariant loss |
+
 **E4 diverged, and the logs said why.** Its loss rose from about 100 to 450. The contrastive hinge
 (0–11) and the mix error (0.00–0.42) stayed small; the divergence itself grew to 50–97, with every
 sample at the 280-slot cap. Grown swarms run 200–280 tadpoles against plans of 76–192, and
