@@ -163,7 +163,7 @@ class World:
     p_mut: float = 0.005      # an egg is another element (domain never changes)
     egg_life: int = 6         # an egg that has not hatched after this many steps is gone (it never lived)
     rho0: float = 8.0         # crowding normaliser
-    capacity: int = 360       # tadpole slots per sample
+    capacity: int = 280       # tadpole slots per sample (largest plan 192)
     seed_n: int = 16          # tadpoles in a seed
     membrane: float = 80.0    # containment sphere (the cell membrane that pens fauna in the game)
 
