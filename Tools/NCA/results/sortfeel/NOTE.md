@@ -104,10 +104,11 @@ plus one RNG draw per tadpole (+23% in this Python prototype, `timing.json`).
   2.63 -> 3.72, pufferfish 5.84 -> 7.63, dragonfly 2.46 -> 2.98. The overhead is Python bookkeeping in the
   subclass (re-reading numpy views, set intersections, a sqrt per fate pull); the math added per tadpole is
   one sqrt + one Gaussian draw + one exp, negligible next to sort's O(n²) neighbour pass in a C# port.
-- Sort's own accuracy at the same seeds: seed 7 12/13 (`results/sort/eval16.json`, same single failure
-  dragonfly->jellyfish 8.97); seed 23 13/13 own+standard per DISCOVERIES; seed 41 — see
-  `sort_baseline_seed41.json` if present (the baseline run was still going at the end of the session).
-  So the only possibly NEW failure is whale->dragonfly at seed 23, at 8.04, a hair over the bar.
+- Sort's own accuracy at the same seeds: seed 7 **12/13** (`results/sort/eval16.json`, same single failure
+  dragonfly->jellyfish 8.97); seed 41 **13/13** (`sort_baseline_seed41.json`, own 1.55 / 3.08 / 1.09 / 3.89 -
+  sortfeel 1.37 / 2.76 / 1.08 / 5.30); seed 23 own + standard 8/8 per DISCOVERIES (its other switches were not
+  re-measured here: a full baseline at seed 23 did not fit the session). **So sortfeel matches sort at 7 and 41;
+  the one possibly new failure is whale->dragonfly at seed 23, 8.04, a hair over the bar.**
 - Old yardstick (`summary.json`, `swarm_nca.rollout`): **7/8**, identical to sort (the one failure is the
   known `lose_majority` quirk: dragonfly -> whale leaves Space the majority and it correctly grows a
   jellyfish, 8.75).
