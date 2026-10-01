@@ -76,6 +76,9 @@ class StudentCfg:
     census_gate: int = 0      # 1 (needs genome): a tadpole lays only while its own element AND the headcount are
                               # short of its believed plan, and starts a molt only while its element is in
                               # surplus (the teacher's composition rule, computed from the census + genome)
+    z_motion: int = 1         # 1: the centre estimate rides the tadpole's own motion (dynamic average consensus);
+                              # 0: it stays put in the world and only diffuses (motion then CHANGES the offset,
+                              # which is the positional feedback a body needs; see NOTE)
     oracle_z: int = 0         # DIAGNOSTIC ONLY (not local): Z = the true live centroid each step
     genome: int = 0           # 1: + genome features: own element's plan share - its live share, the full deficit
                               # vector (plan mix - live mix) and plan headcount - live headcount, all under the
@@ -328,7 +331,8 @@ class Student(nn.Module):
         rad = pos2.norm(dim=-1, keepdim=True).clamp(min=1e-6)
         pos2 = torch.where(rad > W.membrane, pos2 * W.membrane / rad, pos2)
         # the centre estimate rides the tadpole's own motion
-        s[:, Z] = torch.where(lv, s[:, Z] + (pos2 - pos), s[:, Z])
+        if cfg.z_motion:
+            s[:, Z] = torch.where(lv, s[:, Z] + (pos2 - pos), s[:, Z])
         sw.pos = pos2.view(B, N, 3)
         # molting (designed mechanics, learned trigger)
         run = live & (s[:, MOLT] > 0)
