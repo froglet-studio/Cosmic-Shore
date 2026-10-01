@@ -192,6 +192,8 @@ def main():
     benchp, scriptp = build_particles(args.runs)
     benchpr, scriptpr = build_prisms(args.runs)
     status = build_status(args.runs)
+    from viewer_swarm import build_swarm, CSS as SWARM_CSS
+    benchsw, scriptsw = build_swarm(args.runs)
 
     page = TEMPLATE
     for k, v in {
@@ -200,6 +202,7 @@ def main():
         "{{ANIM}}": anim, "{{BENCH3D}}": bench3d, "{{SCRIPT3D}}": script3d,
         "{{BENCHP}}": benchp, "{{SCRIPTP}}": scriptp, "{{STATUS}}": status,
         "{{BENCHPRISM}}": benchpr, "{{SCRIPTPRISM}}": scriptpr, "{{RELATED}}": RELATED,
+        "{{BENCHSWARM}}": benchsw, "{{SCRIPTSWARM}}": scriptsw, "/*SWARMCSS*/": SWARM_CSS,
         "{{ROWS}}": "".join(rows), "{{FIGS}}": "".join(figs) + regen_fig + rot_fig,
         "{{DEFAULT}}": "regenerating" if "regenerating" in runs else next(iter(runs)),
     }.items():
@@ -1019,6 +1022,7 @@ tbody tr:last-child > * { border-bottom: 0 }
 [hidden] { display: none !important }
 .pfigs { display: grid; gap: 18px }
 .ptabs { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+/*SWARMCSS*/
 .ptabs button { border-bottom: 0 !important }
 .h3dhead { display: grid; gap: 8px }
 .h3dhead h2 { margin: 0 }
@@ -1039,6 +1043,7 @@ table.kv td { font-weight: 600 }
     <p class="lede">Every pixel below runs the same 8,336-parameter rule, sees only its 3×3 neighbours, and fires at random half the time. Starting from a single live cell, the rule grows the Noto lizard emoji. This is a CPU PyTorch reproduction of <a href="https://distill.pub/2020/growing-ca/">Mordvintsev et al., Distill 2020</a>, running live in your browser, plus three extensions: the same cell trained on an animated loop, so the lizard swims; that swim with one more spatial dimension; and the cell taken off the grid entirely, as free particles that only sense and push their neighbours.</p>
   </header>
   {{STATUS}}
+  {{BENCHSWARM}}
 
   <section class="bench" id="grid" aria-label="Live automaton">
     <div class="dish">
@@ -1192,6 +1197,7 @@ requestAnimationFrame(frame);
 {{SCRIPT3D}}
 {{SCRIPTP}}
 {{SCRIPTPRISM}}
+{{SCRIPTSWARM}}
 """
 
 if __name__ == "__main__":
