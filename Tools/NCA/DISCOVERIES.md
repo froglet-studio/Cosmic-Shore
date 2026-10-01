@@ -31,6 +31,12 @@ alone costs 2.3–4.5. The loss comes from SORTING. Element placement adds 4–1
 exactly with how GLOBAL each family's sorting mechanism is: global slot assignment (field) <
 per-class grid deficits (hgrid) < per-group anchors (compact) ≈ none (G2, evo).
 
+## Update 18:20 UTC — first local tier-1 pass, and two negatives
+
+- **hgrid2 (Grid morphogen 2: coarse class-deficit grid + a FINE per-class morphogen + continuous target + feed-forward) passes tier 1 under the loss-8 bar**: own-plan losses 6.1 / 4.8 / 5.5 / 7.2 at seed 7 (3/3 samples each), 6 of 15 feasible transitions. Held-out: seed 23 own 4/4 (standard switches 2/4); seed 41 own 2/4 (whale and dragonfly at 1/3 samples - at the bar's edge). The first approach in which every tadpole reads only fields at its own position and the body is accurate. It is the family the lead judged "accurate and organic"; its feel metrics are in results/hgrid2/feel.json.
+- **Specialist ensemble** (`ensemble_swarm.py`: run the single-plan specialist the majority names): own 10.8 / 7.0 / 11.1 / 10.7 - the best LEARNED own-plan numbers, but every switch fails (a specialist cannot regrow from a foreign body).
+- **Task-vector hybrids of the specialists are a clear negative** (results/hybrid/NOTE.md): every blend is worse than its parts (25-82).
+
 ## The lead's feel review (2026-10-01, watching the gallery) — a selection signal, not a score
 
 - **Evolved rule (evo):** "a beautifully organic feel. It always feels like a swarm, but it is interesting to watch it try to be more." A great candidate for another scene test once it reaches the next level of scoring.

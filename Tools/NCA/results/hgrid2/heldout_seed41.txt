@@ -1,0 +1,2 @@
+tier 1 own plans: 2/4  rates [0.33, 1.0, 1.0, 0.33]  (88s)
+tier 2 standard switches: 2/4  (220s)
