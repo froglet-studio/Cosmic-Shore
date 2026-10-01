@@ -78,6 +78,7 @@ def main():
     ap.add_argument("--lr", type=float, default=5e-4)
     ap.add_argument("--snap", type=int, default=100)
     ap.add_argument("--eval-every", type=int, default=200)
+    ap.add_argument("--w-count", type=float, default=0.0, help="LossCfg.w_count (headcount term; off in G2)")
     ap.add_argument("--set", nargs="*", default=[], help="TrainCfg overrides key=value")
     a = ap.parse_args()
     torch.set_num_threads(4)
@@ -93,7 +94,7 @@ def main():
     _Rule.NAN_DUMP = ""
     sn.SwarmRule = _Rule
     os.makedirs(a.run, exist_ok=True)
-    json.dump(dict(morph=a.morph, init=a.init), open(os.path.join(a.run, "posinfo.json"), "w"))
+    json.dump(dict(morph=a.morph, init=a.init, w_count=a.w_count), open(os.path.join(a.run, "posinfo.json"), "w"))
     evlog = open(os.path.join(a.run, "evals.jsonl"), "a")
 
     def on_snapshot(step, rule):
@@ -107,7 +108,7 @@ def main():
         evlog.write(json.dumps(dict(step=step, own=ev)) + "\n"); evlog.flush()
         print(f"EVAL {step}: {summarise(ev)}  ({time.time()-t0:.0f}s)", flush=True)
 
-    sn.train(cfg, sn.World(), sn.LossCfg(), resume=True, on_snapshot=on_snapshot)
+    sn.train(cfg, sn.World(), sn.LossCfg(w_count=a.w_count), resume=True, on_snapshot=on_snapshot)
 
 
 if __name__ == "__main__":
