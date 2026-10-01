@@ -1,28 +1,28 @@
 {
  "cross": {
   "mass": {
-   "mass": 1.77,
-   "space": 69.08,
-   "charge": 55.22,
-   "time": 76.59
+   "mass": 2.45,
+   "space": 66.83,
+   "charge": 53.43,
+   "time": 74.07
   },
   "space": {
-   "mass": 68.3,
-   "space": 2.57,
-   "charge": 53.02,
-   "time": 63.0
+   "mass": 68.22,
+   "space": 2.07,
+   "charge": 52.86,
+   "time": 64.26
   },
   "charge": {
-   "mass": 54.79,
-   "space": 55.87,
-   "charge": 1.79,
-   "time": 70.0
+   "mass": 55.13,
+   "space": 55.5,
+   "charge": 2.0,
+   "time": 70.17
   },
   "time": {
-   "mass": 82.68,
-   "space": 78.18,
-   "charge": 77.67,
-   "time": 2.46
+   "mass": 85.41,
+   "space": 78.93,
+   "charge": 78.73,
+   "time": 2.96
   }
  },
  "census": {
@@ -48,7 +48,7 @@
     0
    ],
    "deaths": 0,
-   "mutants": 1
+   "mutants": 0
   },
   "space": {
    "n": 88,
@@ -96,7 +96,7 @@
     0
    ],
    "deaths": 0,
-   "mutants": 0
+   "mutants": 1
   },
   "time": {
    "n": 76,
@@ -120,34 +120,34 @@
     44
    ],
    "deaths": 0,
-   "mutants": 0
+   "mutants": 1
   }
  },
  "steps": 240,
  "cross_geo": {
   "mass": {
-   "mass": 1.38,
-   "space": 21.18,
-   "charge": 12.43,
-   "time": 25.57
+   "mass": 1.89,
+   "space": 18.74,
+   "charge": 9.96,
+   "time": 23.23
   },
   "space": {
-   "mass": 19.92,
-   "space": 2.48,
-   "charge": 11.26,
-   "time": 20.14
+   "mass": 19.87,
+   "space": 2.02,
+   "charge": 11.33,
+   "time": 21.31
   },
   "charge": {
-   "mass": 11.89,
-   "space": 13.91,
-   "charge": 1.45,
-   "time": 19.38
+   "mass": 12.1,
+   "space": 13.72,
+   "charge": 1.46,
+   "time": 19.32
   },
   "time": {
-   "mass": 22.65,
-   "space": 23.84,
-   "charge": 17.95,
-   "time": 2.42
+   "mass": 25.53,
+   "space": 24.21,
+   "charge": 19.19,
+   "time": 2.26
   }
  },
  "switch": {
@@ -155,10 +155,10 @@
    "to": "space",
    "done": true,
    "cross": {
-    "mass": 69.06,
-    "space": 2.6,
-    "charge": 52.93,
-    "time": 63.98
+    "mass": 68.53,
+    "space": 2.64,
+    "charge": 53.42,
+    "time": 63.62
    },
    "majority": "space",
    "census": {
@@ -183,17 +183,17 @@
      0
     ],
     "deaths": 0,
-    "mutants": 1
+    "mutants": 0
    }
   },
   "space": {
    "to": "charge",
    "done": true,
    "cross": {
-    "mass": 55.0,
-    "space": 55.55,
-    "charge": 1.61,
-    "time": 69.99
+    "mass": 55.12,
+    "space": 55.94,
+    "charge": 2.02,
+    "time": 69.72
    },
    "majority": "charge",
    "census": {
@@ -218,17 +218,17 @@
      0
     ],
     "deaths": 0,
-    "mutants": 0
+    "mutants": 1
    }
   },
   "charge": {
    "to": "time",
    "done": true,
    "cross": {
-    "mass": 75.58,
-    "space": 65.05,
-    "charge": 68.54,
-    "time": 7.71
+    "mass": 77.05,
+    "space": 67.67,
+    "charge": 70.9,
+    "time": 7.57
    },
    "majority": "time",
    "census": {
@@ -253,17 +253,17 @@
      0
     ],
     "deaths": 0,
-    "mutants": 0
+    "mutants": 1
    }
   },
   "time": {
    "to": "mass",
    "done": true,
    "cross": {
-    "mass": 68.38,
-    "space": 3.24,
-    "charge": 53.11,
-    "time": 63.39
+    "mass": 69.9,
+    "space": 4.23,
+    "charge": 54.49,
+    "time": 63.59
    },
    "majority": "space",
    "census": {
@@ -288,7 +288,7 @@
      2
     ],
     "deaths": 0,
-    "mutants": 0
+    "mutants": 2
    }
   }
  },
@@ -323,16 +323,16 @@
    "time->mass": 1.0,
    "mass->charge": 1.0,
    "mass->time": 1.0,
-   "space->time": 0.67,
+   "space->time": 1.0,
    "charge->space": 1.0,
-   "time->space": 1.0
+   "time->space": 0.67
   }
  },
  "tests_passed": 7,
- "tests_close": 88.89,
+ "tests_close": 91.61,
  "meta": {
   "device": "cpu",
-  "step": 700,
+  "step": 800,
   "tag": "posinfo2",
   "note": "PosInfo2Rule: posinfo (G2 + body-frame positional info, BPTT) fine-tuned with switches; designed molting homeostat (homeo 4); learned death masked (lossless)."
  },

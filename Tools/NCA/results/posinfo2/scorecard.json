@@ -10,32 +10,15 @@
     "time->charge"
    ],
    "own": {
-    "mass": 2.11,
-    "space": 2.85,
-    "charge": 1.89,
-    "time": 2.71
+    "mass": 1.93,
+    "space": 2.25,
+    "charge": 2.32,
+    "time": 2.69
    },
    "own_passed": 4,
-   "seconds": 54.5
+   "seconds": 57.3
   },
   "23": {
-   "passed": 12,
-   "feasible": 13,
-   "na": [
-    "space->mass",
-    "charge->mass",
-    "time->charge"
-   ],
-   "own": {
-    "mass": 2.08,
-    "space": 2.81,
-    "charge": 1.86,
-    "time": 3.01
-   },
-   "own_passed": 4,
-   "seconds": 52.6
-  },
-  "41": {
    "passed": 13,
    "feasible": 13,
    "na": [
@@ -44,13 +27,30 @@
     "time->charge"
    ],
    "own": {
-    "mass": 2.41,
-    "space": 2.99,
-    "charge": 2.13,
-    "time": 2.38
+    "mass": 1.65,
+    "space": 2.61,
+    "charge": 1.93,
+    "time": 2.75
    },
    "own_passed": 4,
-   "seconds": 54.1
+   "seconds": 55.1
+  },
+  "41": {
+   "passed": 12,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "own": {
+    "mass": 1.8,
+    "space": 2.61,
+    "charge": 1.95,
+    "time": 2.42
+   },
+   "own_passed": 4,
+   "seconds": 55.7
   }
  },
  "seeds": [
@@ -62,60 +62,60 @@
   "per_plan": {
    "mass": {
     "grown_n": 192,
-    "ms_per_step_grown": 5.506,
-    "ms_per_step_grow": 5.388,
+    "ms_per_step_grown": 5.299,
+    "ms_per_step_grow": 6.047,
     "deaths": 0,
-    "tadpole_steps": 71526
+    "tadpole_steps": 71388
    },
    "space": {
     "grown_n": 88,
-    "ms_per_step_grown": 4.016,
-    "ms_per_step_grow": 4.094,
+    "ms_per_step_grown": 3.765,
+    "ms_per_step_grow": 4.427,
     "deaths": 0,
-    "tadpole_steps": 64863
+    "tadpole_steps": 64981
    },
    "charge": {
     "grown_n": 179,
-    "ms_per_step_grown": 5.16,
-    "ms_per_step_grow": 5.152,
+    "ms_per_step_grown": 4.785,
+    "ms_per_step_grow": 5.046,
     "deaths": 0,
-    "tadpole_steps": 69051
+    "tadpole_steps": 65891
    },
    "time": {
     "grown_n": 76,
-    "ms_per_step_grown": 3.875,
-    "ms_per_step_grow": 4.362,
+    "ms_per_step_grown": 4.302,
+    "ms_per_step_grow": 4.425,
     "deaths": 0,
-    "tadpole_steps": 60743
+    "tadpole_steps": 61557
    }
   },
   "deaths": 0,
   "deaths_per_1k_tadpole_steps": 0.0,
   "lossless": true,
-  "ms_per_step": 4.639,
+  "ms_per_step": 4.538,
   "grown_n": 134
  },
  "emergent": {
-  "in_band": true,
+  "in_band": false,
   "checks": {
    "jerk_rel": true,
    "osc": true,
-   "stuck": true,
+   "stuck": false,
    "planar": true
   },
   "mean": {
-   "speed": 0.105,
-   "jerk": 0.216,
-   "jerk_rel": 2.058,
-   "planar_frac": 0.456,
-   "flat_mean": 0.135,
-   "coherence": 0.2,
-   "jitter": 2.746,
-   "phase": 0.482,
-   "stuck": 0.005,
+   "speed": 0.097,
+   "jerk": 0.201,
+   "jerk_rel": 2.084,
+   "planar_frac": 0.495,
+   "flat_mean": 0.13,
+   "coherence": 0.207,
+   "jitter": 2.718,
+   "phase": 0.402,
+   "stuck": 0.022,
    "osc": 0.035
   },
-  "planar_excess": 0.025
+  "planar_excess": 0.131
  },
- "headline": "accurate 0.92 worst seed | lossless True (0.0/1k) | 4.639 ms/step @134 | organic True | mixed"
+ "headline": "accurate 0.92 worst seed | lossless True (0.0/1k) | 4.538 ms/step @134 | organic False | mixed"
 }
