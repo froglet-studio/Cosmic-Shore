@@ -496,6 +496,42 @@ a `NullReferenceException` from `SwarmFauna`/`SwarmTadpoleFauna` · a morph that
 after the kills. Record frame cost either way, and the cell's live volume after ~5 min (the volume
 ladder is modelled, not measured — `Docs/SWARM_FAUNA.md` §4).
 
+### QA-SWARM-GRID ⬜ — the grid swarm (second swarm species) has never been opened
+
+**Source:** branch `cece/swarm-fauna-game` (authored headless; never compiled in Unity). Full
+reference: `Docs/SWARM_FAUNA.md` §8, exact steps §5.1. **Why it matters:** a second simulation
+core (`SwarmGridCore`, the research's hgrid2 grid morphogen) now drives 16 of the Swarm cell's 24
+swarms (the inner whales and outer pufferfish); the middle dragonflies stay on the field core so
+the two can be compared in one flight. Headless proof: the core compiles, runs, and scores within
+hgrid2's own range under the research's unchanged scorer; nothing about Unity is proven. Run
+`QA-SWARM-FAUNA` first (it covers import, the Cell Selector and the shared glue).
+
+1. Let Unity import; confirm no compile errors naming `SwarmGridCore`, `ISwarmCore`, or
+   `SwarmFauna`. Select `Assets/_SO_Assets/Swarm Fauna/SwarmGridFaunaConfig.asset`: **Model = Grid**
+   and the Grid model fields are populated; `Assets/_Prefabs/FloraAndFauna/SwarmGridFauna.prefab`'s
+   `config` points at it.
+2. Enable the **Ecology** log channel. Enter the Swarm cell (Cell Selector → Swarm). Check the
+   hatch lines: whales and pufferfish say `(Grid)`, dragonflies `(Field)`.
+3. Fly inward from the membrane and park beside a grid pufferfish, then a field dragonfly (past
+   ~840 u from the centre), then a grid whale (past ~600 u). 20–30 s each.
+4. Morph a grid swarm: kill its majority in a burst (a pufferfish ~100 Charge; or wait until one
+   becomes something smaller). Then morph a field dragonfly (~36 Time).
+5. Hover still beside a grazing grid whale for 30 s.
+6. Profiler: with the cell grown, record `SwarmFauna.Update` per frame and total frame time; note
+   how many swarms are grown.
+
+**PASS:** no compile errors; the grid swarms grow from a knot into recognisable creatures (a whale
+reads as a whale at gameplay distance) and visibly JOSTLE inside (members trading places, interior
+shuffling) where the field dragonfly sits crisper; a grid morph commits on the tipping kill and
+re-forms by members swimming to new places (no molting, no flicker back within 3 s); a grazing grid
+body does not spin while it hovers (step 5); no exceptions. Record the frame cost, and the lead's
+verdict on which model reads as more alive.
+**FAIL:** any compile error · a grid swarm that stays a formless cloud after a minute of feeding ·
+a grid swarm whose body rotates continuously while it grazes · a morph that flips back and forth ·
+a `NullReferenceException` from `SwarmGridCore`/`SwarmFauna` · grid tadpoles popping in or vanishing
+(they share the field swarm's bloom and wither — any pop is a glue bug) · a frame-time cost that
+makes the cell unplayable (record it; the dial is `SWARMS_PER_BAND` in `author_swarm_fauna.py`).
+
 ### QA-PALETTE-SHIELDED ⬜ — the four prism tiers across all three domains
 **Source:** PRs #644, #705 (danger prisms now paint on the domain's **shielded base
 face**), #707 (gold's shielded prism brought into the pastel family; the danger tier

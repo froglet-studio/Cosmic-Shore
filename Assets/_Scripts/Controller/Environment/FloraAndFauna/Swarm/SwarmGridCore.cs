@@ -131,6 +131,11 @@ namespace CosmicShore.Gameplay
         readonly Random _rng;
         readonly int _g3, _maxN;
         int _chg = -1000000000, _layHoldUntil;
+        // per-step scratch (Step allocates nothing)
+        readonly float[] _wanted = new float[NCLS], _have = new float[NCLS], _rel = new float[NCLS], _bestRel = new float[3];
+        readonly int[] _cnt = new int[4], _dcnt = new int[3], _bestE = new int[3];
+        readonly List<int> _parents = new();
+        int[] _childE;
         // grids
         readonly float[] _dd, _a, _tmp, _def;   // 13 x G^3 (12 for _a/_tmp)
         // per-member scratch
@@ -165,7 +170,7 @@ namespace CosmicShore.Gameplay
             _live0 = new bool[Cap]; _cls = new int[Cap];
             _maxN = 1; foreach (var p in plansByElement) _maxN = Math.Max(_maxN, p.N);
             _tp = new Vector3[_maxN]; _tv = new Vector3[_maxN]; _tc = new int[_maxN]; _liveIx = new int[Cap];
-            _sorted = new int[Cap]; _cellOf = new int[Cap]; _push = new Vector3[Cap];
+            _sorted = new int[Cap]; _cellOf = new int[Cap]; _push = new Vector3[Cap]; _childE = new int[Cap];
             for (int i = 0; i < Cap; i++) Facing[i] = Vector3.UnitZ;
         }
 
@@ -400,7 +405,7 @@ namespace CosmicShore.Gameplay
                 Splat(_a, _cls[i], GridCoord(Pos[i], centre, swell), 1f);
             }
             Blur(_a, NCLS);
-            var wanted = new float[NCLS];
+            var wanted = _wanted;
             int ot = 12 * _g3;
             Array.Clear(_def, ot, _g3);
             Array.Clear(_dd, ot, _g3);
@@ -417,7 +422,7 @@ namespace CosmicShore.Gameplay
             }
 
             // ── per tadpole: climb the deficits
-            var have = new float[NCLS];
+            var have = _have; Array.Clear(have, 0, NCLS);
             Vector3 sumV = Vector3.Zero;
             for (int i = 0; i < Cap; i++)
             {
@@ -450,7 +455,7 @@ namespace CosmicShore.Gameplay
                 Vector3 flee = Vector3.Zero, x = Pos[i];
                 if (preds.Length > 0 || Startle[i] > 1e-3f)
                 {
-                    ForNeighbours(x, C.RelayR, i, j => { relay = MathF.Max(relay, Startle[j]); });
+                    relay = MaxStartleNear(x, C.RelayR, i);
                     for (int p = 0; p < preds.Length; p++) flee += FleeFrom(preds[p], x, Elem[i], ref st);
                     st = MathF.Max(st, relay * C.Relay);
                 }
@@ -542,7 +547,7 @@ namespace CosmicShore.Gameplay
 
         void DecidePlan()
         {
-            var cnt = new int[4]; var dcnt = new int[3]; int n = 0;
+            var cnt = _cnt; var dcnt = _dcnt; Array.Clear(cnt, 0, 4); Array.Clear(dcnt, 0, 3); int n = 0;
             for (int i = 0; i < Cap; i++) if (_live0[i]) { cnt[Elem[i]]++; dcnt[Dom[i]]++; n++; }
             int maj = 0; for (int e = 1; e < 4; e++) if (cnt[e] > cnt[maj]) maj = e;
             int cur = PlanIx, next = cur;
@@ -895,19 +900,22 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < Cap; i++) if (member[i]) { int g = _cellOf[i]; _sorted[_cellStart[g] + _fill[g]++] = i; }
         }
 
-        void ForNeighbours(Vector3 x, float r, int self, Action<int> f)
+        /// <summary>The largest startle among live members within r of x (the startle relay). A plain
+        /// loop, not a callback: this runs per member per step and must not allocate.</summary>
+        float MaxStartleNear(Vector3 x, float r, int self)
         {
             CellKey(x, out int cx, out int cy, out int cz);
-            float r2 = r * r;
+            float r2 = r * r, best = 0f;
             for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++)
             {
                 int g = Hash(cx + dx, cy + dy, cz + dz);
                 for (int q = _cellStart[g], e = q + _cellCount[g]; q < e; q++)
                 {
                     int j = _sorted[q]; if (j == self) continue;
-                    if (Vector3.DistanceSquared(x, Pos[j]) < r2) f(j);
+                    if (Vector3.DistanceSquared(x, Pos[j]) < r2 && Startle[j] > best) best = Startle[j];
                 }
             }
+            return best;
         }
 
         /// <summary>swarm_nca's designed collision over every ACTIVE member (eggs included), on the
@@ -983,15 +991,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void Lay(float[] have, float[] want, Vector3 centre, float swell)
         {
-            var rel = new float[NCLS];
+            var rel = _rel;
             for (int c = 0; c < NCLS; c++) rel[c] = Math.Clamp((want[c] - have[c]) / MathF.Max(have[c], 1f), 0f, 1f);
-            var bestRel = new float[3]; var bestE = new int[3];
+            var bestRel = _bestRel; var bestE = _bestE;
             for (int d = 0; d < 3; d++)
             {
                 bestRel[d] = rel[d]; bestE[d] = 0;
                 for (int e = 1; e < 4; e++) if (rel[e * 3 + d] > bestRel[d]) { bestRel[d] = rel[e * 3 + d]; bestE[d] = e; }
             }
-            var parents = new List<int>(); var childE = new Dictionary<int, int>();
+            var parents = _parents; parents.Clear(); var childE = _childE;
             for (int i = 0; i < Cap; i++)
             {
                 if (!_live0[i] || !Active[i]) continue;
@@ -1002,7 +1010,7 @@ namespace CosmicShore.Gameplay
                 bool cross = (float)_rng.NextDouble() < C.PCross;
                 if (!ok) continue;
                 parents.Add(i);
-                childE[i] = own <= 0f || (cross && alt > own) ? bestE[Dom[i]] : Elem[i];
+                childE[i] = own <= 0f || (cross && alt > own) ? bestE[Dom[i]] : Elem[i];   // indexed by member
             }
             if (parents.Count == 0) return;
             for (int q = parents.Count - 1; q > 0; q--) { int j = _rng.Next(q + 1); (parents[q], parents[j]) = (parents[j], parents[q]); }
