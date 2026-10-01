@@ -1,0 +1,37 @@
+{
+ "hgrid2 (starve, no cache)": {
+  "mass": 22.92,
+  "space": 20.99,
+  "charge": 26.78,
+  "time": 20.47,
+  "mean": 22.79
+ },
+ "combo G16 no cache": {
+  "mass": 25.45,
+  "space": 24.84,
+  "charge": 27.66,
+  "time": 19.65,
+  "mean": 24.4
+ },
+ "combo G16": {
+  "mass": 13.61,
+  "space": 16.06,
+  "charge": 13.4,
+  "time": 11.49,
+  "mean": 13.64
+ },
+ "combo G12": {
+  "mass": 17.65,
+  "space": 12.21,
+  "charge": 14.19,
+  "time": 11.77,
+  "mean": 13.95
+ },
+ "combo G8": {
+  "mass": 13.97,
+  "space": 12.81,
+  "charge": 11.83,
+  "time": 9.11,
+  "mean": 11.93
+ }
+}

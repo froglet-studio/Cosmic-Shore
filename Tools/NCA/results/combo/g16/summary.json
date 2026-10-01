@@ -1,0 +1,359 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 2.15,
+   "space": 69.24,
+   "charge": 55.79,
+   "time": 75.06
+  },
+  "space": {
+   "mass": 71.78,
+   "space": 1.76,
+   "charge": 57.79,
+   "time": 70.9
+  },
+  "charge": {
+   "mass": 61.81,
+   "space": 57.83,
+   "charge": 2.95,
+   "time": 76.58
+  },
+  "time": {
+   "mass": 85.56,
+   "space": 79.16,
+   "charge": 80.05,
+   "time": 3.15
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 192,
+   "target_n": 192,
+   "elements": [
+    19,
+    125,
+    26,
+    22
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    102,
+    90,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 88,
+   "target_n": 88,
+   "elements": [
+    25,
+    3,
+    53,
+    7
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    39,
+    49,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 179,
+   "target_n": 179,
+   "elements": [
+    131,
+    3,
+    16,
+    29
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    92,
+    87,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 77,
+   "target_n": 76,
+   "elements": [
+    3,
+    3,
+    18,
+    53
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    24,
+    7,
+    46
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 1.01,
+   "space": 21.48,
+   "charge": 12.18,
+   "time": 24.82
+  },
+  "space": {
+   "mass": 24.83,
+   "space": 0.89,
+   "charge": 16.57,
+   "time": 27.5
+  },
+  "charge": {
+   "mass": 19.62,
+   "space": 17.19,
+   "charge": 1.72,
+   "time": 25.37
+  },
+  "time": {
+   "mass": 25.05,
+   "space": 23.75,
+   "charge": 19.65,
+   "time": 1.98
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 70.29,
+    "space": 4.28,
+    "charge": 59.12,
+    "time": 70.44
+   },
+   "majority": "space",
+   "census": {
+    "n": 88,
+    "target_n": 88,
+    "elements": [
+     24,
+     6,
+     52,
+     6
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     38,
+     50,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 60.68,
+    "space": 59.06,
+    "charge": 3.17,
+    "time": 77.0
+   },
+   "majority": "charge",
+   "census": {
+    "n": 179,
+    "target_n": 179,
+    "elements": [
+     129,
+     5,
+     16,
+     29
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     87,
+     92,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 72.3,
+    "space": 63.77,
+    "charge": 64.43,
+    "time": 7.7
+   },
+   "majority": "time",
+   "census": {
+    "n": 78,
+    "target_n": 76,
+    "elements": [
+     5,
+     3,
+     18,
+     52
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     33,
+     45,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 72.71,
+    "space": 2.96,
+    "charge": 60.3,
+    "time": 70.7
+   },
+   "majority": "space",
+   "census": {
+    "n": 88,
+    "target_n": 192,
+    "elements": [
+     25,
+     3,
+     54,
+     6
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     55,
+     30,
+     3
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "tests_passed": 7,
+ "close": 97.87,
+ "sec": 39.8,
+ "meta": {
+  "kind": "combo",
+  "cfg": {
+   "G": 16,
+   "cell": 6.0,
+   "quant": 1,
+   "k_class": 10.0,
+   "k_total": 1.0,
+   "k_home": 0.15,
+   "persist": 0.6,
+   "noise": 0.05,
+   "p_lay": 0.1,
+   "p_cross": 0.25,
+   "hatch_steps": 2,
+   "ease": 0.3,
+   "starve": 1,
+   "starve_rate": 0.04,
+   "starve_tol": 0.0,
+   "starve_local": 0.0,
+   "hyst": 0.0,
+   "animate": 1,
+   "flow": 1,
+   "k_flow": 0.0,
+   "period": 8,
+   "k_fine": 2.0,
+   "k_fine_tot": 0.0,
+   "sigma_rel": 1.2,
+   "sigma": 2.5,
+   "settle": 1,
+   "periods": "time:16",
+   "fine_look": 0,
+   "vel_pre": 0.0,
+   "interp": 1,
+   "stagger": 1,
+   "k_swap": 0.0,
+   "swap_r": 4.0,
+   "swap_th": 0.1,
+   "k_mig": 1.0,
+   "mig_th": 0.3,
+   "mig_L": 40.0,
+   "elem_floor": 1,
+   "small_slack": 2.0,
+   "starve_slack": 0.0,
+   "lock": 60,
+   "dmap_low": 1,
+   "dmap_space": 0,
+   "lay_major": 0.0,
+   "k_ff": 1.5,
+   "molt": 1,
+   "molt_rate": 0.04,
+   "molt_guard": 1,
+   "transfer": 0,
+   "ratio": 2,
+   "transfer2": 1,
+   "grow_scale": 0.0,
+   "orphan_proxy": 1,
+   "wscale_max": 1.0,
+   "lay_cap": 1.0,
+   "cache": 1
+  }
+ }
+}

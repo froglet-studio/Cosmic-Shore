@@ -1,39 +1,39 @@
 {
  "cross": {
   "mass": {
-   "mass": 18.53,
-   "space": 75.14,
-   "charge": 68.34,
-   "time": 82.25
+   "mass": 3.14,
+   "space": 68.59,
+   "charge": 53.69,
+   "time": 75.38
   },
   "space": {
-   "mass": 66.05,
-   "space": 13.43,
-   "charge": 53.53,
-   "time": 72.55
+   "mass": 75.37,
+   "space": 5.16,
+   "charge": 61.23,
+   "time": 71.13
   },
   "charge": {
-   "mass": 55.59,
-   "space": 57.23,
-   "charge": 15.1,
-   "time": 69.85
+   "mass": 56.7,
+   "space": 55.28,
+   "charge": 2.0,
+   "time": 70.39
   },
   "time": {
-   "mass": 83.81,
-   "space": 86.92,
-   "charge": 75.7,
-   "time": 28.19
+   "mass": 83.41,
+   "space": 74.26,
+   "charge": 75.25,
+   "time": 5.8
   }
  },
  "census": {
   "mass": {
-   "n": 280,
+   "n": 185,
    "target_n": 192,
    "elements": [
-    8,
-    233,
-    27,
-    12
+    18,
+    122,
+    24,
+    21
    ],
    "target_elements": [
     19,
@@ -43,21 +43,21 @@
    ],
    "majority": "Mass",
    "domains": [
-    127,
-    153,
+    101,
+    84,
     0
    ],
    "deaths": 0,
    "mutants": 0
   },
   "space": {
-   "n": 280,
+   "n": 85,
    "target_n": 88,
    "elements": [
-    80,
-    15,
-    172,
-    13
+    22,
+    2,
+    54,
+    7
    ],
    "target_elements": [
     25,
@@ -67,21 +67,21 @@
    ],
    "majority": "Space",
    "domains": [
-    140,
-    140,
+    37,
+    48,
     0
    ],
    "deaths": 0,
-   "mutants": 1
+   "mutants": 0
   },
   "charge": {
-   "n": 280,
+   "n": 172,
    "target_n": 179,
    "elements": [
-    204,
-    14,
-    13,
-    49
+    125,
+    1,
+    16,
+    30
    ],
    "target_elements": [
     131,
@@ -91,21 +91,21 @@
    ],
    "majority": "Charge",
    "domains": [
-    151,
-    129,
+    87,
+    85,
     0
    ],
    "deaths": 0,
-   "mutants": 1
+   "mutants": 0
   },
   "time": {
-   "n": 280,
+   "n": 73,
    "target_n": 76,
    "elements": [
-    8,
-    13,
-    11,
-    248
+    2,
+    3,
+    18,
+    50
    ],
    "target_elements": [
     2,
@@ -115,39 +115,39 @@
    ],
    "majority": "Time",
    "domains": [
-    88,
-    69,
-    123
+    43,
+    4,
+    26
    ],
    "deaths": 0,
-   "mutants": 3
+   "mutants": 0
   }
  },
  "steps": 240,
  "cross_geo": {
   "mass": {
-   "mass": 3.28,
-   "space": 21.79,
-   "charge": 13.16,
-   "time": 25.46
+   "mass": 2.09,
+   "space": 19.6,
+   "charge": 10.85,
+   "time": 23.92
   },
   "space": {
-   "mass": 21.2,
-   "space": 5.27,
-   "charge": 12.8,
-   "time": 25.71
+   "mass": 26.35,
+   "space": 4.17,
+   "charge": 18.31,
+   "time": 27.81
   },
   "charge": {
-   "mass": 8.85,
-   "space": 16.1,
-   "charge": 5.03,
-   "time": 19.68
+   "mass": 13.52,
+   "space": 13.07,
+   "charge": 1.98,
+   "time": 20.19
   },
   "time": {
-   "mass": 25.16,
-   "space": 24.5,
-   "charge": 17.7,
-   "time": 7.19
+   "mass": 26.11,
+   "space": 22.26,
+   "charge": 17.16,
+   "time": 4.85
   }
  },
  "switch": {
@@ -155,20 +155,20 @@
    "to": "space",
    "done": true,
    "cross": {
-    "mass": 54.04,
-    "space": 30.46,
-    "charge": 59.04,
-    "time": 75.49
+    "mass": 73.16,
+    "space": 6.32,
+    "charge": 60.9,
+    "time": 70.8
    },
    "majority": "space",
    "census": {
-    "n": 280,
+    "n": 85,
     "target_n": 88,
     "elements": [
-     72,
-     25,
-     169,
-     14
+     23,
+     2,
+     53,
+     7
     ],
     "target_elements": [
      25,
@@ -178,8 +178,8 @@
     ],
     "majority": "Space",
     "domains": [
-     156,
-     124,
+     40,
+     45,
      0
     ],
     "deaths": 0,
@@ -190,20 +190,20 @@
    "to": "charge",
    "done": true,
    "cross": {
-    "mass": 53.59,
-    "space": 40.84,
-    "charge": 22.2,
-    "time": 73.41
+    "mass": 55.19,
+    "space": 55.43,
+    "charge": 1.8,
+    "time": 70.65
    },
    "majority": "charge",
    "census": {
-    "n": 280,
+    "n": 172,
     "target_n": 179,
     "elements": [
-     179,
-     19,
-     59,
-     23
+     125,
+     1,
+     16,
+     30
     ],
     "target_elements": [
      131,
@@ -213,32 +213,32 @@
     ],
     "majority": "Charge",
     "domains": [
-     124,
-     156,
+     84,
+     88,
      0
     ],
     "deaths": 0,
-    "mutants": 3
+    "mutants": 0
    }
   },
   "charge": {
    "to": "time",
    "done": true,
    "cross": {
-    "mass": 64.29,
-    "space": 68.72,
-    "charge": 54.22,
-    "time": 29.78
+    "mass": 75.38,
+    "space": 67.16,
+    "charge": 67.04,
+    "time": 8.44
    },
    "majority": "time",
    "census": {
-    "n": 280,
+    "n": 75,
     "target_n": 76,
     "elements": [
-     36,
-     20,
-     14,
-     210
+     3,
+     3,
+     18,
+     51
     ],
     "target_elements": [
      2,
@@ -248,32 +248,32 @@
     ],
     "majority": "Time",
     "domains": [
-     125,
-     155,
+     40,
+     35,
      0
     ],
     "deaths": 0,
-    "mutants": 1
+    "mutants": 0
    }
   },
   "time": {
    "to": "mass",
    "done": true,
    "cross": {
-    "mass": 24.91,
-    "space": 74.33,
-    "charge": 69.11,
-    "time": 73.67
+    "mass": 78.81,
+    "space": 10.52,
+    "charge": 65.46,
+    "time": 72.74
    },
-   "majority": "mass",
+   "majority": "space",
    "census": {
-    "n": 280,
+    "n": 85,
     "target_n": 192,
     "elements": [
-     16,
-     197,
-     41,
-     26
+     24,
+     2,
+     52,
+     7
     ],
     "target_elements": [
      19,
@@ -281,22 +281,21 @@
      25,
      22
     ],
-    "majority": "Mass",
+    "majority": "Space",
     "domains": [
-     154,
-     42,
-     84
+     27,
+     37,
+     21
     ],
     "deaths": 0,
-    "mutants": 3
+    "mutants": 0
    }
   }
  },
  "meta": {
-  "tag": "evo16",
-  "genome": "genome.npy",
-  "base": "results/swarm_coevo_g2/rule.pt",
-  "tests_passed": 8,
-  "note": "PRIMARY (gen-19 CMA mean): G2 rule + evolved behaviour genome; B1 lay homeostat, B2 egg choice, B6 regrowth on; B7 wound sensing and B8 headcount evolved OFF."
+  "tag": "evofate",
+  "params": "params.json",
+  "tests_passed": 6,
+  "note": "The evolved rule (G2 + evo genome) with a sticky FATE: newborns commit to an under-occupied positional-information well of their (element, region) type and a designed term steers them to it; composition designed (sort's homeostat + molting), learned death suppressed."
  }
 }

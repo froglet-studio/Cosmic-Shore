@@ -1,0 +1,121 @@
+{
+ "locality": "mixed",
+ "accurate": {
+  "7": {
+   "passed": 12,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "own": {
+    "mass": 2.95,
+    "space": 3.65,
+    "charge": 1.58,
+    "time": 6.28
+   },
+   "own_passed": 4,
+   "seconds": 117.8
+  },
+  "23": {
+   "passed": 11,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "own": {
+    "mass": 2.88,
+    "space": 3.85,
+    "charge": 1.44,
+    "time": 6.36
+   },
+   "own_passed": 4,
+   "seconds": 117.2
+  },
+  "41": {
+   "passed": 12,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "own": {
+    "mass": 2.79,
+    "space": 4.01,
+    "charge": 1.6,
+    "time": 5.88
+   },
+   "own_passed": 4,
+   "seconds": 117.0
+  }
+ },
+ "seeds": [
+  7,
+  23,
+  41
+ ],
+ "lossless": {
+  "per_plan": {
+   "mass": {
+    "grown_n": 181,
+    "ms_per_step_grown": 6.532,
+    "ms_per_step_grow": 6.471,
+    "deaths": 0,
+    "tadpole_steps": 64217
+   },
+   "space": {
+    "grown_n": 83,
+    "ms_per_step_grown": 5.051,
+    "ms_per_step_grow": 4.145,
+    "deaths": 0,
+    "tadpole_steps": 58931
+   },
+   "charge": {
+    "grown_n": 169,
+    "ms_per_step_grown": 6.58,
+    "ms_per_step_grow": 6.015,
+    "deaths": 0,
+    "tadpole_steps": 60272
+   },
+   "time": {
+    "grown_n": 72,
+    "ms_per_step_grown": 4.285,
+    "ms_per_step_grow": 4.269,
+    "deaths": 0,
+    "tadpole_steps": 53886
+   }
+  },
+  "deaths": 0,
+  "deaths_per_1k_tadpole_steps": 0.0,
+  "lossless": true,
+  "ms_per_step": 5.612,
+  "grown_n": 126
+ },
+ "emergent": {
+  "in_band": true,
+  "checks": {
+   "jerk_rel": true,
+   "osc": true,
+   "stuck": true,
+   "planar": true
+  },
+  "mean": {
+   "speed": 0.105,
+   "jerk": 0.256,
+   "jerk_rel": 2.435,
+   "planar_frac": 0.398,
+   "flat_mean": 0.143,
+   "coherence": 0.401,
+   "jitter": 2.574,
+   "phase": 0.067,
+   "stuck": 0.0,
+   "osc": 0.044
+  },
+  "planar_excess": 0.119
+ },
+ "headline": "accurate 0.85 worst seed | lossless True (0.0/1k) | 5.612 ms/step @126 | organic True | mixed"
+}

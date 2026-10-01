@@ -1,0 +1,51 @@
+{
+ "seeds": [
+  7700,
+  7701,
+  7702,
+  7703,
+  7704,
+  7705,
+  7706,
+  7707
+ ],
+ "strikes": 1,
+ "regrow": 360,
+ "nostrike": true,
+ "results": {
+  "results/evo16/genome.npy": {
+   "mass": {
+    "heal_mean": -1.0,
+    "heal_ge_half": 0.0,
+    "before": 18.16,
+    "cut": 18.16,
+    "rec": 20.43,
+    "n": 8
+   },
+   "space": {
+    "heal_mean": -1.0,
+    "heal_ge_half": 0.0,
+    "before": 14.78,
+    "cut": 14.78,
+    "rec": 24.83,
+    "n": 8
+   },
+   "charge": {
+    "heal_mean": -0.75,
+    "heal_ge_half": 0.12,
+    "before": 14.15,
+    "cut": 14.15,
+    "rec": 16.41,
+    "n": 8
+   },
+   "time": {
+    "heal_mean": -1.0,
+    "heal_ge_half": 0.0,
+    "before": 26.42,
+    "cut": 26.42,
+    "rec": 28.51,
+    "n": 8
+   }
+  }
+ }
+}

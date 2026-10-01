@@ -1,679 +1,151 @@
 {
  "published": {
   "own": {
-   "mass": 1.22,
-   "space": 2.29,
-   "charge": 0.74,
-   "time": 4.11
+   "mass": 1.35,
+   "space": 2.55,
+   "charge": 1.21,
+   "time": 4.57
   },
   "own_passed": 4.0,
-  "passed": 13.0,
+  "passed": 12.67,
   "feasible": 13.0,
-  "switch_mean_loss": 3.81,
+  "switch_mean_loss": 4.15,
   "runs": [
    {
     "mass": [
-     1.21,
+     1.34,
      true
     ],
     "mass->charge": [
-     0.6,
+     1.06,
      true
     ],
     "mass->space": [
-     1.73,
+     1.99,
      true
     ],
     "mass->time": [
-     5.72,
+     6.18,
      true
     ],
     "space": [
-     2.26,
+     2.53,
      true
     ],
     "space->charge": [
-     0.74,
-     true
-    ],
-    "space->time": [
-     7.81,
-     true
-    ],
-    "charge": [
-     0.88,
-     true
-    ],
-    "charge->space": [
-     1.92,
-     true
-    ],
-    "charge->time": [
-     6.84,
-     true
-    ],
-    "time": [
-     5.09,
-     true
-    ],
-    "time->mass": [
-     1.26,
-     true
-    ],
-    "time->space": [
-     6.86,
-     true
-    ]
-   },
-   {
-    "mass": [
      1.2,
      true
     ],
-    "mass->charge": [
-     0.68,
-     true
-    ],
-    "mass->space": [
-     3.09,
-     true
-    ],
-    "mass->time": [
-     5.98,
-     true
-    ],
-    "space": [
-     2.62,
-     true
-    ],
-    "space->charge": [
-     0.98,
-     true
-    ],
     "space->time": [
-     5.67,
-     true
-    ],
-    "charge": [
-     0.48,
-     true
-    ],
-    "charge->space": [
-     3.19,
-     true
-    ],
-    "charge->time": [
-     5.16,
-     true
-    ],
-    "time": [
-     2.93,
-     true
-    ],
-    "time->mass": [
-     1.69,
-     true
-    ],
-    "time->space": [
-     7.28,
-     true
-    ]
-   },
-   {
-    "mass": [
-     1.25,
-     true
-    ],
-    "mass->charge": [
-     0.59,
-     true
-    ],
-    "mass->space": [
-     3.05,
-     true
-    ],
-    "mass->time": [
-     6.98,
-     true
-    ],
-    "space": [
-     1.98,
-     true
-    ],
-    "space->charge": [
-     0.97,
-     true
-    ],
-    "space->time": [
-     6.37,
-     true
-    ],
-    "charge": [
-     0.87,
-     true
-    ],
-    "charge->space": [
-     2.92,
-     true
-    ],
-    "charge->time": [
-     6.83,
-     true
-    ],
-    "time": [
-     4.32,
-     true
-    ],
-    "time->mass": [
-     1.39,
-     true
-    ],
-    "time->space": [
-     6.51,
-     true
-    ]
-   }
-  ]
- },
- "no adhesion": {
-  "own": {
-   "mass": 1.57,
-   "space": 3.47,
-   "charge": 1.19,
-   "time": 5.09
-  },
-  "own_passed": 4.0,
-  "passed": 12.33,
-  "feasible": 13.0,
-  "switch_mean_loss": 4.57,
-  "runs": [
-   {
-    "mass": [
-     1.57,
-     true
-    ],
-    "mass->charge": [
-     1.07,
-     true
-    ],
-    "mass->space": [
-     2.87,
-     true
-    ],
-    "mass->time": [
-     6.16,
-     true
-    ],
-    "space": [
-     3.38,
-     true
-    ],
-    "space->charge": [
-     1.18,
-     true
-    ],
-    "space->time": [
-     8.63,
+     8.14,
      false
     ],
     "charge": [
-     1.29,
+     1.34,
      true
     ],
     "charge->space": [
-     2.95,
+     2.18,
      true
     ],
     "charge->time": [
-     7.84,
+     7.24,
      true
     ],
     "time": [
-     6.13,
+     5.52,
      true
     ],
     "time->mass": [
-     1.67,
+     1.4,
      true
     ],
     "time->space": [
-     7.63,
+     7.12,
      true
     ]
    },
    {
     "mass": [
-     1.54,
+     1.34,
      true
     ],
     "mass->charge": [
-     1.1,
+     1.15,
      true
     ],
     "mass->space": [
-     4.13,
+     3.36,
      true
     ],
     "mass->time": [
-     6.54,
+     6.39,
      true
     ],
     "space": [
-     3.8,
+     2.88,
      true
     ],
     "space->charge": [
-     1.42,
+     1.44,
      true
     ],
     "space->time": [
-     6.59,
+     6.11,
      true
     ],
     "charge": [
-     0.98,
+     0.95,
      true
     ],
     "charge->space": [
-     4.1,
+     3.45,
      true
     ],
     "charge->time": [
-     5.98,
+     5.59,
      true
     ],
     "time": [
-     3.85,
+     3.41,
      true
     ],
     "time->mass": [
-     2.09,
+     1.83,
      true
     ],
     "time->space": [
-     8.32,
-     false
-    ]
-   },
-   {
-    "mass": [
-     1.61,
-     true
-    ],
-    "mass->charge": [
-     1.02,
-     true
-    ],
-    "mass->space": [
-     3.98,
-     true
-    ],
-    "mass->time": [
-     7.84,
-     true
-    ],
-    "space": [
-     3.24,
-     true
-    ],
-    "space->charge": [
-     1.42,
-     true
-    ],
-    "space->time": [
-     7.62,
-     true
-    ],
-    "charge": [
-     1.31,
-     true
-    ],
-    "charge->space": [
-     4.02,
-     true
-    ],
-    "charge->time": [
-     7.75,
-     true
-    ],
-    "time": [
-     5.28,
-     true
-    ],
-    "time->mass": [
-     1.79,
-     true
-    ],
-    "time->space": [
-     7.63,
-     true
-    ]
-   }
-  ]
- },
- "no swaps": {
-  "own": {
-   "mass": 1.19,
-   "space": 2.44,
-   "charge": 0.76,
-   "time": 4.0
-  },
-  "own_passed": 4.0,
-  "passed": 13.0,
-  "feasible": 13.0,
-  "switch_mean_loss": 3.87,
-  "runs": [
-   {
-    "mass": [
-     1.21,
-     true
-    ],
-    "mass->charge": [
-     0.59,
-     true
-    ],
-    "mass->space": [
-     1.74,
-     true
-    ],
-    "mass->time": [
-     5.61,
-     true
-    ],
-    "space": [
-     2.42,
-     true
-    ],
-    "space->charge": [
-     0.73,
-     true
-    ],
-    "space->time": [
-     7.73,
-     true
-    ],
-    "charge": [
-     0.89,
-     true
-    ],
-    "charge->space": [
-     1.94,
-     true
-    ],
-    "charge->time": [
-     7.38,
-     true
-    ],
-    "time": [
-     4.97,
-     true
-    ],
-    "time->mass": [
-     1.32,
-     true
-    ],
-    "time->space": [
-     6.71,
+     7.55,
      true
     ]
    },
    {
     "mass": [
-     1.16,
+     1.38,
      true
     ],
     "mass->charge": [
-     0.63,
+     1.06,
      true
     ],
     "mass->space": [
-     3.1,
+     3.31,
      true
     ],
     "mass->time": [
-     6.26,
+     7.34,
      true
     ],
     "space": [
-     2.73,
+     2.24,
      true
     ],
     "space->charge": [
-     0.98,
+     1.43,
      true
     ],
     "space->time": [
-     5.62,
-     true
-    ],
-    "charge": [
-     0.45,
-     true
-    ],
-    "charge->space": [
-     3.24,
-     true
-    ],
-    "charge->time": [
-     5.57,
-     true
-    ],
-    "time": [
-     3.11,
-     true
-    ],
-    "time->mass": [
-     1.64,
-     true
-    ],
-    "time->space": [
-     7.31,
-     true
-    ]
-   },
-   {
-    "mass": [
-     1.21,
-     true
-    ],
-    "mass->charge": [
-     0.55,
-     true
-    ],
-    "mass->space": [
-     3.0,
-     true
-    ],
-    "mass->time": [
-     6.84,
-     true
-    ],
-    "space": [
-     2.17,
-     true
-    ],
-    "space->charge": [
-     0.98,
-     true
-    ],
-    "space->time": [
-     6.53,
-     true
-    ],
-    "charge": [
-     0.93,
-     true
-    ],
-    "charge->space": [
-     3.05,
-     true
-    ],
-    "charge->time": [
-     7.52,
-     true
-    ],
-    "time": [
-     3.92,
-     true
-    ],
-    "time->mass": [
-     1.39,
-     true
-    ],
-    "time->space": [
-     6.56,
-     true
-    ]
-   }
-  ]
- },
- "no neighbour sorting (adhesion+swaps off)": {
-  "own": {
-   "mass": 1.56,
-   "space": 3.44,
-   "charge": 1.21,
-   "time": 5.06
-  },
-  "own_passed": 4.0,
-  "passed": 11.67,
-  "feasible": 13.0,
-  "switch_mean_loss": 4.61,
-  "runs": [
-   {
-    "mass": [
-     1.55,
-     true
-    ],
-    "mass->charge": [
-     1.09,
-     true
-    ],
-    "mass->space": [
-     2.95,
-     true
-    ],
-    "mass->time": [
-     6.29,
-     true
-    ],
-    "space": [
-     3.43,
-     true
-    ],
-    "space->charge": [
-     1.18,
-     true
-    ],
-    "space->time": [
-     8.79,
-     false
-    ],
-    "charge": [
-     1.3,
-     true
-    ],
-    "charge->space": [
-     2.98,
-     true
-    ],
-    "charge->time": [
-     8.04,
-     false
-    ],
-    "time": [
-     6.05,
-     true
-    ],
-    "time->mass": [
-     1.66,
-     true
-    ],
-    "time->space": [
-     7.69,
-     true
-    ]
-   },
-   {
-    "mass": [
-     1.52,
-     true
-    ],
-    "mass->charge": [
-     1.09,
-     true
-    ],
-    "mass->space": [
-     4.13,
-     true
-    ],
-    "mass->time": [
-     6.84,
-     true
-    ],
-    "space": [
-     3.69,
-     true
-    ],
-    "space->charge": [
-     1.42,
-     true
-    ],
-    "space->time": [
-     6.52,
-     true
-    ],
-    "charge": [
-     0.99,
-     true
-    ],
-    "charge->space": [
-     4.12,
-     true
-    ],
-    "charge->time": [
-     6.3,
-     true
-    ],
-    "time": [
-     3.97,
-     true
-    ],
-    "time->mass": [
-     2.07,
-     true
-    ],
-    "time->space": [
-     8.23,
-     false
-    ]
-   },
-   {
-    "mass": [
-     1.61,
-     true
-    ],
-    "mass->charge": [
-     1.02,
-     true
-    ],
-    "mass->space": [
-     3.98,
-     true
-    ],
-    "mass->time": [
-     7.68,
-     true
-    ],
-    "space": [
-     3.2,
-     true
-    ],
-    "space->charge": [
-     1.41,
-     true
-    ],
-    "space->time": [
-     7.54,
+     6.74,
      true
     ],
     "charge": [
@@ -681,15 +153,83 @@
      true
     ],
     "charge->space": [
-     4.03,
+     3.19,
      true
     ],
     "charge->time": [
-     8.09,
+     7.25,
+     true
+    ],
+    "time": [
+     4.77,
+     true
+    ],
+    "time->mass": [
+     1.53,
+     true
+    ],
+    "time->space": [
+     6.78,
+     true
+    ]
+   }
+  ]
+ },
+ "no adhesion": {
+  "own": {
+   "mass": 1.71,
+   "space": 3.73,
+   "charge": 1.66,
+   "time": 5.53
+  },
+  "own_passed": 4.0,
+  "passed": 11.33,
+  "feasible": 13.0,
+  "switch_mean_loss": 4.91,
+  "runs": [
+   {
+    "mass": [
+     1.7,
+     true
+    ],
+    "mass->charge": [
+     1.54,
+     true
+    ],
+    "mass->space": [
+     3.13,
+     true
+    ],
+    "mass->time": [
+     6.6,
+     true
+    ],
+    "space": [
+     3.64,
+     true
+    ],
+    "space->charge": [
+     1.64,
+     true
+    ],
+    "space->time": [
+     8.95,
+     false
+    ],
+    "charge": [
+     1.75,
+     true
+    ],
+    "charge->space": [
+     3.21,
+     true
+    ],
+    "charge->time": [
+     8.25,
      false
     ],
     "time": [
-     5.16,
+     6.55,
      true
     ],
     "time->mass": [
@@ -697,7 +237,467 @@
      true
     ],
     "time->space": [
-     7.61,
+     7.89,
+     true
+    ]
+   },
+   {
+    "mass": [
+     1.67,
+     true
+    ],
+    "mass->charge": [
+     1.57,
+     true
+    ],
+    "mass->space": [
+     4.39,
+     true
+    ],
+    "mass->time": [
+     6.98,
+     true
+    ],
+    "space": [
+     4.05,
+     true
+    ],
+    "space->charge": [
+     1.87,
+     true
+    ],
+    "space->time": [
+     7.02,
+     true
+    ],
+    "charge": [
+     1.45,
+     true
+    ],
+    "charge->space": [
+     4.36,
+     true
+    ],
+    "charge->time": [
+     6.42,
+     true
+    ],
+    "time": [
+     4.32,
+     true
+    ],
+    "time->mass": [
+     2.23,
+     true
+    ],
+    "time->space": [
+     8.58,
+     false
+    ]
+   },
+   {
+    "mass": [
+     1.75,
+     true
+    ],
+    "mass->charge": [
+     1.49,
+     true
+    ],
+    "mass->space": [
+     4.24,
+     true
+    ],
+    "mass->time": [
+     8.21,
+     false
+    ],
+    "space": [
+     3.49,
+     true
+    ],
+    "space->charge": [
+     1.87,
+     true
+    ],
+    "space->time": [
+     7.98,
+     true
+    ],
+    "charge": [
+     1.77,
+     true
+    ],
+    "charge->space": [
+     4.28,
+     true
+    ],
+    "charge->time": [
+     8.15,
+     false
+    ],
+    "time": [
+     5.73,
+     true
+    ],
+    "time->mass": [
+     1.93,
+     true
+    ],
+    "time->space": [
+     7.89,
+     true
+    ]
+   }
+  ]
+ },
+ "no swaps": {
+  "own": {
+   "mass": 1.32,
+   "space": 2.7,
+   "charge": 1.22,
+   "time": 4.45
+  },
+  "own_passed": 4.0,
+  "passed": 12.67,
+  "feasible": 13.0,
+  "switch_mean_loss": 4.21,
+  "runs": [
+   {
+    "mass": [
+     1.34,
+     true
+    ],
+    "mass->charge": [
+     1.06,
+     true
+    ],
+    "mass->space": [
+     1.99,
+     true
+    ],
+    "mass->time": [
+     6.02,
+     true
+    ],
+    "space": [
+     2.68,
+     true
+    ],
+    "space->charge": [
+     1.19,
+     true
+    ],
+    "space->time": [
+     8.06,
+     false
+    ],
+    "charge": [
+     1.35,
+     true
+    ],
+    "charge->space": [
+     2.2,
+     true
+    ],
+    "charge->time": [
+     7.79,
+     true
+    ],
+    "time": [
+     5.39,
+     true
+    ],
+    "time->mass": [
+     1.46,
+     true
+    ],
+    "time->space": [
+     6.98,
+     true
+    ]
+   },
+   {
+    "mass": [
+     1.29,
+     true
+    ],
+    "mass->charge": [
+     1.1,
+     true
+    ],
+    "mass->space": [
+     3.37,
+     true
+    ],
+    "mass->time": [
+     6.67,
+     true
+    ],
+    "space": [
+     2.99,
+     true
+    ],
+    "space->charge": [
+     1.43,
+     true
+    ],
+    "space->time": [
+     6.06,
+     true
+    ],
+    "charge": [
+     0.92,
+     true
+    ],
+    "charge->space": [
+     3.5,
+     true
+    ],
+    "charge->time": [
+     6.01,
+     true
+    ],
+    "time": [
+     3.58,
+     true
+    ],
+    "time->mass": [
+     1.77,
+     true
+    ],
+    "time->space": [
+     7.57,
+     true
+    ]
+   },
+   {
+    "mass": [
+     1.34,
+     true
+    ],
+    "mass->charge": [
+     1.03,
+     true
+    ],
+    "mass->space": [
+     3.26,
+     true
+    ],
+    "mass->time": [
+     7.2,
+     true
+    ],
+    "space": [
+     2.42,
+     true
+    ],
+    "space->charge": [
+     1.44,
+     true
+    ],
+    "space->time": [
+     6.9,
+     true
+    ],
+    "charge": [
+     1.39,
+     true
+    ],
+    "charge->space": [
+     3.31,
+     true
+    ],
+    "charge->time": [
+     7.94,
+     true
+    ],
+    "time": [
+     4.37,
+     true
+    ],
+    "time->mass": [
+     1.53,
+     true
+    ],
+    "time->space": [
+     6.83,
+     true
+    ]
+   }
+  ]
+ },
+ "no neighbour sorting (adhesion+swaps off)": {
+  "own": {
+   "mass": 1.69,
+   "space": 3.7,
+   "charge": 1.67,
+   "time": 5.51
+  },
+  "own_passed": 4.0,
+  "passed": 11.33,
+  "feasible": 13.0,
+  "switch_mean_loss": 4.95,
+  "runs": [
+   {
+    "mass": [
+     1.69,
+     true
+    ],
+    "mass->charge": [
+     1.56,
+     true
+    ],
+    "mass->space": [
+     3.2,
+     true
+    ],
+    "mass->time": [
+     6.72,
+     true
+    ],
+    "space": [
+     3.69,
+     true
+    ],
+    "space->charge": [
+     1.65,
+     true
+    ],
+    "space->time": [
+     9.12,
+     false
+    ],
+    "charge": [
+     1.76,
+     true
+    ],
+    "charge->space": [
+     3.24,
+     true
+    ],
+    "charge->time": [
+     8.44,
+     false
+    ],
+    "time": [
+     6.47,
+     true
+    ],
+    "time->mass": [
+     1.79,
+     true
+    ],
+    "time->space": [
+     7.95,
+     true
+    ]
+   },
+   {
+    "mass": [
+     1.65,
+     true
+    ],
+    "mass->charge": [
+     1.56,
+     true
+    ],
+    "mass->space": [
+     4.39,
+     true
+    ],
+    "mass->time": [
+     7.28,
+     true
+    ],
+    "space": [
+     3.95,
+     true
+    ],
+    "space->charge": [
+     1.88,
+     true
+    ],
+    "space->time": [
+     6.95,
+     true
+    ],
+    "charge": [
+     1.45,
+     true
+    ],
+    "charge->space": [
+     4.38,
+     true
+    ],
+    "charge->time": [
+     6.74,
+     true
+    ],
+    "time": [
+     4.44,
+     true
+    ],
+    "time->mass": [
+     2.2,
+     true
+    ],
+    "time->space": [
+     8.49,
+     false
+    ]
+   },
+   {
+    "mass": [
+     1.74,
+     true
+    ],
+    "mass->charge": [
+     1.5,
+     true
+    ],
+    "mass->space": [
+     4.23,
+     true
+    ],
+    "mass->time": [
+     8.05,
+     false
+    ],
+    "space": [
+     3.45,
+     true
+    ],
+    "space->charge": [
+     1.87,
+     true
+    ],
+    "space->time": [
+     7.91,
+     true
+    ],
+    "charge": [
+     1.79,
+     true
+    ],
+    "charge->space": [
+     4.29,
+     true
+    ],
+    "charge->time": [
+     8.49,
+     false
+    ],
+    "time": [
+     5.62,
+     true
+    ],
+    "time->mass": [
+     1.95,
+     true
+    ],
+    "time->space": [
+     7.87,
      true
     ]
    }
@@ -1057,101 +1057,47 @@
  },
  "K=2": {
   "own": {
-   "mass": 3.36,
-   "space": 6.05,
-   "charge": 5.09,
-   "time": 10.3
+   "mass": 3.4,
+   "space": 6.1,
+   "charge": 5.31,
+   "time": 10.52
   },
   "own_passed": 3.0,
   "passed": 7.67,
   "feasible": 13.0,
-  "switch_mean_loss": 8.28,
+  "switch_mean_loss": 8.41,
   "runs": [
    {
     "mass": [
-     3.28,
+     3.31,
      true
     ],
     "mass->charge": [
-     4.19,
+     4.42,
      true
     ],
     "mass->space": [
-     6.53,
+     6.58,
      true
     ],
     "mass->time": [
-     12.62,
+     12.82,
      false
     ],
     "space": [
-     5.54,
+     5.59,
      true
     ],
     "space->charge": [
-     4.83,
+     5.05,
      true
     ],
     "space->time": [
-     12.27,
+     12.46,
      false
     ],
     "charge": [
-     4.92,
-     true
-    ],
-    "charge->space": [
-     5.66,
-     true
-    ],
-    "charge->time": [
-     13.37,
-     false
-    ],
-    "time": [
-     11.14,
-     false
-    ],
-    "time->mass": [
-     4.35,
-     true
-    ],
-    "time->space": [
-     11.49,
-     false
-    ]
-   },
-   {
-    "mass": [
-     3.27,
-     true
-    ],
-    "mass->charge": [
-     4.13,
-     true
-    ],
-    "mass->space": [
-     8.37,
-     false
-    ],
-    "mass->time": [
-     10.56,
-     false
-    ],
-    "space": [
-     6.5,
-     true
-    ],
-    "space->charge": [
-     4.6,
-     true
-    ],
-    "space->time": [
-     12.17,
-     false
-    ],
-    "charge": [
-     4.59,
+     5.14,
      true
     ],
     "charge->space": [
@@ -1159,73 +1105,127 @@
      true
     ],
     "charge->time": [
-     11.5,
+     13.6,
      false
     ],
     "time": [
-     8.72,
+     11.35,
      false
     ],
     "time->mass": [
-     3.77,
+     4.38,
      true
     ],
     "time->space": [
-     11.55,
+     11.54,
      false
     ]
    },
    {
     "mass": [
-     3.54,
+     3.31,
      true
     ],
     "mass->charge": [
-     4.28,
+     4.36,
      true
     ],
     "mass->space": [
-     7.19,
-     true
+     8.42,
+     false
     ],
     "mass->time": [
-     12.91,
+     10.79,
      false
     ],
     "space": [
-     6.1,
+     6.55,
      true
     ],
     "space->charge": [
-     5.35,
+     4.82,
      true
     ],
     "space->time": [
-     11.87,
+     12.33,
      false
     ],
     "charge": [
-     5.76,
+     4.81,
      true
     ],
     "charge->space": [
-     6.11,
+     5.75,
      true
     ],
     "charge->time": [
-     12.18,
+     11.69,
      false
     ],
     "time": [
-     11.05,
+     8.94,
      false
     ],
     "time->mass": [
-     3.95,
+     3.81,
      true
     ],
     "time->space": [
-     12.01,
+     11.6,
+     false
+    ]
+   },
+   {
+    "mass": [
+     3.57,
+     true
+    ],
+    "mass->charge": [
+     4.5,
+     true
+    ],
+    "mass->space": [
+     7.24,
+     true
+    ],
+    "mass->time": [
+     13.12,
+     false
+    ],
+    "space": [
+     6.15,
+     true
+    ],
+    "space->charge": [
+     5.56,
+     true
+    ],
+    "space->time": [
+     12.05,
+     false
+    ],
+    "charge": [
+     5.98,
+     true
+    ],
+    "charge->space": [
+     6.16,
+     true
+    ],
+    "charge->time": [
+     12.41,
+     false
+    ],
+    "time": [
+     11.28,
+     false
+    ],
+    "time->mass": [
+     3.98,
+     true
+    ],
+    "time->space": [
+     12.05,
      false
     ]
    }
@@ -1233,175 +1233,175 @@
  },
  "K=4": {
   "own": {
-   "mass": 2.22,
-   "space": 2.37,
-   "charge": 1.02,
-   "time": 7.76
+   "mass": 2.34,
+   "space": 2.57,
+   "charge": 1.41,
+   "time": 8.07
   },
   "own_passed": 3.67,
   "passed": 9.67,
   "feasible": 13.0,
-  "switch_mean_loss": 5.11,
+  "switch_mean_loss": 5.38,
   "runs": [
    {
     "mass": [
-     2.04,
+     2.17,
      true
     ],
     "mass->charge": [
-     1.05,
+     1.44,
      true
     ],
     "mass->space": [
-     4.07,
+     4.28,
      true
     ],
     "mass->time": [
-     9.76,
+     10.08,
      false
     ],
     "space": [
-     2.25,
+     2.45,
      true
     ],
     "space->charge": [
-     1.24,
+     1.61,
      true
     ],
     "space->time": [
-     9.8,
+     10.03,
      false
     ],
     "charge": [
-     0.98,
+     1.36,
      true
     ],
     "charge->space": [
-     3.32,
+     3.53,
      true
     ],
     "charge->time": [
-     8.05,
+     8.41,
      false
     ],
     "time": [
-     8.6,
-     false
-    ],
-    "time->mass": [
-     2.23,
-     true
-    ],
-    "time->space": [
-     7.58,
-     true
-    ]
-   },
-   {
-    "mass": [
-     2.03,
-     true
-    ],
-    "mass->charge": [
-     1.5,
-     true
-    ],
-    "mass->space": [
-     2.99,
-     true
-    ],
-    "mass->time": [
-     10.19,
-     false
-    ],
-    "space": [
-     2.23,
-     true
-    ],
-    "space->charge": [
-     1.17,
-     true
-    ],
-    "space->time": [
-     10.72,
-     false
-    ],
-    "charge": [
-     0.91,
-     true
-    ],
-    "charge->space": [
-     2.33,
-     true
-    ],
-    "charge->time": [
-     8.8,
-     false
-    ],
-    "time": [
-     7.34,
-     true
-    ],
-    "time->mass": [
-     2.05,
-     true
-    ],
-    "time->space": [
-     7.52,
-     true
-    ]
-   },
-   {
-    "mass": [
-     2.58,
-     true
-    ],
-    "mass->charge": [
-     1.04,
-     true
-    ],
-    "mass->space": [
-     2.41,
-     true
-    ],
-    "mass->time": [
      8.88,
      false
     ],
-    "space": [
-     2.63,
-     true
-    ],
-    "space->charge": [
-     1.16,
-     true
-    ],
-    "space->time": [
-     8.96,
-     false
-    ],
-    "charge": [
-     1.18,
-     true
-    ],
-    "charge->space": [
-     2.1,
-     true
-    ],
-    "charge->time": [
-     9.43,
-     false
-    ],
-    "time": [
-     7.35,
-     true
-    ],
     "time->mass": [
-     2.26,
+     2.35,
      true
     ],
     "time->space": [
-     7.38,
+     7.79,
+     true
+    ]
+   },
+   {
+    "mass": [
+     2.15,
+     true
+    ],
+    "mass->charge": [
+     1.88,
+     true
+    ],
+    "mass->space": [
+     3.19,
+     true
+    ],
+    "mass->time": [
+     10.5,
+     false
+    ],
+    "space": [
+     2.43,
+     true
+    ],
+    "space->charge": [
+     1.56,
+     true
+    ],
+    "space->time": [
+     10.96,
+     false
+    ],
+    "charge": [
+     1.3,
+     true
+    ],
+    "charge->space": [
+     2.53,
+     true
+    ],
+    "charge->time": [
+     9.07,
+     false
+    ],
+    "time": [
+     7.66,
+     true
+    ],
+    "time->mass": [
+     2.18,
+     true
+    ],
+    "time->space": [
+     7.73,
+     true
+    ]
+   },
+   {
+    "mass": [
+     2.7,
+     true
+    ],
+    "mass->charge": [
+     1.43,
+     true
+    ],
+    "mass->space": [
+     2.61,
+     true
+    ],
+    "mass->time": [
+     9.24,
+     false
+    ],
+    "space": [
+     2.84,
+     true
+    ],
+    "space->charge": [
+     1.54,
+     true
+    ],
+    "space->time": [
+     9.19,
+     false
+    ],
+    "charge": [
+     1.57,
+     true
+    ],
+    "charge->space": [
+     2.31,
+     true
+    ],
+    "charge->time": [
+     9.73,
+     false
+    ],
+    "time": [
+     7.67,
+     true
+    ],
+    "time->mass": [
+     2.39,
+     true
+    ],
+    "time->space": [
+     7.59,
      true
     ]
    }
@@ -1409,147 +1409,93 @@
  },
  "K=8": {
   "own": {
-   "mass": 1.65,
-   "space": 2.29,
-   "charge": 1.0,
-   "time": 3.83
+   "mass": 1.79,
+   "space": 2.55,
+   "charge": 1.43,
+   "time": 4.19
   },
   "own_passed": 4.0,
-  "passed": 13.0,
+  "passed": 12.67,
   "feasible": 13.0,
-  "switch_mean_loss": 3.92,
+  "switch_mean_loss": 4.24,
   "runs": [
    {
     "mass": [
-     1.65,
+     1.79,
      true
     ],
     "mass->charge": [
-     0.66,
+     1.11,
      true
     ],
     "mass->space": [
-     2.77,
+     3.03,
      true
     ],
     "mass->time": [
-     6.96,
+     7.28,
      true
     ],
     "space": [
-     2.26,
+     2.53,
      true
     ],
     "space->charge": [
-     0.7,
+     1.14,
      true
     ],
     "space->time": [
-     6.05,
+     6.36,
      true
     ],
     "charge": [
-     1.23,
+     1.66,
      true
     ],
     "charge->space": [
-     1.94,
+     2.18,
      true
     ],
     "charge->time": [
-     7.31,
+     7.68,
      true
     ],
     "time": [
-     4.0,
+     4.36,
      true
     ],
     "time->mass": [
-     1.87,
+     2.01,
      true
     ],
     "time->space": [
-     6.74,
+     7.0,
      true
     ]
    },
    {
     "mass": [
-     1.59,
+     1.73,
      true
     ],
     "mass->charge": [
-     0.52,
+     0.97,
      true
     ],
     "mass->space": [
-     3.42,
+     3.68,
      true
     ],
     "mass->time": [
-     5.67,
+     6.07,
      true
     ],
     "space": [
-     2.62,
+     2.88,
      true
     ],
     "space->charge": [
-     0.72,
-     true
-    ],
-    "space->time": [
-     6.39,
-     true
-    ],
-    "charge": [
-     0.87,
-     true
-    ],
-    "charge->space": [
-     3.34,
-     true
-    ],
-    "charge->time": [
-     7.9,
-     true
-    ],
-    "time": [
-     3.86,
-     true
-    ],
-    "time->mass": [
-     1.77,
-     true
-    ],
-    "time->space": [
-     7.11,
-     true
-    ]
-   },
-   {
-    "mass": [
-     1.7,
-     true
-    ],
-    "mass->charge": [
-     0.84,
-     true
-    ],
-    "mass->space": [
-     2.5,
-     true
-    ],
-    "mass->time": [
-     6.43,
-     true
-    ],
-    "space": [
-     1.98,
-     true
-    ],
-    "space->charge": [
-     0.74,
+     1.16,
      true
     ],
     "space->time": [
@@ -1557,27 +1503,81 @@
      true
     ],
     "charge": [
-     0.9,
+     1.31,
      true
     ],
     "charge->space": [
-     2.39,
+     3.61,
      true
     ],
     "charge->time": [
-     5.65,
-     true
+     8.25,
+     false
     ],
     "time": [
-     3.64,
+     4.22,
      true
     ],
     "time->mass": [
-     1.8,
+     1.92,
      true
     ],
     "time->space": [
-     7.0,
+     7.37,
+     true
+    ]
+   },
+   {
+    "mass": [
+     1.84,
+     true
+    ],
+    "mass->charge": [
+     1.29,
+     true
+    ],
+    "mass->space": [
+     2.76,
+     true
+    ],
+    "mass->time": [
+     6.71,
+     true
+    ],
+    "space": [
+     2.24,
+     true
+    ],
+    "space->charge": [
+     1.18,
+     true
+    ],
+    "space->time": [
+     7.04,
+     true
+    ],
+    "charge": [
+     1.33,
+     true
+    ],
+    "charge->space": [
+     2.65,
+     true
+    ],
+    "charge->time": [
+     6.0,
+     true
+    ],
+    "time": [
+     3.99,
+     true
+    ],
+    "time->mass": [
+     1.94,
+     true
+    ],
+    "time->space": [
+     7.27,
      true
     ]
    }
@@ -1585,175 +1585,175 @@
  },
  "local centre (consensus, no swarm average)": {
   "own": {
-   "mass": 1.23,
-   "space": 3.08,
-   "charge": 1.88,
-   "time": 4.8
+   "mass": 1.37,
+   "space": 3.34,
+   "charge": 2.34,
+   "time": 5.26
   },
   "own_passed": 4.0,
   "passed": 7.0,
   "feasible": 13.0,
-  "switch_mean_loss": 10.45,
+  "switch_mean_loss": 10.78,
   "runs": [
    {
     "mass": [
-     1.28,
+     1.42,
      true
     ],
     "mass->charge": [
-     2.75,
+     3.21,
      true
     ],
     "mass->space": [
+     16.6,
+     false
+    ],
+    "mass->time": [
+     9.52,
+     false
+    ],
+    "space": [
+     3.08,
+     true
+    ],
+    "space->charge": [
+     2.66,
+     true
+    ],
+    "space->time": [
+     9.42,
+     false
+    ],
+    "charge": [
+     2.36,
+     true
+    ],
+    "charge->space": [
+     16.32,
+     false
+    ],
+    "charge->time": [
+     13.56,
+     false
+    ],
+    "time": [
+     6.51,
+     true
+    ],
+    "time->mass": [
+     1.77,
+     true
+    ],
+    "time->space": [
+     13.03,
+     false
+    ]
+   },
+   {
+    "mass": [
+     1.35,
+     true
+    ],
+    "mass->charge": [
+     10.12,
+     false
+    ],
+    "mass->space": [
+     18.22,
+     false
+    ],
+    "mass->time": [
+     20.19,
+     false
+    ],
+    "space": [
+     3.88,
+     true
+    ],
+    "space->charge": [
+     2.32,
+     true
+    ],
+    "space->time": [
+     7.1,
+     true
+    ],
+    "charge": [
+     1.75,
+     true
+    ],
+    "charge->space": [
+     12.48,
+     false
+    ],
+    "charge->time": [
+     17.69,
+     false
+    ],
+    "time": [
+     4.13,
+     true
+    ],
+    "time->mass": [
+     1.84,
+     true
+    ],
+    "time->space": [
+     10.28,
+     false
+    ]
+   },
+   {
+    "mass": [
+     1.34,
+     true
+    ],
+    "mass->charge": [
+     5.73,
+     true
+    ],
+    "mass->space": [
+     17.79,
+     false
+    ],
+    "mass->time": [
+     24.71,
+     false
+    ],
+    "space": [
+     3.05,
+     true
+    ],
+    "space->charge": [
+     2.19,
+     true
+    ],
+    "space->time": [
+     8.49,
+     false
+    ],
+    "charge": [
+     2.92,
+     true
+    ],
+    "charge->space": [
+     16.91,
+     false
+    ],
+    "charge->time": [
      16.34,
      false
     ],
-    "mass->time": [
-     9.1,
-     false
-    ],
-    "space": [
-     2.82,
-     true
-    ],
-    "space->charge": [
-     2.2,
-     true
-    ],
-    "space->time": [
-     9.09,
-     false
-    ],
-    "charge": [
-     1.9,
-     true
-    ],
-    "charge->space": [
-     16.07,
-     false
-    ],
-    "charge->time": [
-     13.1,
-     false
-    ],
     "time": [
-     6.08,
+     5.13,
      true
     ],
     "time->mass": [
-     1.64,
+     1.76,
      true
     ],
     "time->space": [
-     12.77,
-     false
-    ]
-   },
-   {
-    "mass": [
-     1.21,
-     true
-    ],
-    "mass->charge": [
-     9.65,
-     false
-    ],
-    "mass->space": [
-     17.96,
-     false
-    ],
-    "mass->time": [
-     19.79,
-     false
-    ],
-    "space": [
-     3.61,
-     true
-    ],
-    "space->charge": [
-     1.86,
-     true
-    ],
-    "space->time": [
-     6.66,
-     true
-    ],
-    "charge": [
-     1.28,
-     true
-    ],
-    "charge->space": [
-     12.24,
-     false
-    ],
-    "charge->time": [
-     17.24,
-     false
-    ],
-    "time": [
-     3.65,
-     true
-    ],
-    "time->mass": [
-     1.7,
-     true
-    ],
-    "time->space": [
-     10.02,
-     false
-    ]
-   },
-   {
-    "mass": [
-     1.2,
-     true
-    ],
-    "mass->charge": [
-     5.27,
-     true
-    ],
-    "mass->space": [
-     17.73,
-     false
-    ],
-    "mass->time": [
-     24.37,
-     false
-    ],
-    "space": [
-     2.8,
-     true
-    ],
-    "space->charge": [
-     1.74,
-     true
-    ],
-    "space->time": [
-     8.11,
-     false
-    ],
-    "charge": [
-     2.46,
-     true
-    ],
-    "charge->space": [
-     16.68,
-     false
-    ],
-    "charge->time": [
-     15.94,
-     false
-    ],
-    "time": [
-     4.67,
-     true
-    ],
-    "time->mass": [
-     1.63,
-     true
-    ],
-    "time->space": [
-     10.55,
+     10.81,
      false
     ]
    }
@@ -1761,15 +1761,15 @@
  },
  "laps (Time runners advance their fate)": {
   "own": {
-   "mass": 3.3,
-   "space": 2.32,
-   "charge": 7.38,
-   "time": 17.75
+   "mass": 3.14,
+   "space": 2.55,
+   "charge": 4.71,
+   "time": 20.29
   },
   "own_passed": 3.0,
-  "passed": 8.67,
+  "passed": 9.0,
   "feasible": 13.0,
-  "switch_mean_loss": 9.9,
+  "switch_mean_loss": 10.05,
   "runs": [
    {
     "mass": [
@@ -1777,159 +1777,159 @@
      true
     ],
     "mass->charge": [
-     6.78,
+     4.41,
      true
     ],
     "mass->space": [
-     1.93,
+     1.97,
      true
     ],
     "mass->time": [
-     19.01,
+     21.33,
      false
     ],
     "space": [
-     2.37,
+     2.53,
      true
     ],
     "space->charge": [
-     7.81,
+     4.38,
      true
     ],
     "space->time": [
-     20.09,
+     21.82,
      false
     ],
     "charge": [
-     7.08,
+     4.64,
      true
     ],
     "charge->space": [
-     2.01,
+     2.19,
      true
     ],
     "charge->time": [
-     20.45,
+     22.45,
      false
     ],
     "time": [
-     19.26,
+     20.81,
      false
     ],
     "time->mass": [
-     3.46,
+     3.04,
      true
     ],
     "time->space": [
-     6.66,
+     6.71,
      true
     ]
    },
    {
     "mass": [
-     3.25,
+     3.08,
      true
     ],
     "mass->charge": [
-     6.42,
+     5.32,
      true
     ],
     "mass->space": [
-     3.02,
+     3.33,
      true
     ],
     "mass->time": [
-     18.76,
+     21.05,
      false
     ],
     "space": [
-     2.54,
+     2.88,
      true
     ],
     "space->charge": [
-     7.17,
+     4.59,
      true
     ],
     "space->time": [
-     18.77,
+     20.3,
      false
     ],
     "charge": [
-     7.65,
+     4.58,
      true
     ],
     "charge->space": [
-     3.14,
-     true
-    ],
-    "charge->time": [
-     19.57,
-     false
-    ],
-    "time": [
-     16.45,
-     false
-    ],
-    "time->mass": [
-     3.84,
-     true
-    ],
-    "time->space": [
-     7.14,
-     true
-    ]
-   },
-   {
-    "mass": [
      3.43,
      true
     ],
-    "mass->charge": [
-     6.73,
-     true
-    ],
-    "mass->space": [
-     3.09,
-     true
-    ],
-    "mass->time": [
-     20.32,
-     false
-    ],
-    "space": [
-     2.04,
-     true
-    ],
-    "space->charge": [
-     8.17,
-     false
-    ],
-    "space->time": [
-     19.04,
-     false
-    ],
-    "charge": [
-     7.41,
-     true
-    ],
-    "charge->space": [
-     3.12,
-     true
-    ],
     "charge->time": [
-     20.91,
+     21.48,
      false
     ],
     "time": [
-     17.53,
+     20.16,
      false
     ],
     "time->mass": [
-     3.48,
+     3.57,
      true
     ],
     "time->space": [
-     6.5,
+     7.61,
+     true
+    ]
+   },
+   {
+    "mass": [
+     3.13,
+     true
+    ],
+    "mass->charge": [
+     4.12,
+     true
+    ],
+    "mass->space": [
+     3.29,
+     true
+    ],
+    "mass->time": [
+     21.92,
+     false
+    ],
+    "space": [
+     2.24,
+     true
+    ],
+    "space->charge": [
+     4.67,
+     true
+    ],
+    "space->time": [
+     21.5,
+     false
+    ],
+    "charge": [
+     4.91,
+     true
+    ],
+    "charge->space": [
+     3.31,
+     true
+    ],
+    "charge->time": [
+     23.55,
+     false
+    ],
+    "time": [
+     19.9,
+     false
+    ],
+    "time->mass": [
+     3.34,
+     true
+    ],
+    "time->space": [
+     6.65,
      true
     ]
    }
@@ -1937,187 +1937,187 @@
  },
  "no molting (switches)": {
   "own": {
-   "mass": 1.87,
-   "space": 3.83,
-   "charge": 1.91,
-   "time": 6.13
+   "mass": 2.0,
+   "space": 4.07,
+   "charge": 2.35,
+   "time": 6.58
   },
   "own_passed": 4.0,
-  "passed": 7.33,
+  "passed": 7.0,
   "feasible": 14.0,
-  "switch_mean_loss": 19.05,
+  "switch_mean_loss": 19.32,
   "runs": [
    {
     "mass": [
-     2.14,
-     true
-    ],
-    "mass->charge": [
-     8.07,
-     false
-    ],
-    "mass->space": [
-     39.36,
-     false
-    ],
-    "mass->time": [
-     44.65,
-     false
-    ],
-    "space": [
-     4.34,
-     true
-    ],
-    "space->charge": [
-     6.47,
-     true
-    ],
-    "space->mass": [
-     1.33,
-     true
-    ],
-    "space->time": [
-     13.12,
-     false
-    ],
-    "charge": [
-     1.66,
-     true
-    ],
-    "charge->space": [
-     17.87,
-     false
-    ],
-    "charge->time": [
-     33.67,
-     false
-    ],
-    "time": [
-     5.5,
-     true
-    ],
-    "time->mass": [
      2.27,
      true
     ],
-    "time->space": [
-     24.54,
-     false
-    ]
-   },
-   {
-    "mass": [
-     2.11,
-     true
-    ],
     "mass->charge": [
-     8.86,
+     8.48,
      false
     ],
     "mass->space": [
-     38.52,
+     39.55,
      false
     ],
     "mass->time": [
-     44.19,
+     44.9,
      false
     ],
     "space": [
-     3.59,
+     4.58,
      true
     ],
     "space->charge": [
-     7.06,
+     6.86,
      true
     ],
     "space->mass": [
-     1.85,
+     1.47,
      true
     ],
     "space->time": [
-     14.28,
+     13.55,
      false
     ],
     "charge": [
-     2.15,
+     2.1,
      true
     ],
     "charge->space": [
-     17.72,
+     18.01,
      false
     ],
     "charge->time": [
-     31.87,
+     33.93,
      false
     ],
     "time": [
-     5.95,
-     true
-    ],
-    "time->charge": [
-     1.99,
-     true
-    ],
-    "time->space": [
-     21.01,
-     false
-    ]
-   },
-   {
-    "mass": [
-     1.35,
-     true
-    ],
-    "mass->charge": [
-     7.86,
-     true
-    ],
-    "mass->space": [
-     39.18,
-     false
-    ],
-    "mass->time": [
-     44.57,
-     false
-    ],
-    "space": [
-     3.55,
-     true
-    ],
-    "space->charge": [
-     6.7,
-     true
-    ],
-    "space->mass": [
-     1.84,
-     true
-    ],
-    "space->time": [
-     12.19,
-     false
-    ],
-    "charge": [
-     1.92,
-     true
-    ],
-    "charge->space": [
-     17.11,
-     false
-    ],
-    "charge->time": [
-     34.32,
-     false
-    ],
-    "time": [
-     6.94,
+     5.94,
      true
     ],
     "time->mass": [
-     2.53,
+     2.41,
      true
     ],
     "time->space": [
-     26.52,
+     24.78,
+     false
+    ]
+   },
+   {
+    "mass": [
+     2.23,
+     true
+    ],
+    "mass->charge": [
+     9.27,
+     false
+    ],
+    "mass->space": [
+     38.7,
+     false
+    ],
+    "mass->time": [
+     44.44,
+     false
+    ],
+    "space": [
+     3.84,
+     true
+    ],
+    "space->charge": [
+     7.47,
+     true
+    ],
+    "space->mass": [
+     1.98,
+     true
+    ],
+    "space->time": [
+     14.75,
+     false
+    ],
+    "charge": [
+     2.59,
+     true
+    ],
+    "charge->space": [
+     17.86,
+     false
+    ],
+    "charge->time": [
+     32.16,
+     false
+    ],
+    "time": [
+     6.39,
+     true
+    ],
+    "time->charge": [
+     2.43,
+     true
+    ],
+    "time->space": [
+     21.25,
+     false
+    ]
+   },
+   {
+    "mass": [
+     1.49,
+     true
+    ],
+    "mass->charge": [
+     8.29,
+     false
+    ],
+    "mass->space": [
+     39.37,
+     false
+    ],
+    "mass->time": [
+     44.81,
+     false
+    ],
+    "space": [
+     3.79,
+     true
+    ],
+    "space->charge": [
+     7.12,
+     true
+    ],
+    "space->mass": [
+     1.97,
+     true
+    ],
+    "space->time": [
+     12.64,
+     false
+    ],
+    "charge": [
+     2.37,
+     true
+    ],
+    "charge->space": [
+     17.26,
+     false
+    ],
+    "charge->time": [
+     34.57,
+     false
+    ],
+    "time": [
+     7.4,
+     true
+    ],
+    "time->mass": [
+     2.67,
+     true
+    ],
+    "time->space": [
+     26.74,
      false
     ]
    }
@@ -2125,175 +2125,175 @@
  },
  "molt without region transfer": {
   "own": {
-   "mass": 1.22,
-   "space": 2.35,
-   "charge": 0.74,
-   "time": 4.37
+   "mass": 1.35,
+   "space": 2.62,
+   "charge": 1.21,
+   "time": 4.81
   },
   "own_passed": 4.0,
-  "passed": 9.33,
+  "passed": 9.0,
   "feasible": 13.0,
-  "switch_mean_loss": 6.85,
+  "switch_mean_loss": 7.2,
   "runs": [
    {
     "mass": [
-     1.21,
+     1.34,
      true
     ],
     "mass->charge": [
-     0.6,
+     1.06,
      true
     ],
     "mass->space": [
-     1.73,
+     1.99,
      true
     ],
     "mass->time": [
-     8.99,
+     9.42,
      false
     ],
     "space": [
-     2.26,
+     2.53,
      true
     ],
     "space->charge": [
-     0.74,
-     true
-    ],
-    "space->time": [
-     7.81,
-     true
-    ],
-    "charge": [
-     0.88,
-     true
-    ],
-    "charge->space": [
-     1.92,
-     true
-    ],
-    "charge->time": [
-     10.14,
-     false
-    ],
-    "time": [
-     5.87,
-     true
-    ],
-    "time->mass": [
-     1.49,
-     true
-    ],
-    "time->space": [
-     24.97,
-     false
-    ]
-   },
-   {
-    "mass": [
      1.2,
      true
     ],
-    "mass->charge": [
-     0.68,
-     true
-    ],
-    "mass->space": [
-     5.55,
-     true
-    ],
-    "mass->time": [
-     9.26,
-     false
-    ],
-    "space": [
-     2.82,
-     true
-    ],
-    "space->charge": [
-     0.99,
-     true
-    ],
     "space->time": [
-     8.39,
+     8.14,
      false
     ],
     "charge": [
-     0.48,
+     1.34,
      true
     ],
     "charge->space": [
-     2.99,
+     2.18,
      true
     ],
     "charge->time": [
-     8.47,
+     10.61,
      false
     ],
     "time": [
-     2.93,
+     6.26,
      true
     ],
     "time->mass": [
-     1.8,
+     1.62,
      true
     ],
     "time->space": [
-     21.72,
+     25.2,
      false
     ]
    },
    {
     "mass": [
-     1.25,
+     1.34,
      true
     ],
     "mass->charge": [
-     0.59,
+     1.15,
      true
     ],
     "mass->space": [
-     5.59,
+     5.81,
      true
     ],
     "mass->time": [
-     12.98,
+     9.73,
      false
     ],
     "space": [
-     1.98,
+     3.08,
      true
     ],
     "space->charge": [
-     0.97,
+     1.45,
      true
     ],
     "space->time": [
-     8.04,
+     8.77,
      false
     ],
     "charge": [
-     0.87,
+     0.95,
      true
     ],
     "charge->space": [
-     3.09,
+     3.25,
      true
     ],
     "charge->time": [
-     13.24,
+     8.94,
      false
     ],
     "time": [
-     4.32,
+     3.41,
      true
     ],
     "time->mass": [
-     1.48,
+     1.94,
      true
     ],
     "time->space": [
-     20.85,
+     21.95,
+     false
+    ]
+   },
+   {
+    "mass": [
+     1.38,
+     true
+    ],
+    "mass->charge": [
+     1.06,
+     true
+    ],
+    "mass->space": [
+     5.84,
+     true
+    ],
+    "mass->time": [
+     13.43,
+     false
+    ],
+    "space": [
+     2.24,
+     true
+    ],
+    "space->charge": [
+     1.43,
+     true
+    ],
+    "space->time": [
+     8.43,
+     false
+    ],
+    "charge": [
+     1.33,
+     true
+    ],
+    "charge->space": [
+     3.36,
+     true
+    ],
+    "charge->time": [
+     13.71,
+     false
+    ],
+    "time": [
+     4.77,
+     true
+    ],
+    "time->mass": [
+     1.62,
+     true
+    ],
+    "time->space": [
+     21.05,
      false
     ]
    }
@@ -2301,171 +2301,171 @@
  },
  "no cross-laying": {
   "own": {
-   "mass": 1.51,
-   "space": 16.01,
-   "charge": 8.22,
-   "time": 13.46
+   "mass": 1.64,
+   "space": 16.0,
+   "charge": 8.61,
+   "time": 13.74
   },
   "own_passed": 2.67,
-  "passed": 9.33,
+  "passed": 8.67,
   "feasible": 12.67,
-  "switch_mean_loss": 9.59,
+  "switch_mean_loss": 9.88,
   "runs": [
    {
     "mass": [
-     1.26,
+     1.4,
      true
     ],
     "mass->charge": [
-     0.55,
+     1.01,
      true
     ],
     "mass->space": [
-     2.48,
+     2.75,
      true
     ],
     "mass->time": [
-     6.96,
+     7.36,
      true
     ],
     "space": [
-     3.17,
+     3.44,
      true
     ],
     "space->charge": [
-     0.96,
+     1.42,
      true
     ],
     "space->time": [
-     7.66,
-     true
+     8.02,
+     false
     ],
     "charge": [
-     22.83,
+     23.06,
      false
     ],
     "charge->space": [
-     16.76,
+     16.92,
      false
     ],
     "charge->time": [
-     7.65,
-     true
+     8.03,
+     false
     ],
     "time": [
-     26.64,
+     26.77,
      false
     ],
     "time->space": [
-     23.5,
+     23.65,
      false
     ]
    },
    {
     "mass": [
-     1.92,
+     2.05,
      true
     ],
     "mass->charge": [
-     1.0,
+     1.46,
      true
     ],
     "mass->space": [
-     1.9,
+     2.16,
      true
     ],
     "mass->time": [
-     6.17,
+     6.56,
      true
     ],
     "space": [
-     35.56,
+     35.05,
      false
     ],
     "space->charge": [
-     0.59,
+     1.06,
      true
     ],
     "space->time": [
-     5.99,
+     6.38,
      true
     ],
     "charge": [
-     0.93,
+     1.4,
      true
     ],
     "charge->space": [
-     4.51,
+     4.77,
      true
     ],
     "charge->time": [
-     5.72,
+     6.15,
      true
     ],
     "time": [
-     6.84,
+     7.19,
      true
     ],
     "time->mass": [
-     29.45,
+     29.48,
      false
     ],
     "time->space": [
-     34.85,
+     34.56,
      false
     ]
    },
    {
     "mass": [
-     1.35,
+     1.48,
      true
     ],
     "mass->charge": [
-     0.72,
+     1.19,
      true
     ],
     "mass->space": [
-     2.66,
+     2.93,
      true
     ],
     "mass->time": [
-     6.17,
+     6.61,
      true
     ],
     "space": [
-     9.3,
+     9.51,
      false
     ],
     "space->charge": [
-     0.66,
+     1.12,
      true
     ],
     "space->time": [
-     5.99,
+     6.39,
      true
     ],
     "charge": [
-     0.9,
+     1.36,
      true
     ],
     "charge->space": [
-     5.78,
+     6.03,
      true
     ],
     "charge->time": [
-     6.13,
+     6.58,
      true
     ],
     "time": [
-     6.91,
+     7.26,
      true
     ],
     "time->mass": [
-     29.5,
+     29.47,
      false
     ],
     "time->space": [
-     35.0,
+     34.72,
      false
     ]
    }

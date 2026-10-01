@@ -1,0 +1,591 @@
+{
+ "A": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "1",
+   "orphan_proxy": "1"
+  },
+  "23": {
+   "passed": 14,
+   "feasible": 16,
+   "own": {
+    "mass": 1.53,
+    "space": 1.58,
+    "charge": 2.2,
+    "time": 2.79
+   },
+   "fails": {
+    "charge->time": 9.11,
+    "mass->charge": 7.24
+   }
+  },
+  "41": {
+   "passed": 14,
+   "feasible": 16,
+   "own": {
+    "mass": 2.5,
+    "space": 1.66,
+    "charge": 2.19,
+    "time": 4.3
+   },
+   "fails": {
+    "charge->time": 10.33,
+    "time->space": 16.12
+   }
+  },
+  "7": {
+   "passed": 14,
+   "feasible": 16,
+   "own": {
+    "mass": 1.37,
+    "space": 2.11,
+    "charge": 3.46,
+    "time": 3.23
+   },
+   "fails": {
+    "charge->time": 9.3,
+    "mass->time": 10.05
+   }
+  }
+ },
+ "B": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "1",
+   "orphan_proxy": "1",
+   "transfer2": "1"
+  },
+  "7": {
+   "passed": 14,
+   "feasible": 16,
+   "own": {
+    "mass": 1.43,
+    "space": 2.12,
+    "charge": 3.51,
+    "time": 3.28
+   },
+   "fails": {
+    "charge->time": 8.8,
+    "mass->time": 9.49
+   }
+  }
+ },
+ "C12": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1",
+   "G": "12",
+   "cell": "8"
+  },
+  "7": {
+   "passed": 15,
+   "feasible": 16,
+   "own": {
+    "mass": 1.59,
+    "space": 2.16,
+    "charge": 3.33,
+    "time": 3.09
+   },
+   "fails": {
+    "time->space": 8.64
+   }
+  },
+  "lossless": {
+   "deaths": 0,
+   "ms_per_step": 12.152,
+   "grown_n": 134,
+   "organic": true,
+   "molts": 113
+  }
+ },
+ "C8": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1",
+   "G": "8",
+   "cell": "12"
+  },
+  "1000": {
+   "passed": 13,
+   "feasible": 15,
+   "own": {
+    "mass": 1.52,
+    "space": 1.4,
+    "charge": 2.21,
+    "time": 3.47
+   },
+   "fails": {
+    "charge->time": 8.45,
+    "time->space": 8.2
+   }
+  },
+  "23": {
+   "passed": 15,
+   "feasible": 16,
+   "own": {
+    "mass": 1.44,
+    "space": 1.82,
+    "charge": 2.41,
+    "time": 4.24
+   },
+   "fails": {
+    "time->space": 10.51
+   }
+  },
+  "41": {
+   "passed": 15,
+   "feasible": 16,
+   "own": {
+    "mass": 1.33,
+    "space": 2.37,
+    "charge": 2.1,
+    "time": 2.9
+   },
+   "fails": {
+    "charge->time": 8.91
+   }
+  },
+  "7": {
+   "passed": 16,
+   "feasible": 16,
+   "own": {
+    "mass": 2.26,
+    "space": 2.33,
+    "charge": 3.23,
+    "time": 3.46
+   },
+   "fails": {}
+  },
+  "lossless": {
+   "deaths": 0,
+   "ms_per_step": 11.236,
+   "grown_n": 134,
+   "organic": true,
+   "molts": 146
+  }
+ },
+ "C": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1"
+  },
+  "23": {
+   "passed": 16,
+   "feasible": 16,
+   "own": {
+    "mass": 1.67,
+    "space": 1.61,
+    "charge": 2.18,
+    "time": 2.75
+   },
+   "fails": {}
+  },
+  "41": {
+   "passed": 14,
+   "feasible": 16,
+   "own": {
+    "mass": 2.33,
+    "space": 1.58,
+    "charge": 2.19,
+    "time": 3.36
+   },
+   "fails": {
+    "charge->time": 8.69,
+    "mass->charge": 7.57
+   }
+  },
+  "7": {
+   "passed": 16,
+   "feasible": 16,
+   "own": {
+    "mass": 1.44,
+    "space": 2.12,
+    "charge": 3.54,
+    "time": 3.05
+   },
+   "fails": {}
+  },
+  "lossless": {
+   "deaths": 0,
+   "ms_per_step": 14.746,
+   "grown_n": 134,
+   "organic": true,
+   "molts": 114
+  }
+ },
+ "D": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1",
+   "molt_rate": "0.08"
+  },
+  "41": {
+   "passed": 13,
+   "feasible": 15,
+   "own": {
+    "mass": 1.2,
+    "space": 1.51,
+    "charge": 1.77,
+    "time": 3.27
+   },
+   "fails": {
+    "charge->time": 8.86,
+    "time->space": 13.26
+   }
+  }
+ },
+ "E": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1",
+   "k_swap": "0.3"
+  },
+  "41": {
+   "passed": 14,
+   "feasible": 16,
+   "own": {
+    "mass": 1.96,
+    "space": 1.49,
+    "charge": 1.99,
+    "time": 3.71
+   },
+   "fails": {
+    "charge->time": 8.73,
+    "mass->charge": 8.06
+   }
+  }
+ },
+ "cap": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0"
+  },
+  "7": {
+   "passed": 13,
+   "feasible": 16,
+   "own": {
+    "mass": 1.29,
+    "space": 2.15,
+    "charge": 3.15,
+    "time": 3.89
+   },
+   "fails": {
+    "charge->time": 13.95,
+    "mass->time": 15.77,
+    "time->space": 19.57
+   }
+  }
+ },
+ "capfast": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "molt_rate": "0.08"
+  },
+  "7": {
+   "passed": 13,
+   "feasible": 16,
+   "own": {
+    "mass": 1.83,
+    "space": 1.98,
+    "charge": 2.97,
+    "time": 3.59
+   },
+   "fails": {
+    "charge->time": 12.29,
+    "mass->time": 14.14,
+    "time->space": 18.1
+   }
+  }
+ },
+ "captr": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "transfer": "1"
+  },
+  "7": {
+   "passed": 11,
+   "feasible": 16,
+   "own": {
+    "mass": 1.58,
+    "space": 3.11,
+    "charge": 4.16,
+    "time": 5.87
+   },
+   "fails": {
+    "mass->space": 14.39,
+    "charge->time": 21.42,
+    "mass->time": 17.09,
+    "space->time": 9.2,
+    "time->space": 24.75
+   }
+  }
+ },
+ "molt": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "molt": "1"
+  },
+  "23": {
+   "passed": 12,
+   "feasible": 16,
+   "own": {
+    "mass": 1.25,
+    "space": 2.3,
+    "charge": 2.01,
+    "time": 3.87
+   },
+   "fails": {
+    "mass->space": 26.67,
+    "charge->time": 26.01,
+    "mass->time": 28.38,
+    "time->space": 15.61
+   }
+  },
+  "41": {
+   "passed": 11,
+   "feasible": 16,
+   "own": {
+    "mass": 1.43,
+    "space": 1.88,
+    "charge": 2.22,
+    "time": 3.93
+   },
+   "fails": {
+    "mass->space": 26.71,
+    "charge->time": 26.53,
+    "mass->time": 27.89,
+    "charge->space": 8.37,
+    "time->space": 15.88
+   }
+  },
+  "7": {
+   "passed": 12,
+   "feasible": 16,
+   "own": {
+    "mass": 1.38,
+    "space": 2.22,
+    "charge": 2.66,
+    "time": 3.7
+   },
+   "fails": {
+    "mass->space": 25.61,
+    "charge->time": 28.38,
+    "mass->time": 27.7,
+    "time->space": 16.52
+   }
+  }
+ },
+ "base_ll": {
+  "lossless": {
+   "deaths": 120,
+   "ms_per_step": 20.45,
+   "grown_n": 135,
+   "organic": true,
+   "molts": 0
+  }
+ },
+ "molt_ll": {
+  "lossless": {
+   "deaths": 0,
+   "ms_per_step": 21.194,
+   "grown_n": 138,
+   "organic": true,
+   "molts": 34
+  }
+ }
+}

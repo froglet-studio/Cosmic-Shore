@@ -25,6 +25,7 @@ import swarm_nca as sn  # noqa: E402
 torch.set_num_threads(int(os.environ.get("LIVE_THREADS", "2")))
 
 OUT = os.path.join(HERE, "results", "live")
+OUT2 = os.path.join(HERE, "results", "live2")
 R4 = lambda a: [round(float(v), 4) for v in np.asarray(a).reshape(-1)]
 
 
@@ -62,6 +63,34 @@ def evo_json():
         lock=dict(on=sw("sw_lock"), margin=0.25 / (1 + math.exp(-gv("lock")))),
         D=m.D.tolist(), swirl=dict(on=sw("sw_swirl") and float(np.abs(rate).max()) > 1e-4, rate=rate),
         axes=em._AXES.tolist())
+
+
+def sort_json():
+    """The sort model (results/sort/params.json): its config plus every plan's positional-information code
+    (sort_model.PlanCode - the k-means wells are built once with their own fixed seed, so the JS port reads
+    them rather than re-deriving them). Wells per (element, slot): weight, mean, inverse covariance, logdet;
+    the type's look as a full 32-channel state (field_swarm.invert_state)."""
+    import sort_model as sm
+    m = sm.load(os.path.join(HERE, "results", "sort", "params.json"))
+    cfg = asdict_(m.cfg)
+    codes = {}
+    for k, c in m.codes.items():
+        wells = {}
+        for (e, s_), (w, mu, inv, ld) in c.wells.items():
+            wells[f"{e},{s_}"] = dict(w=R6(w), mu=R6(mu), inv=R6(inv), ld=R6(ld), state=R6(c.state[(e, s_)]),
+                                      next=[int(x) for x in c.next[(e, s_)]])
+        codes[k] = dict(n=int(c.n), nslots=int(c.nslots), counts=c.counts.tolist(), axis=R6(c.axis), wells=wells)
+    from field_swarm import invert_state
+    fallback = [R6(invert_state(e, [1, 1, 1] if e != 2 else [2, .3, .3], 0, [0, 0, 1], [.3, 0])) for e in range(4)]
+    return dict(cfg=cfg, codes=codes, fallback=fallback)
+
+
+def asdict_(cfg):
+    from dataclasses import asdict
+    return {k: (list(v) if isinstance(v, tuple) else v) for k, v in asdict(cfg).items()}
+
+
+R6 = lambda a: [round(float(v), 6) for v in np.asarray(a).reshape(-1)]
 
 
 def swarm_from_states(st, N=None):
@@ -106,6 +135,15 @@ def pyref(nseeds, steps=240, kind="grid", switch=False):
     if kind == "evo":
         import evo_model as em
         model = em.EvoRule(np.load(os.path.join(HERE, "results", "evo", "genome.npy")))
+    elif kind.startswith("hgrid2"):
+        import hgrid2_model as hm
+        cfg = json.load(open(os.path.join(HERE, "results", "hgrid2", "params.json")))["cfg"]
+        if kind == "hgrid2_g12":
+            cfg["G"] = 12
+        model = hm.Boid2(sn.World(), hm.Cfg(**cfg))
+    elif kind == "sort":
+        import sort_model as sm
+        model = sm.load(os.path.join(HERE, "results", "sort", "params.json"))
     else:
         import hgrid_boid as hb
         cfg = hb.BoidCfg(**json.load(open(os.path.join(HERE, "results", "hgrid", "oracle", "summary.json")))["meta"]["cfg"])
@@ -140,9 +178,19 @@ def table():
     def load(p):
         p = os.path.join(OUT, p)
         return json.load(open(p)) if os.path.isfile(p) else []
+    if os.environ.get("LIVE_TABLE") == "2":
+        L2 = lambda p: json.load(open(os.path.join(OUT2, p))) if os.path.isfile(os.path.join(OUT2, p)) else []
+        pairs = [(m, "own", L2(f"pyref_{m}_switch.json"), L2(f"fidelity_{m}_js.json")) for m in ("hgrid2", "sort")]
+        if os.path.isfile(os.path.join(OUT2, "fidelity_hgrid2_g12_js.json")):
+            pairs.append(("hgrid2 G=12", "own", L2("pyref_hgrid2_g12_switch.json"), L2("fidelity_hgrid2_g12_js.json")))
+        return _table(pairs)
     pairs = [("grid", "own", load("pyref.json") + [r for r in load("pyref_grid_switch.json") if r.get("tag") == "switch"],
               load("fidelity_grid_js.json") + [r for r in load("fidelity_grid_switch_js.json") if r.get("tag") == "switch"]),
              ("evo", "own", load("pyref_evo_switch.json"), load("fidelity_evo_js.json"))]
+    return _table(pairs)
+
+
+def _table(pairs):
     out = ["| model | test | Python: loss to wanted plan | n | JS port: loss | n | <=8 Py / JS |", "|---|---|---|---|---|---|---|"]
     st = lambda v: f"{np.mean(v):.1f} +- {np.std(v):.1f}, median {np.median(v):.1f} [{np.min(v):.1f}, {np.max(v):.1f}]" if len(v) else "-"
     for name, _, py, js in pairs:
@@ -169,6 +217,11 @@ def main():
         p = os.path.join(OUT, "evo_rule.json")
         json.dump(evo_json(), open(p, "w"), separators=(",", ":"))
         print("wrote", p, os.path.getsize(p) // 1024, "KB")
+    elif cmd == "sort":
+        os.makedirs(OUT2, exist_ok=True)
+        p = os.path.join(OUT2, "sort_code.json")
+        json.dump(sort_json(), open(p, "w"), separators=(",", ":"))
+        print("wrote", p, os.path.getsize(p) // 1024, "KB")
     elif cmd == "table":
         print(table())
     elif cmd == "score":
@@ -182,7 +235,9 @@ def main():
         kind = sys.argv[3] if len(sys.argv) > 3 else "grid"
         sw_ = len(sys.argv) > 4 and sys.argv[4] == "switch"
         res = pyref(n, kind=kind, switch=sw_)
-        json.dump(res, open(os.path.join(OUT, f"pyref_{kind}{'_switch' if sw_ else ''}.json"), "w"), indent=1)
+        out = OUT2 if kind in ("hgrid2", "hgrid2_g12", "sort") else OUT
+        os.makedirs(out, exist_ok=True)
+        json.dump(res, open(os.path.join(out, f"pyref_{kind}{'_switch' if sw_ else ''}.json"), "w"), indent=1)
 
 
 if __name__ == "__main__":

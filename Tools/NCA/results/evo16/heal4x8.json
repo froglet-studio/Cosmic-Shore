@@ -1,0 +1,117 @@
+{
+ "seeds": [
+  7700,
+  7701,
+  7702,
+  7703,
+  7704,
+  7705,
+  7706,
+  7707
+ ],
+ "strikes": 4,
+ "results": {
+  "runs/evo16/cand_r1.npy": {
+   "mass": {
+    "heal_mean": 0.186,
+    "heal_ge_half": 0.41,
+    "before": 18.54,
+    "cut": 19.38,
+    "rec": 19.19,
+    "n": 32
+   },
+   "space": {
+    "heal_mean": -0.652,
+    "heal_ge_half": 0.0,
+    "before": 21.9,
+    "cut": 23.59,
+    "rec": 25.67,
+    "n": 32
+   },
+   "charge": {
+    "heal_mean": 0.054,
+    "heal_ge_half": 0.41,
+    "before": 15.96,
+    "cut": 16.84,
+    "rec": 16.37,
+    "n": 32
+   },
+   "time": {
+    "heal_mean": 0.363,
+    "heal_ge_half": 0.53,
+    "before": 25.32,
+    "cut": 28.89,
+    "rec": 26.68,
+    "n": 32
+   }
+  },
+  "results/evo16/g19/genome.npy": {
+   "mass": {
+    "heal_mean": 0.289,
+    "heal_ge_half": 0.56,
+    "before": 18.16,
+    "cut": 20.01,
+    "rec": 19.12,
+    "n": 32
+   },
+   "space": {
+    "heal_mean": -0.221,
+    "heal_ge_half": 0.12,
+    "before": 14.78,
+    "cut": 19.68,
+    "rec": 19.77,
+    "n": 32
+   },
+   "charge": {
+    "heal_mean": 0.422,
+    "heal_ge_half": 0.59,
+    "before": 14.15,
+    "cut": 16.27,
+    "rec": 15.12,
+    "n": 32
+   },
+   "time": {
+    "heal_mean": 0.391,
+    "heal_ge_half": 0.53,
+    "before": 26.42,
+    "cut": 30.35,
+    "rec": 28.2,
+    "n": 32
+   }
+  },
+  "results/evo16/genome.npy": {
+   "mass": {
+    "heal_mean": 0.128,
+    "heal_ge_half": 0.38,
+    "before": 18.23,
+    "cut": 19.89,
+    "rec": 19.26,
+    "n": 32
+   },
+   "space": {
+    "heal_mean": 0.013,
+    "heal_ge_half": 0.12,
+    "before": 15.38,
+    "cut": 20.75,
+    "rec": 20.11,
+    "n": 32
+   },
+   "charge": {
+    "heal_mean": 0.325,
+    "heal_ge_half": 0.56,
+    "before": 13.76,
+    "cut": 16.06,
+    "rec": 14.52,
+    "n": 32
+   },
+   "time": {
+    "heal_mean": 0.207,
+    "heal_ge_half": 0.38,
+    "before": 26.71,
+    "cut": 30.75,
+    "rec": 29.39,
+    "n": 32
+   }
+  }
+ }
+}

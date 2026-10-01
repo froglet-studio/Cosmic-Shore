@@ -346,7 +346,7 @@
       this.decidePlan(cnt, dcnt);
       if (this.gplan < 0) { this.clock++; this.hatchOnly(); return; }
       const kind = KINDS[this.gplan], nf = this.targets[kind].frames.length;
-      const fr = cfg.animate ? Math.floor(this.clock / cfg.period) % nf : 0;
+      const fr = cfg.animate ? Math.floor(this.clock / this.periodOf(kind)) % nf : 0;
       const { D, want: wantSlot } = this.pf.get(kind, fr);
       // Dd: wanted density per (element, DOMAIN) through the slot->domain map
       const Dd = this.Dd, inv = [0, 0, 0];
@@ -467,6 +467,8 @@
       this.clock++;
       this.lay(live, have, wanted);
     }
+
+    periodOf(kind) { return this.cfg.period; }
 
     hatchOnly() {
       for (let i = 0; i < this.N; i++) if (this.active[i] && !this.hatched[i]) {
@@ -722,6 +724,506 @@
     }
   }
 
+  // ------------------------------------------------------------------ hgrid2: the grid morphogen, round 2 ---
+  /* A port of hgrid2_model.Boid2 at results/hgrid2/params.json (= hgrid2_eval.BEST). Everything the round-1
+   * grid does (LiveSwarm.step above: plan, coarse class-deficit climb, laying, looks), plus:
+   *   * a plan, once committed, holds `lock` steps; a plan with fewer than 3 slots maps them onto domains 0..k-1
+   *   * staggered starvation: per-slot hunger rates in [0.5, 1.5] x starve_rate, a class never loses more than
+   *     its excess over the plan, an element never below the plan's count of it (misfits wither one by one)
+   *   * the FINE layer: per class, a Gaussian bump field of the plan's units minus the live tadpoles of that
+   *     class (sigma = 1.2 x the plan's own unit spacing); each tadpole climbs its own class's field, gain
+   *     scaled by how full the body is, plus feed-forward (a share of its nearby same-class units' motion)
+   *   * migrants: a tadpole where its class is barely wanted heads for the best site where its class is missing */
+  const HG2_CFG = {
+    k_class: 10.0, k_flow: 0.0, starve_tol: 0.0, k_fine: 2.0, k_fine_tot: 0.0, sigma_rel: 1.2, sigma: 2.5, settle: 1,
+    periods: { time: 16 }, interp: 1, stagger: 1, k_mig: 1.0, mig_th: 0.3, mig_L: 40.0, elem_floor: 1, small_slack: 2.0,
+    starve_slack: 0.0, lock: 60, dmap_low: 1, k_ff: 1.5,
+  };
+  class Hgrid2Swarm extends LiveSwarm {
+    constructor(targets, opts) {
+      opts = Object.assign({}, opts || {});
+      opts.cfg = Object.assign({}, HG2_CFG, opts.cfg || {});
+      super(targets, opts);
+      this.chg = -1e9;
+      const u = mulberry32(1234); this.U = new Float32Array(this.N); for (let i = 0; i < this.N; i++) this.U[i] = 0.5 + u();
+      this.nn = {};
+      for (const k of KINDS) {                       // the plan's own mean nearest-neighbour spacing (frame 0)
+        const p = targets[k].frames[0].p, n = p.length / 3; let s = 0;
+        for (let i = 0; i < n; i++) { let b = 1e18; for (let j = 0; j < n; j++) if (j !== i) { const d = (p[3 * i] - p[3 * j]) ** 2 + (p[3 * i + 1] - p[3 * j + 1]) ** 2 + (p[3 * i + 2] - p[3 * j + 2]) ** 2; if (d < b) b = d; } s += Math.sqrt(b); }
+        this.nn[k] = s / n;
+      }
+      this.migrants = 0; this.starved = 0;
+    }
+    clear() { super.clear(); this.chg = -1e9; }
+    periodOf(kind) { const p = this.cfg.periods && this.cfg.periods[kind]; return p || this.cfg.period; }
+    sigOf(kind) { return this.cfg.sigma_rel ? this.cfg.sigma_rel * this.nn[kind] : this.cfg.sigma; }
+    counts() {
+      const cnt = [0, 0, 0, 0], dcnt = [0, 0, 0];
+      for (let i = 0; i < this.N; i++) if (this.active[i] && this.hatched[i]) { cnt[this.elem[i]]++; dcnt[this.dom[i]]++; }
+      return { cnt, dcnt };
+    }
+    /** hgrid_boid.decide_plan with the real hysteresis, then Boid2.decide's commit lock and low_dmap */
+    decide() {
+      const cfg = this.cfg;
+      if (this.clock === 0) this.chg = -1e9;
+      const { cnt, dcnt } = this.counts(), n = cnt[0] + cnt[1] + cnt[2] + cnt[3];
+      const oldP = this.gplan, oldD = this.dmap.slice();
+      if (n > 0) {
+        let maj = 0; for (let e = 1; e < 4; e++) if (cnt[e] > cnt[maj]) maj = e;
+        const cur = this.gplan; let nw = cur;
+        if (cur < 0) nw = PLAN_OF[maj];
+        else { const ce = MAJOR[KINDS[cur]]; if (cnt[maj] > cnt[ce] + cfg.hyst * n) nw = PLAN_OF[maj]; }
+        if (nw !== cur) { this.gplan = nw; this.dmap = domainMap(dcnt, this.targets[KINDS[nw]].slot_mix); }
+      }
+      if (oldP >= 0 && this.gplan !== oldP) {
+        if (cfg.lock && this.clock - this.chg < cfg.lock) { this.gplan = oldP; this.dmap = oldD; }
+        else {
+          this.chg = this.clock;
+          this.switches.push({ step: this.clock, from: KINDS[oldP], to: KINDS[this.gplan] });
+          this.events.push({ type: 'switch', from: KINDS[oldP], to: KINDS[this.gplan], step: this.clock });
+        }
+      }
+      if (cfg.dmap_low) this.lowDmap(dcnt);
+    }
+    lowDmap(dcnt) {
+      if (this.gplan < 0) return;
+      const sm0 = this.targets[KINDS[this.gplan]].slot_mix, k = sm0.filter(c => c > 0).length;
+      if (k >= 3) return;
+      const have = new Set(this.dmap.slice(0, k)); let ok = have.size === k; for (let d = 0; d < k; d++) if (!have.has(d)) ok = false;
+      if (ok) return;
+      const sm = sm0.slice(0, k);
+      const dd = [...Array(k).keys()].sort((a, b) => dcnt[b] - dcnt[a]);        // stable, as Python's sorted
+      const order = [...Array(k).keys()].sort((a, b) => sm[b] - sm[a]);
+      let p = [0, 0, 0];
+      order.forEach((s_, q) => { p[s_] = dd[q]; });
+      if (k === 2) p[2] = [0, 1, 2].find(d => !p.slice(0, 2).includes(d));
+      if (k === 1) p = [0, 1, 2];
+      this.dmap = p;
+    }
+    step() {
+      const cfg = this.cfg, N = this.N;
+      this.decide();
+      const pos0 = new Float32Array(this.pos), live0 = new Uint8Array(N);
+      for (let i = 0; i < N; i++) live0[i] = this.active[i] && this.hatched[i] ? 1 : 0;
+      const h0 = cfg.hyst, st0 = cfg.starve;
+      cfg.hyst = 1e9; if (cfg.stagger) cfg.starve = 0;
+      try { super.step(); } finally { cfg.hyst = h0; cfg.starve = st0; }
+      if (cfg.stagger && cfg.starve) this.starveStaggered();
+      if (!cfg.k_fine && !cfg.k_fine_tot) return;
+      if (this.gplan < 0) return;
+      const live = new Uint8Array(N); let nl = 0, mx = 0, my = 0, mz = 0;
+      for (let i = 0; i < N; i++) if (live0[i] && this.active[i] && this.hatched[i]) { live[i] = 1; nl++; mx += pos0[3 * i]; my += pos0[3 * i + 1]; mz += pos0[3 * i + 2]; }
+      if (nl < 2) return;
+      let cx = mx / nl, cy = my / nl, cz = mz / nl;
+      if (cfg.quant) { cx = roundEven(cx / cfg.cell) * cfg.cell; cy = roundEven(cy / cfg.cell) * cfg.cell; cz = roundEven(cz / cfg.cell) * cfg.cell; }
+      const tg = this.fineTargets(cx, cy, cz);
+      this.fineDisp(tg, live, nl);
+      if (cfg.k_mig) this.migrate(tg, live);
+    }
+    /** Boid2.fine_targets: the plan's units (interpolated between frames) placed at the grid centre, their class, motion */
+    fineTargets(cx, cy, cz) {
+      const kind = KINDS[this.gplan], T = this.targets[kind], frs = T.frames, nf = frs.length, per = this.periodOf(kind);
+      const c = this.clock, f = this.cfg.animate ? Math.floor(c / per) % nf : 0, a = this.cfg.animate ? (c % per) / per : 0;
+      const p0 = frs[f].p, p1 = frs[(f + 1) % nf].p, M = p0.length / 3, p = new Float32Array(3 * M), vel = new Float32Array(3 * M), cls = new Int8Array(M);
+      const ctr = [cx, cy, cz];
+      for (let t = 0; t < M; t++) {
+        for (let k = 0; k < 3; k++) {
+          const q0 = p0[3 * t + k], q1 = p1[3 * t + k];
+          vel[3 * t + k] = (q1 - q0) / per;
+          p[3 * t + k] = (this.cfg.interp ? q0 + a * (q1 - q0) : q0) + ctr[k];
+        }
+        cls[t] = frs[f].e[t] * 3 + this.dmap[frs[f].sl[t]];
+      }
+      const byCls = Array.from({ length: NCLS }, () => []);
+      for (let t = 0; t < M; t++) byCls[cls[t]].push(t);
+      return { p, vel, cls, M, byCls, sig: this.sigOf(kind) };
+    }
+    /** Boid2.fine_disp: each live tadpole climbs (own class's wanted bumps - own class's live bumps) */
+    fineDisp(tg, live, nl) {
+      const cfg = this.cfg, N = this.N, pos = this.pos, elem = this.elem, dom = this.dom, W = this.world;
+      const s2 = 2 * tg.sig * tg.sig, isg2 = 1 / (tg.sig * tg.sig);
+      const mine = Array.from({ length: NCLS }, () => []);
+      for (let i = 0; i < N; i++) if (live[i]) mine[elem[i] * 3 + dom[i]].push(i);
+      let k = cfg.k_fine; if (cfg.settle) k *= Math.max(0, Math.min(1, nl / tg.M));
+      const disp = new Float32Array(3 * N);
+      for (let c = 0; c < NCLS; c++) {
+        const ts = tg.byCls[c], xs = mine[c];
+        for (const i of xs) {
+          const x = pos[3 * i], y = pos[3 * i + 1], z = pos[3 * i + 2];
+          let gx = 0, gy = 0, gz = 0, wsum = 0, fx = 0, fy = 0, fz = 0;
+          for (const t of ts) {
+            const dx = x - tg.p[3 * t], dy = y - tg.p[3 * t + 1], dz = z - tg.p[3 * t + 2], w = Math.exp(-(dx * dx + dy * dy + dz * dz) / s2);
+            gx -= w * dx; gy -= w * dy; gz -= w * dz; wsum += w; fx += w * tg.vel[3 * t]; fy += w * tg.vel[3 * t + 1]; fz += w * tg.vel[3 * t + 2];
+          }
+          for (const j of xs) {
+            const dx = x - pos[3 * j], dy = y - pos[3 * j + 1], dz = z - pos[3 * j + 2], w = Math.exp(-(dx * dx + dy * dy + dz * dz) / s2);
+            gx += w * dx; gy += w * dy; gz += w * dz;                                  // - g_have
+          }
+          let ux = k * gx * isg2, uy = k * gy * isg2, uz = k * gz * isg2;
+          if (cfg.k_ff) { const ws = Math.max(wsum, 0.3); ux += cfg.k_ff * fx / ws; uy += cfg.k_ff * fy / ws; uz += cfg.k_ff * fz / ws; }
+          const dn = Math.hypot(ux, uy, uz), vm = W.vmax[elem[i]], f = Math.min(vm / Math.max(dn, 1e-6), 1);
+          disp[3 * i] = ux * f; disp[3 * i + 1] = uy * f; disp[3 * i + 2] = uz * f;
+        }
+      }
+      for (let i = 0; i < N; i++) if (live[i]) { pos[3 * i] += disp[3 * i]; pos[3 * i + 1] += disp[3 * i + 1]; pos[3 * i + 2] += disp[3 * i + 2]; }
+    }
+    /** Boid2.migrate: a tadpole where its class is barely wanted heads for the neediest site of its class */
+    migrate(tg, live) {
+      const cfg = this.cfg, N = this.N, pos = this.pos, elem = this.elem, dom = this.dom, W = this.world, s2 = 2 * tg.sig * tg.sig;
+      const mine = Array.from({ length: NCLS }, () => []);
+      for (let i = 0; i < N; i++) if (live[i]) mine[elem[i] * 3 + dom[i]].push(i);
+      const x0 = new Float32Array(pos);
+      let nm = 0;
+      for (let c = 0; c < NCLS; c++) {
+        const ts = tg.byCls[c], xs = mine[c]; if (!xs.length) continue;
+        // own_want per tadpole, have per site (Gxt over the same class)
+        const G = new Float32Array(xs.length * ts.length), own = new Float32Array(xs.length), have = new Float32Array(ts.length);
+        let any = false;
+        xs.forEach((i, a) => {
+          for (let b = 0; b < ts.length; b++) { const t = ts[b];
+            const dx = x0[3 * i] - tg.p[3 * t], dy = x0[3 * i + 1] - tg.p[3 * t + 1], dz = x0[3 * i + 2] - tg.p[3 * t + 2];
+            const w = Math.exp(-(dx * dx + dy * dy + dz * dz) / s2); G[a * ts.length + b] = w; own[a] += w; have[b] += w; }
+          if (own[a] < cfg.mig_th) any = true;
+        });
+        if (!any || !ts.length) continue;
+        const want = new Float32Array(ts.length);
+        for (let b = 0; b < ts.length; b++) { const t = ts[b]; let s = 0;
+          for (let b2 = 0; b2 < ts.length; b2++) { const u = ts[b2]; const dx = tg.p[3 * t] - tg.p[3 * u], dy = tg.p[3 * t + 1] - tg.p[3 * u + 1], dz = tg.p[3 * t + 2] - tg.p[3 * u + 2]; s += Math.exp(-(dx * dx + dy * dy + dz * dz) / s2); }
+          want[b] = s; }
+        xs.forEach((i, a) => {
+          if (!(own[a] < cfg.mig_th)) return;
+          let best = -1, bs = -Infinity;
+          for (let b = 0; b < ts.length; b++) { const t = ts[b];
+            const dist = Math.hypot(tg.p[3 * t] - x0[3 * i], tg.p[3 * t + 1] - x0[3 * i + 1], tg.p[3 * t + 2] - x0[3 * i + 2]);
+            const sc = want[b] - have[b] - dist / cfg.mig_L; if (sc > bs) { bs = sc; best = b; } }
+          const t = ts[best];
+          const dx = tg.p[3 * t] - x0[3 * i], dy = tg.p[3 * t + 1] - x0[3 * i + 1], dz = tg.p[3 * t + 2] - x0[3 * i + 2], dl = Math.hypot(dx, dy, dz);
+          const sl = cfg.k_mig * W.vmax[elem[i]];
+          if (dl < sl) { pos[3 * i] = x0[3 * i] + dx; pos[3 * i + 1] = x0[3 * i + 1] + dy; pos[3 * i + 2] = x0[3 * i + 2] + dz; }
+          else { const f = sl / Math.max(dl, 1e-6); pos[3 * i] = x0[3 * i] + f * dx; pos[3 * i + 1] = x0[3 * i + 1] + f * dy; pos[3 * i + 2] = x0[3 * i + 2] + f * dz; }
+          nm++;
+        });
+      }
+      this.migrants = nm;
+    }
+    /** Boid2.starve_staggered */
+    starveStaggered() {
+      const cfg = this.cfg, N = this.N, S = this.S, elem = this.elem, dom = this.dom;
+      if (this.gplan < 0) return;
+      const have = new Float32Array(NCLS), want = new Float32Array(NCLS);
+      for (let i = 0; i < N; i++) if (this.active[i] && this.hatched[i]) have[elem[i] * 3 + dom[i]]++;
+      const fr = this.targets[KINDS[this.gplan]].frames[0];
+      for (let t = 0; t < fr.e.length; t++) want[fr.e[t] * 3 + this.dmap[fr.sl[t]]]++;
+      const slack = new Float32Array(NCLS).fill(cfg.starve_slack);
+      if (cfg.small_slack >= 0) for (let e = 0; e < 4; e++) if (want[e * 3] + want[e * 3 + 1] + want[e * 3 + 2] <= 2) for (let d = 0; d < 3; d++) slack[e * 3 + d] = cfg.small_slack;
+      const excess = new Float32Array(NCLS);
+      for (let c = 0; c < NCLS; c++) excess[c] = Math.max(have[c] - Math.floor((1 + cfg.starve_tol) * want[c]) - slack[c], 0);
+      if (cfg.elem_floor) for (let e = 0; e < 4; e++) {
+        const he = have[e * 3] + have[e * 3 + 1] + have[e * 3 + 2], we = want[e * 3] + want[e * 3 + 1] + want[e * 3 + 2];
+        const eexc = Math.max(he - we - slack[e * 3], 0), tot = Math.max(excess[e * 3] + excess[e * 3 + 1] + excess[e * 3 + 2], 1e-6), r = Math.min(eexc / tot, 1);
+        for (let d = 0; d < 3; d++) excess[e * 3 + d] = Math.floor(excess[e * 3 + d] * r + 1e-4);
+      }
+      const cand = [];
+      for (let i = 0; i < N; i++) {
+        const o = 13 * i + 12, live = this.active[i] && this.hatched[i], cl = elem[i] * 3 + dom[i];
+        S[o] = live && excess[cl] > 0 ? S[o] + cfg.starve_rate * this.U[i] : Math.max(S[o] - cfg.starve_rate, 0);
+        if (live && S[o] > 1.0) cand.push(i);
+      }
+      cand.sort((a, b) => S[13 * b + 12] - S[13 * a + 12]);
+      const quota = excess.slice();
+      for (const i of cand) {
+        const c = elem[i] * 3 + dom[i];
+        if (quota[c] >= 1) { quota[c]--; this.deaths++; this.starved++; this.kill(i, 'death'); }
+        else S[13 * i + 12] = 1.0;
+      }
+    }
+  }
+  function domainMap(dcnt, slotMix) {
+    const sh = [0, 1, 2].map(s => slotMix[s] || 0), ss = sh[0] + sh[1] + sh[2], n = dcnt[0] + dcnt[1] + dcnt[2];
+    let best = -1, arg = PERM3[0];
+    for (const p of PERM3) { let v = 0; for (let s = 0; s < 3; s++) v += Math.min(dcnt[p[s]], sh[s] / ss * n); if (v > best + 1e-6) { best = v; arg = p; } }
+    return arg.slice();
+  }
+
+  // ------------------------------------------------------------------ sort: emergent cell sorting ---
+  /* A port of sort_model.SortSwarm at results/sort/params.json. No grid, no network, no assigned places:
+   *   * a tadpole's TYPE = (element, region); a region is the body part its DOMAIN plays in the current plan
+   *     (the domain -> region map is re-picked from the census every role_every steps, sticky)
+   *   * positional information: per type a mixture of Gaussian wells in body coordinates (origin = the swarm's
+   *     centroid); a newborn COMMITS to the well its type under-occupies most and climbs it
+   *   * neighbours: collision, differential adhesion (unlike types push apart harder than like), Potts swaps
+   *   * composition: a parent lays while its class is short of the plan (or lays its domain's most-needed
+   *     element); total headcount is capped at the plan's; a SURPLUS tadpole MOLTS into a deficit element of
+   *     its own domain, and may transfer to the neediest region. Nothing dies on a clock or of hunger.
+   * The wells are PlanCode's (k-means with its own fixed seed), exported once by live_export.py sort. */
+  const H_ROLE = 12, H_EST = 13, H_VEL = 16, H_AGE = 19, H_FATE = 20, H_FKEY = 21;
+  function sortPerms(k) { return k === 1 ? [[0]] : k === 2 ? [[0, 1], [1, 0]] : PERM3; }
+  class SortSwarm extends LiveSwarm {
+    constructor(targets, code, opts) {
+      opts = Object.assign({}, opts || {}, { stride: 32 });
+      super(targets, opts);
+      this.code = code; this.scfg = Object.assign({}, code.cfg, (opts || {}).scfg || {});
+      if (!code._prep) {
+        for (const k of KINDS) {
+          const c = code.codes[k]; c.keys = [];
+          for (const key of Object.keys(c.wells)) {
+            const [e, s] = key.split(',').map(Number), w = c.wells[key];
+            w.e = e; w.s = s; w.K = w.w.length; w.logw = w.w.map(Math.log); c.keys.push(w);
+          }
+        }
+        code._prep = true;
+      }
+      this.mem = null; this.molts = 0; this.transfers = 0;
+    }
+    clear() { super.clear(); this.mem = null; }
+    reset() {
+      const c = [0, 0, 0, 0]; for (let i = 0; i < this.N; i++) if (this.active[i] && this.hatched[i]) c[this.elem[i]]++;
+      let mx = 0; for (let e = 1; e < 4; e++) if (c[e] > c[mx]) mx = e;
+      this.mem = { plan: KINDS[PLAN_OF[mx]], cand: KINDS[PLAN_OF[mx]], cand_n: 0, perm: null, t: 0 };
+    }
+    pickPerm(code, idx, old) {
+      const cen = [0, 1, 2, 3].map(() => [0, 0, 0]);
+      for (const i of idx) cen[this.elem[i]][this.dom[i]]++;
+      let tot = 0; cen.forEach(r => r.forEach(v => tot += v)); tot = Math.max(1, tot);
+      const scale = tot / Math.max(1, code.n);
+      let best = null, arg = null;
+      for (const perm of sortPerms(code.nslots)) {
+        let cost = 0;
+        for (let e = 0; e < 4; e++) for (let s = 0; s < code.nslots; s++) cost += Math.abs(cen[e][perm[s]] - code.counts[e][s] * scale);
+        if (old && old.length === perm.length && old.every((v, q) => v === perm[q])) cost -= 2.0;
+        if (best === null || cost < best) { best = cost; arg = perm; }
+      }
+      return arg.slice();
+    }
+    effRole(i, roleOfDom) {
+      let r = roleOfDom[this.dom[i]];
+      const pid = KINDS.indexOf(this.mem.plan), h = Math.trunc(this.S[32 * i + H_ROLE]) - 1;
+      if (h >= 0 && Math.floor(h / 4) === pid) r = h % 4;
+      return r;
+    }
+    census44(roleOfDom, eggs) {
+      const cen = [0, 1, 2, 3].map(() => [0, 0, 0, 0]);
+      for (let i = 0; i < this.N; i++) if (this.active[i] && (eggs || this.hatched[i])) { const r = this.effRole(i, roleOfDom); cen[this.elem[i]][r < 0 ? 3 : r]++; }
+      return cen;
+    }
+    poisson(lam) { const L = Math.exp(-lam); let k = 0, p = 1; do { k++; p *= this.rng(); } while (p > L); return k - 1; }
+    permutation(n) { const a = [...Array(n).keys()]; return shuffle(a, this.rng); }
+    step() {
+      this.prev.set(this.pos);
+      if (this.clock === 0 || !this.mem) this.reset();
+      this.sortStep();
+      this.clock++;
+      this.gplan = KINDS.indexOf(this.mem.plan);
+    }
+    sortStep() {
+      const cfg = this.scfg, m = this.mem, rng = this.rng, N = this.N, S = this.S, pos = this.pos, elem = this.elem, dom = this.dom;
+      let idx = []; for (let i = 0; i < N; i++) if (this.active[i] && this.hatched[i]) idx.push(i);
+      if (!idx.length) return;
+      // --- plan from element ratios, with dwell hysteresis
+      const counts = [0, 0, 0, 0]; for (const i of idx) counts[elem[i]]++;
+      const cur = MAJOR[m.plan]; let top = 0; for (let e = 1; e < 4; e++) if (counts[e] > counts[top]) top = e;
+      const maj = counts[cur] === counts[top] ? cur : top;
+      let contested = false;
+      if (maj !== cur) {
+        const cand = KINDS[PLAN_OF[maj]];
+        m.cand_n = m.cand === cand ? m.cand_n + 1 : 1; m.cand = cand;
+        if (m.cand_n >= cfg.dwell) {
+          this.switches.push({ step: this.clock, from: m.plan, to: cand }); this.events.push({ type: 'switch', from: m.plan, to: cand, step: this.clock });
+          m.plan = cand; m.perm = null; m.cand_n = 0;
+        } else contested = true;
+      } else { m.cand = m.plan; m.cand_n = 0; }
+      const code = this.code.codes[m.plan];
+      if (m.perm === null || m.t % cfg.role_every === 0) m.perm = this.pickPerm(code, idx, m.perm);
+      const perm = m.perm, roleOfDom = [-1, -1, -1];
+      perm.forEach((d, s) => { roleOfDom[d] = s; });
+      m.t++;
+      // --- hatching
+      for (let i = 0; i < N; i++) if (this.active[i] && !this.hatched[i]) { S[32 * i + H_AGE] += 1; if (S[32 * i + H_AGE] >= cfg.hatch_steps) this.hatched[i] = 1; }
+      idx = []; for (let i = 0; i < N; i++) if (this.active[i] && this.hatched[i]) idx.push(i);
+      const n = idx.length, role = new Int8Array(n);
+      for (let a = 0; a < n; a++) role[a] = this.effRole(idx[a], roleOfDom);
+      // --- centre and body coords
+      let c0 = [0, 0, 0]; for (const i of idx) for (let k = 0; k < 3; k++) c0[k] += pos[3 * i + k]; c0 = c0.map(v => v / n);
+      const xb = new Float64Array(3 * n); for (let a = 0; a < n; a++) for (let k = 0; k < 3; k++) xb[3 * a + k] = pos[3 * idx[a] + k] - c0[k];
+      // --- own-type chemotaxis toward one's fated well
+      const G = new Float64Array(3 * n), MU = Float64Array.from(xb), INV = new Float64Array(9 * n), hasWell = new Uint8Array(n);
+      const pid = KINDS.indexOf(m.plan);
+      for (const w of code.keys) {
+        const e = w.e, s = w.s, sel = []; for (let a = 0; a < n; a++) if (elem[idx[a]] === e && role[a] === s) sel.push(a);
+        if (!sel.length) continue;
+        const key = 1 + pid * 16 + e * 4 + s;
+        const stale = sel.filter(a => { const j = idx[a]; return S[32 * j + H_FATE] < 1 || S[32 * j + H_FKEY] !== key; });
+        if (stale.length) {
+          const occ = new Float64Array(w.K);
+          for (const a of sel) { const j = idx[a]; if (!(S[32 * j + H_FATE] < 1 || S[32 * j + H_FKEY] !== key)) occ[Math.trunc(S[32 * j + H_FATE] - 1)]++; }
+          const need = w.w.map((v, q) => v * sel.length - occ[q]);
+          for (const a of stale) {
+            const j = idx[a]; let f = 0, bv = -Infinity;
+            for (let q = 0; q < w.K; q++) { const v = need[q] + 1e-3 * rng(); if (v > bv) { bv = v; f = q; } }
+            S[32 * j + H_FATE] = f + 1; S[32 * j + H_FKEY] = key; need[f] -= 1;
+          }
+        }
+        for (const a of sel) {
+          const k = Math.trunc(S[32 * idx[a] + H_FATE] - 1), mu = w.mu, inv = w.inv;
+          const d0 = xb[3 * a] - mu[3 * k], d1 = xb[3 * a + 1] - mu[3 * k + 1], d2 = xb[3 * a + 2] - mu[3 * k + 2], o = 9 * k;
+          G[3 * a] = inv[o] * d0 + inv[o + 1] * d1 + inv[o + 2] * d2;
+          G[3 * a + 1] = inv[o + 3] * d0 + inv[o + 4] * d1 + inv[o + 5] * d2;
+          G[3 * a + 2] = inv[o + 6] * d0 + inv[o + 7] * d1 + inv[o + 8] * d2;
+          for (let q = 0; q < 3; q++) MU[3 * a + q] = mu[3 * k + q];
+          for (let q = 0; q < 9; q++) INV[9 * a + q] = inv[o + q];
+          hasWell[a] = 1;
+        }
+      }
+      // orphans (no region, or a class the plan has no wells for): climb the plan's whole body (best type)
+      for (let a = 0; a < n; a++) {
+        if (hasWell[a] || code.wells[elem[idx[a]] + ',' + role[a]]) continue;
+        let Eb = Infinity, gb = [0, 0, 0];
+        for (const w of code.keys) { const r = mixGrad(w, xb[3 * a], xb[3 * a + 1], xb[3 * a + 2]); if (r.E < Eb) { Eb = r.E; gb = r.g; } }
+        G[3 * a] = gb[0]; G[3 * a + 1] = gb[1]; G[3 * a + 2] = gb[2];
+      }
+      const want = new Float64Array(3 * n);
+      for (let a = 0; a < n; a++) {
+        const sx = -cfg.k_well * G[3 * a], sy = -cfg.k_well * G[3 * a + 1], sz = -cfg.k_well * G[3 * a + 2], nr = Math.hypot(sx, sy, sz);
+        const f = Math.min(1, cfg.well_clip / Math.max(nr, 1e-9));
+        want[3 * a] = sx * f; want[3 * a + 1] = sy * f; want[3 * a + 2] = sz * f;
+      }
+      // --- neighbours: collision, adhesion, swaps (dense, as the Python)
+      const P = new Float64Array(3 * n); for (let a = 0; a < n; a++) for (let k = 0; k < 3; k++) P[3 * a + k] = pos[3 * idx[a] + k];
+      const fcol = new Float64Array(3 * n), fadh = new Float64Array(3 * n), fsw = new Float64Array(3 * n);
+      const el = new Int8Array(n); for (let a = 0; a < n; a++) el[a] = elem[idx[a]];
+      const R2s = cfg.r_swap * cfg.r_swap, R2a = cfg.R_adh * cfg.R_adh, R2c = cfg.r0 * cfg.r0;
+      const eAt = (a, y0, y1, y2) => { const d0 = y0 - MU[3 * a], d1 = y1 - MU[3 * a + 1], d2 = y2 - MU[3 * a + 2], o = 9 * a;
+        return 0.5 * (d0 * (INV[o] * d0 + INV[o + 1] * d1 + INV[o + 2] * d2) + d1 * (INV[o + 3] * d0 + INV[o + 4] * d1 + INV[o + 5] * d2) + d2 * (INV[o + 6] * d0 + INV[o + 7] * d1 + INV[o + 8] * d2)); };
+      for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) {
+        const dx = P[3 * b] - P[3 * a], dy = P[3 * b + 1] - P[3 * a + 1], dz = P[3 * b + 2] - P[3 * a + 2], q = dx * dx + dy * dy + dz * dz;
+        if (q >= R2a && q >= R2s && q >= R2c) continue;
+        const d = Math.sqrt(q);
+        if (d < cfg.r0) { const r = (cfg.r0 - d) / d; fcol[3 * a] -= cfg.k_rep * r * dx; fcol[3 * a + 1] -= cfg.k_rep * r * dy; fcol[3 * a + 2] -= cfg.k_rep * r * dz;
+          fcol[3 * b] += cfg.k_rep * r * dx; fcol[3 * b + 1] += cfg.k_rep * r * dy; fcol[3 * b + 2] += cfg.k_rep * r * dz; }
+        if (d < cfg.R_adh && d > cfg.r0 * 0.9) {
+          const st = el[a] === el[b] && role[a] === role[b], se = el[a] === el[b], sr = role[a] === role[b];
+          const A = (st ? cfg.a_same : se ? cfg.a_elem : sr ? cfg.a_role : cfg.a_other) / d;
+          fadh[3 * a] += A * dx; fadh[3 * a + 1] += A * dy; fadh[3 * a + 2] += A * dz;
+          fadh[3 * b] -= A * dx; fadh[3 * b + 1] -= A * dy; fadh[3 * b + 2] -= A * dz;
+        }
+        if (cfg.swap > 0 && d < cfg.r_swap) {
+          const gain = (eAt(a, xb[3 * a], xb[3 * a + 1], xb[3 * a + 2]) + eAt(b, xb[3 * b], xb[3 * b + 1], xb[3 * b + 2]))
+            - (eAt(a, xb[3 * b], xb[3 * b + 1], xb[3 * b + 2]) + eAt(b, xb[3 * a], xb[3 * a + 1], xb[3 * a + 2]));
+          if (gain > cfg.swap_margin) {
+            const h = cfg.swap * 0.5;
+            fsw[3 * a] += h * dx; fsw[3 * a + 1] += h * dy; fsw[3 * a + 2] += h * dz;
+            fsw[3 * b] -= h * dx; fsw[3 * b + 1] -= h * dy; fsw[3 * b + 2] -= h * dz;
+            const r = Math.max(cfg.r0 - d, 0) / d * cfg.k_rep;
+            fcol[3 * a] += r * dx; fcol[3 * a + 1] += r * dy; fcol[3 * a + 2] += r * dz;
+            fcol[3 * b] -= r * dx; fcol[3 * b + 1] -= r * dy; fcol[3 * b + 2] -= r * dz;
+          }
+        }
+      }
+      for (let a = 0; a < n; a++) {
+        const i = idx[a], o = 32 * i + H_VEL;
+        let vx = cfg.inertia * S[o] + (1 - cfg.inertia) * (want[3 * a] + fcol[3 * a] + fadh[3 * a] + fsw[3 * a]);
+        let vy = cfg.inertia * S[o + 1] + (1 - cfg.inertia) * (want[3 * a + 1] + fcol[3 * a + 1] + fadh[3 * a + 1] + fsw[3 * a + 1]);
+        let vz = cfg.inertia * S[o + 2] + (1 - cfg.inertia) * (want[3 * a + 2] + fcol[3 * a + 2] + fadh[3 * a + 2] + fsw[3 * a + 2]);
+        const sp = Math.hypot(vx, vy, vz), f = Math.min(1, cfg.vmax[el[a]] / Math.max(sp, 1e-9));
+        vx *= f; vy *= f; vz *= f;
+        pos[3 * i] += vx; pos[3 * i + 1] += vy; pos[3 * i + 2] += vz;
+        S[o] = vx; S[o + 1] = vy; S[o + 2] = vz;
+        this.vel[3 * i] = vx; this.vel[3 * i + 1] = vy; this.vel[3 * i + 2] = vz;
+      }
+      // --- look: the type's code state
+      const keep = new Float32Array(H_FKEY - H_ROLE + 1);
+      for (let a = 0; a < n; a++) {
+        const e = el[a], r = role[a], j = idx[a];
+        let w = code.wells[e + ',' + r], st = w ? w.state : null;
+        if (!st) for (let s2 = 0; s2 < 3 && !st; s2++) { const w2 = code.wells[e + ',' + s2]; if (w2) st = w2.state; }
+        if (!st) st = this.code.fallback[e];
+        const o = 32 * j;
+        keep.set(S.subarray(o + H_ROLE, o + H_FKEY + 1));
+        for (let q = 0; q < 32; q++) S[o + q] = st[q];
+        S.set(keep, o + H_ROLE);
+      }
+      // --- composition
+      if (!contested) { this.sortLay(code, roleOfDom); if (cfg.molt) this.sortMolt(code, roleOfDom); }
+    }
+    sortLay(code, roleOfDom) {
+      const cfg = this.scfg, rng = this.rng, N = this.N, S = this.S, elem = this.elem, dom = this.dom, pos = this.pos;
+      const cen = this.census44(roleOfDom, true), want = cen.map((_, e) => [0, 1, 2].map(s => Math.ceil(code.counts[e][s] * cfg.over)).concat([0]));
+      const deficit = want.map((r, e) => r.map((v, s) => v - cen[e][s]));
+      let tot = 0; for (let e = 0; e < 4; e++) for (let s = 0; s < 3; s++) tot += Math.max(deficit[e][s], 0);
+      if (tot <= 0) return;
+      const idx = [], free = []; let nact = 0;
+      for (let i = 0; i < N; i++) { if (this.active[i]) { nact++; if (this.hatched[i]) idx.push(i); } else free.push(i); }
+      const room = Math.ceil(code.n * cfg.over) - nact;
+      const fill = want.map((r, e) => r.map((v, s) => v > 0 ? cen[e][s] / Math.max(v, 1) : 9.0));
+      const nlay = Math.min(cfg.lay_max, free.length, room, this.poisson(Math.max(cfg.lay_rate * idx.length, 0.2)));
+      if (nlay <= 0) return;
+      const ec = [0, 0, 0, 0]; for (let i = 0; i < N; i++) if (this.active[i]) ec[elem[i]]++;
+      const maj = MAJOR[this.mem.plan];
+      let laid = 0;
+      for (const q of this.permutation(idx.length)) {
+        const i = idx[q];
+        if (laid >= nlay || !free.length) break;
+        const r = roleOfDom[dom[i]]; if (r < 0) continue;
+        const e = elem[i];
+        let low = 0; for (let x = 1; x < 4; x++) if (fill[x][r] < fill[low][r]) low = x;
+        let ce;
+        if (deficit[e][r] > 0 && fill[e][r] <= fill[low][r] + cfg.fill_tol) ce = e;
+        else if (rng() < cfg.p_cross && deficit[low][r] > 0) ce = low;
+        else continue;
+        if (ce !== maj && ec[ce] + 1 >= ec[maj]) { if (rng() < cfg.p_cross && deficit[maj][r] > 0) ce = maj; else continue; }
+        ec[ce]++;
+        const j = free.shift();
+        let dx = rng.normal(), dy = rng.normal(), dz = rng.normal(); const dl = Math.max(Math.hypot(dx, dy, dz), 1e-6);
+        const est = S.slice(32 * i + H_EST, 32 * i + H_EST + 3);
+        this.place(j, pos[3 * i] + cfg.r_bud * dx / dl, pos[3 * i + 1] + cfg.r_bud * dy / dl, pos[3 * i + 2] + cfg.r_bud * dz / dl, ce, dom[i], false);
+        S[32 * j] = 0.2; S.set(est, 32 * j + H_EST);
+        this.prev[3 * j] = pos[3 * i]; this.prev[3 * j + 1] = pos[3 * i + 1]; this.prev[3 * j + 2] = pos[3 * i + 2];
+        this.events.push({ type: 'birth', i: j, parent: i, elem: ce, dom: dom[i], step: this.clock });
+        deficit[ce][r]--; cen[ce][r]++; fill[ce][r] = cen[ce][r] / Math.max(want[ce][r], 1);
+        laid++;
+      }
+    }
+    sortMolt(code, roleOfDom) {
+      const cfg = this.scfg, rng = this.rng, N = this.N, S = this.S, elem = this.elem;
+      const cen = this.census44(roleOfDom, false), want = [0, 1, 2, 3].map(e => [...code.counts[e].slice(0, 3), 0]);
+      const idx = []; for (let i = 0; i < N; i++) if (this.active[i] && this.hatched[i]) idx.push(i);
+      const roles = idx.map(i => this.effRole(i, roleOfDom)), pid = KINDS.indexOf(this.mem.plan), maj = MAJOR[code.kind || this.mem.plan];
+      for (const q of this.permutation(idx.length)) {
+        const i = idx[q], r = roles[q];
+        if (rng() > cfg.molt_rate) continue;
+        const e = elem[i], rc = r < 0 ? 3 : r;
+        if (cen[e][rc] <= want[e][rc]) continue;
+        const def = want.map((row, x) => row.map((v, s) => v - cen[x][s]));
+        let r2;
+        if (r >= 0 && Math.max(def[0][r], def[1][r], def[2][r], def[3][r]) > 0) r2 = r;
+        else {
+          let bv = -Infinity, bs = -1; for (let x = 0; x < 4; x++) for (let s = 0; s < 3; s++) if (def[x][s] > bv) { bv = def[x][s]; bs = s; }
+          if (cfg.transfer && bv > 0) { r2 = bs; S[32 * i + H_ROLE] = 1 + 4 * pid + r2; this.transfers++; } else continue;
+        }
+        const fl = [0, 1, 2, 3].map(x => def[x][r2] <= 0 ? 9.0 : want[x][r2] > 0 ? cen[x][r2] / Math.max(want[x][r2], 1) : 9.0);
+        let ne = 0; for (let x = 1; x < 4; x++) if (fl[x] < fl[ne]) ne = x;
+        const ec = [0, 0, 0, 0]; for (const j of idx) ec[elem[j]]++;
+        if (ne !== maj && ec[ne] + 1 >= ec[maj]) continue;
+        elem[i] = ne; cen[e][rc]--; cen[ne][r2]++;
+        this.molts++; this.events.push({ type: 'molt', i, from: e, to: ne, step: this.clock });
+      }
+    }
+  }
+  /** PlanCode.energy_grad for one point: -log mixture density of a type's wells and its gradient */
+  function mixGrad(w, x, y, z) {
+    const K = w.K, lp = new Float64Array(K), Md = new Float64Array(3 * K);
+    let mx = -Infinity;
+    for (let k = 0; k < K; k++) {
+      const d0 = x - w.mu[3 * k], d1 = y - w.mu[3 * k + 1], d2 = z - w.mu[3 * k + 2], o = 9 * k, iv = w.inv;
+      const m0 = iv[o] * d0 + iv[o + 1] * d1 + iv[o + 2] * d2, m1 = iv[o + 3] * d0 + iv[o + 4] * d1 + iv[o + 5] * d2, m2 = iv[o + 6] * d0 + iv[o + 7] * d1 + iv[o + 8] * d2;
+      Md[3 * k] = m0; Md[3 * k + 1] = m1; Md[3 * k + 2] = m2;
+      lp[k] = w.logw[k] - 0.5 * (d0 * m0 + d1 * m1 + d2 * m2) - 0.5 * w.ld[k]; if (lp[k] > mx) mx = lp[k];
+    }
+    let Z = 0; const r = new Float64Array(K); for (let k = 0; k < K; k++) { r[k] = Math.exp(lp[k] - mx); Z += r[k]; }
+    const g = [0, 0, 0]; for (let k = 0; k < K; k++) { const rk = r[k] / Z; g[0] += rk * Md[3 * k]; g[1] += rk * Md[3 * k + 1]; g[2] += rk * Md[3 * k + 2]; }
+    return { E: -(mx + Math.log(Z)), g };
+  }
+
   // ------------------------------------------------------------------ helpers ---
   function roundEven(x) { const r = Math.round(x); return (Math.abs(x % 1) === 0.5 && r % 2 !== 0) ? r - 1 : r; }
   function rep(counts) { const o = []; counts.forEach((c, i) => { for (let k = 0; k < c; k++) o.push(i); }); return o; }
@@ -736,21 +1238,30 @@
     return base;
   }
 
-  const API = { LiveSwarm, EvoSwarm, PlanFields, Grid, makeRng, prismH, rawPrism, KINDS, MAJOR, PLAN_OF, DEF_CFG, DEF_WORLD, largestRemainder };
+  const API = { LiveSwarm, EvoSwarm, Hgrid2Swarm, SortSwarm, HG2_CFG, PlanFields, Grid, makeRng, prismH, rawPrism, KINDS, MAJOR, PLAN_OF, DEF_CFG, DEF_WORLD, largestRemainder };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.SwarmLive = API;
 
   // ------------------------------------------------------------------ node entry ---
   if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
     const fs = require('fs'), argv = process.argv.slice(2), cmd = argv[0];
     const targets = JSON.parse(fs.readFileSync(argv[1] || 'results/live/targets.json', 'utf8'));
+    // MODEL: '-' grid | evo_rule.json | hgrid2 | hgrid2:12 (G) | sort (results/live2/sort_code.json) | sort:path
+    const makeModel = (spec, seed, pfs) => {
+      if (!spec || spec === '-') return new LiveSwarm(targets, { seed, planFields: pfs.grid || (pfs.grid = new PlanFields(targets, DEF_CFG)) });
+      if (spec.startsWith('hgrid2')) { const G = +(spec.split(':')[1] || 16), cfg = Object.assign({}, DEF_CFG, HG2_CFG, { G });
+        return new Hgrid2Swarm(targets, { seed, cfg, planFields: pfs['h' + G] || (pfs['h' + G] = new PlanFields(targets, cfg)) }); }
+      if (spec.startsWith('sort')) { const p = spec.split(':')[1] || 'results/live2/sort_code.json';
+        const code = pfs.sort || (pfs.sort = JSON.parse(fs.readFileSync(p, 'utf8'))); return new SortSwarm(targets, code, { seed }); }
+      const evo = pfs.evo || (pfs.evo = JSON.parse(fs.readFileSync(spec, 'utf8'))); return new EvoSwarm(targets, evo, { seed });
+    };
     if (cmd === 'fidelity') {
       // node swarm_live.js fidelity targets.json out.json SEEDS STEPS [evo_rule.json|-] [switch]
       const out = argv[2] || 'runs/live_js_states.json', seeds = +(argv[3] || 8), steps = +(argv[4] || 240);
-      const evo = argv[5] && argv[5] !== '-' ? JSON.parse(fs.readFileSync(argv[5], 'utf8')) : null, sw_ = argv[6] === 'switch';
+      const spec = argv[5] || '-', sw_ = argv[6] === 'switch';
       const SWITCH_TO = { mass: 2, space: 0, charge: 3, time: 1 };
-      const pf = new PlanFields(targets, DEF_CFG), states = [];
-      for (const k of KINDS) for (let s = 0; s < seeds; s++) {
-        const sw = evo ? new EvoSwarm(targets, evo, { seed: 1000 + s }) : new LiveSwarm(targets, { seed: 1000 + s, planFields: pf });
+      const pfs = {}, states = [];
+      for (const k of (process.env.LIVE_KINDS || KINDS.join(',')).split(',')) for (let s = 0; s < seeds; s++) {
+        const sw = makeModel(spec, 1000 + s, pfs);
         sw.seedPlan(k, 16);
         const t0 = Date.now(); for (let t = 0; t < steps; t++) sw.step();
         let c = sw.census();
@@ -770,13 +1281,13 @@
       // `rate` random tadpoles of the current majority element (fractional rates are a per-step chance).
       // Reports the steps until the plan switches (cap 600) and how many it had to eat.
       // node swarm_live.js predation targets.json [evo_rule.json|-] SEEDS
-      const evo = argv[2] && argv[2] !== '-' ? JSON.parse(fs.readFileSync(argv[2], 'utf8')) : null, seeds = +(argv[3] || 4);
-      const pf = new PlanFields(targets, DEF_CFG), out = {};
+      const spec = argv[2] || '-', seeds = +(argv[3] || 4);
+      const pfs = {}, out = {};
       for (const k of KINDS) for (const rate of (process.env.LIVE_RATES || '0.25,0.5,1,2,4').split(',').map(Number)) {
         const rows = [];
         for (let s = 0; s < seeds; s++) {
           const ov = process.env.LIVE_CFG ? JSON.parse(process.env.LIVE_CFG) : {};
-          const sw = evo ? new EvoSwarm(targets, evo, { seed: 2000 + s }) : new LiveSwarm(targets, { seed: 2000 + s, planFields: pf, cfg: ov });
+          const sw = makeModel(spec, 2000 + s, pfs); Object.assign(sw.scfg || sw.cfg, ov);
           sw.seedPlan(k, 16); for (let t = 0; t < 240; t++) sw.step();
           const plan0 = sw.census().plan, n0 = sw.census().n; let eaten = 0, t = 0;
           for (; t < 600; t++) {
@@ -795,9 +1306,10 @@
       }
       fs.writeFileSync(argv[4] || 'runs/live_predation.json', JSON.stringify(out));
     } else if (cmd === 'bench') {
-      const pf = new PlanFields(targets, DEF_CFG), evo = argv[2] ? JSON.parse(fs.readFileSync(argv[2], 'utf8')) : null;
+      // node swarm_live.js bench targets.json [MODEL]
+      const pfs = {}, spec = argv[2] || '-';
       for (const k of KINDS) {
-        const sw = evo ? new EvoSwarm(targets, evo, { seed: 3 }) : new LiveSwarm(targets, { seed: 3, planFields: pf, capacity: 400 }); sw.seedPlan(k, 16);
+        const sw = makeModel(spec, 3, pfs); sw.seedPlan(k, 16);
         for (let t = 0; t < 240; t++) sw.step();
         const t0 = process.hrtime.bigint(); for (let t = 0; t < 200; t++) sw.step();
         const ms = Number(process.hrtime.bigint() - t0) / 1e6 / 200;
