@@ -67,6 +67,7 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-4)
     ap.add_argument("--w_bc", type=float, default=1.0)
     ap.add_argument("--eval_every", type=int, default=100)
+    ap.add_argument("--refresh", type=int, default=40)
     a = ap.parse_args()
     os.makedirs(a.run, exist_ok=True)
     logf = open(os.path.join(a.run, "log.txt"), "a")
@@ -85,12 +86,12 @@ def main():
     hist = []
     t0 = time.time()
     for it in range(a.iters):
-        if not pool:
+        if it % a.refresh == 0:
             st.eval()
             pool = snapshots(st, seed=1000 + it)
-            np.random.default_rng(it).shuffle(pool)
             st.train()
-        batch = [pool.pop() for _ in range(min(a.B, len(pool)))]
+        rng = np.random.default_rng(it)
+        batch = [pool[i] for i in rng.choice(len(pool), size=min(a.B, len(pool)), replace=False)]
         sw = sn.Swarm.cat([b for b, _ in batch])
         gen = sn.make_gen(it)
         for _ in range(a.K):
