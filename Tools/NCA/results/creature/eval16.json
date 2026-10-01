@@ -1,0 +1,296 @@
+{
+ "own": {
+  "mass": {
+   "cross": {
+    "mass": 19.48,
+    "space": 75.93,
+    "charge": 67.65,
+    "time": 82.64
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true
+  },
+  "space": {
+   "cross": {
+    "mass": 66.65,
+    "space": 19.75,
+    "charge": 61.0,
+    "time": 71.64
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true
+  },
+  "charge": {
+   "cross": {
+    "mass": 55.48,
+    "space": 57.61,
+    "charge": 14.9,
+    "time": 74.37
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true
+  },
+  "time": {
+   "cross": {
+    "mass": 78.73,
+    "space": 81.55,
+    "charge": 72.91,
+    "time": 24.8
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true
+  }
+ },
+ "switch": {
+  "mass->space": {
+   "cross": {
+    "mass": 56.27,
+    "space": 32.16,
+    "charge": 67.08,
+    "time": 75.19
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "space",
+    "space",
+    "space"
+   ]
+  },
+  "space->charge": {
+   "cross": {
+    "mass": 54.8,
+    "space": 47.8,
+    "charge": 19.52,
+    "time": 74.1
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "charge",
+    "charge",
+    "charge"
+   ]
+  },
+  "charge->time": {
+   "cross": {
+    "mass": 63.71,
+    "space": 68.88,
+    "charge": 55.52,
+    "time": 28.32
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "time",
+    "time",
+    "time"
+   ]
+  },
+  "time->mass": {
+   "cross": {
+    "mass": 29.1,
+    "space": 75.74,
+    "charge": 69.29,
+    "time": 70.09
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "mass",
+    "mass",
+    "mass"
+   ]
+  },
+  "mass->charge": {
+   "cross": {
+    "mass": 51.41,
+    "space": 63.9,
+    "charge": 26.53,
+    "time": 81.3
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "charge",
+    "charge",
+    "charge"
+   ]
+  },
+  "mass->time": {
+   "cross": {
+    "mass": 55.71,
+    "space": 75.15,
+    "charge": 62.36,
+    "time": 33.99
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "time",
+    "time",
+    "time"
+   ]
+  },
+  "space->mass": {
+   "cross": {
+    "mass": 20.1,
+    "space": 64.29,
+    "charge": 59.56,
+    "time": 77.97
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "mass",
+    "mass",
+    "mass"
+   ]
+  },
+  "space->time": {
+   "cross": {
+    "mass": 65.47,
+    "space": 67.47,
+    "charge": 58.5,
+    "time": 26.65
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "time",
+    "time",
+    "time"
+   ]
+  },
+  "charge->mass": {
+   "cross": {
+    "mass": 17.17,
+    "space": 73.27,
+    "charge": 65.36,
+    "time": 80.39
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "mass",
+    "mass",
+    "mass"
+   ]
+  },
+  "charge->space": {
+   "cross": {
+    "mass": 61.46,
+    "space": 25.55,
+    "charge": 59.56,
+    "time": 69.57
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "space",
+    "space",
+    "space"
+   ]
+  },
+  "time->charge": {
+   "cross": {
+    "mass": 65.01,
+    "space": 65.83,
+    "charge": 28.65,
+    "time": 67.57
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "charge",
+    "charge",
+    "charge"
+   ]
+  },
+  "time->space": {
+   "cross": {
+    "mass": 73.56,
+    "space": 36.85,
+    "charge": 70.96,
+    "time": 61.33
+   },
+   "n": 280,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "space",
+    "space",
+    "space"
+   ]
+  }
+ },
+ "tiers_run": [
+  "own",
+  "standard",
+  "rest"
+ ],
+ "na": [],
+ "samples": 3,
+ "passed": 16,
+ "feasible": 16,
+ "own_passed": 4,
+ "std_passed": 4,
+ "rest_passed": 8,
+ "complete": true,
+ "seconds": 140.5,
+ "cfg": {
+  "sense": 2.4,
+  "lookahead": 10.0,
+  "relay": 0.75,
+  "relay_r": 4.5,
+  "decay": 0.9,
+  "flee": [
+   0.5,
+   0.3,
+   1.2,
+   2.0
+  ],
+  "flee_swirl": 0.6,
+  "k_ret": 0.1,
+  "max_off": 30.0,
+  "jet_period": 6,
+  "jet_gain": 2.2,
+  "bell": 0.35,
+  "body_jet": 0.6,
+  "inflate": 0.55,
+  "danger_at": 0.35,
+  "tuck": 0.35,
+  "shield": 0.25,
+  "dart": 0.8,
+  "mob": [
+   0.0,
+   0.0,
+   0.0,
+   1.0
+  ],
+  "mob_speed": 1.0,
+  "mob_r": 1.4,
+  "wounds": 1,
+  "wound_reach": 12.0,
+  "wound_life": 160,
+  "tell": 1,
+  "tell_steps": 36,
+  "tell_jitter": 0.7,
+  "tell_swirl": 0.25
+ }
+}
