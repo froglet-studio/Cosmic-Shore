@@ -190,3 +190,25 @@ The three n/a transitions are structural: the jellyfish and pufferfish plans hol
 grown dragonfly 1 Charge, so that element cannot take over (`cull_to` needs >= 2). Dragonfly -> jellyfish
 passes on 3 of these 4 seeds by majority vote (2/3 samples on 101), which matches seed 7's 1/3: it sits
 close to the bar.
+
+## Fully local: the consensus centre, searched (`local_centre/`) — a negative result for switches
+
+Everything above reads the body's origin as the swarm's centroid (a swarm-level signal, like the
+headcount and element mix G2 already senses). `local_centre = 1` removes it: every tadpole carries its own
+estimate of the centre, averages its neighbours' estimates (3 rounds a step, radius R) and leaks 4% toward
+its IMPLIED centre (its position minus its fated well's offset). The first version leaked toward its own
+position instead, and the body flew apart (losses 120-460): a tadpole chasing a centre that moves with it.
+
+CMA-ES warm-started from the published vector (sigma 0.4, 25 generations):
+
+| gen | pop mean passed /16 | held-out passed (4 seeds) | held-out own losses |
+|---|---|---|---|
+| 4 | 6.6 | 8, 6, 7, 8 | 1.52 / 4.04 / 1.72 / 5.85 |
+| 14 | 7.6 | 7, 7, 8, 7 | 1.79 / 3.02 / 1.55 / 4.06 |
+| 24 | 7.9 | 9, 8, 8, 7 | 1.53 / 3.45 / 1.81 / 4.43 |
+
+**Tier 1 is fully local and passes** (own losses 1.5-4.4 on held-out seeds, every plan under the bar).
+**Switches are not**: after a cull the body is several fragments, each with its own consensus, and a
+body morphing into a new plan has no stable origin to read; tuning did not fix it (13/13 -> 7-9/16).
+A local fix would need a slower, body-wide signal (e.g. a diffusing morphogen emitted by the nucleus/
+majority element rather than a centroid estimate), which I did not get to.
