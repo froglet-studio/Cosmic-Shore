@@ -22,16 +22,24 @@ import sort_diag as sd  # noqa: E402
 OUT = os.path.join(HERE, "results", "sort")
 
 
+_VEC = {}
+
+
 def build(vec, sets):
+    """Load the vector ONCE per run: a search still running beside the publisher may overwrite the
+    file, and re-reading it per section once published a mix of two candidates."""
     m = so.make("", sets)
     if vec:
-        m = sm.SortSwarm(sm.cfg_from_vec(np.load(vec), m.cfg))
+        if vec not in _VEC:
+            _VEC[vec] = np.load(vec)
+        m = sm.SortSwarm(sm.cfg_from_vec(_VEC[vec], m.cfg))
     return m
 
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("vec"); ap.add_argument("--set", default="")
     ap.add_argument("--log", default=""); ap.add_argument("--out", default=OUT); ap.add_argument("--heldout", type=int, default=4)
+    ap.add_argument("--heldout-start", type=int, default=101)
     ap.add_argument("--skip", default="", help="comma list of parts to skip: rollout,probe,eval,heldout,terms")
     a = ap.parse_args(); torch.set_num_threads(4)
     os.makedirs(a.out, exist_ok=True); skip = set(a.skip.split(","))
@@ -39,7 +47,7 @@ def main():
     cfg = dc.asdict(m.cfg)
     json.dump(dict(cfg=cfg, model="sort_model.SortSwarm", vec=a.vec, set=a.set), open(os.path.join(a.out, "params.json"), "w"), indent=1)
     if a.vec:
-        np.save(os.path.join(a.out, "cma_vec.npy"), np.load(a.vec))
+        np.save(os.path.join(a.out, "cma_vec.npy"), build.__globals__["_VEC"].setdefault(a.vec, np.load(a.vec)))
     if a.log:
         shutil.copy(a.log, os.path.join(a.out, "search_log.jsonl"))
     t0 = time.time()
@@ -64,11 +72,14 @@ def main():
     if "heldout" not in skip:
         ho = {}
         for s in range(a.heldout):
-            r = se.evaluate(build(a.vec, a.set), seed=101 + s, samples=3, full=True)
-            ho[101 + s] = dict(passed=r["passed"], feasible=r["feasible"], own_passed=r["own_passed"],
+            r = se.evaluate(build(a.vec, a.set), seed=a.heldout_start + s, samples=3, full=True)
+            ho[a.heldout_start + s] = dict(passed=r["passed"], feasible=r["feasible"], own_passed=r["own_passed"],
                                own_losses={k: r["own"][k]["cross"][k] for k in sn.KINDS}, matrix=se.matrix(r), na=r["na"])
-            print("held-out seed", 101 + s, ho[101 + s]["passed"], "/", ho[101 + s]["feasible"], ho[101 + s]["own_losses"], flush=True)
-        json.dump(ho, open(os.path.join(a.out, "heldout.json"), "w"), indent=1)
+            print("held-out seed", a.heldout_start + s, ho[a.heldout_start + s]["passed"], "/", ho[a.heldout_start + s]["feasible"], ho[a.heldout_start + s]["own_losses"], flush=True)
+        hp = os.path.join(a.out, "heldout.json")
+        old = json.load(open(hp)) if os.path.isfile(hp) else {}
+        old.update({str(k): v for k, v in ho.items()})
+        json.dump(old, open(hp, "w"), indent=1)
 
 
 if __name__ == "__main__":
