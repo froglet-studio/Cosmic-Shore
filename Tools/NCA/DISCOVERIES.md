@@ -39,11 +39,13 @@ lossless, in the organic band, local-or-mixed), each from a different family:
 
 | model | family | seed 7 / 23 / 41 (passed / feasible) | own plans, seed 7 | lossless | ms/step @n (Python, 1 thread) | organic | my seed-101 check |
 |---|---|---|---|---|---|---|---|
-| **combo** (G8, published) | grid morphogen + lossless corrector | **16/16, 15/16, 15/16**; held-out 1000: 13/15 | 2.3 / 2.3 / 3.2 / 3.5 | **0 deaths** | 12.2 @134 | **in** (planar excess 0.09) | S101_COMBO |
+| **combo** (G8, published) | grid morphogen + lossless corrector | **16/16, 15/16, 15/16**; held-out 1000: 13/15 | 2.3 / 2.3 / 3.2 / 3.5 | **0 deaths** | 12.2 @134 | **in** (planar excess 0.09) | 15/16 (own 1.6/2.3/1.7/2.8) |
 | combo G16 twin | same, full grid | 16/16, 16/16, 14/16 | 1.4 / 2.1 / 3.5 / 3.1 | 0 | 13.8 | in | — |
-| **evofate** (C2) | the EVOLVED rule + sort's fate | **12/13, 11/13, 12/13** | 3.0 / 3.7 / 1.6 / 6.3 | **0** | 5.6 @126 | **in** (planar 0.12; 0.19 at seed 23 - its edge) | S101_EVOFATE |
-| **sortfeel** (hand-picked) | emergent sorting, sheets removed | **12/13, 11/13, 13/13** | 1.5 / 2.7 / 1.2 / 4.2 | **0** | 6.3 @126 | **in** (planar 0.05, was 0.27) | S101_SORTFEEL |
+| **evofate** (C2) | the EVOLVED rule + sort's fate | **12/13, 11/13, 12/13** | 3.0 / 3.7 / 1.6 / 6.3 | **0** | 5.6 @126 | **in** (planar 0.12; 0.19 at seed 23 - its edge) | 12/13 (own 3.0/4.1/1.7/5.6) |
+| **sortfeel** (hand-picked) | emergent sorting, sheets removed | **12/13, 11/13, 13/13** | 1.5 / 2.7 / 1.2 / 4.2 | **0** | 6.3 @126 | **in** (planar 0.05, was 0.27) | **13/13** (own 1.6/2.7/1.0/4.7) |
 | hgrid2 (for reference) | grid morphogen | 16/16 at 7 and 23 (my rescore) | 1.2 / 2.0 / 2.9 / 3.0 | no (120) | 20.6 | in | — |
+
+**Seed 101 (held out, rescored by the lead, 3 samples, loss-8 bar, `runs/rescore/*_s101.json`)** confirms all three: every model passes tier 1 and tier 2 at a seed none of them was tuned on. sortfeel goes clean (13/13). The one switch that keeps failing is the same in every family: **dragonfly → jellyfish** (time→space), which combo and evofate pass 1 of 3 samples and sortfeel 2 of 3. That switch is now the single open accuracy problem shared by every lossless model, and fixing it there is worth more than any further tuning elsewhere.
 
 What each one teaches:
 - **combo** (`results/combo/NOTE.md`): replacing hgrid2's starvation with a straight molt alone drops
