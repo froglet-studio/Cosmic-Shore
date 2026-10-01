@@ -35,6 +35,7 @@ Confidence scale:
 | 8 | **`Cell.countGrids` disposed on destroy (was §1.8).** Only re-initialisation disposed the density grids, so each destroyed cell leaked 4 grids × 6 persistent NativeArrays (24 allocations) per scene load. `OnDestroy` now disposes them (idempotent) and clears the map. `AddBlock`/`RemoveBlock` use `TryGetValue` so a prism torn down after its cell cannot throw on the emptied map. Shipped on `Bug_Hunt`. | `Cell.OnDestroy`, `Cell.AddBlock`, `Cell.RemoveBlock` |
 | 9 | **Crystal colour-lerp material leak (was §1.10).** `LerpCrystalMaterialCoroutine` ran `new Material(renderer.material)`; the `.material` getter clones the renderer's material onto it, and that clone was orphaned by the next assignment, so every colour change leaked one Material (it logs nothing). It now copies `sharedMaterial`, and each fade copy is tracked and destroyed in `OnDestroy` if the crystal dies mid-fade. Shipped on `Bug_Hunt`. | `Crystal.LerpCrystalMaterialCoroutine`, `Crystal.OnDestroy` |
 | 10 | **Fauna leaves its cell on destroy (was §1.13).** `Fauna` is not a `LifeForm`, so nothing removed a dead or torn-down creature from `Cell.spawnedLifeForms` (flora does it in `LifeForm.Die`); the dead entry stayed and `LifeFormsInCell` stayed inflated. That count feeds `AllLifeFormsDestroyedTurnMonitor` (used by the Wildlife Blitz co-op scene) and the Wildlife Blitz monitors. `Fauna.OnDestroy` now calls `hostCell.UnregisterSpawnedObject`. Shipped on `Bug_Hunt`. | `Fauna.OnDestroy` |
+| 11 | **AI no longer leaves a held drift when stopped (was §1.1).** Already fixed by `4c866f880` (2026-09-26): `AIPilot.StopAIPilot` releases the commit drift, stops every started ability and clears the aim telegraph, and `PilotSwap` releases the hull's held inputs while the server owns it. Verified by Yash in Menu_Main freestyle takeover on `Bug_Hunt`. No code change was needed; `AIPilot.OnDisable` was left alone on purpose (teardown path, vessel is going away). | `AIPilot.StopAIPilot`, `PilotSwap` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -49,20 +50,6 @@ Confidence scale:
 ---
 
 ## 1. Tier 2 — small, local, high value (do these first)
-
-### 1.1 AI never releases a held drift when its pilot stops — High
-- **Where:** `Assets/_Scripts/Controller/AI/AIPilot.cs`, `StopAIPilot()` (~620) and `OnDisable()` (~303).
-- **Bug:** the AI starts a drift through `PerformShipControllerActions(InputEvents.CommitControl …)`.
-  `StopAIPilot` and `OnDisable` stop the brain but never send the matching stop.
-- **Trigger:** an AI vessel is mid-drift when autopilot is switched off. Examples: Menu_Main
-  freestyle entry (the local vessel's autopilot goes off), a vessel swap, a spectator takeover.
-- **Consequence:** the vessel stays drifting (course locked, throttle policy of a drift) under the
-  human pilot until they tap drift themselves.
-- **Fix:** in both methods,
-  `if (VesselStatus.IsDrifting) handler.StopShipControllerActions(InputEvents.CommitControl);`.
-  Use whichever control the drift is bound to (resolve it the way the press was resolved; see
-  `R_VesselActionHandler.TryGetInputForAction<T>`). Mirror `ReleaseHeldInputs` rather than
-  inventing a second release path.
 
 ### 1.2 Gamepad triggers stay held across a strategy switch / pause — High
 - **Where:** `Assets/_Scripts/Controller/IO/GamepadInputStrategy.cs`. Compare with
