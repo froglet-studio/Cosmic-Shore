@@ -117,6 +117,11 @@ descriptive: they separate a school (hgrid2 0.63) from a gas-like swarm (evo, ev
   8, most within 4. Strike it: it regrows to its pre-strike score in 120 steps (heal 0.87-1.0).
 * **evo body + grid**: the lead's favourite motion - gas-like, every unit doing its own thing - now
   actually forms the four animals (2-5 instead of 16-24). Slightly looser bodies, a softer dragonfly.
+* **Chain demo** (`chain.json`, `evo_grid/chain.json`, viewer-packed): one swarm eaten four times in a
+  row. hgrid2: whale 1.7 -> jellyfish 4.2 -> pufferfish 2.0 -> dragonfly 7.6 -> (cull toward Mass; Space is
+  the true majority, see above) jellyfish 1.2, shedding 79 crystals one by one over its life. Evo + grid:
+  2.1 -> 6.6 -> 2.7 -> 8.8 -> 3.4. Measured speeds per step (C/M/S/T): hgrid2 0.07/0.08/0.17/0.39, evo+grid
+  0.10/0.11/0.18/0.58 - Time zips in both.
 * **Ship** (`hgrid2_ship.py`, `ship.json`): a ship flying through at 2.5 voxels/step writes a threat blob
   + fading wake into a grid channel; tadpoles flee its gradient. The swarm PARTS around the ship (it
   touched 0-3 tadpoles in a full pass), divergence rises a little (e.g. charge 1.8 -> 4.0 at worst) and
@@ -180,4 +185,4 @@ descriptive: they separate a school (hgrid2 0.63) from a gas-like swarm (evo, ev
 feed-forward only, 6/15). `evo_grid/`: the same set for the evo body + grid.
 Code: `hgrid2_model.py`, `hgrid2_evo.py`, `hgrid2_eval.py` (score + publish), `hgrid2_diag.py` (per-term),
 `hgrid2_sweep.py`, `hgrid2_switch.py`, `hgrid2_robust.py`, `hgrid2_feelcal.py`, `hgrid2_feelsweep.py`,
-`hgrid2_ship.py`, `hgrid2_cell.py`, `swarm_feel.py`. `cell.json` / `cell_fast.json`: the herding runs.
+`hgrid2_ship.py`, `hgrid2_cell.py`, `hgrid2_chain.py`, `swarm_feel.py`. `cell.json` / `cell_fast.json`: the herding runs.
