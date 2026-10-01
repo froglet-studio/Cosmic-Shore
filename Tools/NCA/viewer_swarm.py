@@ -58,67 +58,88 @@ def _rank(d):
     return (-correct, close)
 
 
-def build_swarm(results_root):
-    cands = [os.path.join(results_root, n) for n in sorted(os.listdir(results_root)) if n.startswith("swarm_coevo")]
-    cands = [d for d in cands if os.path.isfile(os.path.join(d, "rollout.json"))]
-    if not cands:
-        return "", ""
-    d = min(cands, key=_rank)
-    import prism_render as pr
-    roll = json.load(open(os.path.join(d, "rollout.json")))
-    summ = json.load(open(os.path.join(d, "summary.json")))
-    cross = summ["cross"]
-    head = "".join(f'<th scope="col">{NAMES[k]}</th>' for k in KINDS)
-    body = []
-    correct = 0
-    for k in KINDS:
-        row = cross[k]
-        best = min(row, key=row.get)
-        correct += best == k
-        cells = "".join(f'<td class="{"win" if k2 == best else ""}{" diag" if k2 == k else ""}">{row[k2]:.1f}</td>' for k2 in KINDS)
-        c = summ["census"][k]
-        body.append(f'<tr><th scope="row">Seeded mostly {MAJOR[k]}</th>{cells}'
-                    f'<td>{c["n"]}/{c["target_n"]}</td><td>{c["deaths"]}</td><td>{c["mutants"]}</td></tr>')
-    tabs = "".join(
-        f'<button type="button" role="tab" data-swk="{k}" aria-selected="false">'
-        f'<span class="swatch" style="background:{EL_UI[ELEMENTS.index(MAJOR[k])]}"></span>{MAJOR[k]} seed</button>' for k in KINDS)
-    curve = _curve(os.path.join(d, "log.jsonl"))
-    switch_html = ""
-    if summ.get("switch"):
-        srows = []
-        ok = 0
-        for k in KINDS:
-            v = summ["switch"][k]
-            best = min(v["cross"], key=v["cross"].get)
-            ok += best == v["to"]
-            cells = "".join(f'<td class="{"win" if k2 == best else ""}{" diag" if k2 == v["to"] else ""}">{v["cross"][k2]:.1f}</td>' for k2 in KINDS)
-            srows.append(f'<tr><th scope="row">{NAMES[k]} loses its {MAJOR[k]}: {MAJOR[v["to"]]} majority</th>{cells}'
-                         f'<td>{NAMES[v["majority"]]}</td></tr>')
-        switch_html = (f'<h3>Losing the majority</h3><p class="caption">The same swarms after another 240 steps, once enough of their '
-                       f'majority element was removed (as if eaten) that another element took over. The underlined column is the new '
-                       f'majority\'s plan; {ok} of 4 end closest to it. Play a seed past the marked step to watch it.</p>'
-                       f'<div class="tablewrap"><table class="swcross"><thead><tr><th scope="col">Swarm</th>{head}<th scope="col">Majority now</th></tr></thead>'
-                       f'<tbody>{"".join(srows)}</tbody></table></div>')
+def _is_run(d):
+    """A result folder the gallery can show: a swarm rollout plus a rollout summary."""
+    try:
+        return (os.path.isfile(os.path.join(d, "rollout.json")) and "cross" in json.load(open(os.path.join(d, "summary.json"))))
+    except Exception:
+        return False
+
+
+def _label(d, summ):
+    n = os.path.basename(d)
+    lab = summ.get("meta", {}).get("label") or summ.get("label")
+    if lab:
+        return lab
+    if n == "swarm_coevo":
+        return "Baseline rule (try6)"
+    if n.startswith("swarm_coevo_"):
+        return "Learned rule " + n[len("swarm_coevo_"):].upper()
+    return n
+
+
+def _note(summ, passed):
     meta = summ.get("meta", {})
-    note = meta.get("note", "")
-    import swarm_nca
-    passed, _ = swarm_nca.tests_passed(summ)
     ov = meta.get("overrides", {})
     fixes = [lab for key, lab in (("sticky_plan", "sticky switch labels"), ("learned_lay", "a learned laying gate"), ("learned_egg", "parents choosing some eggs' element"),
                                   ("w_con", "a contrastive loss"), ("scale_inv", "a scale-invariant loss"),
-                                  ("w_over", "an overflow penalty")) if str(ov.get(key, "0")) not in ("0", "0.0")]
-    note = (f"{passed} of 8 tests pass (each seeding closest to its own plan, and each switched swarm closest to its new plan). "
+                                  ("w_over", "an overflow penalty"), ("min_body", "a body floor")) if str(ov.get(key, "0")) not in ("0", "0.0")]
+    return (f"{passed} of 8 tests pass (each seeding closest to its own plan, and each switched swarm closest to its new plan). "
             + (f"Trained with {', '.join(fixes)}. " if fixes else "")
             + ("Divergences are scale-invariant (the swarm is rescaled to the plan's size before matching), so they "
                "are lower than in runs without that option and not directly comparable. " if summ.get("scale_inv") else "")
-            + note)
+            + meta.get("note", ""))
+
+
+def _payload(d):
+    import swarm_nca
+    summ = json.load(open(os.path.join(d, "summary.json")))
+    passed, _ = swarm_nca.tests_passed(summ)
+    probe = None
+    if os.path.isfile(os.path.join(d, "probe.json")):
+        try:
+            probe = json.load(open(os.path.join(d, "probe.json")))
+        except Exception:
+            probe = None
+    return dict(id=os.path.basename(d), label=_label(d, summ), passed=passed, note=_note(summ, passed),
+                roll=json.load(open(os.path.join(d, "rollout.json"))), cross=summ["cross"],
+                census={k: summ["census"][k] for k in KINDS if k in summ.get("census", {})},
+                switch=summ.get("switch"), probe=probe, curve=_curve(os.path.join(d, "log.jsonl")))
+
+
+def build_swarm(results_root, gallery_dir=None):
+    """The swarm section. The top-ranked run is embedded in the page; with gallery_dir, every other
+    run is written there as <id>.json, and the page fetches it (relative URL) when it is picked, so
+    the page stays under the artifact size limit however many approaches there are."""
+    cands = [os.path.join(results_root, n) for n in sorted(os.listdir(results_root))]
+    cands = sorted([d for d in cands if os.path.isdir(d) and _is_run(d)], key=_rank)
+    if not cands:
+        return "", ""
+    import prism_render as pr
+    first = _payload(cands[0])
+    manifest = [dict(id=first["id"], label=first["label"], passed=first["passed"], file=None)]
+    if gallery_dir:
+        os.makedirs(gallery_dir, exist_ok=True)
+        for d in cands[1:]:
+            p = _payload(d)
+            fn = f"{p['id']}.json"
+            json.dump(p, open(os.path.join(gallery_dir, fn), "w"), separators=(",", ":"))
+            manifest.append(dict(id=p["id"], label=p["label"], passed=p["passed"], file=f"{os.path.basename(gallery_dir)}/{fn}"))
+    apps = "".join(f'<button type="button" class="app" data-app="{m["id"]}" aria-pressed="false">'
+                   f'<span class="appl">{m["label"]}</span><span class="apps mono">{m["passed"]}/8</span></button>' for m in manifest)
+    tabs = "".join(
+        f'<button type="button" role="tab" data-swk="{k}" aria-selected="false">'
+        f'<span class="swatch" style="background:{EL_UI[ELEMENTS.index(MAJOR[k])]}"></span>{MAJOR[k]} seed</button>' for k in KINDS)
     bench = f"""
   <section class="benchp" aria-labelledby="hswarm" id="swarm">
     <div class="h3dhead">
       <div class="eyebrow">Latest · one rule, four seedings</div>
       <h2 id="hswarm">One rule grows four different creatures</h2>
-      <p class="caption">Each swarm is scored against one plan only: the plan of its current majority element. The total is the sum over the four seedings. Every particle is a whole tadpole fauna: a heart crystal, a spindle and a prism. Its <strong>element</strong> and <strong>domain</strong> are fixed at birth: an egg is always its parent's domain, and its parent's element but for a rare mutation that survives only if the rule lets it hatch. A single learned rule, seeing only its neighbours, decides where each tadpole swims, whether an egg hatches, how its prism and spindle are shaped (inside its element's identity), and whether a Charge tadpole is plain, danger or shielded. A tadpole that dies leaves a lime crystal. The same rule is seeded four ways, sixteen tadpoles at each target's element mix, and is scored on all four at once. Pick a seed to watch it grow; drag to orbit.</p>
-      {f'<p class="caption">{note}</p>' if note else ''}
+      <p class="caption">Each swarm is scored against one plan only: the plan of its current majority element. The total is the sum over the four seedings. Every particle is a whole tadpole fauna: a heart crystal, a spindle and a prism. Its <strong>element</strong> and <strong>domain</strong> are fixed at birth in most approaches: an egg is its parent's domain, and its parent's element but for a rare mutation. The rule decides where each tadpole swims, whether an egg hatches, how its prism and spindle are shaped (inside its element's identity), and whether a Charge tadpole is plain, danger or shielded. A tadpole that dies leaves a lime crystal. The same rule is seeded four ways, sixteen tadpoles at each target's element mix. Pick an approach and a seed to watch it grow; drag to orbit.</p>
+      <h3 class="apph">Approaches</h3>
+      <p class="caption">Each is a different way of building the creature, ranked by strict tests passed. The best is loaded first; the others load when picked.</p>
+      <div class="appgrid" id="swapps">{apps}</div>
+      <p class="caption" id="swnote"></p>
     </div>
     <div class="bench">
       <div class="dish">
@@ -142,15 +163,9 @@ def build_swarm(results_root):
         <p class="census mono" id="rsw-census" aria-live="off"></p>
       </div>
     </div>
-    <div class="record">
-      <h3>Does the seed choose the body?</h3>
-      <p class="caption">Each grown swarm (rows) scored against every target (columns): Sinkhorn divergence on position, element, domain region, prism, tier, facing and spindle, under the best assignment of domains to regions. Lower is closer; the lowest in each row is marked. {correct} of 4 seedings are closest to their own body plan.</p>
-      <div class="tablewrap"><table class="swcross"><thead><tr><th scope="col">Grown from</th>{head}<th scope="col">Tadpoles</th><th scope="col">Crystals</th><th scope="col">Mutant eggs</th></tr></thead><tbody>{''.join(body)}</tbody></table></div>
-      {switch_html}
-      {f'<figure class="fig"><figcaption>Training loss: the sum over the four seedings (black) and each plan</figcaption><div class="chart">{curve}</div></figure>' if curve else ''}
-    </div>
+    <div class="record" id="swtables"></div>
   </section>"""
-    data = {"roll": roll, "cross": cross, "names": NAMES, "major": MAJOR}
+    data = {"first": first, "manifest": manifest, "names": NAMES, "major": MAJOR}
     pal = np.round(pr.palette_colours()[:, :3], 4).tolist()
     script = SCRIPTSWARM.replace("/*SWARM_MODEL*/", open(os.path.join(HERE, "swarm_model.js")).read()) \
         .replace("/*SWDATA*/", json.dumps(data, separators=(",", ":"))).replace("/*PALETTE*/", json.dumps(pal)) \
@@ -168,6 +183,13 @@ CSS = """
 .swmix .lab { font: 12px var(--mono); color: var(--muted) }
 table.swcross td.win { font-weight: 700; color: var(--accent) }
 table.swcross td.diag { text-decoration: underline; text-underline-offset: 3px }
+.apph { margin: 18px 0 4px }
+.appgrid { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px }
+.appgrid .app { display: inline-flex; align-items: baseline; gap: 10px; padding: 7px 12px; border: 1px solid var(--rule);
+  border-radius: 8px; background: transparent; color: var(--ink); font: inherit; cursor: pointer; min-width: 0 }
+.appgrid .app[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent) }
+.appgrid .app .apps { color: var(--muted); font-size: 12px }
+.appgrid .app[aria-busy="true"] { opacity: .6 }
 """
 
 SCRIPTSWARM = r"""<script>
@@ -220,14 +242,60 @@ SCRIPTSWARM = r"""<script>
   const HEART = lin([0.42, 0.62, 1.0]), LIME = lin([0.62, 0.92, 0.22]);
   const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), Sv = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
 
-  // decode rollouts
-  const R = {};
-  for (const k of KINDS) {
-    const r = D.roll[k], bin = atob(r.b64), buf = new ArrayBuffer(bin.length), u8 = new Uint8Array(buf);
-    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-    R[k] = { a: new Int16Array(buf), shape: r.shape, n: r.n, crystals: r.crystals, switched_at: r.switched_at };
+  // decode rollouts (one approach at a time; others are fetched when picked)
+  let R = {}, SC = null, RUN = null;
+  const every = 5, CACHE = {};
+  function decodeRoll(roll) {
+    const out = {};
+    for (const k of KINDS) {
+      const r = roll[k], bin = atob(r.b64), buf = new ArrayBuffer(bin.length), u8 = new Uint8Array(buf);
+      for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+      out[k] = { a: new Int16Array(buf), shape: r.shape, n: r.n, crystals: r.crystals, switched_at: r.switched_at };
+    }
+    return out;
   }
-  const SC = D.roll.scale, every = 5;
+  const NAMES = D.names, MAJOR = D.major, ELN = ['Charge', 'Mass', 'Space', 'Time'];
+  const best = row => Object.keys(row).reduce((a, b) => row[a] <= row[b] ? a : b);
+  const cells = (row, mark) => { const w = best(row); return KINDS.map(k2 => `<td class="${k2 === w ? 'win' : ''}${k2 === mark ? ' diag' : ''}">${row[k2].toFixed(1)}</td>`).join(''); };
+  function tables(p) {
+    const head = KINDS.map(k => `<th scope="col">${NAMES[k]}</th>`).join('');
+    let own = 0;
+    const rows = KINDS.map(k => { const c = p.census[k] || {}; if (best(p.cross[k]) === k) own++;
+      return `<tr><th scope="row">Seeded mostly ${MAJOR[k]}</th>${cells(p.cross[k], k)}<td>${c.n ?? ''}/${c.target_n ?? ''}</td><td>${c.deaths ?? ''}</td><td>${c.mutants ?? ''}</td></tr>`; }).join('');
+    let h = `<h3>Does the seed choose the body?</h3><p class="caption">Each grown swarm (rows) scored against every target (columns): Sinkhorn divergence on position, element, domain region, prism, tier, facing and spindle, under the best assignment of domains to regions. Lower is closer; the lowest in each row is marked. ${own} of 4 seedings are closest to their own body plan.</p>`
+      + `<div class="tablewrap"><table class="swcross"><thead><tr><th scope="col">Grown from</th>${head}<th scope="col">Tadpoles</th><th scope="col">Crystals</th><th scope="col">Mutant eggs</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    if (p.switch) {
+      let ok = 0;
+      const sr = KINDS.map(k => { const v = p.switch[k]; if (best(v.cross) === v.to) ok++;
+        return `<tr><th scope="row">${NAMES[k]} loses its ${MAJOR[k]}: ${MAJOR[v.to]} majority</th>${cells(v.cross, v.to)}<td>${NAMES[v.majority] || v.majority}</td></tr>`; }).join('');
+      h += `<h3>Losing the majority</h3><p class="caption">The same swarms after another 240 steps, once enough of their majority element was removed (as if eaten) that another element took over. The underlined column is the new majority's plan; ${ok} of 4 end closest to it. Play a seed past the marked step to watch it.</p>`
+        + `<div class="tablewrap"><table class="swcross"><thead><tr><th scope="col">Swarm</th>${head}<th scope="col">Majority now</th></tr></thead><tbody>${sr}</tbody></table></div>`;
+    }
+    if (p.probe) {
+      const pr = KINDS.filter(k => p.probe[k]).map(k => { const q = p.probe[k];
+        return `<tr><th scope="row">${NAMES[k]}</th><td>${q.before}</td><td>${q.killed}</td><td>${q.cut}</td><td>${q.recovered}</td><td>${q.heal == null ? '–' : q.heal}</td></tr>`; }).join('');
+      h += `<h3>A vessel flies through it</h3><p class="caption">Every tadpole inside a sphere one swarm radius across, off-centre, is removed; the swarm is scored against its own plan before, right after, and 120 steps later. Heal 1 means back to the pre-strike score.</p>`
+        + `<div class="tablewrap"><table class="swcross"><thead><tr><th scope="col">Plan</th><th scope="col">Before</th><th scope="col">Killed</th><th scope="col">Right after</th><th scope="col">120 steps later</th><th scope="col">Heal</th></tr></thead><tbody>${pr}</tbody></table></div>`;
+    }
+    if (p.curve) h += `<figure class="fig"><figcaption>Training loss: the sum over the four seedings (black) and each plan</figcaption><div class="chart">${p.curve}</div></figure>`;
+    return h;
+  }
+  function setRun(p) {
+    RUN = p; CACHE[p.id] = p; R = decodeRoll(p.roll); SC = p.roll.scale;
+    $('swnote').textContent = p.label + ': ' + p.note;
+    $('swtables').innerHTML = tables(p);
+    document.querySelectorAll('#swapps [data-app]').forEach(b => b.setAttribute('aria-pressed', b.dataset.app === p.id));
+    load(kind);
+  }
+  function pick(id) {
+    if (CACHE[id]) return setRun(CACHE[id]);
+    const m = D.manifest.find(x => x.id === id), b = document.querySelector(`#swapps [data-app="${id}"]`);
+    if (!m || !m.file) return;
+    b.setAttribute('aria-busy', 'true');
+    fetch(m.file).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(p => { b.removeAttribute('aria-busy'); setRun(p); })
+      .catch(() => { b.removeAttribute('aria-busy'); $('swnote').textContent = m.label + ' could not be loaded here (its data is published beside the page).'; });
+  }
   const perp = f => { const a = Math.abs(f[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0]; const d = a[0] * f[0] + a[1] * f[1] + a[2] * f[2];
     const v = [a[0] - d * f[0], a[1] - d * f[1], a[2] - d * f[2]], L = Math.hypot(...v) || 1; return v.map(x => x / L); };
   function swarmFrame(k, fi) {
@@ -297,8 +365,8 @@ SCRIPTSWARM = r"""<script>
     const r = R[kind], [F, N, W] = r.shape, f = F - 1, c = [0, 0, 0, 0];
     for (let i = 0; i < r.n[f]; i++) c[Math.round(r.a[(f * N + i) * W + 3])]++;
     $('swmix').innerHTML = mixBar(c, 'grown') + mixBar(target(kind).elements, 'target');
-    const row = D.cross[kind], best = Object.keys(row).reduce((a, b) => row[a] <= row[b] ? a : b);
-    $('rsw-census').textContent = `${D.major[kind]} seed grows closest to the ${D.names[best]} (${row[best].toFixed(1)}; its own target ${row[kind].toFixed(1)}).`;
+    const row = RUN.cross[kind], w = best(row);
+    $('rsw-census').textContent = `${MAJOR[kind]} seed grows closest to the ${NAMES[w]} (${row[w].toFixed(1)}; its own target ${row[kind].toFixed(1)}).`;
   }
   function load(k) {
     kind = k; fi = R[k].shape[0] - 1; tk = 0; cen = null;
@@ -332,6 +400,7 @@ SCRIPTSWARM = r"""<script>
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', theme);
   new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   new ResizeObserver(resize).observe(cv);
-  load('mass'); theme(); resize(); requestAnimationFrame(loop);
+  document.querySelectorAll('#swapps [data-app]').forEach(b => b.onclick = () => pick(b.dataset.app));
+  setRun(D.first); theme(); resize(); requestAnimationFrame(loop);
 })();
 </script>"""

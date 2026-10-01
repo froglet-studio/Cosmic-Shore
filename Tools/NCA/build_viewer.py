@@ -193,7 +193,7 @@ def main():
     benchpr, scriptpr = build_prisms(args.runs)
     status = build_status(args.runs)
     from viewer_swarm import build_swarm, CSS as SWARM_CSS
-    benchsw, scriptsw = build_swarm(args.runs)
+    benchsw, scriptsw = build_swarm(args.runs, gallery_dir=os.path.join(os.path.dirname(os.path.abspath(args.out)), "swarm_runs"))
 
     page = TEMPLATE
     for k, v in {
