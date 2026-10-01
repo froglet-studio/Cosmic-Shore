@@ -1,0 +1,29 @@
+{
+ "own": {
+  "mass": 1.0,
+  "space": 1.0,
+  "charge": 1.0,
+  "time": 1.0
+ },
+ "switch": {
+  "mass->space": 1.0,
+  "space->charge": 1.0,
+  "charge->time": 1.0,
+  "time->mass": 0.67,
+  "mass->charge": 1.0,
+  "mass->time": 0.33,
+  "space->time": 1.0,
+  "charge->space": 1.0,
+  "time->space": 0.33
+ },
+ "na": [
+  "space->mass",
+  "charge->mass",
+  "time->charge"
+ ],
+ "samples": 3,
+ "max_loss": 8.0,
+ "passed": 11,
+ "feasible": 13,
+ "source": "hold check vec_look=1,frac=8, seed 7"
+}

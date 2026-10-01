@@ -1,0 +1,301 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 1.77,
+   "space": 68.98,
+   "charge": 55.91,
+   "time": 77.1
+  },
+  "space": {
+   "mass": 73.36,
+   "space": 2.88,
+   "charge": 60.62,
+   "time": 71.16
+  },
+  "charge": {
+   "mass": 54.61,
+   "space": 55.4,
+   "charge": 1.02,
+   "time": 69.27
+  },
+  "time": {
+   "mass": 76.17,
+   "space": 69.03,
+   "charge": 69.41,
+   "time": 3.44
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 181,
+   "target_n": 192,
+   "elements": [
+    17,
+    121,
+    24,
+    19
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    101,
+    80,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 83,
+   "target_n": 88,
+   "elements": [
+    22,
+    2,
+    52,
+    7
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    46,
+    37,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 169,
+   "target_n": 179,
+   "elements": [
+    122,
+    1,
+    16,
+    30
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    84,
+    85,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 72,
+   "target_n": 76,
+   "elements": [
+    2,
+    3,
+    17,
+    50
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    41,
+    6,
+    25
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 1.2,
+   "space": 20.75,
+   "charge": 12.16,
+   "time": 25.34
+  },
+  "space": {
+   "mass": 25.13,
+   "space": 2.42,
+   "charge": 17.2,
+   "time": 27.5
+  },
+  "charge": {
+   "mass": 12.03,
+   "space": 13.76,
+   "charge": 1.17,
+   "time": 19.19
+  },
+  "time": {
+   "mass": 24.35,
+   "space": 21.85,
+   "charge": 16.96,
+   "time": 3.25
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 73.19,
+    "space": 3.32,
+    "charge": 60.07,
+    "time": 69.81
+   },
+   "majority": "space",
+   "census": {
+    "n": 83,
+    "target_n": 88,
+    "elements": [
+     22,
+     2,
+     52,
+     7
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     38,
+     45,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 54.34,
+    "space": 55.87,
+    "charge": 1.69,
+    "time": 70.59
+   },
+   "majority": "charge",
+   "census": {
+    "n": 169,
+    "target_n": 179,
+    "elements": [
+     124,
+     1,
+     16,
+     28
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     88,
+     81,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 74.35,
+    "space": 66.33,
+    "charge": 66.85,
+    "time": 6.99
+   },
+   "majority": "time",
+   "census": {
+    "n": 72,
+    "target_n": 76,
+    "elements": [
+     2,
+     3,
+     18,
+     49
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     33,
+     39,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 76.37,
+    "space": 8.82,
+    "charge": 63.75,
+    "time": 73.93
+   },
+   "majority": "space",
+   "census": {
+    "n": 83,
+    "target_n": 192,
+    "elements": [
+     23,
+     2,
+     51,
+     7
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     30,
+     33,
+     20
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "meta": {
+  "tag": "lite_sortfeel/frac8",
+  "spec": "lite_sortfeel:results/lite_sortfeel/params.json?frac=8,vec_look=1",
+  "tests_passed": 7,
+  "note": "sortfeel with 1/8 of the swarm re-steering per step (the rest coast): passes the hold, 1.28 vs 2.88 ms/step, smoothness 0.77 vs 0.44."
+ }
+}

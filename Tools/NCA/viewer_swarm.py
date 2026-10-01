@@ -73,8 +73,13 @@ def _rank(d):
     return (0 if ev.get("max_loss") is not None else 1, -ev["passed"] / max(1, ev.get("feasible", 16)), close)
 
 
+GALLERY_SKIP = {"lite_posinfo2"}   # its rollout is a copy of posinfo2's (no lite config passed the hold)
+
+
 def _is_run(d):
     """A result folder the gallery can show: a swarm rollout plus a rollout summary."""
+    if os.path.basename(d) in GALLERY_SKIP:
+        return False
     try:
         return (os.path.isfile(os.path.join(d, "rollout.json")) and "cross" in json.load(open(os.path.join(d, "summary.json"))))
     except Exception:
@@ -82,7 +87,7 @@ def _is_run(d):
 
 
 LABELS = {"field": "Designed field + flocking", "hgrid/oracle": "Grid morphogen (designed)", "hgrid/hybrid_g2": "Learned rule G2 + grid morphogen", "hgrid": "Grid morphogen (learned)",
-          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis", "sort": "Emergent cell sorting", "posinfo": "Learned rule + positional information", "distill": "Local rule distilled from field", "meta/oracle": "Learned rule + designed metamorph", "hgrid2/round_a": "Grid morphogen 2 (round A)", "creature": "Creature shell (evo body + reaction shell)", "hgrid2/evo_grid": "Evolved body + grid steering", "sort/v1_typelook": "Emergent cell sorting (v1)", "evo16": "Evolved rule, hardened (evo16)", "zoo": "Zoo of personalities (field + behaviours)", "combo": "Lossless grid morphogen (combo, G8)", "combo/g16": "Lossless grid morphogen (combo, G16)", "evofate": "Evolved rule + fate", "evofate/c1_cma": "Evolved rule + fate (CMA point)", "sortfeel": "Emergent cell sorting, organic", "posinfo2": "Learned rule, lossless (posinfo2)", "evofate/c2": "Evolved rule + fate (C2)"}
+          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis", "sort": "Emergent cell sorting", "posinfo": "Learned rule + positional information", "distill": "Local rule distilled from field", "meta/oracle": "Learned rule + designed metamorph", "hgrid2/round_a": "Grid morphogen 2 (round A)", "creature": "Creature shell (evo body + reaction shell)", "hgrid2/evo_grid": "Evolved body + grid steering", "sort/v1_typelook": "Emergent cell sorting (v1)", "evo16": "Evolved rule, hardened (evo16)", "zoo": "Zoo of personalities (field + behaviours)", "combo": "Lossless grid morphogen (combo, G8)", "combo/g16": "Lossless grid morphogen (combo, G16)", "evofate": "Evolved rule + fate", "evofate/c1_cma": "Evolved rule + fate (CMA point)", "sortfeel": "Emergent cell sorting, organic", "posinfo2": "Learned rule, lossless (posinfo2)", "evofate/c2": "Evolved rule + fate (C2)", "lite_sortfeel/frac8": "Cell sorting, 1/8 re-steer per step (lite)"}
 
 
 def _label(d, summ):
@@ -198,6 +203,13 @@ ABOUT = {
         switching="Majority plan with a lock; surplus MOLTS into the new body's missing elements. Nothing dies on its own.",
         watch="After a switch the old majority's leftovers changing colour into the new animal's missing parts instead of withering.",
         bar="All four scorecard axes: 16 / 15 / 15 of 16 at seeds 7 / 23 / 41 under the loss-8 bar, 0 self-inflicted deaths, in the organic band, cheaper than hgrid2."),
+    "lite_sortfeel-frac8": dict(
+        what="sortfeel (emergent cell sorting with flat-bottomed wells and a per-tadpole wander) where only one tadpole in eight re-steers each step; the other seven coast on their last intent. The first light model to PASS the hold: nothing it scored was given up.",
+        body="Positional wells per (element, region), filled as a liquid; the coasting majority smooths every motion.",
+        sorting="Fate: a newborn commits to the well its type under-occupies.",
+        switching="Molting and region transfer; nothing dies on its own.",
+        watch="How calmly it re-forms after a switch or a strike: coasting on a slightly stale intent eases the change in instead of jolting.",
+        bar="Holds sortfeel (12 / 12 / 13 / 13 of 13 at seeds 7 / 23 / 41 / 101), 0 self-inflicted deaths, organic, smoothness 0.77 against 0.44, 1.28 ms/step against 2.88 (Python, 1 thread)."),
     "posinfo2": dict(
         what="A LEARNED rule (the round-1 network G2 plus inputs that tell each tadpole where it sits in the body's own frame, trained end to end) wrapped in a DESIGNED controller that decides only who is laid and who molts into what. The network decides where every tadpole swims; it can no longer decide to die.",
         body="Learned: the network reads its neighbours, which side of the body it is on and the element census, and steers.",
