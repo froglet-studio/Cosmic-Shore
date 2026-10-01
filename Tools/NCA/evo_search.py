@@ -25,7 +25,7 @@ import evo_model as em  # noqa: E402
 GROUPS = {
     "behaviour": ["sw_lay", "k_lay", "b_lay", "sw_egg", "p_egg", "beta_egg", "sw_lock", "lock", "D"],
     "out": ["sw_out", "g_out", "b_out"],
-    "swirl": ["sw_swirl", "swirl"],
+    "swirl": ["sw_swirl", "swirl", "swirl_gain"],
 }
 GROUPS["all"] = GROUPS["behaviour"] + GROUPS["out"] + GROUPS["swirl"]
 

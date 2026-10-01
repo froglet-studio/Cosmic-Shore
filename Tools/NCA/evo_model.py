@@ -53,7 +53,8 @@ LAYOUT = [
     ("g_out", NOUT, 0.0),      # B5 per-output gain (w3 row scale = 1 + 0.5 * tanh(g))
     ("b_out", NOUT, 0.0),      # B5 per-output bias offset (x 0.05)
     ("sw_swirl", 1, 0.5),      # B6 on/off: per-element swirl about the plan's long axis (zero rate = no-op)
-    ("swirl", 4, 0.0),         # B6: rad/step = 0.05 * tanh(gene), per element C M S T
+    ("swirl", 4, 0.0),         # B6: rad/step = 0.05 * tanh(gene) * exp(swirl_gain), per element C M S T
+    ("swirl_gain", 1, 0.0),    # B6: lifts the swirl cap (stage 3: the dragonfly's runners need laps)
 ]
 SLICES, DIM = {}, 0
 for _n, _s, _ in LAYOUT:
@@ -142,7 +143,7 @@ class EvoRule(sn.SwarmRule):
             out = self._step(sw, gen, bud, fire)
             g = self.genome
             if gene(g, "sw_swirl") > 0:
-                rate = 0.05 * torch.tanh(torch.tensor(g[SLICES["swirl"]], dtype=torch.float32))
+                rate = 0.05 * math.exp(gene(g, "swirl_gain")) * torch.tanh(torch.tensor(g[SLICES["swirl"]], dtype=torch.float32))
                 if float(rate.abs().max()) > 1e-4:
                     live = (sw.active & sw.hatched & out.active & out.hatched)
                     w = live.float()

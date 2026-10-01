@@ -1,38 +1,38 @@
 {
  "mass": {
-  "before": 18.36,
+  "before": 21.5,
   "n_before": 280,
-  "killed": 100,
-  "cut": 20.55,
-  "recovered": 19.55,
+  "killed": 108,
+  "cut": 24.09,
+  "recovered": 20.3,
   "n_after": 280,
-  "heal": 0.457
+  "heal": 1.463
  },
  "space": {
-  "before": 22.95,
+  "before": 12.81,
   "n_before": 280,
-  "killed": 51,
-  "cut": 24.7,
-  "recovered": 26.74,
+  "killed": 64,
+  "cut": 16.57,
+  "recovered": 15.89,
   "n_after": 280,
-  "heal": -1.166
+  "heal": 0.181
  },
  "charge": {
-  "before": 16.01,
+  "before": 19.91,
   "n_before": 280,
-  "killed": 88,
-  "cut": 18.47,
-  "recovered": 16.16,
+  "killed": 71,
+  "cut": 18.2,
+  "recovered": 19.1,
   "n_after": 280,
-  "heal": 0.939
+  "heal": null
  },
  "time": {
-  "before": 26.37,
+  "before": 32.27,
   "n_before": 280,
-  "killed": 61,
-  "cut": 29.01,
-  "recovered": 27.43,
+  "killed": 65,
+  "cut": 34.0,
+  "recovered": 31.42,
   "n_after": 280,
-  "heal": 0.598
+  "heal": 1.491
  }
 }
