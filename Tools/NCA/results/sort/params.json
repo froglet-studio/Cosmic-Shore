@@ -1,0 +1,51 @@
+{
+ "cfg": {
+  "K": 12,
+  "per_well": 4,
+  "cov_scale": 0.8453316960855308,
+  "k_well": 0.4054129614935642,
+  "well_clip": 0.5748651931746,
+  "r0": 2.320505231317575,
+  "k_rep": 0.12022275779648686,
+  "R_adh": 5.510718009165661,
+  "a_same": -0.05,
+  "a_elem": -0.021461622545816662,
+  "a_role": -0.0512479591716115,
+  "a_other": -0.07961812729807706,
+  "swap": 0.8273646794563358,
+  "r_swap": 3.5486425367793557,
+  "swap_margin": 0.19288972459785247,
+  "inertia": 0.5751248286253837,
+  "vmax": [
+   0.8,
+   0.8,
+   0.8,
+   2.0
+  ],
+  "local_centre": 0,
+  "centre_relax": 0.04,
+  "centre_iters": 3,
+  "lap_every": 0,
+  "lap_elems": [
+   3
+  ],
+  "fate": 1,
+  "swirl_time": 0.0,
+  "dwell": 12,
+  "lay_rate": 0.09464690487133218,
+  "lay_max": 5,
+  "r_bud": 2.6,
+  "fill_tol": 0.15,
+  "p_cross": 0.49820462751506045,
+  "hatch_steps": 3,
+  "over": 0.9417892562803274,
+  "molt": 1,
+  "molt_rate": 0.03,
+  "transfer": 1,
+  "role_every": 10,
+  "seed": 0
+ },
+ "model": "sort_model.SortSwarm",
+ "vec": "runs/sort/cma_k12/best.npy",
+ "set": "K=12,per_well=4,molt=1"
+}
