@@ -73,6 +73,10 @@ class StudentCfg:
     dwell: int = 12
     freeze_contested: int = 0  # 1 (census mode): a tadpole whose own dwell counter is running neither lays nor
                                # starts a molt (field's 'contested' pause, from the tadpole's own census memory)
+    census_gate: int = 0      # 1 (needs genome): a tadpole lays only while its own element AND the headcount are
+                              # short of its believed plan, and starts a molt only while its element is in
+                              # surplus (the teacher's composition rule, computed from the census + genome)
+    oracle_z: int = 0         # DIAGNOSTIC ONLY (not local): Z = the true live centroid each step
     genome: int = 0           # 1: + genome features: own element's plan share - its live share, the full deficit
                               # vector (plan mix - live mix) and plan headcount - live headcount, all under the
                               # tadpole's own plan belief (the plan constants are the genome; no new perception)
@@ -214,6 +218,10 @@ class Student(nn.Module):
             avg = torch.where(cnt[:, None] > 0, ssum / cnt.clamp(min=1)[:, None], zz)
             zz = zz + self.cfg.cons_a * (avg - zz)
         zz = zz + self.cfg.cons_leak * (pos - zz)
+        if self.cfg.oracle_z:
+            lb = live.view(B, N).float()
+            c = (sw.pos * lb[..., None]).sum(1) / lb.sum(1).clamp(min=1)[:, None]
+            zz = c[:, None, :].expand(B, N, 3).reshape(n, 3)
         s[:, Z] = torch.where(live[:, None], zz, s[:, Z])
 
     def student_action(self, f, s, elem, live, gen):
@@ -295,6 +303,11 @@ class Student(nn.Module):
         v = action["v"]; look = action["look"]
         lay_par = action["lay_par"] & live; lay_dir = action["lay_dir"]; lay_el = action["lay_el"]
         molt_start = action["molt_start"] & live; molt_to = action["molt_to"]
+        if cfg.census_gate and cfg.genome:
+            g0 = NF                                                # genome block: own deficit, deficit[4], headcount gap
+            own_def, n_gap = f[:, g0], f[:, g0 + 5]
+            lay_par = lay_par & (own_def > 0) & (n_gap > 0)
+            molt_start = molt_start & (own_def < 0)
         if cfg.freeze_contested and cfg.plan_mode == "census":
             calm = s[:, CNT] <= 0
             lay_par = lay_par & calm; molt_start = molt_start & calm
