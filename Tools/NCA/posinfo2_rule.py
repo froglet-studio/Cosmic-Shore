@@ -68,7 +68,7 @@ def save(rule, path, step=0, extra=None):
 # inside its slot, molt the surplus into that larger quota, and let parents lay the rest.
 
 @torch.no_grad()
-def scaled_quota(sw, b, capacity=280):
+def scaled_quota(sw, b, capacity=280, orphans=False):
     m = sw.active[b]
     h = sw.active[b] & sw.hatched[b]
     if int(h.sum()) == 0:
@@ -99,6 +99,15 @@ def scaled_quota(sw, b, capacity=280):
     q = torch.zeros(4, 3, dtype=torch.long)
     for sl, d in enumerate(perm):
         q[:, d] = torch.round(tab[:, sl].float() * s).long()
+    if orphans:                                               # homeo 6: a living domain the plan has no slot for (a
+        mix = tab.sum(1).float() / max(1, n_plan)             # 3-domain dragonfly -> a 2-slot jellyfish) molts toward
+        for d in range(3):                                    # the plan's overall element MIX instead of keeping its
+            if int(q[:, d].sum()) == 0 and D[d] > 0:          # old element as debris
+                qd = torch.floor(mix * D[d]).long()
+                rem = int(D[d]) - int(qd.sum())
+                for e in torch.argsort(mix * D[d] - qd.float(), descending=True)[:rem].tolist():
+                    qd[e] += 1
+                q[:, d] = qd
     for d in range(3):                                        # rounding: a domain's quota is never below its headcount
         short = int(D[d]) - int(q[:, d].sum())
         if short > 0 and int(q[:, d].sum()) > 0:
@@ -110,7 +119,8 @@ def homeo_lay5(self, sw, gi, gj, gen=None):
     """posinfo_rule._homeo_lay at level 4 (molting + reserved deficits + proportional fill + cross-lay),
     with the SCALED quota."""
     old = pr.homeo_quota
-    pr.homeo_quota = lambda sw_, b_: scaled_quota(sw_, b_, self.world.capacity)
+    orph = self.homeo >= 6
+    pr.homeo_quota = lambda sw_, b_: scaled_quota(sw_, b_, self.world.capacity, orphans=orph)
     try:
         h = self.homeo
         self.homeo = 4
