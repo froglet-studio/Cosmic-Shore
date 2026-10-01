@@ -16,3 +16,5 @@ one autonomous session works from, on its own branch (`cece/swarm-x-<tag>`), rep
 | meta | relaxed rules: metamorphosis and richer actuators so a swarm can steer its own mix |
 
 The gradient-trained runs (E, F, G, H series) continue alongside; see the parent README.
+
+**Round 1b, specialists** (`solo.md`): the same G2 rule fine-tuned on each plan alone (`cece/swarm-solo-<plan>`), so each plan's result can be confirmed on its own; their task vectors are then combined into hybrids that seed the four-plan search.
