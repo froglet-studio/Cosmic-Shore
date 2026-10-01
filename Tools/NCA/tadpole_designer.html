@@ -1,0 +1,961 @@
+<title>Tadpole Swarm Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f5f6; --panel: #ffffff; --fg: #17202a; --muted: #5a6672; --line: #d8dee3;
+  --accent: #0d6f8f; --accent-fg: #ffffff; --dish: #e8eef2; --ok: #1d7a4a; --bad: #b3261e; --warn: #8a5a00;
+  --chip: #eef2f4;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1418; --panel: #151d23; --fg: #e3e9ee; --muted: #93a1ad; --line: #2a353e;
+  --accent: #3fb3d6; --accent-fg: #06141a; --dish: #0a1116; --ok: #5cc98c; --bad: #ff8a80; --warn: #e8b54a;
+  --chip: #1c262d; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #151d23; --fg: #e3e9ee; --muted: #93a1ad; --line: #2a353e;
+  --accent: #3fb3d6; --accent-fg: #06141a; --dish: #0a1116; --ok: #5cc98c; --bad: #ff8a80; --warn: #e8b54a;
+  --chip: #1c262d; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 18px 40px }
+.wrap { max-width: 1320px; margin: 0 auto }
+header h1 { font-family: var(--display); font-weight: 700; font-size: 1.9rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+header p { margin: 4px 0 12px; color: var(--muted); max-width: 78ch }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px }
+.tab { font: 700 14px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 999px; padding: 7px 16px; cursor: pointer }
+.tab[aria-selected=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 18px; align-items: start }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr } }
+.stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+@media (max-width: 900px) { .stage { position: static } }
+.view { background: var(--dish); border: 1px solid var(--line); border-radius: 10px; overflow: hidden }
+canvas#cv { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: none; cursor: grab }
+.viewbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 7px; padding: 6px 11px; cursor: pointer }
+.btn:hover { border-color: var(--accent) }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.btn.on { border-color: var(--accent); color: var(--accent) }
+.frame { display: flex; align-items: center; gap: 8px; flex: 1 1 200px; min-width: 0 }
+.frame input { flex: 1; min-width: 0 }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0 }
+.stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted) }
+.stat .v { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600 }
+.v.ok { color: var(--ok) } .v.bad { color: var(--bad) } .v.warn { color: var(--warn) }
+.census { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px }
+.census span { background: var(--chip); border-radius: 999px; padding: 2px 9px 2px 4px; display: inline-flex; gap: 5px; align-items: center }
+.dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,.2) }
+.dot.t2 { transform: rotate(45deg) scale(.8) } .dot.t1 { box-shadow: inset 0 0 0 2px #ff3b2f } .dot.el { border-radius: 50% }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0 }
+.panel h2 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 8px }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px }
+details { border-top: 1px solid var(--line); padding: 6px 0 }
+details:first-of-type { border-top: 0 }
+summary { cursor: pointer; font-family: var(--display); font-weight: 500; font-size: 1rem; padding: 4px 0 }
+.row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) 4.6em; gap: 8px; align-items: center; padding: 3px 0 }
+.row label, .crow label { font-size: 13px; color: var(--muted) }
+.row input[type=range] { width: 100%; accent-color: var(--accent) }
+.row input[type=number] { width: 100%; font: 13px var(--mono); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 5px; padding: 2px 4px }
+.row.tog { grid-template-columns: 9.5em 1fr }
+.crow { display: grid; grid-template-columns: 9.5em auto; gap: 8px; align-items: center; padding: 4px 0 }
+.cpick { display: grid; grid-template-columns: repeat(3, 26px); gap: 4px }
+.cpick.el { grid-template-columns: repeat(4, auto) }
+.cpick button { width: 26px; height: 22px; border-radius: 4px; border: 1px solid rgba(0,0,0,.25); cursor: pointer; padding: 0; position: relative }
+.cpick.el button { width: auto; height: 24px; padding: 0 8px 0 6px; font: 600 12px var(--body); color: var(--fg); background: var(--chip); display: inline-flex; align-items: center; gap: 5px; border-color: var(--line) }
+.cpick button.t1::after { content: ""; position: absolute; inset: 4px; border: 2px solid #ff3b2f; border-radius: 2px }
+.cpick button.t2::after { content: ""; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; background: rgba(255,255,255,.75); transform: translate(-50%,-50%) rotate(45deg) }
+.cpick button[aria-pressed=true] { outline: 2px solid var(--fg); outline-offset: 1px }
+.send { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px }
+.send textarea { width: 100%; min-height: 58px; font: 13px var(--body); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; resize: vertical; box-sizing: border-box }
+.send .btns { display: flex; flex-wrap: wrap; gap: 8px }
+.status { font-size: 13px; color: var(--muted) } .status.ok { color: var(--ok) } .status.bad { color: var(--bad) }
+.legend { font-size: 12px; color: var(--muted) }
+.unitnote { font-size: 13px; color: var(--muted); margin: 0 0 8px }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Tadpole Swarm</h1>
+  <p>Targets for a population rule: one swarm of tadpole fauna that assembles into a swimming whale, and — after losing units — a pulsing jellyfish. Every unit is the game's tadpole: an element crystal that never changes, a spindle that can stretch and curl, and a prism free to change domain, state and size.</p>
+</header>
+<div class="tabs" role="tablist" aria-label="Target">
+  <button class="tab" role="tab" data-tab="whale" aria-selected="true" type="button">Whale</button>
+  <button class="tab" role="tab" data-tab="jelly" aria-selected="false" type="button">Jellyfish</button>
+  <button class="tab" role="tab" data-tab="unit" aria-selected="false" type="button">The unit</button>
+</div>
+
+<div class="layout">
+  <section class="stage" aria-label="Preview">
+    <div class="view"><canvas id="cv" aria-label="3D preview; drag to orbit, scroll to zoom"></canvas></div>
+    <div class="viewbar">
+      <button class="btn primary" id="play" type="button">Pause</button>
+      <div class="frame"><span class="legend">frame</span><input id="frame" type="range" min="0" max="7" step="1" value="0" aria-label="Swim frame"><span class="mono" id="frameo">1/8</span></div>
+      <button class="btn" data-view="side" type="button">Side</button>
+      <button class="btn" data-view="top" type="button">Top</button>
+      <button class="btn" data-view="front" type="button">Front</button>
+      <button class="btn" data-view="three" type="button">3/4</button>
+      <button class="btn on" id="gridbtn" type="button" aria-pressed="true">Grid box</button>
+      <button class="btn on" id="hitbtn" type="button" aria-pressed="true">Mark hits</button>
+    </div>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="k">Units</div><div class="v" id="s-n">–</div></div>
+      <div class="stat"><div class="k">Intersections</div><div class="v" id="s-hit">–</div></div>
+      <div class="stat"><div class="k">Fits grid</div><div class="v" id="s-fit">–</div></div>
+      <div class="stat"><div class="k">Extent (x·y·z)</div><div class="v" id="s-size" style="font-size:13px">–</div></div>
+      <div class="stat"><div class="k">Prism half-extent</div><div class="v" id="s-h" style="font-size:13px">–</div></div>
+      <div class="stat"><div class="k">Jelly / whale</div><div class="v" id="s-ratio">–</div></div>
+    </div>
+    <div class="census" id="elems" aria-label="Units by element"></div>
+    <div class="census" id="census" aria-label="Prisms by appearance"></div>
+    <p class="legend" id="notes"></p>
+  </section>
+
+  <section class="panel" aria-label="Parameters">
+    <h2 id="ptitle">Whale parameters</h2>
+    <p class="unitnote" id="unitnote" hidden>The four resting tadpoles, measured from <span class="mono">TadPoleFauna.prefab</span> and each element's variant, and on the right one unit you can bend. Crystal colour stands in for the element's shape, which a voxel cannot resolve.</p>
+    <div class="presets" id="presets"></div>
+    <div id="groups"></div>
+    <div class="send">
+      <label class="legend" for="note">Note for Claude (optional)</label>
+      <textarea id="note" placeholder="What you were going for, what to keep, what still looks off…"></textarea>
+      <div class="btns">
+        <button class="btn primary" id="sendbtn" type="button">Send both to Claude</button>
+        <button class="btn" id="copybtn" type="button">Copy JSON</button>
+        <button class="btn" id="resetbtn" type="button">Reset this target</button>
+      </div>
+      <div class="status" id="sendstatus" role="status">Not sent yet.</div>
+      <textarea id="copyfield" hidden readonly aria-label="Parameters as JSON"></textarea>
+    </div>
+  </section>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// Tadpole-unit targets: creatures assembled from a population of tadpole fauna.
+//
+// One file, run in the designer page and in node (tadpole_target.py). What the designer shows IS
+// the training target.
+//
+// THE UNIT is the game's tadpole (TadPoleFauna.prefab + the four `Tadpole Fauna <Element>`
+// variants): a HEART crystal at the front, a SPINDLE limb out of the heart, and ONE body PRISM
+// riding the spindle's end. What each part may do in a learned rule:
+//   crystal  FIXED by the unit's element: shape and size (Charge|Mass|Space|Time), never changes
+//   spindle  length, bend (arc angle), bend roll (which way it curls), thickness
+//   prism    domain (Jade|Ruby|Gold), tier (plain box | danger box | shield octahedron), three
+//            half-extents, roll about its long axis - unlike most fauna, free to change
+// Measured from the prefab, in game units (the designer's `unitScale` maps them to voxels):
+//   heart world size 2.298 (Charge, Space) | 1.737 (Mass, Time)  -> crystal radius = size / 2
+//   body prism 1.05 x 1.05 x 3.5 (Charge, Space) | 0.32 x 0.32 x 2.8 (Mass, Time), centred
+//   0.7 * 5.81 | 0.4 * 5.81 behind the heart
+//
+// Frame: +x toward the creature's head (whale) / +y up, units = voxels. A unit's own frame is
+// [f, s, n]: f points FORWARD (from its prism to its heart), n is the outward surface normal.
+// Output of build(): { units: [...], crystals: [...], prisms: [...], spindles: [...] } where
+//   crystal {p, r, elem, unit}     prism {p, h, R (row-major, columns = local axes), dom, tier, unit}
+//   spindle {pts: [[x,y,z]...], r, unit}
+(function (root) {
+  const TAU = Math.PI * 2, SHIELD = 3.0, HMIN = 0.25, HMAX = 3.0;
+  const ELEMENTS = ["Charge", "Mass", "Space", "Time"];
+  const HEART = [2.298, 1.737, 2.298, 1.737];                       // heart world size per element
+  const REST = [                                                    // resting body prism half-extents, and spindle length
+    { h: [1.75, 0.525, 0.525], spindle: 1.2 }, { h: [1.4, 0.16, 0.16], spindle: 0.4 },
+    { h: [1.75, 0.525, 0.525], spindle: 1.2 }, { h: [1.4, 0.16, 0.16], spindle: 0.4 }];
+
+  // ---- vector helpers ---------------------------------------------------------------------
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const len = a => Math.hypot(a[0], a[1], a[2]);
+  const norm = a => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+  const deg = d => d * Math.PI / 180;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  function frame(f, n) {                  // [f, s, n], right-handed, n forced perpendicular to f
+    f = norm(f); n = norm(sub(n, mul(f, dot(n, f))));
+    if (len(n) < 1e-6) n = norm(Math.abs(f[1]) < 0.9 ? cross(f, [0, 1, 0]) : cross(f, [1, 0, 0]));
+    return [f, cross(n, f), n];
+  }
+  const toR = ax => [ax[0][0], ax[1][0], ax[2][0], ax[0][1], ax[1][1], ax[2][1], ax[0][2], ax[1][2], ax[2][2]];
+  const rotAxis = (v, k, a) => {
+    const c = Math.cos(a), s = Math.sin(a), kv = cross(k, v), kd = dot(k, v);
+    return [v[0] * c + kv[0] * s + k[0] * kd * (1 - c), v[1] * c + kv[1] * s + k[1] * kd * (1 - c), v[2] * c + kv[2] * s + k[2] * kd * (1 - c)];
+  };
+  const clampH = v => Math.max(HMIN, Math.min(HMAX, v));
+
+  // ---- the unit ----------------------------------------------------------------------------
+  // u = { p (heart centre), f (forward), n (normal), elem, spindle: {len, bend, roll, thick},
+  //       prism: {h:[long, wide, thin], dom, tier, roll} }
+  const crystalR = (P, e) => 0.5 * HEART[e] * P.unitScale * P.crystalSize;
+  function realise(P, u, id) {
+    const [f, s, n] = frame(u.f, u.n);
+    const r = crystalR(P, u.elem), sp = u.spindle;
+    const L = r + sp.len;                                           // the limb roots inside the heart
+    const b = norm(add(mul(n, Math.cos(sp.roll)), mul(s, Math.sin(sp.roll))));
+    const k = Math.abs(sp.bend) < 1e-6 ? 0 : sp.bend / L, back = mul(f, -1);
+    const at = t => k === 0 ? add(u.p, mul(back, t))
+      : add(add(u.p, mul(back, Math.sin(k * t) / k)), mul(b, (1 - Math.cos(k * t)) / k));
+    const tan = t => norm(add(mul(back, Math.cos(k * t)), mul(b, Math.sin(k * t))));
+    const nrm = t => norm(add(mul(f, Math.sin(k * t)), mul(b, Math.cos(k * t))));   // in-plane normal, = b at t = 0
+    const pts = []; for (let i = 0; i <= 8; i++) pts.push(at(L * i / 8));
+    const T = tan(L), N0 = nrm(L);
+    const N = rotAxis(rotAxis(N0, T, -sp.roll), T, u.prism.roll || 0); // undo the curl's roll so the plate lies on the surface
+    const h = u.prism.h.map(clampH);
+    const pc = add(at(L), mul(T, h[0]));
+    const ax = frame(mul(T, -1), N);
+    const tier = u.prism.tier;
+    return {
+      crystal: { p: u.p, r, elem: u.elem, unit: id },
+      spindle: { pts, r: sp.thick * P.unitScale, unit: id },
+      prism: { p: pc, h: tier === 2 ? h.map(v => Math.max(HMIN, v / SHIELD)) : h, R: toR(ax), dom: u.prism.dom, tier, unit: id },
+      tail: add(pc, mul(T, h[0])), tailDir: T,
+    };
+  }
+  function assemble(P, units) {
+    const out = { units, crystals: [], prisms: [], spindles: [] };
+    units.forEach((u, i) => { const g = realise(P, u, i); out.crystals.push(g.crystal); out.prisms.push(g.prism); out.spindles.push(g.spindle); });
+    return out;
+  }
+  const unit = (p, f, n, elem, sp, pr) => ({ p, f, n, elem, spindle: sp, prism: pr });
+
+  // A chain of units laid head to tail (a tentacle, a fin ray): each heart sits just behind the
+  // previous prism's tail, on the previous limb's end tangent - so bends accumulate into curls.
+  function chain(P, start, dir, n, count, mk) {
+    const out = []; let p = start, d = norm(dir), nn = n;
+    for (let i = 0; i < count; i++) {
+      const c = mk(i);                                                // {elem, spindle, prism}
+      const r = crystalR(P, c.elem);
+      const heart = add(p, mul(d, r));
+      const u = unit(heart, mul(d, -1), nn, c.elem, c.spindle, c.prism);
+      out.push(u);
+      const g = realise(P, u, 0);
+      p = add(g.tail, mul(g.tailDir, P.gap)); d = g.tailDir;
+      nn = norm(sub(nn, mul(d, dot(nn, d))));
+    }
+    return out;
+  }
+
+  // Ring tiling of a surface: rings along a parameter s (0 = the head/apex), units around each
+  // ring, each unit pointing forward toward the head along the surface. `surf(s, th)` -> {p, n};
+  // each ring's prisms reach back to just before the next ring's hearts.
+  function tile(P, surf, sList, perRing, look, rmaxOf) {
+    const out = [], ht = P.plateThickness / 2;
+    const rings = sList.map((s, i) => {
+      const ths = evenAngles(th => surf(s, th).p, perRing[i], P.stagger ? 0.5 * (i % 2) : 0);
+      return { ths, hearts: ths.map(th => { const a = surf(s, th); return { a, h: sub(a.p, mul(a.n, ht)) }; }) };
+    });
+    for (let i = 0; i < sList.length; i++) {
+      const s = sList[i], n = perRing[i];
+      const next = i + 1 < sList.length ? sList[i + 1] : null;
+      const { ths, hearts } = rings[i];
+      for (let j = 0; j < n; j++) {
+        const th = ths[j], a = hearts[j].a, look_ = look(s, th, j, i);
+        const ahead = surf(Math.max(0, s - 1e-3), th);
+        const f = norm(sub(ahead.p, a.p));
+        const heart = hearts[j].h;
+        const r = crystalR(P, look_.elem);
+        let reach;                                                   // distance to the next ring's hearts
+        if (next !== null) reach = len(sub(surf(next, th).p, a.p)) - rmaxOf(i + 1) - P.gap - P.ringSlack;   // slack: room to bend while swimming
+        else reach = look_.tailReach;
+        // around the ring: half the chord to the nearer neighbour, less what the inner corners
+        // lose where the surface turns between them (ht * tan(angle / 2)), less half the gap
+        let wide = 1e9;
+        // measured at the heart AND where the plate ends (the next ring), since a tapering body
+        // draws neighbouring plates together along their length
+        const ends = [s, Math.min(1, next !== null ? s + 0.8 * (next - s) : i > 0 ? s + 0.8 * (s - sList[i - 1]) : s)];
+        for (const k of [(j + 1) % n, (j + n - 1) % n]) for (const se of ends) {
+          const A = surf(se, th), B = surf(se, ths[k]);
+          const chord = len(sub(sub(B.p, mul(B.n, ht)), sub(A.p, mul(A.n, ht))));
+          const turn = Math.acos(Math.max(-1, Math.min(1, dot(A.n, B.n))));
+          wide = Math.min(wide, 0.5 * P.plateWidth * chord - 1.5 * ht * Math.tan(Math.min(turn, 2.8) / 2) - P.gap / 2);
+        }
+        // back along the body: stop short of any next-ring heart in the prism's lane
+        if (next !== null) for (const o of rings[i + 1].hearts) {
+          const d = sub(o.h, heart), along = -dot(d, f), lat = len(add(d, mul(f, along)));
+          if (along > 0 && lat < wide + rmaxOf(i + 1) + P.gap) reach = Math.min(reach, along - rmaxOf(i + 1) - P.gap - P.ringSlack);
+        }
+        const lenSp = Math.max(0, Math.min(look_.spindle, reach - r - 2 * HMIN));
+        const hl = 0.5 * (reach - r - lenSp);
+        out.push(unit(heart, f, a.n, look_.elem, { len: lenSp, bend: 0, roll: 0, thick: P.spindleThickness },
+          { h: [hl, wide, ht], dom: look_.col[0], tier: look_.col[1], roll: 0 }));
+      }
+    }
+    return out;
+  }
+  // n angles around a closed curve, evenly spaced in ARC LENGTH (so units sit evenly on the skin)
+  function evenAngles(curve, n, phase) {
+    const M = 360, cum = [0]; let prev = curve(0);
+    for (let i = 1; i <= M; i++) { const q = curve(TAU * i / M); cum.push(cum[i - 1] + len(sub(q, prev))); prev = q; }
+    const total = cum[M], out = [];
+    for (let j = 0; j < n; j++) {
+      const target = (total * (j + phase) / n) % total;
+      let i = 1; while (i < M && cum[i] < target) i++;
+      out.push(TAU * (i - 1 + (target - cum[i - 1]) / Math.max(cum[i] - cum[i - 1], 1e-9)) / M);
+    }
+    return out;
+  }
+
+  function perimeter(a, b) { return Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b))); }
+
+  // ================================= WHALE =================================================
+  const WHALE = {
+    gridX: 96, gridY: 40, gridZ: 64, unitScale: 1, crystalSize: 1, spindleThickness: 0.22, gap: 0.2,
+    length: 64, girth: 0.12, girthPeak: 0.3, headRound: 0.55, tailTaper: 1.6, peduncle: 0.12, flatten: 0.8, bellyDrop: 0.18,
+    ringPitch: 6.5, ringSlack: 0.4, arcSpacing: 3.0, plateWidth: 0.92, plateThickness: 0.9, stagger: 0, spindle: 1.0,
+    flipperRays: 3, flipperUnits: 3, flipperPos: 0.3, flipperSweep: 35, flipperDroop: 25, flipperSpread: 12, flipperCurl: 0,
+    keel: 1, dorsal: 1, dorsalPos: 0.66, dorsalUnits: 1, dorsalRake: 40,
+    flukeRays: 3, flukeUnits: 2, flukeSweep: 30, flukeSpread: 18,
+    backElem: 2, bellyElem: 0, finElem: 1, flukeElem: 3, eyeElem: 3, elemMix: 0,
+    back: [0, 0], belly: [2, 0], countershade: -0.15, pleats: 1, pleatColor: [2, 2], pleatEnd: 0.45,
+    fins: [0, 0], flukeColor: [0, 0], dorsalColor: [0, 0], eye: 1, eyeColor: [1, 2], eyePos: 0.14,
+    frames: 8, swimAmp: 0.05, swimWave: 1.1, swimEnv: 2.2, flukePitch: 22, flipperFlap: 12, spindleSway: 0,
+  };
+  function whaleRadius(P, s) {
+    const rmax = P.girth * P.length;
+    if (s <= P.girthPeak) { const u = s / P.girthPeak; return rmax * Math.pow(Math.max(0, u * (2 - u)), P.headRound); }
+    const t = (s - P.girthPeak) / (1 - P.girthPeak);
+    return rmax * (1 - (1 - P.peduncle) * Math.pow(t, P.tailTaper));
+  }
+  function whaleRest(P) {
+    const L = P.length, xOf = s => L / 2 - s * L;
+    const surf = (s, th) => {
+      const w = Math.max(whaleRadius(P, s), 1e-3), h = w * P.flatten, yc = -P.bellyDrop * w;
+      const y = yc + h * Math.sin(th), z = w * Math.cos(th);
+      return { p: [xOf(s), y, z], n: norm([0, (y - yc) / (h * h), z / (w * w)]), w, h };
+    };
+    const elemFor = (base, i, j) => P.elemMix ? (base + i + j) % 4 : base;
+    const rmax = Math.max(...[0, 1, 2, 3].map(e => crystalR(P, e)));
+    // rings: first where the section can hold three hearts, pitch along the body
+    const sList = [], per = [], looks = [];
+    for (let x = L / 2 - rmax - 0.5; x > -L / 2; x -= P.ringPitch) {
+      const s = (L / 2 - x) / L, w = whaleRadius(P, s), h = w * P.flatten;
+      const ht = P.plateThickness / 2, inner = Math.max(0, w - 2 * ht), innerH = Math.max(0, h - 2 * ht);
+      const n = Math.floor(perimeter(w - ht, h - ht) / Math.max(P.arcSpacing, 2 * rmax + P.gap));
+      if (n < 3 || h < 2 * ht + 2 * rmax * 0.5) { if (sList.length) break; else continue; }
+      sList.push(s); per.push(n); looks.push(perimeter(inner, innerH));
+    }
+    const tagged = [];
+    const bodyUnits = tile(P, surf, sList, per, (s, th, j, i) => {
+      const low = Math.sin(th) < P.countershade;
+      let col = low ? P.belly : P.back;
+      if (low && P.pleats && s < P.pleatEnd && j % 2 === 0) col = P.pleatColor;
+      return { elem: elemFor(low ? P.bellyElem : P.backElem, i, j), spindle: P.spindle, col, arc: looks[i],
+               tailReach: Math.max(2, P.ringPitch * 0.9) };
+    }, () => rmax);
+    bodyUnits.forEach((u, k) => tagged.push({ u, s: (L / 2 - u.p[0]) / L, part: "body" }));
+    // eyes: the body unit nearest each eye point becomes an eye unit (its heart the eye)
+    if (P.eye) for (const side of [1, -1]) {
+      const e = surf(P.eyePos, side > 0 ? 0.15 : Math.PI - 0.15).p;
+      let best = null, bd = 1e9;
+      for (const t of tagged) { const d = len(sub(t.u.p, e)); if (d < bd) { bd = d; best = t; } }
+      if (best) { best.u.elem = P.eyeElem; best.u.prism.dom = P.eyeColor[0]; best.u.prism.tier = P.eyeColor[1]; best.part = "eye"; }
+    }
+    const tailS = sList.length ? sList[sList.length - 1] : 1;
+    // flippers: rays fanned in the fin plane, each ray a chain of units pointing back at the body
+    for (const side of [1, -1]) {
+      const s0 = P.flipperPos, a = surf(s0, side > 0 ? -0.35 : Math.PI + 0.35);
+      let span = [0, 0, side];
+      span = rotAxis(span, [0, 1, 0], -side * deg(P.flipperSweep));
+      span = norm(rotAxis(span, [1, 0, 0], side * deg(P.flipperDroop)));
+      const chord = norm(sub([-1, 0, 0], mul(span, dot([-1, 0, 0], span))));
+      const fn = norm(cross(span, chord));
+      for (let r = 0; r < P.flipperRays; r++) {
+        const v = P.flipperRays > 1 ? r / (P.flipperRays - 1) - 0.5 : 0;
+        const dir = rotAxis(span, fn, deg(P.flipperSpread) * v * 2);        // + toward the trailing edge: rays fan apart
+        const start = add(add(a.p, mul(a.n, 2 * rmax + P.gap)), mul(chord, v * (P.flipperRays - 1) * (2 * Math.max(rmax, 0.9) + P.gap)));
+        chain(P, start, dir, fn, P.flipperUnits, i => ({
+          elem: elemFor(P.finElem, r, i),
+          spindle: { len: P.spindle, bend: side * deg(P.flipperCurl), roll: Math.PI / 2, thick: P.spindleThickness },
+          prism: { h: [2.0 - 0.35 * i, 0.9, 0.45], dom: P.fins[0], tier: P.fins[1], roll: 0 } }))
+          .forEach(u => tagged.push({ u, s: s0, part: "flipper", fin: { side, root: a.p } }));
+      }
+    }
+    // dorsal: a short upright chain
+    if (P.dorsal) {
+      const top = surf(P.dorsalPos, Math.PI / 2);
+      const dir = norm([-Math.sin(deg(P.dorsalRake)), Math.cos(deg(P.dorsalRake)), 0]);
+      chain(P, add(top.p, [0, rmax - P.plateThickness / 2 + P.gap, 0]), dir, [0, 0, 1], P.dorsalUnits, i => ({
+        elem: P.finElem, spindle: { len: P.spindle * 0.6, bend: 0, roll: 0, thick: P.spindleThickness },
+        prism: { h: [1.4, 0.4, 1.1], dom: P.dorsalColor[0], tier: P.dorsalColor[1], roll: 0 } }))
+        .forEach(u => tagged.push({ u, s: P.dorsalPos, part: "dorsal" }));
+    }
+    // tail stock: where the body is too thin for a ring, a single file of tadpoles down the spine
+    let x0 = xOf(tailS) - Math.max(2, P.ringPitch * 0.9) - P.ringSlack - P.gap, y0 = -P.bellyDrop * whaleRadius(P, tailS);
+    if (P.keel) {
+      const room = x0 - (-L / 2), pitch = 2 * rmax + P.spindle * 0.6 + 2 * 1.4 + P.gap;
+      const count = Math.max(0, Math.floor(room / pitch));
+      if (count) {
+        const keel = chain(P, [x0, y0, 0], [-1, 0, 0], [0, 1, 0], count, i => {
+          const s = Math.min(1, (L / 2 - (x0 - (i + 0.5) * pitch)) / L), w = whaleRadius(P, s);
+          return { elem: P.backElem, spindle: { len: P.spindle * 0.6, bend: 0, roll: 0, thick: P.spindleThickness },
+                   prism: { h: [1.4, Math.max(0.5, w * 0.9), Math.max(0.5, w * P.flatten * 0.9)], dom: P.back[0], tier: P.back[1], roll: 0 } };
+        });
+        keel.forEach(u => tagged.push({ u, s: Math.min(1, (L / 2 - u.p[0]) / L), part: "body" }));
+        const end = realise(P, keel[keel.length - 1], 0);
+        x0 = end.tail[0] - P.gap - P.ringSlack;
+      }
+    }
+    // flukes: rays fanned back and out from the tail stock, in the horizontal plane
+    {
+      const tail = surf(tailS, Math.PI / 2);
+      for (const side of [1, -1]) for (let r = 0; r < P.flukeRays; r++) {
+        const v = P.flukeRays > 1 ? r / (P.flukeRays - 1) : 0.5;
+        const ang = deg(P.flukeSweep + P.flukeSpread * (v - 0.5) * 2);
+        const dir = norm([-Math.sin(ang), 0, side * Math.cos(ang)]);
+        chain(P, [x0 - r * (2 * Math.max(rmax, 0.9) + P.gap), y0, side * (rmax + P.gap)], dir, [0, 1, 0], P.flukeUnits, i => ({
+          elem: elemFor(P.flukeElem, r, i), spindle: { len: P.spindle * 0.8, bend: 0, roll: 0, thick: P.spindleThickness },
+          prism: { h: [1.8 - 0.3 * i, 0.9, 0.4], dom: P.flukeColor[0], tier: P.flukeColor[1], roll: 0 } }))
+          .forEach(u => tagged.push({ u, s: 1, part: "fluke" }));
+      }
+      void tail;
+    }
+    return tagged;
+  }
+  function whaleAt(P, k) {
+    const heave = s => P.swimAmp * P.length * Math.pow(Math.max(0, s), P.swimEnv) * Math.sin(TAU * (s / P.swimWave - k / P.frames));
+    const units = [];
+    for (const t of whaleRest(P)) {
+      const u = JSON.parse(JSON.stringify(t.u));
+      const s = t.s, ds = 1e-3, dy = heave(s);
+      let pitch = Math.atan2(dy - heave(s + ds), ds * P.length);
+      if (t.part === "fluke") pitch += deg(P.flukePitch) * Math.cos(TAU * k / P.frames);
+      const pivot = [P.length / 2 - s * P.length, 0, 0];
+      let rel = sub(u.p, pivot), f = u.f, n = u.n;
+      if (t.fin) {                                                     // flipper flap about the body axis at the root
+        const a = deg(P.flipperFlap) * Math.sin(TAU * k / P.frames) * t.fin.side;
+        rel = add(sub(t.fin.root, pivot), rotAxis(sub(u.p, t.fin.root), [1, 0, 0], a));
+        f = rotAxis(f, [1, 0, 0], a); n = rotAxis(n, [1, 0, 0], a);
+      }
+      const z = [0, 0, 1];
+      u.p = add(add(pivot, [0, dy, 0]), rotAxis(rel, z, pitch));
+      u.f = rotAxis(f, z, pitch); u.n = rotAxis(n, z, pitch);
+      if (P.spindleSway) u.spindle.bend += deg(P.spindleSway) * Math.sin(TAU * (s * 2 - k / P.frames));
+      u.part = t.part;
+      units.push(u);
+    }
+    return units;
+  }
+
+  // ================================= JELLYFISH =============================================
+  const JELLY = {
+    gridX: 64, gridY: 64, gridZ: 64, unitScale: 1, crystalSize: 1, spindleThickness: 0.22, gap: 0.2,
+    bellRadius: 13, bellHeight: 9.5, bellSweep: 105, ringPitch: 5.5, ringSlack: 0.2, arcSpacing: 3.0, plateWidth: 0.9, plateThickness: 0.9,
+    stagger: 1, spindle: 0.8, apexUnit: 1,
+    tentacles: 8, tentacleUnits: 3, tentacleCurl: 18, tentacleInset: 0.92,
+    arms: 4, armUnits: 2, armCurl: 10, armRadius: 3.5,
+    bellElem: 2, rimElem: 0, tentacleElem: 1, armElem: 3, elemMix: 0,
+    bell: [1, 2], rim: [1, 1], tentacleColor: [2, 0], armColor: [0, 2], rimRows: 1,
+    frames: 8, pulse: 0.16, pulseLift: 2.5, tentacleWave: 22, tentacleLag: 0.6,
+  };
+  function jellyUnits(P, k) {
+    const ph = TAU * (k || 0) / P.frames, c = 0.5 - 0.5 * Math.cos(ph);   // 0 relaxed .. 1 contracted
+    const lift = P.pulseLift * Math.sin(ph);
+    const sweep = deg(P.bellSweep), rmax = Math.max(...[0, 1, 2, 3].map(e => crystalR(P, e)));
+    const elemFor = (base, i, j) => P.elemMix ? (base + i + j) % 4 : base;
+    const bellAt = (con) => (s, th) => {                              // s: 0 apex .. 1 rim
+      const phi = sweep * s, squeeze = 1 - P.pulse * con * s * s;
+      const R = P.bellRadius * squeeze, H = P.bellHeight;
+      const rho = R * Math.sin(phi) / Math.sin(Math.min(sweep, Math.PI / 2)), y = H * Math.cos(phi) + lift;
+      const p = [rho * Math.cos(th), y, rho * Math.sin(th)];
+      const nr = [Math.cos(th) * Math.sin(phi) * H, Math.cos(phi) * R / Math.sin(Math.min(sweep, Math.PI / 2)), Math.sin(th) * Math.sin(phi) * H];
+      return { p, n: norm(nr), rho };
+    };
+    // ring layout from the CONTRACTED bell, so no frame can squeeze units into each other
+    const tight = bellAt(1), sList = [], per = [], circs = [];
+    const arcLen = s => { let a = 0, prev = tight(0, 0).p; for (let i = 1; i <= 40; i++) { const q = tight(s * i / 40, 0).p; a += len(sub(q, prev)); prev = q; } return a; };
+    const total = arcLen(1);
+    for (let d = rmax + 1.5; d < total; d += P.ringPitch) {
+      let lo = 0, hi = 1; for (let it = 0; it < 30; it++) { const m = (lo + hi) / 2; if (arcLen(m) < d) lo = m; else hi = m; }
+      const s = (lo + hi) / 2, circ = TAU * tight(s, 0).rho, n = Math.floor(circ / Math.max(P.arcSpacing, 2 * rmax + P.gap));
+      if (n < 3) continue;
+      sList.push(s); per.push(n); circs.push(circ);
+    }
+    const surf = bellAt(c);
+    const units = tile(P, surf, sList, per, (s, th, j, i) => {
+      const rimRow = i >= sList.length - P.rimRows;
+      return { elem: elemFor(rimRow ? P.rimElem : P.bellElem, i, j), spindle: P.spindle, col: rimRow ? P.rim : P.bell,
+               arc: TAU * surf(s, 0).rho, tailReach: P.ringPitch * 0.85 };
+    }, () => rmax).map(u => Object.assign(u, { part: "bell" }));
+    // apex: one unit pointing up, its prism hanging inside the bell (the stomach)
+    if (P.apexUnit) units.push(Object.assign(unit(add(surf(0, 0).p, [0, -rmax - 0.6, 0]), [0, 1, 0], [1, 0, 0], P.armElem,
+      { len: P.spindle, bend: 0, roll: 0, thick: P.spindleThickness }, { h: [2.2, 1.2, 1.2], dom: P.armColor[0], tier: P.armColor[1], roll: 0 }), { part: "apex" }));
+    // tentacles: chains hanging from inside the rim, curling, with a wave travelling down them
+    const rimS = sList.length ? sList[sList.length - 1] : 1;
+    for (let t = 0; t < P.tentacles; t++) {
+      const th = TAU * (t + 0.5) / P.tentacles, rp = surf(Math.min(1, rimS + 0.04), th);
+      const start = [rp.p[0] * P.tentacleInset, rp.p[1] - P.ringPitch * 0.85 - rmax - 0.5, rp.p[2] * P.tentacleInset];
+      const radial = norm([Math.cos(th), 0, Math.sin(th)]);
+      chain(P, start, [0, -1, 0], radial, P.tentacleUnits, i => ({
+        elem: elemFor(P.tentacleElem, t, i),
+        spindle: { len: P.spindle, bend: deg(P.tentacleCurl + P.tentacleWave * Math.sin(ph - i * P.tentacleLag)), roll: 0, thick: P.spindleThickness },
+        prism: { h: [2.2 - 0.25 * i, 0.35, 0.35], dom: P.tentacleColor[0], tier: P.tentacleColor[1], roll: 0 } }))
+        .forEach(u => units.push(Object.assign(u, { part: "tentacle" })));
+    }
+    // oral arms: shorter, heavier chains from the centre under the bell
+    for (let a = 0; a < P.arms; a++) {
+      const th = TAU * a / Math.max(1, P.arms), radial = norm([Math.cos(th), 0, Math.sin(th)]);
+      const start = add([0, surf(0, 0).p[1] - P.bellHeight * 0.55, 0], mul(radial, P.armRadius));
+      chain(P, start, [0, -1, 0], radial, P.armUnits, i => ({
+        elem: elemFor(P.armElem, a, i),
+        spindle: { len: P.spindle * 0.7, bend: deg(P.armCurl * Math.sin(ph * 0.5 - i * 0.8 + a)), roll: Math.PI / 2, thick: P.spindleThickness },
+        prism: { h: [1.8, 1.0, 0.5], dom: P.armColor[0], tier: P.armColor[1], roll: 0 } }))
+        .forEach(u => units.push(Object.assign(u, { part: "arm" })));
+    }
+    return units;
+  }
+
+  // ================================= overlap check =========================================
+  // Solids: prisms (box / shield octahedron, exact separating-axis test) and crystals (spheres,
+  // exact distance). Spindles are limbs and are exempt, as in the game (a limb may pass a plate).
+  function axesOf(q) { const R = q.R; return [[R[0], R[3], R[6]], [R[1], R[4], R[7]], [R[2], R[5], R[8]]]; }
+  function shapeOf(q) {
+    const A = axesOf(q);
+    if (q.tier !== 2) return { A, faces: A, edges: A };
+    const H = q.h.map(v => v * SHIELD), faces = [], edges = [];
+    for (const [a, b] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) faces.push(norm(add(add(mul(A[0], 1 / H[0]), mul(A[1], a / H[1])), mul(A[2], b / H[2]))));
+    for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) for (const sg of [1, -1]) edges.push(norm(sub(mul(A[i], H[i]), mul(A[j], sg * H[j]))));
+    return { A, faces, edges };
+  }
+  function support(q, S, n) {
+    const u = [dot(S.A[0], n), dot(S.A[1], n), dot(S.A[2], n)];
+    if (q.tier !== 2) return q.h[0] * Math.abs(u[0]) + q.h[1] * Math.abs(u[1]) + q.h[2] * Math.abs(u[2]);
+    return SHIELD * Math.max(q.h[0] * Math.abs(u[0]), q.h[1] * Math.abs(u[1]), q.h[2] * Math.abs(u[2]));
+  }
+  function prismPrism(a, b) {
+    const Sa = shapeOf(a), Sb = shapeOf(b), d = sub(b.p, a.p), ax = [...Sa.faces, ...Sb.faces];
+    for (const x of Sa.edges) for (const y of Sb.edges) { const c = cross(x, y); if (len(c) > 1e-6) ax.push(norm(c)); }
+    let best = 1e9;
+    for (const n of ax) best = Math.min(best, support(a, Sa, n) + support(b, Sb, n) - Math.abs(dot(d, n)));
+    return best;
+  }
+  function octaVerts(q) { const A = axesOf(q), out = []; for (let i = 0; i < 3; i++) for (const s of [1, -1]) out.push(add(q.p, mul(A[i], s * SHIELD * q.h[i]))); return out; }
+  function closestOnSeg(p, a, b) { const ab = sub(b, a), t = Math.max(0, Math.min(1, dot(sub(p, a), ab) / Math.max(dot(ab, ab), 1e-12))); return add(a, mul(ab, t)); }
+  function spherePrism(c, q) {                                     // penetration depth (< 0: apart)
+    const A = axesOf(q), d = sub(c.p, q.p), u = [dot(d, A[0]), dot(d, A[1]), dot(d, A[2])];
+    if (q.tier !== 2) {
+      const cl = u.map((v, i) => Math.max(-q.h[i], Math.min(q.h[i], v)));
+      const out = Math.hypot(u[0] - cl[0], u[1] - cl[1], u[2] - cl[2]);
+      if (out > 0) return c.r - out;
+      return c.r + Math.min(...u.map((v, i) => q.h[i] - Math.abs(v)));
+    }
+    const S = shapeOf(q), axes = [...S.faces];
+    const V = octaVerts(q);
+    for (const v of V) { const w = sub(c.p, v); if (len(w) > 1e-9) axes.push(norm(w)); }
+    for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) {
+      if ((i >> 1) === (j >> 1)) continue;                            // opposite vertices: not an edge
+      const w = sub(c.p, closestOnSeg(c.p, V[i], V[j])); if (len(w) > 1e-9) axes.push(norm(w));
+    }
+    let best = 1e9;
+    for (const n of axes) best = Math.min(best, c.r + support(q, S, n) - Math.abs(dot(d, n)));
+    return best;
+  }
+  function overlaps(g, tol) {
+    tol = tol == null ? 0.05 : tol;
+    const items = [];
+    g.prisms.forEach(q => items.push({ kind: 0, q, reach: q.tier === 2 ? SHIELD * Math.max(...q.h) : len(q.h) }));
+    g.crystals.forEach(q => items.push({ kind: 1, q, reach: q.r }));
+    const cell = 8, grid = new Map(), key = (a, b, c) => a + "," + b + "," + c, cellOf = p => p.map(v => Math.floor(v / cell));
+    items.forEach((it, i) => { const k = key(...cellOf(it.q.p)); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(i); });
+    const pairs = [];
+    items.forEach((a, i) => {
+      const c = cellOf(a.q.p), span = Math.ceil((a.reach + 6) / cell);
+      for (let x = -span; x <= span; x++) for (let y = -span; y <= span; y++) for (let z = -span; z <= span; z++)
+        for (const j of grid.get(key(c[0] + x, c[1] + y, c[2] + z)) || []) {
+          if (j <= i) continue;
+          const b = items[j];
+          if (a.q.unit === b.q.unit) continue;                        // a unit's own heart and prism are one body
+          if (len(sub(a.q.p, b.q.p)) >= a.reach + b.reach) continue;
+          let dpt;
+          if (a.kind === 0 && b.kind === 0) dpt = prismPrism(a.q, b.q);
+          else if (a.kind === 1 && b.kind === 1) dpt = a.q.r + b.q.r - len(sub(a.q.p, b.q.p));
+          else dpt = a.kind === 1 ? spherePrism(a.q, b.q) : spherePrism(b.q, a.q);
+          if (dpt > tol) pairs.push({ a: i, b: j, depth: dpt, kinds: a.kind + b.kind, units: [a.q.unit, b.q.unit] });
+        }
+    });
+    return pairs;
+  }
+
+  // ================================= report ================================================
+  const TARGETS = { whale: { defaults: WHALE, at: whaleAt }, jelly: { defaults: JELLY, at: jellyUnits } };
+  function build(kind, params, k) { const T = TARGETS[kind], P = Object.assign({}, T.defaults, params || {}); return assemble(P, T.at(P, k || 0)); }
+  function reachOf(g) {
+    const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    const grow = (p, r) => { for (let i = 0; i < 3; i++) { lo[i] = Math.min(lo[i], p[i] - r); hi[i] = Math.max(hi[i], p[i] + r); } };
+    g.prisms.forEach(q => grow(q.p, q.tier === 2 ? SHIELD * Math.max(...q.h) : len(q.h)));
+    g.crystals.forEach(q => grow(q.p, q.r));
+    return { lo, hi };
+  }
+  function report(kind, params) {
+    const T = TARGETS[kind], P = Object.assign({}, T.defaults, params || {});
+    const frames = [], pairs = [];
+    let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9], worst = 0;
+    for (let k = 0; k < P.frames; k++) {
+      const g = assemble(P, T.at(P, k)), ov = overlaps(g), b = reachOf(g);
+      frames.push(g); pairs.push(ov);
+      ov.forEach(o => { worst = Math.max(worst, o.depth); });
+      lo = lo.map((v, i) => Math.min(v, b.lo[i])); hi = hi.map((v, i) => Math.max(v, b.hi[i]));
+    }
+    const grid = [P.gridX, P.gridY, P.gridZ], size = hi.map((v, i) => v - lo[i]);
+    const g0 = frames[0], elems = [0, 0, 0, 0], census = {};
+    g0.crystals.forEach(c => elems[c.elem]++);
+    let hmin = 1e9, hmax = 0, aspect = 0;
+    g0.prisms.forEach(q => {
+      const key = ["Jade", "Ruby", "Gold"][q.dom] + " " + ["plain", "danger", "shield"][q.tier];
+      census[key] = (census[key] || 0) + 1;
+      hmin = Math.min(hmin, ...q.h); hmax = Math.max(hmax, ...q.h); aspect += Math.max(...q.h) / Math.min(...q.h);
+    });
+    const parts = {}; g0.units.forEach(u => { parts[u.part] = (parts[u.part] || 0) + 1; });
+    return { kind, params: P, frames, pairs, overlapsPerFrame: pairs.map(p => p.length), worstDepth: worst,
+             lo, hi, size, grid, offset: lo.map((v, i) => -(v + hi[i]) / 2), fits: size.every((v, i) => v <= grid[i] - 2),
+             units: g0.units.length, elements: elems, census, parts, hmin, hmax, meanAspect: aspect / Math.max(1, g0.prisms.length) };
+  }
+
+  const API = { ELEMENTS, HEART, REST, SHIELD, HMIN, HMAX, WHALE, JELLY, build, report, overlaps, realise, crystalR };
+  if (typeof module !== "undefined" && module.exports) module.exports = API; else root.TadpoleModel = API;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  const TM = window.TadpoleModel, $ = id => document.getElementById(id);
+  const PALETTE = [[[0.0, 0.5871999859809875, 0.8036999702453613], [0.7810999751091003, 0.4296000003814697, 0.5934000015258789], [0.48080000281333923, 0.6430000066757202, 0.8723999857902527]], [[0.5511000156402588, 0.08510000258684158, 0.8637999892234802], [0.8730000257492065, 0.3644999861717224, 0.5881999731063843], [0.7519000172615051, 0.5612000226974487, 0.8647000193595886]], [[0.7324000000953674, 0.5054000020027161, 0.10140000283718109], [0.8655999898910522, 0.40709999203681946, 0.26919999718666077], [0.7293000221252441, 0.6166999936103821, 0.46709999442100525]]];                                    // [domain][plain, danger, shield], gamma
+  const ELCOL = [[0.56, 0.74, 0.16], [0.64, 0.50, 0.96], [0.20, 0.38, 0.96], [0.12, 0.64, 0.54]];
+  const SPINDLE = [0.60, 0.72, 0.86];
+  const DOM = ["Jade", "Ruby", "Gold"], TIER = ["plain", "danger", "shield"];
+  const CAPACITY = 360;
+  const hex = c => "#" + c.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0")).join("");
+
+  const COMMON = [
+    ["unitScale", "Unit scale", 0.5, 1.6, 0.01], ["crystalSize", "Crystal size", 0.6, 1.3, 0.01],
+    ["spindleThickness", "Spindle thickness", 0.1, 0.6, 0.01], ["gap", "Gap", 0.05, 0.8, 0.01]];
+  const SPECS = {
+    whale: [
+      ["Unit", COMMON],
+      ["Body", [["length", "Length", 36, 90, 1], ["girth", "Girth", 0.07, 0.18, 0.005], ["girthPeak", "Widest at", 0.15, 0.5, 0.01],
+        ["headRound", "Head bluntness", 0.2, 1.2, 0.01], ["tailTaper", "Tail taper", 0.8, 3, 0.05], ["peduncle", "Tail stock", 0.05, 0.3, 0.01],
+        ["flatten", "Height / width", 0.55, 1.2, 0.01], ["bellyDrop", "Belly drop", 0, 0.4, 0.01]]],
+      ["Skin of tadpoles", [["ringPitch", "Ring spacing", 3.5, 10, 0.1], ["ringSlack", "Swim slack", 0, 1.5, 0.05], ["arcSpacing", "Unit spacing", 2.4, 6, 0.05],
+        ["plateWidth", "Prism width", 0.4, 1, 0.01], ["plateThickness", "Prism thickness", 0.5, 2, 0.05], ["spindle", "Spindle length", 0, 3, 0.05], ["stagger", "Stagger rings", "toggle"]]],
+      ["Flippers", [["flipperRays", "Rays", 1, 5, 1], ["flipperUnits", "Units per ray", 1, 6, 1], ["flipperPos", "Position", 0.15, 0.5, 0.01],
+        ["flipperSweep", "Sweep back °", -10, 70, 1], ["flipperDroop", "Droop °", -20, 60, 1], ["flipperSpread", "Fan °", 0, 30, 1], ["flipperCurl", "Spindle curl °", -40, 40, 1]]],
+      ["Dorsal & flukes", [["dorsal", "Dorsal fin", "toggle"], ["dorsalPos", "Dorsal position", 0.4, 0.85, 0.01], ["dorsalUnits", "Dorsal units", 1, 3, 1],
+        ["dorsalRake", "Dorsal rake °", 0, 70, 1], ["flukeRays", "Fluke rays", 1, 5, 1], ["flukeUnits", "Units per ray", 1, 5, 1],
+        ["flukeSweep", "Fluke sweep °", 0, 60, 1], ["flukeSpread", "Fluke fan °", 0, 40, 1]]],
+      ["Elements (crystals)", [["backElem", "Back", "elem"], ["bellyElem", "Belly", "elem"], ["finElem", "Flippers & dorsal", "elem"],
+        ["flukeElem", "Flukes", "elem"], ["eyeElem", "Eyes", "elem"], ["elemMix", "Cycle all four", "toggle"]]],
+      ["Prism colours", [["back", "Back", "colour"], ["belly", "Belly", "colour"], ["countershade", "Waterline", -0.9, 0.9, 0.01],
+        ["pleats", "Throat pleats", "toggle"], ["pleatColor", "Pleat stripe", "colour"], ["pleatEnd", "Pleats reach", 0.1, 0.7, 0.01],
+        ["eye", "Eyes", "toggle"], ["eyeColor", "Eye prism", "colour"], ["eyePos", "Eye position", 0.05, 0.3, 0.005],
+        ["fins", "Flippers", "colour"], ["dorsalColor", "Dorsal", "colour"], ["flukeColor", "Flukes", "colour"]]],
+      ["Swim", [["frames", "Frames", 4, 16, 1], ["swimAmp", "Heave", 0, 0.12, 0.002], ["swimWave", "Wavelength", 0.5, 2.5, 0.01],
+        ["swimEnv", "Tail emphasis", 0.5, 4, 0.05], ["flukePitch", "Fluke pitch °", 0, 45, 1], ["flipperFlap", "Flipper flap °", 0, 40, 1], ["spindleSway", "Spindle sway °", 0, 30, 1]]],
+      ["Training grid (voxels)", [["gridX", "Length (x)", 48, 140, 2], ["gridY", "Height (y)", 24, 80, 2], ["gridZ", "Width (z)", 24, 96, 2]]],
+    ],
+    jelly: [
+      ["Unit", COMMON],
+      ["Bell", [["bellRadius", "Radius", 6, 24, 0.5], ["bellHeight", "Height", 4, 20, 0.5], ["bellSweep", "Rim curl °", 70, 130, 1],
+        ["ringPitch", "Ring spacing", 3.5, 9, 0.1], ["ringSlack", "Pulse slack", 0, 1.5, 0.05], ["arcSpacing", "Unit spacing", 2.4, 6, 0.05],
+        ["plateWidth", "Prism width", 0.4, 1, 0.01], ["plateThickness", "Prism thickness", 0.5, 2, 0.05], ["spindle", "Spindle length", 0, 3, 0.05],
+        ["stagger", "Stagger rings", "toggle"], ["apexUnit", "Stomach unit", "toggle"], ["rimRows", "Rim rows", 0, 3, 1]]],
+      ["Tentacles & arms", [["tentacles", "Tentacles", 0, 16, 1], ["tentacleUnits", "Units each", 1, 8, 1], ["tentacleCurl", "Curl °", -60, 60, 1],
+        ["tentacleInset", "Inset", 0.6, 1.1, 0.01], ["arms", "Oral arms", 0, 8, 1], ["armUnits", "Units each", 1, 5, 1],
+        ["armCurl", "Arm curl °", 0, 40, 1], ["armRadius", "Arm spread", 0, 8, 0.1]]],
+      ["Elements (crystals)", [["bellElem", "Bell", "elem"], ["rimElem", "Rim", "elem"], ["tentacleElem", "Tentacles", "elem"], ["armElem", "Arms & stomach", "elem"], ["elemMix", "Cycle all four", "toggle"]]],
+      ["Prism colours", [["bell", "Bell", "colour"], ["rim", "Rim", "colour"], ["tentacleColor", "Tentacles", "colour"], ["armColor", "Arms & stomach", "colour"]]],
+      ["Pulse", [["frames", "Frames", 4, 16, 1], ["pulse", "Contraction", 0, 0.35, 0.005], ["pulseLift", "Lift", 0, 6, 0.1],
+        ["tentacleWave", "Tentacle wave °", 0, 60, 1], ["tentacleLag", "Wave lag", 0, 2, 0.02]]],
+      ["Training grid (voxels)", [["gridX", "Width (x)", 32, 128, 2], ["gridY", "Height (y)", 32, 128, 2], ["gridZ", "Depth (z)", 32, 128, 2]]],
+    ],
+    unit: [
+      ["Demo unit (not part of a target)", [["dElem", "Element", "elem"], ["dLen", "Spindle length", 0, 5, 0.05], ["dBend", "Spindle bend °", -120, 120, 1],
+        ["dRoll", "Bend roll °", -180, 180, 1], ["dThick", "Spindle thickness", 0.1, 0.6, 0.01], ["dHx", "Prism length", 0.25, 3, 0.01],
+        ["dHy", "Prism width", 0.25, 3, 0.01], ["dHz", "Prism thickness", 0.25, 3, 0.01], ["dPrism", "Prism", "colour"]]],
+    ],
+  };
+  const DEMO = { dElem: 2, dLen: 1.2, dBend: 40, dRoll: 0, dThick: 0.22, dHx: 1.75, dHy: 0.7, dHz: 0.35, dPrism: [0, 0] };
+  const PRESETS = {
+    whale: { "Humpback": {}, "Blue whale": { length: 76, girth: 0.09, flatten: 0.75, bellyDrop: 0.12, flipperUnits: 1, flipperRays: 2, dorsalUnits: 1,
+               back: [0, 0], belly: [0, 2], pleatColor: [0, 1], backElem: 2, bellyElem: 2, gridX: 110 },
+             "Orca": { length: 50, girth: 0.15, headRound: 0.7, flatten: 0.85, bellyDrop: 0.1, flipperUnits: 2, flipperRays: 3, flipperSweep: 12,
+               flipperDroop: 35, dorsalUnits: 3, dorsalRake: 12, back: [1, 0], belly: [2, 2], pleats: 0, fins: [1, 0], dorsalColor: [1, 0], flukeColor: [1, 0],
+               backElem: 1, bellyElem: 0, gridX: 80 },
+             "All four mixed": { elemMix: 1 } },
+    jelly: { "Moon jelly": {}, "Sea nettle": { bellRadius: 12, bellHeight: 10, bellSweep: 95, tentacles: 8, tentacleUnits: 5, tentacleCurl: 6, tentacleWave: 14, arms: 4, armUnits: 3,
+               bell: [2, 2], rim: [1, 1], tentacleColor: [1, 0], armColor: [2, 0], gridY: 84 },
+             "Small (after heavy loss)": { bellRadius: 9, bellHeight: 7, tentacles: 6, tentacleUnits: 2, arms: 3, armUnits: 1, pulse: 0.1 } },
+    unit: {},
+  };
+  const DEF = { whale: TM.WHALE, jelly: TM.JELLY, unit: DEMO };
+
+  let state = { whale: Object.assign({}, TM.WHALE), jelly: Object.assign({}, TM.JELLY), unit: Object.assign({}, DEMO) };
+  let hadDraft = false;
+  try { const d = JSON.parse(localStorage.getItem("tadpole-draft") || "null");
+    if (d) { hadDraft = true; for (const k of ["whale", "jelly", "unit"]) if (d[k]) state[k] = Object.assign({}, DEF[k], d[k]); } } catch (e) {}
+  let tab = "whale";
+
+  // ---- controls ---------------------------------------------------------------------------
+  let inputs = {};
+  function buildControls() {
+    const g = $("groups"); g.textContent = ""; inputs = {};
+    const P = state[tab];
+    SPECS[tab].forEach(([name, rows], gi) => {
+      const det = document.createElement("details"); if (gi <= 1) det.open = true;
+      det.innerHTML = `<summary>${name}</summary>`;
+      rows.forEach(([key, label, a, b, step]) => {
+        const id = "p-" + key;
+        if (a === "toggle") {
+          const r = document.createElement("div"); r.className = "row tog";
+          r.innerHTML = `<label for="${id}">${label}</label><input type="checkbox" id="${id}">`;
+          const cb = r.querySelector("input"); cb.addEventListener("change", () => { state[tab][key] = cb.checked ? 1 : 0; changed(); });
+          inputs[key] = v => cb.checked = !!v; det.appendChild(r);
+        } else if (a === "colour" || a === "elem") {
+          const r = document.createElement("div"); r.className = "crow";
+          r.innerHTML = `<label>${label}</label><div class="cpick${a === "elem" ? " el" : ""}" role="group" aria-label="${label}"></div>`;
+          const box = r.querySelector(".cpick"), btns = [];
+          if (a === "colour") for (let t = 0; t < 3; t++) for (let d = 0; d < 3; d++) {
+            const bt = document.createElement("button"); bt.type = "button"; bt.className = "t" + t;
+            bt.style.background = hex(PALETTE[d][t]); bt.title = DOM[d] + " " + TIER[t]; bt.setAttribute("aria-label", label + ": " + DOM[d] + " " + TIER[t]);
+            bt.addEventListener("click", () => { state[tab][key] = [d, t]; set(state[tab][key]); changed(); });
+            btns.push([bt, v => v && v[0] === d && v[1] === t]); box.appendChild(bt);
+          } else for (let e = 0; e < 4; e++) {
+            const bt = document.createElement("button"); bt.type = "button";
+            bt.innerHTML = `<i class="dot el" style="background:${hex(ELCOL[e])}"></i>${TM.ELEMENTS[e]}`;
+            bt.addEventListener("click", () => { state[tab][key] = e; set(e); changed(); });
+            btns.push([bt, v => v === e]); box.appendChild(bt);
+          }
+          const set = v => btns.forEach(([bt, is]) => bt.setAttribute("aria-pressed", is(v) ? "true" : "false"));
+          inputs[key] = set; det.appendChild(r);
+        } else {
+          const r = document.createElement("div"); r.className = "row";
+          r.innerHTML = `<label for="${id}">${label}</label><input type="range" id="${id}" min="${a}" max="${b}" step="${step}"><input type="number" min="${a}" max="${b}" step="${step}" aria-label="${label} value">`;
+          const [rg, nb] = r.querySelectorAll("input");
+          const upd = v => { v = +v; if (!isFinite(v)) return; state[tab][key] = v; rg.value = v; nb.value = v; changed(); };
+          rg.addEventListener("input", () => upd(rg.value)); nb.addEventListener("change", () => upd(nb.value));
+          inputs[key] = v => { rg.value = v; nb.value = v; }; det.appendChild(r);
+        }
+      });
+      g.appendChild(det);
+    });
+    const pr = $("presets"); pr.textContent = "";
+    for (const name of Object.keys(PRESETS[tab])) {
+      const bt = document.createElement("button"); bt.className = "btn"; bt.type = "button"; bt.textContent = name;
+      bt.addEventListener("click", () => { state[tab] = Object.assign({}, DEF[tab], PRESETS[tab][name]); sync(); changed(); });
+      pr.appendChild(bt);
+    }
+    sync();
+    $("ptitle").textContent = { whale: "Whale parameters", jelly: "Jellyfish parameters", unit: "The tadpole unit" }[tab];
+    $("unitnote").hidden = tab !== "unit";
+    $("resetbtn").textContent = tab === "unit" ? "Reset demo unit" : "Reset this target";
+    void P;
+  }
+  function sync() { for (const k in inputs) inputs[k](state[tab][k]); }
+
+  // ---- three.js ---------------------------------------------------------------------------
+  const cv = $("cv");
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(30, 1.6, 0.5, 1500);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445066, 0.8));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(30, 60, 40); scene.add(sun);
+  // Crystal shapes: convex hulls of each element's solid (brute force - tiny point sets, built once).
+  function hullGeometry(pts) {
+    pts = pts.map(p => new THREE.Vector3(...p).normalize());
+    const pos = [], eps = 1e-6;
+    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) for (let k = j + 1; k < pts.length; k++) {
+      const n = new THREE.Vector3().subVectors(pts[j], pts[i]).cross(new THREE.Vector3().subVectors(pts[k], pts[i]));
+      if (n.lengthSq() < 1e-10) continue;
+      let pos_ = 0, neg = 0;
+      for (const q of pts) { const d = n.dot(new THREE.Vector3().subVectors(q, pts[i])); if (d > eps) pos_++; else if (d < -eps) neg++; if (pos_ && neg) break; }
+      if (pos_ && neg) continue;
+      const tri = pos_ ? [pts[i], pts[k], pts[j]] : [pts[i], pts[j], pts[k]];
+      tri.forEach(v => pos.push(v.x, v.y, v.z));
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g;
+  }
+  function perms(base, even) {
+    const out = [], P3 = even ? [[0, 1, 2], [1, 2, 0], [2, 0, 1]] : [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+    for (const b of base) for (const p of P3) for (let s = 0; s < 8; s++) {
+      const v = p.map((ix, i) => b[ix] * ((s >> i) & 1 ? -1 : 1));
+      if (!out.some(o => Math.abs(o[0] - v[0]) + Math.abs(o[1] - v[1]) + Math.abs(o[2] - v[2]) < 1e-9)) out.push(v);
+    }
+    return out;
+  }
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const CRYSTAL_GEO = [
+    hullGeometry(perms([[0, 1, 3 * PHI], [1, 2 + PHI, 2 * PHI], [PHI, 2, 2 * PHI + 1]], true)),   // Charge: truncated icosahedron
+    new THREE.IcosahedronGeometry(1, 1),                                                             // Mass: geodesic shell
+    new THREE.DodecahedronGeometry(1, 0),                                                            // Space
+    hullGeometry(perms([[0, 1, 2]], false)),                                                         // Time: truncated octahedron
+  ];
+  const MAXP = 3000, MAXS = 3000 * 8;
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.06, flatShading: true });
+  const gem = new THREE.MeshStandardMaterial({ roughness: 0.25, metalness: 0.15, flatShading: true, emissive: 0x111111 });
+  const inst = (geo, m, n) => { const x = new THREE.InstancedMesh(geo, m, n); x.instanceMatrix.setUsage(THREE.DynamicDrawUsage); x.setColorAt(0, new THREE.Color(1, 1, 1)); x.count = 0; scene.add(x); return x; };
+  const boxes = inst(new THREE.BoxGeometry(2, 2, 2), mat, MAXP), octas = inst(new THREE.OctahedronGeometry(TM.SHIELD), mat, MAXP);
+  const gems = CRYSTAL_GEO.map(g => inst(g, gem, MAXP));
+  const spMat = new THREE.MeshStandardMaterial({ roughness: 0.6, color: new THREE.Color(...SPINDLE).convertSRGBToLinear() });
+  const cyl = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true); cyl.translate(0, 0.5, 0);
+  const spMesh = new THREE.InstancedMesh(cyl, spMat, MAXS); spMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); spMesh.count = 0; scene.add(spMesh);
+  const gridBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), new THREE.LineBasicMaterial({ color: 0x7f8c96, transparent: true, opacity: 0.6 }));
+  scene.add(gridBox);
+  const PCOL = PALETTE.map(row => row.map(c => new THREE.Color(...c).convertSRGBToLinear()));
+  const ECOL = ELCOL.map(c => new THREE.Color(...c).convertSRGBToLinear());
+  const HIT = new THREE.Color(1, 0, 0.85).convertSRGBToLinear();
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+  let rep = { whale: null, jelly: null }, frameK = 0, playing = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let az = 0.75, el = 0.35, dist = 150, lastTick = 0, showGrid = true, showHits = true;
+
+  function drawScene(g, off, hits) {
+    let nb = 0, no = 0, ns = 0; const ng = [0, 0, 0, 0];
+    g.prisms.forEach((q, i) => {
+      const R = q.R, h = q.h, oct = q.tier === 2, m = oct ? octas : boxes, j = oct ? no++ : nb++;
+      M.set(R[0] * h[0], R[1] * h[1], R[2] * h[2], q.p[0] + off[0], R[3] * h[0], R[4] * h[1], R[5] * h[2], q.p[1] + off[1],
+            R[6] * h[0], R[7] * h[1], R[8] * h[2], q.p[2] + off[2], 0, 0, 0, 1);
+      m.setMatrixAt(j, M); m.setColorAt(j, hits.has("p" + i) ? HIT : PCOL[q.dom][q.tier]);
+    });
+    g.crystals.forEach((c, i) => {
+      const e = c.elem, j = ng[e]++;
+      M.makeScale(c.r, c.r, c.r); M.setPosition(c.p[0] + off[0], c.p[1] + off[1], c.p[2] + off[2]);
+      gems[e].setMatrixAt(j, M); gems[e].setColorAt(j, hits.has("c" + i) ? HIT : ECOL[e]);
+    });
+    g.spindles.forEach(sp => {
+      for (let i = 0; i + 1 < sp.pts.length && ns < MAXS; i++) {
+        const a = sp.pts[i], b = sp.pts[i + 1];
+        V.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const L = V.length(); if (L < 1e-6) continue;
+        Q.setFromUnitVectors(UP, V.normalize()); S.set(sp.r, L, sp.r);
+        M.compose(new THREE.Vector3(a[0] + off[0], a[1] + off[1], a[2] + off[2]), Q, S); spMesh.setMatrixAt(ns++, M);
+      }
+    });
+    boxes.count = nb; octas.count = no; spMesh.count = ns; gems.forEach((m, e) => m.count = ng[e]);
+    [boxes, octas, spMesh, ...gems].forEach(m => { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+  }
+  function unitScene() {
+    const U = state.unit, P = Object.assign({}, TM.WHALE, { unitScale: 1, crystalSize: 1 }), units = [];
+    for (let e = 0; e < 4; e++) units.push({ p: [8, 0, (e - 1.5) * 5], f: [1, 0, 0], n: [0, 1, 0], elem: e,
+      spindle: { len: TM.REST[e].spindle, bend: 0, roll: 0, thick: 0.22 }, prism: { h: TM.REST[e].h.slice(), dom: 0, tier: 0, roll: 0 } });
+    units.push({ p: [-6, 0, 0], f: [1, 0, 0], n: [0, 1, 0], elem: U.dElem,
+      spindle: { len: U.dLen, bend: U.dBend * Math.PI / 180, roll: U.dRoll * Math.PI / 180, thick: U.dThick },
+      prism: { h: [U.dHx, U.dHy, U.dHz], dom: U.dPrism[0], tier: U.dPrism[1], roll: 0 } });
+    const out = { units, crystals: [], prisms: [], spindles: [] };
+    units.forEach((u, i) => { const g = TM.realise(P, u, i); out.crystals.push(g.crystal); out.prisms.push(g.prism); out.spindles.push(g.spindle); });
+    return out;
+  }
+  function draw() {
+    let g, off = [0, 0, 0], hits = new Set();
+    if (tab === "unit") { g = unitScene(); gridBox.visible = false; }
+    else {
+      const r = rep[tab]; if (!r) return;
+      const k = frameK % r.frames.length; g = r.frames[k]; off = r.offset;
+      if (showHits) for (const o of r.pairs[k]) for (const [idx, kind] of [[o.a, 0], [o.b, 0]]) {
+        const np = g.prisms.length; hits.add(idx < np ? "p" + idx : "c" + (idx - np)); void kind;
+      }
+      gridBox.visible = showGrid; gridBox.scale.set(r.grid[0], r.grid[1], r.grid[2]);
+      $("frame").value = k; $("frameo").textContent = (k + 1) + "/" + r.frames.length;
+    }
+    drawScene(g, off, hits);
+    const d = tab === "unit" ? 38 : dist;
+    camera.position.set(Math.cos(el) * Math.cos(az) * d, Math.sin(el) * d, Math.cos(el) * Math.sin(az) * d);
+    camera.lookAt(0, 0, 0); renderer.render(scene, camera);
+  }
+  function resize() { const w = cv.clientWidth || 640, h = cv.clientHeight || 400; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); draw(); }
+  function loop(t) { if (playing && tab !== "unit" && rep[tab] && t - lastTick > 140) { frameK++; lastTick = t; draw(); } requestAnimationFrame(loop); }
+  let drag = null;
+  cv.addEventListener("pointerdown", e => { drag = [e.clientX, e.clientY, az, el]; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", e => { if (!drag) return; az = drag[2] + (e.clientX - drag[0]) * 0.01; el = Math.max(-1.5, Math.min(1.5, drag[3] + (e.clientY - drag[1]) * 0.01)); draw(); });
+  cv.addEventListener("pointerup", () => { drag = null; });
+  cv.addEventListener("wheel", e => { e.preventDefault(); dist = Math.max(30, Math.min(500, dist * Math.exp(e.deltaY * 0.001))); draw(); }, { passive: false });
+  const VIEWS = { side: [Math.PI / 2, 0.02], top: [Math.PI / 2, 1.5], front: [0.0, 0.08], three: [0.75, 0.35] };
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { [az, el] = VIEWS[b.dataset.view]; draw(); }));
+  $("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; };
+  if (!playing) $("play").textContent = "Play";
+  $("frame").addEventListener("input", e => { frameK = +e.target.value; playing = false; $("play").textContent = "Play"; draw(); });
+  const toggle = (id, fn) => $(id).addEventListener("click", () => { const on = fn(); $(id).classList.toggle("on", on); $(id).setAttribute("aria-pressed", on); draw(); });
+  toggle("gridbtn", () => (showGrid = !showGrid)); toggle("hitbtn", () => (showHits = !showHits));
+  function theme() { scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--dish").trim() || "#e8eef2"); draw(); }
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", theme);
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  window.addEventListener("resize", resize);
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => {
+    tab = b.dataset.tab; document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === b ? "true" : "false"));
+    dist = tab === "jelly" ? 120 : 150; buildControls(); renderStats(); draw();
+  }));
+
+  // ---- rebuild + stats --------------------------------------------------------------------
+  let pending = null;
+  function changed() {
+    try { localStorage.setItem("tadpole-draft", JSON.stringify(state)); } catch (e) {}
+    clearTimeout(pending); pending = setTimeout(() => { if (tab !== "unit") rep[tab] = TM.report(tab, state[tab]); renderStats(); draw(); }, 60);
+  }
+  function renderStats() {
+    const show = tab !== "unit";
+    for (const id of ["stats", "census"]) $(id).style.display = show ? "" : "none";
+    const ec = $("elems"); ec.textContent = "";
+    if (!show) { $("notes").textContent = "Resting sizes: heart 2.298 (Charge, Space) / 1.737 (Mass, Time) across; body prism 1.05 × 1.05 × 3.5 / 0.32 × 0.32 × 2.8. A learned rule may change the spindle and the prism, never the crystal."; return; }
+    const r = rep[tab], w = rep.whale, j = rep.jelly;
+    const worst = Math.max(...r.overlapsPerFrame);
+    const setv = (id, text, cls) => { const e = $(id); e.textContent = text; e.className = "v" + (cls ? " " + cls : ""); };
+    setv("s-n", r.units, r.units > CAPACITY ? "warn" : "");
+    setv("s-hit", worst === 0 ? "0" : worst + " (" + r.worstDepth.toFixed(2) + ")", worst === 0 ? "ok" : "bad");
+    setv("s-fit", r.fits ? "yes" : "no", r.fits ? "ok" : "bad");
+    setv("s-size", r.size.map(v => v.toFixed(0)).join("·") + " / " + r.grid.join("·"));
+    setv("s-h", r.hmin.toFixed(2) + "–" + r.hmax.toFixed(2));
+    setv("s-ratio", w && j ? j.units + "/" + w.units + " = " + Math.round(100 * j.units / w.units) + "%" : "–", w && j && j.units > w.units ? "warn" : "");
+    r.elements.forEach((n, e) => { if (!n) return; const s = document.createElement("span");
+      s.innerHTML = `<i class="dot el" style="background:${hex(ELCOL[e])}"></i>`; s.appendChild(document.createTextNode(TM.ELEMENTS[e] + " " + n)); ec.appendChild(s); });
+    const c = $("census"); c.textContent = "";
+    Object.entries(r.census).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => {
+      const [d, t] = k.split(" "), di = DOM.indexOf(d), ti = TIER.indexOf(t), s = document.createElement("span");
+      s.innerHTML = `<i class="dot t${ti}" style="background:${hex(PALETTE[di][ti])}"></i>`; s.appendChild(document.createTextNode(k + " " + v)); c.appendChild(s);
+    });
+    const notes = [];
+    if (worst) notes.push("Intersections (crystal or prism against another unit's, worst frame, deepest overlap in voxels in brackets) show in magenta. Spindles are limbs and may pass through anything.");
+    if (r.units > CAPACITY) notes.push(`More than ${CAPACITY} units is over the automaton's budget.`);
+    if (!r.fits) notes.push("It does not fit the training grid on every frame.");
+    if (w && j && j.units >= w.units) notes.push("The jellyfish should need fewer units than the whale: it is what the swarm becomes after losing some.");
+    $("notes").textContent = notes.join(" ");
+  }
+
+  // ---- send / copy / reset ---------------------------------------------------------------
+  function payload() {
+    const sum = k => rep[k] && { units: rep[k].units, elements: rep[k].elements, worstFrameIntersections: Math.max(...rep[k].overlapsPerFrame), fits: rep[k].fits };
+    return { whale: state.whale, jelly: state.jelly, summary: { whale: sum("whale"), jelly: sum("jelly") }, note: $("note").value.slice(0, 2000) };
+  }
+  $("copybtn").onclick = async () => {
+    const text = JSON.stringify(payload(), null, 1), fld = $("copyfield");
+    try { await navigator.clipboard.writeText(text); $("sendstatus").textContent = "Copied both targets as JSON."; $("sendstatus").className = "status ok"; }
+    catch (e) { fld.hidden = false; fld.value = text; fld.focus(); fld.select(); $("sendstatus").textContent = "Copy the selected field below."; }
+  };
+  $("resetbtn").onclick = () => { state[tab] = Object.assign({}, DEF[tab]); sync(); changed(); };
+  $("sendbtn").disabled = true;
+  (async () => {
+    const db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+    if (!db) { $("sendstatus").textContent = "Sending is unavailable here. Use Copy JSON and paste it to Claude."; return; }
+    let user = null; try { user = await window.claude.use("user"); } catch (e) {}
+    const ref = db.doc("targets/tadpoles"); let first = true;
+    $("sendbtn").disabled = false;
+    ref.onSnapshot(snap => {
+      if (!snap.exists) { first = false; return; }
+      const d = snap.data();
+      $("sendstatus").textContent = "Last sent " + new Date(d.savedAt).toLocaleString() + "."; $("sendstatus").className = "status ok";
+      if (first && !hadDraft) { for (const k of ["whale", "jelly"]) if (d[k]) state[k] = Object.assign({}, DEF[k], d[k]); if (d.note) $("note").value = d.note; rebuildAll(); sync(); }
+      first = false;
+    }, () => { $("sendstatus").textContent = "Could not read the saved targets."; });
+    $("sendbtn").onclick = async () => {
+      $("sendbtn").disabled = true; $("sendstatus").textContent = "Sending…"; $("sendstatus").className = "status";
+      try {
+        const body = Object.assign(payload(), { savedAt: Date.now(), by: user ? await user.id() : null });
+        await ref.set(body);
+        try { await db.collection("targets/tadpoles/versions").doc(String(body.savedAt)).set(body); } catch (e) {}
+      } catch (e) { $("sendstatus").textContent = "Send failed (" + (e && e.code || "error") + "). Copy JSON works as a fallback."; $("sendstatus").className = "status bad"; }
+      $("sendbtn").disabled = false;
+    };
+  })();
+
+  function rebuildAll() { rep.whale = TM.report("whale", state.whale); rep.jelly = TM.report("jelly", state.jelly); renderStats(); draw(); }
+  buildControls(); theme(); resize(); rebuildAll(); requestAnimationFrame(loop);
+})();
+</script>

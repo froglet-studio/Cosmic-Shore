@@ -1,0 +1,479 @@
+<title>Tadpole Swarm Designer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f5f6; --panel: #ffffff; --fg: #17202a; --muted: #5a6672; --line: #d8dee3;
+  --accent: #0d6f8f; --accent-fg: #ffffff; --dish: #e8eef2; --ok: #1d7a4a; --bad: #b3261e; --warn: #8a5a00;
+  --chip: #eef2f4;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1418; --panel: #151d23; --fg: #e3e9ee; --muted: #93a1ad; --line: #2a353e;
+  --accent: #3fb3d6; --accent-fg: #06141a; --dish: #0a1116; --ok: #5cc98c; --bad: #ff8a80; --warn: #e8b54a;
+  --chip: #1c262d; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #151d23; --fg: #e3e9ee; --muted: #93a1ad; --line: #2a353e;
+  --accent: #3fb3d6; --accent-fg: #06141a; --dish: #0a1116; --ok: #5cc98c; --bad: #ff8a80; --warn: #e8b54a;
+  --chip: #1c262d; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 18px 40px }
+.wrap { max-width: 1320px; margin: 0 auto }
+header h1 { font-family: var(--display); font-weight: 700; font-size: 1.9rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+header p { margin: 4px 0 12px; color: var(--muted); max-width: 78ch }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px }
+.tab { font: 700 14px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 999px; padding: 7px 16px; cursor: pointer }
+.tab[aria-selected=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 18px; align-items: start }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr } }
+.stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+@media (max-width: 900px) { .stage { position: static } }
+.view { background: var(--dish); border: 1px solid var(--line); border-radius: 10px; overflow: hidden }
+canvas#cv { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: none; cursor: grab }
+.viewbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 7px; padding: 6px 11px; cursor: pointer }
+.btn:hover { border-color: var(--accent) }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.btn.on { border-color: var(--accent); color: var(--accent) }
+.frame { display: flex; align-items: center; gap: 8px; flex: 1 1 200px; min-width: 0 }
+.frame input { flex: 1; min-width: 0 }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0 }
+.stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted) }
+.stat .v { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600 }
+.v.ok { color: var(--ok) } .v.bad { color: var(--bad) } .v.warn { color: var(--warn) }
+.census { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px }
+.census span { background: var(--chip); border-radius: 999px; padding: 2px 9px 2px 4px; display: inline-flex; gap: 5px; align-items: center }
+.dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,.2) }
+.dot.t2 { transform: rotate(45deg) scale(.8) } .dot.t1 { box-shadow: inset 0 0 0 2px #ff3b2f } .dot.el { border-radius: 50% }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0 }
+.panel h2 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 8px }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px }
+details { border-top: 1px solid var(--line); padding: 6px 0 }
+details:first-of-type { border-top: 0 }
+summary { cursor: pointer; font-family: var(--display); font-weight: 500; font-size: 1rem; padding: 4px 0 }
+.row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) 4.6em; gap: 8px; align-items: center; padding: 3px 0 }
+.row label, .crow label { font-size: 13px; color: var(--muted) }
+.row input[type=range] { width: 100%; accent-color: var(--accent) }
+.row input[type=number] { width: 100%; font: 13px var(--mono); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 5px; padding: 2px 4px }
+.row.tog { grid-template-columns: 9.5em 1fr }
+.crow { display: grid; grid-template-columns: 9.5em auto; gap: 8px; align-items: center; padding: 4px 0 }
+.cpick { display: grid; grid-template-columns: repeat(3, 26px); gap: 4px }
+.cpick.el { grid-template-columns: repeat(4, auto) }
+.cpick button { width: 26px; height: 22px; border-radius: 4px; border: 1px solid rgba(0,0,0,.25); cursor: pointer; padding: 0; position: relative }
+.cpick.el button { width: auto; height: 24px; padding: 0 8px 0 6px; font: 600 12px var(--body); color: var(--fg); background: var(--chip); display: inline-flex; align-items: center; gap: 5px; border-color: var(--line) }
+.cpick button.t1::after { content: ""; position: absolute; inset: 4px; border: 2px solid #ff3b2f; border-radius: 2px }
+.cpick button.t2::after { content: ""; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; background: rgba(255,255,255,.75); transform: translate(-50%,-50%) rotate(45deg) }
+.cpick button[aria-pressed=true] { outline: 2px solid var(--fg); outline-offset: 1px }
+.send { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px }
+.send textarea { width: 100%; min-height: 58px; font: 13px var(--body); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; resize: vertical; box-sizing: border-box }
+.send .btns { display: flex; flex-wrap: wrap; gap: 8px }
+.status { font-size: 13px; color: var(--muted) } .status.ok { color: var(--ok) } .status.bad { color: var(--bad) }
+.legend { font-size: 12px; color: var(--muted) }
+.unitnote { font-size: 13px; color: var(--muted); margin: 0 0 8px }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Tadpole Swarm</h1>
+  <p>Targets for a population rule: one swarm of tadpole fauna that assembles into a swimming whale, and — after losing units — a pulsing jellyfish. Every unit is the game's tadpole: an element crystal that never changes, a spindle that can stretch and curl, and a prism free to change domain, state and size.</p>
+</header>
+<div class="tabs" role="tablist" aria-label="Target">
+  <button class="tab" role="tab" data-tab="whale" aria-selected="true" type="button">Whale</button>
+  <button class="tab" role="tab" data-tab="jelly" aria-selected="false" type="button">Jellyfish</button>
+  <button class="tab" role="tab" data-tab="unit" aria-selected="false" type="button">The unit</button>
+</div>
+
+<div class="layout">
+  <section class="stage" aria-label="Preview">
+    <div class="view"><canvas id="cv" aria-label="3D preview; drag to orbit, scroll to zoom"></canvas></div>
+    <div class="viewbar">
+      <button class="btn primary" id="play" type="button">Pause</button>
+      <div class="frame"><span class="legend">frame</span><input id="frame" type="range" min="0" max="7" step="1" value="0" aria-label="Swim frame"><span class="mono" id="frameo">1/8</span></div>
+      <button class="btn" data-view="side" type="button">Side</button>
+      <button class="btn" data-view="top" type="button">Top</button>
+      <button class="btn" data-view="front" type="button">Front</button>
+      <button class="btn" data-view="three" type="button">3/4</button>
+      <button class="btn on" id="gridbtn" type="button" aria-pressed="true">Grid box</button>
+      <button class="btn on" id="hitbtn" type="button" aria-pressed="true">Mark hits</button>
+    </div>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="k">Units</div><div class="v" id="s-n">–</div></div>
+      <div class="stat"><div class="k">Intersections</div><div class="v" id="s-hit">–</div></div>
+      <div class="stat"><div class="k">Fits grid</div><div class="v" id="s-fit">–</div></div>
+      <div class="stat"><div class="k">Extent (x·y·z)</div><div class="v" id="s-size" style="font-size:13px">–</div></div>
+      <div class="stat"><div class="k">Prism half-extent</div><div class="v" id="s-h" style="font-size:13px">–</div></div>
+      <div class="stat"><div class="k">Jelly / whale</div><div class="v" id="s-ratio">–</div></div>
+    </div>
+    <div class="census" id="elems" aria-label="Units by element"></div>
+    <div class="census" id="census" aria-label="Prisms by appearance"></div>
+    <p class="legend" id="notes"></p>
+  </section>
+
+  <section class="panel" aria-label="Parameters">
+    <h2 id="ptitle">Whale parameters</h2>
+    <p class="unitnote" id="unitnote" hidden>The four resting tadpoles, measured from <span class="mono">TadPoleFauna.prefab</span> and each element's variant, and on the right one unit you can bend. Crystal colour stands in for the element's shape, which a voxel cannot resolve.</p>
+    <div class="presets" id="presets"></div>
+    <div id="groups"></div>
+    <div class="send">
+      <label class="legend" for="note">Note for Claude (optional)</label>
+      <textarea id="note" placeholder="What you were going for, what to keep, what still looks off…"></textarea>
+      <div class="btns">
+        <button class="btn primary" id="sendbtn" type="button">Send both to Claude</button>
+        <button class="btn" id="copybtn" type="button">Copy JSON</button>
+        <button class="btn" id="resetbtn" type="button">Reset this target</button>
+      </div>
+      <div class="status" id="sendstatus" role="status">Not sent yet.</div>
+      <textarea id="copyfield" hidden readonly aria-label="Parameters as JSON"></textarea>
+    </div>
+  </section>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/*TADPOLE_MODEL*/
+</script>
+<script>
+(function () {
+  const TM = window.TadpoleModel, $ = id => document.getElementById(id);
+  const PALETTE = /*PALETTE*/;                                    // [domain][plain, danger, shield], gamma
+  const ELCOL = [[0.56, 0.74, 0.16], [0.64, 0.50, 0.96], [0.20, 0.38, 0.96], [0.12, 0.64, 0.54]];
+  const SPINDLE = [0.60, 0.72, 0.86];
+  const DOM = ["Jade", "Ruby", "Gold"], TIER = ["plain", "danger", "shield"];
+  const CAPACITY = 360;
+  const hex = c => "#" + c.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0")).join("");
+
+  const COMMON = [
+    ["unitScale", "Unit scale", 0.5, 1.6, 0.01], ["crystalSize", "Crystal size", 0.6, 1.3, 0.01],
+    ["spindleThickness", "Spindle thickness", 0.1, 0.6, 0.01], ["gap", "Gap", 0.05, 0.8, 0.01]];
+  const SPECS = {
+    whale: [
+      ["Unit", COMMON],
+      ["Body", [["length", "Length", 36, 90, 1], ["girth", "Girth", 0.07, 0.18, 0.005], ["girthPeak", "Widest at", 0.15, 0.5, 0.01],
+        ["headRound", "Head bluntness", 0.2, 1.2, 0.01], ["tailTaper", "Tail taper", 0.8, 3, 0.05], ["peduncle", "Tail stock", 0.05, 0.3, 0.01],
+        ["flatten", "Height / width", 0.55, 1.2, 0.01], ["bellyDrop", "Belly drop", 0, 0.4, 0.01]]],
+      ["Skin of tadpoles", [["ringPitch", "Ring spacing", 3.5, 10, 0.1], ["ringSlack", "Swim slack", 0, 1.5, 0.05], ["arcSpacing", "Unit spacing", 2.4, 6, 0.05],
+        ["plateWidth", "Prism width", 0.4, 1, 0.01], ["plateThickness", "Prism thickness", 0.5, 2, 0.05], ["spindle", "Spindle length", 0, 3, 0.05], ["stagger", "Stagger rings", "toggle"]]],
+      ["Flippers", [["flipperRays", "Rays", 1, 5, 1], ["flipperUnits", "Units per ray", 1, 6, 1], ["flipperPos", "Position", 0.15, 0.5, 0.01],
+        ["flipperSweep", "Sweep back °", -10, 70, 1], ["flipperDroop", "Droop °", -20, 60, 1], ["flipperSpread", "Fan °", 0, 30, 1], ["flipperCurl", "Spindle curl °", -40, 40, 1]]],
+      ["Dorsal & flukes", [["dorsal", "Dorsal fin", "toggle"], ["dorsalPos", "Dorsal position", 0.4, 0.85, 0.01], ["dorsalUnits", "Dorsal units", 1, 3, 1],
+        ["dorsalRake", "Dorsal rake °", 0, 70, 1], ["flukeRays", "Fluke rays", 1, 5, 1], ["flukeUnits", "Units per ray", 1, 5, 1],
+        ["flukeSweep", "Fluke sweep °", 0, 60, 1], ["flukeSpread", "Fluke fan °", 0, 40, 1]]],
+      ["Elements (crystals)", [["backElem", "Back", "elem"], ["bellyElem", "Belly", "elem"], ["finElem", "Flippers & dorsal", "elem"],
+        ["flukeElem", "Flukes", "elem"], ["eyeElem", "Eyes", "elem"], ["elemMix", "Cycle all four", "toggle"]]],
+      ["Prism colours", [["back", "Back", "colour"], ["belly", "Belly", "colour"], ["countershade", "Waterline", -0.9, 0.9, 0.01],
+        ["pleats", "Throat pleats", "toggle"], ["pleatColor", "Pleat stripe", "colour"], ["pleatEnd", "Pleats reach", 0.1, 0.7, 0.01],
+        ["eye", "Eyes", "toggle"], ["eyeColor", "Eye prism", "colour"], ["eyePos", "Eye position", 0.05, 0.3, 0.005],
+        ["fins", "Flippers", "colour"], ["dorsalColor", "Dorsal", "colour"], ["flukeColor", "Flukes", "colour"]]],
+      ["Swim", [["frames", "Frames", 4, 16, 1], ["swimAmp", "Heave", 0, 0.12, 0.002], ["swimWave", "Wavelength", 0.5, 2.5, 0.01],
+        ["swimEnv", "Tail emphasis", 0.5, 4, 0.05], ["flukePitch", "Fluke pitch °", 0, 45, 1], ["flipperFlap", "Flipper flap °", 0, 40, 1], ["spindleSway", "Spindle sway °", 0, 30, 1]]],
+      ["Training grid (voxels)", [["gridX", "Length (x)", 48, 140, 2], ["gridY", "Height (y)", 24, 80, 2], ["gridZ", "Width (z)", 24, 96, 2]]],
+    ],
+    jelly: [
+      ["Unit", COMMON],
+      ["Bell", [["bellRadius", "Radius", 6, 24, 0.5], ["bellHeight", "Height", 4, 20, 0.5], ["bellSweep", "Rim curl °", 70, 130, 1],
+        ["ringPitch", "Ring spacing", 3.5, 9, 0.1], ["ringSlack", "Pulse slack", 0, 1.5, 0.05], ["arcSpacing", "Unit spacing", 2.4, 6, 0.05],
+        ["plateWidth", "Prism width", 0.4, 1, 0.01], ["plateThickness", "Prism thickness", 0.5, 2, 0.05], ["spindle", "Spindle length", 0, 3, 0.05],
+        ["stagger", "Stagger rings", "toggle"], ["apexUnit", "Stomach unit", "toggle"], ["rimRows", "Rim rows", 0, 3, 1]]],
+      ["Tentacles & arms", [["tentacles", "Tentacles", 0, 16, 1], ["tentacleUnits", "Units each", 1, 8, 1], ["tentacleCurl", "Curl °", -60, 60, 1],
+        ["tentacleInset", "Inset", 0.6, 1.1, 0.01], ["arms", "Oral arms", 0, 8, 1], ["armUnits", "Units each", 1, 5, 1],
+        ["armCurl", "Arm curl °", 0, 40, 1], ["armRadius", "Arm spread", 0, 8, 0.1]]],
+      ["Elements (crystals)", [["bellElem", "Bell", "elem"], ["rimElem", "Rim", "elem"], ["tentacleElem", "Tentacles", "elem"], ["armElem", "Arms & stomach", "elem"], ["elemMix", "Cycle all four", "toggle"]]],
+      ["Prism colours", [["bell", "Bell", "colour"], ["rim", "Rim", "colour"], ["tentacleColor", "Tentacles", "colour"], ["armColor", "Arms & stomach", "colour"]]],
+      ["Pulse", [["frames", "Frames", 4, 16, 1], ["pulse", "Contraction", 0, 0.35, 0.005], ["pulseLift", "Lift", 0, 6, 0.1],
+        ["tentacleWave", "Tentacle wave °", 0, 60, 1], ["tentacleLag", "Wave lag", 0, 2, 0.02]]],
+      ["Training grid (voxels)", [["gridX", "Width (x)", 32, 128, 2], ["gridY", "Height (y)", 32, 128, 2], ["gridZ", "Depth (z)", 32, 128, 2]]],
+    ],
+    unit: [
+      ["Demo unit (not part of a target)", [["dElem", "Element", "elem"], ["dLen", "Spindle length", 0, 5, 0.05], ["dBend", "Spindle bend °", -120, 120, 1],
+        ["dRoll", "Bend roll °", -180, 180, 1], ["dThick", "Spindle thickness", 0.1, 0.6, 0.01], ["dHx", "Prism length", 0.25, 3, 0.01],
+        ["dHy", "Prism width", 0.25, 3, 0.01], ["dHz", "Prism thickness", 0.25, 3, 0.01], ["dPrism", "Prism", "colour"]]],
+    ],
+  };
+  const DEMO = { dElem: 2, dLen: 1.2, dBend: 40, dRoll: 0, dThick: 0.22, dHx: 1.75, dHy: 0.7, dHz: 0.35, dPrism: [0, 0] };
+  const PRESETS = {
+    whale: { "Humpback": {}, "Blue whale": { length: 76, girth: 0.09, flatten: 0.75, bellyDrop: 0.12, flipperUnits: 1, flipperRays: 2, dorsalUnits: 1,
+               back: [0, 0], belly: [0, 2], pleatColor: [0, 1], backElem: 2, bellyElem: 2, gridX: 110 },
+             "Orca": { length: 50, girth: 0.15, headRound: 0.7, flatten: 0.85, bellyDrop: 0.1, flipperUnits: 2, flipperRays: 3, flipperSweep: 12,
+               flipperDroop: 35, dorsalUnits: 3, dorsalRake: 12, back: [1, 0], belly: [2, 2], pleats: 0, fins: [1, 0], dorsalColor: [1, 0], flukeColor: [1, 0],
+               backElem: 1, bellyElem: 0, gridX: 80 },
+             "All four mixed": { elemMix: 1 } },
+    jelly: { "Moon jelly": {}, "Sea nettle": { bellRadius: 12, bellHeight: 10, bellSweep: 95, tentacles: 8, tentacleUnits: 5, tentacleCurl: 6, tentacleWave: 14, arms: 4, armUnits: 3,
+               bell: [2, 2], rim: [1, 1], tentacleColor: [1, 0], armColor: [2, 0], gridY: 84 },
+             "Small (after heavy loss)": { bellRadius: 9, bellHeight: 7, tentacles: 6, tentacleUnits: 2, arms: 3, armUnits: 1, pulse: 0.1 } },
+    unit: {},
+  };
+  const DEF = { whale: TM.WHALE, jelly: TM.JELLY, unit: DEMO };
+
+  let state = { whale: Object.assign({}, TM.WHALE), jelly: Object.assign({}, TM.JELLY), unit: Object.assign({}, DEMO) };
+  let hadDraft = false;
+  try { const d = JSON.parse(localStorage.getItem("tadpole-draft") || "null");
+    if (d) { hadDraft = true; for (const k of ["whale", "jelly", "unit"]) if (d[k]) state[k] = Object.assign({}, DEF[k], d[k]); } } catch (e) {}
+  let tab = "whale";
+
+  // ---- controls ---------------------------------------------------------------------------
+  let inputs = {};
+  function buildControls() {
+    const g = $("groups"); g.textContent = ""; inputs = {};
+    const P = state[tab];
+    SPECS[tab].forEach(([name, rows], gi) => {
+      const det = document.createElement("details"); if (gi <= 1) det.open = true;
+      det.innerHTML = `<summary>${name}</summary>`;
+      rows.forEach(([key, label, a, b, step]) => {
+        const id = "p-" + key;
+        if (a === "toggle") {
+          const r = document.createElement("div"); r.className = "row tog";
+          r.innerHTML = `<label for="${id}">${label}</label><input type="checkbox" id="${id}">`;
+          const cb = r.querySelector("input"); cb.addEventListener("change", () => { state[tab][key] = cb.checked ? 1 : 0; changed(); });
+          inputs[key] = v => cb.checked = !!v; det.appendChild(r);
+        } else if (a === "colour" || a === "elem") {
+          const r = document.createElement("div"); r.className = "crow";
+          r.innerHTML = `<label>${label}</label><div class="cpick${a === "elem" ? " el" : ""}" role="group" aria-label="${label}"></div>`;
+          const box = r.querySelector(".cpick"), btns = [];
+          if (a === "colour") for (let t = 0; t < 3; t++) for (let d = 0; d < 3; d++) {
+            const bt = document.createElement("button"); bt.type = "button"; bt.className = "t" + t;
+            bt.style.background = hex(PALETTE[d][t]); bt.title = DOM[d] + " " + TIER[t]; bt.setAttribute("aria-label", label + ": " + DOM[d] + " " + TIER[t]);
+            bt.addEventListener("click", () => { state[tab][key] = [d, t]; set(state[tab][key]); changed(); });
+            btns.push([bt, v => v && v[0] === d && v[1] === t]); box.appendChild(bt);
+          } else for (let e = 0; e < 4; e++) {
+            const bt = document.createElement("button"); bt.type = "button";
+            bt.innerHTML = `<i class="dot el" style="background:${hex(ELCOL[e])}"></i>${TM.ELEMENTS[e]}`;
+            bt.addEventListener("click", () => { state[tab][key] = e; set(e); changed(); });
+            btns.push([bt, v => v === e]); box.appendChild(bt);
+          }
+          const set = v => btns.forEach(([bt, is]) => bt.setAttribute("aria-pressed", is(v) ? "true" : "false"));
+          inputs[key] = set; det.appendChild(r);
+        } else {
+          const r = document.createElement("div"); r.className = "row";
+          r.innerHTML = `<label for="${id}">${label}</label><input type="range" id="${id}" min="${a}" max="${b}" step="${step}"><input type="number" min="${a}" max="${b}" step="${step}" aria-label="${label} value">`;
+          const [rg, nb] = r.querySelectorAll("input");
+          const upd = v => { v = +v; if (!isFinite(v)) return; state[tab][key] = v; rg.value = v; nb.value = v; changed(); };
+          rg.addEventListener("input", () => upd(rg.value)); nb.addEventListener("change", () => upd(nb.value));
+          inputs[key] = v => { rg.value = v; nb.value = v; }; det.appendChild(r);
+        }
+      });
+      g.appendChild(det);
+    });
+    const pr = $("presets"); pr.textContent = "";
+    for (const name of Object.keys(PRESETS[tab])) {
+      const bt = document.createElement("button"); bt.className = "btn"; bt.type = "button"; bt.textContent = name;
+      bt.addEventListener("click", () => { state[tab] = Object.assign({}, DEF[tab], PRESETS[tab][name]); sync(); changed(); });
+      pr.appendChild(bt);
+    }
+    sync();
+    $("ptitle").textContent = { whale: "Whale parameters", jelly: "Jellyfish parameters", unit: "The tadpole unit" }[tab];
+    $("unitnote").hidden = tab !== "unit";
+    $("resetbtn").textContent = tab === "unit" ? "Reset demo unit" : "Reset this target";
+    void P;
+  }
+  function sync() { for (const k in inputs) inputs[k](state[tab][k]); }
+
+  // ---- three.js ---------------------------------------------------------------------------
+  const cv = $("cv");
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(30, 1.6, 0.5, 1500);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445066, 0.8));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(30, 60, 40); scene.add(sun);
+  // Crystal shapes: convex hulls of each element's solid (brute force - tiny point sets, built once).
+  function hullGeometry(pts) {
+    pts = pts.map(p => new THREE.Vector3(...p).normalize());
+    const pos = [], eps = 1e-6;
+    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) for (let k = j + 1; k < pts.length; k++) {
+      const n = new THREE.Vector3().subVectors(pts[j], pts[i]).cross(new THREE.Vector3().subVectors(pts[k], pts[i]));
+      if (n.lengthSq() < 1e-10) continue;
+      let pos_ = 0, neg = 0;
+      for (const q of pts) { const d = n.dot(new THREE.Vector3().subVectors(q, pts[i])); if (d > eps) pos_++; else if (d < -eps) neg++; if (pos_ && neg) break; }
+      if (pos_ && neg) continue;
+      const tri = pos_ ? [pts[i], pts[k], pts[j]] : [pts[i], pts[j], pts[k]];
+      tri.forEach(v => pos.push(v.x, v.y, v.z));
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g;
+  }
+  function perms(base, even) {
+    const out = [], P3 = even ? [[0, 1, 2], [1, 2, 0], [2, 0, 1]] : [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+    for (const b of base) for (const p of P3) for (let s = 0; s < 8; s++) {
+      const v = p.map((ix, i) => b[ix] * ((s >> i) & 1 ? -1 : 1));
+      if (!out.some(o => Math.abs(o[0] - v[0]) + Math.abs(o[1] - v[1]) + Math.abs(o[2] - v[2]) < 1e-9)) out.push(v);
+    }
+    return out;
+  }
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const CRYSTAL_GEO = [
+    hullGeometry(perms([[0, 1, 3 * PHI], [1, 2 + PHI, 2 * PHI], [PHI, 2, 2 * PHI + 1]], true)),   // Charge: truncated icosahedron
+    new THREE.IcosahedronGeometry(1, 1),                                                             // Mass: geodesic shell
+    new THREE.DodecahedronGeometry(1, 0),                                                            // Space
+    hullGeometry(perms([[0, 1, 2]], false)),                                                         // Time: truncated octahedron
+  ];
+  const MAXP = 3000, MAXS = 3000 * 8;
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.06, flatShading: true });
+  const gem = new THREE.MeshStandardMaterial({ roughness: 0.25, metalness: 0.15, flatShading: true, emissive: 0x111111 });
+  const inst = (geo, m, n) => { const x = new THREE.InstancedMesh(geo, m, n); x.instanceMatrix.setUsage(THREE.DynamicDrawUsage); x.setColorAt(0, new THREE.Color(1, 1, 1)); x.count = 0; scene.add(x); return x; };
+  const boxes = inst(new THREE.BoxGeometry(2, 2, 2), mat, MAXP), octas = inst(new THREE.OctahedronGeometry(TM.SHIELD), mat, MAXP);
+  const gems = CRYSTAL_GEO.map(g => inst(g, gem, MAXP));
+  const spMat = new THREE.MeshStandardMaterial({ roughness: 0.6, color: new THREE.Color(...SPINDLE).convertSRGBToLinear() });
+  const cyl = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true); cyl.translate(0, 0.5, 0);
+  const spMesh = new THREE.InstancedMesh(cyl, spMat, MAXS); spMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); spMesh.count = 0; scene.add(spMesh);
+  const gridBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), new THREE.LineBasicMaterial({ color: 0x7f8c96, transparent: true, opacity: 0.6 }));
+  scene.add(gridBox);
+  const PCOL = PALETTE.map(row => row.map(c => new THREE.Color(...c).convertSRGBToLinear()));
+  const ECOL = ELCOL.map(c => new THREE.Color(...c).convertSRGBToLinear());
+  const HIT = new THREE.Color(1, 0, 0.85).convertSRGBToLinear();
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+  let rep = { whale: null, jelly: null }, frameK = 0, playing = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let az = 0.75, el = 0.35, dist = 150, lastTick = 0, showGrid = true, showHits = true;
+
+  function drawScene(g, off, hits) {
+    let nb = 0, no = 0, ns = 0; const ng = [0, 0, 0, 0];
+    g.prisms.forEach((q, i) => {
+      const R = q.R, h = q.h, oct = q.tier === 2, m = oct ? octas : boxes, j = oct ? no++ : nb++;
+      M.set(R[0] * h[0], R[1] * h[1], R[2] * h[2], q.p[0] + off[0], R[3] * h[0], R[4] * h[1], R[5] * h[2], q.p[1] + off[1],
+            R[6] * h[0], R[7] * h[1], R[8] * h[2], q.p[2] + off[2], 0, 0, 0, 1);
+      m.setMatrixAt(j, M); m.setColorAt(j, hits.has("p" + i) ? HIT : PCOL[q.dom][q.tier]);
+    });
+    g.crystals.forEach((c, i) => {
+      const e = c.elem, j = ng[e]++;
+      M.makeScale(c.r, c.r, c.r); M.setPosition(c.p[0] + off[0], c.p[1] + off[1], c.p[2] + off[2]);
+      gems[e].setMatrixAt(j, M); gems[e].setColorAt(j, hits.has("c" + i) ? HIT : ECOL[e]);
+    });
+    g.spindles.forEach(sp => {
+      for (let i = 0; i + 1 < sp.pts.length && ns < MAXS; i++) {
+        const a = sp.pts[i], b = sp.pts[i + 1];
+        V.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const L = V.length(); if (L < 1e-6) continue;
+        Q.setFromUnitVectors(UP, V.normalize()); S.set(sp.r, L, sp.r);
+        M.compose(new THREE.Vector3(a[0] + off[0], a[1] + off[1], a[2] + off[2]), Q, S); spMesh.setMatrixAt(ns++, M);
+      }
+    });
+    boxes.count = nb; octas.count = no; spMesh.count = ns; gems.forEach((m, e) => m.count = ng[e]);
+    [boxes, octas, spMesh, ...gems].forEach(m => { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+  }
+  function unitScene() {
+    const U = state.unit, P = Object.assign({}, TM.WHALE, { unitScale: 1, crystalSize: 1 }), units = [];
+    for (let e = 0; e < 4; e++) units.push({ p: [8, 0, (e - 1.5) * 5], f: [1, 0, 0], n: [0, 1, 0], elem: e,
+      spindle: { len: TM.REST[e].spindle, bend: 0, roll: 0, thick: 0.22 }, prism: { h: TM.REST[e].h.slice(), dom: 0, tier: 0, roll: 0 } });
+    units.push({ p: [-6, 0, 0], f: [1, 0, 0], n: [0, 1, 0], elem: U.dElem,
+      spindle: { len: U.dLen, bend: U.dBend * Math.PI / 180, roll: U.dRoll * Math.PI / 180, thick: U.dThick },
+      prism: { h: [U.dHx, U.dHy, U.dHz], dom: U.dPrism[0], tier: U.dPrism[1], roll: 0 } });
+    const out = { units, crystals: [], prisms: [], spindles: [] };
+    units.forEach((u, i) => { const g = TM.realise(P, u, i); out.crystals.push(g.crystal); out.prisms.push(g.prism); out.spindles.push(g.spindle); });
+    return out;
+  }
+  function draw() {
+    let g, off = [0, 0, 0], hits = new Set();
+    if (tab === "unit") { g = unitScene(); gridBox.visible = false; }
+    else {
+      const r = rep[tab]; if (!r) return;
+      const k = frameK % r.frames.length; g = r.frames[k]; off = r.offset;
+      if (showHits) for (const o of r.pairs[k]) for (const [idx, kind] of [[o.a, 0], [o.b, 0]]) {
+        const np = g.prisms.length; hits.add(idx < np ? "p" + idx : "c" + (idx - np)); void kind;
+      }
+      gridBox.visible = showGrid; gridBox.scale.set(r.grid[0], r.grid[1], r.grid[2]);
+      $("frame").value = k; $("frameo").textContent = (k + 1) + "/" + r.frames.length;
+    }
+    drawScene(g, off, hits);
+    const d = tab === "unit" ? 38 : dist;
+    camera.position.set(Math.cos(el) * Math.cos(az) * d, Math.sin(el) * d, Math.cos(el) * Math.sin(az) * d);
+    camera.lookAt(0, 0, 0); renderer.render(scene, camera);
+  }
+  function resize() { const w = cv.clientWidth || 640, h = cv.clientHeight || 400; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); draw(); }
+  function loop(t) { if (playing && tab !== "unit" && rep[tab] && t - lastTick > 140) { frameK++; lastTick = t; draw(); } requestAnimationFrame(loop); }
+  let drag = null;
+  cv.addEventListener("pointerdown", e => { drag = [e.clientX, e.clientY, az, el]; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", e => { if (!drag) return; az = drag[2] + (e.clientX - drag[0]) * 0.01; el = Math.max(-1.5, Math.min(1.5, drag[3] + (e.clientY - drag[1]) * 0.01)); draw(); });
+  cv.addEventListener("pointerup", () => { drag = null; });
+  cv.addEventListener("wheel", e => { e.preventDefault(); dist = Math.max(30, Math.min(500, dist * Math.exp(e.deltaY * 0.001))); draw(); }, { passive: false });
+  const VIEWS = { side: [Math.PI / 2, 0.02], top: [Math.PI / 2, 1.5], front: [0.0, 0.08], three: [0.75, 0.35] };
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { [az, el] = VIEWS[b.dataset.view]; draw(); }));
+  $("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; };
+  if (!playing) $("play").textContent = "Play";
+  $("frame").addEventListener("input", e => { frameK = +e.target.value; playing = false; $("play").textContent = "Play"; draw(); });
+  const toggle = (id, fn) => $(id).addEventListener("click", () => { const on = fn(); $(id).classList.toggle("on", on); $(id).setAttribute("aria-pressed", on); draw(); });
+  toggle("gridbtn", () => (showGrid = !showGrid)); toggle("hitbtn", () => (showHits = !showHits));
+  function theme() { scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--dish").trim() || "#e8eef2"); draw(); }
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", theme);
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  window.addEventListener("resize", resize);
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => {
+    tab = b.dataset.tab; document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === b ? "true" : "false"));
+    dist = tab === "jelly" ? 120 : 150; buildControls(); renderStats(); draw();
+  }));
+
+  // ---- rebuild + stats --------------------------------------------------------------------
+  let pending = null;
+  function changed() {
+    try { localStorage.setItem("tadpole-draft", JSON.stringify(state)); } catch (e) {}
+    clearTimeout(pending); pending = setTimeout(() => { if (tab !== "unit") rep[tab] = TM.report(tab, state[tab]); renderStats(); draw(); }, 60);
+  }
+  function renderStats() {
+    const show = tab !== "unit";
+    for (const id of ["stats", "census"]) $(id).style.display = show ? "" : "none";
+    const ec = $("elems"); ec.textContent = "";
+    if (!show) { $("notes").textContent = "Resting sizes: heart 2.298 (Charge, Space) / 1.737 (Mass, Time) across; body prism 1.05 × 1.05 × 3.5 / 0.32 × 0.32 × 2.8. A learned rule may change the spindle and the prism, never the crystal."; return; }
+    const r = rep[tab], w = rep.whale, j = rep.jelly;
+    const worst = Math.max(...r.overlapsPerFrame);
+    const setv = (id, text, cls) => { const e = $(id); e.textContent = text; e.className = "v" + (cls ? " " + cls : ""); };
+    setv("s-n", r.units, r.units > CAPACITY ? "warn" : "");
+    setv("s-hit", worst === 0 ? "0" : worst + " (" + r.worstDepth.toFixed(2) + ")", worst === 0 ? "ok" : "bad");
+    setv("s-fit", r.fits ? "yes" : "no", r.fits ? "ok" : "bad");
+    setv("s-size", r.size.map(v => v.toFixed(0)).join("·") + " / " + r.grid.join("·"));
+    setv("s-h", r.hmin.toFixed(2) + "–" + r.hmax.toFixed(2));
+    setv("s-ratio", w && j ? j.units + "/" + w.units + " = " + Math.round(100 * j.units / w.units) + "%" : "–", w && j && j.units > w.units ? "warn" : "");
+    r.elements.forEach((n, e) => { if (!n) return; const s = document.createElement("span");
+      s.innerHTML = `<i class="dot el" style="background:${hex(ELCOL[e])}"></i>`; s.appendChild(document.createTextNode(TM.ELEMENTS[e] + " " + n)); ec.appendChild(s); });
+    const c = $("census"); c.textContent = "";
+    Object.entries(r.census).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => {
+      const [d, t] = k.split(" "), di = DOM.indexOf(d), ti = TIER.indexOf(t), s = document.createElement("span");
+      s.innerHTML = `<i class="dot t${ti}" style="background:${hex(PALETTE[di][ti])}"></i>`; s.appendChild(document.createTextNode(k + " " + v)); c.appendChild(s);
+    });
+    const notes = [];
+    if (worst) notes.push("Intersections (crystal or prism against another unit's, worst frame, deepest overlap in voxels in brackets) show in magenta. Spindles are limbs and may pass through anything.");
+    if (r.units > CAPACITY) notes.push(`More than ${CAPACITY} units is over the automaton's budget.`);
+    if (!r.fits) notes.push("It does not fit the training grid on every frame.");
+    if (w && j && j.units >= w.units) notes.push("The jellyfish should need fewer units than the whale: it is what the swarm becomes after losing some.");
+    $("notes").textContent = notes.join(" ");
+  }
+
+  // ---- send / copy / reset ---------------------------------------------------------------
+  function payload() {
+    const sum = k => rep[k] && { units: rep[k].units, elements: rep[k].elements, worstFrameIntersections: Math.max(...rep[k].overlapsPerFrame), fits: rep[k].fits };
+    return { whale: state.whale, jelly: state.jelly, summary: { whale: sum("whale"), jelly: sum("jelly") }, note: $("note").value.slice(0, 2000) };
+  }
+  $("copybtn").onclick = async () => {
+    const text = JSON.stringify(payload(), null, 1), fld = $("copyfield");
+    try { await navigator.clipboard.writeText(text); $("sendstatus").textContent = "Copied both targets as JSON."; $("sendstatus").className = "status ok"; }
+    catch (e) { fld.hidden = false; fld.value = text; fld.focus(); fld.select(); $("sendstatus").textContent = "Copy the selected field below."; }
+  };
+  $("resetbtn").onclick = () => { state[tab] = Object.assign({}, DEF[tab]); sync(); changed(); };
+  $("sendbtn").disabled = true;
+  (async () => {
+    const db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+    if (!db) { $("sendstatus").textContent = "Sending is unavailable here. Use Copy JSON and paste it to Claude."; return; }
+    let user = null; try { user = await window.claude.use("user"); } catch (e) {}
+    const ref = db.doc("targets/tadpoles"); let first = true;
+    $("sendbtn").disabled = false;
+    ref.onSnapshot(snap => {
+      if (!snap.exists) { first = false; return; }
+      const d = snap.data();
+      $("sendstatus").textContent = "Last sent " + new Date(d.savedAt).toLocaleString() + "."; $("sendstatus").className = "status ok";
+      if (first && !hadDraft) { for (const k of ["whale", "jelly"]) if (d[k]) state[k] = Object.assign({}, DEF[k], d[k]); if (d.note) $("note").value = d.note; rebuildAll(); sync(); }
+      first = false;
+    }, () => { $("sendstatus").textContent = "Could not read the saved targets."; });
+    $("sendbtn").onclick = async () => {
+      $("sendbtn").disabled = true; $("sendstatus").textContent = "Sending…"; $("sendstatus").className = "status";
+      try {
+        const body = Object.assign(payload(), { savedAt: Date.now(), by: user ? await user.id() : null });
+        await ref.set(body);
+        try { await db.collection("targets/tadpoles/versions").doc(String(body.savedAt)).set(body); } catch (e) {}
+      } catch (e) { $("sendstatus").textContent = "Send failed (" + (e && e.code || "error") + "). Copy JSON works as a fallback."; $("sendstatus").className = "status bad"; }
+      $("sendbtn").disabled = false;
+    };
+  })();
+
+  function rebuildAll() { rep.whale = TM.report("whale", state.whale); rep.jelly = TM.report("jelly", state.jelly); renderStats(); draw(); }
+  buildControls(); theme(); resize(); rebuildAll(); requestAnimationFrame(loop);
+})();
+</script>

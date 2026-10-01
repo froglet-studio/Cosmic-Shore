@@ -409,3 +409,33 @@ order they cost:
   repairs grazing damage — the food web's grazing is the "damage" the paper trains
   against. Mass is conserved in the game, so a port has to decide what an NCA "update"
   means for a prism (grow/place only; never delete — consumption stays the food web's job).
+
+## Swarm targets: tadpole units
+
+The next step after prism particles. Each particle is a whole tadpole fauna, the game's
+`TadPoleFauna.prefab`:
+
+- **Crystal (heart).** Fixed by the unit's element (Charge, Mass, Space or Time). Its world size
+  is 2.298 for Charge and Space and 1.737 for Mass and Time.
+- **Spindle.** Has a length, a bend (arc angle), a bend roll and a thickness.
+- **Body prism.** Has a domain, a tier (plain, danger or shield octahedron), three half-extents
+  and a roll. It rides the end of the spindle.
+
+One population assembles into a swimming **whale**. After it loses units it switches to a second
+learned rule whose target is a pulsing **jellyfish**.
+
+- `tadpole_model.js` is the one generator for both targets, run by the designer page and in node.
+  It includes an exact overlap check. Crystals are spheres, prisms are tested with the
+  separating-axis test, and spindles are exempt (a limb may pass through a plate, as in the game).
+- `tadpole_designer.src.html` is turned into `tadpole_designer.html` by `build_tadpole_designer.py`.
+  The page has sliders, presets, a per-frame intersection check and a jelly-to-whale unit ratio.
+  **Send both to Claude** writes `targets/tadpoles` to the page's database.
+- `tadpole_target.py [targets.json]` runs the generator and writes
+  `results/tadpole_targets/{whale,jelly}.json`. Each holds per-frame unit states (the state a rule
+  must reach) and the rendered geometry, centred in that target's grid.
+
+Defaults: a whale of 115 units and a jellyfish of 99 units. Both have zero intersections on every
+frame and fit their grids.
+
+The earlier all-prism whale (`whale_model.js`, `whale_designer.*`, `whale_target.py`) is kept as
+the previous stage.

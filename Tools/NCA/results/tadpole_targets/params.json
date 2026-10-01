@@ -1,0 +1,143 @@
+{
+ "whale": {
+  "gridX": 96,
+  "gridY": 40,
+  "gridZ": 64,
+  "unitScale": 1,
+  "crystalSize": 1,
+  "spindleThickness": 0.22,
+  "gap": 0.2,
+  "length": 64,
+  "girth": 0.12,
+  "girthPeak": 0.3,
+  "headRound": 0.55,
+  "tailTaper": 1.6,
+  "peduncle": 0.12,
+  "flatten": 0.8,
+  "bellyDrop": 0.18,
+  "ringPitch": 6.5,
+  "ringSlack": 0.4,
+  "arcSpacing": 3,
+  "plateWidth": 0.92,
+  "plateThickness": 0.9,
+  "stagger": 0,
+  "spindle": 1,
+  "flipperRays": 3,
+  "flipperUnits": 3,
+  "flipperPos": 0.3,
+  "flipperSweep": 35,
+  "flipperDroop": 25,
+  "flipperSpread": 12,
+  "flipperCurl": 0,
+  "keel": 1,
+  "dorsal": 1,
+  "dorsalPos": 0.66,
+  "dorsalUnits": 1,
+  "dorsalRake": 40,
+  "flukeRays": 3,
+  "flukeUnits": 2,
+  "flukeSweep": 30,
+  "flukeSpread": 18,
+  "backElem": 2,
+  "bellyElem": 0,
+  "finElem": 1,
+  "flukeElem": 3,
+  "eyeElem": 3,
+  "elemMix": 0,
+  "back": [
+   0,
+   0
+  ],
+  "belly": [
+   2,
+   0
+  ],
+  "countershade": -0.15,
+  "pleats": 1,
+  "pleatColor": [
+   2,
+   2
+  ],
+  "pleatEnd": 0.45,
+  "fins": [
+   0,
+   0
+  ],
+  "flukeColor": [
+   0,
+   0
+  ],
+  "dorsalColor": [
+   0,
+   0
+  ],
+  "eye": 1,
+  "eyeColor": [
+   1,
+   2
+  ],
+  "eyePos": 0.14,
+  "frames": 8,
+  "swimAmp": 0.05,
+  "swimWave": 1.1,
+  "swimEnv": 2.2,
+  "flukePitch": 22,
+  "flipperFlap": 12,
+  "spindleSway": 0
+ },
+ "jelly": {
+  "gridX": 64,
+  "gridY": 64,
+  "gridZ": 64,
+  "unitScale": 1,
+  "crystalSize": 1,
+  "spindleThickness": 0.22,
+  "gap": 0.2,
+  "bellRadius": 13,
+  "bellHeight": 9.5,
+  "bellSweep": 105,
+  "ringPitch": 5.5,
+  "ringSlack": 0.2,
+  "arcSpacing": 3,
+  "plateWidth": 0.9,
+  "plateThickness": 0.9,
+  "stagger": 1,
+  "spindle": 0.8,
+  "apexUnit": 1,
+  "tentacles": 8,
+  "tentacleUnits": 3,
+  "tentacleCurl": 18,
+  "tentacleInset": 0.92,
+  "arms": 4,
+  "armUnits": 2,
+  "armCurl": 10,
+  "armRadius": 3.5,
+  "bellElem": 2,
+  "rimElem": 0,
+  "tentacleElem": 1,
+  "armElem": 3,
+  "elemMix": 0,
+  "bell": [
+   1,
+   2
+  ],
+  "rim": [
+   1,
+   1
+  ],
+  "tentacleColor": [
+   2,
+   0
+  ],
+  "armColor": [
+   0,
+   2
+  ],
+  "rimRows": 1,
+  "frames": 8,
+  "pulse": 0.16,
+  "pulseLift": 2.5,
+  "tentacleWave": 22,
+  "tentacleLag": 0.6
+ }
+}
