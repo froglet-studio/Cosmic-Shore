@@ -36,6 +36,7 @@ def main():
     ap.add_argument("--eval-every", type=int, default=200)
     ap.add_argument("--homeo", type=int, default=4)
     ap.add_argument("--p-molt", type=float, default=0.1)
+    ap.add_argument("--fair", type=float, default=0.0, help="share of training switches made with the yardstick's FAIR cull (swarm_eval.cull_to, any target element) instead of lose_majority's")
     ap.add_argument("--set", nargs="*", default=[])
     a = ap.parse_args()
     torch.set_num_threads(4)
@@ -50,9 +51,27 @@ def main():
         def __init__(self, world, hidden=192):
             super().__init__(world, hidden=hidden, homeo=a.homeo, no_die=1, p_molt=a.p_molt)
     _Rule.NAN_DUMP = ""
+    if a.fair > 0:                       # train() calls sn.lose_majority by module name: wrap it
+        import swarm_eval
+        orig = sn.lose_majority
+
+        def lose_majority(sw, b, gen, *args, **kw):
+            if float(torch.rand((), generator=gen)) >= a.fair:
+                return orig(sw, b, gen, *args, **kw)
+            m = sw.active[b] & sw.hatched[b]
+            c = torch.bincount(sw.elem[b][m], minlength=4)
+            maj = int(c.argmax())
+            cand = [e for e in range(4) if e != maj and int(c[e]) >= 2]
+            if not cand:
+                return None
+            e = cand[int(torch.randint(len(cand), (1,), generator=gen))]
+            if not swarm_eval.cull_to(sw, b, e, gen):
+                return None
+            return sn.majority_plan(sw, b, None)
+        sn.lose_majority = lose_majority
     sn.SwarmRule = _Rule
     os.makedirs(a.run, exist_ok=True)
-    json.dump(dict(homeo=a.homeo, p_molt=a.p_molt, init=a.init, cfg=cfgd), open(os.path.join(a.run, "posinfo2.json"), "w"), indent=1)
+    json.dump(dict(homeo=a.homeo, p_molt=a.p_molt, fair=a.fair, init=a.init, cfg=cfgd), open(os.path.join(a.run, "posinfo2.json"), "w"), indent=1)
     evlog = open(os.path.join(a.run, "evals.jsonl"), "a")
 
     def on_snapshot(step, rule):

@@ -5,7 +5,7 @@ import swarm_eval as se, scorecard as scd
 import posinfo2_rule as p2
 
 if __name__ == "__main__":
-    torch.set_num_threads(4)
+    torch.set_num_threads(int(__import__("os").environ.get("NT", "4")))
     path = sys.argv[1]; seed = int(sys.argv[2]) if len(sys.argv) > 2 else 7
     kw = json.loads(sys.argv[3]) if len(sys.argv) > 3 else {}
     rule = p2.load(path, **kw); rule.eval()

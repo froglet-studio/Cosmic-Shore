@@ -57,3 +57,74 @@ def save(rule, path, step=0, extra=None):
     torch.save(dict(rule={k: v.cpu() for k, v in rule.state_dict().items()}, world=sn.asdict(rule.world),
                     hidden=rule.hidden, morph=rule.morph, morph_iters=rule.morph_iters, homeo=rule.homeo,
                     no_die=rule.no_die, p_molt=rule.p_molt, step=step, **(extra or {})), path)
+
+
+# ------------------------------------------------------------------ homeo 5: the SCALED quota ---
+# posinfo_rule.homeo_quota sizes the quota at the plan's native headcount. Nothing may die and a domain
+# breeds true, so after a big -> small switch (whale -> dragonfly) a domain can hold MORE tadpoles than
+# the plan's slot for it: its surplus has no legal element to molt into and clings on as debris (the
+# game port's finding 17). The loss is a divergence between DISTRIBUTIONS (headcount is not a goal), so
+# the lossless answer is to scale the plan's (element, domain) table up until every living domain fits
+# inside its slot, molt the surplus into that larger quota, and let parents lay the rest.
+
+@torch.no_grad()
+def scaled_quota(sw, b, capacity=280):
+    m = sw.active[b]
+    h = sw.active[b] & sw.hatched[b]
+    if int(h.sum()) == 0:
+        return None, None
+    k = sn.PLAN_OF[int(torch.bincount(sw.elem[b][h], minlength=4).argmax())]
+    tab, slots = pr.plan_tables()[k]
+    have = torch.zeros(4, 3, dtype=torch.long)
+    have.index_put_((sw.elem[b][m], sw.dom[b][m]), torch.ones(int(m.sum()), dtype=torch.long), accumulate=True)
+    D = have.sum(0).float()                                   # per-domain headcount (fixed but for laying)
+    n_plan = int(tab.sum())
+    smax = capacity / n_plan
+    best = None
+    for perm in sn.PERMS[slots]:
+        P = torch.zeros(3)
+        for sl, d in enumerate(perm):
+            P[d] = float(tab[:, sl].sum())
+        if bool(((D > 0) & (P == 0)).any()):                 # a living domain with no slot: last resort
+            lost = float(D[(P == 0)].sum())
+        else:
+            lost = 0.0
+        absent = float(P[D == 0].sum())                       # plan units a missing domain can never fill
+        fit = D / P.clamp(min=1e-6) * (P > 0).float()
+        s = min(smax, max(1.0, float(fit.max())))
+        key = (lost, absent, s)
+        if best is None or key < best[0]:
+            best = (key, perm, s)
+    _, perm, s = best
+    q = torch.zeros(4, 3, dtype=torch.long)
+    for sl, d in enumerate(perm):
+        q[:, d] = torch.round(tab[:, sl].float() * s).long()
+    for d in range(3):                                        # rounding: a domain's quota is never below its headcount
+        short = int(D[d]) - int(q[:, d].sum())
+        if short > 0 and int(q[:, d].sum()) > 0:
+            q[int(q[:, d].argmax()), d] += short
+    return q, have
+
+
+def homeo_lay5(self, sw, gi, gj, gen=None):
+    """posinfo_rule._homeo_lay at level 4 (molting + reserved deficits + proportional fill + cross-lay),
+    with the SCALED quota."""
+    old = pr.homeo_quota
+    pr.homeo_quota = lambda sw_, b_: scaled_quota(sw_, b_, self.world.capacity)
+    try:
+        h = self.homeo
+        self.homeo = 4
+        pr._homeo_lay(self, sw, gi, gj, gen)
+    finally:
+        self.homeo = h
+        pr.homeo_quota = old
+
+
+_base_homeo_lay = PosInfo2Rule.homeo_lay
+
+
+def _dispatch(self, sw, gi, gj, gen=None):
+    return homeo_lay5(self, sw, gi, gj, gen) if self.homeo >= 5 else _base_homeo_lay(self, sw, gi, gj, gen)
+
+
+PosInfo2Rule.homeo_lay = _dispatch

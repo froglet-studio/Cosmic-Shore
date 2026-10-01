@@ -1,0 +1,23 @@
+{
+ "homeo": 5,
+ "p_molt": 0.1,
+ "fair": 0.6,
+ "init": "runs/p2_a/p2_00600.pt",
+ "cfg": {
+  "per_kind": 2,
+  "pool": 24,
+  "seed_every": 6,
+  "roll_min": 48,
+  "roll_max": 96,
+  "bptt": 28,
+  "sticky_plan": 1,
+  "p_switch": 0.35,
+  "switch_cooldown": 60,
+  "p_ratio": 0.5,
+  "margin": 0.15,
+  "w_over": 1.0,
+  "learned_lay": 1,
+  "min_body": 76.0,
+  "w_body": 20.0
+ }
+}
