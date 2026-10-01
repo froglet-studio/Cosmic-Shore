@@ -218,7 +218,7 @@ def quick_eval(student, log=print, full=True, samples=3):
 
 
 def main():
-    torch.set_num_threads(4)
+    torch.set_num_threads(int(os.environ.get("DISTILL_THREADS", "4")))
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["bc", "dagger", "eval"])
     ap.add_argument("--run", default=os.path.join(HERE, "runs", "distill", "bc"))
