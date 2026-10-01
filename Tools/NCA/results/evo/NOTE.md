@@ -142,6 +142,34 @@ bite that refills from the edges in ~120 steps. Weak spots: the dragonfly's Time
 laps (liveliness 0.25 of the plan's speed) — the cloud reads as a body, not as a creature with
 fast-moving parts. Stage 3 (running) targets exactly that.
 
+## Negative result: the headline swarm cannot be converted by GRAZING (`graze.json`, `evo_graze.py`)
+The yardstick converts a swarm with one instantaneous cull. In the game, fauna are eaten a few at a time.
+`evo_graze.py` grows each plan 240 steps, then a predator eats `bite` tadpoles of the OLD majority every
+2 steps (up to 400 eaten = 1.4x the whole swarm) until the yardstick's target element leads, then runs
+240 steps; a test passes if the swarm ends strictly closest to the target plan. 8 seeds x 4 plans:
+
+| eaten per step | headline (stage 2) switches / 4 | G2 switches / 4 | headline swarms that never lost the majority |
+|---|---|---|---|
+| 0.5 | 0.00 | 0.38 | 32 / 32 |
+| 2 | 0.00 | 0.25 | 30 / 32 |
+| 5 | 0.00 | 0.25 | 30 / 32 |
+| 12.5 | 0.50 | 0.25 | 24 / 32 |
+
+The swarm sits at its 280 cap, so every eaten slot is refilled within a few steps — and the evolved
+homeostat refills it with the CURRENT majority element. Grazing therefore never moves the mix: the
+creature keeps its identity while being eaten 1.4x over. G2 is not much better (element-blind laying from
+a parent pool that is mostly the old majority also refills with the old majority).
+
+**This is the most important finding of this direction for the game design:** a composition homeostat
+(the thing that fixed the yardstick) and "switch plans when your majority is eaten" pull in opposite
+directions. A swarm that breeds back to capacity can only change identity if predation of one element
+OUTPACES its breeding — which needs either (a) breeding slower than the game's predators (the game's
+real growth runs on the cell's fauna cycle, ~seconds per member, so in-engine the predator may well
+win), or (b) a behaviour that makes losses matter: B7 "fear" (an element that is being eaten breeds less;
+in `evo_model.py`, off in the headline) is the structural candidate stage 4 evolves with grazing in the
+fitness. As a player experience the immune swarm is arguably wrong: you can chew on it forever and
+nothing about it changes; one big strike flips it.
+
 ## Compact rule (results/evo/compact) — a distinct lifeform candidate
 No neural net. Each tadpole: swim toward its home = centroid + scale·(μ_g + L_g·u), where (μ_g, L_g) is
 a per-frame Gaussian for its (element, domain) group in the current majority's plan (fitted once from
