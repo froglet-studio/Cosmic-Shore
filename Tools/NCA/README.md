@@ -750,6 +750,8 @@ A target element a body holds fewer than 2 of cannot take over; that test is n/a
 | **field** (designed fields + flocking) | **13/13 feasible** (n/a: jellyfish, pufferfish -> whale; dragonfly -> pufferfish) | 4/4 | 9/9 |
 | learned G2 | 6/16 | 4/4 | 2/12 (jellyfish -> whale, pufferfish -> whale) |
 | **evo** (G2 + evolved behaviour genome) | **16/16** (every test 3/3 samples) | 4/4 | 12/12 |
+| **evo compact** (no neural net: a hand-designed rule, 31 evolved parameters, `evo_compact.py`) | **16/16** | 4/4 | 12/12 |
+| H3 (learned egg choice, p_cross 0.25, step 3000, user's GPU) | 5/16 | 4/4 | 1/12 |
 | hgrid oracle (designed grid + designed boids) | 12/15 feasible (fails pufferfish -> jellyfish, dragonfly -> whale, dragonfly -> pufferfish) | 4/4 | 8/11 |
 | hgrid hybrid (G2 + grid composition) | 12/16 (fails jellyfish -> whale, jellyfish -> dragonfly, pufferfish -> jellyfish, dragonfly -> pufferfish) | 4/4 | 8/12 |
 

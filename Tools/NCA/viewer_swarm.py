@@ -79,7 +79,7 @@ def _is_run(d):
 
 
 LABELS = {"field": "Designed field + flocking", "hgrid/oracle": "Grid morphogen (designed)", "hgrid/hybrid_g2": "Learned rule G2 + grid morphogen", "hgrid": "Grid morphogen (learned)",
-          "colony": "Colony brain", "evo": "Evolved rule", "play": "Strike-hardened rule", "meta": "Metamorphosis"}
+          "colony": "Colony brain", "evo": "Evolved rule", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis"}
 
 
 def _label(d, summ):
