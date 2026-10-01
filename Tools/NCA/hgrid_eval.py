@@ -61,8 +61,9 @@ def main():
     ap.add_argument("--out", default="")
     ap.add_argument("--probe", action="store_true")
     ap.add_argument("--seeds", type=int, default=1)
+    ap.add_argument("--threads", type=int, default=4)
     a = ap.parse_args()
-    torch.set_num_threads(4)
+    torch.set_num_threads(a.threads)
     cfg = parse_sets(hb.BoidCfg(), a.set)
     if a.kind == "oracle":
         model = hb.make_oracle(cfg)

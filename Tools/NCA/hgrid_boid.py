@@ -101,6 +101,8 @@ class BoidCfg:
     starve_local: float = 0.0  # ... and the tadpole sits where its class is not wanted (local class deficit below this)
     hyst: float = 0.0          # the plan switches when another element leads the current plan's by > hyst * n
     animate: int = 1           # cycle the target's 8 frames (period steps each)
+    flow: int = 1              # the field also carries the plan's own motion (per-element mean velocity)
+    k_flow: float = 4.0
     period: int = 8
 
 
@@ -121,7 +123,7 @@ class OracleField:
 
     def __init__(self, targets, cfg: BoidCfg):
         self.targets, self.cfg = targets, cfg
-        self.pf = hc.PlanFields(targets, cfg.G, cfg.cell)
+        self.pf = hc.PlanFields(targets, cfg.G, cfg.cell, period=cfg.period, flow=bool(cfg.flow))
 
     def __call__(self, sw: HSwarm, centres, live, train=False):
         cfg = self.cfg
@@ -210,6 +212,12 @@ class FieldBoid:
         wanted_cls = Dd.flatten(2).sum(-1)                                        # [B,12]
         niche = torch.gather(wanted_cls, 1, cls) > 0.5
         v = cfg.k_class * g_own * niche[..., None].float() + cfg.k_total * g_tot
+        if D.shape[1] > hc.FIELD_C and cfg.k_flow:
+            fl = hc.sample(frame, D[:, hc.FIELD_C:], sw.pos).view(B, N, 4, 3)
+            dens_e = hc.sample(frame, D[:, :hc.NCLS], sw.pos).view(B, N, 4, 3).sum(-1)    # [B,N,4]
+            ei = sw.elem[..., None, None].expand(B, N, 1, 3)
+            fe = torch.gather(fl, 2, ei)[:, :, 0] / torch.gather(dens_e, 2, sw.elem[..., None]).clamp(min=0.2)
+            v = v + cfg.k_flow * fe
         cvec = centres[:, None, :] - sw.pos
         home = (want_tot < 0.05).float()[..., None] * cfg.k_home * cvec / cvec.norm(dim=-1, keepdim=True).clamp(min=1)
         v = v + home

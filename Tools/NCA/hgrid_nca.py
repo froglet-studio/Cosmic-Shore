@@ -38,6 +38,22 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 HID = 16
 CH = hc.FIELD_C + HID
 IN = 10
+ATTR_ELEM = torch.tensor([k // 3 for k in range(12)] + [0, 0, 0] + [k // 3 for k in range(12)] + [k // 2 for k in range(8)])
+BOUND = 8.0
+
+
+def elem_density(dens12):
+    """[B,12,...] class densities -> [B,35,...] the density each attribute channel is weighted by."""
+    de = dens12.view(dens12.shape[0], 4, 3, *dens12.shape[2:]).sum(2)
+    return de[:, ATTR_ELEM]
+
+
+def to_field(h):
+    """NCA state -> the 47-channel field: densities (relu) and attribute VALUES turned into the
+    numerators the boid divides back out (value x the matching element's density)."""
+    dens = F.relu(h[:, :hc.NCLS])
+    val = h[:, hc.NCLS:hc.FIELD_C]
+    return torch.cat([dens, val * elem_density(dens)], 1)
 
 
 def _kernels():
@@ -51,9 +67,9 @@ def _kernels():
 
 
 class GridNCA(nn.Module):
-    def __init__(self, hidden=96, fire=0.75):
+    def __init__(self, hidden=96, fire=0.75, leak=0.02):
         super().__init__()
-        self.fire = fire
+        self.fire, self.leak = fire, leak
         k = _kernels()
         self.register_buffer("kern", k[:, None].repeat(CH, 1, 1, 1, 1).view(5 * CH, 1, 3, 3, 3))
         self.c1 = nn.Conv3d(5 * CH + IN, hidden, 1)
@@ -66,7 +82,7 @@ class GridNCA(nn.Module):
         if self.fire < 1:
             m = (torch.rand(h.shape[0], 1, *h.shape[2:], generator=gen) < self.fire).to(h.dtype)
             dh = dh * m
-        return h + dh
+        return h + dh - self.leak * h
 
 
 def shift_grid(g, d):
@@ -122,31 +138,36 @@ class LearnedField:
         frame = hc.GridFrame(centres, G, cfg.cell)
         inp = self.inputs(sw, frame, live)
         h = self.nca(sw.grid, inp, self.gen)
-        h = h.clamp(-50, 50)
+        h = BOUND * torch.tanh(h / BOUND)
         sw.grid = h
-        pred = torch.cat([F.relu(h[:, :hc.NCLS]), h[:, hc.NCLS:hc.FIELD_C]], 1)
+        pred = to_field(h)
         if self.collect is None and self.beta >= 1.0:
             return pred
         lab = self.oracle(sw, centres, live).detach()
         if self.collect is not None:
-            self.collect.append((pred, lab, h))
+            self.collect.append((h, lab))
         if self.beta >= 1.0:
-            return pred
+            return pred.detach()
         use = (torch.rand(B, generator=self.gen) < self.beta).float()[:, None, None, None, None]
         return use * pred.detach() + (1 - use) * lab
 
 
-def field_loss(pred, lab, h, w_attr=0.5, w_over=0.1):
-    """Relative squared error per sample (the field is mostly empty space, so a plain mean would
-    reward predicting nothing): density classes and attribute channels normalised separately."""
-    def rel(p, l):
-        num = ((p - l) ** 2).flatten(1).sum(1)
-        den = (l ** 2).flatten(1).sum(1) + 1e-3
-        return (num / den).mean()
-    d = rel(pred[:, :hc.NCLS], lab[:, :hc.NCLS])
-    a = rel(pred[:, hc.NCLS:], lab[:, hc.NCLS:])
-    over = F.relu(h.abs() - 8).mean()
-    return d + w_attr * a + w_over * over, float(d.detach()), float(a.detach())
+def field_loss(h, lab, w_attr=0.5):
+    """Density: relative squared error per sample (the field is mostly empty, so a plain mean would
+    reward predicting nothing). Attributes: the VALUE channels, weighted by where the plan has that
+    element (a value where nobody should be does not matter)."""
+    dl = lab[:, :hc.NCLS]
+    hd = h[:, :hc.NCLS]
+    # where density is wanted, regress the raw state (relu would pass no gradient from below zero);
+    # where none is wanted, any state <= 0 is right
+    err = torch.where(dl > 0.02, (hd - dl) ** 2, F.relu(hd) ** 2)
+    d = (err.flatten(1).sum(1) / ((dl ** 2).flatten(1).sum(1) + 1e-3)).mean()
+    wd = elem_density(dl)                                                   # [B,35,...]
+    vl = lab[:, hc.NCLS:] / wd.clamp(min=1e-2)
+    vl = vl.clamp(-BOUND + 0.5, BOUND - 0.5)
+    vp = h[:, hc.NCLS:hc.FIELD_C]
+    a = ((wd * (vp - vl) ** 2).flatten(1).sum(1) / (wd.flatten(1).sum(1) + 1e-3)).mean()
+    return d + w_attr * a, float(d.detach()), float(a.detach())
 
 
 # ----------------------------------------------------------------- train ---
@@ -162,11 +183,11 @@ class NcaCfg:
     after: int = 200             # steps after the cull
     p_cull: float = 0.85         # an episode loses its majority mid-way (else: a vessel strike or nothing)
     p_strike: float = 0.5
-    lr: float = 1e-3
+    lr: float = 3e-4
     hidden: int = 96
     beta0: float = 0.0           # DAgger: chance the NCA drives a sample, ramped beta0 -> beta1 over ramp_eps
     beta1: float = 0.8
-    ramp_eps: int = 60
+    ramp_eps: int = 40
     seed: int = 0
 
 
@@ -231,8 +252,8 @@ def train(nc: NcaCfg, bc: hb.BoidCfg):
             sw = boid.step(sw, gen, train=True)
             if len(lf.collect) >= nc.window or t == total - 1:
                 loss = 0
-                for pred, lab, h in lf.collect:
-                    l, dd, aa = field_loss(pred, lab, h)
+                for h, lab in lf.collect:
+                    l, dd, aa = field_loss(h, lab)
                     loss = loss + l
                     stats["d"].append(dd); stats["a"].append(aa)
                 loss = loss / len(lf.collect)

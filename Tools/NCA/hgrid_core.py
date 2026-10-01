@@ -112,6 +112,7 @@ def blur(field, times=1):
 NCLS = 12            # density classes: element (4) x slot (3)
 ATTR = 12 + 3 + 12 + 8   # per element: raw prism 3 (x4) | Charge tier logits 3 | facing 3 (x4) | spindle raw 2 (x4)
 FIELD_C = NCLS + ATTR
+FLOW_C = 12          # optional: per element, the plan's mean unit velocity per step (numerator, x density)
 
 
 def _logit(x, lo, hi):
@@ -177,19 +178,28 @@ class PlanFields:
     field for a swarm is a copy placed at that swarm's centroid. Offsets below one cell are applied
     by splatting at the exact position (cheap: <= 192 points)."""
 
-    def __init__(self, targets, G=G_DEFAULT, cell=CELL_DEFAULT, smooth=1):
-        self.targets, self.G, self.cell, self.smooth = targets, G, cell, smooth
+    def __init__(self, targets, G=G_DEFAULT, cell=CELL_DEFAULT, smooth=1, period=8, flow=False):
+        self.targets, self.G, self.cell, self.smooth, self.flow = targets, G, cell, smooth, flow
         self.vals = {}
         self.cent = {}
         for k, T in targets.items():
             self.vals[k] = [unit_values(fr) for fr in T.frames]
             self.cent[k] = [fr["p"] - fr["p"].mean(0) for fr in T.frames]
+            if flow:
+                nf = len(T.frames)
+                for f, fr in enumerate(T.frames):
+                    v = (self.cent[k][(f + 1) % nf] - self.cent[k][f]) / period     # units keep their index
+                    fv = torch.zeros(len(v), FLOW_C)
+                    for c in range(3):
+                        fv[torch.arange(len(v)), fr["elem"] * 3 + c] = v[:, c]
+                    self.vals[k][f] = torch.cat([self.vals[k][f], fv], 1)
 
     def field(self, kinds, frames, centres):
         """kinds/frames lists (len B) -> [B, FIELD_C, G,G,G] placed at centres [B,3]."""
         B = len(kinds)
         M = max(len(self.cent[k][f]) for k, f in zip(kinds, frames))
-        pos = torch.zeros(B, M, 3); val = torch.zeros(B, M, FIELD_C); mask = torch.zeros(B, M, dtype=torch.bool)
+        K = FIELD_C + (FLOW_C if self.flow else 0)
+        pos = torch.zeros(B, M, 3); val = torch.zeros(B, M, K); mask = torch.zeros(B, M, dtype=torch.bool)
         for b, (k, f) in enumerate(zip(kinds, frames)):
             p = self.cent[k][f]; n = len(p)
             pos[b, :n] = p + centres[b]; val[b, :n] = self.vals[k][f]; mask[b, :n] = True
