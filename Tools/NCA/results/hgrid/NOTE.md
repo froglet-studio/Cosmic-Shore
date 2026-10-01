@@ -45,7 +45,34 @@ crystals). This is exactly what G2's switches lacked.
 | **hybrid**: G2 rule + grid composition (`hybrid_g2/`) | **7/8** | 7.2 / 17.2 / 6.8 / 11.1 | 3/4 | 0.94 / 0.99 / 0.30 / 1.73 |
 | learned vote NCA (decision learned, templates designed), 2 versions | 3/8 | 7.2 / (puffer) / 9.3 / (puffer) | 0/4 | not run |
 | learned field NCA (whole 47-ch morphogen learned) | not scored | density error never got below "predict nothing" in 7 episodes | | |
-| G2 rule conditioned on grid samples, end-to-end (`hgrid_e2e.py`) | see below | | | |
+| **e2e**: G2 rule conditioned on 9 grid samples, fine-tuned with swarm_loss (`e2e/`, step 150 published; best step 1050) | 7/8 (1 seed) | 7.8 / 13.9 / 9.4 / 9.7 | 3/4 | -0.35 / 0.75 / 0.07 / n.a. |
+| **oracle + morph wave** (`oracle_wave/`) | 7/8 | as oracle | 3/4 | as oracle |
+
+### Seed variance (`seeds.json`, 4 rollout seeds each; one rollout moves the summed divergence by 10-20,
+### and the 8th test is unpassable - see below - so 7 is the ceiling)
+
+| model | mean tests | worst seed | mean summed divergence |
+|---|---|---|---|
+| G2 | 4.25 | 4 | 276.7 |
+| oracle (designed grid) | **7.0** | **7** | 166.0 |
+| hybrid (G2 + grid composition) | 6.75 | 6 | 200.0 |
+| e2e step 1050 | 6.5 | 6 | **162.0** (127-196) |
+
+Every seed of every hgrid model gets own-plan 4/4. The designed grid is the robust one (7 on every
+seed); fine-tuning the learned rule against the grid buys the best single runs (127, and 125 with the
+wave) but a seed in two drops a switch.
+
+### Morph wave (`hgrid_boid.WaveField`, `wave=1`)
+
+The grid's spatial layer finally does something only a grid can: each cell holds which plan it
+expresses. When the swarm's plan changes, the new plan nucleates in the cell where the new majority
+element is densest (where the survivors are) and spreads to neighbouring cells (p=0.08 per step,
+~60-steps to sweep a body; p=0.5 sweeps it in ~11 steps, too fast to read). The body re-forms behind
+the front. One rule made it work: the BREEDING budget is always the decided plan's whole template -
+a half-converted field asks for the old majority's element, breeds it back and reverses the switch
+(the first wave scored 6/8 for exactly that reason, the same failure as the learned vote NCA).
+Oracle+wave: 7/8 (summed 159-168 over runs); G2-e2e step 1050 + wave, no retraining: 7/8, summed
+124.9, switches 11.1 / 4.2 / 12.1 (the best switches of any model).
 
 Bodies come out at the plan's size and mix, not at the 280-slot cap (oracle: 196/192, 91/88, 185/179,
 80/76 tadpoles, element mixes within a few units of the plan; G2 runs every plan at 280). In the
