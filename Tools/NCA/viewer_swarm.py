@@ -101,6 +101,17 @@ def build_swarm(results_root):
                        f'<tbody>{"".join(srows)}</tbody></table></div>')
     meta = summ.get("meta", {})
     note = meta.get("note", "")
+    import swarm_nca
+    passed, _ = swarm_nca.tests_passed(summ)
+    ov = meta.get("overrides", {})
+    fixes = [lab for key, lab in (("sticky_plan", "sticky switch labels"), ("learned_lay", "a learned laying gate"),
+                                  ("w_con", "a contrastive loss"), ("scale_inv", "a scale-invariant loss"),
+                                  ("w_over", "an overflow penalty")) if str(ov.get(key, "0")) not in ("0", "0.0")]
+    note = (f"{passed} of 8 tests pass (each seeding closest to its own plan, and each switched swarm closest to its new plan). "
+            + (f"Trained with {', '.join(fixes)}. " if fixes else "")
+            + ("Divergences are scale-invariant (the swarm is rescaled to the plan's size before matching), so they "
+               "are lower than in runs without that option and not directly comparable. " if summ.get("scale_inv") else "")
+            + note)
     bench = f"""
   <section class="benchp" aria-labelledby="hswarm" id="swarm">
     <div class="h3dhead">
