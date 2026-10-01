@@ -124,6 +124,23 @@ swarm therefore takes *selective, fast* predation: a skill target for a player, 
 dragonfly mob = **24.3** tadpoles within 2 ship radii on average (max 37) vs **2.4** with mobbing off; after
 the ship leaves the body re-forms (4.9 vs 4.5 before). Other plans barely mob by design (only Time does).
 
+## Hybrid: learned motion + designed composition (`field_hybrid.py`, `hybrid.json`)
+
+The existing learned rules (unchanged weights) wrapped with ONLY this direction's composition controller —
+majority hysteresis (dwell 12) + molting surplus elements toward the current plan's mix; their own motion and
+laying untouched. Scored with each run's own LossCfg:
+
+| rule | learned alone | + composition | own-plan divergences (alone → hybrid) |
+|---|---|---|---|
+| G2 | 5/8 | **6/8** (whale → jellyfish now passes) | 13.9/17.5/15.3/20.7 → 10.9/15.2/13.1/17.8 |
+| F1 | 5/8 | **6/8** | 15.3/40.2/30.1/22.8 → 9.7/10.2/10.9/17.8 |
+| E8 | 5/8 | 5/8 (gains jelly → puffer, LOSES dragonfly → whale) | 19.6/13.8/18.9/29.1 → 14.8/18.9/18.0/23.4 |
+
+So composition control is a portable fix and helps every learned rule's own-plan fit, but it is not enough:
+the learned swarms all sit at the 280-slot cap (2–4× the plans' headcounts) and keep their old *shape* at the
+new mix (pufferfish → dragonfly stays pufferfish-shaped in all three). E8's earlier dragonfly → whale pass
+disappears once its mix is controlled — direct evidence that the pass came from mix drift, as argued above.
+
 ## Cost and port
 
 numpy, one swarm, per step: **0.9 ms (76) / 1.2 ms (88) / 3.7 ms (179) / 4.3 ms (192)**, dominated by the O(n²)
@@ -168,6 +185,8 @@ https://claude.ai/artifact/AjXRife4xjGfvetYZe41P3
 * Grow-in is only drawn in the showcase (radius ramps with age); the eggs here are born hatched.
 
 ## Recommendation for the next round
+
+(The hybrid table above is the measured basis for point (1).)
 
 Ship this as the **behavioural shell** and put learning only where design is weak: (1) keep slots + hysteresis +
 molting as the composition controller — it alone solves the switching problem the learned rules failed on;
