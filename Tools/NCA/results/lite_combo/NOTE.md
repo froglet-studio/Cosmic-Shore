@@ -66,7 +66,8 @@ B = 16. (B = 64 was not measured — out of time.)
 |---|---|---|---|---|---|---|---|---|
 | combo (baseline) | 16 / 15 / 15 / 15 | 0 | in (0.024) | 0.51 | 6.26 | 1.32 | 8.4 | — |
 | **frac_k = 4** | 16 / 15 / 15 / 15, no lost test, own losses held | 0 | in (0.045) | **0.597** | **4.53** | **1.73 (limit 1.45)** | 6.9 | **FAIL (teleport only)** |
-| frac_k = 2 | FRAC2_ROW |
+| frac_k = 2 | 16 / 15 / 15 / 15, no lost test; **own mass @41 1.99 vs 1.33 (limit 1.83)** | 0 | in (0.054) | 0.517 | 5.65 | 1.29 | 7.5 | **FAIL (one own-plan loss)** |
+| frac_k = 4, coast 0.75 | 16 / 15 / **14** / **14**; lost time->space @41, charge->time @101; own time worse @7, @41 | 0 | in (0.053) | 0.522 | 6.44 | **1.72** | 7.0 | **FAIL (accuracy + teleport)** |
 
 `hold_frac4.json` / `hold_frac4.log`, `hold_frac2.json`.
 
@@ -77,13 +78,31 @@ mass heal's 6.26 → 2.54): coasting on a slightly stale intent is itself a low-
 charge → time switch, teleport 1.23 → 1.73 (3.5 voxels in a step into Time's 2.0 vmax body): a coasting
 tadpole re-applies its last fine step on top of its coarse velocity and a collision push in a frame where
 the fine field would have turned it. Per-event teleport is otherwise within ±0.25 of the baseline. The
-obvious repair is a coast DECAY (coasting rows apply c·d_prev, c < 1) or a per-step speed cap of the
-summed displacement; not run for lack of time. I do not consider the teleport tolerance wrong here — a
+obvious repair, a coast DECAY (coasting rows apply 0.75·d_prev, compounding while stale), was run and is
+WORSE on every axis: teleport is unchanged (1.72 — so the jump is not the stale fine step itself), two
+tests are lost (seeds 41 and 101, both into/out of Time) and the smoothness gain vanishes (0.52). Decaying
+the intent starves the fine layer between refreshes; the undecayed coast is what carried the smoothness.
+The remaining untested repair is a cap on the summed per-step displacement. I do not consider the teleport tolerance wrong here — a
 3.5-voxel jump is a real (if single-tadpole) artefact.
 
 ## 6. Recommendation
 
-RECOMMENDATION
+**No lite config passes the hold, so the config I recommend for the game is the held combo itself
+(`params.json` here = `results/combo/params.json`, unchanged; its summary/rollout are the ones already
+published in `results/combo/`).** Honest negative result for this session:
+
+- The fractional update buys **18% in Python (8.4 → 6.9 ms/step in the hold's own measurement)** and,
+  unexpectedly, **raises smoothness 0.51 → 0.60** at k = 4 — but every k tried breaks exactly one held
+  number (k = 4: one tadpole's teleport on one switch; k = 2: one own-plan loss at one seed). Both misses
+  are single-event, so some of it may be rollout noise — the hold has no repeat of the smooth/teleport run,
+  and I recommend the owner of hold.py consider whether worst-teleport on ONE tadpole in ONE event at ONE
+  seed should be a hard gate (I do not edit it; the 3.5-voxel jump is real).
+- **The cost is not where a fractional update reaches.** Half of the step is the coarse grid (constant in
+  N), and a further 1-2.5 ms is per-sample Python bookkeeping that makes cost linear in B. In the C# core
+  those terms are cheap; the O(N²) fine layer is the term that grows with population, and that is where
+  frac_k pays. For the GAME, frac_k = 4 on the fine layer is the right shape of optimisation once the
+  teleport is capped: it divides the only super-linear term by 4 and smooths the response. It is not yet a
+  held config.
 
 ## 7. Estimated C# cost (per swarm-step, per-operation counts; n ≈ 134 tadpoles, M ≈ n plan units, G = 8)
 
