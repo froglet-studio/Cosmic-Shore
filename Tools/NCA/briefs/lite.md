@@ -31,6 +31,14 @@ Note: swarm_nca's LOSS now ranges the slot->domain assignment over every domain 
 restricted to ids {0,1} for a 2-region plan - a perfect jellyfish coloured with teams 0 and 2 scored 14.5).
 It only ever lowers a loss; models that read sn.PERMS for their own wells are unchanged.
 
+SMOOTHNESS CALIBRATION (results/hold/calibration/*.json, swarm_smooth at seed 7): smoothness evo 0.58 (the
+lead's "beautifully organic") > combo 0.51 = field 0.51 > sortfeel 0.44. Both front runners JOLT: right after a
+cull or a strike their per-step speed spikes to 4-7x the change's own median pace (lurch 6.3 / 6.7 worst) where
+evo eases in at ~1.7. Neither backtracks, neither teleports, and molt/birth bursts are modest. So a cheap,
+specific way to RAISE the held smoothness while you lighten the model: ramp the response (an acceleration
+limit, or the corrector's gain easing in over ~16-32 steps after a composition change). You may publish a
+config that beats the baseline on smoothness - the hold only forbids getting worse.
+
 STEP 2 - PROFILE. Where does the time go per step (ProfilerMarker-style: time each phase of the step with
 time.perf_counter over 200 steps of a grown body)? Separate the per-step O(N) / O(N^2) / O(grid) work from
 the bookkeeping (composition census, molt quota, plan cache) that need not run every step.
