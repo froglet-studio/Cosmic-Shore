@@ -313,6 +313,8 @@ class ColTrain:
     H: int = 32
     K: int = 8
     lay_bias_head: int = 1
+    late_switch: int = 0           # 1: cull just before the BPTT window instead of before the pre-roll
+    stop: int = 0                  # >0: stop at this step (keeps the LR schedule of `steps`)
     init: str = ""                  # resume weights from another colony run's rule (otherwise warm from G2)
 
 
@@ -353,7 +355,7 @@ def train(tc: ColTrain):
                 setattr(pool[k], a, torch.zeros(tc.pool, H if a == "col_h" else 4))
     json.dump(asdict(tc), open(os.path.join(run, "config.json"), "w"), indent=1)
     log = open(os.path.join(run, "log.jsonl"), "a")
-    for step in range(start, tc.steps):
+    for step in range(start, tc.stop or tc.steps):
         t0 = time.time()
         picks, batch = {}, []
         for k in KINDS:
@@ -363,21 +365,28 @@ def train(tc: ColTrain):
             fresh = step % tc.seed_every == 0
             if fresh:
                 sub = ccat([sn.seed_swarm([targets[k]], world, gen), cindex(sub, torch.arange(1, tc.per_kind))], H)
-            for j in range(1 if fresh else 0, tc.per_kind):
-                if int(sub.since[j]) < tc.switch_cooldown:
+            batch.append(sub)
+        sw = ccat(batch, H)
+        fresh = step % tc.seed_every == 0
+
+        def switches(sw_):
+            for b_ in range(sw_.B):
+                if (fresh and b_ % tc.per_kind == 0) or int(sw_.since[b_]) < tc.switch_cooldown:
                     continue
                 if float(torch.rand((), generator=gen)) < tc.p_switch:
                     u = float(torch.rand((), generator=gen))
                     mode = "ratio" if u < tc.p_ratio else ("excess" if u < tc.p_ratio + tc.p_excess else "tie")
-                    new = sn.lose_majority(sub, j, gen, mode=mode, margin=tc.margin, targets=targets)
+                    new = sn.lose_majority(sw_, b_, gen, mode=mode, margin=tc.margin, targets=targets)
                     if new is not None:
-                        sub.plan[j] = KINDS.index(new); sub.since[j] = 0
-            batch.append(sub)
-        sw = ccat(batch, H)
+                        sw_.plan[b_] = KINDS.index(new); sw_.since[b_] = 0
+        if not tc.late_switch:
+            switches(sw)
         T = int(torch.randint(tc.roll_min, tc.roll_max + 1, (1,), generator=gen))
         with torch.no_grad():
             for _ in range(T - tc.bptt):
                 sw = model(sw, gen)
+        if tc.late_switch:           # cull right before the backpropagated window: the refill burst and the
+            switches(sw)             # colony's decision both happen where the gradient can see them
         sw = cdetach(sw)
         groups = [k for k in KINDS for _ in range(tc.per_kind)]
         votes = []
@@ -441,7 +450,7 @@ def train(tc: ColTrain):
             torch.save(dict(rule=model.state_dict(), opt=opt.state_dict(), sched=sched.state_dict(), pool=pool,
                             step=step + 1), ck + ".tmp")
             os.replace(ck + ".tmp", ck)
-            if (step + 1) % 100 == 0 or step == tc.steps - 1:
+            if (step + 1) % 100 == 0 or step in (tc.steps - 1, tc.stop - 1):
                 save_model(model, os.path.join(run, f"rule_{step + 1:05d}.pt"), step=step + 1, tag=tc.tag)
         if (step + 1) % tc.eval_every == 0 or step == tc.steps - 1:
             model.eval()
