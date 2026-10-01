@@ -6,7 +6,7 @@ of those four, so the other eight are likely hiding failures too. Checking all 1
 expensive, so evaluation is tiered and stops early:
 
   tier 1  own plans    grow each seeding 240 steps; 4 tests              (always)
-  tier 2  standard     the 4 switches rollout() has always run            (if tier 1 >= gate[0])
+  tier 2  standard     the 4 switches rollout() has always run            (if tier 1 >= gate[0], default ALL 4)
   tier 3  the rest     the other 8 switches                               (if tiers 1+2 >= gate[1])
 
 Every test runs `samples` independent rollouts (default 3) and passes on a majority; its pass RATE
@@ -16,7 +16,9 @@ standard switches in rollout() and 0 of 4 here on another seed).
 A switch removes (as if eaten) just enough of every element that does not trail the target element
 that the target becomes the strict majority (`cull_to`; NOT swarm_nca.lose_majority, which only cuts
 the old majority, so the runner-up rather than the target takes over), runs 240 more steps, and passes only if the
-swarm is alive with >= 32 tadpoles and strictly closest to the new majority's plan. A target element
+swarm is alive with >= 32 tadpoles, strictly closest to the new majority's plan, AND within
+MAX_TEST_LOSS (8, default LossCfg) of it. Every test, own plans included, has that absolute bar: the
+user's rule is that a body more than 8 from its plan fails however much closer it is than the others. A target element
 the grown swarm holds fewer than 2 of cannot take over; that transition is reported as n/a (it cannot
 happen to that body) rather than as a pass or a fail.
 
@@ -80,9 +82,12 @@ def _score_row(sw, b, targets, L):
     return {k2: round(sn.swarm_loss(x, targets[k2], L)[1]["sink"], 2) for k2 in sn.KINDS}
 
 
-def _passes(row, want, n):
+def _passes(row, want, n, max_loss=None):
+    """Alive with >= MIN_TEST_BODY tadpoles, strictly closest to the wanted plan, AND within max_loss
+    (default swarm_nca.MAX_TEST_LOSS = 8) of it: being the closest of four plans is not a creature."""
     others = [v for k, v in row.items() if k != want]
-    return n >= sn.MIN_TEST_BODY and row[want] < 99.9 and row[want] < min(others) - 1e-6
+    ml = sn.MAX_TEST_LOSS if max_loss is None else max_loss
+    return n >= sn.MIN_TEST_BODY and row[want] <= ml and row[want] < min(others) - 1e-6
 
 
 def _alive(sw, b):
@@ -99,7 +104,7 @@ def _grow(model, kinds, targets, steps, seed):
 
 
 @torch.no_grad()
-def evaluate(model, steps=240, switch_steps=240, seed=7, samples=3, L=None, gate=(3, 6), full=False, log=print):
+def evaluate(model, steps=240, switch_steps=240, seed=7, samples=3, L=None, gate=(4, 6), full=False, log=print, max_loss=None):
     """Every test is run `samples` times (independent seeds); a test PASSES when more than half of its
     samples pass, and its pass RATE is reported, so one lucky rollout cannot carry a test."""
     L = L or sn.LossCfg()
@@ -107,7 +112,7 @@ def evaluate(model, steps=240, switch_steps=240, seed=7, samples=3, L=None, gate
     stateless = getattr(model, "stateless", type(model) is sn.SwarmRule)   # a subclass may keep state on itself
     t0 = time.time()
     S = samples
-    out = dict(own={}, switch={}, tiers_run=[], na=[], samples=S)
+    out = dict(own={}, switch={}, tiers_run=[], na=[], samples=S, max_loss=sn.MAX_TEST_LOSS if max_loss is None else max_loss)
     # tier 1: own plans. grown[k][s] = (swarm batch, index in it, generator)
     grown = {k: [] for k in sn.KINDS}
     if stateless:
@@ -124,7 +129,7 @@ def evaluate(model, steps=240, switch_steps=240, seed=7, samples=3, L=None, gate
         oks, rows, ns = [], [], []
         for sw, b, _ in grown[k]:
             row = _score_row(sw, b, targets, L); n = _alive(sw, b)
-            oks.append(_passes(row, k, n)); rows.append(row); ns.append(n)
+            oks.append(_passes(row, k, n, max_loss)); rows.append(row); ns.append(n)
         out["own"][k] = dict(cross={k2: round(sum(r[k2] for r in rows) / S, 2) for k2 in sn.KINDS}, n=round(sum(ns) / S),
                              rate=round(sum(oks) / S, 2), ok=sum(oks) * 2 > S)
     own = sum(v["ok"] for v in out["own"].values())
@@ -158,7 +163,7 @@ def evaluate(model, steps=240, switch_steps=240, seed=7, samples=3, L=None, gate
                     sw = model(sw, gen)
                 for b, (k, e) in enumerate(keys):
                     to = _plan_of_elem(e); row = _score_row(sw, b, targets, L); n = _alive(sw, b)
-                    res.setdefault((k, e), []).append((_passes(row, to, n), row, n, sn.majority_plan(sw, b, to)))
+                    res.setdefault((k, e), []).append((_passes(row, to, n, max_loss), row, n, sn.majority_plan(sw, b, to)))
         else:
             for k, e in pairs:
                 to = _plan_of_elem(e)
@@ -169,7 +174,7 @@ def evaluate(model, steps=240, switch_steps=240, seed=7, samples=3, L=None, gate
                     for _ in range(switch_steps):
                         sw = model(sw, gen)
                     row = _score_row(sw, 0, targets, L); n = _alive(sw, 0)
-                    res.setdefault((k, e), []).append((_passes(row, to, n), row, n, sn.majority_plan(sw, 0, to)))
+                    res.setdefault((k, e), []).append((_passes(row, to, n, max_loss), row, n, sn.majority_plan(sw, 0, to)))
         for k, e in pairs:
             to = _plan_of_elem(e)
             if (k, e) not in res:
@@ -243,10 +248,11 @@ def main():
     ap.add_argument("--full", action="store_true", help="run every tier regardless of the gates")
     ap.add_argument("--samples", type=int, default=3, help="independent rollouts per test (majority decides)")
     ap.add_argument("--scale-inv", type=int, default=0)
+    ap.add_argument("--max-loss", type=float, default=None, help="absolute pass bar (default swarm_nca.MAX_TEST_LOSS = 8)")
     ap.add_argument("--out", default="")
     a = ap.parse_args()
     model = load_model(a.model)
-    res = evaluate(model, L=sn.LossCfg(scale_inv=a.scale_inv), full=a.full, samples=a.samples)
+    res = evaluate(model, L=sn.LossCfg(scale_inv=a.scale_inv), full=a.full, samples=a.samples, max_loss=a.max_loss)
     print(matrix(res))
     print(f"PASSED {res['passed']}/{res['feasible']} feasible (16 total; n/a: {res['na']}); tiers run: {res['tiers_run']}; {res['seconds']}s")
     if a.out:

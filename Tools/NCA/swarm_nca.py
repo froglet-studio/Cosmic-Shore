@@ -1177,6 +1177,8 @@ def rollout(rule, steps=240, every=5, seed=7, L=None, switch_steps=240):
 
 
 MIN_TEST_BODY = 32     # a swarm must have grown (twice the 16-tadpole seed) for a plan test to count
+MAX_TEST_LOSS = 8.0    # and must actually LOOK like the plan: divergence to the wanted plan at most this (default LossCfg).
+                       # Being the closest of four plans is not enough - a body 35 away from every plan is no creature.
 
 
 def tests_passed(summary):
@@ -1185,10 +1187,11 @@ def tests_passed(summary):
     plan is STRICTLY closest - an extinct swarm scores the sentinel 100 against every plan, and a tie
     must not count as a pass. The swarm must also have grown to MIN_TEST_BODY: the learned laying gate
     found a shortcut of never laying, and a 16-tadpole clump 'closest to the jellyfish' is not a body.
+    And its divergence to the wanted plan must be at most MAX_TEST_LOSS: strictly closest is not enough.
     Returns (passed, summed divergence over the 8 wanted plans)."""
     def ok(row, want, n):
         others = [v for k, v in row.items() if k != want]
-        return n >= MIN_TEST_BODY and row[want] < 99.9 and row[want] < min(others) - 1e-6
+        return n >= MIN_TEST_BODY and row[want] <= MAX_TEST_LOSS and row[want] < min(others) - 1e-6
     cross, cen, sw = summary["cross"], summary.get("census", {}), summary.get("switch", {})
     passed = sum(ok(cross[k], k, cen.get(k, {}).get("n", 1)) for k in KINDS)
     close = sum(cross[k][k] for k in KINDS)
