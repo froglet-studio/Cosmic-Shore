@@ -52,12 +52,22 @@ def _curve(log_path):
     return "".join(out)
 
 
+def _eval16(d):
+    """The tiered all-transition evaluation (swarm_eval: 4 own plans + 12 switches), if it was run."""
+    p = os.path.join(d, "eval16.json")
+    if os.path.isfile(p):
+        return json.load(open(p))
+    return json.load(open(os.path.join(d, "summary.json"))).get("eval16")
+
+
 def _rank(d):
-    """Most tests passed first (own plan x4, switch x4), then the lowest divergence over them."""
+    """Runs scored on all 16 transitions first (most passed), then the original eight tests; ties by
+    the lowest divergence over the original eight."""
     sm = json.load(open(os.path.join(d, "summary.json")))
     import swarm_nca
     correct, close = swarm_nca.tests_passed(sm)
-    return (-correct, close)
+    ev = _eval16(d)
+    return (0, -ev["passed"], close) if ev else (1, -correct, close)
 
 
 def _is_run(d):
@@ -110,7 +120,12 @@ def _payload(d):
                 probe = probe["strike"]
         except Exception:
             probe = None
-    return dict(id=os.path.relpath(d, os.path.dirname(d) if os.path.basename(os.path.dirname(d)) == "results" else
+    ev = _eval16(d)
+    if ev:                                     # keep only the rates: the full file carries per-sample detail
+        ev = dict(passed=ev["passed"], feasible=ev["feasible"], na=ev.get("na", []), samples=ev.get("samples"),
+                  own={k: (v["rate"] if isinstance(v, dict) else v) for k, v in ev["own"].items()},
+                  switch={k: (v["rate"] if isinstance(v, dict) else v) for k, v in ev["switch"].items()})
+    return dict(eval16=ev, id=os.path.relpath(d, os.path.dirname(d) if os.path.basename(os.path.dirname(d)) == "results" else
                                     os.path.dirname(os.path.dirname(d))).replace("/", "-"), label=_label(d, summ), passed=passed, note=_note(summ, passed),
                 roll=json.load(open(os.path.join(d, "rollout.json"))), cross=summ["cross"],
                 census={k: summ["census"][k] for k in KINDS if k in summ.get("census", {})},
@@ -133,16 +148,17 @@ def build_swarm(results_root, gallery_dir=None):
         return "", ""
     import prism_render as pr
     first = _payload(cands[0])
-    manifest = [dict(id=first["id"], label=first["label"], passed=first["passed"], file=None)]
+    tag = lambda p: f"{p['eval16']['passed']}/16" if p.get("eval16") else f"{p['passed']}/8"
+    manifest = [dict(id=first["id"], label=first["label"], passed=tag(first), file=None)]
     if gallery_dir:
         os.makedirs(gallery_dir, exist_ok=True)
         for d in cands[1:]:
             p = _payload(d)
             fn = f"{p['id']}.json"
             json.dump(p, open(os.path.join(gallery_dir, fn), "w"), separators=(",", ":"))
-            manifest.append(dict(id=p["id"], label=p["label"], passed=p["passed"], file=f"{os.path.basename(gallery_dir)}/{fn}"))
+            manifest.append(dict(id=p["id"], label=p["label"], passed=tag(p), file=f"{os.path.basename(gallery_dir)}/{fn}"))
     apps = "".join(f'<button type="button" class="app" data-app="{m["id"]}" aria-pressed="false">'
-                   f'<span class="appl">{m["label"]}</span><span class="apps mono">{m["passed"]}/8</span></button>' for m in manifest)
+                   f'<span class="appl">{m["label"]}</span><span class="apps mono">{m["passed"]}</span></button>' for m in manifest)
     tabs = "".join(
         f'<button type="button" role="tab" data-swk="{k}" aria-selected="false">'
         f'<span class="swatch" style="background:{EL_UI[ELEMENTS.index(MAJOR[k])]}"></span>{MAJOR[k]} seed</button>' for k in KINDS)
@@ -286,6 +302,12 @@ SCRIPTSWARM = r"""<script>
         return `<tr><th scope="row">${NAMES[k]} loses its ${MAJOR[k]}: ${MAJOR[v.to]} majority</th>${cells(v.cross, v.to)}<td>${NAMES[v.majority] || v.majority}</td></tr>`; }).join('');
       h += `<h3>Losing the majority</h3><p class="caption">The same swarms after another 240 steps, once enough of their majority element was removed (as if eaten) that another element took over. The underlined column is the new majority's plan; ${ok} of 4 end closest to it. Play a seed past the marked step to watch it.</p>`
         + `<div class="tablewrap"><table class="swcross"><thead><tr><th scope="col">Swarm</th>${head}<th scope="col">Majority now</th></tr></thead><tbody>${sr}</tbody></table></div>`;
+    }
+    if (p.eval16) {
+      const e = p.eval16, cell = (r, own) => r == null ? '<td>n/a</td>' : `<td class="${r > 0.5 ? 'win' : ''}${own ? ' diag' : ''}">${Math.round(r * 100)}%</td>`;
+      const rows = KINDS.map(k => `<tr><th scope="row">${NAMES[k]}</th>` + KINDS.map(t => t === k ? cell(e.own[k], true) : cell(e.switch[`${k}->${t}`], false)).join('') + '</tr>').join('');
+      h += `<h3>Every transition</h3><p class="caption">All 16 tests: each plan grown from its own seed (diagonal) and each of the 12 possible switches (a grown body loses its majority to each other element). Each test is run ${e.samples || 3} times; the cell is the share of runs that end closest to the wanted plan with at least 32 tadpoles, and a test passes on a majority. ${e.passed} of ${e.feasible} feasible tests pass${e.na && e.na.length ? ` (n/a: a body that holds too little of that element to be taken over: ${e.na.join(', ')})` : ''}.</p>`
+        + `<div class="tablewrap"><table class="swcross"><thead><tr><th scope="col">Grown as \\ ends as</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
     }
     if (p.probe) {
       const pr = KINDS.filter(k => p.probe[k]).map(k => { const q = p.probe[k];

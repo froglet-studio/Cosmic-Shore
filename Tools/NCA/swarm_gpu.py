@@ -118,10 +118,13 @@ def check(device):
 
 
 def score(summary):
-    """Lower is better. First: how many of the eight tests pass - each seeding grows closest to its OWN
-    plan (4), and after losing its majority each swarm ends closest to the NEW majority's plan (4).
-    Then: how close, summed over the same eight."""
+    """Lower is better. With the tiered evaluation (swarm_eval, all 16 tests: 4 own plans + 12
+    switches, 3 samples each, fail-fast) it counts those; otherwise the original eight. Then: how
+    close, summed over the original eight (the rollout's tests)."""
     correct, close = sn.tests_passed(summary)
+    ev = summary.get("eval16")
+    if ev:
+        return (16 - ev["passed"]) * 1000 + close, ev["passed"]
     return (8 - correct) * 1000 + close, correct
 
 
@@ -144,10 +147,20 @@ def make_publisher(device, push):
         L = sn.LossCfg(scale_inv=int(float(OVERRIDES.get("scale_inv", 0))))   # score with the loss it trains on
         data, summary = sn.rollout(rule, 240, L=L)
         summary["scale_inv"] = L.scale_inv
+        try:
+            import swarm_eval                                   # all 16 transitions, fail-fast tiers
+            ev = swarm_eval.evaluate(rule, L=L, samples=3)
+            print(swarm_eval.matrix(ev))
+            summary["eval16"] = {k: ev[k] for k in ("passed", "feasible", "own_passed", "std_passed", "rest_passed",
+                                                    "complete", "na", "samples", "tiers_run")}
+            summary["eval16"]["own"] = {k: v["rate"] for k, v in ev["own"].items()}
+            summary["eval16"]["switch"] = {k: v["rate"] for k, v in ev["switch"].items()}
+        except Exception as e:                                  # never lose a snapshot to the evaluator
+            print(f"swarm_eval failed: {e}")
         rule.train()
         sn.print_cross(summary); sn.print_geo(summary); sn.print_switch(summary)
         sc, correct = score(summary)
-        print(f"score {sc:.1f} ({correct}/8 tests pass: own plan x4, switch x4); best so far {best['score']:.1f}")
+        print(f"score {sc:.1f} ({correct}/{16 if summary.get('eval16') else 8} tests pass); best so far {best['score']:.1f}")
         if sc >= best["score"]:
             return
         best.update(score=sc, step=step, correct=correct)
@@ -169,7 +182,7 @@ def make_publisher(device, push):
         rel = os.path.relpath(RESULT, root)
         git(["pull", "--ff-only", "origin", branch], root)
         if git(["add", rel], root) and git(["commit", "-m", f"feat(nca): swarm co-evolution {os.path.basename(RESULT)} on {name} - step {step}, "
-                                                          f"{correct}/8 plan + switch tests pass"], root):
+                                                          f"{correct}/{16 if summary.get('eval16') else 8} plan + switch tests pass"], root):
             git(["push", "origin", branch], root)
 
     return publish

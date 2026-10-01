@@ -724,6 +724,25 @@ the jellyfish. It must grow from about 76 tadpoles to the whale's 192, and the S
 keeps takes over first. The other directions (colony, evo, play, meta), the single-plan specialists
 (`briefs/solo.md`) and the H runs are still training.
 
+**All 16 transitions, not 4 (`swarm_eval.py`).** The user's point: the yardstick ran the four own
+plans but only 4 of the 12 possible switches, picked arbitrarily, and one of those four failed
+everywhere. `swarm_eval.evaluate` runs every one, as fail-fast tiers so a weak run costs little:
+tier 1 the 4 own plans, tier 2 the 4 standard switches (only if tier 1 passes at least 3), tier 3
+the other 8 (only if tiers 1+2 pass at least 6). Each test is run 3 times on independent seeds and
+passes on a majority, because one rollout per test was noisy: G2's single standard switch pass did
+not survive resampling (a 50% coin). Stateless learned rules branch every switch off one grown swarm
+and run all of them as one batch (16 tests x 3 samples in about 100 s on 2 threads); stateful models
+(field, hgrid) regrow each seeding instead. The GPU job's publisher now ranks snapshots by it, and
+the viewer shows the 4x4 table.
+
+| Approach | 16-test result | Own plans | Standard switches | Other 8 |
+|---|---|---|---|---|
+| field | **8/15** (charge -> whale n/a: a pufferfish holds too little Mass) | 4/4 | 3/4 | 1/8 (only dragonfly -> jellyfish) |
+| learned G2 | 4/16 | 4/4 | 0/4 | 0/8 |
+
+So the 7/8 approaches are much further from the goal than 7/8 suggested: they switch along the
+four standard directions and almost nowhere else. Rounds from here are scored on all 16.
+
 ```
 python Tools/NCA/gpu_run.py swarm --device cpu --tag e1 --steps 6000 --set per_kind=2 --set pool=24 \
   --set seed_every=6 --set roll_min=48 --set roll_max=96 --set bptt=28 --set sticky_plan=1 \
