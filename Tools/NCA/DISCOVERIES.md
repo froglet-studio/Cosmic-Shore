@@ -69,7 +69,7 @@ look lives. That pairing is the strongest cross-family finding of the day.
 | model | locality | own-plan losses (whale / jelly / puffer / dragonfly) | 16-test, seed 7 | held-out | lossless? |
 |---|---|---|---|---|---|
 | **hgrid2** (grid morphogen 2) | local fields | **1.2 / 2.0 / 2.9 / 3.0** | **16 / 16** | seeds 1000, 2000, 3000: 15/15 feasible each (its session); my seed-23 rescore: **16/16, every test 3/3 samples** (own 1.2 / 1.6 / 2.0 / 3.4, worst switch 7.6) | **no**: starves misplaced surplus on a timer |
-| **sort** (emergent cell sorting) | local + census + body centre | 1.4 / 2.4 / 1.05 / 5.0 | 12 / 13 feasible | 13 / 13 / 13 / 12 over 4 seeds (its session); seed 23 (my rescore, cut short by a container restart): tier 1 4/4, standard switches 4/4; its session re-measured seeds 101-104: 13/13 feasible on every one | **yes**, by design (molting + region transfer) |
+| **sort** (emergent cell sorting) | local + census + body centre | 1.4 / 2.4 / 1.05 / 5.0 | 12 / 13 feasible | 13 / 13 / 13 / 12 over 4 seeds (its session); my seed-23 rescore: **12/13 feasible** (own 1.2 / 2.4 / 0.7 / 3.3; the one miss is the same dragonfly -> jellyfish domain-conservation case as seed 7); its session re-measured seeds 101-104: 13/13 feasible on every one | **yes**, by design (molting + region transfer) |
 | **posinfo** (learned rule + positional input + designed homeostat) | local + body frame | 3.2 / 6.9 / 4.4 / 6.7 | 4 / 16 (switches untrained) | seed 23 (my rescore): tier 1 3/4 - dragonfly passes 1 of 3 samples, jellyfish 2 of 3; fails held-out tier 1 | homeostat molts; not audited |
 | field (designed, global assignment) | global | 3.1 / 1.6 / 1.4 / 4.6 | 9 / 13 | — | yes |
 | distill (local student of field) | local | ~25-45 | 7/16 (old bar) | — | — |
