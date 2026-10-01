@@ -191,6 +191,7 @@ class World:
 C = 32                        # channels: 0 hatch | 1-3 facing | 4-6 prism | 7-9 tier | 10-11 spindle | 12-30 hidden | 31 death
 A, FAC, PR, TI, SP, DIE = 0, slice(1, 4), slice(4, 7), slice(7, 10), slice(10, 12), 31
 LAY = 30                      # (learned_lay only) the rule's laying gate; otherwise a hidden channel
+S_MAX = 1e3                   # state guard: never reached by a healthy rule; stops an overflow turning into NaN
 DIE_AT = 1.0                  # a hatched tadpole whose death channel passes this dies (and leaves a crystal)
 
 
@@ -359,7 +360,7 @@ class SwarmRule(nn.Module):
         ds = torch.zeros(n, C).index_copy(0, idx, out[:, :C])
         vmax = torch.tensor(W.vmax)[elem].index_select(0, idx)[:, None]
         v = torch.zeros(n, 3).index_copy(0, idx, vmax * torch.tanh(out[:, C:]))
-        s = s + ds
+        s = (s + ds).clamp(-S_MAX, S_MAX)
         pos = pos + v
         # collision
         dxc = pos[gj] - pos[gi]
@@ -564,10 +565,11 @@ def sinkhorn_ot(Cm, a, b, eps, iters_per=3):
     differentiable soft-c-transform at the end (envelope theorem), as in geomloss."""
     loga, logb = torch.log(a.clamp(min=1e-12)), torch.log(b.clamp(min=1e-12))
     with torch.no_grad():
-        Cd = Cm.detach(); la, lb = loga.detach(), logb.detach()
+        # a non-finite cost would make the eps-halving loop below run forever (NaN never reaches eps)
+        Cd = torch.nan_to_num(Cm.detach(), nan=1e6, posinf=1e6, neginf=-1e6); la, lb = loga.detach(), logb.detach()
         f = torch.zeros(Cd.shape[0]); g = torch.zeros(Cd.shape[1])
         e = max(float(Cd.max()), eps)
-        while True:
+        for _guard in range(200):
             for _ in range(iters_per):
                 f = -e * _lse(lb[None] + (g[None] - Cd) / e, 1)
                 g = -e * _lse(la[:, None] + (f[:, None] - Cd) / e, 0)
@@ -927,6 +929,12 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                 sw = rule(sw, gen)
         sw = sw.detach()
         groups = [k for k in KINDS for _ in range(cfg.per_kind)]       # which seeding a sample came from
+        nonfinite = 0
+        for b in range(sw.B):                                # a sample whose state went non-finite is reseeded
+            if not (bool(torch.isfinite(sw.s[b]).all()) and bool(torch.isfinite(sw.pos[b]).all())):
+                nonfinite += 1
+                sw = Swarm.cat([sw.index(torch.arange(0, b)), seed_swarm([targets[groups[b]]], world, gen),
+                                sw.index(torch.arange(b + 1, sw.B))])
 
         def plan_of(sw_, b_, g_):
             return KINDS[int(sw_.plan[b_])] if cfg.sticky_plan else majority_plan(sw_, b_, g_)
@@ -956,13 +964,24 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                 l, info = swarm_loss(x, targets[k], L, others=others)
                 losses.append(l); plans.append(k)
                 infos.setdefault(g, []).append(info)
-        loss = torch.stack(losses).sum() / cfg.per_kind
+        ok = [bool(torch.isfinite(l)) for l in losses]
+        for b, good in enumerate(ok):                       # a non-finite loss: dropped, and its sample reseeded
+            if not good:
+                nonfinite += 1; g_ = groups[b]; infos[g_][b - KINDS.index(g_) * cfg.per_kind]["sink"] = 1e9
         opt.zero_grad()
-        loss.backward()
-        for p in rule.parameters():
-            if p.grad is not None:
-                p.grad /= (p.grad.norm() + 1e-8)          # per-tensor normalised gradient (as the NCA paper)
-        opt.step(); sched.step()
+        if any(ok):
+            loss = torch.stack([l for l, good in zip(losses, ok) if good]).sum() / cfg.per_kind
+            loss.backward()
+            grads = [p.grad for p in rule.parameters() if p.grad is not None]
+            if all(bool(torch.isfinite(g_).all()) for g_ in grads):
+                for g_ in grads:
+                    g_ /= (g_.norm() + 1e-8)                  # per-tensor normalised gradient (as the NCA paper)
+                opt.step()
+            else:
+                nonfinite += 1
+        else:
+            loss = torch.zeros(())
+        sched.step()
         sw = sw.detach()
         for i, k in enumerate(KINDS):
             sub = sw.index(torch.arange(i * cfg.per_kind, (i + 1) * cfg.per_kind))
@@ -970,7 +989,8 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
             for j in range(cfg.per_kind):
                 tk = targets[plans[i * cfg.per_kind + j]]
                 off = abs(infos[k][j]["n"] - tk.n) / tk.n
-                if int(sub.active[j].sum()) == 0 or infos[k][j]["sink"] > cfg.replace_above or off > cfg.replace_count:
+                if int(sub.active[j].sum()) == 0 or infos[k][j]["sink"] > cfg.replace_above or off > cfg.replace_count \
+                        or not bool(torch.isfinite(sub.s[j]).all()):
                     sub = Swarm.cat([sub.index(torch.arange(0, j)), seed_swarm([targets[k]], world, gen),
                                      sub.index(torch.arange(j + 1, cfg.per_kind))])
             for j, pi in enumerate(picks[k].tolist()):
@@ -979,7 +999,8 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
         dt = time.time() - t0
         if step % cfg.log_every == 0 or step == cfg.steps - 1:
             rev = sum(majority_plan(sw, b, plans[b]) != plans[b] for b in range(sw.B)) / sw.B
-            rec = dict(step=step, loss=float(loss), T=T, sec=round(dt, 2), lr=sched.get_last_lr()[0], rev=round(rev, 3))
+            rec = dict(step=step, loss=float(loss), T=T, sec=round(dt, 2), lr=sched.get_last_lr()[0], rev=round(rev, 3),
+                       nonfinite=nonfinite)
             for i, k in enumerate(KINDS):
                 c = census(sw, i * cfg.per_kind, targets[k])
                 inf = infos[k][0]
@@ -987,7 +1008,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                               el=c["elements"], dom=c["domains"], deaths=c["deaths"], frame=inf["frame"],
                               speed=inf.get("speed"), **{x: round(inf[x], 3) for x in ("mix", "con", "gap", "survive") if x in inf})
             log.write(json.dumps(rec) + "\n"); log.flush()
-            print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s rev{rev:.2f} | " + " | ".join(
+            print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s rev{rev:.2f}{f' nf{nonfinite}' if nonfinite else ''} | " + " | ".join(
                 f"{k[:2]}>{rec[k]['plan'][:2]} {rec[k]['sink']:6.2f} n{rec[k]['n']:3d} d{rec[k]['deaths']}" for k in KINDS), flush=True)
         if (step + 1) % cfg.snap_every == 0 or step == cfg.steps - 1:
             torch.save(dict(rule=rule.state_dict(), opt=opt.state_dict(), sched=sched.state_dict(), pool=pool,
