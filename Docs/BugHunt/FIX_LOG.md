@@ -8,6 +8,32 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-1.2 — gamepad triggers stayed held across a strategy switch or pause
+
+- **Date:** fixed 2026-10-02 (commit); merge pending Yash's retest. Skipped the repro on
+  `bleeding-edge` at Yash's call; the cause is clear from the code.
+- **Symptom:** hold a gamepad trigger, then touch the keyboard or mouse (the input controller
+  hands over to another strategy) or pause. The vessel keeps the trigger's ability held (drift,
+  charge, and so on) until the trigger is pressed and released again on the pad. Nothing in the
+  Console.
+- **Root cause:** `KeyboardInputStrategy` releases held triggers and speed gestures in
+  `OnStrategyDeactivated` and `OnPaused`; `GamepadInputStrategy` had neither override. Once it
+  stops being the live strategy `ProcessInput` no longer runs, so the release edge
+  (`leftJustReleased` and friends) is never raised, and its remembered `prevLeftTriggerActive` /
+  `prevRightTriggerActive` stay stale.
+- **Repro:** not run on `bleeding-edge`. With a pad connected, hold a trigger, then move the mouse
+  or press a key, and check whether the ability stays on.
+- **Fix:** `Assets/_Scripts/Controller/IO/GamepadInputStrategy.cs`.
+  - Added `OnStrategyDeactivated` (release triggers and speed effects, `ResetInput`, reset state)
+    and `OnPaused` (release triggers, zero sticks and analog triggers), mirroring the keyboard.
+  - The trigger edge logic moved unchanged into `DispatchTriggers(left, right)`, so a release is
+    the same code path as a real let-go (`ReleaseHeldTriggers` calls it with 0, 0).
+- **Verification:** all gate scripts pass. Needs Yash's retest on `Bug_Hunt`: hold a trigger, move
+  the mouse, and the ability should end; and pause with a trigger held.
+- **PR/commit:** pending.
+
+---
+
 ## CI-1 — raw `Debug.Log` in `TrainingSessionRunner.LeaveSlot` failed the console-logging check
 
 - **Date:** fixed 2026-10-02.
