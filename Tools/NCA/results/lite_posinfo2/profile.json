@@ -1,0 +1,470 @@
+{
+ "base": {
+  "1": {
+   "ms_per_step": 7.877,
+   "ms_per_swarm_step": 7.877,
+   "ms_per_tadpole_step_us": 41.03,
+   "phases": {
+    "edges": 0.796,
+    "frame": 0.992,
+    "perceive": 1.545,
+    "mlp": 0.607,
+    "physics": 0.528,
+    "hatch": 0.32,
+    "homeo": 3.024
+   },
+   "B": 1,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.499,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 45920
+  },
+  "4": {
+   "ms_per_step": 22.862,
+   "ms_per_swarm_step": 5.716,
+   "ms_per_tadpole_step_us": 29.77,
+   "phases": {
+    "edges": 2.82,
+    "frame": 1.561,
+    "perceive": 4.905,
+    "mlp": 1.166,
+    "physics": 1.42,
+    "hatch": 0.468,
+    "homeo": 10.423
+   },
+   "B": 4,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.499,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 45921
+  },
+  "16": {
+   "ms_per_step": 76.989,
+   "ms_per_swarm_step": 4.812,
+   "ms_per_tadpole_step_us": 25.06,
+   "phases": {
+    "edges": 8.93,
+    "frame": 2.895,
+    "perceive": 17.979,
+    "mlp": 3.676,
+    "physics": 3.585,
+    "hatch": 0.975,
+    "homeo": 38.834
+   },
+   "B": 16,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.497,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 45709
+  },
+  "64": {
+   "ms_per_step": 343.757,
+   "ms_per_swarm_step": 5.371,
+   "ms_per_tadpole_step_us": 27.97,
+   "phases": {
+    "edges": 37.99,
+    "frame": 8.384,
+    "perceive": 103.194,
+    "mlp": 15.811,
+    "physics": 14.982,
+    "hatch": 3.506,
+    "homeo": 159.702
+   },
+   "B": 64,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.5,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 46016
+  }
+ },
+ "h4_f4": {
+  "1": {
+   "ms_per_step": 6.288,
+   "ms_per_swarm_step": 6.288,
+   "ms_per_tadpole_step_us": 32.75,
+   "phases": {
+    "edges": 0.855,
+    "frame": 0.788,
+    "perceive": 1.494,
+    "mlp": 0.632,
+    "physics": 0.499,
+    "hatch": 0.298,
+    "homeo": 1.658
+   },
+   "B": 1,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.501,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 46086
+  },
+  "4": {
+   "ms_per_step": 19.466,
+   "ms_per_swarm_step": 4.866,
+   "ms_per_tadpole_step_us": 25.35,
+   "phases": {
+    "edges": 2.8,
+    "frame": 1.352,
+    "perceive": 5.1,
+    "mlp": 1.246,
+    "physics": 1.488,
+    "hatch": 0.521,
+    "homeo": 6.855
+   },
+   "B": 4,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.498,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 45827
+  },
+  "16": {
+   "ms_per_step": 66.709,
+   "ms_per_swarm_step": 4.169,
+   "ms_per_tadpole_step_us": 21.72,
+   "phases": {
+    "edges": 9.266,
+    "frame": 2.442,
+    "perceive": 18.77,
+    "mlp": 3.864,
+    "physics": 4.006,
+    "hatch": 1.055,
+    "homeo": 27.197
+   },
+   "B": 16,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.498,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 45843
+  },
+  "64": {
+   "ms_per_step": 287.107,
+   "ms_per_swarm_step": 4.486,
+   "ms_per_tadpole_step_us": 23.36,
+   "phases": {
+    "edges": 39.878,
+    "frame": 8.19,
+    "perceive": 103.716,
+    "mlp": 15.665,
+    "physics": 14.795,
+    "hatch": 3.565,
+    "homeo": 100.814
+   },
+   "B": 64,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.499,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 45884
+  }
+ },
+ "k4": {
+  "1": {
+   "ms_per_step": 8.213,
+   "ms_per_swarm_step": 8.213,
+   "ms_per_tadpole_step_us": 42.78,
+   "phases": {
+    "edges": 0.949,
+    "frame": 1.272,
+    "perceive": 1.088,
+    "mlp": 0.537,
+    "physics": 0.703,
+    "hatch": 0.338,
+    "homeo": 3.225
+   },
+   "B": 1,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.25,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 22992
+  },
+  "4": {
+   "ms_per_step": 20.356,
+   "ms_per_swarm_step": 5.089,
+   "ms_per_tadpole_step_us": 26.51,
+   "phases": {
+    "edges": 2.845,
+    "frame": 1.72,
+    "perceive": 2.693,
+    "mlp": 0.797,
+    "physics": 1.482,
+    "hatch": 0.483,
+    "homeo": 10.204
+   },
+   "B": 4,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.25,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 22992
+  },
+  "16": {
+   "ms_per_step": 70.435,
+   "ms_per_swarm_step": 4.402,
+   "ms_per_tadpole_step_us": 22.93,
+   "phases": {
+    "edges": 9.583,
+    "frame": 3.222,
+    "perceive": 9.385,
+    "mlp": 2.265,
+    "physics": 4.028,
+    "hatch": 1.107,
+    "homeo": 40.703
+   },
+   "B": 16,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.25,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 22992
+  },
+  "64": {
+   "ms_per_step": 280.754,
+   "ms_per_swarm_step": 4.387,
+   "ms_per_tadpole_step_us": 22.85,
+   "phases": {
+    "edges": 38.207,
+    "frame": 9.315,
+    "perceive": 38.653,
+    "mlp": 8.919,
+    "physics": 15.281,
+    "hatch": 3.547,
+    "homeo": 166.664
+   },
+   "B": 64,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.25,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 22992
+  }
+ },
+ "k4_h8_f4": {
+  "1": {
+   "ms_per_step": 5.74,
+   "ms_per_swarm_step": 5.74,
+   "ms_per_tadpole_step_us": 29.9,
+   "phases": {
+    "edges": 0.985,
+    "frame": 0.947,
+    "perceive": 1.081,
+    "mlp": 0.494,
+    "physics": 0.708,
+    "hatch": 0.346,
+    "homeo": 1.085
+   },
+   "B": 1,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.25,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 22992
+  },
+  "4": {
+   "ms_per_step": 14.248,
+   "ms_per_swarm_step": 3.562,
+   "ms_per_tadpole_step_us": 18.55,
+   "phases": {
+    "edges": 2.951,
+    "frame": 1.374,
+    "perceive": 2.788,
+    "mlp": 0.93,
+    "physics": 1.593,
+    "hatch": 0.517,
+    "homeo": 3.987
+   },
+   "B": 4,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.25,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 22992
+  },
+  "16": {
+   "ms_per_step": 45.715,
+   "ms_per_swarm_step": 2.857,
+   "ms_per_tadpole_step_us": 14.88,
+   "phases": {
+    "edges": 9.473,
+    "frame": 2.528,
+    "perceive": 9.444,
+    "mlp": 2.199,
+    "physics": 4.086,
+    "hatch": 1.024,
+    "homeo": 16.842
+   },
+   "B": 16,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.25,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 22992
+  },
+  "64": {
+   "ms_per_step": 195.279,
+   "ms_per_swarm_step": 3.051,
+   "ms_per_tadpole_step_us": 15.89,
+   "phases": {
+    "edges": 38.936,
+    "frame": 7.701,
+    "perceive": 38.642,
+    "mlp": 8.634,
+    "physics": 15.324,
+    "hatch": 3.427,
+    "homeo": 82.42
+   },
+   "B": 64,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.25,
+   "net_macs_per_eval": 91968,
+   "net_macs_per_tadpole_step": 22992
+  }
+ },
+ "s64": {
+  "1": {
+   "ms_per_step": 8.123,
+   "ms_per_swarm_step": 8.123,
+   "ms_per_tadpole_step_us": 42.31,
+   "phases": {
+    "edges": 0.915,
+    "frame": 1.141,
+    "perceive": 1.693,
+    "mlp": 0.336,
+    "physics": 0.56,
+    "hatch": 0.331,
+    "homeo": 3.057
+   },
+   "B": 1,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.499,
+   "net_macs_per_eval": 22464,
+   "net_macs_per_tadpole_step": 11206
+  },
+  "4": {
+   "ms_per_step": 24.173,
+   "ms_per_swarm_step": 6.043,
+   "ms_per_tadpole_step_us": 31.48,
+   "phases": {
+    "edges": 2.966,
+    "frame": 1.731,
+    "perceive": 5.532,
+    "mlp": 0.642,
+    "physics": 1.505,
+    "hatch": 0.548,
+    "homeo": 11.125
+   },
+   "B": 4,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.498,
+   "net_macs_per_eval": 22464,
+   "net_macs_per_tadpole_step": 11197
+  },
+  "16": {
+   "ms_per_step": 77.935,
+   "ms_per_swarm_step": 4.871,
+   "ms_per_tadpole_step_us": 25.37,
+   "phases": {
+    "edges": 9.258,
+    "frame": 3.045,
+    "perceive": 18.756,
+    "mlp": 1.526,
+    "physics": 3.843,
+    "hatch": 1.012,
+    "homeo": 40.369
+   },
+   "B": 16,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.498,
+   "net_macs_per_eval": 22464,
+   "net_macs_per_tadpole_step": 11193
+  },
+  "64": {
+   "ms_per_step": 348.556,
+   "ms_per_swarm_step": 5.446,
+   "ms_per_tadpole_step_us": 28.37,
+   "phases": {
+    "edges": 39.851,
+    "frame": 8.481,
+    "perceive": 104.344,
+    "mlp": 6.656,
+    "physics": 16.145,
+    "hatch": 3.743,
+    "homeo": 169.165
+   },
+   "B": 64,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.499,
+   "net_macs_per_eval": 22464,
+   "net_macs_per_tadpole_step": 11207
+  }
+ },
+ "s32": {
+  "1": {
+   "ms_per_step": 8.203,
+   "ms_per_swarm_step": 8.203,
+   "ms_per_tadpole_step_us": 42.72,
+   "phases": {
+    "edges": 0.909,
+    "frame": 1.155,
+    "perceive": 1.872,
+    "mlp": 0.233,
+    "physics": 0.55,
+    "hatch": 0.32,
+    "homeo": 3.083
+   },
+   "B": 1,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.496,
+   "net_macs_per_eval": 10208,
+   "net_macs_per_tadpole_step": 5065
+  },
+  "4": {
+   "ms_per_step": 23.377,
+   "ms_per_swarm_step": 5.844,
+   "ms_per_tadpole_step_us": 30.44,
+   "phases": {
+    "edges": 2.893,
+    "frame": 1.698,
+    "perceive": 5.415,
+    "mlp": 0.444,
+    "physics": 1.524,
+    "hatch": 0.531,
+    "homeo": 10.733
+   },
+   "B": 4,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.5,
+   "net_macs_per_eval": 10208,
+   "net_macs_per_tadpole_step": 5104
+  },
+  "16": {
+   "ms_per_step": 84.069,
+   "ms_per_swarm_step": 5.254,
+   "ms_per_tadpole_step_us": 27.37,
+   "phases": {
+    "edges": 9.847,
+    "frame": 3.291,
+    "perceive": 21.48,
+    "mlp": 1.002,
+    "physics": 4.425,
+    "hatch": 1.206,
+    "homeo": 42.674
+   },
+   "B": 16,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.497,
+   "net_macs_per_eval": 10208,
+   "net_macs_per_tadpole_step": 5076
+  },
+  "64": {
+   "ms_per_step": 329.451,
+   "ms_per_swarm_step": 5.148,
+   "ms_per_tadpole_step_us": 26.81,
+   "phases": {
+    "edges": 40.3,
+    "frame": 8.833,
+    "perceive": 101.356,
+    "mlp": 3.245,
+    "physics": 14.982,
+    "hatch": 3.393,
+    "homeo": 157.161
+   },
+   "B": 64,
+   "grown_n": 192.0,
+   "net_rows_per_tadpole_step": 0.499,
+   "net_macs_per_eval": 10208,
+   "net_macs_per_tadpole_step": 5095
+  }
+ }
+}

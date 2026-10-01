@@ -1,0 +1,27 @@
+  seed 7: 12/13  (86s)
+  seed 23: 11/13  (173s)
+  seed 41: 12/13  (259s)
+  seed 101: 13/13  (344s)
+  lossless {'deaths': 0, 'per_1k': 0.0}  perf {'ms_per_step': 6.298, 'grown_n': 134}  organic False (planar 0.18)  smoothness 0.46  (424.7s)
+FAIL  accurate seed 7 passed           12/13 vs 13/13
+FAIL  accurate seed 7 no lost test     charge->time
+PASS  accurate seed 7 own losses       -
+FAIL  accurate seed 23 passed          11/13 vs 12/13
+FAIL  accurate seed 23 no lost test    charge->time
+PASS  accurate seed 23 own losses      -
+FAIL  accurate seed 41 passed          12/13 vs 13/13
+FAIL  accurate seed 41 no lost test    time->space
+PASS  accurate seed 41 own losses      -
+PASS  accurate seed 101 passed         13/13 vs 13/13
+PASS  accurate seed 101 no lost test   -
+FAIL  accurate seed 101 own losses     own mass 2.3 > 1.55
+PASS  lossless                         0 deaths
+FAIL  organic band                     {'jerk_rel': True, 'osc': True, 'stuck': True, 'planar': False}
+FAIL  organic planar                   0.18 vs 0.12
+PASS  smoothness                       0.46 vs 0.497
+PASS  smooth lurch                     3.64 vs 4.22
+PASS  smooth teleport                  0.895 vs 1.665
+FAIL  smooth molt_burst                0.385 vs 0.319
+PASS  smooth birth_burst               0.542 vs 0.503
+PASS  smooth deaths                    0 vs 0
+perf {'ms_per_step': 6.298, 'grown_n': 134} (baseline {'ms_per_step': 6.985, 'grown_n': 134})

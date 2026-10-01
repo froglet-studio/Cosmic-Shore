@@ -1,0 +1,510 @@
+{
+ "seeds": [
+  7,
+  23,
+  41,
+  101
+ ],
+ "accurate": {
+  "7": {
+   "passed": 12,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "tests": {
+    "own mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.89
+    },
+    "own space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.78
+    },
+    "own charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.09
+    },
+    "own time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.67
+    },
+    "mass->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.13
+    },
+    "space->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.62
+    },
+    "charge->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.45
+    },
+    "time->mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.04
+    },
+    "mass->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.34
+    },
+    "mass->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 6.86
+    },
+    "space->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.16
+    },
+    "charge->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 3.26
+    },
+    "time->space": {
+     "ok": false,
+     "rate": 0.33,
+     "loss": 8.53
+    }
+   }
+  },
+  "23": {
+   "passed": 12,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "tests": {
+    "own mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.66
+    },
+    "own space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.07
+    },
+    "own charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 3.1
+    },
+    "own time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.76
+    },
+    "mass->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.97
+    },
+    "space->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.72
+    },
+    "charge->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.12
+    },
+    "time->mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.38
+    },
+    "mass->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.69
+    },
+    "mass->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.11
+    },
+    "space->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.27
+    },
+    "charge->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 3.25
+    },
+    "time->space": {
+     "ok": false,
+     "rate": 0.0,
+     "loss": 9.59
+    }
+   }
+  },
+  "41": {
+   "passed": 12,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "tests": {
+    "own mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.75
+    },
+    "own space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.77
+    },
+    "own charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.52
+    },
+    "own time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 3.02
+    },
+    "mass->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.98
+    },
+    "space->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.75
+    },
+    "charge->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.33
+    },
+    "time->mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.65
+    },
+    "mass->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.02
+    },
+    "mass->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.03
+    },
+    "space->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.15
+    },
+    "charge->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.23
+    },
+    "time->space": {
+     "ok": false,
+     "rate": 0.33,
+     "loss": 7.62
+    }
+   }
+  },
+  "101": {
+   "passed": 12,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "tests": {
+    "own mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.75
+    },
+    "own space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.77
+    },
+    "own charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.64
+    },
+    "own time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.59
+    },
+    "mass->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.41
+    },
+    "space->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.82
+    },
+    "charge->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.12
+    },
+    "time->mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.02
+    },
+    "mass->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.89
+    },
+    "mass->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.21
+    },
+    "space->time": {
+     "ok": true,
+     "rate": 0.67,
+     "loss": 7.44
+    },
+    "charge->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 4.91
+    },
+    "time->space": {
+     "ok": false,
+     "rate": 0.33,
+     "loss": 9.25
+    }
+   }
+  }
+ },
+ "lossless": {
+  "deaths": 0,
+  "per_1k": 0.0
+ },
+ "performant": {
+  "ms_per_step": 6.435,
+  "grown_n": 134
+ },
+ "organic": {
+  "in_band": true,
+  "planar_excess": 0.121,
+  "checks": {
+   "jerk_rel": true,
+   "osc": true,
+   "stuck": true,
+   "planar": true
+  },
+  "mean": {
+   "speed": 0.093,
+   "jerk": 0.194,
+   "jerk_rel": 2.087,
+   "planar_frac": 0.521,
+   "flat_mean": 0.123,
+   "coherence": 0.204,
+   "jitter": 2.737,
+   "phase": 0.167,
+   "stuck": 0.007,
+   "osc": 0.034
+  }
+ },
+ "smooth": {
+  "smoothness": 0.432,
+  "mean": {
+   "mono": 1.069,
+   "backtrack": 0.007,
+   "settle": 0.308,
+   "travel": 1.393,
+   "lurch": 2.993,
+   "teleport": 1.419,
+   "jerk_rel": 2.042,
+   "molt_burst": 0.083,
+   "birth_burst": 0.209,
+   "rough": 1.313
+  },
+  "worst": {
+   "mono": 1.337,
+   "backtrack": 0.059,
+   "lurch": 4.99,
+   "teleport": 1.636,
+   "jerk_rel": 2.082,
+   "molt_burst": 0.33,
+   "birth_burst": 0.536,
+   "rough": 3.755
+  },
+  "deaths": 0,
+  "events": {
+   "switch mass->space": {
+    "loss_start": 60.44,
+    "loss_end": 7.33,
+    "mono": 1.013,
+    "backtrack": 0.0,
+    "noise_rel": 0.0124,
+    "settle": 0.267,
+    "travel": 1.6,
+    "lurch": 1.94,
+    "teleport": 1.102,
+    "jerk_rel": 2.039,
+    "molt_burst": 0.33,
+    "birth_burst": 0.022,
+    "deaths": 0,
+    "n_end": 91,
+    "rough": 2.3
+   },
+   "switch space->charge": {
+    "loss_start": 44.22,
+    "loss_end": 2.18,
+    "mono": 1.015,
+    "backtrack": 0.0,
+    "noise_rel": 0.0308,
+    "settle": 0.2,
+    "travel": 1.01,
+    "lurch": 4.29,
+    "teleport": 1.634,
+    "jerk_rel": 2.082,
+    "molt_burst": 0.056,
+    "birth_burst": 0.536,
+    "deaths": 0,
+    "n_end": 179,
+    "rough": 3.755
+   },
+   "switch charge->time": {
+    "loss_start": 50.61,
+    "loss_end": 15.31,
+    "mono": 1.024,
+    "backtrack": 0.0,
+    "noise_rel": 0.0064,
+    "settle": 0.2,
+    "travel": 1.75,
+    "lurch": 3.43,
+    "teleport": 1.508,
+    "jerk_rel": 2.068,
+    "molt_burst": 0.265,
+    "birth_burst": 0.084,
+    "deaths": 0,
+    "n_end": 83,
+    "rough": 2.033
+   },
+   "switch time->mass": {
+    "loss_start": 54.86,
+    "loss_end": 2.82,
+    "mono": 1.004,
+    "backtrack": 0.0,
+    "noise_rel": 0.0271,
+    "settle": 0.333,
+    "travel": 1.92,
+    "lurch": 3.21,
+    "teleport": 1.636,
+    "jerk_rel": 2.011,
+    "molt_burst": 0.01,
+    "birth_burst": 0.284,
+    "deaths": 0,
+    "n_end": 194,
+    "rough": 0.805
+   },
+   "heal mass": {
+    "loss_start": 6.25,
+    "loss_end": 1.96,
+    "mono": 1.051,
+    "backtrack": 0.0,
+    "noise_rel": 0.0256,
+    "settle": 0.533,
+    "travel": 1.14,
+    "lurch": 1.9,
+    "teleport": 1.441,
+    "jerk_rel": 2.006,
+    "molt_burst": 0.005,
+    "birth_burst": 0.151,
+    "deaths": 0,
+    "n_end": 192,
+    "rough": 0.0
+   },
+   "heal space": {
+    "loss_start": 10.13,
+    "loss_end": 5.77,
+    "mono": 1.053,
+    "backtrack": 0.0,
+    "noise_rel": 0.0073,
+    "settle": 0.533,
+    "travel": 1.75,
+    "lurch": 1.85,
+    "teleport": 1.177,
+    "jerk_rel": 2.019,
+    "molt_burst": 0.0,
+    "birth_burst": 0.114,
+    "deaths": 0,
+    "n_end": 88,
+    "rough": 0.0
+   },
+   "heal charge": {
+    "loss_start": 8.95,
+    "loss_end": 1.95,
+    "mono": 1.055,
+    "backtrack": 0.0,
+    "noise_rel": 0.0207,
+    "settle": 0.267,
+    "travel": 1.14,
+    "lurch": 2.33,
+    "teleport": 1.265,
+    "jerk_rel": 2.033,
+    "molt_burst": 0.0,
+    "birth_burst": 0.201,
+    "deaths": 0,
+    "n_end": 179,
+    "rough": 0.0
+   },
+   "heal time": {
+    "loss_start": 23.78,
+    "loss_end": 15.51,
+    "mono": 1.337,
+    "backtrack": 0.059,
+    "noise_rel": 0.0,
+    "settle": 0.133,
+    "travel": 0.83,
+    "lurch": 4.99,
+    "teleport": 1.588,
+    "jerk_rel": 2.075,
+    "molt_burst": 0.0,
+    "birth_burst": 0.276,
+    "deaths": 0,
+    "n_end": 76,
+    "rough": 1.609
+   }
+  }
+ },
+ "seconds": 609.0,
+ "model": "lite_posinfo2:Tools/NCA/results/posinfo2/rule.pt?rng_burn=1"
+}

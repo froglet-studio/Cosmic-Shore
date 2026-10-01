@@ -26,14 +26,17 @@ RULE = "Tools/NCA/results/posinfo2/rule.pt"
 
 
 @torch.no_grad()
-def collect(seeds, steps=240):
-    t = lm.load(RULE)
+def collect(seeds, steps=240, driver=None):
+    """driver=None: the teacher drives (behaviour cloning). driver=<student path>: the STUDENT drives and
+    the teacher labels the student's own inputs (DAgger) - the cure for closed-loop drift."""
+    teacher = lm.load(RULE)
+    t = teacher if driver is None else lm.load(driver)
     X, Y = [], []
     base_mlp = t.mlp
 
     def rec(f):
         o = base_mlp(f)
-        X.append(f.clone()); Y.append(o.clone())
+        X.append(f.clone()); Y.append(teacher.mlp(f).clone() if driver else o.clone())
         return o
     t.mlp = rec
     targets = sn.load_targets()
@@ -52,7 +55,7 @@ def collect(seeds, steps=240):
                     for _ in range(steps):
                         sub = t(sub, gen)
         print(f"seed {s}: {sum(len(x) for x in X)} rows", flush=True)
-    return torch.cat(X), torch.cat(Y), t
+    return torch.cat(X), torch.cat(Y), teacher
 
 
 def train(X, Y, teacher, hidden, epochs=40, lr=2e-3):
@@ -102,10 +105,14 @@ def main():
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--epochs", type=int, default=40)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--dagger", default="", help="comma list of student checkpoints to drive extra rollouts")
     a = ap.parse_args()
     torch.set_num_threads(int(__import__("os").environ.get("OMP_NUM_THREADS", 1)))
     torch.manual_seed(0)
     X, Y, t = collect(range(1, a.seeds + 1))
+    for d in filter(None, a.dagger.split(",")):
+        Xd, Yd, _ = collect(range(11, 11 + a.seeds), driver=d)
+        X, Y = torch.cat([X, Xd]), torch.cat([Y, Yd])
     W = train(X, Y, t, a.hidden, a.epochs)
     st = torch.load(RULE, weights_only=False)
     st["rule"] = W
