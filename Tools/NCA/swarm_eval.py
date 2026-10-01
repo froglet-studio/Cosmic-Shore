@@ -217,6 +217,9 @@ def load_model(spec):
     if kind == "evo":
         import numpy as np, evo_model as em
         return em.EvoRule(np.load(path))
+    if kind == "evo_compact":
+        import numpy as np, evo_compact as ec
+        return ec.CompactRule(np.load(path))
     if kind == "field":
         import field_swarm as fs
         cfg = json.load(open(path))["cfg"]
@@ -236,7 +239,7 @@ def load_model(spec):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", required=True, help="rule:<rule.pt> | evo:<genome.npy> | field:<params.json> | hgrid_oracle:<summary.json> | hgrid_hybrid:<summary.json>")
+    ap.add_argument("--model", required=True, help="rule:<rule.pt> | evo:<genome.npy> | evo_compact:<genome.npy> | field:<params.json> | hgrid_oracle:<summary.json> | hgrid_hybrid:<summary.json>")
     ap.add_argument("--full", action="store_true", help="run every tier regardless of the gates")
     ap.add_argument("--samples", type=int, default=3, help="independent rollouts per test (majority decides)")
     ap.add_argument("--scale-inv", type=int, default=0)
