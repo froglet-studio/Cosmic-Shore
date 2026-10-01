@@ -165,6 +165,7 @@ class World:
     rho0: float = 8.0         # crowding normaliser
     capacity: int = 360       # tadpole slots per sample
     seed_n: int = 16          # tadpoles in a seed
+    membrane: float = 80.0    # containment sphere (the cell membrane that pens fauna in the game)
 
 
 C = 32                        # channels: 0 hatch | 1-3 facing | 4-6 prism | 7-9 tier | 10-11 spindle | 12-30 hidden | 31 death
@@ -320,6 +321,8 @@ class SwarmRule(nn.Module):
         r = (dxc * dxc).sum(-1).clamp(min=1e-8).sqrt()
         ov = (W.r0 - r).clamp(min=0) / W.r0
         pos = pos + torch.zeros(n, 3).index_add(0, gi, -(W.rep * W.r0 * 0.5) * ov[:, None] * dxc / r[:, None])
+        rad = pos.norm(dim=-1, keepdim=True).clamp(min=1e-6)            # membrane: pushed back inside
+        pos = pos - 0.5 * (rad - W.membrane).clamp(min=0) * pos / rad
         # hatch / death / egg loss (bookkeeping, no gradient)
         with torch.no_grad():
             # EGGS hatch when the rule raises channel A past 0.1. HATCHED tadpoles live until their own
@@ -420,8 +423,23 @@ class LossCfg:
     w_survive: float = 10.0
 
 
+def _centre(x):
+    """Translation-invariant: a body plan is a shape, not a place. Weighted centroid at the origin."""
+    w = x["w"] if "w" in x else torch.ones(len(x["p"]))
+    c = (w[:, None] * x["p"]).sum(0) / w.sum().clamp(min=1e-6)
+    return x["p"] - c
+
+
+def _poscost(d2):
+    """Huber on squared distance in units of pos_scale: quadratic to 4 scales out, then linear, so a
+    stray tadpole far away pulls, but does not dominate the transport plan."""
+    return torch.where(d2 < 16, d2, 8 * torch.sqrt(d2.clamp(min=1e-9)) - 16)
+
+
 def cost_matrix(x, t, perm, L: LossCfg):
-    dp = ((x["p"][:, None] - t["p"][None]) ** 2).sum(-1) / (2 * L.pos_scale ** 2)
+    if "pc" not in t:
+        t["pc"] = t["p"] - t["p"].mean(0)
+    dp = _poscost(((_centre(x)[:, None] - t["pc"][None]) ** 2).sum(-1) / (2 * L.pos_scale ** 2))
     ce = L.w_elem * (x["elem"][:, None] != t["elem"][None]).float()
     tdom = perm[t["slot"]]
     cd = L.w_dom * (x["dom"][:, None] != tdom[None]).float()
@@ -434,7 +452,7 @@ def cost_matrix(x, t, perm, L: LossCfg):
 
 
 def self_cost(x, L: LossCfg):
-    dp = ((x["p"][:, None] - x["p"][None]) ** 2).sum(-1) / (2 * L.pos_scale ** 2)
+    dp = _poscost(((x["p"][:, None] - x["p"][None]) ** 2).sum(-1) / (2 * L.pos_scale ** 2))
     ce = L.w_elem * (x["elem"][:, None] != x["elem"][None]).float()
     cd = L.w_dom * (x["dom"][:, None] != x["dom"][None]).float()
     ch = L.w_h * ((x["h"][:, None] - x["h"][None]) ** 2).sum(-1)
@@ -627,6 +645,7 @@ class TrainCfg:
     window: int = 8                # checkpoints per rollout (period apart, all backpropagated)
     birth_clock: int = 480         # samples younger than this follow the clock from birth; older ones are phase-free
     w_speed: float = 2.0
+    replace_above: float = 120.0   # pool hygiene: a sample whose loss passed this goes back to a seed
 
 
 def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
@@ -711,9 +730,9 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True):
         sw = sw.detach()
         for i, k in enumerate(KINDS):
             sub = sw.index(torch.arange(i * cfg.per_kind, (i + 1) * cfg.per_kind))
-            # an extinct sample is replaced by a seed so the pool never fills with nothing
+            # an extinct or blown-up sample is replaced by a seed, so the pool keeps learnable states
             for j in range(cfg.per_kind):
-                if int(sub.active[j].sum()) == 0:
+                if int(sub.active[j].sum()) == 0 or infos[k][j]["sink"] > cfg.replace_above:
                     sub = Swarm.cat([sub.index(torch.arange(0, j)), seed_swarm([targets[k]], world, gen),
                                      sub.index(torch.arange(j + 1, cfg.per_kind))])
             for j, pi in enumerate(picks[k].tolist()):
@@ -879,9 +898,12 @@ def selftest():
         x2 = dict(x); x2["dom"] = (t["slot"] + 1) % targets[k].slots
         l1, i1 = swarm_loss(x2, targets[k], L)
         x3 = dict(x); x3["p"] = t["p"] + torch.tensor([6.0, 0, 0])
-        l2, _ = swarm_loss(x3, targets[k], L)
-        print(f"{k}: self {i0['sink']:.4f} relabelled-domains {i1['sink']:.4f} (perm {i1['perm']}) shifted-6 {float(l2):.3f}")
-        assert i0["sink"] < 0.05 and i1["sink"] < 0.05 and float(l2) > 1.0
+        _, i2 = swarm_loss(x3, targets[k], L)
+        x4 = dict(x); x4["p"] = t["p"] * torch.tensor([1.3, 1.0, 1.0])
+        _, i3 = swarm_loss(x4, targets[k], L)
+        print(f"{k}: self {i0['sink']:.4f} relabelled-domains {i1['sink']:.4f} (perm {i1['perm']}) "
+              f"shifted-6 {i2['sink']:.4f} stretched-1.3x {i3['sink']:.3f}")
+        assert i0["sink"] < 0.05 and i1["sink"] < 0.05 and i2["sink"] < 0.05 and i3["sink"] > 0.3
     # cross-target separation: each target scored against the others
     print("target x target sink:")
     for k in KINDS:
