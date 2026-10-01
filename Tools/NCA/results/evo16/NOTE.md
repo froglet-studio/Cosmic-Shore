@@ -19,6 +19,23 @@ to its plan):
 The jellyfish's heal ratio stays low because a strike hurts a well-formed jellyfish a lot (14.8 → 19.7
 divergence); in absolute terms it now recovers to 19.8, where round 1 ended at 25.7 — worse than its cut.
 
+### Healing vs drift — the control that changes the reading (`drift_control_*.json`, `heal4x8_regrow360.json`)
+The probe compares a struck swarm against the SAME swarm before the strike. But the grown bodies are
+not stationary: run an **unstruck** swarm the same extra steps and it degrades too (mean divergence over
+8 seeds, before → +120 → +360 steps):
+| genome | whale | jellyfish | pufferfish | dragonfly |
+|---|---|---|---|---|
+| primary, intact | 18.2 → 18.4 → 20.4 | 14.8 → 17.5 → **24.8** | 14.2 → 14.6 → 16.4 | 26.4 → 27.1 → 28.5 |
+| primary, struck (32 strikes) | cut 20.0 → 19.1 → 21.3 | cut 19.7 → 19.8 → 27.4 | cut 16.3 → 15.1 → 16.9 | cut 30.4 → 28.2 → 29.0 |
+| round 1, intact | 18.5 → 18.6 → 20.1 | 21.9 → 24.8 → **31.5** | 16.0 → 15.9 → 17.6 | 25.3 → 26.2 → 27.8 |
+Measured against the intact control at the same moment, the primary at +120 heals
+**0.56 / −0.04 / 0.68 / 0.66** (whale / jelly / puffer / dragonfly; round 1: 0.23 / n.a. — its intact
+jellyfish is already worse than its cut one — / 0.51 / 0.81). By +360 a struck school is within
+0.4–0.9 of its intact twin (jellyfish 2.6): **the wound is essentially forgotten; what is not solved is
+that every body slowly loses its shape after ~240 steps, struck or not**, the jellyfish worst. The
+yardsticks score at 240 and never see it. Plain ratio heal at +360 is therefore negative everywhere
+(−0.43 / −0.84 / −0.31 / +0.04) and means nothing on its own.
+
 ## Primary genome (`genome.npy`, the gen-19 CMA mean)
 | yardstick | result |
 |---|---|
@@ -113,7 +130,8 @@ selection. The heal gain came from the desired-share table, not from a new actua
    margin (0.1), or the majority element is always short and the cap never binds.
 2. **Swarms cannot shrink**, so size carries history: a whale that loses its Mass majority to Space
    collapses with the cull to 177 and stays jelly-sized; a puffer→dragonfly stays 280.
-3. **The single-strike heal is too noisy to search on** (±0.5 per seed pair). Use ≥ 4 strike directions
+3. **Heal must be measured against an unstruck control** (`--nostrike`): bodies drift on their own.
+   **The single-strike heal is also too noisy to search on** (±0.5 per seed pair). Use ≥ 4 strike directions
    per plan per seed (`evo16_heal.py`), and report recovered divergence beside the ratio — a well-formed
    body has more to lose, so its ratio understates it (the jellyfish).
 4. **CPU**: an unpinned torch process here spreads over all 4 cores even at `set_num_threads(1)` /
@@ -134,6 +152,11 @@ pufferfish are big schools, jellyfish and dragonfly visibly smaller, and a whale
 shrinks with it. Motion is the G2 rule's, unchanged.
 
 ## Recommendation for the next round
+0. **Score at a long horizon.** A game school lives indefinitely; the shared yardsticks stop at 240 steps,
+   and every body here (round 1 included) drifts off its plan by 600 (jellyfish +10 divergence). Add a
+   "hold" test (plan still strictly closest, divergence within x of its 240-step value, at 600 and 1200)
+   and measure heal against an unstruck control (`evo16_heal.py --nostrike`). Stability, not healing,
+   is the next real gap.
 1. **Heal is a shape problem; this genome only controls how many eggs and which element.** Where an egg
    lands is still "away from the local centroid". Cross with field's designed attractor geometry: use the
    field's attractor as the egg-placement direction (and as the target a wound refills toward). That is

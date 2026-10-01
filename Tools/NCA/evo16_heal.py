@@ -2,7 +2,7 @@
 
 swarm_probe strikes each plan once; one strike direction makes heal swing +-0.5 from seed to seed. Here
 each grown plan is cloned K times, each clone struck along its own random direction (swarm_probe's
-geometry: the RMS sphere one radius off the centroid), all run 120 steps as one batch with the struck
+geometry: the RMS sphere one radius off the centroid), all run --regrow steps (default 120, the probe's) as one batch with the struck
 swarm's behaviour state kept (as evo16_fit does), and heal = (cut - recovered) / (cut - before) per
 strike, clipped to [-1, 1] with evo_model.fast_probe's rule for a near-zero cut.
 
@@ -22,7 +22,7 @@ sys.path.insert(0, HERE)
 
 
 def _one(args):
-    path, seed, K = args
+    path, seed, K, regrow, nostrike = args
     import torch
     import evo_model as em
     import evo16_model as e16
@@ -40,14 +40,15 @@ def _one(args):
             b0 = sn.swarm_loss(sn.decode(sw, b), T[k], L)[1]["sink"]
             for _ in range(K):
                 sub = sw.index(torch.tensor([b])).clone()
-                em._strike_b(sub, 0, gen)
+                if not nostrike:
+                    em._strike_b(sub, 0, gen)
                 subs.append(sub); kinds.append(k); before.append(b0)
                 hw.append(float(model.hw[b])); ema.append(model.ema[b:b + 1].clone()); lock.append(int(model.locked[b]))
         bs = sn.Swarm.cat(subs)
         cut = [sn.swarm_loss(sn.decode(bs, i), T[k], L)[1]["sink"] for i, k in enumerate(kinds)]
         model.hw = torch.tensor(hw); model.ema = torch.cat(ema); model.locked = torch.tensor(lock, dtype=torch.long); model._tok = bs.pos
         g2 = sn.make_gen(seed + 1)
-        for _ in range(120):
+        for _ in range(regrow):
             bs = model(bs, g2)
         out = {k: [] for k in sn.KINDS}
         for i, k in enumerate(kinds):
@@ -64,11 +65,13 @@ def main():
     ap.add_argument("--seeds", type=int, default=8)
     ap.add_argument("--seed0", type=int, default=7700)
     ap.add_argument("--strikes", type=int, default=4)
+    ap.add_argument("--regrow", type=int, default=120)
+    ap.add_argument("--nostrike", action="store_true", help="control: same protocol without the strike (drift of an intact swarm)")
     ap.add_argument("--out", default="")
     a = ap.parse_args()
     seeds = [a.seed0 + i for i in range(a.seeds)]
     with pinned_pool(4) as pool:
-        R = pool.map(_one, [(p, s, a.strikes) for p in a.genomes for s in seeds])
+        R = pool.map(_one, [(p, s, a.strikes, a.regrow, a.nostrike) for p in a.genomes for s in seeds])
     res = {}
     for p in a.genomes:
         per = {}
@@ -84,7 +87,7 @@ def main():
         res[p] = summ
         print(os.path.basename(os.path.dirname(p)) + "/" + os.path.basename(p), json.dumps(summ), flush=True)
     if a.out:
-        json.dump(dict(seeds=seeds, strikes=a.strikes, results=res), open(a.out, "w"), indent=1)
+        json.dump(dict(seeds=seeds, strikes=a.strikes, regrow=a.regrow, nostrike=a.nostrike, results=res), open(a.out, "w"), indent=1)
 
 
 if __name__ == "__main__":

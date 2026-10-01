@@ -1,0 +1,51 @@
+{
+ "seeds": [
+  7700,
+  7701,
+  7702,
+  7703,
+  7704,
+  7705,
+  7706,
+  7707
+ ],
+ "strikes": 1,
+ "regrow": 360,
+ "nostrike": true,
+ "results": {
+  "runs/evo16/cand_r1.npy": {
+   "mass": {
+    "heal_mean": -0.75,
+    "heal_ge_half": 0.12,
+    "before": 18.54,
+    "cut": 18.54,
+    "rec": 20.14,
+    "n": 8
+   },
+   "space": {
+    "heal_mean": -1.0,
+    "heal_ge_half": 0.0,
+    "before": 21.9,
+    "cut": 21.9,
+    "rec": 31.48,
+    "n": 8
+   },
+   "charge": {
+    "heal_mean": -1.0,
+    "heal_ge_half": 0.0,
+    "before": 15.96,
+    "cut": 15.96,
+    "rec": 17.58,
+    "n": 8
+   },
+   "time": {
+    "heal_mean": -1.0,
+    "heal_ge_half": 0.0,
+    "before": 25.32,
+    "cut": 25.32,
+    "rec": 27.83,
+    "n": 8
+   }
+  }
+ }
+}

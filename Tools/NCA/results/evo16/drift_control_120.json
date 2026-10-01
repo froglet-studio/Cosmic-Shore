@@ -1,0 +1,85 @@
+{
+ "seeds": [
+  7700,
+  7701,
+  7702,
+  7703,
+  7704,
+  7705,
+  7706,
+  7707
+ ],
+ "strikes": 1,
+ "regrow": 120,
+ "nostrike": true,
+ "results": {
+  "results/evo16/genome.npy": {
+   "mass": {
+    "heal_mean": -0.25,
+    "heal_ge_half": 0.38,
+    "before": 18.16,
+    "cut": 18.16,
+    "rec": 18.41,
+    "n": 8
+   },
+   "space": {
+    "heal_mean": -1.0,
+    "heal_ge_half": 0.0,
+    "before": 14.78,
+    "cut": 14.78,
+    "rec": 17.53,
+    "n": 8
+   },
+   "charge": {
+    "heal_mean": -0.25,
+    "heal_ge_half": 0.38,
+    "before": 14.15,
+    "cut": 14.15,
+    "rec": 14.57,
+    "n": 8
+   },
+   "time": {
+    "heal_mean": -1.0,
+    "heal_ge_half": 0.0,
+    "before": 26.42,
+    "cut": 26.42,
+    "rec": 27.09,
+    "n": 8
+   }
+  },
+  "runs/evo16/cand_r1.npy": {
+   "mass": {
+    "heal_mean": 0.5,
+    "heal_ge_half": 0.75,
+    "before": 18.54,
+    "cut": 18.54,
+    "rec": 18.57,
+    "n": 8
+   },
+   "space": {
+    "heal_mean": -1.0,
+    "heal_ge_half": 0.0,
+    "before": 21.9,
+    "cut": 21.9,
+    "rec": 24.79,
+    "n": 8
+   },
+   "charge": {
+    "heal_mean": 0.5,
+    "heal_ge_half": 0.75,
+    "before": 15.96,
+    "cut": 15.96,
+    "rec": 15.92,
+    "n": 8
+   },
+   "time": {
+    "heal_mean": -1.0,
+    "heal_ge_half": 0.0,
+    "before": 25.32,
+    "cut": 25.32,
+    "rec": 26.16,
+    "n": 8
+   }
+  }
+ }
+}
