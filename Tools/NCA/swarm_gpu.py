@@ -52,7 +52,8 @@ def config(steps, anim=False):
     cfg = sn.TrainCfg(run=RUN, init=WARM, steps=steps, per_kind=4, pool=32, seed_every=4,
                       roll_min=64, roll_max=128, bptt=48, snap_every=250, log_every=10, anim=int(anim))
     for k, v in OVERRIDES.items():
-        setattr(cfg, k, type(getattr(cfg, k))(v))
+        t = type(getattr(cfg, k))
+        setattr(cfg, k, str(v).lower() in ("1", "true", "yes") if t is bool else t(float(v)) if t is int else t(v))
     return cfg
 
 
@@ -147,7 +148,7 @@ def make_publisher(device, push):
         rule.eval()
         data, summary = sn.rollout(rule, 240)
         rule.train()
-        sn.print_cross(summary); sn.print_switch(summary)
+        sn.print_cross(summary); sn.print_geo(summary); sn.print_switch(summary)
         sc, correct = score(summary)
         print(f"score {sc:.1f} ({correct}/8 tests pass: own plan x4, switch x4); best so far {best['score']:.1f}")
         if sc >= best["score"]:

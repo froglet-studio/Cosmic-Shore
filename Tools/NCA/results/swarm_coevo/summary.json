@@ -1,0 +1,270 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 31.21,
+   "space": 67.1,
+   "charge": 67.0,
+   "time": 69.0
+  },
+  "space": {
+   "mass": 61.26,
+   "space": 33.23,
+   "charge": 57.66,
+   "time": 62.71
+  },
+  "charge": {
+   "mass": 62.48,
+   "space": 55.42,
+   "charge": 25.79,
+   "time": 70.07
+  },
+  "time": {
+   "mass": 82.38,
+   "space": 78.88,
+   "charge": 85.76,
+   "time": 37.39
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 275,
+   "target_n": 192,
+   "elements": [
+    21,
+    189,
+    52,
+    13
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    145,
+    130,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 6
+  },
+  "space": {
+   "n": 243,
+   "target_n": 88,
+   "elements": [
+    61,
+    31,
+    140,
+    11
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    95,
+    148,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 14
+  },
+  "charge": {
+   "n": 272,
+   "target_n": 179,
+   "elements": [
+    189,
+    5,
+    34,
+    44
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    106,
+    166,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 7
+  },
+  "time": {
+   "n": 200,
+   "target_n": 76,
+   "elements": [
+    2,
+    10,
+    61,
+    127
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    83,
+    30,
+    87
+   ],
+   "deaths": 0,
+   "mutants": 16
+  }
+ },
+ "steps": 240,
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 46.29,
+    "space": 51.44,
+    "charge": 59.01,
+    "time": 68.2
+   },
+   "majority": "mass",
+   "census": {
+    "n": 280,
+    "target_n": 88,
+    "elements": [
+     52,
+     108,
+     100,
+     20
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Mass",
+    "domains": [
+     182,
+     98,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 13
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 58.19,
+    "space": 45.2,
+    "charge": 47.25,
+    "time": 72.86
+   },
+   "majority": "charge",
+   "census": {
+    "n": 280,
+    "target_n": 179,
+    "elements": [
+     109,
+     64,
+     94,
+     13
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     104,
+     176,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 21
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 65.05,
+    "space": 43.75,
+    "charge": 45.76,
+    "time": 63.88
+   },
+   "majority": "charge",
+   "census": {
+    "n": 280,
+    "target_n": 76,
+    "elements": [
+     108,
+     15,
+     94,
+     63
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Charge",
+    "domains": [
+     91,
+     189,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 13
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 73.13,
+    "space": 53.31,
+    "charge": 75.71,
+    "time": 61.11
+   },
+   "majority": "space",
+   "census": {
+    "n": 277,
+    "target_n": 192,
+    "elements": [
+     16,
+     48,
+     160,
+     53
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     121,
+     12,
+     144
+    ],
+    "deaths": 0,
+    "mutants": 33
+   }
+  }
+ },
+ "rule": "runs/swarm_try6/rule_00250.pt"
+}

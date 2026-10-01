@@ -47,7 +47,7 @@ import math
 import os
 import sys
 import time
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict, field, replace
 
 import numpy as np
 import torch
@@ -60,7 +60,7 @@ MAJOR = {"mass": 1, "space": 2, "charge": 0, "time": 3}
 ELEMENTS = ("Charge", "Mass", "Space", "Time")
 HMIN, HMAX = 0.25, 3.0                               # swarm_model.js clampH
 
-torch.set_num_threads(max(1, os.cpu_count() or 1))
+torch.set_num_threads(int(os.environ.get("NCA_THREADS", 0)) or max(1, os.cpu_count() or 1))
 DEVICE = torch.device("cpu")
 
 
@@ -183,28 +183,47 @@ class World:
     capacity: int = 280       # tadpole slots per sample (largest plan 192)
     seed_n: int = 16          # tadpoles in a seed
     membrane: float = 80.0    # containment sphere (the cell membrane that pens fauna in the game)
+    learned_lay: int = 0      # 1: the rule gates its own laying (channel LAY); the gate gets a gradient
+    lay_gain: float = 4.0     # gate q = sigmoid(lay_gain * s[LAY] + lay_bias); at s = 0 the gate is ~0.95
+    lay_bias: float = 3.0
 
 
 C = 32                        # channels: 0 hatch | 1-3 facing | 4-6 prism | 7-9 tier | 10-11 spindle | 12-30 hidden | 31 death
 A, FAC, PR, TI, SP, DIE = 0, slice(1, 4), slice(4, 7), slice(7, 10), slice(10, 12), 31
+LAY = 30                      # (learned_lay only) the rule's laying gate; otherwise a hidden channel
 DIE_AT = 1.0                  # a hatched tadpole whose death channel passes this dies (and leaves a crystal)
 
 
 class Swarm:
     """pos [B,N,3], s [B,N,C], elem/dom [B,N] long, active/hatched [B,N] bool, deaths [B] long."""
 
-    FIELDS = ("pos", "s", "elem", "dom", "active", "hatched", "deaths", "mutants", "age", "clock")
+    FIELDS = ("pos", "s", "elem", "dom", "active", "hatched", "deaths", "mutants", "age", "clock", "plan", "since", "bw")
 
-    def __init__(self, pos, s, elem, dom, active, hatched, deaths, mutants=None, age=None, clock=None):
+    def __init__(self, pos, s, elem, dom, active, hatched, deaths, mutants=None, age=None, clock=None,
+                 plan=None, since=None, bw=None):
         self.pos, self.s, self.elem, self.dom = pos, s, elem, dom
         self.active, self.hatched, self.deaths = active, hatched, deaths
         self.mutants = mutants if mutants is not None else torch.zeros_like(deaths)
         self.age = age if age is not None else torch.zeros_like(elem)   # steps an egg has waited
         self.clock = clock if clock is not None else torch.zeros_like(deaths)   # steps since the seed
+        self.plan = plan if plan is not None else torch.zeros_like(deaths)     # the plan it is scored against (sticky)
+        self.since = since if since is not None else torch.zeros_like(deaths)  # steps since that plan was set
+        self.bw = bw if bw is not None else torch.zeros(pos.shape[:2], dtype=pos.dtype)  # laying-gate gradient carrier (value 0)
 
     def detach(self):
         return Swarm(self.pos.detach(), self.s.detach(), self.elem, self.dom, self.active, self.hatched,
-                     self.deaths, self.mutants, self.age, self.clock)
+                     self.deaths, self.mutants, self.age, self.clock, self.plan, self.since, self.bw.detach())
+
+    def backfill(self, kind):
+        """A pool pickled before plan/since/bw existed."""
+        B, N = self.pos.shape[:2]
+        if not hasattr(self, "plan"):
+            self.plan = torch.full((B,), KINDS.index(kind), dtype=torch.long)
+        if not hasattr(self, "since"):
+            self.since = torch.full((B,), 10 ** 6, dtype=torch.long)
+        if not hasattr(self, "bw"):
+            self.bw = torch.zeros(B, N, dtype=self.pos.dtype)
+        return self
 
     def clone(self):
         return Swarm(*[getattr(self, a).clone() for a in Swarm.FIELDS])
@@ -257,7 +276,8 @@ def seed_swarm(targets_for_batch, world: World, gen=None):
         pos[b, :n] = torch.randn(n, 3, generator=gen) * 2.0
         s[b, :n, A] = 1.0
         active[b, :n] = True
-    return Swarm(pos, s, elem, dom, active, active.clone(), torch.zeros(B, dtype=torch.long))
+    plan = torch.tensor([KINDS.index(t.kind) for t in targets_for_batch], dtype=torch.long)
+    return Swarm(pos, s, elem, dom, active, active.clone(), torch.zeros(B, dtype=torch.long), plan=plan)
 
 
 # --------------------------------------------------------------------- rule ---
@@ -363,24 +383,42 @@ class SwarmRule(nn.Module):
             deaths = sw.deaths + died.view(B, N).sum(1)
         s = s * keep[:, None].to(s.dtype)
         out_sw = Swarm(pos.view(B, N, 3), s.view(B, N, C), sw.elem.clone(), sw.dom.clone(), keep.view(B, N),
-                       new_hatched.view(B, N), deaths, sw.mutants.clone(), (age * keep.long()).view(B, N), sw.clock + 1)
+                       new_hatched.view(B, N), deaths, sw.mutants.clone(), (age * keep.long()).view(B, N), sw.clock + 1,
+                       sw.plan.clone(), sw.since + 1, sw.bw * keep.view(B, N).to(sw.bw.dtype))
         if bud:
             self.lay(out_sw, gi, gj, gen)
         return out_sw
 
-    @torch.no_grad()
     def lay(self, sw: Swarm, gi, gj, gen=None):
         """Designed reproduction: a hatched tadpole short of neighbours lays one egg of its own
-        domain (and, but for a rare mutation, its own element) into a free slot."""
+        domain (and, but for a rare mutation, its own element) into a free slot.
+
+        learned_lay: the rule also gates its own laying, q = sigmoid(gain * s[LAY] + bias), and the
+        coin is p_bud * q. The coin has no gradient, so each child carries bw = dlog(q_parent) with
+        value 0 (straight-through score function): whatever the loss thinks of that child flows back
+        into the parent's decision to lay it."""
         W = self.world
         B, N, _ = sw.pos.shape
+        q = torch.sigmoid(W.lay_gain * sw.s[:, :, LAY].reshape(-1) + W.lay_bias) if W.learned_lay else None
+        laid = self._lay(sw, gi, gj, gen, None if q is None else q.detach())
+        if q is not None and laid:
+            child = torch.cat([b * N + c for b, c, _ in laid]); par = torch.cat([b * N + p for b, _, p in laid])
+            qp = q[par]
+            contrib = torch.zeros(B * N, dtype=q.dtype).index_add(0, child, (qp - qp.detach()) / qp.detach().clamp(min=0.1))
+            sw.bw = sw.bw + contrib.view(B, N)
+
+    @torch.no_grad()
+    def _lay(self, sw: Swarm, gi, gj, gen, q):
+        W = self.world
+        B, N, _ = sw.pos.shape
+        laid = []
         pos = sw.pos.reshape(B * N, 3)
         dxl = pos[gj] - pos[gi]
         close = ((dxl * dxl).sum(-1) < W.r_lay ** 2).float()
         cnt = torch.zeros(B * N).index_add(0, gi, close)
         cen = torch.zeros(B * N, 3).index_add(0, gi, dxl * close[:, None])
         ok = (sw.hatched.reshape(-1) & sw.active.reshape(-1) & (cnt < W.k_bud)
-              & (torch.rand(B * N, generator=gen) <= W.p_bud)).view(B, N)
+              & (torch.rand(B * N, generator=gen) <= (W.p_bud if q is None else W.p_bud * q))).view(B, N)
         for b in range(B):
             parents = ok[b].nonzero().squeeze(1)
             free = (~sw.active[b]).nonzero().squeeze(1)
@@ -407,6 +445,8 @@ class SwarmRule(nn.Module):
             sw.active[b, slots] = True
             sw.hatched[b, slots] = False
             sw.age[b, slots] = 0
+            laid.append((b, slots, parents))
+        return laid
 
 
 # --------------------------------------------------------------- decoding ---
@@ -421,7 +461,7 @@ def decode(sw: Swarm, b):
     hat = sw.hatched[b][m]
     egg = torch.sigmoid(20 * (s[:, A] - 0.1))            # an egg's pull toward hatching
     pdie = torch.sigmoid(4 * (s[:, DIE] - DIE_AT))       # a tadpole's pull toward dying
-    w = torch.where(hat, 1 - pdie + pdie.detach(), egg - egg.detach())
+    w = torch.where(hat, 1 - pdie + pdie.detach(), egg - egg.detach()) + sw.bw[b][m]
     raw = s[:, FAC]
     f = raw / torch.sqrt((raw * raw).sum(-1, keepdim=True) + 0.04)
     h = prism_h(s[:, PR], e)
@@ -446,6 +486,15 @@ class LossCfg:
     eps: float = 0.05
     w_count: float = 0.0       # headcount is NOT a goal: the plan is the element ratios + shape (opt back in > 0)
     w_survive: float = 60.0     # a death must cost more than the count gains from it: restraint belongs at hatching
+    rel_elem: int = 0          # 1: the target's element marginal is reweighted to the swarm's own mix, so the
+                               # divergence measures GEOMETRY given the composition (w_mix scores the mix itself)
+    w_mix: float = 0.0         # squared error of the swarm's element shares against the plan's
+    w_con: float = 0.0         # contrastive hinge: the own plan must beat every other plan by con_margin
+    con_margin: float = 4.0
+
+
+def _lkey(L):
+    return (L.pos_scale, L.w_elem, L.w_dom, L.w_h, L.w_tier, L.w_face, L.w_sp, L.eps)
 
 
 def _centre(x):
@@ -514,47 +563,90 @@ def sinkhorn_ot(Cm, a, b, eps, iters_per=3):
 PERMS = {1: [(0,)], 2: list(itertools.permutations(range(2))), 3: list(itertools.permutations(range(3)))}
 
 
-def target_self_ot(t, L):
-    if "_self" not in t:
+def _target_self_cost(t, L):
+    key = ("_selfC",) + _lkey(L)
+    if key not in t:
         x = dict(p=t["p"], elem=t["elem"], dom=t["slot"], h=t["h"], tier=F.one_hot(t["tier"], 3).float(),
                  f=t["f"], sp=t["sp"])
+        t[key] = self_cost(x, L)
+    return t[key]
+
+
+def target_self_ot(t, L):
+    key = ("_self",) + _lkey(L)                     # keyed by the cost weights (a geometry-only score differs)
+    if key not in t:
         b = torch.full((len(t["p"]),), 1.0 / len(t["p"]))
-        t["_self"] = float(sinkhorn_ot(self_cost(x, L), b, b, L.eps))
-    return t["_self"]
+        t[key] = float(sinkhorn_ot(_target_self_cost(t, L), b, b, L.eps))
+    return t[key]
 
 
-def swarm_loss(x, T: Target, L: LossCfg, frames=None, ndom=None):
-    """Sinkhorn divergence to the best (frame, slot->domain assignment), + count + survival."""
+def target_self_ot_b(t, b, L):
+    """The target's self transport under a reweighted marginal b (rel_elem); not cached."""
+    return float(sinkhorn_ot(_target_self_cost(t, L), b, b, L.eps))
+
+
+def _plan_marginal(t, xelem, a):
+    """rel_elem: target weights whose element shares match the swarm's (detached) shares, over the
+    elements the target has; a 10% uniform floor keeps every target unit in the transport."""
+    te = t["elem"]
+    with torch.no_grad():
+        sx = torch.zeros(4).index_add(0, xelem, a.detach())
+        cnt = torch.bincount(te, minlength=4).float()
+        sx = sx * (cnt > 0).float()
+        if float(sx.sum()) < 1e-6:
+            return torch.full((len(te),), 1.0 / len(te))
+        sx = sx / sx.sum()
+        b = sx[te] / cnt[te].clamp(min=1)
+        b = 0.9 * b / b.sum() + 0.1 / len(te)
+    return b
+
+
+def _divergence(x, a, oaa, T, L, frames=None, ndom=None):
+    """Debiased Sinkhorn divergence to the best (frame, slot->domain assignment) of target T."""
+    frames = range(len(T.frames)) if frames is None else frames
+    perms = PERMS[ndom or T.slots]
+    best = None
+    with torch.no_grad():
+        for k in frames:
+            t = T.frames[k]
+            b = _plan_marginal(t, x["elem"], a) if L.rel_elem else torch.full((len(t["p"]),), 1.0 / len(t["p"]))
+            for perm in perms:
+                v = float(sinkhorn_ot(cost_matrix(x, t, torch.tensor(perm), L), a, b, max(L.eps, 0.5), iters_per=2))
+                if best is None or v < best[0]:
+                    best = (v, k, perm, b)
+    _, k, perm, b = best
+    t = T.frames[k]
+    oab = sinkhorn_ot(cost_matrix(x, t, torch.tensor(perm), L), a, b, L.eps)
+    tself = target_self_ot_b(t, b, L) if L.rel_elem else target_self_ot(t, L)
+    return oab - 0.5 * oaa - 0.5 * tself, k, perm
+
+
+def swarm_loss(x, T: Target, L: LossCfg, frames=None, ndom=None, others=None):
+    """Sinkhorn divergence to the best (frame, slot->domain assignment), + count + survival
+    (+ element-mix error, + a contrastive margin over the `others` plans)."""
     w = x["w"]
     tot = w.sum()
-    out = {}
     if tot < 1e-3:
         z = (w * 0).sum() + 100.0
         return z, dict(sink=100.0, count=1.0, frame=0, perm=(0,), n=0.0)
     a = w / tot
     oaa = sinkhorn_ot(self_cost(x, L), a, a, L.eps)
-    frames = range(len(T.frames)) if frames is None else frames
-    nd = ndom or T.slots
-    perms = PERMS[nd]
-    best = None
-    with torch.no_grad():
-        for k in frames:
-            t = T.frames[k]
-            b = torch.full((len(t["p"]),), 1.0 / len(t["p"]))
-            for perm in perms:
-                v = float(sinkhorn_ot(cost_matrix(x, t, torch.tensor(perm), L), a, b, max(L.eps, 0.5), iters_per=2))
-                if best is None or v < best[0]:
-                    best = (v, k, perm)
-    _, k, perm = best
-    t = T.frames[k]
-    b = torch.full((len(t["p"]),), 1.0 / len(t["p"]))
-    oab = sinkhorn_ot(cost_matrix(x, t, torch.tensor(perm), L), a, b, L.eps)
-    sink = oab - 0.5 * oaa - 0.5 * target_self_ot(t, L)
+    sink, k, perm = _divergence(x, a, oaa, T, L, frames, ndom)
     count = ((tot - T.n) / T.n) ** 2
     hat = x["hatched"].float()
     survive = (x["pdie"] * hat).sum() / T.n
     loss = sink + L.w_count * count + L.w_survive * survive
-    return loss, dict(sink=float(sink.detach()), count=float(count.detach()), survive=float(survive.detach()), frame=k, perm=perm, n=float(tot))
+    info = dict(sink=float(sink.detach()), count=float(count.detach()), survive=float(survive.detach()), frame=k, perm=perm, n=float(tot))
+    if L.w_mix:
+        share = torch.zeros(4).index_add(0, x["elem"], a)
+        tm = torch.tensor(T.mix, dtype=share.dtype); tm = tm / tm.sum()
+        mix = ((share - tm) ** 2).sum()
+        loss = loss + L.w_mix * mix; info["mix"] = float(mix.detach())
+    if L.w_con and others:
+        so = torch.stack([_divergence(x, a, oaa, T2, L)[0] for T2 in others]).min()
+        con = torch.relu(L.con_margin + sink - so)
+        loss = loss + L.w_con * con; info["con"] = float(con.detach()); info["gap"] = float((so - sink).detach())
+    return loss, info
 
 
 def speed_of(xa, xb, period):
@@ -660,26 +752,50 @@ def majority_plan(sw: Swarm, b, fallback):
 
 
 @torch.no_grad()
-def lose_majority(sw: Swarm, b, gen, keep_min=6, to=None):
-    """In place: remove (as if eaten) just enough of sample b's majority element that another element
+def lose_majority(sw: Swarm, b, gen, keep_min=6, to=None, mode="excess", margin=0.0, targets=None):
+    """In place: remove (as if eaten) enough of sample b's majority element that another element
     present becomes the majority. The swarm is then scored against the new majority's plan, which is
-    the only way a rule can learn to SWITCH plans when its ratios change."""
+    the only way a rule can learn to SWITCH plans when its ratios change. Returns the new majority's
+    plan, or None when no switch was possible.
+
+    mode "excess": the old majority loses just enough (+ a random extra) to fall one behind.
+    mode "tie": the same, but the new majority then leads by margin x the headcount (a clear switch,
+                not a coin the rule can flip back by laying one more of the old element).
+    mode "ratio": every element is culled toward the NEW plan's element mix (needs `targets`)."""
     m = sw.active[b] & sw.hatched[b]
     c = torch.bincount(sw.elem[b][m], minlength=4)
     maj = int(c.argmax())
     others = [e for e in range(4) if e != maj and int(c[e]) >= 2]
     if not others:
-        return False
+        return None
     if to is not None and to not in others:
-        return False
+        return None
     e2 = to if to is not None else others[int(torch.randint(len(others), (1,), generator=gen))]
-    excess = int(c[maj]) - int(c[e2]) + 1 + int(torch.randint(0, max(1, int(c[e2]) // 3 + 1), (1,), generator=gen))
-    idx = (m & (sw.elem[b] == maj)).nonzero().squeeze(1)
-    if int(m.sum()) - excess < keep_min or excess <= 0:
-        return False
-    kill = idx[torch.randperm(len(idx), generator=gen)[:excess]]
-    sw.active[b, kill] = False; sw.hatched[b, kill] = False; sw.s[b, kill] = 0.0
-    return True
+    n = int(m.sum())
+    if mode == "ratio":
+        mix = torch.tensor(targets[PLAN_OF[e2]].mix, dtype=torch.float)
+        frac = mix / mix.sum()
+        ok = frac > 0
+        sc = min(float(c[e]) / float(frac[e]) for e in range(4) if ok[e])
+        keep = torch.tensor([min(int(c[e]), int(math.floor(sc * float(frac[e])))) if ok[e] else 0 for e in range(4)])
+        if int(keep.argmax()) != e2 or int(keep.sum()) < keep_min:
+            return None
+        kills = c.cpu() - keep
+    else:
+        extra = int(math.ceil(margin * n)) if mode == "tie" else \
+            int(torch.randint(0, max(1, int(c[e2]) // 3 + 1), (1,), generator=gen))
+        excess = int(c[maj]) - int(c[e2]) + 1 + extra
+        if n - excess < keep_min or excess <= 0 or excess > int(c[maj]):
+            return None
+        kills = torch.zeros(4, dtype=torch.long); kills[maj] = excess
+    for e in range(4):
+        k = int(kills[e])
+        if k <= 0:
+            continue
+        idx = (m & (sw.elem[b] == e)).nonzero().squeeze(1)
+        kill = idx[torch.randperm(len(idx), generator=gen)[:k]]
+        sw.active[b, kill] = False; sw.hatched[b, kill] = False; sw.s[b, kill] = 0.0
+    return majority_plan(sw, b, None)
 
 
 # ------------------------------------------------------------------ train ---
@@ -710,6 +826,19 @@ class TrainCfg:
     replace_count: float = 1e9     # ... or whose headcount is this far off its plan's (off: count is not a goal)
     p_switch: float = 0.15         # a pool sample loses enough of its majority element (eaten) that another
                                    # element takes the majority; from then on it is scored against THAT plan
+    sticky_plan: int = 0           # 1: a sample keeps the plan its seed / last switch gave it (reverting to
+                                   # the old plan by out-laying the new majority no longer changes the label)
+    switch_cooldown: int = 0       # a sample switches again only after this many steps on its current plan
+    p_ratio: float = 0.0           # share of switches that cull toward the new plan's element MIX (else "tie")
+    margin: float = 0.0            # "tie" switches leave the new majority ahead by this fraction of the headcount
+    # world / loss knobs (mirrored so a run's flags set them; see World and LossCfg)
+    learned_lay: int = 0
+    lay_gain: float = 4.0
+    lay_bias: float = 3.0
+    rel_elem: int = 0
+    w_mix: float = 0.0
+    w_con: float = 0.0
+    con_margin: float = 4.0
 
 
 def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
@@ -724,6 +853,8 @@ def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
 
 def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None):
     os.makedirs(cfg.run, exist_ok=True)
+    world = replace(world, learned_lay=cfg.learned_lay, lay_gain=cfg.lay_gain, lay_bias=cfg.lay_bias)
+    L = replace(L, rel_elem=cfg.rel_elem, w_mix=cfg.w_mix, w_con=cfg.w_con, con_margin=cfg.con_margin)
     targets = load_targets()
     torch.manual_seed(cfg.seed)
     gen = make_gen(cfg.seed)
@@ -743,7 +874,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
     if resume and os.path.exists(ck):
         st = torch.load(ck, weights_only=False, map_location=DEVICE)
         rule.load_state_dict(st["rule"]); opt.load_state_dict(st["opt"]); sched.load_state_dict(st["sched"])
-        pool = st["pool"]; start = st["step"]
+        pool = {k_: v.backfill(k_) for k_, v in st["pool"].items()}; start = st["step"]
         print(f"resumed at step {start}")
     json.dump(dict(train=asdict(cfg), world=asdict(world), loss=asdict(L)), open(os.path.join(cfg.run, "config.json"), "w"), indent=1)
     log = open(os.path.join(cfg.run, "log.jsonl"), "a")
@@ -758,8 +889,13 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                 sub = Swarm.cat([seed_swarm([targets[k]], world, gen), sub.index(torch.arange(1, cfg.per_kind))]) \
                     if cfg.per_kind > 1 else seed_swarm([targets[k]], world, gen)
             for j in range(1 if step % cfg.seed_every == 0 else 0, cfg.per_kind):
+                if int(sub.since[j]) < cfg.switch_cooldown:
+                    continue
                 if float(torch.rand((), generator=gen)) < cfg.p_switch:
-                    lose_majority(sub, j, gen)
+                    mode = "ratio" if cfg.p_ratio > 0 and float(torch.rand((), generator=gen)) < cfg.p_ratio else ("tie" if cfg.sticky_plan else "excess")
+                    new = lose_majority(sub, j, gen, mode=mode, margin=cfg.margin, targets=targets)
+                    if new is not None:
+                        sub.plan[j] = KINDS.index(new); sub.since[j] = 0
             batch.append(sub)
         sw = Swarm.cat(batch)
         T = int(torch.randint(cfg.roll_min, cfg.roll_max + 1, (1,), generator=gen))
@@ -768,6 +904,9 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                 sw = rule(sw, gen)
         sw = sw.detach()
         groups = [k for k in KINDS for _ in range(cfg.per_kind)]       # which seeding a sample came from
+
+        def plan_of(sw_, b_, g_):
+            return KINDS[int(sw_.plan[b_])] if cfg.sticky_plan else majority_plan(sw_, b_, g_)
         losses, infos, plans = [], {}, []
         if cfg.anim:
             cks = []
@@ -777,7 +916,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                 if (i + 1) % cfg.period == 0:
                     cks.append(sw)
             for b, g in enumerate(groups):
-                k = majority_plan(sw, b, g)
+                k = plan_of(sw, b, g)
                 xs = [decode(c, b) for c in cks]
                 age = int(clock0[b]) + cfg.period          # the first checkpoint's age
                 k0 = (age // cfg.period) % len(targets[k].frames) if age < cfg.birth_clock else None
@@ -788,9 +927,10 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
             for _ in range(cfg.bptt):
                 sw = rule(sw, gen)
             for b, g in enumerate(groups):
-                k = majority_plan(sw, b, g)                 # scored against its CURRENT majority's plan only
+                k = plan_of(sw, b, g)                       # scored against ONE plan only (current/sticky)
                 x = decode(sw, b)
-                l, info = swarm_loss(x, targets[k], L)
+                others = [targets[k2] for k2 in KINDS if k2 != k] if L.w_con else None
+                l, info = swarm_loss(x, targets[k], L, others=others)
                 losses.append(l); plans.append(k)
                 infos.setdefault(g, []).append(info)
         loss = torch.stack(losses).sum() / cfg.per_kind
@@ -815,7 +955,8 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                     getattr(pool[k], a)[pi] = getattr(sub, a)[j]
         dt = time.time() - t0
         if step % cfg.log_every == 0 or step == cfg.steps - 1:
-            rec = dict(step=step, loss=float(loss), T=T, sec=round(dt, 2), lr=sched.get_last_lr()[0])
+            rev = sum(majority_plan(sw, b, plans[b]) != plans[b] for b in range(sw.B)) / sw.B
+            rec = dict(step=step, loss=float(loss), T=T, sec=round(dt, 2), lr=sched.get_last_lr()[0], rev=round(rev, 3))
             for i, k in enumerate(KINDS):
                 c = census(sw, i * cfg.per_kind, targets[k])
                 inf = infos[k][0]
@@ -823,7 +964,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                               el=c["elements"], dom=c["domains"], deaths=c["deaths"], frame=inf["frame"],
                               speed=inf.get("speed"))
             log.write(json.dumps(rec) + "\n"); log.flush()
-            print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s | " + " | ".join(
+            print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s rev{rev:.2f} | " + " | ".join(
                 f"{k[:2]}>{rec[k]['plan'][:2]} {rec[k]['sink']:6.2f} n{rec[k]['n']:3d} d{rec[k]['deaths']}" for k in KINDS), flush=True)
         if (step + 1) % cfg.snap_every == 0 or step == cfg.steps - 1:
             torch.save(dict(rule=rule.state_dict(), opt=opt.state_dict(), sched=sched.state_dict(), pool=pool,
@@ -884,6 +1025,7 @@ def rollout(rule, steps=240, every=5, seed=7, L=None, switch_steps=240):
     data[kind] = {frames: int16 [F, n_max, 15] packed units, n: [F], crystals: [[x,y,z,elem,step]]},
     summary = the cross-score matrix (every grown swarm against EVERY target) + census."""
     L = L or LossCfg()
+    Lg = replace(L, w_elem=0.0, w_dom=0.0, rel_elem=0, w_mix=0.0, w_con=0.0)   # geometry only: shape, not composition
     targets = load_targets()
     gen = make_gen(seed)
     data, summary = {}, {"cross": {}, "census": {}, "steps": steps}
@@ -896,6 +1038,7 @@ def rollout(rule, steps=240, every=5, seed=7, L=None, switch_steps=240):
             if switch_steps and t == steps:
                 x = decode(sw, 0)
                 summary["cross"][k] = {k2: round(swarm_loss(x, targets[k2], L)[1]["sink"], 2) for k2 in KINDS}
+                summary.setdefault("cross_geo", {})[k] = {k2: round(swarm_loss(x, targets[k2], Lg)[1]["sink"], 2) for k2 in KINDS}
                 summary["census"][k] = census(sw, 0, targets[k])
                 if lose_majority(sw, 0, gen, to=SWITCH_TO[k]):
                     switched_at = t
@@ -955,6 +1098,15 @@ def print_switch(summary):
         print(f"  {k:8s}-> {sw_['to']:7s} " + " ".join(f"{k2}:{row[k2]:7.2f}{'*' if k2 == best else ' '}" for k2 in KINDS)
               + f"  majority now {sw_['majority']}, n={sw_['census']['n']} el={sw_['census']['elements']}"
               + ("" if sw_["done"] else "  (could not switch: too few of the new element)"))
+
+
+def print_geo(summary):
+    if "cross_geo" not in summary:
+        return
+    print("same, GEOMETRY only (no element / domain cost) - does the shape, not the mix, pick the plan?")
+    for k in KINDS:
+        row = summary["cross_geo"][k]; best = min(row, key=row.get)
+        print(f"  {k:8s}  " + "".join(f"{row[k2]:9.2f}" + ("*" if k2 == best else " ") for k2 in KINDS))
 
 
 def print_cross(summary):
@@ -1070,7 +1222,7 @@ def main():
     elif a.cmd == "rollout":
         rule = load_rule(a.rule)
         data, summary = rollout(rule, a.steps)
-        print_cross(summary); print_switch(summary)
+        print_cross(summary); print_geo(summary); print_switch(summary)
         os.makedirs(a.out, exist_ok=True)
         json.dump(pack(data, a.steps), open(os.path.join(a.out, "rollout.json"), "w"))
         summary["rule"] = os.path.relpath(a.rule, HERE)
