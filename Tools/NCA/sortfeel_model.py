@@ -71,6 +71,8 @@ class _DeadCode:
         self._m0 = m0_fn
 
     def __getattr__(self, k):
+        if k.startswith("_"):                    # deepcopy/pickle probe before __init__ ran: no recursion
+            raise AttributeError(k)
         return getattr(self._c, k)
 
     def energy_grad_fate(self, x, e, s, k):

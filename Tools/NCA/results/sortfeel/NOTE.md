@@ -156,7 +156,8 @@ Risk to check in the viewer: coherence 0.09 is gas-like; if it reads as fizz rat
 
 ## What failed / limits (honest)
 
-- **The CMA-ES pass did not run.** A sort-baseline accuracy job hung (BLAS thread oversubscription, load 12
+- **The CMA-ES pass did not run.** (A last-minute attempt crashed on gen 0: `copy.deepcopy` of the model
+  recursed through `_DeadCode.__getattr__`; fixed in `sortfeel_model.py` and verified, but too late to search.) A sort-baseline accuracy job hung (BLAS thread oversubscription, load 12
   on 4 cores) and ate 50 minutes; `sortfeel_search.py` is ready (sort's 17 genes + the 3 feel genes, the band
   as a penalty with margins) but these parameters are hand-picked from a 10-point screen, not searched.
 - **dragonfly -> jellyfish** still fails (9.0, as in sort): domain conservation, not shape. Not touched.
