@@ -1,0 +1,145 @@
+{
+ "seeds": [
+  5000,
+  5001,
+  5002,
+  5003,
+  5004,
+  5005,
+  5006,
+  5007,
+  5008,
+  5009,
+  5010,
+  5011
+ ],
+ "candidates": {
+  "runs/evo16/cand_r1.npy": {
+   "f": 0.895,
+   "pass_rate": 1.0,
+   "margin": 0.406,
+   "heal_mean": [
+    0.19,
+    -0.62,
+    -0.16,
+    0.51
+   ],
+   "heal_median": [
+    0.3,
+    -0.94,
+    -0.67,
+    0.64
+   ],
+   "heal_ge_half": [
+    0.42,
+    0.0,
+    0.33,
+    0.5
+   ],
+   "fails": {}
+  },
+  "runs/evo16/cand_r1wnd.npy": {
+   "f": 1.142,
+   "pass_rate": 1.0,
+   "margin": 0.404,
+   "heal_mean": [
+    0.45,
+    -0.28,
+    -0.29,
+    0.61
+   ],
+   "heal_median": [
+    0.91,
+    -0.43,
+    -0.79,
+    0.57
+   ],
+   "heal_ge_half": [
+    0.67,
+    0.17,
+    0.17,
+    0.67
+   ],
+   "fails": {}
+  },
+  "runs/evo16/cand_g19mean.npy": {
+   "f": 1.522,
+   "pass_rate": 1.0,
+   "margin": 0.415,
+   "heal_mean": [
+    0.35,
+    0.14,
+    0.46,
+    0.19
+   ],
+   "heal_median": [
+    0.28,
+    0.36,
+    0.68,
+    0.27
+   ],
+   "heal_ge_half": [
+    0.42,
+    0.25,
+    0.58,
+    0.33
+   ],
+   "fails": {}
+  },
+  "runs/evo16/cand_g23mean.npy": {
+   "f": 1.39,
+   "pass_rate": 0.9844,
+   "margin": 0.395,
+   "heal_mean": [
+    -0.04,
+    0.33,
+    0.47,
+    0.34
+   ],
+   "heal_median": [
+    0.09,
+    0.47,
+    0.61,
+    0.49
+   ],
+   "heal_ge_half": [
+    0.33,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "fails": {
+    "charge->time": 1,
+    "charge->mass": 1,
+    "charge->space": 1
+   }
+  },
+  "runs/evo16/cand_bestgen.npy": {
+   "f": 1.38,
+   "pass_rate": 0.9896,
+   "margin": 0.406,
+   "heal_mean": [
+    0.38,
+    -0.15,
+    0.66,
+    0.18
+   ],
+   "heal_median": [
+    0.9,
+    0.13,
+    0.76,
+    0.45
+   ],
+   "heal_ge_half": [
+    0.67,
+    0.17,
+    0.67,
+    0.42
+   ],
+   "fails": {
+    "mass->time": 1,
+    "space->time": 1
+   }
+  }
+ }
+}

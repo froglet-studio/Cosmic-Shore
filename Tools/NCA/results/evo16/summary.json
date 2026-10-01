@@ -1,0 +1,302 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 18.53,
+   "space": 75.14,
+   "charge": 68.34,
+   "time": 82.25
+  },
+  "space": {
+   "mass": 66.05,
+   "space": 13.43,
+   "charge": 53.53,
+   "time": 72.55
+  },
+  "charge": {
+   "mass": 55.59,
+   "space": 57.23,
+   "charge": 15.1,
+   "time": 69.85
+  },
+  "time": {
+   "mass": 83.81,
+   "space": 86.92,
+   "charge": 75.7,
+   "time": 28.19
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 280,
+   "target_n": 192,
+   "elements": [
+    8,
+    233,
+    27,
+    12
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    127,
+    153,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 280,
+   "target_n": 88,
+   "elements": [
+    80,
+    15,
+    172,
+    13
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    140,
+    140,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 1
+  },
+  "charge": {
+   "n": 280,
+   "target_n": 179,
+   "elements": [
+    204,
+    14,
+    13,
+    49
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    151,
+    129,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 1
+  },
+  "time": {
+   "n": 280,
+   "target_n": 76,
+   "elements": [
+    8,
+    13,
+    11,
+    248
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    88,
+    69,
+    123
+   ],
+   "deaths": 0,
+   "mutants": 3
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 3.28,
+   "space": 21.79,
+   "charge": 13.16,
+   "time": 25.46
+  },
+  "space": {
+   "mass": 21.2,
+   "space": 5.27,
+   "charge": 12.8,
+   "time": 25.71
+  },
+  "charge": {
+   "mass": 8.85,
+   "space": 16.1,
+   "charge": 5.03,
+   "time": 19.68
+  },
+  "time": {
+   "mass": 25.16,
+   "space": 24.5,
+   "charge": 17.7,
+   "time": 7.19
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 54.04,
+    "space": 30.46,
+    "charge": 59.04,
+    "time": 75.49
+   },
+   "majority": "space",
+   "census": {
+    "n": 280,
+    "target_n": 88,
+    "elements": [
+     72,
+     25,
+     169,
+     14
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     156,
+     124,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 53.59,
+    "space": 40.84,
+    "charge": 22.2,
+    "time": 73.41
+   },
+   "majority": "charge",
+   "census": {
+    "n": 280,
+    "target_n": 179,
+    "elements": [
+     179,
+     19,
+     59,
+     23
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     124,
+     156,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 3
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 64.29,
+    "space": 68.72,
+    "charge": 54.22,
+    "time": 29.78
+   },
+   "majority": "time",
+   "census": {
+    "n": 280,
+    "target_n": 76,
+    "elements": [
+     36,
+     20,
+     14,
+     210
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     125,
+     155,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 1
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 24.91,
+    "space": 74.33,
+    "charge": 69.11,
+    "time": 73.67
+   },
+   "majority": "mass",
+   "census": {
+    "n": 280,
+    "target_n": 192,
+    "elements": [
+     16,
+     197,
+     41,
+     26
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Mass",
+    "domains": [
+     154,
+     42,
+     84
+    ],
+    "deaths": 0,
+    "mutants": 3
+   }
+  }
+ },
+ "meta": {
+  "tag": "evo16",
+  "genome": "genome.npy",
+  "base": "results/swarm_coevo_g2/rule.pt",
+  "tests_passed": 8,
+  "note": "G2 rule + evolved behaviour genome hardened for held-out seeds and vessel-strike healing (evo16_model.Evo16Rule: + regrowth, wound sensing, per-plan headcount)."
+ }
+}
