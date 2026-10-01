@@ -66,7 +66,8 @@ B = 16. (B = 64 was not measured — out of time.)
 |---|---|---|---|---|---|---|---|---|
 | combo (baseline) | 16 / 15 / 15 / 15 | 0 | in (0.024) | 0.51 | 6.26 | 1.32 | 8.4 | — |
 | **frac_k = 4** | 16 / 15 / 15 / 15, no lost test, own losses held | 0 | in (0.045) | **0.597** | **4.53** | **1.73 (limit 1.45)** | 6.9 | **FAIL (teleport only)** |
-| frac_k = 2 | FRAC2_ROW |
+| frac_k = 2 | 16 / 15 / 15 / 15, no lost test; **own mass @41 1.99 vs 1.33 (limit 1.83)** | 0 | in (0.054) | 0.517 | 5.65 | 1.29 | 7.5 | **FAIL (one own-plan loss)** |
+| frac_k = 4, coast 0.75 | COAST_ROW |
 
 `hold_frac4.json` / `hold_frac4.log`, `hold_frac2.json`.
 
