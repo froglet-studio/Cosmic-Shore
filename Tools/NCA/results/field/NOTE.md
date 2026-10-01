@@ -84,6 +84,10 @@ Strike (`swarm_probe.probe`, a third of the body removed): heal **1.07 / 1.04 / 
 (whale / jelly / puffer / dragonfly; 1 = back to the pre-strike score; >1 = better than before). Headcount back
 to the plan's in every case (192 / 88 / 179 / 76) within the 120-step window.
 
+Strike-size sweep (`strike_sweep.json`, strike sphere 1.0 / 1.5 / 2.0 × RMS radius, removing 19–67 tadpoles =
+21–44% of the body): every plan is back within 1.2× its pre-strike score in **10–30 steps**, and none switches
+plan (a strike is element-blind, so the majority survives).
+
 Predator pass (new; `field_swarm.predator_pass`): a sphere of 0.6× the swarm's RMS radius flies straight through
 the centroid at 3 voxels/step (≈2–4× the tadpoles' top speed), killing nothing. "touched" = share of the school
 that was ever inside it; compared with the same swarm with reactions switched OFF:
