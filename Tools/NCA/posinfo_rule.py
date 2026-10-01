@@ -62,7 +62,7 @@ class PosInfoRule(sn.SwarmRule):
 
     def __init__(self, world: sn.World, hidden=192, fire_rate=0.5, morph=0, morph_iters=4, homeo=0):
         self.morph, self.morph_iters, self.homeo = morph, morph_iters, homeo
-        self.p_molt, self.molts = 0.05, 0
+        self.p_molt, self.molts = 0.1, 0
         super().__init__(world, hidden=hidden, fire_rate=fire_rate)
         P = P_BASE + morph
         self.P = P
@@ -234,6 +234,12 @@ def _homeo_lay(self, sw: Swarm, gi, gj, gen=None):
                             have[e_from, d] -= 1; have[e_to, d] += 1
                             self.molts += 1
             deficit = (quota - have).clamp(min=0)
+            if self.homeo >= 4:          # a domain's deficits are reserved for its surplus molters first
+                surplus = (have - quota).clamp(min=0)
+                for d in range(3):
+                    res = int(surplus[:, d].sum())
+                    for e in sorted(range(4), key=lambda e_: -int(deficit[e_, d])):
+                        take = min(res, int(deficit[e, d])); deficit[e, d] -= take; res -= take
             if self.homeo >= 3:          # grow in proportion: no class fills faster than the major element
                 maj = int(quota.sum(1).argmax())
                 fill = float(have[maj].sum()) / max(1, int(quota[maj].sum()))
