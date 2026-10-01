@@ -76,6 +76,7 @@ class SortCfg:
     lap_clip: float = 2.0       # chemotaxis cap for lap runners (Time's top speed)
     lap_elems: tuple = (3,)     #     type's loop (Time runs laps; occupancy - and so the score - is unchanged)
     fate: int = 1              # 1: each tadpole commits to ONE well of its type (the most under-occupied at birth)
+    well_look: int = 0         # 1: wear the look (facing/prism/spindle/tier) of one's fated WELL, not the type mean
     swirl_time: float = 0.0    # Time runners circulate (rad/step about the body's major axis); look only
     # composition
     dwell: int = 12            # steps a new majority must hold before the plan switches
@@ -143,6 +144,7 @@ class PlanCode:
         self.wells = {}            # (e, s) -> (w [K], mu [K,3], inv [K,3,3], logdet [K])
         self.state = {}            # (e, s) -> state vector (look)
         self.next = {}
+        self.wstate = {}           # (e, s) -> per-well look: positional information decodes the look too
         for e in range(4):
             for s in range(3):
                 m = (el == e) & (sl == s)
@@ -153,15 +155,20 @@ class PlanCode:
                 Q = P[m]
                 K = max(1, min(cfg.K, n // max(1, cfg.per_well)))
                 a, _ = _kmeans(Q, K, rng) if K > 1 else (np.zeros(n, int), None)
-                w, mu, inv, ld = [], [], [], []
+                w, mu, inv, ld, ws = [], [], [], [], []
                 for k in range(K):
                     R = Q[a == k]
                     if len(R) == 0:
                         continue
                     cov = (np.cov(R.T) if len(R) > 2 else np.zeros((3, 3))) * cfg.cov_scale + 1.0 * np.eye(3)
                     w.append(len(R) / n); mu.append(R.mean(0)); inv.append(np.linalg.inv(cov))
+                    mk = np.nonzero(m)[0][a == k]                     # this well's units: its local look
+                    fk = fr["f"][mk].mean(0).numpy(); fk = fk / max(np.linalg.norm(fk), 1e-6)
+                    ws.append(invert_state(e, fr["h"][mk].mean(0).numpy(), int(np.bincount(fr["tier"][mk].numpy()).argmax()),
+                                           fk, fr["sp"][mk].mean(0).numpy()))
                     ld.append(float(np.linalg.slogdet(cov)[1]))
                 self.wells[(e, s)] = (np.array(w), np.array(mu), np.array(inv), np.array(ld))
+                self.wstate[(e, s)] = ws
                 # a loop through the wells (greedy nearest-neighbour tour): next well along it
                 M = np.array(mu); order = [0]; left = set(range(1, len(M)))
                 while left:
@@ -415,6 +422,10 @@ class SortSwarm:
         for i, (e, r) in enumerate(zip(elem[idx], role)):
             key = (int(e), int(r))
             st = code.state.get(key)
+            j0 = idx[i]
+            if cfg.well_look and st is not None and S[j0, H_FATE] >= 1 and \
+                    int(S[j0, H_FKEY]) == 1 + sn.KINDS.index(m["plan"]) * 16 + key[0] * 4 + key[1]:
+                st = code.wstate[key][int(S[j0, H_FATE]) - 1]
             if st is None:
                 for s2 in range(3):
                     st = code.state.get((int(e), s2))
