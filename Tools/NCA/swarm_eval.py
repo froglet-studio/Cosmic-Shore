@@ -263,6 +263,9 @@ def load_model(spec):
     if kind == "combo":
         import combo_model as cm
         return cm.load(path)
+    if kind == "lite_posinfo2":           # path[?fire_k=4&homeo_every=8&frame_every=4&half=1]
+        import lite_posinfo2_model as lm
+        return lm.from_spec(path)
     raise ValueError(spec)
 
 
