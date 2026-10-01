@@ -30,13 +30,16 @@ One shared, slowly-evolving **colony state** per swarm on top of the G2 per-tadp
 | V @900 | 5,5,5,4 | 4.75 | 16/16 | 3/16 |
 | **C** control @600: same loss/culls, NO colony (K=0, no breeding bias) | 4,4,5,4 | 4.25 | 16/16 | 1/16 |
 | **F** free latent @600 (mean pool) | 5,5,4,6 | 5.00 | 16/16 | 4/16 (jelly→puffer 3/4, puffer→dragonfly 1/4) |
+| **A** vote + attention pooling @600 | 4,5,4,4 | 4.25 | 16/16 | 1/16 |
 
 Published here: `rule.pt` (V@600), `summary.json`/`rollout.json` (seed 7, 5/8), `probe.json`,
 `vote_trace.json` (the colony's vote and breeding bias every 10 steps through a switch rollout).
 
 The control C shows the gain comes from the colony, not from the loss/cull changes (w_mix, excess
 culls) that came with it. The vote bottleneck and the free latent score the same at 600 steps; the
-vote's advantage is that its decision is readable (and supervisable).
+vote's advantage is that its decision is readable (and supervisable). Attention pooling over
+tadpoles did not help (4.25, no better than the control): the decision needs counts and shares,
+which the mean summary already carries exactly.
 
 ## Findings
 
