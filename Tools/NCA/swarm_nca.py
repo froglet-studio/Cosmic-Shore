@@ -1019,7 +1019,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
         if step % cfg.log_every == 0 or step == cfg.steps - 1:
             rev = sum(majority_plan(sw, b, plans[b]) != plans[b] for b in range(sw.B)) / sw.B
             rec = dict(step=step, loss=float(loss), T=T, sec=round(dt, 2), lr=sched.get_last_lr()[0], rev=round(rev, 3),
-                       nonfinite=nonfinite)
+                       nonfinite=nonfinite, smax=round(float(sw.s.abs().nan_to_num(posinf=1e9).amax()), 1))
             for i, k in enumerate(KINDS):
                 c = census(sw, i * cfg.per_kind, targets[k])
                 inf = infos[k][0]
@@ -1027,7 +1027,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                               el=c["elements"], dom=c["domains"], deaths=c["deaths"], frame=inf["frame"],
                               speed=inf.get("speed"), **{x: round(inf[x], 3) for x in ("mix", "con", "gap", "survive") if x in inf})
             log.write(json.dumps(rec) + "\n"); log.flush()
-            print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s rev{rev:.2f}{f' nf{nonfinite}' if nonfinite else ''} | " + " | ".join(
+            print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s rev{rev:.2f}{f' nf{nonfinite}' if nonfinite else ''} s{rec['smax']:.0f} | " + " | ".join(
                 f"{k[:2]}>{rec[k]['plan'][:2]} {rec[k]['sink']:6.2f} n{rec[k]['n']:3d} d{rec[k]['deaths']}" for k in KINDS), flush=True)
         if (step + 1) % cfg.snap_every == 0 or step == cfg.steps - 1:
             torch.save(dict(rule=rule.state_dict(), opt=opt.state_dict(), sched=sched.state_dict(), pool=pool,

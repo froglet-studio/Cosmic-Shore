@@ -50,7 +50,7 @@ OVERRIDES = {}                          # --set key=value (TrainCfg fields), e.g
 
 def config(steps, anim=False):
     cfg = sn.TrainCfg(run=RUN, init=WARM, steps=steps, per_kind=4, pool=32, seed_every=4,
-                      roll_min=64, roll_max=128, bptt=48, snap_every=250, log_every=10, anim=int(anim))
+                      roll_min=64, roll_max=128, bptt=48, snap_every=100, log_every=10, anim=int(anim))
     for k, v in OVERRIDES.items():
         t = type(getattr(cfg, k))
         setattr(cfg, k, str(v).lower() in ("1", "true", "yes") if t is bool else t(float(v)) if t is int else t(v))
