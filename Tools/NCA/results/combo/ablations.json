@@ -587,5 +587,83 @@
    "organic": true,
    "molts": 34
   }
+ },
+ "F8": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1",
+   "G": "8",
+   "cell": "12",
+   "dmap_space": "1"
+  },
+  "1000": {
+   "passed": 11,
+   "feasible": 15,
+   "own": {
+    "mass": 1.52,
+    "space": 1.4,
+    "charge": 2.21,
+    "time": 3.47
+   },
+   "fails": {
+    "charge->time": 8.45,
+    "space->time": 71.3,
+    "charge->space": 40.41,
+    "time->space": 8.2
+   }
+  },
+  "23": {
+   "passed": 12,
+   "feasible": 16,
+   "own": {
+    "mass": 1.44,
+    "space": 1.82,
+    "charge": 2.41,
+    "time": 4.24
+   },
+   "fails": {
+    "time->mass": 33.26,
+    "space->time": 49.0,
+    "charge->space": 40.12,
+    "time->space": 10.51
+   }
+  },
+  "41": {
+   "passed": 10,
+   "feasible": 16,
+   "own": {
+    "mass": 1.33,
+    "space": 2.37,
+    "charge": 2.1,
+    "time": 2.9
+   },
+   "fails": {
+    "charge->time": 8.91,
+    "time->mass": 48.55,
+    "space->mass": 38.12,
+    "space->time": 70.23,
+    "charge->space": 40.66,
+    "time->space": 9.69
+   }
+  }
  }
 }
