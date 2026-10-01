@@ -420,7 +420,7 @@ class LossCfg:
     w_sp: float = 1.0
     eps: float = 0.05
     w_count: float = 4.0
-    w_survive: float = 10.0
+    w_survive: float = 60.0     # a death must cost more than the count gains from it: restraint belongs at hatching
 
 
 def _centre(x):
