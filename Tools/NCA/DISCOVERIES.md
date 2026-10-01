@@ -31,6 +31,51 @@ alone costs 2.3–4.5. The loss comes from SORTING. Element placement adds 4–1
 exactly with how GLOBAL each family's sorting mechanism is: global slot assignment (field) <
 per-class grid deficits (hgrid) < per-group anchors (compact) ≈ none (G2, evo).
 
+## Update 21:40 UTC — all four axes at once: three models now clear the scorecard
+
+The lead's goal was "a combination of strategies that are performant, lossless, and emergent". As of
+this round three models pass every scorecard axis (accurate at the loss-8 bar on three seeds,
+lossless, in the organic band, local-or-mixed), each from a different family:
+
+| model | family | seed 7 / 23 / 41 (passed / feasible) | own plans, seed 7 | lossless | ms/step @n (Python, 1 thread) | organic | my seed-101 check |
+|---|---|---|---|---|---|---|---|
+| **combo** (G8, published) | grid morphogen + lossless corrector | **16/16, 15/16, 15/16**; held-out 1000: 13/15 | 2.3 / 2.3 / 3.2 / 3.5 | **0 deaths** | 12.2 @134 | **in** (planar excess 0.09) | S101_COMBO |
+| combo G16 twin | same, full grid | 16/16, 16/16, 14/16 | 1.4 / 2.1 / 3.5 / 3.1 | 0 | 13.8 | in | — |
+| **evofate** (C2) | the EVOLVED rule + sort's fate | **12/13, 11/13, 12/13** | 3.0 / 3.7 / 1.6 / 6.3 | **0** | 5.6 @126 | **in** (planar 0.12; 0.19 at seed 23 - its edge) | S101_EVOFATE |
+| **sortfeel** (hand-picked) | emergent sorting, sheets removed | **12/13, 11/13, 13/13** | 1.5 / 2.7 / 1.2 / 4.2 | **0** | 6.3 @126 | **in** (planar 0.05, was 0.27) | S101_SORTFEEL |
+| hgrid2 (for reference) | grid morphogen | 16/16 at 7 and 23 (my rescore) | 1.2 / 2.0 / 2.9 / 3.0 | no (120) | 20.6 | in | — |
+
+What each one teaches:
+- **combo** (`results/combo/NOTE.md`): replacing hgrid2's starvation with a straight molt alone drops
+  it to 12/12/11 - every failure a BIG→SMALL switch - and three lawful mechanisms get it back:
+  `lay_cap` (no egg while the body holds the plan's headcount: "not creating mass is allowed; aging
+  it out is not"), `ratio = 2` (an overfull DOMAIN's spare room takes the element mix the whole body
+  still lacks: headcount is not a goal, element ratios are), and `orphan_proxy` / `transfer2` (a
+  member with no class in the plan steers by its element's best slot). Molting speed is NOT the
+  limit (2x faster: worse); hgrid2's neighbour swaps are inert (as sort found). G = 8 costs the
+  whale ~1 of loss and nothing else. The remaining misses sit at the bar's edge (7.6-10.5) and are
+  always puffer→dragonfly or dragonfly→jellyfish.
+- **evofate** (`results/evofate/NOTE.md`): the round-1 evolved rule - G2's weights and the evo genome
+  UNCHANGED, learned death suppressed - plus one sticky fate per tadpole (one of sort's wells) and a
+  small designed pull with a DEAD ZONE: inside its well a tadpole is pure G2. The dead zone and
+  syncing the pull to the cell's own firing are "the whole story for the feel". Own plans went
+  16-24 → 1.6-6.3 while jitter (2.57 vs evo's 2.53) stayed evo's. This is the model the lead asked
+  to give "another scene test once you get to the next level of scoring"; it is there.
+- **sortfeel**: the sheets were WELL COMPRESSION (not adhesion); flat-bottomed wells + a wander term
+  took planar excess 0.27 → 0.05 at no accuracy cost.
+- **posinfo2** (interim, learned rule + designed quota/molting homeostat): 11/13 at seed 7, lossless;
+  scorecard pending.
+
+**In the game** (`cece/swarm-fauna-game`, Docs/SWARM_FAUNA.md §9): sort is the third species
+(`SwarmSortCore`), 32/32 own plans over 8 seeds in game mode, zero self-inflicted deaths in 64 runs,
+**0.05-0.16 ms/step** (the grid core is 0.5-1.1, field 0.1-0.9). Findings that matter for the
+research: sort's ABSOLUTE surplus is why continuous molting does not defeat morphing here (the field
+model's proportional surplus did); the code rides the swimming body for free because a well is a
+fixed set of plan units; and the game body needed 0.1 voxels/step of noise to stop riding its wells
+like slots. Round 5 of the game work (launched 21:38) ports combo's lossless corrector into the grid
+species (removing its post-morph debris) and builds `SwarmEvoFateCore`, the evolved rule's scene
+test.
+
 ## Update 21:00 UTC — the first lossless LEARNED rule, and evo's body under the grid
 
 - **posinfo2 (interim): a learned rule that is LOSSLESS** - posinfo's network (G2 + body-frame
