@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/CosmicShore.AssetTool/CosmicShore.AssetTool.csproj" />
     <Project Path="src/CosmicShore.Cli/CosmicShore.Cli.csproj" />
     <Project Path="src/CosmicShore.Client/CosmicShore.Client.csproj" />
     <Project Path="src/CosmicShore.Compat/CosmicShore.Compat.csproj" />

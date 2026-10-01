@@ -20,6 +20,14 @@ namespace CosmicShore.Content.Yaml
 
         public string Str(string key) => this[key]?.Scalar;
 
+        /// <summary>
+        /// Where this node's map entry / sequence item came from in the file it was parsed out of
+        /// — set only by a source-preserving parse (<see cref="UnityYamlFile"/>). The writer
+        /// copies that text verbatim while the node still hashes to what was parsed, so an
+        /// untouched part of a file is written back byte for byte.
+        /// </summary>
+        internal SourceSpan Source;
+
         public float Float(string key, float fallback = 0f)
             => YScalar.TryFloat(this[key]?.Scalar, out var f) ? f : fallback;
 
@@ -73,11 +81,17 @@ namespace CosmicShore.Content.Yaml
     public sealed class YSeq : YNode
     {
         public readonly List<YNode> List = new();
+
+        /// <summary>Written as <c>[a, b]</c> rather than a block sequence (the parser records what it read).</summary>
+        public bool Flow;
+
+        /// <summary>The indent its block entries/items were read at (source-preserving parse only; -1 = unknown).</summary>
+        internal int SourceIndent = -1;
         public override IReadOnlyList<YNode> Items => List;
 
         public override YNode Clone()
         {
-            var c = new YSeq();
+            var c = new YSeq { Flow = Flow };
             c.List.Capacity = List.Count;
             foreach (var n in List) c.List.Add(n.Clone());
             return c;
@@ -88,6 +102,12 @@ namespace CosmicShore.Content.Yaml
     {
         public readonly List<KeyValuePair<string, YNode>> Entries = new();
         Dictionary<string, YNode> _index;
+
+        /// <summary>Written as <c>{k: v, …}</c> rather than a block mapping (the parser records what it read).</summary>
+        public bool Flow;
+
+        /// <summary>The indent its block entries/items were read at (source-preserving parse only; -1 = unknown).</summary>
+        internal int SourceIndent = -1;
 
         public void Add(string key, YNode value)
         {
@@ -143,7 +163,7 @@ namespace CosmicShore.Content.Yaml
 
         public override YNode Clone()
         {
-            var c = new YMap();
+            var c = new YMap { Flow = Flow };
             c.Entries.Capacity = Entries.Count;
             foreach (var e in Entries) c.Entries.Add(new KeyValuePair<string, YNode>(e.Key, e.Value.Clone()));
             return c;
@@ -151,7 +171,7 @@ namespace CosmicShore.Content.Yaml
 
         public static YMap Ref(long fileId, string guid = null, int type = 0)
         {
-            var m = new YMap();
+            var m = new YMap { Flow = true };
             m.Add("fileID", new YScalar(fileId.ToString(CultureInfo.InvariantCulture)));
             if (!string.IsNullOrEmpty(guid))
             {
@@ -174,6 +194,9 @@ namespace CosmicShore.Content.Yaml
         public YMap Body;
 
         public override string ToString() => $"!u!{ClassId} &{FileId} {TypeName}{(Stripped ? " stripped" : "")}";
+
+        /// <summary>The lines this document was parsed from (source-preserving parse only).</summary>
+        internal DocSource Source;
     }
 
     /// <summary>
@@ -182,10 +205,16 @@ namespace CosmicShore.Content.Yaml
     public static class UnityYaml
     {
         /// <summary>Parses a multi-document Unity asset file.</summary>
-        public static List<UnityDocument> ParseDocuments(string text)
+        public static List<UnityDocument> ParseDocuments(string text) => ParseDocuments(text, null);
+
+        /// <summary>
+        /// <paramref name="src"/> non-null = a source-preserving parse: every entry and item
+        /// remembers its span of <paramref name="text"/> (whose lines <paramref name="src"/> holds).
+        /// </summary>
+        internal static List<UnityDocument> ParseDocuments(string text, SourceText src)
         {
             var docs = new List<UnityDocument>();
-            var lines = SplitLines(text);
+            var lines = src != null ? new List<string>(src.Lines) : SplitLines(text);
             int i = 0;
             // Skip %YAML / %TAG directives.
             while (i < lines.Count && !lines[i].StartsWith("---", StringComparison.Ordinal))
@@ -198,7 +227,8 @@ namespace CosmicShore.Content.Yaml
                 while (i < lines.Count && !lines[i].StartsWith("--- ", StringComparison.Ordinal) && lines[i] != "---")
                     i++;
                 var doc = ParseHeader(header);
-                var body = new Reader(lines, start, i).ParseRoot();
+                var body = new Reader(lines, start, i, src).ParseRoot();
+                if (src != null) doc.Source = new DocSource(start - 1, i);
                 if (body is YMap map && map.Entries.Count > 0)
                 {
                     doc.TypeName = map.Entries[0].Key;
@@ -209,6 +239,13 @@ namespace CosmicShore.Content.Yaml
             }
             return docs;
         }
+
+        /// <summary>
+        /// Parses one YAML value as it would appear after "key: " — <c>5</c>, <c>Hello</c>,
+        /// <c>{x: 0, y: 1, z: 0}</c>, <c>[]</c>, <c>'quoted: text'</c>.
+        /// </summary>
+        public static YNode ParseValue(string text)
+            => ParseSingle("v: " + (text ?? "").Replace("\r\n", "\n").Replace("\n", "\n  "))["v"] ?? new YScalar("");
 
         /// <summary>Parses a single-document YAML text (e.g. a .meta file) into its root map.</summary>
         public static YMap ParseSingle(string text)
@@ -237,7 +274,7 @@ namespace CosmicShore.Content.Yaml
             return doc;
         }
 
-        static List<string> SplitLines(string text)
+        internal static List<string> SplitLines(string text)
         {
             var lines = new List<string>(text.Length / 32);
             int s = 0;
@@ -274,8 +311,16 @@ namespace CosmicShore.Content.Yaml
             readonly List<string> _lines;
             int _i;
             readonly int _end;
+            // Source-preserving parse only: the file's lines BEFORE the reader rewrites any
+            // "- key:" line, which is the text an untouched entry is written back as.
+            readonly SourceText _src;
 
-            public Reader(List<string> lines, int start, int end) { _lines = lines; _i = start; _end = end; }
+            public Reader(List<string> lines, int start, int end, SourceText src = null) { _lines = lines; _i = start; _end = end; _src = src; }
+
+            void Mark(YNode node, int start, string key, int indent)
+            {
+                if (_src != null && node != null) node.Source = new SourceSpan(_src, start, _i, key, indent);
+            }
 
             void SkipBlank()
             {
@@ -306,6 +351,7 @@ namespace CosmicShore.Content.Yaml
             YSeq ParseSeq(int indent)
             {
                 var seq = new YSeq();
+                if (_src != null) seq.SourceIndent = indent;
                 while (true)
                 {
                     SkipBlank();
@@ -315,12 +361,22 @@ namespace CosmicShore.Content.Yaml
                     if (ind != indent || !IsSeqItem(line, ind)) break;
                     string rest = ind + 2 <= line.Length ? line.Substring(Math.Min(line.Length, ind + 2)) : "";
                     int contentIndent = ind + 2;
+                    int itemStart = _i;
                     if (rest.Length == 0)
                     {
                         _i++;
                         SkipBlank();
                         if (_i < _end && Indent(_lines[_i]) > indent) seq.List.Add(ParseBlock(Indent(_lines[_i])));
                         else seq.List.Add(new YScalar(""));
+                        Mark(seq.List[^1], itemStart, null, indent);
+                        continue;
+                    }
+                    // "- - a" opens a nested sequence whose further items sit at ind+2.
+                    if (IsSeqItem(rest, 0))
+                    {
+                        _lines[_i] = new string(' ', contentIndent) + rest;
+                        seq.List.Add(ParseSeq(contentIndent));
+                        Mark(seq.List[^1], itemStart, null, indent);
                         continue;
                     }
                     // "- key: value" starts an inline map whose further keys sit at ind+2.
@@ -335,6 +391,7 @@ namespace CosmicShore.Content.Yaml
                     {
                         seq.List.Add(ParseInlineValue(rest, indent));
                     }
+                    Mark(seq.List[^1], itemStart, null, indent);
                 }
                 return seq;
             }
@@ -342,6 +399,7 @@ namespace CosmicShore.Content.Yaml
             YMap ParseMap(int indent)
             {
                 var map = new YMap();
+                if (_src != null) map.SourceIndent = indent;
                 while (true)
                 {
                     SkipBlank();
@@ -360,21 +418,25 @@ namespace CosmicShore.Content.Yaml
                     string key = content.Substring(0, colon);
                     if (key.Length > 1 && (key[0] == '"' || key[0] == '\'')) key = UnquoteInline(key);
                     string rest = colon + 1 < content.Length ? content.Substring(colon + 1).TrimStart(' ') : "";
+                    int entryStart = _i;
                     if (rest.Length == 0)
                     {
                         _i++;
                         SkipBlank();
+                        YNode block = null;
                         if (_i < _end)
                         {
                             string next = _lines[_i];
                             int nind = Indent(next);
-                            if (nind > indent) { map.Add(key, ParseBlock(nind)); continue; }
-                            if (nind == indent && IsSeqItem(next, nind)) { map.Add(key, ParseSeq(nind)); continue; }
+                            if (nind > indent) block = ParseBlock(nind);
+                            else if (nind == indent && IsSeqItem(next, nind)) block = ParseSeq(nind);
                         }
-                        map.Add(key, new YScalar(""));
+                        map.Add(key, block ?? new YScalar(""));
+                        Mark(map.Entries[^1].Value, entryStart, key, indent);
                         continue;
                     }
                     map.Add(key, ParseInlineValue(rest, indent));
+                    Mark(map.Entries[^1].Value, entryStart, key, indent);
                 }
                 return map;
             }
@@ -522,7 +584,7 @@ namespace CosmicShore.Content.Yaml
             if (c == '{')
             {
                 p++;
-                var map = new YMap();
+                var map = new YMap { Flow = true };
                 while (true)
                 {
                     SkipWs(s, ref p);
@@ -539,12 +601,13 @@ namespace CosmicShore.Content.Yaml
                     }
                     map.Add(key, value);
                 }
+                map.Flow = map.Entries.Count > 0; // an empty {} / [] carries no style: filled, it is written as Unity writes a filled one
                 return map;
             }
             if (c == '[')
             {
                 p++;
-                var seq = new YSeq();
+                var seq = new YSeq { Flow = true };
                 while (true)
                 {
                     SkipWs(s, ref p);
@@ -553,6 +616,7 @@ namespace CosmicShore.Content.Yaml
                     if (s[p] == ',') { p++; continue; }
                     seq.List.Add(ParseFlow(s, ref p));
                 }
+                seq.Flow = seq.List.Count > 0;
                 return seq;
             }
             return new YScalar(ReadFlowScalar(s, ref p, isKey: false));

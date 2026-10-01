@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Authoring from the command line: read, edit, create and delete objects in the Unity
+       project's scenes, prefabs and assets, writing back only what changed. Depends on the
+       content bridge alone, so it builds in seconds and needs no renderer or game code. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>cs-asset</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Content/CosmicShore.Content.csproj" />
+  </ItemGroup>
+
+</Project>
