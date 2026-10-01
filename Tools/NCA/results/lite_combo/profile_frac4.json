@@ -1,0 +1,73 @@
+{
+ "B1": {
+  "mass": {
+   "ms_step": 7.773,
+   "ms_swarm_step": 7.773,
+   "us_tadpole_step": 40.276,
+   "n": 193,
+   "phases_ms": {
+    "coarse.step(incl field,lay)": 4.416,
+    "migrate(total)": 1.279,
+    "proxy/transfer2": 0.775,
+    "molt(controller)": 0.313,
+    "decide": 0.216,
+    "fine.targets": 0.203,
+    "lay": 0.174,
+    "coarse.plan_field(cache)": 0.083
+   }
+  },
+  "space": {
+   "ms_step": 7.548,
+   "ms_swarm_step": 7.548,
+   "us_tadpole_step": 85.771,
+   "n": 88,
+   "phases_ms": {
+    "coarse.step(incl field,lay)": 4.026,
+    "molt(controller)": 1.83,
+    "migrate(total)": 0.596,
+    "proxy/transfer2": 0.562,
+    "fine.targets": 0.173,
+    "lay": 0.163,
+    "decide": 0.15,
+    "coarse.plan_field(cache)": 0.07
+   }
+  },
+  "charge": {
+   "ms_step": 6.612,
+   "ms_swarm_step": 6.612,
+   "us_tadpole_step": 36.734,
+   "n": 180,
+   "phases_ms": {
+    "coarse.step(incl field,lay)": 3.953,
+    "migrate(total)": 1.022,
+    "proxy/transfer2": 0.633,
+    "molt(controller)": 0.279,
+    "decide": 0.189,
+    "fine.targets": 0.186,
+    "lay": 0.155,
+    "coarse.plan_field(cache)": 0.078
+   }
+  },
+  "time": {
+   "ms_step": 7.008,
+   "ms_swarm_step": 7.008,
+   "us_tadpole_step": 91.01,
+   "n": 77,
+   "phases_ms": {
+    "coarse.step(incl field,lay)": 4.755,
+    "migrate(total)": 0.708,
+    "proxy/transfer2": 0.607,
+    "molt(controller)": 0.359,
+    "fine.targets": 0.195,
+    "lay": 0.188,
+    "decide": 0.172,
+    "coarse.plan_field(cache)": 0.08
+   }
+  },
+  "mean": {
+   "ms_step": 7.235,
+   "ms_swarm_step": 7.235,
+   "us_tadpole_step": 63.448
+  }
+ }
+}
