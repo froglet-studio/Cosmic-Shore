@@ -263,6 +263,9 @@ def load_model(spec):
     if kind == "combo":
         import combo_model as cm
         return cm.load(path)
+    if kind == "lite_combo":
+        import lite_combo_model as lcm
+        return lcm.load(path)
     raise ValueError(spec)
 
 
