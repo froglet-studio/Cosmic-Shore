@@ -8,6 +8,31 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-1.13 — `Fauna` never left its cell's spawned-object list
+
+- **Date:** fixed 2026-10-02 (commit); merge pending Yash's retest. Skipped the repro on
+  `bleeding-edge` at Yash's call, because the cause is clear from the code.
+- **Symptom:** none visible in normal play and nothing in the Console. `Cell.spawnedLifeForms`
+  kept an entry for every creature that died or was torn down, so the cell's `LifeFormsInCell`
+  stat only ever went up. That stat is read by `AllLifeFormsDestroyedTurnMonitor` (the
+  Wildlife Blitz co-op scene, `MinigameWildlifeBlitzMultuplayerCoOp`) and the single-player
+  Wildlife Blitz turn monitor, so "clear every creature" could never reach 0.
+- **Root cause:** `Flora` leaves the list in `LifeForm.Die`, but `Fauna` derives from
+  `MonoBehaviour`, not `LifeForm`. No fauna death path (starvation, predation, joust, scene
+  teardown, cell swap or split) called `Cell.UnregisterSpawnedObject`, and `Fauna.OnDestroy`
+  only left the live-fauna registry (`UnregisterLiveFauna`), which is a different collection.
+- **Repro:** not run on `bleeding-edge`. To see it, log `spawnedLifeForms.Count` in
+  `Cell.UpdateCellStats`: it only rises as creatures die.
+- **Fix:** `Fauna.OnDestroy` calls `hostCell.UnregisterSpawnedObject(gameObject)`. The call is a
+  no-op when the object isn't in the list, and skipped if the cell is gone, so it is safe on
+  every destroy route. The handoff doc's §1.13 moved to §0.
+- **Verification:** all four gate scripts pass. Needs Yash's retest on `Bug_Hunt`: play the
+  Wildlife Blitz co-op scene (or any mode with fauna), let creatures die, and check that nothing
+  throws and the creatures count goes down as they die.
+- **PR/commit:** pending.
+
+---
+
 ## BH-1.10 — crystal colour fade leaks a Material per colour change
 
 - **Date:** fixed 2026-10-02 (commit); merge pending Yash's retest.
