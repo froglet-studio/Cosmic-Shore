@@ -561,7 +561,21 @@ branches, with results in `results/swarm_coevo_<tag>/`:
 | e4 | all three (stopped at step 260: diverging, see below) | - |
 | e5 | e2 + scale-invariant loss | `cece/swarm-exp-e5` |
 | e6 | e1 + scale-invariant loss | `cece/swarm-exp-e6` |
+| e5b, e6b | e5 and e6 rerun on the NaN-guarded code | `cece/swarm-exp-e5b`, `-e6b` |
 | e7 | e4 + scale-invariant loss | this branch |
+
+**A NaN hang.** The first E7 hung after about 185 steps. `sinkhorn_ot` halves its temperature
+until it reaches the target value, a NaN temperature never does, and one non-finite cost matrix
+kept the loop running forever. `py-spy` showed `e = NaN` inside the swarm's self-transport term.
+Training now guards against this:
+
+- The solver sanitises its costs and bounds its loop.
+- States are clamped at ±1000, which no healthy rule reaches.
+- A sample whose state or loss turns non-finite is dropped from the update and reseeded.
+- A non-finite gradient skips the step.
+
+The log counts these events as `nf`. Default runs are unchanged. E1–E3, E5 and E6 started on the
+earlier code, so a run of theirs that goes quiet has most likely hung the same way.
 
 **E4 diverged, and the logs said why.** Its loss rose from about 100 to 450. The contrastive hinge
 (0–11) and the mix error (0.00–0.42) stayed small; the divergence itself grew to 50–97, with every
