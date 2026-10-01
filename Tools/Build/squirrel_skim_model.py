@@ -557,7 +557,142 @@ def track_report(k, scene_text):
     return rows
 
 
+RIBBON_PREFAB_GUID_KEY = "prism"            # SpawnableWaypointTrack.prism
+MARKER_PREFAB_GUID_KEY = "waypointPrism"    # SpawnableWaypointTrack.waypointPrism
+SLOW_FX = P("Assets", "_SO_Assets", "Effects", "Vessel Prism Effects", "SquirrelVesselChangeSpeedByPrism.asset")
+SELF_TRAIL = P("Assets", "Resources", "SelfTrailContactConfig.asset")
+# The Squirrel's hull as a box. Its two hull BoxColliders sit on FBX bones whose world pose this
+# reader cannot resolve (fileIDs hashed from bone names, rotated through the armature), so the
+# HARNESS flies a deliberately conservative box that bounds the whole mesh (4.50 x 1.46 x 6.45 u,
+# measured from SquirrelVessel_CosmicShoresTest1.fbx) plus a margin. The in-game driver measures
+# the real colliders at runtime (VesselImpactor.HullColliders), so this number never ships.
+HARNESS_HULL_HALF_EXTENTS = (2.3, 0.9, 3.3)
+
+
+def root_box_collider_size(prefab_path):
+    """m_Size of the BoxCollider on a prism prefab's ROOT GameObject (a nested child prism, e.g. the
+    Manta Prism's inert Rhino Prism, is ignored - it sits inside the root's own shell)."""
+    text = read(prefab_path)
+    roots = [b for b in blocks(text) if b.startswith("4 &") and "m_Father: {fileID: 0}" in b]
+    assert len(roots) == 1, f"expected one root Transform in {prefab_path}"
+    go = re.search(r"m_GameObject: \{fileID: (-?\d+)\}", roots[0]).group(1)
+    cols = [b for b in blocks(text) if b.startswith("65 &") and f"m_GameObject: {{fileID: {go}}}" in b]
+    assert len(cols) == 1, f"expected one root BoxCollider in {prefab_path}, found {len(cols)}"
+    return vec3(cols[0], "m_Size")
+
+
+def harness_config(k):
+    """Everything Tools/Build/squirrel_ai_harness needs, read from the shipped assets. The harness
+    reads this file instead of typing a single constant."""
+    scene = read(SCENE)
+    sq = read(SQUIRREL)
+    transformer = block_with(sq, "BoostDecayRate:", "DefaultThrottleScaler:")
+    trail = block_with(sq, "BaseScale:", "MinimumGap:", "initialWavelength:")
+    track = block_with(scene, "prismSpacing:", "waypointScaleMultiplier:")
+    crystals = block_with(scene, "anchorJitterRadius:", "crystalCountMode:")
+    monitor = block_with(scene, "lapsPerIntensity:")
+    spawner = block_with(scene, "playerSpawnPoints:", "aiInitializeDatas:")
+    drift = read(DRIFT)
+    slow = read(SLOW_FX)
+    self_trail = read(SELF_TRAIL)
+
+    def guid_of(block, key):
+        m = re.search(rf"^\s*{key}: \{{fileID: -?\d+, guid: ([0-9a-f]{{32}})", block, flags=re.M)
+        assert m, f"{key} not found"
+        return m.group(1)
+
+    def int_list(block, key):
+        h = re.search(rf"{key}: ([0-9a-f]+)", block).group(1)
+        return [int.from_bytes(bytes.fromhex(h[i:i + 8]), "little", signed=True) for i in range(0, len(h), 8)]
+
+    spline_flags = int_list(track, "useSplinePerIntensity")
+    laps = int_list(monitor, "lapsPerIntensity")
+    tracks, anchors = position_lists(track), position_lists(crystals)
+
+    # Spawn points: the scene's authored Transforms, in list order (GameDataSO draws one at random).
+    ids = re.findall(r"- \{fileID: (\d+)\}", spawner.split("playerSpawnPoints:")[1].split("arrangeSpawnPointsAroundCell")[0])
+    spawns = []
+    for fid in ids:
+        tb = next(b for b in blocks(scene) if b.startswith(f"4 &{fid}\n") or b.startswith(f"4 &{fid}\r"))
+        pos = vec3(tb, "m_LocalPosition")
+        rot = re.search(r"m_LocalRotation: \{x: (-?[0-9.e-]+), y: (-?[0-9.e-]+), z: (-?[0-9.e-]+), w: (-?[0-9.e-]+)\}", tb)
+        spawns.append({"position": pos, "rotation": tuple(float(g) for g in rot.groups())})
+
+    wr = wake_rails(k)
+    return {
+        "source": "Tools/Build/squirrel_skim_model.py --export-harness-config",
+        "flight": {
+            "follow_rate": k["lerp"],
+            "throttle_scaler": k["throttle_scaler"],
+            "min_speed": k["min_speed"],
+            "pitch_dps": num(transformer, "PitchScaler"),
+            "yaw_dps": num(transformer, "YawScaler"),
+            "roll_dps": num(transformer, "RollScaler"),
+            "rot_throttle_scaler": k["rot_throttle_scaler"],
+            "boost_decay": k["boost_decay"],
+            "boost_max": k["boost_max"],
+            "boost_base": k["boost_base"],
+            "vector_flight_model": num(transformer, "vectorFlightModel") == 1,
+            "drift_overshoot_ceiling": num(transformer, "driftOvershootCeiling"),
+            "drift_mult": num(drift, "Mult"),
+            "drift_grip": num(drift, "driftDamping"),
+        },
+        "skim": {
+            "add_per_hit": k["add_per_hit"],
+            "skimmer_radius": skimmer_radius(k, 0),
+        },
+        "hull_half_extents": HARNESS_HULL_HALF_EXTENTS,
+        "hull_touch": {
+            "mass_scaling": num(slow, "massScaling"),
+            "max_slow": num(slow, "maxSlowStrength"),
+            "duration": num(slow, "speedModifierDuration"),
+            "danger_mult": num(slow, "dangerSlowMultiplier"),
+            "danger_duration_mult": num(slow, "dangerSlowDurationMultiplier"),
+        },
+        "self_trail": {
+            "hull_grace": num(self_trail, "hullGraceSeconds"),
+            "skim_grace": num(self_trail, "skimGraceSeconds"),
+        },
+        "rails": {
+            "half_extents": (wr["width"] / 2, wr["height"] / 2, wr["length"] / 2),
+            "lateral": wr["centre"],
+            "wavelength": wr["spacing"],
+            "wait_time": num(trail, "defaultWaitTime"),
+            "start_delay": num(trail, "startDelay"),
+            "min_speed": 3.0,
+            "drift_shields": k["trail_drift_shields"],
+        },
+        "track": {
+            "prism_scale": k["track_prism_scale"],
+            "marker_mult": k["marker_scale_mult"],
+            "spacing": k["prism_spacing"],
+            "ribbon_collider": root_box_collider_size(guid_path(guid_of(track, RIBBON_PREFAB_GUID_KEY))),
+            "marker_collider": root_box_collider_size(guid_path(guid_of(track, MARKER_PREFAB_GUID_KEY))),
+            "shell_scale": SHELL_SCALE,
+            "super_shielded": k["super_shielded_track"],
+            "intensities": [
+                {"waypoints": tracks[i],
+                 "spline": i < len(spline_flags) and spline_flags[i] == 1,
+                 "laps": laps[i] if i < len(laps) else 1,
+                 "anchors": anchors[i] if i < len(anchors) else []}
+                for i in range(len(tracks))
+            ],
+        },
+        "crystal": {
+            "capture_radius": k["crystal_capture_radius"],
+            "jitter": k["crystal_jitter"],
+        },
+        "spawn_points": spawns,
+    }
+
+
 def main():
+    if "--export-harness-config" in sys.argv:
+        out = sys.argv[sys.argv.index("--export-harness-config") + 1]
+        with open(out, "w", encoding="utf-8") as f:
+            json.dump(harness_config(load()), f, indent=1)
+        return
+
     k = load()
     top = k["throttle_scaler"] * k["boost_max"]
     cruise = k["throttle_scaler"]
