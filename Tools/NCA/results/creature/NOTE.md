@@ -7,7 +7,7 @@
 touches **2.6-21%** of the school (inert 28-37%, field alone 8-28%, shell alone 18-32%). **B is the one to build.**
 Showcases: `showcase.html` (A), `showcase_field.html` (B, recommended), `showcase_field_swim.html` (B with field's
 swimming on, `wander 0.25`: the body yaws along a wandering path - the same lives, livelier).
-**`play.html` - a PLAYABLE version** (`creature_play.py` + `creature_play.html.tpl`, 258 KB, no libraries): the
+**`play.html` - a PLAYABLE version** (private artifact: https://claude.ai/artifact/1mJBh5VPkH8MEAZUfXWc11) (`creature_play.py` + `creature_play.html.tpl`, 258 KB, no libraries): the
 whole of (B) runs live in JavaScript - field's body ported line for line from `field_port/FieldSwarmCore.cs`, the
 shell from `creature_port/CreatureShell.cs`, fear on - and you fly the vessel with the mouse (hold the button to
 RAM, hold E to FEED on the animal's element, wheel for depth, right-drag to orbit; toggles for fear and for the
