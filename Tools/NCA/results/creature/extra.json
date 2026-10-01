@@ -1,0 +1,98 @@
+{
+ "escort": {
+  "mass": {
+   "on": 39.18,
+   "off": 4.89,
+   "ship_travel": 144.0
+  },
+  "space": {
+   "on": 5.64,
+   "off": 5.64,
+   "ship_travel": 144.0
+  },
+  "charge": {
+   "on": 1.2,
+   "off": 1.1,
+   "ship_travel": 144.0
+  },
+  "time": {
+   "on": 16.5,
+   "off": -1.62,
+   "ship_travel": 144.0
+  }
+ },
+ "switch": {
+  "mass->charge": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "ch",
+   "trace": "mcccccccccccccccccccccccc"
+  },
+  "mass->space": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "sp",
+   "trace": "mssssssssssssssssssssssss"
+  },
+  "mass->time": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "ti",
+   "trace": "mtttttttttttttttttttttttt"
+  },
+  "space->charge": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "ch",
+   "trace": "scccccccccccccccccccccccc"
+  },
+  "space->mass": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "ma",
+   "trace": "smmmmmmmmmmmmmmmmmmmmmmmm"
+  },
+  "space->time": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "ti",
+   "trace": "stttttttttttttttttttttttt"
+  },
+  "charge->mass": {
+   "latency": 0,
+   "tell_steps": 36,
+   "final": "ma",
+   "trace": "mmmmmmmmmmmmmmmmmmmmmmmmm"
+  },
+  "charge->space": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "sp",
+   "trace": "cssssssssssssssssssssssss"
+  },
+  "charge->time": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "ti",
+   "trace": "ctttttttttttttttttttttttt"
+  },
+  "time->charge": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "ch",
+   "trace": "tcccccccccccccccccccccccc"
+  },
+  "time->mass": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "ma",
+   "trace": "tmmmmmmmmmmmmmmmmmmmmmmmm"
+  },
+  "time->space": {
+   "latency": 10,
+   "tell_steps": 36,
+   "final": "sp",
+   "trace": "tssssssssssssssssssssssss"
+  }
+ }
+}

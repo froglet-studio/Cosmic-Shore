@@ -1,0 +1,70 @@
+{
+ "seed11": {
+  "mass": {
+   "before": 18.36,
+   "n_before": 280,
+   "killed": 100,
+   "cut": 20.55,
+   "recovered": 19.55,
+   "n_after": 280,
+   "heal": 0.457
+  },
+  "space": {
+   "before": 22.95,
+   "n_before": 280,
+   "killed": 51,
+   "cut": 24.7,
+   "recovered": 26.74,
+   "n_after": 280,
+   "heal": -1.166
+  },
+  "charge": {
+   "before": 16.01,
+   "n_before": 280,
+   "killed": 88,
+   "cut": 18.47,
+   "recovered": 16.16,
+   "n_after": 280,
+   "heal": 0.939
+  },
+  "time": {
+   "before": 26.37,
+   "n_before": 280,
+   "killed": 61,
+   "cut": 29.01,
+   "recovered": 27.43,
+   "n_after": 280,
+   "heal": 0.598
+  }
+ },
+ "eight_seeds_wounds_on": {
+  "mean": {
+   "mass": 0.594,
+   "space": -0.181,
+   "charge": -0.427,
+   "time": 0.958
+  },
+  "residual": {
+   "mass": 0.57,
+   "space": 5.238,
+   "charge": 1.38,
+   "time": 0.651
+  },
+  "residual_overall": 1.96
+ },
+ "eight_seeds_evo_and_shipped": {
+  "mean": {
+   "mass": 0.521,
+   "space": -1.387,
+   "charge": 0.259,
+   "time": 0.873
+  },
+  "residual": {
+   "mass": 0.418,
+   "space": 2.707,
+   "charge": -0.205,
+   "time": 0.44
+  },
+  "residual_overall": 0.84
+ }
+}
