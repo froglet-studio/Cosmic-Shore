@@ -43,8 +43,9 @@ crystals). This is exactly what G2's switches lacked.
 | G2 (baseline, `results/swarm_coevo_g2`) | 5/8 | 13.9 / 17.5 / 15.3 / 20.7 | 1/4 | 0.33 / -0.87 / 0.67 / n.a. |
 | **oracle**: designed boid + designed grid (`oracle/`) | **7/8** | 7.2 / 9.8 / 10.3 / 17.7 | 3/4 | 0.72 / 0.99 / -0.08 / 0.82 |
 | **hybrid**: G2 rule + grid composition (`hybrid_g2/`) | **7/8** | 7.2 / 17.2 / 6.8 / 11.1 | 3/4 | 0.94 / 0.99 / 0.30 / 1.73 |
-| learned vote NCA (decision learned, templates designed) | see below | | | |
-| learned field NCA (whole morphogen learned) | see below | | | |
+| learned vote NCA (decision learned, templates designed), 2 versions | 3/8 | 7.2 / (puffer) / 9.3 / (puffer) | 0/4 | not run |
+| learned field NCA (whole 47-ch morphogen learned) | not scored | density error never got below "predict nothing" in 7 episodes | | |
+| G2 rule conditioned on grid samples, end-to-end (`hgrid_e2e.py`) | see below | | | |
 
 Bodies come out at the plan's size and mix, not at the 280-slot cap (oracle: 196/192, 91/88, 185/179,
 80/76 tadpoles, element mixes within a few units of the plan; G2 runs every plan at 280). In the
@@ -66,11 +67,52 @@ after the cull, or cull Space with Time.
 
 ## What a player would see
 
-(to be completed)
+* **A clump that blooms into a creature.** 16 tadpoles; within ~60 steps the class with the most room
+  breeds fastest, eggs land where their class is missing, and the body fills in from the inside out at
+  the plan's own size (not a 280 blob).
+* **It moves like the creature.** With the flow channel the whale's units drift along its body, the
+  dragonfly's Time units run laps around the wings (~0.44 voxel/step, the fastest), the jelly pulses.
+  Collision keeps the spacing even, so it reads as one animal made of fish.
+* **Eat it and it changes species - and drops loot.** Remove enough of the majority and the grid
+  immediately re-targets: the new majority breeds, the old one stops breeding, and the misfits (a class
+  the new body has no room for, sitting where it is not wanted) wither one by one into crystals. A
+  whale culled of its Mass shed ~55 crystals while becoming a jellyfish; the four-creature chain
+  sheds 126 over its life. That is a readable, rewarding reaction: "I ate the whale's mass and it
+  turned into a jellyfish and spilled crystals."
+* **Strike it and it heals.** Ram a third of it away and it regrows into the hole within ~120 steps
+  (heal 0.72-0.99 on three plans; the pufferfish regrows to the right size but scores no better -
+  its spines are pose-sensitive).
+* Caveats: the switch is not a morph wave - the whole field flips in one step (the designed grid is a
+  global decision); and starvation is a death the brief's "no imposed death" allows only as starvation
+  (here: no niche in the body plan). Turn it off with `starve=0`: still 7/8, but the misfits hang around the new body
+  (whale->jellyfish keeps 18 Mass + 31 Time tadpoles, divergence 31.4 vs 11.2 with starvation;
+  pufferfish->dragonfly 39.6 vs 19.9 - a near miss against the pufferfish at 42.4).
 
-## What failed / dead ends
+## What failed / dead ends (and why - the useful part)
 
-(to be completed)
+1. **Learned vote NCA: the composition feedback that gives the designed grid its hysteresis makes a
+   learned grid's mistakes permanent.** The grid's choice sets which elements breed; the majority
+   follows the field; the label (the majority) then agrees with the field. A field that hesitates in
+   its first steps (an untrained cell's argmax is "mass"; a soft mixture of plans asks for a mixed
+   element budget, which favours the two big plans) breeds Mass/Charge, and the swarm walks into the
+   whale or the pufferfish and stays there. Per-cell accuracy against the live majority reached
+   0.88-0.90, yet the closed loop scored 3/8 twice (v1 soft field; v2 hard per-cell argmax + 5%
+   hysteresis): Space and Time seeds grew pufferfish, and the whale never released Mass after a cull.
+   Labelling with the *intended* plan instead (the seed's, or the cull's - sticky) is the honest label,
+   but in 40 episodes it did not learn (accuracy 0.3-0.5): the cue (the mix at the moment of the cull)
+   is gone by the time the error shows. This is G2's credit-assignment problem moved one level up, not
+   solved by it.
+2. **Learned field NCA (grow the whole morphogen): too slow on 4 CPU cores.** First version diverged
+   (unbounded state); bounded + leaky + value-parameterised attributes was stable, but after 7
+   episodes (~1700 field steps) its density error was still ~1.0 relative (= predicting empty space).
+   The task is a conditional growing-NCA with four 3D shapes, 47 output channels and a moving frame;
+   it needs GPU-scale training. Paused (resumable: `runs/hgrid_nca`).
+3. **Engineering traps worth carrying:** (a) the field the boids follow must be detached when training
+   the grid through its own loss - otherwise every position keeps the whole autograd history and the
+   process grew to 14 GB and was OOM-killed; (b) relu on a zero-initialised density readout passes no
+   gradient (regress the raw state where density is wanted); (c) a density field cannot express
+   circulation - the formed swarm sat still (0.05 voxel/step) until the plan's own frame-to-frame unit
+   velocity became a FLOW channel (now 0.13-0.44 voxel/step, Time fastest).
 
 ## Recommendation for the next round
 
