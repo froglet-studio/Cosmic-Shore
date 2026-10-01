@@ -2,7 +2,7 @@
     python Tools/NCA/hgrid2_sweep.py "k_fine=1" "k_fine=2,sigma=2" ... [--seeds 7,108]"""
 import sys, time, json, torch
 import swarm_nca as sn, hgrid2_model as hm, hgrid2_diag as hd
-torch.set_num_threads(4)
+torch.set_num_threads(int(__import__("os").environ.get("NT", "1")))
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 seeds = (7,)
 for a in sys.argv[1:]:

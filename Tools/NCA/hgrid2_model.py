@@ -47,6 +47,8 @@ class Cfg(hb.BoidCfg):
     periods: str = ""           # per-plan animation period override "mass:8,time:16"
     fine_look: int = 0          # looks from the fine field (the nearest wanted units of the element) instead of the grid
     vel_pre: float = 0.0        # extra persistence on the fine term (smooths it: 0 = none)
+    interp: int = 0             # fine targets move CONTINUOUSLY between the plan's frames (no 8-step jumps)
+    k_ff: float = 0.0           # feed-forward: a tadpole takes this share of its nearby same-class units' own velocity
 
 
 def _periods(cfg):
@@ -62,13 +64,14 @@ class Oracle2(hb.OracleField):
         super().__init__(targets, cfg)
         self.per = _periods(cfg)
 
-    def frame_of(self, sw):
+    def frame_of(self, sw, frac=False):
         cfg = self.cfg
         kinds = [sn.KINDS[int(g)] for g in sw.gplan]
         out = []
         for c, k in zip(sw.clock, kinds):
             p = self.per.get(k, cfg.period)
-            out.append(int(c // p) % len(self.targets[k].frames) if cfg.animate else 0)
+            f = int(c // p) % len(self.targets[k].frames) if cfg.animate else 0
+            out.append((f, (float(c) % p) / p if cfg.animate else 0.0, p) if frac else f)
         return kinds, out
 
     def __call__(self, sw, centres, live, train=False):
@@ -85,13 +88,18 @@ class Boid2(hb.FieldBoid):
 
     def fine_targets(self, sw, centres):
         """Per sample: target unit positions (placed at the grid centre) and their class (elem*3+domain)."""
-        kinds, frames = self.field_fn.frame_of(sw)
+        kinds, frames = self.field_fn.frame_of(sw, frac=True)
         out = []
-        for b, (k, f) in enumerate(zip(kinds, frames)):
-            fr = self.targets[k].frames[f]
-            p = fr["p"] - fr["p"].mean(0) + centres[b]
+        for b, (k, (f, a, per)) in enumerate(zip(kinds, frames)):
+            frs = self.targets[k].frames
+            fr = frs[f]
+            p0 = fr["p"] - fr["p"].mean(0)
+            nx = frs[(f + 1) % len(frs)]
+            p1 = nx["p"] - nx["p"].mean(0)
+            vel = (p1 - p0) / per                               # units keep their index across frames
+            p = (p0 + a * (p1 - p0) if self.cfg.interp else p0) + centres[b]
             cls = fr["elem"] * 3 + sw.dmap[b][fr["slot"]]
-            out.append((p, cls, fr))
+            out.append((p, cls, vel))
         return out
 
     def step(self, sw, gen=None, train=False):
@@ -103,8 +111,20 @@ class Boid2(hb.FieldBoid):
             return out
         # The fine layer is applied as an extra displacement on top of the coarse step, on the tadpoles
         # that were live through it (eggs laid this step are untouched).
-        B, N, _ = out.pos.shape
         live = (sw.active & sw.hatched & out.active & out.hatched)
+        lf = live.float()
+        disp = self.fine_disp(out, pos0, live)
+        if cfg.vel_pre:
+            prev = out.s[..., 15:18]
+            disp = cfg.vel_pre * prev + (1 - cfg.vel_pre) * disp
+            out.s[..., 15:18] = disp * lf[..., None]
+        out.pos = out.pos + disp * lf[..., None]
+        return out
+
+    def fine_disp(self, out, pos0, live, k_scale=1.0):
+        """The fine layer's displacement for every live tadpole of `out` (grid centre from pos0)."""
+        cfg = self.cfg
+        B, N, _ = out.pos.shape
         lf = live.float()
         cen = (pos0 * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
         if cfg.quant:
@@ -136,17 +156,15 @@ class Boid2(hb.FieldBoid):
             if cfg.settle:
                 want_n = float(len(p)); have_n = float(len(m))
                 k = k * max(0.0, min(1.0, have_n / want_n))
-            d = k * g + cfg.k_fine_tot * gt
+            d = k_scale * k * g + cfg.k_fine_tot * gt
+            if cfg.k_ff:
+                wv = wt * same_t
+                d = d + k_scale * cfg.k_ff * (wv @ fr) / wv.sum(1, keepdim=True).clamp(min=0.3)
             dn = d.norm(dim=-1, keepdim=True)
             vmax = torch.tensor(self.world.vmax)[out.elem[b, m]][:, None]
             d = d * (vmax / dn.clamp(min=1e-6)).clamp(max=1.0)
             disp[b, m] = d
-        if cfg.vel_pre:
-            prev = out.s[..., 15:18]
-            disp = cfg.vel_pre * prev + (1 - cfg.vel_pre) * disp
-            out.s[..., 15:18] = disp * lf[..., None]
-        out.pos = out.pos + disp * lf[..., None]
-        return out
+        return disp
 
 
 def make(**kw):
