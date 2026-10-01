@@ -11,6 +11,51 @@ several distinct families of lifeform-discovery process and keep them distinct. 
 unifies their capabilities is the LAST step, and only if possible. Orthogonal processes that stay
 separate are a fine outcome. Several lifeforms may ship.
 
+## End of day, 2026-10-01 (23:50 UTC) — where the swarm stands
+
+**The answer to "performant, lossless, emergent" is: a designed composition controller + a local shape rule +
+a fractional update.** Four front runners clear every scorecard axis, three are held, and one has already been
+made 2.25x lighter AND much smoother without giving anything up.
+
+| front runner | what it is | accuracy (loss-8 bar, 3 samples) | lossless | organic | smoothness | ms/step (Python, 1 thr) | held |
+|---|---|---|---|---|---|---|---|
+| **sortfeel, frac = 8** (`lite_sortfeel:results/lite_sortfeel/params.json?frac=8,vec_look=1`) | emergent cell sorting, flat-bottom wells + wander, 1/8 of the swarm re-steers per step | holds sortfeel (12/12/13/13 of 13 at 7/23/41/101) | yes | yes | **0.77** | **1.28** | PASSES the hold |
+| combo (G8) | grid morphogen made lossless (molting, ratio targets, orphan steering) | 16/15/15/15 of 16 | yes | yes | 0.51 | 8.4 (7.5 at frac 2, holds) | `results/hold/combo.json` |
+| posinfo2 | LEARNED rule + designed molting controller | 13/12/13/13 of 13 | yes | yes | 0.50 | 7.0 | `results/hold/posinfo2.json` |
+| evofate | the evolved rule (the lead's "beautifully organic") + fate wells | 12/11/12 of 13 | yes | yes (edge at seed 23) | — | 5.0 | not held |
+
+**What the day established:**
+1. **Composition is designed, shape is local.** Every model that passes tier 1 pairs a designed controller (who is
+   laid, who molts into what) with a local shape rule. Learned composition never got there; learned SHAPE did
+   (posinfo2 - the tightest own-plan losses of any model, 1.6-2.7).
+2. **Lossless is a molt, not a death.** Replacing starvation with molting (a surplus tadpole re-forms its crystal into
+   the element its own team is short of) kept hgrid2's accuracy (combo) and is now in the C# grid core.
+3. **A fractional update is cheaper AND smoother** (round 5). Coasting on a slightly stale intent is a low-pass: it
+   eases a change in instead of jolting. sortfeel at 1/8 re-steering: smoothness 0.44 -> 0.77 (above evo's 0.58),
+   2.25x faster, accuracy held. What it buys depends on where the time goes: half of sortfeel's step is all-pairs
+   neighbours (cut 8x); half of combo's is a coarse grid every tadpole pays (frac 2 holds; frac 4 teleports one
+   tadpole on one event); posinfo2 is a LEARNED rule trained at a 1/2 firing rate - a different schedule needs
+   retraining, it cannot be bolted on (k = 4 leaves the organic band).
+4. **The hold must be calibrated by a noise control.** lite_posinfo2 ran the unchanged rule with its random stream
+   shifted by one draw per step, and it FAILED the first hold: per-seed "no lost test", own losses +15% and
+   smoothness -0.05 were inside the noise of one realisation. `hold.py` now gates on robust tests, summed passes
+   with an allowance for marginal ones, seed-averaged own losses and smoothness -0.08; the noise control passes
+   and real regressions (a lost organic band, a collapsed student) still fail (`results/hold/verdicts_v2.json`).
+5. **Distilling a learned rule fails in closed loop** (R^2 0.98 per step, 0/52 grown); DAgger converges (error
+   30-98 -> 7-13 in two rounds) but needs the hold as its training signal.
+
+**Open problems, in order:**
+1. **dragonfly -> jellyfish** is the one switch every lossless model misses or barely makes (loss 7.4-10.4). Its
+   floor is the orphan third team: a perfect jellyfish with a fraction f of its units on a third team costs ~25 f,
+   so a lawful corrector must keep the orphan team under ~1/3 of the body or give it a place of its own (a design
+   call: an appendage, or a bud-off as a new colony).
+2. **The jolt.** combo, sortfeel and posinfo2 spike to 4-7x their own pace right after a cull or strike (evo eases
+   in at ~1.7). The fractional update fixed it for sortfeel; a ramped corrector gain is the general fix.
+3. **Hold smoothness at one seed** - it needs 2-3 seeds before it can gate a small change.
+4. **The game** (cece/swarm-fauna-game): grid (combo rules), sort and evofate species are ported to C#; the
+   recommended next port is sortfeel's flat wells + wander + the frac 8 schedule into SwarmSortCore. Round 5 there
+   needs an editor pass (compile, JSON import, visuals, Mono cost; QA-SWARM-ROUND5).
+
 ## The yardstick, now
 
 16 transitions: the 4 own plans, plus every one of the 12 majority switches with a fair cull

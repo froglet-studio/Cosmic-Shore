@@ -1,5 +1,7 @@
 # NCA — learned cellular automata, starting from a faithful reproduction
 
+> **Swarm research status (end of day 2026-10-01):** see [`DISCOVERIES.md`](DISCOVERIES.md) § *End of day* - the four front runners, the hold (`hold.py`) and smoothness score (`swarm_smooth.py`), and the open problems.
+
 Offline research tooling. Nothing here ships, nothing here touches the game yet.
 
 The goal is new flora behaviour grown by a **learned local rule** instead of an authored

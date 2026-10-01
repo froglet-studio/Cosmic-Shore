@@ -9,13 +9,22 @@ computationally performant and scalable implementation. This file is the hold.
   check    python Tools/NCA/hold.py --model <spec> --baseline results/hold/<name>.json [--out x.json]
            measures a candidate the same way and prints PASS/FAIL per axis; exit code 1 on any FAIL.
 
-Held axes (a candidate FAILS if it is worse than the baseline beyond the tolerance):
-  ACCURATE  swarm_eval.evaluate at HOLD_SEEDS (3 samples, loss-8 bar). Per seed: passed may not drop; no
-            test the baseline passed may fail; every own-plan loss may rise at most max(0.5, 15%).
+Held axes (a candidate FAILS if it is worse than the baseline beyond the tolerance). The tolerances are set by a
+NOISE CONTROL - the unchanged rule with its random stream shifted by one draw per step (lite_posinfo2, round 5) -
+which must PASS; the first version of these gates (per-seed "no lost test", own losses +15%, smoothness -0.05) failed
+it, i.e. they were inside the noise of a single realisation:
+  ACCURATE  swarm_eval.evaluate at HOLD_SEEDS (3 samples, loss-8 bar).
+            - no ROBUST test may be lost: one the baseline passes at that seed in every sample with a loss <= 7
+              (a full unit under the bar). A MARGINAL test (fewer than all samples, or within 1 of the bar, on
+              either side) is a coin the baseline itself flips between seeds and re-rolls.
+            - the SUM of passes over all seeds may drop by at most half the number of marginal (test, seed) pairs
+              in the baseline, rounded up.
+            - each plan's own loss, AVERAGED over the seeds, may rise at most max(0.5, 20%).
   LOSSLESS  scorecard.lossless_and_cost deaths: a lossless baseline holds 0.
   ORGANIC   swarm_feel.in_band at seed 7: an in-band baseline must stay in band, and planar excess may rise
             at most 0.05.
-  SMOOTH    swarm_smooth.smooth at seed 7: smoothness may fall at most 0.05; worst lurch at most +25%; worst
+  SMOOTH    swarm_smooth.smooth at seed 7: smoothness may fall at most 0.08 (the noise control moved it 0.065 at one
+            seed; a real gate wants several seeds - see SMOOTH_SEEDS); worst lurch at most +25%; worst
             teleport at most max(swarm_smooth.TELEPORT_OK = 1.5, +10%) - up to 1.5x the world's top speed is a
             fast swimmer plus a collision push (the smoothness calibration's own comfort range), not a relocation;
             worst molt/birth burst at most +0.05; no new deaths.
@@ -68,19 +77,42 @@ def measure(model, seeds=HOLD_SEEDS, samples=3, log=print):
     return out
 
 
-def compare(base, cand):
-    """[(axis, ok, detail)] - every held axis of `cand` against `base`."""
+ROBUST_MARGIN = 1.0          # a passed test is robust when every sample passes and its loss is <= bar - this
+SMOOTH_TOL = 0.08            # the noise control moved smoothness 0.065 at one seed
+
+
+def _marginal(t, bar):
+    return t["rate"] not in (0.0, 1.0) or abs(t["loss"] - bar) <= ROBUST_MARGIN
+
+
+def compare(base, cand, bar=None):
+    """[(axis, ok, detail)] - every held axis of `cand` against `base` (rules in the module docstring)."""
+    bar = bar if bar is not None else sn.MAX_TEST_LOSS
     res = []
+    sb = sc = marginal = 0
+    lost, own_b, own_c = [], {}, {}
     for s, b in base["accurate"].items():
         c = cand["accurate"].get(s)
         if c is None:
             res.append((f"accurate seed {s}", False, "not measured")); continue
-        res.append((f"accurate seed {s} passed", c["passed"] >= b["passed"], f"{c['passed']}/{c['feasible']} vs {b['passed']}/{b['feasible']}"))
-        lost = [k for k, v in b["tests"].items() if v["ok"] and not c["tests"].get(k, {}).get("ok", False)]
-        res.append((f"accurate seed {s} no lost test", not lost, ", ".join(lost) or "-"))
-        worse = [f"{k} {c['tests'][k]['loss']} > {v['loss']}" for k, v in b["tests"].items()
-                 if k.startswith("own") and k in c["tests"] and c["tests"][k]["loss"] > v["loss"] + max(0.5, 0.15 * v["loss"])]
-        res.append((f"accurate seed {s} own losses", not worse, "; ".join(worse) or "-"))
+        sb += b["passed"]; sc += c["passed"]
+        for k, v in b["tests"].items():
+            cv = c["tests"].get(k)
+            if _marginal(v, bar):
+                marginal += 1
+            elif v["ok"] and not (cv and cv["ok"]):
+                lost.append(f"{k} @{s}")
+            if k.startswith("own") and cv:
+                own_b.setdefault(k, []).append(v["loss"]); own_c.setdefault(k, []).append(cv["loss"])
+    allow = -(-marginal // 2)
+    res.append(("accurate summed passes", sc >= sb - allow, f"{sc} vs {sb} (allowance {allow}: {marginal} marginal test-seeds)"))
+    res.append(("accurate no lost robust test", not lost, ", ".join(lost) or "-"))
+    worse = []
+    for k in own_b:
+        mb, mc = sum(own_b[k]) / len(own_b[k]), sum(own_c[k]) / len(own_c[k])
+        if mc > mb + max(0.5, 0.2 * mb):
+            worse.append(f"{k} {mc:.2f} > {mb:.2f}")
+    res.append(("accurate own losses (seed mean)", not worse, "; ".join(worse) or "-"))
     if base["lossless"]["deaths"] == 0:
         res.append(("lossless", cand["lossless"]["deaths"] == 0, f"{cand['lossless']['deaths']} deaths"))
     if base["organic"]["in_band"]:
@@ -88,7 +120,7 @@ def compare(base, cand):
     res.append(("organic planar", cand["organic"]["planar_excess"] <= base["organic"]["planar_excess"] + 0.05,
                 f"{cand['organic']['planar_excess']} vs {base['organic']['planar_excess']}"))
     bs, cs = base["smooth"], cand["smooth"]
-    res.append(("smoothness", cs["smoothness"] >= bs["smoothness"] - 0.05, f"{cs['smoothness']} vs {bs['smoothness']}"))
+    res.append(("smoothness", cs["smoothness"] >= bs["smoothness"] - SMOOTH_TOL, f"{cs['smoothness']} vs {bs['smoothness']}"))
     res.append(("smooth lurch", cs["worst"]["lurch"] <= 1.25 * bs["worst"]["lurch"], f"{cs['worst']['lurch']} vs {bs['worst']['lurch']}"))
     res.append(("smooth teleport", cs["worst"]["teleport"] <= max(ss.TELEPORT_OK, 1.1 * bs["worst"]["teleport"]), f"{cs['worst']['teleport']} vs {bs['worst']['teleport']}"))
     for kk in ("molt_burst", "birth_burst"):

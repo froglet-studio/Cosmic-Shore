@@ -1,0 +1,132 @@
+{
+ "results/lite_posinfo2/hold_h4_f4.json": {
+  "verdict": "FAIL",
+  "fails": [
+   [
+    "smooth lurch",
+    "5.52 vs 4.22"
+   ]
+  ],
+  "ms": 5.739,
+  "base_ms": 6.985,
+  "smooth": 0.497,
+  "base_smooth": 0.497
+ },
+ "results/lite_posinfo2/hold_k4_f4.json": {
+  "verdict": "FAIL",
+  "fails": [
+   [
+    "organic band",
+    "{'jerk_rel': True, 'osc': True, 'stuck': True, 'planar': False}"
+   ],
+   [
+    "organic planar",
+    "0.18 vs 0.12"
+   ],
+   [
+    "smooth molt_burst",
+    "0.385 vs 0.319"
+   ]
+  ],
+  "ms": 6.298,
+  "base_ms": 6.985,
+  "smooth": 0.46,
+  "base_smooth": 0.497
+ },
+ "results/lite_posinfo2/hold_k4_h8_f4.json": {
+  "verdict": "FAIL",
+  "fails": [
+   [
+    "smooth molt_burst",
+    "0.407 vs 0.319"
+   ]
+  ],
+  "ms": 4.712,
+  "base_ms": 6.985,
+  "smooth": 0.519,
+  "base_smooth": 0.497
+ },
+ "results/lite_posinfo2/hold_noise.json": {
+  "verdict": "PASS",
+  "fails": [],
+  "ms": 6.435,
+  "base_ms": 6.985,
+  "smooth": 0.432,
+  "base_smooth": 0.497
+ },
+ "results/lite_posinfo2/hold_s64.json": {
+  "verdict": "FAIL",
+  "fails": [
+   [
+    "accurate summed passes",
+    "0 vs 51 (allowance 6: 11 marginal test-seeds)"
+   ],
+   [
+    "accurate no lost robust test",
+    "own mass @7, own space @7, own charge @7, own time @7, mass->space @7, space->charge @7, time->mass @7, mass->charge @7, mass->time @7, space->time @7, charge->space @7, own mass @23, own space @23, own charge @23, own time @23, mass->space @23, space->charge @23, time->mass @23, mass->charge @23, mass->time @23, space->time @23, charge->space @23, own mass @41, own space @41, own charge @41, own time @41, mass->space @41, space->charge @41, time->mass @41, mass->charge @41, mass->time @41, charge->space @41, own mass @101, own space @101, own charge @101, own time @101, mass->space @101, space->charge @101, time->mass @101, mass->charge @101, charge->space @101"
+   ],
+   [
+    "accurate own losses (seed mean)",
+    "own mass 28.21 > 1.63; own space 41.67 > 1.77; own charge 39.37 > 1.82; own time 93.96 > 2.65"
+   ],
+   [
+    "smoothness",
+    "0.287 vs 0.497"
+   ]
+  ],
+  "ms": 5.858,
+  "base_ms": 6.985,
+  "smooth": 0.287,
+  "base_smooth": 0.497
+ },
+ "results/lite_sortfeel/hold/vec_look_1_frac_4.json": {
+  "verdict": "PASS",
+  "fails": [],
+  "ms": 1.519,
+  "base_ms": 2.882,
+  "smooth": 0.436,
+  "base_smooth": 0.44
+ },
+ "results/lite_sortfeel/hold/vec_look_1_frac_8.json": {
+  "verdict": "PASS",
+  "fails": [],
+  "ms": 1.283,
+  "base_ms": 2.882,
+  "smooth": 0.771,
+  "base_smooth": 0.44
+ },
+ "results/lite_combo/hold_frac2.json": {
+  "verdict": "PASS",
+  "fails": [],
+  "ms": 7.548,
+  "base_ms": 8.415,
+  "smooth": 0.517,
+  "base_smooth": 0.51
+ },
+ "results/lite_combo/hold_frac4.json": {
+  "verdict": "FAIL",
+  "fails": [
+   [
+    "smooth teleport",
+    "1.728 vs 1.322"
+   ]
+  ],
+  "ms": 6.928,
+  "base_ms": 8.415,
+  "smooth": 0.597,
+  "base_smooth": 0.51
+ },
+ "results/lite_combo/hold_frac4_coast075.json": {
+  "verdict": "FAIL",
+  "fails": [
+   [
+    "smooth teleport",
+    "1.717 vs 1.322"
+   ]
+  ],
+  "ms": 6.984,
+  "base_ms": 8.415,
+  "smooth": 0.522,
+  "base_smooth": 0.51
+ }
+}
