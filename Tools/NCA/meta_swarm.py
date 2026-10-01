@@ -264,6 +264,9 @@ class MetaRule(sn.SwarmRule):
 
 
 def _cls(oracle):
+    if oracle == 2:
+        from meta_laying import LayHomeostat      # selective laying only: element fixed at birth
+        return LayHomeostat
     if oracle:
         from meta_oracle import OracleMeta
         return OracleMeta
@@ -320,12 +323,13 @@ class MetaCfg:
     meta_conform: float = 0.0
     learned_egg: int = 1
     p_cross: float = 0.1
-    oracle: int = 0                # 1: the DESIGNED conformity metamorph (meta_oracle.OracleMeta); only shape is learned
+    oracle: int = 0                # 1: the DESIGNED conformity metamorph (meta_oracle.OracleMeta); 2: designed selective
+                                   # laying only (meta_laying.LayHomeostat, p_meta forced 0); only shape is learned
 
 
 def train(cfg: MetaCfg, resume=True, on_snapshot=None):
     os.makedirs(cfg.run, exist_ok=True)
-    world = MetaWorld(learned_lay=1, learned_egg=cfg.learned_egg, p_cross=cfg.p_cross, p_meta=cfg.p_meta,
+    world = MetaWorld(learned_lay=1, learned_egg=cfg.learned_egg, p_cross=cfg.p_cross, p_meta=0.0 if cfg.oracle == 2 else cfg.p_meta,
                       meta_bias=cfg.meta_bias, meta_steps=cfg.meta_steps, meta_cap=cfg.meta_cap, meta_conform=cfg.meta_conform)
     L = LossCfg(w_over=1.0, min_body=76, w_body=20)                    # G2's loss
     targets = load_targets()

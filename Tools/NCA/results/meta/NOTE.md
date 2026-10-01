@@ -84,3 +84,18 @@ SPACE on every seed (`majority_after`), so a majority-following swarm becomes a 
 Conformity is positive feedback: it amplifies whichever element leads, so a switch is a RACE
 between conversion and re-laying in the first few dozen steps after the loss. That is a game knob
 with a clear threshold (between 4% and 8% of the swarm transforming at once).
+
+## Control: selective LAYING alone (no metamorphosis; element fixed at birth) - `meta_laying.py`
+
+Designed homeostat on the egg element only (each egg takes the element most under the live
+majority's plan mix), frozen G2: **also 7/8** (close 210.4; metamorph homeostat 197.9). So the
+decisive ingredient is the COMPOSITION HOMEOSTAT (conformity to the majority's plan mix), not the
+metamorph actuator. Metamorphosis still buys: tighter mixes (whale->jelly ends [67,28,153,32] by
+laying vs [78,7,172,23] by metamorph), a real shape change on whale->jelly (laying: geometry
+still whale-closest, 10.9 vs 12.6), and much better healing (laying 0.89/0.16/0.43/0.25 vs
+metamorph 0.71/0.99/0.87/0.86). Laying-only also needs free slots: a swarm at capacity with no
+turnover cannot rebalance by laying. (`results/meta/laying_control.txt`)
+
+m3 continued to step 1260: 7/8 at 500 / 750 / 1250 (close 173.9 / 187.0 / 172.4), 6/8 at 1000 -
+a noisy plateau, no improvement on the published step 500. Stopped to train l3 = laying
+homeostat + learned shape, the fair comparison.
