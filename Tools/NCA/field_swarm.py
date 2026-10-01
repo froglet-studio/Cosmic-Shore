@@ -78,6 +78,7 @@ class FieldCfg:
     align_k: float = 0.15
     vmax: tuple = (0.8, 0.8, 0.8, 2.0)   # per-element top speed (the World's)
     reassign_every: int = 8
+    assign: str = "hungarian"    # "hungarian" | "greedy" (cheapest pairs first: the trivial C# port)
     sticky: float = 4.0          # cost bonus for keeping the current slot
     lay_rate: float = 0.04       # eggs per step as a share of the headcount
     lay_max: int = 4
@@ -89,6 +90,10 @@ class FieldCfg:
     field_sigma: float = 3.0     # RBF width of the element density field
     field_k: float = 1.2
     cruise: float = 0.0          # anchor drift per step (0 for scoring; the viewer looks better > 0)
+    wander: float = 0.0          # >0: the body SWIMS - its anchor travels this far per step along a smooth
+                                 # wandering heading and the whole plan yaws to face it (showcase / game; the
+                                 # yardstick is not rotation-invariant, so scoring runs keep 0)
+    turn: float = 0.012          # max yaw rate (rad/step) of the wander
     # predator response
     sense: float = 2.2           # startle within sense x predator radius
     relay: float = 0.8           # startle passed to neighbours within align_r
@@ -96,6 +101,8 @@ class FieldCfg:
     flee: tuple = (0.6, 0.5, 1.4, 2.0)   # per element (Charge holds, Mass shoulders, Space jets, Time darts)
     flee_swirl: float = 0.8
     inflate: dict = field(default_factory=lambda: {"charge": 0.45})   # plan-level threat response: the body swells
+    mob: tuple = (0.0, 0.0, 0.0, 1.0)    # per element: a LOITERING ship (slower than mob_speed) is orbited, not fled
+    mob_speed: float = 1.0
     lookahead: float = 10.0      # steps of the ship's path the school reacts to
     seed: int = 0
 
@@ -210,7 +217,8 @@ class FieldSwarm:
         p = sw.pos[b].numpy()[al]
         self.mem[b] = dict(plan=kind, cand=kind, cand_n=0, morph=None, morph_t=0, t=0.0,
                            anchor=p.mean(0).astype(np.float32), perm=None, last_assign=-10 ** 9,
-                           heading=np.array([1.0, 0.0, 0.0], np.float32), alive_sig=None, switches=[])
+                           heading=np.array([1.0, 0.0, 0.0], np.float32), alive_sig=None, switches=[],
+                           R=np.eye(3, dtype=np.float32), psi=0.0, wphase=float(np.random.default_rng(b).uniform(0, 6.28)))
 
     def _perm(self, plan: Plan, dom_counts):
         """Domain -> slot mapping that best matches the swarm's domain counts to the plan's slot sizes."""
@@ -222,6 +230,19 @@ class FieldSwarm:
             if best is None or cost < best[0]:
                 best = (cost, perm)
         return np.array(best[1])
+
+    def _at(self, m, plan):
+        """The plan at the sample's time, rotated into the body's current heading."""
+        sp, sv, ss = plan.at(m["t"])
+        R = m["R"]
+        if not np.allclose(R, np.eye(3)):
+            sp, sv = sp @ R.T, sv @ R.T
+            ss = ss.copy(); ss[:, FAC] = ss[:, FAC] @ R.T
+        return sp, sv, ss
+
+    def _grad(self, plan, m, xl, elem, sigma):
+        R = m["R"]
+        return plan.field_grad((xl) @ R, elem, m["t"], sigma) @ R.T
 
     # ------------------------------------------------------------------ the step
 
@@ -292,7 +313,18 @@ class FieldSwarm:
 
         # --- 3. homes
         m["t"] += 1.0
-        sp, sv, ss = plan.at(m["t"])
+        if cfg.wander > 0:
+            # a smooth wandering yaw (two incommensurate sines), the body turns to face it
+            m["wphase"] += 1.0
+            w = m["wphase"]
+            m["psi"] += cfg.turn * (0.7 * math.sin(w * 0.013) + 0.3 * math.sin(w * 0.031 + 1.7))
+            c_, s_ = math.cos(m["psi"]), math.sin(m["psi"])
+            m["R"] = np.array([[c_, 0, s_], [0, 1, 0], [-s_, 0, c_]], np.float32)
+            fwd = m["R"] @ np.array([0.0, 1.0, 0.0] if m["plan"] == "space" else [1.0, 0.0, 0.0], np.float32)
+            if m["plan"] == "space":   # a jellyfish jets along its axis, pulsing
+                fwd = fwd * (0.4 + 0.6 * max(0.0, math.sin(w * 2 * math.pi / (2 * cfg.frame_steps * 7))))
+            m["heading"] = fwd.astype(np.float32)
+        sp, sv, ss = self._at(m, plan)
         anchor = m["anchor"]
         sig = (len(idx), int(elem[idx].sum()))
         clock = int(sw.clock[b])
@@ -313,7 +345,7 @@ class FieldSwarm:
         hh = home[idx]; has = ~np.isnan(hh[:, 0])
         desired[has] = hv[idx][has] + cfg.k_arrive * (hh[has] - x[has])
         if (~has).any():
-            g = plan.field_grad(x[~has] - anchor, elem[idx][~has], m["t"], cfg.field_sigma)
+            g = self._grad(plan, m, x[~has] - anchor, elem[idx][~has], cfg.field_sigma)
             desired[~has] = cfg.field_k * g
         if m["morph"] is not None:
             # the switch spectacle: a vortex around the swarm's vertical axis that peaks mid-morph, while the
@@ -328,7 +360,7 @@ class FieldSwarm:
                 tang /= np.maximum(np.linalg.norm(tang, axis=-1, keepdims=True), 1e-3)
                 amp = cfg.swirl * math.sin(math.pi * u)
                 old = self.plans[m["morph"]]
-                g_old = old.field_grad(r, elem[idx], m["t"], cfg.field_sigma * 2)
+                g_old = self._grad(old, m, r, elem[idx], cfg.field_sigma * 2)
                 desired = desired + amp * tang * np.linalg.norm(r, axis=-1, keepdims=True) ** 0.5 * 0.3 \
                           + (1 - u) ** 2 * 0.5 * g_old
                 m["morph_t"] += 1
@@ -360,6 +392,15 @@ class FieldSwarm:
             radial = rel / np.maximum(dd, 1e-3)[:, None]
             swirl = np.cross(pvn, latn)
             fk = np.array(cfg.flee)[elem[idx]][:, None]
+            if spd < cfg.mob_speed:
+                # loitering ship: mobbing elements swarm it - orbit at 1.4 radii, swirl around its vertical
+                mk = np.array(cfg.mob)[elem[idx]][:, None]
+                w_mob = np.clip(1 - dd / (2.5 * sense), 0, 1)[:, None] * mk
+                up = np.array([0.0, 1.0, 0.0])
+                tang = np.cross(up, radial); tang /= np.maximum(np.linalg.norm(tang, axis=-1, keepdims=True), 1e-3)
+                orbit = 0.4 * (1.4 * rad - dd)[:, None] * radial + 1.5 * tang
+                flee += w_mob * orbit
+                fk = fk * (1 - mk)
             flee += w[:, None] * fk * (0.75 * latn + 0.25 * radial + cfg.flee_swirl * 0.5 * swirl)
         if len(x) > 1:                      # startle cascade through the school
             relay = (nb * st[None]).max(1) * cfg.relay
@@ -377,7 +418,7 @@ class FieldSwarm:
         x = np.where(r > self.world.membrane, x * self.world.membrane / r, x)
         pos[idx] = x; S[idx, VEL] = v
         # anchor follows the swarm (translation is free) plus an optional cruise
-        m["anchor"] = (0.9 * anchor + 0.1 * (x.mean(0) - sp.mean(0))).astype(np.float32) + cfg.cruise * m["heading"]
+        m["anchor"] = (0.9 * anchor + 0.1 * (x.mean(0) - sp.mean(0))).astype(np.float32) + (cfg.cruise + cfg.wander) * m["heading"]
 
         # --- 5. looks: blend toward the home slot's prism / tier / facing / spindle
         look = np.concatenate([np.arange(FAC.start, FAC.stop), np.arange(PR.start, PR.stop), np.arange(TI.start, TI.stop),
@@ -417,7 +458,20 @@ class FieldSwarm:
         cur = S[idx, HOME].astype(int) - 1
         ok = (cur >= 0) & (cur < plan.n)
         cost[np.nonzero(ok)[0], cur[ok]] -= self.cfg.sticky
-        r, c = linear_sum_assignment(cost)
+        if self.cfg.assign == "greedy":
+            order = np.argsort(cost, axis=None)
+            ru, cu = np.zeros(cost.shape[0], bool), np.zeros(cost.shape[1], bool)
+            rr, cc = [], []
+            for f in order:
+                i, j = divmod(int(f), cost.shape[1])
+                if ru[i] or cu[j]:
+                    continue
+                ru[i] = cu[j] = True; rr.append(i); cc.append(j)
+                if len(rr) == min(cost.shape):
+                    break
+            r, c = np.array(rr, int), np.array(cc, int)
+        else:
+            r, c = linear_sum_assignment(cost)
         new = np.full(len(idx), -1)
         new[r] = c
         # tadpoles that won no slot share the cheapest slot of their own kind
@@ -448,7 +502,7 @@ class FieldSwarm:
         np.add.at(have, (e_eff[idx], dom[idx]), 1)
         deficit = want - have
         m = self.mem[b]
-        sp, _, _ = plan.at(m["t"])
+        sp, _, _ = self._at(m, plan)
         slots_world = sp + m["anchor"]
         taken = set((S[idx, HOME].astype(int) - 1).tolist())
         laid = 0
@@ -498,7 +552,7 @@ class FieldSwarm:
         surplus = counts - goal
         k = max(1, int(math.ceil(cfg.molt_rate * n)))
         m = self.mem[b]
-        sp, _, _ = plan.at(m["t"]); slots_world = sp + m["anchor"]
+        sp, _, _ = self._at(m, plan); slots_world = sp + m["anchor"]
         for _ in range(k):
             e_from = int(np.argmax(surplus)); e_to = int(np.argmin(surplus))
             if surplus[e_from] < 1.0 or surplus[e_to] > -1.0:

@@ -33,6 +33,11 @@ per-element top speed (the World's 0.8 / 0.8 / 0.8 / 2.0) — steering to a HOME
    decays. Startled tadpoles flee sideways off the ship's line with a swirl around it, per element: Time darts
    (2.0), Space jets (1.4), Charge holds (0.6), Mass shoulders through (0.5); startled Charge plates flash to
    DANGER, and the **pufferfish plan inflates** (homes ×1 + 0.45·threat) and deflates when the ship is gone.
+   A ship that LOITERS (slower than 1 voxel/step) is **mobbed** instead of fled: Time tadpoles orbit it at
+   1.4 ship radii and return to the body when it leaves.
+7. **Swimming** (`wander > 0`, showcase/game only): the anchor travels a smooth wandering path and the whole
+   plan yaws to face it (the jellyfish jets along its axis in pulses). Off for scoring, because the yardstick
+   is orientation-locked.
 
 ## Shared yardstick (swarm_nca.rollout, unchanged) — **7 / 8 strict tests**
 
@@ -91,12 +96,30 @@ The whale barely parts by design (heavy). Reacting costs shape during the pass a
 | field only (no assignment) | 7 | 9.9 / 8.7 / 14.4 / 22.8 | 16.9 / 10.7 / 26.1 / (fail) |
 | no molting | 7 | 0.3 / 6.4 / 0.9 / 4.2 | **33.1** / 5.3 / **28.6** / (fail) |
 | dwell 1 | 7 | 3.1 / 2.8 / 1.1 / 3.8 | 5.7 / 2.4 / 7.4 / (fail) |
+| greedy assignment (no Hungarian) | 7 | 2.1 / 3.3 / 2.0 / 4.3 | 8.4 / 1.6 / 9.5 / (fail) |
+| swimming (wander 0.25, body yaws) | 7 | 26.7 / 2.5 / 12.8 / 36.0 | 9.4 / 2.5 / 10.1 / (fail) |
 | field only, no molting | 8 (spurious, see above) | 8.4 / 12.2 / 9.7 / 36.6 | 43.6 / 14.1 / 44.7 / 36.5 |
 
 * Slots buy crispness (3–8× lower divergence) but the field alone already tells the plans apart.
 * Molting is what makes a switched body clean: without it whale→jelly ends at 33 (the old mass plates stay).
+* **Greedy assignment is as good as Hungarian** (summed divergence 104.3 vs 103.6): the port needs only a
+  sort, no O(n³) solver.
+* Swimming costs score only through orientation (a yawed whale is "closest to the dragonfly" in geometry-only
+  terms) — composition still picks the plan, so all 7 still pass.
 * Dwell barely matters on the yardstick (the cull is one-shot); it matters when a predator eats tadpoles one at
   a time and the majority flickers.
+
+## Hysteresis and loitering probes
+
+**Knife-edge predation** (`field_probes.tie_churn`): a grown whale is culled to Mass = Space + 1, then a
+predator eats 2 random Mass-or-Space tadpoles EVERY step for 120 steps. 4 seeds × dwell 1 / 12: **0–1 commits
+per run, never a flip-back.** The body is homeostatic — while its majority holds it lays its own element back
+faster than this predator eats, and once a switch commits, molting reinforces the new majority. Converting a
+swarm therefore takes *selective, fast* predation: a skill target for a player, not an accident.
+
+**Loitering ship** (`field_probes.loiter`, ship parked 1.2 RMS radii off the centroid for 80 steps):
+dragonfly mob = **24.3** tadpoles within 2 ship radii on average (max 37) vs **2.4** with mobbing off; after
+the ship leaves the body re-forms (4.9 vs 4.5 before). Other plans barely mob by design (only Time does).
 
 ## Cost and port
 
@@ -112,7 +135,8 @@ floats (velocity, slot, molt, startle, age). No GPU needed.
 A loose knot of 16 tadpoles that, within ~60 steps, lays its way out into a recognisable creature that swims in
 place on its 8-frame cycle (the jellyfish's bell pulses, the dragonfly's Time runners lap the wings). Fly at it:
 the school opens a tunnel ahead of the ship before it arrives and closes behind it; a white startle wave ripples
-out from the contact; the pufferfish swells and turns its plates red. Ram it and the hole fills from the inside
+out from the contact; the pufferfish swells and turns its plates red. Park beside a dragonfly and its Time runners peel off and circle your ship like
+gnats, then stream home when you leave. Ram it and the hole fills from the inside
 as new tadpoles bud beside the holes. Eat its majority element and, after a beat of hesitation, the whole body
 dissolves into a vortex and reassembles as another animal, with tadpoles visibly molting (re-colouring) along the
 way. `showcase.html` plays one scripted life per plan (drag to orbit).

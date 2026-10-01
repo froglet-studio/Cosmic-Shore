@@ -152,22 +152,22 @@
   {
    "kind": "mass",
    "n": 192,
-   "ms_per_step": 4.32
+   "ms_per_step": 4.61
   },
   {
    "kind": "space",
    "n": 88,
-   "ms_per_step": 1.21
+   "ms_per_step": 1.52
   },
   {
    "kind": "charge",
    "n": 179,
-   "ms_per_step": 3.73
+   "ms_per_step": 4.27
   },
   {
    "kind": "time",
    "n": 76,
-   "ms_per_step": 0.93
+   "ms_per_step": 1.18
   }
  ]
 }

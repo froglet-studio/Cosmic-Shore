@@ -72,6 +72,13 @@ def life(kind, cfg, seed=3):
     events.append([t[0], "vessel strike: a third of the body is destroyed"])
     swarm_probe.strike(sw, gen=gen)
     step(140)
+    # a ship loiters beside it (the Time tadpoles mob it), then leaves
+    al = (sw.active[0] & sw.hatched[0]).numpy(); p = sw.pos[0].numpy()[al]
+    c = p.mean(0); rms = float(np.sqrt(((p - c) ** 2).sum(-1).mean()))
+    ship = c + np.array([1.3 * rms, 0.2 * rms, 0.0])
+    events.append([t[0], "a ship loiters beside it: Time tadpoles mob it"])
+    step(80, lambda i: (ship + np.array([0.0, 0.0, 3.0 * np.sin(i / 12)]), 0.3 * rms, np.array([0.0, 0.0, 0.3])))
+    step(60)
     to = sn.SWITCH_TO[kind]
     n0 = int((sw.active[0] & sw.hatched[0]).sum())
     if kind == "time":
@@ -128,7 +135,7 @@ sync();sl.oninput=()=>{fi=+sl.value;};document.getElementById('play').onclick=e=
 cv.onpointerdown=e=>{drag=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)};cv.onpointerup=()=>drag=null;
 cv.onpointermove=e=>{if(!drag)return;yaw+=(e.clientX-drag[0])*0.008;pitch=Math.max(-1.4,Math.min(1.4,pitch+(e.clientY-drag[1])*0.008));drag=[e.clientX,e.clientY]};
 let ctr=[0,0,0];
-function draw(){const d=DATA[kind],A=dec(kind),[F,N,C]=d.shape;const n=d.n[fi];const o=fi*N*C;
+function draw(){if(fi>=DATA[kind].shape[0])fi=0;const d=DATA[kind],A=dec(kind),[F,N,C]=d.shape;const n=d.n[fi];const o=fi*N*C;
  let cx=0,cy=0,cz=0;for(let i=0;i<n;i++){cx+=A[o+i*C];cy+=A[o+i*C+1];cz+=A[o+i*C+2];}
  if(n){cx/=n*10;cy/=n*10;cz/=n*10;}ctr=ctr.map((v,i)=>v+0.15*([cx,cy,cz][i]-v));
  const W=cv.width,H=cv.height;g.fillStyle='#060914';g.fillRect(0,0,W,H);
@@ -150,7 +157,7 @@ let last=0;function loop(ts){if(playing&&ts-last>45){fi=(fi+1)%DATA[kind].shape[
 
 def main():
     torch.set_num_threads(4)
-    cfg = fs.FieldCfg(cruise=0.0)
+    cfg = fs.FieldCfg(wander=0.25)
     data = {k: life(k, cfg) for k in sn.KINDS}
     out = os.path.join(HERE, "results", "field", "showcase.html")
     open(out, "w").write(PAGE.replace("/*DATA*/", json.dumps(data)))

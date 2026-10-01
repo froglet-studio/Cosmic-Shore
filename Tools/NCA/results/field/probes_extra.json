@@ -1642,8 +1642,174 @@
     "charge": 44.72,
     "time": 36.5
    }
+  },
+  {
+   "set": {
+    "assign": "greedy"
+   },
+   "passed": 7,
+   "close": 104.28,
+   "own": {
+    "mass": 2.08,
+    "space": 3.33,
+    "charge": 1.96,
+    "time": 4.32
+   },
+   "switch_to": {
+    "mass": 8.41,
+    "space": 1.56,
+    "charge": 9.47,
+    "time": 73.15
+   }
+  },
+  {
+   "set": {
+    "wander": 0.25
+   },
+   "passed": 7,
+   "close": 174.52,
+   "own": {
+    "mass": 26.7,
+    "space": 2.49,
+    "charge": 12.75,
+    "time": 36.02
+   },
+   "switch_to": {
+    "mass": 9.39,
+    "space": 2.48,
+    "charge": 10.08,
+    "time": 74.61
+   }
   }
  ],
+ "tie_churn": [
+  {
+   "dwell": 1,
+   "commits": 0,
+   "path": [],
+   "final": "mass",
+   "n": 192
+  },
+  {
+   "dwell": 1,
+   "commits": 0,
+   "path": [],
+   "final": "mass",
+   "n": 192
+  },
+  {
+   "dwell": 1,
+   "commits": 1,
+   "path": [
+    "mass->space@240"
+   ],
+   "final": "space",
+   "n": 88
+  },
+  {
+   "dwell": 1,
+   "commits": 0,
+   "path": [],
+   "final": "mass",
+   "n": 192
+  },
+  {
+   "dwell": 12,
+   "commits": 0,
+   "path": [],
+   "final": "mass",
+   "n": 192
+  },
+  {
+   "dwell": 12,
+   "commits": 0,
+   "path": [],
+   "final": "mass",
+   "n": 192
+  },
+  {
+   "dwell": 12,
+   "commits": 1,
+   "path": [
+    "mass->time@255"
+   ],
+   "final": "time",
+   "n": 76
+  },
+  {
+   "dwell": 12,
+   "commits": 0,
+   "path": [],
+   "final": "mass",
+   "n": 192
+  }
+ ],
+ "loiter": {
+  "mass": {
+   "mob": {
+    "kind": "mass",
+    "before": 3.43,
+    "mob_mean": 52.1,
+    "mob_max": 55,
+    "after": 3.44
+   },
+   "no_mob": {
+    "kind": "mass",
+    "before": 3.43,
+    "mob_mean": 32.5,
+    "mob_max": 37,
+    "after": 3.44
+   }
+  },
+  "space": {
+   "mob": {
+    "kind": "space",
+    "before": 2.85,
+    "mob_mean": 5.4,
+    "mob_max": 8,
+    "after": 2.51
+   },
+   "no_mob": {
+    "kind": "space",
+    "before": 2.85,
+    "mob_mean": 3.0,
+    "mob_max": 3,
+    "after": 2.99
+   }
+  },
+  "charge": {
+   "mob": {
+    "kind": "charge",
+    "before": 1.94,
+    "mob_mean": 8.9,
+    "mob_max": 20,
+    "after": 1.86
+   },
+   "no_mob": {
+    "kind": "charge",
+    "before": 1.94,
+    "mob_mean": 8.1,
+    "mob_max": 20,
+    "after": 1.86
+   }
+  },
+  "time": {
+   "mob": {
+    "kind": "time",
+    "before": 4.51,
+    "mob_mean": 24.3,
+    "mob_max": 37,
+    "after": 4.86
+   },
+   "no_mob": {
+    "kind": "time",
+    "before": 4.51,
+    "mob_mean": 2.4,
+    "mob_max": 3,
+    "after": 4.86
+   }
+  }
+ },
  "cfg": {
   "mode": "slots",
   "frame_steps": 6,
@@ -1661,6 +1827,7 @@
    2.0
   ],
   "reassign_every": 8,
+  "assign": "hungarian",
   "sticky": 4.0,
   "lay_rate": 0.04,
   "lay_max": 4,
@@ -1672,6 +1839,8 @@
   "field_sigma": 3.0,
   "field_k": 1.2,
   "cruise": 0.0,
+  "wander": 0.0,
+  "turn": 0.012,
   "sense": 2.2,
   "relay": 0.8,
   "startle_decay": 0.9,
@@ -1685,6 +1854,13 @@
   "inflate": {
    "charge": 0.45
   },
+  "mob": [
+   0.0,
+   0.0,
+   0.0,
+   1.0
+  ],
+  "mob_speed": 1.0,
   "lookahead": 10.0,
   "seed": 0
  }
