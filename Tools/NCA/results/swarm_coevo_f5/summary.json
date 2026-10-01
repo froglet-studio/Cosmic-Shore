@@ -1,37 +1,37 @@
 {
  "cross": {
   "mass": {
-   "mass": 23.54,
-   "space": 73.6,
-   "charge": 63.58,
-   "time": 85.72
+   "mass": 20.75,
+   "space": 72.67,
+   "charge": 59.42,
+   "time": 82.04
   },
   "space": {
-   "mass": 69.45,
-   "space": 34.26,
-   "charge": 56.43,
-   "time": 77.74
+   "mass": 77.76,
+   "space": 23.4,
+   "charge": 58.17,
+   "time": 78.83
   },
   "charge": {
-   "mass": 60.16,
-   "space": 65.93,
-   "charge": 27.27,
-   "time": 82.72
+   "mass": 61.98,
+   "space": 64.28,
+   "charge": 26.63,
+   "time": 68.65
   },
   "time": {
-   "mass": 83.61,
-   "space": 83.56,
-   "charge": 80.26,
-   "time": 45.1
+   "mass": 87.06,
+   "space": 80.28,
+   "charge": 74.55,
+   "time": 26.05
   }
  },
  "census": {
   "mass": {
-   "n": 19,
+   "n": 20,
    "target_n": 192,
    "elements": [
     2,
-    12,
+    13,
     2,
     3
    ],
@@ -43,8 +43,8 @@
    ],
    "majority": "Mass",
    "domains": [
+    11,
     9,
-    10,
     0
    ],
    "deaths": 0,
@@ -54,10 +54,10 @@
    "n": 18,
    "target_n": 88,
    "elements": [
-    4,
+    5,
     1,
-    10,
-    3
+    11,
+    1
    ],
    "target_elements": [
     25,
@@ -67,21 +67,21 @@
    ],
    "majority": "Space",
    "domains": [
-    7,
-    11,
+    8,
+    10,
     0
    ],
    "deaths": 0,
    "mutants": 0
   },
   "charge": {
-   "n": 18,
+   "n": 19,
    "target_n": 179,
    "elements": [
     13,
     1,
     1,
-    3
+    4
    ],
    "target_elements": [
     131,
@@ -91,21 +91,21 @@
    ],
    "majority": "Charge",
    "domains": [
-    8,
     10,
+    9,
     0
    ],
    "deaths": 0,
    "mutants": 0
   },
   "time": {
-   "n": 20,
+   "n": 19,
    "target_n": 76,
    "elements": [
     1,
     1,
     3,
-    15
+    14
    ],
    "target_elements": [
     2,
@@ -115,9 +115,9 @@
    ],
    "majority": "Time",
    "domains": [
-    6,
-    1,
-    13
+    7,
+    2,
+    10
    ],
    "deaths": 0,
    "mutants": 0
@@ -126,28 +126,28 @@
  "steps": 240,
  "cross_geo": {
   "mass": {
-   "mass": 12.68,
-   "space": 28.24,
-   "charge": 19.99,
-   "time": 40.34
+   "mass": 7.97,
+   "space": 23.58,
+   "charge": 15.2,
+   "time": 29.51
   },
   "space": {
-   "mass": 25.86,
-   "space": 16.9,
-   "charge": 17.84,
-   "time": 37.4
+   "mass": 31.66,
+   "space": 11.46,
+   "charge": 18.62,
+   "time": 31.99
   },
   "charge": {
-   "mass": 12.32,
-   "space": 25.41,
-   "charge": 15.45,
-   "time": 30.55
+   "mass": 15.54,
+   "space": 22.89,
+   "charge": 12.08,
+   "time": 16.27
   },
   "time": {
-   "mass": 21.28,
-   "space": 24.12,
-   "charge": 18.4,
-   "time": 26.92
+   "mass": 29.75,
+   "space": 23.94,
+   "charge": 18.94,
+   "time": 12.53
   }
  },
  "switch": {
@@ -155,20 +155,20 @@
    "to": "space",
    "done": true,
    "cross": {
-    "mass": 52.19,
-    "space": 59.46,
-    "charge": 56.09,
-    "time": 69.42
+    "mass": 58.67,
+    "space": 58.53,
+    "charge": 59.43,
+    "time": 66.64
    },
-   "majority": "time",
+   "majority": "space",
    "census": {
-    "n": 8,
+    "n": 11,
     "target_n": 88,
     "elements": [
      2,
      1,
-     2,
-     3
+     4,
+     4
     ],
     "target_elements": [
      25,
@@ -176,10 +176,10 @@
      54,
      7
     ],
-    "majority": "Time",
+    "majority": "Space",
     "domains": [
+     6,
      5,
-     3,
      0
     ],
     "deaths": 0,
@@ -190,20 +190,20 @@
    "to": "charge",
    "done": true,
    "cross": {
-    "mass": 58.56,
-    "space": 65.22,
-    "charge": 49.89,
-    "time": 61.59
+    "mass": 73.73,
+    "space": 42.21,
+    "charge": 46.55,
+    "time": 79.09
    },
-   "majority": "time",
+   "majority": "charge",
    "census": {
-    "n": 13,
+    "n": 11,
     "target_n": 179,
     "elements": [
-     4,
+     5,
      1,
-     2,
-     6
+     4,
+     1
     ],
     "target_elements": [
      131,
@@ -211,10 +211,10 @@
      16,
      31
     ],
-    "majority": "Time",
+    "majority": "Charge",
     "domains": [
      3,
-     10,
+     8,
      0
     ],
     "deaths": 0,
@@ -225,20 +225,20 @@
    "to": "time",
    "done": true,
    "cross": {
-    "mass": 61.56,
-    "space": 69.63,
-    "charge": 61.94,
-    "time": 63.96
+    "mass": 53.17,
+    "space": 69.14,
+    "charge": 57.06,
+    "time": 63.38
    },
    "majority": "time",
    "census": {
-    "n": 6,
+    "n": 9,
     "target_n": 76,
     "elements": [
+     2,
+     2,
      1,
-     1,
-     1,
-     3
+     4
     ],
     "target_elements": [
      2,
@@ -248,8 +248,8 @@
     ],
     "majority": "Time",
     "domains": [
-     2,
      4,
+     5,
      0
     ],
     "deaths": 0,
@@ -260,10 +260,10 @@
    "to": "mass",
    "done": false,
    "cross": {
-    "mass": 81.61,
-    "space": 82.14,
-    "charge": 79.33,
-    "time": 45.14
+    "mass": 85.9,
+    "space": 81.66,
+    "charge": 74.04,
+    "time": 24.58
    },
    "majority": "time",
    "census": {
@@ -283,9 +283,9 @@
     ],
     "majority": "Time",
     "domains": [
-     6,
-     1,
-     13
+     7,
+     2,
+     11
     ],
     "deaths": 0,
     "mutants": 0
@@ -295,7 +295,7 @@
  "scale_inv": 1,
  "meta": {
   "device": "cpu",
-  "step": 1000,
+  "step": 2000,
   "tag": "swarm_coevo_f5",
   "overrides": {
    "per_kind": "2",
@@ -313,7 +313,7 @@
    "learned_lay": "1",
    "scale_inv": "1"
   },
-  "note": "Trained on cpu (swarm_coevo_f5), snapshot 1000."
+  "note": "Trained on cpu (swarm_coevo_f5), snapshot 2000."
  },
- "rule": "rule_01000.pt"
+ "rule": "rule_02000.pt"
 }
