@@ -558,7 +558,27 @@ branches, with results in `results/swarm_coevo_<tag>/`:
 | e1 | sticky labels | `cece/swarm-exp-e1` |
 | e2 | e1 + learned laying gate | `cece/swarm-exp-e2` |
 | e3 | e1 + composition-relative contrastive loss | `cece/swarm-exp-e3` |
-| e4 | all three | this branch |
+| e4 | all three (stopped at step 260: diverging, see below) | - |
+| e5 | e2 + scale-invariant loss | `cece/swarm-exp-e5` |
+| e6 | e1 + scale-invariant loss | `cece/swarm-exp-e6` |
+| e7 | e4 + scale-invariant loss | this branch |
+
+**E4 diverged, and the logs said why.** Its loss rose from about 100 to 450. The contrastive hinge
+(0–11) and the mix error (0.00–0.42) stayed small; the divergence itself grew to 50–97, with every
+sample at the 280-slot cap. Grown swarms run 200–280 tadpoles against plans of 76–192, and
+collision fixes their spacing, so a big swarm cannot take a small plan's geometry. Switching to a
+smaller plan would then need deaths, which are penalised. Two facts point at size rather than shape:
+
+- With element and domain costs zeroed, the four targets are still 12–27 apart, so geometry alone
+  can tell the plans apart.
+- The grown swarms' own-plan divergence (25–37) is larger than those gaps.
+
+The fix is `scale_inv`: before matching, the swarm is centred and rescaled to the plan's RMS
+radius, so a body plan is a shape, not a size. Uniform scale costs 0, a 1.3x stretch still costs
+0.35–0.70, and cross-plan separation is unchanged. This matches the design brief: a plan is chosen
+by element ratios, never by headcount. Runs with `scale_inv` are also evaluated with it
+(`summary.json` carries `scale_inv: 1`), so compare them with the others by tests passed, not by
+divergence values.
 
 ```
 python Tools/NCA/gpu_run.py swarm --device cpu --tag e1 --steps 6000 --set per_kind=2 --set pool=24 \
