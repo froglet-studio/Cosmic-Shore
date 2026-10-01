@@ -65,6 +65,8 @@ class VoteField:
         self.collect = None
         self.gen = None
         self.last_w = None
+        self.hard = True
+        self.sticky = False
 
     def templates(self, sw, centres):
         B = sw.B
@@ -97,17 +99,19 @@ class VoteField:
         h = self.nca(sw.grid, inp, self.gen)
         sw.grid = h
         w = torch.softmax(h[:, :4], 1)                                # [B,4,G,G,G]
+        if self.hard:      # the body follows ONE plan per cell (a soft mixture asks for a mixed element
+            w = F.one_hot(w.argmax(1), 4).permute(0, 4, 1, 2, 3).to(w.dtype)   # mix, and the majority drifts)
         self.last_w = w
         T = self.templates(sw, centres)
         field = (w[:, :, None] * T).sum(1)
         if self.collect is not None:
             occ = (T[:, :, :hc.NCLS].sum(2).amax(1) + dens.sum(1)).detach() > 0.05      # cells that matter
-            self.collect.append((h[:, :4], sw.plan.clone(), occ))
+            self.collect.append((h[:, :4], (sw.plan if self.sticky else sw.gplan.clamp(min=0)).clone(), occ))
         if self.collect is not None:
             field = field.detach()        # train the decision through its CE only; boids carry no graph
         if self.beta >= 1.0:
             return field
-        lab = T[torch.arange(B), sw.plan]
+        lab = T[torch.arange(B), sw.plan if self.sticky else sw.gplan.clamp(min=0)]
         use = (torch.rand(B, generator=self.gen) < self.beta).float()[:, None, None, None, None]
         return use * field.detach() + (1 - use) * lab
 
@@ -127,6 +131,7 @@ class VoteCfg:
     beta1: float = 1.0
     ramp_eps: int = 30
     seed: int = 0
+    sticky: int = 0              # 1: label = the seed's / last cull's plan (tried: did not learn, see NOTE)
 
 
 def load_model(path, cfg=None):
@@ -153,7 +158,7 @@ def train(vc: VoteCfg, bc: hb.BoidCfg):
     if os.path.exists(ck):
         st = torch.load(ck, weights_only=False)
         nca.load_state_dict(st["nca"]); opt.load_state_dict(st["opt"]); ep = st["ep"]
-    vf = VoteField(nca, bc, targets); vf.gen = gen
+    vf = VoteField(nca, bc, targets); vf.gen = gen; vf.sticky = bool(vc.sticky)
     boid = hb.FieldBoid(sn.World(), bc, vf, targets)
     json.dump(dict(vote=asdict(vc), boid=asdict(bc)), open(os.path.join(vc.run, "config.json"), "w"), indent=1)
     log = open(os.path.join(vc.run, "log.jsonl"), "a")
