@@ -138,3 +138,97 @@ def _dispatch(self, sw, gi, gj, gen=None):
 
 
 PosInfo2Rule.homeo_lay = _dispatch
+
+
+# ------------------------------------------------------------------ homeo 7: the MAJORITY GUARD ---
+# A fair cull can leave the new majority element ahead by ONE tadpole in a remnant of ~20 (jellyfish ->
+# dragonfly: Time 7, Space 6, Charge 6, Mass 2). The homeostat re-reads the majority every step, so if its
+# own molting or laying lets another element draw level, the plan flips back and the swarm regrows the OLD
+# body (loss 63). The guard: no molt and no egg may bring a non-majority element level with the plan's
+# majority element. It changes only the order things are made in, never the final quota.
+
+def guarded_homeo_lay(self, sw, gi, gj, gen=None):
+    W = self.world
+    B, N, _ = sw.pos.shape
+    pos = sw.pos.reshape(B * N, 3)
+    with torch.no_grad():
+        dxl = pos[gj] - pos[gi]
+        close = ((dxl * dxl).sum(-1) < W.r_lay ** 2).float()
+        cnt = torch.zeros(B * N).index_add(0, gi, close).view(B, N)
+        elig = sw.hatched & sw.active & (cnt < W.k_bud) & (torch.rand(B, N, generator=gen) <= W.p_bud)
+        q = torch.zeros(B, N)
+        cross = {}
+        for b in range(B):
+            quota, have = scaled_quota(sw, b, W.capacity, orphans=True)
+            if quota is None:
+                continue
+            maj = int(quota.sum(1).argmax())
+            tot = have.sum(1).clone()                          # element totals (eggs included)
+            hm = sw.active[b] & sw.hatched[b]                  # the plan is read off HATCHED tadpoles, so the
+            lead = int((sw.elem[b][hm] == maj).sum())          # majority's lead is counted without its eggs
+
+            def ok(e):                                         # may one more tadpole of element e appear?
+                return e == maj or int(tot[e]) + 1 < lead
+            surplus = (have - quota).clamp(min=0)
+            lack = (quota - have).clamp(min=0)
+            for d in range(3):                                 # molting (domain breeds true)
+                for e_from in range(4):
+                    if surplus[e_from, d] == 0 or lack[:, d].sum() == 0:
+                        continue
+                    mem = (sw.active[b] & sw.hatched[b] & (sw.elem[b] == e_from) & (sw.dom[b] == d)).nonzero().squeeze(1)
+                    go = mem[torch.rand(len(mem), generator=gen) < self.p_molt][:int(surplus[e_from, d])]
+                    for i in go.tolist():
+                        w = lack[:, d].float() * torch.tensor([1.0 if ok(e) else 0.0 for e in range(4)])
+                        if float(w.sum()) == 0:
+                            break
+                        e_to = int(torch.multinomial(w, 1, generator=gen))
+                        sw.elem[b, i] = e_to; lack[e_to, d] -= 1; surplus[e_from, d] -= 1
+                        have[e_from, d] -= 1; have[e_to, d] += 1; tot[e_from] -= 1; tot[e_to] += 1
+                        if e_from == maj:
+                            lead -= 1
+                        if e_to == maj:
+                            lead += 1
+                        self.molts += 1
+            deficit = (quota - have).clamp(min=0)
+            surplus = (have - quota).clamp(min=0)
+            for d in range(3):                                 # a domain's deficits are reserved for its molters
+                res = int(surplus[:, d].sum())
+                for e in sorted(range(4), key=lambda e_: -int(deficit[e_, d])):
+                    take = min(res, int(deficit[e, d])); deficit[e, d] -= take; res -= take
+            fill = float(have[maj].sum()) / max(1, int(quota[maj].sum()))   # grow in proportion
+            cap = torch.ceil(quota.float() * min(1.0, fill + 0.15)).long().clamp(min=2)
+            cap[maj] = quota[maj]
+            deficit = torch.minimum(deficit, (cap - have).clamp(min=0))
+            idx = elig[b].nonzero().squeeze(1)
+            if len(idx) == 0:
+                continue
+            idx = idx[torch.randperm(len(idx), generator=gen)]
+            left = deficit.reshape(-1).clone()
+            spare = []
+            for i in idx.tolist():
+                e, d = int(sw.elem[b, i]), int(sw.dom[b, i])
+                c = e * 3 + d
+                if left[c] > 0 and ok(e):
+                    left[c] -= 1; q[b, i] = 1.0 / W.p_bud; tot[e] += 1
+                else:
+                    spare.append(i)
+            for i in spare:                                    # a class short of parents: same-domain cross-lay
+                d = int(sw.dom[b, i])
+                need = [e for e in range(4) if left[e * 3 + d] > 0 and ok(e)]
+                if need:
+                    e = need[int(torch.randint(len(need), (1,), generator=gen))]
+                    left[e * 3 + d] -= 1; q[b, i] = 1.0 / W.p_bud; cross[(b, i)] = e; tot[e] += 1
+        laid = self._lay(sw, gi, gj, gen, q.reshape(-1), None)
+        for b, slots, parents, *_ in laid:
+            for sl, pa in zip(slots.tolist(), parents.tolist()):
+                if (b, pa) in cross:
+                    sw.elem[b, sl] = cross[(b, pa)]
+
+
+def _dispatch7(self, sw, gi, gj, gen=None):
+    if self.homeo >= 7:
+        return guarded_homeo_lay(self, sw, gi, gj, gen)
+    return _dispatch(self, sw, gi, gj, gen)
+
+
+PosInfo2Rule.homeo_lay = _dispatch7
