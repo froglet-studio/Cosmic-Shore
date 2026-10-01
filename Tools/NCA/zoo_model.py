@@ -46,6 +46,8 @@ class ZooCfg(fs.FieldCfg):
     vscale: float = 1.0               # multiplies the per-element top speeds
     breathe: float = 0.0              # amplitude of the body pulse (share of size)
     breathe_period: float = 48.0
+    wave: float = 0.0                 # a travelling pulse along the body's long axis (peristalsis)
+    wave_k: float = 0.25              # rad per voxel along the axis
     jitter: float = 0.0               # OU wobble acceleration
     jitter_tau: float = 8.0
     orbit: float = 0.0                # radius of each tadpole's private loop around its slot
@@ -108,6 +110,13 @@ class ZooSwarm(fs.FieldSwarm):
             f = 1.0 + c.breathe * math.sin(w * m["t"])
             df = c.breathe * w * math.cos(w * m["t"])
             sv = sv * f + sp * df
+            sp = sp * f
+        if c.wave > 0:
+            # each slot pulses with a phase set by its position along the body's long (x) axis: a wave runs down it
+            w = 2 * math.pi / max(c.breathe_period, 4.0)
+            ph = w * m["t"] - c.wave_k * sp[:, :1]
+            f = 1.0 + c.wave * np.sin(ph)
+            sv = sv * f + sp * (c.wave * w * np.cos(ph))
             sp = sp * f
         return sp, sv, ss
 
@@ -358,6 +367,7 @@ GENES = {
     "mob_speed": (0.3, 4.0, "f"),
     "inflate_m": (0.0, 0.8, "f"), "inflate_s": (0.0, 0.8, "f"), "inflate_c": (0.0, 1.0, "f"), "inflate_t": (0.0, 0.8, "f"),
     "breathe": (0.0, 0.2, "f"), "breathe_on": (0, 1, "b"), "breathe_period": (16.0, 120.0, "f"),
+    "wave": (0.0, 0.25, "f"), "wave_on": (0, 1, "b"), "wave_k": (0.05, 0.6, "f"),
     "jitter": (0.0, 0.6, "f"), "jitter_on": (0, 1, "b"), "jitter_tau": (2.0, 20.0, "f"),
     "orbit": (0.0, 1.8, "f"), "orbit_on": (0, 1, "b"), "orbit_w": (0.05, 0.5, "f"),
     "burst": (0.0, 2.5, "f"), "burst_on": (0, 1, "b"),
@@ -366,7 +376,7 @@ GENES = {
     "rush": (0.0, 4.0, "f"), "rush_on": (0, 1, "b"),
     "bristle": (0, 1, "b"),
 }
-GATED = ("breathe", "jitter", "orbit", "burst", "curious", "hunt", "rush")
+GATED = ("wave", "breathe", "jitter", "orbit", "burst", "curious", "hunt", "rush")
 NAMES = list(GENES)
 
 
@@ -379,13 +389,14 @@ def field_genome():
              relay=c.relay, startle_decay=c.startle_decay, flee_c=c.flee[0], flee_m=c.flee[1], flee_s=c.flee[2],
              flee_t=c.flee[3], flee_swirl=c.flee_swirl, lookahead=c.lookahead, mob_c=0.0, mob_m=0.0, mob_s=0.0,
              mob_t=1.0, mob_speed=c.mob_speed, inflate_m=0.0, inflate_s=0.0, inflate_c=0.45, inflate_t=0.0,
-             breathe=0.08, breathe_on=0, breathe_period=48.0, jitter=0.2, jitter_on=0, jitter_tau=8.0,
+             wave=0.1, wave_on=0, wave_k=0.25, breathe=0.08, breathe_on=0, breathe_period=48.0, jitter=0.2, jitter_on=0, jitter_tau=8.0,
              orbit=0.6, orbit_on=0, orbit_w=0.25, burst=1.0, burst_on=0, curious=0.5, curious_on=0,
              hunt=0.5, hunt_on=0, rush=1.5, rush_on=0, bristle=0)
     return g
 
 
 def to_unit(g):
+    g = {**field_genome(), **g}
     return np.array([(g[k] - GENES[k][0]) / (GENES[k][1] - GENES[k][0]) for k in NAMES], np.float64)
 
 
@@ -399,6 +410,7 @@ def from_unit(u):
 
 
 def genome_to_cfg(g, wander=0.0):
+    g = {**field_genome(), **g}
     on = lambda k: g[k] if g.get(k + "_on", 1) else 0.0
     return ZooCfg(k_arrive=g["k_arrive"], accel=g["accel"], sep_r=g["sep_r"], sep_k=g["sep_k"], align_r=g["align_r"],
                   align_k=g["align_k"], vscale=g["vscale"], sticky=g["sticky"], lay_rate=g["lay_rate"],
@@ -408,7 +420,7 @@ def genome_to_cfg(g, wander=0.0):
                   flee=(g["flee_c"], g["flee_m"], g["flee_s"], g["flee_t"]), flee_swirl=g["flee_swirl"],
                   lookahead=g["lookahead"], mob=(g["mob_c"], g["mob_m"], g["mob_s"], g["mob_t"]), mob_speed=g["mob_speed"],
                   inflate4=(g["inflate_m"], g["inflate_s"], g["inflate_c"], g["inflate_t"]),
-                  breathe=on("breathe"), breathe_period=g["breathe_period"], jitter=on("jitter"), jitter_tau=g["jitter_tau"],
+                  breathe=on("breathe"), wave=on("wave"), wave_k=g["wave_k"], breathe_period=g["breathe_period"], jitter=on("jitter"), jitter_tau=g["jitter_tau"],
                   orbit=on("orbit"), orbit_w=g["orbit_w"], burst=on("burst"), curious=on("curious"), hunt=on("hunt"),
                   rush=on("rush"), bristle=int(g["bristle"]), wander=wander, assign="hungarian")
 
