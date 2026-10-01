@@ -263,17 +263,27 @@ class MetaRule(sn.SwarmRule):
         sw.bw = sw.bw + torch.zeros(B * N, dtype=dl.dtype).index_add(0, child, dl).view(B, N)
 
 
-def load_meta(path):
+def _cls(oracle):
+    if oracle:
+        from meta_oracle import OracleMeta
+        return OracleMeta
+    return MetaRule
+
+
+def load_meta(path, oracle=None):
     st = torch.load(path, weights_only=False, map_location=sn.DEVICE)
     w = st["world"]; w["vmax"] = tuple(w["vmax"])
-    rule = MetaRule(MetaWorld(**w), hidden=st["hidden"])
+    oracle = st.get("oracle", 0) if oracle is None else oracle
+    rule = _cls(oracle)(MetaWorld(**w), hidden=st["hidden"])
     rule.load_state_dict(st["rule"])
+    rule.targets = load_targets()
     return rule
 
 
-def from_g2(path, world: MetaWorld):
+def from_g2(path, world: MetaWorld, oracle=0):
     st = torch.load(path, weights_only=False, map_location=sn.DEVICE)
-    rule = MetaRule(world, hidden=st["hidden"])
+    rule = _cls(oracle)(world, hidden=st["hidden"])
+    rule.targets = load_targets()
     rule.load_g2(st["rule"])
     return rule
 
@@ -310,6 +320,7 @@ class MetaCfg:
     meta_conform: float = 0.0
     learned_egg: int = 1
     p_cross: float = 0.1
+    oracle: int = 0                # 1: the DESIGNED conformity metamorph (meta_oracle.OracleMeta); only shape is learned
 
 
 def train(cfg: MetaCfg, resume=True, on_snapshot=None):
@@ -321,7 +332,7 @@ def train(cfg: MetaCfg, resume=True, on_snapshot=None):
     torch.manual_seed(cfg.seed)
     gen = make_gen(cfg.seed)
     ck = os.path.join(cfg.run, "latest.pt")
-    rule = from_g2(cfg.init, world) if cfg.init.endswith("rule.pt") and "coevo" in cfg.init else load_meta(cfg.init)
+    rule = from_g2(cfg.init, world, cfg.oracle) if cfg.init.endswith("rule.pt") and "coevo" in cfg.init else load_meta(cfg.init, cfg.oracle)
     rule.world = world
     rule.events = None
     opt = torch.optim.Adam(rule.parameters(), lr=cfg.lr)
@@ -430,7 +441,7 @@ def train(cfg: MetaCfg, resume=True, on_snapshot=None):
         if (step + 1) % cfg.snap_every == 0 or step == cfg.steps - 1:
             path = os.path.join(cfg.run, f"rule_{step + 1:05d}.pt")
             torch.save(dict(rule={k_: v.cpu() for k_, v in rule.state_dict().items()}, world=asdict(world),
-                            hidden=rule.hidden, step=step + 1), path)
+                            hidden=rule.hidden, step=step + 1, oracle=cfg.oracle), path)
             if on_snapshot:
                 on_snapshot(step + 1, path)
     return rule
@@ -448,6 +459,13 @@ def evaluate(rule, out=None, meta_tag="meta", note=""):
     t0 = time.time()
     data, summary = sn.rollout(rule, 240, L=L)
     ev = rule.events
+    rule.events = []
+    # the same (deterministic, seed 7) rollout scored on GEOMETRY only: does the switched swarm change SHAPE,
+    # or only colour? (rollout's own cross_geo covers the grown plans, not the switched ones)
+    Lg = replace(L, w_elem=0.0, w_dom=0.0)
+    rule.events = None
+    _, sg = sn.rollout(rule, 240, L=Lg)
+    summary["switch_geo"] = {k: v["cross"] for k, v in sg["switch"].items()}
     rule.events = []
     pr = swarm_probe.probe(rule, L=L)
     rule.events = None
@@ -474,6 +492,11 @@ def evaluate(rule, out=None, meta_tag="meta", note=""):
 
 def print_eval(summary, res):
     sn.print_cross(summary); sn.print_geo(summary); sn.print_switch(summary)
+    if "switch_geo" in summary:
+        print("switched swarms, GEOMETRY only:")
+        for k, row in summary["switch_geo"].items():
+            best = min(row, key=row.get)
+            print(f"  {k:8s}-> {summary['switch'][k]['to']:7s} " + " ".join(f"{k2}:{row[k2]:6.2f}{'*' if k2 == best else ' '}" for k2 in KINDS))
     print("metamorphosis:", json.dumps(summary.get("metamorphosis")))
     print(f"TESTS PASSED {res['passed']}/8  close {res['close']}  ({res['sec']}s)")
     print("probe:", json.dumps({k: (v['before'], v['cut'], v['recovered'], v['heal'], v['killed'], v['n_after']) for k, v in res["probe"].items()}))
