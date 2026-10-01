@@ -137,6 +137,14 @@ swarm correctly grows a jellyfish (8.72). Same finding as evo and field; on the 
   staggered, sprinting at Time's top speed): dragonfly 5.06 -> 7.2 at `lap_every = 48`, still under 8, but
   every lap setting costs score, so it is OFF for scoring and a look option.
 
+## A provenance mistake (fixed)
+
+The first publish of this folder mixed two candidates: `sort_publish.py` re-read the CMA vector file
+for every section while the resumed search was still running and overwrote it (gen-14 best -> gen-19
+best) mid-publish. The publisher now loads the vector once; everything here was regenerated from a frozen
+copy of the gen-19 vector (`cma_vec.npy`). Earlier commits of `results/sort/` on this branch should be
+ignored.
+
 ## What a player would see
 
 *Inferred from the mechanics and the logged rollouts; I had no renderer in this session and did not watch
