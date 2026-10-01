@@ -917,6 +917,7 @@ class TrainCfg:
     over_band: float = 5.0
     min_body: float = 0.0
     w_body: float = 0.0
+    only: str = ""           # a specialist: train on these plans only (comma-separated, e.g. "mass"); use p_switch=0
 
 
 def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
@@ -936,6 +937,8 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
     L = replace(L, rel_elem=cfg.rel_elem, w_mix=cfg.w_mix, w_con=cfg.w_con, con_margin=cfg.con_margin, scale_inv=cfg.scale_inv,
                 w_over=cfg.w_over, over_band=cfg.over_band, min_body=cfg.min_body, w_body=cfg.w_body)
     targets = load_targets()
+    kinds = tuple(cfg.only.split(",")) if cfg.only else KINDS   # a specialist trains on its own plan(s) only
+    assert all(k in KINDS for k in kinds), cfg.only
     torch.manual_seed(cfg.seed)
     gen = make_gen(cfg.seed)
     rule = SwarmRule(world, hidden=cfg.hidden)
@@ -961,7 +964,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
     for step in range(start, cfg.steps):
         t0 = time.time()
         picks, batch = {}, []
-        for k in KINDS:
+        for k in kinds:
             idx = torch.randperm(cfg.pool, generator=gen)[:cfg.per_kind]
             picks[k] = idx
             sub = pool[k].index(idx)
@@ -983,7 +986,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
             for _ in range(T - cfg.bptt):
                 sw = rule(sw, gen)
         sw = sw.detach()
-        groups = [k for k in KINDS for _ in range(cfg.per_kind)]       # which seeding a sample came from
+        groups = [k for k in kinds for _ in range(cfg.per_kind)]       # which seeding a sample came from
         nonfinite = 0
         for b in range(sw.B):                                # a sample whose state went non-finite is reseeded
             if not (bool(torch.isfinite(sw.s[b]).all()) and bool(torch.isfinite(sw.pos[b]).all())):
@@ -1022,7 +1025,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
         ok = [bool(torch.isfinite(l)) for l in losses]
         for b, good in enumerate(ok):                       # a non-finite loss: dropped, and its sample reseeded
             if not good:
-                nonfinite += 1; g_ = groups[b]; infos[g_][b - KINDS.index(g_) * cfg.per_kind]["sink"] = 1e9
+                nonfinite += 1; g_ = groups[b]; infos[g_][b - kinds.index(g_) * cfg.per_kind]["sink"] = 1e9
         opt.zero_grad()
         if any(ok):
             loss = torch.stack([l for l, good in zip(losses, ok) if good]).sum() / cfg.per_kind
@@ -1038,7 +1041,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
             loss = torch.zeros(())
         sched.step()
         sw = sw.detach()
-        for i, k in enumerate(KINDS):
+        for i, k in enumerate(kinds):
             sub = sw.index(torch.arange(i * cfg.per_kind, (i + 1) * cfg.per_kind))
             # an extinct or blown-up sample is replaced by a seed, so the pool keeps learnable states
             for j in range(cfg.per_kind):
@@ -1056,7 +1059,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
             rev = sum(majority_plan(sw, b, plans[b]) != plans[b] for b in range(sw.B)) / sw.B
             rec = dict(step=step, loss=float(loss), T=T, sec=round(dt, 2), lr=sched.get_last_lr()[0], rev=round(rev, 3),
                        nonfinite=nonfinite, smax=round(float(sw.s.abs().nan_to_num(posinf=1e9).amax()), 1))
-            for i, k in enumerate(KINDS):
+            for i, k in enumerate(kinds):
                 c = census(sw, i * cfg.per_kind, targets[k])
                 inf = infos[k][0]
                 rec[k] = dict(plan=plans[i * cfg.per_kind], sink=round(inf["sink"], 3), count=round(inf.get("count", 0), 3), n=c["n"],
@@ -1064,7 +1067,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                               speed=inf.get("speed"), **{x: round(inf[x], 3) for x in ("mix", "con", "gap", "survive", "over") if x in inf})
             log.write(json.dumps(rec) + "\n"); log.flush()
             print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s rev{rev:.2f}{f' nf{nonfinite}' if nonfinite else ''} s{rec['smax']:.0f} | " + " | ".join(
-                f"{k[:2]}>{rec[k]['plan'][:2]} {rec[k]['sink']:6.2f} n{rec[k]['n']:3d} d{rec[k]['deaths']}" for k in KINDS), flush=True)
+                f"{k[:2]}>{rec[k]['plan'][:2]} {rec[k]['sink']:6.2f} n{rec[k]['n']:3d} d{rec[k]['deaths']}" for k in kinds), flush=True)
         if (step + 1) % cfg.snap_every == 0 or step == cfg.steps - 1:
             torch.save(dict(rule=rule.state_dict(), opt=opt.state_dict(), sched=sched.state_dict(), pool=pool,
                             step=step + 1), ck)

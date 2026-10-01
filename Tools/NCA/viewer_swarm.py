@@ -26,7 +26,7 @@ def _curve(log_path):
     if len(rows) < 3:
         return ""
     st = np.array([r["step"] for r in rows], float)
-    per = {k: np.array([r[k]["sink"] for r in rows], float) for k in KINDS}
+    per = {k: np.array([r[k]["sink"] for r in rows], float) for k in KINDS if k in rows[0]}   # a specialist logs one plan
     tot = sum(per.values())
     W, H, L, R, T, B = 640, 220, 48, 16, 14, 30
     k = max(1, min(25, len(tot) // 8))
@@ -44,6 +44,8 @@ def _curve(log_path):
     pts = " ".join(f"{sx(x):.1f},{sy(y):.1f}" for x, y in zip(xs, sm(tot)))
     out.append(f'<polyline points="{pts}" class="series" style="stroke:var(--ink)"/>')
     for kk, c in zip(KINDS, (EL_UI[1], EL_UI[2], EL_UI[0], EL_UI[3])):
+        if kk not in per:
+            continue
         pts = " ".join(f"{sx(x):.1f},{sy(y):.1f}" for x, y in zip(xs, sm(per[kk])))
         out.append(f'<polyline points="{pts}" class="series" style="stroke:{c};stroke-width:1.4;opacity:.85"/>')
     out.append("</svg>")
