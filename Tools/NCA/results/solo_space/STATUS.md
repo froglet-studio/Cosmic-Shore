@@ -1,15 +1,15 @@
 # solo_space status
 
-- Updated: 2026-10-01 15:17 UTC
-- Newest snapshot: `rule_02500.pt` (step 2500 of 3000) -> `rule_latest.pt`
+- Updated: 2026-10-01 15:43 UTC
+- Newest snapshot: `rule_03000.pt` (step 3000 of 3000) -> `rule_latest.pt`
 - Run: `gpu_run.py swarm --tag solo_space --set only=space ...` (see Tools/NCA/briefs/solo.md), warm start from G2
 
 ## Last 5 log lines
 
 ```
- 2480 loss    9.330 T65  3.2s rev0.00 s7 | sp>sp  12.43 n 79 d0
- 2490 loss   11.128 T66  3.1s rev0.00 s5 | sp>sp  10.65 n280 d0
- 2500 loss   12.934 T90  3.3s rev0.00 s6 | sp>sp  13.86 n136 d0
- 2510 loss    9.277 T83  3.4s rev0.00 s6 | sp>sp   9.22 n280 d0
- 2520 loss    8.477 T73  2.9s rev0.00 s5 | sp>sp   9.46 n 98 d0
+ 2999 loss    6.534 T88  3.3s rev0.00 s5 | sp>sp   6.41 n280 d0
+=== step 3000: grow every plan from a fresh seed and score it ===
+grown from (rows) scored against each target (columns), Sinkhorn divergence, lower is closer:
+after losing the majority (another 240 steps), scored against each target:
+score 5387.1 (3/8 tests pass: own plan x4, switch x4); best so far 5384.6
 ```
