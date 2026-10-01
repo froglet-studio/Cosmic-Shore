@@ -82,7 +82,7 @@ def _is_run(d):
 
 
 LABELS = {"field": "Designed field + flocking", "hgrid/oracle": "Grid morphogen (designed)", "hgrid/hybrid_g2": "Learned rule G2 + grid morphogen", "hgrid": "Grid morphogen (learned)",
-          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis", "sort": "Emergent cell sorting", "posinfo": "Learned rule + positional information", "distill": "Local rule distilled from field", "meta/oracle": "Learned rule + designed metamorph", "hgrid2/round_a": "Grid morphogen 2 (round A)", "creature": "Creature shell (evo body + reaction shell)", "hgrid2/evo_grid": "Evolved body + grid steering", "sort/v1_typelook": "Emergent cell sorting (v1)", "evo16": "Evolved rule, hardened (evo16)", "zoo": "Zoo of personalities (field + behaviours)", "combo": "Lossless grid morphogen (combo, G8)", "combo/g16": "Lossless grid morphogen (combo, G16)", "evofate": "Evolved rule + fate", "evofate/c1_cma": "Evolved rule + fate (CMA point)", "sortfeel": "Emergent cell sorting, organic"}
+          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis", "sort": "Emergent cell sorting", "posinfo": "Learned rule + positional information", "distill": "Local rule distilled from field", "meta/oracle": "Learned rule + designed metamorph", "hgrid2/round_a": "Grid morphogen 2 (round A)", "creature": "Creature shell (evo body + reaction shell)", "hgrid2/evo_grid": "Evolved body + grid steering", "sort/v1_typelook": "Emergent cell sorting (v1)", "evo16": "Evolved rule, hardened (evo16)", "zoo": "Zoo of personalities (field + behaviours)", "combo": "Lossless grid morphogen (combo, G8)", "combo/g16": "Lossless grid morphogen (combo, G16)", "evofate": "Evolved rule + fate", "evofate/c1_cma": "Evolved rule + fate (CMA point)", "sortfeel": "Emergent cell sorting, organic", "posinfo2": "Learned rule, lossless (posinfo2)", "evofate/c2": "Evolved rule + fate (C2)"}
 
 
 def _label(d, summ):
@@ -198,6 +198,20 @@ ABOUT = {
         switching="Majority plan with a lock; surplus MOLTS into the new body's missing elements. Nothing dies on its own.",
         watch="After a switch the old majority's leftovers changing colour into the new animal's missing parts instead of withering.",
         bar="All four scorecard axes: 16 / 15 / 15 of 16 at seeds 7 / 23 / 41 under the loss-8 bar, 0 self-inflicted deaths, in the organic band, cheaper than hgrid2."),
+    "posinfo2": dict(
+        what="A LEARNED rule (the round-1 network G2 plus inputs that tell each tadpole where it sits in the body's own frame, trained end to end) wrapped in a DESIGNED controller that decides only who is laid and who molts into what. The network decides where every tadpole swims; it can no longer decide to die.",
+        body="Learned: the network reads its neighbours, which side of the body it is on and the element census, and steers.",
+        sorting="Learned from positional information - the network puts each element and team where its plan wants them.",
+        switching="Designed: a quota scaled so every living team fits the new plan, surplus MOLTS (never dies), and a majority guard stops a slim new majority from being flipped back by its own laying.",
+        watch="A learned body that is accurate: the tightest own-plan shapes of any model, and nothing withers.",
+        bar="51 of 52 feasible transitions over seeds 7 / 23 / 41 / 1000 under the loss-8 bar (own plans 1.6-2.7), 0 self-inflicted deaths, in the organic band."),
+    "sortfeel": dict(
+        what="Emergent cell sorting (sort) made organic. Its flat sheets turned out to be COMPRESSION, not adhesion: every tadpole was pulled to the centre of its well. Wells are now flat-bottomed (a tadpole fills its well as a liquid) and every tadpole wanders slightly on its own clock.",
+        body="Positional wells per (element, region) and differential adhesion; a liquid inside each well.",
+        sorting="Fate: a newborn commits to the well its type under-occupies.",
+        switching="Molting and region transfer; nothing dies on its own.",
+        watch="Tissues that fill their wells and shimmer instead of packing into sheets.",
+        bar="12 / 11 / 13 / 13 of 13 feasible at seeds 7 / 23 / 41 / 101 under the loss-8 bar, 0 self-inflicted deaths, planar excess 0.27 -> 0.05 (in the organic band). The lightest accurate model: 6.3 ms/step in Python."),
     "evofate": dict(
         what="The round-1 EVOLVED rule (the learned G2 network + the evolved behaviour genome, unchanged, its learned death switched off) given a FATE: each tadpole commits to one of a few positional wells for its element, and a small pull with a dead zone keeps it there. Inside its well a tadpole moves exactly as the evolved rule does.",
         body="Emergent from the evolved rule's local motion; the fate pull only acts outside the dead zone.",
