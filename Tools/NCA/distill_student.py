@@ -46,6 +46,7 @@ PB = slice(18, 22)           # plan belief logits (charge, mass, space, time ele
 MOLT, MOLT_TO = 22, 23
 CLK = 24
 STL = 25
+CAND, CNT = 26, 27     # (plan_mode=census) candidate majority + how long it has held
 LOOK = list(range(1, 12))    # FAC, PR, TI, SP
 
 NF = 78                      # feature width (asserted in features())
@@ -65,6 +66,9 @@ class StudentCfg:
     collide: int = 1
     lay_scale: float = 1.0    # multiplies the lay probability (calibration knob)
     molt_scale: float = 1.0
+    plan_mode: str = "learned"   # learned: PB is the MLP's head | census: PB is the population census with
+                                 # a per-tadpole dwell counter (field's hysteresis, computed by every tadpole)
+    dwell: int = 12
 
 
 def _edges(pos, active, R):
@@ -205,6 +209,27 @@ class Student(nn.Module):
         return dict(v=v, look=look, lay_par=lay_par, lay_dir=lay_dir, lay_el=elem.clone(), molt_start=molt_start,
                     molt_to=mto.argmax(-1), pb=out[:, 27:31], stl=out[:, 31].clamp(0, 1))
 
+    def census_plan(self, sw, s, live):
+        """Every tadpole reads the population census (the element mix SwarmRule already perceives) and
+        keeps its own dwell counter: a new majority must hold `dwell` steps before it believes it."""
+        B, N, _ = sw.pos.shape
+        hb = (sw.hatched & sw.active).float()
+        cnt = (hb[:, :, None] * F.one_hot(sw.elem, 4).float()).sum(1)                 # [B, 4]
+        cur = s[:, PB].argmax(-1).view(B, N)
+        top = cnt.argmax(-1)[:, None].expand(B, N)
+        tie = cnt.gather(1, cur) >= cnt.gather(1, top)
+        maj = torch.where(tie, cur, top)
+        cand = s[:, CAND].long().view(B, N); c = s[:, CNT].view(B, N)
+        newc = torch.where(maj == cur, torch.zeros_like(c), torch.where(maj == cand, c + 1, torch.ones_like(c)))
+        newcand = torch.where(maj == cur, cur, maj)
+        commit = newc >= self.cfg.dwell
+        cur2 = torch.where(commit, maj, cur)
+        newc = torch.where(commit, torch.zeros_like(newc), newc)
+        lv = live.view(B, N)
+        s[:, CAND] = torch.where(live, newcand.reshape(-1).float(), s[:, CAND])
+        s[:, CNT] = torch.where(live, newc.reshape(-1), s[:, CNT])
+        return 6.0 * (F.one_hot(cur2.reshape(-1), 4).float() - 0.25)
+
     def forward(self, sw: sn.Swarm, gen=None, action=None, **_):
         """One step. action=None: the student acts. action=dict: an external policy (the teacher, for
         DAgger's mixture rollouts) supplies v / look / lay events / molt starts; same mechanics."""
@@ -223,6 +248,10 @@ class Student(nn.Module):
             for b in fresh.nonzero().squeeze(1).tolist():
                 sw.s[b, :, Z] = sw.pos[b]
                 sw.s[b, :, DIE] = -12.0
+                if cfg.plan_mode == "census":
+                    m = live2[b]
+                    e0 = int(torch.bincount(sw.elem[b][m], minlength=4).argmax())
+                    sw.s[b, :, PB] = 6.0 * (F.one_hot(torch.tensor(e0), 4).float() - 0.25)
         gi, gj = _edges(sw.pos, live2, W.R)
         self.consensus(sw, gi, gj)
         f, live, _ = self.features(sw, gi, gj)
@@ -241,6 +270,8 @@ class Student(nn.Module):
         lay_par = action["lay_par"] & live; lay_dir = action["lay_dir"]; lay_el = action["lay_el"]
         molt_start = action["molt_start"] & live; molt_to = action["molt_to"]
         pb_new = action["pb"]; stl_new = action["stl"]
+        if cfg.plan_mode == "census":
+            pb_new = self.census_plan(sw, s, live)
         lv = live[:, None]
         s[:, VEL] = torch.where(lv, v, s[:, VEL])
         s[:, LOOK] = torch.where(lv, look, s[:, LOOK])
