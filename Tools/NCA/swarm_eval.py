@@ -231,6 +231,9 @@ def load_model(spec):
     if kind == "posinfo":
         import posinfo_rule as pr
         return pr.load(path)
+    if kind == "posinfo2":
+        import posinfo2_rule as p2
+        return p2.load(path)
     if kind == "ensemble":
         import ensemble_swarm as es
         return es.load(path)
