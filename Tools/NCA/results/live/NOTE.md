@@ -138,10 +138,11 @@ Tuning sliders (regrowth, cross-breed, hysteresis, starvation) let it be felt li
 
 ## Recommendation for the next round
 
-1. **Make conversion a tunable rule, not an accident.** The grazing table says the grid's regrowth beats any
-   steady predator. If the game wants attrition to convert a swarm, cap regrowth by FOOD (eggs cost mass the
-   swarm has eaten - conserved mass) rather than by deficit alone; then a grazed swarm can starve its majority.
-   Test it with `predation` and keep the Bite as the dramatic path.
+1. **Make conversion a tunable rule, not an accident.** The two models tell opposite stories (grid: one big bite
+   converts, attrition never does; evolved rule: attrition converts, a bite does not) and neither was designed.
+   Decide which the game wants. If attrition should convert, cap the grid's regrowth by FOOD (eggs cost mass the
+   swarm has eaten - conserved mass) rather than by deficit alone, so a grazed swarm can starve its majority; if a
+   bite should, the grid already does it. Test with `node swarm_live.js predation` and the panel's Graze / Bite.
 2. **Put the accurate models into this panel as they land.** The panel takes any model with `step()` over the
    shared arrays; the next accurate + organic candidate (a local sorting rule) should get a JS port and the same
    `live_export.py score` fidelity row before it is shown, so the lead's feel review is always of the real model.

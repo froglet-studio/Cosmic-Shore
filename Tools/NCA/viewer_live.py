@@ -26,7 +26,8 @@ MODELS = [
                 "Watch for: a scattered random seed condensing toward its centre and blooming from the inside out "
                 "at the plan's own size; Time runners lapping the body; and, when you carve away enough of the "
                 "majority element, the plan flipping in a single step and the swarm re-sorting into the new "
-                "creature while the misfits wither into lime crystals.")),
+                "creature while the misfits wither into lime crystals. It ignores grazing (it breeds back faster than any "
+                "steady predator eats) but one big Bite flips it.")),
     dict(id="evo", label="Evolved rule (G2 + genome)", engine="evo",
          about=("No grid and no plan anywhere in the tadpole's head: every tadpole runs the same small learned network "
                 "(G2, 232-192-192-35, trained by backprop) on what it senses within 8 voxels, plus the swarm's headcount "
@@ -34,8 +35,10 @@ MODELS = [
                 "element is short of the share the CURRENT majority's plan wants (and less when over), and about a quarter "
                 "of eggs take the element the swarm is most short of (domain still breeds true). Nothing is culled. "
                 "Watch for: a loose, organic, always-moving cloud that fills the 280-tadpole budget and only suggests the "
-                "creature (it scores 14-24 against its plan, against 7-18 for the grid); after you eat the majority, the "
-                "homeostat floods the new majority's element and the cloud slowly re-sorts. Heavier to compute: about "
+                "creature (loss 15-25 to its plan, against 8-18 for the grid); after you eat the majority, the "
+                "homeostat floods the new majority's element and the cloud slowly re-sorts. It shrugs off one big bite (it "
+                "refills its 280 slots in a few steps) but a steady Graze of 4 wears most plans down in a few hundred "
+                "steps - the opposite of the grid. Heavier to compute: about "
                 "30 steps/s at 280 tadpoles, so keep the speed moderate.")),
 ]
 
