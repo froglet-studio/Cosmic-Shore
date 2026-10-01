@@ -36,6 +36,7 @@ NAMES = {"mass": "Whale (Mass)", "space": "Jellyfish (Space)", "charge": "Puffer
 # the switch each life shows: element -> the plan it becomes
 SHOW_SWITCH = {"mass": 2, "space": 0, "charge": 3, "time": 1}
 OUT = os.path.join(HERE, "results", "creature")
+FIELD_OVER = {}          # --wander W: field's swimming (the body yaws toward a wandering heading); showcase only
 
 
 def body(sw):
@@ -50,7 +51,7 @@ def life(kind, cfg=None, seed=3, body_kind="evo"):
     T = sn.load_targets()
     if body_kind == "field":
         import creature_field as cf
-        model = cf.CreatureField(**(cfg or {}))
+        model = cf.CreatureField(field=FIELD_OVER, **(cfg or {}))
     else:
         model = cm.CreatureRule(**(cfg or {}))
     gen = sn.make_gen(seed)
@@ -236,8 +237,11 @@ def main():
     ap.add_argument("--set", action="append", default=[])
     ap.add_argument("--seed", type=int, default=3)
     ap.add_argument("--body", default="evo", choices=["evo", "field"])
+    ap.add_argument("--wander", type=float, default=0.0)
     a = ap.parse_args()
-    suf = "" if a.body == "evo" else "_" + a.body
+    if a.wander > 0:
+        FIELD_OVER["wander"] = a.wander
+    suf = ("" if a.body == "evo" else "_" + a.body) + ("_swim" if a.wander > 0 else "")
     torch.set_num_threads(4)
     cfg = {kv.split("=", 1)[0]: json.loads(kv.split("=", 1)[1]) for kv in a.set}
     os.makedirs(OUT, exist_ok=True)

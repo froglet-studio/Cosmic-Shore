@@ -5,7 +5,10 @@
 `CreatureField` = field's slot body + field's own startle + the SAME shell (`creature_field.py`): field's
 13/13 feasible, crisp bodies (divergence 1-5), and the best parting measured in any direction: a ship flying through
 touches **2.6-21%** of the school (inert 28-37%, field alone 8-28%, shell alone 18-32%). **B is the one to build.**
-Showcases: `showcase.html` (A), `showcase_field.html` (B, recommended).
+Showcases: `showcase.html` (A), `showcase_field.html` (B, recommended), `showcase_field_swim.html` (B with field's
+swimming on, `wander 0.25`: the body yaws along a wandering path - the same lives, livelier).
+Robustness (`heldout/`): B 13/13 on yardstick seeds 11 and 23; fly-by touched on probe seeds 6/7 0.22-0.23 /
+0.03-0.05 / 0.04-0.05 / 0.05 (whale / jelly / puffer / dragonfly) vs inert 0.37 / 0.32 / 0.30 / 0.47-0.50.
 
 
 Code: `Tools/NCA/creature_model.py` (the model), `creature_probe.py` (interaction probe), `creature_extra.py`

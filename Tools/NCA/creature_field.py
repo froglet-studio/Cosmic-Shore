@@ -19,9 +19,10 @@ import field_swarm as fs  # noqa: E402
 import creature_model as cm  # noqa: E402
 
 
-def field_cfg():
+def field_cfg(**over):
     cfg = json.load(open(os.path.join(HERE, "results", "field", "params.json")))["cfg"]
     cfg["vmax"] = tuple(cfg["vmax"])
+    cfg.update(over)
     return fs.FieldCfg(**cfg)
 
 
@@ -30,8 +31,8 @@ class CreatureField(fs.FieldSwarm):
     _reset_shell = cm.CreatureRule._reset
     _shell = cm.CreatureRule._shell
 
-    def __init__(self, **shell):
-        super().__init__(field_cfg())
+    def __init__(self, field=None, **shell):
+        super().__init__(field_cfg(**(field or {})))
         self.shell_cfg = dict(cm.DEFAULTS); self.shell_cfg.update(wounds=0, native=1, fear=4.0); self.shell_cfg.update(shell)
         self.vessels = []
         self.react = True
