@@ -21,7 +21,7 @@ import distill_train as dtr  # noqa: E402
 
 
 def main():
-    torch.set_num_threads(4)
+    torch.set_num_threads(int(os.environ.get("DISTILL_THREADS", "4")))
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", required=True)
     ap.add_argument("--out", default=os.path.join(HERE, "results", "distill"))
