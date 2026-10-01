@@ -324,7 +324,7 @@
    "field_sigma": 3.0,
    "field_k": 1.2,
    "cruise": 0.0,
-   "sense": 1.8,
+   "sense": 2.2,
    "relay": 0.8,
    "startle_decay": 0.9,
    "flee": [
@@ -334,6 +334,10 @@
     2.0
    ],
    "flee_swirl": 0.8,
+   "inflate": {
+    "charge": 0.45
+   },
+   "lookahead": 10.0,
    "seed": 0
   }
  },

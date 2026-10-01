@@ -90,11 +90,13 @@ class FieldCfg:
     field_k: float = 1.2
     cruise: float = 0.0          # anchor drift per step (0 for scoring; the viewer looks better > 0)
     # predator response
-    sense: float = 1.8           # startle within sense x predator radius
+    sense: float = 2.2           # startle within sense x predator radius
     relay: float = 0.8           # startle passed to neighbours within align_r
     startle_decay: float = 0.9
     flee: tuple = (0.6, 0.5, 1.4, 2.0)   # per element (Charge holds, Mass shoulders, Space jets, Time darts)
     flee_swirl: float = 0.8
+    inflate: dict = field(default_factory=lambda: {"charge": 0.45})   # plan-level threat response: the body swells
+    lookahead: float = 10.0      # steps of the ship's path the school reacts to
     seed: int = 0
 
 
@@ -299,10 +301,11 @@ class FieldSwarm:
             m["last_assign"] = clock
         m["alive_sig"] = sig
         home = np.full((len(pos), 3), np.nan, np.float32); hv = np.zeros((len(pos), 3), np.float32)
+        swell = 1.0 + cfg.inflate.get(m["plan"], 0.0) * m.get("threat", 0.0)    # the pufferfish inflates
         if cfg.mode == "slots":
             hs = S[idx, HOME].astype(int) - 1
             ok = hs >= 0
-            home[idx[ok]] = sp[hs[ok]] + anchor
+            home[idx[ok]] = sp[hs[ok]] * swell + anchor
             hv[idx[ok]] = sv[hs[ok]]
         # --- 4. steering (boids + attractor + morph vortex + predators)
         x = pos[idx]; v = S[idx, VEL]
@@ -342,20 +345,27 @@ class FieldSwarm:
             rel = x - c
             dd = np.linalg.norm(rel, axis=-1)
             sense = cfg.sense * rad
-            st = np.maximum(st, np.clip(1.2 - dd / sense, 0, 1))
+            spd = max(float(np.linalg.norm(pv)), 1e-6)
+            pvn = pv / spd
+            along = rel @ pvn                                     # > 0: ahead of the ship
+            lat = rel - along[:, None] * pvn
+            dl = np.linalg.norm(lat, axis=-1)
+            latn = lat / np.maximum(dl, 1e-3)[:, None]
+            # threat = near the ship now, OR near its PATH within the look-ahead (the school parts before it arrives)
+            ahead = np.clip(1 - along / (cfg.lookahead * spd + rad), 0, 1) * (along > -rad)
+            w_path = np.clip(1 - dl / sense, 0, 1) * ahead
+            w_here = np.clip(1 - dd / sense, 0, 1)
+            w = np.maximum(w_path, w_here)
+            st = np.maximum(st, np.clip(1.4 * w, 0, 1))
             radial = rel / np.maximum(dd, 1e-3)[:, None]
-            pvn = pv / max(np.linalg.norm(pv), 1e-6)
-            # part around the ship's path: push away from its line of travel, plus a swirl about it
-            lat = rel - (rel @ pvn)[:, None] * pvn
-            latn = lat / np.maximum(np.linalg.norm(lat, axis=-1, keepdims=True), 1e-3)
-            sw_ = np.cross(pvn, latn)
-            w = np.clip(1 - dd / sense, 0, 1)[:, None]
+            swirl = np.cross(pvn, latn)
             fk = np.array(cfg.flee)[elem[idx]][:, None]
-            flee += w * fk * (0.6 * latn + 0.4 * radial + cfg.flee_swirl * 0.5 * sw_)
+            flee += w[:, None] * fk * (0.75 * latn + 0.25 * radial + cfg.flee_swirl * 0.5 * swirl)
         if len(x) > 1:                      # startle cascade through the school
             relay = (nb * st[None]).max(1) * cfg.relay
             st = np.maximum(st, relay)
         S[idx, STARTLE] = st
+        m["threat"] = 0.85 * m.get("threat", 0.0) + 0.15 * min(1.0, 3.0 * float(st.mean()))
         calm = (1 - 0.8 * st)[:, None]
         steer = calm * desired + cfg.sep_k * sep + cfg.align_k * align + flee * 2.0
         vmax = np.array(cfg.vmax)[elem[idx]] * (1 + 0.8 * st)

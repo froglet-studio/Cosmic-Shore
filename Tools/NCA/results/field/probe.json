@@ -40,17 +40,17 @@
  "predator_pass": {
   "mass": {
    "before": 3.43,
-   "worst": 4.36,
+   "worst": 5.04,
    "after": 3.43,
-   "touched_share": 0.323,
+   "touched_share": 0.276,
    "pass_steps": 36,
    "reform_steps_after_pass": 4,
    "radius": 10.6,
    "trace": [
     3.43,
-    3.48,
-    4.36,
-    3.44,
+    3.57,
+    5.04,
+    3.64,
     3.47,
     3.47,
     3.43,
@@ -67,19 +67,19 @@
   },
   "space": {
    "before": 2.85,
-   "worst": 4.62,
+   "worst": 4.88,
    "after": 2.99,
-   "touched_share": 0.216,
+   "touched_share": 0.08,
    "pass_steps": 32,
    "reform_steps_after_pass": 8,
    "radius": 9.3,
    "trace": [
     2.84,
-    3.04,
-    4.62,
-    3.0,
-    2.98,
-    2.87,
+    3.53,
+    4.88,
+    3.07,
+    2.99,
+    2.86,
     2.83,
     2.96,
     2.99,
@@ -94,21 +94,21 @@
   },
   "charge": {
    "before": 1.94,
-   "worst": 5.61,
+   "worst": 10.6,
    "after": 1.86,
-   "touched_share": 0.229,
+   "touched_share": 0.106,
    "pass_steps": 32,
-   "reform_steps_after_pass": 8,
+   "reform_steps_after_pass": 18,
    "radius": 9.4,
    "trace": [
     1.76,
-    3.4,
-    5.61,
-    1.9,
-    2.04,
+    4.84,
+    10.6,
+    5.58,
+    2.95,
     1.75,
-    1.61,
-    2.24,
+    1.66,
+    2.26,
     1.97,
     1.54,
     1.52,
@@ -121,22 +121,22 @@
   },
   "time": {
    "before": 4.51,
-   "worst": 6.74,
+   "worst": 8.05,
    "after": 4.93,
-   "touched_share": 0.184,
+   "touched_share": 0.105,
    "pass_steps": 41,
    "reform_steps_after_pass": 9,
    "radius": 11.9,
    "trace": [
     4.4,
-    4.44,
-    6.74,
-    4.34,
-    4.97,
-    5.72,
-    4.13,
-    4.53,
-    5.75,
+    4.47,
+    8.05,
+    4.78,
+    4.92,
+    5.7,
+    4.14,
+    4.52,
+    5.76,
     4.57,
     5.01,
     5.67,
@@ -152,22 +152,22 @@
   {
    "kind": "mass",
    "n": 192,
-   "ms_per_step": 4.04
+   "ms_per_step": 4.32
   },
   {
    "kind": "space",
    "n": 88,
-   "ms_per_step": 1.11
+   "ms_per_step": 1.21
   },
   {
    "kind": "charge",
    "n": 179,
-   "ms_per_step": 3.46
+   "ms_per_step": 3.73
   },
   {
    "kind": "time",
    "n": 76,
-   "ms_per_step": 1.48
+   "ms_per_step": 0.93
   }
  ]
 }
