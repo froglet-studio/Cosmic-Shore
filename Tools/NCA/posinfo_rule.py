@@ -60,8 +60,8 @@ def body_frame(sw: Swarm):
 class PosInfoRule(sn.SwarmRule):
     stateless = True
 
-    def __init__(self, world: sn.World, hidden=192, fire_rate=0.5, morph=0, morph_iters=4):
-        self.morph, self.morph_iters = morph, morph_iters
+    def __init__(self, world: sn.World, hidden=192, fire_rate=0.5, morph=0, morph_iters=4, homeo=0):
+        self.morph, self.morph_iters, self.homeo = morph, morph_iters, homeo
         super().__init__(world, hidden=hidden, fire_rate=fire_rate)
         P = P_BASE + morph
         self.P = P
@@ -158,8 +158,77 @@ class PosInfoRule(sn.SwarmRule):
                        new_hatched.view(B, N), deaths, sw.mutants.clone(), (age * keep.long()).view(B, N), sw.clock + 1,
                        sw.plan.clone(), sw.since + 1, sw.bw * keep.view(B, N).to(sw.bw.dtype))
         if bud:
-            self.lay(out_sw, gi, gj, gen)
+            (self.homeo_lay if self.homeo else self.lay)(out_sw, gi, gj, gen)
         return out_sw
+
+
+_TABS = {}
+
+
+def plan_tables():
+    """Per plan: joint (element, slot) unit counts [4,3] of frame 0."""
+    if not _TABS:
+        for k, t in sn.load_targets().items():
+            f = t.frames[0]; tab = torch.zeros(4, 3, dtype=torch.long)
+            for e, sl in zip(f["elem"].tolist(), f["slot"].tolist()):
+                tab[e, sl] += 1
+            _TABS[k] = (tab, t.slots)
+    return _TABS
+
+
+@torch.no_grad()
+def homeo_quota(sw: Swarm, b):
+    """The (element, domain) quota [4,3] of sample b: the joint table of the plan of its living majority
+    element, under the slot->domain assignment that best matches the counts it already has."""
+    m = sw.active[b]                                                   # eggs count: no overshoot
+    h = sw.active[b] & sw.hatched[b]
+    if int(h.sum()) == 0:
+        return None, None
+    k = sn.PLAN_OF[int(torch.bincount(sw.elem[b][h], minlength=4).argmax())]
+    tab, slots = plan_tables()[k]
+    have = torch.zeros(4, 3, dtype=torch.long)
+    have.index_put_((sw.elem[b][m], sw.dom[b][m]), torch.ones(int(m.sum()), dtype=torch.long), accumulate=True)
+    best = None
+    for perm in sn.PERMS[slots]:
+        q = torch.zeros(4, 3, dtype=torch.long)
+        for sl, d in enumerate(perm):
+            q[:, d] = tab[:, sl]
+        err = int((q - have).abs().sum())
+        if best is None or err < best[0]:
+            best = (err, q)
+    return best[1], have
+
+
+def _homeo_lay(self, sw: Swarm, gi, gj, gen=None):
+    """Designed production gating (no culling): a parent lays only while its (element, domain) class
+    is below the quota of the current majority plan; at most `deficit` eggs per class per step."""
+    W = self.world
+    B, N, _ = sw.pos.shape
+    pos = sw.pos.reshape(B * N, 3)
+    with torch.no_grad():
+        dxl = pos[gj] - pos[gi]
+        close = ((dxl * dxl).sum(-1) < W.r_lay ** 2).float()
+        cnt = torch.zeros(B * N).index_add(0, gi, close).view(B, N)
+        elig = sw.hatched & sw.active & (cnt < W.k_bud) & (torch.rand(B, N, generator=gen) <= W.p_bud)
+        q = torch.zeros(B, N)
+        for b in range(B):
+            quota, have = homeo_quota(sw, b)
+            if quota is None:
+                continue
+            deficit = (quota - have).clamp(min=0)
+            idx = elig[b].nonzero().squeeze(1)
+            if len(idx) == 0:
+                continue
+            idx = idx[torch.randperm(len(idx), generator=gen)]
+            cls = sw.elem[b][idx] * 3 + sw.dom[b][idx]
+            left = deficit.reshape(-1).clone()
+            for i, c in zip(idx.tolist(), cls.tolist()):
+                if left[c] > 0:
+                    left[c] -= 1; q[b, i] = 1.0 / W.p_bud
+        self._lay(sw, gi, gj, gen, q.reshape(-1), None)
+
+
+PosInfoRule.homeo_lay = _homeo_lay
 
 
 def from_g2(path, morph=0, **kw):
@@ -175,13 +244,13 @@ def from_g2(path, morph=0, **kw):
 
 def save(rule, path, step=0, extra=None):
     torch.save(dict(rule={k: v.cpu() for k, v in rule.state_dict().items()}, world=sn.asdict(rule.world),
-                    hidden=rule.hidden, morph=rule.morph, morph_iters=rule.morph_iters, step=step, **(extra or {})), path)
+                    hidden=rule.hidden, morph=rule.morph, morph_iters=rule.morph_iters, homeo=rule.homeo, step=step, **(extra or {})), path)
 
 
 def load(path):
     st = torch.load(path, weights_only=False, map_location=sn.DEVICE)
     w = st["world"]; w["vmax"] = tuple(w["vmax"])
-    rule = PosInfoRule(sn.World(**w), hidden=st["hidden"], morph=st.get("morph", 0), morph_iters=st.get("morph_iters", 4))
+    rule = PosInfoRule(sn.World(**w), hidden=st["hidden"], morph=st.get("morph", 0), morph_iters=st.get("morph_iters", 4), homeo=st.get("homeo", 0))
     rule.load_state_dict(st["rule"])
     return rule
 

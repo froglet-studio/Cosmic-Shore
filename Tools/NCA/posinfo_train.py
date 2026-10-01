@@ -78,6 +78,7 @@ def main():
     ap.add_argument("--lr", type=float, default=5e-4)
     ap.add_argument("--snap", type=int, default=100)
     ap.add_argument("--eval-every", type=int, default=200)
+    ap.add_argument("--homeo", type=int, default=0, help="designed (element, domain) production quota of the majority plan")
     ap.add_argument("--w-count", type=float, default=0.0, help="LossCfg.w_count (headcount term; off in G2)")
     ap.add_argument("--set", nargs="*", default=[], help="TrainCfg overrides key=value")
     a = ap.parse_args()
@@ -90,11 +91,11 @@ def main():
     cfg = sn.TrainCfg(run=a.run, steps=a.steps, init=a.init, lr=a.lr, snap_every=a.snap, log_every=10, **cfgd)
     class _Rule(pr.PosInfoRule):                                         # train() builds SwarmRule(world, hidden)
         def __init__(self, world, hidden=192):
-            super().__init__(world, hidden=hidden, morph=a.morph)
+            super().__init__(world, hidden=hidden, morph=a.morph, homeo=a.homeo)
     _Rule.NAN_DUMP = ""
     sn.SwarmRule = _Rule
     os.makedirs(a.run, exist_ok=True)
-    json.dump(dict(morph=a.morph, init=a.init, w_count=a.w_count), open(os.path.join(a.run, "posinfo.json"), "w"))
+    json.dump(dict(homeo=a.homeo, morph=a.morph, init=a.init, w_count=a.w_count), open(os.path.join(a.run, "posinfo.json"), "w"))
     evlog = open(os.path.join(a.run, "evals.jsonl"), "a")
 
     def on_snapshot(step, rule):
