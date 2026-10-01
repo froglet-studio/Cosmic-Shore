@@ -4,3 +4,4 @@ runs/
 __pycache__/
 # swarm_runs/ is derived by build_viewer.py (one json per swarm approach, published beside viewer.html)
 swarm_runs/
+results/hybrid/hybrid_*.pt
