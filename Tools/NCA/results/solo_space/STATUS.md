@@ -1,15 +1,15 @@
 # solo_space status
 
-- Updated: 2026-10-01 12:58 UTC
-- Newest snapshot: `rule_00100.pt` (step 100 of 3000) -> `rule_latest.pt`
+- Updated: 2026-10-01 13:44 UTC
+- Newest snapshot: `rule_00900.pt` (step 900 of 3000) -> `rule_latest.pt`
 - Run: `gpu_run.py swarm --tag solo_space --set only=space ...` (see Tools/NCA/briefs/solo.md), warm start from G2
 
 ## Last 5 log lines
 
 ```
-   60 loss   14.254 T76  3.5s rev0.00 s7 | sp>sp  15.84 n125 d0
-   70 loss   12.530 T58  3.1s rev0.00 s11 | sp>sp  13.24 n280 d0
-   80 loss   16.754 T77  3.5s rev0.00 s5 | sp>sp  17.41 n132 d0
-   90 loss   16.547 T62  3.9s rev0.00 s9 | sp>sp  14.06 n280 d0
-  100 loss   19.386 T69  3.1s rev0.00 s6 | sp>sp  21.77 n 86 d0
+  910 loss   14.015 T55  2.9s rev0.00 s5 | sp>sp  19.46 n280 d0
+  920 loss   13.963 T72  2.7s rev0.00 s6 | sp>sp  18.64 n 66 d0
+  930 loss   10.733 T88  3.4s rev0.00 s6 | sp>sp  12.00 n280 d0
+  940 loss   15.487 T84  3.1s rev0.00 s6 | sp>sp  12.80 n115 d0
+  950 loss   12.026 T63  2.8s rev0.00 s6 | sp>sp  10.09 n280 d0
 ```
