@@ -1,0 +1,46 @@
+{
+ "23": {
+  "mean": {
+   "speed": 0.101,
+   "jerk": 0.247,
+   "jerk_rel": 2.435,
+   "planar_frac": 0.391,
+   "flat_mean": 0.142,
+   "coherence": 0.389,
+   "jitter": 2.582,
+   "phase": 0.167,
+   "stuck": 0.0,
+   "osc": 0.048
+  },
+  "in_band": false,
+  "checks": {
+   "jerk_rel": true,
+   "osc": true,
+   "stuck": true,
+   "planar": false
+  },
+  "planar_excess": 0.192
+ },
+ "41": {
+  "mean": {
+   "speed": 0.103,
+   "jerk": 0.256,
+   "jerk_rel": 2.478,
+   "planar_frac": 0.381,
+   "flat_mean": 0.139,
+   "coherence": 0.391,
+   "jitter": 2.531,
+   "phase": 0.162,
+   "stuck": 0.0,
+   "osc": 0.049
+  },
+  "in_band": true,
+  "checks": {
+   "jerk_rel": true,
+   "osc": true,
+   "stuck": true,
+   "planar": true
+  },
+  "planar_excess": 0.11
+ }
+}
