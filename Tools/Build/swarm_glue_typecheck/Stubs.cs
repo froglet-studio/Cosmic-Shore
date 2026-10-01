@@ -25,7 +25,7 @@ namespace UnityEngine
     public struct Quaternion { public static Quaternion LookRotation(Vector3 f, Vector3 u) => default; }
     public static class Mathf { public static float Max(float a, float b) => a; public static int Max(int a, int b) => a; public static float Min(float a, float b) => a; public static float Abs(float a) => a; public static float Clamp01(float a) => a; }
     public static class Random { public static int Range(int a, int b) => a; public static Vector3 onUnitSphere; }
-    public static class Time { public static float time, deltaTime; }
+    public static class Time { public static float time, deltaTime; public static int frameCount; }
     public static class Physics { public static int OverlapSphereNonAlloc(Vector3 p, float r, Collider[] res, int mask) => 0; }
     public static class JsonUtility { public static T FromJson<T>(string s) => default; }
     public class HeaderAttribute : Attribute { public HeaderAttribute(string s) { } }

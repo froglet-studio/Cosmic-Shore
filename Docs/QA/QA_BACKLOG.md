@@ -476,19 +476,20 @@ the Unity glue, prefabs and on-screen behaviour are not.
 1. Let Unity import; confirm the Console has **no compile errors** naming a `Swarm*` file.
 2. Menu_Main → freestyle → **Cell Selector** toy → fly into the **Swarm** station. Enable the
    **Ecology** log channel first (FrogletTools > Toolbox > Logging).
-3. After ~6 s, three swarms hatch (inner whale, middle dragonfly, outer pufferfish), each with
-   flora nearby. Watch one feed and grow.
+3. After ~6 s, 24 swarms hatch — eight per band (inner whales, middle dragonflies, outer
+   pufferfish) — with ~190 plants seeded around them (OVERTUNE pass: ~5,000 always-on hearts at
+   the caps, 4.6× the Lattice cell). Watch one feed and grow.
 4. Fly through a swarm without firing (scatter + startle ripple; pufferfish plates turn danger).
    Hover still beside the dragonfly (its Time members mob you).
 5. Vessel Changer → Sparrow. Shoot tadpoles. Then kill ~36 of the dragonfly's Time members in a
    burst and watch it morph into a jellyfish.
-6. Profiler: `SwarmFauna.Update` cost per frame with all three swarms grown.
+6. Profiler: `SwarmFauna.Update` cost per frame and total frame time with the swarms grown.
 
 **PASS:** no compile/import errors; the three swarms hatch in their bands and swim as recognisable
 creatures; tadpoles grow in (never pop); feeding visibly suctions flora prisms; every kill drops a
 collectable crystal and the husk shrinks away; the dragonfly morphs (log line
 `[Swarm] … morphs time -> space`) with members re-forming in motion; no exceptions in the Console;
-`SwarmFauna.Update` under ~2 ms per swarm.
+`SwarmFauna.Update` under ~2 ms per swarm, and record the total frame time (the overtune is unprofiled).
 **FAIL:** any `Swarm*` compile error · the Swarm station missing from the Cell Selector · swarms
 not hatching · tadpoles appearing at scale 1 or vanishing instantly · a kill with no crystal ·
 a `NullReferenceException` from `SwarmFauna`/`SwarmTadpoleFauna` · a morph that never happens

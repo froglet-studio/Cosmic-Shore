@@ -59,8 +59,16 @@ namespace CosmicShore.Gameplay
                  "not a machine that strips its feeding ground for nothing.")]
         [Min(1f)] public float StomachEggs = 24f;
         [Tooltip("Eggs per step as a share of the headcount, and at most this many per step.")]
-        [Range(0f, 0.2f)] public float LayRate = 0.02f;
+        [Range(0f, 1f)] public float LayRate = 0.02f;
         [Min(1)] public int LayMax = 2;
+        [Tooltip("Cell-wide budget of tadpole births made VISIBLE per frame, shared by every swarm. A " +
+                 "laid member past it is already alive in the sim and simply hatches a frame or two later, " +
+                 "so a burst of laying (or a whole cell of swarms seeding at once) never spikes a frame.")]
+        [Min(1)] public int MaxSpawnsPerFrame = 48;
+        [Tooltip("A WOUNDED swarm holds its eggs: every kill postpones laying by this long. This is what " +
+                 "keeps a morph reachable at a fast lay rate - without it a fed swarm re-lays its majority " +
+                 "faster than any ship can kill it (harness test 3c). 0 = no hold.")]
+        [Min(0f)] public float KillLayHoldSeconds = 2f;
 
         [Header("Starvation - the only death the swarm deals itself")]
         [Tooltip("Seconds without a meal before the swarm starts shedding members (each withers to " +

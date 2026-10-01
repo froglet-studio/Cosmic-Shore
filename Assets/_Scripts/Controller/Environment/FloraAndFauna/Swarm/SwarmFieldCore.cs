@@ -137,6 +137,13 @@ namespace CosmicShore.Gameplay
         /// proportion instead of changing shape. Measured by the harness, test 3.
         /// </summary>
         public int SettleSteps = 300;
+        /// <summary>
+        /// GAME CHANGE: a WOUNDED swarm holds its eggs. Every kill postpones laying by this many steps,
+        /// so a burst of kills is a window in which the body cannot refill what it lost. Without it, a
+        /// fed swarm at the game's fast lay rate re-lays its majority faster than any ship can kill
+        /// it and never morphs (measured, harness test 3c). 0 = the research behaviour (no hold).
+        /// </summary>
+        public int KillLayHoldSteps = 0;
         public int MorphSteps = 60; public float Swirl = 0.9f;
         public float Sense = 2.2f, Relay = 0.8f, StartleDecay = 0.9f, Lookahead = 10f, FleeSwirl = 0.8f;
         public float[] Flee = { 0.6f, 0.5f, 1.4f, 2f };
@@ -330,7 +337,7 @@ namespace CosmicShore.Gameplay
             float swell = 1f + C.Inflate[PlanIx] * ThreatLevel;
 
             // 2. composition (paused while contested)
-            if (!contested) { if (Clock < SettleUntil) MoltStep(plan, counts); Lay(plan); }
+            if (!contested) { if (Clock < SettleUntil) MoltStep(plan, counts); if (Clock >= _layHoldUntil) Lay(plan); }
             for (int i = 0; i < Cap; i++) if (Alive[i] && Molt[i] > 0)
             {
                 Molt[i] += 1f / C.MoltSteps;
@@ -454,6 +461,7 @@ namespace CosmicShore.Gameplay
         {
             if (i < 0 || i >= Cap || !Alive[i]) return;
             Alive[i] = false; Home[i] = -1; Molt[i] = 0;
+            if (C.KillLayHoldSteps > 0) _layHoldUntil = Math.Max(_layHoldUntil, Clock + C.KillLayHoldSteps);
         }
 
         /// <summary>Current element of a tadpole as composition sees it (a molting one counts as what it becomes).</summary>
@@ -546,6 +554,7 @@ namespace CosmicShore.Gameplay
         }
 
         readonly int[] _want = new int[4], _have = new int[4];
+        int _layHoldUntil;
 
         void Lay(SwarmPlanData plan)
         {
