@@ -1,0 +1,8 @@
+{
+ "recommended": "posinfo2:Tools/NCA/results/posinfo2/rule.pt",
+ "lite_spec": "lite_posinfo2:Tools/NCA/results/posinfo2/rule.pt",
+ "flags": {},
+ "why": "no lite config passed the hold; posinfo2 already evaluates its network on half the swarm per step (fire_rate 0.5)",
+ "net_macs_per_eval": 91968,
+ "net_macs_per_tadpole_step": 45984
+}

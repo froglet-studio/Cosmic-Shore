@@ -37,16 +37,32 @@ config is the unchanged posinfo2 (baseline = `results/hold/posinfo2.json`). What
 | **baseline posinfo2** | 6.99 | 13 / 12 / 13 / 13 | - | - | 0.497 | 4.22 | 1.67 | 0.32 / 0.50 | - |
 | k4_h8_f4 (fire_k 4, homeo every 8, frame every 4) | **4.71** | 11 / 12 / 13 / 12 | charge->time @7, time->space @7, @101 | own charge 2.76, own time 3.14 @101 | **0.519** | 4.06 | **0.87** | 0.41 FAIL / 0.34 | FAIL |
 | h4_f4 (homeo every 4, frame every 4; no fractional update) | 5.74 | 12 / **13** / 13 / 13 | time->space @7 (9.44) | own charge 2.26 @41 (+0.63) | 0.497 | 5.52 FAIL | 0.98 | 0.32 / 0.46 | FAIL |
+| (all lite rows above except s64 ran BEFORE the cache-reset fix: their frame cache could carry one stale frame for <= 3 steps across batched rollouts; slightly pessimistic) | | | | | | | | | |
 | k2 (fire_k 2, round-robin + coast) | - | 12 / (killed) | time->space @7 | - | - | - | - | - | incomplete: the hold ran 6x slower than the others and was killed to make room for the noise control |
 | s64 (64-wide student, behaviour cloning) | 5.86 | 0 / 0 / 0 / 0 | everything | own 27-98 | 0.287 | 1.86 | 1.78 | 0.25 / 0.37 | FAIL (collapse) |
-| noise control (unchanged rule, generator stream shifted by one draw per step) | NOISE_MS | NOISE_PASSED | NOISE_LOST | NOISE_OWN | NOISE_SMOOTH | | | | NOISE_VERDICT |
+| noise control (unchanged rule, generator stream shifted by one draw per step) | 6.435 | 12 / 12 / 12 / 12 | time->space @7, @41, @101 | own charge 3.10 @23 | 0.432 FAIL | | | | **FAIL** (lurch 4.99, molt 0.33, birth 0.54 pass) |
 
 Note on accuracy totals: h4_f4 passes **52/52 - 1 = 51 of 52** feasible, exactly the baseline's 51/52 - it
 loses time->space at seed 7 and WINS it at seed 23. The hold forbids any lost test per seed, so it fails.
 
 ## Is the accuracy gate noise?
 
-NOISE_PARAGRAPH
+**Yes, mostly.** The noise control is the UNCHANGED posinfo2 rule with one extra `torch.rand(1)` drawn per
+step - behaviourally neutral, it only shifts the generator stream (flag `rng_burn=1`). It **FAILS its own hold**:
+12/13 at all four seeds (time->space lost at 7, 41, 101), own charge 3.10 vs 2.01 at seed 23, and
+**smoothness 0.432 vs 0.497** (a drop of 0.065 against the 0.05 tolerance). So under the hold as written:
+- `no lost test` is decided by time->space, which the baseline passes at 2/3, 1/3 (fail), 2/3, 3/3 samples with
+  losses 7.49 / 10.38 / 7.99 / 7.44 against the bar 8. A re-roll loses it at most seeds. The noise control loses
+  MORE than any lite candidate did (k4_h8_f4 lost it at 2 seeds, h4_f4 at 1, while h4_f4 WON it at seed 23).
+- the smoothness gate (0.05) is smaller than the seed-to-seed spread of smoothness itself at one seed
+  (0.497 vs 0.432 for the same rule). k4_h8_f4 (0.519) and h4_f4 (0.497) both sit ABOVE the noise control.
+- own-loss tolerance max(0.5, 15%) is also inside the noise (own charge 2.01 -> 3.10 on a re-roll).
+Suggested fix for hold.py (the lead owns it; not edited): compare SUMMED passes over the four seeds (with a
+binomial allowance) rather than per-seed `no lost test`, and either measure smoothness over several seeds or
+set its tolerance from a noise-control run like this one. **Under such a rule, k4_h8_f4 and h4_f4 would be
+read as "inside noise on accuracy, better on smoothness" (k4_h8_f4), with only k4_h8_f4's molt burst and
+h4_f4's worst lurch as real candidates for regressions** - and I would then recommend k4_h8_f4 minus the
+amortised homeostat (fire_k 4 + frame_every 4), which still needs its own hold check.
 
 ## Profile (per step, grown 192-tadpole Mass body, 1 thread, perf_counter per phase, 100 steps)
 
@@ -65,7 +81,42 @@ At B = 12 batched swarms (the hold's own layout), 120 steps: homeo is **48%** of
 In Python the composition controller is the cost and it scales LINEARLY with the number of swarms (its loops
 are per swarm); the network is batched and nearly free. **In C# it is the other way round** (next section).
 
-BATCH_TABLE
+**Scaling with batched swarms** (Mass body, 1 thread, grown once with the base rule, `profile.json`; run while a hold ran, so absolute ms are noisy, ratios are not):
+
+| config | B | ms per swarm-step | us per tadpole-step | homeo ms | perceive ms | mlp ms | net MACs/tadpole-step |
+|---|---|---|---|---|---|---|---|
+| base | 1 | 7.877 | 41.03 | 3.024 | 1.545 | 0.607 | 45920 |
+| base | 4 | 5.716 | 29.77 | 10.423 | 4.905 | 1.166 | 45921 |
+| base | 16 | 4.812 | 25.06 | 38.834 | 17.979 | 3.676 | 45709 |
+| base | 64 | 5.371 | 27.97 | 159.702 | 103.194 | 15.811 | 46016 |
+| h4_f4 | 1 | 6.288 | 32.75 | 1.658 | 1.494 | 0.632 | 46086 |
+| h4_f4 | 4 | 4.866 | 25.35 | 6.855 | 5.1 | 1.246 | 45827 |
+| h4_f4 | 16 | 4.169 | 21.72 | 27.197 | 18.77 | 3.864 | 45843 |
+| h4_f4 | 64 | 4.486 | 23.36 | 100.814 | 103.716 | 15.665 | 45884 |
+| k4 | 1 | 8.213 | 42.78 | 3.225 | 1.088 | 0.537 | 22992 |
+| k4 | 4 | 5.089 | 26.51 | 10.204 | 2.693 | 0.797 | 22992 |
+| k4 | 16 | 4.402 | 22.93 | 40.703 | 9.385 | 2.265 | 22992 |
+| k4 | 64 | 4.387 | 22.85 | 166.664 | 38.653 | 8.919 | 22992 |
+| k4_h8_f4 | 1 | 5.74 | 29.9 | 1.085 | 1.081 | 0.494 | 22992 |
+| k4_h8_f4 | 4 | 3.562 | 18.55 | 3.987 | 2.788 | 0.93 | 22992 |
+| k4_h8_f4 | 16 | 2.857 | 14.88 | 16.842 | 9.444 | 2.199 | 22992 |
+| k4_h8_f4 | 64 | 3.051 | 15.89 | 82.42 | 38.642 | 8.634 | 22992 |
+| s64 | 1 | 8.123 | 42.31 | 3.057 | 1.693 | 0.336 | 11206 |
+| s64 | 4 | 6.043 | 31.48 | 11.125 | 5.532 | 0.642 | 11197 |
+| s64 | 16 | 4.871 | 25.37 | 40.369 | 18.756 | 1.526 | 11193 |
+| s64 | 64 | 5.446 | 28.37 | 169.165 | 104.344 | 6.656 | 11207 |
+| s32 | 1 | 8.203 | 42.72 | 3.083 | 1.872 | 0.233 | 5065 |
+| s32 | 4 | 5.844 | 30.44 | 10.733 | 5.415 | 0.444 | 5104 |
+| s32 | 16 | 5.254 | 27.37 | 42.674 | 21.48 | 1.002 | 5076 |
+| s32 | 64 | 5.148 | 26.81 | 157.161 | 101.356 | 3.245 | 5095 |
+
+Read: batching amortises Python overhead (base 7.9 -> 5.4 ms per swarm-step from B 1 to 64), and at B 64 the
+PERCEPTION gather is the largest phase (103 ms of 344). fire_k 4 cuts perception 2.7x and the network 1.8x
+because both now run only on the firing rows; amortised bookkeeping cuts homeo further. The best config
+(k4_h8_f4) is **3.05 ms per swarm-step at B 64 vs 5.37 (1.76x)**. With a fixed per-frame budget a fractional
+update makes the per-step NETWORK cost proportional to N/k, i.e. a 4x larger swarm at k 4 costs the same network
+and perception as today's swarm - but edges (all-pairs) and physics still run on everyone every step.
+The students (H 64 / 32) cut the MLP 2.4x / 4.9x at B 64 - it barely moves Python totals, it is the C# lever.
 
 ## Cost model for the C# port (per tadpole-step, at the grown size)
 
