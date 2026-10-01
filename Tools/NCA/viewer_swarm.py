@@ -148,7 +148,7 @@ def build_swarm(results_root, gallery_dir=None):
         return "", ""
     import prism_render as pr
     first = _payload(cands[0])
-    tag = lambda p: f"{p['eval16']['passed']}/16" if p.get("eval16") else f"{p['passed']}/8"
+    tag = lambda p: (f"{p['eval16']['passed']}/{p['eval16'].get('feasible', 16)}" + ("" if p['eval16'].get('feasible', 16) == 16 else " feasible")) if p.get("eval16") else f"{p['passed']}/8"
     manifest = [dict(id=first["id"], label=first["label"], passed=tag(first), file=None)]
     if gallery_dir:
         os.makedirs(gallery_dir, exist_ok=True)

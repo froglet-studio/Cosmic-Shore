@@ -749,10 +749,19 @@ A target element a body holds fewer than 2 of cannot take over; that test is n/a
 |---|---|---|---|
 | **field** (designed fields + flocking) | **13/13 feasible** (n/a: jellyfish, pufferfish -> whale; dragonfly -> pufferfish) | 4/4 | 9/9 |
 | learned G2 | 6/16 | 4/4 | 2/12 (jellyfish -> whale, pufferfish -> whale) |
-| evo, hgrid | being re-scored | | |
+| **evo** (G2 + evolved behaviour genome) | **16/16** (every test 3/3 samples) | 4/4 | 12/12 |
+| hgrid | being re-scored | | |
 
-The field approach solves the full problem as stated. The learned rules grow the right bodies but
-switch rarely: they sit at the 280-slot cap and keep their old shape at the new mix (field's
+Two approaches solve the full problem as stated, from opposite ends. **field** is designed
+end to end. **evo** keeps G2's learned body unchanged and adds two behaviours its backprop rule
+had no actuator for, found by CMA-ES over a 95-float genome (`evo_model.py`): a laying homeostat
+(a parent lays more when its element is below the share its majority's plan wants) and egg choice
+(26% of eggs take the most-wanted element of the parent's domain). Its genome was searched on the
+old 8-test yardstick at seed 7, so 16/16 on the fair cull is out-of-sample on the 12 new switches
+but not yet on seeds; round 3 (`briefs/evo16.md`) measures held-out seeds and its weak strike
+healing (space -1.17). Post-switch bodies are rougher than grown ones (divergence 18-40 against
+15-25) and every swarm fills the 280-slot cap. Plain G2 grows the right bodies but switches
+rarely: they sit at the 280-slot cap and keep their old shape at the new mix (field's
 `hybrid.json`: the composition controller lifts G2 and F1 to 6/8 but not further).
 
 ```
