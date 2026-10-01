@@ -15,7 +15,8 @@ Held axes (a candidate FAILS if it is worse than the baseline beyond the toleran
   LOSSLESS  scorecard.lossless_and_cost deaths: a lossless baseline holds 0.
   ORGANIC   swarm_feel.in_band at seed 7: an in-band baseline must stay in band, and planar excess may rise
             at most 0.05.
-  SMOOTH    swarm_smooth.smooth at seed 7: smoothness may fall at most 0.05; worst lurch at most +25%;
+  SMOOTH    swarm_smooth.smooth at seed 7: smoothness may fall at most 0.05; worst lurch at most +25%; worst
+            teleport at most max(1, +10%);
             worst molt/birth burst at most +0.05; no new deaths.
 Reported, never gated (it is what the next stage optimises): PERFORMANT ms/step at the grown size, 1 thread,
 plus anything in `extra` the caller adds (e.g. scaled-population cost).
@@ -88,6 +89,7 @@ def compare(base, cand):
     bs, cs = base["smooth"], cand["smooth"]
     res.append(("smoothness", cs["smoothness"] >= bs["smoothness"] - 0.05, f"{cs['smoothness']} vs {bs['smoothness']}"))
     res.append(("smooth lurch", cs["worst"]["lurch"] <= 1.25 * bs["worst"]["lurch"], f"{cs['worst']['lurch']} vs {bs['worst']['lurch']}"))
+    res.append(("smooth teleport", cs["worst"]["teleport"] <= max(1.0, 1.1 * bs["worst"]["teleport"]), f"{cs['worst']['teleport']} vs {bs['worst']['teleport']}"))
     for kk in ("molt_burst", "birth_burst"):
         res.append((f"smooth {kk}", cs["worst"][kk] <= bs["worst"][kk] + 0.05, f"{cs['worst'][kk]} vs {bs['worst'][kk]}"))
     res.append(("smooth deaths", cs["deaths"] <= bs["deaths"], f"{cs['deaths']} vs {bs['deaths']}"))

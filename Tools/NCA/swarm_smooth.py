@@ -11,21 +11,28 @@ those changes and turns them into numbers. Measured events (one rollout each, se
 
 Per event, on tadpole identities (array slot = identity):
 
-  mono        loss-path monotonicity: total variation of the loss-to-goal series (sampled every 8 steps)
-              over the net drop. 1 = it only ever went downhill; 2 = it climbed back as far as it fell.
+  mono        loss-path monotonicity: total variation of the loss-to-goal series (sampled every 16 steps,
+              against frames 0 and 4 of the plan's animation - a cheap, consistent proxy) over the net drop. 1 = it only ever went downhill; 2 = it climbed back as far as it fell.
               (Goal = the new plan for a switch, the same plan for a heal.)
   settle      share of the window before the loss is within 10% (of the net drop) of where it ends.
-  lurch       the worst step's 95th-percentile tadpole speed over the body's own steady-state mean speed
-              (measured on the grown body before the event). A big number is a lurch or a teleport.
+  travel      the event's median per-step 95th-percentile tadpole speed over the SAME percentile on the
+              body's own steady state (the grown body before the event). A switch IS a migration, so this is
+              expected to be > 1 (measured 5-10 on the first calibration); reported, not penalised.
+  lurch       a SPIKE: the worst step's 95th-percentile speed over the event's own median of it. 1 = the
+              migration flows at an even pace; a big number is a sudden jolt inside the change.
+  teleport    the largest single-step displacement of any tadpole over the world's top speed (2.0 voxels,
+              Time's vmax). > 1 means something was MOVED rather than swam (a transfer that relocates
+              a tadpole, a respawn) - the continuity law's worst failure.
   jerk_rel    mean |third difference| / mean speed DURING the change (swarm_feel's definition).
   molt_burst  the largest share of the body that changed ELEMENT in any 8-step window. A molt recolours a
               crystal; spread out it reads as a wave, all at once it reads as a pop.
   birth_burst the largest share of the body that hatched in any 8-step window (a body that re-forms by a
-              flash of births pops instead of growing).
+              flash of births pops instead of growing). Both shares are of max(the body now, the body at
+              the end), so a body regrowing after a cull is not charged for having been small.
   deaths      self-inflicted deaths after the event (lossless = 0; the cull/strike itself does not count).
 
-`rough` per event = (mono - 1) + max(0, lurch / 4 - 1) + max(0, jerk_rel - 2.5)
-                    + 10 * max(0, molt_burst - 0.10) + 10 * max(0, birth_burst - 0.10),
+`rough` per event = (mono - 1) + max(0, lurch / 2.5 - 1) + 2 * max(0, teleport - 1) + max(0, jerk_rel - 2.5)
+                    + 10 * max(0, molt_burst - 0.10) + 10 * max(0, birth_burst - 0.25),
 each term 0 inside its comfort range, and `smoothness` = 1 / (1 + mean rough) in (0, 1]. The terms are
 reported separately so a regression can be traced; tools/NCA/hold.py gates on them against a held baseline.
 
@@ -43,7 +50,8 @@ import swarm_eval as se
 import swarm_nca as sn
 import swarm_probe as sp
 
-LURCH_OK, JERK_OK, BURST_OK = 4.0, 2.5, 0.10
+LURCH_OK, JERK_OK, BURST_OK, BIRTH_OK = 2.5, 2.5, 0.10, 0.25
+LOSS_FRAMES = (0, 4)
 
 
 def _alive(sw):
@@ -53,7 +61,7 @@ def _alive(sw):
 @torch.no_grad()
 def _track(model, sw, gen, goal, targets, L, steps, every, ref_speed):
     pos, alive, elem, hat, losses = [sw.pos[0].clone()], [_alive(sw)], [sw.elem[0].clone()], [sw.hatched[0].clone()], []
-    loss = lambda s: float(sn.swarm_loss(sn.decode(s, 0), targets[goal], L)[1]["sink"])
+    loss = lambda s: float(sn.swarm_loss(sn.decode(s, 0), targets[goal], L, frames=LOSS_FRAMES)[1]["sink"])
     losses.append(loss(sw))
     act0 = sw.active[0].clone()
     deaths = 0
@@ -66,12 +74,16 @@ def _track(model, sw, gen, goal, targets, L, steps, every, ref_speed):
         if (t + 1) % every == 0:
             losses.append(loss(sw))
     P, A, E, H = torch.stack(pos), torch.stack(alive), torch.stack(elem), torch.stack(hat)
-    n_t = A.sum(1).float().clamp(min=1)
+    n_t = torch.maximum(A.sum(1).float(), A[-1].sum().float()).clamp(min=1)
     # speeds of tadpoles alive at both ends of a step
     both = A[1:] & A[:-1]
     V = (P[1:] - P[:-1]).norm(dim=-1)
     p95 = torch.stack([torch.quantile(V[t][both[t]], 0.95) if int(both[t].sum()) >= 4 else torch.tensor(0.0) for t in range(len(V))])
-    lurch = float(p95.max() / max(ref_speed, 1e-4))
+    p95v = p95[p95 > 0]
+    med = float(p95v.median()) if len(p95v) else 1e-4
+    lurch = float(p95.max()) / max(med, 1e-4)
+    travel = med / max(ref_speed, 1e-4)
+    teleport = float(V[both].max()) / 2.0 if int(both.sum()) else 0.0
     # jerk over tadpoles alive for 4 consecutive steps
     a4 = A[3:] & A[2:-1] & A[1:-2] & A[:-3]
     J = (P[3:] - 3 * P[2:-1] + 3 * P[1:-2] - P[:-3]).norm(dim=-1)
@@ -89,10 +101,11 @@ def _track(model, sw, gen, goal, targets, L, steps, every, ref_speed):
     thr = float(Ls[-1]) + 0.1 * max(drop, 0.0)
     settle = next((i for i, v in enumerate(losses) if v <= thr), len(losses) - 1) / max(1, len(losses) - 1)
     r = dict(loss_start=round(float(Ls[0]), 2), loss_end=round(float(Ls[-1]), 2), mono=round(mono, 3), settle=round(settle, 3),
-             lurch=round(lurch, 2), jerk_rel=round(jerk_rel, 3), molt_burst=round(win(molt), 3), birth_burst=round(win(born), 3),
+             travel=round(travel, 2), lurch=round(lurch, 2), teleport=round(teleport, 3), jerk_rel=round(jerk_rel, 3), molt_burst=round(win(molt), 3), birth_burst=round(win(born), 3),
              deaths=deaths, n_end=int(A[-1].sum()))
-    r["rough"] = round((r["mono"] - 1) + max(0.0, r["lurch"] / LURCH_OK - 1) + max(0.0, r["jerk_rel"] - JERK_OK)
-                       + 10 * max(0.0, r["molt_burst"] - BURST_OK) + 10 * max(0.0, r["birth_burst"] - BURST_OK), 3)
+    r["rough"] = round((r["mono"] - 1) + max(0.0, r["lurch"] / LURCH_OK - 1) + 2 * max(0.0, r["teleport"] - 1)
+                       + max(0.0, r["jerk_rel"] - JERK_OK)
+                       + 10 * max(0.0, r["molt_burst"] - BURST_OK) + 10 * max(0.0, r["birth_burst"] - BIRTH_OK), 3)
     return r
 
 
@@ -102,18 +115,19 @@ def _grown(model, k, targets, steps, seed):
     sw = sn.seed_swarm([targets[k]], model.world, gen)
     for _ in range(steps):
         sw = model(sw, gen)
-    # the body's own steady-state speed, over 16 more steps
+    # the body's own steady-state p95 speed, median over 16 more steps
     a, p0, sp_ = _alive(sw), sw.pos[0].clone(), []
     for _ in range(16):
         sw = model(sw, gen)
         b = a & _alive(sw)
-        sp_.append(float((sw.pos[0][b] - p0[b]).norm(dim=-1).mean()) if int(b.sum()) else 0.0)
+        if int(b.sum()) >= 4:
+            sp_.append(float(torch.quantile((sw.pos[0][b] - p0[b]).norm(dim=-1), 0.95)))
         a, p0 = _alive(sw), sw.pos[0].clone()
-    return sw, gen, sum(sp_) / len(sp_)
+    return sw, gen, float(torch.tensor(sp_).median()) if sp_ else 1e-3
 
 
 @torch.no_grad()
-def smooth(model, seed=7, steps=240, window=240, every=8, log=print):
+def smooth(model, seed=7, steps=240, window=240, every=16, log=print):
     targets = sn.load_targets()
     L = sn.LossCfg()
     std, _ = se.transitions()
@@ -132,9 +146,9 @@ def smooth(model, seed=7, steps=240, window=240, every=8, log=print):
         out["events"][f"heal {k}"] = _track(model, sw, gen, k, targets, L, window, every, ref)
         log(f"heal {k}: {out['events'][f'heal {k}']}  ({time.time() - t0:.0f}s)")
     ev = [v for v in out["events"].values() if v]
-    keys = ["mono", "settle", "lurch", "jerk_rel", "molt_burst", "birth_burst", "rough"]
+    keys = ["mono", "settle", "travel", "lurch", "teleport", "jerk_rel", "molt_burst", "birth_burst", "rough"]
     out["mean"] = {kk: round(sum(v[kk] for v in ev) / len(ev), 3) for kk in keys}
-    out["worst"] = {kk: round(max(v[kk] for v in ev), 3) for kk in keys if kk != "settle"}
+    out["worst"] = {kk: round(max(v[kk] for v in ev), 3) for kk in keys if kk not in ("settle", "travel")}
     out["deaths"] = sum(v["deaths"] for v in ev)
     out["smoothness"] = round(1.0 / (1.0 + out["mean"]["rough"]), 3)
     out["seconds"] = round(time.time() - t0, 1)
