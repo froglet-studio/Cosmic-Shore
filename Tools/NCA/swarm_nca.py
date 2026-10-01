@@ -488,7 +488,7 @@ def decode(sw: Swarm, b):
     tl = torch.softmax(s[:, TI], -1)
     tier = torch.where((e == 0)[:, None], tl, torch.tensor([1.0, 0.0, 0.0]).expand_as(tl))
     sp = torch.stack([0.6 * torch.sigmoid(s[:, SP.start]), 0.5 * torch.tanh(s[:, SP.start + 1])], 1)
-    return dict(p=sw.pos[b][m], w=w, alpha=s[:, A], pdie=pdie, elem=e, dom=sw.dom[b][m], h=h, tier=tier, f=f, sp=sp,
+    return dict(p=sw.pos[b][m], w=w, alpha=s[:, A], s=s, pdie=pdie, elem=e, dom=sw.dom[b][m], h=h, tier=tier, f=f, sp=sp,
                 hatched=sw.hatched[b][m], idx=m.nonzero().squeeze(1))
 
 
@@ -511,6 +511,8 @@ class LossCfg:
     w_mix: float = 0.0         # squared error of the swarm's element shares against the plan's
     w_con: float = 0.0         # contrastive hinge: the own plan must beat every other plan by con_margin
     con_margin: float = 4.0
+    w_over: float = 0.0        # overflow penalty: mean over live particles of sum(relu(|s| - over_band)); the
+    over_band: float = 5.0     # state is otherwise unbounded and runs away to overflow (the NaN hangs)
     scale_inv: int = 0         # 1: a body plan is a shape, not a size - the swarm is rescaled to the plan's RMS
                                # radius before matching (headcount sets the scale; collision fixes the spacing)
 
@@ -680,6 +682,9 @@ def swarm_loss(x, T: Target, L: LossCfg, frames=None, ndom=None, others=None):
     survive = (x["pdie"] * hat).sum() / T.n
     loss = sink + L.w_count * count + L.w_survive * survive
     info = dict(sink=float(sink.detach()), count=float(count.detach()), survive=float(survive.detach()), frame=k, perm=perm, n=float(tot))
+    if L.w_over and "s" in x:
+        over = torch.relu(x["s"].abs() - L.over_band).sum(-1).mean()
+        loss = loss + L.w_over * over; info["over"] = float(over.detach())
     if L.w_mix:
         share = torch.zeros(4).index_add(0, x["elem"], a)
         tm = torch.tensor(T.mix, dtype=share.dtype); tm = tm / tm.sum()
@@ -883,6 +888,8 @@ class TrainCfg:
     w_con: float = 0.0
     con_margin: float = 4.0
     scale_inv: int = 0
+    w_over: float = 0.0
+    over_band: float = 5.0
 
 
 def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
@@ -898,7 +905,8 @@ def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
 def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None):
     os.makedirs(cfg.run, exist_ok=True)
     world = replace(world, learned_lay=cfg.learned_lay, lay_gain=cfg.lay_gain, lay_bias=cfg.lay_bias)
-    L = replace(L, rel_elem=cfg.rel_elem, w_mix=cfg.w_mix, w_con=cfg.w_con, con_margin=cfg.con_margin, scale_inv=cfg.scale_inv)
+    L = replace(L, rel_elem=cfg.rel_elem, w_mix=cfg.w_mix, w_con=cfg.w_con, con_margin=cfg.con_margin, scale_inv=cfg.scale_inv,
+                w_over=cfg.w_over, over_band=cfg.over_band)
     targets = load_targets()
     torch.manual_seed(cfg.seed)
     gen = make_gen(cfg.seed)
@@ -1025,7 +1033,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                 inf = infos[k][0]
                 rec[k] = dict(plan=plans[i * cfg.per_kind], sink=round(inf["sink"], 3), count=round(inf.get("count", 0), 3), n=c["n"],
                               el=c["elements"], dom=c["domains"], deaths=c["deaths"], frame=inf["frame"],
-                              speed=inf.get("speed"), **{x: round(inf[x], 3) for x in ("mix", "con", "gap", "survive") if x in inf})
+                              speed=inf.get("speed"), **{x: round(inf[x], 3) for x in ("mix", "con", "gap", "survive", "over") if x in inf})
             log.write(json.dumps(rec) + "\n"); log.flush()
             print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s rev{rev:.2f}{f' nf{nonfinite}' if nonfinite else ''} s{rec['smax']:.0f} | " + " | ".join(
                 f"{k[:2]}>{rec[k]['plan'][:2]} {rec[k]['sink']:6.2f} n{rec[k]['n']:3d} d{rec[k]['deaths']}" for k in KINDS), flush=True)
