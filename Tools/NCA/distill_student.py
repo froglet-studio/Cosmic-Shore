@@ -71,6 +71,8 @@ class StudentCfg:
     plan_mode: str = "learned"   # learned: PB is the MLP's head | census: PB is the population census with
                                  # a per-tadpole dwell counter (field's hysteresis, computed by every tadpole)
     dwell: int = 12
+    freeze_contested: int = 0  # 1 (census mode): a tadpole whose own dwell counter is running neither lays nor
+                               # starts a molt (field's 'contested' pause, from the tadpole's own census memory)
     genome: int = 0           # 1: + genome features: own element's plan share - its live share, the full deficit
                               # vector (plan mix - live mix) and plan headcount - live headcount, all under the
                               # tadpole's own plan belief (the plan constants are the genome; no new perception)
@@ -293,6 +295,9 @@ class Student(nn.Module):
         v = action["v"]; look = action["look"]
         lay_par = action["lay_par"] & live; lay_dir = action["lay_dir"]; lay_el = action["lay_el"]
         molt_start = action["molt_start"] & live; molt_to = action["molt_to"]
+        if cfg.freeze_contested and cfg.plan_mode == "census":
+            calm = s[:, CNT] <= 0
+            lay_par = lay_par & calm; molt_start = molt_start & calm
         pb_new = action["pb"]; stl_new = action["stl"]
         if cfg.plan_mode == "census":
             pb_new = self.census_plan(sw, s, live)
