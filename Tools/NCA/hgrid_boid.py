@@ -44,12 +44,13 @@ class HSwarm(sn.Swarm):
 
     XF = ("gplan", "dmap")
 
-    def __init__(self, *a, gplan=None, dmap=None, grid=None):
+    def __init__(self, *a, gplan=None, dmap=None, grid=None, gcen=None):
         super().__init__(*a)
         B = self.pos.shape[0]
         self.gplan = gplan if gplan is not None else torch.full((B,), -1, dtype=torch.long)
         self.dmap = dmap if dmap is not None else torch.arange(3).repeat(B, 1)
         self.grid = grid
+        self.gcen = gcen
 
     @staticmethod
     def lift(sw):
@@ -59,7 +60,7 @@ class HSwarm(sn.Swarm):
 
     def _mk(self, base, f):
         return HSwarm(*[getattr(base, a) for a in sn.Swarm.FIELDS], gplan=f(self.gplan), dmap=f(self.dmap),
-                      grid=None if self.grid is None else f(self.grid))
+                      grid=None if self.grid is None else f(self.grid), gcen=None if self.gcen is None else f(self.gcen))
 
     def detach(self):
         return self._mk(sn.Swarm.detach(self), lambda x: x.detach() if x.dtype.is_floating_point else x)
@@ -75,14 +76,16 @@ class HSwarm(sn.Swarm):
         xs = [HSwarm.lift(x) for x in xs]
         base = sn.Swarm.cat(xs)
         g = None if any(x.grid is None for x in xs) else torch.cat([x.grid for x in xs])
+        c = None if any(x.gcen is None for x in xs) else torch.cat([x.gcen for x in xs])
         return HSwarm(*[getattr(base, a) for a in sn.Swarm.FIELDS], gplan=torch.cat([x.gplan for x in xs]),
-                      dmap=torch.cat([x.dmap for x in xs]), grid=g)
+                      dmap=torch.cat([x.dmap for x in xs]), grid=g, gcen=c)
 
 
 @dataclass
 class BoidCfg:
-    G: int = 24
-    cell: float = 4.0
+    G: int = 16
+    cell: float = 6.0
+    quant: int = 1             # the grid snaps to whole cells (a learned grid keeps its state when the swarm drifts)
     k_class: float = 3.0       # gain on the own-class deficit gradient
     k_total: float = 1.0       # gain on the all-class deficit gradient
     k_home: float = 0.15       # a tadpole outside every wanted cell drifts toward the centroid
@@ -175,6 +178,8 @@ class FieldBoid:
         cnt_all = lf.sum(1).clamp(min=1)
         centres = (sw.pos * lf[..., None]).sum(1) / cnt_all[:, None]
         centres = centres.detach()
+        if cfg.quant:
+            centres = torch.round(centres / cfg.cell) * cfg.cell
         decide_plan(sw, live, cfg, self.targets)
         frame = hc.GridFrame(centres, cfg.G, cfg.cell)
         D = self.field_fn(sw, centres, live)                                      # [B, FIELD_C, G^3]
@@ -257,7 +262,7 @@ class FieldBoid:
             s = s * (~died)[..., None].float()
         out = HSwarm(pos, s, sw.elem.clone(), sw.dom.clone(), active, hatched, deaths, sw.mutants.clone(), age,
                      sw.clock + 1, sw.plan.clone(), sw.since + 1, sw.bw, gplan=sw.gplan.clone(), dmap=sw.dmap.clone(),
-                     grid=sw.grid)
+                     grid=sw.grid, gcen=sw.gcen)
         have = torch.zeros(B, 12).scatter_add(1, cls, lf)
         self._lay(out, live & active, have, wanted_cls, gd, gen)
         return out

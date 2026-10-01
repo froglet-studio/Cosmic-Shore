@@ -1,0 +1,324 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 7.21,
+   "space": 67.09,
+   "charge": 54.01,
+   "time": 75.79
+  },
+  "space": {
+   "mass": 62.6,
+   "space": 17.19,
+   "charge": 51.71,
+   "time": 70.18
+  },
+  "charge": {
+   "mass": 56.23,
+   "space": 54.78,
+   "charge": 6.84,
+   "time": 69.86
+  },
+  "time": {
+   "mass": 83.14,
+   "space": 76.31,
+   "charge": 76.42,
+   "time": 11.14
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 196,
+   "target_n": 192,
+   "elements": [
+    21,
+    127,
+    25,
+    23
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    108,
+    88,
+    0
+   ],
+   "deaths": 27,
+   "mutants": 0
+  },
+  "space": {
+   "n": 92,
+   "target_n": 88,
+   "elements": [
+    26,
+    3,
+    54,
+    9
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    40,
+    52,
+    0
+   ],
+   "deaths": 12,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 179,
+   "target_n": 179,
+   "elements": [
+    130,
+    1,
+    16,
+    32
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    91,
+    88,
+    0
+   ],
+   "deaths": 7,
+   "mutants": 0
+  },
+  "time": {
+   "n": 77,
+   "target_n": 76,
+   "elements": [
+    2,
+    3,
+    19,
+    53
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    26,
+    6,
+    45
+   ],
+   "deaths": 1,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 4.94,
+   "space": 20.4,
+   "charge": 11.82,
+   "time": 25.69
+  },
+  "space": {
+   "mass": 17.47,
+   "space": 10.73,
+   "charge": 14.17,
+   "time": 26.63
+  },
+  "charge": {
+   "mass": 12.66,
+   "space": 14.21,
+   "charge": 5.25,
+   "time": 20.22
+  },
+  "time": {
+   "mass": 24.31,
+   "space": 22.1,
+   "charge": 17.45,
+   "time": 7.83
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 51.64,
+    "space": 29.5,
+    "charge": 54.45,
+    "time": 65.36
+   },
+   "majority": "space",
+   "census": {
+    "n": 104,
+    "target_n": 88,
+    "elements": [
+     26,
+     7,
+     55,
+     16
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     44,
+     60,
+     0
+    ],
+    "deaths": 55,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 56.33,
+    "space": 53.64,
+    "charge": 12.35,
+    "time": 71.32
+   },
+   "majority": "charge",
+   "census": {
+    "n": 182,
+    "target_n": 179,
+    "elements": [
+     131,
+     2,
+     17,
+     32
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     90,
+     92,
+     0
+    ],
+    "deaths": 32,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 59.28,
+    "space": 58.66,
+    "charge": 43.74,
+    "time": 40.35
+   },
+   "majority": "time",
+   "census": {
+    "n": 97,
+    "target_n": 76,
+    "elements": [
+     25,
+     4,
+     18,
+     50
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     42,
+     55,
+     0
+    ],
+    "deaths": 11,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 63.22,
+    "space": 16.75,
+    "charge": 49.85,
+    "time": 65.18
+   },
+   "majority": "space",
+   "census": {
+    "n": 94,
+    "target_n": 192,
+    "elements": [
+     27,
+     3,
+     55,
+     9
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     53,
+     39,
+     2
+    ],
+    "deaths": 2,
+    "mutants": 0
+   }
+  }
+ },
+ "tests_passed": 7,
+ "close": 187.8,
+ "sec": 44.8,
+ "meta": {
+  "kind": "hybrid_g2",
+  "rule": "results/swarm_coevo_g2/rule.pt",
+  "cfg": {
+   "G": 16,
+   "cell": 6.0,
+   "quant": 1,
+   "k_class": 3.0,
+   "k_total": 1.0,
+   "k_home": 0.15,
+   "persist": 0.6,
+   "noise": 0.05,
+   "p_lay": 0.1,
+   "p_cross": 0.25,
+   "hatch_steps": 2,
+   "ease": 0.3,
+   "starve": 1,
+   "starve_rate": 0.04,
+   "starve_tol": 0.15,
+   "starve_local": 0.0,
+   "hyst": 0.0,
+   "animate": 1,
+   "period": 8
+  },
+  "shed": 1
+ }
+}
