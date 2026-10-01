@@ -26,8 +26,9 @@ where). This direction attacks exactly that, with local rules and no slot assign
    anyway, so which TEAM is the dorsal side does not matter; that the dorsal side is one team does).
 2. **Positional information (Wolpert).** Each type reads a small mixture of Gaussian "morphogen wells" in
    body coordinates (origin = the body's centre, world-fixed axes as polarity cues). The wells are a
-   compressed code of the plan: K wells per type, at most one per 4 units of that type (K = 12 published,
-   K = 4 compact). Nothing tells a tadpole WHERE in its type's region to go.
+   compressed code of the plan: K wells per type, at most one per 4 units of that type (K = 12 published;
+   K = 4 and one per 6 units for the compact code). The code names a type's places; no tadpole is assigned
+   to one — which well it takes is its own fate decision (next point).
 3. **Fate commitment.** A newborn commits to ONE well of its type — the one its type currently
    under-occupies (lateral inhibition read through a census). Without this, tadpoles settle in the
    nearest well and far parts of the body (the whale's tail fluke) stay empty: own losses 9–15, 0.7/13.
