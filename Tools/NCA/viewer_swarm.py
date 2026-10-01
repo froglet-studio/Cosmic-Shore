@@ -247,7 +247,7 @@ SCRIPTSWARM = r"""<script>
       m.setMatrixAt(j, M); m.setColorAt(j, lin(PALETTE[q.dom][q.tier]));
     });
     g.crystals.forEach(c => { const e = c.elem, j = ng[e]++; M.makeScale(c.r, c.r, c.r); M.setPosition(c.p[0] + off[0], c.p[1] + off[1], c.p[2] + off[2]); gems[e].setMatrixAt(j, M); gems[e].setColorAt(j, HEART); });
-    (dead || []).forEach(c => { const e = c[3], j = nl[e]++; M.makeScale(0.9, 0.9, 0.9); M.setPosition(c[0], c[1], c[2]); limes[e].setMatrixAt(j, M); limes[e].setColorAt(j, LIME); });
+    (dead || []).forEach(c => { const e = c[3], j = nl[e]++; M.makeScale(0.9, 0.9, 0.9); M.setPosition(c[0] + off[0], c[1] + off[1], c[2] + off[2]); limes[e].setMatrixAt(j, M); limes[e].setColorAt(j, LIME); });
     g.spindles.forEach(sp => {
       for (let i = 0; i + 1 < sp.pts.length && ns < MAXS; i++) {
         const a = sp.pts[i], b = sp.pts[i + 1];
@@ -259,7 +259,7 @@ SCRIPTSWARM = r"""<script>
     boxes.count = nb; octas.count = no; spMesh.count = ns; gems.forEach((m, e) => m.count = ng[e]); limes.forEach((m, e) => m.count = nl[e]);
     [boxes, octas, spMesh, ...gems, ...limes].forEach(m => { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
   }
-  let kind = 'mass', fi = 0, showT = false, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, spin = playing, az = 0.75, el = 0.35, dist = 120, last = 0, tk = 0;
+  let cen = null, kind = 'mass', fi = 0, showT = false, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, spin = playing, az = 0.75, el = 0.35, dist = 120, last = 0, tk = 0;
   function mixBar(counts, label) {
     const tot = counts.reduce((a, b) => a + b, 0) || 1;
     return `<span class="lab">${label}</span><span class="bar">${counts.map((c, e) => `<i style="width:${100 * c / tot}%;background:${EL_UI[e]}" title="${['Charge', 'Mass', 'Space', 'Time'][e]} ${c}"></i>`).join('')}</span>`;
@@ -268,7 +268,14 @@ SCRIPTSWARM = r"""<script>
     const r = R[kind], t = target(kind);
     let g, off = [0, 0, 0], dead = [];
     if (showT) { g = t.frames[tk % t.frames.length]; off = t.offset; }
-    else { g = swarmFrame(kind, fi); const step = fi * every; dead = r.crystals.filter(c => c[4] <= step); }
+    else {
+      g = swarmFrame(kind, fi); const step = fi * every; dead = r.crystals.filter(c => c[4] <= step);
+      // a body plan is a shape, not a place (the loss is translation-invariant): follow the swarm's centroid
+      const m = [0, 0, 0], n = g.crystals.length || 1;
+      g.crystals.forEach(c => { m[0] += c.p[0] / n; m[1] += c.p[1] / n; m[2] += c.p[2] / n; });
+      const a = cen ? 0.35 : 1; cen = (cen || m).map((v, i) => v + a * (m[i] - v));
+      off = cen.map(v => -v);
+    }
     draw(g, off, dead);
     camera.position.set(Math.cos(el) * Math.cos(az) * dist, Math.sin(el) * dist, Math.cos(el) * Math.sin(az) * dist);
     camera.lookAt(0, 0, 0); renderer.render(scene, camera);
@@ -287,7 +294,7 @@ SCRIPTSWARM = r"""<script>
     $('rsw-census').textContent = `${D.major[kind]} seed grows closest to the ${D.names[best]} (${row[best].toFixed(1)}; its own target ${row[kind].toFixed(1)}).`;
   }
   function load(k) {
-    kind = k; fi = R[k].shape[0] - 1; tk = 0;
+    kind = k; fi = R[k].shape[0] - 1; tk = 0; cen = null;
     document.querySelectorAll('.swtabs [data-swk]').forEach(b => b.setAttribute('aria-selected', b.dataset.swk === k));
     const t = target(k); dist = Math.max(70, 1.6 * Math.max(...t.size));
     $('swt').max = R[k].shape[0] - 1; $('swt').value = fi; mix(); render();
@@ -308,7 +315,7 @@ SCRIPTSWARM = r"""<script>
   cv.addEventListener('pointerup', () => { drag = null; });
   cv.addEventListener('wheel', e => { e.preventDefault(); dist = Math.max(20, Math.min(500, dist * Math.exp(e.deltaY * 0.001))); render(); }, { passive: false });
   document.querySelectorAll('.swtabs [data-swk]').forEach(b => b.onclick = () => load(b.dataset.swk));
-  $('swt').addEventListener('input', e => { fi = +e.target.value; playing = false; $('bsw-play').textContent = 'Play'; showT = false; $('bsw-target').setAttribute('aria-pressed', false); render(); });
+  $('swt').addEventListener('input', e => { fi = +e.target.value; cen = null; playing = false; $('bsw-play').textContent = 'Play'; showT = false; $('bsw-target').setAttribute('aria-pressed', false); render(); });
   $('bsw-play').onclick = () => { playing = !playing; $('bsw-play').textContent = playing ? 'Pause' : 'Play'; };
   if (!playing) $('bsw-play').textContent = 'Play';
   $('bsw-target').onclick = () => { showT = !showT; $('bsw-target').setAttribute('aria-pressed', showT); $('bsw-target').textContent = showT ? 'Show swarm' : 'Show target'; render(); };
