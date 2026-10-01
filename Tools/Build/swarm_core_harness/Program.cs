@@ -63,7 +63,10 @@ static class Program
 
     static int Main(string[] args)
     {
+        if (args.Length > 0 && args[0] == "export") return GridHarness.Export(args, LoadPlans);
+        bool gridOnly = args.Length > 1 && args[1] == "grid";
         var plans = LoadPlans(args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans");
+        if (gridOnly) return GridHarness.Run(plans) == 0 ? 0 : 1;
         Console.WriteLine("plans: " + string.Join(", ", plans.Select(p => $"{p.Kind} N={p.N} mix=[{string.Join(",", p.Mix)}] R={p.Radius:F1}")));
 
         Console.WriteLine("\n1. growth to the plan, fed (each plan seeded at its own majority, 24 tadpoles)");
@@ -199,6 +202,20 @@ static class Program
             Check(worst < 6f, "shape holds while swimming (worst home error < 6 voxels)");
         }
 
+        Console.WriteLine("\n6b. hovering on its goal, the body holds its heading (it must not chase its own jitter)");
+        for (int e = 0; e < 4; e++)
+        {
+            var c = Make(plans, e, seed: 6); Run(c, 600);
+            var prev = c.Heading; double turned = 0;
+            for (int t = 0; t < 600; t++)
+            {
+                c.Step(Array.Empty<SwarmPredator>()); c.Events.Clear();
+                turned += Math.Acos(Math.Clamp(Vector3.Dot(prev, c.Heading), -1f, 1f)); prev = c.Heading;
+            }
+            Console.WriteLine($"  {plans[e].Kind,-7} heading turned {turned * 180 / Math.PI:F1} deg over 600 hovering steps");
+            Check(turned * 180 / Math.PI < 5, $"{plans[e].Kind}: a hovering body does not spin (< 5 deg / minute)");
+        }
+
         Console.WriteLine("\n7. band: the anchor never leaves its radial band");
         {
             var p = new SwarmFieldParams { Membrane = 600f, Cap = 192, BandInner = 150, BandOuter = 250 };
@@ -212,6 +229,8 @@ static class Program
             Check(minR >= 149.9f && maxR <= 250.1f, "anchor clamped to [150, 250]");
         }
 
+        Console.WriteLine($"\nfield core: {(_fail == 0 ? "OK" : $"FAIL ({_fail})")}");
+        _fail += GridHarness.Run(plans);
         Console.WriteLine($"\n{(_fail == 0 ? "OK" : $"FAIL ({_fail})")}");
         return _fail == 0 ? 0 : 1;
     }

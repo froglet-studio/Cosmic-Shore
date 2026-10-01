@@ -17,6 +17,13 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName = "SwarmFaunaConfig", menuName = "ScriptableObjects/Fauna/Swarm Fauna Config")]
     public class SwarmFaunaConfigSO : ScriptableObject
     {
+        [Header("Model")]
+        [Tooltip("Which simulation drives a swarm that uses this config. FIELD: designed attractor " +
+                 "fields + boids - crisp, every tadpole owns a slot. GRID: the grid morphogen (research " +
+                 "hgrid2) - every tadpole reads only fields at its own position; looser and more organic. " +
+                 "Docs/SWARM_FAUNA.md §8.")]
+        public SwarmModel Model = SwarmModel.Field;
+
         [Header("Body plans (Tools/Build/swarm_plans.py)")]
         [Tooltip("The Charge plan - the pufferfish.")] public TextAsset ChargePlan;
         [Tooltip("The Mass plan - the whale.")] public TextAsset MassPlan;
@@ -103,6 +110,39 @@ namespace CosmicShore.Gameplay
         [Min(0.05f)] public float BirthBloomSeconds = 0.8f;
         [Tooltip("Seconds a molting heart takes to shrink away (and again to re-form as its new element).")]
         [Min(0.05f)] public float MoltHeartSeconds = 0.5f;
+
+        [Header("Grid model (Model = Grid; research hgrid2's values unless noted)")]
+        [Tooltip("Coarse grid resolution (cells per side) and cell size in voxels. The grid rides the " +
+                 "body's centre; 16 x 6 spans 96 voxels - every plan fits.")]
+        [Range(8, 24)] public int GridSize = 16;
+        [Min(1f)] public float GridCell = 6f;
+        [Tooltip("Gain on a tadpole's own class DEFICIT gradient (wanted - actual density).")]
+        [Min(0f)] public float GridKClass = 10f;
+        [Tooltip("Gain on the all-class deficit gradient (fills the outline).")]
+        [Min(0f)] public float GridKTotal = 1f;
+        [Tooltip("Velocity persistence per step (the body's inertia).")]
+        [Range(0f, 0.95f)] public float GridPersist = 0.6f;
+        [Tooltip("Velocity noise per step (voxels).")]
+        [Min(0f)] public float GridNoise = 0.05f;
+        [Tooltip("Laying probability per hatched tadpole at full growth pressure (its class's relative " +
+                 "deficit). The stomach is the real brake: an egg it cannot pay for is not laid.")]
+        [Range(0f, 1f)] public float GridLayChance = 0.1f;
+        [Tooltip("Share of eggs that take the most-wanted element instead of the parent's.")]
+        [Range(0f, 1f)] public float GridCrossChance = 0.25f;
+        [Tooltip("Eggs a grid swarm may lay in one step.")]
+        [Min(1)] public int GridLayMaxPerStep = 3;
+        [Tooltip("Gain on the FINE per-class morphogen (one tadpole's scale) and its bump width in voxels.")]
+        [Min(0f)] public float GridKFine = 2f;
+        [Min(0.5f)] public float GridSigma = 3.5f;
+        [Tooltip("Feed-forward: the share of the nearby same-class targets' own motion a tadpole takes.")]
+        [Min(0f)] public float GridFeedForward = 1.5f;
+        [Tooltip("Steps per plan animation frame (x Charge, y Mass, z Space, w Time). The dragonfly's " +
+                 "wings move 10 voxels a frame, so it runs at 16.")]
+        public Vector4 GridFramePeriod = new(8f, 8f, 8f, 16f);
+        [Tooltip("Steps a committed plan holds before the majority may switch it again (GAME: research " +
+                 "ran 0). The grid commits the step a new element leads, so without a lock a near-tie " +
+                 "would flicker between two animals.")]
+        [Min(0)] public int GridPlanLock = 30;
 
         [Header("Audio")]
         [Tooltip("FMOD loop the swarm plays at its body's centre. Empty = silent (the FMOD rule: an " +

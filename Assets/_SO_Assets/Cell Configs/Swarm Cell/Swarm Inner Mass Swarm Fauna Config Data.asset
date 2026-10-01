@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
   m_Name: Swarm Inner Mass Swarm Fauna Config Data
   m_EditorClassIdentifier:
-  FaunaPrefab: {fileID: 4174204561870355101, guid: d38acaa5904e7a000730e2d5ad289ffc, type: 3}
+  FaunaPrefab: {fileID: 4174204561870355101, guid: fdf92e28cdd61e8c14732eb0bc7c549d, type: 3}
   InitialSpawnCount: 1
   PopulationSize: 1
   SpawnProbability: 1

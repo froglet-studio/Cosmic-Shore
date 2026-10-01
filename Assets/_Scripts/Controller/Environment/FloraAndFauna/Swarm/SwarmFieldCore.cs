@@ -50,10 +50,27 @@ namespace CosmicShore.Gameplay
         /// <summary>RMS radius of frame 0 - the body's size, used for sense and swim pacing.</summary>
         public float Radius;
 
+        // ── the research's full per-frame target (read by the GRID model, SwarmGridCore) ──
+        /// <summary>Each unit's domain SLOT (0..2) in the research plan. The game's one-colour law
+        /// collapses slots onto one domain; the research mode of SwarmGridCore keeps them.</summary>
+        public int[] Slot = Array.Empty<int>();
+        public int[] SlotMix = new int[3];
+        /// <summary>Slots the plan uses (1..3).</summary>
+        public int NSlots = 1;
+        public Vector3[][] HalfF = Array.Empty<Vector3[]>();  // [frame][slot] prism half-extents (identity-clamped)
+        public int[][] TierF = Array.Empty<int[]>();          // [frame][slot]
+        public Vector2[][] SpF = Array.Empty<Vector2[]>();    // [frame][slot] spindle (len, bend)
+
         public void Finish()
         {
             Mix = new int[4];
             for (int k = 0; k < N; k++) Mix[Elem[k]]++;
+            if (Slot.Length != N) Slot = new int[N];
+            SlotMix = new int[3];
+            for (int k = 0; k < N; k++) SlotMix[Slot[k]]++;
+            NSlots = 0;
+            for (int q = 0; q < 3; q++) if (SlotMix[q] > 0) NSlots++;
+            NSlots = Math.Max(1, NSlots);
             double s = 0;
             for (int k = 0; k < N; k++) s += P[0][k].LengthSquared();
             Radius = (float)Math.Sqrt(s / Math.Max(1, N));
@@ -89,6 +106,9 @@ namespace CosmicShore.Gameplay
         public int[] order = Array.Empty<int>(), elem = Array.Empty<int>(), tier = Array.Empty<int>();
         public float[] half = Array.Empty<float>(), pos = Array.Empty<float>(), face = Array.Empty<float>();
         public float[] swimAxis = { 1, 0, 0 }, upAxis = { 0, 1, 0 };
+        // the per-frame research target the grid model reads (absent in an old bake: frame 0 is reused)
+        public int[] slot = Array.Empty<int>(), tierF = Array.Empty<int>();
+        public float[] halfF = Array.Empty<float>(), sp = Array.Empty<float>();
 
         public SwarmPlanData ToPlanData()
         {
@@ -99,6 +119,8 @@ namespace CosmicShore.Gameplay
                 SwimAxis = new Vector3(swimAxis[0], swimAxis[1], swimAxis[2]),
                 UpAxis = new Vector3(upAxis[0], upAxis[1], upAxis[2]),
                 P = new Vector3[frames][], Face = new Vector3[frames][], Half = new Vector3[n],
+                Slot = slot.Length == n ? slot : new int[n],
+                HalfF = new Vector3[frames][], TierF = new int[frames][], SpF = new Vector2[frames][],
             };
             for (int k = 0; k < n; k++) d.Half[k] = new Vector3(half[3 * k], half[3 * k + 1], half[3 * k + 2]);
             for (int f = 0; f < frames; f++)
@@ -109,6 +131,15 @@ namespace CosmicShore.Gameplay
                     int o = 3 * (f * n + k);
                     d.P[f][k] = new Vector3(pos[o], pos[o + 1], pos[o + 2]);
                     d.Face[f][k] = new Vector3(face[o], face[o + 1], face[o + 2]);
+                }
+                d.HalfF[f] = new Vector3[n]; d.TierF[f] = new int[n]; d.SpF[f] = new Vector2[n];
+                bool full = halfF.Length == 3 * frames * n && tierF.Length == frames * n && sp.Length == 2 * frames * n;
+                for (int k = 0; k < n; k++)
+                {
+                    int q = f * n + k;
+                    d.HalfF[f][k] = full ? new Vector3(halfF[3 * q], halfF[3 * q + 1], halfF[3 * q + 2]) : d.Half[k];
+                    d.TierF[f][k] = full ? tierF[q] : (k < tier.Length ? tier[k] : 0);
+                    d.SpF[f][k] = full ? new Vector2(sp[2 * q], sp[2 * q + 1]) : new Vector2(0.3f, 0f);
                 }
             }
             d.Finish();
@@ -146,6 +177,8 @@ namespace CosmicShore.Gameplay
         public float[] Inflate = { 0.45f, 0f, 0f, 0f };
         // Swimming (game): anchor cruise per step and max heading turn per step (radians).
         public float Cruise = 0.25f, Turn = 0.03f;
+        /// <summary>GAME: the body keeps its heading while its swim target is within this many body radii.</summary>
+        public float AimHold = 0.5f;
         public float Membrane = 600f;
         /// <summary>Optional radial band for the ANCHOR (sim units from the origin); 0 = none.</summary>
         public float BandInner, BandOuter;
@@ -157,7 +190,9 @@ namespace CosmicShore.Gameplay
         public int Cap = 192;
     }
 
-    public enum SwarmEventKind { Laid, MoltBegan, MoltDone, Switched }
+    /// <summary>What the host reacts to. Starved: a core killed a member by itself - only SwarmGridCore
+    /// in its research mode (SwarmGridParams.HungerKills), never in the game.</summary>
+    public enum SwarmEventKind { Laid = 0, MoltBegan = 1, MoltDone = 2, Switched = 3, Starved = 4 }
 
     public struct SwarmEvent
     {
@@ -165,7 +200,7 @@ namespace CosmicShore.Gameplay
         public int Index, Other;   // Laid: (child, parent). Molt: (index, element). Switched: (fromPlan, toPlan)
     }
 
-    public sealed class SwarmFieldCore
+    public sealed class SwarmFieldCore : ISwarmCore
     {
         public readonly SwarmPlanData[] Plans;   // indexed by research element (0 Charge .. 3 Time)
         public readonly SwarmFieldParams C;
@@ -323,8 +358,11 @@ namespace CosmicShore.Gameplay
             else { Cand = PlanIx; CandN = 0; }
 
             // 5. swimming - head toward the swim target (decided before the slots are placed)
+            // Re-aim only while the target is a real distance away: a body hovering over its goal has
+            // an anchor that jitters around it, and chasing that jitter spun the whole creature ~1000
+            // degrees a minute while it grazed (measured; Docs/SWARM_FAUNA.md §7 finding 13).
             var toT = SwimTarget - Anchor; float dT = toT.Length();
-            if (dT > 1e-3f) SetHeading(toT / dT);
+            if (dT > C.AimHold * plan.Radius) SetHeading(toT / dT);
             T += 1f; plan.At(T, _sp, _sv, _sf);
             for (int k = 0; k < plan.N; k++) _sw[k] = Rotate(_sp[k]) + Anchor;
             float swell = 1f + C.Inflate[PlanIx] * ThreatLevel;
@@ -431,7 +469,10 @@ namespace CosmicShore.Gameplay
 
             // the anchor follows the body (translation is free) and cruises toward the swim target;
             // slowing as it arrives so a grazing body hovers over its plant instead of orbiting it
-            float cruise = C.Cruise * Math.Clamp(dT / MathF.Max(1f, 1.5f * plan.Radius), 0f, 1f);
+            // cruise only toward a target the body is aimed at and has not reached (a held heading must
+            // not carry an arrived body off its goal)
+            float aim = dT > C.AimHold * plan.Radius ? MathF.Max(0f, Vector3.Dot(Heading, toT / dT)) : 0f;
+            float cruise = C.Cruise * aim * Math.Clamp(dT / MathF.Max(1f, 1.5f * plan.Radius), 0f, 1f);
             if (plan.SwimAxis.Y > 0.5f)   // the jellyfish jets in pulses
                 cruise *= 0.4f + 0.6f * MathF.Max(0f, MathF.Sin(T * 2f * MathF.PI / (2f * plan.FrameSteps * 7f)));
             if (n > 0) Anchor = 0.9f * Anchor + 0.1f * (mean / n - spMean) + cruise * Heading;
@@ -614,5 +655,50 @@ namespace CosmicShore.Gameplay
         /// <summary>The current home of tadpole <paramref name="i"/> in plan coordinates, and the
         /// slot's attributes, for the host's per-unit look (prism shape, tier).</summary>
         public bool TryGetSlot(int i, out int slot) { slot = Home[i]; return slot >= 0 && slot < Plans[PlanIx].N; }
+
+        /// <summary>The home slot's prism and tier, when the slot is of the member's element.</summary>
+        public bool TryGetLook(int i, int element, out Vector3 half, out int tier)
+        {
+            half = default; tier = 0;
+            if (!TryGetSlot(i, out int k) || Plan.Elem[k] != element) return false;
+            half = Plan.Half[k]; tier = Plan.Tier[k];
+            return true;
+        }
+
+        /// <summary>Starvation sheds a member of the element in largest surplus against the plan.</summary>
+        public int StarvationVictim()
+        {
+            var counts = Counts(false);
+            var plan = Plan;
+            int alive = AliveCount, worst = -1; float worstSurplus = float.MinValue;
+            for (int e = 0; e < 4; e++)
+            {
+                if (counts[e] == 0) continue;
+                float s = counts[e] - plan.Mix[e] / (float)plan.N * alive;
+                if (s > worstSurplus) { worstSurplus = s; worst = e; }
+            }
+            for (int i = 0; i < Cap; i++) if (Alive[i] && Elem[i] == worst) return i;
+            return -1;
+        }
+
+        // ISwarmCore - the field core keeps its fields public (the harness reads them directly)
+        int ISwarmCore.Cap => Cap;
+        Vector3[] ISwarmCore.Pos => Pos;
+        Vector3[] ISwarmCore.Vel => Vel;
+        Vector3[] ISwarmCore.Facing => Facing;
+        int[] ISwarmCore.Elem => Elem;
+        bool[] ISwarmCore.Alive => Alive;
+        float[] ISwarmCore.Startle => Startle;
+        float[] ISwarmCore.Molt => Molt;
+        int[] ISwarmCore.MoltTo => MoltTo;
+        float[] ISwarmCore.Stomach => Stomach;
+        List<SwarmEvent> ISwarmCore.Events => Events;
+        int ISwarmCore.Clock => Clock;
+        int ISwarmCore.PlanIx => PlanIx;
+        Vector3 ISwarmCore.Anchor => Anchor;
+        Vector3 ISwarmCore.BX => BX;
+        Vector3 ISwarmCore.BY => BY;
+        Vector3 ISwarmCore.BZ => BZ;
+        Vector3 ISwarmCore.SwimTarget { get => SwimTarget; set => SwimTarget = value; }
     }
 }

@@ -25,6 +25,25 @@ MAJOR = {"mass": 1, "space": 2, "charge": 0, "time": 3}
 FRAME_STEPS = 6
 
 
+HMIN, HMAX = 0.25, 3.0   # swarm_nca.HMIN / HMAX (swarm_model.js clampH)
+
+
+def identity(elem, h, tier):
+    """swarm_nca.identity_np, in plain Python: a prism's half-extents clamped to its element's
+    family (Charge free, Mass near-cubic, Space a long blade, Time a short rod); tier is Charge's only."""
+    clip = lambda x, lo, hi: min(max(x, lo), hi)
+    h = [clip(float(x), HMIN, HMAX) for x in h]
+    if elem == 0:
+        o = [clip(x, 0.3, 2.2) for x in h]
+    elif elem == 1:
+        o = [clip(x, 0.5, 1.8) for x in h]; m = min(o) * 1.6; o = [min(x, m) for x in o]
+    elif elem == 2:
+        L = clip(h[0], 0.9, 3.0); c = lambda x: clip(min(x, L / 4), 0.25, 0.42); o = [L, c(h[1]), c(h[2])]
+    else:
+        L = clip(h[0], 0.45, 1.2); c = lambda x: clip(min(x, L / 1.5), 0.3, 0.6); o = [L, c(h[1]), c(h[2])]
+    return o, (tier if elem == 0 else 0)
+
+
 def _load(kind, src, repo):
     if src:
         with open(os.path.join(src, f"{kind}.json"), encoding="utf-8") as fh:
@@ -63,12 +82,25 @@ def bake(kind, src=None, repo="."):
         for u in fr["units"]:
             f = u["f"]; n = math.sqrt(sum(x * x for x in f)) or 1.0
             face.extend(_r(x / n) for x in f)
+    # The GRID model (SwarmGridCore, the research's hgrid2) also reads every frame's own prism,
+    # tier and spindle and each unit's domain SLOT - its coarse field rasterises them. Prism
+    # half-extents go through the research's identity clamp (swarm_nca.identity_np) here, so
+    # the game reads exactly what swarm_nca.load_targets builds.
+    slot = [int(u["prism"]["slot"]) for u in u0]
+    half_f, tier_f, sp_f = [], [], []
+    for fr in frames:
+        for u in fr["units"]:
+            h, t = identity(int(u["elem"]), u["prism"]["h"], int(u["prism"].get("tier", 0)))
+            half_f.extend(_r(v) for v in h)
+            tier_f.append(t)
+            sp_f.extend((_r(u["spindle"]["len"]), _r(u["spindle"]["bend"])))
     swim = [0, 1, 0] if kind == "space" else [1, 0, 0]
     up = [1, 0, 0] if kind == "space" else [0, 1, 0]
     return {
         "kind": kind, "name": d.get("name", kind), "major": MAJOR[kind], "n": N, "frames": F,
         "frameSteps": FRAME_STEPS, "order": order, "elem": elem, "tier": tier, "half": half,
         "pos": pos, "face": face, "swimAxis": swim, "upAxis": up,
+        "slot": slot, "halfF": half_f, "tierF": tier_f, "sp": sp_f,
     }
 
 

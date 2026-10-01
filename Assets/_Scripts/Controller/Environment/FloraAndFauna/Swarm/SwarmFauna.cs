@@ -18,9 +18,11 @@ namespace CosmicShore.Gameplay
     /// be preyed on. The lifeforms are its MEMBERS (<see cref="SwarmTadpoleFauna"/>), each with its
     /// own heart and body prism, each dying through the sealed fauna death path.
     ///
-    /// The behaviour is ONE simulation over a struct-of-arrays (<see cref="SwarmFieldCore"/>) run at
-    /// a fixed tick; members are posed by interpolating between ticks, so motion is smooth at any
-    /// frame rate and no member runs an Update of its own.
+    /// The behaviour is ONE simulation over a struct-of-arrays run at a fixed tick - the config picks
+    /// which (<see cref="SwarmFaunaConfigSO.Model"/>): <see cref="SwarmFieldCore"/> (designed fields,
+    /// every tadpole owns a slot) or <see cref="SwarmGridCore"/> (the grid morphogen, nothing assigns a
+    /// place). Members are posed by interpolating between ticks, so motion is smooth at any frame rate
+    /// and no member runs an Update of its own.
     ///
     /// Invariants it touches (Docs/SWARM_FAUNA.md §2): mass is conserved (every egg is PAID for out of
     /// eaten flora volume, 1:1), there is no imposed death (members only die to vessels, predators or
@@ -32,7 +34,7 @@ namespace CosmicShore.Gameplay
         [Header("Swarm")]
         [SerializeField] SwarmFaunaConfigSO config;
 
-        SwarmFieldCore _core;
+        ISwarmCore _core;
         SwarmTadpoleFauna[] _members;
         SVector3[] _prevPos, _prevFace;
         float[] _birthTime, _heartFactor;
@@ -55,7 +57,7 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Flora, float> _barren = new();
 
         /// <summary>The live sim (null before the first frame).</summary>
-        public SwarmFieldCore Core => _core;
+        public ISwarmCore Core => _core;
         public SwarmFaunaConfigSO Config => config;
 
         /// <summary>The body plan the swarm is currently growing ("mass", "space", "charge", "time").</summary>
@@ -106,25 +108,7 @@ namespace CosmicShore.Gameplay
             _dt = 1f / config.TickHz;
             _eaterName = "swarm";
 
-            var p = new SwarmFieldParams
-            {
-                LayRate = config.LayRate, LayMax = config.LayMax,
-                Cruise = config.Cruise, Turn = config.TurnPerStep,
-                // MembraneRadius reads 0 until the membrane has spawned (Docs/CONNECTING_PANEL.md); the
-                // standard membrane's 1200 is the fallback rather than a 0 that would pen the body in a point
-                Membrane = (host.MembraneRadius > 1f ? host.MembraneRadius : 1200f) * 0.97f / config.UnitScale,
-                CrossCost = config.CrossElementCost,
-                Cap = Mathf.Max(_plans[0].N, Mathf.Max(_plans[1].N, Mathf.Max(_plans[2].N, _plans[3].N))),
-            };
-            for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
-            var cfg = SourceConfig;
-            if (cfg && cfg.BandOuterRadius > 0f)
-            {
-                p.BandInner = Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius) / config.UnitScale;
-                p.BandOuter = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius) / config.UnitScale;
-            }
-
-            _core = new SwarmFieldCore(_plans, p, Random.Range(1, int.MaxValue));
+            _core = config.Model == SwarmModel.Grid ? BuildGridCore(host) : BuildFieldCore(host);
             int n = _core.Cap;
             _members = new SwarmTadpoleFauna[n];
             _prevPos = new SVector3[n]; _prevFace = new SVector3[n];
@@ -143,7 +127,66 @@ namespace CosmicShore.Gameplay
             _lastFedTime = Time.time;
             StartLoop();
             CSDebug.LogVerbose(CSLogChannel.Ecology,
-                $"[Swarm] {name} hatched as {_core.Plan.Kind} with {_core.AliveCount} tadpoles at r={radial.magnitude:F0}");
+                $"[Swarm] {name} ({config.Model}) hatched as {_core.Plan.Kind} with {_core.AliveCount} tadpoles at r={radial.magnitude:F0}");
+        }
+
+        // MembraneRadius reads 0 until the membrane has spawned (Docs/CONNECTING_PANEL.md); the
+        // standard membrane's 1200 is the fallback rather than a 0 that would pen the body in a point
+        float SimMembrane(Cell host) => (host.MembraneRadius > 1f ? host.MembraneRadius : 1200f) * 0.97f / config.UnitScale;
+
+        int PlanCap => Mathf.Max(_plans[0].N, Mathf.Max(_plans[1].N, Mathf.Max(_plans[2].N, _plans[3].N)));
+
+        bool TryBand(out float inner, out float outer)
+        {
+            inner = outer = 0f;
+            var cfg = SourceConfig;
+            if (!cfg || cfg.BandOuterRadius <= 0f) return false;
+            inner = Mathf.Min(cfg.BandInnerRadius, cfg.BandOuterRadius) / config.UnitScale;
+            outer = Mathf.Max(cfg.BandInnerRadius, cfg.BandOuterRadius) / config.UnitScale;
+            return true;
+        }
+
+        ISwarmCore BuildFieldCore(Cell host)
+        {
+            var p = new SwarmFieldParams
+            {
+                LayRate = config.LayRate, LayMax = config.LayMax,
+                Cruise = config.Cruise, Turn = config.TurnPerStep,
+                Membrane = SimMembrane(host),
+                CrossCost = config.CrossElementCost,
+                Cap = PlanCap,
+            };
+            for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
+            if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }
+            return new SwarmFieldCore(_plans, p, Random.Range(1, int.MaxValue));
+        }
+
+        /// <summary>
+        /// The grid morphogen in its GAME settings (Docs/SWARM_FAUNA.md §8): one domain, funded laying,
+        /// hunger that never kills on its own (it only picks the starvation victim), an oriented body
+        /// that swims, and a plan lock.
+        /// </summary>
+        ISwarmCore BuildGridCore(Cell host)
+        {
+            var p = new SwarmGridParams
+            {
+                G = config.GridSize, Cell = config.GridCell, Quant = false,
+                KClass = config.GridKClass, KTotal = config.GridKTotal, Persist = config.GridPersist,
+                Noise = config.GridNoise, PLay = config.GridLayChance, PCross = config.GridCrossChance,
+                LayMaxPerStep = config.GridLayMaxPerStep, KFine = config.GridKFine, Sigma = config.GridSigma,
+                KFF = config.GridFeedForward, Lock = config.GridPlanLock,
+                Periods = new[]
+                {
+                    Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.x)), Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.y)),
+                    Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.z)), Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.w)),
+                },
+                DomainSlots = false, HungerKills = false, Funded = true, Oriented = true,
+                Cruise = config.Cruise, Turn = config.TurnPerStep,
+                Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
+            };
+            for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
+            if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }
+            return new SwarmGridCore(_plans, p, Random.Range(1, int.MaxValue));
         }
 
         void StartLoop()
@@ -191,16 +234,13 @@ namespace CosmicShore.Gameplay
             _members[i] = null;
         }
 
-        /// <summary>Body prism shape for member i as element e: its home slot's prism when the slot is
-        /// of its own element, else a typical prism of that element. Local scale, long axis +z.</summary>
+        /// <summary>Body prism shape for member i as element e: the core's look for it (the field core:
+        /// its home slot's prism when the slot is of its own element; the grid core: the prism its look
+        /// state has eased to), else a typical prism of that element. Local scale, long axis +z.</summary>
         Vector3 ShapeFor(int i, int e)
         {
             Vector3 h = _defaultHalf[e];
-            if (_core.TryGetSlot(i, out int k) && _core.Plan.Elem[k] == e)
-            {
-                var s = _core.Plan.Half[k];
-                h = new Vector3(s.X, s.Y, s.Z);
-            }
+            if (_core.TryGetLook(i, e, out var s, out _)) h = new Vector3(s.X, s.Y, s.Z);
             float m = 2f * config.UnitScale * config.PrismScale;
             return new Vector3(h.y * m, h.z * m, h.x * m);
         }
@@ -252,6 +292,11 @@ namespace CosmicShore.Gameplay
                     case SwarmEventKind.Switched:
                         OnMorph(ev.Index, ev.Other);
                         break;
+                    case SwarmEventKind.Starved:
+                        // only a research-mode grid core kills by itself; the game never builds one
+                        // (BuildGridCore sets HungerKills = false). Kept so the death is never silent.
+                        if (_members[ev.Index]) _members[ev.Index].Starve();
+                        break;
                 }
             }
             events.Clear();
@@ -286,7 +331,7 @@ namespace CosmicShore.Gameplay
             float st = _core.Startle[i];
             if (_danger[i]) { if (st < config.DangerExit) _danger[i] = false; }
             else if (st > config.DangerEnter) _danger[i] = true;
-            bool shield = _core.TryGetSlot(i, out int k) && _core.Plan.Elem[k] == 0 && _core.Plan.Tier[k] == 2;
+            bool shield = _core.TryGetLook(i, 0, out _, out int tier) && tier == 2;
             m.SetTier(_danger[i], shield);
         }
 
@@ -469,21 +514,10 @@ namespace CosmicShore.Gameplay
             if (now - _lastShedTime < config.ShedIntervalSeconds) return;
             _lastShedTime = now;
 
-            // shed the member the body needs least: one of the most-surplus element vs the plan
-            var counts = _core.Counts(false);
-            var plan = _core.Plan;
-            int alive = _core.AliveCount, worst = -1; float worstSurplus = float.MinValue;
-            for (int e = 0; e < 4; e++)
-            {
-                if (counts[e] == 0) continue;
-                float s = counts[e] - plan.Mix[e] / (float)plan.N * alive;
-                if (s > worstSurplus) { worstSurplus = s; worst = e; }
-            }
-            for (int i = 0; i < _core.Cap; i++)
-            {
-                var m = _members[i];
-                if (m && _core.Alive[i] && _core.Elem[i] == worst) { m.Starve(); return; }
-            }
+            // shed the member the body needs least - the core decides who (the field core: one of the
+            // most-surplus element; the grid core: the hungriest misplaced-surplus member)
+            int victim = _core.StarvationVictim();
+            if (victim >= 0 && _members[victim] && _core.Alive[victim]) _members[victim].Starve();
         }
 
         void Extinction()

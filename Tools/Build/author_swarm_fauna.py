@@ -54,7 +54,8 @@ SCRIPT_DIR = A("_Scripts", "Controller", "Environment", "FloraAndFauna", "Swarm"
 MENU_SCENE = A("_Scenes", "Menu_Main.unity")
 TADPOLE_SRC = os.path.join(PREFAB_DIR, "TadPoleFauna.prefab")
 
-SCRIPTS = ["SwarmFieldCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna", "SwarmTadpoleFauna"]
+SCRIPTS = ["ISwarmCore", "SwarmFieldCore", "SwarmGridCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna",
+           "SwarmTadpoleFauna"]
 SO_SCRIPT = {
     "cell": "01f934d50526431a9392a6ceca1dc33d",
     "profile": "e8d8aa5d835249798a256e18f2f7d912",
@@ -85,15 +86,24 @@ HEARTS = {"Charge": 2.298, "Mass": 1.737, "Space": 2.298, "Time": 1.737}  # = Ta
 
 # ── the three populations ────────────────────────────────────────────────────────────────
 ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
+# MODEL: which simulation drives the population (SwarmFaunaConfigSO.Model). The cell hosts BOTH,
+# alternating by band, so a pilot flying outward from the nucleus meets grid / field / grid and can
+# compare the two in one session (Docs/SWARM_FAUNA.md §8).
 REGIONS = [
-    # name,   band (world),   start,   plan,         ground species, ground element, canonical asset, plants floor/cap
-    dict(key="Inner", band=(430, 600), start="Mass", plan="whale",
+    # name,   band (world),   start,   plan,     model,    ground species, ground element, canonical asset, plants floor/cap
+    dict(key="Inner", band=(430, 600), start="Mass", plan="whale", model="Grid",
          flora="Arbor", food="Mass", canon="Arbor Flora Mass", floor=6, cap=10),
-    dict(key="Middle", band=(660, 840), start="Time", plan="dragonfly",
+    dict(key="Middle", band=(660, 840), start="Time", plan="dragonfly", model="Field",
          flora="Spire", food="Space", canon="Spire Flora Space", floor=8, cap=14),
-    dict(key="Outer", band=(900, 1120), start="Charge", plan="pufferfish",
+    dict(key="Outer", band=(900, 1120), start="Charge", plan="pufferfish", model="Grid",
          flora="Frond", food="Time", canon="Frond Flora Time", floor=10, cap=16),
 ]
+MODEL_ID = {"Field": 0, "Grid": 1}
+# the grid model's game settings (SwarmGridCore; research hgrid2 values unless noted)
+GRID = dict(GridSize=16, GridCell=6, GridKClass=10, GridKTotal=1, GridPersist=0.6, GridNoise=0.05,
+            GridLayChance=0.1, GridCrossChance=0.25, GridLayMaxPerStep=3, GridKFine=2, GridSigma=3.5,
+            GridFeedForward=1.5, GridPlanLock=30)
+GRID_PERIOD = {"Charge": 8, "Mass": 8, "Space": 8, "Time": 16}
 FLORA_GROWTH_PER_OFFSPRING = 0.8   # x the plant's own budget: a plant seeds a neighbour as it completes
 FLORA_COOLDOWN = 20
 FLORA_SPREAD = 120
@@ -257,7 +267,15 @@ def tadpole_prefab():
     return text
 
 
-def anchor_prefab():
+def anchor_name(model):
+    return "SwarmFauna.prefab" if model == "Field" else "SwarmGridFauna.prefab"
+
+
+def config_name(model):
+    return "SwarmFaunaConfig.asset" if model == "Field" else "SwarmGridFaunaConfig.asset"
+
+
+def anchor_prefab(model="Field"):
     return f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &{ROOT_GO_FID}
@@ -271,7 +289,7 @@ GameObject:
   - component: {{fileID: {ROOT_TR_FID}}}
   - component: {{fileID: {ROOT_MB_FID}}}
   m_Layer: 0
-  m_Name: SwarmFauna
+  m_Name: {anchor_name(model)[:-7]}
   m_TagString: Untagged
   m_Icon: {{fileID: 0}}
   m_NavMeshLayer: 0
@@ -315,7 +333,7 @@ MonoBehaviour:
   diet: 0
   predationImmunitySeconds: 0
   starvationSeconds: 0
-  config: {{fileID: 11400000, guid: {guid(rel(os.path.join(SWARM_DIR, 'SwarmFaunaConfig.asset')))}, type: 2}}
+  config: {{fileID: 11400000, guid: {guid(rel(os.path.join(SWARM_DIR, config_name(model))))}, type: 2}}
 """
 
 
@@ -329,10 +347,14 @@ def _g(x):
     return ("%.3f" % x).rstrip("0").rstrip(".")
 
 
-def config_asset(eggs):
+def config_asset(eggs, model="Field"):
     egg = {"Charge": eggs[0], "Mass": eggs[1], "Space": eggs[2], "Time": eggs[3]}
     pg = lambda k: guid(rel(plan_path(k)))
-    return SO_HEADER % (script_guid("SwarmFaunaConfigSO"), "SwarmFaunaConfig") + (
+    grid = "".join(f"  {k}: {_g(v)}\n" for k, v in GRID.items() if k != "GridPlanLock")
+    grid = grid.replace("  GridFeedForward:", f"  GridFeedForward:").rstrip("\n") + "\n"
+    grid += f"  GridFramePeriod: {v4(GRID_PERIOD)}\n  GridPlanLock: {GRID['GridPlanLock']}\n"
+    return SO_HEADER % (script_guid("SwarmFaunaConfigSO"), config_name(model)[:-6]) + (
+        f"  Model: {MODEL_ID[model]}\n"
         f"  ChargePlan: {{fileID: 4900000, guid: {pg('charge')}, type: 3}}\n"
         f"  MassPlan: {{fileID: 4900000, guid: {pg('mass')}, type: 3}}\n"
         f"  SpacePlan: {{fileID: 4900000, guid: {pg('space')}, type: 3}}\n"
@@ -348,6 +370,7 @@ def config_asset(eggs):
         "  VesselRadius: 9\n  SenseMargin: 220\n  DangerEnter: 0.45\n  DangerExit: 0.15\n"
         f"  HeartWorldScale: {v4(HEARTS)}\n"
         f"  PrismScale: {_g(PRISM_SCALE)}\n  HeartPrismGap: 0.6\n  BirthBloomSeconds: 0.8\n  MoltHeartSeconds: 0.5\n"
+        + grid +
         "  SwarmLoopEvent:\n" + EMPTY_EVENT.replace("    ", "    ", 1) +
         "  MorphEvent:\n" + EMPTY_EVENT)
 
@@ -383,7 +406,7 @@ def canon(r):
 def fauna_asset(r):
     lo, hi = r["band"]
     return SO_HEADER % (SO_SCRIPT["fauna"], fauna_name(r)) + (
-        f"  FaunaPrefab: {{fileID: {ROOT_MB_FID}, guid: {guid(rel(os.path.join(PREFAB_DIR, 'SwarmFauna.prefab')))}, type: 3}}\n"
+        f"  FaunaPrefab: {{fileID: {ROOT_MB_FID}, guid: {guid(rel(os.path.join(PREFAB_DIR, anchor_name(r['model']))))}, type: 3}}\n"
         "  InitialSpawnCount: 1\n  PopulationSize: 1\n  SpawnProbability: 1\n  NetworkSynced: 0\n"
         "  FeedsPerOffspring: 0\n  OffspringPerBirth: 1\n  ReproductionCooldownSeconds: 10\n"
         "  MaxLivePopulation: 1\n  ReleaseTier: 0\n"
@@ -468,9 +491,9 @@ def profile_asset():
 def cell_asset(L):
     return SO_HEADER % (SO_SCRIPT["cell"], f"{PREFIX} Cell Config") + (
         "  CellName: Swarm\n"
-        "  Description: Three tadpole swarms in three shells of the cytoplasm - a whale, a dragonfly\n"
-        "    and a pufferfish - each over its own feeding ground. Kill a body's majority element\n"
-        "    and it becomes another animal\n"
+        "  Description: Three tadpole swarms in three shells of the cytoplasm - a grid-morphogen whale,\n"
+        "    a field dragonfly and a grid-morphogen pufferfish - each over its own feeding ground. Kill\n"
+        "    a body's majority element and it becomes another animal\n"
         f"  Icon: {{fileID: 21300000, guid: {ICON}, type: 3}}\n"
         "  Difficulty: 2\n  CellEndGameScore: 0\n"
         f"  MembranePrefab: {{fileID: {MEMBRANE[0]}, guid: {MEMBRANE[1]}, type: 3}}\n"
@@ -525,13 +548,15 @@ def emit():
         out[os.path.join(SCRIPT_DIR, s + ".cs.meta")] = SCRIPT_META % script_guid(s)
 
     rows, tot, eggs = model(plans)
-    for name, text in (("SwarmTadpole.prefab", tadpole_prefab()), ("SwarmFauna.prefab", anchor_prefab())):
+    prefabs = [("SwarmTadpole.prefab", tadpole_prefab())] + [(anchor_name(m), anchor_prefab(m)) for m in MODEL_ID]
+    for name, text in prefabs:
         p = os.path.join(PREFAB_DIR, name)
         out[p] = text
         out[p + ".meta"] = PREFAB_META % guid(rel(p))
-    cfgp = os.path.join(SWARM_DIR, "SwarmFaunaConfig.asset")
-    out[cfgp] = config_asset(eggs)
-    out[cfgp + ".meta"] = ASSET_META % guid(rel(cfgp))
+    for m in MODEL_ID:
+        cfgp = os.path.join(SWARM_DIR, config_name(m))
+        out[cfgp] = config_asset(eggs, m)
+        out[cfgp + ".meta"] = ASSET_META % guid(rel(cfgp))
 
     L = ladder(tot)
     for r, row in zip(REGIONS, rows):
@@ -564,6 +589,8 @@ def verify(out, tot, rows):
         problems.append("the outer band reaches the membrane")
     if len({r["start"] for r in REGIONS}) != len(REGIONS):
         problems.append("two populations start as the same creature")
+    if {r["model"] for r in REGIONS} != set(MODEL_ID):
+        problems.append("the cell must host both models side by side (field and grid)")
     if any(r["food"] == "Charge" for r in REGIONS):
         problems.append("a Charge feeding ground is no food at all (armoured leaves)")
     if tot["hearts"] >= LATTICE_HEART_COLLIDERS:
@@ -587,7 +614,7 @@ def report(rows, tot, eggs, L, baked):
     print("Swarm cell - three populations in three shells of the cytoplasm\n")
     for row in rows:
         r, c = row["r"], row["c"]
-        print(f"  {r['key']:<6} {r['band'][0]:>4}-{r['band'][1]:<4}u  starts {r['start']:<6} ({r['plan']:<10})  "
+        print(f"  {r['key']:<6} {r['band'][0]:>4}-{r['band'][1]:<4}u  {r['model']:<5} starts {r['start']:<6} ({r['plan']:<10})  "
               f"grazes {r['food']:<5} {r['flora']:<5} x{r['floor']}..{r['cap']}  "
               f"{c['budget']} prisms/plant, ~{row['plant_volume']:,.0f} volume/plant (model)")
     print(f"\n  egg = one body prism's world volume: " + ", ".join(
