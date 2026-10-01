@@ -57,6 +57,7 @@ frame."* Three new pieces, all on this branch:
   | combo | 0.51 | 6.3 | 0.18 / 0.29 | 0 | jolts after a cull / strike |
   | field ("its mistakes feel like bugs") | 0.51 | 4.4 | **0.31** / 0.30 | 0.06 | its settled loss wiggles 50% - the "bugs" |
   | sortfeel | 0.44 | 6.7 | 0.12 / 0.29 | 0 | the same jolt |
+  | posinfo2 (measured 22:20) | 0.50 | 4.2 | 0.32 / 0.50 | 0 | eases in (mean lurch 2.7); one birth flash |
 
   **Both front runners jolt.** Right after a cull or a strike their pace spikes to 4-7x the change's own
   median; evo eases in at ~1.7. No front runner backtracks or teleports. A ramped response (an acceleration
@@ -76,6 +77,12 @@ frame."* Three new pieces, all on this branch:
   per-update rates scaled by k, k = 1..16), amortised bookkeeping, vectorisation, a spatial hash - with
   ms per swarm-step for 1..64 batched swarms and every published config passing the hold.
 - **The game moved too**: cece/swarm-fauna-game ported combo's lossless rules into SwarmGridCore (22:14).
+- **A third front runner landed at 22:15: posinfo2**, a LEARNED rule (G2 + body-frame inputs) inside a designed
+  molting controller with a majority guard: **51 of 52 feasible over seeds 7 / 23 / 41 / 1000**, own plans 1.6-2.7 (the
+  tightest of any model), 0 self-inflicted deaths, organic, 5.2 ms/step. Smoothness 0.50 (it eases in like evo, mean
+  lurch 2.7, but one switch births half its body inside 8 steps). It now leads the gallery, and a third lite session
+  (`lite_posinfo2`, session_016hrNL5qiGWAu9SKaJTAkkm, cece/swarm-x-lite-posinfo2) holds it and adds the learned-rule
+  levers: distil the network, prune inputs, evaluate it only for the fraction being updated.
 
 ## Update 21:40 UTC — all four axes at once: three models now clear the scorecard
 
