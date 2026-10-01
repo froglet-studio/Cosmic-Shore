@@ -35,6 +35,7 @@ class LiteCfg(cm.ComboCfg):
     molt_every: int = 1
     fine_ease: float = 1.0
     vec: int = 0
+    coast: float = 1.0      # a coasting tadpole re-applies coast x its last fine displacement (decays while stale)
     mig_frac: int = 0       # also restrict the migrant search to this step's share (off: everyone, every step)
 
 
@@ -183,7 +184,7 @@ class LiteComboBoidSub(LiteComboBoid):
         if e < 1.0:
             d = torch.where((sel & ~fresh)[..., None], e * dnew + (1 - e) * prev, torch.where(sel[..., None], dnew, prev))
         else:
-            d = torch.where(sel[..., None], dnew, prev)
+            d = torch.where(sel[..., None], dnew, cfg.coast * prev)
         d = d * live[..., None].float()
         self._dcache = d.detach().clone()
         return d
