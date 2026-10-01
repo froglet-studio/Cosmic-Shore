@@ -51,6 +51,7 @@ LOOK = list(range(1, 12))    # FAC, PR, TI, SP
 
 NF = 78                      # feature width (asserted in features()); +6 with genome features
 NG = 6
+NC = 1                       # + contest feature (genome=2): own census dwell counter / dwell
 OUT = 3 + 11 + 1 + 3 + 4 + 1 + 4 + 4 + 1   # v, look, lay, egg dir, egg elem, molt, molt_to, pb, startle
 LOOK_SCALE = torch.tensor([4.0] * 3 + [5.0] * 3 + [8.0] * 3 + [3.0] * 2)
 
@@ -92,7 +93,7 @@ class Student(nn.Module):
         self.world = world or sn.World()
         self.cfg = cfg or StudentCfg()
         H = self.cfg.hidden
-        self.nf = NF + (NG if self.cfg.genome else 0)
+        self.nf = NF + (NG if self.cfg.genome else 0) + (NC if self.cfg.genome >= 2 else 0)
         T = sn.load_targets()
         mix = torch.zeros(4, 4); pn = torch.zeros(4)
         for k in sn.KINDS:
@@ -188,6 +189,8 @@ class Student(nn.Module):
             defi = share - glob[:, 1:5]
             own = (defi * eoh).sum(-1, keepdim=True)
             f = torch.cat([f, own, defi, pn / 100 - glob[:, :1]], 1)
+            if self.cfg.genome >= 2:
+                f = torch.cat([f, (s[:, CNT] / self.cfg.dwell)[:, None]], 1)
         assert f.shape[1] == self.nf, f.shape
         return f, live, (gi, gj)
 
