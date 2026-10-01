@@ -36,6 +36,8 @@ class ComboCfg(hm.Cfg):
     molt_guard: int = 1         # never let a molt bring a non-major element level with the plan's major
     transfer: int = 0           # surplus with no molt target in its domain becomes an outline filler
     ratio: int = 0              # molt toward the plan's element RATIOS in an overfull / orphan domain (see ratio_target)
+    transfer2: int = 0          # (with orphan_proxy) overfull-class extras steer to their element's deficit in another region
+    grow_scale: float = 0.0     # >0: a body holding more than the plan scales its fine targets by (n/plan)^(1/3) (cap 1+this)
     orphan_proxy: int = 0       # orphans steer by their element's best slot (see _proxy_dom)
     wscale_max: float = 1.0     # >1: an overfull domain's wanted fine density is scaled up (cap) so extras spread
     lay_cap: float = 0.0        # >0: no laying once live headcount >= lay_cap x plan headcount
@@ -241,6 +243,19 @@ class ComboBoid(hm.Boid2):
             d = torch.where(f[..., None], dt, d)
         return d
 
+    def fine_targets(self, sw, centres):
+        tg = super().fine_targets(sw, centres)
+        if not self.cfg.grow_scale:
+            return tg
+        live = sw.active & sw.hatched
+        out = []
+        for b, (p, cls, vel, sig) in enumerate(tg):
+            n, m = float(live[b].sum()), float(len(p))
+            k = max(1.0, n / max(m, 1.0)) ** (1 / 3)
+            k = min(k, 1 + self.cfg.grow_scale)
+            out.append((centres[b] + (p - centres[b]) * k, cls, vel * k, sig * k))
+        return out
+
     def _proxy_dom(self, out, live):
         """Orphans (class the plan wants none of) borrow the domain whose slot wants their ELEMENT most,
         for steering only: they fill their element's places instead of drifting with no fine target."""
@@ -258,7 +273,27 @@ class ComboBoid(hm.Boid2):
         has = we.max(2).values > 0.5
         pd = torch.gather(best_d, 1, out.elem)
         ok = orphan & torch.gather(has, 1, out.elem)
-        return torch.where(ok, pd, out.dom)
+        res = torch.where(ok, pd, out.dom)
+        if self.cfg.transfer2:
+            # region transfer: extras of an overfull class steer to their element's unfilled sites in another
+            # domain's region (they keep their domain). Stable choice: the highest slot indices transfer.
+            have = torch.zeros(B, 12).scatter_add(1, cls, live.float())
+            for b in range(B):
+                if int(out.gplan[b]) < 0:
+                    continue
+                h = have[b].view(4, 3).clone(); w = want[b].view(4, 3)
+                for e in range(4):
+                    for d in range(3):
+                        ex = int(h[e, d] - w[e, d])
+                        if ex <= 0 or w[e, d] < 0.5:
+                            continue
+                        idx = (live[b] & (out.elem[b] == e) & (out.dom[b] == d)).nonzero().squeeze(1)
+                        for i in idx.flip(0)[:ex].tolist():
+                            dd = int((w[e] - h[e]).argmax())
+                            if float(w[e, dd] - h[e, dd]) < 0.5:
+                                break
+                            res[b, i] = dd; h[e, dd] += 1; h[e, d] -= 1
+        return res
 
     def _with_proxy(self, fn, out, pos0, live, *a):
         if not self.cfg.orphan_proxy:
