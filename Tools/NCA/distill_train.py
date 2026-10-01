@@ -172,7 +172,7 @@ W_LOSS = dict(v=4.0, look=1.0, lay=2.0, dir=0.5, molt=2.0, mto=0.5, pb=0.5, stl=
 
 def fit(student, data, epochs, lr=2e-3, bs=4096, log=print, wd=1e-5):
     n = len(data["f"])
-    if float(student.sd.sum()) == ds.NF:      # first fit: feature normalisation
+    if float(student.sd.sum()) == student.nf:      # first fit: feature normalisation
         with torch.no_grad():
             student.mu.copy_(data["f"].mean(0)); student.sd.copy_(data["f"].std(0).clamp(min=1e-3))
     opt = torch.optim.AdamW(student.parameters(), lr=lr, weight_decay=wd)
@@ -204,7 +204,7 @@ def save(student, path, extra=None):
 def load(path):
     d = torch.load(path, weights_only=False)
     st = ds.Student(cfg=ds.StudentCfg(**d["cfg"]))
-    st.load_state_dict(d["state"])
+    st.load_state_dict(d["state"], strict=False)
     return st.eval()
 
 
@@ -232,6 +232,7 @@ def main():
     ap.add_argument("--hidden", type=int, default=256)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--plan_mode", default="")
+    ap.add_argument("--genome", type=int, default=0)
     a = ap.parse_args()
     os.makedirs(a.run, exist_ok=True)
     logf = open(os.path.join(a.run, "log.txt"), "a")
@@ -245,7 +246,7 @@ def main():
         res = quick_eval(st, log)
         json.dump(res, open(os.path.join(a.run, "eval16.json"), "w"), indent=1)
         return
-    st = load(a.init) if a.init else ds.Student(cfg=ds.StudentCfg(hidden=a.hidden))
+    st = load(a.init) if a.init else ds.Student(cfg=ds.StudentCfg(hidden=a.hidden, genome=a.genome, plan_mode=a.plan_mode or "learned"))
     if a.plan_mode:
         st.cfg.plan_mode = a.plan_mode
     hist = json.load(open(os.path.join(a.run, "hist.json"))) if os.path.exists(os.path.join(a.run, "hist.json")) else []

@@ -49,7 +49,8 @@ STL = 25
 CAND, CNT = 26, 27     # (plan_mode=census) candidate majority + how long it has held
 LOOK = list(range(1, 12))    # FAC, PR, TI, SP
 
-NF = 78                      # feature width (asserted in features())
+NF = 78                      # feature width (asserted in features()); +6 with genome features
+NG = 6
 OUT = 3 + 11 + 1 + 3 + 4 + 1 + 4 + 4 + 1   # v, look, lay, egg dir, egg elem, molt, molt_to, pb, startle
 LOOK_SCALE = torch.tensor([4.0] * 3 + [5.0] * 3 + [8.0] * 3 + [3.0] * 2)
 
@@ -69,6 +70,9 @@ class StudentCfg:
     plan_mode: str = "learned"   # learned: PB is the MLP's head | census: PB is the population census with
                                  # a per-tadpole dwell counter (field's hysteresis, computed by every tadpole)
     dwell: int = 12
+    genome: int = 0           # 1: + genome features: own element's plan share - its live share, the full deficit
+                              # vector (plan mix - live mix) and plan headcount - live headcount, all under the
+                              # tadpole's own plan belief (the plan constants are the genome; no new perception)
 
 
 def _edges(pos, active, R):
@@ -88,10 +92,19 @@ class Student(nn.Module):
         self.world = world or sn.World()
         self.cfg = cfg or StudentCfg()
         H = self.cfg.hidden
-        self.net = nn.Sequential(nn.Linear(NF, H), nn.SiLU(), nn.Linear(H, H), nn.SiLU(), nn.Linear(H, H), nn.SiLU(),
+        self.nf = NF + (NG if self.cfg.genome else 0)
+        T = sn.load_targets()
+        mix = torch.zeros(4, 4); pn = torch.zeros(4)
+        for k in sn.KINDS:
+            e = sn.MAJOR[k]; m = torch.tensor(T[k].mix, dtype=torch.float32)
+            mix[e] = m / m.sum(); pn[e] = T[k].n
+        self.register_buffer("plan_mix", mix)          # row = plan (by its major element), cols = element shares
+        self.register_buffer("plan_n", pn)
+        NFX = self.nf
+        self.net = nn.Sequential(nn.Linear(NFX, H), nn.SiLU(), nn.Linear(H, H), nn.SiLU(), nn.Linear(H, H), nn.SiLU(),
                                  nn.Linear(H, OUT))
-        self.register_buffer("mu", torch.zeros(NF))
-        self.register_buffer("sd", torch.ones(NF))
+        self.register_buffer("mu", torch.zeros(NFX))
+        self.register_buffer("sd", torch.ones(NFX))
         self.predators = []       # [(centre np[3], radius, velocity np[3])], as field
         self.sense = 2.2
 
@@ -167,7 +180,15 @@ class Student(nn.Module):
         f = torch.cat([eoh, doh, s[:, VEL], off, off.norm(dim=-1, keepdim=True), look, pb, ph, mp, mt,
                        sumw / 8, we / 8, wd / 8, mdx, mdx_e, mv, mpb, sep, nnd, mstl, xstl, stl[:, None],
                        glob, pf], 1)
-        assert f.shape[1] == NF, f.shape
+        if self.cfg.genome:
+            pmix = self.plan_mix
+            w4 = pb                                                    # belief over plans (element order)
+            share = w4 @ pmix                                          # expected plan element shares [n, 4]
+            pn = (w4 @ self.plan_n)[:, None]                           # expected plan headcount
+            defi = share - glob[:, 1:5]
+            own = (defi * eoh).sum(-1, keepdim=True)
+            f = torch.cat([f, own, defi, pn / 100 - glob[:, :1]], 1)
+        assert f.shape[1] == self.nf, f.shape
         return f, live, (gi, gj)
 
     def head(self, f):
