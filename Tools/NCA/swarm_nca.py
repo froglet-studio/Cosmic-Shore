@@ -646,6 +646,8 @@ class TrainCfg:
     birth_clock: int = 480         # samples younger than this follow the clock from birth; older ones are phase-free
     w_speed: float = 2.0
     replace_above: float = 120.0   # pool hygiene: a sample whose loss passed this goes back to a seed
+    replace_count: float = 0.5     # ... and one whose headcount is this far off (a full swarm lays no eggs, so
+                                   # it can never learn when to stop hatching)
 
 
 def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
@@ -732,7 +734,8 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True):
             sub = sw.index(torch.arange(i * cfg.per_kind, (i + 1) * cfg.per_kind))
             # an extinct or blown-up sample is replaced by a seed, so the pool keeps learnable states
             for j in range(cfg.per_kind):
-                if int(sub.active[j].sum()) == 0 or infos[k][j]["sink"] > cfg.replace_above:
+                off = abs(infos[k][j]["n"] - targets[k].n) / targets[k].n
+                if int(sub.active[j].sum()) == 0 or infos[k][j]["sink"] > cfg.replace_above or off > cfg.replace_count:
                     sub = Swarm.cat([sub.index(torch.arange(0, j)), seed_swarm([targets[k]], world, gen),
                                      sub.index(torch.arange(j + 1, cfg.per_kind))])
             for j, pi in enumerate(picks[k].tolist()):
