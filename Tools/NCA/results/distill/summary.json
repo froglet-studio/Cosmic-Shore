@@ -1,0 +1,318 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 12.64,
+   "space": 74.0,
+   "charge": 60.78,
+   "time": 81.46
+  },
+  "space": {
+   "mass": 27.46,
+   "space": 86.56,
+   "charge": 79.69,
+   "time": 91.58
+  },
+  "charge": {
+   "mass": 65.52,
+   "space": 61.97,
+   "charge": 19.31,
+   "time": 76.05
+  },
+  "time": {
+   "mass": 80.22,
+   "space": 63.28,
+   "charge": 75.84,
+   "time": 42.45
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 216,
+   "target_n": 192,
+   "elements": [
+    25,
+    151,
+    22,
+    18
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    139,
+    77,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 231,
+   "target_n": 88,
+   "elements": [
+    33,
+    156,
+    23,
+    19
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Mass",
+   "domains": [
+    85,
+    146,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 211,
+   "target_n": 179,
+   "elements": [
+    160,
+    2,
+    12,
+    37
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    95,
+    116,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 97,
+   "target_n": 76,
+   "elements": [
+    0,
+    6,
+    36,
+    55
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    68,
+    1,
+    28
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 4.31,
+   "space": 22.04,
+   "charge": 13.57,
+   "time": 27.6
+  },
+  "space": {
+   "mass": 15.08,
+   "space": 39.24,
+   "charge": 31.3,
+   "time": 39.58
+  },
+  "charge": {
+   "mass": 16.04,
+   "space": 20.07,
+   "charge": 10.47,
+   "time": 23.29
+  },
+  "time": {
+   "mass": 25.1,
+   "space": 18.86,
+   "charge": 18.35,
+   "time": 22.93
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 21.01,
+    "space": 74.13,
+    "charge": 65.16,
+    "time": 86.49
+   },
+   "majority": "mass",
+   "census": {
+    "n": 225,
+    "target_n": 88,
+    "elements": [
+     33,
+     142,
+     28,
+     22
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Mass",
+    "domains": [
+     115,
+     110,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 31.26,
+    "space": 81.53,
+    "charge": 78.88,
+    "time": 86.65
+   },
+   "majority": "mass",
+   "census": {
+    "n": 234,
+    "target_n": 179,
+    "elements": [
+     32,
+     144,
+     43,
+     15
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Mass",
+    "domains": [
+     106,
+     128,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 70.78,
+    "space": 68.03,
+    "charge": 30.0,
+    "time": 81.15
+   },
+   "majority": "charge",
+   "census": {
+    "n": 221,
+    "target_n": 76,
+    "elements": [
+     159,
+     4,
+     22,
+     36
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Charge",
+    "domains": [
+     79,
+     142,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 61.67,
+    "space": 108.71,
+    "charge": 108.98,
+    "time": 111.25
+   },
+   "majority": "mass",
+   "census": {
+    "n": 235,
+    "target_n": 192,
+    "elements": [
+     41,
+     136,
+     39,
+     19
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Mass",
+    "domains": [
+     215,
+     1,
+     19
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "meta": {
+  "device": "cpu",
+  "tag": "distill-dagger-learned",
+  "note": "distill: fully learned local student (BC + DAgger it6), plan belief learned",
+  "cfg": {
+   "hidden": 256,
+   "cons_iters": 2,
+   "cons_a": 0.6,
+   "cons_leak": 0.004,
+   "molt_steps": 10,
+   "sep_r": 2.0,
+   "lay_temp": 1.0,
+   "collide": 1,
+   "lay_scale": 1.0,
+   "molt_scale": 1.0,
+   "plan_mode": "learned",
+   "dwell": 12,
+   "genome": 0
+  },
+  "tests_passed": 4,
+  "close": 456.79
+ },
+ "rule": "student.pt"
+}
