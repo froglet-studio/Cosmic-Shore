@@ -35,6 +35,7 @@ Regenerate: `python creature_publish.py && python creature_showcase.py` (~3 min)
 | | creature | evo (round 1) |
 |---|---|---|
 | `swarm_eval --full` 16 transitions, seed 7, 3 samples | **16/16** (all rates 1.0) — `eval16.json` | 16/16 |
+| same, held-out rollout seeds 11 / 23 / 37 (`heldout/`) | **16/16, 16/16, 16/16** | (not re-run) |
 | old 8-test `rollout` + `tests_passed` | **8/8** (summed 200.8) — `summary.json` | 8/8 |
 | `swarm_probe` strike heal, seed 11 (whale/jelly/puff/dragon) | 0.46 / -1.17 / 0.94 / 0.60 (= evo, shell inert without a ship) | same |
 | strike, 8 seeds, mean residual damage (recovered - before; lower better) | **0.84** shipped; 1.96 with wound memory ON | 0.84 |
