@@ -104,11 +104,14 @@ plus one RNG draw per tadpole (+23% in this Python prototype, `timing.json`).
   2.63 -> 3.72, pufferfish 5.84 -> 7.63, dragonfly 2.46 -> 2.98. The overhead is Python bookkeeping in the
   subclass (re-reading numpy views, set intersections, a sqrt per fate pull); the math added per tadpole is
   one sqrt + one Gaussian draw + one exp, negligible next to sort's O(n²) neighbour pass in a C# port.
-- Sort's own accuracy at the same seeds: seed 7 **12/13** (`results/sort/eval16.json`, same single failure
-  dragonfly->jellyfish 8.97); seed 41 **13/13** (`sort_baseline_seed41.json`, own 1.55 / 3.08 / 1.09 / 3.89 -
-  sortfeel 1.37 / 2.76 / 1.08 / 5.30); seed 23 own + standard 8/8 per DISCOVERIES (its other switches were not
-  re-measured here: a full baseline at seed 23 did not fit the session). **So sortfeel matches sort at 7 and 41;
-  the one possibly new failure is whale->dragonfly at seed 23, 8.04, a hair over the bar.**
+- Sort's own accuracy at the same seeds (same `evaluate` call): seed 7 **12/13** (`results/sort/eval16.json`,
+  dragonfly->jellyfish 8.97); seed 23 **12/13** (`sort_baseline_seed23.json`, dragonfly->jellyfish 9.37);
+  seed 41 **13/13** (`sort_baseline_seed41.json`). **sortfeel: 12 / 11 / 13 — it matches sort at 7 and 41 and
+  loses ONE transition at 23.** The loss is real and systematic, not noise: every switch INTO the dragonfly
+  is worse at seed 23 (whale->dragonfly 6.74 -> **8.04**, jellyfish->dragonfly 6.68 -> 7.53, pufferfish->dragonfly
+  6.02 -> 6.42). The dragonfly's thin wings need tadpoles held tightly; a dead zone + wander loosens them after a
+  switch, when the body is still re-filling. Own-plan losses at 23: sort 1.35 / 2.66 / 1.16 / 3.78, sortfeel
+  1.67 / 2.45 / 0.97 / 4.58.
 - Old yardstick (`summary.json`, `swarm_nca.rollout`): **7/8**, identical to sort (the one failure is the
   known `lose_majority` quirk: dragonfly -> whale leaves Space the majority and it correctly grows a
   jellyfish, 8.75).
@@ -147,8 +150,10 @@ Risk to check in the viewer: coherence 0.09 is gas-like; if it reads as fizz rat
   on 4 cores) and ate 50 minutes; `sortfeel_search.py` is ready (sort's 17 genes + the 3 feel genes, the band
   as a penalty with margins) but these parameters are hand-picked from a 10-point screen, not searched.
 - **dragonfly -> jellyfish** still fails (9.0, as in sort): domain conservation, not shape. Not touched.
-- **whale -> dragonfly at seed 23 = 8.04**: possibly a new marginal failure (sort's value at that seed was not
-  measured here). Switches INTO the dragonfly were sort's weakest (~6) and the wander slightly loosens them.
+- **whale -> dragonfly at seed 23 = 8.04 (sort 6.74)**: a genuine regression of switches INTO the dragonfly
+  (+0.4 to +1.3 at seed 23). Cheapest fixes to try, in order: a per-plan dead zone (m0 = 0.4 for the dragonfly,
+  whose bodies are already as flat as its plan at 0.46 vs 0.49); wander 0.03; or let the CMA pass re-tune k_well /
+  well_clip against the dead zone.
 - Locality unchanged: "mixed" — the body centre is still a swarm-wide average (sort's default).
 
 ## Recommendation
@@ -161,7 +166,8 @@ number and add two mechanisms.**
    **τ = 12 · (0.6 + 0.8·frac(slot·0.618))**, added to the position after sort's velocity update; zero at hatch.
    Keep it OUT of the inertia state (sort's `H_VEL`), or the inertia integrates it into a drift.
 Nothing else changes (adhesion, swaps, fate, composition, molting, transfer all as published). If the viewer
-says it fizzes, use wander 0.03.
+says it fizzes, use wander 0.03. Known cost: switches INTO the dragonfly lose 0.4-1.3 (one transition at seed
+23 tips over the bar, 8.04); if that matters for the game, use m0 = 0.4 on the dragonfly plan only (untested).
 
 **Next round:** (a) run `sortfeel_search.py` (~1 h) to re-tune sort's 17 genes jointly with the dead zone —
 the k_well/well_clip pair was tuned for crushing wells and is likely now too weak at the wall; (b) combine

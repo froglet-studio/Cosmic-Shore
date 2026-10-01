@@ -1,0 +1,24 @@
+{
+ "passed": 12,
+ "feasible": 13,
+ "own": {
+  "mass": 1.35,
+  "space": 2.66,
+  "charge": 1.16,
+  "time": 3.78
+ },
+ "fails": {
+  "time->space": 9.37
+ },
+ "switch": {
+  "mass->space": 3.24,
+  "space->charge": 1.28,
+  "charge->time": 6.02,
+  "time->mass": 2.09,
+  "mass->charge": 1.05,
+  "mass->time": 6.74,
+  "space->time": 6.68,
+  "charge->space": 2.66,
+  "time->space": 9.37
+ }
+}
