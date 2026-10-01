@@ -35,6 +35,7 @@ class EvoCfg(hm.Cfg):
     s_fine: float = 0.7
     ease_look: float = 0.2
     shed: int = 1
+    s_mig_note: str = 'migration uses k_mig / mig_th / mig_L of hgrid2_model.Cfg'
 
 
 class EvoGrid:
@@ -61,7 +62,7 @@ class EvoGrid:
         lf = live.float()
         centres = (out.pos * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
         centres = torch.round(centres / cfg.cell) * cfg.cell
-        hb.decide_plan(out, live, cfg, self.targets)
+        self.boid.decide(out)
         frame = hc.GridFrame(centres, cfg.G, cfg.cell)
         D = self.oracle(out, centres, live)
         Dc = D[:, :hc.NCLS].reshape(B, 4, 3, *D.shape[2:])
@@ -85,6 +86,10 @@ class EvoGrid:
         sp = steer.norm(dim=-1, keepdim=True)
         steer = steer * (vmax / sp.clamp(min=1e-6)).clamp(max=1.0)
         out.pos = out.pos + steer * lf[..., None]
+        if cfg.k_mig:
+            self.boid.migrate(out, pos0, live)
+        if cfg.k_swap:
+            self.boid.swaps(out, pos0, live)
         # LOOK
         if cfg.ease_look:
             n = B * N
@@ -97,7 +102,11 @@ class EvoGrid:
             s[..., sn.PR], s[..., sn.TI], s[..., sn.FAC], s[..., sn.SP] = cur[..., :3], cur[..., 3:6], cur[..., 6:9], cur[..., 9:11]
         # COMPOSITION
         have = torch.zeros(B, 12).scatter_add(1, cls, lf)
-        if cfg.shed:
+        if cfg.shed and cfg.stagger:
+            self.boid.starve_staggered(out, ch=25)          # hunger rides on a hidden channel: the evolved rule owns DIE
+            live = out.active & out.hatched
+            have = torch.zeros(B, 12).scatter_add(1, cls, live.float())
+        elif cfg.shed:
             surplus = have > (1 + cfg.starve_tol) * want + 1.0
             sur_i = torch.gather(surplus, 1, cls) & live & (d_own < cfg.starve_local)
             h = out.s[..., 25]

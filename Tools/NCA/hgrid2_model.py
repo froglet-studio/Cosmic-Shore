@@ -133,9 +133,27 @@ class Boid2(hb.FieldBoid):
                 self._nn[kk] = float(d.min(1).values.mean())
         return self.cfg.sigma_rel * self._nn[k]
 
+    def decide(self, sw):
+        """Plan decision (majority element, with the commit lock) + slot->domain map, in place."""
+        cfg = self.cfg
+        if not hasattr(self, "_chg") or self._chg.shape[0] != sw.B:
+            self._chg = torch.full((sw.B,), -10 ** 9, dtype=torch.long)
+        self._chg[sw.clock == 0] = -10 ** 9
+        live0 = sw.active & sw.hatched
+        old_p, old_d = sw.gplan.clone(), sw.dmap.clone()
+        hb.decide_plan(sw, live0, cfg, self.targets)
+        for b in range(sw.B):
+            if int(old_p[b]) >= 0 and int(sw.gplan[b]) != int(old_p[b]):
+                if cfg.lock and int(sw.clock[b]) - int(self._chg[b]) < cfg.lock:
+                    sw.gplan[b] = old_p[b]; sw.dmap[b] = old_d[b]
+                else:
+                    self._chg[b] = int(sw.clock[b])
+        if cfg.dmap_low:
+            self.low_dmap(sw, live0)
+
     _U = None
 
-    def starve_staggered(self, out):
+    def starve_staggered(self, out, ch=sn.DIE):
         cfg = self.cfg
         B, N, _ = out.pos.shape
         if Boid2._U is None or Boid2._U.shape[0] != N:
@@ -160,11 +178,11 @@ class Boid2(hb.FieldBoid):
             tot = excess.view(-1, 4, 3).sum(-1).clamp(min=1e-6)
             excess = torch.floor(excess.view(-1, 4, 3) * (eexc / tot).clamp(max=1)[..., None] + 1e-4).view(-1, 12)
         sur_i = (torch.gather(excess, 1, cls) > 0) & live
-        h = out.s[..., sn.DIE]
+        h = out.s[..., ch]
         h = torch.where(sur_i, h + cfg.starve_rate * Boid2._U[None], (h - cfg.starve_rate).clamp(min=0))
         died = torch.zeros_like(live)
         for b in range(B):
-            cand = (live[b] & (h[b] > sn.DIE_AT)).nonzero().squeeze(1)
+            cand = (live[b] & (h[b] > 1.0)).nonzero().squeeze(1)
             if len(cand) == 0:
                 continue
             cand = cand[torch.argsort(-h[b, cand])]
@@ -174,8 +192,8 @@ class Boid2(hb.FieldBoid):
                 if quota[c] >= 1:
                     died[b, i] = True; quota[c] -= 1
                 else:
-                    h[b, i] = sn.DIE_AT        # waits at the brink while its class has no excess left
-        out.s[..., sn.DIE] = h
+                    h[b, i] = 1.0        # waits at the brink while its class has no excess left
+        out.s[..., ch] = torch.where(died, torch.zeros_like(h), h) if ch != sn.DIE else h
         out.deaths = out.deaths + died.sum(1)
         out.active = out.active & ~died
         out.hatched = out.hatched & ~died
@@ -235,21 +253,7 @@ class Boid2(hb.FieldBoid):
     def step(self, sw, gen=None, train=False):
         cfg = self.cfg
         sw = hb.HSwarm.lift(sw)
-        # the plan decision is taken HERE (the coarse step's own decide_plan is then a no-op: hyst = inf)
-        if not hasattr(self, "_chg") or self._chg.shape[0] != sw.B:
-            self._chg = torch.full((sw.B,), -10 ** 9, dtype=torch.long)
-        self._chg[sw.clock == 0] = -10 ** 9
-        live0 = sw.active & sw.hatched
-        old_p, old_d = sw.gplan.clone(), sw.dmap.clone()
-        hb.decide_plan(sw, live0, cfg, self.targets)
-        for b in range(sw.B):
-            if int(old_p[b]) >= 0 and int(sw.gplan[b]) != int(old_p[b]):
-                if cfg.lock and int(sw.clock[b]) - int(self._chg[b]) < cfg.lock:
-                    sw.gplan[b] = old_p[b]; sw.dmap[b] = old_d[b]
-                else:
-                    self._chg[b] = int(sw.clock[b])
-        if cfg.dmap_low:
-            self.low_dmap(sw, live0)
+        self.decide(sw)
         if cfg.dmap_space and not bool((sw.clock == 0).all()):
             live0 = sw.active & sw.hatched
             old = sw.gplan.clone()
