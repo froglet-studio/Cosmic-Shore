@@ -2,8 +2,8 @@
 
 Branch `cece/swarm-x-live`, direction "live". The gallery only PLAYED BACK precomputed rollouts; this adds a
 section, **"A live swarm you can eat"**, where the simulation runs in the browser in real time: a random seed,
-a 3D kill brush (with an element filter), a graze predator, a one-click "bite", pause/speed, a live census and
-switch log. Two models are selectable: the **grid morphogen** (hgrid oracle) and the **evolved rule** (G2 + the
+a 3D kill brush (with an element filter), a graze predator, a one-click "bite" (the yardstick's cull), a vessel
+strike (the probe's sphere), live tuning sliders, pause/speed/orbit, a live census and a switch log. Two models are selectable: the **grid morphogen** (hgrid oracle) and the **evolved rule** (G2 + the
 CMA-ES genome). Both are line-for-line ports, checked against the unchanged Python scorer. Nothing was published;
 the coordinating session merges and publishes.
 
@@ -60,8 +60,8 @@ the Python original does - the port adds accuracy nothing and loses nothing: the
 
 | | node (V8, 1 core) | headless Chromium (SwiftShader, CPU GL, the check machine) |
 |---|---|---|
-| grid, ~80-200 tadpoles | 2.2-3.5 ms/step (290-450 steps/s) | 3.2 ms/step sim + 0.8 ms/frame draw (JS side); **11.8 steps/s** at the default speed 12, 36.8 at the max 40 |
-| evolved rule, 280 tadpoles | 33-36 ms/step (28 steps/s) | 14.4 ms/step; **12.4 steps/s** at speed 12 |
+| grid, ~80-200 tadpoles | 2.2-3.5 ms/step (290-450 steps/s) | 2.7 ms/step sim + 0.6 ms/frame draw (JS side); **12.5 steps/s** at the default speed 12, 39.7 at the max 40 |
+| evolved rule, 280 tadpoles | 33-36 ms/step (28 steps/s) | 14-18 ms/step; **11-12 steps/s** at speed 12 |
 
 Rendering interpolates every tadpole between its last two steps each frame (instanced meshes, one realise per
 step, positions shifted per frame), so motion is smooth at any sim rate. The sim keeps its own clock (several steps
@@ -69,10 +69,12 @@ in a slow frame, within a 40 ms budget). A real GPU will only be faster than Swi
 
 ## Browser check (`browser_check.json`)
 
-All flags pass: no page errors; 11.8 steps/s at the default speed; a drag through the swarm's centre with an
-8-voxel brush killed 52 of 94 (lime crystals appear and fade over 4.5 s); eating the majority with the element
-filter flipped the jellyfish to a pufferfish (step 929); the evolved rule grew a 280-tadpole whale from a
-mostly-Mass seed and the Bite button turned it into a jellyfish (step 297).
+All flags pass (final page): no page errors; **12.5 steps/s at the default speed 12 and 39.7 at the max 40** (so
+the sim is not the limit); a real mouse drag through the swarm's centre with an 8-voxel brush killed 54 of 78
+(lime crystals appear and fade over 4.5 s); eating the majority with the element filter flipped a dragonfly into a
+jellyfish (step 534); graze, the tuning sliders and the vessel strike run (the strike took 9 of 86); the evolved
+rule grew a 280-tadpole whale from a mostly-Mass seed (11.1 steps/s at speed 12, 18 ms/step) and the Bite button
+turned it into a jellyfish (step 297). Screens: `screens/1_grown` .. `7_evo_after_eat`, `section.png`.
 
 ## What the lead will see
 
@@ -105,8 +107,22 @@ cross-breed into whatever the parent's domain is shortest of - which, after graz
 cross-breeding off (`p_cross = 0`) barely moves it (jellyfish and dragonfly flip at 2/step in 2/3; whale and
 pufferfish still never). Only a big, sudden loss flips the creature: the yardstick cull, a wide brush stroke
 filtered to the majority, or the panel's **Bite** button (eat just enough that the runner-up
-leads). The evolved rule is even stiffer (it refills 280 slots in ~8 steps; eating 2/3 of a 237-strong Mass
-majority left it a whale). **For the game this is a design choice the lead should make deliberately**: as is, a
+leads).
+
+The evolved rule fails differently (2 seeds each; `results/live/predation_evo.json`):
+
+| plan | 1/step | 4/step | 8/step |
+|---|---|---|---|
+| whale | 0/2 | 0/2 (2400 eaten) | 2/2 in 238-288 steps |
+| jellyfish | 0/2 | 2/2 in 188-192 | 2/2 in 65-78 |
+| pufferfish | 0/2 | 2/2 in 498-559 | 2/2 in 122-144 |
+| dragonfly | 0/2 | 2/2 in 313-436 | 2/2 in 102-107 |
+
+It refills its 280 slots within ~8 steps of any loss and its homeostat wants ~90% majority, so a single bite of
+2/3 of a 237-strong Mass majority left it a whale - but a steady 4/step predator wears three of the four plans
+down within a few hundred steps, which the grid model never allows (whale and pufferfish never flip at 4/step).
+So the two models offer opposite "how do you convert a swarm" stories: the grid model yields to one big bite and
+ignores attrition; the evolved rule ignores a bite and yields to sustained attrition. **For the game this is a design choice the lead should make deliberately**: as is, a
 swarm "defends its species" and conversion is a reward for a big coordinated bite, not for attrition. The panel's
 Tuning sliders (regrowth, cross-breed, hysteresis, starvation) let it be felt live.
 

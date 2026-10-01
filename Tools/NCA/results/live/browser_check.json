@@ -3,176 +3,216 @@
  "netErrors": [
   "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,50"
  ],
- "rate_default": 11.802891708468566,
- "rate_max": 36.80294423553885,
- "sim_ms": 3.1699598874919777,
- "draw_ms": 0.7976970304335151,
+ "rate_default": 12.538061973849182,
+ "rate_max": 39.69352903166251,
+ "sim_ms": 2.667978472136867,
+ "draw_ms": 0.6313514674794922,
  "grow": {
-  "n": 94,
+  "n": 78,
   "eggs": 0,
   "elements": [
-   28,
-   3,
-   54,
-   9
-  ],
-  "domains": [
-   41,
-   1,
-   52
-  ],
-  "majority": 2,
-  "plan": "space",
-  "deaths": 11
- },
- "step_after_grow": 197,
- "grown": {
-  "n": 94,
-  "eggs": 0,
-  "elements": [
-   28,
-   3,
-   54,
-   9
-  ],
-  "domains": [
-   41,
-   1,
-   52
-  ],
-  "majority": 2,
-  "plan": "space",
-  "deaths": 11
- },
- "carve": {
-  "before": 94,
-  "after": 42,
-  "killed": 52,
-  "crystals_visible": 10
- },
- "before_eat": {
-  "n": 92,
-  "eggs": 0,
-  "elements": [
-   27,
-   3,
-   54,
-   8
-  ],
-  "domains": [
-   40,
-   1,
-   51
-  ],
-  "majority": 2,
-  "plan": "space",
-  "deaths": 11
- },
- "eat_passes": 5,
- "after_eat": {
-  "n": 184,
-  "eggs": 0,
-  "elements": [
-   135,
-   1,
-   17,
-   31
-  ],
-  "domains": [
-   89,
-   1,
-   94
-  ],
-  "majority": 0,
-  "plan": "charge",
-  "deaths": 24
- },
- "switches": [
-  {
-   "step": 929,
-   "from": "space",
-   "to": "charge"
-  }
- ],
- "after_switch": {
-  "n": 184,
-  "eggs": 0,
-  "elements": [
-   135,
-   1,
-   17,
-   31
-  ],
-  "domains": [
-   89,
-   1,
-   94
-  ],
-  "majority": 0,
-  "plan": "charge",
-  "deaths": 24
- },
- "log": [
-  "step 1018: carved 129 Space",
-  "step 929: Jellyfish → Pufferfish",
-  "step 872: carved 53 Space",
-  "step 755: carved 102 Space",
-  "step 628: carved 76 Space",
-  "step 513: carved 26 Space",
-  "step 325: carved 52",
-  "seed: 24 tadpoles, Space majority → Jellyfish"
- ],
- "time_seed": {
-  "n": 80,
-  "eggs": 0,
-  "elements": [
+   2,
    4,
-   3,
-   19,
+   18,
    54
   ],
   "domains": [
-   7,
    26,
-   47
+   7,
+   45
   ],
   "majority": 3,
   "plan": "time",
-  "deaths": 5
+  "deaths": 17
  },
- "evo_rate": 12.380952380952381,
- "evo_sim_ms": 14.40721870323935,
+ "step_after_grow": 203,
+ "grown": {
+  "n": 78,
+  "eggs": 0,
+  "elements": [
+   2,
+   4,
+   18,
+   54
+  ],
+  "domains": [
+   26,
+   7,
+   45
+  ],
+  "majority": 3,
+  "plan": "time",
+  "deaths": 17
+ },
+ "carve": {
+  "before": 78,
+  "after": 24,
+  "killed": 54,
+  "crystals_visible": 12
+ },
+ "before_eat": {
+  "n": 77,
+  "eggs": 0,
+  "elements": [
+   2,
+   3,
+   18,
+   54
+  ],
+  "domains": [
+   26,
+   6,
+   45
+  ],
+  "majority": 3,
+  "plan": "time",
+  "deaths": 17
+ },
+ "eat_passes": 2,
+ "after_eat": {
+  "n": 79,
+  "eggs": 3,
+  "elements": [
+   26,
+   3,
+   50,
+   0
+  ],
+  "domains": [
+   55,
+   0,
+   24
+  ],
+  "majority": 2,
+  "plan": "space",
+  "deaths": 19
+ },
+ "switches": [
+  {
+   "step": 534,
+   "from": "time",
+   "to": "space"
+  }
+ ],
+ "after_switch": {
+  "n": 93,
+  "eggs": 0,
+  "elements": [
+   26,
+   3,
+   57,
+   7
+  ],
+  "domains": [
+   55,
+   0,
+   38
+  ],
+  "majority": 2,
+  "plan": "space",
+  "deaths": 28
+ },
+ "log": [
+  "step 587: carved 119 Time",
+  "step 534: Dragonfly → Jellyfish",
+  "step 476: carved 29 Time",
+  "step 310: carved 54",
+  "seed: 24 tadpoles, Time majority → Dragonfly"
+ ],
+ "graze": {
+  "before": {
+   "n": 87,
+   "eggs": 1,
+   "elements": [
+    26,
+    3,
+    51,
+    7
+   ],
+   "domains": [
+    53,
+    0,
+    34
+   ],
+   "majority": 2,
+   "plan": "space",
+   "deaths": 28
+  },
+  "after": {
+   "n": 82,
+   "eggs": 5,
+   "elements": [
+    26,
+    3,
+    46,
+    7
+   ],
+   "domains": [
+    49,
+    0,
+    33
+   ],
+   "majority": 2,
+   "plan": "space",
+   "deaths": 28
+  },
+  "deaths": 307
+ },
+ "strike": {
+  "before": 86,
+  "after": 77
+ },
+ "time_seed": {
+  "n": 78,
+  "eggs": 0,
+  "elements": [
+   3,
+   3,
+   18,
+   54
+  ],
+  "domains": [
+   6,
+   27,
+   45
+  ],
+  "majority": 3,
+  "plan": "time",
+  "deaths": 14
+ },
+ "evo_rate": 11.143493913938023,
+ "evo_sim_ms": 18.21804051971493,
  "evo_grown": {
   "n": 280,
   "eggs": 0,
   "elements": [
-   9,
-   243,
-   16,
-   12
+   13,
+   237,
+   19,
+   11
   ],
   "domains": [
-   165,
-   64,
-   51
+   109,
+   82,
+   89
   ],
   "majority": 1,
   "plan": "mass",
   "deaths": 0
  },
  "evo_after_eat": {
-  "n": 135,
-  "eggs": 30,
+  "n": 116,
+  "eggs": 35,
   "elements": [
-   20,
-   15,
-   85,
-   15
+   19,
+   14,
+   71,
+   12
   ],
   "domains": [
-   84,
-   19,
-   32
+   50,
+   28,
+   38
   ],
   "majority": 2,
   "plan": "space",
@@ -182,15 +222,15 @@
   "n": 280,
   "eggs": 0,
   "elements": [
-   40,
-   35,
-   176,
-   29
+   44,
+   30,
+   180,
+   26
   ],
   "domains": [
-   168,
-   49,
-   63
+   112,
+   83,
+   85
   ],
   "majority": 2,
   "plan": "space",
@@ -209,6 +249,7 @@
   "carve_kills": true,
   "switched": true,
   "evo_runs": true,
+  "strike_kills": true,
   "evo_switched": true
  }
 }

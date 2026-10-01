@@ -109,6 +109,7 @@ def build_live(results_root):
           <button type="button" class="btn" id="bl-orbit" aria-pressed="false">Orbit</button>
           <button type="button" class="btn" id="bl-spin" aria-pressed="false">Auto-orbit</button>
           <button type="button" class="btn" id="bl-eat">Bite: majority to second place</button>
+          <button type="button" class="btn" id="bl-strike">Vessel strike</button>
         </div>
         <label class="row" for="lgraze">Graze<input id="lgraze" type="range" min="0" max="4" step="0.25" value="0"><output id="o-lgraze">0</output></label>
         <label class="row" for="ln">Seed size<input id="ln" type="range" min="8" max="64" value="24"><output id="o-ln">24</output></label>
@@ -390,6 +391,16 @@ SCRIPT = r"""<script>
     const before = c.elements[c.majority], plan = sw.loseMajority(to, 6);
     countKills(); drainEvents();
     log(plan ? `step ${sw.clock}: ate ${before - sw.census().elements[c.majority]} ${ELN[c.majority]}; ${ELN[to]} leads` : `step ${sw.clock}: nothing to eat (no runner-up with 2+)`);
+  };
+  $('bl-strike').onclick = () => {
+    // swarm_probe's strike: everything inside a sphere one RMS radius across, centred one RMS radius off the centroid
+    let m = [0, 0, 0], n = 0;
+    for (let i = 0; i < sw.N; i++) if (sw.active[i] && sw.hatched[i]) { for (let k = 0; k < 3; k++) m[k] += sw.pos[3 * i + k]; n++; }
+    if (n < 4) return; m = m.map(v => v / n);
+    let r2 = 0; for (let i = 0; i < sw.N; i++) if (sw.active[i] && sw.hatched[i]) r2 += (sw.pos[3 * i] - m[0]) ** 2 + (sw.pos[3 * i + 1] - m[1]) ** 2 + (sw.pos[3 * i + 2] - m[2]) ** 2;
+    const rms = Math.sqrt(r2 / n); let d; do { d = [Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1]; } while (Math.hypot(...d) > 1 || Math.hypot(...d) < 0.1);
+    const dl = Math.hypot(...d), k = sw.killBall(m.map((v, j) => v + rms * d[j] / dl), rms, -1);
+    countKills(); drainEvents(); log(`step ${sw.clock}: vessel strike took ${k} of ${n}`);
   };
   const tune = [...document.querySelectorAll('[data-cfg]')];
   function applyTune() { if (sw && model.engine !== 'evo') tune.forEach(t => { sw.cfg[t.dataset.cfg] = +t.value; }); }

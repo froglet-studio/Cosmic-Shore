@@ -94,6 +94,18 @@ let pw; try { pw = require('playwright'); } catch (e) { pw = require(path.join(p
   await snap('4_switched');
   await page.locator('#live').screenshot({ path: path.join(out, 'section.png') });
 
+  // 3b. graze + strike + tuning run without errors
+  await page.evaluate(() => { const g = document.getElementById('lgraze'); g.value = 2; g.dispatchEvent(new Event('input'));
+    const t = document.getElementById('lt-p_lay'); t.value = 0.2; t.dispatchEvent(new Event('input')); });
+  const g0 = await cen(); await page.waitForTimeout(3000); const g1 = await cen();
+  rep.graze = { before: g0, after: g1, deaths: await page.evaluate(() => window.liveSwarm.sw.deathsTotal) };
+  await page.evaluate(() => { const g = document.getElementById('lgraze'); g.value = 0; g.dispatchEvent(new Event('input'));
+    const t = document.getElementById('lt-p_lay'); t.value = 0.1; t.dispatchEvent(new Event('input')); });
+  const s0 = (await cen()).n; await page.click('#bl-strike'); const s1 = (await cen()).n;
+  rep.strike = { before: s0, after: s1 };
+  await page.waitForTimeout(200); await snap('3b_strike');
+  say('phase 3b ' + JSON.stringify(rep.strike));
+
   // 4. a biased seed: mostly Time -> dragonfly
   await page.selectOption('#lbias', '3');
   await page.click('#bl-seed');
@@ -124,7 +136,7 @@ let pw; try { pw = require('playwright'); } catch (e) { pw = require(path.join(p
   rep.ok = {
     no_errors: errors.length === 0, rate: rep.rate_default >= 10, carve_kills: rep.carve.killed > 0,
     switched: rep.switches.length > 0 && rep.after_switch.plan !== rep.before_eat.plan,
-    evo_runs: rep.evo_grown.n > 32, evo_switched: rep.evo_after.plan !== rep.evo_grown.plan,
+    evo_runs: rep.evo_grown.n > 32, strike_kills: rep.strike.after < rep.strike.before, evo_switched: rep.evo_after.plan !== rep.evo_grown.plan,
   };
   fs.writeFileSync(path.join(out, 'check.json'), JSON.stringify(rep, null, 1));
   console.log(JSON.stringify(rep.ok), 'rate', rep.rate_default.toFixed(1), rep.rate_max.toFixed(1), 'carve', JSON.stringify(rep.carve),
