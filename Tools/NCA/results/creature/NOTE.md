@@ -7,6 +7,17 @@
 touches **2.6-21%** of the school (inert 28-37%, field alone 8-28%, shell alone 18-32%). **B is the one to build.**
 Showcases: `showcase.html` (A), `showcase_field.html` (B, recommended), `showcase_field_swim.html` (B with field's
 swimming on, `wander 0.25`: the body yaws along a wandering path - the same lives, livelier).
+**`play.html` - a PLAYABLE version** (`creature_play.py` + `creature_play.html.tpl`, 258 KB, no libraries): the
+whole of (B) runs live in JavaScript - field's body ported line for line from `field_port/FieldSwarmCore.cs`, the
+shell from `creature_port/CreatureShell.cs`, fear on - and you fly the vessel with the mouse (hold the button to
+RAM, hold E to FEED on the animal's element, wheel for depth, right-drag to orbit; toggles for fear and for the
+shell). Headless playtest (playwright, `scratchpad`-style script, not committed): every seed grows to its plan's
+exact headcount and mix in 240 steps; a 3 vox/step fly-by through the centroid touches 0.6-9% of the school; an
+autopilot that chases and feeds on the animal's element converts **all four** (whale->jellyfish after 108 eaten,
+jellyfish->pufferfish 35, pufferfish->dragonfly 107, dragonfly->jellyfish 74), each ending at the new plan's exact
+mix; zero page errors. Cost in the browser: 1-7 ms/step (O(n^2) neighbours, 76-192 tadpoles). Feeding on whatever
+currently leads (instead of the animal's own element) eats the creature to extinction: while the majority is
+contested the body neither lays nor molts - a predator that never stops wins outright.
 Robustness (`heldout/`): B 13/13 on yardstick seeds 11 and 23; fly-by touched on probe seeds 6/7 0.22-0.23 /
 0.03-0.05 / 0.04-0.05 / 0.05 (whale / jelly / puffer / dragonfly) vs inert 0.37 / 0.32 / 0.30 / 0.47-0.50.
 
