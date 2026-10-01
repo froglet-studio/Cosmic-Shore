@@ -100,7 +100,9 @@ class ComboBoid(hm.Boid2):
         if cfg.small_slack >= 0:
             small = (want.view(-1, 4, 3).sum(-1) <= 2)
             slack = torch.where(small.repeat_interleave(3, 1), torch.full_like(want, cfg.small_slack), slack)
-        if cfg.ratio:
+        if cfg.ratio == 2:
+            want = self.ratio_target2(want, have)
+        elif cfg.ratio:
             want = self.ratio_target(want, have)
         excess = (have - torch.floor((1 + cfg.starve_tol) * want) - slack).clamp(min=0)
         deficit = (want - have).clamp(min=0)                                                   # [B,12]
@@ -157,6 +159,25 @@ class ComboBoid(hm.Boid2):
         mix = w.sum(2); mix = mix / mix.sum(1, keepdim=True).clamp(min=1e-6)                  # [B,4]
         scale = (hd / wd.clamp(min=1e-6)).clamp(min=1.0)
         t = torch.where(wd[:, None, :] > 0.5, w * scale[:, None, :], mix[:, :, None] * hd[:, None, :])
+        return t.reshape(B, 12)
+
+    @staticmethod
+    def ratio_target2(want, have):
+        """As ratio_target, but a domain's spare capacity (tadpoles beyond its slot, or a whole orphan
+        domain) takes the element mix the BODY AS A WHOLE is still missing against the plan's ratios
+        (global residual), so the overall element ratio converges to the plan's even when one of the
+        plan's slots cannot be filled (a domain the swarm does not have)."""
+        B = want.shape[0]
+        w = want.view(B, 4, 3); h = have.view(B, 4, 3)
+        wd, hd = w.sum(1), h.sum(1)                                                            # [B,3]
+        n = hd.sum(1, keepdim=True)                                                            # [B,1]
+        mix = w.sum(2); mix = mix / mix.sum(1, keepdim=True).clamp(min=1e-6)                  # [B,4]
+        fill = (hd / wd.clamp(min=1e-6)).clamp(max=1.0)
+        weff = w * fill[:, None, :]                                                            # achievable base
+        resid = (mix * n - weff.sum(2)).clamp(min=0)                                           # [B,4]
+        r = resid / resid.sum(1, keepdim=True).clamp(min=1e-6)
+        spare = (hd - wd).clamp(min=0)                                                         # [B,3]
+        t = torch.where(hd[:, None, :] >= wd[:, None, :], w + r[:, :, None] * spare[:, None, :], w)
         return t.reshape(B, 12)
 
     # --- transfer: a stranded surplus tadpole follows the outline only ------------------------------
