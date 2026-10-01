@@ -2,45 +2,45 @@
  "own": {
   "mass": {
    "cross": {
-    "mass": 2.79,
-    "space": 68.47,
-    "charge": 53.34,
-    "time": 75.11
+    "mass": 3.23,
+    "space": 68.48,
+    "charge": 52.79,
+    "time": 75.13
    },
-   "n": 181,
+   "n": 185,
    "rate": 1.0,
    "ok": true
   },
   "space": {
    "cross": {
-    "mass": 74.35,
-    "space": 4.01,
-    "charge": 60.77,
-    "time": 70.67
+    "mass": 74.99,
+    "space": 4.2,
+    "charge": 60.41,
+    "time": 70.96
    },
-   "n": 83,
+   "n": 85,
    "rate": 1.0,
    "ok": true
   },
   "charge": {
    "cross": {
-    "mass": 55.89,
-    "space": 55.51,
-    "charge": 1.6,
-    "time": 69.81
+    "mass": 56.23,
+    "space": 55.55,
+    "charge": 1.94,
+    "time": 70.62
    },
-   "n": 169,
+   "n": 172,
    "rate": 1.0,
    "ok": true
   },
   "time": {
    "cross": {
-    "mass": 86.36,
-    "space": 78.67,
-    "charge": 79.09,
-    "time": 5.88
+    "mass": 85.69,
+    "space": 78.57,
+    "charge": 78.61,
+    "time": 5.87
    },
-   "n": 72,
+   "n": 73,
    "rate": 1.0,
    "ok": true
   }
@@ -48,12 +48,12 @@
  "switch": {
   "mass->space": {
    "cross": {
-    "mass": 72.4,
-    "space": 4.07,
-    "charge": 60.73,
-    "time": 70.37
+    "mass": 73.16,
+    "space": 4.65,
+    "charge": 60.15,
+    "time": 69.44
    },
-   "n": 84,
+   "n": 86,
    "rate": 1.0,
    "ok": true,
    "majority": [
@@ -64,12 +64,12 @@
   },
   "space->charge": {
    "cross": {
-    "mass": 54.6,
-    "space": 55.47,
-    "charge": 1.85,
-    "time": 71.08
+    "mass": 55.41,
+    "space": 55.53,
+    "charge": 2.42,
+    "time": 71.27
    },
-   "n": 169,
+   "n": 172,
    "rate": 1.0,
    "ok": true,
    "majority": [
@@ -80,12 +80,12 @@
   },
   "charge->time": {
    "cross": {
-    "mass": 76.83,
-    "space": 67.6,
-    "charge": 68.87,
-    "time": 7.68
+    "mass": 75.91,
+    "space": 67.73,
+    "charge": 67.88,
+    "time": 7.31
    },
-   "n": 73,
+   "n": 74,
    "rate": 0.67,
    "ok": true,
    "majority": [
@@ -96,12 +96,12 @@
   },
   "time->mass": {
    "cross": {
-    "mass": 3.09,
-    "space": 68.45,
-    "charge": 54.16,
-    "time": 75.53
+    "mass": 3.1,
+    "space": 68.56,
+    "charge": 53.46,
+    "time": 75.18
    },
-   "n": 181,
+   "n": 185,
    "rate": 1.0,
    "ok": true,
    "majority": [
@@ -112,12 +112,12 @@
   },
   "mass->charge": {
    "cross": {
-    "mass": 55.27,
-    "space": 54.97,
-    "charge": 1.54,
-    "time": 68.79
+    "mass": 55.19,
+    "space": 55.46,
+    "charge": 1.83,
+    "time": 69.79
    },
-   "n": 169,
+   "n": 172,
    "rate": 1.0,
    "ok": true,
    "majority": [
@@ -128,13 +128,13 @@
   },
   "mass->time": {
    "cross": {
-    "mass": 74.3,
-    "space": 66.08,
-    "charge": 67.03,
-    "time": 7.54
+    "mass": 72.62,
+    "space": 66.7,
+    "charge": 66.07,
+    "time": 8.37
    },
-   "n": 77,
-   "rate": 1.0,
+   "n": 79,
+   "rate": 0.67,
    "ok": true,
    "majority": [
     "time",
@@ -144,14 +144,14 @@
   },
   "space->time": {
    "cross": {
-    "mass": 77.19,
-    "space": 68.45,
-    "charge": 69.79,
-    "time": 7.51
+    "mass": 77.3,
+    "space": 68.54,
+    "charge": 69.41,
+    "time": 8.81
    },
-   "n": 72,
-   "rate": 0.67,
-   "ok": true,
+   "n": 71,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "time",
     "time",
@@ -160,12 +160,12 @@
   },
   "charge->space": {
    "cross": {
-    "mass": 73.07,
-    "space": 4.59,
-    "charge": 60.37,
-    "time": 70.84
+    "mass": 74.05,
+    "space": 4.54,
+    "charge": 60.56,
+    "time": 69.64
    },
-   "n": 83,
+   "n": 85,
    "rate": 1.0,
    "ok": true,
    "majority": [
@@ -176,13 +176,13 @@
   },
   "time->space": {
    "cross": {
-    "mass": 75.14,
+    "mass": 74.84,
     "space": 8.91,
-    "charge": 63.08,
-    "time": 73.51
+    "charge": 63.22,
+    "time": 74.33
    },
-   "n": 83,
-   "rate": 0.0,
+   "n": 85,
+   "rate": 0.33,
    "ok": false,
    "majority": [
     "space",
@@ -203,11 +203,11 @@
  ],
  "samples": 3,
  "max_loss": 8.0,
- "passed": 12,
+ "passed": 11,
  "feasible": 13,
  "own_passed": 4,
  "std_passed": 4,
- "rest_passed": 4,
+ "rest_passed": 3,
  "complete": true,
- "seconds": 117.0
+ "seconds": 147.3
 }

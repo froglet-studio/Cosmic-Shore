@@ -2,23 +2,6 @@
  "locality": "mixed",
  "accurate": {
   "7": {
-   "passed": 11,
-   "feasible": 13,
-   "na": [
-    "space->mass",
-    "charge->mass",
-    "time->charge"
-   ],
-   "own": {
-    "mass": 3.2,
-    "space": 4.01,
-    "charge": 2.29,
-    "time": 6.3
-   },
-   "own_passed": 4,
-   "seconds": 164.5
-  },
-  "23": {
    "passed": 12,
    "feasible": 13,
    "na": [
@@ -27,15 +10,15 @@
     "time->charge"
    ],
    "own": {
-    "mass": 3.22,
-    "space": 3.92,
-    "charge": 1.91,
-    "time": 5.52
+    "mass": 2.95,
+    "space": 3.65,
+    "charge": 1.58,
+    "time": 6.28
    },
    "own_passed": 4,
-   "seconds": 164.6
+   "seconds": 117.8
   },
-  "41": {
+  "23": {
    "passed": 11,
    "feasible": 13,
    "na": [
@@ -44,13 +27,30 @@
     "time->charge"
    ],
    "own": {
-    "mass": 3.23,
-    "space": 4.2,
-    "charge": 1.94,
-    "time": 5.87
+    "mass": 2.88,
+    "space": 3.85,
+    "charge": 1.44,
+    "time": 6.36
    },
    "own_passed": 4,
-   "seconds": 147.3
+   "seconds": 117.2
+  },
+  "41": {
+   "passed": 12,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "own": {
+    "mass": 2.79,
+    "space": 4.01,
+    "charge": 1.6,
+    "time": 5.88
+   },
+   "own_passed": 4,
+   "seconds": 117.0
   }
  },
  "seeds": [
@@ -61,39 +61,39 @@
  "lossless": {
   "per_plan": {
    "mass": {
-    "grown_n": 185,
-    "ms_per_step_grown": 7.553,
-    "ms_per_step_grow": 6.625,
+    "grown_n": 181,
+    "ms_per_step_grown": 6.532,
+    "ms_per_step_grow": 6.471,
     "deaths": 0,
-    "tadpole_steps": 60066
+    "tadpole_steps": 64217
    },
    "space": {
-    "grown_n": 85,
-    "ms_per_step_grown": 4.433,
-    "ms_per_step_grow": 4.204,
+    "grown_n": 83,
+    "ms_per_step_grown": 5.051,
+    "ms_per_step_grow": 4.145,
     "deaths": 0,
-    "tadpole_steps": 56823
+    "tadpole_steps": 58931
    },
    "charge": {
-    "grown_n": 172,
-    "ms_per_step_grown": 7.66,
-    "ms_per_step_grow": 6.815,
+    "grown_n": 169,
+    "ms_per_step_grown": 6.58,
+    "ms_per_step_grow": 6.015,
     "deaths": 0,
-    "tadpole_steps": 54240
+    "tadpole_steps": 60272
    },
    "time": {
-    "grown_n": 73,
-    "ms_per_step_grown": 3.749,
-    "ms_per_step_grow": 4.232,
+    "grown_n": 72,
+    "ms_per_step_grown": 4.285,
+    "ms_per_step_grow": 4.269,
     "deaths": 0,
-    "tadpole_steps": 42455
+    "tadpole_steps": 53886
    }
   },
   "deaths": 0,
   "deaths_per_1k_tadpole_steps": 0.0,
   "lossless": true,
-  "ms_per_step": 5.849,
-  "grown_n": 129
+  "ms_per_step": 5.612,
+  "grown_n": 126
  },
  "emergent": {
   "in_band": true,
@@ -104,18 +104,18 @@
    "planar": true
   },
   "mean": {
-   "speed": 0.1,
-   "jerk": 0.234,
-   "jerk_rel": 2.314,
-   "planar_frac": 0.394,
-   "flat_mean": 0.141,
-   "coherence": 0.403,
-   "jitter": 2.446,
-   "phase": 0.149,
+   "speed": 0.105,
+   "jerk": 0.256,
+   "jerk_rel": 2.435,
+   "planar_frac": 0.398,
+   "flat_mean": 0.143,
+   "coherence": 0.401,
+   "jitter": 2.574,
+   "phase": 0.067,
    "stuck": 0.0,
-   "osc": 0.06
+   "osc": 0.044
   },
-  "planar_excess": 0.123
+  "planar_excess": 0.119
  },
- "headline": "accurate 0.85 worst seed | lossless True (0.0/1k) | 5.849 ms/step @129 | organic True | mixed"
+ "headline": "accurate 0.85 worst seed | lossless True (0.0/1k) | 5.612 ms/step @126 | organic True | mixed"
 }

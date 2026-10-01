@@ -1,37 +1,37 @@
 {
  "per_plan": {
   "mass": {
-   "grown_n": 185,
-   "ms_per_step_grown": 7.553,
-   "ms_per_step_grow": 6.625,
+   "grown_n": 181,
+   "ms_per_step_grown": 6.532,
+   "ms_per_step_grow": 6.471,
    "deaths": 0,
-   "tadpole_steps": 60066
+   "tadpole_steps": 64217
   },
   "space": {
-   "grown_n": 85,
-   "ms_per_step_grown": 4.433,
-   "ms_per_step_grow": 4.204,
+   "grown_n": 83,
+   "ms_per_step_grown": 5.051,
+   "ms_per_step_grow": 4.145,
    "deaths": 0,
-   "tadpole_steps": 56823
+   "tadpole_steps": 58931
   },
   "charge": {
-   "grown_n": 172,
-   "ms_per_step_grown": 7.66,
-   "ms_per_step_grow": 6.815,
+   "grown_n": 169,
+   "ms_per_step_grown": 6.58,
+   "ms_per_step_grow": 6.015,
    "deaths": 0,
-   "tadpole_steps": 54240
+   "tadpole_steps": 60272
   },
   "time": {
-   "grown_n": 73,
-   "ms_per_step_grown": 3.749,
-   "ms_per_step_grow": 4.232,
+   "grown_n": 72,
+   "ms_per_step_grown": 4.285,
+   "ms_per_step_grow": 4.269,
    "deaths": 0,
-   "tadpole_steps": 42455
+   "tadpole_steps": 53886
   }
  },
  "deaths": 0,
  "deaths_per_1k_tadpole_steps": 0.0,
  "lossless": true,
- "ms_per_step": 5.849,
- "grown_n": 129
+ "ms_per_step": 5.612,
+ "grown_n": 126
 }

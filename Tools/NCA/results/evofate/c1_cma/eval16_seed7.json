@@ -2,45 +2,45 @@
  "own": {
   "mass": {
    "cross": {
-    "mass": 2.79,
-    "space": 68.47,
-    "charge": 53.34,
-    "time": 75.11
+    "mass": 3.2,
+    "space": 68.25,
+    "charge": 53.13,
+    "time": 74.98
    },
-   "n": 181,
+   "n": 185,
    "rate": 1.0,
    "ok": true
   },
   "space": {
    "cross": {
-    "mass": 74.35,
+    "mass": 73.63,
     "space": 4.01,
-    "charge": 60.77,
-    "time": 70.67
+    "charge": 60.48,
+    "time": 71.09
    },
-   "n": 83,
+   "n": 85,
    "rate": 1.0,
    "ok": true
   },
   "charge": {
    "cross": {
-    "mass": 55.89,
-    "space": 55.51,
-    "charge": 1.6,
-    "time": 69.81
+    "mass": 57.74,
+    "space": 55.74,
+    "charge": 2.29,
+    "time": 70.52
    },
-   "n": 169,
+   "n": 172,
    "rate": 1.0,
    "ok": true
   },
   "time": {
    "cross": {
-    "mass": 86.36,
-    "space": 78.67,
-    "charge": 79.09,
-    "time": 5.88
+    "mass": 84.46,
+    "space": 76.09,
+    "charge": 76.77,
+    "time": 6.3
    },
-   "n": 72,
+   "n": 73,
    "rate": 1.0,
    "ok": true
   }
@@ -48,12 +48,12 @@
  "switch": {
   "mass->space": {
    "cross": {
-    "mass": 72.4,
-    "space": 4.07,
-    "charge": 60.73,
-    "time": 70.37
+    "mass": 72.85,
+    "space": 4.84,
+    "charge": 60.35,
+    "time": 71.13
    },
-   "n": 84,
+   "n": 86,
    "rate": 1.0,
    "ok": true,
    "majority": [
@@ -64,12 +64,12 @@
   },
   "space->charge": {
    "cross": {
-    "mass": 54.6,
-    "space": 55.47,
-    "charge": 1.85,
-    "time": 71.08
+    "mass": 55.47,
+    "space": 55.69,
+    "charge": 2.41,
+    "time": 71.32
    },
-   "n": 169,
+   "n": 172,
    "rate": 1.0,
    "ok": true,
    "majority": [
@@ -80,10 +80,10 @@
   },
   "charge->time": {
    "cross": {
-    "mass": 76.83,
-    "space": 67.6,
-    "charge": 68.87,
-    "time": 7.68
+    "mass": 76.26,
+    "space": 67.72,
+    "charge": 68.47,
+    "time": 7.39
    },
    "n": 73,
    "rate": 0.67,
@@ -96,12 +96,12 @@
   },
   "time->mass": {
    "cross": {
-    "mass": 3.09,
-    "space": 68.45,
-    "charge": 54.16,
-    "time": 75.53
+    "mass": 3.45,
+    "space": 69.05,
+    "charge": 53.75,
+    "time": 75.08
    },
-   "n": 181,
+   "n": 185,
    "rate": 1.0,
    "ok": true,
    "majority": [
@@ -112,12 +112,12 @@
   },
   "mass->charge": {
    "cross": {
-    "mass": 55.27,
-    "space": 54.97,
-    "charge": 1.54,
-    "time": 68.79
+    "mass": 55.61,
+    "space": 55.34,
+    "charge": 1.8,
+    "time": 70.13
    },
-   "n": 169,
+   "n": 172,
    "rate": 1.0,
    "ok": true,
    "majority": [
@@ -128,14 +128,14 @@
   },
   "mass->time": {
    "cross": {
-    "mass": 74.3,
-    "space": 66.08,
-    "charge": 67.03,
-    "time": 7.54
+    "mass": 71.49,
+    "space": 65.3,
+    "charge": 64.59,
+    "time": 10.91
    },
-   "n": 77,
-   "rate": 1.0,
-   "ok": true,
+   "n": 80,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "time",
     "time",
@@ -144,12 +144,12 @@
   },
   "space->time": {
    "cross": {
-    "mass": 77.19,
-    "space": 68.45,
-    "charge": 69.79,
-    "time": 7.51
+    "mass": 77.59,
+    "space": 68.89,
+    "charge": 70.17,
+    "time": 8.46
    },
-   "n": 72,
+   "n": 71,
    "rate": 0.67,
    "ok": true,
    "majority": [
@@ -160,12 +160,12 @@
   },
   "charge->space": {
    "cross": {
-    "mass": 73.07,
-    "space": 4.59,
-    "charge": 60.37,
-    "time": 70.84
+    "mass": 73.25,
+    "space": 4.63,
+    "charge": 60.39,
+    "time": 69.89
    },
-   "n": 83,
+   "n": 85,
    "rate": 1.0,
    "ok": true,
    "majority": [
@@ -176,12 +176,12 @@
   },
   "time->space": {
    "cross": {
-    "mass": 75.14,
-    "space": 8.91,
-    "charge": 63.08,
-    "time": 73.51
+    "mass": 77.52,
+    "space": 10.96,
+    "charge": 64.4,
+    "time": 73.56
    },
-   "n": 83,
+   "n": 85,
    "rate": 0.0,
    "ok": false,
    "majority": [
@@ -203,11 +203,11 @@
  ],
  "samples": 3,
  "max_loss": 8.0,
- "passed": 12,
+ "passed": 11,
  "feasible": 13,
  "own_passed": 4,
  "std_passed": 4,
- "rest_passed": 4,
+ "rest_passed": 3,
  "complete": true,
- "seconds": 117.0
+ "seconds": 164.5
 }
