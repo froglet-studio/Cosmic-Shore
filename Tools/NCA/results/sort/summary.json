@@ -1,28 +1,28 @@
 {
  "cross": {
   "mass": {
-   "mass": 1.53,
-   "space": 68.71,
-   "charge": 55.35,
-   "time": 76.6
+   "mass": 1.42,
+   "space": 68.6,
+   "charge": 55.15,
+   "time": 76.31
   },
   "space": {
-   "mass": 73.74,
-   "space": 3.2,
-   "charge": 61.31,
-   "time": 71.16
+   "mass": 73.32,
+   "space": 2.98,
+   "charge": 60.52,
+   "time": 71.39
   },
   "charge": {
-   "mass": 54.83,
-   "space": 55.57,
-   "charge": 1.01,
-   "time": 69.45
+   "mass": 54.91,
+   "space": 55.52,
+   "charge": 0.97,
+   "time": 69.47
   },
   "time": {
-   "mass": 85.87,
-   "space": 81.2,
-   "charge": 79.69,
-   "time": 3.8
+   "mass": 82.41,
+   "space": 75.0,
+   "charge": 76.05,
+   "time": 3.33
   }
  },
  "census": {
@@ -43,8 +43,8 @@
    ],
    "majority": "Mass",
    "domains": [
-    101,
-    80,
+    100,
+    81,
     0
    ],
    "deaths": 0,
@@ -54,9 +54,9 @@
    "n": 83,
    "target_n": 88,
    "elements": [
-    21,
+    22,
     2,
-    53,
+    52,
     7
    ],
    "target_elements": [
@@ -67,8 +67,8 @@
    ],
    "majority": "Space",
    "domains": [
-    37,
-    46,
+    38,
+    45,
     0
    ],
    "deaths": 0,
@@ -91,8 +91,8 @@
    ],
    "majority": "Charge",
    "domains": [
-    85,
     84,
+    85,
     0
    ],
    "deaths": 0,
@@ -104,8 +104,8 @@
    "elements": [
     2,
     3,
-    15,
-    52
+    18,
+    49
    ],
    "target_elements": [
     2,
@@ -115,9 +115,9 @@
    ],
    "majority": "Time",
    "domains": [
-    23,
+    40,
     6,
-    43
+    26
    ],
    "deaths": 0,
    "mutants": 0
@@ -126,28 +126,28 @@
  "steps": 240,
  "cross_geo": {
   "mass": {
-   "mass": 1.22,
-   "space": 20.73,
-   "charge": 12.09,
-   "time": 25.38
+   "mass": 1.19,
+   "space": 20.66,
+   "charge": 11.96,
+   "time": 25.36
   },
   "space": {
-   "mass": 25.1,
-   "space": 2.47,
-   "charge": 17.74,
-   "time": 27.67
+   "mass": 25.15,
+   "space": 2.3,
+   "charge": 17.83,
+   "time": 27.86
   },
   "charge": {
-   "mass": 12.16,
-   "space": 13.84,
-   "charge": 1.16,
-   "time": 19.49
+   "mass": 12.24,
+   "space": 13.75,
+   "charge": 1.11,
+   "time": 19.5
   },
   "time": {
-   "mass": 25.31,
-   "space": 23.59,
-   "charge": 18.15,
-   "time": 2.87
+   "mass": 24.43,
+   "space": 22.64,
+   "charge": 17.54,
+   "time": 2.89
   }
  },
  "switch": {
@@ -155,10 +155,10 @@
    "to": "space",
    "done": true,
    "cross": {
-    "mass": 73.41,
-    "space": 2.62,
-    "charge": 60.95,
-    "time": 71.45
+    "mass": 73.04,
+    "space": 2.97,
+    "charge": 60.49,
+    "time": 71.76
    },
    "majority": "space",
    "census": {
@@ -178,8 +178,8 @@
     ],
     "majority": "Space",
     "domains": [
-     37,
-     46,
+     38,
+     45,
      0
     ],
     "deaths": 0,
@@ -190,20 +190,20 @@
    "to": "charge",
    "done": true,
    "cross": {
-    "mass": 54.6,
-    "space": 55.64,
-    "charge": 1.12,
-    "time": 70.23
+    "mass": 54.73,
+    "space": 55.76,
+    "charge": 1.0,
+    "time": 69.74
    },
    "majority": "charge",
    "census": {
     "n": 169,
     "target_n": 179,
     "elements": [
-     123,
+     122,
      1,
      16,
-     29
+     30
     ],
     "target_elements": [
      131,
@@ -225,10 +225,10 @@
    "to": "time",
    "done": true,
    "cross": {
-    "mass": 77.98,
-    "space": 68.96,
-    "charge": 70.56,
-    "time": 6.3
+    "mass": 77.68,
+    "space": 68.93,
+    "charge": 70.16,
+    "time": 6.6
    },
    "majority": "time",
    "census": {
@@ -248,8 +248,8 @@
     ],
     "majority": "Time",
     "domains": [
-     46,
-     26,
+     27,
+     45,
      0
     ],
     "deaths": 0,
@@ -260,19 +260,19 @@
    "to": "mass",
    "done": true,
    "cross": {
-    "mass": 73.71,
-    "space": 3.58,
-    "charge": 60.17,
-    "time": 71.74
+    "mass": 76.37,
+    "space": 8.72,
+    "charge": 63.94,
+    "time": 73.26
    },
    "majority": "space",
    "census": {
     "n": 83,
     "target_n": 192,
     "elements": [
-     22,
+     23,
      2,
-     52,
+     51,
      7
     ],
     "target_elements": [
@@ -283,9 +283,9 @@
     ],
     "majority": "Space",
     "domains": [
-     38,
-     43,
-     2
+     22,
+     40,
+     21
     ],
     "deaths": 0,
     "mutants": 0
