@@ -96,18 +96,75 @@ let pw; try { pw = require('playwright'); } catch (e) { pw = require(path.join(p
 
   // 3b. graze + strike + tuning run without errors
   await page.evaluate(() => { const g = document.getElementById('lgraze'); g.value = 2; g.dispatchEvent(new Event('input'));
-    const t = document.getElementById('lt-p_lay'); t.value = 0.2; t.dispatchEvent(new Event('input')); });
+    const t = document.getElementById('lt-hgrid2-p_lay'); t.value = 0.2; t.dispatchEvent(new Event('input')); });
   const g0 = await cen(); await page.waitForTimeout(3000); const g1 = await cen();
   rep.graze = { before: g0, after: g1, deaths: await page.evaluate(() => window.liveSwarm.sw.deathsTotal) };
   await page.evaluate(() => { const g = document.getElementById('lgraze'); g.value = 0; g.dispatchEvent(new Event('input'));
-    const t = document.getElementById('lt-p_lay'); t.value = 0.1; t.dispatchEvent(new Event('input')); });
+    const t = document.getElementById('lt-hgrid2-p_lay'); t.value = 0.1; t.dispatchEvent(new Event('input')); });
   const s0 = (await cen()).n; await page.click('#bl-strike'); const s1 = (await cen()).n;
   rep.strike = { before: s0, after: s1 };
   await page.waitForTimeout(200); await snap('3b_strike');
   say('phase 3b ' + JSON.stringify(rep.strike));
 
+  rep.default_model = await page.evaluate(() => window.liveSwarm.model);
+
+  // 3c. every new model on its own: a mostly-Mass seed grows a whale; step rate at the grown whale (speed slider
+  // at its max 40, and the sim's own ms/step); an element-filtered carve of the majority flips the plan.
+  const setSpeed = v => page.evaluate(v => { const s = document.getElementById('lspeed'); s.value = v; s.dispatchEvent(new Event('input')); }, v);
+  async function eatMajority() {
+    const c0 = await cen();
+    await page.evaluate(m => { document.querySelector(`input[name=lfilt][value="${m}"]`).click(); }, c0.majority);
+    await page.evaluate(() => { const s = document.getElementById('lbr'); s.value = 16; s.dispatchEvent(new Event('input')); });
+    let p = 0;
+    for (; p < 40; p++) {
+      const c = await cen(); if (c.elements.indexOf(Math.max(...c.elements)) !== c0.majority) break;
+      const y = 0.2 + 0.6 * ((p * 0.37) % 1);
+      await page.mouse.move(box.x + box.width * 0.15, box.y + box.height * y); await page.mouse.down();
+      for (let k = 0; k <= 16; k++) await page.mouse.move(box.x + box.width * (0.15 + 0.7 * k / 16), box.y + box.height * y);
+      await page.mouse.up(); await page.waitForTimeout(120);
+    }
+    await page.evaluate(() => document.querySelector('input[name=lfilt][value="-1"]').click());
+    return { before: c0, passes: p, after: await cen() };
+  }
+  rep.models = {};
+  for (const [id, G] of [['hgrid2', 16], ['hgrid2', 12], ['sort', 0], ['grid', 0]]) {
+    const tag = id + (G ? G : '');
+    await page.evaluate(([id, G]) => { if (G) document.getElementById('lt-hgrid2-G').value = String(G); window.liveSwarm.setModel(id); }, [id, G]);
+    await page.selectOption('#lbias', '1');
+    await page.evaluate(() => window.liveSwarm.newSeed());
+    await setSpeed(40);
+    await page.waitForFunction(() => window.liveSwarm.sw.clock > 240, null, { timeout: 120000 });
+    await page.waitForTimeout(3000);
+    const r = { model: await page.evaluate(() => window.liveSwarm.model), grown: await cen(), rate_max: await page.evaluate(() => window.liveSwarm.rate),
+      sim_ms: await page.evaluate(() => window.liveSwarm.simMs), draw_ms: await page.evaluate(() => window.liveSwarm.drawMs),
+      about: await page.evaluate(() => document.getElementById('labout').textContent.slice(0, 120)),
+      tune_visible: await page.evaluate(() => [...document.querySelectorAll('.ltune')].filter(d => !d.hidden).map(d => d.dataset.engine)) };
+    await snap('m_' + tag + '_grown');
+    await setSpeed(12);
+    r.eat = await eatMajority();
+    const tc = await page.evaluate(() => window.liveSwarm.sw.clock);
+    await page.waitForFunction(() => window.liveSwarm.sw.switches.length > 0, null, { timeout: 30000 }).catch(() => {});
+    await setSpeed(40);
+    await page.waitForFunction(t => window.liveSwarm.sw.clock > t + 240, tc, { timeout: 120000 });
+    r.switches = await page.evaluate(() => window.liveSwarm.sw.switches); r.after = await cen();
+    r.molts = await page.evaluate(() => window.liveSwarm.sw.molts == null ? null : window.liveSwarm.sw.molts);
+    r.crystals = await page.evaluate(() => window.liveSwarm.sw.deathsTotal);
+    // graze + strike + bite run on every model
+    const s0 = (await cen()).n; await page.click('#bl-strike'); r.strike = { before: s0, after: (await cen()).n };
+    await page.evaluate(() => { const g = document.getElementById('lgraze'); g.value = 2; g.dispatchEvent(new Event('input')); });
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => { const g = document.getElementById('lgraze'); g.value = 0; g.dispatchEvent(new Event('input')); });
+    await page.click('#bl-eat'); r.bite = await cen();
+    await snap('m_' + tag + '_switched');
+    rep.models[tag] = r;
+    say(`${tag}: grown ${JSON.stringify(r.grown.elements)} ${r.grown.plan} rate ${r.rate_max.toFixed(1)} sim ${r.sim_ms.toFixed(2)}ms; eat ${r.eat.passes} passes -> ${r.after.plan} switches ${JSON.stringify(r.switches)}`);
+  }
+  await page.evaluate(() => { document.getElementById('lt-hgrid2-G').value = '16'; });
+  await setSpeed(12);
+
   // 4. a biased seed: mostly Time -> dragonfly
   await page.selectOption('#lbias', '3');
+  await page.evaluate(() => window.liveSwarm.setModel('hgrid2'));
   await page.click('#bl-seed');
   await page.waitForFunction(() => window.liveSwarm.sw.clock > 200, null, { timeout: 60000 });
   say('phase 5');
@@ -138,6 +195,11 @@ let pw; try { pw = require('playwright'); } catch (e) { pw = require(path.join(p
     switched: rep.switches.length > 0 && rep.after_switch.plan !== rep.before_eat.plan,
     evo_runs: rep.evo_grown.n > 32, strike_kills: rep.strike.after < rep.strike.before, evo_switched: rep.evo_after.plan !== rep.evo_grown.plan,
   };
+  for (const [tag, r] of Object.entries(rep.models)) {
+    rep.ok[tag + '_whale'] = r.grown.plan === 'mass';
+    rep.ok[tag + '_switched'] = r.switches.length > 0 && r.after.plan !== 'mass';
+    rep.ok[tag + '_interactive'] = r.rate_max >= 20;
+  }
   fs.writeFileSync(path.join(out, 'check.json'), JSON.stringify(rep, null, 1));
   console.log(JSON.stringify(rep.ok), 'rate', rep.rate_default.toFixed(1), rep.rate_max.toFixed(1), 'carve', JSON.stringify(rep.carve),
     'switch', JSON.stringify(rep.switches), 'evo', JSON.stringify(rep.evo_switches), rep.evo_rate, 'errors', errors.slice(0, 5));

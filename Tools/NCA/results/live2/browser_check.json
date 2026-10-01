@@ -1,0 +1,731 @@
+{
+ "errors": [],
+ "netErrors": [
+  "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,50"
+ ],
+ "rate_default": 7.5006250520876705,
+ "rate_max": 16,
+ "sim_ms": 6.669707625690184,
+ "draw_ms": 1.7503511617417595,
+ "grow": {
+  "n": 185,
+  "eggs": 0,
+  "elements": [
+   132,
+   6,
+   16,
+   31
+  ],
+  "domains": [
+   91,
+   91,
+   3
+  ],
+  "majority": 0,
+  "plan": "charge",
+  "deaths": 14
+ },
+ "step_after_grow": 116,
+ "grown": {
+  "n": 184,
+  "eggs": 0,
+  "elements": [
+   131,
+   6,
+   16,
+   31
+  ],
+  "domains": [
+   91,
+   91,
+   2
+  ],
+  "majority": 0,
+  "plan": "charge",
+  "deaths": 15
+ },
+ "carve": {
+  "before": 184,
+  "after": 100,
+  "killed": 84,
+  "crystals_visible": 5
+ },
+ "before_eat": {
+  "n": 181,
+  "eggs": 0,
+  "elements": [
+   131,
+   3,
+   16,
+   31
+  ],
+  "domains": [
+   91,
+   89,
+   1
+  ],
+  "majority": 0,
+  "plan": "charge",
+  "deaths": 21
+ },
+ "eat_passes": 5,
+ "after_eat": {
+  "n": 73,
+  "eggs": 0,
+  "elements": [
+   1,
+   3,
+   18,
+   51
+  ],
+  "domains": [
+   27,
+   46,
+   0
+  ],
+  "majority": 3,
+  "plan": "time",
+  "deaths": 25
+ },
+ "switches": [
+  {
+   "step": 1172,
+   "from": "charge",
+   "to": "time"
+  }
+ ],
+ "after_switch": {
+  "n": 73,
+  "eggs": 0,
+  "elements": [
+   1,
+   3,
+   18,
+   51
+  ],
+  "domains": [
+   27,
+   46,
+   0
+  ],
+  "majority": 3,
+  "plan": "time",
+  "deaths": 25
+ },
+ "log": [
+  "step 1256: carved 334 Charge",
+  "step 1172: Pufferfish → Dragonfly",
+  "step 1094: carved 264 Charge",
+  "step 929: carved 401 Charge",
+  "step 764: carved 435 Charge",
+  "step 599: carved 117 Charge",
+  "step 353: carved 85",
+  "seed: 24 tadpoles, Charge majority → Pufferfish"
+ ],
+ "graze": {
+  "before": {
+   "n": 69,
+   "eggs": 0,
+   "elements": [
+    1,
+    3,
+    18,
+    47
+   ],
+   "domains": [
+    26,
+    43,
+    0
+   ],
+   "majority": 3,
+   "plan": "time",
+   "deaths": 25
+  },
+  "after": {
+   "n": 63,
+   "eggs": 4,
+   "elements": [
+    1,
+    3,
+    18,
+    41
+   ],
+   "domains": [
+    26,
+    37,
+    0
+   ],
+   "majority": 3,
+   "plan": "time",
+   "deaths": 25
+  },
+  "deaths": 1665
+ },
+ "strike": {
+  "before": 65,
+  "after": 54
+ },
+ "default_model": "hgrid2",
+ "models": {
+  "hgrid216": {
+   "model": "hgrid2",
+   "grown": {
+    "n": 192,
+    "eggs": 0,
+    "elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "domains": [
+     105,
+     87,
+     0
+    ],
+    "majority": 1,
+    "plan": "mass",
+    "deaths": 15
+   },
+   "rate_max": 23.545495974479618,
+   "sim_ms": 6.005280178933595,
+   "draw_ms": 0.9959996184843373,
+   "about": "Grid morphogen, round 2 (hgrid2). The round-1 grid plus a fine field at the scale of one tadpole. The most accurate body",
+   "tune_visible": [
+    "hgrid2"
+   ],
+   "eat": {
+    "before": {
+     "n": 192,
+     "eggs": 0,
+     "elements": [
+      19,
+      126,
+      25,
+      22
+     ],
+     "domains": [
+      105,
+      87,
+      0
+     ],
+     "majority": 1,
+     "plan": "mass",
+     "deaths": 15
+    },
+    "passes": 27,
+    "after": {
+     "n": 91,
+     "eggs": 0,
+     "elements": [
+      25,
+      5,
+      54,
+      7
+     ],
+     "domains": [
+      39,
+      52,
+      0
+     ],
+     "majority": 2,
+     "plan": "space",
+     "deaths": 53
+    }
+   },
+   "switches": [
+    {
+     "step": 4882,
+     "from": "mass",
+     "to": "space"
+    }
+   ],
+   "after": {
+    "n": 91,
+    "eggs": 0,
+    "elements": [
+     25,
+     5,
+     54,
+     7
+    ],
+    "domains": [
+     39,
+     52,
+     0
+    ],
+    "majority": 2,
+    "plan": "space",
+    "deaths": 53
+   },
+   "molts": null,
+   "crystals": 8764,
+   "strike": {
+    "before": 91,
+    "after": 89
+   },
+   "bite": {
+    "n": 156,
+    "eggs": 7,
+    "elements": [
+     108,
+     3,
+     18,
+     27
+    ],
+    "domains": [
+     68,
+     88,
+     0
+    ],
+    "majority": 0,
+    "plan": "charge",
+    "deaths": 65
+   }
+  },
+  "hgrid212": {
+   "model": "hgrid2",
+   "grown": {
+    "n": 186,
+    "eggs": 0,
+    "elements": [
+     19,
+     126,
+     19,
+     22
+    ],
+    "domains": [
+     99,
+     87,
+     0
+    ],
+    "majority": 1,
+    "plan": "mass",
+    "deaths": 17
+   },
+   "rate_max": 29.57829798022654,
+   "sim_ms": 4.331397325175481,
+   "draw_ms": 1.0972765770533905,
+   "about": "Grid morphogen, round 2 (hgrid2). The round-1 grid plus a fine field at the scale of one tadpole. The most accurate body",
+   "tune_visible": [
+    "hgrid2"
+   ],
+   "eat": {
+    "before": {
+     "n": 186,
+     "eggs": 0,
+     "elements": [
+      19,
+      126,
+      19,
+      22
+     ],
+     "domains": [
+      99,
+      87,
+      0
+     ],
+     "majority": 1,
+     "plan": "mass",
+     "deaths": 17
+    },
+    "passes": 13,
+    "after": {
+     "n": 73,
+     "eggs": 0,
+     "elements": [
+      4,
+      3,
+      18,
+      48
+     ],
+     "domains": [
+      27,
+      46,
+      0
+     ],
+     "majority": 3,
+     "plan": "time",
+     "deaths": 41
+    }
+   },
+   "switches": [
+    {
+     "step": 2687,
+     "from": "mass",
+     "to": "time"
+    }
+   ],
+   "after": {
+    "n": 73,
+    "eggs": 0,
+    "elements": [
+     4,
+     3,
+     18,
+     48
+    ],
+    "domains": [
+     27,
+     46,
+     0
+    ],
+    "majority": 3,
+    "plan": "time",
+    "deaths": 41
+   },
+   "molts": null,
+   "crystals": 4068,
+   "strike": {
+    "before": 73,
+    "after": 74
+   },
+   "bite": {
+    "n": 86,
+    "eggs": 4,
+    "elements": [
+     25,
+     3,
+     50,
+     8
+    ],
+    "domains": [
+     51,
+     35,
+     0
+    ],
+    "majority": 2,
+    "plan": "space",
+    "deaths": 48
+   }
+  },
+  "sort": {
+   "model": "sort",
+   "grown": {
+    "n": 181,
+    "eggs": 0,
+    "elements": [
+     19,
+     119,
+     22,
+     21
+    ],
+    "domains": [
+     86,
+     84,
+     11
+    ],
+    "majority": 1,
+    "plan": "mass",
+    "deaths": 0
+   },
+   "rate_max": 38.359398052524625,
+   "sim_ms": 0.6312631841876721,
+   "draw_ms": 1.0955982465376601,
+   "about": "Cell sorting (sort). No grid and no network: 17 tuned numbers. Accurate (loss 1-4 to its own plan) and lossless - nothin",
+   "tune_visible": [
+    "sort"
+   ],
+   "eat": {
+    "before": {
+     "n": 181,
+     "eggs": 0,
+     "elements": [
+      19,
+      119,
+      22,
+      21
+     ],
+     "domains": [
+      86,
+      84,
+      11
+     ],
+     "majority": 1,
+     "plan": "mass",
+     "deaths": 0
+    },
+    "passes": 32,
+    "after": {
+     "n": 83,
+     "eggs": 0,
+     "elements": [
+      23,
+      2,
+      51,
+      7
+     ],
+     "domains": [
+      27,
+      45,
+      11
+     ],
+     "majority": 2,
+     "plan": "space",
+     "deaths": 0
+    }
+   },
+   "switches": [
+    {
+     "step": 5821,
+     "from": "mass",
+     "to": "space"
+    }
+   ],
+   "after": {
+    "n": 83,
+    "eggs": 0,
+    "elements": [
+     23,
+     2,
+     51,
+     7
+    ],
+    "domains": [
+     27,
+     45,
+     11
+    ],
+    "majority": 2,
+    "plan": "space",
+    "deaths": 0
+   },
+   "molts": 49,
+   "crystals": 7260,
+   "strike": {
+    "before": 83,
+    "after": 83
+   },
+   "bite": {
+    "n": 115,
+    "eggs": 14,
+    "elements": [
+     84,
+     2,
+     21,
+     8
+    ],
+    "domains": [
+     26,
+     87,
+     2
+    ],
+    "majority": 0,
+    "plan": "charge",
+    "deaths": 0
+   }
+  },
+  "grid": {
+   "model": "grid",
+   "grown": {
+    "n": 200,
+    "eggs": 0,
+    "elements": [
+     20,
+     129,
+     27,
+     24
+    ],
+    "domains": [
+     3,
+     108,
+     89
+    ],
+    "majority": 1,
+    "plan": "mass",
+    "deaths": 3
+   },
+   "rate_max": 21.818181818181817,
+   "sim_ms": 5.053721797218257,
+   "draw_ms": 1.0513669804170815,
+   "about": "Grid morphogen, round 1. The first grid oracle: right outline and size, but the inside of the body is left to chance (lo",
+   "tune_visible": [
+    "grid"
+   ],
+   "eat": {
+    "before": {
+     "n": 200,
+     "eggs": 0,
+     "elements": [
+      20,
+      129,
+      27,
+      24
+     ],
+     "domains": [
+      3,
+      108,
+      89
+     ],
+     "majority": 1,
+     "plan": "mass",
+     "deaths": 3
+    },
+    "passes": 40,
+    "after": {
+     "n": 198,
+     "eggs": 0,
+     "elements": [
+      20,
+      127,
+      27,
+      24
+     ],
+     "domains": [
+      2,
+      107,
+      89
+     ],
+     "majority": 1,
+     "plan": "mass",
+     "deaths": 3
+    }
+   },
+   "switches": [],
+   "after": {
+    "n": 198,
+    "eggs": 0,
+    "elements": [
+     20,
+     127,
+     27,
+     24
+    ],
+    "domains": [
+     2,
+     107,
+     89
+    ],
+    "majority": 1,
+    "plan": "mass",
+    "deaths": 3
+   },
+   "molts": null,
+   "crystals": 4945,
+   "strike": {
+    "before": 198,
+    "after": 193
+   },
+   "bite": {
+    "n": 89,
+    "eggs": 1,
+    "elements": [
+     25,
+     0,
+     55,
+     9
+    ],
+    "domains": [
+     1,
+     40,
+     48
+    ],
+    "majority": 2,
+    "plan": "space",
+    "deaths": 48
+   }
+  }
+ },
+ "time_seed": {
+  "n": 77,
+  "eggs": 0,
+  "elements": [
+   3,
+   3,
+   18,
+   53
+  ],
+  "domains": [
+   26,
+   45,
+   6
+  ],
+  "majority": 3,
+  "plan": "time",
+  "deaths": 7
+ },
+ "evo_rate": 5.806077027289085,
+ "evo_sim_ms": 16.265342302878235,
+ "evo_grown": {
+  "n": 280,
+  "eggs": 0,
+  "elements": [
+   10,
+   243,
+   17,
+   10
+  ],
+  "domains": [
+   42,
+   144,
+   94
+  ],
+  "majority": 1,
+  "plan": "mass",
+  "deaths": 0
+ },
+ "evo_after_eat": {
+  "n": 94,
+  "eggs": 33,
+  "elements": [
+   16,
+   16,
+   52,
+   10
+  ],
+  "domains": [
+   6,
+   45,
+   43
+  ],
+  "majority": 2,
+  "plan": "space",
+  "deaths": 0
+ },
+ "evo_after": {
+  "n": 280,
+  "eggs": 0,
+  "elements": [
+   49,
+   36,
+   172,
+   23
+  ],
+  "domains": [
+   22,
+   131,
+   127
+  ],
+  "majority": 2,
+  "plan": "space",
+  "deaths": 0
+ },
+ "evo_switches": [
+  {
+   "step": 294,
+   "from": "mass",
+   "to": "space"
+  }
+ ],
+ "ok": {
+  "no_errors": true,
+  "rate": false,
+  "carve_kills": true,
+  "switched": true,
+  "evo_runs": true,
+  "strike_kills": true,
+  "evo_switched": true,
+  "hgrid216_whale": true,
+  "hgrid216_switched": true,
+  "hgrid216_interactive": true,
+  "hgrid212_whale": true,
+  "hgrid212_switched": true,
+  "hgrid212_interactive": true,
+  "sort_whale": true,
+  "sort_switched": true,
+  "sort_interactive": true,
+  "grid_whale": true,
+  "grid_switched": false,
+  "grid_interactive": true
+ }
+}

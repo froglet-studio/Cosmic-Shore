@@ -1,5 +1,8 @@
 # LIVE — a swarm you seed and carve, simulated in the page
 
+> **Update (cece/swarm-x-live2):** the page now also runs hgrid2 (the default) and sort, ported and checked the same
+> way — see `results/live2/NOTE.md` for their fidelity table, step rates, grazing table and browser check.
+
 Branch `cece/swarm-x-live`, direction "live". The gallery only PLAYED BACK precomputed rollouts; this adds a
 section, **"A live swarm you can eat"**, where the simulation runs in the browser in real time: a random seed,
 a 3D kill brush (with an element filter), a graze predator, a one-click "bite" (the yardstick's cull), a vessel

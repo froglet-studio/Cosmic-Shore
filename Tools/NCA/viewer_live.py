@@ -17,29 +17,80 @@ EL_UI = ["#e8a93a", "#8e6bd8", "#3a7bdc", "#2fb39a"]
 NAMES = {"mass": "Whale", "space": "Jellyfish", "charge": "Pufferfish", "time": "Dragonfly"}
 
 MODELS = [
-    dict(id="grid", label="Grid morphogen", engine="grid",
-         about=("A coarse 16x16x16 grid rides on the swarm. Each step the swarm's majority element picks the body "
-                "plan, and the grid holds that plan's wanted density for every element and domain, cell by cell. "
-                "Every tadpole climbs the gradient of its own class's deficit (wanted minus present), drifts with "
-                "the plan's own motion, and a class with room lays eggs toward where it is missing. A class the "
-                "body has no room for, sitting where it is not wanted, starves and withers to a crystal. "
-                "Watch for: a scattered random seed condensing toward its centre and blooming from the inside out "
-                "at the plan's own size; Time runners lapping the body; and, when you carve away enough of the "
-                "majority element, the plan flipping in a single step and the swarm re-sorting into the new "
-                "creature while the misfits wither into lime crystals. It ignores grazing (it breeds back faster than any "
-                "steady predator eats) but one big Bite flips it.")),
+    dict(id="hgrid2", label="Grid morphogen, round 2 (hgrid2)", engine="hgrid2",
+         summary=("The round-1 grid plus a fine field at the scale of one tadpole. The most accurate body on the shelf: "
+                  "loss 1-3 to its own plan (round 1: 8-18), every standard switch under the bar."),
+         about=[
+             ("Where a tadpole goes", "Two layers. A coarse 16x16x16 grid (cells of 6 voxels) rides on the swarm and holds the plan's "
+              "wanted density for every element and domain: it gets the outline and the composition right. On top, each class "
+              "(element + domain) has a fine field: a soft bump for every unit of that class in the plan, minus a bump for every live "
+              "tadpole of that class. A tadpole climbs its own class's field, so it slides into the nearest HOLE of its own kind. "
+              "Nobody is assigned a site; a site is claimed by being occupied, so two tadpoles wanting one hole jostle and one moves "
+              "on. It also moves with its neighbouring units' animation (feed-forward), and a tadpole stranded where its class is "
+              "not wanted at all swims straight for the best hole of its class (a migrant)."),
+             ("When you kill the majority", "The runner-up element becomes the majority and the plan switches - but a plan, once "
+              "committed, holds for 60 steps, so a lead that lasts a moment does not flip it. Then the grid and the fine field "
+              "re-sort the survivors into the new creature."),
+             ("Does anything die on its own", "Yes. A class the swarm holds more of than the new plan wants STARVES: hunger "
+              "builds at a per-tadpole rate and the misfits wither to lime crystals one at a time, never more than the excess "
+              "and never an element below the plan's own count of it."),
+             ("Watch for", "A loose school that crystallises into a crisp, correctly coloured body as it fills up (the fine "
+              "gain grows with how full the body is); the dragonfly at half tempo; after a cull, the lock holding the old "
+              "creature for a few seconds before it gives way, then a stream of crystals as the surplus starves."),
+         ]),
+    dict(id="sort", label="Cell sorting (sort)", engine="sort",
+         summary=("No grid and no network: 17 tuned numbers. Accurate (loss 1-4 to its own plan) and lossless - "
+                  "nothing ever dies on a clock or of hunger; a misfit changes element instead."),
+         about=[
+             ("Where a tadpole goes", "Each tadpole knows its TYPE (its element, plus which body region its domain plays in the "
+              "current plan), a handful of 'morphogen wells' for that type laid out around the swarm's centre (a French-flag "
+              "code), and its neighbours. A newborn commits to the one well its type has fewest tadpoles in, and climbs to it. "
+              "Neighbours push apart (collision), unlike types push apart harder than like ones (differential adhesion, so "
+              "tissues pack and their borders sharpen), and two touching tadpoles that would each sit better in the other's "
+              "spot slide past one another."),
+             ("When you kill the majority", "The new majority must lead for 12 steps before the plan switches. Then every "
+              "surplus tadpole MOLTS: it re-forms its crystal into an element its region is short of (its domain never "
+              "changes), and one whose region is full may transfer to the neediest region. The headcount is capped at the "
+              "plan's size, so a big body cut down to a small plan simply re-forms."),
+             ("Does anything die on its own", "Never. Only what you kill dies. Mass is conserved: a misfit is re-formed, not "
+              "starved, so the crystal counter only moves when you carve, bite, graze or strike."),
+             ("Watch for", "Sharp boundaries between colours inside the body; a wound healing exactly where it was cut "
+              "(newborns are fated to the emptiest wells, which are the hole); tadpoles flickering to a new element during a "
+              "switch instead of crystals appearing; the body re-centring as you carve one side off (the code follows the "
+              "centroid)."),
+         ]),
+    dict(id="grid", label="Grid morphogen, round 1", engine="grid",
+         summary="The first grid oracle: right outline and size, but the inside of the body is left to chance (loss 8-18).",
+         about=[
+             ("Where a tadpole goes", "A coarse 16x16x16 grid rides on the swarm. The majority element picks the plan, and "
+              "the grid holds that plan's wanted density for every element and domain, cell by cell. Every tadpole climbs the "
+              "gradient of its own class's deficit (wanted minus present) and drifts with the plan's own motion. A cell is 6 "
+              "voxels and blurred over ~3, so inside it every class looks alike: the outline is right, which colour sits where "
+              "inside the body is left to chance (that is what round 2 adds)."),
+             ("When you kill the majority", "The plan flips in the single step another element leads, and the swarm "
+              "re-sorts into the new creature. It ignores grazing (it breeds back faster than any steady predator eats) but "
+              "one big Bite flips it."),
+             ("Does anything die on its own", "Yes. A class the body has no room for, sitting where it is not wanted, starves "
+              "and withers to a lime crystal - a whole class can go at once."),
+             ("Watch for", "A scattered seed condensing toward its centre and blooming from the inside out at the plan's own "
+              "size; Time runners lapping the body; stragglers of unwanted classes withering one after another."),
+         ]),
     dict(id="evo", label="Evolved rule (G2 + genome)", engine="evo",
-         about=("No grid and no plan anywhere in the tadpole's head: every tadpole runs the same small learned network "
-                "(G2, 232-192-192-35, trained by backprop) on what it senses within 8 voxels, plus the swarm's headcount "
-                "and element mix. A genome found by CMA-ES adds two designed behaviours: a parent lays more when its "
-                "element is short of the share the CURRENT majority's plan wants (and less when over), and about a quarter "
-                "of eggs take the element the swarm is most short of (domain still breeds true). Nothing is culled. "
-                "Watch for: a loose, organic, always-moving cloud that fills the 280-tadpole budget and only suggests the "
-                "creature (loss 15-25 to its plan, against 8-18 for the grid); after you eat the majority, the "
-                "homeostat floods the new majority's element and the cloud slowly re-sorts. It shrugs off one big bite (it "
-                "refills its 280 slots in a few steps) but a steady Graze of 4 wears most plans down in a few hundred "
-                "steps - the opposite of the grid. Heavier to compute: about "
-                "30 steps/s at 280 tadpoles, so keep the speed moderate.")),
+         summary="A learned network in every tadpole, no plan in its head. Organic and always moving, but only suggests the creature (loss 15-25).",
+         about=[
+             ("Where a tadpole goes", "Every tadpole runs the same small learned network (G2, 232-192-192-35, trained by "
+              "backprop) on what it senses within 8 voxels, plus the swarm's headcount and element mix. No grid and no plan "
+              "anywhere: where it goes is whatever the network learned."),
+             ("When you kill the majority", "A genome found by CMA-ES adds a homeostat: a parent lays more when its element is "
+              "short of the share the CURRENT majority's plan wants, and about a quarter of eggs take the element the swarm is "
+              "most short of. So after you eat the majority it floods the new majority's element and the cloud slowly re-sorts. "
+              "It shrugs off one big bite (it refills its 280 slots in a few steps) but a steady Graze of 4 wears most plans down "
+              "in a few hundred steps - the opposite of the grid."),
+             ("Does anything die on its own", "Rarely: the network can raise its own death channel, and an egg nobody is near "
+              "is lost. Nothing is culled by a rule."),
+             ("Watch for", "A loose, always-moving cloud that fills the 280-tadpole budget; Space bodies combing into "
+              "near-parallel rods after a switch. Heavier to compute (about 30 steps/s), so keep the speed moderate."),
+         ]),
 ]
 
 
@@ -60,6 +111,19 @@ def _evo(results_root):
             json.dump(live_export.evo_json(), open(p, "w"), separators=(",", ":"))
         except Exception as e:  # the evolved model is optional: the page still runs the grid
             print("viewer_live: no evolved rule:", e)
+            return "null"
+    return open(p).read()
+
+
+def _sort(results_root):
+    p = os.path.join(results_root, "live2", "sort_code.json")
+    if not os.path.isfile(p):
+        try:
+            import live_export
+            os.makedirs(os.path.dirname(p), exist_ok=True)
+            json.dump(live_export.sort_json(), open(p, "w"), separators=(",", ":"))
+        except Exception as e:  # optional: the page still runs the other models
+            print("viewer_live: no sort code:", e)
             return "null"
     return open(p).read()
 
@@ -86,7 +150,7 @@ def build_live(results_root):
       <p class="caption">Everything above was recorded. This one runs in the page, now. Press <strong>New random seed</strong> for a scatter of tadpoles with a random element mix and random domains; the majority element picks the creature. Drag across it to kill every tadpole under the brush (each leaves a lime crystal that fades). Filter the brush to one element and eat the majority: the swarm will change species. Hold Shift (or right-drag, or switch to Orbit) to turn the view; scroll to zoom. <strong>Graze</strong> sets a predator eating the current majority every step; <strong>Bite</strong> takes one big mouthful (just enough that the runner-up leads). One finding to try: a grown body shrugs off grazing - it breeds back faster than you eat - but a single big bite flips it.</p>
       <h3 class="apph">Model</h3>
       <div class="appgrid" id="lmodels">{models}</div>
-      <p class="caption" id="labout"></p>
+      <div class="labout" id="labout"></div>
     </div>
     <div class="bench">
       <div class="dish">
@@ -102,6 +166,7 @@ def build_live(results_root):
           <div><dt>Step</dt><dd id="rl-step">0</dd></div>
           <div><dt>Tadpoles</dt><dd id="rl-n">0</dd></div>
           <div><dt>Crystals</dt><dd id="rl-cr">0</dd></div>
+          <div><dt>Molts</dt><dd id="rl-molt">-</dd></div>
           <div><dt>Steps/s</dt><dd id="rl-rate">0</dd></div>
         </dl>
         <div class="lplan"><span class="lplanl">Becoming</span> <strong id="rl-plan">-</strong> <span class="lmaj" id="rl-maj"></span></div>
@@ -117,11 +182,31 @@ def build_live(results_root):
         <label class="row" for="lgraze">Graze<input id="lgraze" type="range" min="0" max="4" step="0.25" value="0"><output id="o-lgraze">0</output></label>
         <label class="row" for="ln">Seed size<input id="ln" type="range" min="8" max="64" value="24"><output id="o-ln">24</output></label>
         <label class="row" for="lbias">Seed bias<select id="lbias">{bias}</select></label>
-        <details class="ltune" id="ltune"><summary>Tuning (grid model; defaults are the verified oracle)</summary>
-          <label class="row" for="lt-p_lay">Regrowth<input id="lt-p_lay" data-cfg="p_lay" type="range" min="0" max="0.3" step="0.01" value="0.1"><output id="o-lt-p_lay">0.1</output></label>
-          <label class="row" for="lt-p_cross">Cross-breed<input id="lt-p_cross" data-cfg="p_cross" type="range" min="0" max="0.6" step="0.05" value="0.25"><output id="o-lt-p_cross">0.25</output></label>
-          <label class="row" for="lt-hyst">Hysteresis<input id="lt-hyst" data-cfg="hyst" type="range" min="0" max="0.3" step="0.01" value="0"><output id="o-lt-hyst">0</output></label>
-          <label class="row" for="lt-starve">Starvation<input id="lt-starve" data-cfg="starve" type="range" min="0" max="1" step="1" value="1"><output id="o-lt-starve">1</output></label>
+        <details class="ltune" data-engine="hgrid2"><summary>Tuning (hgrid2; defaults are the verified model)</summary>
+          <label class="row" for="lt-hgrid2-G">Grid<select id="lt-hgrid2-G"><option value="16">16 cells (verified)</option><option value="12">12 cells (faster)</option></select></label>
+          <label class="row" for="lt-hgrid2-k_fine">Fine sorting<input id="lt-hgrid2-k_fine" data-cfg="k_fine" type="range" min="0" max="4" step="0.25" value="2"><output id="o-lt-hgrid2-k_fine">2</output></label>
+          <label class="row" for="lt-hgrid2-k_ff">Feed-forward<input id="lt-hgrid2-k_ff" data-cfg="k_ff" type="range" min="0" max="3" step="0.25" value="1.5"><output id="o-lt-hgrid2-k_ff">1.5</output></label>
+          <label class="row" for="lt-hgrid2-lock">Plan lock<input id="lt-hgrid2-lock" data-cfg="lock" type="range" min="0" max="120" step="5" value="60"><output id="o-lt-hgrid2-lock">60</output></label>
+          <label class="row" for="lt-hgrid2-p_lay">Regrowth<input id="lt-hgrid2-p_lay" data-cfg="p_lay" type="range" min="0" max="0.3" step="0.01" value="0.1"><output id="o-lt-hgrid2-p_lay">0.1</output></label>
+          <label class="row" for="lt-hgrid2-k_mig">Migrants<input id="lt-hgrid2-k_mig" data-cfg="k_mig" type="range" min="0" max="2" step="0.25" value="1"><output id="o-lt-hgrid2-k_mig">1</output></label>
+          <label class="row" for="lt-hgrid2-starve">Starvation<input id="lt-hgrid2-starve" data-cfg="starve" type="range" min="0" max="1" step="1" value="1"><output id="o-lt-hgrid2-starve">1</output></label>
+          <p class="caption">Fine sorting is the pull of a tadpole into the nearest hole of its own class (0 = round 1 plus the new starvation); feed-forward is how much it moves with its neighbouring units' animation; plan lock is how many steps a new plan holds before another can replace it; regrowth is the laying probability at full deficit; migrants is how fast a stranded tadpole swims for its class's best hole; starvation lets misfits wither. The grid choice re-seeds.</p>
+        </details>
+        <details class="ltune" data-engine="sort"><summary>Tuning (cell sorting; defaults are the verified model)</summary>
+          <label class="row" for="lt-sort-k_well">Well pull<input id="lt-sort-k_well" data-scfg="k_well" type="range" min="0" max="1" step="0.01" value="0.41"><output id="o-lt-sort-k_well">0.41</output></label>
+          <label class="row" for="lt-sort-a_other">Tension<input id="lt-sort-a_other" data-scfg="a_other" type="range" min="-0.15" max="0.05" step="0.005" value="-0.065"><output id="o-lt-sort-a_other">-0.065</output></label>
+          <label class="row" for="lt-sort-inertia">Inertia<input id="lt-sort-inertia" data-scfg="inertia" type="range" min="0" max="0.9" step="0.01" value="0.69"><output id="o-lt-sort-inertia">0.69</output></label>
+          <label class="row" for="lt-sort-dwell">Dwell<input id="lt-sort-dwell" data-scfg="dwell" type="range" min="1" max="40" step="1" value="12"><output id="o-lt-sort-dwell">12</output></label>
+          <label class="row" for="lt-sort-molt_rate">Molting<input id="lt-sort-molt_rate" data-scfg="molt_rate" type="range" min="0" max="0.15" step="0.005" value="0.03"><output id="o-lt-sort-molt_rate">0.03</output></label>
+          <label class="row" for="lt-sort-lay_rate">Lay rate<input id="lt-sort-lay_rate" data-scfg="lay_rate" type="range" min="0.02" max="0.2" step="0.005" value="0.085"><output id="o-lt-sort-lay_rate">0.085</output></label>
+          <label class="row" for="lt-sort-transfer">Region transfer<input id="lt-sort-transfer" data-scfg="transfer" type="range" min="0" max="1" step="1" value="1"><output id="o-lt-sort-transfer">1</output></label>
+          <p class="caption">Well pull is how hard a tadpole climbs toward its fated well; tension is how hard UNLIKE neighbours push apart (more negative = sharper tissue borders); inertia is how much velocity carries over; dwell is how many steps a new majority must lead before the plan switches; molting is the per-step chance a surplus tadpole re-forms into a needed element; lay rate is eggs per step as a share of the headcount; region transfer lets a misfit join another body region.</p>
+        </details>
+        <details class="ltune" data-engine="grid"><summary>Tuning (round-1 grid; defaults are the verified oracle)</summary>
+          <label class="row" for="lt-grid-p_lay">Regrowth<input id="lt-grid-p_lay" data-cfg="p_lay" type="range" min="0" max="0.3" step="0.01" value="0.1"><output id="o-lt-grid-p_lay">0.1</output></label>
+          <label class="row" for="lt-grid-p_cross">Cross-breed<input id="lt-grid-p_cross" data-cfg="p_cross" type="range" min="0" max="0.6" step="0.05" value="0.25"><output id="o-lt-grid-p_cross">0.25</output></label>
+          <label class="row" for="lt-grid-hyst">Hysteresis<input id="lt-grid-hyst" data-cfg="hyst" type="range" min="0" max="0.3" step="0.01" value="0"><output id="o-lt-grid-hyst">0</output></label>
+          <label class="row" for="lt-grid-starve">Starvation<input id="lt-grid-starve" data-cfg="starve" type="range" min="0" max="1" step="1" value="1"><output id="o-lt-grid-starve">1</output></label>
           <p class="caption">Regrowth is the laying probability at full deficit; cross-breed is the share of eggs that take the element the parent's domain is most short of (it can feed the majority, which is why grazing alone rarely flips the creature); hysteresis is the lead another element needs, as a share of the headcount, before the plan changes; starvation lets misfits wither. Changes apply to the running swarm.</p>
         </details>
         <p class="census mono" id="rl-seed"></p>
@@ -133,6 +218,7 @@ def build_live(results_root):
     script = (SCRIPT.replace("/*SL*/", open(src).read())
               .replace("/*SM*/", open(os.path.join(HERE, "swarm_model.js")).read())
               .replace("/*TARGETS*/", _targets(results_root)).replace("/*EVO*/", _evo(results_root))
+              .replace("/*SORT*/", _sort(results_root))
               .replace("/*LDATA*/", json.dumps(data, separators=(",", ":")))
               .replace("/*PALETTE*/", json.dumps(pal)).replace("/*ELUI*/", json.dumps(EL_UI)))
     return bench, script, CSS
@@ -153,6 +239,8 @@ CSS = """
 .lplan { font-size: 17px } .lplanl, .lmaj { color: var(--muted); font-size: 14px }
 .llog { margin: 0; padding-left: 1.4em; font-size: 12.5px; color: var(--muted); max-height: 9.5em; overflow: auto }
 #platel.orbit { cursor: grab }
+.labout { max-width: 72ch } .labout p { margin: 0 0 6px } .labout dl { margin: 0; display: grid; gap: 4px }
+.labout dt { font-weight: 600; font-size: 14px; margin-top: 4px } .labout dd { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45 }
 .ltune summary { cursor: pointer; font-size: 14px; color: var(--muted) } .ltune { display: grid; gap: 8px }
 """
 
@@ -165,7 +253,7 @@ SCRIPT = r"""<script>
   const SM = (function () { const module = { exports: {} }, exports = module.exports;
 /*SM*/
     ; return module.exports; })();
-  const TARGETS = /*TARGETS*/, EVO = /*EVO*/, D = /*LDATA*/, PALETTE = /*PALETTE*/, EL_UI = /*ELUI*/;
+  const TARGETS = /*TARGETS*/, EVO = /*EVO*/, SORT = /*SORT*/, D = /*LDATA*/, PALETTE = /*PALETTE*/, EL_UI = /*ELUI*/;
   const KINDS = SL.KINDS, ELN = ['Charge', 'Mass', 'Space', 'Time'], NAMES = D.names;
   const $ = id => document.getElementById(id), cv = $('cvl'), plate = $('platel');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -217,7 +305,16 @@ SCRIPT = r"""<script>
   let BG = new THREE.Color(1, 1, 1);
 
   // ---- the simulation ----------------------------------------------------------------------
-  const pf = new SL.PlanFields(TARGETS, SL.DEF_CFG);
+  const pf = new SL.PlanFields(TARGETS, SL.DEF_CFG), pf2 = {};
+  function makeSwarm(seed) {
+    if (model.engine === 'evo' && EVO) return new SL.EvoSwarm(TARGETS, EVO, { seed });
+    if (model.engine === 'sort' && SORT) return new SL.SortSwarm(TARGETS, SORT, { seed });
+    if (model.engine === 'hgrid2') {
+      const G = +$('lt-hgrid2-G').value, cfg = Object.assign({}, SL.DEF_CFG, SL.HG2_CFG, { G });
+      return new SL.Hgrid2Swarm(TARGETS, { seed, cfg, planFields: pf2[G] || (pf2[G] = new SL.PlanFields(TARGETS, cfg)) });
+    }
+    return new SL.LiveSwarm(TARGETS, { seed, planFields: pf, capacity: CAP });
+  }
   let sw = null, model = D.models[0], seedInfo = null, simT = 0, acc = 0, running = !reduce, rate = 0, rateN = 0, rateT = performance.now();
   const P = Object.assign({}, SM.TARGETS.mass.defaults, { slotMap: [0, 1, 2] });
   let geo = [];                                   // per slot: realised geometry relative to the heart at step time
@@ -313,6 +410,7 @@ SCRIPT = r"""<script>
     const c = sw.census(), plan = c.plan;
     $('rl-step').textContent = sw.clock; $('rl-n').textContent = c.n + (c.eggs ? ` +${c.eggs}` : '');
     $('rl-cr').textContent = sw.deathsTotal || 0; $('rl-rate').textContent = rate.toFixed(0);
+    $('rl-molt').textContent = sw.molts != null ? sw.molts : '-';
     $('rl-plan').textContent = plan ? NAMES[plan] : (c.n ? '-' : 'extinct');
     $('rl-maj').textContent = c.majority >= 0 ? `(${ELN[c.majority]} majority: ${c.elements.map((v, e) => `${ELN[e][0]}${v}`).join(' ')})` : '';
     $('lmix').innerHTML = mixBar(c.elements, 'now') + (plan ? mixBar(TARGETS[plan].mix, NAMES[plan].toLowerCase() + ' plan') : '');
@@ -324,7 +422,7 @@ SCRIPT = r"""<script>
   }
   function newSeed() {
     const seed = (Math.random() * 2 ** 31) | 0;
-    sw = model.engine === 'evo' && EVO ? new SL.EvoSwarm(TARGETS, EVO, { seed }) : new SL.LiveSwarm(TARGETS, { seed, planFields: pf, capacity: CAP });
+    sw = makeSwarm(seed);
     sw.deathsTotal = 0;
     const bias = +$('lbias').value, n = +$('ln').value;
     seedInfo = sw.seedRandom({ n, bias, radius: 10 + n / 4 });
@@ -337,7 +435,7 @@ SCRIPT = r"""<script>
     $('rl-seed').textContent = `Seed: ${n} tadpoles. Elements ${em.map((v, e) => `${ELN[e]} ${v}`).join(', ')}; domains ${['Jade', 'Ruby', 'Gold'].map((d, k) => `${d} ${dm[k] || 0}`).join(', ')}. ` +
       `${ELN[maj]} leads${tie ? ' (tied: the first counts)' : ''}, so it becomes the ${NAMES[plan]}.`;
     log(`seed: ${n} tadpoles, ${ELN[maj]} majority → ${NAMES[plan]}`);
-    applyTune(); $('ltune').hidden = model.engine === 'evo';
+    applyTune(); document.querySelectorAll('.ltune').forEach(d => { d.hidden = d.dataset.engine !== model.engine; });
     realiseAll(); panel();
   }
   // a tadpole killed by the player counts toward the crystal total
@@ -405,15 +503,22 @@ SCRIPT = r"""<script>
     const dl = Math.hypot(...d), k = sw.killBall(m.map((v, j) => v + rms * d[j] / dl), rms, -1);
     countKills(); drainEvents(); log(`step ${sw.clock}: vessel strike took ${k} of ${n}`);
   };
-  const tune = [...document.querySelectorAll('[data-cfg]')];
-  function applyTune() { if (sw && model.engine !== 'evo') tune.forEach(t => { sw.cfg[t.dataset.cfg] = +t.value; }); }
+  const tune = [...document.querySelectorAll('[data-cfg],[data-scfg]')];
+  function applyTune() {
+    if (!sw) return;
+    tune.forEach(t => { if (t.closest('.ltune').dataset.engine !== model.engine) return;
+      if (t.dataset.scfg) sw.scfg[t.dataset.scfg] = +t.value; else sw.cfg[t.dataset.cfg] = +t.value; });
+  }
+  $('lt-hgrid2-G').addEventListener('change', () => { if (model.engine === 'hgrid2') newSeed(); });
   tune.forEach(t => { const o = $('o-' + t.id); t.addEventListener('input', () => { o.textContent = t.value; applyTune(); }); });
   for (const id of ['lspeed', 'lbr', 'ln', 'lgraze']) { const o = $('o-' + id); const f = () => o.textContent = $(id).value; $(id).addEventListener('input', f); f(); }
   $('lbr').addEventListener('input', () => placeBrush(hover));
   document.querySelectorAll('input[name=lfilt]').forEach(r => r.addEventListener('change', () => placeBrush(hover)));
   function setModel(id) {
-    model = D.models.find(m => m.id === id && (m.engine !== 'evo' || EVO)) || D.models[0];
-    $('labout').textContent = model.about;
+    model = D.models.find(m => m.id === id && (m.engine !== 'evo' || EVO) && (m.engine !== 'sort' || SORT)) || D.models[0];
+    const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    $('labout').innerHTML = `<p><strong>${esc(model.label)}.</strong> ${esc(model.summary)}</p><dl>` +
+      model.about.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('') + '</dl>';
     document.querySelectorAll('#lmodels [data-lmodel]').forEach(b => b.setAttribute('aria-pressed', b.dataset.lmodel === model.id));
   }
   document.querySelectorAll('#lmodels [data-lmodel]').forEach(b => b.onclick = () => { setModel(b.dataset.lmodel); newSeed(); });
