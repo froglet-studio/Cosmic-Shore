@@ -1,0 +1,302 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 20.91,
+   "space": 77.57,
+   "charge": 70.64,
+   "time": 82.32
+  },
+  "space": {
+   "mass": 68.08,
+   "space": 20.04,
+   "charge": 62.94,
+   "time": 72.63
+  },
+  "charge": {
+   "mass": 56.82,
+   "space": 55.57,
+   "charge": 15.32,
+   "time": 72.74
+  },
+  "time": {
+   "mass": 76.57,
+   "space": 80.61,
+   "charge": 70.54,
+   "time": 24.9
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 280,
+   "target_n": 192,
+   "elements": [
+    12,
+    237,
+    20,
+    11
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    106,
+    174,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 280,
+   "target_n": 88,
+   "elements": [
+    42,
+    17,
+    205,
+    16
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    145,
+    135,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 3
+  },
+  "charge": {
+   "n": 280,
+   "target_n": 179,
+   "elements": [
+    219,
+    10,
+    16,
+    35
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    116,
+    164,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 2
+  },
+  "time": {
+   "n": 280,
+   "target_n": 76,
+   "elements": [
+    12,
+    27,
+    21,
+    220
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    127,
+    40,
+    113
+   ],
+   "deaths": 0,
+   "mutants": 1
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 3.42,
+   "space": 22.46,
+   "charge": 13.81,
+   "time": 26.11
+  },
+  "space": {
+   "mass": 23.65,
+   "space": 7.3,
+   "charge": 15.53,
+   "time": 28.38
+  },
+  "charge": {
+   "mass": 9.03,
+   "space": 14.97,
+   "charge": 4.69,
+   "time": 19.4
+  },
+  "time": {
+   "mass": 22.76,
+   "space": 22.1,
+   "charge": 15.58,
+   "time": 6.49
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 56.29,
+    "space": 37.7,
+    "charge": 71.07,
+    "time": 78.03
+   },
+   "majority": "space",
+   "census": {
+    "n": 280,
+    "target_n": 88,
+    "elements": [
+     44,
+     28,
+     187,
+     21
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     198,
+     82,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 1
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 56.4,
+    "space": 52.85,
+    "charge": 20.64,
+    "time": 75.82
+   },
+   "majority": "charge",
+   "census": {
+    "n": 280,
+    "target_n": 179,
+    "elements": [
+     206,
+     20,
+     28,
+     26
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     194,
+     86,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 4
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 64.62,
+    "space": 66.0,
+    "charge": 56.57,
+    "time": 32.03
+   },
+   "majority": "time",
+   "census": {
+    "n": 280,
+    "target_n": 76,
+    "elements": [
+     30,
+     26,
+     31,
+     193
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     149,
+     131,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 4
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 24.38,
+    "space": 72.8,
+    "charge": 65.93,
+    "time": 73.03
+   },
+   "majority": "mass",
+   "census": {
+    "n": 280,
+    "target_n": 192,
+    "elements": [
+     20,
+     199,
+     37,
+     24
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Mass",
+    "domains": [
+     130,
+     57,
+     93
+    ],
+    "deaths": 0,
+    "mutants": 2
+   }
+  }
+ },
+ "meta": {
+  "tag": "evo",
+  "genome": "genome.npy",
+  "base": "results/swarm_coevo_g2/rule.pt",
+  "tests_passed": 8,
+  "note": "G2 rule + an evolved behaviour genome (CMA-ES over the strict 8-test yardstick)."
+ }
+}

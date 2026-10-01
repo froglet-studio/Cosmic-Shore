@@ -1,0 +1,110 @@
+{
+ "1.0/mass": {
+  "killed": 34,
+  "of": 192,
+  "before": 1.52,
+  "cut": 6.2,
+  "after": 1.18,
+  "steps_to_heal": 20,
+  "plan": "mass"
+ },
+ "1.0/space": {
+  "killed": 18,
+  "of": 88,
+  "before": 1.45,
+  "cut": 12.97,
+  "after": 0.86,
+  "steps_to_heal": 20,
+  "plan": "space"
+ },
+ "1.0/charge": {
+  "killed": 50,
+  "of": 179,
+  "before": 1.57,
+  "cut": 7.71,
+  "after": 1.92,
+  "steps_to_heal": 25,
+  "plan": "charge"
+ },
+ "1.0/time": {
+  "killed": 19,
+  "of": 76,
+  "before": 4.1,
+  "cut": 11.8,
+  "after": 2.87,
+  "steps_to_heal": 10,
+  "plan": "time"
+ },
+ "1.5/mass": {
+  "killed": 44,
+  "of": 192,
+  "before": 1.52,
+  "cut": 7.51,
+  "after": 0.92,
+  "steps_to_heal": 20,
+  "plan": "mass"
+ },
+ "1.5/space": {
+  "killed": 22,
+  "of": 88,
+  "before": 1.45,
+  "cut": 17.11,
+  "after": 0.86,
+  "steps_to_heal": 20,
+  "plan": "space"
+ },
+ "1.5/charge": {
+  "killed": 59,
+  "of": 179,
+  "before": 1.57,
+  "cut": 9.1,
+  "after": 1.91,
+  "steps_to_heal": 25,
+  "plan": "charge"
+ },
+ "1.5/time": {
+  "killed": 27,
+  "of": 76,
+  "before": 4.1,
+  "cut": 15.58,
+  "after": 4.44,
+  "steps_to_heal": 25,
+  "plan": "time"
+ },
+ "2.0/mass": {
+  "killed": 50,
+  "of": 192,
+  "before": 1.52,
+  "cut": 8.82,
+  "after": 1.86,
+  "steps_to_heal": 20,
+  "plan": "mass"
+ },
+ "2.0/space": {
+  "killed": 26,
+  "of": 88,
+  "before": 1.45,
+  "cut": 21.16,
+  "after": 1.14,
+  "steps_to_heal": 20,
+  "plan": "space"
+ },
+ "2.0/charge": {
+  "killed": 67,
+  "of": 179,
+  "before": 1.57,
+  "cut": 10.15,
+  "after": 1.43,
+  "steps_to_heal": 30,
+  "plan": "charge"
+ },
+ "2.0/time": {
+  "killed": 33,
+  "of": 76,
+  "before": 4.1,
+  "cut": 22.56,
+  "after": 4.45,
+  "steps_to_heal": 25,
+  "plan": "time"
+ }
+}

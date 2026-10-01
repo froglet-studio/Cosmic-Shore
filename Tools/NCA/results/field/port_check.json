@@ -1,0 +1,310 @@
+{
+ "passed": 7,
+ "close": 101.7,
+ "summary": {
+  "cross": {
+   "mass": {
+    "mass": 2.36,
+    "space": 68.84,
+    "charge": 56.52,
+    "time": 77.22
+   },
+   "space": {
+    "mass": 69.08,
+    "space": 1.42,
+    "charge": 55.76,
+    "time": 66.99
+   },
+   "charge": {
+    "mass": 64.35,
+    "space": 60.88,
+    "charge": 1.08,
+    "time": 78.04
+   },
+   "time": {
+    "mass": 86.22,
+    "space": 81.14,
+    "charge": 81.71,
+    "time": 3.46
+   }
+  },
+  "census": {
+   "mass": {
+    "n": 192,
+    "target_n": 192,
+    "elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Mass",
+    "domains": [
+     110,
+     82,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   },
+   "space": {
+    "n": 88,
+    "target_n": 88,
+    "elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     36,
+     52,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   },
+   "charge": {
+    "n": 179,
+    "target_n": 179,
+    "elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     90,
+     89,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   },
+   "time": {
+    "n": 76,
+    "target_n": 76,
+    "elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     24,
+     4,
+     48
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "switch": {
+   "mass": {
+    "to": "space",
+    "done": true,
+    "cross": {
+     "mass": 69.16,
+     "space": 9.79,
+     "charge": 56.42,
+     "time": 71.56
+    },
+    "majority": "space",
+    "census": {
+     "n": 88,
+     "target_n": 88,
+     "elements": [
+      25,
+      2,
+      54,
+      7
+     ],
+     "target_elements": [
+      25,
+      2,
+      54,
+      7
+     ],
+     "majority": "Space",
+     "domains": [
+      41,
+      47,
+      0
+     ],
+     "deaths": 0,
+     "mutants": 0
+    }
+   },
+   "space": {
+    "to": "charge",
+    "done": true,
+    "cross": {
+     "mass": 66.71,
+     "space": 59.56,
+     "charge": 2.12,
+     "time": 79.57
+    },
+    "majority": "charge",
+    "census": {
+     "n": 179,
+     "target_n": 179,
+     "elements": [
+      131,
+      1,
+      16,
+      31
+     ],
+     "target_elements": [
+      131,
+      1,
+      16,
+      31
+     ],
+     "majority": "Charge",
+     "domains": [
+      90,
+      89,
+      0
+     ],
+     "deaths": 0,
+     "mutants": 0
+    }
+   },
+   "charge": {
+    "to": "time",
+    "done": true,
+    "cross": {
+     "mass": 75.84,
+     "space": 68.36,
+     "charge": 69.87,
+     "time": 6.43
+    },
+    "majority": "time",
+    "census": {
+     "n": 76,
+     "target_n": 76,
+     "elements": [
+      2,
+      3,
+      18,
+      53
+     ],
+     "target_elements": [
+      2,
+      3,
+      18,
+      53
+     ],
+     "majority": "Time",
+     "domains": [
+      27,
+      49,
+      0
+     ],
+     "deaths": 0,
+     "mutants": 0
+    }
+   },
+   "time": {
+    "to": "mass",
+    "done": true,
+    "cross": {
+     "mass": 75.04,
+     "space": 18.86,
+     "charge": 63.08,
+     "time": 73.8
+    },
+    "majority": "space",
+    "census": {
+     "n": 63,
+     "target_n": 192,
+     "elements": [
+      17,
+      1,
+      38,
+      7
+     ],
+     "target_elements": [
+      19,
+      126,
+      25,
+      22
+     ],
+     "majority": "Space",
+     "domains": [
+      57,
+      0,
+      6
+     ],
+     "deaths": 0,
+     "mutants": 0
+    }
+   }
+  }
+ },
+ "cost": {
+  "mass": {
+   "grow_ms": 1.528,
+   "idle_ms": 0.163,
+   "vessel_ms": 0.293,
+   "n": 88,
+   "switches": [
+    "251:0->1"
+   ]
+  },
+  "space": {
+   "grow_ms": 0.192,
+   "idle_ms": 0.521,
+   "vessel_ms": 0.587,
+   "n": 179,
+   "switches": [
+    "251:1->2"
+   ]
+  },
+  "charge": {
+   "grow_ms": 0.828,
+   "idle_ms": 0.099,
+   "vessel_ms": 0.109,
+   "n": 76,
+   "switches": [
+    "251:2->3"
+   ]
+  },
+  "time": {
+   "grow_ms": 0.141,
+   "idle_ms": 0.099,
+   "vessel_ms": 0.086,
+   "n": 63,
+   "switches": [
+    "251:3->1"
+   ]
+  }
+ }
+}

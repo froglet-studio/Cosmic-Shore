@@ -1,0 +1,114 @@
+{
+ "field": {
+  "passed": 8,
+  "close": 42.11,
+  "switch_best": {
+   "mass": "space/space",
+   "space": "charge/charge",
+   "charge": "time/time",
+   "time": "mass/mass"
+  },
+  "n": {
+   "mass": 90,
+   "space": 179,
+   "charge": 80,
+   "time": 178
+  }
+ },
+ "g2": {
+  "passed": 4,
+  "close": 285.74,
+  "switch_best": {
+   "mass": "mass/space",
+   "space": "space/charge",
+   "charge": "charge/time",
+   "time": "time/mass"
+  },
+  "n": {
+   "mass": 280,
+   "space": 280,
+   "charge": 280,
+   "time": 280
+  }
+ },
+ "g2+composition": {
+  "passed": 4,
+  "close": 336.62,
+  "switch_best": {
+   "mass": "mass/space",
+   "space": "space/charge",
+   "charge": "charge/time",
+   "time": "time/mass"
+  },
+  "n": {
+   "mass": 280,
+   "space": 280,
+   "charge": 280,
+   "time": 280
+  }
+ },
+ "f1": {
+  "passed": 5,
+  "close": 305.44,
+  "switch_best": {
+   "mass": "charge/space",
+   "space": "charge/charge",
+   "charge": "charge/time",
+   "time": "time/mass"
+  },
+  "n": {
+   "mass": 280,
+   "space": 280,
+   "charge": 280,
+   "time": 280
+  }
+ },
+ "f1+composition": {
+  "passed": 4,
+  "close": 325.02,
+  "switch_best": {
+   "mass": "mass/space",
+   "space": "space/charge",
+   "charge": "charge/time",
+   "time": "time/mass"
+  },
+  "n": {
+   "mass": 280,
+   "space": 280,
+   "charge": 280,
+   "time": 280
+  }
+ },
+ "e8": {
+  "passed": 5,
+  "close": 291.41,
+  "switch_best": {
+   "mass": "mass/space",
+   "space": "space/charge",
+   "charge": "charge/time",
+   "time": "mass/mass"
+  },
+  "n": {
+   "mass": 280,
+   "space": 280,
+   "charge": 280,
+   "time": 280
+  }
+ },
+ "e8+composition": {
+  "passed": 5,
+  "close": 296.68,
+  "switch_best": {
+   "mass": "mass/space",
+   "space": "charge/charge",
+   "charge": "charge/time",
+   "time": "time/mass"
+  },
+  "n": {
+   "mass": 280,
+   "space": 280,
+   "charge": 280,
+   "time": 280
+  }
+ }
+}

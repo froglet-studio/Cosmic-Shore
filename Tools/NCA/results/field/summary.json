@@ -313,6 +313,7 @@
     2.0
    ],
    "reassign_every": 8,
+   "assign": "hungarian",
    "sticky": 4.0,
    "lay_rate": 0.04,
    "lay_max": 4,
@@ -324,7 +325,9 @@
    "field_sigma": 3.0,
    "field_k": 1.2,
    "cruise": 0.0,
-   "sense": 1.8,
+   "wander": 0.0,
+   "turn": 0.012,
+   "sense": 2.2,
    "relay": 0.8,
    "startle_decay": 0.9,
    "flee": [
@@ -334,6 +337,17 @@
     2.0
    ],
    "flee_swirl": 0.8,
+   "inflate": {
+    "charge": 0.45
+   },
+   "mob": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "mob_speed": 1.0,
+   "lookahead": 10.0,
    "seed": 0
   }
  },

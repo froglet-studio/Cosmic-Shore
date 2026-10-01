@@ -735,13 +735,25 @@ and run all of them as one batch (16 tests x 3 samples in about 100 s on 2 threa
 (field, hgrid) regrow each seeding instead. The GPU job's publisher now ranks snapshots by it, and
 the viewer shows the 4x4 table.
 
-| Approach | 16-test result | Own plans | Standard switches | Other 8 |
-|---|---|---|---|---|
-| field | **8/15** (charge -> whale n/a: a pufferfish holds too little Mass) | 4/4 | 3/4 | 1/8 (only dragonfly -> jellyfish) |
-| learned G2 | 4/16 | 4/4 | 0/4 | 0/8 |
+**Correction: the first cut of that evaluator was wrong, and so was the old yardstick's eighth
+test.** Both used `swarm_nca.lose_majority`, which removes only enough of the OLD majority for the
+target to pass it; it never checks the other elements. A whale holds 25 Space against 19 Charge, so
+"Charge takes over" handed the majority to Space every time, and only switches to a plan's runner-up
+element ever happened (which is why the four standard switches all target runner-ups). The same flaw
+makes the old eighth test unfair: culling a dragonfly ([2, 3, 18, 53]) until Mass leads Time leaves
+Space 73% of the survivors. The field and evo sessions both found this independently. `swarm_eval`
+now uses `cull_to`, which removes just enough of every element that does not trail the target.
+A target element a body holds fewer than 2 of cannot take over; that test is n/a for that model.
 
-So the 7/8 approaches are much further from the goal than 7/8 suggested: they switch along the
-four standard directions and almost nowhere else. Rounds from here are scored on all 16.
+| Approach | 16-test result (fair cull, 3 samples) | Own plans | Switches |
+|---|---|---|---|
+| **field** (designed fields + flocking) | **13/13 feasible** (n/a: jellyfish, pufferfish -> whale; dragonfly -> pufferfish) | 4/4 | 9/9 |
+| learned G2 | 6/16 | 4/4 | 2/12 (jellyfish -> whale, pufferfish -> whale) |
+| evo, hgrid | being re-scored | | |
+
+The field approach solves the full problem as stated. The learned rules grow the right bodies but
+switch rarely: they sit at the 280-slot cap and keep their old shape at the new mix (field's
+`hybrid.json`: the composition controller lifts G2 and F1 to 6/8 but not further).
 
 ```
 python Tools/NCA/gpu_run.py swarm --device cpu --tag e1 --steps 6000 --set per_kind=2 --set pool=24 \

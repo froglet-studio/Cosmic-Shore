@@ -1,0 +1,344 @@
+{
+ "g2": {
+  "learned": {
+   "passed": 5,
+   "close": 274.02,
+   "own": {
+    "mass": 13.93,
+    "space": 17.47,
+    "charge": 15.3,
+    "time": 20.7
+   },
+   "switch": {
+    "mass": {
+     "to": "space",
+     "best": "mass",
+     "n": 280,
+     "el": [
+      95,
+      47,
+      55,
+      83
+     ]
+    },
+    "space": {
+     "to": "charge",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      144,
+      2,
+      90,
+      44
+     ]
+    },
+    "charge": {
+     "to": "time",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      88,
+      36,
+      51,
+      105
+     ]
+    },
+    "time": {
+     "to": "mass",
+     "best": "space",
+     "n": 280,
+     "el": [
+      20,
+      32,
+      176,
+      52
+     ]
+    }
+   }
+  },
+  "learned+composition": {
+   "passed": 6,
+   "close": 235.33,
+   "own": {
+    "mass": 10.9,
+    "space": 15.16,
+    "charge": 13.1,
+    "time": 17.75
+   },
+   "switch": {
+    "mass": {
+     "to": "space",
+     "best": "space",
+     "n": 280,
+     "el": [
+      79,
+      7,
+      171,
+      23
+     ]
+    },
+    "space": {
+     "to": "charge",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      204,
+      2,
+      26,
+      48
+     ]
+    },
+    "charge": {
+     "to": "time",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      203,
+      2,
+      26,
+      49
+     ]
+    },
+    "time": {
+     "to": "mass",
+     "best": "space",
+     "n": 280,
+     "el": [
+      78,
+      7,
+      172,
+      23
+     ]
+    }
+   }
+  }
+ },
+ "f1": {
+  "learned": {
+   "passed": 5,
+   "close": 319.96,
+   "own": {
+    "mass": 15.33,
+    "space": 40.17,
+    "charge": 30.07,
+    "time": 22.75
+   },
+   "switch": {
+    "mass": {
+     "to": "space",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      139,
+      26,
+      23,
+      92
+     ]
+    },
+    "space": {
+     "to": "charge",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      127,
+      50,
+      63,
+      40
+     ]
+    },
+    "charge": {
+     "to": "time",
+     "best": "time",
+     "n": 280,
+     "el": [
+      107,
+      13,
+      15,
+      145
+     ]
+    },
+    "time": {
+     "to": "mass",
+     "best": "space",
+     "n": 280,
+     "el": [
+      5,
+      4,
+      249,
+      22
+     ]
+    }
+   }
+  },
+  "learned+composition": {
+   "passed": 6,
+   "close": 229.16,
+   "own": {
+    "mass": 9.73,
+    "space": 10.16,
+    "charge": 10.88,
+    "time": 17.83
+   },
+   "switch": {
+    "mass": {
+     "to": "space",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      204,
+      2,
+      25,
+      49
+     ]
+    },
+    "space": {
+     "to": "charge",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      204,
+      2,
+      26,
+      48
+     ]
+    },
+    "charge": {
+     "to": "time",
+     "best": "time",
+     "n": 280,
+     "el": [
+      8,
+      11,
+      66,
+      195
+     ]
+    },
+    "time": {
+     "to": "mass",
+     "best": "space",
+     "n": 280,
+     "el": [
+      79,
+      6,
+      173,
+      22
+     ]
+    }
+   }
+  }
+ },
+ "e8": {
+  "learned": {
+   "passed": 5,
+   "close": 274.8,
+   "own": {
+    "mass": 19.55,
+    "space": 13.79,
+    "charge": 18.86,
+    "time": 29.07
+   },
+   "switch": {
+    "mass": {
+     "to": "space",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      103,
+      25,
+      33,
+      119
+     ]
+    },
+    "space": {
+     "to": "charge",
+     "best": "space",
+     "n": 280,
+     "el": [
+      126,
+      15,
+      128,
+      11
+     ]
+    },
+    "charge": {
+     "to": "time",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      87,
+      33,
+      62,
+      98
+     ]
+    },
+    "time": {
+     "to": "mass",
+     "best": "mass",
+     "n": 280,
+     "el": [
+      20,
+      111,
+      84,
+      65
+     ]
+    }
+   }
+  },
+  "learned+composition": {
+   "passed": 5,
+   "close": 298.61,
+   "own": {
+    "mass": 14.81,
+    "space": 18.9,
+    "charge": 18.01,
+    "time": 23.42
+   },
+   "switch": {
+    "mass": {
+     "to": "space",
+     "best": "mass",
+     "n": 280,
+     "el": [
+      28,
+      183,
+      37,
+      32
+     ]
+    },
+    "space": {
+     "to": "charge",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      204,
+      2,
+      26,
+      48
+     ]
+    },
+    "charge": {
+     "to": "time",
+     "best": "charge",
+     "n": 280,
+     "el": [
+      204,
+      2,
+      25,
+      49
+     ]
+    },
+    "time": {
+     "to": "mass",
+     "best": "space",
+     "n": 280,
+     "el": [
+      79,
+      7,
+      172,
+      22
+     ]
+    }
+   }
+  }
+ }
+}
