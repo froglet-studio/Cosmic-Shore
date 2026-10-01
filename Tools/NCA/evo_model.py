@@ -202,21 +202,84 @@ class EvoRule(sn.SwarmRule):
 
 # ------------------------------------------------------------- fitness ---
 
+def liveliness(sw, p8, a8, T):
+    """Per plan: mean over its elements of min(1, measured 8-step heart displacement / the plan's per-frame
+    speed for that element) - a swarm whose runners run laps scores 1, a jittering blob ~0."""
+    a = a8 & sw.active & sw.hatched
+    d = (sw.pos - p8).norm(dim=-1)
+    out = []
+    for b, k in enumerate(sn.KINDS):
+        sc, wsum = 0.0, 0.0
+        for e in range(4):
+            tgt = T[k].speed[e]
+            sel = a[b] & (sw.elem[b] == e)
+            if tgt < 0.3 or int(sel.sum()) == 0:
+                continue
+            w = tgt                                 # fast elements (Time) weigh most
+            sc += w * min(1.0, float(d[b][sel].mean()) / tgt); wsum += w
+        out.append(sc / wsum if wsum else 0.0)
+    return out
+
+
+def _strike_b(sw, b, gen, frac=1.0):
+    """swarm_probe.strike for sample b of a batch (same geometry)."""
+    m = sw.active[b] & sw.hatched[b]
+    p = sw.pos[b][m]
+    if len(p) < 4:
+        return 0
+    c = p.mean(0)
+    rms = ((p - c) ** 2).sum(-1).mean().sqrt()
+    d = torch.randn(3, generator=gen); d = d / d.norm().clamp(min=1e-6)
+    hit = m & (((sw.pos[b] - (c + frac * rms * d)) ** 2).sum(-1) < (frac * rms) ** 2)
+    sw.active[b, hit] = False; sw.hatched[b, hit] = False; sw.s[b, hit] = 0.0
+    return int(hit.sum())
+
+
 @torch.no_grad()
-def fast_rollout(model, seed, steps=240, switch_steps=240, L=None):
+def fast_probe(model, sw, gen, regrow=120, L=None):
+    """The vessel-strike probe on an already grown batch (cloned): heal per plan in [-1, 1]."""
+    L = L or sn.LossCfg()
+    T = sn.load_targets()
+    model.locked = None if not hasattr(model, "locked") else model.locked
+    saved = None if getattr(model, "locked", None) is None else model.locked.clone()
+    p = sw.clone()
+    sc = lambda b, k: sn.swarm_loss(sn.decode(p, b), T[k], L)[1]["sink"]
+    before = [sc(b, k) for b, k in enumerate(sn.KINDS)]
+    for b in range(p.B):
+        _strike_b(p, b, gen)
+    cut = [sc(b, k) for b, k in enumerate(sn.KINDS)]
+    for _ in range(regrow):
+        p = model(p, gen)
+    rec = [sc(b, k) for b, k in enumerate(sn.KINDS)]
+    if saved is not None:
+        model.locked = saved
+    heal = []
+    for b0, c, r in zip(before, cut, rec):
+        span = c - b0
+        heal.append(max(-1.0, min(1.0, (c - r) / span)) if span > 0.3 else (1.0 if r <= c + 0.3 else -1.0))
+    return dict(before=before, cut=cut, rec=rec, heal=heal)
+
+
+@torch.no_grad()
+def fast_rollout(model, seed, steps=240, switch_steps=240, L=None, probe=False):
     """The yardstick's protocol (grow, score, cull to SWITCH_TO, run, score) for all four plans in ONE
     batch, without the viewer frames or the geometry table. Returns a summary tests_passed() accepts."""
     L = L or sn.LossCfg()
     T = sn.load_targets()
     gen = sn.make_gen(seed)
     sw = sn.seed_swarm([T[k] for k in sn.KINDS], model.world, gen)
-    for _ in range(steps):
+    for t in range(steps):
+        if t == steps - 8:
+            p8, a8 = sw.pos.clone(), (sw.active & sw.hatched).clone()
         sw = model(sw, gen)
     summ = {"cross": {}, "census": {}, "switch": {}}
+    summ["live"] = liveliness(sw, p8, a8, T)
     for b, k in enumerate(sn.KINDS):
         x = sn.decode(sw, b)
         summ["cross"][k] = {k2: round(sn.swarm_loss(x, T[k2], L)[1]["sink"], 2) for k2 in sn.KINDS}
         summ["census"][k] = sn.census(sw, b, T[k])
+    if probe:
+        summ["probe"] = fast_probe(model, sw, gen, L=L)
     done = [sn.lose_majority(sw, b, gen, to=sn.SWITCH_TO[k]) is not None for b, k in enumerate(sn.KINDS)]
     for _ in range(switch_steps):
         sw = model(sw, gen)
@@ -250,12 +313,21 @@ def fitness(summ):
 _CACHE = {}
 
 
-def evaluate(genome, seeds=(1,)):
+W_HEAL = float(os.environ.get("EVO_W_HEAL", "0"))
+W_LIVE = float(os.environ.get("EVO_W_LIVE", "0"))
+
+
+def evaluate(genome, seeds=(1,), make=None):
     torch.set_num_threads(1)
-    model = EvoRule(genome)
+    model = (make or EvoRule)(genome)
     fs, ps, ms = [], [], []
     for s in seeds:
-        summ = fast_rollout(model, s)
+        summ = fast_rollout(model, s, probe=W_HEAL > 0)
         f, p, m = fitness(summ)
+        if W_HEAL > 0:
+            f += W_HEAL * float(np.mean(summ["probe"]["heal"]))
+            m = m + summ["probe"]["heal"]
+        if W_LIVE > 0:
+            f += W_LIVE * float(np.mean(summ["live"]))
         fs.append(f); ps.append(p); ms.append(m)
     return float(np.mean(fs)), ps, ms
