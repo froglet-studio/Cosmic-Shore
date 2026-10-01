@@ -231,6 +231,7 @@ def main():
     ap.add_argument("--cap", type=int, default=3_000_000)
     ap.add_argument("--hidden", type=int, default=256)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--plan_mode", default="")
     a = ap.parse_args()
     os.makedirs(a.run, exist_ok=True)
     logf = open(os.path.join(a.run, "log.txt"), "a")
@@ -245,6 +246,8 @@ def main():
         json.dump(res, open(os.path.join(a.run, "eval16.json"), "w"), indent=1)
         return
     st = load(a.init) if a.init else ds.Student(cfg=ds.StudentCfg(hidden=a.hidden))
+    if a.plan_mode:
+        st.cfg.plan_mode = a.plan_mode
     hist = json.load(open(os.path.join(a.run, "hist.json"))) if os.path.exists(os.path.join(a.run, "hist.json")) else []
     dpath = os.path.join(a.run, "data.pt")
     if a.cmd == "bc":
