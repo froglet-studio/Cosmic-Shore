@@ -79,7 +79,7 @@ def _is_run(d):
 
 
 LABELS = {"field": "Designed field + flocking", "hgrid/oracle": "Grid morphogen (designed)", "hgrid/hybrid_g2": "Learned rule G2 + grid morphogen", "hgrid": "Grid morphogen (learned)",
-          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis"}
+          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis", "sort": "Emergent cell sorting", "posinfo": "Learned rule + positional information", "distill": "Local rule distilled from field", "meta/oracle": "Learned rule + designed metamorph", "hgrid2/round_a": "Grid morphogen 2 (round A)"}
 
 
 def _label(d, summ):
@@ -164,7 +164,49 @@ ABOUT = {
         sorting="Local and fine enough to tell classes apart inside one grid cell - which is what the first grid lacked.",
         switching="As the first grid: the plan follows the majority (with a lock), laying follows class deficits, misplaced surplus withers to crystals.",
         watch="Whether it keeps the first grid's organic motion now that it is accurate (the feel metrics in results/hgrid2/feel.json).",
-        bar="PASSES tier 1 under the loss-8 bar: own-plan losses 6.1 / 4.8 / 5.5 / 7.2 (3 of 3 samples each); 6 of 15 feasible transitions."),
+        bar="16 of 16 under the loss-8 bar at seed 7 (own 1.2 / 2.0 / 2.9 / 3.0), held-out seeds 1000 / 2000 15 of 15 feasible; in the organic feel band. Not lossless: it corrects composition by starving misplaced surplus on a timer."),
+    "sort": dict(
+        what="No network: a tadpole's TYPE is (element, body region). Each type climbs a few Gaussian morphogen wells in body coordinates (positional information), a newborn commits to the well its type under-occupies (fate), unlike types push apart harder than like types (differential adhesion), and a joint composition homeostat decides what is laid. 17 numbers found by CMA-ES.",
+        body="Local sorting around a census and the body's centre; nothing assigns a tadpole a place.",
+        sorting="Emergent tissue sorting (Steinberg): like cells pack together, boundaries sharpen. Adding the element term costs this rule 0.0-0.9, against 4-10 for the learned rule.",
+        switching="Majority plan with a 12-step dwell; surplus tadpoles MOLT into a deficit element of their own domain, a tadpole with no region may transfer. Nothing dies on a clock.",
+        watch="Sorting in motion: a mixed knot separating into tissues. The dragonfly's three-region domain split is its weakest part.",
+        bar="12 of 13 feasible under the loss-8 bar at seed 7 (own 1.4 / 2.4 / 1.05 / 5.0); held-out 13 / 13 / 13 / 12. Lossless by design."),
+    "posinfo": dict(
+        what="The learned G2 rule given body-frame positional inputs (where am I in the body) and trained by backprop, plus a designed (element, domain) production homeostat that lays and molts toward the plan's mix.",
+        body="Emergent from local perception plus a body frame.",
+        sorting="Learned, with the position input the plain learned rule lacked.",
+        switching="The homeostat re-forms surplus members into deficit elements; the switches were not trained when this was published.",
+        watch="Whether it keeps the learned rule's organic swarming while the body is accurate.",
+        bar="Passes tier 1 under the bar (3.2 / 6.9 / 4.4 / 6.7); switches not yet."),
+    "meta": dict(
+        what="The learned rule with a designed metamorphosis homeostat ON during training: tadpoles of the element most over the plan re-form, over 12 slowed steps and at most 8% at a time, into the element most under it; the network only learned shape.",
+        body="Emergent from local perception.",
+        sorting="Learned (none designed).",
+        switching="Metamorphosis carries composition across a switch; every passing switch truly reshapes.",
+        watch="Members visibly changing element after a cull.",
+        bar="7/8 on the old 8-test yardstick on five seeds; own plans 11.8-14.8 fail the loss-8 bar."),
+    "meta-oracle": dict(
+        what="The frozen learned G2 rule with a DESIGNED conformity metamorph and no training at all: each step, tadpoles of the element most over the majority's plan start re-forming into the element most under it (12 slowed steps, at most 8% at once).",
+        body="Emergent from local perception.",
+        sorting="Learned (none designed).",
+        switching="Designed metamorphosis: the clearest evidence that composition should be designed and shape learned.",
+        watch="Switched bodies truly reshape (jelly to puffer, puffer to dragonfly).",
+        bar="7/8 on the old 8-test yardstick with zero training; fails the loss-8 bar."),
+    "colony": dict(
+        what="The learned rule plus one shared colony state (a small recurrent net) that reads the swarm's summary, votes the plan and biases which elements breed.",
+        body="Emergent from local perception, steered by the colony's vote.",
+        sorting="Learned.",
+        switching="The vote flips 20-60 steps after a cull, cleanly and with hysteresis, but the refill burst comes first.",
+        watch="The plan vote flipping (results/colony/vote_trace.json).",
+        bar="5.0 / 8 mean over seeds 7-10 (control without the colony 4.25); fails the loss-8 bar."),
+    "distill": dict(
+        what="A local network student taught by the designed field model (behaviour cloning + DAgger): every tadpole sees only its neighbours and the population census.",
+        body="Emergent from local perception; the plan exists only in the weights.",
+        sorting="Learned from field's labels.",
+        switching="A per-tadpole census belief with a dwell.",
+        watch="Blurrier bodies than field and no healing: the measured price of giving up the global frame.",
+        bar="7 of 16 on the full yardstick under the old bar; own-plan divergence ~25-45, fails the loss-8 bar."),
     "hgrid-oracle": dict(
         what="Two levels: a coarse 3D grid (a cellular automaton over space) holds, per element and slot, how many tadpoles are WANTED there versus present; boids below follow the gradient of their own class's shortage.",
         body="The grid carries the plan; the boids only read their local cell, so the body assembles from local deficits.",

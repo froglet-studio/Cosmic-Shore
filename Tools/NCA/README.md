@@ -749,6 +749,13 @@ A target element a body holds fewer than 2 of cannot take over; that test is n/a
 > **Under the loss-8 bar (later the same day) every row above except field fails tier 1.** See
 > [`DISCOVERIES.md`](DISCOVERIES.md) for the current table, the diagnosis (tier 1 is a sorting
 > problem), and the catalogue of every process family the research has tried.
+>
+> **At the loss-8 bar (19:30 UTC):** **hgrid2** (grid morphogen 2, local fields) passes **16/16** at seed 7
+> (own 1.2 / 2.0 / 2.9 / 3.0); **sort** (emergent cell sorting, lossless by design) 12/13 feasible
+> (own 1.4 / 2.4 / 1.05 / 5.0); **posinfo** (learned rule + positional input + designed homeostat)
+> passes tier 1 (3.2 / 6.9 / 4.4 / 6.7). `scorecard.py` now scores any model on the lead's three
+> axes at once: accurate, lossless (no self-inflicted deaths), performant (ms/step) and emergent
+> (the organic feel band + locality).
 
 | Approach | 16-test result (fair cull, 3 samples) | Own plans | Switches |
 |---|---|---|---|

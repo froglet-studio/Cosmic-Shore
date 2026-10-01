@@ -31,6 +31,55 @@ alone costs 2.3–4.5. The loss comes from SORTING. Element placement adds 4–1
 exactly with how GLOBAL each family's sorting mechanism is: global slot assignment (field) <
 per-class grid deficits (hgrid) < per-group anchors (compact) ≈ none (G2, evo).
 
+## Update 19:30 UTC — the families converge: designed composition + local shape
+
+**Three LOCAL families now pass tier 1 under the loss-8 bar, and one passes everything.** All of them
+pair a DESIGNED composition controller (who lays or molts into what) with a LOCAL shape rule.
+Composition is the easy part to design and the hard part to learn; shape is where the organic
+look lives. That pairing is the strongest cross-family finding of the day.
+
+| model | locality | own-plan losses (whale / jelly / puffer / dragonfly) | 16-test, seed 7 | held-out | lossless? |
+|---|---|---|---|---|---|
+| **hgrid2** (grid morphogen 2) | local fields | **1.2 / 2.0 / 2.9 / 3.0** | **16 / 16** | seeds 1000, 2000: 15/15 feasible (its session); seed 23: SEED23_HGRID2 | **no**: starves misplaced surplus on a timer |
+| **sort** (emergent cell sorting) | local + census + body centre | 1.4 / 2.4 / 1.05 / 5.0 | 12 / 13 feasible | 13 / 13 / 13 / 12 over 4 seeds (its session); seed 23: SEED23_SORT | **yes**, by design (molting + region transfer) |
+| **posinfo** (learned rule + positional input + designed homeostat) | local + body frame | 3.2 / 6.9 / 4.4 / 6.7 | 4 / 16 (switches untrained) | seed 23: SEED23_POSINFO | homeostat molts; not audited |
+| field (designed, global assignment) | global | 3.1 / 1.6 / 1.4 / 4.6 | 9 / 13 | — | yes |
+| distill (local student of field) | local | ~25-45 | 7/16 (old bar) | — | — |
+| meta (designed metamorph + learned shape) | local | 11.8-14.8 | 7/8 old yardstick, 5 seeds | — | yes |
+| colony (shared GRU colony state) | mixed | — | 5.0/8 mean (control 4.25) | — | — |
+
+**The new scorecard** (`scorecard.py`) scores any model on the lead's three words at once: ACCURATE
+(swarm_eval at the bar, per seed), LOSSLESS (self-inflicted deaths per 1k tadpole-steps; the
+yardstick's cull and molting do not count), PERFORMANT (ms/step, one grown swarm, one thread) and
+EMERGENT (the organic feel band + declared locality). Baseline: **field** is lossless, 3.4 ms/step
+at 134 tadpoles, and OUT of the organic band (jerk_rel 0.15 "too clean", 9.6% of members stuck),
+matching the lead's verdict.
+
+SCORECARD_TABLE
+
+**The in-game grid species** (`cece/swarm-fauna-game`, `SwarmGridCore`, Docs/SWARM_FAUNA.md §8):
+hgrid2 ported to C#, side by side with field in the Swarm cell. Research mode reproduces Python
+hgrid2 (own 7.9 / 4.7 / 4.3 / 7.7 vs 6.7 / 4.6 / 5.0 / 7.4 over 8 seeds; feel metrics equal to the
+second decimal). Game mode (one domain, hunger never kills) lands at 5.1 / 1.6 / 3.4 / 3.9, 32/32.
+Findings that flow back to the research:
+- **One domain makes the grid easier**: the domain sort was the hard part of hgrid2.
+- **A body hovering on its goal must not chase its own jitter**: re-aiming every step spun the field creature ~1,000°/min while feeding and smeared the grid body (whale 8.1 → 5.6 once heading was held).
+- **Without molting, a morph leaves debris**: with hunger disabled (no imposed death), the old majority's surplus clings to the new body. This is the gap the round-4 `combo` session targets.
+- **The grid's cost is per step, not per member**: 0.6-1.2 ms/step on CoreCLR against field's 0.1-0.9; shrink G or run the coarse grid every other step.
+- **Feel in numbers**: field in the game 9.4% stuck, coherence 0.78 (lock-step); grid 0% stuck, 0.57 — the field's mistakes are frozen members, the grid's are members still searching.
+- An **overtune pass** (the lead authorised "the next order of magnitude across the board") put 24 swarms in the cell: 5,008 always-on heart colliders at the caps against the Lattice cell's 1,080. It is unprofiled; QA-SWARM-GRID asks for a Profiler capture.
+
+**Sort's mechanism ablations** (results/sort/NOTE.md): fate commitment is essential (0.7/13
+without); molting + cross-laying carry the switches; adhesion helps (12.7 → 11.3 without);
+Potts swaps are inert; one well per type (a single French flag) fails (4/13). CMA-ES found
+Steinberg's rule unprompted: unlike cells repel harder than like cells.
+
+**Round 4** (launched 19:14): `combo` (cece/swarm-x-combo) builds hgrid2 with its hunger death
+replaced by sort's molting/transfer, plus sort's fate and adhesion where needed, plus a cost curve
+(G = 16 / 12 / 8, coarse grid every other step), aiming at all four scorecard axes at seeds
+7 / 23 / 41. `posinfo2` (cece/swarm-x-posinfo2) takes the learned rule (the lead's favourite feel)
+to the full scorecard, with the composition homeostat on during training.
+
 ## Update 18:20 UTC — first local tier-1 pass, and two negatives
 
 - **hgrid2 (Grid morphogen 2: coarse class-deficit grid + a FINE per-class morphogen + continuous target + feed-forward) passes tier 1 under the loss-8 bar**: own-plan losses 6.1 / 4.8 / 5.5 / 7.2 at seed 7 (3/3 samples each), 6 of 15 feasible transitions. Held-out: seed 23 own 4/4 (standard switches 2/4); seed 41 own 2/4 (whale and dragonfly at 1/3 samples - at the bar's edge). The first approach in which every tadpole reads only fields at its own position and the body is accurate. It is the family the lead judged "accurate and organic"; its feel metrics are in results/hgrid2/feel.json.
@@ -89,8 +138,8 @@ taught it something.
 
 ## Open threads (deliberately not mistaken for results)
 
-- colony, zoo and distill: code but no published scores.
-- evo16 (held-out seeds and healing for evo): no branch pushed yet.
+- zoo (MAP-Elites personalities over field) and evo16 (evo hardening) report at the OLD "closest of four" bar only: zoo found the old yardstick never binds (259/259 candidates, 48/48 uniform-random genomes pass); evo16 measured the round-1 evo genome at 128/128 over 8 held-out seeds. Both must be rescored at the loss-8 bar before they count.
+- Seven sessions were archived with follow-up runs still in flight (distill's final DAgger round, meta l3, colony V2, evo stage 5, play p3, hgrid round 1, H1). Their published results are merged; the in-flight runs are lost.
 - The task-vector hybrid stage (`swarm_hybrid.py`): built, never run. All four specialists are done except Mass.
 - Food element steering the laid element in the game: proposed, not implemented.
 - The H3 rescore used the default loss (75–128); its own scale-invariant loss gives 17–31. It fails the bar either way.
