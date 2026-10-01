@@ -851,7 +851,7 @@ def lose_majority(sw: Swarm, b, gen, keep_min=6, to=None, mode="excess", margin=
         keep = torch.tensor([min(int(c[e]), int(math.floor(sc * float(frac[e])))) if ok[e] else 0 for e in range(4)])
         if int(keep.argmax()) != e2 or int(keep.sum()) < keep_min:
             return None
-        kills = c.cpu() - keep
+        kills = c - keep.to(c.device)
     else:
         extra = int(math.ceil(margin * n)) if mode == "tie" else \
             int(torch.randint(0, max(1, int(c[e2]) // 3 + 1), (1,), generator=gen))
