@@ -7,6 +7,7 @@
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> grid    # the grid core's only
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> sort    # the sort core's only
 #   bash Tools/Build/swarm_core_harness/run.sh export <plans> <out.json> 7,23,41   # states for score_grid.py / score_sort.py
+#   bash Tools/Build/swarm_core_harness/run.sh yardstick <plans> <out.json> 7,23,41 3 game16,game8   # the 16-transition yardstick (score_combo.py)
 #
 # Needs a dotnet 8 SDK (a per-user install is fine - see .claude/skills/asset-surgery §4). No
 # .csproj on purpose: the repo gitignores *.csproj. Everything builds into $TMPDIR.
@@ -29,5 +30,5 @@ ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
   "$HERE/Program.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"
-if [ "${1:-}" = "export" ]; then exec "$DOTNET" "$OUT/swarmcore.exe" "$@"; fi
+case "${1:-}" in export|yardstick|evofate) exec "$DOTNET" "$OUT/swarmcore.exe" "$@";; esac
 "$DOTNET" "$OUT/swarmcore.exe" "${1:-$ROOT/Assets/_SO_Assets/Swarm Fauna/Plans}" "${2:-}"

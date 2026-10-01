@@ -1,6 +1,6 @@
-// The swarm fauna's SECOND simulation core - the research model `hgrid2` (the GRID MORPHOGEN:
-// Tools/NCA/hgrid2_model.py over hgrid_boid.py + hgrid_core.py, on cece/gifted-curie-x2cpd0),
-// ported to plain C# over a struct-of-arrays. Same shape as SwarmFieldCore: no UnityEngine, the
+// The swarm fauna's SECOND simulation core - the research model `combo` (the GRID MORPHOGEN made
+// LOSSLESS: Tools/NCA/combo_model.py over hgrid2_model.py + hgrid_boid.py + hgrid_core.py, on
+// cece/gifted-curie-x2cpd0), ported to plain C# over a struct-of-arrays. Same shape as SwarmFieldCore: no UnityEngine, the
 // SAME file compiles and RUNS headless (Tools/Build/swarm_core_harness), the glue (SwarmFauna)
 // converts at the boundary. Docs/SWARM_FAUNA.md §8 is the design record.
 //
@@ -18,6 +18,19 @@
 // Composition is the grid's too: a tadpole LAYS into its class's deficit (with probability
 // proportional to the deficit; a share takes the most-wanted element), and a class in surplus where
 // it is not wanted grows HUNGRY. The plan is the majority element's, with an optional lock.
+//
+// COMBO'S CORRECTOR (round 5, Docs/SWARM_FAUNA.md §10) replaces hunger with a MOLT: a member of a
+// class in surplus re-differentiates into a class in deficit instead of withering - so a morph keeps
+// every tadpole (finding 17's stranded debris is gone) and composition converges on the plan:
+//   * a staggered molt clock (each member its own rate factor), excess/deficit QUOTAS per class,
+//     a guard so a class never molts below its want, and slack for elements the plan wants <=2 of;
+//   * ratio target 2: spare capacity takes the body's global residual element mix;
+//   * lay cap: no egg while the live count is already the plan's whole grid integral;
+//   * migrants: a member stranded in an unwanted cell walks to the nearest wanted one;
+//   * sigma_rel: the fine bump width is 1.2 x the plan's own mean neighbour spacing.
+// orphan_proxy / transfer2 (STEERING a member toward a domain proxy) are ported but INERT with one
+// domain: every plan contains all four elements, so no class is ever an orphan.
+// The game animates the molt (MoltBegan .. MoltDone over MoltSteps) like the sort core.
 //
 // What the GAME adds (all switchable, so the harness can run the research model exactly):
 //   * laying is FUNDED out of the stomach (an egg costs eaten volume), as in SwarmFieldCore;
@@ -49,17 +62,59 @@ namespace CosmicShore.Gameplay
         public float PLay = 0.1f, PCross = 0.25f;
         public int HatchSteps = 2;
         public float Ease = 0.3f;
-        public float StarveRate = 0.04f, StarveTol = 0.15f, StarveLocal = 0f, DieAt = 1f;
-        /// <summary>Plan switching margin (x headcount) and the steps a committed plan holds.</summary>
+        public float StarveRate = 0.04f, StarveTol = 0f, StarveLocal = 0f, DieAt = 1f;
+        /// <summary>Plan switching margin (x headcount) and the steps a committed plan holds (combo: 60).</summary>
         public float Hyst = 0f;
-        public int Lock = 0;
+        public int Lock = 60;
+        /// <summary>hgrid2 `dmap_low`: a plan with k &lt; 3 slots maps them onto domains 0..k-1 (research only:
+        /// the game has one domain).</summary>
+        public bool DmapLow = true;
         public int Period = 8;
         /// <summary>Per-plan animation period override, indexed by research element (0 = use Period).
         /// hgrid2: the dragonfly (Time) runs at 16 - its wings move 10 voxels a frame.</summary>
         public int[] Periods = { 0, 0, 0, 16 };
         // ── the fine morphogen (hgrid2_model.Cfg) ──
         public float KFine = 2f, Sigma = 3.5f, KFF = 1.5f;
+        /// <summary>hgrid2 `sigma_rel`: the fine bump width is this x the plan's own mean nearest-neighbour
+        /// spacing (frame 0), per plan. 0 = use the fixed <see cref="Sigma"/> (the pre-round-5 port).</summary>
+        public float SigmaRel = 1.2f;
         public bool Settle = true, Interp = true;
+        /// <summary>hgrid2 MIGRANTS (`k_mig`): a tadpole where its class is barely wanted (own-class want
+        /// below <see cref="MigTh"/> of a bump) heads at KMig x its top speed for the nearest site where its
+        /// class is MISSING (score = deficit - distance / MigL). No site is ever assigned. 0 = off.</summary>
+        public float KMig = 1f, MigTh = 0.3f, MigL = 40f;
+
+        // ── combo (Tools/NCA/combo_model.py, results/combo/params.json): hgrid2 made LOSSLESS ──
+        /// <summary>The composition corrector MOLTS instead of starving: a surplus member re-forms its crystal
+        /// into the element its own domain is most short of (combo's `molt`). False = the pre-round-5 game
+        /// core's hunger (it only ever picked the starvation victim; nothing corrected a morph's surplus -
+        /// finding 17), or, with <see cref="HungerKills"/>, the old research cull.</summary>
+        public bool Molt = true;
+        /// <summary>Molt clock per step, x a per-member factor in [0.5, 1.5]: a molt takes 17-50 steps of being surplus.</summary>
+        public float MoltRate = 0.04f;
+        /// <summary>No molt may bring a non-majority element level with the plan's major (`molt_guard`).</summary>
+        public bool MoltGuard = true;
+        /// <summary>A class may exceed its (ratio) target by this many before it molts (`starve_slack`)...</summary>
+        public float StarveSlack = 0f;
+        /// <summary>...except the classes of an element the plan holds &lt;= 2 of, which get this (`small_slack`):
+        /// a tiny element kept a little over the plan stays viable as a future majority.</summary>
+        public float SmallSlack = 2f;
+        /// <summary>`ratio` 2 (`ratio_target2`): headcount is not a goal, element RATIOS are - a domain's spare
+        /// capacity (members beyond its slot, or a whole domain the plan has no slot for) takes the element mix
+        /// the BODY AS A WHOLE is still missing. 0 = molt toward the plan's own counts.</summary>
+        public int Ratio = 2;
+        /// <summary>`orphan_proxy`: a member whose class the plan wants none of steers by its ELEMENT's best
+        /// slot. `transfer2`: extras of an overfull class steer to their element's unfilled sites in another
+        /// region. Both are about DOMAINS, so both are inert with the game's one domain (every element of every
+        /// plan has a slot there); they are kept so research mode is combo exactly.</summary>
+        public bool OrphanProxy = true, Transfer2 = true;
+        /// <summary>`lay_cap`: no egg while the body holds this x the plan's headcount (eggs included). 0 = off.
+        /// Not creating mass is allowed; aging it out is not.</summary>
+        public float LayCap = 1f;
+        /// <summary>GAME: a committed molt is ANIMATED over this many steps (MoltBegan .. MoltDone; the glue
+        /// shrinks the heart away and re-forms it as the new element). The member counts and steers as its
+        /// new element from the first step, exactly as combo flips it. 0 = no events (research).</summary>
+        public int MoltSteps = 0;
         // ── the research World (swarm_nca.World) ──
         public float R0 = 2.4f, Rep = 0.4f, RBud = 2.6f;
         public float[] VMax = { 0.8f, 0.8f, 0.8f, 2f };
@@ -112,6 +167,9 @@ namespace CosmicShore.Gameplay
         // ── per tadpole (struct of arrays) ──
         public readonly Vector3[] Pos, Vel, Facing;
         public readonly int[] Elem, Dom, Age, MoltTo;
+        /// <summary>The domain a member STEERS by this step (combo's orphan proxy / region transfer); its own
+        /// domain unless it is an orphan or an overfull class's extra. Never changes what it IS.</summary>
+        public readonly int[] SteerDom;
         public readonly bool[] Active, Hatched;
         public readonly float[] Startle, Hunger, Alpha, Molt;
         /// <summary>The look state the scorer decodes: raw prism 3 | tier logits 3 | facing 3 | spindle 2.</summary>
@@ -120,6 +178,8 @@ namespace CosmicShore.Gameplay
 
         // ── per swarm ──
         public int PlanIx = -1, Clock, Deaths;
+        /// <summary>Committed molts so far (combo's `molts` counter).</summary>
+        public int Molts;
         public readonly int[] DMap = { 0, 1, 2 };   // slot -> domain
         public float ThreatLevel;
         public Vector3 Anchor, SwimTarget;
@@ -133,6 +193,14 @@ namespace CosmicShore.Gameplay
         int _chg = -1000000000, _layHoldUntil;
         // per-step scratch (Step allocates nothing)
         readonly float[] _wanted = new float[NCLS], _have = new float[NCLS], _rel = new float[NCLS], _bestRel = new float[3];
+        // combo corrector scratch
+        readonly float[] _cw = new float[NCLS], _ch = new float[NCLS], _ct = new float[NCLS], _cex = new float[NCLS], _cdef = new float[NCLS], _cq = new float[NCLS];
+        readonly int[] _cand; readonly float[] _candH;
+        /// <summary>Per-slot molt-clock rate factor in [0.5, 1.5] (combo's staggered `_U`).</summary>
+        readonly float[] _u;
+        // migrants scratch (per plan unit)
+        readonly float[] _wantT, _haveT;
+        static readonly Dictionary<SwarmPlanData, float> s_nn = new();
         readonly int[] _cnt = new int[4], _dcnt = new int[3], _bestE = new int[3];
         readonly List<int> _parents = new();
         int[] _childE;
@@ -162,6 +230,8 @@ namespace CosmicShore.Gameplay
             Elem = new int[Cap]; Dom = new int[Cap]; Age = new int[Cap]; MoltTo = new int[Cap];
             Active = new bool[Cap]; Hatched = new bool[Cap];
             Startle = new float[Cap]; Hunger = new float[Cap]; Alpha = new float[Cap]; Molt = new float[Cap];
+            SteerDom = new int[Cap]; _cand = new int[Cap]; _candH = new float[Cap];
+            _u = new float[Cap]; var ur = new Random(1234); for (int i = 0; i < Cap; i++) _u[i] = 0.5f + (float)ur.NextDouble();
             Look = new float[Cap * LOOK];
             _g3 = c.G * c.G * c.G;
             _dd = new float[13 * _g3]; _a = new float[NCLS * _g3]; _tmp = new float[NCLS * _g3];
@@ -170,6 +240,7 @@ namespace CosmicShore.Gameplay
             _live0 = new bool[Cap]; _cls = new int[Cap];
             _maxN = 1; foreach (var p in plansByElement) _maxN = Math.Max(_maxN, p.N);
             _tp = new Vector3[_maxN]; _tv = new Vector3[_maxN]; _tc = new int[_maxN]; _liveIx = new int[Cap];
+            _wantT = new float[_maxN]; _haveT = new float[_maxN];
             _sorted = new int[Cap]; _cellOf = new int[Cap]; _push = new Vector3[Cap]; _childE = new int[Cap];
             for (int i = 0; i < Cap; i++) Facing[i] = Vector3.UnitZ;
         }
@@ -211,7 +282,7 @@ namespace CosmicShore.Gameplay
         {
             if (i < 0 || i >= Cap || !Active[i]) return;
             if (C.KillLayHoldSteps > 0) _layHoldUntil = Math.Max(_layHoldUntil, Clock + C.KillLayHoldSteps);
-            Active[i] = false; Hatched[i] = false; Hunger[i] = 0; Startle[i] = 0; Vel[i] = Vector3.Zero;
+            Active[i] = false; Hatched[i] = false; Hunger[i] = 0; Startle[i] = 0; Vel[i] = Vector3.Zero; Molt[i] = 0f;
             Array.Clear(Look, i * LOOK, LOOK);
         }
 
@@ -362,6 +433,7 @@ namespace CosmicShore.Gameplay
 
             // ── plan by majority (hgrid_boid.decide_plan) with its lock (hgrid2 Cfg.lock)
             DecidePlan();
+            LowDmap();
             var plan = Plans[PlanIx];
 
             // ── swimming: head for the swim target before the body frame is used this step
@@ -517,8 +589,9 @@ namespace CosmicShore.Gameplay
                 else if (Active[i]) { Alpha[i] = 1f; Age[i] = 0; }
             }
 
-            // ── hunger: a surplus class (whole swarm) sitting where its class is not wanted
-            for (int i = 0; i < Cap; i++)
+            // ── (pre-round-5) hunger: a surplus class (whole swarm) sitting where its class is not wanted.
+            // With Molt on, the molt clock replaces it (below, after laying - combo's order).
+            for (int i = 0; i < Cap && !C.Molt; i++)
             {
                 if (!_live0[i]) continue;
                 int c = _cls[i];
@@ -536,8 +609,19 @@ namespace CosmicShore.Gameplay
             // ── laying into the deficits (hgrid_boid.FieldBoid._lay) - unless the body is wounded
             if (Clock >= _layHoldUntil) Lay(have, wanted, centre, swell);
 
-            // ── the fine morphogen (hgrid2_model.Boid2.fine_disp)
-            FineLayer(plan, swell);
+            // ── composition: molt instead of starve (combo_model.ComboBoid.starve_staggered)
+            AdvanceMolts();
+            if (C.Molt) MoltCorrector(plan);
+
+            // ── who steers by which domain's sites (combo's orphan proxy + region transfer)
+            SteerDomains(plan);
+
+            // ── the fine morphogen (hgrid2_model.Boid2.fine_disp), then the migrants (Boid2.migrate)
+            if (BuildTargets(plan, swell))
+            {
+                FineLayer(plan);
+                if (C.KMig > 0f) Migrate(plan);
+            }
 
             ThreatLevel = 0.85f * ThreatLevel + 0.15f * MathF.Min(1f, 3f * stSum / Math.Max(1, nLive));
             for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) Facing[i] = FacingOf(i);
@@ -560,10 +644,26 @@ namespace CosmicShore.Gameplay
                 _chg = Clock;
                 Events.Add(new SwarmEvent { Kind = SwarmEventKind.Switched, Index = cur, Other = next });
             }
-            else _chg = Clock;
             PlanIx = next;
             MapDomains(Plans[next], dcnt, n);
             if (C.Oriented) SetHeading(Heading, snap: true);
+        }
+
+        /// <summary>hgrid2_model.Boid2.low_dmap: a plan with k &lt; 3 slots uses domains 0..k-1 (the larger slot
+        /// to the more numerous of them). Run every step after the plan decision; a no-op once it holds.</summary>
+        void LowDmap()
+        {
+            if (!C.DmapLow || !C.DomainSlots || PlanIx < 0) return;
+            var plan = Plans[PlanIx];
+            int k = 0; for (int q = 0; q < 3; q++) if (plan.SlotMix[q] > 0) k++;
+            if (k >= 3) return;
+            if (k == 1) { if (DMap[0] != 0) { DMap[0] = 0; DMap[1] = 1; DMap[2] = 2; } return; }
+            if ((DMap[0] == 0 && DMap[1] == 1) || (DMap[0] == 1 && DMap[1] == 0)) return;
+            var dcnt = _dcnt;
+            // domains 0..1 sorted by -count (stable), slots 0..1 sorted by -share (stable)
+            int d0 = dcnt[1] > dcnt[0] ? 1 : 0, d1 = 1 - d0;
+            int s0 = plan.SlotMix[1] > plan.SlotMix[0] ? 1 : 0, s1 = 1 - s0;
+            DMap[s0] = d0; DMap[s1] = d1; DMap[2] = 2;
         }
 
         static readonly int[][] PERM3 = { new[] { 0, 1, 2 }, new[] { 0, 2, 1 }, new[] { 1, 0, 2 }, new[] { 1, 2, 0 }, new[] { 2, 0, 1 }, new[] { 2, 1, 0 } };
@@ -973,6 +1073,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void Lay(float[] have, float[] want, Vector3 centre, float swell)
         {
+            if (C.LayCap > 0f)
+            {
+                // combo `lay_cap`: no egg while the body holds the plan's headcount, eggs included (the grid's
+                // own integral of the wanted density, as combo reads it)
+                int nAct = 0; for (int i = 0; i < Cap; i++) if (Active[i]) nAct++;
+                float wsum = 0; for (int c = 0; c < NCLS; c++) wsum += want[c];
+                if (nAct >= C.LayCap * wsum) return;
+            }
             var rel = _rel;
             for (int c = 0; c < NCLS; c++) rel[c] = Math.Clamp((want[c] - have[c]) / MathF.Max(have[c], 1f), 0f, 1f);
             var bestRel = _bestRel; var bestE = _bestE;
@@ -1023,18 +1131,205 @@ namespace CosmicShore.Gameplay
 
         // ──────────────────────────────────────────────────────────────── the fine morphogen
 
-        /// <summary>
-        /// hgrid2_model.Boid2.fine_disp: per live tadpole, climb grad phi_c where phi_c is a Gaussian bump
-        /// per wanted unit of its class minus a bump per live tadpole of its class (the target moves
-        /// CONTINUOUSLY between the plan's frames), plus feed-forward of the nearby same-class targets'
-        /// motion. Gain ramps with how settled the body is (have / want). Clamped at the element's top speed.
-        /// </summary>
-        void FineLayer(SwarmPlanData plan, float swell)
+        // ──────────────────────────────────────────────────────────────── the lossless corrector (combo)
+
+        /// <summary>The fine bump width for a plan: SigmaRel x its own mean nearest-neighbour spacing
+        /// (hgrid2 `sigma_rel`, frame 0), cached per plan; or the fixed Sigma.</summary>
+        float SigmaOf(SwarmPlanData plan)
         {
-            if (C.KFine == 0f && C.KFF == 0f) return;
+            if (C.SigmaRel <= 0f) return C.Sigma;
+            float nn;
+            lock (s_nn)
+            {
+                if (!s_nn.TryGetValue(plan, out nn))
+                {
+                    var P = plan.P[0]; double sum = 0;
+                    for (int a = 0; a < plan.N; a++)
+                    {
+                        float best = float.MaxValue;
+                        for (int b = 0; b < plan.N; b++) if (b != a) best = MathF.Min(best, Vector3.DistanceSquared(P[a], P[b]));
+                        sum += MathF.Sqrt(best);
+                    }
+                    s_nn[plan] = nn = (float)(sum / plan.N);
+                }
+            }
+            return C.SigmaRel * nn;
+        }
+
+        /// <summary>The plan's wanted count per class (element x DOMAIN, through the slot map), frame 0.</summary>
+        void PlanClassCounts(SwarmPlanData plan, float[] w)
+        {
+            Array.Clear(w, 0, NCLS);
+            for (int k = 0; k < plan.N; k++) w[plan.Elem[k] * 3 + DMap[plan.Slot[k]]] += 1f;
+        }
+
+        /// <summary>GAME: a committed molt plays out over MoltSteps (the glue animates the heart re-forming).</summary>
+        void AdvanceMolts()
+        {
+            if (C.MoltSteps <= 0) return;
+            for (int i = 0; i < Cap; i++)
+            {
+                if (!Active[i] || Molt[i] <= 0f) continue;
+                Molt[i] += 1f / C.MoltSteps;
+                if (Molt[i] >= 1f)
+                {
+                    Molt[i] = 0f;
+                    Events.Add(new SwarmEvent { Kind = SwarmEventKind.MoltDone, Index = i, Other = Elem[i] });
+                }
+            }
+        }
+
+        /// <summary>
+        /// combo_model.ComboBoid.starve_staggered with `molt`: hgrid2's identical selection - a member of a class
+        /// the swarm holds more of than the plan's (ratio) target, whose own domain has somewhere to put it,
+        /// winds a staggered clock - but at the end of the clock it MOLTS: it re-forms its crystal into the
+        /// element its own domain is most short of. Quotas: a class molts at most its excess, a receiving class
+        /// takes at most its deficit, and no molt may bring a non-majority element level with the plan's major.
+        /// Domain never changes. Nothing dies.
+        /// </summary>
+        void MoltCorrector(SwarmPlanData plan)
+        {
+            var want = _cw; var have = _ch; var tgt = _ct; var excess = _cex; var deficit = _cdef;
+            PlanClassCounts(plan, want);
+            Array.Clear(have, 0, NCLS);
+            var ecnt = _cnt; Array.Clear(ecnt, 0, 4);
+            for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) { have[Elem[i] * 3 + Dom[i]] += 1f; ecnt[Elem[i]]++; }
+            // slack: classes of an element the plan holds <= 2 of get SmallSlack
+            Span<float> slack = stackalloc float[NCLS];
+            for (int e = 0; e < 4; e++)
+            {
+                float we = want[e * 3] + want[e * 3 + 1] + want[e * 3 + 2];
+                for (int d = 0; d < 3; d++) slack[e * 3 + d] = C.SmallSlack >= 0f && we <= 2f ? C.SmallSlack : C.StarveSlack;
+            }
+            if (C.Ratio == 2) RatioTarget2(want, have, tgt); else Array.Copy(want, tgt, NCLS);
+            Span<float> ddef = stackalloc float[3];
+            for (int c = 0; c < NCLS; c++)
+            {
+                excess[c] = MathF.Max(0f, have[c] - MathF.Floor((1 + C.StarveTol) * tgt[c]) - slack[c]);
+                deficit[c] = MathF.Max(0f, tgt[c] - have[c]);
+                ddef[c % 3] += deficit[c];
+            }
+            int nc = 0;
+            for (int i = 0; i < Cap; i++)
+            {
+                bool live = Active[i] && Hatched[i];
+                int c = Elem[i] * 3 + Dom[i];
+                bool moltable = live && excess[c] > 0f && ddef[Dom[i]] > 0.5f;
+                Hunger[i] = moltable ? Hunger[i] + C.MoltRate * _u[i] : MathF.Max(0f, Hunger[i] - C.MoltRate);
+                if (moltable && Hunger[i] >= 1f) { _cand[nc] = i; _candH[nc] = Hunger[i]; nc++; }
+            }
+            if (nc == 0 || PlanIx < 0) return;
+            // most-advanced clock first (stable on index for ties)
+            for (int a = 1; a < nc; a++)
+            {
+                int ci = _cand[a]; float ch = _candH[a]; int b = a - 1;
+                while (b >= 0 && _candH[b] < ch) { _cand[b + 1] = _cand[b]; _candH[b + 1] = _candH[b]; b--; }
+                _cand[b + 1] = ci; _candH[b + 1] = ch;
+            }
+            var quota = _cq; Array.Copy(excess, quota, NCLS);
+            int maj = plan.MajorElement;
+            Span<float> opts = stackalloc float[4];
+            for (int a = 0; a < nc; a++)
+            {
+                int i = _cand[a], c = Elem[i] * 3 + Dom[i], d = Dom[i], e0 = Elem[i];
+                if (quota[c] < 1f) { Hunger[i] = 1f; continue; }
+                for (int e = 0; e < 4; e++) opts[e] = deficit[e * 3 + d];
+                opts[e0] = 0f;
+                if (C.MoltGuard)
+                    for (int e = 0; e < 4; e++)
+                        if (e != maj && e != e0 && ecnt[e] + 1 >= ecnt[maj] - (e0 == maj ? 1 : 0)) opts[e] = 0f;
+                int ne = 0; for (int e = 1; e < 4; e++) if (opts[e] > opts[ne]) ne = e;
+                if (opts[ne] < 0.5f) { Hunger[i] = 1f; continue; }
+                Elem[i] = ne;
+                quota[c] -= 1f; deficit[ne * 3 + d] -= 1f;
+                ecnt[e0]--; ecnt[ne]++;
+                Hunger[i] = 0f;
+                Molts++;
+                if (C.MoltSteps > 0)
+                {
+                    Molt[i] = 1e-3f; MoltTo[i] = ne;
+                    Events.Add(new SwarmEvent { Kind = SwarmEventKind.MoltBegan, Index = i, Other = ne });
+                }
+            }
+        }
+
+        /// <summary>combo_model.ComboBoid.ratio_target2: a domain at or above its slot's headcount wants its slot's
+        /// counts PLUS its spare capacity in the element mix the whole body still lacks against the plan's ratios.</summary>
+        static void RatioTarget2(float[] w, float[] h, float[] t)
+        {
+            Span<float> wd = stackalloc float[3], hd = stackalloc float[3], mix = stackalloc float[4], resid = stackalloc float[4];
+            float n = 0, wall = 0;
+            for (int d = 0; d < 3; d++) { for (int e = 0; e < 4; e++) { wd[d] += w[e * 3 + d]; hd[d] += h[e * 3 + d]; } n += hd[d]; }
+            for (int e = 0; e < 4; e++) { mix[e] = w[e * 3] + w[e * 3 + 1] + w[e * 3 + 2]; wall += mix[e]; }
+            float rs = 0;
+            for (int e = 0; e < 4; e++)
+            {
+                mix[e] /= MathF.Max(wall, 1e-6f);
+                float weff = 0;
+                for (int d = 0; d < 3; d++) weff += w[e * 3 + d] * MathF.Min(1f, hd[d] / MathF.Max(wd[d], 1e-6f));
+                resid[e] = MathF.Max(0f, mix[e] * n - weff); rs += resid[e];
+            }
+            for (int e = 0; e < 4; e++)
+                for (int d = 0; d < 3; d++)
+                {
+                    float spare = MathF.Max(0f, hd[d] - wd[d]);
+                    t[e * 3 + d] = hd[d] >= wd[d] ? w[e * 3 + d] + resid[e] / MathF.Max(rs, 1e-6f) * spare : w[e * 3 + d];
+                }
+        }
+
+        /// <summary>
+        /// combo_model.ComboBoid._proxy_dom: the domain each live member STEERS by. An ORPHAN (a class the plan
+        /// wants none of) borrows the domain whose slot wants its element most; with Transfer2, the extras of an
+        /// overfull class (the highest slot indices) steer to their element's unfilled sites in another domain.
+        /// What a member IS never changes. With one domain every member steers by its own.
+        /// </summary>
+        void SteerDomains(SwarmPlanData plan)
+        {
+            for (int i = 0; i < Cap; i++) SteerDom[i] = Dom[i];
+            if (!C.OrphanProxy || !C.DomainSlots) return;
+            var want = _cw; var have = _ch;
+            PlanClassCounts(plan, want);
+            Array.Clear(have, 0, NCLS);
+            for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) have[Elem[i] * 3 + Dom[i]] += 1f;
+            for (int i = 0; i < Cap; i++)
+            {
+                if (!(Active[i] && Hatched[i])) continue;
+                int e = Elem[i];
+                if (want[e * 3 + Dom[i]] >= 0.5f) continue;
+                int bd = 0; for (int d = 1; d < 3; d++) if (want[e * 3 + d] > want[e * 3 + bd]) bd = d;
+                if (want[e * 3 + bd] > 0.5f) SteerDom[i] = bd;
+            }
+            if (!C.Transfer2) return;
+            var h = _ct; Array.Copy(have, h, NCLS);
+            for (int e = 0; e < 4; e++)
+                for (int d = 0; d < 3; d++)
+                {
+                    int ex = (int)(h[e * 3 + d] - want[e * 3 + d]);
+                    if (ex <= 0 || want[e * 3 + d] < 0.5f) continue;
+                    for (int i = Cap - 1; i >= 0 && ex > 0; i--)
+                    {
+                        if (!(Active[i] && Hatched[i]) || Elem[i] != e || Dom[i] != d) continue;
+                        ex--;
+                        int dd = 0; for (int q = 1; q < 3; q++) if (want[e * 3 + q] - h[e * 3 + q] > want[e * 3 + dd] - h[e * 3 + dd]) dd = q;
+                        if (want[e * 3 + dd] - h[e * 3 + dd] < 0.5f) break;
+                        SteerDom[i] = dd; h[e * 3 + dd] += 1f; h[e * 3 + d] -= 1f;
+                    }
+                }
+        }
+
+        // ──────────────────────────────────────────────────────────────── the fine morphogen
+
+        int _nl; float _sigma;
+
+        /// <summary>The fine layer's targets this step (hgrid2_model.Boid2.fine_targets): the plan's units placed at
+        /// the live centroid, moving continuously between frames, with their own velocity and class. False when
+        /// fewer than two members are live.</summary>
+        bool BuildTargets(SwarmPlanData plan, float swell)
+        {
             int nl = 0; Vector3 cen = Vector3.Zero;
             for (int i = 0; i < Cap; i++) if (_live0[i] && Active[i] && Hatched[i]) { _liveIx[nl++] = i; cen += _pos0[i]; }
-            if (nl < 2) return;
+            _nl = nl;
+            if (nl < 2) return false;
             cen /= nl;
             if (C.Quant) cen = Snap(cen);
             int per = PeriodOf(PlanIx), F = plan.P.Length;
@@ -1050,13 +1345,28 @@ namespace CosmicShore.Gameplay
                 _tv[k] = Rotate((p1 - p0) / per);
                 _tc[k] = plan.Elem[k] * 3 + DMap[plan.Slot[k]];
             }
-            float s2 = 2f * C.Sigma * C.Sigma, isig2 = 1f / (C.Sigma * C.Sigma);
+            _sigma = SigmaOf(plan);
+            return true;
+        }
+
+        /// <summary>
+        /// hgrid2_model.Boid2.fine_disp: per live tadpole, climb grad phi_c where phi_c is a Gaussian bump
+        /// per wanted unit of its class minus a bump per live tadpole of its class (the target moves
+        /// CONTINUOUSLY between the plan's frames), plus feed-forward of the nearby same-class targets'
+        /// motion. Gain ramps with how settled the body is (have / want). Clamped at the element's top speed.
+        /// A member's class here uses the domain it STEERS by (combo's orphan proxy).
+        /// </summary>
+        void FineLayer(SwarmPlanData plan)
+        {
+            if (C.KFine == 0f && C.KFF == 0f) return;
+            int nl = _nl;
+            float sg = _sigma, s2 = 2f * sg * sg, isig2 = 1f / (sg * sg);
             float kf = C.KFine * (C.Settle ? Math.Clamp(nl / (float)plan.N, 0f, 1f) : 1f);
             float cut2 = 9f * s2;   // exp(-9) ~ 1e-4: beyond three bump widths a bump contributes nothing
             for (int a1 = 0; a1 < nl; a1++)
             {
                 int i = _liveIx[a1];
-                var x = Pos[i]; int ci = Elem[i] * 3 + Dom[i];
+                var x = Pos[i]; int ci = Elem[i] * 3 + SteerDom[i];
                 Vector3 gWant = Vector3.Zero, gHave = Vector3.Zero, ff = Vector3.Zero; float wsum = 0;
                 for (int k = 0; k < plan.N; k++)
                 {
@@ -1067,7 +1377,7 @@ namespace CosmicShore.Gameplay
                 }
                 for (int b1 = 0; b1 < nl; b1++)
                 {
-                    int j = _liveIx[b1]; if (j == i || Elem[j] * 3 + Dom[j] != ci) continue;
+                    int j = _liveIx[b1]; if (j == i || Elem[j] * 3 + SteerDom[j] != ci) continue;
                     var dx = x - Pos[j]; float d2 = dx.LengthSquared(); if (d2 > cut2) continue;
                     gHave -= MathF.Exp(-d2 / s2) * dx;
                 }
@@ -1079,6 +1389,68 @@ namespace CosmicShore.Gameplay
                 _push[i] = d;
             }
             for (int a1 = 0; a1 < nl; a1++) { int i = _liveIx[a1]; Pos[i] += _push[i]; }
+        }
+
+        /// <summary>
+        /// hgrid2_model.Boid2.migrate: a member where its class is barely wanted (own-class wanted density under
+        /// MigTh of a bump) heads, at KMig x its top speed, for the plan site of its class with the best
+        /// (deficit - distance / MigL), where deficit = the class's wanted density there minus its members'.
+        /// No site is ever assigned - two migrants may pick one site and the fine layer sorts it out.
+        /// </summary>
+        void Migrate(SwarmPlanData plan)
+        {
+            int nl = _nl, M = plan.N;
+            float sg = _sigma, s2 = 2f * sg * sg, cut2 = 9f * s2;
+            bool any = false;
+            for (int a1 = 0; a1 < nl; a1++)
+            {
+                int i = _liveIx[a1]; var x = Pos[i]; int ci = Elem[i] * 3 + SteerDom[i];
+                float own = 0;
+                for (int k = 0; k < M; k++)
+                {
+                    if (_tc[k] != ci) continue;
+                    float d2 = Vector3.DistanceSquared(x, _tp[k]); if (d2 <= cut2) own += MathF.Exp(-d2 / s2);
+                }
+                _st[i] = own;   // reuse: own-class wanted density at the member
+                if (own < C.MigTh) any = true;
+            }
+            if (!any) return;
+            for (int k = 0; k < M; k++)
+            {
+                float wt = 0, ht = 0; var p = _tp[k]; int ck = _tc[k];
+                for (int q = 0; q < M; q++)
+                {
+                    if (_tc[q] != ck) continue;
+                    float d2 = Vector3.DistanceSquared(p, _tp[q]); if (d2 <= cut2) wt += MathF.Exp(-d2 / s2);
+                }
+                for (int b1 = 0; b1 < nl; b1++)
+                {
+                    int j = _liveIx[b1]; if (Elem[j] * 3 + SteerDom[j] != ck) continue;
+                    float d2 = Vector3.DistanceSquared(p, Pos[j]); if (d2 <= cut2) ht += MathF.Exp(-d2 / s2);
+                }
+                _wantT[k] = wt; _haveT[k] = ht;
+            }
+            for (int a1 = 0; a1 < nl; a1++)
+            {
+                int i = _liveIx[a1]; if (_st[i] >= C.MigTh) continue;
+                var x = Pos[i]; int ci = Elem[i] * 3 + SteerDom[i];
+                int best = -1; float bs = float.MinValue;
+                for (int k = 0; k < M; k++)
+                {
+                    if (_tc[k] != ci) continue;
+                    float sc = _wantT[k] - _haveT[k] - Vector3.Distance(_tp[k], x) / C.MigL;
+                    if (sc > bs) { bs = sc; best = k; }
+                }
+                if (best < 0) { _push[i] = Vector3.Zero; continue; }
+                var dv = _tp[best] - x; float dl = dv.Length();
+                float stepL = C.KMig * C.VMax[Elem[i]];
+                _push[i] = dl < stepL ? dv : dv * (stepL / MathF.Max(dl, 1e-6f));
+            }
+            for (int a1 = 0; a1 < nl; a1++)
+            {
+                int i = _liveIx[a1]; if (_st[i] >= C.MigTh) continue;
+                Pos[i] += _push[i];
+            }
         }
     }
 }

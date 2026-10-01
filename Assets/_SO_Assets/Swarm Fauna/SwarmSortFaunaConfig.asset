@@ -46,8 +46,8 @@ MonoBehaviour:
   HeartPrismGap: 0.6
   BirthBloomSeconds: 0.8
   MoltHeartSeconds: 0.5
-  GridSize: 16
-  GridCell: 6
+  GridSize: 8
+  GridCell: 12
   GridKClass: 10
   GridKTotal: 1
   GridPersist: 0.6
@@ -56,10 +56,16 @@ MonoBehaviour:
   GridCrossChance: 0.25
   GridLayMaxPerStep: 3
   GridKFine: 2
+  GridSigmaRel: 1.2
   GridSigma: 3.5
+  GridMigrate: 1
   GridFeedForward: 1.5
   GridFramePeriod: {x: 8, y: 8, z: 8, w: 16}
   GridPlanLock: 30
+  GridLossless: 1
+  GridMoltRate: 0.04
+  GridMoltSteps: 10
+  GridLayCap: 1
   SortWellsPerType: 12
   SortUnitsPerWell: 4
   SortWellWidth: 0.89

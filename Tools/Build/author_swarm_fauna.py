@@ -106,10 +106,14 @@ REGIONS = [
          flora="Frond", food="Time", canon="Frond Flora Time", floor=80, cap=160),
 ]
 MODEL_ID = {"Field": 0, "Grid": 1, "Sort": 2}
-# the grid model's game settings (SwarmGridCore; research hgrid2 values unless noted)
-GRID = dict(GridSize=16, GridCell=6, GridKClass=10, GridKTotal=1, GridPersist=0.6, GridNoise=0.05,
-            GridLayChance=0.1, GridCrossChance=0.25, GridLayMaxPerStep=3, GridKFine=2, GridSigma=3.5,
-            GridFeedForward=1.5, GridPlanLock=30)
+# the grid model's game settings (SwarmGridCore; research combo = hgrid2 made lossless, unless noted).
+# Ordered as SwarmFaunaConfigSO declares them. G8 (cell 12) is the shipped default: measured by
+# Tools/Build/swarm_core_harness/score_combo.py it scores the same as G16 (game 12/13 at every seed,
+# research 16/16 at seed 7) at roughly half the ms/step - Docs/SWARM_FAUNA.md §10.
+GRID = dict(GridSize=8, GridCell=12, GridKClass=10, GridKTotal=1, GridPersist=0.6, GridNoise=0.05,
+            GridLayChance=0.1, GridCrossChance=0.25, GridLayMaxPerStep=3, GridKFine=2, GridSigmaRel=1.2,
+            GridSigma=3.5, GridMigrate=1, GridFeedForward=1.5)
+GRID_TAIL = dict(GridPlanLock=30, GridLossless=1, GridMoltRate=0.04, GridMoltSteps=10, GridLayCap=1)
 GRID_PERIOD = {"Charge": 8, "Mass": 8, "Space": 8, "Time": 16}
 # the sort model's game settings (SwarmSortCore; research sort's results/sort/params.json, rounded,
 # unless noted). Written verbatim: these strings are the SO's values AND its C# defaults.
@@ -373,9 +377,9 @@ def _g(x):
 def config_asset(eggs, model="Field"):
     egg = {"Charge": eggs[0], "Mass": eggs[1], "Space": eggs[2], "Time": eggs[3]}
     pg = lambda k: guid(rel(plan_path(k)))
-    grid = "".join(f"  {k}: {_g(v)}\n" for k, v in GRID.items() if k != "GridPlanLock")
-    grid = grid.replace("  GridFeedForward:", f"  GridFeedForward:").rstrip("\n") + "\n"
-    grid += f"  GridFramePeriod: {v4(GRID_PERIOD)}\n  GridPlanLock: {GRID['GridPlanLock']}\n"
+    grid = "".join(f"  {k}: {_g(v)}\n" for k, v in GRID.items())
+    grid += f"  GridFramePeriod: {v4(GRID_PERIOD)}\n"
+    grid += "".join(f"  {k}: {_g(v)}\n" for k, v in GRID_TAIL.items())
     return SO_HEADER % (script_guid("SwarmFaunaConfigSO"), config_name(model)[:-6]) + (
         f"  Model: {MODEL_ID[model]}\n"
         f"  ChargePlan: {{fileID: 4900000, guid: {pg('charge')}, type: 3}}\n"

@@ -1,11 +1,13 @@
-// What the swarm's Unity glue (SwarmFauna) needs from a SIMULATION CORE. Three cores implement it:
+// What the swarm's Unity glue (SwarmFauna) needs from a SIMULATION CORE. Four cores implement it:
 //   SwarmFieldCore - the research's `field` model (designed attractor fields, greedy slot assignment);
 //   SwarmGridCore  - the research's `hgrid2` model (a coarse class-deficit grid + a fine per-class
 //                    morphogen; nothing assigns a tadpole a place);
 //   SwarmSortCore  - the research's `sort` model (emergent cell sorting: positional-information
-//                    wells, fate commitment, differential adhesion, a composition homeostat, molting).
-// A swarm picks one through SwarmFaunaConfigSO.Model, so a cell can host all three side by side
-// (Docs/SWARM_FAUNA.md §8, §9). Like the cores, this file is free of UnityEngine: it compiles and runs
+//                    wells, fate commitment, differential adhesion, a composition homeostat, molting);
+//   SwarmEvoFateCore - the research's `evofate` model (the evolved G2 network moves every tadpole; a
+//                    designed fate pull sorts them; sort's composition).
+// A swarm picks one through SwarmFaunaConfigSO.Model, so a cell can host all four side by side
+// (Docs/SWARM_FAUNA.md §8, §9, §11). Like the cores, this file is free of UnityEngine: it compiles and runs
 // headless in Tools/Build/swarm_core_harness.
 using System;
 using System.Collections.Generic;
@@ -25,6 +27,11 @@ namespace CosmicShore.Gameplay
         /// information well of its type and climbs it; unlike types repel harder than like types; a
         /// surplus member MOLTS into a deficit element. Lossless by design - nothing dies on a clock.</summary>
         Sort = 2,
+        /// <summary>The EVOLVED rule given a fate (research `evofate`): a learned network (the trained G2 rule
+        /// + the evo genome) moves every tadpole, and a small designed pull - only outside a dead zone, only on
+        /// the steps the network fires - steers each toward the one positional-information well it committed
+        /// to. Sort's composition (homeostat + molting). The most "alive" texture of the four, and the dearest.</summary>
+        EvoFate = 3,
     }
 
     /// <summary>The per-swarm simulation the glue drives. Arrays are struct-of-arrays over the core's

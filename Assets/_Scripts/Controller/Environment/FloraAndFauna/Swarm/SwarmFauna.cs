@@ -174,9 +174,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The grid morphogen in its GAME settings (Docs/SWARM_FAUNA.md §8): one domain, funded laying,
-        /// hunger that never kills on its own (it only picks the starvation victim), an oriented body
-        /// that swims, and a plan lock.
+        /// The grid morphogen in its GAME settings (Docs/SWARM_FAUNA.md §8, §10): research `combo` - hgrid2
+        /// made LOSSLESS - with one domain, funded laying, molts that animate over GridMoltSteps, an
+        /// oriented body that swims, and a plan lock. Nothing dies on a clock: the molt clock only picks
+        /// the starvation victim when the host starves the swarm.
         /// </summary>
         ISwarmCore BuildGridCore(Cell host)
         {
@@ -186,7 +187,12 @@ namespace CosmicShore.Gameplay
                 KClass = config.GridKClass, KTotal = config.GridKTotal, Persist = config.GridPersist,
                 Noise = config.GridNoise, PLay = config.GridLayChance, PCross = config.GridCrossChance,
                 LayMaxPerStep = config.GridLayMaxPerStep, KFine = config.GridKFine, Sigma = config.GridSigma,
+                SigmaRel = config.GridSigmaRel, KMig = config.GridMigrate,
                 KFF = config.GridFeedForward, Lock = config.GridPlanLock,
+                // combo: the lossless corrector (molts animate over GridMoltSteps; one domain makes the
+                // orphan proxy and region transfer inert, so they are left at their defaults)
+                Molt = config.GridLossless, MoltRate = config.GridMoltRate, MoltSteps = config.GridMoltSteps,
+                LayCap = config.GridLossless ? config.GridLayCap : 0f, Ratio = config.GridLossless ? 2 : 0,
                 KillLayHoldSteps = Mathf.RoundToInt(config.KillLayHoldSeconds * config.TickHz),
                 Periods = new[]
                 {

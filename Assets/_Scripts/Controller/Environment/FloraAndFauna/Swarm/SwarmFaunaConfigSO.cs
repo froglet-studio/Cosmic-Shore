@@ -121,11 +121,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds a molting heart takes to shrink away (and again to re-form as its new element).")]
         [Min(0.05f)] public float MoltHeartSeconds = 0.5f;
 
-        [Header("Grid model (Model = Grid; research hgrid2's values unless noted)")]
+        [Header("Grid model (Model = Grid; research combo's values - hgrid2 made lossless - unless noted)")]
         [Tooltip("Coarse grid resolution (cells per side) and cell size in voxels. The grid rides the " +
-                 "body's centre; 16 x 6 spans 96 voxels - every plan fits.")]
-        [Range(8, 24)] public int GridSize = 16;
-        [Min(1f)] public float GridCell = 6f;
+                 "body's centre; 16 x 6 and 8 x 12 both span 96 voxels - every plan fits. 8 x 12 is the " +
+                 "research's published combo (C8): the same accuracy at a fraction of the grid work " +
+                 "(Docs/SWARM_FAUNA.md §10).")]
+        [Range(8, 24)] public int GridSize = 8;
+        [Min(1f)] public float GridCell = 12f;
         [Tooltip("Gain on a tadpole's own class DEFICIT gradient (wanted - actual density).")]
         [Min(0f)] public float GridKClass = 10f;
         [Tooltip("Gain on the all-class deficit gradient (fills the outline).")]
@@ -143,7 +145,13 @@ namespace CosmicShore.Gameplay
         [Min(1)] public int GridLayMaxPerStep = 3;
         [Tooltip("Gain on the FINE per-class morphogen (one tadpole's scale) and its bump width in voxels.")]
         [Min(0f)] public float GridKFine = 2f;
+        [Tooltip("The fine bump width, x each plan's own mean nearest-neighbour spacing (hgrid2 `sigma_rel`). " +
+                 "0 = use the fixed GridSigma below (the pre-round-5 port).")]
+        [Min(0f)] public float GridSigmaRel = 1.2f;
         [Min(0.5f)] public float GridSigma = 3.5f;
+        [Tooltip("MIGRANTS: a tadpole where its element is barely wanted heads, at this x its top speed, for " +
+                 "the nearest site where its element is missing (hgrid2 `k_mig`). 0 = off.")]
+        [Min(0f)] public float GridMigrate = 1f;
         [Tooltip("Feed-forward: the share of the nearby same-class targets' own motion a tadpole takes.")]
         [Min(0f)] public float GridFeedForward = 1.5f;
         [Tooltip("Steps per plan animation frame (x Charge, y Mass, z Space, w Time). The dragonfly's " +
@@ -153,6 +161,18 @@ namespace CosmicShore.Gameplay
                  "ran 0). The grid commits the step a new element leads, so without a lock a near-tie " +
                  "would flicker between two animals.")]
         [Min(0)] public int GridPlanLock = 30;
+        [Tooltip("The LOSSLESS corrector (research combo): a member of a surplus element re-forms its crystal " +
+                 "into the element the body is most short of, so after a morph the old majority's surplus " +
+                 "becomes the new body's missing parts instead of clinging to it as debris (finding 17). Off = " +
+                 "the pre-round-5 grid core, which never corrected the mix.")]
+        public bool GridLossless = true;
+        [Tooltip("Molt clock per step of being surplus (x a per-member factor in [0.5, 1.5]): ~17-50 steps.")]
+        [Range(0f, 1f)] public float GridMoltRate = 0.04f;
+        [Tooltip("Steps a committed molt takes on screen (the heart shrinks away and re-forms as the new element).")]
+        [Min(1)] public int GridMoltSteps = 10;
+        [Tooltip("No egg while the body holds this x the plan's headcount, eggs included (combo `lay_cap`). " +
+                 "A body that cannot shed surplus must not breed more of it. 0 = off.")]
+        [Min(0f)] public float GridLayCap = 1f;
 
         [Header("Sort model (Model = Sort; research sort's published values unless noted)")]
         [Tooltip("Positional information: at most this many Gaussian wells per element, and at most one " +

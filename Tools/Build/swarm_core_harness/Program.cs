@@ -65,6 +65,7 @@ static class Program
     static int Main(string[] args)
     {
         if (args.Length > 0 && args[0] == "export") return GridHarness.Export(args, LoadPlans);
+        if (args.Length > 0 && args[0] == "yardstick") return GridHarness.ExportYardstick(args, LoadPlans);
         bool gridOnly = args.Length > 1 && args[1] == "grid", sortOnly = args.Length > 1 && args[1] == "sort";
         var plans = LoadPlans(args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans");
         if (gridOnly) return GridHarness.Run(plans) == 0 ? 0 : 1;
