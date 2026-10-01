@@ -24,3 +24,29 @@ Published here for now: m1 step 500 (5/8, same single switch as G2: jellyfish ->
 The rule learned to metamorph in bursts after a disturbance, but toward the WRONG element as
 often as the right one (time->mass ended Space-majority after 195 metamorphs). No switch gain.
 Next: m2 adds a conformity prior on the metamorph target (+1.5 log share).
+
+## m2: learned metamorph + conformity prior (+1.5 log share, bias -3) - SOUP, negative
+
+| step | tests | metamorphs completed per 480-step rollout (ma/sp/ch/ti) |
+|---|---|---|
+| 250 | 4 | 65/573/115/56 |
+| 500 | 5 | 740/652/675/644 |
+| 750 | 4 | 179/683/58/538 |
+
+With more exploration the learned drive saturated the 8% cap and churned: hundreds of tadpoles
+changing element every rollout, compositions no closer to any plan, probe heal went NEGATIVE
+(-0.3 to -5.7: the swarm got worse after regrowth). Stopped at 750.
+
+## oracle: DESIGNED conformity metamorph on FROZEN G2 - 7/8 with zero training
+
+`meta_oracle.py`: each step, tadpoles of the element most over the live majority's plan mix start
+metamorphosing (same 12-step / 8%-cap / slowed process) into the element most under it.
+Results in `results/meta/oracle/`. Own plan 4/4; switches 3/4; probe heal 0.71 / 0.99 / 0.87 / 0.86
+(G2: 0.04 / n.a. / -0.53 / 0.55). Geometry-only, the switched jelly->puffer (5.1) and
+puffer->dragonfly (10.4) truly reshape; whale->jelly passes on composition but keeps a whale-ish
+shape (12.9 whale vs 13.3 jelly). The failing time->mass test is a YARDSTICK quirk: the
+dragonfly seed holds Space 66 vs Mass 11, so the eval's cull leaves SPACE as the real majority;
+a majority-following swarm correctly becomes a jellyfish and is scored against the whale.
+
+m3 (running): the oracle homeostat ON during training, so the learned rule only has to learn
+SHAPE under a composition that is held to the plan.
