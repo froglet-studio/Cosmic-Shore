@@ -69,6 +69,12 @@ With a cull that really hands Mass the majority (every other element culled belo
 **dragonfly → whale passes**: 9 survivors regrow a 178-tadpole whale scored 12.2 against ≥ 60 elsewhere.
 Strict-cull switches: **4/4**.
 
+**Fair-cull yardstick** (`field_strict_yardstick.py`, `strict_yardstick.json`: the stock eight tests, except
+each cull removes every other element below the switch target so the target really is the majority):
+**field 8/8** (summed wanted divergence 42.1). For comparison on the same yardstick: learned G2 4/8, F1 5/8,
+E8 5/8; with the composition controller 4 / 4 / 5. Every learned switched swarm sits at the 280 cap and stays
+closest to its OLD plan — composition alone cannot reshape them.
+
 **Switch latency** (steps after the cull until the new plan is closest, scored every 10): 30 / 20 / 20 (/0 for
 the strict whale). The commit itself waits the 12-step dwell; the morph spectacle runs 60 steps.
 
