@@ -441,7 +441,8 @@ def train(tc: ColTrain):
             torch.save(dict(rule=model.state_dict(), opt=opt.state_dict(), sched=sched.state_dict(), pool=pool,
                             step=step + 1), ck + ".tmp")
             os.replace(ck + ".tmp", ck)
-            save_model(model, os.path.join(run, f"rule_{step + 1:05d}.pt"), step=step + 1, tag=tc.tag)
+            if (step + 1) % 100 == 0 or step == tc.steps - 1:
+                save_model(model, os.path.join(run, f"rule_{step + 1:05d}.pt"), step=step + 1, tag=tc.tag)
         if (step + 1) % tc.eval_every == 0 or step == tc.steps - 1:
             model.eval()
             res = evaluate(model, seeds=(7,))
