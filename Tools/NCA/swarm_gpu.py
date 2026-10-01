@@ -5,14 +5,20 @@
     python Tools/NCA/gpu_run.py swarm-check         # only: does this GPU agree with the CPU on one step?
     python Tools/NCA/gpu_run.py swarm --steps 12000 --no-push
 
-What it trains: ONE tadpole rule scored on four seedings at once (Mass, Space, Charge and Time
-majorities -> whale, jellyfish, pufferfish, dragonfly), warm-started from the cloud session's best
+What it trains: ONE tadpole rule, four seedings (Mass, Space, Charge and Time majorities). Every
+swarm is scored against ONE plan only - the plan of its CURRENT majority element (Mass -> whale,
+Space -> jellyfish, Charge -> pufferfish, Time -> dragonfly) - and the total is the sum. Headcount is
+not a goal. Some pool swarms lose enough of their majority element (eaten) that another element takes
+over; from then on they are scored against the new majority's plan, which is how a rule can learn to
+switch. Warm-started from the cloud session's best
 rule (results/swarm_coevo/warm_start.pt). The GPU buys what the 4-core cloud run had to cut:
 batch 16 (4 samples per body plan, not 2), rollouts of 64-128 steps (not 48-96), 48 backpropagated
 steps (not 28).
 
-Every 1000 steps it grows each plan from a fresh seed for 240 steps, scores every grown swarm against
-every target, and if that is the best so far writes results/swarm_coevo_gpu/ (rollout, cross-score
+Every 1000 steps it grows each plan from a fresh seed for 240 steps, scores it against every target,
+then removes enough of its majority element to hand the majority to another element and runs 240 more
+steps (whale->jellyfish, jellyfish->pufferfish, pufferfish->dragonfly, dragonfly->whale). Eight tests:
+each seeding closest to its own plan, each switched swarm closest to its new plan. If that is the best so far writes results/swarm_coevo_gpu/ (rollout, cross-score
 summary, rule, training log) and commits + pushes ONLY that folder. It never touches viewer.html, so
 it cannot conflict with the cloud session, which rebuilds the viewer from whatever lands. A failed
 pull or push is reported and training carries on. Re-running resumes from runs/swarm_gpu.
@@ -30,7 +36,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import swarm_nca as sn  # noqa: E402
 
-RUN = os.path.join(HERE, "runs", "swarm_gpu")
+RUN = os.path.join(HERE, "runs", "swarm_gpu2")          # v2: scored against the current majority plan
 RESULT = os.path.join(HERE, "results", "swarm_coevo_gpu")
 WARM = os.path.join(HERE, "results", "swarm_coevo", "warm_start.pt")
 
@@ -93,10 +99,16 @@ def check(device):
 
 
 def score(summary):
-    """Lower is better: how many seedings grow closest to their OWN plan comes first, then how close."""
-    cross = summary["cross"]
+    """Lower is better. First: how many of the eight tests pass - each seeding grows closest to its OWN
+    plan (4), and after losing its majority each swarm ends closest to the NEW majority's plan (4).
+    Then: how close, summed over the same eight."""
+    cross, sw = summary["cross"], summary.get("switch", {})
     correct = sum(min(cross[k], key=cross[k].get) == k for k in sn.KINDS)
-    return (4 - correct) * 1000 + sum(cross[k][k] for k in sn.KINDS), correct
+    close = sum(cross[k][k] for k in sn.KINDS)
+    for k, v in sw.items():
+        correct += min(v["cross"], key=v["cross"].get) == v["to"]
+        close += v["cross"][v["to"]]
+    return (8 - correct) * 1000 + close, correct
 
 
 def git(args, root):
@@ -117,9 +129,9 @@ def make_publisher(device, push):
         rule.eval()
         data, summary = sn.rollout(rule, 240)
         rule.train()
-        sn.print_cross(summary)
+        sn.print_cross(summary); sn.print_switch(summary)
         sc, correct = score(summary)
-        print(f"score {sc:.1f} ({correct}/4 seedings closest to their own plan); best so far {best['score']:.1f}")
+        print(f"score {sc:.1f} ({correct}/8 tests pass: own plan x4, switch x4); best so far {best['score']:.1f}")
         if sc >= best["score"]:
             return
         best.update(score=sc, step=step, correct=correct)
@@ -140,7 +152,7 @@ def make_publisher(device, push):
         rel = os.path.relpath(RESULT, root)
         git(["pull", "--ff-only", "origin", branch], root)
         if git(["add", rel], root) and git(["commit", "-m", f"feat(nca): swarm co-evolution on {name} - step {step}, "
-                                                          f"{correct}/4 seedings grow their own plan"], root):
+                                                          f"{correct}/8 plan + switch tests pass"], root):
             git(["push", "origin", branch], root)
 
     return publish

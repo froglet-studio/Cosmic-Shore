@@ -444,7 +444,7 @@ class LossCfg:
     w_face: float = 1.5
     w_sp: float = 1.0
     eps: float = 0.05
-    w_count: float = 4.0
+    w_count: float = 0.0       # headcount is NOT a goal: the plan is the element ratios + shape (opt back in > 0)
     w_survive: float = 60.0     # a death must cost more than the count gains from it: restraint belongs at hatching
 
 
@@ -646,6 +646,42 @@ def census(sw: Swarm, b, T: Target):
                 deaths=int(sw.deaths[b]), mutants=int(sw.mutants[b]))
 
 
+PLAN_OF = {MAJOR[k]: k for k in KINDS}          # majority element -> the plan that uses most of it
+
+
+@torch.no_grad()
+def majority_plan(sw: Swarm, b, fallback):
+    """The plan a sample is scored against: the one belonging to its living majority element."""
+    m = sw.active[b] & sw.hatched[b]
+    if int(m.sum()) == 0:
+        return fallback
+    c = torch.bincount(sw.elem[b][m], minlength=4)
+    return PLAN_OF[int(c.argmax())]
+
+
+@torch.no_grad()
+def lose_majority(sw: Swarm, b, gen, keep_min=6, to=None):
+    """In place: remove (as if eaten) just enough of sample b's majority element that another element
+    present becomes the majority. The swarm is then scored against the new majority's plan, which is
+    the only way a rule can learn to SWITCH plans when its ratios change."""
+    m = sw.active[b] & sw.hatched[b]
+    c = torch.bincount(sw.elem[b][m], minlength=4)
+    maj = int(c.argmax())
+    others = [e for e in range(4) if e != maj and int(c[e]) >= 2]
+    if not others:
+        return False
+    if to is not None and to not in others:
+        return False
+    e2 = to if to is not None else others[int(torch.randint(len(others), (1,), generator=gen))]
+    excess = int(c[maj]) - int(c[e2]) + 1 + int(torch.randint(0, max(1, int(c[e2]) // 3 + 1), (1,), generator=gen))
+    idx = (m & (sw.elem[b] == maj)).nonzero().squeeze(1)
+    if int(m.sum()) - excess < keep_min or excess <= 0:
+        return False
+    kill = idx[torch.randperm(len(idx), generator=gen)[:excess]]
+    sw.active[b, kill] = False; sw.hatched[b, kill] = False; sw.s[b, kill] = 0.0
+    return True
+
+
 # ------------------------------------------------------------------ train ---
 
 @dataclass
@@ -671,8 +707,9 @@ class TrainCfg:
     birth_clock: int = 480         # samples younger than this follow the clock from birth; older ones are phase-free
     w_speed: float = 2.0
     replace_above: float = 120.0   # pool hygiene: a sample whose loss passed this goes back to a seed
-    replace_count: float = 0.5     # ... and one whose headcount is this far off (a full swarm lays no eggs, so
-                                   # it can never learn when to stop hatching)
+    replace_count: float = 1e9     # ... or whose headcount is this far off its plan's (off: count is not a goal)
+    p_switch: float = 0.15         # a pool sample loses enough of its majority element (eaten) that another
+                                   # element takes the majority; from then on it is scored against THAT plan
 
 
 def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
@@ -720,6 +757,9 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
             if step % cfg.seed_every == 0:                  # one fresh seed in this plan's slot 0
                 sub = Swarm.cat([seed_swarm([targets[k]], world, gen), sub.index(torch.arange(1, cfg.per_kind))]) \
                     if cfg.per_kind > 1 else seed_swarm([targets[k]], world, gen)
+            for j in range(1 if step % cfg.seed_every == 0 else 0, cfg.per_kind):
+                if float(torch.rand((), generator=gen)) < cfg.p_switch:
+                    lose_majority(sub, j, gen)
             batch.append(sub)
         sw = Swarm.cat(batch)
         T = int(torch.randint(cfg.roll_min, cfg.roll_max + 1, (1,), generator=gen))
@@ -727,8 +767,8 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
             for _ in range(T - cfg.bptt):
                 sw = rule(sw, gen)
         sw = sw.detach()
-        kinds_b = [k for k in KINDS for _ in range(cfg.per_kind)]
-        losses, infos = [], {}
+        groups = [k for k in KINDS for _ in range(cfg.per_kind)]       # which seeding a sample came from
+        losses, infos, plans = [], {}, []
         if cfg.anim:
             cks = []
             clock0 = sw.clock.clone()
@@ -736,21 +776,23 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
                 sw = rule(sw, gen)
                 if (i + 1) % cfg.period == 0:
                     cks.append(sw)
-            for b, k in enumerate(kinds_b):
+            for b, g in enumerate(groups):
+                k = majority_plan(sw, b, g)
                 xs = [decode(c, b) for c in cks]
                 age = int(clock0[b]) + cfg.period          # the first checkpoint's age
                 k0 = (age // cfg.period) % len(targets[k].frames) if age < cfg.birth_clock else None
                 l, info = anim_loss(xs, targets[k], L, cfg.period, cfg.w_speed, k0)
-                losses.append(l)
-                infos.setdefault(k, []).append(info)
+                losses.append(l); plans.append(k)
+                infos.setdefault(g, []).append(info)
         else:
             for _ in range(cfg.bptt):
                 sw = rule(sw, gen)
-            for b, k in enumerate(kinds_b):
+            for b, g in enumerate(groups):
+                k = majority_plan(sw, b, g)                 # scored against its CURRENT majority's plan only
                 x = decode(sw, b)
                 l, info = swarm_loss(x, targets[k], L)
-                losses.append(l)
-                infos.setdefault(k, []).append(info)
+                losses.append(l); plans.append(k)
+                infos.setdefault(g, []).append(info)
         loss = torch.stack(losses).sum() / cfg.per_kind
         opt.zero_grad()
         loss.backward()
@@ -763,7 +805,8 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
             sub = sw.index(torch.arange(i * cfg.per_kind, (i + 1) * cfg.per_kind))
             # an extinct or blown-up sample is replaced by a seed, so the pool keeps learnable states
             for j in range(cfg.per_kind):
-                off = abs(infos[k][j]["n"] - targets[k].n) / targets[k].n
+                tk = targets[plans[i * cfg.per_kind + j]]
+                off = abs(infos[k][j]["n"] - tk.n) / tk.n
                 if int(sub.active[j].sum()) == 0 or infos[k][j]["sink"] > cfg.replace_above or off > cfg.replace_count:
                     sub = Swarm.cat([sub.index(torch.arange(0, j)), seed_swarm([targets[k]], world, gen),
                                      sub.index(torch.arange(j + 1, cfg.per_kind))])
@@ -776,12 +819,12 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
             for i, k in enumerate(KINDS):
                 c = census(sw, i * cfg.per_kind, targets[k])
                 inf = infos[k][0]
-                rec[k] = dict(sink=round(inf["sink"], 3), count=round(inf.get("count", 0), 3), n=c["n"],
+                rec[k] = dict(plan=plans[i * cfg.per_kind], sink=round(inf["sink"], 3), count=round(inf.get("count", 0), 3), n=c["n"],
                               el=c["elements"], dom=c["domains"], deaths=c["deaths"], frame=inf["frame"],
                               speed=inf.get("speed"))
             log.write(json.dumps(rec) + "\n"); log.flush()
             print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s | " + " | ".join(
-                f"{k[:2]} {rec[k]['sink']:6.2f} n{rec[k]['n']:3d}/{targets[k].n} d{rec[k]['deaths']}" for k in KINDS), flush=True)
+                f"{k[:2]}>{rec[k]['plan'][:2]} {rec[k]['sink']:6.2f} n{rec[k]['n']:3d} d{rec[k]['deaths']}" for k in KINDS), flush=True)
         if (step + 1) % cfg.snap_every == 0 or step == cfg.steps - 1:
             torch.save(dict(rule=rule.state_dict(), opt=opt.state_dict(), sched=sched.state_dict(), pool=pool,
                             step=step + 1), ck)
@@ -832,8 +875,11 @@ def evaluate(rule, steps=200, seeds=4, every=4, L=None):
 
 
 
+SWITCH_TO = {"mass": 2, "space": 0, "charge": 3, "time": 1}   # whale->jelly, jelly->puffer, puffer->dragonfly, dragonfly->whale
+
+
 @torch.no_grad()
-def rollout(rule, steps=240, every=5, seed=7, L=None):
+def rollout(rule, steps=240, every=5, seed=7, L=None, switch_steps=240):
     """Grow one swarm per body plan from a fresh seed and record it. Returns (data, summary):
     data[kind] = {frames: int16 [F, n_max, 15] packed units, n: [F], crystals: [[x,y,z,elem,step]]},
     summary = the cross-score matrix (every grown swarm against EVERY target) + census."""
@@ -844,7 +890,15 @@ def rollout(rule, steps=240, every=5, seed=7, L=None):
     for k in KINDS:
         sw = seed_swarm([targets[k]], rule.world, gen)
         frames, ns, crystals = [], [], []
-        for t in range(steps + 1):
+        switched_at = None
+        total = steps + (switch_steps if switch_steps else 0)
+        for t in range(total + 1):
+            if switch_steps and t == steps:
+                x = decode(sw, 0)
+                summary["cross"][k] = {k2: round(swarm_loss(x, targets[k2], L)[1]["sink"], 2) for k2 in KINDS}
+                summary["census"][k] = census(sw, 0, targets[k])
+                if lose_majority(sw, 0, gen, to=SWITCH_TO[k]):
+                    switched_at = t
             if t % every == 0:
                 x = decode(sw, 0)
                 vis = x["hatched"]
@@ -852,7 +906,7 @@ def rollout(rule, steps=240, every=5, seed=7, L=None):
                 u = torch.cat([x["p"], x["elem"][:, None].float(), x["dom"][:, None].float(), x["h"],
                                tier[:, None].float(), x["f"], x["sp"], x["w"][:, None]], 1)[vis]
                 frames.append(u.cpu().numpy()); ns.append(int(vis.sum()))
-            if t == steps:
+            if t == total:
                 break
             before = sw.active[0] & sw.hatched[0]
             pos0, el0 = sw.pos[0].clone(), sw.elem[0].clone()
@@ -864,10 +918,16 @@ def rollout(rule, steps=240, every=5, seed=7, L=None):
         arr = np.zeros((len(frames), nmax, 15), np.float32)
         for i, f in enumerate(frames):
             arr[i, :len(f)] = f
-        data[k] = dict(frames=arr, n=ns, crystals=crystals)
+        data[k] = dict(frames=arr, n=ns, crystals=crystals, switched_at=switched_at)
         x = decode(sw, 0)
-        summary["cross"][k] = {k2: round(swarm_loss(x, targets[k2], L)[1]["sink"], 2) for k2 in KINDS}
-        summary["census"][k] = census(sw, 0, targets[k])
+        if switch_steps:
+            new = PLAN_OF[SWITCH_TO[k]]
+            row = {k2: round(swarm_loss(x, targets[k2], L)[1]["sink"], 2) for k2 in KINDS}
+            summary.setdefault("switch", {})[k] = dict(to=new, done=switched_at is not None, cross=row,
+                                                        majority=majority_plan(sw, 0, k), census=census(sw, 0, targets[new]))
+        else:
+            summary["cross"][k] = {k2: round(swarm_loss(x, targets[k2], L)[1]["sink"], 2) for k2 in KINDS}
+            summary["census"][k] = census(sw, 0, targets[k])
     return data, summary
 
 
@@ -878,10 +938,23 @@ def pack(data, steps=240):
     out = {}
     for k, d in data.items():
         q = np.clip(np.round(d["frames"] * scale), -32767, 32767).astype("<i2")
-        out[k] = dict(shape=list(q.shape), b64=base64.b64encode(q.tobytes()).decode(), n=d["n"], crystals=d["crystals"])
+        out[k] = dict(shape=list(q.shape), b64=base64.b64encode(q.tobytes()).decode(), n=d["n"], crystals=d["crystals"],
+                      switched_at=d.get("switched_at"))
     out["scale"] = scale.tolist()
     out["steps"] = steps
     return out
+
+
+def print_switch(summary):
+    if "switch" not in summary:
+        return
+    print("after losing the majority (another 240 steps), scored against each target:")
+    for k in KINDS:
+        sw_ = summary["switch"][k]
+        row = sw_["cross"]; best = min(row, key=row.get)
+        print(f"  {k:8s}-> {sw_['to']:7s} " + " ".join(f"{k2}:{row[k2]:7.2f}{'*' if k2 == best else ' '}" for k2 in KINDS)
+              + f"  majority now {sw_['majority']}, n={sw_['census']['n']} el={sw_['census']['elements']}"
+              + ("" if sw_["done"] else "  (could not switch: too few of the new element)"))
 
 
 def print_cross(summary):
@@ -997,7 +1070,7 @@ def main():
     elif a.cmd == "rollout":
         rule = load_rule(a.rule)
         data, summary = rollout(rule, a.steps)
-        print_cross(summary)
+        print_cross(summary); print_switch(summary)
         os.makedirs(a.out, exist_ok=True)
         json.dump(pack(data, a.steps), open(os.path.join(a.out, "rollout.json"), "w"))
         summary["rule"] = os.path.relpath(a.rule, HERE)

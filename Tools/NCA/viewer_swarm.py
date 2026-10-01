@@ -51,10 +51,15 @@ def _curve(log_path):
 
 
 def _rank(d):
-    """Most seedings closest to their own plan first, then the lowest own-plan divergence."""
-    cross = json.load(open(os.path.join(d, "summary.json")))["cross"]
+    """Most tests passed first (own plan x4, switch x4), then the lowest divergence over them."""
+    sm = json.load(open(os.path.join(d, "summary.json")))
+    cross, sw = sm["cross"], sm.get("switch", {})
     correct = sum(min(cross[k], key=cross[k].get) == k for k in KINDS)
-    return (-correct, sum(cross[k][k] for k in KINDS))
+    close = sum(cross[k][k] for k in KINDS)
+    for v in sw.values():
+        correct += min(v["cross"], key=v["cross"].get) == v["to"]
+        close += v["cross"][v["to"]]
+    return (-correct, close)
 
 
 def build_swarm(results_root):
@@ -82,6 +87,22 @@ def build_swarm(results_root):
         f'<button type="button" role="tab" data-swk="{k}" aria-selected="false">'
         f'<span class="swatch" style="background:{EL_UI[ELEMENTS.index(MAJOR[k])]}"></span>{MAJOR[k]} seed</button>' for k in KINDS)
     curve = _curve(os.path.join(d, "log.jsonl"))
+    switch_html = ""
+    if summ.get("switch"):
+        srows = []
+        ok = 0
+        for k in KINDS:
+            v = summ["switch"][k]
+            best = min(v["cross"], key=v["cross"].get)
+            ok += best == v["to"]
+            cells = "".join(f'<td class="{"win" if k2 == best else ""}{" diag" if k2 == v["to"] else ""}">{v["cross"][k2]:.1f}</td>' for k2 in KINDS)
+            srows.append(f'<tr><th scope="row">{NAMES[k]} loses its {MAJOR[k]}: {MAJOR[v["to"]]} majority</th>{cells}'
+                         f'<td>{NAMES[v["majority"]]}</td></tr>')
+        switch_html = (f'<h3>Losing the majority</h3><p class="caption">The same swarms after another 240 steps, once enough of their '
+                       f'majority element was removed (as if eaten) that another element took over. The underlined column is the new '
+                       f'majority\'s plan; {ok} of 4 end closest to it. Play a seed past the marked step to watch it.</p>'
+                       f'<div class="tablewrap"><table class="swcross"><thead><tr><th scope="col">Swarm</th>{head}<th scope="col">Majority now</th></tr></thead>'
+                       f'<tbody>{"".join(srows)}</tbody></table></div>')
     meta = summ.get("meta", {})
     note = meta.get("note", "")
     bench = f"""
@@ -89,7 +110,7 @@ def build_swarm(results_root):
     <div class="h3dhead">
       <div class="eyebrow">Latest · one rule, four seedings</div>
       <h2 id="hswarm">One rule grows four different creatures</h2>
-      <p class="caption">Every particle is a whole tadpole fauna: a heart crystal, a spindle and a prism. Its <strong>element</strong> and <strong>domain</strong> are fixed at birth: an egg is always its parent's domain, and its parent's element but for a rare mutation that survives only if the rule lets it hatch. A single learned rule, seeing only its neighbours, decides where each tadpole swims, whether an egg hatches, how its prism and spindle are shaped (inside its element's identity), and whether a Charge tadpole is plain, danger or shielded. A tadpole that dies leaves a lime crystal. The same rule is seeded four ways, sixteen tadpoles at each target's element mix, and is scored on all four at once. Pick a seed to watch it grow; drag to orbit.</p>
+      <p class="caption">Each swarm is scored against one plan only: the plan of its current majority element. The total is the sum over the four seedings. Every particle is a whole tadpole fauna: a heart crystal, a spindle and a prism. Its <strong>element</strong> and <strong>domain</strong> are fixed at birth: an egg is always its parent's domain, and its parent's element but for a rare mutation that survives only if the rule lets it hatch. A single learned rule, seeing only its neighbours, decides where each tadpole swims, whether an egg hatches, how its prism and spindle are shaped (inside its element's identity), and whether a Charge tadpole is plain, danger or shielded. A tadpole that dies leaves a lime crystal. The same rule is seeded four ways, sixteen tadpoles at each target's element mix, and is scored on all four at once. Pick a seed to watch it grow; drag to orbit.</p>
       {f'<p class="caption">{note}</p>' if note else ''}
     </div>
     <div class="bench">
@@ -118,6 +139,7 @@ def build_swarm(results_root):
       <h3>Does the seed choose the body?</h3>
       <p class="caption">Each grown swarm (rows) scored against every target (columns): Sinkhorn divergence on position, element, domain region, prism, tier, facing and spindle, under the best assignment of domains to regions. Lower is closer; the lowest in each row is marked. {correct} of 4 seedings are closest to their own body plan.</p>
       <div class="tablewrap"><table class="swcross"><thead><tr><th scope="col">Grown from</th>{head}<th scope="col">Tadpoles</th><th scope="col">Crystals</th><th scope="col">Mutant eggs</th></tr></thead><tbody>{''.join(body)}</tbody></table></div>
+      {switch_html}
       {f'<figure class="fig"><figcaption>Training loss: the sum over the four seedings (black) and each plan</figcaption><div class="chart">{curve}</div></figure>' if curve else ''}
     </div>
   </section>"""
@@ -196,9 +218,9 @@ SCRIPTSWARM = r"""<script>
   for (const k of KINDS) {
     const r = D.roll[k], bin = atob(r.b64), buf = new ArrayBuffer(bin.length), u8 = new Uint8Array(buf);
     for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-    R[k] = { a: new Int16Array(buf), shape: r.shape, n: r.n, crystals: r.crystals };
+    R[k] = { a: new Int16Array(buf), shape: r.shape, n: r.n, crystals: r.crystals, switched_at: r.switched_at };
   }
-  const SC = D.roll.scale, every = Math.max(1, Math.round((D.roll.steps || 240) / Math.max(1, R.mass.shape[0] - 1)));
+  const SC = D.roll.scale, every = 5;
   const perp = f => { const a = Math.abs(f[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0]; const d = a[0] * f[0] + a[1] * f[1] + a[2] * f[2];
     const v = [a[0] - d * f[0], a[1] - d * f[1], a[2] - d * f[2]], L = Math.hypot(...v) || 1; return v.map(x => x / L); };
   function swarmFrame(k, fi) {
@@ -250,7 +272,8 @@ SCRIPTSWARM = r"""<script>
     draw(g, off, dead);
     camera.position.set(Math.cos(el) * Math.cos(az) * dist, Math.sin(el) * dist, Math.cos(el) * Math.sin(az) * dist);
     camera.lookAt(0, 0, 0); renderer.render(scene, camera);
-    $('rsw-step').textContent = showT ? 'target' : (fi * every).toString();
+    const sa = R[kind].switched_at;
+    $('rsw-step').textContent = showT ? 'target' : (fi * every) + (sa != null && fi * every >= sa ? ' (after the loss)' : '');
     $('rsw-n').textContent = showT ? t.units : r.n[fi] + ' / ' + t.units;
     $('rsw-cr').textContent = showT ? '–' : dead.length;
     $('rsw-sh').textContent = showT ? (t.states ? t.states[2] / t.frames.length | 0 : '–') : g.shields;
