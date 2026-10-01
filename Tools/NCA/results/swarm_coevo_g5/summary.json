@@ -1,28 +1,28 @@
 {
  "cross": {
   "mass": {
-   "mass": 21.67,
-   "space": 69.91,
-   "charge": 57.09,
-   "time": 79.59
+   "mass": 15.1,
+   "space": 64.72,
+   "charge": 60.3,
+   "time": 78.46
   },
   "space": {
-   "mass": 66.79,
-   "space": 26.19,
-   "charge": 44.14,
-   "time": 67.15
+   "mass": 74.37,
+   "space": 24.28,
+   "charge": 58.55,
+   "time": 73.79
   },
   "charge": {
-   "mass": 61.35,
-   "space": 60.98,
-   "charge": 20.93,
-   "time": 69.49
+   "mass": 61.52,
+   "space": 51.43,
+   "charge": 24.9,
+   "time": 52.61
   },
   "time": {
-   "mass": 84.12,
-   "space": 81.24,
-   "charge": 71.04,
-   "time": 31.08
+   "mass": 82.45,
+   "space": 77.74,
+   "charge": 70.86,
+   "time": 24.18
   }
  },
  "census": {
@@ -30,10 +30,10 @@
    "n": 280,
    "target_n": 192,
    "elements": [
-    46,
-    183,
-    12,
-    39
+    26,
+    189,
+    42,
+    23
    ],
    "target_elements": [
     19,
@@ -43,21 +43,21 @@
    ],
    "majority": "Mass",
    "domains": [
-    133,
-    147,
+    141,
+    139,
     0
    ],
    "deaths": 0,
-   "mutants": 6
+   "mutants": 2
   },
   "space": {
    "n": 280,
    "target_n": 88,
    "elements": [
-    119,
-    5,
-    124,
-    32
+    62,
+    3,
+    170,
+    45
    ],
    "target_elements": [
     25,
@@ -67,21 +67,21 @@
    ],
    "majority": "Space",
    "domains": [
-    110,
-    170,
+    132,
+    148,
     0
    ],
    "deaths": 0,
-   "mutants": 2
+   "mutants": 1
   },
   "charge": {
-   "n": 280,
+   "n": 176,
    "target_n": 179,
    "elements": [
-    211,
+    89,
     3,
-    7,
-    59
+    28,
+    56
    ],
    "target_elements": [
     131,
@@ -91,21 +91,21 @@
    ],
    "majority": "Charge",
    "domains": [
-    134,
-    146,
+    103,
+    73,
     0
    ],
    "deaths": 0,
-   "mutants": 2
+   "mutants": 1
   },
   "time": {
    "n": 280,
    "target_n": 76,
    "elements": [
-    13,
-    4,
-    27,
-    236
+    11,
+    7,
+    33,
+    229
    ],
    "target_elements": [
     2,
@@ -115,39 +115,39 @@
    ],
    "majority": "Time",
    "domains": [
-    81,
-    29,
-    170
+    106,
+    23,
+    151
    ],
    "deaths": 0,
-   "mutants": 0
+   "mutants": 2
   }
  },
  "steps": 240,
  "cross_geo": {
   "mass": {
-   "mass": 8.0,
-   "space": 21.6,
-   "charge": 12.22,
-   "time": 27.36
+   "mass": 5.29,
+   "space": 20.22,
+   "charge": 12.93,
+   "time": 29.17
   },
   "space": {
-   "mass": 18.64,
-   "space": 9.71,
-   "charge": 13.0,
-   "time": 24.96
+   "mass": 28.49,
+   "space": 9.74,
+   "charge": 16.55,
+   "time": 33.55
   },
   "charge": {
-   "mass": 11.97,
-   "space": 19.57,
-   "charge": 8.85,
-   "time": 18.57
+   "mass": 16.33,
+   "space": 15.3,
+   "charge": 7.7,
+   "time": 13.03
   },
   "time": {
-   "mass": 22.06,
-   "space": 19.33,
-   "charge": 12.54,
-   "time": 11.07
+   "mass": 20.89,
+   "space": 18.52,
+   "charge": 12.06,
+   "time": 7.78
   }
  },
  "switch": {
@@ -155,20 +155,20 @@
    "to": "space",
    "done": true,
    "cross": {
-    "mass": 53.68,
-    "space": 58.78,
-    "charge": 29.38,
-    "time": 67.02
+    "mass": 34.78,
+    "space": 51.6,
+    "charge": 52.28,
+    "time": 57.06
    },
-   "majority": "charge",
+   "majority": "time",
    "census": {
     "n": 280,
     "target_n": 88,
     "elements": [
-     158,
-     27,
-     20,
-     75
+     39,
+     77,
+     70,
+     94
     ],
     "target_elements": [
      25,
@@ -176,34 +176,34 @@
      54,
      7
     ],
-    "majority": "Charge",
+    "majority": "Time",
     "domains": [
-     152,
-     128,
+     162,
+     118,
      0
     ],
     "deaths": 0,
-    "mutants": 7
+    "mutants": 4
    }
   },
   "space": {
    "to": "charge",
    "done": true,
    "cross": {
-    "mass": 72.33,
-    "space": 34.25,
-    "charge": 42.58,
-    "time": 69.23
+    "mass": 66.19,
+    "space": 33.5,
+    "charge": 44.55,
+    "time": 59.58
    },
-   "majority": "charge",
+   "majority": "space",
    "census": {
-    "n": 280,
+    "n": 241,
     "target_n": 179,
     "elements": [
-     139,
-     5,
-     104,
-     32
+     80,
+     3,
+     83,
+     75
     ],
     "target_elements": [
      131,
@@ -211,34 +211,34 @@
      16,
      31
     ],
-    "majority": "Charge",
+    "majority": "Space",
     "domains": [
-     102,
-     178,
+     95,
+     146,
      0
     ],
     "deaths": 0,
-    "mutants": 2
+    "mutants": 1
    }
   },
   "charge": {
    "to": "time",
    "done": true,
    "cross": {
-    "mass": 65.32,
-    "space": 62.98,
-    "charge": 37.33,
-    "time": 52.76
+    "mass": 61.57,
+    "space": 50.21,
+    "charge": 40.4,
+    "time": 40.16
    },
    "majority": "time",
    "census": {
-    "n": 280,
+    "n": 255,
     "target_n": 76,
     "elements": [
-     118,
-     7,
-     11,
-     144
+     78,
+     5,
+     49,
+     123
     ],
     "target_elements": [
      2,
@@ -248,32 +248,32 @@
     ],
     "majority": "Time",
     "domains": [
-     111,
-     169,
+     191,
+     64,
      0
     ],
     "deaths": 0,
-    "mutants": 3
+    "mutants": 2
    }
   },
   "time": {
    "to": "mass",
    "done": true,
    "cross": {
-    "mass": 79.33,
-    "space": 35.81,
-    "charge": 67.67,
-    "time": 71.45
+    "mass": 82.64,
+    "space": 27.4,
+    "charge": 64.93,
+    "time": 73.18
    },
    "majority": "space",
    "census": {
     "n": 280,
     "target_n": 192,
     "elements": [
-     83,
-     10,
-     160,
-     27
+     68,
+     16,
+     170,
+     26
     ],
     "target_elements": [
      19,
@@ -283,19 +283,19 @@
     ],
     "majority": "Space",
     "domains": [
-     74,
-     13,
-     193
+     166,
+     5,
+     109
     ],
     "deaths": 0,
-    "mutants": 0
+    "mutants": 4
    }
   }
  },
  "scale_inv": 1,
  "meta": {
   "device": "cpu",
-  "step": 1000,
+  "step": 2000,
   "tag": "swarm_coevo_g5",
   "overrides": {
    "per_kind": "2",
@@ -315,7 +315,7 @@
    "w_body": "20",
    "scale_inv": "1"
   },
-  "note": "Trained on cpu (swarm_coevo_g5), snapshot 1000."
+  "note": "Trained on cpu (swarm_coevo_g5), snapshot 2000."
  },
- "rule": "rule_01000.pt"
+ "rule": "rule_02000.pt"
 }
