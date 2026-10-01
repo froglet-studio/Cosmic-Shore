@@ -12,7 +12,8 @@ from dataclasses import asdict
 import torch
 import swarm_nca as sn, swarm_eval, swarm_probe, swarm_feel, hgrid_eval, hgrid2_model as hm
 
-BEST = dict(k_fine=2, k_ff=1.5, sigma=3.5, k_class=10, interp=1, k_flow=0, periods="time:16")
+BEST = dict(k_fine=2, k_ff=1.5, interp=1, k_flow=0, periods="time:16", dmap_low=1, lock=60, k_class=10, sigma_rel=1.2,
+            p_cross=0.25, stagger=1, k_mig=1, mig_L=40)
 
 
 def load(path):
