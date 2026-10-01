@@ -211,21 +211,42 @@ def _homeo_lay(self, sw: Swarm, gi, gj, gen=None):
         cnt = torch.zeros(B * N).index_add(0, gi, close).view(B, N)
         elig = sw.hatched & sw.active & (cnt < W.k_bud) & (torch.rand(B, N, generator=gen) <= W.p_bud)
         q = torch.zeros(B, N)
+        cross = {}
         for b in range(B):
             quota, have = homeo_quota(sw, b)
             if quota is None:
                 continue
             deficit = (quota - have).clamp(min=0)
+            if self.homeo >= 3:          # grow in proportion: no class fills faster than the major element
+                maj = int(quota.sum(1).argmax())
+                fill = float(have[maj].sum()) / max(1, int(quota[maj].sum()))
+                cap = torch.ceil(quota.float() * min(1.0, fill + 0.15)).long().clamp(min=2)
+                cap[maj] = quota[maj]
+                deficit = torch.minimum(deficit, (cap - have).clamp(min=0))
             idx = elig[b].nonzero().squeeze(1)
             if len(idx) == 0:
                 continue
             idx = idx[torch.randperm(len(idx), generator=gen)]
             cls = sw.elem[b][idx] * 3 + sw.dom[b][idx]
             left = deficit.reshape(-1).clone()
+            spare = []
             for i, c in zip(idx.tolist(), cls.tolist()):
                 if left[c] > 0:
                     left[c] -= 1; q[b, i] = 1.0 / W.p_bud
-        self._lay(sw, gi, gj, gen, q.reshape(-1), None)
+                else:
+                    spare.append(i)
+            if self.homeo >= 2:          # a class short of parents: a same-DOMAIN parent lays its element
+                for i in spare:
+                    d = int(sw.dom[b, i])
+                    need = [e for e in range(4) if left[e * 3 + d] > 0]
+                    if need:
+                        e = need[int(torch.randint(len(need), (1,), generator=gen))]
+                        left[e * 3 + d] -= 1; q[b, i] = 1.0 / W.p_bud; cross[(b, i)] = e
+        laid = self._lay(sw, gi, gj, gen, q.reshape(-1), None)
+        for b, slots, parents, *_ in laid:
+            for sl, pa in zip(slots.tolist(), parents.tolist()):
+                if (b, pa) in cross:
+                    sw.elem[b, sl] = cross[(b, pa)]
 
 
 PosInfoRule.homeo_lay = _homeo_lay
