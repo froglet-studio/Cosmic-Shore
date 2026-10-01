@@ -1,0 +1,302 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 25.45,
+   "space": 63.19,
+   "charge": 62.78,
+   "time": 76.04
+  },
+  "space": {
+   "mass": 73.57,
+   "space": 34.82,
+   "charge": 72.07,
+   "time": 72.3
+  },
+  "charge": {
+   "mass": 66.92,
+   "space": 59.1,
+   "charge": 20.1,
+   "time": 80.78
+  },
+  "time": {
+   "mass": 79.72,
+   "space": 85.2,
+   "charge": 74.15,
+   "time": 27.24
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 280,
+   "target_n": 192,
+   "elements": [
+    18,
+    206,
+    43,
+    13
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    96,
+    184,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 280,
+   "target_n": 88,
+   "elements": [
+    20,
+    15,
+    234,
+    11
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    78,
+    202,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 280,
+   "target_n": 179,
+   "elements": [
+    243,
+    7,
+    9,
+    21
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    124,
+    156,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 258,
+   "target_n": 76,
+   "elements": [
+    15,
+    20,
+    19,
+    204
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    63,
+    23,
+    172
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 11.37,
+   "space": 16.07,
+   "charge": 8.9,
+   "time": 24.23
+  },
+  "space": {
+   "mass": 22.28,
+   "space": 14.38,
+   "charge": 17.36,
+   "time": 24.79
+  },
+  "charge": {
+   "mass": 16.3,
+   "space": 15.92,
+   "charge": 6.91,
+   "time": 23.15
+  },
+  "time": {
+   "mass": 19.07,
+   "space": 21.11,
+   "charge": 13.44,
+   "time": 12.14
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 20.5,
+    "space": 62.85,
+    "charge": 61.31,
+    "time": 76.55
+   },
+   "majority": "mass",
+   "census": {
+    "n": 280,
+    "target_n": 88,
+    "elements": [
+     21,
+     197,
+     45,
+     17
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Mass",
+    "domains": [
+     108,
+     172,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 62.04,
+    "space": 57.5,
+    "charge": 19.6,
+    "time": 79.39
+   },
+   "majority": "charge",
+   "census": {
+    "n": 280,
+    "target_n": 179,
+    "elements": [
+     232,
+     15,
+     17,
+     16
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     122,
+     158,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 69.08,
+    "space": 74.23,
+    "charge": 64.6,
+    "time": 45.89
+   },
+   "majority": "time",
+   "census": {
+    "n": 258,
+    "target_n": 76,
+    "elements": [
+     20,
+     18,
+     13,
+     207
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     57,
+     201,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 26.94,
+    "space": 74.16,
+    "charge": 69.66,
+    "time": 80.08
+   },
+   "majority": "mass",
+   "census": {
+    "n": 280,
+    "target_n": 192,
+    "elements": [
+     20,
+     201,
+     41,
+     18
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Mass",
+    "domains": [
+     90,
+     52,
+     138
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "meta": {
+  "tag": "evo",
+  "genome": "genome.npy",
+  "base": null,
+  "tests_passed": 7,
+  "note": "Compact hand-designed rule (evo_compact.py), ~31 evolved parameters, no neural net."
+ }
+}
