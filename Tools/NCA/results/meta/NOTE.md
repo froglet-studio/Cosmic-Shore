@@ -71,3 +71,16 @@ G2's published 5/8 is NOT robust: single-threaded, seed 7 gives 4/8 (thread-coun
 flips its one marginal switch). The metamorph models are 7/8 on every seed. The failing test is
 the same everywhere: dragonfly -> whale, where after the yardstick's cull the live majority is
 SPACE on every seed (`majority_after`), so a majority-following swarm becomes a jellyfish.
+
+## How fast may it transform? Cap sweep on m3@500 (`results/meta/capsweep.txt`)
+
+| simultaneous-metamorph cap | tests | what happens after the cull |
+|---|---|---|
+| 2% | 5/8 | conversion slower than the old majority re-lays; the homeostat then LOCKS IN the old plan |
+| 4% | 5/8 | same race lost on 2 of 4 |
+| 8% (trained) | 7/8 | switches hold |
+| 15% | 7/8 | switches hold, slightly worse closeness (181.99 vs 169.9) |
+
+Conformity is positive feedback: it amplifies whichever element leads, so a switch is a RACE
+between conversion and re-laying in the first few dozen steps after the loss. That is a game knob
+with a clear threshold (between 4% and 8% of the swarm transforming at once).
