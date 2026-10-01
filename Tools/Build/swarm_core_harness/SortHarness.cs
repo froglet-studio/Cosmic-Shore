@@ -78,7 +78,7 @@ static class SortHarness
         return c;
     }
 
-    static int[] LR(int[] w, int n)
+    internal static int[] LR(int[] w, int n)
     {
         int K = w.Length; double sum = w.Sum(); var b = new int[K]; var rem = new double[K];
         for (int k = 0; k < K; k++) { double x = w[k] / sum * n; b[k] = (int)Math.Floor(x); rem[k] = x - b[k]; }
@@ -90,16 +90,16 @@ static class SortHarness
 
     /// <summary>Self-inflicted deaths, counted the way Tools/NCA/scorecard.py counts them: a member
     /// active before a step and inactive after it, when nobody outside called Kill.</summary>
-    static int _selfDeaths;
+    internal static int _selfDeaths;
 
-    static void Step(SwarmSortCore c, SwarmPredator[] preds = null)
+    internal static void Step(SwarmSortCore c, SwarmPredator[] preds = null)
     {
         var before = (bool[])c.Active.Clone();
         c.Step(preds ?? Array.Empty<SwarmPredator>());
         for (int i = 0; i < c.Cap; i++) if (before[i] && !c.Active[i]) _selfDeaths++;
     }
 
-    static void Run(SwarmSortCore c, int steps, SwarmPredator[] preds = null)
+    internal static void Run(SwarmSortCore c, int steps, SwarmPredator[] preds = null)
     {
         for (int t = 0; t < steps; t++) { Step(c, preds); c.Events.Clear(); }
     }

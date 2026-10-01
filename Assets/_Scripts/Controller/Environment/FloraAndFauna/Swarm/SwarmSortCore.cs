@@ -112,6 +112,39 @@ namespace CosmicShore.Gameplay
         public float[] Mob = { 0f, 0f, 0f, 1f };
         public float MobSpeed = 1f;
         public float[] Inflate = { 0.45f, 0f, 0f, 0f };
+
+        // ── sortfeel + the fractional update (research sortfeel_model.py / lite_sortfeel_model.py;
+        //    Docs/SWARM_FAUNA.md §12). Every default is OFF, so these fields leave sort byte-identical.
+        /// <summary>FLAT-BOTTOMED fate wells (research `well_dead`, m0 in well sigmas): the fate pull is
+        /// the gradient of 0.5 max(0, m - m0)^2, m the Mahalanobis distance to the fated well - inside m0
+        /// there is no pull, so a tissue FILLS its well as a liquid instead of being crushed into a sheet.
+        /// 0 = sort's plain quadratic well.</summary>
+        public float WellDead = 0f;
+        /// <summary>m0 on the dragonfly (Time) plan's wells only (research `well_dead_time`). NEGATIVE =
+        /// WellDead. sortfeel v2 sets 0 here (its thin wings want tight wells); the held lite config ran
+        /// without the override (0.7 everywhere).</summary>
+        public float WellDeadTime = -1f;
+        /// <summary>Per-tadpole Ornstein-Uhlenbeck wander (research `wander`, voxels/step), added to the
+        /// position and kept OUT of the inertia state. 0 = off.</summary>
+        public float Wander = 0f;
+        /// <summary>The wander's correlation time in steps (research `wander_tau`); each tadpole runs at
+        /// tau x (0.6 + 0.8 frac(slot x 0.618)) - everyone does the same thing slightly differently.</summary>
+        public float WanderTau = 12f;
+        /// <summary>FRACTIONAL UPDATE k (research `frac`): each step only members with (slot + step) % k == 0
+        /// re-steer (neighbours, adhesion, swaps, the velocity blend - which then uses inertia^k, the
+        /// k-step equivalent); the rest COAST on their last velocity. Everything rate-based (fate, wells,
+        /// wander, hatching, laying, molting, the plan's dwell) still runs every step for everyone. A
+        /// member a vessel has startled re-steers every step whatever its phase (GAME). 1 = sort.</summary>
+        public int Frac = 1;
+
+        /// <summary>Turn on the research's published sortfeel (well_dead 0.7, wander 0.05, tau 12) and the
+        /// held lite schedule (frac 8). <paramref name="wellDeadTime"/> -1 reproduces the HELD config
+        /// (results/lite_sortfeel/params.json, which carries no override); sortfeel v2 used 0.</summary>
+        public SwarmSortParams WithSortFeel(int frac = 8, float wellDeadTime = -1f)
+        {
+            WellDead = 0.7f; WellDeadTime = wellDeadTime; Wander = 0.05f; WanderTau = 12f; Frac = Math.Max(1, frac);
+            return this;
+        }
     }
 
     /// <summary>
@@ -291,6 +324,8 @@ namespace CosmicShore.Gameplay
         public readonly int[] Elem, Dom, Age, MoltTo, Fate, FKey, XferRole, XferPlan;
         public readonly bool[] Active, Hatched;
         public readonly float[] Startle, Molt, Energy;
+        /// <summary>Per-tadpole wander velocity (OU state; zero unless Wander > 0).</summary>
+        public readonly Vector3[] Wand;
 
         // ── per swarm ──
         public int PlanIx = -1, Clock, Deaths;
@@ -311,7 +346,9 @@ namespace CosmicShore.Gameplay
         readonly bool[] _live;
         readonly int[] _type, _wk, _liveIx;
         readonly Vector3[] _xb, _grad, _fCol, _fAdh, _fSwap, _newVel, _ff;
-        readonly float[] _st;
+        readonly float[] _st, _wA, _wB;   // _wA/_wB: per-slot OU decay and drive (constants of the params)
+        readonly bool[] _upd;
+        readonly float _inertiaK;   // Inertia^Frac
         readonly int[] _cnt = new int[4], _members, _occ, _cen = new int[16], _cenM = new int[16], _ec = new int[4];
         readonly float[] _need, _want = new float[16], _fill = new float[16], _deficit = new float[16], _fl = new float[4];
         readonly int[,] _dcen = new int[4, 3];
@@ -335,6 +372,14 @@ namespace CosmicShore.Gameplay
             _xb = new Vector3[Cap]; _grad = new Vector3[Cap]; _fCol = new Vector3[Cap]; _fAdh = new Vector3[Cap];
             _fSwap = new Vector3[Cap]; _newVel = new Vector3[Cap]; _ff = new Vector3[Cap]; _st = new float[Cap];
             _sorted = new int[Cap]; _cellOf = new int[Cap];
+            _inertiaK = MathF.Pow(c.Inertia, Math.Max(1, c.Frac));
+            Wand = new Vector3[Cap]; _wA = new float[Cap]; _wB = new float[Cap]; _upd = new bool[Cap];
+            for (int i = 0; i < Cap; i++)
+            {
+                double frac01 = (i * 0.6180339) % 1.0;
+                float tau = MathF.Max(1e-3f, c.WanderTau * (float)(0.6 + 0.8 * frac01));
+                _wA[i] = MathF.Exp(-1f / tau); _wB[i] = MathF.Sqrt(1f - _wA[i] * _wA[i]) * c.Wander;
+            }
             int maxW = 1;
             foreach (var p in plansByElement) maxW = Math.Max(maxW, SwarmSortCode.For(p, c).W.Length);
             _occ = new int[maxW]; _need = new float[maxW];
@@ -382,7 +427,7 @@ namespace CosmicShore.Gameplay
         {
             if (i < 0 || i >= Cap || !Active[i]) return;
             if (C.KillLayHoldSteps > 0) _layHoldUntil = Math.Max(_layHoldUntil, Clock + C.KillLayHoldSteps);
-            Active[i] = false; Hatched[i] = false; Startle[i] = 0; Vel[i] = Vector3.Zero; Molt[i] = 0; Fate[i] = 0; FKey[i] = 0;
+            Active[i] = false; Hatched[i] = false; Startle[i] = 0; Vel[i] = Vector3.Zero; Wand[i] = Vector3.Zero; Molt[i] = 0; Fate[i] = 0; FKey[i] = 0;
             XferPlan[i] = -1;
         }
 
@@ -448,7 +493,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < n; i++)
             {
                 Active[i] = true; Hatched[i] = true; Elem[i] = es[i]; Dom[i] = ds[i];
-                Pos[i] = centre + spread * Gauss3(); Vel[i] = Vector3.Zero; Fate[i] = 0; FKey[i] = 0; XferPlan[i] = -1;
+                Pos[i] = centre + spread * Gauss3(); Vel[i] = Vector3.Zero; Wand[i] = Vector3.Zero; Fate[i] = 0; FKey[i] = 0; XferPlan[i] = -1;
             }
             Anchor = centre; Clock = 0; _permSet = false;
             // sort_model._reset: the opening plan is the seed's majority (no event: nothing switched)
@@ -550,7 +595,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < Cap; i++)
             {
                 if (!Active[i] || Hatched[i]) continue;
-                if (++Age[i] >= C.HatchSteps) { Hatched[i] = true; Age[i] = 0; }
+                if (++Age[i] >= C.HatchSteps) { Hatched[i] = true; Age[i] = 0; Wand[i] = Vector3.Zero; }
             }
             int nl = 0; Vector3 cen = Vector3.Zero;
             for (int i = 0; i < Cap; i++)
@@ -615,6 +660,7 @@ namespace CosmicShore.Gameplay
             }
 
             // ── 5. own-well chemotaxis (the fated well's log-density gradient), orphans climb the whole body
+            float m0 = PlanIx == 3 && C.WellDeadTime >= 0f ? C.WellDeadTime : C.WellDead;
             for (int a = 0; a < nl; a++)
             {
                 int i = _liveIx[a], t = _type[i];
@@ -627,6 +673,13 @@ namespace CosmicShore.Gameplay
                     var mu = muA[k] + fa * (muB[k] - muA[k]);
                     var d = _xb[i] - mu;
                     g = Mul(code.Inv, k, d); E = 0.5f * Vector3.Dot(d, g);
+                    // sortfeel: a FLAT-BOTTOMED well. E stays sort's quadratic (StarvationVictim reads it as
+                    // "how far from its place"); only the pull is cut inside m0 sigmas.
+                    if (m0 > 0f)
+                    {
+                        float m = MathF.Sqrt(MathF.Max(2f * E, 1e-12f));
+                        g *= MathF.Max(0f, 1f - m0 / m);
+                    }
                     _wk[i] = k;
                     if (C.KWellFF != 0f) _ff[i] = C.KWellFF * Rotate((muB[k] - muA[k]) / per) * swell;
                 }
@@ -652,7 +705,9 @@ namespace CosmicShore.Gameplay
             BuildHash(_live);
             float r0 = C.R0, rAdh2 = C.RAdh * C.RAdh, nearMin = 0.9f * r0, rSwap2 = C.RSwap * C.RSwap;
             for (int a = 0; a < nl; a++) { int i = _liveIx[a]; _fCol[i] = _fAdh[i] = _fSwap[i] = Vector3.Zero; }
-            for (int a = 0; a < nl; a++)
+            int kFrac = Math.Max(1, C.Frac);
+            if (kFrac > 1) NeighboursFractional(code, preds, nl, kFrac, muA, muB, fa);
+            else for (int a = 0; a < nl; a++)
             {
                 int i = _liveIx[a]; var x = Pos[i];
                 CellKey(x, out int cx, out int cy, out int cz);
@@ -705,14 +760,31 @@ namespace CosmicShore.Gameplay
                     st = MathF.Max(st, relay * C.Relay);
                 }
                 _st[i] = st; stSum += st;
-                var want = (1 - 0.8f * st) * (_grad[i] + _ff[i]) + _fCol[i] + _fAdh[i] + _fSwap[i] + C.FleeGain * flee;
-                if (C.Noise > 0f) want += C.Noise * Gauss3();
-                var v = C.Inertia * Vel[i] + (1 - C.Inertia) * want;
+                Vector3 v;
+                if (kFrac == 1 || _upd[i])
+                {
+                    var want = (1 - 0.8f * st) * (_grad[i] + _ff[i]) + _fCol[i] + _fAdh[i] + _fSwap[i] + C.FleeGain * flee;
+                    if (C.Noise > 0f) want += C.Noise * Gauss3();
+                    // a member on its phase blends over the k steps it coasted (inertia^k); one a vessel
+                    // woke out of phase blends over the one step it is taking
+                    float inr = kFrac == 1 || ((i + Clock) % kFrac) != 0 ? C.Inertia : _inertiaK;
+                    v = inr * Vel[i] + (1 - inr) * want;
+                }
+                else v = Vel[i];   // coasting: keeps its last velocity (a low-pass on every change)
                 float vmax = C.VMax[e] * (1 + 0.8f * st), sp = v.Length();
                 if (sp > vmax) v *= vmax / sp;
                 _newVel[i] = v;
             }
             for (int a = 0; a < nl; a++) { int i = _liveIx[a]; Vel[i] = _newVel[i]; Startle[i] = _st[i]; Pos[i] += Vel[i]; }
+            // sortfeel: per-tadpole OU wander, added to the position and kept OUT of Vel (the inertia
+            // state) - folded into Vel it would integrate into a drift (research sortfeel NOTE)
+            if (C.Wander > 0f)
+                for (int a = 0; a < nl; a++)
+                {
+                    int i = _liveIx[a];
+                    Wand[i] = _wA[i] * Wand[i] + _wB[i] * Gauss3();
+                    Pos[i] += Wand[i];
+                }
 
             // ── the body swims (GAME): every member, eggs included, rides the cruise
             if (C.Oriented && C.Cruise > 0f)
@@ -768,6 +840,59 @@ namespace CosmicShore.Gameplay
             }
 
             ThreatLevel = 0.85f * ThreatLevel + 0.15f * MathF.Min(1f, 3f * stSum / Math.Max(1, nl));
+        }
+
+        /// <summary>lite_sortfeel's neighbour pass: only the members re-steering this step (slot + step on
+        /// the 1-in-k phase, or woken by a vessel) read their neighbours - rows U, columns everyone - so the
+        /// pair work is O(N^2 / k). A swap is seen from the updating side only (each side, on its own
+        /// phase, takes its own half). Writes _upd for the move.</summary>
+        void NeighboursFractional(SwarmSortCode code, ReadOnlySpan<SwarmPredator> preds, int nl, int k, Vector3[] muA, Vector3[] muB, float fa)
+        {
+            float r0 = C.R0, rAdh2 = C.RAdh * C.RAdh, nearMin = 0.9f * r0, rSwap2 = C.RSwap * C.RSwap;
+            for (int a = 0; a < nl; a++)
+            {
+                int i = _liveIx[a];
+                bool on = ((i + Clock) % k) == 0 || Startle[i] > 0.02f;
+                for (int p = 0; !on && p < preds.Length; p++)
+                {
+                    float reach = (2.5f * C.Sense + 1f) * preds[p].R + C.Lookahead * preds[p].V.Length();
+                    on = Vector3.DistanceSquared(Pos[i], preds[p].C) < reach * reach;
+                }
+                _upd[i] = on;
+                if (!on) continue;
+                var x = Pos[i];
+                CellKey(x, out int cx, out int cy, out int cz);
+                int ei = EffectiveElement(i), ri = EffRole(i);
+                int nbN = SwarmCoreShared.NeighbourBuckets(cx, cy, cz, HG, _nb);
+                for (int nbi = 0; nbi < nbN; nbi++)
+                {
+                    int gk = _nb[nbi];
+                    for (int q = _cellStart[gk], qe = q + _cellCount[gk]; q < qe; q++)
+                    {
+                        int j = _sorted[q]; if (j == i) continue;
+                        var v = Pos[j] - x; float d2 = v.LengthSquared();
+                        if (d2 >= rAdh2 && d2 >= rSwap2) continue;
+                        float d = MathF.Sqrt(MathF.Max(d2, 1e-12f));
+                        if (d < r0) _fCol[i] -= C.KRep * (r0 - d) / d * v;
+                        if (d2 < rAdh2 && d > nearMin)
+                        {
+                            int ej = EffectiveElement(j), rj = EffRole(j);
+                            float A = ei == ej && ri == rj ? C.ASame : ei == ej ? C.AElem : ri == rj ? C.ARole : C.AOther;
+                            _fAdh[i] += A / d * v;
+                        }
+                        if (C.Swap > 0f && d2 < rSwap2)
+                        {
+                            float gain = EAt(code, i, _xb[i], muA, muB, fa) + EAt(code, j, _xb[j], muA, muB, fa)
+                                       - EAt(code, i, _xb[j], muA, muB, fa) - EAt(code, j, _xb[i], muA, muB, fa);
+                            if (gain > C.SwapMargin)
+                            {
+                                _fSwap[i] += C.Swap * 0.5f * v;
+                                _fCol[i] += C.KRep * (MathF.Max(r0 - d, 0f) / d) * v;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         static Vector3 Mul(float[] inv, int k, Vector3 d)
@@ -989,7 +1114,7 @@ namespace CosmicShore.Gameplay
                 freeFrom = j2 + 1;
                 _ec[ce]++;
                 var dir = Gauss3(); dir /= MathF.Max(dir.Length(), 1e-6f);
-                Pos[j2] = Pos[par] + C.RBud * dir; Vel[j2] = Vector3.Zero;
+                Pos[j2] = Pos[par] + C.RBud * dir; Vel[j2] = Vector3.Zero; Wand[j2] = Vector3.Zero;
                 Elem[j2] = ce; Dom[j2] = Dom[par]; Active[j2] = true; Hatched[j2] = false; Age[j2] = 0;
                 Startle[j2] = 0; Molt[j2] = 0; Fate[j2] = 0; FKey[j2] = 0; XferPlan[j2] = -1; Facing[j2] = Facing[par];
                 int q2 = ce * 4 + r;

@@ -472,6 +472,11 @@ static class GridHarness
                     for (int r = 0; r < samples; r++)
                     {
                         int gseed = seed + 101 * r;
+                        if (mode.Contains("Sort"))
+                        {
+                            if (k == 0 && r == 0) SortFeelHarness.Yardstick(sb, ref first, plans, mode, seed, samples, ref steps);
+                            continue;
+                        }
                         if (mode.EndsWith("Evo"))
                         {
                             var ec = EvoHarness.Grow(plans, args[1], mode, k, gseed); steps += 240;
@@ -498,9 +503,9 @@ static class GridHarness
                             AppendRecord(sb, ref first, c2, mode, "switch", k, e, seed, r, c2.Molts, false);
                         }
                     }
-                Console.WriteLine($"  yardstick {mode,-10} seed {seed}: {sw.Elapsed.TotalSeconds:F0}s, {sw.Elapsed.TotalMilliseconds / steps:F3} ms/step mean, self-deaths so far {SelfDeaths + EvoHarness.SelfDeaths}");
+                Console.WriteLine($"  yardstick {mode,-10} seed {seed}: {sw.Elapsed.TotalSeconds:F0}s, {sw.Elapsed.TotalMilliseconds / steps:F3} ms/step mean, self-deaths so far {SelfDeaths + EvoHarness.SelfDeaths + SortHarness._selfDeaths}");
             }
-        sb.Append($"],\"selfDeaths\":{SelfDeaths + EvoHarness.SelfDeaths}}}");
+        sb.Append($"],\"selfDeaths\":{SelfDeaths + EvoHarness.SelfDeaths + SortHarness._selfDeaths}}}");
         File.WriteAllText(outPath, sb.ToString());
         return 0;
     }
