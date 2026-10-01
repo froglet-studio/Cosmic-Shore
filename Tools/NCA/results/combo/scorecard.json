@@ -1,0 +1,109 @@
+{
+ "locality": "mixed",
+ "accurate": {
+  "7": {
+   "passed": 16,
+   "feasible": 16,
+   "na": [],
+   "own": {
+    "mass": 1.44,
+    "space": 2.12,
+    "charge": 3.54,
+    "time": 3.05
+   },
+   "own_passed": 4,
+   "seconds": 325.0
+  },
+  "23": {
+   "passed": 16,
+   "feasible": 16,
+   "na": [],
+   "own": {
+    "mass": 1.67,
+    "space": 1.61,
+    "charge": 2.18,
+    "time": 2.75
+   },
+   "own_passed": 4,
+   "seconds": 318.7
+  },
+  "41": {
+   "passed": 14,
+   "feasible": 16,
+   "na": [],
+   "own": {
+    "mass": 2.33,
+    "space": 1.58,
+    "charge": 2.19,
+    "time": 3.36
+   },
+   "own_passed": 4,
+   "seconds": 297.8
+  }
+ },
+ "seeds": [
+  7,
+  23,
+  41
+ ],
+ "lossless": {
+  "per_plan": {
+   "mass": {
+    "grown_n": 192,
+    "ms_per_step_grown": 14.874,
+    "ms_per_step_grow": 17.072,
+    "deaths": 0,
+    "tadpole_steps": 69404
+   },
+   "space": {
+    "grown_n": 88,
+    "ms_per_step_grown": 14.738,
+    "ms_per_step_grow": 13.618,
+    "deaths": 0,
+    "tadpole_steps": 63916
+   },
+   "charge": {
+    "grown_n": 181,
+    "ms_per_step_grown": 14.366,
+    "ms_per_step_grow": 15.129,
+    "deaths": 0,
+    "tadpole_steps": 63945
+   },
+   "time": {
+    "grown_n": 77,
+    "ms_per_step_grown": 11.201,
+    "ms_per_step_grow": 12.871,
+    "deaths": 0,
+    "tadpole_steps": 56572
+   }
+  },
+  "deaths": 0,
+  "deaths_per_1k_tadpole_steps": 0.0,
+  "lossless": true,
+  "ms_per_step": 13.795,
+  "grown_n": 134
+ },
+ "emergent": {
+  "in_band": true,
+  "checks": {
+   "jerk_rel": true,
+   "osc": true,
+   "stuck": true,
+   "planar": true
+  },
+  "mean": {
+   "speed": 0.206,
+   "jerk": 0.099,
+   "jerk_rel": 0.578,
+   "planar_frac": 0.475,
+   "flat_mean": 0.14,
+   "coherence": 0.631,
+   "jitter": 0.913,
+   "phase": 0.84,
+   "stuck": 0.0,
+   "osc": 0.031
+  },
+  "planar_excess": 0.088
+ },
+ "headline": "accurate 0.88 worst seed | lossless True (0.0/1k) | 13.795 ms/step @134 | organic True | mixed"
+}

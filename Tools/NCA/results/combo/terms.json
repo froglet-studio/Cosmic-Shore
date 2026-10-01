@@ -1,0 +1,30 @@
+{
+ "mass": {
+  "pos only": 0.56,
+  "+ element": 1.56,
+  "+ domain": 1.86,
+  "full": 2.15,
+  "n": 192
+ },
+ "space": {
+  "pos only": 0.71,
+  "+ element": 0.74,
+  "+ domain": 0.9,
+  "full": 1.03,
+  "n": 88
+ },
+ "charge": {
+  "pos only": 0.73,
+  "+ element": 2.14,
+  "+ domain": 2.54,
+  "full": 3.27,
+  "n": 181
+ },
+ "time": {
+  "pos only": 1.25,
+  "+ element": 1.6,
+  "+ domain": 1.93,
+  "full": 2.56,
+  "n": 77
+ }
+}
