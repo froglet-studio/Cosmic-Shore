@@ -1,5 +1,27 @@
 {
  "A": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "1",
+   "orphan_proxy": "1"
+  },
   "23": {
    "passed": 14,
    "feasible": 16,
@@ -44,6 +66,29 @@
   }
  },
  "B": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "1",
+   "orphan_proxy": "1",
+   "transfer2": "1"
+  },
   "7": {
    "passed": 14,
    "feasible": 16,
@@ -60,6 +105,31 @@
   }
  },
  "C12": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1",
+   "G": "12",
+   "cell": "8"
+  },
   "7": {
    "passed": 15,
    "feasible": 16,
@@ -82,6 +152,71 @@
   }
  },
  "C8": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1",
+   "G": "8",
+   "cell": "12"
+  },
+  "1000": {
+   "passed": 13,
+   "feasible": 15,
+   "own": {
+    "mass": 1.52,
+    "space": 1.4,
+    "charge": 2.21,
+    "time": 3.47
+   },
+   "fails": {
+    "charge->time": 8.45,
+    "time->space": 8.2
+   }
+  },
+  "23": {
+   "passed": 15,
+   "feasible": 16,
+   "own": {
+    "mass": 1.44,
+    "space": 1.82,
+    "charge": 2.41,
+    "time": 4.24
+   },
+   "fails": {
+    "time->space": 10.51
+   }
+  },
+  "41": {
+   "passed": 15,
+   "feasible": 16,
+   "own": {
+    "mass": 1.33,
+    "space": 2.37,
+    "charge": 2.1,
+    "time": 2.9
+   },
+   "fails": {
+    "charge->time": 8.91
+   }
+  },
   "7": {
    "passed": 16,
    "feasible": 16,
@@ -102,6 +237,29 @@
   }
  },
  "C": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1"
+  },
   "23": {
    "passed": 16,
    "feasible": 16,
@@ -147,6 +305,30 @@
   }
  },
  "D": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1",
+   "molt_rate": "0.08"
+  },
   "41": {
    "passed": 13,
    "feasible": 15,
@@ -163,6 +345,30 @@
   }
  },
  "E": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "ratio": "2",
+   "orphan_proxy": "1",
+   "transfer2": "1",
+   "k_swap": "0.3"
+  },
   "41": {
    "passed": 14,
    "feasible": 16,
@@ -179,6 +385,26 @@
   }
  },
  "cap": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0"
+  },
   "7": {
    "passed": 13,
    "feasible": 16,
@@ -196,6 +422,27 @@
   }
  },
  "capfast": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "molt_rate": "0.08"
+  },
   "7": {
    "passed": 13,
    "feasible": 16,
@@ -213,6 +460,27 @@
   }
  },
  "captr": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "lay_cap": "1.0",
+   "transfer": "1"
+  },
   "7": {
    "passed": 11,
    "feasible": 16,
@@ -232,6 +500,26 @@
   }
  },
  "molt": {
+  "cfg": {
+   "k_fine": 2,
+   "k_ff": 1.5,
+   "interp": 1,
+   "k_flow": 0,
+   "periods": "time:16",
+   "dmap_low": 1,
+   "lock": 60,
+   "k_class": 10,
+   "sigma_rel": 1.2,
+   "p_cross": 0.25,
+   "stagger": 1,
+   "k_mig": 1,
+   "mig_L": 40,
+   "starve_slack": 0,
+   "starve_tol": 0,
+   "elem_floor": 1,
+   "small_slack": 2,
+   "molt": "1"
+  },
   "23": {
    "passed": 12,
    "feasible": 16,

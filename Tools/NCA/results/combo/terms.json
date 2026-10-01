@@ -1,30 +1,6 @@
 {
- "mass": {
-  "pos only": 0.56,
-  "+ element": 1.56,
-  "+ domain": 1.86,
-  "full": 2.15,
-  "n": 192
- },
- "space": {
-  "pos only": 0.71,
-  "+ element": 0.74,
-  "+ domain": 0.9,
-  "full": 1.03,
-  "n": 88
- },
- "charge": {
-  "pos only": 0.73,
-  "+ element": 2.14,
-  "+ domain": 2.54,
-  "full": 3.27,
-  "n": 181
- },
- "time": {
-  "pos only": 1.25,
-  "+ element": 1.6,
-  "+ domain": 1.93,
-  "full": 2.56,
-  "n": 77
- }
+ "mass": {"pos only": 0.71, "+ element": 2.24, "+ domain": 2.86, "full": 3.34, "n": 193},
+ "space": {"pos only": 0.65, "+ element": 0.65, "+ domain": 0.85, "full": 1.22, "n": 88},
+ "charge": {"pos only": 0.59, "+ element": 1.81, "+ domain": 2.18, "full": 3.05, "n": 180},
+ "time": {"pos only": 1.44, "+ element": 2.03, "+ domain": 2.41, "full": 3.27, "n": 77}
 }

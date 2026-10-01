@@ -1,94 +1,94 @@
 {
  "mass": {
-  "n": 192,
-  "speed": 0.09,
-  "jerk": 0.07,
-  "jerk_rel": 0.774,
+  "n": 193,
+  "speed": 0.091,
+  "jerk": 0.069,
+  "jerk_rel": 0.761,
   "jerk_e": {
    "Charge": 0.052,
    "Mass": 0.057,
    "Space": 0.077,
-   "Time": 0.147
+   "Time": 0.148
   },
-  "planar_frac": 0.52,
+  "planar_frac": 0.442,
   "flat_mean": 0.126,
   "planar_plan": 0.432,
-  "coherence": 0.57,
-  "jitter": 0.906,
-  "phase": 0.905,
+  "coherence": 0.58,
+  "jitter": 0.9,
+  "phase": 0.929,
   "stuck": 0.0,
-  "osc": 0.027
+  "osc": 0.025
  },
  "space": {
   "n": 88,
-  "speed": 0.139,
-  "jerk": 0.082,
+  "speed": 0.138,
+  "jerk": 0.081,
   "jerk_rel": 0.59,
   "jerk_e": {
    "Charge": 0.065,
    "Space": 0.073,
-   "Time": 0.225
+   "Time": 0.217
   },
-  "planar_frac": 0.313,
-  "flat_mean": 0.19,
+  "planar_frac": 0.26,
+  "flat_mean": 0.199,
   "planar_plan": 0.375,
-  "coherence": 0.501,
-  "jitter": 1.451,
-  "phase": 0.895,
+  "coherence": 0.467,
+  "jitter": 1.465,
+  "phase": 0.897,
   "stuck": 0.0,
   "osc": 0.03
  },
  "charge": {
-  "n": 181,
-  "speed": 0.152,
-  "jerk": 0.093,
-  "jerk_rel": 0.611,
+  "n": 180,
+  "speed": 0.15,
+  "jerk": 0.092,
+  "jerk_rel": 0.617,
   "jerk_e": {
    "Charge": 0.072,
-   "Mass": 0.114,
-   "Space": 0.146,
-   "Time": 0.148
+   "Mass": 0.137,
+   "Space": 0.143,
+   "Time": 0.149
   },
-  "planar_frac": 0.678,
-  "flat_mean": 0.088,
+  "planar_frac": 0.711,
+  "flat_mean": 0.077,
   "planar_plan": 0.687,
-  "coherence": 0.709,
-  "jitter": 0.622,
-  "phase": 0.611,
-  "stuck": 0.0,
-  "osc": 0.032
- },
- "time": {
-  "n": 77,
-  "speed": 0.442,
-  "jerk": 0.15,
-  "jerk_rel": 0.338,
-  "jerk_e": {
-   "Charge": 0.103,
-   "Mass": 0.105,
-   "Space": 0.098,
-   "Time": 0.172
-  },
-  "planar_frac": 0.387,
-  "flat_mean": 0.155,
-  "planar_plan": 0.487,
-  "coherence": 0.746,
-  "jitter": 0.672,
-  "phase": 0.947,
-  "stuck": 0.0,
-  "osc": 0.035
- },
- "mean": {
-  "speed": 0.206,
-  "jerk": 0.099,
-  "jerk_rel": 0.578,
-  "planar_frac": 0.475,
-  "flat_mean": 0.14,
-  "coherence": 0.631,
-  "jitter": 0.913,
-  "phase": 0.84,
+  "coherence": 0.717,
+  "jitter": 0.615,
+  "phase": 0.615,
   "stuck": 0.0,
   "osc": 0.031
+ },
+ "time": {
+  "n": 75,
+  "speed": 0.457,
+  "jerk": 0.155,
+  "jerk_rel": 0.338,
+  "jerk_e": {
+   "Charge": 0.098,
+   "Mass": 0.105,
+   "Space": 0.099,
+   "Time": 0.179
+  },
+  "planar_frac": 0.419,
+  "flat_mean": 0.143,
+  "planar_plan": 0.487,
+  "coherence": 0.732,
+  "jitter": 0.641,
+  "phase": 0.903,
+  "stuck": 0.0,
+  "osc": 0.034
+ },
+ "mean": {
+  "speed": 0.209,
+  "jerk": 0.099,
+  "jerk_rel": 0.577,
+  "planar_frac": 0.458,
+  "flat_mean": 0.136,
+  "coherence": 0.624,
+  "jitter": 0.905,
+  "phase": 0.836,
+  "stuck": 0.0,
+  "osc": 0.03
  },
  "organic": {
   "ok": true,
@@ -98,6 +98,6 @@
    "stuck": true,
    "planar": true
   },
-  "planar_excess": 0.088
+  "planar_excess": 0.024
  }
 }
