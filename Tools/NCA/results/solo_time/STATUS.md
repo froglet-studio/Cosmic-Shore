@@ -1,13 +1,13 @@
 # solo_time status
 
-Updated: 2026-10-01T12:57:00Z  
-Step: 40 / 3000 (~2.8 s/step on 4 CPU threads)  
-Rule snapshot: none yet (first at step 100)
+Updated: 2026-10-01T13:44:22Z  
+Step: 980 / 3000 (running)  
+Rule snapshot: Tools/NCA/runs/swarm_solo_time/rule_00900.pt
 
 ```
-    0 loss   22.998 T71  3.3s rev0.00 s7 | ti>ti  23.21 n272 d0
-   10 loss   26.226 T76  2.8s rev0.00 s6 | ti>ti  26.99 n280 d0
-   20 loss   22.013 T62  2.5s rev0.00 s9 | ti>ti  21.19 n274 d0
-   30 loss   22.727 T82  2.8s rev0.00 s6 | ti>ti  19.76 n280 d0
-   40 loss   20.588 T87  3.1s rev0.00 s7 | ti>ti  20.42 n280 d0
+  940 loss   14.544 T92  3.1s rev0.00 s6 | ti>ti  18.21 n280 d0
+  950 loss   16.982 T57  2.6s rev0.00 s5 | ti>ti  20.09 n280 d0
+  960 loss   17.343 T61  2.8s rev0.00 s7 | ti>ti  16.69 n280 d0
+  970 loss   17.405 T73  2.9s rev0.00 s5 | ti>ti  18.93 n280 d0
+  980 loss   16.986 T51  2.9s rev0.00 s6 | ti>ti  20.41 n222 d0
 ```
