@@ -1,0 +1,50 @@
+{
+ "cfg": {
+  "mode": "slots",
+  "frame_steps": 6,
+  "dwell": 12,
+  "k_arrive": 0.35,
+  "accel": 0.45,
+  "sep_r": 2.0,
+  "sep_k": 0.5,
+  "align_r": 5.0,
+  "align_k": 0.15,
+  "vmax": [
+   0.8,
+   0.8,
+   0.8,
+   2.0
+  ],
+  "reassign_every": 8,
+  "sticky": 4.0,
+  "lay_rate": 0.04,
+  "lay_max": 4,
+  "molt": 1,
+  "molt_rate": 0.03,
+  "molt_steps": 10,
+  "morph_steps": 60,
+  "swirl": 0.9,
+  "field_sigma": 3.0,
+  "field_k": 1.2,
+  "cruise": 0.0,
+  "sense": 1.8,
+  "relay": 0.8,
+  "startle_decay": 0.9,
+  "flee": [
+   0.6,
+   0.5,
+   1.4,
+   2.0
+  ],
+  "flee_swirl": 0.8,
+  "seed": 0
+ },
+ "passed": 7,
+ "close": 103.62,
+ "switches": {
+  "mass": 240,
+  "space": 240,
+  "charge": 240,
+  "time": 240
+ }
+}
