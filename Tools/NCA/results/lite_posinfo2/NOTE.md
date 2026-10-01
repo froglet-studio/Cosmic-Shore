@@ -28,7 +28,10 @@ config is the unchanged posinfo2 (baseline = `results/hold/posinfo2.json`). What
 5. **Evidence about the hold itself** (for the lead, who owns hold.py): see "Is the accuracy gate noise?" -
    the single switch every candidate loses, time->space, sits on the loss-8 bar in the BASELINE itself
    (7.49 at 2/3 samples, 7.99 at 2/3, 7.44 at 3/3, 10.38 at 1/3), so ANY change that re-rolls the dice can
-   lose it. NOISE CONTROL result below.
+   lose it. **The noise control (the unchanged rule, generator stream shifted by one draw per step) FAILS the
+   hold too** - time->space lost at 3 of 4 seeds and smoothness 0.432 vs 0.497. The hold's per-seed accuracy and
+   smoothness gates are inside the noise of a single realisation, so every FAIL above that is only on those
+   gates is NOT evidence of a regression. Details and a suggested fix below.
 
 ## Hold PASS/FAIL table (every config checked; `hold_<name>.json` / `.txt` here)
 
