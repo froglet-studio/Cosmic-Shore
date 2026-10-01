@@ -132,6 +132,30 @@ def pyref(nseeds, steps=240, kind="grid", switch=False):
     return res
 
 
+def table():
+    """Markdown fidelity table: Python model vs its JS port, own plan and after the yardstick cull,
+    loss to the wanted plan (mean +- sd [min, max]) and the share under the loss-8 bar."""
+    def load(p):
+        p = os.path.join(OUT, p)
+        return json.load(open(p)) if os.path.isfile(p) else []
+    pairs = [("grid", "own", load("pyref.json") + [r for r in load("pyref_grid_switch.json") if r.get("tag") == "switch"],
+              load("fidelity_grid_js.json") + [r for r in load("fidelity_grid_switch_js.json") if r.get("tag") == "switch"]),
+             ("evo", "own", load("pyref_evo_switch.json"), load("fidelity_evo_js.json"))]
+    out = ["| model | test | Python: loss to wanted plan | n | JS port: loss | n | <=8 Py / JS |", "|---|---|---|---|---|---|---|"]
+    st = lambda v: f"{np.mean(v):.1f} +- {np.std(v):.1f} [{np.min(v):.1f}, {np.max(v):.1f}]" if len(v) else "-"
+    for name, _, py, js in pairs:
+        for tag in ("own", "switch"):
+            for k in sn.KINDS:
+                a = [r["cross"][r.get("want", k)] for r in py if r["kind"] == k and r.get("tag", "own") == tag]
+                b = [r["cross"][r.get("want", k)] for r in js if r["kind"] == k and r.get("tag", "own") == tag]
+                if not a and not b:
+                    continue
+                lab = k if tag == "own" else f"{k} -> {sn.PLAN_OF[sn.SWITCH_TO[k]]}"
+                sh = lambda v: f"{np.mean(np.array(v) <= 8):.2f}" if len(v) else "-"
+                out.append(f"| {name} | {lab} | {st(a)} | {len(a)} | {st(b)} | {len(b)} | {sh(a)} / {sh(b)} |")
+    return "\n".join(out)
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else "targets"
     os.makedirs(OUT, exist_ok=True)
@@ -143,6 +167,8 @@ def main():
         p = os.path.join(OUT, "evo_rule.json")
         json.dump(evo_json(), open(p, "w"), separators=(",", ":"))
         print("wrote", p, os.path.getsize(p) // 1024, "KB")
+    elif cmd == "table":
+        print(table())
     elif cmd == "score":
         res = score(sys.argv[2])
         out = sys.argv[3] if len(sys.argv) > 3 else sys.argv[2].replace(".json", "_scored.json")

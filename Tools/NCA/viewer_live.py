@@ -80,7 +80,7 @@ def build_live(results_root):
     <div class="h3dhead">
       <div class="eyebrow">Live · seed it, carve it, watch it decide</div>
       <h2 id="hlive">A live swarm you can eat</h2>
-      <p class="caption">Everything above was recorded. This one runs in the page, now. Press <strong>New random seed</strong> for a scatter of tadpoles with a random element mix and random domains; the majority element picks the creature. Drag across it to kill every tadpole under the brush (each leaves a lime crystal that fades). Filter the brush to one element and eat the majority: the swarm will change species. Hold Shift (or right-drag, or switch to Orbit) to turn the view; scroll to zoom.</p>
+      <p class="caption">Everything above was recorded. This one runs in the page, now. Press <strong>New random seed</strong> for a scatter of tadpoles with a random element mix and random domains; the majority element picks the creature. Drag across it to kill every tadpole under the brush (each leaves a lime crystal that fades). Filter the brush to one element and eat the majority: the swarm will change species. Hold Shift (or right-drag, or switch to Orbit) to turn the view; scroll to zoom. <strong>Graze</strong> sets a predator eating the current majority every step; <strong>Bite</strong> takes one big mouthful (just enough that the runner-up leads). One finding to try: a grown body shrugs off grazing - it breeds back faster than you eat - but a single big bite flips it.</p>
       <h3 class="apph">Model</h3>
       <div class="appgrid" id="lmodels">{models}</div>
       <p class="caption" id="labout"></p>
@@ -108,10 +108,18 @@ def build_live(results_root):
           <button type="button" class="btn" id="bl-play">Pause</button>
           <button type="button" class="btn" id="bl-orbit" aria-pressed="false">Orbit</button>
           <button type="button" class="btn" id="bl-spin" aria-pressed="false">Auto-orbit</button>
-          <button type="button" class="btn" id="bl-eat">Eat 2/3 of the majority</button>
+          <button type="button" class="btn" id="bl-eat">Bite: majority to second place</button>
         </div>
+        <label class="row" for="lgraze">Graze<input id="lgraze" type="range" min="0" max="4" step="0.25" value="0"><output id="o-lgraze">0</output></label>
         <label class="row" for="ln">Seed size<input id="ln" type="range" min="8" max="64" value="24"><output id="o-ln">24</output></label>
         <label class="row" for="lbias">Seed bias<select id="lbias">{bias}</select></label>
+        <details class="ltune" id="ltune"><summary>Tuning (grid model; defaults are the verified oracle)</summary>
+          <label class="row" for="lt-p_lay">Regrowth<input id="lt-p_lay" data-cfg="p_lay" type="range" min="0" max="0.3" step="0.01" value="0.1"><output id="o-lt-p_lay">0.1</output></label>
+          <label class="row" for="lt-p_cross">Cross-breed<input id="lt-p_cross" data-cfg="p_cross" type="range" min="0" max="0.6" step="0.05" value="0.25"><output id="o-lt-p_cross">0.25</output></label>
+          <label class="row" for="lt-hyst">Hysteresis<input id="lt-hyst" data-cfg="hyst" type="range" min="0" max="0.3" step="0.01" value="0"><output id="o-lt-hyst">0</output></label>
+          <label class="row" for="lt-starve">Starvation<input id="lt-starve" data-cfg="starve" type="range" min="0" max="1" step="1" value="1"><output id="o-lt-starve">1</output></label>
+          <p class="caption">Regrowth is the laying probability at full deficit; cross-breed is the share of eggs that take the element the parent's domain is most short of (it can feed the majority, which is why grazing alone rarely flips the creature); hysteresis is the lead another element needs, as a share of the headcount, before the plan changes; starvation lets misfits wither. Changes apply to the running swarm.</p>
+        </details>
         <p class="census mono" id="rl-seed"></p>
         <ol class="llog mono" id="rl-log" aria-label="What happened"></ol>
       </div>
@@ -141,6 +149,7 @@ CSS = """
 .lplan { font-size: 17px } .lplanl, .lmaj { color: var(--muted); font-size: 14px }
 .llog { margin: 0; padding-left: 1.4em; font-size: 12.5px; color: var(--muted); max-height: 9.5em; overflow: auto }
 #platel.orbit { cursor: grab }
+.ltune summary { cursor: pointer; font-size: 14px; color: var(--muted) } .ltune { display: grid; gap: 8px }
 """
 
 SCRIPT = r"""<script>
@@ -233,7 +242,17 @@ SCRIPT = r"""<script>
     sw.events.length = 0;
     while (dead.length > MAXD) dead.shift();
   }
-  function stepOnce() { sw.step(); simT = sw.clock; drainEvents(); rateN++; }
+  // GRAZE: a predator that eats this many random tadpoles of the CURRENT majority every step (a fraction is a
+  // per-step chance) - attrition, against the swarm's own regrowth
+  function graze() {
+    const g = +$('lgraze').value; if (!g) return;
+    const q = Math.floor(g) + (Math.random() < g % 1 ? 1 : 0); if (!q) return;
+    const c = sw.census(); if (c.majority < 0) return;
+    const ids = []; for (let i = 0; i < sw.N; i++) if (sw.active[i] && sw.hatched[i] && sw.elem[i] === c.majority) ids.push(i);
+    for (let k = 0; k < q && ids.length; k++) { const j = Math.floor(Math.random() * ids.length); sw.kill(ids[j], 'kill'); ids.splice(j, 1); }
+    countKills();
+  }
+  function stepOnce() { graze(); sw.step(); simT = sw.clock; drainEvents(); rateN++; }
 
   // ---- drawing -----------------------------------------------------------------------------
   let cen = null, az = 0.75, el = 0.35, dist = 150, spin = false, tintHearts = true;
@@ -314,6 +333,7 @@ SCRIPT = r"""<script>
     $('rl-seed').textContent = `Seed: ${n} tadpoles. Elements ${em.map((v, e) => `${ELN[e]} ${v}`).join(', ')}; domains ${['Jade', 'Ruby', 'Gold'].map((d, k) => `${d} ${dm[k] || 0}`).join(', ')}. ` +
       `${ELN[maj]} leads${tie ? ' (tied: the first counts)' : ''}, so it becomes the ${NAMES[plan]}.`;
     log(`seed: ${n} tadpoles, ${ELN[maj]} majority → ${NAMES[plan]}`);
+    applyTune(); $('ltune').hidden = model.engine === 'evo';
     realiseAll(); panel();
   }
   // a tadpole killed by the player counts toward the crystal total
@@ -363,14 +383,18 @@ SCRIPT = r"""<script>
     $('lhint').textContent = mode === 'orbit' ? 'drag to orbit' : 'drag to carve · shift-drag to orbit'; placeBrush(null); };
   $('bl-spin').onclick = () => { spin = !spin; $('bl-spin').setAttribute('aria-pressed', spin); };
   $('bl-eat').onclick = () => {
+    // the yardstick's cull (swarm_nca.lose_majority "excess"): eat just enough of the majority, plus a random
+    // extra, that the runner-up leads by one - a big, sudden bite (grazing alone rarely flips a body)
     const c = sw.census(); if (c.majority < 0) return;
-    const ids = []; for (let i = 0; i < sw.N; i++) if (sw.active[i] && sw.hatched[i] && sw.elem[i] === c.majority) ids.push(i);
-    const k = Math.round(ids.length * 2 / 3);
-    for (let q = ids.length - 1; q > 0; q--) { const j = Math.floor(Math.random() * (q + 1)); [ids[q], ids[j]] = [ids[j], ids[q]]; }
-    ids.slice(0, k).forEach(i => sw.kill(i, 'kill')); countKills(); drainEvents();
-    log(`step ${sw.clock}: ate ${k} of ${ids.length} ${ELN[c.majority]}`);
+    let to = -1; for (let e = 0; e < 4; e++) if (e !== c.majority && (to < 0 || c.elements[e] > c.elements[to])) to = e;
+    const before = c.elements[c.majority], plan = sw.loseMajority(to, 6);
+    countKills(); drainEvents();
+    log(plan ? `step ${sw.clock}: ate ${before - sw.census().elements[c.majority]} ${ELN[c.majority]}; ${ELN[to]} leads` : `step ${sw.clock}: nothing to eat (no runner-up with 2+)`);
   };
-  for (const id of ['lspeed', 'lbr', 'ln']) { const o = $('o-' + id); const f = () => o.textContent = $(id).value; $(id).addEventListener('input', f); f(); }
+  const tune = [...document.querySelectorAll('[data-cfg]')];
+  function applyTune() { if (sw && model.engine !== 'evo') tune.forEach(t => { sw.cfg[t.dataset.cfg] = +t.value; }); }
+  tune.forEach(t => { const o = $('o-' + t.id); t.addEventListener('input', () => { o.textContent = t.value; applyTune(); }); });
+  for (const id of ['lspeed', 'lbr', 'ln', 'lgraze']) { const o = $('o-' + id); const f = () => o.textContent = $(id).value; $(id).addEventListener('input', f); f(); }
   $('lbr').addEventListener('input', () => placeBrush(hover));
   document.querySelectorAll('input[name=lfilt]').forEach(r => r.addEventListener('change', () => placeBrush(hover)));
   function setModel(id) {
@@ -410,7 +434,10 @@ SCRIPT = r"""<script>
   new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   new ResizeObserver(resize).observe(cv);
   if (!running) $('bl-play').textContent = 'Play';
-  window.liveSwarm = { get sw() { return sw; }, newSeed, setModel, get model() { return model.id; }, setRunning: v => { running = v; }, step: stepOnce, realiseAll, carveAt, get rate() { return rate; }, get simMs() { return simMs; }, get drawMs() { return drawMs; },
+  const screenOf = i => { const c = cen || [0, 0, 0], r = cv.getBoundingClientRect();
+    const v = new THREE.Vector3(sw.pos[3 * i] - c[0], sw.pos[3 * i + 1] - c[1], sw.pos[3 * i + 2] - c[2]).project(camera);
+    return [r.left + (v.x + 1) / 2 * r.width, r.top + (1 - v.y) / 2 * r.height]; };
+  window.liveSwarm = { get sw() { return sw; }, newSeed, setModel, get model() { return model.id; }, screenOf, setRunning: v => { running = v; }, step: stepOnce, realiseAll, carveAt, get rate() { return rate; }, get simMs() { return simMs; }, get drawMs() { return drawMs; },
     camera, get cen() { return cen; }, get dead() { return dead.length; } };
   setModel(D.models[0].id); theme(); resize(); newSeed(); requestAnimationFrame(frame);
 })();

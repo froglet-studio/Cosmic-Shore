@@ -765,6 +765,35 @@
         }
       }
       fs.writeFileSync(out, JSON.stringify({ states }));
+    } else if (cmd === 'predation') {
+      // How hard is it to make a grown body change species by GRAZING it? Every step a predator eats
+      // `rate` random tadpoles of the current majority element (fractional rates are a per-step chance).
+      // Reports the steps until the plan switches (cap 600) and how many it had to eat.
+      // node swarm_live.js predation targets.json [evo_rule.json|-] SEEDS
+      const evo = argv[2] && argv[2] !== '-' ? JSON.parse(fs.readFileSync(argv[2], 'utf8')) : null, seeds = +(argv[3] || 4);
+      const pf = new PlanFields(targets, DEF_CFG), out = {};
+      for (const k of KINDS) for (const rate of (process.env.LIVE_RATES || '0.25,0.5,1,2,4').split(',').map(Number)) {
+        const rows = [];
+        for (let s = 0; s < seeds; s++) {
+          const ov = process.env.LIVE_CFG ? JSON.parse(process.env.LIVE_CFG) : {};
+          const sw = evo ? new EvoSwarm(targets, evo, { seed: 2000 + s }) : new LiveSwarm(targets, { seed: 2000 + s, planFields: pf, cfg: ov });
+          sw.seedPlan(k, 16); for (let t = 0; t < 240; t++) sw.step();
+          const plan0 = sw.census().plan, n0 = sw.census().n; let eaten = 0, t = 0;
+          for (; t < 600; t++) {
+            const c = sw.census(); if (c.plan !== plan0 || c.n === 0) break;
+            let q = Math.floor(rate) + (sw.rng() < rate % 1 ? 1 : 0);
+            const ids = []; for (let i = 0; i < sw.N; i++) if (sw.active[i] && sw.hatched[i] && sw.elem[i] === c.majority) ids.push(i);
+            shuffle(ids, sw.rng).slice(0, q).forEach(i => { sw.kill(i, 'kill'); eaten++; });
+            sw.step(); sw.events.length = 0;
+          }
+          const c = sw.census();
+          rows.push({ steps: t, eaten, n0, switched: c.plan !== plan0, to: c.plan, n: c.n });
+        }
+        (out[k] = out[k] || {})[rate] = rows;
+        const sw_ = rows.filter(r => r.switched);
+        console.log(k, 'rate', rate, 'switched', sw_.length + '/' + rows.length, 'steps', rows.map(r => r.steps).join(','), 'eaten', rows.map(r => r.eaten).join(','), 'to', rows.map(r => r.to).join(','));
+      }
+      fs.writeFileSync(argv[4] || 'runs/live_predation.json', JSON.stringify(out));
     } else if (cmd === 'bench') {
       const pf = new PlanFields(targets, DEF_CFG), evo = argv[2] ? JSON.parse(fs.readFileSync(argv[2], 'utf8')) : null;
       for (const k of KINDS) {

@@ -46,10 +46,17 @@ let pw; try { pw = require('playwright'); } catch (e) { pw = require(path.join(p
   await page.evaluate(() => { const s = document.getElementById('lbr'); s.value = 8; s.dispatchEvent(new Event('input')); });
   const box = await page.locator('#cvl').boundingBox();
   const n0 = (await cen()).n;
-  await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.5);
+  // aim at the live tadpole nearest the swarm's centroid, and drag through it
+  const [ax, ay] = await page.evaluate(() => { const L = window.liveSwarm, sw = L.sw; let m = [0, 0, 0], n = 0;
+    for (let i = 0; i < sw.N; i++) if (sw.active[i] && sw.hatched[i]) { for (let k = 0; k < 3; k++) m[k] += sw.pos[3 * i + k]; n++; }
+    m = m.map(v => v / n); let best = -1, bd = 1e9;
+    for (let i = 0; i < sw.N; i++) if (sw.active[i] && sw.hatched[i]) { const d = Math.hypot(sw.pos[3 * i] - m[0], sw.pos[3 * i + 1] - m[1], sw.pos[3 * i + 2] - m[2]); if (d < bd) { bd = d; best = i; } }
+    L.setRunning(false); return L.screenOf(best); });
+  await page.mouse.move(ax - 80, ay);
   await page.mouse.down();
-  for (let k = 0; k <= 20; k++) await page.mouse.move(box.x + box.width * (0.3 + 0.4 * k / 20), box.y + box.height * 0.5, { steps: 1 });
+  for (let k = 0; k <= 20; k++) await page.mouse.move(ax - 80 + 8 * k, ay, { steps: 1 });
   await page.mouse.up();
+  await page.evaluate(() => window.liveSwarm.setRunning(true));
   const n1 = (await cen()).n;
   say('phase 2');
   rep.carve = { before: n0, after: n1, killed: n0 - n1, crystals_visible: await page.evaluate(() => window.liveSwarm.dead) };
@@ -95,12 +102,32 @@ let pw; try { pw = require('playwright'); } catch (e) { pw = require(path.join(p
   rep.time_seed = await cen();
   await snap('5_time_seed');
 
+  // 5. the evolved rule: grows, renders, and the 'eat 2/3 of the majority' button makes it switch
+  await page.evaluate(() => { window.liveSwarm.setModel('evo'); window.liveSwarm.newSeed(); });
+  await page.selectOption('#lbias', '1');
+  await page.evaluate(() => window.liveSwarm.newSeed());
+  await page.evaluate(() => { const s = document.getElementById('lspeed'); s.value = 12; s.dispatchEvent(new Event('input')); });
+  await page.waitForTimeout(4000);
+  rep.evo_rate = await page.evaluate(() => window.liveSwarm.rate); rep.evo_sim_ms = await page.evaluate(() => window.liveSwarm.simMs);
+  say('evo rate ' + rep.evo_rate + ' sim ' + rep.evo_sim_ms);
+  await page.waitForFunction(() => window.liveSwarm.sw.clock > 240, null, { timeout: 120000 });
+  rep.evo_grown = await cen();
+  await snap('6_evo_grown');
+  await page.click('#bl-eat');
+  rep.evo_after_eat = await cen();
+  const t1 = await page.evaluate(() => window.liveSwarm.sw.clock);
+  await page.waitForFunction(t => window.liveSwarm.sw.clock > t + 240, t1, { timeout: 120000 });
+  rep.evo_after = await cen(); rep.evo_switches = await page.evaluate(() => window.liveSwarm.sw.switches);
+  await snap('7_evo_after_eat');
+  say('phase 6');
+
   rep.ok = {
     no_errors: errors.length === 0, rate: rep.rate_default >= 10, carve_kills: rep.carve.killed > 0,
     switched: rep.switches.length > 0 && rep.after_switch.plan !== rep.before_eat.plan,
+    evo_runs: rep.evo_grown.n > 32, evo_switched: rep.evo_after.plan !== rep.evo_grown.plan,
   };
   fs.writeFileSync(path.join(out, 'check.json'), JSON.stringify(rep, null, 1));
   console.log(JSON.stringify(rep.ok), 'rate', rep.rate_default.toFixed(1), rep.rate_max.toFixed(1), 'carve', JSON.stringify(rep.carve),
-    'switch', JSON.stringify(rep.switches), 'errors', errors.slice(0, 5));
+    'switch', JSON.stringify(rep.switches), 'evo', JSON.stringify(rep.evo_switches), rep.evo_rate, 'errors', errors.slice(0, 5));
   await browser.close();
 })().catch(e => { console.error(e); process.exit(1); });
