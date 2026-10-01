@@ -804,6 +804,10 @@ namespace CosmicShore.Gameplay
 
         static float LogitS(float s) { s = Math.Clamp(s, 0.02f, 0.98f); return MathF.Log(s / (1 - s)); }
 
+        /// <summary>hgrid_core.raw_prism, public: the look state swarm_nca.decode reads for a prism of
+        /// half-extents h (SwarmSortCore's export uses it).</summary>
+        public static Vector3 RawPrismOf(Vector3 h, int e) => RawPrism(h, e);
+
         /// <summary>hgrid_core.raw_prism: half-extents -> the raw look state (inverse of PrismH).</summary>
         static Vector3 RawPrism(Vector3 h, int e)
         {
@@ -953,32 +957,10 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>SwarmFieldCore's predator layer: a startle from a vessel ahead or near, the per-
-        /// element flee (lateral out of its path, a little radial, a swirl), and Time mobbing a
-        /// LOITERING ship rather than fleeing it.</summary>
-        Vector3 FleeFrom(SwarmPredator pr, Vector3 x, int el, ref float st)
-        {
-            var rel = x - pr.C; float dd = rel.Length(), sense = C.Sense * pr.R, spd = MathF.Max(pr.V.Length(), 1e-6f);
-            var pvn = pr.V / spd; float along = Vector3.Dot(rel, pvn); var lat = rel - along * pvn; float dl = lat.Length();
-            var latn = lat / MathF.Max(dl, 1e-3f);
-            float ahead = along > -pr.R ? Math.Clamp(1 - along / (C.Lookahead * spd + pr.R), 0, 1) : 0;
-            float w = MathF.Max(Math.Clamp(1 - dl / sense, 0, 1) * ahead, Math.Clamp(1 - dd / sense, 0, 1));
-            st = MathF.Max(st, Math.Clamp(1.4f * w, 0, 1));
-            var radial = rel / MathF.Max(dd, 1e-3f);
-            float fk = C.Flee[el];
-            var flee = Vector3.Zero;
-            if (spd < C.MobSpeed && C.Mob[el] > 0f)
-            {
-                float mk = C.Mob[el];
-                float wMob = Math.Clamp(1 - dd / (2.5f * sense), 0, 1) * mk;
-                var tang = Vector3.Cross(Vector3.UnitY, radial); float tl = tang.Length();
-                tang = tl > 1e-3f ? tang / tl : Vector3.UnitX;
-                flee += wMob * (0.4f * (1.4f * pr.R - dd) * radial + 1.5f * tang);
-                fk *= 1 - mk;
-            }
-            flee += w * fk * (0.75f * latn + 0.25f * radial + C.FleeSwirl * 0.5f * Vector3.Cross(pvn, latn));
-            return flee;
-        }
+        /// <summary>SwarmFieldCore's predator layer (one copy, shared with the sort core:
+        /// <see cref="SwarmCoreShared.FleeFrom"/>).</summary>
+        Vector3 FleeFrom(SwarmPredator pr, Vector3 x, int el, ref float st) =>
+            SwarmCoreShared.FleeFrom(pr, x, C.Flee[el], C.Mob[el], C.Sense, C.Lookahead, C.MobSpeed, C.FleeSwirl, ref st);
 
         // ──────────────────────────────────────────────────────────────── laying
 
@@ -1036,23 +1018,8 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>SwarmFieldCore.TryFund, the same rule: its own element's reserve at EggCost, else the
-        /// other reserves at CrossCost times that. Spends nothing when it fails.</summary>
-        public bool TryFund(int e)
-        {
-            float cost = C.EggCost[e];
-            if (Stomach[e] >= cost) { Stomach[e] -= cost; return true; }
-            float cross = cost * C.CrossCost, others = 0;
-            for (int o = 0; o < 4; o++) if (o != e) others += Stomach[o];
-            if (others < cross) return false;
-            while (cross > 1e-6f)
-            {
-                int best = -1; for (int o = 0; o < 4; o++) if (o != e && (best < 0 || Stomach[o] > Stomach[best])) best = o;
-                float take = MathF.Min(Stomach[best], cross); Stomach[best] -= take; cross -= take;
-                if (take <= 0f) break;
-            }
-            return true;
-        }
+        /// <summary>SwarmFieldCore.TryFund, the same rule (one copy: <see cref="SwarmCoreShared.TryFund"/>).</summary>
+        public bool TryFund(int e) => SwarmCoreShared.TryFund(Stomach, e, C.EggCost[e], C.CrossCost);
 
         // ──────────────────────────────────────────────────────────────── the fine morphogen
 

@@ -292,6 +292,7 @@ static class GridHarness
                 for (int e = 0; e < 4; e++)
                 {
                     if (mode == "field") { ExportFieldFeel(sb, ref first, plans, e, seed, win); continue; }
+                    if (mode.StartsWith("sort")) { SortHarness.ExportRun(sb, ref first, plans, mode, e, seed, steps, win); continue; }
                     var c = mode == "research" ? ResearchSwarm(plans, e, seed) : GameSwarm(plans, e, seed);
                     var sw = Stopwatch.StartNew();
                     Run(c, steps);

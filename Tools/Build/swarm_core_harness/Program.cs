@@ -1,4 +1,5 @@
-// Headless proof of the SHIPPED swarm sim core (Assets/.../Swarm/SwarmFieldCore.cs).
+// Headless proof of the SHIPPED swarm sim cores (Assets/.../Swarm/SwarmFieldCore.cs here; the grid and
+// sort cores in GridHarness.cs and SortHarness.cs).
 //   dotnet run -c Release -- <plans dir>
 // Each test prints a line and the run exits non-zero if any assertion fails. What this does NOT
 // prove: anything about Unity (rendering, prisms, crystals, colliders) - see Docs/SWARM_FAUNA.md.
@@ -64,9 +65,10 @@ static class Program
     static int Main(string[] args)
     {
         if (args.Length > 0 && args[0] == "export") return GridHarness.Export(args, LoadPlans);
-        bool gridOnly = args.Length > 1 && args[1] == "grid";
+        bool gridOnly = args.Length > 1 && args[1] == "grid", sortOnly = args.Length > 1 && args[1] == "sort";
         var plans = LoadPlans(args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans");
         if (gridOnly) return GridHarness.Run(plans) == 0 ? 0 : 1;
+        if (sortOnly) return SortHarness.Run(plans) == 0 ? 0 : 1;
         Console.WriteLine("plans: " + string.Join(", ", plans.Select(p => $"{p.Kind} N={p.N} mix=[{string.Join(",", p.Mix)}] R={p.Radius:F1}")));
 
         Console.WriteLine("\n1. growth to the plan, fed (each plan seeded at its own majority, 24 tadpoles)");
@@ -250,6 +252,7 @@ static class Program
 
         Console.WriteLine($"\nfield core: {(_fail == 0 ? "OK" : $"FAIL ({_fail})")}");
         _fail += GridHarness.Run(plans);
+        _fail += SortHarness.Run(plans);
         Console.WriteLine($"\n{(_fail == 0 ? "OK" : $"FAIL ({_fail})")}");
         return _fail == 0 ? 0 : 1;
     }

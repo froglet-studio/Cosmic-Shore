@@ -20,8 +20,9 @@ namespace CosmicShore.Gameplay
     ///
     /// The behaviour is ONE simulation over a struct-of-arrays run at a fixed tick - the config picks
     /// which (<see cref="SwarmFaunaConfigSO.Model"/>): <see cref="SwarmFieldCore"/> (designed fields,
-    /// every tadpole owns a slot) or <see cref="SwarmGridCore"/> (the grid morphogen, nothing assigns a
-    /// place). Members are posed by interpolating between ticks, so motion is smooth at any frame rate
+    /// every tadpole owns a slot), <see cref="SwarmGridCore"/> (the grid morphogen, nothing assigns a
+    /// place) or <see cref="SwarmSortCore"/> (emergent cell sorting: positional-information wells, fate,
+    /// differential adhesion, a lossless molting corrector). Members are posed by interpolating between ticks, so motion is smooth at any frame rate
     /// and no member runs an Update of its own.
     ///
     /// Invariants it touches (Docs/SWARM_FAUNA.md §2): mass is conserved (every egg is PAID for out of
@@ -112,7 +113,12 @@ namespace CosmicShore.Gameplay
             _dt = 1f / config.TickHz;
             _eaterName = "swarm";
 
-            _core = config.Model == SwarmModel.Grid ? BuildGridCore(host) : BuildFieldCore(host);
+            _core = config.Model switch
+            {
+                SwarmModel.Grid => BuildGridCore(host),
+                SwarmModel.Sort => BuildSortCore(host),
+                _ => BuildFieldCore(host),
+            };
             int n = _core.Cap;
             _members = new SwarmTadpoleFauna[n];
             _prevPos = new SVector3[n]; _prevFace = new SVector3[n];
@@ -194,6 +200,40 @@ namespace CosmicShore.Gameplay
             for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
             if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }
             return new SwarmGridCore(_plans, p, Random.Range(1, int.MaxValue));
+        }
+
+        /// <summary>
+        /// Emergent cell sorting in its GAME settings (Docs/SWARM_FAUNA.md §9): one region (the one-colour
+        /// law), funded laying, molts that animate over SortMoltSteps, wells that ride the plan's
+        /// animation and turn and travel with the swimming body, each member wearing its fated well's
+        /// look. Molting runs always - this model's corrector is lossless and absolute (harness S4/S5).
+        /// </summary>
+        ISwarmCore BuildSortCore(Cell host)
+        {
+            var p = new SwarmSortParams
+            {
+                K = config.SortWellsPerType, PerWell = config.SortUnitsPerWell, CovScale = config.SortWellWidth,
+                KWell = config.SortWellGain, WellClip = config.SortWellClip,
+                R0 = config.SortSpacing, KRep = config.SortRepulsion, RAdh = config.SortAdhesionRadius,
+                ASame = config.SortAdhesion.x, AElem = config.SortAdhesion.y, ARole = config.SortAdhesion.z, AOther = config.SortAdhesion.w,
+                Swap = config.SortSwap, RSwap = config.SortSwapRadius,
+                Inertia = config.SortInertia, Noise = config.SortNoise, KWellFF = config.SortFeedForward,
+                Dwell = config.SortDwell, LayRate = config.SortLayRate, LayMax = config.SortLayMax,
+                PCross = config.SortCrossChance, FillTol = config.SortFillTolerance, Over = config.SortBodyFill,
+                Molt = true, Transfer = true, MoltRate = config.SortMoltRate, MoltSteps = config.SortMoltSteps, MoltWindow = -1,
+                KillLayHoldSteps = Mathf.RoundToInt(config.KillLayHoldSeconds * config.TickHz),
+                Periods = new[]
+                {
+                    Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.x)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.y)),
+                    Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.z)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.w)),
+                },
+                DomainSlots = false, Funded = true, Animate = true, WellLook = true, Oriented = true,
+                Cruise = config.Cruise, Turn = config.TurnPerStep,
+                Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
+            };
+            for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
+            if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }
+            return new SwarmSortCore(_plans, p, Random.Range(1, int.MaxValue));
         }
 
         void StartLoop()

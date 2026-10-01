@@ -21,7 +21,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Which simulation drives a swarm that uses this config. FIELD: designed attractor " +
                  "fields + boids - crisp, every tadpole owns a slot. GRID: the grid morphogen (research " +
                  "hgrid2) - every tadpole reads only fields at its own position; looser and more organic. " +
-                 "Docs/SWARM_FAUNA.md §8.")]
+                 "SORT: emergent cell sorting (research sort) - each tadpole commits to one positional-" +
+                 "information well of its element, unlike elements repel harder than like ones, and a surplus " +
+                 "member MOLTS into a missing element (lossless). Docs/SWARM_FAUNA.md §8, §9.")]
         public SwarmModel Model = SwarmModel.Field;
 
         [Header("Body plans (Tools/Build/swarm_plans.py)")]
@@ -151,6 +153,55 @@ namespace CosmicShore.Gameplay
                  "ran 0). The grid commits the step a new element leads, so without a lock a near-tie " +
                  "would flicker between two animals.")]
         [Min(0)] public int GridPlanLock = 30;
+
+        [Header("Sort model (Model = Sort; research sort's published values unless noted)")]
+        [Tooltip("Positional information: at most this many Gaussian wells per element, and at most one " +
+                 "per this many of the plan's units of it.")]
+        [Range(1, 32)] public int SortWellsPerType = 12;
+        [Min(1)] public int SortUnitsPerWell = 4;
+        [Tooltip("Well width, x the spread of the plan units it was fitted to.")]
+        [Min(0.05f)] public float SortWellWidth = 0.89f;
+        [Tooltip("Gain up a tadpole's own fated well (its log-density gradient), and the cap on that step (voxels).")]
+        [Min(0f)] public float SortWellGain = 0.412f;
+        [Min(0.01f)] public float SortWellClip = 0.525f;
+        [Tooltip("Collision spacing (voxels) and repulsion gain.")]
+        [Min(0.5f)] public float SortSpacing = 2.25f;
+        [Min(0f)] public float SortRepulsion = 0.151f;
+        [Tooltip("Differential adhesion: radius (voxels) and the pair coefficients - x same element, " +
+                 "y same element other region, z same region other element, w neither. Negative repels. " +
+                 "Unlike elements repelling HARDER than like ones is what sorts the tissues (Steinberg).")]
+        [Min(0f)] public float SortAdhesionRadius = 5.38f;
+        public Vector4 SortAdhesion = new(-0.05f, -0.0374f, -0.027f, -0.0637f);
+        [Tooltip("Potts swaps: two touching tadpoles that would each sit better in the other's spot slide " +
+                 "past one another (gain, radius in voxels). The research measured them as nearly inert.")]
+        [Min(0f)] public float SortSwap = 0.709f;
+        [Min(0f)] public float SortSwapRadius = 3.63f;
+        [Tooltip("Velocity persistence per step.")]
+        [Range(0f, 0.95f)] public float SortInertia = 0.687f;
+        [Tooltip("GAME: velocity noise per step (voxels). Without it a member on a still well reads as " +
+                 "frozen while the animated body moves around it (swarm_feel `stuck`). Research: 0.")]
+        [Min(0f)] public float SortNoise = 0.1f;
+        [Tooltip("GAME: the share of its well's own animation a tadpole takes (feed-forward). Research: 0.")]
+        [Min(0f)] public float SortFeedForward = 1f;
+        [Tooltip("Steps a new majority must lead before the swarm commits to its plan.")]
+        [Min(0)] public int SortDwell = 12;
+        [Tooltip("The composition homeostat: eggs per step as a share of the headcount (Poisson), at most " +
+                 "SortLayMax a step. The stomach is the real brake: an egg it cannot pay for is not laid.")]
+        [Range(0f, 1f)] public float SortLayRate = 0.084f;
+        [Min(1)] public int SortLayMax = 5;
+        [Tooltip("Chance a parent whose element is full lays its body's most-needed element instead.")]
+        [Range(0f, 1f)] public float SortCrossChance = 0.466f;
+        [Tooltip("A parent breeds true only while its element is within this of the least-filled one.")]
+        [Range(0f, 1f)] public float SortFillTolerance = 0.15f;
+        [Tooltip("The body is laid to this share of the plan's headcount (research: slightly small).")]
+        [Range(0.5f, 1.2f)] public float SortBodyFill = 0.939f;
+        [Tooltip("Chance per step a member of a SURPLUS element begins to molt into a missing one, and the " +
+                 "steps the molt takes (the heart shrinks away and re-forms as the new element).")]
+        [Range(0f, 1f)] public float SortMoltRate = 0.03f;
+        [Min(1)] public int SortMoltSteps = 10;
+        [Tooltip("GAME: steps per plan animation frame (x Charge, y Mass, z Space, w Time) - the wells ride " +
+                 "the plan's own animation. The dragonfly's wings run at 16.")]
+        public Vector4 SortFramePeriod = new(8f, 8f, 8f, 16f);
 
         [Header("Audio")]
         [Tooltip("FMOD loop the swarm plays at its body's centre. Empty = silent (the FMOD rule: an " +

@@ -12,8 +12,10 @@ What it owns:
     overrides intact) with the Boid, the per-tadpole FMOD loop, the NetworkObject /
     NetworkTransform / FaunaNetworkSync and the authored crystal REMOVED (a member provisions
     its heart from its element at birth and is client-local);
-  * SwarmFauna.prefab - the heartless, bodiless population anchor;
-  * SwarmFaunaConfig.asset - every number the swarm runs on;
+  * SwarmFauna.prefab / SwarmGridFauna.prefab / SwarmSortFauna.prefab - the heartless, bodiless
+    population anchors, one per simulation model (field / grid / sort);
+  * SwarmFaunaConfig.asset / SwarmGridFaunaConfig.asset / SwarmSortFaunaConfig.asset - every number
+    the swarm runs on, identical except Model;
   * the Swarm cell: config, spawn profile, three swarm species configs (the three populations)
     and three flora configs (their feeding grounds), and its entry in Menu_Main's
     Cell.CellConfigs (the Cell Selector reads that list; it authors none of its own).
@@ -21,9 +23,9 @@ What it owns:
 THE CELL - three populations, separated in the cytoplasm by RADIUS (the platform's per-species
 band, FaunaConfigurationSO.BandInner/BandOuterRadius), each over its own feeding ground:
 
-    inner  430-600u   starts MASS   -> the whale       grazes MASS flora   (Arbor)
-    mid    660-840u   starts TIME   -> the dragonfly   grazes SPACE flora  (Spire)
-    outer  900-1120u  starts CHARGE -> the pufferfish  grazes TIME flora   (Frond)
+    inner  430-600u   GRID   starts MASS   -> the whale       grazes MASS flora   (Arbor)
+    mid    660-840u   FIELD  starts TIME   -> the dragonfly   grazes SPACE flora  (Spire)
+    outer  900-1120u  SORT   starts CHARGE -> the pufferfish  grazes TIME flora   (Frond)
 
 The pairing is deliberate (Docs/SWARM_FAUNA.md §5): an egg is cheap when paid for with food of
 its own element, and each ground feeds the creature that the resident becomes when a player kills
@@ -54,7 +56,7 @@ SCRIPT_DIR = A("_Scripts", "Controller", "Environment", "FloraAndFauna", "Swarm"
 MENU_SCENE = A("_Scenes", "Menu_Main.unity")
 TADPOLE_SRC = os.path.join(PREFAB_DIR, "TadPoleFauna.prefab")
 
-SCRIPTS = ["ISwarmCore", "SwarmFieldCore", "SwarmGridCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna",
+SCRIPTS = ["ISwarmCore", "SwarmFieldCore", "SwarmGridCore", "SwarmSortCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna",
            "SwarmTadpoleFauna"]
 SO_SCRIPT = {
     "cell": "01f934d50526431a9392a6ceca1dc33d",
@@ -88,24 +90,39 @@ HEARTS = {"Charge": 2.298, "Mass": 1.737, "Space": 2.298, "Time": 1.737}  # = Ta
 
 # ── the three populations ────────────────────────────────────────────────────────────────
 ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
-# MODEL: which simulation drives the population (SwarmFaunaConfigSO.Model). The cell hosts BOTH,
-# alternating by band, so a pilot flying outward from the nucleus meets grid / field / grid and can
-# compare the two in one session (Docs/SWARM_FAUNA.md §8).
+# MODEL: which simulation drives the population (SwarmFaunaConfigSO.Model). The cell hosts ALL THREE,
+# one per band, so a pilot flying outward from the nucleus meets grid / field / sort and can compare
+# them in one session (Docs/SWARM_FAUNA.md §8, §9). One model per band, never mixed within one: every
+# tadpole wears the cell's one colour, so WHERE a swarm swims is the only way a pilot can tell which
+# model it runs. The cell's swarm count is unchanged (3 x SWARMS_PER_BAND): sort took the outer band
+# from grid, which halves the grid CPU (8 grid swarms instead of 16).
 REGIONS = [
     # name,   band (world),   start,   plan,     model,    ground species, ground element, canonical asset, plants floor/cap
     dict(key="Inner", band=(430, 600), start="Mass", plan="whale", model="Grid",
          flora="Arbor", food="Mass", canon="Arbor Flora Mass", floor=48, cap=100),
     dict(key="Middle", band=(660, 840), start="Time", plan="dragonfly", model="Field",
          flora="Spire", food="Space", canon="Spire Flora Space", floor=64, cap=140),
-    dict(key="Outer", band=(900, 1120), start="Charge", plan="pufferfish", model="Grid",
+    dict(key="Outer", band=(900, 1120), start="Charge", plan="pufferfish", model="Sort",
          flora="Frond", food="Time", canon="Frond Flora Time", floor=80, cap=160),
 ]
-MODEL_ID = {"Field": 0, "Grid": 1}
+MODEL_ID = {"Field": 0, "Grid": 1, "Sort": 2}
 # the grid model's game settings (SwarmGridCore; research hgrid2 values unless noted)
 GRID = dict(GridSize=16, GridCell=6, GridKClass=10, GridKTotal=1, GridPersist=0.6, GridNoise=0.05,
             GridLayChance=0.1, GridCrossChance=0.25, GridLayMaxPerStep=3, GridKFine=2, GridSigma=3.5,
             GridFeedForward=1.5, GridPlanLock=30)
 GRID_PERIOD = {"Charge": 8, "Mass": 8, "Space": 8, "Time": 16}
+# the sort model's game settings (SwarmSortCore; research sort's results/sort/params.json, rounded,
+# unless noted). Written verbatim: these strings are the SO's values AND its C# defaults.
+SORT = [("SortWellsPerType", "12"), ("SortUnitsPerWell", "4"), ("SortWellWidth", "0.89"), ("SortWellGain", "0.412"),
+        ("SortWellClip", "0.525"), ("SortSpacing", "2.25"), ("SortRepulsion", "0.151"), ("SortAdhesionRadius", "5.38"),
+        ("SortAdhesion", "{x: -0.05, y: -0.0374, z: -0.027, w: -0.0637}"), ("SortSwap", "0.709"),
+        ("SortSwapRadius", "3.63"), ("SortInertia", "0.687"),
+        ("SortNoise", "0.1"),          # GAME (research 0): without it a member on a still well reads as frozen
+        ("SortFeedForward", "1"),      # GAME (research 0): members take their well's animation
+        ("SortDwell", "12"), ("SortLayRate", "0.084"), ("SortLayMax", "5"), ("SortCrossChance", "0.466"),
+        ("SortFillTolerance", "0.15"), ("SortBodyFill", "0.939"), ("SortMoltRate", "0.03"),
+        ("SortMoltSteps", "10"),       # GAME (research instant): a molt is an animation
+        ("SortFramePeriod", "{x: 8, y: 8, z: 8, w: 16}")]
 FLORA_GROWTH_PER_OFFSPRING = 0.8   # x the plant's own budget: a plant seeds a neighbour as it completes
 FLORA_COOLDOWN = 20
 FLORA_SPREAD = 120
@@ -274,11 +291,11 @@ def tadpole_prefab():
 
 
 def anchor_name(model):
-    return "SwarmFauna.prefab" if model == "Field" else "SwarmGridFauna.prefab"
+    return {"Field": "SwarmFauna.prefab", "Grid": "SwarmGridFauna.prefab", "Sort": "SwarmSortFauna.prefab"}[model]
 
 
 def config_name(model):
-    return "SwarmFaunaConfig.asset" if model == "Field" else "SwarmGridFaunaConfig.asset"
+    return {"Field": "SwarmFaunaConfig.asset", "Grid": "SwarmGridFaunaConfig.asset", "Sort": "SwarmSortFaunaConfig.asset"}[model]
 
 
 def anchor_prefab(model="Field"):
@@ -376,7 +393,7 @@ def config_asset(eggs, model="Field"):
         "  VesselRadius: 9\n  SenseMargin: 400\n  DangerEnter: 0.45\n  DangerExit: 0.15\n"
         f"  HeartWorldScale: {v4(HEARTS)}\n"
         f"  PrismScale: {_g(PRISM_SCALE)}\n  HeartPrismGap: 0.6\n  BirthBloomSeconds: 0.8\n  MoltHeartSeconds: 0.5\n"
-        + grid +
+        + grid + "".join(f"  {k}: {v}\n" for k, v in SORT) +
         "  SwarmLoopEvent:\n" + EMPTY_EVENT.replace("    ", "    ", 1) +
         "  MorphEvent:\n" + EMPTY_EVENT)
 
@@ -497,9 +514,9 @@ def profile_asset():
 def cell_asset(L):
     return SO_HEADER % (SO_SCRIPT["cell"], f"{PREFIX} Cell Config") + (
         "  CellName: Swarm\n"
-        "  Description: Three tadpole swarms in three shells of the cytoplasm - a grid-morphogen whale,\n"
-        "    a field dragonfly and a grid-morphogen pufferfish - each over its own feeding ground. Kill\n"
-        "    a body's majority element and it becomes another animal\n"
+        "  Description: Three tadpole swarms in three shells of the cytoplasm, on three simulation\n"
+        "    models - a grid-morphogen whale, a field dragonfly and a cell-sorting pufferfish - each over\n"
+        "    its own feeding ground. Kill a body's majority element and it becomes another animal\n"
         f"  Icon: {{fileID: 21300000, guid: {ICON}, type: 3}}\n"
         "  Difficulty: 2\n  CellEndGameScore: 0\n"
         f"  MembranePrefab: {{fileID: {MEMBRANE[0]}, guid: {MEMBRANE[1]}, type: 3}}\n"
@@ -596,7 +613,20 @@ def verify(out, tot, rows):
     if len({r["start"] for r in REGIONS}) != len(REGIONS):
         problems.append("two populations start as the same creature")
     if {r["model"] for r in REGIONS} != set(MODEL_ID):
-        problems.append("the cell must host both models side by side (field and grid)")
+        problems.append("the cell must host every model side by side (field, grid and sort)")
+    if len({r["model"] for r in REGIONS}) != len(REGIONS):
+        problems.append("one model per band: a pilot tells the models apart only by where they swim")
+    # the C# defaults of the sort fields are the authored values (an SO created by hand matches the cell)
+    so = read(os.path.join(SCRIPT_DIR, "SwarmFaunaConfigSO.cs"))
+    for k, v in SORT:
+        m = re.search(r"public \w+ %s = ([^;]+);" % k, so)
+        if not m:
+            problems.append(f"SwarmFaunaConfigSO has no field {k}")
+            continue
+        cs = re.sub(r"[f\s]|new\(|\)", "", m.group(1)).split(",")
+        au = re.findall(r"-?[\d.]+", v)
+        if [float(x) for x in cs] != [float(x) for x in au]:
+            problems.append(f"SwarmFaunaConfigSO.{k} defaults to {m.group(1)} but the cell authors {v}")
     if any(r["food"] == "Charge" for r in REGIONS):
         problems.append("a Charge feeding ground is no food at all (armoured leaves)")
     if tot["hearts"] >= OVERTUNE_HEART_CEILING:

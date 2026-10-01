@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Compile the SHIPPED swarm sim cores (SwarmFieldCore.cs + SwarmGridCore.cs, pure System.Numerics - no Unity) with
+# Compile the SHIPPED swarm sim cores (SwarmFieldCore.cs + SwarmGridCore.cs + SwarmSortCore.cs, pure System.Numerics - no Unity) with
 # Program.cs and RUN it: growth, funded laying, selective-kill morphing, vessel reactions, mobbing,
 # swimming and the band clamp, each asserted. Exit code is non-zero on any failure.
 #
-#   bash Tools/Build/swarm_core_harness/run.sh                 # both cores' asserted tests
+#   bash Tools/Build/swarm_core_harness/run.sh                 # all three cores' asserted tests
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> grid    # the grid core's only
-#   bash Tools/Build/swarm_core_harness/run.sh export <plans> <out.json> 7,23,41   # states for score_grid.py
+#   bash Tools/Build/swarm_core_harness/run.sh <plans> sort    # the sort core's only
+#   bash Tools/Build/swarm_core_harness/run.sh export <plans> <out.json> 7,23,41   # states for score_grid.py / score_sort.py
 #
 # Needs a dotnet 8 SDK (a per-user install is fine - see .claude/skills/asset-surgery §4). No
 # .csproj on purpose: the repo gitignores *.csproj. Everything builds into $TMPDIR.
@@ -24,7 +25,8 @@ ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/ISwarmCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFieldCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmGridCore.cs" \
-  "$HERE/Program.cs" "$HERE/GridHarness.cs"
+  "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmSortCore.cs" \
+  "$HERE/Program.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"
 if [ "${1:-}" = "export" ]; then exec "$DOTNET" "$OUT/swarmcore.exe" "$@"; fi

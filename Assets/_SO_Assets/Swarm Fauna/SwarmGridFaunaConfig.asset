@@ -60,6 +60,29 @@ MonoBehaviour:
   GridFeedForward: 1.5
   GridFramePeriod: {x: 8, y: 8, z: 8, w: 16}
   GridPlanLock: 30
+  SortWellsPerType: 12
+  SortUnitsPerWell: 4
+  SortWellWidth: 0.89
+  SortWellGain: 0.412
+  SortWellClip: 0.525
+  SortSpacing: 2.25
+  SortRepulsion: 0.151
+  SortAdhesionRadius: 5.38
+  SortAdhesion: {x: -0.05, y: -0.0374, z: -0.027, w: -0.0637}
+  SortSwap: 0.709
+  SortSwapRadius: 3.63
+  SortInertia: 0.687
+  SortNoise: 0.1
+  SortFeedForward: 1
+  SortDwell: 12
+  SortLayRate: 0.084
+  SortLayMax: 5
+  SortCrossChance: 0.466
+  SortFillTolerance: 0.15
+  SortBodyFill: 0.939
+  SortMoltRate: 0.03
+  SortMoltSteps: 10
+  SortFramePeriod: {x: 8, y: 8, z: 8, w: 16}
   SwarmLoopEvent:
     Guid:
       Data1: 0
