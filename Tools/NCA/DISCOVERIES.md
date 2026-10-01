@@ -31,6 +31,52 @@ alone costs 2.3–4.5. The loss comes from SORTING. Element placement adds 4–1
 exactly with how GLOBAL each family's sorting mechanism is: global slot assignment (field) <
 per-class grid deficits (hgrid) < per-group anchors (compact) ≈ none (G2, evo).
 
+## Update 22:20 UTC — HOLD the front runners, score the smoothness of change, then go light
+
+The lead (22:00): *"Once a front runner starts scoring well enough we will want to hold its scores
+including a score for smoothness of changes. Then optimize for the lightest weight or most computationally
+performant and scalable method. One thing we did before is only update a fraction of a larger swarm each
+frame."* Three new pieces, all on this branch:
+
+- **`swarm_smooth.py` — smoothness of CHANGE.** `swarm_feel` scores a body that has already grown; this
+  scores how it gets from one form to the next: the 4 standard switches and a vessel strike on every plan,
+  recorded step by step. Per event: `backtrack` (uphill loss beyond the settled body's own wiggle), `lurch`
+  (the worst step's p95 speed over the change's own median pace - a jolt inside the change), `teleport`
+  (largest single step over the world's top speed), `jerk_rel`, `molt_burst` / `birth_burst` (share of the
+  body changing element / hatching inside 8 steps - a pop), deaths. `smoothness` = 1/(1 + mean rough).
+  Calibrated over three passes (the first cuts mistook a heal's swimming wiggle for backtracking and a
+  speed-capped Time tadpole for a teleport; both corrected and documented in the file).
+- **`hold.py` — the hold.** `--record` freezes ACCURATE (seeds 7/23/41/101, 3 samples, loss-8 bar, per
+  test), LOSSLESS, ORGANIC and SMOOTH; `--baseline` fails a candidate on any regression and reports cost,
+  which is what the next stage optimises.
+- **Calibration** (`results/hold/calibration/`, seed 7):
+
+  | model | smoothness | worst lurch | worst molt / birth burst | backtrack | note |
+  |---|---|---|---|---|---|
+  | evo (the lead's "beautifully organic") | **0.58** | 2.3 | 0.00 / 0.43 | 0.12 (its heals do not heal) | eases in |
+  | combo | 0.51 | 6.3 | 0.18 / 0.29 | 0 | jolts after a cull / strike |
+  | field ("its mistakes feel like bugs") | 0.51 | 4.4 | **0.31** / 0.30 | 0.06 | its settled loss wiggles 50% - the "bugs" |
+  | sortfeel | 0.44 | 6.7 | 0.12 / 0.29 | 0 | the same jolt |
+
+  **Both front runners jolt.** Right after a cull or a strike their pace spikes to 4-7x the change's own
+  median; evo eases in at ~1.7. No front runner backtracks or teleports. A ramped response (an acceleration
+  limit, or the corrector's gain easing in after a composition change) is the cheapest smoothness gain.
+- **A scoring bug fixed (`swarm_nca.LOSS_PERMS`).** The loss tried slot -> domain maps into ids {0,1} only
+  for a two-region plan, so a PERFECT jellyfish whose teams were ids 0 and 2 scored **14.5** (id 2 and 1:
+  10.5). It now ranges over every domain id; it can only lower a loss, and models that read `sn.PERMS` for
+  their own wells are unchanged. **It is not why dragonfly -> jellyfish fails**: sortfeel rescored with it
+  at seeds 7 and 101 came back identical to the digit. That switch's floor is the orphan third team: an
+  oracle-perfect jellyfish with a fraction f of its units on a third team costs ~25 f (f = 1/3 -> 8.24), so a
+  lawful corrector must keep the orphan team under about a third of the body (dilute it by laying the two
+  kept teams) or give it a place of its own. Puffer -> dragonfly (two teams into three regions) has an
+  oracle floor of ~2: that one IS reachable.
+- **Round 5 started**: `lite_combo` (session_012QQrhFC4CTk2NV7Khe65SJ, cece/swarm-x-lite-combo) and
+  `lite_sortfeel` (session_01BG7RdsNpZ4qogRx2hnhnuL, cece/swarm-x-lite-sortfeel), brief `briefs/lite.md`:
+  record the hold, profile, then make it light - fractional update (1/k of the swarm re-steers per step,
+  per-update rates scaled by k, k = 1..16), amortised bookkeeping, vectorisation, a spatial hash - with
+  ms per swarm-step for 1..64 batched swarms and every published config passing the hold.
+- **The game moved too**: cece/swarm-fauna-game ported combo's lossless rules into SwarmGridCore (22:14).
+
 ## Update 21:40 UTC — all four axes at once: three models now clear the scorecard
 
 The lead's goal was "a combination of strategies that are performant, lossless, and emergent". As of
