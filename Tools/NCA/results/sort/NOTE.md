@@ -80,26 +80,29 @@ held-out own losses 2.09 / 2.66 / 1.83 / 5.06. **Untuned, K = 4 failed tier 1 (7
 
 | variant | own losses (whale/jelly/puff/dragon) | own passed | passed / feasible | switch loss |
 |---|---|---|---|---|
-| **published (K = 12)** | 1.35 / 2.55 / 1.21 / 4.57 | 4.0 | **12.7 / 13** | 4.15 |
-| no adhesion | 1.71 / 3.73 / 1.66 / 5.53 | 4.0 | 11.3 | 4.91 |
-| no swaps | 1.32 / 2.70 / 1.22 / 4.45 | 4.0 | 12.7 | 4.21 |
-| no fate (climb the whole mixture) | 15.2 / 12.9 / 9.1 / 15.4 | 0.3 | 0.7 | 13.7 |
+| **published (K = 12, well_look)** | 1.22 / 2.29 / 0.74 / 4.11 | 4.0 | **13.0 / 13** | 3.81 |
+| no adhesion | 1.57 / 3.47 / 1.19 / 5.09 | 4.0 | 12.3 | 4.57 |
+| no swaps | 1.19 / 2.44 / 0.76 / 4.00 | 4.0 | 13.0 | 3.87 |
+| no neighbour sorting (adhesion + swaps off) | 1.56 / 3.44 / 1.21 / 5.06 | 4.0 | 11.7 | 4.61 |
+| no fate (climb the type's whole mixture) | 15.2 / 12.9 / 9.1 / 15.4 | 0.3 | 0.7 | 13.7 |
 | K = 1 (a single French flag per type) | 9.6 / 7.7 / 7.4 / 18.5 | 1.7 | 4.0 | 12.7 |
-| K = 2 | 3.4 / 6.1 / 5.3 / 10.5 | 3.0 | 7.7 | 8.4 |
-| K = 4 (with K = 12's tuning) | 2.3 / 2.6 / 1.4 / 8.1 | 3.7 | 9.7 | 5.4 |
-| K = 8 | 1.8 / 2.6 / 1.4 / 4.2 | 4.0 | 12.7 | 4.2 |
-| local centre (no swarm-wide average) | 1.4 / 3.3 / 2.3 / 5.3 | 4.0 | 7.0 | 10.8 |
-| Time laps (look option) | 3.1 / 2.6 / 4.7 / 20.3 | 3.0 | 9.0 | 10.1 |
-| no molting | 2.0 / 4.1 / 2.4 / 6.6 | 4.0 | 7.0 / 14 | 19.3 |
-| molting without region transfer | 1.35 / 2.6 / 1.2 / 4.8 | 4.0 | 9.0 | 7.2 |
-| no cross-laying | 1.6 / 16.0 / 8.6 / 13.7 | 2.7 | 8.7 | 9.9 |
+| K = 2 | 3.4 / 6.1 / 5.1 / 10.3 | 3.0 | 7.7 | 8.3 |
+| K = 4 (with K = 12's tuning) | 2.2 / 2.4 / 1.0 / 7.8 | 3.7 | 9.7 | 5.1 |
+| K = 8 | 1.7 / 2.3 / 1.0 / 3.8 | 4.0 | 13.0 | 3.9 |
+| local centre (no swarm-wide average) | 1.2 / 3.1 / 1.9 / 4.8 | 4.0 | 7.0 | 10.5 |
+| Time laps every 6 steps (look option) | 3.3 / 2.3 / 7.4 / 17.8 | 3.0 | 8.7 | 9.9 |
+| no molting | 1.9 / 3.8 / 1.9 / 6.1 | 4.0 | 7.3 / 14 | 19.1 |
+| molting without region transfer | 1.2 / 2.4 / 0.7 / 4.4 | 4.0 | 9.3 | 6.9 |
+| no cross-laying | 1.5 / 16.0 / 8.2 / 13.5 | 2.7 | 9.3 | 9.6 |
+
+(`v1_typelook/ablations.json` is the same table for the type-mean look; same conclusions.)
 
 Compact K = 4 (`compact_k4/ablations.json`): published 2.1 / 2.4 / 2.0 / 5.4, 11.3/13; **no adhesion
 3.1 / 3.9 / 3.1 / 7.5, 8.7/13**; no swaps unchanged; local centre own 4/4 but switches 6.7/13.
 
 What matters, in order: **fate commitment** (the decisive mechanism), **code size** (K >= 8 for the
 dragonfly; K = 4 passes tier 1 only once the neighbour terms are tuned), **differential adhesion**
-(30% lower own loss at K = 12, and the difference between the compact code passing and the dragonfly
+(removing it costs 25-60% own loss and 0.7 passes at K = 12, and is the difference between the compact code passing and the dragonfly
 sitting at the bar), **composition** (cross-laying for own plans, molting + transfer for switches).
 **Swaps are inert** — CMA kept them, but they change nothing; I would delete them. The local-consensus
 centre (each tadpole carries a centre estimate, averages its neighbours' and leaks toward its implied
@@ -195,7 +198,7 @@ jostle), which is the weakness — a resting creature does not swim (see recomme
 The three n/a transitions are structural: the jellyfish and pufferfish plans hold 2 and 1 Mass and the
 grown dragonfly 1 Charge, so that element cannot take over (`cull_to` needs >= 2). Dragonfly -> jellyfish
 passes on all 4 held-out seeds by majority vote, against 1/3 samples on seed 7: it sits close to the bar.
-(The ablation table above was measured with the type-mean look, before `well_look`.)
+
 
 ## Fully local: the consensus centre, searched (`local_centre/`) — a negative result for switches
 
