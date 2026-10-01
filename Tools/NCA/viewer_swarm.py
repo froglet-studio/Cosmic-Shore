@@ -135,6 +135,67 @@ def _payload(d):
                 switch=summ.get("switch"), probe=probe, curve=_curve(os.path.join(d, "log.jsonl")))
 
 
+# What each approach IS and how it differs, shown when it is picked. Keyed by run id (prefix match).
+ABOUT = {
+    "evo-compact": dict(
+        what="A small hand-written swarm rule with no neural net: 31 numbers (attractions, speeds, laying and egg-choice gains, a desired-mix table) found by evolution (CMA-ES).",
+        body="Each tadpole is pulled toward a few Gaussian anchors for its element's group in the current plan; the plan is the majority element.",
+        sorting="Coarse: an element goes to its group's anchors, not to individual places in the body.",
+        switching="Laying and egg choice steer the mix toward the new plan's; the anchors move to the new plan.",
+        watch="Motion is jerky, and crystal clusters tend to form flat planar sheets: the anchors are too simple to hold a rounded body.",
+        bar="Fails tier 1 under the loss-8 bar: own-plan losses 21-30. Every body fills the 280 cap."),
+    "evo": dict(
+        what="The learned G2 rule (one small neural net per tadpole, trained by backprop) left unchanged, plus a 95-number behaviour genome found by evolution: a laying homeostat (lay more when your element is short of the plan's share) and egg choice (some eggs take the most-wanted element).",
+        body="Emergent: each tadpole only perceives its neighbours, and the outline grows from those local interactions. Nothing places tadpoles.",
+        sorting="None designed. Elements end up roughly, not exactly, where the plan has them - the main remaining error.",
+        switching="When the majority is eaten, the homeostat breeds the new majority's mix and the body re-forms around it.",
+        watch="It always reads as a swarm reaching for a shape: organic, imperfect, alive.",
+        bar="Fails tier 1 under the loss-8 bar: own-plan losses 15-25, almost all of it from element and domain placement (the outline alone is 2-4.5)."),
+    "field": dict(
+        what="Entirely designed, no learning: every unit of the plan is a slot, tadpoles are assigned to slots (matching element and domain) and fly there as boids; a field of attraction covers the gaps.",
+        body="Global: a plan-sized set of slots is assigned to tadpoles by a sort every few steps.",
+        sorting="Exact: assignment puts every element and domain in its place - why it is the only tier-1 pass.",
+        switching="Census of the majority with a 12-step delay, then a 60-step vortex morph to the new plan's slots; surplus elements molt into wanted ones.",
+        watch="Crisp, readable transitions and vessel reactions (startle wave, mobbing, pufferfish inflation) - but its imperfections look like bugs, not life.",
+        bar="Passes tier 1 (own-plan losses 3.1 / 1.6 / 1.4 / 4.6); 9 of 13 feasible switches (four switched bodies land at 9-12)."),
+    "hgrid-oracle": dict(
+        what="Two levels: a coarse 3D grid (a cellular automaton over space) holds, per element and slot, how many tadpoles are WANTED there versus present; boids below follow the gradient of their own class's shortage.",
+        body="The grid carries the plan; the boids only read their local cell, so the body assembles from local deficits.",
+        sorting="Partial and local: each class flows to where its class is missing - between field's exact assignment and none.",
+        switching="The grid switches to the new majority's plan; laying is regulated by the grid's class totals and misplaced surplus tadpoles starve to crystals (loot during a switch).",
+        watch="Accurate and organic at once: the body is right, and the motion stays alive.",
+        bar="Just over the loss-8 bar: own-plan losses 8-17 (1 of 4 own plans passes)."),
+    "hgrid-hybrid_g2": dict(
+        what="The learned G2 rule for motion and look, with the grid layer controlling only composition (which element is laid where).",
+        body="Emergent outline from G2; the grid adds where each class is wanted.",
+        sorting="Partial, via the grid's class deficits on laying and starving.",
+        switching="As the grid oracle: the grid's plan changes, composition follows.",
+        watch="G2's organic motion with a better-composed body.",
+        bar="Just over the loss-8 bar: own-plan losses 7-17 (1 of 4 own plans passes)."),
+    "swarm_coevo_g2": dict(
+        what="The canonical learned rule: one small neural net per tadpole, trained by backprop through time on all four plans at once, with a learned laying gate and a body floor.",
+        body="Emergent from local perception only.",
+        sorting="None designed - element placement is the main error.",
+        switching="Rarely: the bodies sit at the 280 cap and keep their old shape at the new mix.",
+        watch="The raw learned behaviour every evolved and hybrid approach builds on.",
+        bar="Fails tier 1: own-plan losses 15-23."),
+    "swarm_coevo": dict(
+        what="A learned rule from the gradient lineage (backprop through time), with the training options listed in the note.",
+        body="Emergent from local perception only.",
+        sorting="None designed.",
+        switching="Rarely.",
+        watch="An intermediate stage of the learned family.",
+        bar="Fails tier 1 under the loss-8 bar."),
+}
+
+
+def _about(pid):
+    for k in sorted(ABOUT, key=len, reverse=True):
+        if pid == k or pid.startswith(k + "_") or pid.startswith(k):
+            return ABOUT[k]
+    return None
+
+
 def build_swarm(results_root, gallery_dir=None):
     """The swarm section. The top-ranked run is embedded in the page; with gallery_dir, every other
     run is written there as <id>.json, and the page fetches it (relative URL) when it is picked, so
@@ -152,14 +213,14 @@ def build_swarm(results_root, gallery_dir=None):
     import prism_render as pr
     first = _payload(cands[0])
     tag = lambda p: (f"{p['eval16']['passed']}/{p['eval16'].get('feasible', 16)}" + ("" if p['eval16'].get('feasible', 16) == 16 else " feasible")) if p.get("eval16") else f"{p['passed']}/8"
-    manifest = [dict(id=first["id"], label=first["label"], passed=tag(first), file=None)]
+    manifest = [dict(id=first["id"], label=first["label"], passed=tag(first), about=_about(first["id"]), file=None)]
     if gallery_dir:
         os.makedirs(gallery_dir, exist_ok=True)
         for d in cands[1:]:
             p = _payload(d)
             fn = f"{p['id']}.json"
             json.dump(p, open(os.path.join(gallery_dir, fn), "w"), separators=(",", ":"))
-            manifest.append(dict(id=p["id"], label=p["label"], passed=tag(p), file=f"{os.path.basename(gallery_dir)}/{fn}"))
+            manifest.append(dict(id=p["id"], label=p["label"], passed=tag(p), about=_about(p["id"]), file=f"{os.path.basename(gallery_dir)}/{fn}"))
     apps = "".join(f'<button type="button" class="app" data-app="{m["id"]}" aria-pressed="false">'
                    f'<span class="appl">{m["label"]}</span><span class="apps mono">{m["passed"]}</span></button>' for m in manifest)
     tabs = "".join(
@@ -174,6 +235,7 @@ def build_swarm(results_root, gallery_dir=None):
       <h3 class="apph">Approaches</h3>
       <p class="caption">Each is a different way of building the creature, ranked by strict tests passed. The best is loaded first; the others load when picked.</p>
       <div class="appgrid" id="swapps">{apps}</div>
+      <dl class="about" id="swabout"></dl>
       <p class="caption" id="swnote"></p>
     </div>
     <div class="bench">
@@ -225,6 +287,10 @@ table.swcross td.diag { text-decoration: underline; text-underline-offset: 3px }
 .appgrid .app[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent) }
 .appgrid .app .apps { color: var(--muted); font-size: 12px }
 .appgrid .app[aria-busy="true"] { opacity: .6 }
+.about { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 22px; margin: 12px 0 6px; max-width: 980px }
+.about div { min-width: 0 }
+.about dt { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px }
+.about dd { margin: 0; font-size: 13.5px; line-height: 1.45 }
 """
 
 SCRIPTSWARM = r"""<script>
@@ -324,6 +390,9 @@ SCRIPTSWARM = r"""<script>
   function setRun(p) {
     RUN = p; CACHE[p.id] = p; R = decodeRoll(p.roll); SC = p.roll.scale;
     $('swnote').textContent = p.label + ': ' + p.note;
+    const ab = (D.manifest.find(x => x.id === p.id) || {}).about;
+    $('swabout').innerHTML = ab ? [['What it is', ab.what], ['How the body forms', ab.body], ['Where elements go', ab.sorting], ['How it switches', ab.switching], ['What to watch for', ab.watch], ['Under the loss-8 bar', ab.bar]]
+      .map(([t, v]) => `<div><dt>${t}</dt><dd>${v}</dd></div>`).join('') : '';
     $('swtables').innerHTML = tables(p);
     document.querySelectorAll('#swapps [data-app]').forEach(b => b.setAttribute('aria-pressed', b.dataset.app === p.id));
     load(kind);

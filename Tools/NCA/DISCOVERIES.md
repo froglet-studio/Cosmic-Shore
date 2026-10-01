@@ -31,6 +31,15 @@ alone costs 2.3–4.5. The loss comes from SORTING. Element placement adds 4–1
 exactly with how GLOBAL each family's sorting mechanism is: global slot assignment (field) <
 per-class grid deficits (hgrid) < per-group anchors (compact) ≈ none (G2, evo).
 
+## The lead's feel review (2026-10-01, watching the gallery) — a selection signal, not a score
+
+- **Evolved rule (evo):** "a beautifully organic feel. It always feels like a swarm, but it is interesting to watch it try to be more." A great candidate for another scene test once it reaches the next level of scoring.
+- **Evolved compact:** "very jerky most of the time, and its clusters like to make planar surfaces with its crystals" — not desirable traits, but notable.
+- **Designed field + flocking:** "the transitions from one to another are fun, but it has lost too much of the organic imperfection. Its mistakes just feel like bugs, not emergence."
+- **Grid morphogen (designed, hgrid oracle):** "an excellent direction. It feels both accurate and organic. Continue to explore how this can be used."
+
+So the target is ACCURATE (under the loss-8 bar) *and* ORGANIC. Exact global assignment gets accuracy and loses life; no sorting keeps life and loses accuracy; the local grid morphogen is the only family so far judged to have both. Jerk and planarity are now named failure modes worth measuring.
+
 ## Catalogue of process families
 
 | # | family | how it produces a lifeform | sorting | composition | plan decision | status | unique strength |
