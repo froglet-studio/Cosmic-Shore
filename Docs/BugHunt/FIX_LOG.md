@@ -8,6 +8,25 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-1.1 — AI held drift on stop (already fixed; closed with no code change)
+
+- **Date:** closed 2026-10-02. The fix itself is `4c866f880` of 2026-09-26, which predates the
+  handoff doc's review of this item.
+- **Symptom (from the handoff):** a vessel stays in the AI's commit drift (course locked, nose
+  free) after autopilot is switched off, until the human taps drift.
+- **Cause:** `StopAIPilot` stopped the brain but never sent the matching stop for the commit drift.
+- **What already fixes it:** `AIPilot.StopAIPilot` releases the commit drift (`_commitDriftHeld`),
+  stops every cycled ability that had started and clears the aim telegraph. `PilotSwap` stops the
+  AI and calls `ReleaseHeldInputs` while the server still owns the hull, so the release replicates.
+- **Left alone on purpose:** `AIPilot.OnDisable` does not release a drift. It only runs on
+  teardown, where the vessel is going away, and the one other disabler (the AI training pilot)
+  calls `StopAIPilot` first. Sending input from a teardown path risks null references.
+- **Verification:** Yash tested the Menu_Main freestyle takeover on `Bug_Hunt` and the ship flew
+  normally, with no stuck drift.
+- **PR/commit:** docs only.
+
+---
+
 ## BH-1.13 — `Fauna` never left its cell's spawned-object list
 
 - **Date:** fixed 2026-10-02 (commit); merge pending Yash's retest. Skipped the repro on
