@@ -77,6 +77,10 @@ DEFAULTS = dict(
     mob=(0.0, 0.0, 0.0, 1.0),
     mob_speed=1.0,
     mob_r=1.4,
+    # escort: a ship cruising past (not at) the body at a moderate speed is FOLLOWED (translation, free)
+    escort=(0.0, 0.55, 0.0, 0.35),   # per majority element C M S T: whale follows like a curious whale, dragonfly zips along
+    escort_speed=(1.0, 2.4),
+    escort_r=3.0,                    # within this x the body's RMS radius
     # wound memory
     wounds=1,
     wound_reach=12.0,     # an egg within this of a wound is placed into it
@@ -250,6 +254,14 @@ class CreatureRule(em.EvoRule):
                 proj = (rel * tsn[:, None]).sum(-1).clamp(min=0)                  # how far toward the ship's side
                 shield = c["shield"] * 0.05 * tsn[:, None] * ((el == 1).float() * proj)[..., None]
                 react = react + whale * thr * (tuck + shield)
+                # escort: cruising past, not at: the body drifts along with the ship
+                if c["escort_speed"][0] <= spd <= c["escort_speed"][1]:
+                    rmsb = ((rel * rel).sum(-1) * alf).sum(1).div(cnt).sqrt()          # [B]
+                    dist_c = to_ship.norm(dim=-1)
+                    heading_in = (-(tsn * pvn).sum(-1)).clamp(min=0)                   # 1 = flying straight at it
+                    eg = torch.tensor(c["escort"])[maj] * (1 - dist_c / (c["escort_r"] * rmsb)).clamp(0, 1) * (heading_in < 0.3).float()
+                    sw.pos = sw.pos + (eg[:, None, None] * pv) * alf[..., None]
+                    st["escort"] = eg
                 bodyjet = -tsn[:, None] * c["body_jet"] * jet_on[..., None]
                 bell = -c["bell"] * 0.1 * rel * jet_on[..., None]
                 react = react + jelly * thr * (bodyjet + bell)

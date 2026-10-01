@@ -54,6 +54,7 @@ def life(kind, cfg=None, seed=3):
     units, ns, show, vessel, flags, events, crystals = [], [], [], [], [], [], []
     live_cr = []           # [x, y, z, elem, born, vx, vy, vz]
     collected = [0]
+    rammed = [0]
     t = [0]
     ship = [None]
 
@@ -109,6 +110,7 @@ def life(kind, cfg=None, seed=3):
                     p = sw.pos[0, j].numpy()
                     live_cr.append([*p.tolist(), int(sw.elem[0, j]), t[0], *(np.random.default_rng(j).normal(size=3) * 0.3).tolist()])
                 sw.active[0, ins] = False; sw.hatched[0, ins] = False; sw.s[0, ins] = 0.0
+                rammed[0] += int(ins.sum())
             rec()
             before = sw.active[0] & sw.hatched[0]
             p0, e0 = sw.pos[0].clone(), sw.elem[0].clone()
@@ -143,6 +145,12 @@ def life(kind, cfg=None, seed=3):
                 0.8 * np.array([-math.sin(a), 0.0, math.cos(a)]))
     step(110, circ)
     step(40)
+    # 2b. cruise alongside: the whale follows, the dragonfly zips along, the others let it go
+    al, c, rms = body(sw)
+    side = np.array([0.0, 0.0, 1.0]) * 1.5 * rms
+    events.append([t[0], "the pilot cruises past alongside" + {"mass": " - the whale turns and follows", "time": " - the dragonfly tags along"}.get(kind, "")])
+    step(90, lambda i, c_, r_: (c + side + np.array([1.6, 0, 0]) * (i - 45), 0.35 * rms, np.array([1.6, 0.0, 0.0])))
+    step(40)
     # 3. ram: tadpoles inside the ship die and leave crystals the ship then collects
     al, c, rms = body(sw)
     d2 = np.array([-0.6, -0.15, 0.78]); d2 /= np.linalg.norm(d2)
@@ -151,7 +159,7 @@ def life(kind, cfg=None, seed=3):
     n0 = int(al.sum())
     events.append([t[0], "RAM: the vessel rams through at speed - every tadpole it hits dies and leaves a crystal"])
     step(span, lambda i, c_, r_: (start + d2 * 2.0 * i, rad, d2 * 2.0), kill=True)
-    events.append([t[0], f"{n0 - int(body(sw)[0].sum())} tadpoles lost; the ship turns back for the crystals; the wound fills from its edges"])
+    events.append([t[0], f"{rammed[0]} tadpoles killed; the ship turns back for the crystals; the wound fills from its edges"])
     end = start + d2 * 2.0 * span
 
     def back(i, c_, r_):
