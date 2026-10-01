@@ -107,8 +107,9 @@ def main():
     ap.add_argument("--out", default="")
     ap.add_argument("--gradual", action="store_true")
     ap.add_argument("--field-escort", action="store_true")
+    ap.add_argument("--gradual-field", action="store_true")
     a = ap.parse_args()
-    if a.gradual:
+    if a.gradual or a.gradual_field:
         return
     if "--field-escort" in sys.argv:
         json.dump(escort(body_kind="field"), open(os.path.join(HERE, "runs", "creature", "field_escort.json"), "w"), indent=1)
@@ -124,7 +125,7 @@ if __name__ == "__main__":
 
 
 @torch.no_grad()
-def gradual(seed=7, steps=240, rate=1, every=2, max_steps=400, L=None):
+def gradual(seed=7, steps=240, rate=1, every=2, max_steps=400, L=None, body_kind="evo"):
     """Predators eat `rate` tadpoles of the majority element every `every` steps until another element
     leads (then stop). Reports when the pre-tell started, when the majority flipped, and whether the
     new plan is closest 120 steps later: is there a readable WARNING before the switch?"""
@@ -132,7 +133,7 @@ def gradual(seed=7, steps=240, rate=1, every=2, max_steps=400, L=None):
     T = sn.load_targets()
     out = {}
     for k in sn.KINDS:
-        m = cm.CreatureRule()
+        m = _make(body_kind)
         gen = sn.make_gen(seed)
         sw = sn.seed_swarm([T[k]], m.world, gen)
         for _ in range(steps):
@@ -162,6 +163,10 @@ def gradual(seed=7, steps=240, rate=1, every=2, max_steps=400, L=None):
     return out
 
 
-if __name__ == "__main__" and "--gradual" in sys.argv:
+if __name__ == "__main__" and "--gradual-field" in sys.argv:
+    torch.set_num_threads(4)
+    json.dump({f"rate{r}": gradual(rate=r, every=1, body_kind="field") for r in (1, 2, 4)},
+              open(os.path.join(HERE, "runs", "creature", "field_gradual.json"), "w"), indent=1)
+elif __name__ == "__main__" and "--gradual" in sys.argv:
     torch.set_num_threads(4)
     json.dump({f"rate{r}": gradual(rate=r, every=1) for r in (2, 4)}, open(os.path.join(HERE, "runs", "creature", "gradual.json"), "w"), indent=1)

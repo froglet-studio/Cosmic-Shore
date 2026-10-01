@@ -128,9 +128,25 @@ spikes, the escort (which also moves field's body frame, `mem.anchor`), the pre-
 * Every encounter keeps the body its own plan in 100% of frames; fly-by worst own-plan score 5.5-11 (inert 2-6),
   back within 4-9 steps; ram heal 1.04-1.19 (field regrows to the plan's headcount).
 * Escort over 144 voxels of ship travel: whale 35.6, dragonfly 18.3, jellyfish/pufferfish 0 (inert 0).
+* Strike (`swarm_probe`, 8 seeds, `heal_field.json`): heal 1.15 / 1.05 / 1.08 / 1.08, mean residual damage
+  **-0.65** (it comes back BETTER than before; evo body: +0.84).
+* Gradual predation (`field_gradual.json`, 1 / 2 / 4 majority tadpoles eaten per step): **no plan ever switches**
+  (the dragonfly flips at step 37 under 4/step and flips straight back) - field's laying toward the plan's headcount
+  plus molting surplus into the plan's mix are even more homeostatic than evo's lay gate. The fair one-shot cull
+  switches it; a predator nibbling never will. For the "eat its majority" fantasy, the game needs to cap laying or
+  molting while a predator feeds (see recommendation 2).
 * Lesson: **a reaction shell needs ONE hook into the body - a "calm" input that relaxes its shape-keeping while
   startled.** Without it the body fights the shell (field + shell only: 0.18-0.32; the learned evo body has no such
   hook either, which is why A's whale stays at 0.35).
+
+## C# port of the shell (`creature_port/`, `creature_port_check.py`, `port_check.json`)
+
+`CreatureShell.cs`: plain C# (System.Numerics, no Unity), struct-of-arrays, no per-step allocation except a tiny
+4-float sort, the startle relay over a uniform hash grid instead of O(n^2). Body-agnostic: `Step(pos, elem, active,
+hatched, vessels)` after the body moves, plus `Drift` for a body with a frame. **Parity with the Python reference over
+573 captured shell calls (fly-by, circle, cruise, cull/tell; all four plans; tell jitter off): worst position error
+7.9e-6 voxels, startle 3.0e-7, threat 1.2e-7. Cost 0.23 ms/step for ~268 tadpoles** (managed .NET 8, single thread,
+no Burst/SIMD). Field's own body port (`field_port/FieldSwarmCore.cs`, 0.1-0.6 ms) + this = the whole of (B).
 
 ## Recommendation (next round / Unity)
 

@@ -18,9 +18,12 @@ sys.path.insert(0, HERE)
 
 def _one(args):
     seed, cfg, evo = args
-    torch.set_num_threads(1)
     import swarm_probe, creature_model as cm, evo_model as em
-    m = em.EvoRule(np.load(cm.GENOME)) if evo else cm.CreatureRule(**cfg)
+    if evo == "field":
+        import creature_field as cf
+        m = cf.CreatureField(**cfg)
+    else:
+        m = em.EvoRule(np.load(cm.GENOME)) if evo else cm.CreatureRule(**cfg)
     return seed, swarm_probe.probe(m, seed=seed)
 
 
@@ -42,10 +45,11 @@ if __name__ == "__main__":
     ap.add_argument("--seeds", type=int, nargs="+", default=[11, 12, 13, 14])
     ap.add_argument("--set", action="append", default=[])
     ap.add_argument("--evo", action="store_true")
+    ap.add_argument("--field", action="store_true")
     ap.add_argument("--out", default="")
     a = ap.parse_args()
     cfg = {kv.split("=", 1)[0]: json.loads(kv.split("=", 1)[1]) for kv in a.set}
-    r = heal(a.seeds, cfg, a.evo)
+    r = heal(a.seeds, cfg, "field" if a.field else a.evo)
     print(json.dumps({"cfg": cfg, "evo": a.evo, "residual": r["residual"], "residual_overall": r["residual_overall"], "heal_mean": r["mean"]}))
     if a.out:
         json.dump(r, open(a.out, "w"), indent=1)

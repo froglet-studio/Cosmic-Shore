@@ -1,0 +1,92 @@
+{
+ "rate1": {
+  "mass": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "mass",
+   "new_majority": null
+  },
+  "space": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "space",
+   "new_majority": null
+  },
+  "charge": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "charge",
+   "new_majority": null
+  },
+  "time": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "time",
+   "new_majority": null
+  }
+ },
+ "rate2": {
+  "mass": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "mass",
+   "new_majority": null
+  },
+  "space": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "space",
+   "new_majority": null
+  },
+  "charge": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "charge",
+   "new_majority": null
+  },
+  "time": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "time",
+   "new_majority": null
+  }
+ },
+ "rate4": {
+  "mass": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "mass",
+   "new_majority": null
+  },
+  "space": {
+   "warn_at": 6,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "space",
+   "new_majority": null
+  },
+  "charge": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "charge",
+   "new_majority": null
+  },
+  "time": {
+   "warn_at": null,
+   "flip_at": 37,
+   "warning_steps": null,
+   "closest_after": "time",
+   "new_majority": "Time"
+  }
+ }
+}
