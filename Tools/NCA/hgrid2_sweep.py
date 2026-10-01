@@ -13,6 +13,9 @@ for a in sys.argv[1:]:
         kinds = tuple(a.split("=")[1].split(","))
 for a in args:
     kw = dict(kv.split("=") for kv in a.split(",") if kv)
+    if kw.pop("best", None):
+        import hgrid2_eval
+        kw = dict(hgrid2_eval.BEST, **kw)
     m = hm.make(**kw)
     t0 = time.time()
     r = hd.diag(m, seeds=seeds, kinds=kinds, log=lambda k, r: None)
