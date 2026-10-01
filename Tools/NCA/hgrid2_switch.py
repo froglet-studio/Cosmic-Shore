@@ -27,5 +27,5 @@ for tr in trs.split(","):
         x = sn.decode(sw, 0); row = se._score_row(sw, 0, T, sn.LossCfg())
         terms = {v: round(sn.swarm_loss(x, T[to], L)[1]["sink"], 1) for v, L in hd.VARIANTS.items()}
         mk = sw.active[0] & sw.hatched[0]
-        out.append(f"{k}->{to} s{sd} {'PASS' if se._passes(row, to, int(mk.sum())) else 'fail'} {terms} n{int(mk.sum())} mix{torch.bincount(sw.elem[0][mk],minlength=4).tolist()} want{T[to].mix} best_other {min(v for kk,v in row.items() if kk!=to)}")
+        out.append(f"{k}->{to} s{sd} {'PASS' if se._passes(row, to, int(mk.sum())) else 'fail'} {terms} n{int(mk.sum())} mix{torch.bincount(sw.elem[0][mk],minlength=4).tolist()} want{T[to].mix} dom{torch.bincount(sw.dom[0][mk],minlength=3).tolist()} wantdom{T[to].slot_mix} dmap{sw.dmap[0].tolist()} best_other {min(v for kk,v in row.items() if kk!=to)}")
 print(cfgs, f"{time.time()-t0:.0f}s"); print("\n".join("   " + o for o in out), flush=True)

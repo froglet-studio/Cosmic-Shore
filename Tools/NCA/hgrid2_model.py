@@ -48,6 +48,11 @@ class Cfg(hb.BoidCfg):
     fine_look: int = 0          # looks from the fine field (the nearest wanted units of the element) instead of the grid
     vel_pre: float = 0.0        # extra persistence on the fine term (smooths it: 0 = none)
     interp: int = 0             # fine targets move CONTINUOUSLY between the plan's frames (no 8-step jumps)
+    lock: int = 0               # a plan, once committed, holds this many steps (composition settles first); 0 = off
+    dmap_low: int = 0           # a plan with k < 3 slots maps them onto domains 0..k-1 (the yardstick's loss only
+                                # considers those for a k-slot plan; any other domain scores as a mismatch)
+    dmap_space: int = 0         # on a plan change, map slots to domains by WHERE each domain already sits (overlap on the grid)
+    lay_major: float = 0.0      # laying pressure x (class want / plan's largest class want)^lay_major: the plan's major breeds fastest
     k_ff: float = 0.0           # feed-forward: a tadpole takes this share of its nearby same-class units' own velocity
 
 
@@ -102,11 +107,88 @@ class Boid2(hb.FieldBoid):
             out.append((p, cls, vel))
         return out
 
+    def low_dmap(self, sw, live):
+        """Re-map every sample whose plan has k < 3 slots so its slots use domains 0..k-1 (the larger
+        slot to the more numerous of them); no-op when the map already does."""
+        dcnt = (F.one_hot(sw.dom, 3).float() * live.float()[..., None]).sum(1)
+        for b in range(sw.B):
+            if int(sw.gplan[b]) < 0:
+                continue
+            T = self.targets[sn.KINDS[int(sw.gplan[b])]]
+            k = sum(1 for c in T.slot_mix if c > 0)
+            if k >= 3 or set(sw.dmap[b, :k].tolist()) == set(range(k)):
+                continue
+            sm = T.slot_mix[:k]
+            big = int(torch.tensor(sm).argmax())
+            dd = sorted(range(k), key=lambda d: -float(dcnt[b, d]))
+            p = [0, 0, 0]
+            order = sorted(range(k), key=lambda s_: -sm[s_])
+            for s_, d in zip(order, dd):
+                p[s_] = d
+            p[2] = [d for d in range(3) if d not in p[:k]][0] if k == 2 else p[2]
+            if k == 1:
+                p = [0, 1, 2]
+            sw.dmap[b] = torch.tensor(p)
+
+    def spatial_dmap(self, sw, live, changed):
+        """For samples whose plan just changed: the slot->domain perm maximising the overlap between
+        each domain's actual density and its slot's wanted density, among perms that are within 10% of
+        the count-optimal coverage (counts still matter: a domain cannot take a slot it cannot fill)."""
+        cfg = self.cfg
+        lf = live.float()
+        cen = (sw.pos * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
+        cen = torch.round(cen / cfg.cell) * cfg.cell
+        D = self.field_fn(sw, cen, live)
+        frame = hc.GridFrame(cen, cfg.G, cfg.cell)
+        Ad = hc.blur(hc.splat(frame, sw.pos, F.one_hot(sw.dom, 3).float(), live), 1)      # [B,3,G^3]
+        Ds = D[:, :hc.NCLS].reshape(sw.B, 4, 3, *D.shape[2:]).sum(1)                        # [B,3 slots,...]
+        dcnt = (F.one_hot(sw.dom, 3).float() * lf[..., None]).sum(1)
+        for b in changed:
+            T = self.targets[sn.KINDS[int(sw.gplan[b])]]
+            sh = torch.tensor(T.slot_mix + [0] * (3 - len(T.slot_mix)), dtype=torch.float)[:3]
+            sh = sh / sh.sum(); n = float(dcnt[b].sum())
+            cov = {p: sum(min(float(dcnt[b, p[s]]), float(sh[s]) * n) for s in range(3)) for p in hb.PERM3}
+            best_cov = max(cov.values())
+            best, arg = -1.0, None
+            for p in hb.PERM3:
+                if cov[p] < 0.9 * best_cov:
+                    continue
+                ov = sum(float(torch.minimum(Ad[b, p[s]], Ds[b, s]).sum()) for s in range(3))
+                if ov > best + 1e-6:
+                    best, arg = ov, p
+            sw.dmap[b] = torch.tensor(arg)
+
     def step(self, sw, gen=None, train=False):
         cfg = self.cfg
         sw = hb.HSwarm.lift(sw)
+        # the plan decision is taken HERE (the coarse step's own decide_plan is then a no-op: hyst = inf)
+        if not hasattr(self, "_chg") or self._chg.shape[0] != sw.B:
+            self._chg = torch.full((sw.B,), -10 ** 9, dtype=torch.long)
+        self._chg[sw.clock == 0] = -10 ** 9
+        live0 = sw.active & sw.hatched
+        old_p, old_d = sw.gplan.clone(), sw.dmap.clone()
+        hb.decide_plan(sw, live0, cfg, self.targets)
+        for b in range(sw.B):
+            if int(old_p[b]) >= 0 and int(sw.gplan[b]) != int(old_p[b]):
+                if cfg.lock and int(sw.clock[b]) - int(self._chg[b]) < cfg.lock:
+                    sw.gplan[b] = old_p[b]; sw.dmap[b] = old_d[b]
+                else:
+                    self._chg[b] = int(sw.clock[b])
+        if cfg.dmap_low:
+            self.low_dmap(sw, live0)
+        if cfg.dmap_space and not bool((sw.clock == 0).all()):
+            live0 = sw.active & sw.hatched
+            old = sw.gplan.clone()
+            hb.decide_plan(sw, live0, cfg, self.targets)
+            changed = [b for b in range(sw.B) if int(old[b]) >= 0 and int(old[b]) != int(sw.gplan[b])]
+            if changed:
+                self.spatial_dmap(sw, live0, changed)
         pos0 = sw.pos.clone()
-        out = super().step(sw, gen, train)
+        h0 = cfg.hyst; cfg.hyst = 1e9
+        try:
+            out = super().step(sw, gen, train)
+        finally:
+            cfg.hyst = h0
         if not cfg.k_fine and not cfg.k_fine_tot:
             return out
         # The fine layer is applied as an extra displacement on top of the coarse step, on the tadpoles
@@ -120,6 +202,16 @@ class Boid2(hb.FieldBoid):
             out.s[..., 15:18] = disp * lf[..., None]
         out.pos = out.pos + disp * lf[..., None]
         return out
+
+    def _lay(self, sw, parents_ok, have, want, gd, gen):
+        if not self.cfg.lay_major:
+            return super()._lay(sw, parents_ok, have, want, gd, gen)
+        # scale the relative deficit by how big the class is in the plan: rel' = rel x (want/max want)^a,
+        # implemented by shrinking `have` toward 0 for small classes is wrong; instead scale p_lay per class
+        w = (want / want.max(1, keepdim=True).values.clamp(min=1)).clamp(min=0) ** self.cfg.lay_major
+        rel = ((want - have) / have.clamp(min=1.0)).clamp(0, 1) * w
+        have2 = want - rel * have.clamp(min=1.0)                 # so the parent class recomputes rel' exactly
+        return super()._lay(sw, parents_ok, have2, want, gd, gen)
 
     def fine_disp(self, out, pos0, live, k_scale=1.0):
         """The fine layer's displacement for every live tadpole of `out` (grid centre from pos0)."""
