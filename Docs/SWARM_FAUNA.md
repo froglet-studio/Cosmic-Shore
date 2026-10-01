@@ -22,16 +22,17 @@ It ports the research "field" model (`Tools/NCA/` on `cece/gifted-curie-x2cpd0`,
 `field_swarm.py`) into the game, plus the three things the research did not have: laying that is
 **funded by eating**, **starvation**, and **swimming through a real cell**.
 
-**There are three species of swarm, on three simulation cores**: the **field** swarm
+**There are four species of swarm, on four simulation cores**: the **field** swarm
 (`SwarmFieldCore`, designed attractor fields — every tadpole owns a slot), the **grid** swarm
-(`SwarmGridCore`, §8, the research's `hgrid2` grid morphogen — nothing assigns a tadpole a place; each
-reads only fields at its own position) and the **sort** swarm (`SwarmSortCore`, §9, the research's
-emergent cell sorting — each tadpole commits to one positional-information well of its element,
-unlike elements repel harder than like ones, and a surplus member MOLTS into a missing element, so
-its composition corrector is lossless). One config field picks the core
-(`SwarmFaunaConfigSO.Model`), and the Swarm cell hosts all three side by side, one per band, so they
-can be compared in one session: **grid whales inside, field dragonflies in the middle, sort
-pufferfish outside**.
+(`SwarmGridCore`, §8 and §10 — since round 5 the research's `combo`: the `hgrid2` grid morphogen made
+LOSSLESS by molting; nothing assigns a tadpole a place, each reads only fields at its own position),
+the **sort** swarm (`SwarmSortCore`, §9, the research's emergent cell sorting — each tadpole commits to
+one positional-information well of its element, unlike elements repel harder than like ones, and a
+surplus member MOLTS into a missing element) and the **evofate** swarm (`SwarmEvoFateCore`, §11, the
+research's `evofate` — a trained neural network moves every tadpole, and a small designed pull toward
+the well it committed to sorts it). One config field picks the core (`SwarmFaunaConfigSO.Model`), and
+the Swarm cell hosts all four side by side, one per band, so they can be compared in one session:
+**grid whales inside, field dragonflies, sort pufferfish, evofate jellyfish on the rim**.
 
 ---
 
@@ -40,7 +41,7 @@ pufferfish outside**.
 ```
 SwarmFauna (heartless population anchor, a Fauna — the worm-colony shape)
  ├─ ISwarmCore                what the glue drives; config.Model picks the implementation:
- ├─ SwarmFieldCore | SwarmGridCore | SwarmSortCore   pure C#, System.Numerics, SoA arrays — ALL behaviour
+ ├─ SwarmFieldCore | SwarmGridCore | SwarmSortCore | SwarmEvoFateCore   pure C#, System.Numerics, SoA arrays — ALL behaviour
  │    ├─ SwarmPlanData x4     baked body plans (8 frames of slot positions + facings)
  │    └─ SwarmFieldParams     every behaviour constant (research values + game additions)
  ├─ fixed-step clock          TickHz (10) steps/s, MaxStepsPerFrame (3), render interpolates
@@ -51,9 +52,10 @@ SwarmFauna (heartless population anchor, a Fauna — the worm-colony shape)
 | file | role |
 |---|---|
 | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFieldCore.cs` | The FIELD simulation. No `UnityEngine` reference; compiled and RUN headless by `Tools/Build/swarm_core_harness`. Also holds the shared plan data (`SwarmPlanData`, `SwarmPlanJson`) and events. |
-| `.../Swarm/SwarmGridCore.cs` | The GRID simulation (research `hgrid2`, §8). Same constraints, same harness. |
+| `.../Swarm/SwarmGridCore.cs` | The GRID simulation (research `hgrid2`, §8, made lossless as research `combo`, §10). Same constraints, same harness. |
 | `.../Swarm/SwarmSortCore.cs` | The SORT simulation (research `sort`, §9) and its plan code (`SwarmSortCode`). Same constraints, same harness. |
-| `.../Swarm/ISwarmCore.cs` | The interface the glue drives, `SwarmModel` (Field / Grid / Sort), and `SwarmCoreShared` - the vessel reaction and funded laying, written once for the grid and sort cores. |
+| `.../Swarm/SwarmEvoFateCore.cs` | The EVOFATE simulation (research `evofate`, §11): the trained G2 network (`SwarmEvoRule`, weights read from a TextAsset) + sort's code and composition. Same constraints, same harness. |
+| `.../Swarm/ISwarmCore.cs` | The interface the glue drives, `SwarmModel` (Field / Grid / Sort / EvoFate), and `SwarmCoreShared` - the vessel reaction, funded laying and the neighbour-hash bucket walk, written once for the cores. |
 | `.../Swarm/SwarmFauna.cs` | The anchor. Owns the core, the clock, member spawn/pose, vessel sensing, feeding, starvation, extinction. |
 | `.../Swarm/SwarmTadpoleFauna.cs` | One member. Heart, body shape, tier (danger/shield), death paths. No `Update`. |
 | `.../Swarm/SwarmFaunaConfigSO.cs` | Every number, including `Model` and the grid model's parameters. One asset per MODEL serves every swarm of that model. |
@@ -185,28 +187,29 @@ its own spawn profile, the Arboretum's membrane / nucleus / cytoplasm (nucleus w
 appended to `Menu_Main` → Cell → `CellConfigs[12]`, so it appears in the freestyle **Cell
 Selector** toy (a bare station: like Lattice and the Arboretum, a grown world has no scale model).
 
-| band (world radius) | model | swarm starts as | flora to eat (floor / cap) | food relation |
-|---|---|---|---|---|
-| inner 430–600 | **grid** | **whale** (Mass) | Arbor, Mass (48 / 100) | own element — grows fast, hardest to convert |
-| middle 660–840 | **field** | **dragonfly** (Time) | Spire, Space (64 / 140) | cross — grows at half rate, and Space food is the jellyfish's element |
-| outer 900–1120 | **sort** | **pufferfish** (Charge) | Frond, Time (80 / 160) | cross — grows at half rate |
+| band (world radius) | model | swarms | swarm starts as | flora to eat (floor / cap) | food relation |
+|---|---|---|---|---|---|
+| inner 430–560 | **grid** (lossless, §10) | 6 | **whale** (Mass) | Arbor, Mass (40 / 80) | own element — grows fast, hardest to convert |
+| middle 610–740 | **field** | 8 | **dragonfly** (Time) | Spire, Space (52 / 110) | cross — grows at half rate, and Space food is the jellyfish's element |
+| outer 790–920 | **sort** | 7 | **pufferfish** (Charge) | Frond, Time (60 / 120) | cross — grows at half rate |
+| rim 970–1120 | **evofate** (§11) | 3 | **jellyfish** (Space) | Reed, Space (40 / 90) | own element — the cheapest body for the dearest model |
 
 One model per band, never mixed within one: every tadpole wears the cell's one colour (§2), so where
 a swarm swims is the only way a pilot can tell which model it runs. A pilot flying outward meets
-grid, field, sort. The author script FAILS if the cell stops hosting all three, or puts two models in
-one band. (The outer band was grid until the sort species landed; it moved to sort because the
+grid, field, sort, evofate. The author script FAILS if the cell stops hosting all four, puts two models
+in one band, or holds other than 24 swarms (round 5: the evofate swarms are PAID FOR, not added - §11.4). (The outer band was grid until the sort species landed; it moved to sort because the
 grid-vs-sort comparison is the interesting one — the same pufferfish, the same feeding ground, a
 lossy corrector against a lossless one — and it halves the grid CPU.)
 
-Bands are disjoint, so the three populations stay separated in the cytoplasm. Each band holds a
-SCHOOL of swarms: `InitialSpawnCount / PopulationSize / MaxLivePopulation = 8`; a new swarm
+Bands are disjoint, so the four populations stay separated in the cytoplasm. Each band holds a
+SCHOOL of swarms: `InitialSpawnCount / PopulationSize / MaxLivePopulation` = the table's swarm count; a new swarm
 hatches with `SeedMembers` (96, clamped to its plan's size) tadpoles at its plan's own mix and grows by eating. Flora use the shipped
 canonical phyllotactic species through `ElementPalette` + per-cell band overrides; they reproduce
 (`GrowthPerOffspring` = 0.8 × budget) so a grazed feeding ground regrows.
 
-**Volume ladder — MODELLED, not measured.** RestlessEnter/Exit 4,453,000 / 3,308,000, FrenzyEnter/Exit
-31,805,000 / 27,988,000 (counts 26,800 / 19,900 / 191,200 / 168,300), derived by
-`author_swarm_fauna.py` from a model of the mature cell (~76,468 prisms, ~12,721,711 volume):
+**Volume ladder — MODELLED, not measured.** RestlessEnter/Exit 3,576,000 / 2,656,000, FrenzyEnter/Exit
+25,538,000 / 22,474,000 (counts 23,700 / 17,600 / 169,000 / 148,700), derived by
+`author_swarm_fauna.py` from a model of the mature cell (~67,588 prisms, ~10,215,161 volume):
 Restless early, Frenzy above the mature cell. The phyllotactic per-prism volume in that model is
 an approximation (leaf cross-section × segment). **Re-measure in the editor** (FrogletTools >
 Ecology > Measure Cell Environment Baselines, then a few minutes of growth) and re-author.
@@ -216,7 +219,7 @@ Ecology > Measure Cell Environment Baselines, then a few minutes of growth) and 
 | | always-on | notes |
 |---|---|---|
 | tadpole hearts at cap | **4,608** | 24 swarms × 192 (each swarm's cap is the largest plan; a swarm only reaches it as a whale) |
-| flora hearts at cap | **400** | 100 + 140 + 160 |
+| flora hearts at cap | **400** | 80 + 110 + 120 + 90 (round 5 re-split the same 400 over four grounds) |
 | **total always-on** | **5,008** | **4.6× the Lattice cell's 1,080** — see the overtune note below |
 | tadpole body prisms | ≤4,608 | ordinary prism colliders, one per member |
 
@@ -230,21 +233,25 @@ numbers drift further. **It is unprofiled.** The dials to bring it back, cheapes
 Realistic load is lower: a dragonfly is 76 and a jellyfish 88. The cell authors no environment
 prisms at all.
 
-**Neither the grid nor the sort model changes these numbers.** Every swarm is the same population of
+**No model changes these numbers.** Every swarm is the same population of
 the same tadpoles under the same 192 cap: one heart collider and one body prism per member, so a whale
 at full size is **192 hearts + 192 body prisms** on any core. The cell's swarm count is unchanged by
-the third species (still 3 bands x 8 = 24; sort took the outer band from grid). What the models
+the third and fourth species (24: grid 6, field 8, sort 7, evofate 3 since round 5). What the models
 differ in is CPU and memory:
 
 | | swarms | grown cost per step (CoreCLR) | CPU per second of game at 10 Hz |
 |---|---|---|---|
-| grid whales (inner) | 8 | ~1.0 ms | ~80 ms |
-| field dragonflies (middle) | 8 | ~0.1 ms | ~9 ms |
-| sort pufferfish (outer) | 8 | ~0.13 ms | ~11 ms |
-| **cell, as seeded** | 24 | | **~100 ms/s** (~1.7 ms per frame at 60 Hz) — was ~180 ms/s with 16 grid swarms |
+| grid whales (inner, G8, §10) | 6 | ~0.74 ms | ~44 ms |
+| field dragonflies (middle) | 8 | ~0.09 ms | ~8 ms |
+| sort pufferfish (outer) | 7 | ~0.16 ms | ~11 ms |
+| evofate jellyfish (rim, §11) | 3 | ~0.74 ms SIMD / **~1.58 scalar** | ~22 / **~47 ms** |
+| **cell, as seeded** | 24 | | **~85 ms/s** CoreCLR-SIMD, **~110 ms/s** with the evofate network on its scalar path (Mono's) — round 4 was ~100 ms/s |
 
-Worst case (every swarm morphed into a whale): grid 1.2 + field 0.9 + sort 0.16 ms/step x 8 x 10 Hz
-≈ 180 ms/s. Mono will be slower than CoreCLR — re-measure (`QA-SWARM-SORT` step 7). Memory: the sort
+Round 5 kept the cell's CPU roughly where it was while adding a fourth, much dearer model: the grid's
+G8 default (§10.3) frees ~36 ms/s, which pays for three evofate jellyfish on the scalar path (the
+evofate count is set by that budget - §11.4). Worst case (every swarm morphed into a whale): grid
+0.74 x 6 + field 0.75 x 8 + sort 0.18 x 7 + evofate 1.69 x 3 (SIMD) / 3.73 x 3 (scalar) ≈ 165 / 225 ms/s.
+Mono will be slower than CoreCLR on everything — re-measure (`QA-SWARM-ROUND5` step 7). Memory: the sort
 code is a few KB per plan (wells + looks), cached and shared by every sort swarm.
 
 ---
@@ -321,6 +328,38 @@ charge …`.
     (headless CoreCLR: ~1.0 / ~0.1 / ~0.13 ms per step; §4.1, §9.5). With the cell grown (8 swarms of
     each), record the total frame time — this cell is the overtune pass and is unprofiled.
 
+### 5.2 Round 5: the lossless grid and the evofate swarm (exact)
+
+The cell now holds FOUR models, one per band (§4): grid whales 430–560 u from the centre, field
+dragonflies 610–740, sort pufferfish 790–920, **evofate jellyfish 970–1120** (the rim, nearest the
+membrane). The Ecology log line names the model: `[Swarm] SwarmEvoFateFauna(Clone) (EvoFate) hatched as
+space …`.
+
+16. **Check the evofate asset first.** Select `Assets/_SO_Assets/Swarm Fauna/SwarmEvoFateFaunaConfig.asset`:
+    **Model = EvoFate**, **Evo Rule** = `SwarmEvoFateRule.json`. If the Console shows
+    `an EvoFate swarm needs SwarmFaunaConfigSO.EvoRule … Falling back to the field model`, the rule
+    asset did not import - the jellyfish you then see are FIELD swarms, and nothing below is evofate.
+17. **Find an evofate swarm.** From the Cell Selector (~980 u out) the first creatures you meet are the
+    three evofate jellyfish, grazing the Reed plants. Park beside one for 30 s.
+18. **What to look for — the evofate look.** The body is a jellyfish whose members never settle:
+    inside its bell each tadpole keeps moving on its own (the trained network drives it; the designed
+    pull only acts on a member that has wandered out of its place), so the interior reads as a living
+    swarm rather than as tiles. Elements stay sorted (shielded Charge bell members on the rim). The
+    whole body drifts a little while it feeds and sidles back to its plant when it has drifted half a
+    body away (§11.3). Members move in short spurts on alternate ticks - that cadence is the network's
+    own; a member visibly snapping back and forth every tick is the failure (`osc`, §11.5).
+19. **Compare the grid whale against round 4.** Fly to a grid whale (inner band). Morph it (~100 Mass
+    kills in a burst). After the morph the old Mass surplus now MOLTS into the new body's elements
+    (heart shrinks away, re-forms, ~1 s each) - it no longer clings to the new creature's edge as debris
+    (finding 17, §10).
+20. **Morph an evofate jellyfish** (~30 Space kills in a burst, a Sparrow is easiest). It re-forms as the
+    new majority's creature; the surplus molts; nothing dies you did not shoot.
+21. **Side by side:** park beside one of each of the four for 20 s and note which reads as most alive.
+    That is the question round 5 is for.
+22. **Profiler:** `SwarmFauna.Update` for a grown evofate jellyfish, a grown grid whale and the whole
+    grown cell. Headless CoreCLR per step: evofate jellyfish ~0.7 ms (SIMD) / ~1.6 (scalar - Unity's
+    Mono does not accelerate `Vector<T>`, so expect the scalar figure or worse), grid whale ~0.6 (G8).
+
 ---
 
 ## 6. Verification status
@@ -370,13 +409,32 @@ What was proved, and how:
   now also fails if a `SwarmFaunaConfigSO` sort default differs from the authored value
   (negative-controlled).
 
+- **Round 5 — the lossless grid (`SwarmGridCore.cs`, research `combo`) is compiled and RUN**
+  (`GridHarness.cs` G1–G11, all green, including G10 — after a morph the old majority's surplus molts
+  into the new body, composition error 0.04–0.05 against the pre-round-5 core's 0.72–0.84 — and G11,
+  zero self-inflicted deaths) and **scored with the research's unchanged scorer on its own 16-transition
+  yardstick** (`score_combo.py`, §10.4). Raw output: `Tools/Build/swarm_core_harness/score_combo_results.txt`.
+- **Round 5 — `SwarmEvoFateCore.cs` (research `evofate`) is compiled and RUN** (`EvoHarness.cs`
+  E1–E8, all green). **E1 is EXACT**: `evofate_fixture.py` has the research's own
+  `evofate_model.EvoFate` perceive and run its network on six random swarm states (849 members), and the
+  C# recomputes all 232 features and 35 outputs per member — worst error 3.0e-7 / 9.5e-7 (float32
+  rounding), on BOTH the SIMD and the scalar dot-product paths. The step itself draws random numbers,
+  so it is proven by DISTRIBUTION: the unchanged scorer on the yardstick, and swarm_feel (§11.5).
+- **The neighbour-hash fix (round 5) is in all four cores**: `SwarmCoreShared.NeighbourBuckets` — two of
+  the 27 cells around a member can hash to one bucket (0.5% of query cells), and every core counted that
+  bucket's members twice. Every harness test re-passes; the grid yardstick moved by noise only.
+- The glue type-check covers `SwarmEvoFateCore.cs` (nine files); `author_swarm_fauna.py --check` now
+  also fails unless the cell holds exactly 24 swarms and hosts all four models.
+
 **NOT verified — needs the editor:** that it compiles in Unity; that the prefabs import and the
 tadpole's spindle/heart/prism hierarchy is right after the strip; everything on screen in §5; the
 modelled volume ladder; Mono frame cost; the Cell Selector station. Tracked as `QA-SWARM-FAUNA`
 in `Docs/QA/QA_BACKLOG.md`. For the grid model additionally: that a grid swarm reads as a creature
 on screen at all, its Mono frame cost with 16 grid swarms grown, and the side-by-side comparison
 (§5.1) — `QA-SWARM-GRID`. For the sort model: that it reads as a creature with sorted tissues, that
-its molts read as re-forming rather than flicker, its Mono cost — `QA-SWARM-SORT`.
+its molts read as re-forming rather than flicker, its Mono cost — `QA-SWARM-SORT`. For round 5: that
+the evofate rule asset imports and the jellyfish read as alive, the grid's molts after a morph, and
+the Mono cost of the network — `QA-SWARM-ROUND5`.
 
 ---
 
@@ -513,6 +571,67 @@ Things the game port taught, for whoever iterates the field model:
     0.16) against the grid's 0.5–1.1, the field's 0.1–0.9 and Python sort's 1.4–4.1. The work is per
     MEMBER (one 3x3 well evaluation + a neighbour pass over a hash grid) with no grid and no
     assignment. Measured ZERO self-inflicted deaths over every C# run (64 scored runs + the harness).
+
+### 7.3 Findings from round 5 (the lossless grid and the evolved rule in the game)
+
+27. **The pre-round-5 grid "research mode" was not faithful hgrid2.** Porting combo forced a second
+    reading of hgrid2, and the earlier C# was missing four of its pieces: the MIGRANTS (a member stranded
+    in an unwanted cell walks to the nearest wanted one), `dmap_low`, the 60-step plan lock (it ran 30),
+    and `sigma_rel` (the fine bump width as 1.2 x the plan's OWN mean neighbour spacing - whale 2.81,
+    jellyfish 5.07 - where the port used a fixed 3.5). Finding 14's unexplained whale gap (C# 7.93 vs
+    Python 6.66) is plausibly this; with the pieces in, research-mode own-plan losses fall to 1.2-1.5
+    (whale) under combo. **For the research:** the per-plan `sigma_rel` is load-bearing and easy to drop.
+28. **combo ports cleanly and keeps hgrid2's feel.** Research mode under the unchanged scorer passes
+    15/16 at every seed on G16 and 16/16, 14/15, 14/16 on G8, against Python combo's 16/16, 16/16, 14/16
+    (G16) and 16/16, 15/16, 15/16 (G8). Every C# failure is a switch INTO Time or into Space sitting
+    just over the bar (8.0-9.2); the Python fails the same kind. Feel is unchanged from hgrid2 (jerk_rel
+    0.57, coherence 0.63, stuck 0, osc 0.03).
+29. **G8 costs half and scores the same.** At G = 8 (cell 12) the grid reads the same: game 12/13 at
+    every seed, own-plan 1.1-1.3 / 1.0 / 1.3-1.6 / 1.9-2.0, against G16's 12-13/13 and 1.0-1.2 / 0.8-1.0 /
+    1.2-1.3 / 2.0; grown cost 0.70-0.74 ms/step for the big bodies (G16 1.05-1.12) and 0.21-0.23 for the
+    small (G16 0.62-0.63). The coarse grid's job is the gross distribution; the fine morphogen carries the
+    shape. The game ships G8.
+30. **Finding 17 is gone.** After a morph the old majority's surplus now molts: mass -> space, the body
+    ends at composition error 0.045 with 0% strays against the old core's 0.840 and 41%. A swarm that is
+    SHORT after a morph (time -> space leaves 40 of 88) molts nothing it does not need and waits for food:
+    no element over its plan count, which is the lossless rule.
+31. **The one game failure is a regrowth PACE, not a composition error.** Game mode fails `time -> mass`
+    on 2-3 of 3 seeds (loss ~43): a 76-member dragonfly culled to Mass keeps ~9 members, and with laying
+    capped at 3 a step and held after the kills it reaches 115-158 of the whale's 192 in the yardstick's
+    240 steps. Research mode (uncapped, free laying) passes it. In play that is "a dragonfly turned whale
+    takes ~30 s of feeding to fill out", which is the funded-growth design, not a defect.
+32. **G2 reproduces exactly; its feel in the game had two traps, both of the research's own kind.** The
+    network and its perception match Python to float32 rounding (E1), and research mode lands on Python
+    evofate's feel to two decimals (jerk_rel 2.432 vs 2.435, jitter 2.562 vs 2.574, coherence 0.394 vs
+    0.401). But the GAME's swim broke it twice. (a) Drifting every member toward the swim target on every
+    step made a member G2 had just moved against the swim back up on its idle step: `osc` 0.355 (research
+    0.05) - exactly the "pulling on the idle steps reverses the motion" defect the research's `sync`
+    removed, re-entering through a game layer. Fix: the swim obeys sync (a member moves only on the steps
+    its network fires, x 2). (b) Station-keeping cancelled the body's collective drift, which is part of
+    the research's motion: members fell to half the research's speed and 13% of a whale's read as frozen
+    (`stuck`). Fix: a free zone (0.75 radii) inside which the body drifts as the network moves it, LATCHED
+    so it returns to half the zone before drifting again (unlatched, it parked on the edge and the swim
+    chattered on and off - fired-to-fired reversals, osc 0.19). Final game feel: osc 0.055, stuck 0.007.
+    **For the research:** any designed motion added to a fire-rate network must follow the fire mask, and
+    the network's "alive" includes whole-body drift - a host that holds the body still will make it read
+    dead.
+33. **evofate in the game is more accurate than in the research.** Game mode passes 13/13 at every seed
+    (own-plan 1.9-2.1 / 3.2-3.5 / 2.3-2.4 / 6.8-6.9) against research mode's 10-11/13 and Python's 11-12/13:
+    the one-domain plan removes the region term the evolved rule was weakest at (finding 15, a third time).
+34. **evofate is the dearest model by a factor of four, and the network is 80-90% of it.** 0.74 ms/step
+    for a grown jellyfish and 1.69 for a whale (CoreCLR, SIMD), **1.58 / 3.73 on the scalar path** -
+    which is what Unity's Mono runs, since it does not hardware-accelerate `Vector<T>`. Every step half the
+    members run a 232-192-192-35 MLP: ~14 us a pass with SIMD, ~36 without. Python evofate (torch,
+    batched) is 5.6 ms/step. The cheapest further win is not SIMD but a smaller network (a distilled
+    student) or a lower fire rate in the game; the research owns both.
+35. **The neighbour hash double-counted.** Every core walks the 27 cells around a member through a hash
+    of 4,096 buckets; two of those cells can share a bucket (0.5% of query cells), and the member's
+    neighbours there were counted twice - in perception, separation, collision. Fixed once in
+    `SwarmCoreShared.NeighbourBuckets`. Fixing it also exposed a latent field-core bug: its body parked
+    exactly ON its re-aim threshold (it cruises until 0.5 radii, then stops), so any change in its
+    trajectory flipped it across and it re-aimed every few steps (harness 6b: 11.9 deg a minute). The
+    arrival is now latched (re-aim only past twice the hold). **Finding 13 has a second half: a hold
+    threshold needs hysteresis, or the body parks on it.**
 
 ## 8. The second species: the grid swarm (`SwarmGridCore`, research `hgrid2`)
 
@@ -788,3 +907,178 @@ minute); the band.
 | `Tools/Build/swarm_core_harness/SortHarness.cs` | the asserted tests (S0–S10) + the state export |
 | `Tools/Build/swarm_core_harness/score_sort.py` | the unchanged-scorer comparison with the Python sort, the grid and field feel, the lossless count (needs torch, numpy, scipy; reads the research code off its branch) |
 | `Tools/Build/swarm_core_harness/score_sort_results.txt` | the raw 8-seed output behind §9.5 |
+
+---
+
+## 10. Round 5: the grid swarm made lossless (`SwarmGridCore`, research `combo`)
+
+### 10.1 What changed
+
+The grid swarm's known flaw (finding 17) was that a morph left the old majority's surplus clinging to
+the new body: hgrid2 corrects composition by withering misplaced surplus, which the game forbids
+(§8.3), so the game had no corrector at all. The research's `combo` (Tools/NCA/combo_model.py) makes
+hgrid2 lossless by MOLTING instead, and that is now the grid core:
+
+| piece | what it does |
+|---|---|
+| molt clock | every member carries its own rate factor (0.5-1.5, seeded); a member of a class in SURPLUS accumulates toward a molt at `MoltRate` x its factor, so molts are staggered, never a wave |
+| quotas | per step, at most the class's EXCESS may molt out and at most each class's DEFICIT may molt in; a guard keeps a class from molting below its want; slack 2 for elements a plan wants <= 2 of |
+| ratio target 2 | spare capacity takes the body's GLOBAL residual element mix, so a body that is short stays proportionate |
+| lay cap | no egg while the live count already equals the plan's whole grid integral |
+| migrants | a member stranded where its class is not wanted walks to the nearest cell that wants it (k_mig 1, threshold 0.3, reach 40) |
+| sigma_rel | the fine bump width is 1.2 x the plan's own mean neighbour spacing (finding 27) |
+| `orphan_proxy`, `transfer2` | ported, **inert with one domain**: they steer a member whose class the plan has no room for toward a domain proxy, and every game plan holds all four elements in its one domain, so no class is ever an orphan |
+
+The game animates a molt like the sort core (`MoltBegan` .. `MoltDone` over `GridMoltSteps` = 10: the
+heart shrinks away and re-forms as the new element). Hunger still never kills (§8.3).
+
+### 10.2 Order of one step
+
+Python's order, kept: decide plan -> coarse step -> lay (capped) -> molt corrector -> fine morphogen ->
+migrants. The molt corrector replaces the legacy hunger loop whenever `GridLossless` is on.
+
+### 10.3 G = 8, and why the cell ships it
+
+`GridSize` 8 with `GridCell` 12 covers the same volume as 16 x 6 with an eighth of the cells. Measured
+(§10.4, finding 29) it scores the same in game mode and costs ~0.7 ms/step for a whale against ~1.1.
+The coarse grid only has to say WHERE each element is short; the fine morphogen, whose width is per
+plan (sigma_rel), carries the shape. **Default: G8**, and the half of the grid CPU it frees is what pays
+for the evofate band (§11.4).
+
+### 10.4 Proof
+
+`python3 Tools/Build/swarm_core_harness/score_combo.py --seeds 7,23,41 --samples 3 --modes
+research16,research8,game16,game8` - the shipped C# runs the research's own yardstick (`swarm_eval`:
+4 own-plan tests + 12 switches by `cull_to`, 3 samples each, majority rule, loss-8 bar) and the records
+are scored by the UNCHANGED `swarm_nca.swarm_loss` and `swarm_eval._passes`. Game mode is scored
+against the one-domain plans. Python combo's numbers are its own published scorecard (same seeds).
+
+| | seed 7 | seed 23 | seed 41 | own-plan (whale / jellyfish / pufferfish / dragonfly), seed 7 |
+|---|---|---|---|---|
+| Python combo G16 | 16/16 | 16/16 | 14/16 | |
+| Python combo G8 | 16/16 | 15/16 | 15/16 | 2.26 / 2.33 / 3.23 / 3.46 |
+| **C# research16** | 15/16 | 15/16 | 15/16 | 1.44 / 1.21 / 2.04 / 3.84 |
+| **C# research8** | 16/16 | 14/15 | 14/16 | 1.26 / 1.19 / 2.29 / 4.31 |
+| **C# game16** | 12/13 | 12/13 | 13/13 | 1.15 / 0.95 / 1.31 / 1.98 |
+| **C# game8** (ships) | 12/13 | 12/13 | 12/13 | 1.08 / 0.99 / 1.60 / 1.92 |
+
+(`/13` and `/15`: the yardstick marks a switch n/a when the cull would leave fewer than 6 members.
+Game fails are all `time -> mass`, finding 31.) **Zero self-inflicted deaths** over all 576 records.
+**Feel** (swarm_feel, grown bodies): game8 speed 0.207, jerk_rel 0.567, coherence 0.648, jitter 0.875,
+stuck 0, osc 0.029 — inside the organic band like hgrid2. **Harness:** G1–G11 green; G9 costs (CoreCLR,
+grown, game): G16 1.12 / 1.05 / 0.63 / 0.62, **G8 0.70 / 0.74 / 0.23 / 0.21**, pre-round-5 0.82 / 0.75 /
+0.40 / 0.38 ms/step (pufferfish / whale / jellyfish / dragonfly). Raw: `score_combo_results.txt`.
+
+### 10.5 Files
+
+| file | role |
+|---|---|
+| `Assets/.../Swarm/SwarmGridCore.cs` | the combo corrector (`MoltCorrector`, `RatioTarget2`, `SteerDomains`, `Migrate`, `SigmaOf`, the lay cap) |
+| `Assets/.../Swarm/SwarmFaunaConfigSO.cs` | `GridSigmaRel`, `GridMigrate`, `GridLossless`, `GridMoltRate`, `GridMoltSteps`, `GridLayCap`; `GridSize` 8 / `GridCell` 12 |
+| `Tools/Build/swarm_core_harness/GridHarness.cs` | G5 (the corrector), G9 (cost at G16 / G8 / legacy), G10 (finding 17 before/after), G11 (zero self-deaths), the yardstick export |
+| `Tools/Build/swarm_core_harness/score_combo.py` | the unchanged-scorer yardstick for every C# mode (grid and evofate) |
+
+---
+
+## 11. The fourth species: the evofate swarm (`SwarmEvoFateCore`, research `evofate`)
+
+### 11.1 What it is
+
+The lead liked the research's EVOLVED rule (a trained network, G2, plus a CMA-ES behaviour genome)
+for its motion, and it did not sort: its outlines were right and its elements sat in the wrong places.
+`evofate` gives it a FATE — sort's mechanism — and that is this core:
+
+| layer | source | what it does |
+|---|---|---|
+| motion | **learned** - G2's trained weights (`results/swarm_coevo_g2/rule.pt`, exported float32 as `results/live/evo_rule.json`; the evo genome's output-gain switch is off, so the weights are G2's own) | every step a random half of the members FIRE: each perceives its neighbours within 8 voxels (232 numbers: own state + element + hatched, the same- and other-domain neighbour means, the gradient of every channel, two densities, the swarm's headcount and element mix) and a 232-192-192(+residual)-35 MLP writes its 32 state channels and proposes its velocity |
+| fate | designed (sort's code) | each member commits to one positional-information well of its type and is pulled up it - **only outside a dead zone** (energy 1.5; Time 0.3x), **only on its fired steps** (x2: `sync`), never pushed away from its well while outside the dead zone (the rectifier); weak differential adhesion (sort's matrix x 0.35); its visual channels set to its type's look |
+| composition | designed (sort's) | the joint lay homeostat, cross-laying, molting + transfer; G2's own laying is off and its learned death suppressed |
+
+The weights ship as `Assets/_SO_Assets/Swarm Fauna/SwarmEvoFateRule.json` (~470 KB, a TextAsset on
+`SwarmFaunaConfigSO.EvoRule`), re-packed by `author_swarm_fauna.py` from the research branch;
+`SwarmEvoRule.Parse` reads it once and every evofate swarm shares it. A config without it logs an error
+and falls back to the field model (fail loud, never silent). The MLP is plain C#: `Vector<float>`
+dot products where the runtime accelerates them (CoreCLR) and a 4-way unrolled scalar loop where it does
+not (Unity's Mono); both paths are proven exact (§11.5).
+
+### 11.2 What the game changes, and why
+
+| | research | game | why |
+|---|---|---|---|
+| domains | three, as regions | ONE (perception sees one domain) | one-colour law; it made the model more accurate, finding 33 |
+| egg loss | an egg G2 has not hatched in 6 steps (or with no live neighbour) VANISHES | it HATCHES | it was paid for with eaten mass - a silent egg loss would be mass leaving the world |
+| laying | free | funded + capped + held after kills (sort's) | conserved mass; a morph must stay reachable |
+| molts | instant | animated over `SortMoltSteps` | continuity of existence |
+| frame | fixed | the network perceives and steers in BODY coordinates; the body turns to its heading | the creature swims nose-first, and G2 must see the frame it was trained in |
+| wells | frame 0 | ride the plan's animation | the body animates |
+| swim | none | sync'd to the fire mask; a latched free zone around the goal | finding 32 |
+| vessel reaction | none | the shared predator layer (`SwarmCoreShared.FleeFrom`) | so a comparison compares bodies, not reactions |
+
+### 11.3 The swim (finding 32)
+
+Outside 1.5 radii of its goal the body swims nose-first toward it. Inside that, it does not station-keep
+continuously: within `HoldFree` (0.75 radii) it drifts as its network moves it; once it has drifted past
+that it sidles back to half of it, then drifts again. Every swim displacement is applied to a member only
+on the steps its network fires (x 1 / fire rate), the research's own `sync` rule.
+
+### 11.4 How many, and why three
+
+The brief: as many evofate swarms as cost allows, at least one, without raising the cell's 24. The budget
+used is round 4's as-seeded cell (~100 ms of CPU per second of game, CoreCLR). Round 5's G8 grid frees
+~36 ms/s; an evofate jellyfish costs ~16 ms/s on the scalar path Mono will run (~7 with SIMD). Three fit
+(the cell lands at ~110 ms/s scalar, ~85 SIMD - §4.1); four would put it at ~126. They start as
+**jellyfish** - the cheapest body (88 members) for the dearest model, and the one creature no other band
+starts as - and take the swarms from the grid (-2, the costliest band before) and sort (-1). A jellyfish
+that morphs into a whale costs ~2.3x as much; the worst case is in §4.1.
+
+### 11.5 Proof
+
+**Exact (E1):** `evofate_fixture.py` builds six random swarm states (40-260 members, random elements,
+three domains, 15% eggs, random state), and the research's own `evofate_model.EvoFate` computes every
+member's perception (`perceive` + the glob row exactly as `_g2` builds it) and network output. The C#
+(`SwarmEvoFateCore.FeaturesOf` + `SwarmEvoRule.Forward` on the shipped asset) reproduces them for all 849
+members: **features within 3.0e-7, outputs within 9.5e-7 (6e-7 relative)** - SIMD and scalar paths both.
+This proves the weights, their layout, the asset round trip and the perception.
+
+**Distribution** (`score_combo.py --modes researchEvo,gameEvo`, unchanged scorer, the research's yardstick):
+
+| | seed 7 | seed 23 | seed 41 | own-plan (whale / jellyfish / pufferfish / dragonfly), seed 7 |
+|---|---|---|---|---|
+| Python evofate (published) | 12/13 | 11/13 | 12/13 | 2.95 / 3.65 / 1.58 / 6.28 |
+| **C# research mode** | 11/13 | 11/13 | 10/13 | 2.47 / 3.28 / 1.90 / 5.78 |
+| **C# game mode** (ships) | **13/13** | **13/13** | **13/13** | 2.02 / 3.23 / 2.33 / 6.81 |
+
+The same three switches are n/a in both. Python fails `time -> space` at every seed (8.9-10.5) and so
+does the C# (8.6-11.0); the C#'s other fails are switches into Time sitting at the bar (7.9-9.2) where
+Python's sat just under it (7.1-7.9) - different random streams around the same bar.
+
+**Feel** (swarm_feel, grown bodies, mean over plans and seeds):
+
+| | speed | jerk_rel | planar | coherence | jitter | phase | stuck | osc |
+|---|---|---|---|---|---|---|---|---|
+| Python evofate | 0.105 | 2.435 | 0.398 | 0.401 | 2.574 | 0.067 | 0.000 | 0.044 |
+| C# evofate, research | 0.107 | 2.432 | 0.354 | 0.394 | 2.562 | 0.155 | 0.000 | 0.050 |
+| **C# evofate, game** | 0.153 | 2.653 | 0.455 | 0.274 | 2.666 | 0.246 | 0.007 | 0.055 |
+| C# evofate, game, before finding 32's fixes | 0.186 | 2.392 | 0.458 | 0.141 | 1.329 | 0.379 | 0.000 | **0.355** |
+
+**Lossless:** zero self-inflicted deaths over all 288 records and every harness run; in game mode no egg
+is ever lost (E4 counts it). **Harness:** E1-E8 green (exactness, growth in both modes, funded laying,
+selective-kill morphs on four transitions with zero deaths and zero eggs lost, swimming, the vessel
+reaction, cost, feel). **Cost (E7, grown, game):** pufferfish 1.57 / whale 1.69 / jellyfish 0.74 /
+dragonfly 0.77 ms/step with SIMD (the network 80%), **3.49 / 3.73 / 1.58 / 1.33 scalar** (the network
+89%); Python evofate 5.6. Raw: `score_combo_results.txt`.
+
+**Colliders:** unchanged — one heart and one body prism per member, cap 192; the cell stays at 5,008
+always-on hearts (§4.1).
+
+### 11.6 Files
+
+| file | role |
+|---|---|
+| `Assets/.../Swarm/SwarmEvoFateCore.cs` | the core, `SwarmEvoFateParams`, `SwarmEvoRule` (the network + its parser) |
+| `Assets/_SO_Assets/Swarm Fauna/SwarmEvoFateRule.json` | the trained weights (authored, never hand-edited) |
+| `Assets/_SO_Assets/Swarm Fauna/SwarmEvoFateFaunaConfig.asset` | `Model: 3`, `EvoRule`, the evofate fields; code + composition read the Sort fields |
+| `Assets/_Prefabs/FloraAndFauna/SwarmEvoFateFauna.prefab` | the evofate anchor |
+| `Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Rim *` | the rim band's swarm config and its Reed feeding ground |
+| `Tools/Build/swarm_core_harness/EvoHarness.cs` | E1-E8 + the yardstick records (`SWARM_EVO_GAME` / `SWARM_EVO_RESEARCH` override params; `SWARM_EVO_PROBE=1` prints where reversals come from) |
+| `Tools/Build/swarm_core_harness/evofate_fixture.py` | the exactness fixture from the research's own model |

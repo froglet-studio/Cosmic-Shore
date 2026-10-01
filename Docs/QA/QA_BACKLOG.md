@@ -574,6 +574,57 @@ new body 30 s after a morph without molting · a member that dies with no shot f
 fed (a self-inflicted death - the model is meant to have none) · a morph that flips back · a
 `NullReferenceException` from `SwarmSortCore`/`SwarmFauna` · tadpoles popping in or out.
 
+### QA-SWARM-ROUND5 ⬜ — the lossless grid swarm and the evolved-rule (evofate) swarm have never been opened
+
+**Source:** branch `cece/swarm-fauna-game` (authored headless; never compiled in Unity). Full
+reference: `Docs/SWARM_FAUNA.md` §10 (lossless grid), §11 (evofate), exact steps §5.2. **Why it
+matters:** two changes nobody has seen. (1) The GRID swarm now runs the research's `combo` - a member
+of a surplus element MOLTS into a missing one instead of lingering, so a grid morph no longer leaves
+the old majority clinging to the new body as debris (finding 17) - on an 8^3 grid by default (half the
+CPU of 16^3, same measured accuracy). (2) A FOURTH species: the EVOFATE swarm, whose every tadpole is
+moved by a trained neural network (the research's evolved G2 rule) with a small designed pull that
+sorts it - the most "alive" texture of the four, and the most expensive. It lives in a new outermost
+band (the rim, 970-1120 u); the cell still holds 24 swarms (grid 6, field 8, sort 7, evofate 3).
+Headless proof: both cores compile, run and score under the research's unchanged scorer; the
+network reproduces Python to float32 rounding; zero self-inflicted deaths; nothing about Unity is
+proven. Run `QA-SWARM-FAUNA` first.
+
+1. Let Unity import; confirm no compile errors naming `SwarmEvoFateCore`, `SwarmEvoRule`,
+   `SwarmGridCore`, `SwarmCoreShared` or `SwarmFauna`. Select
+   `Assets/_SO_Assets/Swarm Fauna/SwarmEvoFateFaunaConfig.asset`: **Model = EvoFate** and **Evo Rule**
+   points at `SwarmEvoFateRule.json` (a ~470 KB text asset); `SwarmEvoFateFauna.prefab`'s `config`
+   points at the config, and `Swarm Rim Space Swarm Fauna Config Data` points at that prefab.
+   `SwarmGridFaunaConfig.asset`: **Grid Size 8, Grid Cell 12, Grid Lossless on**.
+2. Enable the **Ecology** log channel. Enter the Swarm cell (Cell Selector -> Swarm). Hatch lines:
+   jellyfish `(EvoFate)` x3, pufferfish `(Sort)` x7, dragonflies `(Field)` x8, whales `(Grid)` x6. No
+   line saying an EvoFate swarm "needs SwarmFaunaConfigSO.EvoRule" (that is the missing-asset fallback).
+3. The first swarms you meet flying inward from the Cell Selector (~980 u out) are the evofate
+   jellyfish. Park beside one for 30 s while it grazes the Reed plants. Then fly on past ~920 u (sort
+   pufferfish), ~740 u (field dragonflies) and ~560 u (grid whales) and park beside one of each.
+4. Morph an evofate jellyfish: switch to a Sparrow (Vessel Changer) and kill ~30 of its Space
+   members in a burst (it becomes a pufferfish if Charge then leads). Watch the 30 s after.
+5. Morph a grid whale (~100 Mass in a burst). Watch the 30 s after: the old Mass surplus should
+   MOLT into the new body's elements (heart shrinks away, re-forms, ~1 s each), not linger at the edge.
+6. Fly straight through an evofate jellyfish without firing.
+7. Profiler: `SwarmFauna.Update` for a grown evofate jellyfish vs a grown grid whale; total frame
+   time with the cell grown. Headless CoreCLR: an evofate jellyfish ~0.7 ms/step (SIMD) / ~1.6
+   (scalar - what Unity's Mono runs); a grid whale ~0.6.
+
+**PASS:** no compile errors; an evofate jellyfish grows from a knot into a recognisable jellyfish
+whose members visibly SWARM (they keep moving on their own inside the body - not riding fixed places
+like the field/sort bodies) while its elements stay sorted; after its morph (step 4) it re-forms as
+the new creature and surplus members molt, with nothing dying that you did not shoot; after the grid
+morph (step 5) the surplus molts away within ~30 s and no debris clings to the new whale; both
+react to a ship (step 6); no exceptions. Record the frame cost and the lead's verdict on which of the
+four reads as most alive.
+**FAIL:** any compile error · the missing-rule error in step 2 · an evofate swarm that stays a
+formless cloud after a minute of feeding · evofate members jittering in place every other step (the
+"jerky" signature the research removed with `sync`) · grid debris still clinging 30 s after a morph ·
+a member dying with no shot fired and the swarm fed · a morph that flips back · a
+`NullReferenceException` from `SwarmEvoFateCore`/`SwarmGridCore`/`SwarmFauna` · tadpoles popping in or
+out · a frame cost that makes the cell unplayable (record it; the dial is the `swarms` column of
+`REGIONS` in `Tools/Build/author_swarm_fauna.py` - keep the total at 24).
+
 ### QA-PALETTE-SHIELDED ⬜ — the four prism tiers across all three domains
 **Source:** PRs #644, #705 (danger prisms now paint on the domain's **shielded base
 face**), #707 (gold's shielded prism brought into the pastel family; the danger tier
