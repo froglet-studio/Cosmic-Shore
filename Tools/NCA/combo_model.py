@@ -36,12 +36,41 @@ class ComboCfg(hm.Cfg):
     molt_guard: int = 1         # never let a molt bring a non-major element level with the plan's major
     transfer: int = 0           # surplus with no molt target in its domain becomes an outline filler
     lay_cap: float = 0.0        # >0: no laying once live headcount >= lay_cap x plan headcount
-    grid_every: int = 1         # (cost) the coarse grid step every k steps; the fine layer runs every step
+    cache: int = 1              # (cost) exact cache of the coarse plan field per (plan, frame, cell-snapped centre)
+
+
+class CachedOracle(hm.Oracle2):
+    """Exact cache of the coarse plan field. With quant=1 the grid centre snaps to whole cells, and the
+    field is a pure function of (plan, frame, centre) - so a swarm that holds still between frames reuses
+    the same field instead of re-splatting ~80 channels of the plan every step. Bit-identical output."""
+
+    def __init__(self, targets, cfg, size=256):
+        super().__init__(targets, cfg)
+        self.cache, self.size, self.hits, self.miss = {}, size, 0, 0
+
+    def __call__(self, sw, centres, live, train=False):
+        kinds, frames = self.frame_of(sw)
+        outs = []
+        for b, (k, f) in enumerate(zip(kinds, frames)):
+            key = (k, f, tuple(round(float(x), 3) for x in centres[b]))
+            g = self.cache.get(key)
+            if g is None:
+                self.miss += 1
+                g = self.pf.field([k], [f], centres[b:b + 1])[0]
+                if len(self.cache) >= self.size:
+                    self.cache.pop(next(iter(self.cache)))
+                self.cache[key] = g
+            else:
+                self.hits += 1
+            outs.append(g)
+        return torch.stack(outs)
 
 
 class ComboBoid(hm.Boid2):
     def __init__(self, world, cfg: ComboCfg, targets=None):
         super().__init__(world, cfg, targets)
+        if cfg.cache:
+            self.field_fn = CachedOracle(self.targets, cfg)
         self.molts = 0
 
     # --- composition: molt instead of starve -------------------------------------------------------
