@@ -104,7 +104,7 @@ def build_swarm(results_root):
     import swarm_nca
     passed, _ = swarm_nca.tests_passed(summ)
     ov = meta.get("overrides", {})
-    fixes = [lab for key, lab in (("sticky_plan", "sticky switch labels"), ("learned_lay", "a learned laying gate"),
+    fixes = [lab for key, lab in (("sticky_plan", "sticky switch labels"), ("learned_lay", "a learned laying gate"), ("learned_egg", "parents choosing some eggs' element"),
                                   ("w_con", "a contrastive loss"), ("scale_inv", "a scale-invariant loss"),
                                   ("w_over", "an overflow penalty")) if str(ov.get(key, "0")) not in ("0", "0.0")]
     note = (f"{passed} of 8 tests pass (each seeding closest to its own plan, and each switched swarm closest to its new plan). "

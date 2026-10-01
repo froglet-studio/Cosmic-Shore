@@ -667,6 +667,21 @@ which use the old scorer, report 5/8; the strict scorer gives both 0/8. Two fixe
 | g2 | f2 + `min_body=76`, `w_body=20` |
 | g5 | f5 + `min_body=76`, `w_body=20` |
 
+**A new behavior: a parent may choose its egg's element** (`learned_egg`, `p_cross`). Training only
+adjusts the weights of one fixed rule; the rule cannot invent an action it has no actuator for. Until
+now an egg was always its parent's element, except for a rare random mutation, so the only way to
+change a swarm's mix was to lay more of one element or let another die. That is why the switch tests
+drift. With `learned_egg`, four hidden channels (26–29) become the parent's preference over its egg's
+element. A share `p_cross` of eggs (default 0.1: "here and there") take the element the parent picks;
+the rest breed true. Domain always breeds true. The pick gets a gradient the same way the laying gate
+does: a zero-valued straight-through score of the chosen element rides on the child. Off by default,
+so every earlier run is unchanged.
+
+| Tag | Fixes |
+|---|---|
+| h1 | e8 (sticky + scale-invariant + overflow) + `learned_egg` |
+| h2 | g2 (sticky + laying gate + body floor + overflow) + `learned_egg` |
+
 **E4 diverged, and the logs said why.** Its loss rose from about 100 to 450. The contrastive hinge
 (0–11) and the mix error (0.00–0.42) stayed small; the divergence itself grew to 50–97, with every
 sample at the 280-slot cap. Grown swarms run 200–280 tadpoles against plans of 76–192, and

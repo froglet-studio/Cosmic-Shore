@@ -186,11 +186,15 @@ class World:
     learned_lay: int = 0      # 1: the rule gates its own laying (channel LAY); the gate gets a gradient
     lay_gain: float = 4.0     # gate q = sigmoid(lay_gain * s[LAY] + lay_bias); at s = 0 the gate is ~0.95
     lay_bias: float = 3.0
+    learned_egg: int = 0      # 1: a parent may CHOOSE its egg's element (channels EGG, softmax); the choice gets a gradient
+    p_cross: float = 0.1      # learned_egg: share of eggs whose element the parent chooses (the rest breed true);
+                              # "a bit of reproduction of different elements here and there". Domain always breeds true.
 
 
 C = 32                        # channels: 0 hatch | 1-3 facing | 4-6 prism | 7-9 tier | 10-11 spindle | 12-30 hidden | 31 death
 A, FAC, PR, TI, SP, DIE = 0, slice(1, 4), slice(4, 7), slice(7, 10), slice(10, 12), 31
 LAY = 30                      # (learned_lay only) the rule's laying gate; otherwise a hidden channel
+EGG = slice(26, 30)           # (learned_egg only) a parent's preference over its egg's element; otherwise hidden
 S_MAX = 1e3                   # state guard: never reached by a healthy rule; stops an overflow turning into NaN
 DIE_AT = 1.0                  # a hatched tadpole whose death channel passes this dies (and leaves a crystal)
 
@@ -420,15 +424,24 @@ class SwarmRule(nn.Module):
         W = self.world
         B, N, _ = sw.pos.shape
         q = torch.sigmoid(W.lay_gain * sw.s[:, :, LAY].reshape(-1) + W.lay_bias) if W.learned_lay else None
-        laid = self._lay(sw, gi, gj, gen, None if q is None else q.detach())
-        if q is not None and laid:
-            child = torch.cat([b * N + c for b, c, _ in laid]); par = torch.cat([b * N + p for b, _, p in laid])
+        pe = torch.softmax(sw.s[:, :, EGG].reshape(B * N, 4), -1) if W.learned_egg else None
+        laid = self._lay(sw, gi, gj, gen, None if q is None else q.detach(), None if pe is None else pe.detach())
+        if not laid or (q is None and pe is None):
+            return
+        child = torch.cat([b * N + c for b, c, *_ in laid]); par = torch.cat([b * N + p for b, _, p, *_ in laid])
+        dl = torch.zeros(len(child), dtype=sw.s.dtype)
+        if q is not None:
             qp = q[par]
-            contrib = torch.zeros(B * N, dtype=q.dtype).index_add(0, child, (qp - qp.detach()) / qp.detach().clamp(min=0.1))
-            sw.bw = sw.bw + contrib.view(B, N)
+            dl = dl + (qp - qp.detach()) / qp.detach().clamp(min=0.1)
+        if pe is not None:
+            # score function of the CHOSEN element, for the eggs whose element the parent chose
+            crossed = torch.cat([x for *_, x, _ in laid]); chosen = torch.cat([y for *_, y in laid])
+            pc = pe[par, chosen]
+            dl = dl + crossed.to(dl.dtype) * (pc - pc.detach()) / pc.detach().clamp(min=0.05)
+        sw.bw = sw.bw + torch.zeros(B * N, dtype=dl.dtype).index_add(0, child, dl).view(B, N)
 
     @torch.no_grad()
-    def _lay(self, sw: Swarm, gi, gj, gen, q):
+    def _lay(self, sw: Swarm, gi, gj, gen, q, pe=None):
         W = self.world
         B, N, _ = sw.pos.shape
         laid = []
@@ -455,6 +468,11 @@ class SwarmRule(nn.Module):
             sw.pos[b, slots] = sw.pos[b, parents].detach() + W.r_bud * dirn
             sw.s[b, slots] = 0.0
             e = sw.elem[b, parents].clone()
+            crossed = torch.zeros(k, dtype=torch.bool); chosen = e.clone()
+            if pe is not None:
+                crossed = torch.rand(k, generator=gen) < W.p_cross
+                chosen = torch.multinomial(pe[b * N + parents], 1, generator=gen).squeeze(1)
+                e = torch.where(crossed, chosen, e)
             mut = torch.rand(k, generator=gen) < W.p_mut
             if mut.any():
                 shift = torch.randint(1, 4, (int(mut.sum()),), generator=gen)
@@ -465,7 +483,7 @@ class SwarmRule(nn.Module):
             sw.active[b, slots] = True
             sw.hatched[b, slots] = False
             sw.age[b, slots] = 0
-            laid.append((b, slots, parents))
+            laid.append((b, slots, parents, crossed, chosen))
         return laid
 
 
@@ -888,6 +906,8 @@ class TrainCfg:
     learned_lay: int = 0
     lay_gain: float = 4.0
     lay_bias: float = 3.0
+    learned_egg: int = 0
+    p_cross: float = 0.1
     rel_elem: int = 0
     w_mix: float = 0.0
     w_con: float = 0.0
@@ -911,7 +931,8 @@ def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
 
 def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None):
     os.makedirs(cfg.run, exist_ok=True)
-    world = replace(world, learned_lay=cfg.learned_lay, lay_gain=cfg.lay_gain, lay_bias=cfg.lay_bias)
+    world = replace(world, learned_lay=cfg.learned_lay, lay_gain=cfg.lay_gain, lay_bias=cfg.lay_bias,
+                    learned_egg=cfg.learned_egg, p_cross=cfg.p_cross)
     L = replace(L, rel_elem=cfg.rel_elem, w_mix=cfg.w_mix, w_con=cfg.w_con, con_margin=cfg.con_margin, scale_inv=cfg.scale_inv,
                 w_over=cfg.w_over, over_band=cfg.over_band, min_body=cfg.min_body, w_body=cfg.w_body)
     targets = load_targets()
