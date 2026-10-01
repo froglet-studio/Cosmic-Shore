@@ -228,6 +228,9 @@ def load_model(spec):
     if kind == "sort":
         import sort_model as sm
         return sm.load(path)
+    if kind == "sortfeel":
+        import sortfeel_model as fm
+        return fm.load(path)
     if kind == "posinfo":
         import posinfo_rule as pr
         return pr.load(path)

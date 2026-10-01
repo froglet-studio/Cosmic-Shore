@@ -1,0 +1,578 @@
+{
+ "plan": {
+  "mass": {
+   "n": 192,
+   "planar": 0.4322916567325592,
+   "nn_mean": 2.806,
+   "nn_cv": 0.15
+  },
+  "space": {
+   "n": 88,
+   "planar": 0.375,
+   "nn_mean": 5.065,
+   "nn_cv": 0.403
+  },
+  "charge": {
+   "n": 179,
+   "planar": 0.6871508359909058,
+   "nn_mean": 3.493,
+   "nn_cv": 0.312
+  },
+  "time": {
+   "n": 76,
+   "planar": 0.4868420958518982,
+   "nn_mean": 4.695,
+   "nn_cv": 0.232
+  }
+ },
+ "published": {
+  "mass": {
+   "n": 181,
+   "planar": 0.691,
+   "flat_at_boundary": 0.592,
+   "share_boundary": 0.68,
+   "flat_in_shell": 0.24,
+   "planar_boundary": 0.602,
+   "planar_interior": 0.892,
+   "planar_shell": 0.652,
+   "nn_mean": 2.131,
+   "nn_cv": 0.257
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.41,
+   "flat_at_boundary": 0.882,
+   "share_boundary": 0.916,
+   "flat_in_shell": 0.176,
+   "planar_boundary": 0.395,
+   "planar_interior": 0.4,
+   "planar_shell": 0.286,
+   "nn_mean": 3.223,
+   "nn_cv": 0.466
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.888,
+   "flat_at_boundary": 0.327,
+   "share_boundary": 0.396,
+   "flat_in_shell": 0.227,
+   "planar_boundary": 0.731,
+   "planar_interior": 0.989,
+   "planar_shell": 0.791,
+   "nn_mean": 2.229,
+   "nn_cv": 0.324
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.597,
+   "flat_at_boundary": 0.558,
+   "share_boundary": 0.667,
+   "flat_in_shell": 0.372,
+   "planar_boundary": 0.5,
+   "planar_interior": 0.667,
+   "planar_shell": 0.889,
+   "nn_mean": 3.012,
+   "nn_cv": 0.334
+  }
+ },
+ "no_adhesion": {
+  "mass": {
+   "n": 181,
+   "planar": 0.751,
+   "flat_at_boundary": 0.566,
+   "share_boundary": 0.619,
+   "flat_in_shell": 0.235,
+   "planar_boundary": 0.688,
+   "planar_interior": 0.9,
+   "planar_shell": 0.696,
+   "nn_mean": 1.859,
+   "nn_cv": 0.143
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.831,
+   "flat_at_boundary": 0.855,
+   "share_boundary": 0.88,
+   "flat_in_shell": 0.232,
+   "planar_boundary": 0.808,
+   "planar_interior": 1.0,
+   "planar_shell": 0.762,
+   "nn_mean": 1.826,
+   "nn_cv": 0.205
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.947,
+   "flat_at_boundary": 0.294,
+   "share_boundary": 0.325,
+   "flat_in_shell": 0.237,
+   "planar_boundary": 0.855,
+   "planar_interior": 0.99,
+   "planar_shell": 0.884,
+   "nn_mean": 1.873,
+   "nn_cv": 0.205
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.819,
+   "flat_at_boundary": 0.61,
+   "share_boundary": 0.597,
+   "flat_in_shell": 0.305,
+   "planar_boundary": 0.837,
+   "planar_interior": 0.571,
+   "planar_shell": 1.0,
+   "nn_mean": 2.016,
+   "nn_cv": 0.251
+  }
+ },
+ "symmetric_adhesion": {
+  "mass": {
+   "n": 181,
+   "planar": 0.669,
+   "flat_at_boundary": 0.587,
+   "share_boundary": 0.68,
+   "flat_in_shell": 0.256,
+   "planar_boundary": 0.577,
+   "planar_interior": 0.846,
+   "planar_shell": 0.674,
+   "nn_mean": 2.134,
+   "nn_cv": 0.259
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.361,
+   "flat_at_boundary": 0.967,
+   "share_boundary": 0.94,
+   "flat_in_shell": 0.167,
+   "planar_boundary": 0.372,
+   "planar_interior": 0.0,
+   "planar_shell": 0.238,
+   "nn_mean": 3.128,
+   "nn_cv": 0.469
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.899,
+   "flat_at_boundary": 0.309,
+   "share_boundary": 0.373,
+   "flat_in_shell": 0.224,
+   "planar_boundary": 0.746,
+   "planar_interior": 0.99,
+   "planar_shell": 0.791,
+   "nn_mean": 2.224,
+   "nn_cv": 0.354
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.597,
+   "flat_at_boundary": 0.581,
+   "share_boundary": 0.694,
+   "flat_in_shell": 0.372,
+   "planar_boundary": 0.5,
+   "planar_interior": 0.714,
+   "planar_shell": 0.889,
+   "nn_mean": 2.993,
+   "nn_cv": 0.315
+  }
+ },
+ "no_swaps": {
+  "mass": {
+   "n": 181,
+   "planar": 0.674,
+   "flat_at_boundary": 0.623,
+   "share_boundary": 0.702,
+   "flat_in_shell": 0.254,
+   "planar_boundary": 0.598,
+   "planar_interior": 0.892,
+   "planar_shell": 0.674,
+   "nn_mean": 2.127,
+   "nn_cv": 0.25
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.47,
+   "flat_at_boundary": 0.923,
+   "share_boundary": 0.892,
+   "flat_in_shell": 0.128,
+   "planar_boundary": 0.486,
+   "planar_interior": 0.5,
+   "planar_shell": 0.238,
+   "nn_mean": 3.235,
+   "nn_cv": 0.481
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.888,
+   "flat_at_boundary": 0.307,
+   "share_boundary": 0.379,
+   "flat_in_shell": 0.2,
+   "planar_boundary": 0.719,
+   "planar_interior": 0.99,
+   "planar_shell": 0.698,
+   "nn_mean": 2.226,
+   "nn_cv": 0.334
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.542,
+   "flat_at_boundary": 0.718,
+   "share_boundary": 0.75,
+   "flat_in_shell": 0.333,
+   "planar_boundary": 0.519,
+   "planar_interior": 0.5,
+   "planar_shell": 0.722,
+   "nn_mean": 3.073,
+   "nn_cv": 0.315
+  }
+ },
+ "no_fate": {
+  "mass": {
+   "n": 181,
+   "planar": 0.619,
+   "flat_at_boundary": 0.17,
+   "share_boundary": 0.32,
+   "flat_in_shell": 0.259,
+   "planar_boundary": 0.328,
+   "planar_interior": 0.714,
+   "planar_shell": 0.63,
+   "nn_mean": 1.992,
+   "nn_cv": 0.337
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.578,
+   "flat_at_boundary": 0.479,
+   "share_boundary": 0.578,
+   "flat_in_shell": 0.271,
+   "planar_boundary": 0.479,
+   "planar_interior": 0.64,
+   "planar_shell": 0.619,
+   "nn_mean": 3.035,
+   "nn_cv": 0.402
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.953,
+   "flat_at_boundary": 0.099,
+   "share_boundary": 0.13,
+   "flat_in_shell": 0.248,
+   "planar_boundary": 0.727,
+   "planar_interior": 0.982,
+   "planar_shell": 0.93,
+   "nn_mean": 2.214,
+   "nn_cv": 0.316
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.625,
+   "flat_at_boundary": 0.133,
+   "share_boundary": 0.375,
+   "flat_in_shell": 0.378,
+   "planar_boundary": 0.222,
+   "planar_interior": 0.786,
+   "planar_shell": 0.944,
+   "nn_mean": 2.8,
+   "nn_cv": 0.481
+  }
+ },
+ "isotropic_wells": {
+  "mass": {
+   "n": 181,
+   "planar": 0.685,
+   "flat_at_boundary": 0.605,
+   "share_boundary": 0.541,
+   "flat_in_shell": 0.194,
+   "planar_boundary": 0.765,
+   "planar_interior": 0.641,
+   "planar_shell": 0.522,
+   "nn_mean": 1.318,
+   "nn_cv": 0.249
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.843,
+   "flat_at_boundary": 0.886,
+   "share_boundary": 0.843,
+   "flat_in_shell": 0.257,
+   "planar_boundary": 0.886,
+   "planar_interior": 0.615,
+   "planar_shell": 0.857,
+   "nn_mean": 1.285,
+   "nn_cv": 0.106
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.876,
+   "flat_at_boundary": 0.338,
+   "share_boundary": 0.308,
+   "flat_in_shell": 0.216,
+   "planar_boundary": 0.962,
+   "planar_interior": 0.916,
+   "planar_shell": 0.744,
+   "nn_mean": 1.382,
+   "nn_cv": 0.372
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.819,
+   "flat_at_boundary": 0.661,
+   "share_boundary": 0.639,
+   "flat_in_shell": 0.305,
+   "planar_boundary": 0.848,
+   "planar_interior": 0.538,
+   "planar_shell": 1.0,
+   "nn_mean": 1.424,
+   "nn_cv": 0.568
+  }
+ },
+ "wide_wells": {
+  "mass": {
+   "n": 181,
+   "planar": 0.514,
+   "flat_at_boundary": 0.624,
+   "share_boundary": 0.735,
+   "flat_in_shell": 0.237,
+   "planar_boundary": 0.436,
+   "planar_interior": 0.781,
+   "planar_shell": 0.478,
+   "nn_mean": 2.467,
+   "nn_cv": 0.322
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.301,
+   "flat_at_boundary": 0.96,
+   "share_boundary": 0.94,
+   "flat_in_shell": 0.24,
+   "planar_boundary": 0.308,
+   "planar_interior": 0.0,
+   "planar_shell": 0.286,
+   "nn_mean": 3.683,
+   "nn_cv": 0.455
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.805,
+   "flat_at_boundary": 0.324,
+   "share_boundary": 0.426,
+   "flat_in_shell": 0.199,
+   "planar_boundary": 0.611,
+   "planar_interior": 0.943,
+   "planar_shell": 0.628,
+   "nn_mean": 2.821,
+   "nn_cv": 0.436
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.431,
+   "flat_at_boundary": 0.677,
+   "share_boundary": 0.694,
+   "flat_in_shell": 0.355,
+   "planar_boundary": 0.42,
+   "planar_interior": 0.25,
+   "planar_shell": 0.611,
+   "nn_mean": 4.244,
+   "nn_cv": 0.318
+  }
+ },
+ "weak_well": {
+  "mass": {
+   "n": 181,
+   "planar": 0.337,
+   "flat_at_boundary": 0.525,
+   "share_boundary": 0.735,
+   "flat_in_shell": 0.295,
+   "planar_boundary": 0.241,
+   "planar_interior": 0.576,
+   "planar_shell": 0.391,
+   "nn_mean": 2.741,
+   "nn_cv": 0.383
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.337,
+   "flat_at_boundary": 0.821,
+   "share_boundary": 0.88,
+   "flat_in_shell": 0.286,
+   "planar_boundary": 0.315,
+   "planar_interior": 0.429,
+   "planar_shell": 0.381,
+   "nn_mean": 3.916,
+   "nn_cv": 0.395
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.704,
+   "flat_at_boundary": 0.252,
+   "share_boundary": 0.45,
+   "flat_in_shell": 0.118,
+   "planar_boundary": 0.395,
+   "planar_interior": 0.965,
+   "planar_shell": 0.326,
+   "nn_mean": 2.93,
+   "nn_cv": 0.444
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.306,
+   "flat_at_boundary": 0.682,
+   "share_boundary": 0.694,
+   "flat_in_shell": 0.364,
+   "planar_boundary": 0.3,
+   "planar_interior": 0.25,
+   "planar_shell": 0.444,
+   "nn_mean": 4.573,
+   "nn_cv": 0.247
+  }
+ },
+ "soft_collision": {
+  "mass": {
+   "n": 181,
+   "planar": 0.702,
+   "flat_at_boundary": 0.591,
+   "share_boundary": 0.691,
+   "flat_in_shell": 0.244,
+   "planar_boundary": 0.6,
+   "planar_interior": 0.917,
+   "planar_shell": 0.674,
+   "nn_mean": 1.643,
+   "nn_cv": 0.449
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.446,
+   "flat_at_boundary": 0.892,
+   "share_boundary": 0.904,
+   "flat_in_shell": 0.135,
+   "planar_boundary": 0.44,
+   "planar_interior": 0.429,
+   "planar_shell": 0.238,
+   "nn_mean": 2.956,
+   "nn_cv": 0.571
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.923,
+   "flat_at_boundary": 0.314,
+   "share_boundary": 0.361,
+   "flat_in_shell": 0.231,
+   "planar_boundary": 0.803,
+   "planar_interior": 0.99,
+   "planar_shell": 0.837,
+   "nn_mean": 1.888,
+   "nn_cv": 0.475
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.569,
+   "flat_at_boundary": 0.585,
+   "share_boundary": 0.694,
+   "flat_in_shell": 0.39,
+   "planar_boundary": 0.48,
+   "planar_interior": 0.571,
+   "planar_shell": 0.889,
+   "nn_mean": 2.852,
+   "nn_cv": 0.434
+  }
+ },
+ "small_r0": {
+  "mass": {
+   "n": 181,
+   "planar": 0.724,
+   "flat_at_boundary": 0.634,
+   "share_boundary": 0.68,
+   "flat_in_shell": 0.221,
+   "planar_boundary": 0.675,
+   "planar_interior": 0.875,
+   "planar_shell": 0.63,
+   "nn_mean": 1.914,
+   "nn_cv": 0.362
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.41,
+   "flat_at_boundary": 0.941,
+   "share_boundary": 0.904,
+   "flat_in_shell": 0.147,
+   "planar_boundary": 0.427,
+   "planar_interior": 0.5,
+   "planar_shell": 0.238,
+   "nn_mean": 3.08,
+   "nn_cv": 0.51
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.893,
+   "flat_at_boundary": 0.311,
+   "share_boundary": 0.379,
+   "flat_in_shell": 0.205,
+   "planar_boundary": 0.734,
+   "planar_interior": 0.989,
+   "planar_shell": 0.721,
+   "nn_mean": 2.0,
+   "nn_cv": 0.395
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.597,
+   "flat_at_boundary": 0.628,
+   "share_boundary": 0.694,
+   "flat_in_shell": 0.302,
+   "planar_boundary": 0.54,
+   "planar_interior": 0.833,
+   "planar_shell": 0.722,
+   "nn_mean": 2.857,
+   "nn_cv": 0.392
+  }
+ },
+ "no_inertia": {
+  "mass": {
+   "n": 181,
+   "planar": 0.657,
+   "flat_at_boundary": 0.588,
+   "share_boundary": 0.674,
+   "flat_in_shell": 0.252,
+   "planar_boundary": 0.574,
+   "planar_interior": 0.85,
+   "planar_shell": 0.652,
+   "nn_mean": 2.091,
+   "nn_cv": 0.228
+  },
+  "space": {
+   "n": 83,
+   "planar": 0.446,
+   "flat_at_boundary": 0.919,
+   "share_boundary": 0.843,
+   "flat_in_shell": 0.081,
+   "planar_boundary": 0.486,
+   "planar_interior": 0.375,
+   "planar_shell": 0.143,
+   "nn_mean": 3.069,
+   "nn_cv": 0.492
+  },
+  "charge": {
+   "n": 169,
+   "planar": 0.882,
+   "flat_at_boundary": 0.329,
+   "share_boundary": 0.396,
+   "flat_in_shell": 0.208,
+   "planar_boundary": 0.731,
+   "planar_interior": 0.978,
+   "planar_shell": 0.721,
+   "nn_mean": 2.229,
+   "nn_cv": 0.357
+  },
+  "time": {
+   "n": 72,
+   "planar": 0.569,
+   "flat_at_boundary": 0.561,
+   "share_boundary": 0.667,
+   "flat_in_shell": 0.341,
+   "planar_boundary": 0.479,
+   "planar_interior": 0.75,
+   "planar_shell": 0.778,
+   "nn_mean": 3.044,
+   "nn_cv": 0.35
+  }
+ }
+}
