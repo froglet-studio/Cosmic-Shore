@@ -31,6 +31,33 @@ alone costs 2.3–4.5. The loss comes from SORTING. Element placement adds 4–1
 exactly with how GLOBAL each family's sorting mechanism is: global slot assignment (field) <
 per-class grid deficits (hgrid) < per-group anchors (compact) ≈ none (G2, evo).
 
+## Update 23:10 UTC — round 5 interim: a fractional update makes the front runners cheaper AND smoother
+
+All three `lite_*` sessions recorded their holds first (`results/hold/{combo,sortfeel,posinfo2}.json`) and then
+measured candidates against them. Interim, mid-session; the final harvest is at ~23:45.
+
+| candidate | ms/step (hold, 1 thread) | smoothness | hold verdict (gate as of 23:10) |
+|---|---|---|---|
+| **lite_sortfeel `frac=4, vec_look=1`** | **1.52 vs 2.88 (1.9x)** | 0.436 vs 0.44 | one MARGINAL test lost: mass -> time at seed 7 (a 2-of-3 test at loss 7.9 in the baseline) |
+| **lite_combo `frac_k=4`** | 6.9 vs 8.4 | **0.60 vs 0.51** (worst lurch 6.3 -> 4.5) | teleport 1.73 vs 1.5 on one event (charge -> time); the coast-decay repair is built |
+| lite_posinfo2 distilled student (k4, H 8, f4) | 4.7 vs 7.0 | 0.52 vs 0.50 | loses real switches at seeds 7 and 101 - the small network is not there yet |
+
+Findings so far:
+1. **Coasting is a low-pass, and that is the smoothness the lead asked for.** combo with 1/4 of its tadpoles
+   re-steering per step rose to 0.60 (every event's lurch fell; the mass heal's 6.26 -> 2.54): a tadpole coasting
+   on a slightly stale intent eases into a change instead of jolting. The fractional update is not only cheaper.
+2. **Where the time goes differs by family, so the same trick buys different amounts.** sortfeel is half an
+   all-pairs neighbour block (18,349 pair evaluations per step): updating 1/4 of the swarm cuts pairs 4x and the
+   step 2x; past k = 8 the O(N) work dominates and the curve is flat (1.29 ms at k = 8 and 16). combo is half a
+   coarse-grid step that every tadpole pays every step and that does not depend on N (Python per-op overhead on a
+   G = 8 grid); its fractional fine layer saves only 6% at B = 1 and 19% at B = 16 until the grid is amortised
+   too.
+3. **Cost per swarm is flat in B** for both (no cross-swarm batching yet): each cell's swarm is its own core in
+   the game, and the fractional update composes with that.
+4. **The hold's teleport gate was stricter than the smoothness calibration**: it allowed max(1.0, +10%) of the
+   world's top speed where swarm_smooth's documented comfort range is 1.5x (a fast Time swimmer plus a collision
+   push). Fixed in hold.py to max(TELEPORT_OK = 1.5, +10%); the verdicts above are recomputed under it.
+
 ## Update 22:20 UTC — HOLD the front runners, score the smoothness of change, then go light
 
 The lead (22:00): *"Once a front runner starts scoring well enough we will want to hold its scores
