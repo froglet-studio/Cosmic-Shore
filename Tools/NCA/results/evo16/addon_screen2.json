@@ -1,0 +1,57 @@
+{
+ "seeds": [
+  6000,
+  6001,
+  6002,
+  6003,
+  6004,
+  6005,
+  6006,
+  6007
+ ],
+ "variants": {
+  "hsel0": {
+   "spec": "sw_head=0.5,h_head=0,k_head=1.5,sw_hsel=0.5",
+   "f": 0.866,
+   "pass_rate": 0.992,
+   "heal": [
+    -0.35,
+    -0.13,
+    0.09,
+    -0.09
+   ],
+   "fails": {
+    "charge->space": 1
+   }
+  },
+  "wnd_hsel0": {
+   "spec": "sw_wnd=0.5,sw_head=0.5,h_head=0,k_head=1.5,sw_hsel=0.5",
+   "f": 1.16,
+   "pass_rate": 0.984,
+   "heal": [
+    -0.51,
+    -0.22,
+    0.49,
+    0.57
+   ],
+   "fails": {
+    "charge->space": 1,
+    "time->space": 1
+   }
+  },
+  "hsel03": {
+   "spec": "sw_head=0.5,h_head=0.3,k_head=1.5,sw_hsel=0.5",
+   "f": 1.499,
+   "pass_rate": 0.984,
+   "heal": [
+    0.47,
+    0.23,
+    0.23,
+    0.21
+   ],
+   "fails": {
+    "time->space": 2
+   }
+  }
+ }
+}

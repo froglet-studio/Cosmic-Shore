@@ -45,12 +45,14 @@ NEW = [
     ("sw_reg", 1, -1.0), ("a_reg", 1, 1.0),
     ("sw_wnd", 1, -1.0), ("a_wnd", 1, 1.0), ("f_wnd", 1, 0.0), ("tau_wnd", 1, 0.0),
     ("sw_head", 1, -1.0), ("h_head", 4, 0.3), ("k_head", 1, 1.0),
+    ("sw_hsel", 1, -1.0),      # B8b: the headcount gate throttles only parents whose element is NOT short
+    ("t_hsel", 1, 0.0),        # B8b: "short" means the deficit exceeds t_hsel (a share, 0..1)
 ]
 LAYOUT = em.LAYOUT + NEW
 SLICES, DIM = {}, 0
 for _n, _s, _ in LAYOUT:
     SLICES[_n] = slice(DIM, DIM + _s); DIM += _s
-SWITCHES = ("sw_lay", "sw_egg", "sw_lock", "sw_out", "sw_reg", "sw_wnd", "sw_head")
+SWITCHES = ("sw_lay", "sw_egg", "sw_lock", "sw_out", "sw_reg", "sw_wnd", "sw_head", "sw_hsel")
 
 
 def default_genome():
@@ -61,9 +63,10 @@ def default_genome():
 
 
 def from_evo(g_evo):
-    """Extend an evo_model genome (95 floats) with the new genes at their defaults (all new behaviours off)."""
+    """Extend an evo_model genome (95 floats), or an evo16 genome saved before a gene was appended, with
+    the missing genes at their defaults (behaviours off)."""
     g = default_genome()
-    g[:em.DIM] = g_evo
+    g[:len(g_evo)] = g_evo
     return g
 
 
@@ -86,7 +89,8 @@ def describe(g):
              f"B7 wound on={gene(g,'sw_wnd')>0} gain={sp(gene(g,'a_wnd')):.2f} focus={sig(gene(g,'f_wnd')):.2f} "
              f"ema rate={0.3*sig(gene(g,'tau_wnd')):.3f}",
              f"B8 headcount on={gene(g,'sw_head')>0} k={gene(g,'k_head'):.2f} targets " +
-             " ".join(f"{sn.PLAN_OF[e]}={float(PLAN_N[e])*math.exp(gene(g,'h_head')[e]):.0f}" for e in range(4))]
+             " ".join(f"{sn.PLAN_OF[e]}={float(PLAN_N[e])*math.exp(gene(g,'h_head')[e]):.0f}" for e in range(4)) +
+             f" | B8b selective={gene(g,'sw_hsel')>0} past deficit {gene(g,'t_hsel'):.2f}"]
     return "\n".join(lines)
 
 
@@ -95,7 +99,7 @@ class Evo16Rule(em.EvoRule):
 
     def __init__(self, genome):
         genome = np.asarray(genome, float)
-        if len(genome) == em.DIM:
+        if len(genome) < DIM:
             genome = from_evo(genome)
         super().__init__(genome[:em.DIM])
         self.genome = genome
@@ -105,6 +109,7 @@ class Evo16Rule(em.EvoRule):
         self.a_wnd, self.f_wnd, self.r_wnd = sp(gene(g, "a_wnd")), sig(gene(g, "f_wnd")), 0.3 * sig(gene(g, "tau_wnd"))
         self.head_n = PLAN_N * torch.tensor(np.exp(gene(g, "h_head")), dtype=torch.float32)
         self.k_head = gene(g, "k_head")
+        self.t_hsel = gene(g, "t_hsel")
         self._tok = None
         self.hw = None
         self.ema = None
@@ -160,7 +165,15 @@ class Evo16Rule(em.EvoRule):
         lead = self.locked.clamp(min=0)
         tgt = self.head_n[lead]                                             # [B]
         if self.on["sw_head"]:
-            mult = mult * torch.sigmoid(self.k_head * (tgt - n) / tgt / 0.1)[:, None] / torch.sigmoid(torch.tensor(self.k_head * 10.0))
+            hg = (torch.sigmoid(self.k_head * (tgt - n) / tgt / 0.1) / torch.sigmoid(torch.tensor(self.k_head * 10.0)))[:, None].expand(B, N)
+            if self.on["sw_hsel"]:
+                # B8b: a parent whose element the locked plan is SHORT of keeps laying past the headcount,
+                # so a full swarm can still change its mix (a plan-sized gate otherwise froze charge->time)
+                cnt = (alive.float()[:, :, None] * F.one_hot(sw.elem, 4).float()).sum(1)
+                share = cnt / cnt.sum(1, keepdim=True).clamp(min=1)
+                short = (self.D[lead] - share).gather(1, sw.elem) > self.t_hsel
+                hg = torch.where(short, torch.ones_like(hg), hg)
+            mult = mult * hg
         ref = torch.minimum(self.hw, tgt) if self.on["sw_head"] else self.hw
         deficit = ((ref - n) / ref.clamp(min=1)).clamp(0, 1)                # [B]
         if self.on["sw_reg"]:

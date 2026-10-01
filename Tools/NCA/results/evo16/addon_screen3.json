@@ -1,0 +1,44 @@
+{
+ "seeds": [
+  6000,
+  6001,
+  6002,
+  6003,
+  6004,
+  6005,
+  6006,
+  6007
+ ],
+ "variants": {
+  "hs03t1": {
+   "spec": "sw_head=0.5,h_head=0.3,k_head=1.5,sw_hsel=0.5,t_hsel=0.1",
+   "f": 1.624,
+   "pass_rate": 0.984,
+   "heal": [
+    0.36,
+    0.43,
+    0.45,
+    0.28
+   ],
+   "fails": {
+    "charge->space": 1,
+    "time->space": 1
+   }
+  },
+  "hs0t1": {
+   "spec": "sw_head=0.5,h_head=0,k_head=1.5,sw_hsel=0.5,t_hsel=0.1",
+   "f": 1.339,
+   "pass_rate": 0.976,
+   "heal": [
+    0.54,
+    0.02,
+    0.31,
+    -0.03
+   ],
+   "fails": {
+    "charge->space": 2,
+    "time->space": 1
+   }
+  }
+ }
+}
