@@ -25,8 +25,9 @@ import evo_model as em  # noqa: E402
 GROUPS = {
     "behaviour": ["sw_lay", "k_lay", "b_lay", "sw_egg", "p_egg", "beta_egg", "sw_lock", "lock", "D"],
     "out": ["sw_out", "g_out", "b_out"],
+    "swirl": ["sw_swirl", "swirl"],
 }
-GROUPS["all"] = GROUPS["behaviour"] + GROUPS["out"]
+GROUPS["all"] = GROUPS["behaviour"] + GROUPS["out"] + GROUPS["swirl"]
 
 
 def mask_for(groups):
@@ -72,7 +73,7 @@ def main():
         base = np.load(a.init) if a.init else ec.default_genome()
         idx = np.arange(ec.DIM)
     else:
-        base = np.load(a.init) if a.init else em.default_genome()
+        base = em.pad(np.load(a.init)) if a.init else em.default_genome()
         idx = mask_for(a.genes)
     for kv in filter(None, a.fix.split(",")):
         k, v = kv.split("="); base[em.SLICES[k]] = float(v)

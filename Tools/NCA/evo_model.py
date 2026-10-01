@@ -52,6 +52,8 @@ LAYOUT = [
     ("sw_out", 1, -1.0),       # B5 on/off (off at start: begin from the behaviour genes alone)
     ("g_out", NOUT, 0.0),      # B5 per-output gain (w3 row scale = 1 + 0.5 * tanh(g))
     ("b_out", NOUT, 0.0),      # B5 per-output bias offset (x 0.05)
+    ("sw_swirl", 1, 0.5),      # B6 on/off: per-element swirl about the plan's long axis (zero rate = no-op)
+    ("swirl", 4, 0.0),         # B6: rad/step = 0.05 * tanh(gene), per element C M S T
 ]
 SLICES, DIM = {}, 0
 for _n, _s, _ in LAYOUT:
@@ -65,6 +67,25 @@ def default_genome():
     return g
 
 
+def pad(g):
+    """An older (shorter) genome, with the newer genes at their defaults (all no-ops)."""
+    g = np.asarray(g, float)
+    if len(g) < DIM:
+        g = np.concatenate([g, default_genome()[len(g):]])
+    return g
+
+
+def _plan_axes():
+    ax = []
+    for e in range(4):
+        p = _T[sn.PLAN_OF[e]].frames[0]["p"]; p = p - p.mean(0)
+        ax.append(torch.linalg.eigh(p.T @ p)[1][:, -1])
+    return torch.stack(ax)
+
+
+_AXES = _plan_axes()
+
+
 def gene(g, name):
     v = g[SLICES[name]]
     return float(v[0]) if len(v) == 1 else v
@@ -72,7 +93,8 @@ def gene(g, name):
 
 def describe(g):
     D = desired_table(g)
-    on = {k: gene(g, k) > 0 for k in ("sw_lay", "sw_egg", "sw_lock", "sw_out")}
+    g = pad(g)
+    on = {k: gene(g, k) > 0 for k in ("sw_lay", "sw_egg", "sw_lock", "sw_out", "sw_swirl")}
     lines = [f"behaviours on: {[k for k, v in on.items() if v]}",
              f"lay gate k={gene(g,'k_lay'):.2f} b={gene(g,'b_lay'):.2f} | egg share={1/(1+math.exp(-gene(g,'p_egg'))):.3f} "
              f"beta={gene(g,'beta_egg'):.2f} | lock margin={0.25/(1+math.exp(-gene(g,'lock'))):.3f}",
@@ -100,7 +122,7 @@ class EvoRule(sn.SwarmRule):
         w = st["world"]; w["vmax"] = tuple(w["vmax"])
         super().__init__(sn.World(**w), hidden=st["hidden"])
         self.load_state_dict(st["rule"])
-        self.genome = np.asarray(genome, float)
+        self.genome = pad(genome)
         g = self.genome
         if gene(g, "sw_out") > 0:
             with torch.no_grad():
@@ -117,7 +139,18 @@ class EvoRule(sn.SwarmRule):
                 self.locked = torch.full((sw.B,), -1, dtype=torch.long)
             self.locked[sw.clock == 0] = -1
             self._update_lock(sw)
-            return self._step(sw, gen, bud, fire)
+            out = self._step(sw, gen, bud, fire)
+            g = self.genome
+            if gene(g, "sw_swirl") > 0:
+                rate = 0.05 * torch.tanh(torch.tensor(g[SLICES["swirl"]], dtype=torch.float32))
+                if float(rate.abs().max()) > 1e-4:
+                    live = (sw.active & sw.hatched & out.active & out.hatched)
+                    w = live.float()
+                    cen = (w[:, :, None] * out.pos).sum(1) / w.sum(1).clamp(min=1)[:, None]
+                    ax = _AXES[self.locked.clamp(min=0)][:, None].expand_as(out.pos)
+                    om = rate[out.elem][..., None]
+                    out.pos = out.pos + live[..., None] * om * torch.cross(ax, out.pos - cen[:, None], dim=-1)
+            return out
 
     def _shares(self, sw):
         hb = (sw.hatched & sw.active).float()

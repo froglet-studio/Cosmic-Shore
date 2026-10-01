@@ -1,0 +1,38 @@
+{
+ "mass": {
+  "before": 17.93,
+  "n_before": 280,
+  "killed": 106,
+  "cut": 23.94,
+  "recovered": 23.68,
+  "n_after": 280,
+  "heal": 0.043
+ },
+ "space": {
+  "before": 30.99,
+  "n_before": 280,
+  "killed": 58,
+  "cut": 31.5,
+  "recovered": 30.36,
+  "n_after": 280,
+  "heal": 2.235
+ },
+ "charge": {
+  "before": 18.35,
+  "n_before": 280,
+  "killed": 81,
+  "cut": 17.87,
+  "recovered": 17.19,
+  "n_after": 280,
+  "heal": null
+ },
+ "time": {
+  "before": 31.26,
+  "n_before": 258,
+  "killed": 93,
+  "cut": 31.89,
+  "recovered": 30.83,
+  "n_after": 258,
+  "heal": 1.683
+ }
+}
