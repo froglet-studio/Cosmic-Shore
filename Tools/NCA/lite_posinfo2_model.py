@@ -18,6 +18,7 @@ is posinfo2's step, consuming the generator in the same order (bit-identical rol
               its last velocity times `coast` (default 0.5 = the expected fire rate, so the mean drift per
               unit time matches the base rule), then collision + membrane run on everyone. State channels
               are updated only on firing steps (their effect is per-update, so ds is scaled by k).
+  rng_burn    1: NOISE CONTROL - the unchanged rule with one extra generator draw per step (re-rolls the dice).
   half        run the MLP in bfloat16 (the C# analogue is float16 weights).
 
 Cost accounting (multiply-adds per network evaluation): F*H + H*H + H*35 with F = 252, H = hidden.
@@ -49,9 +50,10 @@ class _T:
 
 
 class LitePosInfo2(p2.PosInfo2Rule):
-    def __init__(self, world, homeo_every=1, frame_every=1, fire_k=1, coast=0.5, half=0, **kw):
+    def __init__(self, world, homeo_every=1, frame_every=1, fire_k=1, coast=0.5, half=0, rng_burn=0, **kw):
         super().__init__(world, **kw)
         self.homeo_every, self.frame_every, self.fire_k, self.coast, self.half = homeo_every, frame_every, fire_k, coast, half
+        self.rng_burn = rng_burn
         self.prof = None
         self._vel = None
         self._frame = None
@@ -103,9 +105,13 @@ class LitePosInfo2(p2.PosInfo2Rule):
     # ------------------------------------------------------------------------------------- step ---
     def _step(self, sw: Swarm, gen=None, bud=True, fire=None):
         T = _T(self)
+        if self.rng_burn and gen is not None:      # NOISE CONTROL: the base rule, its generator stream shifted by one
+            torch.rand(1, generator=gen)            # draw per step - a behaviourally neutral change that re-rolls the dice
         W = self.world
         B, N, _ = sw.pos.shape
         n = B * N
+        if sw.pos.data_ptr() != getattr(self, "_last_ptr", None):   # not the swarm this rule just stepped (a new rollout,
+            self._vel, self._frame = None, None                    # a clone, a cull): drop the coast / frame caches
         clock = int(sw.clock.reshape(-1)[0]) if torch.is_tensor(sw.clock) else int(sw.clock)
         pos, s = sw.pos.reshape(n, 3), sw.s.reshape(n, C)
         elem, dom, act = sw.elem.reshape(n), sw.dom.reshape(n), sw.active.reshape(n)
@@ -176,6 +182,7 @@ class LitePosInfo2(p2.PosInfo2Rule):
         out_sw = Swarm(pos.view(B, N, 3), s.view(B, N, C), sw.elem.clone(), sw.dom.clone(), keep.view(B, N),
                        new_hatched.view(B, N), deaths, sw.mutants.clone(), (age * keep.long()).view(B, N), sw.clock + 1,
                        sw.plan.clone(), sw.since + 1, sw.bw * keep.view(B, N).to(sw.bw.dtype))
+        self._last_ptr = out_sw.pos.data_ptr()
         T("hatch")
         m = self.homeo_every
         if bud and (m <= 1 or clock % m == 0):

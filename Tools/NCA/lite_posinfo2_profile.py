@@ -32,6 +32,10 @@ CONFIGS = {
     "k4_h8_f4": dict(fire_k=4, homeo_every=8, frame_every=4),
     "k8_h8_f8": dict(fire_k=8, homeo_every=8, frame_every=8),
     "k4_h8_f4_half": dict(fire_k=4, homeo_every=8, frame_every=4, half=1),
+    "s64": dict(_path="Tools/NCA/results/lite_posinfo2/student64b.pt"),
+    "s32": dict(_path="Tools/NCA/results/lite_posinfo2/student32.pt"),
+    "s64_k2_f4": dict(_path="Tools/NCA/results/lite_posinfo2/student64b.pt", fire_k=2, frame_every=4),
+    "s64_k4_f4": dict(_path="Tools/NCA/results/lite_posinfo2/student64b.pt", fire_k=4, frame_every=4),
 }
 
 
@@ -54,7 +58,8 @@ def profile(flags, B=1, steps=200, kind="mass"):
     if key not in _GROWN:                               # grow with the BASE rule so every config times the same body
         _GROWN[key] = grow(p2.load(RULE), kind, B)
     sw, gen = _GROWN[key][0].clone(), sn.make_gen(99)
-    rule = lm.load(RULE, **flags)
+    flags = dict(flags); path = flags.pop("_path", RULE)
+    rule = lm.load(path, **flags)
     rule.prof = {}
     rule.net_rows = 0
     live = 0
@@ -83,7 +88,7 @@ def main():
     for B in map(int, a.batches.split(",")):
         for name in a.configs.split(","):
             res.setdefault(name, {})
-            r = profile(CONFIGS[name], B=B, steps=200 if B <= 4 else 50)
+            r = profile(CONFIGS[name], B=B, steps={1: 150, 4: 80, 16: 30, 64: 12}.get(B, 20))
             res[name][str(B)] = r
             print(name, B, json.dumps(r), flush=True)
     json.dump(res, open(a.out, "w"), indent=1)

@@ -1,0 +1,27 @@
+  seed 7: 0/13  (88s)
+  seed 23: 0/13  (174s)
+  seed 41: 0/13  (261s)
+  seed 101: 0/13  (346s)
+  lossless {'deaths': 0, 'per_1k': 0.0}  perf {'ms_per_step': 5.858, 'grown_n': 134}  organic True (planar 0.0)  smoothness 0.287  (424.6s)
+FAIL  accurate seed 7 passed           0/13 vs 13/13
+FAIL  accurate seed 7 no lost test     own mass, own space, own charge, own time, mass->space, space->charge, charge->time, time->mass, mass->charge, mass->time, space->time, charge->space, time->space
+FAIL  accurate seed 7 own losses       own mass 30.58 > 1.76; own space 44.94 > 1.65; own charge 42.35 > 1.83; own time 93.26 > 2.68
+FAIL  accurate seed 23 passed          0/13 vs 12/13
+FAIL  accurate seed 23 no lost test    own mass, own space, own charge, own time, mass->space, space->charge, charge->time, time->mass, mass->charge, mass->time, space->time, charge->space
+FAIL  accurate seed 23 own losses      own mass 27.51 > 1.65; own space 41.16 > 1.62; own charge 32.2 > 2.01; own time 98.66 > 2.72
+FAIL  accurate seed 41 passed          0/13 vs 13/13
+FAIL  accurate seed 41 no lost test    own mass, own space, own charge, own time, mass->space, space->charge, charge->time, time->mass, mass->charge, mass->time, space->time, charge->space, time->space
+FAIL  accurate seed 41 own losses      own mass 27.53 > 1.57; own space 46.3 > 1.82; own charge 44.18 > 1.63; own time 98.05 > 2.7
+FAIL  accurate seed 101 passed         0/13 vs 13/13
+FAIL  accurate seed 101 no lost test   own mass, own space, own charge, own time, mass->space, space->charge, charge->time, time->mass, mass->charge, mass->time, space->time, charge->space, time->space
+FAIL  accurate seed 101 own losses     own mass 27.2 > 1.55; own space 34.28 > 2.0; own charge 38.75 > 1.81; own time 85.87 > 2.5
+PASS  lossless                         0 deaths
+PASS  organic band                     {'jerk_rel': True, 'osc': True, 'stuck': True, 'planar': True}
+PASS  organic planar                   0.0 vs 0.12
+FAIL  smoothness                       0.287 vs 0.497
+PASS  smooth lurch                     1.86 vs 4.22
+PASS  smooth teleport                  1.782 vs 1.665
+PASS  smooth molt_burst                0.253 vs 0.319
+PASS  smooth birth_burst               0.374 vs 0.503
+PASS  smooth deaths                    0 vs 0
+perf {'ms_per_step': 5.858, 'grown_n': 134} (baseline {'ms_per_step': 6.985, 'grown_n': 134})
