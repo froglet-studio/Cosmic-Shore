@@ -1,6 +1,6 @@
 # Microgame Training — design plan
 
-**Status: PLAN, not built.** Revision 3 (2026-09-25) — revision 1's five open questions and
+**Status: PHASE 1 DATA LAYER LANDED (2026-10-01); runner, view and Play gating not built.** Revision 3 (2026-09-25) — revision 1's five open questions and
 revision 2's four are answered and folded in (§1). Nothing here has run in the editor. The Game of the Week rotation is a
 separate thread; this plan only assumes it names one `GameModes` value, whose card locks one hull.
 
@@ -146,10 +146,18 @@ human can edit, blank or delete without touching code:
 | "Did you know" ability tips | ONE authored template in `DrillLibrarySO` (`{ability:X} - {abilityDescription:X}, on {glyph:X}`) plus a per-hull, per-element suppress/replace | edit the template or silence the automatic tip for a hull | the template: `DrillLibrary.asset`, *Ability Tip Template* field. Per-hull silence: same asset, *Hull Overrides*. The facts it quotes: the vessel's `ElementalAbilityMaps/<Vessel>.asset` |
 | Chrome — section titles, "Skip", the waiting/hint captions, the "PB" / board labels, empty-state lines | `DrillLibrarySO.Strings` | edit any label | `DrillLibrary.asset`, *Strings* block |
 
-**Only the ability maps exist today.** Every other asset in this table is PLANNED, not yet built;
-the names and folders above are fixed here so the table stays a real map when they land. The
-authoring window (§9, **FrogletTools > Game Modes > Drill Authoring**) will open all of them from
-one place.
+**What exists (2026-10-01):** the ability maps, `DrillLibrary.asset` (pacing, the ability tip
+template, the *Strings* block with pad and flight-control labels) and the two `LessonTemplate_*`
+assets. No `TipListSO` is authored yet - the Mentor's tip lists are phase 3. The seed text was
+written by `Tools/Build/author_drill_assets.py`, which authors an asset only while it does not
+exist (a writer's edit is the point, not drift); its `--check` verifies the SHIPPED assets: ASCII
+only, every `{token}` known to the resolver, step ids unique, scheme correct, references resolve.
+The authoring window (§9, **FrogletTools > Game Modes > Drill Authoring**) will open all of them
+from one place.
+
+**One deliberate gap in the seed:** there is no one-thumb *Drift* label. Which control a one-thumb
+hull drifts on has not been checked in the editor, and a missing label drops the drift step (an
+honest absence), where a guessed label would teach the wrong button.
 
 Three rules make the table hold:
 - An **empty field shows nothing**. That is how a line is deleted; there is no fallback to a
@@ -437,12 +445,33 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 | Phase | Scope | Proves |
 |---|---|---|
 | 1 | `DrillRunner`, `DrillComposer`, `DrillCoachView`, `DrillProgressStore`; the Lesson with derived beats; the two account keys + 3 s skip; Play gating | every hull has a Lesson |
+| 1a **(landed)** | The data layer (§10.1): beats, conditions, tokens, composer, hull facts, progress store + `DRILL_PROGRESS` cloud key, the library and both Lesson templates | the Lesson composes for any hull, offline |
 | 2 | §7 gate course in previews (Switchback + Redline first) | the race is in the window |
 | 3 | The Mentor: TipListSOs for the gate-race family, pacing, Moment conditions, resume | the curated tutor |
 | 4 | Quest Graph P0 railroad; the Game of the Week source | first login → Lesson, end to end |
 | 5 | Remaining races; tip lists for non-racing families; relevance-gated leaderboards (§6); practice-lap result | coverage |
 | 6 | Authoring window, coverage test, analytics (genre already read from `ModeGenre`, §8) | the "every vessel ever" guarantee |
 | later | `GhostDemo` cue (the preview's own autopilot flies a step once before handing over) | show, don't tell |
+
+### 10.1 Phase 1a - what landed
+
+All under `Assets/_Scripts/Controller/Arcade/Preview/Drill/` unless noted.
+
+| Piece | File | Note |
+|---|---|---|
+| Beats | `DrillBeats.cs` | `DrillBeat` / `LessonStep` / `MentorTip`, plus `FlightScheme`, `DrillAnchor`, `DrillCue`, `DrillApplicability`, `MentorTier`. A beat about no element uses `Element.None` |
+| Conditions | `DrillConditions.cs` | `[SerializeReference]` `DrillCondition` + nine kinds (steer, throttle, speed, drift, input, ability, skims, gates, timer). Per-run state lives in a `DrillConditionState` the runner owns, so an authored asset is never written at runtime. Everything they read comes through `IDrillSignals`, whose counters are monotonic: a condition baselines at `Begin` and nothing is reset between steps |
+| Tokens | `DrillTokens.cs` | Two failures kept apart: a MISSING FACT (the hull has no such ability) drops the line; an UNKNOWN TOKEN (a typo) renders as itself and logs once |
+| Hull facts | `DrillHullFacts.cs` | Ability words from the ability map; the control from `InputHintBindingMap`; the WORD for it from the glyph set (keyboard) or the library (pad). `FullSpeedStraightAction` is the passive sentinel, as the lockup reads it |
+| Composer | `DrillComposer.cs` | Pure. Lesson: hull replacement or the scheme's template, minus suppressed ids, applicability, unresolvable lines. Mentor: hull tips, derived Charge/Mass/Space tips, metric or mode tips, advanced tips; tier, priority, authored order; seen tips go to the END; first copy of an id wins |
+| Assets | `LessonTemplateSO.cs`, `TipListSO.cs`, `DrillLibrarySO.cs` | Library at `Resources/DrillLibrary` |
+| Progress | `DrillProgressStore.cs`; `System/CloudData/Models/DrillProgressCloudData.cs`; `.../Repositories/DrillProgressRepository.cs` | Cloud key `DRILL_PROGRESS` plus a PlayerPrefs mirror. Every fact only grows, so a read MERGES the two (OR / union / min) - a slow cloud load cannot re-lock a Lesson finished on this machine |
+
+Proof: `Tools/Build/drill_harness/run.sh` compiles the shipped files (plus the real ability map,
+glyph set and binding map) against a UnityEngine stub and runs 52 checks; four negative controls
+(the skip rule, seen-to-end ordering, missing-fact detection, the passive sentinel) each fail it.
+Edit-mode: `Tests/Editor/DrillComposerTests.cs`. **Nothing has been compiled in the Unity
+editor**, and no runner reads any of this yet.
 
 ---
 

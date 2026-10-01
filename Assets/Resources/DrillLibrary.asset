@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 532bcfd096ee4bb78b532e21bedfba32, type: 3}
+  m_Name: DrillLibrary
+  m_EditorClassIdentifier: 
+  twoThumbLesson: {fileID: 11400000, guid: 1c7bc41571655ea9f57b11d3af1a4125, type: 2}
+  oneThumbLesson: {fileID: 11400000, guid: 2f4a9cc8c965873a4e31f8f04b85b520, type: 2}
+  lessonSkipDelaySeconds: 3
+  defaultHintAfterSeconds: 8
+  metricTips: []
+  modeTips: []
+  advancedTips: {fileID: 0}
+  abilityTipTemplate: 'Did you know? {ability:E} is on {glyph:E}. {abilityDescription:E}'
+  mentorDwellSeconds: 6
+  mentorGapSeconds: 8
+  momentTimeoutSeconds: 14
+  hullOverrides: []
+  strings:
+    LessonTitle: 'LEARN TO FLY'
+    MentorTitle: 'FLIGHT TIPS'
+    SkipLabel: 'SKIP'
+    NextLabel: 'NEXT'
+    MentorClosingLine: 'That is everything. Press Play when you are ready.'
+    PlayLockedCaption: 'Finish the lesson to play'
+    PadControlLabels:
+    - Binding: 7
+      Label: 'LT'
+    - Binding: 8
+      Label: 'RT'
+    - Binding: 1
+      Label: 'A'
+    - Binding: 3
+      Label: 'B'
+    - Binding: 4
+      Label: 'X'
+    - Binding: 6
+      Label: 'RB'
+    FlightControlLabels:
+    - Control: 0
+      Scheme: 0
+      Keyboard: 0
+      Label: 'both sticks'
+    - Control: 0
+      Scheme: 0
+      Keyboard: 1
+      Label: 'WASD and PL;'''
+    - Control: 1
+      Scheme: 0
+      Keyboard: 0
+      Label: 'the sticks'
+    - Control: 1
+      Scheme: 0
+      Keyboard: 1
+      Label: 'A and '''
+    - Control: 2
+      Scheme: 0
+      Keyboard: 0
+      Label: 'both triggers'
+    - Control: 2
+      Scheme: 0
+      Keyboard: 1
+      Label: 'both Shift keys'
+    - Control: 0
+      Scheme: 1
+      Keyboard: 0
+      Label: 'the left stick'
+    - Control: 0
+      Scheme: 1
+      Keyboard: 1
+      Label: 'the mouse'

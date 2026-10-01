@@ -29,6 +29,7 @@ string fallback on load.
 | 10 | `EPISODE_PROGRESS` | `EpisodeProgressCloudData` | **SCAFFOLD** — `ReportMissionCompleted` has no callers | 1.5s | none |
 | 11 | `SQUAD_DATA` | `SquadCloudData` | **WIRED** (new) — repo loads/flushes; system still writes `squad.data`. Migration held for Unity review. | 1.5s | none yet |
 | 12 | `LOADOUT_DATA` | `LoadoutCloudData` | **WIRED** (new) — repo loads/flushes; system still writes local files. Migration held for Unity review. | 1.5s | none yet |
+| 13 | `DRILL_PROGRESS` | `DrillProgressCloudData` | **WIRED** (new, 2026-10-01) — the microgame drill's account keys (`CompletedAnyLesson`, `CompletedTwoThumbLesson`), seen Mentor tip ids, best practice laps. `DrillProgressStore` writes it beside a PlayerPrefs mirror; every field only grows, so reads merge the two. Nothing calls the store yet (Docs/ModePreview/TRAINING_PLAN.md §10.1). | 1.5s | none yet |
 
 ### 1.1 `player_profile` — `PlayerProfileData` (`_Scripts/UI/Views/PlayerProfileData.cs`)
 
