@@ -136,7 +136,7 @@ the better creature; this is a research result, not a shippable one.
    (b) a positional signal that holds its shape. The cheapest honest local frame is a morphogen with a FIXED
    source, not a consensus: e.g. the heart-of-the-swarm tadpole (oldest / seed) emits a hop-count or diffusing
    gradient that every tadpole reads; or the static Z here plus a slow re-centring. Measure it with the oracle-Z
-   long-horizon test (`/tmp`-style harness in this NOTE's table): a frame is good enough when it matches the oracle
+   long-horizon test (`distill_longrun.py`): a frame is good enough when it matches the oracle
    column at step 480.
 2. **Combine with `field`'s composition controller as a designed layer** (the hybrid result from round 1 says the
    same): learning laying/molting from demonstrations misfires exactly in the rare states that decide a switch.
