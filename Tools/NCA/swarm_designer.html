@@ -1,0 +1,1136 @@
+<title>Elemental Swarm Body Plans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f5f6; --panel: #ffffff; --fg: #17202a; --muted: #5a6672; --line: #d8dee3;
+  --accent: #0d6f8f; --accent-fg: #ffffff; --dish: #e8eef2; --ok: #1d7a4a; --bad: #b3261e; --warn: #8a5a00;
+  --chip: #eef2f4;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1418; --panel: #151d23; --fg: #e3e9ee; --muted: #93a1ad; --line: #2a353e;
+  --accent: #3fb3d6; --accent-fg: #06141a; --dish: #0a1116; --ok: #5cc98c; --bad: #ff8a80; --warn: #e8b54a;
+  --chip: #1c262d; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #151d23; --fg: #e3e9ee; --muted: #93a1ad; --line: #2a353e;
+  --accent: #3fb3d6; --accent-fg: #06141a; --dish: #0a1116; --ok: #5cc98c; --bad: #ff8a80; --warn: #e8b54a;
+  --chip: #1c262d; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 18px 40px }
+.wrap { max-width: 1320px; margin: 0 auto }
+header h1 { font-family: var(--display); font-weight: 700; font-size: 1.9rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+header p { margin: 4px 0 12px; color: var(--muted); max-width: 78ch }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px }
+.tab { font: 700 14px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 999px; padding: 7px 16px; cursor: pointer }
+.tab[aria-selected=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 18px; align-items: start }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr } }
+.stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+@media (max-width: 900px) { .stage { position: static } }
+.view { background: var(--dish); border: 1px solid var(--line); border-radius: 10px; overflow: hidden }
+canvas#cv { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: none; cursor: grab }
+.viewbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 7px; padding: 6px 11px; cursor: pointer }
+.btn:hover { border-color: var(--accent) }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.btn.on { border-color: var(--accent); color: var(--accent) }
+.frame { display: flex; align-items: center; gap: 8px; flex: 1 1 200px; min-width: 0 }
+.frame input { flex: 1; min-width: 0 }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0 }
+.stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted) }
+.stat .v { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600 }
+.v.ok { color: var(--ok) } .v.bad { color: var(--bad) } .v.warn { color: var(--warn) }
+.census { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px }
+.census span { background: var(--chip); border-radius: 999px; padding: 2px 9px 2px 4px; display: inline-flex; gap: 5px; align-items: center }
+.dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,.2) }
+.dot.t2 { transform: rotate(45deg) scale(.8) } .dot.t1 { box-shadow: inset 0 0 0 2px #ff3b2f } .dot.el { border-radius: 50% }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0 }
+.panel h2 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 8px }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px }
+details { border-top: 1px solid var(--line); padding: 6px 0 }
+details:first-of-type { border-top: 0 }
+summary { cursor: pointer; font-family: var(--display); font-weight: 500; font-size: 1rem; padding: 4px 0 }
+.row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) 4.6em; gap: 8px; align-items: center; padding: 3px 0 }
+.row label, .crow label { font-size: 13px; color: var(--muted) }
+.row input[type=range] { width: 100%; accent-color: var(--accent) }
+.row input[type=number] { width: 100%; font: 13px var(--mono); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 5px; padding: 2px 4px }
+.row.tog { grid-template-columns: 9.5em 1fr }
+.crow { display: grid; grid-template-columns: 9.5em auto; gap: 8px; align-items: center; padding: 4px 0 }
+.cpick { display: grid; grid-template-columns: repeat(3, 26px); gap: 4px }
+.cpick.el { grid-template-columns: repeat(4, auto) }
+.cpick button { width: 26px; height: 22px; border-radius: 4px; border: 1px solid rgba(0,0,0,.25); cursor: pointer; padding: 0; position: relative }
+.cpick.el button { width: auto; height: 24px; padding: 0 8px 0 6px; font: 600 12px var(--body); color: var(--fg); background: var(--chip); display: inline-flex; align-items: center; gap: 5px; border-color: var(--line) }
+.cpick button.t1::after { content: ""; position: absolute; inset: 4px; border: 2px solid #ff3b2f; border-radius: 2px }
+.cpick button.t2::after { content: ""; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; background: rgba(255,255,255,.75); transform: translate(-50%,-50%) rotate(45deg) }
+.cpick button[aria-pressed=true] { outline: 2px solid var(--fg); outline-offset: 1px }
+.send { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px }
+.send textarea { width: 100%; min-height: 58px; font: 13px var(--body); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; resize: vertical; box-sizing: border-box }
+.send .btns { display: flex; flex-wrap: wrap; gap: 8px }
+.status { font-size: 13px; color: var(--muted) } .status.ok { color: var(--ok) } .status.bad { color: var(--bad) }
+.legend { font-size: 12px; color: var(--muted) }
+.unitnote { font-size: 13px; color: var(--muted); margin: 0 0 8px }
+.seeds { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; margin-bottom: 14px }
+.seed { background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; cursor: pointer; text-align: left; font: inherit; color: var(--fg) }
+.seed[aria-selected=true] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset }
+.seed .t { font-family: var(--display); font-weight: 700; font-size: 1rem }
+.seed .m { font-size: 12px; color: var(--muted) }
+.mix { display: flex; height: 9px; border-radius: 5px; overflow: hidden; margin: 6px 0 3px; background: var(--chip) }
+.mix i { display: block; height: 100% }
+.domains { display: inline-flex; gap: 4px; align-items: center; margin-left: auto }
+.domains button { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0 }
+.domains button[aria-pressed=true] { border-color: var(--fg) }
+.speeds { display: grid; grid-template-columns: auto 1fr auto; gap: 3px 8px; align-items: center; font-size: 12px }
+.speeds .bar { height: 7px; border-radius: 4px; background: var(--chip); overflow: hidden }
+.speeds .bar i { display: block; height: 100% }
+.tier-off { opacity: .35; pointer-events: none }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Elemental Swarm</h1>
+  <p>Four body plans for one rule set. Seed a swarm of tadpoles with a majority of one element and the same learned rules should grow that element's creature; the reported loss sums all four runs. Every tadpole keeps its domain and breeds true, and its heart stays blue and white until it dies. Regions are painted in domain <em>slots</em> A, B, C: the check takes the best assignment of real domains to slots, so it rewards forming distinct domain regions, never a particular domain.</p>
+</header>
+<div class="seeds" id="seeds" role="tablist" aria-label="Body plan"></div>
+
+<div class="layout">
+  <section class="stage" aria-label="Preview">
+    <div class="view"><canvas id="cv" aria-label="3D preview; drag to orbit, scroll to zoom"></canvas></div>
+    <div class="viewbar">
+      <button class="btn primary" id="play" type="button">Pause</button>
+      <div class="frame"><span class="legend">frame</span><input id="frame" type="range" min="0" max="7" step="1" value="0" aria-label="Animation frame"><span class="mono" id="frameo">1/8</span></div>
+      <button class="btn" data-view="side" type="button">Side</button>
+      <button class="btn" data-view="top" type="button">Top</button>
+      <button class="btn" data-view="front" type="button">Front</button>
+      <button class="btn" data-view="three" type="button">3/4</button>
+      <button class="btn on" id="gridbtn" type="button" aria-pressed="true">Grid box</button>
+      <button class="btn on" id="hitbtn" type="button" aria-pressed="true">Mark hits</button>
+      <button class="btn" id="tintbtn" type="button" aria-pressed="false">Tint hearts by element</button>
+      <button class="btn" id="slotbtn" type="button" title="Which real domain each region shows as. The loss takes the best assignment, so this never changes a target.">Domains: –</button>
+    </div>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="k">Tadpoles</div><div class="v" id="s-n">–</div></div>
+      <div class="stat"><div class="k">Intersections</div><div class="v" id="s-hit">–</div></div>
+      <div class="stat"><div class="k">Fits grid</div><div class="v" id="s-fit">–</div></div>
+      <div class="stat"><div class="k">Extent (x·y·z)</div><div class="v" id="s-size" style="font-size:13px">–</div></div>
+      <div class="stat"><div class="k">Majority</div><div class="v" id="s-maj">–</div></div>
+      <div class="stat"><div class="k">States used</div><div class="v" id="s-st" style="font-size:13px">–</div></div>
+      <div class="stat"><div class="k">Domain regions</div><div class="v" id="s-dom" style="font-size:13px">–</div></div>
+    </div>
+    <div class="panel" style="padding:10px 12px">
+      <div class="legend" style="margin-bottom:6px">Heart speed per frame, by element (Time should lead)</div>
+      <div class="speeds" id="speeds"></div>
+    </div>
+    <div class="census" id="roles" aria-label="Tadpoles by role"></div>
+    <p class="legend" id="notes"></p>
+  </section>
+
+  <section class="panel" aria-label="Parameters">
+    <h2 id="ptitle">Parameters</h2>
+    <p class="unitnote" id="plan"></p>
+    <div class="presets" id="presets"></div>
+    <div id="groups"></div>
+    <div class="send">
+      <label class="legend" for="note">Note for Claude (optional)</label>
+      <textarea id="note" placeholder="Which plans you confirm, what to change…"></textarea>
+      <div class="btns">
+        <button class="btn primary" id="sendbtn" type="button">Send all four to Claude</button>
+        <button class="btn" id="copybtn" type="button">Copy JSON</button>
+        <button class="btn" id="resetbtn" type="button">Reset this plan</button>
+      </div>
+      <div class="status" id="sendstatus" role="status">Not sent yet.</div>
+      <textarea id="copyfield" hidden readonly aria-label="Parameters as JSON"></textarea>
+    </div>
+  </section>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// Four body plans for one swarm of tadpole fauna - one per element - as targets for a single
+// learned rule set that, seeded with a different majority element, converges to that element's
+// body plan.
+//
+// One file, run in the designer page and in node (swarm_target.py). What the designer shows IS
+// the training target.
+//
+// THE UNIT is the game's tadpole (TadPoleFauna.prefab + the four `Tadpole Fauna <Element>`
+// variants): a HEART crystal at the front, a SPINDLE limb out of the heart, ONE body PRISM on the
+// limb's end.
+//   crystal  fixed by the element (shape and size). While the tadpole lives every heart is the
+//            same blue-and-white; only a DEAD tadpole leaves a lime crystal behind
+//   spindle  length, bend, bend roll, thickness - free
+//   prism    size and roll free WITHIN the element's identity (below); tier changes are Charge's
+//            alone; a tadpole's domain never changes and its offspring inherit it
+// Measured from the prefab, in game units (`unitScale` maps them to voxels): heart world size
+// 2.298 (Charge, Space) | 1.737 (Mass, Time).
+//
+// Body plans: MASS the whale (chunky skin), SPACE the jellyfish (an umbrella of rods), CHARGE the
+// pufferfish (plates that shield, then swing out into danger spines), TIME the dragonfly
+// (beating wings outlined by runners). In every plan the minority elements keep their identity:
+// Space makes the rods, Mass the bulk, Charge the armour and anything that changes state, and Time
+// the runners that zip round the structure.
+//
+// Frame: +x the creature's head, +y up, units = voxels.
+(function (root) {
+  const TAU = Math.PI * 2, SHIELD = 3.0, HMIN = 0.25, HMAX = 3.0;
+  const ELEMENTS = ["Charge", "Mass", "Space", "Time"];
+  const HEART = [2.298, 1.737, 2.298, 1.737];
+  const perimeter = (a, b) => Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+
+  // ---- vector helpers ---------------------------------------------------------------------
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const len = a => Math.hypot(a[0], a[1], a[2]);
+  const norm = a => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+  const deg = d => d * Math.PI / 180;
+  const lerp = (a, b, t) => a + (b - a) * t;
+  function frame(f, n) {                  // [f, s, n], right-handed, n forced perpendicular to f
+    f = norm(f); n = norm(sub(n, mul(f, dot(n, f))));
+    if (len(n) < 1e-6) n = norm(Math.abs(f[1]) < 0.9 ? cross(f, [0, 1, 0]) : cross(f, [1, 0, 0]));
+    return [f, cross(n, f), n];
+  }
+  const toR = ax => [ax[0][0], ax[1][0], ax[2][0], ax[0][1], ax[1][1], ax[2][1], ax[0][2], ax[1][2], ax[2][2]];
+  const rotAxis = (v, k, a) => {
+    const c = Math.cos(a), s = Math.sin(a), kv = cross(k, v), kd = dot(k, v);
+    return [v[0] * c + kv[0] * s + k[0] * kd * (1 - c), v[1] * c + kv[1] * s + k[1] * kd * (1 - c), v[2] * c + kv[2] * s + k[2] * kd * (1 - c)];
+  };
+  const clampH = v => Math.max(HMIN, Math.min(HMAX, v));
+
+
+  // ---- element identity: every unit obeys its element, whatever a target asks for ----------
+  // Prism half-extents are [long (along the limb), wide, thin]. A request that breaks the identity
+  // is SHRUNK into it where it can be (shrinking never makes a new overlap) and grown only where
+  // it must be (a Space rod too short to be a rod).
+  //   Charge  the only element that changes STATE (plain | danger | shield); any shape 0.3-2.2
+  //   Mass    chunky: every axis 0.5-1.8, longest at most 1.6x the shortest
+  //   Space   a rod: long 0.9-3.0, cross 0.25-0.42 and at most a quarter of the length
+  //   Time    small and streamlined: long 0.45-1.2, cross 0.3-0.6 and at most long / 1.5;
+  //           Time units are the fast ones - in every body plan they are the runners
+  const C = (v, a, b) => Math.max(a, Math.min(b, v));
+  function identity(elem, h, tier) {
+    let o;
+    if (elem === 0) o = h.map(v => C(v, 0.3, 2.2));
+    else if (elem === 1) { o = h.map(v => C(v, 0.5, 1.8)); const m = Math.min(...o); o = o.map(v => Math.min(v, m * 1.6)); }
+    else if (elem === 2) { const L = C(h[0], 0.9, 3.0), c = x => C(Math.min(x, L / 4), 0.25, 0.42); o = [L, c(h[1]), c(h[2])]; }
+    else { const L = C(h[0], 0.45, 1.2), c = x => C(Math.min(x, L / 1.5), 0.3, 0.6); o = [L, c(h[1]), c(h[2])]; }
+    return { h: o, tier: elem === 0 ? tier : 0 };
+  }
+
+  // ---- the unit ----------------------------------------------------------------------------
+  // u = { p (heart centre), f (forward), n (normal), elem, spindle: {len, bend, roll, thick},
+  //       prism: {h:[long, wide, thin], tier, roll}, role }
+  // DOMAINS ARE SLOTS. A swarm may hold several domains (each lineage breeding true), so a target
+  // paints its regions with abstract slots A | B | C (prism.slot 0 | 1 | 2), and P.slotMap says
+  // which real domain each slot shows as in a preview. The loss is meant to be DOMAIN-NEUTRAL:
+  // the minimum over every slot -> domain assignment (distinct slots, distinct domains), so it
+  // rewards forming regions of different domains, never one particular domain.
+  const crystalR = (P, e) => 0.5 * HEART[e] * P.unitScale * P.crystalSize;
+  const unitLength = (P, e, sp, hl) => 2 * crystalR(P, e) + sp + 2 * hl + P.gap;
+  function realise(P, u, id) {
+    const [f, s, n] = frame(u.f, u.n);
+    const r = crystalR(P, u.elem), sp = u.spindle;
+    const L = r + sp.len;                                           // the limb roots inside the heart
+    const b = norm(add(mul(n, Math.cos(sp.roll)), mul(s, Math.sin(sp.roll))));
+    const k = Math.abs(sp.bend) < 1e-6 ? 0 : sp.bend / L, back = mul(f, -1);
+    const at = t => k === 0 ? add(u.p, mul(back, t))
+      : add(add(u.p, mul(back, Math.sin(k * t) / k)), mul(b, (1 - Math.cos(k * t)) / k));
+    const tan = t => norm(add(mul(back, Math.cos(k * t)), mul(b, Math.sin(k * t))));
+    const nrm = t => norm(add(mul(f, Math.sin(k * t)), mul(b, Math.cos(k * t))));
+    const pts = []; for (let i = 0; i <= 8; i++) pts.push(at(L * i / 8));
+    const T = tan(L), N = rotAxis(rotAxis(nrm(L), T, -sp.roll), T, u.prism.roll || 0);
+    const id_ = identity(u.elem, u.prism.h.map(clampH), u.prism.tier || 0), h = id_.h, tier = id_.tier;
+    const pc = add(at(L), mul(T, h[0]));
+    return {
+      crystal: { p: u.p, r, elem: u.elem, unit: id },
+      spindle: { pts, r: sp.thick * P.unitScale, unit: id },
+      prism: { p: pc, h: tier === 2 ? h.map(v => Math.max(HMIN, v / SHIELD)) : h, R: toR(frame(mul(T, -1), N)), dom: (P.slotMap || [0, 1, 2])[u.prism.slot || 0], slot: u.prism.slot || 0, tier, unit: id },
+      tail: add(pc, mul(T, h[0])), tailDir: T,
+    };
+  }
+  function assemble(P, units) {
+    const out = { units, crystals: [], prisms: [], spindles: [] };
+    units.forEach((u, i) => { const g = realise(P, u, i); out.crystals.push(g.crystal); out.prisms.push(g.prism); out.spindles.push(g.spindle); });
+    return out;
+  }
+  const unit = (p, f, n, elem, sp, pr, role) => ({ p, f, n, elem, spindle: sp, prism: pr, role });
+  const limb = (P, len, bend, roll) => ({ len, bend: bend || 0, roll: roll || 0, thick: P.spindleThickness });
+
+  // A chain of units laid head to tail: each heart just behind the previous prism's tail, on the
+  // previous limb's end tangent, so bends accumulate into curls (tentacles, rays, an abdomen).
+  function chain(P, start, dir, n, count, mk, role) {
+    const out = []; let p = start, d = norm(dir), nn = n;
+    for (let i = 0; i < count; i++) {
+      const c = mk(i), r = crystalR(P, c.elem);
+      const u = unit(add(p, mul(d, r)), mul(d, -1), nn, c.elem, c.spindle, c.prism, role);
+      out.push(u);
+      const g = realise(P, u, 0);
+      p = add(g.tail, mul(g.tailDir, P.gap)); d = g.tailDir;
+      nn = norm(sub(nn, mul(d, dot(nn, d))));
+    }
+    return out;
+  }
+
+  // n angles around a closed curve, evenly spaced in ARC LENGTH
+  function evenAngles(curve, n, phase) {
+    const M = 360, cum = [0]; let prev = curve(0);
+    for (let i = 1; i <= M; i++) { const q = curve(TAU * i / M); cum.push(cum[i - 1] + len(sub(q, prev))); prev = q; }
+    const total = cum[M], out = [];
+    for (let j = 0; j < n; j++) {
+      const target = (total * (j + phase) / n) % total;
+      let i = 1; while (i < M && cum[i] < target) i++;
+      out.push(TAU * (i - 1 + (target - cum[i - 1]) / Math.max(cum[i] - cum[i - 1], 1e-9)) / M);
+    }
+    return out;
+  }
+
+  // Ring tiling of a surface `surf(s, th) -> {p, n}` (s = 0 at the head/apex): rings at sList,
+  // perRing[i] units around ring i, each pointing forward along the surface toward s = 0, hearts
+  // at the plate mid-layer, prisms reaching back to just before the next ring's hearts.
+  // look(s, th, j, i) -> {elem, spindle, tier, tailReach}.
+  function tile(P, surf, sList, perRing, look, rmax, ht, slack, phaseOf) {
+    const out = [];
+    const rings = sList.map((s, i) => {
+      const ths = evenAngles(th => surf(s, th).p, perRing[i], phaseOf ? phaseOf(i) : 0);
+      return { ths, hearts: ths.map(th => { const a = surf(s, th); return { a, h: sub(a.p, mul(a.n, ht)) }; }) };
+    });
+    for (let i = 0; i < sList.length; i++) {
+      const s = sList[i], n = perRing[i], next = i + 1 < sList.length ? sList[i + 1] : null;
+      const { ths, hearts } = rings[i];
+      for (let j = 0; j < n; j++) {
+        const th = ths[j], a = hearts[j].a, lk = look(s, th, j, i), heart = hearts[j].h;
+        const f = norm(sub(surf(Math.max(0, s - 1e-3), th).p, a.p));
+        const r = crystalR(P, lk.elem);
+        let reach = next !== null ? len(sub(surf(next, th).p, a.p)) - rmax - P.gap - slack : lk.tailReach;
+        let wide = 1e9;
+        const ends = [s, Math.min(1, next !== null ? s + 0.8 * (next - s) : i > 0 ? s + 0.8 * (s - sList[i - 1]) : s)];
+        for (const k of [(j + 1) % n, (j + n - 1) % n]) for (const se of ends) {
+          if (k === j) continue;
+          const A = surf(se, th), B = surf(se, ths[k]);
+          const chord = len(sub(sub(B.p, mul(B.n, ht)), sub(A.p, mul(A.n, ht))));
+          const turn = Math.acos(Math.max(-1, Math.min(1, dot(A.n, B.n))));
+          wide = Math.min(wide, 0.5 * P.plateWidth * chord - 1.5 * ht * Math.tan(Math.min(turn, 2.8) / 2) - P.gap / 2);
+        }
+        if (next !== null) for (const o of rings[i + 1].hearts) {
+          const d = sub(o.h, heart), along = -dot(d, f), lat = len(add(d, mul(f, along)));
+          if (along > 0 && lat < wide + rmax + P.gap) reach = Math.min(reach, along - rmax - P.gap - slack);
+        }
+        const lenSp = Math.max(0, Math.min(lk.spindle, reach - r - 2 * HMIN));
+        out.push(unit(heart, f, a.n, lk.elem, limb(P, lenSp), { h: [0.5 * (reach - r - lenSp), wide, ht], tier: lk.tier || 0, slot: lk.slot }, lk.role || "skin"));
+      }
+    }
+    return out;
+  }
+
+  // Runners on a closed loop `curve(t) -> {p, n}`, t in [0, 1): `count` evenly spaced Time units
+  // travelling forward; over one cycle each advances `laps` spacings, so the pattern repeats
+  // exactly while every unit really moves (the swarm's fast element, zipping round the body).
+  function loopLength(curve) { let a = 0, prev = curve(0).p; for (let i = 1; i <= 200; i++) { const q = curve(i / 200).p; a += len(sub(q, prev)); prev = q; } return a; }
+  function runners(P, curve, k, opts) {
+    const L = loopLength(curve), uL = unitLength(P, 3, opts.spindle, opts.h[0]);
+    const count = Math.max(0, Math.floor(L / (uL * opts.spacing)));
+    const out = [], shift = count ? opts.laps * (k / P.frames) / count : 0;
+    for (let i = 0; i < count; i++) {
+      const t = ((i / count + shift) % 1 + 1) % 1, a = curve(t), b = curve((t + 1e-3) % 1);
+      out.push(unit(a.p, norm(sub(b.p, a.p)), a.n, 3, limb(P, opts.spindle), { h: opts.h.slice(), tier: 0, slot: opts.slot }, "runner"));
+    }
+    return out;
+  }
+  const smooth = x => { x = C(x, 0, 1); return x * x * (3 - 2 * x); };
+  const firstFitRings = (circAt, sFrom, sTo, step, minUnit, spacing) => {
+    const sList = [], per = [];
+    for (let s = sFrom; s <= sTo + 1e-9; s += step) {
+      const n = Math.floor(circAt(s) / Math.max(spacing, minUnit));
+      if (n >= 3) { sList.push(s); per.push(n); }
+    }
+    return { sList, per };
+  };
+
+  // ============================ MASS: the whale ============================================
+  const WHALE = {
+    slotMap: [0, 1, 2], backSlot: 0, bellySlot: 1, finSlot: 0, eyeSlot: 1, runnerSlot: 1, countershade: -0.15,
+    gridX: 100, gridY: 44, gridZ: 72, unitScale: 1, crystalSize: 1, spindleThickness: 0.22, gap: 0.2,
+    length: 66, girth: 0.14, girthPeak: 0.3, headRound: 0.55, tailTaper: 1.6, peduncle: 0.12, flatten: 0.8, bellyDrop: 0.18,
+    ringPitch: 5.0, ringSlack: 0.4, arcSpacing: 2.6, plateWidth: 0.95, plateThickness: 1.6, spindle: 0.4,
+    pleats: 1, pleatEnd: 0.45, pleatFlash: 1, eyes: 1, eyePos: 0.13,
+    flipperRays: 3, flipperUnits: 2, flipperPos: 0.3, flipperSweep: 35, flipperDroop: 25, flipperSpread: 8,
+    flukeRays: 3, flukeUnits: 2, flukeSweep: 30, flukeSpread: 14, dorsal: 1, dorsalPos: 0.66,
+    runners: 1, laneHigh: 48, laneLow: 22, runFrom: 0.16, runTo: 0.7, runnerSpacing: 1.6, runnerLaps: 2,
+    frames: 8, swimAmp: 0.045, swimWave: 1.1, swimEnv: 2.2, flukePitch: 22, flipperFlap: 12,
+  };
+  function whaleRadius(P, s) {
+    const rmax = P.girth * P.length;
+    if (s <= P.girthPeak) { const u = s / P.girthPeak; return rmax * Math.pow(Math.max(0, u * (2 - u)), P.headRound); }
+    const t = (s - P.girthPeak) / (1 - P.girthPeak);
+    return rmax * (1 - (1 - P.peduncle) * Math.pow(t, P.tailTaper));
+  }
+  function whaleAt(P, k) {
+    const L = P.length, xOf = s => L / 2 - s * L, ht = P.plateThickness / 2, rmax = crystalR(P, 0);
+    const surf = (s, th) => {
+      const w = Math.max(whaleRadius(P, s), 1e-3), h = w * P.flatten, yc = -P.bellyDrop * w;
+      const y = yc + h * Math.sin(th), z = w * Math.cos(th);
+      return { p: [xOf(s), y, z], n: norm([0, (y - yc) / (h * h), z / (w * w)]) };
+    };
+    const sList = [], per = [];
+    for (let x = L / 2 - rmax - 0.5; x > -L / 2; x -= P.ringPitch) {
+      const s = (L / 2 - x) / L, w = whaleRadius(P, s), h = w * P.flatten;
+      const n = Math.floor(perimeter(w - ht, h - ht) / Math.max(P.arcSpacing, 2 * rmax + P.gap));
+      if (n < 3 || h < 2 * ht + rmax) { if (sList.length) break; else continue; }
+      sList.push(s); per.push(n);
+    }
+    const ph = TAU * k / P.frames, out = [];
+    const tagged = tile(P, surf, sList, per, (s, th, j, i) => {
+      const low = Math.sin(th) < P.countershade, pleat = P.pleats && low && s < P.pleatEnd && j % 2 === 0;
+      return pleat ? { elem: 0, spindle: P.spindle, role: "pleat", tailReach: P.ringPitch * 0.8, slot: P.bellySlot,
+                       tier: P.pleatFlash ? (Math.sin(ph - s * 9) > 0 ? 1 : 0) : 1 }
+                   : { elem: 1, spindle: P.spindle, tailReach: P.ringPitch * 0.8, slot: low ? P.bellySlot : P.backSlot };
+    }, rmax, ht, P.ringSlack);
+    tagged.forEach(u => out.push({ u, s: (L / 2 - u.p[0]) / L }));
+    if (P.eyes) for (const side of [1, -1]) {                         // the nearest skin unit becomes a Charge eye
+      const e = surf(P.eyePos, side > 0 ? 0.15 : Math.PI - 0.15).p;
+      let best = null, bd = 1e9;
+      for (const t of out) { const d = len(sub(t.u.p, e)); if (d < bd) { bd = d; best = t; } }
+      if (best) { best.u.elem = 0; best.u.prism.tier = 2; best.u.prism.slot = P.eyeSlot; best.u.role = "eye"; }
+    }
+    const space = (h0) => ({ h: [h0, 0.4, 0.4], tier: 0, slot: P.finSlot });
+    for (const side of [1, -1]) {                                     // flippers: fans of Space rods
+      const s0 = P.flipperPos, a = surf(s0, side > 0 ? -0.35 : Math.PI + 0.35);
+      let span = rotAxis([0, 0, side], [0, 1, 0], -side * deg(P.flipperSweep));
+      span = norm(rotAxis(span, [1, 0, 0], side * deg(P.flipperDroop)));
+      const chord = norm(sub([-1, 0, 0], mul(span, dot([-1, 0, 0], span)))), fn = norm(cross(span, chord));
+      for (let r = 0; r < P.flipperRays; r++) {
+        const v = P.flipperRays > 1 ? r / (P.flipperRays - 1) - 0.5 : 0;
+        const dir = rotAxis(span, fn, deg(P.flipperSpread) * v * 2);
+        const start = add(add(a.p, mul(a.n, 2 * rmax + P.gap)), mul(chord, v * (P.flipperRays - 1) * (2 * rmax + P.gap)));
+        chain(P, start, dir, fn, P.flipperUnits, i => ({ elem: 2, spindle: limb(P, 0.6), prism: space(2.6 - 0.5 * i) }), "fin")
+          .forEach(u => out.push({ u, s: s0, fin: { side, root: a.p } }));
+      }
+    }
+    if (P.dorsal) {
+      const top = surf(P.dorsalPos, Math.PI / 2);
+      chain(P, add(top.p, [0, rmax - ht + P.gap, 0]), norm([-0.6, 0.8, 0]), [0, 0, 1], 1, () => ({ elem: 2, spindle: limb(P, 0.4), prism: space(1.6) }), "fin")
+        .forEach(u => out.push({ u, s: P.dorsalPos }));
+    }
+    {                                                                  // flukes: Space rays fanned from the tail stock
+      const tailS = sList[sList.length - 1], x0 = xOf(tailS) - P.ringPitch * 0.8 - P.ringSlack - P.gap, y0 = -P.bellyDrop * whaleRadius(P, tailS);
+      for (const side of [1, -1]) for (let r = 0; r < P.flukeRays; r++) {
+        const v = P.flukeRays > 1 ? r / (P.flukeRays - 1) : 0.5, ang = deg(P.flukeSweep + P.flukeSpread * (v - 0.5) * 2);
+        chain(P, [x0 - r * (2 * rmax + P.gap), y0, side * (rmax + P.gap)], norm([-Math.sin(ang), 0, side * Math.cos(ang)]), [0, 1, 0], P.flukeUnits,
+          i => ({ elem: 2, spindle: limb(P, 0.5), prism: space(2.4 - 0.4 * i) }), "fluke").forEach(u => out.push({ u, s: 1, fluke: true }));
+      }
+    }
+    if (P.runners) for (const side of [1, -1]) {                      // Time runners zipping round a loop on each flank
+      const lift = rmax - ht + crystalR(P, 3) + 2 * P.gap + 0.4;
+      // a closed path: along the high lane toward the tail, across, along the low lane back to the head
+      const loop = t => {
+        t = ((t % 1) + 1) % 1;
+        const seg = t * 4;
+        let s, th;
+        if (seg < 1.7) { s = P.runFrom + (P.runTo - P.runFrom) * (seg / 1.7); th = P.laneHigh; }
+        else if (seg < 2) { s = P.runTo; th = lerp(P.laneHigh, P.laneLow, (seg - 1.7) / 0.3); }
+        else if (seg < 3.7) { s = P.runTo - (P.runTo - P.runFrom) * ((seg - 2) / 1.7); th = P.laneLow; }
+        else { s = P.runFrom; th = lerp(P.laneLow, P.laneHigh, (seg - 3.7) / 0.3); }
+        const a = surf(s, side > 0 ? deg(th) : Math.PI - deg(th));
+        return { p: add(a.p, mul(a.n, lift)), n: a.n };
+      };
+      runners(P, loop, k, { spindle: 0.3, h: [1.0, 0.5, 0.4], spacing: P.runnerSpacing, laps: P.runnerLaps, slot: P.runnerSlot })
+        .forEach(u => out.push({ u, s: (L / 2 - u.p[0]) / L }));
+    }
+    // swim: a vertical travelling wave, each unit carried rigidly by the spine where it sits
+    const heave = s => P.swimAmp * L * Math.pow(Math.max(0, s), P.swimEnv) * Math.sin(TAU * (s / P.swimWave - k / P.frames));
+    return out.map(t => {
+      const u = t.u, s = C(t.s, 0, 1), ds = 1e-3, dy = heave(s);
+      let pitch = Math.atan2(dy - heave(s + ds), ds * L);
+      if (t.fluke) pitch += deg(P.flukePitch) * Math.cos(ph);
+      const pivot = [xOf(s), 0, 0];
+      let rel = sub(u.p, pivot), f = u.f, n = u.n;
+      if (t.fin) {
+        const a = deg(P.flipperFlap) * Math.sin(ph) * t.fin.side;
+        rel = add(sub(t.fin.root, pivot), rotAxis(sub(u.p, t.fin.root), [1, 0, 0], a));
+        f = rotAxis(f, [1, 0, 0], a); n = rotAxis(n, [1, 0, 0], a);
+      }
+      const z = [0, 0, 1];
+      return Object.assign(u, { p: add(add(pivot, [0, dy, 0]), rotAxis(rel, z, pitch)), f: rotAxis(f, z, pitch), n: rotAxis(n, z, pitch) });
+    });
+  }
+
+  // ============================ SPACE: the jellyfish =======================================
+  const JELLY = {
+    slotMap: [0, 1, 2], ribSlot: 0, rimSlot: 1, tentacleSlot: 1, armSlot: 0, stomachSlot: 1, runnerSlot: 0,
+    gridX: 72, gridY: 80, gridZ: 72, unitScale: 1, crystalSize: 1, spindleThickness: 0.2, gap: 0.2,
+    bellRadius: 15, bellHeight: 10, bellSweep: 104, ribs: 18, ribPitch: 6.8, ribSlack: 0.3, plateWidth: 0.9, spindle: 0.6,
+    rim: 1, rimShield: 1, stomach: 2, tentacles: 8, tentacleUnits: 3, tentacleCurl: 4, tentacleInset: 0.9,
+    arms: 4, armUnits: 3, armCurl: 10, armRadius: 5.5,
+    runners: 1, runnerRadius: 0.6, runnerHeight: 0.42, runnerSpacing: 1.7, runnerLaps: 3,
+    frames: 8, pulse: 0.15, pulseLift: 2.5, tentacleWave: 16, tentacleLag: 0.6,
+  };
+  function jellyAt(P, k) {
+    const ph = TAU * k / P.frames, con = 0.5 - 0.5 * Math.cos(ph), lift = P.pulseLift * Math.sin(ph);
+    const sweep = deg(P.bellSweep), rS = crystalR(P, 2), rmax = crystalR(P, 0), ht = 0.42;
+    const bellAt = c => (s, th) => {
+      const phi = sweep * s, R = P.bellRadius * (1 - P.pulse * c * s * s), H = P.bellHeight, sm = Math.sin(Math.min(sweep, Math.PI / 2));
+      const rho = R * Math.sin(phi) / sm, y = H * Math.cos(phi) + lift;
+      return { p: [rho * Math.cos(th), y, rho * Math.sin(th)], n: norm([Math.cos(th) * Math.sin(phi) * H, Math.cos(phi) * R / sm, Math.sin(th) * Math.sin(phi) * H]), rho };
+    };
+    const tight = bellAt(1), surf = bellAt(con);
+    const arcTo = s => { let a = 0, prev = tight(0, 0).p; for (let i = 1; i <= 40; i++) { const q = tight(s * i / 40, 0).p; a += len(sub(q, prev)); prev = q; } return a; };
+    const sAt = d => { let lo = 0, hi = 1; for (let it = 0; it < 30; it++) { const m = (lo + hi) / 2; if (arcTo(m) < d) lo = m; else hi = m; } return (lo + hi) / 2; };
+    // ribs: rows of Space rods down the meridians; a row too small for every rib carries every other one
+    const sList = [], per = [];
+    for (let d = rS + 1.0; d < arcTo(1) - 0.5; d += P.ribPitch) {
+      const s = sAt(d), circ = TAU * tight(s, 0).rho, need = 2 * rS + P.gap + 0.3;
+      const n = circ >= P.ribs * need ? P.ribs : circ >= (P.ribs / 2) * need ? P.ribs / 2 : 0;
+      if (n) { sList.push(s); per.push(n); }
+    }
+    if (P.rim) {                                                       // the last rib row must leave room for a whole rod
+      const room = 2 * rS + 2 * 0.9 + P.spindle + P.gap + P.ribSlack + rmax;
+      while (sList.length && arcTo(1) - arcTo(sList[sList.length - 1]) < room) { sList.pop(); per.pop(); }
+      sList.push(1); per.push(Math.floor(TAU * tight(1, 0).rho / (2 * rmax + P.gap + 0.5)));
+    }
+    const rimTier = P.rimShield ? (con < 0.35 ? 2 : con < 0.7 ? 0 : 1) : (con > 0.6 ? 1 : 0);   // Charge state follows the pulse
+    const out = tile(P, surf, sList, per, (s, th, j, i) => (P.rim && i === sList.length - 1)
+      ? { elem: 0, spindle: 0.3, tier: rimTier, tailReach: 1.4, role: "rim", slot: P.rimSlot }
+      : { elem: 2, spindle: P.spindle, tailReach: P.ribPitch * 0.8, role: "rib", slot: P.ribSlot }, rmax, ht, P.ribSlack);
+    const top = surf(0, 0).p;
+    // stomach: chunky Mass units hanging under the apex
+    chain(P, [0, top[1] - rS - ht - 0.8, 0], [0, -1, 0], [1, 0, 0], P.stomach, () => ({ elem: 1, spindle: limb(P, 0.3), prism: { h: [1.3, 1.1, 1.1], tier: 0, slot: P.stomachSlot } }), "stomach")
+      .forEach(u => out.push(u));
+    // Time runners circling inside the bell
+    if (P.runners) {
+      const yR = P.bellHeight * P.runnerHeight + lift, rR = P.bellRadius * P.runnerRadius * (1 - P.pulse * con * 0.5);
+      runners(P, t => ({ p: [rR * Math.cos(TAU * t), yR, rR * Math.sin(TAU * t)], n: [0, 1, 0] }), k,
+        { spindle: 0.3, h: [1.0, 0.5, 0.4], spacing: P.runnerSpacing, laps: P.runnerLaps, slot: P.runnerSlot }).forEach(u => out.push(u));
+    }
+    // tentacles: long Space rods hanging inside the rim, a wave travelling down them
+    const rimP = surf(1, 0);
+    const below = rimP.p[1] - 1.4 * 2 - rmax - 1.2;
+    for (let t = 0; t < P.tentacles; t++) {
+      const th = TAU * (t + 0.5) / P.tentacles, rr = surf(1, th);
+      const radial = norm([Math.cos(th), 0, Math.sin(th)]);
+      chain(P, [rr.p[0] * P.tentacleInset, below, rr.p[2] * P.tentacleInset], [0, -1, 0], radial, P.tentacleUnits, i => ({ elem: 2,
+        spindle: limb(P, P.spindle, deg(P.tentacleCurl + P.tentacleWave * Math.sin(ph - i * P.tentacleLag))), prism: { h: [2.8 - 0.3 * i, 0.32, 0.32], tier: 0, slot: P.tentacleSlot } }), "tentacle")
+        .forEach(u => out.push(u));
+    }
+    // oral arms: curling Space rods from under the stomach
+    const armY = top[1] - rS - ht - 0.8 - P.stomach * unitLength(P, 1, 0.3, 1.1) - 0.6;
+    for (let a = 0; a < P.arms; a++) {
+      const th = TAU * a / Math.max(1, P.arms), radial = norm([Math.cos(th), 0, Math.sin(th)]);
+      chain(P, add([0, armY, 0], mul(radial, P.armRadius)), [0, -1, 0], radial, P.armUnits, i => ({ elem: 2,
+        spindle: limb(P, 0.5, deg(P.armCurl * Math.sin(ph * 0.5 - i * 0.8 + a)), Math.PI / 2), prism: { h: [2.4, 0.4, 0.4], tier: 0, slot: P.armSlot } }), "arm")
+        .forEach(u => out.push(u));
+    }
+    return out;
+  }
+
+  // ============================ CHARGE: the pufferfish =====================================
+  const PUFFER = {
+    slotMap: [0, 1, 2], backSlot: 0, bellySlot: 1, bands: 0, finSlot: 0, beakSlot: 1, runnerSlot: 1, countershade: -0.2,
+    gridX: 72, gridY: 72, gridZ: 72, unitScale: 1, crystalSize: 1, spindleThickness: 0.2, gap: 0.2,
+    bodyLength: 30, bodyWidth: 22, inflate: 0.32, ringPitch: 4.6, ringSlack: 0.3, arcSpacing: 2.8, plateWidth: 0.92, plateThickness: 0.9, spindle: 0.3,
+    spine: 2.0, shieldFrom: 0.3, dangerFrom: 0.66, beak: 1,
+    pectoralRays: 3, tailRays: 5, finUnits: 1, finFlutter: 30,
+    runners: 1, orbits: 2, orbitTilt: 18, orbitMargin: 2.5, runnerSpacing: 2.0, runnerLaps: 2,
+    frames: 8,
+  };
+  function pufferAt(P, k) {
+    const ph = TAU * k / P.frames, c = 0.5 - 0.5 * Math.cos(ph), m = 1 + P.inflate * c;
+    const a = P.bodyLength / 2, b = P.bodyWidth / 2, ht = P.plateThickness / 2, rmax = crystalR(P, 0);
+    const bodyAt = (mm, mx) => (s, th) => {
+      const psi = Math.PI * s, rho = b * mm * Math.sin(psi), x = a * mx * Math.cos(psi);
+      return { p: [x, rho * Math.sin(th), rho * Math.cos(th)], n: norm([Math.cos(psi) / (a * mx), Math.sin(psi) * Math.sin(th) / (b * mm), Math.sin(psi) * Math.cos(th) / (b * mm)]) };
+    };
+    const mx = 1 + 0.4 * P.inflate * c, surf = bodyAt(m, mx), rest = bodyAt(1, 1);
+    // rings from the DEFLATED body (inflating only spreads them)
+    const arcTo = s => { let q = 0, prev = rest(0, 0).p; for (let i = 1; i <= 40; i++) { const p = rest(s * i / 40, 0).p; q += len(sub(p, prev)); prev = p; } return q; };
+    const total = arcTo(0.92), sList = [], per = [];
+    for (let d = 2 * rmax + 0.8; d < total; d += P.ringPitch) {
+      let lo = 0, hi = 0.92; for (let it = 0; it < 30; it++) { const mm = (lo + hi) / 2; if (arcTo(mm) < d) lo = mm; else hi = mm; }
+      const s = (lo + hi) / 2, rho = b * Math.sin(Math.PI * s) - ht;
+      const n = Math.floor(TAU * rho / Math.max(P.arcSpacing, 2 * rmax + P.gap));
+      if (n >= 3) { sList.push(s); per.push(n); }
+    }
+    const tier = c < P.shieldFrom ? 0 : c < P.dangerFrom ? 2 : 1;
+    const spike = smooth((c - P.dangerFrom) / (1 - P.dangerFrom));    // plates swing out into spines
+    const shell = tile(P, rest, sList, per, (s, th, j, i) => ({ elem: 0, spindle: P.spindle, tier, tailReach: P.ringPitch * 0.7, role: "shell",
+      slot: P.bands ? (i % 2 ? P.bellySlot : P.backSlot) : Math.sin(th) < P.countershade ? P.bellySlot : P.backSlot }), rmax, ht, P.ringSlack,
+      i => (i % 2) * 0.5);
+    // re-seat each shell unit on the inflated body, then curl its limb outward and stretch its prism into a spine
+    const out = shell.map(u => {
+      let best = null, bd = 1e9;                                      // the (s, th) it was laid at
+      for (const s of sList) { const th = Math.atan2(u.p[1], u.p[2]); const q = rest(s, th); const d = len(sub(sub(q.p, mul(q.n, ht)), u.p)); if (d < bd) { bd = d; best = [s, th]; } }
+      const q = surf(best[0], best[1]), f = norm(sub(surf(Math.max(0, best[0] - 1e-3), best[1]).p, q.p));
+      const h = u.prism.h;
+      return Object.assign(u, { p: sub(q.p, mul(q.n, ht)), f, n: q.n,
+        spindle: Object.assign(u.spindle, { bend: deg(95) * spike }),
+        prism: { h: [lerp(h[0], P.spine, spike), lerp(h[1], 0.35, spike), lerp(h[2], 0.35, spike)], tier, slot: u.prism.slot } });
+    });
+    const front = surf(0, 0).p, back = surf(1, 0).p;
+    if (P.beak) {                                                      // a chunky Mass beak at the front
+      chain(P, add(front, [rmax * 0.3, 0, 0]), [1, 0, 0], [0, 1, 0], 1, () => ({ elem: 1, spindle: limb(P, 0.3), prism: { h: [1.0, 1.4, 1.0], tier: 0, slot: P.beakSlot } }), "beak")
+        .forEach(u => { u.f = [1, 0, 0]; u.p = add(front, [crystalR(P, 1) + P.gap + 0.3, 0, 0]); out.push(u); });
+    }
+    const spineOut = P.spine * 2 * spike;
+    const ray = (h0) => ({ h: [h0, 0.38, 0.38], tier: 0, slot: P.finSlot });
+    for (const side of [1, -1]) {                                     // pectoral fans of Space rods, fluttering
+      const s0 = 0.38, q = surf(s0, side > 0 ? 0 : Math.PI), flut = deg(P.finFlutter) * Math.sin(ph * 3);
+      for (let r = 0; r < P.pectoralRays; r++) {
+        const v = P.pectoralRays > 1 ? r / (P.pectoralRays - 1) - 0.5 : 0;
+        const dir = norm(rotAxis([-0.35, v * 1.2, side], [1, 0, 0], side * flut));
+        chain(P, add(add(q.p, mul(q.n, 2 * rmax + P.gap + spineOut)), [0, v * (P.pectoralRays - 1) * (2 * rmax + P.gap + 0.2), 0]), dir, [0, 1, 0], P.finUnits,
+          () => ({ elem: 2, spindle: limb(P, 0.4), prism: ray(2.2) }), "fin").forEach(u => out.push(u));
+      }
+    }
+    for (let r = 0; r < P.tailRays; r++) {                            // caudal fan
+      const v = P.tailRays > 1 ? r / (P.tailRays - 1) - 0.5 : 0, sw = deg(20) * Math.sin(ph * 2);
+      const dir = norm(rotAxis([-1, v * 1.3, 0], [0, 1, 0], sw));
+      chain(P, add(back, [-(rmax + P.gap + spineOut * 0.5), v * (P.tailRays - 1) * (2 * rmax + P.gap + 0.2), 0]), dir, [0, 0, 1], P.finUnits + 1,
+        i => ({ elem: 2, spindle: limb(P, 0.4), prism: ray(2.4 - 0.4 * i) }), "tail").forEach(u => out.push(u));
+    }
+    if (P.runners) for (let o = 0; o < P.orbits; o++) {                // Time runners racing round slanted girth rings, like electrons
+      const xo = -a * (0.12 + 0.34 * o), so = Math.acos(C(xo / a, -1, 1)) / Math.PI;
+      const R = b * (1 + P.inflate) * Math.sin(Math.PI * so) + P.spine * 2 + rmax + P.orbitMargin, tilt = deg(P.orbitTilt);                                       // parallel rings never cross
+      runners(P, t => {
+        const p = rotAxis([0, R * Math.sin(TAU * t), R * Math.cos(TAU * t)], [0, 0, 1], tilt);
+        return { p: add(p, [xo, 0, 0]), n: rotAxis([1, 0, 0], [0, 0, 1], tilt) };
+      }, k, { spindle: 0.3, h: [1.0, 0.5, 0.4], spacing: P.runnerSpacing, laps: P.runnerLaps * (o % 2 ? -1 : 1), slot: P.runnerSlot }).forEach(u => out.push(u));
+    }
+    return out;
+  }
+
+  // ============================ TIME: the dragonfly ========================================
+  const DRAGONFLY = {
+    slotMap: [0, 1, 2], thoraxSlot: 0, abdomenSlot: 0, stripeSlot: 1, eyeSlot: 1, sparSlot: 0, wingSlot: 2, legSlot: 0,
+    gridX: 84, gridY: 56, gridZ: 96, unitScale: 1, crystalSize: 1, spindleThickness: 0.2, gap: 0.2,
+    thorax: 3, eyes: 1, abdomen: 9, flick: 14, wingSpan: 30, wingChord: 7.5, wingGap: 2.6, foreSweep: 6, hindSweep: -8,
+    spar: 3, flap: 32, beats: 2, hindLag: 0.25, wingInset: 3.5, wingRunnerSpacing: 1.4, runnerLaps: 2, legs: 1,
+    frames: 8,
+  };
+  function dragonflyAt(P, k) {
+    const ph = TAU * k / P.frames, out = [], rM = crystalR(P, 1), rS = crystalR(P, 2), rT = crystalR(P, 3), rC = crystalR(P, 0);
+    // thorax: chunky Mass units along -x from the neck
+    const thx = chain(P, [2, 0, 0], [-1, 0, 0], [0, 1, 0], P.thorax, () => ({ elem: 1, spindle: limb(P, 0.3), prism: { h: [1.3, 1.25, 1.1], tier: 0, slot: P.thoraxSlot } }), "thorax");
+    thx.forEach(u => out.push(u));
+    const thTail = realise(P, thx[thx.length - 1], 0).tail;
+    // head: two shielded Charge eyes
+    if (P.eyes) for (const side of [1, -1])
+      out.push(unit([2 + rC + P.gap + 1.0, 0.6, side * (rC + 0.4)], [1, 0, 0], [0, 1, 0], 0, limb(P, 0.2), { h: [0.9, 0.9, 0.9], tier: 2, slot: P.eyeSlot }, "eye"));
+    // abdomen: a long chain of Time units, flicking up and down twice a cycle
+    chain(P, add(thTail, [-P.gap, 0, 0]), [-1, 0, 0], [0, 1, 0], P.abdomen, i => ({ elem: 3,
+      spindle: limb(P, 0.3, deg(P.flick) * Math.sin(2 * ph - i * 0.5)), prism: { h: [1.15, 0.55, 0.55], tier: 0, slot: i % 2 ? P.stripeSlot : P.abdomenSlot } }), "abdomen").forEach(u => out.push(u));
+    // wings: a Space spar along the leading edge and a loop of Time runners round the outline,
+    // beating `beats` times a cycle, the hind pair lagging
+    const xs = out.filter(u => u.role === "thorax").map(u => u.p[0]);
+    const roots = [Math.max(...xs) - 0.5, Math.max(...xs) - 0.5 - P.wingChord - P.wingGap - 2 * rS];
+    roots.forEach((rx, w) => {
+      const sweep = deg(w === 0 ? P.foreSweep : P.hindSweep), lag = w === 0 ? 0 : P.hindLag * TAU;
+      for (const side of [1, -1]) {
+        const flap = deg(P.flap) * Math.sin(P.beats * ph - lag) * side;
+        const root = [rx, 1.2, side * (1.3 + rM)];
+        const tw = v => rotAxis(v, [1, 0, 0], flap);                   // the whole wing turns about the body axis at its root
+        const span = norm([-Math.sin(sweep), 0, side * Math.cos(sweep)]), chordD = norm(cross([0, 1, 0], span)).map(v => v * side);
+        const nW = tw([0, 1, 0]);
+        // spar
+        chain(P, add(root, tw(mul(span, 0.6))), tw(span), nW, P.spar, i => ({ elem: 2, spindle: limb(P, 0.4), prism: { h: [2.6 - 0.3 * i, 0.32, 0.32], tier: 0, slot: P.sparSlot } }), "spar")
+          .forEach(u => out.push(u));
+        // membrane outline: an ellipse behind the spar in the wing plane
+        const L = P.wingSpan, ch = P.wingChord, inset = rS + 0.42 + rT + P.gap + 0.4;
+        const r0 = ch / 2, straight = Math.max(0, L - 2 * r0), base = add(root, mul(span, P.wingInset));
+        const per = 2 * straight + TAU * r0;                         // a stadium: two straight edges, round ends
+        runners(P, t => {
+          let d = t * per, u, v;
+          if (d < straight) { u = r0 + d; v = -r0; }
+          else if ((d -= straight) < Math.PI * r0) { const a = d / r0 - Math.PI / 2; u = r0 + straight + r0 * Math.cos(a); v = r0 * Math.sin(a); }
+          else if ((d -= Math.PI * r0) < straight) { u = r0 + straight - d; v = r0; }
+          else { d -= straight; const a = d / r0 + Math.PI / 2; u = r0 + r0 * Math.cos(a); v = r0 * Math.sin(a); }
+          const p = add(add(base, mul(span, u)), mul(chordD, -(r0 + inset) + v));
+          return { p: add(root, tw(sub(p, root))), n: nW };
+        }, k, { spindle: 0.2, h: [1.0, 0.45, 0.35], spacing: P.wingRunnerSpacing, laps: P.runnerLaps * side, slot: P.wingSlot }).forEach(u => out.push(u));
+      }
+    });
+    // legs: Space rods tucked under the thorax
+    if (P.legs) thx.forEach((t, i) => { for (const side of [1, -1])
+      out.push(unit(add(t.p, [0, -1.6 - rS, side * 1.4]), norm([0.3, 1, -side * 0.5]), [1, 0, 0], 2, limb(P, 0.3, deg(-25)), { h: [2.0, 0.3, 0.3], tier: 0, slot: P.legSlot }, "leg")); });
+    return out;
+  }
+
+  // ================================= overlap check =========================================
+  // Solids: prisms (box / shield octahedron, exact separating-axis test) and crystals (spheres,
+  // exact distance). Spindles are limbs and are exempt, as in the game (a limb may pass a plate).
+  function axesOf(q) { const R = q.R; return [[R[0], R[3], R[6]], [R[1], R[4], R[7]], [R[2], R[5], R[8]]]; }
+  function shapeOf(q) {
+    const A = axesOf(q);
+    if (q.tier !== 2) return { A, faces: A, edges: A };
+    const H = q.h.map(v => v * SHIELD), faces = [], edges = [];
+    for (const [a, b] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) faces.push(norm(add(add(mul(A[0], 1 / H[0]), mul(A[1], a / H[1])), mul(A[2], b / H[2]))));
+    for (const [i, j] of [[0, 1], [0, 2], [1, 2]]) for (const sg of [1, -1]) edges.push(norm(sub(mul(A[i], H[i]), mul(A[j], sg * H[j]))));
+    return { A, faces, edges };
+  }
+  function support(q, S, n) {
+    const u = [dot(S.A[0], n), dot(S.A[1], n), dot(S.A[2], n)];
+    if (q.tier !== 2) return q.h[0] * Math.abs(u[0]) + q.h[1] * Math.abs(u[1]) + q.h[2] * Math.abs(u[2]);
+    return SHIELD * Math.max(q.h[0] * Math.abs(u[0]), q.h[1] * Math.abs(u[1]), q.h[2] * Math.abs(u[2]));
+  }
+  function prismPrism(a, b) {
+    const Sa = shapeOf(a), Sb = shapeOf(b), d = sub(b.p, a.p), ax = [...Sa.faces, ...Sb.faces];
+    for (const x of Sa.edges) for (const y of Sb.edges) { const c = cross(x, y); if (len(c) > 1e-6) ax.push(norm(c)); }
+    let best = 1e9;
+    for (const n of ax) best = Math.min(best, support(a, Sa, n) + support(b, Sb, n) - Math.abs(dot(d, n)));
+    return best;
+  }
+  function octaVerts(q) { const A = axesOf(q), out = []; for (let i = 0; i < 3; i++) for (const s of [1, -1]) out.push(add(q.p, mul(A[i], s * SHIELD * q.h[i]))); return out; }
+  function closestOnSeg(p, a, b) { const ab = sub(b, a), t = Math.max(0, Math.min(1, dot(sub(p, a), ab) / Math.max(dot(ab, ab), 1e-12))); return add(a, mul(ab, t)); }
+  function spherePrism(c, q) {                                     // penetration depth (< 0: apart)
+    const A = axesOf(q), d = sub(c.p, q.p), u = [dot(d, A[0]), dot(d, A[1]), dot(d, A[2])];
+    if (q.tier !== 2) {
+      const cl = u.map((v, i) => Math.max(-q.h[i], Math.min(q.h[i], v)));
+      const out = Math.hypot(u[0] - cl[0], u[1] - cl[1], u[2] - cl[2]);
+      if (out > 0) return c.r - out;
+      return c.r + Math.min(...u.map((v, i) => q.h[i] - Math.abs(v)));
+    }
+    const S = shapeOf(q), axes = [...S.faces];
+    const V = octaVerts(q);
+    for (const v of V) { const w = sub(c.p, v); if (len(w) > 1e-9) axes.push(norm(w)); }
+    for (let i = 0; i < 6; i++) for (let j = i + 1; j < 6; j++) {
+      if ((i >> 1) === (j >> 1)) continue;                            // opposite vertices: not an edge
+      const w = sub(c.p, closestOnSeg(c.p, V[i], V[j])); if (len(w) > 1e-9) axes.push(norm(w));
+    }
+    let best = 1e9;
+    for (const n of axes) best = Math.min(best, c.r + support(q, S, n) - Math.abs(dot(d, n)));
+    return best;
+  }
+  function overlaps(g, tol) {
+    tol = tol == null ? 0.05 : tol;
+    const items = [];
+    g.prisms.forEach(q => items.push({ kind: 0, q, reach: q.tier === 2 ? SHIELD * Math.max(...q.h) : len(q.h) }));
+    g.crystals.forEach(q => items.push({ kind: 1, q, reach: q.r }));
+    const cell = 8, grid = new Map(), key = (a, b, c) => a + "," + b + "," + c, cellOf = p => p.map(v => Math.floor(v / cell));
+    items.forEach((it, i) => { const k = key(...cellOf(it.q.p)); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(i); });
+    const pairs = [];
+    items.forEach((a, i) => {
+      const c = cellOf(a.q.p), span = Math.ceil((a.reach + 6) / cell);
+      for (let x = -span; x <= span; x++) for (let y = -span; y <= span; y++) for (let z = -span; z <= span; z++)
+        for (const j of grid.get(key(c[0] + x, c[1] + y, c[2] + z)) || []) {
+          if (j <= i) continue;
+          const b = items[j];
+          if (a.q.unit === b.q.unit) continue;                        // a unit's own heart and prism are one body
+          if (len(sub(a.q.p, b.q.p)) >= a.reach + b.reach) continue;
+          let dpt;
+          if (a.kind === 0 && b.kind === 0) dpt = prismPrism(a.q, b.q);
+          else if (a.kind === 1 && b.kind === 1) dpt = a.q.r + b.q.r - len(sub(a.q.p, b.q.p));
+          else dpt = a.kind === 1 ? spherePrism(a.q, b.q) : spherePrism(b.q, a.q);
+          if (dpt > tol) pairs.push({ a: i, b: j, depth: dpt, kinds: a.kind + b.kind, units: [a.q.unit, b.q.unit] });
+        }
+    });
+    return pairs;
+  }
+
+  // ================================= report ================================================
+
+  // ================================= report ================================================
+  const TARGETS = {
+    mass: { name: "Whale", elem: 1, defaults: WHALE, at: whaleAt },
+    space: { name: "Jellyfish", elem: 2, defaults: JELLY, at: jellyAt },
+    charge: { name: "Pufferfish", elem: 0, defaults: PUFFER, at: pufferAt },
+    time: { name: "Dragonfly", elem: 3, defaults: DRAGONFLY, at: dragonflyAt },
+  };
+  function build(kind, params, k) { const T = TARGETS[kind], P = Object.assign({}, T.defaults, params || {}); return assemble(P, T.at(P, k || 0)); }
+  function reachOf(g) {
+    const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    const grow = (p, r) => { for (let i = 0; i < 3; i++) { lo[i] = Math.min(lo[i], p[i] - r); hi[i] = Math.max(hi[i], p[i] + r); } };
+    g.prisms.forEach(q => grow(q.p, q.tier === 2 ? SHIELD * Math.max(...q.h) : len(q.h)));
+    g.crystals.forEach(q => grow(q.p, q.r));
+    return { lo, hi };
+  }
+  function report(kind, params) {
+    const T = TARGETS[kind], P = Object.assign({}, T.defaults, params || {});
+    const frames = [], pairs = [];
+    let lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9], worst = 0;
+    for (let k = 0; k < P.frames; k++) {
+      const g = assemble(P, T.at(P, k)), ov = overlaps(g), b = reachOf(g);
+      frames.push(g); pairs.push(ov);
+      ov.forEach(o => { worst = Math.max(worst, o.depth); });
+      lo = lo.map((v, i) => Math.min(v, b.lo[i])); hi = hi.map((v, i) => Math.max(v, b.hi[i]));
+    }
+    const grid = [P.gridX, P.gridY, P.gridZ], size = hi.map((v, i) => v - lo[i]);
+    const g0 = frames[0], elems = [0, 0, 0, 0], census = {}, roles = {};
+    g0.units.forEach(u => { elems[u.elem]++; roles[u.role] = (roles[u.role] || 0) + 1; });
+    // per-element speed: a unit's heart displacement per frame (units keep their index across frames)
+    const speed = [0, 0, 0, 0], sc = [0, 0, 0, 0];
+    let sameCount = true;
+    for (let k = 0; k < frames.length; k++) {
+      const a = frames[k], b = frames[(k + 1) % frames.length];
+      if (a.units.length !== b.units.length) { sameCount = false; continue; }
+      a.crystals.forEach((c, i) => { speed[c.elem] += len(sub(b.crystals[i].p, c.p)); sc[c.elem]++; });
+    }
+    const slots = [0, 0, 0]; g0.prisms.forEach(q => slots[q.slot]++);  // domain-slot census (regions)
+    const states = [0, 0, 0];                                         // tier usage over all frames (Charge only)
+    frames.forEach(g => g.prisms.forEach(q => states[q.tier]++));
+    let hmin = 1e9, hmax = 0;
+    g0.prisms.forEach(q => {
+      const key = ["plain", "danger", "shield"][q.tier];
+      census[key] = (census[key] || 0) + 1; hmin = Math.min(hmin, ...q.h); hmax = Math.max(hmax, ...q.h);
+    });
+    const total = g0.units.length, majority = elems.indexOf(Math.max(...elems));
+    return { kind, name: T.name, elem: T.elem, params: P, frames, pairs, overlapsPerFrame: pairs.map(p => p.length), worstDepth: worst,
+             lo, hi, size, grid, offset: lo.map((v, i) => -(v + hi[i]) / 2), fits: size.every((v, i) => v <= grid[i] - 2),
+             units: total, elements: elems, share: elems.map(v => v / Math.max(1, total)), majorityOk: majority === T.elem,
+             speed: speed.map((v, i) => sc[i] ? v / sc[i] : 0), sameCount, states, slots, domainsUsed: slots.filter(v => v).length, census, roles, hmin, hmax };
+  }
+  // The four seedings: each target's element proportions, the swarm a rule must turn into it.
+  function seedings(reports) { return reports.map(r => ({ kind: r.kind, units: r.units, share: r.share })); }
+
+  const API = { ELEMENTS, HEART, SHIELD, HMIN, HMAX, TARGETS, identity, build, report, overlaps, realise, crystalR, seedings };
+  if (typeof module !== "undefined" && module.exports) module.exports = API; else root.SwarmModel = API;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  const SM = window.SwarmModel, $ = id => document.getElementById(id);
+  const PALETTE = [[[0.0, 0.5871999859809875, 0.8036999702453613], [0.7810999751091003, 0.4296000003814697, 0.5934000015258789], [0.48080000281333923, 0.6430000066757202, 0.8723999857902527]], [[0.5511000156402588, 0.08510000258684158, 0.8637999892234802], [0.8730000257492065, 0.3644999861717224, 0.5881999731063843], [0.7519000172615051, 0.5612000226974487, 0.8647000193595886]], [[0.7324000000953674, 0.5054000020027161, 0.10140000283718109], [0.8655999898910522, 0.40709999203681946, 0.26919999718666077], [0.7293000221252441, 0.6166999936103821, 0.46709999442100525]]];
+  const EL_UI = ["#e8a93a", "#8e6bd8", "#3a7bdc", "#2fb39a"];          // legend colours only - hearts are all one colour
+  const HEART_BLUE = [0.42, 0.62, 1.0];
+  const DOM = ["Jade", "Ruby", "Gold"], TIER = ["plain", "danger", "shield"];
+  const hex = c => "#" + c.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0")).join("");
+  const ORDER = ["mass", "space", "charge", "time"];
+  const PLAN = {
+    mass: "MASS — the whale. A thick skin of chunky Mass tadpoles swims with a slow travelling wave; Space rods make the flippers and flukes, Charge tadpoles the flashing throat stripes and shielded eyes, and Time runners race laps along both flanks.",
+    space: "SPACE — the jellyfish. An umbrella of long, thin Space rods down every meridian, Space tentacles and curling oral arms; a rim of Charge tadpoles that shield when relaxed and turn dangerous as the bell contracts; a chunky Mass stomach; Time runners circling inside the bell.",
+    charge: "CHARGE — the pufferfish. A shell of Charge plates that goes plain, then shielded, then swings out into danger spines as the body inflates; a Mass beak, Space fins, and Time runners racing round it on slanted rings like electrons.",
+    time: "TIME — the dragonfly. Four wings beating twice a cycle, each outlined by a loop of Time runners around a Space spar; a flicking Time abdomen, a chunky Mass thorax, shielded Charge eyes and Space legs.",
+  };
+  const COMMON = [["unitScale", "Unit scale", 0.6, 1.5, 0.01], ["crystalSize", "Heart size", 0.7, 1.3, 0.01], ["spindleThickness", "Spindle thickness", 0.1, 0.5, 0.01], ["gap", "Gap", 0.1, 0.8, 0.01]];
+  const GRID = n => [`Training grid (voxels)`, [["gridX", "x", 32, 140, 2], ["gridY", "y", 32, 120, 2], ["gridZ", "z", 32, 140, 2]]];
+  const SPECS = {
+    mass: [["Tadpoles", COMMON],
+      ["Domain regions", [["backSlot", "Back", "slot"], ["bellySlot", "Belly & stripes", "slot"], ["countershade", "Waterline", -0.9, 0.9, 0.01], ["finSlot", "Fins & flukes", "slot"], ["eyeSlot", "Eyes", "slot"], ["runnerSlot", "Runners", "slot"]]],
+      ["Body", [["length", "Length", 40, 90, 1], ["girth", "Girth", 0.08, 0.18, 0.005], ["girthPeak", "Widest at", 0.15, 0.5, 0.01], ["headRound", "Head bluntness", 0.2, 1.2, 0.01],
+        ["tailTaper", "Tail taper", 0.8, 3, 0.05], ["flatten", "Height / width", 0.55, 1.2, 0.01], ["bellyDrop", "Belly drop", 0, 0.4, 0.01]]],
+      ["Mass skin", [["ringPitch", "Ring spacing", 3.5, 8, 0.1], ["ringSlack", "Swim slack", 0, 1.5, 0.05], ["arcSpacing", "Spacing round", 2.2, 5, 0.05], ["plateThickness", "Block thickness", 1, 3, 0.05], ["spindle", "Spindle length", 0, 2, 0.05]]],
+      ["Charge", [["pleats", "Throat stripes", "toggle"], ["pleatEnd", "Stripes reach", 0.1, 0.7, 0.01], ["pleatFlash", "Stripes flash", "toggle"], ["eyes", "Shielded eyes", "toggle"], ["eyePos", "Eye position", 0.05, 0.3, 0.005]]],
+      ["Space fins", [["flipperRays", "Flipper rays", 1, 5, 1], ["flipperUnits", "Rods per ray", 1, 4, 1], ["flipperPos", "Flipper position", 0.15, 0.5, 0.01], ["flipperSweep", "Sweep back °", -10, 70, 1],
+        ["flipperDroop", "Droop °", -20, 60, 1], ["flipperSpread", "Fan °", 0, 30, 1], ["flukeRays", "Fluke rays", 1, 5, 1], ["flukeUnits", "Rods per ray", 1, 4, 1], ["flukeSweep", "Fluke sweep °", 0, 60, 1], ["dorsal", "Dorsal rod", "toggle"]]],
+      ["Time runners", [["runners", "Runners", "toggle"], ["laneHigh", "Upper lane °", 20, 80, 1], ["laneLow", "Lower lane °", 0, 60, 1], ["runFrom", "From", 0.05, 0.4, 0.01], ["runTo", "To", 0.4, 0.85, 0.01],
+        ["runnerSpacing", "Spacing", 1.1, 3, 0.05], ["runnerLaps", "Laps per cycle", 1, 6, 1]]],
+      ["Swim", [["frames", "Frames", 4, 16, 1], ["swimAmp", "Heave", 0, 0.1, 0.002], ["swimWave", "Wavelength", 0.5, 2.5, 0.01], ["swimEnv", "Tail emphasis", 0.5, 4, 0.05], ["flukePitch", "Fluke pitch °", 0, 45, 1], ["flipperFlap", "Flipper flap °", 0, 40, 1]]],
+      GRID()],
+    space: [["Tadpoles", COMMON],
+      ["Domain regions", [["ribSlot", "Bell rods", "slot"], ["rimSlot", "Rim", "slot"], ["tentacleSlot", "Tentacles", "slot"], ["armSlot", "Oral arms", "slot"], ["stomachSlot", "Stomach", "slot"], ["runnerSlot", "Runners", "slot"]]],
+      ["Bell of Space rods", [["bellRadius", "Radius", 8, 24, 0.5], ["bellHeight", "Height", 4, 20, 0.5], ["bellSweep", "Rim curl °", 70, 130, 1], ["ribs", "Ribs", 8, 28, 2], ["ribPitch", "Rod spacing", 4, 10, 0.1], ["spindle", "Spindle length", 0, 2, 0.05]]],
+      ["Charge rim", [["rim", "Rim", "toggle"], ["rimShield", "Shields when relaxed", "toggle"]]],
+      ["Tentacles & arms", [["tentacles", "Tentacles", 0, 16, 1], ["tentacleUnits", "Rods each", 1, 6, 1], ["tentacleCurl", "Curl °", -40, 40, 1], ["tentacleInset", "Inset", 0.6, 1.1, 0.01],
+        ["arms", "Oral arms", 0, 8, 1], ["armUnits", "Rods each", 1, 5, 1], ["armCurl", "Arm curl °", 0, 40, 1], ["armRadius", "Arm spread", 0, 9, 0.1], ["stomach", "Mass stomach", 0, 4, 1]]],
+      ["Time runners", [["runners", "Runners", "toggle"], ["runnerRadius", "Ring radius", 0.3, 0.8, 0.01], ["runnerHeight", "Ring height", 0, 0.8, 0.01], ["runnerSpacing", "Spacing", 1.1, 3, 0.05], ["runnerLaps", "Laps per cycle", 1, 6, 1]]],
+      ["Pulse", [["frames", "Frames", 4, 16, 1], ["pulse", "Contraction", 0, 0.3, 0.005], ["pulseLift", "Lift", 0, 6, 0.1], ["tentacleWave", "Tentacle wave °", 0, 40, 1], ["tentacleLag", "Wave lag", 0, 2, 0.02]]],
+      GRID()],
+    charge: [["Tadpoles", COMMON],
+      ["Domain regions", [["backSlot", "Back", "slot"], ["bellySlot", "Belly", "slot"], ["countershade", "Waterline", -0.9, 0.9, 0.01], ["bands", "Bands instead", "toggle"], ["finSlot", "Fins", "slot"], ["beakSlot", "Beak", "slot"], ["runnerSlot", "Runners", "slot"]]],
+      ["Charge shell", [["bodyLength", "Length", 16, 44, 0.5], ["bodyWidth", "Width", 12, 34, 0.5], ["inflate", "Inflation", 0, 0.5, 0.01], ["ringPitch", "Ring spacing", 3.5, 7, 0.1],
+        ["arcSpacing", "Spacing round", 2.4, 5, 0.05], ["plateThickness", "Plate thickness", 0.6, 2, 0.05], ["spine", "Spine length", 1, 2.2, 0.05], ["shieldFrom", "Shield from", 0, 1, 0.01], ["dangerFrom", "Spines from", 0, 1, 0.01]]],
+      ["Mass & Space", [["beak", "Mass beak", "toggle"], ["pectoralRays", "Pectoral rays", 0, 5, 1], ["tailRays", "Tail rays", 0, 7, 1], ["finUnits", "Rods per ray", 1, 3, 1], ["finFlutter", "Flutter °", 0, 50, 1]]],
+      ["Time runners", [["runners", "Runners", "toggle"], ["orbits", "Rings", 1, 3, 1], ["orbitTilt", "Ring slant °", 0, 40, 1], ["orbitMargin", "Clearance", 1, 8, 0.1], ["runnerSpacing", "Spacing", 1.2, 3, 0.05], ["runnerLaps", "Laps per cycle", 1, 6, 1]]],
+      ["Cycle", [["frames", "Frames", 4, 16, 1]]],
+      GRID()],
+    time: [["Tadpoles", COMMON],
+      ["Domain regions", [["thoraxSlot", "Thorax", "slot"], ["abdomenSlot", "Abdomen", "slot"], ["stripeSlot", "Abdomen stripes", "slot"], ["eyeSlot", "Eyes", "slot"], ["sparSlot", "Wing spars", "slot"], ["wingSlot", "Wing runners", "slot"], ["legSlot", "Legs", "slot"]]],
+      ["Body", [["thorax", "Mass thorax", 1, 5, 1], ["eyes", "Charge eyes", "toggle"], ["abdomen", "Time abdomen", 3, 14, 1], ["flick", "Abdomen flick °", 0, 30, 1], ["legs", "Space legs", "toggle"]]],
+      ["Wings", [["wingSpan", "Span", 14, 40, 0.5], ["wingChord", "Chord", 4, 12, 0.1], ["wingGap", "Fore-hind gap", 0, 8, 0.1], ["foreSweep", "Fore sweep °", -20, 30, 1], ["hindSweep", "Hind sweep °", -30, 20, 1],
+        ["spar", "Spar rods", 1, 5, 1], ["wingInset", "Root clearance", 1, 8, 0.1], ["wingRunnerSpacing", "Runner spacing", 1.1, 3, 0.05], ["runnerLaps", "Laps per cycle", 1, 6, 1]]],
+      ["Beat", [["frames", "Frames", 4, 16, 1], ["flap", "Flap °", 0, 60, 1], ["beats", "Beats per cycle", 1, 4, 1], ["hindLag", "Hind lag", 0, 0.5, 0.01]]],
+      GRID()],
+    unit: [["Demo tadpole (not part of a plan)", [["dElem", "Element", "elem"], ["dLen", "Spindle length", 0, 5, 0.05], ["dBend", "Spindle bend °", -120, 120, 1], ["dRoll", "Bend roll °", -180, 180, 1],
+      ["dHx", "Prism length", 0.25, 3, 0.01], ["dHy", "Prism width", 0.25, 3, 0.01], ["dHz", "Prism thickness", 0.25, 3, 0.01], ["dTier", "State (Charge only)", "tier"]]]],
+  };
+  const DEMO = { dElem: 0, dLen: 1.0, dBend: 40, dRoll: 0, dHx: 1.6, dHy: 0.9, dHz: 0.6, dTier: 2 };
+  const PRESETS = {
+    mass: { "Humpback": {}, "Blue whale": { length: 80, girth: 0.1, flatten: 0.75, bellyDrop: 0.12, flipperRays: 2, flipperUnits: 1, gridX: 112 }, "Orca": { length: 52, girth: 0.17, headRound: 0.7, flatten: 0.85, flipperSweep: 12, flipperDroop: 35, pleats: 0, gridX: 84 } },
+    space: { "Moon jelly": {}, "Sea nettle": { bellRadius: 12, bellHeight: 11, bellSweep: 96, ribs: 14, tentacles: 8, tentacleUnits: 5, tentacleCurl: 12, tentacleWave: 10, arms: 4, armUnits: 3, gridY: 100 }, "Lion's mane": { bellRadius: 18, tentacles: 14, tentacleUnits: 4, ribs: 24, gridX: 84, gridZ: 84 } },
+    charge: { "Pufferfish": {}, "Porcupinefish": { bodyLength: 34, bodyWidth: 22, spine: 2.2, inflate: 0.25, ringPitch: 5.2 }, "Sea urchin": { bodyLength: 24, bodyWidth: 24, pectoralRays: 0, tailRays: 0, beak: 0, inflate: 0.15, shieldFrom: 0.2, dangerFrom: 0.45 } },
+    time: { "Dragonfly": {}, "Damselfly": { wingSpan: 22, wingChord: 5, abdomen: 12, flap: 24, wingInset: 4.5 }, "Hawk-moth": { wingSpan: 26, wingChord: 9, wingGap: 8, abdomen: 5, thorax: 3, beats: 3, flap: 40 } },
+    unit: {},
+  };
+  const DEF = { mass: SM.TARGETS.mass.defaults, space: SM.TARGETS.space.defaults, charge: SM.TARGETS.charge.defaults, time: SM.TARGETS.time.defaults, unit: DEMO };
+  let state = {}; for (const k of ORDER.concat("unit")) state[k] = Object.assign({}, DEF[k]);
+  let slotMap = [0, 1, 2], hadDraft = false, tab = "mass", tint = false;
+  const PERMS = [[0, 1, 2], [1, 0, 2], [0, 2, 1], [2, 0, 1], [1, 2, 0], [2, 1, 0]];
+  try { const d = JSON.parse(localStorage.getItem("swarm-draft") || "null"); if (d) { hadDraft = true; for (const k in state) if (d[k]) state[k] = Object.assign({}, DEF[k], d[k]); if (Array.isArray(d.slotMap)) slotMap = d.slotMap; } } catch (e) {}
+
+  // ---- the four seedings strip -----------------------------------------------------------
+  const rep = {};
+  function renderSeeds() {
+    const box = $("seeds"); box.textContent = "";
+    ORDER.concat("unit").forEach(k => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "seed"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", k === tab ? "true" : "false");
+      if (k === "unit") { b.innerHTML = `<div class="t">The tadpole</div><div class="m">one unit, four elements</div>`; }
+      else {
+        const r = rep[k], T = SM.TARGETS[k];
+        b.innerHTML = `<div class="t">${SM.ELEMENTS[T.elem]} · ${T.name}</div>`;
+        if (r) {
+          const mix = document.createElement("div"); mix.className = "mix";
+          r.share.forEach((v, e) => { const i = document.createElement("i"); i.style.width = (100 * v) + "%"; i.style.background = EL_UI[e]; mix.appendChild(i); });
+          b.appendChild(mix);
+          const m = document.createElement("div"); m.className = "m"; const worst = Math.max(...r.overlapsPerFrame);
+          m.textContent = `${r.units} tadpoles · ${Math.round(100 * r.share[T.elem])}% ${SM.ELEMENTS[T.elem]} · ${worst ? worst + " hits" : "no hits"}`;
+          b.appendChild(m);
+        }
+      }
+      b.onclick = () => { tab = k; dist = { mass: 150, space: 120, charge: 120, time: 140, unit: 40 }[k]; renderSeeds(); buildControls(); renderStats(); draw(); };
+      box.appendChild(b);
+    });
+  }
+
+  // ---- controls ---------------------------------------------------------------------------
+  let inputs = {};
+  function buildControls() {
+    const g = $("groups"); g.textContent = ""; inputs = {};
+    SPECS[tab].forEach(([name, rows], gi) => {
+      const det = document.createElement("details"); if (gi <= 1) det.open = true;
+      det.innerHTML = `<summary>${name}</summary>`;
+      rows.forEach(([key, label, a, b, step]) => {
+        const id = "p-" + key, r = document.createElement("div");
+        if (a === "toggle") {
+          r.className = "row tog"; r.innerHTML = `<label for="${id}">${label}</label><input type="checkbox" id="${id}">`;
+          const cb = r.querySelector("input"); cb.addEventListener("change", () => { state[tab][key] = cb.checked ? 1 : 0; changed(); });
+          inputs[key] = v => cb.checked = !!v;
+        } else if (a === "elem" || a === "tier" || a === "slot") {
+          r.className = "crow"; r.innerHTML = `<label>${label}</label><div class="cpick el" role="group" aria-label="${label}"></div>`;
+          const box = r.querySelector(".cpick"), btns = [], names = a === "elem" ? SM.ELEMENTS : a === "slot" ? ["A", "B", "C"] : TIER;
+          names.forEach((nm, e) => {
+            const bt = document.createElement("button"); bt.type = "button";
+            bt.innerHTML = a === "elem" ? `<i class="dot el" style="background:${EL_UI[e]}"></i>${nm}`
+              : a === "slot" ? `<i class="dot" style="background:${hex(PALETTE[slotMap[e]][0])}"></i>${nm}`
+              : `<i class="dot t${e}" style="background:${hex(PALETTE[slotMap[0]][e])}"></i>${nm}`;
+            bt.addEventListener("click", () => { state[tab][key] = e; set(e); changed(); });
+            btns.push([bt, e]); box.appendChild(bt);
+          });
+          const set = v => btns.forEach(([bt, e]) => bt.setAttribute("aria-pressed", v === e ? "true" : "false"));
+          inputs[key] = set; if (a === "tier") r.dataset.tier = "1";
+        } else {
+          r.className = "row";
+          r.innerHTML = `<label for="${id}">${label}</label><input type="range" id="${id}" min="${a}" max="${b}" step="${step}"><input type="number" min="${a}" max="${b}" step="${step}" aria-label="${label} value">`;
+          const [rg, nb] = r.querySelectorAll("input");
+          const upd = v => { v = +v; if (!isFinite(v)) return; state[tab][key] = v; rg.value = v; nb.value = v; changed(); };
+          rg.addEventListener("input", () => upd(rg.value)); nb.addEventListener("change", () => upd(nb.value));
+          inputs[key] = v => { rg.value = v; nb.value = v; };
+        }
+        det.appendChild(r);
+      });
+      g.appendChild(det);
+    });
+    const pr = $("presets"); pr.textContent = "";
+    for (const name of Object.keys(PRESETS[tab])) {
+      const bt = document.createElement("button"); bt.className = "btn"; bt.type = "button"; bt.textContent = name;
+      bt.addEventListener("click", () => { state[tab] = Object.assign({}, DEF[tab], PRESETS[tab][name]); sync(); changed(); });
+      pr.appendChild(bt);
+    }
+    sync();
+    $("ptitle").textContent = tab === "unit" ? "The tadpole" : SM.ELEMENTS[SM.TARGETS[tab].elem] + " · " + SM.TARGETS[tab].name;
+    $("plan").textContent = tab === "unit"
+      ? "Left: the four resting tadpoles. Right: one you can bend. Its prism is held to its element: Mass chunky, Space a thin rod, Time small and streamlined, and only Charge can change state (plain, danger, shield)."
+      : PLAN[tab];
+    $("resetbtn").textContent = tab === "unit" ? "Reset demo" : "Reset this plan";
+  }
+  function sync() {
+    for (const k in inputs) inputs[k](state[tab][k]);
+    document.querySelectorAll("[data-tier]").forEach(r => r.classList.toggle("tier-off", tab === "unit" && state.unit.dElem !== 0));
+  }
+
+  // ---- three.js ---------------------------------------------------------------------------
+  const cv = $("cv");
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(30, 1.6, 0.5, 1500);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445066, 0.8));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(30, 60, 40); scene.add(sun);
+  function hullGeometry(pts) {
+    pts = pts.map(p => new THREE.Vector3(...p).normalize());
+    const pos = [], eps = 1e-6;
+    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) for (let k = j + 1; k < pts.length; k++) {
+      const n = new THREE.Vector3().subVectors(pts[j], pts[i]).cross(new THREE.Vector3().subVectors(pts[k], pts[i]));
+      if (n.lengthSq() < 1e-10) continue;
+      let a = 0, b = 0;
+      for (const q of pts) { const d = n.dot(new THREE.Vector3().subVectors(q, pts[i])); if (d > eps) a++; else if (d < -eps) b++; if (a && b) break; }
+      if (a && b) continue;
+      (a ? [pts[i], pts[k], pts[j]] : [pts[i], pts[j], pts[k]]).forEach(v => pos.push(v.x, v.y, v.z));
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g;
+  }
+  function perms(base, even) {
+    const out = [], P3 = even ? [[0, 1, 2], [1, 2, 0], [2, 0, 1]] : [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+    for (const b of base) for (const p of P3) for (let s = 0; s < 8; s++) {
+      const v = p.map((ix, i) => b[ix] * ((s >> i) & 1 ? -1 : 1));
+      if (!out.some(o => Math.abs(o[0] - v[0]) + Math.abs(o[1] - v[1]) + Math.abs(o[2] - v[2]) < 1e-9)) out.push(v);
+    }
+    return out;
+  }
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const GEO = [hullGeometry(perms([[0, 1, 3 * PHI], [1, 2 + PHI, 2 * PHI], [PHI, 2, 2 * PHI + 1]], true)), new THREE.IcosahedronGeometry(1, 1), new THREE.DodecahedronGeometry(1, 0), hullGeometry(perms([[0, 1, 2]], false))];
+  const MAXP = 3000, MAXS = 3000 * 8;
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.06, flatShading: true });
+  const gem = new THREE.MeshStandardMaterial({ roughness: 0.2, metalness: 0.1, flatShading: true, emissive: 0x3a4a66 });
+  const inst = (geo, m, n) => { const x = new THREE.InstancedMesh(geo, m, n); x.instanceMatrix.setUsage(THREE.DynamicDrawUsage); x.setColorAt(0, new THREE.Color(1, 1, 1)); x.count = 0; scene.add(x); return x; };
+  const boxes = inst(new THREE.BoxGeometry(2, 2, 2), mat, MAXP), octas = inst(new THREE.OctahedronGeometry(SM.SHIELD), mat, MAXP), gems = GEO.map(g => inst(g, gem, MAXP));
+  const cyl = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true); cyl.translate(0, 0.5, 0);
+  const spMesh = new THREE.InstancedMesh(cyl, new THREE.MeshStandardMaterial({ roughness: 0.6, color: new THREE.Color(0.6, 0.72, 0.86).convertSRGBToLinear() }), MAXS);
+  spMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); spMesh.count = 0; scene.add(spMesh);
+  const gridBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), new THREE.LineBasicMaterial({ color: 0x7f8c96, transparent: true, opacity: 0.6 }));
+  scene.add(gridBox);
+  const lin = c => new THREE.Color(...c).convertSRGBToLinear();
+  const HEART = lin(HEART_BLUE), ELT = EL_UI.map(h => new THREE.Color(h).convertSRGBToLinear()), HIT = lin([1, 0, 0.85]);
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+  let frameK = 0, playing = !matchMedia("(prefers-reduced-motion: reduce)").matches, az = 0.75, el = 0.35, dist = 150, lastTick = 0, showGrid = true, showHits = true;
+
+  function drawScene(g, off, hits) {
+    let nb = 0, no = 0, ns = 0; const ng = [0, 0, 0, 0];
+    g.prisms.forEach((q, i) => {
+      const R = q.R, h = q.h, oct = q.tier === 2, m = oct ? octas : boxes, j = oct ? no++ : nb++;
+      M.set(R[0] * h[0], R[1] * h[1], R[2] * h[2], q.p[0] + off[0], R[3] * h[0], R[4] * h[1], R[5] * h[2], q.p[1] + off[1], R[6] * h[0], R[7] * h[1], R[8] * h[2], q.p[2] + off[2], 0, 0, 0, 1);
+      m.setMatrixAt(j, M); m.setColorAt(j, hits.has("p" + i) ? HIT : lin(PALETTE[q.dom][q.tier]));
+    });
+    g.crystals.forEach((c, i) => {
+      const e = c.elem, j = ng[e]++;
+      M.makeScale(c.r, c.r, c.r); M.setPosition(c.p[0] + off[0], c.p[1] + off[1], c.p[2] + off[2]);
+      gems[e].setMatrixAt(j, M); gems[e].setColorAt(j, hits.has("c" + i) ? HIT : tint ? ELT[e] : HEART);
+    });
+    g.spindles.forEach(sp => {
+      for (let i = 0; i + 1 < sp.pts.length && ns < MAXS; i++) {
+        const a = sp.pts[i], b = sp.pts[i + 1];
+        V.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const L = V.length(); if (L < 1e-6) continue;
+        Q.setFromUnitVectors(UP, V.normalize()); S.set(sp.r, L, sp.r);
+        M.compose(new THREE.Vector3(a[0] + off[0], a[1] + off[1], a[2] + off[2]), Q, S); spMesh.setMatrixAt(ns++, M);
+      }
+    });
+    boxes.count = nb; octas.count = no; spMesh.count = ns; gems.forEach((m, e) => m.count = ng[e]);
+    [boxes, octas, spMesh, ...gems].forEach(m => { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+  }
+  function unitScene() {
+    const U = state.unit, P = Object.assign({}, SM.TARGETS.mass.defaults, { slotMap, unitScale: 1, crystalSize: 1 }), units = [];
+    const rest = [{ h: [1.75, 0.525, 0.525], s: 1.2 }, { h: [1.0, 1.0, 0.9], s: 0.4 }, { h: [2.6, 0.32, 0.32], s: 0.8 }, { h: [1.0, 0.5, 0.45], s: 0.3 }];
+    for (let e = 0; e < 4; e++) units.push({ p: [8, 0, (e - 1.5) * 5], f: [1, 0, 0], n: [0, 1, 0], elem: e, spindle: { len: rest[e].s, bend: 0, roll: 0, thick: 0.22 }, prism: { h: rest[e].h, tier: e === 0 ? 2 : 0 } });
+    units.push({ p: [-6, 0, 0], f: [1, 0, 0], n: [0, 1, 0], elem: U.dElem, spindle: { len: U.dLen, bend: U.dBend * Math.PI / 180, roll: U.dRoll * Math.PI / 180, thick: 0.22 },
+      prism: { h: [U.dHx, U.dHy, U.dHz], tier: U.dTier } });
+    const out = { units, crystals: [], prisms: [], spindles: [] };
+    units.forEach((u, i) => { const g = SM.realise(P, u, i); out.crystals.push(g.crystal); out.prisms.push(g.prism); out.spindles.push(g.spindle); });
+    return out;
+  }
+  function draw() {
+    let g, off = [0, 0, 0]; const hits = new Set();
+    if (tab === "unit") { g = unitScene(); gridBox.visible = false; }
+    else {
+      const r = rep[tab]; if (!r) return;
+      const k = frameK % r.frames.length; g = r.frames[k]; off = r.offset;
+      if (showHits) for (const o of r.pairs[k]) for (const idx of [o.a, o.b]) hits.add(idx < g.prisms.length ? "p" + idx : "c" + (idx - g.prisms.length));
+      gridBox.visible = showGrid; gridBox.scale.set(...r.grid);
+      $("frame").max = r.frames.length - 1; $("frame").value = k; $("frameo").textContent = (k + 1) + "/" + r.frames.length;
+    }
+    drawScene(g, off, hits);
+    camera.position.set(Math.cos(el) * Math.cos(az) * dist, Math.sin(el) * dist, Math.cos(el) * Math.sin(az) * dist);
+    camera.lookAt(0, 0, 0); renderer.render(scene, camera);
+  }
+  function resize() { const w = cv.clientWidth || 640, h = cv.clientHeight || 400; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); draw(); }
+  function loop(t) { if (playing && tab !== "unit" && rep[tab] && t - lastTick > 140) { frameK++; lastTick = t; draw(); } requestAnimationFrame(loop); }
+  let drag = null;
+  cv.addEventListener("pointerdown", e => { drag = [e.clientX, e.clientY, az, el]; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", e => { if (!drag) return; az = drag[2] + (e.clientX - drag[0]) * 0.01; el = Math.max(-1.5, Math.min(1.5, drag[3] + (e.clientY - drag[1]) * 0.01)); draw(); });
+  cv.addEventListener("pointerup", () => { drag = null; });
+  cv.addEventListener("wheel", e => { e.preventDefault(); dist = Math.max(20, Math.min(500, dist * Math.exp(e.deltaY * 0.001))); draw(); }, { passive: false });
+  const VIEWS = { side: [Math.PI / 2, 0.02], top: [Math.PI / 2, 1.5], front: [0.0, 0.08], three: [0.75, 0.35] };
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { [az, el] = VIEWS[b.dataset.view]; draw(); }));
+  $("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; };
+  if (!playing) $("play").textContent = "Play";
+  $("frame").addEventListener("input", e => { frameK = +e.target.value; playing = false; $("play").textContent = "Play"; draw(); });
+  const toggle = (id, fn) => $(id).addEventListener("click", () => { const on = fn(); $(id).classList.toggle("on", on); $(id).setAttribute("aria-pressed", on); draw(); });
+  toggle("gridbtn", () => (showGrid = !showGrid)); toggle("hitbtn", () => (showHits = !showHits)); toggle("tintbtn", () => (tint = !tint));
+  function markDomain() { $("slotbtn").textContent = "Domains: " + ["A", "B", "C"].map((l, i) => l + " " + DOM[slotMap[i]]).join(" · "); }
+  $("slotbtn").onclick = () => {
+    const i = PERMS.findIndex(p => p.join() === slotMap.join()); slotMap = PERMS[(i + 1) % PERMS.length].slice();
+    markDomain(); save(); for (const k of ORDER) { state[k].slotMap = slotMap; rep[k] = SM.report(k, state[k]); } buildControls(); renderSeeds(); draw();
+  };
+  function theme() { scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--dish").trim() || "#e8eef2"); draw(); }
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", theme);
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  window.addEventListener("resize", resize);
+
+  // ---- rebuild + stats --------------------------------------------------------------------
+  let pending = null;
+  function save() { try { localStorage.setItem("swarm-draft", JSON.stringify(Object.assign({ slotMap }, state))); } catch (e) {} }
+  function changed() {
+    save(); sync();
+    clearTimeout(pending); pending = setTimeout(() => { if (tab !== "unit") rep[tab] = SM.report(tab, state[tab]); renderSeeds(); renderStats(); draw(); }, 60);
+  }
+  function renderStats() {
+    const show = tab !== "unit";
+    for (const id of ["stats", "roles"]) $(id).style.display = show ? "" : "none";
+    $("speeds").parentElement.style.display = show ? "" : "none";
+    if (!show) { $("notes").textContent = "Hearts: 2.298 across for Charge and Space, 1.737 for Mass and Time — all one blue and white while alive. The colour of a heart in this preview never encodes its element; turn on Tint hearts by element to inspect."; return; }
+    const r = rep[tab], T = SM.TARGETS[tab], worst = Math.max(...r.overlapsPerFrame);
+    const setv = (id, text, cls) => { const e = $(id); e.textContent = text; e.className = "v" + (cls ? " " + cls : ""); };
+    setv("s-n", r.units, r.units > 360 ? "warn" : "");
+    setv("s-hit", worst === 0 ? "0" : worst + " (" + r.worstDepth.toFixed(2) + ")", worst === 0 ? "ok" : "bad");
+    setv("s-fit", r.fits ? "yes" : "no", r.fits ? "ok" : "bad");
+    setv("s-size", r.size.map(v => v.toFixed(0)).join("·") + " / " + r.grid.join("·"));
+    setv("s-maj", Math.round(100 * r.share[T.elem]) + "% " + SM.ELEMENTS[T.elem], r.majorityOk ? "ok" : "bad");
+    setv("s-st", r.states.map((v, i) => v ? TIER[i] : "").filter(Boolean).join(" · ") || "plain");
+    const tot = r.slots.reduce((a, b) => a + b, 0) || 1;
+    setv("s-dom", r.domainsUsed + ": " + r.slots.map((v, i) => v ? ["A", "B", "C"][i] + " " + Math.round(100 * v / tot) + "%" : "").filter(Boolean).join(" · "), r.domainsUsed >= 2 ? "ok" : "warn");
+    const sp = $("speeds"); sp.textContent = ""; const mx = Math.max(...r.speed, 1e-6), fastest = r.speed.indexOf(mx);
+    r.speed.forEach((v, e) => { if (!r.elements[e]) return;
+      sp.insertAdjacentHTML("beforeend", `<span><i class="dot el" style="background:${EL_UI[e]}"></i> ${SM.ELEMENTS[e]} <span class="mono">(${r.elements[e]})</span></span><span class="bar"><i style="width:${100 * v / mx}%;background:${EL_UI[e]}"></i></span><span class="mono">${v.toFixed(2)}</span>`); });
+    const ro = $("roles"); ro.textContent = "";
+    Object.entries(r.roles).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => { const s = document.createElement("span"); s.textContent = k + " " + v; ro.appendChild(s); });
+    const notes = [];
+    if (worst) notes.push("Magenta marks hearts or prisms touching another tadpole's on the worst frame (depth in voxels in brackets). Spindles are limbs and may pass through anything.");
+    if (!r.majorityOk) notes.push(`${SM.ELEMENTS[T.elem]} must be the majority of this swarm.`);
+    if (SM.ELEMENTS[fastest] !== "Time" && r.elements[3]) notes.push("Time should be the fastest element.");
+    if (!r.fits) notes.push("It does not fit the training grid on every frame.");
+    $("notes").textContent = notes.join(" ");
+  }
+
+  // ---- send / copy / reset ---------------------------------------------------------------
+  function payload() {
+    const out = { slotMap, note: $("note").value.slice(0, 2000), summary: {} };
+    for (const k of ORDER) { out[k] = state[k]; const r = rep[k]; if (r) out.summary[k] = { units: r.units, elements: r.elements, domainSlots: r.slots, worstFrameIntersections: Math.max(...r.overlapsPerFrame), fits: r.fits }; }
+    return out;
+  }
+  $("copybtn").onclick = async () => {
+    const text = JSON.stringify(payload(), null, 1), fld = $("copyfield");
+    try { await navigator.clipboard.writeText(text); $("sendstatus").textContent = "Copied all four plans as JSON."; $("sendstatus").className = "status ok"; }
+    catch (e) { fld.hidden = false; fld.value = text; fld.focus(); fld.select(); $("sendstatus").textContent = "Copy the selected field below."; }
+  };
+  $("resetbtn").onclick = () => { state[tab] = Object.assign({}, DEF[tab], tab === "unit" ? {} : { slotMap }); sync(); changed(); };
+  $("sendbtn").disabled = true;
+  (async () => {
+    const db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+    if (!db) { $("sendstatus").textContent = "Sending is unavailable here. Use Copy JSON and paste it to Claude."; return; }
+    let user = null; try { user = await window.claude.use("user"); } catch (e) {}
+    const ref = db.doc("targets/swarm"); let first = true;
+    $("sendbtn").disabled = false;
+    ref.onSnapshot(snap => {
+      if (!snap.exists) { first = false; return; }
+      const d = snap.data();
+      $("sendstatus").textContent = "Last sent " + new Date(d.savedAt).toLocaleString() + "."; $("sendstatus").className = "status ok";
+      if (first && !hadDraft) { for (const k of ORDER) if (d[k]) state[k] = Object.assign({}, DEF[k], d[k]); if (Array.isArray(d.slotMap)) slotMap = d.slotMap; if (d.note) $("note").value = d.note; markDomain(); rebuildAll(); sync(); }
+      first = false;
+    }, () => { $("sendstatus").textContent = "Could not read the saved plans."; });
+    $("sendbtn").onclick = async () => {
+      $("sendbtn").disabled = true; $("sendstatus").textContent = "Sending…"; $("sendstatus").className = "status";
+      try {
+        const body = Object.assign(payload(), { savedAt: Date.now(), by: user ? await user.id() : null });
+        await ref.set(body);
+        try { await db.collection("targets/swarm/versions").doc(String(body.savedAt)).set(body); } catch (e) {}
+      } catch (e) { $("sendstatus").textContent = "Send failed (" + (e && e.code || "error") + "). Copy JSON works as a fallback."; $("sendstatus").className = "status bad"; }
+      $("sendbtn").disabled = false;
+    };
+  })();
+
+  function rebuildAll() { for (const k of ORDER) { state[k].slotMap = slotMap; rep[k] = SM.report(k, state[k]); } renderSeeds(); renderStats(); draw(); }
+  markDomain(); buildControls(); theme(); resize(); rebuildAll(); requestAnimationFrame(loop);
+})();
+</script>

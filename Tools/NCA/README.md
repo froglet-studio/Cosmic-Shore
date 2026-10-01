@@ -439,3 +439,46 @@ frame and fit their grids.
 
 The earlier all-prism whale (`whale_model.js`, `whale_designer.*`, `whale_target.py`) is kept as
 the previous stage.
+
+## Four elemental body plans: one rule kit, four seedings
+
+The next stage keeps the tadpole as the unit and gives each element its own animated body plan.
+The aim is ONE learned rule kit that grows a different creature depending on which element
+dominates the swarm it is seeded into. Training scores the kit on four seedings, each with a
+majority of a different element, against that element's plan. The reported loss is the SUM of
+the four losses.
+
+| Element | Plan | Units (default) | Majority | What the element does there |
+|---|---|---|---|---|
+| Mass | Whale | 192 | 66% | chunky near-cubic skin plates |
+| Space | Jellyfish | 88 | 61% | long thin rods along the bell, tentacles and arms |
+| Charge | Pufferfish | 179 | 73% | a shell that inflates; its plates turn shielded, then into danger spines |
+| Time | Dragonfly | 76 | 70% | runners that circle the wing outlines; the fastest units in every plan |
+
+Element identity is enforced in the generator, so no plan can ask a unit to break it:
+
+- **Charge** is the only element that changes state (plain, shield, danger). Every shielded prism
+  in every plan is a Charge unit.
+- **Mass** prisms stay close to a cube (largest axis at most 1.6x the smallest).
+- **Space** prisms are thin rods at every size (cross-section at most a quarter of the length).
+- **Time** prisms are small and moderately long. Time units reposition: in every plan they run
+  laps along a loop, so they really move between frames. Speed is measured per element.
+
+All four hearts render the same blue and white; the element is shown by the crystal's shape.
+(A dead tadpole's lime crystal is a later stage.)
+
+**Domains are regions, not colours.** Each prism carries a slot (A/B/C). A plan uses two or three
+slots, so no target is a single domain. The intended loss takes the minimum over slot-to-domain
+assignments. A swarm is therefore rewarded for forming differently-coloured regions of the right
+shape, whichever domains they turn out to be. The designer's **Domains** button cycles the six
+assignments to show this.
+
+- `swarm_model.js` is the single generator for all four plans, run by the designer and in node.
+  `report()` returns the element mix, per-element speed, state counts, slot use, and the
+  per-frame exact overlap check.
+- `swarm_designer.src.html` is turned into `swarm_designer.html` by `build_swarm_designer.py`.
+  **Send all four to Claude** writes `targets/swarm` to the page's database.
+- `swarm_target.py [targets.json]` writes `results/swarm_targets/{mass,space,charge,time}.json`
+  plus `params.json`. Units keep their index across frames.
+
+All four defaults have zero intersections on all eight frames and fit their grids.

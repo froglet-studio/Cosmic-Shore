@@ -1,0 +1,498 @@
+<title>Elemental Swarm Body Plans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #f3f5f6; --panel: #ffffff; --fg: #17202a; --muted: #5a6672; --line: #d8dee3;
+  --accent: #0d6f8f; --accent-fg: #ffffff; --dish: #e8eef2; --ok: #1d7a4a; --bad: #b3261e; --warn: #8a5a00;
+  --chip: #eef2f4;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1418; --panel: #151d23; --fg: #e3e9ee; --muted: #93a1ad; --line: #2a353e;
+  --accent: #3fb3d6; --accent-fg: #06141a; --dish: #0a1116; --ok: #5cc98c; --bad: #ff8a80; --warn: #e8b54a;
+  --chip: #1c262d; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e1418; --panel: #151d23; --fg: #e3e9ee; --muted: #93a1ad; --line: #2a353e;
+  --accent: #3fb3d6; --accent-fg: #06141a; --dish: #0a1116; --ok: #5cc98c; --bad: #ff8a80; --warn: #e8b54a;
+  --chip: #1c262d; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5; padding-inline: 16px; padding-block: 18px 40px }
+.wrap { max-width: 1320px; margin: 0 auto }
+header h1 { font-family: var(--display); font-weight: 700; font-size: 1.9rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+header p { margin: 4px 0 12px; color: var(--muted); max-width: 78ch }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px }
+.tab { font: 700 14px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 999px; padding: 7px 16px; cursor: pointer }
+.tab[aria-selected=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 18px; align-items: start }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr } }
+.stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 10px); display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+@media (max-width: 900px) { .stage { position: static } }
+.view { background: var(--dish); border: 1px solid var(--line); border-radius: 10px; overflow: hidden }
+canvas#cv { display: block; width: 100%; aspect-ratio: 16 / 10; touch-action: none; cursor: grab }
+.viewbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.btn { font: 600 13px var(--body); border: 1px solid var(--line); background: var(--panel); color: var(--fg); border-radius: 7px; padding: 6px 11px; cursor: pointer }
+.btn:hover { border-color: var(--accent) }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.btn.on { border-color: var(--accent); color: var(--accent) }
+.frame { display: flex; align-items: center; gap: 8px; flex: 1 1 200px; min-width: 0 }
+.frame input { flex: 1; min-width: 0 }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-width: 0 }
+.stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted) }
+.stat .v { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 600 }
+.v.ok { color: var(--ok) } .v.bad { color: var(--bad) } .v.warn { color: var(--warn) }
+.census { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px }
+.census span { background: var(--chip); border-radius: 999px; padding: 2px 9px 2px 4px; display: inline-flex; gap: 5px; align-items: center }
+.dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid rgba(0,0,0,.2) }
+.dot.t2 { transform: rotate(45deg) scale(.8) } .dot.t1 { box-shadow: inset 0 0 0 2px #ff3b2f } .dot.el { border-radius: 50% }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0 }
+.panel h2 { font-family: var(--display); font-size: 1.05rem; margin: 0 0 8px }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px }
+details { border-top: 1px solid var(--line); padding: 6px 0 }
+details:first-of-type { border-top: 0 }
+summary { cursor: pointer; font-family: var(--display); font-weight: 500; font-size: 1rem; padding: 4px 0 }
+.row { display: grid; grid-template-columns: 9.5em minmax(0, 1fr) 4.6em; gap: 8px; align-items: center; padding: 3px 0 }
+.row label, .crow label { font-size: 13px; color: var(--muted) }
+.row input[type=range] { width: 100%; accent-color: var(--accent) }
+.row input[type=number] { width: 100%; font: 13px var(--mono); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 5px; padding: 2px 4px }
+.row.tog { grid-template-columns: 9.5em 1fr }
+.crow { display: grid; grid-template-columns: 9.5em auto; gap: 8px; align-items: center; padding: 4px 0 }
+.cpick { display: grid; grid-template-columns: repeat(3, 26px); gap: 4px }
+.cpick.el { grid-template-columns: repeat(4, auto) }
+.cpick button { width: 26px; height: 22px; border-radius: 4px; border: 1px solid rgba(0,0,0,.25); cursor: pointer; padding: 0; position: relative }
+.cpick.el button { width: auto; height: 24px; padding: 0 8px 0 6px; font: 600 12px var(--body); color: var(--fg); background: var(--chip); display: inline-flex; align-items: center; gap: 5px; border-color: var(--line) }
+.cpick button.t1::after { content: ""; position: absolute; inset: 4px; border: 2px solid #ff3b2f; border-radius: 2px }
+.cpick button.t2::after { content: ""; position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; background: rgba(255,255,255,.75); transform: translate(-50%,-50%) rotate(45deg) }
+.cpick button[aria-pressed=true] { outline: 2px solid var(--fg); outline-offset: 1px }
+.send { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px }
+.send textarea { width: 100%; min-height: 58px; font: 13px var(--body); background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; resize: vertical; box-sizing: border-box }
+.send .btns { display: flex; flex-wrap: wrap; gap: 8px }
+.status { font-size: 13px; color: var(--muted) } .status.ok { color: var(--ok) } .status.bad { color: var(--bad) }
+.legend { font-size: 12px; color: var(--muted) }
+.unitnote { font-size: 13px; color: var(--muted); margin: 0 0 8px }
+.seeds { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; margin-bottom: 14px }
+.seed { background: var(--panel); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; cursor: pointer; text-align: left; font: inherit; color: var(--fg) }
+.seed[aria-selected=true] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset }
+.seed .t { font-family: var(--display); font-weight: 700; font-size: 1rem }
+.seed .m { font-size: 12px; color: var(--muted) }
+.mix { display: flex; height: 9px; border-radius: 5px; overflow: hidden; margin: 6px 0 3px; background: var(--chip) }
+.mix i { display: block; height: 100% }
+.domains { display: inline-flex; gap: 4px; align-items: center; margin-left: auto }
+.domains button { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0 }
+.domains button[aria-pressed=true] { border-color: var(--fg) }
+.speeds { display: grid; grid-template-columns: auto 1fr auto; gap: 3px 8px; align-items: center; font-size: 12px }
+.speeds .bar { height: 7px; border-radius: 4px; background: var(--chip); overflow: hidden }
+.speeds .bar i { display: block; height: 100% }
+.tier-off { opacity: .35; pointer-events: none }
+</style>
+
+<div class="wrap">
+<header>
+  <h1>Elemental Swarm</h1>
+  <p>Four body plans for one rule set. Seed a swarm of tadpoles with a majority of one element and the same learned rules should grow that element's creature; the reported loss sums all four runs. Every tadpole keeps its domain and breeds true, and its heart stays blue and white until it dies. Regions are painted in domain <em>slots</em> A, B, C: the check takes the best assignment of real domains to slots, so it rewards forming distinct domain regions, never a particular domain.</p>
+</header>
+<div class="seeds" id="seeds" role="tablist" aria-label="Body plan"></div>
+
+<div class="layout">
+  <section class="stage" aria-label="Preview">
+    <div class="view"><canvas id="cv" aria-label="3D preview; drag to orbit, scroll to zoom"></canvas></div>
+    <div class="viewbar">
+      <button class="btn primary" id="play" type="button">Pause</button>
+      <div class="frame"><span class="legend">frame</span><input id="frame" type="range" min="0" max="7" step="1" value="0" aria-label="Animation frame"><span class="mono" id="frameo">1/8</span></div>
+      <button class="btn" data-view="side" type="button">Side</button>
+      <button class="btn" data-view="top" type="button">Top</button>
+      <button class="btn" data-view="front" type="button">Front</button>
+      <button class="btn" data-view="three" type="button">3/4</button>
+      <button class="btn on" id="gridbtn" type="button" aria-pressed="true">Grid box</button>
+      <button class="btn on" id="hitbtn" type="button" aria-pressed="true">Mark hits</button>
+      <button class="btn" id="tintbtn" type="button" aria-pressed="false">Tint hearts by element</button>
+      <button class="btn" id="slotbtn" type="button" title="Which real domain each region shows as. The loss takes the best assignment, so this never changes a target.">Domains: –</button>
+    </div>
+    <div class="stats" id="stats">
+      <div class="stat"><div class="k">Tadpoles</div><div class="v" id="s-n">–</div></div>
+      <div class="stat"><div class="k">Intersections</div><div class="v" id="s-hit">–</div></div>
+      <div class="stat"><div class="k">Fits grid</div><div class="v" id="s-fit">–</div></div>
+      <div class="stat"><div class="k">Extent (x·y·z)</div><div class="v" id="s-size" style="font-size:13px">–</div></div>
+      <div class="stat"><div class="k">Majority</div><div class="v" id="s-maj">–</div></div>
+      <div class="stat"><div class="k">States used</div><div class="v" id="s-st" style="font-size:13px">–</div></div>
+      <div class="stat"><div class="k">Domain regions</div><div class="v" id="s-dom" style="font-size:13px">–</div></div>
+    </div>
+    <div class="panel" style="padding:10px 12px">
+      <div class="legend" style="margin-bottom:6px">Heart speed per frame, by element (Time should lead)</div>
+      <div class="speeds" id="speeds"></div>
+    </div>
+    <div class="census" id="roles" aria-label="Tadpoles by role"></div>
+    <p class="legend" id="notes"></p>
+  </section>
+
+  <section class="panel" aria-label="Parameters">
+    <h2 id="ptitle">Parameters</h2>
+    <p class="unitnote" id="plan"></p>
+    <div class="presets" id="presets"></div>
+    <div id="groups"></div>
+    <div class="send">
+      <label class="legend" for="note">Note for Claude (optional)</label>
+      <textarea id="note" placeholder="Which plans you confirm, what to change…"></textarea>
+      <div class="btns">
+        <button class="btn primary" id="sendbtn" type="button">Send all four to Claude</button>
+        <button class="btn" id="copybtn" type="button">Copy JSON</button>
+        <button class="btn" id="resetbtn" type="button">Reset this plan</button>
+      </div>
+      <div class="status" id="sendstatus" role="status">Not sent yet.</div>
+      <textarea id="copyfield" hidden readonly aria-label="Parameters as JSON"></textarea>
+    </div>
+  </section>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/*SWARM_MODEL*/
+</script>
+<script>
+(function () {
+  const SM = window.SwarmModel, $ = id => document.getElementById(id);
+  const PALETTE = /*PALETTE*/;
+  const EL_UI = ["#e8a93a", "#8e6bd8", "#3a7bdc", "#2fb39a"];          // legend colours only - hearts are all one colour
+  const HEART_BLUE = [0.42, 0.62, 1.0];
+  const DOM = ["Jade", "Ruby", "Gold"], TIER = ["plain", "danger", "shield"];
+  const hex = c => "#" + c.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0")).join("");
+  const ORDER = ["mass", "space", "charge", "time"];
+  const PLAN = {
+    mass: "MASS — the whale. A thick skin of chunky Mass tadpoles swims with a slow travelling wave; Space rods make the flippers and flukes, Charge tadpoles the flashing throat stripes and shielded eyes, and Time runners race laps along both flanks.",
+    space: "SPACE — the jellyfish. An umbrella of long, thin Space rods down every meridian, Space tentacles and curling oral arms; a rim of Charge tadpoles that shield when relaxed and turn dangerous as the bell contracts; a chunky Mass stomach; Time runners circling inside the bell.",
+    charge: "CHARGE — the pufferfish. A shell of Charge plates that goes plain, then shielded, then swings out into danger spines as the body inflates; a Mass beak, Space fins, and Time runners racing round it on slanted rings like electrons.",
+    time: "TIME — the dragonfly. Four wings beating twice a cycle, each outlined by a loop of Time runners around a Space spar; a flicking Time abdomen, a chunky Mass thorax, shielded Charge eyes and Space legs.",
+  };
+  const COMMON = [["unitScale", "Unit scale", 0.6, 1.5, 0.01], ["crystalSize", "Heart size", 0.7, 1.3, 0.01], ["spindleThickness", "Spindle thickness", 0.1, 0.5, 0.01], ["gap", "Gap", 0.1, 0.8, 0.01]];
+  const GRID = n => [`Training grid (voxels)`, [["gridX", "x", 32, 140, 2], ["gridY", "y", 32, 120, 2], ["gridZ", "z", 32, 140, 2]]];
+  const SPECS = {
+    mass: [["Tadpoles", COMMON],
+      ["Domain regions", [["backSlot", "Back", "slot"], ["bellySlot", "Belly & stripes", "slot"], ["countershade", "Waterline", -0.9, 0.9, 0.01], ["finSlot", "Fins & flukes", "slot"], ["eyeSlot", "Eyes", "slot"], ["runnerSlot", "Runners", "slot"]]],
+      ["Body", [["length", "Length", 40, 90, 1], ["girth", "Girth", 0.08, 0.18, 0.005], ["girthPeak", "Widest at", 0.15, 0.5, 0.01], ["headRound", "Head bluntness", 0.2, 1.2, 0.01],
+        ["tailTaper", "Tail taper", 0.8, 3, 0.05], ["flatten", "Height / width", 0.55, 1.2, 0.01], ["bellyDrop", "Belly drop", 0, 0.4, 0.01]]],
+      ["Mass skin", [["ringPitch", "Ring spacing", 3.5, 8, 0.1], ["ringSlack", "Swim slack", 0, 1.5, 0.05], ["arcSpacing", "Spacing round", 2.2, 5, 0.05], ["plateThickness", "Block thickness", 1, 3, 0.05], ["spindle", "Spindle length", 0, 2, 0.05]]],
+      ["Charge", [["pleats", "Throat stripes", "toggle"], ["pleatEnd", "Stripes reach", 0.1, 0.7, 0.01], ["pleatFlash", "Stripes flash", "toggle"], ["eyes", "Shielded eyes", "toggle"], ["eyePos", "Eye position", 0.05, 0.3, 0.005]]],
+      ["Space fins", [["flipperRays", "Flipper rays", 1, 5, 1], ["flipperUnits", "Rods per ray", 1, 4, 1], ["flipperPos", "Flipper position", 0.15, 0.5, 0.01], ["flipperSweep", "Sweep back °", -10, 70, 1],
+        ["flipperDroop", "Droop °", -20, 60, 1], ["flipperSpread", "Fan °", 0, 30, 1], ["flukeRays", "Fluke rays", 1, 5, 1], ["flukeUnits", "Rods per ray", 1, 4, 1], ["flukeSweep", "Fluke sweep °", 0, 60, 1], ["dorsal", "Dorsal rod", "toggle"]]],
+      ["Time runners", [["runners", "Runners", "toggle"], ["laneHigh", "Upper lane °", 20, 80, 1], ["laneLow", "Lower lane °", 0, 60, 1], ["runFrom", "From", 0.05, 0.4, 0.01], ["runTo", "To", 0.4, 0.85, 0.01],
+        ["runnerSpacing", "Spacing", 1.1, 3, 0.05], ["runnerLaps", "Laps per cycle", 1, 6, 1]]],
+      ["Swim", [["frames", "Frames", 4, 16, 1], ["swimAmp", "Heave", 0, 0.1, 0.002], ["swimWave", "Wavelength", 0.5, 2.5, 0.01], ["swimEnv", "Tail emphasis", 0.5, 4, 0.05], ["flukePitch", "Fluke pitch °", 0, 45, 1], ["flipperFlap", "Flipper flap °", 0, 40, 1]]],
+      GRID()],
+    space: [["Tadpoles", COMMON],
+      ["Domain regions", [["ribSlot", "Bell rods", "slot"], ["rimSlot", "Rim", "slot"], ["tentacleSlot", "Tentacles", "slot"], ["armSlot", "Oral arms", "slot"], ["stomachSlot", "Stomach", "slot"], ["runnerSlot", "Runners", "slot"]]],
+      ["Bell of Space rods", [["bellRadius", "Radius", 8, 24, 0.5], ["bellHeight", "Height", 4, 20, 0.5], ["bellSweep", "Rim curl °", 70, 130, 1], ["ribs", "Ribs", 8, 28, 2], ["ribPitch", "Rod spacing", 4, 10, 0.1], ["spindle", "Spindle length", 0, 2, 0.05]]],
+      ["Charge rim", [["rim", "Rim", "toggle"], ["rimShield", "Shields when relaxed", "toggle"]]],
+      ["Tentacles & arms", [["tentacles", "Tentacles", 0, 16, 1], ["tentacleUnits", "Rods each", 1, 6, 1], ["tentacleCurl", "Curl °", -40, 40, 1], ["tentacleInset", "Inset", 0.6, 1.1, 0.01],
+        ["arms", "Oral arms", 0, 8, 1], ["armUnits", "Rods each", 1, 5, 1], ["armCurl", "Arm curl °", 0, 40, 1], ["armRadius", "Arm spread", 0, 9, 0.1], ["stomach", "Mass stomach", 0, 4, 1]]],
+      ["Time runners", [["runners", "Runners", "toggle"], ["runnerRadius", "Ring radius", 0.3, 0.8, 0.01], ["runnerHeight", "Ring height", 0, 0.8, 0.01], ["runnerSpacing", "Spacing", 1.1, 3, 0.05], ["runnerLaps", "Laps per cycle", 1, 6, 1]]],
+      ["Pulse", [["frames", "Frames", 4, 16, 1], ["pulse", "Contraction", 0, 0.3, 0.005], ["pulseLift", "Lift", 0, 6, 0.1], ["tentacleWave", "Tentacle wave °", 0, 40, 1], ["tentacleLag", "Wave lag", 0, 2, 0.02]]],
+      GRID()],
+    charge: [["Tadpoles", COMMON],
+      ["Domain regions", [["backSlot", "Back", "slot"], ["bellySlot", "Belly", "slot"], ["countershade", "Waterline", -0.9, 0.9, 0.01], ["bands", "Bands instead", "toggle"], ["finSlot", "Fins", "slot"], ["beakSlot", "Beak", "slot"], ["runnerSlot", "Runners", "slot"]]],
+      ["Charge shell", [["bodyLength", "Length", 16, 44, 0.5], ["bodyWidth", "Width", 12, 34, 0.5], ["inflate", "Inflation", 0, 0.5, 0.01], ["ringPitch", "Ring spacing", 3.5, 7, 0.1],
+        ["arcSpacing", "Spacing round", 2.4, 5, 0.05], ["plateThickness", "Plate thickness", 0.6, 2, 0.05], ["spine", "Spine length", 1, 2.2, 0.05], ["shieldFrom", "Shield from", 0, 1, 0.01], ["dangerFrom", "Spines from", 0, 1, 0.01]]],
+      ["Mass & Space", [["beak", "Mass beak", "toggle"], ["pectoralRays", "Pectoral rays", 0, 5, 1], ["tailRays", "Tail rays", 0, 7, 1], ["finUnits", "Rods per ray", 1, 3, 1], ["finFlutter", "Flutter °", 0, 50, 1]]],
+      ["Time runners", [["runners", "Runners", "toggle"], ["orbits", "Rings", 1, 3, 1], ["orbitTilt", "Ring slant °", 0, 40, 1], ["orbitMargin", "Clearance", 1, 8, 0.1], ["runnerSpacing", "Spacing", 1.2, 3, 0.05], ["runnerLaps", "Laps per cycle", 1, 6, 1]]],
+      ["Cycle", [["frames", "Frames", 4, 16, 1]]],
+      GRID()],
+    time: [["Tadpoles", COMMON],
+      ["Domain regions", [["thoraxSlot", "Thorax", "slot"], ["abdomenSlot", "Abdomen", "slot"], ["stripeSlot", "Abdomen stripes", "slot"], ["eyeSlot", "Eyes", "slot"], ["sparSlot", "Wing spars", "slot"], ["wingSlot", "Wing runners", "slot"], ["legSlot", "Legs", "slot"]]],
+      ["Body", [["thorax", "Mass thorax", 1, 5, 1], ["eyes", "Charge eyes", "toggle"], ["abdomen", "Time abdomen", 3, 14, 1], ["flick", "Abdomen flick °", 0, 30, 1], ["legs", "Space legs", "toggle"]]],
+      ["Wings", [["wingSpan", "Span", 14, 40, 0.5], ["wingChord", "Chord", 4, 12, 0.1], ["wingGap", "Fore-hind gap", 0, 8, 0.1], ["foreSweep", "Fore sweep °", -20, 30, 1], ["hindSweep", "Hind sweep °", -30, 20, 1],
+        ["spar", "Spar rods", 1, 5, 1], ["wingInset", "Root clearance", 1, 8, 0.1], ["wingRunnerSpacing", "Runner spacing", 1.1, 3, 0.05], ["runnerLaps", "Laps per cycle", 1, 6, 1]]],
+      ["Beat", [["frames", "Frames", 4, 16, 1], ["flap", "Flap °", 0, 60, 1], ["beats", "Beats per cycle", 1, 4, 1], ["hindLag", "Hind lag", 0, 0.5, 0.01]]],
+      GRID()],
+    unit: [["Demo tadpole (not part of a plan)", [["dElem", "Element", "elem"], ["dLen", "Spindle length", 0, 5, 0.05], ["dBend", "Spindle bend °", -120, 120, 1], ["dRoll", "Bend roll °", -180, 180, 1],
+      ["dHx", "Prism length", 0.25, 3, 0.01], ["dHy", "Prism width", 0.25, 3, 0.01], ["dHz", "Prism thickness", 0.25, 3, 0.01], ["dTier", "State (Charge only)", "tier"]]]],
+  };
+  const DEMO = { dElem: 0, dLen: 1.0, dBend: 40, dRoll: 0, dHx: 1.6, dHy: 0.9, dHz: 0.6, dTier: 2 };
+  const PRESETS = {
+    mass: { "Humpback": {}, "Blue whale": { length: 80, girth: 0.1, flatten: 0.75, bellyDrop: 0.12, flipperRays: 2, flipperUnits: 1, gridX: 112 }, "Orca": { length: 52, girth: 0.17, headRound: 0.7, flatten: 0.85, flipperSweep: 12, flipperDroop: 35, pleats: 0, gridX: 84 } },
+    space: { "Moon jelly": {}, "Sea nettle": { bellRadius: 12, bellHeight: 11, bellSweep: 96, ribs: 14, tentacles: 8, tentacleUnits: 5, tentacleCurl: 12, tentacleWave: 10, arms: 4, armUnits: 3, gridY: 100 }, "Lion's mane": { bellRadius: 18, tentacles: 14, tentacleUnits: 4, ribs: 24, gridX: 84, gridZ: 84 } },
+    charge: { "Pufferfish": {}, "Porcupinefish": { bodyLength: 34, bodyWidth: 22, spine: 2.2, inflate: 0.25, ringPitch: 5.2 }, "Sea urchin": { bodyLength: 24, bodyWidth: 24, pectoralRays: 0, tailRays: 0, beak: 0, inflate: 0.15, shieldFrom: 0.2, dangerFrom: 0.45 } },
+    time: { "Dragonfly": {}, "Damselfly": { wingSpan: 22, wingChord: 5, abdomen: 12, flap: 24, wingInset: 4.5 }, "Hawk-moth": { wingSpan: 26, wingChord: 9, wingGap: 8, abdomen: 5, thorax: 3, beats: 3, flap: 40 } },
+    unit: {},
+  };
+  const DEF = { mass: SM.TARGETS.mass.defaults, space: SM.TARGETS.space.defaults, charge: SM.TARGETS.charge.defaults, time: SM.TARGETS.time.defaults, unit: DEMO };
+  let state = {}; for (const k of ORDER.concat("unit")) state[k] = Object.assign({}, DEF[k]);
+  let slotMap = [0, 1, 2], hadDraft = false, tab = "mass", tint = false;
+  const PERMS = [[0, 1, 2], [1, 0, 2], [0, 2, 1], [2, 0, 1], [1, 2, 0], [2, 1, 0]];
+  try { const d = JSON.parse(localStorage.getItem("swarm-draft") || "null"); if (d) { hadDraft = true; for (const k in state) if (d[k]) state[k] = Object.assign({}, DEF[k], d[k]); if (Array.isArray(d.slotMap)) slotMap = d.slotMap; } } catch (e) {}
+
+  // ---- the four seedings strip -----------------------------------------------------------
+  const rep = {};
+  function renderSeeds() {
+    const box = $("seeds"); box.textContent = "";
+    ORDER.concat("unit").forEach(k => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "seed"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", k === tab ? "true" : "false");
+      if (k === "unit") { b.innerHTML = `<div class="t">The tadpole</div><div class="m">one unit, four elements</div>`; }
+      else {
+        const r = rep[k], T = SM.TARGETS[k];
+        b.innerHTML = `<div class="t">${SM.ELEMENTS[T.elem]} · ${T.name}</div>`;
+        if (r) {
+          const mix = document.createElement("div"); mix.className = "mix";
+          r.share.forEach((v, e) => { const i = document.createElement("i"); i.style.width = (100 * v) + "%"; i.style.background = EL_UI[e]; mix.appendChild(i); });
+          b.appendChild(mix);
+          const m = document.createElement("div"); m.className = "m"; const worst = Math.max(...r.overlapsPerFrame);
+          m.textContent = `${r.units} tadpoles · ${Math.round(100 * r.share[T.elem])}% ${SM.ELEMENTS[T.elem]} · ${worst ? worst + " hits" : "no hits"}`;
+          b.appendChild(m);
+        }
+      }
+      b.onclick = () => { tab = k; dist = { mass: 150, space: 120, charge: 120, time: 140, unit: 40 }[k]; renderSeeds(); buildControls(); renderStats(); draw(); };
+      box.appendChild(b);
+    });
+  }
+
+  // ---- controls ---------------------------------------------------------------------------
+  let inputs = {};
+  function buildControls() {
+    const g = $("groups"); g.textContent = ""; inputs = {};
+    SPECS[tab].forEach(([name, rows], gi) => {
+      const det = document.createElement("details"); if (gi <= 1) det.open = true;
+      det.innerHTML = `<summary>${name}</summary>`;
+      rows.forEach(([key, label, a, b, step]) => {
+        const id = "p-" + key, r = document.createElement("div");
+        if (a === "toggle") {
+          r.className = "row tog"; r.innerHTML = `<label for="${id}">${label}</label><input type="checkbox" id="${id}">`;
+          const cb = r.querySelector("input"); cb.addEventListener("change", () => { state[tab][key] = cb.checked ? 1 : 0; changed(); });
+          inputs[key] = v => cb.checked = !!v;
+        } else if (a === "elem" || a === "tier" || a === "slot") {
+          r.className = "crow"; r.innerHTML = `<label>${label}</label><div class="cpick el" role="group" aria-label="${label}"></div>`;
+          const box = r.querySelector(".cpick"), btns = [], names = a === "elem" ? SM.ELEMENTS : a === "slot" ? ["A", "B", "C"] : TIER;
+          names.forEach((nm, e) => {
+            const bt = document.createElement("button"); bt.type = "button";
+            bt.innerHTML = a === "elem" ? `<i class="dot el" style="background:${EL_UI[e]}"></i>${nm}`
+              : a === "slot" ? `<i class="dot" style="background:${hex(PALETTE[slotMap[e]][0])}"></i>${nm}`
+              : `<i class="dot t${e}" style="background:${hex(PALETTE[slotMap[0]][e])}"></i>${nm}`;
+            bt.addEventListener("click", () => { state[tab][key] = e; set(e); changed(); });
+            btns.push([bt, e]); box.appendChild(bt);
+          });
+          const set = v => btns.forEach(([bt, e]) => bt.setAttribute("aria-pressed", v === e ? "true" : "false"));
+          inputs[key] = set; if (a === "tier") r.dataset.tier = "1";
+        } else {
+          r.className = "row";
+          r.innerHTML = `<label for="${id}">${label}</label><input type="range" id="${id}" min="${a}" max="${b}" step="${step}"><input type="number" min="${a}" max="${b}" step="${step}" aria-label="${label} value">`;
+          const [rg, nb] = r.querySelectorAll("input");
+          const upd = v => { v = +v; if (!isFinite(v)) return; state[tab][key] = v; rg.value = v; nb.value = v; changed(); };
+          rg.addEventListener("input", () => upd(rg.value)); nb.addEventListener("change", () => upd(nb.value));
+          inputs[key] = v => { rg.value = v; nb.value = v; };
+        }
+        det.appendChild(r);
+      });
+      g.appendChild(det);
+    });
+    const pr = $("presets"); pr.textContent = "";
+    for (const name of Object.keys(PRESETS[tab])) {
+      const bt = document.createElement("button"); bt.className = "btn"; bt.type = "button"; bt.textContent = name;
+      bt.addEventListener("click", () => { state[tab] = Object.assign({}, DEF[tab], PRESETS[tab][name]); sync(); changed(); });
+      pr.appendChild(bt);
+    }
+    sync();
+    $("ptitle").textContent = tab === "unit" ? "The tadpole" : SM.ELEMENTS[SM.TARGETS[tab].elem] + " · " + SM.TARGETS[tab].name;
+    $("plan").textContent = tab === "unit"
+      ? "Left: the four resting tadpoles. Right: one you can bend. Its prism is held to its element: Mass chunky, Space a thin rod, Time small and streamlined, and only Charge can change state (plain, danger, shield)."
+      : PLAN[tab];
+    $("resetbtn").textContent = tab === "unit" ? "Reset demo" : "Reset this plan";
+  }
+  function sync() {
+    for (const k in inputs) inputs[k](state[tab][k]);
+    document.querySelectorAll("[data-tier]").forEach(r => r.classList.toggle("tier-off", tab === "unit" && state.unit.dElem !== 0));
+  }
+
+  // ---- three.js ---------------------------------------------------------------------------
+  const cv = $("cv");
+  const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true });
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(30, 1.6, 0.5, 1500);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x445066, 0.8));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(30, 60, 40); scene.add(sun);
+  function hullGeometry(pts) {
+    pts = pts.map(p => new THREE.Vector3(...p).normalize());
+    const pos = [], eps = 1e-6;
+    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) for (let k = j + 1; k < pts.length; k++) {
+      const n = new THREE.Vector3().subVectors(pts[j], pts[i]).cross(new THREE.Vector3().subVectors(pts[k], pts[i]));
+      if (n.lengthSq() < 1e-10) continue;
+      let a = 0, b = 0;
+      for (const q of pts) { const d = n.dot(new THREE.Vector3().subVectors(q, pts[i])); if (d > eps) a++; else if (d < -eps) b++; if (a && b) break; }
+      if (a && b) continue;
+      (a ? [pts[i], pts[k], pts[j]] : [pts[i], pts[j], pts[k]]).forEach(v => pos.push(v.x, v.y, v.z));
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g;
+  }
+  function perms(base, even) {
+    const out = [], P3 = even ? [[0, 1, 2], [1, 2, 0], [2, 0, 1]] : [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+    for (const b of base) for (const p of P3) for (let s = 0; s < 8; s++) {
+      const v = p.map((ix, i) => b[ix] * ((s >> i) & 1 ? -1 : 1));
+      if (!out.some(o => Math.abs(o[0] - v[0]) + Math.abs(o[1] - v[1]) + Math.abs(o[2] - v[2]) < 1e-9)) out.push(v);
+    }
+    return out;
+  }
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const GEO = [hullGeometry(perms([[0, 1, 3 * PHI], [1, 2 + PHI, 2 * PHI], [PHI, 2, 2 * PHI + 1]], true)), new THREE.IcosahedronGeometry(1, 1), new THREE.DodecahedronGeometry(1, 0), hullGeometry(perms([[0, 1, 2]], false))];
+  const MAXP = 3000, MAXS = 3000 * 8;
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.45, metalness: 0.06, flatShading: true });
+  const gem = new THREE.MeshStandardMaterial({ roughness: 0.2, metalness: 0.1, flatShading: true, emissive: 0x3a4a66 });
+  const inst = (geo, m, n) => { const x = new THREE.InstancedMesh(geo, m, n); x.instanceMatrix.setUsage(THREE.DynamicDrawUsage); x.setColorAt(0, new THREE.Color(1, 1, 1)); x.count = 0; scene.add(x); return x; };
+  const boxes = inst(new THREE.BoxGeometry(2, 2, 2), mat, MAXP), octas = inst(new THREE.OctahedronGeometry(SM.SHIELD), mat, MAXP), gems = GEO.map(g => inst(g, gem, MAXP));
+  const cyl = new THREE.CylinderGeometry(1, 1, 1, 6, 1, true); cyl.translate(0, 0.5, 0);
+  const spMesh = new THREE.InstancedMesh(cyl, new THREE.MeshStandardMaterial({ roughness: 0.6, color: new THREE.Color(0.6, 0.72, 0.86).convertSRGBToLinear() }), MAXS);
+  spMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); spMesh.count = 0; scene.add(spMesh);
+  const gridBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), new THREE.LineBasicMaterial({ color: 0x7f8c96, transparent: true, opacity: 0.6 }));
+  scene.add(gridBox);
+  const lin = c => new THREE.Color(...c).convertSRGBToLinear();
+  const HEART = lin(HEART_BLUE), ELT = EL_UI.map(h => new THREE.Color(h).convertSRGBToLinear()), HIT = lin([1, 0, 0.85]);
+  const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+  let frameK = 0, playing = !matchMedia("(prefers-reduced-motion: reduce)").matches, az = 0.75, el = 0.35, dist = 150, lastTick = 0, showGrid = true, showHits = true;
+
+  function drawScene(g, off, hits) {
+    let nb = 0, no = 0, ns = 0; const ng = [0, 0, 0, 0];
+    g.prisms.forEach((q, i) => {
+      const R = q.R, h = q.h, oct = q.tier === 2, m = oct ? octas : boxes, j = oct ? no++ : nb++;
+      M.set(R[0] * h[0], R[1] * h[1], R[2] * h[2], q.p[0] + off[0], R[3] * h[0], R[4] * h[1], R[5] * h[2], q.p[1] + off[1], R[6] * h[0], R[7] * h[1], R[8] * h[2], q.p[2] + off[2], 0, 0, 0, 1);
+      m.setMatrixAt(j, M); m.setColorAt(j, hits.has("p" + i) ? HIT : lin(PALETTE[q.dom][q.tier]));
+    });
+    g.crystals.forEach((c, i) => {
+      const e = c.elem, j = ng[e]++;
+      M.makeScale(c.r, c.r, c.r); M.setPosition(c.p[0] + off[0], c.p[1] + off[1], c.p[2] + off[2]);
+      gems[e].setMatrixAt(j, M); gems[e].setColorAt(j, hits.has("c" + i) ? HIT : tint ? ELT[e] : HEART);
+    });
+    g.spindles.forEach(sp => {
+      for (let i = 0; i + 1 < sp.pts.length && ns < MAXS; i++) {
+        const a = sp.pts[i], b = sp.pts[i + 1];
+        V.set(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const L = V.length(); if (L < 1e-6) continue;
+        Q.setFromUnitVectors(UP, V.normalize()); S.set(sp.r, L, sp.r);
+        M.compose(new THREE.Vector3(a[0] + off[0], a[1] + off[1], a[2] + off[2]), Q, S); spMesh.setMatrixAt(ns++, M);
+      }
+    });
+    boxes.count = nb; octas.count = no; spMesh.count = ns; gems.forEach((m, e) => m.count = ng[e]);
+    [boxes, octas, spMesh, ...gems].forEach(m => { m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+  }
+  function unitScene() {
+    const U = state.unit, P = Object.assign({}, SM.TARGETS.mass.defaults, { slotMap, unitScale: 1, crystalSize: 1 }), units = [];
+    const rest = [{ h: [1.75, 0.525, 0.525], s: 1.2 }, { h: [1.0, 1.0, 0.9], s: 0.4 }, { h: [2.6, 0.32, 0.32], s: 0.8 }, { h: [1.0, 0.5, 0.45], s: 0.3 }];
+    for (let e = 0; e < 4; e++) units.push({ p: [8, 0, (e - 1.5) * 5], f: [1, 0, 0], n: [0, 1, 0], elem: e, spindle: { len: rest[e].s, bend: 0, roll: 0, thick: 0.22 }, prism: { h: rest[e].h, tier: e === 0 ? 2 : 0 } });
+    units.push({ p: [-6, 0, 0], f: [1, 0, 0], n: [0, 1, 0], elem: U.dElem, spindle: { len: U.dLen, bend: U.dBend * Math.PI / 180, roll: U.dRoll * Math.PI / 180, thick: 0.22 },
+      prism: { h: [U.dHx, U.dHy, U.dHz], tier: U.dTier } });
+    const out = { units, crystals: [], prisms: [], spindles: [] };
+    units.forEach((u, i) => { const g = SM.realise(P, u, i); out.crystals.push(g.crystal); out.prisms.push(g.prism); out.spindles.push(g.spindle); });
+    return out;
+  }
+  function draw() {
+    let g, off = [0, 0, 0]; const hits = new Set();
+    if (tab === "unit") { g = unitScene(); gridBox.visible = false; }
+    else {
+      const r = rep[tab]; if (!r) return;
+      const k = frameK % r.frames.length; g = r.frames[k]; off = r.offset;
+      if (showHits) for (const o of r.pairs[k]) for (const idx of [o.a, o.b]) hits.add(idx < g.prisms.length ? "p" + idx : "c" + (idx - g.prisms.length));
+      gridBox.visible = showGrid; gridBox.scale.set(...r.grid);
+      $("frame").max = r.frames.length - 1; $("frame").value = k; $("frameo").textContent = (k + 1) + "/" + r.frames.length;
+    }
+    drawScene(g, off, hits);
+    camera.position.set(Math.cos(el) * Math.cos(az) * dist, Math.sin(el) * dist, Math.cos(el) * Math.sin(az) * dist);
+    camera.lookAt(0, 0, 0); renderer.render(scene, camera);
+  }
+  function resize() { const w = cv.clientWidth || 640, h = cv.clientHeight || 400; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); draw(); }
+  function loop(t) { if (playing && tab !== "unit" && rep[tab] && t - lastTick > 140) { frameK++; lastTick = t; draw(); } requestAnimationFrame(loop); }
+  let drag = null;
+  cv.addEventListener("pointerdown", e => { drag = [e.clientX, e.clientY, az, el]; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", e => { if (!drag) return; az = drag[2] + (e.clientX - drag[0]) * 0.01; el = Math.max(-1.5, Math.min(1.5, drag[3] + (e.clientY - drag[1]) * 0.01)); draw(); });
+  cv.addEventListener("pointerup", () => { drag = null; });
+  cv.addEventListener("wheel", e => { e.preventDefault(); dist = Math.max(20, Math.min(500, dist * Math.exp(e.deltaY * 0.001))); draw(); }, { passive: false });
+  const VIEWS = { side: [Math.PI / 2, 0.02], top: [Math.PI / 2, 1.5], front: [0.0, 0.08], three: [0.75, 0.35] };
+  document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => { [az, el] = VIEWS[b.dataset.view]; draw(); }));
+  $("play").onclick = () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; };
+  if (!playing) $("play").textContent = "Play";
+  $("frame").addEventListener("input", e => { frameK = +e.target.value; playing = false; $("play").textContent = "Play"; draw(); });
+  const toggle = (id, fn) => $(id).addEventListener("click", () => { const on = fn(); $(id).classList.toggle("on", on); $(id).setAttribute("aria-pressed", on); draw(); });
+  toggle("gridbtn", () => (showGrid = !showGrid)); toggle("hitbtn", () => (showHits = !showHits)); toggle("tintbtn", () => (tint = !tint));
+  function markDomain() { $("slotbtn").textContent = "Domains: " + ["A", "B", "C"].map((l, i) => l + " " + DOM[slotMap[i]]).join(" · "); }
+  $("slotbtn").onclick = () => {
+    const i = PERMS.findIndex(p => p.join() === slotMap.join()); slotMap = PERMS[(i + 1) % PERMS.length].slice();
+    markDomain(); save(); for (const k of ORDER) { state[k].slotMap = slotMap; rep[k] = SM.report(k, state[k]); } buildControls(); renderSeeds(); draw();
+  };
+  function theme() { scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--dish").trim() || "#e8eef2"); draw(); }
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", theme);
+  new MutationObserver(theme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  window.addEventListener("resize", resize);
+
+  // ---- rebuild + stats --------------------------------------------------------------------
+  let pending = null;
+  function save() { try { localStorage.setItem("swarm-draft", JSON.stringify(Object.assign({ slotMap }, state))); } catch (e) {} }
+  function changed() {
+    save(); sync();
+    clearTimeout(pending); pending = setTimeout(() => { if (tab !== "unit") rep[tab] = SM.report(tab, state[tab]); renderSeeds(); renderStats(); draw(); }, 60);
+  }
+  function renderStats() {
+    const show = tab !== "unit";
+    for (const id of ["stats", "roles"]) $(id).style.display = show ? "" : "none";
+    $("speeds").parentElement.style.display = show ? "" : "none";
+    if (!show) { $("notes").textContent = "Hearts: 2.298 across for Charge and Space, 1.737 for Mass and Time — all one blue and white while alive. The colour of a heart in this preview never encodes its element; turn on Tint hearts by element to inspect."; return; }
+    const r = rep[tab], T = SM.TARGETS[tab], worst = Math.max(...r.overlapsPerFrame);
+    const setv = (id, text, cls) => { const e = $(id); e.textContent = text; e.className = "v" + (cls ? " " + cls : ""); };
+    setv("s-n", r.units, r.units > 360 ? "warn" : "");
+    setv("s-hit", worst === 0 ? "0" : worst + " (" + r.worstDepth.toFixed(2) + ")", worst === 0 ? "ok" : "bad");
+    setv("s-fit", r.fits ? "yes" : "no", r.fits ? "ok" : "bad");
+    setv("s-size", r.size.map(v => v.toFixed(0)).join("·") + " / " + r.grid.join("·"));
+    setv("s-maj", Math.round(100 * r.share[T.elem]) + "% " + SM.ELEMENTS[T.elem], r.majorityOk ? "ok" : "bad");
+    setv("s-st", r.states.map((v, i) => v ? TIER[i] : "").filter(Boolean).join(" · ") || "plain");
+    const tot = r.slots.reduce((a, b) => a + b, 0) || 1;
+    setv("s-dom", r.domainsUsed + ": " + r.slots.map((v, i) => v ? ["A", "B", "C"][i] + " " + Math.round(100 * v / tot) + "%" : "").filter(Boolean).join(" · "), r.domainsUsed >= 2 ? "ok" : "warn");
+    const sp = $("speeds"); sp.textContent = ""; const mx = Math.max(...r.speed, 1e-6), fastest = r.speed.indexOf(mx);
+    r.speed.forEach((v, e) => { if (!r.elements[e]) return;
+      sp.insertAdjacentHTML("beforeend", `<span><i class="dot el" style="background:${EL_UI[e]}"></i> ${SM.ELEMENTS[e]} <span class="mono">(${r.elements[e]})</span></span><span class="bar"><i style="width:${100 * v / mx}%;background:${EL_UI[e]}"></i></span><span class="mono">${v.toFixed(2)}</span>`); });
+    const ro = $("roles"); ro.textContent = "";
+    Object.entries(r.roles).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => { const s = document.createElement("span"); s.textContent = k + " " + v; ro.appendChild(s); });
+    const notes = [];
+    if (worst) notes.push("Magenta marks hearts or prisms touching another tadpole's on the worst frame (depth in voxels in brackets). Spindles are limbs and may pass through anything.");
+    if (!r.majorityOk) notes.push(`${SM.ELEMENTS[T.elem]} must be the majority of this swarm.`);
+    if (SM.ELEMENTS[fastest] !== "Time" && r.elements[3]) notes.push("Time should be the fastest element.");
+    if (!r.fits) notes.push("It does not fit the training grid on every frame.");
+    $("notes").textContent = notes.join(" ");
+  }
+
+  // ---- send / copy / reset ---------------------------------------------------------------
+  function payload() {
+    const out = { slotMap, note: $("note").value.slice(0, 2000), summary: {} };
+    for (const k of ORDER) { out[k] = state[k]; const r = rep[k]; if (r) out.summary[k] = { units: r.units, elements: r.elements, domainSlots: r.slots, worstFrameIntersections: Math.max(...r.overlapsPerFrame), fits: r.fits }; }
+    return out;
+  }
+  $("copybtn").onclick = async () => {
+    const text = JSON.stringify(payload(), null, 1), fld = $("copyfield");
+    try { await navigator.clipboard.writeText(text); $("sendstatus").textContent = "Copied all four plans as JSON."; $("sendstatus").className = "status ok"; }
+    catch (e) { fld.hidden = false; fld.value = text; fld.focus(); fld.select(); $("sendstatus").textContent = "Copy the selected field below."; }
+  };
+  $("resetbtn").onclick = () => { state[tab] = Object.assign({}, DEF[tab], tab === "unit" ? {} : { slotMap }); sync(); changed(); };
+  $("sendbtn").disabled = true;
+  (async () => {
+    const db = window.claude && window.claude.use ? await window.claude.use("db") : null;
+    if (!db) { $("sendstatus").textContent = "Sending is unavailable here. Use Copy JSON and paste it to Claude."; return; }
+    let user = null; try { user = await window.claude.use("user"); } catch (e) {}
+    const ref = db.doc("targets/swarm"); let first = true;
+    $("sendbtn").disabled = false;
+    ref.onSnapshot(snap => {
+      if (!snap.exists) { first = false; return; }
+      const d = snap.data();
+      $("sendstatus").textContent = "Last sent " + new Date(d.savedAt).toLocaleString() + "."; $("sendstatus").className = "status ok";
+      if (first && !hadDraft) { for (const k of ORDER) if (d[k]) state[k] = Object.assign({}, DEF[k], d[k]); if (Array.isArray(d.slotMap)) slotMap = d.slotMap; if (d.note) $("note").value = d.note; markDomain(); rebuildAll(); sync(); }
+      first = false;
+    }, () => { $("sendstatus").textContent = "Could not read the saved plans."; });
+    $("sendbtn").onclick = async () => {
+      $("sendbtn").disabled = true; $("sendstatus").textContent = "Sending…"; $("sendstatus").className = "status";
+      try {
+        const body = Object.assign(payload(), { savedAt: Date.now(), by: user ? await user.id() : null });
+        await ref.set(body);
+        try { await db.collection("targets/swarm/versions").doc(String(body.savedAt)).set(body); } catch (e) {}
+      } catch (e) { $("sendstatus").textContent = "Send failed (" + (e && e.code || "error") + "). Copy JSON works as a fallback."; $("sendstatus").className = "status bad"; }
+      $("sendbtn").disabled = false;
+    };
+  })();
+
+  function rebuildAll() { for (const k of ORDER) { state[k].slotMap = slotMap; rep[k] = SM.report(k, state[k]); } renderSeeds(); renderStats(); draw(); }
+  markDomain(); buildControls(); theme(); resize(); rebuildAll(); requestAnimationFrame(loop);
+})();
+</script>
