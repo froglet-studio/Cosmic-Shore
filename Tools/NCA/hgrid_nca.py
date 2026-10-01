@@ -147,7 +147,7 @@ class LearnedField:
         if self.collect is not None:
             self.collect.append((h, lab))
         if self.beta >= 1.0:
-            return pred
+            return pred.detach()
         use = (torch.rand(B, generator=self.gen) < self.beta).float()[:, None, None, None, None]
         return use * pred.detach() + (1 - use) * lab
 

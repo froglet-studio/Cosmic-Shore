@@ -103,6 +103,8 @@ class VoteField:
         if self.collect is not None:
             occ = (T[:, :, :hc.NCLS].sum(2).amax(1) + dens.sum(1)).detach() > 0.05      # cells that matter
             self.collect.append((h[:, :4], sw.plan.clone(), occ))
+        if self.collect is not None:
+            field = field.detach()        # train the decision through its CE only; boids carry no graph
         if self.beta >= 1.0:
             return field
         lab = T[torch.arange(B), sw.plan]
