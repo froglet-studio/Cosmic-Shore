@@ -1,0 +1,325 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 7.81,
+   "space": 73.26,
+   "charge": 60.52,
+   "time": 80.35
+  },
+  "space": {
+   "mass": 69.21,
+   "space": 13.85,
+   "charge": 57.53,
+   "time": 70.63
+  },
+  "charge": {
+   "mass": 55.03,
+   "space": 56.55,
+   "charge": 9.41,
+   "time": 70.39
+  },
+  "time": {
+   "mass": 85.71,
+   "space": 81.32,
+   "charge": 82.12,
+   "time": 9.67
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 195,
+   "target_n": 192,
+   "elements": [
+    20,
+    126,
+    26,
+    23
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    107,
+    88,
+    0
+   ],
+   "deaths": 61,
+   "mutants": 0
+  },
+  "space": {
+   "n": 90,
+   "target_n": 88,
+   "elements": [
+    26,
+    2,
+    54,
+    8
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    38,
+    52,
+    0
+   ],
+   "deaths": 38,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 180,
+   "target_n": 179,
+   "elements": [
+    131,
+    2,
+    16,
+    31
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    91,
+    89,
+    0
+   ],
+   "deaths": 46,
+   "mutants": 0
+  },
+  "time": {
+   "n": 80,
+   "target_n": 76,
+   "elements": [
+    2,
+    4,
+    19,
+    55
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    27,
+    6,
+    47
+   ],
+   "deaths": 3,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 4.65,
+   "space": 24.74,
+   "charge": 17.34,
+   "time": 29.19
+  },
+  "space": {
+   "mass": 19.6,
+   "space": 8.95,
+   "charge": 16.37,
+   "time": 26.69
+  },
+  "charge": {
+   "mass": 10.48,
+   "space": 15.83,
+   "charge": 5.21,
+   "time": 19.3
+  },
+  "time": {
+   "mass": 26.27,
+   "space": 27.19,
+   "charge": 22.44,
+   "time": 6.34
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 60.4,
+    "space": 16.27,
+    "charge": 55.08,
+    "time": 69.8
+   },
+   "majority": "space",
+   "census": {
+    "n": 92,
+    "target_n": 88,
+    "elements": [
+     25,
+     5,
+     54,
+     8
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     39,
+     53,
+     0
+    ],
+    "deaths": 118,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 56.87,
+    "space": 57.87,
+    "charge": 14.85,
+    "time": 70.32
+   },
+   "majority": "charge",
+   "census": {
+    "n": 181,
+    "target_n": 179,
+    "elements": [
+     131,
+     2,
+     16,
+     32
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     90,
+     91,
+     0
+    ],
+    "deaths": 76,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 69.67,
+    "space": 62.01,
+    "charge": 62.81,
+    "time": 26.79
+   },
+   "majority": "time",
+   "census": {
+    "n": 75,
+    "target_n": 76,
+    "elements": [
+     3,
+     4,
+     18,
+     50
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     29,
+     46,
+     0
+    ],
+    "deaths": 64,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 85.6,
+    "space": 36.43,
+    "charge": 75.44,
+    "time": 67.04
+   },
+   "majority": "space",
+   "census": {
+    "n": 92,
+    "target_n": 192,
+    "elements": [
+     26,
+     4,
+     55,
+     7
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     52,
+     1,
+     39
+    ],
+    "deaths": 23,
+    "mutants": 0
+   }
+  }
+ },
+ "tests_passed": 7,
+ "close": 184.25,
+ "sec": 54.8,
+ "meta": {
+  "kind": "e2e",
+  "ckpt": "runs/e2e_best.pt",
+  "cfg": {
+   "G": 16,
+   "cell": 6.0,
+   "quant": 1,
+   "k_class": 3.0,
+   "k_total": 1.0,
+   "k_home": 0.15,
+   "persist": 0.6,
+   "noise": 0.05,
+   "p_lay": 0.1,
+   "p_cross": 0.25,
+   "hatch_steps": 2,
+   "ease": 0.3,
+   "starve": 1,
+   "starve_rate": 0.04,
+   "starve_tol": 0.15,
+   "starve_local": 0.0,
+   "hyst": 0.0,
+   "animate": 1,
+   "flow": 1,
+   "k_flow": 4.0,
+   "period": 8
+  }
+ }
+}
