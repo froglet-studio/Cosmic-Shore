@@ -66,6 +66,7 @@ class PlayRule(sn.SwarmRule):
         self.p_kill, self.core, self.push = p_kill, core, push
         self.avoid_acc = None      # (training) per-sample running reaction penalty, with gradient
         self.gap = 1.6
+        self.pred_gain = 1.0       # predator inputs are multiplied by this (p2: 3, so the zero-init columns matter sooner)
 
     def set_predator(self, p, v, r, on):
         self.pred = dict(p=p.clone(), v=v.clone(), r=r.clone(), on=on.clone())
@@ -80,7 +81,7 @@ class PlayRule(sn.SwarmRule):
         on = self.pred["on"][:, None].expand(B, N).reshape(n).to(pos.dtype)
         rel = (pos - pp) / rs[:, None]
         f = (1 - (rel * rel).sum(-1)).clamp(min=0) * on
-        return torch.cat([rel * f[:, None], f[:, None], pv / 3.0 * f[:, None]], 1)
+        return self.pred_gain * torch.cat([rel * f[:, None], f[:, None], pv / 3.0 * f[:, None]], 1)
 
     def forward(self, sw: Swarm, gen=None, bud=True, fire=None):
         B = sw.B
@@ -170,7 +171,7 @@ def load_play(path, **kw):
         if sd[k].shape != v.shape:
             pad = torch.zeros_like(v); pad[tuple(slice(0, d) for d in sd[k].shape)] = sd[k]; sd[k] = pad
     rule.load_state_dict(sd)
-    for k in ("p_kill", "core", "push", "gap"):
+    for k in ("p_kill", "core", "push", "gap", "pred_gain"):
         if k in st.get("play", {}):
             setattr(rule, k, st["play"][k])
     return rule
@@ -178,7 +179,7 @@ def load_play(path, **kw):
 
 def save_play(rule, path, step, extra=None):
     torch.save(dict(rule={k: v.detach().cpu() for k, v in rule.state_dict().items()}, world=asdict(rule.world),
-                    hidden=rule.hidden, step=step, play=dict(p_kill=rule.p_kill, core=rule.core, push=rule.push, gap=rule.gap),
+                    hidden=rule.hidden, step=step, play=dict(p_kill=rule.p_kill, core=rule.core, push=rule.push, gap=rule.gap, pred_gain=rule.pred_gain),
                     **(extra or {})), path)
 
 
@@ -277,6 +278,7 @@ class PlayCfg:
     pred_radius: tuple = (4.0, 8.0)
     w_avoid: float = 2.0       # x mean over the window of sum relu(1 - d/(gap r))^2
     gap: float = 1.6
+    pred_gain: float = 1.0
     # loss (G2's)
     w_over: float = 1.0
     min_body: float = 76.0
@@ -295,6 +297,7 @@ def train(cfg: PlayCfg):
     gen = sn.make_gen(cfg.seed)
     rule = load_play(cfg.init)
     rule.gap = cfg.gap
+    rule.pred_gain = cfg.pred_gain
     opt = torch.optim.Adam(rule.parameters(), lr=cfg.lr)
     sched = torch.optim.lr_scheduler.MultiStepLR(opt, [int(cfg.steps * 0.6), int(cfg.steps * 0.85)], 0.3)
     ck = os.path.join(run, "latest.pt")
