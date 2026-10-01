@@ -175,9 +175,33 @@ def life(kind, cfg=None, seed=3, body_kind="evo"):
     to = SHOW_SWITCH[kind]
     al, c, rms = body(sw)
     n0 = int(al.sum())
-    se.cull_to(sw, 0, to, gen)
-    events.append([t[0], f"predators eat until {sn.ELEMENTS[to]} is the majority ({n0 - int(body(sw)[0].sum())} eaten) - "
-                         f"the body shivers, then re-forms as the {NAMES[sn.PLAN_OF[to]].split()[0].lower()}"])
+    if body_kind == "field":
+        # a predator ship hovers beside it and eats its majority, nearest first; afraid, the swarm stops breeding
+        maj0 = sn.MAJOR[kind]
+        events.append([t[0], f"a predator hovers beside it and eats its {sn.ELEMENTS[maj0]} tadpoles - afraid, the swarm stops breeding"])
+        eaten = 0
+        for _ in range(400):
+            al, c, rms = body(sw)
+            cnt = torch.bincount(sw.elem[0][al], minlength=4)
+            top = int(cnt.argmax())
+            if top != maj0 and int(cnt[top] - cnt[maj0]) >= max(2, 0.1 * float(cnt.sum())):
+                break
+            ship = c + np.array([0.8 * rms, 0.0, 0.0])
+            idx = (al & (sw.elem[0] == maj0)).nonzero().squeeze(1)
+            dd = (sw.pos[0][idx] - torch.as_tensor(ship, dtype=torch.float32)).norm(dim=-1)
+            kill = idx[dd.argsort()[:1]]
+            for j in kill.tolist():
+                live_cr.append([*sw.pos[0, j].tolist(), int(sw.elem[0, j]), t[0], 0.0, 0.0, 0.0])
+            sw.active[0, kill] = False; sw.hatched[0, kill] = False; sw.s[0, kill] = 0.0
+            eaten += len(kill)
+            step(1, lambda i, c_, r_, s_=ship: (s_, 0.4 * rms, np.zeros(3)))
+        new = sn.PLAN_OF[int(torch.bincount(sw.elem[0][body(sw)[0]], minlength=4).argmax())]
+        events.append([t[0], f"{eaten} eaten: {sn.ELEMENTS[sn.MAJOR[new]]} now leads - the body shivered, and re-forms as the "
+                             f"{NAMES[new].split()[0].lower()}"])
+    else:
+        se.cull_to(sw, 0, to, gen)
+        events.append([t[0], f"predators eat until {sn.ELEMENTS[to]} is the majority ({n0 - int(body(sw)[0].sum())} eaten) - "
+                             f"the body shivers, then re-forms as the {NAMES[sn.PLAN_OF[to]].split()[0].lower()}"])
     step(300)
     x = sn.decode(sw, 0)
     row = {k: round(sn.swarm_loss(x, T[k], sn.LossCfg())[1]["sink"], 2) for k in sn.KINDS}

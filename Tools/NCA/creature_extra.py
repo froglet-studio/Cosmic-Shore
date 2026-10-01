@@ -63,10 +63,10 @@ def switch_trace(seed=7, steps=240, after=240, L=None):
 
 
 @torch.no_grad()
-def _make(body_kind):
+def _make(body_kind, **cfg):
     if body_kind == "field":
         import creature_field as cf
-        return cf.CreatureField()
+        return cf.CreatureField(**cfg)
     return cm.CreatureRule()
 
 
@@ -108,8 +108,9 @@ def main():
     ap.add_argument("--gradual", action="store_true")
     ap.add_argument("--field-escort", action="store_true")
     ap.add_argument("--gradual-field", action="store_true")
+    ap.add_argument("--eater", action="store_true")
     a = ap.parse_args()
-    if a.gradual or a.gradual_field:
+    if a.gradual or a.gradual_field or a.eater:
         return
     if "--field-escort" in sys.argv:
         json.dump(escort(body_kind="field"), open(os.path.join(HERE, "runs", "creature", "field_escort.json"), "w"), indent=1)
@@ -122,6 +123,56 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+@torch.no_grad()
+def eater(seed=7, steps=240, rate=1, max_steps=400, body_kind="field", L=None, lead=0.0, **cfg):
+    """Gradual predation WITH the eater present: a ship hovers 0.8 RMS radii off the body (so the swarm is afraid)
+    and eats `rate` majority tadpoles per step (nearest to it first) until another element leads, then leaves.
+    Reports flip time and whether the new plan is closest 150 steps later."""
+    L = L or sn.LossCfg()
+    T = sn.load_targets()
+    out = {}
+    for k in sn.KINDS:
+        m = _make(body_kind, **cfg)
+        gen = sn.make_gen(seed)
+        sw = sn.seed_swarm([T[k]], m.world, gen)
+        for _ in range(steps):
+            sw = m(sw, gen)
+        maj0 = sn.MAJOR[k]
+        flip = warn = None
+        eaten = 0
+        for t in range(max_steps):
+            al = sw.active[0] & sw.hatched[0]
+            cnt = torch.bincount(sw.elem[0][al], minlength=4)
+            if flip is None and int(cnt.argmax()) != maj0:
+                flip = t
+            top2 = cnt.sort(descending=True).values
+            feeding = flip is None or (int(cnt.argmax()) != maj0 and int(top2[0] - cnt[maj0]) < max(2, lead * float(cnt.sum())))
+            if feeding and t < max_steps - 160:
+                p = sw.pos[0][al]; c = p.mean(0); rms = float(((p - c) ** 2).sum(-1).mean().sqrt())
+                ship = (c + torch.tensor([0.8 * rms, 0.0, 0.0])).numpy()
+                m.vessels = [(ship, 0.4 * rms, np.zeros(3))]
+                idx = (al & (sw.elem[0] == maj0)).nonzero().squeeze(1)
+                dd = (sw.pos[0][idx] - torch.as_tensor(ship, dtype=torch.float32)).norm(dim=-1)
+                kill = idx[dd.argsort()[:rate]]
+                sw.active[0, kill] = False; sw.hatched[0, kill] = False; sw.s[0, kill] = 0.0
+                eaten += len(kill)
+            else:
+                m.vessels = []
+            sw = m(sw, gen)
+            if warn is None and m.flags is not None and float(torch.as_tensor(m.flags["tell"]).reshape(-1)[0]) > 0.05:
+                warn = t
+            if flip is not None and t >= flip + 150:
+                break
+        m.vessels = []
+        x = sn.decode(sw, 0)
+        row = {k2: round(sn.swarm_loss(x, T[k2], L)[1]["sink"], 2) for k2 in sn.KINDS}
+        al = sw.active[0] & sw.hatched[0]
+        out[k] = dict(flip_at=flip, eaten=eaten, warn_at=warn, closest_after=min(row, key=row.get), row=row,
+                      majority_after=sn.ELEMENTS[int(torch.bincount(sw.elem[0][al], minlength=4).argmax())], n_after=int(al.sum()))
+        print("eater", body_kind, cfg, k, {kk: v for kk, v in out[k].items() if kk != "row"}, flush=True)
+    return out
 
 
 @torch.no_grad()
@@ -163,7 +214,16 @@ def gradual(seed=7, steps=240, rate=1, every=2, max_steps=400, L=None, body_kind
     return out
 
 
-if __name__ == "__main__" and "--gradual-field" in sys.argv:
+if __name__ == "__main__" and "--eater" in sys.argv:
+    torch.set_num_threads(4)
+    res = {}
+    for fear in (0.0, 4.0):
+        for r in (1, 2):
+            res[f"fear{fear}_rate{r}"] = eater(rate=r, fear=fear)
+    for r in (1, 2):
+        res[f"fear4.0_rate{r}_lead0.1"] = eater(rate=r, fear=4.0, lead=0.1)
+    json.dump(res, open(os.path.join(HERE, "runs", "creature", "field_eater.json"), "w"), indent=1)
+elif __name__ == "__main__" and "--gradual-field" in sys.argv:
     torch.set_num_threads(4)
     json.dump({f"rate{r}": gradual(rate=r, every=1, body_kind="field") for r in (1, 2, 4)},
               open(os.path.join(HERE, "runs", "creature", "field_gradual.json"), "w"), indent=1)
