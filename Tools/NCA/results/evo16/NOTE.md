@@ -36,6 +36,12 @@ that every body slowly loses its shape after ~240 steps, struck or not**, the je
 yardsticks score at 240 and never see it. Plain ratio heal at +360 is therefore negative everywhere
 (−0.43 / −0.84 / −0.31 / +0.04) and means nothing on its own.
 
+**Hold test (`evo16_hold.py`, `hold.json`, 8 seeds):** identity survives — every plan is still strictly
+closest to its own body at 600 and 1200 steps (8/8, both genomes). Quality does not: own-plan divergence
+240 → 600 → 1200 for the primary is whale 17.4 → 19.7 → 27.4, jellyfish 15.3 → 24.6 → **36.4**,
+puffer 13.9 → 16.0 → 20.3, dragonfly 26.5 → 28.6 → 32.5 (round 1: 18.6/22.5/15.7/25.5 at 240 →
+27.1/32.4/21.6/33.7 at 1200). The primary's better jellyfish is a 240-step advantage that is gone by 1200.
+
 ## Primary genome (`genome.npy`, the gen-19 CMA mean)
 | yardstick | result |
 |---|---|
@@ -76,7 +82,7 @@ Size and heal trade off along h: the closer to plan size, the weaker the healing
 - `evo16_search.py` (CMA-ES, pop 12, 2 fresh seeds/gen, held-out every 4 gens), `evo16_screen.py`
   (variants / `--ablate`), `evo16_select.py` (candidates on 12 shared seeds), `evo16_heal.py`
   (K-strike heal), `evo16_measure.py` (swarm_eval at N seeds), `evo16_margins.py`, `evo16_publish.py`,
-  `evo16_pool.py` (see the CPU finding).
+  `evo16_hold.py` (long-horizon identity/quality), `evo16_pool.py` (see the CPU finding).
 
 ## Evolution curve (37 dims: behaviour + new genes, from the round-1 genome; `search_log.jsonl`)
 fitness = mean pass + 0.5·mean margin + mean(min(heal, 0.5)/0.5) (max ≈ 2.7). Held-out = CMA mean, 4 seeds.
