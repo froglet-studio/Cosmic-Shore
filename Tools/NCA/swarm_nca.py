@@ -511,6 +511,8 @@ class LossCfg:
     w_mix: float = 0.0         # squared error of the swarm's element shares against the plan's
     w_con: float = 0.0         # contrastive hinge: the own plan must beat every other plan by con_margin
     con_margin: float = 4.0
+    min_body: float = 0.0      # one-sided body floor: w_body * relu(1 - n / min_body)^2, the SAME for every plan
+    w_body: float = 0.0        # (rules out the shrink-to-nothing shortcut without letting headcount pick a plan)
     w_over: float = 0.0        # overflow penalty: mean over live particles of sum(relu(|s| - over_band)); the
     over_band: float = 5.0     # state is otherwise unbounded and runs away to overflow (the NaN hangs)
     scale_inv: int = 0         # 1: a body plan is a shape, not a size - the swarm is rescaled to the plan's RMS
@@ -682,6 +684,9 @@ def swarm_loss(x, T: Target, L: LossCfg, frames=None, ndom=None, others=None):
     survive = (x["pdie"] * hat).sum() / T.n
     loss = sink + L.w_count * count + L.w_survive * survive
     info = dict(sink=float(sink.detach()), count=float(count.detach()), survive=float(survive.detach()), frame=k, perm=perm, n=float(tot))
+    if L.w_body and L.min_body:
+        body = torch.relu(1 - tot / L.min_body) ** 2
+        loss = loss + L.w_body * body; info["body"] = float(body.detach())
     if L.w_over and "s" in x:
         over = torch.relu(x["s"].abs() - L.over_band).sum(-1).mean()
         loss = loss + L.w_over * over; info["over"] = float(over.detach())
@@ -890,6 +895,8 @@ class TrainCfg:
     scale_inv: int = 0
     w_over: float = 0.0
     over_band: float = 5.0
+    min_body: float = 0.0
+    w_body: float = 0.0
 
 
 def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
@@ -906,7 +913,7 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None
     os.makedirs(cfg.run, exist_ok=True)
     world = replace(world, learned_lay=cfg.learned_lay, lay_gain=cfg.lay_gain, lay_bias=cfg.lay_bias)
     L = replace(L, rel_elem=cfg.rel_elem, w_mix=cfg.w_mix, w_con=cfg.w_con, con_margin=cfg.con_margin, scale_inv=cfg.scale_inv,
-                w_over=cfg.w_over, over_band=cfg.over_band)
+                w_over=cfg.w_over, over_band=cfg.over_band, min_body=cfg.min_body, w_body=cfg.w_body)
     targets = load_targets()
     torch.manual_seed(cfg.seed)
     gen = make_gen(cfg.seed)
@@ -1145,14 +1152,19 @@ def rollout(rule, steps=240, every=5, seed=7, L=None, switch_steps=240):
     return data, summary
 
 
+MIN_TEST_BODY = 32     # a swarm must have grown (twice the 16-tadpole seed) for a plan test to count
+
+
 def tests_passed(summary):
     """The 8 tests: each seeding grows closest to its own plan (4), and after losing its majority each
     swarm ends closest to the new majority's plan (4). A test passes only if the swarm is alive and its
     plan is STRICTLY closest - an extinct swarm scores the sentinel 100 against every plan, and a tie
-    must not count as a pass. Returns (passed, summed divergence over the 8 wanted plans)."""
+    must not count as a pass. The swarm must also have grown to MIN_TEST_BODY: the learned laying gate
+    found a shortcut of never laying, and a 16-tadpole clump 'closest to the jellyfish' is not a body.
+    Returns (passed, summed divergence over the 8 wanted plans)."""
     def ok(row, want, n):
         others = [v for k, v in row.items() if k != want]
-        return n > 0 and row[want] < 99.9 and row[want] < min(others) - 1e-6
+        return n >= MIN_TEST_BODY and row[want] < 99.9 and row[want] < min(others) - 1e-6
     cross, cen, sw = summary["cross"], summary.get("census", {}), summary.get("switch", {})
     passed = sum(ok(cross[k], k, cen.get(k, {}).get("n", 1)) for k in KINDS)
     close = sum(cross[k][k] for k in KINDS)
