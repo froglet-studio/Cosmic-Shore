@@ -415,9 +415,10 @@ def train(cfg: MetaCfg, resume=True, on_snapshot=None):
             log.write(json.dumps(rec) + "\n"); log.flush()
             print(f"{step:5d} loss {float(loss):8.3f} T{T} {dt:4.1f}s rev{rev:.2f} meta{mm:3d}{f' nf{nonfinite}' if nonfinite else ''} s{rec['smax']:.0f} | " + " | ".join(
                 f"{k[:2]}>{rec[k]['plan'][:2]} {rec[k]['sink']:6.2f} n{rec[k]['n']:3d} {rec[k]['el']}" for k in KINDS), flush=True)
-        if (step + 1) % cfg.snap_every == 0 or step == cfg.steps - 1:
+        if (step + 1) % 25 == 0 or step == cfg.steps - 1:      # the container can restart: resume often
             torch.save(dict(rule=rule.state_dict(), opt=opt.state_dict(), pool=pool, step=step + 1), ck + ".tmp")
             os.replace(ck + ".tmp", ck)
+        if (step + 1) % cfg.snap_every == 0 or step == cfg.steps - 1:
             path = os.path.join(cfg.run, f"rule_{step + 1:05d}.pt")
             torch.save(dict(rule={k_: v.cpu() for k_, v in rule.state_dict().items()}, world=asdict(world),
                             hidden=rule.hidden, step=step + 1), path)
