@@ -1,116 +1,104 @@
 {
  "mass": {
-  "n": 196,
-  "speed": 0.091,
-  "jerk": 0.07,
-  "jerk_rel": 0.766,
+  "n": 192,
+  "speed": 0.089,
+  "jerk": 0.069,
+  "jerk_rel": 0.775,
   "jerk_e": {
    "Charge": 0.052,
    "Mass": 0.057,
-   "Space": 0.079,
+   "Space": 0.078,
    "Time": 0.144
   },
-  "planar_frac": 0.478,
-  "flat_mean": 0.131,
+  "planar_frac": 0.516,
+  "flat_mean": 0.119,
   "planar_plan": 0.432,
-  "coherence": 0.569,
-  "jitter": 0.931,
-  "phase": 0.965,
+  "coherence": 0.584,
+  "jitter": 0.913,
+  "phase": 0.958,
   "stuck": 0.0,
-  "osc": 0.026
+  "osc": 0.027
  },
  "space": {
-  "n": 95,
+  "n": 88,
   "speed": 0.138,
-  "jerk": 0.083,
+  "jerk": 0.082,
   "jerk_rel": 0.598,
   "jerk_e": {
    "Charge": 0.064,
    "Space": 0.073,
-   "Time": 0.208
+   "Time": 0.228
   },
-  "planar_frac": 0.209,
-  "flat_mean": 0.193,
+  "planar_frac": 0.323,
+  "flat_mean": 0.19,
   "planar_plan": 0.375,
-  "coherence": 0.471,
-  "jitter": 1.461,
-  "phase": 0.866,
+  "coherence": 0.491,
+  "jitter": 1.48,
+  "phase": 0.892,
   "stuck": 0.0,
-  "osc": 0.03
+  "osc": 0.033
  },
  "charge": {
-  "n": 188,
-  "speed": 0.149,
+  "n": 182,
+  "speed": 0.15,
   "jerk": 0.092,
-  "jerk_rel": 0.615,
+  "jerk_rel": 0.612,
   "jerk_e": {
    "Charge": 0.073,
-   "Mass": 0.063,
-   "Space": 0.145,
-   "Time": 0.148
+   "Mass": 0.062,
+   "Space": 0.144,
+   "Time": 0.149
   },
-  "planar_frac": 0.599,
-  "flat_mean": 0.111,
+  "planar_frac": 0.704,
+  "flat_mean": 0.083,
   "planar_plan": 0.687,
-  "coherence": 0.7,
-  "jitter": 0.635,
-  "phase": 0.626,
+  "coherence": 0.709,
+  "jitter": 0.63,
+  "phase": 0.691,
   "stuck": 0.0,
-  "osc": 0.031
+  "osc": 0.032
  },
  "time": {
-  "n": 79,
-  "speed": 0.436,
-  "jerk": 0.146,
-  "jerk_rel": 0.336,
+  "n": 77,
+  "speed": 0.439,
+  "jerk": 0.147,
+  "jerk_rel": 0.335,
   "jerk_e": {
-   "Charge": 0.087,
-   "Mass": 0.1,
-   "Space": 0.097,
-   "Time": 0.171
+   "Charge": 0.085,
+   "Mass": 0.102,
+   "Space": 0.1,
+   "Time": 0.169
   },
-  "planar_frac": 0.34,
-  "flat_mean": 0.166,
+  "planar_frac": 0.291,
+  "flat_mean": 0.169,
   "planar_plan": 0.487,
-  "coherence": 0.727,
-  "jitter": 0.743,
-  "phase": 0.944,
+  "coherence": 0.728,
+  "jitter": 0.701,
+  "phase": 0.915,
   "stuck": 0.0,
-  "osc": 0.034
+  "osc": 0.033
  },
  "mean": {
   "speed": 0.204,
   "jerk": 0.098,
-  "jerk_rel": 0.579,
-  "planar_frac": 0.407,
-  "flat_mean": 0.15,
-  "coherence": 0.617,
-  "jitter": 0.943,
-  "phase": 0.85,
+  "jerk_rel": 0.58,
+  "planar_frac": 0.458,
+  "flat_mean": 0.14,
+  "coherence": 0.628,
+  "jitter": 0.931,
+  "phase": 0.864,
   "stuck": 0.0,
-  "osc": 0.03
+  "osc": 0.031
  },
  "organic": {
-  "mean": {
-   "speed": 0.204,
-   "jerk": 0.098,
-   "jerk_rel": 0.579,
-   "planar_frac": 0.407,
-   "flat_mean": 0.15,
-   "coherence": 0.617,
-   "jitter": 0.943,
-   "phase": 0.85,
-   "stuck": 0.0,
-   "osc": 0.03
-  },
-  "planar_excess": 0.046,
-  "organic": true,
+  "ok": true,
   "checks": {
    "jerk_rel": true,
    "osc": true,
    "stuck": true,
    "planar": true
-  }
+  },
+  "planar_excess": 0.084
  },
  "calibration": {
   "evo (organic)": {
@@ -127,13 +115,7 @@
     "osc": 0.058
    },
    "planar_excess": 0.0,
-   "organic": true,
-   "checks": {
-    "jerk_rel": true,
-    "osc": true,
-    "stuck": true,
-    "planar": true
-   }
+   "organic": true
   },
   "evo compact (jerky, planar)": {
    "mean": {
@@ -149,13 +131,7 @@
     "osc": 0.167
    },
    "planar_excess": 0.235,
-   "organic": false,
-   "checks": {
-    "jerk_rel": true,
-    "osc": false,
-    "stuck": true,
-    "planar": false
-   }
+   "organic": false
   },
   "field (too clean)": {
    "mean": {
@@ -171,13 +147,7 @@
     "osc": 0.035
    },
    "planar_excess": 0.033,
-   "organic": false,
-   "checks": {
-    "jerk_rel": false,
-    "osc": true,
-    "stuck": false,
-    "planar": true
-   }
+   "organic": false
   },
   "hgrid oracle (accurate+organic)": {
    "mean": {
@@ -193,35 +163,7 @@
     "osc": 0.01
    },
    "planar_excess": 0.126,
-   "organic": true,
-   "checks": {
-    "jerk_rel": true,
-    "osc": true,
-    "stuck": true,
-    "planar": true
-   }
-  },
-  "hgrid2 (this round)": {
-   "mean": {
-    "speed": 0.204,
-    "jerk": 0.098,
-    "jerk_rel": 0.579,
-    "planar_frac": 0.407,
-    "flat_mean": 0.15,
-    "coherence": 0.617,
-    "jitter": 0.943,
-    "phase": 0.85,
-    "stuck": 0.0,
-    "osc": 0.03
-   },
-   "planar_excess": 0.046,
-   "organic": true,
-   "checks": {
-    "jerk_rel": true,
-    "osc": true,
-    "stuck": true,
-    "planar": true
-   }
+   "organic": true
   }
  }
 }

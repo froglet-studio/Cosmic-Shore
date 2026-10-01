@@ -13,7 +13,7 @@ import torch
 import swarm_nca as sn, swarm_eval, swarm_probe, swarm_feel, hgrid_eval, hgrid2_model as hm
 
 BEST = dict(k_fine=2, k_ff=1.5, interp=1, k_flow=0, periods="time:16", dmap_low=1, lock=60, k_class=10, sigma_rel=1.2,
-            p_cross=0.25, stagger=1, k_mig=1, mig_L=40)
+            p_cross=0.25, stagger=1, k_mig=1, mig_L=40, starve_slack=0, starve_tol=0, elem_floor=1, small_slack=2)
 
 
 def load(path):
@@ -55,7 +55,14 @@ def main():
             json.dump(pr, open(os.path.join(out, "probe.json"), "w"), indent=1)
     if "feel" in only:
         fe = swarm_feel.feel(model)
-        print(json.dumps(fe["mean"]), flush=True)
+        ok, checks = swarm_feel.in_band(fe)
+        fe["organic"] = dict(ok=ok, checks=checks, planar_excess=round(swarm_feel.planar_excess(fe), 3))
+        cal = os.path.join(sn.HERE, "results", "hgrid2", "feel_calibration.json")
+        if os.path.exists(cal):
+            c = json.load(open(cal))
+            fe["calibration"] = {n: dict(mean=r["mean"], planar_excess=round(swarm_feel.planar_excess(r), 3),
+                                         organic=swarm_feel.in_band(r)[0]) for n, r in c.items()}
+        print(json.dumps(fe["mean"]), fe["organic"], flush=True)
         if out:
             json.dump(fe, open(os.path.join(out, "feel.json"), "w"), indent=1)
 

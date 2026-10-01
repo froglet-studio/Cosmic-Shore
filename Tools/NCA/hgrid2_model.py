@@ -59,6 +59,11 @@ class Cfg(hb.BoidCfg):
     k_mig: float = 0.0          # migrants: a tadpole where its class is barely wanted (own-class want < mig_th of a bump)
     mig_th: float = 0.3         # heads at k_mig x its top speed for the nearest site where its class is MISSING
     mig_L: float = 20.0         # (site score = deficit - distance / mig_L); no site is ever assigned
+    elem_floor: int = 0         # staggered starvation never takes an ELEMENT below the plan's count of it (a plan's
+                                # small element can sit in an unplanned domain; starving it would lose the element)
+    small_slack: float = -1.0   # >= 0: classes of an element the plan holds <= 2 of get this slack instead (a tiny element
+                                # kept a little over the plan stays viable as a future majority after a cull)
+    starve_slack: float = 1.0   # staggered starvation: a class may exceed the plan by tol x want + this many units
     lock: int = 0               # a plan, once committed, holds this many steps (composition settles first); 0 = off
     dmap_low: int = 0           # a plan with k < 3 slots maps them onto domains 0..k-1 (the yardstick's loss only
                                 # considers those for a k-slot plan; any other domain scores as a mismatch)
@@ -144,7 +149,16 @@ class Boid2(hb.FieldBoid):
                 continue
             fr = self.targets[sn.KINDS[int(out.gplan[b])]].frames[0]
             want[b] = torch.bincount(fr["elem"] * 3 + out.dmap[b][fr["slot"]], minlength=12).float()
-        excess = (have - torch.floor((1 + cfg.starve_tol) * want) - 1).clamp(min=0)          # [B,12]
+        slack = torch.full_like(want, cfg.starve_slack)
+        if cfg.small_slack >= 0:
+            small = (want.view(-1, 4, 3).sum(-1) <= 2)                                                      # [B,4]
+            slack = torch.where(small.repeat_interleave(3, 1), torch.full_like(want, cfg.small_slack), slack)
+        excess = (have - torch.floor((1 + cfg.starve_tol) * want) - slack).clamp(min=0)                  # [B,12]
+        if cfg.elem_floor:
+            eexc = (have.view(-1, 4, 3).sum(-1) - want.view(-1, 4, 3).sum(-1) - slack.view(-1, 4, 3)[..., 0]).clamp(min=0)
+            # an element's classes may lose at most the element's own excess in total (scaled per class)
+            tot = excess.view(-1, 4, 3).sum(-1).clamp(min=1e-6)
+            excess = torch.floor(excess.view(-1, 4, 3) * (eexc / tot).clamp(max=1)[..., None] + 1e-4).view(-1, 12)
         sur_i = (torch.gather(excess, 1, cls) > 0) & live
         h = out.s[..., sn.DIE]
         h = torch.where(sur_i, h + cfg.starve_rate * Boid2._U[None], (h - cfg.starve_rate).clamp(min=0))
