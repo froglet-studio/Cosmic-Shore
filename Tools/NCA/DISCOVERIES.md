@@ -42,7 +42,7 @@ look lives. That pairing is the strongest cross-family finding of the day.
 |---|---|---|---|---|---|
 | **hgrid2** (grid morphogen 2) | local fields | **1.2 / 2.0 / 2.9 / 3.0** | **16 / 16** | seeds 1000, 2000: 15/15 feasible (its session); seed 23: SEED23_HGRID2 | **no**: starves misplaced surplus on a timer |
 | **sort** (emergent cell sorting) | local + census + body centre | 1.4 / 2.4 / 1.05 / 5.0 | 12 / 13 feasible | 13 / 13 / 13 / 12 over 4 seeds (its session); seed 23: SEED23_SORT | **yes**, by design (molting + region transfer) |
-| **posinfo** (learned rule + positional input + designed homeostat) | local + body frame | 3.2 / 6.9 / 4.4 / 6.7 | 4 / 16 (switches untrained) | seed 23: SEED23_POSINFO | homeostat molts; not audited |
+| **posinfo** (learned rule + positional input + designed homeostat) | local + body frame | 3.2 / 6.9 / 4.4 / 6.7 | 4 / 16 (switches untrained) | seed 23 (my rescore): tier 1 3/4 - dragonfly passes 1 of 3 samples, jellyfish 2 of 3; fails held-out tier 1 | homeostat molts; not audited |
 | field (designed, global assignment) | global | 3.1 / 1.6 / 1.4 / 4.6 | 9 / 13 | — | yes |
 | distill (local student of field) | local | ~25-45 | 7/16 (old bar) | — | — |
 | meta (designed metamorph + learned shape) | local | 11.8-14.8 | 7/8 old yardstick, 5 seeds | — | yes |
@@ -55,7 +55,22 @@ EMERGENT (the organic feel band + declared locality). Baseline: **field** is los
 at 134 tadpoles, and OUT of the organic band (jerk_rel 0.15 "too clean", 9.6% of members stuck),
 matching the lead's verdict.
 
-SCORECARD_TABLE
+Scorecard (`scorecard.py --skip-eval`, seed 7, 1 thread; ms/step measured while two rescores shared
+the 4 cores, so compare models against each other only):
+
+| model | lossless (self-inflicted deaths, per 1k tadpole-steps) | ms/step @ grown n | organic band | jerk_rel | coherence | jitter | stuck | planar excess | locality |
+|---|---|---|---|---|---|---|---|---|---|
+| field | **yes** (0) | 3.4 @ 134 (1 core free) | **no** (jerk_rel too low, 9.6% stuck) | 0.15 | 0.77 | 0.66 | 0.096 | 0.03 | global |
+| hgrid2 | **no** (120; 0.47/1k) — hunger withers misplaced surplus | 20.6 @ 135 | **yes** | 0.58 | 0.63 | 0.93 | 0.0 | 0.08 | local |
+| sort | **yes** (0) | 3.8 @ 126 | **no** — planar excess 0.27 (whale 0.70 flat vs plan 0.43, pufferfish 0.90 vs 0.69) | 0.99 | 0.58 | 0.80 | 0.0 | **0.27** | mixed (census + body centre) |
+
+**Each of the three fails exactly one axis, and a different one.** Field is lossless and accurate
+but machine-like. hgrid2 is accurate and organic but kills to correct its composition. Sort is
+accurate, lossless and cheap, but its tissues pack into flat SHEETS (the failure the lead named in
+evolved compact: "clusters make planar surfaces with its crystals"); differential adhesion that
+pushes unlike types apart builds sharp boundaries, and sharp boundaries are planes. That makes the
+round-4 combination concrete: hgrid2's fine morphogen for the organic texture, sort's molting for
+lossless composition, and sort's fate (not its adhesion) for accuracy.
 
 **The in-game grid species** (`cece/swarm-fauna-game`, `SwarmGridCore`, Docs/SWARM_FAUNA.md §8):
 hgrid2 ported to C#, side by side with field in the Swarm cell. Research mode reproduces Python
