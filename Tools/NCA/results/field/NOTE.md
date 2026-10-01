@@ -130,6 +130,18 @@ the assignment runs every ~8 frames per swarm — Hungarian on ≤192 is fine in
 greedy-nearest per (element, domain) group; the field mode needs no assignment at all. Per-tadpole state is 8
 floats (velocity, slot, molt, startle, age). No GPU needed.
 
+### Measured C# port (`field_port/FieldSwarmCore.cs`, `field_port_check.py`)
+
+The step is ported to plain C# (System.Numerics, no Unity) in the shape a Burst job takes: struct-of-arrays per
+swarm, a uniform hash grid for neighbours (no O(n²)), greedy slot assignment (one `Array.Sort`), hysteresis,
+true-breeding laying, molting, morph vortex, vessel reaction. `field_port_check.py` exports the plans + seeds,
+runs the yardstick protocol in C# (grow 240, the `lose_majority` "excess" cull, 240 more) and scores the
+dumped states with the **unchanged Python scorer**: **7/8, summed divergence 101.7** (Python 103.6) — the same
+tests pass and fail. Steady-state cost, single-threaded managed .NET 8 (no Burst, no Jobs, no SIMD):
+**0.10 ms (63–76 tadpoles) to 0.61 ms (179) per swarm-step, idle or with a vessel passing through.** The
+growth phase is dearer (≤1.6 ms incl. JIT) because laying/molting scan slots × tadpoles; that is the first
+thing to index if it ever shows in a profile. A cell with 16 such swarms is ~2–10 ms/frame before Burst.
+
 ## What a player would see
 
 A loose knot of 16 tadpoles that, within ~60 steps, lays its way out into a recognisable creature that swims in
