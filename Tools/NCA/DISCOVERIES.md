@@ -31,6 +31,34 @@ alone costs 2.3–4.5. The loss comes from SORTING. Element placement adds 4–1
 exactly with how GLOBAL each family's sorting mechanism is: global slot assignment (field) <
 per-class grid deficits (hgrid) < per-group anchors (compact) ≈ none (G2, evo).
 
+## Update 21:00 UTC — the first lossless LEARNED rule, and evo's body under the grid
+
+- **posinfo2 (interim): a learned rule that is LOSSLESS** - posinfo's network (G2 + body-frame
+  positional inputs) with its learned death channel masked, a designed scaled (element, domain) quota +
+  molting homeostat, and BPTT fine-tuning on yardstick-fair culls. Seed 7: own 3.3 / 4.1 / 3.9 / 3.7,
+  **11/13 feasible**, 0 self-inflicted deaths. Learned shape, designed composition, no killing: three
+  of the four axes from the family the lead finds most organic. Scorecard at 7 / 23 / 41 pending.
+- **evo body + grid steering (hgrid2 direction b, `results/hgrid2/evo_grid`)**: the round-1 EVOLVED rule
+  moves, hatches and looks exactly as shipped; the grid only adds composition, plan lock and a steer.
+  Own 2.2 / 3.2 / 1.9 / 4.9, **13/16** (only the three into-dragonfly switches miss, 8.3-9.8), held-out
+  12/15 on two seeds, and in the organic band "evo-like". This is the candidate for the lead's "second
+  scene test" of the evolved rule - except that it still corrects composition with hgrid2's starvation,
+  which the game forbids. `combo`'s lossless corrector applies to it unchanged.
+- **hgrid2 findings worth carrying**: MIGRANTS fixed sorting (a tadpole where its class is barely
+  wanted heads for the nearest site where its class is MISSING; the whale 6.1 → 1.2) - no local
+  gradient can carry a unit across a packed body; a PLAN LOCK (60 steps) stops a culled body re-breeding
+  its old majority; a yardstick property: a 2-slot plan only scores domains {0, 1} (`dmap_low`).
+  Held-out now 15/15 at seeds 1000, 2000 and 3000.
+- **sort** republished as `well_look` (seed 7 own 1.27 / 2.18 / 0.58 / 4.60, 12/13) with held-out
+  seeds 101-104 all 13/13.
+- **zoo** (MAP-Elites over field + nine on/off behaviours - breathe, wave, jitter, orbit, burst, curious,
+  hunt, rush, bristle): 142 map elites, **seven named creatures**, each 13/13 feasible at 3 samples on
+  the old bar (field's own-plan losses, ~1-3, so they should hold at the loss-8 bar; not yet
+  rescored). Playable per-creature pages in `results/zoo/elites/`. A personality family, not one
+  creature: the lever for "multiple lifeforms may ship".
+- **evo16** hardened the evolved genome (128/128 held-out, 16/16) but only on the OLD bar: own-plan
+  losses 13-26, so it fails tier 1 at the loss-8 bar. Its value now is evo_grid's body.
+
 ## Update 19:30 UTC — the families converge: designed composition + local shape
 
 **Three LOCAL families now pass tier 1 under the loss-8 bar, and one passes everything.** All of them
@@ -40,8 +68,8 @@ look lives. That pairing is the strongest cross-family finding of the day.
 
 | model | locality | own-plan losses (whale / jelly / puffer / dragonfly) | 16-test, seed 7 | held-out | lossless? |
 |---|---|---|---|---|---|
-| **hgrid2** (grid morphogen 2) | local fields | **1.2 / 2.0 / 2.9 / 3.0** | **16 / 16** | seeds 1000, 2000: 15/15 feasible (its session); seed 23: SEED23_HGRID2 | **no**: starves misplaced surplus on a timer |
-| **sort** (emergent cell sorting) | local + census + body centre | 1.4 / 2.4 / 1.05 / 5.0 | 12 / 13 feasible | 13 / 13 / 13 / 12 over 4 seeds (its session); seed 23: SEED23_SORT | **yes**, by design (molting + region transfer) |
+| **hgrid2** (grid morphogen 2) | local fields | **1.2 / 2.0 / 2.9 / 3.0** | **16 / 16** | seeds 1000, 2000, 3000: 15/15 feasible each (its session); my seed-23 rescore: SEED23_HGRID2 | **no**: starves misplaced surplus on a timer |
+| **sort** (emergent cell sorting) | local + census + body centre | 1.4 / 2.4 / 1.05 / 5.0 | 12 / 13 feasible | 13 / 13 / 13 / 12 over 4 seeds (its session); seed 23 (my rescore, cut short by a container restart): tier 1 4/4, standard switches 4/4; its session re-measured seeds 101-104: 13/13 feasible on every one | **yes**, by design (molting + region transfer) |
 | **posinfo** (learned rule + positional input + designed homeostat) | local + body frame | 3.2 / 6.9 / 4.4 / 6.7 | 4 / 16 (switches untrained) | seed 23 (my rescore): tier 1 3/4 - dragonfly passes 1 of 3 samples, jellyfish 2 of 3; fails held-out tier 1 | homeostat molts; not audited |
 | field (designed, global assignment) | global | 3.1 / 1.6 / 1.4 / 4.6 | 9 / 13 | — | yes |
 | distill (local student of field) | local | ~25-45 | 7/16 (old bar) | — | — |
@@ -67,10 +95,13 @@ the 4 cores, so compare models against each other only):
 **Each of the three fails exactly one axis, and a different one.** Field is lossless and accurate
 but machine-like. hgrid2 is accurate and organic but kills to correct its composition. Sort is
 accurate, lossless and cheap, but its tissues pack into flat SHEETS (the failure the lead named in
-evolved compact: "clusters make planar surfaces with its crystals"); differential adhesion that
-pushes unlike types apart builds sharp boundaries, and sharp boundaries are planes. That makes the
-round-4 combination concrete: hgrid2's fine morphogen for the organic texture, sort's molting for
-lossless composition, and sort's fate (not its adhesion) for accuracy.
+evolved compact: "clusters make planar surfaces with its crystals"). Our first guess was differential
+adhesion; **the sortfeel session measured it and the guess was wrong** (`results/sortfeel/diag.json`):
+the sheets are WELL COMPRESSION - tadpoles pack tighter than the plan inside each Gaussian well
+(whale nearest-neighbour 2.1 vs the plan's 2.8, pufferfish interior 99% flat), and removing adhesion
+makes them flatter, not rounder. Its fix in progress: flat-bottomed wells plus a wander term. The
+round-4 combination stays: hgrid2's fine morphogen for the organic texture, sort's molting for
+lossless composition, sort's fate for accuracy.
 
 **The in-game grid species** (`cece/swarm-fauna-game`, `SwarmGridCore`, Docs/SWARM_FAUNA.md §8):
 hgrid2 ported to C#, side by side with field in the Swarm cell. Research mode reproduces Python

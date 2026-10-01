@@ -1,0 +1,372 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 2.07,
+   "space": 69.14,
+   "charge": 56.5,
+   "time": 77.51
+  },
+  "space": {
+   "mass": 69.34,
+   "space": 3.54,
+   "charge": 54.85,
+   "time": 66.49
+  },
+  "charge": {
+   "mass": 63.28,
+   "space": 59.12,
+   "charge": 1.22,
+   "time": 76.96
+  },
+  "time": {
+   "mass": 87.2,
+   "space": 80.99,
+   "charge": 81.55,
+   "time": 4.64
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 192,
+   "target_n": 192,
+   "elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    108,
+    84,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 87,
+   "target_n": 88,
+   "elements": [
+    26,
+    1,
+    54,
+    6
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    32,
+    55,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 179,
+   "target_n": 179,
+   "elements": [
+    130,
+    1,
+    16,
+    32
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    90,
+    89,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 76,
+   "target_n": 76,
+   "elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    25,
+    2,
+    49
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 0.01,
+   "space": 20.81,
+   "charge": 12.34,
+   "time": 25.42
+  },
+  "space": {
+   "mass": 20.75,
+   "space": 0.21,
+   "charge": 14.46,
+   "time": 23.48
+  },
+  "charge": {
+   "mass": 20.03,
+   "space": 18.03,
+   "charge": 0.43,
+   "time": 25.8
+  },
+  "time": {
+   "mass": 25.18,
+   "space": 24.29,
+   "charge": 19.68,
+   "time": 0.36
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 69.55,
+    "space": 5.53,
+    "charge": 57.61,
+    "time": 71.07
+   },
+   "majority": "space",
+   "census": {
+    "n": 90,
+    "target_n": 88,
+    "elements": [
+     25,
+     3,
+     54,
+     8
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     43,
+     47,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 65.76,
+    "space": 60.0,
+    "charge": 1.46,
+    "time": 78.59
+   },
+   "majority": "charge",
+   "census": {
+    "n": 179,
+    "target_n": 179,
+    "elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     91,
+     88,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 73.78,
+    "space": 67.94,
+    "charge": 68.11,
+    "time": 6.02
+   },
+   "majority": "time",
+   "census": {
+    "n": 78,
+    "target_n": 76,
+    "elements": [
+     3,
+     3,
+     18,
+     54
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     33,
+     45,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 74.88,
+    "space": 17.29,
+    "charge": 62.72,
+    "time": 73.89
+   },
+   "majority": "space",
+   "census": {
+    "n": 70,
+    "target_n": 192,
+    "elements": [
+     19,
+     1,
+     42,
+     8
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     62,
+     0,
+     8
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "meta": {
+  "device": "cpu",
+  "tag": "zoo/glass_minnows",
+  "note": "zoo elite 'Glass Minnows': zoo_model.py",
+  "cfg": {
+   "mode": "slots",
+   "frame_steps": 6,
+   "dwell": 4,
+   "k_arrive": 0.3486,
+   "accel": 0.4732,
+   "sep_r": 1.5771,
+   "sep_k": 0.8187,
+   "align_r": 5.8979,
+   "align_k": 0.1989,
+   "vmax": [
+    0.8,
+    0.8,
+    0.8,
+    2.0
+   ],
+   "reassign_every": 8,
+   "assign": "hungarian",
+   "sticky": 0.0,
+   "lay_rate": 0.01,
+   "lay_max": 12,
+   "molt": 1,
+   "molt_rate": 0.0185,
+   "molt_steps": 7,
+   "morph_steps": 71,
+   "swirl": 1.1826,
+   "field_sigma": 3.0,
+   "field_k": 1.2,
+   "cruise": 0.0,
+   "wander": 0.0,
+   "turn": 0.012,
+   "sense": 3.4546,
+   "relay": 0.7645,
+   "startle_decay": 0.8443,
+   "flee": [
+    1.9186,
+    0.9738,
+    1.9397,
+    2.4055
+   ],
+   "flee_swirl": 0.6294,
+   "mob": [
+    0.3752,
+    0.1445,
+    0.0415,
+    1.0
+   ],
+   "mob_speed": 0.3,
+   "lookahead": 19.2459,
+   "seed": 0,
+   "vscale": 1.3356,
+   "breathe": 0.0,
+   "breathe_period": 16.0,
+   "wave": 0.0,
+   "wave_k": 0.1066,
+   "jitter": 0.0,
+   "jitter_tau": 11.0715,
+   "orbit": 0.0,
+   "orbit_w": 0.5,
+   "burst": 1.3618,
+   "curious": 0.0824,
+   "hunt": 0.0,
+   "bristle": 0,
+   "rush": 0.0,
+   "inflate4": [
+    0.0,
+    0.3264,
+    0.3453,
+    0.1625
+   ]
+  }
+ },
+ "rule": "params.json"
+}

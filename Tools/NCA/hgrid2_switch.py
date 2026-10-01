@@ -9,7 +9,11 @@ seeds = (7,); evo = False
 for a in sys.argv[3:]:
     if a.startswith("--seeds="): seeds = tuple(int(x) for x in a.split("=")[1].split(","))
     if a == "--evo": evo = True
-kw = dict(kv.split("=") for kv in cfgs.split(",") if kv)
+import hgrid2_eval
+kw = dict(hgrid2_eval.BEST)
+if evo:
+    kw.update(hgrid2_eval.EVO)
+kw.update({k: v.replace(";", ",") for k, v in (kv.split("=") for kv in cfgs.split(",") if kv)})
 if evo:
     import hgrid2_evo as M
 else:

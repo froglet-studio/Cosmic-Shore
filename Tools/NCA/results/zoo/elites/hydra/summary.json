@@ -1,0 +1,372 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 1.79,
+   "space": 67.63,
+   "charge": 55.02,
+   "time": 76.97
+  },
+  "space": {
+   "mass": 68.68,
+   "space": 1.83,
+   "charge": 54.41,
+   "time": 66.33
+  },
+  "charge": {
+   "mass": 63.06,
+   "space": 58.55,
+   "charge": 1.48,
+   "time": 77.14
+  },
+  "time": {
+   "mass": 84.38,
+   "space": 77.08,
+   "charge": 78.83,
+   "time": 3.05
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 192,
+   "target_n": 192,
+   "elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    109,
+    83,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 88,
+   "target_n": 88,
+   "elements": [
+    26,
+    2,
+    53,
+    7
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    37,
+    51,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 179,
+   "target_n": 179,
+   "elements": [
+    130,
+    1,
+    16,
+    32
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    90,
+    89,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 76,
+   "target_n": 76,
+   "elements": [
+    2,
+    3,
+    19,
+    52
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    27,
+    3,
+    46
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 0.23,
+   "space": 19.81,
+   "charge": 11.22,
+   "time": 24.84
+  },
+  "space": {
+   "mass": 20.31,
+   "space": 0.25,
+   "charge": 13.87,
+   "time": 23.58
+  },
+  "charge": {
+   "mass": 19.91,
+   "space": 17.59,
+   "charge": 0.66,
+   "time": 26.08
+  },
+  "time": {
+   "mass": 23.66,
+   "space": 21.6,
+   "charge": 17.34,
+   "time": 0.74
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 71.31,
+    "space": 7.19,
+    "charge": 55.17,
+    "time": 73.18
+   },
+   "majority": "space",
+   "census": {
+    "n": 88,
+    "target_n": 88,
+    "elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     44,
+     44,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 65.35,
+    "space": 58.72,
+    "charge": 1.7,
+    "time": 79.02
+   },
+   "majority": "charge",
+   "census": {
+    "n": 179,
+    "target_n": 179,
+    "elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     91,
+     88,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 72.37,
+    "space": 66.91,
+    "charge": 66.38,
+    "time": 7.51
+   },
+   "majority": "time",
+   "census": {
+    "n": 76,
+    "target_n": 76,
+    "elements": [
+     3,
+     3,
+     18,
+     52
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     31,
+     45,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 75.02,
+    "space": 17.09,
+    "charge": 63.08,
+    "time": 74.4
+   },
+   "majority": "space",
+   "census": {
+    "n": 63,
+    "target_n": 192,
+    "elements": [
+     17,
+     1,
+     38,
+     7
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     59,
+     0,
+     4
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "meta": {
+  "device": "cpu",
+  "tag": "zoo/hydra",
+  "note": "zoo elite 'Hydra': zoo_model.py",
+  "cfg": {
+   "mode": "slots",
+   "frame_steps": 6,
+   "dwell": 13,
+   "k_arrive": 0.4724,
+   "accel": 0.8,
+   "sep_r": 1.7868,
+   "sep_k": 1.2855,
+   "align_r": 5.12,
+   "align_k": 0.087,
+   "vmax": [
+    0.8,
+    0.8,
+    0.8,
+    2.0
+   ],
+   "reassign_every": 8,
+   "assign": "hungarian",
+   "sticky": 1.5123,
+   "lay_rate": 0.0509,
+   "lay_max": 2,
+   "molt": 1,
+   "molt_rate": 0.0426,
+   "molt_steps": 4,
+   "morph_steps": 80,
+   "swirl": 1.4577,
+   "field_sigma": 3.0,
+   "field_k": 1.2,
+   "cruise": 0.0,
+   "wander": 0.0,
+   "turn": 0.012,
+   "sense": 3.3224,
+   "relay": 0.58,
+   "startle_decay": 0.8608,
+   "flee": [
+    2.5,
+    0.0,
+    1.1114,
+    0.3632
+   ],
+   "flee_swirl": 1.3781,
+   "mob": [
+    0.6846,
+    0.6843,
+    0.0,
+    1.0
+   ],
+   "mob_speed": 0.3787,
+   "lookahead": 20.0,
+   "seed": 0,
+   "vscale": 2.2,
+   "breathe": 0.0737,
+   "breathe_period": 22.2525,
+   "wave": 0.0,
+   "wave_k": 0.3227,
+   "jitter": 0.0,
+   "jitter_tau": 15.3067,
+   "orbit": 0.337,
+   "orbit_w": 0.1202,
+   "burst": 1.0285,
+   "curious": 0.3338,
+   "hunt": 0.0,
+   "bristle": 1,
+   "rush": 1.5,
+   "inflate4": [
+    0.4068,
+    0.0,
+    1.415,
+    0.789
+   ]
+  }
+ },
+ "rule": "params.json"
+}

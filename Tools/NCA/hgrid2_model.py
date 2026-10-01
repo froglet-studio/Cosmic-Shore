@@ -178,7 +178,14 @@ class Boid2(hb.FieldBoid):
             tot = excess.view(-1, 4, 3).sum(-1).clamp(min=1e-6)
             excess = torch.floor(excess.view(-1, 4, 3) * (eexc / tot).clamp(max=1)[..., None] + 1e-4).view(-1, 12)
         sur_i = (torch.gather(excess, 1, cls) > 0) & live
-        h = out.s[..., ch]
+        if ch is None:                       # hunger kept on the model (a learned body owns every state channel)
+            if getattr(self, "_hun", None) is None or self._hun.shape != live.shape:
+                self._hun = torch.zeros(live.shape)
+            self._hun[out.clock == 0] = 0.0
+            self._hun = self._hun * live.float()
+            h = self._hun
+        else:
+            h = out.s[..., ch]
         h = torch.where(sur_i, h + cfg.starve_rate * Boid2._U[None], (h - cfg.starve_rate).clamp(min=0))
         died = torch.zeros_like(live)
         for b in range(B):
@@ -193,7 +200,10 @@ class Boid2(hb.FieldBoid):
                     died[b, i] = True; quota[c] -= 1
                 else:
                     h[b, i] = 1.0        # waits at the brink while its class has no excess left
-        out.s[..., ch] = torch.where(died, torch.zeros_like(h), h) if ch != sn.DIE else h
+        if ch is None:
+            self._hun = torch.where(died, torch.zeros_like(h), h)
+        else:
+            out.s[..., ch] = torch.where(died, torch.zeros_like(h), h) if ch != sn.DIE else h
         out.deaths = out.deaths + died.sum(1)
         out.active = out.active & ~died
         out.hatched = out.hatched & ~died
@@ -221,6 +231,16 @@ class Boid2(hb.FieldBoid):
             if k == 1:
                 p = [0, 1, 2]
             sw.dmap[b] = torch.tensor(p)
+
+    anchor = None        # [B,3] or None: the fine layer's centre, written by an outer field (the Cell herding swarms)
+
+    def fine_centre(self, pos0, lf):
+        if self.anchor is not None:
+            return self.anchor
+        cen = (pos0 * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
+        if self.cfg.quant:
+            cen = torch.round(cen / self.cfg.cell) * self.cfg.cell
+        return cen
 
     def spatial_dmap(self, sw, live, changed):
         """For samples whose plan just changed: the slot->domain perm maximising the overlap between
@@ -293,9 +313,7 @@ class Boid2(hb.FieldBoid):
     def migrate(self, out, pos0, live):
         cfg = self.cfg
         lf = live.float()
-        cen = (pos0 * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
-        if cfg.quant:
-            cen = torch.round(cen / cfg.cell) * cfg.cell
+        cen = self.fine_centre(pos0, lf)
         tg = self.fine_targets(out, cen)
         nm = 0
         for b in range(out.B):
@@ -337,9 +355,7 @@ class Boid2(hb.FieldBoid):
         it has turned far enough that trading no longer gains, it simply stops."""
         cfg = self.cfg
         lf = live.float()
-        cen = (pos0 * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
-        if cfg.quant:
-            cen = torch.round(cen / cfg.cell) * cfg.cell
+        cen = self.fine_centre(pos0, lf)
         tg = self.fine_targets(out, cen)
         nswap = 0
         for b in range(out.B):
@@ -392,9 +408,7 @@ class Boid2(hb.FieldBoid):
         cfg = self.cfg
         B, N, _ = out.pos.shape
         lf = live.float()
-        cen = (pos0 * lf[..., None]).sum(1) / lf.sum(1).clamp(min=1)[:, None]
-        if cfg.quant:
-            cen = torch.round(cen / cfg.cell) * cfg.cell
+        cen = self.fine_centre(pos0, lf)
         tg = self.fine_targets(out, cen)
         disp = torch.zeros_like(out.pos)
         for b in range(B):

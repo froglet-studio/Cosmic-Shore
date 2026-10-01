@@ -228,9 +228,15 @@ def load_model(spec):
     if kind == "sort":
         import sort_model as sm
         return sm.load(path)
+    if kind == "sortfeel":
+        import sortfeel_model as fm
+        return fm.load(path)
     if kind == "posinfo":
         import posinfo_rule as pr
         return pr.load(path)
+    if kind == "posinfo2":
+        import posinfo2_rule as p2
+        return p2.load(path)
     if kind == "ensemble":
         import ensemble_swarm as es
         return es.load(path)
@@ -251,6 +257,9 @@ def load_model(spec):
         import hgrid_hybrid as hh
         return hh.HybridRule(sn.load_rule(os.path.join(sn.HERE, meta["rule"]) if not os.path.isabs(meta["rule"]) else meta["rule"]),
                              cfg, meta.get("shed", 1))
+    if kind == "combo":
+        import combo_model as cm
+        return cm.load(path)
     raise ValueError(spec)
 
 

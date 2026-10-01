@@ -1,10 +1,16 @@
 # sort — emergent cell sorting (positional information + fate + differential adhesion)
 
 **Result: tier 1 passes at the new bar on every seed tried.** Own-plan divergences
-**1.40 / 2.44 / 1.05 / 5.03** (whale / jellyfish / pufferfish / dragonfly; `swarm_eval`, 3 samples,
+**1.27 / 2.18 / 0.58 / 4.60** (whale / jellyfish / pufferfish / dragonfly; `swarm_eval`, 3 samples,
 seed 7), and **12 of 13 feasible transitions** at the bar of 8 (tier 1 4/4, standard switches 4/4, other
-switches 4/5; three are n/a). The one failure (dragonfly → jellyfish, 8.97 mean, passing in 1 of 3
-samples) is domain conservation, explained below. Held-out seeds: see the table at the end.
+switches 4/5; three are n/a). The one failure (dragonfly → jellyfish, 8.71 mean, passing in 1 of 3
+samples) is domain conservation, explained below. **Held-out seeds 101-104: 13 / 13 feasible on every one**
+(own losses 1.19-1.55 / 2.22-2.71 / 0.53-1.05 / 3.32-3.66; `heldout.json`).
+
+The published model is the gen-19 CMA vector with `well_look = 1` (each tadpole wears the look of its
+FATED WELL, not its type's mean — positional information decodes the look too). It changes no dynamics
+(positions are identical); the same vector with the type-mean look is kept in `v1_typelook/` (seed 7
+1.40 / 2.44 / 1.05 / 5.03, held-out 13/13 on every seed too).
 
 Code: `Tools/NCA/sort_model.py` (the model), `sort_search.py` (CMA-ES), `sort_publish.py` (this folder),
 `sort_ablate.py`, `sort_diag.py` (per-term breakdown), `sort_eval.py` (`swarm_eval.evaluate`, unchanged).
@@ -46,15 +52,15 @@ where). This direction attacks exactly that, with local rules and no slot assign
 
 | plan | pos only | + element | + domain | full | n |
 |---|---|---|---|---|---|
-| whale | 0.62 | 0.87 | 0.90 | 1.42 | 181 |
-| jellyfish | 1.65 | 1.90 | 1.94 | 2.56 | 83 |
-| pufferfish | 0.61 | 0.43 | 0.50 | 1.03 | 169 |
-| dragonfly | 1.63 | 2.55 | 3.62 | 5.06 | 72 |
+| whale | 0.62 | 0.87 | 0.90 | 1.29 | 181 |
+| jellyfish | 1.65 | 1.90 | 1.94 | 2.30 | 83 |
+| pufferfish | 0.61 | 0.43 | 0.50 | 0.56 | 169 |
+| dragonfly | 1.63 | 2.55 | 3.62 | 4.63 | 72 |
 
 Against the diagnosis: G2 7.0 / 13.6 / 10.8 / 6.3 with elements, evo 14.7 / 13.0 / 10.5 / 13.6,
 field 0.5 / 0.0 / 0.0 / 1.5. **Sorting closes the gap: adding the element term costs this rule 0.25 / 0.25
-/ ~0 / 0.9, against G2's 4–10.** What is left is visuals (constant per type: +0.5) and the dragonfly's
-three-region domain split.
+/ ~0 / 0.9, against G2's 4–10.** What is left is visuals (+0.06 to +1.0; it was +0.5 to +1.4 with a
+constant look per type) and the dragonfly's three-region domain split.
 
 ## Search (`search_log.jsonl`; CMA-ES, pop 10, 17 continuous genes, one fresh seed per generation, all 16 transitions)
 
@@ -104,10 +110,10 @@ because a culled, fragmented body has no single consensus for several steps.
 
 | plan | before | killed | right after | after 120 steps | heal |
 |---|---|---|---|---|---|
-| whale | 1.85 | 78 of 181 | 13.86 | 1.28 | 1.05 |
-| jellyfish | 2.56 | 20 of 83 | 8.99 | 2.26 | 1.05 |
-| pufferfish | 1.33 | 46 of 169 | 8.23 | 1.03 | 1.04 |
-| dragonfly | 4.54 | 28 of 72 | 24.74 | 3.54 | 1.05 |
+| whale | 1.71 | 78 of 181 | 13.90 | 1.15 | 1.05 |
+| jellyfish | 2.30 | 20 of 83 | 8.89 | 2.04 | 1.04 |
+| pufferfish | 0.88 | 46 of 169 | 7.85 | 0.56 | 1.05 |
+| dragonfly | 4.07 | 28 of 72 | 24.42 | 3.04 | 1.05 |
 
 Every plan heals to slightly BETTER than before (the survivors keep their fates; newborns take the
 holes' fates because those wells are now the under-occupied ones — the strike wound is exactly where
@@ -125,8 +131,8 @@ swarm correctly grows a jellyfish (8.72). Same finding as evo and field; on the 
   two regions. The third domain's tadpoles can transfer and molt, but they keep their colour, so
   ~25% of the body pays the domain term. Only a domain change (forbidden) or culling them would fix
   it. Switches INTO the dragonfly cost ~6 for the mirror reason (an empty third region).
-- **Visuals are a constant per type** (prism, tier, facing, spindle = the type's mean in the plan).
-  That is ~0.5 of every loss. Facing could be decoded from position (outward normal) for free.
+- **Visuals come from the fated well** (the mean look of the plan units that well summarises).
+  That is a coarse decode; per-tadpole decoding from position inside the well would shave the rest.
 - **The code is fit to the plan.** K = 12 wells per type at most one per 4 units is a coarse
   description of each plan, not slots — but it IS designed from the targets, like field's fields.
   The search tunes how a swarm REALISES the code, not the code. K = 1 (a true French flag) fails.
@@ -136,6 +142,14 @@ swarm correctly grows a jellyfish (8.72). Same finding as evo and field; on the 
 - **Laps.** Time runners can advance their fate along a loop through their wells (`lap_every`,
   staggered, sprinting at Time's top speed): dragonfly 5.06 -> 7.2 at `lap_every = 48`, still under 8, but
   every lap setting costs score, so it is OFF for scoring and a look option.
+
+## A provenance mistake (fixed)
+
+The first publish of this folder mixed two candidates: `sort_publish.py` re-read the CMA vector file
+for every section while the resumed search was still running and overwrote it (gen-14 best -> gen-19
+best) mid-publish. The publisher now loads the vector once; everything here was regenerated from a frozen
+copy of the gen-19 vector (`cma_vec.npy`). Earlier commits of `results/sort/` on this branch should be
+ignored.
 
 ## What a player would see
 
@@ -164,6 +178,43 @@ jostle), which is the weakness — a resting creature does not swim (see recomme
    discrete fate channel chosen at birth by a census of under-occupied fates, and let the learned rule
    steer by its fate's well. That is the actuator the diagnosis says G2 lacks.
 3. **Drop swaps; keep differential adhesion** (tuned negative and type-asymmetric).
-4. **Decode facing/prism from position within the well** (outward normal, along-axis): the ~0.5 floor.
+4. **Decode the look from position** — done at well resolution (`well_look`), which took the pufferfish
+   1.03 -> 0.56 and the dragonfly 5.06 -> 4.63 for free; finer decoding inside a well is the next step.
 5. **The domain-conservation switches need a design call**, not tuning: either a slow domain re-dye
    for orphan regions, or accept that a three-team dragonfly cannot become a two-team jellyfish.
+
+## Held-out (`heldout.json`: `swarm_eval.evaluate`, full, 3 samples per test, unseen seeds)
+
+| seed | passed / feasible | own losses (whale / jelly / puffer / dragon) | n/a |
+|---|---|---|---|
+| 101 | 13 / 13 | 1.19 / 2.22 / 1.05 / 3.32 | space->mass, charge->mass, time->charge |
+| 102 | 13 / 13 | 1.28 / 2.36 / 0.57 / 3.46 | same |
+| 103 | 13 / 13 | 1.42 / 2.35 / 0.53 / 3.66 | same |
+| 104 | 13 / 13 | 1.55 / 2.71 / 0.57 / 3.51 | same |
+
+The three n/a transitions are structural: the jellyfish and pufferfish plans hold 2 and 1 Mass and the
+grown dragonfly 1 Charge, so that element cannot take over (`cull_to` needs >= 2). Dragonfly -> jellyfish
+passes on all 4 held-out seeds by majority vote, against 1/3 samples on seed 7: it sits close to the bar.
+(The ablation table above was measured with the type-mean look, before `well_look`.)
+
+## Fully local: the consensus centre, searched (`local_centre/`) — a negative result for switches
+
+Everything above reads the body's origin as the swarm's centroid (a swarm-level signal, like the
+headcount and element mix G2 already senses). `local_centre = 1` removes it: every tadpole carries its own
+estimate of the centre, averages its neighbours' estimates (3 rounds a step, radius R) and leaks 4% toward
+its IMPLIED centre (its position minus its fated well's offset). The first version leaked toward its own
+position instead, and the body flew apart (losses 120-460): a tadpole chasing a centre that moves with it.
+
+CMA-ES warm-started from the published vector (sigma 0.4, 25 generations):
+
+| gen | pop mean passed /16 | held-out passed (4 seeds) | held-out own losses |
+|---|---|---|---|
+| 4 | 6.6 | 8, 6, 7, 8 | 1.52 / 4.04 / 1.72 / 5.85 |
+| 14 | 7.6 | 7, 7, 8, 7 | 1.79 / 3.02 / 1.55 / 4.06 |
+| 24 | 7.9 | 9, 8, 8, 7 | 1.53 / 3.45 / 1.81 / 4.43 |
+
+**Tier 1 is fully local and passes** (own losses 1.5-4.4 on held-out seeds, every plan under the bar).
+**Switches are not**: after a cull the body is several fragments, each with its own consensus, and a
+body morphing into a new plan has no stable origin to read; tuning did not fix it (13/13 -> 7-9/16).
+A local fix would need a slower, body-wide signal (e.g. a diffusing morphogen emitted by the nucleus/
+majority element rather than a centroid estimate), which I did not get to.

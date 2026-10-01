@@ -82,7 +82,7 @@ def _is_run(d):
 
 
 LABELS = {"field": "Designed field + flocking", "hgrid/oracle": "Grid morphogen (designed)", "hgrid/hybrid_g2": "Learned rule G2 + grid morphogen", "hgrid": "Grid morphogen (learned)",
-          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis", "sort": "Emergent cell sorting", "posinfo": "Learned rule + positional information", "distill": "Local rule distilled from field", "meta/oracle": "Learned rule + designed metamorph", "hgrid2/round_a": "Grid morphogen 2 (round A)", "creature": "Creature shell (evo body + reaction shell)"}
+          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis", "sort": "Emergent cell sorting", "posinfo": "Learned rule + positional information", "distill": "Local rule distilled from field", "meta/oracle": "Learned rule + designed metamorph", "hgrid2/round_a": "Grid morphogen 2 (round A)", "creature": "Creature shell (evo body + reaction shell)", "hgrid2/evo_grid": "Evolved body + grid steering", "sort/v1_typelook": "Emergent cell sorting (v1)", "evo16": "Evolved rule, hardened (evo16)", "zoo": "Zoo of personalities (field + behaviours)"}
 
 
 def _label(d, summ):
@@ -191,6 +191,27 @@ ABOUT = {
         switching="Metamorphosis carries composition across a switch; every passing switch truly reshapes.",
         watch="Members visibly changing element after a cull.",
         bar="7/8 on the old 8-test yardstick on five seeds; own plans 11.8-14.8 fail the loss-8 bar."),
+    "hgrid2-evo_grid": dict(
+        what="The round-1 EVOLVED rule (the body the lead called beautifully organic) moving, hatching and looking exactly as it shipped, with the grid morphogen adding only composition (what is laid, misplaced surplus withering), a plan lock, and a gentle steer (coarse class gradient + fine morphogen + migrants).",
+        body="Emergent: the evolved rule's own local motion; the grid nudges.",
+        sorting="The grid's steer and its migrants (a tadpole where its class is barely wanted heads for the nearest site where it is missing).",
+        switching="Majority plan with a 60-step lock; laying follows class deficits; surplus withers to crystals.",
+        watch="Whether it keeps evo's swarming texture now that the body is accurate.",
+        bar="13 of 16 under the loss-8 bar (own 2.2 / 3.2 / 1.9 / 4.9; only the three into-dragonfly switches miss at 8.3-9.8); held-out 12/15 on two seeds; in the organic band. Not lossless."),
+    "evo16": dict(
+        what="The evolved rule with its behaviour genome re-searched for held-out robustness and healing.",
+        body="Emergent from local perception (G2) plus the evolved lay homeostat and egg choice.",
+        sorting="None designed: the outline is right, the elements are not where the plan puts them.",
+        switching="Lay homeostat + egg choice.",
+        watch="The organic texture of the evolved family.",
+        bar="16/16 on the OLD bar and 128/128 over held-out seeds; own-plan losses 13-26, so it fails tier 1 at the loss-8 bar."),
+    "zoo": dict(
+        what="A zoo of personalities: the designed field model plus nine switchable behaviours (breathe, travelling wave, jitter, orbit, switch burst, curiosity, hunting, rush-breeding after losses, bristling danger), searched with MAP-Elites over how a creature reacts, how lively it is and how dramatic its switches are.",
+        body="Global, as field: slots assigned by a sort.",
+        sorting="Global slot assignment.",
+        switching="Molting + census with dwell, plus a radial burst in some personalities.",
+        watch="Seven named creatures in results/zoo/elites/, each with its own playback page.",
+        bar="Seven named creatures, each 13 of 13 feasible on the old bar (field's own-plan losses, ~1-3); not yet rescored at the loss-8 bar."),
     "meta-oracle": dict(
         what="The frozen learned G2 rule with a DESIGNED conformity metamorph and no training at all: each step, tadpoles of the element most over the majority's plan start re-forming into the element most under it (12 slowed steps, at most 8% at once).",
         body="Emergent from local perception.",

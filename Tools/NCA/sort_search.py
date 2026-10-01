@@ -73,6 +73,7 @@ def main():
     ap.add_argument("--pop", type=int, default=10); ap.add_argument("--sigma", type=float, default=0.6)
     ap.add_argument("--gens", type=int, default=40); ap.add_argument("--check", type=int, default=5)
     ap.add_argument("--hours", type=float, default=99)
+    ap.add_argument("--init", default="", help="start the CMA mean at this vector (.npy)")
     a = ap.parse_args()
     os.makedirs(a.run, exist_ok=True)
     sp = os.path.join(a.run, "state.pkl")
@@ -80,7 +81,8 @@ def main():
         st = pickle.load(open(sp, "rb")); es, g0, best = st["es"], st["gen"], st["best"]
         print("resumed at", g0, flush=True)
     else:
-        es = cma.CMAEvolutionStrategy(np.zeros(len(sm.GENES)), a.sigma, {"popsize": a.pop, "seed": 3, "verbose": -9})
+        x0 = np.load(a.init) if a.init else np.zeros(len(sm.GENES))
+        es = cma.CMAEvolutionStrategy(x0, a.sigma, {"popsize": a.pop, "seed": 3, "verbose": -9})
         g0, best = 0, dict(f=-1e9, held=-1e9)
     log = open(os.path.join(a.run, "log.jsonl"), "a"); t_end = time.time() + a.hours * 3600
     with Pool(4) as pool:

@@ -1,0 +1,70 @@
+{
+ "101": {
+  "passed": 13,
+  "feasible": 13,
+  "own_passed": 4,
+  "own_losses": {
+   "mass": 1.19,
+   "space": 2.22,
+   "charge": 1.05,
+   "time": 3.32
+  },
+  "matrix": "from \\ to      mass   space   charg    time\nmass          1.00+   1.00+   1.00+   1.00+\nspace           n/a   1.00+   1.00+   1.00+\ncharge          n/a   1.00+   1.00+   1.00+\ntime          1.00+   0.67+     n/a   1.00+",
+  "na": [
+   "space->mass",
+   "charge->mass",
+   "time->charge"
+  ]
+ },
+ "102": {
+  "passed": 13,
+  "feasible": 13,
+  "own_passed": 4,
+  "own_losses": {
+   "mass": 1.28,
+   "space": 2.36,
+   "charge": 0.57,
+   "time": 3.46
+  },
+  "matrix": "from \\ to      mass   space   charg    time\nmass          1.00+   1.00+   1.00+   1.00+\nspace           n/a   1.00+   1.00+   1.00+\ncharge          n/a   1.00+   1.00+   1.00+\ntime          1.00+   1.00+     n/a   1.00+",
+  "na": [
+   "space->mass",
+   "charge->mass",
+   "time->charge"
+  ]
+ },
+ "103": {
+  "passed": 13,
+  "feasible": 13,
+  "own_passed": 4,
+  "own_losses": {
+   "mass": 1.42,
+   "space": 2.35,
+   "charge": 0.53,
+   "time": 3.66
+  },
+  "matrix": "from \\ to      mass   space   charg    time\nmass          1.00+   1.00+   1.00+   1.00+\nspace           n/a   1.00+   1.00+   1.00+\ncharge          n/a   1.00+   1.00+   1.00+\ntime          1.00+   1.00+     n/a   1.00+",
+  "na": [
+   "space->mass",
+   "charge->mass",
+   "time->charge"
+  ]
+ },
+ "104": {
+  "passed": 13,
+  "feasible": 13,
+  "own_passed": 4,
+  "own_losses": {
+   "mass": 1.55,
+   "space": 2.71,
+   "charge": 0.57,
+   "time": 3.51
+  },
+  "matrix": "from \\ to      mass   space   charg    time\nmass          1.00+   1.00+   1.00+   1.00+\nspace           n/a   1.00+   1.00+   1.00+\ncharge          n/a   1.00+   1.00+   1.00+\ntime          1.00+   1.00+     n/a   1.00+",
+  "na": [
+   "space->mass",
+   "charge->mass",
+   "time->charge"
+  ]
+ }
+}

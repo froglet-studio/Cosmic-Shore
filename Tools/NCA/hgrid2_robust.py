@@ -4,9 +4,11 @@ import swarm_eval, hgrid2_eval
 torch.set_num_threads(2)
 seed, out = int(sys.argv[1]), sys.argv[2]
 kw = dict(hgrid2_eval.BEST)
+if "--evo" in sys.argv:
+    kw.update(hgrid2_eval.EVO)
 for a in sys.argv[3:]:
     if a.startswith("k=") or "=" in a and not a.startswith("--"):
-        k, v = a.split("=", 1); kw[k] = v
+        k, v = a.split("=", 1); kw[k] = v.replace(";", ",")
 if "--evo" in sys.argv:
     import hgrid2_evo as M
 else:
