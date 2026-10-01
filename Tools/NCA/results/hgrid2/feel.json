@@ -1,92 +1,169 @@
 {
  "mass": {
-  "n": 196,
-  "speed": 0.081,
-  "jerk": 0.066,
-  "jerk_rel": 0.823,
+  "n": 192,
+  "speed": 0.089,
+  "jerk": 0.069,
+  "jerk_rel": 0.775,
   "jerk_e": {
    "Charge": 0.052,
    "Mass": 0.057,
-   "Space": 0.068,
-   "Time": 0.125
+   "Space": 0.078,
+   "Time": 0.144
   },
-  "planar_frac": 0.439,
-  "flat_mean": 0.141,
+  "planar_frac": 0.516,
+  "flat_mean": 0.119,
   "planar_plan": 0.432,
-  "coherence": 0.511,
-  "jitter": 1.012,
-  "phase": 0.965,
+  "coherence": 0.584,
+  "jitter": 0.913,
+  "phase": 0.958,
   "stuck": 0.0,
   "osc": 0.027
  },
  "space": {
-  "n": 95,
-  "speed": 0.135,
-  "jerk": 0.081,
-  "jerk_rel": 0.599,
+  "n": 88,
+  "speed": 0.138,
+  "jerk": 0.082,
+  "jerk_rel": 0.598,
   "jerk_e": {
-   "Charge": 0.062,
-   "Space": 0.07,
-   "Time": 0.209
+   "Charge": 0.064,
+   "Space": 0.073,
+   "Time": 0.228
   },
-  "planar_frac": 0.171,
-  "flat_mean": 0.228,
+  "planar_frac": 0.323,
+  "flat_mean": 0.19,
   "planar_plan": 0.375,
-  "coherence": 0.417,
-  "jitter": 1.754,
-  "phase": 0.856,
-  "stuck": 0.0,
-  "osc": 0.037
- },
- "charge": {
-  "n": 186,
-  "speed": 0.142,
-  "jerk": 0.089,
-  "jerk_rel": 0.625,
-  "jerk_e": {
-   "Charge": 0.072,
-   "Space": 0.12,
-   "Time": 0.14
-  },
-  "planar_frac": 0.679,
-  "flat_mean": 0.091,
-  "planar_plan": 0.687,
-  "coherence": 0.674,
-  "jitter": 0.77,
-  "phase": 0.55,
+  "coherence": 0.491,
+  "jitter": 1.48,
+  "phase": 0.892,
   "stuck": 0.0,
   "osc": 0.033
  },
- "time": {
-  "n": 78,
-  "speed": 0.419,
-  "jerk": 0.146,
-  "jerk_rel": 0.348,
+ "charge": {
+  "n": 182,
+  "speed": 0.15,
+  "jerk": 0.092,
+  "jerk_rel": 0.612,
   "jerk_e": {
-   "Charge": 0.054,
-   "Mass": 0.1,
-   "Space": 0.107,
-   "Time": 0.168
+   "Charge": 0.073,
+   "Mass": 0.062,
+   "Space": 0.144,
+   "Time": 0.149
   },
-  "planar_frac": 0.415,
-  "flat_mean": 0.153,
-  "planar_plan": 0.487,
-  "coherence": 0.61,
-  "jitter": 1.091,
-  "phase": 0.928,
+  "planar_frac": 0.704,
+  "flat_mean": 0.083,
+  "planar_plan": 0.687,
+  "coherence": 0.709,
+  "jitter": 0.63,
+  "phase": 0.691,
   "stuck": 0.0,
   "osc": 0.032
  },
- "mean": {
-  "speed": 0.194,
-  "jerk": 0.096,
-  "jerk_rel": 0.599,
-  "planar_frac": 0.426,
-  "flat_mean": 0.153,
-  "coherence": 0.553,
-  "jitter": 1.157,
-  "phase": 0.825,
+ "time": {
+  "n": 77,
+  "speed": 0.439,
+  "jerk": 0.147,
+  "jerk_rel": 0.335,
+  "jerk_e": {
+   "Charge": 0.085,
+   "Mass": 0.102,
+   "Space": 0.1,
+   "Time": 0.169
+  },
+  "planar_frac": 0.291,
+  "flat_mean": 0.169,
+  "planar_plan": 0.487,
+  "coherence": 0.728,
+  "jitter": 0.701,
+  "phase": 0.915,
   "stuck": 0.0,
-  "osc": 0.032
+  "osc": 0.033
+ },
+ "mean": {
+  "speed": 0.204,
+  "jerk": 0.098,
+  "jerk_rel": 0.58,
+  "planar_frac": 0.458,
+  "flat_mean": 0.14,
+  "coherence": 0.628,
+  "jitter": 0.931,
+  "phase": 0.864,
+  "stuck": 0.0,
+  "osc": 0.031
+ },
+ "organic": {
+  "ok": true,
+  "checks": {
+   "jerk_rel": true,
+   "osc": true,
+   "stuck": true,
+   "planar": true
+  },
+  "planar_excess": 0.084
+ },
+ "calibration": {
+  "evo (organic)": {
+   "mean": {
+    "speed": 0.182,
+    "jerk": 0.352,
+    "jerk_rel": 1.926,
+    "planar_frac": 0.144,
+    "flat_mean": 0.222,
+    "coherence": 0.117,
+    "jitter": 2.532,
+    "phase": 0.463,
+    "stuck": 0.0,
+    "osc": 0.058
+   },
+   "planar_excess": 0.0,
+   "organic": true
+  },
+  "evo compact (jerky, planar)": {
+   "mean": {
+    "speed": 0.414,
+    "jerk": 0.586,
+    "jerk_rel": 1.307,
+    "planar_frac": 0.378,
+    "flat_mean": 0.161,
+    "coherence": 0.729,
+    "jitter": 0.726,
+    "phase": 0.434,
+    "stuck": 0.0,
+    "osc": 0.167
+   },
+   "planar_excess": 0.235,
+   "organic": false
+  },
+  "field (too clean)": {
+   "mean": {
+    "speed": 0.401,
+    "jerk": 0.068,
+    "jerk_rel": 0.148,
+    "planar_frac": 0.499,
+    "flat_mean": 0.136,
+    "coherence": 0.768,
+    "jitter": 0.658,
+    "phase": 0.736,
+    "stuck": 0.096,
+    "osc": 0.035
+   },
+   "planar_excess": 0.033,
+   "organic": false
+  },
+  "hgrid oracle (accurate+organic)": {
+   "mean": {
+    "speed": 0.372,
+    "jerk": 0.101,
+    "jerk_rel": 0.3,
+    "planar_frac": 0.26,
+    "flat_mean": 0.189,
+    "coherence": 0.71,
+    "jitter": 0.968,
+    "phase": 0.756,
+    "stuck": 0.0,
+    "osc": 0.01
+   },
+   "planar_excess": 0.126,
+   "organic": true
+  }
  }
 }

@@ -225,6 +225,12 @@ def load_model(spec):
     if kind == "hgrid2":
         import hgrid2_model as hm
         return hm.Boid2(sn.World(), hm.Cfg(**json.load(open(path))["cfg"]))
+    if kind == "sort":
+        import sort_model as sm
+        return sm.load(path)
+    if kind == "posinfo":
+        import posinfo_rule as pr
+        return pr.load(path)
     if kind == "ensemble":
         import ensemble_swarm as es
         return es.load(path)

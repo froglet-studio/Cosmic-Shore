@@ -1,0 +1,301 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 1.42,
+   "space": 68.6,
+   "charge": 55.15,
+   "time": 76.31
+  },
+  "space": {
+   "mass": 73.32,
+   "space": 2.98,
+   "charge": 60.52,
+   "time": 71.39
+  },
+  "charge": {
+   "mass": 54.91,
+   "space": 55.52,
+   "charge": 0.97,
+   "time": 69.47
+  },
+  "time": {
+   "mass": 82.41,
+   "space": 75.0,
+   "charge": 76.05,
+   "time": 3.33
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 181,
+   "target_n": 192,
+   "elements": [
+    17,
+    119,
+    24,
+    21
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    100,
+    81,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 83,
+   "target_n": 88,
+   "elements": [
+    22,
+    2,
+    52,
+    7
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    38,
+    45,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 169,
+   "target_n": 179,
+   "elements": [
+    122,
+    1,
+    16,
+    30
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    84,
+    85,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 72,
+   "target_n": 76,
+   "elements": [
+    2,
+    3,
+    18,
+    49
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    40,
+    6,
+    26
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 1.19,
+   "space": 20.66,
+   "charge": 11.96,
+   "time": 25.36
+  },
+  "space": {
+   "mass": 25.15,
+   "space": 2.3,
+   "charge": 17.83,
+   "time": 27.86
+  },
+  "charge": {
+   "mass": 12.24,
+   "space": 13.75,
+   "charge": 1.11,
+   "time": 19.5
+  },
+  "time": {
+   "mass": 24.43,
+   "space": 22.64,
+   "charge": 17.54,
+   "time": 2.89
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 73.04,
+    "space": 2.97,
+    "charge": 60.49,
+    "time": 71.76
+   },
+   "majority": "space",
+   "census": {
+    "n": 83,
+    "target_n": 88,
+    "elements": [
+     22,
+     2,
+     52,
+     7
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     38,
+     45,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 54.73,
+    "space": 55.76,
+    "charge": 1.0,
+    "time": 69.74
+   },
+   "majority": "charge",
+   "census": {
+    "n": 169,
+    "target_n": 179,
+    "elements": [
+     122,
+     1,
+     16,
+     30
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     83,
+     86,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 77.68,
+    "space": 68.93,
+    "charge": 70.16,
+    "time": 6.6
+   },
+   "majority": "time",
+   "census": {
+    "n": 72,
+    "target_n": 76,
+    "elements": [
+     1,
+     3,
+     18,
+     50
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     27,
+     45,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 76.37,
+    "space": 8.72,
+    "charge": 63.94,
+    "time": 73.26
+   },
+   "majority": "space",
+   "census": {
+    "n": 83,
+    "target_n": 192,
+    "elements": [
+     23,
+     2,
+     51,
+     7
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     22,
+     40,
+     21
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "meta": {
+  "tag": "sort",
+  "params": "params.json",
+  "tests_passed": 7,
+  "note": "Emergent cell sorting: per-type positional-information wells + fate commitment + local adhesion/swaps; class homeostat."
+ }
+}

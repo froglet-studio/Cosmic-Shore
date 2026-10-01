@@ -1,0 +1,322 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 33.77,
+   "space": 88.22,
+   "charge": 80.45,
+   "time": 88.05
+  },
+  "space": {
+   "mass": 71.28,
+   "space": 44.66,
+   "charge": 71.92,
+   "time": 86.97
+  },
+  "charge": {
+   "mass": 76.07,
+   "space": 66.84,
+   "charge": 30.81,
+   "time": 81.12
+  },
+  "time": {
+   "mass": 82.29,
+   "space": 80.31,
+   "charge": 79.25,
+   "time": 32.59
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 212,
+   "target_n": 192,
+   "elements": [
+    21,
+    137,
+    32,
+    22
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    176,
+    36,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 115,
+   "target_n": 88,
+   "elements": [
+    36,
+    1,
+    67,
+    11
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    54,
+    61,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 201,
+   "target_n": 179,
+   "elements": [
+    146,
+    1,
+    20,
+    34
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    61,
+    140,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 95,
+   "target_n": 76,
+   "elements": [
+    0,
+    2,
+    24,
+    69
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    41,
+    5,
+    49
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 20.98,
+   "space": 38.87,
+   "charge": 28.35,
+   "time": 33.82
+  },
+  "space": {
+   "mass": 23.57,
+   "space": 32.96,
+   "charge": 33.86,
+   "time": 39.78
+  },
+  "charge": {
+   "mass": 24.28,
+   "space": 28.95,
+   "charge": 19.77,
+   "time": 29.78
+  },
+  "time": {
+   "mass": 20.13,
+   "space": 24.57,
+   "charge": 17.33,
+   "time": 18.83
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 89.24,
+    "space": 70.26,
+    "charge": 91.33,
+    "time": 103.67
+   },
+   "majority": "space",
+   "census": {
+    "n": 130,
+    "target_n": 88,
+    "elements": [
+     44,
+     3,
+     71,
+     12
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     89,
+     41,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 100.98,
+    "space": 104.67,
+    "charge": 73.08,
+    "time": 118.22
+   },
+   "majority": "charge",
+   "census": {
+    "n": 209,
+    "target_n": 179,
+    "elements": [
+     142,
+     3,
+     29,
+     35
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     53,
+     156,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 80.41,
+    "space": 86.29,
+    "charge": 89.39,
+    "time": 50.5
+   },
+   "majority": "time",
+   "census": {
+    "n": 99,
+    "target_n": 76,
+    "elements": [
+     4,
+     4,
+     26,
+     65
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     31,
+     68,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 72.18,
+    "space": 70.83,
+    "charge": 34.16,
+    "time": 86.15
+   },
+   "majority": "charge",
+   "census": {
+    "n": 202,
+    "target_n": 192,
+    "elements": [
+     147,
+     1,
+     24,
+     30
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Charge",
+    "domains": [
+     150,
+     6,
+     46
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "meta": {
+  "device": "cpu",
+  "tag": "distill-census-genome-zm0",
+  "note": "distill: local student (BC+DAgger, census plan + genome features + freeze while contested + static centre consensus)",
+  "cfg": {
+   "hidden": 256,
+   "cons_iters": 2,
+   "cons_a": 0.6,
+   "cons_leak": 0.004,
+   "molt_steps": 10,
+   "sep_r": 2.0,
+   "lay_temp": 1.0,
+   "collide": 1,
+   "lay_scale": 1.0,
+   "molt_scale": 1.0,
+   "plan_mode": "census",
+   "dwell": 12,
+   "freeze_contested": 1,
+   "census_gate": 0,
+   "z_motion": 0,
+   "oracle_z": 0,
+   "genome": 1
+  },
+  "tests_passed": 7,
+  "close": 407.85
+ },
+ "rule": "student.pt"
+}

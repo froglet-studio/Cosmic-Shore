@@ -22,6 +22,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import swarm_nca as sn  # noqa: E402
 
+torch.set_num_threads(int(os.environ.get("LIVE_THREADS", "2")))
+
 OUT = os.path.join(HERE, "results", "live")
 R4 = lambda a: [round(float(v), 4) for v in np.asarray(a).reshape(-1)]
 
@@ -142,7 +144,7 @@ def table():
               load("fidelity_grid_js.json") + [r for r in load("fidelity_grid_switch_js.json") if r.get("tag") == "switch"]),
              ("evo", "own", load("pyref_evo_switch.json"), load("fidelity_evo_js.json"))]
     out = ["| model | test | Python: loss to wanted plan | n | JS port: loss | n | <=8 Py / JS |", "|---|---|---|---|---|---|---|"]
-    st = lambda v: f"{np.mean(v):.1f} +- {np.std(v):.1f} [{np.min(v):.1f}, {np.max(v):.1f}]" if len(v) else "-"
+    st = lambda v: f"{np.mean(v):.1f} +- {np.std(v):.1f}, median {np.median(v):.1f} [{np.min(v):.1f}, {np.max(v):.1f}]" if len(v) else "-"
     for name, _, py, js in pairs:
         for tag in ("own", "switch"):
             for k in sn.KINDS:

@@ -1,0 +1,330 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 3.27,
+   "space": 68.23,
+   "charge": 55.07,
+   "time": 75.04
+  },
+  "space": {
+   "mass": 68.98,
+   "space": 5.31,
+   "charge": 52.69,
+   "time": 68.36
+  },
+  "charge": {
+   "mass": 56.0,
+   "space": 54.86,
+   "charge": 3.57,
+   "time": 66.75
+  },
+  "time": {
+   "mass": 82.28,
+   "space": 77.31,
+   "charge": 77.4,
+   "time": 7.35
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 194,
+   "target_n": 192,
+   "elements": [
+    20,
+    126,
+    25,
+    23
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    107,
+    87,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 91,
+   "target_n": 88,
+   "elements": [
+    27,
+    2,
+    54,
+    8
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    39,
+    52,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 182,
+   "target_n": 179,
+   "elements": [
+    131,
+    1,
+    17,
+    33
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    90,
+    92,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 1
+  },
+  "time": {
+   "n": 79,
+   "target_n": 76,
+   "elements": [
+    3,
+    4,
+    19,
+    53
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    26,
+    6,
+    47
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 2.05,
+   "space": 20.59,
+   "charge": 12.23,
+   "time": 23.94
+  },
+  "space": {
+   "mass": 21.95,
+   "space": 4.0,
+   "charge": 13.16,
+   "time": 25.79
+  },
+  "charge": {
+   "mass": 13.23,
+   "space": 13.94,
+   "charge": 2.79,
+   "time": 17.57
+  },
+  "time": {
+   "mass": 23.64,
+   "space": 23.63,
+   "charge": 18.39,
+   "time": 4.89
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 44.35,
+    "space": 36.69,
+    "charge": 51.3,
+    "time": 57.9
+   },
+   "majority": "space",
+   "census": {
+    "n": 126,
+    "target_n": 88,
+    "elements": [
+     26,
+     17,
+     54,
+     29
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     51,
+     75,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 57.91,
+    "space": 47.29,
+    "charge": 13.17,
+    "time": 66.5
+   },
+   "majority": "charge",
+   "census": {
+    "n": 193,
+    "target_n": 179,
+    "elements": [
+     131,
+     3,
+     27,
+     32
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     100,
+     93,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 60.15,
+    "space": 51.47,
+    "charge": 40.55,
+    "time": 34.89
+   },
+   "majority": "time",
+   "census": {
+    "n": 97,
+    "target_n": 76,
+    "elements": [
+     25,
+     4,
+     19,
+     49
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     54,
+     43,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 1
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 68.21,
+    "space": 11.45,
+    "charge": 54.72,
+    "time": 66.76
+   },
+   "majority": "space",
+   "census": {
+    "n": 96,
+    "target_n": 192,
+    "elements": [
+     26,
+     6,
+     55,
+     9
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     40,
+     51,
+     5
+    ],
+    "deaths": 0,
+    "mutants": 2
+   }
+  }
+ },
+ "eval16": {
+  "passed": 4,
+  "feasible": 16,
+  "own_passed": 4,
+  "std_passed": 0,
+  "rest_passed": null,
+  "complete": false,
+  "na": [],
+  "samples": 3,
+  "tiers_run": [
+   "own",
+   "standard"
+  ],
+  "own": {
+   "mass": 1.0,
+   "space": 0.67,
+   "charge": 1.0,
+   "time": 1.0
+  },
+  "switch": {
+   "mass->space": 0.0,
+   "space->charge": 0.0,
+   "charge->time": 0.0,
+   "time->mass": 0.33
+  }
+ },
+ "tests_passed": 4,
+ "tests_close": 172.46,
+ "meta": {
+  "device": "cpu",
+  "step": 400,
+  "tag": "posinfo",
+  "note": "PosInfoRule: G2 + body-frame positional information (principal-axis frame), BPTT."
+ },
+ "rule": "rule.pt"
+}

@@ -1,0 +1,962 @@
+[
+ {
+  "kind": "mass",
+  "seed": 0,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 18.31,
+   "space": 76.33,
+   "charge": 67.23,
+   "time": 81.85
+  },
+  "n": 280,
+  "mix": [
+   13,
+   236,
+   16,
+   15
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 0,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 51.03,
+   "space": 35.24,
+   "charge": 65.13,
+   "time": 74.23
+  },
+  "n": 280,
+  "mix": [
+   47,
+   29,
+   174,
+   30
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 1,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 19.86,
+   "space": 76.49,
+   "charge": 68.29,
+   "time": 81.9
+  },
+  "n": 280,
+  "mix": [
+   11,
+   232,
+   19,
+   18
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 1,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 59.71,
+   "space": 42.52,
+   "charge": 73.17,
+   "time": 79.28
+  },
+  "n": 280,
+  "mix": [
+   47,
+   30,
+   177,
+   26
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 2,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 20.82,
+   "space": 75.63,
+   "charge": 68.49,
+   "time": 81.6
+  },
+  "n": 280,
+  "mix": [
+   11,
+   237,
+   19,
+   13
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 2,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 56.24,
+   "space": 31.69,
+   "charge": 62.66,
+   "time": 72.86
+  },
+  "n": 280,
+  "mix": [
+   41,
+   30,
+   184,
+   25
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 3,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 21.8,
+   "space": 77.23,
+   "charge": 70.78,
+   "time": 84.12
+  },
+  "n": 280,
+  "mix": [
+   9,
+   244,
+   15,
+   12
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 3,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 56.47,
+   "space": 34.36,
+   "charge": 67.07,
+   "time": 75.06
+  },
+  "n": 280,
+  "mix": [
+   47,
+   31,
+   174,
+   28
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 4,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 19.11,
+   "space": 77.29,
+   "charge": 68.63,
+   "time": 84.05
+  },
+  "n": 280,
+  "mix": [
+   14,
+   235,
+   23,
+   8
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 4,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 56.84,
+   "space": 37.2,
+   "charge": 70.0,
+   "time": 78.38
+  },
+  "n": 280,
+  "mix": [
+   45,
+   29,
+   186,
+   20
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 5,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 17.03,
+   "space": 75.98,
+   "charge": 66.57,
+   "time": 83.13
+  },
+  "n": 280,
+  "mix": [
+   11,
+   232,
+   23,
+   14
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 5,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 51.43,
+   "space": 31.97,
+   "charge": 65.74,
+   "time": 73.17
+  },
+  "n": 280,
+  "mix": [
+   40,
+   29,
+   186,
+   25
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 0,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 67.27,
+   "space": 21.46,
+   "charge": 62.63,
+   "time": 72.38
+  },
+  "n": 280,
+  "mix": [
+   46,
+   19,
+   201,
+   14
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 0,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 49.34,
+   "space": 47.32,
+   "charge": 17.7,
+   "time": 74.75
+  },
+  "n": 280,
+  "mix": [
+   190,
+   21,
+   36,
+   33
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 1,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 66.64,
+   "space": 22.61,
+   "charge": 62.21,
+   "time": 72.16
+  },
+  "n": 280,
+  "mix": [
+   44,
+   16,
+   201,
+   19
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 1,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 54.29,
+   "space": 50.09,
+   "charge": 17.13,
+   "time": 70.92
+  },
+  "n": 280,
+  "mix": [
+   196,
+   17,
+   34,
+   33
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 2,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 65.27,
+   "space": 22.92,
+   "charge": 63.01,
+   "time": 72.64
+  },
+  "n": 280,
+  "mix": [
+   38,
+   21,
+   204,
+   17
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 2,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 55.26,
+   "space": 49.84,
+   "charge": 19.17,
+   "time": 70.86
+  },
+  "n": 280,
+  "mix": [
+   186,
+   23,
+   34,
+   37
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 3,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 67.49,
+   "space": 21.91,
+   "charge": 63.83,
+   "time": 76.71
+  },
+  "n": 280,
+  "mix": [
+   48,
+   14,
+   205,
+   13
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 3,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 55.19,
+   "space": 48.44,
+   "charge": 19.43,
+   "time": 75.58
+  },
+  "n": 280,
+  "mix": [
+   196,
+   16,
+   43,
+   25
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 4,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 64.2,
+   "space": 21.87,
+   "charge": 61.66,
+   "time": 72.38
+  },
+  "n": 280,
+  "mix": [
+   42,
+   19,
+   202,
+   17
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 4,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 54.3,
+   "space": 49.5,
+   "charge": 21.05,
+   "time": 71.23
+  },
+  "n": 280,
+  "mix": [
+   186,
+   20,
+   42,
+   32
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 5,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 66.72,
+   "space": 21.14,
+   "charge": 62.21,
+   "time": 70.8
+  },
+  "n": 280,
+  "mix": [
+   42,
+   15,
+   202,
+   21
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 5,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 53.95,
+   "space": 47.95,
+   "charge": 17.85,
+   "time": 71.25
+  },
+  "n": 280,
+  "mix": [
+   186,
+   18,
+   36,
+   40
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 0,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 57.41,
+   "space": 57.15,
+   "charge": 16.81,
+   "time": 74.7
+  },
+  "n": 280,
+  "mix": [
+   221,
+   13,
+   11,
+   35
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 0,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 61.27,
+   "space": 67.37,
+   "charge": 55.21,
+   "time": 31.27
+  },
+  "n": 280,
+  "mix": [
+   30,
+   32,
+   21,
+   197
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 1,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 57.13,
+   "space": 57.21,
+   "charge": 14.82,
+   "time": 73.9
+  },
+  "n": 280,
+  "mix": [
+   218,
+   12,
+   13,
+   37
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 1,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 59.72,
+   "space": 64.98,
+   "charge": 51.78,
+   "time": 31.57
+  },
+  "n": 280,
+  "mix": [
+   36,
+   29,
+   27,
+   188
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 2,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 55.07,
+   "space": 58.26,
+   "charge": 14.26,
+   "time": 74.0
+  },
+  "n": 280,
+  "mix": [
+   217,
+   14,
+   13,
+   36
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 2,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 63.56,
+   "space": 66.72,
+   "charge": 56.28,
+   "time": 25.79
+  },
+  "n": 280,
+  "mix": [
+   30,
+   29,
+   28,
+   193
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 3,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 54.0,
+   "space": 56.57,
+   "charge": 12.75,
+   "time": 76.77
+  },
+  "n": 280,
+  "mix": [
+   218,
+   12,
+   17,
+   33
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 3,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 62.41,
+   "space": 63.97,
+   "charge": 50.95,
+   "time": 32.09
+  },
+  "n": 280,
+  "mix": [
+   38,
+   36,
+   31,
+   175
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 4,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 57.09,
+   "space": 57.11,
+   "charge": 16.38,
+   "time": 73.93
+  },
+  "n": 280,
+  "mix": [
+   222,
+   8,
+   16,
+   34
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 4,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 64.52,
+   "space": 67.9,
+   "charge": 55.42,
+   "time": 29.9
+  },
+  "n": 280,
+  "mix": [
+   32,
+   26,
+   23,
+   199
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 5,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 54.72,
+   "space": 56.49,
+   "charge": 15.39,
+   "time": 76.89
+  },
+  "n": 280,
+  "mix": [
+   220,
+   10,
+   19,
+   31
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 5,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 60.43,
+   "space": 65.58,
+   "charge": 52.29,
+   "time": 30.37
+  },
+  "n": 280,
+  "mix": [
+   29,
+   30,
+   29,
+   192
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 0,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 81.61,
+   "space": 84.9,
+   "charge": 75.36,
+   "time": 25.52
+  },
+  "n": 280,
+  "mix": [
+   13,
+   23,
+   25,
+   219
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 0,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 70.95,
+   "space": 36.53,
+   "charge": 69.86,
+   "time": 62.17
+  },
+  "n": 280,
+  "mix": [
+   35,
+   32,
+   185,
+   28
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 1,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 78.92,
+   "space": 81.05,
+   "charge": 72.56,
+   "time": 24.25
+  },
+  "n": 280,
+  "mix": [
+   11,
+   24,
+   27,
+   218
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 1,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 73.21,
+   "space": 37.98,
+   "charge": 71.28,
+   "time": 61.34
+  },
+  "n": 280,
+  "mix": [
+   31,
+   33,
+   186,
+   30
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 2,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 80.25,
+   "space": 81.64,
+   "charge": 73.85,
+   "time": 24.32
+  },
+  "n": 280,
+  "mix": [
+   10,
+   29,
+   26,
+   215
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 2,
+  "step": 480,
+  "tag": "switch",
+  "want": "mass",
+  "cross": {
+   "mass": 28.47,
+   "space": 70.19,
+   "charge": 65.55,
+   "time": 69.92
+  },
+  "n": 280,
+  "mix": [
+   21,
+   187,
+   40,
+   32
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 3,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 76.69,
+   "space": 81.69,
+   "charge": 71.52,
+   "time": 24.96
+  },
+  "n": 280,
+  "mix": [
+   13,
+   29,
+   22,
+   216
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 3,
+  "step": 480,
+  "tag": "switch",
+  "want": "mass",
+  "cross": {
+   "mass": 23.41,
+   "space": 73.48,
+   "charge": 66.18,
+   "time": 72.89
+  },
+  "n": 280,
+  "mix": [
+   15,
+   203,
+   33,
+   29
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 4,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 79.03,
+   "space": 83.39,
+   "charge": 73.03,
+   "time": 24.35
+  },
+  "n": 280,
+  "mix": [
+   14,
+   28,
+   22,
+   216
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 4,
+  "step": 480,
+  "tag": "switch",
+  "want": "mass",
+  "cross": {
+   "mass": 24.96,
+   "space": 77.4,
+   "charge": 69.49,
+   "time": 72.56
+  },
+  "n": 280,
+  "mix": [
+   20,
+   195,
+   33,
+   32
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 5,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 79.46,
+   "space": 83.73,
+   "charge": 73.53,
+   "time": 25.55
+  },
+  "n": 280,
+  "mix": [
+   14,
+   27,
+   20,
+   219
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 5,
+  "step": 480,
+  "tag": "switch",
+  "want": "mass",
+  "cross": {
+   "mass": 27.45,
+   "space": 74.26,
+   "charge": 67.72,
+   "time": 72.63
+  },
+  "n": 280,
+  "mix": [
+   24,
+   196,
+   32,
+   28
+  ]
+ }
+]

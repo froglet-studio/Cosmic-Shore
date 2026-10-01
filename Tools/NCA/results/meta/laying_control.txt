@@ -1,0 +1,24 @@
+grown from (rows) scored against each target (columns), Sinkhorn divergence, lower is closer:
+                 mass    space   charge     time
+  mass          12.95*    67.12     59.53     77.42   n=280/192 el=[27, 183, 38, 32] dom=[128, 152, 0] crystals=0 mutants=1
+  space         66.24     13.41*    51.76     69.72   n=280/88 el=[82, 7, 167, 24] dom=[167, 113, 0] crystals=0 mutants=2
+  charge        55.91     54.07     11.78*    70.77   n=280/179 el=[205, 2, 24, 49] dom=[133, 147, 0] crystals=0 mutants=1
+  time          86.15     76.84     77.82     20.97   n=280/76 el=[8, 11, 66, 195] dom=[115, 42, 123] crystals=0 mutants=2
+same, GEOMETRY only (no element / domain cost) - does the shape, not the mix, pick the plan?
+  mass           4.09*    21.09     12.98     26.31 
+  space         21.18      5.97*    12.44     25.36 
+  charge         9.12     15.15      4.38*    19.87 
+  time          30.08     26.05     22.07      7.38*
+after losing the majority (another 240 steps), scored against each target:
+  mass    -> space   mass:  50.63  space:  27.72* charge:  54.70  time:  67.54   majority now space, n=280 el=[67, 28, 153, 32]
+  space   -> charge  mass:  58.69  space:  41.23  charge:  20.78* time:  74.33   majority now charge, n=280 el=[184, 7, 64, 25]
+  charge  -> time    mass:  67.76  space:  58.74  charge:  54.07  time:  25.27*  majority now time, n=280 el=[35, 2, 57, 186]
+  time    -> mass    mass:  77.52  space:  28.49* charge:  61.79  time:  61.79   majority now space, n=280 el=[79, 11, 168, 22]
+switched swarms, GEOMETRY only:
+  mass    -> space   mass: 10.94* space: 12.62  charge: 14.20  time: 24.64 
+  space   -> charge  mass: 15.22  space: 10.41  charge:  6.82* time: 23.78 
+  charge  -> time    mass: 21.05  space: 17.88  charge: 13.02  time:  8.72*
+  time    -> mass    mass: 24.25  space: 10.57* charge: 13.65  time: 15.26 
+metamorphosis: {"mass": {"started_grow": 0, "started_after_cull": 0, "completed": 0, "peak_running": 0}, "space": {"started_grow": 0, "started_after_cull": 0, "completed": 0, "peak_running": 0}, "charge": {"started_grow": 0, "started_after_cull": 0, "completed": 0, "peak_running": 0}, "time": {"started_grow": 0, "started_after_cull": 0, "completed": 0, "peak_running": 0}}
+TESTS PASSED 7/8  close 210.4  (72.7s)
+probe: {"mass": [13.2, 15.89, 13.51, 0.885, 61, 280], "space": [14.31, 21.63, 20.46, 0.16, 106, 280], "charge": [12.12, 13.27, 12.78, 0.426, 54, 280], "time": [21.01, 26.8, 25.37, 0.247, 110, 280]}

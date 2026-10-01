@@ -1,0 +1,1970 @@
+[
+ {
+  "kind": "mass",
+  "seed": 0,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 7.81,
+   "space": 67.54,
+   "charge": 53.33,
+   "time": 71.61
+  },
+  "n": 197,
+  "mix": [
+   20,
+   127,
+   26,
+   24
+  ],
+  "sec": 3.8
+ },
+ {
+  "kind": "mass",
+  "seed": 0,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 70.77,
+   "space": 10.67,
+   "charge": 56.61,
+   "time": 71.52
+  },
+  "n": 91,
+  "mix": [
+   27,
+   3,
+   54,
+   7
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 1,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 10.15,
+   "space": 66.35,
+   "charge": 53.09,
+   "time": 70.14
+  },
+  "n": 200,
+  "mix": [
+   20,
+   128,
+   26,
+   26
+  ],
+  "sec": 3.8
+ },
+ {
+  "kind": "mass",
+  "seed": 1,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 71.02,
+   "space": 13.08,
+   "charge": 55.79,
+   "time": 71.05
+  },
+  "n": 93,
+  "mix": [
+   28,
+   3,
+   55,
+   7
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 2,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 9.67,
+   "space": 67.68,
+   "charge": 54.41,
+   "time": 70.84
+  },
+  "n": 197,
+  "mix": [
+   19,
+   128,
+   26,
+   24
+  ],
+  "sec": 3.7
+ },
+ {
+  "kind": "mass",
+  "seed": 2,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 71.02,
+   "space": 8.95,
+   "charge": 57.79,
+   "time": 70.52
+  },
+  "n": 91,
+  "mix": [
+   25,
+   2,
+   56,
+   8
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 3,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 9.61,
+   "space": 67.01,
+   "charge": 53.9,
+   "time": 70.83
+  },
+  "n": 196,
+  "mix": [
+   20,
+   127,
+   25,
+   24
+  ],
+  "sec": 3.9
+ },
+ {
+  "kind": "mass",
+  "seed": 3,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 71.24,
+   "space": 12.14,
+   "charge": 56.4,
+   "time": 72.42
+  },
+  "n": 98,
+  "mix": [
+   29,
+   2,
+   60,
+   7
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 4,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 9.1,
+   "space": 68.07,
+   "charge": 54.45,
+   "time": 72.04
+  },
+  "n": 196,
+  "mix": [
+   20,
+   128,
+   25,
+   23
+  ],
+  "sec": 4.0
+ },
+ {
+  "kind": "mass",
+  "seed": 4,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 69.83,
+   "space": 9.99,
+   "charge": 58.14,
+   "time": 72.07
+  },
+  "n": 93,
+  "mix": [
+   26,
+   2,
+   57,
+   8
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 5,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 7.57,
+   "space": 67.87,
+   "charge": 52.75,
+   "time": 72.3
+  },
+  "n": 196,
+  "mix": [
+   21,
+   126,
+   25,
+   24
+  ],
+  "sec": 3.7
+ },
+ {
+  "kind": "mass",
+  "seed": 5,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 70.83,
+   "space": 63.81,
+   "charge": 65.94,
+   "time": 16.14
+  },
+  "n": 74,
+  "mix": [
+   1,
+   3,
+   20,
+   50
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 6,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 12.37,
+   "space": 67.39,
+   "charge": 55.17,
+   "time": 71.5
+  },
+  "n": 195,
+  "mix": [
+   21,
+   126,
+   26,
+   22
+  ],
+  "sec": 3.7
+ },
+ {
+  "kind": "mass",
+  "seed": 6,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 70.38,
+   "space": 11.32,
+   "charge": 58.88,
+   "time": 70.19
+  },
+  "n": 93,
+  "mix": [
+   26,
+   3,
+   55,
+   9
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 7,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 6.16,
+   "space": 69.1,
+   "charge": 53.6,
+   "time": 73.27
+  },
+  "n": 193,
+  "mix": [
+   19,
+   127,
+   25,
+   22
+  ],
+  "sec": 3.8
+ },
+ {
+  "kind": "mass",
+  "seed": 7,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 68.3,
+   "space": 11.66,
+   "charge": 57.77,
+   "time": 70.56
+  },
+  "n": 93,
+  "mix": [
+   26,
+   3,
+   57,
+   7
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 8,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 8.95,
+   "space": 67.84,
+   "charge": 54.92,
+   "time": 70.4
+  },
+  "n": 195,
+  "mix": [
+   19,
+   127,
+   26,
+   23
+  ],
+  "sec": 4.0
+ },
+ {
+  "kind": "mass",
+  "seed": 8,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 70.83,
+   "space": 11.63,
+   "charge": 58.12,
+   "time": 69.74
+  },
+  "n": 92,
+  "mix": [
+   26,
+   2,
+   56,
+   8
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 9,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 7.35,
+   "space": 67.68,
+   "charge": 53.17,
+   "time": 72.79
+  },
+  "n": 197,
+  "mix": [
+   22,
+   127,
+   26,
+   22
+  ],
+  "sec": 3.9
+ },
+ {
+  "kind": "mass",
+  "seed": 9,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 69.5,
+   "space": 10.64,
+   "charge": 56.76,
+   "time": 72.48
+  },
+  "n": 94,
+  "mix": [
+   28,
+   2,
+   55,
+   9
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 10,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 9.45,
+   "space": 67.12,
+   "charge": 53.9,
+   "time": 71.45
+  },
+  "n": 195,
+  "mix": [
+   21,
+   126,
+   25,
+   23
+  ],
+  "sec": 3.8
+ },
+ {
+  "kind": "mass",
+  "seed": 10,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 70.23,
+   "space": 9.81,
+   "charge": 56.92,
+   "time": 70.41
+  },
+  "n": 100,
+  "mix": [
+   29,
+   3,
+   60,
+   8
+  ]
+ },
+ {
+  "kind": "mass",
+  "seed": 11,
+  "step": 240,
+  "tag": "own",
+  "want": "mass",
+  "cross": {
+   "mass": 10.69,
+   "space": 66.63,
+   "charge": 54.56,
+   "time": 69.89
+  },
+  "n": 197,
+  "mix": [
+   21,
+   126,
+   26,
+   24
+  ],
+  "sec": 3.9
+ },
+ {
+  "kind": "mass",
+  "seed": 11,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 70.37,
+   "space": 10.96,
+   "charge": 57.25,
+   "time": 70.73
+  },
+  "n": 95,
+  "mix": [
+   26,
+   2,
+   58,
+   9
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 0,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 72.36,
+   "space": 6.04,
+   "charge": 57.14,
+   "time": 72.32
+  },
+  "n": 90,
+  "mix": [
+   27,
+   2,
+   54,
+   7
+  ],
+  "sec": 3.5
+ },
+ {
+  "kind": "space",
+  "seed": 0,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 66.96,
+   "space": 59.96,
+   "charge": 12.61,
+   "time": 77.73
+  },
+  "n": 183,
+  "mix": [
+   134,
+   1,
+   16,
+   32
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 1,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 71.18,
+   "space": 7.57,
+   "charge": 58.35,
+   "time": 69.89
+  },
+  "n": 92,
+  "mix": [
+   25,
+   3,
+   56,
+   8
+  ],
+  "sec": 3.4
+ },
+ {
+  "kind": "space",
+  "seed": 1,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 66.71,
+   "space": 59.54,
+   "charge": 13.32,
+   "time": 77.85
+  },
+  "n": 183,
+  "mix": [
+   131,
+   2,
+   17,
+   33
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 2,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 70.79,
+   "space": 9.37,
+   "charge": 56.75,
+   "time": 69.02
+  },
+  "n": 94,
+  "mix": [
+   26,
+   3,
+   56,
+   9
+  ],
+  "sec": 3.4
+ },
+ {
+  "kind": "space",
+  "seed": 2,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 66.55,
+   "space": 59.04,
+   "charge": 13.12,
+   "time": 77.31
+  },
+  "n": 188,
+  "mix": [
+   135,
+   1,
+   18,
+   34
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 3,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 71.22,
+   "space": 9.29,
+   "charge": 57.28,
+   "time": 69.32
+  },
+  "n": 94,
+  "mix": [
+   26,
+   4,
+   55,
+   9
+  ],
+  "sec": 3.4
+ },
+ {
+  "kind": "space",
+  "seed": 3,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 68.69,
+   "space": 60.55,
+   "charge": 15.27,
+   "time": 76.81
+  },
+  "n": 185,
+  "mix": [
+   133,
+   1,
+   16,
+   35
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 4,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 71.28,
+   "space": 7.61,
+   "charge": 57.8,
+   "time": 71.64
+  },
+  "n": 94,
+  "mix": [
+   27,
+   4,
+   56,
+   7
+  ],
+  "sec": 3.5
+ },
+ {
+  "kind": "space",
+  "seed": 4,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 68.05,
+   "space": 58.51,
+   "charge": 13.83,
+   "time": 77.21
+  },
+  "n": 182,
+  "mix": [
+   131,
+   1,
+   18,
+   32
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 5,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 73.59,
+   "space": 6.67,
+   "charge": 58.46,
+   "time": 71.63
+  },
+  "n": 90,
+  "mix": [
+   25,
+   2,
+   55,
+   8
+  ],
+  "sec": 3.6
+ },
+ {
+  "kind": "space",
+  "seed": 5,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 66.37,
+   "space": 59.54,
+   "charge": 13.23,
+   "time": 78.76
+  },
+  "n": 184,
+  "mix": [
+   132,
+   2,
+   16,
+   34
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 6,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 72.51,
+   "space": 9.4,
+   "charge": 56.79,
+   "time": 68.72
+  },
+  "n": 92,
+  "mix": [
+   25,
+   3,
+   54,
+   10
+  ],
+  "sec": 3.4
+ },
+ {
+  "kind": "space",
+  "seed": 6,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 66.68,
+   "space": 59.6,
+   "charge": 11.73,
+   "time": 77.97
+  },
+  "n": 180,
+  "mix": [
+   131,
+   1,
+   16,
+   32
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 7,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 72.0,
+   "space": 7.64,
+   "charge": 57.98,
+   "time": 71.52
+  },
+  "n": 89,
+  "mix": [
+   25,
+   2,
+   55,
+   7
+  ],
+  "sec": 3.6
+ },
+ {
+  "kind": "space",
+  "seed": 7,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 67.61,
+   "space": 60.07,
+   "charge": 13.61,
+   "time": 78.23
+  },
+  "n": 184,
+  "mix": [
+   133,
+   2,
+   17,
+   32
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 8,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 71.28,
+   "space": 7.86,
+   "charge": 58.69,
+   "time": 70.59
+  },
+  "n": 93,
+  "mix": [
+   26,
+   2,
+   57,
+   8
+  ],
+  "sec": 3.4
+ },
+ {
+  "kind": "space",
+  "seed": 8,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 65.76,
+   "space": 60.12,
+   "charge": 11.89,
+   "time": 78.26
+  },
+  "n": 182,
+  "mix": [
+   132,
+   2,
+   16,
+   32
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 9,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 72.12,
+   "space": 7.92,
+   "charge": 56.22,
+   "time": 71.11
+  },
+  "n": 91,
+  "mix": [
+   27,
+   2,
+   54,
+   8
+  ],
+  "sec": 3.5
+ },
+ {
+  "kind": "space",
+  "seed": 9,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 68.2,
+   "space": 59.82,
+   "charge": 14.1,
+   "time": 76.88
+  },
+  "n": 183,
+  "mix": [
+   133,
+   1,
+   16,
+   33
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 10,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 72.41,
+   "space": 7.81,
+   "charge": 58.33,
+   "time": 70.78
+  },
+  "n": 97,
+  "mix": [
+   26,
+   2,
+   60,
+   9
+  ],
+  "sec": 3.6
+ },
+ {
+  "kind": "space",
+  "seed": 10,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 68.66,
+   "space": 59.66,
+   "charge": 15.97,
+   "time": 77.62
+  },
+  "n": 190,
+  "mix": [
+   137,
+   2,
+   18,
+   33
+  ]
+ },
+ {
+  "kind": "space",
+  "seed": 11,
+  "step": 240,
+  "tag": "own",
+  "want": "space",
+  "cross": {
+   "mass": 70.69,
+   "space": 10.05,
+   "charge": 55.69,
+   "time": 70.55
+  },
+  "n": 89,
+  "mix": [
+   25,
+   2,
+   54,
+   8
+  ],
+  "sec": 3.4
+ },
+ {
+  "kind": "space",
+  "seed": 11,
+  "step": 480,
+  "tag": "switch",
+  "want": "charge",
+  "cross": {
+   "mass": 67.72,
+   "space": 59.1,
+   "charge": 14.63,
+   "time": 77.97
+  },
+  "n": 182,
+  "mix": [
+   131,
+   1,
+   18,
+   32
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 0,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 62.27,
+   "space": 56.65,
+   "charge": 9.31,
+   "time": 75.5
+  },
+  "n": 185,
+  "mix": [
+   132,
+   3,
+   17,
+   33
+  ],
+  "sec": 3.5
+ },
+ {
+  "kind": "charge",
+  "seed": 0,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 70.9,
+   "space": 63.07,
+   "charge": 66.31,
+   "time": 18.64
+  },
+  "n": 73,
+  "mix": [
+   0,
+   3,
+   20,
+   50
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 1,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 60.56,
+   "space": 55.14,
+   "charge": 9.3,
+   "time": 75.37
+  },
+  "n": 189,
+  "mix": [
+   133,
+   3,
+   20,
+   33
+  ],
+  "sec": 4.3
+ },
+ {
+  "kind": "charge",
+  "seed": 1,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 69.28,
+   "space": 62.67,
+   "charge": 65.09,
+   "time": 18.86
+  },
+  "n": 73,
+  "mix": [
+   0,
+   3,
+   20,
+   50
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 2,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 62.52,
+   "space": 56.27,
+   "charge": 9.5,
+   "time": 75.71
+  },
+  "n": 181,
+  "mix": [
+   131,
+   1,
+   17,
+   32
+  ],
+  "sec": 3.7
+ },
+ {
+  "kind": "charge",
+  "seed": 2,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 69.96,
+   "space": 63.89,
+   "charge": 66.13,
+   "time": 18.17
+  },
+  "n": 72,
+  "mix": [
+   0,
+   4,
+   19,
+   49
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 3,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 61.47,
+   "space": 55.55,
+   "charge": 9.09,
+   "time": 75.92
+  },
+  "n": 189,
+  "mix": [
+   136,
+   3,
+   18,
+   32
+  ],
+  "sec": 3.8
+ },
+ {
+  "kind": "charge",
+  "seed": 3,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 70.62,
+   "space": 62.34,
+   "charge": 65.17,
+   "time": 18.74
+  },
+  "n": 72,
+  "mix": [
+   0,
+   3,
+   20,
+   49
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 4,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 61.76,
+   "space": 56.39,
+   "charge": 7.81,
+   "time": 75.92
+  },
+  "n": 183,
+  "mix": [
+   132,
+   1,
+   17,
+   33
+  ],
+  "sec": 3.8
+ },
+ {
+  "kind": "charge",
+  "seed": 4,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 68.04,
+   "space": 62.91,
+   "charge": 64.29,
+   "time": 20.13
+  },
+  "n": 76,
+  "mix": [
+   0,
+   5,
+   20,
+   51
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 5,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 62.34,
+   "space": 56.33,
+   "charge": 8.77,
+   "time": 76.08
+  },
+  "n": 186,
+  "mix": [
+   135,
+   1,
+   18,
+   32
+  ],
+  "sec": 3.9
+ },
+ {
+  "kind": "charge",
+  "seed": 5,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 68.69,
+   "space": 63.91,
+   "charge": 65.76,
+   "time": 22.44
+  },
+  "n": 74,
+  "mix": [
+   0,
+   5,
+   20,
+   49
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 6,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 62.64,
+   "space": 56.07,
+   "charge": 8.56,
+   "time": 75.71
+  },
+  "n": 181,
+  "mix": [
+   132,
+   2,
+   16,
+   31
+  ],
+  "sec": 3.8
+ },
+ {
+  "kind": "charge",
+  "seed": 6,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 70.91,
+   "space": 65.87,
+   "charge": 65.97,
+   "time": 17.83
+  },
+  "n": 74,
+  "mix": [
+   0,
+   5,
+   18,
+   51
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 7,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 61.57,
+   "space": 57.43,
+   "charge": 8.29,
+   "time": 77.72
+  },
+  "n": 187,
+  "mix": [
+   136,
+   2,
+   17,
+   32
+  ],
+  "sec": 4.1
+ },
+ {
+  "kind": "charge",
+  "seed": 7,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 67.87,
+   "space": 65.32,
+   "charge": 64.42,
+   "time": 20.11
+  },
+  "n": 75,
+  "mix": [
+   0,
+   5,
+   18,
+   52
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 8,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 61.62,
+   "space": 56.54,
+   "charge": 8.54,
+   "time": 77.01
+  },
+  "n": 182,
+  "mix": [
+   134,
+   1,
+   16,
+   31
+  ],
+  "sec": 3.9
+ },
+ {
+  "kind": "charge",
+  "seed": 8,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 68.43,
+   "space": 63.96,
+   "charge": 65.39,
+   "time": 19.21
+  },
+  "n": 74,
+  "mix": [
+   0,
+   5,
+   18,
+   51
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 9,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 62.36,
+   "space": 56.9,
+   "charge": 8.88,
+   "time": 76.08
+  },
+  "n": 186,
+  "mix": [
+   135,
+   1,
+   17,
+   33
+  ],
+  "sec": 4.2
+ },
+ {
+  "kind": "charge",
+  "seed": 9,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 70.59,
+   "space": 62.99,
+   "charge": 65.18,
+   "time": 19.33
+  },
+  "n": 74,
+  "mix": [
+   0,
+   4,
+   20,
+   50
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 10,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 60.42,
+   "space": 57.2,
+   "charge": 7.18,
+   "time": 76.86
+  },
+  "n": 181,
+  "mix": [
+   131,
+   2,
+   16,
+   32
+  ],
+  "sec": 4.0
+ },
+ {
+  "kind": "charge",
+  "seed": 10,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 67.07,
+   "space": 63.19,
+   "charge": 64.39,
+   "time": 20.68
+  },
+  "n": 72,
+  "mix": [
+   0,
+   5,
+   18,
+   49
+  ]
+ },
+ {
+  "kind": "charge",
+  "seed": 11,
+  "step": 240,
+  "tag": "own",
+  "want": "charge",
+  "cross": {
+   "mass": 64.2,
+   "space": 57.1,
+   "charge": 10.16,
+   "time": 76.17
+  },
+  "n": 183,
+  "mix": [
+   135,
+   1,
+   16,
+   31
+  ],
+  "sec": 3.8
+ },
+ {
+  "kind": "charge",
+  "seed": 11,
+  "step": 480,
+  "tag": "switch",
+  "want": "time",
+  "cross": {
+   "mass": 68.9,
+   "space": 64.3,
+   "charge": 65.85,
+   "time": 21.06
+  },
+  "n": 75,
+  "mix": [
+   0,
+   5,
+   19,
+   51
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 0,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 83.02,
+   "space": 73.96,
+   "charge": 76.1,
+   "time": 15.73
+  },
+  "n": 78,
+  "mix": [
+   4,
+   3,
+   18,
+   53
+  ],
+  "sec": 3.4
+ },
+ {
+  "kind": "time",
+  "seed": 0,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 64.27,
+   "space": 62.79,
+   "charge": 12.22,
+   "time": 79.2
+  },
+  "n": 191,
+  "mix": [
+   137,
+   2,
+   20,
+   32
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 1,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 80.43,
+   "space": 72.81,
+   "charge": 76.1,
+   "time": 16.84
+  },
+  "n": 80,
+  "mix": [
+   3,
+   4,
+   20,
+   53
+  ],
+  "sec": 3.4
+ },
+ {
+  "kind": "time",
+  "seed": 1,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 78.93,
+   "space": 20.08,
+   "charge": 67.54,
+   "time": 69.96
+  },
+  "n": 93,
+  "mix": [
+   25,
+   4,
+   57,
+   7
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 2,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 82.9,
+   "space": 75.39,
+   "charge": 77.02,
+   "time": 15.77
+  },
+  "n": 79,
+  "mix": [
+   3,
+   3,
+   18,
+   55
+  ],
+  "sec": 3.8
+ },
+ {
+  "kind": "time",
+  "seed": 2,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 71.96,
+   "space": 9.51,
+   "charge": 58.45,
+   "time": 70.76
+  },
+  "n": 93,
+  "mix": [
+   25,
+   3,
+   56,
+   9
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 3,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 79.33,
+   "space": 73.1,
+   "charge": 74.36,
+   "time": 18.56
+  },
+  "n": 80,
+  "mix": [
+   4,
+   3,
+   19,
+   54
+  ],
+  "sec": 3.2
+ },
+ {
+  "kind": "time",
+  "seed": 3,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 69.78,
+   "space": 10.38,
+   "charge": 54.7,
+   "time": 70.1
+  },
+  "n": 97,
+  "mix": [
+   29,
+   3,
+   57,
+   8
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 4,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 82.39,
+   "space": 76.09,
+   "charge": 77.12,
+   "time": 16.51
+  },
+  "n": 79,
+  "mix": [
+   2,
+   4,
+   18,
+   55
+  ],
+  "sec": 3.6
+ },
+ {
+  "kind": "time",
+  "seed": 4,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 69.79,
+   "space": 12.3,
+   "charge": 56.31,
+   "time": 70.48
+  },
+  "n": 95,
+  "mix": [
+   27,
+   4,
+   55,
+   9
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 5,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 82.84,
+   "space": 72.15,
+   "charge": 76.12,
+   "time": 18.09
+  },
+  "n": 80,
+  "mix": [
+   3,
+   3,
+   20,
+   54
+  ],
+  "sec": 3.6
+ },
+ {
+  "kind": "time",
+  "seed": 5,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 71.16,
+   "space": 13.07,
+   "charge": 56.85,
+   "time": 71.18
+  },
+  "n": 94,
+  "mix": [
+   25,
+   3,
+   59,
+   7
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 6,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 79.91,
+   "space": 72.03,
+   "charge": 75.69,
+   "time": 17.63
+  },
+  "n": 82,
+  "mix": [
+   4,
+   4,
+   21,
+   53
+  ],
+  "sec": 3.4
+ },
+ {
+  "kind": "time",
+  "seed": 6,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 72.12,
+   "space": 9.58,
+   "charge": 59.58,
+   "time": 71.32
+  },
+  "n": 96,
+  "mix": [
+   25,
+   4,
+   59,
+   8
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 7,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 82.08,
+   "space": 74.7,
+   "charge": 76.71,
+   "time": 16.19
+  },
+  "n": 80,
+  "mix": [
+   3,
+   4,
+   18,
+   55
+  ],
+  "sec": 3.8
+ },
+ {
+  "kind": "time",
+  "seed": 7,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 80.69,
+   "space": 19.86,
+   "charge": 67.34,
+   "time": 71.15
+  },
+  "n": 93,
+  "mix": [
+   26,
+   4,
+   56,
+   7
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 8,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 79.19,
+   "space": 71.85,
+   "charge": 74.54,
+   "time": 17.02
+  },
+  "n": 83,
+  "mix": [
+   4,
+   4,
+   21,
+   54
+  ],
+  "sec": 3.6
+ },
+ {
+  "kind": "time",
+  "seed": 8,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 70.92,
+   "space": 11.56,
+   "charge": 57.61,
+   "time": 70.87
+  },
+  "n": 93,
+  "mix": [
+   26,
+   4,
+   56,
+   7
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 9,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 79.35,
+   "space": 72.3,
+   "charge": 73.97,
+   "time": 21.37
+  },
+  "n": 80,
+  "mix": [
+   4,
+   3,
+   19,
+   54
+  ],
+  "sec": 3.2
+ },
+ {
+  "kind": "time",
+  "seed": 9,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 77.29,
+   "space": 70.03,
+   "charge": 23.19,
+   "time": 78.92
+  },
+  "n": 185,
+  "mix": [
+   136,
+   1,
+   17,
+   31
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 10,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 80.87,
+   "space": 73.9,
+   "charge": 75.06,
+   "time": 17.06
+  },
+  "n": 79,
+  "mix": [
+   3,
+   4,
+   18,
+   54
+  ],
+  "sec": 3.9
+ },
+ {
+  "kind": "time",
+  "seed": 10,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 79.1,
+   "space": 18.92,
+   "charge": 66.92,
+   "time": 71.46
+  },
+  "n": 91,
+  "mix": [
+   26,
+   4,
+   54,
+   7
+  ]
+ },
+ {
+  "kind": "time",
+  "seed": 11,
+  "step": 240,
+  "tag": "own",
+  "want": "time",
+  "cross": {
+   "mass": 80.98,
+   "space": 72.74,
+   "charge": 75.35,
+   "time": 17.86
+  },
+  "n": 80,
+  "mix": [
+   3,
+   4,
+   19,
+   54
+  ],
+  "sec": 3.5
+ },
+ {
+  "kind": "time",
+  "seed": 11,
+  "step": 480,
+  "tag": "switch",
+  "want": "space",
+  "cross": {
+   "mass": 80.45,
+   "space": 21.78,
+   "charge": 67.26,
+   "time": 69.74
+  },
+  "n": 95,
+  "mix": [
+   27,
+   4,
+   56,
+   8
+  ]
+ }
+]

@@ -1,0 +1,33 @@
+== cap 0.02
+  mass    -> space   mass:  65.09  space:  58.96  charge:  58.75  time:  19.78*  majority now time, n=280 el=[12, 16, 68, 184]
+  space   -> charge  mass:  58.60  space:  51.31  charge:  10.68* time:  66.03   majority now charge, n=280 el=[204, 2, 26, 48]
+  charge  -> time    mass:  61.54  space:  53.73  charge:  10.56* time:  69.63   majority now charge, n=280 el=[203, 2, 26, 49]
+  time    -> mass    mass:  81.82  space:  29.04* charge:  65.46  time:  65.57   majority now space, n=280 el=[78, 7, 172, 23]
+  mass    -> space   mass: 19.18  space: 17.05  charge: 12.76  time:  7.68*
+  space   -> charge  mass: 12.43  space: 13.79  charge:  3.99* time: 17.32 
+  charge  -> time    mass: 14.68  space: 14.30  charge:  4.49* time: 19.14 
+  time    -> mass    mass: 24.15  space:  8.83* charge: 13.87  time: 20.58 
+TESTS PASSED 5/8  close 272.51  (72.9s)
+probe: {"mass": [10.48, 14.11, 9.56, 1.253, 53, 280], "space": [9.56, 11.58, 11.18, 0.198, 47, 280], "charge": [9.9, 13.7, 12.64, 0.279, 72, 280], "time": [17.06, 25.95, 23.3, 0.298, 90, 280]}
+== cap 0.04
+  mass    -> space   mass:  11.19* space:  65.35  charge:  57.31  time:  73.65   majority now mass, n=280 el=[28, 182, 37, 33]
+  space   -> charge  mass:  59.96  space:  52.93  charge:  11.36* time:  68.35   majority now charge, n=280 el=[204, 2, 26, 48]
+  charge  -> time    mass:  64.42  space:  50.47  charge:  11.59* time:  69.82   majority now charge, n=280 el=[203, 2, 26, 49]
+  time    -> mass    mass:  78.42  space:  24.71* charge:  65.58  time:  71.34   majority now space, n=280 el=[78, 7, 172, 23]
+  mass    -> space   mass:  3.94* space: 18.89  charge: 11.33  time: 23.03 
+  space   -> charge  mass: 14.47  space: 13.62  charge:  4.31* time: 17.90 
+  charge  -> time    mass: 17.19  space: 13.18  charge:  4.52* time: 20.27 
+  time    -> mass    mass: 21.55  space:  6.43* charge: 14.92  time: 25.56 
+TESTS PASSED 5/8  close 272.55  (74.5s)
+probe: {"mass": [11.57, 15.13, 11.83, 0.927, 94, 280], "space": [9.65, 17.12, 9.16, 1.066, 66, 280], "charge": [6.94, 8.01, 11.59, -3.346, 77, 280], "time": [13.9, 18.47, 14.55, 0.858, 63, 280]}
+== cap 0.15
+  mass    -> space   mass:  61.00  space:  20.86* charge:  55.18  time:  69.70   majority now space, n=280 el=[79, 7, 171, 23]
+  space   -> charge  mass:  56.66  space:  54.29  charge:   9.68* time:  70.43   majority now charge, n=280 el=[204, 2, 26, 48]
+  charge  -> time    mass:  74.11  space:  63.69  charge:  65.26  time:  18.04*  majority now time, n=280 el=[8, 11, 67, 194]
+  time    -> mass    mass:  79.40  space:  25.29* charge:  62.75  time:  66.87   majority now space, n=280 el=[80, 6, 172, 22]
+  mass    -> space   mass: 15.41  space: 10.47* charge: 16.07  time: 24.15 
+  space   -> charge  mass: 11.83  space: 13.88  charge:  4.15* time: 18.68 
+  charge  -> time    mass: 25.20  space: 21.89  charge: 17.20  time:  6.49*
+  time    -> mass    mass: 25.33  space:  8.48* charge: 14.65  time: 20.26 
+TESTS PASSED 7/8  close 181.99  (73.5s)
+probe: {"mass": [10.02, 14.93, 9.24, 1.159, 51, 280], "space": [10.25, 13.31, 13.42, -0.036, 50, 280], "charge": [11.04, 12.84, 7.52, 2.956, 64, 280], "time": [14.59, 20.5, 15.92, 0.775, 86, 280]}

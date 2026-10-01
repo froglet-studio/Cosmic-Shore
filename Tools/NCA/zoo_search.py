@@ -31,9 +31,9 @@ LOG = os.path.join(RUN, "log.jsonl")
 
 # the map: stance (flee <-> mob), liveliness (idle speed), drama (switch spectacle)
 AXES = {
-    "stance": [-1.5, -0.5, 0.25, 1.0, 2.0],      # log2 crowd ratio vs an inert body
-    "live": [0.3, 0.45, 0.6, 0.8],               # voxels / step at rest
-    "drama": [1.1, 1.25, 1.45, 1.75],            # peak radius during a switch / grown radius
+    "stance": [-0.25, 0.5, 1.25, 2.0, 2.6],      # log2 crowd ratio vs an inert body
+    "live": [0.38, 0.45, 0.55, 0.65],            # voxels / step at rest
+    "drama": [1.12, 1.18, 1.26, 1.38],           # peak radius during a switch / grown radius
 }
 
 
@@ -79,7 +79,7 @@ def mutate(u, rng, sigma):
         if kind == "b":
             if rng.random() < 0.12:
                 u[i] = 1.0 - round(u[i])
-        elif rng.random() < 0.3:
+        elif rng.random() < 0.35:
             u[i] = u[i] + rng.normal() * sigma
     return np.clip(u, 0, 1)
 
@@ -141,7 +141,7 @@ def main():
             u2 = zm.to_unit(p2["g"])
             mask = rng.random(len(u)) < 0.5
             u = np.where(mask, u, u2)
-        sigma = float(rng.choice([0.06, 0.12, 0.25]))
+        sigma = float(rng.choice([0.08, 0.16, 0.3, 0.45]))
         return zm.from_unit(mutate(u, rng, sigma))
 
     n_eval = len(recs)

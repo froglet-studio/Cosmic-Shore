@@ -46,9 +46,12 @@ PB = slice(18, 22)           # plan belief logits (charge, mass, space, time ele
 MOLT, MOLT_TO = 22, 23
 CLK = 24
 STL = 25
+CAND, CNT = 26, 27     # (plan_mode=census) candidate majority + how long it has held
 LOOK = list(range(1, 12))    # FAC, PR, TI, SP
 
-NF = 78                      # feature width (asserted in features())
+NF = 78                      # feature width (asserted in features()); +6 with genome features
+NG = 6
+NC = 1                       # + contest feature (genome=2): own census dwell counter / dwell
 OUT = 3 + 11 + 1 + 3 + 4 + 1 + 4 + 4 + 1   # v, look, lay, egg dir, egg elem, molt, molt_to, pb, startle
 LOOK_SCALE = torch.tensor([4.0] * 3 + [5.0] * 3 + [8.0] * 3 + [3.0] * 2)
 
@@ -65,6 +68,21 @@ class StudentCfg:
     collide: int = 1
     lay_scale: float = 1.0    # multiplies the lay probability (calibration knob)
     molt_scale: float = 1.0
+    plan_mode: str = "learned"   # learned: PB is the MLP's head | census: PB is the population census with
+                                 # a per-tadpole dwell counter (field's hysteresis, computed by every tadpole)
+    dwell: int = 12
+    freeze_contested: int = 0  # 1 (census mode): a tadpole whose own dwell counter is running neither lays nor
+                               # starts a molt (field's 'contested' pause, from the tadpole's own census memory)
+    census_gate: int = 0      # 1 (needs genome): a tadpole lays only while its own element AND the headcount are
+                              # short of its believed plan, and starts a molt only while its element is in
+                              # surplus (the teacher's composition rule, computed from the census + genome)
+    z_motion: int = 1         # 1: the centre estimate rides the tadpole's own motion (dynamic average consensus);
+                              # 0: it stays put in the world and only diffuses (motion then CHANGES the offset,
+                              # which is the positional feedback a body needs; see NOTE)
+    oracle_z: int = 0         # DIAGNOSTIC ONLY (not local): Z = the true live centroid each step
+    genome: int = 0           # 1: + genome features: own element's plan share - its live share, the full deficit
+                              # vector (plan mix - live mix) and plan headcount - live headcount, all under the
+                              # tadpole's own plan belief (the plan constants are the genome; no new perception)
 
 
 def _edges(pos, active, R):
@@ -84,10 +102,19 @@ class Student(nn.Module):
         self.world = world or sn.World()
         self.cfg = cfg or StudentCfg()
         H = self.cfg.hidden
-        self.net = nn.Sequential(nn.Linear(NF, H), nn.SiLU(), nn.Linear(H, H), nn.SiLU(), nn.Linear(H, H), nn.SiLU(),
+        self.nf = NF + (NG if self.cfg.genome else 0) + (NC if self.cfg.genome >= 2 else 0)
+        T = sn.load_targets()
+        mix = torch.zeros(4, 4); pn = torch.zeros(4)
+        for k in sn.KINDS:
+            e = sn.MAJOR[k]; m = torch.tensor(T[k].mix, dtype=torch.float32)
+            mix[e] = m / m.sum(); pn[e] = T[k].n
+        self.register_buffer("plan_mix", mix)          # row = plan (by its major element), cols = element shares
+        self.register_buffer("plan_n", pn)
+        NFX = self.nf
+        self.net = nn.Sequential(nn.Linear(NFX, H), nn.SiLU(), nn.Linear(H, H), nn.SiLU(), nn.Linear(H, H), nn.SiLU(),
                                  nn.Linear(H, OUT))
-        self.register_buffer("mu", torch.zeros(NF))
-        self.register_buffer("sd", torch.ones(NF))
+        self.register_buffer("mu", torch.zeros(NFX))
+        self.register_buffer("sd", torch.ones(NFX))
         self.predators = []       # [(centre np[3], radius, velocity np[3])], as field
         self.sense = 2.2
 
@@ -163,7 +190,17 @@ class Student(nn.Module):
         f = torch.cat([eoh, doh, s[:, VEL], off, off.norm(dim=-1, keepdim=True), look, pb, ph, mp, mt,
                        sumw / 8, we / 8, wd / 8, mdx, mdx_e, mv, mpb, sep, nnd, mstl, xstl, stl[:, None],
                        glob, pf], 1)
-        assert f.shape[1] == NF, f.shape
+        if self.cfg.genome:
+            pmix = self.plan_mix
+            w4 = pb                                                    # belief over plans (element order)
+            share = w4 @ pmix                                          # expected plan element shares [n, 4]
+            pn = (w4 @ self.plan_n)[:, None]                           # expected plan headcount
+            defi = share - glob[:, 1:5]
+            own = (defi * eoh).sum(-1, keepdim=True)
+            f = torch.cat([f, own, defi, pn / 100 - glob[:, :1]], 1)
+            if self.cfg.genome >= 2:
+                f = torch.cat([f, (s[:, CNT] / self.cfg.dwell)[:, None]], 1)
+        assert f.shape[1] == self.nf, f.shape
         return f, live, (gi, gj)
 
     def head(self, f):
@@ -184,6 +221,10 @@ class Student(nn.Module):
             avg = torch.where(cnt[:, None] > 0, ssum / cnt.clamp(min=1)[:, None], zz)
             zz = zz + self.cfg.cons_a * (avg - zz)
         zz = zz + self.cfg.cons_leak * (pos - zz)
+        if self.cfg.oracle_z:
+            lb = live.view(B, N).float()
+            c = (sw.pos * lb[..., None]).sum(1) / lb.sum(1).clamp(min=1)[:, None]
+            zz = c[:, None, :].expand(B, N, 3).reshape(n, 3)
         s[:, Z] = torch.where(live[:, None], zz, s[:, Z])
 
     def student_action(self, f, s, elem, live, gen):
@@ -205,6 +246,27 @@ class Student(nn.Module):
         return dict(v=v, look=look, lay_par=lay_par, lay_dir=lay_dir, lay_el=elem.clone(), molt_start=molt_start,
                     molt_to=mto.argmax(-1), pb=out[:, 27:31], stl=out[:, 31].clamp(0, 1))
 
+    def census_plan(self, sw, s, live):
+        """Every tadpole reads the population census (the element mix SwarmRule already perceives) and
+        keeps its own dwell counter: a new majority must hold `dwell` steps before it believes it."""
+        B, N, _ = sw.pos.shape
+        hb = (sw.hatched & sw.active).float()
+        cnt = (hb[:, :, None] * F.one_hot(sw.elem, 4).float()).sum(1)                 # [B, 4]
+        cur = s[:, PB].argmax(-1).view(B, N)
+        top = cnt.argmax(-1)[:, None].expand(B, N)
+        tie = cnt.gather(1, cur) >= cnt.gather(1, top)
+        maj = torch.where(tie, cur, top)
+        cand = s[:, CAND].long().view(B, N); c = s[:, CNT].view(B, N)
+        newc = torch.where(maj == cur, torch.zeros_like(c), torch.where(maj == cand, c + 1, torch.ones_like(c)))
+        newcand = torch.where(maj == cur, cur, maj)
+        commit = newc >= self.cfg.dwell
+        cur2 = torch.where(commit, maj, cur)
+        newc = torch.where(commit, torch.zeros_like(newc), newc)
+        lv = live.view(B, N)
+        s[:, CAND] = torch.where(live, newcand.reshape(-1).float(), s[:, CAND])
+        s[:, CNT] = torch.where(live, newc.reshape(-1), s[:, CNT])
+        return 6.0 * (F.one_hot(cur2.reshape(-1), 4).float() - 0.25)
+
     def forward(self, sw: sn.Swarm, gen=None, action=None, **_):
         """One step. action=None: the student acts. action=dict: an external policy (the teacher, for
         DAgger's mixture rollouts) supplies v / look / lay events / molt starts; same mechanics."""
@@ -223,6 +285,10 @@ class Student(nn.Module):
             for b in fresh.nonzero().squeeze(1).tolist():
                 sw.s[b, :, Z] = sw.pos[b]
                 sw.s[b, :, DIE] = -12.0
+                if cfg.plan_mode == "census":
+                    m = live2[b]
+                    e0 = int(torch.bincount(sw.elem[b][m], minlength=4).argmax())
+                    sw.s[b, :, PB] = 6.0 * (F.one_hot(torch.tensor(e0), 4).float() - 0.25)
         gi, gj = _edges(sw.pos, live2, W.R)
         self.consensus(sw, gi, gj)
         f, live, _ = self.features(sw, gi, gj)
@@ -240,7 +306,17 @@ class Student(nn.Module):
         v = action["v"]; look = action["look"]
         lay_par = action["lay_par"] & live; lay_dir = action["lay_dir"]; lay_el = action["lay_el"]
         molt_start = action["molt_start"] & live; molt_to = action["molt_to"]
+        if cfg.census_gate and cfg.genome:
+            g0 = NF                                                # genome block: own deficit, deficit[4], headcount gap
+            own_def, n_gap = f[:, g0], f[:, g0 + 5]
+            lay_par = lay_par & (own_def > 0) & (n_gap > 0)
+            molt_start = molt_start & (own_def < 0)
+        if cfg.freeze_contested and cfg.plan_mode == "census":
+            calm = s[:, CNT] <= 0
+            lay_par = lay_par & calm; molt_start = molt_start & calm
         pb_new = action["pb"]; stl_new = action["stl"]
+        if cfg.plan_mode == "census":
+            pb_new = self.census_plan(sw, s, live)
         lv = live[:, None]
         s[:, VEL] = torch.where(lv, v, s[:, VEL])
         s[:, LOOK] = torch.where(lv, look, s[:, LOOK])
@@ -255,7 +331,8 @@ class Student(nn.Module):
         rad = pos2.norm(dim=-1, keepdim=True).clamp(min=1e-6)
         pos2 = torch.where(rad > W.membrane, pos2 * W.membrane / rad, pos2)
         # the centre estimate rides the tadpole's own motion
-        s[:, Z] = torch.where(lv, s[:, Z] + (pos2 - pos), s[:, Z])
+        if cfg.z_motion:
+            s[:, Z] = torch.where(lv, s[:, Z] + (pos2 - pos), s[:, Z])
         sw.pos = pos2.view(B, N, 3)
         # molting (designed mechanics, learned trigger)
         run = live & (s[:, MOLT] > 0)

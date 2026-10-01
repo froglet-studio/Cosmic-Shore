@@ -29,9 +29,7 @@ on tadpoles alive through the whole window (array slot = identity).
   osc       share of steps on which a tadpole reverses (cos(v_t, v_t-1) < -0.5): a twitch/oscillation,
             the bug-like failure of a controller fighting itself.
 
-`organic_band()` states the band the lead's review implies (calibrated in results/hgrid2/feel.json):
-jerk_rel and planar_frac at or below the organic models', osc and stuck low, coherence below the
-too-clean field's, jitter above it.
+`in_band()` checks the ORGANIC band (BAND below), calibrated on the lead's review of the gallery.
 
     python Tools/NCA/swarm_feel.py --model evo:Tools/NCA/results/evo/genome.npy
 """
@@ -137,19 +135,26 @@ def feel(model, kinds=sn.KINDS, seed=7, warm=240, win=64):
     return res
 
 
-# The band the lead's review implies, from the calibration table (results/hgrid2/feel.json):
-# jerk_rel below the "very jerky" compact model's, planar excess (planar_frac - planar_plan) small,
-# coherence below the "too clean" field model's, few oscillating / stuck tadpoles.
-BAND = dict(jerk_rel_max=None, planar_excess_max=None, coherence_max=None, osc_max=None, stuck_max=None)
+# The organic band, calibrated on the lead's review (results/hgrid2/feel.json "calibration"):
+#   jerk_rel in [0.2, 2.5]   below 0.2 is machine-smooth (field 0.15, "too clean"); evo's brownian 1.9 is organic
+#   osc <= 0.08              twitching / reversing in place: evo compact 0.17 ("very jerky"); all others <= 0.06
+#   stuck <= 0.02            frozen tadpoles in a moving body: field 0.10 ("mistakes feel like bugs")
+#   planar_excess <= 0.15    worst plan's planar_frac above the PLAN's own: compact's jellyfish +0.23 ("planar
+#                            surfaces with its crystals"); a body that matches its plan is as flat as the plan
+# It sorts the four reviewed approaches exactly as the lead did (evo, hgrid oracle in; compact, field out).
+# coherence / jitter / phase are descriptive (how school-like vs gas-like), not pass/fail.
+BAND = dict(jerk_rel=(0.2, 2.5), osc_max=0.08, stuck_max=0.02, planar_excess_max=0.15)
+
+
+def planar_excess(res):
+    return max(max(0.0, res[k]["planar_frac"] - res[k].get("planar_plan", 0.0)) for k in sn.KINDS)
 
 
 def in_band(res, band=None):
     band = band or BAND
     m = res["mean"]
-    pex = sum(res[k]["planar_frac"] - res[k].get("planar_plan", 0) for k in sn.KINDS) / 4
-    checks = dict(jerk_rel=m["jerk_rel"] <= band["jerk_rel_max"], planar=pex <= band["planar_excess_max"],
-                  coherence=m["coherence"] <= band["coherence_max"], osc=m["osc"] <= band["osc_max"],
-                  stuck=m["stuck"] <= band["stuck_max"])
+    checks = dict(jerk_rel=band["jerk_rel"][0] <= m["jerk_rel"] <= band["jerk_rel"][1], osc=m["osc"] <= band["osc_max"],
+                  stuck=m["stuck"] <= band["stuck_max"], planar=planar_excess(res) <= band["planar_excess_max"])
     return all(checks.values()), checks
 
 
@@ -161,6 +166,8 @@ def main():
     a = ap.parse_args()
     torch.set_num_threads(4)
     res = feel(swarm_eval.load_model(a.model))
+    ok, checks = in_band(res)
+    res["organic"] = dict(ok=ok, checks=checks, planar_excess=round(planar_excess(res), 3))
     print(json.dumps(res, indent=1))
     if a.out:
         json.dump(res, open(a.out, "w"), indent=1)

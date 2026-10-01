@@ -26,7 +26,8 @@ MODELS = [
                 "Watch for: a scattered random seed condensing toward its centre and blooming from the inside out "
                 "at the plan's own size; Time runners lapping the body; and, when you carve away enough of the "
                 "majority element, the plan flipping in a single step and the swarm re-sorting into the new "
-                "creature while the misfits wither into lime crystals.")),
+                "creature while the misfits wither into lime crystals. It ignores grazing (it breeds back faster than any "
+                "steady predator eats) but one big Bite flips it.")),
     dict(id="evo", label="Evolved rule (G2 + genome)", engine="evo",
          about=("No grid and no plan anywhere in the tadpole's head: every tadpole runs the same small learned network "
                 "(G2, 232-192-192-35, trained by backprop) on what it senses within 8 voxels, plus the swarm's headcount "
@@ -34,8 +35,10 @@ MODELS = [
                 "element is short of the share the CURRENT majority's plan wants (and less when over), and about a quarter "
                 "of eggs take the element the swarm is most short of (domain still breeds true). Nothing is culled. "
                 "Watch for: a loose, organic, always-moving cloud that fills the 280-tadpole budget and only suggests the "
-                "creature (it scores 14-24 against its plan, against 7-18 for the grid); after you eat the majority, the "
-                "homeostat floods the new majority's element and the cloud slowly re-sorts. Heavier to compute: about "
+                "creature (loss 15-25 to its plan, against 8-18 for the grid); after you eat the majority, the "
+                "homeostat floods the new majority's element and the cloud slowly re-sorts. It shrugs off one big bite (it "
+                "refills its 280 slots in a few steps) but a steady Graze of 4 wears most plans down in a few hundred "
+                "steps - the opposite of the grid. Heavier to compute: about "
                 "30 steps/s at 280 tadpoles, so keep the speed moderate.")),
 ]
 
@@ -109,6 +112,7 @@ def build_live(results_root):
           <button type="button" class="btn" id="bl-orbit" aria-pressed="false">Orbit</button>
           <button type="button" class="btn" id="bl-spin" aria-pressed="false">Auto-orbit</button>
           <button type="button" class="btn" id="bl-eat">Bite: majority to second place</button>
+          <button type="button" class="btn" id="bl-strike">Vessel strike</button>
         </div>
         <label class="row" for="lgraze">Graze<input id="lgraze" type="range" min="0" max="4" step="0.25" value="0"><output id="o-lgraze">0</output></label>
         <label class="row" for="ln">Seed size<input id="ln" type="range" min="8" max="64" value="24"><output id="o-ln">24</output></label>
@@ -390,6 +394,16 @@ SCRIPT = r"""<script>
     const before = c.elements[c.majority], plan = sw.loseMajority(to, 6);
     countKills(); drainEvents();
     log(plan ? `step ${sw.clock}: ate ${before - sw.census().elements[c.majority]} ${ELN[c.majority]}; ${ELN[to]} leads` : `step ${sw.clock}: nothing to eat (no runner-up with 2+)`);
+  };
+  $('bl-strike').onclick = () => {
+    // swarm_probe's strike: everything inside a sphere one RMS radius across, centred one RMS radius off the centroid
+    let m = [0, 0, 0], n = 0;
+    for (let i = 0; i < sw.N; i++) if (sw.active[i] && sw.hatched[i]) { for (let k = 0; k < 3; k++) m[k] += sw.pos[3 * i + k]; n++; }
+    if (n < 4) return; m = m.map(v => v / n);
+    let r2 = 0; for (let i = 0; i < sw.N; i++) if (sw.active[i] && sw.hatched[i]) r2 += (sw.pos[3 * i] - m[0]) ** 2 + (sw.pos[3 * i + 1] - m[1]) ** 2 + (sw.pos[3 * i + 2] - m[2]) ** 2;
+    const rms = Math.sqrt(r2 / n); let d; do { d = [Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1]; } while (Math.hypot(...d) > 1 || Math.hypot(...d) < 0.1);
+    const dl = Math.hypot(...d), k = sw.killBall(m.map((v, j) => v + rms * d[j] / dl), rms, -1);
+    countKills(); drainEvents(); log(`step ${sw.clock}: vessel strike took ${k} of ${n}`);
   };
   const tune = [...document.querySelectorAll('[data-cfg]')];
   function applyTune() { if (sw && model.engine !== 'evo') tune.forEach(t => { sw.cfg[t.dataset.cfg] = +t.value; }); }
