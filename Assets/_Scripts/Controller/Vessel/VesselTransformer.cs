@@ -55,14 +55,6 @@ public class VesselTransformer : MonoBehaviour
              "for the default two-trigger drift where both triggers sum (e.g. Manta).")]
     [SerializeField] bool singleTriggerDrift = false;
 
-    [Tooltip("CEILING on a TOUCH drift's depth, as a fraction of a full trigger pull (0-1). A " +
-             "touch drift's live depth is the steering thumb's sideways deflection while the " +
-             "other is lifted (stripped branch) or otherwise a full pull - scaled by this, because the " +
-             "drift action's FULL-pull tuning is authored for a pad pilot who can feather the " +
-             "trigger. 1 = unchanged (the fleet default). Only read when no sharp tier is bound; " +
-             "a sharp tier keeps the binary 1/2 ladder.")]
-    [SerializeField, Range(0f, 1f)] float touchDriftDepth = 1f;
-
     [Tooltip("Hold the cruise speed the vessel carried INTO a drift for the drift's whole " +
              "duration: the throttle stops feeding speed the moment the drift starts, and the " +
              "latched value is flown until it ends. Combined with the course lock (drift damping " +
@@ -341,6 +333,14 @@ public class VesselTransformer : MonoBehaviour
         private float _frameTriggerSum;
         private bool _driftEaseOutPending;
         private const float DRIFT_EASE_SPEED = 12f; // ~83ms for 0→1 ramp
+
+        /// <summary>Trigger travel below which a RUNNING drift is read as having no analog
+        /// measurement at all (a digital trigger) and falls back to a full pull.</summary>
+        private const float MeasuredTriggerTravel = 0.01f;
+
+        /// <summary>Whether the last <see cref="GetTriggerSum"/> took the binary fallback - no
+        /// measured trigger travel - and so needs the simulated pull/release ease.</summary>
+        private bool _triggerSumBinary;
         public bool IsDriftActive => _singleDriftActive || _sharpDriftActive || _driftEaseOutPending;
 
         private bool _driftSpeedHeld;
@@ -368,8 +368,7 @@ public class VesselTransformer : MonoBehaviour
 
             // Smooth trigger sum for non-analog input to simulate a quick trigger pull
             float rawTriggerSum = GetTriggerSum();
-            bool needsEasing = InputStatus != null
-                            && InputStatus.ActiveInputDevice != InputDeviceType.Gamepad;
+            bool needsEasing = _triggerSumBinary;
             _frameTriggerSum = needsEasing
                 ? Mathf.MoveTowards(_frameTriggerSum, rawTriggerSum, DRIFT_EASE_SPEED * Time.deltaTime)
                 : rawTriggerSum;
@@ -673,8 +672,9 @@ public class VesselTransformer : MonoBehaviour
 
             if (!_singleDriftActive && !_sharpDriftActive)
             {
-                bool needsEasing = InputStatus != null
-                                && InputStatus.ActiveInputDevice != InputDeviceType.Gamepad;
+                // A binary drift (no measured trigger travel) has no trigger to ease it out, so it
+                // is eased here; an analog one already rode the trigger back down.
+                bool needsEasing = _triggerSumBinary;
                 if (needsEasing)
                     _driftEaseOutPending = true;
                 else
@@ -731,45 +731,44 @@ public class VesselTransformer : MonoBehaviour
         /// <item>TWO stacked tiers (the Scarab: single + sharp on the same trigger) — the 0-1
         /// travel is remapped across 0-2 so one trigger spans no-drift → single → sharp.</item>
         /// </list>
-        /// For non-gamepad input, returns a binary value based on which drift level is active.
+        ///
+        /// <para><b>Analog when measured, BINARY when not.</b> Any input that cannot report trigger
+        /// travel gets the binary fallback: a drift that is on is a FULL pull (1 single, 2 sharp).
+        /// That is every non-gamepad device - a touch thumb LIFT is a full pull, a key is a full
+        /// pull - and a gamepad whose trigger is DIGITAL (or mapped as a plain button), detected as
+        /// a drift that is running while the trigger reports no travel at all. Before this a
+        /// digital pad trigger started the drift and then fed it a depth of zero, i.e. no drift.
+        /// One rule for every device, so a lift on glass and a button on a pad feel like the same
+        /// buried trigger.</para>
         /// </summary>
         private float GetTriggerSum()
         {
             if (InputStatus == null)
                 return 0f;
 
+            bool drifting = _singleDriftActive || _sharpDriftActive;
+
             if (InputStatus.ActiveInputDevice == InputDeviceType.Gamepad)
             {
-                if (!singleTriggerDrift)
-                    return InputStatus.LeftTriggerAnalog + InputStatus.RightTriggerAnalog;
-
                 // A hull that never binds a sharp tier has exactly one drift to scale, so the
                 // trigger's travel maps straight onto it instead of maxing out at half-pull.
-                return _sharpDriftParamsSet
-                    ? InputStatus.LeftTriggerAnalog * 2f
-                    : InputStatus.LeftTriggerAnalog;
+                float analog = !singleTriggerDrift
+                    ? InputStatus.LeftTriggerAnalog + InputStatus.RightTriggerAnalog
+                    : _sharpDriftParamsSet
+                        ? InputStatus.LeftTriggerAnalog * 2f
+                        : InputStatus.LeftTriggerAnalog;
+
+                if (analog > MeasuredTriggerTravel || !drifting)
+                {
+                    _triggerSumBinary = false;
+                    return analog;
+                }
             }
 
-            // Non-gamepad fallback: binary intensity
+            // Binary fallback: a drift that is on is a full pull.
+            _triggerSumBinary = true;
             if (_sharpDriftActive) return 2f;
-            if (_singleDriftActive)
-            {
-                // A touch drift's depth is the STEERING thumb's sideways deflection while the other
-                // is lifted (TouchInputStrategy.UpdateLiftDriftDepth, stripped branch), published
-                // on LeftTriggerAnalog like the pad's trigger; zero means none was measured (off
-                // the strip), which reads as a full pull. Either way it is scaled by the
-                // authored touchDriftDepth CEILING: a full-deflection turn at the Squirrel's full
-                // pull (x1.8 / grip 0.25) slides past 90 degrees of slip, where nose thrust brakes.
-                // Tools/Build/touch_drift_slip.py measures it.
-                if (InputStatus.ActiveInputDevice == InputDeviceType.Touch && !_sharpDriftParamsSet)
-                {
-                    float pull = InputStatus.LeftTriggerAnalog > 0f
-                        ? Mathf.Clamp01(InputStatus.LeftTriggerAnalog)
-                        : 1f;
-                    return touchDriftDepth * pull;
-                }
-                return 1f;
-            }
+            if (_singleDriftActive) return 1f;
             return 0f;
         }
 

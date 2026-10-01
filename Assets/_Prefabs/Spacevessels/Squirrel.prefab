@@ -906,7 +906,6 @@ MonoBehaviour:
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.3
   singleTriggerDrift: 1
-  touchDriftDepth: 0.5
   holdSpeedWhileDrifting: 0
   vectorFlightModel: 1
   driftOvershootCeiling: 1.25

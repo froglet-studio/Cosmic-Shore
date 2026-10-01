@@ -881,7 +881,7 @@ braking). `Tools/Build/touch_drift_slip.py --check` models a 180° hairpin at fu
 - **Butterfly on glass**: both abilities are binary, and both land on a thumb lift — **lift the left
   thumb** to toggle Mass/Dust, **lift the right thumb and hold** to reach a Fold, **put it back** to
   go. The re-zero means neither lift pulls the vessel off its line.
-- **Fold-gate windows are off** (`PerfStrip.FoldGateWindows`): a window is a whole second render of
+- *(Superseded by Round 14 — windows are back, rendering only their footprint.)* **Fold-gate windows are off** (`PerfStrip.FoldGateWindows`): a window is a whole second render of
   the world every frame a gate is on screen — exactly when you're threading one. Gates still carry
   you across; the camera cuts over with the ship instead of being carried through a window.
 - **Waystation** (the Butterfly's Time race) is in the build and appears in the Arcade grid on its
@@ -955,7 +955,7 @@ set. Two things were changed anyway, both general:
    happen, on the phone, where the console is out of reach. The ring's authored shape is worth
    knowing when reading them: **one** ring of 8 danger prisms, radius 8, 100 u ahead, 20 s cooldown.
 
-### Panini in freestyle
+### Panini in freestyle *(Round 14 extends this to the whole menu)*
 
 Post-processing on the strip was granted only to scenes with a minigame controller — so never to
 Menu_Main, including **freestyle**, where a phone pilot does most of their flying. The profile's
@@ -977,3 +977,75 @@ No Unity here; the eight out-of-editor gates, a Roslyn syntax parse of every cha
 3. Freestyle has the Panini curvature at rest and it relaxes as you speed up; the menu lava lamp
    behind the UI does not.
 4. The Butterfly still toggles on a left lift and folds on a right lift.
+
+## Round 14 — post across the menu, binary drift, the portal window back (2026-10-01)
+
+Reported after Round 13: *"the ring works, panini is looking good. the butterfly is working.
+Lets bring the postprocessing like bloom etc. to the lavalamp view not just freestyle. the
+transition was jarring. the drift is wrong. just turn it into a binary drift fallback from analog.
+we should be doing the same on gamepad if they have a non analog trigger. just treat lifting a
+thumb as a full trigger pull and switch to one thumb flying. the butterfly portal is small, try to
+render only what you need to performantly bring in the portal view."*
+
+### Post-processing across the whole menu
+
+Round 13 granted the post stack to freestyle only, so it switched on and off at the freestyle
+boundary — in the middle of the camera blend, which read as a cut. It now runs in every scene that
+shows the world: any minigame scene and Menu_Main (probed by its `MainMenuController`), lava lamp
+and freestyle alike; only the boot/auth scenes, which show nothing but UI, stay post-free.
+`PerfStrip.FreestyleFlying` is retired with nothing left to read it. The menu canvas is
+screen-space overlay, so bloom never reaches the UI. Cost: the lava lamp now pays Bloom + Panini
+on the one presenting camera, as freestyle and the races already did.
+
+### Drift: analog when measured, a full pull when not
+
+`VesselTransformer.GetTriggerSum` now has ONE rule for every device: if trigger travel is measured
+it is the drift's depth; if it is not, a drift that is on is a **full pull**. "Not measured" is every
+non-gamepad device (a touch thumb lift, a key) — and, new, a **gamepad with a digital trigger**,
+detected as a drift that is running while the trigger reports no travel (before, a digital trigger
+started the drift and fed it a depth of zero, i.e. no drift). Binary drifts ease in and out over
+`DRIFT_EASE_SPEED`, analog ones ride the trigger, and `DriftAudioController` follows the same rule.
+
+On touch: **lift the right thumb = a full trigger pull**, and the left thumb flies alone (mirrored
+onto both sticks, pitch and yaw only, at `OneThumbDriftTurnGain` 0.70). Retired: Round 13's
+depth-from-the-steering-thumb (the slide changed under you as you steered) and with it
+`VesselTransformer.touchDriftDepth` (removed from the code and from `Squirrel.prefab`) and
+`PerfStrip.TouchLiftDriftDepth`. Nothing on touch writes the trigger channel any more; zero travel
+is how the vessel knows to take the binary path.
+
+`Tools/Build/touch_drift_slip.py` now gates the FELT invariant: a full-pull lift drift held at full
+lock through a 180° hairpin must never drop below its entry speed and must leave at least as fast.
+At gain 0.70: **slowest 100%, exit 111%**. The slide does pass 90° for a moment (peak 101°) — Round 9
+gated on that angle as a proxy for braking, and it is only a proxy: `ShapeSpeed` floors the speed at
+its pre-thrust magnitude, so the drift carries rather than brakes. Negative control: gain 1.0 loses
+7% and fails (run). If the drift ever feels like it scrubs speed, the dial is `OneThumbDriftTurnGain`.
+
+### The Butterfly's portal window, back — rendering only its footprint
+
+The window is a disc that is usually small on screen, and the far-side camera was rendering the
+whole screen to show it. Now (`FoldGatePortalView`):
+- the window disc's bounding square is projected each frame to get its **rectangle of the screen**
+  (padded 3 px, clamped; the whole screen once a corner is behind the near plane — the carry);
+- the far-side projection is **cropped** to that rectangle (rows 0/1 of the clip transform, after
+  the oblique near plane, which only touches row 2) — so **culling drops everything the window
+  cannot show**, not only the pixels;
+- the target is sized to the rectangle's pixels × `portalWindowRenderScale`, capped on the strip at
+  `PerfStrip.FoldGateWindowMaxRenderScale` 0.5, in 32-texel steps with 1.25x growth headroom (an
+  approaching gate grows into it instead of reallocating every frame; one 1.6x too big on both axes
+  is reallocated smaller);
+- the shader maps its screen UV into the rectangle (`_FoldGatePortalUV`, identity when full screen).
+  The crop and the remap are proven to agree to 1e-14 offline.
+`PerfStrip.FoldGateWindows` is retired; the chase camera is carried through the mouth again.
+Also fixed on the way: the target's format check compared the REQUESTED format with what
+`DefaultHDR` resolved to on the device, which could never match and reallocated it every frame.
+
+### Not verified in the editor
+
+No Unity here; the eight out-of-editor gates, a Roslyn syntax parse of every changed file, and
+`touch_drift_slip.py --check` pass. On device:
+1. Menu_Main: the lava lamp has bloom and the Panini curve; entering and leaving freestyle changes
+   nothing about the look.
+2. Squirrel: lift the right thumb — a full drift at once, steer with the left thumb; put it back —
+   it straightens out at speed. On a pad with digital triggers, the drift trigger drifts.
+3. Butterfly: a distant gate's window shows the far side; flying in, the camera is carried through
+   and the window fills the screen without a hitch; the frame rate holds while a gate is in view.

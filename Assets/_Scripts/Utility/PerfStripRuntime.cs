@@ -50,7 +50,6 @@ namespace CosmicShore.Utility
                 // Freestyle is a Menu_Main state; a scene load ends it whatever path left the
                 // menu, so a race never inherits the uncapped freestyle trail.
                 PerfStrip.FreestyleTrailActive = false;
-                PerfStrip.FreestyleFlying = false;
                 ScheduleApply();
             };
             ScheduleApply();
@@ -98,12 +97,12 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Post-processing is restored for GAMEPLAY - every minigame scene, and freestyle flight in
-        /// Menu_Main (<see cref="PerfStrip.FreestyleFlying"/>) - and stays off everywhere else,
-        /// including the menu's own autopilot lava lamp. Freestyle was missing until Round 13: the
-        /// gameplay test was "the scene has a minigame controller", which Menu_Main never has, so
-        /// the one place a phone pilot spends most of their flying had no Panini and therefore only
-        /// half a speed tunnel.
+        /// Post-processing runs in every scene that SHOWS THE WORLD - each minigame scene, and
+        /// Menu_Main whether the pilot is flying freestyle or the autopilot lava lamp is drifting
+        /// behind the menu - and stays off in the boot/auth scenes, which show only UI. It used to
+        /// be gameplay-only: Round 13 added freestyle, and the lava lamp still flipped the whole
+        /// post stack on and off at the freestyle boundary, which read as a jarring cut in the
+        /// middle of the camera blend. One look across the menu, so the boundary changes nothing.
         ///
         /// Two active overrides live on the one persistent Volume (it rides the Bootstrap
         /// PostProcessingManager as DontDestroyOnLoad, so there is no per-scene volume to read):
@@ -127,7 +126,7 @@ namespace CosmicShore.Utility
         static void ApplyPostProcessing()
         {
             bool keepPost = PerfStrip.AllowAuthoredPostProcessing
-                            && (PerfStrip.FreestyleFlying || IsGameplayScene())
+                            && IsWorldScene()
                             && SceneHasActivePostOverride();
 
             foreach (var cam in AllCamerasIncludingInactive())
@@ -214,18 +213,23 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// True when this is a playable minigame scene. Probed by the presence of the scene's
-        /// <see cref="CosmicShore.Gameplay.MiniGameControllerBase"/> - exactly one per gameplay
-        /// scene and none elsewhere, the same self-resolving idiom Docs/GAMECANVAS.md uses, so a
-        /// new mode gets its authored look without joining a scene-name allow-list.
+        /// True when this scene shows the world: a playable minigame scene (its
+        /// <see cref="CosmicShore.Gameplay.MiniGameControllerBase"/>) or the main menu (its
+        /// <see cref="CosmicShore.Core.MainMenuController"/>, which owns both the lava lamp and
+        /// freestyle). Probed by the scene's own controller - exactly one per such scene, the same
+        /// self-resolving idiom Docs/GAMECANVAS.md uses - so a new mode gets its authored look
+        /// without joining a scene-name allow-list.
         /// </summary>
-        static bool IsGameplayScene()
+        static bool IsWorldScene()
         {
 #if UNITY_2023_1_OR_NEWER
             return Object.FindFirstObjectByType<CosmicShore.Gameplay.MiniGameControllerBase>(
+                       FindObjectsInactive.Include) != null
+                || Object.FindFirstObjectByType<CosmicShore.Core.MainMenuController>(
                        FindObjectsInactive.Include) != null;
 #else
-            return Object.FindObjectOfType<CosmicShore.Gameplay.MiniGameControllerBase>(true) != null;
+            return Object.FindObjectOfType<CosmicShore.Gameplay.MiniGameControllerBase>(true) != null
+                || Object.FindObjectOfType<CosmicShore.Core.MainMenuController>(true) != null;
 #endif
         }
 

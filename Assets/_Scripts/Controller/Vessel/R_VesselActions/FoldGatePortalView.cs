@@ -52,18 +52,50 @@ namespace CosmicShore.Gameplay
     /// the gameplay render between <c>beginCameraRendering</c> and <c>endCameraRendering</c>),
     /// so no physics step, network sample or ribbon update ever sees the borrowed pose.</para>
     ///
-    /// <para><b>The cost, stated.</b> One extra render of the world per frame, at
-    /// <c>portalWindowRenderScale</c> of the gameplay camera's resolution, with no shadows, no
-    /// anti-aliasing and no post — paid only while a threadable gate is on screen and within
-    /// <c>portalWindowRange</c>, and for at most ONE gate at a time (the nearest). It refreshes
-    /// every frame rather than at a capped rate: a window that lagged the camera by even a frame
-    /// would shear against the ring as the pilot turned, which is exactly the seam it exists to
-    /// hide. No colliders, no prisms, no per-prism anything.</para>
+    /// <para><b>It renders only its own FOOTPRINT.</b> The window is usually a small disc on
+    /// screen, and every pixel of the far-side render outside it was being drawn to be thrown
+    /// away. So the window's on-screen rectangle is measured each frame (the disc's bounding
+    /// square, projected), the far-side projection is CROPPED to exactly that rectangle - the
+    /// same frustum, with its side planes pulled in, so culling drops everything the window cannot
+    /// show as well - and the target is sized to the rectangle's pixels rather than the screen's.
+    /// The shader maps its screen position into that rectangle (<c>_FoldGatePortalUV</c>). A
+    /// distant gate now costs a render the size of a thumbnail; one that fills the screen (the
+    /// approach, the carry through) costs what it always did, capped on the strip by
+    /// <see cref="PerfStrip.FoldGateWindowMaxRenderScale"/>.</para>
+    ///
+    /// <para><b>The cost, stated.</b> One extra render of the world per frame, of the window's
+    /// footprint at <c>portalWindowRenderScale</c> of the gameplay camera's resolution, with no
+    /// shadows, no anti-aliasing and no post — paid only while a threadable gate is on screen and
+    /// within <c>portalWindowRange</c>, and for at most ONE gate at a time (the nearest). It
+    /// refreshes every frame rather than at a capped rate: a window that lagged the camera by even
+    /// a frame would shear against the ring as the pilot turned, which is exactly the seam it
+    /// exists to hide. No colliders, no prisms, no per-prism anything.</para>
     /// </summary>
     public static class FoldGatePortalView
     {
         static readonly int PortalTexId = Shader.PropertyToID("_FoldGatePortalTex");
+        static readonly int PortalUVId = Shader.PropertyToID("_FoldGatePortalUV");
         static readonly Plane[] FrustumPlanes = new Plane[6];
+
+        /// <summary>Screen UV -> target UV for a target that covers the whole screen.</summary>
+        static readonly Vector4 IdentityUV = new(1f, 1f, 0f, 0f);
+        static readonly Rect FullViewport = new(0f, 0f, 1f, 1f);
+
+        /// <summary>Pixels of margin around the measured footprint, so the bilinear tap at the
+        /// window's rim never reads past the rendered rectangle.</summary>
+        const float FootprintPadPixels = 3f;
+
+        /// <summary>The target is sized in steps of this many texels, so a footprint growing a few
+        /// pixels a frame does not reallocate it every frame.</summary>
+        const int TexelQuantum = 32;
+
+        /// <summary>Headroom a reallocated target takes over the footprint it was sized for, so an
+        /// approaching gate grows into it instead of reallocating at every step.</summary>
+        const float GrowHeadroom = 1.25f;
+
+        /// <summary>A target this many times larger than the footprint needs (on both axes) is
+        /// reallocated smaller - the receding gate stops paying for the size it had up close.</summary>
+        const float ShrinkSlack = 1.6f;
 
         /// <summary>
         /// How far toward the vantage the oblique plane is pulled from the far mouth, world units —
@@ -81,7 +113,12 @@ namespace CosmicShore.Gameplay
         const float MinObliqueDistance = 0.2f;
 
         static Camera _camera;
+        static UnityEngine.Rendering.Universal.UniversalAdditionalCameraData _cameraData;
         static RenderTexture _texture;
+        // The format the target was REQUESTED in. RenderTexture.format reports what DefaultHDR
+        // resolved to on this device, so comparing against it would never match and would
+        // reallocate the target every frame.
+        static RenderTextureFormat _textureFormat;
         static GameObject _host;
 
         static Transform _viewerKey;
@@ -105,7 +142,12 @@ namespace CosmicShore.Gameplay
         {
             // Statics survive play-mode exit in the editor.
             _camera = null;
+            _cameraData = null;
             _texture = null;
+            // A full-screen target is the identity mapping; set it so a window that draws before
+            // the first far-side render samples sensibly rather than at uv 0 (an unset global
+            // vector is zero).
+            Shader.SetGlobalVector(PortalUVId, IdentityUV);
             _viewerKey = null;
             _viewerStatus = null;
             _subjectKey = null;
@@ -150,19 +192,6 @@ namespace CosmicShore.Gameplay
             _mainView = null;
 
             var live = FoldGate.Live;
-
-            // Stripped-performance branch: the window is a whole second render of the world every
-            // frame a gate is on screen - which on a phone is exactly the moment the pilot is
-            // threading one. Gates still carry pilots across; the camera cuts over with them
-            // (CustomCameraController.CarryThroughPortal). See PerfStrip.FoldGateWindows.
-            if (!CosmicShore.Utility.PerfStrip.FoldGateWindows)
-            {
-                for (int i = 0; i < live.Count; i++)
-                    if (live[i]) live[i].SetWindow(false, 0f);
-                Shown = null;
-                if (_texture != null) ReleaseTexture();
-                return;
-            }
 
             if (live.Count == 0)
             {
@@ -262,7 +291,12 @@ namespace CosmicShore.Gameplay
         {
             var partner = gate.Partner;
             if (!partner) return false;
-            if (!EnsureCamera(view, gate.WindowRenderScale)) return false;
+
+            // Only the window's own rectangle of the screen is rendered (see the class summary).
+            Rect footprint = WindowFootprint(gate, view);
+            if (footprint.width * view.pixelWidth < 1f || footprint.height * view.pixelHeight < 1f)
+                return false;
+            if (!EnsureCamera(view, footprint, gate.WindowRenderScale)) return false;
 
             Vector3 near = gate.Centre, far = partner.Centre;
             Vector3 nearAxis = gate.Axis, farAxis = partner.Axis;
@@ -300,6 +334,11 @@ namespace CosmicShore.Gameplay
                 _camera.projectionMatrix = _camera.CalculateObliqueMatrix(
                     new Vector4(camNormal.x, camNormal.y, camNormal.z, camDist));
 
+            // --- crop to the footprint ------------------------------------------------------
+            // After the oblique plane, which only rewrites the z row: the crop rewrites x and y,
+            // so the two compose without disturbing each other.
+            CropProjection(footprint);
+
             // --- render -------------------------------------------------------------------
             // Neither window may appear in its own render: this one would sample the texture it is
             // being drawn into, and the far one sits on the clip plane and would flicker there.
@@ -336,20 +375,91 @@ namespace CosmicShore.Gameplay
             if (farWindow) farWindow.forceRenderingOff = farWasOff;
 
             Shader.SetGlobalTexture(PortalTexId, _texture);
+            // The window samples at its screen position; map that into the footprint the target
+            // covers: uv' = (uv - min) / size.
+            Shader.SetGlobalVector(PortalUVId, new Vector4(
+                1f / footprint.width, 1f / footprint.height,
+                -footprint.xMin / footprint.width, -footprint.yMin / footprint.height));
             return true;
         }
 
-        static bool EnsureCamera(Camera view, float renderScale)
+        /// <summary>
+        /// The window's rectangle of the gameplay camera's viewport (0..1), padded and clamped to
+        /// the screen. Measured from the window disc's own bounding square - its mesh is a unit
+        /// disc in its local XY plane - projected through the camera that is about to draw it, so
+        /// it follows the ring's bloom and the speed tunnel's field of view for free. A corner at
+        /// or behind the near plane means the window wraps around the camera (the carry through),
+        /// and then all of the screen may show it.
+        /// </summary>
+        static Rect WindowFootprint(FoldGate gate, Camera view)
         {
-            int width = Mathf.Max(64, Mathf.RoundToInt(view.pixelWidth * renderScale));
-            int height = Mathf.Max(64, Mathf.RoundToInt(view.pixelHeight * renderScale));
+            var window = gate.Window;
+            if (!window) return FullViewport;
+
+            Transform t = window.transform;
+            float near = view.nearClipPlane;
+            float xMin = float.MaxValue, yMin = float.MaxValue;
+            float xMax = float.MinValue, yMax = float.MinValue;
+            for (int i = 0; i < 4; i++)
+            {
+                var corner = new Vector3((i & 1) == 0 ? -0.5f : 0.5f, (i & 2) == 0 ? -0.5f : 0.5f, 0f);
+                Vector3 vp = view.WorldToViewportPoint(t.TransformPoint(corner));
+                if (vp.z <= near) return FullViewport;
+                xMin = Mathf.Min(xMin, vp.x);
+                yMin = Mathf.Min(yMin, vp.y);
+                xMax = Mathf.Max(xMax, vp.x);
+                yMax = Mathf.Max(yMax, vp.y);
+            }
+
+            float padX = FootprintPadPixels / Mathf.Max(1, view.pixelWidth);
+            float padY = FootprintPadPixels / Mathf.Max(1, view.pixelHeight);
+            return Rect.MinMaxRect(Mathf.Clamp01(xMin - padX), Mathf.Clamp01(yMin - padY),
+                                   Mathf.Clamp01(xMax + padX), Mathf.Clamp01(yMax + padY));
+        }
+
+        /// <summary>
+        /// Narrow the projection to <paramref name="footprint"/>: the sub-rectangle's NDC range is
+        /// stretched onto the whole target. In clip space that is x' = (x - c.w) / h for the
+        /// rectangle's NDC centre c and half-extent h, i.e. a rewrite of rows 0 and 1 against the
+        /// w row - z and w are untouched, so depth and the oblique near plane are exactly as before.
+        /// Culling follows the projection, so what the window cannot show is not drawn either.
+        /// </summary>
+        static void CropProjection(Rect footprint)
+        {
+            if (footprint.xMin <= 0f && footprint.yMin <= 0f && footprint.xMax >= 1f && footprint.yMax >= 1f)
+                return;
+
+            Matrix4x4 p = _camera.projectionMatrix;
+            float cx = footprint.xMin + footprint.xMax - 1f, hx = footprint.width;
+            float cy = footprint.yMin + footprint.yMax - 1f, hy = footprint.height;
+            Vector4 row3 = p.GetRow(3);
+            p.SetRow(0, (p.GetRow(0) - cx * row3) / hx);
+            p.SetRow(1, (p.GetRow(1) - cy * row3) / hy);
+            _camera.projectionMatrix = p;
+        }
+
+        static bool EnsureCamera(Camera view, Rect footprint, float renderScale)
+        {
+            float scale = Mathf.Min(renderScale, PerfStrip.FoldGateWindowMaxRenderScale);
+            int capW = Mathf.Max(TexelQuantum, Mathf.RoundToInt(view.pixelWidth * scale));
+            int capH = Mathf.Max(TexelQuantum, Mathf.RoundToInt(view.pixelHeight * scale));
+            int needW = Mathf.Clamp(Mathf.CeilToInt(footprint.width * view.pixelWidth * scale), TexelQuantum, capW);
+            int needH = Mathf.Clamp(Mathf.CeilToInt(footprint.height * view.pixelHeight * scale), TexelQuantum, capH);
             var format = view.allowHDR && SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.DefaultHDR)
                 ? RenderTextureFormat.DefaultHDR
                 : RenderTextureFormat.Default;
 
-            if (_texture != null &&
-                (_texture.width != width || _texture.height != height || _texture.format != format))
+            // Reuse the target while it covers the footprint and is not grossly larger than it;
+            // the crop maps the footprint onto the whole target whatever its size, so a target a
+            // little larger than needed only renders a little sharper.
+            bool fits = _texture != null && _textureFormat == format
+                        && _texture.width >= needW && _texture.height >= needH
+                        && (_texture.width <= needW * ShrinkSlack || _texture.height <= needH * ShrinkSlack);
+            if (_texture != null && !fits)
                 ReleaseTexture();
+
+            int width = Mathf.Min(capW, Quantize(needW * GrowHeadroom));
+            int height = Mathf.Min(capH, Quantize(needH * GrowHeadroom));
 
             if (_texture == null)
             {
@@ -364,6 +474,7 @@ namespace CosmicShore.Gameplay
                 // Created outright: the window samples it in the same frame, and a sampled
                 // uncreated target draws nothing.
                 _texture.Create();
+                _textureFormat = format;
             }
 
             if (_camera == null)
@@ -381,11 +492,24 @@ namespace CosmicShore.Gameplay
                 OffscreenCameraSetup.AdoptGameCameraImage(_camera, postProcessing: false,
                                                           antiAliasing: false, shadows: false);
                 _camera.allowHDR = view.allowHDR;
+                _cameraData = UnityEngine.Rendering.Universal.CameraExtensions
+                    .GetUniversalAdditionalCameraData(_camera);
+            }
+
+            // Re-asserted every render: a sweep that grants post to "every camera that presents
+            // to the screen" (PerfStripRuntime) sees this one as such for any frame it has no target.
+            if (_cameraData != null)
+            {
+                _cameraData.renderPostProcessing = false;
+                _cameraData.antialiasing = UnityEngine.Rendering.Universal.AntialiasingMode.None;
             }
 
             _camera.targetTexture = _texture;
             return true;
         }
+
+        static int Quantize(float texels) =>
+            Mathf.Max(TexelQuantum, Mathf.CeilToInt(texels / TexelQuantum) * TexelQuantum);
 
         // ---- the straddling ship ------------------------------------------------------------
 

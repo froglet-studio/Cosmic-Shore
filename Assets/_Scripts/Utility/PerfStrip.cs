@@ -50,16 +50,6 @@ namespace CosmicShore.Utility
         /// </summary>
         public static bool FreestyleTrailActive;
 
-        /// <summary>
-        /// The pilot is flying freestyle in Menu_Main. Freestyle is gameplay, and gameplay gets the
-        /// authored post stack - Bloom, and the Panini that is HALF THE SPEED TUNNEL
-        /// (Docs/SPEED_TUNNEL.md) - which <see cref="PerfStripRuntime"/> otherwise withholds from
-        /// every scene without a minigame controller, i.e. from all of Menu_Main. Kept apart from
-        /// <see cref="FreestyleTrailActive"/> on purpose: "is the trail laid" and "is the pilot
-        /// flying" are different questions that happen to change at the same moment today.
-        /// Set by MenuCrystalClickHandler on freestyle enter/exit; cleared on every scene load.
-        /// </summary>
-        public static bool FreestyleFlying;
 
         /// <summary>
         /// Live prisms (all sources: boughs, garden, creatures, trail) above which the freestyle
@@ -155,17 +145,6 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// A touch drift's DEPTH comes from the steering thumb. While one thumb flies because the
-        /// other was lifted for an ability (the Squirrel binds its drift to the RIGHT-thumb lift),
-        /// that thumb's sideways deflection is published on LeftTriggerAnalog - the pad trigger's
-        /// channel - floored so the drift is felt the moment it engages: turn harder, slide deeper.
-        /// Off the strip the channel stays zero on touch, which every reader already takes as a
-        /// full-depth drift, so no other hull changes. It replaces Round 12's two-thumb overdrive
-        /// past the rim, which never drifted on device (see TouchInputStrategy).
-        /// </summary>
-        public static bool TouchLiftDriftDepth => Enabled;
-
-        /// <summary>
         /// On touch, a single thumb raises Left/RightStickAction only when it is alone because the
         /// other thumb was LIFTED - never because it was the first one down. Those events are the
         /// Butterfly's Fold and mode switch; off the strip, touching the screen right-thumb-first
@@ -174,13 +153,15 @@ namespace CosmicShore.Utility
         public static bool TouchStickEventsOnLiftOnly => Enabled;
 
         /// <summary>
-        /// Whether a Butterfly fold gate draws its WINDOW onto the far side. Off on the strip: the
-        /// window is one extra render of the whole world per frame while a gate is on screen,
-        /// which on a phone lands exactly when the pilot is threading it. The gates still carry
-        /// pilots across (the gameplay half is untouched); the chase camera cuts across with the
-        /// ship instead of being carried through a window that is not there.
+        /// Ceiling on a Butterfly fold-gate window's render resolution, as a fraction of the
+        /// gameplay camera's. The window renders only its own on-screen FOOTPRINT
+        /// (FoldGatePortalView), so a distant gate costs a few thousand pixels; this cap is for the
+        /// moments it fills the screen - the approach and the carry through - where an uncapped
+        /// 0.75 would be a second near-full-resolution frame on a phone. The window is composited
+        /// into the world and post-processed with it, so half resolution reads as a soft view
+        /// through glass rather than as a low-resolution picture.
         /// </summary>
-        public static bool FoldGateWindows => !Enabled;
+        public static float FoldGateWindowMaxRenderScale => Enabled ? 0.5f : 1f;
 
         /// <summary>
         /// Hide arcade/arena cards whose scene is not in this build. The strip ships a handful of

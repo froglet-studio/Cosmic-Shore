@@ -41,8 +41,8 @@ namespace CosmicShore.Gameplay
         // enters the moment a thumb is LIFTED to trigger an ability (a lift is a 2+ -> 1 touch
         // transition, see HandleDriftTransitions: the Squirrel's boost ring, the Butterfly's mode
         // switch and Fold). While it lasts, the live thumb is mirrored onto BOTH virtual sticks
-        // in Reparameterize. The Squirrel's drift is one of these lifts (the RIGHT thumb); on the
-        // stripped branch the steering thumb also sets its depth (see UpdateLiftDriftDepth).
+        // in Reparameterize. The Squirrel's drift is one of these lifts (the RIGHT thumb), and a
+        // lift is a full trigger pull (see the section below).
         private bool oneThumbActive;
         private Vector2 oneThumbStick;
 
@@ -75,9 +75,11 @@ namespace CosmicShore.Gameplay
         /// magnitude, because it always adds along +forward while the velocity's forward
         /// component has gone negative. The racing drift scrubs speed instead of carrying it.
         ///
-        /// 0.70 lands the mirrored thumb on <c>Ease(1.4) = 0.6643</c> -> 111.6 deg/s, still
-        /// faster than the 99.9 deg/s one thumb produced before the mirror existed, with slip
-        /// staying inside 90 degrees through a normal corner.
+        /// 0.70 lands the mirrored thumb on <c>Ease(1.4) = 0.6643</c>. With a lift drift as a FULL
+        /// trigger pull (x1.8 / grip 0.25) that is 143.5 deg/s, and a full-lock 180 degree hairpin
+        /// never drops below its entry speed and leaves at 111% of it - the slide passes 90 degrees
+        /// for a moment (peak 101) but the speed floor holds, so it carries rather than brakes.
+        /// At 0.9 it starts to scrub (98.5%); at 1.0 it loses 7%. Tools/Build/touch_drift_slip.py.
         ///
         /// This is a CALIBRATION, not a derived constant. Lower it toward 0.5 if a held drift
         /// still washes speed off; raise it toward 0.8 if the drift reads sluggish.
@@ -129,25 +131,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private float throttleCarry;
 
-        // ── Drift depth from the steering thumb (stripped-performance branch) ─────────────────
-        // The Squirrel's touch drift is a thumb LIFT: lift the RIGHT thumb and it drifts while
-        // the left one steers; put it back and the drift ends with the speed carried
-        // (throttleCarry). Round 12 moved it onto a two-thumb "overdrive" past the rim of the
-        // sticks, and on device it never drifted. Throttle on this mix is the thumbs' spread, so
-        // at cruise the thumbs sit on OPPOSITE sides; reaching "both past the rim on the same
-        // side" meant the inside thumb travelling more than two stick radii (~1.2"), and the
-        // first tenth of a radius past the rim bought a drift of 3.5% of the ceiling - nothing a
-        // pilot can feel. What the lift version got wrong was never the lift: it yanked the
-        // vessel (fixed by rebaseSticks) and its depth was a fixed number. So the depth is now the
-        // STEERING thumb's sideways deflection - turn harder, slide deeper - floored so the drift
-        // is felt the instant it engages. Published on LeftTriggerAnalog, the pad trigger's
-        // channel, which VesselTransformer.GetTriggerSum scales by the hull's touchDriftDepth
-        // CEILING and DriftAudioController follows.
-
-        /// <summary>Depth of a lift drift with the steering thumb centred; the rest of the range
-        /// is bought with sideways deflection and reaches 1 (the hull's ceiling) at the rim.
-        /// Tools/Build/touch_drift_slip.py reads it.</summary>
-        const float LiftDriftDepthFloor = 0.5f;
+        // ── A thumb lift is a FULL trigger pull ─────────────────────────────────────────────
+        // Glass cannot measure trigger travel, so a lift that fires a drift is the binary
+        // fallback every non-analog input gets (VesselTransformer.GetTriggerSum): the drift is on
+        // at full pull for as long as the thumb is up, and the remaining thumb flies the vessel
+        // alone - mirrored onto both sticks, pitch and yaw only (see Reparameterize). Round 13
+        // tried deriving a depth from the steering thumb's deflection; it made the slide change
+        // under the pilot as they steered, and is retired. Nothing here writes the trigger
+        // channel: zero travel IS how the vessel knows to take the binary path.
 
         /// <summary>
         /// True while the single live thumb is alone because the other was LIFTED (a 2 -&gt; 1
@@ -229,7 +220,6 @@ namespace CosmicShore.Gameplay
                 oneThumbActive = false;
                 throttleCarry = 0f;
                 ResetInput();
-                UpdateLiftDriftDepth();
                 if (!inputStatus.Idle)
                 {
                     inputStatus.Idle = true;
@@ -251,7 +241,6 @@ namespace CosmicShore.Gameplay
                     heldXDiff = inputStatus.XDiff;
                 }
 
-                UpdateLiftDriftDepth();
 
                 PerformSpeedAndDirectionalEffects();
                 if (inputStatus.Idle)
@@ -545,22 +534,6 @@ namespace CosmicShore.Gameplay
         {
             float fromNeutral = Mathf.Min(1f, Mathf.Abs(live - 0.5f) * 2f);
             return Mathf.Clamp01(live + carry * (1f - fromNeutral));
-        }
-
-        /// <summary>
-        /// The lift drift's depth (see <see cref="LiftDriftDepthFloor"/>): while one thumb flies
-        /// because the other was lifted for an ability, its sideways deflection - floored - is
-        /// published on <c>LeftTriggerAnalog</c>; otherwise zero. Only drift readers consume the
-        /// channel on touch (VesselTransformer.GetTriggerSum while a drift is running, and
-        /// DriftAudioController), so a lift that fired a different ability - the Squirrel's boost
-        /// ring, the Butterfly's mode switch - is unaffected by it.
-        /// </summary>
-        private void UpdateLiftDriftDepth()
-        {
-            float depth = 0f;
-            if (PerfStrip.TouchLiftDriftDepth && OneThumbAbilityActive)
-                depth = Mathf.Lerp(LiftDriftDepthFloor, 1f, Mathf.Clamp01(Mathf.Abs(oneThumbStick.x)));
-            inputStatus.LeftTriggerAnalog = depth;
         }
 
         private void PerformSpeedAndDirectionalEffects()
