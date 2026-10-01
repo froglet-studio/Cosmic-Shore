@@ -1,0 +1,301 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 20.91,
+   "space": 77.57,
+   "charge": 70.64,
+   "time": 82.32
+  },
+  "space": {
+   "mass": 67.97,
+   "space": 24.31,
+   "charge": 65.84,
+   "time": 73.06
+  },
+  "charge": {
+   "mass": 53.88,
+   "space": 57.44,
+   "charge": 13.84,
+   "time": 74.5
+  },
+  "time": {
+   "mass": 81.77,
+   "space": 85.12,
+   "charge": 75.79,
+   "time": 24.76
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 280,
+   "target_n": 192,
+   "elements": [
+    12,
+    237,
+    20,
+    11
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    106,
+    174,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 280,
+   "target_n": 88,
+   "elements": [
+    38,
+    21,
+    203,
+    18
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    145,
+    135,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 2
+  },
+  "charge": {
+   "n": 280,
+   "target_n": 179,
+   "elements": [
+    215,
+    14,
+    15,
+    36
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    130,
+    150,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 3
+  },
+  "time": {
+   "n": 280,
+   "target_n": 76,
+   "elements": [
+    12,
+    25,
+    22,
+    221
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    112,
+    29,
+    139
+   ],
+   "deaths": 0,
+   "mutants": 2
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 3.42,
+   "space": 22.46,
+   "charge": 13.81,
+   "time": 26.11
+  },
+  "space": {
+   "mass": 24.08,
+   "space": 8.07,
+   "charge": 16.26,
+   "time": 28.61
+  },
+  "charge": {
+   "mass": 8.24,
+   "space": 15.73,
+   "charge": 4.98,
+   "time": 20.15
+  },
+  "time": {
+   "mass": 25.86,
+   "space": 24.24,
+   "charge": 17.93,
+   "time": 7.04
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 56.32,
+    "space": 38.93,
+    "charge": 71.1,
+    "time": 76.83
+   },
+   "majority": "space",
+   "census": {
+    "n": 280,
+    "target_n": 88,
+    "elements": [
+     41,
+     28,
+     188,
+     23
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     197,
+     83,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 2
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 52.04,
+    "space": 50.24,
+    "charge": 18.58,
+    "time": 76.05
+   },
+   "majority": "charge",
+   "census": {
+    "n": 280,
+    "target_n": 179,
+    "elements": [
+     199,
+     25,
+     30,
+     26
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     136,
+     144,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 3
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 60.94,
+    "space": 67.26,
+    "charge": 55.89,
+    "time": 29.35
+   },
+   "majority": "time",
+   "census": {
+    "n": 280,
+    "target_n": 76,
+    "elements": [
+     30,
+     34,
+     25,
+     191
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     183,
+     97,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 3
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 30.17,
+    "space": 75.95,
+    "charge": 70.09,
+    "time": 71.3
+   },
+   "majority": "mass",
+   "census": {
+    "n": 280,
+    "target_n": 192,
+    "elements": [
+     21,
+     202,
+     35,
+     22
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Mass",
+    "domains": [
+     123,
+     18,
+     139
+    ],
+    "deaths": 0,
+    "mutants": 2
+   }
+  }
+ },
+ "meta": {
+  "tag": "creature",
+  "body": "results/evo/genome.npy over results/swarm_coevo_g2/rule.pt",
+  "tests_passed": 8,
+  "note": "evo body + elastic vessel-reaction shell (creature_model.py)"
+ }
+}

@@ -1,0 +1,268 @@
+{
+ "own": {
+  "mass": {
+   "cross": {
+    "mass": 3.07,
+    "space": 68.73,
+    "charge": 57.09,
+    "time": 77.07
+   },
+   "n": 192,
+   "rate": 1.0,
+   "ok": true
+  },
+  "space": {
+   "cross": {
+    "mass": 69.27,
+    "space": 1.57,
+    "charge": 55.97,
+    "time": 66.07
+   },
+   "n": 88,
+   "rate": 1.0,
+   "ok": true
+  },
+  "charge": {
+   "cross": {
+    "mass": 63.17,
+    "space": 59.33,
+    "charge": 1.4,
+    "time": 76.78
+   },
+   "n": 179,
+   "rate": 1.0,
+   "ok": true
+  },
+  "time": {
+   "cross": {
+    "mass": 86.41,
+    "space": 80.42,
+    "charge": 81.71,
+    "time": 4.64
+   },
+   "n": 76,
+   "rate": 1.0,
+   "ok": true
+  }
+ },
+ "switch": {
+  "mass->space": {
+   "cross": {
+    "mass": 69.05,
+    "space": 8.83,
+    "charge": 57.36,
+    "time": 72.64
+   },
+   "n": 89,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "space",
+    "space",
+    "space"
+   ]
+  },
+  "space->charge": {
+   "cross": {
+    "mass": 66.11,
+    "space": 59.2,
+    "charge": 2.31,
+    "time": 79.13
+   },
+   "n": 179,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "charge",
+    "charge",
+    "charge"
+   ]
+  },
+  "charge->time": {
+   "cross": {
+    "mass": 73.04,
+    "space": 67.56,
+    "charge": 67.96,
+    "time": 7.81
+   },
+   "n": 78,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "time",
+    "time",
+    "time"
+   ]
+  },
+  "time->mass": {
+   "cross": {
+    "mass": 12.39,
+    "space": 73.39,
+    "charge": 67.74,
+    "time": 79.95
+   },
+   "n": 178,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "mass",
+    "mass",
+    "mass"
+   ]
+  },
+  "mass->charge": {
+   "cross": {
+    "mass": 65.92,
+    "space": 59.23,
+    "charge": 2.17,
+    "time": 78.73
+   },
+   "n": 179,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "charge",
+    "charge",
+    "charge"
+   ]
+  },
+  "mass->time": {
+   "cross": {
+    "mass": 70.78,
+    "space": 66.33,
+    "charge": 67.09,
+    "time": 12.52
+   },
+   "n": 81,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "time",
+    "time",
+    "time"
+   ]
+  },
+  "space->time": {
+   "cross": {
+    "mass": 74.83,
+    "space": 68.56,
+    "charge": 69.92,
+    "time": 5.92
+   },
+   "n": 76,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "time",
+    "time",
+    "time"
+   ]
+  },
+  "charge->space": {
+   "cross": {
+    "mass": 72.05,
+    "space": 5.97,
+    "charge": 56.77,
+    "time": 71.2
+   },
+   "n": 88,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "space",
+    "space",
+    "space"
+   ]
+  },
+  "time->space": {
+   "cross": {
+    "mass": 75.72,
+    "space": 11.33,
+    "charge": 62.69,
+    "time": 73.21
+   },
+   "n": 82,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "space",
+    "space",
+    "space"
+   ]
+  }
+ },
+ "tiers_run": [
+  "own",
+  "standard",
+  "rest"
+ ],
+ "na": [
+  "space->mass",
+  "charge->mass",
+  "time->charge"
+ ],
+ "samples": 3,
+ "passed": 13,
+ "feasible": 13,
+ "own_passed": 4,
+ "std_passed": 4,
+ "rest_passed": 5,
+ "complete": true,
+ "seconds": 81.9,
+ "cfg": {
+  "sense": 3.0,
+  "lookahead": 10.0,
+  "relay": 0.75,
+  "relay_r": 4.5,
+  "decay": 0.9,
+  "flee": [
+   0.5,
+   0.3,
+   2.0,
+   2.0
+  ],
+  "flee_swirl": 0.6,
+  "k_ret": 0.1,
+  "max_off": 30.0,
+  "jet_period": 6,
+  "jet_gain": 3.0,
+  "bell": 0.35,
+  "body_jet": 0.6,
+  "inflate": 0.55,
+  "danger_at": 0.35,
+  "tuck": 0.35,
+  "shield": 0.25,
+  "dart": 0.8,
+  "mob": [
+   0.0,
+   0.0,
+   0.0,
+   1.0
+  ],
+  "mob_speed": 1.0,
+  "mob_r": 1.4,
+  "escort": [
+   0.0,
+   0.8,
+   0.0,
+   0.45
+  ],
+  "escort_speed": [
+   1.0,
+   2.4
+  ],
+  "escort_r": 4.0,
+  "wounds": 0,
+  "wound_reach": 12.0,
+  "wound_life": 160,
+  "wound_elem": 1,
+  "anchor": 0,
+  "tell": 1,
+  "tell_steps": 36,
+  "tell_jitter": 0.7,
+  "tell_swirl": 0.25,
+  "pre_gap": 0.08,
+  "native": 1,
+  "fear": 4.0
+ }
+}

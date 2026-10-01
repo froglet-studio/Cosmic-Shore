@@ -1,0 +1,62 @@
+{
+ "rate2": {
+  "mass": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "mass",
+   "new_majority": null
+  },
+  "space": {
+   "warn_at": 346,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "space",
+   "new_majority": null
+  },
+  "charge": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "charge",
+   "new_majority": null
+  },
+  "time": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "time",
+   "new_majority": null
+  }
+ },
+ "rate4": {
+  "mass": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "mass",
+   "new_majority": null
+  },
+  "space": {
+   "warn_at": 164,
+   "flip_at": 188,
+   "warning_steps": 24,
+   "closest_after": "space",
+   "new_majority": "Charge"
+  },
+  "charge": {
+   "warn_at": null,
+   "flip_at": null,
+   "warning_steps": null,
+   "closest_after": "charge",
+   "new_majority": null
+  },
+  "time": {
+   "warn_at": 331,
+   "flip_at": 392,
+   "warning_steps": 61,
+   "closest_after": "mass",
+   "new_majority": "Mass"
+  }
+ }
+}

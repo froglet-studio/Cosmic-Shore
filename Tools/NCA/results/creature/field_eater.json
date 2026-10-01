@@ -1,0 +1,350 @@
+{
+ "fear0.0_rate1": {
+  "mass": {
+   "flip_at": null,
+   "eaten": 240,
+   "warn_at": null,
+   "closest_after": "mass",
+   "row": {
+    "mass": 2.82,
+    "space": 70.43,
+    "charge": 57.11,
+    "time": 77.18
+   },
+   "majority_after": "Mass",
+   "n_after": 192
+  },
+  "space": {
+   "flip_at": null,
+   "eaten": 240,
+   "warn_at": null,
+   "closest_after": "space",
+   "row": {
+    "mass": 71.26,
+    "space": 0.79,
+    "charge": 55.21,
+    "time": 68.31
+   },
+   "majority_after": "Space",
+   "n_after": 88
+  },
+  "charge": {
+   "flip_at": null,
+   "eaten": 240,
+   "warn_at": null,
+   "closest_after": "charge",
+   "row": {
+    "mass": 62.66,
+    "space": 59.44,
+    "charge": 1.85,
+    "time": 76.2
+   },
+   "majority_after": "Charge",
+   "n_after": 179
+  },
+  "time": {
+   "flip_at": null,
+   "eaten": 240,
+   "warn_at": null,
+   "closest_after": "time",
+   "row": {
+    "mass": 85.21,
+    "space": 80.54,
+    "charge": 80.44,
+    "time": 6.58
+   },
+   "majority_after": "Time",
+   "n_after": 76
+  }
+ },
+ "fear0.0_rate2": {
+  "mass": {
+   "flip_at": null,
+   "eaten": 480,
+   "warn_at": null,
+   "closest_after": "mass",
+   "row": {
+    "mass": 2.96,
+    "space": 70.6,
+    "charge": 57.25,
+    "time": 77.27
+   },
+   "majority_after": "Mass",
+   "n_after": 192
+  },
+  "space": {
+   "flip_at": null,
+   "eaten": 480,
+   "warn_at": null,
+   "closest_after": "space",
+   "row": {
+    "mass": 71.26,
+    "space": 0.79,
+    "charge": 55.21,
+    "time": 68.3
+   },
+   "majority_after": "Space",
+   "n_after": 88
+  },
+  "charge": {
+   "flip_at": null,
+   "eaten": 480,
+   "warn_at": null,
+   "closest_after": "charge",
+   "row": {
+    "mass": 62.42,
+    "space": 59.93,
+    "charge": 1.27,
+    "time": 76.19
+   },
+   "majority_after": "Charge",
+   "n_after": 179
+  },
+  "time": {
+   "flip_at": null,
+   "eaten": 480,
+   "warn_at": null,
+   "closest_after": "time",
+   "row": {
+    "mass": 84.96,
+    "space": 80.38,
+    "charge": 80.61,
+    "time": 4.61
+   },
+   "majority_after": "Time",
+   "n_after": 76
+  }
+ },
+ "fear4.0_rate1": {
+  "mass": {
+   "flip_at": 102,
+   "eaten": 103,
+   "warn_at": 93,
+   "closest_after": "space",
+   "row": {
+    "mass": 66.11,
+    "space": 7.91,
+    "charge": 53.3,
+    "time": 69.07
+   },
+   "majority_after": "Space",
+   "n_after": 91
+  },
+  "space": {
+   "flip_at": 30,
+   "eaten": 32,
+   "warn_at": 25,
+   "closest_after": "charge",
+   "row": {
+    "mass": 56.09,
+    "space": 54.28,
+    "charge": 1.56,
+    "time": 70.48
+   },
+   "majority_after": "Charge",
+   "n_after": 179
+  },
+  "charge": {
+   "flip_at": 101,
+   "eaten": 102,
+   "warn_at": 93,
+   "closest_after": "time",
+   "row": {
+    "mass": 74.03,
+    "space": 66.9,
+    "charge": 67.24,
+    "time": 5.47
+   },
+   "majority_after": "Time",
+   "n_after": 79
+  },
+  "time": {
+   "flip_at": 33,
+   "eaten": 35,
+   "warn_at": 29,
+   "closest_after": "space",
+   "row": {
+    "mass": 76.17,
+    "space": 9.59,
+    "charge": 61.56,
+    "time": 75.32
+   },
+   "majority_after": "Space",
+   "n_after": 88
+  }
+ },
+ "fear4.0_rate2": {
+  "mass": {
+   "flip_at": 52,
+   "eaten": 106,
+   "warn_at": 47,
+   "closest_after": "space",
+   "row": {
+    "mass": 68.33,
+    "space": 8.02,
+    "charge": 56.85,
+    "time": 71.76
+   },
+   "majority_after": "Space",
+   "n_after": 90
+  },
+  "space": {
+   "flip_at": 16,
+   "eaten": 34,
+   "warn_at": 13,
+   "closest_after": "charge",
+   "row": {
+    "mass": 62.28,
+    "space": 57.62,
+    "charge": 5.05,
+    "time": 75.85
+   },
+   "majority_after": "Charge",
+   "n_after": 179
+  },
+  "charge": {
+   "flip_at": 52,
+   "eaten": 104,
+   "warn_at": 47,
+   "closest_after": "time",
+   "row": {
+    "mass": 73.23,
+    "space": 66.05,
+    "charge": 66.69,
+    "time": 6.06
+   },
+   "majority_after": "Time",
+   "n_after": 79
+  },
+  "time": {
+   "flip_at": 18,
+   "eaten": 38,
+   "warn_at": 15,
+   "closest_after": "space",
+   "row": {
+    "mass": 71.25,
+    "space": 6.72,
+    "charge": 58.83,
+    "time": 68.61
+   },
+   "majority_after": "Space",
+   "n_after": 88
+  }
+ },
+ "fear4.0_rate1_lead0.1": {
+  "mass": {
+   "flip_at": 102,
+   "eaten": 110,
+   "warn_at": 93,
+   "closest_after": "space",
+   "row": {
+    "mass": 67.79,
+    "space": 8.57,
+    "charge": 52.23,
+    "time": 69.24
+   },
+   "majority_after": "Space",
+   "n_after": 88
+  },
+  "space": {
+   "flip_at": 30,
+   "eaten": 36,
+   "warn_at": 25,
+   "closest_after": "charge",
+   "row": {
+    "mass": 56.46,
+    "space": 54.28,
+    "charge": 1.95,
+    "time": 70.87
+   },
+   "majority_after": "Charge",
+   "n_after": 179
+  },
+  "charge": {
+   "flip_at": 101,
+   "eaten": 108,
+   "warn_at": 93,
+   "closest_after": "time",
+   "row": {
+    "mass": 72.99,
+    "space": 65.64,
+    "charge": 66.59,
+    "time": 7.36
+   },
+   "majority_after": "Time",
+   "n_after": 76
+  },
+  "time": {
+   "flip_at": 33,
+   "eaten": 38,
+   "warn_at": 29,
+   "closest_after": "space",
+   "row": {
+    "mass": 74.7,
+    "space": 6.2,
+    "charge": 61.92,
+    "time": 71.67
+   },
+   "majority_after": "Space",
+   "n_after": 88
+  }
+ },
+ "fear4.0_rate2_lead0.1": {
+  "mass": {
+   "flip_at": 52,
+   "eaten": 112,
+   "warn_at": 47,
+   "closest_after": "space",
+   "row": {
+    "mass": 70.2,
+    "space": 6.99,
+    "charge": 56.68,
+    "time": 72.3
+   },
+   "majority_after": "Space",
+   "n_after": 88
+  },
+  "space": {
+   "flip_at": 16,
+   "eaten": 38,
+   "warn_at": 13,
+   "closest_after": "charge",
+   "row": {
+    "mass": 62.34,
+    "space": 57.46,
+    "charge": 4.43,
+    "time": 75.38
+   },
+   "majority_after": "Charge",
+   "n_after": 179
+  },
+  "charge": {
+   "flip_at": 52,
+   "eaten": 110,
+   "warn_at": 47,
+   "closest_after": "time",
+   "row": {
+    "mass": 73.15,
+    "space": 66.14,
+    "charge": 66.59,
+    "time": 8.32
+   },
+   "majority_after": "Time",
+   "n_after": 76
+  },
+  "time": {
+   "flip_at": 18,
+   "eaten": 40,
+   "warn_at": 15,
+   "closest_after": "space",
+   "row": {
+    "mass": 71.53,
+    "space": 6.44,
+    "charge": 58.98,
+    "time": 68.71
+   },
+   "majority_after": "Space",
+   "n_after": 88
+  }
+ }
+}
