@@ -31,7 +31,7 @@ import swarm_nca as sn  # noqa: E402
 import swarm_eval as se  # noqa: E402
 import creature_model as cm  # noqa: E402
 
-EVERY = 3
+EVERY = 4
 NAMES = {"mass": "Whale (Mass)", "space": "Jellyfish (Space)", "charge": "Pufferfish (Charge)", "time": "Dragonfly (Time)"}
 # the switch each life shows: element -> the plan it becomes
 SHOW_SWITCH = {"mass": 2, "space": 0, "charge": 3, "time": 1}
@@ -218,8 +218,12 @@ def main():
     packed = pack_extra(data)
     json.dump(packed, open(os.path.join(OUT, "rollout.json"), "w"))
     page = open(os.path.join(HERE, "creature_showcase.html.tpl")).read()
-    payload = {k: {kk: packed[k][kk] for kk in ("shape", "b64", "n", "vessel", "flags", "tell", "events", "crystal_track", "every")}
-               for k in sn.KINDS}
+    payload = {}
+    for k in sn.KINDS:
+        # the page needs 9 of the 15 packed columns: x y z elem dom tier facing(3)
+        a = np.frombuffer(base64.b64decode(packed[k]["b64"]), "<i2").reshape(packed[k]["shape"])[..., [0, 1, 2, 3, 4, 8, 9, 10, 11]]
+        payload[k] = {kk: packed[k][kk] for kk in ("n", "vessel", "flags", "tell", "events", "crystal_track", "every")}
+        payload[k].update(shape=list(a.shape), b64=base64.b64encode(np.ascontiguousarray(a).tobytes()).decode())
     for k in sn.KINDS:
         payload[k]["name"] = NAMES[k]
     open(os.path.join(OUT, "showcase.html"), "w").write(page.replace("/*DATA*/", json.dumps(payload)).replace("/*SCALE*/", json.dumps(packed["scale"])))

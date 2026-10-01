@@ -40,7 +40,7 @@ sys.path.insert(0, HERE)
 import swarm_nca as sn  # noqa: E402
 import creature_model as cm  # noqa: E402
 
-SENSE = 2.4
+SENSE = 3.0
 
 
 def body(sw):

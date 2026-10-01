@@ -54,19 +54,19 @@ GENOME = os.path.join(HERE, "results", "evo", "genome.npy")
 
 DEFAULTS = dict(
     # perception of a ship
-    sense=2.4,            # startle within sense x ship radius (now, or ahead on its path)
+    sense=3.0,            # startle within sense x ship radius (now, or ahead on its path)
     lookahead=10.0,       # steps of path look-ahead
     relay=0.75,           # startle passed to neighbours within relay_r
     relay_r=4.5,
     decay=0.9,            # startle decay per step
     # flee per element C M S T
-    flee=(0.5, 0.3, 1.2, 2.0),
+    flee=(0.5, 0.3, 2.0, 2.0),
     flee_swirl=0.6,
     k_ret=0.10,           # elastic return of the offset per calm step
     max_off=30.0,         # offset clamp (voxels)
     # temperaments
     jet_period=6,         # Space: jets on 2 of every jet_period steps
-    jet_gain=2.2,
+    jet_gain=3.0,
     bell=0.35,            # jellyfish plan: bell contraction per jet
     body_jet=0.6,         # jellyfish plan: whole-body escape per jet (voxels/step)
     inflate=0.55,         # pufferfish plan: radial swell at full threat
@@ -78,19 +78,21 @@ DEFAULTS = dict(
     mob_speed=1.0,
     mob_r=1.4,
     # escort: a ship cruising past (not at) the body at a moderate speed is FOLLOWED (translation, free)
-    escort=(0.0, 0.55, 0.0, 0.35),   # per majority element C M S T: whale follows like a curious whale, dragonfly zips along
+    escort=(0.0, 0.8, 0.0, 0.45),   # per majority element C M S T: whale follows like a curious whale, dragonfly zips along
     escort_speed=(1.0, 2.4),
-    escort_r=3.0,                    # within this x the body's RMS radius
+    escort_r=4.0,                    # within this x the body's RMS radius
     # wound memory
-    wounds=1,
+    wounds=0,             # OFF: measured worse over 8 seeds (see NOTE); kept as an option
     wound_reach=12.0,     # an egg within this of a wound is placed into it
     wound_life=160,
+    wound_elem=1,         # an egg only fills a wound left by its own element (the body keeps its regions)
     anchor=0,             # 1: wounds anchored to their nearest survivor (else to the centroid)
     # switch tell
     tell=1,
     tell_steps=36,
     tell_jitter=0.7,
     tell_swirl=0.25,
+    pre_gap=0.08,         # pre-tell: shiver when the top two elements' shares are within this
 )
 
 
@@ -177,9 +179,12 @@ class CreatureRule(em.EvoRule):
             else:
                 wp = torch.stack([w[0] for w in ws]) + cen       # [W,3] absolute wound sites
             used = torch.zeros(len(ws), dtype=torch.bool)
+            we = torch.tensor([w[1] for w in ws])
             for i in new[b].nonzero().squeeze(1).tolist():
                 d = (wp - sw.pos[b, i]).norm(dim=-1)
                 d[used] = 1e9
+                if self.cfg["wound_elem"]:
+                    d[we != int(sw.elem[b, i])] = 1e9
                 j = int(d.argmin())
                 if float(d[j]) < self.cfg["wound_reach"]:
                     sw.pos[b, i] = wp[j]
@@ -285,13 +290,19 @@ class CreatureRule(em.EvoRule):
             changed = (st["maj"] >= 0) & (maj != st["maj"]) & (cnt >= sn.MIN_TEST_BODY)
             st["tell"] = torch.where(changed, torch.full_like(st["tell"], float(c["tell_steps"])), (st["tell"] - 1).clamp(min=0))
             st["maj"] = maj
-            if bool((st["tell"] > 0).any()):
-                a = (st["tell"] / c["tell_steps"])[:, None, None]
+            # the PRE-tell: a body whose top two elements are nearly tied is about to change - it starts to
+            # shiver before the majority flips (gradual predation gives a warning; a one-shot cull cannot)
+            srt = (counts / cnt[:, None]).sort(1, descending=True).values
+            gap = srt[:, 0] - srt[:, 1]
+            pre = ((c["pre_gap"] - gap) / c["pre_gap"]).clamp(0, 1) * (cnt >= sn.MIN_TEST_BODY).float()
+            amp = torch.maximum(st["tell"] / c["tell_steps"], pre)
+            if bool((amp > 0).any()):
+                a = amp[:, None, None]
                 jit = torch.randn(B, N, 3, generator=self._rng) * c["tell_jitter"]   # own stream: never shifts the rule's
                 up = torch.tensor([0.0, 1.0, 0.0]).expand_as(rel)
                 tang = torch.cross(up, rel, dim=-1)
                 react = react + a * (jit + c["tell_swirl"] * 0.1 * tang) * alf[..., None]
-                flags["tell"] = st["tell"] / c["tell_steps"]
+                flags["tell"] = amp
         # elastic offset
         calm = 1 - startle.clamp(0, 1)
         old = st["off"]

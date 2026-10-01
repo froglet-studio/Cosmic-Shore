@@ -48,8 +48,8 @@ function draw(){const d=DATA[kind];if(fi>=d.shape[0])fi=0;const A=dec(kind,'',In
  const cyw=Math.cos(yaw),syw=Math.sin(yaw),cp=Math.cos(pitch),spp=Math.sin(pitch);
  const proj=(x,y,z)=>{x-=ctr[0];y-=ctr[1];z-=ctr[2];const X=cyw*x+syw*z,Z=-syw*x+cyw*z;const Y=cp*y-spp*Z,Z2=spp*y+cp*Z;const s=1700/(95+Z2);return [W/2+X*s,H/2-Y*s,s,Z2];};
  const items=[];
- for(let i=0;i<n;i++){const b=o+i*C;const x=A[b]/SC[0],y=A[b+1]/SC[0],z=A[b+2]/SC[0];const fx=A[b+9]/1000,fy=A[b+10]/1000,fz=A[b+11]/1000,sl_=0.6+A[b+12]/1000*2;
-  const p=proj(x,y,z),q=proj(x-fx*2.4*sl_,y-fy*2.4*sl_,z-fz*2.4*sl_);items.push([p[3],0,p,q,A[b+3],A[b+4],A[b+8],FL[of+i*3]/100,FL[of+i*3+1],FL[of+i*3+2]]);}
+ for(let i=0;i<n;i++){const b=o+i*C;const x=A[b]/SC[0],y=A[b+1]/SC[0],z=A[b+2]/SC[0];const fx=A[b+6]/1000,fy=A[b+7]/1000,fz=A[b+8]/1000,sl_=1;
+  const p=proj(x,y,z),q=proj(x-fx*2.4*sl_,y-fy*2.4*sl_,z-fz*2.4*sl_);items.push([p[3],0,p,q,A[b+3],A[b+4],A[b+5],FL[of+i*3]/100,FL[of+i*3+1],FL[of+i*3+2]]);}
  for(const c of (d.crystal_track[fi]||[])){const p=proj(c[0],c[1],c[2]);items.push([p[3],1,p]);}
  items.sort((a,b)=>b[0]-a[0]);
  for(const it of items){const p=it[2];
