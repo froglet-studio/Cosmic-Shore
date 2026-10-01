@@ -109,6 +109,11 @@ descriptive: they separate a school (hgrid2 0.63) from a gas-like swarm (evo, ev
 
 ## What a player would see
 
+`bodies.png` / `evo_grid/bodies.png`: each grown body next to its plan (two projections, colour = element,
+marker = domain). The shape and the element regions match; the plans' rigid lattice rows come out softened
+into a living scatter (that softness is most of the remaining divergence, and is what keeps it organic).
+
+
 * **hgrid2**: a seed clump blooms into the creature at its exact size and mix; minorities visibly SWIM
   across the body to their regions (migrants), the whale's Charge streaming to the tail; the dragonfly's
   wings flap continuously instead of stepping frame to frame. It moves as a school (coherence 0.63):
@@ -185,4 +190,4 @@ descriptive: they separate a school (hgrid2 0.63) from a gas-like swarm (evo, ev
 feed-forward only, 6/15). `evo_grid/`: the same set for the evo body + grid.
 Code: `hgrid2_model.py`, `hgrid2_evo.py`, `hgrid2_eval.py` (score + publish), `hgrid2_diag.py` (per-term),
 `hgrid2_sweep.py`, `hgrid2_switch.py`, `hgrid2_robust.py`, `hgrid2_feelcal.py`, `hgrid2_feelsweep.py`,
-`hgrid2_ship.py`, `hgrid2_cell.py`, `hgrid2_chain.py`, `swarm_feel.py`. `cell.json` / `cell_fast.json`: the herding runs.
+`hgrid2_ship.py`, `hgrid2_cell.py`, `hgrid2_chain.py`, `hgrid2_render.py`, `swarm_feel.py`. `cell.json` / `cell_fast.json`: the herding runs.
