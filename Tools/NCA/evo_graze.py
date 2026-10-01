@@ -21,7 +21,7 @@ import swarm_nca as sn  # noqa: E402
 
 
 @torch.no_grad()
-def graze_rollout(model, seed, every=2, max_eat=400, L=None):
+def graze_rollout(model, seed, every=2, max_eat=400, L=None, bite=1):
     L = L or sn.LossCfg()
     T = sn.load_targets()
     gen = sn.make_gen(seed)
@@ -31,7 +31,7 @@ def graze_rollout(model, seed, every=2, max_eat=400, L=None):
     old = [int(torch.bincount(sw.elem[b][sw.active[b] & sw.hatched[b]], minlength=4).argmax()) for b in range(4)]
     eaten = [0] * 4; flipped = [None] * 4
     t = 0
-    while t < max_eat * every:
+    while t < max_eat * every and min(eaten) < max_eat:
         if t % every == 0:
             for b, k in enumerate(sn.KINDS):
                 if flipped[b] is not None or eaten[b] >= max_eat:
@@ -43,9 +43,9 @@ def graze_rollout(model, seed, every=2, max_eat=400, L=None):
                 idx = (a & (sw.elem[b] == old[b])).nonzero().squeeze(1)
                 if len(idx) == 0:
                     continue
-                i = idx[torch.randint(len(idx), (1,), generator=gen)]
+                i = idx[torch.randperm(len(idx), generator=gen)[:bite]]
                 sw.active[b, i] = False; sw.hatched[b, i] = False; sw.s[b, i] = 0.0
-                eaten[b] += 1
+                eaten[b] += len(i)
         if all(f is not None for f in flipped):
             break
         sw = model(sw, gen)
@@ -64,11 +64,16 @@ def graze_rollout(model, seed, every=2, max_eat=400, L=None):
     return out
 
 
+EVERY = int(os.environ.get("EVO_EVERY", "2"))
+BITE = int(os.environ.get("EVO_BITE", "1"))
+MAX_EAT = int(os.environ.get("EVO_MAX_EAT", "400"))
+
+
 def job(args):
     kind, path, seed = args
     torch.set_num_threads(1)
     m = ec.make(kind, path)
-    return graze_rollout(m, seed)
+    return graze_rollout(m, seed, every=EVERY, bite=BITE, max_eat=MAX_EAT)
 
 
 def main():
@@ -79,11 +84,15 @@ def main():
             kind, path = spec.split(":", 1)
             r = pool.map(job, [(kind, path, s) for s in seeds])
             per = {k: sum(x[k]["ok"] for x in r) for k in sn.KINDS}
-            res[spec] = dict(switch_tests_passed_of_8_seeds=per, mean_switches=round(sum(per.values()) / len(seeds), 3),
+            res[spec] = dict(every=EVERY, bite=BITE, eat_per_step=BITE / EVERY,switch_tests_passed_of_8_seeds=per, mean_switches=round(sum(per.values()) / len(seeds), 3),
                              eaten_mean={k: round(float(np.mean([x[k]["eaten"] for x in r])), 1) for k in sn.KINDS},
                              never_flipped={k: sum(x[k]["flipped_after"] is None for x in r) for k in sn.KINDS})
             print(spec, json.dumps(res[spec]), flush=True)
-    json.dump(res, open(os.path.join(HERE, "results", "evo", "graze.json"), "w"), indent=1)
+    path = os.path.join(HERE, "results", "evo", "graze.json")
+    allr = json.load(open(path)) if os.path.isfile(path) else {}
+    for k, v in res.items():
+        allr[f"{k} bite={BITE}/every={EVERY}"] = v
+    json.dump(allr, open(path, "w"), indent=1)
 
 
 if __name__ == "__main__":

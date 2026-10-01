@@ -55,6 +55,9 @@ LAYOUT = [
     ("sw_swirl", 1, 0.5),      # B6 on/off: per-element swirl about the plan's long axis (zero rate = no-op)
     ("swirl", 4, 0.0),         # B6: rad/step = 0.05 * tanh(gene) * exp(swirl_gain), per element C M S T
     ("swirl_gain", 1, 0.0),    # B6: lifts the swirl cap (stage 3: the dragonfly's runners need laps)
+    ("sw_fear", 1, -1.0),      # B7 on/off: an element that is being EATEN breeds less (predation-aware)
+    ("fear_k", 1, 1.0),        # B7: lay multiplier for element e = exp(-exp(fear_k) * loss_rate_e / share_e)
+    ("fear_tau", 1, 0.0),      # B7: loss memory time constant = 20 * exp(fear_tau) steps
 ]
 SLICES, DIM = {}, 0
 for _n, _s, _ in LAYOUT:
@@ -95,7 +98,7 @@ def gene(g, name):
 def describe(g):
     D = desired_table(g)
     g = pad(g)
-    on = {k: gene(g, k) > 0 for k in ("sw_lay", "sw_egg", "sw_lock", "sw_out", "sw_swirl")}
+    on = {k: gene(g, k) > 0 for k in ("sw_lay", "sw_egg", "sw_lock", "sw_out", "sw_swirl", "sw_fear")}
     lines = [f"behaviours on: {[k for k, v in on.items() if v]}",
              f"lay gate k={gene(g,'k_lay'):.2f} b={gene(g,'b_lay'):.2f} | egg share={1/(1+math.exp(-gene(g,'p_egg'))):.3f} "
              f"beta={gene(g,'beta_egg'):.2f} | lock margin={0.25/(1+math.exp(-gene(g,'lock'))):.3f}",
@@ -132,6 +135,8 @@ class EvoRule(sn.SwarmRule):
                 self.b3.add_(0.05 * torch.tensor(g[SLICES["b_out"]], dtype=torch.float32))
         self.D = torch.tensor(desired_table(g), dtype=torch.float32)
         self.locked = None
+        self.loss_mem = None
+        self.prev_cnt = None
         self.eval()
 
     def forward(self, sw, gen=None, bud=True, fire=None):
@@ -140,6 +145,7 @@ class EvoRule(sn.SwarmRule):
                 self.locked = torch.full((sw.B,), -1, dtype=torch.long)
             self.locked[sw.clock == 0] = -1
             self._update_lock(sw)
+            self._update_fear(sw)
             out = self._step(sw, gen, bud, fire)
             g = self.genome
             if gene(g, "sw_swirl") > 0:
@@ -152,6 +158,19 @@ class EvoRule(sn.SwarmRule):
                     om = rate[out.elem][..., None]
                     out.pos = out.pos + live[..., None] * om * torch.cross(ax, out.pos - cen[:, None], dim=-1)
             return out
+
+    def _update_fear(self, sw):
+        """Losses per element since the last step (live count drops; births only ever add), as a leaky
+        memory in units of tadpoles per step."""
+        cnt, _ = self._shares(sw)
+        if self.loss_mem is None or self.loss_mem.shape[0] != sw.B:
+            self.loss_mem = torch.zeros(sw.B, 4); self.prev_cnt = cnt.clone()
+        fresh = sw.clock == 0
+        self.loss_mem[fresh] = 0.0; self.prev_cnt[fresh] = cnt[fresh]
+        lost = (self.prev_cnt - cnt).clamp(min=0)
+        a = 1.0 / (20.0 * math.exp(gene(self.genome, "fear_tau")))
+        self.loss_mem = (1 - a) * self.loss_mem + a * lost
+        self.prev_cnt = cnt.clone()
 
     def _shares(self, sw):
         hb = (sw.hatched & sw.active).float()
@@ -185,6 +204,10 @@ class EvoRule(sn.SwarmRule):
             k, b0 = gene(g, "k_lay"), gene(g, "b_lay")
             de = deficit.gather(1, sw.elem)                                    # [B,N] the parent's element
             mult = (torch.sigmoid(k * de / 0.1 + b0) / torch.sigmoid(torch.tensor(b0))).reshape(-1).clamp(max=1.0 / max(W.p_bud, 1e-3))
+        if gene(g, "sw_fear") > 0 and self.loss_mem is not None:
+            rate = self.loss_mem / (share * cnt.sum(1, keepdim=True)).clamp(min=1.0)       # fraction of e lost per step
+            fear = torch.exp(-math.exp(gene(g, "fear_k")) * 100 * rate)                   # [B,4]
+            mult = mult * fear.gather(1, sw.elem).reshape(-1)
         qq = (torch.ones(B * N) if q is None else q) * mult
         pchoose = 1 / (1 + math.exp(-gene(g, "p_egg"))) if gene(g, "sw_egg") > 0 else 0.0
         probs = torch.softmax(gene(g, "beta_egg") * deficit / 0.1, 1)       # [B,4]
@@ -274,8 +297,8 @@ def fast_probe(model, sw, gen, regrow=120, L=None):
     """The vessel-strike probe on an already grown batch (cloned): heal per plan in [-1, 1]."""
     L = L or sn.LossCfg()
     T = sn.load_targets()
-    model.locked = None if not hasattr(model, "locked") else model.locked
-    saved = None if getattr(model, "locked", None) is None else model.locked.clone()
+    keys = ("locked", "loss_mem", "prev_cnt")
+    saved = {k: (None if getattr(model, k, None) is None else getattr(model, k).clone()) for k in keys if hasattr(model, k)}
     p = sw.clone()
     sc = lambda b, k: sn.swarm_loss(sn.decode(p, b), T[k], L)[1]["sink"]
     before = [sc(b, k) for b, k in enumerate(sn.KINDS)]
@@ -285,8 +308,8 @@ def fast_probe(model, sw, gen, regrow=120, L=None):
     for _ in range(regrow):
         p = model(p, gen)
     rec = [sc(b, k) for b, k in enumerate(sn.KINDS)]
-    if saved is not None:
-        model.locked = saved
+    for k, v in saved.items():
+        setattr(model, k, v)
     heal = []
     for b0, c, r in zip(before, cut, rec):
         span = c - b0
