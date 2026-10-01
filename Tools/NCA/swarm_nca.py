@@ -623,6 +623,11 @@ def sinkhorn_ot(Cm, a, b, eps, iters_per=3):
 
 
 PERMS = {1: [(0,)], 2: list(itertools.permutations(range(2))), 3: list(itertools.permutations(range(3)))}
+# The LOSS's slot -> domain assignment ranges over every injective map from the plan's regions into the
+# three domain ids a swarm can carry: a plan asks for REGIONS of different domains, never specific ids.
+# (PERMS above restricted a 2-region plan to ids {0,1}, so a perfect jellyfish whose teams happened to be
+# ids 0 and 2 scored 14.5. Models that read PERMS for their own well assignment are deliberately left on it.)
+LOSS_PERMS = {k: list(itertools.permutations(range(3), k)) for k in (1, 2, 3)}
 
 
 def _target_self_cost(t, L):
@@ -669,7 +674,7 @@ def _divergence(x, a, oaa, T, L, frames=None, ndom=None):
         x = _rescaled(x, a, T)
         oaa = sinkhorn_ot(self_cost(x, L), a, a, L.eps)
     frames = range(len(T.frames)) if frames is None else frames
-    perms = PERMS[ndom or T.slots]
+    perms = LOSS_PERMS[ndom or T.slots]
     best = None
     with torch.no_grad():
         for k in frames:
