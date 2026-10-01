@@ -263,7 +263,9 @@ class SwarmRule(nn.Module):
         self.world, self.hidden, self.fire_rate = world, hidden, fire_rate
         X = self.X
         # own [X] | same-domain mean [X] | other-domain mean [X] | gradient [X*3] | same-dom gradient [3] | rho, rho_same
-        self.F = X * 3 + X * 3 + 3 + 2
+        # + population signals (the game's Cell tracks its fauna population): headcount/100, element mix [4]
+        self.G = 5
+        self.F = X * 3 + X * 3 + 3 + 2 + self.G
         self.w1 = nn.Parameter(torch.empty(hidden, self.F)); nn.init.xavier_uniform_(self.w1)
         self.b1 = nn.Parameter(torch.zeros(hidden))
         self.w2 = nn.Parameter(torch.empty(hidden, hidden)); nn.init.xavier_uniform_(self.w2, gain=0.5)
@@ -309,7 +311,13 @@ class SwarmRule(nn.Module):
         fire = act & (torch.rand(n, generator=gen) <= self.fire_rate)
         idx = fire.nonzero().squeeze(1)
         e = fire[gi]
-        feats = self.perceive(pos, x, dom, gi[e], gj[e], n).index_select(0, idx)
+        with torch.no_grad():
+            hb = (sw.hatched & sw.active).float()                                  # [B, N]
+            cnt = hb.sum(1).clamp(min=1)
+            mixe = (hb[:, :, None] * F.one_hot(sw.elem, 4).float()).sum(1) / cnt[:, None]
+            glob = torch.cat([(cnt / 100)[:, None], mixe], 1)                     # [B, 5]
+            glob = glob[:, None, :].expand(B, N, self.G).reshape(n, self.G)
+        feats = torch.cat([self.perceive(pos, x, dom, gi[e], gj[e], n), glob], 1).index_select(0, idx)
         out = self.mlp(feats)
         ds = torch.zeros(n, C).index_copy(0, idx, out[:, :C])
         vmax = torch.tensor(W.vmax)[elem].index_select(0, idx)[:, None]
@@ -672,7 +680,11 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True):
     ck = os.path.join(cfg.run, "latest.pt")
     pool = make_seed_pool(rule, targets, cfg, gen)
     if cfg.init and not os.path.exists(ck):
-        rule.load_state_dict(torch.load(cfg.init, weights_only=False)["rule"])
+        sd = torch.load(cfg.init, weights_only=False)["rule"]
+        for k_, v in rule.state_dict().items():               # new input columns enter at zero weight
+            if sd[k_].shape != v.shape:
+                pad = torch.zeros_like(v); pad[tuple(slice(0, d) for d in sd[k_].shape)] = sd[k_]; sd[k_] = pad
+        rule.load_state_dict(sd)
         print(f"warm start from {cfg.init}")
     if resume and os.path.exists(ck):
         st = torch.load(ck, weights_only=False)
