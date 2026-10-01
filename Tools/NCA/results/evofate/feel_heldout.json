@@ -1,46 +1,218 @@
 {
- "23": {
-  "mean": {
-   "speed": 0.101,
-   "jerk": 0.247,
-   "jerk_rel": 2.435,
-   "planar_frac": 0.391,
-   "flat_mean": 0.142,
-   "coherence": 0.389,
-   "jitter": 2.582,
-   "phase": 0.167,
-   "stuck": 0.0,
-   "osc": 0.048
+ "C3 (published)": [
+  {
+   "name": "B7",
+   "seed": 41,
+   "cfg": {
+    "pull": 1.4301,
+    "e0": 1.7258,
+    "rect": 1.0,
+    "sync": 1,
+    "adh": 0.6587,
+    "te0": 0.2732,
+    "tmix": 0.6246,
+    "cov_scale": 0.6857,
+    "k_well": 0.2091,
+    "well_clip": 0.8449
+   },
+   "passed": 12,
+   "feasible": 13,
+   "own": {
+    "mass": 2.6,
+    "space": 3.92,
+    "charge": 1.55,
+    "time": 5.3
+   },
+   "fails": [
+    "time->space"
+   ],
+   "feel": {
+    "osc": 0.022,
+    "jr": 2.373,
+    "pe": 0.011,
+    "jitter": 2.638,
+    "coherence": 0.428,
+    "band": true
+   }
   },
-  "in_band": false,
-  "checks": {
-   "jerk_rel": true,
-   "osc": true,
-   "stuck": true,
-   "planar": false
+  {
+   "name": "B7",
+   "seed": 7,
+   "cfg": {
+    "pull": 1.4301,
+    "e0": 1.7258,
+    "rect": 1.0,
+    "sync": 1,
+    "adh": 0.6587,
+    "te0": 0.2732,
+    "tmix": 0.6246,
+    "cov_scale": 0.6857,
+    "k_well": 0.2091,
+    "well_clip": 0.8449
+   },
+   "passed": 12,
+   "feasible": 13,
+   "own": {
+    "mass": 2.68,
+    "space": 3.61,
+    "charge": 1.47,
+    "time": 5.92
+   },
+   "fails": [
+    "time->space"
+   ],
+   "feel": {
+    "osc": 0.024,
+    "jr": 2.303,
+    "pe": 0.053,
+    "jitter": 2.622,
+    "coherence": 0.429,
+    "band": true
+   }
   },
-  "planar_excess": 0.192
- },
- "41": {
-  "mean": {
-   "speed": 0.103,
-   "jerk": 0.256,
-   "jerk_rel": 2.478,
-   "planar_frac": 0.381,
-   "flat_mean": 0.139,
-   "coherence": 0.391,
-   "jitter": 2.531,
-   "phase": 0.162,
-   "stuck": 0.0,
-   "osc": 0.049
+  {
+   "name": "B7",
+   "seed": 23,
+   "cfg": {
+    "pull": 1.4301,
+    "e0": 1.7258,
+    "rect": 1.0,
+    "sync": 1,
+    "adh": 0.6587,
+    "te0": 0.2732,
+    "tmix": 0.6246,
+    "cov_scale": 0.6857,
+    "k_well": 0.2091,
+    "well_clip": 0.8449
+   },
+   "passed": 11,
+   "feasible": 13,
+   "own": {
+    "mass": 2.72,
+    "space": 3.73,
+    "charge": 1.36,
+    "time": 5.86
+   },
+   "fails": [
+    "mass->time",
+    "time->space"
+   ],
+   "feel": {
+    "osc": 0.029,
+    "jr": 2.337,
+    "pe": 0.086,
+    "jitter": 2.655,
+    "coherence": 0.411,
+    "band": true
+   }
+  }
+ ],
+ "cma_mean_gen7": [
+  {
+   "name": "M7",
+   "seed": 7,
+   "cfg": {
+    "pull": 1.4334,
+    "e0": 1.7146,
+    "rect": 1.0,
+    "sync": 1,
+    "adh": 0.6877,
+    "te0": 0.2365,
+    "tmix": 0.5978,
+    "cov_scale": 0.7132,
+    "k_well": 0.2338,
+    "well_clip": 1.0206
+   },
+   "passed": 12,
+   "feasible": 13,
+   "own": {
+    "mass": 2.68,
+    "space": 3.68,
+    "charge": 1.47,
+    "time": 5.7
+   },
+   "fails": [
+    "time->space"
+   ],
+   "feel": {
+    "osc": 0.023,
+    "jr": 2.327,
+    "pe": 0.036,
+    "jitter": 2.617,
+    "coherence": 0.428,
+    "band": true
+   }
   },
-  "in_band": true,
-  "checks": {
-   "jerk_rel": true,
-   "osc": true,
-   "stuck": true,
-   "planar": true
+  {
+   "name": "M7",
+   "seed": 41,
+   "cfg": {
+    "pull": 1.4334,
+    "e0": 1.7146,
+    "rect": 1.0,
+    "sync": 1,
+    "adh": 0.6877,
+    "te0": 0.2365,
+    "tmix": 0.5978,
+    "cov_scale": 0.7132,
+    "k_well": 0.2338,
+    "well_clip": 1.0206
+   },
+   "passed": 12,
+   "feasible": 13,
+   "own": {
+    "mass": 2.5,
+    "space": 4.28,
+    "charge": 1.52,
+    "time": 5.15
+   },
+   "fails": [
+    "time->space"
+   ],
+   "feel": {
+    "osc": 0.025,
+    "jr": 2.423,
+    "pe": 0.089,
+    "jitter": 2.627,
+    "coherence": 0.428,
+    "band": true
+   }
   },
-  "planar_excess": 0.11
- }
+  {
+   "name": "M7",
+   "seed": 23,
+   "cfg": {
+    "pull": 1.4334,
+    "e0": 1.7146,
+    "rect": 1.0,
+    "sync": 1,
+    "adh": 0.6877,
+    "te0": 0.2365,
+    "tmix": 0.5978,
+    "cov_scale": 0.7132,
+    "k_well": 0.2338,
+    "well_clip": 1.0206
+   },
+   "passed": 11,
+   "feasible": 13,
+   "own": {
+    "mass": 2.65,
+    "space": 3.52,
+    "charge": 1.38,
+    "time": 5.61
+   },
+   "fails": [
+    "mass->time",
+    "time->space"
+   ],
+   "feel": {
+    "osc": 0.027,
+    "jr": 2.382,
+    "pe": 0.14,
+    "jitter": 2.667,
+    "coherence": 0.415,
+    "band": true
+   }
+  }
+ ]
 }

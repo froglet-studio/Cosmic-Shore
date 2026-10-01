@@ -1,30 +1,36 @@
 # evofate — the evolved rule, given a FATE
 
-**Result: the evolved rule now passes the bar and stays organic.** The published model (C2,
-`params.json`) passes **tier 1 at every seed tried** and **12 / 11 / 12 of 13 feasible transitions**
-at seeds 7 / 23 / 41 under the loss-8 bar, is **lossless** (0 self-inflicted deaths), costs
-**5.6 ms/step** at its grown size (126 tadpoles, 1 thread), and sits **inside the organic band** of
-`swarm_feel` on every check, with motion numbers next to evo's own:
+**Result: the evolved rule now passes the bar and stays organic at every seed.** The published model
+(**C3**, `params.json`, found by CMA-ES on the full yardstick) passes **tier 1 at every seed tried** and
+**12 / 11 / 12 of 13 feasible transitions** at seeds 7 / 23 / 41 under the loss-8 bar, is **lossless**
+(0 self-inflicted deaths), costs **5.0 ms/step** at its grown size (126 tadpoles, 1 thread), and sits
+**inside the organic band of `swarm_feel` at all three seeds** (the previous pick, C2, now in `c2/`, was out on
+planar excess at seed 23). Motion numbers next to evo's own:
 
 | | own losses (whale / jelly / puffer / dragonfly), seed 7 | 16-test | jitter | coherence | osc | jerk_rel | planar excess | organic band |
 |---|---|---|---|---|---|---|---|---|
 | evo (results/evo) | 19.5 / 19.8 / 14.9 / 24.8 | 0/16 | 2.53 | 0.12 | 0.058 | 1.93 | – | in |
 | sort (results/sort) | 1.40 / 2.44 / 1.05 / 5.03 | 12/13 | – | – | – | – | – | – |
-| **evofate C2 (published)** | **2.95 / 3.65 / 1.58 / 6.28** | **12/13** | **2.57** | **0.40** | **0.044** | **2.44** | **0.119** | **in** |
-| evofate C1 (`c1_cma/`, the CMA point) | 3.20 / 4.01 / 2.29 / 6.30 | 11/13 | 2.45 | 0.40 | 0.060 | 2.31 | 0.123 | in |
+| **evofate C3 (published, CMA v3)** | **2.68 / 3.61 / 1.47 / 5.92** | **12/13** | **2.62** | **0.43** | **0.024** | **2.30** | **0.053** | **in (3/3 seeds)** |
+| evofate C2 (`c2/`, hand-placed) | 2.95 / 3.65 / 1.58 / 6.28 | 12/13 | 2.57 | 0.40 | 0.044 | 2.44 | 0.119 | in (2/3 seeds) |
+| evofate C1 (`c1_cma/`, CMA v2 point) | 3.20 / 4.01 / 2.29 / 6.30 | 11/13 | 2.45 | 0.40 | 0.060 | 2.31 | 0.123 | in |
 
-Scorecard (`scorecard.json`): `accurate 0.85 worst seed | lossless True (0.0/1k) | 5.612 ms/step @126 |
-organic True | mixed`. **Feel at held-out seeds** (`feel_heldout.json`): seed 41 in band (planar excess 0.11);
-**seed 23 OUT on planar excess (0.192 > 0.15)**, osc/jerk_rel/stuck in band there too — C2 sits at the
-band's planar edge, in 2 of 3 seeds. Own plans at the three seeds: 2.95/3.65/1.58/6.28, 2.88/3.85/1.44/6.36,
-2.79/4.01/1.60/5.88. The failures: **dragonfly → jellyfish at every seed** (10.5 / 10.5 / 8.9) and
-mass → dragonfly at seed 23 (8.16, a hair over). Old yardstick (`summary.json`): **7/8** — the one
-failure is dragonfly → whale, the known `lose_majority` artefact (Space, not Mass, becomes the
-majority; the swarm correctly becomes a jellyfish; on the fair cull it passes: time → mass 2.75).
+Scorecard (`scorecard.json`): `accurate 0.85 worst seed | lossless True (0.0/1k) | 5.041 ms/step @126 |
+organic True | mixed`. **Feel at every seed** (`feel_heldout.json`, official `swarm_feel` at the seed itself):
+seed 7 osc 0.024 / planar excess 0.053 / jerk_rel 2.30; seed 23 0.029 / 0.086 / 2.34; seed 41 0.022 / 0.011 / 2.37
+— all in band, with margin on every check (C2 was 0.192 planar at seed 23). Own plans at the three seeds:
+2.68/3.61/1.47/5.92, 2.72/3.73/1.36/5.86, 2.60/3.92/1.55/5.30 — all twelve lower than C2's at the same seed.
+The failures are C2's, unchanged: **dragonfly → jellyfish at every seed** (10.38 / 10.38 / 8.76) and
+mass → dragonfly at seed 23 (8.16, a hair over). Old yardstick (`summary.json`): **7/8** (dragonfly → whale,
+the known `lose_majority` artefact). C3 vs C2 in genes: a weaker pull (1.43 vs 2.0) with a smaller per-step
+gradient, `k_well` 0.21 vs 0.41 and `well_clip` 0.84 vs 0.52 — a gentler but longer-reaching pull), tighter wells
+(`cov_scale` 0.69 vs 0.89), more adhesion (0.66 vs 0.35, now affordable because the softer pull left jerk_rel room),
+dead zone 1.73 vs 1.5, Time genes about the same (te0 0.27, tmix 0.62).
 
 Code (all new files, nothing shared edited): `evofate_model.py` (the model), `evofate_fast.py`
 (batched 8-test screen), `evofate_curve.py` (pull-strength curve + feel), `evofate_full.py` (full
-16-transition yardstick + feel per config), `evofate_search.py` (CMA-ES with a feel term),
+16-transition yardstick + feel per config), `evofate_search.py` (CMA-ES with a feel term, screen fitness), `evofate_search2.py` (CMA-ES v3: full 16-transition
+yardstick + official feel as fitness — found C3),
 `evofate_publish.py` (this folder; the scorecard split across processes).
 
 ## What it is
@@ -119,11 +125,11 @@ rest, 12/13) is *more* brownian than evo (jerk_rel 3.0 > the band's 2.5); the mo
    again), but each extra neighbour force adds high-frequency jerk: adhesion 1.0 → jerk_rel 2.75,
    0.6 → 2.56, 0.35 → 2.42. 0.35 is the largest in band.
 
-## Ablations (C2, full yardstick seed 7 + feel; `ablations.jsonl`)
+## Ablations (run on C2, the mechanism set C3 shares; full yardstick seed 7 + feel; `ablations.jsonl`)
 
 | variant | 16-test | own losses | osc | planar ex. | jerk_rel | jitter | coherence | band |
 |---|---|---|---|---|---|---|---|---|
-| **C2 (published)** | 12/13 | 2.95 / 3.65 / 1.58 / 6.28 | 0.044 | 0.119 | 2.44 | 2.57 | 0.40 | in |
+| **C2 (published before CMA v3)** | 12/13 | 2.95 / 3.65 / 1.58 / 6.28 | 0.044 | 0.119 | 2.44 | 2.57 | 0.40 | in |
 | no fate (pull 0) | 0/13 | 15.17 / 13.13 / 11.89 / 26.74 | 0.009 | 0.0 | 2.012 | 2.748 | 0.405 | in |
 | no dead zone | 12/13 | 2.07 / 3.73 / 1.50 / 5.19 | 0.324 | 0.424 | 2.743 | 1.535 | 0.163 | out |
 | no fire-sync | 12/13 | 3.02 / 3.65 / 1.60 / 6.32 | 0.112 | 0.163 | 1.869 | 1.673 | 0.548 | out |
@@ -141,19 +147,49 @@ switches** (7/15 feasible without it: own plans pass, the switches fail - the ol
 planar margin.** **The Time genes are the dragonfly** (8.99 without them, 8/13). Surprise: **the designed look is part of the motion** - writing the type look into the visual channels changes what G2 perceives; with G2's own visuals
 the own losses barely move but osc rises to 0.10 and coherence halves (0.21): the designed look calms G2.
 
-## Probe (`probe.json`, vessel strike, 120 steps to heal)
+## Probe (`probe.json`, C3, vessel strike, 120 steps to heal)
 
 | plan | before | killed | right after | after 120 | heal |
 |---|---|---|---|---|---|
-| whale | 2.62 | 44 of 181 | 7.45 | 2.48 | 1.03 |
-| jellyfish | 4.37 | 19 of 83 | 12.00 | 5.59 | 0.84 |
-| pufferfish | 1.40 | 49 of 169 | 7.33 | 1.33 | 1.01 |
-| dragonfly | 7.41 | 19 of 72 | 13.80 | 4.61 | 1.44 |
+| whale | 2.49 | 46 of 181 | 8.05 | 2.48 | 1.00 |
+| jellyfish | 4.15 | 19 of 83 | 11.59 | 4.31 | 0.98 |
+| pufferfish | 1.29 | 47 of 169 | 6.88 | 1.44 | 0.97 |
+| dragonfly | 6.88 | 24 of 72 | 16.47 | 4.24 | 1.28 |
 
-Against evo's 0.46 / −1.17 / 0.94 / 0.60. Fates make healing directional: the wound's wells are now
-the under-occupied ones, so the next eggs are fated INTO the hole. Headcount refills to the body.
-The dragonfly heals to better than it was (its pre-strike body had a few Time runners stuck off-wing;
-the regrowth re-fates them).
+Against evo's 0.46 / −1.17 / 0.94 / 0.60 (C2: 1.03 / 0.84 / 1.01 / 1.44). Fates make healing directional: the
+wound's wells are now the under-occupied ones, so the next eggs are fated INTO the hole. Headcount refills to the
+body. The dragonfly heals to better than it was (its pre-strike body had a few Time runners stuck off-wing; the
+regrowth re-fates them).
+
+## CMA v3 (`cma_v3_log.jsonl`, `evofate_search2.py`)
+
+CMA-ES (pop 8, σ 0.5) around C2 over 8 genes (adhesion, Time dead zone, Time speed, pull, dead zone, cov_scale,
+k_well, well_clip), **fitness = the full `swarm_eval` yardstick** (16 transitions, 3 samples, loss-8 bar) on a
+fresh seed per generation (4000 + gen) **+ 0.5 × mean own margin − 3 × graded organic-band violation** (official
+`swarm_feel` at that seed: osc over 0.07, planar excess over 0.13, jerk_rel over 2.45). ~4.2 min per generation
+on 4 cores; 8 generations in the first run. In-band 12/13 at gens 0, 1, 3; in-band 13/13 (on those seeds)
+at gens 6 and 7. C3 = gen 7's best; it and the gen-7 search mean were then re-scored at seeds 7/23/41
+(`feel_heldout.json`): both 12/11/12, both in band at all three seeds (the mean: planar 0.036 / 0.140 / 0.089 —
+less margin), so the best was published. Direction the search took from C2: **softer per-step pull, longer reach,
+tighter wells, more adhesion** — the softer pull is what bought the room for adhesion inside the jerk_rel bound.
+It did not move the two failing transitions: they are structural (below), not a tuning residue.
+
+**Resumed for two more generations** (gens 8–9; stopped at 22:16 UTC for time). Gen 9's best — **G9**:
+pull 0.98, dead zone 1.17, adhesion 0.76, cov_scale 0.47, k_well 0.35, well_clip 0.62, te0 0.32, tmix 0.53 —
+re-scored at seeds 7/23/41 (`cma_v3_validation.jsonl`): **12 / 12 / 12 of 13** (passes mass → dragonfly at seed 23
+too) with own losses **1.93/2.75/1.26/4.75, 1.94/2.68/1.17/4.88, 1.73/3.30/1.32/4.37** — sort's are
+1.40/2.44/1.05/5.03, so G9 beats sort on the dragonfly — **but out of the organic band on planar excess at all three
+seeds** (0.166 / 0.211 / 0.153 against the 0.15 bound; osc 0.053–0.058 and jerk_rel 2.40–2.48 in band, jitter 2.50–2.56).
+So the full-yardstick frontier now reads:
+
+| point | 16-test (7/23/41) | own losses seed 7 | osc | planar ex. (7/23/41) | band |
+|---|---|---|---|---|---|
+| **C3 (published)** | 12 / 11 / 12 | 2.68 / 3.61 / 1.47 / 5.92 | 0.024 | 0.053 / 0.086 / 0.011 | in, 3/3 |
+| G9 (accuracy end) | 12 / 12 / 12 | 1.93 / 2.75 / 1.26 / 4.75 | 0.055 | 0.166 / 0.211 / 0.153 | out (planar), 0/3 |
+
+The step from C3 to G9 is tighter wells (cov_scale 0.69 → 0.47) and a smaller dead zone (1.73 → 1.17): the tissue packs
+closer to its wells, which is accuracy and flatness together — the same trade the pull curve showed, now at the far
+better end of it. G9 is the one to show if the lead says the planar check is too strict for these plans.
 
 ## What a player would see
 
@@ -173,20 +209,18 @@ to their new tissue.
 
 - **dragonfly → jellyfish fails at every seed** (8.9–10.5): three domains into two regions; the
   third domain's tadpoles keep their colour (domain breeds true). Same wall as sort.
-- **C2 is in band at 2 of 3 feel seeds** (seed 23: planar excess 0.192 — the dragonfly's wings come out
-  flatter than the plan's). A Time dead zone of 0.4 instead of 0.3 gives margin on planar (0.076) at the
-  cost of one transition (11/13).
+- **Feel margin: fixed in C3** (in band at all 3 seeds; C2 was out on planar at seed 23). Three seeds is
+  still a small sample for a band that C2 left at one of them.
 - **The organic band is tight at the accurate end.** Every rule with own losses near sort's broke the
-  band on jerk_rel (too brownian) or planar (too flat). C2's own losses are ~1.5 above sort's on the
-  whale/jelly, ~1.2 on the dragonfly.
+  band on jerk_rel (too brownian) or planar (too flat). C3's own losses are ~1.2 above sort's on the
+  whale/jelly, ~0.9 on the dragonfly.
 - **Coherence 0.40 is not evo's 0.12.** Even with no fate at all (pull 0) the evofate body reads 0.44:
   that is the composition change (sort's plan-sized body, 72–181 tadpoles, vs evo's 280-filled
   blob), not the fate. The band does not judge coherence; the lead's eye should.
-- **CMA-ES was not the main engine.** Two runs (`cma_v1_log.jsonl`, `cma_log.jsonl`): v1 searched
+- **CMA-ES found the published point only in v3.** Earlier runs (`cma_v1_log.jsonl`, `cma_log.jsonl`): v1 searched
   on code without sync/rectifier and traded the feel away; v2 found C1 (in band, 11/13) by gen 2,
   then the structure was clear enough to place C2 by hand from the full-yardstick table (24 rows).
-  C2's genes are mostly defaults; a CMA pass around C2 with the full yardstick as fitness (it costs
-  ~2 min per candidate here) is the obvious next step.
+  v3 (above) then ran that full-yardstick search around C2 and found C3.
 - **Designed parts**: composition, the fate census, the wells (sort's code, fit from the targets),
   and the steering shape are designed; G2 is the only learned part. The search tuned how the two
   meet, not the code.
@@ -195,16 +229,17 @@ to their new tissue.
 
 ## Recommendation for the next round
 
-1. **Ready for the lead's second scene test? Yes, as a candidate** — C2 is the first evolved-rule
-   swarm under the bar (12/13, tier 1 at all seeds), lossless and in the organic band. Port path:
+1. **Ready for the lead's second scene test? Yes** — C3 is the first evolved-rule swarm under the bar
+   (12/11/12 of 13, tier 1 at all seeds), lossless, 5.0 ms/step, and in the organic band at every seed tried,
+   with fewer reversals than evo itself (osc 0.024 vs 0.058). The lead's eye should judge coherence (0.43 vs
+   evo's 0.12) — the one evo number it does not match, and a composition effect, not a fate effect. Port path:
    G2 inference already ran in the game for the first scene test; add the per-tadpole fate (one int),
    sort's wells (a table per plan) and the four steering terms (dead zone, rectifier, fire-synced
    pull, weak adhesion) — all O(N) per step except adhesion (neighbour list G2 already builds).
 2. **Combine with hgrid2's grid instead of sort's centroid wells** to make it LOCAL: hgrid2 reads a
    coarse class-deficit grid + per-class morphogen at the tadpole's own position; its morphogen could
    replace the well gradient and its deficit grid the census, removing the swarm-wide centre.
-3. **Run CMA around C2 with the full 16-transition yardstick + official feel as fitness** (~2 min per
-   candidate; pop 8 ≈ 5 min/gen on 4 cores), genes: adhesion, Time dead zone, Time speed, pull,
-   cov_scale. The knee may move toward sort's losses without leaving the band.
+3. **Continue CMA v3** (`evofate_search2.py` resumes from `runs/evofate/cma3/state.pkl`): it was still
+   improving at gen 7 (13/13 in band on two fresh seeds). Fitness on 2 seeds per generation would cut noise.
 4. **dragonfly → jellyfish** needs a rule decision, not tuning: either let a region accept a
    foreign domain's colour (a relaxed constraint) or let the third domain form a distinct appendage.

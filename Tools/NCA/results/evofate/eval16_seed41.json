@@ -2,10 +2,10 @@
  "own": {
   "mass": {
    "cross": {
-    "mass": 2.79,
-    "space": 68.47,
-    "charge": 53.34,
-    "time": 75.11
+    "mass": 2.6,
+    "space": 68.41,
+    "charge": 53.43,
+    "time": 75.06
    },
    "n": 181,
    "rate": 1.0,
@@ -13,10 +13,10 @@
   },
   "space": {
    "cross": {
-    "mass": 74.35,
-    "space": 4.01,
-    "charge": 60.77,
-    "time": 70.67
+    "mass": 74.13,
+    "space": 3.92,
+    "charge": 60.82,
+    "time": 71.02
    },
    "n": 83,
    "rate": 1.0,
@@ -24,10 +24,10 @@
   },
   "charge": {
    "cross": {
-    "mass": 55.89,
-    "space": 55.51,
-    "charge": 1.6,
-    "time": 69.81
+    "mass": 55.78,
+    "space": 55.52,
+    "charge": 1.55,
+    "time": 69.56
    },
    "n": 169,
    "rate": 1.0,
@@ -35,10 +35,10 @@
   },
   "time": {
    "cross": {
-    "mass": 86.36,
-    "space": 78.67,
-    "charge": 79.09,
-    "time": 5.88
+    "mass": 86.21,
+    "space": 78.69,
+    "charge": 79.23,
+    "time": 5.3
    },
    "n": 72,
    "rate": 1.0,
@@ -48,10 +48,10 @@
  "switch": {
   "mass->space": {
    "cross": {
-    "mass": 72.4,
-    "space": 4.07,
-    "charge": 60.73,
-    "time": 70.37
+    "mass": 72.65,
+    "space": 4.04,
+    "charge": 60.62,
+    "time": 69.69
    },
    "n": 84,
    "rate": 1.0,
@@ -64,10 +64,10 @@
   },
   "space->charge": {
    "cross": {
-    "mass": 54.6,
-    "space": 55.47,
-    "charge": 1.85,
-    "time": 71.08
+    "mass": 54.61,
+    "space": 55.4,
+    "charge": 1.81,
+    "time": 70.6
    },
    "n": 169,
    "rate": 1.0,
@@ -80,13 +80,13 @@
   },
   "charge->time": {
    "cross": {
-    "mass": 76.83,
-    "space": 67.6,
-    "charge": 68.87,
-    "time": 7.68
+    "mass": 76.59,
+    "space": 67.62,
+    "charge": 68.68,
+    "time": 7.4
    },
    "n": 73,
-   "rate": 0.67,
+   "rate": 1.0,
    "ok": true,
    "majority": [
     "time",
@@ -96,10 +96,10 @@
   },
   "time->mass": {
    "cross": {
-    "mass": 3.09,
-    "space": 68.45,
-    "charge": 54.16,
-    "time": 75.53
+    "mass": 2.8,
+    "space": 68.34,
+    "charge": 54.19,
+    "time": 75.43
    },
    "n": 181,
    "rate": 1.0,
@@ -112,10 +112,10 @@
   },
   "mass->charge": {
    "cross": {
-    "mass": 55.27,
-    "space": 54.97,
-    "charge": 1.54,
-    "time": 68.79
+    "mass": 55.3,
+    "space": 55.03,
+    "charge": 1.56,
+    "time": 68.57
    },
    "n": 169,
    "rate": 1.0,
@@ -128,13 +128,13 @@
   },
   "mass->time": {
    "cross": {
-    "mass": 74.3,
-    "space": 66.08,
-    "charge": 67.03,
-    "time": 7.54
+    "mass": 74.42,
+    "space": 66.49,
+    "charge": 66.92,
+    "time": 7.44
    },
    "n": 77,
-   "rate": 1.0,
+   "rate": 0.67,
    "ok": true,
    "majority": [
     "time",
@@ -144,13 +144,13 @@
   },
   "space->time": {
    "cross": {
-    "mass": 77.19,
-    "space": 68.45,
-    "charge": 69.79,
-    "time": 7.51
+    "mass": 76.83,
+    "space": 68.73,
+    "charge": 69.69,
+    "time": 7.04
    },
    "n": 72,
-   "rate": 0.67,
+   "rate": 1.0,
    "ok": true,
    "majority": [
     "time",
@@ -160,10 +160,10 @@
   },
   "charge->space": {
    "cross": {
-    "mass": 73.07,
-    "space": 4.59,
-    "charge": 60.37,
-    "time": 70.84
+    "mass": 72.68,
+    "space": 4.68,
+    "charge": 60.17,
+    "time": 70.73
    },
    "n": 83,
    "rate": 1.0,
@@ -176,13 +176,13 @@
   },
   "time->space": {
    "cross": {
-    "mass": 75.14,
-    "space": 8.91,
-    "charge": 63.08,
-    "time": 73.51
+    "mass": 75.4,
+    "space": 8.76,
+    "charge": 63.13,
+    "time": 73.34
    },
    "n": 83,
-   "rate": 0.0,
+   "rate": 0.33,
    "ok": false,
    "majority": [
     "space",
@@ -209,5 +209,5 @@
  "std_passed": 4,
  "rest_passed": 4,
  "complete": true,
- "seconds": 117.0
+ "seconds": 120.2
 }
