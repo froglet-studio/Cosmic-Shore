@@ -48,6 +48,9 @@ per-element top speed (the World's 0.8 / 0.8 / 0.8 / 2.0) — steering to a HOME
 | Charge → pufferfish | **1.25** | 58.9 | → dragonfly | **7.70** (next 68.1) | pass / pass |
 | Time → dragonfly | **5.54** | 80.7 | → whale | 74.7 (jellyfish 19.9) | pass / **FAIL** |
 
+**Seed sweep** (`seed_sweep.json`, rollout seeds 1–9 × Hungarian/greedy): **7/8 in all 16 runs**, the only failure
+always the dragonfly → whale cull; summed wanted divergence 103–117.
+
 Geometry-only diagonals: 0.07 / 0.09 / 0.43 / 1.41 against 12–26 off-diagonal. Every swarm has exactly its
 plan's headcount and element mix (e.g. whale el=[19,126,25,22] vs plan [19,126,25,22]). Zero deaths except
 the cull.
@@ -151,7 +154,8 @@ out from the contact; the pufferfish swells and turns its plates red. Park besid
 gnats, then stream home when you leave. Ram it and the hole fills from the inside
 as new tadpoles bud beside the holes. Eat its majority element and, after a beat of hesitation, the whole body
 dissolves into a vortex and reassembles as another animal, with tadpoles visibly molting (re-colouring) along the
-way. `showcase.html` plays one scripted life per plan (drag to orbit).
+way. `showcase.html` plays one scripted life per plan (drag to orbit); also published as a private artifact:
+https://claude.ai/artifact/AjXRife4xjGfvetYZe41P3
 
 ## What failed / caveats
 
