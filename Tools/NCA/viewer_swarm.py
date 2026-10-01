@@ -95,13 +95,16 @@ def _label(d, summ):
     return n
 
 
-def _note(summ, passed):
+def _note(summ, passed, ev=None):
     meta = summ.get("meta", {})
     ov = meta.get("overrides", {})
     fixes = [lab for key, lab in (("sticky_plan", "sticky switch labels"), ("learned_lay", "a learned laying gate"), ("learned_egg", "parents choosing some eggs' element"),
                                   ("w_con", "a contrastive loss"), ("scale_inv", "a scale-invariant loss"),
                                   ("w_over", "an overflow penalty"), ("min_body", "a body floor")) if str(ov.get(key, "0")) not in ("0", "0.0")]
-    return (f"{passed} of 8 tests pass (each seeding closest to its own plan, and each switched swarm closest to its new plan). "
+    head = (f"{ev['passed']} of {ev['feasible']} feasible transitions pass on the 16-test yardstick (all four own plans and all 12 switches, fair cull, "
+            f"3 samples each); the rollout shown is the older 8-test one ({passed} of 8). " if ev else
+            f"{passed} of 8 tests pass (each seeding closest to its own plan, and each switched swarm closest to its new plan). ")
+    return (head
             + (f"Trained with {', '.join(fixes)}. " if fixes else "")
             + ("Divergences are scale-invariant (the swarm is rescaled to the plan's size before matching), so they "
                "are lower than in runs without that option and not directly comparable. " if summ.get("scale_inv") else "")
@@ -126,7 +129,7 @@ def _payload(d):
                   own={k: (v["rate"] if isinstance(v, dict) else v) for k, v in ev["own"].items()},
                   switch={k: (v["rate"] if isinstance(v, dict) else v) for k, v in ev["switch"].items()})
     return dict(eval16=ev, id=os.path.relpath(d, os.path.dirname(d) if os.path.basename(os.path.dirname(d)) == "results" else
-                                    os.path.dirname(os.path.dirname(d))).replace("/", "-"), label=_label(d, summ), passed=passed, note=_note(summ, passed),
+                                    os.path.dirname(os.path.dirname(d))).replace("/", "-"), label=_label(d, summ), passed=passed, note=_note(summ, passed, ev),
                 roll=json.load(open(os.path.join(d, "rollout.json"))), cross=summ["cross"],
                 census={k: summ["census"][k] for k in KINDS if k in summ.get("census", {})},
                 switch=summ.get("switch"), probe=probe, curve=_curve(os.path.join(d, "log.jsonl")))
