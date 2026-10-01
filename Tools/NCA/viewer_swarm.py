@@ -67,7 +67,10 @@ def _rank(d):
     import swarm_nca
     correct, close = swarm_nca.tests_passed(sm)
     ev = _eval16(d)
-    return (0, -ev["passed"], close) if ev else (1, -correct, close)
+    if not ev:
+        return (2, -correct, close)
+    # runs scored at the absolute loss-8 bar rank above runs scored only on "closest of four"
+    return (0 if ev.get("max_loss") is not None else 1, -ev["passed"] / max(1, ev.get("feasible", 16)), close)
 
 
 def _is_run(d):
@@ -79,7 +82,7 @@ def _is_run(d):
 
 
 LABELS = {"field": "Designed field + flocking", "hgrid/oracle": "Grid morphogen (designed)", "hgrid/hybrid_g2": "Learned rule G2 + grid morphogen", "hgrid": "Grid morphogen (learned)",
-          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis", "sort": "Emergent cell sorting", "posinfo": "Learned rule + positional information", "distill": "Local rule distilled from field", "meta/oracle": "Learned rule + designed metamorph", "hgrid2/round_a": "Grid morphogen 2 (round A)"}
+          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis", "sort": "Emergent cell sorting", "posinfo": "Learned rule + positional information", "distill": "Local rule distilled from field", "meta/oracle": "Learned rule + designed metamorph", "hgrid2/round_a": "Grid morphogen 2 (round A)", "creature": "Creature shell (evo body + reaction shell)"}
 
 
 def _label(d, summ):
@@ -101,7 +104,9 @@ def _note(summ, passed, ev=None):
     fixes = [lab for key, lab in (("sticky_plan", "sticky switch labels"), ("learned_lay", "a learned laying gate"), ("learned_egg", "parents choosing some eggs' element"),
                                   ("w_con", "a contrastive loss"), ("scale_inv", "a scale-invariant loss"),
                                   ("w_over", "an overflow penalty"), ("min_body", "a body floor")) if str(ov.get(key, "0")) not in ("0", "0.0")]
-    head = (f"{ev['passed']} of {ev['feasible']} feasible transitions pass on the 16-test yardstick (all four own plans and all 12 switches, fair cull, "
+    bar = (f"under the absolute bar (a test fails if its divergence to the wanted plan is over {ev['max_loss']:g})" if ev and ev.get("max_loss") is not None
+           else "on the OLD bar only (closest of the four plans, no absolute divergence limit; not yet rescored at the loss-8 bar)")
+    head = (f"{ev['passed']} of {ev['feasible']} feasible transitions pass on the 16-test yardstick {bar} (all four own plans and all 12 switches, fair cull, "
             f"3 samples each); the rollout shown is the older 8-test one ({passed} of 8). " if ev else
             f"{passed} of 8 tests pass (each seeding closest to its own plan, and each switched swarm closest to its new plan). ")
     return (head
@@ -125,7 +130,7 @@ def _payload(d):
             probe = None
     ev = _eval16(d)
     if ev:                                     # keep only the rates: the full file carries per-sample detail
-        ev = dict(passed=ev["passed"], feasible=ev["feasible"], na=ev.get("na", []), samples=ev.get("samples"),
+        ev = dict(passed=ev["passed"], feasible=ev["feasible"], na=ev.get("na", []), samples=ev.get("samples"), max_loss=ev.get("max_loss"),
                   own={k: (v["rate"] if isinstance(v, dict) else v) for k, v in ev["own"].items()},
                   switch={k: (v["rate"] if isinstance(v, dict) else v) for k, v in ev["switch"].items()})
     return dict(eval16=ev, id=os.path.relpath(d, os.path.dirname(d) if os.path.basename(os.path.dirname(d)) == "results" else
@@ -261,7 +266,7 @@ def build_swarm(results_root, gallery_dir=None):
         return "", ""
     import prism_render as pr
     first = _payload(cands[0])
-    tag = lambda p: (f"{p['eval16']['passed']}/{p['eval16'].get('feasible', 16)}" + ("" if p['eval16'].get('feasible', 16) == 16 else " feasible")) if p.get("eval16") else f"{p['passed']}/8"
+    tag = lambda p: (f"{p['eval16']['passed']}/{p['eval16'].get('feasible', 16)}" + ("" if p['eval16'].get('feasible', 16) == 16 else " feasible") + ("" if p['eval16'].get('max_loss') is not None else " old bar")) if p.get("eval16") else f"{p['passed']}/8"
     manifest = [dict(id=first["id"], label=first["label"], passed=tag(first), about=_about(first["id"]), file=None)]
     if gallery_dir:
         os.makedirs(gallery_dir, exist_ok=True)
@@ -424,7 +429,7 @@ SCRIPTSWARM = r"""<script>
     if (p.eval16) {
       const e = p.eval16, cell = (r, own) => r == null ? '<td>n/a</td>' : `<td class="${r > 0.5 ? 'win' : ''}${own ? ' diag' : ''}">${Math.round(r * 100)}%</td>`;
       const rows = KINDS.map(k => `<tr><th scope="row">${NAMES[k]}</th>` + KINDS.map(t => t === k ? cell(e.own[k], true) : cell(e.switch[`${k}->${t}`], false)).join('') + '</tr>').join('');
-      h += `<h3>Every transition</h3><p class="caption">All 16 tests: each plan grown from its own seed (diagonal) and each of the 12 possible switches (a grown body loses its majority to each other element). Each test is run ${e.samples || 3} times; the cell is the share of runs that end closest to the wanted plan with at least 32 tadpoles, and a test passes on a majority. ${e.passed} of ${e.feasible} feasible tests pass${e.na && e.na.length ? ` (n/a: a body that holds too little of that element to be taken over: ${e.na.join(', ')})` : ''}.</p>`
+      h += `<h3>Every transition</h3><p class="caption">All 16 tests: each plan grown from its own seed (diagonal) and each of the 12 possible switches (a grown body loses its majority to each other element). Each test is run ${e.samples || 3} times; the cell is the share of runs that end closest to the wanted plan with at least 32 tadpoles${e.max_loss != null ? ` and a divergence of at most ${e.max_loss}` : ' (old bar: no divergence limit)'}, and a test passes on a majority. ${e.passed} of ${e.feasible} feasible tests pass${e.na && e.na.length ? ` (n/a: a body that holds too little of that element to be taken over: ${e.na.join(', ')})` : ''}.</p>`
         + `<div class="tablewrap"><table class="swcross"><thead><tr><th scope="col">Grown as \\ ends as</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
     }
     if (p.probe) {
