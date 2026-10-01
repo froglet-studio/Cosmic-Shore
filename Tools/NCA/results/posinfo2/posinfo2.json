@@ -1,8 +1,8 @@
 {
- "homeo": 5,
+ "homeo": 6,
  "p_molt": 0.1,
  "fair": 0.6,
- "init": "runs/p2_a/p2_00600.pt",
+ "init": "runs/p2_b/p2_00800.pt",
  "cfg": {
   "per_kind": 2,
   "pool": 24,
