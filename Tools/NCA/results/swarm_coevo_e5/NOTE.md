@@ -34,3 +34,9 @@ iterations, and find where `scale_inv` can produce a non-finite scale (clamp the
 Checkpoints are every 250 steps (`snap_every`). Progress only persists when a launch survives past
 the next multiple of 250. The babysitter now relaunches automatically when the log goes stale for
 more than 8 min, so the run keeps retrying from the latest checkpoint until 15:00 UTC.
+
+## Progress log
+- 10:26 UTC: the watchdog got one launch past step 500 (`rule_00500.pt` saved). Since then the hang
+  comes earlier: three launches resumed at step 500 and each hung by step ~520, within a couple of
+  minutes. The non-finite cost now appears to come up almost every step, so the rule may be drifting
+  toward degenerate swarms. The watchdog keeps retrying.
