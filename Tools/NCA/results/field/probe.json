@@ -1,0 +1,173 @@
+{
+ "strike": {
+  "mass": {
+   "before": 1.52,
+   "n_before": 192,
+   "killed": 34,
+   "cut": 6.2,
+   "recovered": 1.18,
+   "n_after": 192,
+   "heal": 1.073
+  },
+  "space": {
+   "before": 2.58,
+   "n_before": 88,
+   "killed": 26,
+   "cut": 10.0,
+   "recovered": 2.25,
+   "n_after": 88,
+   "heal": 1.044
+  },
+  "charge": {
+   "before": 1.28,
+   "n_before": 179,
+   "killed": 51,
+   "cut": 9.98,
+   "recovered": 1.96,
+   "n_after": 179,
+   "heal": 0.922
+  },
+  "time": {
+   "before": 5.15,
+   "n_before": 76,
+   "killed": 14,
+   "cut": 16.47,
+   "recovered": 4.44,
+   "n_after": 76,
+   "heal": 1.063
+  }
+ },
+ "predator_pass": {
+  "mass": {
+   "before": 3.43,
+   "worst": 4.36,
+   "after": 3.43,
+   "touched_share": 0.323,
+   "pass_steps": 36,
+   "reform_steps_after_pass": 4,
+   "radius": 10.6,
+   "trace": [
+    3.43,
+    3.48,
+    4.36,
+    3.44,
+    3.47,
+    3.47,
+    3.43,
+    3.48,
+    3.47,
+    3.43,
+    3.45,
+    3.45,
+    3.43,
+    3.45,
+    3.45,
+    3.43
+   ]
+  },
+  "space": {
+   "before": 2.85,
+   "worst": 4.62,
+   "after": 2.99,
+   "touched_share": 0.216,
+   "pass_steps": 32,
+   "reform_steps_after_pass": 8,
+   "radius": 9.3,
+   "trace": [
+    2.84,
+    3.04,
+    4.62,
+    3.0,
+    2.98,
+    2.87,
+    2.83,
+    2.96,
+    2.99,
+    2.99,
+    2.99,
+    2.86,
+    2.96,
+    3.55,
+    3.0,
+    2.97
+   ]
+  },
+  "charge": {
+   "before": 1.94,
+   "worst": 5.61,
+   "after": 1.86,
+   "touched_share": 0.229,
+   "pass_steps": 32,
+   "reform_steps_after_pass": 8,
+   "radius": 9.4,
+   "trace": [
+    1.76,
+    3.4,
+    5.61,
+    1.9,
+    2.04,
+    1.75,
+    1.61,
+    2.24,
+    1.97,
+    1.54,
+    1.52,
+    1.87,
+    2.4,
+    4.04,
+    1.66,
+    1.91
+   ]
+  },
+  "time": {
+   "before": 4.51,
+   "worst": 6.74,
+   "after": 4.93,
+   "touched_share": 0.184,
+   "pass_steps": 41,
+   "reform_steps_after_pass": 9,
+   "radius": 11.9,
+   "trace": [
+    4.4,
+    4.44,
+    6.74,
+    4.34,
+    4.97,
+    5.72,
+    4.13,
+    4.53,
+    5.75,
+    4.57,
+    5.01,
+    5.67,
+    4.19,
+    4.46,
+    6.16,
+    4.42,
+    4.93
+   ]
+  }
+ },
+ "cost": [
+  {
+   "kind": "mass",
+   "n": 192,
+   "ms_per_step": 4.04
+  },
+  {
+   "kind": "space",
+   "n": 88,
+   "ms_per_step": 1.11
+  },
+  {
+   "kind": "charge",
+   "n": 179,
+   "ms_per_step": 3.46
+  },
+  {
+   "kind": "time",
+   "n": 76,
+   "ms_per_step": 1.48
+  }
+ ]
+}

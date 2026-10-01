@@ -708,6 +708,22 @@ by element ratios, never by headcount. Runs with `scale_inv` are also evaluated 
 (`summary.json` carries `scale_inv: 1`), so compare them with the others by tests passed, not by
 divergence values.
 
+#### Research portfolio, round 1 (`briefs/`)
+
+Six directions run in parallel, each a different way to build the creature (see `briefs/README.md`).
+First results, on the same strict yardstick:
+
+| Approach | Tests passed | Own plan | Switches | Notes |
+|---|---|---|---|---|
+| **field**: designed attractor fields + flocking (`field_swarm.py`, no learning) | **7/8** | 4/4, divergences 1.2–5.5 | 3/4 | heals a vessel strike fully (heal 0.92–1.07), re-forms 4–8 steps after a predator passes, 1–4 ms per step |
+| **hgrid/oracle**: a coarse grid morphogen steering simple boids (`hgrid_*.py`, designed grid) | **7/8** | 4/4 | 3/4 | the user's CA-over-boids idea |
+| **hgrid/hybrid_g2**: the LEARNED G2 rule steered by the same grid | **7/8** | 4/4 | 3/4 | the grid lifts the learned rule from 5/8 to 7/8: it steers composition, which the rule could not |
+
+All three fail the same switch: the dragonfly that loses its Time majority to Mass ends closest to
+the jellyfish. It must grow from about 76 tadpoles to the whale's 192, and the Space minority it
+keeps takes over first. The other directions (colony, evo, play, meta), the single-plan specialists
+(`briefs/solo.md`) and the H runs are still training.
+
 ```
 python Tools/NCA/gpu_run.py swarm --device cpu --tag e1 --steps 6000 --set per_kind=2 --set pool=24 \
   --set seed_every=6 --set roll_min=48 --set roll_max=96 --set bptt=28 --set sticky_plan=1 \

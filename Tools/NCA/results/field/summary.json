@@ -1,0 +1,341 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 3.08,
+   "space": 68.53,
+   "charge": 56.57,
+   "time": 77.47
+  },
+  "space": {
+   "mass": 68.68,
+   "space": 2.76,
+   "charge": 54.85,
+   "time": 66.08
+  },
+  "charge": {
+   "mass": 63.36,
+   "space": 58.87,
+   "charge": 1.25,
+   "time": 76.85
+  },
+  "time": {
+   "mass": 86.64,
+   "space": 80.68,
+   "charge": 82.35,
+   "time": 5.54
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 192,
+   "target_n": 192,
+   "elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    109,
+    83,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 88,
+   "target_n": 88,
+   "elements": [
+    26,
+    2,
+    54,
+    6
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    32,
+    56,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 179,
+   "target_n": 179,
+   "elements": [
+    130,
+    1,
+    16,
+    32
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    91,
+    88,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 76,
+   "target_n": 76,
+   "elements": [
+    2,
+    3,
+    19,
+    52
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    23,
+    3,
+    50
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 0.07,
+   "space": 20.78,
+   "charge": 12.39,
+   "time": 25.44
+  },
+  "space": {
+   "mass": 20.72,
+   "space": 0.09,
+   "charge": 14.39,
+   "time": 23.5
+  },
+  "charge": {
+   "mass": 20.04,
+   "space": 18.02,
+   "charge": 0.43,
+   "time": 25.81
+  },
+  "time": {
+   "mass": 24.9,
+   "space": 24.74,
+   "charge": 19.96,
+   "time": 1.41
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 71.12,
+    "space": 6.52,
+    "charge": 55.7,
+    "time": 73.11
+   },
+   "majority": "space",
+   "census": {
+    "n": 88,
+    "target_n": 88,
+    "elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     45,
+     43,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 65.78,
+    "space": 59.06,
+    "charge": 2.04,
+    "time": 78.41
+   },
+   "majority": "charge",
+   "census": {
+    "n": 179,
+    "target_n": 179,
+    "elements": [
+     130,
+     1,
+     16,
+     32
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     90,
+     89,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 74.83,
+    "space": 68.08,
+    "charge": 68.18,
+    "time": 7.7
+   },
+   "majority": "time",
+   "census": {
+    "n": 78,
+    "target_n": 76,
+    "elements": [
+     3,
+     3,
+     18,
+     54
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     32,
+     46,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 74.73,
+    "space": 19.89,
+    "charge": 63.21,
+    "time": 72.87
+   },
+   "majority": "space",
+   "census": {
+    "n": 63,
+    "target_n": 192,
+    "elements": [
+     17,
+     1,
+     38,
+     7
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     55,
+     0,
+     8
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "meta": {
+  "device": "cpu",
+  "tag": "field",
+  "note": "Designed fields + boids (no learning): field_swarm.py",
+  "cfg": {
+   "mode": "slots",
+   "frame_steps": 6,
+   "dwell": 12,
+   "k_arrive": 0.35,
+   "accel": 0.45,
+   "sep_r": 2.0,
+   "sep_k": 0.5,
+   "align_r": 5.0,
+   "align_k": 0.15,
+   "vmax": [
+    0.8,
+    0.8,
+    0.8,
+    2.0
+   ],
+   "reassign_every": 8,
+   "sticky": 4.0,
+   "lay_rate": 0.04,
+   "lay_max": 4,
+   "molt": 1,
+   "molt_rate": 0.03,
+   "molt_steps": 10,
+   "morph_steps": 60,
+   "swirl": 0.9,
+   "field_sigma": 3.0,
+   "field_k": 1.2,
+   "cruise": 0.0,
+   "sense": 1.8,
+   "relay": 0.8,
+   "startle_decay": 0.9,
+   "flee": [
+    0.6,
+    0.5,
+    1.4,
+    2.0
+   ],
+   "flee_swirl": 0.8,
+   "seed": 0
+  }
+ },
+ "rule": "params.json"
+}

@@ -68,9 +68,14 @@ def _is_run(d):
         return False
 
 
+LABELS = {"field": "Designed field + flocking", "hgrid/oracle": "Grid morphogen (designed)", "hgrid/hybrid_g2": "Learned rule G2 + grid morphogen", "hgrid": "Grid morphogen (learned)",
+          "colony": "Colony brain", "evo": "Evolved rule", "play": "Strike-hardened rule", "meta": "Metamorphosis"}
+
+
 def _label(d, summ):
     n = os.path.basename(d)
-    lab = summ.get("meta", {}).get("label") or summ.get("label")
+    rel = os.path.relpath(d, os.path.dirname(os.path.dirname(d))) if os.path.basename(os.path.dirname(d)) != "results" else n
+    lab = summ.get("meta", {}).get("label") or summ.get("label") or LABELS.get(rel) or LABELS.get(n)
     if lab:
         return lab
     if n == "swarm_coevo":
@@ -101,9 +106,12 @@ def _payload(d):
     if os.path.isfile(os.path.join(d, "probe.json")):
         try:
             probe = json.load(open(os.path.join(d, "probe.json")))
+            if isinstance(probe, dict) and "strike" in probe:      # richer probe files keep the strike under "strike"
+                probe = probe["strike"]
         except Exception:
             probe = None
-    return dict(id=os.path.basename(d), label=_label(d, summ), passed=passed, note=_note(summ, passed),
+    return dict(id=os.path.relpath(d, os.path.dirname(d) if os.path.basename(os.path.dirname(d)) == "results" else
+                                    os.path.dirname(os.path.dirname(d))).replace("/", "-"), label=_label(d, summ), passed=passed, note=_note(summ, passed),
                 roll=json.load(open(os.path.join(d, "rollout.json"))), cross=summ["cross"],
                 census={k: summ["census"][k] for k in KINDS if k in summ.get("census", {})},
                 switch=summ.get("switch"), probe=probe, curve=_curve(os.path.join(d, "log.jsonl")))
@@ -113,8 +121,14 @@ def build_swarm(results_root, gallery_dir=None):
     """The swarm section. The top-ranked run is embedded in the page; with gallery_dir, every other
     run is written there as <id>.json, and the page fetches it (relative URL) when it is picked, so
     the page stays under the artifact size limit however many approaches there are."""
-    cands = [os.path.join(results_root, n) for n in sorted(os.listdir(results_root))]
-    cands = sorted([d for d in cands if os.path.isdir(d) and _is_run(d)], key=_rank)
+    cands = []
+    for n in sorted(os.listdir(results_root)):                 # a result folder, or one level of sub-runs
+        d = os.path.join(results_root, n)
+        if not os.path.isdir(d):
+            continue
+        cands += [d] if _is_run(d) else [os.path.join(d, m) for m in sorted(os.listdir(d))
+                                         if os.path.isdir(os.path.join(d, m)) and _is_run(os.path.join(d, m))]
+    cands = sorted(cands, key=_rank)
     if not cands:
         return "", ""
     import prism_render as pr

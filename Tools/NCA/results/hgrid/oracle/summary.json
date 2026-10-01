@@ -1,0 +1,322 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 8.07,
+   "space": 66.12,
+   "charge": 52.33,
+   "time": 71.39
+  },
+  "space": {
+   "mass": 68.88,
+   "space": 10.47,
+   "charge": 55.65,
+   "time": 70.15
+  },
+  "charge": {
+   "mass": 65.14,
+   "space": 55.88,
+   "charge": 9.46,
+   "time": 75.86
+  },
+  "time": {
+   "mass": 72.47,
+   "space": 68.55,
+   "charge": 67.55,
+   "time": 18.1
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 196,
+   "target_n": 192,
+   "elements": [
+    20,
+    126,
+    26,
+    24
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    108,
+    88,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 93,
+   "target_n": 88,
+   "elements": [
+    27,
+    4,
+    54,
+    8
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    38,
+    55,
+    0
+   ],
+   "deaths": 7,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 183,
+   "target_n": 179,
+   "elements": [
+    133,
+    1,
+    18,
+    31
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    91,
+    92,
+    0
+   ],
+   "deaths": 2,
+   "mutants": 0
+  },
+  "time": {
+   "n": 78,
+   "target_n": 76,
+   "elements": [
+    3,
+    3,
+    18,
+    54
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    28,
+    6,
+    44
+   ],
+   "deaths": 2,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 4.76,
+   "space": 17.3,
+   "charge": 8.19,
+   "time": 22.86
+  },
+  "space": {
+   "mass": 22.58,
+   "space": 5.75,
+   "charge": 15.85,
+   "time": 27.06
+  },
+  "charge": {
+   "mass": 20.35,
+   "space": 15.95,
+   "charge": 4.63,
+   "time": 25.52
+  },
+  "time": {
+   "mass": 15.5,
+   "space": 13.79,
+   "charge": 9.38,
+   "time": 14.36
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 68.01,
+    "space": 12.67,
+    "charge": 55.29,
+    "time": 70.35
+   },
+   "majority": "space",
+   "census": {
+    "n": 93,
+    "target_n": 88,
+    "elements": [
+     27,
+     2,
+     56,
+     8
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     40,
+     53,
+     0
+    ],
+    "deaths": 45,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 66.55,
+    "space": 55.09,
+    "charge": 11.7,
+    "time": 75.44
+   },
+   "majority": "charge",
+   "census": {
+    "n": 181,
+    "target_n": 179,
+    "elements": [
+     132,
+     1,
+     16,
+     32
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     90,
+     91,
+     0
+    ],
+    "deaths": 25,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 66.48,
+    "space": 57.33,
+    "charge": 59.6,
+    "time": 19.14
+   },
+   "majority": "time",
+   "census": {
+    "n": 75,
+    "target_n": 76,
+    "elements": [
+     0,
+     4,
+     19,
+     52
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     26,
+     49,
+     0
+    ],
+    "deaths": 24,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 74.72,
+    "space": 33.66,
+    "charge": 54.82,
+    "time": 76.6
+   },
+   "majority": "charge",
+   "census": {
+    "n": 54,
+    "target_n": 192,
+    "elements": [
+     25,
+     3,
+     25,
+     1
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Charge",
+    "domains": [
+     53,
+     0,
+     1
+    ],
+    "deaths": 4,
+    "mutants": 0
+   }
+  }
+ },
+ "tests_passed": 7,
+ "close": 164.33,
+ "sec": 63.9,
+ "meta": {
+  "kind": "oracle",
+  "cfg": {
+   "G": 24,
+   "cell": 4.0,
+   "k_class": 3.0,
+   "k_total": 1.0,
+   "k_home": 0.15,
+   "persist": 0.6,
+   "noise": 0.05,
+   "p_lay": 0.1,
+   "p_cross": 0.25,
+   "hatch_steps": 2,
+   "ease": 0.3,
+   "starve": 1,
+   "starve_rate": 0.04,
+   "starve_tol": 0.15,
+   "starve_local": 0.0,
+   "hyst": 0.0,
+   "animate": 1,
+   "period": 8
+  },
+  "ckpt": ""
+ }
+}
