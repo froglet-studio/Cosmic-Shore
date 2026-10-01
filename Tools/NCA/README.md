@@ -651,7 +651,8 @@ plan. Its whale → jellyfish switch scores 16.3 against the whale itself, i.e. 
 they keep the 16-tadpole seed. A sixteen-point cloud in roughly the right place matches any plan's
 spread well enough, since the divergence carries no size term (and with `scale_inv`, deliberately
 none). Their 4/4 own-plan diagonals are against bodies that never grew, so they are not counted.
-Two fixes:
+At step 2000 nothing had changed: F2 and F5 still ran 16–20-tadpole swarms. Their publishers,
+which use the old scorer, report 5/8; the strict scorer gives both 0/8. Two fixes:
 
 - **The scorer** requires `MIN_TEST_BODY = 32` tadpoles before a plan test can pass.
 - **`min_body` / `w_body`**: a one-sided body floor, `w_body · relu(1 - n/min_body)²`. It is the
