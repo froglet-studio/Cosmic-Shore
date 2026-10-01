@@ -19,10 +19,10 @@
    "time": 69.32
   },
   "time": {
-   "mass": 83.0,
-   "space": 75.93,
-   "charge": 76.42,
-   "time": 2.78
+   "mass": 81.88,
+   "space": 74.63,
+   "charge": 74.92,
+   "time": 3.68
   }
  },
  "census": {
@@ -144,10 +144,10 @@
    "time": 19.39
   },
   "time": {
-   "mass": 25.14,
-   "space": 23.16,
-   "charge": 18.08,
-   "time": 2.73
+   "mass": 24.52,
+   "space": 21.82,
+   "charge": 16.54,
+   "time": 3.44
   }
  },
  "switch": {
@@ -225,10 +225,10 @@
    "to": "time",
    "done": true,
    "cross": {
-    "mass": 75.51,
-    "space": 68.23,
-    "charge": 68.82,
-    "time": 6.19
+    "mass": 74.2,
+    "space": 66.36,
+    "charge": 66.78,
+    "time": 7.01
    },
    "majority": "time",
    "census": {
@@ -261,9 +261,9 @@
    "done": true,
    "cross": {
     "mass": 76.57,
-    "space": 8.91,
-    "charge": 63.93,
-    "time": 74.19
+    "space": 8.75,
+    "charge": 63.91,
+    "time": 74.16
    },
    "majority": "space",
    "census": {
