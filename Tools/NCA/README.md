@@ -562,6 +562,7 @@ branches, with results in `results/swarm_coevo_<tag>/`:
 | e5 | e2 + scale-invariant loss | `cece/swarm-exp-e5` |
 | e6 | e1 + scale-invariant loss | `cece/swarm-exp-e6` |
 | e5b, e6b | e5 and e6 rerun on the NaN-guarded code | `cece/swarm-exp-e5b`, `-e6b` |
+| e1b, e2b, e3b | e1, e2 and e3 rerun on the NaN-guarded code, with `NCA_NAN_DUMP` on | `cece/swarm-exp-e1b`, `-e2b`, `-e3b` |
 | e7 | e4 + scale-invariant loss | this branch |
 
 **A NaN hang.** The first E7 hung after about 185 steps. `sinkhorn_ot` halves its temperature
@@ -576,6 +577,14 @@ Training now guards against this:
 
 The log counts these events as `nf`. Default runs are unchanged. E1–E3, E5 and E6 started on the
 earlier code, so a run of theirs that goes quiet has most likely hung the same way.
+
+E1 hung at step 500 and E2 at steps 200 and 220 (twice, deterministically from step 0). E1 has
+none of the newer options, so the NaN is not specific to the laying gate or the scale-invariant
+loss. The leading hypothesis is state runaway: nothing bounds the state (`s += ds`), and a rule
+whose update grows with the state grows exponentially until it overflows. The ±1000 clamp stops
+the overflow; `smax` in the log (largest |state|) shows whether it is happening. With
+`NCA_NAN_DUMP=<path>`, the first step that turns a finite swarm non-finite is saved so it can be
+replayed.
 
 **E4 diverged, and the logs said why.** Its loss rose from about 100 to 450. The contrastive hinge
 (0–11) and the mix error (0.00–0.42) stayed small; the divergence itself grew to 50–97, with every
