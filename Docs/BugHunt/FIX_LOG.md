@@ -8,6 +8,34 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-1.10 — crystal colour fade leaks a Material per colour change
+
+- **Date:** fixed 2026-10-02 (commit); merge pending Yash's retest.
+- **Symptom:** nothing in the Console. The Profiler's Materials count creeps up over a long
+  session in one scene (crystal colour changes: a heart becoming a pickup, theft and decay back
+  to blue), and the extra materials are named `Crystal... (Instance)`. Unity frees them on a full
+  scene load, so the growth only shows within one scene.
+- **Root cause:** `Crystal.LerpCrystalMaterialCoroutine` ran `new Material(renderer.material)`.
+  The `.material` getter clones the renderer's current material onto the renderer, and the
+  following `renderer.material = tempMaterial` replaced that clone without destroying it, so
+  one Material leaked per colour change. (The handoff said two; the fade copy is destroyed at
+  the end, so it is one.) The fade copy also leaked if the crystal was destroyed mid-fade,
+  because the `Destroy(tempMaterial)` at the end of the coroutine never ran.
+- **Repro (unfixed `bleeding-edge`):** Profiler > Memory > Take Sample Editor, then play one
+  round in a mode where crystals change colour (Skim Race, hearts dropping), take a second
+  sample in the same round, and compare the Material count and `Crystal (Instance)` entries.
+- **Fix:** `Assets/_Scripts/Controller/Environment/FlowField/Crystal.cs`.
+  - The fade copy is `new Material(renderer.sharedMaterial)`, and the renderer is assigned
+    through `sharedMaterial`, so no hidden clone is made.
+  - Each fade copy is added to `_lerpTempMaterials` and removed when the coroutine destroys it;
+    `OnDestroy` destroys any still listed.
+  - The handoff doc's §1.10 moved to §0.
+- **Verification:** all four gate scripts pass. Needs Yash's retest on `Bug_Hunt`: the same
+  play path should leave the Material count flat and show no `Crystal (Instance)` entries.
+- **PR/commit:** pending.
+
+---
+
 ## BH-1.8 — `Cell.countGrids` never disposed on destroy
 
 - **Date:** fixed 2026-09-26 (commit), merged 2026-09-29 04:46.

@@ -33,6 +33,7 @@ Confidence scale:
 | 6 | **Pool double-release / handler stacking.** `GenericPoolManager` released an instance twice, which put it in the pool twice. That handed the same prism to two callers. The per-Get `OnReturnToPool += Release` handlers also stacked. This is the likely cause of **the Squirrel's boost-ring prisms losing spawn consistency over a session.** | `GenericPoolManager` + 4 subclasses |
 | 7 | `.AsMainThread()` returns to the main thread on the EXCEPTION path too (`try/finally`). A faulted UGS task previously resumed its `catch` block off-thread. | `UniTaskExtensions.cs` |
 | 8 | **`Cell.countGrids` disposed on destroy (was §1.8).** Only re-initialisation disposed the density grids, so each destroyed cell leaked 4 grids × 6 persistent NativeArrays (24 allocations) per scene load. `OnDestroy` now disposes them (idempotent) and clears the map. `AddBlock`/`RemoveBlock` use `TryGetValue` so a prism torn down after its cell cannot throw on the emptied map. Shipped on `Bug_Hunt`. | `Cell.OnDestroy`, `Cell.AddBlock`, `Cell.RemoveBlock` |
+| 9 | **Crystal colour-lerp material leak (was §1.10).** `LerpCrystalMaterialCoroutine` ran `new Material(renderer.material)`; the `.material` getter clones the renderer's material onto it, and that clone was orphaned by the next assignment, so every colour change leaked one Material (it logs nothing). It now copies `sharedMaterial`, and each fade copy is tracked and destroyed in `OnDestroy` if the crystal dies mid-fade. Shipped on `Bug_Hunt`. | `Crystal.LerpCrystalMaterialCoroutine`, `Crystal.OnDestroy` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -123,13 +124,6 @@ Confidence scale:
 - **Bug:** `ToString("yyyy-MM-dd…")` with no culture renders in the device's calendar. On ar-SA,
   th-TH and fa-IR that is not Gregorian (see the weekly-challenge finding in CLAUDE.md).
 - **Fix:** pass `CultureInfo.InvariantCulture` to every one.
-
-### 1.10 Crystal material lerp leaks two materials per lerp — High
-- **Where:** `Assets/_Scripts/Controller/Environment/FlowField/Crystal.cs`, `LerpCrystalMaterialCoroutine` (~788).
-- **Bug:** `new Material(renderer.material)`. `renderer.material` already clones, so each call mints
-  TWO materials and neither is destroyed.
-- **Fix:** `new Material(renderer.sharedMaterial)`, then `Destroy(tempMaterial)` when the lerp
-  finishes or the coroutine is stopped.
 
 ### 1.11 Non-ASCII glyphs render as tofu — High
 - **Where:** `SpectatorOverlay.cs` 125 (`◀`), 138 (`▶`), 150 (`✕`). Also check

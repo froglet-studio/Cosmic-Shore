@@ -177,8 +177,8 @@ Fix the missing guard; don't reorder destruction.
 `Material (Instance)` objects). There is usually no console error.
 
 **Why it happens:** `renderer.material` **clones** the material on first access, and each clone
-lives until destroyed. `new Material(renderer.material)` mints two. Handoff §1.10 (Crystal
-lerp) is this pattern.
+lives until destroyed. `new Material(renderer.material)` leaks the implicit clone (FIX_LOG BH-1.10, the Crystal
+colour lerp, is this pattern). Also track any copy you make, and destroy it in `OnDestroy` too.
 
 **Find it:** `rg -n "\.material\b|\.materials\b|new Material\(" Assets/_Scripts`, then check that
 each clone is destroyed.
