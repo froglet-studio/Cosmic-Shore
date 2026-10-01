@@ -7,6 +7,11 @@
     python Tools/NCA/gpu_run.py --steps 6000    # a longer run
     python Tools/NCA/gpu_run.py --device mps    # Apple silicon
 
+    python Tools/NCA/gpu_run.py swarm           # the swarm co-evolution instead (see swarm_gpu.py): check,
+                                                # train for --steps (default 12000 here), and push its own
+                                                # results folder every 1000 steps when it improves
+    python Tools/NCA/gpu_run.py swarm-check     # only the swarm CPU-vs-GPU check
+
 Re-running resumes: the run lives in Tools/NCA/runs/prism_swim3d_gpu (gitignored) and training picks
 up from its last checkpoint. Needs torch with CUDA (or MPS), numpy, pillow; node for the JS
 verifier (skipped with a warning if missing).
@@ -210,9 +215,9 @@ def push(best):
 def main():
     global RUN
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("stage", nargs="?", default="all", choices=["all", "check", "train", "pick", "promote"])
+    ap.add_argument("stage", nargs="?", default="all", choices=["all", "check", "train", "pick", "promote", "swarm", "swarm-check"])
     ap.add_argument("--device", default="cuda")
-    ap.add_argument("--steps", type=int, default=4500)
+    ap.add_argument("--steps", type=int, default=None, help="default 4500 (prism swim) / 12000 (swarm)")
     ap.add_argument("--no-push", action="store_true")
     ap.add_argument("--run", default=RUN, help="training directory (default runs/prism_swim3d_gpu)")
     a = ap.parse_args()
@@ -229,6 +234,13 @@ def main():
                  + '  Then: python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name())"')
     print(f"torch {torch.__version__}, device {a.device}" +
           (f" ({torch.cuda.get_device_name()})" if a.device.startswith("cuda") and torch.cuda.is_available() else ""))
+    if a.stage.startswith("swarm"):
+        import swarm_gpu
+        if a.stage == "swarm-check":
+            sys.exit(0 if swarm_gpu.check(a.device) else 1)
+        swarm_gpu.run(a.device, a.steps or 12000, push=not a.no_push)
+        return
+    a.steps = a.steps or 4500
     if a.stage in ("all", "check"):
         if not check(a.device):
             sys.exit(1)

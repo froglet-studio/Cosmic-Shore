@@ -61,6 +61,23 @@ ELEMENTS = ("Charge", "Mass", "Space", "Time")
 HMIN, HMAX = 0.25, 3.0                               # swarm_model.js clampH
 
 torch.set_num_threads(max(1, os.cpu_count() or 1))
+DEVICE = torch.device("cpu")
+
+
+def set_device(name="cpu"):
+    """Run on `name` ("cpu", "cuda", "mps"): every tensor is created there (torch's default device)
+    and every random generator lives there. numpy crossings copy back explicitly."""
+    global DEVICE
+    dev = torch.device(name)
+    if dev.type == "cuda" and not torch.cuda.is_available():
+        sys.exit(f"--device {name}: this torch has no CUDA (torch {torch.__version__})")
+    DEVICE = dev
+    torch.set_default_device(dev)
+    return dev
+
+
+def make_gen(seed):
+    return torch.Generator(device=DEVICE).manual_seed(seed)
 
 
 # ------------------------------------------------------------ element identity ---
@@ -299,7 +316,7 @@ class SwarmRule(nn.Module):
         h = torch.relu(F.linear(h, self.w2, self.b2)) + h
         return F.linear(h, self.w3, self.b3)
 
-    def forward(self, sw: Swarm, gen=None, bud=True):
+    def forward(self, sw: Swarm, gen=None, bud=True, fire=None):
         W = self.world
         B, N, _ = sw.pos.shape
         n = B * N
@@ -308,7 +325,7 @@ class SwarmRule(nn.Module):
         hatched = sw.hatched.reshape(n)
         gi, gj = edges(sw, W.R)
         x = torch.cat([s, F.one_hot(elem, 4).to(s.dtype), hatched[:, None].to(s.dtype)], 1)
-        fire = act & (torch.rand(n, generator=gen) <= self.fire_rate)
+        fire = act & ((torch.rand(n, generator=gen) <= self.fire_rate) if fire is None else fire.reshape(n))
         idx = fire.nonzero().squeeze(1)
         e = fire[gi]
         with torch.no_grad():
@@ -544,11 +561,11 @@ def speed_of(xa, xb, period):
     """Per-element mean heart displacement per FRAME between two checkpoints `period` steps apart,
     over tadpoles alive at both (slot identity). Returns [4] tensor and a [4] presence mask."""
     ia, ib = xa["idx"], xb["idx"]
-    common, ca, cb = np.intersect1d(ia.numpy(), ib.numpy(), return_indices=True)
+    common, ca, cb = np.intersect1d(ia.cpu().numpy(), ib.cpu().numpy(), return_indices=True)
     v = torch.zeros(4); m = torch.zeros(4, dtype=torch.bool)
     if len(common) == 0:
         return v, m
-    ca, cb = torch.as_tensor(ca), torch.as_tensor(cb)
+    ca, cb = torch.as_tensor(ca, device=DEVICE), torch.as_tensor(cb, device=DEVICE)
     ok = (xa["hatched"][ca] & xb["hatched"][cb])
     d = (xb["p"][cb] - xa["p"][ca]).norm(dim=-1)
     e = xa["elem"][ca]
@@ -668,11 +685,11 @@ def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
     return pool
 
 
-def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True):
+def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None):
     os.makedirs(cfg.run, exist_ok=True)
     targets = load_targets()
     torch.manual_seed(cfg.seed)
-    gen = torch.Generator().manual_seed(cfg.seed)
+    gen = make_gen(cfg.seed)
     rule = SwarmRule(world, hidden=cfg.hidden)
     opt = torch.optim.Adam(rule.parameters(), lr=cfg.lr)
     sched = torch.optim.lr_scheduler.MultiStepLR(opt, [int(cfg.steps * 0.6), int(cfg.steps * 0.85)], 0.3)
@@ -680,14 +697,14 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True):
     ck = os.path.join(cfg.run, "latest.pt")
     pool = make_seed_pool(rule, targets, cfg, gen)
     if cfg.init and not os.path.exists(ck):
-        sd = torch.load(cfg.init, weights_only=False)["rule"]
+        sd = {k_: v.to(DEVICE) for k_, v in torch.load(cfg.init, weights_only=False, map_location=DEVICE)["rule"].items()}
         for k_, v in rule.state_dict().items():               # new input columns enter at zero weight
             if sd[k_].shape != v.shape:
                 pad = torch.zeros_like(v); pad[tuple(slice(0, d) for d in sd[k_].shape)] = sd[k_]; sd[k_] = pad
         rule.load_state_dict(sd)
         print(f"warm start from {cfg.init}")
     if resume and os.path.exists(ck):
-        st = torch.load(ck, weights_only=False)
+        st = torch.load(ck, weights_only=False, map_location=DEVICE)
         rule.load_state_dict(st["rule"]); opt.load_state_dict(st["opt"]); sched.load_state_dict(st["sched"])
         pool = st["pool"]; start = st["step"]
         print(f"resumed at step {start}")
@@ -768,15 +785,17 @@ def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True):
         if (step + 1) % cfg.snap_every == 0 or step == cfg.steps - 1:
             torch.save(dict(rule=rule.state_dict(), opt=opt.state_dict(), sched=sched.state_dict(), pool=pool,
                             step=step + 1), ck)
-            torch.save(dict(rule=rule.state_dict(), world=asdict(world), hidden=cfg.hidden, step=step + 1),
-                       os.path.join(cfg.run, f"rule_{step + 1:05d}.pt"))
+            torch.save(dict(rule={k_: v.cpu() for k_, v in rule.state_dict().items()}, world=asdict(world),
+                            hidden=cfg.hidden, step=step + 1), os.path.join(cfg.run, f"rule_{step + 1:05d}.pt"))
+            if on_snapshot:
+                on_snapshot(step + 1, rule)
     return rule
 
 
 # --------------------------------------------------------------- evaluate ---
 
 def load_rule(path):
-    st = torch.load(path, weights_only=False)
+    st = torch.load(path, weights_only=False, map_location=DEVICE)
     w = st["world"]; w["vmax"] = tuple(w["vmax"])
     world = World(**w)
     rule = SwarmRule(world, hidden=st["hidden"])
@@ -790,7 +809,7 @@ def evaluate(rule, steps=200, seeds=4, every=4, L=None):
     whether the seed mix, not chance, picked the body). Returns a summary dict."""
     L = L or LossCfg()
     targets = load_targets()
-    gen = torch.Generator().manual_seed(1234)
+    gen = make_gen(1234)
     res = {}
     for k in KINDS:
         sw = seed_swarm([targets[k]] * seeds, rule.world, gen)
@@ -820,7 +839,7 @@ def rollout(rule, steps=240, every=5, seed=7, L=None):
     summary = the cross-score matrix (every grown swarm against EVERY target) + census."""
     L = L or LossCfg()
     targets = load_targets()
-    gen = torch.Generator().manual_seed(seed)
+    gen = make_gen(seed)
     data, summary = {}, {"cross": {}, "census": {}, "steps": steps}
     for k in KINDS:
         sw = seed_swarm([targets[k]], rule.world, gen)
@@ -832,7 +851,7 @@ def rollout(rule, steps=240, every=5, seed=7, L=None):
                 tier = x["tier"].argmax(1)
                 u = torch.cat([x["p"], x["elem"][:, None].float(), x["dom"][:, None].float(), x["h"],
                                tier[:, None].float(), x["f"], x["sp"], x["w"][:, None]], 1)[vis]
-                frames.append(u.numpy()); ns.append(int(vis.sum()))
+                frames.append(u.cpu().numpy()); ns.append(int(vis.sum()))
             if t == steps:
                 break
             before = sw.active[0] & sw.hatched[0]
@@ -852,7 +871,7 @@ def rollout(rule, steps=240, every=5, seed=7, L=None):
     return data, summary
 
 
-def pack(data):
+def pack(data, steps=240):
     """int16 quantisation for the viewer: positions x50, extents/vectors x1000."""
     import base64
     scale = np.array([50, 50, 50, 1, 1, 1000, 1000, 1000, 1, 1000, 1000, 1000, 1000, 1000, 1000], np.float32)
@@ -861,6 +880,7 @@ def pack(data):
         q = np.clip(np.round(d["frames"] * scale), -32767, 32767).astype("<i2")
         out[k] = dict(shape=list(q.shape), b64=base64.b64encode(q.tobytes()).decode(), n=d["n"], crystals=d["crystals"])
     out["scale"] = scale.tolist()
+    out["steps"] = steps
     return out
 
 
@@ -881,7 +901,7 @@ def selftest():
     targets = load_targets()
     world = World(capacity=200)
     rule = SwarmRule(world)
-    gen = torch.Generator().manual_seed(0)
+    gen = make_gen(0)
     sw = seed_swarm([targets[k] for k in KINDS], world, gen)
     for k in KINDS:
         em, dm = seed_mix(targets[k], world.seed_n)
@@ -899,7 +919,7 @@ def selftest():
     h = prism_h(raw, e)
     for el in range(4):
         hh = h[e == el]
-        print(ELEMENTS[el], "h range", hh.min(0).values.numpy().round(2), hh.max(0).values.numpy().round(2),
+        print(ELEMENTS[el], "h range", hh.min(0).values.cpu().numpy().round(2), hh.max(0).values.cpu().numpy().round(2),
               "aspect", (hh.max(1).values / hh.min(1).values).max().item())
     assert ((h[e == 1].max(1).values / h[e == 1].min(1).values) <= 1.6 + 1e-5).all()
     assert ((h[e == 2][:, 0] / h[e == 2][:, 1:].max(1).values) >= 2.14 - 1e-4).all()
@@ -933,7 +953,7 @@ def bench():
     targets = load_targets()
     world = World()
     rule = SwarmRule(world)
-    gen = torch.Generator().manual_seed(0)
+    gen = make_gen(0)
     sw = seed_swarm([targets[k] for k in KINDS], world, gen)
     with torch.no_grad():
         for _ in range(60):
@@ -979,7 +999,7 @@ def main():
         data, summary = rollout(rule, a.steps)
         print_cross(summary)
         os.makedirs(a.out, exist_ok=True)
-        json.dump(pack(data), open(os.path.join(a.out, "rollout.json"), "w"))
+        json.dump(pack(data, a.steps), open(os.path.join(a.out, "rollout.json"), "w"))
         summary["rule"] = os.path.relpath(a.rule, HERE)
         json.dump(summary, open(os.path.join(a.out, "summary.json"), "w"), indent=1)
     elif a.cmd == "train":

@@ -482,3 +482,28 @@ assignments to show this.
   plus `params.json`. Units keep their index across frames.
 
 All four defaults have zero intersections on all eight frames and fit their grids.
+
+### Co-evolution: one rule, four seedings (`swarm_nca.py`)
+
+`swarm_nca.py` trains ONE tadpole rule on four seedings at once and reports the sum of the four
+losses. Each seeding is 16 tadpoles at one plan's element and domain mix.
+
+- **Element and domain are fixed at birth.** An egg is always its parent's domain. It is its
+  parent's element too, except for a 0.5% mutation that survives only if the rule hatches it.
+- **The rule learns** where a tadpole moves, whether an egg hatches, its prism (mapped inside its
+  element's identity), Charge's state (plain, danger or shield), its spindle, and when it dies.
+  A death leaves a crystal and is penalised, so restraint has to happen at hatching.
+- **Perception is domain-neutral.** A tadpole sees "same domain" vs "other domain", never which
+  domain. It also senses the swarm's headcount and element mix, as a game Cell tracks its fauna.
+- **The loss is translation-invariant.** It is a Sinkhorn divergence between centred swarms, with
+  a Huber position cost, minimised over slot-to-domain assignments.
+
+On a GPU, `python Tools/NCA/gpu_run.py swarm` runs the same co-evolution (see `swarm_gpu.py`):
+
+1. It checks the GPU against the CPU on one step.
+2. It trains with a larger batch and longer rollouts, warm-started from `results/swarm_coevo/warm_start.pt`.
+3. Every 1000 steps it scores every grown plan against every target. If the result improves, it
+   pushes `results/swarm_coevo_gpu/` only. It never touches `viewer.html`.
+
+Re-running resumes. `python Tools/NCA/swarm_nca.py rollout --rule <rule.pt>` prints the
+cross-score table and writes the data the viewer plays back.

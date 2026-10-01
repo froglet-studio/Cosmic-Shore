@@ -50,10 +50,19 @@ def _curve(log_path):
     return "".join(out)
 
 
+def _rank(d):
+    """Most seedings closest to their own plan first, then the lowest own-plan divergence."""
+    cross = json.load(open(os.path.join(d, "summary.json")))["cross"]
+    correct = sum(min(cross[k], key=cross[k].get) == k for k in KINDS)
+    return (-correct, sum(cross[k][k] for k in KINDS))
+
+
 def build_swarm(results_root):
-    d = os.path.join(results_root, "swarm_coevo")
-    if not os.path.isfile(os.path.join(d, "rollout.json")):
+    cands = [os.path.join(results_root, n) for n in ("swarm_coevo_gpu", "swarm_coevo")]
+    cands = [d for d in cands if os.path.isfile(os.path.join(d, "rollout.json"))]
+    if not cands:
         return "", ""
+    d = min(cands, key=_rank)
     import prism_render as pr
     roll = json.load(open(os.path.join(d, "rollout.json")))
     summ = json.load(open(os.path.join(d, "summary.json")))
