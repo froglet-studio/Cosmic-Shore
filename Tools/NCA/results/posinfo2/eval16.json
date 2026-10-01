@@ -1,0 +1,213 @@
+{
+ "own": {
+  "mass": {
+   "cross": {
+    "mass": 1.76,
+    "space": 69.32,
+    "charge": 55.08,
+    "time": 76.87
+   },
+   "n": 192,
+   "rate": 1.0,
+   "ok": true
+  },
+  "space": {
+   "cross": {
+    "mass": 70.61,
+    "space": 1.65,
+    "charge": 55.24,
+    "time": 68.43
+   },
+   "n": 88,
+   "rate": 1.0,
+   "ok": true
+  },
+  "charge": {
+   "cross": {
+    "mass": 55.13,
+    "space": 55.87,
+    "charge": 1.83,
+    "time": 69.85
+   },
+   "n": 179,
+   "rate": 1.0,
+   "ok": true
+  },
+  "time": {
+   "cross": {
+    "mass": 84.68,
+    "space": 79.59,
+    "charge": 78.69,
+    "time": 2.68
+   },
+   "n": 76,
+   "rate": 1.0,
+   "ok": true
+  }
+ },
+ "switch": {
+  "mass->space": {
+   "cross": {
+    "mass": 70.98,
+    "space": 1.89,
+    "charge": 54.8,
+    "time": 68.88
+   },
+   "n": 99,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "space",
+    "space",
+    "space"
+   ]
+  },
+  "space->charge": {
+   "cross": {
+    "mass": 55.5,
+    "space": 55.98,
+    "charge": 2.15,
+    "time": 69.87
+   },
+   "n": 179,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "charge",
+    "charge",
+    "charge"
+   ]
+  },
+  "charge->time": {
+   "cross": {
+    "mass": 76.9,
+    "space": 67.02,
+    "charge": 69.7,
+    "time": 7.09
+   },
+   "n": 81,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "time",
+    "time",
+    "time"
+   ]
+  },
+  "time->mass": {
+   "cross": {
+    "mass": 2.24,
+    "space": 69.55,
+    "charge": 55.81,
+    "time": 77.2
+   },
+   "n": 193,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "mass",
+    "mass",
+    "mass"
+   ]
+  },
+  "mass->charge": {
+   "cross": {
+    "mass": 55.43,
+    "space": 55.9,
+    "charge": 1.99,
+    "time": 69.62
+   },
+   "n": 179,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "charge",
+    "charge",
+    "charge"
+   ]
+  },
+  "mass->time": {
+   "cross": {
+    "mass": 76.48,
+    "space": 66.8,
+    "charge": 69.34,
+    "time": 6.88
+   },
+   "n": 83,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "time",
+    "time",
+    "time"
+   ]
+  },
+  "space->time": {
+   "cross": {
+    "mass": 77.09,
+    "space": 67.67,
+    "charge": 70.29,
+    "time": 6.87
+   },
+   "n": 70,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "time",
+    "time",
+    "time"
+   ]
+  },
+  "charge->space": {
+   "cross": {
+    "mass": 70.27,
+    "space": 2.54,
+    "charge": 54.93,
+    "time": 68.38
+   },
+   "n": 88,
+   "rate": 1.0,
+   "ok": true,
+   "majority": [
+    "space",
+    "space",
+    "space"
+   ]
+  },
+  "time->space": {
+   "cross": {
+    "mass": 73.8,
+    "space": 7.49,
+    "charge": 57.87,
+    "time": 68.65
+   },
+   "n": 101,
+   "rate": 0.67,
+   "ok": true,
+   "majority": [
+    "space",
+    "space",
+    "space"
+   ]
+  }
+ },
+ "tiers_run": [
+  "own",
+  "standard",
+  "rest"
+ ],
+ "na": [
+  "space->mass",
+  "charge->mass",
+  "time->charge"
+ ],
+ "samples": 3,
+ "max_loss": 8.0,
+ "passed": 13,
+ "feasible": 13,
+ "own_passed": 4,
+ "std_passed": 4,
+ "rest_passed": 5,
+ "complete": true,
+ "seconds": 41.6
+}

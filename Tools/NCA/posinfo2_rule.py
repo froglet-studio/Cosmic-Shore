@@ -169,6 +169,18 @@ def guarded_homeo_lay(self, sw, gi, gj, gen=None):
 
             def ok(e):                                         # may one more tadpole of element e appear?
                 return e == maj or int(tot[e]) + 1 < lead
+            # an EGG laid before the cull (the cull counts only hatched tadpoles) of an element that already
+            # matches the lead re-forms as the majority element before it hatches - no death, just a molt
+            for e in range(4):
+                if e == maj or int(tot[e]) < lead:
+                    continue
+                eggs = (sw.active[b] & ~sw.hatched[b] & (sw.elem[b] == e)).nonzero().squeeze(1)
+                for i in eggs.tolist():
+                    if int(tot[e]) < lead:
+                        break
+                    d = int(sw.dom[b, i])
+                    sw.elem[b, i] = maj; have[e, d] -= 1; have[maj, d] += 1; tot[e] -= 1; tot[maj] += 1
+                    self.molts += 1
             surplus = (have - quota).clamp(min=0)
             lack = (quota - have).clamp(min=0)
             for d in range(3):                                 # molting (domain breeds true)
@@ -178,6 +190,8 @@ def guarded_homeo_lay(self, sw, gi, gj, gen=None):
                     mem = (sw.active[b] & sw.hatched[b] & (sw.elem[b] == e_from) & (sw.dom[b] == d)).nonzero().squeeze(1)
                     go = mem[torch.rand(len(mem), generator=gen) < self.p_molt][:int(surplus[e_from, d])]
                     for i in go.tolist():
+                        if e_from == maj and lead - 1 <= max(int(tot[e]) for e in range(4) if e != maj) + 1:
+                            break                              # never thin the majority while its lead is slim
                         w = lack[:, d].float() * torch.tensor([1.0 if ok(e) else 0.0 for e in range(4)])
                         if float(w.sum()) == 0:
                             break
@@ -232,3 +246,37 @@ def _dispatch7(self, sw, gi, gj, gen=None):
 
 
 PosInfo2Rule.homeo_lay = _dispatch7
+
+
+@torch.no_grad()
+def egg_guard(rule, sw):
+    """homeo >= 7, run at the START of a step (eggs hatch inside the step, before laying is decided): an
+    unhatched egg of a non-majority element whose hatched + egg count would draw level with the majority
+    element's hatched count re-forms as the majority element. A molt, never a death."""
+    for b in range(sw.B):
+        h = sw.active[b] & sw.hatched[b]
+        if int(h.sum()) == 0:
+            continue
+        hc = torch.bincount(sw.elem[b][h], minlength=4)
+        maj = int(hc.argmax()); lead = int(hc[maj])
+        eg = sw.active[b] & ~sw.hatched[b]
+        ec = torch.bincount(sw.elem[b][eg], minlength=4)
+        for e in range(4):
+            over = int(hc[e]) + int(ec[e]) - (lead - 1)
+            if e == maj or over <= 0:
+                continue
+            eggs = (eg & (sw.elem[b] == e)).nonzero().squeeze(1)[:over]
+            sw.elem[b, eggs] = maj
+            rule.molts += len(eggs)
+
+
+_base_step = PosInfo2Rule._step
+
+
+def _guarded_step(self, sw, gen=None, bud=True, fire=None):
+    if self.homeo >= 7:
+        egg_guard(self, sw)
+    return _base_step(self, sw, gen, bud, fire)
+
+
+PosInfo2Rule._step = _guarded_step

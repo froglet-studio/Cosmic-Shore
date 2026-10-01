@@ -1,0 +1,91 @@
+{
+ "mass": {
+  "n": 192,
+  "speed": 0.119,
+  "jerk": 0.242,
+  "jerk_rel": 2.043,
+  "jerk_e": {
+   "Charge": 0.332,
+   "Mass": 0.178,
+   "Space": 0.406,
+   "Time": 0.349
+  },
+  "planar_frac": 0.355,
+  "flat_mean": 0.15,
+  "planar_plan": 0.432,
+  "coherence": 0.181,
+  "jitter": 2.542,
+  "phase": 0.122,
+  "stuck": 0.0,
+  "osc": 0.058
+ },
+ "space": {
+  "n": 88,
+  "speed": 0.097,
+  "jerk": 0.195,
+  "jerk_rel": 2.023,
+  "jerk_e": {
+   "Charge": 0.103,
+   "Space": 0.23,
+   "Time": 0.203
+  },
+  "planar_frac": 0.229,
+  "flat_mean": 0.194,
+  "planar_plan": 0.375,
+  "coherence": 0.203,
+  "jitter": 2.853,
+  "phase": 0.065,
+  "stuck": 0.0,
+  "osc": 0.012
+ },
+ "charge": {
+  "n": 179,
+  "speed": 0.068,
+  "jerk": 0.14,
+  "jerk_rel": 2.056,
+  "jerk_e": {
+   "Charge": 0.091,
+   "Space": 0.441,
+   "Time": 0.196
+  },
+  "planar_frac": 0.743,
+  "flat_mean": 0.08,
+  "planar_plan": 0.687,
+  "coherence": 0.219,
+  "jitter": 2.596,
+  "phase": 0.332,
+  "stuck": 0.039,
+  "osc": 0.045
+ },
+ "time": {
+  "n": 76,
+  "speed": 0.121,
+  "jerk": 0.252,
+  "jerk_rel": 2.082,
+  "jerk_e": {
+   "Mass": 0.167,
+   "Space": 0.209,
+   "Time": 0.276
+  },
+  "planar_frac": 0.607,
+  "flat_mean": 0.098,
+  "planar_plan": 0.487,
+  "coherence": 0.149,
+  "jitter": 2.909,
+  "phase": 0.159,
+  "stuck": 0.0,
+  "osc": 0.023
+ },
+ "mean": {
+  "speed": 0.101,
+  "jerk": 0.207,
+  "jerk_rel": 2.051,
+  "planar_frac": 0.483,
+  "flat_mean": 0.131,
+  "coherence": 0.188,
+  "jitter": 2.725,
+  "phase": 0.17,
+  "stuck": 0.01,
+  "osc": 0.035
+ }
+}

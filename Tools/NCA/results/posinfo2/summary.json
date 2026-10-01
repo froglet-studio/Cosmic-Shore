@@ -1,0 +1,340 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 1.45,
+   "space": 69.11,
+   "charge": 55.01,
+   "time": 76.73
+  },
+  "space": {
+   "mass": 70.14,
+   "space": 1.82,
+   "charge": 54.9,
+   "time": 67.86
+  },
+  "charge": {
+   "mass": 54.85,
+   "space": 55.81,
+   "charge": 1.51,
+   "time": 70.6
+  },
+  "time": {
+   "mass": 84.14,
+   "space": 78.42,
+   "charge": 77.77,
+   "time": 2.41
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 192,
+   "target_n": 192,
+   "elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    105,
+    87,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 88,
+   "target_n": 88,
+   "elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    37,
+    51,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 1
+  },
+  "charge": {
+   "n": 179,
+   "target_n": 179,
+   "elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    90,
+    89,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 76,
+   "target_n": 76,
+   "elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    26,
+    6,
+    44
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 1.19,
+   "space": 21.3,
+   "charge": 12.5,
+   "time": 25.06
+  },
+  "space": {
+   "mass": 21.57,
+   "space": 1.74,
+   "charge": 13.28,
+   "time": 24.45
+  },
+  "charge": {
+   "mass": 11.82,
+   "space": 13.81,
+   "charge": 1.27,
+   "time": 19.82
+  },
+  "time": {
+   "mass": 24.89,
+   "space": 23.85,
+   "charge": 18.33,
+   "time": 2.15
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 70.22,
+    "space": 2.26,
+    "charge": 54.88,
+    "time": 67.53
+   },
+   "majority": "space",
+   "census": {
+    "n": 88,
+    "target_n": 88,
+    "elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     37,
+     51,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 55.17,
+    "space": 55.82,
+    "charge": 1.65,
+    "time": 69.92
+   },
+   "majority": "charge",
+   "census": {
+    "n": 179,
+    "target_n": 179,
+    "elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     90,
+     89,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 2
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 79.14,
+    "space": 68.3,
+    "charge": 71.87,
+    "time": 7.48
+   },
+   "majority": "time",
+   "census": {
+    "n": 78,
+    "target_n": 76,
+    "elements": [
+     0,
+     3,
+     20,
+     55
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     29,
+     49,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 70.37,
+    "space": 2.75,
+    "charge": 54.82,
+    "time": 68.09
+   },
+   "majority": "space",
+   "census": {
+    "n": 89,
+    "target_n": 192,
+    "elements": [
+     25,
+     2,
+     55,
+     7
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     37,
+     51,
+     1
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "eval16": {
+  "passed": 13,
+  "feasible": 13,
+  "own_passed": 4,
+  "std_passed": 4,
+  "rest_passed": 5,
+  "complete": true,
+  "na": [
+   "space->mass",
+   "charge->mass",
+   "time->charge"
+  ],
+  "samples": 3,
+  "tiers_run": [
+   "own",
+   "standard",
+   "rest"
+  ],
+  "own": {
+   "mass": 1.0,
+   "space": 1.0,
+   "charge": 1.0,
+   "time": 1.0
+  },
+  "switch": {
+   "mass->space": 1.0,
+   "space->charge": 1.0,
+   "charge->time": 1.0,
+   "time->mass": 1.0,
+   "mass->charge": 1.0,
+   "mass->time": 1.0,
+   "space->time": 1.0,
+   "charge->space": 1.0,
+   "time->space": 0.67
+  }
+ },
+ "tests_passed": 7,
+ "tests_close": 88.95,
+ "meta": {
+  "device": "cpu",
+  "step": 300,
+  "tag": "posinfo2",
+  "note": "PosInfo2Rule: posinfo (G2 + body-frame positional info, BPTT) fine-tuned with switches; designed molting homeostat (homeo 4); learned death masked (lossless)."
+ },
+ "rule": "rule.pt"
+}
