@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4e318482672e4a9533d4a2ac8c4bc10, type: 3}
+  m_Name: SwarmFaunaConfig
+  m_EditorClassIdentifier:
+  ChargePlan: {fileID: 4900000, guid: 07dfea02463d653b53c1d4c2e33d628c, type: 3}
+  MassPlan: {fileID: 4900000, guid: b37e5df8f8e587075a45938a89048a3f, type: 3}
+  SpacePlan: {fileID: 4900000, guid: 337aaa14d97dd0a87399f1d0223ec939, type: 3}
+  TimePlan: {fileID: 4900000, guid: db839ccf55616a4c67e38f69d7927a62, type: 3}
+  TadpolePrefab: {fileID: 5945480239701989318, guid: 66504f098e300c8a60c29e3d931eaa0a, type: 3}
+  UnitScale: 2
+  TickHz: 10
+  MaxStepsPerFrame: 3
+  SeedMembers: 24
+  BiteRadius: 7
+  BitersPerStep: 12
+  EggVolume: {x: 20.45, y: 40.31, z: 22.18, w: 12.8}
+  CrossElementCost: 2
+  StomachEggs: 24
+  LayRate: 0.02
+  LayMax: 2
+  StarvationSeconds: 90
+  ShedIntervalSeconds: 4
+  ExtinctLingerSeconds: 10
+  Cruise: 0.35
+  TurnPerStep: 0.03
+  WanderReach: 300
+  VesselRadius: 9
+  SenseMargin: 220
+  DangerEnter: 0.45
+  DangerExit: 0.15
+  HeartWorldScale: {x: 2.298, y: 1.737, z: 2.298, w: 1.737}
+  PrismScale: 1
+  HeartPrismGap: 0.6
+  BirthBloomSeconds: 0.8
+  MoltHeartSeconds: 0.5
+  SwarmLoopEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  MorphEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
