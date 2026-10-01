@@ -8,7 +8,7 @@
     "time": 75.57
    },
    "n": 196,
-   "rate": 1.0,
+   "rate": 0.67,
    "ok": true
   },
   "space": {
@@ -19,8 +19,8 @@
     "time": 69.56
    },
    "n": 91,
-   "rate": 1.0,
-   "ok": true
+   "rate": 0.0,
+   "ok": false
   },
   "charge": {
    "cross": {
@@ -30,8 +30,8 @@
     "time": 71.25
    },
    "n": 181,
-   "rate": 1.0,
-   "ok": true
+   "rate": 0.33,
+   "ok": false
   },
   "time": {
    "cross": {
@@ -41,8 +41,8 @@
     "time": 12.63
    },
    "n": 80,
-   "rate": 1.0,
-   "ok": true
+   "rate": 0.0,
+   "ok": false
   }
  },
  "switch": {
@@ -54,8 +54,8 @@
     "time": 65.2
    },
    "n": 103,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "space",
     "space",
@@ -70,8 +70,8 @@
     "time": 71.3
    },
    "n": 182,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "charge",
     "charge",
@@ -86,8 +86,8 @@
     "time": 36.88
    },
    "n": 96,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "time",
     "time",
@@ -102,8 +102,8 @@
     "time": 56.25
    },
    "n": 156,
-   "rate": 0.67,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "mass",
     "mass",
@@ -118,8 +118,8 @@
     "time": 74.54
    },
    "n": 187,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "charge",
     "charge",
@@ -134,8 +134,8 @@
     "time": 39.32
    },
    "n": 100,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "time",
     "time",
@@ -150,7 +150,7 @@
     "time": 71.56
    },
    "n": 146,
-   "rate": 0.5,
+   "rate": 0.0,
    "ok": false,
    "majority": [
     "space",
@@ -165,7 +165,7 @@
     "time": 54.74
    },
    "n": 94,
-   "rate": 0.33,
+   "rate": 0.0,
    "ok": false,
    "majority": [
     "space",
@@ -181,8 +181,8 @@
     "time": 74.5
    },
    "n": 196,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "mass",
     "mass"
@@ -228,8 +228,8 @@
     "time": 63.91
    },
    "n": 97,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "space",
     "space",
@@ -244,11 +244,12 @@
  ],
  "na": [],
  "samples": 3,
- "passed": 12,
+ "max_loss": 8.0,
+ "passed": 1,
  "feasible": 16,
- "own_passed": 4,
- "std_passed": 4,
- "rest_passed": 4,
+ "own_passed": 1,
+ "std_passed": 0,
+ "rest_passed": 0,
  "complete": true,
- "seconds": 392.6
+ "seconds": 844.0
 }
