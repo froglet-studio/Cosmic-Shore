@@ -18,3 +18,5 @@ one autonomous session works from, on its own branch (`cece/swarm-x-<tag>`), rep
 The gradient-trained runs (E, F, G, H series) continue alongside; see the parent README.
 
 **Round 1b, specialists** (`solo.md`): the same G2 rule fine-tuned on each plan alone (`cece/swarm-solo-<plan>`), so each plan's result can be confirmed on its own; their task vectors are then combined into hybrids that seed the four-plan search.
+
+**Round 2** (after round 1 showed field solves the stated problem): `distill.md` (can a purely local learned rule reproduce field?) and `zoo.md` (quality-diversity over field: a set of distinct, fun personalities). Scored on `swarm_eval.py` (all 16 transitions, fair cull).
