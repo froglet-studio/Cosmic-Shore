@@ -400,7 +400,10 @@ class SortSwarm:
             nb = (d < sn.World().R).astype(float) + np.eye(len(idx))
             c = np.array(cen_i)
             for _ in range(cfg.centre_iters):
-                c = (1 - cfg.centre_relax) * (nb @ c) / nb.sum(1, keepdims=True) + cfg.centre_relax * (P + v)
+                # leak toward the IMPLIED centre: where I am minus where my fated well says I should be
+                # (orphans/no well: MU = own body coords, i.e. no opinion beyond the neighbours')
+                implied = P + v - MU
+                c = (1 - cfg.centre_relax) * (nb @ c) / nb.sum(1, keepdims=True) + cfg.centre_relax * implied
             S[idx, H_EST] = c
         # --- look: the type's code state (grow-in alpha)
         for i, (e, r) in enumerate(zip(elem[idx], role)):
