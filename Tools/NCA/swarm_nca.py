@@ -491,6 +491,25 @@ class LossCfg:
     w_mix: float = 0.0         # squared error of the swarm's element shares against the plan's
     w_con: float = 0.0         # contrastive hinge: the own plan must beat every other plan by con_margin
     con_margin: float = 4.0
+    scale_inv: int = 0         # 1: a body plan is a shape, not a size - the swarm is rescaled to the plan's RMS
+                               # radius before matching (headcount sets the scale; collision fixes the spacing)
+
+
+def _plan_rms(T):
+    if not hasattr(T, "_rms"):
+        p = T.frames[0]["p"]
+        T._rms = float(((p - p.mean(0)) ** 2).sum(-1).mean().sqrt())
+    return T._rms
+
+
+def _rescaled(x, a, T):
+    """scale_inv: centre the swarm (weights a) and scale its RMS radius to the plan's. Uniform scale
+    only - a stretched or squashed swarm still differs from the plan."""
+    c = (a[:, None] * x["p"]).sum(0)
+    d = x["p"] - c
+    r = (a * (d * d).sum(-1)).sum().clamp(min=1e-6).sqrt()
+    x2 = dict(x); x2["p"] = d * (_plan_rms(T) / r)
+    return x2
 
 
 def _lkey(L):
@@ -603,6 +622,9 @@ def _plan_marginal(t, xelem, a):
 
 def _divergence(x, a, oaa, T, L, frames=None, ndom=None):
     """Debiased Sinkhorn divergence to the best (frame, slot->domain assignment) of target T."""
+    if L.scale_inv:
+        x = _rescaled(x, a, T)
+        oaa = sinkhorn_ot(self_cost(x, L), a, a, L.eps)
     frames = range(len(T.frames)) if frames is None else frames
     perms = PERMS[ndom or T.slots]
     best = None
@@ -630,7 +652,7 @@ def swarm_loss(x, T: Target, L: LossCfg, frames=None, ndom=None, others=None):
         z = (w * 0).sum() + 100.0
         return z, dict(sink=100.0, count=1.0, frame=0, perm=(0,), n=0.0)
     a = w / tot
-    oaa = sinkhorn_ot(self_cost(x, L), a, a, L.eps)
+    oaa = None if L.scale_inv else sinkhorn_ot(self_cost(x, L), a, a, L.eps)
     sink, k, perm = _divergence(x, a, oaa, T, L, frames, ndom)
     count = ((tot - T.n) / T.n) ** 2
     hat = x["hatched"].float()
@@ -839,6 +861,7 @@ class TrainCfg:
     w_mix: float = 0.0
     w_con: float = 0.0
     con_margin: float = 4.0
+    scale_inv: int = 0
 
 
 def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
@@ -854,7 +877,7 @@ def make_seed_pool(rule, targets, cfg: TrainCfg, gen):
 def train(cfg: TrainCfg, world: World, L: LossCfg, resume=True, on_snapshot=None):
     os.makedirs(cfg.run, exist_ok=True)
     world = replace(world, learned_lay=cfg.learned_lay, lay_gain=cfg.lay_gain, lay_bias=cfg.lay_bias)
-    L = replace(L, rel_elem=cfg.rel_elem, w_mix=cfg.w_mix, w_con=cfg.w_con, con_margin=cfg.con_margin)
+    L = replace(L, rel_elem=cfg.rel_elem, w_mix=cfg.w_mix, w_con=cfg.w_con, con_margin=cfg.con_margin, scale_inv=cfg.scale_inv)
     targets = load_targets()
     torch.manual_seed(cfg.seed)
     gen = make_gen(cfg.seed)
@@ -1211,6 +1234,7 @@ def main():
     ro.add_argument("--rule", required=True)
     ro.add_argument("--steps", type=int, default=240)
     ro.add_argument("--out", default=os.path.join(HERE, "results", "swarm_coevo"))
+    ro.add_argument("--scale-inv", type=int, default=0)
     tr = sub.add_parser("train")
     for f_, v in asdict(TrainCfg()).items():
         tr.add_argument("--" + f_.replace("_", "-"), type=type(v), default=v)
@@ -1221,7 +1245,7 @@ def main():
         bench()
     elif a.cmd == "rollout":
         rule = load_rule(a.rule)
-        data, summary = rollout(rule, a.steps)
+        data, summary = rollout(rule, a.steps, L=LossCfg(scale_inv=a.scale_inv))
         print_cross(summary); print_geo(summary); print_switch(summary)
         os.makedirs(a.out, exist_ok=True)
         json.dump(pack(data, a.steps), open(os.path.join(a.out, "rollout.json"), "w"))

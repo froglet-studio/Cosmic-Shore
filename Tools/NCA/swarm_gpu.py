@@ -146,7 +146,9 @@ def make_publisher(device, push):
             return
         banner(f"step {step}: grow every plan from a fresh seed and score it")
         rule.eval()
-        data, summary = sn.rollout(rule, 240)
+        L = sn.LossCfg(scale_inv=int(float(OVERRIDES.get("scale_inv", 0))))   # score with the loss it trains on
+        data, summary = sn.rollout(rule, 240, L=L)
+        summary["scale_inv"] = L.scale_inv
         rule.train()
         sn.print_cross(summary); sn.print_geo(summary); sn.print_switch(summary)
         sc, correct = score(summary)
