@@ -50,3 +50,11 @@ a majority-following swarm correctly becomes a jellyfish and is scored against t
 
 m3 (running): the oracle homeostat ON during training, so the learned rule only has to learn
 SHAPE under a composition that is held to the plan.
+
+## m3: designed homeostat ON in training, shape learned - 7/8, PUBLISHED (step 500)
+
+`results/meta/{summary,rollout,probe}.json` + `rule.pt` are now m3 step 500 (oracle=1 in the
+checkpoint; load with `meta_swarm.load_meta`). Strict tests 7/8, summed close 169.9 (G2 274.0,
+oracle-on-G2 197.9). Own plan: 11.8 / 14.8 / 5.2 / 12.9 (G2 13.9 / 17.5 / 15.3 / 20.7).
+Geometry-only, EVERY passing switch now really changes shape: whale->jelly 8.3 (vs 17.2 whale),
+jelly->puffer 5.1, puffer->dragonfly 8.1. Probe heal 0.90 / 0.77 / 0.71 / 1.08.
