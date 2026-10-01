@@ -1,0 +1,37 @@
+{
+ "per_plan": {
+  "mass": {
+   "grown_n": 185,
+   "ms_per_step_grown": 7.553,
+   "ms_per_step_grow": 6.625,
+   "deaths": 0,
+   "tadpole_steps": 60066
+  },
+  "space": {
+   "grown_n": 85,
+   "ms_per_step_grown": 4.433,
+   "ms_per_step_grow": 4.204,
+   "deaths": 0,
+   "tadpole_steps": 56823
+  },
+  "charge": {
+   "grown_n": 172,
+   "ms_per_step_grown": 7.66,
+   "ms_per_step_grow": 6.815,
+   "deaths": 0,
+   "tadpole_steps": 54240
+  },
+  "time": {
+   "grown_n": 73,
+   "ms_per_step_grown": 3.749,
+   "ms_per_step_grow": 4.232,
+   "deaths": 0,
+   "tadpole_steps": 42455
+  }
+ },
+ "deaths": 0,
+ "deaths_per_1k_tadpole_steps": 0.0,
+ "lossless": true,
+ "ms_per_step": 5.849,
+ "grown_n": 129
+}

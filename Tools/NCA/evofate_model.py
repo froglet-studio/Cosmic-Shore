@@ -56,6 +56,14 @@ class FateCfg:
     well_clip: float = 0.52    # cap on the well step (voxels/step)
     mix: float = 1.0           # scale on G2's learned velocity
     e0: float = 0.0            # dead zone: no pull while the fated well's energy (0.5 Mahalanobis^2) is under e0, full by 2 e0
+    tmix: float = 1.0          # Time runners: scale on G2's learned velocity (vmax 2: they wander out of thin wings)
+    tp: float = 1.0            # Time runners: pull multiplier (Time zips at vmax 2, the dragonfly is the hard plan)
+    te0: float = 1.0           # Time runners: dead-zone multiplier
+    rect: float = 0.0          # 0..1: G2 may not move a tadpole AWAY from its well while it is outside the dead zone
+                               # (the outward component of its learned velocity is removed, last step's well direction);
+                               # inside the dead zone G2 roams freely. Removes the push-out / pull-back reversal.
+    sync: int = 0              # 1: the designed move happens only on the steps the tadpole's G2 cell FIRES (x 1/fire_rate,
+                               # same mean pull). G2 fires on half the steps; pulling on the idle ones reverses the motion.
     f_inertia: float = 0.0     # momentum on the designed (fate + adhesion) move: v = f_inertia v + (1 - f_inertia) move
     adh: float = 0.0           # scale on sort's differential-adhesion force (0 = off)
     k_rep: float = 0.0         # extra collision (sort-style) on top of G2's own
@@ -130,7 +138,7 @@ class EvoFate(em.EvoRule):
         c = np.bincount(sw.elem[b].numpy()[al], minlength=4)
         kind = sn.PLAN_OF[int(np.argmax(c))]
         self.mem[b] = dict(plan=kind, cand=kind, cand_n=0, perm=None, t=0,
-                           fate=np.full(N, -1), fkey=np.zeros(N, int), troll=np.full(N, -1), fv=np.zeros((N, 3)),
+                           fate=np.full(N, -1), fkey=np.zeros(N, int), troll=np.full(N, -1), fv=np.zeros((N, 3)), udir=np.zeros((N, 3)), ugate=np.zeros(N),
                            rng=np.random.default_rng(self.cfg.seed * 1000 + b + 17 * int(sw.elem[b].sum())))
 
     def _pick_perm(self, code, elem, dom, old):
@@ -186,6 +194,7 @@ class EvoFate(em.EvoRule):
         gi, gj = sn.edges(sw, W.R)
         x = torch.cat([s, F.one_hot(elem, 4).to(s.dtype), hatched[:, None].to(s.dtype)], 1)
         fire = act & (torch.rand(n, generator=gen) <= self.fire_rate)
+        self._fired = fire.view(B, N).numpy().copy()
         idx = fire.nonzero().squeeze(1)
         e = fire[gi]
         hb = (sw.hatched & sw.active).float()
@@ -196,7 +205,13 @@ class EvoFate(em.EvoRule):
         out = self.mlp(feats)
         ds = torch.zeros(n, C).index_copy(0, idx, out[:, :C])
         vmax = torch.tensor(W.vmax)[elem].index_select(0, idx)[:, None]
-        v = torch.zeros(n, 3).index_copy(0, idx, cfg.mix * vmax * torch.tanh(out[:, C:]))
+        vm = torch.where(elem.index_select(0, idx) == 3, cfg.mix * cfg.tmix, cfg.mix)[:, None]
+        v = torch.zeros(n, 3).index_copy(0, idx, vm * vmax * torch.tanh(out[:, C:]))
+        if cfg.rect > 0 and self.mem:
+            u = torch.tensor(np.concatenate([self.mem[b]["udir"] for b in range(B)]), dtype=v.dtype)
+            gt = torch.tensor(np.concatenate([self.mem[b]["ugate"] for b in range(B)]), dtype=v.dtype)
+            out_c = (v * u).sum(-1).clamp(max=0)                 # < 0: moving away from the well
+            v = v - (cfg.rect * gt * out_c)[:, None] * u
         s = (s + ds).clamp(-sn.S_MAX, sn.S_MAX)
         if cfg.no_death:
             s[:, DIE] = s[:, DIE].clamp(max=sn.DIE_AT - 0.5)
@@ -295,9 +310,20 @@ class EvoFate(em.EvoRule):
                 Eb[better], Gb[better] = e2[better], g2[better]
             G[orph] = Gb; E[orph] = Eb
         step = -cfg.k_well * G
+        gate = np.ones(len(idx))
+        is_t = elem[idx] == 3
         if cfg.e0 > 0:
-            step = step * np.clip((E - cfg.e0) / cfg.e0, 0, 1)[:, None]
+            e0 = np.where(is_t, cfg.e0 * cfg.te0, cfg.e0)
+            gate = np.clip((E - e0) / np.maximum(e0, 1e-6), 0, 1)
+            step = step * gate[:, None]
+        if cfg.tp != 1.0:
+            step = step * np.where(is_t, cfg.tp, 1.0)[:, None]
         nrm = np.linalg.norm(step, axis=1, keepdims=True)
+        if cfg.rect > 0:
+            gn = np.linalg.norm(G, axis=1, keepdims=True)
+            m["udir"][:] = 0; m["ugate"][:] = 0
+            m["udir"][idx] = -G / np.maximum(gn, 1e-9)
+            m["ugate"][idx] = gate
         step = step * np.minimum(1, cfg.well_clip / np.maximum(nrm, 1e-9))
         move = cfg.pull * step
         if cfg.adh > 0 or cfg.k_rep > 0:
@@ -316,6 +342,8 @@ class EvoFate(em.EvoRule):
                 Aij = np.where(same_t, a["a_same"], np.where(same_e, a["a_elem"], np.where(same_r, a["a_role"], a["a_other"])))
                 near = (d < a["R_adh"]) & (d > a["r0"] * 0.9)
                 move += cfg.adh * ((Aij * near / d)[..., None] * dx).sum(1)
+        if cfg.sync:
+            move = move * (self._fired[b][idx] / self.fire_rate)[:, None]
         if cfg.f_inertia > 0:
             fv = m["fv"]
             move = cfg.f_inertia * fv[idx] + (1 - cfg.f_inertia) * move

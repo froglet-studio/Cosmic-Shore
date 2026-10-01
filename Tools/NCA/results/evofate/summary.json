@@ -1,0 +1,301 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 3.14,
+   "space": 68.59,
+   "charge": 53.69,
+   "time": 75.38
+  },
+  "space": {
+   "mass": 75.37,
+   "space": 5.16,
+   "charge": 61.23,
+   "time": 71.13
+  },
+  "charge": {
+   "mass": 56.7,
+   "space": 55.28,
+   "charge": 2.0,
+   "time": 70.39
+  },
+  "time": {
+   "mass": 83.41,
+   "space": 74.26,
+   "charge": 75.25,
+   "time": 5.8
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 185,
+   "target_n": 192,
+   "elements": [
+    18,
+    122,
+    24,
+    21
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    101,
+    84,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 85,
+   "target_n": 88,
+   "elements": [
+    22,
+    2,
+    54,
+    7
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    37,
+    48,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 172,
+   "target_n": 179,
+   "elements": [
+    125,
+    1,
+    16,
+    30
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    87,
+    85,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 73,
+   "target_n": 76,
+   "elements": [
+    2,
+    3,
+    18,
+    50
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    43,
+    4,
+    26
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 2.09,
+   "space": 19.6,
+   "charge": 10.85,
+   "time": 23.92
+  },
+  "space": {
+   "mass": 26.35,
+   "space": 4.17,
+   "charge": 18.31,
+   "time": 27.81
+  },
+  "charge": {
+   "mass": 13.52,
+   "space": 13.07,
+   "charge": 1.98,
+   "time": 20.19
+  },
+  "time": {
+   "mass": 26.11,
+   "space": 22.26,
+   "charge": 17.16,
+   "time": 4.85
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 73.16,
+    "space": 6.32,
+    "charge": 60.9,
+    "time": 70.8
+   },
+   "majority": "space",
+   "census": {
+    "n": 85,
+    "target_n": 88,
+    "elements": [
+     23,
+     2,
+     53,
+     7
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     40,
+     45,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 55.19,
+    "space": 55.43,
+    "charge": 1.8,
+    "time": 70.65
+   },
+   "majority": "charge",
+   "census": {
+    "n": 172,
+    "target_n": 179,
+    "elements": [
+     125,
+     1,
+     16,
+     30
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     84,
+     88,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 75.38,
+    "space": 67.16,
+    "charge": 67.04,
+    "time": 8.44
+   },
+   "majority": "time",
+   "census": {
+    "n": 75,
+    "target_n": 76,
+    "elements": [
+     3,
+     3,
+     18,
+     51
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     40,
+     35,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 78.81,
+    "space": 10.52,
+    "charge": 65.46,
+    "time": 72.74
+   },
+   "majority": "space",
+   "census": {
+    "n": 85,
+    "target_n": 192,
+    "elements": [
+     24,
+     2,
+     52,
+     7
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     27,
+     37,
+     21
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "meta": {
+  "tag": "evofate",
+  "params": "params.json",
+  "tests_passed": 6,
+  "note": "The evolved rule (G2 + evo genome) with a sticky FATE: newborns commit to an under-occupied positional-information well of their (element, region) type and a designed term steers them to it; composition designed (sort's homeostat + molting), learned death suppressed."
+ }
+}

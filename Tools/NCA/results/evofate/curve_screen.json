@@ -1,0 +1,4760 @@
+[
+ {
+  "cfg": {
+   "pull": 0.5
+  },
+  "screen": {
+   "7": {
+    "fit": 16.79,
+    "own": {
+     "mass": 5.75,
+     "space": 3.61,
+     "charge": 2.35,
+     "time": 10.34
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 5.19,
+     "space->charge": 2.2,
+     "charge->time": 10.89,
+     "time->mass": 5.0
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 16.18,
+    "own": {
+     "mass": 6.62,
+     "space": 4.72,
+     "charge": 2.15,
+     "time": 12.67
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 5.14,
+     "space->charge": 1.58,
+     "charge->time": 11.51,
+     "time->mass": 6.57
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.135,
+    "jerk": 0.229,
+    "jerk_rel": 1.699,
+    "planar_frac": 0.754,
+    "flat_mean": 0.072,
+    "coherence": 0.521,
+    "jitter": 1.179,
+    "phase": 0.254,
+    "stuck": 0.0,
+    "osc": 0.15
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.345,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.141,
+     "jerk": 0.247,
+     "jerk_rel": 1.754,
+     "jerk_e": {
+      "Charge": 0.221,
+      "Mass": 0.219,
+      "Space": 0.147,
+      "Time": 0.535
+     },
+     "planar_frac": 0.683,
+     "flat_mean": 0.084,
+     "planar_plan": 0.432,
+     "coherence": 0.464,
+     "jitter": 1.115,
+     "phase": 0.182,
+     "stuck": 0.0,
+     "osc": 0.169
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.122,
+     "jerk": 0.225,
+     "jerk_rel": 1.841,
+     "jerk_e": {
+      "Charge": 0.321,
+      "Space": 0.166,
+      "Time": 0.371
+     },
+     "planar_frac": 0.72,
+     "flat_mean": 0.089,
+     "planar_plan": 0.375,
+     "coherence": 0.395,
+     "jitter": 1.181,
+     "phase": 0.252,
+     "stuck": 0.0,
+     "osc": 0.208
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.103,
+     "jerk": 0.166,
+     "jerk_rel": 1.606,
+     "jerk_e": {
+      "Charge": 0.145,
+      "Space": 0.114,
+      "Time": 0.282
+     },
+     "planar_frac": 0.899,
+     "flat_mean": 0.037,
+     "planar_plan": 0.687,
+     "coherence": 0.719,
+     "jitter": 1.318,
+     "phase": 0.071,
+     "stuck": 0.0,
+     "osc": 0.1
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.173,
+     "jerk": 0.276,
+     "jerk_rel": 1.594,
+     "jerk_e": {
+      "Mass": 0.181,
+      "Space": 0.187,
+      "Time": 0.312
+     },
+     "planar_frac": 0.715,
+     "flat_mean": 0.079,
+     "planar_plan": 0.487,
+     "coherence": 0.508,
+     "jitter": 1.101,
+     "phase": 0.509,
+     "stuck": 0.0,
+     "osc": 0.122
+    }
+   }
+  },
+  "sec": 32
+ },
+ {
+  "cfg": {
+   "pull": 0.1
+  },
+  "screen": {
+   "7": {
+    "fit": 0.99,
+    "own": {
+     "mass": 18.24,
+     "space": 14.23,
+     "charge": 11.46,
+     "time": 31.08
+    },
+    "own_ok": 0,
+    "sw": {
+     "mass->space": 23.23,
+     "space->charge": 12.8,
+     "charge->time": 31.5,
+     "time->mass": 28.49
+    },
+    "sw_ok": 0
+   },
+   "23": {
+    "fit": 0.54,
+    "own": {
+     "mass": 16.83,
+     "space": 16.2,
+     "charge": 14.01,
+     "time": 29.97
+    },
+    "own_ok": 0,
+    "sw": {
+     "mass->space": 24.3,
+     "space->charge": 11.33,
+     "charge->time": 26.65,
+     "time->mass": 29.09
+    },
+    "sw_ok": 0
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.142,
+    "jerk": 0.245,
+    "jerk_rel": 1.723,
+    "planar_frac": 0.244,
+    "flat_mean": 0.193,
+    "coherence": 0.405,
+    "jitter": 1.599,
+    "phase": 0.369,
+    "stuck": 0.0,
+    "osc": 0.153
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.0,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.155,
+     "jerk": 0.27,
+     "jerk_rel": 1.742,
+     "jerk_e": {
+      "Charge": 0.195,
+      "Mass": 0.286,
+      "Space": 0.168,
+      "Time": 0.355
+     },
+     "planar_frac": 0.222,
+     "flat_mean": 0.2,
+     "planar_plan": 0.432,
+     "coherence": 0.42,
+     "jitter": 1.599,
+     "phase": 0.348,
+     "stuck": 0.0,
+     "osc": 0.17
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.13,
+     "jerk": 0.229,
+     "jerk_rel": 1.761,
+     "jerk_e": {
+      "Charge": 0.252,
+      "Space": 0.2,
+      "Time": 0.388
+     },
+     "planar_frac": 0.24,
+     "flat_mean": 0.186,
+     "planar_plan": 0.375,
+     "coherence": 0.301,
+     "jitter": 1.572,
+     "phase": 0.543,
+     "stuck": 0.0,
+     "osc": 0.172
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.123,
+     "jerk": 0.208,
+     "jerk_rel": 1.698,
+     "jerk_e": {
+      "Charge": 0.212,
+      "Space": 0.138,
+      "Time": 0.237
+     },
+     "planar_frac": 0.246,
+     "flat_mean": 0.194,
+     "planar_plan": 0.687,
+     "coherence": 0.403,
+     "jitter": 1.521,
+     "phase": 0.365,
+     "stuck": 0.0,
+     "osc": 0.167
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.161,
+     "jerk": 0.273,
+     "jerk_rel": 1.69,
+     "jerk_e": {
+      "Mass": 0.233,
+      "Space": 0.207,
+      "Time": 0.3
+     },
+     "planar_frac": 0.267,
+     "flat_mean": 0.192,
+     "planar_plan": 0.487,
+     "coherence": 0.496,
+     "jitter": 1.705,
+     "phase": 0.222,
+     "stuck": 0.0,
+     "osc": 0.102
+    }
+   }
+  },
+  "sec": 33
+ },
+ {
+  "cfg": {
+   "pull": 0.2
+  },
+  "screen": {
+   "7": {
+    "fit": 6.08,
+    "own": {
+     "mass": 12.74,
+     "space": 8.21,
+     "charge": 6.63,
+     "time": 23.74
+    },
+    "own_ok": 1,
+    "sw": {
+     "mass->space": 15.81,
+     "space->charge": 7.82,
+     "charge->time": 24.5,
+     "time->mass": 16.26
+    },
+    "sw_ok": 1
+   },
+   "23": {
+    "fit": 6.21,
+    "own": {
+     "mass": 12.0,
+     "space": 8.58,
+     "charge": 7.2,
+     "time": 24.36
+    },
+    "own_ok": 1,
+    "sw": {
+     "mass->space": 15.69,
+     "space->charge": 6.55,
+     "charge->time": 23.13,
+     "time->mass": 14.91
+    },
+    "sw_ok": 1
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.145,
+    "jerk": 0.24,
+    "jerk_rel": 1.659,
+    "planar_frac": 0.438,
+    "flat_mean": 0.143,
+    "coherence": 0.442,
+    "jitter": 1.349,
+    "phase": 0.364,
+    "stuck": 0.0,
+    "osc": 0.149
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.055,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.16,
+     "jerk": 0.255,
+     "jerk_rel": 1.593,
+     "jerk_e": {
+      "Charge": 0.194,
+      "Mass": 0.258,
+      "Space": 0.16,
+      "Time": 0.388
+     },
+     "planar_frac": 0.284,
+     "flat_mean": 0.177,
+     "planar_plan": 0.432,
+     "coherence": 0.514,
+     "jitter": 1.196,
+     "phase": 0.26,
+     "stuck": 0.0,
+     "osc": 0.163
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.14,
+     "jerk": 0.235,
+     "jerk_rel": 1.672,
+     "jerk_e": {
+      "Charge": 0.278,
+      "Space": 0.184,
+      "Time": 0.5
+     },
+     "planar_frac": 0.43,
+     "flat_mean": 0.134,
+     "planar_plan": 0.375,
+     "coherence": 0.353,
+     "jitter": 1.397,
+     "phase": 0.617,
+     "stuck": 0.0,
+     "osc": 0.133
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.104,
+     "jerk": 0.182,
+     "jerk_rel": 1.749,
+     "jerk_e": {
+      "Charge": 0.171,
+      "Space": 0.142,
+      "Time": 0.248
+     },
+     "planar_frac": 0.707,
+     "flat_mean": 0.087,
+     "planar_plan": 0.687,
+     "coherence": 0.376,
+     "jitter": 1.475,
+     "phase": 0.348,
+     "stuck": 0.0,
+     "osc": 0.209
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.177,
+     "jerk": 0.287,
+     "jerk_rel": 1.622,
+     "jerk_e": {
+      "Mass": 0.272,
+      "Space": 0.177,
+      "Time": 0.33
+     },
+     "planar_frac": 0.332,
+     "flat_mean": 0.172,
+     "planar_plan": 0.487,
+     "coherence": 0.524,
+     "jitter": 1.327,
+     "phase": 0.231,
+     "stuck": 0.0,
+     "osc": 0.091
+    }
+   }
+  },
+  "sec": 33
+ },
+ {
+  "cfg": {
+   "pull": 0.35
+  },
+  "screen": {
+   "7": {
+    "fit": 13.84,
+    "own": {
+     "mass": 7.49,
+     "space": 6.1,
+     "charge": 3.25,
+     "time": 14.61
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 7.34,
+     "space->charge": 3.5,
+     "charge->time": 16.23,
+     "time->mass": 8.8
+    },
+    "sw_ok": 2
+   },
+   "23": {
+    "fit": 10.62,
+    "own": {
+     "mass": 8.33,
+     "space": 6.62,
+     "charge": 2.66,
+     "time": 15.73
+    },
+    "own_ok": 2,
+    "sw": {
+     "mass->space": 8.93,
+     "space->charge": 2.57,
+     "charge->time": 15.32,
+     "time->mass": 8.61
+    },
+    "sw_ok": 1
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.138,
+    "jerk": 0.231,
+    "jerk_rel": 1.692,
+    "planar_frac": 0.651,
+    "flat_mean": 0.089,
+    "coherence": 0.5,
+    "jitter": 1.309,
+    "phase": 0.188,
+    "stuck": 0.0,
+    "osc": 0.159
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.249,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.145,
+     "jerk": 0.241,
+     "jerk_rel": 1.66,
+     "jerk_e": {
+      "Charge": 0.192,
+      "Mass": 0.225,
+      "Space": 0.195,
+      "Time": 0.422
+     },
+     "planar_frac": 0.602,
+     "flat_mean": 0.1,
+     "planar_plan": 0.432,
+     "coherence": 0.529,
+     "jitter": 1.137,
+     "phase": 0.192,
+     "stuck": 0.0,
+     "osc": 0.151
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.124,
+     "jerk": 0.217,
+     "jerk_rel": 1.751,
+     "jerk_e": {
+      "Charge": 0.304,
+      "Space": 0.174,
+      "Time": 0.267
+     },
+     "planar_frac": 0.624,
+     "flat_mean": 0.101,
+     "planar_plan": 0.375,
+     "coherence": 0.418,
+     "jitter": 1.256,
+     "phase": 0.186,
+     "stuck": 0.0,
+     "osc": 0.19
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.098,
+     "jerk": 0.172,
+     "jerk_rel": 1.758,
+     "jerk_e": {
+      "Charge": 0.155,
+      "Space": 0.156,
+      "Time": 0.254
+     },
+     "planar_frac": 0.846,
+     "flat_mean": 0.047,
+     "planar_plan": 0.687,
+     "coherence": 0.563,
+     "jitter": 1.559,
+     "phase": 0.117,
+     "stuck": 0.0,
+     "osc": 0.165
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.185,
+     "jerk": 0.296,
+     "jerk_rel": 1.598,
+     "jerk_e": {
+      "Mass": 0.161,
+      "Space": 0.204,
+      "Time": 0.338
+     },
+     "planar_frac": 0.532,
+     "flat_mean": 0.108,
+     "planar_plan": 0.487,
+     "coherence": 0.489,
+     "jitter": 1.285,
+     "phase": 0.255,
+     "stuck": 0.0,
+     "osc": 0.128
+    }
+   }
+  },
+  "sec": 34
+ },
+ {
+  "cfg": {
+   "pull": 2.0
+  },
+  "screen": {
+   "7": {
+    "fit": 21.0,
+    "own": {
+     "mass": 3.96,
+     "space": 4.85,
+     "charge": 1.54,
+     "time": 5.62
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.37,
+     "space->charge": 2.0,
+     "charge->time": 5.99,
+     "time->mass": 3.64
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 21.0,
+    "own": {
+     "mass": 3.53,
+     "space": 4.05,
+     "charge": 1.88,
+     "time": 5.97
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.5,
+     "space->charge": 1.66,
+     "charge->time": 7.31,
+     "time->mass": 3.61
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.142,
+    "jerk": 0.22,
+    "jerk_rel": 1.538,
+    "planar_frac": 0.819,
+    "flat_mean": 0.06,
+    "coherence": 0.676,
+    "jitter": 0.816,
+    "phase": 0.054,
+    "stuck": 0.0,
+    "osc": 0.091
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.444,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.159,
+     "jerk": 0.309,
+     "jerk_rel": 1.941,
+     "jerk_e": {
+      "Charge": 0.234,
+      "Mass": 0.217,
+      "Space": 0.151,
+      "Time": 1.058
+     },
+     "planar_frac": 0.719,
+     "flat_mean": 0.069,
+     "planar_plan": 0.432,
+     "coherence": 0.45,
+     "jitter": 0.988,
+     "phase": 0.14,
+     "stuck": 0.0,
+     "osc": 0.187
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.114,
+     "jerk": 0.19,
+     "jerk_rel": 1.672,
+     "jerk_e": {
+      "Charge": 0.269,
+      "Space": 0.13,
+      "Time": 0.41
+     },
+     "planar_frac": 0.819,
+     "flat_mean": 0.076,
+     "planar_plan": 0.375,
+     "coherence": 0.632,
+     "jitter": 0.814,
+     "phase": 0.043,
+     "stuck": 0.0,
+     "osc": 0.085
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.132,
+     "jerk": 0.144,
+     "jerk_rel": 1.089,
+     "jerk_e": {
+      "Charge": 0.113,
+      "Space": 0.073,
+      "Time": 0.312
+     },
+     "planar_frac": 0.956,
+     "flat_mean": 0.023,
+     "planar_plan": 0.687,
+     "coherence": 0.873,
+     "jitter": 0.585,
+     "phase": 0.015,
+     "stuck": 0.0,
+     "osc": 0.039
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.163,
+     "jerk": 0.237,
+     "jerk_rel": 1.451,
+     "jerk_e": {
+      "Mass": 0.081,
+      "Space": 0.166,
+      "Time": 0.274
+     },
+     "planar_frac": 0.782,
+     "flat_mean": 0.071,
+     "planar_plan": 0.487,
+     "coherence": 0.749,
+     "jitter": 0.877,
+     "phase": 0.019,
+     "stuck": 0.0,
+     "osc": 0.054
+    }
+   }
+  },
+  "sec": 30
+ },
+ {
+  "cfg": {
+   "pull": 1.0
+  },
+  "screen": {
+   "7": {
+    "fit": 20.93,
+    "own": {
+     "mass": 4.05,
+     "space": 4.01,
+     "charge": 1.53,
+     "time": 6.18
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.01,
+     "space->charge": 1.89,
+     "charge->time": 7.14,
+     "time->mass": 4.58
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 20.68,
+    "own": {
+     "mass": 4.68,
+     "space": 4.33,
+     "charge": 1.9,
+     "time": 6.38
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.7,
+     "space->charge": 1.72,
+     "charge->time": 7.79,
+     "time->mass": 4.33
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.136,
+    "jerk": 0.222,
+    "jerk_rel": 1.629,
+    "planar_frac": 0.802,
+    "flat_mean": 0.065,
+    "coherence": 0.617,
+    "jitter": 0.977,
+    "phase": 0.088,
+    "stuck": 0.0,
+    "osc": 0.12
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.43,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.14,
+     "jerk": 0.259,
+     "jerk_rel": 1.848,
+     "jerk_e": {
+      "Charge": 0.189,
+      "Mass": 0.223,
+      "Space": 0.112,
+      "Time": 0.673
+     },
+     "planar_frac": 0.696,
+     "flat_mean": 0.084,
+     "planar_plan": 0.432,
+     "coherence": 0.459,
+     "jitter": 1.089,
+     "phase": 0.135,
+     "stuck": 0.0,
+     "osc": 0.196
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.119,
+     "jerk": 0.212,
+     "jerk_rel": 1.78,
+     "jerk_e": {
+      "Charge": 0.303,
+      "Space": 0.153,
+      "Time": 0.362
+     },
+     "planar_frac": 0.805,
+     "flat_mean": 0.078,
+     "planar_plan": 0.375,
+     "coherence": 0.51,
+     "jitter": 0.962,
+     "phase": 0.11,
+     "stuck": 0.0,
+     "osc": 0.139
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.122,
+     "jerk": 0.165,
+     "jerk_rel": 1.357,
+     "jerk_e": {
+      "Charge": 0.132,
+      "Space": 0.104,
+      "Time": 0.334
+     },
+     "planar_frac": 0.925,
+     "flat_mean": 0.029,
+     "planar_plan": 0.687,
+     "coherence": 0.827,
+     "jitter": 0.841,
+     "phase": 0.036,
+     "stuck": 0.0,
+     "osc": 0.053
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.164,
+     "jerk": 0.252,
+     "jerk_rel": 1.53,
+     "jerk_e": {
+      "Mass": 0.071,
+      "Space": 0.178,
+      "Time": 0.29
+     },
+     "planar_frac": 0.782,
+     "flat_mean": 0.068,
+     "planar_plan": 0.487,
+     "coherence": 0.671,
+     "jitter": 1.017,
+     "phase": 0.072,
+     "stuck": 0.0,
+     "osc": 0.092
+    }
+   }
+  },
+  "sec": 30
+ },
+ {
+  "cfg": {
+   "pull": 0.75
+  },
+  "screen": {
+   "7": {
+    "fit": 19.61,
+    "own": {
+     "mass": 5.23,
+     "space": 3.77,
+     "charge": 1.57,
+     "time": 7.16
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 3.79,
+     "space->charge": 1.9,
+     "charge->time": 8.23,
+     "time->mass": 4.8
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 17.14,
+    "own": {
+     "mass": 5.34,
+     "space": 4.33,
+     "charge": 1.96,
+     "time": 9.51
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 4.23,
+     "space->charge": 1.72,
+     "charge->time": 8.55,
+     "time->mass": 4.91
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.142,
+    "jerk": 0.236,
+    "jerk_rel": 1.666,
+    "planar_frac": 0.766,
+    "flat_mean": 0.067,
+    "coherence": 0.596,
+    "jitter": 1.01,
+    "phase": 0.199,
+    "stuck": 0.0,
+    "osc": 0.124
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.361,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.149,
+     "jerk": 0.273,
+     "jerk_rel": 1.833,
+     "jerk_e": {
+      "Charge": 0.206,
+      "Mass": 0.226,
+      "Space": 0.186,
+      "Time": 0.686
+     },
+     "planar_frac": 0.71,
+     "flat_mean": 0.084,
+     "planar_plan": 0.432,
+     "coherence": 0.469,
+     "jitter": 1.061,
+     "phase": 0.122,
+     "stuck": 0.0,
+     "osc": 0.175
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.125,
+     "jerk": 0.224,
+     "jerk_rel": 1.787,
+     "jerk_e": {
+      "Charge": 0.333,
+      "Space": 0.158,
+      "Time": 0.375
+     },
+     "planar_frac": 0.736,
+     "flat_mean": 0.084,
+     "planar_plan": 0.375,
+     "coherence": 0.493,
+     "jitter": 0.984,
+     "phase": 0.153,
+     "stuck": 0.0,
+     "osc": 0.159
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.113,
+     "jerk": 0.168,
+     "jerk_rel": 1.491,
+     "jerk_e": {
+      "Charge": 0.138,
+      "Space": 0.109,
+      "Time": 0.322
+     },
+     "planar_frac": 0.933,
+     "flat_mean": 0.03,
+     "planar_plan": 0.687,
+     "coherence": 0.795,
+     "jitter": 1.018,
+     "phase": 0.059,
+     "stuck": 0.0,
+     "osc": 0.071
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.179,
+     "jerk": 0.278,
+     "jerk_rel": 1.553,
+     "jerk_e": {
+      "Mass": 0.15,
+      "Space": 0.173,
+      "Time": 0.325
+     },
+     "planar_frac": 0.684,
+     "flat_mean": 0.068,
+     "planar_plan": 0.487,
+     "coherence": 0.627,
+     "jitter": 0.977,
+     "phase": 0.461,
+     "stuck": 0.0,
+     "osc": 0.093
+    }
+   }
+  },
+  "sec": 30
+ },
+ {
+  "cfg": {
+   "pull": 1.5
+  },
+  "screen": {
+   "7": {
+    "fit": 20.96,
+    "own": {
+     "mass": 4.01,
+     "space": 4.86,
+     "charge": 1.5,
+     "time": 5.78
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.48,
+     "space->charge": 2.02,
+     "charge->time": 5.97,
+     "time->mass": 3.91
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 20.88,
+    "own": {
+     "mass": 4.29,
+     "space": 4.01,
+     "charge": 1.88,
+     "time": 6.06
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.48,
+     "space->charge": 1.67,
+     "charge->time": 7.38,
+     "time->mass": 3.91
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.138,
+    "jerk": 0.224,
+    "jerk_rel": 1.613,
+    "planar_frac": 0.786,
+    "flat_mean": 0.064,
+    "coherence": 0.631,
+    "jitter": 0.912,
+    "phase": 0.056,
+    "stuck": 0.0,
+    "osc": 0.116
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.419,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.149,
+     "jerk": 0.29,
+     "jerk_rel": 1.943,
+     "jerk_e": {
+      "Charge": 0.211,
+      "Mass": 0.223,
+      "Space": 0.121,
+      "Time": 0.919
+     },
+     "planar_frac": 0.627,
+     "flat_mean": 0.084,
+     "planar_plan": 0.432,
+     "coherence": 0.433,
+     "jitter": 1.06,
+     "phase": 0.135,
+     "stuck": 0.0,
+     "osc": 0.205
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.117,
+     "jerk": 0.205,
+     "jerk_rel": 1.754,
+     "jerk_e": {
+      "Charge": 0.294,
+      "Space": 0.14,
+      "Time": 0.419
+     },
+     "planar_frac": 0.794,
+     "flat_mean": 0.079,
+     "planar_plan": 0.375,
+     "coherence": 0.548,
+     "jitter": 0.896,
+     "phase": 0.041,
+     "stuck": 0.0,
+     "osc": 0.106
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.127,
+     "jerk": 0.156,
+     "jerk_rel": 1.226,
+     "jerk_e": {
+      "Charge": 0.123,
+      "Space": 0.088,
+      "Time": 0.328
+     },
+     "planar_frac": 0.958,
+     "flat_mean": 0.024,
+     "planar_plan": 0.687,
+     "coherence": 0.851,
+     "jitter": 0.673,
+     "phase": 0.018,
+     "stuck": 0.0,
+     "osc": 0.051
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.159,
+     "jerk": 0.243,
+     "jerk_rel": 1.531,
+     "jerk_e": {
+      "Mass": 0.099,
+      "Space": 0.164,
+      "Time": 0.282
+     },
+     "planar_frac": 0.765,
+     "flat_mean": 0.069,
+     "planar_plan": 0.487,
+     "coherence": 0.69,
+     "jitter": 1.02,
+     "phase": 0.031,
+     "stuck": 0.0,
+     "osc": 0.101
+    }
+   }
+  },
+  "sec": 30
+ },
+ {
+  "cfg": {
+   "pull": 3.0
+  },
+  "screen": {
+   "7": {
+    "fit": 21.08,
+    "own": {
+     "mass": 3.3,
+     "space": 4.9,
+     "charge": 1.56,
+     "time": 5.68
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.56,
+     "space->charge": 2.02,
+     "charge->time": 6.1,
+     "time->mass": 3.16
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 21.04,
+    "own": {
+     "mass": 3.13,
+     "space": 4.21,
+     "charge": 1.91,
+     "time": 6.01
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.65,
+     "space->charge": 2.0,
+     "charge->time": 7.17,
+     "time->mass": 3.06
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.152,
+    "jerk": 0.267,
+    "jerk_rel": 1.763,
+    "planar_frac": 0.855,
+    "flat_mean": 0.052,
+    "coherence": 0.655,
+    "jitter": 0.817,
+    "phase": 0.044,
+    "stuck": 0.0,
+    "osc": 0.129
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.472,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.156,
+     "jerk": 0.325,
+     "jerk_rel": 2.084,
+     "jerk_e": {
+      "Charge": 0.258,
+      "Mass": 0.234,
+      "Space": 0.193,
+      "Time": 1.042
+     },
+     "planar_frac": 0.825,
+     "flat_mean": 0.053,
+     "planar_plan": 0.432,
+     "coherence": 0.454,
+     "jitter": 0.958,
+     "phase": 0.105,
+     "stuck": 0.0,
+     "osc": 0.202
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.137,
+     "jerk": 0.296,
+     "jerk_rel": 2.162,
+     "jerk_e": {
+      "Charge": 0.311,
+      "Space": 0.243,
+      "Time": 0.493
+     },
+     "planar_frac": 0.847,
+     "flat_mean": 0.07,
+     "planar_plan": 0.375,
+     "coherence": 0.567,
+     "jitter": 0.885,
+     "phase": 0.05,
+     "stuck": 0.0,
+     "osc": 0.196
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.147,
+     "jerk": 0.16,
+     "jerk_rel": 1.092,
+     "jerk_e": {
+      "Charge": 0.124,
+      "Space": 0.205,
+      "Time": 0.286
+     },
+     "planar_frac": 0.956,
+     "flat_mean": 0.021,
+     "planar_plan": 0.687,
+     "coherence": 0.88,
+     "jitter": 0.509,
+     "phase": 0.007,
+     "stuck": 0.0,
+     "osc": 0.034
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.167,
+     "jerk": 0.287,
+     "jerk_rel": 1.715,
+     "jerk_e": {
+      "Mass": 0.133,
+      "Space": 0.378,
+      "Time": 0.265
+     },
+     "planar_frac": 0.792,
+     "flat_mean": 0.066,
+     "planar_plan": 0.487,
+     "coherence": 0.721,
+     "jitter": 0.914,
+     "phase": 0.013,
+     "stuck": 0.0,
+     "osc": 0.085
+    }
+   }
+  },
+  "sec": 31
+ },
+ {
+  "cfg": {
+   "pull": 0.0
+  },
+  "screen": {
+   "7": {
+    "fit": 0.0,
+    "own": {
+     "mass": 22.66,
+     "space": 25.27,
+     "charge": 20.48,
+     "time": 34.33
+    },
+    "own_ok": 0,
+    "sw": {
+     "mass->space": 34.19,
+     "space->charge": 21.21,
+     "charge->time": 41.85,
+     "time->mass": 42.36
+    },
+    "sw_ok": 0
+   },
+   "23": {
+    "fit": 0.0,
+    "own": {
+     "mass": 20.68,
+     "space": 24.09,
+     "charge": 19.54,
+     "time": 38.82
+    },
+    "own_ok": 0,
+    "sw": {
+     "mass->space": 35.5,
+     "space->charge": 21.53,
+     "charge->time": 44.04,
+     "time->mass": 42.46
+    },
+    "sw_ok": 0
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.129,
+    "jerk": 0.248,
+    "jerk_rel": 1.932,
+    "planar_frac": 0.22,
+    "flat_mean": 0.186,
+    "coherence": 0.44,
+    "jitter": 2.652,
+    "phase": 0.073,
+    "stuck": 0.0,
+    "osc": 0.022
+   },
+   "in_band": true,
+   "checks": {
+    "jerk_rel": true,
+    "osc": true,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.0,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.144,
+     "jerk": 0.282,
+     "jerk_rel": 1.962,
+     "jerk_e": {
+      "Charge": 0.213,
+      "Mass": 0.292,
+      "Space": 0.187,
+      "Time": 0.388
+     },
+     "planar_frac": 0.15,
+     "flat_mean": 0.213,
+     "planar_plan": 0.432,
+     "coherence": 0.446,
+     "jitter": 2.603,
+     "phase": 0.041,
+     "stuck": 0.0,
+     "osc": 0.026
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.114,
+     "jerk": 0.217,
+     "jerk_rel": 1.907,
+     "jerk_e": {
+      "Charge": 0.267,
+      "Space": 0.193,
+      "Time": 0.245
+     },
+     "planar_frac": 0.332,
+     "flat_mean": 0.149,
+     "planar_plan": 0.375,
+     "coherence": 0.39,
+     "jitter": 2.677,
+     "phase": 0.182,
+     "stuck": 0.0,
+     "osc": 0.024
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.121,
+     "jerk": 0.237,
+     "jerk_rel": 1.957,
+     "jerk_e": {
+      "Charge": 0.237,
+      "Space": 0.145,
+      "Time": 0.29
+     },
+     "planar_frac": 0.191,
+     "flat_mean": 0.193,
+     "planar_plan": 0.687,
+     "coherence": 0.485,
+     "jitter": 2.65,
+     "phase": 0.035,
+     "stuck": 0.0,
+     "osc": 0.016
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.135,
+     "jerk": 0.257,
+     "jerk_rel": 1.904,
+     "jerk_e": {
+      "Mass": 0.217,
+      "Space": 0.214,
+      "Time": 0.276
+     },
+     "planar_frac": 0.205,
+     "flat_mean": 0.19,
+     "planar_plan": 0.487,
+     "coherence": 0.44,
+     "jitter": 2.679,
+     "phase": 0.032,
+     "stuck": 0.0,
+     "osc": 0.024
+    }
+   }
+  },
+  "sec": 33
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "adh": 1.0
+  },
+  "screen": {
+   "7": {
+    "fit": 21.69,
+    "own": {
+     "mass": 3.2,
+     "space": 2.49,
+     "charge": 1.02,
+     "time": 5.03
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 2.99,
+     "space->charge": 1.44,
+     "charge->time": 6.24,
+     "time->mass": 2.79
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 21.48,
+    "own": {
+     "mass": 3.09,
+     "space": 2.93,
+     "charge": 1.4,
+     "time": 5.63
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 3.22,
+     "space->charge": 1.2,
+     "charge->time": 6.61,
+     "time->mass": 3.22
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.127,
+    "jerk": 0.226,
+    "jerk_rel": 1.788,
+    "planar_frac": 0.609,
+    "flat_mean": 0.103,
+    "coherence": 0.558,
+    "jitter": 1.112,
+    "phase": 0.113,
+    "stuck": 0.0,
+    "osc": 0.154
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.185,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.143,
+     "jerk": 0.275,
+     "jerk_rel": 1.926,
+     "jerk_e": {
+      "Charge": 0.201,
+      "Mass": 0.247,
+      "Space": 0.164,
+      "Time": 0.617
+     },
+     "planar_frac": 0.592,
+     "flat_mean": 0.11,
+     "planar_plan": 0.432,
+     "coherence": 0.479,
+     "jitter": 1.196,
+     "phase": 0.1,
+     "stuck": 0.0,
+     "osc": 0.199
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.103,
+     "jerk": 0.204,
+     "jerk_rel": 1.986,
+     "jerk_e": {
+      "Charge": 0.287,
+      "Space": 0.159,
+      "Time": 0.276
+     },
+     "planar_frac": 0.45,
+     "flat_mean": 0.142,
+     "planar_plan": 0.375,
+     "coherence": 0.392,
+     "jitter": 1.101,
+     "phase": 0.212,
+     "stuck": 0.0,
+     "osc": 0.254
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.112,
+     "jerk": 0.177,
+     "jerk_rel": 1.586,
+     "jerk_e": {
+      "Charge": 0.161,
+      "Space": 0.133,
+      "Time": 0.269
+     },
+     "planar_frac": 0.872,
+     "flat_mean": 0.046,
+     "planar_plan": 0.687,
+     "coherence": 0.76,
+     "jitter": 1.011,
+     "phase": 0.051,
+     "stuck": 0.0,
+     "osc": 0.062
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.15,
+     "jerk": 0.248,
+     "jerk_rel": 1.653,
+     "jerk_e": {
+      "Mass": 0.111,
+      "Space": 0.179,
+      "Time": 0.281
+     },
+     "planar_frac": 0.52,
+     "flat_mean": 0.113,
+     "planar_plan": 0.487,
+     "coherence": 0.601,
+     "jitter": 1.141,
+     "phase": 0.091,
+     "stuck": 0.0,
+     "osc": 0.1
+    }
+   }
+  },
+  "sec": 37
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "adh": 1.0
+  },
+  "screen": {
+   "7": {
+    "fit": 21.59,
+    "own": {
+     "mass": 2.63,
+     "space": 3.87,
+     "charge": 1.2,
+     "time": 5.02
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 3.56,
+     "space->charge": 1.63,
+     "charge->time": 5.36,
+     "time->mass": 2.52
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 21.59,
+    "own": {
+     "mass": 2.27,
+     "space": 3.23,
+     "charge": 1.49,
+     "time": 5.29
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 3.65,
+     "space->charge": 1.29,
+     "charge->time": 6.56,
+     "time->mass": 2.53
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.127,
+    "jerk": 0.212,
+    "jerk_rel": 1.687,
+    "planar_frac": 0.703,
+    "flat_mean": 0.072,
+    "coherence": 0.606,
+    "jitter": 0.955,
+    "phase": 0.06,
+    "stuck": 0.0,
+    "osc": 0.133
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.326,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.132,
+     "jerk": 0.266,
+     "jerk_rel": 2.019,
+     "jerk_e": {
+      "Charge": 0.212,
+      "Mass": 0.24,
+      "Space": 0.124,
+      "Time": 0.611
+     },
+     "planar_frac": 0.758,
+     "flat_mean": 0.072,
+     "planar_plan": 0.432,
+     "coherence": 0.461,
+     "jitter": 1.07,
+     "phase": 0.084,
+     "stuck": 0.0,
+     "osc": 0.218
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.098,
+     "jerk": 0.186,
+     "jerk_rel": 1.901,
+     "jerk_e": {
+      "Charge": 0.279,
+      "Space": 0.131,
+      "Time": 0.297
+     },
+     "planar_frac": 0.515,
+     "flat_mean": 0.118,
+     "planar_plan": 0.375,
+     "coherence": 0.489,
+     "jitter": 0.965,
+     "phase": 0.073,
+     "stuck": 0.0,
+     "osc": 0.162
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.132,
+     "jerk": 0.16,
+     "jerk_rel": 1.211,
+     "jerk_e": {
+      "Charge": 0.131,
+      "Space": 0.102,
+      "Time": 0.305
+     },
+     "planar_frac": 0.915,
+     "flat_mean": 0.031,
+     "planar_plan": 0.687,
+     "coherence": 0.849,
+     "jitter": 0.647,
+     "phase": 0.029,
+     "stuck": 0.0,
+     "osc": 0.041
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.147,
+     "jerk": 0.238,
+     "jerk_rel": 1.618,
+     "jerk_e": {
+      "Mass": 0.078,
+      "Space": 0.168,
+      "Time": 0.275
+     },
+     "planar_frac": 0.622,
+     "flat_mean": 0.068,
+     "planar_plan": 0.487,
+     "coherence": 0.625,
+     "jitter": 1.138,
+     "phase": 0.054,
+     "stuck": 0.0,
+     "osc": 0.11
+    }
+   }
+  },
+  "sec": 37
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "e0": 6.0
+  },
+  "screen": {
+   "7": {
+    "fit": 11.13,
+    "own": {
+     "mass": 9.01,
+     "space": 6.75,
+     "charge": 3.8,
+     "time": 18.7
+    },
+    "own_ok": 2,
+    "sw": {
+     "mass->space": 9.98,
+     "space->charge": 5.21,
+     "charge->time": 19.31,
+     "time->mass": 7.62
+    },
+    "sw_ok": 2
+   },
+   "23": {
+    "fit": 7.95,
+    "own": {
+     "mass": 8.35,
+     "space": 8.01,
+     "charge": 4.62,
+     "time": 20.19
+    },
+    "own_ok": 1,
+    "sw": {
+     "mass->space": 9.5,
+     "space->charge": 5.15,
+     "charge->time": 17.54,
+     "time->mass": 8.18
+    },
+    "sw_ok": 1
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.118,
+    "jerk": 0.216,
+    "jerk_rel": 1.833,
+    "planar_frac": 0.3,
+    "flat_mean": 0.177,
+    "coherence": 0.477,
+    "jitter": 2.063,
+    "phase": 0.324,
+    "stuck": 0.0,
+    "osc": 0.073
+   },
+   "in_band": true,
+   "checks": {
+    "jerk_rel": true,
+    "osc": true,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.116,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.12,
+     "jerk": 0.228,
+     "jerk_rel": 1.894,
+     "jerk_e": {
+      "Charge": 0.163,
+      "Mass": 0.202,
+      "Space": 0.147,
+      "Time": 0.517
+     },
+     "planar_frac": 0.231,
+     "flat_mean": 0.188,
+     "planar_plan": 0.432,
+     "coherence": 0.469,
+     "jitter": 2.055,
+     "phase": 0.153,
+     "stuck": 0.0,
+     "osc": 0.106
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.114,
+     "jerk": 0.205,
+     "jerk_rel": 1.799,
+     "jerk_e": {
+      "Charge": 0.26,
+      "Space": 0.166,
+      "Time": 0.338
+     },
+     "planar_frac": 0.491,
+     "flat_mean": 0.135,
+     "planar_plan": 0.375,
+     "coherence": 0.421,
+     "jitter": 1.858,
+     "phase": 0.705,
+     "stuck": 0.0,
+     "osc": 0.066
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.093,
+     "jerk": 0.175,
+     "jerk_rel": 1.889,
+     "jerk_e": {
+      "Charge": 0.161,
+      "Space": 0.153,
+      "Time": 0.248
+     },
+     "planar_frac": 0.231,
+     "flat_mean": 0.204,
+     "planar_plan": 0.687,
+     "coherence": 0.529,
+     "jitter": 2.316,
+     "phase": 0.288,
+     "stuck": 0.0,
+     "osc": 0.031
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.147,
+     "jerk": 0.258,
+     "jerk_rel": 1.751,
+     "jerk_e": {
+      "Mass": 0.126,
+      "Space": 0.223,
+      "Time": 0.281
+     },
+     "planar_frac": 0.247,
+     "flat_mean": 0.183,
+     "planar_plan": 0.487,
+     "coherence": 0.488,
+     "jitter": 2.022,
+     "phase": 0.151,
+     "stuck": 0.0,
+     "osc": 0.09
+    }
+   }
+  },
+  "sec": 32
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "e0": 3.0
+  },
+  "screen": {
+   "7": {
+    "fit": 15.35,
+    "own": {
+     "mass": 6.36,
+     "space": 5.88,
+     "charge": 3.12,
+     "time": 14.83
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 6.19,
+     "space->charge": 3.38,
+     "charge->time": 14.78,
+     "time->mass": 5.66
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 15.4,
+    "own": {
+     "mass": 6.13,
+     "space": 6.07,
+     "charge": 3.29,
+     "time": 14.65
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 5.71,
+     "space->charge": 3.24,
+     "charge->time": 14.56,
+     "time->mass": 5.82
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.124,
+    "jerk": 0.224,
+    "jerk_rel": 1.82,
+    "planar_frac": 0.409,
+    "flat_mean": 0.148,
+    "coherence": 0.5,
+    "jitter": 1.905,
+    "phase": 0.144,
+    "stuck": 0.0,
+    "osc": 0.085
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.127,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.131,
+     "jerk": 0.241,
+     "jerk_rel": 1.846,
+     "jerk_e": {
+      "Charge": 0.16,
+      "Mass": 0.211,
+      "Space": 0.163,
+      "Time": 0.564
+     },
+     "planar_frac": 0.374,
+     "flat_mean": 0.151,
+     "planar_plan": 0.432,
+     "coherence": 0.506,
+     "jitter": 1.828,
+     "phase": 0.15,
+     "stuck": 0.0,
+     "osc": 0.12
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.106,
+     "jerk": 0.196,
+     "jerk_rel": 1.842,
+     "jerk_e": {
+      "Charge": 0.279,
+      "Space": 0.156,
+      "Time": 0.247
+     },
+     "planar_frac": 0.502,
+     "flat_mean": 0.136,
+     "planar_plan": 0.375,
+     "coherence": 0.391,
+     "jitter": 1.737,
+     "phase": 0.2,
+     "stuck": 0.0,
+     "osc": 0.113
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.09,
+     "jerk": 0.171,
+     "jerk_rel": 1.895,
+     "jerk_e": {
+      "Charge": 0.159,
+      "Space": 0.131,
+      "Time": 0.244
+     },
+     "planar_frac": 0.444,
+     "flat_mean": 0.129,
+     "planar_plan": 0.687,
+     "coherence": 0.533,
+     "jitter": 2.293,
+     "phase": 0.116,
+     "stuck": 0.0,
+     "osc": 0.051
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.169,
+     "jerk": 0.287,
+     "jerk_rel": 1.696,
+     "jerk_e": {
+      "Mass": 0.192,
+      "Space": 0.226,
+      "Time": 0.318
+     },
+     "planar_frac": 0.315,
+     "flat_mean": 0.175,
+     "planar_plan": 0.487,
+     "coherence": 0.568,
+     "jitter": 1.762,
+     "phase": 0.11,
+     "stuck": 0.0,
+     "osc": 0.058
+    }
+   }
+  },
+  "sec": 32
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 1.5
+  },
+  "screen": {
+   "7": {
+    "fit": 17.2,
+    "own": {
+     "mass": 4.26,
+     "space": 4.24,
+     "charge": 1.89,
+     "time": 9.88
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 5.02,
+     "space->charge": 2.18,
+     "charge->time": 9.2,
+     "time->mass": 3.89
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 16.98,
+    "own": {
+     "mass": 4.16,
+     "space": 4.96,
+     "charge": 2.32,
+     "time": 10.26
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 4.54,
+     "space->charge": 2.19,
+     "charge->time": 10.22,
+     "time->mass": 3.97
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.125,
+    "jerk": 0.23,
+    "jerk_rel": 1.879,
+    "planar_frac": 0.544,
+    "flat_mean": 0.111,
+    "coherence": 0.532,
+    "jitter": 1.839,
+    "phase": 0.173,
+    "stuck": 0.0,
+    "osc": 0.079
+   },
+   "in_band": true,
+   "checks": {
+    "jerk_rel": true,
+    "osc": true,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.134,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.127,
+     "jerk": 0.25,
+     "jerk_rel": 1.963,
+     "jerk_e": {
+      "Charge": 0.173,
+      "Mass": 0.221,
+      "Space": 0.176,
+      "Time": 0.554
+     },
+     "planar_frac": 0.566,
+     "flat_mean": 0.106,
+     "planar_plan": 0.432,
+     "coherence": 0.507,
+     "jitter": 1.799,
+     "phase": 0.119,
+     "stuck": 0.0,
+     "osc": 0.122
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.104,
+     "jerk": 0.212,
+     "jerk_rel": 2.032,
+     "jerk_e": {
+      "Charge": 0.305,
+      "Space": 0.152,
+      "Time": 0.331
+     },
+     "planar_frac": 0.422,
+     "flat_mean": 0.138,
+     "planar_plan": 0.375,
+     "coherence": 0.431,
+     "jitter": 1.813,
+     "phase": 0.229,
+     "stuck": 0.0,
+     "osc": 0.103
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.09,
+     "jerk": 0.172,
+     "jerk_rel": 1.917,
+     "jerk_e": {
+      "Charge": 0.15,
+      "Space": 0.147,
+      "Time": 0.273
+     },
+     "planar_frac": 0.734,
+     "flat_mean": 0.078,
+     "planar_plan": 0.687,
+     "coherence": 0.553,
+     "jitter": 2.27,
+     "phase": 0.079,
+     "stuck": 0.0,
+     "osc": 0.043
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.178,
+     "jerk": 0.285,
+     "jerk_rel": 1.602,
+     "jerk_e": {
+      "Mass": 0.137,
+      "Space": 0.226,
+      "Time": 0.313
+     },
+     "planar_frac": 0.454,
+     "flat_mean": 0.121,
+     "planar_plan": 0.487,
+     "coherence": 0.636,
+     "jitter": 1.474,
+     "phase": 0.266,
+     "stuck": 0.0,
+     "osc": 0.048
+    }
+   }
+  },
+  "sec": 33
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "e0": 1.5
+  },
+  "screen": {
+   "7": {
+    "fit": 16.77,
+    "own": {
+     "mass": 5.01,
+     "space": 4.47,
+     "charge": 2.37,
+     "time": 10.64
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 4.76,
+     "space->charge": 2.73,
+     "charge->time": 10.59,
+     "time->mass": 4.69
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 16.61,
+    "own": {
+     "mass": 5.21,
+     "space": 4.81,
+     "charge": 2.49,
+     "time": 10.86
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 4.89,
+     "space->charge": 2.15,
+     "charge->time": 11.6,
+     "time->mass": 4.87
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.129,
+    "jerk": 0.228,
+    "jerk_rel": 1.793,
+    "planar_frac": 0.54,
+    "flat_mean": 0.117,
+    "coherence": 0.524,
+    "jitter": 1.78,
+    "phase": 0.235,
+    "stuck": 0.0,
+    "osc": 0.091
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.098,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.132,
+     "jerk": 0.244,
+     "jerk_rel": 1.845,
+     "jerk_e": {
+      "Charge": 0.174,
+      "Mass": 0.209,
+      "Space": 0.154,
+      "Time": 0.6
+     },
+     "planar_frac": 0.47,
+     "flat_mean": 0.126,
+     "planar_plan": 0.432,
+     "coherence": 0.459,
+     "jitter": 1.806,
+     "phase": 0.182,
+     "stuck": 0.0,
+     "osc": 0.136
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.103,
+     "jerk": 0.188,
+     "jerk_rel": 1.83,
+     "jerk_e": {
+      "Charge": 0.267,
+      "Space": 0.151,
+      "Time": 0.21
+     },
+     "planar_frac": 0.473,
+     "flat_mean": 0.137,
+     "planar_plan": 0.375,
+     "coherence": 0.473,
+     "jitter": 1.669,
+     "phase": 0.185,
+     "stuck": 0.0,
+     "osc": 0.098
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.092,
+     "jerk": 0.171,
+     "jerk_rel": 1.866,
+     "jerk_e": {
+      "Charge": 0.153,
+      "Space": 0.133,
+      "Time": 0.267
+     },
+     "planar_frac": 0.723,
+     "flat_mean": 0.078,
+     "planar_plan": 0.687,
+     "coherence": 0.57,
+     "jitter": 2.207,
+     "phase": 0.271,
+     "stuck": 0.0,
+     "osc": 0.059
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.19,
+     "jerk": 0.311,
+     "jerk_rel": 1.631,
+     "jerk_e": {
+      "Mass": 0.209,
+      "Space": 0.206,
+      "Time": 0.358
+     },
+     "planar_frac": 0.495,
+     "flat_mean": 0.125,
+     "planar_plan": 0.487,
+     "coherence": 0.594,
+     "jitter": 1.438,
+     "phase": 0.303,
+     "stuck": 0.0,
+     "osc": 0.071
+    }
+   }
+  },
+  "sec": 33
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 3.0
+  },
+  "screen": {
+   "7": {
+    "fit": 15.77,
+    "own": {
+     "mass": 5.38,
+     "space": 5.7,
+     "charge": 2.49,
+     "time": 14.11
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 7.23,
+     "space->charge": 2.62,
+     "charge->time": 13.7,
+     "time->mass": 4.78
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 15.59,
+    "own": {
+     "mass": 5.61,
+     "space": 6.27,
+     "charge": 2.99,
+     "time": 14.26
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 6.87,
+     "space->charge": 2.83,
+     "charge->time": 13.9,
+     "time->mass": 4.77
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.121,
+    "jerk": 0.228,
+    "jerk_rel": 1.912,
+    "planar_frac": 0.388,
+    "flat_mean": 0.148,
+    "coherence": 0.494,
+    "jitter": 2.027,
+    "phase": 0.196,
+    "stuck": 0.0,
+    "osc": 0.075
+   },
+   "in_band": true,
+   "checks": {
+    "jerk_rel": true,
+    "osc": true,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.0,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.117,
+     "jerk": 0.233,
+     "jerk_rel": 2.001,
+     "jerk_e": {
+      "Charge": 0.172,
+      "Mass": 0.205,
+      "Space": 0.2,
+      "Time": 0.484
+     },
+     "planar_frac": 0.327,
+     "flat_mean": 0.155,
+     "planar_plan": 0.432,
+     "coherence": 0.456,
+     "jitter": 1.984,
+     "phase": 0.129,
+     "stuck": 0.0,
+     "osc": 0.117
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.107,
+     "jerk": 0.216,
+     "jerk_rel": 2.021,
+     "jerk_e": {
+      "Charge": 0.296,
+      "Space": 0.162,
+      "Time": 0.341
+     },
+     "planar_frac": 0.332,
+     "flat_mean": 0.172,
+     "planar_plan": 0.375,
+     "coherence": 0.397,
+     "jitter": 1.982,
+     "phase": 0.135,
+     "stuck": 0.0,
+     "osc": 0.09
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.091,
+     "jerk": 0.173,
+     "jerk_rel": 1.908,
+     "jerk_e": {
+      "Charge": 0.157,
+      "Space": 0.139,
+      "Time": 0.258
+     },
+     "planar_frac": 0.533,
+     "flat_mean": 0.11,
+     "planar_plan": 0.687,
+     "coherence": 0.554,
+     "jitter": 2.262,
+     "phase": 0.272,
+     "stuck": 0.0,
+     "osc": 0.042
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.169,
+     "jerk": 0.291,
+     "jerk_rel": 1.72,
+     "jerk_e": {
+      "Mass": 0.276,
+      "Space": 0.231,
+      "Time": 0.311
+     },
+     "planar_frac": 0.358,
+     "flat_mean": 0.157,
+     "planar_plan": 0.487,
+     "coherence": 0.569,
+     "jitter": 1.882,
+     "phase": 0.248,
+     "stuck": 0.0,
+     "osc": 0.05
+    }
+   }
+  },
+  "sec": 31
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "f_inertia": 0.7
+  },
+  "screen": {
+   "7": {
+    "fit": 20.98,
+    "own": {
+     "mass": 3.96,
+     "space": 4.06,
+     "charge": 1.54,
+     "time": 5.83
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.21,
+     "space->charge": 1.94,
+     "charge->time": 7.05,
+     "time->mass": 4.3
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 20.64,
+    "own": {
+     "mass": 4.81,
+     "space": 4.18,
+     "charge": 1.93,
+     "time": 6.6
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.59,
+     "space->charge": 1.74,
+     "charge->time": 7.83,
+     "time->mass": 4.64
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.151,
+    "jerk": 0.249,
+    "jerk_rel": 1.647,
+    "planar_frac": 0.791,
+    "flat_mean": 0.069,
+    "coherence": 0.533,
+    "jitter": 1.061,
+    "phase": 0.151,
+    "stuck": 0.0,
+    "osc": 0.139
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.412,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.162,
+     "jerk": 0.295,
+     "jerk_rel": 1.827,
+     "jerk_e": {
+      "Charge": 0.202,
+      "Mass": 0.253,
+      "Space": 0.165,
+      "Time": 0.75
+     },
+     "planar_frac": 0.675,
+     "flat_mean": 0.087,
+     "planar_plan": 0.432,
+     "coherence": 0.399,
+     "jitter": 1.101,
+     "phase": 0.128,
+     "stuck": 0.0,
+     "osc": 0.203
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.138,
+     "jerk": 0.238,
+     "jerk_rel": 1.718,
+     "jerk_e": {
+      "Charge": 0.338,
+      "Space": 0.173,
+      "Time": 0.403
+     },
+     "planar_frac": 0.787,
+     "flat_mean": 0.084,
+     "planar_plan": 0.375,
+     "coherence": 0.382,
+     "jitter": 1.036,
+     "phase": 0.177,
+     "stuck": 0.0,
+     "osc": 0.178
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.122,
+     "jerk": 0.184,
+     "jerk_rel": 1.506,
+     "jerk_e": {
+      "Charge": 0.149,
+      "Space": 0.123,
+      "Time": 0.358
+     },
+     "planar_frac": 0.934,
+     "flat_mean": 0.028,
+     "planar_plan": 0.687,
+     "coherence": 0.731,
+     "jitter": 1.087,
+     "phase": 0.05,
+     "stuck": 0.0,
+     "osc": 0.083
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.183,
+     "jerk": 0.281,
+     "jerk_rel": 1.535,
+     "jerk_e": {
+      "Mass": 0.129,
+      "Space": 0.198,
+      "Time": 0.321
+     },
+     "planar_frac": 0.769,
+     "flat_mean": 0.076,
+     "planar_plan": 0.487,
+     "coherence": 0.621,
+     "jitter": 1.021,
+     "phase": 0.249,
+     "stuck": 0.0,
+     "osc": 0.091
+    }
+   }
+  },
+  "sec": 32
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 1.5,
+   "f_inertia": 0.8
+  },
+  "screen": {
+   "7": {
+    "fit": 17.06,
+    "own": {
+     "mass": 4.32,
+     "space": 4.97,
+     "charge": 1.87,
+     "time": 10.21
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 4.71,
+     "space->charge": 2.41,
+     "charge->time": 8.97,
+     "time->mass": 4.24
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 16.94,
+    "own": {
+     "mass": 4.16,
+     "space": 4.72,
+     "charge": 2.36,
+     "time": 10.11
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 4.61,
+     "space->charge": 2.11,
+     "charge->time": 10.92,
+     "time->mass": 4.69
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.145,
+    "jerk": 0.257,
+    "jerk_rel": 1.8,
+    "planar_frac": 0.55,
+    "flat_mean": 0.117,
+    "coherence": 0.459,
+    "jitter": 1.782,
+    "phase": 0.273,
+    "stuck": 0.0,
+    "osc": 0.124
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.147,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.161,
+     "jerk": 0.303,
+     "jerk_rel": 1.887,
+     "jerk_e": {
+      "Charge": 0.186,
+      "Mass": 0.251,
+      "Space": 0.179,
+      "Time": 0.829
+     },
+     "planar_frac": 0.465,
+     "flat_mean": 0.126,
+     "planar_plan": 0.432,
+     "coherence": 0.403,
+     "jitter": 1.784,
+     "phase": 0.208,
+     "stuck": 0.0,
+     "osc": 0.18
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.12,
+     "jerk": 0.219,
+     "jerk_rel": 1.833,
+     "jerk_e": {
+      "Charge": 0.343,
+      "Space": 0.158,
+      "Time": 0.278
+     },
+     "planar_frac": 0.522,
+     "flat_mean": 0.129,
+     "planar_plan": 0.375,
+     "coherence": 0.359,
+     "jitter": 1.718,
+     "phase": 0.202,
+     "stuck": 0.0,
+     "osc": 0.155
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.096,
+     "jerk": 0.184,
+     "jerk_rel": 1.909,
+     "jerk_e": {
+      "Charge": 0.163,
+      "Space": 0.143,
+      "Time": 0.293
+     },
+     "planar_frac": 0.757,
+     "flat_mean": 0.082,
+     "planar_plan": 0.687,
+     "coherence": 0.481,
+     "jitter": 2.236,
+     "phase": 0.21,
+     "stuck": 0.0,
+     "osc": 0.11
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.204,
+     "jerk": 0.32,
+     "jerk_rel": 1.571,
+     "jerk_e": {
+      "Mass": 0.227,
+      "Space": 0.229,
+      "Time": 0.361
+     },
+     "planar_frac": 0.454,
+     "flat_mean": 0.13,
+     "planar_plan": 0.487,
+     "coherence": 0.595,
+     "jitter": 1.39,
+     "phase": 0.474,
+     "stuck": 0.0,
+     "osc": 0.05
+    }
+   }
+  },
+  "sec": 32
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "f_inertia": 0.9
+  },
+  "screen": {
+   "7": {
+    "fit": 20.88,
+    "own": {
+     "mass": 4.18,
+     "space": 4.13,
+     "charge": 1.62,
+     "time": 5.97
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.22,
+     "space->charge": 1.97,
+     "charge->time": 7.13,
+     "time->mass": 4.85
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 20.64,
+    "own": {
+     "mass": 4.45,
+     "space": 4.33,
+     "charge": 2.09,
+     "time": 6.66
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.6,
+     "space->charge": 1.85,
+     "charge->time": 7.54,
+     "time->mass": 4.63
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.163,
+    "jerk": 0.247,
+    "jerk_rel": 1.503,
+    "planar_frac": 0.767,
+    "flat_mean": 0.075,
+    "coherence": 0.427,
+    "jitter": 1.094,
+    "phase": 0.127,
+    "stuck": 0.0,
+    "osc": 0.123
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.391,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.174,
+     "jerk": 0.287,
+     "jerk_rel": 1.647,
+     "jerk_e": {
+      "Charge": 0.222,
+      "Mass": 0.254,
+      "Space": 0.179,
+      "Time": 0.647
+     },
+     "planar_frac": 0.652,
+     "flat_mean": 0.095,
+     "planar_plan": 0.432,
+     "coherence": 0.278,
+     "jitter": 1.107,
+     "phase": 0.146,
+     "stuck": 0.0,
+     "osc": 0.167
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.155,
+     "jerk": 0.24,
+     "jerk_rel": 1.555,
+     "jerk_e": {
+      "Charge": 0.345,
+      "Space": 0.174,
+      "Time": 0.4
+     },
+     "planar_frac": 0.766,
+     "flat_mean": 0.087,
+     "planar_plan": 0.375,
+     "coherence": 0.281,
+     "jitter": 1.093,
+     "phase": 0.098,
+     "stuck": 0.0,
+     "osc": 0.159
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.138,
+     "jerk": 0.184,
+     "jerk_rel": 1.335,
+     "jerk_e": {
+      "Charge": 0.152,
+      "Space": 0.127,
+      "Time": 0.345
+     },
+     "planar_frac": 0.918,
+     "flat_mean": 0.043,
+     "planar_plan": 0.687,
+     "coherence": 0.576,
+     "jitter": 1.146,
+     "phase": 0.054,
+     "stuck": 0.0,
+     "osc": 0.08
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.187,
+     "jerk": 0.277,
+     "jerk_rel": 1.475,
+     "jerk_e": {
+      "Mass": 0.107,
+      "Space": 0.172,
+      "Time": 0.324
+     },
+     "planar_frac": 0.731,
+     "flat_mean": 0.077,
+     "planar_plan": 0.487,
+     "coherence": 0.573,
+     "jitter": 1.029,
+     "phase": 0.209,
+     "stuck": 0.0,
+     "osc": 0.086
+    }
+   }
+  },
+  "sec": 32
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "look": 0
+  },
+  "screen": {
+   "7": {
+    "fit": 17.25,
+    "own": {
+     "mass": 3.85,
+     "space": 4.46,
+     "charge": 1.85,
+     "time": 9.15
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 4.91,
+     "space->charge": 2.44,
+     "charge->time": 10.59,
+     "time->mass": 3.48
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 19.37,
+    "own": {
+     "mass": 3.57,
+     "space": 5.33,
+     "charge": 1.91,
+     "time": 7.8
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 5.24,
+     "space->charge": 2.21,
+     "charge->time": 9.66,
+     "time->mass": 3.68
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.184,
+    "jerk": 0.332,
+    "jerk_rel": 1.813,
+    "planar_frac": 0.679,
+    "flat_mean": 0.087,
+    "coherence": 0.357,
+    "jitter": 1.12,
+    "phase": 0.339,
+    "stuck": 0.0,
+    "osc": 0.221
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.204,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.205,
+     "jerk": 0.399,
+     "jerk_rel": 1.95,
+     "jerk_e": {
+      "Charge": 0.407,
+      "Mass": 0.381,
+      "Space": 0.379,
+      "Time": 0.518
+     },
+     "planar_frac": 0.636,
+     "flat_mean": 0.094,
+     "planar_plan": 0.432,
+     "coherence": 0.247,
+     "jitter": 1.16,
+     "phase": 0.435,
+     "stuck": 0.0,
+     "osc": 0.311
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.179,
+     "jerk": 0.332,
+     "jerk_rel": 1.853,
+     "jerk_e": {
+      "Charge": 0.346,
+      "Space": 0.305,
+      "Time": 0.493
+     },
+     "planar_frac": 0.541,
+     "flat_mean": 0.12,
+     "planar_plan": 0.375,
+     "coherence": 0.38,
+     "jitter": 1.186,
+     "phase": 0.136,
+     "stuck": 0.0,
+     "osc": 0.198
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.158,
+     "jerk": 0.305,
+     "jerk_rel": 1.937,
+     "jerk_e": {
+      "Charge": 0.324,
+      "Space": 0.303,
+      "Time": 0.232
+     },
+     "planar_frac": 0.883,
+     "flat_mean": 0.047,
+     "planar_plan": 0.687,
+     "coherence": 0.288,
+     "jitter": 1.161,
+     "phase": 0.225,
+     "stuck": 0.0,
+     "osc": 0.259
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.193,
+     "jerk": 0.292,
+     "jerk_rel": 1.513,
+     "jerk_e": {
+      "Mass": 0.399,
+      "Space": 0.234,
+      "Time": 0.31
+     },
+     "planar_frac": 0.657,
+     "flat_mean": 0.085,
+     "planar_plan": 0.487,
+     "coherence": 0.513,
+     "jitter": 0.972,
+     "phase": 0.561,
+     "stuck": 0.0,
+     "osc": 0.116
+    }
+   }
+  },
+  "sec": 32
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "no_death": 0
+  },
+  "screen": {
+   "7": {
+    "fit": 20.93,
+    "own": {
+     "mass": 4.05,
+     "space": 4.01,
+     "charge": 1.53,
+     "time": 6.18
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.01,
+     "space->charge": 1.89,
+     "charge->time": 7.14,
+     "time->mass": 4.58
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 20.68,
+    "own": {
+     "mass": 4.68,
+     "space": 4.33,
+     "charge": 1.9,
+     "time": 6.38
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.7,
+     "space->charge": 1.72,
+     "charge->time": 7.79,
+     "time->mass": 4.33
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.136,
+    "jerk": 0.222,
+    "jerk_rel": 1.629,
+    "planar_frac": 0.802,
+    "flat_mean": 0.065,
+    "coherence": 0.617,
+    "jitter": 0.977,
+    "phase": 0.088,
+    "stuck": 0.0,
+    "osc": 0.12
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.43,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.14,
+     "jerk": 0.259,
+     "jerk_rel": 1.848,
+     "jerk_e": {
+      "Charge": 0.189,
+      "Mass": 0.223,
+      "Space": 0.112,
+      "Time": 0.673
+     },
+     "planar_frac": 0.696,
+     "flat_mean": 0.084,
+     "planar_plan": 0.432,
+     "coherence": 0.459,
+     "jitter": 1.089,
+     "phase": 0.135,
+     "stuck": 0.0,
+     "osc": 0.196
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.119,
+     "jerk": 0.212,
+     "jerk_rel": 1.78,
+     "jerk_e": {
+      "Charge": 0.303,
+      "Space": 0.153,
+      "Time": 0.362
+     },
+     "planar_frac": 0.805,
+     "flat_mean": 0.078,
+     "planar_plan": 0.375,
+     "coherence": 0.51,
+     "jitter": 0.962,
+     "phase": 0.11,
+     "stuck": 0.0,
+     "osc": 0.139
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.122,
+     "jerk": 0.165,
+     "jerk_rel": 1.357,
+     "jerk_e": {
+      "Charge": 0.132,
+      "Space": 0.104,
+      "Time": 0.334
+     },
+     "planar_frac": 0.925,
+     "flat_mean": 0.029,
+     "planar_plan": 0.687,
+     "coherence": 0.827,
+     "jitter": 0.841,
+     "phase": 0.036,
+     "stuck": 0.0,
+     "osc": 0.053
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.164,
+     "jerk": 0.252,
+     "jerk_rel": 1.53,
+     "jerk_e": {
+      "Mass": 0.071,
+      "Space": 0.178,
+      "Time": 0.29
+     },
+     "planar_frac": 0.782,
+     "flat_mean": 0.068,
+     "planar_plan": 0.487,
+     "coherence": 0.671,
+     "jitter": 1.017,
+     "phase": 0.072,
+     "stuck": 0.0,
+     "osc": 0.092
+    }
+   }
+  },
+  "sec": 33
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "mix": 0.5
+  },
+  "screen": {
+   "7": {
+    "fit": 21.22,
+    "own": {
+     "mass": 3.58,
+     "space": 3.69,
+     "charge": 1.41,
+     "time": 5.69
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 3.87,
+     "space->charge": 1.81,
+     "charge->time": 6.79,
+     "time->mass": 3.31
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 21.03,
+    "own": {
+     "mass": 3.55,
+     "space": 4.01,
+     "charge": 1.8,
+     "time": 6.0
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 3.98,
+     "space->charge": 1.63,
+     "charge->time": 7.77,
+     "time->mass": 3.37
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.079,
+    "jerk": 0.121,
+    "jerk_rel": 1.547,
+    "planar_frac": 0.806,
+    "flat_mean": 0.065,
+    "coherence": 0.631,
+    "jitter": 0.847,
+    "phase": 0.094,
+    "stuck": 0.0,
+    "osc": 0.099
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.456,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.086,
+     "jerk": 0.16,
+     "jerk_rel": 1.858,
+     "jerk_e": {
+      "Charge": 0.122,
+      "Mass": 0.123,
+      "Space": 0.059,
+      "Time": 0.508
+     },
+     "planar_frac": 0.679,
+     "flat_mean": 0.078,
+     "planar_plan": 0.432,
+     "coherence": 0.415,
+     "jitter": 1.004,
+     "phase": 0.196,
+     "stuck": 0.0,
+     "osc": 0.189
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.063,
+     "jerk": 0.11,
+     "jerk_rel": 1.744,
+     "jerk_e": {
+      "Charge": 0.145,
+      "Space": 0.075,
+      "Time": 0.254
+     },
+     "planar_frac": 0.831,
+     "flat_mean": 0.075,
+     "planar_plan": 0.375,
+     "coherence": 0.502,
+     "jitter": 0.936,
+     "phase": 0.114,
+     "stuck": 0.0,
+     "osc": 0.116
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.066,
+     "jerk": 0.084,
+     "jerk_rel": 1.276,
+     "jerk_e": {
+      "Charge": 0.066,
+      "Space": 0.052,
+      "Time": 0.174
+     },
+     "planar_frac": 0.962,
+     "flat_mean": 0.025,
+     "planar_plan": 0.687,
+     "coherence": 0.839,
+     "jitter": 0.731,
+     "phase": 0.026,
+     "stuck": 0.0,
+     "osc": 0.056
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.099,
+     "jerk": 0.129,
+     "jerk_rel": 1.309,
+     "jerk_e": {
+      "Mass": 0.038,
+      "Space": 0.095,
+      "Time": 0.148
+     },
+     "planar_frac": 0.753,
+     "flat_mean": 0.081,
+     "planar_plan": 0.487,
+     "coherence": 0.77,
+     "jitter": 0.719,
+     "phase": 0.04,
+     "stuck": 0.0,
+     "osc": 0.036
+    }
+   }
+  },
+  "sec": 33
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 3.0,
+   "f_inertia": 0.8
+  },
+  "screen": {
+   "7": {
+    "fit": 15.91,
+    "own": {
+     "mass": 5.3,
+     "space": 5.51,
+     "charge": 2.36,
+     "time": 13.87
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 6.37,
+     "space->charge": 2.81,
+     "charge->time": 13.05,
+     "time->mass": 5.17
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 15.6,
+    "own": {
+     "mass": 5.73,
+     "space": 5.69,
+     "charge": 2.86,
+     "time": 13.79
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 7.35,
+     "space->charge": 2.8,
+     "charge->time": 14.86,
+     "time->mass": 5.28
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.142,
+    "jerk": 0.258,
+    "jerk_rel": 1.839,
+    "planar_frac": 0.357,
+    "flat_mean": 0.152,
+    "coherence": 0.444,
+    "jitter": 1.892,
+    "phase": 0.332,
+    "stuck": 0.0,
+    "osc": 0.118
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.0,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.15,
+     "jerk": 0.286,
+     "jerk_rel": 1.904,
+     "jerk_e": {
+      "Charge": 0.175,
+      "Mass": 0.239,
+      "Space": 0.207,
+      "Time": 0.729
+     },
+     "planar_frac": 0.348,
+     "flat_mean": 0.152,
+     "planar_plan": 0.432,
+     "coherence": 0.423,
+     "jitter": 1.883,
+     "phase": 0.216,
+     "stuck": 0.0,
+     "osc": 0.164
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.123,
+     "jerk": 0.223,
+     "jerk_rel": 1.815,
+     "jerk_e": {
+      "Charge": 0.306,
+      "Space": 0.169,
+      "Time": 0.34
+     },
+     "planar_frac": 0.372,
+     "flat_mean": 0.156,
+     "planar_plan": 0.375,
+     "coherence": 0.341,
+     "jitter": 1.745,
+     "phase": 0.225,
+     "stuck": 0.0,
+     "osc": 0.126
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.093,
+     "jerk": 0.18,
+     "jerk_rel": 1.924,
+     "jerk_e": {
+      "Charge": 0.159,
+      "Space": 0.141,
+      "Time": 0.289
+     },
+     "planar_frac": 0.44,
+     "flat_mean": 0.126,
+     "planar_plan": 0.687,
+     "coherence": 0.473,
+     "jitter": 2.388,
+     "phase": 0.406,
+     "stuck": 0.0,
+     "osc": 0.099
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.2,
+     "jerk": 0.342,
+     "jerk_rel": 1.711,
+     "jerk_e": {
+      "Mass": 0.295,
+      "Space": 0.231,
+      "Time": 0.388
+     },
+     "planar_frac": 0.267,
+     "flat_mean": 0.173,
+     "planar_plan": 0.487,
+     "coherence": 0.537,
+     "jitter": 1.553,
+     "phase": 0.479,
+     "stuck": 0.0,
+     "osc": 0.082
+    }
+   }
+  },
+  "sec": 33
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 1.5,
+   "rect": 1.0
+  },
+  "screen": {
+   "7": {
+    "fit": 17.29,
+    "own": {
+     "mass": 4.17,
+     "space": 4.29,
+     "charge": 1.89,
+     "time": 9.65
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 4.85,
+     "space->charge": 2.18,
+     "charge->time": 8.63,
+     "time->mass": 3.77
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 17.08,
+    "own": {
+     "mass": 3.73,
+     "space": 5.01,
+     "charge": 2.28,
+     "time": 9.86
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 4.78,
+     "space->charge": 2.13,
+     "charge->time": 10.26,
+     "time->mass": 3.78
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.122,
+    "jerk": 0.233,
+    "jerk_rel": 1.936,
+    "planar_frac": 0.556,
+    "flat_mean": 0.108,
+    "coherence": 0.53,
+    "jitter": 1.905,
+    "phase": 0.154,
+    "stuck": 0.0,
+    "osc": 0.074
+   },
+   "in_band": true,
+   "checks": {
+    "jerk_rel": true,
+    "osc": true,
+    "stuck": true,
+    "planar": true
+   },
+   "planar_excess": 0.136,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.12,
+     "jerk": 0.252,
+     "jerk_rel": 2.1,
+     "jerk_e": {
+      "Charge": 0.175,
+      "Mass": 0.205,
+      "Space": 0.17,
+      "Time": 0.672
+     },
+     "planar_frac": 0.568,
+     "flat_mean": 0.106,
+     "planar_plan": 0.432,
+     "coherence": 0.5,
+     "jitter": 1.841,
+     "phase": 0.133,
+     "stuck": 0.0,
+     "osc": 0.113
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.099,
+     "jerk": 0.195,
+     "jerk_rel": 1.974,
+     "jerk_e": {
+      "Charge": 0.28,
+      "Space": 0.153,
+      "Time": 0.224
+     },
+     "planar_frac": 0.462,
+     "flat_mean": 0.136,
+     "planar_plan": 0.375,
+     "coherence": 0.46,
+     "jitter": 1.855,
+     "phase": 0.147,
+     "stuck": 0.0,
+     "osc": 0.081
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.087,
+     "jerk": 0.168,
+     "jerk_rel": 1.926,
+     "jerk_e": {
+      "Charge": 0.151,
+      "Space": 0.146,
+      "Time": 0.251
+     },
+     "planar_frac": 0.705,
+     "flat_mean": 0.083,
+     "planar_plan": 0.687,
+     "coherence": 0.554,
+     "jitter": 2.287,
+     "phase": 0.073,
+     "stuck": 0.0,
+     "osc": 0.041
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.182,
+     "jerk": 0.318,
+     "jerk_rel": 1.745,
+     "jerk_e": {
+      "Mass": 0.275,
+      "Space": 0.248,
+      "Time": 0.343
+     },
+     "planar_frac": 0.491,
+     "flat_mean": 0.107,
+     "planar_plan": 0.487,
+     "coherence": 0.608,
+     "jitter": 1.639,
+     "phase": 0.263,
+     "stuck": 0.0,
+     "osc": 0.06
+    }
+   }
+  },
+  "sec": 31
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "rect": 1.0
+  },
+  "screen": {
+   "7": {
+    "fit": 21.31,
+    "own": {
+     "mass": 2.88,
+     "space": 3.81,
+     "charge": 1.48,
+     "time": 5.62
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.37,
+     "space->charge": 1.94,
+     "charge->time": 6.53,
+     "time->mass": 2.61
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 21.12,
+    "own": {
+     "mass": 2.79,
+     "space": 4.23,
+     "charge": 1.81,
+     "time": 6.06
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.38,
+     "space->charge": 1.68,
+     "charge->time": 7.39,
+     "time->mass": 2.87
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.111,
+    "jerk": 0.215,
+    "jerk_rel": 1.947,
+    "planar_frac": 0.793,
+    "flat_mean": 0.067,
+    "coherence": 0.561,
+    "jitter": 1.068,
+    "phase": 0.121,
+    "stuck": 0.0,
+    "osc": 0.124
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.403,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.121,
+     "jerk": 0.287,
+     "jerk_rel": 2.38,
+     "jerk_e": {
+      "Charge": 0.182,
+      "Mass": 0.201,
+      "Space": 0.11,
+      "Time": 1.056
+     },
+     "planar_frac": 0.677,
+     "flat_mean": 0.076,
+     "planar_plan": 0.432,
+     "coherence": 0.359,
+     "jitter": 1.25,
+     "phase": 0.263,
+     "stuck": 0.0,
+     "osc": 0.223
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.09,
+     "jerk": 0.193,
+     "jerk_rel": 2.142,
+     "jerk_e": {
+      "Charge": 0.268,
+      "Space": 0.122,
+      "Time": 0.477
+     },
+     "planar_frac": 0.778,
+     "flat_mean": 0.088,
+     "planar_plan": 0.375,
+     "coherence": 0.415,
+     "jitter": 1.078,
+     "phase": 0.163,
+     "stuck": 0.0,
+     "osc": 0.169
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.096,
+     "jerk": 0.157,
+     "jerk_rel": 1.633,
+     "jerk_e": {
+      "Charge": 0.125,
+      "Space": 0.106,
+      "Time": 0.314
+     },
+     "planar_frac": 0.949,
+     "flat_mean": 0.027,
+     "planar_plan": 0.687,
+     "coherence": 0.795,
+     "jitter": 0.976,
+     "phase": 0.022,
+     "stuck": 0.0,
+     "osc": 0.045
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.136,
+     "jerk": 0.222,
+     "jerk_rel": 1.632,
+     "jerk_e": {
+      "Mass": 0.074,
+      "Space": 0.159,
+      "Time": 0.257
+     },
+     "planar_frac": 0.77,
+     "flat_mean": 0.079,
+     "planar_plan": 0.487,
+     "coherence": 0.674,
+     "jitter": 0.968,
+     "phase": 0.035,
+     "stuck": 0.0,
+     "osc": 0.059
+    }
+   }
+  },
+  "sec": 30
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 0.5,
+   "rect": 1.0
+  },
+  "screen": {
+   "7": {
+    "fit": 21.14,
+    "own": {
+     "mass": 3.36,
+     "space": 3.97,
+     "charge": 1.48,
+     "time": 6.37
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.01,
+     "space->charge": 1.76,
+     "charge->time": 6.52,
+     "time->mass": 3.19
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 20.99,
+    "own": {
+     "mass": 3.02,
+     "space": 4.08,
+     "charge": 1.88,
+     "time": 6.72
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.33,
+     "space->charge": 1.77,
+     "charge->time": 7.53,
+     "time->mass": 3.2
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.123,
+    "jerk": 0.245,
+    "jerk_rel": 1.98,
+    "planar_frac": 0.69,
+    "flat_mean": 0.096,
+    "coherence": 0.523,
+    "jitter": 1.634,
+    "phase": 0.117,
+    "stuck": 0.0,
+    "osc": 0.117
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.225,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.145,
+     "jerk": 0.33,
+     "jerk_rel": 2.279,
+     "jerk_e": {
+      "Charge": 0.174,
+      "Mass": 0.231,
+      "Space": 0.167,
+      "Time": 1.203
+     },
+     "planar_frac": 0.608,
+     "flat_mean": 0.105,
+     "planar_plan": 0.432,
+     "coherence": 0.426,
+     "jitter": 1.563,
+     "phase": 0.186,
+     "stuck": 0.0,
+     "osc": 0.174
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.104,
+     "jerk": 0.222,
+     "jerk_rel": 2.128,
+     "jerk_e": {
+      "Charge": 0.295,
+      "Space": 0.169,
+      "Time": 0.308
+     },
+     "planar_frac": 0.6,
+     "flat_mean": 0.131,
+     "planar_plan": 0.375,
+     "coherence": 0.399,
+     "jitter": 1.619,
+     "phase": 0.118,
+     "stuck": 0.0,
+     "osc": 0.138
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.097,
+     "jerk": 0.166,
+     "jerk_rel": 1.708,
+     "jerk_e": {
+      "Charge": 0.142,
+      "Space": 0.143,
+      "Time": 0.275
+     },
+     "planar_frac": 0.903,
+     "flat_mean": 0.052,
+     "planar_plan": 0.687,
+     "coherence": 0.691,
+     "jitter": 1.574,
+     "phase": 0.044,
+     "stuck": 0.0,
+     "osc": 0.056
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.146,
+     "jerk": 0.263,
+     "jerk_rel": 1.804,
+     "jerk_e": {
+      "Mass": 0.134,
+      "Space": 0.225,
+      "Time": 0.28
+     },
+     "planar_frac": 0.65,
+     "flat_mean": 0.097,
+     "planar_plan": 0.487,
+     "coherence": 0.577,
+     "jitter": 1.779,
+     "phase": 0.12,
+     "stuck": 0.0,
+     "osc": 0.099
+    }
+   }
+  },
+  "sec": 31
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 1.5,
+   "te0": 0.33,
+   "rect": 1.0
+  },
+  "screen": {
+   "7": {
+    "fit": 20.66,
+    "own": {
+     "mass": 3.86,
+     "space": 4.32,
+     "charge": 1.83,
+     "time": 7.66
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.79,
+     "space->charge": 2.08,
+     "charge->time": 7.66,
+     "time->mass": 3.59
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 19.44,
+    "own": {
+     "mass": 3.46,
+     "space": 4.97,
+     "charge": 2.23,
+     "time": 7.95
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 5.45,
+     "space->charge": 2.12,
+     "charge->time": 8.58,
+     "time->mass": 3.52
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.117,
+    "jerk": 0.229,
+    "jerk_rel": 1.953,
+    "planar_frac": 0.568,
+    "flat_mean": 0.107,
+    "coherence": 0.504,
+    "jitter": 1.862,
+    "phase": 0.221,
+    "stuck": 0.0,
+    "osc": 0.095
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.195,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.139,
+     "jerk": 0.302,
+     "jerk_rel": 2.167,
+     "jerk_e": {
+      "Charge": 0.169,
+      "Mass": 0.22,
+      "Space": 0.161,
+      "Time": 1.033
+     },
+     "planar_frac": 0.495,
+     "flat_mean": 0.115,
+     "planar_plan": 0.432,
+     "coherence": 0.478,
+     "jitter": 1.789,
+     "phase": 0.205,
+     "stuck": 0.0,
+     "osc": 0.116
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.1,
+     "jerk": 0.2,
+     "jerk_rel": 2.003,
+     "jerk_e": {
+      "Charge": 0.286,
+      "Space": 0.146,
+      "Time": 0.265
+     },
+     "planar_frac": 0.399,
+     "flat_mean": 0.153,
+     "planar_plan": 0.375,
+     "coherence": 0.412,
+     "jitter": 1.787,
+     "phase": 0.204,
+     "stuck": 0.0,
+     "osc": 0.101
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.09,
+     "jerk": 0.172,
+     "jerk_rel": 1.917,
+     "jerk_e": {
+      "Charge": 0.15,
+      "Space": 0.143,
+      "Time": 0.276
+     },
+     "planar_frac": 0.697,
+     "flat_mean": 0.084,
+     "planar_plan": 0.687,
+     "coherence": 0.561,
+     "jitter": 2.14,
+     "phase": 0.09,
+     "stuck": 0.0,
+     "osc": 0.057
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.141,
+     "jerk": 0.243,
+     "jerk_rel": 1.724,
+     "jerk_e": {
+      "Mass": 0.079,
+      "Space": 0.186,
+      "Time": 0.271
+     },
+     "planar_frac": 0.682,
+     "flat_mean": 0.077,
+     "planar_plan": 0.487,
+     "coherence": 0.563,
+     "jitter": 1.731,
+     "phase": 0.383,
+     "stuck": 0.0,
+     "osc": 0.104
+    }
+   }
+  },
+  "sec": 31
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 1.5,
+   "tp": 2.0,
+   "te0": 0.33,
+   "rect": 1.0
+  },
+  "screen": {
+   "7": {
+    "fit": 20.68,
+    "own": {
+     "mass": 3.77,
+     "space": 4.27,
+     "charge": 1.85,
+     "time": 7.44
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 5.08,
+     "space->charge": 2.16,
+     "charge->time": 7.6,
+     "time->mass": 3.54
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 19.52,
+    "own": {
+     "mass": 3.46,
+     "space": 4.87,
+     "charge": 2.3,
+     "time": 7.48
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.95,
+     "space->charge": 2.2,
+     "charge->time": 8.78,
+     "time->mass": 3.53
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.122,
+    "jerk": 0.248,
+    "jerk_rel": 2.024,
+    "planar_frac": 0.564,
+    "flat_mean": 0.108,
+    "coherence": 0.496,
+    "jitter": 1.883,
+    "phase": 0.22,
+    "stuck": 0.0,
+    "osc": 0.089
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.214,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.156,
+     "jerk": 0.341,
+     "jerk_rel": 2.191,
+     "jerk_e": {
+      "Charge": 0.173,
+      "Mass": 0.219,
+      "Space": 0.155,
+      "Time": 1.38
+     },
+     "planar_frac": 0.487,
+     "flat_mean": 0.114,
+     "planar_plan": 0.432,
+     "coherence": 0.473,
+     "jitter": 1.822,
+     "phase": 0.192,
+     "stuck": 0.0,
+     "osc": 0.113
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.104,
+     "jerk": 0.216,
+     "jerk_rel": 2.087,
+     "jerk_e": {
+      "Charge": 0.29,
+      "Space": 0.147,
+      "Time": 0.428
+     },
+     "planar_frac": 0.375,
+     "flat_mean": 0.153,
+     "planar_plan": 0.375,
+     "coherence": 0.375,
+     "jitter": 1.832,
+     "phase": 0.215,
+     "stuck": 0.0,
+     "osc": 0.1
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.089,
+     "jerk": 0.176,
+     "jerk_rel": 1.969,
+     "jerk_e": {
+      "Charge": 0.15,
+      "Space": 0.144,
+      "Time": 0.298
+     },
+     "planar_frac": 0.692,
+     "flat_mean": 0.085,
+     "planar_plan": 0.687,
+     "coherence": 0.56,
+     "jitter": 2.16,
+     "phase": 0.072,
+     "stuck": 0.0,
+     "osc": 0.056
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.14,
+     "jerk": 0.259,
+     "jerk_rel": 1.85,
+     "jerk_e": {
+      "Mass": 0.077,
+      "Space": 0.201,
+      "Time": 0.289
+     },
+     "planar_frac": 0.701,
+     "flat_mean": 0.078,
+     "planar_plan": 0.487,
+     "coherence": 0.577,
+     "jitter": 1.718,
+     "phase": 0.4,
+     "stuck": 0.0,
+     "osc": 0.085
+    }
+   }
+  },
+  "sec": 31
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 2.0,
+   "te0": 0.2,
+   "rect": 1.0
+  },
+  "screen": {
+   "7": {
+    "fit": 19.41,
+    "own": {
+     "mass": 4.23,
+     "space": 4.85,
+     "charge": 2.01,
+     "time": 7.95
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 5.13,
+     "space->charge": 2.31,
+     "charge->time": 8.07,
+     "time->mass": 3.88
+    },
+    "sw_ok": 3
+   },
+   "23": {
+    "fit": 17.24,
+    "own": {
+     "mass": 3.83,
+     "space": 5.2,
+     "charge": 2.42,
+     "time": 8.27
+    },
+    "own_ok": 3,
+    "sw": {
+     "mass->space": 5.23,
+     "space->charge": 2.53,
+     "charge->time": 9.12,
+     "time->mass": 3.86
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.117,
+    "jerk": 0.233,
+    "jerk_rel": 1.982,
+    "planar_frac": 0.524,
+    "flat_mean": 0.112,
+    "coherence": 0.489,
+    "jitter": 1.906,
+    "phase": 0.336,
+    "stuck": 0.0,
+    "osc": 0.103
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.289,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.14,
+     "jerk": 0.303,
+     "jerk_rel": 2.165,
+     "jerk_e": {
+      "Charge": 0.178,
+      "Mass": 0.219,
+      "Space": 0.159,
+      "Time": 1.04
+     },
+     "planar_frac": 0.382,
+     "flat_mean": 0.138,
+     "planar_plan": 0.432,
+     "coherence": 0.474,
+     "jitter": 1.867,
+     "phase": 0.226,
+     "stuck": 0.0,
+     "osc": 0.121
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.107,
+     "jerk": 0.215,
+     "jerk_rel": 2.016,
+     "jerk_e": {
+      "Charge": 0.299,
+      "Space": 0.153,
+      "Time": 0.323
+     },
+     "planar_frac": 0.317,
+     "flat_mean": 0.156,
+     "planar_plan": 0.375,
+     "coherence": 0.41,
+     "jitter": 1.848,
+     "phase": 0.222,
+     "stuck": 0.0,
+     "osc": 0.088
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.09,
+     "jerk": 0.174,
+     "jerk_rel": 1.93,
+     "jerk_e": {
+      "Charge": 0.156,
+      "Space": 0.139,
+      "Time": 0.268
+     },
+     "planar_frac": 0.623,
+     "flat_mean": 0.099,
+     "planar_plan": 0.687,
+     "coherence": 0.557,
+     "jitter": 2.155,
+     "phase": 0.09,
+     "stuck": 0.0,
+     "osc": 0.06
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.132,
+     "jerk": 0.24,
+     "jerk_rel": 1.818,
+     "jerk_e": {
+      "Mass": 0.073,
+      "Space": 0.193,
+      "Time": 0.265
+     },
+     "planar_frac": 0.776,
+     "flat_mean": 0.055,
+     "planar_plan": 0.487,
+     "coherence": 0.517,
+     "jitter": 1.755,
+     "phase": 0.806,
+     "stuck": 0.0,
+     "osc": 0.144
+    }
+   }
+  },
+  "sec": 30
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 1.5,
+   "te0": 0.33,
+   "rect": 1.0,
+   "sync": 1
+  },
+  "screen": {
+   "7": {
+    "fit": 20.48,
+    "own": {
+     "mass": 3.92,
+     "space": 4.98,
+     "charge": 1.82,
+     "time": 7.51
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 5.37,
+     "space->charge": 2.62,
+     "charge->time": 7.94,
+     "time->mass": 3.96
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 19.52,
+    "own": {
+     "mass": 3.43,
+     "space": 4.89,
+     "charge": 2.2,
+     "time": 7.72
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.64,
+     "space->charge": 2.15,
+     "charge->time": 8.73,
+     "time->mass": 3.64
+    },
+    "sw_ok": 3
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.125,
+    "jerk": 0.286,
+    "jerk_rel": 2.285,
+    "planar_frac": 0.609,
+    "flat_mean": 0.11,
+    "coherence": 0.4,
+    "jitter": 2.238,
+    "phase": 0.251,
+    "stuck": 0.0,
+    "osc": 0.088
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.277,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.149,
+     "jerk": 0.356,
+     "jerk_rel": 2.394,
+     "jerk_e": {
+      "Charge": 0.178,
+      "Mass": 0.253,
+      "Space": 0.214,
+      "Time": 1.242
+     },
+     "planar_frac": 0.508,
+     "flat_mean": 0.124,
+     "planar_plan": 0.432,
+     "coherence": 0.363,
+     "jitter": 2.077,
+     "phase": 0.343,
+     "stuck": 0.0,
+     "osc": 0.125
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.114,
+     "jerk": 0.28,
+     "jerk_rel": 2.459,
+     "jerk_e": {
+      "Charge": 0.446,
+      "Space": 0.188,
+      "Time": 0.376
+     },
+     "planar_frac": 0.469,
+     "flat_mean": 0.146,
+     "planar_plan": 0.375,
+     "coherence": 0.266,
+     "jitter": 2.264,
+     "phase": 0.237,
+     "stuck": 0.0,
+     "osc": 0.098
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.089,
+     "jerk": 0.191,
+     "jerk_rel": 2.14,
+     "jerk_e": {
+      "Charge": 0.166,
+      "Space": 0.181,
+      "Time": 0.293
+     },
+     "planar_frac": 0.694,
+     "flat_mean": 0.087,
+     "planar_plan": 0.687,
+     "coherence": 0.488,
+     "jitter": 2.419,
+     "phase": 0.076,
+     "stuck": 0.0,
+     "osc": 0.048
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.147,
+     "jerk": 0.316,
+     "jerk_rel": 2.148,
+     "jerk_e": {
+      "Mass": 0.502,
+      "Space": 0.312,
+      "Time": 0.297
+     },
+     "planar_frac": 0.764,
+     "flat_mean": 0.081,
+     "planar_plan": 0.487,
+     "coherence": 0.482,
+     "jitter": 2.191,
+     "phase": 0.346,
+     "stuck": 0.0,
+     "osc": 0.081
+    }
+   }
+  },
+  "sec": 31
+ },
+ {
+  "cfg": {
+   "pull": 1.0,
+   "sync": 1
+  },
+  "screen": {
+   "7": {
+    "fit": 20.92,
+    "own": {
+     "mass": 4.48,
+     "space": 3.9,
+     "charge": 1.52,
+     "time": 6.22
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.12,
+     "space->charge": 1.97,
+     "charge->time": 7.14,
+     "time->mass": 3.86
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 20.85,
+    "own": {
+     "mass": 3.89,
+     "space": 4.23,
+     "charge": 1.87,
+     "time": 6.25
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.27,
+     "space->charge": 1.75,
+     "charge->time": 7.9,
+     "time->mass": 4.08
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.148,
+    "jerk": 0.309,
+    "jerk_rel": 2.103,
+    "planar_frac": 0.801,
+    "flat_mean": 0.063,
+    "coherence": 0.375,
+    "jitter": 1.523,
+    "phase": 0.194,
+    "stuck": 0.0,
+    "osc": 0.197
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.456,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.136,
+     "jerk": 0.292,
+     "jerk_rel": 2.15,
+     "jerk_e": {
+      "Charge": 0.246,
+      "Mass": 0.289,
+      "Space": 0.241,
+      "Time": 0.404
+     },
+     "planar_frac": 0.709,
+     "flat_mean": 0.08,
+     "planar_plan": 0.432,
+     "coherence": 0.291,
+     "jitter": 1.311,
+     "phase": 0.198,
+     "stuck": 0.0,
+     "osc": 0.26
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.131,
+     "jerk": 0.292,
+     "jerk_rel": 2.231,
+     "jerk_e": {
+      "Charge": 0.274,
+      "Space": 0.274,
+      "Time": 0.367
+     },
+     "planar_frac": 0.831,
+     "flat_mean": 0.071,
+     "planar_plan": 0.375,
+     "coherence": 0.344,
+     "jitter": 1.599,
+     "phase": 0.267,
+     "stuck": 0.0,
+     "osc": 0.201
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.155,
+     "jerk": 0.328,
+     "jerk_rel": 2.12,
+     "jerk_e": {
+      "Charge": 0.343,
+      "Space": 0.367,
+      "Time": 0.252
+     },
+     "planar_frac": 0.936,
+     "flat_mean": 0.028,
+     "planar_plan": 0.687,
+     "coherence": 0.384,
+     "jitter": 1.415,
+     "phase": 0.212,
+     "stuck": 0.0,
+     "osc": 0.199
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.171,
+     "jerk": 0.326,
+     "jerk_rel": 1.909,
+     "jerk_e": {
+      "Mass": 0.291,
+      "Space": 0.461,
+      "Time": 0.279
+     },
+     "planar_frac": 0.727,
+     "flat_mean": 0.073,
+     "planar_plan": 0.487,
+     "coherence": 0.479,
+     "jitter": 1.768,
+     "phase": 0.099,
+     "stuck": 0.0,
+     "osc": 0.126
+    }
+   }
+  },
+  "sec": 30
+ },
+ {
+  "cfg": {
+   "pull": 2.0,
+   "e0": 0.5,
+   "rect": 1.0,
+   "sync": 1
+  },
+  "screen": {
+   "7": {
+    "fit": 20.98,
+    "own": {
+     "mass": 3.42,
+     "space": 4.74,
+     "charge": 1.47,
+     "time": 6.35
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.21,
+     "space->charge": 2.05,
+     "charge->time": 6.59,
+     "time->mass": 3.47
+    },
+    "sw_ok": 4
+   },
+   "23": {
+    "fit": 21.03,
+    "own": {
+     "mass": 3.0,
+     "space": 3.82,
+     "charge": 1.84,
+     "time": 6.66
+    },
+    "own_ok": 4,
+    "sw": {
+     "mass->space": 4.43,
+     "space->charge": 1.74,
+     "charge->time": 7.5,
+     "time->mass": 3.23
+    },
+    "sw_ok": 4
+   }
+  },
+  "feel": {
+   "mean": {
+    "speed": 0.152,
+    "jerk": 0.364,
+    "jerk_rel": 2.374,
+    "planar_frac": 0.704,
+    "flat_mean": 0.089,
+    "coherence": 0.364,
+    "jitter": 2.025,
+    "phase": 0.255,
+    "stuck": 0.0,
+    "osc": 0.126
+   },
+   "in_band": false,
+   "checks": {
+    "jerk_rel": true,
+    "osc": false,
+    "stuck": true,
+    "planar": false
+   },
+   "planar_excess": 0.226,
+   "per_plan": {
+    "mass": {
+     "n": 181,
+     "speed": 0.171,
+     "jerk": 0.436,
+     "jerk_rel": 2.548,
+     "jerk_e": {
+      "Charge": 0.236,
+      "Mass": 0.318,
+      "Space": 0.254,
+      "Time": 1.468
+     },
+     "planar_frac": 0.648,
+     "flat_mean": 0.099,
+     "planar_plan": 0.432,
+     "coherence": 0.296,
+     "jitter": 1.751,
+     "phase": 0.236,
+     "stuck": 0.0,
+     "osc": 0.185
+    },
+    "space": {
+     "n": 83,
+     "speed": 0.156,
+     "jerk": 0.396,
+     "jerk_rel": 2.534,
+     "jerk_e": {
+      "Charge": 0.615,
+      "Space": 0.265,
+      "Time": 0.462
+     },
+     "planar_frac": 0.601,
+     "flat_mean": 0.112,
+     "planar_plan": 0.375,
+     "coherence": 0.239,
+     "jitter": 2.067,
+     "phase": 0.516,
+     "stuck": 0.0,
+     "osc": 0.143
+    },
+    "charge": {
+     "n": 169,
+     "speed": 0.112,
+     "jerk": 0.246,
+     "jerk_rel": 2.2,
+     "jerk_e": {
+      "Charge": 0.224,
+      "Space": 0.331,
+      "Time": 0.286
+     },
+     "planar_frac": 0.87,
+     "flat_mean": 0.054,
+     "planar_plan": 0.687,
+     "coherence": 0.476,
+     "jitter": 2.037,
+     "phase": 0.123,
+     "stuck": 0.0,
+     "osc": 0.096
+    },
+    "time": {
+     "n": 72,
+     "speed": 0.171,
+     "jerk": 0.378,
+     "jerk_rel": 2.214,
+     "jerk_e": {
+      "Mass": 0.613,
+      "Space": 0.481,
+      "Time": 0.318
+     },
+     "planar_frac": 0.696,
+     "flat_mean": 0.09,
+     "planar_plan": 0.487,
+     "coherence": 0.445,
+     "jitter": 2.244,
+     "phase": 0.144,
+     "stuck": 0.0,
+     "osc": 0.081
+    }
+   }
+  },
+  "sec": 29
+ }
+]
