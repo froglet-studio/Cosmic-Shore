@@ -6,10 +6,10 @@ Branch `cece/swarm-x-hgrid2`. Every number is the shared yardstick, unchanged: `
 
 ## Headline
 
-| model | own plans (mass/space/charge/time) | 16-transition yardstick | held-out seeds 1000 / 2000 | probe heal (m/s/c/t) | organic band |
+| model | own plans (mass/space/charge/time) | 16-transition yardstick | held-out seeds | probe heal (m/s/c/t) | organic band |
 |---|---|---|---|---|---|
-| **hgrid2** (`results/hgrid2/`) | **1.2 / 2.0 / 2.9 / 3.0** | **16/16, all feasible** | 15/15, 15/15 | 0.98 / 0.87 / 1.00 / 0.97 | **yes** |
-| **evo body + grid** (`results/hgrid2/evo_grid/`) | 2.2 / 3.2 / 1.9 / 4.9 | 13/16 (only the 3 into-dragonfly switches fail, 8.3–9.8) | 12/15 | 1.02 / 0.91 / 0.94 / 0.91 | **yes, evo-like** |
+| **hgrid2** (`results/hgrid2/`) | **1.2 / 2.0 / 2.9 / 3.0** | **16/16, all feasible** | 15/15 (s1000), 15/15 (s2000), 15/15 (s3000) | 0.98 / 0.87 / 1.00 / 0.97 | **yes** |
+| **evo body + grid** (`results/hgrid2/evo_grid/`) | 2.2 / 3.2 / 1.9 / 4.9 | 13/16 (only the 3 into-dragonfly switches fail, 8.3–9.8) | 12/15 (s1000), 12/15 (s2000) - same 3 misses | 1.02 / 0.91 / 0.94 / 0.91 | **yes, evo-like** |
 | round-1 hgrid oracle | 7.2 / 9.1 / 7.9 / 18.1 | tier 1 fails | | 0.72 / 0.99 / -0.08 / 0.82 | yes |
 | designed field model (round 1) | 3.1 / 1.6 / 1.4 / 4.6 | 13/13 feasible | | | no (too clean) |
 | evo (round 1) | 16–24 | 0/16 under the bar | | 0.46 / -1.17 / 0.94 / 0.60 | yes |
@@ -180,7 +180,7 @@ descriptive: they separate a school (hgrid2 0.63) from a gas-like swarm (evo, ev
 ## Files
 
 `results/hgrid2/`: `summary.json` + `rollout.json` (viewer, `swarm_nca.pack`), `eval16.json`,
-`robust_1000.json`, `robust_2000.json`, `probe.json`, `feel.json` (+ the calibration table),
+`robust_1000.json`, `robust_2000.json`, `robust_3000.json`, `probe.json`, `feel.json` (+ the calibration table),
 `feel_calibration.json`, `params.json`, `ship.json`; `round_a/` is the first tier-1 pass (fine layer +
 feed-forward only, 6/15). `evo_grid/`: the same set for the evo body + grid.
 Code: `hgrid2_model.py`, `hgrid2_evo.py`, `hgrid2_eval.py` (score + publish), `hgrid2_diag.py` (per-term),
