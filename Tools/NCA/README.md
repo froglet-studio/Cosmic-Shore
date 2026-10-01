@@ -667,6 +667,15 @@ which use the old scorer, report 5/8; the strict scorer gives both 0/8. Two fixe
 | g2 | f2 + `min_body=76`, `w_body=20` |
 | g5 | f5 + `min_body=76`, `w_body=20` |
 
+**G2 at step 1000 passes 5 of 8 with full-size swarms** (G5: 4/8). The body floor worked: the rule
+now controls its own laying and still grows every seeding to 280 tadpoles. Its own-plan margins
+are the widest of any run so far (13.9 / 17.5 / 15.3 / 20.7 against 42–84 off-diagonal), and one
+switch passes (jellyfish → pufferfish). The other three switches drift: 240 steps after the cull,
+the majority has moved on again (the whale that lost Mass to Space ends with a Charge majority).
+That is the composition problem `learned_egg` targets. G2 ties E8 on tests passed; it is shown in
+the viewer because its rule decides its own laying. F1 at step 2000 is still 5/8; F7 at step 1000
+kept 19–32-tadpole swarms (1/8). E8 at step 2000 fell to 4/8.
+
 **A new behavior: a parent may choose its egg's element** (`learned_egg`, `p_cross`). Training only
 adjusts the weights of one fixed rule; the rule cannot invent an action it has no actuator for. Until
 now an egg was always its parent's element, except for a rare random mutation, so the only way to
