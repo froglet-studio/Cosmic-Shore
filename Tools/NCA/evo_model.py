@@ -317,8 +317,69 @@ def fast_probe(model, sw, gen, regrow=120, L=None):
     return dict(before=before, cut=cut, rec=rec, heal=heal)
 
 
+_STATE = ("locked", "loss_mem", "prev_cnt")
+
+
+def _save(model):
+    return {k: (None if getattr(model, k, None) is None else getattr(model, k).clone()) for k in _STATE if hasattr(model, k)}
+
+
+def _restore(model, st):
+    for k, v in st.items():
+        setattr(model, k, v)
+
+
+GRAZE_BITE = int(os.environ.get("EVO_GRAZE_BITE", "4"))
+GRAZE_EVERY = int(os.environ.get("EVO_GRAZE_EVERY", "2"))
+
+
 @torch.no_grad()
-def fast_rollout(model, seed, steps=240, switch_steps=240, L=None, probe=False):
+def fast_graze(model, sw, gen, bite=None, every=None, max_eat=300, settle=160, L=None):
+    """Gradual predation on a clone of a grown batch: every `every` steps a predator eats `bite` tadpoles
+    of the old majority, until the yardstick's target element leads (or max_eat); then `settle` steps.
+    Returns per plan whether the swarm ends strictly closest to the target plan, and the margin."""
+    bite = bite or GRAZE_BITE; every = every or GRAZE_EVERY
+    L = L or sn.LossCfg()
+    T = sn.load_targets()
+    st = _save(model)
+    p = sw.clone()
+    old = [int(torch.bincount(p.elem[b][p.active[b] & p.hatched[b]], minlength=4).argmax()) for b in range(p.B)]
+    eaten = [0] * p.B; done = [False] * p.B
+    t = 0
+    while not all(done) and t < (max_eat // bite + 1) * every:
+        if t % every == 0:
+            for b, k in enumerate(sn.KINDS):
+                if done[b]:
+                    continue
+                a = p.active[b] & p.hatched[b]
+                c = torch.bincount(p.elem[b][a], minlength=4)
+                if int(c.argmax()) == sn.SWITCH_TO[k] or eaten[b] >= max_eat:
+                    done[b] = True; continue
+                idx = (a & (p.elem[b] == old[b])).nonzero().squeeze(1)
+                if len(idx) == 0:
+                    done[b] = True; continue
+                i = idx[torch.randperm(len(idx), generator=gen)[:bite]]
+                p.active[b, i] = False; p.hatched[b, i] = False; p.s[b, i] = 0.0
+                eaten[b] += len(i)
+        p = model(p, gen)
+        t += 1
+    for _ in range(settle):
+        p = model(p, gen)
+    _restore(model, st)
+    ok, mg = [], []
+    for b, k in enumerate(sn.KINDS):
+        new = sn.PLAN_OF[sn.SWITCH_TO[k]]
+        x = sn.decode(p, b)
+        row = {k2: sn.swarm_loss(x, T[k2], L)[1]["sink"] for k2 in sn.KINDS}
+        n = int((p.active[b] & p.hatched[b]).sum())
+        o = min(v for kk, v in row.items() if kk != new)
+        good = n >= sn.MIN_TEST_BODY and row[new] < 99.9 and row[new] < o
+        ok.append(bool(good)); mg.append(max(-1.0, min(1.0, (o - row[new]) / (o + row[new]))) if n >= sn.MIN_TEST_BODY else -1.0)
+    return dict(ok=ok, margin=mg, eaten=eaten)
+
+
+@torch.no_grad()
+def fast_rollout(model, seed, steps=240, switch_steps=240, L=None, probe=False, graze=False):
     """The yardstick's protocol (grow, score, cull to SWITCH_TO, run, score) for all four plans in ONE
     batch, without the viewer frames or the geometry table. Returns a summary tests_passed() accepts."""
     L = L or sn.LossCfg()
@@ -337,6 +398,8 @@ def fast_rollout(model, seed, steps=240, switch_steps=240, L=None, probe=False):
         summ["census"][k] = sn.census(sw, b, T[k])
     if probe:
         summ["probe"] = fast_probe(model, sw, gen, L=L)
+    if graze:
+        summ["graze"] = fast_graze(model, sw, gen, L=L)
     done = [sn.lose_majority(sw, b, gen, to=sn.SWITCH_TO[k]) is not None for b, k in enumerate(sn.KINDS)]
     for _ in range(switch_steps):
         sw = model(sw, gen)
@@ -372,6 +435,7 @@ _CACHE = {}
 
 W_HEAL = float(os.environ.get("EVO_W_HEAL", "0"))
 W_LIVE = float(os.environ.get("EVO_W_LIVE", "0"))
+W_GRAZE = float(os.environ.get("EVO_W_GRAZE", "0"))
 
 
 def evaluate(genome, seeds=(1,), make=None):
@@ -379,12 +443,16 @@ def evaluate(genome, seeds=(1,), make=None):
     model = (make or EvoRule)(genome)
     fs, ps, ms = [], [], []
     for s in seeds:
-        summ = fast_rollout(model, s, probe=W_HEAL > 0)
+        summ = fast_rollout(model, s, probe=W_HEAL > 0, graze=W_GRAZE > 0)
         f, p, m = fitness(summ)
         if W_HEAL > 0:
             f += W_HEAL * float(np.mean(summ["probe"]["heal"]))
             m = m + summ["probe"]["heal"]
         if W_LIVE > 0:
             f += W_LIVE * float(np.mean(summ["live"]))
+        if W_GRAZE > 0:
+            gz = summ["graze"]
+            f += W_GRAZE * (sum(gz["ok"]) + 0.5 * float(np.mean(gz["margin"])))
+            p = [p, sum(gz["ok"])]
         fs.append(f); ps.append(p); ms.append(m)
     return float(np.mean(fs)), ps, ms

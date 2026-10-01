@@ -26,8 +26,9 @@ GROUPS = {
     "behaviour": ["sw_lay", "k_lay", "b_lay", "sw_egg", "p_egg", "beta_egg", "sw_lock", "lock", "D"],
     "out": ["sw_out", "g_out", "b_out"],
     "swirl": ["sw_swirl", "swirl", "swirl_gain"],
+    "fear": ["sw_fear", "fear_k", "fear_tau"],
 }
-GROUPS["all"] = GROUPS["behaviour"] + GROUPS["out"] + GROUPS["swirl"]
+GROUPS["all"] = GROUPS["behaviour"] + GROUPS["out"] + GROUPS["swirl"] + GROUPS["fear"]
 
 
 def mask_for(groups):
