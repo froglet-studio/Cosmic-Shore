@@ -110,7 +110,17 @@ plus one RNG draw per tadpole (see the cost caveat below).
   known `lose_majority` quirk: dragonfly -> whale leaves Space the majority and it correctly grows a
   jellyfish, 8.75).
 
-## 5. Probe (`probe.json`) — see the file; PROBE_PLACEHOLDER
+## 5. Probe (`probe.json`, vessel strike, seed 11)
+
+| plan | before | killed | right after | after 120 steps | heal | sort's heal |
+|---|---|---|---|---|---|---|
+| whale | 1.67 | 78 of 181 | 15.87 | 1.64 | 1.00 | 1.05 |
+| jellyfish | 3.02 | 21 of 83 | 8.77 | 2.85 | 1.03 | 1.05 |
+| pufferfish | 0.98 | 46 of 169 | 9.39 | 1.50 | 0.94 | 1.04 |
+| dragonfly | 5.77 | 28 of 72 | 23.88 | 4.71 | 1.06 | 1.05 |
+
+Healing is kept: every plan refills to its full headcount and to (about) its pre-strike score; the
+pufferfish settles 0.5 above its before-value (still far under the bar), the others at or better.
 
 ## What a player would see
 
