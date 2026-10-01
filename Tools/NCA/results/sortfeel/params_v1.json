@@ -48,10 +48,9 @@
   "wander": 0.05,
   "wander_tau": 12.0,
   "breathe": 0.0,
-  "breathe_T": 90.0,
-  "well_dead_time": 0.0
+  "breathe_T": 90.0
  },
  "model": "sortfeel_model.SortFeel",
  "vec": "runs/sort/final_vec_g19.npy",
- "set": "sort published + well_dead=0.7 (0.0 on the dragonfly plan), wander=0.05"
+ "set": "sort published + well_dead=0.7, wander=0.05 (hand-picked from sweep1)"
 }

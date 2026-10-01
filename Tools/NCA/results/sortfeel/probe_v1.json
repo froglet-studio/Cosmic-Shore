@@ -27,12 +27,12 @@
   "heal": 0.938
  },
  "time": {
-  "before": 5.12,
+  "before": 5.77,
   "n_before": 72,
-  "killed": 27,
-  "cut": 23.69,
-  "recovered": 3.87,
+  "killed": 28,
+  "cut": 23.88,
+  "recovered": 4.71,
   "n_after": 72,
-  "heal": 1.067
+  "heal": 1.059
  }
 }

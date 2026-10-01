@@ -59,7 +59,7 @@
  },
  "time": {
   "n": 72,
-  "speed": 0.071,
+  "speed": 0.07,
   "jerk": 0.049,
   "jerk_rel": 0.695,
   "jerk_e": {
@@ -67,26 +67,26 @@
    "Space": 0.051,
    "Time": 0.049
   },
-  "planar_frac": 0.548,
-  "flat_mean": 0.092,
+  "planar_frac": 0.458,
+  "flat_mean": 0.137,
   "planar_plan": 0.487,
-  "coherence": 0.344,
-  "jitter": 1.07,
-  "phase": 0.165,
+  "coherence": 0.171,
+  "jitter": 1.101,
+  "phase": 0.537,
   "stuck": 0.0,
-  "osc": 0.01
+  "osc": 0.009
  },
  "mean": {
-  "speed": 0.069,
+  "speed": 0.068,
   "jerk": 0.049,
   "jerk_rel": 0.719,
-  "planar_frac": 0.497,
-  "flat_mean": 0.13,
-  "coherence": 0.135,
-  "jitter": 1.114,
-  "phase": 0.483,
+  "planar_frac": 0.474,
+  "flat_mean": 0.141,
+  "coherence": 0.092,
+  "jitter": 1.122,
+  "phase": 0.576,
   "stuck": 0.0,
-  "osc": 0.01
+  "osc": 0.009
  },
  "organic": {
   "ok": true,
@@ -96,6 +96,6 @@
    "stuck": true,
    "planar": true
   },
-  "planar_excess": 0.061
+  "planar_excess": 0.054
  }
 }

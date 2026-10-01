@@ -13,13 +13,13 @@
     "mass": 1.51,
     "space": 2.69,
     "charge": 1.17,
-    "time": 3.45
+    "time": 4.16
    },
    "own_passed": 4,
-   "seconds": 140.1
+   "seconds": 141.7
   },
   "23": {
-   "passed": 12,
+   "passed": 11,
    "feasible": 13,
    "na": [
     "space->mass",
@@ -30,10 +30,10 @@
     "mass": 1.67,
     "space": 2.45,
     "charge": 0.97,
-    "time": 3.69
+    "time": 4.58
    },
    "own_passed": 4,
-   "seconds": 142.9
+   "seconds": 144.6
   },
   "41": {
    "passed": 13,
@@ -47,7 +47,7 @@
     "mass": 1.37,
     "space": 2.76,
     "charge": 1.08,
-    "time": 4.61
+    "time": 5.3
    },
    "own_passed": 4,
    "seconds": 145.8
@@ -62,29 +62,29 @@
   "per_plan": {
    "mass": {
     "grown_n": 181,
-    "ms_per_step_grown": 11.365,
-    "ms_per_step_grow": 9.235,
+    "ms_per_step_grown": 10.247,
+    "ms_per_step_grow": 9.463,
     "deaths": 0,
     "tadpole_steps": 64007
    },
    "space": {
     "grown_n": 83,
-    "ms_per_step_grown": 3.535,
-    "ms_per_step_grow": 4.312,
+    "ms_per_step_grown": 3.58,
+    "ms_per_step_grow": 3.811,
     "deaths": 0,
     "tadpole_steps": 58693
    },
    "charge": {
     "grown_n": 169,
-    "ms_per_step_grown": 7.397,
-    "ms_per_step_grow": 7.617,
+    "ms_per_step_grown": 8.365,
+    "ms_per_step_grow": 7.945,
     "deaths": 0,
     "tadpole_steps": 59178
    },
    "time": {
     "grown_n": 72,
-    "ms_per_step_grown": 3.408,
-    "ms_per_step_grow": 3.577,
+    "ms_per_step_grown": 3.059,
+    "ms_per_step_grow": 3.608,
     "deaths": 0,
     "tadpole_steps": 52988
    }
@@ -92,7 +92,7 @@
   "deaths": 0,
   "deaths_per_1k_tadpole_steps": 0.0,
   "lossless": true,
-  "ms_per_step": 6.426,
+  "ms_per_step": 6.313,
   "grown_n": 126
  },
  "emergent": {
@@ -104,18 +104,18 @@
    "planar": true
   },
   "mean": {
-   "speed": 0.069,
+   "speed": 0.068,
    "jerk": 0.049,
    "jerk_rel": 0.719,
-   "planar_frac": 0.497,
-   "flat_mean": 0.13,
-   "coherence": 0.135,
-   "jitter": 1.114,
-   "phase": 0.483,
+   "planar_frac": 0.474,
+   "flat_mean": 0.141,
+   "coherence": 0.092,
+   "jitter": 1.122,
+   "phase": 0.576,
    "stuck": 0.0,
-   "osc": 0.01
+   "osc": 0.009
   },
-  "planar_excess": 0.061,
+  "planar_excess": 0.054,
   "per_plan": {
    "mass": {
     "n": 181,
@@ -177,7 +177,7 @@
    },
    "time": {
     "n": 72,
-    "speed": 0.071,
+    "speed": 0.07,
     "jerk": 0.049,
     "jerk_rel": 0.695,
     "jerk_e": {
@@ -185,16 +185,16 @@
      "Space": 0.051,
      "Time": 0.049
     },
-    "planar_frac": 0.548,
-    "flat_mean": 0.092,
+    "planar_frac": 0.458,
+    "flat_mean": 0.137,
     "planar_plan": 0.487,
-    "coherence": 0.344,
-    "jitter": 1.07,
-    "phase": 0.165,
+    "coherence": 0.171,
+    "jitter": 1.101,
+    "phase": 0.537,
     "stuck": 0.0,
-    "osc": 0.01
+    "osc": 0.009
    }
   }
  },
- "headline": "accurate 0.92 worst seed | lossless True (0.0/1k) | 6.426 ms/step @126 | organic True | mixed"
+ "headline": "accurate 0.85 worst seed | lossless True (0.0/1k) | 6.313 ms/step @126 | organic True | mixed"
 }

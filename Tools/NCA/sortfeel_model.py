@@ -43,6 +43,7 @@ class SortFeelCfg(sm.SortCfg):
     wander_tau: float = 12.0    # OU correlation time (steps)
     breathe: float = 0.0        # amplitude of the m0 oscillation (well sigmas)
     breathe_T: float = 90.0     # its period (steps)
+    well_dead_time: float = -1.0  # m0 override for the dragonfly (Time) plan's wells; -1 = well_dead
 
 
 FEEL_GENES = [("well_dead", 0.0, 2.5, False), ("wander", 0.0, 0.25, False), ("wander_tau", 3.0, 40.0, True)]
@@ -70,6 +71,8 @@ class _DeadCode:
         self._m0 = m0_fn
 
     def __getattr__(self, k):
+        if k.startswith("_"):                    # deepcopy/pickle probe before __init__ ran: no recursion
+            raise AttributeError(k)
         return getattr(self._c, k)
 
     def energy_grad_fate(self, x, e, s, k):
@@ -85,13 +88,14 @@ class SortFeel(sm.SortSwarm):
         super().__init__(cfg or SortFeelCfg(), world)
         self._t = 0
         if self.cfg.well_dead > 0 or self.cfg.breathe > 0:
-            self.codes = {k: _DeadCode(c, self._m0) for k, c in self.codes.items()}
+            self.codes = {k: _DeadCode(c, (lambda e, s, k=k: self._m0(e, s, k))) for k, c in self.codes.items()}
 
-    def _m0(self, e, s):
+    def _m0(self, e, s, kind=None):
         c = self.cfg
+        base = c.well_dead_time if (kind == "time" and c.well_dead_time >= 0) else c.well_dead
         if c.breathe <= 0:
-            return c.well_dead
-        return max(0.0, c.well_dead + c.breathe * math.sin(2 * math.pi * self._t / c.breathe_T + 1.7 * (e * 3 + s)))
+            return base
+        return max(0.0, base + c.breathe * math.sin(2 * math.pi * self._t / c.breathe_T + 1.7 * (e * 3 + s)))
 
     def _step(self, sw, b):
         cfg = self.cfg
