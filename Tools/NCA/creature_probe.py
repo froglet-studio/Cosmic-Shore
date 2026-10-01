@@ -178,17 +178,24 @@ def chase_path(seed, speed=1.2, frac=0.5, hover=0.8):
     return path, st
 
 
+def make_model(body, cfg):
+    if body == "field":
+        import creature_field as cf
+        return cf.CreatureField(**(cfg or {}))
+    return cm.CreatureRule(**(cfg or {}))
+
+
 def _one(args):
-    k, seed, steps, cfg = args
+    k, seed, steps, cfg, body = args
     torch.set_num_threads(1)
-    return k, run_kind(k, seed, steps, cfg)
+    return k, run_kind(k, seed, steps, cfg, body)
 
 
-def run(seed=5, steps=240, cfg=None, kinds=sn.KINDS, log=print):
+def run(seed=5, steps=240, cfg=None, kinds=sn.KINDS, log=print, body="evo"):
     from multiprocessing import Pool
     t0 = time.time()
     with Pool(len(kinds)) as pool:
-        out = dict(pool.map(_one, [(k, seed, steps, cfg) for k in kinds]))
+        out = dict(pool.map(_one, [(k, seed, steps, cfg, body) for k in kinds]))
     for k in kinds:
         res = out[k]
         log(f"{k}: ({time.time() - t0:.0f}s)")
@@ -201,10 +208,11 @@ def run(seed=5, steps=240, cfg=None, kinds=sn.KINDS, log=print):
 
 
 @torch.no_grad()
-def run_kind(k, seed=5, steps=240, cfg=None):
+def run_kind(k, seed=5, steps=240, cfg=None, body="evo"):
+    import copy
     T = sn.load_targets(); L = sn.LossCfg()
     if True:
-        model = cm.CreatureRule(**(cfg or {}))
+        model = make_model(body, cfg)
         gen = sn.make_gen(seed)
         sw = sn.seed_swarm([T[k]], model.world, gen)
         for _ in range(steps):
@@ -218,12 +226,13 @@ def run_kind(k, seed=5, steps=240, cfg=None):
                 path(0, body(sw)[1].numpy(), body(sw)[2])
                 nsteps = n if n is not None else st["span"]
                 path, st = mk(seed)
-                state = {kk: (v.clone() if torch.is_tensor(v) else ([list(x) for x in v] if isinstance(v, list) else v))
-                         for kk, v in model._st.items()}
+                state = copy.deepcopy(model._st)
+                mem = copy.deepcopy(getattr(model, "mem", None))
                 g2 = sn.make_gen(seed + 77)
                 r, _ = encounter(model, sw, g2, k, path, nsteps, kill=kill, T=T, L=L)
                 model._st = state
-                res[f"{name}{'' if react else '_inert'}"] = r
+                if mem is not None:
+                    model.mem = mem                res[f"{name}{'' if react else '_inert'}"] = r
             model.react = True; model.shell = True
     return res
 
@@ -233,9 +242,10 @@ def main():
     ap.add_argument("--seed", type=int, default=5)
     ap.add_argument("--set", action="append", default=[])
     ap.add_argument("--out", default="")
+    ap.add_argument("--body", default="evo", choices=["evo", "field"])
     a = ap.parse_args()
     cfg = {kv.split("=", 1)[0]: json.loads(kv.split("=", 1)[1]) for kv in a.set}
-    res = run(a.seed, cfg=cfg)
+    res = run(a.seed, cfg=cfg, body=a.body)
     if a.out:
         json.dump(res, open(a.out, "w"), indent=1)
 

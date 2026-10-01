@@ -29,11 +29,16 @@ def main():
     ap.add_argument("--samples", type=int, default=3)
     ap.add_argument("--set", action="append", default=[])
     ap.add_argument("--out", default="")
+    ap.add_argument("--body", default="evo", choices=["evo", "field"])
     a = ap.parse_args()
     torch.set_num_threads(4)
-    model = cm.CreatureRule(**parse_sets(a.set))
+    if a.body == "field":
+        import creature_field as cf
+        model = cf.CreatureField(**parse_sets(a.set))
+    else:
+        model = cm.CreatureRule(**parse_sets(a.set))
     res = se.evaluate(model, seed=a.seed, samples=a.samples, full=True)
-    res["cfg"] = model.cfg
+    res["cfg"] = model.shell_cfg
     print(se.matrix(res))
     print(f"PASSED {res['passed']}/{res['feasible']} (n/a {res['na']}) {res['seconds']}s")
     if a.out:

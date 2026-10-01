@@ -101,13 +101,17 @@ class CreatureRule(em.EvoRule):
 
     def __init__(self, genome=None, **cfg):
         super().__init__(np.load(GENOME) if genome is None else genome)
-        self.cfg = dict(DEFAULTS)
-        self.cfg.update(cfg)
+        self.shell_cfg = dict(DEFAULTS)
+        self.shell_cfg.update(cfg)
         self.vessels = []          # [(centre np[3], radius, velocity np[3])], set by the driver each step
         self.react = True          # False: ignore ships (no startle / flee / plan responses)
         self.shell = True          # False: the whole shell is off - the bare evo model (inert baseline)
         self._st = None
         self._rng = torch.Generator().manual_seed(1234)
+
+    @property
+    def cfg(self):
+        return self.shell_cfg
 
     # ----------------------------------------------------------------- state
     def _reset(self, sw):
@@ -129,7 +133,7 @@ class CreatureRule(em.EvoRule):
         with torch.no_grad():
             self._reset(sw)
             st = self._st
-            c = self.cfg
+            c = self.shell_cfg
             alive_in = sw.active & sw.hatched
             # --- wounds: alive at the end of my last step, gone now = removed from outside
             if c["wounds"]:
@@ -163,7 +167,7 @@ class CreatureRule(em.EvoRule):
     def lay(self, sw, gi, gj, gen=None):
         before = sw.active.clone()
         super().lay(sw, gi, gj, gen)
-        if not self.shell or not self.cfg["wounds"] or self._st is None:
+        if not self.shell or not self.shell_cfg["wounds"] or self._st is None:
             return
         new = sw.active & ~before
         for b in new.any(1).nonzero().squeeze(1).tolist():
@@ -174,7 +178,7 @@ class CreatureRule(em.EvoRule):
             if int(al.sum()) < 4:
                 continue
             cen = sw.pos[b][al].mean(0)
-            if self.cfg.get("anchor", 1):
+            if self.shell_cfg.get("anchor", 1):
                 wp = torch.stack([sw.pos[b, w[3]] + w[4] if bool(sw.active[b, w[3]]) else w[0] + cen for w in ws])
             else:
                 wp = torch.stack([w[0] for w in ws]) + cen       # [W,3] absolute wound sites
@@ -183,17 +187,17 @@ class CreatureRule(em.EvoRule):
             for i in new[b].nonzero().squeeze(1).tolist():
                 d = (wp - sw.pos[b, i]).norm(dim=-1)
                 d[used] = 1e9
-                if self.cfg["wound_elem"]:
+                if self.shell_cfg["wound_elem"]:
                     d[we != int(sw.elem[b, i])] = 1e9
                 j = int(d.argmin())
-                if float(d[j]) < self.cfg["wound_reach"]:
+                if float(d[j]) < self.shell_cfg["wound_reach"]:
                     sw.pos[b, i] = wp[j]
                     used[j] = True
             self._st["wounds"][b] = [w for w, u in zip(ws, used.tolist()) if not u]
 
     # ------------------------------------------------------------- the shell
     def _shell(self, sw, gen):
-        st, c = self._st, self.cfg
+        st, c = self._st, self.shell_cfg
         B, N, _ = sw.pos.shape
         al = sw.active & sw.hatched
         alf = al.float()
