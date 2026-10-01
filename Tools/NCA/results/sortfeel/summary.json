@@ -1,0 +1,301 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 1.71,
+   "space": 68.87,
+   "charge": 55.84,
+   "time": 77.07
+  },
+  "space": {
+   "mass": 73.26,
+   "space": 2.78,
+   "charge": 60.75,
+   "time": 71.16
+  },
+  "charge": {
+   "mass": 54.65,
+   "space": 55.37,
+   "charge": 0.95,
+   "time": 69.32
+  },
+  "time": {
+   "mass": 81.88,
+   "space": 74.63,
+   "charge": 74.92,
+   "time": 3.68
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 181,
+   "target_n": 192,
+   "elements": [
+    17,
+    121,
+    24,
+    19
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    101,
+    80,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "space": {
+   "n": 83,
+   "target_n": 88,
+   "elements": [
+    22,
+    2,
+    52,
+    7
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    46,
+    37,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 169,
+   "target_n": 179,
+   "elements": [
+    122,
+    1,
+    16,
+    30
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    84,
+    85,
+    0
+   ],
+   "deaths": 0,
+   "mutants": 0
+  },
+  "time": {
+   "n": 72,
+   "target_n": 76,
+   "elements": [
+    2,
+    3,
+    17,
+    50
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    41,
+    6,
+    25
+   ],
+   "deaths": 0,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 1.17,
+   "space": 20.69,
+   "charge": 12.07,
+   "time": 25.29
+  },
+  "space": {
+   "mass": 25.05,
+   "space": 2.39,
+   "charge": 17.39,
+   "time": 27.47
+  },
+  "charge": {
+   "mass": 12.01,
+   "space": 13.68,
+   "charge": 1.1,
+   "time": 19.39
+  },
+  "time": {
+   "mass": 24.52,
+   "space": 21.82,
+   "charge": 16.54,
+   "time": 3.44
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 72.85,
+    "space": 3.11,
+    "charge": 60.36,
+    "time": 70.36
+   },
+   "majority": "space",
+   "census": {
+    "n": 83,
+    "target_n": 88,
+    "elements": [
+     22,
+     2,
+     52,
+     7
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     38,
+     45,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 54.48,
+    "space": 55.74,
+    "charge": 1.74,
+    "time": 70.94
+   },
+   "majority": "charge",
+   "census": {
+    "n": 169,
+    "target_n": 179,
+    "elements": [
+     124,
+     1,
+     16,
+     28
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     88,
+     81,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 74.2,
+    "space": 66.36,
+    "charge": 66.78,
+    "time": 7.01
+   },
+   "majority": "time",
+   "census": {
+    "n": 72,
+    "target_n": 76,
+    "elements": [
+     2,
+     3,
+     18,
+     49
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     33,
+     39,
+     0
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 76.57,
+    "space": 8.75,
+    "charge": 63.91,
+    "time": 74.16
+   },
+   "majority": "space",
+   "census": {
+    "n": 83,
+    "target_n": 192,
+    "elements": [
+     23,
+     2,
+     51,
+     7
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     30,
+     33,
+     20
+    ],
+    "deaths": 0,
+    "mutants": 0
+   }
+  }
+ },
+ "meta": {
+  "tag": "sortfeel",
+  "params": "params.json",
+  "tests_passed": 7,
+  "note": "sort + flat-bottomed fate wells (no compression -> no sheets) + per-tadpole OU wander."
+ }
+}

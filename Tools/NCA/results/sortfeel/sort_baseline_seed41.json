@@ -1,0 +1,11 @@
+{
+ "passed": 13,
+ "feasible": 13,
+ "own": {
+  "mass": 1.55,
+  "space": 3.08,
+  "charge": 1.09,
+  "time": 3.89
+ },
+ "fails": {}
+}
