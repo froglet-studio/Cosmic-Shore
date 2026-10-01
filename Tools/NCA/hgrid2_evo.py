@@ -35,6 +35,9 @@ class EvoCfg(hm.Cfg):
     s_fine: float = 0.7
     ease_look: float = 0.2
     shed: int = 1
+    sync_elems: str = "0,1,2,3"     # which elements steer_sync applies to (the rest are steered every step)
+    steer_sync: int = 0           # steer a tadpole only on steps its own (stochastic) rule moved it: body + morphogen act together
+    steer_persist: float = 0.0    # momentum on the steering displacement (EMA); damps steer-vs-body reversals
     s_mig_note: str = 'migration uses k_mig / mig_th / mig_L of hgrid2_model.Cfg'
 
 
@@ -54,6 +57,9 @@ class EvoGrid:
         gplan, dmap = hsw.gplan.clone(), hsw.dmap.clone()
         if bool((hsw.clock == 0).all()):
             gplan[:] = -1
+            # the grid layer's per-swarm state (plan-change time, hunger) belongs to the NEW swarm
+            self.boid._chg = torch.full((hsw.B,), -10 ** 9, dtype=torch.long)
+            self.boid._hun = None
         pos0 = sw.pos.clone()
         out = hb.HSwarm.lift(self.evo(sw, gen, bud=False))
         out.gplan, out.dmap = gplan, dmap
@@ -82,12 +88,27 @@ class EvoGrid:
         steer = cfg.s_coarse * cfg.k_class * g_own
         if cfg.s_fine:
             steer = steer + self.boid.fine_disp(out, pos0, live, k_scale=1.0) * cfg.s_fine
+        if cfg.steer_sync:
+            moved = ((out.pos - pos0).norm(dim=-1) > 0.05).float()        # the evolved rule fired for this tadpole
+            se_ = torch.zeros(4); se_[[int(v) for v in cfg.sync_elems.split(",") if v != ""]] = 1.0
+            unsynced = (se_[out.elem] == 0).float()
+            moved = torch.maximum(moved, 0.5 * unsynced)                  # unsynced: every step at the plain gain (x2 x 0.5)
+            steer = steer * moved[..., None] * 2.0                        # (it fires on ~half the steps: same mean pull)
+        if cfg.steer_persist:
+            if getattr(self, "_steer", None) is None or self._steer.shape != steer.shape or bool((hsw.clock == 0).all()):
+                self._steer = torch.zeros_like(steer)
+            prev = self._steer * live.float()[..., None]
+            steer = cfg.steer_persist * prev + (1 - cfg.steer_persist) * steer
+            self._steer = steer
         vmax = torch.tensor(self.world.vmax)[out.elem][..., None]
         sp = steer.norm(dim=-1, keepdim=True)
         steer = steer * (vmax / sp.clamp(min=1e-6)).clamp(max=1.0)
         out.pos = out.pos + steer * lf[..., None]
         if cfg.k_mig:
+            pre = out.pos.clone()
             self.boid.migrate(out, pos0, live)
+            if cfg.steer_sync:
+                out.pos = torch.where(moved[..., None] > 0, pre + 2.0 * (out.pos - pre), pre)
         if cfg.k_swap:
             self.boid.swaps(out, pos0, live)
         # LOOK
@@ -103,7 +124,7 @@ class EvoGrid:
         # COMPOSITION
         have = torch.zeros(B, 12).scatter_add(1, cls, lf)
         if cfg.shed and cfg.stagger:
-            self.boid.starve_staggered(out, ch=25)          # hunger rides on a hidden channel: the evolved rule owns DIE
+            self.boid.starve_staggered(out, ch=None)        # hunger kept on the model: the evolved rule owns every channel
             live = out.active & out.hatched
             have = torch.zeros(B, 12).scatter_add(1, cls, live.float())
         elif cfg.shed:

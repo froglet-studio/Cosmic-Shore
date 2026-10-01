@@ -178,7 +178,14 @@ class Boid2(hb.FieldBoid):
             tot = excess.view(-1, 4, 3).sum(-1).clamp(min=1e-6)
             excess = torch.floor(excess.view(-1, 4, 3) * (eexc / tot).clamp(max=1)[..., None] + 1e-4).view(-1, 12)
         sur_i = (torch.gather(excess, 1, cls) > 0) & live
-        h = out.s[..., ch]
+        if ch is None:                       # hunger kept on the model (a learned body owns every state channel)
+            if getattr(self, "_hun", None) is None or self._hun.shape != live.shape:
+                self._hun = torch.zeros(live.shape)
+            self._hun[out.clock == 0] = 0.0
+            self._hun = self._hun * live.float()
+            h = self._hun
+        else:
+            h = out.s[..., ch]
         h = torch.where(sur_i, h + cfg.starve_rate * Boid2._U[None], (h - cfg.starve_rate).clamp(min=0))
         died = torch.zeros_like(live)
         for b in range(B):
@@ -193,7 +200,10 @@ class Boid2(hb.FieldBoid):
                     died[b, i] = True; quota[c] -= 1
                 else:
                     h[b, i] = 1.0        # waits at the brink while its class has no excess left
-        out.s[..., ch] = torch.where(died, torch.zeros_like(h), h) if ch != sn.DIE else h
+        if ch is None:
+            self._hun = torch.where(died, torch.zeros_like(h), h)
+        else:
+            out.s[..., ch] = torch.where(died, torch.zeros_like(h), h) if ch != sn.DIE else h
         out.deaths = out.deaths + died.sum(1)
         out.active = out.active & ~died
         out.hatched = out.hatched & ~died

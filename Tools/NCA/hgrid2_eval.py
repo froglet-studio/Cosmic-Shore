@@ -15,9 +15,15 @@ import swarm_nca as sn, swarm_eval, swarm_probe, swarm_feel, hgrid_eval, hgrid2_
 BEST = dict(k_fine=2, k_ff=1.5, interp=1, k_flow=0, periods="time:16", dmap_low=1, lock=60, k_class=10, sigma_rel=1.2,
             p_cross=0.25, stagger=1, k_mig=1, mig_L=40, starve_slack=0, starve_tol=0, elem_floor=1, small_slack=2)
 
+EVO = dict(s_coarse=0.7, s_fine=1.0, steer_sync=1, ease_look=0, sync_elems="0,1,2")
+
 
 def load(path):
-    return hm.Boid2(sn.World(), hm.Cfg(**json.load(open(path))["cfg"]))
+    d = json.load(open(path))
+    if d.get("model", "").startswith("hgrid2_evo"):
+        import hgrid2_evo
+        return hgrid2_evo.EvoGrid(hgrid2_evo.EvoCfg(**d["cfg"]))
+    return hm.Boid2(sn.World(), hm.Cfg(**d["cfg"]))
 
 
 def main():
@@ -27,15 +33,23 @@ def main():
     ap.add_argument("--out", default="")
     ap.add_argument("--only", default="eval,rollout,probe,feel")
     ap.add_argument("--threads", type=int, default=4)
+    ap.add_argument("--evo", action="store_true", help="the evolved body (evo genome) steered by the grid (hgrid2_evo)")
     a = ap.parse_args()
     torch.set_num_threads(a.threads)
     kw = dict(BEST) if a.best else {}
     kw.update(dict(s.split("=", 1) for s in a.set))
-    model = hm.make(**kw)
+    if a.evo:
+        import hgrid2_evo
+        kw.update(EVO)
+        kw.update(dict(s.split("=", 1) for s in a.set))
+        model = hgrid2_evo.make(**kw)
+    else:
+        model = hm.make(**kw)
     out = a.out
     if out:
         os.makedirs(out, exist_ok=True)
-        json.dump(dict(cfg=asdict(model.cfg), model="hgrid2_model.Boid2"), open(os.path.join(out, "params.json"), "w"), indent=1)
+        json.dump(dict(cfg=asdict(model.cfg), model="hgrid2_evo.EvoGrid" if a.evo else "hgrid2_model.Boid2",
+                       genome="results/evo/genome.npy" if a.evo else None), open(os.path.join(out, "params.json"), "w"), indent=1)
     only = a.only.split(",")
     if "eval" in only:
         res = swarm_eval.evaluate(model, full=True)

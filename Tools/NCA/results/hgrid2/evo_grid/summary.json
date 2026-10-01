@@ -1,0 +1,356 @@
+{
+ "cross": {
+  "mass": {
+   "mass": 2.21,
+   "space": 69.65,
+   "charge": 55.62,
+   "time": 75.95
+  },
+  "space": {
+   "mass": 65.02,
+   "space": 4.77,
+   "charge": 53.05,
+   "time": 66.14
+  },
+  "charge": {
+   "mass": 54.5,
+   "space": 55.27,
+   "charge": 1.89,
+   "time": 69.29
+  },
+  "time": {
+   "mass": 85.06,
+   "space": 79.73,
+   "charge": 79.97,
+   "time": 4.56
+  }
+ },
+ "census": {
+  "mass": {
+   "n": 192,
+   "target_n": 192,
+   "elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "target_elements": [
+    19,
+    126,
+    25,
+    22
+   ],
+   "majority": "Mass",
+   "domains": [
+    105,
+    87,
+    0
+   ],
+   "deaths": 5,
+   "mutants": 0
+  },
+  "space": {
+   "n": 91,
+   "target_n": 88,
+   "elements": [
+    25,
+    5,
+    54,
+    7
+   ],
+   "target_elements": [
+    25,
+    2,
+    54,
+    7
+   ],
+   "majority": "Space",
+   "domains": [
+    38,
+    53,
+    0
+   ],
+   "deaths": 2,
+   "mutants": 0
+  },
+  "charge": {
+   "n": 181,
+   "target_n": 179,
+   "elements": [
+    131,
+    3,
+    16,
+    31
+   ],
+   "target_elements": [
+    131,
+    1,
+    16,
+    31
+   ],
+   "majority": "Charge",
+   "domains": [
+    91,
+    90,
+    0
+   ],
+   "deaths": 1,
+   "mutants": 0
+  },
+  "time": {
+   "n": 77,
+   "target_n": 76,
+   "elements": [
+    3,
+    3,
+    18,
+    53
+   ],
+   "target_elements": [
+    2,
+    3,
+    18,
+    53
+   ],
+   "majority": "Time",
+   "domains": [
+    27,
+    6,
+    44
+   ],
+   "deaths": 6,
+   "mutants": 0
+  }
+ },
+ "steps": 240,
+ "cross_geo": {
+  "mass": {
+   "mass": 1.78,
+   "space": 21.6,
+   "charge": 12.53,
+   "time": 24.85
+  },
+  "space": {
+   "mass": 19.22,
+   "space": 2.95,
+   "charge": 10.86,
+   "time": 23.43
+  },
+  "charge": {
+   "mass": 12.22,
+   "space": 13.54,
+   "charge": 1.38,
+   "time": 18.94
+  },
+  "time": {
+   "mass": 24.61,
+   "space": 24.26,
+   "charge": 19.3,
+   "time": 3.74
+  }
+ },
+ "switch": {
+  "mass": {
+   "to": "space",
+   "done": true,
+   "cross": {
+    "mass": 63.65,
+    "space": 6.28,
+    "charge": 53.18,
+    "time": 66.25
+   },
+   "majority": "space",
+   "census": {
+    "n": 92,
+    "target_n": 88,
+    "elements": [
+     25,
+     6,
+     54,
+     7
+    ],
+    "target_elements": [
+     25,
+     2,
+     54,
+     7
+    ],
+    "majority": "Space",
+    "domains": [
+     39,
+     53,
+     0
+    ],
+    "deaths": 42,
+    "mutants": 0
+   }
+  },
+  "space": {
+   "to": "charge",
+   "done": true,
+   "cross": {
+    "mass": 55.09,
+    "space": 56.38,
+    "charge": 2.82,
+    "time": 70.18
+   },
+   "majority": "charge",
+   "census": {
+    "n": 181,
+    "target_n": 179,
+    "elements": [
+     131,
+     3,
+     16,
+     31
+    ],
+    "target_elements": [
+     131,
+     1,
+     16,
+     31
+    ],
+    "majority": "Charge",
+    "domains": [
+     89,
+     92,
+     0
+    ],
+    "deaths": 12,
+    "mutants": 0
+   }
+  },
+  "charge": {
+   "to": "time",
+   "done": true,
+   "cross": {
+    "mass": 75.22,
+    "space": 65.34,
+    "charge": 66.84,
+    "time": 9.54
+   },
+   "majority": "time",
+   "census": {
+    "n": 74,
+    "target_n": 76,
+    "elements": [
+     4,
+     3,
+     18,
+     49
+    ],
+    "target_elements": [
+     2,
+     3,
+     18,
+     53
+    ],
+    "majority": "Time",
+    "domains": [
+     28,
+     46,
+     0
+    ],
+    "deaths": 25,
+    "mutants": 0
+   }
+  },
+  "time": {
+   "to": "mass",
+   "done": true,
+   "cross": {
+    "mass": 65.45,
+    "space": 3.63,
+    "charge": 52.91,
+    "time": 66.33
+   },
+   "majority": "space",
+   "census": {
+    "n": 89,
+    "target_n": 192,
+    "elements": [
+     25,
+     3,
+     54,
+     7
+    ],
+    "target_elements": [
+     19,
+     126,
+     25,
+     22
+    ],
+    "majority": "Space",
+    "domains": [
+     52,
+     37,
+     0
+    ],
+    "deaths": 12,
+    "mutants": 0
+   }
+  }
+ },
+ "tests_passed": 6,
+ "close": 97.52,
+ "sec": 60.8,
+ "meta": {
+  "kind": "hgrid2",
+  "cfg": {
+   "G": 16,
+   "cell": 6.0,
+   "quant": 1,
+   "k_class": 10.0,
+   "k_total": 1.0,
+   "k_home": 0.15,
+   "persist": 0.6,
+   "noise": 0.05,
+   "p_lay": 0.1,
+   "p_cross": 0.25,
+   "hatch_steps": 2,
+   "ease": 0.3,
+   "starve": 1,
+   "starve_rate": 0.04,
+   "starve_tol": 0.0,
+   "starve_local": 0.0,
+   "hyst": 0.0,
+   "animate": 1,
+   "flow": 1,
+   "k_flow": 0.0,
+   "period": 8,
+   "k_fine": 2.0,
+   "k_fine_tot": 0.0,
+   "sigma_rel": 1.2,
+   "sigma": 2.5,
+   "settle": 1,
+   "periods": "time:16",
+   "fine_look": 0,
+   "vel_pre": 0.0,
+   "interp": 1,
+   "stagger": 1,
+   "k_swap": 0.0,
+   "swap_r": 4.0,
+   "swap_th": 0.1,
+   "k_mig": 1.0,
+   "mig_th": 0.3,
+   "mig_L": 40.0,
+   "elem_floor": 1,
+   "small_slack": 2.0,
+   "starve_slack": 0.0,
+   "lock": 60,
+   "dmap_low": 1,
+   "dmap_space": 0,
+   "lay_major": 0.0,
+   "k_ff": 1.5,
+   "s_coarse": 0.7,
+   "s_fine": 1.0,
+   "ease_look": 0.0,
+   "shed": 1,
+   "sync_elems": "0,1,2",
+   "steer_sync": 1,
+   "steer_persist": 0.0,
+   "s_mig_note": "migration uses k_mig / mig_th / mig_L of hgrid2_model.Cfg"
+  }
+ }
+}
