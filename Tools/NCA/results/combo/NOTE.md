@@ -70,6 +70,7 @@ With all four: **candidate C (G16) 16/16, 16/16, 14/16; C8 (G8) 16/15/15, held-o
 | E = C + hgrid2's neighbour swaps | 14 @41 | inert, as sort found |
 | C12 (G = 12, cell 8) | 15 @7 | |
 | **C8 (G = 8, cell 12) — published** | **16 / 15 / 15**, 13/15 @1000 | cheapest, same total |
+| F8 = C8 + hgrid2's spatial domain re-map on a plan change (`dmap_space`) | 12 / 10 @23/41, 11/15 @1000 | clearly worse: re-mapping by where domains sit fights the ratio corrector |
 
 Also tried and dropped: scaling the fine wanted density in an overfull domain (`wscale_max`, inert), and
 scaling the fine target body up by (n/plan)^(1/3) when overfull (`grow_scale`, inert). Both are left in the
