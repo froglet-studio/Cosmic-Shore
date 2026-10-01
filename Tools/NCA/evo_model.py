@@ -329,6 +329,7 @@ def _restore(model, st):
         setattr(model, k, v)
 
 
+CULL = os.environ.get("EVO_CULL", "excess")    # "ratio": the alternative yardstick cull (toward the new plan's mix)
 GRAZE_BITE = int(os.environ.get("EVO_GRAZE_BITE", "4"))
 GRAZE_EVERY = int(os.environ.get("EVO_GRAZE_EVERY", "2"))
 
@@ -400,7 +401,11 @@ def fast_rollout(model, seed, steps=240, switch_steps=240, L=None, probe=False, 
         summ["probe"] = fast_probe(model, sw, gen, L=L)
     if graze:
         summ["graze"] = fast_graze(model, sw, gen, L=L)
-    done = [sn.lose_majority(sw, b, gen, to=sn.SWITCH_TO[k]) is not None for b, k in enumerate(sn.KINDS)]
+    if CULL == "ratio":
+        done = [sn.lose_majority(sw, b, gen, to=sn.SWITCH_TO[k], mode="ratio", targets=T) is not None for b, k in enumerate(sn.KINDS)]
+    else:
+        done = [sn.lose_majority(sw, b, gen, to=sn.SWITCH_TO[k]) is not None for b, k in enumerate(sn.KINDS)]
+    summ["cull_done"] = done
     for _ in range(switch_steps):
         sw = model(sw, gen)
     for b, k in enumerate(sn.KINDS):

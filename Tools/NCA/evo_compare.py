@@ -33,7 +33,7 @@ def job(args):
         m.eval()
     s = em.fast_rollout(m, seed, probe=True)
     p, _ = sn.tests_passed(s)
-    return dict(passed=p, heal=float(np.mean(s["probe"]["heal"])), live=float(np.mean(s["live"])),
+    return dict(passed=p, cull_done=float(np.mean(s["cull_done"])), heal=float(np.mean(s["probe"]["heal"])), live=float(np.mean(s["live"])),
                 live_time=float(s["live"][3]))
 
 
@@ -48,7 +48,8 @@ def main():
             out[key] = {k: round(float(np.mean([x[k] for x in r])), 3) for k in r[0]}
             out[key]["passed_list"] = [x["passed"] for x in r]
             print(key, json.dumps(out[key]), flush=True)
-    json.dump(out, open(os.path.join(HERE, "results", "evo", "compare.json"), "w"), indent=1)
+    name = "compare.json" if em.CULL == "excess" else f"compare_{em.CULL}.json"
+    json.dump(out, open(os.path.join(HERE, "results", "evo", name), "w"), indent=1)
 
 
 if __name__ == "__main__":

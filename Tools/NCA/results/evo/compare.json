@@ -19,7 +19,7 @@
    4
   ]
  },
- "g2:results/evo/genome.npy": {
+ "g2:results/evo/stage1/genome.npy": {
   "passed": 7.917,
   "heal": -0.198,
   "live": 0.477,
@@ -44,6 +44,46 @@
   "heal": 0.433,
   "live": 0.642,
   "live_time": 0.254,
+  "passed_list": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ]
+ },
+ "g2:results/evo/stage3/genome.npy": {
+  "passed": 8.0,
+  "heal": 0.119,
+  "live": 0.902,
+  "live_time": 0.616,
+  "passed_list": [
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8,
+   8
+  ]
+ },
+ "g2:results/evo/stage4/genome.npy": {
+  "passed": 8.0,
+  "heal": 0.075,
+  "live": 0.9,
+  "live_time": 0.616,
   "passed_list": [
    8,
    8,
