@@ -85,7 +85,7 @@ across the whole sweep. **m0 = 0.7 is the faithful setting** — it reproduces e
 (it is the only one whose bodies are neither flatter nor rounder than their plans); m0 >= 1.0 overshoots
 into rounder-than-plan clouds and costs dragonfly loss. Accuracy cost is +0.1 to +0.4 on three plans and
 **−1.1 on the dragonfly** (the wander helps the thin dragonfly wings fill). ms/step: identical machinery
-plus one RNG draw per tadpole (see the cost caveat below).
+plus one RNG draw per tadpole (+23% in this Python prototype, `timing.json`).
 
 ## 4. Full scorecard (`scorecard.json`, seeds 7, 23, 41, locality mixed)
 
@@ -98,10 +98,12 @@ plus one RNG draw per tadpole (see the cost caveat below).
 - LOSSLESS: **0 deaths** over 235k tadpole-steps (grow + every standard switch). Molting/transfer only.
 - EMERGENT: **in band** — jerk_rel 0.72, osc 0.009, stuck 0.00, planar excess 0.054; coherence 0.09,
   jitter 1.12, phase 0.58 (descriptive: more gas-like, more phase-diverse than sort's 0.58 / 0.80 / 0.12).
-- PERFORMANT: 6.3 ms/step @ 126 mean headcount (1 thread). **Caveat:** measured while three other
-  evaluation processes shared the 4 cores; sort's 3.85 ms/step was measured by another session on an idle
-  machine. The model adds one Gaussian draw and one exp per tadpole per step to sort's O(n²) step, so the
-  real overhead is a few percent; I did not get a clean side-by-side.
+- PERFORMANT: 6.3 ms/step @ 126 mean headcount in the scorecard (measured while three evaluation processes
+  shared the 4 cores). Clean side-by-side (`timing.json`, same process, 1 thread, alternating, grown bodies,
+  one other job running): **sort 4.44 vs sortfeel 5.45 ms/step mean (+23%)**; whale 6.84 -> 7.45, jellyfish
+  2.63 -> 3.72, pufferfish 5.84 -> 7.63, dragonfly 2.46 -> 2.98. The overhead is Python bookkeeping in the
+  subclass (re-reading numpy views, set intersections, a sqrt per fate pull); the math added per tadpole is
+  one sqrt + one Gaussian draw + one exp, negligible next to sort's O(n²) neighbour pass in a C# port.
 - Sort's own accuracy at the same seeds: seed 7 12/13 (`results/sort/eval16.json`, same single failure
   dragonfly->jellyfish 8.97); seed 23 13/13 own+standard per DISCOVERIES; seed 41 — see
   `sort_baseline_seed41.json` if present (the baseline run was still going at the end of the session).

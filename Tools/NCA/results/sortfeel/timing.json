@@ -1,0 +1,22 @@
+{
+ "mass": {
+  "sort": 6.84,
+  "sortfeel": 7.45
+ },
+ "space": {
+  "sort": 2.63,
+  "sortfeel": 3.72
+ },
+ "charge": {
+  "sort": 5.84,
+  "sortfeel": 7.63
+ },
+ "time": {
+  "sort": 2.46,
+  "sortfeel": 2.98
+ },
+ "mean": {
+  "sort": 4.44,
+  "sortfeel": 5.45
+ }
+}
