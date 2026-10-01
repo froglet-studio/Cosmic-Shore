@@ -24,6 +24,11 @@ def build(spec):
         return sn.load_rule(os.path.join(HERE, "results/swarm_coevo_g2/rule.pt"))
     if name == "oracle":
         return hb.make_oracle()
+    if name == "oracle_wave":
+        return hb.make_oracle(hb.BoidCfg(wave=1))
+    if name == "e2e_wave":
+        import hgrid_e2e
+        return hgrid_e2e.make(arg, hb.BoidCfg(wave=1))
     if name == "oracle_nostarve":
         return hb.make_oracle(hb.BoidCfg(starve=0))
     if name == "hybrid":
