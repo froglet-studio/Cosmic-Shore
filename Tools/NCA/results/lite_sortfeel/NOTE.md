@@ -83,14 +83,22 @@ SMOOTH screen (seed 7, `results/lite_sortfeel/smooth/*.json`):
 | frac=4 + ease 24 | 0.466 | 6.96 | 1.046 | 0.325 | teleport FAIL |
 | frac=8 | **0.771** | **3.97** | 1.050 | 0.289 | teleport FAIL, smoothness +0.33 |
 
-FRAC8_PLACEHOLDER
+**frac=8 + vec_look** (`hold/vec_look_1_frac_8.txt`) - **FAIL (same 2 axes as k=4)**, perf **1.28 ms/step**:
+accurate 11/13, 12/13, 13/13, 13/13 (seed 7 loses mass->time, seed 23 gains one; total 49/52 = baseline's
+49/52), own losses PASS, lossless PASS (0 deaths), organic PASS (planar 0.061), **smoothness 0.771 vs 0.44
+PASS**, **lurch 3.97 vs 6.68 PASS**, teleport 1.05 vs 0.92 FAIL, bursts/deaths PASS.
+
+No published config passes the hold cleanly. Every fractional config fails the same two rows: seed 7's
+mass->time switch and teleport ~1.05.
 
 ## 5. Findings
 
 1. **The accuracy axis of the hold flips on float noise.** The k=1 control is sortfeel with the
    neighbour sums reordered (max position gap 0.015 voxels after 150 steps; `lite_sortfeel_equiv.py`) and it
-   GAINS a test at seed 23 (12/13 vs 11/13). frac=4 loses one at seed 7 and gains one at seed 23 - the same
-   total (49/52) as the baseline. A 3-sample switch test near the bar of 8 is chaotic in the last bits, so
+   GAINS a test at seed 23 (12/13 vs 11/13). frac=4 AND frac=8 both lose seed 7's mass->time and gain one at seed 23 - the same
+   total (49/52) as the baseline. Because both k values lose the SAME test while the k=1 control keeps 12/13
+   at seed 7, I can't call that row pure noise: mass->time at seed 7 is probably a borderline test that
+   coasting tips over. A 3-sample rerun at more seeds would settle it. A 3-sample switch test near the bar of 8 is chaotic in the last bits, so
    "passed may not drop at any seed" will fail correct refactors about half the time. Evidence for the hold
    owner: compare totals across seeds, or re-record the baseline as the min over 2-3 float-perturbed reruns.
    (I did not edit hold.py.)
@@ -117,9 +125,10 @@ FRAC8_PLACEHOLDER
 Port two things, both mechanical: **vec_look** (only write the look state when a tadpole's type changes -
 in C# that is a per-type cached vector, zero per step) and **frac=k** (each step, only slots with
 (slot + t) % k == 0 run collision/adhesion/swap; everyone integrates; updated tadpoles blend with
-1 - inertia^k). Use **k = 8** if the teleport bar is relaxed to ~1.1 (its smoothness is the best measured
-in the whole portfolio), otherwise k = 4 is the cost win and the one I would ship knowing the hold flags
-teleport 1.058 and a seed-noise accuracy swap. `params.json` holds k=4 (the conservative choice).
+1 - inertia^k). Use **k = 8**: it fails exactly the same two hold rows as k=4, while it is cheaper (1.28 vs 1.42 ms/step) and
+much smoother (0.77 vs 0.44, the best measured in the portfolio). `params.json` holds k=8. Before the game
+adopts it, the hold owner has to decide whether teleport 1.05 against a 1.012 limit, and one swapped switch
+test at seed 7, are acceptable.
 
 Per-step operation count at N = 126 (grown), from the bench's counters:
 

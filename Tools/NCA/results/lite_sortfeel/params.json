@@ -50,13 +50,13 @@
   "breathe": 0.0,
   "breathe_T": 90.0,
   "vec_look": 1,
-  "frac": 4,
+  "frac": 8,
   "ease": 0.0,
   "ease_floor": 0.35,
   "ease_frac": 0.04
  },
  "model": "lite_sortfeel_model.LiteSortFeel",
  "vec": "runs/sort/final_vec_g19.npy",
- "set": "sortfeel + vec_look=1 + frac=4 (fractional neighbour update, 1/4 of the swarm per step); see NOTE.md",
+ "set": "sortfeel + vec_look=1 + frac=8 (fractional neighbour update, 1/8 of the swarm per step); see NOTE.md",
  "spec": "lite_sortfeel:results/lite_sortfeel/params.json"
 }
