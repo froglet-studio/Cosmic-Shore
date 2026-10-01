@@ -184,4 +184,4 @@ noise for transitions, while the per-step positions will of course differ (the w
 the k_well/well_clip pair was tuned for crushing wells and is likely now too weak at the wall; (b) combine
 with field's motion layer (rotate the wells with the body) — the dead zone makes that easier because a
 rotating well no longer drags a compressed lattice through itself; (c) the remaining flatness knob for
-looks is m0 per plan (pufferfish 0.74 vs plan 0.69 is the only body still flatter than its plan).
+looks is m0 per plan (pufferfish 0.74 vs 0.69 and, in v2, dragonfly 0.55 vs 0.49 are the bodies still slightly flatter than their plans).
