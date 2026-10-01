@@ -26,12 +26,10 @@
   "centre_relax": 0.04,
   "centre_iters": 3,
   "lap_every": 0,
-  "lap_clip": 2.0,
   "lap_elems": [
    3
   ],
   "fate": 1,
-  "well_look": 1,
   "swirl_time": 0.0,
   "dwell": 12,
   "lay_rate": 0.08398333480372795,
@@ -49,5 +47,5 @@
  },
  "model": "sort_model.SortSwarm",
  "vec": "runs/sort/final_vec_g19.npy",
- "set": "K=12,per_well=4,molt=1,well_look=1"
+ "set": "K=12,per_well=4,molt=1"
 }
