@@ -40,3 +40,9 @@ more than 8 min, so the run keeps retrying from the latest checkpoint until 15:0
   comes earlier: three launches resumed at step 500 and each hung by step ~520, within a couple of
   minutes. The non-finite cost now appears to come up almost every step, so the rule may be drifting
   toward degenerate swarms. The watchdog keeps retrying.
+- 11:25 UTC: **stopped babysitting.** The watchdog relaunched 10 times in total. Every resume from
+  `rule_00500.pt` is deterministic (step 500 loss is exactly 163.854 every time), and every one hangs
+  between steps 510 and 530. Retrying cannot get past it, so the run is blocked until the non-finite
+  cost in `sinkhorn_ot` is fixed. No step-1000 evaluation was reached, so no results were published.
+  The last good checkpoint is `Tools/NCA/runs/swarm_e5/rule_00500.pt` (gitignored, in the session
+  container only).
