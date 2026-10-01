@@ -167,12 +167,29 @@ CMA-ES (pop 8, σ 0.5) around C2 over 8 genes (adhesion, Time dead zone, Time sp
 k_well, well_clip), **fitness = the full `swarm_eval` yardstick** (16 transitions, 3 samples, loss-8 bar) on a
 fresh seed per generation (4000 + gen) **+ 0.5 × mean own margin − 3 × graded organic-band violation** (official
 `swarm_feel` at that seed: osc over 0.07, planar excess over 0.13, jerk_rel over 2.45). ~4.2 min per generation
-on 4 cores; 8 generations run (stopped for time). In-band 12/13 at gens 0, 1, 3; in-band 13/13 (on those seeds)
+on 4 cores; 8 generations in the first run. In-band 12/13 at gens 0, 1, 3; in-band 13/13 (on those seeds)
 at gens 6 and 7. C3 = gen 7's best; it and the gen-7 search mean were then re-scored at seeds 7/23/41
 (`feel_heldout.json`): both 12/11/12, both in band at all three seeds (the mean: planar 0.036 / 0.140 / 0.089 —
 less margin), so the best was published. Direction the search took from C2: **softer per-step pull, longer reach,
 tighter wells, more adhesion** — the softer pull is what bought the room for adhesion inside the jerk_rel bound.
 It did not move the two failing transitions: they are structural (below), not a tuning residue.
+
+**Resumed for two more generations** (gens 8–9; stopped at 22:16 UTC for time). Gen 9's best — **G9**:
+pull 0.98, dead zone 1.17, adhesion 0.76, cov_scale 0.47, k_well 0.35, well_clip 0.62, te0 0.32, tmix 0.53 —
+re-scored at seeds 7/23/41 (`cma_v3_validation.jsonl`): **12 / 12 / 12 of 13** (passes mass → dragonfly at seed 23
+too) with own losses **1.93/2.75/1.26/4.75, 1.94/2.68/1.17/4.88, 1.73/3.30/1.32/4.37** — sort's are
+1.40/2.44/1.05/5.03, so G9 beats sort on the dragonfly — **but out of the organic band on planar excess at all three
+seeds** (0.166 / 0.211 / 0.153 against the 0.15 bound; osc 0.053–0.058 and jerk_rel 2.40–2.48 in band, jitter 2.50–2.56).
+So the full-yardstick frontier now reads:
+
+| point | 16-test (7/23/41) | own losses seed 7 | osc | planar ex. (7/23/41) | band |
+|---|---|---|---|---|---|
+| **C3 (published)** | 12 / 11 / 12 | 2.68 / 3.61 / 1.47 / 5.92 | 0.024 | 0.053 / 0.086 / 0.011 | in, 3/3 |
+| G9 (accuracy end) | 12 / 12 / 12 | 1.93 / 2.75 / 1.26 / 4.75 | 0.055 | 0.166 / 0.211 / 0.153 | out (planar), 0/3 |
+
+The step from C3 to G9 is tighter wells (cov_scale 0.69 → 0.47) and a smaller dead zone (1.73 → 1.17): the tissue packs
+closer to its wells, which is accuracy and flatness together — the same trade the pull curve showed, now at the far
+better end of it. G9 is the one to show if the lead says the planar check is too strict for these plans.
 
 ## What a player would see
 
