@@ -322,8 +322,10 @@ class SortSwarm:
                         for j in js[stale]:
                             f = int(np.argmax(need + 1e-3 * rng.random(len(w))))
                             S[j, H_FATE] = f + 1; S[j, H_FKEY] = key; need[f] -= 1
-                    if cfg.lap_every and e in cfg.lap_elems and m["t"] % cfg.lap_every == 0:
-                        fz = S[js, H_FATE] >= 1
+                    if cfg.lap_every and e in cfg.lap_elems:
+                        # staggered: each runner advances on its own phase, so only ~1/lap_every of
+                        # them are in transit at any step and every well stays occupied
+                        fz = (S[js, H_FATE] >= 1) & (((m["t"] + js * 7) % cfg.lap_every) == 0)
                         S[js[fz], H_FATE] = code.next[(e, s)][(S[js[fz], H_FATE] - 1).astype(int)] + 1
                     kk = (S[js, H_FATE] - 1).astype(int)
                     E[sel], G[sel] = code.energy_grad_fate(xb[sel], e, s, kk)
