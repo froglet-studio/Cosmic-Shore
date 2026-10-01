@@ -635,6 +635,37 @@ closest to the wanted plan. The GPU job's publisher and the viewer's ranking bot
 
 The divergences are scale-invariant, so they are not on try6's scale; compare runs by tests passed.
 
+**F results at step 1000** (strict scoring; a passing swarm must be alive with at least 32
+tadpoles):
+
+| Run | Tests passed | Own plan | Switches | Swarm size |
+|---|---|---|---|---|
+| f1 (sticky labels) | 5/8 | 3/4 (the whale grows closer to the dragonfly, 40.3 vs 45.1) | 2/4: jellyfish → pufferfish, pufferfish → dragonfly | 280 |
+| f2 (+ laying gate) | 0/8 | geometry right, 4/4 by divergence | 1/4 by divergence | 16–17 |
+| f5 (+ laying gate + scale-invariant) | 0/8 | geometry right, 4/4 by divergence | 1/4 by divergence | 18–20 |
+
+F1's two switches are genuine: full 280-tadpole swarms that ended closest to the new majority's
+plan. Its whale → jellyfish switch scores 16.3 against the whale itself, i.e. it kept its old body.
+
+**The learned laying gate found a shortcut.** F2 and F5 pick the right plan, but they never lay:
+they keep the 16-tadpole seed. A sixteen-point cloud in roughly the right place matches any plan's
+spread well enough, since the divergence carries no size term (and with `scale_inv`, deliberately
+none). Their 4/4 own-plan diagonals are against bodies that never grew, so they are not counted.
+Two fixes:
+
+- **The scorer** requires `MIN_TEST_BODY = 32` tadpoles before a plan test can pass.
+- **`min_body` / `w_body`**: a one-sided body floor, `w_body · relu(1 - n/min_body)²`. It is the
+  same for every plan, so it tells the rule to grow without telling it which plan to grow. The floor
+  is set to 76, the smallest plan. This is not a headcount goal: any swarm at or above the floor pays
+  nothing.
+
+**G series** (F plus the body floor, branches `cece/swarm-exp-g*`):
+
+| Tag | Fixes |
+|---|---|
+| g2 | f2 + `min_body=76`, `w_body=20` |
+| g5 | f5 + `min_body=76`, `w_body=20` |
+
 **E4 diverged, and the logs said why.** Its loss rose from about 100 to 450. The contrastive hinge
 (0–11) and the mix error (0.00–0.42) stayed small; the divergence itself grew to 50–97, with every
 sample at the 280-slot cap. Grown swarms run 200–280 tadpoles against plans of 76–192, and
