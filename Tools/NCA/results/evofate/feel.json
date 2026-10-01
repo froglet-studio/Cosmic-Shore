@@ -1,92 +1,92 @@
 {
  "mass": {
   "n": 181,
-  "speed": 0.132,
-  "jerk": 0.334,
-  "jerk_rel": 2.534,
+  "speed": 0.11,
+  "jerk": 0.257,
+  "jerk_rel": 2.329,
   "jerk_e": {
-   "Charge": 0.195,
-   "Mass": 0.25,
-   "Space": 0.248,
-   "Time": 1.023
+   "Charge": 0.223,
+   "Mass": 0.246,
+   "Space": 0.228,
+   "Time": 0.381
   },
-  "planar_frac": 0.313,
-  "flat_mean": 0.155,
+  "planar_frac": 0.107,
+  "flat_mean": 0.233,
   "planar_plan": 0.432,
-  "coherence": 0.404,
-  "jitter": 2.399,
-  "phase": 0.104,
+  "coherence": 0.443,
+  "jitter": 2.481,
+  "phase": 0.212,
   "stuck": 0.0,
-  "osc": 0.073
+  "osc": 0.046
  },
  "space": {
   "n": 83,
-  "speed": 0.099,
-  "jerk": 0.255,
-  "jerk_rel": 2.57,
+  "speed": 0.078,
+  "jerk": 0.174,
+  "jerk_rel": 2.219,
   "jerk_e": {
-   "Charge": 0.434,
-   "Space": 0.171,
-   "Time": 0.205
+   "Charge": 0.244,
+   "Space": 0.144,
+   "Time": 0.175
   },
-  "planar_frac": 0.265,
-  "flat_mean": 0.183,
+  "planar_frac": 0.134,
+  "flat_mean": 0.226,
   "planar_plan": 0.375,
-  "coherence": 0.282,
-  "jitter": 2.56,
-  "phase": 0.103,
+  "coherence": 0.36,
+  "jitter": 2.642,
+  "phase": 0.048,
   "stuck": 0.0,
-  "osc": 0.069
+  "osc": 0.027
  },
  "charge": {
   "n": 169,
-  "speed": 0.087,
-  "jerk": 0.213,
-  "jerk_rel": 2.442,
+  "speed": 0.075,
+  "jerk": 0.187,
+  "jerk_rel": 2.494,
   "jerk_e": {
-   "Charge": 0.211,
-   "Space": 0.216,
-   "Time": 0.219
+   "Charge": 0.191,
+   "Space": 0.187,
+   "Time": 0.173
   },
-  "planar_frac": 0.406,
-  "flat_mean": 0.127,
+  "planar_frac": 0.144,
+  "flat_mean": 0.181,
   "planar_plan": 0.687,
-  "coherence": 0.454,
-  "jitter": 2.674,
-  "phase": 0.026,
+  "coherence": 0.449,
+  "jitter": 2.685,
+  "phase": 0.016,
   "stuck": 0.0,
-  "osc": 0.016
+  "osc": 0.009
  },
  "time": {
   "n": 72,
-  "speed": 0.101,
-  "jerk": 0.222,
-  "jerk_rel": 2.195,
+  "speed": 0.083,
+  "jerk": 0.181,
+  "jerk_rel": 2.171,
   "jerk_e": {
-   "Mass": 0.303,
-   "Space": 0.217,
-   "Time": 0.21
+   "Mass": 0.185,
+   "Space": 0.197,
+   "Time": 0.17
   },
-  "planar_frac": 0.606,
-  "flat_mean": 0.106,
+  "planar_frac": 0.54,
+  "flat_mean": 0.102,
   "planar_plan": 0.487,
   "coherence": 0.463,
-  "jitter": 2.664,
-  "phase": 0.035,
+  "jitter": 2.678,
+  "phase": 0.043,
   "stuck": 0.0,
   "osc": 0.016
  },
  "mean": {
-  "speed": 0.105,
-  "jerk": 0.256,
-  "jerk_rel": 2.435,
-  "planar_frac": 0.398,
-  "flat_mean": 0.143,
-  "coherence": 0.401,
-  "jitter": 2.574,
-  "phase": 0.067,
+  "speed": 0.087,
+  "jerk": 0.2,
+  "jerk_rel": 2.303,
+  "planar_frac": 0.231,
+  "flat_mean": 0.185,
+  "coherence": 0.429,
+  "jitter": 2.622,
+  "phase": 0.08,
   "stuck": 0.0,
-  "osc": 0.044
+  "osc": 0.024
  },
  "organic": {
   "ok": true,
@@ -96,6 +96,6 @@
    "stuck": true,
    "planar": true
   },
-  "planar_excess": 0.119
+  "planar_excess": 0.053
  }
 }

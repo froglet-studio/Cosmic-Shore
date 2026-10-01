@@ -10,13 +10,13 @@
     "time->charge"
    ],
    "own": {
-    "mass": 2.68,
-    "space": 3.61,
-    "charge": 1.47,
-    "time": 5.92
+    "mass": 2.95,
+    "space": 3.65,
+    "charge": 1.58,
+    "time": 6.28
    },
    "own_passed": 4,
-   "seconds": 119.5
+   "seconds": 117.8
   },
   "23": {
    "passed": 11,
@@ -27,13 +27,13 @@
     "time->charge"
    ],
    "own": {
-    "mass": 2.72,
-    "space": 3.73,
-    "charge": 1.36,
-    "time": 5.86
+    "mass": 2.88,
+    "space": 3.85,
+    "charge": 1.44,
+    "time": 6.36
    },
    "own_passed": 4,
-   "seconds": 118.9
+   "seconds": 117.2
   },
   "41": {
    "passed": 12,
@@ -44,13 +44,13 @@
     "time->charge"
    ],
    "own": {
-    "mass": 2.6,
-    "space": 3.92,
-    "charge": 1.55,
-    "time": 5.3
+    "mass": 2.79,
+    "space": 4.01,
+    "charge": 1.6,
+    "time": 5.88
    },
    "own_passed": 4,
-   "seconds": 120.2
+   "seconds": 117.0
   }
  },
  "seeds": [
@@ -62,29 +62,29 @@
   "per_plan": {
    "mass": {
     "grown_n": 181,
-    "ms_per_step_grown": 6.391,
-    "ms_per_step_grow": 6.169,
+    "ms_per_step_grown": 6.532,
+    "ms_per_step_grow": 6.471,
     "deaths": 0,
     "tadpole_steps": 64217
    },
    "space": {
     "grown_n": 83,
-    "ms_per_step_grown": 3.787,
-    "ms_per_step_grow": 4.108,
+    "ms_per_step_grown": 5.051,
+    "ms_per_step_grow": 4.145,
     "deaths": 0,
-    "tadpole_steps": 59023
+    "tadpole_steps": 58931
    },
    "charge": {
     "grown_n": 169,
-    "ms_per_step_grown": 6.266,
-    "ms_per_step_grow": 5.522,
+    "ms_per_step_grown": 6.58,
+    "ms_per_step_grow": 6.015,
     "deaths": 0,
     "tadpole_steps": 60272
    },
    "time": {
     "grown_n": 72,
-    "ms_per_step_grown": 3.719,
-    "ms_per_step_grow": 3.703,
+    "ms_per_step_grown": 4.285,
+    "ms_per_step_grow": 4.269,
     "deaths": 0,
     "tadpole_steps": 53886
    }
@@ -92,7 +92,7 @@
   "deaths": 0,
   "deaths_per_1k_tadpole_steps": 0.0,
   "lossless": true,
-  "ms_per_step": 5.041,
+  "ms_per_step": 5.612,
   "grown_n": 126
  },
  "emergent": {
@@ -104,18 +104,18 @@
    "planar": true
   },
   "mean": {
-   "speed": 0.087,
-   "jerk": 0.2,
-   "jerk_rel": 2.303,
-   "planar_frac": 0.231,
-   "flat_mean": 0.185,
-   "coherence": 0.429,
-   "jitter": 2.622,
-   "phase": 0.08,
+   "speed": 0.105,
+   "jerk": 0.256,
+   "jerk_rel": 2.435,
+   "planar_frac": 0.398,
+   "flat_mean": 0.143,
+   "coherence": 0.401,
+   "jitter": 2.574,
+   "phase": 0.067,
    "stuck": 0.0,
-   "osc": 0.024
+   "osc": 0.044
   },
-  "planar_excess": 0.053
+  "planar_excess": 0.119
  },
- "headline": "accurate 0.85 worst seed | lossless True (0.0/1k) | 5.041 ms/step @126 | organic True | mixed"
+ "headline": "accurate 0.85 worst seed | lossless True (0.0/1k) | 5.612 ms/step @126 | organic True | mixed"
 }
