@@ -745,6 +745,11 @@ Space 73% of the survivors. The field and evo sessions both found this independe
 now uses `cull_to`, which removes just enough of every element that does not trail the target.
 A target element a body holds fewer than 2 of cannot take over; that test is n/a for that model.
 
+
+> **Under the loss-8 bar (later the same day) every row above except field fails tier 1.** See
+> [`DISCOVERIES.md`](DISCOVERIES.md) for the current table, the diagnosis (tier 1 is a sorting
+> problem), and the catalogue of every process family the research has tried.
+
 | Approach | 16-test result (fair cull, 3 samples) | Own plans | Switches |
 |---|---|---|---|
 | **field** (designed fields + flocking) | **13/13 feasible** (n/a: jellyfish, pufferfish -> whale; dragonfly -> pufferfish) | 4/4 | 9/9 |
