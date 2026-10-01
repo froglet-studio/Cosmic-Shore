@@ -209,6 +209,8 @@ def load(path):
 
 
 def quick_eval(student, log=print, full=True, samples=3):
+    if os.environ.get("DISTILL_LIGHT_EVAL"):
+        full, samples = False, 1
     res = se.evaluate(student, full=full, samples=samples, log=log)
     log(se.matrix(res))
     log(f"PASSED {res['passed']}/{res['feasible']}  own {res['own_passed']} std {res['std_passed']} rest {res['rest_passed']}  {res['seconds']}s")
