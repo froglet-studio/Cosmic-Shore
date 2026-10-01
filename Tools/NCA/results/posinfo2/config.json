@@ -1,8 +1,8 @@
 {
  "train": {
-  "run": "runs/p2_c",
-  "steps": 800,
-  "lr": 0.0002,
+  "run": "runs/p2_d",
+  "steps": 300,
+  "lr": 0.0001,
   "pool": 24,
   "per_kind": 2,
   "roll_min": 48,
@@ -14,7 +14,7 @@
   "snap_every": 100,
   "seed": 0,
   "hidden": 192,
-  "init": "runs/p2_b/p2_00800.pt",
+  "init": "runs/p2_c/p2_00800.pt",
   "anim": 0,
   "period": 8,
   "window": 8,
