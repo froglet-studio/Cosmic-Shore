@@ -219,10 +219,14 @@ def main():
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--steps", type=int, default=None, help="default 4500 (prism swim) / 12000 (swarm)")
     ap.add_argument("--no-push", action="store_true")
+    ap.add_argument("--tag", default=None, help="swarm: a parallel experiment's name (own run/result folders)")
+    ap.add_argument("--set", action="append", default=[], help="swarm: TrainCfg override key=value (repeatable)")
     ap.add_argument("--run", default=RUN, help="training directory (default runs/prism_swim3d_gpu)")
     a = ap.parse_args()
     RUN = a.run
-    if a.device.startswith("cuda") and not torch.cuda.is_available():
+    if a.device == "cpu":
+        pass
+    elif a.device.startswith("cuda") and not torch.cuda.is_available():
         sys.exit(f"torch {torch.__version__} cannot see a CUDA GPU.\n"
                  + ("  This is the CPU-only build ('+cpu'). Replace it with a CUDA build, e.g.:\n"
                     "    pip uninstall -y torch\n"
@@ -236,6 +240,7 @@ def main():
           (f" ({torch.cuda.get_device_name()})" if a.device.startswith("cuda") and torch.cuda.is_available() else ""))
     if a.stage.startswith("swarm"):
         import swarm_gpu
+        swarm_gpu.configure(a.tag, a.set)
         if a.stage == "swarm-check":
             sys.exit(0 if swarm_gpu.check(a.device) else 1)
         swarm_gpu.run(a.device, a.steps or 12000, push=not a.no_push)

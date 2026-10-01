@@ -63,7 +63,7 @@ def _rank(d):
 
 
 def build_swarm(results_root):
-    cands = [os.path.join(results_root, n) for n in ("swarm_coevo_gpu", "swarm_coevo")]
+    cands = [os.path.join(results_root, n) for n in sorted(os.listdir(results_root)) if n.startswith("swarm_coevo")]
     cands = [d for d in cands if os.path.isfile(os.path.join(d, "rollout.json"))]
     if not cands:
         return "", ""

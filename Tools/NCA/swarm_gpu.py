@@ -45,9 +45,27 @@ def banner(msg):
     print(f"\n=== {msg} ===", flush=True)
 
 
+OVERRIDES = {}                          # --set key=value (TrainCfg fields), e.g. from a parallel experiment
+
+
 def config(steps, anim=False):
-    return sn.TrainCfg(run=RUN, init=WARM, steps=steps, per_kind=4, pool=32, seed_every=4,
-                       roll_min=64, roll_max=128, bptt=48, snap_every=250, log_every=10, anim=int(anim))
+    cfg = sn.TrainCfg(run=RUN, init=WARM, steps=steps, per_kind=4, pool=32, seed_every=4,
+                      roll_min=64, roll_max=128, bptt=48, snap_every=250, log_every=10, anim=int(anim))
+    for k, v in OVERRIDES.items():
+        setattr(cfg, k, type(getattr(cfg, k))(v))
+    return cfg
+
+
+def configure(tag=None, overrides=None):
+    """A parallel experiment: its own run and result folders (results/swarm_coevo_<tag>)."""
+    global RUN, RESULT
+    if tag:
+        RUN = os.path.join(HERE, "runs", f"swarm_{tag}")
+        RESULT = os.path.join(HERE, "results", f"swarm_coevo_{tag}")
+    for kv in overrides or []:
+        k, v = kv.split("=", 1)
+        assert hasattr(sn.TrainCfg, k) or k in sn.TrainCfg.__dataclass_fields__, f"unknown TrainCfg field {k}"
+        OVERRIDES[k] = v
 
 
 def check(device):
@@ -139,7 +157,8 @@ def make_publisher(device, push):
         os.makedirs(RESULT, exist_ok=True)
         json.dump(sn.pack(data, 240), open(os.path.join(RESULT, "rollout.json"), "w"))
         name = torch.cuda.get_device_name() if device.startswith("cuda") else device
-        summary["meta"] = {"device": name, "step": step, "note": f"Trained on {name}, snapshot {step}."}
+        summary["meta"] = {"device": name, "step": step, "tag": os.path.basename(RESULT), "overrides": OVERRIDES,
+                           "note": f"Trained on {name} ({os.path.basename(RESULT)}), snapshot {step}."}
         summary["rule"] = f"rule_{step:05d}.pt"
         json.dump(summary, open(os.path.join(RESULT, "summary.json"), "w"), indent=1)
         shutil.copy(os.path.join(RUN, "log.jsonl"), os.path.join(RESULT, "log.jsonl"))
@@ -151,7 +170,7 @@ def make_publisher(device, push):
         branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=root, text=True).strip()
         rel = os.path.relpath(RESULT, root)
         git(["pull", "--ff-only", "origin", branch], root)
-        if git(["add", rel], root) and git(["commit", "-m", f"feat(nca): swarm co-evolution on {name} - step {step}, "
+        if git(["add", rel], root) and git(["commit", "-m", f"feat(nca): swarm co-evolution {os.path.basename(RESULT)} on {name} - step {step}, "
                                                           f"{correct}/8 plan + switch tests pass"], root):
             git(["push", "origin", branch], root)
 
