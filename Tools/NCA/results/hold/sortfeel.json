@@ -1,0 +1,510 @@
+{
+ "seeds": [
+  7,
+  23,
+  41,
+  101
+ ],
+ "accurate": {
+  "7": {
+   "passed": 12,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "tests": {
+    "own mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.51
+    },
+    "own space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.69
+    },
+    "own charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.17
+    },
+    "own time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 4.16
+    },
+    "mass->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 3.74
+    },
+    "space->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.32
+    },
+    "charge->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 6.69
+    },
+    "time->mass": {
+     "ok": true,
+     "rate": 0.67,
+     "loss": 11.87
+    },
+    "mass->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.1
+    },
+    "mass->time": {
+     "ok": true,
+     "rate": 0.67,
+     "loss": 7.88
+    },
+    "space->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.58
+    },
+    "charge->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 3.16
+    },
+    "time->space": {
+     "ok": false,
+     "rate": 0.33,
+     "loss": 9.04
+    }
+   }
+  },
+  "23": {
+   "passed": 11,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "tests": {
+    "own mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.67
+    },
+    "own space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.45
+    },
+    "own charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 0.97
+    },
+    "own time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 4.58
+    },
+    "mass->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.96
+    },
+    "space->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.54
+    },
+    "charge->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 6.42
+    },
+    "time->mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.99
+    },
+    "mass->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.36
+    },
+    "mass->time": {
+     "ok": false,
+     "rate": 0.33,
+     "loss": 8.04
+    },
+    "space->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.53
+    },
+    "charge->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.77
+    },
+    "time->space": {
+     "ok": false,
+     "rate": 0.33,
+     "loss": 9.09
+    }
+   }
+  },
+  "41": {
+   "passed": 13,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "tests": {
+    "own mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.37
+    },
+    "own space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.76
+    },
+    "own charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.08
+    },
+    "own time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 5.3
+    },
+    "mass->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.92
+    },
+    "space->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.36
+    },
+    "charge->time": {
+     "ok": true,
+     "rate": 0.67,
+     "loss": 7.57
+    },
+    "time->mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.86
+    },
+    "mass->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.06
+    },
+    "mass->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.48
+    },
+    "space->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 6.34
+    },
+    "charge->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.43
+    },
+    "time->space": {
+     "ok": true,
+     "rate": 0.67,
+     "loss": 7.44
+    }
+   }
+  },
+  "101": {
+   "passed": 13,
+   "feasible": 13,
+   "na": [
+    "space->mass",
+    "charge->mass",
+    "time->charge"
+   ],
+   "tests": {
+    "own mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.59
+    },
+    "own space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 2.73
+    },
+    "own charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.01
+    },
+    "own time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 4.74
+    },
+    "mass->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 3.43
+    },
+    "space->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.45
+    },
+    "charge->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 6.76
+    },
+    "time->mass": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.97
+    },
+    "mass->charge": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 1.05
+    },
+    "mass->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.21
+    },
+    "space->time": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 7.69
+    },
+    "charge->space": {
+     "ok": true,
+     "rate": 1.0,
+     "loss": 3.71
+    },
+    "time->space": {
+     "ok": true,
+     "rate": 0.67,
+     "loss": 8.57
+    }
+   }
+  }
+ },
+ "lossless": {
+  "deaths": 0,
+  "per_1k": 0.0
+ },
+ "performant": {
+  "ms_per_step": 2.882,
+  "grown_n": 126
+ },
+ "organic": {
+  "in_band": true,
+  "planar_excess": 0.054,
+  "checks": {
+   "jerk_rel": true,
+   "osc": true,
+   "stuck": true,
+   "planar": true
+  },
+  "mean": {
+   "speed": 0.068,
+   "jerk": 0.049,
+   "jerk_rel": 0.719,
+   "planar_frac": 0.474,
+   "flat_mean": 0.141,
+   "coherence": 0.092,
+   "jitter": 1.122,
+   "phase": 0.576,
+   "stuck": 0.0,
+   "osc": 0.009
+  }
+ },
+ "smooth": {
+  "smoothness": 0.44,
+  "mean": {
+   "mono": 1.009,
+   "backtrack": 0.0,
+   "settle": 0.292,
+   "travel": 1.374,
+   "lurch": 5.492,
+   "teleport": 0.702,
+   "jerk_rel": 0.462,
+   "molt_burst": 0.032,
+   "birth_burst": 0.17,
+   "rough": 1.271
+  },
+  "worst": {
+   "mono": 1.032,
+   "backtrack": 0.0,
+   "lurch": 6.68,
+   "teleport": 0.92,
+   "jerk_rel": 0.611,
+   "molt_burst": 0.12,
+   "birth_burst": 0.289,
+   "rough": 1.672
+  },
+  "deaths": 0,
+  "events": {
+   "switch mass->space": {
+    "loss_start": 62.64,
+    "loss_end": 4.62,
+    "mono": 1.0,
+    "backtrack": 0.0,
+    "noise_rel": 0.0001,
+    "settle": 0.467,
+    "travel": 2.12,
+    "lurch": 3.21,
+    "teleport": 0.653,
+    "jerk_rel": 0.331,
+    "molt_burst": 0.12,
+    "birth_burst": 0.012,
+    "deaths": 0,
+    "n_end": 83,
+    "rough": 0.484
+   },
+   "switch space->charge": {
+    "loss_start": 50.41,
+    "loss_end": 1.39,
+    "mono": 1.0,
+    "backtrack": 0.0,
+    "noise_rel": 0.0009,
+    "settle": 0.267,
+    "travel": 1.26,
+    "lurch": 5.99,
+    "teleport": 0.92,
+    "jerk_rel": 0.412,
+    "molt_burst": 0.024,
+    "birth_burst": 0.237,
+    "deaths": 0,
+    "n_end": 169,
+    "rough": 1.396
+   },
+   "switch charge->time": {
+    "loss_start": 49.35,
+    "loss_end": 7.06,
+    "mono": 1.0,
+    "backtrack": 0.0,
+    "noise_rel": 0.0,
+    "settle": 0.467,
+    "travel": 1.84,
+    "lurch": 5.49,
+    "teleport": 0.901,
+    "jerk_rel": 0.342,
+    "molt_burst": 0.097,
+    "birth_burst": 0.0,
+    "deaths": 0,
+    "n_end": 72,
+    "rough": 1.196
+   },
+   "switch time->mass": {
+    "loss_start": 51.96,
+    "loss_end": 2.72,
+    "mono": 1.0,
+    "backtrack": 0.0,
+    "noise_rel": 0.0,
+    "settle": 0.4,
+    "travel": 1.65,
+    "lurch": 4.55,
+    "teleport": 0.815,
+    "jerk_rel": 0.425,
+    "molt_burst": 0.011,
+    "birth_burst": 0.221,
+    "deaths": 0,
+    "n_end": 181,
+    "rough": 0.82
+   },
+   "heal mass": {
+    "loss_start": 14.17,
+    "loss_end": 1.67,
+    "mono": 1.001,
+    "backtrack": 0.0,
+    "noise_rel": 0.0031,
+    "settle": 0.2,
+    "travel": 1.1,
+    "lurch": 6.4,
+    "teleport": 0.84,
+    "jerk_rel": 0.493,
+    "molt_burst": 0.0,
+    "birth_burst": 0.221,
+    "deaths": 0,
+    "n_end": 181,
+    "rough": 1.56
+   },
+   "heal space": {
+    "loss_start": 14.05,
+    "loss_end": 2.29,
+    "mono": 1.026,
+    "backtrack": 0.0,
+    "noise_rel": 0.0088,
+    "settle": 0.2,
+    "travel": 1.03,
+    "lurch": 5.26,
+    "teleport": 0.442,
+    "jerk_rel": 0.513,
+    "molt_burst": 0.0,
+    "birth_burst": 0.289,
+    "deaths": 0,
+    "n_end": 83,
+    "rough": 1.494
+   },
+   "heal charge": {
+    "loss_start": 9.97,
+    "loss_end": 0.95,
+    "mono": 1.014,
+    "backtrack": 0.0,
+    "noise_rel": 0.0063,
+    "settle": 0.133,
+    "travel": 1.04,
+    "lurch": 6.68,
+    "teleport": 0.473,
+    "jerk_rel": 0.567,
+    "molt_burst": 0.0,
+    "birth_burst": 0.237,
+    "deaths": 0,
+    "n_end": 169,
+    "rough": 1.672
+   },
+   "heal time": {
+    "loss_start": 10.55,
+    "loss_end": 3.35,
+    "mono": 1.032,
+    "backtrack": 0.0,
+    "noise_rel": 0.0056,
+    "settle": 0.2,
+    "travel": 0.95,
+    "lurch": 6.36,
+    "teleport": 0.571,
+    "jerk_rel": 0.611,
+    "molt_burst": 0.0,
+    "birth_burst": 0.139,
+    "deaths": 0,
+    "n_end": 72,
+    "rough": 1.544
+   }
+  }
+ },
+ "seconds": 415.0,
+ "model": "sortfeel:results/sortfeel/params.json"
+}

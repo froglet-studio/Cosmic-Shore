@@ -266,6 +266,14 @@ def load_model(spec):
     if kind == "lite_combo":
         import lite_combo_model as lcm
         return lcm.load(path)
+    if kind == "lite_sortfeel":   # lite_sortfeel:<params.json>[?frac=4,vec_look=1,...]
+        import lite_sortfeel_model as lm
+        path, _, q = path.partition("?")
+        kw = {}
+        for kv in filter(None, q.split(",")):
+            k_, v_ = kv.split("=")
+            kw[k_] = float(v_) if "." in v_ else int(v_)
+        return lm.load(path, **kw)
     raise ValueError(spec)
 
 
