@@ -62,7 +62,9 @@ Sanity check of the simulator: the teacher's actions executed through the STUDEN
 | + freeze + census composition gate (designed lay/molt gate) | 4/4 | 0/4 | 0/6 | 4/14 | exact headcounts, still no switches |
 | + contest counter as an INPUT (genome=2, DAgger it 3) | 2/4 | 0/4 | 0/7 | 2/15 | |
 | **+ freeze + static centre estimate (z_motion = 0)** — **published** | **4/4** | **2/4** | **1/8** | **7/16** | |
-| … + 1 DAgger iter on the static estimate | 4/4 | 1/4 | 0/7 | 5/15 | (more iterations running at writing time) |
+| … + 1 DAgger iter on the static estimate | 4/4 | 1/4 | 0/7 | 5/15 | retraining on the new frame did not add tests |
+| static estimate, leak 0 (frame never moves) | 4/4 | 1/4 | 1/6 | 6/14 | jelly 480-step: RMS 37.0, own 73.7 — the body drifts off a fixed frame |
+| static estimate, 8 sweeps, leak 0.01 | 4/4 | 1/4 | 0/6 | 5/14 | worse frame (spread 26 at 480): leak pulls estimates apart faster than diffusion joins them |
 | (field, the teacher) | 4/4 | 4/4 | 5/5 feasible | 13/13 | |
 | stage 3 fine-tune (BPTT on swarm_loss, 70 iters) | – | – | – | 4/16 light | BC loss drifted 0.75 → 0.95, sink noisy; stopped |
 
