@@ -62,6 +62,7 @@ class PosInfoRule(sn.SwarmRule):
 
     def __init__(self, world: sn.World, hidden=192, fire_rate=0.5, morph=0, morph_iters=4, homeo=0):
         self.morph, self.morph_iters, self.homeo = morph, morph_iters, homeo
+        self.p_molt, self.molts = 0.05, 0
         super().__init__(world, hidden=hidden, fire_rate=fire_rate)
         P = P_BASE + morph
         self.P = P
@@ -216,6 +217,22 @@ def _homeo_lay(self, sw: Swarm, gi, gj, gen=None):
             quota, have = homeo_quota(sw, b)
             if quota is None:
                 continue
+            if self.homeo >= 4:          # molting: a SURPLUS (element, domain) tadpole re-forms as a deficit
+                surplus = (have - quota).clamp(min=0)   # element of its own domain (domain never changes)
+                lack = (quota - have).clamp(min=0)
+                for d in range(3):
+                    for e_from in range(4):
+                        if surplus[e_from, d] == 0 or lack[:, d].sum() == 0:
+                            continue
+                        mem = (sw.active[b] & sw.hatched[b] & (sw.elem[b] == e_from) & (sw.dom[b] == d)).nonzero().squeeze(1)
+                        go = mem[torch.rand(len(mem), generator=gen) < self.p_molt][:int(surplus[e_from, d])]
+                        for i in go.tolist():
+                            if lack[:, d].sum() == 0:
+                                break
+                            e_to = int(torch.multinomial(lack[:, d].float(), 1, generator=gen))
+                            sw.elem[b, i] = e_to; lack[e_to, d] -= 1; surplus[e_from, d] -= 1
+                            have[e_from, d] -= 1; have[e_to, d] += 1
+                            self.molts += 1
             deficit = (quota - have).clamp(min=0)
             if self.homeo >= 3:          # grow in proportion: no class fills faster than the major element
                 maj = int(quota.sum(1).argmax())
