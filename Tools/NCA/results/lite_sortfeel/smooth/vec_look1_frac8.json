@@ -1,0 +1,27 @@
+{
+ "smoothness": 0.771,
+ "mean": {
+  "mono": 1.007,
+  "backtrack": 0.0,
+  "settle": 0.367,
+  "travel": 1.649,
+  "lurch": 2.897,
+  "teleport": 0.836,
+  "jerk_rel": 0.509,
+  "molt_burst": 0.032,
+  "birth_burst": 0.168,
+  "rough": 0.297
+ },
+ "worst": {
+  "mono": 1.021,
+  "backtrack": 0.0,
+  "lurch": 3.97,
+  "teleport": 1.05,
+  "jerk_rel": 0.599,
+  "molt_burst": 0.12,
+  "birth_burst": 0.289,
+  "rough": 0.642
+ },
+ "deaths": 0,
+ "query": "vec_look=1,frac=8"
+}
