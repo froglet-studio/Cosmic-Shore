@@ -1,0 +1,287 @@
+{
+ "G2": {
+  "rows": [
+   {
+    "seed": 7,
+    "passed": 4,
+    "close": 293.3,
+    "own": 4,
+    "switch": {
+     "mass": false,
+     "space": false,
+     "charge": false,
+     "time": false
+    },
+    "majority_after": [
+     "charge",
+     "charge",
+     "charge",
+     "space"
+    ]
+   },
+   {
+    "seed": 8,
+    "passed": 4,
+    "close": 257.9,
+    "own": 4,
+    "switch": {
+     "mass": false,
+     "space": false,
+     "charge": false,
+     "time": false
+    },
+    "majority_after": [
+     "charge",
+     "charge",
+     "time",
+     "space"
+    ]
+   },
+   {
+    "seed": 9,
+    "passed": 4,
+    "close": 300.5,
+    "own": 4,
+    "switch": {
+     "mass": false,
+     "space": false,
+     "charge": false,
+     "time": false
+    },
+    "majority_after": [
+     "charge",
+     "charge",
+     "charge",
+     "space"
+    ]
+   },
+   {
+    "seed": 10,
+    "passed": 4,
+    "close": 281.3,
+    "own": 4,
+    "switch": {
+     "mass": false,
+     "space": false,
+     "charge": false,
+     "time": false
+    },
+    "majority_after": [
+     "charge",
+     "charge",
+     "time",
+     "space"
+    ]
+   },
+   {
+    "seed": 11,
+    "passed": 4,
+    "close": 277.4,
+    "own": 4,
+    "switch": {
+     "mass": false,
+     "space": false,
+     "charge": false,
+     "time": false
+    },
+    "majority_after": [
+     "charge",
+     "charge",
+     "time",
+     "space"
+    ]
+   }
+  ],
+  "mean_passed": 4.0
+ },
+ "oracle_on_G2": {
+  "rows": [
+   {
+    "seed": 7,
+    "passed": 7,
+    "close": 197.9,
+    "own": 4,
+    "switch": {
+     "mass": true,
+     "space": true,
+     "charge": true,
+     "time": false
+    },
+    "majority_after": [
+     "space",
+     "charge",
+     "time",
+     "space"
+    ]
+   },
+   {
+    "seed": 8,
+    "passed": 7,
+    "close": 190.1,
+    "own": 4,
+    "switch": {
+     "mass": true,
+     "space": true,
+     "charge": true,
+     "time": false
+    },
+    "majority_after": [
+     "space",
+     "charge",
+     "time",
+     "space"
+    ]
+   },
+   {
+    "seed": 9,
+    "passed": 7,
+    "close": 184.7,
+    "own": 4,
+    "switch": {
+     "mass": true,
+     "space": true,
+     "charge": true,
+     "time": false
+    },
+    "majority_after": [
+     "space",
+     "charge",
+     "time",
+     "space"
+    ]
+   },
+   {
+    "seed": 10,
+    "passed": 7,
+    "close": 192.8,
+    "own": 4,
+    "switch": {
+     "mass": true,
+     "space": true,
+     "charge": true,
+     "time": false
+    },
+    "majority_after": [
+     "space",
+     "charge",
+     "time",
+     "space"
+    ]
+   },
+   {
+    "seed": 11,
+    "passed": 7,
+    "close": 194.8,
+    "own": 4,
+    "switch": {
+     "mass": true,
+     "space": true,
+     "charge": true,
+     "time": false
+    },
+    "majority_after": [
+     "space",
+     "charge",
+     "time",
+     "space"
+    ]
+   }
+  ],
+  "mean_passed": 7.0
+ },
+ "m3@rule_00500.pt": {
+  "rows": [
+   {
+    "seed": 7,
+    "passed": 7,
+    "close": 169.9,
+    "own": 4,
+    "switch": {
+     "mass": true,
+     "space": true,
+     "charge": true,
+     "time": false
+    },
+    "majority_after": [
+     "space",
+     "charge",
+     "time",
+     "space"
+    ]
+   },
+   {
+    "seed": 8,
+    "passed": 7,
+    "close": 173.1,
+    "own": 4,
+    "switch": {
+     "mass": true,
+     "space": true,
+     "charge": true,
+     "time": false
+    },
+    "majority_after": [
+     "space",
+     "charge",
+     "time",
+     "space"
+    ]
+   },
+   {
+    "seed": 9,
+    "passed": 7,
+    "close": 172.4,
+    "own": 4,
+    "switch": {
+     "mass": true,
+     "space": true,
+     "charge": true,
+     "time": false
+    },
+    "majority_after": [
+     "space",
+     "charge",
+     "time",
+     "space"
+    ]
+   },
+   {
+    "seed": 10,
+    "passed": 7,
+    "close": 168.6,
+    "own": 4,
+    "switch": {
+     "mass": true,
+     "space": true,
+     "charge": true,
+     "time": false
+    },
+    "majority_after": [
+     "space",
+     "charge",
+     "time",
+     "space"
+    ]
+   },
+   {
+    "seed": 11,
+    "passed": 7,
+    "close": 172.0,
+    "own": 4,
+    "switch": {
+     "mass": true,
+     "space": true,
+     "charge": true,
+     "time": false
+    },
+    "majority_after": [
+     "space",
+     "charge",
+     "time",
+     "space"
+    ]
+   }
+  ],
+  "mean_passed": 7.0
+ }
+}

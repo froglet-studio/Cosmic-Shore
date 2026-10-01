@@ -58,3 +58,16 @@ checkpoint; load with `meta_swarm.load_meta`). Strict tests 7/8, summed close 16
 oracle-on-G2 197.9). Own plan: 11.8 / 14.8 / 5.2 / 12.9 (G2 13.9 / 17.5 / 15.3 / 20.7).
 Geometry-only, EVERY passing switch now really changes shape: whale->jelly 8.3 (vs 17.2 whale),
 jelly->puffer 5.1, puffer->dragonfly 8.1. Probe heal 0.90 / 0.77 / 0.71 / 1.08.
+
+## Robustness over rollout seeds 7-11 (`meta_seeds.py`, `results/meta/seeds.json`, 1 thread)
+
+| model | tests passed, seeds 7/8/9/10/11 | summed close |
+|---|---|---|
+| G2 | 4/4/4/4/4 (own 4/4, switches 0/4) | 258-301 |
+| designed homeostat on frozen G2 | 7/7/7/7/7 | 185-198 |
+| m3 step 500 | 7/7/7/7/7 | 169-173 |
+
+G2's published 5/8 is NOT robust: single-threaded, seed 7 gives 4/8 (thread-count nondeterminism
+flips its one marginal switch). The metamorph models are 7/8 on every seed. The failing test is
+the same everywhere: dragonfly -> whale, where after the yardstick's cull the live majority is
+SPACE on every seed (`majority_after`), so a majority-following swarm becomes a jellyfish.
