@@ -105,8 +105,16 @@ def main():
         t0 = time.time()
         rule.eval()
         ev = own_eval(rule)
+        rec = dict(step=step, own=ev)
+        if cfg.p_switch > 0:                       # switches are in play: the full 16-transition yardstick
+            import swarm_eval
+            e16 = swarm_eval.evaluate(rule, samples=3, full=True, log=lambda *_: None)
+            rec["eval16"] = dict(passed=e16["passed"], feasible=e16["feasible"], own=e16["own_passed"],
+                                 switch={k: v["rate"] for k, v in e16["switch"].items()})
+            print(swarm_eval.matrix(e16), flush=True)
+            print(f"EVAL16 {step}: {e16['passed']}/{e16['feasible']}", flush=True)
         rule.train()
-        evlog.write(json.dumps(dict(step=step, own=ev)) + "\n"); evlog.flush()
+        evlog.write(json.dumps(rec) + "\n"); evlog.flush()
         print(f"EVAL {step}: {summarise(ev)}  ({time.time()-t0:.0f}s)", flush=True)
 
     sn.train(cfg, sn.World(), sn.LossCfg(w_count=a.w_count), resume=True, on_snapshot=on_snapshot)
