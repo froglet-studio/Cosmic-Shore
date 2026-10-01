@@ -1,4 +1,12 @@
-# creature — the evo body wearing a vessel-reaction shell (round 3)
+# creature — a vessel-reaction shell on a swarm body (round 3)
+
+**Headline.** Two playable creatures were built and measured. (A) `CreatureRule` = evo's learned body + the shell:
+16/16 (seed 7 and held-out 11/23/37), 8/8 old yardstick, but blobby bodies (own-plan divergence 14-25). (B)
+`CreatureField` = field's slot body + field's own startle + the SAME shell (`creature_field.py`): field's
+13/13 feasible, crisp bodies (divergence 1-5), and the best parting measured in any direction: a ship flying through
+touches **2.6-21%** of the school (inert 28-37%, field alone 8-28%, shell alone 18-32%). **B is the one to build.**
+Showcases: `showcase.html` (A), `showcase_field.html` (B, recommended).
+
 
 Code: `Tools/NCA/creature_model.py` (the model), `creature_probe.py` (interaction probe), `creature_extra.py`
 (switch latency, escort, gradual predation), `creature_heal.py` (8-seed strike probe), `creature_eval.py`
@@ -102,13 +110,35 @@ crisp animals (the evo plans score 14-25 Sinkhorn; field's slot bodies score 1-6
 * `rollout.json` = `swarm_nca.pack` frames every 4 steps + extra keys (`vessel` per frame [x,y,z,r], `flags` int8
   [startle x100, danger, mob], `tell`, `events`, `crystal_track`, `every`), one scripted life per plan.
 
+## (B) The shell on field's slot bodies (`creature_field.py`; `field_*.json`, `showcase_field.html`)
+
+Same shell code, applied to `FieldSwarm` (params `results/field/params.json`). Field's own predator response is a
+second layer (`native=1`, default): it is the one thing an external shell cannot do - it CALMS the body's homing
+while startled, so the slots stop pulling tadpoles back into the ship's path. The shell adds the jets, the pufferfish
+spikes, the escort (which also moves field's body frame, `mem.anchor`), the pre-tell and the elastic flee.
+
+| fly-by touched (seed 5) | whale | jellyfish | pufferfish | dragonfly |
+|---|---|---|---|---|
+| inert (field body, no reaction) | 0.37 | 0.31 | 0.28 | 0.36 |
+| shell only | 0.32 | 0.23 | 0.18 | 0.18 |
+| field native only (round 1) | 0.28 | 0.08 | 0.11 | 0.11 |
+| **native + shell (shipped B)** | **0.21** | **0.045** | **0.05** | **0.026** |
+
+* 16-test yardstick: **13/13 feasible** (`field_eval16.json`; n/a space->mass, charge->mass, time->charge, as field).
+* Every encounter keeps the body its own plan in 100% of frames; fly-by worst own-plan score 5.5-11 (inert 2-6),
+  back within 4-9 steps; ram heal 1.04-1.19 (field regrows to the plan's headcount).
+* Escort over 144 voxels of ship travel: whale 35.6, dragonfly 18.3, jellyfish/pufferfish 0 (inert 0).
+* Lesson: **a reaction shell needs ONE hook into the body - a "calm" input that relaxes its shape-keeping while
+  startled.** Without it the body fights the shell (field + shell only: 0.18-0.32; the learned evo body has no such
+  hook either, which is why A's whale stays at 0.35).
+
 ## Recommendation (next round / Unity)
 
 1. **Ship the shell, not the network, first.** Everything a player reacts to here is the shell: ~200 lines of
    per-tadpole arithmetic (startle relay, per-element flee/jet/dart/mob, plan swell/tuck/escort, elastic offset).
    It is body-agnostic: port it as a Burst job over the fauna spatial index and put it on top of **field's** slot
-   bodies (crisp shapes, C# port exists, 0.1-0.6 ms) — that is the combination I would build. The elastic offset is
-   what lets it sit on any body without fighting it.
+   bodies (crisp shapes, C# port exists, 0.1-0.6 ms) — measured above as (B), the best of everything tried. Give
+   the body a `calm` input (field's `desired *= 1 - 0.8*startle`) so it stops defending its shape while startled.
 2. If the learned body is kept, its lay homeostat makes a swarm nearly unconvertible by gradual predation (good for a
    "boss" creature, bad for the "eat its majority" fantasy). Tune its gain per game mode, or let a player-visible
    event (a crystal steal, an ability) suppress laying for a few seconds.

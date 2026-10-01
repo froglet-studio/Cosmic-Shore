@@ -1,0 +1,22 @@
+{
+ "mass": {
+  "on": 35.61,
+  "off": 0.03,
+  "ship_travel": 144.0
+ },
+ "space": {
+  "on": 0.03,
+  "off": 0.03,
+  "ship_travel": 144.0
+ },
+ "charge": {
+  "on": 0.04,
+  "off": 0.03,
+  "ship_travel": 144.0
+ },
+ "time": {
+  "on": 18.26,
+  "off": 0.07,
+  "ship_travel": 144.0
+ }
+}
