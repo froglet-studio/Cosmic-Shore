@@ -191,6 +191,9 @@ namespace CosmicShore.Content.Serialization
             return Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
+        internal static string FormatFloat(float f) => Float(f);
+        internal static string FormatDouble(double d) => Double(d);
+
         static string Float(float f)
         {
             if (float.IsPositiveInfinity(f)) return "Infinity";

@@ -140,6 +140,17 @@ namespace CosmicShore.Tests
         }
 
         [Fact]
+        public void ALargeMapsLookupSeesValuesWrittenByIndex()
+        {
+            // 8+ keys switch YMap lookups to an index; a write by position must update it.
+            var m = new YMap();
+            for (int i = 0; i < 10; i++) m.Add("k" + i, new YScalar("old"));
+            Assert.Equal("old", m.Str("k7"));
+            m.SetAt(7, new YScalar("new"));
+            Assert.Equal("new", m.Str("k7"));
+        }
+
+        [Fact]
         public void NestedBlockSequencesRoundTrip()
         {
             string text = Header + "--- !u!114 &1\nMonoBehaviour:\n  m_PhysicsShape:\n  - - {x: 0, y: 1}\n    - {x: 2, y: 3}\n  - - {x: 4, y: 5}\n";

@@ -19,6 +19,10 @@ namespace CosmicShore.AssetTool
     ///   cs-asset remove &lt;file&gt; &lt;object&gt; &lt;field.path&gt;
     ///   cs-asset create &lt;file&gt; &lt;name&gt; [--parent &lt;object&gt;]
     ///   cs-asset delete &lt;file&gt; &lt;object&gt;
+    ///   cs-asset components &lt;file&gt; &lt;object&gt;
+    ///   cs-asset add    &lt;file&gt; &lt;object&gt; &lt;Component&gt; [--like &amp;fileID]
+    ///   cs-asset remove-component &lt;file&gt; &lt;object&gt; --component Type[#n]
+    ///   cs-asset schema [path…]                         measure the component serializer against the project
     ///
     /// &lt;object&gt; is <c>&amp;fileID</c>, a GameObject hierarchy path (<c>Canvas/Panel/Button</c>) or a
     /// unique GameObject name; add <c>--component Type</c> to address that GameObject's
@@ -48,6 +52,8 @@ namespace CosmicShore.AssetTool
                 return pos[0] switch
                 {
                     "roundtrip" => RoundTrip(pos.Skip(1).ToList()),
+                    "schema" => Scripts.Schema(pos.Skip(1).ToList()),
+                    "addall" => Scripts.AddAll(),
                     "list" => List(Need(pos, 2)),
                     "docs" => Docs(Need(pos, 2)),
                     "get" => Get(Need(pos, 3), opts),
@@ -57,6 +63,15 @@ namespace CosmicShore.AssetTool
                         if (!ed.Remove(id, pos[3])) throw new ArgumentException($"no field '{pos[3]}'");
                     }),
                     "create" => Create(Need(pos, 3), opts),
+                    "components" => Components(Need(pos, 3), opts),
+                    "add" => AddComponent(Need(pos, 4), opts),
+                    "remove-component" => Edit(Need(pos, 3), opts, (ed, id) =>
+                    {
+                        if (!opts.ContainsKey("component") && !pos[2].StartsWith('&'))
+                            throw new ArgumentException("name the component: --component Type[#n], or &fileID");
+                        var r = ed.RemoveComponent(id);
+                        foreach (var c in r.ClearedReferences) Console.WriteLine($"  cleared reference {c}");
+                    }),
                     "delete" => Delete(Need(pos, 3), opts),
                     _ => Fail($"unknown command '{pos[0]}'"),
                 };
@@ -84,6 +99,12 @@ namespace CosmicShore.AssetTool
   remove <file> <object> <field.path>
   create <file> <name> [--parent <object>]
   delete <file> <object>
+  components <file> <object>                list a GameObject's components
+  add    <file> <object> <Component>        add a script, package (Image, TextMeshProUGUI ...) or built-in
+                                            (BoxCollider, Rigidbody ...) component; --like &fileID copies
+                                            an existing component in the same file instead
+  remove-component <file> <object> --component <Type>[#n]
+  schema [path...]                          check the component serializer against every saved script
 
 <object>: &fileID | GameObject path (Canvas/Panel/Button) | unique GameObject name
           --component <Type>[#n] targets that GameObject's component instead
@@ -209,9 +230,51 @@ namespace CosmicShore.AssetTool
             foreach (var c in comps.Items)
             {
                 long cid = c["component"] is YMap m ? m.Long("fileID") : 0;
-                if (ed.File.Find(cid) is { } cd && cd.TypeName == type && ++seen == nth) return cid;
+                if (ed.File.Find(cid) is not { } cd) continue;
+                // A script component is "MonoBehaviour" in the file; match its class name too.
+                string scriptName = cd.ClassId == 114 && cd.Body["m_Script"]?.Str("guid") is { } g ? Scripts.Catalog.FromGuid(g).Type?.Name : null;
+                if ((cd.TypeName == type || scriptName == type) && ++seen == nth) return cid;
             }
             throw new ArgumentException($"&{id} has no component {comp}");
+        }
+
+        // ── Components ────────────────────────────────────────────────
+
+        static int Components(List<string> pos, Dictionary<string, string> opts)
+        {
+            var ed = new UnityAssetEditor(UnityYamlFile.Load(pos[1]));
+            long go = ResolveObject(ed, pos[2], new());
+            foreach (var c in ed.Components(go))
+            {
+                string name = c.TypeName;
+                if (c.ClassId == 114 && c.Body["m_Script"]?.Str("guid") is { } g)
+                    name = Scripts.Catalog.FromGuid(g).Type?.Name ?? $"(missing script {g})";
+                Console.WriteLine($"&{c.FileId,-22} {name}");
+            }
+            return 0;
+        }
+
+        static int AddComponent(List<string> pos, Dictionary<string, string> opts)
+        {
+            string path = pos[1];
+            var ed = new UnityAssetEditor(UnityYamlFile.Load(path));
+            long go = ResolveObject(ed, pos[2], new());
+            if (opts.TryGetValue("like", out var like))
+            {
+                if (!like.StartsWith('&') || !long.TryParse(like.AsSpan(1), out long src) || ed.File.Find(src) is not { } doc)
+                    throw new ArgumentException($"--like needs a component &fileID in this file");
+                if (doc.ClassId is UnityAssetEditor.TransformClass or UnityAssetEditor.RectTransformClass or UnityAssetEditor.GameObjectClass)
+                    throw new ArgumentException("--like copies a component, not a Transform or GameObject");
+                var body = (YMap)doc.Body.Clone();
+                long id = ed.AddComponentDocument(go, doc.ClassId, doc.TypeName, body);
+                Console.WriteLine($"added &{id} {doc.TypeName} (copy of &{src})");
+                return Save(path, ed.File, opts);
+            }
+            var adder = new ComponentAdder(ed, Scripts.Catalog, new ComponentTemplates(Scripts.Db.AssetsRoot));
+            var r = adder.Add(go, pos[3]);
+            foreach (var (id, type, source) in r.Added) Console.WriteLine($"added &{id} {type}  ({source})");
+            foreach (var n in r.Notes) Console.WriteLine($"  note: {n}");
+            return Save(path, ed.File, opts);
         }
 
         // ── Verification ──────────────────────────────────────────────

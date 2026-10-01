@@ -137,6 +137,13 @@ namespace CosmicShore.Content.Scenes
                     catch (IOException) { }
                     if (ns != null && _byFullName.TryGetValue(ns + "." + className, out var exact)) result = exact;
                     else result = PickComponent(className, ns);
+                    // Unity pairs a script with its class ignoring case (MinigameHUDView.cs holds
+                    // MiniGameHUDView); without this the component silently never loads.
+                    if (result == null)
+                    {
+                        string want = (ns != null ? ns + "." : "") + className;
+                        result = _byFullName.FirstOrDefault(kv => string.Equals(kv.Key, want, StringComparison.OrdinalIgnoreCase)).Value;
+                    }
                 }
             }
 

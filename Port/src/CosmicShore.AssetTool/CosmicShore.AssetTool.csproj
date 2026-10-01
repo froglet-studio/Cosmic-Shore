@@ -2,7 +2,8 @@
 
   <!-- Authoring from the command line: read, edit, create and delete objects in the Unity
        project's scenes, prefabs and assets, writing back only what changed. Depends on the
-       content bridge alone, so it builds in seconds and needs no renderer or game code. -->
+       content bridge plus the compiled game scripts (a new component's default fields come
+       from its C# type); no renderer. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>cs-asset</AssemblyName>
@@ -10,6 +11,10 @@
 
   <ItemGroup>
     <ProjectReference Include="../CosmicShore.Content/CosmicShore.Content.csproj" />
+    <!-- The game's own scripts, compiled against the engine: what a new component's
+         default fields are read from. -->
+    <ProjectReference Include="../CosmicShore.Live/CosmicShore.Live.csproj" />
+    <ProjectReference Include="../CosmicShore.Compat/CosmicShore.Compat.csproj" />
   </ItemGroup>
 
 </Project>

@@ -261,6 +261,78 @@ namespace CosmicShore.Content.Editing
             return id;
         }
 
+        // ── Components ────────────────────────────────────────────────
+
+        /// <summary>The component documents of a GameObject, in its m_Component order.</summary>
+        public List<UnityDocument> Components(long goId)
+        {
+            var go = Require(goId);
+            var list = new List<UnityDocument>();
+            if (go.Body["m_Component"] is YSeq comps)
+                foreach (var c in comps.Items)
+                    if (File.Find(Ref(c["component"])) is { } cd) list.Add(cd);
+            return list;
+        }
+
+        /// <summary>
+        /// Attaches a component document: a new fileID, <c>m_GameObject</c> pointing at its owner,
+        /// and an entry at the end of the owner's <c>m_Component</c> list (where Unity appends).
+        /// </summary>
+        public long AddComponentDocument(long goId, int classId, string typeName, YMap body)
+        {
+            var go = Require(goId);
+            if (go.ClassId != GameObjectClass || go.Stripped) throw new ArgumentException($"&{goId} is not a GameObject this file defines");
+            long id = NewId();
+            body.Set("m_GameObject", YMap.Ref(goId));
+            Insert(new UnityDocument { ClassId = classId, FileId = id, TypeName = typeName, Body = body });
+            if (go.Body["m_Component"] is not YSeq comps) { comps = new YSeq(); go.Body.Set("m_Component", comps); }
+            var entry = new YMap(); entry.Add("component", YMap.Ref(id));
+            comps.List.Add(entry);
+            return id;
+        }
+
+        /// <summary>
+        /// Removes one component. A GameObject's Transform cannot be removed (delete the object
+        /// instead); references to the component elsewhere in the file are cleared and reported.
+        /// </summary>
+        public DeleteResult RemoveComponent(long componentId)
+        {
+            var doc = Require(componentId);
+            if (doc.ClassId is TransformClass or RectTransformClass) throw new ArgumentException("a Transform cannot be removed; delete the GameObject instead");
+            long goId = Ref(doc.Body["m_GameObject"]);
+            if (goId != 0 && File.Find(goId)?.Body["m_Component"] is YSeq comps)
+                comps.List.RemoveAll(c => Ref(c["component"]) == componentId);
+            var doomed = new HashSet<long> { componentId };
+            var result = new DeleteResult();
+            File.Documents.Remove(doc);
+            result.Removed.Add(componentId);
+            foreach (var d in File.Documents)
+                ClearRefs(d.Body, doomed, $"&{d.FileId} {d.TypeName}", result.ClearedReferences);
+            return result;
+        }
+
+        /// <summary>
+        /// Turns a GameObject's Transform into a RectTransform (what Unity does when a UI component
+        /// is added to a plain object). The fileID is kept, so every reference to it stays valid.
+        /// </summary>
+        public bool EnsureRectTransform(long goId)
+        {
+            long t = TransformOf(Require(goId));
+            if (t == 0 || File.Find(t) is not { } td) throw new ArgumentException($"&{goId} has no Transform");
+            if (td.ClassId == RectTransformClass) return false;
+            if (td.Stripped) throw new ArgumentException($"&{goId} is inside a nested prefab; edit the prefab itself");
+            td.ClassId = RectTransformClass;
+            td.TypeName = "RectTransform";
+            td.Body.Remove("serializedVersion"); // a Transform's; a RectTransform writes none
+            void Add(string k, string yaml) { if (!td.Body.Has(k)) td.Body.Add(k, UnityYaml.ParseValue(yaml)); }
+            Add("m_AnchorMin", "{x: 0.5, y: 0.5}");
+            Add("m_AnchorMax", "{x: 0.5, y: 0.5}");
+            Add("m_AnchoredPosition", "{x: 0, y: 0}");
+            Add("m_SizeDelta", "{x: 100, y: 100}");
+            Add("m_Pivot", "{x: 0.5, y: 0.5}");
+            return true;
+        }
+
         // ── Delete ────────────────────────────────────────────────────
 
         /// <summary>What a delete removed, and the references elsewhere in the file it had to clear.</summary>
@@ -366,7 +438,7 @@ namespace CosmicShore.Content.Editing
                         if (IsLocalRef(v, doomed))
                         {
                             report.Add($"{where}.{m.Entries[i].Key} -> &{Ref(v)}");
-                            m.Entries[i] = new KeyValuePair<string, YNode>(m.Entries[i].Key, YMap.Ref(0));
+                            m.SetAt(i, YMap.Ref(0));
                         }
                         else ClearRefs(v, doomed, $"{where}.{m.Entries[i].Key}", report);
                     }

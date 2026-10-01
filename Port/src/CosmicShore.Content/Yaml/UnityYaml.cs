@@ -149,6 +149,18 @@ namespace CosmicShore.Content.Yaml
             Add(key, value);
         }
 
+        /// <summary>
+        /// Replaces the value at <paramref name="index"/>. Write values through this (or
+        /// <see cref="Set"/>), never through <see cref="Entries"/>: a map of 8+ keys answers
+        /// lookups from an index, which a direct <c>Entries[i] = …</c> leaves pointing at the old value.
+        /// </summary>
+        public void SetAt(int index, YNode value)
+        {
+            var key = Entries[index].Key;
+            Entries[index] = new KeyValuePair<string, YNode>(key, value);
+            if (_index != null) _index[key] = value;
+        }
+
         public bool Remove(string key)
         {
             for (int i = 0; i < Entries.Count; i++)
