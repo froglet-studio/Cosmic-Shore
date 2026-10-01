@@ -500,9 +500,9 @@ ladder is modelled, not measured — `Docs/SWARM_FAUNA.md` §4).
 
 **Source:** branch `cece/swarm-fauna-game` (authored headless; never compiled in Unity). Full
 reference: `Docs/SWARM_FAUNA.md` §8, exact steps §5.1. **Why it matters:** a second simulation
-core (`SwarmGridCore`, the research's hgrid2 grid morphogen) now drives 16 of the Swarm cell's 24
-swarms (the inner whales and outer pufferfish); the middle dragonflies stay on the field core so
-the two can be compared in one flight. Headless proof: the core compiles, runs, and scores within
+core (`SwarmGridCore`, the research's hgrid2 grid morphogen) drives 8 of the Swarm cell's 24
+swarms (the inner whales); the middle dragonflies stay on the field core and the outer pufferfish
+moved to the third, sort core (`QA-SWARM-SORT`), so all three can be compared in one flight. Headless proof: the core compiles, runs, and scores within
 hgrid2's own range under the research's unchanged scorer; nothing about Unity is proven. Run
 `QA-SWARM-FAUNA` first (it covers import, the Cell Selector and the shared glue).
 
@@ -511,11 +511,11 @@ hgrid2's own range under the research's unchanged scorer; nothing about Unity is
    and the Grid model fields are populated; `Assets/_Prefabs/FloraAndFauna/SwarmGridFauna.prefab`'s
    `config` points at it.
 2. Enable the **Ecology** log channel. Enter the Swarm cell (Cell Selector → Swarm). Check the
-   hatch lines: whales and pufferfish say `(Grid)`, dragonflies `(Field)`.
-3. Fly inward from the membrane and park beside a grid pufferfish, then a field dragonfly (past
+   hatch lines: whales say `(Grid)`, dragonflies `(Field)`, pufferfish `(Sort)`.
+3. Fly inward from the membrane past the sort pufferfish, park beside a field dragonfly (past
    ~840 u from the centre), then a grid whale (past ~600 u). 20–30 s each.
-4. Morph a grid swarm: kill its majority in a burst (a pufferfish ~100 Charge; or wait until one
-   becomes something smaller). Then morph a field dragonfly (~36 Time).
+4. Morph a grid whale: kill its majority in a burst (~100 Mass). Then morph a field dragonfly
+   (~36 Time).
 5. Hover still beside a grazing grid whale for 30 s.
 6. Profiler: with the cell grown, record `SwarmFauna.Update` per frame and total frame time; note
    how many swarms are grown.
@@ -531,6 +531,48 @@ a grid swarm whose body rotates continuously while it grazes · a morph that fli
 a `NullReferenceException` from `SwarmGridCore`/`SwarmFauna` · grid tadpoles popping in or vanishing
 (they share the field swarm's bloom and wither — any pop is a glue bug) · a frame-time cost that
 makes the cell unplayable (record it; the dial is `SWARMS_PER_BAND` in `author_swarm_fauna.py`).
+
+### QA-SWARM-SORT ⬜ — the sort swarm (third swarm species) has never been opened
+
+**Source:** branch `cece/swarm-fauna-game` (authored headless; never compiled in Unity). Full
+reference: `Docs/SWARM_FAUNA.md` §9, exact steps §5.1. **Why it matters:** a third simulation core
+(`SwarmSortCore`, the research's emergent cell sorting) now drives the Swarm cell's 8 OUTER swarms
+(the pufferfish, 900–1120 u from the centre). It is the swarm with a LOSSLESS composition corrector:
+after a morph, members of the old majority MOLT into the new body's missing elements instead of
+lingering as debris (the grid swarm's known flaw) or dying. Headless proof: the core compiles, runs,
+scores at Python sort's own accuracy under the research's unchanged scorer, and never kills a
+member by itself; nothing about Unity is proven. Run `QA-SWARM-FAUNA` first.
+
+1. Let Unity import; confirm no compile errors naming `SwarmSortCore`, `SwarmCoreShared`,
+   `ISwarmCore` or `SwarmFauna`. Select `Assets/_SO_Assets/Swarm Fauna/SwarmSortFaunaConfig.asset`:
+   **Model = Sort** and the Sort model fields are populated;
+   `Assets/_Prefabs/FloraAndFauna/SwarmSortFauna.prefab`'s `config` points at it, and
+   `Swarm Outer Charge Swarm Fauna Config Data` points at that prefab.
+2. Enable the **Ecology** log channel. Enter the Swarm cell. The pufferfish hatch lines say `(Sort)`.
+3. From the Cell Selector (near the membrane) the first swarms you meet flying inward are the sort
+   pufferfish. Park beside one for 30 s while it grazes. Then fly on and park beside a field
+   dragonfly and a grid whale for comparison.
+4. Fly straight through a sort pufferfish without firing: members scatter, its Charge members puff
+   up and their plates turn danger.
+5. Morph a sort pufferfish: switch to a Sparrow (Vessel Changer) and kill ~95 of its Charge members
+   in a burst (it becomes a dragonfly). Watch the 30 s after the morph.
+6. Hover still beside a grazing sort swarm for 30 s.
+7. Profiler: `SwarmFauna.Update` for a grown sort pufferfish vs a grown grid whale; total frame time
+   with the cell grown.
+
+**PASS:** no compile errors; a sort pufferfish grows from a knot into a recognisable pufferfish
+whose ELEMENTS sit in clean tissues (the shielded/danger Charge plates on the shell, the other
+elements in their own patches) and whose body animates; newborns visibly swim across the body to
+their place; after the morph (step 5) the body re-forms as a dragonfly and surplus members visibly
+MOLT (heart shrinks away and re-forms as another element, over ~1 s) until the surplus is gone, with
+no member dying that you did not shoot; the body does not spin while it hovers (step 6); no
+exceptions. Record the frame cost (headless: ~0.13 ms/step for a pufferfish, ~1/8 of a grid whale)
+and the lead's verdict comparing all three models.
+**FAIL:** any compile error · a sort swarm that stays a formless knot after a minute of feeding ·
+members that freeze in place while the body moves · the old majority's surplus still clinging to the
+new body 30 s after a morph without molting · a member that dies with no shot fired and the swarm
+fed (a self-inflicted death - the model is meant to have none) · a morph that flips back · a
+`NullReferenceException` from `SwarmSortCore`/`SwarmFauna` · tadpoles popping in or out.
 
 ### QA-PALETTE-SHIELDED ⬜ — the four prism tiers across all three domains
 **Source:** PRs #644, #705 (danger prisms now paint on the domain's **shielded base

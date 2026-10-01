@@ -22,12 +22,16 @@ It ports the research "field" model (`Tools/NCA/` on `cece/gifted-curie-x2cpd0`,
 `field_swarm.py`) into the game, plus the three things the research did not have: laying that is
 **funded by eating**, **starvation**, and **swimming through a real cell**.
 
-**There are two species of swarm, on two simulation cores** (§8): the **field** swarm
-(`SwarmFieldCore`, designed attractor fields — every tadpole owns a slot) and the **grid** swarm
-(`SwarmGridCore`, the research's `hgrid2` grid morphogen — nothing assigns a tadpole a place; each
-reads only fields at its own position). One config field picks the core
-(`SwarmFaunaConfigSO.Model`), and the Swarm cell hosts both side by side so they can be compared in
-one session: **grid whales inside, field dragonflies in the middle, grid pufferfish outside**.
+**There are three species of swarm, on three simulation cores**: the **field** swarm
+(`SwarmFieldCore`, designed attractor fields — every tadpole owns a slot), the **grid** swarm
+(`SwarmGridCore`, §8, the research's `hgrid2` grid morphogen — nothing assigns a tadpole a place; each
+reads only fields at its own position) and the **sort** swarm (`SwarmSortCore`, §9, the research's
+emergent cell sorting — each tadpole commits to one positional-information well of its element,
+unlike elements repel harder than like ones, and a surplus member MOLTS into a missing element, so
+its composition corrector is lossless). One config field picks the core
+(`SwarmFaunaConfigSO.Model`), and the Swarm cell hosts all three side by side, one per band, so they
+can be compared in one session: **grid whales inside, field dragonflies in the middle, sort
+pufferfish outside**.
 
 ---
 
@@ -36,7 +40,7 @@ one session: **grid whales inside, field dragonflies in the middle, grid pufferf
 ```
 SwarmFauna (heartless population anchor, a Fauna — the worm-colony shape)
  ├─ ISwarmCore                what the glue drives; config.Model picks the implementation:
- ├─ SwarmFieldCore  | SwarmGridCore   pure C#, System.Numerics, SoA arrays — ALL behaviour
+ ├─ SwarmFieldCore | SwarmGridCore | SwarmSortCore   pure C#, System.Numerics, SoA arrays — ALL behaviour
  │    ├─ SwarmPlanData x4     baked body plans (8 frames of slot positions + facings)
  │    └─ SwarmFieldParams     every behaviour constant (research values + game additions)
  ├─ fixed-step clock          TickHz (10) steps/s, MaxStepsPerFrame (3), render interpolates
@@ -48,14 +52,15 @@ SwarmFauna (heartless population anchor, a Fauna — the worm-colony shape)
 |---|---|
 | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFieldCore.cs` | The FIELD simulation. No `UnityEngine` reference; compiled and RUN headless by `Tools/Build/swarm_core_harness`. Also holds the shared plan data (`SwarmPlanData`, `SwarmPlanJson`) and events. |
 | `.../Swarm/SwarmGridCore.cs` | The GRID simulation (research `hgrid2`, §8). Same constraints, same harness. |
-| `.../Swarm/ISwarmCore.cs` | The interface the glue drives, and `SwarmModel` (Field / Grid). |
+| `.../Swarm/SwarmSortCore.cs` | The SORT simulation (research `sort`, §9) and its plan code (`SwarmSortCode`). Same constraints, same harness. |
+| `.../Swarm/ISwarmCore.cs` | The interface the glue drives, `SwarmModel` (Field / Grid / Sort), and `SwarmCoreShared` - the vessel reaction and funded laying, written once for the grid and sort cores. |
 | `.../Swarm/SwarmFauna.cs` | The anchor. Owns the core, the clock, member spawn/pose, vessel sensing, feeding, starvation, extinction. |
 | `.../Swarm/SwarmTadpoleFauna.cs` | One member. Heart, body shape, tier (danger/shield), death paths. No `Update`. |
 | `.../Swarm/SwarmFaunaConfigSO.cs` | Every number, including `Model` and the grid model's parameters. One asset per MODEL serves every swarm of that model. |
 | `.../Swarm/SwarmPlanLibrary.cs` | Loads the four plan `TextAsset`s via `JsonUtility`, caches them. |
 | `Assets/_SO_Assets/Swarm Fauna/Plans/SwarmPlan_*.json` | The baked plans (`Tools/Build/swarm_plans.py`). Research units. |
-| `Assets/_SO_Assets/Swarm Fauna/SwarmFaunaConfig.asset`, `SwarmGridFaunaConfig.asset` | The two configs (`Model: 0` field, `Model: 1` grid); identical except the model. |
-| `Assets/_Prefabs/FloraAndFauna/SwarmFauna.prefab`, `SwarmGridFauna.prefab`, `SwarmTadpole.prefab` | The two anchors (one per config) + the shared member. The tadpole is derived from `TadPoleFauna.prefab` with its NetworkObject, NetworkTransform, FaunaNetworkSync, FMOD emitters and embedded crystal stripped. |
+| `Assets/_SO_Assets/Swarm Fauna/SwarmFaunaConfig.asset`, `SwarmGridFaunaConfig.asset`, `SwarmSortFaunaConfig.asset` | The three configs (`Model: 0` field, `1` grid, `2` sort); identical except the model. |
+| `Assets/_Prefabs/FloraAndFauna/SwarmFauna.prefab`, `SwarmGridFauna.prefab`, `SwarmSortFauna.prefab`, `SwarmTadpole.prefab` | The three anchors (one per config) + the shared member. The tadpole is derived from `TadPoleFauna.prefab` with its NetworkObject, NetworkTransform, FaunaNetworkSync, FMOD emitters and embedded crystal stripped. |
 | `Assets/_SO_Assets/Cell Configs/Swarm Cell/` | The cell, its spawn profile, three swarm fauna configs, three flora configs. |
 | `Tools/Build/author_swarm_fauna.py` | **Owns every asset above** (`--check`). Hand edits are drift. |
 
@@ -105,7 +110,7 @@ Events (`Laid`, `MoltBegan`, `MoltDone`, `Switched`) are the only things the glu
 | invariant | how this holds it |
 |---|---|
 | **Continuity of existence** | A newborn tadpole blooms from scale 0.001 over `BirthBloomSeconds`; a molting heart shrinks away and re-forms over `MoltHeartSeconds`; a body prism re-shape is a `ChangeSize()` grow on the prism clock; a dead member's husk shrinks out over 0.45 s; the body prism is left as a skeleton or suctioned into an eater. Nothing is `Destroy`ed while visible. |
-| **No imposed death** | No lifespan, no timer cull. (The GRID model's research rule withers misplaced surplus on a hunger clock; in the game hunger only picks the starvation victim — §8.3.) The only self-inflicted death is **starvation**: after `StarvationSeconds` (90) with no meal the swarm sheds one member every `ShedIntervalSeconds` (4), each withering to its crystal. Feeding resets the clock. An extinct anchor (no members, no heart, no body) removes itself after `ExtinctLingerSeconds` so the seeder can hatch a fresh swarm — extinction recovery, the same as every species. |
+| **No imposed death** | No lifespan, no timer cull. (The GRID model's research rule withers misplaced surplus on a hunger clock; in the game hunger only picks the starvation victim — §8.3. The SORT model has no death of its own at all: its surplus MOLTS — §9.3.) The only self-inflicted death is **starvation**: after `StarvationSeconds` (90) with no meal the swarm sheds one member every `ShedIntervalSeconds` (4), each withering to its crystal. Feeding resets the clock. An extinct anchor (no members, no heart, no body) removes itself after `ExtinctLingerSeconds` so the seeder can hatch a fresh swarm — extinction recovery, the same as every species. |
 | **One-colour spawning** | Every member wears the swarm's ONE domain (the cell's controlling colour, stamped on the anchor by the standard spawner). **Conservative choice, deliberately:** the research gives each slot a domain as well as an element; that was dropped. Elements vary within a swarm — elements are not domains — so "a creature made of four elements" is legal, but "a creature made of three teams" would be the cross-domain spawning the invariant forbids. The three swarms differ by starting ELEMENT MIX, not by colour. Revisit only with sign-off. |
 | **Shielded mass is never food** | Every bite routes through `Fauna.IsShieldedMass` and `IsPreyForMe`. Consequence worth knowing: **Charge flora are inedible** (Charge plant leaves are armoured, `Docs/ECOSYSTEM.md §35`), so the cell plants no Charge flora — it would be a feeding ground nothing can graze. |
 | **A creature dies when its last body prism is destroyed** | Each tadpole has exactly one body prism, so destroying it kills that tadpole through `Fauna.OnBodyPrismExploded` → sealed `Die`. The swarm itself is a population, not a creature. |
@@ -131,7 +136,10 @@ death, which no other species does — it is kept because it is what makes a mor
 re-arranging itself rather than a population replacing itself, and it is visibly animated. If it is
 judged to violate "a lifeform is its species and its element" (`ECOSYSTEM.md §40`), set
 `SettleSteps` to 0 and the swarm will morph by laying alone (slower, and the new body is mostly
-newborns).
+newborns). **The SORT swarm molts too, and ALWAYS (no settle window)** — its corrector is absolute
+rather than proportional, so it cannot molt a morph back (§9.3); the same §40 question applies to it,
+and its off-switch is `SortMoltRate` 0 (then it behaves like the grid swarm after a morph: the old
+majority's surplus lingers).
 
 ---
 
@@ -181,10 +189,14 @@ Selector** toy (a bare station: like Lattice and the Arboretum, a grown world ha
 |---|---|---|---|---|
 | inner 430–600 | **grid** | **whale** (Mass) | Arbor, Mass (48 / 100) | own element — grows fast, hardest to convert |
 | middle 660–840 | **field** | **dragonfly** (Time) | Spire, Space (64 / 140) | cross — grows at half rate, and Space food is the jellyfish's element |
-| outer 900–1120 | **grid** | **pufferfish** (Charge) | Frond, Time (80 / 160) | cross — grows at half rate |
+| outer 900–1120 | **sort** | **pufferfish** (Charge) | Frond, Time (80 / 160) | cross — grows at half rate |
 
-The models alternate by band so that a pilot flying outward meets grid, field, grid; the author
-script FAILS if the cell stops hosting both.
+One model per band, never mixed within one: every tadpole wears the cell's one colour (§2), so where
+a swarm swims is the only way a pilot can tell which model it runs. A pilot flying outward meets
+grid, field, sort. The author script FAILS if the cell stops hosting all three, or puts two models in
+one band. (The outer band was grid until the sort species landed; it moved to sort because the
+grid-vs-sort comparison is the interesting one — the same pufferfish, the same feeding ground, a
+lossy corrector against a lossless one — and it halves the grid CPU.)
 
 Bands are disjoint, so the three populations stay separated in the cytoplasm. Each band holds a
 SCHOOL of swarms: `InitialSpawnCount / PopulationSize / MaxLivePopulation = 8`; a new swarm
@@ -218,10 +230,22 @@ numbers drift further. **It is unprofiled.** The dials to bring it back, cheapes
 Realistic load is lower: a dragonfly is 76 and a jellyfish 88. The cell authors no environment
 prisms at all.
 
-**The grid model changes none of these numbers.** A grid swarm is the same population of the same
-tadpoles under the same 192 cap: one heart collider and one body prism per member, so a grid whale
-at full size is **192 hearts + 192 body prisms**, exactly like a field whale. What it adds is CPU
-and memory (§8.5).
+**Neither the grid nor the sort model changes these numbers.** Every swarm is the same population of
+the same tadpoles under the same 192 cap: one heart collider and one body prism per member, so a whale
+at full size is **192 hearts + 192 body prisms** on any core. The cell's swarm count is unchanged by
+the third species (still 3 bands x 8 = 24; sort took the outer band from grid). What the models
+differ in is CPU and memory:
+
+| | swarms | grown cost per step (CoreCLR) | CPU per second of game at 10 Hz |
+|---|---|---|---|
+| grid whales (inner) | 8 | ~1.0 ms | ~80 ms |
+| field dragonflies (middle) | 8 | ~0.1 ms | ~9 ms |
+| sort pufferfish (outer) | 8 | ~0.13 ms | ~11 ms |
+| **cell, as seeded** | 24 | | **~100 ms/s** (~1.7 ms per frame at 60 Hz) — was ~180 ms/s with 16 grid swarms |
+
+Worst case (every swarm morphed into a whale): grid 1.2 + field 0.9 + sort 0.16 ms/step x 8 x 10 Hz
+≈ 180 ms/s. Mono will be slower than CoreCLR — re-measure (`QA-SWARM-SORT` step 7). Memory: the sort
+code is a few KB per plan (wells + looks), cached and shared by every sort swarm.
 
 ---
 
@@ -259,14 +283,15 @@ and memory (§8.5).
 10. **Starvation (long):** a swarm that cannot reach food (e.g. after its plants are grazed out)
     begins shedding members after 90 s; each withers to a crystal and leaves its body prism.
 
-### 5.1 Comparing the field swarm and the grid swarm (exact)
+### 5.1 Comparing the three swarms (exact)
 
-The cell hosts both models (§4): the **inner** band (430–600 u from the centre) holds GRID whales,
-the **middle** band (660–840 u) FIELD dragonflies, the **outer** band (900–1120 u) GRID pufferfish.
-The Ecology log line names the model: `[Swarm] SwarmGridFauna(Clone) (Grid) hatched as mass …`.
+The cell hosts all three models (§4): the **inner** band (430–600 u from the centre) holds GRID
+whales, the **middle** band (660–840 u) FIELD dragonflies, the **outer** band (900–1120 u) SORT
+pufferfish. The Ecology log line names the model: `[Swarm] SwarmSortFauna(Clone) (Sort) hatched as
+charge …`.
 
 11. **Find one of each.** From the Cell Selector (near the membrane, ~980 u out) fly inward. The
-    first creatures you reach are grid pufferfish; keep going past ~840 u for the field dragonflies;
+    first creatures you reach are SORT pufferfish; keep going past ~840 u for the field dragonflies;
     past ~600 u for the grid whales. Park alongside one of each for 20–30 s.
 12. **What to look for — the grid's look.** A grid body is a *school that happens to be a whale*:
     it forms loosely from its knot and then sharpens; members jostle for places (two that want one
@@ -274,17 +299,27 @@ The Ecology log line names the model: `[Swarm] SwarmGridFauna(Clone) (Grid) hatc
     The field body is crisper: every tadpole sits on its slot, members move in near-lockstep, and
     when it is wrong it is wrong *mechanically* (a member stuck, a ripple of identical motion).
     Note which reads as alive at gameplay distance — that is the question the lead is answering.
-13. **Morph both.** Kill the majority of a field dragonfly (~36 Time) and of a grid pufferfish
-    (~100 Charge; or wait for a grid swarm to become a dragonfly first). The field swarm hesitates
+    **The sort look:** a body of clean TISSUES — each element packed in its own patches with sharp
+    borders (like cells push one another apart less than unlike cells), the pufferfish's shielded and
+    danger plates on its shell; it animates with its plan (each member rides its well); newborns
+    appear beside a parent and then visibly SWIM ACROSS the body to the place their fate names; a
+    wound refills from the inside out, because the next eggs are fated exactly to the holes.
+13. **Morph all three.** Kill the majority of a field dragonfly (~36 Time), of a grid whale
+    (~100 Mass) and of a sort pufferfish (~95 Charge → it becomes a dragonfly). The field swarm hesitates
     ~1.2 s (its `Dwell`), then swirls into the new body with members visibly MOLTING. The grid swarm
     commits on the kill that tips the majority (no dwell; a 3 s `GridPlanLock` stops it flickering
     back), never molts, and re-forms by members CLIMBING to where the new plan wants their element;
-    the surplus element drifts to the edges and stays (it is not killed — §8.3).
-14. **Fly through both** without firing. Both scatter the same way (the grid core reuses the field
-    core's vessel reaction), so any difference you see is the body, not the reaction.
-15. **Profiler:** `SwarmFauna.Update` for a grown grid whale vs a grown field dragonfly (headless
-    CoreCLR: ~1.2 ms vs ~0.1 ms per step; §8.5). With 16 grid swarms and 8 field swarms grown, record
-    the total frame time — this cell is the overtune pass and is unprofiled.
+    the surplus element drifts to the edges and stays (it is not killed — §8.3). The SORT swarm
+    hesitates ~1.2 s (its `SortDwell`), then the survivors re-sort into the new body while the old
+    majority's surplus MOLTS one by one (heart shrinks away, re-forms as the missing element, ~1 s
+    each) until the composition is right — the lossless corrector, the thing to compare against the
+    grid's lingering debris. Nothing dies that you did not shoot.
+14. **Fly through all three** without firing. All scatter the same way (the grid and sort cores share
+    the field core's vessel reaction, `SwarmCoreShared.FleeFrom`), so any difference you see is the
+    body, not the reaction.
+15. **Profiler:** `SwarmFauna.Update` for a grown grid whale, a field dragonfly and a sort pufferfish
+    (headless CoreCLR: ~1.0 / ~0.1 / ~0.13 ms per step; §4.1, §9.5). With the cell grown (8 swarms of
+    each), record the total frame time — this cell is the overtune pass and is unprofiled.
 
 ---
 
@@ -322,12 +357,26 @@ What was proved, and how:
   hgrid2 itself over 8 seeds — §8.5. Raw output: `Tools/Build/swarm_core_harness/score_grid_results.txt`.
 - The glue type-check now covers `ISwarmCore.cs` and `SwarmGridCore.cs` too (seven files).
 
+- **`SwarmSortCore.cs` is compiled and RUN** by the same harness (`SortHarness.cs`, S0–S10, all
+  green): the code builds for every plan; research-mode growth; game growth to ≥ 85% of every plan;
+  funded laying; selective-kill morphs on all four plans with one commit and molting always on; the
+  wounded-swarm lay hold; the lossless corrector (a dragonfly killed into a jellyfish UNFED corrects
+  its surplus by molting, headcount unchanged, every molt 10 steps long); **zero self-inflicted
+  deaths across every sort run in the harness**; vessel reaction; swimming with members on their
+  wells; station-keeping; band; cost.
+- **SwarmSortCore is scored with the research's UNCHANGED scorer** (`score_sort.py`) next to the
+  Python sort over 8 seeds — §9.5. Raw output: `Tools/Build/swarm_core_harness/score_sort_results.txt`.
+- The glue type-check covers `SwarmSortCore.cs` too (eight files). `author_swarm_fauna.py --check`
+  now also fails if a `SwarmFaunaConfigSO` sort default differs from the authored value
+  (negative-controlled).
+
 **NOT verified — needs the editor:** that it compiles in Unity; that the prefabs import and the
 tadpole's spindle/heart/prism hierarchy is right after the strip; everything on screen in §5; the
 modelled volume ladder; Mono frame cost; the Cell Selector station. Tracked as `QA-SWARM-FAUNA`
 in `Docs/QA/QA_BACKLOG.md`. For the grid model additionally: that a grid swarm reads as a creature
 on screen at all, its Mono frame cost with 16 grid swarms grown, and the side-by-side comparison
-(§5.1) — `QA-SWARM-GRID`.
+(§5.1) — `QA-SWARM-GRID`. For the sort model: that it reads as a creature with sorted tissues, that
+its molts read as re-forming rather than flicker, its Mono cost — `QA-SWARM-SORT`.
 
 ---
 
@@ -418,6 +467,52 @@ Things the game port taught, for whoever iterates the field model:
     run the coarse grid every other step.
 
 ---
+
+### 7.2 Findings from the sort species (emergent cell sorting in the game)
+
+20. **The port reproduces sort, a little better than the original.** Research mode under the unchanged
+    scorer, 8 seeds: own-plan means **1.43 / 2.44 / 1.01 / 4.00** (whale / jellyfish / pufferfish /
+    dragonfly) against Python sort's **1.57 / 2.70 / 1.12 / 4.72**; 32/32 pass both. The dynamics are a
+    line-by-line port; what differs is the WELL CODE — its k-means starts from `System.Random(1234)`
+    where Python's starts from `numpy.default_rng(1234)`, so the wells are a different (equally valid)
+    fit. The dragonfly varies most by seed in both (C# 3.0–5.7, Python 3.5–5.1). **For the research:**
+    the code's k-means start alone moves the score this much, so the code is a free variable worth
+    searching (several starts, keep the best), not a fixed input.
+21. **One region makes sort easier too (finding 15 again).** Against the one-domain plan the game
+    lands at **1.55 / 1.83 / 1.56 / 4.32**, 32/32. The jellyfish improves (2.44 → 1.83: no region term);
+    the pufferfish gets worse (1.01 → 1.56) because with one region its 131 Charge share ONE code of at
+    most 12 wells where the research split Charge across regions into up to 24. Code size is a
+    resolution dial: K = 24 with one well per 3 units takes the game to 1.25 / 1.40 / 0.84 / 3.52 — but
+    a finer code is closer to slots, i.e. more designed. The game ships the research's K = 12 / 4.
+22. **Continuous molting does NOT defeat morphing here — finding 3 was about the field model's RULE,
+    not about molting.** Sort calls a class surplus only above its plan COUNT (absolute), so killing a
+    majority creates deficits and never a surplus: there is nothing to molt back into the majority.
+    Harness S4: all four plans morph with one commit while molting runs every step. The field model
+    molts against a PROPORTIONAL surplus, which is what turned its minority into the majority.
+23. **The lossless corrector works with no food at all.** A dragonfly killed into a jellyfish, unfed:
+    the ~10 Time members over the jellyfish's count molt into Space and Charge (10 steps each) until the
+    surplus is 0; headcount unchanged (S5). This is the game-legal composition corrector hgrid2 needed a
+    hunger cull for (finding 17): **sort is the only model of the three that is accurate, lossless AND
+    has no imposed death.**
+24. **The code rides the body.** Read in the body frame (centroid + heading + inflation) and fed the
+    well's own animation, members stay on their wells while the body swims and turns (median distance
+    to their well 3.12 voxels at rest, 3.13 worst while swimming a 90° turn — S8). A well being a FIXED
+    SET OF PLAN UNITS is what makes this free: its centre in any frame is theirs, so the code animates
+    with no new fitting. The research's code is frame 0 only; this is the cheapest way to give it motion.
+25. **Feel: the motion layer made it a machine, a little noise made it alive, and one flaw is the
+    model's own.** With the research's settings plus animation, the game body moved in lock-step —
+    coherence 0.84, jerk_rel 0.18 (under the organic floor 0.2) and 8% `stuck` (all of it the
+    jellyfish's still tentacle wells while the bell pulses): members ride their wells like slots. The
+    grid core's per-step noise (0.1 voxels) fixes all three (0.56 / 0.63 / 0.000) for ~0.1 of loss. What
+    is left outside the organic band is PLANARITY: sort packs flatter than its plan — planar excess
+    **0.28** in the game, **0.16** C# research, **0.26** Python sort — so it is the model, not the port:
+    all-repulsive adhesion inside Gaussian wells lays members in sheets. The grid core is the only model
+    inside the band. Widening the wells (`cov_scale` 1.3) takes it to 0.20. **For the research:** a
+    planarity term in the next search.
+26. **Cost: the cheapest model of the three, by far.** 0.05–0.16 ms/step grown (pufferfish 0.13, whale
+    0.16) against the grid's 0.5–1.1, the field's 0.1–0.9 and Python sort's 1.4–4.1. The work is per
+    MEMBER (one 3x3 well evaluation + a neighbour pass over a hash grid) with no grid and no
+    assignment. Measured ZERO self-inflicted deaths over every C# run (64 scored runs + the harness).
 
 ## 8. The second species: the grid swarm (`SwarmGridCore`, research `hgrid2`)
 
@@ -558,3 +653,138 @@ the band.
 | `Tools/Build/swarm_core_harness/GridHarness.cs` | the asserted tests + the state export |
 | `Tools/Build/swarm_core_harness/score_grid.py` | the unchanged-scorer comparison (needs torch; reads the research code off its branch) |
 | `Tools/Build/swarm_plans.py` | now also bakes each unit's slot and every frame's prism / tier / spindle (the grid's coarse field rasterises them) |
+
+---
+
+## 9. The third species: the sort swarm (`SwarmSortCore`, research `sort`)
+
+The lead on the two before it: the field model's transitions are fun but *"it has lost too much
+organic imperfection; its mistakes feel like bugs, not emergence"*; the grid model is accurate and
+organic, but its composition corrector had to be switched off in the game (no imposed death), so after
+a morph the old majority's surplus clings to the new body as debris (finding 17). The research's
+`sort` direction (emergent cell sorting) passed tier 1 at the loss-8 bar on every seed tried, and its
+corrector is **lossless by design**: a surplus member MOLTS into a missing element of its own region,
+a member with no region may TRANSFER, and nothing dies on a clock. Its own recommendation was to put
+its fate-committed positional code under the field model's motion layer — which the game already has.
+
+### 9.1 How it differs from the other two
+
+| | field | grid | **sort** |
+|---|---|---|---|
+| where a tadpole goes | a slot the swarm assigns it | nowhere: it climbs its class's deficit field | the ONE well of its type it committed to at birth (its FATE: the well its type under-occupied then) |
+| what it reads | its slot | fields at its own position | its well (positional information, in body coordinates) + its neighbours' TYPES (differential adhesion) |
+| shape control | arrive + boids | a 16³ deficit grid + a fine per-class morphogen | Gaussian wells (≤ 12 per element, ≤ 1 per 4 units) + collision + adhesion (unlike types repel harder) + Potts swaps |
+| composition | lays toward the plan; molts in a settle window | lays into deficits; never molts; surplus lingers | a joint homeostat lays; surplus MOLTS, always (absolute counts — §9.3) |
+| plan switch | dwell 12, then a swirl morph | commits on the tipping kill, 3 s lock | dwell 12, then the survivors re-sort and the surplus molts |
+| imperfection | rare and mechanical | constant and local (members jostle for sites) | tissues with sharp borders; members migrate across the body to their wells |
+| cost (grown, CoreCLR) | 0.1–0.9 ms/step | 0.5–1.1 | **0.05–0.16** |
+
+Shared and unchanged: funded laying, the stomach, feeding, starvation (the host's decision), swimming
+in a band, the vessel reaction (now one copy, `SwarmCoreShared`), the kill path, hearts, crystals,
+continuity of existence, the glue, the member prefab.
+
+### 9.2 One step
+
+1. **Plan** — the hatched majority names the plan; a new majority must lead `SortDwell` (12) steps,
+   contested meanwhile (no laying, no molting); commit emits `Switched`.
+2. **Regions** — (research only) the swarm re-picks the domain → region map from its census every 10
+   steps. The game has one region.
+3. **Hatching** — an egg hatches after 3 steps.
+4. **Fate** — a member whose fate is stale (newborn, just molted, new plan, new region) commits to the
+   well of its type with the largest `w·n − occupied` (+ a 1e-3 tie-break).
+5. **Positional information** — the member climbs its fated well's log-density (`−k_well · Σ⁻¹(x − μ)`,
+   capped at `well_clip`), read in BODY coordinates: centred on the swarm's centroid, yawed onto the
+   heading, scaled by the pufferfish's inflation, the well riding the plan's animation (game). An orphan
+   (a type the plan has no wells for) climbs the best mixture of the whole body.
+6. **Neighbours** — collision under `R0`; differential adhesion inside `RAdh` (same type −0.050, same
+   element other region −0.037, same region other element −0.027, neither −0.064: all repulsive,
+   unlike harder); Potts swaps for touching pairs that would each sit better in the other's spot.
+7. **Move** — the vessel reaction (startle damps the well pull, raises the top speed, adds the flee),
+   the game's noise, inertia 0.69, the element's top speed. Then the body swims (game), the membrane.
+8. **Molts in progress** advance (game: 10 steps; the glue animates the heart re-forming).
+9. **Composition** (unless contested) — the homeostat lays (funded, held while wounded), then a
+   surplus member may begin a molt.
+
+### 9.3 Molting, and why it is always on here
+
+A member of a SURPLUS class — more of its element (in its region) than the plan's COUNT — re-forms its
+crystal into the least-filled element of its region, at `SortMoltRate` (0.03 per member per step); if
+its region has no deficit it may TRANSFER to the neediest region (research; the game's one region makes
+transfer inert). No molt may let a non-majority element tie the majority. The field core had to
+confine molting to a settle window after a morph (finding 3) because its surplus is PROPORTIONAL: kill a
+whale's Mass and every other element becomes "too many" in proportion and molts into Mass, so the body
+shrinks instead of morphing. Sort's surplus is ABSOLUTE, so a kill campaign creates only deficits and
+nothing can molt back into the majority (harness S4: all four plans morph, one commit each, molting
+on). Molting therefore runs at all times, and what it buys is the thing the grid swarm lacks: after a
+morph the old majority's leftovers become the new body's missing parts (finding 23) — accurate,
+lossless, no imposed death.
+
+Molting is still the relaxed constraint flagged in §2 (a lifeform changing its element without a
+death). It animates — `MoltBegan` → the heart shrinks away over `MoltHeartSeconds`, re-forms as the
+new element, grows back; the body prism re-forms — and while it runs the member already steers and
+counts as what it is becoming. Off-switch: `SortMoltRate` 0.
+
+### 9.4 What the game changes in sort, and why
+
+| | research | game | why |
+|---|---|---|---|
+| regions | three domains → regions | ONE region; a type is an element | one-colour fauna law (§2) |
+| laying | free | funded (`SwarmCoreShared.TryFund`) + `SortLayMax` 5 + the wounded-swarm hold | mass is conserved; a morph must stay reachable against a fed swarm (S4b) |
+| molt | instant | 10 steps, animated (`MoltBegan`/`MoltDone`) | continuity of existence |
+| the code's frame | world axes, frame 0 | the body frame (centroid, heading, inflation); each well rides the plan's animation (`SortFramePeriod`), with feed-forward 1 | the creature swims nose-first and animates (finding 24) |
+| look | the type's mean (`well_look` 0) | each member wears its fated WELL's look (`well_look` 1) | the jellyfish's shielded bell and the pufferfish's spines sit where the plan puts them |
+| noise | 0 | 0.1 voxels/step | without it members ride their wells like slots (finding 25) |
+| goal | — | far: swim nose-first; within 1.5 radii: hold heading, station-keep | finding 13 |
+| seed | 16 in a knot | `SeedMembers` (96) in a knot | the overtune pass |
+| capacity | 280 | 192 | the collider budget is stated per member |
+| vessel reaction | a simple flee (look) | the field core's predator layer | so a comparison compares bodies, not reactions |
+
+### 9.5 Proof
+
+**Accuracy** — `python3 Tools/Build/swarm_core_harness/score_sort.py --seeds 7,23,41,108,209,310,411,512`
+(the shipped C# compiled, run, its exported states scored by the research's unchanged
+`swarm_nca.swarm_loss`, default `LossCfg`; bar 8). Own-plan loss, mean over the 8 seeds:
+
+| | whale | jellyfish | pufferfish | dragonfly | pass | ms/step grown |
+|---|---|---|---|---|---|---|
+| **Python sort** (reference, same seeds) | 1.57 | 2.70 | 1.12 | 4.72 | 32/32 | 1.4–4.1 |
+| **C# sort, research mode** (the port check) | 1.43 | 2.44 | 1.01 | 4.00 | 32/32 | 0.03–0.13 |
+| **C# sort, game mode** (what ships; one-domain plan) | 1.55 | 1.83 | 1.56 | 4.32 | 32/32 | 0.05–0.16 |
+| C# grid, game mode (for comparison) | 5.14 | 1.59 | 3.35 | 3.87 | 32/32 | 0.54–1.06 |
+
+**Feel** (`swarm_feel.metrics`, 64-step window of each grown body, mean over plans and seeds; ORGANIC
+= the research's calibrated band `swarm_feel.BAND`):
+
+| | speed | jerk_rel | planar excess | coherence | jitter | phase | stuck | osc | band |
+|---|---|---|---|---|---|---|---|---|---|
+| Python sort | 0.020 | 0.899 | 0.262 | 0.687 | 0.675 | 0.090 | 0.000 | 0.035 | out (planar) |
+| C# sort, research | 0.019 | 0.799 | 0.160 | 0.761 | 0.637 | 0.113 | 0.000 | 0.016 | out (planar) |
+| **C# sort, game** | 0.192 | 0.633 | 0.278 | 0.555 | 0.846 | 0.809 | 0.000 | 0.016 | out (planar) |
+| C# grid, game | 0.209 | 0.572 | 0.000 | 0.574 | 1.023 | 0.546 | 0.000 | 0.031 | **ORGANIC** |
+| C# field, game | 0.404 | 0.130 | 0.034 | 0.776 | 0.656 | 0.777 | 0.094 | 0.028 | out (jerk_rel, stuck) |
+
+**Lossless** — zero members vanished without being killed in all 64 scored C# runs (32 research, 32
+game) and across every sort test in the harness (S6 counts it the way `Tools/NCA/scorecard.py` does);
+Python sort's own scorecard: 0 deaths.
+
+**Colliders at full size:** unchanged — one heart collider and one body prism per member, cap 192;
+the cell's ceiling is the same 5,008 always-on hearts (§4.1). **CPU:** §4.1's table.
+
+**Asserted** (harness S0–S10, all green): the code builds for every plan; research growth; game growth
+to ≥ 85% of every plan with its own majority; an unfed swarm lays nothing and a meal lays at most what
+it pays for; selective kills morph all four plans with ONE commit (molting on); a fed swarm under a kill
+burst morphs only with the lay hold; the lossless corrector (S5); zero self-inflicted deaths (S6); the
+pufferfish's threat rises; swimming to a target with members on their wells; station-keeping (< 5° a
+minute); the band.
+
+### 9.6 Files
+
+| file | role |
+|---|---|
+| `Assets/.../Swarm/SwarmSortCore.cs` | the core, `SwarmSortParams`, `SwarmSortCode` (the wells and looks, built once per plan and shared) |
+| `Assets/.../Swarm/ISwarmCore.cs` | `SwarmModel.Sort`; `SwarmCoreShared` (vessel reaction, funded laying) |
+| `Assets/_SO_Assets/Swarm Fauna/SwarmSortFaunaConfig.asset` | `Model: 2` + the sort parameters (every config carries them) |
+| `Assets/_Prefabs/FloraAndFauna/SwarmSortFauna.prefab` | the sort anchor (references the sort config) |
+| `Tools/Build/swarm_core_harness/SortHarness.cs` | the asserted tests (S0–S10) + the state export |
+| `Tools/Build/swarm_core_harness/score_sort.py` | the unchanged-scorer comparison with the Python sort, the grid and field feel, the lossless count (needs torch, numpy, scipy; reads the research code off its branch) |
+| `Tools/Build/swarm_core_harness/score_sort_results.txt` | the raw 8-seed output behind §9.5 |
