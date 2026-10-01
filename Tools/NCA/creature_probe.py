@@ -208,11 +208,11 @@ def run(seed=5, steps=240, cfg=None, kinds=sn.KINDS, log=print, body="evo"):
 
 
 @torch.no_grad()
-def run_kind(k, seed=5, steps=240, cfg=None, body="evo"):
+def run_kind(k, seed=5, steps=240, cfg=None, body_kind="evo"):
     import copy
     T = sn.load_targets(); L = sn.LossCfg()
     if True:
-        model = make_model(body, cfg)
+        model = make_model(body_kind, cfg)
         gen = sn.make_gen(seed)
         sw = sn.seed_swarm([T[k]], model.world, gen)
         for _ in range(steps):
@@ -232,7 +232,8 @@ def run_kind(k, seed=5, steps=240, cfg=None, body="evo"):
                 r, _ = encounter(model, sw, g2, k, path, nsteps, kill=kill, T=T, L=L)
                 model._st = state
                 if mem is not None:
-                    model.mem = mem                res[f"{name}{'' if react else '_inert'}"] = r
+                    model.mem = mem
+                res[f"{name}{'' if react else '_inert'}"] = r
             model.react = True; model.shell = True
     return res
 

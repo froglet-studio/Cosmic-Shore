@@ -271,6 +271,7 @@ class CreatureRule(em.EvoRule):
                     eg = torch.tensor(c["escort"])[maj] * (1 - dist_c / (c["escort_r"] * rmsb)).clamp(0, 1) * (heading_in < 0.3).float()
                     sw.pos = sw.pos + (eg[:, None, None] * pv) * alf[..., None]
                     st["escort"] = eg
+                    st["drift"] = st.get("drift", torch.zeros(B, 3)) + eg[:, None] * pv[None]   # a body with a frame (field's anchor) moves it too
                 bodyjet = -tsn[:, None] * c["body_jet"] * jet_on[..., None]
                 bell = -c["bell"] * 0.1 * rel * jet_on[..., None]
                 react = react + jelly * thr * (bodyjet + bell)

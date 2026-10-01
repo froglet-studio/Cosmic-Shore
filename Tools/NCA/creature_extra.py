@@ -63,18 +63,28 @@ def switch_trace(seed=7, steps=240, after=240, L=None):
 
 
 @torch.no_grad()
-def escort(seed=5, steps=240):
+def _make(body_kind):
+    if body_kind == "field":
+        import creature_field as cf
+        return cf.CreatureField()
+    return cm.CreatureRule()
+
+
+def escort(seed=5, steps=240, body_kind="evo"):
+    import copy
     T = sn.load_targets()
     out = {}
     for k in sn.KINDS:
-        m = cm.CreatureRule()
+        m = _make(body_kind)
         gen = sn.make_gen(seed)
         sw = sn.seed_swarm([T[k]], m.world, gen)
         for _ in range(steps):
             sw = m(sw, gen)
         res = {}
         for on in (True, False):
-            mm = cm.CreatureRule(); mm._st = {kk: (v.clone() if torch.is_tensor(v) else [list(x) for x in v]) for kk, v in m._st.items()}
+            mm = _make(body_kind); mm._st = copy.deepcopy(m._st)
+            if hasattr(m, "mem"):
+                mm.mem = copy.deepcopy(m.mem)
             mm.shell = on
             s2 = sw.clone(); g2 = sn.make_gen(seed + 9)
             _, c0, rms = cp.body(s2)
@@ -96,8 +106,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="")
     ap.add_argument("--gradual", action="store_true")
+    ap.add_argument("--field-escort", action="store_true")
     a = ap.parse_args()
     if a.gradual:
+        return
+    if "--field-escort" in sys.argv:
+        json.dump(escort(body_kind="field"), open(os.path.join(HERE, "runs", "creature", "field_escort.json"), "w"), indent=1)
         return
     torch.set_num_threads(4)
     res = dict(escort=escort(), switch=switch_trace())

@@ -32,7 +32,7 @@ class CreatureField(fs.FieldSwarm):
 
     def __init__(self, **shell):
         super().__init__(field_cfg())
-        self.shell_cfg = dict(cm.DEFAULTS); self.shell_cfg["wounds"] = 0; self.shell_cfg.update(shell)
+        self.shell_cfg = dict(cm.DEFAULTS); self.shell_cfg.update(wounds=0, native=1); self.shell_cfg.update(shell)
         self.vessels = []
         self.react = True
         self.shell = True
@@ -40,8 +40,11 @@ class CreatureField(fs.FieldSwarm):
         self._rng = torch.Generator().manual_seed(1234)
 
     def __call__(self, sw, gen=None, **kw):
-        self.predators = []
-        if not self.shell:
+        # native=1: ALSO hand the ship to field's own predator response (which can calm the body's homing -
+        # the one thing an external shell cannot do); native_only=1: field round 1 exactly, no shell
+        nat = self.shell_cfg.get("native", 0) or self.shell_cfg.get("native_only", 0)
+        self.predators = list(self.vessels) if (self.shell and self.react and nat) else []
+        if not self.shell or self.shell_cfg.get("native_only", 0):
             return super().__call__(sw, gen, **kw)
         with torch.no_grad():
             self._reset_shell(sw)
@@ -49,7 +52,11 @@ class CreatureField(fs.FieldSwarm):
             st["off"][~sw.active] = 0
             st["startle"][~sw.active] = 0
             out = super().__call__(sw, gen, **kw)
+            st["drift"] = torch.zeros(out.B, 3)
             self._shell(out, gen)
+            for b in range(out.B):                       # translation the shell applied (escort) moves the body frame
+                if b in self.mem and bool(st["drift"][b].abs().sum() > 0):
+                    self.mem[b]["anchor"] = (self.mem[b]["anchor"] + st["drift"][b].numpy()).astype(np.float32)
             st["alive"] = (out.active & out.hatched).clone()
             st["last"] = out.pos.clone()
             st["t"] += 1

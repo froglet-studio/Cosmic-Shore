@@ -46,9 +46,13 @@ def body(sw):
 
 
 @torch.no_grad()
-def life(kind, cfg=None, seed=3):
+def life(kind, cfg=None, seed=3, body_kind="evo"):
     T = sn.load_targets()
-    model = cm.CreatureRule(**(cfg or {}))
+    if body_kind == "field":
+        import creature_field as cf
+        model = cf.CreatureField(**(cfg or {}))
+    else:
+        model = cm.CreatureRule(**(cfg or {}))
     gen = sn.make_gen(seed)
     sw = sn.seed_swarm([T[kind]], model.world, gen)
     units, ns, show, vessel, flags, events, crystals = [], [], [], [], [], [], []
@@ -207,16 +211,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--set", action="append", default=[])
     ap.add_argument("--seed", type=int, default=3)
+    ap.add_argument("--body", default="evo", choices=["evo", "field"])
     a = ap.parse_args()
+    suf = "" if a.body == "evo" else "_" + a.body
     torch.set_num_threads(4)
     cfg = {kv.split("=", 1)[0]: json.loads(kv.split("=", 1)[1]) for kv in a.set}
     os.makedirs(OUT, exist_ok=True)
     data = {}
     for k in sn.KINDS:
-        data[k] = life(k, cfg, a.seed)
+        data[k] = life(k, cfg, a.seed, a.body)
         print(k, data[k]["frames"].shape, "collected", data[k]["collected"], data[k]["events"][-1][1], flush=True)
     packed = pack_extra(data)
-    json.dump(packed, open(os.path.join(OUT, "rollout.json"), "w"))
+    json.dump(packed, open(os.path.join(OUT, f"rollout{suf}.json"), "w"))
     page = open(os.path.join(HERE, "creature_showcase.html.tpl")).read()
     payload = {}
     for k in sn.KINDS:
@@ -226,7 +232,7 @@ def main():
         payload[k].update(shape=list(a.shape), b64=base64.b64encode(np.ascontiguousarray(a).tobytes()).decode())
     for k in sn.KINDS:
         payload[k]["name"] = NAMES[k]
-    open(os.path.join(OUT, "showcase.html"), "w").write(page.replace("/*DATA*/", json.dumps(payload)).replace("/*SCALE*/", json.dumps(packed["scale"])))
+    open(os.path.join(OUT, f"showcase{suf}.html"), "w").write(page.replace("/*DATA*/", json.dumps(payload)).replace("/*SCALE*/", json.dumps(packed["scale"])))
     print("wrote", OUT)
 
 
