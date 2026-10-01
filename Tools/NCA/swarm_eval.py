@@ -222,6 +222,9 @@ def load_model(spec):
     if kind == "evo":
         import numpy as np, evo_model as em
         return em.EvoRule(np.load(path))
+    if kind == "ensemble":
+        import ensemble_swarm as es
+        return es.load(path)
     if kind == "evo_compact":
         import numpy as np, evo_compact as ec
         return ec.CompactRule(np.load(path))
