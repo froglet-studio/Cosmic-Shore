@@ -66,6 +66,8 @@ class MetaWorld(World):
     meta_steps: int = 12       # K: steps a metamorphosis takes
     meta_slow: float = 0.75    # speed multiplier while metamorphosing: 1 - slow * progress
     meta_cap: float = 0.08     # at most this share of a swarm's live tadpoles metamorphose at once
+    meta_conform: float = 0.0  # prior on the metamorph target: + conform * log(share of that element in the swarm),
+                               # i.e. a metamorph leans toward joining the majority (the learned PREF can override)
 
 
 def widen(sw: Swarm) -> Swarm:
@@ -199,6 +201,12 @@ class MetaRule(sn.SwarmRule):
         drive = s[:, DRIVE]
         q = W.p_meta * torch.sigmoid(W.meta_gain * drive + W.meta_bias)
         logits = s[:, PREF] - 1e4 * F.one_hot(e_flat, 4).to(s.dtype)       # never "into" its own element
+        if W.meta_conform:
+            with torch.no_grad():
+                lf = live.view(B, N).float()
+                mix = (lf[:, :, None] * F.one_hot(e_flat.view(B, N), 4).float()).sum(1) / lf.sum(1, keepdim=True).clamp(min=1)
+                prior = W.meta_conform * torch.log(mix + 0.02)
+            logits = logits + prior[:, None, :].expand(B, N, 4).reshape(n, 4)
         pe = torch.softmax(logits, -1)
         with torch.no_grad():
             cap = (W.meta_cap * live.view(B, N).sum(1).float()).floor()
@@ -299,6 +307,7 @@ class MetaCfg:
     meta_bias: float = -4.0
     meta_steps: int = 12
     meta_cap: float = 0.08
+    meta_conform: float = 0.0
     learned_egg: int = 1
     p_cross: float = 0.1
 
@@ -306,7 +315,7 @@ class MetaCfg:
 def train(cfg: MetaCfg, resume=True, on_snapshot=None):
     os.makedirs(cfg.run, exist_ok=True)
     world = MetaWorld(learned_lay=1, learned_egg=cfg.learned_egg, p_cross=cfg.p_cross, p_meta=cfg.p_meta,
-                      meta_bias=cfg.meta_bias, meta_steps=cfg.meta_steps, meta_cap=cfg.meta_cap)
+                      meta_bias=cfg.meta_bias, meta_steps=cfg.meta_steps, meta_cap=cfg.meta_cap, meta_conform=cfg.meta_conform)
     L = LossCfg(w_over=1.0, min_body=76, w_body=20)                    # G2's loss
     targets = load_targets()
     torch.manual_seed(cfg.seed)
