@@ -8,8 +8,8 @@
     "time": 78.1
    },
    "n": 280,
-   "rate": 1.0,
-   "ok": true
+   "rate": 0.0,
+   "ok": false
   },
   "space": {
    "cross": {
@@ -19,8 +19,8 @@
     "time": 71.57
    },
    "n": 280,
-   "rate": 1.0,
-   "ok": true
+   "rate": 0.0,
+   "ok": false
   },
   "charge": {
    "cross": {
@@ -30,8 +30,8 @@
     "time": 70.75
    },
    "n": 280,
-   "rate": 1.0,
-   "ok": true
+   "rate": 0.0,
+   "ok": false
   },
   "time": {
    "cross": {
@@ -41,8 +41,8 @@
     "time": 23.46
    },
    "n": 280,
-   "rate": 1.0,
-   "ok": true
+   "rate": 0.0,
+   "ok": false
   }
  },
  "switch": {
@@ -102,7 +102,7 @@
     "time": 51.27
    },
    "n": 280,
-   "rate": 0.33,
+   "rate": 0.0,
    "ok": false,
    "majority": [
     "time",
@@ -150,8 +150,8 @@
     "time": 62.64
    },
    "n": 280,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "mass",
     "mass"
@@ -181,8 +181,8 @@
     "time": 60.75
    },
    "n": 280,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "mass",
     "charge",
@@ -245,11 +245,12 @@
  ],
  "na": [],
  "samples": 3,
- "passed": 6,
+ "max_loss": 8.0,
+ "passed": 0,
  "feasible": 16,
- "own_passed": 4,
+ "own_passed": 0,
  "std_passed": 0,
- "rest_passed": 2,
+ "rest_passed": 0,
  "complete": true,
- "seconds": 106.2
+ "seconds": 111.1
 }

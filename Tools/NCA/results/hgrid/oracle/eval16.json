@@ -8,8 +8,8 @@
     "time": 71.35
    },
    "n": 195,
-   "rate": 1.0,
-   "ok": true
+   "rate": 0.33,
+   "ok": false
   },
   "space": {
    "cross": {
@@ -19,7 +19,7 @@
     "time": 70.63
    },
    "n": 94,
-   "rate": 1.0,
+   "rate": 0.67,
    "ok": true
   },
   "charge": {
@@ -30,8 +30,8 @@
     "time": 76.85
    },
    "n": 184,
-   "rate": 1.0,
-   "ok": true
+   "rate": 0.33,
+   "ok": false
   },
   "time": {
    "cross": {
@@ -41,8 +41,8 @@
     "time": 17.36
    },
    "n": 80,
-   "rate": 1.0,
-   "ok": true
+   "rate": 0.0,
+   "ok": false
   }
  },
  "switch": {
@@ -54,8 +54,8 @@
     "time": 70.8
    },
    "n": 94,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "space",
     "space",
@@ -70,8 +70,8 @@
     "time": 77.49
    },
    "n": 181,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "charge",
     "charge",
@@ -86,8 +86,8 @@
     "time": 19.57
    },
    "n": 73,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "time",
     "time",
@@ -102,7 +102,7 @@
     "time": 71.17
    },
    "n": 125,
-   "rate": 0.33,
+   "rate": 0.0,
    "ok": false,
    "majority": [
     "space",
@@ -118,8 +118,8 @@
     "time": 78.11
    },
    "n": 182,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "charge",
     "charge",
@@ -134,8 +134,8 @@
     "time": 17.48
    },
    "n": 73,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "time",
     "time",
@@ -150,8 +150,8 @@
     "time": 70.06
    },
    "n": 196,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "mass",
     "mass"
@@ -165,8 +165,8 @@
     "time": 18.92
    },
    "n": 72,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "time",
     "time",
@@ -181,7 +181,7 @@
     "time": 76.14
    },
    "n": 153,
-   "rate": 0.33,
+   "rate": 0.0,
    "ok": false,
    "majority": [
     "charge",
@@ -197,7 +197,7 @@
     "time": 72.72
    },
    "n": 124,
-   "rate": 0.33,
+   "rate": 0.0,
    "ok": false,
    "majority": [
     "charge",
@@ -213,8 +213,8 @@
     "time": 70.59
    },
    "n": 97,
-   "rate": 1.0,
-   "ok": true,
+   "rate": 0.0,
+   "ok": false,
    "majority": [
     "space",
     "space",
@@ -231,11 +231,12 @@
   "charge->mass"
  ],
  "samples": 3,
- "passed": 12,
+ "max_loss": 8.0,
+ "passed": 1,
  "feasible": 15,
- "own_passed": 4,
- "std_passed": 3,
- "rest_passed": 5,
+ "own_passed": 1,
+ "std_passed": 0,
+ "rest_passed": 0,
  "complete": true,
- "seconds": 403.3
+ "seconds": 830.2
 }
