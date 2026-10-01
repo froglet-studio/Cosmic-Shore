@@ -619,6 +619,22 @@ closest to the wanted plan. The GPU job's publisher and the viewer's ranking bot
 | f7 | all four |
 | e8 (local) | sticky labels + scale-invariant loss |
 
+**First clean result: E8 at step 1000 passes 5 of 8 tests** (try6 baseline: 4 of 8).
+
+- **Own plan, 4 of 4.** Each seeding grows closest to its own plan.
+- **Shape now decides, not just the element mix.** In the geometry-only table (element and domain
+  costs zeroed), every seeding is also closest to its own plan: 4.8 / 5.7 / 6.7 / 8.8 against 9–30
+  off-diagonal.
+- **First switch.** The dragonfly that loses its Time majority ends closest to the whale (41.5
+  against 52.9–63.8).
+- **The other three switches fail on composition, not shape.** The evaluation's cull leaves the new
+  majority barely ahead, and laying is element-blind, so after 240 more steps the majority has
+  drifted: whale → dragonfly instead of jellyfish, a 128 vs 126 tie for the jellyfish, pufferfish →
+  dragonfly as intended but still pufferfish-shaped. Composition control is what the learned laying
+  gate (f2, f5) is for.
+
+The divergences are scale-invariant, so they are not on try6's scale; compare runs by tests passed.
+
 **E4 diverged, and the logs said why.** Its loss rose from about 100 to 450. The contrastive hinge
 (0–11) and the mix error (0.00–0.42) stayed small; the divergence itself grew to 50–97, with every
 sample at the 280-slot cap. Grown swarms run 200–280 tadpoles against plans of 76–192, and
