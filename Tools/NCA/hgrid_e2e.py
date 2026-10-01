@@ -150,7 +150,7 @@ def make(rule_path="results/swarm_coevo_g2/rule.pt", cfg=None):
 
 # ------------------------------------------------------------------ train ---
 
-def train(run, hours, init, cfg_b: hb.BoidCfg, lr=3e-4, per_kind=2, pool=12, bptt=24, roll_min=48, roll_max=80,
+def train(run, hours, init, cfg_b: hb.BoidCfg, lr=1.5e-4, per_kind=2, pool=12, bptt=24, roll_min=48, roll_max=80,
           p_switch=0.3, seed=0, eval_every=150):
     import hgrid_eval
     os.makedirs(run, exist_ok=True)
