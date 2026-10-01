@@ -545,12 +545,14 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        readonly int[] _want = new int[4], _have = new int[4];
+
         void Lay(SwarmPlanData plan)
         {
             int n = 0; for (int i = 0; i < Cap; i++) if (Alive[i]) n++;
             if (n >= plan.N || n == 0) return;
             int k = Math.Min(C.LayMax, Math.Min(plan.N - n, Math.Max(1, (int)MathF.Ceiling(C.LayRate * n))));
-            var want = new int[4]; var have = new int[4];
+            var want = _want; var have = _have; Array.Clear(want, 0, 4); Array.Clear(have, 0, 4);
             for (int s = 0; s < plan.N; s++) want[plan.Elem[s]]++;
             for (int i = 0; i < Cap; i++) if (Alive[i]) have[Molt[i] > 0 ? MoltTo[i] : Elem[i]]++;
             Array.Clear(_taken, 0, plan.N);

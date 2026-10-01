@@ -466,6 +466,35 @@ corridor radius that is not ship-sized.
 
 ## Priority 1 — merged features that have never been played
 
+### QA-SWARM-FAUNA ⬜ — swarm fauna + the Swarm cell have never been opened
+**Source:** branch `cece/swarm-fauna-game` (authored headless; never compiled in Unity). Full
+reference and exact steps: `Docs/SWARM_FAUNA.md` §5. **Why it matters:** a new fauna family
+(population-of-tadpoles creatures that morph by majority element), a new cell in the Cell
+Selector, and an edit to `Menu_Main`'s `CellConfigs`. The pure-C# sim core is proven headless;
+the Unity glue, prefabs and on-screen behaviour are not.
+
+1. Let Unity import; confirm the Console has **no compile errors** naming a `Swarm*` file.
+2. Menu_Main → freestyle → **Cell Selector** toy → fly into the **Swarm** station. Enable the
+   **Ecology** log channel first (FrogletTools > Toolbox > Logging).
+3. After ~6 s, three swarms hatch (inner whale, middle dragonfly, outer pufferfish), each with
+   flora nearby. Watch one feed and grow.
+4. Fly through a swarm without firing (scatter + startle ripple; pufferfish plates turn danger).
+   Hover still beside the dragonfly (its Time members mob you).
+5. Vessel Changer → Sparrow. Shoot tadpoles. Then kill ~36 of the dragonfly's Time members in a
+   burst and watch it morph into a jellyfish.
+6. Profiler: `SwarmFauna.Update` cost per frame with all three swarms grown.
+
+**PASS:** no compile/import errors; the three swarms hatch in their bands and swim as recognisable
+creatures; tadpoles grow in (never pop); feeding visibly suctions flora prisms; every kill drops a
+collectable crystal and the husk shrinks away; the dragonfly morphs (log line
+`[Swarm] … morphs time -> space`) with members re-forming in motion; no exceptions in the Console;
+`SwarmFauna.Update` under ~2 ms per swarm.
+**FAIL:** any `Swarm*` compile error · the Swarm station missing from the Cell Selector · swarms
+not hatching · tadpoles appearing at scale 1 or vanishing instantly · a kill with no crystal ·
+a `NullReferenceException` from `SwarmFauna`/`SwarmTadpoleFauna` · a morph that never happens
+after the kills. Record frame cost either way, and the cell's live volume after ~5 min (the volume
+ladder is modelled, not measured — `Docs/SWARM_FAUNA.md` §4).
+
 ### QA-PALETTE-SHIELDED ⬜ — the four prism tiers across all three domains
 **Source:** PRs #644, #705 (danger prisms now paint on the domain's **shielded base
 face**), #707 (gold's shielded prism brought into the pastel family; the danger tier
