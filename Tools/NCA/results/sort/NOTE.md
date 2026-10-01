@@ -4,7 +4,8 @@
 **1.40 / 2.44 / 1.05 / 5.03** (whale / jellyfish / pufferfish / dragonfly; `swarm_eval`, 3 samples,
 seed 7), and **12 of 13 feasible transitions** at the bar of 8 (tier 1 4/4, standard switches 4/4, other
 switches 4/5; three are n/a). The one failure (dragonfly → jellyfish, 8.97 mean, passing in 1 of 3
-samples) is domain conservation, explained below. Held-out seeds: see the table at the end.
+samples) is domain conservation, explained below. **Held-out seeds 101-104: 13 / 13 feasible on every one**
+(own losses 1.33-1.68 / 2.48-2.97 / 1.00-1.52 / 3.78-4.09; `heldout.json`).
 
 Code: `Tools/NCA/sort_model.py` (the model), `sort_search.py` (CMA-ES), `sort_publish.py` (this folder),
 `sort_ablate.py`, `sort_diag.py` (per-term breakdown), `sort_eval.py` (`swarm_eval.evaluate`, unchanged).
@@ -175,3 +176,17 @@ jostle), which is the weakness — a resting creature does not swim (see recomme
 4. **Decode facing/prism from position within the well** (outward normal, along-axis): the ~0.5 floor.
 5. **The domain-conservation switches need a design call**, not tuning: either a slow domain re-dye
    for orphan regions, or accept that a three-team dragonfly cannot become a two-team jellyfish.
+
+## Held-out (`heldout.json`: `swarm_eval.evaluate`, full, 3 samples per test, unseen seeds)
+
+| seed | passed / feasible | own losses (whale / jelly / puffer / dragon) | n/a |
+|---|---|---|---|
+| 101 | 13 / 13 | 1.33 / 2.48 / 1.52 / 3.78 | space->mass, charge->mass, time->charge |
+| 102 | 13 / 13 | 1.41 / 2.62 / 1.04 / 3.93 | same |
+| 103 | 13 / 13 | 1.56 / 2.60 / 1.00 / 4.09 | same |
+| 104 | 13 / 13 | 1.68 / 2.97 / 1.04 / 3.98 | same |
+
+The three n/a transitions are structural: the jellyfish and pufferfish plans hold 2 and 1 Mass and the
+grown dragonfly 1 Charge, so that element cannot take over (`cull_to` needs >= 2). Dragonfly -> jellyfish
+passes on 3 of these 4 seeds by majority vote (2/3 samples on 101), which matches seed 7's 1/3: it sits
+close to the bar.
