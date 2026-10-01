@@ -70,7 +70,10 @@ class SortCfg:
     inertia: float = 0.5
     vmax: tuple = (0.8, 0.8, 0.8, 2.0)
     local_centre: int = 0      # 1: centre from neighbour consensus, no swarm-wide average
-    centre_relax: float = 0.3
+    centre_relax: float = 0.04  # leak toward own position (small: the estimate is mostly the neighbours')
+    centre_iters: int = 3       # consensus rounds per step (a tadpole only talks to neighbours each round)
+    lap_every: int = 0          # >0: every this many steps the runners' fates advance one well along their
+    lap_elems: tuple = (3,)     #     type's loop (Time runs laps; occupancy - and so the score - is unchanged)
     fate: int = 1              # 1: each tadpole commits to ONE well of its type (the most under-occupied at birth)
     swirl_time: float = 0.0    # Time runners circulate (rad/step about the body's major axis); look only
     # composition
@@ -138,6 +141,7 @@ class PlanCode:
         self.counts = np.zeros((4, 3), int)
         self.wells = {}            # (e, s) -> (w [K], mu [K,3], inv [K,3,3], logdet [K])
         self.state = {}            # (e, s) -> state vector (look)
+        self.next = {}
         for e in range(4):
             for s in range(3):
                 m = (el == e) & (sl == s)
@@ -157,6 +161,14 @@ class PlanCode:
                     w.append(len(R) / n); mu.append(R.mean(0)); inv.append(np.linalg.inv(cov))
                     ld.append(float(np.linalg.slogdet(cov)[1]))
                 self.wells[(e, s)] = (np.array(w), np.array(mu), np.array(inv), np.array(ld))
+                # a loop through the wells (greedy nearest-neighbour tour): next well along it
+                M = np.array(mu); order = [0]; left = set(range(1, len(M)))
+                while left:
+                    j = min(left, key=lambda q: np.linalg.norm(M[q] - M[order[-1]])); order.append(j); left.remove(j)
+                nxt = np.zeros(len(M), int)
+                for a_, b_ in zip(order, order[1:] + order[:1]):
+                    nxt[a_] = b_
+                self.next[(e, s)] = nxt
                 h = fr["h"][torch.tensor(m)].mean(0).numpy()
                 f = fr["f"][torch.tensor(m)].mean(0).numpy(); f = f / max(np.linalg.norm(f), 1e-6)
                 sp = fr["sp"][torch.tensor(m)].mean(0).numpy()
@@ -310,6 +322,9 @@ class SortSwarm:
                         for j in js[stale]:
                             f = int(np.argmax(need + 1e-3 * rng.random(len(w))))
                             S[j, H_FATE] = f + 1; S[j, H_FKEY] = key; need[f] -= 1
+                    if cfg.lap_every and e in cfg.lap_elems and m["t"] % cfg.lap_every == 0:
+                        fz = S[js, H_FATE] >= 1
+                        S[js[fz], H_FATE] = code.next[(e, s)][(S[js[fz], H_FATE] - 1).astype(int)] + 1
                     kk = (S[js, H_FATE] - 1).astype(int)
                     E[sel], G[sel] = code.energy_grad_fate(xb[sel], e, s, kk)
                 else:
@@ -380,10 +395,13 @@ class SortSwarm:
         S[idx, H_VEL] = v
         if cfg.local_centre:
             # consensus: the estimate moves with the body and relaxes toward neighbours' estimates
-            nb = (d < sn.World().R).astype(float)
-            est = cen_i + v.mean(0) * 0
-            avg = (nb @ est + P) / (nb.sum(1, keepdims=True) + 1)   # neighbours' estimates + own position
-            S[idx, H_EST] = (1 - cfg.centre_relax) * est + cfg.centre_relax * avg
+            # consensus morphogen: each estimate averages its neighbours' (and its own) estimates and
+            # leaks toward its own position; the fixed point is a smoothed centroid of the connected body
+            nb = (d < sn.World().R).astype(float) + np.eye(len(idx))
+            c = np.array(cen_i)
+            for _ in range(cfg.centre_iters):
+                c = (1 - cfg.centre_relax) * (nb @ c) / nb.sum(1, keepdims=True) + cfg.centre_relax * (P + v)
+            S[idx, H_EST] = c
         # --- look: the type's code state (grow-in alpha)
         for i, (e, r) in enumerate(zip(elem[idx], role)):
             key = (int(e), int(r))
@@ -476,6 +494,7 @@ class SortSwarm:
             dirn = rng.normal(size=3); dirn /= max(np.linalg.norm(dirn), 1e-6)
             pos[j] = pos[i] + cfg.r_bud * dirn
             S[j] = 0.0; S[j, A] = 0.2
+            S[j, H_EST] = S[i, H_EST]                        # a newborn inherits its parent's sense of the centre
             elem[j] = ce; dom[j] = dom[i]
             sw.active[b, j] = True; sw.hatched[b, j] = False
             deficit[ce, r] -= 1; cen[ce, r] += 1
