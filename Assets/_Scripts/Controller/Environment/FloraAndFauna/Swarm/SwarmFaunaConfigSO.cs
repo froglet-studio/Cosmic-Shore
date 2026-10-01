@@ -223,6 +223,24 @@ namespace CosmicShore.Gameplay
                  "the plan's own animation. The dragonfly's wings run at 16.")]
         public Vector4 SortFramePeriod = new(8f, 8f, 8f, 16f);
 
+        [Header("EvoFate model (Model = EvoFate; research evofate C2 - the trained G2 rule given a fate)")]
+        [Tooltip("The trained G2 network (Tools/Build/author_swarm_fauna.py writes it from the research's " +
+                 "results/live/evo_rule.json). An evofate swarm without it does not hatch (fail loud). Its code " +
+                 "and composition are SORT's: the Sort fields above (wells, lay homeostat, molting, frame periods) apply.")]
+        public TextAsset EvoRule;
+        [Tooltip("The designed fate pull toward a member's committed well (x the well step) - only outside the dead " +
+                 "zone, only on the steps its network fires. 0 = the pure evolved motion (it does not sort).")]
+        [Min(0f)] public float EvoPull = 2f;
+        [Tooltip("Dead zone: no pull while the fated well's energy (half its Mahalanobis^2) is under this; full by " +
+                 "twice it. Inside it a member is pure G2, which is what keeps the swarming texture.")]
+        [Min(0f)] public float EvoDeadZone = 1.5f;
+        [Tooltip("Differential adhesion, x sort's Steinberg matrix.")]
+        [Min(0f)] public float EvoAdhesion = 0.35f;
+        [Tooltip("Time runners: G2 speed x this (vmax 2 lets them wander out of the dragonfly's thin wings), and " +
+                 "their dead zone x EvoTimeDeadZone.")]
+        [Range(0f, 1.5f)] public float EvoTimeSpeed = 0.7f;
+        [Range(0f, 1f)] public float EvoTimeDeadZone = 0.3f;
+
         [Header("Audio")]
         [Tooltip("FMOD loop the swarm plays at its body's centre. Empty = silent (the FMOD rule: an " +
                  "empty slot is a visible TODO, never a borrowed event). One per swarm, not per tadpole.")]

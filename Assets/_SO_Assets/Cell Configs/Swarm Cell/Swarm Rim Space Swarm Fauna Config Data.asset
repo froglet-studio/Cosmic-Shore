@@ -10,22 +10,22 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
-  m_Name: Swarm Middle Time Swarm Fauna Config Data
+  m_Name: Swarm Rim Space Swarm Fauna Config Data
   m_EditorClassIdentifier:
-  FaunaPrefab: {fileID: 4174204561870355101, guid: d38acaa5904e7a000730e2d5ad289ffc, type: 3}
-  InitialSpawnCount: 8
-  PopulationSize: 8
+  FaunaPrefab: {fileID: 4174204561870355101, guid: a6815be88f6a14d8e8197168459d2680, type: 3}
+  InitialSpawnCount: 3
+  PopulationSize: 3
   SpawnProbability: 1
   NetworkSynced: 0
   FeedsPerOffspring: 0
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
-  MaxLivePopulation: 8
+  MaxLivePopulation: 3
   ReleaseTier: 0
-  BandInnerRadius: 610
-  BandOuterRadius: 740
+  BandInnerRadius: 970
+  BandOuterRadius: 1120
   CenterFocusBias: 0
-  Element: 4
+  Element: 3
   Variant:
     Enabled: 0
   SpreadElements: 0

@@ -90,6 +90,26 @@ namespace CosmicShore.Gameplay
     public static class SwarmCoreShared
     {
         /// <summary>
+        /// The distinct buckets of the 27 cells around (cx, cy, cz) in a spatial hash of <paramref name="mod"/>
+        /// buckets (the cores' shared formula). Two neighbouring cells can hash to ONE bucket (measured: 0.5% of
+        /// query cells near the origin), and a loop over the 27 cells then visits that bucket twice and counts its
+        /// members twice - a neighbour's weight doubled in perception, separation or collision. Returns the count
+        /// written to <paramref name="buckets"/> (at least 27 long).
+        /// </summary>
+        public static int NeighbourBuckets(int cx, int cy, int cz, int mod, int[] buckets)
+        {
+            int n = 0;
+            for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++)
+            {
+                int g = (int)(((uint)((cx + dx) * 73856093) ^ (uint)((cy + dy) * 19349663) ^ (uint)((cz + dz) * 83492791)) % (uint)mod);
+                bool seen = false;
+                for (int k = 0; k < n && !seen; k++) seen = buckets[k] == g;
+                if (!seen) buckets[n++] = g;
+            }
+            return n;
+        }
+
+        /// <summary>
         /// One vessel's pull on a member at <paramref name="x"/> of a given element: a startle from a
         /// vessel ahead or near (raises <paramref name="st"/>), the per-element flee (lateral out of its
         /// path, a little radial, a swirl), and - for an element that mobs - an orbit around a LOITERING

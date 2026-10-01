@@ -117,6 +117,7 @@ namespace CosmicShore.Gameplay
             {
                 SwarmModel.Grid => BuildGridCore(host),
                 SwarmModel.Sort => BuildSortCore(host),
+                SwarmModel.EvoFate => BuildEvoFateCore(host),
                 _ => BuildFieldCore(host),
             };
             int n = _core.Cap;
@@ -240,6 +241,45 @@ namespace CosmicShore.Gameplay
             for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
             if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }
             return new SwarmSortCore(_plans, p, Random.Range(1, int.MaxValue));
+        }
+
+        /// <summary>
+        /// The evolved rule given a fate in its GAME settings (Docs/SWARM_FAUNA.md §11): the trained G2 network
+        /// moves every member, perceiving and steering in the BODY frame so it sees the frame it was trained in;
+        /// a designed pull steers each to its committed well; sort's code and composition (the Sort fields).
+        /// Funded laying, animated molts, and an egg the network has not hatched in time HATCHES instead of
+        /// vanishing (it was paid for with eaten mass). Null - the swarm does not hatch - without the rule asset.
+        /// </summary>
+        ISwarmCore BuildEvoFateCore(Cell host)
+        {
+            if (!config.EvoRule)
+            {
+                CSDebug.LogError($"{name}: an EvoFate swarm needs SwarmFaunaConfigSO.EvoRule (the trained network) - run " +
+                                 "Tools/Build/author_swarm_fauna.py. Falling back to the field model.");
+                return BuildFieldCore(host);
+            }
+            var rule = SwarmEvoRule.Parse(config.EvoRule.text);
+            var p = new SwarmEvoFateParams
+            {
+                Pull = config.EvoPull, E0 = config.EvoDeadZone, Adh = config.EvoAdhesion,
+                TMix = config.EvoTimeSpeed, TE0 = config.EvoTimeDeadZone,
+                K = config.SortWellsPerType, PerWell = config.SortUnitsPerWell, CovScale = config.SortWellWidth,
+                Dwell = config.SortDwell, LayRate = config.SortLayRate, LayMax = config.SortLayMax,
+                PCross = config.SortCrossChance, FillTol = config.SortFillTolerance, Over = config.SortBodyFill,
+                Molt = true, Transfer = true, MoltRate = config.SortMoltRate, MoltSteps = config.SortMoltSteps,
+                KillLayHoldSteps = Mathf.RoundToInt(config.KillLayHoldSeconds * config.TickHz),
+                Periods = new[]
+                {
+                    Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.x)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.y)),
+                    Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.z)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.w)),
+                },
+                DomainSlots = false, Funded = true, KeepEggs = true, Animate = true, Oriented = true,
+                Cruise = config.Cruise, Turn = config.TurnPerStep,
+                Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
+            };
+            for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
+            if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }
+            return new SwarmEvoFateCore(_plans, p, rule, Random.Range(1, int.MaxValue));
         }
 
         void StartLoop()

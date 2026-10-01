@@ -472,6 +472,20 @@ static class GridHarness
                     for (int r = 0; r < samples; r++)
                     {
                         int gseed = seed + 101 * r;
+                        if (mode.EndsWith("Evo"))
+                        {
+                            var ec = EvoHarness.Grow(plans, args[1], mode, k, gseed); steps += 240;
+                            EvoHarness.AppendRecord(sb, ref first, ec, mode, "own", k, k, seed, r, true);
+                            for (int e = 0; e < 4; e++)
+                            {
+                                if (e == k) continue;
+                                var ec2 = EvoHarness.Grow(plans, args[1], mode, k, gseed);
+                                if (!EvoHarness.GridCull(ec2, e, new Random(gseed * 31 + e))) { AppendNA(sb, ref first, mode, k, e, seed, r); continue; }
+                                EvoHarness.RunSteps(ec2, 240); steps += 240;
+                                EvoHarness.AppendRecord(sb, ref first, ec2, mode, "switch", k, e, seed, r, false);
+                            }
+                            continue;
+                        }
                         var c = Grow(plans, mode, k, gseed); steps += 240;
                         AppendRecord(sb, ref first, c, mode, "own", k, k, seed, r, -1, true);
                         for (int e = 0; e < 4; e++)
@@ -484,9 +498,9 @@ static class GridHarness
                             AppendRecord(sb, ref first, c2, mode, "switch", k, e, seed, r, c2.Molts, false);
                         }
                     }
-                Console.WriteLine($"  yardstick {mode,-10} seed {seed}: {sw.Elapsed.TotalSeconds:F0}s, {sw.Elapsed.TotalMilliseconds / steps:F3} ms/step mean, self-deaths so far {SelfDeaths}");
+                Console.WriteLine($"  yardstick {mode,-10} seed {seed}: {sw.Elapsed.TotalSeconds:F0}s, {sw.Elapsed.TotalMilliseconds / steps:F3} ms/step mean, self-deaths so far {SelfDeaths + EvoHarness.SelfDeaths}");
             }
-        sb.Append($"],\"selfDeaths\":{SelfDeaths}}}");
+        sb.Append($"],\"selfDeaths\":{SelfDeaths + EvoHarness.SelfDeaths}}}");
         File.WriteAllText(outPath, sb.ToString());
         return 0;
     }

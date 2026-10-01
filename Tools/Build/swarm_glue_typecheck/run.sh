@@ -13,5 +13,5 @@ ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 S="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 "$DOTNET_ROOT/dotnet" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "@$OUT/refs.rsp" -target:library \
   -nowarn:CS0108,CS0114 -out:"$OUT/glue.dll" "$HERE/Stubs.cs" \
-  "$S/ISwarmCore.cs" "$S/SwarmFieldCore.cs" "$S/SwarmGridCore.cs" "$S/SwarmSortCore.cs" "$S/SwarmFaunaConfigSO.cs" "$S/SwarmPlanLibrary.cs" "$S/SwarmFauna.cs" "$S/SwarmTadpoleFauna.cs"
+  "$S/ISwarmCore.cs" "$S/SwarmFieldCore.cs" "$S/SwarmGridCore.cs" "$S/SwarmSortCore.cs" "$S/SwarmEvoFateCore.cs" "$S/SwarmFaunaConfigSO.cs" "$S/SwarmPlanLibrary.cs" "$S/SwarmFauna.cs" "$S/SwarmTadpoleFauna.cs"
 echo "type-check OK"

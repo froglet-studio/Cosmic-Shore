@@ -215,6 +215,7 @@ namespace CosmicShore.Gameplay
         readonly Vector3[] _tp, _tv; readonly int[] _tc, _liveIx;
         // neighbour hash
         const int HG = 4096;
+        readonly int[] _nb = new int[27];
         readonly int[] _cellStart = new int[HG], _cellCount = new int[HG], _fill = new int[HG];
         readonly int[] _sorted, _cellOf;
         readonly Vector3[] _push;
@@ -1010,9 +1011,10 @@ namespace CosmicShore.Gameplay
         {
             CellKey(x, out int cx, out int cy, out int cz);
             float r2 = r * r, best = 0f;
-            for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++)
+            int nbN = SwarmCoreShared.NeighbourBuckets(cx, cy, cz, HG, _nb);
+            for (int nbi = 0; nbi < nbN; nbi++)
             {
-                int g = Hash(cx + dx, cy + dy, cz + dz);
+                int g = _nb[nbi];
                 for (int q = _cellStart[g], e = q + _cellCount[g]; q < e; q++)
                 {
                     int j = _sorted[q]; if (j == self) continue;
@@ -1034,9 +1036,10 @@ namespace CosmicShore.Gameplay
                 if (!Active[i]) continue;
                 var x = Pos[i];
                 CellKey(x, out int cx, out int cy, out int cz);
-                for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++)
+                int nbN = SwarmCoreShared.NeighbourBuckets(cx, cy, cz, HG, _nb);
+                for (int nbi = 0; nbi < nbN; nbi++)
                 {
-                    int g = Hash(cx + dx, cy + dy, cz + dz);
+                    int g = _nb[nbi];
                     for (int q = _cellStart[g], e = q + _cellCount[g]; q < e; q++)
                     {
                         int j = _sorted[q]; if (j == i) continue;

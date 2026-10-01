@@ -13,17 +13,17 @@ MonoBehaviour:
   m_Name: Swarm Inner Mass Swarm Fauna Config Data
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 4174204561870355101, guid: fdf92e28cdd61e8c14732eb0bc7c549d, type: 3}
-  InitialSpawnCount: 8
-  PopulationSize: 8
+  InitialSpawnCount: 6
+  PopulationSize: 6
   SpawnProbability: 1
   NetworkSynced: 0
   FeedsPerOffspring: 0
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
-  MaxLivePopulation: 8
+  MaxLivePopulation: 6
   ReleaseTier: 0
   BandInnerRadius: 430
-  BandOuterRadius: 600
+  BandOuterRadius: 560
   CenterFocusBias: 0
   Element: 2
   Variant:

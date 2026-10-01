@@ -15,11 +15,11 @@ MonoBehaviour:
   FloraPrefab: {fileID: 7514956980722975813, guid: becb04107104ecb6768ae2d6766e681e, type: 3}
   NetworkSynced: 0
   SpawnProbability: 1
-  InitialSpawnCount: 64
+  InitialSpawnCount: 52
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 2147483647
-  PopulationSize: 64
-  MaxLivePopulation: 140
+  PopulationSize: 52
+  MaxLivePopulation: 110
   GrowthPerOffspring: 95
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 20
@@ -32,6 +32,6 @@ MonoBehaviour:
   SpreadElements: 1
   ElementPalette:
   - {fileID: 11400000, guid: f46966ea66e278b0ad293ccecc672c1d, type: 2}
-  PlantRadiusCellFractionMaxOverride: 0.7
-  PlantRadiusCellFractionMinOverride: 0.55
+  PlantRadiusCellFractionMaxOverride: 0.617
+  PlantRadiusCellFractionMinOverride: 0.508
   MaxTotalSpawnedObjectsOverride: -1

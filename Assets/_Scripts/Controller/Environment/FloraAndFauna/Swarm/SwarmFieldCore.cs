@@ -236,6 +236,8 @@ namespace CosmicShore.Gameplay
         int _aliveSig = -1;
         // grid
         const int G = 4096;
+        bool _arrived;
+        readonly int[] _nb = new int[27];
         readonly int[] _cellStart = new int[G], _cellCount = new int[G], _fill = new int[G];
         readonly int[] _sorted, _cellOf;
         // assignment scratch
@@ -368,8 +370,13 @@ namespace CosmicShore.Gameplay
             // Re-aim only while the target is a real distance away: a body hovering over its goal has
             // an anchor that jitters around it, and chasing that jitter spun the whole creature ~1000
             // degrees a minute while it grazed (measured; Docs/SWARM_FAUNA.md §7 finding 13).
+            // The arrival is LATCHED: a body that has arrived re-aims only once the target is twice the hold
+            // distance away. Without the latch the body parks exactly ON the threshold (it cruises until
+            // dT = AimHold R, then stops) and its jitter flips it across, re-aiming every few steps.
             var toT = SwimTarget - Anchor; float dT = toT.Length();
-            if (dT > C.AimHold * plan.Radius) SetHeading(toT / dT);
+            bool reaim = dT > C.AimHold * plan.Radius * (_arrived ? 2f : 1f);
+            _arrived = !reaim;
+            if (reaim) SetHeading(toT / dT);
             T += 1f; plan.At(T, _sp, _sv, _sf);
             for (int k = 0; k < plan.N; k++) _sw[k] = Rotate(_sp[k]) + Anchor;
             float swell = 1f + C.Inflate[PlanIx] * ThreatLevel;
@@ -416,9 +423,10 @@ namespace CosmicShore.Gameplay
                 }
                 Vector3 sep = Vector3.Zero, vs = Vector3.Zero; int cnt = 0; float st = Startle[i] * C.StartleDecay, relay = 0;
                 CellOf(x, out int cx, out int cy, out int cz);
-                for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++)
+                int nbN = SwarmCoreShared.NeighbourBuckets(cx, cy, cz, G, _nb);
+                for (int nbi = 0; nbi < nbN; nbi++)
                 {
-                    int g = Hash(cx + dx, cy + dy, cz + dz);
+                    int g = _nb[nbi];
                     for (int q = _cellStart[g], e = q + _cellCount[g]; q < e; q++)
                     {
                         int j = _sorted[q]; if (j == i) continue;
@@ -478,7 +486,7 @@ namespace CosmicShore.Gameplay
             // slowing as it arrives so a grazing body hovers over its plant instead of orbiting it
             // cruise only toward a target the body is aimed at and has not reached (a held heading must
             // not carry an arrived body off its goal)
-            float aim = dT > C.AimHold * plan.Radius ? MathF.Max(0f, Vector3.Dot(Heading, toT / dT)) : 0f;
+            float aim = reaim ? MathF.Max(0f, Vector3.Dot(Heading, toT / dT)) : 0f;
             float cruise = C.Cruise * aim * Math.Clamp(dT / MathF.Max(1f, 1.5f * plan.Radius), 0f, 1f);
             if (plan.SwimAxis.Y > 0.5f)   // the jellyfish jets in pulses
                 cruise *= 0.4f + 0.6f * MathF.Max(0f, MathF.Sin(T * 2f * MathF.PI / (2f * plan.FrameSteps * 7f)));

@@ -24,6 +24,8 @@ static class Program
         if (!ok) _fail++;
     }
 
+    public static SwarmPlanData[] LoadPlansPublic(string dir) => LoadPlans(dir);
+
     static SwarmPlanData[] LoadPlans(string dir)
     {
         var o = new JsonSerializerOptions { IncludeFields = true };
@@ -66,10 +68,13 @@ static class Program
     {
         if (args.Length > 0 && args[0] == "export") return GridHarness.Export(args, LoadPlans);
         if (args.Length > 0 && args[0] == "yardstick") return GridHarness.ExportYardstick(args, LoadPlans);
+        if (args.Length > 0 && args[0] == "evofate") return EvoHarness.Fixture(args[1], args[2]) == 0 ? 0 : 1;
         bool gridOnly = args.Length > 1 && args[1] == "grid", sortOnly = args.Length > 1 && args[1] == "sort";
         var plans = LoadPlans(args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans");
         if (gridOnly) return GridHarness.Run(plans) == 0 ? 0 : 1;
         if (sortOnly) return SortHarness.Run(plans) == 0 ? 0 : 1;
+        string plansDir = args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans";
+        if (args.Length > 1 && args[1] == "evo") return EvoHarness.Run(plans, plansDir) == 0 ? 0 : 1;
         Console.WriteLine("plans: " + string.Join(", ", plans.Select(p => $"{p.Kind} N={p.N} mix=[{string.Join(",", p.Mix)}] R={p.Radius:F1}")));
 
         Console.WriteLine("\n1. growth to the plan, fed (each plan seeded at its own majority, 24 tadpoles)");
@@ -254,6 +259,7 @@ static class Program
         Console.WriteLine($"\nfield core: {(_fail == 0 ? "OK" : $"FAIL ({_fail})")}");
         _fail += GridHarness.Run(plans);
         _fail += SortHarness.Run(plans);
+        _fail += EvoHarness.Run(plans, plansDir);
         Console.WriteLine($"\n{(_fail == 0 ? "OK" : $"FAIL ({_fail})")}");
         return _fail == 0 ? 0 : 1;
     }

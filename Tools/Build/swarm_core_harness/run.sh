@@ -6,6 +6,8 @@
 #   bash Tools/Build/swarm_core_harness/run.sh                 # all three cores' asserted tests
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> grid    # the grid core's only
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> sort    # the sort core's only
+#   bash Tools/Build/swarm_core_harness/run.sh <plans> evo     # the evofate core's only
+#   bash Tools/Build/swarm_core_harness/run.sh evofate <plans> <fixture.json>   # exactness vs Python (evofate_fixture.py)
 #   bash Tools/Build/swarm_core_harness/run.sh export <plans> <out.json> 7,23,41   # states for score_grid.py / score_sort.py
 #   bash Tools/Build/swarm_core_harness/run.sh yardstick <plans> <out.json> 7,23,41 3 game16,game8   # the 16-transition yardstick (score_combo.py)
 #
@@ -27,7 +29,8 @@ ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmFieldCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmGridCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmSortCore.cs" \
-  "$HERE/Program.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs"
+  "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmEvoFateCore.cs" \
+  "$HERE/Program.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/EvoHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"
 case "${1:-}" in export|yardstick|evofate) exec "$DOTNET" "$OUT/swarmcore.exe" "$@";; esac

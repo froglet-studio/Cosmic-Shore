@@ -12,20 +12,23 @@ What it owns:
     overrides intact) with the Boid, the per-tadpole FMOD loop, the NetworkObject /
     NetworkTransform / FaunaNetworkSync and the authored crystal REMOVED (a member provisions
     its heart from its element at birth and is client-local);
-  * SwarmFauna.prefab / SwarmGridFauna.prefab / SwarmSortFauna.prefab - the heartless, bodiless
-    population anchors, one per simulation model (field / grid / sort);
-  * SwarmFaunaConfig.asset / SwarmGridFaunaConfig.asset / SwarmSortFaunaConfig.asset - every number
-    the swarm runs on, identical except Model;
-  * the Swarm cell: config, spawn profile, three swarm species configs (the three populations)
-    and three flora configs (their feeding grounds), and its entry in Menu_Main's
+  * SwarmFauna.prefab / SwarmGridFauna.prefab / SwarmSortFauna.prefab / SwarmEvoFateFauna.prefab - the
+    heartless, bodiless population anchors, one per simulation model (field / grid / sort / evofate);
+  * SwarmFaunaConfig.asset / SwarmGridFaunaConfig.asset / SwarmSortFaunaConfig.asset /
+    SwarmEvoFateFaunaConfig.asset - every number the swarm runs on, identical except Model;
+  * SwarmEvoFateRule.json - the trained G2 network the evofate model runs (the research's
+    results/live/evo_rule.json, re-packed for SwarmEvoRule.Parse);
+  * the Swarm cell: config, spawn profile, four swarm species configs (the four populations)
+    and four flora configs (their feeding grounds), and its entry in Menu_Main's
     Cell.CellConfigs (the Cell Selector reads that list; it authors none of its own).
 
-THE CELL - three populations, separated in the cytoplasm by RADIUS (the platform's per-species
+THE CELL - four populations, separated in the cytoplasm by RADIUS (the platform's per-species
 band, FaunaConfigurationSO.BandInner/BandOuterRadius), each over its own feeding ground:
 
-    inner  430-600u   GRID   starts MASS   -> the whale       grazes MASS flora   (Arbor)
-    mid    660-840u   FIELD  starts TIME   -> the dragonfly   grazes SPACE flora  (Spire)
-    outer  900-1120u  SORT   starts CHARGE -> the pufferfish  grazes TIME flora   (Frond)
+    inner  430-560u   GRID     6 swarms  starts MASS   -> the whale       grazes MASS flora   (Arbor)
+    mid    610-740u   FIELD    8 swarms  starts TIME   -> the dragonfly   grazes SPACE flora  (Spire)
+    outer  790-920u   SORT     7 swarms  starts CHARGE -> the pufferfish  grazes TIME flora   (Frond)
+    rim    970-1120u  EVOFATE  3 swarms  starts SPACE  -> the jellyfish   grazes SPACE flora  (Reed)
 
 The pairing is deliberate (Docs/SWARM_FAUNA.md §5): an egg is cheap when paid for with food of
 its own element, and each ground feeds the creature that the resident becomes when a player kills
@@ -56,7 +59,7 @@ SCRIPT_DIR = A("_Scripts", "Controller", "Environment", "FloraAndFauna", "Swarm"
 MENU_SCENE = A("_Scenes", "Menu_Main.unity")
 TADPOLE_SRC = os.path.join(PREFAB_DIR, "TadPoleFauna.prefab")
 
-SCRIPTS = ["ISwarmCore", "SwarmFieldCore", "SwarmGridCore", "SwarmSortCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna",
+SCRIPTS = ["ISwarmCore", "SwarmFieldCore", "SwarmGridCore", "SwarmSortCore", "SwarmEvoFateCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna",
            "SwarmTadpoleFauna"]
 SO_SCRIPT = {
     "cell": "01f934d50526431a9392a6ceca1dc33d",
@@ -83,29 +86,32 @@ TADPOLE_MB_FID = "5945480239701989318"     # TadPoleFauna's Boid MB fileID, kept
 UNIT_SCALE = 2.0          # world units per voxel
 TICK_HZ = 10.0
 SEED_MEMBERS = 96         # OVERTUNE (x4): a hatchling swarm is already a half-built creature
-SWARMS_PER_BAND = 8       # OVERTUNE (x8): each shell holds a school of swarms, not one
+TOTAL_SWARMS = 24         # OVERTUNE (x8 per band at three bands): the cell's whole school; REGIONS splits it
 MAX_SPAWNS_PER_FRAME = 48 # cell-wide budget of tadpole Instantiates per frame (queued past it)
 PRISM_SCALE = 1.0
 HEARTS = {"Charge": 2.298, "Mass": 1.737, "Space": 2.298, "Time": 1.737}  # = Tadpole Fauna * (read below)
 
-# ── the three populations ────────────────────────────────────────────────────────────────
+# ── the four populations ─────────────────────────────────────────────────────────────────
 ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
-# MODEL: which simulation drives the population (SwarmFaunaConfigSO.Model). The cell hosts ALL THREE,
-# one per band, so a pilot flying outward from the nucleus meets grid / field / sort and can compare
-# them in one session (Docs/SWARM_FAUNA.md §8, §9). One model per band, never mixed within one: every
+# MODEL: which simulation drives the population (SwarmFaunaConfigSO.Model). The cell hosts ALL FOUR,
+# one per band, so a pilot flying outward from the nucleus meets grid / field / sort / evofate and can
+# compare them in one session (Docs/SWARM_FAUNA.md §8, §9, §11). One model per band, never mixed within one: every
 # tadpole wears the cell's one colour, so WHERE a swarm swims is the only way a pilot can tell which
-# model it runs. The cell's swarm count is unchanged (3 x SWARMS_PER_BAND): sort took the outer band
-# from grid, which halves the grid CPU (8 grid swarms instead of 16).
+# model it runs. The cell's swarm count is unchanged (TOTAL_SWARMS).
 REGIONS = [
-    # name,   band (world),   start,   plan,     model,    ground species, ground element, canonical asset, plants floor/cap
-    dict(key="Inner", band=(430, 600), start="Mass", plan="whale", model="Grid",
-         flora="Arbor", food="Mass", canon="Arbor Flora Mass", floor=48, cap=100),
-    dict(key="Middle", band=(660, 840), start="Time", plan="dragonfly", model="Field",
-         flora="Spire", food="Space", canon="Spire Flora Space", floor=64, cap=140),
-    dict(key="Outer", band=(900, 1120), start="Charge", plan="pufferfish", model="Sort",
-         flora="Frond", food="Time", canon="Frond Flora Time", floor=80, cap=160),
+    # name,   band (world),   start,   plan,     model,    ground species, ground element, canonical asset, plants floor/cap,
+    # swarms. The cell's swarm count stays 24: the evofate band's three are paid for by the grid's G8 default
+    # (half the grid CPU) and taken from the grid (-2) and sort (-1) bands - Docs/SWARM_FAUNA.md §4.1, §11.
+    dict(key="Inner", band=(430, 560), start="Mass", plan="whale", model="Grid", swarms=6,
+         flora="Arbor", food="Mass", canon="Arbor Flora Mass", floor=40, cap=80),
+    dict(key="Middle", band=(610, 740), start="Time", plan="dragonfly", model="Field", swarms=8,
+         flora="Spire", food="Space", canon="Spire Flora Space", floor=52, cap=110),
+    dict(key="Outer", band=(790, 920), start="Charge", plan="pufferfish", model="Sort", swarms=7,
+         flora="Frond", food="Time", canon="Frond Flora Time", floor=60, cap=120),
+    dict(key="Rim", band=(970, 1120), start="Space", plan="jellyfish", model="EvoFate", swarms=3,
+         flora="Reed", food="Space", canon="Reed Flora Space", floor=40, cap=90),
 ]
-MODEL_ID = {"Field": 0, "Grid": 1, "Sort": 2}
+MODEL_ID = {"Field": 0, "Grid": 1, "Sort": 2, "EvoFate": 3}
 # the grid model's game settings (SwarmGridCore; research combo = hgrid2 made lossless, unless noted).
 # Ordered as SwarmFaunaConfigSO declares them. G8 (cell 12) is the shipped default: measured by
 # Tools/Build/swarm_core_harness/score_combo.py it scores the same as G16 (game 12/13 at every seed,
@@ -114,6 +120,9 @@ GRID = dict(GridSize=8, GridCell=12, GridKClass=10, GridKTotal=1, GridPersist=0.
             GridLayChance=0.1, GridCrossChance=0.25, GridLayMaxPerStep=3, GridKFine=2, GridSigmaRel=1.2,
             GridSigma=3.5, GridMigrate=1, GridFeedForward=1.5)
 GRID_TAIL = dict(GridPlanLock=30, GridLossless=1, GridMoltRate=0.04, GridMoltSteps=10, GridLayCap=1)
+# the evofate model's game settings (SwarmEvoFateCore; research evofate C2). Its code and composition are
+# sort's (the SORT fields); these are its own.
+EVO = dict(EvoPull=2, EvoDeadZone=1.5, EvoAdhesion=0.35, EvoTimeSpeed=0.7, EvoTimeDeadZone=0.3)
 GRID_PERIOD = {"Charge": 8, "Mass": 8, "Space": 8, "Time": 16}
 # the sort model's game settings (SwarmSortCore; research sort's results/sort/params.json, rounded,
 # unless noted). Written verbatim: these strings are the SO's values AND its C# defaults.
@@ -206,6 +215,36 @@ def plans_from_research():
     return swarm_plans.bake_all(repo=REPO)
 
 
+EVO_RULE_SRC = "Tools/NCA/results/live/evo_rule.json"   # the G2 weights the evofate genome leaves unchanged
+
+
+def evo_rule_path():
+    return os.path.join(SWARM_DIR, "SwarmEvoFateRule.json")
+
+
+def evo_rule_from_research():
+    """The trained G2 network as SwarmEvoRule.Parse reads it (hidden, fire_rate, w1..b3 as base64 float32),
+    or None when the research ref is not reachable. evofate_model.EvoFate runs these weights unchanged: the
+    evo genome's output-gain switch (sw_out) is off - checked here, so a re-export with it on fails loudly."""
+    import json
+    try:
+        text = subprocess.run(["git", "-C", REPO, "show", f"{swarm_plans.RESEARCH_REF}:{EVO_RULE_SRC}"],
+                              check=True, capture_output=True, text=True).stdout
+    except subprocess.CalledProcessError:
+        return None
+    d = json.loads(text)
+    w = d["weights"]
+    shapes = {"w1": [192, 232], "b1": [192], "w2": [192, 192], "b2": [192], "w3": [35, 192], "b3": [35]}
+    for k, sh in shapes.items():
+        if w[k]["shape"] != sh:
+            raise SystemExit(f"{EVO_RULE_SRC}: {k} is {w[k]['shape']}, the core expects {sh}")
+    if d["hidden"] != 192:
+        raise SystemExit(f"{EVO_RULE_SRC}: hidden {d['hidden']}, the core expects 192")
+    body = ",\n".join(f'  "{k}": "{w[k]["b64"]}"' for k in shapes)
+    return ("{\n" f'  "source": "{swarm_plans.RESEARCH_REF}:{EVO_RULE_SRC}",\n'
+            f'  "hidden": {d["hidden"]},\n  "fire_rate": {d["fire_rate"]},\n' + body + "\n}\n")
+
+
 def plan_path(kind):
     return os.path.join(PLAN_DIR, f"SwarmPlan_{kind}.json")
 
@@ -295,11 +334,13 @@ def tadpole_prefab():
 
 
 def anchor_name(model):
-    return {"Field": "SwarmFauna.prefab", "Grid": "SwarmGridFauna.prefab", "Sort": "SwarmSortFauna.prefab"}[model]
+    return {"Field": "SwarmFauna.prefab", "Grid": "SwarmGridFauna.prefab", "Sort": "SwarmSortFauna.prefab",
+            "EvoFate": "SwarmEvoFateFauna.prefab"}[model]
 
 
 def config_name(model):
-    return {"Field": "SwarmFaunaConfig.asset", "Grid": "SwarmGridFaunaConfig.asset", "Sort": "SwarmSortFaunaConfig.asset"}[model]
+    return {"Field": "SwarmFaunaConfig.asset", "Grid": "SwarmGridFaunaConfig.asset", "Sort": "SwarmSortFaunaConfig.asset",
+            "EvoFate": "SwarmEvoFateFaunaConfig.asset"}[model]
 
 
 def anchor_prefab(model="Field"):
@@ -398,6 +439,8 @@ def config_asset(eggs, model="Field"):
         f"  HeartWorldScale: {v4(HEARTS)}\n"
         f"  PrismScale: {_g(PRISM_SCALE)}\n  HeartPrismGap: 0.6\n  BirthBloomSeconds: 0.8\n  MoltHeartSeconds: 0.5\n"
         + grid + "".join(f"  {k}: {v}\n" for k, v in SORT) +
+        f"  EvoRule: {{fileID: 4900000, guid: {guid(rel(evo_rule_path()))}, type: 3}}\n"
+        + "".join(f"  {k}: {_g(v)}\n" for k, v in EVO.items()) +
         "  SwarmLoopEvent:\n" + EMPTY_EVENT.replace("    ", "    ", 1) +
         "  MorphEvent:\n" + EMPTY_EVENT)
 
@@ -434,9 +477,9 @@ def fauna_asset(r):
     lo, hi = r["band"]
     return SO_HEADER % (SO_SCRIPT["fauna"], fauna_name(r)) + (
         f"  FaunaPrefab: {{fileID: {ROOT_MB_FID}, guid: {guid(rel(os.path.join(PREFAB_DIR, anchor_name(r['model']))))}, type: 3}}\n"
-        f"  InitialSpawnCount: {SWARMS_PER_BAND}\n  PopulationSize: {SWARMS_PER_BAND}\n  SpawnProbability: 1\n  NetworkSynced: 0\n"
+        f"  InitialSpawnCount: {r['swarms']}\n  PopulationSize: {r['swarms']}\n  SpawnProbability: 1\n  NetworkSynced: 0\n"
         "  FeedsPerOffspring: 0\n  OffspringPerBirth: 1\n  ReproductionCooldownSeconds: 10\n"
-        f"  MaxLivePopulation: {SWARMS_PER_BAND}\n  ReleaseTier: 0\n"
+        f"  MaxLivePopulation: {r['swarms']}\n  ReleaseTier: 0\n"
         f"  BandInnerRadius: {lo}\n  BandOuterRadius: {hi}\n  CenterFocusBias: 0\n"
         f"  Element: {ELEMENT_ID[r['start']]}\n"
         "  Variant:\n    Enabled: 0\n"
@@ -479,7 +522,7 @@ def model(plans):
         tot["volume"] += plants * c["budget"] * per
         tot["plants_max"] += plants
     cap = max(p["n"] for p in plans.values())
-    tot["tadpoles"] = cap * len(REGIONS) * SWARMS_PER_BAND
+    tot["tadpoles"] = cap * sum(r["swarms"] for r in REGIONS)
     tot["prisms"] += tot["tadpoles"]
     tot["volume"] += tot["tadpoles"] * max(eggs.values())
     tot["hearts"] = tot["plants_max"] + tot["tadpoles"]
@@ -518,9 +561,10 @@ def profile_asset():
 def cell_asset(L):
     return SO_HEADER % (SO_SCRIPT["cell"], f"{PREFIX} Cell Config") + (
         "  CellName: Swarm\n"
-        "  Description: Three tadpole swarms in three shells of the cytoplasm, on three simulation\n"
-        "    models - a grid-morphogen whale, a field dragonfly and a cell-sorting pufferfish - each over\n"
-        "    its own feeding ground. Kill a body's majority element and it becomes another animal\n"
+        "  Description: Tadpole swarms in four shells of the cytoplasm, on four simulation models - a\n"
+        "    grid-morphogen whale, a field dragonfly, a cell-sorting pufferfish and an evolved-rule\n"
+        "    jellyfish - each over its own feeding ground. Kill a body's majority element and it becomes\n"
+        "    another animal\n"
         f"  Icon: {{fileID: 21300000, guid: {ICON}, type: 3}}\n"
         "  Difficulty: 2\n  CellEndGameScore: 0\n"
         f"  MembranePrefab: {{fileID: {MEMBRANE[0]}, guid: {MEMBRANE[1]}, type: 3}}\n"
@@ -569,6 +613,10 @@ def emit():
             out[plan_path(k)] = swarm_plans.dumps(p)
     for k in swarm_plans.KINDS:
         out[plan_path(k) + ".meta"] = TEXT_META % guid(rel(plan_path(k)))
+    rule = evo_rule_from_research()
+    if rule:
+        out[evo_rule_path()] = rule
+    out[evo_rule_path() + ".meta"] = TEXT_META % guid(rel(evo_rule_path()))
     for d in (SWARM_DIR, PLAN_DIR, CELL_DIR, SCRIPT_DIR):
         out[d + ".meta"] = FOLDER_META % guid(rel(d))
     for s in SCRIPTS:
@@ -617,7 +665,9 @@ def verify(out, tot, rows):
     if len({r["start"] for r in REGIONS}) != len(REGIONS):
         problems.append("two populations start as the same creature")
     if {r["model"] for r in REGIONS} != set(MODEL_ID):
-        problems.append("the cell must host every model side by side (field, grid and sort)")
+        problems.append("the cell must host every model side by side (field, grid, sort and evofate)")
+    if sum(r["swarms"] for r in REGIONS) != TOTAL_SWARMS:
+        problems.append(f"the cell holds {sum(r['swarms'] for r in REGIONS)} swarms, not {TOTAL_SWARMS} (the round-5 rule: evofate is paid for, not added)")
     if len({r["model"] for r in REGIONS}) != len(REGIONS):
         problems.append("one model per band: a pilot tells the models apart only by where they swim")
     # the C# defaults of the sort fields are the authored values (an SO created by hand matches the cell)
@@ -651,7 +701,7 @@ def verify(out, tot, rows):
 
 
 def report(rows, tot, eggs, L, baked):
-    print("Swarm cell - three populations in three shells of the cytoplasm\n")
+    print("Swarm cell - four populations in four shells of the cytoplasm\n")
     for row in rows:
         r, c = row["r"], row["c"]
         print(f"  {r['key']:<6} {r['band'][0]:>4}-{r['band'][1]:<4}u  {r['model']:<5} starts {r['start']:<6} ({r['plan']:<10})  "
