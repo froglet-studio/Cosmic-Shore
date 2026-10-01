@@ -1,0 +1,90 @@
+{
+ "strike": {
+  "mass": {
+   "before": 2.49,
+   "n_before": 192,
+   "killed": 38,
+   "cut": 7.63,
+   "recovered": 2.05,
+   "n_after": 192,
+   "heal": 1.086
+  },
+  "space": {
+   "before": 0.85,
+   "n_before": 88,
+   "killed": 16,
+   "cut": 9.62,
+   "recovered": 0.83,
+   "n_after": 88,
+   "heal": 1.002
+  },
+  "charge": {
+   "before": 2.03,
+   "n_before": 179,
+   "killed": 47,
+   "cut": 7.91,
+   "recovered": 2.07,
+   "n_after": 179,
+   "heal": 0.993
+  },
+  "time": {
+   "before": 3.92,
+   "n_before": 76,
+   "killed": 8,
+   "cut": 6.06,
+   "recovered": 3.76,
+   "n_after": 76,
+   "heal": 1.075
+  }
+ },
+ "behaviour": {
+  "mass": {
+   "n": 192,
+   "before": 3.95,
+   "ms": 4.76,
+   "live": 0.814,
+   "loose": 1.559,
+   "crowd": 0.4936,
+   "touched": 0.182,
+   "heal": 35,
+   "drama": 1.461,
+   "latency": 20
+  },
+  "space": {
+   "n": 88,
+   "before": 3.3,
+   "ms": 1.8,
+   "live": 0.862,
+   "loose": 1.479,
+   "crowd": 0.5354,
+   "touched": 0.114,
+   "heal": 25,
+   "drama": 1.502,
+   "latency": 20
+  },
+  "charge": {
+   "n": 179,
+   "before": 1.59,
+   "ms": 4.16,
+   "live": 0.906,
+   "loose": 1.588,
+   "crowd": 0.2762,
+   "touched": 0.034,
+   "heal": 50,
+   "drama": 1.792,
+   "latency": 20
+  },
+  "time": {
+   "n": 76,
+   "before": 4.23,
+   "ms": 1.44,
+   "live": 1.659,
+   "loose": 2.855,
+   "crowd": 0.6208,
+   "touched": 0.092,
+   "heal": 50,
+   "drama": 1.204,
+   "latency": 10
+  }
+ }
+}
