@@ -707,8 +707,8 @@ namespace CosmicShore.Utility.AITraining
         /// </summary>
         void LeaveSlot(TrainingSchedule.Decision decision)
         {
-            Debug.Log($"[Training] Schedule {decision.Action} at slot " +
-                      $"{(state != null ? state.ScheduleIndex : 0)}: {decision.Reason}");
+            Trace($"[Training] Schedule {decision.Action} at slot " +
+                  $"{(state != null ? state.ScheduleIndex : 0)}: {decision.Reason}");
             TrainingSchedule.Apply(state, decision);
             PersistState(forceSave: true);
             if (decision.Action == TrainingSchedule.Action.Finished)

@@ -8,6 +8,22 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## CI-1 — raw `Debug.Log` in `TrainingSessionRunner.LeaveSlot` failed the console-logging check
+
+- **Date:** fixed 2026-10-02.
+- **Symptom:** the `conditional-compilation` CI job failed on PR #936 (and would fail on any PR)
+  at its "Check console logging" step: `TrainingSessionRunner.cs:710: raw Debug.Log - route through
+  CSDebug`. The failure was in code already on `bleeding-edge`, not in the PR's own change.
+- **Root cause:** the AI training commits of 2026-09-29 added a raw `Debug.Log` in `LeaveSlot`.
+  The project's rule is that all logging goes through `CSDebug`.
+- **Fix:** `LeaveSlot` calls the file's own `Trace` helper (`CSDebug.LogVerbose` on the
+  `AITraining` channel), the same as every other training log in that file. Same message text.
+- **Verification:** `python3 Tools/Build/check_console_logging.py` reports no problems (it
+  reported 1 before).
+- **PR/commit:** pending.
+
+---
+
 ## BH-1.1 — AI held drift on stop (already fixed; closed with no code change)
 
 - **Date:** closed 2026-10-02. The fix itself is `4c866f880` of 2026-09-26, which predates the
