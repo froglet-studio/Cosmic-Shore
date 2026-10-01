@@ -43,6 +43,7 @@ config is the unchanged posinfo2 (baseline = `results/hold/posinfo2.json`). What
 | (all lite rows above except s64 ran BEFORE the cache-reset fix: their frame cache could carry one stale frame for <= 3 steps across batched rollouts; slightly pessimistic) | | | | | | | | | |
 | k2 (fire_k 2, round-robin + coast) | - | 12 / (killed) | time->space @7 | - | - | - | - | - | incomplete: the hold ran 6x slower than the others and was killed to make room for the noise control |
 | s64 (64-wide student, behaviour cloning) | 5.86 | 0 / 0 / 0 / 0 | everything | own 27-98 | 0.287 | 1.86 | 1.78 | 0.25 / 0.37 | FAIL (collapse) |
+| **k4_f4** (fire_k 4 + frame every 4, AFTER the cache fix, homeostat every step) | 6.30 | 12 / 11 / 12 / 13 | charge->time @7, @23; time->space @41 | own mass 2.30 @101 | 0.460 | 3.64 | 0.90 | 0.385 FAIL / 0.54 | **FAIL - real: organic band lost (planar 0.18 > 0.15), and charge->time is not the noise-floor switch** |
 | noise control (unchanged rule, generator stream shifted by one draw per step) | 6.435 | 12 / 12 / 12 / 12 | time->space @7, @41, @101 | own charge 3.10 @23 | 0.432 FAIL | | | | **FAIL** (lurch 4.99, molt 0.33, birth 0.54 pass) |
 
 Note on accuracy totals: h4_f4 passes **52/52 - 1 = 51 of 52** feasible, exactly the baseline's 51/52 - it
@@ -64,8 +65,11 @@ Suggested fix for hold.py (the lead owns it; not edited): compare SUMMED passes 
 binomial allowance) rather than per-seed `no lost test`, and either measure smoothness over several seeds or
 set its tolerance from a noise-control run like this one. **Under such a rule, k4_h8_f4 and h4_f4 would be
 read as "inside noise on accuracy, better on smoothness" (k4_h8_f4), with only k4_h8_f4's molt burst and
-h4_f4's worst lurch as real candidates for regressions** - and I would then recommend k4_h8_f4 minus the
-amortised homeostat (fire_k 4 + frame_every 4), which still needs its own hold check.
+h4_f4's worst lurch as real candidates for regressions**. I then checked k4_h8_f4 minus the amortised homeostat
+(k4_f4, after the cache fix): it is a REAL regression, not noise - it leaves the organic band (planar excess 0.18,
+bodies flatten when 3/4 of the swarm coasts) and loses charge->time at two seeds. So the fractional update on
+this LEARNED rule needs retraining under the new update schedule; it cannot be bolted on. Contrast with the
+designed front runners, where the rule has no learned dependence on its own firing statistics.
 
 ## Profile (per step, grown 192-tadpole Mass body, 1 thread, perf_counter per phase, 100 steps)
 
