@@ -507,3 +507,61 @@ On a GPU, `python Tools/NCA/gpu_run.py swarm` runs the same co-evolution (see `s
 
 Re-running resumes. `python Tools/NCA/swarm_nca.py rollout --rule <rule.pt>` prints the
 cross-score table and writes the data the viewer plays back.
+
+#### Scoring against the current majority, and why switching failed at first
+
+Headcount is not a goal. Each swarm is scored against **one** plan only: the plan of its current
+majority element (Mass → whale, Space → jellyfish, Charge → pufferfish, Time → dragonfly). The
+total is the sum over the four seedings. During training, some pool swarms lose enough of their
+majority element (as if eaten) for another element to take over. From then on they are scored
+against the new majority's plan. Every evaluation also runs a **switch test**: a grown swarm
+loses its majority, then runs 240 more steps.
+
+The first rule trained this way (`runs/swarm_try6`, step 250, shown in the viewer) grows each
+seeding closest to its own plan (4/4: diagonals 31 / 33 / 26 / 37 against 55–86 off-diagonal),
+but it never switches (0/4). A design review found five reasons:
+
+1. **The label is read at the end of the rollout**, so a swarm that out-lays the new majority and
+   returns to its old plan is scored as correct. The training signal rewards reverting.
+2. **Laying is designed and element-blind, and it has no gradient.** The rule cannot change its
+   own composition.
+3. **`w_elem = 60` makes the score mostly a composition readout.** The plans' geometry differs by
+   only 5–22.
+4. **The hatch and death gradient is weak.**
+5. **Switched samples do not live long enough** in the pool to restructure.
+
+Three fixes, all behind `TrainCfg` flags that are off by default (a 3-step run reproduces the
+earlier code exactly):
+
+- **Sticky labels** (`sticky_plan`, `switch_cooldown`, `margin`, `p_ratio`): a switched swarm
+  keeps its new plan as its label. A switch either leaves the new majority ahead by a margin
+  ("tie") or culls every element toward the new plan's mix ("ratio"). Each swarm has a cooldown
+  before it can switch again. The log's `rev` is the fraction of swarms whose majority no longer
+  matches their label.
+- **A learned laying gate** (`learned_lay`): the rule gates its own laying on channel 30, with
+  `q = sigmoid(4·s + 3)`, so laying is about 0.95 when that channel is 0. Each child carries a
+  zero-valued straight-through weight `dlog q_parent`, so the loss on a child reaches the
+  parent's decision to lay it.
+- **A composition-relative, contrastive loss** (`rel_elem`, `w_mix`, `w_con`, `con_margin`): the
+  target's element marginal is reweighted to the swarm's own mix, so the divergence measures
+  geometry given the composition. The mix gets its own squared-error term. A hinge requires the
+  own plan to beat every other plan by `con_margin`.
+
+Rollouts now also print a **geometry-only** cross table (element and domain costs zeroed): it
+shows whether shape, not just composition, picks the plan.
+
+Four overnight runs compare these fixes. All are warm-started from try6 and pushed to their own
+branches, with results in `results/swarm_coevo_<tag>/`:
+
+| Tag | Fixes | Branch |
+|---|---|---|
+| e1 | sticky labels | `cece/swarm-exp-e1` |
+| e2 | e1 + learned laying gate | `cece/swarm-exp-e2` |
+| e3 | e1 + composition-relative contrastive loss | `cece/swarm-exp-e3` |
+| e4 | all three | this branch |
+
+```
+python Tools/NCA/gpu_run.py swarm --device cpu --tag e1 --steps 6000 --set per_kind=2 --set pool=24 \
+  --set seed_every=6 --set roll_min=48 --set roll_max=96 --set bptt=28 --set sticky_plan=1 \
+  --set p_switch=0.25 --set switch_cooldown=240 --set p_ratio=0.5 --set margin=0.15   # (+ the e2/e3 flags)
+```
