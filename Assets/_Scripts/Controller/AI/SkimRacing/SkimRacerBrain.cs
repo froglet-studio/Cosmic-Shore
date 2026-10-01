@@ -69,6 +69,11 @@ namespace CosmicShore.Gameplay
             /// <summary>The lane this key sits on (0 over the plates, 1 under them), or -1. Between
             /// two keys on the same lane the line IS that lane.</summary>
             public sbyte Lane;
+            /// <summary>For an optimised line (<see cref="KeyKind.Opt"/>): the world control point
+            /// this key is — the line is the cubic B-spline through them, not a Hermite of offsets.</summary>
+            public Vector3 P;
+            /// <summary>For an optimised line: the speed (u/s) it is planned to be flown at here.</summary>
+            public float V;
         }
 
         const float SampleStep = 6f;        // arc between samples; tangent half-span
@@ -131,6 +136,30 @@ namespace CosmicShore.Gameplay
         public string DebugSteer { get; private set; } = "";
         /// <summary>What the last obstacle check concluded — for tooling.</summary>
         public string LastAvoidNote { get; private set; } = "";
+
+        /// <summary>Tooling: the plan's demand as the throttle reads it against the solver's own, knot
+        /// by knot, at the solver's design speeds.</summary>
+        public string DebugDemandCompare()
+        {
+            if (!IsSpline(_keys)) return "not a spline";
+            var sb = new System.Text.StringBuilder();
+            float worstRatio = 0f; int at = -1;
+            for (int i = 2; i < _opt.Count - 3; i++)
+            {
+                float s = _opt.Start + (i + 0.5f) * _opt.Step;
+                if (s < _s) continue;
+                float v = 0.5f * (_opt.DesignSpeed(i) + _opt.DesignSpeed(i + 1));
+                SampleCurve(_keys, s, 1, WindowFor(v));
+                float brain = Demand(0, v);
+                float solver = _opt.Demand(i);
+                if (solver > 0.3f && brain / solver > worstRatio) { worstRatio = brain / solver; at = i; }
+                if (i < 12) sb.Append($" [{i}:{brain:F2}/{solver:F2}@{v:F0}]");
+            }
+            return $"worst brain/solver {worstRatio:F2} at {at}:" + sb;
+        }
+
+        /// <summary>Tooling: the last solve's view of the obstacle nearest a point.</summary>
+        public string DescribeObstacleNear(Vector3 p) => _opt.DescribeObstacleNear(p);
 
         /// <summary>The planned offset (distance, angle) at arc <paramref name="s"/> — for tooling.</summary>
         public void DescribePlan(float s, out float rho, out float phi) => Offset(_keys, s, out rho, out phi);
@@ -474,6 +503,16 @@ namespace CosmicShore.Gameplay
         void State(List<Key> keys, float s, out float rho, out float phi,
                    out float dRho, out float dPhi, out float ddRho, out float ddPhi)
         {
+            if (IsSpline(keys))
+            {
+                SplineEval(keys, s, out Vector3 sp, out Vector3 sd1, out Vector3 sd2);
+                _route.Frame(s, out Vector3 sc, out _, out Vector3 sr, out Vector3 su);
+                Vector3 sd = sp - sc;
+                ToPolar(Vector3.Dot(sd, sr), Vector3.Dot(sd, su), Vector3.Dot(sd1, sr), Vector3.Dot(sd1, su),
+                    Vector3.Dot(sd2, sr), Vector3.Dot(sd2, su), SplinePhiNear(keys, s),
+                    out rho, out phi, out dRho, out dPhi, out ddRho, out ddPhi);
+                return;
+            }
             int n = keys.Count;
             if (n == 0)
             {
@@ -535,16 +574,113 @@ namespace CosmicShore.Gameplay
         Vector3 LinePoint(List<Key> keys, float s, out float rho, out float phi)
         {
             _route.Frame(s, out Vector3 c, out _, out Vector3 right, out Vector3 up);
+            if (IsSpline(keys))
+            {
+                Vector3 sp = SplinePoint(keys, s);
+                Vector3 d = sp - c;
+                float sa = Vector3.Dot(d, right), sb = Vector3.Dot(d, up);
+                rho = Mathf.Max(1e-3f, Mathf.Sqrt(sa * sa + sb * sb));
+                phi = Unwrap(Mathf.Atan2(sa, sb), SplinePhiNear(keys, s));
+                if (_p.LineWander > 0f)
+                {
+                    Wander(s, phi, out float wa, out float wb);
+                    sp += right * wa + up * wb;
+                }
+                return sp;
+            }
             Offset(keys, s, out rho, out phi);
             float a = rho * Mathf.Sin(phi), b = rho * Mathf.Cos(phi);
             if (_p.LineWander > 0f)
             {
-                float lambda = Mathf.Max(60f, _p.LineWanderSeconds * _sensors.ThrottleScaler * Mathf.Max(1f, _sensors.MaxBoost));
-                a += _p.LineWander * Mathf.Sin(s / lambda * 2f * Mathf.PI + _wanderPhaseA);
-                float lift = 0.5f + 0.5f * Mathf.Sin(s / (lambda * 1.37f) * 2f * Mathf.PI + _wanderPhaseB);
-                b += (Mathf.Cos(phi) >= 0f ? 1f : -1f) * _p.LineWander * 0.6f * lift;
+                Wander(s, phi, out float wa, out float wb);
+                a += wa;
+                b += wb;
             }
             return c + right * a + up * b;
+        }
+
+        /// <summary>The pilot's wander off the plan at arc <paramref name="s"/>: across the plates,
+        /// and away from them on the side <paramref name="phi"/> is on.</summary>
+        void Wander(float s, float phi, out float da, out float db)
+        {
+            float lambda = Mathf.Max(60f, _p.LineWanderSeconds * _sensors.ThrottleScaler * Mathf.Max(1f, _sensors.MaxBoost));
+            da = _p.LineWander * Mathf.Sin(s / lambda * 2f * Mathf.PI + _wanderPhaseA);
+            float lift = 0.5f + 0.5f * Mathf.Sin(s / (lambda * 1.37f) * 2f * Mathf.PI + _wanderPhaseB);
+            db = (Mathf.Cos(phi) >= 0f ? 1f : -1f) * _p.LineWander * 0.6f * lift;
+        }
+
+        // ------------------------------------------------------------------ the optimised line
+
+        /// <summary>True when <paramref name="keys"/> are an optimised line's control points
+        /// (<see cref="KeyKind.Opt"/>) rather than Hermite keys.</summary>
+        static bool IsSpline(List<Key> keys) => keys.Count >= 4 && keys[0].Kind == KeyKind.Opt;
+
+        /// <summary>
+        /// Control point <paramref name="idx"/> of an optimised line. Past either end of the stored
+        /// points the line goes on as the cubic its end segment already is (control points on a
+        /// cubic in the index make a B-spline that IS that cubic), so it is C-infinity across the
+        /// ends — which is what the samples a few metres behind the ship need.
+        /// </summary>
+        static Vector3 SplineControl(List<Key> keys, int idx)
+        {
+            int n = keys.Count;
+            if (idx >= 0 && idx < n) return keys[idx].P;
+            int b = idx < 0 ? 0 : n - 4;
+            float x = idx - b;
+            float l0 = -(x - 1f) * (x - 2f) * (x - 3f) / 6f;
+            float l1 = x * (x - 2f) * (x - 3f) / 2f;
+            float l2 = -x * (x - 1f) * (x - 3f) / 2f;
+            float l3 = x * (x - 1f) * (x - 2f) / 6f;
+            return keys[b].P * l0 + keys[b + 1].P * l1 + keys[b + 2].P * l2 + keys[b + 3].P * l3;
+        }
+
+        /// <summary>
+        /// World point and its first and second derivatives (per unit of route arc) of an optimised
+        /// line: the uniform cubic B-spline of its control points, knot i at <c>keys[i].S</c>.
+        ///
+        /// <para><b>Why a B-spline and not a Hermite through the points.</b> The optimiser bounds the
+        /// stick a line asks for through its third differences, and the third derivative of a uniform
+        /// cubic B-spline IS its control points' third difference over h³ (and its second derivative
+        /// at the knots their second difference over h²) — so the line flown asks for exactly what
+        /// the solver allowed. The first cut interpolated the points with a quintic Hermite whose
+        /// slopes and curvatures came from finite differences; that adds sub-grid jerk of several
+        /// times the true jerk (a slope error of h² J / 6 at both ends of a span is a jerk error of up
+        /// to 10 J inside it), and the line flown asked for 1.3-1.8x what the solver had promised —
+        /// enough at 300 u/s to saturate the stick, fall off the line and lose a crystal.</para>
+        /// </summary>
+        static void SplineEval(List<Key> keys, float s, out Vector3 p, out Vector3 d1, out Vector3 d2)
+        {
+            float h = Mathf.Max(1e-3f, keys[1].S - keys[0].S);
+            float u = (s - keys[0].S) / h;
+            int j = Mathf.FloorToInt(u);
+            float t = u - j;
+            Vector3 p0 = SplineControl(keys, j - 1), p1 = SplineControl(keys, j);
+            Vector3 p2 = SplineControl(keys, j + 1), p3 = SplineControl(keys, j + 2);
+            float t2 = t * t, t3 = t2 * t, mt = 1f - t;
+            p = (p0 * (mt * mt * mt) + p1 * (3f * t3 - 6f * t2 + 4f) + p2 * (-3f * t3 + 3f * t2 + 3f * t + 1f) + p3 * t3) / 6f;
+            d1 = (p0 * (-3f * mt * mt) + p1 * (9f * t2 - 12f * t) + p2 * (-9f * t2 + 6f * t + 3f) + p3 * (3f * t2)) / (6f * h);
+            d2 = (p0 * mt + p1 * (3f * t - 2f) + p2 * (1f - 3f * t) + p3 * t) / (h * h);
+        }
+
+        static Vector3 SplinePoint(List<Key> keys, float s)
+        {
+            float h = Mathf.Max(1e-3f, keys[1].S - keys[0].S);
+            float u = (s - keys[0].S) / h;
+            int j = Mathf.FloorToInt(u);
+            float t = u - j;
+            Vector3 p0 = SplineControl(keys, j - 1), p1 = SplineControl(keys, j);
+            Vector3 p2 = SplineControl(keys, j + 1), p3 = SplineControl(keys, j + 2);
+            float t2 = t * t, t3 = t2 * t, mt = 1f - t;
+            return (p0 * (mt * mt * mt) + p1 * (3f * t3 - 6f * t2 + 4f) + p2 * (-3f * t3 + 3f * t2 + 3f * t + 1f) + p3 * t3) / 6f;
+        }
+
+        /// <summary>The angle of the control point nearest <paramref name="s"/>: what an offset read
+        /// off an optimised line is unwrapped near.</summary>
+        static float SplinePhiNear(List<Key> keys, float s)
+        {
+            float h = Mathf.Max(1e-3f, keys[1].S - keys[0].S);
+            int i = Mathf.Clamp(Mathf.RoundToInt((s - keys[0].S) / h), 0, keys.Count - 1);
+            return keys[i].Phi;
         }
 
         /// <summary>Unit direction from the nearest point of the plates to the line at
@@ -702,6 +838,15 @@ namespace CosmicShore.Gameplay
 
         void PruneKeys()
         {
+            if (IsSpline(_keys))
+            {
+                // A B-spline reads control points behind the ship too, and the samples the steering
+                // smooths over reach 70-odd units back: keep what lies within SplineKeepBehind.
+                int drop = 0;
+                while (drop + 4 < _keys.Count && _keys[drop].S < _s - SplineKeepBehind) drop++;
+                if (drop > 0) _keys.RemoveRange(0, drop);
+                return;
+            }
             // Keep the last key at or behind the ship: it is the left end of the segment it is on.
             int lastBehind = -1;
             for (int i = 0; i < _keys.Count; i++)
@@ -1237,6 +1382,7 @@ namespace CosmicShore.Gameplay
         const float PlanTail = 240f;          // line planned past the crystal
         const float MaxPlanLength = 960f;     // longest line planned
         const float RefreshInterval = 0.25f;  // seconds between warm re-solves
+        const float SplineKeepBehind = 160f;  // control points kept behind the ship (the steering's samples reach ~70 u back)
 
         readonly SkimPathOptimizer _opt = new SkimPathOptimizer();
         readonly List<Key>[] _optCands =
@@ -1266,7 +1412,8 @@ namespace CosmicShore.Gameplay
                 Reanchors++;
                 return;
             }
-            bool inRange = _haveCrystal && !float.IsNaN(_crystalS) && _crystalS - _s <= MaxPlanLength - PlanTail;
+            float toCrystal = _haveCrystal && !float.IsNaN(_crystalS) ? _crystalS - _s : float.MaxValue;
+            bool inRange = toCrystal <= MaxPlanLength - PlanTail && toCrystal >= 2f * MinGridStep;
             if (crystalChanged || (inRange && !_planHasCrystal))
             {
                 Optimize(fromShip: false, cold: true);
@@ -1306,6 +1453,13 @@ namespace CosmicShore.Gameplay
         /// Solve a new line from the ship forward. <paramref name="cold"/>: seeded fresh, round the
         /// ribbon each way the crystal can be reached, and the faster flown; otherwise seeded on the
         /// line already being flown and refined.
+        ///
+        /// <para><b>The hand-over is C2.</b> The line is a B-spline (<see cref="SplineEval"/>) with
+        /// knot 0 one step BEHIND the ship and knot 1 at it, and its first three control points are
+        /// pinned so that position, slope and curvature at the ship are exactly what the old line
+        /// (or, from the ship, its motion and the turn it is already in) has there:
+        /// <c>P1 = C - h² C''/6</c>, <c>P0,2 = C ∓ h C' + h² C''/3</c>. A re-plan never moves the
+        /// line under the ship and never asks the stick for a jump.</para>
         /// </summary>
         void Optimize(bool fromShip, bool cold)
         {
@@ -1319,33 +1473,34 @@ namespace CosmicShore.Gameplay
             float vRef = Mathf.Max(_sensors.Speed, PredictSkimSpeed(300f));
             float grid = Mathf.Clamp(_p.OptGridSeconds * vRef, MinGridStep, MaxGridStep);
             float ahead = _haveCrystal && !float.IsNaN(_crystalS) ? _crystalS - s0 : float.MaxValue;
-            bool target = ahead > 3.5f * grid && ahead <= MaxPlanLength - PlanTail;
+            // A crystal is planned for while there are two knots of free line before it: a line re-
+            // planned from the ship close to its crystal must still go for it (the first cut planned a
+            // plain band line inside three and a half grid steps, and a ship knocked off its line
+            // there flew past its crystal and lost a lap).
+            bool target = ahead >= 2f * MinGridStep && ahead <= MaxPlanLength - PlanTail;
             float step = grid;
             int count, ic = -1;
             if (target)
             {
-                // The crystal on a grid point, so its pass is a point of the line and not a blend.
-                int nc = Mathf.Max(4, Mathf.RoundToInt(ahead / grid));
+                // The crystal on a knot, so its pass is a point of the line and not a blend.
+                int nc = Mathf.Max(2, Mathf.RoundToInt(ahead / grid));
                 step = ahead / nc;
-                ic = nc;
-                count = nc + Mathf.CeilToInt(PlanTail / step) + 1;
+                ic = nc + 1;
+                count = ic + Mathf.CeilToInt(PlanTail / step) + 1;
             }
-            else count = Mathf.CeilToInt(MaxPlanLength / step) + 1;
+            else count = Mathf.CeilToInt(MaxPlanLength / step) + 2;
             count = Mathf.Min(count, SkimPathOptimizer.MaxPoints);
+            float start = s0 - step;
 
-            _opt.Setup(_route, s0, step, count, _sensors.HullHalfExtents.z + _p.ClearanceMargin, HullReach, OptSettings());
+            _opt.Setup(_route, start, step, count, _sensors.HullHalfExtents.z + _p.ClearanceMargin, HullReach, OptSettings());
             count = _opt.Count;
 
-            // Where the ship is and how it is already turning: read off the old line when the ship
-            // is on it, so a re-plan never moves the line under the ship.
-            bool fromPlan = !fromShip && _keys.Count > 0;
-            for (int i = 0; i < 3; i++)
-            {
-                float a, b;
-                if (fromPlan) PlanOffset(_keys, s0 + i * step, out a, out b);
-                else ShipOffsetAhead(i * step, out a, out b);
-                _opt.SetPoint(i, a, b);
-            }
+            // The three pinned control points: where the ship is flying, as a B-spline must see it.
+            StartState(fromShip, s0, out Vector3 c, out Vector3 d1, out Vector3 d2);
+            float h2 = step * step;
+            SetControl(0, c - d1 * step + d2 * (h2 / 3f));
+            SetControl(1, c - d2 * (h2 / 6f));
+            SetControl(2, c + d1 * step + d2 * (h2 / 3f));
 
             float ac = 0f, bc = 0f;
             if (target)
@@ -1358,40 +1513,27 @@ namespace CosmicShore.Gameplay
                 for (int o = 0; o < _obstacles.Count; o++)
                 {
                     var ob = _obstacles[o];
-                    float r = HullReach + Mathf.Max(ob.HalfExtents.x, ob.HalfExtents.y) + _p.ObstacleMargin + 0.3f;
-                    _opt.AddObstacle(ob.Center, r);
+                    // A rod: its own thickness, the hull's reach at any roll, a little for the hull's
+                    // length when the line crosses it at an angle, and the margin.
+                    float r = HullReach + Mathf.Max(ob.HalfExtents.x, ob.HalfExtents.y) + _p.ObstacleMargin + 0.6f;
+                    _opt.AddObstacle(ob.Center, ob.Rotation * Vector3.forward, ob.HalfExtents.z, r);
                 }
             }
 
-            float sEnd = s0 + (count - 1) * step - 12f;
+            float sEnd = start + (count - 2) * step;
             int chosen = 0;
             string note;
             if (!cold && _keys.Count > 0)
             {
-                for (int i = 3; i < count; i++)
-                {
-                    PlanOffset(_keys, s0 + i * step, out float a, out float b);
-                    _opt.SetPoint(i, a, b);
-                }
-                PlanSpeeds(count, step, useBand: true);
-                _opt.Solve(_p.OptWarmIterations);
+                SeedFromPlan(count, step, useLane: false);
+                SolveLine(count, step, cold: false);
                 GridToKeys(_optCands[0]);
                 note = "warm";
             }
             else if (!target)
             {
-                int face = FaceOf(Mathf.Atan2(_opt.A(0), _opt.B(0)));
-                for (int i = 3; i < count; i++)
-                {
-                    float a, b;
-                    if (_keys.Count > 0) PlanOffset(_keys, s0 + i * step, out a, out b);
-                    else _line.Offset(face, s0 + i * step, out a, out b);
-                    _opt.SetPoint(i, a, b);
-                }
-                PlanSpeeds(count, step, useBand: false);
-                _opt.Solve(_p.OptColdIterations);
-                PlanSpeeds(count, step, useBand: true);
-                _opt.Solve(_p.OptWarmIterations);
+                SeedFromPlan(count, step, useLane: _keys.Count == 0);
+                SolveLine(count, step, cold: true);
                 GridToKeys(_optCands[0]);
                 note = "band";
             }
@@ -1406,17 +1548,14 @@ namespace CosmicShore.Gameplay
                 float rhoP = Mathf.Sqrt(pa * pa + pb * pb);
                 int options = Mathf.Abs(phiP - phi0) > 0.6f * Mathf.PI ? 2 : 1;
                 float bestCost = float.MaxValue;
-                for (int c = 0; c < options; c++)
+                for (int k = 0; k < options; k++)
                 {
-                    float phiT = c == 0 ? phiP : phiP - Mathf.Sign(phiP - phi0) * 2f * Mathf.PI;
+                    float phiT = k == 0 ? phiP : phiP - Mathf.Sign(phiP - phi0) * 2f * Mathf.PI;
                     SeedTowards(count, step, ic, phiT, rhoP);
-                    PlanSpeeds(count, step, useBand: false);
-                    _opt.Solve(_p.OptColdIterations);
-                    PlanSpeeds(count, step, useBand: true);
-                    _opt.Solve(_p.OptWarmIterations);
-                    GridToKeys(_optCands[c]);
-                    float cost = options > 1 ? Evaluate(_optCands[c], s0, sEnd) : 0f;
-                    if (cost < bestCost) { bestCost = cost; chosen = c; }
+                    SolveLine(count, step, cold: true);
+                    GridToKeys(_optCands[k]);
+                    float cost = options > 1 ? Evaluate(_optCands[k], s0, sEnd) : 0f;
+                    if (cost < bestCost) { bestCost = cost; chosen = k; }
                 }
                 note = options > 1 ? (chosen == 0 ? "short-way" : "long-way") : "crystal";
             }
@@ -1430,8 +1569,78 @@ namespace CosmicShore.Gameplay
             _planSpeed = Mathf.Max(_sensors.Speed, 1f);
             int newFace = FaceOf(_keys[_keys.Count - 1].Phi);
             if (oldFace >= 0 && newFace != oldFace) FaceChanges++;
-            LastChoice = $"{note} it={_opt.Iterations} d={_opt.WorstDemand:F2} miss={_opt.CrystalMiss:F1} clr={_opt.WorstClearDeficit:F1} obs={_opt.WorstObstacleDeficit:F1}";
+            LastChoice = $"{note} it={_opt.Iterations} d={_opt.WorstDemand:F2} miss={_opt.CrystalMiss:F1} clr={_opt.WorstClearDeficit:F1} obs={_opt.WorstObstacleDeficit:F1}/{_opt.ObstacleCount}of{(_obstacles != null ? _obstacles.Count : 0)}";
         }
+
+        /// <summary>Pins optimiser point <paramref name="i"/> to world control point
+        /// <paramref name="p"/>, as an offset in the ribbon's frame at its knot.</summary>
+        void SetControl(int i, Vector3 p)
+        {
+            _route.Frame(_opt.Start + i * _opt.Step, out Vector3 c, out _, out Vector3 r, out Vector3 u);
+            Vector3 d = p - c;
+            _opt.SetPoint(i, Vector3.Dot(d, r), Vector3.Dot(d, u));
+        }
+
+        /// <summary>
+        /// World position, and slope and curvature per unit of route arc, of where the ship is flying
+        /// at arc <paramref name="s0"/>: read off the line it is on, or — from the ship — its own
+        /// position, the way it is going and the turn the transform is already closing on (the
+        /// commanded rotation's lead times the follow rate).
+        /// </summary>
+        void StartState(bool fromShip, float s0, out Vector3 c, out Vector3 d1, out Vector3 d2)
+        {
+            if (!fromShip && IsSpline(_keys))
+            {
+                SplineEval(_keys, s0, out c, out d1, out d2);
+                return;
+            }
+            _route.Frame(s0, out _, out Vector3 tangent, out _, out _);
+            Vector3 fwd = _sensors.Course.sqrMagnitude > 0.5f ? _sensors.Course.normalized : _sensors.Rotation * Vector3.forward;
+            float v = Mathf.Max(_sensors.Speed, 1f);
+            Quaternion gap = _sensors.CommandedRotation * Quaternion.Inverse(_sensors.Rotation);
+            gap.ToAngleAxis(out float angle, out Vector3 axis);
+            if (angle > 180f) angle -= 360f;
+            Vector3 omega = axis.sqrMagnitude > 1e-6f ? axis.normalized * (angle * Mathf.Deg2Rad * Follow) : Vector3.zero;
+            Vector3 kappa = Vector3.Cross(omega, fwd) / v;
+            float along = Mathf.Max(0.25f, Vector3.Dot(fwd, tangent));
+            c = _sensors.Position;
+            d1 = fwd / along;
+            d2 = kappa / (along * along);
+        }
+
+        /// <summary>
+        /// Seed the free control points on the line being flown (or, before there is one, on the
+        /// racing line's lane): its offsets at the new knots, less a sixth of their second
+        /// difference — the control points whose B-spline passes through those offsets, to second
+        /// order — so a warm start does not shave every swing by <c>h² κ / 6</c> per re-plan.
+        /// </summary>
+        void SeedFromPlan(int count, float step, bool useLane)
+        {
+            float start = _opt.Start;
+            int face = FaceOf(Mathf.Atan2(_opt.A(1), _opt.B(1)));
+            for (int i = 2; i < count + 1; i++)
+            {
+                float a, b;
+                SeedOffset(start + i * step, useLane, face, out a, out b);
+                _seedA[i] = a;
+                _seedB[i] = b;
+            }
+            for (int i = 3; i < count; i++)
+            {
+                float a = _seedA[i] - (_seedA[i - 1] - 2f * _seedA[i] + _seedA[i + 1]) / 6f;
+                float b = _seedB[i] - (_seedB[i - 1] - 2f * _seedB[i] + _seedB[i + 1]) / 6f;
+                _opt.SetPoint(i, a, b);
+            }
+        }
+
+        void SeedOffset(float s, bool useLane, int face, out float a, out float b)
+        {
+            if (useLane || _keys.Count == 0) _line.Offset(face, s, out a, out b);
+            else PlanOffset(_keys, s, out a, out b);
+        }
+
+        readonly float[] _seedA = new float[SkimPathOptimizer.MaxPoints + 2];
+        readonly float[] _seedB = new float[SkimPathOptimizer.MaxPoints + 2];
 
         /// <summary>Seed the line from point 2 round the ribbon to angle <paramref name="phiT"/>
         /// (unwrapped: the sign of the move says which way round) at the crystal's point, then back
@@ -1466,6 +1675,69 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Solve the line and the speed it is flown at together. The line is first solved for the
+        /// speed the ship could reach skimming flat out (<see cref="PlanSpeeds"/>); wherever that
+        /// line still asks for more stick than the budget at that speed — a crystal too close to swing
+        /// to at full boost, a twist of the ribbon too sharp — the speed there is lowered to what the
+        /// line CAN be flown at, braked back toward the ship (<see cref="FitSpeeds"/>), and the line
+        /// re-solved for the slower ship, which can bend tighter. The plan then carries its speeds and
+        /// the throttle follows them, so the ship slows BEFORE the bend that needs it, smoothly,
+        /// instead of finding out in the bend and shutting the throttle there.
+        /// </summary>
+        void SolveLine(int count, float step, bool cold)
+        {
+            if (cold)
+            {
+                PlanSpeeds(count, step, useBand: false);
+                _opt.Solve(_p.OptColdIterations);
+            }
+            PlanSpeeds(count, step, useBand: true);
+            _opt.Solve(_p.OptWarmIterations);
+            for (int pass = 0; pass < _p.SpeedFitPasses; pass++)
+            {
+                if (!FitSpeeds(count, step)) break;
+                _opt.Solve(_p.OptWarmIterations);
+            }
+        }
+
+        readonly float[] _fitV = new float[SkimPathOptimizer.MaxPoints];
+
+        /// <summary>
+        /// Lowers each stretch's design speed to the fastest the solved line can be flown there inside
+        /// the planning budget, then brakes the profile back toward the ship at the rate the throttle
+        /// can shed speed. The ship's own speed at the knots it is already on cannot change. True when
+        /// any knot got slower.
+        /// </summary>
+        bool FitSpeeds(int count, float step)
+        {
+            float budget = _p.SpeedFitAuthority * TurnRateRad * _p.RollBonus;
+            for (int i = 0; i < count; i++) _fitV[i] = _opt.DesignSpeed(i);
+            bool changed = false;
+            for (int i = 2; i <= count - 3; i++)
+            {
+                float vm = _opt.MaxSpeed(i, budget, Mathf.Max(_fitV[i], _fitV[i + 1]));
+                if (vm < _fitV[i] - 0.5f) { _fitV[i] = vm; changed = true; }
+                if (vm < _fitV[i + 1] - 0.5f) { _fitV[i + 1] = vm; changed = true; }
+            }
+            if (!changed) return false;
+            for (int i = count - 2; i >= 2; i--) _fitV[i] = Mathf.Min(_fitV[i], _fitV[i + 1] + _p.PlanBrakePerUnit * step);
+            for (int i = 0; i < count; i++) _opt.SetSpeed(i, Mathf.Max(_fitV[i], MinPlanSpeed));
+            return true;
+        }
+
+        const float MinPlanSpeed = 30f;
+
+        /// <summary>The speed the plan is to be flown at, at arc <paramref name="s"/>.</summary>
+        float PlanSpeedAt(float s)
+        {
+            int n = _keys.Count;
+            float h = Mathf.Max(1e-3f, _keys[1].S - _keys[0].S);
+            float u = Mathf.Clamp((s - _keys[0].S) / h, 0f, n - 1.001f);
+            int i = Mathf.FloorToInt(u);
+            return Mathf.Lerp(_keys[i].V, _keys[i + 1].V, u - i);
+        }
+
         /// <summary>The speed the ship will be doing at each point of the line: its own now, then the
         /// throttle target at the boost it will have, skimming wherever the line is in reach
         /// (<paramref name="useBand"/>) or everywhere.</summary>
@@ -1487,28 +1759,22 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The optimiser's points as keys: value, slope and curvature at each, so the
-        /// quintic between consecutive keys is the smooth line through them.</summary>
+        /// <summary>The optimiser's points as an optimised line's keys: each a B-spline control
+        /// point (<see cref="Key.P"/>), with its offset angle kept for unwrapping reads of the line.</summary>
         void GridToKeys(List<Key> keys)
         {
             keys.Clear();
             int n = _opt.Count;
             float h = _opt.Step, s0 = _opt.Start;
-            float phiNear = Mathf.Atan2(_opt.A(0), _opt.B(0));
+            float phiNear = Mathf.Atan2(_opt.A(1), _opt.B(1));
             for (int i = 0; i < n; i++)
             {
-                int i0 = Mathf.Max(0, i - 1), i1 = Mathf.Min(n - 1, i + 1);
-                float span = (i1 - i0) * h;
-                float da = (_opt.A(i1) - _opt.A(i0)) / span, db = (_opt.B(i1) - _opt.B(i0)) / span;
-                int c = Mathf.Clamp(i, 1, n - 2);
-                float dda = (_opt.A(c + 1) - 2f * _opt.A(c) + _opt.A(c - 1)) / (h * h);
-                float ddb = (_opt.B(c + 1) - 2f * _opt.B(c) + _opt.B(c - 1)) / (h * h);
-                ToPolar(_opt.A(i), _opt.B(i), da, db, dda, ddb, phiNear,
-                    out float rho, out float phi, out float dRho, out float dPhi, out float ddRho, out float ddPhi);
+                float a = _opt.A(i), b = _opt.B(i);
+                float phi = Unwrap(Mathf.Atan2(a, b), phiNear);
                 keys.Add(new Key
                 {
-                    S = s0 + i * h, Rho = rho, Phi = phi, DRho = dRho, DPhi = dPhi, DDRho = ddRho, DDPhi = ddPhi,
-                    Kind = i == 0 ? KeyKind.Anchor : KeyKind.Opt, Lane = -1,
+                    S = s0 + i * h, Rho = Mathf.Max(1e-3f, Mathf.Sqrt(a * a + b * b)), Phi = phi,
+                    Kind = KeyKind.Opt, Lane = -1, P = _opt.Point(i), V = _opt.DesignSpeed(i),
                 });
                 phiNear = phi;
             }
@@ -1520,28 +1786,6 @@ namespace CosmicShore.Gameplay
             Offset(keys, s, out float rho, out float phi);
             a = rho * Mathf.Sin(phi);
             b = rho * Mathf.Cos(phi);
-        }
-
-        /// <summary>Where the ship will be, as an offset, after <paramref name="ds"/> of arc if it
-        /// holds the turn it is already in — the transform closing on the commanded rotation at the
-        /// follow rate.</summary>
-        void ShipOffsetAhead(float ds, out float a, out float b)
-        {
-            _route.Frame(_s, out _, out Vector3 tangent, out _, out _);
-            Vector3 fwd = _sensors.Course.sqrMagnitude > 0.5f ? _sensors.Course.normalized : _sensors.Rotation * Vector3.forward;
-            float v = Mathf.Max(_sensors.Speed, 1f);
-            Quaternion gap = _sensors.CommandedRotation * Quaternion.Inverse(_sensors.Rotation);
-            gap.ToAngleAxis(out float angle, out Vector3 axis);
-            if (angle > 180f) angle -= 360f;
-            Vector3 omega = axis.sqrMagnitude > 1e-6f ? axis.normalized * (angle * Mathf.Deg2Rad * Follow) : Vector3.zero;
-            Vector3 kappa = Vector3.Cross(omega, fwd) / v;
-            float along = Mathf.Max(0.25f, Vector3.Dot(fwd, tangent));
-            float sigma = ds / along;
-            Vector3 p = _sensors.Position + fwd * sigma + kappa * (0.5f * sigma * sigma);
-            _route.Frame(_s + ds, out Vector3 c, out _, out Vector3 r, out Vector3 u);
-            Vector3 d = p - c;
-            a = Vector3.Dot(d, r);
-            b = Vector3.Dot(d, u);
         }
 
         // ============================================================================== avoidance
@@ -1732,8 +1976,21 @@ namespace CosmicShore.Gameplay
 
             float full = _sensors.ThrottleScaler * Mathf.Max(1f, _sensors.BoostMultiplier);
             float want = Mathf.Clamp01(_p.Throttle);
+            if (_p.FollowPlanSpeed && IsSpline(_keys) && full >= 1f)
+            {
+                // The plan's speed, led by the throttle lag: the speed lerps toward its target at the
+                // follow rate, so a target of v_plan + v dv/ds / k makes it ARRIVE at the planned speed
+                // where the plan wants it rather than 0.7 s later.
+                float vp = PlanSpeedAt(_s);
+                float slope = (PlanSpeedAt(_s + 12f) - PlanSpeedAt(_s - 12f)) / 24f;
+                float lead = vp + v * slope / Follow;
+                if (lead < full * want) want = Mathf.Clamp01(lead / full);
+            }
+            // Aim the throttle AT the speed the line allows rather than shutting it whenever the ship is
+            // over: the lerp then sheds the excess in proportion to it, so a ship a few u/s over its
+            // cap eases off instead of decelerating at 1.5 v per second mid-bend.
             if (full < 1f || cap >= full * want) _throttle = want;
-            else if (v > cap) _throttle = 0f;
+            else if (v > cap && !_p.ProportionalBrake) _throttle = 0f;
             else _throttle = Mathf.Clamp01(Mathf.Min(want, cap / full));
         }
 
@@ -1762,7 +2019,14 @@ namespace CosmicShore.Gameplay
                              $"D=({Vector3.Dot(dd, dbgR):F0},{Vector3.Dot(dd, dbgU):F0}) e=({Vector3.Dot(e, dbgR):F1},{Vector3.Dot(e, dbgU):F1})";
             }
             Vector3 omega = Vector3.Cross(fwd, accel) / v;
-            Vector3 omegaRate = Vector3.Cross(tl, ddTl) * (v * v);
+            // How fast the turn the line asks for is changing: the line's own curvature change at this
+            // speed, plus the speed change at this curvature. The second is the term that matters when
+            // the throttle moves: the throttle lerp sheds 1.5 v per second with the throttle shut, and
+            // a ship holding a 77°/s bend through that keeps turning at the rate the OLD speed needed —
+            // the same commanded lead on a slower ship is a tighter circle, and it flies off the line
+            // into whatever is inside the bend.
+            float vDot = Follow * (_sensors.ThrottleScaler * _throttle * Mathf.Max(1f, _sensors.BoostMultiplier) - s.Speed);
+            Vector3 omegaRate = Vector3.Cross(tl, ddTl) * (v * v) + Vector3.Cross(fwd, dTl) * (vDot * _p.SpeedChangeFeedForward);
             omegaRate -= fwd * Vector3.Dot(omegaRate, fwd);
 
             Vector3 belly = BellyDirection(_s);

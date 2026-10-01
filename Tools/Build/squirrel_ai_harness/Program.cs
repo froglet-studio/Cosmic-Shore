@@ -321,7 +321,10 @@ namespace SquirrelAiHarness
             foreach (var (field, value) in _tweaks)
             {
                 var f = typeof(SkimRacerProfile).GetField(field) ?? throw new ArgumentException($"no profile field {field}");
-                f.SetValue(p, value);
+                object v = f.FieldType == typeof(bool) ? value != 0f
+                         : f.FieldType == typeof(int) ? (object)(int)Math.Round(value)
+                         : value;
+                f.SetValue(p, v);
             }
             return p;
         }

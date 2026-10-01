@@ -251,32 +251,51 @@ namespace SquirrelAiHarness
             r.Brain.DescribePlan(s, out float rho, out float phi);
             float cs = r.Brain.TargetCrystalS;
             Vector3 fwd = p.Rotation * Vector3.forward;
-            r.Stats.Events.Add($"{Time,7:F2}s s={s,8:F1} v={p.Speed,5:F0} bm={p.Boost:F2} " +
+            r.Brain.ProfilePlan(s, s + 300f, 300f, _profRates);
+            float worst = 0f; int worstAt = 0;
+            for (int q = 0; q < _profRates.Count; q++) if (_profRates[q] > worst) { worst = _profRates[q]; worstAt = q; }
+            r.Stats.Events.Add($"{Time,7:F2}s s={s,8:F1} v={p.Speed,5:F0} bm={p.Boost:F2} keysDemand300={worst:F2}@{worstAt * 6} " +
                 $"off=({Vector3.Dot(d, right),6:F1},{Vector3.Dot(d, up),6:F1},{Vector3.Dot(d, t),5:F1}) " +
                 $"plan=({rho * Mathf.Sin(phi),6:F1},{rho * Mathf.Cos(phi),6:F1}) xt={r.Brain.CrossTrackError,5:F1} " +
                 $"head={Vector3.Angle(fwd, t),5:F1} crystal ds={(float.IsNaN(cs) ? float.NaN : cs - s),7:F1} dist={Vector3.Distance(p.Position, r.Crystal),6:F1} " +
                 $"keys={r.Brain.KeyCount} re={r.Brain.Reanchors} stick=({p.XSum,5:F2},{p.YSum,5:F2},{p.YDiff,5:F2}) " +
-                $"gap={Quaternion.Angle(p.Rotation, p.Commanded),5:F1} thr={r.Brain.ThrottleOut:F2} plan={r.Brain.LastChoice} {r.Brain.DebugSteer}");
+                $"gap={Quaternion.Angle(p.Rotation, p.Commanded),5:F1} thr={r.Brain.ThrottleOut:F2} plan={r.Brain.LastChoice} {r.Brain.DebugSteer}" +
+                (Environment.GetEnvironmentVariable("SKIM_DEMAND_DEBUG") == "1" ? " || " + r.Brain.DebugDemandCompare() : ""));
         }
 
+        readonly List<float> _profRates = new List<float>(64);
+
+        readonly HashSet<int> _gathered = new HashSet<int>();
+
+        /// <summary>
+        /// What a pilot can see of other trails: every rail along the ribbon ahead, out to the length
+        /// of line the brain plans (the game's sensor does the same with the prism spatial index,
+        /// along the route). A rail the racer laid itself within the hull grace is not solid yet.
+        /// </summary>
         void GatherObstacles(Racer r)
         {
             _obstacles.Clear();
-            var p = r.Plant;
-            float v = Mathf.Max(p.Speed, 60f);
-            Vector3 centre = p.Position + p.Course * (v * 0.45f);
-            float radius = v * 0.55f + 30f;
-            _scratch.Clear();
-            _railGrid.Query(centre, radius, _scratch);
-            foreach (int i in _scratch)
+            _gathered.Clear();
+            float s0 = r.Brain.RouteS;
+            for (float ds = 0f; ds <= ObstacleHorizon; ds += 70f)
             {
-                var rail = _rails[i];
-                if (rail.Owner == r.Id && Time - rail.Born < _c.HullGrace) continue;
-                if ((rail.Position - centre).sqrMagnitude > radius * radius) continue;
-                Vector3 half = rail.Shielded ? _c.RailHalf * _c.ShellScale : _c.RailHalf;
-                _obstacles.Add(new SkimObstacle(rail.Position, rail.Rotation, half));
+                Route.Frame(s0 + ds, out Vector3 centre, out _, out _, out _);
+                _scratch.Clear();
+                _railGrid.Query(centre, ObstacleQueryRadius, _scratch);
+                foreach (int i in _scratch)
+                {
+                    if (!_gathered.Add(i)) continue;
+                    var rail = _rails[i];
+                    if (rail.Owner == r.Id && Time - rail.Born < _c.HullGrace) continue;
+                    if ((rail.Position - centre).sqrMagnitude > ObstacleQueryRadius * ObstacleQueryRadius) continue;
+                    Vector3 half = rail.Shielded ? _c.RailHalf * _c.ShellScale : _c.RailHalf;
+                    _obstacles.Add(new SkimObstacle(rail.Position, rail.Rotation, half));
+                }
             }
         }
+
+        const float ObstacleHorizon = 980f;
+        const float ObstacleQueryRadius = 120f;
 
         void SpawnRails(Racer r)
         {
@@ -334,7 +353,9 @@ namespace SquirrelAiHarness
                     Route.Frame(r.Brain.RouteS, out Vector3 tc, out _, out Vector3 tr, out Vector3 tu);
                     Vector3 td = p.Position - tc;
                     r.Brain.DescribePlan(r.Brain.RouteS, out float prho, out float pphi);
-                    r.Stats.Events.Add($"{Time,7:F2}s ribbon touch at prism {i}{(Track[i].Marker ? " (marker)" : "")} " +
+                    Route.Envelope(r.Brain.RouteS, _c.HullHalf.z + 1f, out float ehw, out float ehh);
+                    Route.Envelope(r.Brain.RouteS, 0f, out float phw, out float phh);
+                    r.Stats.Events.Add($"{Time,7:F2}s ribbon touch at prism {i}{(Track[i].Marker ? " (marker)" : "")} env({ehw:F1},{ehh:F1}) plate({phw:F1},{phh:F1}) " +
                         $"ship at ({Vector3.Dot(td, tr):F1},{Vector3.Dot(td, tu):F1}) plan ({prho * Mathf.Sin(pphi):F1},{prho * Mathf.Cos(pphi):F1}) " +
                         $"v={p.Speed:F0} thr={r.Brain.ThrottleOut:F2} plan={r.Brain.LastChoice} {r.Brain.DebugSteer}");
                 }
@@ -373,7 +394,7 @@ namespace SquirrelAiHarness
                     Vector3 rd = rail.Position - rc;
                     r.Stats.Events.Add($"{Time,7:F2}s rail touch ({(rail.Owner == r.Id ? "own" : $"racer {rail.Owner}")}, age {Time - rail.Born:F1}s) " +
                         $"rail at ({Vector3.Dot(rd, rr):F1},{Vector3.Dot(rd, ru):F1}) v={p.Speed:F0} xt={r.Brain.CrossTrackError:F1} " +
-                        $"{(seen ? "SEEN" : "NOT-GATHERED")} avoid: {r.Brain.LastAvoidNote} plan={r.Brain.LastChoice}");
+                        $"{(seen ? "SEEN" : "NOT-GATHERED")} avoid: {r.Brain.LastAvoidNote} plan={r.Brain.LastChoice} | {r.Brain.DescribeObstacleNear(rail.Position)}");
                 }
             Swap(r.SkimRails, r.NextSkimRails);
             Swap(r.HullRails, r.NextHullRails);

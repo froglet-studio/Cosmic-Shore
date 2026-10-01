@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Clearance kept between the hull's reach and anything solid, on top of the exact " +
                  "envelope.")]
-        public float ClearanceMargin = 1f;
+        public float ClearanceMargin = 3.25f;
 
         [Tooltip("Clearance the RACING LINE keeps between the hull's reach and the plates, on top of " +
                  "the exact envelope. The line sits at this bound wherever it cuts a bend toward the " +
@@ -83,6 +83,18 @@ namespace CosmicShore.Gameplay
         [Tooltip("ADMM penalty on the line's point copies (per u squared): how hard each iteration " +
                  "fits the line to the projected copies. Convergence speed only, not the answer.")]
         public float OptRho = 10f;
+        [Tooltip("Passes of fitting the line's speed to what it can be flown at, and re-solving (0 = plan flat out).")]
+        public int SpeedFitPasses = 2;
+        [Tooltip("Share of the stick a stretch of line may need at its fitted speed: above the share the line is shaped to (PlanAuthority), so the speed is lowered only where the shaping could not get the line under budget.")]
+        public float SpeedFitAuthority = 0.95f;
+        [Tooltip("u/s of planned speed shed per unit of line when braking for a bend (the throttle shut sheds 1.5).")]
+        public float PlanBrakePerUnit = 1.0f;
+        [Tooltip("Throttle follows the plan's speed profile, led by the throttle lag.")]
+        public bool FollowPlanSpeed = true;
+        [Tooltip("EXPERIMENT: aim the throttle at the speed cap instead of shutting it when over.")]
+        public bool ProportionalBrake = false;
+        [Tooltip("EXPERIMENT: weight of the speed-change term in the turn-rate feed-forward.")]
+        public float SpeedChangeFeedForward = 1f;
         [Tooltip("Seconds of flight between the optimiser's points (12 to 36 u).")]
         public float OptGridSeconds = 0.12f;
         [Tooltip("ADMM iterations for a fresh line.")]

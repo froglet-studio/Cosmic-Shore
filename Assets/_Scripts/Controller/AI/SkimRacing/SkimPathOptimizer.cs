@@ -92,9 +92,10 @@ namespace CosmicShore.Gameplay
         readonly double[] _rhoD = new double[MaxPoints];
         readonly double[] _zpa = new double[MaxPoints], _zpb = new double[MaxPoints];
         readonly double[] _wpa = new double[MaxPoints], _wpb = new double[MaxPoints];
+        // Each obstacle's copy is the curve point at its arc, held outside the obstacle's capsule.
         readonly Vector3[] _zo = new Vector3[MaxObstacles], _wo = new Vector3[MaxObstacles];
-        readonly int[] _oSeg = new int[MaxObstacles];
-        readonly float[] _oT = new float[MaxObstacles];
+        readonly int[] _oSeg = new int[MaxObstacles];    // B-spline segment the obstacle sits beside
+        readonly float[] _oT = new float[MaxObstacles];  // and where along it
 
         // The demand rows never change during a solve (geometry and speed only): kept, per stencil,
         // as 4 points x (a, b) coefficients plus the constant, for the across (R) and up (U) rows.
@@ -111,9 +112,13 @@ namespace CosmicShore.Gameplay
         int _tn;
         double _tc;
 
+        // Obstacles are capsules: a centre, a unit axis and a half-length (a rail prism is a 6 u rod),
+        // inflated by a radius; each is held off the line at the route arc it stands beside.
         readonly List<Vector3> _obsCenters = new List<Vector3>(256);
+        readonly List<Vector3> _obsAxes = new List<Vector3>(256);
+        readonly List<float> _obsHalf = new List<float>(256);
         readonly List<float> _obsRadii = new List<float>(256);
-        readonly List<int> _obsIndex = new List<int>(256);   // grid point nearest the obstacle
+        readonly List<float> _obsU = new List<float>(256);   // arc parameter, in knots from the first
 
         int _n;
         float _s0, _step;
@@ -136,6 +141,7 @@ namespace CosmicShore.Gameplay
         public float WorstClearDeficit { get; private set; }
         public float WorstObstacleDeficit { get; private set; }
         public int Iterations { get; private set; }
+        public int ObstacleCount => _obsCenters.Count;
 
         /// <summary>Tooling: receives a line every few iterations when set.</summary>
         public Action<string> DebugLog;
@@ -155,8 +161,10 @@ namespace CosmicShore.Gameplay
             _set = settings;
             _crystalIndex = -1;
             _obsCenters.Clear();
+            _obsAxes.Clear();
+            _obsHalf.Clear();
             _obsRadii.Clear();
-            _obsIndex.Clear();
+            _obsU.Clear();
             for (int i = 0; i < _n; i++)
             {
                 float s = s0 + i * _step;
@@ -195,11 +203,18 @@ namespace CosmicShore.Gameplay
             _crystalR = radius;
         }
 
-        /// <summary>Keep the hull <paramref name="radius"/> from <paramref name="center"/>. Ignored
-        /// when the obstacle is nowhere near the stretch of ribbon being planned.</summary>
-        public void AddObstacle(Vector3 center, float radius)
+        /// <summary>
+        /// Keep the line <paramref name="radius"/> from a rod of half-length
+        /// <paramref name="halfLength"/> along <paramref name="axis"/> through <paramref name="center"/>.
+        /// The line is held off it at the route arc the rod stands beside — the curve point there, not
+        /// a point of the control polygon — which is what lets a line that runs alongside a chain of
+        /// rails stay clear of every one of them: the rails are a line of rods 7 u apart, and a curve
+        /// that is clear at each rod's arc cannot dip into the gap between two of them by more than
+        /// its curvature allows over 3.5 u. Ignored when it stands nowhere near the stretch planned.
+        /// </summary>
+        public void AddObstacle(Vector3 center, Vector3 axis, float halfLength, float radius)
         {
-            if (_obsCenters.Count >= MaxObstacles) return;
+            if (_obsCenters.Count >= MaxObstacles || _n < FixedCount + 2) return;
             int best = -1;
             float bestD = float.MaxValue;
             for (int i = 0; i < _n; i++)
@@ -207,11 +222,50 @@ namespace CosmicShore.Gameplay
                 float d = (_c[i] - center).sqrMagnitude;
                 if (d < bestD) { bestD = d; best = i; }
             }
-            float reach = radius + 80f;
-            if (best < 0 || bestD > reach * reach) return;
+            // Its arc: the nearest knot, slid along the route's tangent there.
+            int i0 = Mathf.Max(0, best - 1), i1 = Mathf.Min(_n - 1, best + 1);
+            Vector3 tangent = (_c[i1] - _c[i0]).normalized;
+            float u = best + Vector3.Dot(center - _c[best], tangent) / _step;
+            // Only beside the line's own segments (1 .. n-3): behind the ship it has been flown.
+            if (u < FixedCount - 2 + 0.5f || u > _n - 2.01f) return;
+            Vector3 lateral = center - _c[best] - tangent * Vector3.Dot(center - _c[best], tangent);
+            if (lateral.sqrMagnitude > MaxObstacleLateral * MaxObstacleLateral) return;
             _obsCenters.Add(center);
+            _obsAxes.Add(axis.sqrMagnitude > 1e-6f ? axis.normalized : tangent);
+            _obsHalf.Add(Mathf.Max(0f, halfLength));
             _obsRadii.Add(radius);
-            _obsIndex.Add(best);
+            _obsU.Add(u);
+        }
+
+        /// <summary>Obstacles further than this (u) from the ribbon's centre line are not planned
+        /// around: a crystal is never further out than 70 u, and the line never strays much past it.</summary>
+        const float MaxObstacleLateral = 110f;
+
+        /// <summary>World point of the B-spline at arc parameter <paramref name="u"/> (in knots from the
+        /// first): what the line actually flies, as opposed to <see cref="Point"/>, its control points.</summary>
+        public Vector3 CurvePoint(float u)
+        {
+            int j = Mathf.Clamp(Mathf.FloorToInt(u), 1, _n - 3);
+            float t = Mathf.Clamp01(u - j);
+            SplineWeights(t, out float w0, out float w1, out float w2, out float w3);
+            return Point(j - 1) * w0 + Point(j) * w1 + Point(j + 1) * w2 + Point(j + 2) * w3;
+        }
+
+        static void SplineWeights(float t, out float w0, out float w1, out float w2, out float w3)
+        {
+            float t2 = t * t, t3 = t2 * t, mt = 1f - t;
+            w0 = mt * mt * mt / 6f;
+            w1 = (3f * t3 - 6f * t2 + 4f) / 6f;
+            w2 = (-3f * t3 + 3f * t2 + 3f * t + 1f) / 6f;
+            w3 = t3 / 6f;
+        }
+
+        /// <summary>The point of obstacle <paramref name="o"/>'s rod nearest <paramref name="q"/>.</summary>
+        Vector3 RodPoint(int o, Vector3 q)
+        {
+            Vector3 c = _obsCenters[o], ax = _obsAxes[o];
+            float h = _obsHalf[o];
+            return c + ax * Mathf.Clamp(Vector3.Dot(q - c, ax), -h, h);
         }
 
         /// <summary>World point of the line at grid point <paramref name="i"/>.</summary>
@@ -248,9 +302,11 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _n; i++) _side[i] = NearestSide(i, _a[i], _b[i]);
             for (int o = 0; o < _obsCenters.Count; o++)
             {
-                NearestSegment(o, out _oSeg[o], out _oT[o], out _);
+                float u = _obsU[o];
+                _oSeg[o] = Mathf.Clamp(Mathf.FloorToInt(u), 1, _n - 3);
+                _oT[o] = Mathf.Clamp01(u - _oSeg[o]);
                 _wo[o] = Vector3.zero;
-                _zo[o] = Vector3.Lerp(Point(_oSeg[o]), Point(_oSeg[o] + 1), _oT[o]);
+                _zo[o] = CurvePoint(u);
             }
 
             // ---- the fixed system: every copy's least-squares fit.
@@ -346,17 +402,18 @@ namespace CosmicShore.Gameplay
                 }
                 for (int o = 0; o < _obsCenters.Count; o++)
                 {
-                    Vector3 q = Vector3.Lerp(Point(_oSeg[o]), Point(_oSeg[o] + 1), _oT[o]);
+                    Vector3 q = CurvePoint(_oSeg[o] + _oT[o]);
                     Vector3 hq = (float)relax * q + (float)(1.0 - relax) * _zo[o];
                     Vector3 vq = hq + _wo[o];
-                    Vector3 away = vq - _obsCenters[o];
+                    Vector3 rod = RodPoint(o, vq);
+                    Vector3 away = vq - rod;
                     float d = away.magnitude;
                     float rad = _obsRadii[o];
                     if (d < rad)
                     {
                         if (d < 1e-3f) away = PushDirection(_oSeg[o]);
                         else away /= d;
-                        vq = _obsCenters[o] + away * rad;
+                        vq = rod + away * rad;
                     }
                     _wo[o] += hq - vq;
                     _zo[o] = vq;
@@ -468,28 +525,6 @@ namespace CosmicShore.Gameplay
             return b >= 0f ? 2 : 3;
         }
 
-        /// <summary>The segment of the line nearest obstacle <paramref name="o"/>, searched around the
-        /// grid point it was registered at.</summary>
-        void NearestSegment(int o, out int seg, out float t, out float dist)
-        {
-            Vector3 oc = _obsCenters[o];
-            int centre = _obsIndex[o];
-            seg = Mathf.Clamp(centre, FixedCount - 1, _n - 2);
-            t = 0f;
-            float bestD = float.MaxValue;
-            int k0 = Mathf.Max(FixedCount - 1, centre - 5), k1 = Mathf.Min(_n - 2, centre + 5);
-            for (int kk = k0; kk <= k1; kk++)
-            {
-                Vector3 p0 = Point(kk), p1 = Point(kk + 1);
-                Vector3 sv = p1 - p0;
-                float len2 = sv.sqrMagnitude;
-                float tt = len2 > 1e-6f ? Mathf.Clamp01(Vector3.Dot(oc - p0, sv) / len2) : 0f;
-                float d = (p0 + sv * tt - oc).sqrMagnitude;
-                if (d < bestD) { bestD = d; seg = kk; t = tt; }
-            }
-            dist = Mathf.Sqrt(bestD);
-        }
-
         // ========================================================================== terms
 
         /// <summary>
@@ -590,15 +625,23 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>World coordinate <paramref name="axis"/> of the line point obstacle
-        /// <paramref name="o"/> is held off.</summary>
+        /// <summary>World coordinate <paramref name="axis"/> of the curve point obstacle
+        /// <paramref name="o"/> is held off: the B-spline's four control points at its arc.</summary>
         void ObstacleRow(int o, int axis)
         {
-            int k = _oSeg[o];
-            double w0 = 1.0 - _oT[o], w1 = _oT[o];
-            Begin(w0 * _c[k][axis] + w1 * _c[k + 1][axis]);
-            Add(k, w0 * _r[k][axis], w0 * _u[k][axis]);
-            Add(k + 1, w1 * _r[k + 1][axis], w1 * _u[k + 1][axis]);
+            int j = _oSeg[o];
+            SplineWeights(_oT[o], out float w0, out float w1, out float w2, out float w3);
+            Begin(0.0);
+            AddCurve(j - 1, w0, axis);
+            AddCurve(j, w1, axis);
+            AddCurve(j + 1, w2, axis);
+            AddCurve(j + 2, w3, axis);
+        }
+
+        void AddCurve(int k, double w, int axis)
+        {
+            _tc += w * _c[k][axis];
+            Add(k, w * _r[k][axis], w * _u[k][axis]);
         }
 
         // ========================================================================== assembly
@@ -734,10 +777,58 @@ namespace CosmicShore.Gameplay
             float obs = 0f;
             for (int o = 0; o < _obsCenters.Count; o++)
             {
-                NearestSegment(o, out _, out _, out float dist);
-                obs = Mathf.Max(obs, _obsRadii[o] - dist);
+                Vector3 q = CurvePoint(_oSeg[o] + _oT[o]);
+                obs = Mathf.Max(obs, _obsRadii[o] - (q - RodPoint(o, q)).magnitude);
             }
             WorstObstacleDeficit = obs;
+        }
+
+        /// <summary>
+        /// The fastest (u/s, at most <paramref name="vCap"/>) the line as it now stands can be flown
+        /// between points <paramref name="i"/> and i+1 inside <paramref name="budget"/> rad/s of stick:
+        /// the largest v with <c>|v K + (v² / k) J| ≤ budget</c>, K and J the line's curvature and
+        /// its rate of change there (the same stencil the solve bounds). Exact by bisection — the two
+        /// terms are vectors, and where they point apart the sum is less than the bound on their sizes.
+        /// </summary>
+        public float MaxSpeed(int i, float budget, float vCap)
+        {
+            if (i < 1 || i > _n - 3) return vCap;
+            Vector3 p0 = Point(i - 1), p1 = Point(i), p2 = Point(i + 1), p3 = Point(i + 2);
+            float h = _step;
+            Vector3 kv = 0.5f * (p0 - p1 - p2 + p3) / (h * h);
+            Vector3 jv = (-p0 + 3f * p1 - 3f * p2 + p3) / (h * h * h);
+            float kr = Vector3.Dot(kv, _r[i]), ku = Vector3.Dot(kv, _u[i]);
+            float jr = Vector3.Dot(jv, _r[i]), ju = Vector3.Dot(jv, _u[i]);
+            float k = Mathf.Max(0.05f, _set.FollowRate);
+            float Demand(float v)
+            {
+                float dr = v * kr + v * v / k * jr, du = v * ku + v * v / k * ju;
+                return Mathf.Sqrt(dr * dr + du * du);
+            }
+            if (Demand(vCap) <= budget) return vCap;
+            float lo = 0f, hi = vCap;
+            for (int it = 0; it < 24; it++)
+            {
+                float mid = 0.5f * (lo + hi);
+                if (Demand(mid) <= budget) lo = mid; else hi = mid;
+            }
+            return lo;
+        }
+
+        /// <summary>Tooling: the last solve's view of the obstacle nearest <paramref name="p"/>.</summary>
+        public string DescribeObstacleNear(Vector3 p)
+        {
+            int best = -1; float bd = float.MaxValue;
+            for (int o = 0; o < _obsCenters.Count; o++)
+            {
+                float d = (_obsCenters[o] - p).sqrMagnitude;
+                if (d < bd) { bd = d; best = o; }
+            }
+            if (best < 0) return "no obstacles";
+            Vector3 q = CurvePoint(_oSeg[best] + _oT[best]);
+            Vector3 rp = RodPoint(best, q);
+            return $"nearest obstacle {Mathf.Sqrt(bd):F1} away: u={_obsU[best]:F2} (seg {_oSeg[best]} t {_oT[best]:F2} of n {_n}) " +
+                   $"curve-to-rod {(q - rp).magnitude:F2} radius {_obsRadii[best]:F2}";
         }
 
         /// <summary>Tooling: one point's constraint state.</summary>
