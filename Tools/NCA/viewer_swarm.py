@@ -79,7 +79,7 @@ def _is_run(d):
 
 
 LABELS = {"field": "Designed field + flocking", "hgrid/oracle": "Grid morphogen (designed)", "hgrid/hybrid_g2": "Learned rule G2 + grid morphogen", "hgrid": "Grid morphogen (learned)",
-          "colony": "Colony brain", "evo": "Evolved rule", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis"}
+          "colony": "Colony brain", "evo": "Evolved rule", "hgrid2": "Grid morphogen 2 (fine, local)", "evo/compact": "Evolved compact rule (no neural net)", "play": "Strike-hardened rule", "meta": "Metamorphosis"}
 
 
 def _label(d, summ):
@@ -158,6 +158,13 @@ ABOUT = {
         switching="Census of the majority with a 12-step delay, then a 60-step vortex morph to the new plan's slots; surplus elements molt into wanted ones.",
         watch="Crisp, readable transitions and vessel reactions (startle wave, mobbing, pufferfish inflation) - but its imperfections look like bugs, not life.",
         bar="Passes tier 1 (own-plan losses 3.1 / 1.6 / 1.4 / 4.6); 9 of 13 feasible switches (four switched bodies land at 9-12)."),
+    "hgrid2": dict(
+        what="The grid morphogen, second round: the coarse class-deficit grid plus a FINE per-class morphogen (each element-and-domain class climbs a smooth field built from its own units in the plan), a continuous target, and feed-forward of the plan's own motion.",
+        body="Local: every tadpole reads only the fields at its own position; nothing assigns it a place.",
+        sorting="Local and fine enough to tell classes apart inside one grid cell - which is what the first grid lacked.",
+        switching="As the first grid: the plan follows the majority (with a lock), laying follows class deficits, misplaced surplus withers to crystals.",
+        watch="Whether it keeps the first grid's organic motion now that it is accurate (the feel metrics in results/hgrid2/feel.json).",
+        bar="PASSES tier 1 under the loss-8 bar: own-plan losses 6.1 / 4.8 / 5.5 / 7.2 (3 of 3 samples each); 6 of 15 feasible transitions."),
     "hgrid-oracle": dict(
         what="Two levels: a coarse 3D grid (a cellular automaton over space) holds, per element and slot, how many tadpoles are WANTED there versus present; boids below follow the gradient of their own class's shortage.",
         body="The grid carries the plan; the boids only read their local cell, so the body assembles from local deficits.",

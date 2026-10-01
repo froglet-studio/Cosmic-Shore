@@ -194,6 +194,9 @@ def main():
     status = build_status(args.runs)
     from viewer_swarm import build_swarm, CSS as SWARM_CSS
     benchsw, scriptsw = build_swarm(args.runs, gallery_dir=os.path.join(os.path.dirname(os.path.abspath(args.out)), "swarm_runs"))
+    from viewer_live import build_live  # the live, carvable swarm (swarm_live.js); appended after the gallery
+    benchlv, scriptlv, csslv = build_live(args.runs)
+    benchsw, scriptsw, SWARM_CSS = benchsw + benchlv, scriptsw + scriptlv, SWARM_CSS + csslv
 
     page = TEMPLATE
     for k, v in {

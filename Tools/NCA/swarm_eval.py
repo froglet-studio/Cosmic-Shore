@@ -222,6 +222,9 @@ def load_model(spec):
     if kind == "evo":
         import numpy as np, evo_model as em
         return em.EvoRule(np.load(path))
+    if kind == "hgrid2":
+        import hgrid2_model as hm
+        return hm.Boid2(sn.World(), hm.Cfg(**json.load(open(path))["cfg"]))
     if kind == "ensemble":
         import ensemble_swarm as es
         return es.load(path)
@@ -251,11 +254,12 @@ def main():
     ap.add_argument("--full", action="store_true", help="run every tier regardless of the gates")
     ap.add_argument("--samples", type=int, default=3, help="independent rollouts per test (majority decides)")
     ap.add_argument("--scale-inv", type=int, default=0)
+    ap.add_argument("--seed", type=int, default=7, help="base rollout seed (held-out checks: anything but 7)")
     ap.add_argument("--max-loss", type=float, default=None, help="absolute pass bar (default swarm_nca.MAX_TEST_LOSS = 8)")
     ap.add_argument("--out", default="")
     a = ap.parse_args()
     model = load_model(a.model)
-    res = evaluate(model, L=sn.LossCfg(scale_inv=a.scale_inv), full=a.full, samples=a.samples, max_loss=a.max_loss)
+    res = evaluate(model, L=sn.LossCfg(scale_inv=a.scale_inv), full=a.full, samples=a.samples, max_loss=a.max_loss, seed=a.seed)
     print(matrix(res))
     print(f"PASSED {res['passed']}/{res['feasible']} feasible (16 total; n/a: {res['na']}); tiers run: {res['tiers_run']}; {res['seconds']}s")
     if a.out:
