@@ -1,0 +1,14 @@
+start 1.7151999999999998 {"threat": 0.868, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.579}
+0 obj 1.7944 R 0.9342 Rh 0.8602 best 1.7944 KEPT {"touch": 23.821} {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.58}
+1 obj 1.7746 R 0.9342 Rh 0.8404 best 1.7944  {"spore_cd": 0.7876} {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.58}
+2 obj 1.8522 R 0.9629 Rh 0.8893 best 1.8522 KEPT {"touch": 23.5501, "drag": 0.7262} {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.739}
+3 obj 1.6864 R 0.9054 Rh 0.781 best 1.8522  {"drag": 0.4023, "launch": 71.7808} {"threat": 0.868, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 0.996, "adapt": 0.522}
+4 obj 1.7195 R 0.917 Rh 0.8025 best 1.8522  {"launch": 50.3053, "t_swell": 1.0214, "alarm_r": 127.8207} {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.5}
+5 obj 1.3182 R 0.8083 Rh 0.5099 best 1.8522  {"drag": 0.5566} {"threat": 0.207, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 0.957, "presence": 1.0, "adapt": 0.92}
+6 obj 1.8491 R 0.9629 Rh 0.8862 best 1.8522  {"v_soft": 79.4252} {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.739}
+7 obj 1.7808 R 0.947 Rh 0.8338 best 1.8522  {"clumps": 11, "alarm_r": 134.2414} {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 0.961, "presence": 1.0, "adapt": 0.673}
+8 obj 1.7773 R 0.917 Rh 0.8603 best 1.8522  {"n_pods": 50, "clumps": 12} {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.5}
+9 obj 1.5363 R 0.8514 Rh 0.6849 best 1.8522  {"launch": 26.6023, "spore_r": 7.8014, "t_swell": 0.8956} {"threat": 0.5, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.552}
+10 obj 1.8717 R 0.9737 Rh 0.898 best 1.8717 KEPT {"touch": 23.5501, "drag": 0.8929, "wind": 11.5861, "alarm_speed": 102.4362} {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.808}
+11 obj 1.2291 R 0.7615 Rh 0.4676 best 1.8717  {"t_swell": 1.1395, "kick_soft": 0.2809} {"threat": 0.207, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.547}
+12 obj 1.6432 R 0.8941 Rh 0.7491 best 1.8717  {"relax": 0.4179} {"threat": 0.708, "counterplay": 0.714, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.808}

@@ -6,7 +6,14 @@ NAMES = ("snaptrap", "spores", "physarum", "coral", "walker")
 
 
 def load(p):
-    return [json.loads(l) for l in open(p)] if os.path.exists(p) else []
+    """Rows that predate R_hard are re-scored from their card, so every row ranks on obj = R + R_hard."""
+    sys.path.insert(0, HERE)
+    from harness import replay_score_hard
+    rows = [json.loads(l) for l in open(p)] if os.path.exists(p) else []
+    for r in rows:
+        if r.get("R_hard") is None:
+            r["R_hard"] = replay_score_hard(dict(r["card"])); r["obj"] = r["R"] + r["R_hard"]
+    return rows
 
 
 def f(x, n=2):
@@ -17,9 +24,9 @@ def main():
     print("| species | start R | best R | best R_hard | evals | hits/min (wander) | reader/wander | telegraph p10 s | crystals/burn | twin variety | access | lane cov | route-bias x | prisms end |")
     print("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for n in NAMES:
-        rows = load(os.path.join(RES, f"search_{n}.jsonl")) + load(os.path.join(RES, f"search_{n}_stage2.jsonl"))
+        rows = load(os.path.join(RES, f"search_{n}.jsonl"))
         if not rows: continue
-        b = max(rows, key=lambda r: r.get("obj", r["R"]))
+        b = max(rows, key=lambda r: r["obj"])
         c = b["card"]
         print(f"| {n} | {f(rows[0]['R'])} | {f(b['R'])} | {f(b.get('R_hard'))} | {len(rows)} | {f(c['hits_per_min_wander'])} | {f(c['counterplay'])} | "
               f"{f(c['telegraph_p10'])} | {f(c['crystals_per_burn'])} | {f(c['variety'])} | {f(c['avoid_cost'])} | {f(c['lane_coverage'])} | "
