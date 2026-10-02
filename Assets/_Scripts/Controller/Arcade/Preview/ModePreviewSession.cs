@@ -872,8 +872,13 @@ namespace CosmicShore.Gameplay
 
             // A race starts on its own line - behind its first ring (Skein: its collar), pointed
             // through it - rather than on the cell ring the definition mirrors for every mode.
-            bool onStartLine = _gateCourse && _gateCourse.TryGetStartPose(out var startPose);
-            var pose = onStartLine ? startPose : _arena.SpawnPose(definition);
+            // Read the out-var inside the `if` it was assigned in: routed through a bool and a
+            // `?:`, the compiler cannot prove it assigned (CS0165).
+            Pose pose;
+            if (_gateCourse != null && _gateCourse.TryGetStartPose(out var startPose))
+                pose = startPose;
+            else
+                pose = _arena.SpawnPose(definition);
             vessel.SetPose(pose);
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
