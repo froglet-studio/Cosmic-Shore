@@ -184,30 +184,17 @@ public class VesselTransformer : MonoBehaviour
         [SerializeField, Min(0f)] float restrictedTurnMultiplier = 3f;
 
         [Tooltip("How fast the hull swings onto the rotation the pilot has commanded, per second, " +
-                 "while a TOUCH pilot flies outside a drift. 0 = the fleet's shared response " +
-                 "(1.5/s, a 0.67 s time constant). Inside a drift the fleet response returns, " +
-                 "blended by the drift amount, so the slide itself is unchanged.")]
+                 "while a TOUCH pilot flies - in a drift as well as out of one. 0 = the fleet's " +
+                 "shared response (1.5/s, a 0.67 s time constant).")]
         [SerializeField, Min(0f)] float touchNoseResponse = 0f;
 
         /// <summary>
-        /// The nose closes a LEFTOVER gap - one it inherited from a regime that let it fall far
-        /// behind (a drift running at the fleet response, a 180 degree flip) - no faster than this
-        /// multiple of the vessel's own combined max turn rate. It never binds while the response
-        /// is steady: chasing a command that turns at w, an exponential follower moves at most w,
-        /// which is under the cap. It only stops a drift EXIT from whipping the nose through a
-        /// 90 degree leftover gap in a tenth of a second.
+        /// The nose closes a LEFTOVER gap - one a discontinuous command left behind (a 180 degree
+        /// flip, a device switch from a lagging pad mid-turn) - no faster than this multiple of the
+        /// vessel's own combined max turn rate. It never binds while flying: chasing a command that
+        /// turns at w, an exponential follower moves at most w, which is under the cap.
         /// </summary>
         const float NoseCatchUpTurnRateMultiple = 1.5f;
-
-        /// <summary>How fast the touch nose response climbs back after a drift, per second: from
-        /// the fleet's 1.5 to a 9 in ~0.75 s, so the ~95 degree gap a held drift leaves is closed
-        /// as a swell peaking near 210 deg/s and done in ~0.9 s, where the fleet response takes
-        /// ~3.5 s to settle it and a straight jump to 9 would snap it at the 320 deg/s cap.</summary>
-        const float NoseResponseRisePerSecond = 10f;
-
-        /// <summary>The live touch nose response. Only meaningful while <see cref="touchNoseResponse"/>
-        /// is in force; 0 reads as the fleet response.</summary>
-        float _touchNoseRate;
 
         /// <summary>Pitch/yaw rate scalar for this frame — <c>restrictedTurnMultiplier</c> while
         /// the vessel is translation-restricted, 1 otherwise. Read at use time (the stance is
@@ -490,7 +477,6 @@ public class VesselTransformer : MonoBehaviour
             // Rotation - reset to face forward
             accumulatedRotation = Quaternion.identity;
             transform.rotation = Quaternion.identity;
-            _touchNoseRate = 0f;
 
             // Movement
             BankIntoTurnSuppressed = false;   // an interrupted ability must not strand the roll axis
@@ -555,29 +541,20 @@ public class VesselTransformer : MonoBehaviour
         /// counter-steers into it. That is the overcorrection.
         ///
         /// A vessel that authors <see cref="touchNoseResponse"/> follows at that rate instead,
-        /// for a touch pilot outside a drift. The steady turn RATE is unchanged - only the lag
-        /// behind it shrinks. Inside a drift the rate blends back to the fleet's by the drift
-        /// amount, so the slide is exactly what it was, and the catch-up cap keeps the gap a drift
-        /// leaves behind from being closed as a whip on the way out. Never slower than the fleet.
+        /// for a touch pilot - in a drift too, so the remaining thumb steers the slide as crisply
+        /// as it steers straight flight, and the drift's Mult turns it sharper exactly as it does
+        /// on a pad. The steady turn RATE is unchanged - only the lag behind it shrinks (at a
+        /// full-lock drift's 216 deg/s, 144 degrees behind at the fleet rate, 24 at 9). Never
+        /// slower than the fleet.
         /// </summary>
         protected float NoseFollowFraction(Quaternion target, float dt)
         {
             float fleet = LERP_AMOUNT * dt;
             if (touchNoseResponse <= LERP_AMOUNT || InputStatus == null
                 || InputStatus.ActiveInputDevice != InputDeviceType.Touch)
-            {
-                _touchNoseRate = 0f;
                 return fleet;
-            }
 
-            // Falls at once (a drift takes the fleet response the frame it starts) and RISES at a
-            // bounded slew, because a drift leaves the nose 75-95 degrees behind the command and
-            // jumping straight to the touch response would close that leftover as a whip.
-            float wanted = Mathf.Lerp(touchNoseResponse, LERP_AMOUNT, DriftBlend01());
-            _touchNoseRate = wanted <= _touchNoseRate
-                ? wanted
-                : Mathf.MoveTowards(Mathf.Max(_touchNoseRate, LERP_AMOUNT), wanted, NoseResponseRisePerSecond * dt);
-            float t = 1f - Mathf.Exp(-_touchNoseRate * dt);
+            float t = 1f - Mathf.Exp(-touchNoseResponse * dt);
 
             float gap = Quaternion.Angle(transform.rotation, target);
             if (gap > 1e-3f)

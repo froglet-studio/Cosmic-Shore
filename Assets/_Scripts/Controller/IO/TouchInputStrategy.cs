@@ -54,45 +54,14 @@ namespace CosmicShore.Gameplay
         private bool oneThumbActive;
         private Vector2 oneThumbStick;
 
-        /// <summary>
-        /// Turn authority for the MIX while one thumb flies and NO ability was triggered to get
-        /// there (a single finger down from the start). 1 = the mirror alone, which is exactly
-        /// the ceiling a two-thumb pilot already has and never exceeds it: the mix eases
-        /// (right + left), so one stick alone feeds Ease(s) - 0.4625 of full authority at max
-        /// deflection on THIS class's curve, not the 0.2926 the gamepad cosine in
-        /// <see cref="BaseInputStrategy"/> gives - while a mirrored thumb feeds Ease(2s) = 1.0.
-        /// That 2.162x IS the "faster turning" this mode is for; it just lets one thumb reach
-        /// the two-thumb maximum.
-        /// </summary>
-        private const float OneThumbTurnGain = 1f;
-
-        /// <summary>
-        /// Turn authority for the MIX while one thumb flies BECAUSE the other was lifted to fire
-        /// an ability (the Squirrel's boost ring and its drift; Yawstery / analog turn boost on
-        /// the Manta). Lower
-        /// than <see cref="OneThumbTurnGain"/> because those abilities MULTIPLY the vessel's own
-        /// rotation scalers - <c>VesselTransformer.ApplyAnalogDrift</c> writes
-        /// <c>Pitch/Yaw/RollScaler = base x Mult</c> - so the mirror's 2.162x and the ability's
-        /// multiplier STACK, and each was calibrated as if it were the only one.
-        ///
-        /// On the Squirrel that stack is what made the drift feel wrong. Commanded yaw ran
-        /// <c>YawScaler 120 x Mult x Ease(2s)</c> = 216 deg/s at full deflection, against a grip
-        /// that only closes the slip angle by <c>1 - e^(-Grip.dt)</c> per frame. Course cannot
-        /// follow, slip passes 90 degrees - and past 90 the nose-ward thrust in
-        /// <c>VesselTransformer.ComputeNoseAcceleration</c> is SUBTRACTING from the velocity's
-        /// magnitude, because it always adds along +forward while the velocity's forward
-        /// component has gone negative. The racing drift scrubs speed instead of carrying it.
-        ///
-        /// 0.70 lands the mirrored thumb on <c>Ease(1.4) = 0.6643</c>. With a lift drift as a FULL
-        /// trigger pull (x1.8 / grip 0.25) that is 143.5 deg/s, and a full-lock 180 degree hairpin
-        /// never drops below its entry speed and leaves at 111% of it - the slide passes 90 degrees
-        /// for a moment (peak 101) but the speed floor holds, so it carries rather than brakes.
-        /// At 0.9 it starts to scrub (98.5%); at 1.0 it loses 7%. Tools/Build/touch_drift_slip.py.
-        ///
-        /// This is a CALIBRATION, not a derived constant. Lower it toward 0.5 if a held drift
-        /// still washes speed off; raise it toward 0.8 if the drift reads sluggish.
-        /// </summary>
-        private const float OneThumbDriftTurnGain = 0.70f;
+        // FULL authority, in a drift too. The mirror feeds the mix Ease(2s): one thumb at the rim
+        // commands exactly what two full sticks command on a pad - the two-thumb ceiling, never
+        // more. A drift then turns SHARPER the way it does on a pad: the drift action multiplies
+        // the vessel's rotation scalers (VesselTransformer.ApplyAnalogDrift, Mult), and a lift is
+        // a full trigger pull. Rounds 12-15 cut the mirror to 0.70 while an ability was lifted, to
+        // stop a full-lock drift scrubbing speed; that was a touch-only steering cut a pad pilot
+        // never had, and on a pad the same full lock at full trigger scrubs the same 7%. Parity is
+        // the rule now - Tools/Build/touch_drift_slip.py --check holds it.
 
         /// <summary>
         /// True while the single live thumb is the result of LIFTING one to fire an ability,
@@ -102,8 +71,8 @@ namespace CosmicShore.Gameplay
         /// thumb raises OnlyLeftStickAction (InputEvents 12), which that vessel binds to the
         /// drift, while a lifted LEFT thumb raises OnlyRightStickAction (11), bound to the tube -
         /// so the old flag pinned the throttle for an ability that is not a drift at all.
-        /// Whichever ability it is, THIS is the state the gain cut and the throttle hold are
-        /// about: an ability is engaged, so the vessel is scaling rotation underneath us.
+        /// Whichever ability it is, THIS is the state the throttle hold is about: the pilot's
+        /// speed is kept while one thumb is up, as a pad keeps it while a trigger is held.
         /// </summary>
         private bool OneThumbAbilityActive => oneThumbActive && (onlyLeftActive || onlyRightActive);
 
@@ -189,10 +158,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Touch-tuned easing: 90% linear with a whisper of cubic. The gamepad cosine curve
-        /// crushes mid-range to ~15% output - that compensates for stick resistance but feels
-        /// sluggish on glass where there is no friction. Center noise is handled by the explicit
-        /// dead zone in <see cref="HandleJoystick"/>, so the curve no longer needs to do that job.
+        /// Touch-tuned easing: 75% linear + 25% cubic - between the near-linear 90/10 the strip
+        /// ran and the gamepad's cosine (<see cref="BaseInputStrategy"/>), which is flat at the
+        /// centre. Output at quarter / half / three-quarter deflection: 0.191 / 0.406 / 0.668,
+        /// against the pad's 0.076 / 0.293 / 0.617 and the old 0.227 / 0.463 / 0.717. Full
+        /// deflection is 1 on every curve, so the turn-rate ceiling (and the drift) is unchanged.
+        ///
+        /// This is the curve that shipped before July's 90/10. That pass answered "touch feels
+        /// less responsive than a pad" by steepening the curve, but the unresponsiveness was the
+        /// hull's 0.67 s nose lag (VesselTransformer.touchNoseResponse fixes it), and a steeper
+        /// curve on top of a lagging nose is a bigger turn to overshoot. With the lag gone, the
+        /// softer centre is precision rather than sluggishness. Tremor is still the dead zone's job.
         ///
         /// Input [-2, 2] → Output [-1, 1] (same domain/range as gamepad Ease).
         /// </summary>
@@ -200,7 +176,7 @@ namespace CosmicShore.Gameplay
         {
             float t = Mathf.Clamp(input * 0.5f, -1f, 1f);
             float cubic = t * t * t;
-            return cubic * 0.1f + t * 0.9f;
+            return cubic * 0.25f + t * 0.75f;
         }
 
         public override void ProcessInput()
@@ -493,14 +469,6 @@ namespace CosmicShore.Gameplay
             var left = leftNormalizedJoystickPosition;
             var right = rightNormalizedJoystickPosition;
 
-            // The MIX (XSum/YSum/XDiff/YDiff) and the FAN-OUT (the eased pair + the normalized
-            // pair) are built from SEPARATE copies. The fan-out is what a single-stick hull
-            // steers from and what every "stick at the rim" ability perimeter (|stick| >= 1) is
-            // measured against, so the one-thumb gain below must never reach it - a reduced
-            // mirrored stick would silently move those perimeters inward.
-            var mixLeft = left;
-            var mixRight = right;
-
             // ONE-THUMB FLIGHT. Mirror the live thumb onto both sticks. The mix is
             // XSum = yaw, YSum = pitch, XDiff = throttle, YDiff = roll over (right +/- left), so
             // mirroring is not a special case bolted on - it falls out of the existing mix as
@@ -508,6 +476,9 @@ namespace CosmicShore.Gameplay
             //   XDiff = (s.x - s.x + 2)/4 = 0.5  -> throttle neutral (then held, see heldXDiff)
             //   YDiff = Ease(s.y - s.y)   = 0    -> no roll, i.e. pitch and yaw ONLY
             //   XSum/YSum = Ease(2s)             -> pitch + yaw at the two-thumb ceiling
+            // No gain is applied, in a drift or out of one, so the mix and the fan-out (what a
+            // single-stick hull steers from, and what every "stick at the rim" ability perimeter
+            // is measured against) are the same mirrored stick.
             // Flying one-thumbed previously did the opposite of all three: the idle stick decays
             // toward zero, so XDiff drifted with sideways thumb travel (a turn silently changed
             // SPEED), YDiff picked up roll from vertical travel, and pitch/yaw ran at Ease(s) =
@@ -516,10 +487,6 @@ namespace CosmicShore.Gameplay
             {
                 left = oneThumbStick;
                 right = left;
-
-                mixLeft = oneThumbStick
-                          * (OneThumbAbilityActive ? OneThumbDriftTurnGain : OneThumbTurnGain);
-                mixRight = mixLeft;
             }
 
             inputStatus.EasedRightJoystickPosition = new Vector2(Ease(2 * right.x), Ease(2 * right.y));
@@ -528,10 +495,10 @@ namespace CosmicShore.Gameplay
             inputStatus.RightNormalizedJoystickPosition = right;
             inputStatus.LeftNormalizedJoystickPosition = left;
 
-            inputStatus.XSum = Ease(mixRight.x + mixLeft.x);
-            inputStatus.YSum = -Ease(mixRight.y + mixLeft.y);
-            inputStatus.XDiff = (mixRight.x - mixLeft.x + 2) / 4;
-            inputStatus.YDiff = Ease(mixRight.y - mixLeft.y);
+            inputStatus.XSum = Ease(right.x + left.x);
+            inputStatus.YSum = -Ease(right.y + left.y);
+            inputStatus.XDiff = (right.x - left.x + 2) / 4;
+            inputStatus.YDiff = Ease(right.y - left.y);
         }
 
         /// <summary>

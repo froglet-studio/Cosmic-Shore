@@ -997,7 +997,7 @@ and freestyle alike; only the boot/auth scenes, which show nothing but UI, stay 
 screen-space overlay, so bloom never reaches the UI. Cost: the lava lamp now pays Bloom + Panini
 on the one presenting camera, as freestyle and the races already did.
 
-### Drift: analog when measured, a full pull when not
+### Drift: analog when measured, a full pull when not *(the 0.70 gain and its speed gate: superseded by Round 16)*
 
 `VesselTransformer.GetTriggerSum` now has ONE rule for every device: if trigger travel is measured
 it is the drift's depth; if it is not, a drift that is on is a **full pull**. "Not measured" is every
@@ -1102,9 +1102,9 @@ the lag.
 - **`VesselTransformer.touchNoseResponse`** (0 = the fleet's 1.5, so every other hull is untouched;
   **Squirrel 9**): for a TOUCH pilot outside a drift, the hull follows at that rate. The steady turn
   RATE is unchanged — only the lag behind it shrinks: **80° → 14°** at full yaw, 40° → 7° at half.
-- **Drift unchanged**: the rate blends back to the fleet's by `DriftBlend01`, so the slide you
-  approved is exactly what it was.
-- **Drift exit without a whip**: a held drift leaves the nose ~95° behind the command. The response
+- **Drift unchanged** *(superseded by Round 16 - the tight response now runs through the drift)*:
+  the rate blends back to the fleet's by `DriftBlend01`, so the slide you approved is exactly what it was.
+- **Drift exit without a whip** *(retired in Round 16 with the blend it existed for)*: a held drift leaves the nose ~95° behind the command. The response
   falls to the fleet's the frame a drift starts and climbs back at 10/s (`NoseResponseRisePerSecond`),
   so that leftover closes as a swell peaking near 210°/s, done in **~0.9 s** — against ~3.5 s to
   settle at the fleet response, and a snap at the cap if it jumped straight to 9. A catch-up cap at
@@ -1127,3 +1127,62 @@ No Unity here; the eight out-of-editor gates, a Roslyn syntax parse of every cha
    correct; small corrections land without overshoot. A held drift feels as before, and on exit the
    hull comes round onto the line in under a second without snapping.
 3. Skim Race intensity 3: the far lobe appears as you cross the wall (expected, see above).
+
+## Round 16 — the touch drift is the pad drift, and a softer curve (2026-10-02)
+
+Reported after Round 15: *"now lets make the drift consistent with the not drift changes you just
+made, the squirrel drift should be very similar to gamepad just the analog is replaced with a full
+pull of the trigger when the thumb is released. the remaining thumb control should be just as
+responsive and enable the player to turn sharper (again this is not something new, this is just how
+the drift works on a controller). I feel like previous attempts at making the squirrel more
+responsive may have overtuned its response curve to compensate for the issue you found. give it a
+slightly less steep response curve bringing it closer to the gamepad curve."*
+
+### The drift: a pad drift with the trigger replaced by a full pull
+
+- **No one-thumb gain.** Rounds 12-15 cut the mirrored thumb to 0.70 authority while a thumb was
+  lifted (`OneThumbDriftTurnGain`), so a full-lock drift could not scrub speed. That was a
+  touch-only steering cut: on a pad, two full sticks and a full trigger command the full-lock yaw it
+  removed. It is gone (with `OneThumbTurnGain`, which was 1 and therefore nothing): one thumb at the
+  rim commands exactly what two full pad sticks command, and the drift's `Mult` (1.8) turns it
+  sharper the way it does on a pad - **216 deg/s at full lock, pad 215.8**. The mix and the fan-out
+  in `Reparameterize` are the same stick again, so the split that existed to keep the gain off the
+  fan-out is collapsed.
+- **The nose stays tight through the drift.** `touchNoseResponse` (9) now applies in a drift as out
+  of one; Round 15's blend back to the fleet's 1.5 and the post-drift slew it needed are deleted.
+  At full lock the nose trails the command by 24 degrees where the fleet response let it fall 144
+  behind, so the remaining thumb steers the slide as crisply as straight flight - and a drift exit
+  leaves only that 24-degree gap, closed at the drift's own turn rate, so the exit needs no
+  special-casing. The catch-up cap stays for discontinuities (a flip).
+- **Same tuning on both devices**, already: the touch lift (InputEvent 12) and the pad trigger
+  (InputEvent 2) bind the same `SquirrelDriftAction` + `DriftTrailAction` assets.
+
+`Tools/Build/touch_drift_slip.py` was rebuilt around that rule. `--check` now fails if touch and pad
+drift DIFFER: different drift assets on the two overrides, any one-thumb gain below 1 or a scaled
+mirror, or a touch curve that does not reach the pad's full-deflection authority. `--self-test`
+proves all four fire (Round 15's 0.70 restored, the mirror scaled, a curve topping out at 0.9, touch
+bound to a different drift asset). What the shared drift does to speed is now REPORTED: a full-lock
+180 degree hairpin at full pull bottoms out at **93.2%** of entry speed (peak slip 117 degrees) - on
+both devices, because it is the drift action's tuning; the dials are its `Mult` and `driftDamping`.
+Below ~0.9 deflection it carries speed (100% slowest, 107-125% exit, `--sweep`).
+
+### The curve: back to 75/25
+
+`TouchInputStrategy.Ease` goes from 90% linear + 10% cubic to **75% linear + 25% cubic** - the curve
+it shipped with before July's 90/10. That pass answered "touch feels less responsive than a pad" by
+steepening the curve; the cause was the hull's 0.67 s nose lag (Round 15), and a steeper curve on a
+lagging nose is just a bigger turn to overshoot. Output at quarter / half / three-quarter deflection:
+**0.191 / 0.406 / 0.668**, against the old 0.227 / 0.463 / 0.717 and the pad's cosine 0.076 / 0.293 /
+0.617. Full deflection is 1 on every curve, so the turn-rate ceiling and the full-lock drift are
+unchanged. The Butterfly flies the same touch curve, so its centre softens too.
+
+### Not verified in the editor
+
+No Unity here; the eight out-of-editor gates, a Roslyn syntax parse of both changed files, and
+`touch_drift_slip.py --check` / `--self-test` pass. On device:
+1. Squirrel on touch, no drift: small corrections are finer than Round 15 near centre; full
+   deflection turns as hard as before.
+2. Lift the right thumb at full left-thumb lock: the drift turns as sharply as a pad drift with both
+   sticks over and the trigger pulled, and the nose follows the thumb without lag; put the thumb back
+   and the hull settles at once.
+3. A full-lock 180 bleeds a little speed (~7%), as on the pad; anything less than full lock carries.

@@ -1,37 +1,39 @@
 #!/usr/bin/env python3
-"""Measure the Squirrel's TOUCH drift, and fail if it scrubs speed.
+"""Hold the Squirrel's TOUCH drift to its PAD drift, and report what that drift does to speed.
 
 WHY THIS EXISTS
 ---------------
 On the stripped Android branch a touch drift is a RIGHT-thumb LIFT, and a lift is a FULL trigger
 pull: glass cannot measure trigger travel, so it takes the binary fallback every non-analog input
 gets (VesselTransformer.GetTriggerSum - a drift that is on is a full pull). The left thumb then
-flies alone, mirrored onto both sticks at OneThumbDriftTurnGain (TouchInputStrategy), pitch and
-yaw only. So the worst case is the steering thumb at full deflection with the drift's full-pull
-`Mult` multiplying every rotation scaler (VesselTransformer.ApplyAnalogDrift) and its full-pull
-grip letting the velocity lag the nose.
+flies alone, mirrored onto both sticks (TouchInputStrategy.Reparameterize), pitch and yaw only.
 
-The invariant is the FELT one, measured rather than eyeballed:
+The rule is PARITY: the touch drift is the pad drift with the analog trigger replaced by a full
+pull. Rounds 12-15 broke it on purpose - the mirrored thumb was cut to 0.70 authority while a
+thumb was lifted, so a full-lock drift could not scrub speed - and that was a touch-only steering
+cut a pad pilot never had: on a pad, both sticks at full plus a full trigger command exactly the
+full-lock yaw the cut was removing. So --check fails if touch and pad drift DIFFER:
 
-    a full-deflection lift drift held through a CORNER_DEG hairpin must never be slower than it
-    was on entry, and must leave the corner at least as fast as it entered.
+  1. the touch drift event and the pad drift event bind the SAME drift action assets (one Mult,
+     one grip - nothing tuned for touch alone);
+  2. the one-thumb mirror applies NO gain (no OneThumb*Gain below 1, no scaled oneThumbStick);
+  3. the touch curve reaches the pad curve's full-deflection authority (Ease(2) = 1 on both), so
+     one thumb at the rim commands what two full sticks command.
 
-Peak SLIP (the angle between the velocity and the nose) is reported too. Past 90 degrees the
-vector flight model's nose-ward thrust (`ComputeNoseAcceleration`, always along +forward) points
-partly against the velocity - Round 9 gated on that angle as a proxy for braking. It is a proxy:
-`ShapeSpeed` floors the speed at its pre-thrust magnitude, so a slide can pass 90 degrees for a
-moment and still carry speed out of the corner. The gate is on what the pilot feels - speed -
-and the gain is the dial (the full-pull drift itself is the action's authored tuning).
-
-A corner, not a fixed hold: at full deflection a slide past 90 degrees is only a matter of time.
-What a pilot flies is a corner.
+What the shared drift then does to SPEED through a full-lock hairpin is reported, not gated: it is
+the drift action's tuning and it is identical on both devices. Past 90 degrees of slip the vector
+model's nose-ward thrust (ComputeNoseAcceleration, always +forward) points partly against the
+velocity; ShapeSpeed floors the speed at its pre-thrust magnitude, so how much a full-lock corner
+scrubs is what the report shows. If it scrubs too much, the dials are the drift action's Mult and
+driftDamping - for both devices at once.
 
 Every input is read from the SHIPPED files, so a retune of any one of them is checked:
-  * OneThumbDriftTurnGain   - Assets/_Scripts/Controller/IO/TouchInputStrategy.cs
-  * Mult / driftDamping     - the drift action assets bound to the Squirrel's TOUCH override
-  * YawScaler               - Assets/_Prefabs/Spacevessels/Squirrel.prefab
+  * Ease, the mirror           - Assets/_Scripts/Controller/IO/TouchInputStrategy.cs
+  * pad Ease                    - Assets/_Scripts/Controller/IO/BaseInputStrategy.cs (PI_OVER_FOUR)
+  * Mult / driftDamping         - the drift action assets on the Squirrel's touch AND pad overrides
+  * YawScaler, throttle scaler  - Assets/_Prefabs/Spacevessels/Squirrel.prefab
 
-Usage:  python3 Tools/Build/touch_drift_slip.py [--check] [--sweep]
+Usage:  python3 Tools/Build/touch_drift_slip.py [--check] [--sweep] [--self-test]
 Read-only: writes nothing, opens no scenes, needs no Unity.
 """
 
@@ -43,6 +45,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 STRATEGY = ROOT / "Assets/_Scripts/Controller/IO/TouchInputStrategy.cs"
+BASE_STRATEGY = ROOT / "Assets/_Scripts/Controller/IO/BaseInputStrategy.cs"
 SQUIRREL = ROOT / "Assets/_Prefabs/Spacevessels/Squirrel.prefab"
 ACTIONS = ROOT / "Assets/_SO_Assets/VesselActions"
 
@@ -50,25 +53,49 @@ ACTIONS = ROOT / "Assets/_SO_Assets/VesselActions"
 DT = 1.0 / 60.0
 LERP_AMOUNT = 1.5
 
-# The bar.  90 degrees is not a taste threshold - it is where nose thrust changes sign.
-SLIP_LIMIT_DEG = 90.0
-HOLD_SECONDS = 2.0
+SLIP_LIMIT_DEG = 90.0   # where nose thrust changes sign - reported, not gated
 CORNER_DEG = 180.0
 
-# InputEvents.OnlyLeftStickAction - the RIGHT thumb lifted (the left remains), which the Squirrel
-# binds its drift to on touch.
+# InputEvents.OnlyLeftStickAction - the RIGHT thumb lifted (the left remains): the touch drift.
 DRIFT_TOUCH_EVENT = 12
+# InputEvents.LeftStickAction - which GamepadInputStrategy raises from the LEFT TRIGGER: the pad drift.
+DRIFT_PAD_EVENT = 2
+
+# A full-deflection authority mismatch smaller than this is the pad cosine's own rounding
+# (PI_OVER_FOUR is authored as 0.785, so the pad tops out at 0.99920), not a design difference.
+AUTHORITY_TOLERANCE = 2e-3
 
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def ease(x: float) -> float:
-    """TouchInputStrategy.Ease - NOT BaseInputStrategy's cosine (0.4625 vs 0.2926 at x=1)."""
-    t = max(-1.0, min(1.0, x * 0.5))
-    return t * t * t * 0.1 + t * 0.9
+# ------------------------------------------------------------------------- shipped curves
 
+def touch_curve(strategy_text: str):
+    """(linear, cubic) coefficients of TouchInputStrategy.Ease: cubic * C + t * L."""
+    m = re.search(r"return cubic \* ([\d.]+)f \+ t \* ([\d.]+)f;", strategy_text)
+    if not m:
+        sys.exit("could not read TouchInputStrategy.Ease (expected `return cubic * C + t * L;`)")
+    return float(m.group(2)), float(m.group(1))
+
+
+def touch_ease(x: float, curve) -> float:
+    lin, cub = curve
+    t = max(-1.0, min(1.0, x * 0.5))
+    return t * t * t * cub + t * lin
+
+
+def pad_ease(x: float, base_text: str) -> float:
+    m = re.search(r"PI_OVER_FOUR = ([\d.]+)f", base_text)
+    if not m:
+        sys.exit("could not read PI_OVER_FOUR from BaseInputStrategy.cs")
+    k = float(m.group(1))
+    c = math.cos(x * k) - 1.0
+    return c if x < 0 else -c
+
+
+# ------------------------------------------------------------------------- shipped tuning
 
 def guid_to_asset() -> dict:
     out = {}
@@ -79,23 +106,17 @@ def guid_to_asset() -> dict:
     return out
 
 
-def touch_drift_actions() -> list:
-    """The drift assets on the Squirrel's TOUCH override for the one-thumb drift event."""
-    text = read(SQUIRREL)
-    block = re.search(
-        r"^  _touchActionOverrides:\n(.*?)^  _\w+:", text, re.S | re.M)
+def drift_tiers(prefab_text: str, override_field: str, event: int, lookup: dict) -> list:
+    """The drift assets (those carrying Mult + driftDamping) bound to one override's event."""
+    block = re.search(rf"^  {override_field}:\n(.*?)^  _\w+:", prefab_text, re.S | re.M)
     if not block:
-        sys.exit("could not find _touchActionOverrides on Squirrel.prefab")
+        sys.exit(f"could not find {override_field} on Squirrel.prefab")
     entry = re.search(
-        rf"^  - InputEvent: {DRIFT_TOUCH_EVENT}\n    ShipActions:\n((?:    - .*\n)*)",
-        block.group(1), re.M)
+        rf"^  - InputEvent: {event}\n    ShipActions:\n((?:    - .*\n)*)", block.group(1), re.M)
     if not entry:
-        sys.exit(f"Squirrel touch override has no InputEvent {DRIFT_TOUCH_EVENT}")
-    guids = re.findall(r"guid: ([0-9a-f]{32})", entry.group(1))
-
-    lookup = guid_to_asset()
+        return []
     tiers = []
-    for g in guids:
+    for g in re.findall(r"guid: ([0-9a-f]{32})", entry.group(1)):
         path = lookup.get(g)
         if not path or not path.exists():
             continue
@@ -104,7 +125,7 @@ def touch_drift_actions() -> list:
         damp = re.search(r"^  driftDamping: ([\d.]+)", body, re.M)
         sharp = re.search(r"^  isSharpDrifting: (\d)", body, re.M)
         if mult and damp and sharp:
-            tiers.append(dict(name=path.stem, mult=float(mult.group(1)),
+            tiers.append(dict(guid=g, name=path.stem, mult=float(mult.group(1)),
                               grip=float(damp.group(1)), sharp=sharp.group(1) == "1"))
     return tiers
 
@@ -116,19 +137,43 @@ def scalar(pattern: str, text: str, what: str) -> float:
     return float(m.group(1))
 
 
-def constant(name: str) -> float:
-    m = re.search(rf"const float {name} = ([\d.]+)f", read(STRATEGY))
-    if not m:
-        sys.exit(f"could not read {name} from TouchInputStrategy.cs")
-    return float(m.group(1))
+# ------------------------------------------------------------------------- the parity gate
+
+def parity_failures(strategy_text: str, base_text: str, prefab_text: str, lookup: dict) -> list:
+    fails = []
+
+    touch = drift_tiers(prefab_text, "_touchActionOverrides", DRIFT_TOUCH_EVENT, lookup)
+    pad = drift_tiers(prefab_text, "_gamepadActionOverrides", DRIFT_PAD_EVENT, lookup)
+    if not touch:
+        fails.append(f"the touch override binds no drift action to InputEvent {DRIFT_TOUCH_EVENT}")
+    if not pad:
+        fails.append(f"the pad override binds no drift action to InputEvent {DRIFT_PAD_EVENT}")
+    if touch and pad and {t["guid"] for t in touch} != {t["guid"] for t in pad}:
+        fails.append("touch and pad drift bind DIFFERENT drift assets "
+                     f"(touch: {', '.join(t['name'] for t in touch)}; "
+                     f"pad: {', '.join(t['name'] for t in pad)}) - a touch-only drift tuning")
+
+    for name, value in re.findall(r"const float (OneThumb\w*Gain) = ([\d.]+)f", strategy_text):
+        if float(value) < 1.0:
+            fails.append(f"{name} = {value} cuts the one-thumb mirror below the pad's authority")
+    if re.search(r"oneThumbStick\s*\*", strategy_text):
+        fails.append("the one-thumb mirror scales oneThumbStick - a touch-only steering cut")
+
+    curve = touch_curve(strategy_text)
+    touch_full, pad_full = touch_ease(2.0, curve), pad_ease(2.0, base_text)
+    if abs(touch_full - pad_full) > AUTHORITY_TOLERANCE:
+        fails.append(f"touch full-deflection authority {touch_full:.4f} != pad {pad_full:.4f} "
+                     f"(TouchInputStrategy.Ease coefficients must sum to 1)")
+    return fails
 
 
-def simulate(yaw_scaler, mult, grip, gain, throttle_target,
-             seconds=HOLD_SECONDS, overshoot_ceiling=1.25):
-    """One thumb held at FULL deflection into a sustained drift. Returns per-frame
-    (slip degrees, speed). Transcribes VesselTransformer's vector path in 2D: the drift
-    is planar, so a third axis adds nothing but noise."""
-    x_sum = ease(2.0 * gain)                       # mirrored thumb at |stick| = 1
+# ------------------------------------------------------------------------- the speed report
+
+def simulate(yaw_scaler, mult, grip, x_sum, throttle_target, seconds):
+    """Full-pull drift with the turn held at x_sum. Returns per-frame (slip degrees, speed).
+    Transcribes VesselTransformer's vector path in 2D: the drift is planar. The nose turns at
+    the commanded rate - touchNoseResponse keeps it within ~24 degrees of the command through a
+    full-lock drift, so this is the TOUCH nose; a pad nose lags further and slides less."""
     omega = math.radians(x_sum * yaw_scaler * mult)  # RotationThrottleScaler is 0 here
     angle, vel = 0.0, [throttle_target, 0.0]
     trace = []
@@ -159,7 +204,7 @@ def simulate(yaw_scaler, mult, grip, gain, throttle_target,
 
         # 3) ShapeSpeed: bounds GAIN only, floored at the pre-thrust magnitude.
         now = math.hypot(*vel)
-        cap = max(before, throttle_target * overshoot_ceiling)
+        cap = max(before, throttle_target * 1.25)
         if now > cap and now > 1e-9:
             vel = [vel[0] * cap / now, vel[1] * cap / now]
             now = cap
@@ -175,70 +220,106 @@ def target_step(current, target):
     return current + (target - current) * LERP_AMOUNT * DT
 
 
+# ------------------------------------------------------------------------- self-test
+
+def self_test(strategy_text, base_text, prefab_text, lookup) -> int:
+    """Each shipped parity rule must FAIL on the change it exists to catch."""
+    ok = True
+
+    def expect(label, s, b, p, should_fail):
+        nonlocal ok
+        fails = parity_failures(s, b, p, lookup)
+        good = bool(fails) == should_fail
+        ok &= good
+        print(f"  [{'ok ' if good else 'BAD'}] {label}: {'fails' if fails else 'passes'}"
+              f"{' (' + fails[0] + ')' if fails else ''}")
+
+    expect("shipped files", strategy_text, base_text, prefab_text, False)
+
+    cut = strategy_text.replace(
+        "        private bool oneThumbActive;",
+        "        private const float OneThumbDriftTurnGain = 0.70f;\n        private bool oneThumbActive;", 1)
+    expect("Round 12-15's 0.70 drift gain restored", cut, base_text, prefab_text, True)
+
+    scaled = strategy_text.replace("left = oneThumbStick;", "left = oneThumbStick * 0.7f;", 1)
+    expect("the mirror scaled in Reparameterize", scaled, base_text, prefab_text, True)
+
+    weak = re.sub(r"return cubic \* [\d.]+f \+ t \* [\d.]+f;",
+                  "return cubic * 0.1f + t * 0.8f;", strategy_text, count=1)
+    expect("a touch curve that tops out at 0.9", weak, base_text, prefab_text, True)
+
+    m = re.search(r"(^  _touchActionOverrides:\n.*?^  - InputEvent: 12\n    ShipActions:\n)"
+                  r"(    - [^\n]*\n)", prefab_text, re.S | re.M)
+    split = prefab_text
+    if m:
+        sharp_guid = next((g for g, pth in lookup.items() if pth.stem == "SquirrelSharpDriftAction"), None)
+        if sharp_guid:
+            first = re.search(r"guid: ([0-9a-f]{32})", m.group(2)).group(1)
+            split = prefab_text[:m.start(2)] + m.group(2).replace(first, sharp_guid) + prefab_text[m.end(2):]
+    expect("touch bound to a different drift asset than the pad", strategy_text, base_text, split, True)
+
+    print("\nself-test OK" if ok else "\nself-test FAILED")
+    return 0 if ok else 1
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--check", action="store_true", help="fail the build on a violation")
-    ap.add_argument("--sweep", action="store_true", help="print the one-thumb gain sensitivity table")
+    ap.add_argument("--check", action="store_true", help="fail the build if touch and pad drift differ")
+    ap.add_argument("--sweep", action="store_true", help="print the thumb-deflection table")
+    ap.add_argument("--self-test", action="store_true", help="prove each parity rule fires")
     args = ap.parse_args()
 
-    prefab = read(SQUIRREL)
-    yaw = scalar("YawScaler", prefab, "YawScaler")
-    throttle = scalar("DefaultThrottleScaler", prefab, "DefaultThrottleScaler")
-    tiers = touch_drift_actions()
+    strategy_text, base_text, prefab_text = read(STRATEGY), read(BASE_STRATEGY), read(SQUIRREL)
+    lookup = guid_to_asset()
+
+    if args.self_test:
+        return self_test(strategy_text, base_text, prefab_text, lookup)
+
+    yaw = scalar("YawScaler", prefab_text, "YawScaler")
+    throttle = scalar("DefaultThrottleScaler", prefab_text, "DefaultThrottleScaler")
+    tiers = drift_tiers(prefab_text, "_touchActionOverrides", DRIFT_TOUCH_EVENT, lookup)
     if not tiers:
         sys.exit("no drift actions found on the Squirrel's touch override")
     tier = next((t for t in tiers if t["sharp"]), tiers[0])
+    curve = touch_curve(strategy_text)
 
-    # VesselTransformer.GetTriggerSum: a touch lift has no measured trigger travel, so it is the
-    # binary fallback - a FULL pull - and ApplyAnalogDrift runs the action's full-pull Mult and grip.
-
-    gain = constant("OneThumbDriftTurnGain")   # the mirrored steering thumb at full deflection
-    x_sum = ease(2.0 * gain)
-    omega = x_sum * yaw * tier["mult"]
-    corner_s = CORNER_DEG / omega
-
-    print(f"Squirrel TOUCH lift drift, full pull  (YawScaler {yaw:g}, throttle scaler {throttle:g}, "
-          f"one-thumb gain {gain:g})")
-    print(f"  bound touch drift tiers : {', '.join(t['name'] for t in tiers)}")
-    print(f"  tier (full pull)        : {tier['name']}  "
-          f"(Mult {tier['mult']:.3g}, Grip {tier['grip']:.3g}, sharp={tier['sharp']})")
-    print(f"  commanded yaw           : {omega:.1f} deg/s -> a {CORNER_DEG:g} deg corner "
-          f"takes {corner_s:.2f} s")
+    fails = parity_failures(strategy_text, base_text, prefab_text, lookup)
+    print(f"Squirrel drift, touch vs pad  (YawScaler {yaw:g}, throttle scaler {throttle:g}, "
+          f"touch curve {curve[0]:g}t + {curve[1]:g}t^3)")
+    print(f"  drift tier (full pull)  : {tier['name']}  (Mult {tier['mult']:.3g}, "
+          f"Grip {tier['grip']:.3g}) - same assets on both devices: {'yes' if not any('DIFFERENT' in f for f in fails) else 'NO'}")
+    print(f"  full-lock yaw           : touch {touch_ease(2.0, curve) * yaw * tier['mult']:.1f} deg/s, "
+          f"pad {pad_ease(2.0, base_text) * yaw * tier['mult']:.1f} deg/s")
+    for f in fails:
+        print(f"  [BAD] {f}")
     print()
 
-    def corner(g, target):
-        om = ease(2.0 * g) * yaw * tier["mult"]
-        trace = simulate(yaw, tier["mult"], tier["grip"], g, target, seconds=CORNER_DEG / om)
-        peak = max(sl for sl, _ in trace)
-        floor = min(v for _, v in trace)
-        return om, peak, floor, trace[-1][1]
+    def corner(x_sum, target):
+        om = x_sum * yaw * tier["mult"]
+        trace = simulate(yaw, tier["mult"], tier["grip"], x_sum, target, seconds=CORNER_DEG / om)
+        return om, max(sl for sl, _ in trace), min(v for _, v in trace), trace[-1][1]
 
-    # Speeds are compared with a hair of float slack: the model's ShapeSpeed floor holds the
-    # magnitude exactly, and a 1e-9 wobble is not a brake.
-    eps = 1e-6
-    ok = True
+    print(f"  full-lock {CORNER_DEG:g} deg hairpin at full pull (the shared drift - reported, not gated):")
     for xdiff in (0.5, 0.75, 1.0):
         target = xdiff * throttle
-        _, peak, floor, end = corner(gain, target)
-        good = floor >= target - eps and end >= target - eps
-        ok &= good
-        print(f"  [{'ok ' if good else 'BAD'}] XDiff {xdiff:<4} target {target:5.1f} -> "
-              f"slowest {floor / target * 100:5.1f}%, exit {end / target * 100:5.1f}% of entry speed "
-              f"(peak slip {peak:5.1f} deg{', past 90' if peak >= SLIP_LIMIT_DEG else ''})")
+        _, peak, floor, end = corner(touch_ease(2.0, curve), target)
+        print(f"    XDiff {xdiff:<4} target {target:5.1f} -> slowest {floor / target * 100:5.1f}%, "
+              f"exit {end / target * 100:5.1f}% of entry speed (peak slip {peak:5.1f} deg"
+              f"{', past 90' if peak >= SLIP_LIMIT_DEG else ''})")
 
     if args.sweep:
-        print(f"\n  one-thumb gain sensitivity (XDiff 0.75, full pull, {CORNER_DEG:g} deg corner):")
-        for g in (0.5, 0.6, 0.7, 0.8, 0.9, 1.0):
+        print(f"\n  thumb deflection (XDiff 0.75, full pull, {CORNER_DEG:g} deg corner) - touch mirror vs "
+              f"two pad sticks at the same deflection:")
+        for d in (0.5, 0.6, 0.7, 0.8, 0.9, 1.0):
             target = 0.75 * throttle
-            om, peak, floor, end = corner(g, target)
-            print(f"    gain {g:<4} yaw {om:6.1f} deg/s  slowest {floor / target * 100:5.1f}%  "
-                  f"exit {end / target * 100:5.1f}%  peak slip {peak:5.1f} deg")
+            om, peak, floor, end = corner(touch_ease(2.0 * d, curve), target)
+            pad_om = pad_ease(2.0 * d, base_text) * yaw * tier["mult"]
+            print(f"    {d:<4} touch yaw {om:6.1f} deg/s (pad {pad_om:6.1f})  slowest "
+                  f"{floor / target * 100:5.1f}%  exit {end / target * 100:5.1f}%  peak slip {peak:5.1f} deg")
 
-    if args.check and not ok:
-        print(f"\nFAIL: a full-pull lift drift through a {CORNER_DEG:g} deg corner drops below, or "
-              f"leaves slower than, its entry speed - the drift is a brake.\n"
-              f"Lower OneThumbDriftTurnGain (TouchInputStrategy) or raise the drift action's "
-              f"driftDamping.")
+    if args.check and fails:
+        print("\nFAIL: the touch drift differs from the pad drift. A lift is a full trigger pull and "
+              "nothing else - steering authority and drift tuning are the pad's.")
         return 1
     if args.check:
         print("\nOK")
