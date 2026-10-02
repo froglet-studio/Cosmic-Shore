@@ -1,6 +1,6 @@
 # Microgame Training — design plan
 
-**Status: PHASE 1 DATA LAYER LANDED (2026-10-01); runner, view and Play gating not built.** Revision 3 (2026-09-25) — revision 1's five open questions and
+**Status: PHASE 1 LANDED, NOT YET RUN IN THE EDITOR (2026-10-02)** - data layer, runner, coach view, Play gating (§10.1, §10.2). Revision 3 (2026-09-25) — revision 1's five open questions and
 revision 2's four are answered and folded in (§1). Nothing here has run in the editor. The Game of the Week rotation is a
 separate thread; this plan only assumes it names one `GameModes` value, whose card locks one hull.
 
@@ -445,6 +445,7 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 | Phase | Scope | Proves |
 |---|---|---|
 | 1 | `DrillRunner`, `DrillComposer`, `DrillCoachView`, `DrillProgressStore`; the Lesson with derived beats; the two account keys + 3 s skip; Play gating | every hull has a Lesson |
+| 1b **(landed)** | `DrillRunner`, `DrillCoachView`, the window's release hold and the card's Play gate (§10.2) | a forced Lesson in the window, then the Mentor |
 | 1a **(landed)** | The data layer (§10.1): beats, conditions, tokens, composer, hull facts, progress store + `DRILL_PROGRESS` cloud key, the library and both Lesson templates | the Lesson composes for any hull, offline |
 | 2 | §7 gate course in previews (Switchback + Redline first) | the race is in the window |
 | 3 | The Mentor: TipListSOs for the gate-race family, pacing, Moment conditions, resume | the curated tutor |
@@ -471,7 +472,37 @@ Proof: `Tools/Build/drill_harness/run.sh` compiles the shipped files (plus the r
 glyph set and binding map) against a UnityEngine stub and runs 52 checks; four negative controls
 (the skip rule, seen-to-end ordering, missing-fact detection, the passive sentinel) each fail it.
 Edit-mode: `Tests/Editor/DrillComposerTests.cs`. **Nothing has been compiled in the Unity
-editor**, and no runner reads any of this yet.
+editor.**
+
+### 10.2 Phase 1b - the runner, the coach, the gates
+
+| Piece | File | Note |
+|---|---|---|
+| Runner | `Drill/DrillRunner.cs` | Plain MonoBehaviour the session adds beside `ModePreviewRunner`. Started in `EnterFlightAsync` right after `StartRunner` (the stick is already granted); stopped at every exit the objective runner stops at (tap-out, `Stop`, `AbortHard`). Phases Lesson -> Mentor -> Done. It is its own `IDrillSignals`: speed, the drift flag, the throttle axis (`XDiff`) and the larger eased stick come off the live vessel; presses come off `R_VesselActionHandler.OnInputEventStarted`, and an ABILITY use is a press on the input that ability's map entry names; gates come off the preview's own `ModePreviewGateCourse.Threaded`. Skip is offered after the library's delay only when the Lesson is skippable (D7, or a party guest). A completed Lesson records its scheme's keys; a skipped one records nothing. The Mentor marks a tip seen the moment it is SHOWN. A device switch re-says the current line in the new device's words (`InputController.ActiveDeviceFamily`, now exposed read-only) |
+| Coach | `UI/View/DrillCoachView.cs` | Generated on first use under the window's picture rect (`ModePreviewWindow.SurfaceRect`), because a coach that must be placed in every window host is one some host will be missing. A panel along the bottom fifth: title, the line, step pips, the control chip (pad artwork from `ControlGlyphSet`, keyboard label from its row - the lockup's own chain), and Skip / Next. Font taken from the window's status label. Redraws on `DrillRunner.OnChanged`; no Update |
+| Release hold | `ModePreviewWindow.HoldRelease` | While true, Escape / pad Start / a tap outside do nothing. EVERY other route out (card change, modal close, launch, scene change) still releases - the hold delays a player and never traps one |
+| Play gate | `ArcadeGameConfigureModal.RefreshStartAvailability` | A third condition beside the vessel gate and the weekly lock: `ModePreviewSession.DrillHoldsPlay`, re-decided on `OnDrillGateChanged`. The caption beside the greyed button is the library's `PlayLockedCaption` |
+| Names | `ModePreviewSession.SetDrillNames` | The modal passes the card's `DisplayName` and, for a single-hull card, that hull's `SO_Vessel.Name`. A multi-hull card passes no vessel name, so a line quoting `{vessel}` is dropped there |
+
+Proof: the same harness now also drives the SHIPPED runner through scripted visits (forced
+first Lesson with hint, device switch, wrong button, the skipped Skims step, drift, Mentor
+pacing with a Moment and Next, closing line; a skippable later visit with Skip; a party guest;
+a vessel destroyed mid-run; a missing library) - 80 checks, and five negative controls each fail
+it (hold, skip gate, unsubscribe, seen-marking, party guest).
+
+**Stated gaps, all for later phases or the editor pass:**
+- **No pad Skip.** Skip and Next are buttons on the panel; a pad player skips by releasing
+  focus (Start), which is allowed whenever the Lesson is skippable. A dedicated pad binding needs
+  a button flight does not use, and Select is the screenshot director's.
+- **`PulseAbilityRow` is not drawn.** The cue is carried and the chip shows the control, but the
+  launch panel's controls block is not pulsed yet.
+- **A Skims step is skipped live.** No per-vessel skim signal reaches the runner (the skim event
+  is a scene-wired SOAP asset shared by every vessel), so a Skims condition would hold a forced
+  Lesson forever; the runner skips it with a warning. None of the seeded steps uses it.
+- **No resume.** Tapping out ends the run; tapping back in starts the Lesson again (skippable by
+  then if it was finished). The Mentor's "resume where it left off" is phase 3.
+- **Not reached by a first login.** Forcing the player INTO the window is the Quest Graph railroad
+  (phase 4); today the Lesson starts when a player taps into any preview.
 
 ---
 

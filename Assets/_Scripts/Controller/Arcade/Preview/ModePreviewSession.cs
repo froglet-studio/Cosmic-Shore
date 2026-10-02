@@ -10,6 +10,7 @@ using Reflex.Attributes;
 using Reflex.Core;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using Unity.Netcode;
 
 namespace CosmicShore.Gameplay
 {
@@ -239,6 +240,7 @@ namespace CosmicShore.Gameplay
 
             _window.OnFocusRequested -= HandleFocusRequested;
             _window.OnFocusReleased -= HandleFocusReleased;
+            _window.HoldRelease = false;   // a hold never outlives the window it was placed on
             _window = null;
         }
 
@@ -476,6 +478,10 @@ namespace CosmicShore.Gameplay
                 // The objective counts from the take-over, which is now also the arrival.
                 if (!_runnerStarted) StartRunner(definition);
 
+                // The coach: the Lesson, then the Mentor (TRAINING_PLAN §4). After the stick is
+                // granted, so the first step's condition reads a vessel the player is flying.
+                StartDrill(definition);
+
                 // A duel needs somebody to duel: modes that seat two or more get a sparring
                 // partner - a dummy in the mode's own hull, nothing clever.
                 SpawnSparringPartnerAsync(definition).Forget();
@@ -619,6 +625,7 @@ namespace CosmicShore.Gameplay
                 }
 
                 StopRunner();
+                StopDrill();
                 if (_gateCourse) _gateCourse.Track(null);   // the rings stay; nothing is counting
 
                 // Pen the local trail up across the teleport home: a spawner left live for even
@@ -687,6 +694,7 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             StopRunner();
+            StopDrill();
             StrikeGateCourse();
 
             _window?.ReleaseFocus();          // routes through HandleFocusReleased → AI back on
@@ -802,6 +810,7 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             StopRunner();
+            StopDrill();
             StrikeGateCourse();
 
             // Both callers of AbortHard - the launch and OnDestroy - are LEAVING the menu, so
@@ -1085,6 +1094,86 @@ namespace CosmicShore.Gameplay
             if (!manager || !Alive(vessel) || vessel.VesselStatus == null || !texture) return false;
 
             return manager.BeginWindowedPlayerCamera(vessel.VesselStatus.CameraFollowTarget, texture) != null;
+        }
+
+        // ── The drill (Lesson + Mentor) ─────────────────────────────────────
+
+        DrillRunner _drill;
+        DrillCoachView _coach;
+        string _drillModeName;
+        string _drillVesselName;
+
+        /// <summary>
+        /// The drill's hold on the card's Play button moved: true while a forced Lesson runs
+        /// (D2), false once the Mentor starts or the run ends. The modal re-decides Start's
+        /// availability on it.
+        /// </summary>
+        public event Action OnDrillGateChanged;
+
+        /// <summary>True while a forced Lesson holds the card's Play button shut.</summary>
+        public bool DrillHoldsPlay => _drill && _drill.HoldsExit;
+
+        /// <summary>The caption shown beside a held Play button, authored in the drill library.</summary>
+        public string DrillHoldCaption => _drill && _drill.Library ? _drill.Library.Strings.PlayLockedCaption : null;
+
+        /// <summary>
+        /// The words the coach uses for {mode} and {vessel} - the card's display name and the
+        /// hull's. Passed by the modal, which owns the card; null names simply drop any line
+        /// that quotes them (a missing fact, never a placeholder).
+        /// </summary>
+        public void SetDrillNames(string modeName, string vesselName)
+        {
+            _drillModeName = modeName;
+            _drillVesselName = vesselName;
+        }
+
+        void StartDrill(ModePreviewDefinitionSO definition)
+        {
+            var vessel = gameData?.LocalPlayer?.Vessel;
+            if (!definition || !Alive(vessel)) return;
+
+            if (!_drill)
+            {
+                _drill = gameObject.AddComponent<DrillRunner>();
+                _drill.OnChanged += HandleDrillChanged;
+            }
+
+            var nm = NetworkManager.Singleton;
+            bool started = _drill.Begin(new DrillContext
+            {
+                Vessel = vessel,
+                Mode = definition.Mode,
+                Metric = definition.ObjectiveMetric,
+                ModeName = _drillModeName,
+                VesselName = _drillVesselName,
+                GateCourse = GateCourse,
+                PartyGuest = nm && nm.IsListening && !nm.IsServer,
+            });
+            if (!started) return;
+
+            var host = _window ? _window.SurfaceRect : null;
+            _coach = host ? DrillCoachView.Ensure(host) : null;
+            if (_coach) _coach.Bind(_drill);
+            HandleDrillChanged();
+        }
+
+        void StopDrill()
+        {
+            if (_drill) _drill.Stop();
+            if (_coach) _coach.Bind(null);
+            ApplyDrillHold(false);
+        }
+
+        bool _drillHoldApplied;
+
+        void HandleDrillChanged() => ApplyDrillHold(DrillHoldsPlay);
+
+        void ApplyDrillHold(bool hold)
+        {
+            if (_window) _window.HoldRelease = hold;
+            if (hold == _drillHoldApplied) return;
+            _drillHoldApplied = hold;
+            OnDrillGateChanged?.Invoke();
         }
 
         // ── Objective ────────────────────────────────────────────────────────

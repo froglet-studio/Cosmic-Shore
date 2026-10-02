@@ -91,6 +91,7 @@ static class Driver
         Mentor();
         Progress();
         HullFacts();
+        RunnerDriver.Run(Check);
         Console.WriteLine($"{_pass} passed, {_fail} failed");
         return _fail == 0 ? 0 : 1;
     }

@@ -23,7 +23,7 @@ open(sys.argv[2], "w").write("namespace CosmicShore.UI { public partial class In
 PY
 
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
-printf '%s\n' "$HERE/Unity.cs" "$HERE/Driver.cs" "$OUT/HintBinding.cs" \
+printf '%s\n' "$HERE/Unity.cs" "$HERE/Gameplay.cs" "$HERE/Driver.cs" "$HERE/RunnerDriver.cs" "$OUT/HintBinding.cs" \
   "$A/Data/Enums/Element.cs" "$A/Data/Enums/InputEvents.cs" "$A/Data/Enums/VesselClassType.cs" \
   "$A/Data/Enums/GameModes.cs" "$A/Data/Enums/ScoringMetric.cs" \
   "$A/ScriptableObjects/ElementalAbilityMapSO.cs" "$A/ScriptableObjects/ControlGlyphSetSO.cs" \

@@ -3,14 +3,24 @@ using System;
 using System.Collections.Generic;
 namespace UnityEngine
 {
-    public partial class Object { }
+    public partial class Object { public static implicit operator bool(Object o) => o != null && !o.Destroyed; public bool Destroyed; }
     public class ScriptableObject : Object
     {
         public static T CreateInstance<T>() where T : ScriptableObject => (T)System.Activator.CreateInstance(typeof(T), true);
     }
     public class Sprite : Object { }
+    public class Component : Object { }
+    public class Behaviour : Component { }
+    public class MonoBehaviour : Behaviour { }
+    public static class Time { public static float unscaledDeltaTime = 0.1f; }
+    public static class Mathf
+    {
+        public static float Clamp01(float v) => v < 0 ? 0 : v > 1 ? 1 : v;
+        public static float Max(float a, float b) => a > b ? a : b;
+    }
+    public struct Vector2 { public float x, y; public Vector2(float x, float y) { this.x = x; this.y = y; } public float magnitude => (float)System.Math.Sqrt(x * x + y * y); }
     public struct Color { public float r, g, b, a; public Color(float r, float g, float b, float a) { this.r = r; this.g = g; this.b = b; this.a = a; } public static Color white => new(1, 1, 1, 1); }
-    public static class Resources { public static T Load<T>(string path) where T : Object => null; }
+    public static class Resources { public static Func<string, Object> Loader; public static T Load<T>(string path) where T : Object => Loader?.Invoke(path) as T; }
     public static class PlayerPrefs
     {
         static readonly Dictionary<string, object> S = new();

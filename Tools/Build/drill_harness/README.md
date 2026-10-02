@@ -4,7 +4,8 @@ Compiles the SHIPPED microgame drill data layer (`Assets/_Scripts/Controller/Arc
 plus the real `ElementalAbilityMapSO`, `ControlGlyphSetSO`, `InputHintBindingMap` and
 `DrillProgressCloudData` against a small UnityEngine stub (`Unity.cs`), and runs `Driver.cs`:
 token resolution, conditions, Lesson and Mentor composition, the first-time skip rule, the progress
-store's mirror/cloud merge, and hull facts. `HintBinding` is extracted from the shipped
+store's mirror/cloud merge, and hull facts. `RunnerDriver.cs` drives the shipped `DrillRunner`
+through scripted visits against the vessel stand-ins in `Gameplay.cs`. `HintBinding` is extracted from the shipped
 `InputDeviceIconSetSwitcher.cs` at build time rather than retyped.
 
     bash Tools/Build/drill_harness/run.sh     # exit 0 = pass
