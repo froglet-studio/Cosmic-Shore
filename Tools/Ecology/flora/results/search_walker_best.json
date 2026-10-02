@@ -1,0 +1,60 @@
+{
+ "params": {
+  "t_erupt": 0.5773,
+  "n_walkers": 16,
+  "speed": 10.3666,
+  "prime": 140.0398,
+  "strike": 55.7759,
+  "r_body": 26.0861,
+  "tell": 82.4097,
+  "thorn": 57.8965
+ },
+ "R": 1.7317,
+ "card": {
+  "hits_per_min_wander": 5.167,
+  "hits_per_min_reader": 0.167,
+  "counterplay": 0.032,
+  "telegraph_s": 1.3,
+  "telegraph_p10": 0.61,
+  "unwarned_frac": 0.125,
+  "payoff_per_min": 9.667,
+  "cutter_burns_per_min": 2.0,
+  "crystals_per_burn": 4.833,
+  "variety": 0.641,
+  "avoid_cost": 2.667,
+  "lane_coverage": 0.335,
+  "threat_density": 1.666,
+  "growth_per_min": 745.0,
+  "prisms_end": 2033.667,
+  "mass_drift_max": 1.5755599656085007e-16,
+  "crystal_law": true,
+  "py_ms_per_step": 10.067,
+  "courier_hits_per_min": 4.167,
+  "adapt": 1.769,
+  "kinds": {
+   "burn": 31
+  },
+  "R_terms": {
+   "threat": 1.0,
+   "counterplay": 1.0,
+   "telegraph": 0.871,
+   "payoff": 0.656,
+   "variety": 1.0,
+   "access": 1.0,
+   "presence": 1.0,
+   "adapt": 1.0
+  },
+  "R": 0.9325,
+  "R_hard_terms": {
+   "threat": 0.815,
+   "counterplay": 1.0,
+   "telegraph": 0.61,
+   "payoff": 0.364,
+   "variety": 1.0,
+   "access": 1.0,
+   "presence": 0.92,
+   "adapt": 1.0
+  },
+  "R_hard": 0.7992
+ }
+}

@@ -30,7 +30,7 @@ from harness import FloraSpecies, PlantBody, VIEW, seg_point_dist
 IDLE, TREMBLE, ERUPT, RETRACT = 0, 1, 2, 3
 DEFAULTS = dict(n_walkers=12, shell=24, r_body=28.0, prism_vol=14.0, thorns=10, thorn_vol=6.0, speed=5.0,
                 hunger_boost=2.0, sense=160.0, root=60.0, absorb_every=2.0, tell=110.0, prime=130.0, t_prime=0.6,
-                strike=40.0, thorn=55.0, t_erupt=0.45, t_hold=0.6, t_retract=1.2, bud=1, ram=True, armour=0.0)
+                strike=40.0, thorn=55.0, t_erupt=0.45, t_hold=0.6, t_retract=1.2, bud=1, ram=True, armour=0.0, guard=0.0)
 
 
 class Walker(FloraSpecies):
@@ -135,13 +135,19 @@ class Walker(FloraSpecies):
             st = self.state[i]; self.timer[i] += dt
             if st == IDLE and near < p["prime"]:
                 self.state[i] = TREMBLE; self.timer[i] = 0
+            if self.state[i] == TREMBLE:
+                # GUARD: a trembling thicket half-extends its thorns toward `guard` - the heart is defended during
+                # the approach, so a fast dive no longer slips in under an all-or-nothing eruption (round 4)
+                self.ext[i] += (p["guard"] - self.ext[i]) * min(1.0, dt / max(p["t_prime"], 1e-3))
+            elif self.state[i] == IDLE:
+                self.ext[i] = max(0.0, self.ext[i] - dt / p["t_retract"])
             elif st == TREMBLE:
                 if near > p["prime"] * 1.3: self.state[i] = IDLE
                 elif near < p["strike"] or self.timer[i] > p["t_prime"] + 3.0:
                     if self.timer[i] >= p["t_prime"] or near < p["strike"] * 0.6:
                         self.state[i] = ERUPT; self.timer[i] = 0; self.fired[i] += 1; self.strikes += 1
             elif st == ERUPT:
-                self.ext[i] = min(1.0, self.timer[i] / p["t_erupt"])
+                self.ext[i] = max(self.ext[i], min(1.0, self.timer[i] / p["t_erupt"]))
                 if self.timer[i] > p["t_erupt"] + p["t_hold"]: self.state[i] = RETRACT; self.timer[i] = 0
             elif st == RETRACT:
                 self.ext[i] = max(0.0, 1.0 - self.timer[i] / p["t_retract"])

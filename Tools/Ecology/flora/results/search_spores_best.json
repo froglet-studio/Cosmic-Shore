@@ -1,0 +1,56 @@
+{
+ "params": {
+  "touch": 23.5501,
+  "drag": 0.8929,
+  "wind": 11.5861,
+  "alarm_speed": 102.4362
+ },
+ "R": 1.8717000000000001,
+ "card": {
+  "hits_per_min_wander": 1.667,
+  "hits_per_min_reader": 0.0,
+  "counterplay": 0.0,
+  "telegraph_s": 5.0,
+  "telegraph_p10": 2.93,
+  "unwarned_frac": 0.1,
+  "payoff_per_min": 26.5,
+  "cutter_burns_per_min": 27.667,
+  "crystals_per_burn": 0.958,
+  "variety": 0.564,
+  "avoid_cost": 0.767,
+  "lane_coverage": 0.372,
+  "threat_density": 1.554,
+  "growth_per_min": 398.667,
+  "prisms_end": 1440.0,
+  "mass_drift_max": 1.4805582927454706e-16,
+  "crystal_law": true,
+  "py_ms_per_step": 8.297,
+  "courier_hits_per_min": 0.0,
+  "adapt": 1.308,
+  "kinds": {
+   "burn": 10
+  },
+  "R_terms": {
+   "threat": 1.0,
+   "counterplay": 1.0,
+   "telegraph": 1.0,
+   "payoff": 1.0,
+   "variety": 1.0,
+   "access": 1.0,
+   "presence": 1.0,
+   "adapt": 0.808
+  },
+  "R": 0.9737,
+  "R_hard_terms": {
+   "threat": 1.0,
+   "counterplay": 1.0,
+   "telegraph": 1.0,
+   "payoff": 1.0,
+   "variety": 1.0,
+   "access": 0.852,
+   "presence": 0.845,
+   "adapt": 0.587
+  },
+  "R_hard": 0.898
+ }
+}
