@@ -170,20 +170,15 @@ class Arena:
         self.scattered += float(self.mass_vol[-n:].sum()) if n else 0.0
         self.mass_grid.build(self.mass_pos, self.mass_alive)
 
-    def lay_mass(self, p, vol, elem=0, owner: int = -1) -> int:
-        """Create ONE prism (a species laying mass it PAID for - e.g. a builder's wall). Returns its index."""
-        self.mass_owner  # pad before growing
-        self.mass_pos = np.vstack([self.mass_pos, p]); self.mass_vol = np.append(self.mass_vol, vol)
-        self.mass_elem = np.append(self.mass_elem, np.int8(elem)); self.mass_alive = np.append(self.mass_alive, True)
-        self.mass_shielded = np.append(self.mass_shielded, False)
-        self._owner = np.append(self._owner, np.int16(owner))
-    def lay_mass(self, p, vol, elem=0, dom=0, danger=False, trail=False, shielded=False) -> int:
+    def lay_mass(self, p, vol, elem=0, dom=0, danger=False, trail=False, shielded=False, owner: int = -1) -> int:
         """Create ONE prism (a species laying mass it PAID for - e.g. a builder's wall, or a pilot's trail).
-        Returns its index."""
+        `owner` = laying pilot index (-1 = environment; Direction B's trails). Returns its index."""
+        self.mass_owner  # pad the owner ledger before growing
         self.mass_pos = np.vstack([self.mass_pos, p]); self.mass_vol = np.append(self.mass_vol, vol)
         self.mass_elem = np.append(self.mass_elem, np.int8(elem)); self.mass_alive = np.append(self.mass_alive, True)
         self.mass_shielded = np.append(self.mass_shielded, bool(shielded))
         self._pad_ledgers()
+        self._owner = np.append(self._owner, np.int16(owner))
         self.mass_dom[-1] = dom; self.mass_danger[-1] = bool(danger); self.mass_trail[-1] = bool(trail)
         self.laid += float(vol); self.dirty.add(len(self.mass_vol) - 1)
         return len(self.mass_vol) - 1
