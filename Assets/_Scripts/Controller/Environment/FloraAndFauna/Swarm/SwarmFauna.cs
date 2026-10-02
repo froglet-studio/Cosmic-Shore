@@ -77,6 +77,12 @@ namespace CosmicShore.Gameplay
         float _atPlantSince = -1f;
         readonly Dictionary<Flora, float> _barren = new();
         static int s_spawnFrame = -1, s_spawnsThisFrame;
+        // round 8: proxies materialised because a weapon or predator reached a member (§16.2), budgeted cell-wide
+        static int s_hitFrame = -1, s_hitsThisFrame;
+        static readonly List<SwarmFauna> s_live = new();
+        float _alpha;                    // this frame's display alpha - where every member is DRAWN right now
+        Domains[] _slotDomain = { Domains.Blue, Domains.Blue, Domains.Blue };
+        readonly List<int> _qScratch = new(64), _qHits = new(64);
         // inline ticks (off-thread disabled, or WebGL) share one per-frame budget - the round-6 rule
         static int s_inlineFrame = -1;
         static double s_inlineMs;
@@ -181,6 +187,8 @@ namespace CosmicShore.Gameplay
             }
 
             BuildMouths();
+            _slotDomain = BuildSlotDomains();
+            s_live.Add(this);
             _lastFedTime = Time.time;
             _acc = Random.value * _dt;   // stagger the cell's swarms across frames from the first tick
             StartLoop();
@@ -423,6 +431,8 @@ namespace CosmicShore.Gameplay
         {
             s_spawnFrame = -1; s_spawnsThisFrame = 0;
             s_inlineFrame = -1; s_inlineMs = 0;
+            s_hitFrame = -1; s_hitsThisFrame = 0;
+            s_live.Clear();
         }
 
         protected override void OnDestroy()
@@ -431,6 +441,7 @@ namespace CosmicShore.Gameplay
             // harmless (the job holds no Unity object). The GPU buffers are ours to release.
             _render?.Dispose();
             _render = null;
+            s_live.Remove(this);
             base.OnDestroy();
         }
 
@@ -442,6 +453,7 @@ namespace CosmicShore.Gameplay
             _acc += Time.deltaTime;
             if (_acc >= _dt) AdvanceTick();
             float alpha = Mathf.Clamp01(_acc / _dt);
+            _alpha = alpha;
 
             using (s_mPose.Auto()) PoseProxies(alpha);
             if (_gpu)
@@ -619,7 +631,9 @@ namespace CosmicShore.Gameplay
             var e = SwarmFaunaConfigSO.ToElement(s.CurMolt >= 0.5f && s.CurMolt < 1f ? s.HeartTo : s.HeartFrom);
             var member = Instantiate(config.TadpolePrefab, Uni(s.CurPos), Face(s.CurFace));
             member.Bind(HostCell, this, i, e, SwarmFaunaConfigSO.Of(config.HeartWorldScale, e),
-                        new Vector3(s.Scale.X, s.Scale.Y, s.Scale.Z), s.PrismZ, hideLive: _gpu);
+                        new Vector3(s.Scale.X, s.Scale.Y, s.Scale.Z), s.PrismZ, hideLive: _gpu,
+                        memberDomain: MemberDomain(i),
+                        memberAgeSeconds: Mathf.Max(0f, (_job.Tick + _alpha - s.BirthTick) / config.TickHz));
             HostCell.RegisterSpawnedObject(member.gameObject);
             // The replication seam every fauna producer reaches. A swarm member carries no NetworkObject
             // (members are client-local, like every freestyle creature), so this only neutralizes; it is
@@ -675,6 +689,122 @@ namespace CosmicShore.Gameplay
                 _mouth[q].position = Uni(_job.PoseAt(i, alpha));
             }
         }
+
+        // ───────────────────────────────────────────────────────────────── members as targets (round 8)
+
+        /// <summary>
+        /// One living member a query found (Docs/SWARM_FAUNA.md §16.1): which swarm, which slot, the point the
+        /// volume tested (its body prism's centre, or its heart) and the domain it wears. A member that already has
+        /// a proxy is never returned - its real body and heart are in PrismSpatialIndex and PhysX, where the
+        /// weapon's own path already finds them, so returning it here too would hit it twice.
+        /// </summary>
+        public readonly struct MemberHit
+        {
+            public readonly SwarmFauna Swarm;
+            public readonly int Slot;
+            public readonly Vector3 Point;
+            public readonly Domains Domain;
+            /// <summary>Half the body prism's scale diagonal - the bounding radius a projectile sweep allows a prism
+            /// (<c>0.5 * lossyScale.magnitude</c>), so a member's contact test is a prism's.</summary>
+            public readonly float BodyRadius;
+            public MemberHit(SwarmFauna swarm, int slot, Vector3 point, Domains domain, float bodyRadius)
+            { Swarm = swarm; Slot = slot; Point = point; Domain = domain; BodyRadius = bodyRadius; }
+            /// <summary>A key unique per (swarm, slot) - a blast's once-per-member ledger.</summary>
+            public long Key => ((long)Swarm.GetInstanceID() << 32) | (uint)Slot;
+        }
+
+        /// <summary>Every live GPU-drawn swarm.</summary>
+        public static IReadOnlyList<SwarmFauna> Live => s_live;
+
+        /// <summary>
+        /// Every proxy-less living member, across every swarm, whose BODY centre (or heart, with
+        /// <paramref name="heart"/>) lies in <paramref name="v"/> where it is drawn THIS frame. The same centre test
+        /// PrismSpatialIndex runs on a prism (SwarmVolume is that test, proven against the shipped Burst code), over
+        /// a grid the tick worker built - O(members near the volume), and a swarm whose box misses the volume costs
+        /// one compare. Appends; returns the count appended. Main thread.
+        /// </summary>
+        public static int CollectMembers(in SwarmVolume v, bool heart, List<MemberHit> results)
+        {
+            int before = results.Count;
+            for (int k = 0; k < s_live.Count; k++)
+            {
+                var sw = s_live[k];
+                if (sw) sw.CollectOwn(v, heart, results);
+            }
+            return results.Count - before;
+        }
+
+        void CollectOwn(in SwarmVolume v, bool heart, List<MemberHit> results)
+        {
+            // without GPU drawing every living member already HAS a proxy (the fallback), so nothing is virtual
+            if (_job == null || !_gpu) return;
+            _qHits.Clear();
+            _job.QueryMembers(v, _alpha, heart, _qScratch, _qHits);
+            for (int q = 0; q < _qHits.Count; q++)
+            {
+                int i = _qHits[q];
+                if (_proxy[i] || _gone[i]) continue;
+                var p = heart ? _job.PoseAt(i, _alpha) : _job.BodyAt(i, _alpha);
+                results.Add(new MemberHit(this, i, Uni(p), MemberDomain(i), 0.5f * _job.Instances[i].Scale.Length()));
+            }
+        }
+
+        /// <summary>The domain member <paramref name="i"/> wears (its slot in this swarm's slot table, §16.4).</summary>
+        public Domains MemberDomain(int i) =>
+            _job != null && i >= 0 && i < _cap ? _slotDomain[Mathf.Clamp(_job.Instances[i].DomainSlot, 0, 2)] : domain;
+
+        /// <summary>Room left in this frame's cell-wide budget of hit materialisations (§16.2).</summary>
+        public static bool HitBudgetLeft(SwarmFaunaConfigSO cfg)
+        {
+            int frame = Time.frameCount;
+            if (s_hitFrame != frame) { s_hitFrame = frame; s_hitsThisFrame = 0; }
+            return s_hitsThisFrame < (cfg ? cfg.MaxHitMaterialisationsPerFrame : 48);
+        }
+
+        /// <summary>
+        /// THE seam a weapon or a predator reaches a virtual member through (Docs/SWARM_FAUNA.md §16.2). The member
+        /// becomes its proxy NOW, posed exactly where it is drawn, wearing its tier, with its body prism's creation
+        /// finished in this frame (<see cref="Prism.CompleteCreationImmediately"/>) - so the caller then runs its OWN
+        /// code on a real body prism and a real heart, and every consequence (the domain test, shields, the sealed
+        /// <see cref="Fauna.Die"/>, the crystal, the wither or the suction, the kill credit) is the platform's,
+        /// unchanged. Null when the member is gone, or (unless <paramref name="force"/>) the cell-wide per-frame
+        /// budget is spent - the caller then keeps the hit and asks again next frame.
+        /// </summary>
+        public SwarmTadpoleFauna MaterialiseForHit(int i, bool force = false)
+        {
+            if (_job == null || i < 0 || i >= _cap) return null;
+            var existing = _proxy[i];
+            if (existing)
+            {
+                _wantedAt[i] = Time.time;
+                return existing.IsDead || !existing.MaterialiseNow() ? null : existing;
+            }
+            if (_gone[i] || !_job.Instances[i].Alive) return null;
+            if (!force && !HitBudgetLeft(config)) return null;
+            if (!TrySpawnProxy(i, force: true)) return null;
+            s_hitsThisFrame++;
+
+            var m = _proxy[i];
+            _wantedAt[i] = Time.time;
+            m.transform.SetPositionAndRotation(Uni(_job.PoseAt(i, _alpha)), Face(_job.FaceAt(i, _alpha), Uni(_job.BY)));
+            if (!m.MaterialiseNow()) return null;
+            ref var s = ref _job.Instances[i];
+            m.SetTier(s.Tier == 1, s.Tier == 2);
+            m.SyncBodyToIndex();
+            return m;
+        }
+
+        /// <summary>Keep member <paramref name="i"/>'s proxy alive this frame (a predator is hunting it, §16.3).</summary>
+        public void KeepProxy(int i)
+        {
+            if (_wantedAt != null && i >= 0 && i < _cap) _wantedAt[i] = Time.time;
+        }
+
+        /// <summary>
+        /// The swarm's domain SLOT table (§16.4): slot 0 is the anchor's - the cell's controlling domain, which every
+        /// seed wears. A one-colour swarm maps every slot to it.
+        /// </summary>
+        Domains[] BuildSlotDomains() => new[] { domain, domain, domain };
 
         // ───────────────────────────────────────────────────────────────── vessels
 

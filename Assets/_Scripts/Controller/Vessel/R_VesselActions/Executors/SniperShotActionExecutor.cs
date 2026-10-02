@@ -93,7 +93,10 @@ namespace CosmicShore.Gameplay
 
         // Reused so a shot allocates nothing on the hot path.
         readonly List<Prism> _hits = new();
-        readonly List<(Prism prism, float distance)> _ordered = new();
+        // A target along the round is a prism OR a swarm member that is only data (round 8, Docs/SWARM_FAUNA.md
+        // §16.2) - the member slot is >= 0 and the prism null until the member is materialised at its turn.
+        readonly List<(Prism prism, SwarmFauna.MemberHit member, float distance)> _ordered = new();
+        readonly List<SwarmFauna.MemberHit> _members = new();
         readonly List<Transform> _vesselScratch = new();
 
         /// <summary>Seconds until the next shot is available, 0 when ready. Read by the HUD.</summary>
@@ -236,7 +239,24 @@ namespace CosmicShore.Gameplay
                 {
                     var prism = _hits[i];
                     if (!IsValidTarget(prism)) continue;
-                    _ordered.Add((prism, Vector3.Dot(prism.transform.position - origin, direction)));
+                    _ordered.Add((prism, default(SwarmFauna.MemberHit), Vector3.Dot(prism.transform.position - origin, direction)));
+                }
+
+                // Swarm members that are only DATA (no GameObject past 160 u of a vessel): the SAME cone, the same
+                // centre test, against each member's body prism where it is drawn (SwarmTargets.Cone is QueryCone,
+                // transcribed and proven). They join the ordered list, so pierce counts them exactly as the prisms
+                // their bodies would be, and IsValidTarget's domain rule is asked before one is materialised.
+                if (SwarmTargets.Any)
+                {
+                    _members.Clear();
+                    SwarmTargets.Bodies(SwarmTargets.Cone(origin, direction, so.RangeUnits, so.ConeHalfAngleDegrees,
+                                                          so.MinPathRadius), _members);
+                    for (int i = 0; i < _members.Count; i++)
+                    {
+                        var m = _members[i];
+                        if (m.Domain == _status.Domain) continue;   // IsValidTarget: never eat your own
+                        _ordered.Add(((Prism)null, m, Vector3.Dot(m.Point - origin, direction)));
+                    }
                 }
                 _ordered.Sort((a, b) => a.distance.CompareTo(b.distance));
 
@@ -253,6 +273,14 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < _ordered.Count && killed < budget; i++)
                 {
                     var prism = _ordered[i].prism;
+                    if (prism == null && _ordered[i].member.Swarm)
+                    {
+                        // the member becomes its proxy now - a real body prism the round then destroys exactly as
+                        // it destroys any prism (and the creature dies through the sealed Fauna.Die). A sniper's
+                        // handful of members is never deferred.
+                        var proxy = _ordered[i].member.Swarm.MaterialiseForHit(_ordered[i].member.Slot, force: true);
+                        prism = proxy ? proxy.Body : null;
+                    }
                     // Re-tested: the list is a snapshot, and destroying a prism can destroy others
                     // through its own side effects (QueryCone's own documented contract). The stop
                     // point is read BEFORE the kill, because a destroyed prism's transform is on

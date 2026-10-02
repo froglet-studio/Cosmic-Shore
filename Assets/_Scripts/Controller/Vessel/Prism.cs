@@ -813,7 +813,8 @@ namespace CosmicShore.Gameplay
                 authoredTargetScale = transform.localScale;
 
             scaleAnimator.SetTargetScale(authoredTargetScale);
-            StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
+            _creationScale = authoredTargetScale;
+            _creationRoutine = StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
 
             if (prismProperties.IsShielded) ActivateShield();
             if (prismProperties.IsDangerous) MakeDangerous();
@@ -1077,6 +1078,30 @@ namespace CosmicShore.Gameplay
             if (isEnvironmentMass) s_environmentCompletionsThisFrame++;
             else s_creationCompletionsThisFrame++;
 
+            _creationRoutine = null;
+            FinishCreation(authoredTargetScale);
+        }
+
+        Coroutine _creationRoutine;
+        Vector3 _creationScale;
+
+        /// <summary>
+        /// Finish THIS life's creation now: skip the spawn wait and the per-frame completion budget, and run
+        /// exactly the completion the coroutine would have run (visibility, collider, growth stamp, created
+        /// event, spatial registration). For an OWNER that needs the prism real in the frame it asked - a swarm
+        /// member materialised to take a hit a weapon has already landed (Docs/SWARM_FAUNA.md §16.2). The caller
+        /// owns the budget: every call is one full completion. No-op once complete, destroyed, or never started.
+        /// </summary>
+        public void CompleteCreationImmediately()
+        {
+            if (destroyed || IsCreationComplete || _creationRoutine == null) return;
+            StopCoroutine(_creationRoutine);
+            _creationRoutine = null;
+            FinishCreation(_creationScale);
+        }
+
+        void FinishCreation(Vector3 authoredTargetScale)
+        {
             // Measured across the WHOLE completion (visibility, growth stamp, SOAP raise,
             // spatial registration) rather than one block of it - a slice that only counts
             // part of the work it is meant to bound is not a bound.

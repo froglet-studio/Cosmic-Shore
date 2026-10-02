@@ -177,6 +177,23 @@ namespace CosmicShore.Gameplay
         // freshly-spawned creature is immune from frame zero, not only after its Start runs.
         float _spawnTime = -1f;
 
+        /// <summary>
+        /// Moves this creature's birth time back by <paramref name="ageSeconds"/>. For a creature whose GameObject is
+        /// younger than the creature itself - a swarm member's proxy, materialised for a member that has lived in the
+        /// simulation for minutes (Docs/SWARM_FAUNA.md §16.3) - so the post-spawn predation grace is measured from the
+        /// member's birth, not from the proxy's. A newborn member keeps its full grace.
+        /// </summary>
+        protected void BackdateSpawn(float ageSeconds)
+        {
+            if (ageSeconds > 0f) _spawnTime = Time.time - ageSeconds;
+        }
+
+        /// <summary>
+        /// A predator has this creature as its CURRENT target this frame. Nothing by default; a creature whose
+        /// GameObject would otherwise be retired (a swarm member's proxy) keeps itself alive while it is hunted.
+        /// </summary>
+        public virtual void NotifyHunted() { }
+
         /// <summary>True during the post-spawn grace window when this fauna can't be predated.</summary>
         public bool IsPredationImmune =>
             predationImmunitySeconds > 0f && _spawnTime >= 0f && (Time.time - _spawnTime) < predationImmunitySeconds;

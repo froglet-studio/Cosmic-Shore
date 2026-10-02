@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
-    public class Object { public string name; public HideFlags hideFlags; public static void Destroy(Object o) { } public static T Instantiate<T>(T o, Vector3 p, Quaternion r) where T : Object => o; public static implicit operator bool(Object o) => o != null; }
+    public class Object { public string name; public HideFlags hideFlags; public int GetInstanceID() => 0; public static void Destroy(Object o) { } public static T Instantiate<T>(T o, Vector3 p, Quaternion r) where T : Object => o; public static implicit operator bool(Object o) => o != null; }
     [Flags] public enum HideFlags { None = 0, DontSave = 52 }
     public class Component : Object { public Transform transform; public GameObject gameObject; public T GetComponent<T>() => default; public T GetComponentInParent<T>(bool includeInactive = false) => default; public T GetComponentInChildren<T>(bool b = false) => default; public T[] GetComponentsInChildren<T>(bool b = false) => default; public bool TryGetComponent<T>(out T c) { c = default; return false; } }
     public class Behaviour : Component { public bool enabled; public bool isActiveAndEnabled; }
@@ -147,6 +147,7 @@ namespace CosmicShore.Gameplay
         public void ChangeTeam(Domains d) { } public virtual void Initialize(string playerName = "") { }
         public void NotifyPositionChanged() { }
         public void CompleteGrowthImmediately() { }
+        public void CompleteCreationImmediately() { }   // Prism.cs (round 8)
         public void SetOwnerHidden(bool hidden) { }
         public bool OwnerHidden => false;
     }
@@ -197,5 +198,7 @@ namespace CosmicShore.Gameplay
         protected Transform DevourTarget { get; private set; }
         public virtual bool Predated(string predatorName, Transform devourTarget) => false;
         protected virtual Vector3 ResolveGoal() => Goal;
+        protected void BackdateSpawn(float ageSeconds) { }   // Fauna.cs (round 8)
+        public virtual void NotifyHunted() { }              // Fauna.cs (round 8)
     }
 }

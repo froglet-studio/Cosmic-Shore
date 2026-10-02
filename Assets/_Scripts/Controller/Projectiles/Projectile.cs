@@ -709,6 +709,7 @@ namespace CosmicShore.Gameplay
             // After every scale/parent change above — the carried turret collider is sized
             // per shot, so this cannot be cached at Awake.
             if (sweptPrismDetection) CacheSweepRadius();
+            else _memberSweepRadius = MeasureHitRadius();
 
             // The growth baseline is whatever this shot actually launched at (the gun applies
             // projectileScale, the turret sizes its carried collider per shot), never the
@@ -910,6 +911,14 @@ namespace CosmicShore.Gameplay
                         if (_flightEndRaised) return;
                     }
 
+                    if (!sweptPrismDetection && SwarmTargets.Any)
+                    {
+                        // a trigger round reaches every PRISM through PhysX; a swarm member that is only data has
+                        // no collider, so it is swept for (and joins the same dispatch) explicitly
+                        SweepPrismsAlong(sweepFrom, t.position, membersOnly: true);
+                        if (_flightEndRaised) return;
+                    }
+
                     if (sweptPrismDetection)
                     {
                         SweepPrismsAlong(sweepFrom, t.position);
@@ -1071,7 +1080,11 @@ namespace CosmicShore.Gameplay
         {
             public readonly float T;                 // parameter along this frame's segment
             public readonly ImpactorBase Impactor;
-            public SweepHit(float t, ImpactorBase impactor) { T = t; Impactor = impactor; }
+            /// <summary>Round 8: a swarm member that is only DATA (Docs/SWARM_FAUNA.md §16.2). Its impactor is null
+            /// until its turn in the nearest-first dispatch, when it becomes its proxy's real body prism.</summary>
+            public readonly SwarmFauna.MemberHit Member;
+            public SweepHit(float t, ImpactorBase impactor) { T = t; Impactor = impactor; Member = default; }
+            public SweepHit(float t, SwarmFauna.MemberHit member) { T = t; Impactor = null; Member = member; }
         }
 
         // Shared scratch, RENTED BY DEPTH. The sweep is main-thread but it is NOT
@@ -1093,9 +1106,12 @@ namespace CosmicShore.Gameplay
             {
                 s_candidatePool.Add(new List<Prism>(64));
                 s_hitPool.Add(new List<SweepHit>(16));
+                s_memberPool.Add(new List<SwarmFauna.MemberHit>(8));
             }
             return (s_candidatePool[depth], s_hitPool[depth]);
         }
+        // rented by depth with the other two, for the same re-entrancy reason
+        static readonly List<List<SwarmFauna.MemberHit>> s_memberPool = new();
         static readonly Comparison<SweepHit> s_nearestFirst = (x, y) => x.T.CompareTo(y.T);
 
         float _sweepRadius = 0.5f;
@@ -1732,24 +1748,29 @@ namespace CosmicShore.Gameplay
         /// A SphereCollider takes the LARGEST lossy-scale component — the same rule that once
         /// turned a 0.3 radius on a ×20-stretched tracer into a 6.0 world radius.
         /// </summary>
-        void CacheSweepRadius()
+        void CacheSweepRadius() => _sweepRadius = MeasureHitRadius();
+
+        float MeasureHitRadius()
         {
             if (_rootCollider is SphereCollider sphere)
             {
                 Vector3 s = _rootCollider.transform.lossyScale;
-                _sweepRadius = sphere.radius *
+                return sphere.radius *
                     Mathf.Max(Mathf.Abs(s.x), Mathf.Max(Mathf.Abs(s.y), Mathf.Abs(s.z)));
-                return;
             }
 
             // Non-sphere colliders: the smallest half-extent is the conservative read (a long
             // dart's AABB diagonal would massively overstate its cross-section). Swept
             // detection is opt-in and every current user is a sphere.
-            _sweepRadius = _rootCollider
+            return _rootCollider
                 ? Mathf.Min(_rootCollider.bounds.extents.x,
                     Mathf.Min(_rootCollider.bounds.extents.y, _rootCollider.bounds.extents.z))
                 : 0.5f;
         }
+
+        // Round 8: the hit radius a NON-swept round tests swarm members with (its trigger reaches prisms; members
+        // have no collider, so they are swept for explicitly - Docs/SWARM_FAUNA.md §16.2). Measured at launch.
+        float _memberSweepRadius = 0.5f;
 
         /// <summary>
         /// Tests the segment this projectile crossed THIS FRAME for prism contact and
@@ -1762,25 +1783,45 @@ namespace CosmicShore.Gameplay
         /// its prism "wherever the bullet would be destroyed" — sees where the shot actually
         /// met the prism, not where the frame's step happened to end.
         /// </summary>
-        void SweepPrismsAlong(Vector3 from, Vector3 to)
+        void SweepPrismsAlong(Vector3 from, Vector3 to, bool membersOnly = false)
         {
             if (!projectileImpactor) return;
 
             var index = PrismSpatialIndex.Instance;
-            if (!index || !index.IsAvailable) return;
+            if (!membersOnly && (!index || !index.IsAvailable)) return;
 
             int depth = s_sweepDepth++;
             try
             {
             var (s_sweepCandidates, s_sweepHits) = RentSweepBuffers(depth);
+            var members = s_memberPool[depth];
+            float radius = membersOnly ? _memberSweepRadius : _sweepRadius;
 
-            if (index.QuerySegment(from, to, _sweepRadius + SweepCandidateExtent, s_sweepCandidates) == 0)
+            s_sweepCandidates.Clear();
+            if (!membersOnly)
+                index.QuerySegment(from, to, _sweepRadius + SweepCandidateExtent, s_sweepCandidates);
+
+            // Round 8 (Docs/SWARM_FAUNA.md §16.2): swarm members that are only DATA, on the same segment with the
+            // same allowance, refined below by the same bounding-sphere contact a prism gets.
+            members.Clear();
+            if (SwarmTargets.Any)
+                SwarmTargets.Bodies(SwarmTargets.Capsule(from, to, radius + SweepCandidateExtent), members);
+
+            if (s_sweepCandidates.Count == 0 && members.Count == 0)
                 return;
 
             Vector3 ab = to - from;
             float abLenSq = ab.sqrMagnitude;
 
             s_sweepHits.Clear();
+            for (int i = 0; i < members.Count; i++)
+            {
+                var m = members[i];
+                float t = abLenSq > 1e-8f ? Mathf.Clamp01(Vector3.Dot(m.Point - from, ab) / abLenSq) : 0f;
+                float contact = radius + m.BodyRadius;
+                if ((m.Point - (from + ab * t)).sqrMagnitude > contact * contact) continue;
+                s_sweepHits.Add(new SweepHit(t, m));
+            }
             for (int i = 0; i < s_sweepCandidates.Count; i++)
             {
                 var prism = s_sweepCandidates[i];
@@ -1808,10 +1849,18 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < s_sweepHits.Count; i++)
             {
                 var hit = s_sweepHits[i];
-                if (!hit.Impactor) continue;
+                ImpactorBase impactor = hit.Impactor;
+                if (!impactor && hit.Member.Swarm)
+                {
+                    // the member becomes its proxy at its turn - a real body prism this round's own prism effects
+                    // then act on, exactly as on any prism. A round's handful of members is never deferred.
+                    var proxy = hit.Member.Swarm.MaterialiseForHit(hit.Member.Slot, force: true);
+                    if (proxy && proxy.Body && proxy.Body.TryGetComponent(out PrismImpactor bodyImpactor)) impactor = bodyImpactor;
+                }
+                if (!impactor) continue;
 
                 transform.position = from + ab * hit.T;
-                projectileImpactor.AcceptImpacteeFromSweep(hit.Impactor);
+                projectileImpactor.AcceptImpacteeFromSweep(impactor);
 
                 // A stopping impact ran the whole end-of-flight path from inside that call;
                 // the shot rests here.

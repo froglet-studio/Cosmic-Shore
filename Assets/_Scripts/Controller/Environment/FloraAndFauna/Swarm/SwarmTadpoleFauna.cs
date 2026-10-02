@@ -67,12 +67,17 @@ namespace CosmicShore.Gameplay
         /// species size. Called once, right after Instantiate, by <see cref="SwarmFauna"/>.
         /// </summary>
         public void Bind(Cell cell, SwarmFauna swarm, int index, Element element, float heartWorldScale,
-                         Vector3 prismLocalScale, float prismLocalZ, bool hideLive = true)
+                         Vector3 prismLocalScale, float prismLocalZ, bool hideLive = true,
+                         Domains memberDomain = Domains.Blue, float memberAgeSeconds = 0f)
         {
             Swarm = swarm;
             Index = index;
-            domain = swarm.domain;
+            // Round 8: a MULTI-DOMAIN swarm's members each wear their own domain (Docs/SWARM_FAUNA.md §16.4); a
+            // one-colour swarm passes the anchor's, which is what it always was.
+            domain = memberDomain != Domains.Blue || !swarm ? memberDomain : swarm.domain;
             Initialize(cell);
+            // The GameObject is younger than the creature: grace is measured from the member's birth (§16.3).
+            BackdateSpawn(memberAgeSeconds);
 
             var prisms = CacheBodyPrisms();
             _body = bodyPrism ? bodyPrism : (prisms.Length > 0 ? prisms[0] : null);
@@ -110,6 +115,28 @@ namespace CosmicShore.Gameplay
                 _ready = true;
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Round 8 (Docs/SWARM_FAUNA.md §16.2): make this proxy REAL in the frame it was asked for - the body prism
+        /// finishes its creation now (collider on, spatial index registered) and grows to full size - so a weapon
+        /// that has already landed on the member can run its own code on this body and this heart. The caller owns
+        /// the budget (<see cref="SwarmFauna.MaterialiseForHit"/>).
+        /// </summary>
+        public bool MaterialiseNow()
+        {
+            if (_dead || !_body || _body.destroyed) return false;
+            _body.CompleteCreationImmediately();
+            return Ready;
+        }
+
+        /// <summary>The living heart (null once released) - what a blast's lifeform-crystal effects act on.</summary>
+        public Crystal Heart => crystal && crystal.IsEmbedded ? crystal : null;
+
+        /// <summary>A predator is chasing this member: the swarm must not retire its proxy mid-hunt (§16.3).</summary>
+        public override void NotifyHunted()
+        {
+            if (!_dead && Swarm) Swarm.KeepProxy(Index);
         }
 
         /// <summary>Every renderer this proxy owns, off, except what the platform draws for itself: the body

@@ -76,6 +76,11 @@ namespace CosmicShore.Gameplay
         [Min(0)] public int MaxProxies = 160;
         [Tooltip("Seconds a proxy outlives its vessel leaving before it is given back to the simulation.")]
         [Min(0f)] public float ProxyLingerSeconds = 2f;
+        [Tooltip("Round 8 (Docs/SWARM_FAUNA.md §16.2): most members a WEAPON may turn into proxies per frame, cell-wide " +
+                 "(a rocket into a 960-tadpole whale). Hits past it wait in the weapon's backlog for the next frame - the " +
+                 "member keeps swimming until its turn, so the deaths roll through the body instead of hitching one frame. " +
+                 "A sniper round and a projectile are never deferred (a handful of members each).")]
+        [Min(1)] public int MaxHitMaterialisationsPerFrame = 48;
 
         [Header("Seed")]
         [Tooltip("Tadpoles a new swarm hatches with, at its plan's element mix, each on a slot of its " +
