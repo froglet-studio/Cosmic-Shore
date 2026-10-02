@@ -19,6 +19,9 @@ from probe import EmotionProbe, EMOTIONS
 from sealed import SEALED
 from sim import run, HERE
 from species import GAME
+from neutral import NEUTRAL, SEALED_NEUTRAL
+
+PROBE_PATH = os.path.join(HERE, "results", "probe_v3.json")
 
 sys.path.insert(0, os.path.join(HERE, ".."))
 from common.viewer import TPL  # noqa: E402
@@ -44,7 +47,7 @@ function drawPanel(){
     EMO.map(e=>{const p=(m.probe&&m.probe[e])||0;return `<div style="display:flex;align-items:center;gap:6px"><span style="width:62px">${e}</span><span style="flex:1;background:#1c2236;height:8px;border-radius:4px"><span style="display:block;height:8px;border-radius:4px;width:${Math.round(p*100)}%;background:${e==m.truth?'#7fd1ff':'#8a90b0'}"></span></span><span style="width:30px;text-align:right">${p.toFixed(2)}</span></div>`}).join('')
     + (m.truth?`<div style="color:var(--mute);margin-top:4px">authored as: ${m.truth}</div>`:'');
   document.getElementById('rate').innerHTML = EMO.map(e=>`<button data-e="${e}" style="flex:1 0 30%;background:${mine==e?'#2b4b6b':'#151a28'};color:var(--fg);border:1px solid #2a3150;border-radius:6px;padding:3px">${e}</button>`).join('')
-    + `<button data-e="none" style="flex:1 0 30%;background:${mine=='none'?'#2b4b6b':'#151a28'};color:var(--fg);border:1px solid #2a3150;border-radius:6px;padding:3px">none / neutral</button>`;
+    + ``;
   document.querySelectorAll('#rate button').forEach(b=>b.onclick=()=>{const R=ratings();R[m.label]=b.dataset.e;save(R);drawPanel()});
   document.getElementById('rated').textContent = Object.keys(R).length+' of '+RUNS.length+' runs rated';
 }
@@ -56,7 +59,7 @@ document.getElementById('run').addEventListener('change',drawPanel); setTimeout(
 
 
 def runs():
-    pr = EmotionProbe.load(); out = []
+    pr = EmotionProbe.load(PROBE_PATH); out = []
 
     def add(label, fac, truth, seed, viewer="hover", note=""):
         f, rec = run(fac, seed, viewer, seconds=24.0, record=True)
@@ -71,11 +74,18 @@ def runs():
     for emo, fams in FAMILIES.items():
         for F in fams:
             add(f"archetype {emo} / {F.__name__}", F, emo, 21, note=F.__doc__.split(".")[0])
+    for F in NEUTRAL:
+        add(f"archetype neutral / {F.__name__}", F, "neutral", 21, note=F.__doc__.split(".")[0])
+    add(f"sealed neutral / {SEALED_NEUTRAL.__name__}", SEALED_NEUTRAL, "neutral", 22, note="(sealed) " + SEALED_NEUTRAL.__doc__.split(".")[0])
     for emo, F in SEALED.items():
         add(f"sealed {emo} / {F.__name__}", F, emo, 22, note="(sealed test family) " + F.__doc__.split(".")[0])
     sp = os.path.join(HERE, "results", "search.json")
     if os.path.exists(sp):
-        for emo, r in json.load(open(sp)).items():
+        found = json.load(open(sp))
+        s3 = os.path.join(HERE, "results", "search_v3.json")
+        if os.path.exists(s3):
+            found["majestic"] = json.load(open(s3))["majestic"]          # v1's majestic was a neutral dot
+        for emo, r in found.items():
             add(f"searched -> {emo} (critter)", factory(np.array(r["cma"]["theta"])), emo, 23,
                 note=f"one parametric family, parameters found by CMA-ES for '{emo}'")
     for name, fac in GAME.items():
@@ -86,7 +96,7 @@ def runs():
 
 if __name__ == "__main__":
     R = runs()
-    html = TPL.replace('<div id="info"></div>', PANEL.replace("__EMO__", json.dumps(list(EMOTIONS))))
+    html = TPL.replace('<div id="info"></div>', PANEL.replace("__EMO__", json.dumps(list(EmotionProbe.load(PROBE_PATH).emotions))))
     html = html.replace("__TITLE__", "Emotion probe").replace("__DATA__", json.dumps(R, separators=(",", ":")))
     out = os.path.join(HERE, "results", "emotion_viewer.html")
     open(out, "w").write(html)

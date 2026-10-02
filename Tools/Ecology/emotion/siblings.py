@@ -102,7 +102,7 @@ if __name__ == "__main__":
     ap.add_argument("--seeds", default="301,302")
     a = ap.parse_args(); seeds = [int(x) for x in a.seeds.split(",")]
     res = (bestiary if a.kind == "bestiary" else substrate)(os.path.abspath(a.root), seeds)
-    pr = probe_mod.EmotionProbe.load()
+    pr = probe_mod.EmotionProbe.load(os.environ.get("EMOTION_PROBE"))
     for k, r in res.items():
         for run_ in r["runs"]:
             sc = pr.score(run_["f"]); run_["probe"] = dict(p=sc["p"], top=sc["top"], agreement=sc["agreement"], affect=sc["affect"],
