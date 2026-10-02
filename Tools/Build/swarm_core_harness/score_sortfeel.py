@@ -4,7 +4,7 @@
 
     python3 Tools/Build/swarm_core_harness/score_sortfeel.py [--seeds 7,23,41,101] [--samples 3]
             [--modes researchSort,researchSortFeel,researchSortFeelF8,...] [--ref sort,sortfeel,lite8]
-            [--smooth researchSort,researchSortFeelF8] [--smooth-seed 7] [--out results.json]
+            [--smooth researchSort,researchSortFeelF8] [--smooth-seed 7,23,41] [--out results.json]
 
   1. YARDSTICK: `run.sh yardstick` with sort modes (SortFeelHarness.Yardstick): per seed, plan and sample, grow
      240 steps (the own test) and, for every other element, regrow, swarm_eval.cull_to and run 240 (the 12
@@ -129,12 +129,18 @@ def reference(a, nca, se, res):
 def smoothness(a, sn, torch, targets, targets1, L, res):
     import swarm_smooth as ss
     pairs = ",".join(f"{CS_KINDS.index(k)}:{sn.SWITCH_TO[k]}" for k in sn.KINDS)
-    exp = os.path.join(tempfile.mkdtemp(prefix="swarm_smooth6_"), "smooth.json")
-    t0 = time.time()
-    subprocess.run(["bash", os.path.join(HERE, "run.sh"), "smoothsort", sg.PLANS, exp, str(a.smooth_seed), a.smooth, pairs],
-                   check=True)
-    dump = json.load(open(exp))
-    print(f"\nC# smooth export: {len(dump['events'])} events in {time.time() - t0:.0f}s")
+    events = []
+    for seed in [int(x) for x in str(a.smooth_seed).split(",")]:
+        exp = os.path.join(tempfile.mkdtemp(prefix="swarm_smooth6_"), "smooth.json")
+        t0 = time.time()
+        subprocess.run(["bash", os.path.join(HERE, "run.sh"), "smoothsort", sg.PLANS, exp, str(seed), a.smooth, pairs],
+                       check=True)
+        evs = json.load(open(exp))["events"]
+        for ev in evs:
+            ev["seed"] = seed
+        events += evs
+        print(f"\nC# smooth export, seed {seed}: {len(evs)} events in {time.time() - t0:.0f}s")
+    dump = {"events": events}
 
     def frames(tr):
         P = torch.tensor([f["p"] for f in tr], dtype=torch.float32).view(len(tr), -1, 3)
@@ -193,14 +199,19 @@ def smoothness(a, sn, torch, targets, targets1, L, res):
         r["rough"] = round(4 * r["backtrack"] + max(0.0, r["lurch"] / ss.LURCH_OK - 1) + 2 * max(0.0, r["teleport"] / ss.TELEPORT_OK - 1)
                            + max(0.0, r["jerk_rel"] - ss.JERK_OK)
                            + 10 * max(0.0, r["molt_burst"] - ss.BURST_OK) + 10 * max(0.0, r["birth_burst"] - ss.BIRTH_OK), 3)
-        res["smooth"].setdefault(ev["mode"], {"events": {}})["events"][ev["event"]] = r
+        res["smooth"].setdefault(ev["mode"], {"events": {}})["events"][f"seed {ev['seed']} {ev['event']}"] = r
     for mode, d in res["smooth"].items():
         evs = list(d["events"].values())
         keys = ["backtrack", "lurch", "teleport", "jerk_rel", "molt_burst", "birth_burst", "rough"]
         d["mean"] = {k: round(statistics.mean(v[k] for v in evs), 3) for k in keys}
         d["worst"] = {k: round(max(v[k] for v in evs), 3) for k in keys}
         d["deaths"] = sum(v["deaths"] for v in evs)
-        d["smoothness"] = round(1.0 / (1.0 + d["mean"]["rough"]), 3)
+        # swarm_smooth's smoothness is per seed (1 / (1 + mean rough over that seed's 8 events)); report each
+        per = {}
+        for name, v in d["events"].items():
+            per.setdefault(name.split()[1], []).append(v["rough"])
+        d["per_seed"] = {sd: round(1.0 / (1.0 + statistics.mean(r)), 3) for sd, r in per.items()}
+        d["smoothness"] = round(statistics.mean(d["per_seed"].values()), 3)
 
 
 def report(res, kinds):
@@ -248,7 +259,7 @@ def report(res, kinds):
     if res["smooth"]:
         print("\nSMOOTHNESS (swarm_smooth's events + formulas on C# trajectories)")
         for mode, d in res["smooth"].items():
-            print(f"  {mode:<24} smoothness {d['smoothness']:.3f}  deaths {d['deaths']}  mean {d['mean']}")
+            print(f"  {mode:<24} smoothness {d['smoothness']:.3f} (per seed {d['per_seed']})  deaths {d['deaths']}  mean {d['mean']}")
             print(f"  {'':<24} worst {d['worst']}")
             for name, r in d["events"].items():
                 print(f"      {name:<22} {r}")
@@ -263,7 +274,7 @@ def main():
     ap.add_argument("--modes", default="researchSort,researchSortFeel,researchSortFeelF8,researchSortFeelD0F8,gameSort,gameSortFeelF8")
     ap.add_argument("--ref", default="")
     ap.add_argument("--smooth", default="")
-    ap.add_argument("--smooth-seed", type=int, default=7)
+    ap.add_argument("--smooth-seed", default="7", help="one seed or a comma list (swarm_smooth is one seed; average 2-3)")
     ap.add_argument("--nca", default="")
     ap.add_argument("--out", default="")
     ap.add_argument("--jobs", type=int, default=4)

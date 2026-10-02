@@ -1092,113 +1092,123 @@ always-on hearts (§4.1).
 The research's verdict at the end of 2026-10-01 (`Tools/NCA/DISCOVERIES.md` on `cece/gifted-curie-x2cpd0`):
 the first LIGHT configuration to pass its hold is **`sortfeel` with a 1-in-8 fractional update** - sort with
 its planar sheets removed, re-steering one tadpole in eight per step. Three mechanisms, ported into the sort
-core behind `SwarmSortParams`; every default is OFF, so a core built without them is byte-for-byte sort:
+core behind `SwarmSortParams`; every default is OFF, so a core built without them is sort:
 
 | mechanism | research | C# (`SwarmSortParams`) | what it does |
 |---|---|---|---|
 | flat-bottomed wells | `well_dead` 0.7, `well_dead_time` | `WellDead`, `WellDeadTime` | the fate pull is the gradient of `0.5 max(0, m - m0)^2` (m = Mahalanobis distance to the fated well): inside 0.7 sigma there is NO pull, so a tissue fills its well as a liquid instead of being crushed into a sheet against its thin axis. `WellDeadTime` overrides m0 on the dragonfly plan only. `Energy[i]` stays sort's quadratic (StarvationVictim reads it as "how far from its place"); only the pull is cut |
 | OU wander | `wander` 0.05, `wander_tau` 12 | `Wander`, `WanderTau` | per tadpole `w <- a w + sqrt(1 - a^2) 0.05 N(0,1)^3`, `tau = 12 (0.6 + 0.8 frac(slot 0.618))`, added to the POSITION and kept OUT of `Vel` (the inertia state would integrate it into a drift); zeroed at seed, hatch, lay and kill |
-| fractional update | `frac` 8 (`lite_sortfeel_model.py`) | `Frac` | only members with `(slot + step) % k == 0` read their neighbours (collision, adhesion, swaps - rows U, columns everyone) and blend `v = inertia^k v + (1 - inertia^k) want`; the rest COAST on their last velocity. Fate, chemotaxis (needed for the swap energies anyway), wander, hatching, laying, molting, the plan's dwell and the vessel reaction's startle run for EVERYONE every step |
+| fractional update | `frac` 8 (`lite_sortfeel_model.py`) | `Frac` | only members with `(slot + step) % k == 0` read their neighbours (collision, adhesion, swaps - rows U, columns everyone) and blend `v = inertia^k v + (1 - inertia^k) want`; the rest COAST on their last velocity. Fate, chemotaxis (needed for the swap energies anyway), wander, hatching, laying, molting, the plan's dwell and the startle bookkeeping run for EVERYONE every step - the split `lite_sortfeel_model._core` makes |
 
 One GAME addition, because the research has no vessels: **a member a vessel has startled (Startle > 0.02) or
 that is inside a predator's reach re-steers every step whatever its phase** (with the one-step inertia), so the
-swarm's flinch is never 0.8 s late. `vec_look` (the research's other lite flag) has no C# counterpart to port:
-the C# core never wrote a per-step look; the glue reads `LookState` on demand.
-
-The per-step scratch is preallocated (`_upd`, `_wA`, `_wB` - the per-slot OU constants are computed once in
-the constructor), so the step stays allocation-free.
+swarm's flinch is never 0.8 s late. `vec_look` (the research's other lite flag) has no C# counterpart: the C#
+core never wrote a per-step look; the glue reads `LookState` on demand. The step stays allocation-free (`_upd`,
+and the per-slot OU constants `_wA`/`_wB` computed once in the constructor). Box-Muller now keeps its second
+normal (the wander draws three per member per step; throwing half away was ~15% of a frac-8 step).
 
 ### 12.2 What ships
 
 `SwarmFaunaConfigSO` (authored by `author_swarm_fauna.py`, `--check` green): `SortWellDead 0.7`,
-**`SortWellDeadTime 0`**, `SortWander 0.05`, `SortWanderTau 12`, `SortUpdateFraction 8`, and **`SortNoise 0`**
-(was 0.1). Two of those are NOT the research's held lite config, and both were measured (§12.3):
+**`SortWellDeadTime 0`**, `SortWander 0.05`, `SortWanderTau 12`, `SortUpdateFraction 8`; `SortNoise` stays 0.1.
+Two choices differ from the research's held lite config or were open, and both were measured (§12.3):
 
-- **`SortWellDeadTime 0`** - sortfeel v2's dragonfly override. The held lite config's `params.json` carries no
-  `well_dead_time`, so it ran 0.7 on the dragonfly too; in C# research mode that loses `mass -> time` at seed
-  101 (49/52), the override keeps C# sort's 50/52 and lowers the dragonfly's own loss (4.79 -> 4.11 at seed 7).
-- **`SortNoise 0`** - round 3 added a 0.1 velocity noise so a member on a still well would not read as frozen
-  (`stuck`); the wander now does that job. With both, the body is gas-like (coherence 0.22); without the noise
-  it is twice as coherent (0.40), smoother (0.812 -> 0.826) and its own-plan losses fall on every plan.
+- **`SortWellDeadTime 0`** (sortfeel v2's dragonfly override). The held lite config's `params.json` carries no
+  `well_dead_time`, so the hold ran 0.7 on the dragonfly too. In C# research mode the two are inside the
+  yardstick's noise (50 vs 49 and 49 vs 49 over two RNG streams), the override is smoother (0.763 vs 0.724, three
+  seeds) and its dragonfly own-plan loss is lower on every seed (4.19-4.63 vs 4.57-5.30). Never worse: kept.
+- **`SortNoise 0.1`** (round 3's game noise) kept beside the wander. Off, the body is twice as coherent (0.40 vs
+  0.23) and its own-plan losses are lower on every plan; on, it is smoother on EVERY seed (0.917 vs 0.837).
+  Accuracy is 52/52 both ways, so the held axis decides. Part of that gain is how `lurch` is measured
+  (finding 40).
 
-The old behaviour is one switch away: `SortUpdateFraction 1`, `SortWellDead 0`, `SortWander 0`, `SortNoise 0.1`.
+The old behaviour is one switch away: `SortUpdateFraction 1`, `SortWellDead 0`, `SortWander 0`.
 
 ### 12.3 Proof
 
-`python3 Tools/Build/swarm_core_harness/score_sortfeel.py` - the research's own 16-transition yardstick
-(`swarm_eval`: 4 own-plan tests + 12 switches by `cull_to`, 3 samples each, majority rule, loss-8 bar) on the
-SHIPPED C# core, seeds **7 / 23 / 41 / 101** (the hold's), every record scored by the UNCHANGED
-`swarm_nca.swarm_loss` + `swarm_eval._passes`; research modes against the research plans, game modes against
-the one-domain plans. Raw: `score_sortfeel_results.txt`.
+`python3 Tools/Build/swarm_core_harness/score_sortfeel.py --smooth-seed 7,23,41` - the research's own
+16-transition yardstick (`swarm_eval`: 4 own-plan tests + 12 switches by `cull_to`, 3 samples each, majority
+rule, loss-8 bar) on the SHIPPED C# core at the hold's seeds **7 / 23 / 41 / 101**, every record scored by the
+UNCHANGED `swarm_nca.swarm_loss` + `swarm_eval._passes`; research modes against the research plans, game modes
+against the one-domain plans. Everything was run twice, on two independent RNG streams of the same models
+(**A**: before the Box-Muller change; **B**: the shipped code) - the gap between them is the yardstick's own noise,
+which the research found the hard way (`lite_sortfeel` NOTE §5.1). Raw: `score_sortfeel_results.txt`.
 
-| C# mode | 7 | 23 | 41 | 101 | total | fails |
-|---|---|---|---|---|---|---|
-| research sort (round 3) | 12/13 | 13/13 | 13/13 | 12/13 | **50/52** | `time->space` x2 |
-| research sort, frac 8 only | 12/13 | 13/13 | 13/13 | 12/13 | 50/52 | same; **leaves the organic band (osc 0.111)** |
-| research sortfeel, frac 1 | 12/13 | 13/13 | 13/13 | 10/13 | 48/52 | + `mass->time`, `space->time` @101 |
-| research sortfeel, frac 8 (the HELD config) | 12/13 | 13/13 | 13/13 | 11/13 | 49/52 | + `mass->time` @101 |
-| **research sortfeel, frac 8, dragonfly m0 = 0** | 12/13 | 13/13 | 13/13 | 12/13 | **50/52** | `time->space` x2 (= sort) |
-| game, round 5 | 13/13 | 13/13 | 13/13 | 13/13 | 52/52 | - |
-| game + sortfeel frac 8 | 13/13 | 13/13 | 13/13 | 13/13 | 52/52 | - |
-| **game, SHIPPED** (sortfeel, frac 8, m0 0, noise 0) | 13/13 | 13/13 | 13/13 | 13/13 | **52/52** | - |
+| C# mode | B: 7 | 23 | 41 | 101 | **B total** | A total | fails (B) |
+|---|---|---|---|---|---|---|---|
+| research sort (round 3) | 12 | 13 | 13 | 12 | **50/52** | 50/52 | `time->space` x2 |
+| research sort, frac 8 only | 12 | 13 | 13 | 12 | 50/52 | 50/52 | same; **leaves the organic band (osc)** |
+| research sortfeel, frac 1 | 11 | 13 | 12 | 11 | 47/52 | 48/52 | `time->space` x2, `charge->time` x2, `mass->time` |
+| research sortfeel, frac 8 (the HELD config) | 11 | 13 | 13 | 12 | 49/52 | 49/52 | `time->space` x2, `charge->time` |
+| research sortfeel, frac 8, dragonfly m0 0 | 12 | 12 | 13 | 12 | 49/52 | 50/52 | `time->space` x3 |
+| game, round 5 | 13 | 13 | 13 | 13 | 52/52 | 52/52 | - |
+| **game, SHIPPED** (sortfeel, frac 8, m0 0, noise 0.1) | 13 | 13 | 13 | 13 | **52/52** | 52/52 | - |
+| game, shipped with noise 0 | 13 | 13 | 13 | 13 | 52/52 | 52/52 | - |
 
-Python, for reference (the research's own hold, `results/hold/sortfeel.json` and
-`results/lite_sortfeel/hold/vec_look_1_frac_8.txt`): sortfeel 12/11/13/13 = 49/52, lite frac 8 11/12/13/13 = 49/52.
-The C# held config lands on the same total. Own-plan losses (whale / jellyfish / pufferfish / dragonfly), seed 7:
-game round 5 1.61 / 1.89 / 1.65 / 4.34, **shipped 1.79 / 2.04 / 1.64 / 5.63** (the dragonfly loosens by 1.3,
-still 2.4 under the bar; the price of a body that fills its wells instead of pressing into them).
+Python, the research's own hold (`results/hold/sortfeel.json`, `results/lite_sortfeel/hold/vec_look_1_frac_8.txt`):
+sortfeel 12/11/13/13 = 49/52, lite frac 8 11/12/13/13 = 49/52. The C# held config lands on the same 49 in both
+streams. Every research-mode fail is a switch INTO or OUT OF the dragonfly near the bar (7.7-9.7) - the research's
+known open problem, not a port defect. Own-plan losses (whale / jellyfish / pufferfish / dragonfly), stream B
+seed 7: game round 5 1.66 / 1.86 / 1.38 / 4.35, **shipped 1.91 / 2.18 / 1.63 / 5.50** - every body loosens a
+little and the dragonfly most (+1.2, still 2.5 under the bar): the price of a body that fills its wells instead
+of pressing into them.
 
-**Lossless:** **0 self-inflicted deaths** over all 2,304 C# yardstick records, all 96 smoothness events and the
-harness. **Organic** (`swarm_feel` over each grown own-plan body, the research band; planar excess = a plan's
-mean planar fraction over that plan's own):
+**Lossless:** **0 self-inflicted deaths** over every C# yardstick record of both streams (3,840), every smoothness
+event (352) and the harness. **Organic** (`swarm_feel` over each grown own-plan body, the research band; planar
+excess = a plan's mean planar fraction over that plan's own), stream B:
 
 | | speed | jerk_rel | planar excess | coherence | jitter | phase | stuck | osc | band |
 |---|---|---|---|---|---|---|---|---|---|
-| research sort | 0.019 | 0.82 | 0.149 | 0.75 | 0.63 | 0.09 | 0 | 0.024 | in (at the edge) |
-| research sort, frac 8 only | 0.331 | 0.49 | 0.112 | 0.16 | 1.28 | 0.59 | 0.006 | **0.111** | **out** |
-| research sortfeel, frac 8, m0 0 | 0.156 | 0.65 | 0.082 | 0.02 | 1.20 | 0.72 | 0 | 0.041 | in |
-| **game, round 5** | 0.192 | 0.63 | **0.277** | 0.55 | 0.85 | 0.81 | 0 | 0.016 | **out (planar)** |
-| **game, SHIPPED** | 0.255 | 0.49 | 0.045 | 0.40 | 1.02 | 0.87 | 0 | 0.026 | **in** |
+| research sort | 0.019 | 0.82 | 0.171 | 0.76 | 0.62 | 0.08 | 0 | 0.021 | **out (planar)** |
+| research sort, frac 8 only | 0.327 | 0.49 | 0.122 | 0.14 | 1.29 | 0.60 | 0.007 | **0.109** | **out (osc)** |
+| research sortfeel, frac 8 (held) | 0.107 | 0.67 | 0.033 | 0.03 | 1.20 | 0.75 | 0 | 0.027 | in |
+| research sortfeel, frac 8, m0 0 | 0.156 | 0.65 | 0.114 | 0.01 | 1.21 | 0.75 | 0 | 0.043 | in |
+| **game, round 5** | 0.192 | 0.63 | **0.280** | 0.56 | 0.85 | 0.83 | 0 | 0.016 | **out (planar)** |
+| **game, SHIPPED** | 0.354 | 0.48 | 0.015 | 0.23 | 1.10 | 0.89 | 0 | 0.042 | **in** |
+| game, shipped with noise 0 | 0.255 | 0.49 | 0.032 | 0.40 | 1.02 | 0.86 | 0 | 0.027 | in |
 
-**Smoothness of change** (finding 37): `swarm_smooth.py`'s events - the 4 standard switches and a vessel strike
-on every plan, seed 7 - recorded step by step from the C# core (`run.sh smoothsort`) and reduced with
-`swarm_smooth._track`'s formulas, transcribed in `score_sortfeel.py`:
+**Smoothness of change** - `swarm_smooth.py`'s events (the 4 standard switches and a vessel strike on every plan)
+recorded step by step from the C# core (`run.sh smoothsort`) and reduced with `swarm_smooth._track`'s formulas,
+transcribed in `score_sortfeel.py`; smoothness per seed (1 / (1 + mean rough)), averaged over seeds 7, 23, 41:
 
-| C# mode | smoothness | lurch mean / worst | teleport worst | molt / birth burst worst | backtrack worst |
+| C# mode | smoothness (7 / 23 / 41) | lurch mean / worst | teleport worst | molt / birth burst worst | backtrack worst |
 |---|---|---|---|---|---|
-| research sort (round 3) | 0.160 | 15.2 / **33.5** | 0.97 | 0.12 / 0.36 | 0.001 |
-| research sort, frac 8 only | 0.812 | 2.19 / 3.25 | 1.00 | 0.12 / 0.35 | 0 |
-| research sortfeel, frac 1 | 0.430 | 5.42 / 6.51 | 0.90 | 0.12 / 0.35 | 0.002 |
-| research sortfeel, frac 8 (held config) | 0.738 | 2.93 / 3.94 | 1.04 | 0.12 / 0.33 | 0 |
-| research sortfeel, frac 8, m0 0 | 0.754 | 2.81 / 3.94 | 1.05 | 0.12 / 0.35 | 0 |
-| game, round 5 | 0.768 | 2.55 / 3.59 | 1.00 | 0.16 / 0.32 | 0.001 |
-| game + sortfeel frac 8, m0 0, noise 0.1 | 0.812 | 1.50 / 1.99 | 1.07 | 0.18 / 0.32 | 0 |
-| **game, SHIPPED** (noise 0) | **0.826** | 2.09 / 3.46 | 1.08 | 0.16 / 0.32 | 0 |
+| research sort (round 3) | **0.166** (0.165 / 0.153 / 0.179) | 14.7 / **31.1** | 1.00 | 0.13 / 0.36 | 0.25 |
+| research sort, frac 8 only | 0.841 (0.786 / 0.892 / 0.846) | 1.80 / 2.80 | 1.00 | 0.13 / 0.36 | 0.24 |
+| research sortfeel, frac 1 | 0.403 (0.397 / 0.384 / 0.427) | 5.78 / 8.48 | 1.02 | 0.14 / 0.36 | 0.005 |
+| research sortfeel, frac 8 (held) | 0.724 (0.737 / 0.733 / 0.701) | 2.84 / 4.27 | 1.06 | 0.14 / 0.36 | 0.016 |
+| research sortfeel, frac 8, m0 0 | 0.763 (0.752 / 0.791 / 0.746) | 2.66 / 4.08 | 1.06 | 0.14 / 0.33 | 0.016 |
+| game, round 5 | 0.751 (0.721 / 0.796 / 0.736) | 2.71 / 4.27 | 1.02 | 0.14 / 0.35 | 0.06 |
+| **game, SHIPPED** | **0.917** (0.901 / 0.963 / 0.886) | 1.63 / 3.20 | 1.08 | 0.13 / 0.31 | **0** |
+| game, shipped with noise 0 | 0.837 (0.851 / 0.846 / 0.813) | 2.20 / 4.64 | 1.09 | 0.14 / 0.33 | 0.016 |
 
-(Per event: `score_sortfeel_results.txt`.) Research Python, same events and formulas: sortfeel 0.44,
-lite frac 8 **0.771** (`results/hold/calibration/sortfeel.json`, `results/lite_sortfeel/smooth/vec_look1_frac8.json`).
-The C# port reproduces both within the metric's own noise (0.430 vs 0.44, 0.738 vs 0.771). No event backtracks,
-nothing teleports past the 1.5 comfort line, nothing dies.
+Research Python, same events and formulas, seed 7: sortfeel **0.44**, lite frac 8 **0.771**
+(`results/hold/calibration/sortfeel.json`, `results/lite_sortfeel/smooth/vec_look1_frac8.json`). The C# port
+reproduces both at seed 7 within the metric's seed-to-seed spread (0.397 vs 0.44; 0.737 vs 0.771). Nothing
+teleports past swarm_smooth's 1.5 comfort line, nothing dies, and the shipped body never backtracks.
 
-**Cost** (`run.sh benchsort`, CoreCLR Release, grown swarms over the four plans, ms per swarm-step / us per
+**Cost** (`run.sh benchsort`, CoreCLR Release, grown swarms over the four plans; ms per swarm-step, us per
 tadpole-step):
 
 | config | B = 1 | 4 | 16 | 64 | us / tadpole (B 16) |
 |---|---|---|---|---|---|
-| game, round 5 (frac 1) | 0.191 | 0.152 | 0.154 | 0.156 | 1.20 |
-| game shipped at frac 1 | 0.185 | 0.146 | 0.150 | 0.154 | 1.16 |
-| frac 2 | 0.125 | 0.096 | 0.100 | 0.096 | 0.78 |
-| frac 4 | 0.090 | 0.070 | 0.071 | 0.073 | 0.55 |
-| **frac 8 (ships)** | 0.074 | 0.057 | 0.058 | 0.062 | **0.45** |
-| frac 16 | 0.070 | 0.054 | 0.054 | 0.056 | 0.42 |
+| game, round 5 (frac 1) | 0.262 | 0.276 | 0.149 | 0.153 | 1.16 |
+| game shipped at frac 1 | 0.190 | 0.151 | 0.155 | 0.153 | 1.20 |
+| frac 2 | 0.178 | 0.097 | 0.095 | 0.100 | 0.74 |
+| frac 4 | 0.086 | 0.069 | 0.069 | 0.072 | 0.53 |
+| **frac 8 (ships)** | 0.069 | 0.054 | **0.055** | 0.058 | **0.43** |
+| frac 16 | 0.060 | 0.048 | 0.050 | 0.052 | 0.39 |
+| research sort / sortfeel frac 8 m0 0 | 0.150 / 0.066 | 0.125 / 0.048 | 0.131 / 0.050 | 0.139 / 0.055 | 1.04 / 0.40 |
 
-Per-swarm cost is flat in B (each cell's swarm is its own core; there is no cross-swarm batching to gain). The
-Swarm cell's seven sort swarms at 10 Hz cost ~4 ms of simulation per second (was ~10.5), i.e. ~0.07 ms per
-60 fps frame. **Mono, which Unity runs, is unmeasured here** - expect 2-3x CoreCLR (QA-SWARM-ROUND6).
+(B = 1 and 4 are noisy - one or four bodies, a short timing window.) Per-swarm cost is flat in B: each cell's
+swarm is its own core and there is nothing to batch across them. Frac 8 is **2.8x** cheaper than frac 1 at
+B >= 16; past it the pair loop is no longer the bill (finding 41). The Swarm cell's seven sort swarms at 10 Hz
+cost ~3.9 ms of simulation per second (was ~10.5), ~0.06 ms per 60 fps frame. **Mono, which Unity runs, is
+unmeasured** - expect 2-3x CoreCLR (QA-SWARM-ROUND6).
 
-**Harness:** S0-S10 green on the shipped config, plus **S11** - every off-phase member keeps its velocity exactly
-(158/158), every hatched member wanders and no egg does, and frac 8 costs 0.082 vs 0.210 ms/step on a grown
-whale. The other three cores' suites are unchanged and green. Glue type-check green.
+**Harness:** S0-S10 green on the shipped config, plus **S11** - every off-phase member keeps its velocity exactly,
+every hatched member wanders and no egg does, frac 8 costs 0.076 vs 0.217 ms/step on a grown whale. The field,
+grid and evofate suites are unchanged and green; the glue type-check is green.
 
 ### 12.4 Colliders and the invariants
 
@@ -1206,51 +1216,52 @@ whale. The other three cores' suites are unchanged and green. Glue type-check gr
 always-on hearts (§4.1). The change is entirely inside the simulation: how a member moves.
 
 **Continuity of existence:** nothing appears or vanishes; a coasting member keeps moving on its last velocity,
-which is precisely what removes the jolts (lurch 2.55 -> 2.09). **No imposed death:** the round adds no clock
-and no culling; molting and funded laying are sort's, unchanged; 0 self-inflicted deaths. **Emergence:** the
-wander is per-member noise (a local rule), the dead zone is a property of each member's own well, and the
+which is precisely what removes the jolts (worst lurch 4.27 -> 3.20). **No imposed death:** the round adds no
+clock and no culling; molting and funded laying are sort's, unchanged; 0 self-inflicted deaths. **Emergence:**
+the wander is per-member noise (a local rule), the dead zone is a property of each member's own well, and the
 fractional schedule decides only WHEN a member reads its neighbours, never WHERE it goes.
 
 ### 12.5 Files
 
 | file | role |
 |---|---|
-| `Assets/.../Swarm/SwarmSortCore.cs` | `WellDead`/`WellDeadTime`/`Wander`/`WanderTau`/`Frac`, `WithSortFeel`, `Wand`, `NeighboursFractional` |
-| `Assets/.../Swarm/SwarmFaunaConfigSO.cs`, `SwarmFauna.cs` | the five `Sort*` round-6 fields, `SortNoise 0`; `BuildSortCore` passes them |
+| `Assets/.../Swarm/SwarmSortCore.cs` | `WellDead`/`WellDeadTime`/`Wander`/`WanderTau`/`Frac`, `WithSortFeel`, `Wand`, `NeighboursFractional`, the paired Gauss |
+| `Assets/.../Swarm/SwarmFaunaConfigSO.cs`, `SwarmFauna.cs` | the five round-6 `Sort*` fields; `BuildSortCore` passes them |
 | `Tools/Build/author_swarm_fauna.py` | authors them into every config (the evofate core reads Sort fields but not these) |
-| `Tools/Build/swarm_core_harness/SortFeelHarness.cs` | yardstick sort modes, `smoothsort` (swarm_smooth's events), `benchsort` |
+| `Tools/Build/swarm_core_harness/SortFeelHarness.cs` | yardstick sort modes (`research|game` + `Sort` [+ `Feel` [+ `D0`]] [+ `N0`] [+ `F<k>`]), `smoothsort`, `benchsort` |
 | `Tools/Build/swarm_core_harness/SortHarness.cs` | S11; `Game()` = the shipped config, `GameRound5()` the old |
-| `Tools/Build/swarm_core_harness/score_sortfeel.py` | the scorer (yardstick + feel + smoothness + optional Python reference) |
-| `Tools/Build/swarm_core_harness/score_sortfeel_results.txt` | raw output of this section |
+| `Tools/Build/swarm_core_harness/score_sortfeel.py` | the scorer (yardstick + feel + multi-seed smoothness + optional Python reference via `--ref`) |
+| `Tools/Build/swarm_core_harness/score_sortfeel_results.txt` | raw output of this section, both streams |
 
 ### 12.6 Findings from round 6
 
 36. **The shipped game sort species was outside the organic band, and nothing said so.** score_sort.py scored
-    game-mode feel with no plan (planar excess = 0 by construction); scored against each plan's own flatness the
-    round-5 game body has planar excess **0.277** - the crystal sheets the lead disliked, in the game, not only
-    in the research. sortfeel takes it to 0.045. *A band test that compares a body to nothing cannot fail.*
-37. **The research's smoothness numbers are reproducible on C# trajectories.** Recording the same events in C#
-    and transcribing `_track` gives sortfeel 0.430 (Python 0.44) and lite frac 8 0.738 (Python 0.771). The hold's
-    SMOOTH axis can therefore gate a C# change without a Python model.
-38. **Coasting needs a soft well.** frac 8 on plain sort (no dead zone) is cheaper and smoother (0.812) but
-    leaves the organic band on oscillation (osc 0.111 vs 0.08): a member that coasts for 8 steps overshoots a
-    stiff quadratic well and rings. The flat bottom absorbs the overshoot. The two changes are one package.
-39. **The held config's dragonfly is a parameter-file accident, and the override is better.** sortfeel v2 turned
-    the dead zone off on the dragonfly; `results/lite_sortfeel/params.json` predates that field, so the hold ran
-    0.7 there. In C# the override wins in both modes (research 49 -> 50/52; game dragonfly 6.08 -> 5.91).
-40. **Two noise sources make a gas.** The round-3 velocity noise and the wander do the same job; together the
-    game body's coherence is 0.22, with the wander alone 0.40, the own-plan losses fall on every plan and the
-    mean roughness falls (smoothness 0.812 -> 0.826). One axis moves the other way and is stated: the WORST
-    lurch rises 1.99 -> 3.46 (over swarm_smooth's 2.5 comfort line on one event, where the old noise had been
-    blurring the jolt; the shipped mean is 2.09, inside it). Retire a game-side patch when the research's
-    mechanism supersedes it, and measure what the patch was quietly also doing.
-41. **The O(N) floor is now the cost.** Past k = 8 the pair loop is no longer the bill (frac 16 saves 5%);
-    ~0.05 ms per swarm-step is fate, chemotaxis, the hash build and the bookkeeping loops over the 280-slot
-    arrays. The next lever is those loops (iterate the live list, not `Cap`), not a larger k.
+    game-mode feel with no plan, so planar excess was 0 by construction; scored against each plan's own
+    flatness the round-5 game body has planar excess **0.280** - the crystal sheets the lead disliked, in the
+    game, not only in the research. The shipped round-6 body: 0.015. *A band test that compares a body to
+    nothing cannot fail.*
+37. **The research's smoothness is reproducible on C# trajectories** (0.397 vs Python 0.44; 0.737 vs 0.771 at
+    the same seed), so the hold's SMOOTH axis can gate a C# change without a Python model - with three seeds:
+    one seed moved the shipped config 0.826 -> 0.852 between two RNG streams and flipped a noise-on/off call.
+38. **Coasting needs a soft well.** frac 8 on plain sort (no dead zone) is cheap and smooth (0.841) but leaves
+    the organic band on oscillation (osc 0.109 vs 0.08): a member that coasts for 8 steps overshoots a stiff
+    quadratic well and rings. The flat bottom absorbs the overshoot; the two changes are one package.
+39. **The held config's dragonfly is a parameter-file accident.** sortfeel v2 turned the dead zone off on the
+    dragonfly; `results/lite_sortfeel/params.json` predates that field, so the hold ran 0.7 there. In C# the
+    override is inside the yardstick's noise on accuracy and better on smoothness and dragonfly loss: shipped.
+40. **Two noise sources: smoother by the metric, gassier by eye-proxy.** With the round-3 velocity noise beside
+    the wander, smoothness is higher on every seed (0.917 vs 0.837), coherence lower (0.23 vs 0.40), own-plan
+    losses a little higher. `lurch` is the worst step's p95 speed over the event's MEDIAN p95, and the noise
+    raises that median - part of the gain is the denominator, not a gentler jolt. Kept because smoothness is
+    the held axis and accuracy is unchanged; if the lead reads the body as fizz, `SortNoise 0` is the dial.
+41. **The O(N) floor is now the cost.** Profiled (frac 8, ~170 members): neighbours 21 us, move + wander 20 us
+    (three Gaussian draws per member - the paired Box-Muller took ~10 us off it), swim 9 us, fate / chemotaxis /
+    molts / facing ~6 us each, of ~69 us. Past k = 8 a larger k saves ~5%; the next lever is the RNG (a cheaper
+    normal, or uniform noise of matched variance for the wander) and the swim loop, not k.
 42. **`swarm_nca` sets `torch.set_num_threads(4)` at import.** A scorer that sets one thread BEFORE importing it
     runs four, and on a busy 4-core box one `swarm_loss` took ~20 s instead of ~0.1 s (measured). Set threads
-    after the import (and scorers in this folder now spread losses over worker processes).
-43. **At the game's 10 Hz a frac-8 member re-steers every 0.8 s.** The yardstick and the feel metrics are in
-    steps and pass; whether 0.8 s of straight-line coasting reads well against the plan's animated wells (one
-    frame per 0.8 s) is a LOOK question only the editor can answer - QA-SWARM-ROUND6 step 4. The vessel
-    reaction is unaffected (a threatened member re-steers every step; harness S7).
+    after the import; this folder's new scorer spreads losses over worker processes.
+43. **At the game's 10 Hz a frac-8 member re-steers every 0.8 s.** The yardstick and the feel metrics count
+    steps and pass; whether 0.8 s of straight coasting reads well against wells that animate one frame per
+    0.8 s is a LOOK question only the editor answers - QA-SWARM-ROUND6 step 4 (dial: `SortUpdateFraction 4`).
+    The vessel reaction is unaffected (a threatened member re-steers every step; harness S7).

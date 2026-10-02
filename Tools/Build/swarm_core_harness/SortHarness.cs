@@ -37,8 +37,8 @@ static class SortHarness
 
     /// <summary>The game's settings as SHIPPED (SwarmFauna.BuildSortCore builds the same from SwarmFaunaConfigSO):
     /// round 3's game settings + round 6's sortfeel (flat wells 0.7, 0 on the dragonfly; wander 0.05) on the
-    /// 1-in-8 update, with the velocity noise off (the wander replaces it). Docs/SWARM_FAUNA.md §12.</summary>
-    public static SwarmSortParams Game(SwarmPlanData[] plans) => Override(GameRound5(plans).WithSortFeel(8, 0f).WithNoise(0f));
+    /// 1-in-8 update; the velocity noise stays at 0.1 (smoother than 0 on every seed measured). Docs/SWARM_FAUNA.md §12.</summary>
+    public static SwarmSortParams Game(SwarmPlanData[] plans) => Override(GameRound5(plans).WithSortFeel(8, 0f));
 
     /// <summary>The game's settings before round 6 (velocity noise 0.1, plain wells, every member every step).</summary>
     public static SwarmSortParams GameRound5(SwarmPlanData[] plans) => new SwarmSortParams
@@ -47,8 +47,6 @@ static class SortHarness
         WellLook = true, Oriented = true, Cruise = 0.35f, Membrane = 600f, Cap = plans.Max(p => p.N),
         LayMax = 5, KillLayHoldSteps = 20,
     };
-
-    static SwarmSortParams WithNoise(this SwarmSortParams p, float n) { p.Noise = n; return p; }
 
     public const int GameSeed = GridHarness.GameSeed;
 

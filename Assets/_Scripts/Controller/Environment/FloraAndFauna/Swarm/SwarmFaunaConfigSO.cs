@@ -198,11 +198,11 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float SortSwapRadius = 3.63f;
         [Tooltip("Velocity persistence per step.")]
         [Range(0f, 0.95f)] public float SortInertia = 0.687f;
-        [Tooltip("GAME: velocity noise per step (voxels). Round 3 shipped 0.1 so a member on a still well " +
-                 "would not read as frozen (swarm_feel `stuck`); since round 6 the per-member wander " +
-                 "(SortWander) does that job, and 0 measures smoother and less gas-like (Docs/SWARM_FAUNA.md " +
-                 "§12). Research: 0.")]
-        [Min(0f)] public float SortNoise = 0f;
+        [Tooltip("GAME: velocity noise per step (voxels). Without it a member on a still well reads as " +
+                 "frozen while the animated body moves around it (swarm_feel `stuck`). Round 6 measured it " +
+                 "against the wander: 0 trims the own-plan losses and doubles coherence, 0.1 is smoother on " +
+                 "every seed (0.917 vs 0.837) - kept (Docs/SWARM_FAUNA.md §12). Research: 0.")]
+        [Min(0f)] public float SortNoise = 0.1f;
         [Tooltip("GAME: the share of its well's own animation a tadpole takes (feed-forward). Research: 0.")]
         [Min(0f)] public float SortFeedForward = 1f;
         [Tooltip("Steps a new majority must lead before the swarm commits to its plan.")]

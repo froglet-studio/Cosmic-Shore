@@ -78,7 +78,7 @@ MonoBehaviour:
   SortSwap: 0.709
   SortSwapRadius: 3.63
   SortInertia: 0.687
-  SortNoise: 0
+  SortNoise: 0.1
   SortFeedForward: 1
   SortDwell: 12
   SortLayRate: 0.084

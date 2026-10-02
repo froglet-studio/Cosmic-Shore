@@ -130,7 +130,7 @@ SORT = [("SortWellsPerType", "12"), ("SortUnitsPerWell", "4"), ("SortWellWidth",
         ("SortWellClip", "0.525"), ("SortSpacing", "2.25"), ("SortRepulsion", "0.151"), ("SortAdhesionRadius", "5.38"),
         ("SortAdhesion", "{x: -0.05, y: -0.0374, z: -0.027, w: -0.0637}"), ("SortSwap", "0.709"),
         ("SortSwapRadius", "3.63"), ("SortInertia", "0.687"),
-        ("SortNoise", "0"),            # round 6: the wander does the anti-`stuck` job (round 3-5 shipped 0.1)
+        ("SortNoise", "0.1"),          # GAME (research 0); round 6 kept it beside the wander: smoother (SWARM_FAUNA §12)
         ("SortFeedForward", "1"),      # GAME (research 0): members take their well's animation
         ("SortDwell", "12"), ("SortLayRate", "0.084"), ("SortLayMax", "5"), ("SortCrossChance", "0.466"),
         ("SortFillTolerance", "0.15"), ("SortBodyFill", "0.939"), ("SortMoltRate", "0.03"),
