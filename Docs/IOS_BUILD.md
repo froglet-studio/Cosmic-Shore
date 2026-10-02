@@ -1,9 +1,13 @@
 # iOS builds — identifiers, getting a build onto a phone, cross-platform play
 
-Status: **written 2026-10-02, and nothing in it has been run yet.** No iOS build of this project has
-been made since the bundle-id change below. That includes
-`.github/workflows/ios-unsigned-ipa.yml`, which is written but has not had a real run. Treat every
-step as a plan until somebody has done it once and corrected this file.
+Status: **the unsigned-ipa path ran end to end on 2026-10-02.** Run 37072677118 took a
+Windows-exported, **RAR5**-packed Xcode project (402 MB archive, 2.5 GB unpacked) and built it with
+Xcode 16.4 on `macos-15` in about **18 minutes**. It produced a 163 MB `CosmicShore-dev.ipa` whose
+bundle id is `com.FrogletGames.CosmicShore.dev`. Installing that `.ipa` on a phone with Sideloadly
+has **not** been confirmed yet, and neither has playing it; Path B and the cross-platform section
+are still plans. The four failed runs before it are recorded in the workflow's comments and commit
+history: a RAR archive, Homebrew 7-Zip lacking the RAR codec, a relative project path, and a disk
+cleanup that deleted the selected Xcode.
 
 ---
 
@@ -80,7 +84,7 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
    | | C++ Compiler Configuration | Release | *Debug* is huge and slow; *Master* takes much longer to compile on a 3-core runner |
    | | IL2CPP Code Generation | *Optimize for code size and build time* (optional) | Less C++ to compile on the free runner. The game is fine either way |
    | | Managed Stripping Level | leave as authored | Reflex DI, Netcode and SOAP use reflection; stripping harder can delete types they need at runtime |
-2. Zip that folder and upload it to **Dropbox** (most reliable for a large file) or Google Drive
+2. Zip that folder (RAR and 7z also work) and upload it to **Dropbox** (most reliable for a large file) or Google Drive
    (big public files sometimes hit its "too many downloads" limit). Share it as "anyone with the
    link".
 3. **Compile it on a Mac.** Pick one:
