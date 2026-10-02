@@ -34,11 +34,15 @@ namespace CosmicShore.Gameplay
     /// on, and rails come into view — at once when the line ahead runs into a rail, and from the ship
     /// when the ship has strayed from it.</para>
     ///
-    /// <para><b>Two things are flown by hand.</b> Coming up to the ribbon from the spawn, a hundred
+    /// <para><b>Three things are flown by hand.</b> Coming up to the ribbon from the spawn, a hundred
     /// units off it, the line runs ACROSS the ribbon, and read per unit of ribbon arc its turns are
     /// several times too sharp — so until the ship is skimming along the ribbon it is read per unit
-    /// of its OWN length (<see cref="ArcPhase"/>). And a crystal the ship has flown past, or is about
-    /// to, is turned round for directly (<see cref="SeekTick"/>): missing it costs a whole lap.</para>
+    /// of its OWN length (<see cref="ArcPhase"/>). A crystal the ship has flown past, is about to,
+    /// or finds behind it (intensity 4 spawns past its first) is turned round for directly
+    /// (<see cref="SeekTick"/>): missing it costs a whole lap. And a ship pointing back along the
+    /// ribbon — through intensity 4's 157° fold, or out of a turn-round — is steered straight back
+    /// onto the band (<see cref="WrongWay"/>): a line has to run along the ribbon to be a line at
+    /// all, and one bent that far back holds the ship at a crawl.</para>
     ///
     /// <para><b>Steering</b> is cross-track tracking of the line: its curvature as feed-forward,
     /// plus a damped correction of position and lateral velocity, turned into sticks by
@@ -198,6 +202,13 @@ namespace CosmicShore.Gameplay
                 _realigning = false;
                 Optimize(fromShip: true, cold: true);
             }
+            else if (WrongWay())
+            {
+                _realigning = true;
+                _seekStart = sensors.Time;
+                Realignments++;
+                return SeekTick(MergePoint());
+            }
             if (_approach) UpdateApproach();
             PruneKeys();
 
@@ -233,6 +244,28 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Tooling: crystals the plan was about to miss, gone for directly.</summary>
         public int CrystalsRescued { get; private set; }
+
+        /// <summary>Tooling: times the ship was found pointing back along the ribbon and steered back
+        /// onto it directly (<see cref="WrongWay"/>).</summary>
+        public int Realignments { get; private set; }
+
+        /// <summary>cos 100°: a nose this far off the ribbon's direction is going the wrong way.</summary>
+        const float WrongWayDot = -0.17f;
+
+        /// <summary>
+        /// Whether the ship points back along the ribbon — through a fold (intensity 4's start/finish
+        /// turns the ribbon back on itself, 157° at a single prism), out of the turn for its first
+        /// crystal, or off a collision. A line planned from the ship that has to bend that far back
+        /// asks the stick for many times what it has, so the speed fit holds the ship at a crawl while
+        /// every re-plan starts from where it has drifted to: one racer flew 25 s at 15 u/s, 190 u off
+        /// the ribbon, before such a line found its way back. Steered straight back onto the band
+        /// instead (<see cref="MergePoint"/>), as after a turn-round.
+        /// </summary>
+        bool WrongWay()
+        {
+            _route.Frame(_s, out _, out Vector3 t, out _, out _);
+            return Vector3.Dot(_sensors.Rotation * Vector3.forward, t) < WrongWayDot;
+        }
 
         /// <summary>Tooling: crystals flown past and turned round for.</summary>
         public int CrystalsRecovered { get; private set; }
@@ -317,7 +350,14 @@ namespace CosmicShore.Gameplay
         {
             sb = ab = bb = kw = kh = 0f;
             float s1 = float.IsNaN(_crystalS) ? _s + Vector3.Distance(from, to) : _crystalS;
-            float deepest = 0f;
+            // The skim band is INSIDE the keep-out box (the box carries the turn-round's margin), so
+            // a ship skimming is already in it, and a path that stays as deep as the ship is runs
+            // along the plates rather than into them. Only going deeper is blocked: measured from
+            // the box's surface, every path out of the band read as blocked, and its detour corner
+            // — a few units off the ship, moving with it — held the ship at 3-7 u/s for 15 s.
+            float own = KeepOutDepth(from, _s, out _, out _, out _, out _);
+            float deepest = own > 0f ? own + 1f : 0f;
+            bool blocked = false;
             const int samples = 24;
             float hint = _s;
             for (int k = 1; k < samples; k++)
@@ -327,19 +367,30 @@ namespace CosmicShore.Gameplay
                 float guess = s1 >= _s ? Mathf.Max(hint, Mathf.Lerp(_s, s1, t) - 40f) : Mathf.Lerp(_s, s1, t);
                 float sp = _route.Project(p, guess, 60f, s1 >= _s ? 120f : 60f);
                 hint = sp;
-                _route.Frame(sp, out Vector3 c, out _, out Vector3 r, out Vector3 u);
-                _route.Envelope(sp, _sensors.HullHalfExtents.z, out float hw, out float hh);
-                float bw = hw + HullReach + _p.RecoverMargin, bh = hh + HullReach + _p.RecoverMargin;
-                Vector3 dp = p - c;
-                float a = Vector3.Dot(dp, r), b = Vector3.Dot(dp, u);
-                float depth = Mathf.Min(bw - Mathf.Abs(a), bh - Mathf.Abs(b));
+                float depth = KeepOutDepth(p, sp, out float a, out float b, out float bw, out float bh);
                 if (depth > deepest)
                 {
                     deepest = depth;
+                    blocked = true;
                     sb = sp; ab = a; bb = b; kw = bw; kh = bh;
                 }
             }
-            return deepest > 0f;
+            return blocked;
+        }
+
+        /// <summary>How deep <paramref name="p"/> is inside the keep-out box at arc <paramref name="s"/>
+        /// (the plates' envelope grown by the hull's reach and the turn-round margin): positive inside,
+        /// with its cross-section offset and the box's half-sizes.</summary>
+        float KeepOutDepth(Vector3 p, float s, out float a, out float b, out float bw, out float bh)
+        {
+            _route.Frame(s, out Vector3 c, out _, out Vector3 r, out Vector3 u);
+            _route.Envelope(s, _sensors.HullHalfExtents.z, out float hw, out float hh);
+            bw = hw + HullReach + _p.RecoverMargin;
+            bh = hh + HullReach + _p.RecoverMargin;
+            Vector3 dp = p - c;
+            a = Vector3.Dot(dp, r);
+            b = Vector3.Dot(dp, u);
+            return Mathf.Min(bw - Mathf.Abs(a), bh - Mathf.Abs(b));
         }
 
         /// <summary>
@@ -978,9 +1029,16 @@ namespace CosmicShore.Gameplay
                 // Search the ribbon AHEAD, not the whole loop: a knot passes near itself, and a
                 // crystal matched to the wrong strand is a pass point in the wrong place.
                 float sc = _route.Project(c, _s + 0.4f * lap, 0.45f * lap, 0.45f * lap);
-                if (sc < _s + 20f && _route.Closed) sc += lap;
                 _crystalS = sc;
                 CrystalsPlanned++;
+                // Already behind the ship — the race started past it (intensity 4's spawn faces back
+                // along the ribbon, its first crystal ~300 u behind) or it appeared there. Turn round
+                // for it exactly as for one flown past; a lap on is the fallback, not the plan.
+                if (sc < _s + 20f && _route.Closed)
+                {
+                    if (TryTurnRound()) return false;   // stays behind the ship: the backstop laps it
+                    _crystalS += lap;
+                }
                 return true;
             }
 
@@ -988,20 +1046,26 @@ namespace CosmicShore.Gameplay
             // behind to turn round for, which costs a few seconds where the lap costs twenty.
             if (_s > _crystalS + 40f && _route.Closed)
             {
-                if (_p.RecoverMissedCrystal && !_seeking
-                    && (_crystal - _sensors.Position).sqrMagnitude < _p.RecoverMaxDistance * _p.RecoverMaxDistance)
-                {
-                    _seeking = true;
-                    _seekCrystal = _crystal;
-                    _seekStart = _sensors.Time;
-                    CrystalsRecovered++;
-                    return false;
-                }
+                if (TryTurnRound()) return false;
                 _crystalS += _route.Length;
                 CrystalsDeferred++;
                 return true;
             }
             return false;
+        }
+
+        /// <summary>Starts a turn-round (<see cref="SeekTick"/>) for the crystal when it is close enough
+        /// to be worth it — a few seconds, where waiting for it a lap on costs a whole lap.</summary>
+        bool TryTurnRound()
+        {
+            if (!_p.RecoverMissedCrystal || _seeking
+                || (_crystal - _sensors.Position).sqrMagnitude >= _p.RecoverMaxDistance * _p.RecoverMaxDistance)
+                return false;
+            _seeking = true;
+            _seekCrystal = _crystal;
+            _seekStart = _sensors.Time;
+            CrystalsRecovered++;
+            return true;
         }
 
         // ============================================================================== optimised planning

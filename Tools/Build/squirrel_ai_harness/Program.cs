@@ -449,7 +449,7 @@ namespace SquirrelAiHarness
                             $"crystals {s.Crystals,2}/{race.Target}  ribbon {s.RibbonTouches} rail {s.RailTouches}  " +
                             $"skims {s.SkimHits}+{s.RailSkimHits}  full-boost {s.TimeAtFullBoost,5:F1}s (first {s.TimeToFirstFullBoost,5:F1}s)  " +
                             $"xtrack mean {s.CrossTrackSum / Math.Max(1, s.CrossTrackSamples):F2} max {s.MaxCrossTrack:F1}  " +
-                            $"reanchor {r.Brain.Reanchors} faces {r.Brain.FaceChanges} recovered {r.Brain.CrystalsRecovered} rescued {r.Brain.CrystalsRescued} deferred {r.Brain.CrystalsDeferred}  " +
+                            $"reanchor {r.Brain.Reanchors} faces {r.Brain.FaceChanges} recovered {r.Brain.CrystalsRecovered} rescued {r.Brain.CrystalsRescued} deferred {r.Brain.CrystalsDeferred} realign {r.Brain.Realignments}  " +
                             $"lost: throttle {s.LostThrottle:F1}s boost {s.LostBoost:F1}s contact {s.LostContact:F1}s other {s.LostOther:F1}s  laps {LapSummary(s)}");
                         if (trace || s.RibbonTouches + s.RailTouches > 0)
                             foreach (var e in s.Events.Take(trace ? 4000 : 12)) Console.WriteLine("      " + e);
@@ -543,6 +543,12 @@ namespace SquirrelAiHarness
                     failures += Gate("intensity 2 @30fps: every tier racer finishes", slow.Dnf == 0);
                 }
                 failures += Gate($"intensity {i}: every solo expert finishes", solo.Dnf == 0);
+                // Intensity 4 is where this broke: its start/finish folds the ribbon back on itself
+                // (157 deg at one prism) and its first crystal sits behind the spawn, and 7 of 9
+                // racers in a field failed to finish inside the 240 s cap before the brain learned
+                // to turn round for a crystal behind it and to steer back onto a ribbon it points
+                // the wrong way along.
+                failures += Gate($"intensity {i}: every racer in the 3-AI expert field finishes", field.Dnf == 0);
             }
             Console.WriteLine(failures == 0 ? "ALL GATES PASS" : $"{failures} GATE(S) FAILED");
             return failures == 0 ? 0 : 1;
