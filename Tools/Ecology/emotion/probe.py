@@ -34,19 +34,21 @@ AFFECT = {           # valence, arousal, threat
     "majestic":   (+0.5, 0.20, 0.15),
     "menacing":   (-0.6, 0.55, 0.70),
     "terrifying": (-0.9, 0.95, 1.00),
+    "neutral":    (0.0, 0.10, 0.00),     # round 3: background life that evokes nothing in particular
 }
 A = np.array([AFFECT[e] for e in EMOTIONS])
 
 
-def affect_of(p):
+def affect_of(p, emotions=EMOTIONS):
     p = np.asarray(p, float)
-    v = p @ A
+    v = p @ np.array([AFFECT[e] for e in emotions])
     return dict(valence=round(float(v[0]), 3), arousal=round(float(v[1]), 3), threat=round(float(v[2]), 3))
 
 
 class EmotionProbe:
     def __init__(self, d):
         self.d = d
+        self.emotions = tuple(d.get("emotions", EMOTIONS))
         self.keys_l, self.keys_s = d["logistic"]["features"], d["subproto"]["features"]
         L, S = d["logistic"], d["subproto"]
         self.Lmu, self.Lsd, self.W, self.b = (np.array(L[k]) for k in ("mu", "sd", "W", "b"))
@@ -63,20 +65,21 @@ class EmotionProbe:
     def _ps(self, f):
         x = np.array([f.get(k, 0.0) for k in self.keys_s]); z = np.clip((x - self.Smu) / self.Ssd, -6, 6)
         D = np.sum(self.w * (z[None] - self.Cs) ** 2, axis=1)
-        dk = np.array([D[self.lab == k].min() for k in range(len(EMOTIONS))])
+        dk = np.array([D[self.lab == k].min() for k in range(len(self.emotions))])
         l = -dk / float(self.T); l -= l.max(); p = np.exp(l); return p / p.sum()
 
     def score(self, f):
         pl, ps = self._pl(f), self._ps(f); p = 0.5 * (pl + ps)
-        return dict(p={e: round(float(x), 4) for e, x in zip(EMOTIONS, p)}, top=EMOTIONS[int(p.argmax())],
-                    logistic=EMOTIONS[int(pl.argmax())], subproto=EMOTIONS[int(ps.argmax())],
-                    agreement=bool(pl.argmax() == ps.argmax()), affect=affect_of(p),
+        E = self.emotions
+        return dict(p={e: round(float(x), 4) for e, x in zip(E, p)}, top=E[int(p.argmax())],
+                    logistic=E[int(pl.argmax())], subproto=E[int(ps.argmax())],
+                    agreement=bool(pl.argmax() == ps.argmax()), affect=affect_of(p, E),
                     _pl=pl, _ps=ps)
 
     def explain(self, f, emotion, top=5):
         """Which features push this creature toward `emotion` in the logistic judge (contribution =
         weight x standardised value)."""
-        k = EMOTIONS.index(emotion)
+        k = self.emotions.index(emotion)
         x = np.array([f.get(q, 0.0) for q in self.keys_l]); z = np.clip((x - self.Lmu) / self.Lsd, -6, 6)
         c = self.W[k] * z - (self.W * z).mean(0)
         order = np.argsort(-np.abs(c))[:top]
@@ -89,7 +92,7 @@ class EmotionProbe:
         cur = self.score(f)["top"]
         if cur == target:
             return []
-        kt, kc = EMOTIONS.index(target), EMOTIONS.index(cur)
+        kt, kc = self.emotions.index(target), self.emotions.index(cur)
         x = np.array([f.get(q, 0.0) for q in self.keys_l]); z = np.clip((x - self.Lmu) / self.Lsd, -6, 6)
         dw = self.W[kt] - self.W[kc]
         gain = dw * z                      # how much each feature currently helps target over current

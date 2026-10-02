@@ -27,16 +27,19 @@ VAL_SEEDS, VAL_VIEWERS = (101, 102, 103, 104, 105, 106), ("hover", "cruise", "ev
 SECONDS = 20.0
 
 
+PROBE_PATH = os.environ.get("EMOTION_PROBE")        # e.g. results/probe_v3.json; default results/probe.json
+
+
 def _probe():
     global PROBE
     if PROBE is None:
-        PROBE = EmotionProbe.load()
+        PROBE = EmotionProbe.load(PROBE_PATH)
     return PROBE
 
 
 def _eval(args):
     theta, target, seeds, viewers = args
-    pr = _probe(); k = EMOTIONS.index(target); vals, tops, agree = [], [], []
+    pr = _probe(); k = pr.emotions.index(target); vals, tops, agree = [], [], []
     for s in seeds:
         for v in viewers:
             f, _ = run(factory(theta), s, v, seconds=SECONDS)
