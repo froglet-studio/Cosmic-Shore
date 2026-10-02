@@ -60,6 +60,8 @@ class HierSim:
         self.events = dict(expand=0, absorb=0, arrive=0, seen_deleted=0, settle=0.0)
         self.timing = dict(macro=0.0, micro=0.0, lod=0.0, flora=0.0, steps=0, macro_steps=0)
         self.ledger0 = None
+        self._arrived_ids = set()        # agents spawned at a representative this macro step (continuity test)
+        self._drawn_last = set()
 
     # ---- setup -------------------------------------------------------------------------------------------
     def populate(self, n_herb=45000, n_pred=4000, flora_fill=0.5, nutrient=3000.0):
@@ -216,6 +218,7 @@ class HierSim:
 
     def _drain_inbox(self):
         A, W = self.A, self.W
+        self._arrived_ids = set()
         for (s, dst, src, e, energy) in self.M.inbox:
             reps = self.reps[src, s]
             j = int(np.argmin(np.linalg.norm(reps - W.centers[dst], axis=1)))
@@ -223,6 +226,7 @@ class HierSim:
             d = W.centers[dst] - p; d /= max(np.linalg.norm(d), 1e-9)
             A.add(p[None], np.array([s], np.int8), np.array([e], np.int8), energy, vel=d[None] * SP[s].speed)
             A.heading[A.n - 1] = d
+            self._arrived_ids.add(int(A.id[A.n - 1]))
             self.events["arrive"] += 1
         self.M.inbox.clear()
 
@@ -291,7 +295,14 @@ class HierSim:
                 cnt += int(m.sum()); st += float(E.sum())
                 ph = ph + np.bincount(phase_of(sp, E), minlength=3)
                 el += np.bincount(A.view("elem")[m], minlength=4)
-            out[sp.name] = dict(count=cnt, mean_e=st / max(cnt, 1), phase=(ph / max(cnt, 1)).tolist(),
+            # stomach spread (SD) over macro cohorts + agents: what a flattening bug cannot fake
+            nn, mm, vv = pop.mean_var()
+            q2 = float((nn[sel] * (vv[sel] + mm[sel] ** 2)).sum())
+            if m.any():
+                q2 += float((A.view("E")[m] ** 2).sum())
+            mean = st / max(cnt, 1)
+            sd_e = float(np.sqrt(max(q2 / max(cnt, 1) - mean * mean, 0.0)))
+            out[sp.name] = dict(count=cnt, mean_e=st / max(cnt, 1), sd_e=sd_e, phase=(ph / max(cnt, 1)).tolist(),
                                 elem=el.tolist())
         out["flora"] = float(W.F[sel].sum() + W.K[sel].sum())
         return out

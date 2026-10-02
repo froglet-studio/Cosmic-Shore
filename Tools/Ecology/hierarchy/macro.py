@@ -340,7 +340,21 @@ class Macro:
         live = (n > 0) & cold[:, None]
         if not live.any():
             return
-        burn_pc = sp.metab * dt
+        # metabolism + the expected SPRINT cost: a hunter chases whenever a herbivore is inside its sense radius,
+        # a grazer flees whenever a predator is inside its flee radius - Poisson odds from the region's density
+        Vreg = self.P.L ** 3
+        if k == 0:
+            other = self.Pr.count().astype(float)
+            p_spr = 1.0 - np.exp(-other / Vreg * (4.0 / 3.0) * np.pi * P.h_flee ** 3)
+            spr = p_spr[:, None] * np.ones_like(m)
+        else:
+            other = self.H.count().astype(float)
+            p_spr = 1.0 - np.exp(-other / Vreg * (4.0 / 3.0) * np.pi * P.p_sense ** 3)
+            hunt = ndtr((P.p_hunt_below * sp.e_max - m) / np.maximum(np.sqrt(v), 1e-6))
+            spr = p_spr[:, None] * hunt
+        if P.bug == "macro_no_sprint_cost":
+            spr = spr * 0.0
+        burn_pc = (sp.metab + sp.sprint_metab * spr) * dt
         burn = np.where(live, n * burn_pc, 0.0)
         W.N += burn.sum(1)                                           # metabolism: stomach -> soil, exactly
         pop.S -= burn

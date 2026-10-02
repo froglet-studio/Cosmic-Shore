@@ -8,8 +8,9 @@ then differ only in which level simulates the fauna:
 Compared over N seeds (seed means): herbivore / predator COUNT, mean STOMACH, PHASE mix (sated/forage/hungry,
 total variation distance), standing FLORA. Each must be within tolerance of the micro arm.
 NEGATIVE CONTROLS (planted bugs) must FAIL:
-    macro_graze_x1.5     macro grazing 50% too strong
-    expand_flat_energy   expansion hands every agent the mean stomach (phase structure lost)
+    macro_graze_x1.5      macro grazing 50% too strong
+    expand_flat_energy    expansion hands every agent the mean stomach (spread lost)
+    macro_no_sprint_cost  macro forgets what chasing / fleeing costs (the first real bug this gate found)
 Run:  python -m hierarchy.tests.test_consistency [--seeds 6] [--T 300]
 """
 from __future__ import annotations
@@ -26,8 +27,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from hierarchy.params import Params  # noqa: E402
 from hierarchy.sim import HierSim  # noqa: E402
 
-TOL = dict(count=0.10, mean_e=0.10, phase=0.08, flora=0.05)
-BUGS = ["macro_graze_x1.5", "expand_flat_energy"]
+TOL = dict(count=0.10, mean_e=0.10, sd_e=0.25, phase=0.08, flora=0.05)
+BUGS = ["macro_graze_x1.5", "expand_flat_energy", "macro_no_sprint_cost"]
 
 
 def make(P, init_seed, run_seed, R, dens, pred_frac):
@@ -64,7 +65,7 @@ def compare(ref, test):
         return float(np.mean([r[sp][key] for r in rs]))
     err = {}
     for sp in ("herb", "pred"):
-        for key in ("count", "mean_e"):
+        for key in ("count", "mean_e", "sd_e"):
             a, b = m(ref, sp, key), m(test, sp, key)
             err[f"{sp}_{key}"] = abs(b - a) / max(abs(a), 1e-9)
         pa = np.mean([r[sp]["phase"] for r in ref], 0); pb = np.mean([r[sp]["phase"] for r in test], 0)
@@ -81,6 +82,7 @@ def compare(ref, test):
 
 def within(err):
     lim = dict(herb_count=TOL["count"], pred_count=TOL["count"], herb_mean_e=TOL["mean_e"],
+               herb_sd_e=TOL["sd_e"], pred_sd_e=TOL["sd_e"],
                pred_mean_e=TOL["mean_e"], herb_phase=TOL["phase"], pred_phase=TOL["phase"], flora=TOL["flora"])
     return all(err[k] <= lim[k] for k in lim), {k: err[k] <= lim[k] for k in lim}
 
