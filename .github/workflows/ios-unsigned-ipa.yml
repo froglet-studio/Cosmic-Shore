@@ -111,7 +111,8 @@ jobs:
           KIND=$(file -b export.zip)
           case "$KIND" in
             # 7-zip first: "7-zip archive data" also contains "zip archive".
-            *RAR\ archive*|*7-zip\ archive*) echo "ARCHIVE_KIND=7z" >> "$GITHUB_ENV" ;;
+            *RAR\ archive*)   echo "ARCHIVE_KIND=rar" >> "$GITHUB_ENV" ;;
+            *7-zip\ archive*) echo "ARCHIVE_KIND=7z" >> "$GITHUB_ENV" ;;
             *[Zz]ip\ archive*) echo "ARCHIVE_KIND=zip" >> "$GITHUB_ENV" ;;
             *)
               echo "::error::The link did not return an archive ($KIND). Use a direct-download or share link to the .zip / .rar / .7z itself."
@@ -122,19 +123,23 @@ jobs:
         if: steps.gate.outputs.ready == 'true'
         run: |
           cd "$WORK"
-          if [ "$ARCHIVE_KIND" = "zip" ]; then
-            # ditto copes with large (zip64) archives that Info-ZIP unzip sometimes rejects.
-            ditto -x -k export.zip src || unzip -q export.zip -d src
-          else
-            # RAR5 and 7z: 7-Zip reads both. unar is the fallback if the formula is unavailable.
-            export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1
-            if brew install --quiet sevenzip; then
-              7zz x -y -bso0 -bsp0 -osrc export.zip
-            else
+          export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1
+          case "$ARCHIVE_KIND" in
+            zip)
+              # ditto copes with large (zip64) archives that Info-ZIP unzip sometimes rejects.
+              ditto -x -k export.zip src || unzip -q export.zip -d src ;;
+            rar)
+              # NOT 7-Zip: Homebrew's sevenzip is built without the RAR codec and answers
+              # "Unsupported Method" for every file in a RAR5 archive (measured on run 37071065804).
+              # unar (The Unarchiver) reads RAR5.
+              mv export.zip export.rar
               brew install --quiet unar
-              unar -q -o src export.zip
-            fi
-          fi
+              unar -q -o src export.rar
+              rm -f export.rar ;;
+            7z)
+              brew install --quiet sevenzip
+              7zz x -y -bso0 -bsp0 -osrc export.zip ;;
+          esac
           rm -f export.zip
           PROJ_FILE=$(find src -maxdepth 4 -name 'Unity-iPhone.xcodeproj' -type d | head -1)
           if [ -z "$PROJ_FILE" ]; then
