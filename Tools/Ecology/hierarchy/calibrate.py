@@ -44,7 +44,7 @@ def macro_graze_prediction(sim, thetas):
     return np.array(out)
 
 
-def run(R=600.0, T=400.0, seed=1, P=None, dens=50.0, pred_frac=0.09, flora_fill=0.5):
+def run(R=600.0, T=400.0, seed=1, P=None, dens=50.0, pred_frac=0.09, flora_fill=0.5, burn=100.0):
     P = P or Params()
     sim = HierSim(P, seed=seed, R=R)
     nreg = sim.W.nreg
@@ -61,7 +61,8 @@ def run(R=600.0, T=400.0, seed=1, P=None, dens=50.0, pred_frac=0.09, flora_fill=
             if step > 0:
                 graze_real.append(A.graze_acc.copy())
                 graze_pred.append(pred0)
-                pred_rows.append(np.stack([hunters0, herbs0, A.kill_acc.copy()], 1))
+                if sim.t >= burn:             # the start-up transient (unwary prey) is not the steady state
+                    pred_rows.append(np.stack([hunters0, herbs0, A.kill_acc.copy()], 1))
             sim.step()          # flora growth + (no-op) LOD/macro + one micro tick
             A.graze_acc[:] = 0; A.kill_acc[:] = 0
             pred0 = macro_graze_prediction(sim, thetas)
@@ -122,7 +123,7 @@ def main():
     # three scenarios so every fitted rate is seen over the range it is used in: dense + fed, sparse + fed
     # (low-density predation, which sets the cycle's trough), dense + starved (hungry movement)
     scen = [dict(dens=50.0, flora_fill=0.5), dict(dens=8.0, flora_fill=0.5, pred_frac=0.3),
-            dict(dens=40.0, flora_fill=0.04)]
+            dict(dens=40.0, flora_fill=0.5, pred_frac=0.06), dict(dens=40.0, flora_fill=0.04)]
     runs = [run(a.R, a.T, seed=s + 1, P=P, **sc) for s in range(a.seeds) for sc in scen]
     rows = sum((r["pred_rows"] for r in runs), [])
     hol = fit_holling(rows, P.dt_macro)
