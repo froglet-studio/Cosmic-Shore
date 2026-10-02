@@ -32,13 +32,19 @@ probe_mod = _load("cs_probe", os.path.join(ME, "probe.py"))
 VIEW = {"hover": 25.0, "cruise": 90.0}
 
 
+FACE = os.environ.get("FACE_PILOT") == "1"     # experiment: publish a heading toward the pilot (motion unchanged)
+
+
 def drive(ar, sp, pilot, seconds=40.0, dt=0.1, warm=2.0):
     rec = affect.AffectRecorder(dt, pilot_radius=pilot.radius)
     for k in range(int((seconds + warm) / dt)):
         sp.step(ar, dt); ar.step(dt)
         if k * dt >= warm:
             P = np.asarray(sp.agent_pos); V = np.asarray(sp.agent_vel)
-            rec.observe(pilot.pos, pilot.vel, P, V, getattr(sp, "agent_size", None), None, None)
+            H = None
+            if FACE and len(P):
+                H = pilot.pos - P; H = H / np.maximum(np.linalg.norm(H, axis=1, keepdims=True), 1e-9)
+            rec.observe(pilot.pos, pilot.vel, P, V, getattr(sp, "agent_size", None), None, H)
     return rec.features()
 
 

@@ -165,7 +165,17 @@ does much of the work.
    menacing).
 6. **Menacing ↔ terrifying is the commonest confusion** (25 of 120 terrifying runs read as menacing). It is
    graded by imminence, not a categorical boundary, which is why the threat axis exists.
-7. **A headless viewer test caught a load-order bug** (the panel read `RUNS` before it existed) and a
+7. **Facing the pilot alone does not make a pack menacing** (`results/sib_*_facing.json`). Re-probing every
+   sibling species with a heading toward the pilot, motion unchanged:
+   - bestiary pack: playful/majestic → **eerie** (3/4) / neutral;
+   - substrate pack: stays **playful** 4/4 (its ~200 u/s swirl dominates);
+   - slow grazers and the sparse locust: → **eerie**.
+
+   In the probe, attention plus calm motion reads as *watchers*, and attention plus a fast swirl is still
+   *play*. The wolfpack effect gives the attention; menace also needs the slow, direct, persistent approach
+   that `advise` asks for. A design takeaway: to move a pack from play to dread, slow it down and make it
+   approach straight, not only make it look at you.
+8. **A headless viewer test caught a load-order bug** (the panel read `RUNS` before it existed) and a
    camera that made encounters invisible at cell scale. Both fixed: initialisation on `load`, and a
    follow-pilot camera.
 
