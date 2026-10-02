@@ -31,6 +31,7 @@ def run(bug="", T=150.0, seed=9):
     sim.populate(45000, 3000)
     for sp in (140.0, 200.0):
         p = sim.add_pilot(Pilot.wanderer(speed=sp)); p.turn = 1.0
+    observe = sim.visible                 # the test's own eyes: never patched by a planted bug
     if bug == "absorb_ignores_visibility":
         sim.visible = lambda pos: np.zeros(len(pos), bool)
     prev = {}
@@ -48,7 +49,7 @@ def run(bug="", T=150.0, seed=9):
         drawn = out["agents"]["pos"]
         if bug == "expand_no_emerge":
             drawn = A.view("pos")
-        vis = sim.visible(drawn)
+        vis = observe(drawn)
         ids = A.view("id")
         bloom = A.view("bloom"); emerge = A.view("emerge")
         cur = {}

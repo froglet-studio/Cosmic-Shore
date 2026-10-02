@@ -1,0 +1,38 @@
+{
+ "gate_passed": false,
+ "runs": [
+  {
+   "bug": "",
+   "seen_agent_ticks": 1376043,
+   "pop_in": 0,
+   "pop_out": 0,
+   "teleport": 0,
+   "expand": 189829,
+   "absorb": 183207,
+   "arrive": 6643,
+   "passed": true
+  },
+  {
+   "bug": "absorb_ignores_visibility",
+   "seen_agent_ticks": 0,
+   "pop_in": 0,
+   "pop_out": 0,
+   "teleport": 0,
+   "expand": 84433,
+   "absorb": 76639,
+   "arrive": 3506,
+   "passed": true
+  },
+  {
+   "bug": "expand_no_emerge",
+   "seen_agent_ticks": 608941,
+   "pop_in": 3128,
+   "pop_out": 0,
+   "teleport": 264743,
+   "expand": 84416,
+   "absorb": 76707,
+   "arrive": 3506,
+   "passed": false
+  }
+ ]
+}
