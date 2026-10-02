@@ -1,0 +1,2 @@
+snaptrap R 0.5888 {"threat": 0.433, "counterplay": 1.0, "telegraph": 1.0, "payoff": 0.052, "variety": 1.0, "access": 0.735, "presence": 1.0, "adapt": 0.874} hits 13.167 cov 0.169 adapt 1.374 cpm 22.333 var 0.69
+spores R 0.514 {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 0.01, "variety": 1.0, "access": 1.0, "presence": 0.619, "adapt": 0.787} hits 1.5 cov 0.059 adapt 1.287 cpm 23.667 var 0.627

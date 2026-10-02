@@ -31,7 +31,7 @@ from harness import FloraSpecies, PlantBody, VIEW, GARDEN, seg_point_dist
 
 OPEN, PRIMING, ARMED, CLOSING, SHUT = 0, 1, 2, 3, 4
 
-DEFAULTS = dict(n_traps=40, clumps=8, clump_r=70.0, sense=170.0, t_prime=0.7, t_close=0.3, t_reset=3.0,
+DEFAULTS = dict(ram=True, heart_in_jaws=True, n_traps=40, clumps=8, clump_r=70.0, sense=170.0, t_prime=0.7, t_close=0.3, t_reset=3.0,
                 t_digest=9.0, gape=35.0, dgape=18.0, mouth_len=55.0, mouth_w=24.0, turn_deg=4.0, bud_bias=0.0,
                 root=90.0, absorb_every=4.0, prism_vol=12.0, tooth_vol=8.0, fire_on="mouth")
 
@@ -140,6 +140,7 @@ class SnapTrap(FloraSpecies):
                 if len(f):
                     j = f[np.argmin(np.linalg.norm(arena.mass_pos[f] - self.h[i], axis=1))]
                     self.reserve += arena.consume(j, "snaptrap")
+                self._lay_upto(i, 1.0)                      # repair rammed/cut prisms from the reserve
         if self.reserve >= self.cost:
             par = live[rng.integers(len(live))] if len(live) else None
             if par is not None:
@@ -172,7 +173,8 @@ class SnapTrap(FloraSpecies):
         st[pr & (it >= 1.0) & near] = ARMED
         ar_ = st == ARMED
         relax = ar_ & ~near; st[relax] = PRIMING
-        fire = ar_ & in_mouth if p["fire_on"] == "mouth" else ar_ & near
+        intact = (self.slots[grown][:, 3:] >= 0).mean(axis=1) >= 0.5   # a jaw with half its lobes gone cannot snap
+        fire = (ar_ & in_mouth if p["fire_on"] == "mouth" else ar_ & near) & intact
         st[fire] = CLOSING; tm[fire] = 0.0
         self.fired[grown[fire]] += 1
         cl = st == CLOSING
@@ -228,6 +230,7 @@ class SnapTrap(FloraSpecies):
                 o = self.body.owner[j]
                 if o >= 0 and self.caught[o]: continue   # the snap that just landed already counted
                 self._credit(arena, o, pi); arena.hit(pi, "burn")
+        self._ram(arena)
         # telegraph bookkeeping (per trap, per pilot)
         for pi in pil:
             dist = np.linalg.norm(self.h[:N] - pi.pos, axis=1)
@@ -276,15 +279,21 @@ class SnapTrap(FloraSpecies):
     def threat_elements(self):
         N = self.n
         live = np.flatnonzero(self.alive[:N] & (self.grow[:N] >= 1))
-        armed = live[np.isin(self.state[live], (ARMED, CLOSING))]
+        armed = live[np.isin(self.state[live], (OPEN, PRIMING, ARMED, CLOSING))]   # latent: any trap that can fire
         mouths = self.h[armed] + self.a[armed] * (22.0 + self.p["mouth_len"] * 0.5)
         bi = self.body.live(); teeth = bi[self.body.danger[bi]]
         return (np.concatenate([mouths, self.body.pos[teeth]]),
                 np.concatenate([np.full(len(armed), self.p["mouth_len"] * 0.6), np.full(len(teeth), 3.5)]))
 
+    def heart_pos(self, idx):
+        """The crystal sits at the HINGE, between the lobes - the bait is in the jaws (heart_in_jaws), so taking it
+        means diving into the mouth fast enough to beat t_close. Off: the heart sits at the stalk's root."""
+        if not self.p["heart_in_jaws"]: return self.h[idx]
+        return self.h[idx] + self.a[idx] * 30.0
+
     def cut_targets(self):
         live = np.flatnonzero(self.alive[:self.n] & (self.grow[:self.n] >= 1))
-        return self.h[live]
+        return self.heart_pos(live)
 
     def cut(self, arena, pilot, a, b):
         c = self.body.contacts(a, b, 14.0)
@@ -295,7 +304,7 @@ class SnapTrap(FloraSpecies):
             if o >= 0: self.slots[o][self.slots[o] == j] = -1
         live = np.flatnonzero(self.alive[:self.n])
         if len(live):
-            d = seg_point_dist(a, b, self.h[live])
+            d = seg_point_dist(a, b, self.heart_pos(live))
             for i in live[d < 12.0]:
                 self._die(i)
 
@@ -304,6 +313,16 @@ class SnapTrap(FloraSpecies):
         self.alive[i] = False; self.crystals += 1; self.deaths += 1; self.itn[i] = 0
         for j in self.slots[i]:
             if j >= 0: self.body.danger[j] = False; self.body.owner[j] = -1
+
+    def _ram(self, arena):
+        """A pilot flying through PLAIN plant prisms breaks them (an active force; mass leaves as cut mass)."""
+        if not self.p["ram"]: return
+        for pi in arena.pilots:
+            for j in self.body.contacts(pi.prev, pi.pos, pi.radius):
+                if self.body.danger[j]: continue
+                self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j])
+                o = self.body.owner[j]
+                if o >= 0: self.slots[o][self.slots[o] == j] = -1
 
     def mass_total(self):
         return self.reserve + self.body.total_volume()

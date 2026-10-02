@@ -48,8 +48,19 @@ BURN_COOLDOWN = 1.0              # one hazard element burns one pilot at most on
 
 # ------------------------------------------------------------------------------------------------- pilots
 class FloraArena(Arena):
-    def __init__(self, seed=7, **kw):
+    """`trails`: every pilot lays a trail prism (`trail_vol`) every `trail_gap` u it flies - the game's truth (a
+    vessel IS a mass source), and the one continuous food supply a creeping plant can follow. Created volume is
+    tracked in `created` so the mass audit stays exact."""
+
+    def __init__(self, seed=7, trails=True, trail_gap=24.0, trail_vol=6.0, n_crystals=6, divert=300.0, **kw):
         super().__init__(seed=seed, **kw)
+        # real omni crystals: a pilot diverts to any it can see within `divert` (players go for crystals). A
+        # species may publish LURES (mimics) through `lures()`; a pilot cannot tell a lure from a crystal unless
+        # it is a reader inside the lure's tell range.
+        self.crys = self.grove(n_crystals, 30.0) if n_crystals else np.zeros((0, 3))
+        self.divert = divert; self.collected = {}; self.lured = {}; self.known_lures = {}
+        self.trails, self.trail_gap, self.trail_vol = trails, trail_gap, trail_vol
+        self.created = 0.0; self.trail_acc = {}; self.n_trail = 0
         self.species = None                  # the flora species under test (set by run())
         self.goals_reached = {}
         self.path_len = {}
@@ -77,8 +88,17 @@ class FloraArena(Arena):
                 p.speed = self.base_speed[p.name]
         super().step(dt)
         for p, b in zip(self.pilots, before):
-            self.path_len[p.name] += float(np.linalg.norm(p.pos - b))
+            L = float(np.linalg.norm(p.pos - b))
+            self.path_len[p.name] += L
             p.prev = b
+            if self.trails:
+                self.trail_acc[p.name] = self.trail_acc.get(p.name, 0.0) + L
+                if self.trail_acc[p.name] >= self.trail_gap:
+                    self.trail_acc[p.name] = 0.0
+                    back = b - (p.pos - b) / max(L, 1e-6) * 8.0
+                    self.lay_mass(back, self.trail_vol, elem=4 % 4)
+                    self.created += self.trail_vol; self.n_trail += 1
+                    self.mass_grid.build(self.mass_pos, self.mass_alive)
 
     def _new_goal(self, p):
         self.goals_reached[p.name] += 1
@@ -111,15 +131,48 @@ class FloraArena(Arena):
                 return T[np.argmin(np.linalg.norm(T - p.pos, axis=1))]
         if np.linalg.norm(p.goal - p.pos) < 60.0:
             self._new_goal(p)
+        bait = self._bait(p)
+        if bait is not None:
+            if p.policy == "reader":
+                return self._read(p, bait)
+            return bait
         if p.policy == "reader" and self.species is not None:
             return self._read(p)
         return p.goal
 
-    def _read(self, p):
+    def _bait(self, p):
+        """Opportunism: the nearest crystal (or lure) within `divert`. Collect real ones on contact (they respawn).
+        A reader skips a lure whose TELL it can read (inside the lure's tell range)."""
+        C = self.crys; L, tell = (self.species.lures() if self.species is not None and hasattr(self.species, "lures")
+                                 else (np.zeros((0, 3)), np.zeros(0)))
+        for k in np.flatnonzero(np.linalg.norm(C - p.pos, axis=1) < 12.0) if len(C) else []:
+            self.collected[p.name] = self.collected.get(p.name, 0) + 1
+            C[k] = self.grove(1, 30.0)[0]
+        P = np.concatenate([C, L]); is_lure = np.r_[np.zeros(len(C), bool), np.ones(len(L), bool)]
+        if not len(P): return None
+        d = np.linalg.norm(P - p.pos, axis=1)
+        ok = d < self.divert
+        if p.policy == "reader" and len(L):
+            # a reader that has READ a lure's tell remembers it (lures walk slowly; 80 u matches it next time)
+            known = self.known_lures.setdefault(p.name, [])
+            seen = is_lure & (d < np.r_[np.zeros(len(C)), tell])
+            for q in P[seen]:
+                if not any(np.linalg.norm(q - k) < 80.0 for k in known): known.append(q.copy())
+            for m in np.flatnonzero(is_lure):
+                for k in known:
+                    if np.linalg.norm(P[m] - k) < 80.0:
+                        ok[m] = False; k[:] = P[m]; break
+        if not ok.any(): return None
+        j = int(np.flatnonzero(ok)[np.argmin(d[ok])])
+        if is_lure[j]: self.lured[p.name] = self.lured.get(p.name, 0) + 1
+        return P[j]
+
+    def _read(self, p, goal=None):
         """Context steering over 26 directions, scored by goal alignment minus VISIBLE danger ahead."""
         base = self.base_speed[p.name]
         H, Rr, W, soft = self.species.hazards()
-        want = p.goal - p.pos; want /= max(np.linalg.norm(want), 1e-6)
+        goal = p.goal if goal is None else goal
+        want = goal - p.pos; want /= max(np.linalg.norm(want), 1e-6)
         v = p.vel / max(np.linalg.norm(p.vel), 1e-6)
         speed = base * (1.7 if self.boost_left[p.name] > 0 else 1.0)
         if len(H):
@@ -127,7 +180,7 @@ class FloraArena(Arena):
             H, Rr, W = H[m], Rr[m], W[m]
         if not len(H):
             p.speed = speed
-            return p.goal
+            return goal
         dirs = _DIRS
         look = np.array([40.0, 90.0, 150.0, 220.0])
         # sample points along each candidate direction; penalty = sum of hazards those points fall inside
@@ -230,8 +283,10 @@ class FloraSpecies:
         render(out)                viewer buffers
         hazards()                  (pos (h,3), radius (h,), weight (h,), soft (s,3)|None) - ONLY what the plant
                                    telegraphs (glow, gape, swell). A reading pilot steers on this.
-        threat_elements()          (pos (t,3), radius (t,)) - what can actually hurt a pilot right now (for lane
-                                   coverage and threat density; hidden state included - it is a measurement)
+        threat_elements()          (pos (t,3), radius (t,)) - every LATENT threat zone: what would hurt a pilot who
+                                   flew there now, including a dormant trap that would fire (lane coverage and
+                                   threat density; hidden state included - it is a measurement). Round 2 counted
+                                   only ACTIVE threats and scored every ambush plant ~0 presence.
         cut_targets()              hearts a cutter flies at
         cut(arena, pilot, a, b)    the pilot's ability removes prisms along its path / collects hearts
         mass_total()               volume held by the species (reserve + body + any free-floating mass)
@@ -258,7 +313,10 @@ class FloraProbe:
         r = np.cbrt(rng.random((n_lanes, 2))) * GROVE_R
         self.lanes = GROVE_C + d * r[..., None]
         self.dt, self.every, self.k = dt, every, 0
-        self.coverage = []; self.density = []; self.mass_series = []; self.prisms = []
+        self.coverage = []; self.density = []; self.mass_series = []; self.prisms = []; self.route_bias = []
+        r = arena.courier_route; self.route = [(r[i], r[(i + 1) % 3]) for i in range(3)]
+        self.route_len = sum(float(np.linalg.norm(b - a)) for a, b in self.route)
+        self.lane_len = float(np.linalg.norm(self.lanes[:, 1] - self.lanes[:, 0], axis=1).sum())
         self.lead_samples = []
         self.vis_since = {}                 # (pilot) -> {element key -> first t visible-hot within VIEW}
 
@@ -277,8 +335,11 @@ class FloraProbe:
             for a, b in self.lanes:
                 if np.any(seg_point_dist(a, b, T) < TR + 8.0): cov += 1
             self.coverage.append(cov / len(self.lanes))
+            on_route = sum(int(np.sum(seg_point_dist(a, b, T) < TR + 60.0)) for a, b in self.route) / self.route_len
+            on_lanes = sum(int(np.sum(seg_point_dist(a, b, T) < TR + 60.0)) for a, b in self.lanes) / self.lane_len
+            self.route_bias.append((on_route + 1e-4) / (on_lanes + 1e-4))
         else:
-            self.coverage.append(0.0)
+            self.coverage.append(0.0); self.route_bias.append(1.0)
         self.prisms.append(sp.body.alive[:sp.body.n].sum() if hasattr(sp, "body") else 0)
 
     def summary(self, minutes):
@@ -305,12 +366,12 @@ def resolve(spec):
     return lambda a, p: C(a, p)
 
 
-def run(spec, params, seed, policy, minutes=2.0, dt=0.1, record=None, perturb=0.0, cut_event=None):
+def run(spec, params, seed, policy, minutes=2.0, dt=0.1, record=None, perturb=0.0, cut_event=None, trails=True):
     """One species x one pilot policy x one seed. Returns a run dict (common fields + plant metrics).
     `perturb` nudges the pilot's start by that many units with an independent rng (twin runs for variety)."""
     from common.scorecard import Probe, run_score
     make_species = resolve(spec)
-    ar = FloraArena(seed=seed)
+    ar = FloraArena(seed=seed, trails=trails)
     ar.grove_mass(1600, clumps=20)
     mk = dict(wander=Pilot.wanderer, reader=lambda: Pilot("reader", speed=120.0, name="reader"),
               cutter=lambda: Pilot("cutter", speed=140.0, name="cutter"),
@@ -335,10 +396,11 @@ def run(spec, params, seed, policy, minutes=2.0, dt=0.1, record=None, perturb=0.
         pr.observe(ar, sp); fp.observe(ar, sp)
         if record is not None: record.frame(ar, [sp])
     ms = (time.perf_counter() - t0) / steps * 1000
-    m1 = ar.live_volume() + sp.mass_total() + sp.cut_volume
+    m1 = ar.live_volume() + sp.mass_total() + sp.cut_volume - ar.created
     out = run_score(ar, sp, pr, minutes)
     out.update(fp.summary(minutes))
-    out["goals_per_min"] = round(ar.goals_reached[pilot.name] / minutes, 2)
+    out["goals_per_min"] = round((ar.goals_reached[pilot.name] + ar.collected.get(pilot.name, 0)) / minutes, 2)
+    out["crystals_collected_per_min"] = round(ar.collected.get(pilot.name, 0) / minutes, 2)
     out["leads"] = [round(min(5.0, x), 2) for x in getattr(sp, "leads", [])]
     out["mass_drift"] = (m1 - m0) / max(m0, 1e-9)
     out["crystals"] = sp.crystals; out["deaths"] = sp.deaths
@@ -347,9 +409,9 @@ def run(spec, params, seed, policy, minutes=2.0, dt=0.1, record=None, perturb=0.
     kinds = {}
     for (_t, _n, kd, _a) in ar.log: kinds[kd] = kinds.get(kd, 0) + 1
     out["kinds"] = kinds
-    dens = np.asarray(fp.density); h = len(dens) // 2
-    out["density_early"] = float(dens[:h].mean()) if h else 0.0
-    out["density_late"] = float(dens[h:].mean()) if h else 0.0
+    rb = np.asarray(fp.route_bias); h = len(rb) // 2
+    out["route_bias_early"] = float(rb[:h].mean()) if h else 1.0
+    out["route_bias_late"] = float(rb[h:].mean()) if h else 1.0
     out["signature"] = np.asarray(sp.signature(), float).tolist() if hasattr(sp, "signature") else []
     if cut_report is not None:
         out["cut"] = cut_report
@@ -410,8 +472,8 @@ def summarize(runs, minutes):
         crystal_law=all(r["crystals"] == r["deaths"] for r in runs.values()),
         py_ms_per_step=_r(mean("wander", "py_ms_per_step")),
         courier_hits_per_min=_r(mean("courier", "hits_per_min")),
-        adapt=_r((mean("courier", "density_late") + 0.05) / (mean("courier", "density_early") + 0.05))
-        if mean("courier", "density_early") is not None else None,
+        adapt=_r(mean("courier", "route_bias_late") / max(mean("courier", "route_bias_early"), 1e-3))
+        if mean("courier", "route_bias_early") is not None else None,
         kinds={k: sum(r["kinds"].get(k, 0) for (p, s), r in runs.items() if p == "wander") for k in
                sorted({k for r in runs.values() for k in r["kinds"]})},
     )
@@ -443,8 +505,10 @@ def replay_score(c):
        variety     twin-run divergence: same world, the pilot nudged 5 u at the start; >= 0.3 full marks
        access      reader goals/min over wanderer goals/min >= 0.75 (the counter is not 'stay home')
        presence    lane coverage inside [0.1, 0.4]: flora's job is to SHAPE routes - block some lanes, not all
-       adapt       threat density near a COURIER that keeps flying one 3-waypoint loop, late half / early half;
-                   1.5x is full marks and a static plant scores 0.5 (the place changes because you were there)
+       adapt       ROUTE BIAS growth for a COURIER that keeps flying one 3-waypoint loop: threat per unit length near
+                   its route over threat per unit length near 64 random lanes, late half / early half. 1.5x is full
+                   marks; a plant that ignores traffic scores 0.5 (the place changes because you were there).
+                   (Round 1 used raw density late/early - confounded by plain growth; physarum read 2.48 for that.)
        payoff is now also a band on crystals/min [1, 6]: a plant you farm at 20/min is not a threat.
        Hard gates: mass drift < 1e-6 and every dead plant dropped its crystal, else R = 0."""
     if c["mass_drift_max"] > 1e-6 or not c["crystal_law"]:

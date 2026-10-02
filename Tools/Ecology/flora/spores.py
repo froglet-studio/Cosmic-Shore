@@ -30,7 +30,7 @@ import numpy as np
 from harness import FloraSpecies, PlantBody, VIEW, GARDEN, seg_point_dist
 
 IDLE, SWELL, EMPTY, GROW = 0, 1, 2, 3
-DEFAULTS = dict(n_pods=80, clumps=10, clump_r=60.0, charge_cap=60.0, spore_vol=4.0, shell_vol=10.0,
+DEFAULTS = dict(ram=True, n_pods=80, clumps=10, clump_r=60.0, charge_cap=60.0, spore_vol=4.0, shell_vol=10.0,
                 touch=24.0, wake=70.0, v_soft=70.0, kick_hard=1.2, kick_soft=0.25, kick_wake=0.15,
                 alarm_r=90.0, alarm_speed=70.0, alarm_gain=0.75, relax=0.35, t_swell=0.8, launch=45.0,
                 drag=0.6, wind=12.0, wind_k=0.006, root=80.0, absorb_every=3.0, settle_v=12.0, spore_cd=0.6)
@@ -130,6 +130,8 @@ class SporeBurster(FloraSpecies):
                     else:
                         room = p["charge_cap"] - self.charge[i]; take = min(room, v)
                         self.charge[i] += take; self.reserve += v - take
+            if self.state[i] != GROW and not (self.slots[i] >= 0).all():
+                self._lay(i, 1.0)                           # repair rammed/cut shell from the reserve
             if self.state[i] == GROW and self.sprout_res[i] > 0 and (self.slots[i] >= 0).all():
                 self.charge[i] += self.sprout_res[i]; self.sprout_res[i] = 0
             if self.state[i] == EMPTY and self.charge[i] >= 0.8 * p["charge_cap"]:
@@ -185,6 +187,7 @@ class SporeBurster(FloraSpecies):
                 self.burn_cd[pi.name] = t + p["spore_cd"]
                 self.leads.append(t - float(self.sbirth[hit].min()))
                 arena.hit(pi, "burn")
+        self._ram(arena)
         self._pose()
         bi = self.body.live(); ow = self.body.owner[bi]; ok = ow >= 0
         self.body.hot[bi] = 0.0
@@ -243,11 +246,13 @@ class SporeBurster(FloraSpecies):
         return H, R, W, self._centre(calm)
 
     def threat_elements(self):
-        return self.spos, np.full(len(self.spos), 4.0)
+        live = np.flatnonzero(self.alive[:self.n] & np.isin(self.state[:self.n], (IDLE, SWELL)))
+        return (np.concatenate([self.spos, self._centre(live)]),
+                np.concatenate([np.full(len(self.spos), 4.0), np.full(len(live), self.p["touch"])]))
 
     def cut_targets(self):
         live = np.flatnonzero(self.alive[:self.n])
-        return self.h[live]
+        return self._centre(live)                  # the crystal is INSIDE the pod: taking it bursts it on you
 
     def cut(self, arena, pilot, a, b):
         c = self.body.contacts(a, b, 14.0)
@@ -259,7 +264,7 @@ class SporeBurster(FloraSpecies):
             if o >= 0: self.slots[o][self.slots[o] == j] = -1
         live = np.flatnonzero(self.alive[:self.n])
         if len(live):
-            d = seg_point_dist(a, b, self.h[live])
+            d = seg_point_dist(a, b, self._centre(live))
             for i in live[d < 12.0]:
                 self._die(i, arena, arena.rng)
 
@@ -271,6 +276,16 @@ class SporeBurster(FloraSpecies):
         self.alive[i] = False
         for j in self.slots[i]:
             if j >= 0: self.body.owner[j] = -1
+
+    def _ram(self, arena):
+        """A pilot flying through PLAIN plant prisms breaks them (an active force; mass leaves as cut mass)."""
+        if not self.p["ram"]: return
+        for pi in arena.pilots:
+            for j in self.body.contacts(pi.prev, pi.pos, pi.radius):
+                if self.body.danger[j]: continue
+                self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j])
+                o = self.body.owner[j]
+                if o >= 0: self.slots[o][self.slots[o] == j] = -1
 
     def mass_total(self):
         return (self.reserve + self.body.total_volume() + float(self.charge[:self.n][self.alive[:self.n]].sum())
