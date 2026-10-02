@@ -170,6 +170,42 @@ audit quietly report the prefab's scale instead of the bone's.
 path (single-player, multiplayer, menu autopilot, every runtime swap), which is what makes it
 impossible to author a hull whose tail flies the wrong domain.
 
+### A scoped hold: hiding a TAIL without touching anything else
+
+`VesselTailAndJets.HideTails()` / `ShowTails()` darken this vessel's tail for as long as a caller
+holds it. Today's one caller is the screenshot director, which takes it on every ship within 30
+units of its lens for one hand-stepped render (`Docs/SCREENSHOT_DIRECTOR.md`): a ribbon sized to be
+legible from across a cell is, at that range, several hull lengths crossing the frame in front of
+the thing the photograph is of.
+
+Three properties are the whole of it, and each is a defect if it goes the other way:
+
+- **It reaches TAILS and not JETS.** A jet reads thrust, which is a close-range read — so hiding
+  one at close range removes the thing that works and keeps the thing that does not.
+- **It hides by `Renderer.forceRenderingOff`, never by disabling the component.** A disabled
+  `TrailRenderer` stops **recording** as well as drawing, so on release the ribbon bridges the gap
+  with one straight segment — a visible artefact left behind by a hold that is supposed to leave
+  nothing. Forcing rendering off leaves the simulation running untouched.
+- **It records what it flipped**, so the release restores exactly those renderers and never
+  re-shows one something else had already hidden — the identity guard the platform's other scoped
+  holds (the occlusion corridor's, the capture pass's) use for the same reason.
+
+The **prism trail is not reachable from here and must never be**. It is conserved mass, mass is
+never hidden (`CLAUDE.md` ▸ *Mass is conserved*), and it is not a `TrailRenderer` at all.
+
+### A teleport CUTS every ribbon instead of streaking it
+
+A `TrailRenderer` records world positions, so a hull that jumps draws one straight ribbon between
+where it was and where it is — a line nothing flew along. `VesselTransformer.SetPose` (every pose
+write, every machine) calls `TeleportContinuity.OnTeleported`, which splits **every** trail under
+the vessel at the jump: the ribbon laid so far goes to a `TeleportRibbonGhost` that ends where the
+vessel left and drains from its tail at the rate it would have aged out, and the live renderer
+starts again where the vessel arrived. Every trail rather than only the markers, because a cut
+copies what the renderer shows at that instant and hands the renderer back untouched, so it fights
+nobody's colour work — and a streak across the arena is a defect on every ribbon. Through a
+Butterfly fold gate the cut points are the two mouths, so a tail reads as passing through the
+portal (`R_VesselActions/BUTTERFLY_FOLD.md` § "Seamless transit").
+
 ## 4. Placement: the rules, and every vessel's numbers
 
 **Tail** — on the vessel root, on the centreline, at `z = −1.05 × |followOffset.z|`: just past the
@@ -276,7 +312,9 @@ is what prompted this pass.
   for the wrong one. Its prefab's `MeshFilter`s all carry guid
   `4a586f927b9527f469c6d95a0ac32051`, and resolving that with
   `grep -rl "guid: $g" Assets --include=*.meta | head -1` returned
-  `Placeholder/Vessel_Placeholder_1.fbx.meta`, which merely sorts first. That file is a REFERENCE —
+  `Placeholder/Vessel_Placeholder_1.fbx.meta`, which merely sorts first. (Both placeholders were
+  retired in 2026-08 — `Docs/VESSEL_CONSTRUCTION.md` §7 — so the file this names is gone; the trap
+  it demonstrates is not, which is why the account is kept verbatim.) That file is a REFERENCE —
   the placeholder points its own filters at the Rhino's meshes. `Rhino_Test.fbx.meta` is the one
   whose top-level `guid:` line carries it, so the Rhino renders `Rhino_Test.fbx`'s `fusalage`.
 

@@ -39,6 +39,11 @@ namespace CosmicShore.UI
         /// </summary>
         public void Show(string message, ToastNotificationSettingsSO settings)
         {
+            // Show can arrive before Awake (item instantiated from an inactive prefab / pooled
+            // inactive) — resolve the required components lazily instead of NRE'ing.
+            if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
+            if (_rect == null) _rect = GetComponent<RectTransform>();
+
             _settings = settings;
             _isDismissing = false;
 

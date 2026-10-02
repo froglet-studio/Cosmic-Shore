@@ -117,6 +117,7 @@ namespace CosmicShore.Gameplay
         public const byte None = 0;
         public const byte Octahedron = 1; // SHIELDED: L1 ball circumscribing the authored box
         public const byte Stella = 2;     // SUPER-SHIELDED: union of two tetrahedra (non-convex)
+        public const byte Box = 3;        // UNSHIELDED: the prism's own authored box (extended coverage only)
     }
 
     /// <summary>
@@ -188,6 +189,10 @@ namespace CosmicShore.Gameplay
         [ReadOnly] public NativeArray<PrismShellData> Shells;
         [ReadOnly] public NativeArray<ShellProbe> Probes;
         [ReadOnly] public int ProbeCount;
+        /// <summary>1 while the tier also owns UNSHIELDED prisms. This is the flag-byte
+        /// early-out below going away: with it set the scan pays a bound test per slot
+        /// per probe instead of one byte read, which is the whole cost question.</summary>
+        [ReadOnly] public byte CoverUnshielded;
 
         public NativeList<ShellContactHit>.ParallelWriter Hits;
 
@@ -195,7 +200,7 @@ namespace CosmicShore.Gameplay
         {
             var p = Prisms[index];
             if ((p.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) return;
-            if ((p.Flags & PrismFlags.AnyShieldMask) == 0) return;
+            if (CoverUnshielded == 0 && (p.Flags & PrismFlags.AnyShieldMask) == 0) return;
 
             var shell = Shells[index];
             if (shell.Kind == ShellKind.None) return;
@@ -216,24 +221,30 @@ namespace CosmicShore.Gameplay
                     frameBuilt = true;
                 }
 
-                bool octa = shell.Kind == ShellKind.Octahedron;
+                byte kind = shell.Kind;
                 bool hit;
                 switch (probe.Kind)
                 {
                     case ShellProbeKind.Sphere:
-                        hit = octa
+                        hit = kind == ShellKind.Octahedron
                             ? ShieldShellMath.SphereOverlapsOcta(in frame, probe.A, probe.Radius)
-                            : ShieldShellMath.SphereOverlapsStella(in frame, probe.A, probe.Radius);
+                            : kind == ShellKind.Stella
+                                ? ShieldShellMath.SphereOverlapsStella(in frame, probe.A, probe.Radius)
+                                : ShieldShellMath.SphereOverlapsBox(in frame, probe.A, probe.Radius);
                         break;
                     case ShellProbeKind.Capsule:
-                        hit = octa
+                        hit = kind == ShellKind.Octahedron
                             ? ShieldShellMath.CapsuleOverlapsOcta(in frame, probe.A, probe.B, probe.Radius)
-                            : ShieldShellMath.CapsuleOverlapsStella(in frame, probe.A, probe.B, probe.Radius);
+                            : kind == ShellKind.Stella
+                                ? ShieldShellMath.CapsuleOverlapsStella(in frame, probe.A, probe.B, probe.Radius)
+                                : ShieldShellMath.CapsuleOverlapsBox(in frame, probe.A, probe.B, probe.Radius);
                         break;
                     default:
-                        hit = octa
+                        hit = kind == ShellKind.Octahedron
                             ? ShieldShellMath.BoxOverlapsOcta(in frame, probe.A, probe.E1, probe.E2, probe.E3)
-                            : ShieldShellMath.BoxOverlapsStella(in frame, probe.A, probe.E1, probe.E2, probe.E3);
+                            : kind == ShellKind.Stella
+                                ? ShieldShellMath.BoxOverlapsStella(in frame, probe.A, probe.E1, probe.E2, probe.E3)
+                                : ShieldShellMath.BoxOverlapsBox(in frame, probe.A, probe.E1, probe.E2, probe.E3);
                         break;
                 }
 
@@ -1060,6 +1071,199 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The TAPERING counterpart of <see cref="QuerySegment"/>: gathers every LIVE prism
+        /// whose centre lies inside a cone of half-angle <paramref name="halfAngleDegrees"/>
+        /// opening from <paramref name="apex"/> along <paramref name="direction"/>, out to
+        /// <paramref name="length"/>, with a <paramref name="minRadius"/> floor near the apex.
+        ///
+        /// It exists because a hitscan weapon is aimed in ANGLE and a capsule is not. A fixed
+        /// radius is a tube: 4 u at 3,000 u subtends 0.076°, which inside a 22° scope is about
+        /// 7 px — a needle the player cannot aim, while the same 4 u at point-blank range is a
+        /// blunderbuss. A cone covers a CONSTANT on-screen area at every range, so "put the
+        /// reticle on it" means the same thing everywhere along the beam, and the reticle can
+        /// be drawn at the cone's true angular size.
+        ///
+        /// The floor is what keeps the apex honest: a pure cone has zero radius at the muzzle,
+        /// so mass the ship is about to fly into would be missed by the one weapon pointed
+        /// straight at it.
+        ///
+        /// Same conventions as <see cref="QuerySegment"/>: results are cleared first, the test
+        /// is against the prism's CENTRE, the snapshot is UNORDERED (callers that stop at the
+        /// first hit must sort along <paramref name="direction"/> themselves), entries can be
+        /// destroyed by the caller's own side effects mid-iteration, and it is main-thread only
+        /// with no allocation given a reused list.
+        ///
+        /// <paramref name="direction"/> need not be normalized; a zero direction returns 0.
+        /// </summary>
+        public int QueryCone(Vector3 apex, Vector3 direction, float length, float halfAngleDegrees,
+            float minRadius, List<Prism> results)
+        {
+            results.Clear();
+            if (!_buckets.IsCreated || _highWaterMark == 0) return 0;
+            if (length <= 0f) return 0;
+
+            float3 dir = direction;
+            float dirLenSq = math.lengthsq(dir);
+            if (dirLenSq < 1e-8f) return 0;
+            dir *= math.rsqrt(dirLenSq);
+
+            float3 p0 = apex;
+            float tanHalf = math.tan(math.radians(math.clamp(halfAngleDegrees, 0f, 89f)));
+            minRadius = math.max(minRadius, 0f);
+            float endRadius = math.max(minRadius, length * tanHalf);
+
+            // Conservative AABB: the capsule that circumscribes the cone. Thin across the
+            // flight for any sane half-angle, so the bucket walk stays cheap on a long shot.
+            float3 end = p0 + dir * length;
+            float3 lo = math.min(p0, end) - endRadius;
+            float3 hi = math.max(p0, end) + endRadius;
+            int3 min = (int3)math.floor(lo / BucketSizeMeters);
+            int3 max = (int3)math.floor(hi / BucketSizeMeters);
+
+            if (BucketWalkCostsMoreThanLinearScan(min, max))
+            {
+                for (int i = 0; i < _highWaterMark; i++)
+                {
+                    var s = _spatial[i];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (!ConeContains(s.Position, p0, dir, length, tanHalf, minRadius)) continue;
+                    var prism = _prisms[i];
+                    if (prism) results.Add(prism);
+                }
+                return results.Count;
+            }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!_buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it))
+                    continue;
+                do
+                {
+                    var s = _spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (!ConeContains(s.Position, p0, dir, length, tanHalf, minRadius)) continue;
+                    var prism = _prisms[idx];
+                    if (prism) results.Add(prism);
+                } while (_buckets.TryGetNextValue(out idx, ref it));
+            }
+            return results.Count;
+        }
+
+        /// <summary>
+        /// Is <paramref name="p"/> inside the cone from <paramref name="apex"/> along the UNIT
+        /// <paramref name="dir"/>? The allowed radius at axial distance t is
+        /// <c>max(minRadius, t · tanHalf)</c>, and the perpendicular distance falls out of the
+        /// axial projection for free because <paramref name="dir"/> is unit length.
+        /// </summary>
+        public static bool ConeContains(float3 p, float3 apex, float3 dir, float length,
+            float tanHalf, float minRadius)
+        {
+            float3 rel = p - apex;
+            float t = math.dot(rel, dir);
+            if (t < 0f || t > length) return false;
+            float allowed = math.max(minRadius, t * tanHalf);
+            float perpSq = math.max(0f, math.lengthsq(rel) - t * t);
+            return perpSq <= allowed * allowed;
+        }
+
+        /// <summary>
+        /// How many LIVE prisms stand inside the CONE from <paramref name="apex"/> (a point) to
+        /// the disc of <paramref name="baseRadius"/> at <paramref name="basePoint"/> — i.e. how
+        /// much mass is between a lens and a thing it is looking at.
+        ///
+        /// <para>A COUNT rather than a gather, deliberately: the caller wants "is this view
+        /// blocked, and by how much", and in a dense arena (Atlantis ~69k prisms, Rampage's
+        /// intensity-1 forest ~49k) materialising a <c>List&lt;Prism&gt;</c> of several thousand
+        /// managed references per candidate vantage — and then discarding all of them — costs far
+        /// more than the walk itself. Nothing here touches <c>_prisms</c>.</para>
+        ///
+        /// <para>The shape is a CONE and not <see cref="QuerySegment"/>'s capsule because that is
+        /// what occlusion actually is: a prism a metre off the axis at the far end barely clips the
+        /// subject's silhouette, while the same prism a metre off the axis right at the lens fills
+        /// the frame. The cone from the eye to the subject's circumscribing sphere is very nearly
+        /// <c>PrismOcclusionCorridor</c>'s own volume, so a caller counting here and the shader
+        /// clearing there are describing one geometry — with one difference worth stating rather
+        /// than papering over: the corridor is a FRUSTUM (a circle of <c>nearRadiusScale</c> hull
+        /// radii at the lens, because a pure cone is thinnest exactly where a prism does the most
+        /// damage) and this count is a pure CONE. They diverge only within a half-hull-radius of
+        /// the lens, which sits inside the camera's own near clip and so cannot be photographed.</para>
+        ///
+        /// <para>Both caps are exclusive: a prism behind the apex or past the base disc is not
+        /// between them and is not counted, which is what lets a caller end the cone one hull
+        /// radius short of the subject and so count what OBSCURES the ship rather than the ship's
+        /// own surroundings. Main-thread only; allocates nothing.</para>
+        /// </summary>
+        public int CountInCone(Vector3 apex, Vector3 basePoint, float baseRadius)
+        {
+            if (!_buckets.IsCreated || _highWaterMark == 0) return 0;
+
+            float3 p0 = apex;
+            float3 ab = (float3)basePoint - p0;
+            float abLenSq = math.lengthsq(ab);
+            if (abLenSq < 1e-6f || baseRadius <= 0f) return 0;
+
+            // The cone is contained in the capsule of the same axis and radius, so the AABB — and
+            // therefore the bucket walk — is QuerySegment's.
+            float3 lo = math.min(p0, (float3)basePoint) - baseRadius;
+            float3 hi = math.max(p0, (float3)basePoint) + baseRadius;
+            int3 min = (int3)math.floor(lo / BucketSizeMeters);
+            int3 max = (int3)math.floor(hi / BucketSizeMeters);
+
+            int count = 0;
+
+            if (BucketWalkCostsMoreThanLinearScan(min, max))
+            {
+                for (int i = 0; i < _highWaterMark; i++)
+                {
+                    var s = _spatial[i];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (IsInsideCone(s.Position, p0, ab, abLenSq, baseRadius)) count++;
+                }
+                return count;
+            }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!_buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it))
+                    continue;
+                do
+                {
+                    var s = _spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (IsInsideCone(s.Position, p0, ab, abLenSq, baseRadius)) count++;
+                } while (_buckets.TryGetNextValue(out idx, ref it));
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Is <paramref name="p"/> inside the cone from <paramref name="a"/> (a point) to the disc
+        /// of <paramref name="baseRadius"/> at <c>a + ab</c>? The axial parameter is deliberately
+        /// UNCLAMPED, unlike <see cref="DistanceToSegmentSq"/>'s: clamping would round a prism
+        /// behind the apex onto the apex and a prism past the base onto the base disc, turning a
+        /// cone into a capsule with rounded caps and counting mass on the wrong side of both ends.
+        ///
+        /// <para>Public for the same reason <see cref="DistanceToSegmentSq"/> is: the geometry is
+        /// the part that can be silently wrong, and it is the only part an edit-mode test can
+        /// reach without a live index.</para>
+        /// </summary>
+        public static bool IsInsideCone(float3 p, float3 a, float3 ab, float abLenSq, float baseRadius)
+        {
+            float3 ap = p - a;
+            float t = math.dot(ap, ab) / abLenSq;
+            if (t <= 0f || t >= 1f) return false;
+
+            // |ap|^2 - (t|ab|)^2 is the squared perpendicular offset; the cone's allowance there
+            // grows linearly from nothing at the lens to baseRadius at the subject.
+            float perpSq = math.lengthsq(ap) - t * t * abLenSq;
+            float allowed = baseRadius * t;
+            return perpSq <= allowed * allowed;
+        }
+        /// <summary>
         /// Squared distance from <paramref name="p"/> to the segment starting at
         /// <paramref name="a"/> with direction/length <paramref name="ab"/> — the same
         /// point-to-segment metric a CapsuleCollider uses, clamped to the endpoints.
@@ -1848,7 +2052,9 @@ namespace CosmicShore.Gameplay
         {
             if (!_shell.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
-            if (_shell[index].Kind == ShellKind.None) return;
+            // While the extension is live an unshielded slot legitimately holds a Box
+            // shell, so "Kind == None" can no longer stand in for "nothing to refresh".
+            if (_shell[index].Kind == ShellKind.None && !PrismShellContactManager.ExtendToUnshieldedPrisms) return;
             RefreshShellData(index);
         }
 
@@ -1865,10 +2071,21 @@ namespace CosmicShore.Gameplay
             byte kind = ShellKind.None;
             if ((s.Flags & PrismFlags.IsSuperShielded) != 0) kind = ShellKind.Stella;
             else if ((s.Flags & PrismFlags.IsShielded) != 0) kind = ShellKind.Octahedron;
+            else if (PrismShellContactManager.ExtendToUnshieldedPrisms) kind = ShellKind.Box;
 
             var prism = _prisms[index];
-            if (kind == ShellKind.None || prism == null
-                || !prism.TryGetShellGeometry(out Vector3 centerLocal, out Vector3 semiAxesLocal))
+            // Written out rather than folded into a ternary: an `out` behind a
+            // short-circuited && is exactly the shape C#'s definite-assignment analysis
+            // refuses, and that is an editor-only error no out-of-editor gate can see.
+            Vector3 centerLocal = Vector3.zero, semiAxesLocal = Vector3.zero;
+            bool haveGeometry = false;
+            if (kind != ShellKind.None && prism != null)
+            {
+                haveGeometry = kind == ShellKind.Box
+                    ? prism.TryGetBoxGeometry(out centerLocal, out semiAxesLocal)
+                    : prism.TryGetShellGeometry(out centerLocal, out semiAxesLocal);
+            }
+            if (!haveGeometry)
             {
                 _shell[index] = default;
                 return;
@@ -1882,7 +2099,7 @@ namespace CosmicShore.Gameplay
                 Mathf.Abs(semiAxesLocal.z * lossy.z));
             // Octahedron vertices sit at ±semi along each axis; stella spike tips at
             // the scaled cube corners (±sx, ±sy, ±sz).
-            float bound = kind == ShellKind.Stella ? math.length(semi) : math.cmax(semi);
+            float bound = kind == ShellKind.Octahedron ? math.cmax(semi) : math.length(semi);
 
             _shell[index] = new PrismShellData
             {
@@ -1920,6 +2137,48 @@ namespace CosmicShore.Gameplay
         /// Schedule-then-Complete discipline as ProcessExplosionFrame — the caller
         /// dispatches from the results afterwards, never during the scan.
         /// </summary>
+        /// <summary>
+        /// Rebuilds every slot's shell entry. Called when
+        /// <see cref="PrismShellContactManager.ExtendToUnshieldedPrisms"/> is toggled:
+        /// the shell view is maintained incrementally (register / shield change /
+        /// growth / move), so a policy change that alters which slots HAVE a shell has
+        /// no incremental event to ride and must sweep.
+        /// </summary>
+        public void RebuildAllShells()
+        {
+            if (!_shell.IsCreated) return;
+            for (int i = 0; i < _highWaterMark; i++) RefreshShellData(i);
+        }
+
+        /// <summary>Live shell-view census (diagnostics): how many slots present each kind.</summary>
+        public void CountShells(out int box, out int octa, out int stella)
+        {
+            box = octa = stella = 0;
+            if (!_shell.IsCreated) return;
+            for (int i = 0; i < _highWaterMark; i++)
+            {
+                switch (_shell[i].Kind)
+                {
+                    case ShellKind.Box: box++; break;
+                    case ShellKind.Octahedron: octa++; break;
+                    case ShellKind.Stella: stella++; break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Does this slot currently present a shell to probes? The authority for
+        /// <see cref="PrismShellContactManager.ShellOwnsContact"/> under extended
+        /// coverage: a prism the tier claims but has no shell for would be suppressed
+        /// out of the trigger path AND invisible to the query — an uninteractable
+        /// prism, which is the one failure this mode must not be able to produce.
+        /// </summary>
+        public bool HasShell(int index)
+        {
+            if (!_shell.IsCreated || index < 0 || index >= _highWaterMark) return false;
+            return _shell[index].Kind != ShellKind.None;
+        }
+
         public void CollectShellContacts(NativeArray<ShellProbe> probes, int probeCount, NativeList<ShellContactHit> hits)
         {
             hits.Clear();
@@ -1928,7 +2187,13 @@ namespace CosmicShore.Gameplay
 
             // AddNoResize throws on overflow; size for a dense worst case (a large
             // skimmer riding a fully super-shielded track lining).
-            int capacity = math.min(65536, math.max(1024, probeCount * 512));
+            // AddNoResize THROWS on overflow, so the capacity is the crash surface, not a
+            // perf knob. Extended coverage puts every prism a probe overlaps in the list
+            // (a 30 u skimmer inside dense flora), so it is sized against the population
+            // rather than the probe count there.
+            int capacity = PrismShellContactManager.ExtendToUnshieldedPrisms
+                ? math.min(262144, math.max(4096, _highWaterMark))
+                : math.min(65536, math.max(1024, probeCount * 512));
             if (hits.Capacity < capacity)
                 hits.Capacity = capacity;
 
@@ -1940,6 +2205,7 @@ namespace CosmicShore.Gameplay
                     Shells = _shell,
                     Probes = probes,
                     ProbeCount = probeCount,
+                    CoverUnshielded = (byte)(PrismShellContactManager.ExtendToUnshieldedPrisms ? 1 : 0),
                     Hits = hits.AsParallelWriter()
                 };
                 job.Schedule(_highWaterMark, JOB_BATCH_SIZE).Complete();
@@ -2411,17 +2677,26 @@ namespace CosmicShore.Gameplay
             // Same team (and not affectSelf) or non-destructive: shield the prism
             if ((prismDomain == expDomain && !affectSelf) || !destructive)
             {
-                // The blast is ACCEPTED, not ignored: the prism armours up instead of the
-                // explosion visibly passing through it. The blow's magnitude (Speed x
-                // Inertia - no vector built, no root taken) and its ceiling ride along so
-                // the timed pop sheds at half of it (PrismStateManager.
-                // ExecuteTimerDeactivation). Mirrors ExecuteCommonPrismCommands.
-                float impactSpeed = impulse.Speed * impulse.Inertia;
+                // The blast is ACCEPTED, not ignored - and since 2026-09 what says so is LIT:
+                // the impactor publishes its swept volume once per frame
+                // (ExplosionImpactor.PublishLit) and every prism inside it is drawn lit in the
+                // blast's domain colour, replacing the 2-second shield this used to put on each
+                // prism individually. That shield was a stand-in for a VISUAL and quietly carried
+                // three gameplay side effects with it - see ExplosionImpactor.SparesWhatItTouches
+                // and Docs/LIT.md. Mirrors ExecuteCommonPrismCommands, as this branch must.
+                //
+                // An AUTHORED shield still lands. `shielding` is a real ability (the Sparrow's
+                // CHARGE-5 "Shielded Prisms"), it is PERMANENT rather than timed, and it is a
+                // gameplay grant rather than a stand-in - so it keeps its registry sync too,
+                // which is now INSIDE the branch: writing it unconditionally would have told the
+                // index every spared prism was shielded when none of them are any more, which is
+                // the food-web blackout the swap exists to remove.
                 if (shielding && prismDomain == expDomain)
-                    prism.ActivateShieldFromImpact(impactSpeed, impulse.DebrisSpeedLimit);
-                else
-                    prism.ActivateShield(2f, impactSpeed, impulse.DebrisSpeedLimit);
-                UpdateShieldState(idx, true, false);
+                {
+                    prism.ActivateShieldFromImpact(impulse.Speed * impulse.Inertia,
+                                                   impulse.DebrisSpeedLimit);
+                    UpdateShieldState(idx, true, false);
+                }
                 return true;
             }
 

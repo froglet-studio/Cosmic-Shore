@@ -156,6 +156,15 @@ namespace CosmicShore.Core
             // via the Netcode pipeline. The game-launch path sets it via ConfigurePlayerCounts().
             _gameData.SelectedIntensity.Value = menuIntensity;
 
+            // The last arena card's per-hull starting levels must not follow the player home:
+            // the lava-lamp vessel is the freestyle vessel and starts at rest, and this table
+            // survives the scene load on purpose (GameDataSO.StartingElements).
+            _gameData.PublishStartingElements(null);
+
+            // Same for arena seating: the menu is not a match, so no hull is exclusive and the
+            // pilot-swap gesture has no teammate to reach.
+            _gameData.IsArenaMatch = false;
+
             // The host's Player NetworkObject was spawned in the Auth scene, where
             // gameData.selectedVesselClass was Squirrel (set by AppManager.ConfigureGameData).
             // That value got locked into NetDefaultVesselType in Player.OnNetworkSpawn before
@@ -188,6 +197,13 @@ namespace CosmicShore.Core
 
         void HandleMenuReady()
         {
+            // OnClientReady can be re-raised while the pilot is FLYING (a late pair
+            // initialization - the same edge MainMenuCameraController.HandleMenuReady guards).
+            // Acting on it here switched the hull to autopilot and paused the pilot's input
+            // mid-freestyle, and moved the menu state machine out of Freestyle while the camera,
+            // the HUD and the click handler all still believed the player was flying.
+            if (_state == MainMenuState.Freestyle) return;
+
             TransitionTo(MainMenuState.Ready);
             ActivateLocalPlayerAutopilot();
             _analytics?.RecordMenuReady();

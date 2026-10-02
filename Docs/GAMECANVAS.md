@@ -20,7 +20,7 @@ the scenes — the real per-mode configuration is tiny and always was.
 
 > **Scope, re-measured 2026-09-07 (`Tools/Build/gamecanvas_unification_report.py`):** the fork is
 > on **15** scenes, not six — every mode cloned since (Drumfire, Hijack, Switchback, Salvo, Scarab
-> Scramble, Dog Fight, Bends, Wildlife Liberation, Peel the Cage) inherited the whole override blob
+> Scramble, Dog Fight, Bends, Wildlife Liberation, Cleave) inherited the whole override blob
 > from its donor scene. And the overrides were only half the story: **every fork scene also carries
 > STRUCTURAL edits on its canvas instance** — 9 removed objects, 3 removed components and 3
 > scene-added components — identical across 12 of the 15. See §9. **The prefab asset was never what
@@ -47,7 +47,7 @@ never reaches the six newer modes, and vice versa.
 
 | Fork | Scenes |
 |---|---|
-| `GameCanvas-SkimRace` (15 when measured; **14 today** — the Drumfire scene was deleted with that mode in 2026-09) | SkimRace, Joust, Crystal Capture (Scurry), AstroLeague, BroodRush, Rampage, PeelTheCage, WildlifeLiberation, DogFight, Bends, ScarabScramble, Salvo, Switchback, Hijack, ~~Drumfire~~ |
+| `GameCanvas-SkimRace` (15 when measured; **14 today** — the Drumfire scene was deleted with that mode in 2026-09) | SkimRace, Joust, Crystal Capture (Scurry), AstroLeague, BroodRush, Rampage, Cleave, WildlifeLiberation, DogFight, Bends, ScarabScramble, Salvo, Switchback, Hijack, ~~Drumfire~~ |
 | `CORE/GameCanvas` (10) | 2v2CoOpVsAI, Maelstrom, DuelForCell, FreestyleMultiplayer, WildlifeBlitz (MP + SP), DuelForTheCell, BenchmarkStressTest, Recording Studio ×2 |
 
 (The 6-scene table below §2 is the 2026-08 measurement kept for the record; the nine newer scenes
@@ -87,10 +87,10 @@ the property is.
 | MinigameBroodRush | SkimRace | **1770** | layout 1245 · other 458 · script-field 36 · active 16 · button 10 |
 | MinigameSkimRace | SkimRace | **1766** | layout 1247 · other 458 · script-field 37 · active 15 · button 4 |
 | BenchmarkStressTest | CORE | 105 | layout 36 · script-field 27 · button 21 · active 12 |
-| MinigameWildlifeBlitz (SP) | CORE | 105 | layout 36 · script-field 27 · button 21 · active 12 |
+| MinigameWildlifeBlitz (SP, retired 2026-09) | CORE | 105 | layout 36 · script-field 27 · button 21 · active 12 |
 | ArcadeGameMultiplayer2v2CoOpVsAI | CORE | 96 | layout 58 · font-noise 12 · button 11 · script-field 8 |
 | MinigameDuelForCellMultiplayer_Gameplay | CORE | 96 | layout 58 · font-noise 12 · button 11 · script-field 8 |
-| MinigameDuelForTheCell | CORE | 85 | layout 53 · button 13 · active 6 · script-field 5 |
+| MinigameDuelForTheCell (retired 2026-09) | CORE | 85 | layout 53 · button 13 · active 6 · script-field 5 |
 | MinigameFreestyleMultiplayer_Gameplay | CORE | 81 | layout 49 · button 11 · script-field 11 · active 5 |
 | Maelstrom | CORE | 65 | layout 49 · button 10 (+ 8 removed GameObjects) |
 | MinigameWildlifeBlitzMultuplayerCoOp | CORE | 61 | layout 49 · button 10 |

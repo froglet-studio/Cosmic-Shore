@@ -69,6 +69,30 @@ namespace CosmicShore.Gameplay
         /// <summary>Emit the whole environment via <see cref="Emit"/>.</summary>
         protected abstract void BuildEnvironment();
 
+        /// <summary>
+        /// True if this environment's authored prism sizes must survive
+        /// <c>PrismScaleAnimator</c>'s per-axis clamp. Default FALSE — every environment that
+        /// fits inside the shared prism prefab's serialized window wants the clamp as the
+        /// backstop it is.
+        ///
+        /// <para>Turn it on only when the generator STATES a size outside that window on purpose.
+        /// The clamp lives INSIDE the setter with no log and no return value, so an over-range
+        /// axis is not an error, it is a different arena that looks authored (see
+        /// <c>Docs/PRISM_ANIMATION.md</c> — the fitted-flora passes that measured and shipped
+        /// sizes the engine never used). Cleave's four arenas set it as a standing GUARD rather
+        /// than as a fix: every size they state today is well inside the window (longest 44), but
+        /// the window is a property of a prefab ~30 spawnables share, and an arena whose sizes are
+        /// computed from a dial is one edit away from stating one outside it. At the 6x envelope
+        /// pass, before prism size became its own dial, three of the Panes' lengths (102 / 108 /
+        /// 132) cleared even <c>SpawnablePrism.prefab</c>'s widened max of 100 and nothing said
+        /// so.</para>
+        ///
+        /// <para>It is a per-ENVIRONMENT opt-in rather than a widened prefab because
+        /// <c>SpawnablePrism.prefab</c> is shared by ~30 spawnables, and admitting a size one of
+        /// them is relying on the clamp to cut is a behaviour change for that one.</para>
+        /// </summary>
+        protected virtual bool AdmitsAuthoredPrismScale => false;
+
         /// <summary>Hash of every SUBCLASS parameter that affects generation (the base already
         /// covers seed, density, and clearance). Bump a constant here to invalidate caches
         /// after a code-level layout change.</summary>
@@ -152,9 +176,11 @@ namespace CosmicShore.Gameplay
             // synchronous.
             if (Application.isPlaying)
                 PrismTrailBuilder.LayBudgetedAsync(prism, lays, container.transform, trail,
-                    $"{container.name}::BLOCK", LayBudgetMsPerFrame).Forget();
+                    $"{container.name}::BLOCK", LayBudgetMsPerFrame,
+                    admitAuthoredScale: AdmitsAuthoredPrismScale).Forget();
             else
-                PrismTrailBuilder.LaySync(prism, lays, container.transform, trail, $"{container.name}::BLOCK");
+                PrismTrailBuilder.LaySync(prism, lays, container.transform, trail,
+                    $"{container.name}::BLOCK", AdmitsAuthoredPrismScale);
 
             trails.Add(trail);
         }

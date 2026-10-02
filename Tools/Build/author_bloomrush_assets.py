@@ -149,9 +149,9 @@ MonoBehaviour:
   golfRules: 0
 """ % BLOOMRUSH_RULE_SCRIPT
 
-# Comeback rate derivation. The comeback source is VolumeDestroyed (the quantity the mode
-# SCORES - ElementalComebackSystem.DefaultSourceFor; a count deficit against a volume score
-# is uncalibratable). First-pass expected winning VOLUME over a 120 s round: ~300 cactus
+# Comeback rate derivation. The comeback reads VolumeDestroyed because it reads what the mode
+# SCORES (ElementalComebackSystem -> ScoringRuleSO.DomainValue; a count deficit against a volume
+# score is uncalibratable). First-pass expected winning VOLUME over a 120 s round: ~300 cactus
 # prisms x 75 volume each (5x5x3 leaf, Rampage's arena) = 22,500. A quarter-of-expected
 # deficit x rate must buy at least one whole element level (the trap recorded on Dog
 # Fight / Bends / Wildlife Liberation, where re-targeting silently killed the buff); the

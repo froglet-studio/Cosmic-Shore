@@ -45,7 +45,21 @@ namespace CosmicShore.Editor
 
         public const string CorridorHlslPath = "Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl";
         public const string CorridorHlslGuid = "bf8e2c1fa76142c89ba03b2e1ae46201";
+        // The corridor's entry point, PER GRAPH. Live mass and its debris run the SAME
+        // body (PrismOcclusionFadeImpl) and differ in one argument — the nose clearance,
+        // which debris gets none of because it has no collider and therefore nothing to
+        // buy with one. Two thin wrappers rather than a new node input, because a custom
+        // function node's call is its slot list in order and adding one renders every
+        // prism material magenta (see the SIGNATURE CONTRACT note in the HLSL).
         public const string CorridorFunctionName = "PrismOcclusionFade";
+        public const string DebrisCorridorFunctionName = "PrismOcclusionFadeDebris";
+
+        /// <summary>Which corridor entry point a wired graph is expected to bind.</summary>
+        public static string CorridorFunctionFor(string graphPath) =>
+            graphPath != null && graphPath.Contains("ExplodingBlockGraph")
+                ? DebrisCorridorFunctionName
+                : CorridorFunctionName;
+
         const string AlphaTestKeyword = "_ALPHATEST_ON";
 
         public static readonly string[] CorridorGlobalProps = { "_PrismOcclusionTarget", "_PrismOcclusionParams" };
@@ -263,18 +277,19 @@ namespace CosmicShore.Editor
                         report.AppendLine($"   ✅ property {prop} (global, unexposed)");
                 }
 
-                if (text.Contains($"\"m_FunctionName\": \"{CorridorFunctionName}\""))
+                string expectedFunction = CorridorFunctionFor(graphPath);
+                if (text.Contains($"\"m_FunctionName\": \"{expectedFunction}\""))
                 {
-                    report.AppendLine($"   ✅ Custom Function node '{CorridorFunctionName}' present");
+                    report.AppendLine($"   ✅ Custom Function node '{expectedFunction}' present");
                     if (!text.Contains($"\"m_FunctionSource\": \"{CorridorHlslGuid}\""))
                     {
-                        report.AppendLine($"   ❌ '{CorridorFunctionName}' does not source {CorridorHlslPath}");
+                        report.AppendLine($"   ❌ '{expectedFunction}' does not source {CorridorHlslPath}");
                         pass = false;
                     }
                 }
                 else
                 {
-                    report.AppendLine($"   ❌ Custom Function node '{CorridorFunctionName}' NOT found — re-run Tools/Shaders/wire_prism_occlusion_corridor.py");
+                    report.AppendLine($"   ❌ Custom Function node '{expectedFunction}' NOT found — re-run Tools/Shaders/wire_prism_occlusion_corridor.py");
                     pass = false;
                 }
 

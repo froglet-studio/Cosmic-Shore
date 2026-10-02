@@ -39,11 +39,19 @@ namespace CosmicShore.Gameplay
             // RAW COUNTS are per EVENT, not per tier: an upgrade is the same rocket arriving
             // closer than it was first credited for, so counting it again would report two
             // missile hits for one rocket.
+            //
+            // Each class is tallied EXPLICITLY. An else-arm here is the same trap the enum's own
+            // doc records for pricing: it silently files every member added later under whatever
+            // the arm happens to be, and this one filed a Rhino's SWORD as a bullet - a raw
+            // count, on a hull with no gun, on the scoreboard breakdown. Broadside is the mode
+            // that surfaced it; a class this switch does not know is now counted as nothing
+            // rather than as the wrong thing.
             if (!isUpgrade)
             {
-                if (CombatHitClasses.IsMissile(hitClass))      shooterStats.MissileHitsLanded++;
-                else if (hitClass == CombatHitClass.Debuff)    shooterStats.DebuffHitsLanded++;
-                else                                          shooterStats.BulletHitsLanded++;
+                if (CombatHitClasses.IsMissile(hitClass))          shooterStats.MissileHitsLanded++;
+                else if (hitClass == CombatHitClass.Debuff)        shooterStats.DebuffHitsLanded++;
+                else if (hitClass == CombatHitClass.Strike)        shooterStats.StrikeHitsLanded++;
+                else if (hitClass == CombatHitClass.Bullet)        shooterStats.BulletHitsLanded++;
             }
 
             if (rule == null) return;

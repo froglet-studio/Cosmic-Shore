@@ -18,7 +18,7 @@ namespace CosmicShore.Data
         // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
         // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
         // "Lava-Lamp Mode"). Do not reuse ID 7.
-        DuelForTheCell = 8,
+        DuelForTheCell = 8,        // single-player scene retired 2026-09; id kept (never reuse)
         DashNGrab = 9,
         CellularBrawl = 10,
         Denial = 11,
@@ -36,7 +36,7 @@ namespace CosmicShore.Data
         BotDuel = 23,
         Curvatious = 24,
         MazeRun = 25,
-        WildlifeBlitz = 26,
+        WildlifeBlitz = 26,        // single-player scene retired 2026-09; still set by BenchmarkSceneLauncher
         ProtectMission = 27,
         MultiplayerFreestyle = 28,
         OnlineDuelForTheCell = 29,
@@ -57,13 +57,19 @@ namespace CosmicShore.Data
         // scores a point; first domain to the wave target (default 3) wins. See
         // _Scripts/Controller/Arcade/BROODRUSH.md.
         BroodRush = 38,
-        // PeelTheCage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
-        // pens the cell's brood; domains race to smash the destruction target, and the
-        // leader IS the cell's controlling domain - so the fauna wave hatches in the
-        // leader's colour and the legacy herbivore diet (eat opposing-domain mass) turns
-        // the swarm loose on every trailing team's trails. See
-        // _Scripts/Controller/Arcade/PEEL_THE_CAGE.md.
-        PeelTheCage = 39,
+        // Cleave (39): the Rhino-only SLICING race. Domains race to cut a per-INTENSITY
+        // target of hostile prisms out of the arena (1200 / 1200 / 1500 / 1500 - a target is
+        // a fraction of the arena, so it is re-priced whenever the arena is re-cut), and the
+        // arena IS the score. Intensity picks WHICH PLACE you cut rather than how much of it
+        // there is - four unrelated arenas, one CellConfigDataSO each: angled panes, wide
+        // wavy roads, a three-rind cage, and interlocked one-sided Mobius ribbons. Every
+        // arena is built from the same SMALL prisms (SliceArenaGeometry.PrismScaleI1..I4, all
+        // 2): destroying lots of little prisms is the fun, one big prism reads as low
+        // poly. Every prism is plain or danger; nothing is shielded,
+        // because an AI never pulls the triggers that energize a blade and hardened mass
+        // would be mass an all-AI domain could never score against. See
+        // _Scripts/Controller/Arcade/CLEAVE.md.
+        Cleave = 39,
         // WildlifeLiberation (40): the Sparrow-only hunt. Three concentric cages at 1050 / 600
         // / 200 pen three tiers of wildlife - a huge swarm of small creatures in the outer
         // room, much bigger ones in the middle, the biggest and toughest in the core. Break in
@@ -205,16 +211,86 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/REDLINE.md.
         Redline = 53,
 
+        // WreckingBall (54, display name "Wrecking Ball"): the Scarab-only demolition race, and
+        // Rampage's analog for the hull whose weapons are a BALL and a PLATE. A sphere court is
+        // grown full of Rampage's five breakable flora; every bright crystal you fly through
+        // becomes your ball and every prism it plows through is yours, and the juke dash's
+        // cavitation plate shreds whatever is beside you. First DOMAIN to the hostile-prism
+        // target wins (ScoringMetric.PrismsDestroyed). Intensity is DENSITY and SUPPLY: more
+        // forest and more crystals at 1, a sparse court and a scarce ball at 4. See
+        // _Scripts/Controller/Arcade/WRECKING_BALL.md.
+        WreckingBall = 54,
 
-        // GrizzlyCharge (54): the Grizzly-only assault mode (in development). Authored as 42
-        // on grizzly-v2, moved to 44 when Bends/ScarabScramble took 42/43, and moved AGAIN to
-        // 54 at the 2026-09-12 merge after Salvo took 44 and Switchback 45 - the parallel-
-        // branch collision the Skein and Bloomrush notes above record, hit a FIFTH time. The
-        // ArcadeGameGrizzlyCharge asset's serialized Mode moved with it each time.
-        GrizzlyCharge = 54,
+        // Undertow (55): the Scarab-only cavitation duel - The Bends for the hull whose blast is a
+        // sideways PLATE rather than a cone. Fought in Wildlife Liberation's caged arena: dash
+        // beside a rival to catch them in the plate (every element stripped for four seconds -
+        // one BEND) and drag the wildlife through it (a creature caught in the plate dies -
+        // one KILL). Points are bends and kills together; first DOMAIN to the target wins.
+        // See _Scripts/Controller/Arcade/UNDERTOW.md.
+        Undertow = 55,
+
+        // Regatta (56): the ARENA race - every playable hull on the same closed circuit of
+        // switch rings, three super-shielded rails (one per domain) braided along the racing
+        // line so an Urchin grinds it and a Squirrel skims it while a Manta, a Rhino, a Scarab
+        // or a Sparrow flies beside it; first DOMAIN whose LEAD RUNNER threads the last gate
+        // of the last lap wins. The mixed fleet is balanced by the card's per-hull STARTING
+        // ELEMENTS (SO_ArcadeGame.StartingElements) and the corner mix, never by a mode-local
+        // speed dial. See _Scripts/Controller/Arcade/REGATTA.md.
+        Regatta = 56,
+
+        // Broadside (57): the ARENA brawl - Regatta's fighting twin. Seven hulls loose in Dog
+        // Fight's Boneyard, each fighting with the weapon it actually has: a Sparrow's guns and
+        // rockets, an Urchin's chain spikes, a Rhino's energised sword, a Squirrel's joust, a
+        // Dolphin's cone, a Scarab's plate, a Manta's bloom. A hit is priced by the VERB that
+        // landed it and never by the hull - a round is 1, a contact strike 8, an area debuff 12,
+        // a rocket 10/20/30 by how close it got - and the first DOMAIN to the point target wins
+        // on ScoringMetric.CombatPoints. See _Scripts/Controller/Arcade/BROADSIDE.md.
+        Broadside = 57,
+
+        // Waystation (58): the Butterfly-only migration race. The course is a chain of
+        // CLUSTERS - tight knots of switch rings - laid far apart in the cell. Inside a cluster
+        // you FLY, on the fleet's slowest hull and its widest turning circle; between clusters
+        // you FOLD, and the Fold has exactly one degree of freedom, the heading you leave on. So
+        // the last ring of a cluster is also the aiming device for the next jump, and threading
+        // it on the right LINE is worth more than threading it fast. First DOMAIN whose LEAD
+        // RUNNER threads the last ring wins, on ScoringMetric.SwitchesThreaded - the gate-race
+        // platform, reused whole. See _Scripts/Controller/Arcade/WAYSTATION.md.
+        Waystation = 58,
+
+        // Dustup (59): the Butterfly's CHARGE game - a dust duel. The Butterfly carries no gun;
+        // its one weapon is the Scale Dust capsule hanging BELOW the hull in Dust mode, so a
+        // rival is hit by flying OVER them. Every rival the dust passes through takes the
+        // Charge-scaled all-element bite and pays one DUSTING (a Strike-class combat hit); first
+        // DOMAIN to the point target wins, on ScoringMetric.CombatPoints. Fought in Dog Fight's
+        // Boneyard. See _Scripts/Controller/Arcade/DUSTUP.md.
+        Dustup = 59,
+
+        // Tapestry (60): the Butterfly's MASS game - a TIMED painting war. Mass mode lays a wake
+        // 5x-20x wide; Dust mode raids a rival's painting (destroying, shrinking or stealing
+        // what it touches). The score is the mass a domain has STANDING when the clock runs out
+        // (ScoringMetric.VolumeRemaining) - a live stock, so every raid moves two scores at
+        // once. Fought in the bare Barren cell, with no food web. See
+        // _Scripts/Controller/Arcade/TAPESTRY.md.
+        Tapestry = 60,
+
+        // Sirocco (61): the Butterfly's SPACE game - an erosion race through Rampage's cactus
+        // forest. The dust's LENGTH is Space, and on opposing mass it destroys, shrinks or
+        // steals; first DOMAIN to destroy the hostile-prism target wins on
+        // ScoringMetric.PrismsDestroyed (Rampage's metric and machinery). See
+        // _Scripts/Controller/Arcade/SIROCCO.md.
+        Sirocco = 61,
+
+
+        // GrizzlyCharge (62): the Grizzly-only assault mode (in development). Authored as 42
+        // on grizzly-v2, moved to 44 when Bends/ScarabScramble took 42/43, to 54 at the
+        // 2026-09-12 merge after Salvo took 44 and Switchback 45, and to 62 at the 2026-10-02
+        // merge after WreckingBall took 54 (bleeding-edge had run on to Sirocco = 61) - the
+        // parallel-branch collision the Skein and Bloomrush notes above record, hit a SIXTH
+        // time. The ArcadeGameGrizzlyCharge asset's serialized Mode moved with it each time.
+        GrizzlyCharge = 62,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 52) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 60) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

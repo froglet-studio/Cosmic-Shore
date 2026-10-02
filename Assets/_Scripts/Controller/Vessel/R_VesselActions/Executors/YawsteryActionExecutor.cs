@@ -212,13 +212,11 @@ namespace CosmicShore.Gameplay
             if (_status.IsTranslationRestricted) return;
 
             float speedFactor = Mathf.Pow(1f + Mathf.Max(0f, _status.Speed) * 0.01f, _so.SpeedExp);
-            // Element → parameter, AUTHORED on the SO (None = unscaled). The old hardcoded
-            // Space read moved with the Manta re-cut: Space now owns Kabloom's blast radius,
-            // and an element read left behind here would have kept scaling the turn silently
-            // (the merge rule — move every element read WITH the ability).
-            float elementMul = _so.TurnRateElement != Element.None
-                ? _status?.ElementalAbilityHandler.Multiplier(_so.TurnRateElement) ?? 1f
-                : 1f;
+            // Element → parameter, AUTHORED on the SO and disabled on both shipped assets. The
+            // old hardcoded Space read moved with the Manta re-cut: Space now owns Kabloom's blast
+            // radius, and an element read left behind here would have kept scaling the turn
+            // silently (the merge rule — move every element read WITH the ability).
+            float elementMul = _so.TurnRateMultiplier(_status);
             float yawPerSec = _so.MaxYawDegPerSec * elementMul * Mathf.Max(0.0f, _so.SpeedScale) * speedFactor;
 
             float signed = yawPerSec * (int)_so.Steer;

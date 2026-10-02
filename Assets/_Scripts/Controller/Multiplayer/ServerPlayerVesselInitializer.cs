@@ -62,11 +62,20 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Floor for the computed spawn-ring radius, for a cell whose 'core' is NOT a " +
                  "nucleus. The ring is max(nucleus radius + Spawn Distance Outside Nucleus, this). " +
-                 "PeelTheCage needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
+                 "Cleave needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
                  "break the mode's fauna diet), so the nucleus radius is 0 and the ring would " +
                  "collapse to the cell centre - INSIDE the 300u cage the players are meant to be " +
                  "attacking from outside. 0 = no floor (every existing scene is unchanged).")]
         [SerializeField, Min(0f)] protected float spawnRingRadiusFloor;
+
+        [Tooltip("Per-INTENSITY override of Spawn Ring Radius Floor - element 0 is intensity 1. " +
+                 "Empty (or a 0 entry, or an intensity past the end) falls back to the scalar " +
+                 "above, so every existing scene is unchanged. It exists because the floor is one " +
+                 "serialized number and a mode whose intensities are different PLACES needs " +
+                 "several: Cleave's intensity-1 and -2 arenas are 2,160 units of radius against " +
+                 "720 for its 3 and 4, so one ring either spawns a pilot inside the big arenas or " +
+                 "parks them 3,000 units away from a speck.")]
+        [SerializeField] protected List<float> spawnRingRadiusFloorByIntensity = new();
 
         [Tooltip("How the computed ring distributes players. Symmetric spreads them over a SPHERE " +
                  "(4 tetrahedral, 3 triangle, 2 antipodal). Equatorial Ring puts everyone on one " +
@@ -450,7 +459,7 @@ namespace CosmicShore.Gameplay
             float nucleusRadius = cell ? cell.ExpectedNucleusWorldRadius : 0f;
 
             // A radius floor makes the ring usable for a cell whose core is a STRUCTURE rather
-            // than a nucleus (PeelTheCage's cage), where nucleusRadius is legitimately 0. Without a
+            // than a nucleus (Cleave's cage), where nucleusRadius is legitimately 0. Without a
             // floor that case is indistinguishable from "cell not resolvable yet" below.
             if (nucleusRadius <= 0f && spawnRingRadiusFloor <= 0f)
             {
@@ -479,13 +488,39 @@ namespace CosmicShore.Gameplay
                 ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
                 : Mathf.Max(1, gameData.Players.Count);
 
-            float radius = Mathf.Max(nucleusRadius + spawnDistanceOutsideNucleus, spawnRingRadiusFloor);
+            float floor = ResolveSpawnRingRadiusFloor();
+            float radius = Mathf.Max(nucleusRadius + spawnDistanceOutsideNucleus, floor);
             gameData.SetSpawnPoses(
                 CellSpawnFormation.Build(count, cell.transform.position, radius, spawnFormation));
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
                         $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}, " +
-                        $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}, {spawnFormation}.");
+                        $"floor {floor:0.#}) around {cell.name}, {spawnFormation}.");
+        }
+
+        /// <summary>
+        /// The spawn-ring floor for the intensity this match is running, falling back to the
+        /// scalar <see cref="spawnRingRadiusFloor"/>.
+        ///
+        /// <para>Reading <c>SelectedIntensity</c> here is safe where <c>Cell.AssignConfig</c>'s
+        /// is not: this runs SERVER-side, and the intensity is set before the scene loads. The
+        /// race that bites the cell (Docs/ECOSYSTEM.md §28) is a CLIENT computing a value it
+        /// should have received.</para>
+        ///
+        /// <para>A missing or 0 entry means "this rung has nothing to say", not "no floor" — an
+        /// author who sizes rung 1 and leaves rung 2 blank gets the scalar, never the centre of
+        /// the cell.</para>
+        /// </summary>
+        float ResolveSpawnRingRadiusFloor()
+        {
+            if (spawnRingRadiusFloorByIntensity == null || spawnRingRadiusFloorByIntensity.Count == 0)
+                return spawnRingRadiusFloor;
+
+            int intensity = gameData != null && gameData.SelectedIntensity != null
+                ? gameData.SelectedIntensity.Value : 1;
+            int i = Mathf.Clamp(intensity - 1, 0, spawnRingRadiusFloorByIntensity.Count - 1);
+            float v = spawnRingRadiusFloorByIntensity[i];
+            return v > 0f ? v : spawnRingRadiusFloor;
         }
 
         /// <summary>Latched once the scene is known to have NO start-line provider, so the
@@ -696,7 +731,7 @@ namespace CosmicShore.Gameplay
         /// wearing the hull it last flew, and the launcher-side clamp in
         /// <c>GameDataSO.SyncFromArcadeGame</c> never sees it - that call only runs on the machine
         /// that pressed Start, and the config ClientRpc lands later than this spawn. A Dolphin
-        /// therefore flew Rhino-only PeelTheCage on every client while the AI (whose class comes from
+        /// therefore flew Rhino-only Cleave on every client while the AI (whose class comes from
         /// the scene's aiInitializeDatas) correctly spawned Rhinos.
         ///
         /// The SERVER is the only authority that sees every player's request and the mode's rules
@@ -706,7 +741,7 @@ namespace CosmicShore.Gameplay
         protected virtual VesselClassType ResolveSpawnVesselType(Player networkPlayer)
         {
             var requested = networkPlayer.NetDefaultVesselType.Value;
-            var allowed = gameData.ClampVesselToGame(requested);
+            var allowed = ResolveArenaUniqueHull(networkPlayer, gameData.ClampVesselToGame(requested));
             if (allowed == requested) return requested;
 
             CSDebug.LogWarning(
@@ -719,6 +754,44 @@ namespace CosmicShore.Gameplay
             networkPlayer.ServerForceVesselType(allowed);
             return allowed;
         }
+
+        /// <summary>
+        /// ARENA backstop: under <see cref="GameDataSO.IsArenaMatch"/> a hull is flown by ONE
+        /// pilot. The lobby already enforces that for every human who confirmed a hull there (a
+        /// server-arbitrated claim), and the AI draw deals only free hulls - but a pilot can reach
+        /// a spawn without having claimed anything (a rematch, a guest who joined after the card
+        /// closed), and two such pilots may walk in wearing the same hull. The SERVER sees every
+        /// live vessel, so it is the one place that can settle it: first come keeps the hull, a
+        /// later arrival is dealt the first free one in the card's own order.
+        /// </summary>
+        VesselClassType ResolveArenaUniqueHull(Player networkPlayer, VesselClassType wanted)
+        {
+            if (!gameData.IsArenaMatch) return wanted;
+
+            _arenaHullsInUse.Clear();
+            var vessels = gameData.Vessels;
+            for (int i = 0; i < vessels.Count; i++)
+            {
+                var v = vessels[i];
+                if (v is not UnityEngine.Object o || !o || v.VesselStatus == null) continue;
+                if (ReferenceEquals(v.VesselStatus.Player, networkPlayer)) continue;
+                _arenaHullsInUse.Add(v.VesselStatus.VesselType);
+            }
+
+            if (!_arenaHullsInUse.Contains(wanted)) return wanted;
+            if (gameData.TryPickFreeHull(wanted, _arenaHullsInUse, out var free))
+            {
+                CSDebug.LogWarning($"[ServerPlayerVesselInitializer] Arena: {wanted} is already flown; " +
+                                   $"{networkPlayer.NetName.Value} spawns in {free}.");
+                return free;
+            }
+
+            CSDebug.LogWarning($"[ServerPlayerVesselInitializer] Arena: every hull is taken - " +
+                               $"{networkPlayer.NetName.Value} shares {wanted}. Seats exceed the card's hulls.");
+            return wanted;
+        }
+
+        readonly HashSet<VesselClassType> _arenaHullsInUse = new();
 
         /// <summary>
         /// Spawns a vessel of the given type, assigns ownership to <paramref name="clientId"/>,
@@ -823,6 +896,32 @@ namespace CosmicShore.Gameplay
         /// has no AI profile list, so it leaves the pilot on its prefab defaults.
         /// </summary>
         protected virtual void ConfigureDepartedPilotAI(IVessel vessel) { }
+
+        /// <summary>
+        /// Could <see cref="SpawnVesselForPlayer"/> actually produce a vessel of this class?
+        /// Resolves the prefab and its <c>NetworkObject</c> WITHOUT instantiating anything.
+        ///
+        /// <para>It exists for one caller shape: a SWAP, which destroys the pilot's current ship
+        /// before it builds the next one. When the spawn then fails — an unregistered class, a
+        /// prefab whose <c>VesselStatus</c> claims a different type, a missing NetworkObject —
+        /// the pilot is left with no vessel at all: no hull, no camera target, input still paused
+        /// by the swap. That reads to a player as the game having FROZEN, and nothing in the
+        /// console says "swap", because the failure is one LogError about a prefab. Ask first,
+        /// and a refused swap costs the pilot nothing.</para>
+        ///
+        /// <para>Loud on purpose (<c>reportMissing: true</c>): a swap the player asked for and
+        /// cannot have is a fault, not a probe — the quiet form belongs to the rosters that ask
+        /// "which hulls exist on this build" (<c>ToyVesselRoster.ResolveOffered</c>).</para>
+        /// </summary>
+        protected bool CanSpawnVesselType(VesselClassType vesselType)
+        {
+            if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
+                return false;
+            if (shipPrefabTransform.TryGetComponent(out NetworkObject _)) return true;
+            CSDebug.LogError(
+                $"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} has no NetworkObject.");
+            return false;
+        }
 
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer, VesselClassType vesselType)
         {

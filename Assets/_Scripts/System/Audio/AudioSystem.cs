@@ -23,8 +23,9 @@ using UnityEngine.Serialization;
 ///      <see cref="AudioSource"/>s (<see cref="MusicSource1"/> /
 ///      <see cref="MusicSource2"/>) with crossfade support, plus a single
 ///      shared <see cref="sfxSource"/> for the older
-///      <see cref="PlaySFXClip(AudioClip)"/> API still used by
-///      <c>CountdownTimer</c>, <c>ProfileModal</c>, and <c>Crystal</c>.
+///      <see cref="PlaySFXClip(AudioClip)"/> API, which as of 12 Sep 2026 has
+///      <b>ZERO callers</b> - <c>CountdownTimer</c> and <c>ProfileModal</c> were the
+///      last two and moved to FMOD with the NiceVibrations demo-audio removal.
 ///      The mixer-bus volume (<see cref="masterMixer"/>) only affects this
 ///      path - FMOD events bypass it entirely.
 ///
@@ -47,8 +48,14 @@ using UnityEngine.Serialization;
 ///
 /// Migration path: convert callers from <see cref="PlaySFXClip(AudioClip)"/>
 /// to <see cref="PlaySFXEvent(EventReference)"/> (or one of its overloads)
-/// and wire the corresponding <c>EventReference</c> on the caller. The Unity
-/// AudioSource path can be deleted once all callers have migrated.
+/// and wire the corresponding <c>EventReference</c> on the caller. <b>That is now
+/// DONE for SFX</b>, so this path's own stated precondition for deletion is met:
+/// <see cref="PlaySFXClip"/>, <see cref="sfxSource"/> and the
+/// <see cref="masterMixer"/> bus they route through are dead for SFX and can go.
+/// They are deliberately NOT deleted here - the MUSIC AudioSources are a separate
+/// live consumer of the same legacy tier, so the removal is its own scoped change
+/// rather than a side effect of migrating two UI sounds
+/// (<c>Docs/AudioSystem/FMOD_AUDIT.md</c> section 4).
 /// </summary>
 namespace CosmicShore.Core
 {

@@ -368,8 +368,8 @@ hold their shape relative to the pilot.
 | `generationRangeFalloff` | `UrchinSpikeAction.asset` | 0.75. Clamped `[0.05, 1]` by `SetChainRangeFalloff`. 1 = the CHARGE-5 upgrade. |
 | `chainsOnChargeUpgrade` | `UrchinSpikeAction.asset` | 1 — the CHARGE-5 extra generation (its other half is the falloff override above) |
 | `ammoCost` / `firingRate` | the two spike action assets | 0.15 @ 3/s · 0 @ 1/s |
-| `projectileSpeed` / `chargedProjectileSpeed` × CHARGE `MultiplierAtFullLevel` | asset + `Urchin.asset` map | 60 / 40 × (0.4 … **2.5**) |
-| CHARGE `MultiplierAtFullLevel` | `Urchin.asset` map | 2.0 / min 0.4 — the generic multiplier; depth itself comes off `GetLevel(Element.Charge)`, not this |
+| `projectileSpeed` / `chargedProjectileSpeed` × `chargeRangeMultiplier` | both spike action assets | 60 / 40 × (0.4 … **2.5**) |
+| `chargeRangeMultiplier` | both spike action assets | 1 → **2.5**, floored 0.4 (measured off `UrchinSpikeAction.asset`, and matching `UrchinSpikeActionSO`'s initializer). Authored here since the 2026-09-18 element-scaling unification; it was the map's generic `MultiplierAtFullLevel`, which is gone. The two rows this replaced disagreed with each other — one said 2.0, one said 2.5 — which is what a hand-transcribed endpoint does. Cascade DEPTH is a separate read off `GetLevel(Element.Charge)`, not this. |
 | `MaxVolleysPerTick` | `UrchinSpikeActionExecutor` (const) | 4 |
 | `sideLength` | each spike prefab's `LoadedGun` | 2 — how far off the origin each child of a volley is spawned |
 

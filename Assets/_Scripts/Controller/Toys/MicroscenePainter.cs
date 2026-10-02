@@ -17,8 +17,10 @@ namespace CosmicShore.Gameplay
     ///     the Squirrel's danger boost), danger tips on arm/blade ends, shielded ribs armouring one
     ///     frame, a supershielded keystone guarding the crystal, loose sprinkles, all-plain.
     ///     Danger prisms are dangerous to EVERY domain (locked design) - on the belt they are pure
-    ///     risk/reward furniture. Shielded/supershielded carry an always-on convex MeshCollider, so
-    ///     the palette's hard caps are enforced unconditionally at the end of every paint.
+    ///     risk/reward furniture. The palette's hard caps on the shielded tiers are enforced
+    ///     unconditionally at the end of every paint - for geometry (a shield reaches 1.5x leafSize)
+    ///     and because armoured mass is never food, NOT for colliders: a shield swaps the mesh and
+    ///     the mass, never the collider.
     ///   • SCALE MOODS - a uniform grand/delicate mood, a long-axis stretch (wiry vs. chunky), and
     ///     per-structure taper (root-thick tips or outward flares) riding the structure-t.
     ///
@@ -330,9 +332,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Unconditional collider-budget backstop: whatever the scheme painted, the scene never
-        /// exceeds the palette caps (shielded/supershielded ride an always-on convex MeshCollider;
-        /// danger is capped for gameplay readability). Overflow demotes to Plain, later points first.
+        /// Unconditional kind-cap backstop: whatever the scheme painted, the scene never exceeds the
+        /// palette caps (the shielded tiers are capped for GEOMETRY and for the food web - see
+        /// <see cref="MicroscenePalette"/>; danger is capped for gameplay readability). No kind costs
+        /// a collider. Overflow demotes to Plain, later points first.
         /// </summary>
         static void EnforceKindCaps(PrismKind[] kinds, MicroscenePalette pal)
         {

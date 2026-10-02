@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
     /// shell grey.
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-    public class ScarabHullBuilder : MonoBehaviour, IProceduralElementMorphSource
+    public class ScarabHullBuilder : MonoBehaviour, IProceduralElementMorphSource, IProceduralHullSource
     {
         [Header("Proportions (world units, +Z forward)")]
         [Tooltip("Nose-to-tail length of the CARAPACE. Horn and legs extend past this — the fit " +
@@ -119,6 +119,34 @@ namespace CosmicShore.Gameplay
         public IReadOnlyList<Element> ProceduralMorphElements => ScarabHullForm.MorphElements;
         public Transform HiddenLegacyModelRoot => legacyModelRoot;
 
+        // IProceduralHullSource — what a harvester reading the ASSET sees instead of an empty
+        // MeshFilter beside a still-enabled Sparrow. Same parts, same pivot rule as EmitParts, so
+        // a mini hull or a codex portrait is the ship at rest, not a second opinion about it.
+        public void BuildPreviewPieces(List<ProceduralHullPiece> into)
+        {
+            var parts = ScarabHullForm.Generate(CollectSettings());
+            for (int i = 0; i < parts.Count; i++)
+            {
+                var part = parts[i];
+                Vector3 pivotShift = PivotShift(i, part);
+                var verts = new Vector3[part.Verts.Count];
+                for (int v = 0; v < verts.Length; v++) verts[v] = part.Verts[v] - pivotShift;
+                into.Add(new ProceduralHullPiece
+                {
+                    Name = part.Name,
+                    LocalPosition = pivotShift,
+                    Vertices = verts,
+                    Normals = part.Normals.ToArray(),
+                    Uvs = part.Uvs.ToArray(),
+                    Submeshes = new[] { part.Chassis.ToArray(), part.Shell.ToArray() },
+                });
+            }
+        }
+
+        /// <summary>Geometry arrives in hull space; a CHILD part is re-seated on its pivot, while
+        /// part 0 (the Core, on this GameObject) stays in hull space outright - see EmitParts.</summary>
+        static Vector3 PivotShift(int index, ScarabHullForm.Part part) => index == 0 ? Vector3.zero : part.Pivot;
+
         void Awake()
         {
             _sourceRenderer = GetComponent<MeshRenderer>();
@@ -183,7 +211,7 @@ namespace CosmicShore.Gameplay
                 // hull, so 'pivot zero' comes back as minus the carapace centre. The offline
                 // renders composite hull-space verts and were structurally blind to it.)
                 var local = new List<Vector3>(part.Verts.Count);
-                Vector3 pivotShift = i == 0 ? Vector3.zero : part.Pivot;
+                Vector3 pivotShift = PivotShift(i, part);
                 for (int v = 0; v < part.Verts.Count; v++) local.Add(part.Verts[v] - pivotShift);
 
                 var mesh = new Mesh { name = "Scarab_" + part.Name };

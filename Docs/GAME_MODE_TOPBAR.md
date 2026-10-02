@@ -150,7 +150,7 @@ Two numbers that look arbitrary and are not:
 
 `RoundTime` was never a clock. **Every** turn monitor raises
 `onUpdateTurnMonitorDisplay` with the metric **REMAINING** — `WildlifeKillTurnMonitor`,
-`RampagePrismTurnMonitor`, `PeelTheCagePrismTurnMonitor`, `ScarabScrambleGoalTurnMonitor`,
+`RampagePrismTurnMonitor`, `CleavePrismTurnMonitor`, `ScarabScrambleGoalTurnMonitor`,
 `BroodRushWaveTurnMonitor`, `SalvoPrismTurnMonitor`, `CombatPointTurnMonitorBase`,
 `JoustCollisionTurnMonitor` and `NetworkCrystalCollisionTurnMonitor` all send
 `ScoringRule.Remaining(...).ToString()`. So BigCircle + three `JustRotate` rings + a
@@ -214,7 +214,7 @@ ring was retired for.
 
 `GameCanvas-SkimRace.prefab` is a hard **copy**, not a variant, so propagation is
 severed (`Docs/GAMECANVAS.md`) — and it is the one **12** domain scenes instance
-(SkimRace, Rampage, Crystal Capture, Dog Fight, Salvo, PeelTheCage, Bends, Joust, Scarab
+(SkimRace, Rampage, Crystal Capture, Dog Fight, Salvo, Cleave, Bends, Joust, Scarab
 Scramble, Astro League, Nucleus Rush, Wildlife Liberation), against **10** for
 `CORE/GameCanvas.prefab`. Authoring only the latter would have shipped a feature
 invisible in every modern mode. `Tools/Build/author_goal_stack.py` does both, resolving
@@ -248,7 +248,7 @@ objectives did not fit — measured against the shipped `ChakraPetch-Regular.ttf
 
 A wrapped label does not look like an overflow — it looks like **two goals**. So the row
 is **400 wide** with a 196-unit label box (the widest label plus air) and a 132-unit value
-column ("1997/2000" needs 124.6 at font 22, and Rampage / PeelTheCage / Salvo all run to 2000;
+column ("1997/2000" needs 124.6 at font 22, and Rampage / Cleave / Salvo all run to 2000;
 120 was not enough either).
 
 **Word wrapping is OFF**, and `author_goal_stack.py` asserts the fit against the shipped

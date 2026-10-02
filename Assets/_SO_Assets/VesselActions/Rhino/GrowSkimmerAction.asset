@@ -12,23 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31e77d97d19543d8a27a98a3a069b847, type: 3}
   m_Name: GrowSkimmerAction
   m_EditorClassIdentifier: 
-  maxSize:
-    Enabled: 1
-    Value: 120
-    Min: 120
-    Max: 120
-    element: 3
+  maxSize: 120
   growRate: 12
-  shrinkRate:
-    Enabled: 1
-    Value: 6
-    Min: 6
-    Max: 2
-    element: 1
+  shrinkRate: 6
   applyBoostWhileGrowing: 0
-  boostMultiplier:
-    Enabled: 0
-    Value: 1.25
-    Min: 0
-    Max: 0
-    element: 0
+  boostMultiplier: 1.25

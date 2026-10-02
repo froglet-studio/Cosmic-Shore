@@ -93,7 +93,14 @@ Per-round history survives the per-scene reset (the UI-only scene has no live `g
 
 ---
 
-## 5. Networked ready-up — `MaelstromLobbyNetwork` (Phase 3)
+## 5. Networked ready-up — `MaelstromLobbyNetwork` (Phase 3) — **SUPERSEDED**
+
+> **RETIRED.** `MaelstromLobbyNetwork` no longer exists. It had to be PLACED in the scene to exist at
+> all and never was (`lobbyNetwork: {fileID: 0}`), so this ready-up never ran once — the hub fell
+> through to a local fallback where only the host's button did anything. It is replaced by
+> `MaelstromLobby` (a plain MonoBehaviour the scene view ensures) with the state on
+> `Player.NetMaelstromReady` / `Player.NetMaelstromRound`, and the all-ready snap is **3 s**, not 5.
+> See `ARCHITECTURE.md` §1.3. The description below is kept as the record of what was specified.
 
 Scene-placed `NetworkBehaviour` (host-authoritative). 30s auto-start; snaps to 5s once **every
 connected client** is ready. Deadline + ready tally are `NetworkVariable`s so every peer renders the
@@ -174,8 +181,9 @@ The active/summary scrolls hold **Maelstrom Data Cards**, each nesting its round
 1. **Prefabs:** build the **Player Data Card** (`MaelstromPlayerCard` — round + total scores), the
    **Maelstrom Data Card** (`MaelstromRoundCard`, with its `playerCardPrefab` = the Player Data Card +
    `playerCardContainer`), and a `MaelstromDomainScoreView` prefab for the summary rank rows.
-2. **Lobby network:** add a GameObject with **`NetworkObject` + `MaelstromLobbyNetwork`** (autoStart 30,
-   allReady 5).
+2. ~~**Lobby network:** add a GameObject with **`NetworkObject` + `MaelstromLobbyNetwork`**~~ —
+   **no longer needed**: `MaelstromLobby` is ensured in code and needs no scene object. What the
+   scene DOES still need is a `Cell` and the standard spawn pair (`ARCHITECTURE.md` §7).
 3. **Scene view:** build `activeRoot` / `summaryRoot` / `rankRoot` and wire every field in §6 on the
    `MaelstromSceneView`. (`gameData`, `tournamentData`, `titleText`, `onClickToMainMenu` survive from the
    old component; the rest are new.)
@@ -209,8 +217,9 @@ only adds the v2 deltas + the exact scene-wiring map.
   card's `colorTargets`.
 - **Separate animated countdown text** (`countdownText`) — "Game will start in {N}s", DOTween punch each
   tick. The button face is now optional (`readyButtonLabel` shows START / READY ✓ only when wired).
-- **Local countdown fallback** (`localCountdownSeconds`, default 30) — ticks + animates for panel testing
-  even before `MaelstromLobbyNetwork` is in the scene (display-only, no auto-advance).
+- ~~**Local countdown fallback** (`localCountdownSeconds`)~~ — **removed with
+  `MaelstromLobbyNetwork`.** There is now one countdown on one deadline, and nothing to place, so
+  there is nothing for a fallback to cover for.
 - **Top-bar labels** carry their full prefix in one TMP: `GAMEMODES : …`, `LEADING DOMAIN : …`, `ROUND N`,
   and `raceRuleText` = "First domain to {WinTarget} points wins". Round counter is `ROUND N` (no "/6").
 - Round 0 shows a single **preview card** (roster, no scores, winner `—`); AI appear from round 1.
@@ -265,8 +274,7 @@ only adds the v2 deltas + the exact scene-wiring map.
 - `roundCardPrefab` / `playerCardPrefab` must point to the **prefab assets**, not the scene template
   instances — the templates under `Content` (and the sample player row) are cleared at runtime and
   rebuilt from data, so an unbound prefab = empty scroll.
-- `lobbyNetwork` is optional for the first panel test (local countdown covers the animation); add a
-  `NetworkObject + MaelstromLobbyNetwork` GameObject for the real 30s/5s ready-up.
+- ~~`lobbyNetwork` is optional …~~ — **retired**; the ready-up is always live (`ARCHITECTURE.md` §1.3).
 - With no live session (Play straight from the scene), the roster is empty (no Player objects) — the
   chrome + countdown render, but cards have no rows. Run via the game flow (or ask for a debug sample-data
   toggle) to see populated cards.
@@ -295,7 +303,7 @@ Follow-up fixes from the in-editor pass. Supersedes the v2 colour wiring above (
 - **Round-card header text** is now `ROUND INDEX : N` (`roundNumberText`), `ROUND NAME : SCRUM`
   (`roundNameText`), `WINNING DOMAIN : X` (`winningDomainText`).
 - **Auto-start** — the round starts automatically when the countdown ends (no need to press START).
-  Networked path fires inside `MaelstromLobbyNetwork`; the local fallback auto-starts on the host at 0.
+  Fired by `MaelstromLobby` on the host when the shared deadline elapses (`ARCHITECTURE.md` §1.3).
 - **Scroll fix** — round cards render **chronologically** (Round 1 at the top, newest at the bottom) and
   the scroll auto-scrolls **down** to the latest round, deferred one frame so the layout/size-fitter has
   built the content height first (setting the position before layout is why the old attempt landed on

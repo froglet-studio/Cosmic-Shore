@@ -301,10 +301,131 @@ namespace CosmicShore.ECS
     /// float3 because the prism graphs carry Vector1 and Vector3 property donors and no
     /// Vector4 one — synthesising a property type neither graph contains is exactly the
     /// hand-authored schema the asset-surgery protocol forbids (same ruling as
-    /// PrismDestructionSight's five globals).
+    /// PrismLit's five globals).
     [MaterialProperty("_JiggleParams")]
     public struct PrismJiggleParamsOverride : IComponentData
     {
         public float3 Value;
+    }
+
+    // -- Prism set: super-shield MARK (the Echo Sight's blocker read) --
+    // 1 while this prism wears the super-shield (the stellated octahedron), 0 otherwise.
+    // Not an animation: a STATE bit, written once when the shield engages and once when it
+    // drops (Prism.SetSuperShieldMark), never per frame — the same "a state change is final at
+    // the instant it is applied" shape as the mesh override it travels with.
+    //
+    // It exists because the super-shield is the one tier the prism graphs cannot otherwise tell
+    // apart: a super-shielded prism draws with the PLAIN team material (PrismStateManager
+    // .ActivateSuperShield keeps the opaque block material so the stellation reads), so no
+    // per-material stamp can carry it. The Dolphin's Echo Sight reads it to paint every
+    // super-shield inside the cone in the danger colour, because a crystal blast that reaches
+    // one ends there (PrismSpatialIndex.ResolveExplosionHit, shouldContinue = false).
+    [MaterialProperty("_PrismSuperShielded")]
+    public struct PrismSuperShieldedOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    // ----------------------------------------------------------------------
+    // Living-mass sway (Docs/ECOSYSTEM.md §47). A health prism bolted to a swaying
+    // spindle reads the LIMB'S OWN shear field, evaluated at its own vertices, so the
+    // two move together exactly and the lockup that reads as one creature holds.
+    //
+    // All four are constants of the prism's ATTACHMENT, baked once when it is bound:
+    // a prism does not move relative to the limb it is part of, so nothing here is
+    // ever re-computed. A zero span is an exact no-op and is the default, which is
+    // why a vessel's trail, an authored environment and a dead lifeform's skeleton
+    // are bit-identical to before — living mass is the mass that moves.
+    // ----------------------------------------------------------------------
+
+    /// The limb's +x axis expressed in THIS prism's object space, premultiplied by the
+    /// limb's sway amplitude. The change of basis is what makes a rib pitched off the
+    /// fin bend WITH the fin rather than across it, and it carries the prism's own
+    /// (often non-uniform) leaf scale for free.
+    [MaterialProperty("_SwaySpanX")]
+    public struct PrismSwaySpanXOverride : IComponentData
+    {
+        public float3 Value;
+    }
+
+    /// The limb's +y axis, same basis and same amplitude — the secondary wave's axis.
+    [MaterialProperty("_SwaySpanY")]
+    public struct PrismSwaySpanYOverride : IComponentData
+    {
+        public float3 Value;
+    }
+
+    /// The limb's +z as a linear FUNCTIONAL on this prism's object space, so
+    /// dot(PositionOS, Axis) is a vertex's height up the limb measured from the prism's
+    /// own origin. Not a direction — a row of the basis change, so it is correct under
+    /// non-uniform scale where a normalized axis would not be.
+    [MaterialProperty("_SwayAxis")]
+    public struct PrismSwayAxisOverride : IComponentData
+    {
+        public float3 Value;
+    }
+
+    /// (Frequency rad/s, Phase rad, Z0 = the prism ORIGIN's height up the limb). Three
+    /// scalars in one float3 for the reason _JiggleParams records: the prism graphs
+    /// carry Vector1 and Vector3 property donors and no Vector4 one.
+    [MaterialProperty("_SwayTiming")]
+    public struct PrismSwayTimingOverride : IComponentData
+    {
+        public float3 Value;
+    }
+
+    // ----------------------------------------------------------------------
+    // The Rhino sword's SLICE death (Docs/PRISM_ANIMATION.md §4.10, PrismSlice.hlsl).
+    // Read ONLY by PrismSlice.shader, and only on the pure render entities
+    // PrismSlice.cs spawns — two per sliced prism, one per half. Every one of them is
+    // an INITIAL CONDITION stamped once at spawn and never written again; the GPU runs
+    // the cut, the parting and the dissolve off _PrismClock. float4 throughout: the
+    // slice shader is hand-written, so unlike the prism graphs it has no Vector3-donor
+    // constraint forcing three-wide packing. Sizes match the shader's DOTS declarations.
+    // ----------------------------------------------------------------------
+
+    /// (start time on PrismClock, life in seconds, noise seed, unused).
+    [MaterialProperty("_SliceTiming")]
+    public struct PrismSliceTimingOverride : IComponentData
+    {
+        public float4 Value;
+    }
+
+    /// The cut in THIS half's object space, (m, d): the half keeps dot(m, x) &lt;= d, m
+    /// points out of it. NOT normalised — m = Mᵀ·n_world — so dot(m, x) − d is the
+    /// WORLD signed distance from the cut under any non-uniform scale.
+    [MaterialProperty("_SlicePlane")]
+    public struct PrismSlicePlaneOverride : IComponentData
+    {
+        public float4 Value;
+    }
+
+    /// (the central projection's centre in object space — strictly inside the half —,
+    /// the half's deepest point measured from the cut in world units).
+    [MaterialProperty("_SliceCentre")]
+    public struct PrismSliceCentreOverride : IComponentData
+    {
+        public float4 Value;
+    }
+
+    /// (the hinge the half opens about, WORLD space, the distance the half parts by).
+    [MaterialProperty("_SlicePivot")]
+    public struct PrismSlicePivotOverride : IComponentData
+    {
+        public float4 Value;
+    }
+
+    /// (the hinge axis, WORLD space, unit; the opening angle in radians).
+    [MaterialProperty("_SliceAxis")]
+    public struct PrismSliceAxisOverride : IComponentData
+    {
+        public float4 Value;
+    }
+
+    /// (the drift velocity both halves are carried along the swing with, WORLD space; unused).
+    [MaterialProperty("_SliceDrift")]
+    public struct PrismSliceDriftOverride : IComponentData
+    {
+        public float4 Value;
     }
 }

@@ -16,6 +16,21 @@ namespace CosmicShore.Gameplay
     {
         protected const float PI_OVER_TWO = Mathf.PI / 2;
 
+        /// <summary>
+        /// Does this blast CREATE conserved mass, as opposed to destroying (or merely reaching)
+        /// it? False on every blast whose payload is damage, an impulse or a debuff; true on the
+        /// ones that lay prisms — <see cref="AOEBlockCreation"/> and its subclasses,
+        /// <see cref="AOERadialBlocks"/>, <see cref="AOEDangerHemisphereBlocks"/>.
+        ///
+        /// <para>Asked by <c>ProjectileDetonatorSO</c>, so a round can decline the mass-creating
+        /// half of its own detonation while keeping the destructive half. It is a property of
+        /// the CLASS rather than an authored bool because "does this lay prisms" is decided by
+        /// the code that runs, not by a field somebody can set to the wrong answer — and a
+        /// filter that named a list INDEX instead would silently re-point itself the day an
+        /// effect asset reorders its <c>aoePrefabs</c>.</para>
+        /// </summary>
+        public virtual bool CreatesMass => false;
+
         [Header("Dependencies")]
         [Inject] protected GameDataSO gameData;
 
@@ -149,8 +164,9 @@ namespace CosmicShore.Gameplay
         /// trigger collider so PhysX never generates the thousands of trigger pairs
         /// that OnTriggerEnter would discard (they're handled by ProcessBatchFrame).
         /// Only TrailBlocks is excluded - vessel pairs must stay live because
-        /// explosion→vessel effects (e.g. VesselChangeSpeedByExplosionEffect) are
-        /// resolved through this collider's OnTriggerEnter, not the batch path.
+        /// explosion→vessel effects (e.g. the Dolphin cone's and the Scarab plate's
+        /// combat-hit report + elemental drain) are resolved through this collider's
+        /// OnTriggerEnter, not the batch path.
         /// </summary>
         protected void ApplyPrismExclusion()
         {

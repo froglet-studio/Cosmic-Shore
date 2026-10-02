@@ -213,7 +213,8 @@ namespace CosmicShore.UI
             var progression = GameModeProgressionService.Instance;
             if (progression != null && !progression.IsVesselHangarUnlocked())
             {
-                ToastNotificationAPI.Show("Vessel Hangars LOCKED!");
+                CSDebug.Log("[Hangar] Vessel unlocks LOCKED — the hangar opens once every game-mode " +
+                            "quest in the chain is done (CC/HexRace/Joust maxed + Maelstrom unlocked).");
                 return;
             }
 

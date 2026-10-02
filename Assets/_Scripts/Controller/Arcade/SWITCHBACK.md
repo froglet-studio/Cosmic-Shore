@@ -42,7 +42,7 @@ that its 110°/s turn rate could not otherwise make, **boost** down the straight
   `GameDataSO.SwitchTargetCount`
 - **Players**: **2–4** with AI backfill. `MinDomainsAllowed = 2` (a race needs a rival)
 - **Vessels**: **Dolphin only** — the single `Vessels` entry drives all three platform clamps
-- **Comeback**: `ScoreDifferenceSource.SwitchesThreaded`, rate **0.5** (a quarter-of-course
+- **Comeback**: the rule's `DomainValue` (`SwitchesThreaded`), rate **0.5** (a quarter-of-course
   deficit ≈ 2.5 element levels)
 - **Config**: `_SO_Assets/Games/ArcadeGameSwitchback.asset`, registered in
   `GameLists/OrganicRematchGames.asset` and `ProgressionConfig.alwaysUnlockedModes`
@@ -251,7 +251,7 @@ waypoints**:
 
 `AIPilot` has no arrive-and-stop behaviour — it steers at its target forever and passes through on
 arrival — so handing it the ring's centre produces a pilot orbiting the hoop, the defect both
-PeelTheCage and Dog Fight record. Which side is "behind" is **latched** when the gate changes,
+Cleave and Dog Fight record. Which side is "behind" is **latched** when the gate changes,
 not recomputed: a pilot that drifts just past the plane without threading would otherwise see the
 sides swap and swing away (Dog Fight's break-off lesson).
 
@@ -517,8 +517,11 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   `Tools/Build/audit_persistent_listener_injection.py --check` resolves every persistent
   `UnityEvent` listener in every scene and prefab to its target's script and fails on any
   `(class, method)` whose class declares an `[Inject]` field and is not reviewed. It RATCHETS —
-  today's 28 pairs are frozen as an explicitly UNREVIEWED baseline, so it passes now and fails on
-  anything new. **(2) Fail safe on the persistent listener.** Layer 1 has to be remembered once per spawn
+  its pairs are frozen as an explicitly UNREVIEWED baseline, so it passes now and fails on
+  anything new. (That baseline was **28** when this was written and is **56** since 12 Sep 2026,
+  when the auditor's own parser was fixed: it had been reading 279 of the project's 992 persistent
+  calls. Not one of the added rows is new debt — see CLAUDE.md's entry on this gate for the three
+  rules that came out of it.) **(2) Fail safe on the persistent listener.** Layer 1 has to be remembered once per spawn
   site, forever; layer 2 holds everywhere at once. `MenuAudio` now falls back to
   `AudioSystem.Instance` and warns ONCE per component, so the next runtime-created UI object that
   nobody injects loses a SOUND rather than a BUTTON. `MenuAudioResilienceTests` pins it.
@@ -564,11 +567,12 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   `GenerateAndBroadcastCourse` adds `ResolveCellCentre()` to every gate before broadcasting, so
   world positions travel and moving or nesting the Cell keeps the course on the arena. The
   fairness argument (gate 1 on the equatorial ring's pole) depends on that offset.
-- **Three sibling scenes carry the same stale-donor comeback source this mode's clone did**
-  (`MinigameDogFight`, `MinigameBends` and `MinigameWildlifeLiberation` all serialize
-  `differenceSource: 3` while `DefaultSourceFor` names `CombatPoints`/`LifeformsKilled`).
-  `ElementalComebackSystem.EnsureExists` respects a scene-authored instance as-is, so those three
-  read a stat their pilots do not move. Not fixed here — it is not this branch's diff — but it is
+- **~~Three sibling scenes carry the same stale-donor comeback source this mode's clone did~~ — FIXED 2026-09 by
+  retiring the setting**: `ElementalComebackSystem` now reads `ScoringRuleSO.DomainValue`, so no
+  scene can author a comeback stat at all (eight scenes were affected, not three). Historical note follows:
+  (`MinigameDogFight`, `MinigameBends` and `MinigameWildlifeLiberation` all serialized
+  `differenceSource: 3` while `DefaultSourceFor` named `CombatPoints`/`LifeformsKilled`).
+  Not fixed here — it is not this branch's diff — but it is
   the same defect and worth a ticket.
 - **The Skim Race cell's `PhaseThresholds` are count-based** (600/480, 2000/1600) with no volume
   keys, inherited from a mode whose vessel lays a different trail. A Dolphin trail here has not

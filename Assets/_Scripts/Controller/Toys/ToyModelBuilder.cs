@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -79,6 +80,11 @@ namespace CosmicShore.Gameplay
             var root = new GameObject("ToyModel");
             bool any = false;
 
+            // What the ASSET shows is not always what the SHIP shows: a procedural hull hides its
+            // inherited model at Awake, so on the asset that model's renderers are still enabled
+            // and the real hull is an empty MeshFilter. Read the one, never the other.
+            var hiddenRoot = HiddenLegacyModelRoot(prefabRoot);
+
             // Built LAZILY, and that matters: a model whose resolver supplies every material never
             // needs one, and the eager version allocated a white Material per model that nothing
             // ever freed. Still eager in effect for the flat path, where the first mesh asks for it.
@@ -94,7 +100,7 @@ namespace CosmicShore.Gameplay
                 if (!mf || !mf.sharedMesh) continue;
                 var mr = mf.GetComponent<MeshRenderer>();
                 if (!mr) continue; // a MeshFilter with no renderer isn't visible geometry
-                if (!Accept(prefabRoot, mf.transform, mf.sharedMesh, mr, filter)) continue;
+                if (!Accept(prefabRoot, mf.transform, mf.sharedMesh, mr, filter, hiddenRoot)) continue;
                 AddMesh(root.transform, prefabRoot, mf.transform, mf.sharedMesh, Preview,
                         Resolve(materials, mf.transform, mr));
                 any = true;
@@ -103,10 +109,17 @@ namespace CosmicShore.Gameplay
             foreach (var smr in prefabRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 if (!smr || !smr.sharedMesh) continue;
-                if (!Accept(prefabRoot, smr.transform, smr.sharedMesh, smr, filter)) continue;
+                if (!Accept(prefabRoot, smr.transform, smr.sharedMesh, smr, filter, hiddenRoot)) continue;
                 AddMesh(root.transform, prefabRoot, smr.transform, smr.sharedMesh, Preview,
                         Resolve(materials, smr.transform, smr));
                 any = true;
+            }
+
+            var minted = new List<Mesh>();
+            if (HarvestProceduralHulls(prefabRoot, root.transform, Preview, materials, minted))
+            {
+                any = true;
+                root.AddComponent<ToyMintedMeshes>().Adopt(minted);
             }
 
             if (!any)
@@ -123,13 +136,84 @@ namespace CosmicShore.Gameplay
         static Material[] Resolve(MaterialResolver resolver, Transform node, Renderer source)
             => resolver?.Invoke(node, source, source ? source.sharedMaterials : null);
 
-        static bool Accept(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer, RendererFilter filter)
+        static bool Accept(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer, RendererFilter filter,
+            Transform hiddenRoot)
         {
             if (renderer && !renderer.enabled) return false;
+            if (IsUnderHiddenLegacyModel(node, hiddenRoot)) return false;
             // Activeness is read via activeSelf up the chain: activeInHierarchy is always false
             // for a prefab asset that isn't in a loaded scene.
             if (!IsActiveInPrefab(node, prefabRoot)) return false;
             return filter == null || filter(prefabRoot, node, mesh, renderer);
+        }
+
+        /// <summary>
+        /// The root of the legacy model a procedural hull SWITCHES OFF at runtime, or null. On the
+        /// prefab asset those renderers are still enabled - `ScarabHullBuilder.HideLegacyModel`
+        /// runs in Awake - so an asset-reading harvester has to be told, or it photographs the
+        /// hidden ship (which is how the Scarab's codex portrait came out byte-identical to the
+        /// Sparrow's).
+        /// </summary>
+        public static Transform HiddenLegacyModelRoot(Transform prefabRoot)
+        {
+            if (!prefabRoot) return null;
+            var source = prefabRoot.GetComponentInChildren<IProceduralElementMorphSource>(true);
+            return source?.HiddenLegacyModelRoot;
+        }
+
+        /// <summary>True when <paramref name="node"/> draws under a hidden legacy model root.</summary>
+        public static bool IsUnderHiddenLegacyModel(Transform node, Transform hiddenRoot)
+            => hiddenRoot && node && node.IsChildOf(hiddenRoot);
+
+        /// <summary>
+        /// Emit every <see cref="IProceduralHullSource"/> under <paramref name="prefabRoot"/> as
+        /// posed mesh children of <paramref name="root"/>, built from the ASSET's authored
+        /// settings. The meshes minted here are appended to <paramref name="minted"/> and belong
+        /// to the CALLER (a runtime model hangs a <see cref="ToyMintedMeshes"/> on itself; an
+        /// editor bake adds them to its temporaries). A source is the hull by declaration, so no
+        /// renderer filter is consulted; the source component's own renderer supplies the
+        /// materials the resolver sees, exactly as it does for the live ship.
+        /// </summary>
+        public static bool HarvestProceduralHulls(Transform prefabRoot, Transform root,
+            System.Func<Material> preview, MaterialResolver materials, List<Mesh> minted)
+        {
+            if (!prefabRoot || !root) return false;
+            bool any = false;
+            var pieces = new List<ProceduralHullPiece>();
+
+            foreach (var source in prefabRoot.GetComponentsInChildren<IProceduralHullSource>(true))
+            {
+                if (source is not Component component || !component) continue;
+                var node = component.transform;
+                if (!IsActiveInPrefab(node, prefabRoot)) continue;
+
+                pieces.Clear();
+                source.BuildPreviewPieces(pieces);
+                var resolved = Resolve(materials, node, component.GetComponent<Renderer>());
+
+                foreach (var piece in pieces)
+                {
+                    var mesh = BuildPieceMesh(piece);
+                    minted?.Add(mesh);
+                    AddMesh(root, prefabRoot, node, mesh, preview, resolved, piece.LocalPosition, piece.Name);
+                    any = true;
+                }
+            }
+            return any;
+        }
+
+        static Mesh BuildPieceMesh(ProceduralHullPiece piece)
+        {
+            var mesh = new Mesh { name = piece.Name ?? "ProceduralHull" };
+            mesh.SetVertices(piece.Vertices);
+            if (piece.Normals != null && piece.Normals.Length == piece.Vertices.Length) mesh.SetNormals(piece.Normals);
+            if (piece.Uvs != null && piece.Uvs.Length == piece.Vertices.Length) mesh.SetUVs(0, piece.Uvs);
+            int subs = piece.Submeshes?.Length ?? 0;
+            mesh.subMeshCount = Mathf.Max(1, subs);
+            for (int i = 0; i < subs; i++) mesh.SetTriangles(piece.Submeshes[i], i);
+            if (piece.Normals == null || piece.Normals.Length != piece.Vertices.Length) mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         public static bool IsActiveInPrefab(Transform t, Transform root)
@@ -163,13 +247,16 @@ namespace CosmicShore.Gameplay
         }
 
         static void AddMesh(Transform parent, Transform prefabRoot, Transform src, Mesh mesh,
-            System.Func<Material> preview, Material[] resolved)
+            System.Func<Material> preview, Material[] resolved,
+            Vector3 localOffset = default, string name = null)
         {
-            var go = new GameObject(src ? src.name : "Mesh");
+            var go = new GameObject(name ?? (src ? src.name : "Mesh"));
             go.transform.SetParent(parent, false);
+            go.hideFlags = parent.gameObject.hideFlags;   // an editor bake's HideAndDontSave root keeps its children out of the scene
 
-            // Place this mesh at the same pose it has relative to the prefab root.
-            go.transform.localPosition = prefabRoot.InverseTransformPoint(src.position);
+            // Place this mesh at the same pose it has relative to the prefab root (plus a piece's
+            // own seat under its source, for a procedural hull's re-seated parts).
+            go.transform.localPosition = prefabRoot.InverseTransformPoint(src.TransformPoint(localOffset));
             go.transform.localRotation = Quaternion.Inverse(prefabRoot.rotation) * src.rotation;
             go.transform.localScale = RelativeLossyScale(prefabRoot.lossyScale, src.lossyScale);
 

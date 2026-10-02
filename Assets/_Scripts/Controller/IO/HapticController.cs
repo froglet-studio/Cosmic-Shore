@@ -2,8 +2,6 @@ using System.Text;
 using CosmicShore.Core;
 using Reflex.Attributes;
 using UnityEngine;
-using Lofelt.NiceVibrations;
-using LofeltHaptics = Lofelt.NiceVibrations.HapticController;
 
 namespace CosmicShore.Gameplay
 {
@@ -40,8 +38,10 @@ namespace CosmicShore.Gameplay
     /// <see cref="PlayConstant"/> entry points (UI, drift, boost, jousts, explosions, overtake,
     /// elemental debuffs …) are no-ops.
     ///
-    /// NiceVibrations keeps only ONE loaded clip — every <c>Load()</c> evicts whatever is playing —
-    /// so a tiny priority/rate-limit gate arbitrates them. Priority, top to bottom:
+    /// The motors carry only ONE pattern at a time — every <see cref="GamepadRumblePlayer.Play"/>
+    /// replaces whatever is playing — so a tiny priority/rate-limit gate arbitrates them. That
+    /// single-pattern property is now a deliberate choice of ours rather than a vendor
+    /// limitation, and the gate below is written against it. Priority, top to bottom:
     /// <b>alert &gt; punish &gt; skim &gt; spray</b>. Punish always interrupts the skim train and
     /// the skim train never interrupts a thud; the spray is a texture, so it yields to all three
     /// and interrupts none of them.
@@ -83,7 +83,11 @@ namespace CosmicShore.Gameplay
         // held, so it sits at the BOTTOM of the priority order and never suppresses anything.
         const float SprayMinIntervalSec = 0.035f;  // backstop floor; the caller sets the real cadence
         const float SprayDurationSec = 0.050f;     // one short buzz per pulse
-        const float SkimDurationSec = 0.070f;      // the skim clip's length — read only by spray
+        const float SkimDurationSec = 0.070f;      // the skim clip's length — read only by spray/bind
+
+        // The bind grind is the second TEXTURE: it repeats while the Rhino's blade is held inside
+        // super-shielded mass it cannot cut. Bottom of the order beside the spray, same reasons.
+        const float BindMinIntervalSec = 0.060f;   // backstop floor; the caller sets the real cadence
 
         static float s_lastSkimTime = -999f;
         static float s_skimBusyUntil = -999f;      // spray is suppressed until here (skim outranks it)
@@ -92,6 +96,7 @@ namespace CosmicShore.Gameplay
         static float s_lastAlertTime = -999f;
         static float s_alertBusyUntil = -999f;     // skim AND punish are suppressed until here
         static float s_lastSprayTime = -999f;
+        static float s_lastBindTime = -999f;
 
         // These are compared against Time.unscaledTime, which restarts at 0 every play session —
         // with domain reload disabled a leftover busy-until stamp from a long session would
@@ -106,6 +111,7 @@ namespace CosmicShore.Gameplay
             s_lastAlertTime = -999f;
             s_alertBusyUntil = -999f;
             s_lastSprayTime = -999f;
+            s_lastBindTime = -999f;
         }
 
         /// <summary>
@@ -125,10 +131,7 @@ namespace CosmicShore.Gameplay
             s_skimBusyUntil = now + SkimDurationSec;   // spray must not cut the reward short
 
             EnsureClips();
-            LofeltHaptics.Load(s_skimJson, s_skimRumble);
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = Mathf.Clamp01(strength01); // scales both the iOS clip and gamepad motors
-            LofeltHaptics.Play();
+            PlayPattern(s_skimJson, s_skimRumble, level * Mathf.Clamp01(strength01));
         }
 
         /// <summary>
@@ -146,10 +149,7 @@ namespace CosmicShore.Gameplay
             s_punishBusyUntil = now + PunishDurationSec;
 
             EnsureClips();
-            LofeltHaptics.Load(s_punishJson, s_punishRumble); // evicts any skim clip mid-train
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = 1f;
-            LofeltHaptics.Play();
+            PlayPattern(s_punishJson, s_punishRumble, level);
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace CosmicShore.Gameplay
         /// bright characters: unmistakably not a skim and not a thud, and long enough to read as
         /// "something just happened" rather than "you hit something".
         ///
-        /// Reserved for RARE, match-changing state changes — currently only PeelTheCage's fauna
+        /// Reserved for RARE, match-changing state changes — currently only Cleave's fauna
         /// release rungs. It outranks both other feels for its whole duration and is rate-limited
         /// so it can never stack into a drone. Do NOT hang it on anything frequent; the two-feel
         /// policy exists because haptics stop meaning anything once they are common.
@@ -174,10 +174,7 @@ namespace CosmicShore.Gameplay
             s_alertBusyUntil = now + AlertDurationSec;
 
             EnsureClips();
-            LofeltHaptics.Load(s_alertJson, s_alertRumble);  // evicts whatever was playing
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = 1f;
-            LofeltHaptics.Play();
+            PlayPattern(s_alertJson, s_alertRumble, level);
         }
 
         /// <summary>
@@ -212,10 +209,42 @@ namespace CosmicShore.Gameplay
             // Deliberately sets NO busy window: the spray never suppresses another feel.
 
             EnsureClips();
-            LofeltHaptics.Load(s_sprayJson, s_sprayRumble);
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = Mathf.Clamp01(strength01);
-            LofeltHaptics.Play();
+            PlayPattern(s_sprayJson, s_sprayRumble, level * Mathf.Clamp01(strength01));
+        }
+
+        /// <summary>
+        /// The BIND grind — the fifth feel, added deliberately (Docs/HAPTICS.md ▸ "Adding /
+        /// changing a feel"): a low, heavy, transient-free rumble that repeats while the Rhino's
+        /// NON-energized blade is held inside a super-shielded prism it cannot cut
+        /// (RHINO_ENERGY_SWORD.md § "Binding"). It answers the question the pilot is asking in
+        /// that moment — "am I still stuck in it?" — and stops the frame the blade comes free.
+        ///
+        /// Character sits between the thud and the spray: the LOW motor carries it (it is armour
+        /// resisting, heavy like the punish) but it is short and repeating (a texture, like the
+        /// spray), with a low frequency (0.15, against punish 0.0 and spray 0.45) so the two
+        /// textures stay separable if a future vessel ever had both.
+        ///
+        /// Priority: the bottom, beside the spray — alert, punish and skim all suppress it and it
+        /// suppresses nothing. The ENTRY into the armour is not this feel; the caller plays the
+        /// punish thud for that, and this grind cannot cut the thud short.
+        ///
+        /// Fenced to the Rhino's blade binding on the LOCAL HUMAN pilot's own vessel. Do not hang
+        /// it on anything else.
+        /// </summary>
+        public static void PlayBind(float strength01)
+        {
+            if (!TryBeginPlayback(out var level)) return;
+
+            float now = Time.unscaledTime;
+            if (now < s_alertBusyUntil) return;                  // alert outranks everything
+            if (now < s_punishBusyUntil) return;                 // the entry thud must land intact
+            if (now < s_skimBusyUntil) return;                   // so must a reward pulse
+            if (now - s_lastBindTime < BindMinIntervalSec) return;
+            s_lastBindTime = now;
+            // Deliberately sets NO busy window: a texture never suppresses another feel.
+
+            EnsureClips();
+            PlayPattern(s_bindJson, s_bindRumble, level * Mathf.Clamp01(strength01));
         }
 
         // Shared gate on the player's setting. Returns the output level (haptics "volume") to use.
@@ -231,18 +260,20 @@ namespace CosmicShore.Gameplay
 
         // ---------------------------------------------------------------- runtime clip generation
 
-        // Both clips are generated once as .haptic JSON (iOS/Android) + a GamepadRumble (gamepads),
-        // then reloaded per pulse — exactly how NiceVibrations' own HapticPatterns work. The JSON
-        // matches the plugin's nv-*-template.txt schema; decimal points are hard-coded so the strings
-        // are locale-independent.
+        // Each feel is generated once as BOTH a .haptic JSON envelope (the portable, authored
+        // source — see PlayMobilePattern) and a GamepadRumblePattern (what actually plays today),
+        // then replayed per pulse. Decimal points are hard-coded so the strings are
+        // locale-independent.
         static byte[] s_skimJson;
         static byte[] s_punishJson;
         static byte[] s_alertJson;
         static byte[] s_sprayJson;
-        static GamepadRumble s_skimRumble;
-        static GamepadRumble s_punishRumble;
-        static GamepadRumble s_alertRumble;
-        static GamepadRumble s_sprayRumble;
+        static byte[] s_bindJson;
+        static GamepadRumblePattern s_skimRumble;
+        static GamepadRumblePattern s_punishRumble;
+        static GamepadRumblePattern s_alertRumble;
+        static GamepadRumblePattern s_sprayRumble;
+        static GamepadRumblePattern s_bindRumble;
         static bool s_clipsBuilt;
 
         static void EnsureClips()
@@ -311,6 +342,20 @@ namespace CosmicShore.Gameplay
                 new[] { 30, 20 },
                 low:  new[] { 0.85f, 0.55f },
                 high: new[] { 0.70f, 0.45f });
+
+            // Bind — a low GRIND, ~80 ms. No transient (that is the skim's), low frequency
+            // (0.15 — heavier than the spray, lighter than the thud's 0.0), carried by the LOW
+            // motor with a little high-motor grit so it reads as friction rather than a hum. The
+            // caller repeats it with a small gap, so it pulses like a blade dragging on armour.
+            s_bindJson = ClipJson(
+                "{\"time\":0.0,\"amplitude\":0.8}," +
+                "{\"time\":0.05,\"amplitude\":1.0}," +
+                "{\"time\":0.08,\"amplitude\":0.0}",
+                frequency: "0.15", durationSec: "0.08");
+            s_bindRumble = Rumble(
+                new[] { 50, 30 },
+                low:  new[] { 0.95f, 0.55f },
+                high: new[] { 0.25f, 0.10f });
         }
 
         // Builds a continuous .haptic clip: the caller supplies the amplitude breakpoints; frequency
@@ -328,18 +373,41 @@ namespace CosmicShore.Gameplay
             return Encoding.UTF8.GetBytes(json);
         }
 
-        static GamepadRumble Rumble(int[] durationsMs, float[] low, float[] high)
+        static GamepadRumblePattern Rumble(int[] durationsMs, float[] low, float[] high) =>
+            new GamepadRumblePattern(durationsMs, low, high);
+
+        // ---------------------------------------------------------------- playback
+
+        /// <summary>
+        /// Hand one feel to every backend that can express it. <paramref name="gain"/> is the
+        /// player's haptics level already multiplied by this pulse's own strength — one number,
+        /// so a backend cannot apply half of the scaling.
+        /// </summary>
+        static void PlayPattern(byte[] clipJson, in GamepadRumblePattern rumble, float gain)
         {
-            var rumble = new GamepadRumble
-            {
-                durationsMs = durationsMs,
-                lowFrequencyMotorSpeeds = low,
-                highFrequencyMotorSpeeds = high,
-                totalDurationMs = 0
-            };
-            for (int i = 0; i < durationsMs.Length; i++)
-                rumble.totalDurationMs += durationsMs[i];
-            return rumble;
+            GamepadRumblePlayer.Play(rumble, gain);
+            PlayMobilePattern(clipJson, gain);
         }
+
+        /// <summary>
+        /// <b>Mobile device haptics are not implemented, and that is a stated position rather than
+        /// an oversight.</b>
+        ///
+        /// <para>Pattern haptics on a phone — iOS Core Haptics, Android <c>VibrationEffect</c> —
+        /// were the ONE thing the NiceVibrations plugin provided that a gamepad cannot, and the
+        /// launch platform is PC/Steam, where a pad is the only thing in the room with motors. So
+        /// this ships SILENT on a phone rather than reaching for <c>Handheld.Vibrate()</c>: that
+        /// call is a single fixed buzz of a few hundred milliseconds with no amplitude and no
+        /// envelope, so it cannot express any of the four feels, and firing one per skim would
+        /// make a phone strictly worse than silence. A pad connected to a phone still rumbles —
+        /// <see cref="GamepadRumblePlayer"/> is platform-agnostic, where the plugin's gamepad path
+        /// was compiled out on iOS and Android entirely.</para>
+        ///
+        /// <para>The <c>.haptic</c> JSON handed here is retained for exactly this reason: it is
+        /// the only portable record of the four envelopes, it costs four small strings built once,
+        /// and it is what a future backend consumes. Do not delete it to tidy up an unused
+        /// parameter — deleting it is deleting the authored source.</para>
+        /// </summary>
+        static void PlayMobilePattern(byte[] clipJson, float gain) { }
     }
 }

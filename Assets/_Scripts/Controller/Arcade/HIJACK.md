@@ -154,7 +154,7 @@ be authored because this cell has no nucleus: without it the crystal falls throu
 The whole yard is rotated **22.5° about world Y** as the last build step, so the equatorial spawn
 ring lines up with rail midpoints rather than the gaps between them. Players spawn through
 `arrangeSpawnPointsAroundCell` + `spawnFormation EquatorialRing` + `spawnRingRadiusFloor 1120` —
-**equatorial, not the default symmetric sphere**, for the same reason Peel the Cage is: the yard's
+**equatorial, not the default symmetric sphere**, for the same reason Cleave is: the yard's
 rails ring the core, so a polar spawn slot would face no rail at all.
 
 Outermost mass reaches **985u** < spawn ring **1120** < membrane **1200**. All three are asserted
@@ -289,7 +289,8 @@ It is AI-only, so it changes nothing for a human pilot in any mode.
 ## 7. Budget and collider impact
 
 `Tools/Build/hijack_budget.py` is the mirror, and `author_hijack_assets.py` imports it — the same
-discipline as `boneyard_budget.py` and `ribcage_budget.py`. Running it prints the table above and
+discipline as `boneyard_budget.py` and `cleave_budget.py` (which replaced the deleted
+`ribcage_budget.py`). Running it prints the table above and
 runs six proofs: the launch aim, the launch gap, rail separation, burr clearance, the arena
 extent against the spawn ring and membrane, and the painting balance.
 
@@ -360,7 +361,8 @@ item is a real check a human has to perform, in this order (load-bearing first).
 ### The three registry IDs, and why 46 rather than 45
 
 A mode claims a slot in three enums that every other mode also lives in — `GameModes` (46),
-`ScoringMetric` (10) and `ElementalComebackSystem.ScoreDifferenceSource` (9). **None of the
+`ScoringMetric` (10) and the comeback's `ScoreDifferenceSource` (9, retired 2026-09 — the comeback
+now reads the rule). **None of the
 three fails loudly on a double-claim.** C# lets two members share a value, so a second mode
 taking the same number *compiles*: `GameModes.Hijack` would `==` the other mode, every switch
 over it ambiguous, and the two metrics silently reading each other's stat. Only `GameModes` has
@@ -413,7 +415,7 @@ merge without a conflict in that file. Do not edit it on this branch for that re
   on an Urchin (today only Cellular Duel's ownership swap) would throw and leave the vessel
   uncontrollable.
 - **`ram: 1` is a FLEET-WIDE AI change made for one mode.** `Urchin.prefab` is shared, so every
-  AI Urchin in every context — the menu lava-lamp autopilot, the Lifeform Matrix's vessel hangar,
+  AI Urchin in every context — the menu lava-lamp autopilot, the Spawn Matrix's vessel hangar,
   any future mode that does not lock its hull — now flies at full throttle whenever it is lined
   up on its objective, not just here. It has the Rhino's precedent and it is AI-only, so no human
   pilot is affected; if it ever needs to be narrower, the honest lever is a per-mode setter rather

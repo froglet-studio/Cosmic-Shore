@@ -4,6 +4,7 @@ using TMPro;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {
@@ -49,6 +50,15 @@ namespace CosmicShore.UI
         [Header("Debug")]
         [Tooltip("Always show the icon at a fixed edge position, ignoring providers and on-screen checks. Use to verify the UI renders.")]
         [SerializeField] bool debugAlwaysVisible = false;
+
+        /// <summary>
+        /// The on-screen hide rule's reach. While the target is inside the screen rect the
+        /// arrow hides — but only if the target is also within this distance of the camera.
+        /// Default: no limit (the legacy rule). A provider whose objective is a small body that
+        /// can be on screen and yet unreadable (the Arkway's Ark, thousands of units down its
+        /// corridor axis) lowers it so the arrow keeps pointing at a speck.
+        /// </summary>
+        public float HideOnScreenWithin { get; set; } = float.PositiveInfinity;
 
         IObjectiveProvider _providerCached;
         RectTransform _parentRect;
@@ -157,11 +167,28 @@ namespace CosmicShore.UI
                     screenPos = cam.WorldToScreenPoint(targetPos);
                 bool inFront = screenPos.z > 0f;
 
-                if (inFront &&
+                bool onScreen = inFront &&
                     screenPos.x >= 0f && screenPos.x <= screenW &&
-                    screenPos.y >= 0f && screenPos.y <= screenH)
+                    screenPos.y >= 0f && screenPos.y <= screenH;
+
+                if (onScreen &&
+                    (float.IsPositiveInfinity(HideOnScreenWithin) ||
+                     (targetPos - cam.transform.position).sqrMagnitude <= HideOnScreenWithin * HideOnScreenWithin))
                 {
                     SetVisible(false);
+                    return;
+                }
+
+                // On screen but too far to read (HideOnScreenWithin): MARK it where it is. The
+                // edge placement below aims along centre -> target, and a distant target sits
+                // near the screen centre (straight down the view axis, behind the pilot's own
+                // hull), so that direction is a few jittering pixels - the arrow swung around
+                // the rim and read as pointing at the player's own vessel.
+                if (onScreen)
+                {
+                    PositionOnScreen(screenPos);
+                    UpdateDistance(cam.transform.position, targetPos);
+                    SetVisible(true);
                     return;
                 }
 
@@ -181,6 +208,21 @@ namespace CosmicShore.UI
             float halfW = Mathf.Max(0f, rect.width * 0.5f - edgePadding);
             icon.anchoredPosition = new Vector2(halfW, 0f);
             icon.localRotation = Quaternion.identity;
+        }
+
+        /// <summary>Places the icon over an on-screen target, pointing straight down at it.</summary>
+        void PositionOnScreen(Vector3 screenPos)
+        {
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                _parentRect, screenPos, _canvasCamera, out Vector2 local);
+            Rect rect = _parentRect.rect;
+            local -= rect.center; // pivot-relative -> centre-relative (the icon anchors at centre)
+            float halfW = Mathf.Max(0f, rect.width * 0.5f - edgePadding);
+            float halfH = Mathf.Max(0f, rect.height * 0.5f - edgePadding);
+            icon.anchoredPosition = new Vector2(Mathf.Clamp(local.x, -halfW, halfW),
+                                                Mathf.Clamp(local.y, -halfH, halfH));
+            // Rotation as the edge path would give a target directly BELOW the icon.
+            icon.localRotation = Quaternion.Euler(0f, 0f, -90f + spriteRotationOffset);
         }
 
         void PositionAtEdge(Vector3 screenPos)

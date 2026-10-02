@@ -133,7 +133,7 @@ def assert_content_fits():
         f"label '{worst.upper()}' needs {worst_w:.1f} units and the box is {box} - it would "
         f"overflow into the numerals (widen LABEL_X1, or shorten the label in the catalogue)")
 
-    # The counted objectives run to 2000 (Rampage/PeelTheCage/Salvo), so the widest value the row
+    # The counted objectives run to 2000 (Rampage/Cleave/Salvo), so the widest value the row
     # can be asked to draw is four digits over four.
     widest_value = val.getlength("1997/2000") / 10.0
     assert widest_value <= VALUE_W, (

@@ -57,7 +57,7 @@ namespace CosmicShore.Utility
                  "Cell.FaunaReleaseTier reaches this value. 0 (the default, and what every " +
                  "shipped biome authors) means 'released from the start' - a cell's tier " +
                  "defaults to int.MaxValue, so nothing changes unless a mode stages it. " +
-                 "PeelTheCage holds its brood closed until the leader cracks 25% of the cage " +
+                 "Cleave holds its brood closed until the leader cracks 25% of the cage " +
                  "(tier 0 = the grazer swarm) and adds the predator at 50% (tier 1). " +
                  "Gating PRODUCTION is allowed by the conserved-mass law; culling is not.")]
         [Min(0)] public int ReleaseTier = 0;
@@ -215,8 +215,8 @@ namespace CosmicShore.Utility
         [Tooltip("WORLD scale this variant's heart (its elemental crystal) renders at - sized " +
                  "to suit THIS creature, so a piranha's heart is a piranha's and a shark's is a " +
                  "shark's. 0 = keep the platform default on ElementalCrystalSet.\n\n" +
-                 "This is a GAMEPLAY number as well as a visual one: the collect reward and the " +
-                 "live domain fauna buff both read the heart's world scale, so a bigger " +
+                 "This is a GAMEPLAY number as well as a visual one: the collect reward reads " +
+                 "the heart's world scale, so a bigger " +
                  "creature's heart is worth more to whoever takes it. The whole authored band " +
                  "must therefore stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale - past " +
                  "it two visibly different hearts pay the same. Authored by " +

@@ -67,3 +67,6 @@ MonoBehaviour:
   OnGameResultRecorded: {fileID: 11400000, guid: 4e6290faf6bc4a29a0f00cc212c7ba86, type: 2}
   OnStandingsChanged: {fileID: 11400000, guid: 9557ba9b87f24175952f2d176fb1d1f9, type: 2}
   OnMaelstromCompleted: {fileID: 11400000, guid: 8e93213923f4438db14a2c71c7fd76b7, type: 2}
+  seatCount: 4
+  aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69,
+    type: 2}

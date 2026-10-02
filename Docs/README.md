@@ -54,6 +54,13 @@ Docs/
 │   └── ARCHITECTURE.md          pointer to MaelstromSystem + a deferred list of
 │                                planned Shuffle behavior deltas (NOT a separate mode)
 │
+├── BugHunt/                     ← bug-hunt / console-cleanup record
+│   ├── README.md                workflow: repro on bleeding-edge → fix on
+│   │                            Bug_Hunt → Editor retest → PR + merge commit
+│   ├── FIX_LOG.md               one report per shipped fix + open console issues
+│   └── PLAYBOOK.md              troubleshooting by class: native leaks, teardown
+│                                re-spawns, YAML parse errors, teardown NREs
+│
 ├── ASSEMBLY_SPLIT.md            splitting the single-assembly monolith:
 │                                the one-way extraction rule, the compile-timing
 │                                protocol + baseline, phase-1 result, phase-2 plan
@@ -92,6 +99,7 @@ session-scoped findings that benefit from a timeline view.
 | Understand the tournament meta-mode (chains the 3 domain games) | `MaelstromSystem/ARCHITECTURE.md` |
 | Find "Shuffle" (it's Maelstrom's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `MaelstromSystem/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
+| Chase a console error / leak, or see what the bug hunt fixed | `BugHunt/README.md` → `BugHunt/PLAYBOOK.md`, `BugHunt/FIX_LOG.md` |
 | Confirm changes that landed without an editor pass | `UNITY_VERIFICATION_CHECKLIST.md` |
 | Find a scene | `SCENES.md` |
 

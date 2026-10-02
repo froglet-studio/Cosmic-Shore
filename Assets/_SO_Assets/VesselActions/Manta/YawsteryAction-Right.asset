@@ -12,6 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: beb0cb3d1601424aa921d70177c06424, type: 3}
   m_Name: YawsteryAction-Right
   m_EditorClassIdentifier: 
+  turnRateMultiplier:
+    Enabled: 0
+    Value: 1
+    Min: 1
+    Max: 1
+    element: 0
+    UseFloor: 0
+    Floor: 0
   steerDirection: 1
   maxYawDegPerSec: 80
   rampInSeconds: 0.35

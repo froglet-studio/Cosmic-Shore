@@ -47,7 +47,9 @@ namespace CosmicShore.Gameplay
         public float DangerStructureWeight = 1.7f;
         [Tooltip("Danger on the far tips of multi-point structures - hot spire/arm/blade ends.")]
         public float DangerTipsWeight = 1.7f;
-        [Tooltip("A few tougher shielded accents (always-on convex MeshCollider - kept rare).")]
+        [Tooltip("A few tougher shielded accents - kept rare because a shield reaches 1.5x leafSize " +
+                 "and armoured mass is never food, NOT because of colliders (a shield swaps the mesh, " +
+                 "never the collider).")]
         public float ShieldAccentWeight = 1.2f;
         [Tooltip("Shielded ribs along one substructure - an armoured frame (capped by Max Shielded).")]
         public float ShieldFrameWeight = 1.2f;
@@ -55,9 +57,11 @@ namespace CosmicShore.Gameplay
         public float LandmarkWeight = 0.9f;
         [Min(0), Tooltip("Cap on danger prisms per scene (box collider - no extra collider cost).")]
         public int MaxDanger = 16;
-        [Min(0), Tooltip("Collider-budget cap on shielded prisms per scene.")]
+        [Min(0), Tooltip("Cap on shielded prisms per scene - geometry and food-web reasons, not colliders.")]
         public int MaxShielded = 3;
-        [Min(0), Tooltip("Collider-budget cap on supershielded prisms per scene.")]
+        [Min(0), Tooltip("Cap on supershielded prisms per scene - nothing but the Rhino's energised blade " +
+                 "or the Serpent's sniper can remove one, so on a recycling belt it is permanent " +
+                 "furniture. Not a collider cost.")]
         public int MaxSuperShielded = 1;
 
         [Header("Scale moods (grand / delicate / elongated / tapered scenes)")]

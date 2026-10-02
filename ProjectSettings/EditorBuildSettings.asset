@@ -17,12 +17,6 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Scenes/Tools/MattsRecording Studio.unity
     guid: 24dd4d7af8c78a14199bc0ab37b17d37
-  - enabled: 1
-    path: Assets/_Scenes/Singleplayer Scenes/MinigameWildlifeBlitz.unity
-    guid: d5418cffe1da8b840bcc2e1a92a7b1db
-  - enabled: 1
-    path: Assets/_Scenes/Singleplayer Scenes/MinigameDuelForTheCell.unity
-    guid: a0793cb7cf4069b44ba82acfddb04f11
   - enabled: 0
     path: Assets/_Scenes/Tools/PhotoBooth.unity
     guid: 88bd9d59331396d44be56d5b782632ee
@@ -60,11 +54,20 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameBends.unity
     guid: 4bd7f88fecb7656a95c80e9bd3a26949
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameUndertow.unity
+    guid: b40ed216cc5fc9b15f307d128634cbc0
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity
     guid: 9d8301469790f52127be3a371175902b
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameBroadside.unity
+    guid: 54ef8d736a02e0064bb0f3dac41132ad
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameScarabScramble.unity
     guid: 0395d0c497342302a6aad5ec90e5c293
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWreckingBall.unity
+    guid: b46c6fe4f22e6371a02b75b4fe3362b2
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameTollway.unity
     guid: 17d14a293f6b6ba948acec58b6ea0933
@@ -87,10 +90,13 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity
     guid: 5c4a19b94fe0e6e8cf6276e50013e091
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameRegatta.unity
+    guid: 49396577723d994f703e783dce685bff
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeLiberation.unity
     guid: 11228dcc85a39689b45c12e88617a976
   - enabled: 1
-    path: Assets/_Scenes/Multiplayer Scenes/MinigamePeelTheCage.unity
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameCleave.unity
     guid: 654b78c48ae68265c22ff31443204daf
   - enabled: 1
     path: Assets/_Scenes/Singleplayer Scenes/MinigameGrizzlyCharge.unity
@@ -101,6 +107,21 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSkein.unity
     guid: 7a176232b6f8f7a3277106d997031bdd
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWaystation.unity
+    guid: 44434b4493159039a94408c64fd2bf38
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameDustup.unity
+    guid: e22eb90422d763de08d219612851e916
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameTapestry.unity
+    guid: 66ee08b9dff6ca4fd973337baf4857af
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameSirocco.unity
+    guid: f3efa5204ad2461ebf22bc57e2170a5a
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeBlitzMultuplayerCoOp.unity
+    guid: ad3b1401174bb7d46af84ae67c6ffbe3
   m_configObjects:
     com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: d81858d78bc481248ad644af4fc19343,
       type: 2}

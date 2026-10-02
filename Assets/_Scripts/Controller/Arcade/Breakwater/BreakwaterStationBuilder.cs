@@ -23,11 +23,13 @@ namespace CosmicShore.Gameplay
     /// the model (which has no station index at all) can reproduce it.</para>
     ///
     /// <para><b>Everything emitted is <see cref="PrismKind.Plain"/> or
-    /// <see cref="PrismKind.Danger"/>, and that is a collider-budget law, not a look.</b> Both
-    /// ride a LOD-cullable <c>BoxCollider</c>; the two shield tiers swap to an always-on convex
-    /// <c>MeshCollider</c> that collider-LOD cannot reclaim. Never shield the plug on top of
-    /// that: a shield reaches 1.5x leafSize (<c>Docs/ECOSYSTEM.md</c> §35), which on a 12-unit
-    /// rake pitch fuses the weave into a solid wall and deletes both the saw and the thread.</para>
+    /// <see cref="PrismKind.Danger"/>, and the reason is GEOMETRY, not the collider.</b> A shield
+    /// does NOT cost a collider - every kind rides the same LOD-cullable <c>BoxCollider</c> and
+    /// <c>shieldMeshCollider.enabled = true</c> appears nowhere (see
+    /// <see cref="CosmicShore.Gameplay.SpawnableBreakwater"/>, which records the measurement). What
+    /// is not contingent is the reach: a shield engages the circumscribing octahedron at 1.5x
+    /// leafSize (<c>Docs/ECOSYSTEM.md</c> §35), which on a 12-unit rake pitch fuses the weave into a
+    /// solid wall and deletes both the saw and the thread.</para>
     ///
     /// <para><b>What the three parts teach, in the order a pilot meets them.</b> The DISH is a
     /// horn you cannot miss and cannot be hurt by - it says "the station is here, and it is

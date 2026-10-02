@@ -22,3 +22,4 @@ MonoBehaviour:
   swipeEngageThreshold: 0.4
   stanceSumThreshold: 1.5
   stanceCenterEpsilon: 0.4
+  comboLibrary: {fileID: 11400000, guid: 93cd91bfb2a74d648db6762a71dfc3e9, type: 2}

@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86d1715b8f104fcc87cb60e015d4b563, type: 3}
+  m_Name: GameToastConfig_Waystation
+  m_EditorClassIdentifier:
+  gameMode: 58
+  toasts:
+  - situation: 117
+    messageTemplate: 'Thread every ring around you - they only count in order'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 1
+    resetOnSituation: 0
+    idleSeconds: 25
+    repeatWhileIdle: 1
+  - situation: 118
+    messageTemplate: 'Out of rings? HOLD the fold and aim where you want to land'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 1
+    resetOnSituation: 0
+    idleSeconds: 40
+    repeatWhileIdle: 1

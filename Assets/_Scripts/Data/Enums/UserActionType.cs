@@ -20,9 +20,16 @@ namespace CosmicShore.Data
         ViewShipManta = 310,
         ViewShipRhino = 311,
         ViewShipSquirrel = 312,
+        UnlockVessel = 320,
 
         // Game Related - 400s
         PlayGame = 400,
+
+        // Profile Related - 500s
+        ViewProfileMenu = 500,
+
+        // Episodes Related - 600s
+        ViewEpisodeMenu = 600,
 
 
         /*********** ADDED BY WILL *************/

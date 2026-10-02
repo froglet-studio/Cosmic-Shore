@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_GrizzlyCharge
+  m_EditorClassIdentifier: 
+  Mode: 62
+  Notes: 'Grizzly proving grounds in the Boneyard - the scene''s own four intensity
+    cells, referenced, not forked. OPEN-ENDED: what it teaches is the Grizzly kit,
+    above all the bomb pump (alternate LT/RT; squeeze harder for a bigger kick) and
+    riding your own cannon blast. Vessel pinned to Grizzly(5).'
+  PreviewCell: {fileID: 11400000, guid: cc21823da49bd38535c54796c4a1c168, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: cc21823da49bd38535c54796c4a1c168, type: 2}
+  - {fileID: 11400000, guid: 64160342670283d2a0c5088f1951295c, type: 2}
+  - {fileID: 11400000, guid: 7dc0173b8f31a743221e8f0bd3ec2d40, type: 2}
+  - {fileID: 11400000, guid: 5511269da8da60affaf693e51b8a60a1, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  Vessel: 5
+  ObjectiveText: Pump the triggers
+  ObjectiveMetric: 5
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 700
+  SpawnFormation: 0
+  SpawnPoints: []

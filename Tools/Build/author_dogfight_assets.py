@@ -177,7 +177,7 @@ SPAWN_RING_RADIUS = 700
 SENSE_RADIUS = 1200
 
 # The scene's NetworkCrystalManager spawns the OMNI crystal. Dog Fight runs it EXACTLY as every
-# other mode does (PeelTheCage, freestyle: crystalCountMode 0, one crystal, spawnOnClientReady) - it
+# other mode does (Cleave, freestyle: crystalCountMode 0, one crystal, spawnOnClientReady) - it
 # is a platform fundamental, not mode furniture, and a mode that switches it off is a mode where
 # a whole crystal economy silently does nothing.
 #
@@ -370,9 +370,9 @@ emit(SHOCKWAVE_PATH + ".meta", asset_meta(G_ASSET["VesselCombatHitByMissileShock
 
 # ── 4. Wire them onto the Sparrow's weapons ─────────────────────────────────
 #
-# BULLETS: append to the full-auto container's existing projectileShipEffects (which already
-# spins and shrinks the victim's skimmer) - the scoring effect is additive and changes nothing
-# about how a bullet already feels.
+# BULLETS: append to the full-auto container's existing projectileShipEffects - the scoring
+# effect is additive and changes nothing about how a bullet already feels. (That container used
+# to carry a SPIN as well; it was removed - a vessel may not move an opposing vessel.)
 FULLAUTO_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Projectile Containers/"
                  "SparrowFullAutoProjectileImpactContainer.asset")
 fullauto = read(FULLAUTO_PATH)
@@ -843,7 +843,7 @@ else:
     # 9e. THE OMNI CRYSTAL SPAWNS NORMALLY - it just stops spawning at the origin.
     #
     # The donor's settings are already the platform-normal ones (crystalCountMode 0, one crystal,
-    # spawnOnClientReady), identical to PeelTheCage, and they are kept verbatim. What the donor does NOT
+    # spawnOnClientReady), identical to Cleave, and they are kept verbatim. What the donor does NOT
     # author is `noNucleusSpawnRadius`, and in THIS cell that is the whole problem:
     # CrystalManager.GetAnchorlessSpawnRadius resolves the cell's NUCLEUS radius FIRST (the crystal
     # volume and the nucleus are coupled platform-wide and no scene may override that - see

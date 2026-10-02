@@ -40,7 +40,9 @@ import os
 import re
 import sys
 
-ROOT = os.path.join("Assets", "_Scripts")
+# See check_enum_member_references.py: `Assets/FTUE` is first-party C# too, and a
+# duplicate switch label there is exactly as invisible to the compile tier as one here.
+SCAN_ROOTS = [os.path.join("Assets", "_Scripts"), os.path.join("Assets", "FTUE")]
 
 ENUM_RE = re.compile(r'\benum\s+([A-Za-z_]\w*)\s*(?::\s*[\w\.]+\s*)?\{', re.M)
 MEMBER_RE = re.compile(r'^\s*(?:\[[^\]]*\]\s*)*([A-Za-z_]\w*)\s*(?:=\s*([^,\n]+?))?\s*,?\s*(?://.*)?$')
@@ -141,10 +143,11 @@ def run(files):
 def main():
     self_test = "--self-test" in sys.argv
     files = []
-    for d, _, fs in os.walk(ROOT):
-        for f in fs:
-            if f.endswith(".cs"):
-                files.append(os.path.join(d, f))
+    for scan_root in SCAN_ROOTS:
+        for d, _, fs in os.walk(scan_root):
+            for f in fs:
+                if f.endswith(".cs"):
+                    files.append(os.path.join(d, f))
 
     if self_test:
         import tempfile

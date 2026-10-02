@@ -17,7 +17,7 @@ string fallback on load.
 
 | # | Key | Model | Status | Debounce | Writes |
 |---|---|---|---|---|---|
-| 1 | `player_profile` | `PlayerProfileData` | **ACTIVE** | 1.5s | Per mutation (crystals, rewards, avatar/name) |
+| 1 | `player_profile` | `PlayerProfileData` | **ACTIVE** | 1.5s | Per mutation (crystals, rewards, avatar/name; the `xp` field is dormant) |
 | 2 | `PLAYER_STATS_PROFILE` | `PlayerStatsProfile` | **ACTIVE** | 2.0s | Game end (only when a best is beaten) |
 | 3 | `VESSEL_STATS` | `VesselStatsCloudData` | **ACTIVE** | 2.0s | Every game end |
 | 4 | `GAME_MODE_PROGRESSION` | `GameModeProgressionData` | **ACTIVE** | 1.5s + immediate | Quest claims, intensity unlocks, stat reports |
@@ -48,7 +48,8 @@ string fallback on load.
 (Phase 2) — used for install-relative cohorting / retention analysis.
 
 Writer: `PlayerDataService` (sole writer; `AddCrystals`, `TrySpendCrystals`, `UnlockReward`,
-profile edits → `MarkDirty`).
+profile edits → `MarkDirty`). XP was removed (no `AddXP`, no `ParticipationXpAwarder`); the
+`PlayerProfileData.xp` field persists dormant for back-compat.
 Read once per session, merged with cloud (`MergeCloudProfile` unions reward IDs).
 **Note for the data team: "omnicrystals" in the instrumentation doc == `crystalBalance` here.**
 
@@ -250,7 +251,11 @@ favorites is a referral signal), and should get cloud keys + events when touched
   instead of resurrecting the Firebase path.**
 - `level_start` / `level_end` in `FirebaseAnalyticsController` — subscriptions commented out.
 - `screen_view` — method exists, never called.
-- `UserJourneySystem` / `QuestSystem` — full funnel state machine, emits zero analytics.
+- `QuestGraphRunner` (`Assets/FTUE/Scripts/Graph/Runtime/`) — the quest graph, emits zero
+  analytics. It REPLACED `UserJourneySystem` / `QuestSystem`, which are deleted; instrument the
+  runner's `FTUEEventManager.OnQuestPhaseCompleted` / `OnQuestCompleted`, not the old classes.
+  Note it does not run at all while `DeveloperUnlockGate.AllUnlocked` is on (the default until
+  the FTUE is designed), so a build taken today emits nothing here by construction.
 - PlayFab PlayStream `AnalyticsController` — disabled, delete when convenient.
 
 ### 2.3 Consent
@@ -323,8 +328,11 @@ itself doesn't exist).
     (or a new `PLAYER_STYLE` key) and as a UGS Analytics user property. Note: "altitude bands /
     map coverage" from the data-team doc translate to **cell occupancy / cell coverage** in our IA.
 14. **Squad cloud migration** + `squad_configured` (activation gate in the data team's funnel).
-15. **Quest/UserJourney analytics**: `quest_completed` / `journey_stage_reached` from
-    `UserJourneySystem` (currently silent).
+15. **Quest analytics**: `journey_stage_reached` is still unbuilt. `quest_completed` IS raised
+    again — `GameModeProgressionService.RecordQuestCompletedAnalytics`, at both quest-completion
+    paths — after the quest-graph branch deleted its old producer (`QuestSystem`) and left the
+    event documented LIVE with nothing raising it. `UserJourneySystem` is deleted; do not plan
+    against it.
 
 ### 3.3 Explicitly out of scope until VLater
 

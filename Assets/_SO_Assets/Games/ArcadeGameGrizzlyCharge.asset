@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameGrizzlyCharge
   m_EditorClassIdentifier:
-  Mode: 54
+  Mode: 62
   IsMultiplayer: 1
   DisplayName: Grizzly Charge
   Description: Grizzly proving grounds. A cell full of prisms to nuke, an opponent
@@ -20,9 +20,7 @@ MonoBehaviour:
     in, rush, snipe, and burn - a test range today, a tank game tomorrow.
   IconActive: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
   IconInactive: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
-  CardBackground: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
-  PreviewClip: {fileID: 241334157148977051, guid: f48cd1df8d808014c8a8f4db1258d202,
-    type: 3}
+  CardBackground: {fileID: 21300000, guid: 4002a4178e5148abb2bcb3ad23659d07, type: 3}
   GolfScoring: 1
   SceneName: MinigameGrizzlyCharge
   Vessels:
@@ -33,6 +31,5 @@ MonoBehaviour:
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0

@@ -12,7 +12,7 @@ the scoring rule, the scene, and the registrations.
   - four CellConfigDataSOs, each carrying ITS OWN PhaseThresholds
   - one spawn profile that authors NOTHING (no food web - see HIJACK.md "Why no fauna")
   - the arcade card + scoring rule + objective-icon entry for the new metric
-  - the scene (cloned from MinigamePeelTheCage, mode wiring swapped)
+  - the scene (cloned from MinigameCleave, mode wiring swapped)
   - the registrations (game list, progression, build settings, end-condition target)
 
 THE NUMBERS ARE NOT IN THIS FILE. Every count and threshold is imported from
@@ -83,9 +83,9 @@ EXISTING = {
     "CellConfigDataSO": "01f934d50526431a9392a6ceca1dc33d",
     "SpawnProfileSO":   "e8d8aa5d835249798a256e18f2f7d912",
     # donor scene wiring to swap out (minted deterministically by author_ribcage_assets.py)
-    "PeelTheCageController":       guid("script/RibcageController"),
-    "PeelTheCagePrismTurnMonitor": guid("script/RibcagePrismTurnMonitor"),
-    "PeelTheCageScoringRule":      guid("asset/RibcageScoringRule"),
+    "CleaveController":       guid("script/RibcageController"),
+    "CleavePrismTurnMonitor": guid("script/RibcagePrismTurnMonitor"),
+    "CleaveScoringRule":      guid("asset/RibcageScoringRule"),
     # shared content
     "Prism_prefab":     "ed9defc56162b4b4588e61c20984b6d9",
     "Membrane_prefab":  "6e330f85972faf843b8a128e7166f7b5",
@@ -137,21 +137,14 @@ COMEBACK_RATE = 0.016
 # its own SphereRadius and respawns on the arena's exact centre (the Dog Fight lesson).
 OMNI_SPAWN_RADIUS = 300
 
-# ScoreDifferenceSource.PrismsStolen - the LIVE stat the comeback layer reads a deficit from.
-#
-# This has to be authored INTO THE SCENE, not left to ElementalComebackSystem.DefaultSourceFor:
-# EnsureExists respects a scene-authored instance as-is (it only calls Bind), so the per-mode
-# default is never consulted in a scene that already carries the component - and the donor's is
-# PrismsDestroyed, which in a mode where nothing is destroyed is a flat zero forever. The
-# comeback layer would have been silently inert, which is exactly the shape of defect the
-# generator's other scene assertions exist to catch.
-COMEBACK_SOURCE = 9
+# (No comeback source: ElementalComebackSystem reads ScoringRuleSO.DomainValue since 2026-09, so
+# the comeback reads PrismsStolen because the SCORE does, and a clone cannot inherit its donor's.)
 
 # ── The three shared-registry IDs, in ONE place ─────────────────────────────
 # A game mode claims three slots in three enums that every other mode also lives in, and NONE of
 # the three fails loudly on a double-claim: C# lets two enum members share a value, so a second
 # mode taking the same ID compiles and silently ALIASES - GameModes.Hijack == the other mode,
-# every switch on it ambiguous, and ScoringMetric/ScoreDifferenceSource reading each other's
+# every switch on it ambiguous, and two ScoringMetric members reading each other's
 # stat. Only GameModes has a tripwire (EnumIntegrityTests' member count), and it catches the
 # COUNT rather than the collision. So the numbers live here, the asserts at the bottom hold the
 # C# to them, and moving a mode off a collision is a three-line edit rather than a hunt.
@@ -450,29 +443,29 @@ emit("Assets/_SO_Assets/Cell Configs/Switchyard Cell/Switchyard Spawn Profile.as
      asset_meta(G_ASSET["SwitchyardSpawnProfile"]))
 
 
-# ── 6. Scene: clone MinigamePeelTheCage, swap the mode-specific wiring ──────
+# ── 6. Scene: clone MinigameCleave, swap the mode-specific wiring ──────
 # The donor is the closest structural match in the project: a nucleus-less arena cell on
 # IntensityWise configs, players spawned on a computed EQUATORIAL ring outside the structure
 # (which is what this mode wants too - the yard's rails ring the core, so a tetrahedral spread
 # would drop two of four players on a pole where no rail passes), four AI templates, and one
 # omni crystal. The clone swaps the mode identity, the arena, the hull and the spawn radius.
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigamePeelTheCage.unity")
+scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameCleave.unity")
 
 # 6a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
-scene, n = re.subn(EXISTING["PeelTheCagePrismTurnMonitor"], G_SCRIPT["HijackStealTurnMonitor"], scene)
+scene, n = re.subn(EXISTING["CleavePrismTurnMonitor"], G_SCRIPT["HijackStealTurnMonitor"], scene)
 assert n == 1, f"turn monitor guid appeared {n} times"
 
 # 6b. controller script swap + its serialized field block
-scene, n = re.subn(EXISTING["PeelTheCageController"], G_SCRIPT["HijackController"], scene)
+scene, n = re.subn(EXISTING["CleaveController"], G_SCRIPT["HijackController"], scene)
 assert n == 1, f"controller guid appeared {n} times"
 
-OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['PeelTheCageScoringRule']}, type: 2}}
+OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['CleaveScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
   firstMilestoneFraction: 0.25
   secondMilestoneFraction: 0.5
   progressSampleSeconds: 0.5
   aiRetargetSeconds: 2
-  aiCageRadiusOverride: 0
+  aiArenaRadiusOverride: 0
 """
 NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['HijackScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
@@ -488,7 +481,7 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['HijackScoringRule']
 assert OLD_FIELDS in scene, "controller field block not found in donor scene"
 scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 
-# 6c. The ARENA: swap the donor's five cage configs for the four Switchyard ones. The choice
+# 6c. The ARENA: swap the donor's four Cleave configs for the four Switchyard ones. The choice
 # mode is already IntensityWise, which is the platform's own way to vary a cell by intensity.
 old_cell = re.search(r"  CellConfigs:\n(?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)+"
                      r"  cellTypeChoiceOptions: 1\n", scene)
@@ -520,11 +513,6 @@ scene, n = re.subn(r"  noNucleusSpawnRadius: \d+\n",
                    f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n", scene)
 assert n == 1, f"noNucleusSpawnRadius appeared {n} times"
 
-# 6g. The comeback's LIVE STAT. See COMEBACK_SOURCE - the donor's PrismsDestroyed is a flat
-# zero in a mode that destroys nothing, so the whole comeback layer would never fire.
-scene, n = re.subn(r"  differenceSource: \d+\n",
-                   f"  differenceSource: {COMEBACK_SOURCE}\n", scene)
-assert n == 1, f"differenceSource appeared {n} times"
 
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity.meta",
@@ -593,9 +581,9 @@ BUILD_PATH = "ProjectSettings/EditorBuildSettings.asset"
 build = read(BUILD_PATH)
 if "MinigameHijack.unity" not in build:
     anchor = re.search(
-        r"(  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigamePeelTheCage\.unity\n"
+        r"(  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameCleave\.unity\n"
         r"    guid: [0-9a-f]{32}\n)", build)
-    assert anchor, "PeelTheCage scene entry not found in EditorBuildSettings"
+    assert anchor, "Cleave scene entry not found in EditorBuildSettings"
     build = build.replace(anchor.group(1), anchor.group(1) +
                           "  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity\n"
                           f"    guid: {G_ASSET['MinigameHijack.unity']}\n")
@@ -655,7 +643,7 @@ for name, g in EXISTING.items():
 
 # the scene must no longer mention the donor's mode-specific guids
 sc = files["Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity"]
-for name in ("PeelTheCageController", "PeelTheCagePrismTurnMonitor", "PeelTheCageScoringRule"):
+for name in ("CleaveController", "CleavePrismTurnMonitor", "CleaveScoringRule"):
     if EXISTING[name] in sc:
         errors.append(f"cloned scene still references {name}")
 for name in ("HijackController", "HijackStealTurnMonitor"):
@@ -677,10 +665,6 @@ if f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n" not in sc:
 if "  spawnFormation: 1\n" not in sc:
     errors.append("scene is not on CellSpawnFormation.EquatorialRing - the yard's rails ring "
                   "the core, so a polar spawn slot faces no rail")
-if f"  differenceSource: {COMEBACK_SOURCE}\n" not in sc:
-    errors.append("scene does not author ScoreDifferenceSource.PrismsStolen - a scene-authored "
-                  "ElementalComebackSystem is respected as-is, so the donor's PrismsDestroyed "
-                  "would leave the comeback layer reading a flat zero deficit all match")
 if f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n" not in sc:
     errors.append("scene lost noNucleusSpawnRadius - this cell has no nucleus, so the omni "
                   "crystal would respawn on the arena's exact centre")
@@ -827,16 +811,6 @@ if not m:
 elif int(m.group(1)) != HIJACK_STEAL_TARGET:
     errors.append(f"DefaultHijackStealTarget ({m.group(1)}) != this script's "
                   f"HIJACK_STEAL_TARGET ({HIJACK_STEAL_TARGET}) - the two must move together")
-
-# The comeback source ordinal must match the C# enum, or the scene points at another stat.
-comeback_cs = read("Assets/_Scripts/Controller/Arcade/ElementalComebackSystem.cs")
-m = re.search(r"PrismsStolen = (\d+),", comeback_cs)
-if not m:
-    errors.append("ElementalComebackSystem.ScoreDifferenceSource.PrismsStolen has no explicit "
-                  "value - the scene serializes an ordinal and cannot be checked against it")
-elif int(m.group(1)) != COMEBACK_SOURCE:
-    errors.append(f"ScoreDifferenceSource.PrismsStolen is {m.group(1)} but the scene authors "
-                  f"{COMEBACK_SOURCE} - the comeback would read a different stat")
 
 # GameModes.Hijack and ScoringMetric.PrismsStolen must exist with the values authored here
 gamemodes_cs = read("Assets/_Scripts/Data/Enums/GameModes.cs")

@@ -125,6 +125,12 @@ change table: §2.10.3. Applied by `Tools/Build/retire_profile_modal.py` (`--che
 **Acceptance re-run:** `audit_persistent_listener_injection.py` dead-wiring list is **13 → 11**;
 both `ProfileModal.ModalWindowOut` rows (`Menu_Main.unity` and `Profile.prefab`) are gone.
 
+> **Those numbers are pre-12-Sep-2026 and are not comparable to a run today.** The auditor's parser
+> assumed Unity's serialised field order and was reading **279 of 992** persistent calls; fixing it
+> took the dead-wiring list to **26** and the injection-surface baseline from 28 to 56 pairs. The
+> *delta* recorded above (the two `ProfileModal.ModalWindowOut` rows going away) still holds — it is
+> the absolute counts that moved, because the tool can now see its whole input.
+
 **One correction to this item's own wording.** It said the `ProfileModal.ModalWindowOut` entries
 "have `m_Target: {fileID: 0}`". They did not — those two rows targeted a real `ProfileModal`
 component and worked at runtime. The auditor lists them because it greps the *resolved script file*
@@ -1354,7 +1360,7 @@ Shared `MultiplayerHUD`. Team crystals-remaining + team panels; **deliberately n
 `Assets/_Scripts/UI/MenuMiniGameHUD.cs`; hierarchy `Menu_Main → UI_Refactored → Game UI`. The entire freestyle HUD is:
 - **One button** — the same domain-volume hex gauge, top-right; tapping it (or gamepad **Start**) exits freestyle back to the menu.
 - The **vessel HUD** (per-vessel gauges + element flowers + ability row, §3.6) — reparented in and shown/hidden with the freestyle transitions, re-shown after a mid-freestyle vessel swap.
-- The **Vessel Selection Panel**: seven scene-placed vessel cards (Rhino, Dolphin, Manta, Squirrel, Serpent, Sparrow, **Urchin — which has no vessel HUD**), Resume/Pause buttons. Opening it re-engages autopilot; Resume performs a networked vessel swap and restores control after ~600ms.
+- ~~The **Vessel Selection Panel**~~ — **RETIRED 2026-09-23.** Seven scene-placed vessel cards (Rhino, Dolphin, Manta, Squirrel, Serpent, Sparrow, Urchin), never updated for the Scarab or the Butterfly. This entry described it as if it opened; measured, its GameObject was `m_IsActive: 0`, `Awake` called `ui.Hide()`, and `Open()` had zero callers in C# and zero persistent listeners — so it was unreachable, and its staleness could never surface. Hull selection is the **Vessel Changer toy** (fly it, or open it in the menu Toy Box).
 - The **pause menu**, instantiated at runtime and pre-warmed.
 - No score, no timer, no toasts, no ready button, no countdown, no end condition — by design (freestyle is a toybox).
 
@@ -1382,7 +1388,7 @@ HUD prefab variants exist at `Assets/_Prefabs/UI Elements/VesselHUD/` for **Dolp
 | Vessel | HUD contents |
 |---|---|
 | **Squirrel** (fullest) | Boost radial fill (team-tinted, whitens at full); **Drift** icon (3 sprite states + a 45° lean tween); an **Impact** icon flashing red on a joust / cyan on a crystal; **Tube cooldown** icon (grey→red "armed" with a breathing pulse and a slam-home on load); **Overheat** icon + heat glow ramping to orange with an overheat counter; explicitly authored element flowers |
-| **Dolphin** | Four slots = four axes of its one weapon: a **procedurally drawn blast-profile capsule** (color-shifts while the Echo Sight is held) + a two-line living tally (pilots debuffed / creatures killed); a **crystal-seeding recharge icon** (lime = free-for-all seed, team color = team-locked seed at Mass 5); **animated jaws** that open with banked energy, mirroring the hull's real jaws, + a blast tally; the boost/charge ring |
+| **Dolphin** | Four slots = four axes of its one weapon: a **procedurally drawn blast-profile capsule** (color-shifts while the Echo Sight is held) + a two-line living tally (pilots debuffed / creatures killed); a **crystal-seeding recharge icon** (lime = free-for-all seed, team color = team-locked seed at Mass 5); **animated jaws** that open with banked energy, mirroring the hull's real jaws; the boost/charge ring; and the **omni crystal card** carrying the last blast's prism tally, centred, held until the next blast |
 | **Sparrow** | Missile ammo ladder (multi-sprite); a binary **strafing-roll charge ring** (blue-white armed / dim spent, punch on spend); weapon-mode icon; blocked-input red pulses; 4-icon action row + Xbox/PS glyph roots |
 | **Serpent** | Seed-wall **shield icon** (5-sprite ladder, 0–4 shields); **four boost pips** (white → green while consuming → faint when empty) |
 | **Rhino** | A **skimmer-size icon that physically resizes** (50→100px) with skimmer growth; crystal-slow icon (green flash + count); slow-line icon (red flash); debuff icon (cyan flash + countdown) |
@@ -1618,7 +1624,7 @@ Rules already in force going forward (from the doc): one canvas asset; variants 
 | **Settings scripts** | Legacy `SettingsModal.cs` shim + live `GameSettingsPanelController` on the same prefab; four generations of options-panel prefabs exist |
 | **Legacy player-count buttons vs `IntStepper`** | Both alive (loadout view vs configure modal) |
 | **Two sibling folders `UI/View/` and `UI/Views/`** | `Views/` also contains `PlayerDataService` — a data service filed under views |
-| **Dead-but-present** | `VesselSelectionPanelController` (legacy, GUID referenced nowhere), `KeyboardMouseInputStrategy`, retired `AddFriendPanel`/`FriendInfoEntry`, `MIgration_Prefabs (DELETE LATER)/` folder with a duplicate `ModalWindows.prefab` |
+| **Dead-but-present** | ~~`VesselSelectionPanelController`~~ (deleted 2026-09-23 with the whole vessel-selection panel cluster), `KeyboardMouseInputStrategy`, retired `AddFriendPanel`/`FriendInfoEntry`, `MIgration_Prefabs (DELETE LATER)/` folder with a duplicate `ModalWindows.prefab` |
 
 ### 5.2.1 The second game-over panel — F6, resolved 2026-09-08
 
@@ -1840,7 +1846,7 @@ Every distinct screen/state to capture for full visual coverage. Recommended: ca
 
 - [ ] Menu → freestyle transition mid-fade (chrome fading, camera blending)
 - [ ] Freestyle flight — the minimal HUD: hex-gauge button + vessel HUD, per vessel (see H)
-- [ ] Vessel Selection Panel open (7 cards incl. **Urchin**, selected marker, Resume/Pause)
+- [ ] Vessel Changer toy: fly it in freestyle AND open it in the menu Toy Box — the same hull list, the same swap (the scene-authored vessel-selection panel was retired 2026-09-23)
 - [ ] Freestyle pause menu (runtime-instantiated variant — note it differs from the in-game one)
 - [ ] The domain-volume hex gauge in distinct fill states (early cell vs a full/frenzied cell)
 - [ ] A toy interaction moment (switch ring + matrix bloom — world geometry, for visual-language context)

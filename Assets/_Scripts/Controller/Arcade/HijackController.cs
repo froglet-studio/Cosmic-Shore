@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
             _finalResultsSent = false;
 
             // RoundStats lives on the PERSISTENT Player object, so a stat that survives a scene
-            // load is worth zeroing twice rather than never (the PeelTheCage regression where
+            // load is worth zeroing twice rather than never (the Cleave regression where
             // players started a match already on the board).
             if (IsServer) ZeroStealCounters();
         }

@@ -20,19 +20,20 @@ namespace CosmicShore.Gameplay
     /// effect.</b> A rule enforced at one PRODUCER can only ever see that producer — the same
     /// finding the Scarab's ball ceiling records. A Sparrow destroys prisms five different ways:
     /// full-auto bullets, turret-stance prism rounds, a missile's direct hit, a missile's BLAST,
-    /// and a hull ram. The blast is the big one and it is the one an effect cannot see at all:
-    /// while the spatial index is up, <c>ExplosionImpactor</c> resolves prism damage through the
-    /// Burst batch path (<c>PrismSpatialIndex.ProcessExplosionFrame</c>), which dispatches NO
-    /// per-prism effects — an <c>ExplosionPrismEffectSO</c> wired for this would run only on the
-    /// Physics fallback, i.e. almost never, and would look correct in code the whole time.
-    /// <see cref="Prism"/> raises the destroyed channel from ONE place on every route, so
-    /// counting what actually happened notices every producer by construction.</para>
+    /// and a hull ram. <see cref="Prism"/> raises the destroyed channel from ONE place on every
+    /// route, so counting what actually happened notices every producer by construction — which
+    /// is also what makes it possible to DECLINE four of the five in one place. The weapon
+    /// identity rides the payload (<see cref="PrismStats.DestroyedByGunfire"/>) because it is
+    /// only knowable at the call that damaged the prism.</para>
     ///
-    /// <para><b>Only HOSTILE mass pays.</b> The test is <see cref="StatsManager"/>'s own
-    /// (<c>IsFriendlyEnvironmentPrism</c>) so "which mass is worth something to me" has one
-    /// answer platform-wide: your own trail, a teammate's trail, and environment mass wearing
-    /// your colour are all free of charge, while <see cref="Domains.Blue"/> neutral mass is
-    /// hostile to everyone. Without it, a pilot could park and reload off their own ribbon.</para>
+    /// <para><b>Only DIRECT GUNFIRE pays, and its DOMAIN does not matter.</b> Two separate
+    /// rules, and the second replaced a hostile-mass-only test. Gunfire only, because the loop
+    /// is <i>shoot to reload, reload to rocket</i>: a rocket whose own blast funds the next one
+    /// closes that loop on itself and the guns stop being the economy. Any domain, because the
+    /// thing being rewarded is <i>trigger time on mass</i> rather than territorial damage —
+    /// gating it on colour made the reload silently dry up in exactly the arenas whose mass
+    /// wears the pilot's own (a teammate's trail, own-domain flora), and a pilot willing to
+    /// spend ammunition shooting their own ribbon has paid for what they get back.</para>
     ///
     /// <para><b>THE TANK MUST AGREE ACROSS PEERS, and this is why the component is networked.</b>
     /// An ability press is replicated as a PRESS, not as a decision: the owner sends it to the
@@ -72,15 +73,15 @@ namespace CosmicShore.Gameplay
         [SerializeField] FireGunActionSO weaponAction;
 
         [Header("Payout")]
-        [Tooltip("Ammunition added per hostile prism destroyed, in the resource's own units " +
-                 "(the Sparrow's missile tank is 0..1 and a skyburst costs 0.5, so 0.01 means " +
-                 "50 prisms per missile and 100 for a full rack).")]
+        [Tooltip("Ammunition added per prism destroyed, in the resource's own units (the " +
+                 "Sparrow's missile tank is 0..1 and a base skyburst costs 0.25, so 0.01 means " +
+                 "25 prisms per rocket and 100 for a full rack).")]
         [SerializeField, Min(0f)] float ammoPerPrism = 0.01f;
 
-        [Tooltip("On (default): only prisms that are NOT your own domain's pay. Off: any prism " +
-                 "you destroy pays, including your own trail — which is a self-service reload " +
-                 "and almost certainly not what you want.")]
-        [SerializeField] bool hostileMassOnly = true;
+        [Tooltip("On (default): only DIRECT GUNFIRE pays — a round that struck the prism " +
+                 "itself. A rocket's blast, a ram, a sword and a creature all pay nothing. Off: " +
+                 "anything you destroy pays, whatever destroyed it.")]
+        [SerializeField] bool requireGunfire = true;
 
         [Header("Networking")]
         [Tooltip("How often (seconds) the OWNER may publish its tank to the other peers. This is " +
@@ -147,8 +148,10 @@ namespace CosmicShore.Gameplay
             var me = player.Name;
             if (string.IsNullOrEmpty(me) || stats.AttackerName != me) return;
 
-            if (hostileMassOnly &&
-                StatsManager.IsFriendlyEnvironmentPrism(_status.Domain, stats.OwnDomain)) return;
+            // THE GUN IS THE RELOAD, and nothing else is. A rocket that clears a whole stand of
+            // cacti buys no part of the next rocket: the loop is "shoot to reload, reload to
+            // rocket", and letting the rocket pay for itself collapses it.
+            if (requireGunfire && !stats.DestroyedByGunfire) return;
 
             var resources = _status.ResourceSystem;
             if (!resources) return;

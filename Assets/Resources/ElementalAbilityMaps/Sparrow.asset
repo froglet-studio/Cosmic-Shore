@@ -20,8 +20,6 @@ MonoBehaviour:
       - short at rest, unchanged at full overcharge. At level 5 shots pierce through
       prisms - both bullets and turret-stance prism rounds.
     Input: 1
-    MultiplierAtFullLevel: 9
-    MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -36,8 +34,6 @@ MonoBehaviour:
       no unlock). Time raises the boost speed; at level 5 boosting also makes you
       immune to elemental debuffs.
     Input: 7
-    MultiplierAtFullLevel: 1.5
-    MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -46,23 +42,21 @@ MonoBehaviour:
       and skimmer overtakes leave your levels untouched. Buffs still apply.
   - Element: 2
     AbilityLabel: Turret Stance
-    AbilityDescription: Stop and fire prisms instead of bullets - the same shot in
+    AbilityDescription: 'Stop and fire prisms instead of bullets - the same shot in
       every way, except you watch a prism fly and it stays wherever the bullet would
       have died. Mass is the SUBSTANCE of what you fire: it stretches the fired prisms
       AND swells every round as it travels (3x over its flight at rest, 6x at level
       10), so the hit volume grows with the visual. At level 5 fired prisms arrive
-      shielded.
+      shielded.'
     Input: 6
-    MultiplierAtFullLevel: 2.5
-    MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Shielded Prisms
-    UpgradeDescription: Prisms fired in the turret stance arrive shielded - one-hit
+    UpgradeDescription: 'Prisms fired in the turret stance arrive shielded - one-hit
       ablative octahedron armor, with a wider hit sphere to match. Briefly lived at
       Space 5 (2026-08 round 4) and was returned here by design sign-off: MASS owns
-      the substance of what you fire, SPACE owns its reach.
+      the substance of what you fire, SPACE owns its reach.'
   - Element: 1
     AbilityLabel: Skyburst Rockets
     AbilityDescription: Rockets stocked by DESTROYING MASS - every hostile prism
@@ -73,8 +67,6 @@ MonoBehaviour:
       wildlife. Charge widens the prism blast (authored on the skyburst effect
       assets); at level 5 both explosions spare your own domain.
     Input: 2
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

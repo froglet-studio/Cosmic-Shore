@@ -20,6 +20,13 @@ namespace CosmicShore.ScriptableObjects
         menuName = "ScriptableObjects/UI/Elemental Bars Config")]
     public class ElementalBarsConfigSO : ScriptableObject
     {
+        /// <summary>
+        /// Where the shipped asset lives, so a surface outside a vessel HUD can reach the petal
+        /// art with no per-prefab wiring. Named rather than retyped because the path is already
+        /// a magic string in several places; new readers use this.
+        /// </summary>
+        public const string ResourcePath = "ElementalBarsConfig";
+
         [Serializable]
         public struct ElementPetal
         {

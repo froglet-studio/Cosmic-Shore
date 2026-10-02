@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
     /// (<c>GameDataSO.SyncFromArcadeGame</c> for the machine that pressed Start,
     /// <c>ServerPlayerVesselInitializer.ResolveSpawnVesselType</c> server-side at spawn), fed by
     /// the single entry in <c>ArcadeGameRampage.Vessels</c>. See
-    /// <see cref="DogFightController"/> / PEEL_THE_CAGE.md for why the server clamp is the one that
+    /// <see cref="DogFightController"/> / CLEAVE.md for why the server clamp is the one that
     /// matters in multiplayer.</para>
     /// </summary>
     public class RampageController : MultiplayerDomainGamesController

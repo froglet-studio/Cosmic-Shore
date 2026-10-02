@@ -97,7 +97,7 @@ A stepping stone to our future dreams of a multi-biome esport, Duel for the Cell
 - **Camera**: Cinemachine 3.1.2 with per-vessel settings
 - **VFX**: VFX Graph, custom HLSL shaders, Shader Graph, procedural skybox
 - **Input**: Unity Input System with platform-specific strategy pattern (keyboard/mouse, gamepad, touch)
-- **Audio**: Wwise integration + SOAP gameplay SFX events for decoupled audio triggers
+- **Audio**: FMOD Studio (`FMODUnity`) + SOAP gameplay SFX events for decoupled audio triggers
 - **Haptics**: NiceVibrations (mobile)
 - **Animation**: Timeline, DOTween
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance, DOTS Entities (incremental adoption)

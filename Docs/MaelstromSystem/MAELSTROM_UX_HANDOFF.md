@@ -98,7 +98,7 @@ sequenceDiagram
     participant Net as Netcode (clients follow)
 
     Host->>TC: AdvanceToNextGame() (Continue)
-    Note over TC: not IsShuffleComplete → LoadRandomGame()
+    Note over TC: not IsShuffleComplete → DrawNextRound() + LaunchPendingRound()
     TC->>TC: pick mode + roll intensity [1..ceiling]
     TC->>GD: stamp NextGameName / NextGameIntensity
     TC->>GD: InvokeGameLaunch() → OnLaunchGame
@@ -173,7 +173,7 @@ scene `m_text` is a static placeholder that runtime `ModeName` overwrites; it wa
   immediately, before the client-defer guard (so clients fade too). Mirrors `LaunchGame`.
 
 ### 2 — `66dcbbfd` "Up next" on the between-game splash
-- **`MaelstromController.LoadRandomGame`** — stamps `MaelstromDataSO.NextGameName` / `NextGameIntensity`
+- **`MaelstromController.DrawNextRound`** — stamps `MaelstromDataSO.NextGameName` / `NextGameIntensity`
   right before `InvokeGameLaunch`.
 - **`MaelstromDataSO`** — added the two `[NonSerialized]` runtime fields.
 - **`MaelstromStandingsFormatter.FormatRunning`** — emits `Up next: <name> · Intensity N` when set.
@@ -297,7 +297,7 @@ funnel instrumentation, host migration, full QA matrix.
 
 | File | Key symbols added/changed |
 |---|---|
-| `_Scripts/Controller/Arcade/Maelstrom/MaelstromController.cs` | `IsBetweenGamesStandingsShown`, `MinLoadSplashDwellSeconds`; `LoadRandomGame` stamps `NextGame*` |
+| `_Scripts/Controller/Arcade/Maelstrom/MaelstromController.cs` | `IsBetweenGamesStandingsShown`, `MinLoadSplashDwellSeconds`; `DrawNextRound` stamps `NextGame*` |
 | `_Scripts/Controller/Arcade/Maelstrom/MaelstromSceneView.cs` | `_summaryActionTaken`, `DisableSummaryButtons`, idempotent button handlers, `RenderSummary`, `GetLocalDomain()` |
 | `_Scripts/System/SceneLoader.cs` | `LaunchGame` computes `minSplashDwell`; `LoadSceneAsync(string, float minSplashDwell)`; `ReturnToMainMenu` splash-ASAP |
 | `_Scripts/UI/Screens/BootStatusBroadcaster.cs` | `HandleLaunchGame` passes local domain to `FormatRunning` |

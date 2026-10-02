@@ -226,10 +226,10 @@ namespace CosmicShore.Utility
         SchwarzPColony = 1 << 19,
         /// <summary>
         /// <c>[Cell]</c> / <c>[Ecology]</c> — cell lifecycle and the food web's bookkeeping:
-        /// spawner start/stop, cell swaps, satellite builds, runtime-data resets, the domain
-        /// fauna buff and lifeform releases. A cell that cannot initialize is still a warning.
+        /// spawner start/stop, cell swaps, satellite builds, runtime-data resets and lifeform
+        /// releases. A cell that cannot initialize is still a warning.
         /// </summary>
-        [CSLogChannelLabel("[Ecology] cell lifecycle, spawners, swaps, fauna buff")]
+        [CSLogChannelLabel("[Ecology] cell lifecycle, spawners, swaps, lifeform releases")]
         Ecology = 1 << 20,
         /// <summary>
         /// <c>[Arcade]</c> — match flow inside a mode: the server setting a turn target,
@@ -270,19 +270,41 @@ namespace CosmicShore.Utility
         [CSLogChannelLabel("[Prism] render service, pools, effect census")]
         PrismRuntime = 1 << 25,
         /// <summary>
-        /// <c>[PlayFab]</c> — the inert legacy PlayFab integration (catalog, economy,
-        /// leaderboards, groups, the old authentication view). Nothing in the shipped flow
-        /// calls it, but its trace survives so the code can be read; it never reaches the
-        /// console without this flag.
+        /// <c>[SerpentScope]</c> — the Serpent scope's instrument: the frame the eyepiece first
+        /// draws, and where on screen it landed. Off by default like every channel.
+        ///
+        /// It exists because that instrument's failure mode is a BLANK SCREEN, and a blank screen
+        /// is the same report whether the overlay never ticked, ticked and drew nothing, or drew
+        /// correctly under something opaque. This channel separates the first case from the other
+        /// two in one line; the overlay's own self-checks cover the second and stay warnings.
         /// </summary>
-        [CSLogChannelLabel("[PlayFab] legacy PlayFab integration (inert)")]
-        LegacyPlayFab = 1 << 26,
+        [CSLogChannelLabel("[SerpentScope] scope eyepiece placement")]
+        SerpentScope = 1 << 26,
         /// <summary>
         /// <c>[FTUE]</c> — the first-time-user tutorial flow: step advance, skip, outro and
         /// completion.
         /// </summary>
         [CSLogChannelLabel("[FTUE] tutorial step flow")]
         FTUE = 1 << 27,
+        /// <summary>
+        /// <c>[FoldGate]</c> — the Butterfly's standing portal pair: where a fold laid its gates,
+        /// who threaded one, and when a pair was replaced.
+        ///
+        /// It exists because a gate's failure modes all read the same on screen ("it did
+        /// nothing"): no pair was placed at all, a pair was placed too short to keep, the pilot's
+        /// domain does not match, or the transit fired on a machine that does not own that
+        /// vessel. One line separates them.
+        /// </summary>
+        [CSLogChannelLabel("[FoldGate] Butterfly fold gate placement and transits")]
+        ButterflyFold = 1 << 28,
+        /// <summary>
+        /// <c>[Training]</c> — overnight GA bring-up: launch, rollout start, a recorded
+        /// episode, replay handoff, deployment install. Off by default. A watchdog
+        /// timeout, a missing controller, and a failed save stay warnings or errors.
+        /// Nothing in the per-frame fitness sample logs, on this channel or otherwise.
+        /// </summary>
+        [CSLogChannelLabel("[Training] overnight GA bring-up")]
+        AITraining = 1 << 29,
         All = ~0
     }
 

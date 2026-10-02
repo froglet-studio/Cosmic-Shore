@@ -114,24 +114,31 @@ namespace CosmicShore.Utility
 
         IEnumerator RunReveal()
         {
-            // The reveal is cosmetic; the OnShowGameEndScreen raise at the end is NOT - it is the
+            // The reveal is cosmetic; the OnShowGameEndScreen raise at the end is NOT — it is the
             // only path to the Scoreboard, and in a tournament the Scoreboard's host-only Continue
             // is the only way to advance the party. An exception anywhere in the flourish / SFX /
             // toast (a coroutine dies on its first unhandled throw) must degrade to a skipped
-            // flourish - never to a finished game with no end-game screen.
+            // flourish — never to a finished game with no end-game screen.
             try
             {
+                bool didWin = DidLocalPlayerWin();
+
                 HaltOtherVessels();
                 StartLocalVesselFlourish();
-                AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
-                ShowToast(ResolveMessage(DidLocalPlayerWin()));
+
+                if (AudioSystem.Instance != null)
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
+
+                ShowToast(ResolveMessage(didWin));
             }
             catch (System.Exception e)
             {
-                CSDebug.LogError($"[EndGameSequencer] End-game reveal failed - skipping to the end-game screen: {e}");
+                Debug.LogException(e);
+                Debug.LogError("[EndGameSequencer] Reveal flourish threw — continuing to the end screen anyway.");
             }
 
-            yield return new WaitForSeconds(revealDuration);
+            // Unscaled: a zero timescale at game end (pause) must not freeze the reveal forever.
+            yield return new WaitForSecondsRealtime(revealDuration);
 
             try
             {
@@ -139,7 +146,7 @@ namespace CosmicShore.Utility
             }
             catch (System.Exception e)
             {
-                CSDebug.LogError($"[EndGameSequencer] HideToast failed: {e}");
+                Debug.LogException(e);
             }
 
             gameData.InvokeShowGameEndScreen();
@@ -289,7 +296,7 @@ namespace CosmicShore.Utility
                 .FirstOrDefault(x => x.name == targetName);
         }
 
-        void HandleQuestCompleted(SO_GameModeQuestData quest)
+        void HandleQuestCompleted(SO_UnlockData quest)
         {
             if (quest == null || quest.IsPlaceholder) return;
             ToastNotificationAPI.Show($"Quest Complete!\n{quest.DisplayName}");

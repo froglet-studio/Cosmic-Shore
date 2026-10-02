@@ -391,7 +391,7 @@ namespace CosmicShore.Gameplay
 
             if (!view) return;
 
-            // Space says what it did to MASS; Charge says what it did to the LIVING.
+            // The omni card says what it did to MASS; Charge says what it did to the LIVING.
             view.ReportBlast(tally.Prisms);
             view.ReportEchoTally(tally.Vessels, fauna);
         }

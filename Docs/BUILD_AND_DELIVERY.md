@@ -156,7 +156,7 @@ DailyRewardCard were already mobile-gated. Multi-mouse input already has a Windo
 
 ### Still requires a human on Windows
 
-- [ ] Wwise audio initialises and all beds play
+- [ ] FMOD audio initialises and all beds play — the middleware is **FMOD**, not Wwise, so run the checks in [`AudioSystem/FMOD_AUDIT.md` §0](AudioSystem/FMOD_AUDIT.md) (a pass written against Wwise tests nothing)
 - [ ] Keyboard + mouse, Xbox pad, and PlayStation pad each drive menu and flight
 - [ ] Alt-tab away and back: audio resumes, input recovers, no stuck modifier keys
 - [ ] Windowed ↔ fullscreen ↔ borderless via the settings panel, at several resolutions

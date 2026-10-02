@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
     /// mean high is not EMPTY, and a fight can climb through wreckage instead of leaving it.
     /// Nothing enforces this; it falls out of the geometry.
     ///
-    /// <b>The wreckage is COVER, not the objective.</b> Unlike PeelTheCage (whose bone IS the score)
+    /// <b>The wreckage is COVER, not the objective.</b> Unlike Cleave (whose bone IS the score)
     /// or the Wildlife Liberation cages (which ARE the walls of the rooms), shooting the Boneyard
     /// is worth exactly nothing in Dog Fight - the only thing that scores is landing a shot on
     /// another pilot. That is deliberate: a pilot who spends the match demolishing scenery should
@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
     /// INTENSITY ramps the DENSITY OF COVER and nothing else - more wrecks, tighter warrens,
     /// shorter sightlines - via the serialized structure counts plus the base
     /// <c>density</c> knob on the four prefab variants. The arena RADIUS is deliberately fixed
-    /// at every intensity, for the same reason PeelTheCage and the wildlife cages fix theirs: it is
+    /// at every intensity, for the same reason Cleave and the wildlife cages fix theirs: it is
     /// what the player spawn shell, the AI's fallback aim point and the arena silhouette are all
     /// defined against.
     ///
@@ -58,12 +58,13 @@ namespace CosmicShore.Gameplay
     /// in <see cref="PaintingStrokeToolkit"/>, and a seed of 0 falls back to
     /// <see cref="DefaultSeed"/> rather than time-seeding.
     ///
-    /// COLLIDER BUDGET: plain and danger prisms ride the LOD-cullable BoxCollider, so the active
-    /// count is bounded by <c>PrismColliderLodManager</c>'s radius rather than by population.
-    /// Shielded / super-shielded prisms carry always-on convex MeshColliders and are therefore
+    /// COLLIDER BUDGET: every kind rides the LOD-cullable BoxCollider, so the active count is
+    /// bounded by <c>PrismColliderLodManager</c>'s radius rather than by population - including the
+    /// shield tiers, which swap the mesh and the mass and never the collider. They are still
     /// rationed hard - the reactor core ring and one beacon per spire, well under 1% of the
-    /// structure. Do NOT armour the wreckage: a shielded hulk would be both un-shootable cover
-    /// and a few thousand permanent mesh colliders.
+    /// structure - because armoured mass is never food and super-shielded mass is removable only by
+    /// an energised blade. Do NOT armour the wreckage: a shielded hulk would be un-shootable cover
+    /// in a mode whose whole economy is shooting it (the collider was never the reason).
     /// </summary>
     public class SpawnableBoneyard : CellEnvironmentSpawnableBase
     {

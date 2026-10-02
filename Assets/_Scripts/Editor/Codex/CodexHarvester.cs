@@ -702,7 +702,6 @@ namespace CosmicShore.Editor.Codex
         {
             "LightFauna" => "Shoals — separation, cohesion and a shared goal",
             "Boid" => "Boid shoal — the classic flocking three rules",
-            "QuadFish" => "Swimmer — steers to a goal on its own",
             "WormFauna" => "Colony — a chain of segments following the head; splits when cut",
             var other => other,
         };

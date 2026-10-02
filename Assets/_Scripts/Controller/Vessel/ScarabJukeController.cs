@@ -391,6 +391,51 @@ namespace CosmicShore.Gameplay
             _ownerRoll = StartCoroutine(RollRoutine(rollSign, _gestureStrength01, committed, transformer));
         }
 
+        /// <summary>
+        /// AUTOPILOT: fire one COMMITTED dash along <paramref name="worldShove"/> (projected off the
+        /// course like a pilot's push is), for a vessel this machine SIMULATES - a host-run AI. The
+        /// juke is stick-driven and autopilot vessels produce no stick input, so without this an AI
+        /// Scarab could never dash and therefore never fire the cavitation plate; in a mode whose
+        /// only weapon is the plate, an all-AI domain would then be an opponent that cannot play
+        /// (the Tollway rule). It runs the SAME <see cref="Fire"/> path a human's committed push
+        /// runs - the steal window opens, the roll plays, the plate flies off
+        /// <see cref="OnJukeFired"/> - so nothing about a dash is special-cased for an AI.
+        ///
+        /// Gated to the simulating machine: the fire path is owner-only for a human because the
+        /// stick is replicated, and an AI's "owner" is the server (it is a server-owned
+        /// NetworkObject), so this refuses on any peer that is spawned and not the server. Refuses
+        /// while a roll is live or the juke is spent, exactly as a human push does. Returns whether
+        /// a dash fired, so a caller can pace itself off the answer rather than off a timer.
+        /// </summary>
+        public bool TryAutopilotDash(Vector3 worldShove)
+        {
+            if (_status == null || !_status.AutoPilotEnabled) return false;
+            if (IsSpawned && !IsServer) return false;
+            if (!_jukeArmed || _rolling) return false;
+
+            var transformer = _status.VesselTransformer;
+            if (!transformer) return false;
+
+            var ship = _status.ShipTransform ? _status.ShipTransform : transform;
+            Vector3 shove = Vector3.ProjectOnPlane(worldShove,
+                _status.IsTranslationRestricted ? transform.forward : _status.Course);
+            if (shove.sqrMagnitude < 1e-4f) shove = ship.right;
+            shove = shove.normalized;
+
+            // Spin the way the dash goes, as a pilot's stick would have it.
+            float rollSign = Vector3.Dot(shove, ship.right) >= 0f ? 1f : -1f;
+            if (invertRollDirection) rollSign = -rollSign;
+
+            _gestureActive = false;
+            _gestureCommitted = true;
+            _gestureStrength01 = 1f;
+            _gestureShove = shove;
+            _gestureRollSign = rollSign;
+            SetJukeArmed(false);
+            Fire(shove, rollSign, 1f, committed: true, transformer, upgrade: false);
+            return true;
+        }
+
         /// <summary>The push is over (stick back inside the release band, autopilot took over, or
         /// the ability was interrupted). The next deflection past <see cref="engageThreshold"/> is a new
         /// juke.</summary>

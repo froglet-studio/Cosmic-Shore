@@ -2390,8 +2390,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   skillLevel: 1
-  defaultThrottleHigh: 0.6
-  defaultThrottleLow: 0.6
+  defaultThrottleHigh: 0.8
+  defaultThrottleLow: 0.8
   defaultAggressivenessHigh: 0.035
   defaultAggressivenessLow: 0.035
   throttleIncreaseHigh: 0.001

@@ -1,6 +1,6 @@
 ---
 name: reorient
-description: Pull the latest bleeding-edge, re-evaluate the project state against it, and issue a verdict — continue as planned, course-correct, or hand off to a fresh session with a written handoff prompt. Use when asked to resync with bleeding-edge, sanity-check the session's direction, or when the session has run long and may be working against stale information.
+description: Pull the latest bleeding-edge, re-evaluate the project state against it, and issue a verdict — continue as planned, course-correct, or hand off to a fresh session with a written handoff prompt. Use when asked to resync with bleeding-edge, sanity-check the session's direction, or when the session has run long and may be working against stale information. Also logs (never acts on) the refactor/cleanup opportunities the resync surfaces, per the /refactor skill.
 ---
 
 # Reorient — resync with bleeding-edge and re-evaluate the session
@@ -31,8 +31,8 @@ so nothing can be lost in the steps below.
 - Upstream-side changes only: `git diff --stat HEAD...origin/bleeding-edge`
   (three-dot).
 
-If there are zero new upstream commits, say so, skip to step 4, and weigh
-only context health.
+If there are zero new upstream commits, say so, skip to step 4 (§3.5 is fed by the
+upstream diff, so it has nothing to read), and weigh only context health.
 
 ## 3. Re-evaluate with the new information
 
@@ -50,6 +50,43 @@ Investigate — do not skim:
 - **Foundation shifts.** Did upstream change APIs, base classes,
   ScriptableObject contracts, SOAP types, or scene wiring that this
   session's work builds on?
+
+## 3.5 Refactor-opportunity pass (log it, never act on it)
+
+You have just read the upstream diff in full and re-read this session's own target
+files against it. **That is the cheapest moment in the project to NOTICE structural
+debt and the worst one to fix it** — the session already has a task, and a resync that
+grows a second subject is the widening `/refactor` §4 forbids. So this pass produces
+**rows with evidence attached**, never edits.
+
+Four things this step is uniquely positioned to see:
+
+- **A supersession leaves a vestige.** Any overlap you classified *superseding* in §3
+  means upstream replaced something — and the branch that shipped the replacement was
+  not looking for what it orphaned. Grep the superseded identifier across code AND
+  prose (`/refactor` §3.9); an accessor, a serialized field or a config row nothing
+  reads any more is a row.
+- **A system that SURVIVED with a changed role.** Grep the upstream-touched type names
+  for *fallback / falls back / legacy path / degrades to / kept for* and re-read each
+  hit against what the code now does. A comment describing a tier that is no longer
+  reachable is the shape that gets cited as evidence later.
+- **Upstream docs the upstream change made false.** §3 already had you read the
+  `CLAUDE.md` / `Docs/` diffs in full. A claim contradicted by the same push is a row
+  for whoever owns that doc, not a silent fix in your branch.
+- **Cleanup-labelled rows upstream just added or touched.** If a `BACKLOG`/`TODOS`/
+  `REFACTOR` doc changed upstream, its new *cleanup* / *hygiene* / *consistency* rows
+  are now in this session's way or adjacent to it. Say which, and whether any is a
+  prerequisite for the session's own work — that is the one case where it stops being a
+  row and becomes a sequencing fact for the verdict below.
+
+**Keep it bounded.** If context is already thin, name what you saw and where the next
+session would measure it — do not open a sweep you cannot finish, and do not let this pass
+be the reason §4 comes back HANDOFF.
+
+**A row with no measurement is worse than no row**, because it becomes the next
+session's claim to disprove — which is precisely the failure `/refactor` exists to
+answer. Attach the command and its output. If the pass finds nothing, say so
+explicitly; silence reads as "not checked".
 
 ## 4. Assess context health
 
@@ -118,3 +155,7 @@ End your reply with:
 2. Upstream summary: commit count plus the notable changes.
 3. What you did about it: merge result, correction applied, or the handoff
    prompt.
+4. The §3.5 refactor-opportunity outcome: the rows you opened (with where they
+   live), anything that is a prerequisite for this session's work, or the
+   explicit "nothing found". Never leave this line off — and never satisfy it
+   by fixing something.

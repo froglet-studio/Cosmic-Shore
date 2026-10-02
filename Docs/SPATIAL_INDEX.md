@@ -50,7 +50,7 @@ understood as a **view** of the same lifecycle, not an independent system.
                      fauna body prisms swim — movers keep positions honest)
  Unregister(i)     → slot freed (pool return / destroy)
 
- QuerySphere / QuerySegment / IsAnyPrismWithin (neighborhood views over _buckets/_spatial)
+ QuerySphere / QuerySegment / QueryCone / IsAnyPrismWithin (neighborhood views over _buckets/_spatial)
  — fauna senses (LightFauna, Boid), assembler mate-finding (Gyroid, Wall),
    trail passives (ScoutTrailPrismScaler). Replaced the Physics.OverlapSphere
    calls those systems used to make against prism colliders.
@@ -109,7 +109,7 @@ understood as a **view** of the same lifecycle, not an independent system.
   static, so there is no per-frame rebucketing cost. (Fauna body prisms are the
   moving minority: their `Fauna.NotifyBodyPrismsMoved` calls only rebucket when
   a body crosses an 8m bucket boundary.)
-- **Adaptive query strategy** — `QuerySphere`/`QuerySegment`/`IsAnyPrismWithin` walk the bucket
+- **Adaptive query strategy** — `QuerySphere`/`QuerySegment`/`QueryCone`/`IsAnyPrismWithin` walk the bucket
   AABB for tight radii, but fall back to one linear pass over the 16B hot array
   when the AABB covers more buckets than there are slots (a 100m Scout probe is
   26³ ≈ 17k bucket lookups vs one ~64KB scan).
@@ -169,6 +169,8 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `IsAnyPrismWithin(pos, radius)` | Anyone (read-only) | Live prism in range (claims excluded) |
 | `QuerySphere(pos, radius, results)` | Anyone (read-only) | Gather live prisms in range into a caller scratch list — the replacement for `Physics.OverlapSphere` against prisms |
 | `QuerySegment(a, b, radius, results)` | Fast projectiles (`Projectile.SweepPrismsAlong`) | **Swept** counterpart of `QuerySphere`: live prisms within `radius` of the SEGMENT a→b. A projectile is a *teleport*, not a sweep — the mover writes `position += Velocity·Δt` and PhysX samples its trigger once per physics step, so a Sparrow round at 375 u/s tests only ~26% of its own path (~3% at high SPACE). This is how the ground BETWEEN the samples gets tested, without inflating the collider. Degenerate segment (a == b) reduces to `QuerySphere` exactly |
+| `QueryCone(apex, direction, length, halfAngleDegrees, minRadius, results)` | Hitscan weapons (`SniperShotActionExecutor`) | **Tapering** counterpart of `QuerySegment`: live prisms whose centre lies inside a cone opening from `apex`, with a `minRadius` floor near it. It exists because **a hitscan weapon is aimed in ANGLE and a capsule is not** — a fixed radius is a tube, and 4 u subtends 0.076° at 3,000 u (about 7 px in a 22° scope) while being a blunderbuss at point blank. A cone covers a CONSTANT on-screen area at every range, so a reticle can be drawn at the beam's true size. The floor keeps the apex honest: a pure cone has zero radius there, so mass the ship is about to fly into would be missed by the one weapon pointed straight at it |
+| `CountInCone(apex, basePoint, baseRadius)` | `ScreenshotDirector.CountOccluders` | **How much mass stands between a lens and the thing it is looking at.** The cone from `apex` (a point) to the disc of `baseRadius` at `basePoint` — deliberately very nearly the volume `PrismOcclusionCorridor` dissolves, so a caller counting here and the shader clearing there describe one geometry. **They are not identical and that is deliberate**: the corridor is a FRUSTUM (a circle of `nearRadiusScale` hull radii at the lens) and this is a pure CONE, so they diverge only within a half-hull-radius of the lens — inside the camera's own near clip, which cannot be photographed. A cone rather than `QuerySegment`'s capsule because that is what occlusion *is*: a prism a metre off the axis at the far end barely clips the subject's silhouette, while the same prism a metre off the axis at the lens fills the frame. A **count, not a gather** — in a dense arena (Atlantis ~69k prisms) materialising several thousand managed references per candidate and discarding them all costs far more than the walk, and nothing here touches `_prisms`. Both caps are **exclusive** (the axial parameter is unclamped, unlike `DistanceToSegmentSq`'s — clamping would round a point behind the apex onto the apex and a point past the base onto the base disc, i.e. silently turn the cone back into a capsule and count mass on the wrong side of both ends), which is what lets a caller end the cone short of its subject and so count what OBSCURES a thing rather than what surrounds it. Geometry pinned by `PrismConeQueryTests`, whose rejection cases are a capsule negative control |
 | `CopyLivePrisms(results)` | `PrismColliderLodManager`, telemetry | Whole-population sweep: one linear pass copying every live prism into a caller scratch list |
 | `ReleaseReservation(pos)` | A claimant that changed its mind | Explicit cancel |
 | `Register(prism)` | `Prism.CreateBlockCoroutine` (+ `Prism.Restore` for spawn-window-killed prisms) | Enter the index; consumes matching claim; binds the containing cell's density grids |
@@ -196,7 +198,7 @@ All methods are **main-thread only**. The Burst jobs inside
 `ProcessExplosionFrame` and `ProcessExplosionConeFrame` are scheduled and
 completed synchronously.
 
-`QuerySphere` / `QuerySegment` results are an unordered **snapshot**: the caller's own side
+`QuerySphere` / `QuerySegment` / `QueryCone` results are an unordered **snapshot**: the caller's own side
 effects (consume, predate, steal/convert) can destroy entries mid-iteration,
 so iterate with a `!prism || prism.destroyed` guard — the same contract
 collider snapshots had. Reuse a static scratch list per call site
@@ -340,6 +342,70 @@ at the editor:
 - **`MakeDangerous` still never disengages the shell visual** (pre-existing):
   the octahedron stays rendered while flags + shell interaction correctly
   retire. Visual-only mismatch, owned by PrismStateManager.
+
+## Shell view — EXTENDED COVERAGE (experimental, default OFF, measure before believing)
+
+`PrismShellContactManager.ExtendToUnshieldedPrisms` extends the tier from shielded
+prisms to **every registered prism**, so vessel/skimmer contact resolves against this
+index at render rate instead of against PhysX box triggers at the physics tick.
+Flip it only through `SetExtendToUnshieldedPrisms(bool)` — the shell view is maintained
+incrementally (register / shield change / growth / move) and a POLICY change has no
+incremental event to ride, so the setter sweeps `RebuildAllShells()` and drops live
+pairs with exit bookkeeping.
+
+**It buys nothing in SHAPE, and saying so is the point.** An unshielded prism's exact
+surface already IS its authored box, which is what PhysX tests — so shape parity is the
+CORRECTNESS BAR here, not a feature. `ShieldShellMath.SphereOverlapsBox` /
+`CapsuleOverlapsBox` / `BoxOverlapsBox` are validated against brute force over 40,000
+randomised poses with zero disagreements by `Tools/Build/shield_shell_box_harness/run.sh`,
+which compiles and RUNS the shipped file. What the mode does buy:
+
+- **Sampling rate.** `Update` (~60 Hz) against PhysX's 25 Hz tick. The project has paid
+  for that gap once already — a 375 u/s Sparrow round was invisible to the trigger path.
+- **Determinism.** A Burst scan over a deterministic array orders identically on every
+  peer; PhysX contact order does not. Flora are simulated per-peer, so this is not
+  academic.
+- **It can own a prism whose COLLIDER cannot be trusted** — one posed per-frame from the
+  GPU. This is the only property PhysX cannot be tuned into having, and it is the reason
+  the mode exists.
+
+**What it costs, and why that is the whole question.** `ShellContactQueryJob` escapes on
+a flag byte for the unshielded majority, which is why the tier is nearly free today.
+Extended coverage deletes that escape: `job.Schedule(_highWaterMark, …)` is a FLAT
+parallel scan with **no broadphase under it** — `QuerySegment` uses the bucket grid, this
+path does not — so cost grows with the REGISTRY, not with what is near the vessel. Three
+further exposures come with it, all of which only exist at scale:
+
+| Exposure | Where |
+|---|---|
+| Main-thread stall — the query is `Schedule().Complete()`, not pipelined | `CollectShellContacts` |
+| `AddNoResize` **throws** on overflow; capacity is a crash surface, not a perf knob | `CollectShellContacts` (sized off `_highWaterMark` in extended mode) |
+| `Dictionary<long, ActivePair>` with class values, swept every frame | `PrismShellContactManager` |
+
+**The collider saving is smaller than it looks.** `PrismColliderLodManager` already culls
+prism colliders to a 200 m bubble with hysteresis and a 512-toggle/frame budget, so the
+standing collider count is `LastNearCount`, not the population. Extended coverage removes
+the near set, not the plant. (Projectiles already find prisms through `QuerySegment`,
+explosions already batch through the index, and fauna use `NonPrismOverlapMask` — so the
+remaining collider consumers are the vessel/skimmer trigger path and the explosion legacy
+fallback, and that is all.)
+
+**The one failure this mode must not be able to produce** is an uninteractable prism:
+claimed by the tier (so `Skimmer`/`VesselImpactor` suppress their box-trigger dispatch)
+but carrying no shell for the query to hit. `ShellOwnsContact` therefore asks
+`PrismSpatialIndex.HasShell(prism.SpatialIndexId)` before claiming an unshielded prism,
+and a prism with no box geometry falls back to the trigger path.
+
+### Measuring it — FrogletTools > Diagnostics > Prism Contact Probe
+
+Play mode, reader only, writes no assets. **Run A/B** samples both modes for the same
+wall time and prints one block: query ms (median / p95 / max), hits and active pairs
+(median / max), enter dispatches per second, the `AddNoResize` headroom, the collider-LOD
+near count, and the shell census. Read it as: **B is the whole cost of the change.**
+If B is affordable in the heaviest cell that ships, the bucket-grid broadphase is
+optional; if it is not, that broadphase is the prerequisite and nothing else should be
+built on this until it exists. A large rise in enter dispatches per second is contacts
+the 25 Hz path was missing — unless it is enormous, which would be double-firing.
 
 ## What NOT to use it for
 

@@ -17,7 +17,7 @@ namespace CosmicShore.Tests
     /// </summary>
     public class RhinoRampGradingTests
     {
-        static RampBoostActionSO Ramp(float max = 24f, float band = 1f)
+        static RampBoostActionSO Ramp(float max = 16.8f, float band = 1f)
         {
             var so = ScriptableObject.CreateInstance<RampBoostActionSO>();
             Set(so, "maxBoostMultiplier", max);
@@ -38,7 +38,7 @@ namespace CosmicShore.Tests
         {
             var so = Ramp();
             foreach (float d in new[] { 0f, 0.1f, 0.29f, StraightLineGesture.EngageThreshold })
-                Assert.AreEqual(24f, so.MultiplierFor(d), 1e-3f,
+                Assert.AreEqual(16.8f, so.MultiplierFor(d), 1e-3f,
                     $"deviation {d} is inside the gesture and must cost nothing");
         }
 
@@ -74,7 +74,7 @@ namespace CosmicShore.Tests
             // curve and the behaviour that shipped before it, so authoring it away must be exact
             // rather than approximate.
             var so = Ramp(band: StraightLineGesture.EngageThreshold);
-            Assert.AreEqual(24f, so.MultiplierFor(0.29f), 1e-3f);
+            Assert.AreEqual(16.8f, so.MultiplierFor(0.29f), 1e-3f);
             Assert.AreEqual(1f, so.MultiplierFor(0.30f), 1e-3f);
             Assert.AreEqual(1f, so.MultiplierFor(0.90f), 1e-3f);
         }
@@ -84,7 +84,7 @@ namespace CosmicShore.Tests
         {
             var so = Ramp(band: 0f);
             Assert.AreEqual(StraightLineGesture.EngageThreshold, so.StraightnessGraceBand, 1e-4f);
-            Assert.AreEqual(24f, so.MultiplierFor(0f), 1e-3f);
+            Assert.AreEqual(16.8f, so.MultiplierFor(0f), 1e-3f);
             Assert.AreEqual(1f, so.MultiplierFor(0.5f), 1e-3f);
         }
 

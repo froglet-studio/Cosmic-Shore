@@ -66,6 +66,12 @@ namespace CosmicShore.UI
         Button privacyPolicyButton;
         [SerializeField, Tooltip("Opens the delete-my-data form in a browser. Main menu only - see ApplyContextLock.")]
         Button deleteDataButton;
+        [SerializeField, Tooltip("Opens the in-game CREDITS screen. Unlike the three buttons above " +
+                                 "this does not leave the game - it is main-menu only because the modal " +
+                                 "stack it opens into (ScreenSwitcher) exists only in Menu_Main.")]
+        Button creditsButton;
+        [SerializeField, Tooltip("Leave empty to find the one in the scene. Only used by creditsButton.")]
+        ScreenSwitcher screenSwitcher;
         [SerializeField, Tooltip("PC/Steam only: closes the game. Hidden automatically on mobile, where " +
              "the OS owns app exit and a quit button is a store-review flag. Main menu only - see ApplyContextLock.")]
         Button quitGameButton;
@@ -192,6 +198,11 @@ namespace CosmicShore.UI
             SetInteractable(deleteDataButton, menu);
             SetInteractable(quitGameButton, menu);
 
+            // Credits is NOT an exit action - it neither leaves the game nor touches the account -
+            // but it opens a ScreenSwitcher modal, and the switcher only exists in Menu_Main. So it
+            // is locked for a different reason from the four above: there is nothing to open here.
+            SetInteractable(creditsButton, menu);
+
             UnlockLiveSafeControls();
 
             if (menuOnlyHint != null) menuOnlyHint.SetActive(!menu);
@@ -264,6 +275,8 @@ namespace CosmicShore.UI
             BindButton(bugReportButton, OpenBugReport);
             BindButton(privacyPolicyButton, OpenPrivacyPolicy);
             BindButton(deleteDataButton, OpenDeleteDataForm);
+            EnsureCreditsRow();
+            BindButton(creditsButton, OpenCredits);
             BindQuitButton();
 
             // DISPLAY
@@ -557,6 +570,93 @@ namespace CosmicShore.UI
         static void OpenUrl(string url)
         {
             if (!string.IsNullOrEmpty(url)) Application.OpenURL(url);
+        }
+
+        /// <summary>
+        /// Opens the in-game CREDITS screen. Names the modal TYPE and lets <see cref="ScreenSwitcher"/>
+        /// find the window, rather than holding a reference to it and calling
+        /// <c>ModalWindowIn</c> - the switcher already owns the modal stack, the return-to-modal
+        /// preference and the close sweeps, and a second authority over a modal's lifecycle is the
+        /// shape <c>Docs/HomeHub/ARCHITECTURE.md</c> §1 rules out.
+        ///
+        /// <para>The screen is not optional chrome: FMOD's EULA clause 3 requires an in-game credit,
+        /// so this row is what makes the obligation dischargeable at all. See
+        /// <c>Docs/THIRD_PARTY_REGISTER.md</c> §7.</para>
+        /// </summary>
+        /// <summary>
+        /// Guarantees there is a CREDITS row to press, by cloning the Privacy Policy row when no
+        /// <c>creditsButton</c> is wired.
+        ///
+        /// <para><b>Why a fallback exists at all.</b> FMOD's EULA clause 3 requires an in-game
+        /// credit, so the credits screen is a licence obligation rather than a feature — and a
+        /// screen with no way in discharges nothing. <c>ScreenSwitcher</c> ensures the WINDOW for
+        /// the same reason; this ensures the DOOR. Both stand down the moment the real thing is
+        /// authored: wire <c>creditsButton</c> in the settings prefab and nothing here runs.</para>
+        ///
+        /// <para><b>The placement is MEASURED, not guessed.</b> The three link rows in this tab are
+        /// absolutely positioned siblings with no layout group, so a clone dropped in unpositioned
+        /// lands exactly on top of its source. It is offset by the source row's OWN height plus a
+        /// gap, read off the live rect — so it stays correct if the row is ever resized, and it goes
+        /// BELOW rather than beside because a fourth row in the strip would overhang the panel.</para>
+        /// </summary>
+        void EnsureCreditsRow()
+        {
+            if (creditsButton) return;                 // authored - leave it alone
+            if (!privacyPolicyButton) return;          // nothing to measure against
+
+            var source = privacyPolicyButton.GetComponent<RectTransform>();
+            if (!source || !source.parent) return;
+
+            // No Reflex injection here, and that is a MEASURED claim rather than an omission: the
+            // Privacy Policy row is RectTransform + CanvasRenderer + Image + Button, carries no
+            // [Inject] field and no persistent onClick call. If that row ever gains a component
+            // with an [Inject] field (MenuAudio is the obvious one), this clone must be passed
+            // through GameObjectInjector.InjectRecursive - an un-injected persistent listener
+            // throws and eats every runtime listener behind it, which reads on screen as a dead
+            // button. CLAUDE.md records that failure three times over.
+            var clone = Instantiate(privacyPolicyButton.gameObject, source.parent);
+            clone.name = "Credits";
+
+            var rect = clone.GetComponent<RectTransform>();
+            if (rect)
+            {
+                const float RowGap = 16f;
+                rect.anchoredPosition = source.anchoredPosition -
+                                        new Vector2(0f, source.rect.height + RowGap);
+            }
+
+            creditsButton = clone.GetComponent<Button>();
+            if (creditsButton)
+            {
+                // Runtime listeners are not serialized, so Instantiate does not copy the binding
+                // BindAll gave the source - but clearing is free and makes that independent of
+                // when this runs relative to the rest of BindAll.
+                creditsButton.onClick.RemoveAllListeners();
+            }
+
+            var label = clone.GetComponentInChildren<TMPro.TMP_Text>(true);
+            if (label) label.text = "Credits";
+
+            CSDebug.LogVerbose(CSLogChannel.MenuUI,
+                $"{nameof(GameSettingsPanelController)} - no credits row was wired, so one was " +
+                "cloned from the Privacy Policy row. Wire 'creditsButton' in SettingsModal.prefab " +
+                "to replace it with an authored row.");
+        }
+
+        void OpenCredits()
+        {
+            if (!screenSwitcher)
+                screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+
+            if (!screenSwitcher)
+            {
+                CSDebug.LogWarningFormat(
+                    "{0} - no ScreenSwitcher in the scene, so the credits screen cannot be opened.",
+                    nameof(GameSettingsPanelController));
+                return;
+            }
+
+            screenSwitcher.OpenModal(ScreenSwitcher.ModalWindows.CREDITS);
         }
     }
 }

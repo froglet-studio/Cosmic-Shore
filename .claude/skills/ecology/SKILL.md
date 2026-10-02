@@ -15,6 +15,10 @@ this protocol exists to prevent that. Follow it exactly.
   contract (§4)**, the platform-wiring plan (§5), the phased roadmap (§6), the orchestration (§7).
 - `Docs/ECOSYSTEM.md` — the mechanics log (how the current system actually works).
 
+**If the change is about ONE CREATURE** — adding or reviving a species, how it moves,
+where its heart sits, its body prisms, its config wiring — **load `/fauna` as well**.
+This skill owns the system; that one owns the animal.
+
 ## 2. Restate before you edit (this kills the #1 source of rework)
 In one or two lines, state which invariants the change touches and confirm it violates **none**:
 **continuity of existence** (nothing pops in/out — everything grows/fades/suctions/withers; PLATFORM-WIDE) ·
@@ -112,7 +116,7 @@ what the carve-out silently broke — see the traps below.
   `OnFaunaWaveSpawned`.** This is the spawner-swap trap wearing a different hat: the wave
   EVENT is raised by `RandomLifeSpawner` alone, so subscribing to it makes a colony's
   production dead code in every `IntensityWise` cell — and it is dead in exactly the modes
-  (Rampage, PeelTheCage, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
+  (Rampage, Cleave, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
   PERIOD is served by the `Cell` itself off `SpawnProfileSO.BaseFaunaSpawnTime` and is
   therefore correct under both spawners; both `AssembledFlora`'s colony cycle and
   `WormFauna.TickProduction` read it. Two consequences to carry: the period is authored
@@ -409,7 +413,8 @@ what the carve-out silently broke — see the traps below.
   corrective re-size was done by `Fauna.SetLevel`, as an incidental side-effect of seeding the
   spawn level — so retiring levels silently gave every creature with an authored body scale a
   heart of `authored × BaseBodyScale` (0.4 and 0.7 on the shipped tadpoles: a 2.5× and 1.43× cut
-  to BOTH the collect reward and the live domain fauna buff, with nothing reporting it). There is
+  to the collect reward — and, at the time, to the live domain fauna buff, since removed
+  (`Docs/ECOSYSTEM.md` §15) — with nothing reporting it). There is
   a SECOND inversion one level up — the Boid/LightFauna path runs `Initialize` (heart sized)
   before `SpawnFaunaBanded` calls `AssignLineage` (body scaled) — which is why the fix belongs at
   the END of `AssignLineage` rather than inside `ApplyVariantTuning`. **A CONDITIONAL re-apply is
@@ -454,8 +459,9 @@ what the carve-out silently broke — see the traps below.
   one crystal), so a cell-level `MaxTotalSpawnedObjectsOverride` does not thin the plant, it
   truncates a shape mid-figure.
 - **A SIZE that gameplay reads is a REWARD, and the band needs a ceiling with a margin.** A
-  lifeform heart's world scale is read in five places (collect reward, live domain fauna buff,
-  pickup trigger radius, vacuum speed, capture flourish); the reward is
+  lifeform heart's world scale is read in four places (collect reward, pickup trigger radius,
+  vacuum speed, capture flourish — the live domain fauna buff was a fifth and was removed,
+  `Docs/ECOSYSTEM.md` §15); the reward is
   `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)`, so it SATURATES. Past that point two
   visibly different hearts pay the same — a size the player can see and a reward they cannot.
   When a band is authored rather than uniform, solve its scale constant so the LARGEST member
@@ -463,6 +469,15 @@ what the carve-out silently broke — see the traps below.
   and it uses the whole band. Do NOT answer an overshoot by retuning `levelPerUnitScale` — it is
   shared with every non-lifeform elemental crystal (the Wanderway conveyor, Dog Fight's arena
   scatter). Compress the mapping instead.
+- **"Spindles and crystals but no prisms" is a prism WAITING to be drawn, not a prism that was
+  never made.** `Prism.CreateBlockCoroutine` keeps every laid prism's renderer and collider off
+  until it wins a per-frame creation completion (6/frame at gameplay tier); spindles and crystals
+  need none. Anything that grows worlds continuously in live play (the Arkway corridor) outruns 6
+  a frame within minutes and the backlog shows up as whole cells of bare limbs. Two sessions of
+  owner-aliasing and pool fixes went in before this was checked. Count `!IsCreationComplete`
+  prisms under the root FIRST (`CellConveyor.CountPendingCreation`); the answer to a real backlog
+  is a creation tier (`Prism.BeginBulkTransport`) or less growth, never a hidden-state hack.
+  Environment-pool mass and trail mass now spend separate budgets (`Docs/ECOSYSTEM.md` §41.3.5).
 
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals

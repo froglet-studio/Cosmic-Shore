@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
@@ -55,7 +56,7 @@ namespace CosmicShore.UI
     /// the two previews can never photograph each other.</para>
     ///
     /// <para><b>And it can WATCH — a live thing in the world the toy just made.</b> A Spawn press
-    /// on the Lifeform Matrix releases a creature into the cell, and telling the player it
+    /// on the Spawn Matrix releases a creature into the cell, and telling the player it
     /// happened is weaker than showing it: <see cref="Watch"/> turns the camera onto that object
     /// where it landed, at a radius the option states (the creature blooms in from zero, so its
     /// own bounds say nothing on the frame it appears), and goes back to the toy when the target
@@ -355,16 +356,15 @@ namespace CosmicShore.UI
             // first cut of this window rendered a shark. The volume mask and HDR flag are ADOPTED
             // from the gameplay camera rather than written down, so the picture is tonemapped by
             // the same profile the world is.
+            // Routed through the shared helper rather than kept as one of four copies of the same
+            // finding - see OffscreenCameraSetup, which the Serpent's scope window paid for.
+            OffscreenCameraSetup.AdoptGameCameraImage(_camera, postProcessing: true,
+                                                     antiAliasing: false, shadows: false);
+            _camera.allowMSAA = false;
+
             var data = _camera.GetUniversalAdditionalCameraData();
-            var main = Camera.main;
-            var mainData = main ? main.GetUniversalAdditionalCameraData() : null;
-            _camera.allowHDR = main ? main.allowHDR : true;
             if (data)
             {
-                data.renderPostProcessing = !mainData || mainData.renderPostProcessing;
-                data.volumeLayerMask = mainData ? mainData.volumeLayerMask : (LayerMask)~0;
-                data.renderShadows = false;
-                data.antialiasing = AntialiasingMode.None;
                 data.requiresColorOption = CameraOverrideOption.Off;
                 data.requiresDepthOption = CameraOverrideOption.Off;
             }

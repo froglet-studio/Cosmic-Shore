@@ -11,9 +11,9 @@ The map is `Assets/Resources/ElementalAbilityMaps/Manta.asset` — **the asset i
 
 | Element | Ability | Quantitative (authoring home) | L5 upgrade |
 |---|---|---|---|
-| Charge | **Sting** (passive, no input) | bomb-bay capacity 3 → 5 at Charge 15 (`capacityPerChargeLevel`) AND skim-charge rate (`chargeRateAtFullCharge`), both on `MantaStingConfig.asset`; map multiplier pinned 1 | **Contagion** — anything caught in a bloom is itself bombed, free |
-| Mass | **Yastri** (Input 12, the turn pair) | trail prism VOLUME (`VesselPrismController.trailVolume` on Manta.prefab, 1× → 2.5×, the Squirrel's Heavy Trail machinery); the turn RATE is deliberately unscaled (`turnRateElement: None`); map pinned 1 | **Shielded Turn Trails** — prisms laid during a hard turn come out shielded |
-| Space | **Kabloom** (passive — it fires off crystal contact) | every bomb bloom's scale (`blastScaleAtFullSpace` 1.6× on `MantaStingConfig.asset`); map pinned 1 | **No Friendly Fire** — blooms spare allies and allied prisms |
+| Charge | **Sting** (passive, no input) | bomb-bay capacity 3 → 5 at Charge 15 (`capacityPerChargeLevel`) AND skim-charge rate (`chargeRateAtFullCharge`), both on `MantaStingConfig.asset` | **Contagion** — anything caught in a bloom is itself bombed, free |
+| Mass | **Yastri** (Input 12, the turn pair) | trail prism VOLUME (`VesselPrismController.trailVolume` on Manta.prefab, 1× → 2.5×, the Squirrel's Heavy Trail machinery); the turn RATE is deliberately unscaled (`YawsteryActionSO.turnRateMultiplier` disabled, `turnRateElement: None`) | **Shielded Turn Trails** — prisms laid during a hard turn come out shielded |
+| Space | **Kabloom** (passive — it fires off crystal contact) | every bomb bloom's scale (`blastScaleAtFullSpace` 1.6× on `MantaStingConfig.asset`) | **No Friendly Fire** — blooms spare allies and allied prisms |
 | Time | **Soar** (Input 13, analog boost) | max soaring speed — the map multiplier (1.3 at full, 0.7 floor) IS the authoring home, read fleet-wide by `VesselTransformer.CurrentBoostAmount` | *(open — Wake Highway was built and cut 2026-09; see §5)* |
 
 All three pinned multipliers are the no-double-dip rule: a dedicated authored field carries the

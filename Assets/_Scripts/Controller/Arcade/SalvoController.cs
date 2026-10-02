@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// Salvo - the **Sparrow-only** demolition race, and Dog Fight's inverse in the same
     /// Boneyard: there the wreckage is cover and shooting it is worthless; here tearing it
     /// apart IS the score. Every domain races to destroy the hostile-prism target first
-    /// (<see cref="ScoringMetric.PrismsDestroyed"/>, the Rampage/PeelTheCage metric - the
+    /// (<see cref="ScoringMetric.PrismsDestroyed"/>, the Rampage/Cleave metric - the
     /// destruction stat auto-increments via StatsManager's block-destroyed channel plus the
     /// environment-prism client RPC, so no per-event listener is needed here).
     ///
@@ -30,8 +30,9 @@ namespace CosmicShore.Gameplay
     /// <para><b>⚠ CHANGED UNDER THIS MODE'S FEET (2026-09).</b> This doc used to say "the tank
     /// does not regenerate - the ONLY refuel is an omni crystal
     /// (<c>SparrowVesselChangeResourceByCrystalEffect</c>)". That asset is DELETED. The Sparrow's
-    /// missiles now reload by DESTROYING HOSTILE PRISMS
-    /// (<c>VesselRearmOnPrismDestruction</c>, 0.01 per prism = 50 prisms per rocket), and the omni
+    /// missiles now reload by DESTROYING PRISMS WITH GUNFIRE - any domain, and a rocket's own
+    /// blast pays nothing (<c>VesselRearmOnPrismDestruction</c>, 0.01 per prism = 25 prisms per
+    /// BASE rocket, 50 per heavy one), and the omni
     /// crystal instead grants an 8-second elemental-debuff ward. This mode's premise is therefore
     /// softened rather than broken: a Sparrow tearing up the Boneyard is now self-funding, so the
     /// crystal line is an ACCELERANT rather than the sole tap, and the tension between "shoot the
@@ -135,7 +136,7 @@ namespace CosmicShore.Gameplay
             // re-guards on IsServer anyway, so a client subscription is inert by construction.
             onOmniCrystalCollected.OnRaised += HandleOmniCrystalCollected;
 
-            // Belt-and-braces against the PeelTheCage regression where players started a match on a
+            // Belt-and-braces against the Cleave regression where players started a match on a
             // non-zero score: RoundStats lives on the PERSISTENT Player object, and a stat that
             // survives a scene load is worth zeroing twice rather than never. The authoritative
             // reset is ServerPlayerVesselInitializer.PrepareForNewScene.

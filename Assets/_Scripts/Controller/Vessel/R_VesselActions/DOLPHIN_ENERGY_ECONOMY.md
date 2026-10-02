@@ -455,7 +455,8 @@ re-deriving the layout.
 |---|---|---|
 | Charge | a generated blast-PROFILE capsule + a two-line living tally | the next blast's cross-section (extent = energy, roundness = Charge), and what the last blast did to pilots and creatures |
 | Mass | omni-crystal icon | the seeding recharge, and — by colour — whether the next seed is a free-for-all crystal or a team-locked one |
-| Space | the vessel's own jaw silhouettes + a prism tally | banked energy, as a gape — **lime when full** — and prisms the last cone claimed |
+| Space | the vessel's own jaw silhouettes | banked energy, as a gape — **lime when full** |
+| Omni crystal (non-elemental) | the prism tally, centred on an invisible anchor icon | prisms the last cone claimed — held until the next blast replaces it (`0` for a blast that took nothing, blank before the first) |
 | Time | the vessel's own 11-step boost ring | the boost banked by drifting |
 
 Two conventions this HUD deviates on, both deliberate:

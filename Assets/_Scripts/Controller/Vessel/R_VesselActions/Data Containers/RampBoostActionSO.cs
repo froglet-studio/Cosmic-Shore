@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -49,6 +50,21 @@ namespace CosmicShore.Gameplay
         [Tooltip("Constant acceleration while engaged, in speed units per second.")]
         [SerializeField] float accelerationPerSecond = 40f;
 
+        /// <summary>TIME -> ramp wind-up rate: x1 at the resting level, x2.5 at level 10, floored at x0.5.
+        /// Migrated verbatim from the retired ElementalAbilityMapSO generic
+        /// multiplier (atFull 2.5, minMultiplier 0.5) — see
+        /// Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md. Lives here, on the
+        /// asset that owns the parameter, so it can only ever scale this one number.
+        /// Never bound (this is a ScriptableObject, and BindElementalFloats reflects only
+        /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
+        /// </summary>
+        /// <para>This is the ramp's ACCELERATION and deliberately not its CEILING. Until this
+        /// migration the same element also multiplied the ceiling, through the fleet-wide boost
+        /// read in VesselTransformer.CurrentBoostAmount — undeclared, and contradicted by both
+        /// CLAUDE.md and regatta_balance.py, which model the ceiling with no Time term.</para>
+        [SerializeField] ElementalFloat timeAccelerationMultiplier =
+            ElementalFloat.Multiplier(1f, 2.5f, Element.Time, 0.5f);
+
         [Tooltip("Constant deceleration after the ramp DISENGAGES, in speed units per second — " +
                  "the coast back to the input-driven throttle speed. Deliberately slow: speed is " +
                  "a resource you spent winding up, so losing it should be felt over seconds.")]
@@ -76,6 +92,10 @@ namespace CosmicShore.Gameplay
 
         public float MaxBoostMultiplier => maxBoostMultiplier;
         public float AccelerationPerSecond => accelerationPerSecond;
+
+        /// <summary>The live TIME multiplier on this ramp's wind-up rate.</summary>
+        public float TimeAccelerationMultiplier(IVesselStatus status)
+            => timeAccelerationMultiplier.EvaluateLive(status);
         public float ReturnPerSecond => returnPerSecond;
         public float BleedPerSecond => bleedPerSecond;
 

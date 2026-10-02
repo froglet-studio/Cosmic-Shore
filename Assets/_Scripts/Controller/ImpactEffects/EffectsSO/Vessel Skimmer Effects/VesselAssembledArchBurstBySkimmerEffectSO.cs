@@ -48,8 +48,6 @@ namespace CosmicShore.Gameplay
         [Header("Rod Scale")]
         [SerializeField] private Vector3 blockScale = Vector3.one;
 
-        [SerializeField] private bool verbose = false;
-
         #endregion
         
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)

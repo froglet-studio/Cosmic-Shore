@@ -29,6 +29,25 @@ namespace CosmicShore.Gameplay
         public Color GetDomainUIAccentColor(Domains domain) =>
             ColorSet != null ? ColorSet.GetDomainUIAccentColor(domain) : Color.gray;
 
+        /// <summary>
+        /// Null-safe accessor for the DANGER tier at signal strength
+        /// (see <see cref="SO_ColorSet.GetDangerSignalColor"/>), for a UI surface that has to say
+        /// "this is danger mass". Returns alpha 0 when no ColorSet is wired OR when the palette
+        /// authors no danger colour, so a caller keeps whatever it already had rather than painting
+        /// something black - the same contract the accessor itself has.
+        /// </summary>
+        public Color GetDangerSignalColor() =>
+            ColorSet != null ? ColorSet.GetDangerSignalColor() : new Color(0f, 0f, 0f, 0f);
+
+        /// <summary>
+        /// Null-safe accessor for the domain's SHIELDED base face at signal strength
+        /// (see <see cref="SO_ColorSet.GetShieldedSignalColor"/>), for a UI surface that has to say
+        /// "this is shielded mass, in this domain". Alpha 0 when no ColorSet is wired OR when the
+        /// domain authors no shielded base, so a caller keeps whatever it already had.
+        /// </summary>
+        public Color GetShieldedSignalColor(Domains domain) =>
+            ColorSet != null ? ColorSet.GetShieldedSignalColor(domain) : new Color(0f, 0f, 0f, 0f);
+
         public void SetBackgroundColor(Camera mainCamera)
         {
             if (mainCamera == null)

@@ -34,11 +34,15 @@ namespace CosmicShore.Gameplay
         /// <summary>`DefaultThrottleScaler` on Rhino.prefab.</summary>
         public const float RhinoThrottleScaler = 50f;
 
-        /// <summary>`DefaultMinimumSpeed` on Rhino.prefab.</summary>
-        public const float RhinoMinimumSpeed = 10f;
+        /// <summary>`DefaultMinimumSpeed` on Rhino.prefab. **0 since the minimum-throttle brake**
+        /// (`MinimumThrottleBrake`, `SQUIRREL_DRIFT.md` §3.5): a floor is a speed the pilot cannot
+        /// give back, so a two-thumb flier that is meant to be able to STOP cannot author one.
+        /// It was 10, and the whole of what that bought this mode was 10 u/s of padding on both
+        /// ends of the speed ladder — measured, the circuits it generates are unchanged.</summary>
+        public const float RhinoMinimumSpeed = 0f;
 
         /// <summary>`maxBoostMultiplier` on RhinoRampBoostAction.asset.</summary>
-        public const float RhinoMaxBoostMultiplier = 24f;
+        public const float RhinoMaxBoostMultiplier = 16.8f;
 
         /// <summary>`straightnessGraceBand` on RhinoRampBoostAction.asset — the deviation at
         /// which the graded ramp contributes nothing.</summary>
@@ -49,7 +53,7 @@ namespace CosmicShore.Gameplay
             RhinoThrottleScaler * RhinoMaxBoostMultiplier + RhinoMinimumSpeed;
 
         /// <summary>`RotationThrottleScaler` on Rhino.prefab.</summary>
-        public const float RhinoRotationThrottleScaler = 0.5f;
+        public const float RhinoRotationThrottleScaler = 0.2f;
 
         /// <summary>`YawScaler`/`PitchScaler` on Rhino.prefab (the vessel authors both at 90).</summary>
         public const float RhinoTurnScaler = 90f;
@@ -75,7 +79,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// THE number this whole mode is built around: the tightest circle a Rhino can fly at
-        /// top speed WITHOUT dropping the ramp boost. ~410 u.
+        /// top speed WITHOUT dropping the ramp boost. <b>666.2 u</b> — `MinTurnRadius(840)` 186.5
+        /// over `BoostStickBudget` 0.28, and pinned by `HeadlongCircuitTests`. (355.9 before the
+        /// 2026-09-25 Rhino retune — top speed 1200 -> 840, RotationThrottleScaler 0.5 -> 0.2 —
+        /// and 356.3 while the Rhino authored a 10 u/s floor. It was never the "~410 u" the
+        /// authoring commit claimed.)
         ///
         /// <para>Turn rate is linear in stick, so a pilot holding the boost turns at
         /// <c>BoostStickBudget x omega(v)</c> and therefore flies a circle
@@ -200,7 +208,13 @@ namespace CosmicShore.Gameplay
                 // The SAFETY floor, a little under each level's own hardest target: a corner the
                 // solver overshot is still one a Rhino can hold, at roughly a quarter of top
                 // speed at level 4. It is not the design - CornerProfile is.
-                CornerRadiusFactor = new[] { 0.62f, 0.42f, 0.28f, 0.20f }[i - 1],
+                // Level 1 went 0.62 -> 0.75 when the Rhino's top speed dropped 1200 -> 840 and its
+                // RotationThrottleScaler 0.5 -> 0.2 (2026-09-25): the flat-out radius grew
+                // 355.9 -> 666.2, the fixed 480..1080 shell cannot widen with it, so 0.62 became
+                // the binding limit and level 1 started producing hairpins (0.62 of flat-out,
+                // under HeadlongCircuitTests' 0.70 bar). 0.75 restores the tutorial promise;
+                // levels 2-4 were left alone and are still ordered and binding.
+                CornerRadiusFactor = new[] { 0.75f, 0.42f, 0.28f, 0.20f }[i - 1],
                 // How hard the generator is allowed to work to hit the profile. A tight corner
                 // needs a vertex driven OUT between two driven IN and its two gates pulled
                 // angularly TOGETHER - radius alone cannot do it (on a circle the corner radius
@@ -210,7 +224,7 @@ namespace CosmicShore.Gameplay
                 AngularSpread = new[] { 1.2f, 2.0f, 2.8f, 3.6f }[i - 1],
                 LateralPerturbation = new[] { 120f, 170f, 215f, 260f }[i - 1],
                 // Wider than Switchback's ladder at every step: a Rhino arrives at up to
-                // 1210 u/s against a Dolphin's 347, so it crosses a mouth in a quarter of the
+                // 1200 u/s against a Dolphin's 347, so it crosses a mouth in a quarter of the
                 // time and has a quarter of the lateral authority to correct with on the way in.
                 RingRadius = new[] { 96f, 72f, 58f, 46f }[i - 1],
                 AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],

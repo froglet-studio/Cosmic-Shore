@@ -1,0 +1,255 @@
+{
+ "cards": {
+  "AstroLeague": {
+   "cell": "Astro League Cell Config",
+   "environment": null,
+   "prisms": 262,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 10028
+  },
+  "Bends": {
+   "cell": "Rampage Cell Config 2",
+   "environment": null,
+   "prisms": 4480,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 58112
+  },
+  "Bloomrush": {
+   "cell": "Rampage Cell Config 2",
+   "environment": null,
+   "prisms": 4474,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 81168
+  },
+  "Breakwater": {
+   "cell": "Breakwater Cell Config 2",
+   "environment": null,
+   "prisms": 3165,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 47532
+  },
+  "Broadside": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16109,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 195016
+  },
+  "BroodRush": {
+   "cell": "Nucleus Rush Cell Config",
+   "environment": null,
+   "prisms": 592,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 8268
+  },
+  "Cleave": {
+   "cell": "Cleave Cell Config 2",
+   "environment": "SpawnableSwell",
+   "prisms": 14277,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 172488
+  },
+  "DogFight": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16114,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 194556
+  },
+  "Dustup": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16100,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 278200
+  },
+  "GrizzlyCharge": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16101,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 216196
+  },
+  "Headlong": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 8908
+  },
+  "Hijack": {
+   "cell": "Switchyard Cell Config 2",
+   "environment": "SpawnableSwitchyard2",
+   "prisms": 3978,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 48888
+  },
+  "Joust": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 2304,
+   "tier": "RUN",
+   "track": "SpawnableHopf",
+   "triangles": 28080
+  },
+  "Maelstrom": {
+   "cell": null,
+   "environment": null,
+   "montage": [
+    "SkimRace",
+    "Scurry",
+    "Salvo",
+    "Rampage",
+    "DogFight"
+   ],
+   "tier": "MONTAGE",
+   "track": null
+  },
+  "Rampage": {
+   "cell": "Rampage Cell Config 2",
+   "environment": null,
+   "prisms": 4486,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 58208
+  },
+  "Redline": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 9148
+  },
+  "Regatta": {
+   "cell": "Regatta Cell Config 2",
+   "environment": "SpawnableRegattaRails2",
+   "prisms": 2038,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 32884
+  },
+  "Salvo": {
+   "cell": "Boneyard Cell Config 2",
+   "environment": "SpawnableBoneyard2",
+   "prisms": 16100,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 216232
+  },
+  "ScarabScramble": {
+   "cell": "Scarab Scramble Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 17332
+  },
+  "Scurry": {
+   "cell": "Scurry Cell Config",
+   "environment": null,
+   "prisms": 24966,
+   "tier": "RUN",
+   "track": "SpawnableConcetricSpheres",
+   "triangles": 332032
+  },
+  "Sirocco": {
+   "cell": "Rampage Cell Config 2",
+   "environment": null,
+   "prisms": 4478,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 242844
+  },
+  "Skein": {
+   "cell": "Skein Cell Config 2",
+   "environment": "SpawnableSkein2",
+   "prisms": 5103,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 62340
+  },
+  "SkimRace": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 464,
+   "tier": "RUN",
+   "track": "SkimRaceWaypointTrack",
+   "triangles": 38116
+  },
+  "Switchback": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 20620
+  },
+  "Tapestry": {
+   "cell": "Barren Cell Config",
+   "environment": null,
+   "prisms": 863,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 80500
+  },
+  "Tollway": {
+   "cell": "Tollway Cell Config 2",
+   "environment": null,
+   "prisms": 336,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 4980
+  },
+  "Undertow": {
+   "cell": "Wildlife Liberation Cell Config 2",
+   "environment": "SpawnableWildlifeCage2",
+   "prisms": 13018,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 301700
+  },
+  "Waystation": {
+   "cell": "Skim Race Cell Config",
+   "environment": null,
+   "prisms": 0,
+   "tier": "COURSE",
+   "track": null,
+   "triangles": 204148
+  },
+  "WildlifeLiberation": {
+   "cell": "Wildlife Liberation Cell Config 2",
+   "environment": "SpawnableWildlifeCage2",
+   "prisms": 13018,
+   "tier": "RUN",
+   "track": null,
+   "triangles": 301492
+  },
+  "WreckingBall": {
+   "cell": "WreckingBall Cell Config 2",
+   "environment": null,
+   "prisms": 1091,
+   "tier": "MODEL",
+   "track": null,
+   "triangles": 23580
+  }
+ },
+ "intensity": 2,
+ "size": [
+  768,
+  510
+ ],
+ "source_hash": "2f503196e0d6a3e9fbdfebf1495c704fbf97115fdf192b278eff16f0a9046361"
+}

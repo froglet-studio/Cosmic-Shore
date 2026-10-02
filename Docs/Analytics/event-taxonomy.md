@@ -112,7 +112,7 @@ system exists, hook is cheap; **P2** = valuable after a prerequisite ships.
 | Event | Parameters | Hook point |
 |---|---|---|
 | `session_started` | `entry_point` (cold_launch \| resume) | `AnalyticsServiceFacade` on collection start / `OnAppPaused(false)`. Today only *ends* are explicit; the second sink should not have to reconstruct session starts from UGS built-ins it doesn't receive. |
-| `ftue_step_completed` | `step_id` (string), `seconds_since_launch` (int) | `FTUEEventManager` / `TutorialFlowController` (Assets/FTUE/) — a full tutorial state machine that emits **zero** analytics. This is the top of the activation funnel and it is dark. |
+| `ftue_step_completed` | `step_id` (string), `seconds_since_launch` (int) | `FTUEEventManager` / `QuestGraphRunner` (Assets/FTUE/) — the quest graph, which emits **zero** analytics. This is the top of the activation funnel and it is dark. (`TutorialFlowController` is deleted; the graph's per-node hook is `QuestGraphRunner`, its per-phase/quest hooks are `FTUEEventManager.OnQuestPhaseCompleted`/`OnQuestCompleted`. The graph does not run while `DeveloperUnlockGate.AllUnlocked` is on — the default until the FTUE is designed.) |
 | `game_quit_midway` | `game_mode`, `intensity`, `seconds_elapsed` (int) | Facade: game in progress (`_gameInProgress`) + scene exit / `OnClickToMainMenuButton` without `OnMiniGameEnd`. Rage-quit is currently indistinguishable from finishing. |
 | `network_disconnected` | `app_state` (string), `in_game` (bool) | `NetworkMonitorData.OnNetworkLost` — the facade already subscribes to this event for gating but records nothing. Mid-match disconnects are a churn driver for a multiplayer game and are invisible. |
 
