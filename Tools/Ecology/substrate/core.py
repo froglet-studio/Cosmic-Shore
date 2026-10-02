@@ -148,7 +148,7 @@ class Substrate:
 
     def __init__(self, arena, P: SpeciesParams, backend="numpy", center=None, spread=60.0, G=40, init_hunger=None):
         self.P, self.backend = P, backend
-        if backend == "numba" and not HAVE_NUMBA:
+        if backend in ("numba", "fused") and not HAVE_NUMBA:
             raise RuntimeError("numba backend requested but numba missing")
         self.rng = np.random.default_rng(P.seed * 7919 + 13)
         cap = P.capacity or 2 * P.n0
@@ -230,6 +230,15 @@ class Substrate:
         self.tick += 1
         if len(A) == 0:
             self._world(arena, dt, A); self._expose(); return
+        if self.backend == "fused" and P.body is None:
+            self._fused(arena, dt, A)
+            t0 = time.perf_counter()
+            self._world(arena, dt, A)
+            t0 = self._t("world", t0)
+            self._expose()
+            if self.publish:
+                arena.targets = list(self.agent_pos); arena.threats = list(self.agent_pos)
+            return
         pos = self.pos[A]
         cells = F.cell(pos)
         # ---- hash + moments (all agents) and neighbour reads (the re-steering slice only) ----
@@ -269,7 +278,7 @@ class Substrate:
     def _neighbours(self, A, sl):
         P = self.P
         pos, vel, ph = self.pos[A], self.vel[A], self.phase[A]
-        if self.backend == "numba":
+        if self.backend in ("numba", "fused"):
             nb = knb.neighbours(pos, vel, ph, sl.astype(np.int64), P.nbr_r, self.R)
             nb["sep"] = np.where(nb["_has"][:, None], (pos[sl] - nb["_cen"]) / P.nbr_r, 0.0) * \
                 (nb["count"] / P.dens_norm)[:, None]
@@ -411,7 +420,7 @@ class Substrate:
         danger("threat", -F.sample_grad("threat", cells), W("w_threat") * (0.3 + fe))
         # ---- context map ----
         t1 = time.perf_counter()
-        if self.backend == "numba":
+        if self.backend in ("numba", "fused"):
             best = knb.context_choose(T, Wt, D, Wd, self.dirs, self.idir[S])
         else:
             best = self._context_np(T, Wt, D, Wd, self.idir[S])
@@ -462,6 +471,38 @@ class Substrate:
         # phase relaxes every step toward the last computed quorum target
         self.phase[A] += dt * self.P.q_rate * (self.qtarget[A] - ph)
         self._dt = dt
+
+    # ---- fused (Burst-shaped) path ----
+    def _fused(self, arena, dt, A):
+        P, F = self.P, self.fields
+        t0 = time.perf_counter()
+        if not hasattr(self, "_Rs"):
+            self._Rs = np.array([float(getattr(P.solitary, f)) for f in knb.REG_FIELDS])
+            self._Rg = np.array([float(getattr(P.gregarious, f)) for f in knb.REG_FIELDS])
+            self._SPv = np.array([float(getattr(P, f)) for f in knb.SP_FIELDS])
+            self._role = self.role.astype(np.int64)
+        PP = np.stack([q.pos for q in arena.pilots]) if arena.pilots else np.zeros((0, 3))
+        PV = np.stack([q.vel for q in arena.pilots]) if arena.pilots else np.zeros((0, 3))
+        G = F.G
+        knb.fused_step(A.astype(np.int64), self.pos, self.vel, self.idir, self.ispeed, self.hunger, self.fear,
+                       self.curious, self.aggr, self.attach, self.phase, self.qtarget, self.wseed, self._role,
+                       self._Rs, self._Rg, self._SPv, self.dirs, PP, PV, float(F.R), G,
+                       F.grad["food"].reshape(-1, 3), F.grad[self.trail_ch].reshape(-1, 3),
+                       F.ch["alarm"].reshape(-1), F.grad["alarm"].reshape(-1, 3),
+                       F.ch["threat"].reshape(-1), F.grad["threat"].reshape(-1, 3),
+                       self.home if self.home is not None else np.zeros(3), self.home is not None,
+                       self.tick, max(1, P.frac_k), dt, float(self.R))
+        k = max(1, P.frac_k)
+        self._S = A[(A + self.tick) % k == 0]
+        t0 = self._t("fused", t0)
+        if P.deposit_trail:
+            F.deposit(self.trail_ch, self.pos[A], P.deposit_trail * dt)
+        if P.deposit_alarm:
+            m = self.fear[A] > 0.3
+            F.deposit("alarm", self.pos[A][m], P.deposit_alarm * self.fear[A][m] * dt)
+        if P.deposit_threat:
+            F.deposit("threat", self.pos[A], P.deposit_threat * dt)
+        self._t("deposit", t0)
 
     # ---- body frame ----
     def _update_body(self, A):
@@ -553,6 +594,11 @@ class Substrate:
         live = np.flatnonzero(arena.mass_alive & ~arena.mass_shielded)
         if len(live) == 0:
             return
+        if self.backend == "fused":
+            j = knb.eat_query(arena.mass_pos[live], self.pos[hungry], float(P.eat_r), float(self.R))
+            got = j >= 0
+            best = np.full(len(hungry), -1); best[got] = live[j[got]]
+            return self._consume(arena, hungry, best)
         h = P.eat_r
         M = int(2 * self.R / h) + 4
         def keys(p):
@@ -575,6 +621,10 @@ class Substrate:
                     better = (d < bd[ok]) & (d < h)
                     idx = np.flatnonzero(ok)[better]
                     best[idx] = jj[better]; bd[idx] = d[better]
+        return self._consume(arena, hungry, best)
+
+    def _consume(self, arena, hungry, best):
+        P = self.P
         got = best >= 0
         if not got.any():
             return

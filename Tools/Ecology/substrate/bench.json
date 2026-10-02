@@ -5,331 +5,448 @@
   "numba_threads": 4,
   "numpy": "2.4.6",
   "numba": "0.68.0",
-  "note": "ms_step includes the shared field update (40^3 x 5 channels) and the arena's own step is excluded"
+  "note": "steer INCLUDES context; fused = drives+neighbours+quorum+steer+integrate in one numba parallel-for; ms_step includes the shared field update (40^3 x 5 channels) and the arena's own step is excluded"
  },
  "rows": [
   {
    "N": 1000,
    "backend": "numpy",
    "k": 1,
-   "ms_step": 16.148,
-   "us_per_agent_step": 16.1477,
+   "ms_step": 14.908,
+   "us_per_agent_step": 14.9082,
    "stages_ms": {
-    "fields": 2.462,
-    "drives_pre": 0.126,
-    "neighbours": 3.163,
-    "drives": 0.245,
-    "context": 3.574,
-    "steer": 5.135,
-    "integrate": 0.39,
-    "deposit": 0.026,
-    "world": 2.856
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "numpy",
-   "k": 4,
-   "ms_step": 8.163,
-   "us_per_agent_step": 8.1633,
-   "stages_ms": {
-    "fields": 2.158,
-    "drives_pre": 0.111,
-    "neighbours": 1.156,
-    "drives": 0.22,
-    "context": 0.853,
-    "steer": 1.502,
-    "integrate": 0.328,
-    "deposit": 0.025,
-    "world": 1.07
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "numpy",
-   "k": 8,
-   "ms_step": 7.092,
-   "us_per_agent_step": 7.0916,
-   "stages_ms": {
-    "fields": 2.158,
+    "fields": 2.197,
     "drives_pre": 0.114,
-    "neighbours": 0.846,
-    "drives": 0.218,
-    "context": 0.445,
-    "steer": 0.943,
-    "integrate": 0.341,
-    "deposit": 0.024,
-    "world": 0.825
+    "neighbours": 3.058,
+    "drives": 0.226,
+    "context": 3.46,
+    "steer": 4.851,
+    "integrate": 0.35,
+    "deposit": 0.026,
+    "world": 2.579
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numpy",
+   "k": 4,
+   "ms_step": 9.423,
+   "us_per_agent_step": 9.4232,
+   "stages_ms": {
+    "fields": 2.563,
+    "drives_pre": 0.123,
+    "neighbours": 1.322,
+    "drives": 0.234,
+    "context": 1.062,
+    "steer": 1.813,
+    "integrate": 0.378,
+    "deposit": 0.023,
+    "world": 1.292
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numpy",
+   "k": 8,
+   "ms_step": 7.466,
+   "us_per_agent_step": 7.4661,
+   "stages_ms": {
+    "fields": 2.359,
+    "drives_pre": 0.123,
+    "neighbours": 0.898,
+    "drives": 0.226,
+    "context": 0.487,
+    "steer": 0.992,
+    "integrate": 0.37,
+    "deposit": 0.026,
+    "world": 0.93
    }
   },
   {
    "N": 10000,
    "backend": "numpy",
    "k": 1,
-   "ms_step": 125.491,
-   "us_per_agent_step": 12.5491,
+   "ms_step": 114.878,
+   "us_per_agent_step": 11.4878,
    "stages_ms": {
-    "fields": 2.531,
-    "drives_pre": 0.46,
-    "neighbours": 38.631,
-    "drives": 1.432,
-    "context": 42.275,
-    "steer": 55.45,
-    "integrate": 2.836,
-    "deposit": 0.422,
-    "world": 19.907
+    "fields": 2.332,
+    "drives_pre": 0.434,
+    "neighbours": 34.59,
+    "drives": 1.29,
+    "context": 41.413,
+    "steer": 53.738,
+    "integrate": 2.555,
+    "deposit": 0.352,
+    "world": 17.804
    }
   },
   {
    "N": 10000,
    "backend": "numpy",
    "k": 4,
-   "ms_step": 33.172,
-   "us_per_agent_step": 3.3172,
+   "ms_step": 37.398,
+   "us_per_agent_step": 3.7398,
    "stages_ms": {
-    "fields": 1.953,
-    "drives_pre": 0.372,
-    "neighbours": 8.74,
-    "drives": 1.083,
-    "context": 7.356,
-    "steer": 10.307,
-    "integrate": 2.189,
-    "deposit": 0.296,
-    "world": 5.064
+    "fields": 2.224,
+    "drives_pre": 0.415,
+    "neighbours": 10.533,
+    "drives": 1.228,
+    "context": 8.74,
+    "steer": 12.161,
+    "integrate": 2.661,
+    "deposit": 0.343,
+    "world": 6.231
    }
   },
   {
    "N": 10000,
    "backend": "numpy",
    "k": 8,
-   "ms_step": 26.406,
-   "us_per_agent_step": 2.6406,
+   "ms_step": 26.489,
+   "us_per_agent_step": 2.6489,
    "stages_ms": {
-    "fields": 2.278,
-    "drives_pre": 0.368,
-    "neighbours": 6.011,
-    "drives": 1.33,
-    "context": 4.557,
-    "steer": 6.429,
-    "integrate": 2.494,
-    "deposit": 0.289,
-    "world": 3.492
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "numpy",
-   "k": 1,
-   "ms_step": 2173.763,
-   "us_per_agent_step": 21.7376,
-   "stages_ms": {
-    "fields": 2.673,
-    "drives_pre": 6.091,
-    "neighbours": 730.266,
-    "drives": 14.257,
-    "context": 995.725,
-    "steer": 1143.293,
-    "integrate": 30.671,
-    "deposit": 3.268,
-    "world": 212.051
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "numpy",
-   "k": 4,
-   "ms_step": 503.067,
-   "us_per_agent_step": 5.0307,
-   "stages_ms": {
-    "fields": 2.286,
-    "drives_pre": 5.008,
-    "neighbours": 178.815,
-    "drives": 13.603,
-    "context": 156.163,
-    "steer": 188.939,
-    "integrate": 29.956,
-    "deposit": 2.438,
-    "world": 53.235
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "numpy",
-   "k": 8,
-   "ms_step": 295.795,
-   "us_per_agent_step": 2.958,
-   "stages_ms": {
-    "fields": 2.444,
-    "drives_pre": 4.572,
-    "neighbours": 103.401,
-    "drives": 14.382,
-    "context": 55.895,
-    "steer": 75.834,
-    "integrate": 30.289,
-    "deposit": 2.383,
-    "world": 31.608
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "numba",
-   "k": 1,
-   "ms_step": 7.046,
-   "us_per_agent_step": 7.0458,
-   "stages_ms": {
-    "fields": 1.422,
-    "drives_pre": 0.139,
-    "neighbours": 0.306,
-    "drives": 0.217,
-    "context": 0.366,
-    "steer": 1.517,
-    "integrate": 0.26,
-    "deposit": 0.018,
-    "world": 1.949
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "numba",
-   "k": 4,
-   "ms_step": 4.914,
-   "us_per_agent_step": 4.9139,
-   "stages_ms": {
-    "fields": 1.438,
-    "drives_pre": 0.117,
-    "neighbours": 0.179,
-    "drives": 0.213,
-    "context": 0.094,
-    "steer": 0.635,
-    "integrate": 0.267,
-    "deposit": 0.02,
-    "world": 0.842
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "numba",
-   "k": 8,
-   "ms_step": 5.428,
-   "us_per_agent_step": 5.428,
-   "stages_ms": {
-    "fields": 1.741,
-    "drives_pre": 0.127,
-    "neighbours": 0.412,
-    "drives": 0.236,
-    "context": 0.068,
-    "steer": 0.506,
-    "integrate": 0.295,
-    "deposit": 0.019,
-    "world": 0.751
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "numba",
-   "k": 1,
-   "ms_step": 42.986,
-   "us_per_agent_step": 4.2986,
-   "stages_ms": {
-    "fields": 1.639,
-    "drives_pre": 0.421,
-    "neighbours": 2.461,
-    "drives": 1.173,
-    "context": 2.318,
-    "steer": 14.229,
-    "integrate": 2.18,
-    "deposit": 0.296,
-    "world": 17.238
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "numba",
-   "k": 4,
-   "ms_step": 22.183,
-   "us_per_agent_step": 2.2183,
-   "stages_ms": {
-    "fields": 1.792,
-    "drives_pre": 0.422,
-    "neighbours": 1.155,
+    "fields": 2.435,
+    "drives_pre": 0.436,
+    "neighbours": 6.766,
     "drives": 1.284,
-    "context": 1.556,
-    "steer": 5.049,
-    "integrate": 2.491,
-    "deposit": 0.31,
-    "world": 6.119
+    "context": 4.49,
+    "steer": 6.538,
+    "integrate": 2.788,
+    "deposit": 0.366,
+    "world": 4.124
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 1,
+   "ms_step": 2059.869,
+   "us_per_agent_step": 20.5987,
+   "stages_ms": {
+    "fields": 2.268,
+    "drives_pre": 5.448,
+    "neighbours": 676.649,
+    "drives": 13.21,
+    "context": 998.675,
+    "steer": 1133.149,
+    "integrate": 29.415,
+    "deposit": 2.351,
+    "world": 191.298
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 4,
+   "ms_step": 565.956,
+   "us_per_agent_step": 5.6596,
+   "stages_ms": {
+    "fields": 2.403,
+    "drives_pre": 4.536,
+    "neighbours": 201.553,
+    "drives": 14.877,
+    "context": 216.393,
+    "steer": 251.289,
+    "integrate": 29.684,
+    "deposit": 2.285,
+    "world": 53.884
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 8,
+   "ms_step": 266.159,
+   "us_per_agent_step": 2.6616,
+   "stages_ms": {
+    "fields": 2.089,
+    "drives_pre": 3.93,
+    "neighbours": 94.926,
+    "drives": 14.668,
+    "context": 69.045,
+    "steer": 85.73,
+    "integrate": 27.445,
+    "deposit": 2.252,
+    "world": 29.702
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 1,
+   "ms_step": 8.494,
+   "us_per_agent_step": 8.4941,
+   "stages_ms": {
+    "fields": 1.582,
+    "drives_pre": 0.128,
+    "neighbours": 0.373,
+    "drives": 0.258,
+    "context": 0.271,
+    "steer": 1.81,
+    "integrate": 0.362,
+    "deposit": 0.032,
+    "world": 2.669
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 4,
+   "ms_step": 5.566,
+   "us_per_agent_step": 5.5663,
+   "stages_ms": {
+    "fields": 1.591,
+    "drives_pre": 0.117,
+    "neighbours": 0.2,
+    "drives": 0.236,
+    "context": 0.117,
+    "steer": 0.77,
+    "integrate": 0.357,
+    "deposit": 0.023,
+    "world": 1.058
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 8,
+   "ms_step": 5.36,
+   "us_per_agent_step": 5.3602,
+   "stages_ms": {
+    "fields": 1.559,
+    "drives_pre": 0.124,
+    "neighbours": 0.214,
+    "drives": 0.262,
+    "context": 0.054,
+    "steer": 0.612,
+    "integrate": 0.366,
+    "deposit": 0.026,
+    "world": 0.906
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 1,
+   "ms_step": 44.348,
+   "us_per_agent_step": 4.4348,
+   "stages_ms": {
+    "fields": 1.658,
+    "drives_pre": 0.463,
+    "neighbours": 2.468,
+    "drives": 1.286,
+    "context": 2.156,
+    "steer": 14.803,
+    "integrate": 2.418,
+    "deposit": 0.323,
+    "world": 19.292
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 4,
+   "ms_step": 16.419,
+   "us_per_agent_step": 1.6419,
+   "stages_ms": {
+    "fields": 1.415,
+    "drives_pre": 0.379,
+    "neighbours": 1.003,
+    "drives": 1.114,
+    "context": 0.603,
+    "steer": 3.485,
+    "integrate": 2.158,
+    "deposit": 0.283,
+    "world": 5.104
    }
   },
   {
    "N": 10000,
    "backend": "numba",
    "k": 8,
-   "ms_step": 15.967,
-   "us_per_agent_step": 1.5967,
+   "ms_step": 11.102,
+   "us_per_agent_step": 1.1102,
    "stages_ms": {
-    "fields": 1.597,
-    "drives_pre": 0.403,
-    "neighbours": 0.942,
-    "drives": 1.237,
-    "context": 0.484,
-    "steer": 2.261,
-    "integrate": 2.483,
-    "deposit": 0.29,
-    "world": 3.485
+    "fields": 1.266,
+    "drives_pre": 0.304,
+    "neighbours": 0.768,
+    "drives": 1.0,
+    "context": 0.298,
+    "steer": 1.684,
+    "integrate": 1.854,
+    "deposit": 0.248,
+    "world": 2.67
    }
   },
   {
    "N": 100000,
    "backend": "numba",
    "k": 1,
-   "ms_step": 499.011,
-   "us_per_agent_step": 4.9901,
+   "ms_step": 471.002,
+   "us_per_agent_step": 4.71,
    "stages_ms": {
-    "fields": 1.723,
-    "drives_pre": 5.567,
-    "neighbours": 34.799,
-    "drives": 13.356,
-    "context": 22.359,
-    "steer": 188.379,
-    "integrate": 32.008,
-    "deposit": 2.263,
-    "world": 192.4
+    "fields": 1.809,
+    "drives_pre": 5.744,
+    "neighbours": 32.557,
+    "drives": 13.663,
+    "context": 24.118,
+    "steer": 185.29,
+    "integrate": 31.373,
+    "deposit": 2.373,
+    "world": 192.045
    }
   },
   {
    "N": 100000,
    "backend": "numba",
    "k": 4,
-   "ms_step": 195.338,
-   "us_per_agent_step": 1.9534,
+   "ms_step": 169.173,
+   "us_per_agent_step": 1.6917,
    "stages_ms": {
-    "fields": 1.816,
-    "drives_pre": 5.327,
-    "neighbours": 15.822,
-    "drives": 13.58,
-    "context": 7.261,
-    "steer": 40.577,
-    "integrate": 30.618,
-    "deposit": 2.47,
-    "world": 56.424
+    "fields": 1.914,
+    "drives_pre": 4.456,
+    "neighbours": 17.607,
+    "drives": 13.485,
+    "context": 7.785,
+    "steer": 42.025,
+    "integrate": 28.138,
+    "deposit": 2.423,
+    "world": 53.124
    }
   },
   {
    "N": 100000,
    "backend": "numba",
    "k": 8,
-   "ms_step": 160.153,
-   "us_per_agent_step": 1.6015,
+   "ms_step": 115.311,
+   "us_per_agent_step": 1.1531,
    "stages_ms": {
-    "fields": 3.177,
-    "drives_pre": 4.886,
-    "neighbours": 11.351,
-    "drives": 12.795,
-    "context": 3.411,
-    "steer": 21.283,
-    "integrate": 28.216,
-    "deposit": 2.168,
-    "world": 45.613
+    "fields": 1.82,
+    "drives_pre": 4.073,
+    "neighbours": 10.253,
+    "drives": 12.336,
+    "context": 3.381,
+    "steer": 20.204,
+    "integrate": 27.618,
+    "deposit": 2.088,
+    "world": 31.413
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "fused",
+   "k": 1,
+   "ms_step": 5.001,
+   "us_per_agent_step": 5.0011,
+   "stages_ms": {
+    "fields": 2.08,
+    "fused": 0.637,
+    "deposit": 0.035,
+    "world": 1.686
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "fused",
+   "k": 4,
+   "ms_step": 4.483,
+   "us_per_agent_step": 4.4828,
+   "stages_ms": {
+    "fields": 2.194,
+    "fused": 0.298,
+    "deposit": 0.037,
+    "world": 1.006
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "fused",
+   "k": 8,
+   "ms_step": 5.078,
+   "us_per_agent_step": 5.0781,
+   "stages_ms": {
+    "fields": 2.497,
+    "fused": 0.389,
+    "deposit": 0.043,
+    "world": 1.214
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "fused",
+   "k": 1,
+   "ms_step": 11.352,
+   "us_per_agent_step": 1.1352,
+   "stages_ms": {
+    "fields": 2.11,
+    "fused": 3.76,
+    "deposit": 0.347,
+    "world": 7.597
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "fused",
+   "k": 4,
+   "ms_step": 8.137,
+   "us_per_agent_step": 0.8137,
+   "stages_ms": {
+    "fields": 2.64,
+    "fused": 1.752,
+    "deposit": 0.301,
+    "world": 3.945
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "fused",
+   "k": 8,
+   "ms_step": 6.815,
+   "us_per_agent_step": 0.6815,
+   "stages_ms": {
+    "fields": 2.049,
+    "fused": 1.386,
+    "deposit": 0.33,
+    "world": 3.204
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "fused",
+   "k": 1,
+   "ms_step": 81.357,
+   "us_per_agent_step": 0.8136,
+   "stages_ms": {
+    "fields": 2.545,
+    "fused": 41.467,
+    "deposit": 2.469,
+    "world": 73.051
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "fused",
+   "k": 4,
+   "ms_step": 39.031,
+   "us_per_agent_step": 0.3903,
+   "stages_ms": {
+    "fields": 2.193,
+    "fused": 16.333,
+    "deposit": 2.125,
+    "world": 31.589
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "fused",
+   "k": 8,
+   "ms_step": 30.729,
+   "us_per_agent_step": 0.3073,
+   "stages_ms": {
+    "fields": 2.229,
+    "fused": 11.19,
+    "deposit": 2.119,
+    "world": 23.61
    }
   }
  ]
