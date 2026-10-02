@@ -37,7 +37,11 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from common.arena import Arena, Pilot, Grid  # noqa: E402
 
-GARDEN = (250.0, 850.0)          # the band the plants live in and the pilots fly through
+GARDEN = (250.0, 850.0)          # (legacy shell band; unused since round 1 - see GROVE)
+GROVE_C = np.array([0.0, 0.0, 600.0])
+GROVE_R = 450.0                  # the GROVE: a ball the plants live in and the pilots fly through. A stationary
+                                 # threat is a PLACE; in a 600 u-thick shell a wanderer's mean free path between
+                                 # plant clumps was ~8000 u and it met no plant at all (round 0, see DISCOVERIES).
 VIEW = 450.0                     # how far a pilot can READ a telegraph
 BURN_COOLDOWN = 1.0              # one hazard element burns one pilot at most once per this many seconds
 
@@ -51,14 +55,14 @@ class FloraArena(Arena):
         self.path_len = {}
         self.boost_left = {}
         self.boost_cool = {}
-        self.courier_route = self._ball(3, GARDEN[0] + 50, GARDEN[1] - 50)
+        self.courier_route = self.grove(3, 60.0)
         self.courier_i = {}
         self.base_speed = {}
 
     def add_pilot(self, p: Pilot):
         super().add_pilot(p)
-        p.pos = self._ball(1, GARDEN[0], GARDEN[1])[0]
-        p.goal = self._ball(1, GARDEN[0], GARDEN[1])[0]
+        p.pos = self.grove(1)[0]
+        p.goal = self.grove(1)[0]
         self.goals_reached[p.name] = 0; self.path_len[p.name] = 0.0
         self.boost_left[p.name] = 0.0; self.boost_cool[p.name] = 0.0
         self.courier_i[p.name] = 0; self.base_speed[p.name] = p.speed
@@ -78,7 +82,22 @@ class FloraArena(Arena):
 
     def _new_goal(self, p):
         self.goals_reached[p.name] += 1
-        p.goal = self._ball(1, GARDEN[0], GARDEN[1])[0]
+        p.goal = self.grove(1)[0]
+
+    def grove(self, n, margin=0.0):
+        """n points volume-uniform in the grove ball (shrunk by margin)."""
+        return GROVE_C + self._ball(n, 0.0, GROVE_R - margin)
+
+    def grove_mass(self, n, clumps=20, vol=(8.0, 40.0), spread=25.0):
+        """Food prisms in clumps inside the grove (the shared arena's scatter_mass, relocated)."""
+        rng = self.rng
+        centres = self.grove(clumps, 40.0); which = rng.integers(0, clumps, n)
+        p = centres[which] + rng.normal(0, spread, (n, 3))
+        self.mass_pos = np.concatenate([self.mass_pos, p]); self.mass_vol = np.concatenate([self.mass_vol, rng.uniform(*vol, n)])
+        self.mass_elem = np.concatenate([self.mass_elem, (which % 4).astype(np.int8)])
+        self.mass_alive = np.concatenate([self.mass_alive, np.ones(n, bool)])
+        self.mass_shielded = np.concatenate([self.mass_shielded, np.zeros(n, bool)])
+        self.mass_grid.build(self.mass_pos, self.mass_alive)
 
     def _pilot_goal(self, p):
         if p.policy == "courier":
@@ -236,8 +255,8 @@ class FloraProbe:
     def __init__(self, arena, dt, n_lanes=64, every=10):
         rng = np.random.default_rng(12345)
         d = rng.normal(size=(n_lanes, 2, 3)); d /= np.linalg.norm(d, axis=2, keepdims=True)
-        r = np.cbrt(GARDEN[0] ** 3 + rng.random((n_lanes, 2)) * (GARDEN[1] ** 3 - GARDEN[0] ** 3))
-        self.lanes = d * r[..., None]
+        r = np.cbrt(rng.random((n_lanes, 2))) * GROVE_R
+        self.lanes = GROVE_C + d * r[..., None]
         self.dt, self.every, self.k = dt, every, 0
         self.coverage = []; self.density = []; self.mass_series = []; self.prisms = []
         self.lead_samples = []
@@ -277,17 +296,30 @@ def precise_leads(arena, sp_leads):
 
 
 # ------------------------------------------------------------------------------------------------- runner
-def run(make_species, params, seed, policy, minutes=2.0, dt=0.1, record=None, extra_pilot=None, cut_event=None):
-    """One species x one pilot policy x one seed. Returns a run dict (common fields + plant metrics)."""
+def resolve(spec):
+    """'module:Class' -> a species factory (strings keep the multiprocessing pool picklable)."""
+    if callable(spec): return spec
+    import importlib
+    mod, cls = spec.split(":")
+    C = getattr(importlib.import_module(mod), cls)
+    return lambda a, p: C(a, p)
+
+
+def run(spec, params, seed, policy, minutes=2.0, dt=0.1, record=None, perturb=0.0, cut_event=None):
+    """One species x one pilot policy x one seed. Returns a run dict (common fields + plant metrics).
+    `perturb` nudges the pilot's start by that many units with an independent rng (twin runs for variety)."""
     from common.scorecard import Probe, run_score
+    make_species = resolve(spec)
     ar = FloraArena(seed=seed)
-    ar.scatter_mass(1600, r_lo=GARDEN[0] / ar.R, r_hi=GARDEN[1] / ar.R, clumps=20)
+    ar.grove_mass(1600, clumps=20)
     mk = dict(wander=Pilot.wanderer, reader=lambda: Pilot("reader", speed=120.0, name="reader"),
               cutter=lambda: Pilot("cutter", speed=140.0, name="cutter"),
               courier=lambda: Pilot("courier", speed=120.0, name="courier"))[policy]
     sp = make_species(ar, params)
     ar.species = sp
     pilot = ar.add_pilot(mk())
+    if perturb:
+        pilot.pos = pilot.pos + np.random.default_rng(seed + 999).normal(0, perturb, 3)
     pilot.prev = pilot.pos.copy()
     m0 = ar.live_volume() + sp.mass_total() + sp.cut_volume
     pr = Probe(dt); fp = FloraProbe(ar, dt)
@@ -307,20 +339,47 @@ def run(make_species, params, seed, policy, minutes=2.0, dt=0.1, record=None, ex
     out = run_score(ar, sp, pr, minutes)
     out.update(fp.summary(minutes))
     out["goals_per_min"] = round(ar.goals_reached[pilot.name] / minutes, 2)
-    out["leads"] = [round(x, 2) for x in getattr(sp, "leads", [])]
+    out["leads"] = [round(min(5.0, x), 2) for x in getattr(sp, "leads", [])]
     out["mass_drift"] = (m1 - m0) / max(m0, 1e-9)
     out["crystals"] = sp.crystals; out["deaths"] = sp.deaths
     out["kills_per_min"] = round(sp.crystals / minutes, 2)
     out["py_ms_per_step"] = round(ms, 2)
-    out["burns"] = sum(1 for h in pilot.hits)
+    kinds = {}
+    for (_t, _n, kd, _a) in ar.log: kinds[kd] = kinds.get(kd, 0) + 1
+    out["kinds"] = kinds
+    dens = np.asarray(fp.density); h = len(dens) // 2
+    out["density_early"] = float(dens[:h].mean()) if h else 0.0
+    out["density_late"] = float(dens[h:].mean()) if h else 0.0
+    out["signature"] = np.asarray(sp.signature(), float).tolist() if hasattr(sp, "signature") else []
     if cut_report is not None:
         out["cut"] = cut_report
     return out
 
 
-def scorecard(make_species, params, seeds=(7, 23, 41), minutes=2.0, policies=("wander", "reader", "cutter")):
-    runs = {(p, s): run(make_species, params, s, p, minutes) for p in policies for s in seeds}
+def _job(args):
+    spec, params, seed, policy, minutes, perturb = args
+    return (policy if not perturb else policy + "_twin", seed), run(spec, params, seed, policy, minutes, perturb=perturb)
+
+
+def scorecard(spec, params, seeds=(7, 23, 41), minutes=2.0, policies=("wander", "reader", "cutter", "courier"), procs=4, twins=True):
+    jobs = [(spec, params, s, p, minutes, 0.0) for p in policies for s in seeds]
+    if twins:
+        jobs += [(spec, params, s, "wander", minutes, 5.0) for s in seeds]
+    if procs > 1 and isinstance(spec, str):
+        import multiprocessing as mp
+        with mp.get_context("fork").Pool(min(procs, len(jobs))) as pool:
+            runs = dict(pool.map(_job, jobs))
+    else:
+        runs = dict(_job(j) for j in jobs)
     return summarize(runs, minutes), runs
+
+
+def _sigdist(a, b):
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    n = max(len(a), len(b))
+    a = np.pad(a, (0, n - len(a))); b = np.pad(b, (0, n - len(b)))
+    s = np.abs(a).sum() + np.abs(b).sum()
+    return float(np.abs(a - b).sum() / s) if s > 0 else 0.0
 
 
 def summarize(runs, minutes):
@@ -329,19 +388,18 @@ def summarize(runs, minutes):
         return float(np.mean(v)) if v else None
     w = mean("wander", "hits_per_min"); rd = mean("reader", "hits_per_min")
     leads = [x for (p, s), r in runs.items() if p in ("wander", "reader") for x in r["leads"]]
-    hs = []
-    for (p, s), r in runs.items():
-        if p == "wander" and r["hit_times"]:
-            h, _ = np.histogram(r["hit_times"], bins=12, range=(0, minutes * 60)); hs.append(h / max(h.sum(), 1))
-    var = float(np.mean([np.abs(a - b).sum() for i, a in enumerate(hs) for b in hs[i + 1:]])) if len(hs) > 1 else 0.0
+    # variety (twin): same world, the pilot nudged 5 u at the start -> how differently did the PLANTS respond?
+    tw = [_sigdist(runs[("wander", s)]["signature"], r["signature"]) for (p, s), r in runs.items() if p == "wander_twin"]
+    cut_cpm = mean("cutter", "kills_per_min"); cut_bpm = mean("cutter", "hits_per_min")
     card = dict(
         hits_per_min_wander=_r(w), hits_per_min_reader=_r(rd),
         counterplay=_r(rd / w) if w else None,
         telegraph_s=_r(float(np.median(leads))) if leads else None,
         telegraph_p10=_r(float(np.percentile(leads, 10))) if leads else None,
-        payoff_per_min=_r(mean("cutter", "kills_per_min")),
-        cutter_burns_per_min=_r(mean("cutter", "hits_per_min")),
-        variety=_r(var),
+        unwarned_frac=_r(float(np.mean(np.asarray(leads) < 0.7))) if leads else None,
+        payoff_per_min=_r(cut_cpm), cutter_burns_per_min=_r(cut_bpm),
+        crystals_per_burn=_r(cut_cpm / max(cut_bpm, 0.25)) if cut_cpm is not None else None,
+        variety=_r(float(np.mean(tw))) if tw else 0.0,
         avoid_cost=_r(mean("reader", "goals_per_min") / max(mean("wander", "goals_per_min") or 1e-6, 1e-6))
         if mean("wander", "goals_per_min") else None,
         lane_coverage=_r(mean("wander", "lane_coverage")),
@@ -351,6 +409,11 @@ def summarize(runs, minutes):
         mass_drift_max=float(max(abs(r["mass_drift"]) for r in runs.values())),
         crystal_law=all(r["crystals"] == r["deaths"] for r in runs.values()),
         py_ms_per_step=_r(mean("wander", "py_ms_per_step")),
+        courier_hits_per_min=_r(mean("courier", "hits_per_min")),
+        adapt=_r((mean("courier", "density_late") + 0.05) / (mean("courier", "density_early") + 0.05))
+        if mean("courier", "density_early") is not None else None,
+        kinds={k: sum(r["kinds"].get(k, 0) for (p, s), r in runs.items() if p == "wander") for k in
+               sorted({k for r in runs.values() for k in r["kinds"]})},
     )
     card["R"] = replay_score(card)
     return card
@@ -369,24 +432,33 @@ def _band(x, lo, hi):
 
 
 def replay_score(c):
-    """Composite replayable-threat score in [0,1] - the geometric mean of six terms (PROGRAM.md §2):
-       threat      hits/min vs a blind wanderer inside [1, 6] (present, not a meat grinder)
-       counterplay reader/wanderer hit ratio, <= 0.3 is full marks (reading the telegraph is the counter)
-       telegraph   median visible lead before a hit, >= 0.8 s full marks
-       payoff      cutter crystals/min, >= 1/min full marks
-       variety     hit-time histogram distance across seeds, >= 0.5 full marks
+    """Composite replayable-threat score in [0,1]: the geometric mean of seven terms (PROGRAM.md §2), each floored
+    at 0.01 so one dead axis drags the whole score down without zeroing it.
+       threat      hits/min vs a blind wanderer inside [1, 6]       (present, not a meat grinder)
+       counterplay reader/wanderer hit ratio; <= 0.3 is full marks  (reading the telegraph IS the counter)
+       telegraph   the WORST decile of visible lead before a hit, >= 0.7 s full marks (unwarned hits are what
+                   frustrate; a median hides them)
+       payoff      cutter crystals per burn taken inside [0.5, 3] AND >= 1 crystal/min (killing it pays, but it
+                   costs exposure - free crystals are not a threat, unwinnable ones are not a reward)
+       variety     twin-run divergence: same world, the pilot nudged 5 u at the start; >= 0.3 full marks
        access      reader goals/min over wanderer goals/min >= 0.75 (the counter is not 'stay home')
+       presence    lane coverage inside [0.1, 0.4]: flora's job is to SHAPE routes - block some lanes, not all
+       adapt       threat density near a COURIER that keeps flying one 3-waypoint loop, late half / early half;
+                   1.5x is full marks and a static plant scores 0.5 (the place changes because you were there)
+       payoff is now also a band on crystals/min [1, 6]: a plant you farm at 20/min is not a threat.
        Hard gates: mass drift < 1e-6 and every dead plant dropped its crystal, else R = 0."""
     if c["mass_drift_max"] > 1e-6 or not c["crystal_law"]:
         return 0.0
-    cp = c["counterplay"]
+    cp = c["counterplay"]; f = 0.01
     terms = dict(
-        threat=max(0.01, _band(c["hits_per_min_wander"], 1.0, 6.0)),
-        counterplay=0.01 if cp is None else float(np.clip((1.0 - cp) / 0.7, 0.05, 1.0)),
-        telegraph=0.05 if c["telegraph_s"] is None else float(np.clip(c["telegraph_s"] / 0.8, 0.05, 1.0)),
-        payoff=float(np.clip((c["payoff_per_min"] or 0) / 1.0, 0.05, 1.0)),
-        variety=float(np.clip(c["variety"] / 0.5, 0.05, 1.0)),
-        access=float(np.clip((c["avoid_cost"] or 0) / 0.75, 0.05, 1.0)),
+        threat=max(f, _band(c["hits_per_min_wander"], 1.0, 6.0)),
+        counterplay=f if cp is None else float(np.clip((1.0 - cp) / 0.7, f, 1.0)),
+        telegraph=f if c["telegraph_p10"] is None else float(np.clip(c["telegraph_p10"] / 0.7, f, 1.0)),
+        payoff=max(f, _band(c["crystals_per_burn"], 0.5, 3.0) * _band(c["payoff_per_min"], 1.0, 6.0)),
+        variety=float(np.clip(c["variety"] / 0.3, f, 1.0)),
+        access=float(np.clip((c["avoid_cost"] or 0) / 0.75, f, 1.0)),
+        presence=max(f, _band(c["lane_coverage"], 0.1, 0.4)),
+        adapt=0.5 if c["adapt"] is None else float(np.clip(0.5 + (c["adapt"] - 1.0), 0.5, 1.0)),
     )
     c["R_terms"] = {k: round(v, 3) for k, v in terms.items()}
     return round(float(np.exp(np.mean(np.log(list(terms.values()))))), 4)

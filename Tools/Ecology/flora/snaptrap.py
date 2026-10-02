@@ -73,11 +73,11 @@ class SnapTrap(FloraSpecies):
         self.ema = np.zeros((self.cap, 3)); self.absorb_t = np.zeros(self.cap); self.caught = np.zeros(self.cap, bool)
         self.hot_since = {}            # (trap, pilot) -> t the trap first showed intent>=0.5 within VIEW of pilot
         self.seen_since = {}           # (trap, pilot) -> t the pilot first came within VIEW of the trap
-        self.n = 0
+        self.n = 0; self.fired = np.zeros(self.cap)
         self.cost = 3 * p["prism_vol"] + 16 * p["prism_vol"] + 8 * p["tooth_vol"]
         self.reserve = p["n_traps"] * self.cost          # planted with exactly the mass of its initial traps
         self.cut_volume = 0.0; self.crystals = 0; self.deaths = 0; self.leads = []; self.snaps = 0
-        centres = arena._ball(p["clumps"], GARDEN[0] + 60, GARDEN[1] - 60)
+        centres = arena.grove(p["clumps"], 60.0)
         for i in range(p["n_traps"]):
             c = centres[i % p["clumps"]]
             pos = c + rng.normal(0, p["clump_r"], 3)
@@ -174,6 +174,7 @@ class SnapTrap(FloraSpecies):
         relax = ar_ & ~near; st[relax] = PRIMING
         fire = ar_ & in_mouth if p["fire_on"] == "mouth" else ar_ & near
         st[fire] = CLOSING; tm[fire] = 0.0
+        self.fired[grown[fire]] += 1
         cl = st == CLOSING
         th_prev = th.copy()
         th[cl] = np.maximum(shut, wide - (wide - shut) * tm[cl] / p["t_close"])
@@ -319,3 +320,11 @@ class SnapTrap(FloraSpecies):
         out["snaptrap"] = dict(pos=self.body.pos[bi], col=np.clip(col, 0, 1), size=np.where(dg, 5.0, 7.0))
         live = np.flatnonzero(self.alive[:self.n])
         out["hearts"] = dict(pos=self.h[live], col=np.tile([[0.4, 0.7, 1.0]], (len(live), 1)), size=np.full(len(live), 9.0))
+
+
+def _sig(self):
+    """Per-trap fire count (who fired is what twin runs should disagree on)."""
+    return self.fired[:self.n] if hasattr(self, "fired") else np.zeros(0)
+
+
+SnapTrap.signature = _sig
