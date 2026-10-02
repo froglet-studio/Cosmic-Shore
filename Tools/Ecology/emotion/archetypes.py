@@ -62,7 +62,7 @@ class Body:
         self.agent_pos = self.agent_pos + self.agent_vel * dt
         self.t += dt
 
-    def render(self, out, col=(1, 1, 1), name="agents"):
+    def render(self, out, col=(1.0, 0.55, 0.25), name="agents"):
         out[name] = dict(pos=self.agent_pos, col=np.tile(col, (self.n, 1)), size=self.agent_size)
 
 

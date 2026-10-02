@@ -33,6 +33,7 @@ border-radius:8px;padding:10px;z-index:3;font-size:12px">
 <div id="rate" style="display:flex;flex-wrap:wrap;gap:4px"></div>
 <div id="rated" style="color:var(--mute);margin-top:6px"></div>
 <label style="display:block;margin-top:6px;color:var(--mute)"><input type="checkbox" id="blind"> blind mode (hide reading until rated)</label>
+<label style="display:block;margin-top:4px;color:var(--mute)"><input type="checkbox" id="follow" checked> follow the pilot (white) at encounter range</label>
 <button id="exp" style="margin-top:8px;width:100%;background:#151a28;color:var(--fg);border:1px solid #2a3150;border-radius:6px;padding:4px">export my ratings (JSON)</button>
 </div>
 <div id="info"></div>
@@ -51,10 +52,19 @@ function drawPanel(){
   document.querySelectorAll('#rate button').forEach(b=>b.onclick=()=>{const R=ratings();R[m.label]=b.dataset.e;save(R);drawPanel()});
   document.getElementById('rated').textContent = Object.keys(R).length+' of '+RUNS.length+' runs rated';
 }
+addEventListener('load',()=>{
 document.getElementById('blind').onchange=drawPanel;
 document.getElementById('exp').onclick=()=>{const b=new Blob([JSON.stringify({ratings:ratings(),runs:RUNS.map(r=>({label:r.meta.label,truth:r.meta.truth||null,probe:r.meta.probe}))},null,1)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='emotion_ratings.json';a.click()};
-document.getElementById('run').addEventListener('change',drawPanel); setTimeout(drawPanel,50);
+document.getElementById('run').addEventListener('change',()=>{drawPanel();lastP=null});
+let lastP=null;
+(function follow(){requestAnimationFrame(follow);
+  if(!document.getElementById('follow').checked||typeof run==='undefined'||!run) {lastP=null;return}
+  const f=run.frames[k]; if(!f||!f.pilots.length) return;
+  const p=new THREE.Vector3(f.pilots[0][0],f.pilots[0][1],f.pilots[0][2]);
+  if(lastP) cam.position.add(p.clone().sub(lastP)); else cam.position.copy(p).add(new THREE.Vector3(0,220,520));
+  ctl.target.copy(p); lastP=p;})();
+drawPanel();});
 </script>"""
 
 
@@ -96,7 +106,7 @@ def runs():
 
 if __name__ == "__main__":
     R = runs()
-    html = TPL.replace('<div id="info"></div>', PANEL.replace("__EMO__", json.dumps(list(EmotionProbe.load(PROBE_PATH).emotions))))
+    html = '<meta charset="utf-8">' + TPL.replace('<div id="info"></div>', PANEL.replace("__EMO__", json.dumps(list(EmotionProbe.load(PROBE_PATH).emotions))))
     html = html.replace("__TITLE__", "Emotion probe").replace("__DATA__", json.dumps(R, separators=(",", ":")))
     out = os.path.join(HERE, "results", "emotion_viewer.html")
     open(out, "w").write(html)
