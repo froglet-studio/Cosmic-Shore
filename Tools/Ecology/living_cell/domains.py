@@ -12,6 +12,9 @@ Compared, each on the same cell and the same seeds:
     (c) control  offspring domain = the cell's controlling (most-volume) domain at birth (today's one-colour law)
     (d) last     a member's domain flips to the domain of whatever it last ate (offspring take the parent's)
     blind        reference: members have a domain but eat ANY domain (today's nucleus-cell exterior diet)
+    X_blind      rule X's inheritance with the any-domain diet: a_blind asks whether food-inheritance's COLOUR can
+                 be had without its diet; bmix_blind is the NEUTRAL control (domain changes nothing a member
+                 does, so its mix can only drift) for the drift / founder question
     none         reference: no swarm at all
 
 The cell: radius 700, nucleus-less, three domains each holding a territory (an azimuth third of the sphere)
@@ -45,7 +48,7 @@ from numba import njit
 from .world import World, FLORA, TRAIL, SKEL, flock_terms
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-RULES = ("a", "a1", "b", "bmix", "c", "d", "blind", "none")
+RULES = ("a", "a1", "b", "bmix", "c", "d", "blind", "none", "a_blind", "bmix_blind")
 
 
 @njit(cache=True)
@@ -83,6 +86,8 @@ class DomainCell:
     def __init__(self, seed=1, rule="a", cap=600, e_birth=12.0, n0=150, R=700.0, plants=(40, 20, 20),
                  plant_cap=30, flora_r=0.03, N0=20000.0, N_half=6000.0, pilots=True, dt=0.2):
         self.rule = rule; self.cap = cap; self.e_birth = e_birth
+        self.blind = rule == "blind" or rule.endswith("_blind")
+        self.inherit = rule.split("_")[0]
         w = self.w = World(seed=seed, R=R, nucleus=0.0, cap=150_000, N0=N0)
         rng = w.rng
         self.body, self.e0, self.metab, self.imax, self.speed = 3.0, 2.0, 0.05, 0.6, 40.0
@@ -111,7 +116,7 @@ class DomainCell:
             ctrl = self.controlling()
             c0 = self.ppos[rng.integers(0, len(self.ppos), n0)] + rng.normal(0, 40, (n0, 3))
             self.pos[:n0] = c0; self.st[:n0] = 6.0; self.dom[:n0] = ctrl; self.alive[:n0] = True
-            if rule == "bmix":
+            if rule.startswith("bmix"):
                 dm = self.domain_mass()[1:]
                 self.dom[:n0] = rng.choice(3, n0, p=dm / dm.sum()) + 1
             w.book_initial(n0 * (self.body + 6.0))
@@ -166,7 +171,7 @@ class DomainCell:
             need = a[bad & (self.st[a] < 16.0)]
             if len(need):
                 got = _nearest_dom(np.ascontiguousarray(self.pos[need]), self.dom[need], 250.0, w.pos, w.alive, w.kind,
-                                   w.dom, w.excl, w.R, w.h, w.G, w.start, w.order, 1 if self.rule == "blind" else 0)
+                                   w.dom, w.excl, w.R, w.h, w.G, w.start, w.order, 1 if self.blind else 0)
                 for i, j in zip(need, got):
                     if j >= 0:
                         self.claim[i] = j; w.excl[j] = 1
@@ -204,11 +209,11 @@ class DomainCell:
             for i, j in zip(par[:max(0, room)], free):
                 self.st[i] -= self.body + self.e0
                 f = self.fund[i, 1:]
-                if self.rule == "a":
+                if self.inherit == "a":
                     d = int(w.rng.choice(3, p=f / f.sum()) + 1) if f.sum() > 0 else int(self.dom[i])
-                elif self.rule == "a1":
+                elif self.inherit == "a1":
                     d = int(np.argmax(f) + 1) if f.sum() > 0 else int(self.dom[i])
-                elif self.rule == "c":
+                elif self.inherit == "c":
                     d = self.controlling()
                 else:
                     d = int(self.dom[i])         # b, d (last-eaten member's current domain), blind
@@ -313,10 +318,10 @@ def _job(a):
     return run_domain(**a)
 
 
-def study(seeds=(1, 2, 3), minutes=20.0):
-    jobs = [dict(seed=s, rule=r, minutes=minutes) for r in RULES for s in seeds]
+def study(seeds=(1, 2, 3), minutes=20.0, rules=RULES, sweep=("a", "bmix", "c", "d")):
+    jobs = [dict(seed=s, rule=r, minutes=minutes) for r in rules for s in seeds]
     # fixation vs size and birth rate, for the two heritable rules
-    for r in ("a", "bmix", "c", "d"):
+    for r in sweep:
         for cap in (150, 600, 1500):
             for eb in (8.0, 16.0):
                 if cap == 600 and eb == 12.0:
@@ -334,7 +339,9 @@ def table(res):
         rows.setdefault(k, []).append(r)
     out = []
     for (rule, cap, eb), rs in sorted(rows.items(), key=lambda x: (RULES.index(x[0][0]), x[0][1], x[0][2])):
-        m = lambda k: round(float(np.nanmean([x[k] if x[k] is not None else np.nan for x in rs])), 3)
+        def m(k):
+            v = [x[k] for x in rs if x[k] is not None and x[k] == x[k]]
+            return round(float(np.mean(v)), 3) if v else None
         fx = [x["t_fix"] for x in rs]
         out.append(dict(rule=rule, cap=cap, e_birth=eb, n=len(rs), n_end=m("n_end"), births=m("births"),
                         simpson_mean=m("simpson_mean"), simpson_end=m("simpson_end"),
@@ -348,6 +355,16 @@ def table(res):
 
 if __name__ == "__main__":
     mins = float(sys.argv[1]) if len(sys.argv) > 1 else 20.0
+    if len(sys.argv) > 2 and sys.argv[2] == "drift":
+        # the neutral control and food-inheritance-with-blind-diet, over the same size / birth-rate grid
+        res = study(minutes=mins, rules=("a_blind", "bmix_blind"), sweep=("a_blind", "bmix_blind"))
+        T = table(res)
+        for r in T:
+            print(r)
+        json.dump(dict(table=T, runs=[{k: v for k, v in r.items() if k not in ("rows",)} for r in res],
+                       series={f"{r['rule']}_{r['cap']}_{r['e_birth']}_{r['seed']}": r["rows"] for r in res}),
+                  open(os.path.join(HERE, "results", "domains_drift.json"), "w"), indent=0)
+        sys.exit(0)
     res = study(minutes=mins)
     T = table(res)
     for r in T:

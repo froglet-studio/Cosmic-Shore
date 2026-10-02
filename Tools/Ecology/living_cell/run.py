@@ -90,7 +90,7 @@ def flight_table(runs):
         return {}
     m = lambda k: round(float(np.mean([f.get(k, 0) for f in F])), 3)
     out = {k: m(k) for k in ("enc_per_min", "variety", "variety_entropy_bits", "quiet_frac", "hits_per_min", "damage_per_min", "steals_per_min",
-                             "emotion_distinct", "emotion_entropy_bits", "threat_range", "threat_peak", "active_encounters")}
+                             "emotion_distinct", "emotion_entropy_bits", "threat_range", "threat_peak", "active_encounters", "species_sighted")}
     out["n_flights"] = len(F)
     # replayability: every pair of flights by the same pilot policy from DIFFERENT seeds
     d = []
@@ -252,8 +252,11 @@ if __name__ == "__main__":
     elif what == "controls":
         controls()
     elif what == "consistency":
-        consistency()
+        import importlib
+        consistency(cfg=getattr(importlib.import_module("living_cell.rounds"), sys.argv[2]) if len(sys.argv) > 2 else None)
     elif what == "iterate":
         import importlib
         mod = importlib.import_module("living_cell.rounds")
-        iterate(getattr(mod, sys.argv[2]), minutes=float(sys.argv[3]) if len(sys.argv) > 3 else 20.0)
+        seeds = tuple(int(x) for x in sys.argv[4].split(",")) if len(sys.argv) > 4 else (1, 2, 3)
+        tag = sys.argv[5] if len(sys.argv) > 5 else "iterate"
+        iterate(getattr(mod, sys.argv[2]), minutes=float(sys.argv[3]) if len(sys.argv) > 3 else 20.0, seeds=seeds, tag=tag)

@@ -16,3 +16,34 @@ R2 = {
     "r2_r010": dict(HIGHCAP, flora_r=0.010),
     "r2_r006_cap60": dict(HIGHCAP, flora_r=0.006, plant_cap=60),
 }
+
+# Round 3: territory. R2's lurkers (cap-bound, creeping from 600 u) and thieves (tailing forever) never left a
+# pilot alone. Leashes + a lurker that has to eat to live; plus the sizes of the two populations.
+BASE3 = dict(HIGHCAP, flora_r=0.006, lurker_cap=60, thief_cap=150, thief_n=45, **{"lurker.metab": 0.03})
+R3 = {
+    "r3_base": BASE3,
+    "r3_lurk_lean": dict(BASE3, lurker_n=12, lurker_cap=40),
+    "r3_thief_short": dict(BASE3, **{"thief.leash": 600.0}),
+    "r3_r004": dict(BASE3, flora_r=0.004),
+}
+
+# Round 4: encounters are now ACTIVE-state events (metrics.Flight). Lurkers food-limited (R3 still capped).
+R4 = {
+    "r4_base": dict(BASE3),
+    "r4_lurk06": dict(BASE3, **{"lurker.metab": 0.06}),
+    "r4_lurk06_cap40": dict(BASE3, lurker_cap=40, **{"lurker.metab": 0.06}),
+    "r4_lurk10": dict(BASE3, **{"lurker.metab": 0.10}),
+}
+
+# Round 5: cohorts of schooling species expand as clumps; packs go for whichever is nearer (prey or pilot).
+BASE5 = dict(BASE3, **{"lurker.metab": 0.10})
+R5 = {
+    "r5_base": BASE5,
+    "r5_locust_dense": dict(BASE5, locust_n=500),
+    "r5_pack_lean": dict(BASE5, pack_n=16),
+    "r5_locust_dense_r008": dict(BASE5, locust_n=500, flora_r=0.008),
+}
+
+# Long horizon: does the cell BREATHE (a flora recovery feeding a second herbivore / locust boom)?
+LONG = {"long_r5d008": dict(BASE5, locust_n=500, flora_r=0.008)}
+CONS = dict(BASE5, locust_n=500, flora_r=0.008)

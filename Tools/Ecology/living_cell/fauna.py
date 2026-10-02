@@ -152,7 +152,12 @@ class Guild:
         else:
             x[:] = S / c
         cen = w.rcen_all[r]
-        if at is None:
+        if at is None and self.clump_size > 0:
+            # a cohort of a schooling species is a BAND, not a gas: expand into clumps of ~clump_size members
+            k = max(1, int(math.ceil(c / self.clump_size)))
+            cc = cen + w.rng.uniform(-0.4, 0.4, (k, 3)) * w.L
+            P = cc[w.rng.integers(0, k, c)] + w.rng.normal(0, self.clump_spread, (c, 3))
+        elif at is None:
             P = cen + w.rng.uniform(-0.5, 0.5, (c, 3)) * w.L
         else:
             P = np.asarray(at) + w.rng.normal(0, 15.0, (c, 3))
@@ -432,6 +437,7 @@ class Guild:
                 self.expand_region(q, n=kk, at=face)
 
     face_clear = 330.0
+    clump_size = 0; clump_spread = 40.0      # >0: expand cohorts as clumps (schooling species; iter 5)
 
     def hop_weight(self, r, q, food, guilds):
         if food is None:
@@ -489,6 +495,7 @@ class Grazer(Guild):
     diet = K_GRAZE                   # flora + skeleton (E's herbivore diet)
     body, e0, e_birth, e_max, metab = 6.0, 4.0, 18.0, 26.0, 0.045
     imax, F_half = 0.5, 250.0
+    clump_size, clump_spread = 40, 50.0
     cap = 2600; capacity = 2600
     hop = 0.003; food_bias = 0.5
     size = 2.5; color = (0.45, 0.95, 1.0)
@@ -536,6 +543,7 @@ class Locust(Guild):
     body, e0, e_birth, e_max, metab = 3.0, 2.0, 10.0, 14.0, 0.05
     imax, F_half = 0.6, 250.0
     cap = 1200; capacity = 1200
+    clump_size, clump_spread = 40, 30.0
     hop = 0.006; food_bias = 1.0
     size = 2.0; color = (0.45, 0.95, 0.4); threat = True
 
@@ -619,7 +627,7 @@ class Pack(Guild):
         C = self.capacity
         self.stamina = np.full(C, 3.0); self.cool = np.zeros(C); self.closure = np.zeros(C)
         self.weave = self.w.rng.uniform(0, 6.28, C); self.strikes = 0; self.prey_kills = 0
-        self.heading = np.zeros((C, 3)); self.mode = np.zeros(C, np.int8)
+        self.heading = np.zeros((C, 3)); self.mode = np.zeros(C, np.int8); self.stalking = np.zeros(C, bool)
 
     def on_spawn(self, idx, from_macro=False):
         self.stamina[idx] = 3.0; self.cool[idx] = 0.0
@@ -642,10 +650,13 @@ class Pack(Guild):
                 preyP.append(g.pos[a]); preyRef += [(g, i) for i in a]
         self.prey_near = np.zeros(n, bool)
         preyP = np.concatenate(preyP) if preyP else np.zeros((0, 3))
-        chase = np.zeros(n, bool); self.prey_near = np.zeros(n, bool)
+        chase = np.zeros(n, bool); self.prey_near = np.zeros(n, bool); self._dprey = np.full(n, np.inf)
         if len(preyP) and hungry.any():
             j, dj = nearest_point(P, preyP, self.prey_sense)
-            chase = hungry & (j >= 0); self.prey_near = j >= 0
+            chase = hungry & (j >= 0); self.prey_near = j >= 0; self._dprey = dj
+            # a pack goes for whichever is nearer: the prey, or a pilot (iter 5: grazers crowd every pilot)
+            dp0, _ = w.dist_to_pilots(P)
+            chase &= ~(dp0 < dj)
             des[chase] = unit(preyP[j[chase]] - P[chase]) * 175.0
             for kk in np.flatnonzero(chase & (dj < self.catch_r)):
                 g, i = preyRef[j[kk]]
@@ -672,7 +683,8 @@ class Pack(Guild):
             striking = (closure > 0.55) & (self.stamina[idx] > 0.3) & (self.cool[idx] <= 0)
             ring = np.where(striking, 0.0, np.clip(dp * 0.5, 120, 220))
             goal = pred + want_b * ring[:, None]
-            stalk = (dp < 900) & ~chase & (hungry | (not self.hunger_gate)) & ~self.prey_near
+            dprey = self._dprey
+            stalk = (dp < 900) & ~chase & (hungry | (not self.hunger_gate)) & (~self.prey_near | (dp < dprey))
             spd = np.where(striking, 175.0, 95.0)
             des[stalk] = unit(goal - P)[stalk] * spd[stalk, None]
             side = unit(np.cross(des, [0.0, 1.0, 0.0]) + 1e-6)
@@ -687,8 +699,9 @@ class Pack(Guild):
                 mates = idx[same[kk]]
                 self.cool[mates] = 3.0; self.cool[idx[kk]] = 3.0
             roam = ~chase & ~stalk
+            self.stalking[idx] = stalk
         else:
-            roam = ~chase
+            roam = ~chase; self.stalking[idx] = False
         # roam: drift toward the pack centroid of nearby mates
         if roam.any():
             D, d = pair(P)
@@ -734,7 +747,7 @@ class Pack(Guild):
 
     def threat_agents(self):
         a = np.flatnonzero(self.alive)
-        return self.pos[a], self.vel[a], np.full(len(a), self.size), np.ones(len(a), bool)
+        return self.pos[a], self.vel[a], np.full(len(a), self.size), self.stalking[a]
 
     def render(self, out):
         a = np.flatnonzero(self.alive)
@@ -754,6 +767,7 @@ class Thief(Guild):
     hop = 0.0
     size = 2.2; color = (0.75, 0.75, 1.0); threat = True
     diet = (1 << FLORA) | (1 << SKEL)    # nectar + scavenging (round 1 of iteration: nectar alone starved them)
+    leash = 900.0                         # territory: a thief never tails a ship beyond this from its nest (iter 3)
 
     def extra_init(self):
         C = self.capacity
@@ -807,8 +821,13 @@ class Thief(Guild):
         stale = (tc >= 0) & ((~w.alive[np.maximum(tc, 0)]) | (w.kind[np.maximum(tc, 0)] != TRAIL))
         for kk in np.flatnonzero(stale):
             w.excl[tc[kk]] = 0; self.tclaim[idx[kk]] = -1
+        dn = np.linalg.norm(P - nest, axis=1)
+        far = dn > self.leash
         tc = self.tclaim[idx]
-        look = free[(tc[free] < 0) & (dp[free] < 700)]
+        for kk in np.flatnonzero(far & (tc >= 0)):
+            w.excl[tc[kk]] = 0; self.tclaim[idx[kk]] = -1
+        tc = self.tclaim[idx]
+        look = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free]]
         if len(look):
             got = w.nearest(P[look], 400.0, 1 << TRAIL, tmin=w.t - 1.5)
             for kk, j in zip(look, got):
@@ -825,11 +844,11 @@ class Thief(Guild):
                 w.dom[j] = 1; self.carry[i] = j; self.tclaim[i] = -1
                 self.steals += 1; self.stolen_vol += w.vol[j]
                 w.hit(int(k[kk]), self.name, "steal", float(w.vol[j]))
-        tail = free[(tc[free] < 0) & (dp[free] < 700)]
+        tail = free[(tc[free] < 0) & (dp[free] < 700) & ~far[free]]
         if len(tail) and len(w.pilots):
             PPv = w.pilot_pos(); PVv = np.array([p.vel for p in w.pilots])
             des[tail] = unit(PPv[k[tail]] - unit(PVv[k[tail]]) * 70.0 - P[tail]) * 150.0
-        home_ = free[(tc[free] < 0) & (dp[free] >= 700)]
+        home_ = free[(tc[free] < 0) & ((dp[free] >= 700) | far[free])]
         if len(home_):
             hv = nest[home_] - P[home_]
             hungry = self.st[idx[home_]] < 0.4 * self.e_birth
@@ -896,6 +915,7 @@ class Lurker(Guild):
     size = 4.0; color = (0.75, 1.0, 0.45); threat = True
     predator = True; prey_names = ("grazer", "locust")
     a_attack, h_handle = 1.5e-4, 20.0
+    creep_r = 350.0          # creep toward a pilot's line only at ambush range (B used 600 in a 450-u grove; iter 3)
 
     def extra_init(self):
         C = self.capacity
@@ -935,7 +955,7 @@ class Lurker(Guild):
         go = idle & (g >= 1.0)
         for kk in np.flatnonzero(go):
             i = idx[kk]
-            if trig_f[kk] and (dmin[kk] < dp[kk] or not trig_p[kk]):
+            if (trig_f[kk] and (dmin[kk] < dp[kk] or not trig_p[kk])) or not len(w.pilots) or dmin[kk] < dp[kk]:
                 aim = preyP[jq[kk]] - P[kk]; self.tk[i] = 1
             else:
                 p = w.pilots[k[kk]]; aim = p.pos + p.vel * min(dp[kk] / 380.0, 0.5) - P[kk]; self.tk[i] = 0
@@ -973,7 +993,7 @@ class Lurker(Guild):
             PV = np.array([p.vel for p in w.pilots]); PP = w.pilot_pos()
             ahead = PP[k] + PV[k] * 3.0
             look = np.sum(unit(PV[k]) * unit(P - PP[k]), axis=1) > np.cos(np.radians(50))
-            dorm = settle & (dp < 600) & (dp > 120)
+            dorm = settle & (dp < self.creep_r) & (dp > 120)
             creep = dorm & ~look
             des[creep] = unit(ahead[creep] - P[creep]) * 35.0
             des[dorm & look] = 0.0; V[dorm & look] = 0.0

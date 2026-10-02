@@ -133,10 +133,12 @@ def continuity_metrics(world, pop_r=250.0):
 class Flight:
     """One pilot's flight through the cell: encounters, quiet, hits, and the frames the emotion probe reads.
 
-    ENCOUNTER: a THREAT species (anything that can strike a pilot) comes within 200 u, having not been within
-    400 u in the previous 10 s. It is `active` if any of its members in range was in its striking state
-    (gregarious locust, closing pack, a thief on your wake, a gaping lurker, a primed trap, an excited tube,
-    a defending fortress) while the encounter lasted. Grazers are logged as SIGHTINGS, never encounters.
+    ENCOUNTER: a THREAT species has a member in its STRIKING state (a gregarious locust, a stalking pack, a
+    thief locked on your wake or carrying, a gaping or lunging lurker, a primed / armed / closing trap, an
+    excited tube, a defending fortress worker) within 200 u, having had no active member within 400 u for the
+    previous 10 s. (Iteration 4: the first definition used mere PRESENCE, and the cell's life is around a pilot
+    almost all the time - grazers inside 200 u 95% of a flight, sparse locusts 77% - so a presence encounter
+    never ended. Presence is kept as SIGHTINGS per species.)
     QUIET: nothing in its striking state within 300 u (a sparse cute locust cloud or a sleeping lurker is
     life, not a threat; a pack is always a threat)."""
 
@@ -163,22 +165,21 @@ class Flight:
             if len(P) == 0:
                 continue
             d = np.linalg.norm(P - p.pos, axis=1)
-            dmin = float(d.min())
-            if sp == "grazer":
-                if dmin < ENC_R:
-                    self.sight[sp] = self.sight.get(sp, 0) + 1
+            if d.min() < ENC_R:
+                self.sight[sp] = self.sight.get(sp, 0) + 1          # ambient presence (seconds x 10)
+            if sp == "grazer" or not len(act):
                 continue
-            if len(act) and np.any(act & (d < QUIET_R)):
+            da = d[act]
+            amin = float(da.min()) if len(da) else float("inf")
+            if amin < QUIET_R:
                 anyq = True
-            a_in = bool(np.any(act[d < ENC_R])) if len(act) else False
             if sp in self.cur:
-                self.cur[sp]["active"] |= a_in
-                if dmin > CLEAR_R:
+                if amin > CLEAR_R and w.t - self.last_close.get(sp, -1e9) > DEBOUNCE:
                     self.cur.pop(sp)
-            elif dmin < ENC_R and w.t - self.last_close.get(sp, -1e9) > DEBOUNCE:
-                e = dict(t=round(w.t - self.t0, 1), species=sp, active=a_in)
+            elif amin < ENC_R and w.t - self.last_close.get(sp, -1e9) > DEBOUNCE:
+                e = dict(t=round(w.t - self.t0, 1), species=sp, active=True)
                 self.enc.append(e); self.cur[sp] = e
-            if dmin < CLEAR_R:
+            if amin < CLEAR_R:
                 self.last_close[sp] = w.t
         self.quiet.append(not anyq)
         # emotion frames: sticky nearest K bodies (a slot keeps its body while it lives and stays inside 700 u)
@@ -239,6 +240,8 @@ class Flight:
                    steals_per_min=round(len(steals) / max(mins, 1e-9), 2),
                    damage_per_min=round(sum(e[4] for e in hits) / max(mins, 1e-9), 2),
                    grazer_sight_s=round(self.sight.get("grazer", 0) * 0.1, 1),
+                   sight_frac={k: round(v / max(len(self.quiet), 1), 3) for k, v in self.sight.items()},
+                   species_sighted=len(self.sight),
                    seq=[(e["species"], int(e["t"] // 60)) for e in self.enc], events=self.enc)
         if emo and self.frames:
             ws = self.emotion()
