@@ -1,0 +1,77 @@
+{
+ "kernels": "MICRO tick (agents clustered within 450 u of a pilot, 10% predators)\n  agents   1000  0.391 ms/tick  390.6 ns/agent  -> at 10 Hz: 3.906 ms per second of game (0.0651 ms per 60fps frame)\n  agents   2000  0.795 ms/tick  397.6 ns/agent  -> at 10 Hz: 7.952 ms per second of game (0.1325 ms per 60fps frame)\n  agents   5000  2.574 ms/tick  514.7 ns/agent  -> at 10 Hz: 25.737 ms per second of game (0.4289 ms per 60fps frame)\n  agents  10000  6.107 ms/tick  610.7 ns/agent  -> at 10 Hz: 61.065 ms per second of game (1.0178 ms per 60fps frame)\n  agents  20000  14.696 ms/tick  734.8 ns/agent  -> at 10 Hz: 146.956 ms per second of game (2.4493 ms per 60fps frame)\nMACRO tick (912 regions x 10 cohorts x 2 species + 58k flora voxels): 2.132 ms per macro step (1 Hz) = 116.9 ns per cohort slot; amortised 0.0355 ms per 60 fps frame\n",
+ "rows": [
+  {
+   "pilots": 1,
+   "individuals": 53659,
+   "agents_mean": 1876.052,
+   "agents_p95": 2161.0,
+   "agents_max": 2234,
+   "hot_mean": 31.566666666666666,
+   "regions": 912,
+   "py_micro_ms_per_tick": 3.563900528351951,
+   "py_macro_ms_per_macro_step": 31.074392150018564,
+   "py_lod_ms_per_macro_step": 14.632198666671078,
+   "py_flora_ms_per_macro_step": 0.9279564666485385,
+   "events": {
+    "expand": 21912.0,
+    "absorb": 21226.0,
+    "arrive": 1247.0,
+    "seen_deleted": 0.0,
+    "settle": 2.55386822800574e-11
+   },
+   "c_micro_ms_per_tick_p95": 0.8727941163666666,
+   "c_micro_ms_per_60fps_frame_at_10hz": 0.1454656860611111,
+   "c_macro_ms_per_step": 2.132,
+   "c_macro_ms_per_60fps_frame_at_1hz": 0.03553333333333333
+  },
+  {
+   "pilots": 2,
+   "individuals": 53631,
+   "agents_mean": 3305.832,
+   "agents_p95": 3960.05,
+   "agents_max": 4007,
+   "hot_mean": 56.68333333333333,
+   "regions": 912,
+   "py_micro_ms_per_tick": 5.704257803355783,
+   "py_macro_ms_per_macro_step": 31.16564109994518,
+   "py_lod_ms_per_macro_step": 25.275051550048982,
+   "py_flora_ms_per_macro_step": 0.9204700499746347,
+   "events": {
+    "expand": 40401.0,
+    "absorb": 38965.0,
+    "arrive": 2156.0,
+    "seen_deleted": 0.0,
+    "settle": 4.766675942846632e-11
+   },
+   "c_micro_ms_per_tick_p95": 1.87748855396425,
+   "c_micro_ms_per_60fps_frame_at_10hz": 0.3129147589940417,
+   "c_macro_ms_per_step": 2.132,
+   "c_macro_ms_per_60fps_frame_at_1hz": 0.03553333333333333
+  },
+  {
+   "pilots": 4,
+   "individuals": 53586,
+   "agents_mean": 5391.798,
+   "agents_p95": 6380.0,
+   "agents_max": 6467,
+   "hot_mean": 91.48333333333333,
+   "regions": 912,
+   "py_micro_ms_per_tick": 8.644957091667797,
+   "py_macro_ms_per_macro_step": 31.28993723335043,
+   "py_lod_ms_per_macro_step": 43.440111666617064,
+   "py_flora_ms_per_macro_step": 0.8717849167169334,
+   "events": {
+    "expand": 74833.0,
+    "absorb": 72301.0,
+    "arrive": 3542.0,
+    "seen_deleted": 0.0,
+    "settle": 8.643574744837679e-11
+   },
+   "c_micro_ms_per_tick_p95": 3.45283048,
+   "c_micro_ms_per_60fps_frame_at_10hz": 0.5754717466666667,
+   "c_macro_ms_per_step": 2.132,
+   "c_macro_ms_per_60fps_frame_at_1hz": 0.03553333333333333
+  }
+ ]
+}
