@@ -62,12 +62,36 @@ def _tail(m, sd, cut, upper):
     return p, mu, mu * mu + var
 
 
+def interval_moments(m, sd, a, b):
+    """Mass, mean and second moment of Normal(m, sd) restricted to [a, b] (mass is the fraction of the WHOLE
+    Normal inside the interval)."""
+    sd = np.maximum(sd, 1e-6)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        al, be = (a - m) / sd, (b - m) / sd
+        Z = ndtr(be) - ndtr(al)
+        pa, pb = _phi(al), _phi(be)
+        pa = np.where(np.isfinite(al), pa, 0.0); pb = np.where(np.isfinite(be), pb, 0.0)
+        ala = np.where(np.isfinite(al), al, 0.0); beb = np.where(np.isfinite(be), be, 0.0)
+        Zs = np.maximum(Z, 1e-300)
+        mu = m + sd * (pa - pb) / Zs
+        var = sd * sd * (1 + (ala * pa - beb * pb) / Zs - ((pa - pb) / Zs) ** 2)
+    tiny = Z < 1e-12
+    mid = np.clip(m, a, b)
+    mu = np.where(tiny | ~np.isfinite(mu), mid, np.clip(mu, a, b))
+    var = np.where(tiny | ~np.isfinite(var), 0.0, np.maximum(var, 0.0))
+    return np.where(np.isfinite(Z), Z, 0.0), mu, mu * mu + var
+
+
 class MacroPop:
     def __init__(self, sp: Species, nreg: int, P: Params, C: int):
         self.sp, self.P, self.C = sp, P, C
         self.N = np.zeros((nreg, C, NE), np.int64)
         self.S = np.zeros((nreg, C))
         self.Q = np.zeros((nreg, C))
+        # exact BOUNDS of each cohort's stomachs: a Normal's tail beyond the cohort's real max would breed
+        # individuals nobody is (births leaked ~90 s early in the enriched regime, measured)
+        self.lo = np.zeros((nreg, C))
+        self.hi = np.zeros((nreg, C))
         self.merge_tol = P.merge_tol * sp.e_birth
 
     # ---- moments -----------------------------------------------------------------------------------------
@@ -105,15 +129,18 @@ class MacroPop:
         return N.sum(axis=(0, 1))
 
     # ---- insertion: a batch of new cohorts (r, Ne[4], S, Q) merged / slotted ------------------------------
-    def insert(self, r, Ne, S, Q):
+    def insert(self, r, Ne, S, Q, lo=None, hi=None):
         r = np.asarray(r, np.int64)
         if len(r) == 0:
             return
         Ne = np.asarray(Ne, np.int64).reshape(len(r), NE)
         S = np.asarray(S, float).reshape(-1); Q = np.asarray(Q, float).reshape(-1)
         k = Ne.sum(1)
+        mean = S / np.maximum(k, 1)
+        lo = mean if lo is None else np.minimum(np.asarray(lo, float).reshape(-1), mean)
+        hi = mean if hi is None else np.maximum(np.asarray(hi, float).reshape(-1), mean)
         ok = k > 0
-        r, Ne, S, Q, k = r[ok], Ne[ok], S[ok], Q[ok], k[ok]
+        r, Ne, S, Q, k, lo, hi = r[ok], Ne[ok], S[ok], Q[ok], k[ok], lo[ok], hi[ok]
         if len(r) == 0:
             return
         m_new = S / k
@@ -138,6 +165,11 @@ class MacroPop:
             slot = np.where(has, slot, near[need][order])          # no free slot left: merge into nearest
             t2 = np.empty_like(slot); t2[order] = slot
             tgt[need] = t2
+        empty = n[r, tgt] == 0
+        self.lo[r[empty], tgt[empty]] = np.inf
+        self.hi[r[empty], tgt[empty]] = -np.inf
+        np.minimum.at(self.lo, (r, tgt), lo)
+        np.maximum.at(self.hi, (r, tgt), hi)
         np.add.at(self.N, (r, tgt), Ne)
         np.add.at(self.S, (r, tgt), S)
         np.add.at(self.Q, (r, tgt), Q)
@@ -158,7 +190,8 @@ class MacroPop:
             j = np.argmin(gap, 1)
             a = o[np.arange(len(rr)), j]; b = o[np.arange(len(rr)), j + 1]
             self.N[rr, a] += self.N[rr, b]; self.S[rr, a] += self.S[rr, b]; self.Q[rr, a] += self.Q[rr, b]
-            self.N[rr, b] = 0; self.S[rr, b] = 0.0; self.Q[rr, b] = 0.0
+            self.lo[rr, a] = np.minimum(self.lo[rr, a], self.lo[rr, b]); self.hi[rr, a] = np.maximum(self.hi[rr, a], self.hi[rr, b])
+            self.N[rr, b] = 0; self.S[rr, b] = 0.0; self.Q[rr, b] = 0.0; self.lo[rr, b] = 0.0; self.hi[rr, b] = 0.0
 
     def place(self, r, e, energy, k=1):
         """Add individuals (one zero-spread cohort each, merged where close) - used by absorb and seeding."""
@@ -179,7 +212,7 @@ class MacroPop:
         n = self.n_rc()
         z = n == 0
         resid = self.S * z
-        self.S[z] = 0.0; self.Q[z] = 0.0
+        self.S[z] = 0.0; self.Q[z] = 0.0; self.lo[z] = 0.0; self.hi[z] = 0.0
         self.Q = np.maximum(self.Q, self.S * self.S / np.maximum(n, 1))
         return resid.sum(1)
 
@@ -283,6 +316,9 @@ class Macro:
         # credit NOW (before predation removes anyone): every member shifts by `gain`, so S and Q shift exactly
         H.Q += 2 * gain * H.S + n * gain * gain
         H.S += n * gain                                     # Σ n*gain == tot, exactly what left the flora
+        live = n > 0
+        H.lo += np.where(live, f[:, None] * np.clip(1 - H.lo / H.sp.e_max, 0, 1) * dt, 0.0)
+        H.hi += np.where(live, f[:, None] * np.clip(1 - H.hi / H.sp.e_max, 0, 1) * dt, 0.0)
         beta = np.where(sat > 0, -f[:, None] / H.sp.e_max, 0.0)
         return gain, beta
 
@@ -301,7 +337,7 @@ class Macro:
         if len(rr) == 0:
             return
         nh, mh, vh = H.mean_var()
-        new_r, new_N, new_S, new_Q = [], [], [], []
+        new_r, new_N, new_S, new_Q, new_lo, new_hi = [], [], [], [], [], []
         for r in rr:
             kk = int(k[r])
             vic = rng.multivariate_hypergeometric(H.N[r].ravel(), kk).reshape(H.C, NE)
@@ -322,11 +358,12 @@ class Macro:
                 Pr.N[r, c] -= ke; Pr.S[r, c] -= kc * mc; Pr.Q[r, c] -= kc * (vc_ + mc * mc)
                 newm = mc + per
                 new_r.append(r); new_N.append(ke); new_S.append(kc * newm); new_Q.append(kc * (vc_ + newm * newm))
+                new_lo.append(Pr.lo[r, c] + per); new_hi.append(Pr.hi[r, c] + per)
             if got == 0:
                 self.W.N[r] += meal
             self.kills += kk
         if new_r:
-            Pr.insert(np.array(new_r), np.array(new_N), np.array(new_S), np.array(new_Q))
+            Pr.insert(np.array(new_r), np.array(new_N), np.array(new_S), np.array(new_Q), np.array(new_lo), np.array(new_hi))
 
     def _hyper_rows(self, pop, r, c, k):
         """Element split of k individuals drawn from each cohort (r[i], c[i])."""
@@ -359,11 +396,18 @@ class Macro:
         burn = np.where(live, n * burn_pc, 0.0)
         W.N += burn.sum(1)                                           # metabolism: stomach -> soil, exactly
         pop.S -= burn
+        pop.lo -= np.where(live, burn_pc, 0.0); pop.hi -= np.where(live, burn_pc, 0.0)
         m2 = np.where(live, pop.S / np.maximum(n, 1), 0.0)
         v2 = np.where(live, np.maximum(v * (1 + 2 * beta * dt) + 2 * P.e_diffuse[k] * dt, 0.0), v)
         pop.Q = np.where(live, n * (v2 + m2 * m2), pop.Q)
         # births: the upper tail past e_birth splits into parent + offspring (bodies paid from stomachs)
-        pb, mub, mu2b = tail_moments(m2, np.sqrt(v2), sp.e_birth, True)
+        if P.bug == "macro_unbounded_cohorts":
+            pb, mub, mu2b = tail_moments(m2, np.sqrt(v2), sp.e_birth, True)
+        else:
+            hi = np.maximum(pop.hi, sp.e_birth)
+            pb, mub, mu2b = interval_moments(m2, np.sqrt(v2), sp.e_birth, hi)
+            whole, _, _ = interval_moments(m2, np.sqrt(v2), np.minimum(pop.lo, m2), np.maximum(pop.hi, m2))
+            pb = np.where(pop.hi >= sp.e_birth, pb / np.maximum(whole, 1e-12), 0.0)
         nb = rng.binomial(np.where(live, n, 0).astype(np.int64), np.clip(pb, 0, 1))
         rb, cb = np.nonzero(nb)
         if len(rb):
@@ -374,13 +418,22 @@ class Macro:
             pv = np.maximum(mu2b[rb, cb] - mub[rb, cb] ** 2, 0.0)
             S_new = kb * pm + kb * sp.e0
             Q_new = kb * (pv + pm * pm) + kb * sp.e0 * sp.e0
-            pop.insert(rb, 2 * ke, S_new, Q_new)
+            hi_old = pop.hi[rb, cb].copy()
+            pop.hi[rb, cb] = np.minimum(pop.hi[rb, cb], sp.e_birth)     # the survivors are below the threshold
+            plo = sp.e_birth - sp.body - sp.e0
+            pop.insert(rb, 2 * ke, S_new, Q_new, lo=np.minimum(plo, sp.e0), hi=np.maximum(hi_old - sp.body - sp.e0, sp.e0))
             self.births[k] += int(kb.sum())
         # starvation: the lower tail past 0. body -> skeleton; the tail's (sub-zero) stomach stays with the
         # survivors, whose spread becomes the upper truncated part - exact in S
         n, m, v = pop.mean_var()
         live = (n > 0) & cold[:, None]
-        pd, _, _ = tail_moments(m, np.sqrt(v), 0.0, False)
+        if P.bug == "macro_unbounded_cohorts":
+            pd, _, _ = tail_moments(m, np.sqrt(v), 0.0, False)
+        else:
+            lo = np.minimum(pop.lo, 0.0)
+            pd, _, _ = interval_moments(m, np.sqrt(v), lo, 0.0)
+            whole, _, _ = interval_moments(m, np.sqrt(v), np.minimum(pop.lo, m), np.maximum(pop.hi, m))
+            pd = np.where(pop.lo <= 0.0, pd / np.maximum(whole, 1e-12), 0.0)
         nd = rng.binomial(np.where(live, n, 0).astype(np.int64), np.clip(pd, 0, 1))
         rd, cd = np.nonzero(nd)
         if len(rd):
@@ -388,6 +441,7 @@ class Macro:
             ke = self._hyper_rows(pop, rd, cd, kd)
             _, mus, mu2s = tail_moments(m[rd, cd], np.sqrt(v[rd, cd]), 0.0, True)
             pop.N[rd, cd] -= ke
+            pop.lo[rd, cd] = np.maximum(pop.lo[rd, cd], 0.0)
             rest = pop.N[rd, cd].sum(1)
             mm = np.where(rest > 0, pop.S[rd, cd] / np.maximum(rest, 1), 0.0)
             vv = np.maximum(mu2s - mus * mus, 0.0)
@@ -436,6 +490,7 @@ class Macro:
                 continue
             rr, cc, mv, tot = rr[sel], cc[sel], mv[sel], tot[sel]
             mu = m[rr, cc]; mu2 = v[rr, cc] + mu * mu
+            blo, bhi = pop.lo[rr, cc].copy(), pop.hi[rr, cc].copy()
             pop.take(rr, cc, mv.sum(2), mu, mu2)
             self.hops += int(tot.sum())
             for d in range(6):
@@ -446,13 +501,14 @@ class Macro:
                     continue
                 src = rr[s_]; dst = nb[src, d]; mdd = md[s_]; cc_ = c[s_]
                 mu_s, mu2_s = mu[s_], mu2[s_]
+                lo_s, hi_s = blo[s_], bhi[s_]
                 toh = hot[dst]
                 if (~toh).any():
-                    pop.insert(dst[~toh], mdd[~toh], (cc_ * mu_s)[~toh], (cc_ * mu2_s)[~toh])
+                    pop.insert(dst[~toh], mdd[~toh], (cc_ * mu_s)[~toh], (cc_ * mu2_s)[~toh], lo_s[~toh], hi_s[~toh])
                 for j in np.flatnonzero(toh):
                     sdv = np.sqrt(max(mu2_s[j] - mu_s[j] ** 2, 0.0))
                     es = np.repeat(np.arange(NE), mdd[j])
-                    e_draw = np.clip(rng.normal(mu_s[j], sdv, len(es)), 0.05, pop.sp.e_birth - 0.05)
+                    e_draw = np.clip(rng.normal(mu_s[j], sdv, len(es)), max(lo_s[j], 0.05), min(hi_s[j], pop.sp.e_birth - 0.05))
                     e_draw += (cc_[j] * mu_s[j] - e_draw.sum()) / len(es)
                     for e, en in zip(es, e_draw):
                         self.inbox.append((k, int(dst[j]), int(src[j]), int(e), float(en)))

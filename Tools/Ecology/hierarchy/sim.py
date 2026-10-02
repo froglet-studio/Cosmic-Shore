@@ -172,7 +172,7 @@ class HierSim:
                 target = float(pop.S[r, c])
                 el = np.repeat(np.arange(NE), Ne).astype(np.int8)
                 sd = np.sqrt(v[r, c])
-                E = np.clip(rng.normal(m[r, c], sd, cnt), 0.05 * pop.sp.e0, pop.sp.e_birth - 1e-3)
+                E = np.clip(rng.normal(m[r, c], sd, cnt), max(pop.lo[r, c], 0.05 * pop.sp.e0), min(pop.hi[r, c], pop.sp.e_birth - 1e-3))
                 E += (target - E.sum()) / cnt
                 if self.P.bug == "expand_mean_field":       # expanding from a mean-field state: cohorts lost
                     E[:] = reg_mean
