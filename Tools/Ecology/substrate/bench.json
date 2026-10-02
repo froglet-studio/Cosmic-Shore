@@ -1,0 +1,336 @@
+{
+ "meta": {
+  "cpu": "x86_64",
+  "cores": 4,
+  "numba_threads": 4,
+  "numpy": "2.4.6",
+  "numba": "0.68.0",
+  "note": "ms_step includes the shared field update (40^3 x 5 channels) and the arena's own step is excluded"
+ },
+ "rows": [
+  {
+   "N": 1000,
+   "backend": "numpy",
+   "k": 1,
+   "ms_step": 16.148,
+   "us_per_agent_step": 16.1477,
+   "stages_ms": {
+    "fields": 2.462,
+    "drives_pre": 0.126,
+    "neighbours": 3.163,
+    "drives": 0.245,
+    "context": 3.574,
+    "steer": 5.135,
+    "integrate": 0.39,
+    "deposit": 0.026,
+    "world": 2.856
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numpy",
+   "k": 4,
+   "ms_step": 8.163,
+   "us_per_agent_step": 8.1633,
+   "stages_ms": {
+    "fields": 2.158,
+    "drives_pre": 0.111,
+    "neighbours": 1.156,
+    "drives": 0.22,
+    "context": 0.853,
+    "steer": 1.502,
+    "integrate": 0.328,
+    "deposit": 0.025,
+    "world": 1.07
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numpy",
+   "k": 8,
+   "ms_step": 7.092,
+   "us_per_agent_step": 7.0916,
+   "stages_ms": {
+    "fields": 2.158,
+    "drives_pre": 0.114,
+    "neighbours": 0.846,
+    "drives": 0.218,
+    "context": 0.445,
+    "steer": 0.943,
+    "integrate": 0.341,
+    "deposit": 0.024,
+    "world": 0.825
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numpy",
+   "k": 1,
+   "ms_step": 125.491,
+   "us_per_agent_step": 12.5491,
+   "stages_ms": {
+    "fields": 2.531,
+    "drives_pre": 0.46,
+    "neighbours": 38.631,
+    "drives": 1.432,
+    "context": 42.275,
+    "steer": 55.45,
+    "integrate": 2.836,
+    "deposit": 0.422,
+    "world": 19.907
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numpy",
+   "k": 4,
+   "ms_step": 33.172,
+   "us_per_agent_step": 3.3172,
+   "stages_ms": {
+    "fields": 1.953,
+    "drives_pre": 0.372,
+    "neighbours": 8.74,
+    "drives": 1.083,
+    "context": 7.356,
+    "steer": 10.307,
+    "integrate": 2.189,
+    "deposit": 0.296,
+    "world": 5.064
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numpy",
+   "k": 8,
+   "ms_step": 26.406,
+   "us_per_agent_step": 2.6406,
+   "stages_ms": {
+    "fields": 2.278,
+    "drives_pre": 0.368,
+    "neighbours": 6.011,
+    "drives": 1.33,
+    "context": 4.557,
+    "steer": 6.429,
+    "integrate": 2.494,
+    "deposit": 0.289,
+    "world": 3.492
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 1,
+   "ms_step": 2173.763,
+   "us_per_agent_step": 21.7376,
+   "stages_ms": {
+    "fields": 2.673,
+    "drives_pre": 6.091,
+    "neighbours": 730.266,
+    "drives": 14.257,
+    "context": 995.725,
+    "steer": 1143.293,
+    "integrate": 30.671,
+    "deposit": 3.268,
+    "world": 212.051
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 4,
+   "ms_step": 503.067,
+   "us_per_agent_step": 5.0307,
+   "stages_ms": {
+    "fields": 2.286,
+    "drives_pre": 5.008,
+    "neighbours": 178.815,
+    "drives": 13.603,
+    "context": 156.163,
+    "steer": 188.939,
+    "integrate": 29.956,
+    "deposit": 2.438,
+    "world": 53.235
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 8,
+   "ms_step": 295.795,
+   "us_per_agent_step": 2.958,
+   "stages_ms": {
+    "fields": 2.444,
+    "drives_pre": 4.572,
+    "neighbours": 103.401,
+    "drives": 14.382,
+    "context": 55.895,
+    "steer": 75.834,
+    "integrate": 30.289,
+    "deposit": 2.383,
+    "world": 31.608
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 1,
+   "ms_step": 7.046,
+   "us_per_agent_step": 7.0458,
+   "stages_ms": {
+    "fields": 1.422,
+    "drives_pre": 0.139,
+    "neighbours": 0.306,
+    "drives": 0.217,
+    "context": 0.366,
+    "steer": 1.517,
+    "integrate": 0.26,
+    "deposit": 0.018,
+    "world": 1.949
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 4,
+   "ms_step": 4.914,
+   "us_per_agent_step": 4.9139,
+   "stages_ms": {
+    "fields": 1.438,
+    "drives_pre": 0.117,
+    "neighbours": 0.179,
+    "drives": 0.213,
+    "context": 0.094,
+    "steer": 0.635,
+    "integrate": 0.267,
+    "deposit": 0.02,
+    "world": 0.842
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 8,
+   "ms_step": 5.428,
+   "us_per_agent_step": 5.428,
+   "stages_ms": {
+    "fields": 1.741,
+    "drives_pre": 0.127,
+    "neighbours": 0.412,
+    "drives": 0.236,
+    "context": 0.068,
+    "steer": 0.506,
+    "integrate": 0.295,
+    "deposit": 0.019,
+    "world": 0.751
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 1,
+   "ms_step": 42.986,
+   "us_per_agent_step": 4.2986,
+   "stages_ms": {
+    "fields": 1.639,
+    "drives_pre": 0.421,
+    "neighbours": 2.461,
+    "drives": 1.173,
+    "context": 2.318,
+    "steer": 14.229,
+    "integrate": 2.18,
+    "deposit": 0.296,
+    "world": 17.238
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 4,
+   "ms_step": 22.183,
+   "us_per_agent_step": 2.2183,
+   "stages_ms": {
+    "fields": 1.792,
+    "drives_pre": 0.422,
+    "neighbours": 1.155,
+    "drives": 1.284,
+    "context": 1.556,
+    "steer": 5.049,
+    "integrate": 2.491,
+    "deposit": 0.31,
+    "world": 6.119
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 8,
+   "ms_step": 15.967,
+   "us_per_agent_step": 1.5967,
+   "stages_ms": {
+    "fields": 1.597,
+    "drives_pre": 0.403,
+    "neighbours": 0.942,
+    "drives": 1.237,
+    "context": 0.484,
+    "steer": 2.261,
+    "integrate": 2.483,
+    "deposit": 0.29,
+    "world": 3.485
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numba",
+   "k": 1,
+   "ms_step": 499.011,
+   "us_per_agent_step": 4.9901,
+   "stages_ms": {
+    "fields": 1.723,
+    "drives_pre": 5.567,
+    "neighbours": 34.799,
+    "drives": 13.356,
+    "context": 22.359,
+    "steer": 188.379,
+    "integrate": 32.008,
+    "deposit": 2.263,
+    "world": 192.4
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numba",
+   "k": 4,
+   "ms_step": 195.338,
+   "us_per_agent_step": 1.9534,
+   "stages_ms": {
+    "fields": 1.816,
+    "drives_pre": 5.327,
+    "neighbours": 15.822,
+    "drives": 13.58,
+    "context": 7.261,
+    "steer": 40.577,
+    "integrate": 30.618,
+    "deposit": 2.47,
+    "world": 56.424
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numba",
+   "k": 8,
+   "ms_step": 160.153,
+   "us_per_agent_step": 1.6015,
+   "stages_ms": {
+    "fields": 3.177,
+    "drives_pre": 4.886,
+    "neighbours": 11.351,
+    "drives": 12.795,
+    "context": 3.411,
+    "steer": 21.283,
+    "integrate": 28.216,
+    "deposit": 2.168,
+    "world": 45.613
+   }
+  }
+ ]
+}

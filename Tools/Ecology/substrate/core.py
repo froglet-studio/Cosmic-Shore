@@ -146,7 +146,7 @@ class Substrate:
     TERMS = ("food", "coh", "align", "wander", "curious", "hunt", "ring", "trail", "home", "body", "inward")
     DANGERS = ("sep", "flee", "alarm", "threat", "wall")
 
-    def __init__(self, arena, P: SpeciesParams, backend="numpy", center=None, spread=60.0, G=40):
+    def __init__(self, arena, P: SpeciesParams, backend="numpy", center=None, spread=60.0, G=40, init_hunger=None):
         self.P, self.backend = P, backend
         if backend == "numba" and not HAVE_NUMBA:
             raise RuntimeError("numba backend requested but numba missing")
@@ -173,6 +173,7 @@ class Substrate:
         self.hits = 0
         self.tick = 0
         self.publish = True
+        self._last_hit = {}
         self.timers: dict[str, float] = {}
         self.body_c = None; self.body_f = np.array([0, 0, 1.0]); self.body_v = np.zeros(3)
         c = arena._ball(1, 0.3 * arena.R, 0.7 * arena.R)[0] if center is None else np.asarray(center, float)
@@ -182,7 +183,8 @@ class Substrate:
         self.vel[:n] = self.idir[:n] * P.solitary.speed * 0.5
         self.ispeed[:n] = P.solitary.speed
         self.alive[:n] = True; self.grow[:n] = 1.0
-        self.hunger[:n] = self.rng.uniform(0.1, 0.4, n)
+        self.hunger[:n] = self.rng.uniform(0.1, 0.4, n) if init_hunger is None else \
+            np.clip(init_hunger + self.rng.normal(0, 0.03, n), 0, 1)
         self.stock[:n] = P.birth_stock * 0.5
         self.wseed[:n] = self.rng.uniform(0, 100, (n, 3))
         self.home = c.copy()
@@ -234,6 +236,7 @@ class Substrate:
         k = max(1, P.frac_k)
         S = A[(A + self.tick) % k == 0] if k > 1 else A
         sl = np.searchsorted(A, S)                       # S's rows inside A
+        self._S = S
         t0 = self._t("drives_pre", t0)
         nb = self._neighbours(A, sl)
         t0 = self._t("neighbours", t0)
@@ -499,7 +502,10 @@ class Substrate:
         if len(A) == 0:
             return
         # eat: hungry agents take a whole prism within eat_r (volume -> stock)
-        hungry = A[self.hunger[A] > P.eat_hunger]
+        # eating is checked by the re-steering slice only (fractional, like steering)
+        Sx = getattr(self, "_S", A)
+        Sx = Sx[self.alive[Sx] & ~self.dying[Sx]]
+        hungry = Sx[self.hunger[Sx] > P.eat_hunger]
         if len(hungry) and arena.mass_alive.any():
             self._eat(arena, hungry)
         # pilots: bites (aggressive agents) and kills (a hunting pilot rams an agent)
@@ -508,8 +514,13 @@ class Substrate:
                 d = np.linalg.norm(self.pos[A] - pl.pos, axis=1)
                 self.cool[A] -= dt / max(len(arena.pilots), 1)
                 b = A[(d < P.bite_r + pl.radius) & (self.aggr[A] > 0.5) & (self.cool[A] <= 0)]
-                for i in b[:3]:
-                    arena.hit(pl, "bite", 1.0); self.cool[i] = P.bite_cool; self.hits += 1
+                # one harm EVENT per pilot per bite_cool (a swarm nibbles, it does not machine-gun); the event's
+                # amount is how many agents were in contact
+                key = id(pl)
+                if len(b) and arena.t - self._last_hit.get(key, -1e9) >= P.bite_cool:
+                    arena.hit(pl, "bite", float(len(b))); self.hits += 1
+                    self._last_hit[key] = arena.t
+                    self.cool[b] = P.bite_cool
                 if pl.policy == "hunter":
                     kd = A[d < pl.radius + self._sizes()[A] + 2]
                     for i in kd:
