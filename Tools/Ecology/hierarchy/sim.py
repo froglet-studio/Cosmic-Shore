@@ -140,13 +140,18 @@ class HierSim:
         else:
             Ps, Vs = self._pilot_geo()
             want = self.hot.copy()
+            # agent budget: scale the LOD radii smoothly so the expanded headcount tracks the budget
+            target = min(1.0, (P.agent_budget / max(self.A.n, 1)) ** (1 / 3)) if self.A.n > P.agent_budget else 1.0
+            self.lod_scale = getattr(self, "lod_scale", 1.0)
+            self.lod_scale += (target - self.lod_scale) * 0.2
+            ls = self.lod_scale
             near = np.zeros(W.nreg, bool); keep = np.zeros(W.nreg, bool)
             for p, v in zip(Ps, Vs):
                 d = W.centers - p
                 r = np.linalg.norm(d, axis=1)
                 cos = (d @ v) / np.maximum(r, 1e-9)
-                near |= (r < P.expand_radius) | ((r < P.expand_ahead) & (cos > P.cone_cos))
-                keep |= (r < P.collapse_radius) | ((r < P.expand_ahead + 80) & (cos > P.cone_cos))
+                near |= (r < P.expand_radius * ls) | ((r < P.expand_ahead * ls) & (cos > P.cone_cos))
+                keep |= (r < P.collapse_radius * ls) | ((r < (P.expand_ahead + 80) * ls) & (cos > P.cone_cos))
             want = near | (self.hot & keep)
         newly = want & ~self.hot
         self.hot = want
