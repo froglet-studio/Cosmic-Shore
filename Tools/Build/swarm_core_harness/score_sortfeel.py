@@ -86,7 +86,7 @@ def yardstick(a, sn, se, torch, targets, targets1, L, swarm_feel, res):
         if r["tag"] == "own" and "win" in r:
             P = torch.tensor(r["win"], dtype=torch.float32)
             if P.ndim == 3 and P.shape[1] >= 8:
-                m = swarm_feel.metrics(P, torch.tensor(r["winElem"]), r["kind"] if r["mode"].startswith("research") else None)
+                m = swarm_feel.metrics(P, torch.tensor(r["winElem"]), r["kind"])   # the one-domain plan has the same geometry
                 res["feel"].setdefault(r["mode"], {}).setdefault(r["kind"], []).append(m)
     for (mode, seed, k, want), rs in tests.items():
         d = res["csharp"].setdefault(mode, {}).setdefault(str(seed), {"tests": {}})

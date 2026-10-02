@@ -35,18 +35,25 @@ static class SortHarness
         WellLook = false, Oriented = false, Cruise = 0f, Cap = 280,
     };
 
-    /// <summary>The game's settings (SwarmFauna.BuildSortCore builds the same from SwarmFaunaConfigSO).</summary>
-    public static SwarmSortParams Game(SwarmPlanData[] plans) => Override(new SwarmSortParams
+    /// <summary>The game's settings as SHIPPED (SwarmFauna.BuildSortCore builds the same from SwarmFaunaConfigSO):
+    /// round 3's game settings + round 6's sortfeel (flat wells 0.7, 0 on the dragonfly; wander 0.05) on the
+    /// 1-in-8 update, with the velocity noise off (the wander replaces it). Docs/SWARM_FAUNA.md §12.</summary>
+    public static SwarmSortParams Game(SwarmPlanData[] plans) => Override(GameRound5(plans).WithSortFeel(8, 0f).WithNoise(0f));
+
+    /// <summary>The game's settings before round 6 (velocity noise 0.1, plain wells, every member every step).</summary>
+    public static SwarmSortParams GameRound5(SwarmPlanData[] plans) => new SwarmSortParams
     {
         DomainSlots = false, Funded = true, MoltSteps = 10, MoltWindow = -1, Animate = true, KWellFF = 1f, Noise = 0.1f,
         WellLook = true, Oriented = true, Cruise = 0.35f, Membrane = 600f, Cap = plans.Max(p => p.N),
         LayMax = 5, KillLayHoldSteps = 20,
-    });
+    };
+
+    static SwarmSortParams WithNoise(this SwarmSortParams p, float n) { p.Noise = n; return p; }
 
     public const int GameSeed = GridHarness.GameSeed;
 
     /// <summary>Experiments: SWARM_SORT_GAME="Field=value,..." overrides game-mode params by name.</summary>
-    static SwarmSortParams Override(SwarmSortParams p)
+    internal static SwarmSortParams Override(SwarmSortParams p)
     {
         var env = Environment.GetEnvironmentVariable("SWARM_SORT_GAME");
         if (string.IsNullOrEmpty(env)) return p;
@@ -349,6 +356,36 @@ static class SortHarness
             var c2 = GameSwarm(plans, e, 21); Run(c2, 400);
             var sw = Stopwatch.StartNew(); Run(c2, 300); double ms = sw.Elapsed.TotalMilliseconds / 300;
             Console.WriteLine($"  {plans[e].Kind,-7} n={Live(c2),3}  {ms:F3} ms/step");
+        }
+
+        Console.WriteLine("\nS11. round 6: the 1-in-k update, flat wells and wander (Docs/SWARM_FAUNA.md §12)");
+        {
+            var c = GameSwarm(plans, 1, GameSeed + 11);
+            Run(c, 240);
+            int k = c.C.Frac, coastOk = 0, coastN = 0;
+            var v0 = (System.Numerics.Vector3[])c.Vel.Clone();
+            Step(c); c.Events.Clear();
+            for (int i = 0; i < c.Cap; i++)
+            {
+                if (!c.Active[i] || !c.Hatched[i] || c.Molt[i] > 0f || c.Startle[i] > 0.02f) continue;
+                if (((i + c.Clock - 1) % k) == 0) continue;   // on its phase this step
+                coastN++;
+                if (v0[i] == c.Vel[i] || (c.Vel[i] - v0[i]).Length() <= 1e-6f + Math.Max(0f, v0[i].Length() - c.C.VMax[c.EffectiveElement(i)])) coastOk++;
+            }
+            Console.WriteLine($"  frac {k}: {coastOk}/{coastN} off-phase members kept their velocity exactly (they coast)");
+            Check(k == 8 && coastN > 0 && coastOk == coastN, "the shipped game core re-steers 1 member in 8 per step; the rest coast");
+            int eggsWand = 0; for (int i = 0; i < c.Cap; i++) if (c.Active[i] && !c.Hatched[i] && c.Wand[i] != System.Numerics.Vector3.Zero) eggsWand++;
+            float wmax = 0f; for (int i = 0; i < c.Cap; i++) if (c.Active[i] && c.Hatched[i]) wmax = MathF.Max(wmax, c.Wand[i].Length());
+            Console.WriteLine($"  wander: largest |w| {wmax:F3} voxels/step (amplitude {c.C.Wander}), eggs carrying wander {eggsWand}");
+            Check(eggsWand == 0 && wmax > 0f && wmax < 6f * c.C.Wander, "every hatched member wanders, bounded; no egg wanders");
+            // cost: the same grown whale, frac 8 vs frac 1 (everything else shipped)
+            var p1 = Game(plans); p1.Frac = 1;
+            var a = GameSwarm(plans, 1, GameSeed + 12, p: p1); Run(a, 240);
+            var b = GameSwarm(plans, 1, GameSeed + 12); Run(b, 240);
+            var sw = Stopwatch.StartNew(); Run(a, 200); double m1 = sw.Elapsed.TotalMilliseconds / 200;
+            sw.Restart(); Run(b, 200); double m8 = sw.Elapsed.TotalMilliseconds / 200;
+            Console.WriteLine($"  grown whale: frac 1 {m1:F3} ms/step, frac 8 {m8:F3} ms/step ({m1 / m8:F1}x)");
+            Check(m8 < 0.7 * m1, "the 1-in-8 update is substantially cheaper");
         }
 
         Console.WriteLine($"\nsort core: {(_fail == 0 ? "OK" : $"FAIL ({_fail})")}");

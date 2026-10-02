@@ -5,9 +5,10 @@
 //   smoothsort       swarm_smooth.py's events (the 4 standard switches + a strike on each plan) recorded
 //                    step by step, so the research's smoothness numbers can be computed on C# trajectories;
 //   bench            ms per swarm-step and per tadpole-step for B = 1, 4, 16, 64 independent swarms.
-// Mode names: research|game + Sort [+ Feel [+ D0] [+ F<k>]] - e.g. researchSort (the published sort, as
+// Mode names: research|game + Sort [+ Feel [+ D0]] [+ N0 (game: no velocity noise)] [+ F<k>] - e.g. researchSort (the published sort, as
 // ported in round 3), researchSortFeel (sortfeel, frac 1), researchSortFeelF8 (the held lite config:
-// well_dead 0.7 everywhere), researchSortFeelD0F8 (sortfeel v2's dragonfly override), gameSortFeelF8.
+// well_dead 0.7 everywhere), researchSortFeelD0F8 (sortfeel v2's dragonfly override), gameSortFeelD0N0F8
+// (what ships = SortHarness.Game), gameSort (the pre-round-6 game core).
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,7 +26,10 @@ static class SortFeelHarness
 
     public static SwarmSortParams ParamsFor(SwarmPlanData[] plans, string mode)
     {
-        var p = mode.StartsWith("research") ? SortHarness.Research() : SortHarness.Game(plans);
+        // game modes start from the PRE-round-6 game settings so each round-6 piece is its own suffix;
+        // the shipped config is gameSortFeelD0N0F8 (= SortHarness.Game)
+        var p = mode.StartsWith("research") ? SortHarness.Research() : SortHarness.Override(SortHarness.GameRound5(plans));
+        if (mode.Contains("N0")) p.Noise = 0f;
         if (mode.Contains("Feel"))
         {
             var m = Regex.Match(mode, @"F(\d+)$");

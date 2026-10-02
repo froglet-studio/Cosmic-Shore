@@ -130,14 +130,14 @@ SORT = [("SortWellsPerType", "12"), ("SortUnitsPerWell", "4"), ("SortWellWidth",
         ("SortWellClip", "0.525"), ("SortSpacing", "2.25"), ("SortRepulsion", "0.151"), ("SortAdhesionRadius", "5.38"),
         ("SortAdhesion", "{x: -0.05, y: -0.0374, z: -0.027, w: -0.0637}"), ("SortSwap", "0.709"),
         ("SortSwapRadius", "3.63"), ("SortInertia", "0.687"),
-        ("SortNoise", "0.1"),          # GAME (research 0): without it a member on a still well reads as frozen
+        ("SortNoise", "0"),            # round 6: the wander does the anti-`stuck` job (round 3-5 shipped 0.1)
         ("SortFeedForward", "1"),      # GAME (research 0): members take their well's animation
         ("SortDwell", "12"), ("SortLayRate", "0.084"), ("SortLayMax", "5"), ("SortCrossChance", "0.466"),
         ("SortFillTolerance", "0.15"), ("SortBodyFill", "0.939"), ("SortMoltRate", "0.03"),
         ("SortMoltSteps", "10"),       # GAME (research instant): a molt is an animation
         ("SortFramePeriod", "{x: 8, y: 8, z: 8, w: 16}"),
         # ROUND 6 (research sortfeel + lite_sortfeel frac 8, Docs/SWARM_FAUNA.md §12)
-        ("SortWellDead", "0.7"), ("SortWellDeadTime", "-1"), ("SortWander", "0.05"), ("SortWanderTau", "12"),
+        ("SortWellDead", "0.7"), ("SortWellDeadTime", "0"), ("SortWander", "0.05"), ("SortWanderTau", "12"),
         ("SortUpdateFraction", "8")]
 FLORA_GROWTH_PER_OFFSPRING = 0.8   # x the plant's own budget: a plant seeds a neighbour as it completes
 FLORA_COOLDOWN = 20

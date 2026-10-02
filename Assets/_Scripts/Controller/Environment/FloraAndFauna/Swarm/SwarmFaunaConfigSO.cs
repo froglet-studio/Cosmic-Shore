@@ -198,9 +198,11 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float SortSwapRadius = 3.63f;
         [Tooltip("Velocity persistence per step.")]
         [Range(0f, 0.95f)] public float SortInertia = 0.687f;
-        [Tooltip("GAME: velocity noise per step (voxels). Without it a member on a still well reads as " +
-                 "frozen while the animated body moves around it (swarm_feel `stuck`). Research: 0.")]
-        [Min(0f)] public float SortNoise = 0.1f;
+        [Tooltip("GAME: velocity noise per step (voxels). Round 3 shipped 0.1 so a member on a still well " +
+                 "would not read as frozen (swarm_feel `stuck`); since round 6 the per-member wander " +
+                 "(SortWander) does that job, and 0 measures smoother and less gas-like (Docs/SWARM_FAUNA.md " +
+                 "§12). Research: 0.")]
+        [Min(0f)] public float SortNoise = 0f;
         [Tooltip("GAME: the share of its well's own animation a tadpole takes (feed-forward). Research: 0.")]
         [Min(0f)] public float SortFeedForward = 1f;
         [Tooltip("Steps a new majority must lead before the swarm commits to its plan.")]
@@ -227,8 +229,9 @@ namespace CosmicShore.Gameplay
                  "flat sheets (the crystal look the lead disliked). 0 = sort's plain wells.")]
         [Min(0f)] public float SortWellDead = 0.7f;
         [Tooltip("The flat-bottom radius on the dragonfly (Time) plan only. NEGATIVE = SortWellDead. " +
-                 "sortfeel v2 used 0 (thin wings want tight wells); the held lite config used -1.")]
-        public float SortWellDeadTime = -1f;
+                 "0 (sortfeel v2: thin wings want tight wells) measured better than the held lite config's " +
+                 "-1 in both research and game mode (Docs/SWARM_FAUNA.md §12).")]
+        public float SortWellDeadTime = 0f;
         [Tooltip("ROUND 6: per-member Ornstein-Uhlenbeck wander (voxels/step) - each member drifts on its " +
                  "own slow path and is turned back by its well's wall. Melts the lattice. 0 = off.")]
         [Min(0f)] public float SortWander = 0.05f;

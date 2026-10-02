@@ -78,7 +78,7 @@ MonoBehaviour:
   SortSwap: 0.709
   SortSwapRadius: 3.63
   SortInertia: 0.687
-  SortNoise: 0.1
+  SortNoise: 0
   SortFeedForward: 1
   SortDwell: 12
   SortLayRate: 0.084
@@ -90,7 +90,7 @@ MonoBehaviour:
   SortMoltSteps: 10
   SortFramePeriod: {x: 8, y: 8, z: 8, w: 16}
   SortWellDead: 0.7
-  SortWellDeadTime: -1
+  SortWellDeadTime: 0
   SortWander: 0.05
   SortWanderTau: 12
   SortUpdateFraction: 8
