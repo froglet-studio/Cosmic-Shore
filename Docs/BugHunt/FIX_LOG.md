@@ -8,6 +8,46 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## CAM-1 — Sparrow freestyle: camera stops following after the turret stance (partial)
+
+- **Date:** 2026-10-02. **Status: not reproduced; root cause of the stance trigger NOT found.**
+- **Symptom (reported):** Menu_Main freestyle, Sparrow, gamepad. Pressing Turret Stance (A) makes
+  the camera stop following the ship; exiting to the menu and re-entering freestyle fixes it.
+- **What was established:** the Sparrow's camera is hard-attached (`SparrowCameraSettingsSO` has
+  no `mode` key, so `FixedCamera`), so a frozen view needs the player rig to have NO follow
+  target, be inactive, or have its framed point overridden. Two full read-only traces (forward
+  from the stance, backward from the camera) found no path from the stance to any of those.
+  The menu round-trip heals it because freestyle entry re-runs
+  `CameraManager.SetupGamePlayCameras`, which re-points the rig.
+- **Fixed in this neighborhood:**
+  - `CameraManager.EndWindowedPlayerCamera` restored `_windowedPreviousTarget` even when no loan
+    was running (null), so an unmatched or repeated End (the mode preview calls it from four
+    teardown paths) handed the gameplay camera a NULL follow target: exactly this symptom. The
+    loan is now balanced, and `SetupGamePlayCameras` voids an outstanding loan so a late preview
+    teardown cannot overwrite the fresh target.
+  - `CustomCameraController` now reports, once, when the on-screen player rig loses its follow
+    target, naming the call stack that cleared it (or that the target was destroyed), and
+    re-latches onto `CameraManager.PlayerFollowTarget`. **This is the diagnostic for the next
+    repro:** if the stance still breaks the camera, the Console names the culprit.
+  - `ScreenSwitcher`'s freestyle input gate now re-applies if anything re-opens
+    `sendNavigationEvents` mid-flight (both preview hosts restore it), instead of trusting its
+    own "applied" flag.
+  - `MainMenuController.HandleMenuReady` is guarded against freestyle, like its camera twin: a
+    re-raised `OnClientReady` used to put the hull on autopilot and pause input mid-flight.
+  - `ToggleTranslationModeActionExecutor.End` cleared the stance locally but not the replicated
+    `n_IsTranslationRestricted`; it now goes through `VesselController.SetTranslationRestricted`.
+  - Both `ToggleStationaryModeAction` assets serialized a dead `mode` key, so both ran the
+    default (`Serpent`). They now author `stationaryMode` with the value each hull already ran
+    (no behaviour change; the Sparrow has no seed assembler, so its branch is identical).
+- **Verification:** out-of-editor gates pass (conditional compilation, using directives,
+  self-referential locals, duplicate attributes, console logging, abstract members, enum refs,
+  switch collisions). **Not compiled or run in the Unity editor.**
+- **Retest:** freestyle → vessel changer → Sparrow → gamepad A (stance) on and off, fly. If the
+  camera still freezes, copy the `[CustomCameraController] The player camera lost its follow
+  target` warning (with its stack) into this entry.
+
+---
+
 ## BH-1.3 / BH-1.4 — auth scene: timeout off the main thread, and silent sign-in failure
 
 - **Date:** fixed 2026-10-02; retest deferred by Yash on 2026-10-02 and parked on the handoff's revisit/playtest list. Repro skipped at Yash's call.
