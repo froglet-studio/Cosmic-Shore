@@ -69,16 +69,14 @@ jobs:
             echo "::error::No Xcode 16.x on this runner image. Installed:"; ls -d /Applications/Xcode*.app
             exit 1
           fi
+          # Resolve symlinks: the image carries aliases like Xcode_16.4.app -> Xcode_16.4.0.app.
+          XCODE=$(cd "$XCODE" && pwd -P)
           sudo xcode-select -s "$XCODE/Contents/Developer"
+          # Pin it for every later step too, so nothing can fall back to the Command Line Tools.
+          echo "DEVELOPER_DIR=$XCODE/Contents/Developer" >> "$GITHUB_ENV"
           xcodebuild -version
-          # Reclaim disk: the image guarantees only 14 GB, and an IL2CPP build of this game is
-          # large. The other Xcodes and the simulator runtimes are never used here.
-          for x in /Applications/Xcode*.app; do
-            [ "$x" != "$XCODE" ] && sudo rm -rf "$x" &
-          done
-          wait
-          xcrun simctl delete all >/dev/null 2>&1 || true
-          sudo rm -rf ~/Library/Developer/CoreSimulator/Caches || true
+          # No disk cleanup: deleting the "other" Xcodes once took out the selected one through
+          # a symlink alias (run 37072167182), and the image has ~80 GB free anyway.
           df -h /
 
       - name: Download the Xcode project
@@ -153,9 +151,14 @@ jobs:
           # Xcode build phases call would fail with "Permission denied" (MapFileParser.sh is the
           # well-known one; Unity's il2cpp build tools are the rest).
           find "$PROJ" -type f \( -name '*.sh' -o -name 'MapFileParser' -o -name 'usymtool*' \) -exec chmod +x {} +
-          if [ -d "$PROJ/Il2CppOutputProject/IL2CPP/build" ]; then
-            chmod -R u+x "$PROJ/Il2CppOutputProject/IL2CPP/build"
+          if [ -d "$PROJ/Il2CppOutputProject/IL2CPP" ]; then
+            chmod -R u+x "$PROJ/Il2CppOutputProject/IL2CPP"
           fi
+          # And any other extensionless Mach-O executable or script the build phases may call.
+          find "$PROJ" -type f ! -name '*.*' ! -path '*/Data/*' -print0 \
+            | xargs -0 file -N --mime-type 2>/dev/null \
+            | awk -F': ' '$2 ~ /x-mach-binary|x-shellscript|x-executable/ {print $1}' \
+            | while IFS= read -r f; do chmod +x "$f"; done
           du -sh "$PROJ"
           df -h /
 
