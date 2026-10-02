@@ -167,6 +167,16 @@ namespace CosmicShore.Gameplay
         [Range(0f, 1f)] public float DangerEnter = 0.45f;
         [Range(0f, 1f)] public float DangerExit = 0.15f;
 
+        [Header("Round 10 bestiary (SWARM_FAUNA.md §18)")]
+        [Tooltip("Mass, Space and Time members strike with danger plates too. Opposing-domain pilots who hit one BURN petals.")]
+        public bool Bestiary = true;
+        [Tooltip("Startle at which a Time member (pack hunter) turns on a vessel; it calms below DangerExit.")]
+        [Range(0f, 1f)] public float HuntEnter = 0.2f;
+        [Tooltip("A Mass member (lurker) bristles once its startle passes this and stays dangerous until it reaches DangerEnter and bolts.")]
+        [Range(0f, 1f)] public float LurkCalm = 0.05f;
+        [Tooltip("Seconds before the dangerous quarter of a Space (locust) cloud moves to a different quarter.")]
+        [Min(0.1f)] public float LocustPhaseSeconds = 2f;
+
         [Header("Hearts and body prisms (per element: x Charge, y Mass, z Space, w Time)")]
         [Tooltip("World scale of each element's heart - the canonical Tadpole species' own band values " +
                  "(Assets/_SO_Assets/Lifeforms/Tadpole Fauna *), so a swarm member pays exactly what a " +

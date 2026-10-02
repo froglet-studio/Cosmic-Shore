@@ -68,6 +68,11 @@ namespace CosmicShore.Gameplay
         public float[] HeartWorldScale = { 2.298f, 1.737f, 2.298f, 1.737f };   // per research element
         public Vector3[] DefaultHalf = { Vector3.One, Vector3.One, Vector3.One, Vector3.One };
         public float DangerEnter = 0.45f, DangerExit = 0.15f;
+        /// <summary>Round 10 bestiary: Mass, Space and Time members strike with danger plates too (SWARM_FAUNA.md §18).</summary>
+        public bool Bestiary;
+        public float HuntEnter = 0.2f, LurkCalm = 0.05f;
+        /// <summary>Ticks a locust shimmer holds before the dangerous quarter of the cloud moves on.</summary>
+        public int LocustPhaseTicks = 20;
         /// <summary>World radius around a vessel inside which a member becomes a real proxy.</summary>
         public float EngageRadius = 160f;
         /// <summary>Most proxies this swarm may hold (nearest first).</summary>
@@ -149,6 +154,23 @@ namespace CosmicShore.Gameplay
         readonly int[] _engI;
         readonly int[] _hc = new int[4];
         long _tick;
+
+        /// <summary>
+        /// Round 10 bestiary strike for a non-Charge member: a danger plate is a hostile danger prism, so an
+        /// opposing-domain pilot who hits it BURNS petals (ELEMENTAL_ECONOMY.md §4); the swarm's own domain is stung only.
+        /// Mass = lurker (bristles while only half-startled: creep up on it and it bites, rush it and it bolts), Space = locust (a rotating quarter of the cloud),
+        /// Time = pack hunter (turns on a vessel at a lower startle than the pufferfish, with hysteresis).
+        /// </summary>
+        bool BestiaryStrike(int eff, int i, float st, bool was)
+        {
+            switch (eff)
+            {
+                case 1: return st > S.LurkCalm && st < S.DangerEnter;   // bristles when first noticed, safe once it bolts
+                case 2: return ((i * 7919L + _tick / Math.Max(1, S.LocustPhaseTicks)) & 3L) == 0L;
+                case 3: return was ? st >= S.DangerExit : st > S.HuntEnter;
+                default: return false;
+            }
+        }
         float _toWorldSpeed;
         static readonly WaitCallback s_run = RunOnWorker;
 
@@ -325,6 +347,7 @@ namespace CosmicShore.Gameplay
                     else if (st > S.DangerEnter) _danger[i] = true;
                     if (_danger[i]) tier = 1;   // danger wins over shield (locked design)
                 }
+                else if (S.Bestiary) { _danger[i] = BestiaryStrike(eff, i, c.Startle[i], _danger[i]); if (_danger[i]) tier = 1; }
                 else _danger[i] = false;
 
                 // heart: the element before / after the molt midpoint, and the molt progress at both ends

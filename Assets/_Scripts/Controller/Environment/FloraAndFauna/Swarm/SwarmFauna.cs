@@ -208,6 +208,8 @@ namespace CosmicShore.Gameplay
                 Centre = Sim(_centre), UnitScale = config.UnitScale, PrismScale = config.PrismScale,
                 HeartPrismGap = config.HeartPrismGap,
                 DangerEnter = config.DangerEnter, DangerExit = config.DangerExit,
+                Bestiary = config.Bestiary, HuntEnter = config.HuntEnter, LurkCalm = config.LurkCalm,
+                LocustPhaseTicks = Mathf.Max(1, Mathf.RoundToInt(config.LocustPhaseSeconds * config.TickHz)),
                 EngageRadius = config.EngageRadius, MaxEngaged = config.MaxProxies,
                 MultiDomain = Lineages,
             };

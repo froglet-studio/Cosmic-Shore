@@ -801,6 +801,24 @@ with no trail · live volume never moves as the swarms grow.
 Round 8's diet colouring (newborns wearing the colour of what they ate) was removed on playtest. See
 `Docs/SWARM_FAUNA.md` §17.
 
+### QA-SWARM-ROUND10-1 ⬜ — four creatures, and their strikes burn petals
+
+**Source:** branch `cece/swarm-fauna-game` (type-checked only, not run in the editor). Reference:
+`Docs/SWARM_FAUNA.md` §18. **Why it matters:** before round 10 only the pufferfish could hurt you, so most swarms
+had no stakes.
+
+1. Fly into the Swarm cell as a domain that does NOT control it, with a few petals on your HUD flower.
+2. Mass lurkers: creep slowly toward one until it shows danger plates, then touch one. Next, rush another at speed.
+3. Space locusts: from a distance, watch the cloud; a quarter should glow dangerous, shifting about every 2 s.
+   Fly through, once hitting a lit member and once threading the gaps.
+4. Time pack hunters: approach; they should turn dangerous sooner than the Charge pufferfish do.
+5. Repeat one hit as the cell's controlling domain.
+
+**PASS:** each creature is dangerous in its own pattern; an opposing-domain hit takes petals that do not reappear as
+crystals; a rushed lurker bolts without plates; an own-domain hit only stings.
+**FAIL:** no plates on Mass/Space/Time · plates but no petal loss · burned petals drop as crystals · a whole swarm
+stays lit permanently · frame rate drops versus round 9.
+
 ### QA-SWARM-ROUND9-1 ⬜ — swarms graze and move on
 
 **Source:** branch `cece/swarm-fauna-game` (headless only). Reference: `Docs/SWARM_FAUNA.md` §17.1. **Why it

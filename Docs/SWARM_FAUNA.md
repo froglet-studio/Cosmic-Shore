@@ -1882,3 +1882,26 @@ field or evofate config is one colour. All three Swarm-cell swarms are sort.
   `SatedAbove`, `GiveUpSeconds`, `PlantRestSeconds`), the four config assets
 - `Tools/Build/swarm_core_harness/LineageHarness.cs` (R9a-d; `lineage <out.json>` exports grown bodies),
   `Tools/Build/author_swarm_fauna.py`, `Tools/Build/swarm_glue_typecheck/Stubs.cs`
+
+## 18. Round 10: a bestiary whose strikes burn petals for good
+
+Until round 9 only the Charge pufferfish ever grew a danger plate, so a pilot could fly through three of the four
+swarms with nothing at stake. Round 10 gives the other three elements their own strike. A strike is the existing
+danger tier (`tier = 1`), so the member's proxy becomes a hostile danger prism in the member's domain, and the
+locked economy rule decides the cost (`Docs/ELEMENTAL_ECONOMY.md` §4): an **opposing-domain** pilot who hits it
+**burns** petals out of the match; the swarm's own domain is only stung. Nothing gates on domain.
+
+| Element | Creature | When it is dangerous | How to beat it |
+|---|---|---|---|
+| Charge | pufferfish (unchanged) | startle above `DangerEnter`, until below `DangerExit` | stay calm near it, or hit it before it puffs |
+| Mass | **lurker** | while half-startled: `LurkCalm < startle < DangerEnter` | rush it so it bolts (safe), never creep up on it |
+| Space | **locust** | a quarter of the cloud at a time, the quarter moving every `LocustPhaseSeconds` | read the shimmer and thread the safe gaps |
+| Time | **pack hunter** | startle above `HuntEnter` (0.2, earlier than the pufferfish), until below `DangerExit` | keep your distance; they turn on you early |
+
+`SwarmFaunaConfigSO.Bestiary` (default **on**, so every existing swarm config gets it without an asset edit) turns
+it off. The rule is `SwarmTickJob.BestiaryStrike`: pure per-member arithmetic on data the tick already had, no new
+neighbour queries, so the cost stays flat. Far members show the strike through the GPU tier colour; near ones get it
+on the proxy via the existing `SetTier` path.
+
+Verified by `Tools/Build/swarm_glue_typecheck/run.sh` (netstandard2.1). Not run in the editor; see
+QA-SWARM-ROUND10-1.
