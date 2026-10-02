@@ -1,0 +1,5 @@
+start 0.9105 {"threat": 1.0, "counterplay": 1.0, "telegraph": 0.714, "payoff": 1.0, "variety": 1.0, "access": 0.757, "presence": 1.0, "adapt": 0.873}
+0 R 0.8845 best 0.9105  {"t_close": 0.5078, "turn_deg": 4.4275} {"threat": 1.0, "counterplay": 1.0, "telegraph": 0.714, "payoff": 1.0, "variety": 1.0, "access": 0.596, "presence": 1.0, "adapt": 0.88}
+1 R 0.8577 best 0.9105  {"mouth_len": 30.0, "t_reset": 6.2042} {"threat": 0.839, "counterplay": 1.0, "telegraph": 0.857, "payoff": 1.0, "variety": 1.0, "access": 0.667, "presence": 1.0, "adapt": 0.611}
+2 R 0.9702 best 0.9702 KEPT {"t_close": 0.5191, "turn_deg": 4.4225, "t_prime": 0.7308, "clumps": 10, "sense": 145.9975, "bud_bias": 0.3049, "mouth_len": 36.3478, "mouth_w": 15.7119, "dgape": 13.5434, "clump_r": 57.0011} {"threat": 1.0, "counterplay": 1.0, "telegraph": 0.957, "payoff": 1.0, "variety": 1.0, "access": 0.82, "presence": 1.0, "adapt": 1.0}
+3 R 0.9166 best 0.9702  {"clump_r": 32.8631, "t_reset": 4.0361} {"threat": 1.0, "counterplay": 1.0, "telegraph": 0.714, "payoff": 1.0, "variety": 1.0, "access": 0.697, "presence": 1.0, "adapt": 1.0}

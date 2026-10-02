@@ -29,7 +29,8 @@ SPACE = dict(
                 prime=(70, 220, "lin"), strike=(25, 90, "lin"), thorn=(25, 90, "lin"), t_erupt=(0.15, 0.9, "lin"),
                 t_hold=(0.2, 1.5, "lin"), r_body=(18, 40, "lin")),
     coral=dict(n_hearts=(3, 12, "int"), Du=(0.1, 1.2, "lin"), Dv=(0.003, 0.08, "log"), rate=(5, 120, "log"),
-               k=(0.002, 0.05, "log"), vth=(0.15, 0.8, "lin"), sting=(0.005, 0.2, "log"), eat_per_s=(0.1, 3.0, "log")),
+               k=(0.002, 0.05, "log"), vth=(0.15, 0.8, "lin"), sting=(0.005, 0.2, "log"), eat_per_s=(0.1, 3.0, "log"),
+               reach=(1, 4, "int")),
     physarum=dict(sa=(15, 60, "lin"), ra=(15, 60, "lin"), so=(12, 50, "lin"), ss=(20, 80, "lin"), food_dep=(0.3, 6, "log"),
                   on=(3, 14, "lin"), off=(1, 6, "lin"), period=(1.5, 6, "lin"), wave_speed=(20, 120, "lin"),
                   ex_ticks=(1, 4, "int"), wake_dep=(-4, 8, "lin"), heart_speed=(0, 15, "lin")),
@@ -51,6 +52,9 @@ def propose(rng, x, space):
 
 if __name__ == "__main__":
     name = sys.argv[1]; iters = int(sys.argv[2]); x = json.loads(sys.argv[3]) if len(sys.argv) > 3 else {}
+    # import the species module in THIS process so every forked scorecard worker inherits one fixed copy - a
+    # worker that imported it from disk itself would pick up edits made to the file while the search runs
+    import importlib; importlib.import_module(SPEC[name].split(":")[0])
     margin = 0.01
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results", f"search_{name}.jsonl")
     rng = np.random.default_rng(hash(name) % (1 << 31))

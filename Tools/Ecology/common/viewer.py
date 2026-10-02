@@ -12,7 +12,7 @@ import argparse
 import json
 import os
 
-TPL = r"""<title>__TITLE__</title>
+TPL = r"""<meta charset="utf-8"><title>__TITLE__</title>
 <style>
 :root{--bg:#0b0d14;--fg:#d8dcf0;--mute:#7c84a8;--acc:#7fd1ff}
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#0b0d14;--fg:#d8dcf0;--mute:#7c84a8;--acc:#7fd1ff}}

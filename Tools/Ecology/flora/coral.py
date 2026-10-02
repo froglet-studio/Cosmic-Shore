@@ -31,7 +31,7 @@ from physarum import _blur
 from scipy_free import components
 
 DEFAULTS = dict(G=48, n_hearts=6, c0=20.0, plant_vol=12000.0, Du=0.9, Dv=0.25, rate=1.2, k=0.05, vth=0.35,
-                sting=0.04, reach=1, eat_per_s=0.5, substeps=2, ram=True, label_every=10, seed_r=1)
+                sting=0.04, reach=2, eat_per_s=0.5, substeps=2, ram=True, label_every=10, seed_r=1)
 
 
 def _lap(F, M):
@@ -96,16 +96,19 @@ class Coral(FloraSpecies):
             self.u += back - r; self.v += r - back
             self.rate_f = r / h
     def _eat(self, arena, dt):
+        """Living coral eats food within `reach` voxels (a dilation of its mask). The substrate is deposited where
+        the FOOD was, so the front then grows OUT toward it - foraging tips. With reach 1 (round 3) the coral could
+        only eat what it already touched and froze as compact blobs on the food clumps it was planted beside."""
         fa = np.flatnonzero(arena.mass_alive)
         if not len(fa): return
-        V = (self.v * self.living).ravel()
+        M = (self.v > self.p["vth"]) & self.living
+        for _ in range(int(self.p["reach"])):
+            D = M.copy()
+            for ax in range(3):
+                D |= np.roll(M, 1, ax) | np.roll(M, -1, ax)
+            M = D
         vx = self.vox(arena.mass_pos[fa])
-        # food is in reach if living coral occupies its voxel or a 6-neighbour
-        G = self.G; ok = V[vx] > self.p["vth"]
-        if self.p["reach"]:
-            for s in (1, -1, G, -G, G * G, -G * G):
-                ok |= V[np.clip(vx + s, 0, G ** 3 - 1)] > self.p["vth"]
-        cand = fa[ok]
+        cand = fa[M.ravel()[vx]]
         pr = self.p["eat_per_s"] * dt
         for j in cand[self.rng.random(len(cand)) < pr]:
             self.u.ravel()[self.vox(arena.mass_pos[j])] += arena.consume(j, "coral") / self.p["c0"]
