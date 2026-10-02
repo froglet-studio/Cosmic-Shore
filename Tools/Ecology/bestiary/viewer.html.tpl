@@ -58,7 +58,7 @@ td:last-child{text-align:right}
       <span id="clock">t 0.0 s</span>
     </div>
     <div id="flash" aria-live="polite"></div>
-    <div id="legend">white diamond = pilot · thin line = its trail<br>dim points = plants (mass) · drag to orbit, scroll to zoom</div>
+    <div id="legend">white disc = pilot · thin line = its trail<br>dim points = plants (mass) · drag to orbit, scroll to zoom</div>
   </div>
   <aside>
     <div><h1>Hypersea Bestiary</h1><p class="sub">Eight threat fauna run on local rules only, each recorded against the pilot that shows it best. Seed 7, 45 s.</p></div>

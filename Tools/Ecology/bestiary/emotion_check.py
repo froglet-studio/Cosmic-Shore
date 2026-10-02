@@ -31,6 +31,7 @@ VIEWERS = {"hover": lambda: Pilot("wander", speed=25.0, turn=1.5, name="hover"),
 
 
 def encounter(key, viewer, seed, seconds=40.0, warm=None):
+    key = key.partition("@")[0]
     ar = make_arena(seed)
     sp = importlib.import_module(f"species.{key}").make(ar)
     p = ar.add_pilot(VIEWERS[viewer]())
@@ -53,11 +54,12 @@ if __name__ == "__main__":
     out = json.load(open(os.path.join(HERE, "emotion.json"))) if os.path.exists(os.path.join(HERE, "emotion.json")) else {}
     for key in keys:
         res = {}
-        mod = importlib.import_module(f"species.{key}")
+        base, _, w = key.partition("@")              # "locust@55" = encounter after 55 s of the species' own life
+        mod = importlib.import_module(f"species.{base}")
         for v in VIEWERS:
             P = []
             for s in (7, 23, 41):
-                f = encounter(key, v, s, warm=getattr(mod, "EMOTION_WARMUP", 0.0))
+                f = encounter(base, v, s, warm=float(w) if w else 0.0)
                 P.append([pr.score(f)["p"][e] for e in probe_mod.EMOTIONS])
             Pm = np.mean(P, 0)
             res[v] = dict(top=probe_mod.EMOTIONS[int(Pm.argmax())],

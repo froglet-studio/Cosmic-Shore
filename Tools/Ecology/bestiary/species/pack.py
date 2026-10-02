@@ -63,7 +63,7 @@ class Pack(Herd):
         striking = (closure > 0.55) & (self.stamina > 0.3) & (self.cool <= 0)
         ab = getattr(self, "ablate", None)
         if ab == "chase":
-            pred = PP[k]; want_b = b; striking = (dist < RANGE) & (self.cool <= 0)
+            pred = PP[k]; want_b = b; striking = (dist < RANGE) & (self.stamina > 0.3) & (self.cool <= 0)
         elif ab == "noquorum":
             striking = (dist < 150) & (self.stamina > 0.3) & (self.cool <= 0)
         ring = np.where(striking, 0.0, np.clip(dist * 0.5, 120, 220))

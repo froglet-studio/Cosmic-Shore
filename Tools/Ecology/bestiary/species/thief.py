@@ -19,7 +19,7 @@ from core import Herd, unit, steer, contain, pairwise, separation
 
 EMOTION = "mischief (cheeky, annoying)"
 COUNTER = "turn back on laden thieves (recapture); weave your wake; raid the hoard"
-FREE_V, LADEN_V, SCOUT, WARM, SPOT = 150.0, 75.0, 400.0, 2.0, 700.0
+FREE_V, LADEN_V, SCOUT, WARM, SPOT = 150.0, 75.0, 400.0, 1.5, 700.0
 THIEF_OWNER = -2
 
 
@@ -92,8 +92,8 @@ class Thief(Herd):
         # the carried prism rides in the grip (positions set before the base loop moves the thief)
         for i in np.flatnonzero(al & (self.carry >= 0)):
             arena.mass_pos[self.carry[i]] = self.pos[i] + self.vel[i] * dt - unit(self.vel[i]) * 3.0
-        locked = al & (self.claim >= 0) & (dist < 250)
-        tailing = al & (self.claim < 0) & (self.carry < 0) & (dist < 250)      # gulls gathering in your wake
+        locked = al & (self.claim >= 0) & (dist < 300)
+        tailing = al & (self.claim < 0) & (self.carry < 0) & (dist < 300)      # gulls gathering in your wake
         self.intent = np.where(locked, 1.0, np.where(tailing, 0.7, np.where(self.carry >= 0, 0.3, 0.0)))
         # a hunter knocks a thief down: its prism goes back to the pilot it was stolen from
         for p in arena.pilots:

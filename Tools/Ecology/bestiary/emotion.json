@@ -309,49 +309,49 @@
   "hover": {
    "top": "cute",
    "p": {
-    "cute": 0.662,
-    "playful": 0.264,
-    "eerie": 0.028,
-    "majestic": 0.003,
+    "cute": 0.652,
+    "playful": 0.278,
+    "eerie": 0.023,
+    "majestic": 0.002,
     "menacing": 0.004,
-    "terrifying": 0.039
+    "terrifying": 0.042
    },
    "affect": {
-    "valence": 0.663,
-    "arousal": 0.478,
-    "threat": 0.082
+    "valence": 0.666,
+    "arousal": 0.485,
+    "threat": 0.083
    }
   },
   "cruise": {
    "top": "cute",
    "p": {
-    "cute": 0.606,
-    "playful": 0.093,
-    "eerie": 0.137,
-    "majestic": 0.081,
-    "menacing": 0.039,
-    "terrifying": 0.045
+    "cute": 0.613,
+    "playful": 0.106,
+    "eerie": 0.126,
+    "majestic": 0.078,
+    "menacing": 0.037,
+    "terrifying": 0.039
    },
    "affect": {
-    "valence": 0.457,
-    "arousal": 0.403,
-    "threat": 0.155
+    "valence": 0.483,
+    "arousal": 0.405,
+    "threat": 0.144
    }
   },
   "evade": {
    "top": "cute",
    "p": {
-    "cute": 0.781,
-    "playful": 0.072,
-    "eerie": 0.073,
-    "majestic": 0.04,
-    "menacing": 0.02,
-    "terrifying": 0.015
+    "cute": 0.748,
+    "playful": 0.074,
+    "eerie": 0.088,
+    "majestic": 0.051,
+    "menacing": 0.022,
+    "terrifying": 0.017
    },
    "affect": {
-    "valence": 0.633,
+    "valence": 0.603,
     "arousal": 0.382,
-    "threat": 0.075
+    "threat": 0.087
    }
   },
   "target": "mischief (cheeky, annoying)"
@@ -406,5 +406,56 @@
    }
   },
   "target": "playful nuisance (cheeky, swarming, harmless-ish)"
+ },
+ "locust@55": {
+  "hover": {
+   "top": "terrifying",
+   "p": {
+    "cute": 0.214,
+    "playful": 0.144,
+    "eerie": 0.054,
+    "majestic": 0.003,
+    "menacing": 0.006,
+    "terrifying": 0.579
+   },
+   "affect": {
+    "valence": -0.277,
+    "arousal": 0.753,
+    "threat": 0.622
+   }
+  },
+  "cruise": {
+   "top": "terrifying",
+   "p": {
+    "cute": 0.292,
+    "playful": 0.244,
+    "eerie": 0.05,
+    "majestic": 0.006,
+    "menacing": 0.008,
+    "terrifying": 0.401
+   },
+   "affect": {
+    "valence": 0.016,
+    "arousal": 0.686,
+    "threat": 0.454
+   }
+  },
+  "evade": {
+   "top": "cute",
+   "p": {
+    "cute": 0.381,
+    "playful": 0.205,
+    "eerie": 0.082,
+    "majestic": 0.124,
+    "menacing": 0.014,
+    "terrifying": 0.194
+   },
+   "affect": {
+    "valence": 0.287,
+    "arousal": 0.529,
+    "threat": 0.28
+   }
+  },
+  "target": "cute & shy when sparse -> terrifying storm when dense"
  }
 }
