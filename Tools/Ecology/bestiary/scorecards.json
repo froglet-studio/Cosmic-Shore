@@ -1,0 +1,1559 @@
+{
+ "species": {
+  "pack": {
+   "hits_per_min_wander": 5.996666666666667,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 1.27,
+   "payoff_per_min": 4.67,
+   "variety": 1.098,
+   "feel": {
+    "size": 12.0,
+    "speed_rel": 0.634,
+    "approach": -12.243,
+    "coherence": 0.671,
+    "burstiness": 1.389,
+    "jerk_rel": 0.455
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": 0.0,
+   "telegraph_first_s": 0.9,
+   "engagements": 50,
+   "unwarned_frac": 0.16,
+   "hits_per_min_skimmer": 6.45,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 6.0
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 2.45
+    },
+    "skimmer": {
+     "bite": 6.45
+    },
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 4.67,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.307,
+   "agents": 5.5,
+   "us_per_agent_step": 55.82,
+   "phase": {
+    "strikes": 5.583
+   },
+   "emotion": "dread (menacing, coordinated)",
+   "counter": "break through the gap before the ring closes; change heading so the cut-off is wrong",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "leech": {
+   "hits_per_min_wander": 49.10999999999999,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.65,
+   "payoff_per_min": 2.4433333333333334,
+   "variety": 1.761,
+   "feel": {
+    "size": 1.6,
+    "speed_rel": 0.055,
+    "approach": 28.626,
+    "coherence": 0.274,
+    "burstiness": 3.287,
+    "jerk_rel": 1.128
+   },
+   "hits_per_min_evader120": 0.67,
+   "counterplay_same_speed": 0.01,
+   "hits_per_min_aware": 5.33,
+   "counterplay_aware": 0.11,
+   "telegraph_first_s": 2.0,
+   "engagements": 35,
+   "unwarned_frac": 0.14,
+   "hits_per_min_skimmer": 24.0,
+   "hits_by_kind": {
+    "wander": {
+     "drain": 49.11
+    },
+    "evader": {},
+    "hunter": {
+     "drain": 46.0
+    },
+    "skimmer": {
+     "drain": 24.0
+    },
+    "evader120": {
+     "drain": 0.67
+    },
+    "aware": {
+     "drain": 5.34
+    }
+   },
+   "crystals_per_min_hunter": 2.44,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 1.101,
+   "agents": 63.3,
+   "us_per_agent_step": 17.39,
+   "phase": {
+    "shaken": 8.5,
+    "attached_s": 73.625
+   },
+   "emotion": "cute (curious, clingy) with a sting",
+   "counter": "hard turn / drift shakes them off; give the puddle a wide berth; ram free ones",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "locust": {
+   "hits_per_min_wander": 38.666666666666664,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.1,
+   "payoff_per_min": 21.33666666666667,
+   "variety": 1.0,
+   "feel": {
+    "size": 2.853,
+    "speed_rel": 0.588,
+    "approach": 4.338,
+    "coherence": 0.579,
+    "burstiness": 1.971,
+    "jerk_rel": 0.633
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "hits_per_min_aware": 2.67,
+   "counterplay_aware": 0.07,
+   "telegraph_first_s": 0.9,
+   "engagements": 11,
+   "unwarned_frac": 0.09,
+   "hits_per_min_skimmer": 116.45,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 38.66
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 5.34
+    },
+    "skimmer": {
+     "bite": 116.44
+    },
+    "evader120": {},
+    "aware": {
+     "bite": 2.67
+    }
+   },
+   "crystals_per_min_hunter": 21.33,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 12.867,
+   "agents": 200.7,
+   "us_per_agent_step": 64.11,
+   "phase": {
+    "births": 338.0,
+    "trail_eaten": 1217.5,
+    "greg_frac_end": 0.623,
+    "greg_frac_max": 0.82,
+    "t_tip": 27.583,
+    "solitary_speed": 16.283,
+    "solitary_approach": 10.775,
+    "gregarious_speed": 58.683,
+    "gregarious_approach": -5.267
+   },
+   "emotion": "cute & shy when sparse -> terrifying storm when dense",
+   "counter": "leave before the cloud tips; outrun the march; thin it (every locust is frail)",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "stampede": {
+   "hits_per_min_wander": 10.886666666666665,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.1,
+   "payoff_per_min": 3.776666666666667,
+   "variety": 1.059,
+   "feel": {
+    "size": 10.0,
+    "speed_rel": 0.193,
+    "approach": 14.347,
+    "coherence": 0.824,
+    "burstiness": 3.488,
+    "jerk_rel": 0.321
+   },
+   "hits_per_min_evader120": 1.33,
+   "counterplay_same_speed": 0.12,
+   "hits_per_min_aware": 1.11,
+   "counterplay_aware": 0.1,
+   "telegraph_first_s": 0.7,
+   "engagements": 45,
+   "unwarned_frac": 0.33,
+   "hits_per_min_skimmer": 5.33,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 10.89
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 17.12
+    },
+    "skimmer": {
+     "bite": 5.33
+    },
+    "evader120": {
+     "bite": 1.33
+    },
+    "aware": {
+     "bite": 1.11
+    }
+   },
+   "crystals_per_min_hunter": 3.78,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 3.105,
+   "agents": 71.3,
+   "us_per_agent_step": 43.55,
+   "phase": {
+    "charges": 21.5,
+    "trail_eaten": 510.833,
+    "env_trampled": 1265.8,
+    "stampede_s": 8.892
+   },
+   "emotion": "majestic (awe, then danger in its panic)",
+   "counter": "approach from outside the alarm radius; never sit in a bolting herd's path; sidestep a bull; split off a calf",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "lurker": {
+   "hits_per_min_wander": 0.89,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.95,
+   "payoff_per_min": 6.22,
+   "variety": 2.0,
+   "feel": {
+    "size": 4.0,
+    "speed_rel": 0.0,
+    "approach": -5.806,
+    "coherence": 0.195,
+    "burstiness": 35000000.0,
+    "jerk_rel": 376.638
+   },
+   "hits_per_min_evader120": 0.67,
+   "counterplay_same_speed": 0.75,
+   "hits_per_min_aware": 1.11,
+   "counterplay_aware": 1.25,
+   "telegraph_first_s": 0.85,
+   "engagements": 44,
+   "unwarned_frac": 0.09,
+   "hits_per_min_skimmer": 4.89,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 0.89
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 5.56
+    },
+    "skimmer": {
+     "bite": 4.88
+    },
+    "evader120": {
+     "bite": 0.67
+    },
+    "aware": {
+     "bite": 1.11
+    }
+   },
+   "crystals_per_min_hunter": 6.22,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 1.533,
+   "agents": 14.8,
+   "us_per_agent_step": 103.58,
+   "phase": {
+    "crept": 7278.833,
+    "snaps": 12.167,
+    "snap_hit_rate": 0.245,
+    "aborts": 1.25
+   },
+   "emotion": "eerie (stillness, mimicry, the sudden snap)",
+   "counter": "read the gape and swerve off your line; or strike first / while it is spent",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "leviathan": {
+   "hits_per_min_wander": 0.4466666666666667,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 1.3,
+   "payoff_per_min": 37.11333333333334,
+   "variety": 2.0,
+   "feel": {
+    "size": 5.0,
+    "speed_rel": 0.32,
+    "approach": -4.684,
+    "coherence": 0.97,
+    "burstiness": 2.265,
+    "jerk_rel": 0.041
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": 0.0,
+   "telegraph_first_s": 1.0,
+   "engagements": 47,
+   "unwarned_frac": 0.0,
+   "hits_per_min_skimmer": 3.11,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 0.44
+    },
+    "evader": {},
+    "hunter": {
+     "burn": 12.67
+    },
+    "skimmer": {
+     "bite": 0.88,
+     "burn": 2.23
+    },
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 37.11,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.821,
+   "agents": 133.2,
+   "us_per_agent_step": 6.16,
+   "phase": {
+    "gulps": 1.667,
+    "trail_eaten": 325.0,
+    "assemblies": 1.0,
+    "dissolves": 0.0,
+    "assembled_s": 87.667,
+    "eaten": 2177.567
+   },
+   "emotion": "majestic awe -> dread up close",
+   "counter": "keep clear of a slow giant; never linger at the tail; pick off loose units so it cannot re-form",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "thief": {
+   "hits_per_min_wander": 39.333333333333336,
+   "hits_per_min_evader": 10.666666666666666,
+   "counterplay": 0.27,
+   "telegraph_s": 0.17,
+   "payoff_per_min": 5.5566666666666675,
+   "variety": 1.455,
+   "feel": {
+    "size": 2.2,
+    "speed_rel": 0.438,
+    "approach": 13.553,
+    "coherence": 0.478,
+    "burstiness": 2.532,
+    "jerk_rel": 0.969
+   },
+   "hits_per_min_evader120": 14.0,
+   "counterplay_same_speed": 0.36,
+   "hits_per_min_aware": 29.78,
+   "counterplay_aware": 0.76,
+   "telegraph_first_s": 1.5,
+   "engagements": 69,
+   "unwarned_frac": 0.22,
+   "hits_per_min_skimmer": 88.67,
+   "hits_by_kind": {
+    "wander": {
+     "steal": 39.34
+    },
+    "evader": {
+     "steal": 10.67
+    },
+    "hunter": {
+     "steal": 54.44
+    },
+    "skimmer": {
+     "steal": 88.67
+    },
+    "evader120": {
+     "steal": 14.0
+    },
+    "aware": {
+     "steal": 29.78
+    }
+   },
+   "crystals_per_min_hunter": 5.56,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.55,
+   "agents": 17.0,
+   "us_per_agent_step": 32.35,
+   "phase": {
+    "steals": 72.417,
+    "stolen_vol": 724.167,
+    "recaptured": 1.917,
+    "hoard": 65.917
+   },
+   "emotion": "mischief (cheeky, annoying)",
+   "counter": "turn back on laden thieves (recapture); weave your wake; raid the hoard",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "mobber": {
+   "hits_per_min_wander": 6.223333333333334,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.15,
+   "payoff_per_min": 25.11,
+   "variety": 2.0,
+   "feel": {
+    "size": 1.5,
+    "speed_rel": 0.246,
+    "approach": -0.37,
+    "coherence": 0.309,
+    "burstiness": 2.14,
+    "jerk_rel": 2.0
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": 0.0,
+   "telegraph_first_s": 1.15,
+   "engagements": 44,
+   "unwarned_frac": 0.0,
+   "hits_per_min_skimmer": 70.45,
+   "hits_by_kind": {
+    "wander": {
+     "drain": 6.22
+    },
+    "evader": {},
+    "hunter": {
+     "drain": 25.11
+    },
+    "skimmer": {
+     "drain": 70.44
+    },
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 25.11,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.691,
+   "agents": 44.5,
+   "us_per_agent_step": 15.53,
+   "phase": {
+    "pecks": 38.167,
+    "mob_s": 5.542
+   },
+   "emotion": "playful nuisance (cheeky, swarming, harmless-ish)",
+   "counter": "keep speed up; don't loiter at the roost; jink when one pulls up",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  }
+ },
+ "ablations": {
+  "pack:chase": {
+   "hits_per_min_wander": 0.22333333333333336,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.25,
+   "payoff_per_min": 4.67,
+   "variety": 0.0,
+   "feel": {
+    "size": 12.0,
+    "speed_rel": 0.711,
+    "approach": -23.05,
+    "coherence": 0.774,
+    "burstiness": 1.395,
+    "jerk_rel": 0.595
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": 0.0,
+   "telegraph_first_s": 0.0,
+   "engagements": 7,
+   "unwarned_frac": 0.86,
+   "hits_per_min_skimmer": 0.0,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 0.22
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 1.32
+    },
+    "skimmer": {},
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 4.67,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.299,
+   "agents": 5.3,
+   "us_per_agent_step": 56.42,
+   "phase": {
+    "strikes": 0.583
+   },
+   "ablation": "naive: chase the pilot's CURRENT position, no spread, no quorum (the template pack)",
+   "emotion": "dread (menacing, coordinated)",
+   "counter": "break through the gap before the ring closes; change heading so the cut-off is wrong",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": false,
+    "counterplay": true,
+    "variety": false,
+    "payoff": true
+   }
+  },
+  "pack:noquorum": {
+   "hits_per_min_wander": 6.0,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 2.8,
+   "payoff_per_min": 4.67,
+   "variety": 0.87,
+   "feel": {
+    "size": 12.0,
+    "speed_rel": 0.635,
+    "approach": -13.029,
+    "coherence": 0.674,
+    "burstiness": 1.243,
+    "jerk_rel": 0.454
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "hits_per_min_aware": 1.11,
+   "counterplay_aware": 0.19,
+   "telegraph_first_s": 0.4,
+   "engagements": 66,
+   "unwarned_frac": 0.45,
+   "hits_per_min_skimmer": 5.33,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 6.0
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 3.33
+    },
+    "skimmer": {
+     "bite": 5.33
+    },
+    "evader120": {},
+    "aware": {
+     "bite": 1.11
+    }
+   },
+   "crystals_per_min_hunter": 4.67,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.322,
+   "agents": 5.5,
+   "us_per_agent_step": 58.55,
+   "phase": {
+    "strikes": 5.5
+   },
+   "ablation": "prediction + spread kept, but each hunter strikes on its own inside 150 u (no collective closure)",
+   "emotion": "dread (menacing, coordinated)",
+   "counter": "break through the gap before the ring closes; change heading so the cut-off is wrong",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": false,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "leech:nogrip": {
+   "hits_per_min_wander": 164.22,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.6,
+   "payoff_per_min": 1.1133333333333333,
+   "variety": 0.56,
+   "feel": {
+    "size": 1.6,
+    "speed_rel": 0.057,
+    "approach": 26.463,
+    "coherence": 0.299,
+    "burstiness": 10.675,
+    "jerk_rel": 0.96
+   },
+   "hits_per_min_evader120": 25.33,
+   "counterplay_same_speed": 0.15,
+   "hits_per_min_aware": 39.78,
+   "counterplay_aware": 0.24,
+   "telegraph_first_s": 1.95,
+   "engagements": 12,
+   "unwarned_frac": 0.25,
+   "hits_per_min_skimmer": 143.55,
+   "hits_by_kind": {
+    "wander": {
+     "drain": 164.21
+    },
+    "evader": {},
+    "hunter": {
+     "drain": 137.99
+    },
+    "skimmer": {
+     "drain": 143.55
+    },
+    "evader120": {
+     "drain": 25.33
+    },
+    "aware": {
+     "drain": 39.78
+    }
+   },
+   "crystals_per_min_hunter": 1.11,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 1.203,
+   "agents": 63.6,
+   "us_per_agent_step": 18.92,
+   "phase": {
+    "shaken": 0.0,
+    "attached_s": 252.95
+   },
+   "ablation": "a latched leech never loses its grip (turning does nothing)",
+   "emotion": "cute (curious, clingy) with a sting",
+   "counter": "hard turn / drift shakes them off; give the puddle a wide berth; ram free ones",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "leech:nopounce": {
+   "hits_per_min_wander": 0.0,
+   "hits_per_min_evader": 0.0,
+   "counterplay": null,
+   "telegraph_s": 1.4,
+   "payoff_per_min": 36.0,
+   "variety": 0.0,
+   "feel": {
+    "size": 1.6,
+    "speed_rel": 0.055,
+    "approach": 7.246,
+    "coherence": 0.276,
+    "burstiness": 1.868,
+    "jerk_rel": 1.221
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": null,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": null,
+   "telegraph_first_s": 1.2,
+   "engagements": 1,
+   "unwarned_frac": 0.0,
+   "hits_per_min_skimmer": 1.33,
+   "hits_by_kind": {
+    "wander": {},
+    "evader": {},
+    "hunter": {},
+    "skimmer": {
+     "drain": 1.33
+    },
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 36.0,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 1.059,
+   "agents": 57.3,
+   "us_per_agent_step": 18.48,
+   "phase": {
+    "shaken": 0.417,
+    "attached_s": 0.867
+   },
+   "ablation": "no hop: a leech only latches if the hull brushes it (no intercept dart)",
+   "emotion": "cute (curious, clingy) with a sting",
+   "counter": "hard turn / drift shakes them off; give the puddle a wide berth; ram free ones",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": false,
+    "variety": false,
+    "payoff": true
+   }
+  },
+  "locust:solitary": {
+   "hits_per_min_wander": 0.0,
+   "hits_per_min_evader": 0.0,
+   "counterplay": null,
+   "telegraph_s": null,
+   "payoff_per_min": 21.55666666666667,
+   "variety": 0.0,
+   "feel": {
+    "size": 2.0,
+    "speed_rel": 0.092,
+    "approach": 0.822,
+    "coherence": 0.286,
+    "burstiness": 1.787,
+    "jerk_rel": 1.312
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": null,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": null,
+   "telegraph_first_s": null,
+   "engagements": 0,
+   "unwarned_frac": null,
+   "hits_per_min_skimmer": 0.0,
+   "hits_by_kind": {
+    "wander": {},
+    "evader": {},
+    "hunter": {},
+    "skimmer": {},
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 21.56,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 10.904,
+   "agents": 184.4,
+   "us_per_agent_step": 59.13,
+   "phase": {
+    "births": 334.417,
+    "trail_eaten": 0.0,
+    "greg_frac_end": 0.0,
+    "greg_frac_max": 0.0,
+    "t_tip": -1.0,
+    "solitary_speed": 7.317,
+    "solitary_approach": 1.425,
+    "gregarious_speed": 0.0,
+    "gregarious_approach": 0.0
+   },
+   "ablation": "phase pinned at 0: never gregarious (crowding does nothing)",
+   "emotion": "cute & shy when sparse -> terrifying storm when dense",
+   "counter": "leave before the cloud tips; outrun the march; thin it (every locust is frail)",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": false,
+    "counterplay": false,
+    "variety": false,
+    "payoff": true
+   }
+  },
+  "locust:gregarious": {
+   "hits_per_min_wander": 53.333333333333336,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.15,
+   "payoff_per_min": 3.78,
+   "variety": 1.385,
+   "feel": {
+    "size": 3.0,
+    "speed_rel": 0.988,
+    "approach": -8.634,
+    "coherence": 0.872,
+    "burstiness": 1.174,
+    "jerk_rel": 0.215
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "hits_per_min_aware": 7.11,
+   "counterplay_aware": 0.13,
+   "telegraph_first_s": 3.85,
+   "engagements": 8,
+   "unwarned_frac": 0.0,
+   "hits_per_min_skimmer": 105.56,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 53.34
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 1.78
+    },
+    "skimmer": {
+     "bite": 105.55
+    },
+    "evader120": {},
+    "aware": {
+     "bite": 7.11
+    }
+   },
+   "crystals_per_min_hunter": 3.78,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 10.802,
+   "agents": 188.9,
+   "us_per_agent_step": 57.18,
+   "phase": {
+    "births": 327.917,
+    "trail_eaten": 1315.833,
+    "greg_frac_end": 1.0,
+    "greg_frac_max": 1.0,
+    "t_tip": 0.0,
+    "solitary_speed": 0.0,
+    "solitary_approach": 0.0,
+    "gregarious_speed": 82.575,
+    "gregarious_approach": -12.558
+   },
+   "ablation": "phase pinned at 1 from the first second (always a storm)",
+   "emotion": "cute & shy when sparse -> terrifying storm when dense",
+   "counter": "leave before the cloud tips; outrun the march; thin it (every locust is frail)",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "stampede:nobulls": {
+   "hits_per_min_wander": 0.0,
+   "hits_per_min_evader": 0.0,
+   "counterplay": null,
+   "telegraph_s": 5.1,
+   "payoff_per_min": 3.5566666666666666,
+   "variety": 0.0,
+   "feel": {
+    "size": 10.0,
+    "speed_rel": 0.194,
+    "approach": 12.4,
+    "coherence": 0.861,
+    "burstiness": 3.115,
+    "jerk_rel": 0.326
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": null,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": null,
+   "telegraph_first_s": 0.0,
+   "engagements": 25,
+   "unwarned_frac": 1.0,
+   "hits_per_min_skimmer": 0.0,
+   "hits_by_kind": {
+    "wander": {},
+    "evader": {},
+    "hunter": {
+     "bite": 6.89
+    },
+    "skimmer": {},
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 3.56,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 3.167,
+   "agents": 71.3,
+   "us_per_agent_step": 44.42,
+   "phase": {
+    "charges": 0.0,
+    "trail_eaten": 155.0,
+    "env_trampled": 709.05,
+    "stampede_s": 8.225
+   },
+   "ablation": "no bulls: a herd that only panics",
+   "emotion": "majestic (awe, then danger in its panic)",
+   "counter": "approach from outside the alarm radius; never sit in a bolting herd's path; sidestep a bull; split off a calf",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": false,
+    "counterplay": false,
+    "variety": false,
+    "payoff": true
+   }
+  },
+  "stampede:selfish": {
+   "hits_per_min_wander": 10.89,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.15,
+   "payoff_per_min": 10.443333333333333,
+   "variety": 1.263,
+   "feel": {
+    "size": 10.0,
+    "speed_rel": 0.196,
+    "approach": 7.414,
+    "coherence": 0.821,
+    "burstiness": 3.443,
+    "jerk_rel": 0.322
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "hits_per_min_aware": 1.33,
+   "counterplay_aware": 0.12,
+   "telegraph_first_s": 1.25,
+   "engagements": 38,
+   "unwarned_frac": 0.03,
+   "hits_per_min_skimmer": 8.22,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 10.89
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 16.89
+    },
+    "skimmer": {
+     "bite": 8.22
+    },
+    "evader120": {},
+    "aware": {
+     "bite": 1.33
+    }
+   },
+   "crystals_per_min_hunter": 10.44,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 2.972,
+   "agents": 70.2,
+   "us_per_agent_step": 42.34,
+   "phase": {
+    "charges": 20.417,
+    "trail_eaten": 491.667,
+    "env_trampled": 1146.692,
+    "stampede_s": 8.342
+   },
+   "ablation": "each seer flees straight away from the pilot (no herd-centre flee, no contagion)",
+   "emotion": "majestic (awe, then danger in its panic)",
+   "counter": "approach from outside the alarm radius; never sit in a bolting herd's path; sidestep a bull; split off a calf",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "lurker:nogape": {
+   "hits_per_min_wander": 0.0,
+   "hits_per_min_evader": 0.4466666666666667,
+   "counterplay": null,
+   "telegraph_s": 0.2,
+   "payoff_per_min": 10.67,
+   "variety": 0.0,
+   "feel": {
+    "size": 4.0,
+    "speed_rel": 0.0,
+    "approach": -47.285,
+    "coherence": 0.156,
+    "burstiness": 31250000.0,
+    "jerk_rel": 2430.299
+   },
+   "hits_per_min_evader120": 0.22,
+   "counterplay_same_speed": null,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": null,
+   "telegraph_first_s": 0.2,
+   "engagements": 25,
+   "unwarned_frac": 1.0,
+   "hits_per_min_skimmer": 0.0,
+   "hits_by_kind": {
+    "wander": {},
+    "evader": {
+     "bite": 0.44
+    },
+    "hunter": {
+     "bite": 10.68
+    },
+    "skimmer": {},
+    "evader120": {
+     "bite": 0.22
+    },
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 10.67,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 1.39,
+   "agents": 13.0,
+   "us_per_agent_step": 106.92,
+   "phase": {
+    "crept": 6213.375,
+    "snaps": 9.417,
+    "snap_hit_rate": 0.263,
+    "aborts": 0.0
+   },
+   "ablation": "snaps the instant it triggers (no 0.9 s gape)",
+   "emotion": "eerie (stillness, mimicry, the sudden snap)",
+   "counter": "read the gape and swerve off your line; or strike first / while it is spent",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": false,
+    "counterplay": false,
+    "variety": false,
+    "payoff": true
+   }
+  },
+  "lurker:nocreep": {
+   "hits_per_min_wander": 0.0,
+   "hits_per_min_evader": 0.44333333333333336,
+   "counterplay": null,
+   "telegraph_s": 0.8,
+   "payoff_per_min": 5.776666666666666,
+   "variety": 0.0,
+   "feel": {
+    "size": 4.0,
+    "speed_rel": 0.0,
+    "approach": -4.125,
+    "coherence": 0.08,
+    "burstiness": 12357315.718,
+    "jerk_rel": 225.889
+   },
+   "hits_per_min_evader120": 0.44,
+   "counterplay_same_speed": null,
+   "hits_per_min_aware": 0.44,
+   "counterplay_aware": null,
+   "telegraph_first_s": 0.9,
+   "engagements": 39,
+   "unwarned_frac": 0.05,
+   "hits_per_min_skimmer": 5.56,
+   "hits_by_kind": {
+    "wander": {},
+    "evader": {
+     "bite": 0.44
+    },
+    "hunter": {
+     "bite": 5.33
+    },
+    "skimmer": {
+     "bite": 5.56
+    },
+    "evader120": {
+     "bite": 0.44
+    },
+    "aware": {
+     "bite": 0.44
+    }
+   },
+   "crystals_per_min_hunter": 5.78,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.326,
+   "agents": 14.7,
+   "us_per_agent_step": 22.18,
+   "phase": {
+    "crept": 0.0,
+    "snaps": 9.75,
+    "snap_hit_rate": 0.31,
+    "aborts": 0.25
+   },
+   "ablation": "never creeps while unwatched (stays on its prism)",
+   "emotion": "eerie (stillness, mimicry, the sudden snap)",
+   "counter": "read the gape and swerve off your line; or strike first / while it is spent",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": false,
+    "variety": false,
+    "payoff": true
+   }
+  },
+  "leviathan:noassemble": {
+   "hits_per_min_wander": 0.0,
+   "hits_per_min_evader": 0.0,
+   "counterplay": null,
+   "telegraph_s": null,
+   "payoff_per_min": 93.33,
+   "variety": 0.0,
+   "feel": {
+    "size": 5.0,
+    "speed_rel": 0.091,
+    "approach": -6.727,
+    "coherence": 0.394,
+    "burstiness": 4.091,
+    "jerk_rel": 1.156
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": null,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": null,
+   "telegraph_first_s": null,
+   "engagements": 0,
+   "unwarned_frac": null,
+   "hits_per_min_skimmer": 0.0,
+   "hits_by_kind": {
+    "wander": {},
+    "evader": {},
+    "hunter": {},
+    "skimmer": {},
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 93.33,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 1.718,
+   "agents": 114.3,
+   "us_per_agent_step": 15.03,
+   "phase": {
+    "gulps": 0.0,
+    "trail_eaten": 0.0,
+    "assemblies": 0.0,
+    "dissolves": 0.0,
+    "assembled_s": 0.0,
+    "eaten": 0.0
+   },
+   "ablation": "the quorum never fires: a loose shoal forever",
+   "emotion": "majestic awe -> dread up close",
+   "counter": "keep clear of a slow giant; never linger at the tail; pick off loose units so it cannot re-form",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": false,
+    "counterplay": false,
+    "variety": false,
+    "payoff": true
+   }
+  },
+  "leviathan:nogulp": {
+   "hits_per_min_wander": 0.0,
+   "hits_per_min_evader": 0.0,
+   "counterplay": null,
+   "telegraph_s": 1.2,
+   "payoff_per_min": 36.89,
+   "variety": 0.0,
+   "feel": {
+    "size": 5.0,
+    "speed_rel": 0.319,
+    "approach": -3.185,
+    "coherence": 0.969,
+    "burstiness": 1.72,
+    "jerk_rel": 0.033
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": null,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": null,
+   "telegraph_first_s": 1.2,
+   "engagements": 43,
+   "unwarned_frac": 0.0,
+   "hits_per_min_skimmer": 2.44,
+   "hits_by_kind": {
+    "wander": {},
+    "evader": {},
+    "hunter": {
+     "burn": 13.56
+    },
+    "skimmer": {
+     "burn": 2.44
+    },
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 36.89,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.784,
+   "agents": 133.6,
+   "us_per_agent_step": 5.87,
+   "phase": {
+    "gulps": 0.0,
+    "trail_eaten": 196.667,
+    "assemblies": 1.0,
+    "dissolves": 0.0,
+    "assembled_s": 87.667,
+    "eaten": 1918.975
+   },
+   "ablation": "assembled body, but no telegraphed gulp surge",
+   "emotion": "majestic awe -> dread up close",
+   "counter": "keep clear of a slow giant; never linger at the tail; pick off loose units so it cannot re-form",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": false,
+    "variety": false,
+    "payoff": true
+   }
+  },
+  "thief:cold": {
+   "hits_per_min_wander": 10.886666666666665,
+   "hits_per_min_evader": 3.3333333333333335,
+   "counterplay": 0.31,
+   "telegraph_s": 0.35,
+   "payoff_per_min": 3.776666666666667,
+   "variety": 1.5,
+   "feel": {
+    "size": 2.2,
+    "speed_rel": 0.427,
+    "approach": 3.96,
+    "coherence": 0.307,
+    "burstiness": 2.165,
+    "jerk_rel": 1.106
+   },
+   "hits_per_min_evader120": 3.33,
+   "counterplay_same_speed": 0.31,
+   "hits_per_min_aware": 6.0,
+   "counterplay_aware": 0.55,
+   "telegraph_first_s": 1.15,
+   "engagements": 62,
+   "unwarned_frac": 0.4,
+   "hits_per_min_skimmer": 18.45,
+   "hits_by_kind": {
+    "wander": {
+     "steal": 10.89
+    },
+    "evader": {
+     "steal": 3.33
+    },
+    "hunter": {
+     "steal": 64.44
+    },
+    "skimmer": {
+     "steal": 18.45
+    },
+    "evader120": {
+     "steal": 3.33
+    },
+    "aware": {
+     "steal": 6.0
+    }
+   },
+   "crystals_per_min_hunter": 3.78,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.638,
+   "agents": 17.4,
+   "us_per_agent_step": 36.67,
+   "phase": {
+    "steals": 36.417,
+    "stolen_vol": 364.167,
+    "recaptured": 1.0,
+    "hoard": 34.167
+   },
+   "ablation": "takes ANY trail prism (not only the warm wake) and never tails a ship",
+   "emotion": "mischief (cheeky, annoying)",
+   "counter": "turn back on laden thieves (recapture); weave your wake; raid the hoard",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "thief:bold": {
+   "hits_per_min_wander": 40.443333333333335,
+   "hits_per_min_evader": 10.666666666666666,
+   "counterplay": 0.26,
+   "telegraph_s": 0.25,
+   "payoff_per_min": 12.0,
+   "variety": 1.403,
+   "feel": {
+    "size": 2.2,
+    "speed_rel": 0.452,
+    "approach": 6.984,
+    "coherence": 0.501,
+    "burstiness": 2.483,
+    "jerk_rel": 0.956
+   },
+   "hits_per_min_evader120": 14.0,
+   "counterplay_same_speed": 0.35,
+   "hits_per_min_aware": 29.78,
+   "counterplay_aware": 0.74,
+   "telegraph_first_s": 1.5,
+   "engagements": 62,
+   "unwarned_frac": 0.24,
+   "hits_per_min_skimmer": 76.0,
+   "hits_by_kind": {
+    "wander": {
+     "steal": 40.45
+    },
+    "evader": {
+     "steal": 10.67
+    },
+    "hunter": {
+     "steal": 20.89
+    },
+    "skimmer": {
+     "steal": 76.0
+    },
+    "evader120": {
+     "steal": 14.0
+    },
+    "aware": {
+     "steal": 29.78
+    }
+   },
+   "crystals_per_min_hunter": 12.0,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.523,
+   "agents": 14.8,
+   "us_per_agent_step": 35.34,
+   "phase": {
+    "steals": 55.5,
+    "stolen_vol": 555.0,
+    "recaptured": 1.167,
+    "hoard": 50.667
+   },
+   "ablation": "never veers off a pilot pointing at it",
+   "emotion": "mischief (cheeky, annoying)",
+   "counter": "turn back on laden thieves (recapture); weave your wake; raid the hoard",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "mobber:speedblind": {
+   "hits_per_min_wander": 39.333333333333336,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.1,
+   "payoff_per_min": 33.33,
+   "variety": 1.346,
+   "feel": {
+    "size": 1.5,
+    "speed_rel": 0.302,
+    "approach": -5.553,
+    "coherence": 0.395,
+    "burstiness": 2.963,
+    "jerk_rel": 1.545
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": 0.0,
+   "telegraph_first_s": 4.7,
+   "engagements": 64,
+   "unwarned_frac": 0.0,
+   "hits_per_min_skimmer": 70.45,
+   "hits_by_kind": {
+    "wander": {
+     "drain": 39.33
+    },
+    "evader": {},
+    "hunter": {
+     "drain": 36.45
+    },
+    "skimmer": {
+     "drain": 70.44
+    },
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 33.33,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.688,
+   "agents": 41.9,
+   "us_per_agent_step": 16.42,
+   "phase": {
+    "pecks": 54.833,
+    "mob_s": 14.225
+   },
+   "ablation": "mobs any pilot within 300 u whatever its speed (speed no longer matters)",
+   "emotion": "playful nuisance (cheeky, swarming, harmless-ish)",
+   "counter": "keep speed up; don't loiter at the roost; jink when one pulls up",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "mobber:nodive": {
+   "hits_per_min_wander": 0.0,
+   "hits_per_min_evader": 0.0,
+   "counterplay": null,
+   "telegraph_s": null,
+   "payoff_per_min": 12.0,
+   "variety": 0.0,
+   "feel": {
+    "size": 1.5,
+    "speed_rel": 0.246,
+    "approach": 1.249,
+    "coherence": 0.319,
+    "burstiness": 2.123,
+    "jerk_rel": 1.949
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": null,
+   "hits_per_min_aware": 0.0,
+   "counterplay_aware": null,
+   "telegraph_first_s": null,
+   "engagements": 0,
+   "unwarned_frac": null,
+   "hits_per_min_skimmer": 0.0,
+   "hits_by_kind": {
+    "wander": {},
+    "evader": {},
+    "hunter": {},
+    "skimmer": {},
+    "evader120": {},
+    "aware": {}
+   },
+   "crystals_per_min_hunter": 12.0,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.705,
+   "agents": 47.3,
+   "us_per_agent_step": 14.9,
+   "phase": {
+    "pecks": 0.0,
+    "mob_s": 6.358
+   },
+   "ablation": "swirls but never pulls up/dives (no pecks... and no telegraph)",
+   "emotion": "playful nuisance (cheeky, swarming, harmless-ish)",
+   "counter": "keep speed up; don't loiter at the roost; jink when one pulls up",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": false,
+    "counterplay": false,
+    "variety": false,
+    "payoff": true
+   }
+  }
+ },
+ "feel_spread": {
+  "min_pair": [
+   "locust",
+   "thief"
+  ],
+  "min_dist": 1.14,
+  "mean_dist": 3.46
+ }
+}
