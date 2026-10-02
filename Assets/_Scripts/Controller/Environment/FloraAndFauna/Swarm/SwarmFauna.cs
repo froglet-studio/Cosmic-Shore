@@ -794,6 +794,114 @@ namespace CosmicShore.Gameplay
             return m;
         }
 
+        // ───────────────────────────────────────────────────────────────── members as PREY (round 8, §16.3)
+
+        static readonly List<MemberHit> s_preyScratch = new(32);
+
+        /// <summary>
+        /// Can <paramref name="predator"/> eat member <paramref name="i"/>? The rules a predator applies to a registry
+        /// creature, asked of the member's own state: a member is a HERBIVORE (the tadpole prefab's diet), so a
+        /// herbivore-only predator may take it; it is still in its post-spawn grace for the first
+        /// <c>predationImmunitySeconds</c> of its SIMULATION life (not its proxy's); and a predator penned to a band
+        /// is never led out of it ("a creature must never be led to mass it cannot reach or eat").
+        /// </summary>
+        bool IsPreyFor(int i, Vector3 at, Fauna predator, bool herbivoresOnly)
+        {
+            if (!predator || predator == this) return false;
+            if (herbivoresOnly && config.TadpolePrefab && config.TadpolePrefab.Diet != FaunaDiet.Herbivore) return false;
+            float grace = config.TadpolePrefab ? config.TadpolePrefab.PredationImmunitySeconds : 0f;
+            if (grace > 0f && (_job.Tick + _alpha - _job.Instances[i].BirthTick) / config.TickHz < grace) return false;
+            return predator.IsInsideBand(at);
+        }
+
+        /// <summary>
+        /// The nearest swarm member <paramref name="predator"/> can eat within <paramref name="maxSqr"/> of
+        /// <paramref name="origin"/>, as a real creature: a member that already has a proxy is returned as that proxy,
+        /// a member that is only data is materialised (budgeted, §16.2) - and kept alive while it is hunted
+        /// (<see cref="SwarmTadpoleFauna.NotifyHunted"/>). The search widens a sphere from the swarm's own box, so it
+        /// walks only the members near the answer. Null when nothing qualifies (or the frame's budget is spent).
+        /// </summary>
+        public static Fauna NearestPrey(Vector3 origin, float maxSqr, Fauna predator, bool herbivoresOnly, out float sqr)
+        {
+            sqr = float.PositiveInfinity;
+            SwarmFauna bestSwarm = null; int bestSlot = -1;
+            Fauna bestProxy = null;
+            for (int k = 0; k < s_live.Count; k++)
+            {
+                var sw = s_live[k];
+                if (!sw || sw._job == null || !sw._gpu) continue;
+                // proxies first: they are real creatures the registry does not hold
+                for (int q = 0; q < sw._proxySlots.Count; q++)
+                {
+                    var m = sw._proxy[sw._proxySlots[q]];
+                    if (!m || m.IsDead || !m.IsAlivePrey || m.IsPredationImmune || m == predator) continue;
+                    if (herbivoresOnly && m.Diet != FaunaDiet.Herbivore) continue;
+                    var at = m.transform.position;
+                    float d = (at - origin).sqrMagnitude;
+                    if (d < sqr && d <= maxSqr && predator.IsInsideBand(at)) { sqr = d; bestProxy = m; bestSwarm = null; }
+                }
+                // members that are only data: grow a sphere from the box's nearest face until something qualifies
+                var g = sw._job.Grid;
+                if (g.Count == 0) continue;
+                var lo = new Vector3(g.Lo.X, g.Lo.Y, g.Lo.Z); var hi = new Vector3(g.Hi.X, g.Hi.Y, g.Hi.Z);
+                var nearest = Vector3.Max(lo, Vector3.Min(hi, origin));
+                float r = Mathf.Max(64f, (nearest - origin).magnitude + 32f);
+                float rMax = Mathf.Min(Mathf.Sqrt(Mathf.Min(maxSqr, sqr)), (origin - (lo + hi) * 0.5f).magnitude + (hi - lo).magnitude);
+                for (; ; r *= 2f)
+                {
+                    float rr = Mathf.Min(r, rMax);
+                    s_preyScratch.Clear();
+                    sw.CollectOwn(SwarmTargets.Sphere(origin, rr), true, s_preyScratch);
+                    bool found = false;
+                    for (int q = 0; q < s_preyScratch.Count; q++)
+                    {
+                        var h = s_preyScratch[q];
+                        float d = (h.Point - origin).sqrMagnitude;
+                        if (d >= sqr || d > maxSqr || !sw.IsPreyFor(h.Slot, h.Point, predator, herbivoresOnly)) continue;
+                        sqr = d; bestSwarm = sw; bestSlot = h.Slot; bestProxy = null; found = true;
+                    }
+                    if (found || rr >= rMax) break;
+                }
+            }
+            if (bestProxy) return bestProxy;
+            if (!bestSwarm) return null;
+            var proxy = bestSwarm.MaterialiseForHit(bestSlot);
+            return proxy && !proxy.IsPredationImmune ? proxy : null;
+        }
+
+        /// <summary>
+        /// Every swarm member within <paramref name="range"/> of a predator's MOUTH that it can eat, as real creatures
+        /// (existing proxies, plus members materialised under the per-frame budget) - appended to
+        /// <paramref name="results"/>. The predator then calls <see cref="Fauna.Predated"/> on each exactly as it does on
+        /// a registry creature, so the suction into the mouth, the mass transfer and the crystal are the platform's.
+        /// </summary>
+        public static void PreyAtMouth(Vector3 mouth, float range, Fauna predator, bool herbivoresOnly, List<Fauna> results)
+        {
+            float r2 = range * range;
+            for (int k = 0; k < s_live.Count; k++)
+            {
+                var sw = s_live[k];
+                if (!sw || sw._job == null || !sw._gpu) continue;
+                for (int q = 0; q < sw._proxySlots.Count; q++)
+                {
+                    var m = sw._proxy[sw._proxySlots[q]];
+                    if (!m || m.IsDead || m == predator) continue;
+                    if (herbivoresOnly && m.Diet != FaunaDiet.Herbivore) continue;
+                    if ((m.transform.position - mouth).sqrMagnitude <= r2) results.Add(m);
+                }
+                s_preyScratch.Clear();
+                sw.CollectOwn(SwarmTargets.Sphere(mouth, range), true, s_preyScratch);
+                for (int q = 0; q < s_preyScratch.Count; q++)
+                {
+                    var h = s_preyScratch[q];
+                    if (!sw.IsPreyFor(h.Slot, h.Point, predator, herbivoresOnly)) continue;
+                    var proxy = sw.MaterialiseForHit(h.Slot);
+                    if (proxy) results.Add(proxy);
+                    else break;   // the frame's budget is spent - the rest are still there next frame
+                }
+            }
+        }
+
         /// <summary>Keep member <paramref name="i"/>'s proxy alive this frame (a predator is hunting it, §16.3).</summary>
         public void KeepProxy(int i)
         {

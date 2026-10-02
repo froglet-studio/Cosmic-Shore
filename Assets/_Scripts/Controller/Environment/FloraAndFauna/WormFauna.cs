@@ -763,7 +763,23 @@ namespace CosmicShore.Gameplay
                 if (f.Predated(PLAYER_NAME, _mouth))
                     NotifyFed();
             }
+
+            // Swarm members in reach of the jaws (most are DATA the registry cannot see, Docs/SWARM_FAUNA.md
+            // §16.3) - handed back as real creatures and eaten the same way.
+            if (SwarmTargets.Any)
+            {
+                s_swarmPrey.Clear();
+                SwarmFauna.PreyAtMouth(mouthPos, config.FaunaBiteRange, this, false, s_swarmPrey);
+                for (int i = 0; i < s_swarmPrey.Count; i++)
+                {
+                    var f = s_swarmPrey[i];
+                    if (f && f.Predated(PLAYER_NAME, _mouth))
+                        NotifyFed();
+                }
+            }
         }
+
+        static readonly List<Fauna> s_swarmPrey = new(16);
 
         /// <summary>
         /// Canonical herbivore edibility (the same rule LightFauna grazes by): the

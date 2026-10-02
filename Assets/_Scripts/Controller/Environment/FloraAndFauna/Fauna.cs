@@ -194,6 +194,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public virtual void NotifyHunted() { }
 
+        /// <summary>The authored post-spawn predation grace, in seconds (what <see cref="IsPredationImmune"/> measures).</summary>
+        public float PredationImmunitySeconds => predationImmunitySeconds;
+
         /// <summary>True during the post-spawn grace window when this fauna can't be predated.</summary>
         public bool IsPredationImmune =>
             predationImmunitySeconds > 0f && _spawnTime >= 0f && (Time.time - _spawnTime) < predationImmunitySeconds;

@@ -392,6 +392,15 @@ namespace CosmicShore.Gameplay
                 if (d < bestSqr && d <= maxSqr) { bestSqr = d; best = f; }
             }
 
+            // Swarm members are herbivores too, but most of them are DATA with no GameObject (Docs/SWARM_FAUNA.md
+            // §16.3): ask the swarms for one nearer than the registry's best. The winner comes back as a real
+            // creature (its proxy), held alive while this predator hunts it.
+            if (SwarmTargets.Any)
+            {
+                var member = SwarmFauna.NearestPrey(origin, Mathf.Min(bestSqr, maxSqr), this, true, out _);
+                if (member) best = member;
+            }
+
             return best;
         }
 
@@ -937,6 +946,7 @@ namespace CosmicShore.Gameplay
             var prey = _targetPrey;
             if (prey)
             {
+                prey.NotifyHunted();   // a swarm member's proxy must not be retired mid-chase (§16.3)
                 Goal = prey.transform.position;
                 Vector3 toPrey = Goal - transform.position;
                 float speed = currentVelocity.magnitude;
@@ -982,7 +992,23 @@ namespace CosmicShore.Gameplay
                 if (f.Predated(PLAYER_NAME, _mouth))
                     NotifyFed();
             }
+
+            // A school of swarm members swimming into the mouth: most are DATA, so the registry cannot see them
+            // (Docs/SWARM_FAUNA.md §16.3). The swarm hands back the ones in reach as real creatures.
+            if (SwarmTargets.Any)
+            {
+                s_swarmPrey.Clear();
+                SwarmFauna.PreyAtMouth(mouthPos, data.attackRange, this, true, s_swarmPrey);
+                for (int i = 0; i < s_swarmPrey.Count; i++)
+                {
+                    var f = s_swarmPrey[i];
+                    if (f && f.Predated(PLAYER_NAME, _mouth))
+                        NotifyFed();
+                }
+            }
         }
+
+        static readonly List<Fauna> s_swarmPrey = new(16);
 
         void Update()
         {
