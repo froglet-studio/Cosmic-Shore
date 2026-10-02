@@ -1,0 +1,86 @@
+[
+ {
+  "step": "G0 old scorecard feel",
+  "n_features": 5,
+  "logistic": {
+   "lofo": 0.396,
+   "within": 0.632,
+   "viewer": 0.639
+  },
+  "prototype": {
+   "lofo": 0.479,
+   "within": 0.653,
+   "viewer": 0.528
+  }
+ },
+ {
+  "step": "G1 + looming (Schiff, Lee tau)",
+  "n_features": 9,
+  "logistic": {
+   "lofo": 0.507,
+   "within": 0.789,
+   "viewer": 0.769
+  },
+  "prototype": {
+   "lofo": 0.44,
+   "within": 0.829,
+   "viewer": 0.806
+  }
+ },
+ {
+  "step": "G2 + scale & baby schema",
+  "n_features": 12,
+  "logistic": {
+   "lofo": 0.519,
+   "within": 0.856,
+   "viewer": 0.852
+  },
+  "prototype": {
+   "lofo": 0.512,
+   "within": 0.847,
+   "viewer": 0.898
+  }
+ },
+ {
+  "step": "G3 + gaze / chase / encircle (Gao, Heider-Simmel)",
+  "n_features": 17,
+  "logistic": {
+   "lofo": 0.593,
+   "within": 0.928,
+   "viewer": 0.889
+  },
+  "prototype": {
+   "lofo": 0.6,
+   "within": 0.903,
+   "viewer": 0.907
+  }
+ },
+ {
+  "step": "G4 + coordination / uncanny",
+  "n_features": 20,
+  "logistic": {
+   "lofo": 0.639,
+   "within": 0.93,
+   "viewer": 0.944
+  },
+  "prototype": {
+   "lofo": 0.604,
+   "within": 0.912,
+   "viewer": 0.907
+  }
+ },
+ {
+  "step": "G5 + effort & rhythm (Laban, Pollick, Tremoulet)",
+  "n_features": 29,
+  "logistic": {
+   "lofo": 0.597,
+   "within": 0.951,
+   "viewer": 0.926
+  },
+  "prototype": {
+   "lofo": 0.625,
+   "within": 0.912,
+   "viewer": 0.88
+  }
+ }
+]
