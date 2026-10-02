@@ -1,0 +1,10 @@
+{"cond": "grazer", "exact": false, "hits": 0.0, "phase": 0.0, "speed_rel": 0.656, "coherence": 0.73, "jerk_rel": 0.113, "heading_to_pilot": 0.427, "near_frac": 0.014}
+{"cond": "grazer", "exact": true, "hits": 0.0, "phase": 0.0, "speed_rel": 0.457, "coherence": 0.699, "jerk_rel": 0.105, "heading_to_pilot": 0.251, "near_frac": 0.014}
+{"cond": "locust_dense_hungry", "exact": false, "hits": 41.5, "phase": 0.728, "speed_rel": 1.187, "coherence": 0.838, "jerk_rel": 0.258, "heading_to_pilot": -0.151, "near_frac": 0.575}
+{"cond": "locust_dense_hungry", "exact": true, "hits": 38.0, "phase": 0.546, "speed_rel": 1.187, "coherence": 0.778, "jerk_rel": 0.311, "heading_to_pilot": -0.173, "near_frac": 0.474}
+{"cond": "locust_sparse_fed", "exact": false, "hits": 0.0, "phase": 0.029, "speed_rel": 0.217, "coherence": 0.342, "jerk_rel": 0.077, "heading_to_pilot": 0.512, "near_frac": 0.001}
+{"cond": "locust_sparse_fed", "exact": true, "hits": 0.0, "phase": 0.006, "speed_rel": 0.217, "coherence": 0.33, "jerk_rel": 0.074, "heading_to_pilot": 0.528, "near_frac": 0.001}
+{'N': 10000, 'exact': False, 'ms': 1.93, 'mean_neighbours': 3.6}
+{'N': 10000, 'exact': True, 'ms': 7.93, 'mean_neighbours': 1.7}
+{'N': 100000, 'exact': False, 'ms': 23.53, 'mean_neighbours': 35.1}
+{'N': 100000, 'exact': True, 'ms': 128.39, 'mean_neighbours': 17.0}

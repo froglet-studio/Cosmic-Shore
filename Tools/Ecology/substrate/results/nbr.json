@@ -1,0 +1,96 @@
+{
+ "behaviour": [
+  {
+   "cond": "grazer",
+   "exact": false,
+   "hits": 0.0,
+   "phase": 0.0,
+   "speed_rel": 0.34,
+   "coherence": 0.693,
+   "jerk_rel": 0.112,
+   "heading_to_pilot": 0.568,
+   "near_frac": 0.011
+  },
+  {
+   "cond": "grazer",
+   "exact": true,
+   "hits": 0.0,
+   "phase": 0.0,
+   "speed_rel": 0.397,
+   "coherence": 0.668,
+   "jerk_rel": 0.107,
+   "heading_to_pilot": 0.459,
+   "near_frac": 0.013
+  },
+  {
+   "cond": "locust_dense_hungry",
+   "exact": false,
+   "hits": 46.0,
+   "phase": 0.483,
+   "speed_rel": 1.184,
+   "coherence": 0.764,
+   "jerk_rel": 0.485,
+   "heading_to_pilot": -0.29,
+   "near_frac": 0.469
+  },
+  {
+   "cond": "locust_dense_hungry",
+   "exact": true,
+   "hits": 43.5,
+   "phase": 0.492,
+   "speed_rel": 1.184,
+   "coherence": 0.758,
+   "jerk_rel": 0.295,
+   "heading_to_pilot": -0.318,
+   "near_frac": 0.499
+  },
+  {
+   "cond": "locust_sparse_fed",
+   "exact": false,
+   "hits": 0.0,
+   "phase": 0.004,
+   "speed_rel": 0.217,
+   "coherence": 0.326,
+   "jerk_rel": 0.074,
+   "heading_to_pilot": 0.444,
+   "near_frac": 0.001
+  },
+  {
+   "cond": "locust_sparse_fed",
+   "exact": true,
+   "hits": 0.0,
+   "phase": 0.002,
+   "speed_rel": 0.217,
+   "coherence": 0.329,
+   "jerk_rel": 0.074,
+   "heading_to_pilot": 0.486,
+   "near_frac": 0.001
+  }
+ ],
+ "cost": [
+  {
+   "N": 10000,
+   "exact": false,
+   "ms": 2.01,
+   "mean_neighbours": 3.6
+  },
+  {
+   "N": 10000,
+   "exact": true,
+   "ms": 8.43,
+   "mean_neighbours": 1.7
+  },
+  {
+   "N": 100000,
+   "exact": false,
+   "ms": 29.22,
+   "mean_neighbours": 35.1
+  },
+  {
+   "N": 100000,
+   "exact": true,
+   "ms": 147.33,
+   "mean_neighbours": 17.0
+  }
+ ]
+}

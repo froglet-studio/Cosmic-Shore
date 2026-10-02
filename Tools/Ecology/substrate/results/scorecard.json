@@ -1,0 +1,158 @@
+{
+ "grazer": {
+  "hits_per_min_wander": 0.0,
+  "hits_per_min_evader": 0.0,
+  "counterplay": null,
+  "telegraph_s": null,
+  "payoff_per_min": 16.33,
+  "variety": 0.0,
+  "feel": {
+   "size": 2.5,
+   "speed_rel": 0.26,
+   "approach": 19.327,
+   "coherence": 0.666,
+   "burstiness": 1.37,
+   "jerk_rel": 0.125
+  },
+  "encounter_wander": {
+   "heading_to_pilot": 0.543,
+   "pursuit": -22.376,
+   "near_frac": 0.003,
+   "ring_sd": 0.162
+  },
+  "phase_end_wander": [
+   0.0,
+   0.0
+  ]
+ },
+ "locust": {
+  "hits_per_min_wander": 41.33,
+  "hits_per_min_evader": 0.0,
+  "counterplay": 0.0,
+  "telegraph_s": 1.43,
+  "payoff_per_min": 116.0,
+  "variety": 0.097,
+  "feel": {
+   "size": 2.442,
+   "speed_rel": 0.433,
+   "approach": 21.65,
+   "coherence": 0.552,
+   "burstiness": 2.38,
+   "jerk_rel": 0.979
+  },
+  "encounter_wander": {
+   "heading_to_pilot": -0.217,
+   "pursuit": 38.348,
+   "near_frac": 0.291,
+   "ring_sd": 0.865
+  },
+  "phase_end_wander": [
+   0.389,
+   0.288
+  ]
+ },
+ "pack": {
+  "hits_per_min_wander": 9.67,
+  "hits_per_min_evader": 1.0,
+  "counterplay": 0.1,
+  "telegraph_s": 4.9,
+  "payoff_per_min": 2.0,
+  "variety": 0.663,
+  "feel": {
+   "size": 5.488,
+   "speed_rel": 1.691,
+   "approach": 26.512,
+   "coherence": 0.659,
+   "burstiness": 1.027,
+   "jerk_rel": 0.119
+  },
+  "encounter_wander": {
+   "heading_to_pilot": -0.085,
+   "pursuit": 26.588,
+   "near_frac": 0.384,
+   "ring_sd": 0.521
+  },
+  "phase_end_wander": [
+   0.889,
+   0.899
+  ]
+ },
+ "leviathan": {
+  "hits_per_min_wander": 0.0,
+  "hits_per_min_evader": 0.0,
+  "counterplay": null,
+  "telegraph_s": null,
+  "payoff_per_min": 95.0,
+  "variety": 0.0,
+  "feel": {
+   "size": 2.5,
+   "speed_rel": 0.451,
+   "approach": 17.892,
+   "coherence": 0.884,
+   "burstiness": 2.098,
+   "jerk_rel": 0.084
+  },
+  "encounter_wander": {
+   "heading_to_pilot": 0.184,
+   "pursuit": -6.716,
+   "near_frac": 0.007,
+   "ring_sd": 0.137
+  },
+  "phase_end_wander": [
+   0.0,
+   0.0
+  ]
+ },
+ "lurker": {
+  "hits_per_min_wander": 4.0,
+  "hits_per_min_evader": 0.0,
+  "counterplay": 0.0,
+  "telegraph_s": 5.2,
+  "payoff_per_min": 0.335,
+  "variety": 1.5,
+  "feel": {
+   "size": 2.5,
+   "speed_rel": 0.029,
+   "approach": 5.663,
+   "coherence": 0.303,
+   "burstiness": 21.655,
+   "jerk_rel": 0.101
+  },
+  "encounter_wander": {
+   "heading_to_pilot": 0.001,
+   "pursuit": 18.395,
+   "near_frac": 0.025,
+   "ring_sd": 0.174
+  },
+  "phase_end_wander": [
+   0.0,
+   0.002
+  ]
+ },
+ "stampede": {
+  "hits_per_min_wander": 0.0,
+  "hits_per_min_evader": 0.0,
+  "counterplay": null,
+  "telegraph_s": null,
+  "payoff_per_min": 38.335,
+  "variety": 0.0,
+  "feel": {
+   "size": 4.167,
+   "speed_rel": 0.426,
+   "approach": 18.72,
+   "coherence": 0.671,
+   "burstiness": 1.838,
+   "jerk_rel": 0.082
+  },
+  "encounter_wander": {
+   "heading_to_pilot": 0.128,
+   "pursuit": 0.958,
+   "near_frac": 0.003,
+   "ring_sd": 0.139
+  },
+  "phase_end_wander": [
+   0.8,
+   0.0
+  ]
+ }
+}

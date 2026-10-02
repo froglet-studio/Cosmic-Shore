@@ -1,0 +1,544 @@
+{
+ "meta": {
+  "cpu": "x86_64",
+  "cores": 4,
+  "numba_threads": 4,
+  "numpy": "2.4.6",
+  "numba": "0.68.0",
+  "note": "steer INCLUDES context; fused = drives+neighbours+quorum+steer+integrate in one numba parallel-for; ms_step includes the shared field update (40^3 x 5 channels) and the arena's own step is excluded"
+ },
+ "rows": [
+  {
+   "N": 1000,
+   "backend": "numpy",
+   "k": 1,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 16.17,
+   "us_per_agent_step": 16.1702,
+   "stages_ms": {
+    "fields": 2.356,
+    "drives": 0.391,
+    "neighbours": 3.212,
+    "context": 3.655,
+    "steer": 5.275,
+    "integrate": 0.588,
+    "deposit": 0.028,
+    "world": 2.809
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numpy",
+   "k": 4,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 8.405,
+   "us_per_agent_step": 8.405,
+   "stages_ms": {
+    "fields": 2.209,
+    "drives": 0.344,
+    "neighbours": 1.174,
+    "context": 0.852,
+    "steer": 1.507,
+    "integrate": 0.483,
+    "deposit": 0.024,
+    "world": 1.082
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numpy",
+   "k": 8,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 7.033,
+   "us_per_agent_step": 7.0326,
+   "stages_ms": {
+    "fields": 2.089,
+    "drives": 0.322,
+    "neighbours": 0.805,
+    "context": 0.418,
+    "steer": 0.887,
+    "integrate": 0.466,
+    "deposit": 0.023,
+    "world": 0.878
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numpy",
+   "k": 1,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 135.488,
+   "us_per_agent_step": 13.5488,
+   "stages_ms": {
+    "fields": 2.856,
+    "drives": 1.74,
+    "neighbours": 41.954,
+    "context": 46.479,
+    "steer": 60.77,
+    "integrate": 4.442,
+    "deposit": 0.466,
+    "world": 21.148
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numpy",
+   "k": 4,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 48.658,
+   "us_per_agent_step": 4.8658,
+   "stages_ms": {
+    "fields": 2.908,
+    "drives": 1.913,
+    "neighbours": 13.865,
+    "context": 10.786,
+    "steer": 15.37,
+    "integrate": 4.613,
+    "deposit": 0.438,
+    "world": 7.498
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numpy",
+   "k": 8,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 26.19,
+   "us_per_agent_step": 2.619,
+   "stages_ms": {
+    "fields": 2.266,
+    "drives": 1.566,
+    "neighbours": 6.466,
+    "context": 3.978,
+    "steer": 6.013,
+    "integrate": 3.699,
+    "deposit": 0.31,
+    "world": 4.083
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 1,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 2107.895,
+   "us_per_agent_step": 21.0789,
+   "stages_ms": {
+    "fields": 2.526,
+    "drives": 16.293,
+    "neighbours": 675.841,
+    "context": 992.922,
+    "steer": 1138.035,
+    "integrate": 44.054,
+    "deposit": 2.519,
+    "world": 218.078
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 4,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 504.036,
+   "us_per_agent_step": 5.0404,
+   "stages_ms": {
+    "fields": 2.393,
+    "drives": 16.184,
+    "neighbours": 186.044,
+    "context": 146.276,
+    "steer": 183.888,
+    "integrate": 43.626,
+    "deposit": 2.359,
+    "world": 60.613
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 8,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 278.321,
+   "us_per_agent_step": 2.7832,
+   "stages_ms": {
+    "fields": 2.419,
+    "drives": 15.467,
+    "neighbours": 96.734,
+    "context": 57.469,
+    "steer": 77.166,
+    "integrate": 44.359,
+    "deposit": 2.282,
+    "world": 32.557
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 1,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 7.857,
+   "us_per_agent_step": 7.8572,
+   "stages_ms": {
+    "fields": 1.427,
+    "drives": 0.329,
+    "neighbours": 0.34,
+    "context": 0.325,
+    "steer": 1.662,
+    "integrate": 0.456,
+    "deposit": 0.021,
+    "world": 2.375
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 4,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 5.584,
+   "us_per_agent_step": 5.5845,
+   "stages_ms": {
+    "fields": 1.402,
+    "drives": 0.361,
+    "neighbours": 0.217,
+    "context": 0.081,
+    "steer": 0.762,
+    "integrate": 0.494,
+    "deposit": 0.024,
+    "world": 1.066
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 8,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 5.213,
+   "us_per_agent_step": 5.2128,
+   "stages_ms": {
+    "fields": 1.476,
+    "drives": 0.371,
+    "neighbours": 0.183,
+    "context": 0.056,
+    "steer": 0.544,
+    "integrate": 0.477,
+    "deposit": 0.022,
+    "world": 0.877
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 1,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 49.161,
+   "us_per_agent_step": 4.9161,
+   "stages_ms": {
+    "fields": 1.764,
+    "drives": 1.674,
+    "neighbours": 2.551,
+    "context": 2.596,
+    "steer": 15.475,
+    "integrate": 4.134,
+    "deposit": 0.48,
+    "world": 21.132
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 4,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 24.461,
+   "us_per_agent_step": 2.4461,
+   "stages_ms": {
+    "fields": 3.948,
+    "drives": 1.693,
+    "neighbours": 1.408,
+    "context": 1.135,
+    "steer": 4.769,
+    "integrate": 3.878,
+    "deposit": 0.336,
+    "world": 6.46
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 8,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 15.384,
+   "us_per_agent_step": 1.5384,
+   "stages_ms": {
+    "fields": 1.513,
+    "drives": 1.49,
+    "neighbours": 1.1,
+    "context": 0.325,
+    "steer": 2.197,
+    "integrate": 3.386,
+    "deposit": 0.292,
+    "world": 3.663
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numba",
+   "k": 1,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 467.84,
+   "us_per_agent_step": 4.6784,
+   "stages_ms": {
+    "fields": 2.055,
+    "drives": 17.268,
+    "neighbours": 30.824,
+    "context": 26.013,
+    "steer": 168.321,
+    "integrate": 46.996,
+    "deposit": 2.383,
+    "world": 192.143
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numba",
+   "k": 4,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 156.76,
+   "us_per_agent_step": 1.5676,
+   "stages_ms": {
+    "fields": 2.011,
+    "drives": 14.922,
+    "neighbours": 13.098,
+    "context": 5.746,
+    "steer": 34.3,
+    "integrate": 35.085,
+    "deposit": 1.969,
+    "world": 48.459
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numba",
+   "k": 8,
+   "attn": false,
+   "steered_frac": null,
+   "ms_step": 140.277,
+   "us_per_agent_step": 1.4028,
+   "stages_ms": {
+    "fields": 1.998,
+    "drives": 16.638,
+    "neighbours": 11.21,
+    "context": 3.706,
+    "steer": 21.402,
+    "integrate": 41.388,
+    "deposit": 2.295,
+    "world": 37.478
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "fused",
+   "k": 1,
+   "attn": false,
+   "steered_frac": 1.0,
+   "ms_step": 7.026,
+   "us_per_agent_step": 7.0258,
+   "stages_ms": {
+    "fields": 3.48,
+    "fused": 1.062,
+    "deposit": 0.03,
+    "world": 1.021
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "fused",
+   "k": 4,
+   "attn": false,
+   "steered_frac": 0.25,
+   "ms_step": 4.533,
+   "us_per_agent_step": 4.533,
+   "stages_ms": {
+    "fields": 2.058,
+    "fused": 0.484,
+    "deposit": 0.025,
+    "world": 0.677
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "fused",
+   "k": 8,
+   "attn": false,
+   "steered_frac": 0.125,
+   "ms_step": 5.382,
+   "us_per_agent_step": 5.3818,
+   "stages_ms": {
+    "fields": 2.372,
+    "fused": 0.896,
+    "deposit": 0.028,
+    "world": 0.733
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "fused",
+   "k": 1,
+   "attn": false,
+   "steered_frac": 1.0,
+   "ms_step": 14.054,
+   "us_per_agent_step": 1.4054,
+   "stages_ms": {
+    "fields": 2.229,
+    "fused": 5.853,
+    "deposit": 0.346,
+    "world": 3.742
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "fused",
+   "k": 4,
+   "attn": false,
+   "steered_frac": 0.25,
+   "ms_step": 9.755,
+   "us_per_agent_step": 0.9755,
+   "stages_ms": {
+    "fields": 2.455,
+    "fused": 2.937,
+    "deposit": 0.33,
+    "world": 2.099
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "fused",
+   "k": 8,
+   "attn": false,
+   "steered_frac": 0.125,
+   "ms_step": 8.513,
+   "us_per_agent_step": 0.8513,
+   "stages_ms": {
+    "fields": 2.099,
+    "fused": 2.498,
+    "deposit": 0.32,
+    "world": 1.779
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "fused",
+   "k": 1,
+   "attn": false,
+   "steered_frac": 1.0,
+   "ms_step": 106.259,
+   "us_per_agent_step": 1.0626,
+   "stages_ms": {
+    "fields": 2.526,
+    "fused": 60.5,
+    "deposit": 2.111,
+    "world": 33.089
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "fused",
+   "k": 4,
+   "attn": false,
+   "steered_frac": 0.25,
+   "ms_step": 66.652,
+   "us_per_agent_step": 0.6665,
+   "stages_ms": {
+    "fields": 2.592,
+    "fused": 34.504,
+    "deposit": 2.333,
+    "world": 18.905
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "fused",
+   "k": 8,
+   "attn": false,
+   "steered_frac": 0.125,
+   "ms_step": 44.107,
+   "us_per_agent_step": 0.4411,
+   "stages_ms": {
+    "fields": 2.141,
+    "fused": 21.957,
+    "deposit": 1.757,
+    "world": 12.33
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "fused",
+   "k": 8,
+   "attn": true,
+   "steered_frac": 0.1255,
+   "ms_step": 9.706,
+   "us_per_agent_step": 0.9706,
+   "stages_ms": {
+    "fields": 2.463,
+    "fused": 2.851,
+    "deposit": 0.353,
+    "world": 2.029
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "fused",
+   "k": 8,
+   "attn": true,
+   "steered_frac": 0.12515,
+   "ms_step": 44.128,
+   "us_per_agent_step": 0.4413,
+   "stages_ms": {
+    "fields": 2.122,
+    "fused": 22.15,
+    "deposit": 1.8,
+    "world": 12.167
+   }
+  }
+ ],
+ "kernel_only_ms": {
+  "note": "knb.fused_step alone (= the Burst AgentStepJob proxy), 4 numba threads, locust params, attn off, median of 8 steps; the 'fused' stage in rows also includes a numpy gait pass (~1 ms per 10k agents) that is two FMAs inside the kernel in a port",
+  "rows": [
+   {
+    "N": 10000,
+    "k": 1,
+    "ms": 3.8
+   },
+   {
+    "N": 10000,
+    "k": 8,
+    "ms": 1.19
+   },
+   {
+    "N": 100000,
+    "k": 1,
+    "ms": 42.41
+   },
+   {
+    "N": 100000,
+    "k": 8,
+    "ms": 11.2
+   }
+  ]
+ }
+}
