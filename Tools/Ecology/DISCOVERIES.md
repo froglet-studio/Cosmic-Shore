@@ -127,22 +127,36 @@ Probe v3, 4 seeds × 3 viewers.
 - Judge agreement on game species is lower (0–1.0 per run) than on held-out archetypes (0.84). Real species
   sit outside the reference set, so treat low-agreement readings as uncertain.
 
-### Sibling species (`siblings.py`, run on their own `common/`; v3, 2 seeds × 2 viewers)
+### Sibling species (`siblings.py`, run on their own `common/`; v3, 4 seeds per viewer, final branch states)
+The packs' play-vs-dread analysis and the facing test (negative 7) were run on the bestiary's *earlier*
+pack, which read playful; the final pack below reads terrifying to a hovering pilot.
 
-| species | intended | probe reads |
-|---|---|---|
-| substrate locust, dense and hungry | terrifying | **terrifying 4/4** ✓ |
-| substrate locust, sparse and fed | cute and shy | neutral 4/4 (shy reads as background, not cute) |
-| bestiary leech | cute | **cute 3/4** ✓ |
-| bestiary stampede | majestic | neutral 3/4, majestic 1/4 |
-| bestiary pack and substrate pack | dread | **playful** (also majestic or eerie) ✗ |
-| substrate grazer, leviathan | cute; an assembled creature | playful (hover) / neutral (cruise) |
+| species | intended | hovering pilot | cruising pilot |
+|---|---|---|---|
+| substrate locust, dense and hungry | terrifying | **terrifying 4/4** ✓ | **terrifying 4/4** ✓ |
+| substrate locust, sparse and fed | cute and shy | neutral 4/4 | neutral 4/4 |
+| substrate grazer | cute school | playful 4/4 | neutral 4/4 |
+| substrate pack | hunter | playful 4/4 ✗ | playful 4/4 ✗ |
+| substrate leviathan | assembled creature | majestic 3/4 | neutral 3/4 |
+| bestiary pack (final) | dread | **terrifying 4/4** ✓ | majestic 4/4 |
+| bestiary leviathan | awe, then dread up close | **terrifying 3/4** ✓ | eerie 3/4 |
+| bestiary thief | mischief | **playful 4/4** ✓ | cute 2 / neutral 2 |
+| bestiary mobber | playful nuisance | cute 4/4 (valence ✓) | cute 4/4 |
+| bestiary leech | cute and clingy | neutral 2 / cute 1 / playful 1 | **cute 4/4** ✓ |
+| bestiary locust | cute when sparse | **cute 3/4** ✓ | neutral 4/4 |
+| bestiary lurker | eerie (stillness, snap) | neutral 2 / eerie 1 / terrifying 1 | neutral 4/4 |
+| bestiary stampede | majestic | neutral 2 / majestic 1 / terrifying 1 | neutral 4/4 |
 
-**The packs read as play, not dread.** Fast, small, unpredictable and swirling, without facing the pilot, is
-the play-fight signature. Animals need play signals (Bekoff's play bow) precisely because play-fighting and
-fighting share the same motor patterns. `advise(f, "menacing")` says what to change: fewer close fast passes
-(lower `tau_inv`), face the pilot (raise `gaze`), slow down. The wolfpack effect predicts that facing alone
-does much of the work.
+- **Every species with an intended threat reads as a threat to a pilot that stops to look**, except the
+  substrate pack (speed plus swirl reads as play).
+- **To a cruising pilot almost everything turns neutral.** A creature the pilot outruns cannot hold an
+  emotion. The same lesson as the worm: an emotion needs an encounter that lasts.
+- **The lurker reads as background unless it snaps during the window.** An ambusher's whole emotion is in
+  one rare event, and a 40 s average dilutes it. That limit of a time-averaged probe is recorded below.
+- **The substrate pack reads as play.** Fast, small, unpredictable and swirling, without facing the pilot,
+  is the play-fight signature. Animals need play signals (Bekoff's play bow) precisely because play-fighting
+  and fighting share the same motor patterns. `advise(f, "menacing")` says what to change: fewer close fast
+  passes (lower `tau_inv`), face the pilot (raise `gaze`), slow down.
 
 ### Negatives (kept)
 1. **The old scorecard's feel stats separate the six emotions at 0.32 LOFO.** Nearly all the signal is in
@@ -203,6 +217,8 @@ does much of the work.
   telegraph.
 - **Too-perfect motion is eerie only relative to an expectation of life.** A rigid lattice of prisms may read
   as machinery rather than as uncanny. The uncanny needs an almost-living look that only art can give.
+- **The probe averages over 30–40 s.** An ambusher whose whole emotion is one rare snap (the bestiary
+  lurker) is diluted into background. A per-moment readout, or a peak statistic, is the next model change.
 - **The probe reads 30–40 s encounters with one pilot.** It does not see mood built over a match, sound
   (FMOD stingers, a roar, silence before a strike), lighting, the camera or the stakes (whether it can hurt
   you). Danger prisms that burn petals change "menacing" more than any motion could.
