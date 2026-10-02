@@ -21,9 +21,18 @@ searched toward? Results and negatives: `../DISCOVERIES.md` § Emotion probe. Li
 | `score_species.py` | probe readings of the game species -> `results/species_scores.json` |
 | `siblings.py` | probe readings of sibling branches' species on their own `common/` -> `results/sib_*.json` |
 | `viewer.py` | `results/emotion_viewer.html`: every archetype, sealed family, searched creature and game species, with the probe's bars and a HUMAN RATING panel (export JSON) |
+| `timeline.py` | emotion over TIME: 8 s windows every 2 s, peak and mean threat (an ambusher's snap is not diluted) |
+| `retune.py` | CMA-ES started at an existing creature, toward a target emotion (e.g. `python retune.py playful menacing`) |
+| `worm_tuning.py` | which WormColonyConfig dials make the kaiju's attack read as a threat; `ONEBODY=1` reads it as one body |
+| `neutral.py` | the NEUTRAL class: background life that evokes nothing in particular |
 | `ratings.py` | compare exported human ratings with the authored labels and the probe |
 
 Reproduce: `python dataset.py && python dataset.py --variants 6 --viewers evade --seed 5000 --out results/reference_evade.json && python iterate.py && python evaluate.py && python dataset.py --sealed --seed 9000 --out results/sealed_set.json && python dataset.py --sealed2 --seed 9500 --out results/sealed2_set.json && python v2.py && python v3.py && python final_probe.py && python search.py && python score_species.py && python viewer.py` (about an hour on 4 cores; needs numpy + scipy).
+
+**Bodies:** if your agents are PARTS of one creature (segments, an assembled swarm), publish
+`agent_body_id` (n,) - otherwise a jointed body reads as an eerie lockstep group.
+
+The viewer's game-species runs are single seeds; the tables in DISCOVERIES are 4-seed averages.
 
 Use it on a new species: put `PROBE_SPECIES = {"name": factory(rng, pilot)}` in a module under
 `Tools/Ecology/<dir>/` and run `score_species.py`, or just read `feel["emo_*"]` from the shared scorecard.
