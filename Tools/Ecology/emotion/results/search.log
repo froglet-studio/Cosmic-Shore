@@ -56,3 +56,22 @@ playful {"fitness": 0.749, "val_fitness": 0.693, "val_hit": 0.889, "val_agree": 
   eerie gen 17 best 0.734 sigma 0.173
 eerie {"fitness": 0.774, "val_fitness": 0.746, "val_hit": 1.0, "val_agree": 1.0, "params": {"n": 120, "size": 1.5, "aspect": 2.057, "vmax": 29.587, "approach": 0.91, "d0": 39.387, "orbit": 0.282, "ar_amp": 1.0, "ar_period": 5.004, "bounce_amp": 11.666, "bounce_hz": 0.1, "sync": 0.519, "noise": 0.369, "still_duty": 0.8, "still_period": 1.0, "rigid": 0.586, "spread": 175.784, "face": 1.0, "pace": 1.054, "sneak": 0.278}} | random 1.0
   majestic gen  0 best 0.800 sigma 0.277
+  majestic gen  1 best 0.694 sigma 0.262
+  majestic gen  2 best 0.819 sigma 0.246
+  majestic gen  3 best 0.811 sigma 0.240
+  majestic gen  4 best 0.649 sigma 0.235
+  majestic gen  5 best 0.823 sigma 0.230
+  majestic gen  6 best 0.828 sigma 0.223
+  majestic gen  7 best 0.836 sigma 0.217
+  majestic gen  8 best 0.802 sigma 0.209
+  majestic gen  9 best 0.822 sigma 0.202
+  majestic gen 10 best 0.845 sigma 0.199
+  majestic gen 11 best 0.827 sigma 0.199
+  majestic gen 12 best 0.905 sigma 0.195
+  majestic gen 13 best 0.866 sigma 0.191
+  majestic gen 14 best 0.874 sigma 0.190
+  majestic gen 15 best 0.847 sigma 0.186
+  majestic gen 16 best 0.915 sigma 0.182
+  majestic gen 17 best 0.921 sigma 0.174
+majestic {"fitness": 0.921, "val_fitness": 0.813, "val_hit": 1.0, "val_agree": 1.0, "params": {"n": 1, "size": 1.5, "aspect": 2.282, "vmax": 23.83, "approach": -0.284, "d0": 51.09, "orbit": 0.838, "ar_amp": 0.434, "ar_period": 1.944, "bounce_amp": 23.697, "bounce_hz": 0.1, "sync": 0.0, "noise": 0.791, "still_duty": 0.0, "still_period": 7.031, "rigid": 0.96, "spread": 186.978, "face": 0.451, "pace": 0.346, "sneak": 0.903}} | random 1.0
+  menacing gen  0 best 0.211 sigma 0.278
