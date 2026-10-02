@@ -1,0 +1,3 @@
+snaptrap R 0.5011 {"threat": 0.669, "counterplay": 1.0, "telegraph": 1.0, "payoff": 0.063, "variety": 1.0, "access": 0.101, "presence": 1.0, "adapt": 0.935} hits 9.5 cov 0.354 adapt 1.435 cpm 22.0 var 0.601
+spores R 0.2417 {"threat": 0.207, "counterplay": 0.01, "telegraph": 1.0, "payoff": 0.01, "variety": 1.0, "access": 0.725, "presence": 1.0, "adapt": 0.777} hits 0.333 cov 0.398 adapt 1.277 cpm 24.667 var 0.549
+walker R 0.5546 {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 0.01, "variety": 1.0, "access": 1.0, "presence": 1.0, "adapt": 0.895} hits 1.667 cov 0.303 adapt 1.395 cpm 7.333 var 0.468

@@ -1,0 +1,6 @@
+start 0.12840000000000001 {"threat": 0.01, "counterplay": 0.01, "telegraph": 0.01, "payoff": 1.0, "variety": 0.047, "access": 0.871, "presence": 0.01, "adapt": 1.0}
+0 obj 0.0678 R 0.036 Rh 0.0318 best 0.1284  {"reach": 2, "eat_per_s": 0.9435, "sting": 0.0998} {"threat": 0.01, "counterplay": 0.01, "telegraph": 0.01, "payoff": 0.01, "variety": 0.037, "access": 0.832, "presence": 0.01, "adapt": 0.916}
+1 obj 0.121 R 0.0639 Rh 0.0571 best 0.1284  {"Dv": 0.0237, "vth": 0.6039, "eat_per_s": 1.967} {"threat": 0.01, "counterplay": 0.01, "telegraph": 0.01, "payoff": 1.0, "variety": 0.03, "access": 1.0, "presence": 0.01, "adapt": 0.926}
+2 obj 0.1425 R 0.0746 Rh 0.0679 best 0.1425 KEPT {"Dv": 0.0209, "Du": 0.3, "rate": 63.7002, "k": 0.01} {"threat": 0.01, "counterplay": 0.01, "telegraph": 0.01, "payoff": 1.0, "variety": 0.1, "access": 0.96, "presence": 0.01, "adapt": 1.0}
+3 obj 0.2203 R 0.1192 Rh 0.1011 best 0.2203 KEPT {"Dv": 0.0209, "Du": 0.3, "rate": 76.8523, "k": 0.01} {"threat": 0.01, "counterplay": 0.01, "telegraph": 0.414, "payoff": 1.0, "variety": 0.113, "access": 0.871, "presence": 0.01, "adapt": 0.998}
+4 obj 0.103 R 0.0729 Rh 0.0301 best 0.2203  {"eat_per_s": 1.8169, "vth": 0.392, "sting": 0.068} {"threat": 0.207, "counterplay": 0.01, "telegraph": 0.01, "payoff": 0.208, "variety": 0.027, "access": 0.835, "presence": 0.01, "adapt": 0.834}

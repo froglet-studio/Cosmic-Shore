@@ -1,0 +1,249 @@
+<meta charset="utf-8"><title>Threat flora sandbox</title>
+<style>
+:root{--bg:#070a12;--fg:#d8dcf0;--mute:#8a92b8;--acc:#7fd1ff;--bad:#ff5a4a}
+@media (prefers-color-scheme: light){:root:not([data-theme="light"]){--bg:#070a12;--fg:#d8dcf0}}
+:root[data-theme="dark"]{--bg:#070a12}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:13px/1.45 system-ui,sans-serif;overflow:hidden}
+#hud{position:fixed;left:12px;top:12px;right:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;z-index:3}
+#hud select,#hud button{background:#141a2a;color:var(--fg);border:1px solid #2a3150;border-radius:6px;padding:5px 9px;font:inherit}
+.stat{background:#0f1420cc;border:1px solid #232b45;border-radius:6px;padding:4px 9px;font-variant-numeric:tabular-nums}
+#help{position:fixed;left:12px;bottom:12px;right:12px;max-width:72ch;color:var(--mute);z-index:3}
+#flash{position:fixed;inset:0;pointer-events:none;background:radial-gradient(transparent 45%,#ff2a1a 140%);opacity:0;transition:opacity .25s;z-index:2}
+#desc{position:fixed;right:12px;top:56px;max-width:min(42ch,90vw);background:#0f1420cc;border:1px solid #232b45;border-radius:8px;padding:8px 10px;z-index:3}
+canvas{display:block}
+@media (max-width:640px){#desc{display:none}}
+</style>
+<div id="flash"></div>
+<div id="hud">
+  <select id="sp"><option value="snaptrap">Snap trap</option><option value="spores">Spore burster</option><option value="physarum">Physarum network</option><option value="coral">Reaction-diffusion coral</option><option value="walker">Walking mimic</option></select>
+  <button id="reset">reset</button><button id="autobtn">autopilot: off</button>
+  <span class="stat" id="s_burn">burns 0</span><span class="stat" id="s_cry">crystals 0</span><span class="stat" id="s_heart">hearts 0</span><span class="stat" id="s_spd">0 u/s</span><span class="stat" id="s_boost">boost ready</span>
+</div>
+<div id="desc"></div>
+<div id="help">Fly: mouse steers (click canvas to capture) or W/S pitch, A/D yaw · Shift = boost (1 s, 4 s cooldown) · Space = light touch (45 u/s) · fly into a blue heart to take its crystal, cyan diamonds are real crystals. Your trail (pale) is food: the flora grow toward where you fly. Rules are JS ports of Tools/Ecology/flora/*.py with the tuned parameters; scoring lives in the Python harness.</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script>
+const PARAMS = {"snaptrap": {"ram": true, "heart_in_jaws": true, "armour": 0.0, "n_traps": 40, "clumps": 9, "clump_r": 57.0011, "sense": 145.9975, "t_prime": 0.7308, "t_close": 0.5245, "t_reset": 6.6876, "t_digest": 9.0, "gape": 35.0, "dgape": 9.8316, "mouth_len": 36.3478, "mouth_w": 15.7119, "turn_deg": 6.9547, "bud_bias": 0.3049, "root": 90.0, "absorb_every": 4.0, "prism_vol": 12.0, "tooth_vol": 8.0, "fire_on": "mouth"}, "spores": {"ram": true, "n_pods": 80, "clumps": 10, "clump_r": 60.0, "charge_cap": 60.0, "spore_vol": 4.0, "shell_vol": 10.0, "touch": 23.5501, "wake": 70.0, "v_soft": 70.0, "kick_hard": 1.2, "kick_soft": 0.25, "kick_wake": 0.15, "alarm_r": 90.0, "alarm_speed": 102.4362, "alarm_gain": 0.75, "relax": 0.35, "t_swell": 0.8, "launch": 45.0, "drag": 0.8929, "wind": 11.5861, "wind_k": 0.006, "root": 80.0, "absorb_every": 3.0, "settle_v": 12.0, "spore_cd": 0.6, "spore_r": 4.0, "armour": 0.0}, "physarum": {"G": 56, "n_agents": 16000, "n_hearts": 5, "so": 28.0, "sa": 30.0, "ra": 40.4291, "ss": 44.3024, "dep": 1.0, "diffuse": 0.5, "evap": 0.08, "food_dep": 1.5, "on": 6.0, "off": 4.1165, "ema": 0.05, "prism_vol": 15.2827, "plant_vol": 12000.0, "digest": 0.3, "period": 3.0, "wave_speed": 64.711, "ex_ticks": 2, "refr": 4, "wake_dep": -0.2435, "warmup": 250, "jitter": 0.15, "spread_init": 1, "heart_speed": 7.7737, "ram": true, "armour": 0.0, "heart_guard": 50, "beat_on": 0.6, "beat_glow": 0.8}, "coral": {"G": 48, "n_hearts": 6, "c0": 6.0, "plant_vol": 12000.0, "Du": 0.3, "Dv": 0.0209, "rate": 120.0, "k": 0.01, "vth": 0.35, "sting": 0.04, "reach": 2, "eat_per_s": 2.0829, "substeps": 2, "ram": true, "label_every": 10, "seed_r": 1, "armour": 0.0, "sting_mode": "dense", "v_danger": 1.804, "warmup": 600}, "walker": {"n_walkers": 16, "shell": 24, "r_body": 26.0861, "prism_vol": 14.0, "thorns": 10, "thorn_vol": 6.0, "speed": 10.3666, "hunger_boost": 2.0, "sense": 160.0, "root": 60.0, "absorb_every": 2.0, "tell": 82.4097, "prime": 220.0, "t_prime": 0.6, "strike": 55.9014, "thorn": 57.8965, "t_erupt": 0.5773, "t_hold": 0.6, "t_retract": 1.2, "bud": 1, "ram": true, "armour": 0.0, "guard": 0.4}};
+const DESC = {
+ snaptrap:"<b>Snap trap.</b> Traps sense you, open WIDE and glow (primed), then sweep shut when you enter the mouth. The crystal sits in the jaws. Counter: boost through the mouth faster than it closes, or pass outside the lobes. Traps slowly turn to face where you fly and bud toward your traffic.",
+ spores:"<b>Spore burster.</b> Touch a pod fast and it swells and bursts into a drifting danger cloud; an alarm wave runs to its neighbours. Counter: a LIGHT TOUCH (hold Space near pods), or route around the glow. Clouds that land on food re-seed the colony.",
+ physarum:"<b>Physarum network.</b> A slime mould links food (and your trails) with tubes. Red pulses run along the tubes from its hearts: those burn. Resting tubes are walls you can break. Cut a link and it re-routes.",
+ coral:"<b>Reaction-diffusion coral.</b> Gray-Scott made mass-conserving: it grows only by eating food and your trail. Pink fronts are stinging growth tips; plain coral is a wall you carve by flying through it.",
+ walker:"<b>Walking mimic.</b> Thickets that treadmill toward food. The lime 'crystal' on top is bait: they tremble, then thorns erupt. Counter: read the tell (the bait breathes; real crystals spin) or take the bait fast."
+};
+const R = 450, SPEED = 120;
+let rng = mulberry(7);
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(){let u=0,v=0;while(!u)u=rng();while(!v)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(6.283*v)}
+const V3 = THREE.Vector3;
+function rball(r){const d=new V3(gauss(),gauss(),gauss()).normalize();return d.multiplyScalar(r*Math.cbrt(rng()))}
+
+// ---------------- three.js scene ----------------
+const scene=new THREE.Scene(); scene.fog=new THREE.FogExp2(0x070a12,0.0011);
+const cam=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,1,6000);
+const ren=new THREE.WebGLRenderer({antialias:true}); ren.setPixelRatio(Math.min(2,devicePixelRatio)); ren.setSize(innerWidth,innerHeight); document.body.appendChild(ren.domElement);
+addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});
+scene.add(new THREE.HemisphereLight(0x9fb4ff,0x221a10,0.9)); const dl=new THREE.DirectionalLight(0xffffff,0.7); dl.position.set(300,500,200); scene.add(dl);
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(R+40,48,24),new THREE.MeshBasicMaterial({color:0x2a3a6a,wireframe:true,transparent:true,opacity:0.07})));
+function layer(n,geo,emissive){const m=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.6,metalness:.1,emissive:emissive?0x222222:0});const im=new THREE.InstancedMesh(geo,m,n);im.setColorAt(0,new THREE.Color());im.count=0;im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);im.frustumCulled=false;scene.add(im);return im}
+const BOX=new THREE.BoxGeometry(1,1,1), OCT=new THREE.OctahedronGeometry(1), SPH=new THREE.IcosahedronGeometry(1,1);
+const L_food=layer(4000,BOX), L_trail=layer(3000,BOX), L_body=layer(9000,BOX,true), L_hot=layer(4000,OCT,true), L_heart=layer(400,OCT,true), L_cry=layer(64,OCT,true), L_pts=layer(6000,SPH);
+const M=new THREE.Matrix4(), Q=new THREE.Quaternion(), S=new V3(), C=new THREE.Color();
+function put(L,i,p,s,col,q){S.set(s,s,s);M.compose(p,q||Q,S);L.setMatrixAt(i,M);C.setRGB(col[0],col[1],col[2]);L.setColorAt(i,C)}
+function done(L,n){L.count=n;L.instanceMatrix.needsUpdate=true;if(L.instanceColor)L.instanceColor.needsUpdate=true}
+const ship=new THREE.Mesh(new THREE.ConeGeometry(4,14,6),new THREE.MeshStandardMaterial({color:0xdde6ff,emissive:0x334466}));ship.geometry.rotateX(Math.PI/2);scene.add(ship);
+
+// ---------------- world: food, trails, crystals, pilot ----------------
+let food, trail, crys, pilot, keys={}, mouse={x:0,y:0,lock:false}, stats, species, auto=false;
+function makeWorld(){
+  rng=mulberry(7); food=[]; trail=[];
+  const cl=[]; for(let i=0;i<20;i++) cl.push(rball(R-40));
+  for(let i=0;i<1600;i++){const c=cl[i%20];food.push({p:c.clone().add(new V3(gauss(),gauss(),gauss()).multiplyScalar(25)),v:8+32*rng(),alive:true})}
+  crys=[]; for(let i=0;i<6;i++) crys.push(rball(R-30));
+  pilot={p:rball(R*0.8),v:new V3(1,0,0),spd:SPEED,boost:0,cool:0,acc:0,prev:new V3(),burnCd:0};
+  pilot.prev.copy(pilot.p);
+  stats={burns:0,crystals:0,hearts:0};
+}
+function foodNear(p,r){const out=[];for(const f of food) if(f.alive&&f.p.distanceToSquared(p)<r*r) out.push(f);for(const f of trail) if(f.alive&&f.p.distanceToSquared(p)<r*r) out.push(f);return out}
+function allFood(){return food.filter(f=>f.alive).concat(trail.filter(f=>f.alive))}
+function burn(kind){stats.burns++;const fl=document.getElementById('flash');fl.style.opacity=.9;setTimeout(()=>fl.style.opacity=0,180)}
+function segDist(a,b,p){const ab=b.clone().sub(a);const L2=ab.lengthSq();if(L2<1e-9)return p.distanceTo(a);const t=Math.max(0,Math.min(1,p.clone().sub(a).dot(ab)/L2));return p.distanceTo(a.clone().addScaledVector(ab,t))}
+function perp(a){const up=Math.abs(a.y)<.9?new V3(0,1,0):new V3(1,0,0);const n=new V3().crossVectors(a,up).normalize();return [n,new V3().crossVectors(a,n)]}
+
+// ---------------- species: snap trap ----------------
+function SnapTrap(P){
+  const L=[];for(const r of[5,12,19])L.push([0,r,0,0]);for(const sd of[1,-1]){for(const r of[10,22,34,46])for(const s of[-12,12])L.push([sd,r,s,0]);for(const s of[-18,-6,6,18])L.push([sd,53,s,1])}
+  const T=[];const cen=[];for(let i=0;i<P.clumps;i++)cen.push(rball(R-60));
+  for(let i=0;i<P.n_traps;i++)T.push({h:cen[i%P.clumps].clone().add(new V3(gauss(),gauss(),gauss()).multiplyScalar(P.clump_r)),a:new V3(gauss(),gauss(),gauss()).normalize(),st:0,tm:0,th:P.gape*Math.PI/180,it:0,alive:true,caught:false,ema:new V3(),broken:new Set()});
+  const gape=P.gape*Math.PI/180, wide=(P.gape+P.dgape)*Math.PI/180, shut=3*Math.PI/180;
+  function heart(t){return t.h.clone().addScaledVector(t.a,30)}
+  function prisms(t){const [n,b]=perp(t.a);const m=t.h.clone().addScaledVector(t.a,22);const out=[];L.forEach((l,k)=>{if(t.broken.has(k))return;let p;if(l[0]==0)p=t.h.clone().addScaledVector(t.a,l[1]);else{const u=t.a.clone().multiplyScalar(Math.cos(t.th)).addScaledVector(n,l[0]*Math.sin(t.th));p=m.clone().addScaledVector(u,l[1]).addScaledVector(b,l[2])}out.push([p,l[3],k])});return out}
+  return{step(dt){
+    for(const t of T){if(!t.alive)continue;const [n,b]=perp(t.a);const m=t.h.clone().addScaledVector(t.a,22);const d=pilot.p.clone().sub(m);const dist=d.length();const near=dist<P.sense;
+      if(near)t.ema.multiplyScalar(.97).addScaledVector(d.clone().normalize(),.03);
+      const z=d.dot(t.a),y=d.dot(n),w=d.dot(b);const inMouth=z>0&&z<P.mouth_len&&Math.abs(w)<P.mouth_w&&Math.abs(y)<z*Math.tan(t.th)+6;
+      t.tm+=dt;const thPrev=t.th;
+      if(t.st==0&&near){t.st=1;t.tm=0}
+      if(t.st==1){t.it=Math.min(1,t.it+dt/P.t_prime);t.th=gape+(wide-gape)*t.it;if(!near){t.it=Math.max(0,t.it-2*dt/P.t_prime);if(t.it<=0)t.st=0}else if(t.it>=1)t.st=2}
+      if(t.st==2){if(!near)t.st=1;else if(inMouth&&t.broken.size<9){t.st=3;t.tm=0}}
+      if(t.st==3){t.th=Math.max(shut,wide-(wide-shut)*t.tm/P.t_close);t.it=1;
+        const inslab=z>0&&z<P.mouth_len+6&&Math.abs(w)<P.mouth_w+6;const ay=Math.abs(y);
+        const swept=inslab&&ay<z*Math.tan(thPrev)+6&&ay>z*Math.tan(t.th)-6;const doneC=t.tm>=P.t_close;
+        if(!t.caught&&(swept||(doneC&&inslab&&ay<z*Math.tan(t.th)+8))){t.caught=true;burn('snap')}
+        if(doneC){t.st=4;t.tm=0}}
+      if(t.st==4){t.it=Math.max(0,t.it-dt/.5);if(t.tm>(t.caught?P.t_digest:P.t_reset)){t.th=Math.min(gape,t.th+dt*(gape-shut)/1.5);if(t.th>=gape-1e-6){t.st=0;t.caught=false}}}
+      if(t.ema.length()>.05&&t.st!=3){const tg=t.ema.clone().normalize();const ang=Math.acos(Math.max(-1,Math.min(1,t.a.dot(tg))));const k=Math.min(1,P.turn_deg*Math.PI/180*dt/Math.max(ang,1e-6));t.a.lerp(tg,k).normalize()}
+      // teeth + ramming
+      for(const [p,dg,k] of prisms(t)){const dd=segDist(pilot.prev,pilot.p,p);if(dd<10){if(dg){if(pilot.burnCd<=0&&!t.caught){pilot.burnCd=1;burn('burn')}}else t.broken.add(k)}}
+      if(t.broken.size&&rng()<dt*.3)t.broken.delete([...t.broken][0]);
+      if(segDist(pilot.prev,pilot.p,heart(t))<12){t.alive=false;stats.hearts++}
+    }},
+    draw(){let i=0,j=0,k=0;for(const t of T){for(const [p,dg] of prisms(t)){const hot=t.alive?t.it:0;if(dg){put(L_hot,j++,p,3.5,t.alive?[1,.25+.3*hot,.15]:[.4,.4,.4])}else put(L_body,i++,p,7,t.alive?[.35+.5*hot,.75+.2*hot,.3]:[.4,.4,.4])}if(t.alive)put(L_heart,k++,heart(t),5,[.4,.7,1])}return[i,j,k,0]}}
+}
+
+// ---------------- species: spore burster ----------------
+function Spores(P){
+  const pods=[];const cen=[];for(let i=0;i<P.clumps;i++)cen.push(rball(R-60));
+  function mk(p){const ax=p.clone().normalize().add(new V3(gauss(),gauss(),gauss()).multiplyScalar(.6)).normalize();return{h:p,ax,u:0,st:0,tm:0,charge:P.charge_cap,alive:true}}
+  for(let i=0;i<P.n_pods;i++)pods.push(mk(cen[i%P.clumps].clone().add(new V3(gauss(),gauss(),gauss()).multiplyScalar(P.clump_r))));
+  const spores=[];const pulses=[];let t=0;
+  const c=q=>q.h.clone().addScaledVector(q.ax,16);
+  function burst(q){const n=Math.floor(q.charge/P.spore_vol);q.charge=0;q.st=2;q.u=0;const cc=c(q);for(let k=0;k<n;k++){const d=new V3(gauss(),gauss(),gauss()).normalize().addScaledVector(q.ax,.8);spores.push({p:cc.clone().addScaledVector(d,6),v:d.multiplyScalar(P.launch*(.6+.6*rng())),age:0})}
+    for(const o of pods){if(o===q||!o.alive)continue;const dd=o.h.distanceTo(q.h);if(dd<P.alarm_r)pulses.push([t+dd/P.alarm_speed,o])}}
+  return{step(dt){t+=dt;const spd=pilot.p.distanceTo(pilot.prev)/dt;
+    for(const q of pods){if(!q.alive)continue;const d=segDist(pilot.prev,pilot.p,c(q));
+      if(d<P.touch)q.u+=(spd>P.v_soft?P.kick_hard:P.kick_soft)*.5;else if(d<P.wake&&spd>P.v_soft)q.u+=P.kick_wake*.5;
+      if(q.st==0&&q.u>=1){q.st=1;q.tm=0}
+      if(q.st==1){q.tm+=dt;if(q.tm>=P.t_swell)burst(q)}else q.u*=Math.exp(-P.relax*dt);
+      if(q.st==2){if(rng()<dt/P.absorb_every){const f=foodNear(q.h,P.root);if(f.length){const g=f[0];g.alive=false;q.charge=Math.min(P.charge_cap,q.charge+g.v)}}if(q.charge>=.8*P.charge_cap)q.st=0}
+      if(d<12){q.alive=false;stats.hearts++;burst(q)}}
+    for(let i=pulses.length-1;i>=0;i--)if(pulses[i][0]<=t){if(pulses[i][1].alive)pulses[i][1].u+=P.alarm_gain;pulses.splice(i,1)}
+    const k=P.wind_k,ph=.05*t;
+    for(let i=spores.length-1;i>=0;i--){const s=spores[i];const w=new V3(Math.cos(k*s.p.z+ph),Math.cos(k*s.p.x+1.3*ph),Math.cos(k*s.p.y+.7*ph)).multiplyScalar(-P.wind);s.v.lerp(w,1-Math.exp(-P.drag*dt));s.p.addScaledVector(s.v,dt);if(s.p.length()>R)s.p.setLength(R);
+      if(segDist(pilot.prev,pilot.p,s.p)<P.spore_r+6&&pilot.burnCd<=0){pilot.burnCd=P.spore_cd;burn('burn')}
+      if(s.v.length()<P.settle_v){for(const q of pods){if(q.alive&&q.st!=1&&c(q).distanceTo(s.p)<12&&q.charge+P.spore_vol<=P.charge_cap){q.charge+=P.spore_vol;spores.splice(i,1);break}}
+        if(spores[i]===s&&foodNear(s.p,20).length&&pods.length<400){pods.push(Object.assign(mk(s.p.clone()),{charge:P.spore_vol,st:2}));spores.splice(i,1)}}}},
+    draw(){let i=0,j=0,k=0,m=0;for(const q of pods){const cc=c(q);const sw=q.st==1?1+.6*Math.min(1,q.tm/P.t_swell):1;const fill=.5+.5*q.charge/P.charge_cap;const hot=q.alive?Math.min(1,q.u):0;
+      const [n,b]=perp(q.ax);for(let s=0;s<6;s++){const a=s*Math.PI/3;put(L_body,i++,cc.clone().addScaledVector(n,7*sw*fill*Math.cos(a)).addScaledVector(b,7*sw*fill*Math.sin(a)),6,q.alive?[.75+.25*hot,.6+.3*hot,.35-.15*hot]:[.4,.4,.4])}
+      put(L_body,i++,q.h.clone().addScaledVector(q.ax,6),6,[.5,.45,.3]);if(q.alive)put(L_heart,k++,cc,4,[.4,.7,1])}
+      for(const s of spores)put(L_pts,m++,s.p,P.spore_r*.8,[1,.35,.1]);return[i,0,k,m]}}
+}
+
+// ---------------- species: physarum ----------------
+function Physarum(P){
+  const G=40,h=2*R/G;const N=G*G*G;const T=new Float32Array(N),T2=new Float32Array(N),Sm=new Float32Array(N),E=new Int8Array(N),tube=new Uint8Array(N);let reserve=P.plant_vol;
+  const vx=p=>{const x=Math.min(G-1,Math.max(0,Math.floor((p.x+R)/h))),y=Math.min(G-1,Math.max(0,Math.floor((p.y+R)/h))),z=Math.min(G-1,Math.max(0,Math.floor((p.z+R)/h)));return(x*G+y)*G+z};
+  const cen=i=>new V3((Math.floor(i/(G*G))+.5)*h-R,(Math.floor(i/G)%G+.5)*h-R,(i%G+.5)*h-R);
+  const NA=Math.min(8000,P.n_agents|0);const A=[],D=[],PH=[];for(let i=0;i<NA;i++){A.push(rball(R-h));D.push(new V3(gauss(),gauss(),gauss()).normalize());PH.push(rng()*6.28)}
+  const hearts=[];for(let i=0;i<P.n_hearts;i++)hearts.push({p:rball(R-80),alive:true,beat:rng()*P.period});
+  let t=0,acc=0;const sa=P.sa*Math.PI/180,ra=Math.min(1,P.ra/P.sa);
+  function blur(){for(let ax=0;ax<3;ax++){const st=ax==0?G*G:ax==1?G:1;for(let i=0;i<N;i++){const c=(ax==0?Math.floor(i/(G*G)):ax==1?Math.floor(i/G)%G:i%G);const a=c>0?T[i-st]:T[i],b=c<G-1?T[i+st]:T[i];T2[i]=(a+T[i]+b)/3}for(let i=0;i<N;i++)T[i]=T2[i]}}
+  function sim(dt){const sc=(dt/0.1);
+    const so=P.so,cs=Math.cos(sa),sn=Math.sin(sa),G2=G*G;
+    const samp=(x,y,z)=>{const a=Math.min(G-1,Math.max(0,((x+R)/h)|0)),b=Math.min(G-1,Math.max(0,((y+R)/h)|0)),c=Math.min(G-1,Math.max(0,((z+R)/h)|0));return T[a*G2+b*G+c]};
+    for(let i=0;i<NA;i++){const d=D[i],p=A[i];
+      // frame (u,v) perpendicular to d, scalar math (no per-sensor allocations)
+      let ux,uy,uz;if(Math.abs(d.y)<.9){ux=-d.z;uy=0;uz=d.x}else{ux=0;uy=d.z;uz=-d.y}let ul=Math.hypot(ux,uy,uz);ux/=ul;uy/=ul;uz/=ul;
+      const vx_=d.y*uz-d.z*uy,vy_=d.z*ux-d.x*uz,vz_=d.x*uy-d.y*ux;
+      let best=samp(p.x+d.x*so,p.y+d.y*so,p.z+d.z*so),bx=0,by=0,bz=0,turn=false;
+      for(let k=0;k<4;k++){const th=PH[i]+k*1.5708,c=Math.cos(th),s=Math.sin(th);
+        const sx=cs*d.x+sn*(c*ux+s*vx_),sy=cs*d.y+sn*(c*uy+s*vy_),sz=cs*d.z+sn*(c*uz+s*vz_);
+        const x=samp(p.x+sx*so,p.y+sy*so,p.z+sz*so);if(x>best){best=x;bx=sx;by=sy;bz=sz;turn=true}}
+      if(turn){d.x+=(bx-d.x)*ra;d.y+=(by-d.y)*ra;d.z+=(bz-d.z)*ra}
+      d.x+=gauss()*P.jitter;d.y+=gauss()*P.jitter;d.z+=gauss()*P.jitter;d.normalize();
+      p.x+=d.x*P.ss*dt;p.y+=d.y*P.ss*dt;p.z+=d.z*P.ss*dt;if(p.lengthSq()>(R-h)*(R-h)){d.negate();p.setLength(R-1.5*h)}
+      T[vx(p)]+=P.dep*4}
+    for(const f of allFood())T[vx(f.p)]+=P.food_dep*4;if(P.wake_dep)T[vx(pilot.p)]+=P.wake_dep*4;
+    blur();for(let i=0;i<N;i++){T[i]=(T[i]*(1-P.diffuse)+T2[i]*P.diffuse)*(1-P.evap);Sm[i]+=(T[i]-Sm[i])*P.ema}
+    for(let i=0;i<N;i++){if(tube[i]&&Sm[i]<P.off*4){tube[i]=0;reserve+=P.prism_vol*2}else if(!tube[i]&&Sm[i]>P.on*4&&reserve>=P.prism_vol*2){tube[i]=1;reserve-=P.prism_vol*2}}
+    for(const f of allFood())if(tube[vx(f.p)]&&rng()<P.digest*dt/f.v){f.alive=false;reserve+=f.v}
+    for(const hh of hearts){if(!hh.alive)continue;let b=Sm[vx(hh.p)],bd=null;for(const d of[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){const q=hh.p.clone().add(new V3(...d).multiplyScalar(h));if(q.length()>R-h)continue;const x=Sm[vx(q)];if(x>b){b=x;bd=d}}if(bd)hh.p.addScaledVector(new V3(...bd),P.heart_speed*dt)}}
+  function waves(dt){acc+=dt;const tick=h/P.wave_speed;while(acc>=tick){acc-=tick;const nE=new Int8Array(N);
+    for(let i=0;i<N;i++){if(!tube[i])continue;if(E[i]>=1){nE[i]=E[i]+1>P.ex_ticks+P.refr?0:E[i]+1;continue}const x=Math.floor(i/(G*G)),y=Math.floor(i/G)%G,z=i%G;
+      if((x>0&&E[i-G*G]==1)||(x<G-1&&E[i+G*G]==1)||(y>0&&E[i-G]==1)||(y<G-1&&E[i+G]==1)||(z>0&&E[i-1]==1)||(z<G-1&&E[i+1]==1))nE[i]=1}
+    for(const hh of hearts){if(!hh.alive||t<hh.beat)continue;hh.beat=t+P.period;let bi=-1,bd=1e9;for(let i=0;i<N;i++)if(tube[i]){const d=cen(i).distanceToSquared(hh.p);if(d<bd){bd=d;bi=i}}if(bi>=0&&nE[bi]==0)nE[bi]=1}
+    E.set(nE)}}
+  let frame=0;
+  return{step(dt){t+=dt;if((frame++)%2==0)sim(dt*2);waves(dt);
+    const n=Math.max(2,Math.ceil(pilot.p.distanceTo(pilot.prev)/4));for(let k=0;k<=n;k++){const q=pilot.prev.clone().lerp(pilot.p,k/n);const i=vx(q);if(!tube[i])continue;if(E[i]>=1&&E[i]<=P.ex_ticks){if(pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}else{tube[i]=0;T[i]=0;Sm[i]=0;reserve+=P.prism_vol*2}}
+    if(P.heart_guard>0)for(const hh of hearts){if(!hh.alive)continue;const last=hh.beat-P.period;if(last>=0&&t-last<P.beat_on&&segDist(pilot.prev,pilot.p,hh.p)<P.heart_guard&&pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}
+    for(const hh of hearts)if(hh.alive&&segDist(pilot.prev,pilot.p,hh.p)<12){hh.alive=false;stats.hearts++}},
+    draw(){let i=0,j=0,k=0,m=0;if(P.heart_guard>0)for(const hh of hearts){if(!hh.alive)continue;const last=hh.beat-P.period,on=last>=0&&t-last<P.beat_on,gl=hh.beat-t<P.beat_glow;if(on||gl)put(L_pts,m++,hh.p,P.heart_guard*(on?1:.55),on?[.9,.15,.08]:[.45,.2,.05])}
+      for(let v=0;v<N;v++){if(!tube[v])continue;const p=cen(v);if(E[v]>=1&&E[v]<=P.ex_ticks)put(L_hot,j++,p,h*.6,[1,.3,.1]);else put(L_body,i++,p,h*.85,[.85,.72,.25])}
+      for(const hh of hearts)if(hh.alive)put(L_heart,k++,hh.p,6,[.4,.7,1]);for(let a=0;a<NA;a+=4)put(L_pts,m++,A[a],1.2,[.5,.45,.25]);return[i,j,k,m]}}
+}
+
+// ---------------- species: coral ----------------
+function Coral(P){
+  const G=40,h=2*R/G,N=G*G*G;let u=new Float32Array(N),v=new Float32Array(N);const rate=new Float32Array(N);
+  const vx=p=>{const x=Math.min(G-1,Math.max(0,Math.floor((p.x+R)/h))),y=Math.min(G-1,Math.max(0,Math.floor((p.y+R)/h))),z=Math.min(G-1,Math.max(0,Math.floor((p.z+R)/h)));return(x*G+y)*G+z};
+  const cen=i=>new V3((Math.floor(i/(G*G))+.5)*h-R,(Math.floor(i/G)%G+.5)*h-R,(i%G+.5)*h-R);
+  const ff=allFood();const hearts=[];for(let i=0;i<P.n_hearts;i++){const f=ff[Math.floor(rng()*ff.length)];hearts.push({p:f.p.clone(),alive:true})}
+  const per=P.plant_vol/P.c0/P.n_hearts/27*(48/40)**3;for(const hh of hearts){const c=vx(hh.p);for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)for(let dz=-1;dz<=1;dz++){const i=c+(dx*G+dy)*G+dz;if(i>=0&&i<N)v[i]+=per}}
+  const lap=(F,i)=>{const x=Math.floor(i/(G*G)),y=Math.floor(i/G)%G,z=i%G;let s=0;if(x>0)s+=F[i-G*G]-F[i];if(x<G-1)s+=F[i+G*G]-F[i];if(y>0)s+=F[i-G]-F[i];if(y<G-1)s+=F[i+G]-F[i];if(z>0)s+=F[i-1]-F[i];if(z<G-1)s+=F[i+1]-F[i];return s};
+  const k3=(48/40)**2; // diffusion rescaled to the coarser grid
+  const sting=i=>P.sting_mode==='front'?rate[i]>P.sting:v[i]>P.v_danger;
+  const self={step(dt){const hh=dt/P.substeps;
+    for(let s=0;s<P.substeps;s++){const nu=new Float32Array(N),nv=new Float32Array(N);for(let i=0;i<N;i++){nu[i]=u[i]+hh*P.Du/k3*lap(u,i);nv[i]=v[i]+hh*P.Dv/k3*lap(v,i)}
+      for(let i=0;i<N;i++){const r=nu[i]*(1-Math.exp(-P.rate*nv[i]*nv[i]*hh)),b=nv[i]*(1-Math.exp(-P.k*hh));nu[i]+=b-r;nv[i]+=r-b;rate[i]=r/hh}u=nu;v=nv}
+    for(const f of allFood()){const i=vx(f.p);if(v[i]>P.vth&&rng()<P.eat_per_s*dt){f.alive=false;u[i]+=f.v/P.c0}}
+    const n=Math.max(2,Math.ceil(pilot.p.distanceTo(pilot.prev)/4));for(let q=0;q<=n;q++){const i=vx(pilot.prev.clone().lerp(pilot.p,q/n));if(v[i]<=P.vth)continue;if(sting(i)){if(pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}else{u[i]=0;v[i]=0}}
+    for(const hh of hearts)if(hh.alive&&segDist(pilot.prev,pilot.p,hh.p)<12){hh.alive=false;stats.hearts++}},
+    draw(){let i=0,j=0,k=0;for(let q=0;q<N;q++){if(v[q]<=P.vth)continue;const p=cen(q);if(sting(q))put(L_hot,j++,p,h*.6,[1,.35,.55]);else put(L_body,i++,p,Math.min(h,Math.cbrt(v[q])*h*.6),[.9,.5,.4])}for(const hh of hearts)if(hh.alive)put(L_heart,k++,hh.p,6,[.4,.7,1]);return[i,j,k,0]}};
+  const save=pilot.p.clone(),sp=pilot.prev.clone();pilot.p.set(1e5,0,0);pilot.prev.set(1e5,0,0);for(let w=0;w<Math.min(200,(P.warmup||0)/3);w++)self.step(0.3);pilot.p.copy(save);pilot.prev.copy(sp);
+  return self
+}
+
+// ---------------- species: walking mimic ----------------
+function Walker(P){
+  const W=[];for(let i=0;i<P.n_walkers;i++){const w={h:rball(R-60),dir:new V3(gauss(),gauss(),gauss()).normalize(),st:0,tm:0,ext:0,alive:true,shell:[],thorns:[],ph:rng()*6};
+    for(let k=0;k<P.shell;k++)w.shell.push(w.h.clone().add(new V3(gauss(),gauss(),gauss()).normalize().multiplyScalar(P.r_body*(.7+.3*rng()))));for(let k=0;k<P.thorns;k++)w.thorns.push(new V3(gauss(),gauss(),gauss()).normalize());W.push(w)}
+  const lure=w=>w.h.clone().addScaledVector(w.h.clone().normalize(),P.r_body*.4);let t=0;
+  return{lures:()=>W.filter(w=>w.alive).map(lure),step(dt){t+=dt;for(const w of W){if(!w.alive)continue;
+      const fs=foodNear(w.h,P.sense);if(fs.length){const g=new V3();for(const f of fs)g.addScaledVector(f.p.clone().sub(w.h),f.v);w.dir.lerp(g.normalize(),Math.min(1,.8*dt)).normalize()}
+      const sp=w.st==2?0:P.speed;const nh=w.h.clone().addScaledVector(w.dir,sp*dt);if(nh.length()<R-40)w.h.copy(nh);
+      for(let k=0;k<w.shell.length;k++)if(w.shell[k].distanceTo(w.h)>P.r_body*1.25){const d=new V3(gauss(),gauss(),gauss()).normalize();if(d.dot(w.dir)<0)d.negate();w.shell[k]=w.h.clone().addScaledVector(d,P.r_body*(.7+.3*rng()))}
+      for(const f of foodNear(w.h,P.r_body))if(rng()<dt/P.absorb_every)f.alive=false;
+      const near=pilot.p.distanceTo(lure(w));w.tm+=dt;
+      if(w.st==1)w.ext+=((P.guard||0)-w.ext)*Math.min(1,dt/P.t_prime);else if(w.st==0)w.ext=Math.max(0,w.ext-dt/P.t_retract);
+      if(w.st==0&&near<P.prime){w.st=1;w.tm=0}else if(w.st==1){if(near>P.prime*1.3)w.st=0;else if(near<P.strike&&(w.tm>=P.t_prime||near<P.strike*.6)){w.st=2;w.tm=0}}
+      else if(w.st==2){w.ext=Math.max(w.ext,Math.min(1,w.tm/P.t_erupt));if(w.tm>P.t_erupt+P.t_hold){w.st=3;w.tm=0}}else if(w.st==3){w.ext=Math.max(0,1-w.tm/P.t_retract);if(w.ext<=0)w.st=0}
+      if(w.ext>.25)for(let k=0;k<w.thorns.length;k++){const reach=P.r_body+w.ext*P.thorn;const p=w.h.clone().addScaledVector(w.thorns[k],P.r_body*.9+(reach-P.r_body*.9)*(k%3+1)/3);if(segDist(pilot.prev,pilot.p,p)<9&&pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}
+      for(let k=w.shell.length-1;k>=0;k--)if(segDist(pilot.prev,pilot.p,w.shell[k])<11)w.shell.splice(k,1);
+      while(w.shell.length<P.shell&&rng()<dt*3){const d=new V3(gauss(),gauss(),gauss()).normalize();if(d.dot(w.dir)<0)d.negate();w.shell.push(w.h.clone().addScaledVector(d,P.r_body*(.7+.3*rng())))}
+      if(segDist(pilot.prev,pilot.p,w.h)<12){w.alive=false;stats.hearts++}}},
+    draw(){let i=0,j=0,k=0;for(const w of W){const hot=w.st==1?.5:0;for(const p of w.shell)put(L_body,i++,p,9,w.alive?[.3+hot,.55,.3]:[.4,.4,.4]);
+      if(w.alive){const reach=P.r_body+w.ext*P.thorn;w.thorns.forEach((d,q)=>put(L_hot,j++,w.h.clone().addScaledVector(d,P.r_body*.9+(reach-P.r_body*.9)*(q%3+1)/3),3.5,[1,.2+w.ext*.5,.3]));
+        const br=.75+.25*Math.sin(t*2.2+w.ph);put(L_cry,6+k,lure(w),7*br,[.55*br,1*br,.3*br]);put(L_heart,k++,w.h,4,[.4,.7,1])}}return[i,j,k,0,k]}}
+}
+
+// ---------------- loop ----------------
+const MAKE={snaptrap:SnapTrap,spores:Spores,physarum:Physarum,coral:Coral,walker:Walker};
+function reset(){makeWorld();const name=document.getElementById('sp').value;species=MAKE[name](PARAMS[name]);document.getElementById('desc').innerHTML=DESC[name]}
+document.getElementById('sp').onchange=reset;document.getElementById('reset').onclick=reset;
+document.getElementById('autobtn').onclick=()=>{auto=!auto;document.getElementById('autobtn').textContent='autopilot: '+(auto?'on':'off')};
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space')e.preventDefault()});addEventListener('keyup',e=>keys[e.code]=false);
+ren.domElement.addEventListener('click',()=>ren.domElement.requestPointerLock&&ren.domElement.requestPointerLock());
+document.addEventListener('pointerlockchange',()=>mouse.lock=document.pointerLockElement===ren.domElement);
+addEventListener('mousemove',e=>{if(mouse.lock){mouse.x+=e.movementX;mouse.y+=e.movementY}});
+let goal=rball(R*.8);
+function steer(dt){const f=pilot.v.clone().normalize();const [n,b]=perp(f);let yaw=0,pitch=0;
+  if(auto){if(pilot.p.distanceTo(goal)<60)goal=rball(R*.8);let tgt=goal;for(const c of crys)if(c.distanceTo(pilot.p)<300)tgt=c;const w=tgt.clone().sub(pilot.p).normalize();yaw=w.dot(b)*2;pitch=w.dot(n)*2}
+  else{yaw=(keys.KeyD?1:0)-(keys.KeyA?1:0)+mouse.x*.01;pitch=(keys.KeyW?1:0)-(keys.KeyS?1:0)-mouse.y*.01;mouse.x*=.85;mouse.y*=.85}
+  const turn=2*dt;f.addScaledVector(b,Math.max(-1,Math.min(1,yaw))*turn).addScaledVector(n,Math.max(-1,Math.min(1,pitch))*turn).normalize();
+  if(keys.ShiftLeft&&pilot.cool<=0&&pilot.boost<=0){pilot.boost=1;pilot.cool=4}pilot.boost=Math.max(0,pilot.boost-dt);pilot.cool=Math.max(0,pilot.cool-dt);
+  pilot.spd=pilot.boost>0?SPEED*1.7:keys.Space?45:SPEED;pilot.v.copy(f).multiplyScalar(pilot.spd);
+  pilot.prev.copy(pilot.p);pilot.p.addScaledVector(pilot.v,dt);if(pilot.p.length()>R+60){pilot.p.setLength(R+60);pilot.v.reflect(pilot.p.clone().normalize())}
+  pilot.burnCd=Math.max(0,pilot.burnCd-dt);pilot.acc+=pilot.spd*dt;if(pilot.acc>24){pilot.acc=0;trail.push({p:pilot.prev.clone().addScaledVector(pilot.v.clone().normalize(),-14),v:6,alive:true});if(trail.length>2500)trail.shift()}
+  for(let i=0;i<crys.length;i++)if(crys[i].distanceTo(pilot.p)<14){stats.crystals++;crys[i]=rball(R-30)}}
+reset();let last=performance.now();
+(function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;
+  steer(dt);species.step(dt);
+  const [nb,nh,nk,np,nl]=species.draw();done(L_body,nb);done(L_hot,nh);done(L_heart,nk);done(L_pts,np);
+  let fi=0;for(const f of food)if(f.alive)put(L_food,fi++,f.p,3.5,[.18,.22,.3]);done(L_food,fi);let ti=0;for(const f of trail)if(f.alive)put(L_trail,ti++,f.p,2,[.5,.5,.65]);done(L_trail,ti);
+  const rq=new THREE.Quaternion().setFromAxisAngle(new V3(0,1,0),now/700);crys.forEach((c,i)=>put(L_cry,i,c,7,[.3,.95,1],rq));done(L_cry,(nl?6+nl:crys.length));
+  ship.position.copy(pilot.p);ship.lookAt(pilot.p.clone().add(pilot.v));const back=pilot.v.clone().normalize().multiplyScalar(-55).add(new V3(0,14,0));cam.position.lerp(pilot.p.clone().add(back),.15);cam.lookAt(pilot.p.clone().addScaledVector(pilot.v.clone().normalize(),40));
+  document.getElementById('s_burn').textContent='burns '+stats.burns;document.getElementById('s_cry').textContent='crystals '+stats.crystals;document.getElementById('s_heart').textContent='hearts '+stats.hearts;
+  document.getElementById('s_spd').textContent=Math.round(pilot.spd)+' u/s';document.getElementById('s_boost').textContent=pilot.boost>0?'BOOST':pilot.cool>0?'boost '+pilot.cool.toFixed(1)+'s':'boost ready';
+  ren.render(scene,cam)})(performance.now());
+</script>
