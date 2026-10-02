@@ -1,0 +1,34 @@
+{
+ "source": "Tools/Ecology/flight/index.html",
+ "version": 1,
+ "exported": "2026-10-02T16:33:44.350Z",
+ "runs": [
+  {
+   "label": "thief@test",
+   "truth": "playful",
+   "probe": null,
+   "species": "thief"
+  }
+ ],
+ "ratings": {
+  "thief@test": "playful"
+ },
+ "encounters": [
+  {
+   "id": "thief@test",
+   "species": "thief",
+   "mode": "cell",
+   "seed": 7,
+   "t0": 0,
+   "t1": 5,
+   "hits": 2,
+   "kills": 0,
+   "emotion": "playful",
+   "threat": 2,
+   "readability": 4,
+   "fun": 5,
+   "note": "",
+   "truth": "playful"
+  }
+ ]
+}

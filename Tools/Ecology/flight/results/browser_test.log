@@ -1,0 +1,78 @@
+{
+ "thief": {
+  "moved": 251.02259351519484,
+  "rot": 0.11558461916912255,
+  "errors": [],
+  "steals": 18,
+  "tails": true
+ },
+ "pack": {
+  "moved": 265.7980071667685,
+  "rot": 0.14825808451896738,
+  "errors": [],
+  "closure_max": 0.9870103213624315,
+  "rings": true
+ },
+ "locust": {
+  "errors": [],
+  "agents": 360
+ },
+ "lurker": {
+  "errors": [],
+  "agents": 16
+ },
+ "stampede": {
+  "errors": [],
+  "agents": 72
+ },
+ "leviathan": {
+  "errors": [],
+  "agents": 140
+ },
+ "mobber": {
+  "errors": [],
+  "agents": 50
+ },
+ "grazer": {
+  "errors": [],
+  "agents": 240
+ },
+ "fortress": {
+  "errors": [],
+  "agents": 48
+ },
+ "snaptrap": {
+  "errors": [],
+  "agents": 40
+ },
+ "cell_perf": {
+  "frames": 29,
+  "frame_ms": 95.40344827586203,
+  "frame_p95": 100,
+  "cpu_ms": 25.19310344829513,
+  "cpu_p95": 31.899999999906868,
+  "sim_ms": 20.089655172433062,
+  "render_ms": 4.541379310335193,
+  "sim_ms_per_step": 7.1048780487873024,
+  "agents": 1394,
+  "prisms": 3620,
+  "audit": {
+   "start": 130629.08894172311,
+   "wake": 260,
+   "live": 86129.18535771221,
+   "held": 44759.9035840109,
+   "eaten_by_fauna": 14614.903584010899,
+   "destroyed": 0,
+   "cut": 0,
+   "stolen": 0,
+   "residual": 0,
+   "prisms": 4226
+  }
+ },
+ "ratings_py": "/home/user/Cosmic-Shore/Tools/Ecology/flight/results/export_sample.json: 1 rated | human = authored 1/1 | probe = human 0/0\nauthored/source -> human: {('playful', 'playful'): 1}\n  thief      threat 2.0 (n=1)  readability 4.0 (n=1)  fun 5.0 (n=1)",
+ "phone": {
+  "errors": [],
+  "scrollWidth": 390
+ },
+ "fails": []
+}
