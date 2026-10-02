@@ -159,6 +159,7 @@ class HierSim:
         occ = self.M.occupancy()[r]
         for s, pop in enumerate(self.M.pops):
             n, m, v = pop.mean_var()
+            reg_mean = float(pop.S[r].sum() / max(n[r].sum(), 1))
             for c in np.flatnonzero(n[r] > 0):  # noqa: B007
                 Ne = pop.N[r, c]
                 cnt = int(Ne.sum())
@@ -167,8 +168,11 @@ class HierSim:
                 sd = np.sqrt(v[r, c])
                 E = np.clip(rng.normal(m[r, c], sd, cnt), 0.05 * pop.sp.e0, pop.sp.e_birth - 1e-3)
                 E += (target - E.sum()) / cnt
-                if self.P.bug == "expand_flat_energy":
-                    E[:] = target / cnt
+                if self.P.bug == "expand_mean_field":       # expanding from a mean-field state: cohorts lost
+                    E[:] = reg_mean
+                    target = float(E.sum())                  # (mass still conserved: residual -> soil below)
+                    resid_fix = float(pop.S[r, c]) - target
+                    W.N[r] += resid_fix
                 low = E < 0.01
                 if low.any():          # never hand an agent an empty stomach: borrow from the rest
                     need = (0.01 - E[low]).sum()

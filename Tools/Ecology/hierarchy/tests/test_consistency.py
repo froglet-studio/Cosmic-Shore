@@ -9,7 +9,7 @@ Compared over N seeds (seed means): herbivore / predator COUNT, mean STOMACH, PH
 total variation distance), standing FLORA. Each must be within tolerance of the micro arm.
 NEGATIVE CONTROLS (planted bugs) must FAIL:
     macro_graze_x1.5      macro grazing 50% too strong
-    expand_flat_energy    expansion hands every agent the mean stomach (spread lost)
+    expand_mean_field     expansion hands every agent the REGION's mean stomach (cohort structure lost)
     macro_no_sprint_cost  macro forgets what chasing / fleeing costs (the first real bug this gate found)
 Run:  python -m hierarchy.tests.test_consistency [--seeds 6] [--T 300]
 """
@@ -28,7 +28,7 @@ from hierarchy.params import Params  # noqa: E402
 from hierarchy.sim import HierSim  # noqa: E402
 
 TOL = dict(count=0.10, mean_e=0.10, sd_e=0.25, phase=0.08, flora=0.05)
-BUGS = ["macro_graze_x1.5", "expand_flat_energy", "macro_no_sprint_cost"]
+BUGS = ["macro_graze_x1.5", "expand_mean_field", "macro_no_sprint_cost"]
 
 
 def make(P, init_seed, run_seed, R, dens, pred_frac):
