@@ -58,8 +58,8 @@ class Params:
     occ_theta: float = 0.5       # macro occupancy relaxes toward food ** occ_theta ... (fitted, calibrate.fit_occupancy)
     occ_tau: float = 1.0         # ... with this time constant (s)
     # ---- predation (Holling II on region herbivore count; fitted to micro, see calibrate.py) ----
-    p_attack: float = 0.0001     # kills / (predator * herbivore-in-region * s) at low density
-    p_handle: float = 151.0        # s per kill (the chase)
+    p_attack: float = 5.0e-5     # kills / (predator * herbivore-in-region * s) at low density
+    p_handle: float = 357.0        # s per kill (the chase)
     p_hunt_below: float = 0.8    # predators hunt only while stomach < this * e_max (satiation)
     # ---- micro predation geometry (what p_attack / p_handle are fitted FROM)
     p_sense: float = 25.0
