@@ -3,35 +3,35 @@
  "runs": [
   {
    "bug": "",
-   "seen_agent_ticks": 566242,
+   "seen_agent_ticks": 572406,
    "pop_in": 0,
    "pop_out": 0,
    "teleport": 0,
-   "expand": 96064,
-   "absorb": 97338,
-   "arrive": 4545,
+   "expand": 96922,
+   "absorb": 97677,
+   "arrive": 3979,
    "passed": true
   },
   {
    "bug": "absorb_ignores_visibility",
-   "seen_agent_ticks": 241717,
+   "seen_agent_ticks": 243136,
    "pop_in": 0,
-   "pop_out": 63,
+   "pop_out": 74,
    "teleport": 0,
-   "expand": 42028,
-   "absorb": 40985,
-   "arrive": 2020,
+   "expand": 42328,
+   "absorb": 41118,
+   "arrive": 1908,
    "passed": false
   },
   {
    "bug": "expand_no_emerge",
-   "seen_agent_ticks": 233537,
-   "pop_in": 9054,
+   "seen_agent_ticks": 234098,
+   "pop_in": 9093,
    "pop_out": 0,
-   "teleport": 7453,
-   "expand": 42259,
-   "absorb": 41115,
-   "arrive": 1959,
+   "teleport": 6275,
+   "expand": 42437,
+   "absorb": 41250,
+   "arrive": 1922,
    "passed": false
   }
  ]
