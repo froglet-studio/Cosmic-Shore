@@ -112,7 +112,7 @@ def eco_metrics(rows, cell, burn=300.0):
         shannon_max_possible=round(math.log(len(names)), 3),
         persistence=dict(extinct=ext, n_extinct=len(ext), n_unrecovered=sum(1 for e in ext.values() if not e["recovered"])),
         cv=cv, freeze_frac=round(freeze, 3), flora_saturated_frac=round(flora_sat, 3),
-        reversals=dict(flora=reversals(flo), herbivores=reversals(np.asarray(herb, float)) if len(R) else 0,
+        reversals=dict(flora=reversals(flo), herbivores=reversals(np.asarray(herb, float)) if np.ndim(herb) else 0,
                        pack=reversals(C["pack"]) if "pack" in C else 0),
         audit_max=float(audit), shield_eaten=int(cell.w.shield_eaten),
         final_census=R[-1]["census"], final_bio=R[-1]["bio"],

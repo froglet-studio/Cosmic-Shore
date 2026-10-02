@@ -1334,3 +1334,222 @@ respects. That cost is one more reason it is not in the top two.
 **Runner-up: spores.** Its counterplay is perfect and it scores R 1.00 at Space. It loses the second slot because
 it never re-routes, and because 2,000 drifting spores is a lot of always-moving mass for a cell's spatial index.
 
+
+## Living cell (Direction G, branch `cece/eco-living-cell`, 2026-10-02)
+
+**Question.** Do the round-1 picks survive being put in ONE cell together - thieves, pack hunters, locusts,
+lurkers, the fortress, the snap-trap clump, physarum and A's grazer school in a 1200-u arena, with real trophic
+links, E's cohort LOD, and the locked rules (mass conserved and audited every step, no imposed death, nothing pops,
+shielded mass never food)? And does a pilot flying through it get an *experience*, not just an ecosystem?
+
+Code: `Tools/Ecology/living_cell/` (`world.py` mass store + numba grids, `fauna.py` the five mobile guilds,
+`structures.py` flora / traps / fortress / physarum, `cell.py` the trophic wiring + macro level, `metrics.py`,
+`run.py`, `calibrate.py`, `rounds.py` = every configuration tried, `domains.py` Part 2, `viewer.py`).
+Results: `living_cell/results/*.json` + `*.log` (every round kept, including the dead ends). Re-run everything:
+`sh living_cell/run_all.sh` (~3.5 h on 4 cores). Viewer: `living_cell/viewer.html` (self-contained, three.js 0.128
+from jsDelivr; one 5-min explorer flight through the recommended cell, species-coloured, far populations drawn as
+cohort clouds, timeline of encounters / hits / C's emotion / threat underneath).
+
+### The food web as built
+
+```
+ pilot trail (the source) --> TRAIL prisms --+--> locusts (FLORA|TRAIL)      --> packs (Holling II)
+ flora <-- soil nutrient N <-- every metabolism, every exudate, every starved stomach                |
+   |                                         +--> thieves steal warm trail --> HOARD --> fortress builds walls from it
+   +--> grazers (FLORA|SKEL) ---------------------------------------------------> packs, lurkers, snap-traps
+ physarum digests FLORA|TRAIL|SKEL it covers;  every death = crystal + SKELeton prisms (conserved)
+ pilot ram / ability = the only sink;  danger tubes / trap jaws / wall bites burn pilots
+```
+
+Ledger: prisms + N + everything held by species (bodies, stomachs, cohort ΣS, reserves, stores). Worst audit over
+every run of every round **≤ 1.1e-5 vol** on ~6e5 vol total. Shielded prisms eaten: **0** in every run.
+Continuity: **0 pop-ins / 0 pop-outs** in every run of the recommended LOD (closest cohort expansion 308 u from a
+pilot; scene load at t < 1 s excluded).
+
+### Iteration log (every round kept in `results/iterate.json` / `baseline.json` / `long.json` / `final*.json`)
+
+Means over seeds; player numbers are per 5-min flight (explorer + wanderer pilots, 6+ flights per run).
+"enc" = ACTIVE encounters (a striking state within 200 u) from R4 on; R1-R3 counted presence.
+
+| round (seeds x min) | change | extinct | Shannon mean/min | enc/min | variety | quiet | hits/min | emotions | verdict |
+|---|---|---|---|---|---|---|---|---|---|
+| baseline (4x30) | the picks at their round-1 numbers | thief 3/4 | 1.84 / 1.79 | 0.41* | 2.0 | **0.01** | **34.8** | 4.1 | a siege, not a cell |
+| R1 (3x20) | niche partition (grazer FLORA\|SKEL, locust FLORA\|TRAIL), hunger-gated packs, trap exudation | 0-2 | 1.66 / 1.59 | 0.37* | 1.8 | 0.31 | 5.4 | 2.5 | quiet appears; every population sat at its cap (CV ~0) |
+| R2 (3x15) | caps as backstops only, flora growth 0.004-0.010 | 0 | 1.95 / 1.87 | 0.47* | 2.3 | 0.17 | 12.6 | 3.8 | populations move; lurkers still capped |
+| R3 (3x15) | leashes (thief territory, pack range) | 0 | 1.92 / 1.81 | 0.37* | 1.8 | 0.31 | 3.7 | 2.2 | presence-based encounters can't see anything |
+| R4 (3x15) | encounters = ACTIVE state; lurker metabolism | 0 | 1.88 / 1.82 | 1.67 | 2.7 | 0.56 | 2.4 | 3.0 | the metric now measures meetings |
+| R5 (3x15) | schools/swarms expand as clumps; packs take nearer of prey/pilot; dense locusts | 0 | 1.88 / 1.80 | 2.03 | 3.7 | 0.54 | 3.0 | 2.5 | best 15-min cell; then the 60-min run |
+| LONG (2x60) | R5 for an hour | thief 2/2 | 1.81 / 1.72 | 1.76 | 3.1 | 0.72 | 1.8 | 2.4 | thieves die ~20-25 min, packs reach cap, physarum starves |
+| consistency (3x6) | same cell all-micro vs all-macro | - | - | - | - | - | - | - | macro locusts 7x micro, lurkers 0.16x, thieves 2x: **the far cell was a different ecosystem** |
+| calibrate | fit 8 macro dials to the micro trajectories | - | - | - | - | - | - | - | mean log error 0.65 -> 0.14 (end gaps: grazer 1%, thief 3%, lurker 0%, pack 16%, locust 54%) |
+| R6 (3x30) | calibrated cell (+ packs off thieves, lurker metab 0.2, physarum upkeep) | 1-4 | 1.81 / 1.70 | 1.98 | 3.3 | 0.59 | 3.1 | 2.6 | thieves still dying with NO pack predation |
+| R7 (3x30) | two thief fixes | 1-3 | 1.79-1.82 | 1.66-1.98 | 2.9-3.3 | 0.53-0.59 | 2.9-3.4 | 2.6-2.8 | each fix moved the extinction onto locusts |
+| final R7 (4x45) | R7 base for 45 min | thief 3/4 | 1.81 / 1.70 | 1.73 | 2.9 | 0.64 | 2.7 | 2.5 | thieves STARVE (54 of 58 losses), eat 181 vol vs grazers' 165k |
+| R8 (3x30) | **macro diets = micro diets** (the consistency gap the calibration had papered over) | **0** | 1.87 / 1.68 | 1.88 | 3.2 | 0.53 | 3.0 | 2.9 | breathes: herbivore reversals 3-5 per run (was 1-2) |
+| **final (4x45)** | R8 for 45 min | thief 3/4 | **1.87 / 1.68** | **1.76** | **3.1** | **0.60** | 11.2 mean / **2.0 median** | 2.7 | recommended; thieves the one open failure |
+
+\* presence-based, not comparable with R4+.
+
+**Final cell, per pilot (median of 24 flights each, 4 seeds x 45 min):** explorer 1.9 enc/min, variety 3, quiet 61%,
+2.5 hits/min, 3 distinct emotions, 8 species sighted; wanderer 1.6 / 3 / 64% / 1.9 / 3 / 7.5. Threat-variety entropy
+1.44 bits. Emotion entropy 0.83 bits (cute / eerie / terrifying dominate; menacing and majestic appear rarely).
+Threat range 0.40. Replayability: Jaccard distance between seeds' encounter sets 0.73, species-mix TV 0.36,
+emotion TV 0.16 (same seed twice: exactly 0). Cost **14.8 ms/tick mean, 34.7 ms p95** (numba, one core).
+The 11.2 hits/min mean is one flight family: in seed 1 the explorer met a **locust storm** (543 locust hits in one
+5-min flight, flights 7-10 at 70-150 hits/min) - an emergent event nobody scripted, kept in the numbers rather than
+trimmed. Encounter mix over the final: snap-traps 181, lurkers 137, fortress 50, packs 45, locusts 5, physarum 3,
+thieves 2.
+
+### Recommended composition and dials (`rounds.FINAL`)
+
+Everything in `rounds.py` is a delta chain (`HIGHCAP -> BASE3 -> BASE5 -> CONS -> BASE6 -> BASE7 -> R8`), so the
+recommendation is readable as the list of changes that each round earned:
+
+- **Seeds:** grazers (A's school), 500 locusts, packs, 45 thieves at 3 nests, lurkers, one fortress, a snap-trap
+  clump, one physarum; flora logistic on soil N, growth **0.008**, 12% Charge plants (shielded, never food).
+- **Niches are what stopped the siege:** grazer `FLORA|SKEL`, locust `FLORA|TRAIL`, thief `FLORA|SKEL` + stolen
+  trail + larder, packs eat **grazers and locusts only**, lurkers eat anything that wanders in (pilots included).
+- **Caps are backstops, not the dynamics** (grazer 2600, locust 1200, pack 120, thief 150, lurker 60). Packs and
+  lurkers still reach theirs late in long runs - see negatives.
+- **Hunger-gated predators:** packs hunt only below a stomach threshold and stalk a pilot only when it is nearer than
+  any prey; lurker metabolism **0.2** makes lurkers food-limited instead of cap-limited (CV 0.15, was 0.0).
+- **Macro dials are FITTED, not guessed** (`calibrate.py`): grazer F_half 7.8, locust F_half 500, thief F_half 1200,
+  lurker a_attack 0.038, hops 0.012/0.012/0.008 - **and each guild's macro diet is its micro diet** (R8). Without
+  that last line the calibration fits rates that compensate for eating the wrong food.
+- **LOD:** expand 520 u around pilots + a 760-u cone ahead, absorb beyond 680, migrants spawn only > 330 u from any
+  pilot. Sweep (`results/lod.json`, 2 seeds x 15 min):
+
+| LOD radii (expand/ahead/absorb) | pop-ins | closest expansion to a pilot | cost ms (p95) | enc/min | quiet |
+|---|---|---|---|---|---|
+| 360 / 520 / 470 | **39** | 139 u | 13.2 (35.0) | 2.40 | 0.52 |
+| **520 / 760 / 680** | **0** | 320 u | 15.1 (33.6) | 1.75 | 0.51 |
+| 700 / 1000 / 900 | 0 | 527 u | 16.7 (31.5) | 1.95 | 0.44 |
+
+  360 is cheaper and *feels* busier precisely because creatures materialise in view - the continuity law, broken.
+  700 buys nothing 520 doesn't. 520 is the knee.
+
+### Negative controls (`results/controls.json`; the recommended cell with one planted failure, 2 seeds x 12 min)
+
+| metric | planted failure | control value | clean cell | fired |
+|---|---|---|---|---|
+| persistence | pack metabolism x6 | 2 extinct | 0 | yes |
+| diversity (Shannon min) | grazers only | 0.49 | 1.81 | yes |
+| oscillation without freeze | no fauna | freeze 0.50, flora saturated 0.72 | 0.00 | yes |
+| mass audit | a birth that doesn't pay its body | 28,113 vol leaked | 3e-6 | yes |
+| shielded never food | `eat()` bypasses the shield check | 1 shield eaten | 0 | yes |
+| continuity | LOD radii 120/150/160 | 1,585 pop-ins, 1,864 pop-outs | 0 | yes |
+| threat variety | packs only | 0.75 | 3.5 | yes |
+| quiet time | 600 immortal packs | 0.00 | 0.43 | yes |
+| emotional range | grazers only | 1.75 | 2.25 | yes |
+| replayability | same seed twice | distance 0.0 / 0.0 / 0.0 | - | yes |
+
+The clean cell fires none of them.
+
+### Why iteration stopped
+
+The last three rounds stopped moving the player numbers (enc 1.7-2.0, variety 2.9-3.3, quiet 0.53-0.64, median hits
+2-3, emotions 2.5-2.9 across R6, R7, R8 and both finals - inside seed-to-seed spread), and the ecosystem numbers had
+converged except one species. The remaining failure (thieves, below) is structural rather than a dial: two rounds of
+thief dials only moved the extinction onto locusts, and the one fix that worked (R8) was a *model* fix whose effect
+lasts 30 min, not 45. Spending more 45-min runs on thief dials is the wrong use of compute until the opening
+transient is fixed (first bullet of "what would still move the numbers").
+
+### Negatives worth keeping
+
+- **The baseline was a siege.** Every round-1 pick at its own tuned numbers, in one cell: 1.4% quiet, 35 hits/min,
+  thieves extinct 3/4. Each direction was tuned alone against a pilot; together they summed. Niche partition +
+  hunger gating, not lower counts, fixed it.
+- **Presence is not an encounter.** R1-R3 measured "threat within 200 u" and reported variety ~1.8 for a cell full of
+  predators; counting only creatures in a striking state (R4) doubled variety and made quiet measurable.
+- **The far cell was a different ecosystem** until it was calibrated: all-macro locusts 7x the micro count, lurkers
+  0.16x. Any LOD scheme needs this consistency test; ours only looked fine because pilots expand the part you see.
+- **`pack.a_attack` was inert during calibration** - a cfg ordering bug let the legacy `pack_attack` overwrite it.
+  Fixed after the fit; the fitted value equals the default, so the fit stands, but the pack gap (16%) is unfitted.
+- **Calibration hid a diet bug.** The macro level fed grazers and locusts one shared `FLORA|TRAIL|SKEL` list and
+  thieves flora only; the fit compensated (grazer F_half 7.8 = a super-grazer) and the thieves starved behind it.
+  A fit can only be trusted after the model it fits has been made the same model.
+- **Thieves are the fragile link: 3 of 4 seeds extinct by ~33-39 min in the final run.** Starvation, not
+  predation (52 of ~57 losses starved in every seed; packs no longer eat them). It happens in the **opening flora
+  crash**: flora is seeded at its cap (28.8k vol) and the herbivore boom strips it to ~5k by minute 3; thieves, the
+  slowest eaters, never refill. Seed 3 shows the counterfactual: thieves that got through the crash recovered from 12
+  to 27.
+- **Locust storms happen rarely and only to explorers** (one episode, spanning 4 consecutive flights, in 4 seeds x 45 min) - a real emergent event, but a cell
+  that wants locust weather on purpose needs it more often.
+- **Packs and lurkers still end at their caps** (120 / 60) in 45-min runs - food-limited for the first half hour,
+  cap-limited after. The caps are doing work they shouldn't.
+- **Soil N grows ~linearly** (60k -> 130k vol in 38 min): pilots' trail is a steady mass pump and nothing sinks N
+  except flora growth, which is capped by the plant cap. Conserved, legal, but not an equilibrium.
+- **Thieves barely register as encounters** (2 of 423): their theft happens to the pilot's wake behind them.
+  They show up as steals (2.2/min) - a player sees them as their trail vanishing, not as a creature.
+- **A wasted variant:** `r7_thief_metab` duplicated `r7_base` (the dial was already in `HIGHCAP`); kept, flagged.
+- **One cohort per region, normal closure** - variance-only; a bimodal region (half fed, half starving) starves too
+  slowly in macro. Not fixed.
+
+### What would still move the numbers
+
+1. **Seed flora at its grazed equilibrium, not at its cap** (or let herbivores bloom in from zero) - removes the
+   opening crash that kills thieves and hides every other species' real dynamics for the first 5 minutes.
+2. **A sink for soil N that is not a timer** - e.g. flora caps rising with N (more plants, not faster plants), so the
+   trail pump becomes standing biomass the food web can graze.
+3. **Prey-switching packs** (Holling III) instead of hunger gates - should take packs off their cap without making
+   them sparse near pilots.
+4. **Thieves that read as creatures:** their encounter is behind the pilot; a "chase back" moment (thief flees with a
+   glowing prism you can recapture - already modelled, 0-5 recaptures per run) is the encounter waiting to be made
+   legible.
+5. Re-calibrate after R8 (the fit was done on the shared-diet model).
+
+### Part 2 - multi-domain swarms (`domains.py`, `results/domains*.json`)
+
+**Setup.** A 700-u nucleus-less cell, 3 domain territories with 40/20/20 plants (one leader), three pilots trailing
+their own domain, a swarm (cap 150 / 600 / 1500, egg cost e_birth 8 / 12 / 16), 3 seeds x 20 min. Rules for a new
+member's domain: **(a)** the domain of the mass that funded its egg (stomach-weighted pick; seeds in the controlling
+colour; diet = opposing mass per member), **(a1)** the single largest donor, **(b)** parent's domain, **bmix**
+(b with mixed-colour seeds), **(c)** the controlling colour at birth (today), **(d)** flips to the colour of the last
+thing eaten. `*_blind` = same colour rule, colour-blind diet (= a nucleus cell's exterior). `none` = no swarm.
+Metrics: Simpson diversity of member domains, fixation, leader's share of territory (mean/end; none = 0.41/0.38),
+**comeback index** = trailing domains' share change / leader's share change under the swarm vs `none` (1 = neutral,
+< 1 the swarm shelters the leader, > 1 it grazes the leader down), legibility (fraction of body-minutes in a 100-u
+cluster that is not a < 10% sliver and whose colour mix turns over < 20%/min), audit (≤ 5e-9 everywhere).
+
+| rule (cap 600, e_birth 12) | Simpson | fixed | leader share mean / end | comeback idx | legible | slivers | turnover/min |
+|---|---|---|---|---|---|---|---|
+| none (no swarm) | - | - | 0.41 / 0.38 | - | - | - | - |
+| **(a) food** | 0.64 | 0/3 | 0.51 / 0.43 | **0.80** | 0.82 | 0.18 | 0.2% |
+| (a1) largest donor | 0.64 | 0/3 | 0.53 / 0.44 | 0.74 | 0.88 | 0.12 | 0.3% |
+| (b) parent | 0.00 | 3/3 at 60 s | 0.97 / 0.97 | 0.14 | 1.00 | 0 | 0 |
+| bmix (parent, mixed seeds) | 0.65 | 0/3 | 0.48 / 0.44 | 0.80 | 0.88 | 0.12 | 0.0% |
+| **(c) controller (today)** | 0.00 | 3/3 at 60 s | **0.97 / 0.97** | **0.14** | 1.00 | 0 | 0 |
+| (d) last eaten | 0.66 | 0/3 | 0.48 / 0.42 | 0.79 | **0.03** | 0.16 | **73%** |
+| blind (one colour, any diet) | 0.00 | 3/3 | 0.41 / 0.40 | 1.08 | 1.00 | 0 | 0 |
+| a_blind (a's colour, any diet) | 0.42 | 0/3 | 0.41 / 0.41 | 1.06 | 0.66 | 0.35 | 0.0% |
+
+Across sizes: (a) at cap 150 ci 0.95, cap 1500 ci 1.02 (but turnover 23%/min at e_birth 8 -> legible 0.12; 13% at
+e_birth 16 -> legible 0.90). (c) at cap 150 is milder (leader 0.45, ci 0.41) because a small swarm can't hold the
+leader's colour everywhere; at 600 and 1500 it is monochrome in the leader's colour and grazes only the trailers.
+
+**Drift / founder effects.** With colour-blind diets nothing selects on colour, so any fixation would be pure drift.
+None fixed in 20 min at any size: births are 75-455 per 20 min at caps 150/600 (< 1 generation), 4.5k-9.4k at
+1500 (~5-10 generations); neutral fixation needs ~1.4·N generations, i.e. hours to days of sim time. At low turnover
+the founder colour simply persists (a_blind Simpson 0.40-0.55 = the seed mix), at high turnover it mixes toward
+0.66 (the max for three domains). **Drift is not a risk at swarm sizes and match lengths; founder colour is.**
+
+**Recommendation: (a), with two UI conditions. The finding does not argue against (a); it argues hard against
+keeping (c).**
+
+- (c) is the strongest anti-comeback mechanic measured anywhere in this program: the swarm wears the leader's colour,
+  therefore eats only the trailers' mass, and the leader's share goes 0.41 -> 0.97 (ci 0.14). In a nucleus-less cell
+  today's rule hands the cell to whoever leads at the first wave.
+- (a) cuts that to a mild shelter (leader share +0.10, ci 0.80) at every size, keeps three colours alive (Simpson
+  0.64, never fixes), and in **nucleus cells** - where the exterior diet is any-domain - its effect on territory is
+  nil (a_blind ci 1.06): there it is purely a colour/readability decision.
+- **Costs of (a), measured:** (1) slivers - 15-18% of body-minutes sit in < 10% colour fragments; **DomainSlots must
+  merge or hide slots under ~10%** of a swarm or the HUD will show noise. (2) Legibility collapses when turnover passes
+  ~20%/min (high churn: big swarms with cheap eggs) - cap e_birth so a member lives > ~5 min, or show the swarm's
+  colour as a smoothed mix rather than per-member. (3) The residual leader shelter (ci 0.80) in nucleus-less cells.
+- (a1) is strictly worse (more shelter, ci 0.74). (d) is as balanced as (a) but **illegible** (73% of colours change
+  every minute, 12k flips per run) - rejected. (b) with controller seeds is (c); bmix (parent, mixed seeds) matches (a)
+  and is a cheap fallback if per-egg bookkeeping is a problem.
+
+Note for the game session implementing (a) (`cece/swarm-fauna-game`, `Docs/SWARM_FAUNA.md` §16): the stomach-weighted
+pick (a) beat the largest-donor pick (a1) on balance; and the legibility numbers above are per 100-u cluster, so a
+DomainSlots row per 10% of the swarm is about the finest granularity a player can follow.
