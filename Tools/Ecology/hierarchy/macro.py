@@ -294,7 +294,8 @@ class Macro:
         hunters_c = n * fh
         hunters = hunters_c.sum(1) * cold
         nH = H.count() * cold
-        rate = hunters * P.p_attack * nH / (1.0 + P.p_attack * P.p_handle * nH) * dt
+        a_ = P.p_attack * (2.0 if P.bug == "macro_attack_x2" else 1.0)
+        rate = hunters * a_ * nH / (1.0 + a_ * P.p_handle * nH) * dt
         k = np.minimum(rng.poisson(rate), nH)
         rr = np.flatnonzero(k)
         if len(rr) == 0:

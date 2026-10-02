@@ -25,6 +25,7 @@ OUT = os.path.join(os.path.dirname(__file__), "results")
 
 GRIDS = {
     "a": dict(h_half=[30.0, 90.0], pred_metab=[0.06, 0.12], flora_r=[0.003, 0.006]),
+    "c": dict(h_half=[60.0, 90.0], pred_metab=[0.015, 0.02, 0.025, 0.03], flora_r=[0.006]),
     "b": dict(h_half=[90.0], pred_metab=[0.02, 0.03, 0.04], pred_sprint=[0.03, 0.06], flora_r=[0.003, 0.006]),
 }
 
