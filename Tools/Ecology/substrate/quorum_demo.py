@@ -36,12 +36,13 @@ def run(cond, seed, minutes=1.5, dt=0.1, backend="numpy", policy="wander"):
     for i in range(int(minutes * 60 / dt)):
         sp.step(ar, dt); ar.step(dt); pr.observe(ar, sp); enc.observe(ar, sp)
         ph = float(sp.phase[sp.alive].mean()) if sp.alive.any() else 0
-        if flip is None and ph > 0.5: flip = round(ar.t, 1)
+        gf = float(np.mean(sp.phase[sp.alive] > 0.5)) if sp.alive.any() else 0
+        if flip is None and gf > 0.25: flip = round(ar.t, 1)      # a band (>= 1/4 of the population) went gregarious
         if i % 10 == 0:
-            trace.append(dict(t=round(ar.t, 1), phase=round(ph, 3), hunger=round(float(sp.hunger[sp.alive].mean()), 3),
+            trace.append(dict(t=round(ar.t, 1), phase=round(ph, 3), greg_frac=round(gf, 3), hunger=round(float(sp.hunger[sp.alive].mean()), 3),
                               n=int(sp.alive.sum()), live_vol=round(ar.live_volume())))
     r = run_score(ar, sp, pr, minutes); r.pop("hit_times")
-    r.update(encounter=enc.summary(), phase_end=round(float(sp.phase[sp.alive].mean()), 3), flip_t=flip, trace=trace)
+    r.update(encounter=enc.summary(), greg_frac_end=round(float(np.mean(sp.phase[sp.alive] > 0.5)), 3), phase_end=round(float(sp.phase[sp.alive].mean()), 3), flip_t=flip, trace=trace)
     return r
 
 
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     for cond, mins in (("sparse_fed", 1.5), ("dense_hungry", 1.5), ("emergent", 4.0)):
         out[cond] = [run(cond, s, minutes=mins) for s in (7, 23)]
         f = [r["feel"] for r in out[cond]]
-        print(cond, "phase", [r["phase_end"] for r in out[cond]], "flip", [r["flip_t"] for r in out[cond]],
+        print(cond, "phase", [r["phase_end"] for r in out[cond]], "greg", [r["greg_frac_end"] for r in out[cond]], "flip", [r["flip_t"] for r in out[cond]],
               "hits/min", [r["hits_per_min"] for r in out[cond]],
               {k: round(float(np.mean([x[k] for x in f])), 3) for k in f[0]}, out[cond][0]["encounter"])
     json.dump(out, open(os.path.join(HERE, "results", "quorum.json"), "w"), indent=1)

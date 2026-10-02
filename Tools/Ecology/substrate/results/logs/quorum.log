@@ -1,0 +1,2 @@
+sparse_fed phase [0.001, 0.023] greg [0.0, 0.0] flip [None, None] hits/min [0.0, 0.0] {'size': 2.2, 'speed_rel': 0.217, 'approach': 1.705, 'coherence': 0.317, 'burstiness': 1.06, 'jerk_rel': 0.184} {'heading_to_pilot': 0.562, 'pursuit': -14.897, 'near_frac': 0.001, 'ring_sd': 0.19}
+dense_hungry phase [0.494, 0.408] greg [0.451, 0.345] flip [1.5, 1.5] hits/min [47.33, 45.33] {'size': 2.965, 'speed_rel': 1.183, 'approach': 6.945, 'coherence': 0.722, 'burstiness': 1.005, 'jerk_rel': 0.925} {'heading_to_pilot': -0.321, 'pursuit': 46.203, 'near_frac': 0.565, 'ring_sd': 0.856}
