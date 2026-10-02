@@ -16,3 +16,27 @@
   cute gen 15 best 0.996 sigma 0.164
   cute gen 16 best 0.996 sigma 0.154
   cute gen 17 best 0.996 sigma 0.145
+cute {"fitness": 0.996, "val_fitness": 0.995, "val_hit": 1.0, "val_agree": 1.0, "params": {"n": 1, "size": 3.169, "aspect": 1.0, "vmax": 34.389, "approach": 0.051, "d0": 61.415, "orbit": 1.0, "ar_amp": 0.596, "ar_period": 3.549, "bounce_amp": 37.254, "bounce_hz": 3.146, "sync": 0.463, "noise": 0.455, "still_duty": 0.078, "still_period": 2.879, "rigid": 0.4, "spread": 47.315, "face": 0.843, "pace": 0.886, "sneak": 0.14}} | random 0.667
+  playful gen  0 best 0.306 sigma 0.278
+  playful gen  1 best 0.488 sigma 0.262
+  playful gen  2 best 0.485 sigma 0.246
+  playful gen  3 best 0.318 sigma 0.233
+  playful gen  4 best 0.475 sigma 0.224
+  playful gen  5 best 0.462 sigma 0.211
+  playful gen  6 best 0.626 sigma 0.201
+  playful gen  7 best 0.493 sigma 0.192
+  playful gen  8 best 0.475 sigma 0.181
+  playful gen  9 best 0.529 sigma 0.171
+  playful gen 10 best 0.642 sigma 0.169
+  playful gen 11 best 0.565 sigma 0.162
+  playful gen 12 best 0.729 sigma 0.159
+  playful gen 13 best 0.722 sigma 0.155
+  playful gen 14 best 0.648 sigma 0.148
+  playful gen 15 best 0.749 sigma 0.141
+  playful gen 16 best 0.704 sigma 0.137
+  playful gen 17 best 0.672 sigma 0.131
+playful {"fitness": 0.749, "val_fitness": 0.693, "val_hit": 0.889, "val_agree": 0.889, "params": {"n": 8, "size": 4.971, "aspect": 2.306, "vmax": 16.287, "approach": -0.184, "d0": 100.556, "orbit": 0.202, "ar_amp": 0.409, "ar_period": 2.183, "bounce_amp": 40.0, "bounce_hz": 0.701, "sync": 0.616, "noise": 0.801, "still_duty": 0.0, "still_period": 6.402, "rigid": 0.007, "spread": 157.345, "face": 0.413, "pace": 0.0, "sneak": 0.68}} | random 0.389
+  eerie gen  0 best 0.362 sigma 0.282
+  eerie gen  1 best 0.407 sigma 0.271
+  eerie gen  2 best 0.380 sigma 0.257
+  eerie gen  3 best 0.359 sigma 0.246

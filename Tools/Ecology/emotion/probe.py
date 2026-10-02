@@ -81,3 +81,17 @@ class EmotionProbe:
         c = self.W[k] * z - (self.W * z).mean(0)
         order = np.argsort(-np.abs(c))[:top]
         return [(self.keys_l[i], round(float(c[i]), 2)) for i in order]
+
+    def advise(self, f, target, top=4):
+        """What to change to move this creature toward `target`: the logistic features whose contribution
+        to (target - current top) is most negative, with the direction to move each. Design hints, not laws -
+        a feature can only move as far as the species' own rules let it."""
+        cur = self.score(f)["top"]
+        if cur == target:
+            return []
+        kt, kc = EMOTIONS.index(target), EMOTIONS.index(cur)
+        x = np.array([f.get(q, 0.0) for q in self.keys_l]); z = np.clip((x - self.Lmu) / self.Lsd, -6, 6)
+        dw = self.W[kt] - self.W[kc]
+        gain = dw * z                      # how much each feature currently helps target over current
+        order = np.argsort(gain)[:top]
+        return [(self.keys_l[i], "raise" if dw[i] > 0 else "lower", round(float(gain[i]), 2)) for i in order]
