@@ -158,6 +158,31 @@ pack, which read playful; the final pack below reads terrifying to a hovering pi
   and fighting share the same motor patterns. `advise(f, "menacing")` says what to change: fewer close fast
   passes (lower `tau_inv`), face the pilot (raise `gaze`), slow down.
 
+### Emotion over time (`emotion/timeline.py`, `results/timeline.json`, `results/sib_bestiary_timeline.json`)
+A 40 s average hides an arc and dilutes a single snap. The timeline reads the probe on 8 s windows every
+2 s. On the reference families an 8 s window costs almost nothing: 0.978 per window over 986 windows, and the
+mean of windows is right 100% of the time. (This is a check that short windows don't break the probe, not a
+held-out score.)
+
+Hovering pilot; one letter per window (n neutral, c cute, p playful, e eerie, m majestic, t terrifying):
+
+| species | windows | peak threat | mean threat |
+|---|---|---|---|
+| bestiary leviathan, seed 301 | `mmmmmmmmmeeeeette` | 0.48 | 0.23 |
+| bestiary stampede, seed 301 | `nnnnnnnnntttttmnn` | **0.74** | 0.26 |
+| bestiary lurker, seed 301 | `nnnneppcppppppttt` | 0.48 | 0.27 |
+| bestiary locust, seed 301 | `nnnnnnnnnnnncccct` | 0.79 | 0.06 |
+| game worm attack cycle | eerie in 15 of 17 windows | **0.095** | 0.07 |
+
+- **The leviathan plays exactly its stated arc** ("majestic awe → dread up close"): majestic → eerie →
+  terrifying as it closes.
+- **The stampede's panic is a terror spike** inside an otherwise neutral encounter.
+- **The lurker's snap is visible** as terrifying windows at the end.
+- **The worm's telegraph and lunge never read as a threat in any window.** That is the clearest game
+  finding of the night: the shipped kaiju attack reads *eerie* (lockstep body, facing you), and the lunge is
+  too slow (70 u/s) and too brief to register as looming.
+- **Recommendation:** report `peak_threat` alongside the mean for any ambush or burst species.
+
 ### Negatives (kept)
 1. **The old scorecard's feel stats separate the six emotions at 0.32 LOFO.** Nearly all the signal is in
    the new relational features.
@@ -218,7 +243,8 @@ pack, which read playful; the final pack below reads terrifying to a hovering pi
 - **Too-perfect motion is eerie only relative to an expectation of life.** A rigid lattice of prisms may read
   as machinery rather than as uncanny. The uncanny needs an almost-living look that only art can give.
 - **The probe averages over 30–40 s.** An ambusher whose whole emotion is one rare snap (the bestiary
-  lurker) is diluted into background. A per-moment readout, or a peak statistic, is the next model change.
+  lurker) is diluted into background. `timeline.py` now gives a per-window readout and a peak statistic; the windows are still 8 s long, so
+  an instant shorter than that is still averaged.
 - **The probe reads 30–40 s encounters with one pilot.** It does not see mood built over a match, sound
   (FMOD stingers, a roar, silence before a strike), lighting, the camera or the stakes (whether it can hurt
   you). Danger prisms that burn petals change "menacing" more than any motion could.

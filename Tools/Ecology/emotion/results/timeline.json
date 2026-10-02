@@ -1,0 +1,173 @@
+{
+ "check": {
+  "window_acc": 0.978,
+  "mean_of_windows_acc": 1.0,
+  "n_windows": 986
+ },
+ "species": {
+  "game/worm_attack_cycle": {
+   "mean": {
+    "cute": 0.049,
+    "playful": 0.019,
+    "eerie": 0.564,
+    "majestic": 0.108,
+    "menacing": 0.051,
+    "terrifying": 0.018,
+    "neutral": 0.189
+   },
+   "peak": {
+    "cute": 0.097,
+    "playful": 0.022,
+    "eerie": 0.629,
+    "majestic": 0.162,
+    "menacing": 0.069,
+    "terrifying": 0.025,
+    "neutral": 0.365
+   },
+   "peak_threat": 0.095,
+   "mean_threat": 0.069,
+   "tops": [
+    "neutral",
+    "neutral",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie",
+    "eerie"
+   ]
+  },
+  "game/worm_colony": {
+   "mean": {
+    "cute": 0.028,
+    "playful": 0.017,
+    "eerie": 0.113,
+    "majestic": 0.498,
+    "menacing": 0.023,
+    "terrifying": 0.004,
+    "neutral": 0.317
+   },
+   "peak": {
+    "cute": 0.036,
+    "playful": 0.036,
+    "eerie": 0.169,
+    "majestic": 0.572,
+    "menacing": 0.033,
+    "terrifying": 0.008,
+    "neutral": 0.452
+   },
+   "peak_threat": 0.041,
+   "mean_threat": 0.027,
+   "tops": [
+    "neutral",
+    "neutral",
+    "neutral",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic"
+   ]
+  },
+  "game/shark_r30": {
+   "mean": {
+    "cute": 0.004,
+    "playful": 0.037,
+    "eerie": 0.033,
+    "majestic": 0.39,
+    "menacing": 0.298,
+    "terrifying": 0.023,
+    "neutral": 0.216
+   },
+   "peak": {
+    "cute": 0.008,
+    "playful": 0.085,
+    "eerie": 0.042,
+    "majestic": 0.47,
+    "menacing": 0.384,
+    "terrifying": 0.089,
+    "neutral": 0.31
+   },
+   "peak_threat": 0.465,
+   "mean_threat": 0.32,
+   "tops": [
+    "menacing",
+    "menacing",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "majestic",
+    "menacing",
+    "majestic",
+    "majestic",
+    "majestic"
+   ]
+  },
+  "game/tadpole_flock": {
+   "mean": {
+    "cute": 0.714,
+    "playful": 0.012,
+    "eerie": 0.071,
+    "majestic": 0.04,
+    "menacing": 0.005,
+    "terrifying": 0.002,
+    "neutral": 0.156
+   },
+   "peak": {
+    "cute": 0.854,
+    "playful": 0.02,
+    "eerie": 0.128,
+    "majestic": 0.064,
+    "menacing": 0.009,
+    "terrifying": 0.004,
+    "neutral": 0.185
+   },
+   "peak_threat": 0.011,
+   "mean_threat": 0.007,
+   "tops": [
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute",
+    "cute"
+   ]
+  }
+ }
+}
