@@ -10,7 +10,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-1.3 / BH-1.4 — auth scene: timeout off the main thread, and silent sign-in failure
 
-- **Date:** fixed 2026-10-02; awaiting Yash's retest on `Bug_Hunt`. Repro skipped at Yash's call.
+- **Date:** fixed 2026-10-02; retest deferred by Yash on 2026-10-02 and parked on the handoff's revisit/playtest list. Repro skipped at Yash's call.
 - **Symptom (1.3):** with a slow or unreachable UGS at boot, the cached-auth timeout expires and the
   auth scene can throw `EnsureRunningOnMainThread` or freeze on the auth screen.
 - **Symptom (1.4):** a failed guest or auto sign-in navigates on as if signed in, then waits out the

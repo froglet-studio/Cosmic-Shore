@@ -51,6 +51,8 @@ Confidence scale:
 - **Gamepad held triggers (1.2):** with a pad, hold a trigger then move the mouse or tap a key, and
   the ability/drift must end; hold a trigger and pause, and it must release, and the pad must work
   after resume. Re-check this if a held ability ever sticks after an input switch.
+- **STILL TO TEST (revisit): 1.3 and 1.4 were pushed on `Bug_Hunt` (`6d16219`) but not yet retested in Unity.** Run
+  the next two items before merging them, or whenever the auth scene is next touched.
 - **Auth timeout (1.3):** set `cachedAuthTimeout` to ~0.1 s on the auth scene controller (or go
   offline with a cached session) and boot. After "Cached auth timed out" it should carry on to the
   auth panel or main menu with no `EnsureRunningOnMainThread` error and no frozen screen.
