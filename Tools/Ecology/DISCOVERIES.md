@@ -146,3 +146,51 @@ loose mass. The mass split was wasp 45-52%, wearers 41-43%, traps 5-15%. The tra
 the racer lays before the others strip it. Hits by kind on the racer: burn 8 / 25 (the web), sting 0 / 14 (it flew
 through the nest), crush 0 / 2. The hunter took everything apart: all 40 wearers and most trap workers killed in 5 min.
 The single hunter policy is too strong to be the only probe in a mixed cell.
+
+### Round 3 (~08:00 UTC) - sieges, division of labour, and "is it the seed or the play?"
+
+**You cannot steal a mending wall; you have to break it** (`run_tug.py`, 3 seeds x 3 passes). A raiding vessel that
+STEALS the bricks it touches (a Squirrel/Urchin-style steal) instead of ramming them:
+
+| raid | wall healed to 90% | t50 | t90 | wall mass destroyed |
+|---|---|---|---|---|
+| ram (destroy) | 7/9 | 17.8 s | 70.0 s | 290-440 |
+| steal | **9/9** | **5.4 s** | **12.5 s** | 0 |
+
+The stolen bricks fall loose right at the breach, in the pilot's colour, which is exactly what the menders forage for.
+They re-steal them within seconds. Removing supply is the only siege that works. That is emergent, and it is good game
+design: two vessel verbs with different counters.
+
+**Defence competes with repair** (`run_defend_vs_mend.py`). The ram t50 drifted 6.4 -> 10.7 -> 17.8 s between rounds.
+The alarm defence added in round 1 was the cause: it sends every idle worker at the intruder, so nobody is fetching
+repair material.
+
+| | t50 | t90 | healed | stings on a pass-through cutter (9 passes) |
+|---|---|---|---|---|
+| defence on (all idle workers) | 17.8 s | 70.0 s | 7/9 | 1 |
+| defence off | 5.6 s | 38.5 s | 9/9 | 0 |
+| **defender caste 30%** (response thresholds, Bonabeau, Theraulaz & Deneubourg 1996) | **5.6 s** | **41.3 s** | 8/9 | 1 |
+
+The caste keeps repair at full speed and loses nothing against a cutter. **But it costs raid defence**: against a hunter
+that keeps attacking the core, raider hits fall 1.11 -> 0.11/min and crystals taken 27 -> 19 (fewer workers to ram).
+Escalating recruitment (the alarm keeps accumulating while an intruder stays) **did not change this at all**. The
+hunter pilot passes through the alarm radius in ~1.4 s per pass and the alarm decays between passes, so nothing ever
+accumulates. Recorded as a negative. The caste fraction is a design dial: menders vs stingers.
+
+**Structures are shaped by the play, not the seed** (`run_butterfly.py`). Jaccard distance of the built structure
+against the seed-7 baseline:
+
+| species | same seed rerun | pilot start nudged by **1 u** | a different seed |
+|---|---|---|---|
+| nest v1 (logistic) | 0.00 | 0.45 | 0.59 |
+| wasp comb | 0.00 | 0.33 | 0.76 |
+| traps v2 (racer) | 0.00 | 0.45 | 0.73 |
+| wearers v2 | 0.00 | 0.93 | 0.86 |
+
+Same seed is bit-identical; a 1 u nudge to where the pilot starts already rebuilds a third to most of the structure. Two
+players on the same seed get different nests, webs and monsters. Replayability is driven by the player.
+
+**The logistic claim, measured** (`run_supply.py`, 8 seeds). cos(structure centroid offset, supply direction): nest v1
+**0.94** (null -0.26; offset 4-16 u). Even the template shell v0 leans toward its supply (0.66), but only by 1-7 u. The
+wasp comb barely does (0.31): its stalk axis dominates. Ladley & Bullock's point holds: making workers carry real mass
+makes the structure face where the mass comes from. Here that is where the player flies.

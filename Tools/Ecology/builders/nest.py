@@ -24,13 +24,14 @@ class NestWeavers(Colony):
             "core by a Q-template + cement rule. Gold = laden worker. Raid the core for the brood crystals.")
 
     def __init__(self, arena, seed=0, n=48, Rc=36.0, w=9.0, k_cement=0.6, nucleate=0.01, alarm=110.0,
-                 growth_per_brood=20, anchor=None, name="nest", homing="shell"):
+                 growth_per_brood=20, anchor=None, name="nest", homing="shell", caste=None):
         rng = np.random.default_rng(seed + 5)
         if anchor is None:
             d = rng.normal(size=3); d /= np.linalg.norm(d); anchor = d * 450.0
         super().__init__(arena, n, anchor, dom=2, s=8.0, speed=70.0, sense=220.0, frac=4, name=name, seed=seed)
         self.Rc, self.w, self.kc, self.nuc, self.alarm_r = Rc, w, k_cement, nucleate, alarm
         self.gpb = growth_per_brood
+        self.defend_caste = caste       # None = every unladen worker answers the alarm; 0.3 = a 30% defender caste
         self.homing = homing          # "shell": walk to a drifting bearing on the Rc shell; "core": walk home to the core
         m = self.lat.m
         self.cement = np.zeros((m, m, m), np.float32)

@@ -1,0 +1,22 @@
+{
+ "nest_v1": {
+  "same_seed": 0.0,
+  "nudged_1u": 0.45,
+  "other_seed": 0.587
+ },
+ "wasp": {
+  "same_seed": 0.0,
+  "nudged_1u": 0.333,
+  "other_seed": 0.76
+ },
+ "traps_v2": {
+  "same_seed": 0.0,
+  "nudged_1u": 0.452,
+  "other_seed": 0.729
+ },
+ "wearers_v2": {
+  "same_seed": 0.0,
+  "nudged_1u": 0.933,
+  "other_seed": 0.86
+ }
+}

@@ -191,6 +191,7 @@ class Colony:
         self.claimed: set = set()                     # mass indices some worker is already heading for
         self.taken: set = set()                       # mass indices this colony is carrying or has built with
         self.build_log = []                           # (t, n_built)
+        self.pickup_pos = []                          # where every stolen prism was picked up (the supply)
 
     # ---------------------------------------------------------------- foraging
     def stealable(self, arena, i) -> bool:
@@ -322,6 +323,7 @@ class Colony:
                         self.claimed.discard(int(g)); self.goal[k] = -1
                         if arena.mass_dom[g] == self.dom:
                             self.carry[k] = g; self.taken.add(int(g)); self.pickups += 1
+                            self.pickup_pos.append(arena.mass_pos[g].copy())
                             self.on_pickup(arena, k, g)
                 else:
                     if refresh:
@@ -343,7 +345,8 @@ class Colony:
     def forage_bias(self, arena, k):
         return np.zeros(3)
 
-    def defend(self, arena, dt, centre, alarm_r, guard_r=None, strike_at=0.6, rise=0.6, fall=0.3, cooldown=1.5):
+    def defend(self, arena, dt, centre, alarm_r, guard_r=None, strike_at=0.6, rise=0.6, fall=0.3, cooldown=1.5,
+               caste=None):
         """Shared colony defence with a readable escalation (no branch picks a behaviour; one alarm level does):
         a pilot inside `alarm_r` of `centre` raises the colony's ALARM (local: the workers that see it). Below
         `strike_at` the unladen workers near home form a GUARD SCREEN between the core and the pilot (the
@@ -353,13 +356,24 @@ class Colony:
         guard_r = guard_r or alarm_r * 0.5
         self.cool -= dt; self.intent[:] = 0.0
         inside = [p for p in arena.pilots if np.linalg.norm(p.pos - centre) < alarm_r]
-        self.alarm_level = min(1.0, self.alarm_level + rise * dt) if inside else max(0.0, self.alarm_level - fall * dt)
+        cap = 1.0 / getattr(self, "defend_caste", None) if getattr(self, "defend_caste", None) else 1.0
+        # the stimulus keeps ACCUMULATING while an intruder stays (up to 1/caste): a pass-through recruits the
+        # low-threshold few, a siege recruits everyone - escalating recruitment, not a fixed caste
+        self.alarm_level = min(cap, self.alarm_level + rise * dt) if inside else max(0.0, self.alarm_level - fall * dt)
         if self.alarm_level <= 0:
             return
         p = min(inside or arena.pilots, key=lambda q: np.linalg.norm(q.pos - centre))
         d = np.linalg.norm(self.agent_pos - p.pos, axis=1)
         dh = np.linalg.norm(self.agent_pos - centre, axis=1)
         ks = np.flatnonzero(self.alive & (self.carry < 0) & (dh < alarm_r * 2.2))
+        caste = getattr(self, "defend_caste", None) if caste is None else caste
+        if caste is not None:
+            # RESPONSE THRESHOLDS (Bonabeau, Theraulaz & Deneubourg 1996): each worker has a fixed threshold; it
+            # answers the alarm only if alarm_level exceeds it. With thresholds spread over [0, 1/caste] at most a
+            # `caste` fraction ever defends - the rest keep fetching material, so defence stops starving repair.
+            if not hasattr(self, "theta"):
+                self.theta = self.rng.random(self.n) / max(caste, 1e-6)
+            ks = ks[self.theta[ks] < self.alarm_level]
         to = p.pos - centre; to = to / max(np.linalg.norm(to), 1e-6)
         for k in ks:
             if self.alarm_level < strike_at:
