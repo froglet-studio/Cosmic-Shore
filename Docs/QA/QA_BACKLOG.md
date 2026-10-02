@@ -722,6 +722,107 @@ a CPU line that still climbs over minutes · a `NullReferenceException` from `Sw
 weapon (Serpent sniper, Dolphin cone, distant rocket) passes through it; other fauna cannot prey on
 members; member bodies do not move the cell's phase ladder (`Docs/SWARM_FAUNA.md` §14.4).
 
+### QA-SWARM-ROUND8-1 ⬜ — weapons reach a GPU-drawn swarm member at range
+
+**Source:** branch `cece/swarm-fauna-game` (authored headless; **never run in the editor**). Full reference:
+`Docs/SWARM_FAUNA.md` §16.1-§16.2. **Why it matters:** before round 8 a member with no proxy (> 160 u from a
+vessel) had no collider, so a rocket, the Dolphin's cone, the Serpent's rifle and gunfire passed straight
+through a whale. Now each weapon queries the members with the SAME volume it uses for prisms, and a hit
+member is materialised at its slot and killed by the weapon's own code. Headless proof: the five volumes
+match the shipped Burst predicates on 1M points each (0 disagreements), and the grid never misses a member.
+Nothing about Unity is proven. Run `QA-SWARM-ROUND7` first.
+
+1. Let Unity import. Confirm there are no compile errors naming `SwarmMemberQuery`, `SwarmTargets`,
+   `SwarmFauna`, `ExplosionImpactor`, `SniperShotActionExecutor`, `Projectile` or `Prism`.
+2. Enter the Swarm cell. Park a Dolphin ~600 u from the whale (well outside 160 u), bank energy, collect a
+   crystal, and fire the cone through the whale. Members inside the cone must die where they are drawn:
+   each one dies the way a proxied member shot up close dies, and drops its crystal. Nothing should pop and
+   nothing should jump sideways at the moment of death.
+3. As a Serpent, scope from ~1,500 u and fire through a dense part of a swarm. The tracer must stop at, or
+   pierce through, members exactly as it does through prisms, and the members it passed through must die.
+4. As a Sparrow, fire full-auto at a swarm from ~400 u, then fire a rocket. Rounds that cross a member must
+   hit it. A rocket's blast must kill the members inside its sphere and spare members of the pilot's own
+   domain, exactly as it spares own-domain prisms.
+5. In a multiplayer session, kill members from a client. Confirm the kills show on the scoreboard for that
+   client (the ordinary `ReportFaunaKill_ServerRpc` path).
+6. Profiler: look for a frame spike on a big blast. Explosion member work is capped at 48 materialisations
+   per frame; record the worst frame time.
+
+**PASS:** no compile errors; every weapon kills members at range, where they are drawn; own-domain members
+are spared; crystals drop; client kills score; no frame worse than the same blast fired into a forest.
+**FAIL:** any compile error · a weapon passing through a member at range · a death that pops or jumps · a
+member killed twice (two crystals) · an own-domain member killed by a non-friendly-fire blast · a client
+kill that never scores.
+
+### QA-SWARM-ROUND8-2 ⬜ — predators hunt and eat GPU-drawn members
+
+**Source:** branch `cece/swarm-fauna-game` (headless only; **never run in the editor**). Full reference:
+`Docs/SWARM_FAUNA.md` §16.3. **Why it matters:** proxies were never in the cell's live-fauna registry, so no
+predator could see a swarm member. Now `LightFauna` and the worm colony ask the swarms for prey through the
+same member query, respecting diet, band and predation immunity measured from the member's real age.
+
+1. Spawn a predator `LightFauna` species and a worm colony into the Swarm cell from the Spawn Matrix.
+2. Watch a predator near a swarm for 2 minutes. It must chase a member, which becomes a proxy and must not
+   flicker away mid-chase, then eat it. The member must suction into the predator's mouth (the predation
+   death, not a wither), and the predator's starvation clock must reset.
+3. Confirm that a just-born member (blooming in) is not eaten in its first moments, i.e. predation immunity
+   holds.
+4. Confirm a predator does not chase members outside its own band.
+
+**PASS:** predators chase and eat members through the predation path; immunity and band hold; no pop.
+**FAIL:** any compile error · predators ignore swarms · a member is eaten while still blooming in · a chased
+member blinks out and reappears · a predated member withers in place instead of suctioning into the mouth.
+
+### QA-SWARM-ROUND8-3 ⬜ — member bodies move the Swarm cell's volume ladder
+
+**Source:** branch `cece/swarm-fauna-game` (headless only; **never run in the editor**). Full reference:
+`Docs/SWARM_FAUNA.md` §16.3. **Why it matters:** "volume is the spine". The three swarms' bodies (~62,600
+volume grown full) now count toward `Cell.LiveVolume` per domain, never twice for a member that has a
+proxy. The cell's ladder was re-derived for it: Restless 55,000 / 41,000, Frenzy 390,000 / 343,000
+(volume; counts unchanged).
+
+1. Select `Swarm Cell Config.asset`. **Restless Enter/Exit Volume 55000/41000, Frenzy Enter/Exit Volume
+   390000/343000.** If not, reimport.
+2. Enter the Swarm cell with a debug readout of `Cell.LiveVolume` (or the cell phase HUD). With the swarms
+   seeded, live volume must exceed the forest alone. Let them grow for 5 minutes: it should climb as they
+   grow.
+3. Fly a vessel into a swarm so dozens of proxies form, then leave. Live volume must NOT jump when proxies
+   appear or retire. A step there is a double count or a gap.
+4. Kill ~100 members. Live volume must fall by roughly their bodies, with no spike.
+5. Record which phase the cell sits in once the swarms are grown (expected Calm or Restless; Frenzy only
+   with heavy trail).
+
+**PASS:** the config values are present; bodies raise live volume; proxies forming or retiring cause no
+jump; kills lower it. **FAIL:** volume jumps when you approach or leave a swarm · the cell pins at Frenzy
+with no trail · live volume never moves as the swarms grow.
+
+### QA-SWARM-ROUND8-4 ⬜ — MultiDomain swarms wear the colours of what they ate
+
+**Source:** branch `cece/swarm-fauna-game` (headless only; **never run in the editor**). Full reference:
+`Docs/SWARM_FAUNA.md` §16.4 and the CLAUDE.md exception beside "No domain asymmetry". **Why it matters:**
+the Swarm cell's swarms are now MultiDomain. Seeds wear the controlling domain, and every newborn wears the
+domain of the mass that funded its egg, so a swarm grazing a mixed forest grows into several colours that
+sort into regions. Headless: in the sort core a member's nearest neighbour shares its domain 56% of the
+time (34% for random labels); a one-colour control fed the same food stays one colour.
+
+1. Select the four `Assets/_SO_Assets/Swarm Fauna/*Config.asset`: **Multi Domain on**. Confirm the C#
+   default (a new SwarmFaunaConfigSO) is **off**.
+2. Enter the Swarm cell. Confirm there are no shader errors on `CosmicShore/SwarmMemberInstanced` (the
+   palette is now `_SwarmTierDark/_SwarmTierBright[9]`). Seeded swarms must be one colour.
+3. Lay trails or plant other domains' mass near a swarm's feeding ground (switch domain with the Domain
+   Changer and graze-test), then wait 5-10 minutes. Newborns should appear in the other domains' colours
+   and gather into patches or regions, not a random speckle.
+4. Shoot members of each colour with a rocket from each domain: own-colour members are spared, others die,
+   matching prisms of those colours.
+5. A proxy (fly close) must show the same colour as its GPU-drawn member, with no colour flicker at 160 u.
+6. In a mode that pins control (`Cell.SetModeControlOverride`), a MultiDomain swarm must keep its colours.
+   With MultiDomain off on a test config, the whole swarm, proxies included, must recolour.
+
+**PASS:** seeds one colour; newborns take their food's colour; colours cluster; domain sparing follows the
+member's colour; proxies match; the override recolours only a one-colour swarm. **FAIL:** shader error ·
+all members stay one colour despite mixed food · colours randomly speckled · a proxy colour mismatch · a
+MultiDomain swarm recoloured by a mode override.
+
 ### QA-PALETTE-SHIELDED ⬜ — the four prism tiers across all three domains
 **Source:** PRs #644, #705 (danger prisms now paint on the domain's **shielded base
 face**), #707 (gold's shielded prism brought into the pastel family; the danger tier

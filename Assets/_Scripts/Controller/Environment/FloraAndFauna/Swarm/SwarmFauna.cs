@@ -559,7 +559,7 @@ namespace CosmicShore.Gameplay
             _tickMsSum = 0; _tickMsCount = 0;
         }
 
-        // ───────────────────────────────────────────────────────────────── volume (round 8, §16.5)
+        // ───────────────────────────────────────────────────────────────── volume (round 8, §16.3)
 
         readonly double[] _virtualBySlot = new double[4];
         readonly int[] _cellSlotOfDomainSlot = new int[3];
@@ -567,7 +567,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Once per TICK: tell the host cell how much fauna BODY volume this swarm holds that is not a registered
-        /// prism (Docs/SWARM_FAUNA.md §16.5) - "volume is the spine", and a fauna body counts. The worker summed every
+        /// prism (Docs/SWARM_FAUNA.md §16.3) - "volume is the spine", and a fauna body counts. The worker summed every
         /// drawn body by domain slot; from that the main thread removes (a) members that died since the tick started
         /// (masked, their proxy's skeleton is real mass now) and (b) members whose proxy body has finished creation and
         /// is therefore ALREADY in the cell's own sum. Nothing counts twice and nothing is missed: a member is virtual

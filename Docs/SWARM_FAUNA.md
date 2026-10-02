@@ -1454,6 +1454,8 @@ Worst case 978, asserted under `COLLIDER_CEILING` 1,200 by the author script. 2,
 | member body volume in LiveVolume | **no** | **COST:** the bodies do not move the cell's phase ladder (the ladder is derived without them, §14.2). |
 | a virtual member's tier | colour only | danger / shield show as the tier's palette pair, not the octahedron shell; a proxy shows the real state |
 
+Round 8 closed the three costed rows (shootable at range, predation, LiveVolume) - see the updated table in §16.5.
+
 ### 14.5 Proof (offline)
 
 - **Body reads as its creature** - `score_sortfeel.py --density 5` (the research's Sinkhorn shape loss
@@ -1549,3 +1551,244 @@ The glue type-check passes.
 **QA (QA-SWARM-SPREAD).** In the Swarm cell, fly away from a swarm. Its members' faces should part with
 distance exactly like a nearby trail prism of the same tier. Fly back in: they should close again, and at
 contact range a member should read as one box.
+
+## 16. Round 8: a member that is only data is still a creature (weapons, predators, the ladder, colours)
+
+Round 7 (§14) bought three ~1,000-tadpole swarms at near-zero main-thread cost by drawing every member from
+one GPU buffer and giving a GameObject only to the members near a vessel (the proxies, `EngageRadius` 160).
+Its own invariant table (§14.4) listed what that cost: past 160 u a member had no collider, so long-range
+weapons passed through a whale; the cell's predators could not see a member; and the member bodies did not
+move the cell's volume ladder. Round 8 closes all three, and adds the swarm's one deliberate departure from
+the one-colour law. **None of it raises `EngageRadius` and none of it materialises proxies to be FOUND.** A
+proxy is made only for the member that is actually hit or actually eaten, and only at the instant it is.
+
+**Nothing in this section was run in the Unity editor.** Every claim below is either a headless measurement
+(named) or a statement about code that type-checks against stubs checked member by member against the real
+API. The QA items in §16.8 are what turns it into a fact.
+
+### 16.1 The member query (`SwarmMemberQuery.cs`, `SwarmTargets.cs`)
+
+Two pieces. Both are plain C#, so the same file compiles and runs in `Tools/Build/swarm_core_harness`.
+
+- **`SwarmVolume`** is the five shapes the platform already uses to find PRISMS, transcribed term for term
+  from `PrismSpatialIndex`:
+  - the sphere (`QuerySphere` and the AOE sphere job);
+  - the capsule (`QuerySegment`, a projectile's swept step);
+  - the cone (`QueryCone`, the Serpent's rifle);
+  - the cone slab (`AOEConicSweepQueryJob`, the Dolphin's blast);
+  - the cylinder slab (`AOECylinderSweepQueryJob`, the Scarab's plate, mirror flag included).
+
+  It also carries each shape's preprocessing (`normalizesafe`, the tangent precomputation), so a member
+  and a prism standing at one point get the same answer to the last bit. The test point is the member's
+  **body prism centre** (`SwarmTickJob.BodyAt`: the interpolated pose plus `PrismZ` along the face), which
+  is the point the prism index tests for a prism.
+- **`SwarmMemberGrid`** is a counting-sort spatial hash of the living members.
+  - The tick job **builds it on its worker thread** and publishes it with the frame, so it costs the
+    main thread nothing. It allocates nothing after the first tick.
+  - A query walks only the hash cells under the volume's bounding box, padded by the largest step a member
+    took that tick plus the largest body seat. The pad is needed because a member is filed at `CurPos` but
+    drawn anywhere on the `PrevPos -> CurPos` step. Without it, R8b's negative control misses 7 of 3,264
+    members.
+  - Cost is O(members near the volume). A rocket on the far side of the cell touches no member.
+- **`SwarmTargets`** is the Unity-typed front door a weapon calls with the same arguments it hands the prism
+  index. Members that have a proxy (the proxy's own colliders and prisms already answer) and members killed
+  since the frame was built are excluded.
+
+### 16.2 Weapons (item 1)
+
+**One rule: a virtual member is treated exactly as its body prism would be.** The weapon runs the same
+volume test and the same domain test. When a member is hit, it is **materialised at its slot**
+(`SwarmFauna.MaterialiseForHit`): the proxy is spawned and posed where the GPU draws the member, and its
+body prism is completed synchronously (`Prism.CompleteCreationImmediately`, the creation coroutine's tail
+run now). The weapon's **own** per-prism or per-heart code then runs on it.
+
+A kill is therefore the sealed `Fauna.Die` path, with its crystal, its wither or suction, and its killer's
+name. The kill credit and the `ReportFaunaKill_ServerRpc` round trip are the ordinary creature path. Nothing
+about scoring knows a swarm exists.
+
+| weapon | seam it already used for prisms | what it now does for a member |
+|---|---|---|
+| explosions: sphere, the Dolphin's cone, the Scarab's plate (`ExplosionImpactor`) | the Burst AOE sweep per batch frame | `ResolveSwarmMembers` builds the same shape for the swept-so-far slab. **Bodies:** the domain pre-filter is exactly `ExecuteCommonPrismCommands`' (own domain spared unless `affectSelf`; a non-destructive blast is not a kill), then `ExecuteCommonPrismCommands` runs on the body. **Hearts:** `explosionLifeformCrystalEffects` run on the materialised heart, with the narrowphase the crystal sweep uses. A per-blast ledger means a member is hit once. Work is queued and drained under the frame budget, then forced at `EndBatchProcessing`. |
+| the Serpent's rifle (`SniperShotActionExecutor`) | `PrismSpatialIndex.QueryCone`, sorted along the axis | Members from the same cone join the same sorted list. Own-domain members are skipped like own-domain prisms. A member in the kill order is materialised (forced) and its body takes the shot. Pierce counts it like a prism. |
+| projectile guns (`Projectile`) | the swept capsule (`sweptPrismDetection`) | Member hits merge into the same sweep, with a contact distance of round radius + member body radius. The member's body `PrismImpactor` goes through `AcceptImpacteeFromSweep`, so the round's own prism effects (damage, embed, steal, chain) apply. A round that does not sweep prisms still sweeps members (`membersOnly`), because a member has no trigger collider for it to hit. |
+
+**Budget.** At most `SwarmFaunaConfigSO.MaxHitMaterialisationsPerFrame` (48) blast-hit members are
+materialised per frame, cell-wide. The rest wait in the blast's queue for the next frame. A hitscan or
+projectile hit is forced, since it is one member and the shot must land on the frame it is fired.
+
+### 16.3 Predators and the ladder (items 2 and 3)
+
+**Predators.** Proxies were never in `Cell.LiveFauna`, which has no lineage for them, so no predator ever
+saw a member. Two changes fix that.
+
+- `LightFauna`'s hunt asks `SwarmFauna.NearestPrey`. It checks proxies first, then grows a sphere query
+  over the grid, materialising only the winner.
+- `LightFauna` and `WormFauna`'s bites ask `SwarmFauna.PreyAtMouth`. The eat is the sealed `Predated`
+  path, so the body suctions into the mouth and the mass transfers.
+
+Every candidate passes the predator's own diet. That covers `Diet` (a herbivore-only hunter takes only
+herbivores), `IsInsideBand`, and **predation immunity measured from the member's real age**: the proxy
+back-dates its spawn by the member's age (`Fauna.BackdateSpawn`), so a newborn is not free food just
+because its GameObject is new. A hunted proxy is kept alive by `NotifyHunted -> KeepProxy` so the chase
+does not retire its target.
+
+**The ladder.** Each member body now moves `Cell.LiveVolume` the way a fauna `HealthPrism` does. That means
+VOLUME ONLY: no environment volume, no nucleus or exterior volume, and no `LiveBlockCount`.
+`DominantDomain`, which reads only nucleus environment volume, is therefore untouched, as it is for any
+creature.
+
+- The tick job sums the drawn bodies per domain slot on the worker (`VolumeBySlot`) and records which slot
+  it counted each member in (`Counted`).
+- `SwarmVolumeLedger.State` takes out exactly two kinds of member: those whose volume the cell already sees
+  (a proxy whose body prism finished creation is a registered prism and counts itself), and those killed
+  since the frame was built.
+- The swarm hands the cell ONE ABSOLUTE vector per tick (`Cell.SetVirtualVolume`). The cell folds the sum
+  over swarms into `liveVolumeByDomain` / `liveVolumeTotal` on every republish. That is an aggregate push,
+  never per member per frame, and a swarm that dies clears its entry (`ClearVirtualVolume`).
+- **Finding: the whale plan authors negative half-extents** (5 of its prisms). A signed `x*y*z` therefore
+  SUBTRACTED volume. A body's volume is `|x*y*z|`, as a prism's scale is read everywhere else.
+- **The ladder was re-derived on forest + bodies** (`author_swarm_fauna.py`).
+  - Bodies grown full: 62,643 volume, beside the forest's 93,122 at cap.
+  - Restless 33,000 / 25,000 -> **55,000 / 41,000**.
+  - Frenzy 233,000 / 205,000 -> **390,000 / 343,000**.
+  - The count ladder is unchanged (2,200 / 1,700 / 15,500 / 13,600). Bodies are volume-only, and count
+    is a backstop.
+- **float32.** At the ladder's top with margin (1,557,652) the float32 ulp is 0.125. The smallest member
+  body is 4.82, i.e. 38 ulps. The generator FAILS below 16.
+
+### 16.4 MultiDomain swarms (item 4)
+
+`SwarmFaunaConfigSO.MultiDomain` defaults to OFF. The generator asserts that default, and authors it ON for
+the four swarm configs, which only the Swarm cell references. CLAUDE.md records it beside "No domain
+asymmetry" as the named exception, together with its reason: **a swarm IS its population's diet history**.
+
+- **Seeds** all take slot 0, the cell's controlling domain when the swarm hatched.
+- **The slot table** (`SwarmFauna.BuildSlotDomains`) is fixed for the swarm's life, so a member's slot
+  always names one domain. Slot 0 is the anchor; slots 1 and 2 are the other two playable domains in
+  Jade/Ruby/Gold order. Mass of a domain the table does not hold, i.e. neutral Blue environment, funds
+  slot 0.
+- **Feeding.** A member grazes as ITS domain (`Fauna.IsPreyForMe(position, prey, eater)`, the one
+  predicate with an explicit eater). Each bite's deposit is tagged with the eaten prism's domain slot
+  (`QueueDeposit(element, volume, slot)` -> `StomachDom`, banked per element per slot).
+- **Newborns.** `SwarmCoreShared.TryFund(stomach, stomachDom, ...)` pays for an egg exactly as before. It
+  then draws each element's domain split in proportion to what it took, and names the slot that paid
+  most. A cross-element egg is credited to the reserve it actually drew. The newborn takes that slot.
+- **Regions.** Sort, EvoFate and Grid run with `DomainSlots` plus the new `FoodDomains`: seeds go to slot 0
+  rather than the research's slot mix, and a child takes the funding slot. The members therefore sort into
+  domain regions through the research's own `PickPerm` / region-transfer machinery. A domain with no
+  region in the current plan (a 2-slot plan holding 3 domains) transfers, as research members always have.
+  The Field core has no regions and only recolours. The sort/evofate lay bookkeeping now credits the
+  CHILD's region, not the parent's.
+- **Drawing.** `Flags` bits 7-8 carry the slot. The shader reads a per-tier, per-slot palette
+  (`_SwarmTierDark/_SwarmTierBright[9]`, `[tier*3 + slot]`). These are new property names, because a
+  shader array property's length is pinned per editor session by NAME (the `PrismLit` finding).
+- **Domain everywhere else.** A proxy takes its member's domain. Weapons spare and credit by the member's
+  domain: `MemberHit.Domain` is `MemberDomain(i)`, and the proxy's body prism wears it.
+- **Recolour.** `Cell.SetModeControlOverride` no longer re-colours a MultiDomain swarm
+  (`Fauna.AcceptsTeamRecolour`). A one-colour swarm now re-colours fully, slots, palette and live proxies,
+  through `SwarmFauna.OnTeamChanged`. Before this the override changed the swarm's `domain` field and
+  nothing it drew.
+
+**Stated approximation.** The swarm's GOAL plant, i.e. where the whole body swims, is still chosen in the
+anchor domain's diet. In a nucleus-less cell, a body whose members wear mixed colours steers toward food
+edible to slot 0, while each member's actual bite uses its own domain.
+
+### 16.5 Invariants - §14.4 updated
+
+| law | holds? | how / cost |
+|---|---|---|
+| members are shootable | **yes, at any range** | §16.2. A hit materialises one proxy at the member's slot, and the weapon's own code runs on it. |
+| joustable | yes | unchanged (contact, inside 160 u) |
+| every death drops a LifeFormCrystal | yes | only a proxy dies, and it dies through the sealed `Fauna.Die`. A hit member is a proxy before it dies. |
+| starvation withers | yes | unchanged |
+| mass is conserved | yes | eggs are still paid 1:1 from eaten volume. A predated member suctions into its eater. |
+| continuity of existence | yes | a materialised proxy is posed exactly where the GPU draws the member (proven by `verify_swarm_member_pose.py`), and its body is completed in the frame it appears, under an unchanged picture |
+| one colour per swarm | **yes, unless MultiDomain** | §16.4, the named exception: seeds one colour, newborns the colour of their funding mass |
+| no imposed death | yes | unchanged |
+| killing the majority element morphs | yes, ~5x the kills | unchanged (§14.4) |
+| other fauna prey on members | **yes** | §16.3. Same diet, band and age immunity as any prey. |
+| member body volume in LiveVolume | **yes** | §16.3. Aggregate, volume-only, never double-counted. |
+| a virtual member's tier | colour only | unchanged |
+
+### 16.6 Costs
+
+- **Colliders: no always-on change.** A hit or hunted member gets a proxy for as long as it lives. That is
+  the proxy's two colliders (body prism plus heart crystal), until it dies or retires after
+  `ProxyLingerSeconds`. The blast budget caps how many appear per frame.
+- **Main thread, per weapon event.**
+  - One grid walk: R8b averages 158 candidate slots of 2,000 for a random volume, and none for a far one.
+  - Plus one proxy Instantiate per member actually hit, capped at 48 per frame for blasts and
+    budget-free for single hitscan or projectile hits.
+- **Main thread, per tick.**
+  - `StateVirtualVolume`: O(proxies + recently killed) subtractions and one dictionary write.
+  - The cell re-sums its swarms (three).
+  - `Feed` adds one domain read per bite.
+- **Worker, per tick.** The grid build is a counting sort over the members, and the volume sum is one
+  multiply-add per member. Both stay inside the existing tick, so R7f's main-thread share is unchanged.
+- **GPU.** One palette index per body vertex.
+
+### 16.7 Proof (offline)
+
+- **R8a** (`swarm_core_harness`, query mode). `SwarmVolume` matches the shipped Burst predicates.
+  - The predicates are extracted VERBATIM from `PrismSpatialIndex.cs` by `extract_burst_predicates.py` and
+    compiled against a Unity.Mathematics shim.
+  - Each of the five shapes is tested at 1,000,000 points with **0 disagreements**.
+  - Each shape has its own mutant negative control, and all five are caught.
+- **R8b.** The padded grid never misses a member drawn inside the volume and never returns one twice
+  (3,264 cases over 3,000 volumes). The unpadded negative control misses 7. A query walks 158 of 2,000
+  slots on average, and none for a far volume.
+- **R8c.** `QueryMembers` on a live job returns exactly the brute-force set over `BodyAt`: 902 members,
+  400 volumes, 17,215 member hits, 0 disagreements. `VolumeBySlot` sums every drawn body.
+- **R8d.** Stated plus proxied volume equals every member's body exactly once. The negative control, a
+  ledger without exclusions, over-counts by exactly the proxied volume (6,217).
+- **R8e.** With MultiDomain on, every seed and only the seeds wear slot 0, and newborns wear slot 1 and
+  then slot 2 as the food changes.
+  - Sort core: 96/83/73 by slot. A member's nearest neighbour shares its domain 56% of the time, against
+    34% for random labels.
+  - Grid: 96/97/91. Field: 96/98/100.
+  - Each core has a one-colour control fed the SAME mixed-domain food, and stays one colour
+    (264/0/0, 259/0/0, 294/0/0).
+- **R8f.** The funding rule draws a domain split in proportion and names the slot that paid most. It also
+  holds for cross-element eggs, unaffordable eggs and one-colour swarms.
+- **`verify_swarm_member_pose.py` T9/T10.** Every (tier, slot) pair reads its own palette entry. A shader
+  that ignores the slot fails (6 wrong).
+- **`author_swarm_fauna.py --check`** passes with the re-derived ladder and the ulp gate. The glue
+  type-check passes. The textual gates pass, except `check_console_logging`'s pre-existing
+  `TrainingSessionRunner.cs:710`, which is not this branch.
+
+### 16.8 QA
+
+`Docs/QA/QA_BACKLOG.md`: **QA-SWARM-ROUND8-1** (weapons at range), **-2** (predators), **-3** (the ladder),
+and **-4** (MultiDomain colours). Run `QA-SWARM-ROUND7` first.
+
+### 16.9 Files
+
+- **Core.**
+  - `Swarm/SwarmMemberQuery.cs` (new: `SwarmVolume`, `SwarmMemberGrid`, `SwarmVolumeLedger`)
+  - `Swarm/SwarmTargets.cs` (new)
+  - `Swarm/SwarmTickJob.cs` (grid, `VolumeBySlot`, `Counted`, `BodyAt`, `QueryMembers`, the domain slot
+    in `Flags`)
+  - `Swarm/ISwarmCore.cs` (`StomachDom`, `Dom`, the domain-aware `TryFund`)
+  - the four cores (`FoodDomains`)
+- **Glue.**
+  - `Swarm/SwarmFauna.cs`
+  - `Swarm/SwarmTadpoleFauna.cs`
+  - `Swarm/SwarmFaunaConfigSO.cs` (`MaxHitMaterialisationsPerFrame`, `MultiDomain`)
+  - `Swarm/SwarmMemberRenderer.cs`
+  - `SwarmMemberInstanced.hlsl`
+- **Platform seams.**
+  - `ExplosionImpactor.cs`
+  - `SniperShotActionExecutor.cs`
+  - `Projectile.cs`
+  - `LightFauna.cs`
+  - `WormFauna.cs`
+  - `Fauna.cs` (`BackdateSpawn`, `NotifyHunted`, `PredationImmunitySeconds`, `IsPreyForMe` with an eater,
+    `AcceptsTeamRecolour`/`OnTeamChanged`)
+  - `Prism.cs` (`CompleteCreationImmediately`)
+  - `Cell.cs` (`SetVirtualVolume`/`ClearVirtualVolume`)
+- **Tools.**
+  - `Tools/Build/swarm_core_harness/` (`QueryHarness.cs`, `BurstShim.cs`, `extract_burst_predicates.py`,
+    R8c-R8f in `TickJobHarness.cs`)
+  - `Tools/Build/swarm_glue_typecheck/Stubs.cs`
+  - `Tools/Shaders/verify_swarm_member_pose.py`
+  - `Tools/Build/author_swarm_fauna.py`

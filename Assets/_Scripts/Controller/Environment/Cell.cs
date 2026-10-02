@@ -893,7 +893,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ------------------------------------------------------------------
-        //  VIRTUAL fauna body volume (round 8, Docs/SWARM_FAUNA.md §16.5).
+        //  VIRTUAL fauna body volume (round 8, Docs/SWARM_FAUNA.md §16.3).
         //  A GPU-drawn swarm member has no registered body prism, so the Burst
         //  pass above cannot see its mass - but volume is the spine, and a fauna
         //  body counts. Each source (a swarm) states its ABSOLUTE per-domain body

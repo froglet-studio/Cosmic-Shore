@@ -155,7 +155,7 @@ FLORA_COOLDOWN = 20
 FLORA_SPREAD = 120
 
 # ladder ratios (against the modelled mature CELL; see ladder()). Round 7 left the GPU-drawn bodies out of
-# LiveVolume; round 8 (Docs/SWARM_FAUNA.md §16.5) puts them back - every swarm states its member body volume to
+# LiveVolume; round 8 (Docs/SWARM_FAUNA.md §16.3) puts them back - every swarm states its member body volume to
 # the cell (Cell.SetVirtualVolume), exactly where a fauna body prism lands. So the ladder is the forest PLUS
 # the three bodies grown full, and the ratios are unchanged.
 RESTLESS_ENTER, RESTLESS_EXIT, FRENZY_ENTER, FRENZY_EXIT = 0.35, 0.26, 2.5, 2.2
@@ -805,7 +805,7 @@ def report(rows, tot, eggs, L, baked):
           f"({tot['colliders_engaged']} worst case, ceiling {COLLIDER_CEILING}); {tot['tadpoles']} tadpoles GPU-drawn, 0 colliders")
     print(f"  mature forest (model): {tot['prisms']:,} prisms, {tot['volume']:,.0f} volume - Atlantis is {ATLANTIS_PRISMS:,}")
     print(f"  round 8: member bodies grown full {tot['bodies']:,.0f} volume beside the forest's {tot['volume']:,.0f} "
-          f"(now in LiveVolume, Docs/SWARM_FAUNA.md §16.5); smallest member body {float32_ulp_check(tot)[0]:.2f} vs float32 ulp "
+          f"(now in LiveVolume, Docs/SWARM_FAUNA.md §16.3); smallest member body {float32_ulp_check(tot)[0]:.2f} vs float32 ulp "
           f"{float32_ulp_check(tot)[2]:.4f} at {float32_ulp_check(tot)[1]:,.0f}")
     print("  ladder: " + ", ".join(f"{k} {v:,}" for k, v in L.items()))
     print(f"  plans: {'re-baked from ' + swarm_plans.RESEARCH_REF if baked else 'research ref not reachable - committed plans kept'}")
