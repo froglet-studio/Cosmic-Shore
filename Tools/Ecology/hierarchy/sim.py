@@ -185,7 +185,8 @@ class HierSim:
                     resid = 0.0
                 if abs(resid) > 0:
                     W.N[r] += resid; self.events["settle"] += abs(resid)
-                vv = rng.choice(W.nvox, cnt, p=occ)
+                po = occ if s == 0 else W.vox_ok[r] / W.vox_ok[r].sum()   # predators: not on top of prey
+                vv = rng.choice(W.nvox, cnt, p=po)
                 pos = W.centers[r] + W.vox_off[vv] + rng.uniform(-0.5, 0.5, (cnt, 3)) * W.vox_h
                 orig = self.reps[r, s][rng.integers(0, P_reps(self.P), cnt)]
                 A.add(pos, np.full(cnt, s, np.int8), el, E, origin=orig, emerge=0.0)

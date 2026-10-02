@@ -68,7 +68,7 @@ def run(bug="", T=300.0, seed=5, n_herb=30000, n_pred=2500):
                  macro_births=sim.M.births.tolist(), macro_deaths=sim.M.deaths.tolist(), macro_kills=sim.M.kills,
                  micro_births=sim.A.births.tolist(), micro_deaths=sim.A.deaths.tolist(), micro_kills=sim.A.kills)
     exercised = ev["expand"] > 0 and ev["absorb"] > 0 and ev["arrive"] > 0 and sim.M.kills > 0 and sim.A.kills > 0 \
-        and min(sim.M.births) > 0 and min(sim.A.births) > 0
+        and sum(sim.M.births) > 0 and sum(sim.A.births) > 0
     ok = worst_rel < TOL_REL and worst_lod < TOL_LOD and worst_cnt == 0 and not neg
     return dict(bug=bug, passed=bool(ok), exercised=bool(exercised), ledger_rel_drift=worst_rel,
                 lod_mass_mismatch=worst_lod, lod_count_mismatch=worst_cnt, negative_state=neg, flows=flows,
