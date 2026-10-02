@@ -1,0 +1,662 @@
+{
+ "persistence": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 1.793,
+   "shannon_min": 1.495,
+   "n_extinct": 2,
+   "n_unrecovered": 2,
+   "extinct": [
+    [
+     "locust"
+    ],
+    [
+     "locust"
+    ]
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 1,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.802,
+    "locust": 0.742,
+    "pack": 0.299,
+    "thief": 0.373,
+    "lurker": 0.255,
+    "fortress": 0.0,
+    "snaptrap": 0.013,
+    "physarum": 0.015
+   },
+   "audit_max": 3.1280796974897385e-06,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cost_ms": 16.78,
+   "cost_p95": 40.59
+  },
+  "player": {
+   "enc_per_min": 2.3,
+   "variety": 3.75,
+   "variety_entropy_bits": 1.735,
+   "quiet_frac": 0.367,
+   "hits_per_min": 3.25,
+   "damage_per_min": 1.64,
+   "steals_per_min": 9.5,
+   "emotion_distinct": 3.25,
+   "emotion_entropy_bits": 1.002,
+   "threat_range": 0.503,
+   "threat_peak": 0.534,
+   "active_encounters": 11.5,
+   "species_sighted": 8.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.635,
+   "replay_species_tv": 0.299,
+   "replay_emotion_tv": 0.055
+  }
+ },
+ "diversity": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 0.607,
+   "shannon_min": 0.485,
+   "n_extinct": 6,
+   "n_unrecovered": 6,
+   "extinct": [
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ],
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ]
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.249,
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.0
+   },
+   "audit_max": 6.567570380866528e-07,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cost_ms": 5.89,
+   "cost_p95": 21.59
+  },
+  "player": {
+   "enc_per_min": 0.0,
+   "variety": 0.0,
+   "variety_entropy_bits": 0.0,
+   "quiet_frac": 1.0,
+   "hits_per_min": 0.0,
+   "damage_per_min": 0.0,
+   "steals_per_min": 0.0,
+   "emotion_distinct": 1.75,
+   "emotion_entropy_bits": 0.134,
+   "threat_range": 0.05,
+   "threat_peak": 0.075,
+   "active_encounters": 0.0,
+   "species_sighted": 1.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.0,
+   "replay_species_tv": 0.0,
+   "replay_emotion_tv": 0.027
+  }
+ },
+ "freeze": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 0.786,
+   "shannon_min": 0.772,
+   "n_extinct": 0,
+   "n_unrecovered": 0,
+   "extinct": [
+    [],
+    []
+   ],
+   "freeze_frac": 0.5,
+   "flora_saturated": 0.724,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "fortress": 0.017,
+    "snaptrap": 0.0,
+    "physarum": 0.017
+   },
+   "audit_max": 1.8120044842362404e-07,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cost_ms": 7.5,
+   "cost_p95": 19.6
+  },
+  "player": {
+   "enc_per_min": 1.15,
+   "variety": 1.5,
+   "variety_entropy_bits": 0.412,
+   "quiet_frac": 0.867,
+   "hits_per_min": 0.65,
+   "damage_per_min": 0.65,
+   "steals_per_min": 0.0,
+   "emotion_distinct": 2.5,
+   "emotion_entropy_bits": 0.851,
+   "threat_range": 0.468,
+   "threat_peak": 0.469,
+   "active_encounters": 5.75,
+   "species_sighted": 2.75,
+   "n_flights": 4,
+   "replay_jaccard": 0.5,
+   "replay_species_tv": 0.167,
+   "replay_emotion_tv": 0.32
+  }
+ },
+ "audit": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 1.873,
+   "shannon_min": 1.687,
+   "n_extinct": 0,
+   "n_unrecovered": 0,
+   "extinct": [
+    [],
+    []
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.277,
+    "locust": 0.343,
+    "pack": 0.188,
+    "thief": 0.293,
+    "lurker": 0.0,
+    "fortress": 0.0,
+    "snaptrap": 0.022,
+    "physarum": 0.018
+   },
+   "audit_max": 28112.999996724713,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cost_ms": 19.15,
+   "cost_p95": 45.75
+  },
+  "player": {
+   "enc_per_min": 1.5,
+   "variety": 3.25,
+   "variety_entropy_bits": 1.469,
+   "quiet_frac": 0.427,
+   "hits_per_min": 1.5,
+   "damage_per_min": 0.765,
+   "steals_per_min": 8.65,
+   "emotion_distinct": 2.0,
+   "emotion_entropy_bits": 0.851,
+   "threat_range": 0.185,
+   "threat_peak": 0.211,
+   "active_encounters": 7.5,
+   "species_sighted": 7.75,
+   "n_flights": 4,
+   "replay_jaccard": 0.791,
+   "replay_species_tv": 0.363,
+   "replay_emotion_tv": 0.044
+  }
+ },
+ "shield": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 1.908,
+   "shannon_min": 1.812,
+   "n_extinct": 0,
+   "n_unrecovered": 0,
+   "extinct": [
+    [],
+    []
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.355,
+    "locust": 0.223,
+    "pack": 0.125,
+    "thief": 0.402,
+    "lurker": 0.011,
+    "fortress": 0.0,
+    "snaptrap": 0.016,
+    "physarum": 0.018
+   },
+   "audit_max": 3.211316652595997e-06,
+   "shield_eaten": 1,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cost_ms": 16.82,
+   "cost_p95": 37.78
+  },
+  "player": {
+   "enc_per_min": 1.45,
+   "variety": 2.5,
+   "variety_entropy_bits": 1.115,
+   "quiet_frac": 0.457,
+   "hits_per_min": 2.1,
+   "damage_per_min": 0.7,
+   "steals_per_min": 5.3,
+   "emotion_distinct": 2.25,
+   "emotion_entropy_bits": 0.869,
+   "threat_range": 0.206,
+   "threat_peak": 0.232,
+   "active_encounters": 7.25,
+   "species_sighted": 8.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.41,
+   "replay_species_tv": 0.208,
+   "replay_emotion_tv": 0.088
+  }
+ },
+ "continuity": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 1.778,
+   "shannon_min": 1.72,
+   "n_extinct": 0,
+   "n_unrecovered": 0,
+   "extinct": [
+    [],
+    []
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.37,
+    "locust": 1.104,
+    "pack": 0.095,
+    "thief": 0.158,
+    "lurker": 0.053,
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.018
+   },
+   "audit_max": 3.381894202902913e-06,
+   "shield_eaten": 0,
+   "pop_ins": 1585,
+   "pop_outs": 1864,
+   "cost_ms": 10.56,
+   "cost_p95": 35.01
+  },
+  "player": {
+   "enc_per_min": 2.4,
+   "variety": 3.25,
+   "variety_entropy_bits": 1.566,
+   "quiet_frac": 0.647,
+   "hits_per_min": 1.4,
+   "damage_per_min": 0.56,
+   "steals_per_min": 1.55,
+   "emotion_distinct": 3.0,
+   "emotion_entropy_bits": 1.33,
+   "threat_range": 0.634,
+   "threat_peak": 0.635,
+   "active_encounters": 12.0,
+   "species_sighted": 8.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.651,
+   "replay_species_tv": 0.242,
+   "replay_emotion_tv": 0.088
+  }
+ },
+ "variety": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 0.234,
+   "shannon_min": 0.203,
+   "n_extinct": 6,
+   "n_unrecovered": 6,
+   "extinct": [
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ],
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ]
+   ],
+   "freeze_frac": 0.429,
+   "flora_saturated": 0.724,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "pack": 0.0,
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.0
+   },
+   "audit_max": 1.9397702999413013e-08,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cost_ms": 2.7,
+   "cost_p95": 8.28
+  },
+  "player": {
+   "enc_per_min": 0.15,
+   "variety": 0.75,
+   "variety_entropy_bits": 0.0,
+   "quiet_frac": 0.049,
+   "hits_per_min": 13.55,
+   "damage_per_min": 13.55,
+   "steals_per_min": 0.0,
+   "emotion_distinct": 3.25,
+   "emotion_entropy_bits": 1.101,
+   "threat_range": 0.618,
+   "threat_peak": 0.785,
+   "active_encounters": 0.75,
+   "species_sighted": 1.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.5,
+   "replay_species_tv": 0.25,
+   "replay_emotion_tv": 0.187
+  }
+ },
+ "quiet": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 0.692,
+   "shannon_min": 0.692,
+   "n_extinct": 6,
+   "n_unrecovered": 6,
+   "extinct": [
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ],
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ]
+   ],
+   "freeze_frac": 0.5,
+   "flora_saturated": 0.729,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "pack": 0.0,
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.0
+   },
+   "audit_max": 0.0,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cost_ms": 12.7,
+   "cost_p95": 26.17
+  },
+  "player": {
+   "enc_per_min": 0.2,
+   "variety": 1.0,
+   "variety_entropy_bits": 0.0,
+   "quiet_frac": 0.0,
+   "hits_per_min": 36.35,
+   "damage_per_min": 36.35,
+   "steals_per_min": 0.0,
+   "emotion_distinct": 1.75,
+   "emotion_entropy_bits": 0.098,
+   "threat_range": 0.475,
+   "threat_peak": 0.883,
+   "active_encounters": 1.0,
+   "species_sighted": 1.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.0,
+   "replay_species_tv": 0.0,
+   "replay_emotion_tv": 0.024
+  }
+ },
+ "emotion_range": {
+  "fired": true,
+  "eco": {
+   "shannon_mean": 0.607,
+   "shannon_min": 0.485,
+   "n_extinct": 6,
+   "n_unrecovered": 6,
+   "extinct": [
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ],
+    [
+     "fortress",
+     "snaptrap",
+     "physarum"
+    ]
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.249,
+    "fortress": 0.0,
+    "snaptrap": 0.0,
+    "physarum": 0.0
+   },
+   "audit_max": 6.567570380866528e-07,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cost_ms": 5.53,
+   "cost_p95": 20.21
+  },
+  "player": {
+   "enc_per_min": 0.0,
+   "variety": 0.0,
+   "variety_entropy_bits": 0.0,
+   "quiet_frac": 1.0,
+   "hits_per_min": 0.0,
+   "damage_per_min": 0.0,
+   "steals_per_min": 0.0,
+   "emotion_distinct": 1.75,
+   "emotion_entropy_bits": 0.134,
+   "threat_range": 0.05,
+   "threat_peak": 0.075,
+   "active_encounters": 0.0,
+   "species_sighted": 1.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.0,
+   "replay_species_tv": 0.0,
+   "replay_emotion_tv": 0.027
+  }
+ },
+ "clean": {
+  "fires": {
+   "persistence": false,
+   "diversity": false,
+   "freeze": false,
+   "audit": false,
+   "shield": false,
+   "continuity": false,
+   "variety": false,
+   "quiet": false,
+   "emotion_range": false
+  },
+  "eco": {
+   "shannon_mean": 1.914,
+   "shannon_min": 1.812,
+   "n_extinct": 0,
+   "n_unrecovered": 0,
+   "extinct": [
+    [],
+    []
+   ],
+   "freeze_frac": 0.0,
+   "flora_saturated": 0.0,
+   "reversals": [
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    },
+    {
+     "flora": 0,
+     "herbivores": 0,
+     "pack": 0
+    }
+   ],
+   "cv": {
+    "grazer": 0.358,
+    "locust": 0.215,
+    "pack": 0.134,
+    "thief": 0.395,
+    "lurker": 0.01,
+    "fortress": 0.0,
+    "snaptrap": 0.023,
+    "physarum": 0.018
+   },
+   "audit_max": 3.2151001505553722e-06,
+   "shield_eaten": 0,
+   "pop_ins": 0,
+   "pop_outs": 0,
+   "cost_ms": 16.97,
+   "cost_p95": 37.11
+  },
+  "player": {
+   "enc_per_min": 1.95,
+   "variety": 3.5,
+   "variety_entropy_bits": 1.545,
+   "quiet_frac": 0.425,
+   "hits_per_min": 2.05,
+   "damage_per_min": 0.86,
+   "steals_per_min": 6.55,
+   "emotion_distinct": 2.25,
+   "emotion_entropy_bits": 0.914,
+   "threat_range": 0.191,
+   "threat_peak": 0.22,
+   "active_encounters": 9.75,
+   "species_sighted": 8.0,
+   "n_flights": 4,
+   "replay_jaccard": 0.775,
+   "replay_species_tv": 0.389,
+   "replay_emotion_tv": 0.18
+  }
+ },
+ "replay": {
+  "fired": true,
+  "distances": [
+   {
+    "jaccard_dist": 0.0,
+    "species_tv": 0.0,
+    "emotion_tv": 0.0
+   },
+   {
+    "jaccard_dist": 0.0,
+    "species_tv": 0.0,
+    "emotion_tv": 0.0
+   }
+  ]
+ }
+}
