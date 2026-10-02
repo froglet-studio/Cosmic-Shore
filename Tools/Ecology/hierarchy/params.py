@@ -36,8 +36,8 @@ class Species:
 
 HERB = Species("herb", body=8.0, e0=6.0, e_birth=20.0, e_max=32.0, metab=0.04,
                speed=18.0, sprint=32.0, sprint_metab=0.04)
-PRED = Species("pred", body=40.0, e0=30.0, e_birth=100.0, e_max=120.0, metab=0.06,
-               speed=20.0, sprint=36.0, sprint_metab=0.10)
+PRED = Species("pred", body=40.0, e0=30.0, e_birth=100.0, e_max=120.0, metab=0.04,
+               speed=20.0, sprint=36.0, sprint_metab=0.06)
 
 
 @dataclass
@@ -54,7 +54,7 @@ class Params:
     nutrient_diffuse: float = 0.002  # /s exchange of nutrient between face-neighbour regions (soil)
     # ---- herbivore grazing (Holling II on voxel flora) ----
     h_intake: float = 0.25       # max vol/s
-    h_half: float = 30.0         # voxel grazeable volume at half intake
+    h_half: float = 90.0         # voxel grazeable volume at half intake
     occ_theta: float = 0.5       # macro occupancy relaxes toward food ** occ_theta ... (fitted, calibrate.fit_occupancy)
     occ_tau: float = 1.0         # ... with this time constant (s)
     # ---- predation (Holling II on region herbivore count; fitted to micro, see calibrate.py) ----
