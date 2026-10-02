@@ -94,6 +94,8 @@ class Herd:
         self.rng = arena.rng
         self.t = 0.0
         self.stat: dict = {}
+        self.aspect = 1.0                          # body length / width (published for the emotion probe)
+        self.heading = None                        # (n,3) facing; None = velocity direction
 
     # -- scorecard surface (only LIVE agents are exposed; indices compacted - jerk uses stable shapes) --------
     @property
@@ -107,6 +109,14 @@ class Herd:
     @property
     def agent_size(self):
         return self.size[self.alive]
+
+    @property
+    def agent_aspect(self):
+        return np.full(int(self.alive.sum()), float(self.aspect))
+
+    @property
+    def agent_heading(self):
+        return None if self.heading is None else self.heading[self.alive]
 
     @property
     def intent_live(self):

@@ -47,6 +47,8 @@ class Mobber(Herd):
         d = np.where(al[None, :], d, np.inf)
         near_roost = np.linalg.norm(PP[k] - self.roost[self.home], axis=1) < 260
         provoke = (dist < 300) & ((pspeed[k] < 100) | near_roost)
+        if getattr(self, 'ablate', None) == 'speedblind':
+            provoke = dist < 300
         loud = np.where(d < 120, self.m[None, :], 0).max(1)
         tgt = np.where(provoke, 1.0, 0.9 * loud * (dist < 400))
         self.m = np.clip(np.where(tgt > self.m, self.m + (tgt - self.m) * min(1, 2 * dt), self.m - 0.25 * dt), 0, 1)
@@ -61,7 +63,7 @@ class Mobber(Herd):
         des = np.where(mob[:, None], orbit, home) + separation(D, d, 6.0, al) * 40
         # dive rhythm
         self.clock = np.where(mob, self.clock - dt, self.clock)
-        startpull = mob & (self.clock <= 0) & (self.pull <= 0) & (self.dive <= 0) & (dist < 80)
+        startpull = (getattr(self, 'ablate', None) != 'nodive') & mob & (self.clock <= 0) & (self.pull <= 0) & (self.dive <= 0) & (dist < 80)
         was = self.pull > 0
         self.pull = np.where(startpull, PULL, np.maximum(0, self.pull - dt))
         godive = was & (self.pull <= 0) & mob
@@ -98,5 +100,10 @@ class Mobber(Herd):
         return dict(pecks=self.pecks, mob_s=round(self.mob_s, 1))
 
 
-def make(arena):
-    return Mobber(arena)
+ABLATIONS = {"speedblind": "mobs any pilot within 300 u whatever its speed (speed no longer matters)",
+             "nodive": "swirls but never pulls up/dives (no pecks... and no telegraph)"}
+
+
+def make(arena, ablate=None):
+    sp = Mobber(arena); sp.ablate = ablate
+    return sp

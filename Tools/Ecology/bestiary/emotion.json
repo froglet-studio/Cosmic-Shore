@@ -1,0 +1,410 @@
+{
+ "pack": {
+  "hover": {
+   "top": "terrifying",
+   "p": {
+    "cute": 0.01,
+    "playful": 0.099,
+    "eerie": 0.304,
+    "majestic": 0.072,
+    "menacing": 0.155,
+    "terrifying": 0.36
+   },
+   "affect": {
+    "valence": -0.456,
+    "arousal": 0.611,
+    "threat": 0.626
+   }
+  },
+  "cruise": {
+   "top": "eerie",
+   "p": {
+    "cute": 0.014,
+    "playful": 0.098,
+    "eerie": 0.315,
+    "majestic": 0.18,
+    "menacing": 0.256,
+    "terrifying": 0.137
+   },
+   "affect": {
+    "valence": -0.264,
+    "arousal": 0.48,
+    "threat": 0.495
+   }
+  },
+  "evade": {
+   "top": "menacing",
+   "p": {
+    "cute": 0.021,
+    "playful": 0.155,
+    "eerie": 0.265,
+    "majestic": 0.089,
+    "menacing": 0.344,
+    "terrifying": 0.127
+   },
+   "affect": {
+    "valence": -0.283,
+    "arousal": 0.53,
+    "threat": 0.515
+   }
+  },
+  "target": "dread (menacing, coordinated)"
+ },
+ "leech": {
+  "hover": {
+   "top": "cute",
+   "p": {
+    "cute": 0.792,
+    "playful": 0.138,
+    "eerie": 0.042,
+    "majestic": 0.009,
+    "menacing": 0.01,
+    "terrifying": 0.008
+   },
+   "affect": {
+    "valence": 0.7,
+    "arousal": 0.409,
+    "threat": 0.05
+   }
+  },
+  "cruise": {
+   "top": "cute",
+   "p": {
+    "cute": 0.828,
+    "playful": 0.078,
+    "eerie": 0.062,
+    "majestic": 0.007,
+    "menacing": 0.015,
+    "terrifying": 0.01
+   },
+   "affect": {
+    "valence": 0.671,
+    "arousal": 0.386,
+    "threat": 0.057
+   }
+  },
+  "evade": {
+   "top": "cute",
+   "p": {
+    "cute": 0.871,
+    "playful": 0.046,
+    "eerie": 0.04,
+    "majestic": 0.03,
+    "menacing": 0.011,
+    "terrifying": 0.002
+   },
+   "affect": {
+    "valence": 0.716,
+    "arousal": 0.365,
+    "threat": 0.037
+   }
+  },
+  "target": "cute (curious, clingy) with a sting"
+ },
+ "locust": {
+  "hover": {
+   "top": "cute",
+   "p": {
+    "cute": 0.87,
+    "playful": 0.051,
+    "eerie": 0.044,
+    "majestic": 0.023,
+    "menacing": 0.006,
+    "terrifying": 0.005
+   },
+   "affect": {
+    "valence": 0.714,
+    "arousal": 0.369,
+    "threat": 0.037
+   }
+  },
+  "cruise": {
+   "top": "cute",
+   "p": {
+    "cute": 0.881,
+    "playful": 0.04,
+    "eerie": 0.035,
+    "majestic": 0.037,
+    "menacing": 0.004,
+    "terrifying": 0.003
+   },
+   "affect": {
+    "valence": 0.728,
+    "arousal": 0.361,
+    "threat": 0.031
+   }
+  },
+  "evade": {
+   "top": "cute",
+   "p": {
+    "cute": 0.866,
+    "playful": 0.034,
+    "eerie": 0.017,
+    "majestic": 0.079,
+    "menacing": 0.003,
+    "terrifying": 0.001
+   },
+   "affect": {
+    "valence": 0.746,
+    "arousal": 0.352,
+    "threat": 0.026
+   }
+  },
+  "target": "cute & shy when sparse -> terrifying storm when dense"
+ },
+ "stampede": {
+  "hover": {
+   "top": "cute",
+   "p": {
+    "cute": 0.353,
+    "playful": 0.16,
+    "eerie": 0.107,
+    "majestic": 0.215,
+    "menacing": 0.037,
+    "terrifying": 0.129
+   },
+   "affect": {
+    "valence": 0.31,
+    "arousal": 0.461,
+    "threat": 0.251
+   }
+  },
+  "cruise": {
+   "top": "cute",
+   "p": {
+    "cute": 0.385,
+    "playful": 0.137,
+    "eerie": 0.08,
+    "majestic": 0.265,
+    "menacing": 0.033,
+    "terrifying": 0.1
+   },
+   "affect": {
+    "valence": 0.388,
+    "arousal": 0.427,
+    "threat": 0.212
+   }
+  },
+  "evade": {
+   "top": "majestic",
+   "p": {
+    "cute": 0.268,
+    "playful": 0.094,
+    "eerie": 0.06,
+    "majestic": 0.533,
+    "menacing": 0.018,
+    "terrifying": 0.027
+   },
+   "affect": {
+    "valence": 0.481,
+    "arousal": 0.324,
+    "threat": 0.156
+   }
+  },
+  "target": "majestic (awe, then danger in its panic)"
+ },
+ "lurker": {
+  "hover": {
+   "top": "cute",
+   "p": {
+    "cute": 0.434,
+    "playful": 0.074,
+    "eerie": 0.046,
+    "majestic": 0.012,
+    "menacing": 0.087,
+    "terrifying": 0.348
+   },
+   "affect": {
+    "valence": 0.017,
+    "arousal": 0.601,
+    "threat": 0.438
+   }
+  },
+  "cruise": {
+   "top": "cute",
+   "p": {
+    "cute": 0.483,
+    "playful": 0.039,
+    "eerie": 0.097,
+    "majestic": 0.072,
+    "menacing": 0.161,
+    "terrifying": 0.148
+   },
+   "affect": {
+    "valence": 0.171,
+    "arousal": 0.471,
+    "threat": 0.319
+   }
+  },
+  "evade": {
+   "top": "cute",
+   "p": {
+    "cute": 0.502,
+    "playful": 0.062,
+    "eerie": 0.067,
+    "majestic": 0.074,
+    "menacing": 0.174,
+    "terrifying": 0.122
+   },
+   "affect": {
+    "valence": 0.234,
+    "arousal": 0.468,
+    "threat": 0.291
+   }
+  },
+  "target": "eerie (stillness, mimicry, the sudden snap)"
+ },
+ "leviathan": {
+  "hover": {
+   "top": "cute",
+   "p": {
+    "cute": 0.348,
+    "playful": 0.136,
+    "eerie": 0.236,
+    "majestic": 0.062,
+    "menacing": 0.026,
+    "terrifying": 0.193
+   },
+   "affect": {
+    "valence": 0.098,
+    "arousal": 0.504,
+    "threat": 0.34
+   }
+  },
+  "cruise": {
+   "top": "majestic",
+   "p": {
+    "cute": 0.293,
+    "playful": 0.067,
+    "eerie": 0.141,
+    "majestic": 0.44,
+    "menacing": 0.023,
+    "terrifying": 0.037
+   },
+   "affect": {
+    "valence": 0.384,
+    "arousal": 0.33,
+    "threat": 0.189
+   }
+  },
+  "evade": {
+   "top": "majestic",
+   "p": {
+    "cute": 0.225,
+    "playful": 0.043,
+    "eerie": 0.067,
+    "majestic": 0.648,
+    "menacing": 0.011,
+    "terrifying": 0.007
+   },
+   "affect": {
+    "valence": 0.488,
+    "arousal": 0.273,
+    "threat": 0.146
+   }
+  },
+  "target": "majestic awe -> dread up close"
+ },
+ "thief": {
+  "hover": {
+   "top": "cute",
+   "p": {
+    "cute": 0.662,
+    "playful": 0.264,
+    "eerie": 0.028,
+    "majestic": 0.003,
+    "menacing": 0.004,
+    "terrifying": 0.039
+   },
+   "affect": {
+    "valence": 0.663,
+    "arousal": 0.478,
+    "threat": 0.082
+   }
+  },
+  "cruise": {
+   "top": "cute",
+   "p": {
+    "cute": 0.606,
+    "playful": 0.093,
+    "eerie": 0.137,
+    "majestic": 0.081,
+    "menacing": 0.039,
+    "terrifying": 0.045
+   },
+   "affect": {
+    "valence": 0.457,
+    "arousal": 0.403,
+    "threat": 0.155
+   }
+  },
+  "evade": {
+   "top": "cute",
+   "p": {
+    "cute": 0.781,
+    "playful": 0.072,
+    "eerie": 0.073,
+    "majestic": 0.04,
+    "menacing": 0.02,
+    "terrifying": 0.015
+   },
+   "affect": {
+    "valence": 0.633,
+    "arousal": 0.382,
+    "threat": 0.075
+   }
+  },
+  "target": "mischief (cheeky, annoying)"
+ },
+ "mobber": {
+  "hover": {
+   "top": "cute",
+   "p": {
+    "cute": 0.889,
+    "playful": 0.094,
+    "eerie": 0.001,
+    "majestic": 0.0,
+    "menacing": 0.0,
+    "terrifying": 0.016
+   },
+   "affect": {
+    "valence": 0.762,
+    "arousal": 0.397,
+    "threat": 0.026
+   }
+  },
+  "cruise": {
+   "top": "cute",
+   "p": {
+    "cute": 0.771,
+    "playful": 0.168,
+    "eerie": 0.001,
+    "majestic": 0.0,
+    "menacing": 0.0,
+    "terrifying": 0.059
+   },
+   "affect": {
+    "valence": 0.681,
+    "arousal": 0.452,
+    "threat": 0.076
+   }
+  },
+  "evade": {
+   "top": "cute",
+   "p": {
+    "cute": 0.995,
+    "playful": 0.001,
+    "eerie": 0.003,
+    "majestic": 0.001,
+    "menacing": 0.0,
+    "terrifying": 0.0
+   },
+   "affect": {
+    "valence": 0.795,
+    "arousal": 0.35,
+    "threat": 0.002
+   }
+  },
+  "target": "playful nuisance (cheeky, swarming, harmless-ish)"
+ }
+}

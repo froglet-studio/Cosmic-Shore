@@ -9,6 +9,8 @@ Local rules:
              (intent = gape). If the pilot leaves 230 u the mouth closes again.
   * snap:    gape complete -> lunge at the pilot's predicted position for 0.35 s (133 u reach); a hull inside
              the jaws is bitten (`bite`)
+  * creep:   within 600 u of a pilot but OUTSIDE its forward 50-degree cone, it slides (35 u/s) toward where
+             that pilot will be in 3 s; looked at, it freezes dead still (it moves only when you are not looking)
   * spent:   3 s slack and slow after a snap (it cannot gape), then it creeps off to a new prism
 Counterplay: read the gape and swerve - the snap is aimed at where you WERE going; or hit it first (it is
 helpless before the gape completes and while spent). Payoff: a crystal-mimic is a real crystal once killed.
@@ -33,6 +35,8 @@ class Lurker(Herd):
         self.seat = np.full(n, -1)
         self.snaps = 0; self.hits = 0; self.aborts = 0
         self.prev_d = np.full(n, np.inf)
+        self.heading = unit(arena.rng.normal(size=(n, 3)))      # it never turns to face you
+        self.crept = 0.0
 
     def act(self, arena, dt):
         al = self.alive
@@ -43,7 +47,8 @@ class Lurker(Herd):
         idle = al & (self.lunge <= 0) & (self.spent <= 0)
         trig = idle & (((dist < SENSE) & closing) | (dist < 80))
         before = self.gape.copy()
-        self.gape = np.where(trig | (idle & (self.gape > 0) & (dist < 230)), self.gape + dt / GAPE, np.maximum(0, self.gape - 2 * dt))
+        gt = 0.05 if getattr(self, 'ablate', None) == 'nogape' else GAPE
+        self.gape = np.where(trig | (idle & (self.gape > 0) & (dist < 230)), self.gape + dt / gt, np.maximum(0, self.gape - 2 * dt))
         self.aborts += int(((before > 0.3) & (self.gape < before) & idle).sum())
         go = idle & (self.gape >= 1.0)
         aim = off + PV[k] * np.clip(dist / LUNGE, 0, 0.5)[:, None]
@@ -71,6 +76,18 @@ class Lurker(Herd):
                 to = arena.mass_pos[s] - self.pos[i]
                 dd = np.linalg.norm(to)
                 des[i] = unit(to) * min(20.0, dd * 2.0) if dd > 6 else 0.0
+        # CREEP WHILE UNWATCHED: a dormant lurker within 600 u of a pilot, OUTSIDE that pilot's forward 50 deg
+        # cone, slides toward the point the pilot will pass in 3 s; inside the cone it freezes dead still
+        PP = np.array([p.pos for p in arena.pilots])
+        ahead = PP[k] + PV[k] * 3.0
+        look = np.sum(unit(PV[k]) * unit(-off), axis=1) > np.cos(np.radians(50))
+        dorm = settle & (dist < 600) & (dist > 120) & (getattr(self, 'ablate', None) != 'nocreep')
+        creep = dorm & ~look
+        des[creep] = unit(ahead[creep] - self.pos[creep]) * 35.0
+        des[dorm & look] = 0.0
+        self.vel[dorm & look] = 0.0
+        self.crept += float(np.linalg.norm(des[creep], axis=1).sum()) * dt
+        self.seat[creep] = -1
         acc = np.where(self.lunge > 0, 0.0, 120.0)
         self.vel = np.where((self.lunge > 0)[:, None], self.vel, steer(self.vel, des, acc, dt))
         self.vel = contain(self.pos, self.vel, arena.R)
@@ -95,8 +112,13 @@ class Lurker(Herd):
         return c
 
     def phase_stats(self):
-        return dict(snaps=self.snaps, snap_hit_rate=round(self.hits / max(self.snaps, 1), 2), aborts=self.aborts)
+        return dict(crept=round(self.crept, 1), snaps=self.snaps, snap_hit_rate=round(self.hits / max(self.snaps, 1), 2), aborts=self.aborts)
 
 
-def make(arena):
-    return Lurker(arena)
+ABLATIONS = {"nogape": "snaps the instant it triggers (no 0.9 s gape)",
+             "nocreep": "never creeps while unwatched (stays on its prism)"}
+
+
+def make(arena, ablate=None):
+    sp = Lurker(arena); sp.ablate = ablate
+    return sp

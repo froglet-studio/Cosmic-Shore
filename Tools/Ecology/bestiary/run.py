@@ -37,7 +37,9 @@ SPECIES = ["pack", "leech", "locust", "stampede", "lurker", "leviathan", "thief"
 POLICIES = {"wander": Pilot.wanderer, "evader": Pilot.evader, "hunter": Pilot.hunter, "skimmer": Pilot.skimmer,
             # the shared evader flies 140 u/s against the wanderer's 120, so `counterplay` mixes "fleeing" with
             # "being faster". This one flees at the wanderer's own speed: counterplay_same_speed is fleeing alone.
-            "evader120": lambda: Pilot("evader", speed=120.0, name="evader120")}
+            "evader120": lambda: Pilot("evader", speed=120.0, name="evader120"),
+            "aware": lambda: Pilot("aware", speed=120.0, name="aware")}
+EXTRA = ("evader120", "aware")
 DT = 0.1
 GAP = 3.0          # a hit with no hit on that pilot in the previous GAP seconds opens a new ENGAGEMENT
 
@@ -78,8 +80,27 @@ class TelProbe(Probe):
         return out
 
 
+class BArena(Arena):
+    """The shared Arena plus one pilot policy the shared evader lacks: `aware` flees only threats it can SEE
+    (inside 350 u) and otherwise cruises like the wanderer. The shared evader reads every threat in the cell,
+    from 2 km away, so its zero is partly clairvoyance; `aware` at the wanderer's speed is the fair test of
+    "does flying well matter"."""
+
+    def _pilot_goal(self, p):
+        if p.policy == "aware":
+            if len(self.threats):
+                T = np.asarray(self.threats); d = np.linalg.norm(T - p.pos, axis=1); j = int(np.argmin(d))
+                if d[j] < 350.0:
+                    away = p.pos - T[j]
+                    return p.pos + away / max(np.linalg.norm(away), 1e-6) * 300.0
+            if np.linalg.norm(p.goal - p.pos) < 60.0:
+                p.goal = self._ball(1, 0.2 * self.R, 0.9 * self.R)[0]
+            return p.goal
+        return super()._pilot_goal(p)
+
+
 def make_arena(seed, mass=3000):
-    ar = Arena(seed=seed)
+    ar = BArena(seed=seed)
     ar.scatter_mass(mass)
     ar.enable_trails(spacing=15.0, vol=10.0)
     return ar
@@ -87,9 +108,10 @@ def make_arena(seed, mass=3000):
 
 def one(args):
     key, policy, seed, minutes, rec_every = args
-    mod = importlib.import_module(f"species.{key}")
+    base, _, ab = key.partition(":")
+    mod = importlib.import_module(f"species.{base}")
     ar = make_arena(seed)
-    sp = mod.make(ar)
+    sp = mod.make(ar, ablate=ab or None)
     ar.add_pilot(POLICIES[policy]())
     view = ScoreView(sp)
     pr = TelProbe(DT)
@@ -128,12 +150,15 @@ def score(keys, seeds, minutes, procs=4):
     out = {}
     for k in keys:
         allruns = {(p, s): r for (kk, p, s), r, _ in res if kk == k}
-        runs = {ps: r for ps, r in allruns.items() if ps[0] != "evader120"}
+        runs = {ps: r for ps, r in allruns.items() if ps[0] not in EXTRA}
         card = combine(runs, minutes)
         e120 = float(np.mean([r["hits_per_min"] for (p, s), r in allruns.items() if p == "evader120"]))
         card["hits_per_min_evader120"] = round(e120, 2)
         w = card["hits_per_min_wander"]
         card["counterplay_same_speed"] = round(e120 / w, 2) if w else None
+        aw = float(np.mean([r["hits_per_min"] for (p, s), r in allruns.items() if p == "aware"]))
+        card["hits_per_min_aware"] = round(aw, 2)
+        card["counterplay_aware"] = round(aw / w, 2) if w else None
         sk = [r["hits_per_min"] for (p, s), r in runs.items() if p == "skimmer"]
         fl = [x for r in allruns.values() for x in r["first_leads"]]
         card["telegraph_first_s"] = round(float(np.median(fl)), 2) if fl else None
@@ -153,7 +178,9 @@ def score(keys, seeds, minutes, procs=4):
         ph = [r["phase"] for r in runs.values() if r["phase"]]
         if ph:
             card["phase"] = {k2: round(float(np.mean([x[k2] for x in ph if k2 in x])), 3) for k2 in ph[0]}
-        mod = importlib.import_module(f"species.{k}")
+        mod = importlib.import_module(f"species.{k.partition(':')[0]}")
+        if ":" in k:
+            card["ablation"] = mod.ABLATIONS[k.partition(":")[2]]
         card["emotion"] = mod.EMOTION
         card["counter"] = mod.COUNTER
         card["minutes"], card["seeds"] = minutes, list(seeds)
@@ -185,23 +212,30 @@ def feel_spread(cards):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("keys", nargs="*")
+    ap.add_argument("--ablations", action="store_true", help="also run every species' ABLATIONS (negative controls)")
     ap.add_argument("--seeds", nargs="+", type=int, default=[7, 23, 41])
     ap.add_argument("--minutes", type=float, default=1.5)
     ap.add_argument("--out", default=os.path.join(HERE, "scorecards.json"))
     a = ap.parse_args()
     keys = a.keys or SPECIES
+    if a.ablations:
+        keys = keys + [f"{k}:{ab}" for k in (a.keys or SPECIES)
+                       for ab in importlib.import_module(f"species.{k}").ABLATIONS]
     t0 = time.time()
     cards = score(keys, a.seeds, a.minutes)
     allc = json.load(open(a.out)) if os.path.exists(a.out) else {}
     allc.setdefault("species", {}).update(cards)
     sp = {k: v for k, v in allc["species"].items() if k in SPECIES}
+    for k in list(allc["species"]):
+        if ":" in k:
+            allc.setdefault("ablations", {})[k] = allc["species"].pop(k)
     if len(sp) >= 2:
         allc["feel_spread"] = feel_spread(sp)
     for k, c in cards.items():
         c["verdict"] = verdict(c)
     json.dump(allc, open(a.out, "w"), indent=1)
     for k, c in cards.items():
-        print(f"{k:10s} tel {c['telegraph_s']}/first {c['telegraph_first_s']} unw {c['unwarned_frac']}  cp {c['counterplay']} cp120 {c['counterplay_same_speed']} (w {c['hits_per_min_wander']} e {c['hits_per_min_evader']} s {c['hits_per_min_skimmer']})"
+        print(f"{k:10s} tel {c['telegraph_s']}/first {c['telegraph_first_s']} unw {c['unwarned_frac']}  cp {c['counterplay']} cp120 {c['counterplay_same_speed']} aware {c['counterplay_aware']} (w {c['hits_per_min_wander']} e {c['hits_per_min_evader']} s {c['hits_per_min_skimmer']})"
               f"  pay {c['payoff_per_min']}  var {c['variety']}  cons {c['conservation_max_drift']}  "
               f"{c['ms_per_step']}ms/{c['agents']}ag  {c['verdict']}")
         print("           feel", c["feel"], "kinds", c["hits_by_kind"], "phase", c.get("phase"))

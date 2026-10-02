@@ -59,7 +59,9 @@ class Stampede(Herd):
         cen = (herd[:, :, None] * D).sum(1) / np.maximum(herd.sum(1, keepdims=True), 1)
         # a seer flees away from the threat AS SEEN FROM ITS HERD'S CENTRE (where the herd is, minus where the
         # threat is) - so a whole herd bolts ONE way, and the animals on the far side of you run THROUGH you
-        herd_away = unit(cen - off)
+        herd_away = unit(cen - off) if getattr(self, 'ablate', None) != 'selfish' else unit(-off)
+        if getattr(self, 'ablate', None) == 'selfish':
+            target = np.zeros_like(target)
         self.f = np.where(saw[:, None], unit(0.35 * unit(-off) + herd_away),
                           unit(self.f + (inherited - self.f) * min(1, 2 * dt)))
         a = self.a[:, None]
@@ -155,5 +157,12 @@ class Stampede(Herd):
                     env_trampled=round(self.env_trampled, 1), stampede_s=round(self.stampede_s, 1))
 
 
-def make(arena):
-    return Stampede(arena)
+ABLATIONS = {"nobulls": "no bulls: a herd that only panics",
+             "selfish": "each seer flees straight away from the pilot (no herd-centre flee, no contagion)"}
+
+
+def make(arena, ablate=None):
+    sp = Stampede(arena); sp.ablate = ablate
+    if ablate == "nobulls":
+        sp.bull[:] = False; sp.size[:] = 10.0
+    return sp

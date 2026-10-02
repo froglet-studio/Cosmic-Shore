@@ -67,7 +67,7 @@ class Leviathan(Herd):
             return
         cen = self.pos[al].mean(0)
         tight = int((np.linalg.norm(self.pos[al] - cen, axis=1) < 260).sum())
-        if not self.assembled and tight >= ASSEMBLE_N:
+        if not self.assembled and tight >= ASSEMBLE_N and getattr(self, 'ablate', None) != 'noassemble':
             self.assembled = True; self.assemblies += 1
             self.centre = cen
             v = self.vel[al].mean(0)
@@ -111,7 +111,7 @@ class Leviathan(Herd):
             if self.gulp > 0:
                 self.gulp -= dt
                 if self.gulp <= 0: self.gulp_rest = 4.0
-            elif ahead.any() and self.gulp_rest <= 0:
+            elif ahead.any() and self.gulp_rest <= 0 and getattr(self, 'ablate', None) != 'nogulp':
                 self.gulp_prep += dt
                 if self.gulp_prep >= 1.2:
                     self.gulp, self.gulp_prep = 1.6, 0.0; self.gulps += 1
@@ -183,5 +183,10 @@ class Leviathan(Herd):
                     eaten=round(self.eaten, 1))
 
 
-def make(arena):
-    return Leviathan(arena)
+ABLATIONS = {"noassemble": "the quorum never fires: a loose shoal forever",
+             "nogulp": "assembled body, but no telegraphed gulp surge"}
+
+
+def make(arena, ablate=None):
+    sp = Leviathan(arena); sp.ablate = ablate
+    return sp

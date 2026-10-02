@@ -43,7 +43,8 @@ class Thief(Herd):
         n = len(arena.mass_vol)
         if len(self.laid_t) < n:
             self.laid_t = np.concatenate([self.laid_t, np.full(n - len(self.laid_t), self.t)])
-        trail = np.flatnonzero(arena.mass_alive & (own >= 0) & (self.t - self.laid_t <= WARM))
+        warm = 1e9 if getattr(self, 'ablate', None) == 'cold' else WARM
+        trail = np.flatnonzero(arena.mass_alive & (own >= 0) & (self.t - self.laid_t <= warm))
         claimed = set(self.claim[self.claim >= 0].tolist()) | set(self.carry[self.carry >= 0].tolist())
         D, d = pairwise(self.pos)
         des = np.zeros_like(self.vel)
@@ -57,7 +58,7 @@ class Thief(Herd):
                     self.carry[i] = -1; self.hoard += 1
                 continue
             c = self.claim[i]
-            if c < 0 or not arena.mass_alive[c] or own[c] < 0 or self.t - self.laid_t[c] > WARM + 1.5:
+            if c < 0 or not arena.mass_alive[c] or own[c] < 0 or self.t - self.laid_t[c] > warm + 1.5:
                 self.claim[i] = -1
                 if len(trail):
                     cand = trail[np.linalg.norm(arena.mass_pos[trail] - self.pos[i], axis=1) < SCOUT]
@@ -74,7 +75,7 @@ class Thief(Herd):
                     own[c] = THIEF_OWNER; self.carry[i] = c; self.claim[i] = -1
                     self.stolen_by[int(c)] = o; self.steals += 1; self.stolen_vol += arena.mass_vol[c]
                     arena.hit(arena.pilots[o], "steal", float(arena.mass_vol[c]))
-            elif dist[i] < SPOT:
+            elif dist[i] < SPOT and warm < 1e9:
                 # a ship in sight: fall in behind it, like gulls behind a trawler
                 p = arena.pilots[k[i]]
                 des[i] = unit(p.pos - unit(p.vel) * 70.0 - self.pos[i]) * FREE_V
@@ -82,7 +83,7 @@ class Thief(Herd):
                 des[i] = unit(self.nest - self.pos[i] + self.rng.normal(0, 30, 3)) * 30.0
         # timid: a pilot pointing at a free thief inside 120 u
         pointing = np.sum(unit(PV[k]) * unit(-off), axis=1) > 0.85
-        shy = al & (self.carry < 0) & (dist < 120) & pointing
+        shy = al & (self.carry < 0) & (dist < 120) & pointing & (getattr(self, 'ablate', None) != 'bold')
         side = unit(np.cross(PV[k], [0.0, 1.0, 0.0]) + 1e-6)
         des[shy] = (side[shy] * np.sign(np.sum(side[shy] * -off[shy], axis=1))[:, None]) * FREE_V
         des += separation(D, d, 8.0, al) * 40
@@ -112,10 +113,20 @@ class Thief(Herd):
         c[self.carry >= 0] = [1.0, 0.85, 0.3]
         return c
 
+    def render_extra(self, out, arena):
+        """Viewer only: the prisms the thieves hold (carried + the hoard), in gold."""
+        h = np.flatnonzero(arena.mass_alive & (arena.mass_owner == THIEF_OWNER))
+        out["hoard"] = dict(pos=arena.mass_pos[h], col=np.tile([0.95, 0.75, 0.2], (len(h), 1)), size=np.full(len(h), 3.0))
+
     def phase_stats(self):
         return dict(steals=self.steals, stolen_vol=round(self.stolen_vol, 1), recaptured=self.recaptured,
                     hoard=self.hoard)
 
 
-def make(arena):
-    return Thief(arena)
+ABLATIONS = {"cold": "takes ANY trail prism (not only the warm wake) and never tails a ship",
+             "bold": "never veers off a pilot pointing at it"}
+
+
+def make(arena, ablate=None):
+    sp = Thief(arena); sp.ablate = ablate
+    return sp

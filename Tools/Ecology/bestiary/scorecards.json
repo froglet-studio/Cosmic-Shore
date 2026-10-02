@@ -1,46 +1,46 @@
 {
  "species": {
   "pack": {
-   "hits_per_min_wander": 4.67,
+   "hits_per_min_wander": 5.996666666666667,
    "hits_per_min_evader": 0.0,
    "counterplay": 0.0,
-   "telegraph_s": 1.05,
-   "payoff_per_min": 6.0,
-   "variety": 1.143,
+   "telegraph_s": 1.27,
+   "payoff_per_min": 4.67,
+   "variety": 1.098,
    "feel": {
-    "size": 5.0,
-    "speed_rel": 0.738,
-    "approach": -7.848,
-    "coherence": 0.816,
-    "burstiness": 1.247,
-    "jerk_rel": 0.171
+    "size": 12.0,
+    "speed_rel": 0.634,
+    "approach": -12.243,
+    "coherence": 0.671,
+    "burstiness": 1.389,
+    "jerk_rel": 0.455
    },
    "hits_per_min_evader120": 0.0,
    "counterplay_same_speed": 0.0,
    "telegraph_first_s": 0.9,
-   "engagements": 62,
-   "unwarned_frac": 0.13,
-   "hits_per_min_skimmer": 10.0,
+   "engagements": 50,
+   "unwarned_frac": 0.16,
+   "hits_per_min_skimmer": 6.45,
    "hits_by_kind": {
     "wander": {
-     "bite": 4.68
+     "bite": 6.0
     },
     "evader": {},
     "hunter": {
-     "bite": 3.11
+     "bite": 2.45
     },
     "skimmer": {
-     "bite": 10.0
+     "bite": 6.45
     },
     "evader120": {}
    },
-   "crystals_per_min_hunter": 6.0,
+   "crystals_per_min_hunter": 4.67,
    "conservation_max_drift": 0.0,
-   "ms_per_step": 0.273,
-   "agents": 7.1,
-   "us_per_agent_step": 38.45,
+   "ms_per_step": 0.327,
+   "agents": 5.5,
+   "us_per_agent_step": 59.45,
    "phase": {
-    "strikes": 6.667
+    "strikes": 5.583
    },
    "emotion": "dread (menacing, coordinated)",
    "counter": "break through the gap before the ring closes; change heading so the cut-off is wrong",
@@ -246,51 +246,50 @@
   },
   "lurker": {
    "hits_per_min_wander": 0.89,
-   "hits_per_min_evader": 0.6666666666666666,
-   "counterplay": 0.75,
-   "telegraph_s": 0.9,
-   "payoff_per_min": 7.553333333333334,
-   "variety": 1.333,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.95,
+   "payoff_per_min": 6.22,
+   "variety": 2.0,
    "feel": {
     "size": 4.0,
     "speed_rel": 0.0,
-    "approach": -6.908,
-    "coherence": 0.079,
-    "burstiness": 12560861.472,
-    "jerk_rel": 251.451
+    "approach": -5.806,
+    "coherence": 0.195,
+    "burstiness": 35000000.0,
+    "jerk_rel": 376.638
    },
-   "hits_per_min_evader120": 0.22,
-   "counterplay_same_speed": 0.25,
+   "hits_per_min_evader120": 0.67,
+   "counterplay_same_speed": 0.75,
    "telegraph_first_s": 0.9,
    "engagements": 40,
-   "unwarned_frac": 0.0,
-   "hits_per_min_skimmer": 2.67,
+   "unwarned_frac": 0.03,
+   "hits_per_min_skimmer": 4.89,
    "hits_by_kind": {
     "wander": {
      "bite": 0.89
     },
-    "evader": {
-     "bite": 0.66
-    },
+    "evader": {},
     "hunter": {
-     "bite": 7.11
+     "bite": 5.56
     },
     "skimmer": {
-     "bite": 2.67
+     "bite": 4.88
     },
     "evader120": {
-     "bite": 0.22
+     "bite": 0.67
     }
    },
-   "crystals_per_min_hunter": 7.56,
+   "crystals_per_min_hunter": 6.22,
    "conservation_max_drift": 0.0,
-   "ms_per_step": 0.263,
-   "agents": 14.4,
-   "us_per_agent_step": 18.26,
+   "ms_per_step": 1.504,
+   "agents": 14.8,
+   "us_per_agent_step": 101.62,
    "phase": {
-    "snaps": 8.333,
-    "snap_hit_rate": 0.485,
-    "aborts": 0.0
+    "crept": 7278.833,
+    "snaps": 12.167,
+    "snap_hit_rate": 0.245,
+    "aborts": 1.25
    },
    "emotion": "eerie (stillness, mimicry, the sudden snap)",
    "counter": "read the gape and swerve off your line; or strike first / while it is spent",
@@ -498,7 +497,7 @@
    "locust",
    "thief"
   ],
-  "min_dist": 1.22,
-  "mean_dist": 3.44
+  "min_dist": 1.23,
+  "mean_dist": 3.46
  }
 }

@@ -78,6 +78,8 @@ class Leech(Herd):
         tau = np.clip(dist / 150.0, 0, 0.8)
         aim = PP[k] + PV[k] * tau[:, None]
         pounce = free & (dist < SENSE) & (self.hop > 0.05) & (self.daze <= 0)
+        if getattr(self, 'ablate', None) == 'nopounce':
+            pounce[:] = False
         desired[pounce] = unit(aim[pounce] - self.pos[pounce]) * 150.0
         self.vel[free] = steer(self.vel[free], desired[free], np.where(pounce[free], 900.0, 60.0), dt)
         self.vel = contain(self.pos, self.vel, arena.R)
@@ -106,7 +108,7 @@ class Leech(Herd):
             self.pos[i] = p.pos + F.T @ self.off[i] - p.vel * dt     # minus: the base loop adds vel*dt
             self.vel[i] = p.vel
             self.grip[i] += (-(omega[j] - 1.0) * 1.6 if omega[j] > 1.0 else 0.3) * dt
-            self.grip[i] = min(self.grip[i], 1.0)
+            self.grip[i] = 1.0 if getattr(self, 'ablate', None) == 'nogrip' else min(self.grip[i], 1.0)
             self.sip[i] += dt
             self.attached_time += dt
             if self.sip[i] >= 1.5:
@@ -130,5 +132,10 @@ class Leech(Herd):
         return dict(shaken=self.shaken, attached_s=round(self.attached_time, 1))
 
 
-def make(arena):
-    return Leech(arena)
+ABLATIONS = {"nogrip": "a latched leech never loses its grip (turning does nothing)",
+             "nopounce": "no hop: a leech only latches if the hull brushes it (no intercept dart)"}
+
+
+def make(arena, ablate=None):
+    sp = Leech(arena); sp.ablate = ablate
+    return sp

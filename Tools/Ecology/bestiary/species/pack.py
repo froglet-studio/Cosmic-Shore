@@ -25,8 +25,11 @@ CRUISE, SPRINT, RANGE = 95.0, 175.0, 900.0
 class Pack(Herd):
     name = "pack"
 
-    def __init__(self, arena, n=9):
-        super().__init__(arena, n, spread=50.0, size=5.0, body=12.0)
+    def __init__(self, arena, n=7):
+        super().__init__(arena, n, spread=50.0, size=12.0, body=48.0)
+        self.aspect = 2.6                                   # long, low bodies
+        self.weave = arena.rng.uniform(0, 6.28, n)            # each stalks on its own weave
+        self.gait = arena.rng.uniform(0.92, 1.08, n)           # and at its own pace (no lock-step)
         self.stamina = np.full(n, 3.0)
         self.cool = np.zeros(n)
         self.closure = np.zeros(n)
@@ -53,20 +56,28 @@ class Pack(Herd):
         # closure: resultant of my packmates' bearings around their pilot - small resultant + many = surrounded
         cnt = same.sum(1) + 1
         res = np.linalg.norm((same[:, :, None] * b[None, :, :]).sum(1) + b, axis=1) / cnt
-        closure = np.clip((1.0 - res) * np.clip((cnt - 1) / 4.0, 0, 1) * 1.6, 0, 1)
+        closure = np.clip((1.0 - res) * np.clip((cnt - 1) / 3.0, 0, 1) * 1.6, 0, 1)
         closure = np.where(dist < 350, closure, 0.0)
         self.closure = closure
         want_b = unit(b + 1.2 * ang + 0.9 * head)
         striking = (closure > 0.55) & (self.stamina > 0.3) & (self.cool <= 0)
+        ab = getattr(self, "ablate", None)
+        if ab == "chase":
+            pred = PP[k]; want_b = b; striking = (dist < RANGE) & (self.cool <= 0)
+        elif ab == "noquorum":
+            striking = (dist < 150) & (self.stamina > 0.3) & (self.cool <= 0)
         ring = np.where(striking, 0.0, np.clip(dist * 0.5, 120, 220))
         goal = pred + want_b * ring[:, None]
-        speed = np.where(striking, SPRINT, CRUISE)
+        speed = np.where(striking, SPRINT, CRUISE * self.gait)
         desired = unit(goal - self.pos) * speed[:, None]
         # roam when no pilot in range: drift with the pack
         roam = dist > RANGE
         centre = self.pos[a].mean(0)
         desired[roam] = unit(centre - self.pos[roam] + self.rng.normal(0, 40, (roam.sum(), 3))) * 40
         desired += separation(D, d, 30.0, a) * 60
+        # stalking weave: each hunter sways on its own phase (no lock-step), stronger while stalking
+        side = unit(np.cross(desired, [0.0, 1.0, 0.0]) + 1e-6)
+        desired += side * (np.sin(1.3 * self.t + self.weave) * 35.0 * (1 - striking) * (dist < RANGE))[:, None]
         # winded / cooling hunters fall back and widen
         back = self.cool > 0
         desired[back] = unit(self.pos[back] - PP[k[back]]) * CRUISE
@@ -75,6 +86,8 @@ class Pack(Herd):
         self.stamina = np.where(striking, self.stamina - dt, np.minimum(3.0, self.stamina + 0.5 * dt))
         self.cool = np.maximum(0, self.cool - dt)
         self.intent = np.where(back, 0.0, closure)
+        # they WATCH you: a hunter in range faces the predicted pilot whatever its feet are doing (wolfpack effect)
+        self.heading = np.where((dist < RANGE)[:, None], unit(pred - self.pos), unit(self.vel))
         # bite
         for i in np.flatnonzero(a & (dist < arena.pilots[0].radius + self.size + 4) & (self.cool <= 0)):
             p = arena.pilots[k[i]]
@@ -93,5 +106,10 @@ class Pack(Herd):
         return dict(strikes=self.strikes)
 
 
-def make(arena):
-    return Pack(arena)
+ABLATIONS = {"chase": "naive: chase the pilot's CURRENT position, no spread, no quorum (the template pack)",
+             "noquorum": "prediction + spread kept, but each hunter strikes on its own inside 150 u (no collective closure)"}
+
+
+def make(arena, ablate=None):
+    sp = Pack(arena); sp.ablate = ablate
+    return sp

@@ -57,6 +57,9 @@ class Locust(Herd):
         hunger = np.clip(1.0 - self.gut[idx] / 40.0, 0, 1)
         target = 1.0 / (1.0 + np.exp(-(nn - (9.0 - 3.0 * hunger)) * 0.9))
         g = g + (target - g) * (dt / 4.0)
+        ab = getattr(self, 'ablate', None)
+        if ab == 'solitary': g = np.zeros_like(g)
+        elif ab == 'gregarious': g = np.ones_like(g)
         # neighbours inside 60 u: alignment + cohesion, weighted by MY phase
         m = d < 60
         cntm = np.maximum(m.sum(1, keepdims=True), 1)
@@ -147,5 +150,10 @@ class Locust(Herd):
         return out
 
 
-def make(arena):
-    return Locust(arena)
+ABLATIONS = {"solitary": "phase pinned at 0: never gregarious (crowding does nothing)",
+             "gregarious": "phase pinned at 1 from the first second (always a storm)"}
+
+
+def make(arena, ablate=None):
+    sp = Locust(arena); sp.ablate = ablate
+    return sp
