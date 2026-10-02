@@ -4314,7 +4314,8 @@ is the only currency.
 **THE MASTER DEVELOPER UNLOCK IS ON BY DEFAULT — read this before debugging any lock.**
 `DeveloperUnlockGate.AllUnlocked` (`_Scripts/System/Progression/`) opens every entitlement at
 once — all vessels, all game modes, every intensity tier, the Vessel Hangar — **and stands down
-every quest that has not opted in** (`QuestSO.runsUnderDeveloperUnlock`, default off), because a
+every quest that has not opted in** (`QuestSO.runsUnderDeveloperUnlock`, or per PHASE
+`QuestPhaseGraphSO.runsUnderDeveloperUnlock`; both default off), because a
 lock-funnel quest applies exactly the locks that gate exists to open. A quest that ROUTES rather
 than locks (the first-login railroad into the Game of the Week microgame,
 `Docs/ModePreview/TRAINING_PLAN.md`) opts in and runs, with every lock-APPLYING node

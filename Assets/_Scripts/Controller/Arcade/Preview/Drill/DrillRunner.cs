@@ -59,6 +59,14 @@ namespace CosmicShore.Gameplay
         /// <summary>The Lesson finished: true = completed, false = skipped.</summary>
         public event Action<bool> OnLessonEnded;
 
+        /// <summary>Any runner's Lesson finished (true = completed, false = skipped). For listeners
+        /// that cannot reach the runner - the first-login quest, which only knows a Lesson should
+        /// happen somewhere.</summary>
+        public static event Action<bool> AnyLessonEnded;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => AnyLessonEnded = null;
+
         public DrillPhase Phase { get; private set; } = DrillPhase.Idle;
 
         /// <summary>Section header, authored in the library's Strings.</summary>
@@ -276,6 +284,7 @@ namespace CosmicShore.Gameplay
         {
             if (Phase != DrillPhase.Lesson || !SkipAvailable) return;
             OnLessonEnded?.Invoke(false);
+            AnyLessonEnded?.Invoke(false);
             EnterMentor(null);
         }
 
@@ -380,6 +389,7 @@ namespace CosmicShore.Gameplay
         {
             DrillProgressStore.RecordLessonCompleted(_facts.Scheme);
             OnLessonEnded?.Invoke(true);
+            AnyLessonEnded?.Invoke(true);
             EnterMentor(null);
         }
 

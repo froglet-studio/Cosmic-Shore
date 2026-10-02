@@ -256,7 +256,8 @@ P0 (new):  WaitMenuReady → LockNavigation(Arcade only)
 ```
 
 Two new nodes: `QuestOpenMicrogameNode` (navigate → select the card → arm the preview forced) and
-`QuestWaitForLessonNode` (completes when `DrillProgressStore` marks that hull's Lesson done). The
+`QuestWaitForLessonNode` (completes when a Lesson ends). As shipped (§10.5) the open node carries
+the wait itself, because a quest resumes at its saved node. The
 existing flight-school nodes (`EnterFreestyle`, `WaitForInput`, `WaitForDrift`, `WaitForSkim`,
 `ExitFreestyle`) stay in the codebase for other uses but leave the Main Quest. The later phases
 (the Crystal Capture funnel, the unlocks) need re-deciding against the Game of the Week, which is
@@ -446,7 +447,7 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 | 1a **(landed)** | The data layer (§10.1): beats, conditions, tokens, composer, hull facts, progress store + `DRILL_PROGRESS` cloud key, the library and both Lesson templates | the Lesson composes for any hull, offline |
 | 2 **(landed)** | §7 gate course in previews; start lines, Breakwater's stations, Notes (§10.3) | the race is in the window |
 | 3 **(landed)** | The Mentor: TipListSOs for the gate-race family, race Moment conditions, resume (§10.4) | the curated tutor |
-| 4 | Quest Graph P0 railroad; the Game of the Week source | first login → Lesson, end to end |
+| 4 **(landed)** | Quest Graph P0 railroad; the Game of the Week source (§10.5) | first login → Lesson, end to end |
 | 5 | Remaining races; tip lists for non-racing families; relevance-gated leaderboards (§6); practice-lap result | coverage |
 | 6 | Authoring window, coverage test, analytics (genre already read from `ModeGenre`, §8) | the "every vessel ever" guarantee |
 | later | `GhostDemo` cue (the preview's own autopilot flies a step once before handing over) | show, don't tell |
@@ -548,6 +549,43 @@ in the editor.**
 Stated: every tip line was checked against the mode docs, not against play. The Headlong and
 Redline lines describe how the Rhino's ramp boost and the Manta's Soar trade speed for turn; if a
 playtest finds them wrong, they are fields in their `Tips_<Mode>` asset.
+
+### 10.5 Phase 4 - the first-login railroad
+
+| Piece | File | Note |
+|---|---|---|
+| Game of the Week source | `ScriptableObjects/GameOfTheWeekSO.cs`, `Resources/GameOfTheWeek.asset` | The minimal source this plan assumed: an authored, ordered rotation stepped once per UTC week (weeks start Monday, counted in whole days from a fixed Monday, so no calendar or culture is involved), with a fallback for an empty list. Seeded with the seven racing cards: Skim Race, Switchback, Headlong, Redline, Breakwater, Skein, Waystation. The real rotation is a separate thread; it replaces this asset's contents or its `Current()`, and nothing that reads it changes |
+| Open the microgame | `FTUE/.../Nodes/QuestOpenMicrogameNode.cs` | Opens the Arcade, selects the card through the new `ArcadeExploreView.TrySelectMode` (which reuses `FindGameByMode` and `SelectGame`, so a progression lock on the card is bypassed exactly as the weekly challenge bypasses it), and arms `ModePreviewSession.ArmForcedEntry`, which flies the vessel in the moment that card's preview goes live, as if tapped. With `holdUntilLessonEnds` it stays on this node until the Lesson ends |
+| Wait for the Lesson | `FTUE/.../Nodes/QuestWaitForLessonNode.cs` | The wait itself, also usable on its own. Ends on `DrillProgressStore.CompletedAnyLesson` (the key that forces the first Lesson) or on the new `DrillRunner.AnyLessonEnded` (a party guest's skip, which sets no key) |
+| The phase | `FTUE/DataContainer/Phases/MainQuest_Phase0_Railroad.asset` | Lock nav to Arcade -> open the Game of the Week, forced, holding -> unlock nav -> phase end. `MainQuest` phase 0 now points here; the old flight-school Phase 0 asset stays on disk, unreferenced |
+| Per-phase gate opt-in | `QuestPhaseGraphSO.runsUnderDeveloperUnlock`, `QuestGraphRunner` | The railroad PHASE opts in, not the quest. With the master developer unlock on (the default), Phase 0 runs (its lock nodes pass through) and the runner stands down at Phase 1, marking nothing; with the gate off, the old phases 1-5 follow as before |
+
+**Why the open node holds instead of handing to a wait node.** A quest resumes at its saved
+node. With a separate wait node, a new player who quits mid-Lesson would resume on a home screen
+with nothing open and navigation locked. Holding on the open node means a resume walks them in
+again.
+
+Authored by `Tools/Build/author_first_login_railroad.py`. It writes the rotation and the phase
+only while they do not exist (both are for a designer to edit), and enforces the MainQuest
+re-point every run. `--check` verifies that phase 0 is the railroad, that it opts in, that its
+edges and node scripts resolve, that the open node holds, and that every rotation mode has an
+arcade card and a flyable preview. `--self-test` has 6 negative controls.
+
+Proof: the drill harness gained the week arithmetic (Monday rollover, wrap, a pre-epoch date,
+the empty-rotation fallback; 102 checks, a negative control on the pre-epoch floor fires). The
+two nodes and the rotation type-check against the real `QuestNodeSO` with stubs for the rest.
+**Nothing has been run in the editor**, and this phase cannot be judged without it: the walk-in
+crosses the arcade screen, the configure modal and the preview, which no harness reaches.
+
+To try it, in play mode: reset quest progress in the Quest Graph Editor, and run **FrogletTools >
+Quest Graph > Reset Microgame Lessons (testing)** (`DrillProgressStore.ResetForTesting`, which
+clears the local AND the loaded cloud copy, since a read merges the two). Then leave and re-enter
+Menu_Main. Stated gaps:
+- **`QuestDefaultContentBuilder` still seeds the old Phase 0.** It refuses to run while a
+  MainQuest exists, so it cannot overwrite this one, but a re-seed from scratch would build the
+  flight school again.
+- **Phases 1-5 are unchanged** (§11, item 1). With the gate off they still follow the railroad
+  and still assume a Crystal Capture funnel.
 
 ---
 

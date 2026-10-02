@@ -23,6 +23,13 @@ namespace CosmicShore.Core
         [Tooltip("When off, the runner skips this phase entirely (test harness).")]
         public bool phaseEnabled = true;
 
+        [Tooltip("Run this PHASE even while the master developer unlock is on. The phase-level twin of " +
+                 "QuestSO.runsUnderDeveloperUnlock: lock-applying nodes still pass straight through, and " +
+                 "when the quest reaches a phase that has not opted in, the runner stands down there " +
+                 "(nothing is marked complete). Lets a routing phase - the first-login railroad - run " +
+                 "while the lock-funnel phases after it keep waiting for the gate to be turned off.")]
+        public bool runsUnderDeveloperUnlock;
+
         [Tooltip("Designer notes: what this phase teaches/unlocks, its entry gate, anything a teammate needs to know.")]
         [TextArea(3, 10)] public string designerNotes;
 

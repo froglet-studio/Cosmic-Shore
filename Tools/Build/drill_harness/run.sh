@@ -27,6 +27,7 @@ printf '%s\n' "$HERE/Unity.cs" "$HERE/Gameplay.cs" "$HERE/Driver.cs" "$HERE/Runn
   "$A/Data/Enums/Element.cs" "$A/Data/Enums/InputEvents.cs" "$A/Data/Enums/VesselClassType.cs" \
   "$A/Data/Enums/GameModes.cs" "$A/Data/Enums/ScoringMetric.cs" \
   "$A/ScriptableObjects/ElementalAbilityMapSO.cs" "$A/ScriptableObjects/ControlGlyphSetSO.cs" \
+  "$A/ScriptableObjects/GameOfTheWeekSO.cs" \
   "$A/UI/Elements/InputHintBindingMap.cs" \
   "$A/System/CloudData/Models/DrillProgressCloudData.cs" \
   "$A"/Controller/Arcade/Preview/Drill/*.cs > "$OUT/sources.rsp"

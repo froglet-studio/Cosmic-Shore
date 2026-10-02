@@ -771,6 +771,19 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Select this screen's card for <paramref name="mode"/> as if it were pressed. False -
+        /// and nothing opened - when the roster has no such card. The first-login railroad
+        /// (TRAINING_PLAN §5) uses it to walk a new player onto the Game of the Week.
+        /// </summary>
+        public bool TrySelectMode(CosmicShore.Data.GameModes mode)
+        {
+            var game = FindGameByMode(mode);
+            if (!game) return false;
+            SelectGame(game);
+            return true;
+        }
+
+        /// <summary>
         /// Open the launch modal for THIS WEEK'S weekly challenge, with its intensity and seat count
         /// pinned. Routes through the ordinary launch surface rather than a bespoke one - the
         /// weekly challenge is a mode you already know with one objective attached.

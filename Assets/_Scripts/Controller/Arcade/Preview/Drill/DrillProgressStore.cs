@@ -153,6 +153,23 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// Forget the Lesson keys and the seen tips EVERYWHERE: this machine's mirror and, when the
+        /// cloud copy is loaded, that too. Testing only (it makes this account a first-timer again,
+        /// so the first-login railroad and the forced Lesson run). Best laps are kept. A read
+        /// MERGES the two copies, so clearing only one would change nothing.
+        /// </summary>
+        public static void ResetForTesting()
+        {
+            ResetLocal();
+            var repo = Repo;
+            if (repo == null || !repo.IsLoaded) return;
+            repo.Data.CompletedAnyLesson = false;
+            repo.Data.CompletedTwoThumbLesson = false;
+            repo.Data.SeenTipIds.Clear();
+            repo.MarkDirty();
+        }
+
         /// <summary>Forget this machine's mirror (test and tooling hygiene; the cloud copy is untouched).</summary>
         public static void ResetLocal()
         {

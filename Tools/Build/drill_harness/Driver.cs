@@ -90,6 +90,23 @@ static class Driver
         public int AbilityActivationCount(Element e) => Abilities.TryGetValue(e, out var n) ? n : 0;
     }
 
+    static void GameOfTheWeek()
+    {
+        var utc = DateTimeKind.Utc;
+        // 2024-01-01 is a Monday (the epoch): Sunday the 7th is still week 0, Monday the 8th is week 1.
+        Check(CosmicShore.ScriptableObjects.GameOfTheWeekSO.WeekIndex(new DateTime(2024, 1, 7, 23, 59, 59, utc), 7) == 0,
+              "gotw: Sunday belongs to the week that began on Monday");
+        Check(CosmicShore.ScriptableObjects.GameOfTheWeekSO.WeekIndex(new DateTime(2024, 1, 8, 0, 0, 0, utc), 7) == 1,
+              "gotw: the week turns at Monday 00:00 UTC");
+        Check(CosmicShore.ScriptableObjects.GameOfTheWeekSO.WeekIndex(new DateTime(2024, 2, 19, 12, 0, 0, utc), 7) == 0,
+              "gotw: the rotation wraps after its last week");
+        Check(CosmicShore.ScriptableObjects.GameOfTheWeekSO.WeekIndex(new DateTime(2023, 12, 31, 12, 0, 0, utc), 7) == 6,
+              "gotw: a date before the epoch wraps backwards, not to index 0");
+        var gotw = new CosmicShore.ScriptableObjects.GameOfTheWeekSO();
+        Check(gotw.For(new DateTime(2026, 10, 2, 0, 0, 0, utc)) == GameModes.SkimRace,
+              "gotw: an empty rotation falls back");
+    }
+
     static int Main()
     {
         Tokens();
@@ -98,6 +115,7 @@ static class Driver
         Mentor();
         Progress();
         HullFacts();
+        GameOfTheWeek();
         RunnerDriver.Run(Check);
         Console.WriteLine($"{_pass} passed, {_fail} failed");
         return _fail == 0 ? 0 : 1;

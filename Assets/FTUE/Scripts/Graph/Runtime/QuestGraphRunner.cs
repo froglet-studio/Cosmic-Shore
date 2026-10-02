@@ -130,7 +130,8 @@ namespace CosmicShore.Core
             // spend the session re-applying them behind a switch that says nothing is locked.
             //
             // A quest that ROUTES and TEACHES rather than locks (the first-login railroad into
-            // the Game of the Week microgame) sets QuestSO.runsUnderDeveloperUnlock and runs;
+            // the Game of the Week microgame) sets runsUnderDeveloperUnlock - on the QuestSO, or on
+            // just its routing PHASE (QuestPhaseGraphSO) - and runs;
             // its lock-applying nodes pass straight through in RunNode (QuestNodeSO.AppliesLock),
             // so the gate still gets to mean "nothing is locked".
             //
@@ -139,7 +140,7 @@ namespace CosmicShore.Core
             // runs, so there is nothing to undo, and OnDisable's cleanup has nothing to clean.
             // A constraint set persisted by an EARLIER session is covered separately, by
             // QuestArcadeConstraints.Active reading the same gate.
-            if (DeveloperUnlockGate.AllUnlocked && !(quest != null && quest.runsUnderDeveloperUnlock))
+            if (DeveloperUnlockGate.AllUnlocked && !MayRunUnderGate(FirstPhaseToRun()))
             {
                 CSDebug.LogVerbose(CSLogChannel.FTUE,
                     "[Quest] Runner stood down - the master developer unlock is on, so there is " +
@@ -174,6 +175,27 @@ namespace CosmicShore.Core
 
             _started = true;
             StartCoroutine(StartAfterDelay());
+        }
+
+        /// <summary>
+        /// True when <paramref name="phase"/> may run while the master developer unlock is on:
+        /// the whole quest opted in, or this phase did (QuestPhaseGraphSO.runsUnderDeveloperUnlock).
+        /// </summary>
+        bool MayRunUnderGate(QuestPhaseGraphSO phase) =>
+            (quest != null && quest.runsUnderDeveloperUnlock) ||
+            (phase != null && phase.runsUnderDeveloperUnlock);
+
+        /// <summary>The phase a start would run first: the debug override, else the saved phase
+        /// skipping null and disabled slots exactly as <see cref="StartPhase"/> does.</summary>
+        QuestPhaseGraphSO FirstPhaseToRun()
+        {
+            if (debugPhaseOverride != null) return debugPhaseOverride;
+            if (quest == null || quest.phases.Count == 0) return null;
+            int i = debugForceRun ? 0 : Mathf.Max(0, QuestProgressStore.GetPhaseIndex(QuestId));
+            for (; i < quest.phases.Count; i++)
+                if (quest.phases[i] != null && quest.phases[i].phaseEnabled)
+                    return quest.phases[i];
+            return null;
         }
 
         IEnumerator StartAfterDelay()
@@ -255,6 +277,18 @@ namespace CosmicShore.Core
             }
 
             _activeGraph = quest.phases[_phaseIndex];
+
+            // A phase that has not opted in to running under the master developer unlock is where
+            // the quest stops while the gate is on: nothing marked complete, so it resumes here the
+            // day the gate is turned off.
+            if (DeveloperUnlockGate.AllUnlocked && !MayRunUnderGate(_activeGraph))
+            {
+                CSDebug.LogVerbose(CSLogChannel.FTUE,
+                    $"[Quest] Phase {_phaseIndex} ('{_activeGraph.PhaseName}') has not opted in to running " +
+                    "under the master developer unlock - standing down here.");
+                _current = null;
+                return;
+            }
 
             var startNode = _activeGraph.entryNode;
             if (resume)

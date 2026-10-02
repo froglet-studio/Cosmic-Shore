@@ -169,8 +169,12 @@ Interactive/editable reference map (browser): the "Main Quest Progression Map" a
 ## Runtime
 
 **Master developer unlock.** While `DeveloperUnlockGate.AllUnlocked` is on (the default), the
-runner stands down unless the quest sets `QuestSO.runsUnderDeveloperUnlock`. An opted-in quest
-runs, but every node whose `QuestNodeSO.AppliesLock` is true (LockModes; the locking direction of
+runner stands down unless the quest sets `QuestSO.runsUnderDeveloperUnlock`, or the phase it is
+about to run sets `QuestPhaseGraphSO.runsUnderDeveloperUnlock`. A phase-level opt-in runs that phase
+and the runner stands down at the first later phase that has not opted in (nothing is marked
+complete, so it resumes there once the gate is off) - which is how MainQuest's Phase 0, the
+first-login railroad, runs in a default checkout while the lock-funnel phases after it wait. An
+opted-in quest or phase runs, but every node whose `QuestNodeSO.AppliesLock` is true (LockModes; the locking direction of
 LockNavigation, SetButtonInteractable and SetArcadeConstraints) passes straight through, so the
 gate keeps meaning "nothing is locked". A new node type that locks anything must override
 `AppliesLock`.
