@@ -1,0 +1,188 @@
+{
+ "ram": {
+  "summary": {
+   "cuts_healed_90": "7/9",
+   "refill_frac": 0.942,
+   "t50_median": 17.8,
+   "t90_median": 70.0,
+   "sites_per_cut": 15.2,
+   "repair_from_trail": 0.969
+  },
+  "runs": [
+   {
+    "built": 738,
+    "audit": 0.0,
+    "pilot_stole": 0,
+    "destroyed": 289.9,
+    "pilot_dom_vol": 2688.0,
+    "cuts": [
+     {
+      "cut_sites": 10,
+      "refilled": 10,
+      "t50": 9.2,
+      "t90": 61.6
+     },
+     {
+      "cut_sites": 11,
+      "refilled": 10,
+      "t50": 5.8,
+      "t90": 83.4
+     },
+     {
+      "cut_sites": 19,
+      "refilled": 16,
+      "t50": 17.8,
+      "t90": null
+     }
+    ]
+   },
+   {
+    "built": 851,
+    "audit": 0.0,
+    "pilot_stole": 0,
+    "destroyed": 439.5,
+    "pilot_dom_vol": 2670.0,
+    "cuts": [
+     {
+      "cut_sites": 18,
+      "refilled": 18,
+      "t50": 29.8,
+      "t90": 84.7
+     },
+     {
+      "cut_sites": 16,
+      "refilled": 16,
+      "t50": 20.9,
+      "t90": 59.4
+     },
+     {
+      "cut_sites": 19,
+      "refilled": 18,
+      "t50": 9.3,
+      "t90": 38.6
+     }
+    ]
+   },
+   {
+    "built": 731,
+    "audit": -0.0,
+    "pilot_stole": 0,
+    "destroyed": 367.6,
+    "pilot_dom_vol": 2616.0,
+    "cuts": [
+     {
+      "cut_sites": 15,
+      "refilled": 15,
+      "t50": 35.5,
+      "t90": 112.6
+     },
+     {
+      "cut_sites": 15,
+      "refilled": 15,
+      "t50": 27.3,
+      "t90": 70.0
+     },
+     {
+      "cut_sites": 14,
+      "refilled": 11,
+      "t50": 13.3,
+      "t90": null
+     }
+    ]
+   }
+  ]
+ },
+ "steal": {
+  "summary": {
+   "cuts_healed_90": "9/9",
+   "refill_frac": 0.978,
+   "t50_median": 5.4,
+   "t90_median": 12.5,
+   "sites_per_cut": 15.4,
+   "repair_from_trail": 0.941
+  },
+  "runs": [
+   {
+    "built": 759,
+    "audit": 0.0,
+    "pilot_stole": 44,
+    "destroyed": 0.0,
+    "pilot_dom_vol": 2760.0,
+    "cuts": [
+     {
+      "cut_sites": 10,
+      "refilled": 9,
+      "t50": 5.2,
+      "t90": 34.2
+     },
+     {
+      "cut_sites": 12,
+      "refilled": 12,
+      "t50": 5.6,
+      "t90": 12.5
+     },
+     {
+      "cut_sites": 22,
+      "refilled": 20,
+      "t50": 5.4,
+      "t90": 6.7
+     }
+    ]
+   },
+   {
+    "built": 869,
+    "audit": 0.0,
+    "pilot_stole": 53,
+    "destroyed": 0.0,
+    "pilot_dom_vol": 2916.0,
+    "cuts": [
+     {
+      "cut_sites": 18,
+      "refilled": 18,
+      "t50": 5.5,
+      "t90": 86.3
+     },
+     {
+      "cut_sites": 16,
+      "refilled": 16,
+      "t50": 4.6,
+      "t90": 5.9
+     },
+     {
+      "cut_sites": 19,
+      "refilled": 19,
+      "t50": 5.3,
+      "t90": 6.9
+     }
+    ]
+   },
+   {
+    "built": 781,
+    "audit": -0.0,
+    "pilot_stole": 42,
+    "destroyed": 0.0,
+    "pilot_dom_vol": 2622.0,
+    "cuts": [
+     {
+      "cut_sites": 15,
+      "refilled": 15,
+      "t50": 5.7,
+      "t90": 38.5
+     },
+     {
+      "cut_sites": 12,
+      "refilled": 12,
+      "t50": 5.6,
+      "t90": 13.6
+     },
+     {
+      "cut_sites": 15,
+      "refilled": 15,
+      "t50": 5.1,
+      "t90": 6.2
+     }
+    ]
+   }
+  ]
+ }
+}

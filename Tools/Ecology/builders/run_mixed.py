@@ -5,6 +5,7 @@ import json, os, sys
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from common.arena import Arena, Pilot, Recorder
+from builders import harness
 from builders.harness import ram, make_pilot, vary_lines, OUT
 from builders.wasp import WaspComb
 from builders.traps import TrapBuilders
@@ -16,7 +17,7 @@ def run(seed, minutes=5.0, dt=0.1, record=False):
     pil = [make_pilot(p, ar) for p in ("circuit", "wander", "hunter")]
     sps = [WaspComb(ar, seed=seed), TrapBuilders(ar, seed=seed, n=30, max_nb=2, lane_min=3.0),
            Wearers(ar, seed=seed, contact=0.5, body_cap=150)]
-    rec = Recorder(every=3) if record else None; hud = []
+    rec = Recorder(every=harness.REC_EVERY) if record else None; hud = []
     for _ in range(int(minutes * 60 / dt)):
         tg, th = [], []
         for sp in sps:

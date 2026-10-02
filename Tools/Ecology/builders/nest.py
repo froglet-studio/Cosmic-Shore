@@ -43,6 +43,7 @@ class NestWeavers(Colony):
         self.store = 0; self.raided = 0
         self.out = np.zeros(n, bool)
         self.cool = np.zeros(n)
+        self.focus = self.lat.anchor; self.focus_dist = 300.0
         self.extent = Rc + 3 * w
         self.breaches = []
 

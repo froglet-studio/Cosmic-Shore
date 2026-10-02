@@ -238,7 +238,8 @@ class Colony:
 
     def sweep_destroyed(self, arena):
         """Sites whose prism an active force removed: free the site and return them (breaches)."""
-        dead = [i for i in self.lat.sites if not arena.mass_alive[i]]
+        # a site is breached when its prism was destroyed OR stolen away (it changed hands back to a pilot)
+        dead = [i for i in self.lat.sites if not arena.mass_alive[i] or arena.mass_dom[i] != self.dom]
         out = []
         for i in dead:
             out.append(self.lat.remove(i)); self.taken.discard(i)

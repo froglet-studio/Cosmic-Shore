@@ -5,7 +5,8 @@
 One HTML file, three.js + OrbitControls from jsDelivr (the artifact CSP allows it), data inlined. Mass prisms
 draw as dim points tinted by element (or bright in their DOMAIN colour once owned, orange when dangerous, and
 they MOVE when a species moves them - Recorder per-frame deltas), species agents as bright points sized by body radius, pilots as white
-diamonds with a short trail. A dropdown switches runs; space pauses; the slider scrubs.
+diamonds with a short trail. A dropdown switches runs; space pauses; the slider scrubs. A run whose meta carries `focus: [x, y, z, distance]` opens
+framed on that point.
 """
 from __future__ import annotations
 
@@ -54,6 +55,9 @@ function load(i){
   const n=Math.max(run.meta.mass_n_max||0, run.mass0.pos.length); mass=cloud(n); let maxA=1;
   for(const f of run.frames) {let a=0; for(const s in f.species) a+=f.species[s].pos.length; maxA=Math.max(maxA,a)}
   agents=cloud(maxA); pil=cloud(16); scrub.max=run.frames.length-1;
+  const fo=run.meta.focus; // optional: [x,y,z,distance] frames the camera on a structure
+  if(fo){ctl.target.set(fo[0],fo[1],fo[2]);cam.position.set(fo[0]+fo[3]*0.35,fo[1]+fo[3]*0.35,fo[2]+fo[3]);}
+  else {ctl.target.set(0,0,0);cam.position.set(0,900,2400);}
   document.getElementById('info').textContent=(run.meta.note||'')+'  ·  drag to orbit, scroll to zoom, space to pause';
 }
 function setMass(j,x,y,z,st){const P=mass.geometry.attributes.position.array, C=mass.geometry.attributes.col.array;

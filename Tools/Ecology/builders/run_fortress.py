@@ -5,13 +5,14 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from common.arena import Arena, Pilot, Recorder
 from common.scorecard import Probe
+from builders import harness
 from builders.harness import ram, evaluate, save_card, OUT, TRAIL_EVERY
 from builders.fortress import Fortress
 
 CUTS = (150.0, 200.0, 250.0)          # three cutting passes after a build-up phase
 
 
-def cut_run(seed, mend="both", minutes=5.0, dt=0.1, record=False, n=48, same_line=False, tag="", **kw):
+def cut_run(seed, mend="both", minutes=5.0, dt=0.1, record=False, n=48, same_line=False, tag="", raid="ram", **kw):
     ar = Arena(seed=seed); ar.scatter_mass(1500); ar.struct_owner = {}
     sp = Fortress(ar, seed=seed, mend=mend, n=n, **kw)
     A = sp.lat.anchor
@@ -20,7 +21,7 @@ def cut_run(seed, mend="both", minutes=5.0, dt=0.1, record=False, n=48, same_lin
     p = Pilot.circuit(far, speed=140.0, name="cutter"); p.trail_every = TRAIL_EVERY
     ar.add_pilot(p); p.pos = far[0].copy()
     rng = np.random.default_rng(seed + 77)
-    rec = Recorder(every=3) if record else None; hud = []
+    rec = Recorder(every=harness.REC_EVERY) if record else None; hud = []
     plan = []; line_mass = []
     d0 = rng.normal(size=3); d0 /= np.linalg.norm(d0)
     for tc in CUTS:
@@ -33,9 +34,11 @@ def cut_run(seed, mend="both", minutes=5.0, dt=0.1, record=False, n=48, same_lin
         for (ts, wps) in plan:
             if abs(ar.t - ts) < dt / 2:
                 p.waypoints = [w for w in wps] + far; p._wp = 0; p.pos = wps[0].copy()
-                v = wps[1] - wps[0]; p.vel = v / np.linalg.norm(v) * p.speed; p.ram = True
+                v = wps[1] - wps[0]; p.vel = v / np.linalg.norm(v) * p.speed
+                if raid == "steal": p.thief = True
+                else: p.ram = True
             if abs(ar.t - (ts + 9.0)) < dt / 2:
-                p.ram = False
+                p.ram = False; p.thief = False
         for j, (ts, wps) in enumerate(plan):
             if abs(ar.t - ts) < dt / 2:      # wall mass on the cut line just before each pass (scar thickness)
                 a, b = wps
@@ -52,11 +55,14 @@ def cut_run(seed, mend="both", minutes=5.0, dt=0.1, record=False, n=48, same_lin
     res = dict(seed=seed, mend=mend, built=sp.lat.n_built(), audit=round(ar.audit(), 6),
                cuts=[sp.repair_stats(tc - 3.0) for tc in CUTS], repair_trail=sp.repair_trail,
                repaired=len(sp.repairs), moves_per_s=round(ar.moves / (minutes * 60), 1),
-               trail_frac=sp.metrics(ar, minutes)["trail_frac"], hits=len(ar.log), line_mass=line_mass)
+               trail_frac=sp.metrics(ar, minutes)["trail_frac"], hits=len(ar.log), line_mass=line_mass,
+               pilot_stole=getattr(ar, "pilot_stole", 0), destroyed=round(ar.destroyed, 1),
+               pilot_dom_vol=round(float(ar.mass_vol[ar.mass_alive & (ar.mass_dom == 1)].sum()), 1))
     if rec:
         os.makedirs(OUT, exist_ok=True)
         path = os.path.join(OUT, f"fortress_cut_{mend}{tag}_{seed}.json")
-        rec.save(path, dict(label=f"fortress cut test, mend={mend} (seed {seed})", note=sp.note, hud=hud))
+        rec.save(path, dict(label=f"fortress cut test, mend={mend}{tag} (seed {seed})", note=sp.note, hud=hud,
+                            focus=[round(float(x), 1) for x in A] + [320.0]))
         res["recording"] = path
     return res, sp
 

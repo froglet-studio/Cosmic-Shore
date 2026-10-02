@@ -23,6 +23,7 @@ from common.scorecard import Probe, run_score, combine     # noqa: E402
 from builders.core import structure_signature, shape_stats, components   # noqa: E402
 
 OUT = os.path.join(HERE, "out")
+REC_EVERY = 3                 # recorder frame step (make_viewer.py raises it to keep the committed viewer small)
 TRAIL_EVERY = 0.25            # every pilot lays a conserved trail prism every 0.25 s (4/s, ~Squirrel cadence)
 
 
@@ -59,11 +60,16 @@ def vary_lines(arena):
 def ram(arena, colonies, dt, reach=4.0, policies=("hunter", "cutter")):
     """Ram-capable pilots destroy unshielded structure prisms and kill workers they touch."""
     for p in arena.pilots:
-        if p.policy not in policies and not getattr(p, "ram", False):
+        thief = getattr(p, "thief", False)
+        if p.policy not in policies and not getattr(p, "ram", False) and not thief:
             continue
         for c in arena.mass_near(p.pos, p.radius + reach):
             if arena.mass_alive[c] and getattr(arena, "struct_owner", {}).get(int(c)):
-                arena.destroy(int(c), by=p.name)
+                if thief:      # a stealing vessel (Squirrel / Urchin style): the brick changes hands, nothing is removed
+                    if arena.steal(int(c), p.domain, by=p.name) > 0:
+                        arena.struct_owner.pop(int(c), None); arena.pilot_stole = getattr(arena, "pilot_stole", 0) + 1
+                else:
+                    arena.destroy(int(c), by=p.name)
         for col in colonies:
             if not hasattr(col, "agent_pos"):
                 continue
@@ -81,7 +87,7 @@ def run_one(factory, policy, seed, minutes=2.0, dt=0.1, record=False, mass=1500,
     if setup:
         setup(ar, p)
     sp = factory(ar, seed)
-    pr = Probe(dt); rec = Recorder(every=3) if record else None
+    pr = Probe(dt); rec = Recorder(every=REC_EVERY) if record else None
     t0 = time.time(); steps = int(minutes * 60 / dt)
     hud = []
     for s in range(steps):
@@ -106,7 +112,10 @@ def run_one(factory, policy, seed, minutes=2.0, dt=0.1, record=False, mass=1500,
     if rec:
         os.makedirs(OUT, exist_ok=True)
         path = os.path.join(OUT, f"{label or sp.name}_{policy}_{seed}.json")
-        rec.save(path, dict(label=f"{label or sp.name} vs {policy} (seed {seed})", note=sp.note, hud=hud))
+        meta = dict(label=f"{label or sp.name} vs {policy} (seed {seed})", note=sp.note, hud=hud)
+        if getattr(sp, "focus", None) is not None:
+            meta["focus"] = [round(float(x), 1) for x in sp.focus] + [float(getattr(sp, "focus_dist", 400.0))]
+        rec.save(path, meta)
         r["recording"] = path
     return r
 

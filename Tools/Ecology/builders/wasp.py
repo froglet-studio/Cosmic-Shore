@@ -48,6 +48,7 @@ class WaspComb(Colony):
         self.gap, self.mature, self.comb_R, self.envelope, self.per_brood = gap, comb_mature, comb_R, envelope, per_brood
         self.alarm_r = alarm; self.env_gap = env_gap; self.mouth = mouth
         self.cool = np.zeros(n); self.store = 0; self.raided = 0
+        self.focus = self.lat.anchor; self.focus_dist = 300.0
         self.extent = 120.0
         self.top = 0
         self.tgt = np.tile(self.lat.pos(self.root), (n, 1))
