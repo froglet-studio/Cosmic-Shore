@@ -26,29 +26,29 @@
   ]
  },
  "locust": {
-  "hits_per_min_wander": 40.67,
+  "hits_per_min_wander": 41.33,
   "hits_per_min_evader": 0.0,
   "counterplay": 0.0,
-  "telegraph_s": 1.25,
-  "payoff_per_min": 96.66499999999999,
-  "variety": 0.098,
+  "telegraph_s": 1.43,
+  "payoff_per_min": 116.0,
+  "variety": 0.097,
   "feel": {
-   "size": 2.405,
-   "speed_rel": 0.325,
-   "approach": 21.548,
-   "coherence": 0.553,
-   "burstiness": 3.145,
-   "jerk_rel": 1.056
+   "size": 2.442,
+   "speed_rel": 0.433,
+   "approach": 21.65,
+   "coherence": 0.552,
+   "burstiness": 2.38,
+   "jerk_rel": 0.979
   },
   "encounter_wander": {
-   "heading_to_pilot": -0.238,
-   "pursuit": 41.907,
-   "near_frac": 0.201,
-   "ring_sd": 0.891
+   "heading_to_pilot": -0.217,
+   "pursuit": 38.348,
+   "near_frac": 0.291,
+   "ring_sd": 0.865
   },
   "phase_end_wander": [
-   0.353,
-   0.33
+   0.389,
+   0.288
   ]
  },
  "pack": {

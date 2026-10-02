@@ -12,423 +12,423 @@
    "N": 1000,
    "backend": "numpy",
    "k": 1,
-   "ms_step": 15.747,
-   "us_per_agent_step": 15.7466,
+   "ms_step": 14.928,
+   "us_per_agent_step": 14.9285,
+   "stages_ms": {
+    "fields": 2.157,
+    "drives": 0.344,
+    "neighbours": 3.029,
+    "context": 3.317,
+    "steer": 4.758,
+    "integrate": 0.474,
+    "deposit": 0.023,
+    "world": 2.647
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numpy",
+   "k": 4,
+   "ms_step": 8.519,
+   "us_per_agent_step": 8.5191,
+   "stages_ms": {
+    "fields": 2.259,
+    "drives": 0.337,
+    "neighbours": 1.212,
+    "context": 0.84,
+    "steer": 1.475,
+    "integrate": 0.473,
+    "deposit": 0.023,
+    "world": 1.108
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numpy",
+   "k": 8,
+   "ms_step": 7.405,
+   "us_per_agent_step": 7.405,
+   "stages_ms": {
+    "fields": 2.237,
+    "drives": 0.366,
+    "neighbours": 0.87,
+    "context": 0.452,
+    "steer": 0.963,
+    "integrate": 0.472,
+    "deposit": 0.022,
+    "world": 0.9
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numpy",
+   "k": 1,
+   "ms_step": 127.127,
+   "us_per_agent_step": 12.7127,
+   "stages_ms": {
+    "fields": 2.649,
+    "drives": 1.656,
+    "neighbours": 40.072,
+    "context": 41.92,
+    "steer": 55.566,
+    "integrate": 3.839,
+    "deposit": 0.403,
+    "world": 20.941
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numpy",
+   "k": 4,
+   "ms_step": 39.346,
+   "us_per_agent_step": 3.9346,
+   "stages_ms": {
+    "fields": 2.481,
+    "drives": 1.572,
+    "neighbours": 11.738,
+    "context": 8.016,
+    "steer": 11.534,
+    "integrate": 3.533,
+    "deposit": 0.391,
+    "world": 6.271
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numpy",
+   "k": 8,
+   "ms_step": 21.22,
+   "us_per_agent_step": 2.122,
+   "stages_ms": {
+    "fields": 1.928,
+    "drives": 1.243,
+    "neighbours": 5.189,
+    "context": 3.393,
+    "steer": 5.0,
+    "integrate": 2.798,
+    "deposit": 0.282,
+    "world": 3.277
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 1,
+   "ms_step": 2028.449,
+   "us_per_agent_step": 20.2845,
+   "stages_ms": {
+    "fields": 3.01,
+    "drives": 18.438,
+    "neighbours": 654.772,
+    "context": 959.483,
+    "steer": 1085.336,
+    "integrate": 43.27,
+    "deposit": 2.326,
+    "world": 207.481
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 4,
+   "ms_step": 552.287,
+   "us_per_agent_step": 5.5229,
+   "stages_ms": {
+    "fields": 3.147,
+    "drives": 17.348,
+    "neighbours": 172.796,
+    "context": 217.909,
+    "steer": 251.151,
+    "integrate": 43.798,
+    "deposit": 2.531,
+    "world": 53.286
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numpy",
+   "k": 8,
+   "ms_step": 275.081,
+   "us_per_agent_step": 2.7508,
+   "stages_ms": {
+    "fields": 2.398,
+    "drives": 15.543,
+    "neighbours": 97.472,
+    "context": 58.807,
+    "steer": 77.306,
+    "integrate": 37.665,
+    "deposit": 2.265,
+    "world": 35.013
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 1,
+   "ms_step": 8.731,
+   "us_per_agent_step": 8.7307,
+   "stages_ms": {
+    "fields": 1.538,
+    "drives": 0.36,
+    "neighbours": 0.654,
+    "context": 0.261,
+    "steer": 1.744,
+    "integrate": 0.473,
+    "deposit": 0.024,
+    "world": 2.645
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 4,
+   "ms_step": 5.501,
+   "us_per_agent_step": 5.5012,
+   "stages_ms": {
+    "fields": 1.431,
+    "drives": 0.339,
+    "neighbours": 0.244,
+    "context": 0.075,
+    "steer": 0.731,
+    "integrate": 0.435,
+    "deposit": 0.023,
+    "world": 1.071
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "numba",
+   "k": 8,
+   "ms_step": 5.245,
+   "us_per_agent_step": 5.2448,
+   "stages_ms": {
+    "fields": 1.394,
+    "drives": 0.351,
+    "neighbours": 0.22,
+    "context": 0.056,
+    "steer": 0.562,
+    "integrate": 0.46,
+    "deposit": 0.023,
+    "world": 0.935
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 1,
+   "ms_step": 52.053,
+   "us_per_agent_step": 5.2053,
+   "stages_ms": {
+    "fields": 2.464,
+    "drives": 1.861,
+    "neighbours": 2.821,
+    "context": 2.435,
+    "steer": 16.537,
+    "integrate": 3.727,
+    "deposit": 0.401,
+    "world": 22.01
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 4,
+   "ms_step": 23.225,
+   "us_per_agent_step": 2.3225,
+   "stages_ms": {
+    "fields": 1.923,
+    "drives": 1.743,
+    "neighbours": 1.484,
+    "context": 0.679,
+    "steer": 4.822,
+    "integrate": 3.787,
+    "deposit": 0.36,
+    "world": 7.062
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "numba",
+   "k": 8,
+   "ms_step": 17.713,
+   "us_per_agent_step": 1.7713,
+   "stages_ms": {
+    "fields": 1.813,
+    "drives": 1.637,
+    "neighbours": 1.778,
+    "context": 0.387,
+    "steer": 2.464,
+    "integrate": 3.492,
+    "deposit": 0.37,
+    "world": 4.181
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numba",
+   "k": 1,
+   "ms_step": 492.447,
+   "us_per_agent_step": 4.9245,
+   "stages_ms": {
+    "fields": 1.825,
+    "drives": 17.617,
+    "neighbours": 32.553,
+    "context": 22.563,
+    "steer": 184.127,
+    "integrate": 44.314,
+    "deposit": 2.64,
+    "world": 201.173
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numba",
+   "k": 4,
+   "ms_step": 182.979,
+   "us_per_agent_step": 1.8298,
+   "stages_ms": {
+    "fields": 2.177,
+    "drives": 17.867,
+    "neighbours": 17.355,
+    "context": 6.157,
+    "steer": 38.328,
+    "integrate": 37.58,
+    "deposit": 2.425,
+    "world": 59.006
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "numba",
+   "k": 8,
+   "ms_step": 128.503,
+   "us_per_agent_step": 1.285,
+   "stages_ms": {
+    "fields": 1.691,
+    "drives": 15.542,
+    "neighbours": 11.995,
+    "context": 3.828,
+    "steer": 20.638,
+    "integrate": 35.527,
+    "deposit": 2.142,
+    "world": 33.867
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "fused",
+   "k": 1,
+   "ms_step": 4.826,
+   "us_per_agent_step": 4.8265,
+   "stages_ms": {
+    "fields": 2.102,
+    "fused": 0.594,
+    "deposit": 0.022,
+    "world": 0.826
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "fused",
+   "k": 4,
+   "ms_step": 4.209,
+   "us_per_agent_step": 4.2089,
+   "stages_ms": {
+    "fields": 1.952,
+    "fused": 0.408,
+    "deposit": 0.022,
+    "world": 0.61
+   }
+  },
+  {
+   "N": 1000,
+   "backend": "fused",
+   "k": 8,
+   "ms_step": 3.796,
+   "us_per_agent_step": 3.7965,
+   "stages_ms": {
+    "fields": 1.854,
+    "fused": 0.319,
+    "deposit": 0.019,
+    "world": 0.52
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "fused",
+   "k": 1,
+   "ms_step": 10.813,
+   "us_per_agent_step": 1.0813,
+   "stages_ms": {
+    "fields": 1.863,
+    "fused": 3.887,
+    "deposit": 0.298,
+    "world": 3.202
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "fused",
+   "k": 4,
+   "ms_step": 7.501,
+   "us_per_agent_step": 0.7501,
+   "stages_ms": {
+    "fields": 1.796,
+    "fused": 2.251,
+    "deposit": 0.26,
+    "world": 1.715
+   }
+  },
+  {
+   "N": 10000,
+   "backend": "fused",
+   "k": 8,
+   "ms_step": 7.294,
+   "us_per_agent_step": 0.7294,
+   "stages_ms": {
+    "fields": 1.806,
+    "fused": 2.201,
+    "deposit": 0.255,
+    "world": 1.548
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "fused",
+   "k": 1,
+   "ms_step": 101.695,
+   "us_per_agent_step": 1.0169,
+   "stages_ms": {
+    "fields": 2.439,
+    "fused": 56.116,
+    "deposit": 2.432,
+    "world": 32.942
+   }
+  },
+  {
+   "N": 100000,
+   "backend": "fused",
+   "k": 4,
+   "ms_step": 53.847,
+   "us_per_agent_step": 0.5385,
    "stages_ms": {
     "fields": 2.432,
-    "drives": 0.369,
-    "neighbours": 3.067,
-    "context": 3.762,
-    "steer": 5.242,
-    "integrate": 0.363,
-    "deposit": 0.026,
-    "world": 2.635
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "numpy",
-   "k": 4,
-   "ms_step": 8.82,
-   "us_per_agent_step": 8.8195,
-   "stages_ms": {
-    "fields": 2.499,
-    "drives": 0.375,
-    "neighbours": 1.205,
-    "context": 0.917,
-    "steer": 1.612,
-    "integrate": 0.366,
-    "deposit": 0.023,
-    "world": 1.166
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "numpy",
-   "k": 8,
-   "ms_step": 7.915,
-   "us_per_agent_step": 7.9147,
-   "stages_ms": {
-    "fields": 2.537,
-    "drives": 0.382,
-    "neighbours": 0.916,
-    "context": 0.516,
-    "steer": 1.083,
-    "integrate": 0.358,
-    "deposit": 0.024,
-    "world": 0.968
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "numpy",
-   "k": 1,
-   "ms_step": 135.348,
-   "us_per_agent_step": 13.5348,
-   "stages_ms": {
-    "fields": 2.997,
-    "drives": 1.881,
-    "neighbours": 42.614,
-    "context": 45.809,
-    "steer": 60.641,
-    "integrate": 2.971,
-    "deposit": 0.42,
-    "world": 21.709
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "numpy",
-   "k": 4,
-   "ms_step": 38.866,
-   "us_per_agent_step": 3.8866,
-   "stages_ms": {
-    "fields": 2.37,
-    "drives": 1.607,
-    "neighbours": 11.344,
-    "context": 8.75,
-    "steer": 12.318,
-    "integrate": 2.769,
-    "deposit": 0.35,
-    "world": 6.456
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "numpy",
-   "k": 8,
-   "ms_step": 23.573,
-   "us_per_agent_step": 2.3573,
-   "stages_ms": {
-    "fields": 2.238,
-    "drives": 1.432,
-    "neighbours": 6.114,
-    "context": 3.91,
-    "steer": 5.76,
-    "integrate": 2.417,
-    "deposit": 0.302,
-    "world": 3.802
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "numpy",
-   "k": 1,
-   "ms_step": 2273.859,
-   "us_per_agent_step": 22.7386,
-   "stages_ms": {
-    "fields": 2.493,
-    "drives": 17.117,
-    "neighbours": 684.162,
-    "context": 1148.85,
-    "steer": 1288.229,
-    "integrate": 52.777,
-    "deposit": 3.697,
-    "world": 218.027
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "numpy",
-   "k": 4,
-   "ms_step": 511.396,
-   "us_per_agent_step": 5.114,
-   "stages_ms": {
-    "fields": 2.451,
-    "drives": 21.543,
-    "neighbours": 188.007,
-    "context": 140.967,
-    "steer": 174.542,
-    "integrate": 48.69,
-    "deposit": 4.305,
-    "world": 64.196
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "numpy",
-   "k": 8,
-   "ms_step": 282.749,
-   "us_per_agent_step": 2.8275,
-   "stages_ms": {
-    "fields": 2.574,
-    "drives": 16.626,
-    "neighbours": 105.567,
-    "context": 60.919,
-    "steer": 81.04,
-    "integrate": 32.486,
-    "deposit": 2.224,
-    "world": 36.643
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "numba",
-   "k": 1,
-   "ms_step": 21.3,
-   "us_per_agent_step": 21.2997,
-   "stages_ms": {
-    "fields": 11.529,
-    "drives": 0.381,
-    "neighbours": 2.853,
-    "context": 0.773,
-    "steer": 2.244,
-    "integrate": 0.349,
-    "deposit": 0.023,
-    "world": 2.608
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "numba",
-   "k": 4,
-   "ms_step": 5.515,
-   "us_per_agent_step": 5.5152,
-   "stages_ms": {
-    "fields": 1.444,
-    "drives": 0.373,
-    "neighbours": 0.288,
-    "context": 0.096,
-    "steer": 0.765,
-    "integrate": 0.34,
-    "deposit": 0.023,
-    "world": 1.067
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "numba",
-   "k": 8,
-   "ms_step": 4.944,
-   "us_per_agent_step": 4.9437,
-   "stages_ms": {
-    "fields": 1.33,
-    "drives": 0.357,
-    "neighbours": 0.211,
-    "context": 0.052,
-    "steer": 0.538,
-    "integrate": 0.345,
-    "deposit": 0.024,
-    "world": 0.898
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "numba",
-   "k": 1,
-   "ms_step": 47.955,
-   "us_per_agent_step": 4.7955,
-   "stages_ms": {
-    "fields": 1.853,
-    "drives": 1.891,
-    "neighbours": 2.683,
-    "context": 2.72,
-    "steer": 16.113,
-    "integrate": 2.594,
-    "deposit": 0.337,
-    "world": 20.824
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "numba",
-   "k": 4,
-   "ms_step": 21.021,
-   "us_per_agent_step": 2.1021,
-   "stages_ms": {
-    "fields": 2.361,
-    "drives": 1.665,
-    "neighbours": 1.416,
-    "context": 0.727,
-    "steer": 4.343,
-    "integrate": 2.736,
-    "deposit": 0.337,
-    "world": 6.359
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "numba",
-   "k": 8,
-   "ms_step": 14.914,
-   "us_per_agent_step": 1.4914,
-   "stages_ms": {
-    "fields": 1.598,
-    "drives": 1.547,
-    "neighbours": 1.091,
-    "context": 0.365,
-    "steer": 2.359,
-    "integrate": 2.494,
-    "deposit": 0.304,
-    "world": 3.865
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "numba",
-   "k": 1,
-   "ms_step": 420.42,
-   "us_per_agent_step": 4.2042,
-   "stages_ms": {
-    "fields": 1.857,
-    "drives": 15.513,
-    "neighbours": 32.478,
-    "context": 23.467,
-    "steer": 156.605,
-    "integrate": 26.927,
-    "deposit": 2.026,
-    "world": 179.392
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "numba",
-   "k": 4,
-   "ms_step": 151.251,
-   "us_per_agent_step": 1.5125,
-   "stages_ms": {
-    "fields": 1.791,
-    "drives": 15.232,
-    "neighbours": 14.931,
-    "context": 5.976,
-    "steer": 35.443,
-    "integrate": 24.78,
-    "deposit": 1.783,
-    "world": 52.193
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "numba",
-   "k": 8,
-   "ms_step": 121.816,
-   "us_per_agent_step": 1.2182,
-   "stages_ms": {
-    "fields": 6.995,
-    "drives": 15.123,
-    "neighbours": 11.311,
-    "context": 3.477,
-    "steer": 20.079,
-    "integrate": 26.275,
-    "deposit": 1.891,
-    "world": 35.103
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "fused",
-   "k": 1,
-   "ms_step": 4.498,
-   "us_per_agent_step": 4.4981,
-   "stages_ms": {
-    "fields": 1.948,
-    "fused": 0.471,
-    "deposit": 0.035,
-    "world": 0.834
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "fused",
-   "k": 4,
-   "ms_step": 4.816,
-   "us_per_agent_step": 4.8162,
-   "stages_ms": {
-    "fields": 2.18,
-    "fused": 0.553,
-    "deposit": 0.043,
-    "world": 0.749
-   }
-  },
-  {
-   "N": 1000,
-   "backend": "fused",
-   "k": 8,
-   "ms_step": 4.485,
-   "us_per_agent_step": 4.485,
-   "stages_ms": {
-    "fields": 2.149,
-    "fused": 0.276,
-    "deposit": 0.046,
-    "world": 0.719
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "fused",
-   "k": 1,
-   "ms_step": 11.167,
-   "us_per_agent_step": 1.1167,
-   "stages_ms": {
-    "fields": 2.093,
-    "fused": 3.42,
-    "deposit": 0.349,
-    "world": 3.6
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "fused",
-   "k": 4,
-   "ms_step": 7.748,
-   "us_per_agent_step": 0.7748,
-   "stages_ms": {
-    "fields": 2.151,
-    "fused": 1.591,
-    "deposit": 0.314,
-    "world": 2.126
-   }
-  },
-  {
-   "N": 10000,
-   "backend": "fused",
-   "k": 8,
-   "ms_step": 6.707,
-   "us_per_agent_step": 0.6707,
-   "stages_ms": {
-    "fields": 1.927,
-    "fused": 1.27,
-    "deposit": 0.314,
-    "world": 1.681
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "fused",
-   "k": 1,
-   "ms_step": 89.945,
-   "us_per_agent_step": 0.8995,
-   "stages_ms": {
-    "fields": 2.322,
-    "fused": 44.485,
-    "deposit": 2.312,
-    "world": 34.805
-   }
-  },
-  {
-   "N": 100000,
-   "backend": "fused",
-   "k": 4,
-   "ms_step": 51.538,
-   "us_per_agent_step": 0.5154,
-   "stages_ms": {
-    "fields": 2.482,
-    "fused": 20.695,
-    "deposit": 2.288,
-    "world": 20.078
+    "fused": 25.969,
+    "deposit": 2.09,
+    "world": 16.212
    }
   },
   {
    "N": 100000,
    "backend": "fused",
    "k": 8,
-   "ms_step": 32.818,
-   "us_per_agent_step": 0.3282,
+   "ms_step": 47.042,
+   "us_per_agent_step": 0.4704,
    "stages_ms": {
-    "fields": 1.862,
-    "fused": 11.457,
-    "deposit": 1.822,
-    "world": 13.21
+    "fields": 2.276,
+    "fused": 21.569,
+    "deposit": 2.107,
+    "world": 13.721
    }
   }
  ]

@@ -14,9 +14,11 @@ from substrate import species as S
 HERE = os.path.dirname(__file__)
 
 
-def bench(N, backend, k, steps, G=40):
+def bench(N, backend, k, steps, G=40, attn=False):
     ar = Arena(seed=7); ar.scatter_mass(4000); ar.add_pilot(Pilot.wanderer())
-    P = replace(S.locust(n0=N), capacity=N, frac_k=k, birth_stock=1e12)     # fixed population for timing
+    P = replace(S.locust(n0=N), capacity=N, frac_k=k, birth_stock=1e12, attn_r=150.0 if attn else 0.0,
+                attn_urg=0.6 if attn else 1.0)
+    # attention LOD OFF: this table is the pure 1/k schedule (attn cost = the k=1 row for engaged agents)     # fixed population for timing
     sp = Substrate(ar, P, backend=backend, spread=0.3 * ar.R, G=G)
     sp.publish = False          # scorecard plumbing (python lists of positions) is not part of the sim
     for _ in range(3):
@@ -27,7 +29,8 @@ def bench(N, backend, k, steps, G=40):
         sp.step(ar, 0.1); ar.step(0.1)
     wall = (time.perf_counter() - t) / steps
     stages = {kk: round(v / steps * 1000, 3) for kk, v in sp.timers.items()}
-    return dict(N=N, backend=backend, k=k, ms_step=round(wall * 1000, 3),
+    eng = float(np.mean(sp._steered[sp.alive])) if backend == "fused" else None
+    return dict(N=N, backend=backend, k=k, attn=attn, steered_frac=eng, ms_step=round(wall * 1000, 3),
                 us_per_agent_step=round(wall / N * 1e6, 4), stages_ms=stages)
 
 
@@ -41,6 +44,8 @@ if __name__ == "__main__":
                 if quick: steps = max(2, steps // 4)
                 r = bench(N, backend, k, steps); rows.append(r)
                 print(json.dumps(r))
+    for N in (10000, 100000):
+        r = bench(N, "fused", 8, 12 if N <= 10000 else 4, attn=True); rows.append(r); print(json.dumps(r))
     import numba
     meta = dict(cpu=platform.processor() or platform.machine(), cores=os.cpu_count(),
                 numba_threads=numba.get_num_threads(), numpy=np.__version__, numba=numba.__version__,

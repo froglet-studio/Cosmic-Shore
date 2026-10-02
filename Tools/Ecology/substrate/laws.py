@@ -42,7 +42,7 @@ def audit(name, policy, seed=7, minutes=4.0, dt=0.1, backend="numpy", scarce=Fal
         v["pop_in"] += int(np.sum(size[born] > grow_step + 1e-9))
         v["pop_out"] += int(np.sum(prev_size[gone] > grow_step + 1e-9))
         spd = np.linalg.norm(sp.vel, axis=1)
-        tot_spd = np.linalg.norm(sp.vel + sp.gaitv, axis=1)       # a gait moves the body too
+        tot_spd = spd + np.linalg.norm(sp.gaitv, axis=1)       # a gait moves the body too
         moved = np.linalg.norm(sp.pos - prev_pos, axis=1)
         # positions may be pulled in by the membrane clamp (shorter, never longer)
         v["teleport"] += int(np.sum(moved[both] > tot_spd[both] * dt * 1.0001 + 1e-6))

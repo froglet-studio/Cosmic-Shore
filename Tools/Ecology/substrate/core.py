@@ -566,6 +566,9 @@ class Substrate:
             hz = _lerp(P.solitary.gait_hz, P.gregarious.gait_hz, self.phase[A])
             self.gaitv[A, 1] = amp * np.cos(2 * np.pi * hz * self.t + self.wseed[A, 0])
             self.pos[A] = self.pos[A] + self.gaitv[A] * dt
+            r = np.linalg.norm(self.pos[A], axis=1); out = r > 0.98 * self.R
+            if out.any():                       # the membrane clamp is a projection: never lengthens a step
+                ii = A[out]; self.pos[ii] *= (0.98 * self.R / r[out])[:, None]
 
     # ---- fused (Burst-shaped) path ----
     def _fused(self, arena, dt, A):
