@@ -76,6 +76,98 @@ namespace CosmicShore.Gameplay
             Radius = (float)Math.Sqrt(s / Math.Max(1, N));
         }
 
+        /// <summary>
+        /// The same creature with <paramref name="m"/> tadpoles where this plan has one (round 7,
+        /// Docs/SWARM_FAUNA.md §14). The body is scaled by m^(1/3) so the DENSITY - and with it the
+        /// tadpole spacing the sort core's collision and adhesion were tuned at - is unchanged, and each
+        /// unit is replaced by m copies on a small Fibonacci sphere around its scaled position (radius
+        /// <see cref="DefaultUpsampleRadius"/> x the scaled mean neighbour spacing),
+        /// turned by a per-unit hash so the copies do not lattice. Every copy inherits its unit's element,
+        /// tier, prism, facing and per-frame look, and the offset is constant across frames, so the
+        /// animation is the plan's own. Deterministic: no RNG state. m = 1 returns this plan.
+        /// </summary>
+        /// <summary>
+        /// Copy radius as a fraction of the scaled mean neighbour spacing. Picked by measurement at
+        /// density 5 (score_sortfeel, seeds 7/23, worst own-plan loss per element against the loss-8 bar):
+        /// 0.15 -> dragonfly 8.8 (FAILS), 0.45 -> 6.6, 0.6 -> 5.6 (others <= 2.1), 0.75 -> 5.5 but space
+        /// 2.3. 0.6 minimises the worst loss without pushing the other three up (§14).
+        /// </summary>
+        public const float DefaultUpsampleRadius = 0.6f;
+
+        public SwarmPlanData Upsample(int m) => Upsample(m, DefaultUpsampleRadius);
+
+        public SwarmPlanData Upsample(int m, float radiusFraction)
+        {
+            if (m <= 1) return this;
+            int F = P.Length, n2 = N * m;
+            float s = MathF.Pow(m, 1f / 3f);
+
+            // mean nearest-neighbour spacing at frame 0 (once per plan, at load)
+            double nn = 0;
+            for (int i = 0; i < N; i++)
+            {
+                float best = float.MaxValue;
+                for (int j = 0; j < N; j++) if (j != i) best = MathF.Min(best, Vector3.DistanceSquared(P[0][i], P[0][j]));
+                nn += MathF.Sqrt(best);
+            }
+            float r = radiusFraction * s * (float)(nn / Math.Max(1, N));
+
+            // m directions on a Fibonacci sphere (m = 2 is antipodal)
+            var dirs = new Vector3[m];
+            float ga = MathF.PI * (3f - MathF.Sqrt(5f));
+            for (int c = 0; c < m; c++)
+            {
+                float y = 1f - 2f * (c + 0.5f) / m, rr = MathF.Sqrt(MathF.Max(0f, 1f - y * y));
+                dirs[c] = new Vector3(MathF.Cos(ga * c) * rr, y, MathF.Sin(ga * c) * rr);
+            }
+
+            var d = new SwarmPlanData
+            {
+                Kind = Kind, MajorElement = MajorElement, N = n2, FrameSteps = FrameSteps, Order = Order,
+                SwimAxis = SwimAxis, UpAxis = UpAxis,
+                P = new Vector3[F][], Face = new Vector3[F][], HalfF = new Vector3[F][], TierF = new int[F][], SpF = new Vector2[F][],
+                Elem = new int[n2], Tier = new int[n2], Half = new Vector3[n2], Slot = new int[n2],
+            };
+            var off = new Vector3[n2];
+            for (int k = 0; k < N; k++)
+            {
+                // a per-unit rotation from an integer hash (Rodrigues about a hashed axis)
+                uint h = (uint)k * 2654435761u ^ 0x9E3779B9u;
+                float a1 = (h & 0xFFFF) / 65535f * 2f * MathF.PI; h = h * 1664525u + 1013904223u;
+                float zc = (h & 0xFFFF) / 65535f * 2f - 1f; h = h * 1664525u + 1013904223u;
+                float a2 = (h & 0xFFFF) / 65535f * 2f * MathF.PI;
+                float zr = MathF.Sqrt(MathF.Max(0f, 1f - zc * zc));
+                var axis = new Vector3(MathF.Cos(a1) * zr, zc, MathF.Sin(a1) * zr);
+                var q = Quaternion.CreateFromAxisAngle(axis, a2);
+                for (int c = 0; c < m; c++)
+                {
+                    int o = k * m + c;
+                    off[o] = Vector3.Transform(dirs[c], q) * r;
+                    d.Elem[o] = Elem[k];
+                    d.Tier[o] = k < Tier.Length ? Tier[k] : 0;
+                    d.Half[o] = Half[k];
+                    d.Slot[o] = k < Slot.Length ? Slot[k] : 0;
+                }
+            }
+            for (int f = 0; f < F; f++)
+            {
+                d.P[f] = new Vector3[n2]; d.Face[f] = new Vector3[n2];
+                d.HalfF[f] = new Vector3[n2]; d.TierF[f] = new int[n2]; d.SpF[f] = new Vector2[n2];
+                for (int k = 0; k < N; k++)
+                    for (int c = 0; c < m; c++)
+                    {
+                        int o = k * m + c;
+                        d.P[f][o] = P[f][k] * s + off[o];
+                        d.Face[f][o] = Face[f][k];
+                        d.HalfF[f][o] = f < HalfF.Length && HalfF[f] != null && k < HalfF[f].Length ? HalfF[f][k] : Half[k];
+                        d.TierF[f][o] = f < TierF.Length && TierF[f] != null && k < TierF[f].Length ? TierF[f][k] : d.Tier[o];
+                        d.SpF[f][o] = f < SpF.Length && SpF[f] != null && k < SpF[f].Length ? SpF[f][k] : new Vector2(0.3f, 0f);
+                    }
+            }
+            d.Finish();
+            return d;
+        }
+
         public void At(float t, Vector3[] outP, Vector3[] outV, Vector3[] outF)
         {
             float u = t / FrameSteps; int L = Order.Length;

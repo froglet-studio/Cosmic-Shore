@@ -112,6 +112,10 @@ namespace CosmicShore.Gameplay
         public float[] Mob = { 0f, 0f, 0f, 1f };
         public float MobSpeed = 1f;
         public float[] Inflate = { 0.45f, 0f, 0f, 0f };
+        /// <summary>Threat = min(1, ThreatGain x startled fraction). A ship of fixed size sweeps a TUBE through
+        /// the body, so the fraction it startles falls as density^(-2/3) when the plan is upsampled (round 7,
+        /// Docs/SWARM_FAUNA.md §14): the game sets 3 x PlanDensity^(2/3) so a pufferfish still inflates.</summary>
+        public float ThreatGain = 3f;
 
         // ── sortfeel + the fractional update (research sortfeel_model.py / lite_sortfeel_model.py;
         //    Docs/SWARM_FAUNA.md §12). Every default is OFF, so these fields leave sort byte-identical.
@@ -845,7 +849,7 @@ namespace CosmicShore.Gameplay
                 if (C.Molt && (C.MoltWindow < 0 || Clock < _settleUntil)) MoltStep(code);
             }
 
-            ThreatLevel = 0.85f * ThreatLevel + 0.15f * MathF.Min(1f, 3f * stSum / Math.Max(1, nl));
+            ThreatLevel = 0.85f * ThreatLevel + 0.15f * MathF.Min(1f, C.ThreatGain * stSum / Math.Max(1, nl));
         }
 
         /// <summary>lite_sortfeel's neighbour pass: only the members re-steering this step (slot + step on

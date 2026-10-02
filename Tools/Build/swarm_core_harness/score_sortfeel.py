@@ -61,12 +61,41 @@ def _pool(nca, jobs):
     return mp.get_context("fork").Pool(jobs, initializer=_winit, initargs=(nca,))
 
 
+def _density_env(a):
+    """Round 7 (Docs/SWARM_FAUNA.md §14): --density m runs the C# core on the m-times-upsampled plans
+    (SwarmPlanData.Upsample, the game's PlanDensity) and lets a body lay m times as fast so it grows in
+    the yardstick's 240 steps (SWARM_SORT_GAME LayMax = 5 m, the authored ratio)."""
+    env = dict(os.environ)
+    if a.density > 1:
+        env["SWARM_DENSITY"] = str(a.density)
+        extra = f"LayMax={5 * a.density}"
+        env["SWARM_SORT_GAME"] = extra + ("," + env["SWARM_SORT_GAME"] if env.get("SWARM_SORT_GAME") else "")
+    return env
+
+
+def _shrink(dump, m):
+    """An upsampled body is the plan scaled by m^(1/3) (constant density). Scale every exported position
+    back by 1/m^(1/3) so the UNCHANGED swarm_loss compares it with the research's own target: the
+    Sinkhorn term is a divergence between NORMALISED distributions, so the extra headcount is not a
+    penalty - the question it answers is exactly 'is this the creature's shape'. The feel window is
+    shrunk with it, so the feel metrics are in plan units too."""
+    if m <= 1:
+        return
+    k = 1.0 / m ** (1.0 / 3.0)
+    for r in dump.get("runs", []):
+        for u in r.get("units", []):
+            u[0] *= k; u[1] *= k; u[2] *= k
+        if "win" in r:
+            r["win"] = [[[c * k for c in p] for p in step] for step in r["win"]]
+
+
 def yardstick(a, sn, se, torch, targets, targets1, L, swarm_feel, res):
     exp = os.path.join(tempfile.mkdtemp(prefix="swarm_yard6_"), "yard.json")
     t0 = time.time()
     subprocess.run(["bash", os.path.join(HERE, "run.sh"), "yardstick", sg.PLANS, exp, a.seeds, str(a.samples), a.modes],
-                   check=True)
+                   check=True, env=_density_env(a))
     dump = json.load(open(exp))
+    _shrink(dump, a.density)
     print(f"\nC# yardstick: {len(dump['runs'])} records in {time.time() - t0:.0f}s; self-inflicted deaths {dump['selfDeaths']}")
     res["selfDeaths"] = dump["selfDeaths"]
     tests = {}
@@ -278,6 +307,7 @@ def main():
     ap.add_argument("--nca", default="")
     ap.add_argument("--out", default="")
     ap.add_argument("--jobs", type=int, default=4)
+    ap.add_argument("--density", type=int, default=1, help="round 7: run on m-times-upsampled plans (SWARM_DENSITY)")
     a = ap.parse_args()
     nca = sg.research_dir(a.nca)
     sys.path.insert(0, nca)

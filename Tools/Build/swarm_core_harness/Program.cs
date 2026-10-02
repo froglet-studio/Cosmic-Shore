@@ -24,13 +24,20 @@ static class Program
         if (!ok) _fail++;
     }
 
+    /// <summary>SWARM_DENSITY (round 7's SwarmFaunaConfigSO.PlanDensity); 1 when unset.</summary>
+    public static int Density => int.TryParse(Environment.GetEnvironmentVariable("SWARM_DENSITY"), out var d) && d > 1 ? d : 1;
+
     public static SwarmPlanData[] LoadPlansPublic(string dir) => LoadPlans(dir);
 
     static SwarmPlanData[] LoadPlans(string dir)
     {
         var o = new JsonSerializerOptions { IncludeFields = true };
+        // SWARM_DENSITY=m runs every mode on the round-7 upsampled plans (SwarmPlanData.Upsample, the
+        // game's SwarmFaunaConfigSO.PlanDensity) - Docs/SWARM_FAUNA.md §14
+        float ur = float.TryParse(Environment.GetEnvironmentVariable("SWARM_UPSAMPLE_R"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var urv) ? urv : SwarmPlanData.DefaultUpsampleRadius;
+        int m = Density;
         return Kinds.Select(k => JsonSerializer.Deserialize<SwarmPlanJson>(
-            File.ReadAllText(Path.Combine(dir, $"SwarmPlan_{k}.json")), o).ToPlanData()).ToArray();
+            File.ReadAllText(Path.Combine(dir, $"SwarmPlan_{k}.json")), o).ToPlanData().Upsample(m, ur)).ToArray();
     }
 
     static SwarmFieldCore Make(SwarmPlanData[] plans, int seedPlan, int seed = 1, bool fed = true)
@@ -75,6 +82,7 @@ static class Program
         var plans = LoadPlans(args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans");
         if (gridOnly) return GridHarness.Run(plans) == 0 ? 0 : 1;
         if (sortOnly) return SortHarness.Run(plans) == 0 ? 0 : 1;
+        if (args.Length > 1 && args[1] == "tickjob") return TickJobHarness.Run(plans) == 0 ? 0 : 1;
         string plansDir = args.Length > 0 ? args[0] : "../../../Assets/_SO_Assets/Swarm Fauna/Plans";
         if (args.Length > 1 && args[1] == "evo") return EvoHarness.Run(plans, plansDir) == 0 ? 0 : 1;
         Console.WriteLine("plans: " + string.Join(", ", plans.Select(p => $"{p.Kind} N={p.N} mix=[{string.Join(",", p.Mix)}] R={p.Radius:F1}")));

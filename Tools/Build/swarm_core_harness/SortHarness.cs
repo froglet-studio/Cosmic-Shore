@@ -45,7 +45,8 @@ static class SortHarness
     {
         DomainSlots = false, Funded = true, MoltSteps = 10, MoltWindow = -1, Animate = true, KWellFF = 1f, Noise = 0.1f,
         WellLook = true, Oriented = true, Cruise = 0.35f, Membrane = 600f, Cap = plans.Max(p => p.N),
-        LayMax = 5, KillLayHoldSteps = 20,
+        LayMax = 5 * Program.Density, KillLayHoldSteps = 20,
+        ThreatGain = 3f * MathF.Pow(Program.Density, 2f / 3f),   // round 7: SwarmFauna.BuildSortCore's rule
     };
 
     public const int GameSeed = GridHarness.GameSeed;
@@ -234,10 +235,10 @@ static class SortHarness
         {
             var p = Game(plans); p.KillLayHoldSteps = hold; p.LayMax = 16;
             var c = GameSwarm(plans, 3, 9, p: p); Run(c, 400);   // dragonfly, bottomless food
-            int killed = 0, switches = 0;
+            int killed = 0, switches = 0;   // the burst is the same FRACTION of the body at any density
             for (int t = 0; t < 300; t++)
             {
-                if (t < 40) for (int q = 0, i = 0; i < c.Cap && q < 2; i++) if (c.Active[i] && c.Hatched[i] && c.EffectiveElement(i) == 3) { c.Kill(i); killed++; q++; }
+                if (t < 40) for (int q = 0, i = 0; i < c.Cap && q < 2 * Program.Density; i++) if (c.Active[i] && c.Hatched[i] && c.EffectiveElement(i) == 3) { c.Kill(i); killed++; q++; }
                 Step(c);
                 foreach (var ev in c.Events) if (ev.Kind == SwarmEventKind.Switched) switches++;
                 c.Events.Clear();
