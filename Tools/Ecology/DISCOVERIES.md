@@ -1392,3 +1392,172 @@ respects. That cost is one more reason it is not in the top two.
 **Runner-up: spores.** Its counterplay is perfect and it scores R 1.00 at Space. It loses the second slot because
 it never re-routes, and because 2,000 drifting spores is a lot of always-moving mass for a cell's spatial index.
 
+
+## Flyable ecology (Direction H, branch `cece/eco-flight`)
+
+**Question.** The round-1 viewers were too austere to judge: "with no sense of depth it is hard to perceive this as
+a 3d scene. without control it is hard to interact. without a sense of orientation, i don't know how the vessel is
+moving, facing etc." Can the species be FLOWN, at game-like speed, by the code that was scored, so the judgement is
+about the species rather than the viewer?
+
+**Where it lives.** `Tools/Ecology/flight/`:
+- `index.html` is the page: self-contained, 218 KB, with three.js r128 from jsDelivr as the only external host.
+- `export_params.py` lifts every species' constants and defaults out of the Python by AST into `params.json`. It also
+  writes a source-hash manifest; `--check` fails if the JS's parameters are stale or a Python source changed.
+- `src/*.js` is the JS port: bestiary herds, the new grazer base, the fortress builder colony and the snap-trap
+  clump, all on typed arrays and a hashed spatial grid. `build.py` bundles it into `sim.js`, which Node `require`s
+  and the page inlines, so the page flies exactly the code the gate measured.
+- `grazer.py` is a new Python species: a cute, schooling, curious grazer of environment mass. It flees a rushing
+  pilot, never hits, and breeds from its gut. It is the base every other species lives among.
+- The fidelity gate is `fidelity_py.py`, `fidelity_js.js` (`run_fidelity_all.sh` runs it in parallel) and
+  `fidelity.py`, which compares the two and runs the negative controls.
+- `browser_test.py` drives headless Chromium. Results go to `results/` and screenshots to `shots/`.
+- `emotion/ratings.py` now reads the page's export too, and summarises the 1-5 threat, readability and fun scales
+  per species.
+
+### What you fly
+
+- **The vessel.** A lit manta-dart mesh with nav lights and an engine plume.
+  - Throttle runs 0-160 u/s; Shift boosts to 300 u/s on a draining meter. Turn rate is 110 deg/s (the Dolphin's
+    authored turn), roll 160 deg/s; rates are eased, and the hull banks into turns.
+  - Controls: W/S throttle, A/D yaw, arrows or mouse for pitch/yaw, Q/E roll. There is a mouse-steer mode, two
+    touch sticks and the Gamepad API.
+  - Near the membrane the vessel is turned back rather than clamped.
+- **The wake.** It is conserved mass: a 10-volume prism every 15 u, aligned to the flight path at lay time.
+  Thieves steal it, fortress workers carry it off, grazers and fauna eat it.
+- **Depth and orientation.**
+  - Lighting and space: lit instanced prisms, exponential fog, hemisphere plus key plus rim light, a starfield,
+    drifting motes, and a fresnel membrane with lat/long rings and coloured poles.
+  - Creatures: low-poly bodies oriented to their velocity and coloured by posture. Telegraphs are drawn as
+    additive halos: a pack's red closure, a lurker's widening gape, a bull's head-down, a trap's open glow.
+  - Cameras: a chase camera with lag, bank and look-ahead, plus a free orbit camera (C).
+  - HUD: speed and heading/pitch/roll readout, an attitude indicator, a minimap disc, edge arrows plus brackets
+    for anything telegraphing at you, and a hit/steal flash with a toast. Optional WebAudio stingers sit behind a
+    click.
+- **The occlusion corridor.** The game's own platform law (PRISM_ANIMATION.md section 4.7) is applied to the page:
+  prisms between the chase camera and the ship, or brushing the lens, shrink out of the view. Photons only; every
+  rule still sees them.
+- **Modes.** One species at a time (to judge it), or the whole cell: about 1,400 agents of ten species on about 4k
+  live prisms.
+- **Debug overlay (`?debug=1`).** It shows the conserved-mass ledger, live + held by species + destroyed + cut =
+  start + your wake. Its residual is exactly 0 in every run measured, browser and Node.
+- **Judging.** Rate an encounter with R: one of six emotions, plus threat, readability and fun on 1-5.
+  - Ratings persist in localStorage, inside try/catch.
+  - Export copies JSON to the clipboard, falling back to a selected textarea. `ratings.py` reads it; the browser
+    test round-trips one.
+
+### The fidelity gate
+
+The JS cannot match the Python bit for bit (different RNGs), so the gate is statistical.
+- **Setup.** Each species runs in ITS OWN Python harness world (bestiary / builders / flora), mirrored in JS, against
+  the same scripted pilots (wander / evader / hunter; flora: wander / reader / cutter). Seeds: 6 Python, 8 JS.
+  Runs are 1.5 min.
+- **Metrics.** Hits/min per pilot, hunter payoff, counterplay, three telegraph measures, and the six feel axes.
+- **Agreement rule.** A metric agrees when |js - py| <= max(abs floor, rel band x max, 2.5 x combined bootstrap SE).
+  A species passes only when every metric agrees.
+
+**At the Python's step (dt 0.1 s), all ten species pass.** Means are JS / Python:
+
+| species | hits/min wander | hits/min evader (reader) | hits/min hunter (cutter) | hunter payoff/min | shared telegraph s |
+|---|---|---|---|---|---|
+| pack | 4.7 / 5.7 | 0 / 0 | 2.5 / 2.6 | 4.7 / 4.7 | 1.5 / 1.2 |
+| thief | 24.5 / 29.4 | 3.4 / 5.3 | 60.2 / 56.1 | 7.2 / 5.9 | 0.23 / 0.20 |
+| locust | 40.2 / 28.9 | 0 / 0 | 5.8 / 8.9 | 20.2 / 30.0 | 0.10 / 0.03 |
+| lurker | 1.3 / 0.4 | 0.5 / 0 | 4.5 / 4.7 | 5.0 / 5.2 | 0.9 / 0.8 |
+| stampede | 7.9 / 10.4 | 0 / 0 | 18.1 / 13.3 | 3.6 / 3.6 | 0.1 / 0.1 |
+| leviathan | 0.4 / 0.6 | 0 / 0 | 14.2 / 12.3 | 39.2 / 38.0 | 0.9 / 0.9 |
+| mobber | 3.7 / 3.1 | 0 / 0 | 28.2 / 25.2 | 27.4 / 26.7 | 0.2 / 0.15 |
+| grazer | 0 / 0 | 0 / 0 | 0 / 0 | 32.6 / 29.3 | - |
+| fortress | 0.08 / 0.11 | 0 / 0 | 1.0 / 1.3 | 5.6 / 7.7 | 0.6 / 0.65 |
+| snaptrap | 5.0 / 7.4 | 0.3 / 0.2 | 19.7 / 23.3 | 23.7 / 24.6 | 1.8 / 1.9 |
+
+The locust row passes on its noise. Its swarm tips from shy to storm at a seed-dependent moment, so a 1.5-minute
+run is either mostly storm or mostly not; the band is the bootstrap SE, not a loose constant. Full per-metric table:
+`flight/results/fidelity.md`.
+
+**The gate has teeth.** Three deliberately broken parameters, run through Node, must fail it, and all three do:
+- `thief.WARM=1e9` (wants any trail, not fresh trail) disagrees on wander hits, coherence and burstiness.
+- `lurker.GAPE=0.05` (no telegraph) disagrees on 7 metrics, including all three telegraph measures.
+- `pack.SPRINT=60` disagrees on hits and all three telegraph measures.
+
+**Two metrics were re-cut after they produced false disagreements; both re-cuts are measurement fixes, stated
+here:**
+1. **Counterplay (evader hits / wander hits)** is reported only when BOTH sides' wanderer is hit at least once per
+   minute. Below that it is a ratio of two near-zero counts: the lurker read 0.40 vs undefined, the leviathan
+   undefined vs 0.00. The hit rates themselves are still compared.
+2. **First-strike telegraph lead is BIMODAL for some species.** A hunter ramming a stampede is hit with lead 0; a
+   bull's charge comes 0.3-2 s after head-down. About half of the stampede's first strikes are in each mode, so the
+   median flipped between 0 and 0.6 s on a few strikes. It is now two numbers: the share of first strikes that were
+   telegraphed (lead >= 0.25 s), and the median lead of those that were.
+
+**The page steps at 1/30 s, and that is a separate question.** JS at 1/30 s against Python at 0.1 s disagrees on six
+species (lurker, stampede, leviathan, mobber, grazer, fortress). To separate port defects from the RULES' own
+step-size sensitivity, `fidelity_py.py --dt30` runs the Python at the page's step:
+- **Like for like at 30 Hz,** five of the six agree. **The lurker is the instructive one.** Its bite is a contact
+  test sampled once per step: a 320 u/s lunge moves 32 u per 0.1 s step but the contact radius is about 19 u, so
+  the 0.1 s Python TUNNELS through most bites. Its scored lurker under-counts its own bites by about 2x (hunter 4.7
+  at 0.1 s vs 10.6 at 1/30 s). This is the game's own rule, *a fixed-timestep trigger is a SAMPLE, not a test*,
+  found in the research harness. Any species whose strike is a fast lunge should be scored at the step it will run
+  at, or sweep its contact.
+- **Jerk** is likewise a function of step size. At 1/30 s a `steerTo` turn is three small rotations, not one, so
+  jerk_rel moves 2-3x between steps on the same rules.
+- **The leviathan's approach axis** still differed at 30 Hz. It is set entirely by whether a seed's random start puts
+  the evader within 300 u of the body: the evader then flees to the membrane and never meets it again, at 1,100-1,900
+  u. Re-run with the same 24 seeds per side, every leviathan metric agrees; 8/24 Python seeds vs 7/24 JS seeds have
+  such an encounter. It was seed luck at 6-8 seeds, not a port difference.
+
+The page's fidelity line ("agrees") uses the like-for-like 30 Hz verdict where it exists and the cross-step verdict
+for the four species with no step sensitivity. The fidelity summary is baked into the page at build time.
+
+### Performance
+
+| | measured |
+|---|---|
+| whole cell | ~1,400 agents, ~3.6-4k live prisms |
+| sim cost | 6.7-7.2 ms per 30 Hz step in the browser; 8.6 ms in Node, profiled |
+| render CPU | 4.3-5 ms per frame, measured in headless Chromium |
+
+- **Budget.** At 60 fps the sim runs every other frame, so CPU averages about 8 ms per frame. That leaves headroom
+  in a 16.7 ms frame, but it is not measured on a GPU here. The only GL available is SwiftShader (software), so wall
+  frame time headlessly is about 95 ms (11 fps), which says nothing about a real GPU. Render cost is one instanced
+  draw per species plus one for prisms, plus halos/motes as points.
+- **One defect found and fixed.** The spatial grid's large-radius queries de-duplicated buckets with
+  `Array.from(...).sort()`, allocating every call. The grazer's 120 u food search hit that path for every grazer,
+  costing 13 ms of an 18 ms step. Generation-stamped bucket marks made it O(1) and allocation-free: whole cell 18 ->
+  8.6 ms per step. The grazer flock is still the largest cost (6 ms of 8.6) because a cluster of 1,100 schooling
+  grazers has about 115 neighbours each.
+
+### Verified in headless Chromium (`browser_test.py`)
+
+- No page or console errors in any of the 11 modes.
+- The vessel moves and turns under scripted keys (W, A, ArrowUp): 270 u travelled and a rotation change.
+- **Thieves tail the wake.** 18 steals from the player's fresh trail in 12 s. Thieves follow the trail, not the hull,
+  so "the median thief comes closer to the ship" was the wrong test; the ship flies away from them.
+- **The pack rings.** Its own closure quorum reaches 0.89, past the 0.55 strike threshold. A raw bearing-spread test
+  was wrong too: the pack fans out in a cone AHEAD of you (it cuts off where you are going), not round your current
+  position.
+- No horizontal overflow at 390 px.
+- `ratings.py` reads the page's export.
+- **Screenshots** at 1440x900 and 390x844: whole cell in chase and orbit, the rating panel, phone start and phone
+  flight, thief, lurker, leviathan, fortress, snaptrap.
+- **Critique applied from the screenshots:**
+  - The phone HUD's minimap covered the speed readout, so the minimap moved under the top bar.
+  - The engine plume read as a white ball on the hull; it is now smaller and dimmer.
+  - Fresh wake prisms loomed across the bottom of the chase view; fixed by the corridor plus the near-lens fade.
+
+### Known gaps
+
+- **No human has rated anything yet.** The page is the instrument; the evidence starts when five or more pilots
+  export ratings for `ratings.py`.
+- **Cross-species interactions are unvalidated.** In whole-cell mode thieves and fortress workers compete for the same
+  wake, grazers and locusts graze the same mass, and so on. No Python scores those interactions, so the whole-cell
+  mode is faithful species by species, not as an ecosystem.
+- **Whole-cell populations are scaled for vibrancy, not scored.** Grazers start at 900 (cap 1,600) against the
+  scored 120 (cap 240); locusts are capped at 360. Single-species modes use the scored defaults.
+- **The fortress lattice is 12 sites each way in JS, 40 in Python.** Its Q template is below 0.05 past 52 u, so no
+  rule reads or writes past 96 u; the fortress passes the gate at both steps.
+- **The flight world slows the player only on a burn or a snap.** The bestiary's slow-on-every-hit belongs to the
+  flora harness; in flight a hit flashes, toasts and logs.
+- **Frame time is not measured on real graphics hardware** (see Performance).
+- **The page uses the game's NUMBERS (turn rate, boost ratio, chase offset), not its flight model.** It has no drift,
+  no element scaling and no abilities beyond ramming.

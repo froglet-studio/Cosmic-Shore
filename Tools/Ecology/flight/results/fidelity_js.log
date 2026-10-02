@@ -1,0 +1,34 @@
+pack       wander  hits/min    4.67  crystals/min   0.00  ms/step 0.201  max drift 0.0e+0
+pack       evader  hits/min    0.00  crystals/min   0.00  ms/step 0.142  max drift 0.0e+0
+pack       hunter  hits/min    2.50  crystals/min   4.67  ms/step 0.111  max drift 0.0e+0
+thief      wander  hits/min   24.50  crystals/min   0.00  ms/step 0.261  max drift 0.0e+0
+thief      evader  hits/min    3.42  crystals/min   0.00  ms/step 0.219  max drift 0.0e+0
+thief      hunter  hits/min   60.17  crystals/min   7.17  ms/step 0.168  max drift 0.0e+0
+locust     wander  hits/min   40.17  crystals/min   0.00  ms/step 13.825  max drift 0.0e+0
+locust     evader  hits/min    0.00  crystals/min   0.00  ms/step 12.545  max drift 0.0e+0
+locust     hunter  hits/min    5.75  crystals/min  20.17  ms/step 9.046  max drift 0.0e+0
+266s -> results/part1.json
+lurker     wander  hits/min    1.25  crystals/min   0.00  ms/step 1.188  max drift 0.0e+0
+lurker     evader  hits/min    0.50  crystals/min   0.00  ms/step 0.967  max drift 0.0e+0
+lurker     hunter  hits/min    4.50  crystals/min   5.00  ms/step 0.328  max drift 0.0e+0
+stampede   wander  hits/min    7.92  crystals/min   0.00  ms/step 1.456  max drift 0.0e+0
+stampede   evader  hits/min    0.00  crystals/min   0.00  ms/step 1.426  max drift 0.0e+0
+stampede   hunter  hits/min   18.08  crystals/min   3.58  ms/step 1.395  max drift 0.0e+0
+leviathan  wander  hits/min    0.42  crystals/min   0.00  ms/step 5.869  max drift 0.0e+0
+leviathan  evader  hits/min    0.00  crystals/min   0.00  ms/step 5.693  max drift 0.0e+0
+leviathan  hunter  hits/min   14.17  crystals/min  39.17  ms/step 3.716  max drift 0.0e+0
+162s -> results/part2.json
+mobber     wander  hits/min    3.67  crystals/min   0.00  ms/step 0.816  max drift 0.0e+0
+mobber     evader  hits/min    0.00  crystals/min   0.00  ms/step 0.656  max drift 0.0e+0
+mobber     hunter  hits/min   28.17  crystals/min  27.42  ms/step 0.340  max drift 0.0e+0
+grazer     wander  hits/min    0.00  crystals/min   0.00  ms/step 16.732  max drift 0.0e+0
+grazer     evader  hits/min    0.00  crystals/min   0.00  ms/step 14.024  max drift 0.0e+0
+grazer     hunter  hits/min    0.00  crystals/min  32.58  ms/step 12.929  max drift 0.0e+0
+fortress   wander  hits/min    0.08  crystals/min   0.00  ms/step 0.762  max drift 0.0e+0
+fortress   evader  hits/min    0.00  crystals/min   0.00  ms/step 0.743  max drift 0.0e+0
+fortress   hunter  hits/min    1.00  crystals/min   5.58  ms/step 0.733  max drift 0.0e+0
+349s -> results/part3.json
+snaptrap   wander  hits/min    5.00  crystals/min   0.00  ms/step 0.980  max drift 0.0e+0
+snaptrap   reader  hits/min    0.33  crystals/min   0.00  ms/step 1.325  max drift 0.0e+0
+snaptrap   cutter  hits/min   19.67  crystals/min  23.67  ms/step 0.426  max drift 0.0e+0
+20s -> results/part4.json

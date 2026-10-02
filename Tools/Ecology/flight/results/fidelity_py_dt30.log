@@ -1,0 +1,19 @@
+lurker     wander  hits/min   0.89  kills/min   0.00  ms/step 4.66
+lurker     evader  hits/min   0.33  kills/min   0.00  ms/step 3.91
+lurker     hunter  hits/min  10.67  kills/min  10.67  ms/step 1.85
+stampede   wander  hits/min   8.33  kills/min   0.00  ms/step 6.02
+stampede   evader  hits/min   0.00  kills/min   0.00  ms/step 5.98
+stampede   hunter  hits/min  16.34  kills/min   2.89  ms/step 6.15
+leviathan  wander  hits/min   0.67  kills/min   0.00  ms/step 3.59
+leviathan  evader  hits/min   0.00  kills/min   0.00  ms/step 3.65
+leviathan  hunter  hits/min   7.78  kills/min  34.00  ms/step 3.57
+mobber     wander  hits/min   1.78  kills/min   0.00  ms/step 2.48
+mobber     evader  hits/min   0.00  kills/min   0.00  ms/step 2.39
+mobber     hunter  hits/min  24.33  kills/min  17.67  ms/step 2.70
+grazer     wander  hits/min   0.00  kills/min   0.00  ms/step 21.79
+grazer     evader  hits/min   0.00  kills/min   0.00  ms/step 21.72
+grazer     hunter  hits/min   0.00  kills/min  27.67  ms/step 21.38
+fortress   wander  hits/min   0.22  kills/min   0.00  ms/step 5.70
+fortress   evader  hits/min   0.00  kills/min   0.00  ms/step 5.56
+fortress   hunter  hits/min   1.22  kills/min   9.56  ms/step 6.04
+532s

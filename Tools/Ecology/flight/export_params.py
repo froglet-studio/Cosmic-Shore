@@ -1,0 +1,161 @@
+"""Export every ported species' parameters from its PYTHON source to flight/params.json, so the JS port in
+flight/ reads its numbers from the same place the scored Python does and cannot silently drift.
+
+    python Tools/Ecology/flight/export_params.py           # (re)write params.json
+    python Tools/Ecology/flight/export_params.py --check   # fail if params.json is stale OR a ported source changed
+
+What is exported, per species (by AST, never by hand):
+  const   every module-level literal assignment (CRUISE, SPRINT, RANGE = 95.0, 175.0, 900.0 -> three keys)
+  init    the species class __init__ keyword defaults (n=7 ...), merged over its base classes' defaults
+  herd    the literal keywords the class passes to super().__init__ (spread, size, body)
+  extra   anything that is not a plain literal but is still data (the snap trap's LAYOUT and its SEARCHED best
+          parameters, exactly as flora/sandbox.py overlays them)
+
+What CANNOT be exported is the inline literals inside a rule (a 0.85 pointing cone, a 70 u tail offset). Those are
+guarded instead by a source hash: port_manifest.json records the sha256 of each Python file at the moment the JS
+was ported from it, and `--check` fails the day a ported file changes, naming the file whose port must be
+re-read. The fidelity gate (fidelity.py) is the behavioural half of the same guard.
+"""
+from __future__ import annotations
+
+import ast
+import hashlib
+import json
+import os
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ECO = os.path.dirname(HERE)
+
+# species key -> (source file relative to Tools/Ecology, class name, base-class files to merge init defaults from)
+SOURCES = {
+    "pack":      ("bestiary/species/pack.py", "Pack", []),
+    "thief":     ("bestiary/species/thief.py", "Thief", []),
+    "locust":    ("bestiary/species/locust.py", "Locust", []),
+    "lurker":    ("bestiary/species/lurker.py", "Lurker", []),
+    "stampede":  ("bestiary/species/stampede.py", "Stampede", []),
+    "leviathan": ("bestiary/species/leviathan.py", "Leviathan", []),
+    "mobber":    ("bestiary/species/mobber.py", "Mobber", []),
+    "grazer":    ("flight/grazer.py", "Grazer", []),
+    "fortress":  ("builders/fortress.py", "Fortress", [("builders/nest.py", "NestWeavers"), ("builders/core.py", "Colony")]),
+    "snaptrap":  ("flora/snaptrap.py", "SnapTrap", []),
+}
+# shared machinery the ports mirror (hash-guarded too, no parameters of their own)
+SHARED = ["bestiary/core.py", "common/arena.py", "common/scorecard.py", "bestiary/run.py", "builders/core.py",
+          "builders/harness.py", "flora/harness.py", "builders/nest.py"]
+OUT = os.path.join(HERE, "params.json")
+MANIFEST = os.path.join(HERE, "port_manifest.json")
+
+
+def sha(rel):
+    return hashlib.sha256(open(os.path.join(ECO, rel), "rb").read()).hexdigest()
+
+
+def literal(node):
+    try:
+        return ast.literal_eval(node)
+    except Exception:
+        return None
+
+
+def module_consts(tree):
+    out = {}
+    for st in tree.body:
+        if not isinstance(st, ast.Assign):
+            continue
+        for tg in st.targets:
+            if isinstance(tg, ast.Name):
+                v = literal(st.value)
+                if v is not None:
+                    out[tg.id] = v
+            elif isinstance(tg, ast.Tuple) and isinstance(st.value, ast.Tuple) and len(tg.elts) == len(st.value.elts):
+                for a, b in zip(tg.elts, st.value.elts):
+                    v = literal(b)
+                    if isinstance(a, ast.Name) and v is not None:
+                        out[a.id] = v
+    return out
+
+
+def class_init(tree, cls):
+    """(init keyword defaults, literal keywords passed to super().__init__)."""
+    for st in tree.body:
+        if isinstance(st, ast.ClassDef) and st.name == cls:
+            for fn in st.body:
+                if isinstance(fn, ast.FunctionDef) and fn.name == "__init__":
+                    args = fn.args
+                    pos = args.args[len(args.args) - len(args.defaults):]
+                    init = {a.arg: literal(d) for a, d in zip(pos, args.defaults)}
+                    init.update({a.arg: literal(d) for a, d in zip(args.kwonlyargs, args.kw_defaults) if d is not None})
+                    herd = {}
+                    for node in ast.walk(fn):
+                        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                                and node.func.attr == "__init__" and isinstance(node.func.value, ast.Call)
+                                and getattr(node.func.value.func, "id", "") == "super"):
+                            for kw in node.keywords:
+                                v = literal(kw.value)
+                                if kw.arg and v is not None:
+                                    herd[kw.arg] = v
+                    return init, herd
+    return {}, {}
+
+
+def export():
+    sys.path.insert(0, ECO)
+    params = {"_note": "generated by flight/export_params.py from the Python sources; do not edit by hand",
+              "species": {}}
+    for key, (rel, cls, bases) in SOURCES.items():
+        tree = ast.parse(open(os.path.join(ECO, rel)).read())
+        init, herd = {}, {}
+        for brel, bcls in reversed(bases):          # base defaults first, the species overrides last
+            bi, bh = class_init(ast.parse(open(os.path.join(ECO, brel)).read()), bcls)
+            init.update(bi); herd.update(bh)
+        si, sh = class_init(tree, cls)
+        init.update(si); herd.update(sh)
+        entry = dict(source=rel, const=module_consts(tree), init=init, herd=herd)
+        if key == "snaptrap":
+            sys.path.insert(0, os.path.join(ECO, "flora"))
+            import snaptrap  # noqa: E402  (numpy only)
+            p = dict(snaptrap.DEFAULTS)
+            best = os.path.join(ECO, "flora", "results", "search_snaptrap_best.json")
+            if os.path.exists(best):
+                p.update(json.load(open(best))["params"])
+                entry["best_source"] = "flora/results/search_snaptrap_best.json"
+            entry["extra"] = dict(params=p, layout=[list(map(lambda x: x if not isinstance(x, bool) else int(x), l))
+                                                    for l in snaptrap.LAYOUT])
+            sys.path.insert(0, os.path.join(ECO, "flora"))
+            import harness as fh  # noqa: E402
+            entry["extra"].update(GROVE_C=fh.GROVE_C.tolist(), GROVE_R=fh.GROVE_R, VIEW=fh.VIEW,
+                                  BURN_COOLDOWN=fh.BURN_COOLDOWN, SLOW_STRENGTH=fh.SLOW_STRENGTH, SLOW_S=fh.SLOW_S)
+        if key == "fortress":
+            entry["extra"] = dict(TRAIL_EVERY=0.25, harness_mass=1500)
+        params["species"][key] = entry
+    return params
+
+
+def hashes():
+    return {rel: sha(rel) for rel in sorted({v[0] for v in SOURCES.values()} | set(SHARED)
+                                             | {b for v in SOURCES.values() for b, _ in v[2]})}
+
+
+if __name__ == "__main__":
+    p = export()
+    text = json.dumps(p, indent=1, sort_keys=True)
+    if "--check" in sys.argv:
+        bad = 0
+        if not os.path.exists(OUT) or open(OUT).read() != text:
+            print("STALE: params.json differs from the Python sources - run export_params.py and re-run fidelity.py")
+            bad = 1
+        man = json.load(open(MANIFEST))["sha256"]
+        for rel, h in hashes().items():
+            if man.get(rel) != h:
+                print(f"CHANGED SINCE PORT: {rel} - re-read it against the JS port in flight/src, then "
+                      f"`export_params.py --bless` once the port matches")
+                bad = 1
+        print("export_params: ok" if not bad else "export_params: FAILED")
+        sys.exit(bad)
+    open(OUT, "w").write(text)
+    print(OUT, len(text), "bytes")
+    if "--bless" in sys.argv or not os.path.exists(MANIFEST):
+        json.dump(dict(note="sha256 of each Python source at the moment the JS port was (re)checked against it",
+                       sha256=hashes()), open(MANIFEST, "w"), indent=1, sort_keys=True)
+        print(MANIFEST, "blessed")

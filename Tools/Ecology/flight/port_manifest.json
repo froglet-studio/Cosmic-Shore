@@ -1,0 +1,23 @@
+{
+ "note": "sha256 of each Python source at the moment the JS port was (re)checked against it",
+ "sha256": {
+  "bestiary/core.py": "97d3553fe28a0d71724df3c6b777df4447a9eaa728700da2cb1fce0012cd8116",
+  "bestiary/run.py": "ec73e45a34ccbff0f6da7b139f5d86053713f8266b7b34e5a76b436ab15a980e",
+  "bestiary/species/leviathan.py": "dd378532cd5a395e8b6d4ae441c74845f8b0d2f0d759577736716d576b994c16",
+  "bestiary/species/locust.py": "d31632096a8582307cf49b42aa10597c7efc1f9484ca4f2e8cd515833cf4ae26",
+  "bestiary/species/lurker.py": "b085c0cb5b6172497ef52092969f45bc2bba55908ff8ad737cb31494a3ee4d46",
+  "bestiary/species/mobber.py": "da80ef17c3154554fce2b6313131523fe656fadb306b0d96c3d7192715c06ed2",
+  "bestiary/species/pack.py": "dd1f4421d7c6683d28cf945b726236b87a2997183d5be827a0ecc1b17ebd1307",
+  "bestiary/species/stampede.py": "febd6746967523003d91758721b5c18961b3344b970bedeb4e94b0299a70c005",
+  "bestiary/species/thief.py": "8124a927dd7329e5dd0d24cbab2645c040016aaacbd409847b1fd20bfc6aa44c",
+  "builders/core.py": "3dc4a32c95e4923fdfbbd807ee6f22d00483b7fbd119cc0086ca9a608d8dcf8e",
+  "builders/fortress.py": "a19b3f3b801a3e82ef6a6c21dc39376f13a83f99aba5aeba544285c7971d341a",
+  "builders/harness.py": "e5d94f2086398ddc40268e7a7e1fb571cda755f0ab0ef1d6db656bad1fa1bc2c",
+  "builders/nest.py": "478f7f30f0183226f90b164a70812e3411ef3df73146ebb2025a9099969c1012",
+  "common/arena.py": "7f7ca815df42f37dca85870208064a53dcf52f1a147f37d31a6b29bd9056f8b9",
+  "common/scorecard.py": "5ef3c505ea3c4030f75643138c5bab65f7c24091ce52308fa7b0ec96f01e9930",
+  "flight/grazer.py": "be6fff90e1946340c4932abfa5d1e39e515230879295880307ae3c770ad3b8f3",
+  "flora/harness.py": "ed8a4f22135bdc5362b958a5610ecc9181d81a466df7c42c05fdb8f632df83b9",
+  "flora/snaptrap.py": "d46f5ac0b6e5d0f2ed137d314ac8221ede1f9a23cdf3217c89badc98f45907a7"
+ }
+}
