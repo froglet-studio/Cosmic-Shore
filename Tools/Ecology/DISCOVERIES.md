@@ -58,7 +58,7 @@ locust) to 0.63 (pack), and the locust alone crosses most of it (0.03 -> 0.62) w
    from 0.4 to 0.9 s and lets an aware pilot escape every time (0.19 -> 0.0). Both halves are kept.
 2. **One continuous drive gives the cute-to-terrifying range.** The locust is green, shy and harmless sparse,
    and the probe reads it cute at 0.87 from all three viewers. It is the same code after 55 s of breeding on
-   food: the cloud tips at ~28 s (median), 82% gregarious at peak, and the probe reads terrifying (0.58 hover,
+   food: the cloud tips at ~28 s (mean over runs), 82% gregarious at peak, and the probe reads terrifying (0.58 hover,
    0.40 cruise, threat 0.62). Ablating the drive removes the entire threat.
 3. **A swarm breaks the shared telegraph metric.** The shared median credits every follow-up bite with the
    0.1 s since the previous one, so locust, stampede, thief and mobber all score 0.1-0.2 s. Scoring only the
