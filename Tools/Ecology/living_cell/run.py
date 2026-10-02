@@ -89,7 +89,7 @@ def flight_table(runs):
     if not F:
         return {}
     m = lambda k: round(float(np.mean([f.get(k, 0) for f in F])), 3)
-    out = {k: m(k) for k in ("enc_per_min", "variety", "variety_entropy_bits", "quiet_frac", "hits_per_min", "steals_per_min",
+    out = {k: m(k) for k in ("enc_per_min", "variety", "variety_entropy_bits", "quiet_frac", "hits_per_min", "damage_per_min", "steals_per_min",
                              "emotion_distinct", "emotion_entropy_bits", "threat_range", "threat_peak", "active_encounters")}
     out["n_flights"] = len(F)
     # replayability: every pair of flights by the same pilot policy from DIFFERENT seeds
@@ -148,8 +148,112 @@ def baseline(seeds=(1, 2, 3, 4), minutes=30.0, cfg=None, label="baseline"):
     return s, runs
 
 
+# ==========================================================================================================
+# NEGATIVE CONTROLS: a planted failure per metric; each must FIRE (and the default cell must not).
+NOFIX = dict(traps=False, fortress=False, physarum=False)
+CONTROLS = {
+    "persistence": (dict(pack_metab=0.25), "", lambda s: s["eco"]["n_extinct"] > 0),
+    "diversity": (dict(NOFIX, species=("grazer",)), "", lambda s: s["eco"]["shannon_min"] < 0.8),
+    "freeze": (dict(species=()), "", lambda s: s["eco"]["freeze_frac"] > 0.3 or s["eco"]["flora_saturated"] > 0.3),
+    "audit": (dict(), "leak_birth", lambda s: s["eco"]["audit_max"] > 1.0),
+    "shield": (dict(), "eat_shield", lambda s: s["eco"]["shield_eaten"] > 0),
+    "continuity": (dict(expand_r=120.0, ahead_r=150.0, absorb_r=160.0), "", lambda s: s["eco"]["pop_ins"] + s["eco"]["pop_outs"] > 0),
+    "variety": (dict(NOFIX, species=("pack",), pack_n=60), "", lambda s: s["player"]["variety"] <= 1.0),
+    "quiet": (dict(NOFIX, species=("pack",), pack_n=600, pack_cap=800, pack_metab=0.0), "", lambda s: s["player"]["quiet_frac"] < 0.3),
+    "emotion_range": (dict(NOFIX, species=("grazer",)), "", lambda s: s["player"]["emotion_distinct"] <= 2.0),
+}
+
+
+def controls(minutes=12.0, seeds=(1, 2)):
+    jobs, keys = [], []
+    for name, (cfg, bug, _) in CONTROLS.items():
+        for s in seeds:
+            jobs.append(dict(seed=s, cfg=cfg, minutes=minutes, bug=bug, burn=300.0, keep_series=False)); keys.append(name)
+    # replayability control: the SAME seed twice must measure distance 0 (two identical flights)
+    jobs += [dict(seed=5, cfg=None, minutes=minutes, burn=300.0, keep_series=False)] * 2; keys += ["replay", "replay"]
+    res = pool_map(jobs)
+    out = {}
+    for name in CONTROLS:
+        rs = [r for r, k in zip(res, keys) if k == name]
+        s = dict(eco=eco_table(rs), player=flight_table(rs))
+        out[name] = dict(fired=bool(CONTROLS[name][2](s)), eco=s["eco"], player={k: v for k, v in s["player"].items() if k != "enc_by_species_total"})
+    rr = [r for r, k in zip(res, keys) if k == "replay"]
+    d = [replay_distance(a, b) for a, b in zip(rr[0]["flights"], rr[1]["flights"])]
+    out["replay"] = dict(fired=all(x["jaccard_dist"] == 0 and x["species_tv"] == 0 for x in d), distances=d)
+    for k, v in out.items():
+        print(k, "FIRED" if v["fired"] else "did NOT fire")
+    save("controls.json", out)
+    return out
+
+
+
+# ==========================================================================================================
+def iterate(rounds, seeds=(1, 2, 3), minutes=20.0, tag="iterate"):
+    """Run named configurations (every run kept in results/<tag>.json, appended across calls)."""
+    path = os.path.join(RES, f"{tag}.json")
+    allr = json.load(open(path)) if os.path.exists(path) else {}
+    jobs, keys = [], []
+    for name, cfg in rounds.items():
+        for s in seeds:
+            jobs.append(dict(seed=s, cfg=cfg, minutes=minutes, keep_series=True)); keys.append(name)
+    res = pool_map(jobs)
+    for name, cfg in rounds.items():
+        rs = [r for r, k in zip(res, keys) if k == name]
+        allr[name] = dict(cfg=cfg, summary=dict(eco=eco_table(rs), player=flight_table(rs)),
+                          runs=[{k: v for k, v in r.items() if k != "flights"} | dict(flights=[{k: v for k, v in f.items() if k != "emotion_series"} for f in r["flights"]]) for r in rs])
+        print(name, json.dumps(allr[name]["summary"])[:1800])
+    save(f"{tag}.json", allr)
+    return allr
+
+
+
+def _consist(a):
+    seed, mode, minutes, cfg = a
+    c = Cell(seed=seed, cfg=dict(cfg, force_hot=(mode == "micro"), traps=False, fortress=False, physarum=False), pilots=())
+    rows = []
+    for i in range(int(minutes * 600)):
+        c.step(0.1)
+        if i % 300 == 0:
+            rows.append(dict(t=round(c.w.t), census={k: v for k, v in c.census().items() if k in c.guilds},
+                             flora=round(c.biomass()["flora"]), N=round(c.w.N)))
+    return dict(seed=seed, mode=mode, rows=rows, audit=c.w.audit(), cost_ms=round(float(np.mean(c.cost)) * 1000, 2),
+                prey_kills={k: getattr(g, "prey_kills", 0) for k, g in c.guilds.items()},
+                births={k: g.births for k, g in c.guilds.items()}, starved={k: g.starved for k, g in c.guilds.items()})
+
+
+def consistency(seeds=(1, 2, 3), minutes=6.0, cfg=None):
+    """The same cell (no pilots, no structures) run all-MACRO (every region a cohort) and all-MICRO (every
+    region expanded into individuals). What the one-cohort-per-region simplification costs is the gap."""
+    cfg = cfg or {}
+    with Pool(4) as p:
+        res = p.map(_consist, [(s, m, minutes, cfg) for s in seeds for m in ("macro", "micro")])
+    out = dict(runs=res, gap={})
+    for sp in res[0]["rows"][-1]["census"]:
+        for key in ("count",):
+            mac = np.array([[r["census"][sp] for r in x["rows"]] for x in res if x["mode"] == "macro"], float)
+            mic = np.array([[r["census"][sp] for r in x["rows"]] for x in res if x["mode"] == "micro"], float)
+            out["gap"][sp] = dict(macro_end=round(float(mac[:, -1].mean()), 1), micro_end=round(float(mic[:, -1].mean()), 1),
+                                  rel_gap_end=round(float(abs(mac[:, -1].mean() - mic[:, -1].mean()) / max(mic[:, -1].mean(), 1)), 3),
+                                  rel_gap_mean=round(float(np.mean(np.abs(mac.mean(0) - mic.mean(0)) / np.maximum(mic.mean(0), 1))), 3))
+    fm = np.array([[r["flora"] for r in x["rows"]] for x in res if x["mode"] == "macro"], float)
+    fi = np.array([[r["flora"] for r in x["rows"]] for x in res if x["mode"] == "micro"], float)
+    out["gap"]["flora"] = dict(macro_end=round(float(fm[:, -1].mean())), micro_end=round(float(fi[:, -1].mean())),
+                               rel_gap_mean=round(float(np.mean(np.abs(fm.mean(0) - fi.mean(0)) / np.maximum(fi.mean(0), 1))), 3))
+    print(json.dumps(out["gap"], indent=1))
+    save("consistency.json", out)
+    return out
+
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "baseline"
     if what == "baseline":
         mins = float(sys.argv[2]) if len(sys.argv) > 2 else 30.0
         baseline(minutes=mins)
+    elif what == "controls":
+        controls()
+    elif what == "consistency":
+        consistency()
+    elif what == "iterate":
+        import importlib
+        mod = importlib.import_module("living_cell.rounds")
+        iterate(getattr(mod, sys.argv[2]), minutes=float(sys.argv[3]) if len(sys.argv) > 3 else 20.0)

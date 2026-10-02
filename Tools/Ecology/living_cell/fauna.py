@@ -26,7 +26,7 @@ import math
 
 import numpy as np
 
-from .world import K_HERB, FLORA, TRAIL, SKEL, HOARD, flock_terms, nearest_point, flee_push
+from .world import K_HERB, FLORA, TRAIL, SKEL, HOARD, K_GRAZE, K_LOCUST, flock_terms, nearest_point, flee_push
 
 SQ2 = math.sqrt(2.0)
 
@@ -486,6 +486,7 @@ class Grazer(Guild):
     """A's grazer school (substrate/species.py `grazer`): food scent + align + cohesion + separation, a
     CURIOUS comfort ring around a pilot (70 u), flee predators. Never aggressive: prey and background life."""
     name = "grazer"
+    diet = K_GRAZE                   # flora + skeleton (E's herbivore diet)
     body, e0, e_birth, e_max, metab = 6.0, 4.0, 18.0, 26.0, 0.045
     imax, F_half = 0.5, 250.0
     cap = 2600; capacity = 2600
@@ -531,6 +532,7 @@ class Locust(Guild):
     relax tau 4 s, march 135 u/s, swarm-a-pilot range 250, bite cool 2 s). Breeds on food; the cap is
     production gating. In macro the whole cohort is solitary (a sparse cloud far from anyone)."""
     name = "locust"
+    diet = K_LOCUST                  # flora + pilot TRAIL (B: the gregarious swarm eats your wake)
     body, e0, e_birth, e_max, metab = 3.0, 2.0, 10.0, 14.0, 0.05
     imax, F_half = 0.6, 250.0
     cap = 1200; capacity = 1200
@@ -611,6 +613,7 @@ class Pack(Guild):
     predator = True; prey_names = ("grazer", "locust", "thief")
     a_attack, h_handle = 6.0e-4, 40.0
     hunt_below = 0.6; catch_r = 10.0; prey_sense = 300.0
+    hunger_gate = True     # a pack stalks a PILOT only while hungry and with no prey in range (iteration 1)
 
     def extra_init(self):
         C = self.capacity
@@ -637,11 +640,12 @@ class Pack(Guild):
             if g.name in self.prey_names:
                 a = np.flatnonzero(g.alive)
                 preyP.append(g.pos[a]); preyRef += [(g, i) for i in a]
+        self.prey_near = np.zeros(n, bool)
         preyP = np.concatenate(preyP) if preyP else np.zeros((0, 3))
-        chase = np.zeros(n, bool)
+        chase = np.zeros(n, bool); self.prey_near = np.zeros(n, bool)
         if len(preyP) and hungry.any():
             j, dj = nearest_point(P, preyP, self.prey_sense)
-            chase = hungry & (j >= 0)
+            chase = hungry & (j >= 0); self.prey_near = j >= 0
             des[chase] = unit(preyP[j[chase]] - P[chase]) * 175.0
             for kk in np.flatnonzero(chase & (dj < self.catch_r)):
                 g, i = preyRef[j[kk]]
@@ -668,7 +672,7 @@ class Pack(Guild):
             striking = (closure > 0.55) & (self.stamina[idx] > 0.3) & (self.cool[idx] <= 0)
             ring = np.where(striking, 0.0, np.clip(dp * 0.5, 120, 220))
             goal = pred + want_b * ring[:, None]
-            stalk = (dp < 900) & ~chase
+            stalk = (dp < 900) & ~chase & (hungry | (not self.hunger_gate)) & ~self.prey_near
             spd = np.where(striking, 175.0, 95.0)
             des[stalk] = unit(goal - P)[stalk] * spd[stalk, None]
             side = unit(np.cross(des, [0.0, 1.0, 0.0]) + 1e-6)
@@ -682,7 +686,7 @@ class Pack(Guild):
                 w.hit(int(k[kk]), self.name, "bite"); self.strikes += 1
                 mates = idx[same[kk]]
                 self.cool[mates] = 3.0; self.cool[idx[kk]] = 3.0
-            roam = (dp >= 900) & ~chase
+            roam = ~chase & ~stalk
         else:
             roam = ~chase
         # roam: drift toward the pack centroid of nearby mates
@@ -749,7 +753,7 @@ class Thief(Guild):
     cap = 220; capacity = 400
     hop = 0.0
     size = 2.2; color = (0.75, 0.75, 1.0); threat = True
-    diet = 1 << FLORA
+    diet = (1 << FLORA) | (1 << SKEL)    # nectar + scavenging (round 1 of iteration: nectar alone starved them)
 
     def extra_init(self):
         C = self.capacity
@@ -848,6 +852,10 @@ class Thief(Guild):
                 side = unit(np.cross(PV[k], [0.0, 1.0, 0.0]) + 1e-6)
                 des[shy] = side[shy] * 150.0
         des += flock_terms(P, V, 8.0, 8.0, 8.0)[3] * 40
+        for Q in w.predator_pos:
+            if len(Q):
+                f, af = flee_push(P, np.ascontiguousarray(Q), 60.0)
+                des = np.where(af[:, None] > 0, unit(f) * 150.0, des)
         V = steer(V, des, np.where(laden, 200.0, 500.0), dt)
         self.vel[idx] = contain(P, V, w.R)
         self.intent[idx] = np.where((self.tclaim[idx] >= 0) & (dp < 300), 1.0, np.where(laden, 0.3, 0.0))

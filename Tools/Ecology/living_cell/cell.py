@@ -31,8 +31,8 @@ from .structures import Flora, SnapTraps, Fortress, Physarum
 DEFAULT = dict(
     N0=60000.0,
     n_plants=150, plant_cap=40, flora_r=0.03, N_half=20000.0, shield_frac=0.12,
-    grazer_n=900, locust_n=250, pack_n=36, thief_n=60, lurker_n=24,
-    grazer_cap=2600, locust_cap=1200, pack_cap=160, thief_cap=220, lurker_cap=120,
+    grazer_n=900, locust_n=250, pack_n=24, thief_n=60, lurker_n=20,
+    grazer_cap=2600, locust_cap=1200, pack_cap=40, thief_cap=220, lurker_cap=40,
     pack_metab=0.04, pack_attack=6.0e-4,
     traps=True, n_clumps=5, traps_per=6, trap_cap=10,
     fortress=True, fortress_n=40,
@@ -59,6 +59,11 @@ class Cell:
         for name in cfg["species"]:
             g = SPECIES[name](w, dict(cap=cfg[f"{name}_cap"]))
             self.guilds[name] = g
+        for k, v in cfg.items():
+            if "." in k:                         # per-species overrides: "grazer.metab": 0.05
+                sp, attr = k.split(".", 1)
+                if sp in self.guilds:
+                    setattr(self.guilds[sp], attr, v)
         if "pack" in self.guilds:
             self.guilds["pack"].metab = cfg["pack_metab"]; self.guilds["pack"].a_attack = cfg["pack_attack"]
         if bug == "leak_birth":
@@ -101,6 +106,8 @@ class Cell:
     def hot_regions(self):
         w = self.w
         hot = np.zeros(w.nreg, bool)
+        if self.cfg.get("force_hot"):
+            return w.rin.copy()                  # consistency check: every region simulated as individuals
         if not w.pilots:
             return hot
         C = w.rcen_all
@@ -122,7 +129,7 @@ class Cell:
             if nm in self.guilds:
                 preds.append(self.guilds[nm].agents()[0])
         w.predator_pos = preds
-        if self.k % 5 == 0:
+        if self.k % 5 == 0 or self.k == 1:
             hot = self.hot_regions()
             for g in self.guilds.values():
                 g.update_lod(hot)

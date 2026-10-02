@@ -237,6 +237,7 @@ class Flight:
                    enc_by_species=cnt, quiet_frac=round(float(np.mean(self.quiet)), 3) if self.quiet else 1.0,
                    hits_per_min=round(len(hits) / max(mins, 1e-9), 2), hits_by_species=hit_by,
                    steals_per_min=round(len(steals) / max(mins, 1e-9), 2),
+                   damage_per_min=round(sum(e[4] for e in hits) / max(mins, 1e-9), 2),
                    grazer_sight_s=round(self.sight.get("grazer", 0) * 0.1, 1),
                    seq=[(e["species"], int(e["t"] // 60)) for e in self.enc], events=self.enc)
         if emo and self.frames:

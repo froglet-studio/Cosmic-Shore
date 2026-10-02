@@ -30,6 +30,8 @@ KIND_NAMES = ("flora", "trail", "skel", "hoard", "wall", "tube", "trap")
 K_HERB = (1 << FLORA) | (1 << TRAIL) | (1 << SKEL)          # what a grazer / locust eats
 K_LOOSE = (1 << TRAIL) | (1 << SKEL) | (1 << HOARD)         # what a builder can carry off
 K_DIGEST = (1 << FLORA) | (1 << TRAIL) | (1 << SKEL)        # what a physarum tube digests
+K_GRAZE = (1 << FLORA) | (1 << SKEL)                        # the grazer school's diet (niche partition, iter 1)
+K_LOCUST = (1 << FLORA) | (1 << TRAIL)                      # the locust's diet: plants and your wake
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -338,8 +340,8 @@ class World:
 
     def appeared(self, species, P, how="in"):
         """Something became visible / was removed at P: log the distance to the nearest pilot (continuity)."""
-        if len(self.pilots) == 0 or len(P) == 0:
-            return
+        if len(self.pilots) == 0 or len(P) == 0 or self.t < 1.0:
+            return          # t < 1 s is the scene load around freshly spawned pilots (the load veil covers it)
         d, _ = self.dist_to_pilots(np.asarray(P).reshape(-1, 3))
         self.continuity.append((self.t, species, how, float(d.min())))
 

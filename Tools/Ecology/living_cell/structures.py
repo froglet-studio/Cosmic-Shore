@@ -31,8 +31,8 @@ class Flora:
     name = "flora"
 
     def __init__(self, w, n_plants=150, cap=40, vol=8.0, r=0.03, N_half=20000.0, meadows=18, shield_frac=0.12,
-                 seed_frac=0.6):
-        self.w = w; self.cap = cap; self.vol = vol; self.r = r; self.N_half = N_half
+                 seed_frac=0.6, seed_c=3.0):
+        self.w = w; self.cap = cap; self.seed_c = seed_c; self.vol = vol; self.r = r; self.N_half = N_half
         cen = w.ball(meadows, 0.3 * w.R, 0.85 * w.R)
         self.pos = cen[w.rng.integers(0, meadows, n_plants)] + w.rng.normal(0, 70.0, (n_plants, 3))
         self.shielded = w.rng.random(n_plants) < shield_frac         # CHARGE plants: armoured, never food
@@ -61,7 +61,7 @@ class Flora:
         """Logistic growth limited by the soil: expected new prisms/s = r (c+1)(1 - c/cap) N/(N+N_half)."""
         w = self.w
         c = self.counts()
-        lam = self.r * (c + 1) * np.clip(1 - c / self.cap, 0, 1) * w.N / (w.N + self.N_half) * dt
+        lam = self.r * (c + self.seed_c) * np.clip(1 - c / self.cap, 0, 1) * w.N / (w.N + self.N_half) * dt
         k = w.rng.poisson(lam)
         for i in np.flatnonzero(k):
             for _ in range(int(k[i])):
@@ -219,10 +219,13 @@ class SnapTraps:
                             self.reserve[c] -= v
                             self.slots[t][k] = w.add(self.slot_pos(t, k), v, 0, TRAP, owner=10000 + t, danger=TL[k][3])
                         break
-        # upkeep and budding per clump
+        # upkeep and budding per clump; a full reserve EXUDES its excess to the soil (no hoarding mass forever)
         for c in range(len(self.centres)):
             n_t = sum(1 for x in self.clump if x == c)
             up = min(self.reserve[c], self.upkeep * n_t * dt); self.reserve[c] -= up; w.N += up
+            ex = self.reserve[c] - 3 * self.bud_cost
+            if ex > 0:
+                self.reserve[c] -= ex; w.N += ex
             if self.reserve[c] >= self.bud_cost * 1.5 and n_t < self.cap:
                 self._new_trap(c); self.buds += 1
 
@@ -248,6 +251,7 @@ class Fortress:
     body, metab, e_feed = 4.0, 0.02, 8.0
     cap = 64
     birth_cost = 4.0 + 6.0
+    intrude_r, defend_every, bite_cd, store_full = 150.0, 6, 4.0, 400.0   # iteration 1 (was 220 / every 3rd / 1.5 s / none)
 
     def __init__(self, w, core, n=40):
         self.w = w; self.core = np.asarray(core, float)
@@ -325,7 +329,7 @@ class Fortress:
         idx = np.flatnonzero(self.alive)
         dp, k = w.dist_to_pilots(self.pos[idx]) if len(idx) else (np.zeros(0), np.zeros(0, int))
         pc, kc = w.dist_to_pilots(self.core[None])
-        intruder = len(w.pilots) and pc[0] < 220
+        intruder = len(w.pilots) and pc[0] < self.intrude_r
         filled = self._filled(); shell_done = filled.mean() > 0.97
         des = np.zeros((len(self.pos), 3))
         for kk, i in enumerate(idx):
@@ -355,19 +359,19 @@ class Fortress:
                         self.store += w.eat(int(j), self.name)      # surplus feeds the brood
                 continue
             # defend: an intruder near the core draws the idle workers onto it (bite on contact)
-            if intruder and home < 260 and kk % 3 == 0:
+            if intruder and home < 260 and kk % self.defend_every == 0:
                 PPk = w.pilots[int(kc[0])].pos
                 des[i] = unit(PPk - p) * 120.0
                 self.intent[i] = 1.0
                 self.bitecd[i] = max(0.0, self.bitecd[i] - dt)
                 if np.linalg.norm(PPk - p) < 12 and self.bitecd[i] <= 0:
-                    w.hit(int(kc[0]), self.name, "bite", 0.1); self.bites += 1; self.bitecd[i] = 1.5
+                    w.hit(int(kc[0]), self.name, "bite", 0.1); self.bites += 1; self.bitecd[i] = self.bite_cd
                 continue
             self.intent[i] = 0.0
             c = self.claim[i]
             if c >= 0 and (not w.alive[c] or not ((K_LOOSE >> int(w.kind[c])) & 1) or w.shield[c]):
                 w.excl[c] = 0; self.claim[i] = c = -1
-            if c < 0 and (i + int(w.t * 10)) % 4 == 0:
+            if c < 0 and (i + int(w.t * 10)) % 4 == 0 and (not shell_done or self.store < self.store_full):
                 q = self.core + unit(p - self.core) * min(home, 200.0)
                 j2 = w.nearest(q, self.forage_r - min(home, 200.0), K_LOOSE)[0]
                 if j2 >= 0 and np.linalg.norm(w.pos[j2] - self.core) < self.forage_r:
@@ -399,7 +403,7 @@ class Fortress:
 
     def threat_points(self):
         a = np.flatnonzero(self.alive)
-        return np.concatenate([self.core[None], self.pos[a]]), np.concatenate([[True], self.intent[a] > 0])
+        return np.concatenate([self.core[None], self.pos[a]]), np.concatenate([[False], self.intent[a] > 0])
 
     def render(self, out):
         a = np.flatnonzero(self.alive)
@@ -482,7 +486,7 @@ class Physarum:
     so, sa, ra, ss = 28.0, math.radians(30), 35.0 / 30.0, 40.0
     diffuse, evap, food_dep, on, off, ema, pv, digest = 0.5, 0.08, 1.5, 6.0, 3.0, 0.05, 10.0, 0.3
     period, wave_speed, ex_ticks, refr = 3.0, 50.0, 2, 4
-    upkeep = 0.006            # vol/s per tube from the reserve
+    upkeep = 0.004            # vol/s per tube from the reserve
     tube_cap = 1400
 
     def __init__(self, w, centre, Rg=380.0, G=40, n_agents=6000, n_hearts=3, reserve=5000.0):
