@@ -417,3 +417,4 @@ Gate FAILED as required; disagreeing metrics: hits/min hunter, payoff/min (hunte
 ### Negative control `pack.SPRINT=60` (a pack that cannot sprint (60 u/s))
 
 Gate FAILED as required; disagreeing metrics: hits/min wander, hits/min hunter, telegraphed share of first strikes, telegraph first strike s (telegraphed), telegraph (shared) s.
+

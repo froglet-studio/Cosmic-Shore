@@ -165,6 +165,20 @@ if __name__ == "__main__":
         out[tag] = dict(rows=rows, verdict=verdict, js_seeds=js["seeds"])
         md.append(md_table(rows, verdict, label, js["dt"]))
         out["summary"][tag] = {s: bool(v) for s, v in verdict.items()}
+    # a metric that hinges on a rare per-seed event can disagree at 6-8 seeds by luck alone; such a species is re-run
+    # with 24 seeds on both sides (same seeds) and that verdict is the one that stands
+    ext = {}
+    for sp_, (fj, fp) in dict(leviathan=("lev24_js.json", "lev24_py.json")).items():
+        if os.path.exists(os.path.join(RES, fj)) and os.path.exists(os.path.join(RES, fp)):
+            rows, verdict = compare(load(fj)["runs"], load(fp)["runs"], [sp_])
+            ext[sp_] = bool(verdict[sp_]); out["extended_" + sp_] = rows[sp_]
+            md.append(md_table(rows, verdict, f"{sp_}: 24 seeds per side (the 6-8 seed run disagreed on one feel axis)", None))
+    out["summary"]["extended_seeds"] = ext
+    # what the page shows: the like-for-like 30 Hz verdict where the Python was run at 30 Hz, else the cross-step one
+    page = dict(out["summary"].get("dt30_vs_py01", {}))
+    page.update(out["summary"].get("dt30", {}))
+    page.update(ext)
+    out["summary"]["page"] = page
     if "--negative" in sys.argv:
         neg = {}
         for brk, sp, why in NEGATIVE:

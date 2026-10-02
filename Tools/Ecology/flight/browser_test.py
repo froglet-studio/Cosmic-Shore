@@ -163,7 +163,7 @@ def main():
     out["fails"] = fails
     os.makedirs(os.path.join(HERE, "results"), exist_ok=True)
     json.dump(out, open(os.path.join(HERE, "results", "browser_test.json"), "w"), indent=1)
-    print(json.dumps({k: (v if k in ("cell_perf", "fails", "phone") else {kk: vv for kk, vv in v.items() if kk != "geo"}) for k, v in out.items()}, indent=1))
+    print(json.dumps({k: (v if not isinstance(v, dict) or k in ("cell_perf", "phone") else {kk: vv for kk, vv in v.items() if kk != "geo"}) for k, v in out.items()}, indent=1))
     sys.exit(1 if fails else 0)
 
 
