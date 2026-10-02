@@ -135,7 +135,10 @@ SORT = [("SortWellsPerType", "12"), ("SortUnitsPerWell", "4"), ("SortWellWidth",
         ("SortDwell", "12"), ("SortLayRate", "0.084"), ("SortLayMax", "5"), ("SortCrossChance", "0.466"),
         ("SortFillTolerance", "0.15"), ("SortBodyFill", "0.939"), ("SortMoltRate", "0.03"),
         ("SortMoltSteps", "10"),       # GAME (research instant): a molt is an animation
-        ("SortFramePeriod", "{x: 8, y: 8, z: 8, w: 16}")]
+        ("SortFramePeriod", "{x: 8, y: 8, z: 8, w: 16}"),
+        # ROUND 6 (research sortfeel + lite_sortfeel frac 8, Docs/SWARM_FAUNA.md §12)
+        ("SortWellDead", "0.7"), ("SortWellDeadTime", "-1"), ("SortWander", "0.05"), ("SortWanderTau", "12"),
+        ("SortUpdateFraction", "8")]
 FLORA_GROWTH_PER_OFFSPRING = 0.8   # x the plant's own budget: a plant seeds a neighbour as it completes
 FLORA_COOLDOWN = 20
 FLORA_SPREAD = 120

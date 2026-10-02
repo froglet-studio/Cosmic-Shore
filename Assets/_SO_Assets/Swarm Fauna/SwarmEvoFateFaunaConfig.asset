@@ -89,6 +89,11 @@ MonoBehaviour:
   SortMoltRate: 0.03
   SortMoltSteps: 10
   SortFramePeriod: {x: 8, y: 8, z: 8, w: 16}
+  SortWellDead: 0.7
+  SortWellDeadTime: -1
+  SortWander: 0.05
+  SortWanderTau: 12
+  SortUpdateFraction: 8
   EvoRule: {fileID: 4900000, guid: 5e7a9fa52ba5247800582378f4795aa7, type: 3}
   EvoPull: 2
   EvoDeadZone: 1.5

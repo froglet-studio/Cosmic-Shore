@@ -237,6 +237,10 @@ namespace CosmicShore.Gameplay
                 DomainSlots = false, Funded = true, Animate = true, WellLook = true, Oriented = true,
                 Cruise = config.Cruise, Turn = config.TurnPerStep,
                 Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
+                // round 6 (Docs/SWARM_FAUNA.md §12): sortfeel's flat wells + wander, the 1-in-k update
+                WellDead = config.SortWellDead, WellDeadTime = config.SortWellDeadTime,
+                Wander = config.SortWander, WanderTau = config.SortWanderTau,
+                Frac = Mathf.Max(1, config.SortUpdateFraction),
             };
             for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
             if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }

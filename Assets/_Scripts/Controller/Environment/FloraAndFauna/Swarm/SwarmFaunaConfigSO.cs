@@ -222,6 +222,23 @@ namespace CosmicShore.Gameplay
         [Tooltip("GAME: steps per plan animation frame (x Charge, y Mass, z Space, w Time) - the wells ride " +
                  "the plan's own animation. The dragonfly's wings run at 16.")]
         public Vector4 SortFramePeriod = new(8f, 8f, 8f, 16f);
+        [Tooltip("ROUND 6 (research sortfeel): FLAT-BOTTOMED wells - inside this many well-sigmas a member " +
+                 "feels no pull, so a tissue fills its well as a loose liquid instead of being crushed into " +
+                 "flat sheets (the crystal look the lead disliked). 0 = sort's plain wells.")]
+        [Min(0f)] public float SortWellDead = 0.7f;
+        [Tooltip("The flat-bottom radius on the dragonfly (Time) plan only. NEGATIVE = SortWellDead. " +
+                 "sortfeel v2 used 0 (thin wings want tight wells); the held lite config used -1.")]
+        public float SortWellDeadTime = -1f;
+        [Tooltip("ROUND 6: per-member Ornstein-Uhlenbeck wander (voxels/step) - each member drifts on its " +
+                 "own slow path and is turned back by its well's wall. Melts the lattice. 0 = off.")]
+        [Min(0f)] public float SortWander = 0.05f;
+        [Tooltip("The wander's correlation time in steps (each member +-40% of it).")]
+        [Min(1f)] public float SortWanderTau = 12f;
+        [Tooltip("ROUND 6 (research lite_sortfeel): only 1 member in this many re-steers each step (its " +
+                 "neighbours, adhesion, swaps); the rest coast on their last velocity. Cheaper (the pair " +
+                 "work falls by this factor) AND smoother - coasting eases every change in. A member a " +
+                 "vessel startles re-steers every step. 1 = every member every step (sort).")]
+        [Range(1, 16)] public int SortUpdateFraction = 8;
 
         [Header("EvoFate model (Model = EvoFate; research evofate C2 - the trained G2 rule given a fate)")]
         [Tooltip("The trained G2 network (Tools/Build/author_swarm_fauna.py writes it from the research's " +
