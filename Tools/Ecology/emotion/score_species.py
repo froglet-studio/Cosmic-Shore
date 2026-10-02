@@ -26,11 +26,11 @@ def score(name, factory, pr, seconds=40.0):
         P, tops, agree, feats = [], [], [], []
         for s in SEEDS:
             f, _ = run(factory, s, v, seconds=seconds)
-            sc = pr.score(f); P.append([sc["p"][e] for e in EMOTIONS]); tops.append(sc["top"]); agree.append(sc["agreement"]); feats.append(f)
+            sc = pr.score(f); P.append([sc["p"][e] for e in pr.emotions]); tops.append(sc["top"]); agree.append(sc["agreement"]); feats.append(f)
         Pm = np.mean(P, 0)
         mf = {k: round(float(np.mean([q[k] for q in feats])), 3) for k in feats[0]}
-        top = EMOTIONS[int(Pm.argmax())]
-        per[v] = dict(p={e: round(float(x), 3) for e, x in zip(EMOTIONS, Pm)}, top=top,
+        top = pr.emotions[int(Pm.argmax())]
+        per[v] = dict(p={e: round(float(x), 3) for e, x in zip(pr.emotions, Pm)}, top=top,
                       votes={e: tops.count(e) for e in set(tops)}, judges_agree=round(float(np.mean(agree)), 2),
                       affect=pr.score(mf)["affect"], why=pr.explain(mf, top, 4), features=mf)
     return per

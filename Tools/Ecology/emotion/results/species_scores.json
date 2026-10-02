@@ -2,39 +2,40 @@
  "worm_colony": {
   "hover": {
    "p": {
-    "cute": 0.099,
-    "playful": 0.046,
-    "eerie": 0.17,
-    "majestic": 0.63,
-    "menacing": 0.04,
-    "terrifying": 0.016
+    "cute": 0.059,
+    "playful": 0.025,
+    "eerie": 0.092,
+    "majestic": 0.33,
+    "menacing": 0.037,
+    "terrifying": 0.013,
+    "neutral": 0.444
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "neutral": 4
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.75,
    "affect": {
-    "valence": 0.31,
-    "arousal": 0.281,
-    "threat": 0.218
+    "valence": 0.15,
+    "arousal": 0.2,
+    "threat": 0.122
    },
    "why": [
     [
-     "proximity",
-     0.58
-    ],
-    [
      "speed_rel",
-     0.42
+     0.39
     ],
     [
      "converge",
-     0.42
+     0.27
     ],
     [
-     "speed_cv",
-     0.32
+     "proximity",
+     0.26
+    ],
+    [
+     "view_fill",
+     0.22
     ]
    ],
    "features": {
@@ -75,39 +76,40 @@
   },
   "cruise": {
    "p": {
-    "cute": 0.085,
-    "playful": 0.032,
-    "eerie": 0.131,
-    "majestic": 0.706,
-    "menacing": 0.033,
-    "terrifying": 0.014
+    "cute": 0.046,
+    "playful": 0.015,
+    "eerie": 0.058,
+    "majestic": 0.287,
+    "menacing": 0.031,
+    "terrifying": 0.005,
+    "neutral": 0.558
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "neutral": 4
    },
    "judges_agree": 1.0,
    "affect": {
-    "valence": 0.364,
-    "arousal": 0.256,
-    "threat": 0.198
+    "valence": 0.159,
+    "arousal": 0.18,
+    "threat": 0.102
    },
    "why": [
     [
      "converge",
-     0.8
-    ],
-    [
-     "proximity",
-     0.79
+     0.58
     ],
     [
      "speed_rel",
-     0.42
+     0.39
     ],
     [
-     "speed_cv",
-     0.28
+     "proximity",
+     0.37
+    ],
+    [
+     "view_fill",
+     0.35
     ]
    ],
    "features": {
@@ -148,39 +150,41 @@
   },
   "evade": {
    "p": {
-    "cute": 0.066,
-    "playful": 0.019,
-    "eerie": 0.175,
-    "majestic": 0.706,
-    "menacing": 0.027,
-    "terrifying": 0.007
+    "cute": 0.033,
+    "playful": 0.007,
+    "eerie": 0.06,
+    "majestic": 0.333,
+    "menacing": 0.022,
+    "terrifying": 0.002,
+    "neutral": 0.542
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "majestic": 1,
+    "neutral": 3
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.5,
    "affect": {
-    "valence": 0.368,
-    "arousal": 0.239,
-    "threat": 0.193
+    "valence": 0.15,
+    "arousal": 0.161,
+    "threat": 0.081
    },
    "why": [
     [
-     "proximity",
-     0.91
+     "converge",
+     0.56
     ],
     [
-     "converge",
-     0.77
+     "view_fill",
+     0.45
+    ],
+    [
+     "proximity",
+     0.44
     ],
     [
      "speed_rel",
-     0.42
-    ],
-    [
-     "speed_cv",
-     0.32
+     0.39
     ]
    ],
    "features": {
@@ -223,40 +227,41 @@
  "worm_attack_cycle": {
   "hover": {
    "p": {
-    "cute": 0.153,
-    "playful": 0.074,
-    "eerie": 0.36,
-    "majestic": 0.183,
-    "menacing": 0.101,
-    "terrifying": 0.128
+    "cute": 0.113,
+    "playful": 0.037,
+    "eerie": 0.333,
+    "majestic": 0.116,
+    "menacing": 0.087,
+    "terrifying": 0.082,
+    "neutral": 0.232
    },
    "top": "eerie",
    "votes": {
-    "majestic": 1,
-    "eerie": 3
+    "eerie": 3,
+    "neutral": 1
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.75,
    "affect": {
-    "valence": -0.06,
-    "arousal": 0.434,
-    "threat": 0.384
+    "valence": -0.095,
+    "arousal": 0.34,
+    "threat": 0.305
    },
    "why": [
     [
-     "wobble_hz",
-     0.35
+     "gaze",
+     0.33
     ],
     [
      "jerk_rel",
-     0.34
+     0.31
+    ],
+    [
+     "wobble_hz",
+     0.28
     ],
     [
      "burst",
-     -0.32
-    ],
-    [
-     "gaze",
-     0.32
+     -0.12
     ]
    ],
    "features": {
@@ -297,39 +302,40 @@
   },
   "cruise": {
    "p": {
-    "cute": 0.111,
-    "playful": 0.038,
-    "eerie": 0.142,
-    "majestic": 0.63,
-    "menacing": 0.053,
-    "terrifying": 0.025
+    "cute": 0.058,
+    "playful": 0.016,
+    "eerie": 0.067,
+    "majestic": 0.237,
+    "menacing": 0.038,
+    "terrifying": 0.008,
+    "neutral": 0.575
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "neutral": 4
    },
    "judges_agree": 1.0,
    "affect": {
-    "valence": 0.33,
-    "arousal": 0.273,
-    "threat": 0.211
+    "valence": 0.131,
+    "arousal": 0.183,
+    "threat": 0.102
    },
    "why": [
     [
      "converge",
-     0.86
-    ],
-    [
-     "proximity",
-     0.79
+     0.63
     ],
     [
      "speed_rel",
-     0.42
+     0.39
     ],
     [
-     "encircle",
-     0.19
+     "proximity",
+     0.37
+    ],
+    [
+     "view_fill",
+     0.35
     ]
    ],
    "features": {
@@ -370,39 +376,40 @@
   },
   "evade": {
    "p": {
-    "cute": 0.055,
-    "playful": 0.015,
-    "eerie": 0.094,
-    "majestic": 0.785,
-    "menacing": 0.038,
-    "terrifying": 0.012
+    "cute": 0.015,
+    "playful": 0.003,
+    "eerie": 0.015,
+    "majestic": 0.14,
+    "menacing": 0.009,
+    "terrifying": 0.001,
+    "neutral": 0.817
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "neutral": 4
    },
    "judges_agree": 1.0,
    "affect": {
-    "valence": 0.386,
-    "arousal": 0.236,
-    "threat": 0.19
+    "valence": 0.062,
+    "arousal": 0.123,
+    "threat": 0.029
    },
    "why": [
     [
      "converge",
-     1.59
+     1.78
+    ],
+    [
+     "view_fill",
+     0.44
     ],
     [
      "proximity",
-     0.9
+     0.43
     ],
     [
      "speed_rel",
-     0.42
-    ],
-    [
-     "encircle",
-     0.19
+     0.39
     ]
    ],
    "features": {
@@ -445,40 +452,41 @@
  "shark_r30": {
   "hover": {
    "p": {
-    "cute": 0.007,
-    "playful": 0.047,
-    "eerie": 0.037,
-    "majestic": 0.483,
-    "menacing": 0.378,
-    "terrifying": 0.047
+    "cute": 0.005,
+    "playful": 0.034,
+    "eerie": 0.033,
+    "majestic": 0.297,
+    "menacing": 0.376,
+    "terrifying": 0.029,
+    "neutral": 0.227
    },
-   "top": "majestic",
+   "top": "menacing",
    "votes": {
-    "majestic": 3,
-    "menacing": 1
+    "majestic": 1,
+    "menacing": 3
    },
-   "judges_agree": 0.75,
+   "judges_agree": 0.25,
    "affect": {
-    "valence": -0.007,
-    "arousal": 0.397,
-    "threat": 0.405
+    "valence": -0.086,
+    "arousal": 0.35,
+    "threat": 0.352
    },
    "why": [
     [
-     "proximity",
-     0.59
+     "roundness",
+     0.64
     ],
     [
-     "converge",
-     0.36
-    ],
-    [
-     "speed_rel",
-     0.36
+     "size_log",
+     0.26
     ],
     [
      "gaze",
-     0.32
+     -0.22
+    ],
+    [
+     "coherence",
+     0.21
     ]
    ],
    "features": {
@@ -520,38 +528,41 @@
   "cruise": {
    "p": {
     "cute": 0.003,
-    "playful": 0.024,
-    "eerie": 0.03,
-    "majestic": 0.677,
-    "menacing": 0.241,
-    "terrifying": 0.025
+    "playful": 0.018,
+    "eerie": 0.022,
+    "majestic": 0.368,
+    "menacing": 0.251,
+    "terrifying": 0.011,
+    "neutral": 0.327
    },
    "top": "majestic",
    "votes": {
-    "majestic": 4
+    "neutral": 1,
+    "majestic": 2,
+    "menacing": 1
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.5,
    "affect": {
-    "valence": 0.286,
-    "arousal": 0.279,
-    "threat": 0.256
+    "valence": 0.075,
+    "arousal": 0.251,
+    "threat": 0.219
    },
    "why": [
     [
-     "converge",
-     1.43
+     "proximity",
+     0.56
     ],
     [
-     "proximity",
-     0.78
+     "size_log",
+     0.48
+    ],
+    [
+     "converge",
+     0.42
     ],
     [
      "gaze",
-     0.38
-    ],
-    [
-     "speed_rel",
-     0.36
+     0.4
     ]
    ],
    "features": {
@@ -592,39 +603,41 @@
   },
   "evade": {
    "p": {
-    "cute": 0.003,
-    "playful": 0.014,
-    "eerie": 0.041,
-    "majestic": 0.713,
-    "menacing": 0.209,
-    "terrifying": 0.02
+    "cute": 0.002,
+    "playful": 0.008,
+    "eerie": 0.018,
+    "majestic": 0.333,
+    "menacing": 0.191,
+    "terrifying": 0.006,
+    "neutral": 0.442
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "majestic": 2,
+    "neutral": 2
    },
    "judges_agree": 1.0,
    "affect": {
-    "valence": 0.326,
-    "arousal": 0.259,
-    "threat": 0.234
+    "valence": 0.08,
+    "arousal": 0.225,
+    "threat": 0.187
    },
    "why": [
     [
      "converge",
-     1.59
+     1.26
     ],
     [
      "proximity",
-     0.9
+     0.43
     ],
     [
-     "speed_rel",
-     0.36
+     "view_fill",
+     0.42
     ],
     [
-     "approach_retreat",
-     0.29
+     "size_log",
+     -0.39
     ]
    ],
    "features": {
@@ -667,40 +680,41 @@
  "shark_r60": {
   "hover": {
    "p": {
-    "cute": 0.005,
-    "playful": 0.034,
-    "eerie": 0.018,
-    "majestic": 0.518,
-    "menacing": 0.361,
-    "terrifying": 0.065
+    "cute": 0.004,
+    "playful": 0.026,
+    "eerie": 0.015,
+    "majestic": 0.429,
+    "menacing": 0.372,
+    "terrifying": 0.05,
+    "neutral": 0.104
    },
    "top": "majestic",
    "votes": {
-    "majestic": 3,
-    "menacing": 1
+    "majestic": 2,
+    "menacing": 2
    },
    "judges_agree": 0.75,
    "affect": {
-    "valence": 0.004,
-    "arousal": 0.395,
-    "threat": 0.406
+    "valence": -0.027,
+    "arousal": 0.367,
+    "threat": 0.376
    },
    "why": [
     [
-     "proximity",
-     0.59
-    ],
-    [
-     "converge",
-     0.37
-    ],
-    [
      "size_log",
-     0.37
+     0.75
+    ],
+    [
+     "proximity",
+     0.4
+    ],
+    [
+     "gaze",
+     0.34
     ],
     [
      "speed_rel",
-     0.36
+     0.2
     ]
    ],
    "features": {
@@ -742,38 +756,39 @@
   "cruise": {
    "p": {
     "cute": 0.002,
-    "playful": 0.017,
-    "eerie": 0.014,
-    "majestic": 0.716,
-    "menacing": 0.22,
-    "terrifying": 0.032
+    "playful": 0.014,
+    "eerie": 0.01,
+    "majestic": 0.55,
+    "menacing": 0.246,
+    "terrifying": 0.018,
+    "neutral": 0.159
    },
    "top": "majestic",
    "votes": {
     "majestic": 4
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.75,
    "affect": {
-    "valence": 0.316,
-    "arousal": 0.27,
-    "threat": 0.244
+    "valence": 0.179,
+    "arousal": 0.267,
+    "threat": 0.242
    },
    "why": [
     [
-     "converge",
-     1.43
+     "size_log",
+     0.75
     ],
     [
      "proximity",
-     0.78
+     0.57
+    ],
+    [
+     "converge",
+     0.42
     ],
     [
      "gaze",
-     0.38
-    ],
-    [
-     "size_log",
-     0.37
+     0.4
     ]
    ],
    "features": {
@@ -814,39 +829,40 @@
   },
   "evade": {
    "p": {
-    "cute": 0.002,
-    "playful": 0.01,
-    "eerie": 0.02,
-    "majestic": 0.753,
-    "menacing": 0.193,
-    "terrifying": 0.024
+    "cute": 0.001,
+    "playful": 0.007,
+    "eerie": 0.01,
+    "majestic": 0.533,
+    "menacing": 0.201,
+    "terrifying": 0.008,
+    "neutral": 0.24
    },
    "top": "majestic",
    "votes": {
     "majestic": 4
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.5,
    "affect": {
-    "valence": 0.358,
-    "arousal": 0.25,
-    "threat": 0.221
+    "valence": 0.184,
+    "arousal": 0.245,
+    "threat": 0.217
    },
    "why": [
     [
-     "converge",
-     1.59
+     "size_log",
+     0.75
     ],
     [
      "proximity",
-     0.9
+     0.67
     ],
     [
-     "size_log",
-     0.37
+     "converge",
+     0.48
     ],
     [
-     "speed_rel",
-     0.36
+     "approach_retreat",
+     0.28
     ]
    ],
    "features": {
@@ -889,12 +905,13 @@
  "tadpole_flock": {
   "hover": {
    "p": {
-    "cute": 0.648,
-    "playful": 0.081,
-    "eerie": 0.097,
-    "majestic": 0.155,
-    "menacing": 0.017,
-    "terrifying": 0.001
+    "cute": 0.788,
+    "playful": 0.013,
+    "eerie": 0.034,
+    "majestic": 0.02,
+    "menacing": 0.003,
+    "terrifying": 0.002,
+    "neutral": 0.14
    },
    "top": "cute",
    "votes": {
@@ -902,26 +919,26 @@
    },
    "judges_agree": 1.0,
    "affect": {
-    "valence": 0.597,
-    "arousal": 0.361,
-    "threat": 0.087
+    "valence": 0.632,
+    "arousal": 0.318,
+    "threat": 0.023
    },
    "why": [
     [
      "curvature",
-     2.29
+     2.2
     ],
     [
      "jerk_rel",
-     0.79
-    ],
-    [
-     "extent_log",
-     0.48
+     0.96
     ],
     [
      "wobble_hz",
-     0.43
+     0.42
+    ],
+    [
+     "extent_log",
+     0.37
     ]
    ],
    "features": {
@@ -962,40 +979,40 @@
   },
   "cruise": {
    "p": {
-    "cute": 0.511,
-    "playful": 0.061,
-    "eerie": 0.069,
-    "majestic": 0.342,
-    "menacing": 0.016,
-    "terrifying": 0.001
+    "cute": 0.618,
+    "playful": 0.011,
+    "eerie": 0.023,
+    "majestic": 0.038,
+    "menacing": 0.003,
+    "terrifying": 0.001,
+    "neutral": 0.307
    },
    "top": "cute",
    "votes": {
-    "cute": 3,
-    "majestic": 1
+    "cute": 4
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.5,
    "affect": {
-    "valence": 0.581,
-    "arousal": 0.323,
-    "threat": 0.1
+    "valence": 0.526,
+    "arousal": 0.277,
+    "threat": 0.018
    },
    "why": [
     [
      "curvature",
-     2.29
+     2.2
     ],
     [
      "jerk_rel",
-     0.79
-    ],
-    [
-     "extent_log",
-     0.48
+     0.96
     ],
     [
      "wobble_hz",
-     0.43
+     0.42
+    ],
+    [
+     "extent_log",
+     0.37
     ]
    ],
    "features": {
@@ -1036,40 +1053,41 @@
   },
   "evade": {
    "p": {
-    "cute": 0.333,
-    "playful": 0.041,
-    "eerie": 0.061,
-    "majestic": 0.546,
-    "menacing": 0.018,
-    "terrifying": 0.001
+    "cute": 0.373,
+    "playful": 0.008,
+    "eerie": 0.015,
+    "majestic": 0.062,
+    "menacing": 0.004,
+    "terrifying": 0.0,
+    "neutral": 0.538
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
     "cute": 1,
-    "majestic": 3
+    "neutral": 3
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.25,
    "affect": {
-    "valence": 0.531,
-    "arousal": 0.285,
-    "threat": 0.126
+    "valence": 0.323,
+    "arousal": 0.208,
+    "threat": 0.018
    },
    "why": [
     [
      "converge",
-     1.59
+     1.77
     ],
     [
-     "proximity",
-     0.91
+     "view_fill",
+     0.5
     ],
     [
      "speed_rel",
-     0.47
+     0.44
     ],
     [
-     "speed_cv",
-     0.38
+     "proximity",
+     0.43
     ]
    ],
    "features": {
@@ -1112,40 +1130,41 @@
  "swarm_whale": {
   "hover": {
    "p": {
-    "cute": 0.002,
-    "playful": 0.009,
-    "eerie": 0.368,
-    "majestic": 0.539,
-    "menacing": 0.07,
-    "terrifying": 0.011
+    "cute": 0.003,
+    "playful": 0.004,
+    "eerie": 0.331,
+    "majestic": 0.314,
+    "menacing": 0.072,
+    "terrifying": 0.015,
+    "neutral": 0.261
    },
-   "top": "majestic",
+   "top": "eerie",
    "votes": {
-    "majestic": 3,
-    "eerie": 1
+    "eerie": 2,
+    "majestic": 2
    },
-   "judges_agree": 0.5,
+   "judges_agree": 0.0,
    "affect": {
-    "valence": 0.025,
-    "arousal": 0.277,
-    "threat": 0.313
+    "valence": -0.075,
+    "arousal": 0.247,
+    "threat": 0.266
    },
    "why": [
     [
-     "proximity",
-     0.65
-    ],
-    [
      "stillness",
-     -0.5
+     0.81
     ],
     [
-     "speed_rel",
-     0.5
+     "synchrony",
+     0.44
     ],
     [
-     "speed_cv",
+     "gaze",
      0.37
+    ],
+    [
+     "regularity",
+     0.3
     ]
    ],
    "features": {
@@ -1187,38 +1206,40 @@
   "cruise": {
    "p": {
     "cute": 0.003,
-    "playful": 0.008,
-    "eerie": 0.224,
-    "majestic": 0.697,
-    "menacing": 0.062,
-    "terrifying": 0.007
+    "playful": 0.004,
+    "eerie": 0.191,
+    "majestic": 0.28,
+    "menacing": 0.058,
+    "terrifying": 0.007,
+    "neutral": 0.458
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "neutral": 2,
+    "majestic": 2
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.5,
    "affect": {
-    "valence": 0.233,
-    "arousal": 0.249,
-    "threat": 0.246
+    "valence": 0.035,
+    "arousal": 0.207,
+    "threat": 0.184
    },
    "why": [
     [
      "converge",
-     0.92
-    ],
-    [
-     "proximity",
-     0.79
-    ],
-    [
-     "stillness",
-     -0.5
+     0.68
     ],
     [
      "speed_rel",
-     0.5
+     0.48
+    ],
+    [
+     "size_log",
+     0.39
+    ],
+    [
+     "proximity",
+     0.37
     ]
    ],
    "features": {
@@ -1260,38 +1281,39 @@
   "evade": {
    "p": {
     "cute": 0.002,
-    "playful": 0.004,
-    "eerie": 0.09,
-    "majestic": 0.868,
-    "menacing": 0.034,
-    "terrifying": 0.001
+    "playful": 0.002,
+    "eerie": 0.053,
+    "majestic": 0.278,
+    "menacing": 0.025,
+    "terrifying": 0.001,
+    "neutral": 0.64
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "neutral": 4
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.75,
    "affect": {
-    "valence": 0.385,
-    "arousal": 0.222,
-    "threat": 0.192
+    "valence": 0.101,
+    "arousal": 0.151,
+    "threat": 0.082
    },
    "why": [
     [
      "converge",
-     1.53
-    ],
-    [
-     "proximity",
-     0.9
-    ],
-    [
-     "stillness",
-     -0.5
+     1.19
     ],
     [
      "speed_rel",
-     0.5
+     0.48
+    ],
+    [
+     "proximity",
+     0.43
+    ],
+    [
+     "view_fill",
+     0.41
     ]
    ],
    "features": {
@@ -1335,38 +1357,39 @@
   "hover": {
    "p": {
     "cute": 0.007,
-    "playful": 0.028,
-    "eerie": 0.242,
-    "majestic": 0.59,
-    "menacing": 0.115,
-    "terrifying": 0.017
+    "playful": 0.013,
+    "eerie": 0.195,
+    "majestic": 0.298,
+    "menacing": 0.076,
+    "terrifying": 0.02,
+    "neutral": 0.391
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "neutral": 4
    },
-   "judges_agree": 0.75,
+   "judges_agree": 0.25,
    "affect": {
-    "valence": 0.131,
-    "arousal": 0.288,
-    "threat": 0.29
+    "valence": -0.0,
+    "arousal": 0.221,
+    "threat": 0.195
    },
    "why": [
     [
-     "stillness",
-     -0.5
-    ],
-    [
      "speed_rel",
-     0.5
+     0.48
     ],
     [
-     "proximity",
-     0.49
+     "size_log",
+     0.39
     ],
     [
      "converge",
-     0.42
+     0.27
+    ],
+    [
+     "proximity",
+     0.21
     ]
    ],
    "features": {
@@ -1408,38 +1431,40 @@
   "cruise": {
    "p": {
     "cute": 0.002,
-    "playful": 0.007,
-    "eerie": 0.148,
-    "majestic": 0.793,
-    "menacing": 0.046,
-    "terrifying": 0.004
+    "playful": 0.004,
+    "eerie": 0.114,
+    "majestic": 0.32,
+    "menacing": 0.041,
+    "terrifying": 0.003,
+    "neutral": 0.515
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "majestic": 1,
+    "neutral": 3
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.5,
    "affect": {
-    "valence": 0.385,
-    "arousal": 0.225,
-    "threat": 0.193
+    "valence": 0.132,
+    "arousal": 0.167,
+    "threat": 0.105
    },
    "why": [
     [
      "converge",
-     1.39
-    ],
-    [
-     "proximity",
-     0.8
-    ],
-    [
-     "stillness",
-     -0.5
+     1.07
     ],
     [
      "speed_rel",
-     0.5
+     0.48
+    ],
+    [
+     "size_log",
+     0.39
+    ],
+    [
+     "view_fill",
+     0.39
     ]
    ],
    "features": {
@@ -1481,38 +1506,40 @@
   "evade": {
    "p": {
     "cute": 0.002,
-    "playful": 0.005,
-    "eerie": 0.094,
-    "majestic": 0.863,
-    "menacing": 0.034,
-    "terrifying": 0.001
+    "playful": 0.003,
+    "eerie": 0.055,
+    "majestic": 0.293,
+    "menacing": 0.022,
+    "terrifying": 0.001,
+    "neutral": 0.624
    },
-   "top": "majestic",
+   "top": "neutral",
    "votes": {
-    "majestic": 4
+    "neutral": 3,
+    "majestic": 1
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.75,
    "affect": {
-    "valence": 0.396,
-    "arousal": 0.221,
-    "threat": 0.188
+    "valence": 0.129,
+    "arousal": 0.155,
+    "threat": 0.086
    },
    "why": [
     [
      "converge",
-     1.3
-    ],
-    [
-     "proximity",
-     0.91
-    ],
-    [
-     "stillness",
-     -0.5
+     1.0
     ],
     [
      "speed_rel",
-     0.5
+     0.48
+    ],
+    [
+     "view_fill",
+     0.47
+    ],
+    [
+     "proximity",
+     0.44
     ]
    ],
    "features": {
