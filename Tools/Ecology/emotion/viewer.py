@@ -28,14 +28,15 @@ from common.viewer import TPL  # noqa: E402
 
 PANEL = r"""<div id="emo" style="position:fixed;right:12px;top:56px;width:250px;background:#121726ee;border:1px solid #2a3150;
 border-radius:8px;padding:10px;z-index:3;font-size:12px">
-<div style="color:var(--mute);margin-bottom:4px">probe reading (blind to the label)</div><div id="bars"></div>
+<button id="emotog" style="display:none;width:100%;background:#151a28;color:var(--fg);border:1px solid #2a3150;border-radius:6px;padding:4px">rate this run</button>
+<div id="emobody"><div style="color:var(--mute);margin-bottom:4px">probe reading (blind to the label)</div><div id="bars"></div>
 <div style="color:var(--mute);margin:10px 0 4px">how does it make YOU feel? (pick one)</div>
 <div id="rate" style="display:flex;flex-wrap:wrap;gap:4px"></div>
 <div id="rated" style="color:var(--mute);margin-top:6px"></div>
 <label style="display:block;margin-top:6px;color:var(--mute)"><input type="checkbox" id="blind"> blind mode (hide reading until rated)</label>
-<label style="display:block;margin-top:4px;color:var(--mute)"><input type="checkbox" id="follow" checked> follow the pilot (white) at encounter range</label>
 <button id="exp" style="margin-top:8px;width:100%;background:#151a28;color:var(--fg);border:1px solid #2a3150;border-radius:6px;padding:4px">export my ratings (JSON)</button>
-</div>
+</div></div>
+<style>@media (max-width:560px){#emo{width:auto!important;left:auto;max-width:60vw;top:auto!important;bottom:132px}#emotog{display:block!important}#emo.shut #emobody{display:none}}</style>
 <div id="info"></div>
 <script>
 const EMO=__EMO__, KEY='cs-emotion-ratings-v1';
@@ -53,20 +54,13 @@ function drawPanel(){
   document.getElementById('rated').textContent = Object.keys(R).length+' of '+RUNS.length+' runs rated';
 }
 addEventListener('load',()=>{
+const emo=document.getElementById('emo'); if(innerWidth<=560)emo.classList.add('shut');
+document.getElementById('emotog').onclick=()=>emo.classList.toggle('shut');
 document.getElementById('blind').onchange=drawPanel;
 document.getElementById('exp').onclick=()=>{const b=new Blob([JSON.stringify({ratings:ratings(),runs:RUNS.map(r=>({label:r.meta.label,truth:r.meta.truth||null,probe:r.meta.probe}))},null,1)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='emotion_ratings.json';a.click()};
-document.getElementById('run').addEventListener('change',()=>{drawPanel();lastP=null});
-// follow: ease the camera's target toward the pilot's INTERPOLATED position (pilotNow, set by the template's
-// playback) and carry the camera by the same delta, so the user's orbit offset is kept. A jump the size of a
-// loop or a run switch snaps instead of sweeping across the arena.
-let lastP=null, fLast=performance.now();
-(function follow(now){requestAnimationFrame(follow);const dt=Math.min(0.1,(now-fLast)/1000);fLast=now;
-  if(!document.getElementById('follow').checked||typeof run==='undefined'||!run||!pilotNow) {lastP=null;return}
-  const p=new THREE.Vector3(pilotNow[0],pilotNow[1],pilotNow[2]);
-  if(!lastP||lastP.distanceTo(p)>300){cam.position.copy(p).add(new THREE.Vector3(0,220,520));ctl.target.copy(p);lastP=p.clone();return}
-  const nt=lastP.clone().lerp(p,1-Math.exp(-dt*5));
-  cam.position.add(nt.clone().sub(lastP)); ctl.target.copy(nt); lastP=nt;})(performance.now());
+document.getElementById('run').addEventListener('change',()=>drawPanel());
+// the camera is the template's (chase / orbit / fly); this panel only rates
 drawPanel();});
 </script>"""
 
@@ -107,7 +101,21 @@ def runs():
     return out
 
 
-if __name__ == "__main__":
+def render(R_json: str, emo_json: str) -> str:
+    html = '<meta charset="utf-8">' + TPL.replace('<div id="info"></div>', PANEL.replace("__EMO__", emo_json))
+    return html.replace("__TITLE__", "Emotion probe").replace("__DATA__", R_json)
+
+
+if __name__ == "__main__" and "--retemplate" in sys.argv:
+    # re-render the committed viewer's recorded data with the current templates (no sims re-run)
+    import re
+    out = os.path.join(HERE, "results", "emotion_viewer.html")
+    old = open(out, encoding="utf-8").read()
+    R_json = re.search(r"const RUNS = (\[.*?\]);\n", old, re.S).group(1)
+    emo = re.search(r"const EMO=(\[[^\]]*\])", old).group(1)
+    open(out, "w", encoding="utf-8").write(render(R_json, emo))
+    print(out, os.path.getsize(out) // 1024, "KB")
+elif __name__ == "__main__":
     R = runs()
     html = '<meta charset="utf-8">' + TPL.replace('<div id="info"></div>', PANEL.replace("__EMO__", json.dumps(list(EmotionProbe.load(PROBE_PATH).emotions))))
     html = html.replace("__TITLE__", "Emotion probe").replace("__DATA__", json.dumps(R, separators=(",", ":")))
