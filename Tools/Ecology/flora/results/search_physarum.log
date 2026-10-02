@@ -1,2 +1,3 @@
 start 1.1776 {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 0.132, "variety": 1.0, "access": 0.757, "presence": 0.899, "adapt": 0.735}
 0 obj 0.5939 R 0.3616 Rh 0.2323 best 1.1776  {"sa": 40.8283} {"threat": 0.01, "counterplay": 1.0, "telegraph": 1.0, "payoff": 0.132, "variety": 0.31, "access": 0.812, "presence": 0.882, "adapt": 1.0}
+1 obj 1.2261 R 0.7482 Rh 0.4779 best 1.2261 KEPT {"wake_dep": 3, "wave_speed": 64.711, "off": 3.6166} {"threat": 0.868, "counterplay": 1.0, "telegraph": 1.0, "payoff": 0.132, "variety": 1.0, "access": 0.984, "presence": 0.875, "adapt": 1.0}

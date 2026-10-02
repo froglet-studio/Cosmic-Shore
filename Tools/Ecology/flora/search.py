@@ -34,7 +34,8 @@ SPACE = dict(
                reach=(1, 4, "int"), v_danger=(0.5, 4.0, "log"), c0=(4.0, 20.0, "log")),
     physarum=dict(sa=(15, 60, "lin"), ra=(15, 60, "lin"), so=(12, 50, "lin"), ss=(20, 80, "lin"), food_dep=(0.3, 6, "log"),
                   on=(3, 14, "lin"), off=(1, 6, "lin"), period=(1.5, 6, "lin"), wave_speed=(20, 120, "lin"),
-                  ex_ticks=(1, 4, "int"), wake_dep=(-4, 8, "lin"), heart_speed=(0, 15, "lin")),
+                  ex_ticks=(1, 4, "int"), wake_dep=(-4, 8, "lin"), heart_speed=(0, 15, "lin"),
+                  heart_guard=(0, 90, "lin"), prism_vol=(8, 30, "log")),
 )
 
 

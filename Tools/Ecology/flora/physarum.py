@@ -37,7 +37,7 @@ from harness import FloraSpecies, PlantBody, VIEW, GROVE_C, GROVE_R, seg_point_d
 DEFAULTS = dict(G=56, n_agents=16000, n_hearts=5, so=28.0, sa=30.0, ra=35.0, ss=40.0, dep=1.0,
                 diffuse=0.5, evap=0.08, food_dep=1.5, on=6.0, off=3.0, ema=0.05, prism_vol=10.0,
                 plant_vol=12000.0, digest=0.3, period=3.0, wave_speed=50.0, ex_ticks=2, refr=4,
-                wake_dep=0.0, warmup=250, jitter=0.15, spread_init=1, heart_speed=6.0, ram=True, armour=0.0)
+                wake_dep=0.0, warmup=250, jitter=0.15, spread_init=1, heart_speed=6.0, ram=True, armour=0.0, heart_guard=0.0, beat_on=0.6, beat_glow=0.8)
 
 _NB6 = ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
 
@@ -82,7 +82,7 @@ class Physarum(FloraSpecies):
             self.apos = self.hearts[self.owner] + d * rng.uniform(0, 60, (n, 1))
         self.adir = rng.normal(size=(n, 3)); self.adir /= np.linalg.norm(self.adir, axis=1, keepdims=True)
         self.aphase = rng.uniform(0, 2 * math.pi, n)
-        self.fired_vox = np.zeros(G ** 3, np.int32)
+        self.fired_vox = np.zeros(G ** 3, np.int32); self.t_now = 0.0
         self.t_local = 0.0
         for _ in range(int(p["warmup"])):           # the grove before you arrive
             self._sim(arena, 0.1, warm=True)
@@ -224,8 +224,18 @@ class Physarum(FloraSpecies):
     def danger_mask(self):
         return (self.E >= 1) & (self.E <= self.p["ex_ticks"]) & (self.vox_prism >= 0)
 
+    def beating(self, t):
+        """SCLEROTIUM BEAT (round 5): each living heart's pacemaker beat stings within heart_guard for beat_on s, and
+        glows beat_glow s before it - the crystal is taken by diving in BETWEEN beats. (A guard made of nearby tube
+        voxels did nothing: hearts climb the trail gradient but rarely sit inside a tube - 7 crystals/min, 0 burns.)"""
+        last = self.next_beat - self.p["period"]
+        on = self.heart_alive & ((t - last) < self.p["beat_on"]) & (last >= 0)
+        glow = self.heart_alive & ((self.next_beat - t) < self.p["beat_glow"])
+        return on, glow
+
     # ---- step -------------------------------------------------------------------------------------------
     def step(self, arena, dt):
+        self.t_now = arena.t
         self._sim(arena, dt)
         self._waves(arena, dt)
         dm = self.danger_mask()
@@ -255,6 +265,15 @@ class Physarum(FloraSpecies):
             if len(cold):
                 self.bumps += len(cold)
                 if self.p["ram"]: self._remove(cold)          # flying through a resting tube breaks it
+        if self.p["heart_guard"] > 0:
+            on, glow = self.beating(arena.t)
+            for pi in arena.pilots:
+                d = seg_point_dist(pi.prev, pi.pos, self.hearts)
+                hit = np.flatnonzero(on & (d < self.p["heart_guard"]))
+                if len(hit) and self.burn_cd.get(pi.name, -1e9) <= arena.t:
+                    self.burn_cd[pi.name] = arena.t + 1.0
+                    k = int(hit[0]); self.leads.append(self.p["beat_glow"] + (arena.t - (self.next_beat[k] - self.p["period"])))
+                    arena.hit(pi, "burn")
         bi = self.body.live(); self.body.hot[bi] = 0.0
         hv = np.flatnonzero(dm)
         self.body.hot[self.vox_prism[hv]] = 1.0
@@ -270,6 +289,11 @@ class Physarum(FloraSpecies):
         H = np.concatenate([cen[hot], cen[tube]])
         R = np.concatenate([np.full(len(hot), self.h * 1.5), np.full(len(tube), self.h * 0.6)])
         W = np.concatenate([np.ones(len(hot)), np.full(len(tube), 0.12)])
+        if self.p["heart_guard"] > 0:
+            on, glow = self.beating(self.t_now)
+            b = np.flatnonzero(on | glow)
+            H = np.concatenate([H, self.hearts[b]]); R = np.concatenate([R, np.full(len(b), self.p["heart_guard"])])
+            W = np.concatenate([W, np.ones(len(b))])
         return H, R, W, None
 
     def threat_elements(self):
