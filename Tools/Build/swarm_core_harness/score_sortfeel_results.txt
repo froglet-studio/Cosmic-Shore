@@ -1,0 +1,271 @@
+# score_sortfeel.py results, 2026-10-02 (round 6). Seeds 7,23,41,101; 3 samples; loss-8 bar; unchanged scorer.
+# Run 1: all research modes + pre-round-6 game (game feel scored WITHOUT plan-relative planar in this run - see run 2).
+YARDSTICK (swarm_eval: 4 own + 12 switches, majority of samples, loss-8 bar); own = mass / space / charge / time
+  C# researchSort          seed   7: 12/13  own 1.51 / 2.15 / 1.10 / 4.48  fails ['time->space(9.44)']
+  C# researchSort          seed  23: 13/13  own 1.47 / 2.59 / 1.11 / 3.80  fails []
+  C# researchSort          seed  41: 13/13  own 1.33 / 2.81 / 1.05 / 3.25  fails []
+  C# researchSort          seed 101: 12/13  own 1.44 / 2.38 / 1.21 / 3.55  fails ['time->space(8.56)']
+  C# researchSort          TOTAL     50/52
+  C# researchSortF8        seed   7: 12/13  own 1.67 / 2.37 / 1.30 / 4.93  fails ['time->space(9.75)']
+  C# researchSortF8        seed  23: 13/13  own 1.58 / 2.79 / 1.27 / 4.25  fails []
+  C# researchSortF8        seed  41: 13/13  own 1.48 / 2.96 / 1.20 / 3.75  fails []
+  C# researchSortF8        seed 101: 12/13  own 1.64 / 2.55 / 1.35 / 3.88  fails ['time->space(8.81)']
+  C# researchSortF8        TOTAL     50/52
+  C# researchSortFeel      seed   7: 12/13  own 1.47 / 2.44 / 0.97 / 4.64  fails ['time->space(9.72)']
+  C# researchSortFeel      seed  23: 13/13  own 1.48 / 2.93 / 1.07 / 5.42  fails []
+  C# researchSortFeel      seed  41: 13/13  own 1.57 / 2.41 / 1.04 / 3.99  fails []
+  C# researchSortFeel      seed 101: 10/13  own 1.66 / 2.40 / 1.15 / 4.49  fails ['mass->time(8.45)', 'space->time(8.31)', 'time->space(9.22)']
+  C# researchSortFeel      TOTAL     48/52
+  C# researchSortFeelF8    seed   7: 12/13  own 1.56 / 2.64 / 1.04 / 4.79  fails ['time->space(9.83)']
+  C# researchSortFeelF8    seed  23: 13/13  own 1.50 / 2.92 / 1.12 / 5.29  fails []
+  C# researchSortFeelF8    seed  41: 13/13  own 1.51 / 2.54 / 1.04 / 4.41  fails []
+  C# researchSortFeelF8    seed 101: 11/13  own 1.84 / 2.46 / 1.14 / 4.78  fails ['mass->time(8.36)', 'time->space(9.29)']
+  C# researchSortFeelF8    TOTAL     49/52
+  C# researchSortFeelD0F8  seed   7: 12/13  own 1.56 / 2.64 / 1.04 / 4.11  fails ['time->space(9.79)']
+  C# researchSortFeelD0F8  seed  23: 13/13  own 1.50 / 2.92 / 1.12 / 4.79  fails []
+  C# researchSortFeelD0F8  seed  41: 13/13  own 1.51 / 2.54 / 1.04 / 3.84  fails []
+  C# researchSortFeelD0F8  seed 101: 12/13  own 1.84 / 2.46 / 1.14 / 4.00  fails ['time->space(9.18)']
+  C# researchSortFeelD0F8  TOTAL     50/52
+  C# gameSort              seed   7: 13/13  own 1.61 / 1.89 / 1.65 / 4.34  fails []
+  C# gameSort              seed  23: 13/13  own 1.56 / 1.84 / 1.65 / 4.43  fails []
+  C# gameSort              seed  41: 13/13  own 1.56 / 1.89 / 1.55 / 4.37  fails []
+  C# gameSort              seed 101: 13/13  own 1.54 / 1.86 / 1.49 / 4.37  fails []
+  C# gameSort              TOTAL     52/52
+  C# gameSortFeelF8        seed   7: 13/13  own 1.89 / 2.24 / 1.56 / 6.08  fails []
+  C# gameSortFeelF8        seed  23: 13/13  own 1.86 / 2.31 / 1.65 / 6.35  fails []
+  C# gameSortFeelF8        seed  41: 13/13  own 1.91 / 2.25 / 1.72 / 5.86  fails []
+  C# gameSortFeelF8        seed 101: 13/13  own 2.05 / 2.49 / 1.66 / 6.17  fails []
+  C# gameSortFeelF8        TOTAL     52/52
+
+FEEL (swarm_feel.metrics over each grown own-plan body's 64-step window, mean)
+  researchSort             speed 0.019  jerk_rel 0.824  planar_frac 0.626  coherence 0.747  jitter 0.632  phase 0.085  stuck 0.000  osc 0.024  planar_excess 0.149 -> ORGANIC
+  researchSortF8           speed 0.331  jerk_rel 0.494  planar_frac 0.558  coherence 0.160  jitter 1.276  phase 0.587  stuck 0.006  osc 0.111  planar_excess 0.112 -> out (osc)
+  researchSortFeel         speed 0.069  jerk_rel 0.719  planar_frac 0.438  coherence 0.101  jitter 1.117  phase 0.703  stuck 0.000  osc 0.009  planar_excess 0.023 -> ORGANIC
+  researchSortFeelF8       speed 0.105  jerk_rel 0.667  planar_frac 0.433  coherence 0.039  jitter 1.189  phase 0.738  stuck 0.000  osc 0.026  planar_excess 0.018 -> ORGANIC
+  researchSortFeelD0F8     speed 0.156  jerk_rel 0.650  planar_frac 0.482  coherence 0.022  jitter 1.203  phase 0.720  stuck 0.000  osc 0.041  planar_excess 0.082 -> ORGANIC
+  gameSort                 speed 0.192  jerk_rel 0.634  planar_frac 0.638  coherence 0.552  jitter 0.849  phase 0.810  stuck 0.000  osc 0.016  planar_excess 0.788 -> out (planar)
+  gameSortFeelF8           speed 0.343  jerk_rel 0.471  planar_frac 0.381  coherence 0.230  jitter 1.100  phase 0.881  stuck 0.000  osc 0.040  planar_excess 0.542 -> out (planar)
+
+SMOOTHNESS (swarm_smooth's events + formulas on C# trajectories)
+  researchSort             smoothness 0.160  deaths 0  mean {'backtrack': 0.0, 'lurch': 15.196, 'teleport': 0.752, 'jerk_rel': 0.247, 'molt_burst': 0.032, 'birth_burst': 0.183, 'rough': 5.255}
+                           worst {'backtrack': 0.001, 'lurch': 33.51, 'teleport': 0.974, 'jerk_rel': 0.409, 'molt_burst': 0.122, 'birth_burst': 0.361, 'rough': 12.408}
+      switch mass->space     {'loss_start': 63.18, 'loss_end': 2.26, 'backtrack': 0.0, 'travel': 7.28, 'lurch': 4.39, 'teleport': 0.661, 'jerk_rel': 0.135, 'molt_burst': 0.108, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 83, 'rough': 0.836}
+      switch space->charge   {'loss_start': 49.85, 'loss_end': 1.12, 'backtrack': 0.0, 'travel': 3.8, 'lurch': 8.08, 'teleport': 0.918, 'jerk_rel': 0.235, 'molt_burst': 0.018, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 2.232}
+      switch charge->time    {'loss_start': 50.53, 'loss_end': 6.0, 'backtrack': 0.0, 'travel': 9.88, 'lurch': 3.49, 'teleport': 0.974, 'jerk_rel': 0.141, 'molt_burst': 0.122, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 74, 'rough': 0.616}
+      switch time->mass      {'loss_start': 52.82, 'loss_end': 2.38, 'backtrack': 0.0, 'travel': 6.11, 'lurch': 4.23, 'teleport': 0.824, 'jerk_rel': 0.217, 'molt_burst': 0.006, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.692}
+      heal charge            {'loss_start': 7.69, 'loss_end': 0.94, 'backtrack': 0.0, 'travel': 1.36, 'lurch': 29.99, 'teleport': 0.463, 'jerk_rel': 0.309, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 10.996}
+      heal mass              {'loss_start': 8.96, 'loss_end': 1.44, 'backtrack': 0.0, 'travel': 1.14, 'lurch': 27.13, 'teleport': 0.83, 'jerk_rel': 0.409, 'molt_burst': 0.0, 'birth_burst': 0.215, 'deaths': 0, 'n_end': 181, 'rough': 9.852}
+      heal space             {'loss_start': 9.4, 'loss_end': 2.53, 'backtrack': 0.001, 'travel': 0.89, 'lurch': 33.51, 'teleport': 0.638, 'jerk_rel': 0.343, 'molt_burst': 0.0, 'birth_burst': 0.193, 'deaths': 0, 'n_end': 83, 'rough': 12.408}
+      heal time              {'loss_start': 27.98, 'loss_end': 2.99, 'backtrack': 0.0, 'travel': 1.48, 'lurch': 10.75, 'teleport': 0.712, 'jerk_rel': 0.189, 'molt_burst': 0.0, 'birth_burst': 0.361, 'deaths': 0, 'n_end': 72, 'rough': 4.41}
+  researchSortF8           smoothness 0.812  deaths 0  mean {'backtrack': 0.0, 'lurch': 2.194, 'teleport': 0.857, 'jerk_rel': 0.431, 'molt_burst': 0.032, 'birth_burst': 0.182, 'rough': 0.232}
+                           worst {'backtrack': 0.0, 'lurch': 3.25, 'teleport': 1.0, 'jerk_rel': 0.48, 'molt_burst': 0.122, 'birth_burst': 0.347, 'rough': 0.97}
+      switch mass->space     {'loss_start': 62.55, 'loss_end': 2.33, 'backtrack': 0.0, 'travel': 1.0, 'lurch': 2.03, 'teleport': 0.699, 'jerk_rel': 0.39, 'molt_burst': 0.108, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 83, 'rough': 0.08}
+      switch space->charge   {'loss_start': 49.54, 'loss_end': 1.23, 'backtrack': 0.0, 'travel': 1.08, 'lurch': 2.35, 'teleport': 1.0, 'jerk_rel': 0.421, 'molt_burst': 0.018, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      switch charge->time    {'loss_start': 50.37, 'loss_end': 6.3, 'backtrack': 0.0, 'travel': 1.11, 'lurch': 3.25, 'teleport': 1.0, 'jerk_rel': 0.388, 'molt_burst': 0.122, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 74, 'rough': 0.52}
+      switch time->mass      {'loss_start': 52.71, 'loss_end': 2.84, 'backtrack': 0.0, 'travel': 1.27, 'lurch': 3.21, 'teleport': 1.0, 'jerk_rel': 0.389, 'molt_burst': 0.006, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.284}
+      heal charge            {'loss_start': 7.53, 'loss_end': 1.04, 'backtrack': 0.0, 'travel': 1.02, 'lurch': 1.56, 'teleport': 0.763, 'jerk_rel': 0.473, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      heal mass              {'loss_start': 8.94, 'loss_end': 1.53, 'backtrack': 0.0, 'travel': 1.04, 'lurch': 1.46, 'teleport': 1.0, 'jerk_rel': 0.465, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal space             {'loss_start': 8.74, 'loss_end': 2.4, 'backtrack': 0.0, 'travel': 1.0, 'lurch': 1.67, 'teleport': 0.675, 'jerk_rel': 0.48, 'molt_burst': 0.0, 'birth_burst': 0.193, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      heal time              {'loss_start': 28.1, 'loss_end': 3.23, 'backtrack': 0.0, 'travel': 1.05, 'lurch': 2.02, 'teleport': 0.715, 'jerk_rel': 0.445, 'molt_burst': 0.0, 'birth_burst': 0.347, 'deaths': 0, 'n_end': 72, 'rough': 0.97}
+  researchSortFeel         smoothness 0.430  deaths 0  mean {'backtrack': 0.0, 'lurch': 5.42, 'teleport': 0.73, 'jerk_rel': 0.463, 'molt_burst': 0.032, 'birth_burst': 0.185, 'rough': 1.327}
+                           worst {'backtrack': 0.002, 'lurch': 6.51, 'teleport': 0.896, 'jerk_rel': 0.599, 'molt_burst': 0.119, 'birth_burst': 0.347, 'rough': 2.47}
+      switch mass->space     {'loss_start': 64.03, 'loss_end': 3.58, 'backtrack': 0.0, 'travel': 1.84, 'lurch': 3.8, 'teleport': 0.584, 'jerk_rel': 0.345, 'molt_burst': 0.119, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.71}
+      switch space->charge   {'loss_start': 50.03, 'loss_end': 1.36, 'backtrack': 0.0, 'travel': 1.22, 'lurch': 5.93, 'teleport': 0.896, 'jerk_rel': 0.406, 'molt_burst': 0.018, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 1.372}
+      switch charge->time    {'loss_start': 49.54, 'loss_end': 7.23, 'backtrack': 0.0, 'travel': 1.58, 'lurch': 5.23, 'teleport': 0.889, 'jerk_rel': 0.345, 'molt_burst': 0.11, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 73, 'rough': 1.192}
+      switch time->mass      {'loss_start': 58.05, 'loss_end': 2.26, 'backtrack': 0.0, 'travel': 2.08, 'lurch': 3.47, 'teleport': 0.796, 'jerk_rel': 0.402, 'molt_burst': 0.006, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.388}
+      heal charge            {'loss_start': 6.75, 'loss_end': 0.92, 'backtrack': 0.0, 'travel': 0.99, 'lurch': 6.51, 'teleport': 0.762, 'jerk_rel': 0.551, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 1.604}
+      heal mass              {'loss_start': 6.53, 'loss_end': 1.44, 'backtrack': 0.0, 'travel': 1.08, 'lurch': 6.2, 'teleport': 0.72, 'jerk_rel': 0.59, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 1.48}
+      heal space             {'loss_start': 6.44, 'loss_end': 2.69, 'backtrack': 0.002, 'travel': 1.1, 'lurch': 5.97, 'teleport': 0.441, 'jerk_rel': 0.599, 'molt_burst': 0.0, 'birth_burst': 0.217, 'deaths': 0, 'n_end': 83, 'rough': 1.396}
+      heal time              {'loss_start': 28.33, 'loss_end': 3.43, 'backtrack': 0.0, 'travel': 1.03, 'lurch': 6.25, 'teleport': 0.75, 'jerk_rel': 0.465, 'molt_burst': 0.0, 'birth_burst': 0.347, 'deaths': 0, 'n_end': 72, 'rough': 2.47}
+  researchSortFeelF8       smoothness 0.738  deaths 0  mean {'backtrack': 0.0, 'lurch': 2.929, 'teleport': 0.954, 'jerk_rel': 0.509, 'molt_burst': 0.032, 'birth_burst': 0.183, 'rough': 0.355}
+                           worst {'backtrack': 0.0, 'lurch': 3.94, 'teleport': 1.036, 'jerk_rel': 0.601, 'molt_burst': 0.119, 'birth_burst': 0.333, 'rough': 1.054}
+      switch mass->space     {'loss_start': 63.49, 'loss_end': 3.68, 'backtrack': 0.0, 'travel': 1.45, 'lurch': 1.72, 'teleport': 0.887, 'jerk_rel': 0.433, 'molt_burst': 0.119, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.19}
+      switch space->charge   {'loss_start': 50.51, 'loss_end': 1.36, 'backtrack': 0.0, 'travel': 2.12, 'lurch': 3.06, 'teleport': 0.985, 'jerk_rel': 0.463, 'molt_burst': 0.018, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.224}
+      switch charge->time    {'loss_start': 49.47, 'loss_end': 7.08, 'backtrack': 0.0, 'travel': 2.55, 'lurch': 2.89, 'teleport': 1.031, 'jerk_rel': 0.435, 'molt_burst': 0.11, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 73, 'rough': 0.256}
+      switch time->mass      {'loss_start': 59.4, 'loss_end': 2.28, 'backtrack': 0.0, 'travel': 1.76, 'lurch': 2.41, 'teleport': 1.025, 'jerk_rel': 0.453, 'molt_burst': 0.006, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal charge            {'loss_start': 6.96, 'loss_end': 0.92, 'backtrack': 0.0, 'travel': 1.09, 'lurch': 3.94, 'teleport': 0.939, 'jerk_rel': 0.579, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.576}
+      heal mass              {'loss_start': 6.73, 'loss_end': 1.5, 'backtrack': 0.0, 'travel': 0.85, 'lurch': 2.78, 'teleport': 1.036, 'jerk_rel': 0.573, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.112}
+      heal space             {'loss_start': 7.1, 'loss_end': 2.9, 'backtrack': 0.0, 'travel': 1.1, 'lurch': 3.57, 'teleport': 0.716, 'jerk_rel': 0.601, 'molt_burst': 0.0, 'birth_burst': 0.217, 'deaths': 0, 'n_end': 83, 'rough': 0.428}
+      heal time              {'loss_start': 28.38, 'loss_end': 3.35, 'backtrack': 0.0, 'travel': 2.08, 'lurch': 3.06, 'teleport': 1.017, 'jerk_rel': 0.535, 'molt_burst': 0.0, 'birth_burst': 0.333, 'deaths': 0, 'n_end': 72, 'rough': 1.054}
+  researchSortFeelD0F8     smoothness 0.754  deaths 0  mean {'backtrack': 0.0, 'lurch': 2.805, 'teleport': 0.958, 'jerk_rel': 0.511, 'molt_burst': 0.032, 'birth_burst': 0.185, 'rough': 0.327}
+                           worst {'backtrack': 0.0, 'lurch': 3.94, 'teleport': 1.054, 'jerk_rel': 0.601, 'molt_burst': 0.119, 'birth_burst': 0.347, 'rough': 0.97}
+      switch mass->space     {'loss_start': 63.49, 'loss_end': 3.68, 'backtrack': 0.0, 'travel': 1.45, 'lurch': 1.72, 'teleport': 0.887, 'jerk_rel': 0.433, 'molt_burst': 0.119, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.19}
+      switch space->charge   {'loss_start': 50.51, 'loss_end': 1.36, 'backtrack': 0.0, 'travel': 2.12, 'lurch': 3.06, 'teleport': 0.985, 'jerk_rel': 0.463, 'molt_burst': 0.018, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.224}
+      switch charge->time    {'loss_start': 49.47, 'loss_end': 6.56, 'backtrack': 0.0, 'travel': 3.12, 'lurch': 2.44, 'teleport': 1.054, 'jerk_rel': 0.459, 'molt_burst': 0.11, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 73, 'rough': 0.1}
+      switch time->mass      {'loss_start': 60.24, 'loss_end': 2.27, 'backtrack': 0.0, 'travel': 1.06, 'lurch': 2.54, 'teleport': 1.034, 'jerk_rel': 0.457, 'molt_burst': 0.006, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.016}
+      heal charge            {'loss_start': 6.96, 'loss_end': 0.92, 'backtrack': 0.0, 'travel': 1.09, 'lurch': 3.94, 'teleport': 0.939, 'jerk_rel': 0.579, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.576}
+      heal mass              {'loss_start': 6.73, 'loss_end': 1.5, 'backtrack': 0.0, 'travel': 0.85, 'lurch': 2.78, 'teleport': 1.036, 'jerk_rel': 0.573, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.112}
+      heal space             {'loss_start': 7.1, 'loss_end': 2.9, 'backtrack': 0.0, 'travel': 1.1, 'lurch': 3.57, 'teleport': 0.716, 'jerk_rel': 0.601, 'molt_burst': 0.0, 'birth_burst': 0.217, 'deaths': 0, 'n_end': 83, 'rough': 0.428}
+      heal time              {'loss_start': 26.3, 'loss_end': 3.81, 'backtrack': 0.0, 'travel': 1.04, 'lurch': 2.39, 'teleport': 1.01, 'jerk_rel': 0.525, 'molt_burst': 0.0, 'birth_burst': 0.347, 'deaths': 0, 'n_end': 72, 'rough': 0.97}
+  gameSort                 smoothness 0.768  deaths 0  mean {'backtrack': 0.0, 'lurch': 2.552, 'teleport': 0.875, 'jerk_rel': 0.493, 'molt_burst': 0.035, 'birth_burst': 0.176, 'rough': 0.302}
+                           worst {'backtrack': 0.001, 'lurch': 3.59, 'teleport': 1.004, 'jerk_rel': 0.714, 'molt_burst': 0.155, 'birth_burst': 0.319, 'rough': 0.69}
+      switch mass->space     {'loss_start': 54.47, 'loss_end': 2.06, 'backtrack': 0.0, 'travel': 1.44, 'lurch': 2.19, 'teleport': 0.726, 'jerk_rel': 0.499, 'molt_burst': 0.155, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.55}
+      switch space->charge   {'loss_start': 41.43, 'loss_end': 1.7, 'backtrack': 0.0, 'travel': 1.27, 'lurch': 3.31, 'teleport': 0.984, 'jerk_rel': 0.477, 'molt_burst': 0.024, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.324}
+      switch charge->time    {'loss_start': 45.86, 'loss_end': 6.02, 'backtrack': 0.0, 'travel': 4.75, 'lurch': 1.29, 'teleport': 1.004, 'jerk_rel': 0.242, 'molt_burst': 0.097, 'birth_burst': 0.014, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      switch time->mass      {'loss_start': 41.63, 'loss_end': 1.84, 'backtrack': 0.0, 'travel': 0.34, 'lurch': 2.36, 'teleport': 0.907, 'jerk_rel': 0.532, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal charge            {'loss_start': 5.39, 'loss_end': 1.47, 'backtrack': 0.0, 'travel': 1.05, 'lurch': 3.36, 'teleport': 0.975, 'jerk_rel': 0.571, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.344}
+      heal mass              {'loss_start': 6.48, 'loss_end': 1.89, 'backtrack': 0.0, 'travel': 1.09, 'lurch': 3.59, 'teleport': 0.754, 'jerk_rel': 0.714, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.436}
+      heal space             {'loss_start': 8.01, 'loss_end': 2.32, 'backtrack': 0.001, 'travel': 1.2, 'lurch': 2.68, 'teleport': 0.669, 'jerk_rel': 0.687, 'molt_burst': 0.0, 'birth_burst': 0.157, 'deaths': 0, 'n_end': 83, 'rough': 0.076}
+      heal time              {'loss_start': 22.58, 'loss_end': 6.14, 'backtrack': 0.0, 'travel': 1.13, 'lurch': 1.64, 'teleport': 0.983, 'jerk_rel': 0.222, 'molt_burst': 0.0, 'birth_burst': 0.319, 'deaths': 0, 'n_end': 72, 'rough': 0.69}
+  gameSortFeelF8           smoothness 0.790  deaths 0  mean {'backtrack': 0.0, 'lurch': 1.514, 'teleport': 0.964, 'jerk_rel': 0.444, 'molt_burst': 0.043, 'birth_burst': 0.174, 'rough': 0.266}
+                           worst {'backtrack': 0.0, 'lurch': 1.99, 'teleport': 1.079, 'jerk_rel': 0.512, 'molt_burst': 0.179, 'birth_burst': 0.347, 'rough': 0.97}
+      switch mass->space     {'loss_start': 54.17, 'loss_end': 2.81, 'backtrack': 0.0, 'travel': 1.21, 'lurch': 1.47, 'teleport': 1.01, 'jerk_rel': 0.456, 'molt_burst': 0.179, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.79}
+      switch space->charge   {'loss_start': 41.56, 'loss_end': 1.86, 'backtrack': 0.0, 'travel': 1.0, 'lurch': 1.99, 'teleport': 1.029, 'jerk_rel': 0.444, 'molt_burst': 0.024, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      switch charge->time    {'loss_start': 45.01, 'loss_end': 7.13, 'backtrack': 0.0, 'travel': 2.98, 'lurch': 1.32, 'teleport': 1.064, 'jerk_rel': 0.352, 'molt_burst': 0.137, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 73, 'rough': 0.37}
+      switch time->mass      {'loss_start': 41.14, 'loss_end': 2.29, 'backtrack': 0.0, 'travel': 0.57, 'lurch': 1.37, 'teleport': 1.054, 'jerk_rel': 0.453, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal charge            {'loss_start': 5.9, 'loss_end': 1.73, 'backtrack': 0.0, 'travel': 1.12, 'lurch': 1.68, 'teleport': 0.964, 'jerk_rel': 0.484, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      heal mass              {'loss_start': 7.28, 'loss_end': 1.95, 'backtrack': 0.0, 'travel': 1.22, 'lurch': 1.5, 'teleport': 1.051, 'jerk_rel': 0.499, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal space             {'loss_start': 6.8, 'loss_end': 2.77, 'backtrack': 0.0, 'travel': 1.06, 'lurch': 1.46, 'teleport': 0.464, 'jerk_rel': 0.512, 'molt_burst': 0.0, 'birth_burst': 0.133, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      heal time              {'loss_start': 21.28, 'loss_end': 7.45, 'backtrack': 0.0, 'travel': 1.06, 'lurch': 1.32, 'teleport': 1.079, 'jerk_rel': 0.348, 'molt_burst': 0.0, 'birth_burst': 0.347, 'deaths': 0, 'n_end': 72, 'rough': 0.97}
+
+LOSSLESS: self-inflicted deaths over every C# yardstick run: 0
+
+wrote /tmp/claude-0/-home-user-Cosmic-Shore/979a65d9-1e36-525d-a1ec-8c4d017ecc39/scratchpad/cs.json
+
+# Run 2: game modes, feel scored against each plan's own planar (score_sortfeel.py as committed)
+YARDSTICK (swarm_eval: 4 own + 12 switches, majority of samples, loss-8 bar); own = mass / space / charge / time
+  C# gameSort              seed   7: 13/13  own 1.61 / 1.89 / 1.65 / 4.34  fails []
+  C# gameSort              seed  23: 13/13  own 1.56 / 1.84 / 1.65 / 4.43  fails []
+  C# gameSort              seed  41: 13/13  own 1.56 / 1.89 / 1.55 / 4.37  fails []
+  C# gameSort              seed 101: 13/13  own 1.54 / 1.86 / 1.49 / 4.37  fails []
+  C# gameSort              TOTAL     52/52
+  C# gameSortFeelF8        seed   7: 13/13  own 1.89 / 2.24 / 1.56 / 6.08  fails []
+  C# gameSortFeelF8        seed  23: 13/13  own 1.86 / 2.31 / 1.65 / 6.35  fails []
+  C# gameSortFeelF8        seed  41: 13/13  own 1.91 / 2.25 / 1.72 / 5.86  fails []
+  C# gameSortFeelF8        seed 101: 13/13  own 2.05 / 2.49 / 1.66 / 6.17  fails []
+  C# gameSortFeelF8        TOTAL     52/52
+  C# gameSortFeelD0F8      seed   7: 13/13  own 1.89 / 2.24 / 1.56 / 5.91  fails []
+  C# gameSortFeelD0F8      seed  23: 13/13  own 1.86 / 2.31 / 1.65 / 5.83  fails []
+  C# gameSortFeelD0F8      seed  41: 13/13  own 1.91 / 2.25 / 1.72 / 5.66  fails []
+  C# gameSortFeelD0F8      seed 101: 13/13  own 2.05 / 2.49 / 1.66 / 5.77  fails []
+  C# gameSortFeelD0F8      TOTAL     52/52
+
+FEEL (swarm_feel.metrics over each grown own-plan body's 64-step window, mean)
+  gameSort                 speed 0.192  jerk_rel 0.634  planar_frac 0.638  coherence 0.552  jitter 0.849  phase 0.810  stuck 0.000  osc 0.016  planar_excess 0.277 -> out (planar)
+  gameSortFeelF8           speed 0.343  jerk_rel 0.471  planar_frac 0.381  coherence 0.230  jitter 1.100  phase 0.881  stuck 0.000  osc 0.040  planar_excess 0.000 -> ORGANIC
+  gameSortFeelD0F8         speed 0.352  jerk_rel 0.476  planar_frac 0.403  coherence 0.224  jitter 1.101  phase 0.891  stuck 0.000  osc 0.041  planar_excess 0.006 -> ORGANIC
+
+SMOOTHNESS (swarm_smooth's events + formulas on C# trajectories)
+  gameSort                 smoothness 0.768  deaths 0  mean {'backtrack': 0.0, 'lurch': 2.552, 'teleport': 0.875, 'jerk_rel': 0.493, 'molt_burst': 0.035, 'birth_burst': 0.176, 'rough': 0.302}
+                           worst {'backtrack': 0.001, 'lurch': 3.59, 'teleport': 1.004, 'jerk_rel': 0.714, 'molt_burst': 0.155, 'birth_burst': 0.319, 'rough': 0.69}
+      switch mass->space     {'loss_start': 54.47, 'loss_end': 2.06, 'backtrack': 0.0, 'travel': 1.44, 'lurch': 2.19, 'teleport': 0.726, 'jerk_rel': 0.499, 'molt_burst': 0.155, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.55}
+      switch space->charge   {'loss_start': 41.43, 'loss_end': 1.7, 'backtrack': 0.0, 'travel': 1.27, 'lurch': 3.31, 'teleport': 0.984, 'jerk_rel': 0.477, 'molt_burst': 0.024, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.324}
+      switch charge->time    {'loss_start': 45.86, 'loss_end': 6.02, 'backtrack': 0.0, 'travel': 4.75, 'lurch': 1.29, 'teleport': 1.004, 'jerk_rel': 0.242, 'molt_burst': 0.097, 'birth_burst': 0.014, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      switch time->mass      {'loss_start': 41.63, 'loss_end': 1.84, 'backtrack': 0.0, 'travel': 0.34, 'lurch': 2.36, 'teleport': 0.907, 'jerk_rel': 0.532, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal charge            {'loss_start': 5.39, 'loss_end': 1.47, 'backtrack': 0.0, 'travel': 1.05, 'lurch': 3.36, 'teleport': 0.975, 'jerk_rel': 0.571, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.344}
+      heal mass              {'loss_start': 6.48, 'loss_end': 1.89, 'backtrack': 0.0, 'travel': 1.09, 'lurch': 3.59, 'teleport': 0.754, 'jerk_rel': 0.714, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.436}
+      heal space             {'loss_start': 8.01, 'loss_end': 2.32, 'backtrack': 0.001, 'travel': 1.2, 'lurch': 2.68, 'teleport': 0.669, 'jerk_rel': 0.687, 'molt_burst': 0.0, 'birth_burst': 0.157, 'deaths': 0, 'n_end': 83, 'rough': 0.076}
+      heal time              {'loss_start': 22.58, 'loss_end': 6.14, 'backtrack': 0.0, 'travel': 1.13, 'lurch': 1.64, 'teleport': 0.983, 'jerk_rel': 0.222, 'molt_burst': 0.0, 'birth_burst': 0.319, 'deaths': 0, 'n_end': 72, 'rough': 0.69}
+  gameSortFeelF8           smoothness 0.790  deaths 0  mean {'backtrack': 0.0, 'lurch': 1.514, 'teleport': 0.964, 'jerk_rel': 0.444, 'molt_burst': 0.043, 'birth_burst': 0.174, 'rough': 0.266}
+                           worst {'backtrack': 0.0, 'lurch': 1.99, 'teleport': 1.079, 'jerk_rel': 0.512, 'molt_burst': 0.179, 'birth_burst': 0.347, 'rough': 0.97}
+      switch mass->space     {'loss_start': 54.17, 'loss_end': 2.81, 'backtrack': 0.0, 'travel': 1.21, 'lurch': 1.47, 'teleport': 1.01, 'jerk_rel': 0.456, 'molt_burst': 0.179, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.79}
+      switch space->charge   {'loss_start': 41.56, 'loss_end': 1.86, 'backtrack': 0.0, 'travel': 1.0, 'lurch': 1.99, 'teleport': 1.029, 'jerk_rel': 0.444, 'molt_burst': 0.024, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      switch charge->time    {'loss_start': 45.01, 'loss_end': 7.13, 'backtrack': 0.0, 'travel': 2.98, 'lurch': 1.32, 'teleport': 1.064, 'jerk_rel': 0.352, 'molt_burst': 0.137, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 73, 'rough': 0.37}
+      switch time->mass      {'loss_start': 41.14, 'loss_end': 2.29, 'backtrack': 0.0, 'travel': 0.57, 'lurch': 1.37, 'teleport': 1.054, 'jerk_rel': 0.453, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal charge            {'loss_start': 5.9, 'loss_end': 1.73, 'backtrack': 0.0, 'travel': 1.12, 'lurch': 1.68, 'teleport': 0.964, 'jerk_rel': 0.484, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      heal mass              {'loss_start': 7.28, 'loss_end': 1.95, 'backtrack': 0.0, 'travel': 1.22, 'lurch': 1.5, 'teleport': 1.051, 'jerk_rel': 0.499, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal space             {'loss_start': 6.8, 'loss_end': 2.77, 'backtrack': 0.0, 'travel': 1.06, 'lurch': 1.46, 'teleport': 0.464, 'jerk_rel': 0.512, 'molt_burst': 0.0, 'birth_burst': 0.133, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      heal time              {'loss_start': 21.28, 'loss_end': 7.45, 'backtrack': 0.0, 'travel': 1.06, 'lurch': 1.32, 'teleport': 1.079, 'jerk_rel': 0.348, 'molt_burst': 0.0, 'birth_burst': 0.347, 'deaths': 0, 'n_end': 72, 'rough': 0.97}
+  gameSortFeelD0F8         smoothness 0.812  deaths 0  mean {'backtrack': 0.0, 'lurch': 1.504, 'teleport': 0.959, 'jerk_rel': 0.447, 'molt_burst': 0.043, 'birth_burst': 0.171, 'rough': 0.231}
+                           worst {'backtrack': 0.0, 'lurch': 1.99, 'teleport': 1.066, 'jerk_rel': 0.512, 'molt_burst': 0.179, 'birth_burst': 0.319, 'rough': 0.79}
+      switch mass->space     {'loss_start': 54.17, 'loss_end': 2.81, 'backtrack': 0.0, 'travel': 1.21, 'lurch': 1.47, 'teleport': 1.01, 'jerk_rel': 0.456, 'molt_burst': 0.179, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.79}
+      switch space->charge   {'loss_start': 41.56, 'loss_end': 1.86, 'backtrack': 0.0, 'travel': 1.0, 'lurch': 1.99, 'teleport': 1.029, 'jerk_rel': 0.444, 'molt_burst': 0.024, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      switch charge->time    {'loss_start': 45.01, 'loss_end': 6.84, 'backtrack': 0.0, 'travel': 3.02, 'lurch': 1.27, 'teleport': 1.066, 'jerk_rel': 0.368, 'molt_burst': 0.137, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 73, 'rough': 0.37}
+      switch time->mass      {'loss_start': 42.29, 'loss_end': 2.11, 'backtrack': 0.0, 'travel': 0.56, 'lurch': 1.37, 'teleport': 1.039, 'jerk_rel': 0.453, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal charge            {'loss_start': 5.9, 'loss_end': 1.73, 'backtrack': 0.0, 'travel': 1.12, 'lurch': 1.68, 'teleport': 0.964, 'jerk_rel': 0.484, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.0}
+      heal mass              {'loss_start': 7.28, 'loss_end': 1.95, 'backtrack': 0.0, 'travel': 1.22, 'lurch': 1.5, 'teleport': 1.051, 'jerk_rel': 0.499, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal space             {'loss_start': 6.8, 'loss_end': 2.77, 'backtrack': 0.0, 'travel': 1.06, 'lurch': 1.46, 'teleport': 0.464, 'jerk_rel': 0.512, 'molt_burst': 0.0, 'birth_burst': 0.133, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      heal time              {'loss_start': 22.68, 'loss_end': 6.58, 'backtrack': 0.0, 'travel': 1.13, 'lurch': 1.29, 'teleport': 1.05, 'jerk_rel': 0.362, 'molt_burst': 0.0, 'birth_burst': 0.319, 'deaths': 0, 'n_end': 72, 'rough': 0.69}
+
+LOSSLESS: self-inflicted deaths over every C# yardstick run: 0
+
+wrote /tmp/claude-0/-home-user-Cosmic-Shore/979a65d9-1e36-525d-a1ec-8c4d017ecc39/scratchpad/game.json
+
+# Run 3: SWARM_SORT_GAME=Noise=0 (game modes with the velocity noise off; gameSortFeelD0F8 here = the SHIPPED config)
+YARDSTICK (swarm_eval: 4 own + 12 switches, majority of samples, loss-8 bar); own = mass / space / charge / time
+  C# gameSortFeelF8        seed   7: 13/13  own 1.79 / 2.04 / 1.64 / 5.84  fails []
+  C# gameSortFeelF8        seed  23: 13/13  own 1.68 / 1.89 / 1.64 / 6.05  fails []
+  C# gameSortFeelF8        seed  41: 13/13  own 1.71 / 1.84 / 1.54 / 5.87  fails []
+  C# gameSortFeelF8        seed 101: 13/13  own 1.66 / 1.92 / 1.46 / 5.73  fails []
+  C# gameSortFeelF8        TOTAL     52/52
+  C# gameSortFeelD0F8      seed   7: 13/13  own 1.79 / 2.04 / 1.64 / 5.63  fails []
+  C# gameSortFeelD0F8      seed  23: 13/13  own 1.68 / 1.89 / 1.64 / 5.70  fails []
+  C# gameSortFeelD0F8      seed  41: 13/13  own 1.71 / 1.84 / 1.54 / 5.36  fails []
+  C# gameSortFeelD0F8      seed 101: 13/13  own 1.66 / 1.92 / 1.46 / 5.63  fails []
+  C# gameSortFeelD0F8      TOTAL     52/52
+
+FEEL (swarm_feel.metrics over each grown own-plan body's 64-step window, mean)
+  gameSortFeelF8           speed 0.241  jerk_rel 0.482  planar_frac 0.389  coherence 0.416  jitter 1.016  phase 0.871  stuck 0.000  osc 0.024  planar_excess 0.000 -> ORGANIC
+  gameSortFeelD0F8         speed 0.255  jerk_rel 0.493  planar_frac 0.420  coherence 0.403  jitter 1.023  phase 0.874  stuck 0.000  osc 0.026  planar_excess 0.045 -> ORGANIC
+
+SMOOTHNESS (swarm_smooth's events + formulas on C# trajectories)
+  gameSortFeelF8           smoothness 0.814  deaths 0  mean {'backtrack': 0.0, 'lurch': 2.083, 'teleport': 0.938, 'jerk_rel': 0.431, 'molt_burst': 0.035, 'birth_burst': 0.177, 'rough': 0.228}
+                           worst {'backtrack': 0.0, 'lurch': 3.46, 'teleport': 1.065, 'jerk_rel': 0.52, 'molt_burst': 0.155, 'birth_burst': 0.333, 'rough': 0.83}
+      switch mass->space     {'loss_start': 54.53, 'loss_end': 2.56, 'backtrack': 0.0, 'travel': 1.56, 'lurch': 1.73, 'teleport': 0.803, 'jerk_rel': 0.423, 'molt_burst': 0.155, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.55}
+      switch space->charge   {'loss_start': 41.18, 'loss_end': 1.54, 'backtrack': 0.0, 'travel': 1.13, 'lurch': 3.46, 'teleport': 1.038, 'jerk_rel': 0.425, 'molt_burst': 0.024, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.384}
+      switch charge->time    {'loss_start': 46.22, 'loss_end': 7.5, 'backtrack': 0.0, 'travel': 4.62, 'lurch': 1.44, 'teleport': 1.057, 'jerk_rel': 0.339, 'molt_burst': 0.097, 'birth_burst': 0.014, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      switch time->mass      {'loss_start': 42.61, 'loss_end': 1.9, 'backtrack': 0.0, 'travel': 0.57, 'lurch': 1.41, 'teleport': 1.065, 'jerk_rel': 0.439, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal charge            {'loss_start': 5.71, 'loss_end': 1.72, 'backtrack': 0.0, 'travel': 1.24, 'lurch': 2.65, 'teleport': 0.78, 'jerk_rel': 0.471, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.06}
+      heal mass              {'loss_start': 7.08, 'loss_end': 1.97, 'backtrack': 0.0, 'travel': 1.21, 'lurch': 2.49, 'teleport': 1.017, 'jerk_rel': 0.511, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal space             {'loss_start': 7.46, 'loss_end': 2.47, 'backtrack': 0.0, 'travel': 1.52, 'lurch': 2.09, 'teleport': 0.7, 'jerk_rel': 0.52, 'molt_burst': 0.0, 'birth_burst': 0.157, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      heal time              {'loss_start': 20.74, 'loss_end': 6.68, 'backtrack': 0.0, 'travel': 1.1, 'lurch': 1.39, 'teleport': 1.04, 'jerk_rel': 0.323, 'molt_burst': 0.0, 'birth_burst': 0.333, 'deaths': 0, 'n_end': 72, 'rough': 0.83}
+  gameSortFeelD0F8         smoothness 0.826  deaths 0  mean {'backtrack': 0.0, 'lurch': 2.091, 'teleport': 0.938, 'jerk_rel': 0.439, 'molt_burst': 0.035, 'birth_burst': 0.176, 'rough': 0.21}
+                           worst {'backtrack': 0.0, 'lurch': 3.46, 'teleport': 1.077, 'jerk_rel': 0.52, 'molt_burst': 0.155, 'birth_burst': 0.319, 'rough': 0.69}
+      switch mass->space     {'loss_start': 54.53, 'loss_end': 2.56, 'backtrack': 0.0, 'travel': 1.56, 'lurch': 1.73, 'teleport': 0.803, 'jerk_rel': 0.423, 'molt_burst': 0.155, 'birth_burst': 0.0, 'deaths': 0, 'n_end': 84, 'rough': 0.55}
+      switch space->charge   {'loss_start': 41.18, 'loss_end': 1.54, 'backtrack': 0.0, 'travel': 1.13, 'lurch': 3.46, 'teleport': 1.038, 'jerk_rel': 0.425, 'molt_burst': 0.024, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.384}
+      switch charge->time    {'loss_start': 46.22, 'loss_end': 6.6, 'backtrack': 0.0, 'travel': 4.69, 'lurch': 1.46, 'teleport': 1.061, 'jerk_rel': 0.363, 'molt_burst': 0.097, 'birth_burst': 0.014, 'deaths': 0, 'n_end': 72, 'rough': 0.0}
+      switch time->mass      {'loss_start': 43.3, 'loss_end': 1.93, 'backtrack': 0.0, 'travel': 0.48, 'lurch': 1.52, 'teleport': 1.028, 'jerk_rel': 0.442, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal charge            {'loss_start': 5.71, 'loss_end': 1.72, 'backtrack': 0.0, 'travel': 1.24, 'lurch': 2.65, 'teleport': 0.78, 'jerk_rel': 0.471, 'molt_burst': 0.0, 'birth_burst': 0.237, 'deaths': 0, 'n_end': 169, 'rough': 0.06}
+      heal mass              {'loss_start': 7.08, 'loss_end': 1.97, 'backtrack': 0.0, 'travel': 1.21, 'lurch': 2.49, 'teleport': 1.017, 'jerk_rel': 0.511, 'molt_burst': 0.0, 'birth_burst': 0.221, 'deaths': 0, 'n_end': 181, 'rough': 0.0}
+      heal space             {'loss_start': 7.46, 'loss_end': 2.47, 'backtrack': 0.0, 'travel': 1.52, 'lurch': 2.09, 'teleport': 0.7, 'jerk_rel': 0.52, 'molt_burst': 0.0, 'birth_burst': 0.157, 'deaths': 0, 'n_end': 83, 'rough': 0.0}
+      heal time              {'loss_start': 20.97, 'loss_end': 6.85, 'backtrack': 0.0, 'travel': 1.05, 'lurch': 1.33, 'teleport': 1.077, 'jerk_rel': 0.358, 'molt_burst': 0.0, 'birth_burst': 0.319, 'deaths': 0, 'n_end': 72, 'rough': 0.69}
+
+LOSSLESS: self-inflicted deaths over every C# yardstick run: 0
+
+wrote /tmp/claude-0/-home-user-Cosmic-Shore/979a65d9-1e36-525d-a1ec-8c4d017ecc39/scratchpad/game_n0.json
+
+# benchsort (CoreCLR Release, 200 steps after a 240-step grow + 20 warm; B swarms over the four plans round-robin)
+BENCH mode=researchSort B=1 tadpoles=169 ms_per_swarm_step=0.2269 us_per_tadpole_step=1.343 ms_per_frame_all=0.227
+BENCH mode=researchSort B=4 tadpoles=505 ms_per_swarm_step=0.1240 us_per_tadpole_step=0.983 ms_per_frame_all=0.496
+BENCH mode=researchSort B=16 tadpoles=2020 ms_per_swarm_step=0.1310 us_per_tadpole_step=1.037 ms_per_frame_all=2.095
+BENCH mode=researchSort B=64 tadpoles=8080 ms_per_swarm_step=0.1349 us_per_tadpole_step=1.069 ms_per_frame_all=8.636
+BENCH mode=researchSortFeelD0F2 B=1 tadpoles=169 ms_per_swarm_step=0.1326 us_per_tadpole_step=0.785 ms_per_frame_all=0.133
+BENCH mode=researchSortFeelD0F2 B=4 tadpoles=505 ms_per_swarm_step=0.1057 us_per_tadpole_step=0.837 ms_per_frame_all=0.423
+BENCH mode=researchSortFeelD0F2 B=16 tadpoles=2020 ms_per_swarm_step=0.0920 us_per_tadpole_step=0.729 ms_per_frame_all=1.472
+BENCH mode=researchSortFeelD0F2 B=64 tadpoles=8080 ms_per_swarm_step=0.0938 us_per_tadpole_step=0.743 ms_per_frame_all=6.002
+BENCH mode=researchSortFeelD0F4 B=1 tadpoles=169 ms_per_swarm_step=0.0844 us_per_tadpole_step=0.499 ms_per_frame_all=0.084
+BENCH mode=researchSortFeelD0F4 B=4 tadpoles=505 ms_per_swarm_step=0.0647 us_per_tadpole_step=0.513 ms_per_frame_all=0.259
+BENCH mode=researchSortFeelD0F4 B=16 tadpoles=2020 ms_per_swarm_step=0.0669 us_per_tadpole_step=0.530 ms_per_frame_all=1.071
+BENCH mode=researchSortFeelD0F4 B=64 tadpoles=8080 ms_per_swarm_step=0.0688 us_per_tadpole_step=0.545 ms_per_frame_all=4.406
+BENCH mode=researchSortFeelD0F8 B=1 tadpoles=169 ms_per_swarm_step=0.0685 us_per_tadpole_step=0.405 ms_per_frame_all=0.068
+BENCH mode=researchSortFeelD0F8 B=4 tadpoles=505 ms_per_swarm_step=0.0545 us_per_tadpole_step=0.432 ms_per_frame_all=0.218
+BENCH mode=researchSortFeelD0F8 B=16 tadpoles=2020 ms_per_swarm_step=0.0557 us_per_tadpole_step=0.441 ms_per_frame_all=0.891
+BENCH mode=researchSortFeelD0F8 B=64 tadpoles=8080 ms_per_swarm_step=0.0563 us_per_tadpole_step=0.446 ms_per_frame_all=3.601
+BENCH mode=researchSortFeelD0F16 B=1 tadpoles=169 ms_per_swarm_step=0.0620 us_per_tadpole_step=0.367 ms_per_frame_all=0.062
+BENCH mode=researchSortFeelD0F16 B=4 tadpoles=505 ms_per_swarm_step=0.0475 us_per_tadpole_step=0.377 ms_per_frame_all=0.190
+BENCH mode=researchSortFeelD0F16 B=16 tadpoles=2020 ms_per_swarm_step=0.0497 us_per_tadpole_step=0.394 ms_per_frame_all=0.796
+BENCH mode=researchSortFeelD0F16 B=64 tadpoles=8080 ms_per_swarm_step=0.0526 us_per_tadpole_step=0.417 ms_per_frame_all=3.369
+BENCH mode=gameSort B=1 tadpoles=169 ms_per_swarm_step=0.1905 us_per_tadpole_step=1.128 ms_per_frame_all=0.191
+BENCH mode=gameSort B=4 tadpoles=514 ms_per_swarm_step=0.1523 us_per_tadpole_step=1.186 ms_per_frame_all=0.609
+BENCH mode=gameSort B=16 tadpoles=2056 ms_per_swarm_step=0.1537 us_per_tadpole_step=1.196 ms_per_frame_all=2.460
+BENCH mode=gameSort B=64 tadpoles=8224 ms_per_swarm_step=0.1557 us_per_tadpole_step=1.211 ms_per_frame_all=9.963
+BENCH mode=gameSortFeelD0N0 B=1 tadpoles=169 ms_per_swarm_step=0.1848 us_per_tadpole_step=1.094 ms_per_frame_all=0.185
+BENCH mode=gameSortFeelD0N0 B=4 tadpoles=514 ms_per_swarm_step=0.1457 us_per_tadpole_step=1.134 ms_per_frame_all=0.583
+BENCH mode=gameSortFeelD0N0 B=16 tadpoles=2056 ms_per_swarm_step=0.1496 us_per_tadpole_step=1.164 ms_per_frame_all=2.393
+BENCH mode=gameSortFeelD0N0 B=64 tadpoles=8224 ms_per_swarm_step=0.1541 us_per_tadpole_step=1.199 ms_per_frame_all=9.863
+BENCH mode=gameSortFeelD0N0F2 B=1 tadpoles=169 ms_per_swarm_step=0.1251 us_per_tadpole_step=0.740 ms_per_frame_all=0.125
+BENCH mode=gameSortFeelD0N0F2 B=4 tadpoles=514 ms_per_swarm_step=0.0957 us_per_tadpole_step=0.745 ms_per_frame_all=0.383
+BENCH mode=gameSortFeelD0N0F2 B=16 tadpoles=2056 ms_per_swarm_step=0.1000 us_per_tadpole_step=0.778 ms_per_frame_all=1.601
+BENCH mode=gameSortFeelD0N0F2 B=64 tadpoles=8224 ms_per_swarm_step=0.0964 us_per_tadpole_step=0.750 ms_per_frame_all=6.168
+BENCH mode=gameSortFeelD0N0F4 B=1 tadpoles=169 ms_per_swarm_step=0.0901 us_per_tadpole_step=0.533 ms_per_frame_all=0.090
+BENCH mode=gameSortFeelD0N0F4 B=4 tadpoles=514 ms_per_swarm_step=0.0698 us_per_tadpole_step=0.543 ms_per_frame_all=0.279
+BENCH mode=gameSortFeelD0N0F4 B=16 tadpoles=2056 ms_per_swarm_step=0.0708 us_per_tadpole_step=0.551 ms_per_frame_all=1.133
+BENCH mode=gameSortFeelD0N0F4 B=64 tadpoles=8224 ms_per_swarm_step=0.0726 us_per_tadpole_step=0.565 ms_per_frame_all=4.643
+BENCH mode=gameSortFeelD0N0F8 B=1 tadpoles=169 ms_per_swarm_step=0.0737 us_per_tadpole_step=0.436 ms_per_frame_all=0.074
+BENCH mode=gameSortFeelD0N0F8 B=4 tadpoles=514 ms_per_swarm_step=0.0573 us_per_tadpole_step=0.446 ms_per_frame_all=0.229
+BENCH mode=gameSortFeelD0N0F8 B=16 tadpoles=2056 ms_per_swarm_step=0.0584 us_per_tadpole_step=0.454 ms_per_frame_all=0.934
+BENCH mode=gameSortFeelD0N0F8 B=64 tadpoles=8224 ms_per_swarm_step=0.0616 us_per_tadpole_step=0.479 ms_per_frame_all=3.941
+BENCH mode=gameSortFeelD0N0F16 B=1 tadpoles=169 ms_per_swarm_step=0.0699 us_per_tadpole_step=0.414 ms_per_frame_all=0.070
+BENCH mode=gameSortFeelD0N0F16 B=4 tadpoles=514 ms_per_swarm_step=0.0539 us_per_tadpole_step=0.419 ms_per_frame_all=0.215
+BENCH mode=gameSortFeelD0N0F16 B=16 tadpoles=2056 ms_per_swarm_step=0.0543 us_per_tadpole_step=0.423 ms_per_frame_all=0.869
+BENCH mode=gameSortFeelD0N0F16 B=64 tadpoles=8224 ms_per_swarm_step=0.0560 us_per_tadpole_step=0.436 ms_per_frame_all=3.586

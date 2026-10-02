@@ -625,6 +625,49 @@ a member dying with no shot fired and the swarm fed · a morph that flips back �
 out · a frame cost that makes the cell unplayable (record it; the dial is the `swarms` column of
 `REGIONS` in `Tools/Build/author_swarm_fauna.py` - keep the total at 24).
 
+### QA-SWARM-ROUND6 ⬜ — the sort swarm's round-6 motion (flat wells, wander, 1-in-8 update) has never been seen
+
+**Source:** branch `cece/swarm-fauna-game` (authored headless; never compiled in Unity). Full reference:
+`Docs/SWARM_FAUNA.md` §12. **Why it matters:** the SORT species (the pufferfish band of the Swarm cell, 790-920 u)
+changed how every member moves: its wells are flat-bottomed (a tissue fills its region like a liquid instead of
+packing into flat crystal sheets), every member drifts on its own slow wander, the old velocity noise is off, and
+only 1 member in 8 re-steers each step (the rest coast on their last velocity). Headless it is 52/52 on the
+research's yardstick, inside the organic band (it was OUTSIDE before: planar), smoother (0.768 -> 0.826), zero
+self-inflicted deaths, and 2.6x cheaper on CoreCLR (0.150 -> 0.058 ms per swarm-step). Nothing about Unity is
+proven: not the compile, not the import, not the look, not the Mono frame cost. Run `QA-SWARM-FAUNA` and
+`QA-SWARM-SORT` first.
+
+1. Let Unity import; confirm no compile errors naming `SwarmSortCore`, `SwarmSortParams`, `SwarmFaunaConfigSO`
+   or `SwarmFauna`.
+2. Select `Assets/_SO_Assets/Swarm Fauna/SwarmSortFaunaConfig.asset`: **Sort Noise 0, Sort Well Dead 0.7,
+   Sort Well Dead Time 0, Sort Wander 0.05, Sort Wander Tau 12, Sort Update Fraction 8** (the last five at the
+   bottom of the Sort block). If they read 0.1 / 0 / -1 / 0 / 12 / 1 or are missing, the import is stale -
+   reimport the asset before judging anything.
+3. Enter the Swarm cell (Cell Selector -> Swarm). Fly to the outer band (~850 u) and park beside a grown sort
+   pufferfish for 60 s while it grazes.
+4. **The look call (the reason this item exists).** Compare against a pufferfish built the old way: set **Sort
+   Update Fraction 1, Sort Well Dead 0, Sort Wander 0, Sort Noise 0.1** on the config, re-enter the cell, park
+   beside one again, then restore the shipped values. Judge: (a) does the new body read as a soft, softly
+   churning cloud holding a banded shape, where the old one read as flat plates / a mosaic? (b) at the game's
+   10 Hz a member re-steers every 0.8 s - does anything look like it is sliding on rails, or snapping when it
+   re-steers? (c) does it fizz (too gas-like)? If it fizzes, the dial is **Sort Wander 0.03**; if members slide,
+   try **Sort Update Fraction 4**.
+5. Morph one: switch to a Sparrow and kill ~40 of its Charge members in a burst. Watch the 30 s after - the change
+   should ease in (no jolt), surplus members molt, nothing you did not shoot dies.
+6. Fly straight through a grown pufferfish without firing: the members near the ship must flinch IMMEDIATELY
+   (a threatened member re-steers every step whatever its phase), and the body must inflate (threat).
+7. Profiler (Mono, the editor): `SwarmFauna.Update` for a grown sort pufferfish, frac 8 vs frac 1 (step 4's
+   toggle). Headless CoreCLR: ~0.074 vs ~0.19 ms per step for one pufferfish; Mono is expected 2-3x slower.
+
+**PASS:** no compile errors; the step-2 values are present; the lead (or tester) judges the new body as at
+least as alive as the old and not sliding/snapping (record the verdict and any dial changed); the morph eases in
+with no deaths; the flinch is immediate; the Mono cost per sort swarm is recorded and frac 8 is cheaper than
+frac 1.
+**FAIL:** any compile error · stale or missing fields after a reimport · members visibly sliding in straight lines
+or snapping every 0.8 s · a body that dissolves into fizz with no readable shape · a member dying with no shot
+fired and the swarm fed · a flinch that starts late · a `NullReferenceException` from `SwarmSortCore` ·
+tadpoles popping in or out.
+
 ### QA-PALETTE-SHIELDED ⬜ — the four prism tiers across all three domains
 **Source:** PRs #644, #705 (danger prisms now paint on the domain's **shielded base
 face**), #707 (gold's shielded prism brought into the pastel family; the danger tier
