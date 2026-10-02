@@ -36,6 +36,7 @@ WORLD = dict(pack="bestiary", thief="bestiary", locust="bestiary", lurker="besti
 POLICIES = dict(bestiary=("wander", "evader", "hunter"), builders=("wander", "evader", "hunter"),
                 flora=("wander", "reader", "cutter"))
 DT = 0.1
+EVERY = 1      # probe every k steps (--dt30: the page's step, sampled at the same 10 Hz)
 FEEL = ("size", "speed_rel", "approach", "coherence", "burstiness", "jerk_rel")
 
 
@@ -83,17 +84,18 @@ def one(args):
                   cutter=lambda: Pilot("cutter", speed=140.0, name="cutter"))[policy]
         pilot = ar.add_pilot(mk()); pilot.prev = pilot.pos.copy()
         view = sp
-    pr = TelProbe(DT)
+    pr = TelProbe(DT * EVERY)
     steps = int(minutes * 60 / DT)
     t0 = time.perf_counter()
-    for _ in range(steps):
+    for s_ in range(steps):
         sp.step(ar, DT)
         if world == "builders":
             ram(ar, [sp], DT)
         if world == "flora" and policy == "cutter":
             p = ar.pilots[0]; sp.cut(ar, p, p.prev, p.pos)
         ar.step(DT)
-        pr.observe(ar, view)
+        if (s_ + 1) % EVERY == 0:
+            pr.observe(ar, view)
     ms = (time.perf_counter() - t0) / steps * 1000
     r = run_score(ar, view, pr, minutes)
     kinds = {}
@@ -113,8 +115,13 @@ if __name__ == "__main__":
     ap.add_argument("--seeds", nargs="+", type=int, default=[7, 23, 41, 101, 202, 303])
     ap.add_argument("--minutes", type=float, default=1.5)
     ap.add_argument("--procs", type=int, default=4)
+    ap.add_argument("--dt30", action="store_true", help="run at the page's 1/30 s step (probe at 10 Hz)")
     ap.add_argument("--out", default=os.path.join(HERE, "results", "fidelity_py.json"))
     a = ap.parse_args()
+    if a.dt30:
+        DT, EVERY = 1.0 / 30.0, 3            # module globals: Pool workers fork after this, so they inherit it
+        if a.out == os.path.join(HERE, "results", "fidelity_py.json"):
+            a.out = os.path.join(HERE, "results", "fidelity_py_dt30.json")
     keys = a.keys or list(WORLD)
     jobs = [(k, p, s, a.minutes) for k in keys for p in POLICIES[WORLD[k]] for s in a.seeds]
     t0 = time.time()
