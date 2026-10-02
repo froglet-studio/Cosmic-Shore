@@ -1345,7 +1345,8 @@ shielded mass never food)? And does a pilot flying through it get an *experience
 Code: `Tools/Ecology/living_cell/` (`world.py` mass store + numba grids, `fauna.py` the five mobile guilds,
 `structures.py` flora / traps / fortress / physarum, `cell.py` the trophic wiring + macro level, `metrics.py`,
 `run.py`, `calibrate.py`, `rounds.py` = every configuration tried, `domains.py` Part 2, `viewer.py`).
-Results: `living_cell/results/*.json` + `*.log` (every round kept, including the dead ends). Re-run everything:
+Results: `living_cell/results/*.json` (every round kept, including the dead ends; the `*.log` console output
+that `run_all.sh` writes beside them is not committed - every number in it is in the JSON). Re-run everything:
 `sh living_cell/run_all.sh` (~3.5 h on 4 cores). Viewer: `living_cell/viewer.html` (self-contained, three.js 0.128
 from jsDelivr; one 5-min explorer flight through the recommended cell, species-coloured, far populations drawn as
 cohort clouds, timeline of encounters / hits / C's emotion / threat underneath).
