@@ -135,7 +135,7 @@ long-run statistics (cycle amplitude, period, persistence) are what a pilot sees
   - After a transient the cell settles at ~34k grazers / 12k predators: cv 0.25 / 0.24, regional sync 0.73,
     no detectable period.
   - Alive, but it does not breathe.
-- **Enrichment turns it into cycles** (`sweep_d`, then 8 h at flora cap 240; `results/longrun_cycles8h_*.png`).
+- **Enrichment turns it into cycles** (`sweep_d`, then 8 h at flora cap 240; `results/longrun_cycles8h_*.png`, reproduced on the final bounded-cohort code as `longrun_cycles8h_final_*` with grazers 18.8k–163k, predators 3.7k–34k, cv 0.68 / 0.42 and ledger drift 5.3e-15).
   This is the paradox of enrichment, in the cell.
   - Grazers 19k–164k, predators 3.8k–34k, cv 0.69 / 0.43.
   - **No extinction**, either cell-wide or in any region (0 local extinctions).
