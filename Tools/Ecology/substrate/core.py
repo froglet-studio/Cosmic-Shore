@@ -98,9 +98,9 @@ class SpeciesParams:
     sense: float = 250.0               # pilot perception radius
     curiosity_rate: float = 0.3
     attach_rate: float = 0.5
-    attach_bias: float = -3.0          # attachment target = sigmoid(attach_sated*(1-hunger)+attach_fear*fear_grp+bias)
-    attach_sated: float = 0.0
-    attach_fear: float = 0.0
+    attach_on_h: float = 0.3           # body quorum: assemble when the group's mean hunger falls below this
+    attach_off_h: float = 0.55         # ... and dissolve when it rises above this (hysteresis)
+    attach_on_f: float = 0.35          # ... or assemble when the group's mean fear rises above this
     # quorum (locust): s = density * hunger; hysteresis
     q_up: float = 9.0                  # s above this -> gregarious (9 = never)
     q_down: float = 9.0
@@ -112,6 +112,7 @@ class SpeciesParams:
     bite_cool: float = 1.5
     starve_s: float = 30.0             # seconds at hunger 1 before withering
     birth_stock: float = 60.0          # stock needed to split
+    stock0: float = 25.0               # body volume a spawned seed starts with (re-laid as prisms if it dies)
     grow_s: float = 2.0                # grow-in / wither-out duration
     deposit_trail: float = 0.0
     deposit_threat: float = 0.0        # predators make the cell feel dangerous to others
@@ -174,6 +175,11 @@ class Substrate:
         self.tick = 0
         self.publish = True
         self._last_hit = {}
+        self.assembling = False
+        self.death_log = []
+        self._freed_tick = np.full(cap, -1)
+        self._dt = 0.1
+        self.arena_pilots = []
         self.timers: dict[str, float] = {}
         self.body_c = None; self.body_f = np.array([0, 0, 1.0]); self.body_v = np.zeros(3)
         c = arena._ball(1, 0.3 * arena.R, 0.7 * arena.R)[0] if center is None else np.asarray(center, float)
@@ -185,7 +191,7 @@ class Substrate:
         self.alive[:n] = True; self.grow[:n] = 1.0
         self.hunger[:n] = self.rng.uniform(0.1, 0.4, n) if init_hunger is None else \
             np.clip(init_hunger + self.rng.normal(0, 0.03, n), 0, 1)
-        self.stock[:n] = P.birth_stock * 0.5
+        self.stock[:n] = P.stock0          # a spawned seed's body (a spawner is a seeder, as in the game)
         self.wseed[:n] = self.rng.uniform(0, 100, (n, 3))
         self.home = c.copy()
         self._expose()
@@ -342,9 +348,15 @@ class Substrate:
         cap = np.minimum(1.0, _lerp(P.solitary.w_hunt + P.solitary.w_ring, P.gregarious.w_hunt + P.gregarious.w_ring, ph))
         self.aggr[A] = np.clip(h[A] * 1.4 - 0.3, 0, 1) * cap
         # attachment (assembly into the body): sated and/or collectively afraid
+        # a GROUP quorum with hysteresis on the school's mean hunger and fear: individual satiety is out of
+        # phase across members, so an individual rule never reaches a body (measured: assembled <= 22%)
         if P.body is not None:
-            fg = float(np.mean(self.fear[A]))
-            tgt = 1 / (1 + np.exp(-(P.attach_sated * (1 - h[A]) + P.attach_fear * fg + P.attach_bias)))
+            gh, gf = float(np.mean(h[A])), float(np.mean(self.fear[A]))
+            if not self.assembling and (gh < P.attach_on_h or gf > P.attach_on_f):
+                self.assembling = True
+            elif self.assembling and gh > P.attach_off_h and gf < 0.5 * P.attach_on_f:
+                self.assembling = False
+            tgt = 1.0 if self.assembling else 0.0
             self.attach[A] += dt * P.attach_rate * (tgt - self.attach[A])
         # quorum: phase relaxes toward a hysteretic sigmoid of density x hunger (+ contagion), for the
         # slice whose neighbour counts we have (others hold their target)
@@ -408,16 +420,30 @@ class Substrate:
         if self.home is not None:
             term("home", self.home - p, W("w_home") * (1 - hu))
         if P.body is not None and self.body_c is not None:
+            # the member's desired VELOCITY is its slot's own velocity plus a closing speed along the
+            # displacement (flat-bottom well: zero inside `well`), bounded by the turn radius
+            # (v <= turn * distance) or members orbit their slot. Steering takes its direction, the speed
+            # stage below takes its magnitude, so heading and speed always agree.
             sw = self._slot_world(S)
             d = sw - p; dn = np.linalg.norm(d, axis=1)
-            pull = np.clip((dn - P.body.well) / 20.0, 0, 1)
-            term("body", d, 4.0 * self.attach[S] * pull)
+            sv = self.slot_v[self.slot[S]] if hasattr(self, "slot_v") else np.tile(self.body_v, (len(S), 1))
+            close = np.minimum(np.minimum(np.clip(dn - P.body.well, 0, None) * 2.0, 0.5 * W("turn") * dn), 150.0)
+            vstar = sv + d / np.maximum(dn, 1e-6)[:, None] * close[:, None]
+            self._vstar = vstar
+            term("body", vstar, 4.0 * self.attach[S])
         r = np.linalg.norm(p, axis=1)
         term("inward", -p, np.clip((r - 0.8 * self.R) / (0.15 * self.R), 0, 1) * 3.0)
         danger("wall", p, np.clip((r - 0.85 * self.R) / (0.1 * self.R), 0, 1) * 3.0)
-        danger("sep", nb["sep"], W("w_sep") * np.minimum(np.linalg.norm(nb["sep"], axis=1), 2.0))
+        # an assembled member accepts crowding (its slot does the spacing)
+        danger("sep", nb["sep"], W("w_sep") * np.minimum(np.linalg.norm(nb["sep"], axis=1), 2.0) * (1 - self.attach[S]))
         danger("alarm", -F.sample_grad("alarm", cells), W("w_alarm") * (0.3 + fe))
         danger("threat", -F.sample_grad("threat", cells), W("w_threat") * (0.3 + fe))
+        if P.body is not None:
+            # an assembled member hands its own drives to the body (the body is the agent now): mute them
+            mute = (1 - 0.9 * self.attach[S])[:, None]
+            keep = np.array([k in ("body", "inward") for k in self.TERMS])
+            Wt[:, ~keep] *= mute
+            Wd[:, [di["sep"], di["flee"], di["alarm"], di["threat"]]] *= mute
         # ---- context map ----
         t1 = time.perf_counter()
         if self.backend in ("numba", "fused"):
@@ -430,8 +456,7 @@ class Substrate:
         sp = W("speed") * (1 + (W("burst") - 1) * urg)
         if P.body is not None and self.body_c is not None:
             # assembled members catch up with their slot, then match the body's pace
-            sw = self._slot_world(S); dn = np.linalg.norm(sw - p, axis=1)
-            sp = _lerp(sp, P.body.speed + np.clip(dn, 0, 150) * 0.8, self.attach[S])
+            sp = _lerp(sp, np.linalg.norm(self._vstar, axis=1), self.attach[S])
         self.ispeed[S] = sp
 
     def _context_np(self, T, Wt, D, Wd, cur):
@@ -510,27 +535,60 @@ class Substrate:
         if P.body is None:
             return
         att = A[self.attach[A] > 0.5]
-        if len(att) < max(4, len(P.body.slots) // 3):
-            self.body_c = None if len(att) == 0 else self.pos[att].mean(0)
-            if self.body_c is None:
-                return
-        c = self.pos[att].mean(0) if len(att) else self.body_c
-        v = self.vel[att].mean(0) if len(att) else np.zeros(3)
-        self.body_v = 0.9 * self.body_v + 0.1 * v
-        if np.linalg.norm(self.body_v) > 1:
-            self.body_f = _unit(0.95 * self.body_f + 0.05 * _unit(self.body_v)[0])[0]
-        self.body_c = c
+        if len(att) == 0:
+            self.body_c = None
+            return
+        # the body owns its position: it flies at body_v and is only gently tied to its members' centroid
+        # (tying it hard makes it lag its own members, and that feedback spirals the shape apart)
+        cm = self.pos[att].mean(0) if len(att) else self.body_c
+        if self.body_c is None or len(att) < max(4, len(P.body.slots) // 3):
+            self.body_c = cm
+        else:
+            self.body_c = self.body_c + self.body_v * self._dt + 0.05 * (cm - self.body_c)
+        c = self.body_c
+        # the BODY is an agent one level up: its heading is steered by the school's summed drives at the
+        # body centre (food scent when hungry, away from the nearest pilot when afraid, off the wall), turned
+        # at a slow rate; members feed its velocity forward
+        F = self.fields
+        cell = F.cell(c[None])
+        hu = float(self.hunger[A].mean()); fe = float(self.fear[A].mean())
+        want = F.sample_grad("food", cell)[0] * 50 * hu
+        if self.arena_pilots:
+            pp = min(self.arena_pilots, key=lambda q: np.linalg.norm(q - c))
+            want = want + _unit(c - pp)[0] * 2.0 * fe
+        r = np.linalg.norm(c)
+        want = want - c / max(r, 1) * np.clip((r - 0.6 * self.R) / (0.2 * self.R), 0, 2)
+        tt = self.tick * 0.02
+        want = want + 0.3 * np.array([np.sin(tt), np.sin(1.3 * tt + 1), np.sin(0.7 * tt + 2)])
+        self._f_prev = self.body_f.copy()
+        u, n = _unit(want)
+        if n > 1e-6:
+            ang = np.arccos(np.clip(self.body_f @ u, -1, 1))
+            k = min(1.0, 0.35 * self._dt / max(ang, 1e-6))
+            self.body_f = _unit(self.body_f + (u - self.body_f) * k)[0]
+        spd = P.body.speed * (1 + 1.5 * fe)
+        self.body_v = 0.9 * self.body_v + 0.1 * self.body_f * spd
+        # every slot's own world velocity = body_v + omega x r (rigid body), omega from the heading's turn this
+        # step. (A finite difference of slot positions was tried first: the centroid re-seat during formation
+        # made it jump, and members were flung at the 300 u/s clip.)
+        om = np.cross(self._f_prev, self.body_f) / self._dt
+        r = self._slot_world_k(np.arange(len(P.body.slots))) - self.body_c
+        self.slot_v = self.body_v + np.cross(om, r)
 
     def _slot_world(self, S):
+        return self._slot_world_k(self.slot[S])
+
+    def _slot_world_k(self, ks):
         f = self.body_f
         a = _unit(np.cross(np.array([0.0, 1.0, 0.0]), f) + 1e-6)[0]
         b = np.cross(f, a)
-        off = self.P.body.slots[self.slot[S]] * self.P.body.scale
+        off = self.P.body.slots[ks] * self.P.body.scale
         return self.body_c + off[:, 0:1] * a + off[:, 1:2] * b + off[:, 2:3] * f
 
     # ---- world: eat, bite, die, reproduce, grow ----
     def _world(self, arena, dt, A):
         P = self.P
+        self.arena_pilots = [q.pos for q in arena.pilots]
         self._update_body(A)
         # grow in / wither out
         self.grow[self.alive & ~self.dying] = np.minimum(1.0, self.grow[self.alive & ~self.dying] + dt / P.grow_s)
@@ -540,6 +598,7 @@ class Substrate:
             gone = wd[self.grow[wd] <= 0]
             self.alive[gone] = False; self.dying[gone] = False; self.grow[gone] = 0
             self.vel[gone] = 0
+            self._freed_tick[gone] = self.tick
         if len(A) == 0:
             return
         # eat: hungry agents take a whole prism within eat_r (volume -> stock)
@@ -565,17 +624,20 @@ class Substrate:
                 if pl.policy == "hunter":
                     kd = A[d < pl.radius + self._sizes()[A] + 2]
                     for i in kd:
-                        self._die(arena, i); self.kills += 1
+                        if not self.dying[i]:
+                            self._die(arena, i, "pilot"); self.kills += 1
         # starvation (no imposed death: only hunger maxed for starve_s)
         st = A[self.hunger[A] >= 1.0]
         self.starve[A] = np.where(self.hunger[A] >= 1.0, self.starve[A] + dt, 0)
         for i in st[self.starve[st] > P.starve_s]:
             if not self.dying[i]:
-                self._die(arena, i); self.starved += 1
+                self._die(arena, i, "starvation"); self.starved += 1
         # reproduce: stock splits, child grows in at the parent (production gated by free pool slots)
         par = A[(self.stock[A] >= P.birth_stock) & ~self.dying[A] & (self.grow[A] >= 1)]
         if len(par):
-            free = np.flatnonzero(~self.alive)
+            # never reuse a slot freed THIS tick: an index must not change identity inside one tick (a GPU
+            # interpolating last->this frame would draw a streak from the dead agent to the newborn)
+            free = np.flatnonzero(~self.alive & (self._freed_tick != self.tick))
             nb = min(len(par), len(free))
             for i, j in zip(par[:nb], free[:nb]):
                 half = self.stock[i] * 0.5
@@ -637,11 +699,12 @@ class Substrate:
                 self.stock[i] += v
                 self.hunger[i] = max(0.0, self.hunger[i] - v * P.hunger_per_vol)
 
-    def _die(self, arena, i):
+    def _die(self, arena, i, cause="?"):
         """Wither (continuity) and leave the stock behind as prisms (mass conserved); one crystal drops."""
         if self.dying[i] or not self.alive[i]:
             return
         self.dying[i] = True
+        self.death_log.append((round(arena.t, 2), cause, float(self.hunger[i]), float(self.starve[i])))
         v = float(self.stock[i])
         if v > 0:
             # re-lay the body's stock as up to 3 prisms where it fell (a skeleton the food web can graze)

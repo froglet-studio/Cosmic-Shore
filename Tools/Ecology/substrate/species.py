@@ -72,7 +72,8 @@ def manta_slots(K=96, length=60.0, span=80.0, rng=None):
 def leviathan(n0=160, seed=0) -> SpeciesParams:
     P = grazer(n0, seed)
     P = replace(P, name="leviathan", body=BodyPlan(slots=manta_slots(n0), scale=1.0, well=3.0, speed=40),
-                attach_rate=0.6, attach_sated=8.0, attach_fear=6.0, attach_bias=-6.5, metabolism=0.02)
+                attach_rate=0.8, attach_on_h=0.36, attach_off_h=0.55, attach_on_f=0.3, metabolism=0.012,
+                eat_r=12, hunger_per_vol=0.03)
     P.solitary = replace(P.solitary, color=(0.6, 0.75, 1.0)); P.gregarious = P.solitary
     return P
 

@@ -1,0 +1,262 @@
+[
+ {
+  "species": "grazer",
+  "policy": "wander",
+  "scarce": false,
+  "mass_rel_err": 1.902739862994546e-16,
+  "eaten": 12958,
+  "laid": 5738,
+  "births": 171,
+  "deaths": {
+   "starvation": 132
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "grazer",
+  "policy": "hunter",
+  "scarce": false,
+  "mass_rel_err": 1.902739862994546e-16,
+  "eaten": 16693,
+  "laid": 9447,
+  "births": 215,
+  "deaths": {
+   "pilot": 136,
+   "starvation": 45
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "grazer",
+  "policy": "wander",
+  "scarce": true,
+  "mass_rel_err": 1.5340064886943906e-16,
+  "eaten": 6443,
+  "laid": 5728,
+  "births": 70,
+  "deaths": {
+   "starvation": 155
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "locust",
+  "policy": "wander",
+  "scarce": false,
+  "mass_rel_err": 1.7750839742839728e-16,
+  "eaten": 72203,
+  "laid": 45156,
+  "births": 946,
+  "deaths": {
+   "starvation": 760
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "locust",
+  "policy": "hunter",
+  "scarce": false,
+  "mass_rel_err": 1.7750839742839728e-16,
+  "eaten": 65125,
+  "laid": 36103,
+  "births": 916,
+  "deaths": {
+   "pilot": 229,
+   "starvation": 467
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "locust",
+  "policy": "wander",
+  "scarce": true,
+  "mass_rel_err": 4.1917586096549756e-16,
+  "eaten": 9282,
+  "laid": 13911,
+  "births": 88,
+  "deaths": {
+   "starvation": 405
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "pack",
+  "policy": "wander",
+  "scarce": false,
+  "mass_rel_err": 2.0160943093615306e-16,
+  "eaten": 319,
+  "laid": 0,
+  "births": 0,
+  "deaths": {},
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "pack",
+  "policy": "hunter",
+  "scarce": false,
+  "mass_rel_err": 0.0,
+  "eaten": 18,
+  "laid": 218,
+  "births": 0,
+  "deaths": {
+   "pilot": 8
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "pack",
+  "policy": "wander",
+  "scarce": true,
+  "mass_rel_err": 1.2033905046243886e-16,
+  "eaten": 40,
+  "laid": 0,
+  "births": 0,
+  "deaths": {},
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "leviathan",
+  "policy": "wander",
+  "scarce": false,
+  "mass_rel_err": 1.9152613907074392e-16,
+  "eaten": 19781,
+  "laid": 2724,
+  "births": 220,
+  "deaths": {
+   "starvation": 60
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "leviathan",
+  "policy": "hunter",
+  "scarce": false,
+  "mass_rel_err": 1.9152613907074392e-16,
+  "eaten": 479,
+  "laid": 4479,
+  "births": 0,
+  "deaths": {
+   "pilot": 160
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "leviathan",
+  "policy": "wander",
+  "scarce": true,
+  "mass_rel_err": 1.6015376445619636e-16,
+  "eaten": 6784,
+  "laid": 4210,
+  "births": 67,
+  "deaths": {
+   "starvation": 114
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true
+ },
+ {
+  "species": "locust",
+  "policy": "hunter",
+  "scarce": false,
+  "mass_rel_err": 1.7750839742839728e-16,
+  "eaten": 70301,
+  "laid": 41180,
+  "births": 970,
+  "deaths": {
+   "pilot": 287,
+   "starvation": 455
+  },
+  "imposed_deaths": 0,
+  "pop_in": 0,
+  "pop_out": 0,
+  "teleport": 0,
+  "accel": 0,
+  "size_jump": 0,
+  "steps": 2400,
+  "ok": true,
+  "backend": "fused"
+ }
+]
