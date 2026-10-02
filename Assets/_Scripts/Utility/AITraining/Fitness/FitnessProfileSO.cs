@@ -83,8 +83,7 @@ namespace CosmicShore.Utility.AITraining
         public void ApplyHexRaceDefaults()
         {
             Description = "HexRace: crystals collected by this pilot, golf score negated " +
-                          "(lower finish time is better), elapsed-time penalty. A 54-crystal " +
-                          "finish at 70s outranks an 11-crystal sit to 240s. No team bonus.";
+                          "(lower finish time is better), elapsed-time penalty. No team bonus.";
             Entries = new List<Entry>
             {
                 new() { Kind = ComponentKind.CrystalCollection, Weight = 100f, Label = "Crystals" },

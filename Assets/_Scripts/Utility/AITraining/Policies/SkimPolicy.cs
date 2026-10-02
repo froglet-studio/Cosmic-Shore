@@ -40,10 +40,6 @@ namespace CosmicShore.Utility.AITraining
 
         public DecisionOutput Decide(DecisionContext ctx)
         {
-            // Do not dilute crystal pursuit with trail farming — SkimRace finishes on crystals.
-            if (ctx.HasTarget && ctx.TargetKind == TargetKind.Crystal)
-                return DecisionOutput.Zero;
-
             if (ctx.NearbyPrisms.Count == 0) return DecisionOutput.Zero;
 
             Vector3 bias = Vector3.zero;

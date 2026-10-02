@@ -8,10 +8,10 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Objective provider for SkimRace: the local player's next crystal - the
-    /// closest live <see cref="Crystal"/> this pilot can collect
-    /// (<see cref="Crystal.CanBeCollected"/>: Blue is free-for-all, any other
-    /// crystal only by its own domain). A domain-stamped crystal belonging to
-    /// another team is never a valid objective and must be skipped.
+    /// closest live <see cref="Crystal"/> in the local player's own domain.
+    /// SkimRace gives every player a crystal in their own domain, so the
+    /// other-domain crystals belonging to AI opponents are never a valid
+    /// objective for the local player and must be skipped.
     ///
     /// Event-driven: the closest-crystal scan runs on demand (initial call +
     /// each <see cref="ElementalCrystalImpactor.OnCrystalCollected"/> event +
@@ -94,9 +94,9 @@ namespace CosmicShore.Gameplay
                 int count = crystals.Count;
                 if (count == 0) return;
 
-                // Only a crystal the local player can COLLECT is a valid objective:
-                // one in their own domain, or a Blue free-for-all crystal (the
-                // current Skim Race farm). Without this filter the closest crystal is often
+                // SkimRace gives every player a crystal in their own domain, so
+                // only a crystal matching the local player's domain is a valid
+                // objective. Without this filter the closest crystal is often
                 // an AI opponent's, and the indicator hooks onto a crystal the
                 // local player can neither reach nor collect.
                 var localDomain = localPlayer.Domain;
@@ -108,8 +108,7 @@ namespace CosmicShore.Gameplay
                 {
                     var crystal = crystals[i];
                     if (crystal == null || crystal.IsExploding) continue;
-                    // Same rule the impact chain enforces: own domain, or Blue (free-for-all).
-                    if (!crystal.CanBeCollected(localDomain)) continue;
+                    if (crystal.ownDomain != localDomain) continue;
 
                     float sqr = (crystal.transform.position - origin).sqrMagnitude;
                     if (sqr < bestSqr)
