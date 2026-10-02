@@ -4,21 +4,21 @@
   "hits_per_min_evader": 0.0,
   "counterplay": null,
   "telegraph_s": null,
-  "payoff_per_min": 23.0,
+  "payoff_per_min": 27.335,
   "variety": 0.0,
   "feel": {
    "size": 2.5,
-   "speed_rel": 0.334,
-   "approach": 19.588,
-   "coherence": 0.664,
-   "burstiness": 1.257,
-   "jerk_rel": 0.108
+   "speed_rel": 0.294,
+   "approach": 20.548,
+   "coherence": 0.687,
+   "burstiness": 1.387,
+   "jerk_rel": 0.304
   },
   "encounter_wander": {
-   "heading_to_pilot": 0.416,
-   "pursuit": -17.566,
+   "heading_to_pilot": 0.616,
+   "pursuit": -25.511,
    "near_frac": 0.004,
-   "ring_sd": 0.121
+   "ring_sd": 0.115
   },
   "phase_end_wander": [
    0.0,
@@ -26,55 +26,55 @@
   ]
  },
  "locust": {
-  "hits_per_min_wander": 31.665,
+  "hits_per_min_wander": 34.665,
   "hits_per_min_evader": 0.0,
   "counterplay": 0.0,
-  "telegraph_s": 3.1,
-  "payoff_per_min": 98.0,
-  "variety": 0.418,
+  "telegraph_s": 1.2,
+  "payoff_per_min": 223.0,
+  "variety": 0.308,
   "feel": {
-   "size": 2.965,
-   "speed_rel": 0.823,
-   "approach": 25.878,
-   "coherence": 0.655,
-   "burstiness": 1.38,
-   "jerk_rel": 1.282
+   "size": 3.04,
+   "speed_rel": 0.822,
+   "approach": 21.063,
+   "coherence": 0.707,
+   "burstiness": 1.428,
+   "jerk_rel": 0.566
   },
   "encounter_wander": {
-   "heading_to_pilot": 0.465,
-   "pursuit": -63.688,
-   "near_frac": 0.513,
-   "ring_sd": 0.76
+   "heading_to_pilot": -0.112,
+   "pursuit": 19.068,
+   "near_frac": 0.506,
+   "ring_sd": 0.683
   },
   "phase_end_wander": [
-   0.579,
-   0.495
+   0.601,
+   0.592
   ]
  },
  "pack": {
-  "hits_per_min_wander": 11.67,
+  "hits_per_min_wander": 13.67,
   "hits_per_min_evader": 0.335,
-  "counterplay": 0.03,
-  "telegraph_s": 7.2,
-  "payoff_per_min": 5.0,
-  "variety": 0.553,
+  "counterplay": 0.02,
+  "telegraph_s": 8.07,
+  "payoff_per_min": 3.0,
+  "variety": 0.306,
   "feel": {
-   "size": 5.407,
-   "speed_rel": 1.556,
-   "approach": 29.953,
-   "coherence": 0.663,
-   "burstiness": 1.137,
-   "jerk_rel": 0.137
+   "size": 5.403,
+   "speed_rel": 1.564,
+   "approach": 29.423,
+   "coherence": 0.673,
+   "burstiness": 1.113,
+   "jerk_rel": 0.114
   },
   "encounter_wander": {
-   "heading_to_pilot": -0.107,
-   "pursuit": 28.343,
-   "near_frac": 0.479,
-   "ring_sd": 0.528
+   "heading_to_pilot": -0.115,
+   "pursuit": 30.45,
+   "near_frac": 0.389,
+   "ring_sd": 0.542
   },
   "phase_end_wander": [
-   0.874,
-   1.0
+   0.721,
+   0.905
   ]
  },
  "leviathan": {
@@ -82,24 +82,76 @@
   "hits_per_min_evader": 0.0,
   "counterplay": null,
   "telegraph_s": null,
-  "payoff_per_min": 87.67,
+  "payoff_per_min": 107.0,
   "variety": 0.0,
   "feel": {
    "size": 2.5,
-   "speed_rel": 0.46,
-   "approach": 14.852,
-   "coherence": 0.857,
-   "burstiness": 2.233,
-   "jerk_rel": 0.096
+   "speed_rel": 0.483,
+   "approach": 14.472,
+   "coherence": 0.887,
+   "burstiness": 2.235,
+   "jerk_rel": 0.087
   },
   "encounter_wander": {
-   "heading_to_pilot": 0.047,
-   "pursuit": -0.16,
+   "heading_to_pilot": 0.083,
+   "pursuit": -4.841,
    "near_frac": 0.007,
-   "ring_sd": 0.138
+   "ring_sd": 0.162
   },
   "phase_end_wander": [
    0.0,
+   0.0
+  ]
+ },
+ "lurker": {
+  "hits_per_min_wander": 2.335,
+  "hits_per_min_evader": 0.0,
+  "counterplay": 0.0,
+  "telegraph_s": 3.8,
+  "payoff_per_min": 1.33,
+  "variety": 1.5,
+  "feel": {
+   "size": 2.5,
+   "speed_rel": 0.029,
+   "approach": 4.237,
+   "coherence": 0.293,
+   "burstiness": 17.807,
+   "jerk_rel": 0.073
+  },
+  "encounter_wander": {
+   "heading_to_pilot": 0.032,
+   "pursuit": 12.775,
+   "near_frac": 0.011,
+   "ring_sd": 0.103
+  },
+  "phase_end_wander": [
+   0.0,
+   0.0
+  ]
+ },
+ "stampede": {
+  "hits_per_min_wander": 0.335,
+  "hits_per_min_evader": 0.0,
+  "counterplay": 0.0,
+  "telegraph_s": null,
+  "payoff_per_min": 134.33499999999998,
+  "variety": 0.0,
+  "feel": {
+   "size": 4.167,
+   "speed_rel": 0.541,
+   "approach": 12.557,
+   "coherence": 0.746,
+   "burstiness": 1.002,
+   "jerk_rel": 0.073
+  },
+  "encounter_wander": {
+   "heading_to_pilot": 0.028,
+   "pursuit": 1.736,
+   "near_frac": 0.006,
+   "ring_sd": 0.158
+  },
+  "phase_end_wander": [
+   0.904,
    0.0
   ]
  }

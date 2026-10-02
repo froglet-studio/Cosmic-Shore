@@ -65,6 +65,7 @@ class Regime:
     w_alarm: float = 0.5         # alarm field gradient as danger
     w_threat: float = 0.5        # threat field gradient as danger
     w_home: float = 0.0          # toward the agent's own home (where it was born/spawned)
+    crowd: float = 1.0           # spacing spring target: neighbour count / dens_norm the agent settles at
     trample: float = 0.0         # >0.5: contact harms a pilot when moving fast (a stampede), regardless of aggression
     size: float = 3.0
     color: tuple = (0.5, 0.9, 1.0)
@@ -95,6 +96,7 @@ class SpeciesParams:
     eat_hunger: float = 0.25           # only eat above this hunger
     hunger_per_vol: float = 0.02       # hunger removed per unit volume eaten
     fear_gain: float = 1.0
+    aggr_base: float = 0.0             # aggression floor independent of hunger (an ambusher strikes when triggered)
     fear_decay: float = 0.5            # per second
     sense: float = 250.0               # pilot perception radius
     curiosity_rate: float = 0.3
@@ -123,7 +125,11 @@ class SpeciesParams:
     deposit_threat: float = 0.0        # predators make the cell feel dangerous to others
     deposit_alarm: float = 0.5         # scaled by fear
     n_dirs: int = 18
+    spacing_spring: bool = True        # one signed spring replaces cohesion + separation (see _steer)
+    nbr_exact: bool = False            # numba backend: true pairwise neighbours instead of cell moments
     frac_k: int = 4
+    momentum: float = 0.15             # interest painted along the current intent (hysteresis against dithering)
+    intent_blend: float = 0.0          # 0..1 exponential smoothing of the chosen direction per re-steer
     attn_r: float = 0.0                # attention LOD: within this distance of a pilot, re-steer every step
     attn_urg: float = 1.0              # ... or when max(fear, aggression) exceeds this (1 = off)
     ring_roles: int = 0                # pack: number of ring slots (role = i % ring_roles)
@@ -304,6 +310,8 @@ class Substrate:
     def _neighbours(self, A, sl):
         P = self.P
         pos, vel, ph = self.pos[A], self.vel[A], self.phase[A]
+        if P.nbr_exact and self.backend in ("numba", "fused"):
+            return knb.neighbours_exact(pos, vel, ph, sl.astype(np.int64), P.nbr_r, self.R, P.dens_norm)
         if self.backend in ("numba", "fused"):
             nb = knb.neighbours(pos, vel, ph, sl.astype(np.int64), P.nbr_r, self.R)
             nb["sep"] = np.where(nb["_has"][:, None], (pos[sl] - nb["_cen"]) / P.nbr_r, 0.0) * \
@@ -367,7 +375,7 @@ class Substrate:
         # hunger is never aggression, a solitary locust's is not either, a gregarious one's is
         ph = self.phase[A]
         cap = np.minimum(1.0, _lerp(P.solitary.w_hunt + P.solitary.w_ring, P.gregarious.w_hunt + P.gregarious.w_ring, ph))
-        self.aggr[A] = np.clip(h[A] * 1.4 - 0.3, 0, 1) * cap
+        self.aggr[A] = np.clip(np.maximum(h[A] * 1.4 - 0.3, P.aggr_base), 0, 1) * cap
         # attachment (assembly into the body): sated and/or collectively afraid
         # a GROUP quorum with hysteresis on the school's mean hunger and fear: individual satiety is out of
         # phase across members, so an individual rule never reaches a body (measured: assembled <= 22%)
@@ -422,7 +430,17 @@ class Substrate:
             u, n = _unit(v); D[:, di[k]] = u; Wd[:, di[k]] = w * (n > 1e-9)
 
         term("food", F.sample_grad("food", cells), W("w_food") * hu)
-        term("coh", nb["coh"], W("w_coh") * (1 + self.attach[S]))
+        if P.spacing_spring:
+            # ONE signed spring along the neighbour-centroid axis instead of cohesion (toward) + separation
+            # (away): with cell moments those two are exactly collinear and flip-flop at the crowding where
+            # they balance (measured: calm grazers turned 72 deg/s, 41 without separation). The spring
+            # crosses zero smoothly at the target crowding.
+            crowd = nb["count"] / P.dens_norm
+            sgn = np.clip(1.0 - crowd / np.maximum(W("crowd"), 1e-3), -1.5, 1.0)
+            term("coh", nb["coh"] * sgn[:, None], np.abs(sgn) * (W("w_coh") * (sgn > 0) + W("w_sep") * (sgn < 0))
+                 * (1 + self.attach[S]))
+        else:
+            term("coh", nb["coh"], W("w_coh") * (1 + self.attach[S]))
         term("align", nb["align"], W("w_align"))
         tt = self.tick * 0.05
         wv = np.sin(self.wseed[S] + tt * np.array([1.0, 1.3, 0.7])) + 0.6 * np.sin(1.7 * self.wseed[S][:, ::-1] + tt * 2.1)
@@ -463,7 +481,8 @@ class Substrate:
         term("inward", -p, np.clip((r - 0.8 * self.R) / (0.15 * self.R), 0, 1) * 3.0)
         danger("wall", p, np.clip((r - 0.85 * self.R) / (0.1 * self.R), 0, 1) * 3.0)
         # an assembled member accepts crowding (its slot does the spacing)
-        danger("sep", nb["sep"], W("w_sep") * np.minimum(np.linalg.norm(nb["sep"], axis=1), 2.0) * (1 - self.attach[S]))
+        if not P.spacing_spring:
+            danger("sep", nb["sep"], W("w_sep") * np.minimum(np.linalg.norm(nb["sep"], axis=1), 2.0) * (1 - self.attach[S]))
         danger("alarm", -F.sample_grad("alarm", cells), W("w_alarm") * (0.3 + fe))
         danger("threat", -F.sample_grad("threat", cells), W("w_threat") * (0.3 + fe))
         if P.body is not None:
@@ -475,10 +494,13 @@ class Substrate:
         # ---- context map ----
         t1 = time.perf_counter()
         if self.backend in ("numba", "fused"):
-            best = knb.context_choose(T, Wt, D, Wd, self.dirs, self.idir[S])
+            best = knb.context_choose(T, Wt, D, Wd, self.dirs, self.idir[S], P.momentum)
         else:
             best = self._context_np(T, Wt, D, Wd, self.idir[S])
         self.timers["context"] = self.timers.get("context", 0) + time.perf_counter() - t1
+        if P.intent_blend > 0:
+            # low-pass the chosen direction (exponential smoothing of intent, per re-steer)
+            best = _unit(P.intent_blend * self.idir[S] + (1 - P.intent_blend) * best)[0]
         self.idir[S] = best
         urg = np.maximum(fe * (W("w_flee") > 0), ag)
         sp = W("speed") * (1 + (W("burst") - 1) * urg)
@@ -494,7 +516,7 @@ class Substrate:
         Dg = np.einsum("mtc,dc->mtd", D, dirs)
         Dg = (np.maximum(Dg, 0) ** 2 * Wd[:, :, None]).sum(1)
         # momentum: a little interest along the current heading (hysteresis, prevents dithering)
-        I += 0.15 * np.maximum(cur @ dirs.T, 0)
+        I += self.P.momentum * np.maximum(cur @ dirs.T, 0)
         Ie = I * (1 - np.clip(Dg, 0, 1)) - 0.25 * np.maximum(Dg - 1, 0)
         mx = Ie.max(1, keepdims=True)
         w = np.maximum(Ie - 0.75 * mx, 0) ** 2

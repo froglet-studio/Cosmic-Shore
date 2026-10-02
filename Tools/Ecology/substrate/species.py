@@ -25,21 +25,22 @@ def grazer(n0=180, seed=0) -> SpeciesParams:
     return SpeciesParams(name="grazer", n0=n0, capacity=int(n0 * 2), solitary=r, gregarious=r, nbr_r=25,
                          dens_norm=6, metabolism=0.012, eat_r=7, eat_hunger=0.2, hunger_per_vol=0.025,
                          fear_gain=1.2, fear_decay=0.6, sense=200, curiosity_rate=0.4, birth_stock=80,
-                         deposit_alarm=0.6, frac_k=4, seed=seed)
+                         deposit_alarm=0.6, frac_k=4, attn_r=150, attn_urg=0.6, seed=seed)
 
 
 def locust(n0=400, seed=0, hunger0=None) -> SpeciesParams:
     sol = Regime(speed=26, burst=2.0, turn=2.2, accel=50, w_food=1.0, w_coh=0.05, w_align=0.05, w_sep=1.4,
                  w_wander=0.5, w_curious=1.0, comfort=90, w_flee=1.4, w_hunt=0.0, w_alarm=0.6, w_threat=0.3,
-                 size=2.2, color=(0.45, 0.95, 0.35))
+                 crowd=0.5, size=2.2, color=(0.45, 0.95, 0.35))
     gre = Regime(speed=95, burst=1.5, turn=4.0, accel=160, w_food=0.6, w_coh=0.9, w_align=1.2, w_sep=0.6,
                  w_wander=0.08, w_curious=0.0, comfort=90, w_flee=0.0, w_hunt=1.8, w_alarm=0.0, w_threat=0.0,
-                 size=3.2, color=(1.0, 0.82, 0.1))
+                 crowd=2.0, size=3.2, color=(1.0, 0.82, 0.1))
     return SpeciesParams(name="locust", n0=n0, capacity=int(n0 * 1.6), solitary=sol, gregarious=gre, nbr_r=30,
                          dens_norm=5, metabolism=0.02, eat_r=7, eat_hunger=0.15, hunger_per_vol=0.02,
                          fear_gain=1.0, fear_decay=0.6, sense=220, curiosity_rate=0.4,
                          q_up=0.55, q_down=0.30, q_width=0.06, q_rate=0.5, q_contagion=0.6,
-                         bite_r=8, bite_cool=1.2, birth_stock=90, deposit_alarm=0.3, frac_k=4, seed=seed)
+                         bite_r=8, bite_cool=1.2, birth_stock=90, deposit_alarm=0.3, frac_k=4, attn_r=150,
+                         attn_urg=0.6, seed=seed)
 
 
 def pack(n0=8, seed=0) -> SpeciesParams:
@@ -52,7 +53,7 @@ def pack(n0=8, seed=0) -> SpeciesParams:
                          dens_norm=3.0, metabolism=0.03, eat_r=8, eat_hunger=0.9, hunger_per_vol=0.01,
                          sense=900, q_up=0.75, q_down=0.35, q_width=0.08, q_rate=0.8, q_contagion=0.5,
                          bite_r=10, bite_cool=2.0, birth_stock=1e9, ring_roles=n0, deposit_threat=0.4,
-                         deposit_alarm=0.0, frac_k=2, starve_s=1e9, seed=seed, n_dirs=26)
+                         deposit_alarm=0.0, frac_k=2, attn_r=250, attn_urg=0.6, starve_s=1e9, seed=seed, n_dirs=26)
 
 
 def manta_slots(K=96, length=60.0, span=80.0, rng=None):
@@ -70,9 +71,12 @@ def manta_slots(K=96, length=60.0, span=80.0, rng=None):
 
 
 def leviathan(n0=160, seed=0) -> SpeciesParams:
+    """Assembly on SATIETY only. A fear trigger (attach_on_f ~0.3) works - the body forms ~6 s after a charge
+    arrives - but against a pilot that kills on contact the condensed body is a pinata (139 of 160 members
+    rammed in 8 s, assembly_demo charge run). Fear-assembly needs an armoured/dangerous body (Direction B)."""
     P = grazer(n0, seed)
     P = replace(P, name="leviathan", body=BodyPlan(slots=manta_slots(n0), scale=1.0, well=3.0, speed=40),
-                attach_rate=0.8, attach_on_h=0.36, attach_off_h=0.55, attach_on_f=0.3, metabolism=0.012,
+                attach_rate=0.8, attach_on_h=0.36, attach_off_h=0.55, attach_on_f=2.0, metabolism=0.012,
                 eat_r=12, hunger_per_vol=0.03)
     P.solitary = replace(P.solitary, color=(0.6, 0.75, 1.0)); P.gregarious = P.solitary
     return P
@@ -87,7 +91,7 @@ def lurker(n0=12, seed=0) -> SpeciesParams:
     lunge = replace(sit, speed=230, burst=1.0, turn=5.0, accel=900, w_hunt=3.0, w_home=0.0, w_sep=0.2,
                     size=7.0, color=(1.0, 0.35, 0.1))
     return SpeciesParams(name="lurker", n0=n0, capacity=n0 * 2, solitary=sit, gregarious=lunge, nbr_r=40,
-                         metabolism=0.004, eat_r=10, eat_hunger=0.2, sense=300, q_w_dens=0.0, q_w_prox=1.0,
+                         metabolism=0.004, eat_r=10, eat_hunger=0.2, sense=300, aggr_base=1.0, q_w_dens=0.0, q_w_prox=1.0,
                          q_hunger=0.0, q_up=0.5, q_down=0.25, q_width=0.04, q_rate=1.6, q_contagion=0.0,
                          bite_r=12, bite_cool=2.5, birth_stock=1e9, starve_s=1e9, deposit_alarm=0.0,
                          frac_k=1, seed=seed)
@@ -106,7 +110,7 @@ def stampede(n0=220, seed=0) -> SpeciesParams:
                          nbr_r=35, dens_norm=6, metabolism=0.008, eat_r=9, sense=260, fear_gain=1.6,
                          q_w_dens=0.0, q_w_alarm=1.0, q_hunger=0.0, q_up=0.35, q_down=0.08, q_width=0.04,
                          q_rate=0.9, q_contagion=0.7, bite_r=9, bite_cool=1.0, birth_stock=120,
-                         deposit_alarm=1.2, frac_k=4, seed=seed)
+                         deposit_alarm=1.2, frac_k=4, attn_r=150, attn_urg=0.6, seed=seed)
 
 
 ANCHOR = dict(lurker="mass")

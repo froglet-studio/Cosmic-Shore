@@ -87,7 +87,7 @@ if HAVE_NUMBA:
         return out
 
     @nb.njit(parallel=True, fastmath=True, cache=True)
-    def _context_kernel(T, Wt, D, Wd, dirs, cur):
+    def _context_kernel(T, Wt, D, Wd, dirs, cur, mom):
         m = T.shape[0]; nt = T.shape[1]; nd = D.shape[1]; K = dirs.shape[0]
         out = np.empty((m, 3))
         for i in nb.prange(m):
@@ -104,7 +104,7 @@ if HAVE_NUMBA:
                             I += c * w
                 c = cur[i, 0] * dx + cur[i, 1] * dy + cur[i, 2] * dz
                 if c > 0.0:
-                    I += 0.15 * c
+                    I += mom * c
                 G = 0.0
                 for t in range(nd):
                     w = Wd[i, t]
@@ -144,9 +144,9 @@ def neighbours(pos, vel, ph, sl, h, R, dens_norm=6.0):
     return dict(count=n_c, coh=coh, align=align, _cen=cen, _has=has, mphase=np.where(has, o[:, 7] * inv, ph[sl]))
 
 
-def context_choose(T, Wt, D, Wd, dirs, cur):
+def context_choose(T, Wt, D, Wd, dirs, cur, mom=0.15):
     return _context_kernel(np.ascontiguousarray(T), np.ascontiguousarray(Wt), np.ascontiguousarray(D),
-                           np.ascontiguousarray(Wd), np.ascontiguousarray(dirs), np.ascontiguousarray(cur))
+                           np.ascontiguousarray(Wd), np.ascontiguousarray(dirs), np.ascontiguousarray(cur), float(mom))
 
 
 # ------------------------------------------------------------------------------------------------ fused step
@@ -155,10 +155,10 @@ def context_choose(T, Wt, D, Wd, dirs, cur):
 # pass. Semantics mirror core.py's numpy path term for term (verified statistically in equiv.py).
 REG_FIELDS = ("speed", "burst", "turn", "accel", "w_food", "w_coh", "w_align", "w_sep", "w_wander",
               "w_curious", "comfort", "w_flee", "w_hunt", "w_ring", "ring_r", "w_trail", "w_alarm",
-              "w_threat", "w_home")
+              "w_threat", "w_home", "crowd")
 SP_FIELDS = ("metabolism", "fear_gain", "fear_decay", "sense", "curiosity_rate", "q_up", "q_down", "q_width",
              "q_contagion", "q_rate", "dens_norm", "nbr_r", "ring_roles", "q_w_dens", "q_w_prox", "q_w_alarm",
-             "q_hunger")
+             "q_hunger", "aggr_base", "intent_blend", "momentum", "spacing_spring")
 
 if HAVE_NUMBA:
     @nb.njit(cache=True, inline="always")
@@ -237,7 +237,7 @@ if HAVE_NUMBA:
             calm = (1.0 - fe) * (1.0 - hu)
             cu = curious[i] + dt * SPv[4] * (calm * (1.0 - ph) - curious[i]); curious[i] = cu
             capw = min(1.0, (Rs[12] + Rs[13]) + ((Rg[12] + Rg[13]) - (Rs[12] + Rs[13])) * ph)
-            ag = min(max(hu * 1.4 - 0.3, 0.0), 1.0) * capw; aggr[i] = ag
+            ag = min(max(max(hu * 1.4 - 0.3, SPv[17]), 0.0), 1.0) * capw; aggr[i] = ag
             # ---- re-steer the 1/k slice ----
             st = ((i + tick) % k == 0) or (pd < attn_r) or (max(fe, ag) > attn_urg)
             steered[i] = st
@@ -266,13 +266,18 @@ if HAVE_NUMBA:
                     if cnt > 0:
                         tg = (1 - c) * tg + c * max(tg, mph)
                     qtarget[i] = tg
-                W = np.empty(19)
-                for f in range(19):
+                W = np.empty(20)
+                for f in range(20):
                     W[f] = Rs[f] + (Rg[f] - Rs[f]) * ph
                 I = np.zeros(K); G = np.zeros(K)
                 _paint(I, dirs, food_g[fc, 0], food_g[fc, 1], food_g[fc, 2], W[4] * hu)
                 if cnt > 0:
-                    _paint(I, dirs, cx_ - px, cy_ - py, cz_ - pz, W[5] * (1.0 + attach[i]))
+                    if SPv[20] > 0.5:
+                        sg = min(max(1.0 - cnt / SPv[10] / max(W[19], 1e-3), -1.5), 1.0)
+                        wsp = W[5] if sg > 0 else W[7]
+                        _paint(I, dirs, (cx_ - px) * sg, (cy_ - py) * sg, (cz_ - pz) * sg, abs(sg) * wsp * (1.0 + attach[i]))
+                    else:
+                        _paint(I, dirs, cx_ - px, cy_ - py, cz_ - pz, W[5] * (1.0 + attach[i]))
                     _paint(I, dirs, ax_, ay_, az_, W[6])
                 wx = np.sin(wseed[i, 0] + tt) + 0.6 * np.sin(1.7 * wseed[i, 2] + tt * 2.1)
                 wy = np.sin(wseed[i, 1] + tt * 1.3) + 0.6 * np.sin(1.7 * wseed[i, 1] + tt * 2.1)
@@ -305,7 +310,7 @@ if HAVE_NUMBA:
                 r = (px * px + py * py + pz * pz) ** 0.5
                 _paint(I, dirs, -px, -py, -pz, min(max((r - 0.8 * R) / (0.15 * R), 0.0), 1.0) * 3.0)
                 _paintD(G, dirs, px, py, pz, min(max((r - 0.85 * R) / (0.1 * R), 0.0), 1.0) * 3.0)
-                if cnt > 0:
+                if cnt > 0 and SPv[20] <= 0.5:
                     sc = cnt / SPv[10] / h
                     sx = (px - (cx_)) * sc; sy = (py - cy_) * sc; sz = (pz - cz_) * sc
                     _paintD(G, dirs, sx, sy, sz, W[7] * min((sx * sx + sy * sy + sz * sz) ** 0.5, 2.0))
@@ -316,7 +321,7 @@ if HAVE_NUMBA:
                 for d in range(K):
                     c = idir[i, 0] * dirs[d, 0] + idir[i, 1] * dirs[d, 1] + idir[i, 2] * dirs[d, 2]
                     if c > 0:
-                        I[d] += 0.15 * c
+                        I[d] += SPv[19] * c
                     e = I[d] * (1.0 - min(max(G[d], 0.0), 1.0)) - 0.25 * max(G[d] - 1.0, 0.0)
                     I[d] = e
                     if e > mx:
@@ -330,6 +335,11 @@ if HAVE_NUMBA:
                             vx += w * dirs[d, 0]; vy += w * dirs[d, 1]; vz += w * dirs[d, 2]
                 nn = (vx * vx + vy * vy + vz * vz) ** 0.5
                 if nn > 1e-9:
+                    b = SPv[18]
+                    vx = b * idir[i, 0] + (1 - b) * vx / nn
+                    vy = b * idir[i, 1] + (1 - b) * vy / nn
+                    vz = b * idir[i, 2] + (1 - b) * vz / nn
+                    nn = max((vx * vx + vy * vy + vz * vz) ** 0.5, 1e-9)
                     idir[i, 0] = vx / nn; idir[i, 1] = vy / nn; idir[i, 2] = vz / nn
                 urg = max(fe if W[11] > 0 else 0.0, ag)
                 ispeed[i] = W[0] * (1.0 + (W[1] - 1.0) * urg)
@@ -388,3 +398,63 @@ if HAVE_NUMBA:
                                 bd = d; out[q] = mi
                             j += 1
         return out
+
+
+# ------------------------------------------------------------------------------------- exact-pair neighbours
+# The alternative to cell MOMENTS: true pairwise neighbours within radius h (cell list, 27 cells, distance
+# test per pair). Used by core.py when SpeciesParams.nbr_exact is set, to measure whether the moments
+# approximation changes behaviour (and what exactness costs).
+if HAVE_NUMBA:
+    @nb.njit(parallel=True, fastmath=True, cache=True)
+    def _nbr_exact_kernel(pos, vel, ph, sl, h, R, dens_norm):
+        n = len(pos)
+        M = np.int64(2 * R / h) + 4
+        key = np.empty(n, np.int64)
+        for i in nb.prange(n):
+            cx = min(max(np.int64(np.floor((pos[i, 0] + R) / h)) + 1, 0), M - 1)
+            cy = min(max(np.int64(np.floor((pos[i, 1] + R) / h)) + 1, 0), M - 1)
+            cz = min(max(np.int64(np.floor((pos[i, 2] + R) / h)) + 1, 0), M - 1)
+            key[i] = (cx * M + cy) * M + cz
+        o = np.argsort(key)
+        sk = key[o]
+        m = len(sl)
+        out = np.zeros((m, 11))
+        for q in nb.prange(m):
+            i = sl[q]
+            k0 = key[i]
+            c = 0.0; spx = 0.0; spy = 0.0; spz = 0.0; svx = 0.0; svy = 0.0; svz = 0.0; sph = 0.0
+            sx = 0.0; sy = 0.0; sz = 0.0
+            for dx in range(-1, 2):
+                for dy in range(-1, 2):
+                    for dz in range(-1, 2):
+                        kq = k0 + (dx * M + dy) * M + dz
+                        j = np.searchsorted(sk, kq)
+                        while j < n and sk[j] == kq:
+                            a = o[j]; j += 1
+                            if a == i:
+                                continue
+                            ex = pos[i, 0] - pos[a, 0]; ey = pos[i, 1] - pos[a, 1]; ez = pos[i, 2] - pos[a, 2]
+                            d = (ex * ex + ey * ey + ez * ez) ** 0.5
+                            if d >= 1.5 * h:          # radius 1.5h ~ the 3x3x3 cube's reach, comparable counts
+                                continue
+                            c += 1.0
+                            spx += pos[a, 0]; spy += pos[a, 1]; spz += pos[a, 2]
+                            svx += vel[a, 0]; svy += vel[a, 1]; svz += vel[a, 2]; sph += ph[a]
+                            w = (1.0 - d / (1.5 * h)) / max(d, 1e-6)
+                            sx += ex * w; sy += ey * w; sz += ez * w
+            out[q, 0] = c
+            out[q, 1] = spx; out[q, 2] = spy; out[q, 3] = spz
+            out[q, 4] = svx; out[q, 5] = svy; out[q, 6] = svz; out[q, 7] = sph
+            out[q, 8] = sx / dens_norm * 2.0; out[q, 9] = sy / dens_norm * 2.0; out[q, 10] = sz / dens_norm * 2.0
+        return out
+
+
+def neighbours_exact(pos, vel, ph, sl, h, R, dens_norm):
+    o = _nbr_exact_kernel(np.ascontiguousarray(pos), np.ascontiguousarray(vel), np.ascontiguousarray(ph), sl,
+                          float(h), float(R), float(dens_norm))
+    n_c = o[:, 0]; inv = 1.0 / np.maximum(n_c, 1); has = n_c > 0; p = pos[sl]
+    cen = o[:, 1:4] * inv[:, None]
+    return dict(count=n_c, coh=np.where(has[:, None], cen - p, 0.0),
+                align=np.where(has[:, None], o[:, 4:7] * inv[:, None], 0.0),
+                sep=np.where(has[:, None], o[:, 8:11], 0.0),
+                mphase=np.where(has, o[:, 7] * inv, ph[sl]))
