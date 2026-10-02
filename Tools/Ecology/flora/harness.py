@@ -192,14 +192,20 @@ class FloraArena(Arena):
         if not len(H):
             p.speed = speed
             return goal
-        dirs = _DIRS
+        # candidates: the exact goal direction and the current heading first (26 fixed directions alone are ~40
+        # degrees apart, so a reader could never home onto a 12 u crystal - it orbited them; round 3), then the sphere
+        dirs = np.vstack([want, v, _DIRS])
         look = np.array([40.0, 90.0, 150.0, 220.0])
         # sample points along each candidate direction; penalty = sum of hazards those points fall inside
         pts = p.pos[None, None, :] + dirs[:, None, :] * look[None, :, None]           # (26,4,3)
         dd = np.linalg.norm(pts[:, :, None, :] - H[None, None, :, :], axis=3)          # (26,4,h)
-        inside = np.clip(1.0 - (dd - Rr[None, None, :]) / 40.0, 0, 1) * W[None, None, :]
-        danger = (inside * np.array([1.0, 0.8, 0.5, 0.3])[None, :, None]).sum(axis=(1, 2))
-        score = dirs @ want * 1.0 + dirs @ v * 0.6 - 3.0 * danger
+        # MAX over hazards per sample point (a cluster of teeth is one hazard, not eight), a 25 u margin, and the
+        # near look points weigh most. Round 3's reader SUMMED penalties with a 40 u margin: a trap cluster vetoed
+        # every direction and the reader collected 10 crystals to the blind wanderer's 44 - `access` was measuring
+        # the pilot model, not the plant.
+        inside = np.clip(1.0 - (dd - Rr[None, None, :]) / 25.0, 0, 1) * W[None, None, :]
+        danger = (inside.max(axis=2) * np.array([1.0, 0.7, 0.4, 0.2])[None, :]).sum(axis=1)
+        score = dirs @ want * 1.0 + dirs @ v * 0.6 - 2.5 * danger
         best = int(np.argmax(score))
         # unavoidable danger right ahead: boost through it (the "speed" counter)
         if danger[best] > 0.6 and self.boost_cool[p.name] <= 0 and self.boost_left[p.name] <= 0:

@@ -269,10 +269,13 @@ class SnapTrap(FloraSpecies):
         N = self.n
         live = np.flatnonzero(self.alive[:N] & (self.grow[:N] >= 1))
         hot = live[self.itn[live] > 0.25]
-        mouths = self.h[hot] + self.a[hot] * (22.0 + self.p["mouth_len"] * 0.5)
+        # the glow must COVER the strike volume: at full gape the lip spans +-(L tan(gape+dgape)) - round 3's r=0.7L
+        # sphere did not, and readers were snapped 9 times in 2 min by mouths that looked smaller than they were
+        L = self.p["mouth_len"]; lip = L * math.tan(math.radians(self.p["gape"] + self.p["dgape"]))
+        mouths = self.h[hot] + self.a[hot] * (22.0 + L * 0.6)
         bi = self.body.live(); teeth = bi[self.body.danger[bi]]
         H = np.concatenate([mouths, self.body.pos[teeth]])
-        R = np.concatenate([np.full(len(hot), self.p["mouth_len"] * 0.7), np.full(len(teeth), 8.0)])
+        R = np.concatenate([np.full(len(hot), max(L * 0.7, lip)), np.full(len(teeth), 8.0)])
         W = np.concatenate([self.itn[hot], np.full(len(teeth), 0.5)])
         return H, R, W, None
 
