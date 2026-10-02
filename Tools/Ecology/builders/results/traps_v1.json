@@ -14,54 +14,54 @@
   "jerk_rel": 0.4
  },
  "replay": {
-  "jaccard_mean": 0.966,
+  "jaccard_mean": 0.993,
   "shapes": [
    {
-    "n": 171,
-    "r_mean": 495.5,
-    "r_std": 250.6,
-    "aniso": 0.261,
-    "flat": 0.473
+    "n": 558,
+    "r_mean": 576.1,
+    "r_std": 181.0,
+    "aniso": 0.023,
+    "flat": 0.916
    },
    {
-    "n": 208,
-    "r_mean": 600.1,
-    "r_std": 226.7,
-    "aniso": 0.241,
-    "flat": 0.842
+    "n": 587,
+    "r_mean": 594.2,
+    "r_std": 152.9,
+    "aniso": 0.022,
+    "flat": 0.804
    },
    {
-    "n": 161,
-    "r_mean": 570.8,
-    "r_std": 153.0,
-    "aniso": 0.277,
-    "flat": 0.537
+    "n": 600,
+    "r_mean": 589.2,
+    "r_std": 161.5,
+    "aniso": 0.02,
+    "flat": 0.772
    }
   ],
   "components": [
    [
-    16,
-    8,
-    7,
-    5,
-    5,
-    5
+    23,
+    21,
+    18,
+    17,
+    17,
+    15
    ],
    [
-    11,
-    10,
-    8,
-    8,
-    7,
-    7
+    65,
+    23,
+    15,
+    15,
+    14,
+    14
    ],
    [
-    8,
-    7,
-    7,
-    7,
-    7,
-    6
+    30,
+    23,
+    17,
+    15,
+    14,
+    13
    ]
   ]
  },
@@ -84,7 +84,7 @@
    "moves_per_s": 191.6,
    "steals": 210,
    "hits_per_min": 0.0,
-   "wall_s": 17.3
+   "wall_s": 30.5
   },
   "wander/23": {
    "built": 208,
@@ -104,7 +104,7 @@
    "moves_per_s": 318.7,
    "steals": 259,
    "hits_per_min": 0.33,
-   "wall_s": 19.4
+   "wall_s": 30.6
   },
   "wander/41": {
    "built": 161,
@@ -124,7 +124,7 @@
    "moves_per_s": 245.2,
    "steals": 208,
    "hits_per_min": 0.0,
-   "wall_s": 17.8
+   "wall_s": 19.5
   },
   "evader/7": {
    "built": 37,
@@ -144,7 +144,7 @@
    "moves_per_s": 139.6,
    "steals": 58,
    "hits_per_min": 0.0,
-   "wall_s": 14.6
+   "wall_s": 18.1
   },
   "evader/23": {
    "built": 24,
@@ -164,7 +164,7 @@
    "moves_per_s": 109.9,
    "steals": 39,
    "hits_per_min": 0.0,
-   "wall_s": 14.4
+   "wall_s": 17.4
   },
   "evader/41": {
    "built": 9,
@@ -184,7 +184,7 @@
    "moves_per_s": 144.3,
    "steals": 28,
    "hits_per_min": 0.0,
-   "wall_s": 14.3
+   "wall_s": 14.6
   },
   "hunter/7": {
    "built": 79,
@@ -204,7 +204,7 @@
    "moves_per_s": 179.1,
    "steals": 114,
    "hits_per_min": 0.0,
-   "wall_s": 13.8
+   "wall_s": 14.2
   },
   "hunter/23": {
    "built": 216,
@@ -224,7 +224,7 @@
    "moves_per_s": 191.1,
    "steals": 252,
    "hits_per_min": 2.33,
-   "wall_s": 13.5
+   "wall_s": 13.9
   },
   "hunter/41": {
    "built": 121,
@@ -264,7 +264,7 @@
    "moves_per_s": 218.6,
    "steals": 779,
    "hits_per_min": 37.33,
-   "wall_s": 18.6
+   "wall_s": 18.2
   },
   "circuit/23": {
    "built": 587,
@@ -284,7 +284,7 @@
    "moves_per_s": 157.6,
    "steals": 814,
    "hits_per_min": 37.67,
-   "wall_s": 16.9
+   "wall_s": 17.2
   },
   "circuit/41": {
    "built": 600,
@@ -304,7 +304,7 @@
    "moves_per_s": 224.4,
    "steals": 807,
    "hits_per_min": 32.33,
-   "wall_s": 17.8
+   "wall_s": 18.6
   },
   "varied/7": {
    "built": 314,
@@ -324,7 +324,7 @@
    "moves_per_s": 341.2,
    "steals": 361,
    "hits_per_min": 0.67,
-   "wall_s": 19.9
+   "wall_s": 20.7
   },
   "varied/23": {
    "built": 346,
@@ -344,7 +344,7 @@
    "moves_per_s": 384.1,
    "steals": 400,
    "hits_per_min": 0.33,
-   "wall_s": 21.0
+   "wall_s": 20.8
   },
   "varied/41": {
    "built": 282,
@@ -364,7 +364,7 @@
    "moves_per_s": 356.1,
    "steals": 334,
    "hits_per_min": 0.67,
-   "wall_s": 20.4
+   "wall_s": 20.5
   }
  },
  "hits_per_min_circuit": 35.776666666666664,

@@ -45,7 +45,7 @@ class TrapBuilders(Colony):
         self.last_trail = {}                            # pilot domain -> last trail prism index (heading)
         self.sprung = []                                # (t, age_s) of every trap a pilot touched
         self.burn_cool = {}; self.cooldown = cooldown
-        self.extent = 600.0
+        self.extent = 1200.0; self.sig_centre = np.zeros(3); self.sig_bins = 24   # webs compare in the WORLD frame
 
     # -- learning the lanes from the trail -------------------------------------------------------------------
     def learn(self, arena):

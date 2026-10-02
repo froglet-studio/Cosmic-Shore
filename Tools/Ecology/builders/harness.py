@@ -117,7 +117,8 @@ def replayability(sps):
     sigs = []
     for sp in sps:
         pts = sp.lat.occupancy_points()
-        sigs.append((structure_signature(pts, sp.lat.anchor, bins=10, extent=sp.extent), shape_stats(pts, sp.lat.anchor),
+        c0 = getattr(sp, 'sig_centre', None); c0 = sp.lat.anchor if c0 is None else c0
+        sigs.append((structure_signature(pts, c0, bins=getattr(sp, 'sig_bins', 10), extent=sp.extent), shape_stats(pts, sp.lat.anchor),
                      components(sp.lat)))
     jac = []
     for i in range(len(sigs)):

@@ -29,11 +29,13 @@ class Wearers:
             "Ram it to strip your prisms back.")
 
     def __init__(self, arena, seed=0, n=40, alpha=1.0, V_hunt=600.0, speed=95.0, windup=1.0, lunge=2.2,
-                 sense=180.0, exposed_at=3, s=6.0, fuse=True, dom=2, slow=0.15, rear_at=140.0, intercept=True):
+                 sense=180.0, exposed_at=3, s=6.0, fuse=True, dom=2, slow=0.15, rear_at=140.0, intercept=True,
+                 contact=0.0):
         self.rng = np.random.default_rng(seed + 13)
         self.n, self.alpha, self.V_hunt, self.speed0, self.windup, self.lunge_k = n, alpha, V_hunt, speed, windup, lunge
         self.sense, self.exposed_at, self.s, self.fuse, self.dom = sense, exposed_at, s, fuse, dom
         self.slow, self.rear_at, self.intercept = slow, rear_at, intercept
+        self.contact = contact          # 0 = draw from the whole frontier; >0 = stick near the touch point (temp.)
         c = arena._ball(1, 300, 800)[0]
         self.agent_pos = c + self.rng.normal(0, 150, (n, 3))
         self.agent_vel = np.zeros((n, 3)); self.agent_size = np.full(n, 2.0); self.intent = np.zeros(n)
@@ -74,6 +76,12 @@ class Wearers:
                     nb = sum((r[0] + p[0], r[1] + p[1], r[2] + p[2]) in occ for p in N26)
                     cand[r] = nb
         sites = list(cand); w = np.array([cand[r] for r in sites], float) ** (-self.alpha)
+        if self.contact:
+            # the prism sticks where it TOUCHED: frontier sites are weighted by how close they lie to the prism's
+            # current offset from the heart (DLA's arrival point) - bodies grow arms toward what they feed on
+            rel = (arena.mass_pos[i] - self.agent_pos[k]) / self.s
+            dd = np.array([np.sum((np.asarray(r, float) - rel) ** 2) for r in sites])
+            w = w * np.exp(-(dd - dd.min()) / self.contact)
         site = sites[self.rng.choice(len(sites), p=w / w.sum())]
         b[site] = int(i)
 

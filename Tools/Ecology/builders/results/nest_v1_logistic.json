@@ -2,19 +2,19 @@
  "hits_per_min_wander": 0.0,
  "hits_per_min_evader": 0.0,
  "counterplay": null,
- "telegraph_s": 0.3,
- "payoff_per_min": 7.553333333333334,
+ "telegraph_s": 0.5,
+ "payoff_per_min": 4.223333333333334,
  "variety": 0.0,
  "feel": {
   "size": 3.0,
-  "speed_rel": 0.299,
-  "approach": 1.961,
-  "coherence": 0.323,
-  "burstiness": 1.701,
-  "jerk_rel": 0.066
+  "speed_rel": 0.293,
+  "approach": 3.186,
+  "coherence": 0.314,
+  "burstiness": 1.77,
+  "jerk_rel": 0.07
  },
  "replay": {
-  "jaccard_mean": 0.529,
+  "jaccard_mean": 0.527,
   "shapes": [
    {
     "n": 229,
@@ -24,11 +24,11 @@
     "flat": 0.694
    },
    {
-    "n": 310,
-    "r_mean": 45.8,
+    "n": 312,
+    "r_mean": 45.6,
     "r_std": 12.1,
-    "aniso": 0.447,
-    "flat": 0.493
+    "aniso": 0.459,
+    "flat": 0.49
    },
    {
     "n": 174,
@@ -48,9 +48,9 @@
     2
    ],
    [
-    276,
-    11,
+    287,
     5,
+    2,
     2,
     2,
     2
@@ -84,16 +84,16 @@
    "moves_per_s": 98.6,
    "steals": 235,
    "hits_per_min": 0.0,
-   "wall_s": 9.4
+   "wall_s": 12.1
   },
   "wander/23": {
-   "built": 310,
-   "placed": 310,
-   "placed_trail": 97,
-   "trail_frac": 0.313,
-   "build_per_min": 103.3,
-   "pickups": 315,
-   "carry_moves_per_s": 110.3,
+   "built": 312,
+   "placed": 312,
+   "placed_trail": 98,
+   "trail_frac": 0.314,
+   "build_per_min": 104.0,
+   "pickups": 319,
+   "carry_moves_per_s": 109.5,
    "workers_alive": 48,
    "kills": 0,
    "shell_frac": 1.0,
@@ -101,10 +101,10 @@
    "raided": 0,
    "breaches": 0,
    "audit": 0.0,
-   "moves_per_s": 112.0,
-   "steals": 315,
+   "moves_per_s": 111.2,
+   "steals": 319,
    "hits_per_min": 0.0,
-   "wall_s": 9.6
+   "wall_s": 19.0
   },
   "wander/41": {
    "built": 174,
@@ -124,7 +124,7 @@
    "moves_per_s": 90.5,
    "steals": 184,
    "hits_per_min": 0.0,
-   "wall_s": 8.7
+   "wall_s": 16.2
   },
   "evader/7": {
    "built": 94,
@@ -144,7 +144,7 @@
    "moves_per_s": 48.1,
    "steals": 95,
    "hits_per_min": 0.0,
-   "wall_s": 8.4
+   "wall_s": 11.0
   },
   "evader/23": {
    "built": 223,
@@ -164,7 +164,7 @@
    "moves_per_s": 81.2,
    "steals": 227,
    "hits_per_min": 0.0,
-   "wall_s": 8.9
+   "wall_s": 10.4
   },
   "evader/41": {
    "built": 109,
@@ -184,67 +184,67 @@
    "moves_per_s": 71.9,
    "steals": 119,
    "hits_per_min": 0.0,
-   "wall_s": 8.5
+   "wall_s": 8.6
   },
   "hunter/7": {
-   "built": 208,
-   "placed": 279,
-   "placed_trail": 199,
-   "trail_frac": 0.639,
-   "build_per_min": 93.0,
-   "pickups": 293,
-   "carry_moves_per_s": 90.5,
-   "workers_alive": 32,
-   "kills": 16,
+   "built": 205,
+   "placed": 267,
+   "placed_trail": 196,
+   "trail_frac": 0.673,
+   "build_per_min": 89.0,
+   "pickups": 273,
+   "carry_moves_per_s": 86.7,
+   "workers_alive": 36,
+   "kills": 12,
    "shell_frac": 1.0,
    "brood_store": 0,
    "raided": 13,
-   "breaches": 71,
-   "audit": -0.0,
-   "moves_per_s": 92.1,
-   "steals": 289,
+   "breaches": 62,
+   "audit": 0.0,
+   "moves_per_s": 88.2,
+   "steals": 268,
    "hits_per_min": 1.67,
-   "wall_s": 9.1
+   "wall_s": 9.3
   },
   "hunter/23": {
-   "built": 259,
-   "placed": 343,
-   "placed_trail": 178,
-   "trail_frac": 0.402,
-   "build_per_min": 114.3,
-   "pickups": 357,
-   "carry_moves_per_s": 86.6,
-   "workers_alive": 18,
-   "kills": 30,
+   "built": 267,
+   "placed": 347,
+   "placed_trail": 184,
+   "trail_frac": 0.438,
+   "build_per_min": 115.7,
+   "pickups": 366,
+   "carry_moves_per_s": 91.8,
+   "workers_alive": 36,
+   "kills": 12,
    "shell_frac": 1.0,
    "brood_store": 1,
    "raided": 16,
-   "breaches": 84,
-   "audit": 0.0,
-   "moves_per_s": 88.5,
-   "steals": 351,
-   "hits_per_min": 6.33,
-   "wall_s": 8.1
+   "breaches": 80,
+   "audit": -0.0,
+   "moves_per_s": 93.7,
+   "steals": 360,
+   "hits_per_min": 1.0,
+   "wall_s": 12.2
   },
   "hunter/41": {
-   "built": 151,
-   "placed": 223,
-   "placed_trail": 181,
-   "trail_frac": 0.748,
-   "build_per_min": 74.3,
-   "pickups": 232,
-   "carry_moves_per_s": 76.7,
-   "workers_alive": 26,
-   "kills": 22,
+   "built": 158,
+   "placed": 222,
+   "placed_trail": 185,
+   "trail_frac": 0.804,
+   "build_per_min": 74.0,
+   "pickups": 231,
+   "carry_moves_per_s": 73.0,
+   "workers_alive": 34,
+   "kills": 14,
    "shell_frac": 1.0,
    "brood_store": 2,
    "raided": 9,
-   "breaches": 72,
+   "breaches": 64,
    "audit": -0.0,
-   "moves_per_s": 78.0,
-   "steals": 228,
-   "hits_per_min": 4.67,
-   "wall_s": 8.4
+   "moves_per_s": 74.2,
+   "steals": 226,
+   "hits_per_min": 1.67,
+   "wall_s": 11.3
   }
  }
 }
