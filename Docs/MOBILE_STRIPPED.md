@@ -243,7 +243,7 @@ The strip's smoothing was re-applied onto the new code: populate lays **1 prism/
 PerfStrip, re-poses are amortized (5/frame while suctioned), `MaxConcurrentArrivals = 2`.
 If 800 + ≤300 breadcrumb prisms proves too heavy on device, `prismBudgetPerScene` is still dial #1.
 
-## Static skybox (bake once in the editor)
+## Static skybox (bake once in the editor) *(superseded by Round 17: baked offline, no editor)*
 
 Run **FrogletTools ▸ Bake Static HyperSea Skybox** once (and after any skybox shader change): it
 renders the procedural HyperSea sky into a 512px/face cubemap and saves a `Skybox/Cubemap` material
@@ -799,8 +799,7 @@ worlds), spawn matrix (flora/fauna are paused) and Arkway (three satellite cells
 ### Candidates to bring in next (not done — each needs the editor)
 
 1. ~~**Joust**~~ — brought in, Round 11.
-2. **The static skybox** — still the biggest missing piece of the look; bake it in the editor
-   (FrogletTools ▸ Bake Static HyperSea Skybox) and commit the material. One texture sample.
+2. ~~**The static skybox**~~ — baked offline and shipped, Round 17.
 3. **Render scale** — if MSAA + FXAA still read soft/jaggy on device, the next lever is
    `m_RenderScale` 0.8 → 0.9 (+27% pixels) or the FSR upscaler; measure first.
 
@@ -1082,7 +1081,7 @@ Cost: one 642-vertex draw where the capsule membrane drew **2,562 instanced caps
 4) every frame and rebuilt 2,562 matrices at 20 Hz; and from inside, the opaque wall writes depth in
 front of the skybox, so the sky shader is early-z rejected under it.
 
-Stated consequence: **Skim Race intensity 3** runs a lobe out to x = -3,480, outside the wall. From
+Stated consequence *(resolved in Round 17 - intensity 3 gets its own, larger membrane)*: **Skim Race intensity 3** runs a lobe out to x = -3,480, outside the wall. From
 inside the cell that part of the track is behind the wall until you cross it; from outside, the
 membrane is transparent toward you. That is how Skim Race looked before March; the other three
 intensities stay within 700.
@@ -1186,3 +1185,84 @@ No Unity here; the eight out-of-editor gates, a Roslyn syntax parse of both chan
    sticks over and the trigger pulled, and the nose follows the thumb without lag; put the thumb back
    and the hull settles at once.
 3. A full-lock 180 bleeds a little speed (~7%), as on the pad; anything less than full lock carries.
+
+## Round 17 — the sky baked offline, Skim Race's far lobe, the Butterfly on glass (2026-10-02)
+
+Reported after Round 16: *"please continue. and making the skybox bigger in the intensity 3 is fine.
+but i just played wander way and it was pitch black in the skybox which is not ideal."*
+
+### Resync
+
+61 upstream commits merged clean (no overlap with strip files). Brought in, among others: a crystal
+`Material` leak per colour change (`Crystal.LerpCrystalMaterialCoroutine`), the freestyle camera
+losing the ship, the pad releasing held triggers on pause/strategy switch, Skim Race Blue pickups
+and AI readiness. The merge also exposed a Round 15 miss: a comment-only edit to
+`SpawnableGarland.cs` had staled `author_garland_cell.py --check`'s source hash. Re-measured with
+`garland_harness/run.sh`: every number identical (4,259 prisms, 2,177,499 volume).
+
+### The sky: the authored HyperSea sky, baked without the editor
+
+Wanderway was black because the strip clears to a solid deep-space colour - the procedural sky
+(`HyperSeaSkybox.shader`, 767 lines, two 3x3x3 Voronoi searches and ~20 noise octaves per pixel) is
+too expensive to run, and the editor bake that was meant to replace it never produced an asset.
+Inside a cell nobody saw it (the mesh membrane is the sky there since Round 15); a Wanderway run
+flies out of the cell and saw only the clear.
+
+`Tools/Build/bake_static_skybox.py` bakes it OFFLINE. The sky is pure math with no textures, so the
+tool transpiles the SHIPPED shader's CGINCLUDE block to C++ (a 90-line HLSL shim,
+`static_skybox_harness/hlsl_shim.h`), compiles it with clang, and evaluates it per texel with the
+SHIPPED material's values (colours linearized as Unity uploads them in a Linear project; vectors
+left alone) into a **4096x2048 equirectangular panorama**, 3x3 supersampled in linear light,
+8-bit sRGB with a +-1 LSB dither against banding in the dark nebulae. 6.7 MB PNG, ~70 s on 4 cores.
+- **Runtime cost: one texture sample per pixel.** `StaticSkyPanorama.shader` (a 20-line URP skybox
+  in the same shape as `HyperSeaSkybox.shader`), `Resources/StaticHyperSeaSkybox.mat` - the name
+  `PerfStripRuntime` has always loaded, so no code changed. Inside a cell the opaque membrane is in
+  front of it, so early-z rejects it.
+- **LDR is exact, not a compromise:** the strip renders LDR (`URP_Asset` `m_SupportsHDR: 0`), so a
+  clamped 8-bit value is what the procedural sky would have put on screen anyway.
+- **Static:** time 0 - the authored drift and star twinkle do not animate. A foreground star smaller
+  than a texel is averaged rather than point-sampled, so it reads fainter than the procedural's
+  per-pixel sparkle; galaxies, the galactic band, Andromeda and the nebulae are intact.
+- **Proved:** the shader's direction→UV and the bake's UV→direction round-trip to 3e-14; the
+  longitude seam's colour step (1.98) is below the interior neighbour step (2.62), i.e. no line.
+- **`--check`** fails if the sky shader, its material, the shim or the bake code changed since the
+  bake, or if any authored asset drifted. It hashes the CODE that moves pixels and not the whole
+  script, so a docstring edit is not a stale bake (proved both ways: a docstring edit passes, a
+  `_StarBrightness` change fails) - the trap the Garland hash just demonstrated.
+- **Retired:** `Assets/Editor/BakeStaticSkybox.cs` (FrogletTools ▸ Bake Static HyperSea Skybox). It
+  wrote the same `Resources` path as a cubemap material; two writers to one asset is whichever ran
+  last, and the offline bake is the one that exists.
+
+Also visible now: the boot/auth scenes and anything a RenderTexture camera sees outside a cell
+(the Butterfly's gate window) show the sky instead of the clear.
+
+### Skim Race intensity 3: its own, larger membrane
+
+Intensity 3's barbell track runs out to x = -3,480; the 1,200 membrane hid that lobe until you flew
+through the wall. Per CLAUDE.md, a Cell-owned visual is resized by a config pointing at a resized
+prefab: `MeshMembraneLarge.prefab` (variant of `MembraneBase`, scale **3,800** - wall at ~3,860
+after the mesh's own radius and ripple, ~375 clear of the lobe) and `Skim Race Cell Config 3`
+(identical to the Skim Race config but for the membrane). The Skim Race scene's cell now picks by
+intensity - `IntensityWise` over [config, config, config 3, config] - so intensities 1, 2 and 4 are
+byte-for-byte the cell they were. Waystation shares `Skim Race Cell Config` and is untouched.
+
+Stated cost: `IntensityWise` also selects the timer-driven `IntensityWiseLifeSpawner` instead of the
+prey-linked `RandomLifeSpawner` for this cell. On the strip that is inert - cell life runs only in
+the home world (`PerfStrip.CellLifeRuns`, gated in `CellLifeSpawnerBase`) - but it is a real change
+to Skim Race's food web in a non-strip build.
+
+### The Butterfly on glass
+
+`touchNoseResponse` **5** on `Butterfly.prefab` (Squirrel 9): the Butterfly turns at 45 deg/s, so the
+fleet response left its nose 30 degrees behind the command; at 5 it is 9. Gentler than the Squirrel
+on purpose - it is the slow, meditative hull - and it makes the Fold's line (aimed before the press)
+land where the pilot pointed. `waystation_course.py` and the Butterfly asset generators still pass.
+
+### Not verified in the editor
+
+No Unity here; the eight out-of-editor gates, a Roslyn parse, `bake_static_skybox.py --check`,
+`touch_drift_slip.py --check` and the cell/course generators pass. On device:
+1. Wanderway: the sky behind the belt is the HyperSea sky (galactic band, Andromeda, nebulae), not
+   black; frame rate holds. Inside a cell nothing changes (the membrane is in front of it).
+2. Skim Race intensity 3: the whole barbell is visible from the start; intensities 1, 2, 4 unchanged.
+3. Butterfly on touch: turns settle where the thumb stops; a Fold lands on the line you aimed.

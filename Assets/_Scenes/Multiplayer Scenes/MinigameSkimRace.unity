@@ -226,16 +226,34 @@ PrefabInstance:
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
       propertyPath: cellTypeChoiceOptions
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
-        type: 3}
-      propertyPath: CellConfigs.Array.size
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
+      propertyPath: CellConfigs.Array.size
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
+        type: 3}
       propertyPath: 'CellConfigs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6,
+        type: 2}
+    - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
+        type: 3}
+      propertyPath: 'CellConfigs.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6,
+        type: 2}
+    - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
+        type: 3}
+      propertyPath: 'CellConfigs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: bd8351b3f99497b1e23ab62b53a89cc1,
+        type: 2}
+    - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
+        type: 3}
+      propertyPath: 'CellConfigs.Array.data[3]'
       value: 
       objectReference: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6,
         type: 2}

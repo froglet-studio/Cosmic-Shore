@@ -8,17 +8,18 @@ namespace CosmicShore.Utility
     /// <summary>
     /// Runtime hooks for the Android stripped-performance branch (see <see cref="PerfStrip"/>).
     ///
-    /// SKYBOX: killed. The authored HyperSea sky is a 767-line fragment shader (two 3x3x3 Voronoi
+    /// SKYBOX: BAKED. The authored HyperSea sky is a 767-line fragment shader (two 3x3x3 Voronoi
     /// loops, 7 FBM octaves, star field + twinkle + nebulae + dust + two galaxy cores) shading
-    /// nearly every pixel every frame - one of the largest GPU costs on a mid phone. Cameras fall
-    /// back to a solid deep-space clear, which is also strictly cheaper than ANY skybox (no
-    /// full-screen sample, no background overdraw).
+    /// nearly every pixel every frame - one of the largest GPU costs on a mid phone - so it never
+    /// runs here. Tools/Build/bake_static_skybox.py compiles that shader's math OFFLINE and writes
+    /// it into a panorama; Resources/StaticHyperSeaSkybox draws it at one texture sample per pixel
+    /// (StaticSkyPanorama.shader). Inside a cell the opaque mesh membrane hides it and early-z
+    /// rejects it; it is what a Wanderway run sees outside the cell, which was a black void before.
+    /// Without the asset this falls back to a solid deep-space clear.
     ///
-    /// A runtime cubemap bake was tried and REVERTED on measurement: it restored the look but cost
-    /// frames, and its failure path was worse still - it kept the procedural sky at full price. If
-    /// the sky is ever wanted back, bake it OFFLINE (FrogletTools > Bake Static HyperSea Skybox
-    /// writes Resources/StaticHyperSeaSkybox) so the cost is a texture sample and never a shader;
-    /// this loader picks that asset up automatically if it exists.
+    /// A RUNTIME cubemap bake was tried and REVERTED on measurement: it restored the look but cost
+    /// frames, and its failure path kept the procedural sky at full price. The offline bake has no
+    /// failure path at runtime - the asset either loads or the clear is used.
     ///
     /// POST-PROCESSING: restored for gameplay only, and only on the camera that actually presents
     /// to the screen. See <see cref="ApplyPostProcessing"/>.
