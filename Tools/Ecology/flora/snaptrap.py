@@ -327,6 +327,12 @@ class SnapTrap(FloraSpecies):
                 o = self.body.owner[j]
                 if o >= 0: self.slots[o][self.slots[o] == j] = -1
 
+    def remove_ball(self, arena, c, r):
+        bi = self.body.live(); m = bi[np.linalg.norm(self.body.pos[bi] - c, axis=1) < r]
+        for j in m:
+            self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j]); o = self.body.owner[j]
+            if o >= 0: self.slots[o][self.slots[o] == j] = -1
+
     def mass_total(self):
         return self.reserve + self.body.total_volume()
 

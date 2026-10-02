@@ -43,7 +43,8 @@ GROVE_R = 450.0                  # the GROVE: a ball the plants live in and the 
                                  # threat is a PLACE; in a 600 u-thick shell a wanderer's mean free path between
                                  # plant clumps was ~8000 u and it met no plant at all (round 0, see DISCOVERIES).
 VIEW = 450.0                     # how far a pilot can READ a telegraph
-BURN_COOLDOWN = 1.0              # one hazard element burns one pilot at most once per this many seconds
+BURN_COOLDOWN = 1.0
+SLOW_STRENGTH, SLOW_S = 1.5, 3.0  # danger slow (fleet tuning): strength 0.5 x 3, duration 1 s x 3              # one hazard element burns one pilot at most once per this many seconds
 
 
 # ------------------------------------------------------------------------------------------------- pilots
@@ -58,7 +59,7 @@ class FloraArena(Arena):
         # species may publish LURES (mimics) through `lures()`; a pilot cannot tell a lure from a crystal unless
         # it is a reader inside the lure's tell range.
         self.crys = self.grove(n_crystals, 30.0) if n_crystals else np.zeros((0, 3))
-        self.divert = divert; self.collected = {}; self.lured = {}; self.known_lures = {}; self.goal_t = {}
+        self.divert = divert; self.collected = {}; self.lured = {}; self.known_lures = {}; self.goal_t = {}; self.slow_t = {}
         self.bait_t = {}; self.bait_skip = {}
         self.trails, self.trail_gap, self.trail_vol = trails, trail_gap, trail_vol
         self.created = 0.0; self.trail_acc = {}; self.n_trail = 0
@@ -70,6 +71,20 @@ class FloraArena(Arena):
         self.courier_route = self.grove(3, 60.0)
         self.courier_i = {}
         self.base_speed = {}
+
+    def hit(self, pilot, kind, amount=1.0):
+        """A burn also SLOWS, as in game: VesselChangeSpeedByPrismEffectSO on a danger prism slows at
+        maxSlowStrength x dangerSlowMultiplier (0.5 x 3 = 1.5, i.e. clamped to a stop) for speedModifierDuration x
+        dangerSlowDurationMultiplier (1 x 3 = 3 s) - the fleet's shared tuning (CLAUDE.md). Modelled as a linear
+        recovery 1 - 1.5 (1 - t/3), floored at 0.1. The arena may do this; a vessel may not (ELEMENTAL_ECONOMY §9)."""
+        super().hit(pilot, kind, amount)
+        self.slow_t[pilot.name] = self.t
+
+    def speed_factor(self, p):
+        t0 = self.slow_t.get(p.name)
+        if t0 is None: return 1.0
+        x = (self.t - t0) / SLOW_S
+        return 1.0 if x >= 1 else max(0.1, 1.0 - SLOW_STRENGTH * (1.0 - x))
 
     def add_pilot(self, p: Pilot):
         super().add_pilot(p)
@@ -87,6 +102,7 @@ class FloraArena(Arena):
             self.boost_cool[p.name] = max(0.0, self.boost_cool[p.name] - dt)
             if p.policy not in ("reader",):
                 p.speed = self.base_speed[p.name]
+            p.speed *= self.speed_factor(p)
         super().step(dt)
         for p, b in zip(self.pilots, before):
             L = float(np.linalg.norm(p.pos - b))
@@ -190,7 +206,7 @@ class FloraArena(Arena):
             d = np.linalg.norm(H - p.pos, axis=1); m = d < 260
             H, Rr, W = H[m], Rr[m], W[m]
         if not len(H):
-            p.speed = speed
+            p.speed = speed * self.speed_factor(p)
             return goal
         # candidates: the exact goal direction and the current heading first (26 fixed directions alone are ~40
         # degrees apart, so a reader could never home onto a 12 u crystal - it orbited them; round 3), then the sphere
@@ -214,7 +230,7 @@ class FloraArena(Arena):
         if soft is not None and len(soft):
             if np.min(np.linalg.norm(soft - p.pos, axis=1)) < 90 and self.boost_left[p.name] <= 0:
                 speed = min(speed, 45.0)
-        p.speed = speed
+        p.speed = speed * self.speed_factor(p)
         return p.pos + dirs[best] * 200.0
 
 
@@ -526,7 +542,9 @@ def replay_score(c):
                    its route over threat per unit length near 64 random lanes, late half / early half. 1.5x is full
                    marks; a plant that ignores traffic scores 0.5 (the place changes because you were there).
                    (Round 1 used raw density late/early - confounded by plain growth; physarum read 2.48 for that.)
-       payoff is now also a band on crystals/min [1, 6]: a plant you farm at 20/min is not a threat.
+       payoff is the EXCHANGE RATE (crystals per burn) and only needs >= 1 crystal/min: the absolute harvest rate
+       is set by how many plants the colony grows from food - a cell population budget, not a plant property
+       (a [1, 6]/min band was tried in round 3 and punished every colony that fed well; it is still reported).
        Hard gates: mass drift < 1e-6 and every dead plant dropped its crystal, else R = 0."""
     if c["mass_drift_max"] > 1e-6 or not c["crystal_law"]:
         return 0.0
@@ -535,7 +553,7 @@ def replay_score(c):
         threat=max(f, _band(c["hits_per_min_wander"], 1.0, 6.0)),
         counterplay=f if cp is None else float(np.clip((1.0 - cp) / 0.7, f, 1.0)),
         telegraph=f if c["telegraph_p10"] is None else float(np.clip(c["telegraph_p10"] / 0.7, f, 1.0)),
-        payoff=max(f, _band(c["crystals_per_burn"], 0.5, 3.0) * _band(c["payoff_per_min"], 1.0, 6.0)),
+        payoff=max(f, _band(c["crystals_per_burn"], 0.5, 3.0) * min(1.0, (c["payoff_per_min"] or 0) / 1.0)),
         variety=float(np.clip(c["variety"] / 0.3, f, 1.0)),
         access=float(np.clip((c["avoid_cost"] or 0) / 0.75, f, 1.0)),
         presence=max(f, _band(c["lane_coverage"], 0.1, 0.4)),

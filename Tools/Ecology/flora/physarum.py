@@ -317,6 +317,10 @@ class Physarum(FloraSpecies):
         self.cut_ball = (ball, pre, arena.t, [])
         return dict(pre=pre, centre=c.round(1).tolist())
 
+    def remove_ball(self, arena, c, r):
+        cen = self.centres.reshape(-1, 3)
+        self._remove(np.flatnonzero(np.linalg.norm(cen - c, axis=1) < r))
+
     def mass_total(self):
         return self.reserve + self.body.total_volume()
 

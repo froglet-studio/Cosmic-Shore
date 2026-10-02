@@ -209,6 +209,11 @@ class Walker(FloraSpecies):
                 for j in self.shell[i] + self.thorn_idx[i]:
                     if self.body.alive[j]: self.body.owner[j] = -1; self.body.danger[j] = False
 
+    def remove_ball(self, arena, c, r):
+        bi = self.body.live(); m = bi[np.linalg.norm(self.body.pos[bi] - c, axis=1) < r]
+        for j in m:
+            self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j])
+
     def mass_total(self):
         return self.reserve + float(self.res[:self.n].sum()) + self.body.total_volume()
 

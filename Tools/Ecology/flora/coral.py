@@ -192,6 +192,9 @@ class Coral(FloraSpecies):
     def lane_cut(self, arena, ev):
         return None
 
+    def remove_ball(self, arena, c, r):
+        self._remove(np.flatnonzero(np.linalg.norm(self.centres - c, axis=1) < r))
+
     def mass_total(self):
         return float(self.u.sum() + self.v.sum()) * self.p["c0"]
 

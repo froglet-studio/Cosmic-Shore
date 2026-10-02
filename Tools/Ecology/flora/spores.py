@@ -287,6 +287,16 @@ class SporeBurster(FloraSpecies):
                 o = self.body.owner[j]
                 if o >= 0: self.slots[o][self.slots[o] == j] = -1
 
+    def remove_ball(self, arena, c, r):
+        bi = self.body.live(); m = bi[np.linalg.norm(self.body.pos[bi] - c, axis=1) < r]
+        for j in m:
+            self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j]); o = self.body.owner[j]
+            if o >= 0: self.slots[o][self.slots[o] == j] = -1
+        if len(self.spos):
+            g = np.linalg.norm(self.spos - c, axis=1) < r
+            self.cut_volume += float(self.svol[g].sum()); k = ~g
+            self.spos, self.svel, self.sbirth, self.svol = self.spos[k], self.svel[k], self.sbirth[k], self.svol[k]
+
     def mass_total(self):
         return (self.reserve + self.body.total_volume() + float(self.charge[:self.n][self.alive[:self.n]].sum())
                 + float(self.sprout_res[:self.n][self.alive[:self.n]].sum()) + float(self.svol.sum()))
