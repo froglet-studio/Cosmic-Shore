@@ -36,8 +36,8 @@ class Species:
 
 HERB = Species("herb", body=8.0, e0=6.0, e_birth=20.0, e_max=32.0, metab=0.04,
                speed=18.0, sprint=32.0, sprint_metab=0.04)
-PRED = Species("pred", body=40.0, e0=30.0, e_birth=100.0, e_max=120.0, metab=0.15,
-               speed=20.0, sprint=36.0, sprint_metab=0.30)
+PRED = Species("pred", body=40.0, e0=30.0, e_birth=100.0, e_max=120.0, metab=0.06,
+               speed=20.0, sprint=36.0, sprint_metab=0.10)
 
 
 @dataclass
@@ -55,22 +55,27 @@ class Params:
     # ---- herbivore grazing (Holling II on voxel flora) ----
     h_intake: float = 0.25       # max vol/s
     h_half: float = 30.0         # voxel grazeable volume at half intake
+    occ_theta: float = 0.5       # macro occupancy relaxes toward food ** occ_theta ... (fitted, calibrate.fit_occupancy)
+    occ_tau: float = 1.0         # ... with this time constant (s)
     # ---- predation (Holling II on region herbivore count; fitted to micro, see calibrate.py) ----
-    p_attack: float = 0.0040     # kills / (predator * herbivore-in-region * s) at low density
-    p_handle: float = 4.0        # s per kill (the chase)
+    p_attack: float = 0.0001     # kills / (predator * herbivore-in-region * s) at low density
+    p_handle: float = 151.0        # s per kill (the chase)
     p_hunt_below: float = 0.8    # predators hunt only while stomach < this * e_max (satiation)
     # ---- micro predation geometry (what p_attack / p_handle are fitted FROM)
     p_sense: float = 25.0
     p_catch: float = 4.0
     h_flee: float = 40.0
     # ---- macro movement (regional hops; fitted to micro effective diffusion) ----
-    hop_rate: dict = field(default_factory=lambda: {"herb": (0.004, 0.008, 0.03), "pred": (0.006, 0.015, 0.05)})
+    hop_rate: dict = field(default_factory=lambda: {"herb": (0.00144, 0.00482, 0.0112), "pred": (0.0028, 0.0107, 0.0144)})
     # per-neighbour hop rate by phase (sated, forage, hungry)
-    food_bias: float = 2.0       # hops weighted by (neighbour food / own food) ** food_bias for hungry herbivores
-    prey_bias: float = 1.5       # same for predators on herbivore counts
-    flee_bias: float = 0.5       # herbivores weight hops away from predators
+    food_bias: float = 0.3       # hops weighted by (neighbour food / own food) ** food_bias for hungry herbivores
+    prey_bias: float = 0.0       # same for predators on herbivore counts
+    flee_bias: float = 0.0       # herbivores weight hops away from predators
     # ---- macro discretisation ----
-    n_bins: int = 8              # stomach bins (energy-structured population)
+    n_bins: int = 8              # (legacy macro_bins.py only)
+    cohorts: int = 10            # cohort slots per region per species
+    merge_tol: float = 0.06      # an arrival merges into a cohort whose mean stomach is within this x e_birth
+    e_diffuse: tuple = (0.0009, 0.002)  # stomach diffusion within a cohort (vol^2/s), herb / pred (fitted)
     dt_macro: float = 1.0
     dt_micro: float = 0.1
     # ---- LOD ----

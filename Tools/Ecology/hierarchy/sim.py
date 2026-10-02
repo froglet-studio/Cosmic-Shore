@@ -70,7 +70,7 @@ class HierSim:
             if N == 0:
                 continue
             r = rng.choice(W.nreg, N, p=pr); el = rng.integers(0, NE, N)
-            pop.place(r, el, np.full(N, e))
+            pop.place(r, el, np.clip(rng.normal(e, 0.15 * e, N), 0.2 * e, 1.6 * e))
         self._retarget_reps(all_regions=True)
         self.reps[:] = self.rep_target
         self.ledger0 = self.ledger()
@@ -156,39 +156,35 @@ class HierSim:
         W, rng, A = self.W, self.rng, self.A
         occ = self.M.occupancy()[r]
         for s, pop in enumerate(self.M.pops):
-            nr = pop.n[r]
-            cnt = int(nr.sum())
-            if cnt == 0:
-                if pop.pool[r] != 0:
-                    W.N[r] += pop.pool[r]; self.events["settle"] += abs(pop.pool[r]); pop.pool[r] = 0.0
-                continue
-            e_idx, b_idx = np.nonzero(nr)
-            reps_e = np.repeat(e_idx, nr[e_idx, b_idx])
-            reps_b = np.repeat(b_idx, nr[e_idx, b_idx])
-            E = pop.centre[reps_b] + rng.uniform(-0.5, 0.5, cnt) * pop.w
-            target = (nr * pop.centre).sum() + pop.pool[r]
-            E += (target - E.sum()) / cnt
-            if self.P.bug == "expand_flat_energy":
-                E[:] = target / cnt
-            low = E < 0.05 * pop.w
-            if low.any():          # never hand an agent an empty stomach: borrow from the rest
-                need = (0.05 * pop.w - E[low]).sum()
-                E[low] = 0.05 * pop.w
-                E[~low] -= need / max((~low).sum(), 1)
-            resid = target - E.sum()
-            if self.P.bug == "expand_lose_pool":
-                resid = 0.0
-                E -= pop.pool[r] / cnt
-            if abs(resid) > 0:
-                W.N[r] += resid; self.events["settle"] += abs(resid)
-            # positions: voxel by occupancy, uniform inside the voxel
-            v = rng.choice(W.nvox, cnt, p=occ)
-            pos = W.centers[r] + W.vox_off[v] + rng.uniform(-0.5, 0.5, (cnt, 3)) * W.vox_h
-            orig = self.reps[r, s][rng.integers(0, P_reps(self.P), cnt)]
-            A.add(pos, np.full(cnt, s, np.int8), reps_e.astype(np.int8), E, origin=orig, emerge=0.0)
-            pop.n[r] = 0
-            pop.pool[r] = 0.0
-            self.events["expand"] += cnt
+            n, m, v = pop.mean_var()
+            for c in np.flatnonzero(n[r] > 0):  # noqa: B007
+                Ne = pop.N[r, c]
+                cnt = int(Ne.sum())
+                target = float(pop.S[r, c])
+                el = np.repeat(np.arange(NE), Ne).astype(np.int8)
+                sd = np.sqrt(v[r, c])
+                E = np.clip(rng.normal(m[r, c], sd, cnt), 0.05 * pop.sp.e0, pop.sp.e_birth - 1e-3)
+                E += (target - E.sum()) / cnt
+                if self.P.bug == "expand_flat_energy":
+                    E[:] = target / cnt
+                low = E < 0.01
+                if low.any():          # never hand an agent an empty stomach: borrow from the rest
+                    need = (0.01 - E[low]).sum()
+                    E[low] = 0.01
+                    E[~low] -= need / max((~low).sum(), 1)
+                if self.P.bug == "expand_lose_pool":
+                    E -= 0.05 * target / cnt
+                resid = target - E.sum()
+                if self.P.bug == "expand_lose_pool":
+                    resid = 0.0
+                if abs(resid) > 0:
+                    W.N[r] += resid; self.events["settle"] += abs(resid)
+                vv = rng.choice(W.nvox, cnt, p=occ)
+                pos = W.centers[r] + W.vox_off[vv] + rng.uniform(-0.5, 0.5, (cnt, 3)) * W.vox_h
+                orig = self.reps[r, s][rng.integers(0, P_reps(self.P), cnt)]
+                A.add(pos, np.full(cnt, s, np.int8), el, E, origin=orig, emerge=0.0)
+                self.events["expand"] += cnt
+            pop.N[r] = 0; pop.S[r] = 0.0; pop.Q[r] = 0.0
 
     def _absorb(self):
         A, W = self.A, self.W
@@ -207,6 +203,9 @@ class HierSim:
         if len(go) == 0:
             return
         sp = A.view("sp")[go]; el = A.view("elem")[go]; E = A.view("E")[go]; rr = np.maximum(reg[go], 0)
+        mh = sp == 0
+        if mh.any():
+            self.M.absorb_occupancy(rr[mh], W.voxel_of(pos[go][mh], rr[mh]))
         for s, pop in enumerate(self.M.pops):
             m = sp == s
             if m.any():
@@ -282,16 +281,15 @@ class HierSim:
         areg = W.region_of(A.view("pos")) if n else np.zeros(0, np.int64)
         for s, pop in enumerate(self.M.pops):
             sp = SP[s]
-            nb = pop.n[sel].sum(axis=(0, 1))
-            cnt = int(nb.sum())
-            st = float((nb * pop.centre).sum() + pop.pool[sel].sum())
-            ph = np.bincount(pop.phase_of_bin, weights=nb, minlength=3)
-            el = pop.n[sel].sum(axis=(0, 2)).astype(float)
+            cnt = int(pop.N[sel].sum())
+            st = float(pop.S[sel].sum())
+            ph = pop.phase_counts(sel)
+            el = pop.elem_counts(sel).astype(float)
             m = (A.view("sp") == s) & (sel[np.maximum(areg, 0)] if n else np.zeros(0, bool))
             if m.any():
                 E = A.view("E")[m]
                 cnt += int(m.sum()); st += float(E.sum())
-                ph += np.bincount(pop.phase_of_bin[pop.bin_of(E)], minlength=3)
+                ph = ph + np.bincount(phase_of(sp, E), minlength=3)
                 el += np.bincount(A.view("elem")[m], minlength=4)
             out[sp.name] = dict(count=cnt, mean_e=st / max(cnt, 1), phase=(ph / max(cnt, 1)).tolist(),
                                 elem=el.tolist())
@@ -301,3 +299,9 @@ class HierSim:
 
 def P_reps(P):
     return P.reps_per_region
+
+
+def phase_of(sp, E):
+    """0 sated, 1 forage, 2 hungry - the same thresholds the macro cohorts integrate their Normals over."""
+    f = np.asarray(E) / sp.e_birth
+    return np.where(f < sp.phase_lo, 2, np.where(f > sp.phase_hi, 0, 1))

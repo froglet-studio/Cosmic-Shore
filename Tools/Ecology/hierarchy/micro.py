@@ -189,7 +189,8 @@ class Agents:
         starve = (E <= 1e-9) & ~dead
         if starve.any():
             body = np.where(isH, HERB.body, PRED.body)
-            np.add.at(W.K, (reg[starve], vox[starve]), body[starve] + np.maximum(E[starve], 0))
+            np.add.at(W.K, (reg[starve], vox[starve]), body[starve])
+            np.add.at(W.N, reg[starve], E[starve])          # the last (~0) stomach -> soil, exactly
             for s in (0, 1):
                 self.deaths[s] += int((starve & (sp == s)).sum())
         # ---- births: split at e_birth, offspring at the parent's side

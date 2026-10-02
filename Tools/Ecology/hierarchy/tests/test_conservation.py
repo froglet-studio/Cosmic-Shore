@@ -62,7 +62,7 @@ def run(bug="", T=300.0, seed=5, n_herb=30000, n_pred=2500):
         sim.step()
         if sim.k % 10 == 0:
             worst_rel = max(worst_rel, abs(sim.ledger()["total"] - L0) / L0)
-            neg |= bool((sim.M.H.n < 0).any() or (sim.M.Pr.n < 0).any() or (sim.A.view("E") < -1e-9).any())
+            neg |= bool((sim.M.H.N < 0).any() or (sim.M.Pr.N < 0).any() or (sim.A.view("E") < -1e-9).any())
     ev = dict(sim.events)
     flows = dict(expand=ev["expand"], absorb=ev["absorb"], arrive=ev["arrive"],
                  macro_births=sim.M.births.tolist(), macro_deaths=sim.M.deaths.tolist(), macro_kills=sim.M.kills,

@@ -1,140 +1,140 @@
 {
- "gate_passed": true,
+ "gate_passed": false,
  "runs": [
   {
    "bug": "",
-   "passed": true,
+   "passed": false,
    "exercised": true,
-   "ledger_rel_drift": 1.4514614872504895e-13,
+   "ledger_rel_drift": 2.047976752539408e-05,
    "lod_mass_mismatch": 2.3283064365386963e-10,
    "lod_count_mismatch": 0,
    "negative_state": false,
    "flows": {
-    "expand": 158836,
-    "absorb": 166301,
-    "arrive": 10131,
+    "expand": 380240,
+    "absorb": 380601,
+    "arrive": 11019,
     "macro_births": [
-     4837,
-     6561
+     15702,
+     385
     ],
     "macro_deaths": [
-     13,
-     2472
+     27,
+     11
     ],
-    "macro_kills": 32951,
+    "macro_kills": 1668,
     "micro_births": [
-     318,
-     615
+     202,
+     634
     ],
     "micro_deaths": [
      0,
-     147
+     0
     ],
-    "micro_kills": 2183
+    "micro_kills": 4397
    },
-   "total": 6371531.89882447,
-   "settle": 3.664162862015985e-10
+   "total": 6371789.617129081,
+   "settle": 3.767226530726475e-10
   },
   {
    "bug": "absorb_drop_stomach",
    "passed": false,
    "exercised": true,
-   "ledger_rel_drift": 0.0035126776984532202,
-   "lod_mass_mismatch": 410.1307363247033,
+   "ledger_rel_drift": 0.003806212630033672,
+   "lod_mass_mismatch": 414.53013855963945,
    "lod_count_mismatch": 0,
    "negative_state": false,
    "flows": {
-    "expand": 97979,
-    "absorb": 98971,
-    "arrive": 5068,
+    "expand": 137317,
+    "absorb": 133632,
+    "arrive": 4126,
     "macro_births": [
-     3380,
-     4770
+     299,
+     104
     ],
     "macro_deaths": [
-     1,
-     234
+     0,
+     0
     ],
-    "macro_kills": 25782,
+    "macro_kills": 588,
     "micro_births": [
-     238,
-     475
+     11,
+     129
     ],
     "micro_deaths": [
      0,
-     10
+     0
     ],
-    "micro_kills": 1733
+    "micro_kills": 1386
    },
-   "total": 6371531.89882447,
-   "settle": 1.752056277837255e-10
+   "total": 6371789.617129081,
+   "settle": 1.298658958148735e-10
   },
   {
    "bug": "birth_free_body",
    "passed": false,
    "exercised": true,
-   "ledger_rel_drift": 0.003273310144349737,
+   "ledger_rel_drift": 0.0010994931994393132,
    "lod_mass_mismatch": 2.3283064365386963e-10,
    "lod_count_mismatch": 0,
    "negative_state": false,
    "flows": {
-    "expand": 99511,
-    "absorb": 100440,
-    "arrive": 5120,
+    "expand": 137810,
+    "absorb": 133752,
+    "arrive": 3966,
     "macro_births": [
-     3881,
-     5167
+     712,
+     97
     ],
     "macro_deaths": [
-     2,
-     170
+     0,
+     0
     ],
-    "macro_kills": 26372,
+    "macro_kills": 555,
     "micro_births": [
-     272,
-     467
+     11,
+     174
     ],
     "micro_deaths": [
      0,
-     7
+     0
     ],
-    "micro_kills": 1803
+    "micro_kills": 1347
    },
-   "total": 6371531.89882447,
-   "settle": 1.851603315117245e-10
+   "total": 6371789.617129081,
+   "settle": 1.4020606897702237e-10
   },
   {
    "bug": "expand_lose_pool",
    "passed": false,
-   "exercised": true,
-   "ledger_rel_drift": 0.000950344161748014,
-   "lod_mass_mismatch": 4558.5,
+   "exercised": false,
+   "ledger_rel_drift": 0.017920715027150334,
+   "lod_mass_mismatch": 3599.4032379630953,
    "lod_count_mismatch": 0,
    "negative_state": false,
    "flows": {
-    "expand": 98434,
-    "absorb": 99326,
-    "arrive": 5149,
+    "expand": 136739,
+    "absorb": 133118,
+    "arrive": 4251,
     "macro_births": [
-     3820,
-     4973
+     70,
+     55
     ],
     "macro_deaths": [
-     1,
-     194
+     0,
+     0
     ],
-    "macro_kills": 26153,
+    "macro_kills": 559,
     "micro_births": [
-     228,
-     412
+     0,
+     40
     ],
     "micro_deaths": [
      0,
-     11
+     0
     ],
-    "micro_kills": 1749
+    "micro_kills": 1361
    },
-   "total": 6371531.89882447,
+   "total": 6371789.617129081,
    "settle": 0.0
   }
  ]
