@@ -179,10 +179,6 @@ namespace CosmicShore.Gameplay
         // ── GAME ──
         /// <summary>Keep the research's domain regions (true: only for the harness). The game has one region.</summary>
         public bool DomainSlots = false;
-        /// <summary>Round 8 MultiDomain (Docs/SWARM_FAUNA.md §16.4): a member's domain slot is its population's
-        /// DIET HISTORY - every seed takes slot 0 (the cell's controlling domain) and a newborn takes the slot of the
-        /// mass that FUNDED its egg (StomachDom). Off: seeds follow the plan's slot mix and a child keeps its parent's.</summary>
-        public bool FoodDomains = false;
         public bool Funded = true;
         public float[] EggCost = { 1f, 1f, 1f, 1f };
         public float CrossCost = 2f;
@@ -237,8 +233,6 @@ namespace CosmicShore.Gameplay
         public Vector3 Heading = Vector3.UnitX;
         public Vector3 BX = Vector3.UnitX, BY = Vector3.UnitY, BZ = Vector3.UnitZ;
         public readonly float[] Stomach = new float[4];
-        /// <summary>Banked volume by [element * 3 + domain slot] (ISwarmCore.StomachDom).</summary>
-        public readonly float[] StomachDom = new float[12];
         public readonly List<SwarmEvent> Events = new();
         public readonly int[] Perm = { 0, 1, 2 };
         public readonly int[] RoleOfDom = { 0, -1, -1 };
@@ -304,7 +298,6 @@ namespace CosmicShore.Gameplay
         float[] ISwarmCore.Molt => Molt;
         int[] ISwarmCore.MoltTo => MoltTo;
         float[] ISwarmCore.Stomach => Stomach;
-        float[] ISwarmCore.StomachDom => StomachDom;
         int[] ISwarmCore.Dom => Dom;
         List<SwarmEvent> ISwarmCore.Events => Events;
         int ISwarmCore.Clock => Clock;
@@ -391,7 +384,7 @@ namespace CosmicShore.Gameplay
             var plan = Plans[planElement];
             count = Math.Min(count, Math.Min(Cap, plan.N));
             var em = LargestRemainder(plan.Mix, count, true);
-            var dm = P.DomainSlots && !P.FoodDomains ? LargestRemainder(plan.SlotMix, count, true) : new[] { count, 0, 0 };
+            var dm = P.DomainSlots ? LargestRemainder(plan.SlotMix, count, true) : new[] { count, 0, 0 };
             SeedWith(em, dm, anchor, 2f);
             SetHeading(heading, snap: true);
             SwimTarget = anchor;
@@ -1134,11 +1127,7 @@ namespace CosmicShore.Gameplay
                     else continue;
                 }
                 int cd = Dom[par];
-                if (P.Funded)
-                {
-                    if (!SwarmCoreShared.TryFund(Stomach, P.FoodDomains ? StomachDom : null, ce, P.EggCost[ce], P.CrossCost, out int fd)) continue;
-                    if (fd >= 0) cd = fd;   // MultiDomain: the domain of the mass that paid
-                }
+                if (P.Funded && !SwarmCoreShared.TryFund(Stomach, ce, P.EggCost[ce], P.CrossCost)) continue;
                 int j2 = -1; for (int i = freeFrom; i < Cap; i++) if (!Active[i]) { j2 = i; break; }
                 if (j2 < 0) break;
                 freeFrom = j2 + 1;

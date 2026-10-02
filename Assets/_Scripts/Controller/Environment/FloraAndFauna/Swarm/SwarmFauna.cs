@@ -74,8 +74,9 @@ namespace CosmicShore.Gameplay
         FMODUnity.StudioEventEmitter _loop;
         readonly List<IVesselStatus> _seen = new(8);
         Flora _goalPlant;
-        float _atPlantSince = -1f;
-        readonly Dictionary<Flora, float> _barren = new();
+        float _atPlantSince = -1f, _lastGoalBite = -1f, _goalSince;
+        bool _foraging = true;
+        readonly Dictionary<Flora, float> _rested = new();
         static int s_spawnFrame = -1, s_spawnsThisFrame;
         // round 8: proxies materialised because a weapon or predator reached a member (§16.2), budgeted cell-wide
         static int s_hitFrame = -1, s_hitsThisFrame;
@@ -208,7 +209,7 @@ namespace CosmicShore.Gameplay
                 HeartPrismGap = config.HeartPrismGap,
                 DangerEnter = config.DangerEnter, DangerExit = config.DangerExit,
                 EngageRadius = config.EngageRadius, MaxEngaged = config.MaxProxies,
-                MultiDomain = config.MultiDomain,
+                MultiDomain = Lineages,
             };
             for (int e = 0; e < 4; e++)
             {
@@ -307,7 +308,6 @@ namespace CosmicShore.Gameplay
                 Membrane = SimMembrane(host),
                 CrossCost = config.CrossElementCost,
                 Cap = PlanCap,
-                FoodDomains = config.MultiDomain,   // a field swarm has no regions: only the colour follows the food
             };
             for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
             if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }
@@ -340,7 +340,7 @@ namespace CosmicShore.Gameplay
                     Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.x)), Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.y)),
                     Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.z)), Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.w)),
                 },
-                DomainSlots = config.MultiDomain, FoodDomains = config.MultiDomain, HungerKills = false, Funded = true, Oriented = true,
+                HungerKills = false, Funded = true, Oriented = true,   // one colour: lineages are the sort model's (round 9)
                 Cruise = config.Cruise, Turn = config.TurnPerStep,
                 Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
             };
@@ -374,7 +374,7 @@ namespace CosmicShore.Gameplay
                     Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.x)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.y)),
                     Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.z)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.w)),
                 },
-                DomainSlots = config.MultiDomain, FoodDomains = config.MultiDomain, Funded = true, Animate = true, WellLook = true, Oriented = true,
+                DomainSlots = Lineages, Lineages = Lineages, Drift = config.LineageDrift, Funded = true, Animate = true, WellLook = true, Oriented = true,
                 Cruise = config.Cruise, Turn = config.TurnPerStep,
                 Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
                 // round 6 (Docs/SWARM_FAUNA.md §12): sortfeel's flat wells + wander, the 1-in-k update
@@ -419,7 +419,7 @@ namespace CosmicShore.Gameplay
                     Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.x)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.y)),
                     Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.z)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.w)),
                 },
-                DomainSlots = config.MultiDomain, FoodDomains = config.MultiDomain, Funded = true, KeepEggs = true, Animate = true, Oriented = true,
+                Funded = true, KeepEggs = true, Animate = true, Oriented = true,   // one colour: lineages are the sort model's (round 9)
                 Cruise = config.Cruise, Turn = config.TurnPerStep,
                 Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
             };
@@ -968,7 +968,7 @@ namespace CosmicShore.Gameplay
         Domains[] BuildSlotDomains()
         {
             var t = new[] { domain, domain, domain };
-            if (!config.MultiDomain) return t;
+            if (!Lineages) return t;
             int k = 1;
             foreach (var d in PlayableDomains)
                 if (d != domain && k < 3) t[k++] = d;
@@ -977,15 +977,11 @@ namespace CosmicShore.Gameplay
 
         static readonly Domains[] PlayableDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
-        /// <summary>The slot a domain's mass funds (§16.4). Mass of a domain the table does not hold - neutral
-        /// (Blue) environment, or anything in a one-colour swarm - funds slot 0, the anchor's.</summary>
-        int SlotOfDomain(Domains d)
-        {
-            for (int s = 1; s < 3; s++) if (_slotDomain[s] == d && d != _slotDomain[0]) return s;
-            return 0;
-        }
+        protected override bool AcceptsTeamRecolour => !Lineages;
 
-        protected override bool AcceptsTeamRecolour => !(config && config.MultiDomain);
+        /// <summary>Round 9 (§17): this swarm grows regional lineages - MultiDomain, on the one model that has them.
+        /// Any other model is one colour whatever the flag says.</summary>
+        bool Lineages => config && config.MultiDomain && config.Model == SwarmModel.Sort;
 
         /// <summary>A one-colour swarm re-coloured by its cell (Cell.SetModeControlOverride): every slot, the
         /// palette and every live proxy take the new domain at once, so the cell never holds two fauna colours.</summary>
@@ -1032,6 +1028,18 @@ namespace CosmicShore.Gameplay
 
         // ───────────────────────────────────────────────────────────────── food
 
+        float StomachCapacity => config.StomachEggs * Density * (config.EggVolume.x + config.EggVolume.y + config.EggVolume.z + config.EggVolume.w) * 0.25f;
+
+        /// <summary>How full the stomach is, 0..1 (the published tick's banked volume over its capacity).</summary>
+        float StomachFill
+        {
+            get
+            {
+                var st = _job.Stomach;
+                return (st[0] + st[1] + st[2] + st[3]) / Mathf.Max(1e-3f, StomachCapacity);
+            }
+        }
+
         /// <summary>
         /// Grazing. A few members per tick take one bite each of the nearest edible FLORA prism within
         /// reach of where the published frame has them; the prism is consumed (suctioned into a mouth
@@ -1041,9 +1049,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void Feed()
         {
-            float capacity = config.StomachEggs * Density * (config.EggVolume.x + config.EggVolume.y + config.EggVolume.z + config.EggVolume.w) * 0.25f;
-            var st = _job.Stomach;
-            if (st[0] + st[1] + st[2] + st[3] >= capacity) { _lastFedTime = Time.time; return; }
+            if (StomachFill >= 1f) { _lastFedTime = Time.time; return; }
 
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable) return;
@@ -1061,14 +1067,14 @@ namespace CosmicShore.Gameplay
                 for (int q = 0; q < found; q++)
                 {
                     var prism = FeedScratch[q];
-                    var eater = MemberDomain(i);   // a MultiDomain member eats as its own domain (§16.4)
+                    var eater = MemberDomain(i);   // a member eats as its own domain (§16.4, the platform's one predicate)
                     if (!IsFood(prism, eater, out int e)) continue;
                     float volume = Mathf.Max(0.001f, prism.Volume);
-                    var paid = prism.Domain;   // read before Consume - the domain of the mass that will fund an egg
+                    bool fromGoal = _goalPlant && (prism as HealthPrism).LifeForm == _goalPlant;
                     prism.Consume(MouthFor(i, at), eater, _eaterName, false, true);
-                    _job.QueueDeposit(e, volume, SlotOfDomain(paid));
+                    _job.QueueDeposit(e, volume);   // round 9: food pays for eggs; it never decides a colour
                     _lastFedTime = Time.time;
-                    _atPlantSince = -1f;
+                    if (fromGoal) _lastGoalBite = Time.time;
                     break;
                 }
             }
@@ -1102,36 +1108,53 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Where to swim: the nearest living plant inside this swarm's band that it has not just
-        /// found grazed bare; else a fresh point in the band. Runs on the base class's goal clock.
+        /// Where to swim (round 9, Docs/SWARM_FAUNA.md §17.1) - an ordinary grazer's day, not a vigil at one crystal.
+        /// HUNGRY (stomach below <see cref="SwarmFaunaConfigSO.ForageBelow"/>) the swarm heads for the nearest plant in
+        /// its band it can EAT and has not just left; it grazes there until SATED
+        /// (<see cref="SwarmFaunaConfigSO.SatedAbove"/>) or until <see cref="SwarmFaunaConfigSO.GiveUpSeconds"/> pass
+        /// with no bite taken from THAT plant (grazed bare). Either way it leaves and the plant is rested for
+        /// <see cref="SwarmFaunaConfigSO.PlantRestSeconds"/>, so the next meal is somewhere else. Sated, it roams its
+        /// band. Round 8 parked a swarm on the nearest plant's heart crystal forever: the goal was always the nearest
+        /// plant, edible or not, and any bite anywhere (a regrowing membrane always offers one) reset its only exit.
         /// </summary>
         protected override Vector3 ResolveGoal()
         {
             if (_job == null || !HostCell) return Goal;
             Vector3 here = transform.position;
-            float now = Time.time;
+            float now = Time.time, fill = StomachFill;
 
-            // a plant the body has hovered over for a while without a single bite is grazed out
-            if (_goalPlant && _atPlantSince >= 0f && now - _atPlantSince > 10f)
+            if (!_foraging && fill < config.ForageBelow) _foraging = true;
+            else if (_foraging && fill >= config.SatedAbove) _foraging = false;
+
+            if (_goalPlant)
             {
-                _barren[_goalPlant] = now;
-                _goalPlant = null;
-                _atPlantSince = -1f;
+                bool bare = _atPlantSince >= 0f && now - Mathf.Max(_atPlantSince, _lastGoalBite) > config.GiveUpSeconds;
+                bool unreached = _atPlantSince < 0f && now - _goalSince > 6f * config.GiveUpSeconds;   // never got there
+                if (!_foraging || bare || unreached || _goalPlant.IsDying)
+                {
+                    _rested[_goalPlant] = now;   // leave it to regrow; the next meal is elsewhere
+                    _goalPlant = null;
+                    _atPlantSince = -1f;
+                }
             }
 
-            var plant = FloraHeartRegistry.NearestToPoint(here, f =>
-                f.IsDying || !IsInsideBand(f.HeartTransform.position) ||
-                HostCell.IsInsideNucleus(f.HeartTransform.position) ||
-                (_barren.TryGetValue(f, out float t) && now - t < 45f));
-            if (plant)
+            if (_foraging)
             {
-                if (plant != _goalPlant) { _goalPlant = plant; _atPlantSince = -1f; }
-                Vector3 target = plant.HeartTransform.position;
-                if (_atPlantSince < 0f && (target - here).sqrMagnitude < 60f * 60f) _atPlantSince = now;
-                return target;
+                var plant = _goalPlant ? _goalPlant : FloraHeartRegistry.NearestToPoint(here, f =>
+                    f.IsDying || !IsInsideBand(f.HeartTransform.position) ||
+                    HostCell.IsInsideNucleus(f.HeartTransform.position) ||
+                    !IsPreyForMe(f.HeartTransform.position, f.Domain) ||       // never led to food it cannot eat
+                    SwarmFaunaConfigSO.ToIndex(f.Element) < 0 ||
+                    (_rested.TryGetValue(f, out float t) && now - t < config.PlantRestSeconds));
+                if (plant)
+                {
+                    if (plant != _goalPlant) { _goalPlant = plant; _goalSince = now; _atPlantSince = -1f; _lastGoalBite = -1f; }
+                    Vector3 target = plant.HeartTransform.position;
+                    if (_atPlantSince < 0f && (target - here).sqrMagnitude < 60f * 60f) _atPlantSince = now;
+                    return target;
+                }
             }
 
-            _goalPlant = null;
             if ((Goal - here).sqrMagnitude > 40f * 40f) return Goal;   // still travelling to the last point
             Vector3 radial = here - _centre;
             Vector3 wander = here + Random.onUnitSphere * config.WanderReach;

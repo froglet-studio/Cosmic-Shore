@@ -157,7 +157,7 @@ namespace CosmicShore.Gameplay
     public static class LifeFormCrystal { public static Crystal EnsureElementalCrystal(Component owner, Element e) => null; }
     public interface ILifeFormEntity { }
     public interface IVesselStatus { Vector3 Course { get; set; } float Speed { get; set; } }
-    public class LifeForm : MonoBehaviour { public Element Element => default; public bool IsDying => false; public Transform HeartTransform => null; }
+    public class LifeForm : MonoBehaviour { public Element Element => default; public Domains Domain => default; public bool IsDying => false; public Transform HeartTransform => null; }
     public class Flora : LifeForm { }
     public static class FloraHeartRegistry { public static Flora NearestToPoint(Vector3 from, Predicate<Flora> reject) => null; }
     public class Cell : MonoBehaviour { public float MembraneRadius => 0; public void RegisterSpawnedObject(GameObject o) { } public bool IsInsideNucleus(Vector3 p) => false;

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   Model: 1
   MultiDomain: 1
+  LineageDrift: 0.01
   ChargePlan: {fileID: 4900000, guid: 07dfea02463d653b53c1d4c2e33d628c, type: 3}
   MassPlan: {fileID: 4900000, guid: b37e5df8f8e587075a45938a89048a3f, type: 3}
   SpacePlan: {fileID: 4900000, guid: 337aaa14d97dd0a87399f1d0223ec939, type: 3}
@@ -37,6 +38,10 @@ MonoBehaviour:
   EggVolume: {x: 20.45, y: 40.31, z: 22.18, w: 12.8}
   CrossElementCost: 2
   StomachEggs: 240
+  ForageBelow: 0.5
+  SatedAbove: 0.9
+  GiveUpSeconds: 10
+  PlantRestSeconds: 60
   LayRate: 0.2
   LayMax: 16
   MaxSpawnsPerFrame: 24

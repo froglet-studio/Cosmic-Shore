@@ -102,7 +102,6 @@ namespace CosmicShore.Gameplay
         readonly int[] _kills, _killsRun;
         int _killCount;
         readonly float[] _deposit = new float[4], _depositRun = new float[4];
-        readonly float[] _depositDom = new float[12], _depositDomRun = new float[12];
         readonly object _inLock = new();
         public bool WantStarvationVictim;
 
@@ -187,13 +186,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Bank eaten volume (main thread, any time); paid into the core's stomach next tick.
-        /// <paramref name="domainSlot"/> is the slot (0..2) of the domain the eaten mass wore - a MultiDomain
-        /// swarm funds each egg in the domain of the food that paid for it (Docs/SWARM_FAUNA.md §16.4).</summary>
-        public void QueueDeposit(int element, float volume, int domainSlot = 0)
+        /// Food never decides a member's colour (round 9, Docs/SWARM_FAUNA.md §17): only volume is banked.</summary>
+        public void QueueDeposit(int element, float volume)
         {
             if (element < 0 || element > 3 || !(volume > 0f)) return;
-            if (domainSlot < 0 || domainSlot > 2) domainSlot = 0;
-            lock (_inLock) { _deposit[element] += volume; _depositDom[element * 3 + domainSlot] += volume; }
+            lock (_inLock) _deposit[element] += volume;
         }
 
         /// <summary>True when slot i's member in the FRONT buffers was born in the published pair - i.e.
@@ -254,12 +251,9 @@ namespace CosmicShore.Gameplay
                 Array.Copy(_kills, _killsRun, kills);
                 _killCount = 0;
                 for (int e = 0; e < 4; e++) { _depositRun[e] = _deposit[e]; _deposit[e] = 0f; }
-                for (int q = 0; q < 12; q++) { _depositDomRun[q] = _depositDom[q]; _depositDom[q] = 0f; }
             }
             for (int q = 0; q < kills; q++) Core.Kill(_killsRun[q]);
             for (int e = 0; e < 4; e++) Core.Stomach[e] += _depositRun[e];
-            // the domain ledger is only kept where something spends it: a one-colour swarm would grow it forever
-            if (S.MultiDomain) for (int q = 0; q < 12; q++) Core.StomachDom[q] += _depositDomRun[q];
             Core.SwimTarget = SwimTarget;
             _bEvents.Clear();
             for (int s = 0; s < Math.Max(1, Steps); s++)

@@ -98,7 +98,9 @@ ENGAGE_RADIUS = 160       # world units around a vessel inside which a member is
 MAX_PROXIES = 160         # per swarm: the nearest members win
 BITERS_PER_STEP = 24      # bites per tick per swarm - the one main-thread cost that scales with appetite
 PRISM_SCALE = 1.0
-MULTI_DOMAIN = 1          # ROUND 8 (Docs/SWARM_FAUNA.md §16.4): the Swarm cell's swarms take the colour of what they eat
+MULTI_DOMAIN = 1          # ROUND 9 (Docs/SWARM_FAUNA.md §17): the Swarm cell's swarms grow regional LINEAGES (food colours nothing)
+LINEAGE_DRIFT = 0.01      # chance a child laid into unowned body tissue founds a new lineage (harness R9b at density 5)
+FORAGE = (0.5, 0.9, 10, 60)   # ROUND 9 §17.1: ForageBelow, SatedAbove, GiveUpSeconds, PlantRestSeconds
 HEARTS = {"Charge": 2.298, "Mass": 1.737, "Space": 2.298, "Time": 1.737}  # = Tadpole Fauna * (read below)
 
 # ── the three populations ────────────────────────────────────────────────────────────────
@@ -443,6 +445,7 @@ def config_asset(eggs, model="Field"):
     return SO_HEADER % (script_guid("SwarmFaunaConfigSO"), config_name(model)[:-6]) + (
         f"  Model: {MODEL_ID[model]}\n"
         f"  MultiDomain: {MULTI_DOMAIN}\n"
+        f"  LineageDrift: {_g(LINEAGE_DRIFT)}\n"
         f"  ChargePlan: {{fileID: 4900000, guid: {pg('charge')}, type: 3}}\n"
         f"  MassPlan: {{fileID: 4900000, guid: {pg('mass')}, type: 3}}\n"
         f"  SpacePlan: {{fileID: 4900000, guid: {pg('space')}, type: 3}}\n"
@@ -458,7 +461,9 @@ def config_asset(eggs, model="Field"):
         f"  SeedMembers: {SEED_MEMBERS}\n"
         f"  BiteRadius: 10\n  BitersPerStep: {BITERS_PER_STEP}\n"
         f"  EggVolume: {v4(egg)}\n"
-        f"  CrossElementCost: 2\n  StomachEggs: 240\n  LayRate: 0.2\n  LayMax: 16\n  MaxSpawnsPerFrame: {MAX_SPAWNS_PER_FRAME}\n  KillLayHoldSeconds: 2\n"
+        f"  CrossElementCost: 2\n  StomachEggs: 240\n"
+        f"  ForageBelow: {_g(FORAGE[0])}\n  SatedAbove: {_g(FORAGE[1])}\n  GiveUpSeconds: {_g(FORAGE[2])}\n  PlantRestSeconds: {_g(FORAGE[3])}\n"
+        f"  LayRate: 0.2\n  LayMax: 16\n  MaxSpawnsPerFrame: {MAX_SPAWNS_PER_FRAME}\n  KillLayHoldSeconds: 2\n"
         "  StarvationSeconds: 90\n  ShedIntervalSeconds: 1\n  ExtinctLingerSeconds: 10\n"
         "  Cruise: 0.35\n  TurnPerStep: 0.03\n  WanderReach: 300\n"
         "  VesselRadius: 9\n  SenseMargin: 400\n  DangerEnter: 0.45\n  DangerExit: 0.15\n"
@@ -771,7 +776,7 @@ def verify(out, tot, rows):
     if not m or m.group(1) != "false":
         problems.append("SwarmFaunaConfigSO.MultiDomain must default to false (the one-colour law everywhere but here)")
     if MULTI_DOMAIN != 1:
-        problems.append("the Swarm cell's swarms are MultiDomain (round 8)")
+        problems.append("the Swarm cell's swarms are MultiDomain (round 9 lineages)")
     if any(r["food"] == "Charge" for r in REGIONS):
         problems.append("a Charge feeding ground is no food at all (armoured leaves)")
     # the prefab really is stripped of its network layer and its authored crystal

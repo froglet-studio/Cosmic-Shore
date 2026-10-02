@@ -285,9 +285,6 @@ namespace CosmicShore.Gameplay
         // reserve it costs CrossCost times as much (the feeding-ground lever, Docs/SWARM_FAUNA.md).
         public float[] EggCost = { 1f, 1f, 1f, 1f };
         public float CrossCost = 2f;
-        /// <summary>Round 8 MultiDomain (Docs/SWARM_FAUNA.md §16.4): a newborn takes the domain slot of the mass that
-        /// FUNDED its egg; every seed is slot 0. A field swarm has no domain regions - only the colour moves.</summary>
-        public bool FoodDomains = false;
         /// <summary>Headcount ceiling - never more tadpoles than the largest plan holds.</summary>
         public int Cap = 192;
     }
@@ -323,9 +320,7 @@ namespace CosmicShore.Gameplay
         public Vector3 BX = Vector3.UnitX, BY = Vector3.UnitY, BZ = Vector3.UnitZ;
         public Vector3 SwimTarget;
         public readonly float[] Stomach = new float[4];
-        /// <summary>Banked volume by [element * 3 + domain slot] (ISwarmCore.StomachDom).</summary>
-        public readonly float[] StomachDom = new float[12];
-        readonly int[] _dom;   // domain slot per member: all 0 for a one-colour swarm (FoodDomains: the funding mass)
+        readonly int[] _dom;   // a field swarm is one colour: every member is slot 0
         public readonly List<SwarmEvent> Events = new();
 
         readonly Vector3[] _sp, _sv, _sf, _sw;   // _sw: slot positions in the world (sim) this step
@@ -710,8 +705,7 @@ namespace CosmicShore.Gameplay
                 }
                 if (be < 0) return;
                 int free = Array.IndexOf(Alive, false); if (free < 0) return;
-                if (!SwarmCoreShared.TryFund(Stomach, C.FoodDomains ? StomachDom : null, be, C.EggCost[be], C.CrossCost, out int fd))
-                    return;      // hungry: the body waits for its next meal
+                if (!TryFund(be)) return;      // hungry: the body waits for its next meal
                 int bp = -1, bs = -1; float bdist = float.MaxValue;
                 for (int s = 0; s < plan.N; s++)
                 {
@@ -726,7 +720,7 @@ namespace CosmicShore.Gameplay
                 dir /= MathF.Max(dir.Length(), 1e-6f);
                 Alive[free] = true; Pos[free] = Pos[bp] + C.RBud * dir; Vel[free] = Vel[bp]; Elem[free] = be;
                 Home[free] = bs; Molt[free] = 0; Startle[free] = 0; Facing[free] = Facing[bp];
-                _dom[free] = fd >= 0 ? fd : _dom[bp];   // MultiDomain: the domain of the mass that paid
+                _dom[free] = _dom[bp];
                 have[be]++; if (bs >= 0) _taken[bs] = true; LastAssign = -1000000;
                 Events.Add(new SwarmEvent { Kind = SwarmEventKind.Laid, Index = free, Other = bp });
             }
@@ -795,7 +789,6 @@ namespace CosmicShore.Gameplay
         float[] ISwarmCore.Molt => Molt;
         int[] ISwarmCore.MoltTo => MoltTo;
         float[] ISwarmCore.Stomach => Stomach;
-        float[] ISwarmCore.StomachDom => StomachDom;
         int[] ISwarmCore.Dom => _dom;
         List<SwarmEvent> ISwarmCore.Events => Events;
         int ISwarmCore.Clock => Clock;

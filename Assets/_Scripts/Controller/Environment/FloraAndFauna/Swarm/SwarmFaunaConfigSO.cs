@@ -26,14 +26,19 @@ namespace CosmicShore.Gameplay
                  "member MOLTS into a missing element (lossless). Docs/SWARM_FAUNA.md §8, §9.")]
         public SwarmModel Model = SwarmModel.Field;
 
-        [Tooltip("MULTI-DOMAIN (Docs/SWARM_FAUNA.md §16.4; CLAUDE.md, the named swarm exception to 'No domain " +
-                 "asymmetry'). Off (the default, and every cell but the Swarm cell): the swarm is ONE colour - the " +
-                 "cell's controlling domain - and Cell.SetModeControlOverride re-colours it. On: every SEED takes the " +
-                 "controlling domain, and every NEWBORN takes the domain of the mass whose eaten volume FUNDED its egg, " +
-                 "so the swarm's colours are its population's diet history. Members sort into domain regions (Sort, " +
-                 "EvoFate, Grid models), each drawn, fed, spared and credited in its own domain. A mode override does " +
-                 "not re-colour a MultiDomain swarm.")]
+        [Tooltip("MULTI-DOMAIN LINEAGES (round 9, Docs/SWARM_FAUNA.md §17; CLAUDE.md, the named swarm exception to " +
+                 "'No domain asymmetry'). Off (the default, and every cell but the Swarm cell): the swarm is ONE colour - " +
+                 "the cell's controlling domain - and Cell.SetModeControlOverride re-colours it. On (Sort model only): " +
+                 "every SEED takes the controlling domain and every child keeps its parent's - food never colours " +
+                 "anyone. A child laid into body-plan tissue no lineage holds yet (a whale's belly, before anything " +
+                 "owns it) may found a new lineage (LineageDrift) in a domain drawn uniformly from those the swarm " +
+                 "lacks, which then breeds true into that region. Each member is drawn, spared and credited in its " +
+                 "own domain. A mode override does not re-colour a MultiDomain swarm. Other models ignore it.")]
         public bool MultiDomain = false;
+
+        [Tooltip("Round 9: the chance that a child laid into UNOWNED body tissue founds a new lineage (a domain the " +
+                 "swarm does not hold yet). Low = a body grows one colour for a while before a second appears.")]
+        [Range(0f, 1f)] public float LineageDrift = 0.01f;
 
         [Header("Body plans (Tools/Build/swarm_plans.py)")]
         [Tooltip("The Charge plan - the pufferfish.")] public TextAsset ChargePlan;
@@ -111,6 +116,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("Most food (in eggs) a swarm can bank. A full swarm stops grazing, so a grown body is " +
                  "not a machine that strips its feeding ground for nothing.")]
         [Min(1f)] public float StomachEggs = 24f;
+        [Tooltip("Round 9 foraging (Docs/SWARM_FAUNA.md §17.1): a swarm sets out for a plant only when its stomach " +
+                 "falls below this fraction of StomachEggs. Above it, it roams its band like any sated grazer.")]
+        [Range(0f, 1f)] public float ForageBelow = 0.5f;
+        [Tooltip("Round 9: a foraging swarm leaves its plant once its stomach reaches this fraction (sated).")]
+        [Range(0f, 1f)] public float SatedAbove = 0.9f;
+        [Tooltip("Round 9: seconds at a plant without one bite taken FROM THAT PLANT before the swarm gives it up " +
+                 "as grazed bare (bites elsewhere do not count).")]
+        [Min(1f)] public float GiveUpSeconds = 10f;
+        [Tooltip("Round 9: seconds a plant the swarm has left is passed over, so the next meal is somewhere else and " +
+                 "the plant regrows.")]
+        [Min(0f)] public float PlantRestSeconds = 60f;
         [Tooltip("Eggs per step as a share of the headcount, and at most this many per step.")]
         [Range(0f, 1f)] public float LayRate = 0.02f;
         [Min(1)] public int LayMax = 2;

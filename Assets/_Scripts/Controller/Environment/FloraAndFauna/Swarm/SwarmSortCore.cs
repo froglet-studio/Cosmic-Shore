@@ -73,10 +73,17 @@ namespace CosmicShore.Gameplay
         /// <summary>Keep the research's domain regions (true: only for the harness). The game's
         /// one-colour law leaves one region, so a type is just an element.</summary>
         public bool DomainSlots = false;
-        /// <summary>Round 8 MultiDomain (Docs/SWARM_FAUNA.md §16.4): a member's domain slot is its population's
-        /// DIET HISTORY - every seed takes slot 0 (the cell's controlling domain) and a newborn takes the slot of the
-        /// mass that FUNDED its egg (StomachDom). Off: seeds follow the plan's slot mix and a child keeps its parent's.</summary>
-        public bool FoodDomains = false;
+        /// <summary>Round 9 LINEAGES (Docs/SWARM_FAUNA.md §17; needs DomainSlots). Every seed wears slot 0 (the cell's
+        /// controlling domain) and a child keeps its parent's domain - food never colours anyone. The plan's regions
+        /// (a whale's back and belly) are ANATOMY, not colours: a region is OWNED by whichever lineage holds most of
+        /// its tissue, and a region no lineage owns is grown by any parent with room to lay. A child laid into such
+        /// UNOWNED tissue by a parent whose lineage owns a region of its own founds a NEW lineage with probability
+        /// <see cref="Drift"/> - a domain the swarm does not hold yet, drawn uniformly, so nothing picks which colour
+        /// lands where. The founder's line then breeds true into the region it holds, and strangers (members sitting
+        /// in tissue another lineage owns) drift home whenever their own region has room.</summary>
+        public bool Lineages = false;
+        /// <summary>Chance a child laid into unowned tissue founds a new lineage (round 9).</summary>
+        public float Drift = 0.01f;
         /// <summary>Laying pays out of the stomach (game). False = free (research).</summary>
         public bool Funded = true;
         public float[] EggCost = { 1f, 1f, 1f, 1f };
@@ -342,8 +349,6 @@ namespace CosmicShore.Gameplay
         public Vector3 Heading = Vector3.UnitX;
         public Vector3 BX = Vector3.UnitX, BY = Vector3.UnitY, BZ = Vector3.UnitZ;
         public readonly float[] Stomach = new float[4];
-        /// <summary>Banked volume by [element * 3 + domain slot] (ISwarmCore.StomachDom).</summary>
-        public readonly float[] StomachDom = new float[12];
         public readonly List<SwarmEvent> Events = new();
         /// <summary>slot -> domain (research); -1 where a region has no domain. One region in the game.</summary>
         public readonly int[] Perm = { 0, 1, 2 };
@@ -362,6 +367,8 @@ namespace CosmicShore.Gameplay
         readonly int[] _cnt = new int[4], _members, _occ, _cen = new int[16], _cenM = new int[16], _ec = new int[4];
         readonly float[] _need, _want = new float[16], _fill = new float[16], _deficit = new float[16], _fl = new float[4];
         readonly int[,] _dcen = new int[4, 3];
+        readonly int[] _hold = new int[9];
+        readonly bool[] _dpresent = new bool[3];
         // neighbour hash
         const int HG = 4096;
         readonly int[] _nb = new int[27];
@@ -411,7 +418,6 @@ namespace CosmicShore.Gameplay
         float[] ISwarmCore.Molt => Molt;
         int[] ISwarmCore.MoltTo => MoltTo;
         float[] ISwarmCore.Stomach => Stomach;
-        float[] ISwarmCore.StomachDom => StomachDom;
         int[] ISwarmCore.Dom => Dom;
         List<SwarmEvent> ISwarmCore.Events => Events;
         int ISwarmCore.Clock => Clock;
@@ -487,8 +493,20 @@ namespace CosmicShore.Gameplay
             var plan = Plans[planElement];
             count = Math.Min(count, Math.Min(Cap, plan.N));
             var em = LargestRemainder(plan.Mix, count, true);
-            var dm = C.DomainSlots && !C.FoodDomains ? LargestRemainder(plan.SlotMix, count, true) : new[] { count, 0, 0 };
+            var dm = C.DomainSlots && !C.Lineages ? LargestRemainder(plan.SlotMix, count, true) : new[] { count, 0, 0 };
             SeedWith(em, dm, anchor, 2f);
+            if (C.DomainSlots && C.Lineages)
+            {
+                // round 9: the seed lineage settles in ONE region, drawn by tissue size - no region is the controlling
+                // colour's by fiat; the rest of the body is unowned until a lineage grows into it
+                int ns = Math.Clamp(SwarmSortCode.For(plan, C).NSlots, 1, 3), tot = 0;
+                for (int sl = 0; sl < ns; sl++) tot += plan.SlotMix[sl];
+                int pick = _rng.Next(Math.Max(1, tot)), r0 = 0;
+                for (int sl = 0; sl < ns; sl++) { if (pick < plan.SlotMix[sl]) { r0 = sl; break; } pick -= plan.SlotMix[sl]; }
+                Perm[0] = Perm[1] = Perm[2] = -1; Perm[r0] = 0;
+                RoleOfDom[0] = r0; RoleOfDom[1] = RoleOfDom[2] = -1;
+                _permSet = true;
+            }
             SetHeading(heading, snap: true);
             SwimTarget = anchor;
         }
@@ -989,6 +1007,7 @@ namespace CosmicShore.Gameplay
         {
             _permSet = true;
             int ns = Math.Clamp(code.NSlots, 1, 3);
+            if (C.DomainSlots && C.Lineages) { PickOwners(ns); return; }
             if (!C.DomainSlots || ns == 1)
             {
                 Perm[0] = 0; RoleOfDom[0] = 0; RoleOfDom[1] = RoleOfDom[2] = -1;
@@ -1011,8 +1030,69 @@ namespace CosmicShore.Gameplay
             for (int s = 0; s < ns; s++) { Perm[s] = arg[s]; RoleOfDom[arg[s]] = s; }
         }
 
+        /// <summary>Round 9 lineages: each region is OWNED by the lineage (domain) holding most of its hatched tissue,
+        /// one region per lineage, chosen to maximise the tissue owners hold (sticky by 2 members). A region nobody
+        /// holds stays unowned (-1) - the tissue any parent may grow, and where a new lineage can be founded.</summary>
+        void PickOwners(int ns)
+        {
+            Array.Clear(_hold, 0, _hold.Length);
+            for (int i = 0; i < Cap; i++)
+            {
+                if (!Active[i] || !Hatched[i]) continue;
+                int r = EffRole(i);
+                if (r >= 0 && r < ns) _hold[r * 3 + Math.Clamp(Dom[i], 0, 2)]++;
+            }
+            float best = float.MinValue; int b0 = -1, b1 = -1, b2 = -1;
+            for (int a0 = -1; a0 < 3; a0++)
+            for (int a1 = -1; a1 < (ns > 1 ? 3 : 0); a1++)
+            for (int a2 = -1; a2 < (ns > 2 ? 3 : 0); a2++)
+            {
+                if ((a0 >= 0 && (a0 == a1 || a0 == a2)) || (a1 >= 0 && a1 == a2)) continue;
+                float score = 0f; bool ok = true;
+                for (int sl = 0; sl < ns && ok; sl++)
+                {
+                    int d = sl == 0 ? a0 : sl == 1 ? a1 : a2;
+                    if (d < 0) continue;
+                    int h = _hold[sl * 3 + d];
+                    if (h <= 0) { ok = false; break; }   // nobody owns tissue it does not hold
+                    score += h + (Perm[sl] == d ? 2f : 0f);
+                }
+                if (ok && score > best) { best = score; b0 = a0; b1 = a1; b2 = a2; }
+            }
+            Perm[0] = b0; Perm[1] = ns > 1 ? b1 : -1; Perm[2] = ns > 2 ? b2 : -1;
+            RoleOfDom[0] = RoleOfDom[1] = RoleOfDom[2] = -1;
+            for (int sl = 0; sl < 3; sl++) if (Perm[sl] >= 0) RoleOfDom[Perm[sl]] = sl;
+        }
+
+        /// <summary>Round 9: the (element, region) of UNOWNED tissue with the largest laying deficit, or -1.</summary>
+        int UnownedNeed(int ns, out int element)
+        {
+            element = -1; int region = -1; float bd = 0f;
+            for (int sl = 0; sl < ns; sl++)
+            {
+                if (Perm[sl] >= 0) continue;
+                for (int e = 0; e < 4; e++) if (_deficit[e * 4 + sl] > bd) { bd = _deficit[e * 4 + sl]; element = e; region = sl; }
+            }
+            return region;
+        }
+
+        /// <summary>Round 9: a domain the swarm holds no live member of, drawn uniformly (-1 if it holds all three).</summary>
+        int AbsentDomain()
+        {
+            _dpresent[0] = _dpresent[1] = _dpresent[2] = false;
+            for (int i = 0; i < Cap; i++) if (Active[i]) _dpresent[Math.Clamp(Dom[i], 0, 2)] = true;
+            int n = 0; for (int d = 0; d < 3; d++) if (!_dpresent[d]) n++;
+            if (n == 0) return -1;
+            int k = _rng.Next(n);
+            for (int d = 0; d < 3; d++) if (!_dpresent[d] && k-- == 0) return d;
+            return -1;
+        }
+
         /// <summary>A member's region: its domain's, unless it TRANSFERRED to another region of the
         /// current plan (-1: no region in this plan).</summary>
+        /// <summary>Member i's body region in the current plan (-1: none) - the harness's view of the regions.</summary>
+        public int RegionOf(int i) => EffRole(i);
+
         int EffRole(int i) => XferPlan[i] == PlanIx && XferPlan[i] >= 0 ? XferRole[i] : RoleOfDom[Math.Clamp(Dom[i], 0, 2)];
 
         void LookOf(int i, int element, out Vector3 half, out int tier, out Vector3 face)
@@ -1106,7 +1186,8 @@ namespace CosmicShore.Gameplay
             if (nlay <= 0) return;
             Array.Clear(_ec, 0, 4);
             for (int i = 0; i < Cap; i++) if (Active[i]) _ec[EffectiveElement(i)]++;
-            int maj = PlanIx, laid = 0, freeFrom = 0;
+            int maj = PlanIx, laid = 0, freeFrom = 0, ns = Math.Clamp(code.NSlots, 1, 3);
+            bool lineages = C.DomainSlots && C.Lineages;
             // parents in random order (a partial Fisher-Yates over the hatched members)
             int np = 0; for (int i = 0; i < Cap; i++) if (Active[i] && Hatched[i]) _members[np++] = i;
             for (int q = np - 1; q > 0; q--) { int j = _rng.Next(q + 1); (_members[q], _members[j]) = (_members[j], _members[q]); }
@@ -1114,24 +1195,25 @@ namespace CosmicShore.Gameplay
             {
                 int par = _members[pq];
                 int r = RoleOfDom[Math.Clamp(Dom[par], 0, 2)];
-                if (r < 0) continue;
+                if (r < 0 && !lineages) continue;
                 int e = EffectiveElement(par);
-                int low = 0; for (int e2 = 1; e2 < 4; e2++) if (_fill[e2 * 4 + r] < _fill[low * 4 + r]) low = e2;
-                int ce;
-                if (_deficit[e * 4 + r] > 0 && _fill[e * 4 + r] <= _fill[low * 4 + r] + C.FillTol) ce = e;   // breeds true
-                else if (_rng.NextDouble() < C.PCross && _deficit[low * 4 + r] > 0) ce = low;          // its region's most-needed element
+                int ce, into = r;
+                int low = 0;
+                if (r >= 0) for (int e2 = 1; e2 < 4; e2++) if (_fill[e2 * 4 + r] < _fill[low * 4 + r]) low = e2;
+                if (r >= 0 && _deficit[e * 4 + r] > 0 && _fill[e * 4 + r] <= _fill[low * 4 + r] + C.FillTol) ce = e;   // breeds true
+                else if (r >= 0 && _rng.NextDouble() < C.PCross && _deficit[low * 4 + r] > 0) ce = low;          // its region's most-needed element
+                else if (lineages && (into = UnownedNeed(ns, out int ue)) >= 0 && (r < 0 || _rng.NextDouble() < C.PCross)) ce = ue;   // round 9: grow unowned tissue
                 else continue;
                 if (ce != maj && _ec[ce] + 1 >= _ec[maj])
                 {
-                    if (_rng.NextDouble() < C.PCross && _deficit[maj * 4 + r] > 0) ce = maj;          // the plan's element keeps its lead
+                    if (_rng.NextDouble() < C.PCross && _deficit[maj * 4 + into] > 0) ce = maj;          // the plan's element keeps its lead
                     else continue;
                 }
                 int cd = Dom[par];
-                if (C.Funded)
-                {
-                    if (!SwarmCoreShared.TryFund(Stomach, C.FoodDomains ? StomachDom : null, ce, C.EggCost[ce], C.CrossCost, out int fd)) continue;   // hungry: waits for a meal
-                    if (fd >= 0) cd = fd;   // MultiDomain: the domain of the mass that paid
-                }
+                bool unowned = into != r;
+                // round 9: a child laid into unowned tissue by a parent whose lineage holds a region may FOUND a lineage
+                if (unowned && r >= 0 && _rng.NextDouble() < C.Drift) { int nd = AbsentDomain(); if (nd >= 0) cd = nd; }
+                if (C.Funded && !SwarmCoreShared.TryFund(Stomach, ce, C.EggCost[ce], C.CrossCost)) continue;   // hungry: waits for a meal
                 int j2 = -1; for (int i = freeFrom; i < Cap; i++) if (!Active[i]) { j2 = i; break; }
                 if (j2 < 0) break;
                 freeFrom = j2 + 1;
@@ -1140,7 +1222,8 @@ namespace CosmicShore.Gameplay
                 Pos[j2] = Pos[par] + C.RBud * dir; Vel[j2] = Vector3.Zero; Wand[j2] = Vector3.Zero;
                 Elem[j2] = ce; Dom[j2] = cd; Active[j2] = true; Hatched[j2] = false; Age[j2] = 0;
                 Startle[j2] = 0; Molt[j2] = 0; Fate[j2] = 0; FKey[j2] = 0; XferPlan[j2] = -1; Facing[j2] = Facing[par];
-                int rq = cd == Dom[par] ? r : RoleOfDom[Math.Clamp(cd, 0, 2)];   // the CHILD region, not the parent one
+                if (unowned) { XferRole[j2] = into; XferPlan[j2] = PlanIx; }   // it is tissue of the region it was laid into
+                int rq = into;   // the CHILD region
                 if (rq >= 0)
                 {
                     int q2 = ce * 4 + rq;
@@ -1167,12 +1250,26 @@ namespace CosmicShore.Gameplay
             for (int q = 0; q < np; q++) _type[_members[q]] = EffRole(_members[q]);
             for (int q = np - 1; q > 0; q--) { int j = _rng.Next(q + 1); (_members[q], _members[j]) = (_members[j], _members[q]); }
             int maj = PlanIx;
+            bool lineages = C.DomainSlots && C.Lineages;
             for (int pq = 0; pq < np; pq++)
             {
                 int i = _members[pq], r = _type[i];
                 if (_rng.NextDouble() > C.MoltRate) continue;
                 if (Molt[i] > 0f) continue;   // already re-forming
                 int e = Elem[i], rc = r < 0 ? 3 : r;
+                // round 9: a STRANGER (in tissue another lineage owns) goes home when its own lineage's region has room
+                if (lineages && r >= 0 && Perm[r] >= 0 && Perm[r] != Dom[i])
+                {
+                    int home = RoleOfDom[Math.Clamp(Dom[i], 0, 2)];
+                    bool room = false;
+                    if (home >= 0 && home != r) for (int e2 = 0; e2 < 4 && !room; e2++) room = _want[e2 * 4 + home] - cen[e2 * 4 + home] > 0;
+                    if (room)
+                    {
+                        XferPlan[i] = -1;   // EffRole is its lineage's region again
+                        cen[e * 4 + rc]--; cen[e * 4 + home]++;
+                        continue;
+                    }
+                }
                 if (cen[e * 4 + rc] <= _want[e * 4 + rc]) continue;   // its class is not in surplus
                 int r2 = -1;
                 if (r >= 0) { for (int e2 = 0; e2 < 4; e2++) if (_want[e2 * 4 + r] - cen[e2 * 4 + r] > 0) { r2 = r; break; } }
@@ -1181,6 +1278,7 @@ namespace CosmicShore.Gameplay
                     float bd = 0;
                     for (int e2 = 0; e2 < 4; e2++) for (int col = 0; col < 3; col++)
                     {
+                        if (lineages && Perm[col] >= 0 && Perm[col] != Dom[i]) continue;   // round 9: never into another lineage's tissue
                         float d = _want[e2 * 4 + col] - cen[e2 * 4 + col];
                         if (d > bd) { bd = d; r2 = col; }
                     }

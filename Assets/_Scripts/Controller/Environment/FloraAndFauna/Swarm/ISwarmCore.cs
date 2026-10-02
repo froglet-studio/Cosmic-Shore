@@ -50,9 +50,6 @@ namespace CosmicShore.Gameplay
         int[] MoltTo { get; }
         /// <summary>Eaten volume banked per research element (0 Charge .. 3 Time) - what pays for eggs.</summary>
         float[] Stomach { get; }
-        /// <summary>Round 8 (Docs/SWARM_FAUNA.md §16.4): the same banked volume split by the DOMAIN slot (0..2) of the
-        /// mass that was eaten, laid out [element * 3 + slot]. Only a core that funds eggs by food domain spends it.</summary>
-        float[] StomachDom { get; }
         /// <summary>Each member's domain SLOT (0..2; 0 = the swarm's controlling domain). All 0 in a one-colour swarm.</summary>
         int[] Dom { get; }
         List<SwarmEvent> Events { get; }
@@ -149,38 +146,6 @@ namespace CosmicShore.Gameplay
         /// element's reserve at <paramref name="cost"/>, else the other reserves at
         /// <paramref name="crossCost"/> times that (largest first). Spends nothing when it fails.
         /// </summary>
-        /// <summary>
-        /// <see cref="TryFund(float[], int, float, float)"/>, and also says WHOSE mass paid (Docs/SWARM_FAUNA.md
-        /// §16.4). <paramref name="stomachDom"/> banks each element's reserve split by the domain slot (0..2) of
-        /// the mass it was eaten from ([element * 3 + slot]); whatever the egg drew from an element's reserve is
-        /// drawn from that element's domain split in proportion, and <paramref name="fundedSlot"/> is the slot
-        /// that paid the most (lowest slot on a tie). -1 when no domain is banked (a one-colour swarm, or a
-        /// reserve funded before any split was recorded) - the caller then keeps the parent's domain.
-        /// </summary>
-        public static bool TryFund(float[] stomach, float[] stomachDom, int e, float cost, float crossCost, out int fundedSlot)
-        {
-            fundedSlot = -1;
-            if (stomachDom == null) return TryFund(stomach, e, cost, crossCost);
-            float b0 = stomach[0], b1 = stomach[1], b2 = stomach[2], b3 = stomach[3];
-            if (!TryFund(stomach, e, cost, crossCost)) return false;
-            float f0 = 0f, f1 = 0f, f2 = 0f;
-            for (int o = 0; o < 4; o++)
-            {
-                float taken = (o == 0 ? b0 : o == 1 ? b1 : o == 2 ? b2 : b3) - stomach[o];
-                if (taken <= 0f) continue;
-                int q = o * 3;
-                float banked = stomachDom[q] + stomachDom[q + 1] + stomachDom[q + 2];
-                if (banked <= 0f) continue;
-                float k = MathF.Min(1f, taken / banked);
-                float d0 = stomachDom[q] * k, d1 = stomachDom[q + 1] * k, d2 = stomachDom[q + 2] * k;
-                stomachDom[q] -= d0; stomachDom[q + 1] -= d1; stomachDom[q + 2] -= d2;
-                f0 += d0; f1 += d1; f2 += d2;
-            }
-            if (f0 <= 0f && f1 <= 0f && f2 <= 0f) return true;
-            fundedSlot = f0 >= f1 && f0 >= f2 ? 0 : f1 >= f2 ? 1 : 2;
-            return true;
-        }
-
         public static bool TryFund(float[] stomach, int e, float cost, float crossCost)
         {
             if (stomach[e] >= cost) { stomach[e] -= cost; return true; }

@@ -8,6 +8,7 @@
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> sort    # the sort core's only
 #   bash Tools/Build/swarm_core_harness/run.sh <plans> evo     # the evofate core's only
 #   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> tickjob   # round 7: the off-thread tick (R7a-g)
+#   SWARM_DENSITY=5 bash Tools/Build/swarm_core_harness/run.sh <plans> lineage [out.json]   # round 9: regional lineages (R9a-d)
 #   bash Tools/Build/swarm_core_harness/run.sh evofate <plans> <fixture.json>   # exactness vs Python (evofate_fixture.py)
 #   bash Tools/Build/swarm_core_harness/run.sh export <plans> <out.json> 7,23,41   # states for score_grid.py / score_sort.py
 #   bash Tools/Build/swarm_core_harness/run.sh smoothsort <plans> <out.json> 7 researchSortFeelF8 0:1,...  # swarm_smooth events (score_sortfeel.py)
@@ -50,11 +51,11 @@ python3 "$HERE/extract_burst_predicates.py" "$ROOT/Assets/_Scripts/Controller/Ma
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmEvoFateCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmTickJob.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmMemberQuery.cs" \
-  "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs"
+  "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs" "$HERE/LineageHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"
 cp "$OUT/swarmcore.runtimeconfig.json" "$OUT/swarmquery.runtimeconfig.json"
 if [ "${1:-}" = "query" ]; then exec "$DOTNET" "$OUT/swarmquery.exe"; fi
 case "${1:-}" in export|yardstick|evofate|smoothsort|benchsort) ;; *) "$DOTNET" "$OUT/swarmquery.exe" || exit 1;; esac
 case "${1:-}" in export|yardstick|evofate|smoothsort|benchsort) exec "$DOTNET" "$OUT/swarmcore.exe" "$@";; esac
-"$DOTNET" "$OUT/swarmcore.exe" "${1:-$ROOT/Assets/_SO_Assets/Swarm Fauna/Plans}" "${2:-}"
+"$DOTNET" "$OUT/swarmcore.exe" "${1:-$ROOT/Assets/_SO_Assets/Swarm Fauna/Plans}" "${2:-}" ${3:+"$3"}
