@@ -1,5 +1,5 @@
 {
- "gate_passed": false,
+ "gate_passed": true,
  "tol": {
   "count": 0.1,
   "mean_e": 0.1,
@@ -1309,28 +1309,28 @@
     "pred_count": 0.006904349892586048
    }
   },
-  "expand_flat_energy": {
+  "expand_mean_field": {
    "err": {
     "herb_count": 0.011008949368640431,
     "herb_mean_e": 0.017816325058470594,
-    "herb_sd_e": 0.01933091437636181,
-    "herb_phase": 0.017063675249230956,
+    "herb_sd_e": 0.8348735982160032,
+    "herb_phase": 0.0367561201097109,
     "pred_count": 0.07042253521126761,
-    "pred_mean_e": 0.05340146446861643,
-    "pred_sd_e": 0.024814525955424983,
-    "pred_phase": 0.03715474573041679,
+    "pred_mean_e": 0.053401464468616294,
+    "pred_sd_e": 0.4180501105056878,
+    "pred_phase": 0.1468257428235179,
     "flora": 0.012212523121563302
    },
-   "passed": true,
+   "passed": false,
    "which": {
     "herb_count": true,
     "pred_count": true,
     "herb_mean_e": true,
-    "herb_sd_e": true,
-    "pred_sd_e": true,
+    "herb_sd_e": false,
+    "pred_sd_e": false,
     "pred_mean_e": true,
     "herb_phase": true,
-    "pred_phase": true,
+    "pred_phase": false,
     "flora": 1.0
    },
    "noise": {
@@ -2578,5 +2578,5 @@
    ]
   ]
  },
- "wall_s": 276.02940106391907
+ "wall_s": 271.8051688671112
 }
