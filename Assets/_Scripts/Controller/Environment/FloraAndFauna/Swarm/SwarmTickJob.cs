@@ -123,6 +123,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Round 8: total BODY prism volume of the published living members, by domain slot (0..2; 3 unused).
         /// Double: the cell adds it to a float sum, and this is where precision is cheap to keep.</summary>
         public readonly double[] VolumeBySlot = new double[4];
+        /// <summary>Per slot, the domain slot it was counted under in <see cref="VolumeBySlot"/>, or -1 if it was not
+        /// (dead in this frame). Survives the main thread masking a slot's Flags, so a death can be un-counted.</summary>
+        public sbyte[] Counted;
 
         // ── back buffers (worker writes) ──
         SwarmInstance[] _bInst;
@@ -136,6 +139,7 @@ namespace CosmicShore.Gameplay
         int _bPlanIx, _bAlive, _bVictim = -1;
         Vector3 _bAnchor, _bBX, _bBY, _bBZ;
         SwarmMemberGrid _bGrid;
+        sbyte[] _bCounted;
         readonly double[] _bVol = new double[4];
 
         // ── worker-private state carried tick to tick ──
@@ -162,6 +166,7 @@ namespace CosmicShore.Gameplay
             _lastAlive = new bool[_cap]; _danger = new bool[_cap];
             _engD = new float[_cap]; _engI = new int[_cap];
             Grid = new SwarmMemberGrid(_cap); _bGrid = new SwarmMemberGrid(_cap);
+            Counted = new sbyte[_cap]; _bCounted = new sbyte[_cap];
             _toWorldSpeed = settings.UnitScale * tickHz;
         }
 
@@ -280,6 +285,7 @@ namespace CosmicShore.Gameplay
             PlanIx = _bPlanIx; AliveCount = _bAlive; StarvationVictim = _bVictim;
             Anchor = _bAnchor; BX = _bBX; BY = _bBY; BZ = _bBZ;
             (Grid, _bGrid) = (_bGrid, Grid);
+            (Counted, _bCounted) = (_bCounted, Counted);
             for (int d = 0; d < 4; d++) VolumeBySlot[d] = _bVol[d];
             Tick = _tick - 1;
         }
@@ -303,6 +309,7 @@ namespace CosmicShore.Gameplay
                 if (!a)
                 {
                     inst.Flags = 0u;
+                    _bCounted[i] = -1;
                     _bSpeed[i] = 0f;
                     _lastAlive[i] = false;
                     _danger[i] = false;
@@ -343,7 +350,8 @@ namespace CosmicShore.Gameplay
                 int ds = dom != null ? Math.Clamp(dom[i], 0, 2) : 0;
                 inst.Flags = SwarmInstance.Pack(true, tier, from, to, ds);
                 _bSpeed[i] = c.Vel[i].Length() * _toWorldSpeed;
-                _bVol[ds] += (double)scale.X * scale.Y * scale.Z;
+                _bVol[ds] += SwarmVolumeLedger.BodyVolume(scale);   // a plan half-extent can be signed (whale)
+                _bCounted[i] = (sbyte)ds;
                 maxStepSq = MathF.Max(maxStepSq, Vector3.DistanceSquared(inst.PrevPos, inst.CurPos));
                 maxSeat = MathF.Max(maxSeat, MathF.Abs(inst.PrismZ));
 

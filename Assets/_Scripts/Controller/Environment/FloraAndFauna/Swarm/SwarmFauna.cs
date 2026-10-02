@@ -96,6 +96,7 @@ namespace CosmicShore.Gameplay
         static readonly ProfilerMarker s_mInline = new("SwarmFauna.Tick.InlineStep");
         static readonly ProfilerMarker s_mPose = new("SwarmFauna.Frame.PoseProxies");
         static readonly ProfilerMarker s_mDraw = new("SwarmFauna.Frame.Draw");
+        static readonly ProfilerMarker s_mVolume = new("SwarmFauna.Tick.Volume");
 
         public SwarmFaunaConfigSO Config => config;
 
@@ -442,6 +443,8 @@ namespace CosmicShore.Gameplay
             _render?.Dispose();
             _render = null;
             s_live.Remove(this);
+            var host = HostCell;
+            if (host) host.ClearVirtualVolume(this);
             base.OnDestroy();
         }
 
@@ -519,6 +522,7 @@ namespace CosmicShore.Gameplay
                 if (events[q].Kind == SwarmEventKind.Switched) OnMorph(events[q].Index, events[q].Other);
 
             using (s_mProxies.Auto()) SyncProxies();
+            using (s_mVolume.Auto()) StateVirtualVolume();
             using (s_mFeed.Auto()) Feed();
             Starvation();
             Extinction();
@@ -540,6 +544,40 @@ namespace CosmicShore.Gameplay
                     $"[Swarm] {name}: {_job.AliveCount} tadpoles, {_proxySlots.Count} proxies, worker {_tickMsSum / Mathf.Max(1, _tickMsCount):F2} ms/tick " +
                     $"({(_inline ? "inline" : "off-thread")}, {(_gpu ? "GPU-drawn" : "GameObjects")})");
             _tickMsSum = 0; _tickMsCount = 0;
+        }
+
+        // ───────────────────────────────────────────────────────────────── volume (round 8, §16.5)
+
+        readonly double[] _virtualBySlot = new double[4];
+        readonly int[] _cellSlotOfDomainSlot = new int[3];
+        readonly List<int> _volumeExcluded = new();
+
+        /// <summary>
+        /// Once per TICK: tell the host cell how much fauna BODY volume this swarm holds that is not a registered
+        /// prism (Docs/SWARM_FAUNA.md §16.5) - "volume is the spine", and a fauna body counts. The worker summed every
+        /// drawn body by domain slot; from that the main thread removes (a) members that died since the tick started
+        /// (masked, their proxy's skeleton is real mass now) and (b) members whose proxy body has finished creation and
+        /// is therefore ALREADY in the cell's own sum. Nothing counts twice and nothing is missed: a member is virtual
+        /// volume until its body is real, and real volume after. O(proxies + recent deaths), never O(members).
+        /// The value is ABSOLUTE (Cell.SetVirtualVolume), stated only when it changed.
+        /// </summary>
+        void StateVirtualVolume()
+        {
+            var host = HostCell;
+            if (!host) return;
+            for (int ds = 0; ds < 3; ds++) _cellSlotOfDomainSlot[ds] = Cell.VolumeSlotOf(_slotDomain[ds]);
+            _volumeExcluded.Clear();
+            _volumeExcluded.AddRange(_goneSlots);   // dead in the cell, still in the frame's sum
+            for (int q = 0; q < _proxySlots.Count; q++)
+            {
+                int i = _proxySlots[q];
+                var m = _proxy[i];
+                if (_gone[i] || !m || !m.Body || !m.Body.IsCreationComplete) continue;
+                _volumeExcluded.Add(i);   // its HealthPrism is registered and counts itself
+            }
+            SwarmVolumeLedger.State(_job.VolumeBySlot, _cellSlotOfDomainSlot, _job.Counted, _job.Instances,
+                                    _volumeExcluded, _virtualBySlot);
+            host.SetVirtualVolume(this, _virtualBySlot);
         }
 
         /// <summary>A member that died since the running tick started is still alive in its frame: hide it

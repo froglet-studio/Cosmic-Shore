@@ -234,9 +234,41 @@ static class TickJobHarness
             }
             Console.WriteLine($"  {j.AliveCount} members, 400 volumes, {cases} member hits, {wrong} volumes disagreed");
             Check(wrong == 0 && cases > 0, "the grid + exact test returns exactly the brute-force set");
-            double vol0 = 0; for (int i = 0; i < j.Instances.Length; i++) if (j.Instances[i].Alive) { var sc = j.Instances[i].Scale; vol0 += (double)sc.X * sc.Y * sc.Z; }
+            double vol0 = 0; for (int i = 0; i < j.Instances.Length; i++) if (j.Instances[i].Alive) vol0 += SwarmVolumeLedger.BodyVolume(j.Instances[i].Scale);
             Check(Math.Abs(j.VolumeBySlot[0] - vol0) < 1e-6 * Math.Max(1, vol0) && j.VolumeBySlot[1] == 0 && j.VolumeBySlot[2] == 0,
                   $"VolumeBySlot sums every drawn body ({vol0:F0}), all in slot 0 for a one-colour swarm");
+        }
+
+        Console.WriteLine("\nR8d. the volume ledger never double-counts a member that has a proxy (Docs/SWARM_FAUNA.md §16.3)");
+        {
+            var j = Make(plans, 1, 5);
+            for (int t = 0; t < 60; t++) Tick(j, inline: true);
+            var rng = new Random(11);
+            int[] map = { 1, 1, 1 };   // the swarm's domain slots all land in cell slot 1 (Ruby) here
+            var excluded = new System.Collections.Generic.List<int>();
+            double proxied = 0, all = 0;
+            for (int i = 0; i < j.Instances.Length; i++)
+            {
+                if (!j.Instances[i].Alive) continue;
+                double v = SwarmVolumeLedger.BodyVolume(j.Instances[i].Scale);
+                all += v;
+                if (rng.NextDouble() < 0.2) { excluded.Add(i); proxied += v; }   // these "have a finished proxy"
+            }
+            // a dead slot excluded too must take nothing out (it was never in the worker's sum)
+            int dead = -1; for (int i = 0; i < j.Instances.Length; i++) if (!j.Instances[i].Alive) { dead = i; break; }
+            if (dead >= 0) excluded.Add(dead);
+            var outv = new double[4];
+            SwarmVolumeLedger.State(j.VolumeBySlot, map, j.Counted, j.Instances, excluded, outv);
+            double cell = outv[1] + proxied;   // what the cell sees: the stated virtual volume + the proxies' own prisms
+            Console.WriteLine($"  {j.AliveCount} members, {excluded.Count} excluded, body volume {all:F0}, stated {outv[1]:F0} + proxies {proxied:F0}");
+            Check(Math.Abs(cell - all) < 1e-6 * Math.Max(1, all) && outv[0] == 0 && outv[2] == 0 && outv[3] == 0,
+                  "stated + proxied == every member's body exactly once, in the mapped cell slot");
+            // negative control: a ledger that forgets the exclusions counts every proxied body twice
+            var naive = new double[4];
+            SwarmVolumeLedger.State(j.VolumeBySlot, map, j.Counted, j.Instances, new System.Collections.Generic.List<int>(), naive);
+            double over = naive[1] + proxied - all;
+            Check(proxied > 0 && Math.Abs(over - proxied) < 1e-6 * Math.Max(1, all),
+                  $"negative control: without the exclusions the cell over-counts by exactly the proxied volume ({over:F0})");
         }
 
         Console.WriteLine(_fail == 0 ? "\ntick job: OK" : $"\ntick job: {_fail} FAILED");

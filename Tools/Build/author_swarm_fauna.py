@@ -153,9 +153,10 @@ FLORA_GROWTH_PER_OFFSPRING = 0.8   # x the plant's own budget: a plant seeds a n
 FLORA_COOLDOWN = 20
 FLORA_SPREAD = 120
 
-# ladder ratios (against the modelled mature FOREST; see ladder()). Round 7: a GPU-drawn member is not a
-# registered prism, so the cell's LiveVolume holds the flora, the skeletons, trails and the few proxies - not
-# the bodies (Docs/SWARM_FAUNA.md §14.4). The ladder is derived from what the cell can actually measure.
+# ladder ratios (against the modelled mature CELL; see ladder()). Round 7 left the GPU-drawn bodies out of
+# LiveVolume; round 8 (Docs/SWARM_FAUNA.md §16.5) puts them back - every swarm states its member body volume to
+# the cell (Cell.SetVirtualVolume), exactly where a fauna body prism lands. So the ladder is the forest PLUS
+# the three bodies grown full, and the ratios are unchanged.
 RESTLESS_ENTER, RESTLESS_EXIT, FRENZY_ENTER, FRENZY_EXIT = 0.35, 0.26, 2.5, 2.2
 LATTICE_HEART_COLLIDERS = 1080
 COLLIDER_CEILING = 1200         # round 7: always-on hearts + every proxy's two colliders, all swarms engaged
@@ -541,7 +542,9 @@ def model(plans):
     the cell's LiveVolume (no registered prism) - so the ladder is the forest's."""
     eggs = egg_volumes(plans)
     kind = {"whale": "mass", "pufferfish": "charge", "jellyfish": "space", "dragonfly": "time"}
-    rows, tot = [], dict(prisms=0, volume=0.0, hearts=0, plants_max=0, tadpoles=0, bill=0.0, food=0.0, forest_at_cap=0.0)
+    rows, tot = [], dict(prisms=0, volume=0.0, hearts=0, plants_max=0, tadpoles=0, bill=0.0, food=0.0, forest_at_cap=0.0,
+                         bodies=0.0, min_member=1e30)
+    m3 = (2.0 * UNIT_SCALE * PRISM_SCALE) ** 3   # SwarmTickJob.Build: scale = 2 * unit * prismScale * half
     for r in REGIONS:
         c = canon(r)
         per = c["leaf"][0] * c["leaf"][1] * c["leaf"][2]
@@ -552,7 +555,15 @@ def model(plans):
         food_e = {"Charge": 0, "Mass": 1, "Space": 2, "Time": 3}[r["food"]]
         # the egg bill of the full body: own-element eggs at their price, the rest at the cross price (2x)
         bill = sum(PLAN_DENSITY * mix[e] * 0.939 * eggs[e] * (1 if e == food_e else 2) for e in range(4))
-        rows.append(dict(r=r, c=c, per=per, plant_volume=per * c["budget"], body=PLAN_DENSITY * p["n"], bill=bill))
+        # round 8: the body's own volume, grown to the sort core's fill (SortBodyFill 0.939) - each tadpole is a
+        # body prism of its plan slot's half-extents, as the tick job draws and the cell now counts it
+        hf = p["half"]
+        unit_vols = [m3 * abs(hf[3 * k] * hf[3 * k + 1] * hf[3 * k + 2]) for k in range(p["n"])]
+        body_volume = PLAN_DENSITY * sum(unit_vols) * 0.939 * r["swarms"]
+        tot["min_member"] = min(tot["min_member"], min(unit_vols))
+        tot["bodies"] += body_volume
+        rows.append(dict(r=r, c=c, per=per, plant_volume=per * c["budget"], body=PLAN_DENSITY * p["n"], bill=bill,
+                         body_volume=body_volume))
         tot["prisms"] += r["cap"] * c["budget"]
         tot["volume"] += r["cap"] * c["budget"] * per
         tot["plants_max"] += r["cap"]
@@ -569,17 +580,19 @@ def model(plans):
 
 def ladder(tot):
     rt = lambda x, st: int(math.ceil(x / st) * st)
-    # proxies + skeletons are counted in prisms beside the forest (a full engagement of every swarm)
+    # proxies + skeletons are counted in prisms beside the forest (a full engagement of every swarm). A member
+    # body is VOLUME-only (like every fauna body), so the count ladder does not move in round 8
     prisms = tot["prisms"] + MAX_PROXIES * TOTAL_SWARMS
+    volume = tot["volume"] + tot["bodies"]
     return {
         "RestlessEnter": rt(prisms * RESTLESS_ENTER, 100),
         "RestlessExit": rt(prisms * RESTLESS_EXIT, 100),
         "FrenzyEnter": rt(prisms * FRENZY_ENTER, 100),
         "FrenzyExit": rt(prisms * FRENZY_EXIT, 100),
-        "RestlessEnterVolume": rt(tot["volume"] * RESTLESS_ENTER, 1000),
-        "RestlessExitVolume": rt(tot["volume"] * RESTLESS_EXIT, 1000),
-        "FrenzyEnterVolume": rt(tot["volume"] * FRENZY_ENTER, 1000),
-        "FrenzyExitVolume": rt(tot["volume"] * FRENZY_EXIT, 1000),
+        "RestlessEnterVolume": rt(volume * RESTLESS_ENTER, 1000),
+        "RestlessExitVolume": rt(volume * RESTLESS_EXIT, 1000),
+        "FrenzyEnterVolume": rt(volume * FRENZY_ENTER, 1000),
+        "FrenzyExitVolume": rt(volume * FRENZY_EXIT, 1000),
     }
 
 
@@ -685,6 +698,15 @@ def emit():
     return out, rows, tot, eggs, L, bool(baked)
 
 
+def float32_ulp_check(tot):
+    """(smallest member body volume, the largest total the ladder sees with 4x margin, float32 ulp there)."""
+    import struct
+    top = 4.0 * (tot["volume"] + tot["bodies"]) * FRENZY_ENTER
+    f = struct.unpack("f", struct.pack("f", top))[0]
+    ulp = struct.unpack("f", struct.pack("I", struct.unpack("I", struct.pack("f", f))[0] + 1))[0] - f
+    return tot["min_member"], top, ulp
+
+
 def verify(out, tot, rows):
     problems = []
     # every guid this script mints has exactly one owner in the tree (or will, once written)
@@ -716,6 +738,12 @@ def verify(out, tot, rows):
         problems.append(f"the largest body is {max(bodies.values())} tadpoles - round 7 caps a swarm near 1,000")
     if min(row["body"] for row in rows) < 400:
         problems.append("a starting body under 400 tadpoles is not 'substantially filled' (round 7)")
+    # round 8: the member bodies now ride Cell.liveVolumeTotal, a float32 re-derived each pass. The smallest
+    # body a member can add must stay well above one ulp of the largest value that total reaches (FrenzyEnter
+    # with margin), or a member's birth or death could be invisible to the ladder (the Cleave finding)
+    smallest, top, ulp = float32_ulp_check(tot)
+    if smallest < 16 * ulp:
+        problems.append(f"the smallest member body ({smallest:.3f}) is under 16 ulps of float32 at {top:,.0f} ({ulp:.4f})")
     if tot["colliders_engaged"] >= COLLIDER_CEILING:
         problems.append(f"{tot['colliders_engaged']} colliders with every swarm fully engaged >= the ceiling {COLLIDER_CEILING}")
     # food, PER BAND (the swarms are penned apart): the band's forest at its CAP must be able to pay for
@@ -767,6 +795,9 @@ def report(rows, tot, eggs, L, baked):
           f"+ up to {tot['proxy_colliders']} proxy colliders only while vessels are near "
           f"({tot['colliders_engaged']} worst case, ceiling {COLLIDER_CEILING}); {tot['tadpoles']} tadpoles GPU-drawn, 0 colliders")
     print(f"  mature forest (model): {tot['prisms']:,} prisms, {tot['volume']:,.0f} volume - Atlantis is {ATLANTIS_PRISMS:,}")
+    print(f"  round 8: member bodies grown full {tot['bodies']:,.0f} volume beside the forest's {tot['volume']:,.0f} "
+          f"(now in LiveVolume, Docs/SWARM_FAUNA.md §16.5); smallest member body {float32_ulp_check(tot)[0]:.2f} vs float32 ulp "
+          f"{float32_ulp_check(tot)[2]:.4f} at {float32_ulp_check(tot)[1]:,.0f}")
     print("  ladder: " + ", ".join(f"{k} {v:,}" for k, v in L.items()))
     print(f"  plans: {'re-baked from ' + swarm_plans.RESEARCH_REF if baked else 'research ref not reachable - committed plans kept'}")
 

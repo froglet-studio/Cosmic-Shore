@@ -160,7 +160,9 @@ namespace CosmicShore.Gameplay
     public class LifeForm : MonoBehaviour { public Element Element => default; public bool IsDying => false; public Transform HeartTransform => null; }
     public class Flora : LifeForm { }
     public static class FloraHeartRegistry { public static Flora NearestToPoint(Vector3 from, Predicate<Flora> reject) => null; }
-    public class Cell : MonoBehaviour { public float MembraneRadius => 0; public void RegisterSpawnedObject(GameObject o) { } public bool IsInsideNucleus(Vector3 p) => false; }
+    public class Cell : MonoBehaviour { public float MembraneRadius => 0; public void RegisterSpawnedObject(GameObject o) { } public bool IsInsideNucleus(Vector3 p) => false;
+        // Cell.cs (round 8)
+        public static int VolumeSlotOf(Domains d) => 0; public void SetVirtualVolume(Object source, double[] bySlot) { } public void ClearVirtualVolume(Object source) { } }
     public class PrismSpatialIndex { public static PrismSpatialIndex EnsureInstance() => null; public bool IsAvailable => true; public int QuerySphere(Vector3 c, float r, List<Prism> res) => 0; }
     public class FaunaNetworkSync { public static void ServerSpawn(Fauna f) { } }
 

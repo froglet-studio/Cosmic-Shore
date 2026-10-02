@@ -303,4 +303,39 @@ namespace CosmicShore.Gameplay
             return slots.Count - before;
         }
     }
+
+    /// <summary>
+    /// Round 8 (Docs/SWARM_FAUNA.md §16.3): what a swarm states to its cell's volume ladder. The worker sums
+    /// every DRAWN body per domain slot (<c>SwarmTickJob.VolumeBySlot</c>, recording which slot it counted each
+    /// member in, <c>Counted</c>); this takes out exactly the members whose volume the cell already sees some
+    /// other way - a proxy whose body prism has finished creation is a registered HealthPrism and counts itself,
+    /// and a member killed since the frame was built is dead in the cell even though its frame still draws it.
+    /// One rule, so "never double-count a member that has a proxy" cannot drift between the C# and its proof.
+    /// </summary>
+    public static class SwarmVolumeLedger
+    {
+        /// <summary>A body's volume, as the cell counts a prism's: |x·y·z| (a plan may author a negative extent).</summary>
+        public static double BodyVolume(Vector3 scale) => Math.Abs((double)scale.X * scale.Y * scale.Z);
+
+        /// <param name="volumeBySlot">The worker's per-domain-slot sums (3 used).</param>
+        /// <param name="cellSlotOfDomainSlot">Cell volume slot (0..3) each swarm domain slot maps to.</param>
+        /// <param name="counted">Per member: the domain slot the worker counted it in, or -1.</param>
+        /// <param name="excluded">Members the cell already sees (finished proxies) or that are gone.</param>
+        /// <param name="outByCellSlot">Receives the stated volume per cell slot (4 entries).</param>
+        public static void State(double[] volumeBySlot, int[] cellSlotOfDomainSlot, sbyte[] counted,
+                                 SwarmInstance[] instances, IList<int> excluded, double[] outByCellSlot)
+        {
+            Array.Clear(outByCellSlot, 0, 4);
+            for (int ds = 0; ds < 3; ds++) outByCellSlot[cellSlotOfDomainSlot[ds]] += volumeBySlot[ds];
+            for (int q = 0; q < excluded.Count; q++)
+            {
+                int i = excluded[q];
+                if (i < 0 || i >= counted.Length) continue;
+                int ds = counted[i];
+                if (ds < 0) continue;   // not in the worker's sum - nothing to take out
+                int slot = cellSlotOfDomainSlot[ds];
+                outByCellSlot[slot] = Math.Max(0.0, outByCellSlot[slot] - BodyVolume(instances[i].Scale));
+            }
+        }
+    }
 }
