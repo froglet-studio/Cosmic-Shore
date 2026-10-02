@@ -215,5 +215,28 @@ should work normally after resume. If it recurs, check first that `InputControll
 
 ---
 
+## 7. A timeout `catch` that runs on the wrong thread
+
+**Shows up as:** `EnsureRunningOnMainThread` exceptions (or a frozen screen) right after a timeout
+or cancellation, especially at boot with a slow or unreachable UGS. FIX_LOG BH-1.3.
+
+**Why it happens:** `CancelAfter` and `new CancellationTokenSource(ms)` cancel from a timer thread.
+`AttachExternalCancellation` does not marshal, so when it sits outside `.AsMainThread()` the
+`catch (OperationCanceledException)` and everything after it resumes on that thread.
+
+**Fix pattern:** make the first statement of each such `catch` `await MainThreadDispatcher.SwitchToMainThreadAsync();`
+(and use `.AsMainThread()` rather than `.AsUniTask()` on the awaited task). Find candidates with
+`rg -n "CancelAfter|new CancellationTokenSource\(" Assets/_Scripts` and check what each `catch`
+touches. Full background: [`../THREADING.md`](../THREADING.md).
+
+**Related, BH-1.4:** a facade call that reports failure through an event (for example
+`AuthenticationServiceFacade.OnSignInFailed`) does not throw, so a bare `await` is not proof of
+success. Check the state afterwards (`_facade.IsSignedIn`) before moving on.
+
+**Verify:** shorten the timeout to ~0.1 s (or go offline) and boot: no `EnsureRunningOnMainThread`
+error, and the flow carries on. With no network and no session, Guest shows the error at once.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).

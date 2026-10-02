@@ -8,6 +8,36 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-1.3 / BH-1.4 — auth scene: timeout off the main thread, and silent sign-in failure
+
+- **Date:** fixed 2026-10-02; retest deferred by Yash on 2026-10-02 and parked on the handoff's revisit/playtest list. Repro skipped at Yash's call.
+- **Symptom (1.3):** with a slow or unreachable UGS at boot, the cached-auth timeout expires and the
+  auth scene can throw `EnsureRunningOnMainThread` or freeze on the auth screen.
+- **Symptom (1.4):** a failed guest or auto sign-in navigates on as if signed in, then waits out the
+  whole profile timeout for a profile that never loads.
+- **Root cause (1.3):** the timeout is raised by `CancelAfter`'s timer thread. In
+  `TrySignInCachedWithTimeoutAsync`, `.AttachExternalCancellation` sat outside `.AsMainThread()` (the
+  call used `.AsUniTask()`), so the `catch (OperationCanceledException)` resumed on the timer
+  thread and its caller then touched Unity/UI state. `HostConnectionService.WaitForProfileInitAsync`
+  has the identical shape.
+- **Root cause (1.4):** `AuthenticationServiceFacade` reports a failed sign-in through its
+  `OnSignInFailed` event and never throws, so `OnGuestLoginAsync` / `AttemptAutoSignInAsync` carried
+  on to `HandlePostAuthFlowAsync` after a failure.
+- **Fix:**
+  - `AuthenticationSceneController.TrySignInCachedWithTimeoutAsync`: `.AsMainThread()` on the
+    success path, and `await MainThreadDispatcher.SwitchToMainThreadAsync()` as the first statement
+    of both catch blocks.
+  - `HostConnectionService.WaitForProfileInitAsync`: the same switch at the top of its catch.
+  - `OnGuestLoginAsync`: after the await, `if (!_facade.IsSignedIn)` shows the sign-in error and
+    re-enables the button (the existing `finally`), via a shared `ShowGuestSignInFailed`.
+  - `AttemptAutoSignInAsync`: after the await, `if (!_facade.IsSignedIn)` logs and goes to the main
+    menu, matching its existing failure behaviour, instead of waiting out the profile timeout.
+- **Verification:** all gate scripts pass; not run in Unity. Retest steps are in the handoff
+  playtest list and PLAYBOOK §7.
+- **PR/commit:** pending.
+
+---
+
 ## BH-1.2 — gamepad triggers stayed held across a strategy switch or pause
 
 - **Date:** fixed 2026-10-02; Yash retested on `Bug_Hunt` and it works. Skipped the repro on

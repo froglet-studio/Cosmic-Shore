@@ -37,6 +37,7 @@ Confidence scale:
 | 10 | **Fauna leaves its cell on destroy (was §1.13).** `Fauna` is not a `LifeForm`, so nothing removed a dead or torn-down creature from `Cell.spawnedLifeForms` (flora does it in `LifeForm.Die`); the dead entry stayed and `LifeFormsInCell` stayed inflated. That count feeds `AllLifeFormsDestroyedTurnMonitor` (used by the Wildlife Blitz co-op scene) and the Wildlife Blitz monitors. `Fauna.OnDestroy` now calls `hostCell.UnregisterSpawnedObject`. Shipped on `Bug_Hunt`. | `Fauna.OnDestroy` |
 | 11 | **AI no longer leaves a held drift when stopped (was §1.1).** Already fixed by `4c866f880` (2026-09-26): `AIPilot.StopAIPilot` releases the commit drift, stops every started ability and clears the aim telegraph, and `PilotSwap` releases the hull's held inputs while the server owns it. Verified by Yash in Menu_Main freestyle takeover on `Bug_Hunt`. No code change was needed; `AIPilot.OnDisable` was left alone on purpose (teardown path, vessel is going away). | `AIPilot.StopAIPilot`, `PilotSwap` |
 | 12 | **Gamepad triggers released on strategy switch and pause (was §1.2).** `GamepadInputStrategy` had no `OnStrategyDeactivated` / `OnPaused`, so a trigger or speed gesture held when the player touched the keyboard or mouse (or paused) never sent its release and the vessel kept the ability held. It now releases held triggers and speed effects and resets its state, mirroring `KeyboardInputStrategy`; the trigger edge logic moved into a shared `DispatchTriggers`. Shipped on `Bug_Hunt`. | `GamepadInputStrategy` |
+| 13 | **Auth scene: cached-auth timeout stays on the main thread, and a silent sign-in failure is no longer treated as success (was §1.3 and §1.4).** `TrySignInCachedWithTimeoutAsync` switches to the main thread in both catches (the `CancelAfter` timer thread used to resume it) and uses `.AsMainThread()` on the success path; `HostConnectionService.WaitForProfileInitAsync` got the same switch. `OnGuestLoginAsync` and `AttemptAutoSignInAsync` now check `_facade.IsSignedIn` after the await: guest shows the error and re-enables the button, auto sign-in goes to the main menu instead of waiting out the profile timeout. Shipped on `Bug_Hunt`. | `AuthenticationSceneController`, `HostConnectionService` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -50,31 +51,18 @@ Confidence scale:
 - **Gamepad held triggers (1.2):** with a pad, hold a trigger then move the mouse or tap a key, and
   the ability/drift must end; hold a trigger and pause, and it must release, and the pad must work
   after resume. Re-check this if a held ability ever sticks after an input switch.
+- **STILL TO TEST (revisit): 1.3 and 1.4 were pushed on `Bug_Hunt` (`6d16219`) but not yet retested in Unity.** Run
+  the next two items before merging them, or whenever the auth scene is next touched.
+- **Auth timeout (1.3):** set `cachedAuthTimeout` to ~0.1 s on the auth scene controller (or go
+  offline with a cached session) and boot. After "Cached auth timed out" it should carry on to the
+  auth panel or main menu with no `EnsureRunningOnMainThread` error and no frozen screen.
+- **Silent sign-in failure (1.4):** with no network and no session, press Guest. It should show the
+  sign-in error and re-enable the button immediately, not sit on "Loading profile…" until the
+  profile timeout. Re-check this if the auth scene ever hangs after a failed sign-in.
 
 ---
 
 ## 1. Tier 2 — small, local, high value (do these first)
-
-### 1.3 Cached-auth timeout resumes off the main thread — High
-- **Where:** `Assets/_Scripts/System/AuthenticationSceneController.cs`,
-  `TrySignInCachedWithTimeoutAsync` (303).
-- **Bug:** `CancelAfter` fires on a timer thread, so the `catch (OperationCanceledException)`
-  resumes on the ThreadPool. `.AttachExternalCancellation` sits OUTSIDE `.AsMainThread()`, so shipped
-  fix #7 does not cover this path. The caller then touches UI off-thread.
-- **Trigger:** a slow or unreachable UGS at boot (the `cachedAuthTimeout` expires).
-- **Consequence:** an `EnsureRunningOnMainThread` exception during the auth scene. The player may
-  land on a frozen auth screen.
-- **Fix:** first statement of both `catch` blocks: `await MainThreadDispatcher.SwitchToMainThreadAsync();`
-  (the method must become `async` in the catch; it already is). The same shape exists in
-  `HostConnectionService.WaitForProfileInitAsync` (2239) — check its timeout path too.
-
-### 1.4 Guest / auto sign-in treats a silent failure as success — Medium
-- **Where:** `AuthenticationSceneController.OnGuestLoginAsync` (356) and `AttemptAutoSignInAsync` (329).
-- **Bug:** both await the facade and proceed to `HandlePostAuthFlow` without checking the result.
-  The facade reports failure through `OnSignInFailed` rather than throwing.
-- **Consequence:** the scene navigates as signed in and then waits on a profile that never loads,
-  until the safety timeout.
-- **Fix:** after the await, `if (!_facade.IsSignedIn) { show the error / re-enable the button; return; }`.
 
 ### 1.5 Friends init latches `_initialized` before the service is actually up — High
 - **Where:** `Assets/_Scripts/Controller/Party/FriendsInitializer.cs` (~236-241).
