@@ -25,6 +25,14 @@ REFDIR=$(ls -d "$DOTNET_ROOT"/packs/Microsoft.NETCore.App.Ref/*/ref/net8.0 | hea
 OUT="${TMPDIR:-/tmp}/swarm_core_harness"
 mkdir -p "$OUT"
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
+# Unity compiles these files against its netstandard2.1 API profile, which is NARROWER than net8.0 (e.g. no
+# Vector<T>(ReadOnlySpan<T>) constructor - that shipped once as CS1503 in SwarmEvoFateCore and the net8 build below
+# could not see it). So compile the five cores against netstandard2.1 first and fail the way Unity would.
+NSREF=$(ls "$DOTNET_ROOT"/packs/NETStandard.Library.Ref/*/ref/netstandard2.1/netstandard.dll | head -1)
+SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
+"$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -out:"$OUT/unityprofile.dll" \
+  "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmSortCore.cs" "$SW/SwarmEvoFateCore.cs" \
+  || { echo "FAIL: the sim cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -target:exe -main:Program -out:"$OUT/swarmcore.exe" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/ISwarmCore.cs" \

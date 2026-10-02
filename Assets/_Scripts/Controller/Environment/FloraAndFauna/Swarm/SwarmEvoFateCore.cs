@@ -41,6 +41,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace CosmicShore.Gameplay
 {
@@ -117,8 +118,14 @@ namespace CosmicShore.Gameplay
             int n = a.Length, i = 0; float s = 0f;
             if (Vector.IsHardwareAccelerated && n >= Vector<float>.Count * 2)
             {
-                var acc = Vector<float>.Zero; int w = Vector<float>.Count;
-                for (; i <= n - w; i += w) acc += new Vector<float>(a.Slice(i, w)) * new Vector<float>(b.Slice(i, w));
+                // Reinterpret the spans as vectors rather than constructing each one: Unity's profile of
+                // System.Numerics has only the Vector<T>(Span<T>) constructor and no ReadOnlySpan<T> overload
+                // (CS1503 there, while CoreCLR compiles it), and MemoryMarshal.Cast takes a ReadOnlySpan on both.
+                var va = MemoryMarshal.Cast<float, Vector<float>>(a);
+                var vb = MemoryMarshal.Cast<float, Vector<float>>(b.Slice(0, n));
+                var acc = Vector<float>.Zero;
+                for (int v = 0; v < va.Length; v++) acc += va[v] * vb[v];
+                i = va.Length * Vector<float>.Count;
                 s = Vector.Dot(acc, Vector<float>.One);
             }
             else
