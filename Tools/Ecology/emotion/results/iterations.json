@@ -3,84 +3,133 @@
   "step": "G0 old scorecard feel",
   "n_features": 5,
   "logistic": {
-   "lofo": 0.321,
-   "within": 0.496,
-   "viewer": 0.465
+   "lofo": 0.318,
+   "within": 0.512,
+   "viewer": 0.417
   },
   "prototype": {
-   "lofo": 0.28,
-   "within": 0.496,
-   "viewer": 0.486
+   "lofo": 0.286,
+   "within": 0.505,
+   "viewer": 0.465
+  },
+  "subproto": {
+   "lofo": 0.354,
+   "within": 0.686,
+   "viewer": 0.583
   }
  },
  {
   "step": "G1 + looming (Schiff, Lee tau)",
   "n_features": 9,
   "logistic": {
-   "lofo": 0.559,
-   "within": 0.766,
-   "viewer": 0.771
+   "lofo": 0.543,
+   "within": 0.759,
+   "viewer": 0.757
   },
   "prototype": {
-   "lofo": 0.481,
+   "lofo": 0.484,
    "within": 0.788,
-   "viewer": 0.84
+   "viewer": 0.854
+  },
+  "subproto": {
+   "lofo": 0.503,
+   "within": 0.872,
+   "viewer": 0.875
   }
  },
  {
   "step": "G2 + scale & baby schema",
   "n_features": 12,
   "logistic": {
-   "lofo": 0.59,
-   "within": 0.814,
-   "viewer": 0.84
+   "lofo": 0.601,
+   "within": 0.812,
+   "viewer": 0.847
   },
   "prototype": {
-   "lofo": 0.658,
-   "within": 0.833,
-   "viewer": 0.896
+   "lofo": 0.637,
+   "within": 0.826,
+   "viewer": 0.903
+  },
+  "subproto": {
+   "lofo": 0.637,
+   "within": 0.951,
+   "viewer": 0.958
   }
  },
  {
   "step": "G3 + gaze / chase / encircle (Gao, Heider-Simmel)",
   "n_features": 17,
   "logistic": {
-   "lofo": 0.634,
-   "within": 0.92,
-   "viewer": 0.91
+   "lofo": 0.656,
+   "within": 0.927,
+   "viewer": 0.882
   },
   "prototype": {
-   "lofo": 0.694,
-   "within": 0.904,
-   "viewer": 0.896
+   "lofo": 0.684,
+   "within": 0.906,
+   "viewer": 0.917
+  },
+  "subproto": {
+   "lofo": 0.693,
+   "within": 0.976,
+   "viewer": 0.938
   }
  },
  {
   "step": "G4 + coordination / uncanny",
   "n_features": 20,
   "logistic": {
-   "lofo": 0.677,
-   "within": 0.889,
-   "viewer": 0.882
+   "lofo": 0.701,
+   "within": 0.894,
+   "viewer": 0.889
   },
   "prototype": {
-   "lofo": 0.693,
-   "within": 0.91,
-   "viewer": 0.896
+   "lofo": 0.688,
+   "within": 0.911,
+   "viewer": 0.91
+  },
+  "subproto": {
+   "lofo": 0.705,
+   "within": 0.974,
+   "viewer": 0.931
   }
  },
  {
   "step": "G5 + effort & rhythm (Laban, Pollick, Tremoulet)",
   "n_features": 29,
   "logistic": {
-   "lofo": 0.667,
-   "within": 0.958,
-   "viewer": 0.931
+   "lofo": 0.717,
+   "within": 0.962,
+   "viewer": 0.944
   },
   "prototype": {
-   "lofo": 0.688,
-   "within": 0.925,
-   "viewer": 0.91
+   "lofo": 0.686,
+   "within": 0.932,
+   "viewer": 0.931
+  },
+  "subproto": {
+   "lofo": 0.719,
+   "within": 0.99,
+   "viewer": 0.965
+  }
+ },
+ {
+  "step": "G6 + attention / mass / sneak (from LOFO failures)",
+  "n_features": 32,
+  "logistic": {
+   "lofo": 0.672,
+   "within": 0.965,
+   "viewer": 0.972
+  },
+  "prototype": {
+   "lofo": 0.7,
+   "within": 0.936,
+   "viewer": 0.938
+  },
+  "subproto": {
+   "lofo": 0.729,
+   "within": 0.99,
+   "viewer": 0.972
   }
  }
 ]

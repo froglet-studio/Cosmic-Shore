@@ -22,6 +22,7 @@ GROUPS = [
     ("G5 + effort & rhythm (Laban, Pollick, Tremoulet)", ["accel_rel", "curvature", "bounce", "wobble_hz",
                                                           "speed_cv", "unpredict", "stillness", "burst",
                                                           "approach_retreat"]),
+    ("G6 + attention / mass / sneak (from LOFO failures)", ["tracking", "mass_log", "sneak"]),
 ]
 
 
@@ -34,14 +35,14 @@ def main():
         X, y, fam, _ = load(ref, keys)
         Xe, ye, _, _ = load(ev, keys)
         row = dict(step=name, n_features=len(keys))
-        for kind in ("logistic", "prototype"):
+        for kind in ("logistic", "prototype", "subproto"):
             a, conf = lofo(X, y, fam, kind)
             row[kind] = dict(lofo=round(a, 3), within=round(within(X, y, kind), 3),
                              viewer=round(transfer(X, y, Xe, ye, kind), 3))
         log.append(row)
-        print(f"{name:52s} d={len(keys):2d}  logistic lofo {row['logistic']['lofo']:.3f} within "
-              f"{row['logistic']['within']:.3f} viewer {row['logistic']['viewer']:.3f} | prototype lofo "
-              f"{row['prototype']['lofo']:.3f} within {row['prototype']['within']:.3f} viewer {row['prototype']['viewer']:.3f}")
+        print(f"{name:52s} d={len(keys):2d} " + " | ".join(
+            f"{k[:5]} lofo {v['lofo']:.3f} within {v['within']:.3f} viewer {v['viewer']:.3f}" for k, v in row.items()
+            if isinstance(v, dict)))
     json.dump(log, open(os.path.join(HERE, "results", "iterations.json"), "w"), indent=1)
     return keys
 

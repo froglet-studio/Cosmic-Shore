@@ -54,6 +54,15 @@ Each feature is tied to a line of the literature (full table in emotion/LITERATU
   mimicry         max over lags 0..1 s of the correlation between agent velocity and PILOT velocity
                   (an echo that copies you is eerie).
   speed_cv        coefficient of variation of each agent's speed over time (steady vs changeable).
+  tracking        1 / (1 + 5 x CV of the distance from the pilot to the group's centroid): does it KEEP its
+                  distance to you (attending) or pass by (indifferent)?  Contingent responsiveness is an
+                  agency cue (Johnson, Slaughter & Carey 1998: contingency alone makes infants follow a
+                  blob's "gaze"); indifference to the viewer is what separates awe from threat.
+  mass_log        log2(cube root of the summed body volume engaged near the pilot / hull) - how much
+                  creature is near you, whatever it is made of (a swarm of tiny things is one big thing).
+  sneak           (mean speed while OUTSIDE the pilot's 45 deg forward cone - mean speed while inside it) /
+                  SPEED_REF.  Stalking predators freeze while the prey looks (Caro 1994, cheetah stalks)
+                  and creep when it does not; positive = it moves when you are not looking.
 
 Temporal features use stable agent indexing over up to MAX_TRACK agents; when the agent count changes the
 track restarts (births/deaths), so a species that churns every step loses only those features.
@@ -72,7 +81,8 @@ SPEED_REF = 100.0       # u/s: the yardstick for every speed feature (a vessel's
 FEATURES = ("size_log", "extent_log", "roundness", "count_log", "speed_rel", "accel_rel", "jerk_rel",
             "curvature", "approach", "loom", "tau_inv", "view_fill", "proximity", "gaze", "pursuit", "orbit",
             "encircle", "converge", "coherence", "synchrony", "regularity", "stillness", "burst",
-            "bounce", "wobble_hz", "approach_retreat", "unpredict", "mimicry", "speed_cv")
+            "bounce", "wobble_hz", "approach_retreat", "unpredict", "mimicry", "speed_cv",
+            "tracking", "mass_log", "sneak")
 
 
 def _unit(v):
@@ -84,7 +94,8 @@ class AffectRecorder:
     def __init__(self, dt: float, pilot_radius: float = 6.0):
         self.dt, self.pr = dt, pilot_radius
         self.rows = {k: [] for k in ("approach", "loom", "fill", "prox", "gaze", "orbit", "encircle",
-                                     "meand", "coh", "size", "extent", "count", "aspect", "tau", "pursue")}
+                                     "meand", "coh", "size", "extent", "count", "aspect", "tau", "pursue",
+                                     "cdist", "mass", "sp_in", "sp_out")}
         self.track_P, self.track_H, self.pilot_V = [], [], []
         self.track_n = None
         self.segments = []            # finished (P (T,n,3), pilot_V (T,3)) tracks
@@ -119,6 +130,16 @@ class AffectRecorder:
             H = self.heading.copy()
         d = pp - P; dist = np.linalg.norm(d, axis=1); dh = d / np.maximum(dist[:, None], 1e-9)
         eng = dist < ENGAGE
+        self.rows["cdist"].append(float(np.linalg.norm(pp - P.mean(0))))
+        self.rows["mass"].append(float(np.cbrt(np.sum(size[eng] ** 3))) if eng.any() else np.nan)
+        pvn = np.linalg.norm(pv)
+        if pvn > 1e-3 and eng.any():
+            inview = np.sum(-dh[eng] * (pv / pvn), axis=1) > math.cos(math.radians(45))
+            se = sp[eng]
+            if inview.any():
+                self.rows["sp_in"].append(float(se[inview].mean()))
+            if (~inview).any():
+                self.rows["sp_out"].append(float(se[~inview].mean()))
         self.rows["size"].append(float(np.median(size)))
         self.rows["prox"].append(float(dist.min()))
         if eng.any():
@@ -211,6 +232,13 @@ class AffectRecorder:
             f["converge"] = 0.0
         f["coherence"] = nm(r["coh"], d=0.0)
         f.update(self._temporal(ps))
+        cd = r["cdist"]
+        f["tracking"] = 1.0 / (1.0 + 5.0 * float(np.std(cd) / max(np.mean(cd), 1e-6))) if len(cd) > 2 else 0.0
+        f["mass_log"] = math.log2(max(nm(r["mass"], np.nanmedian, 0.0), 0.1) / self.pr) if np.isfinite(r["mass"]).any() else f["size_log"]
+        if len(r["sp_in"]) > 5 and len(r["sp_out"]) > 5:
+            f["sneak"] = (float(np.mean(r["sp_out"])) - float(np.mean(r["sp_in"]))) / ps
+        else:
+            f["sneak"] = 0.0
         f["roundness_known"] = 1.0 if self.aspect_known else 0.0
         return {k: round(float(v), 4) for k, v in f.items()}
 

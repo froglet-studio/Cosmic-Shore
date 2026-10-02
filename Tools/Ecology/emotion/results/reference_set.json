@@ -37,6 +37,9 @@
 "unpredict": 0.7893,
 "mimicry": 0.3492,
 "speed_cv": 0.3428,
+"tracking": 0.5104,
+"mass_log": -1.0164,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -77,6 +80,9 @@
 "unpredict": 0.7363,
 "mimicry": 0.7149,
 "speed_cv": 0.4062,
+"tracking": 0.4375,
+"mass_log": -0.0314,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -117,6 +123,9 @@
 "unpredict": 0.7436,
 "mimicry": 0.1994,
 "speed_cv": 0.2449,
+"tracking": 0.321,
+"mass_log": -0.6455,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -157,6 +166,9 @@
 "unpredict": 0.7127,
 "mimicry": 0.7045,
 "speed_cv": 0.3872,
+"tracking": 0.4396,
+"mass_log": -0.9461,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -197,6 +209,9 @@
 "unpredict": 0.6805,
 "mimicry": 0.0,
 "speed_cv": 0.2655,
+"tracking": 0.3707,
+"mass_log": -0.0992,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -237,6 +252,9 @@
 "unpredict": 0.7697,
 "mimicry": 0.724,
 "speed_cv": 0.3591,
+"tracking": 0.4641,
+"mass_log": -0.2445,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -277,6 +295,9 @@
 "unpredict": 0.8626,
 "mimicry": 0.0006,
 "speed_cv": 0.2329,
+"tracking": 0.515,
+"mass_log": -0.0378,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -317,6 +338,9 @@
 "unpredict": 0.7302,
 "mimicry": 0.7139,
 "speed_cv": 0.4024,
+"tracking": 0.2959,
+"mass_log": -0.4644,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -357,6 +381,9 @@
 "unpredict": 0.8522,
 "mimicry": 0.0025,
 "speed_cv": 0.3455,
+"tracking": 0.4418,
+"mass_log": -0.9876,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -397,6 +424,9 @@
 "unpredict": 0.607,
 "mimicry": 0.6607,
 "speed_cv": 0.3734,
+"tracking": 0.3771,
+"mass_log": -0.4411,
+"sneak": 0.256,
 "roundness_known": 1.0
 }
 },
@@ -437,6 +467,9 @@
 "unpredict": 0.8083,
 "mimicry": 0.0005,
 "speed_cv": 0.2377,
+"tracking": 0.5258,
+"mass_log": -0.7373,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -477,6 +510,9 @@
 "unpredict": 0.6131,
 "mimicry": 0.7621,
 "speed_cv": 0.3789,
+"tracking": 0.3711,
+"mass_log": 0.0978,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -517,6 +553,9 @@
 "unpredict": 0.8449,
 "mimicry": 0.0679,
 "speed_cv": 0.2613,
+"tracking": 0.3562,
+"mass_log": -1.2731,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -557,6 +596,9 @@
 "unpredict": 0.6207,
 "mimicry": 0.6812,
 "speed_cv": 0.3798,
+"tracking": 0.4061,
+"mass_log": -0.4472,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -597,6 +639,9 @@
 "unpredict": 0.862,
 "mimicry": 0.2505,
 "speed_cv": 0.2377,
+"tracking": 0.3833,
+"mass_log": -0.6211,
+"sneak": -0.0147,
 "roundness_known": 1.0
 }
 },
@@ -637,6 +682,9 @@
 "unpredict": 0.661,
 "mimicry": 0.6972,
 "speed_cv": 0.4173,
+"tracking": 0.3439,
+"mass_log": -0.417,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -677,6 +725,9 @@
 "unpredict": 0.9706,
 "mimicry": 0.0006,
 "speed_cv": 0.2434,
+"tracking": 0.576,
+"mass_log": -0.9666,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -717,6 +768,9 @@
 "unpredict": 0.5591,
 "mimicry": 0.6793,
 "speed_cv": 0.3722,
+"tracking": 0.3746,
+"mass_log": -0.5025,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -757,6 +811,9 @@
 "unpredict": 0.8514,
 "mimicry": 0.2167,
 "speed_cv": 0.3121,
+"tracking": 0.4596,
+"mass_log": -0.5827,
+"sneak": -0.0388,
 "roundness_known": 1.0
 }
 },
@@ -797,6 +854,9 @@
 "unpredict": 0.6337,
 "mimicry": 0.7252,
 "speed_cv": 0.4294,
+"tracking": 0.3766,
+"mass_log": -0.1618,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -837,6 +897,9 @@
 "unpredict": 0.883,
 "mimicry": 0.0026,
 "speed_cv": 0.2073,
+"tracking": 0.478,
+"mass_log": -0.3427,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -877,6 +940,9 @@
 "unpredict": 0.6468,
 "mimicry": 0.6618,
 "speed_cv": 0.3742,
+"tracking": 0.314,
+"mass_log": -0.3653,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -917,6 +983,9 @@
 "unpredict": 0.8022,
 "mimicry": 0.0054,
 "speed_cv": 0.3571,
+"tracking": 0.5722,
+"mass_log": -0.9079,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -957,6 +1026,9 @@
 "unpredict": 0.4524,
 "mimicry": 0.7411,
 "speed_cv": 0.3951,
+"tracking": 0.327,
+"mass_log": -1.1346,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -997,6 +1069,9 @@
 "unpredict": 1.0358,
 "mimicry": 0.0,
 "speed_cv": 0.3876,
+"tracking": 0.4907,
+"mass_log": -0.114,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1037,6 +1112,9 @@
 "unpredict": 0.3756,
 "mimicry": 0.8545,
 "speed_cv": 0.3066,
+"tracking": 0.4677,
+"mass_log": 0.3196,
+"sneak": -0.6674,
 "roundness_known": 1.0
 }
 },
@@ -1077,6 +1155,9 @@
 "unpredict": 0.8144,
 "mimicry": 0.0,
 "speed_cv": 0.4653,
+"tracking": 0.4866,
+"mass_log": -0.1716,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1117,6 +1198,9 @@
 "unpredict": 0.4993,
 "mimicry": 0.82,
 "speed_cv": 0.3311,
+"tracking": 0.4662,
+"mass_log": -0.645,
+"sneak": -0.7064,
 "roundness_known": 1.0
 }
 },
@@ -1157,6 +1241,9 @@
 "unpredict": 0.8806,
 "mimicry": 0.0,
 "speed_cv": 0.496,
+"tracking": 0.4608,
+"mass_log": -0.4381,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1197,6 +1284,9 @@
 "unpredict": 0.401,
 "mimicry": 0.8298,
 "speed_cv": 0.3664,
+"tracking": 0.4113,
+"mass_log": -0.6074,
+"sneak": -0.6999,
 "roundness_known": 1.0
 }
 },
@@ -1237,6 +1327,9 @@
 "unpredict": 0.8651,
 "mimicry": 0.0005,
 "speed_cv": 0.4402,
+"tracking": 0.5286,
+"mass_log": -0.1216,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1277,6 +1370,9 @@
 "unpredict": 0.5269,
 "mimicry": 0.8365,
 "speed_cv": 0.2896,
+"tracking": 0.4969,
+"mass_log": 0.1017,
+"sneak": -0.6767,
 "roundness_known": 1.0
 }
 },
@@ -1317,6 +1413,9 @@
 "unpredict": 0.9719,
 "mimicry": 0.0002,
 "speed_cv": 0.3698,
+"tracking": 0.5482,
+"mass_log": -0.1256,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1357,6 +1456,9 @@
 "unpredict": 0.3103,
 "mimicry": 0.8655,
 "speed_cv": 0.2466,
+"tracking": 0.5594,
+"mass_log": -0.0142,
+"sneak": -0.7033,
 "roundness_known": 1.0
 }
 },
@@ -1397,6 +1499,9 @@
 "unpredict": 0.9585,
 "mimicry": 0.0,
 "speed_cv": 0.458,
+"tracking": 0.4776,
+"mass_log": 0.2988,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1437,6 +1542,9 @@
 "unpredict": 0.4018,
 "mimicry": 0.8743,
 "speed_cv": 0.2626,
+"tracking": 0.5991,
+"mass_log": -0.0857,
+"sneak": -0.6417,
 "roundness_known": 1.0
 }
 },
@@ -1477,6 +1585,9 @@
 "unpredict": 0.7909,
 "mimicry": 0.0011,
 "speed_cv": 0.4274,
+"tracking": 0.5384,
+"mass_log": -0.431,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1517,6 +1628,9 @@
 "unpredict": 0.4612,
 "mimicry": 0.8566,
 "speed_cv": 0.3003,
+"tracking": 0.47,
+"mass_log": -0.5426,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1557,6 +1671,9 @@
 "unpredict": 0.8925,
 "mimicry": 0.0,
 "speed_cv": 0.4515,
+"tracking": 0.4895,
+"mass_log": 0.0718,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1597,6 +1714,9 @@
 "unpredict": 0.372,
 "mimicry": 0.8293,
 "speed_cv": 0.2606,
+"tracking": 0.6465,
+"mass_log": -0.9444,
+"sneak": -0.6689,
 "roundness_known": 1.0
 }
 },
@@ -1637,6 +1757,9 @@
 "unpredict": 0.9771,
 "mimicry": 0.0002,
 "speed_cv": 0.4134,
+"tracking": 0.4858,
+"mass_log": -0.1947,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1677,6 +1800,9 @@
 "unpredict": 0.5829,
 "mimicry": 0.804,
 "speed_cv": 0.3324,
+"tracking": 0.4317,
+"mass_log": -0.0148,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1717,6 +1843,9 @@
 "unpredict": 0.8527,
 "mimicry": 0.0006,
 "speed_cv": 0.4578,
+"tracking": 0.5266,
+"mass_log": -0.1439,
+"sneak": -0.4113,
 "roundness_known": 1.0
 }
 },
@@ -1757,6 +1886,9 @@
 "unpredict": 0.4664,
 "mimicry": 0.8479,
 "speed_cv": 0.301,
+"tracking": 0.4732,
+"mass_log": -0.3671,
+"sneak": -0.7011,
 "roundness_known": 1.0
 }
 },
@@ -1797,6 +1929,9 @@
 "unpredict": 1.0645,
 "mimicry": 0.0004,
 "speed_cv": 0.4235,
+"tracking": 0.5205,
+"mass_log": -0.1933,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1837,6 +1972,9 @@
 "unpredict": 0.5034,
 "mimicry": 0.8135,
 "speed_cv": 0.3108,
+"tracking": 0.4813,
+"mass_log": -0.4316,
+"sneak": -0.6681,
 "roundness_known": 1.0
 }
 },
@@ -1877,6 +2015,9 @@
 "unpredict": 0.9327,
 "mimicry": 0.3597,
 "speed_cv": 0.4731,
+"tracking": 0.4879,
+"mass_log": -0.2457,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1917,6 +2058,9 @@
 "unpredict": 0.4282,
 "mimicry": 0.8259,
 "speed_cv": 0.291,
+"tracking": 0.5037,
+"mass_log": -0.1208,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -1957,6 +2101,9 @@
 "unpredict": 0.9253,
 "mimicry": 0.0294,
 "speed_cv": 0.2622,
+"tracking": 0.3716,
+"mass_log": -0.8755,
+"sneak": 0.0693,
 "roundness_known": 1.0
 }
 },
@@ -1997,6 +2144,9 @@
 "unpredict": 0.6136,
 "mimicry": 0.7967,
 "speed_cv": 0.3034,
+"tracking": 0.3262,
+"mass_log": -0.354,
+"sneak": -0.0283,
 "roundness_known": 1.0
 }
 },
@@ -2037,6 +2187,9 @@
 "unpredict": 0.9048,
 "mimicry": 0.0016,
 "speed_cv": 0.2695,
+"tracking": 0.4116,
+"mass_log": -0.9161,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -2077,6 +2230,9 @@
 "unpredict": 0.5797,
 "mimicry": 0.8103,
 "speed_cv": 0.291,
+"tracking": 0.343,
+"mass_log": -0.3126,
+"sneak": -0.123,
 "roundness_known": 1.0
 }
 },
@@ -2117,6 +2273,9 @@
 "unpredict": 0.892,
 "mimicry": 0.0,
 "speed_cv": 0.2387,
+"tracking": 0.331,
+"mass_log": -0.0737,
+"sneak": -0.0093,
 "roundness_known": 1.0
 }
 },
@@ -2157,6 +2316,9 @@
 "unpredict": 0.5458,
 "mimicry": 0.7719,
 "speed_cv": 0.2637,
+"tracking": 0.2781,
+"mass_log": -0.7967,
+"sneak": -0.0557,
 "roundness_known": 1.0
 }
 },
@@ -2197,6 +2359,9 @@
 "unpredict": 0.9129,
 "mimicry": 0.0,
 "speed_cv": 0.2403,
+"tracking": 0.3268,
+"mass_log": -0.9319,
+"sneak": -0.0501,
 "roundness_known": 1.0
 }
 },
@@ -2237,6 +2402,9 @@
 "unpredict": 0.6068,
 "mimicry": 0.7987,
 "speed_cv": 0.3198,
+"tracking": 0.3044,
+"mass_log": -0.346,
+"sneak": -0.0548,
 "roundness_known": 1.0
 }
 },
@@ -2277,6 +2445,9 @@
 "unpredict": 0.9407,
 "mimicry": 0.001,
 "speed_cv": 0.195,
+"tracking": 0.3333,
+"mass_log": -0.8965,
+"sneak": -0.0221,
 "roundness_known": 1.0
 }
 },
@@ -2317,6 +2488,9 @@
 "unpredict": 0.6142,
 "mimicry": 0.805,
 "speed_cv": 0.3157,
+"tracking": 0.3504,
+"mass_log": -0.0466,
+"sneak": -0.0737,
 "roundness_known": 1.0
 }
 },
@@ -2357,6 +2531,9 @@
 "unpredict": 0.8837,
 "mimicry": 0.0115,
 "speed_cv": 0.245,
+"tracking": 0.3689,
+"mass_log": -0.2546,
+"sneak": 0.0782,
 "roundness_known": 1.0
 }
 },
@@ -2397,6 +2574,9 @@
 "unpredict": 0.6231,
 "mimicry": 0.7579,
 "speed_cv": 0.3337,
+"tracking": 0.3224,
+"mass_log": -0.6073,
+"sneak": -0.0855,
 "roundness_known": 1.0
 }
 },
@@ -2437,6 +2617,9 @@
 "unpredict": 0.8601,
 "mimicry": 0.0014,
 "speed_cv": 0.3124,
+"tracking": 0.2909,
+"mass_log": -0.4246,
+"sneak": 0.0313,
 "roundness_known": 1.0
 }
 },
@@ -2477,6 +2660,9 @@
 "unpredict": 0.6136,
 "mimicry": 0.7588,
 "speed_cv": 0.3058,
+"tracking": 0.3057,
+"mass_log": -0.9464,
+"sneak": -0.1659,
 "roundness_known": 1.0
 }
 },
@@ -2517,6 +2703,9 @@
 "unpredict": 0.9225,
 "mimicry": 0.0008,
 "speed_cv": 0.2329,
+"tracking": 0.2996,
+"mass_log": -1.0336,
+"sneak": 0.011,
 "roundness_known": 1.0
 }
 },
@@ -2557,6 +2746,9 @@
 "unpredict": 0.6021,
 "mimicry": 0.7306,
 "speed_cv": 0.2873,
+"tracking": 0.2726,
+"mass_log": -0.2169,
+"sneak": -0.0484,
 "roundness_known": 1.0
 }
 },
@@ -2597,6 +2789,9 @@
 "unpredict": 0.8679,
 "mimicry": 0.0033,
 "speed_cv": 0.2453,
+"tracking": 0.312,
+"mass_log": -0.1285,
+"sneak": -0.0003,
 "roundness_known": 1.0
 }
 },
@@ -2637,6 +2832,9 @@
 "unpredict": 0.5585,
 "mimicry": 0.7585,
 "speed_cv": 0.2594,
+"tracking": 0.2144,
+"mass_log": -0.628,
+"sneak": -0.0504,
 "roundness_known": 1.0
 }
 },
@@ -2677,6 +2875,9 @@
 "unpredict": 0.8706,
 "mimicry": 0.0,
 "speed_cv": 0.2057,
+"tracking": 0.3194,
+"mass_log": -0.5042,
+"sneak": 0.0191,
 "roundness_known": 1.0
 }
 },
@@ -2717,6 +2918,9 @@
 "unpredict": 0.6371,
 "mimicry": 0.7672,
 "speed_cv": 0.297,
+"tracking": 0.2748,
+"mass_log": -0.8081,
+"sneak": -0.0893,
 "roundness_known": 1.0
 }
 },
@@ -2757,6 +2961,9 @@
 "unpredict": 0.8952,
 "mimicry": 0.0012,
 "speed_cv": 0.2262,
+"tracking": 0.3239,
+"mass_log": -0.5873,
+"sneak": 0.0445,
 "roundness_known": 1.0
 }
 },
@@ -2797,6 +3004,9 @@
 "unpredict": 0.6507,
 "mimicry": 0.7388,
 "speed_cv": 0.3144,
+"tracking": 0.2861,
+"mass_log": -0.449,
+"sneak": -0.0824,
 "roundness_known": 1.0
 }
 },
@@ -2837,6 +3047,9 @@
 "unpredict": 0.9498,
 "mimicry": 0.0,
 "speed_cv": 0.2406,
+"tracking": 0.3155,
+"mass_log": -0.964,
+"sneak": -0.0046,
 "roundness_known": 1.0
 }
 },
@@ -2877,6 +3090,9 @@
 "unpredict": 0.566,
 "mimicry": 0.8021,
 "speed_cv": 0.2976,
+"tracking": 0.2595,
+"mass_log": -0.1033,
+"sneak": -0.0456,
 "roundness_known": 1.0
 }
 },
@@ -2917,6 +3133,9 @@
 "unpredict": 0.2466,
 "mimicry": 0.0,
 "speed_cv": 0.2712,
+"tracking": 0.247,
+"mass_log": -0.931,
+"sneak": 0.0364,
 "roundness_known": 1.0
 }
 },
@@ -2957,6 +3176,9 @@
 "unpredict": 0.0813,
 "mimicry": 0.9683,
 "speed_cv": 0.1758,
+"tracking": 0.2009,
+"mass_log": -0.3048,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -2997,6 +3219,9 @@
 "unpredict": 0.2643,
 "mimicry": 0.0,
 "speed_cv": 0.2948,
+"tracking": 0.2257,
+"mass_log": -0.4145,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3037,6 +3262,9 @@
 "unpredict": 0.0939,
 "mimicry": 0.9651,
 "speed_cv": 0.1996,
+"tracking": 0.2143,
+"mass_log": -0.6486,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3077,6 +3305,9 @@
 "unpredict": 0.2744,
 "mimicry": 0.7646,
 "speed_cv": 0.2214,
+"tracking": 0.2573,
+"mass_log": -0.769,
+"sneak": 0.1667,
 "roundness_known": 1.0
 }
 },
@@ -3117,6 +3348,9 @@
 "unpredict": 0.0961,
 "mimicry": 0.979,
 "speed_cv": 0.1553,
+"tracking": 0.2089,
+"mass_log": -0.5667,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3157,6 +3391,9 @@
 "unpredict": 0.2382,
 "mimicry": 0.0083,
 "speed_cv": 0.2205,
+"tracking": 0.2676,
+"mass_log": -0.4025,
+"sneak": 0.015,
 "roundness_known": 1.0
 }
 },
@@ -3197,6 +3434,9 @@
 "unpredict": 0.0983,
 "mimicry": 0.969,
 "speed_cv": 0.1324,
+"tracking": 0.2342,
+"mass_log": -0.4883,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3237,6 +3477,9 @@
 "unpredict": 0.2927,
 "mimicry": 0.0094,
 "speed_cv": 0.3158,
+"tracking": 0.2541,
+"mass_log": -0.3936,
+"sneak": 0.0348,
 "roundness_known": 1.0
 }
 },
@@ -3277,6 +3520,9 @@
 "unpredict": 0.1113,
 "mimicry": 0.9675,
 "speed_cv": 0.2263,
+"tracking": 0.203,
+"mass_log": -1.119,
+"sneak": 0.0861,
 "roundness_known": 1.0
 }
 },
@@ -3317,6 +3563,9 @@
 "unpredict": 0.2578,
 "mimicry": 0.7841,
 "speed_cv": 0.334,
+"tracking": 0.23,
+"mass_log": -0.8464,
+"sneak": 0.0603,
 "roundness_known": 1.0
 }
 },
@@ -3357,6 +3606,9 @@
 "unpredict": 0.1014,
 "mimicry": 0.9633,
 "speed_cv": 0.2115,
+"tracking": 0.2493,
+"mass_log": -0.3806,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3397,6 +3649,9 @@
 "unpredict": 0.2895,
 "mimicry": 0.0065,
 "speed_cv": 0.3041,
+"tracking": 0.2689,
+"mass_log": -0.6514,
+"sneak": 0.0481,
 "roundness_known": 1.0
 }
 },
@@ -3437,6 +3692,9 @@
 "unpredict": 0.0817,
 "mimicry": 0.9818,
 "speed_cv": 0.0977,
+"tracking": 0.2526,
+"mass_log": -0.9325,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3477,6 +3735,9 @@
 "unpredict": 0.2612,
 "mimicry": 0.6828,
 "speed_cv": 0.3611,
+"tracking": 0.2167,
+"mass_log": -0.5061,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3517,6 +3778,9 @@
 "unpredict": 0.1027,
 "mimicry": 0.9759,
 "speed_cv": 0.1296,
+"tracking": 0.2285,
+"mass_log": -0.6485,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3557,6 +3821,9 @@
 "unpredict": 0.2699,
 "mimicry": 0.0061,
 "speed_cv": 0.4291,
+"tracking": 0.2333,
+"mass_log": -0.7619,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3597,6 +3864,9 @@
 "unpredict": 0.0833,
 "mimicry": 0.9635,
 "speed_cv": 0.1575,
+"tracking": 0.2017,
+"mass_log": -0.5191,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3637,6 +3907,9 @@
 "unpredict": 0.2878,
 "mimicry": 0.6899,
 "speed_cv": 0.2215,
+"tracking": 0.2467,
+"mass_log": -0.3452,
+"sneak": 0.0643,
 "roundness_known": 1.0
 }
 },
@@ -3677,6 +3950,9 @@
 "unpredict": 0.0926,
 "mimicry": 0.9693,
 "speed_cv": 0.1794,
+"tracking": 0.2124,
+"mass_log": -0.8321,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3717,6 +3993,9 @@
 "unpredict": 0.2919,
 "mimicry": 0.0029,
 "speed_cv": 0.3108,
+"tracking": 0.2311,
+"mass_log": -0.9464,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3757,6 +4036,9 @@
 "unpredict": 0.0855,
 "mimicry": 0.9881,
 "speed_cv": 0.0991,
+"tracking": 0.1779,
+"mass_log": -1.1557,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3797,6 +4079,9 @@
 "unpredict": 0.283,
 "mimicry": 0.0006,
 "speed_cv": 0.3391,
+"tracking": 0.2551,
+"mass_log": -0.7343,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -3837,6 +4122,9 @@
 "unpredict": 0.0969,
 "mimicry": 0.9733,
 "speed_cv": 0.1515,
+"tracking": 0.2374,
+"mass_log": -0.49,
+"sneak": 0.0685,
 "roundness_known": 1.0
 }
 },
@@ -3877,6 +4165,9 @@
 "unpredict": 0.8219,
 "mimicry": 0.3558,
 "speed_cv": 0.262,
+"tracking": 0.4867,
+"mass_log": 0.8063,
+"sneak": 0.0328,
 "roundness_known": 1.0
 }
 },
@@ -3917,6 +4208,9 @@
 "unpredict": 0.6415,
 "mimicry": 0.782,
 "speed_cv": 0.2501,
+"tracking": 0.594,
+"mass_log": 1.6444,
+"sneak": 0.2775,
 "roundness_known": 1.0
 }
 },
@@ -3957,6 +4251,9 @@
 "unpredict": 0.7494,
 "mimicry": 0.2122,
 "speed_cv": 0.2849,
+"tracking": 0.3877,
+"mass_log": 1.1276,
+"sneak": 0.0536,
 "roundness_known": 1.0
 }
 },
@@ -3997,6 +4294,9 @@
 "unpredict": 0.4435,
 "mimicry": 0.8362,
 "speed_cv": 0.4291,
+"tracking": 0.5707,
+"mass_log": 0.8631,
+"sneak": 0.175,
 "roundness_known": 1.0
 }
 },
@@ -4037,6 +4337,9 @@
 "unpredict": 0.701,
 "mimicry": 0.0041,
 "speed_cv": 0.2593,
+"tracking": 0.6516,
+"mass_log": 1.5126,
+"sneak": 0.0532,
 "roundness_known": 1.0
 }
 },
@@ -4077,6 +4380,9 @@
 "unpredict": 0.5523,
 "mimicry": 0.7918,
 "speed_cv": 0.3013,
+"tracking": 0.4579,
+"mass_log": 1.3489,
+"sneak": 0.2125,
 "roundness_known": 1.0
 }
 },
@@ -4117,6 +4423,9 @@
 "unpredict": 0.977,
 "mimicry": 0.0,
 "speed_cv": 0.2442,
+"tracking": 0.5094,
+"mass_log": 1.6387,
+"sneak": 0.0634,
 "roundness_known": 1.0
 }
 },
@@ -4157,6 +4466,9 @@
 "unpredict": 0.6586,
 "mimicry": 0.8069,
 "speed_cv": 0.2723,
+"tracking": 0.6902,
+"mass_log": 1.484,
+"sneak": 0.1876,
 "roundness_known": 1.0
 }
 },
@@ -4197,6 +4509,9 @@
 "unpredict": 0.846,
 "mimicry": 0.0122,
 "speed_cv": 0.3769,
+"tracking": 0.4263,
+"mass_log": 0.7433,
+"sneak": 0.0514,
 "roundness_known": 1.0
 }
 },
@@ -4237,6 +4552,9 @@
 "unpredict": 0.6474,
 "mimicry": 0.7769,
 "speed_cv": 0.2995,
+"tracking": 0.4704,
+"mass_log": 1.3475,
+"sneak": 0.1546,
 "roundness_known": 1.0
 }
 },
@@ -4277,6 +4595,9 @@
 "unpredict": 0.9269,
 "mimicry": 0.0008,
 "speed_cv": 0.198,
+"tracking": 0.3928,
+"mass_log": 1.0348,
+"sneak": 0.063,
 "roundness_known": 1.0
 }
 },
@@ -4317,6 +4638,9 @@
 "unpredict": 0.6707,
 "mimicry": 0.77,
 "speed_cv": 0.3256,
+"tracking": 0.5662,
+"mass_log": 1.76,
+"sneak": 0.2269,
 "roundness_known": 1.0
 }
 },
@@ -4357,6 +4681,9 @@
 "unpredict": 0.859,
 "mimicry": 0.0,
 "speed_cv": 0.2747,
+"tracking": 0.4588,
+"mass_log": 0.588,
+"sneak": 0.0177,
 "roundness_known": 1.0
 }
 },
@@ -4397,6 +4724,9 @@
 "unpredict": 0.6848,
 "mimicry": 0.7479,
 "speed_cv": 0.3319,
+"tracking": 0.3864,
+"mass_log": 1.2804,
+"sneak": 0.1943,
 "roundness_known": 1.0
 }
 },
@@ -4437,6 +4767,9 @@
 "unpredict": 0.9158,
 "mimicry": 0.2215,
 "speed_cv": 0.1834,
+"tracking": 0.3103,
+"mass_log": 1.1323,
+"sneak": 0.0596,
 "roundness_known": 1.0
 }
 },
@@ -4477,6 +4810,9 @@
 "unpredict": 0.5895,
 "mimicry": 0.7261,
 "speed_cv": 0.3274,
+"tracking": 0.3656,
+"mass_log": 1.3316,
+"sneak": 0.2513,
 "roundness_known": 1.0
 }
 },
@@ -4517,6 +4853,9 @@
 "unpredict": 0.9237,
 "mimicry": 0.0002,
 "speed_cv": 0.2362,
+"tracking": 0.644,
+"mass_log": 0.8464,
+"sneak": 0.0233,
 "roundness_known": 1.0
 }
 },
@@ -4557,6 +4896,9 @@
 "unpredict": 0.6786,
 "mimicry": 0.7384,
 "speed_cv": 0.3275,
+"tracking": 0.3525,
+"mass_log": 1.2939,
+"sneak": 0.2406,
 "roundness_known": 1.0
 }
 },
@@ -4597,6 +4939,9 @@
 "unpredict": 0.8409,
 "mimicry": 0.4109,
 "speed_cv": 0.2596,
+"tracking": 0.3568,
+"mass_log": 1.0574,
+"sneak": 0.1226,
 "roundness_known": 1.0
 }
 },
@@ -4637,6 +4982,9 @@
 "unpredict": 0.7362,
 "mimicry": 0.7191,
 "speed_cv": 0.2841,
+"tracking": 0.5898,
+"mass_log": 1.4565,
+"sneak": 0.2451,
 "roundness_known": 1.0
 }
 },
@@ -4677,6 +5025,9 @@
 "unpredict": 0.9875,
 "mimicry": 0.0,
 "speed_cv": 0.2451,
+"tracking": 0.3971,
+"mass_log": 1.2957,
+"sneak": 0.0434,
 "roundness_known": 1.0
 }
 },
@@ -4717,6 +5068,9 @@
 "unpredict": 0.5324,
 "mimicry": 0.7589,
 "speed_cv": 0.3119,
+"tracking": 0.323,
+"mass_log": 1.2758,
+"sneak": 0.1952,
 "roundness_known": 1.0
 }
 },
@@ -4757,6 +5111,9 @@
 "unpredict": 0.9839,
 "mimicry": 0.0,
 "speed_cv": 0.3681,
+"tracking": 0.3951,
+"mass_log": 0.7869,
+"sneak": 0.0135,
 "roundness_known": 1.0
 }
 },
@@ -4797,6 +5154,9 @@
 "unpredict": 0.6547,
 "mimicry": 0.7671,
 "speed_cv": 0.4715,
+"tracking": 0.5165,
+"mass_log": 0.7042,
+"sneak": 0.1693,
 "roundness_known": 1.0
 }
 },
@@ -4837,6 +5197,9 @@
 "unpredict": 0.5344,
 "mimicry": 0.0051,
 "speed_cv": 0.2127,
+"tracking": 0.2679,
+"mass_log": 0.0315,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -4877,6 +5240,9 @@
 "unpredict": 0.5401,
 "mimicry": 0.5719,
 "speed_cv": 0.3497,
+"tracking": 0.2488,
+"mass_log": 0.54,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -4917,6 +5283,9 @@
 "unpredict": 0.7102,
 "mimicry": 0.0153,
 "speed_cv": 0.2527,
+"tracking": 0.2802,
+"mass_log": 0.0246,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -4957,6 +5326,9 @@
 "unpredict": 0.5451,
 "mimicry": 0.4876,
 "speed_cv": 0.3109,
+"tracking": 0.2508,
+"mass_log": -0.5438,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -4997,6 +5369,9 @@
 "unpredict": 0.5787,
 "mimicry": 0.0,
 "speed_cv": 0.2354,
+"tracking": 0.2791,
+"mass_log": -0.2907,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5037,6 +5412,9 @@
 "unpredict": 0.5471,
 "mimicry": 0.5454,
 "speed_cv": 0.2872,
+"tracking": 0.2832,
+"mass_log": -0.5882,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5077,6 +5455,9 @@
 "unpredict": 0.4424,
 "mimicry": 0.0,
 "speed_cv": 0.2382,
+"tracking": 0.2527,
+"mass_log": 0.0826,
+"sneak": -0.0232,
 "roundness_known": 1.0
 }
 },
@@ -5117,6 +5498,9 @@
 "unpredict": 0.6757,
 "mimicry": 0.5525,
 "speed_cv": 0.3449,
+"tracking": 0.2639,
+"mass_log": 0.2877,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5157,6 +5541,9 @@
 "unpredict": 0.5114,
 "mimicry": 0.0104,
 "speed_cv": 0.2532,
+"tracking": 0.2651,
+"mass_log": 0.078,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5197,6 +5584,9 @@
 "unpredict": 0.5366,
 "mimicry": 0.4892,
 "speed_cv": 0.3754,
+"tracking": 0.2434,
+"mass_log": 0.2062,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5237,6 +5627,9 @@
 "unpredict": 0.4495,
 "mimicry": 0.0146,
 "speed_cv": 0.2504,
+"tracking": 0.2707,
+"mass_log": 0.5162,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5277,6 +5670,9 @@
 "unpredict": 0.6463,
 "mimicry": 0.4831,
 "speed_cv": 0.3212,
+"tracking": 0.2896,
+"mass_log": 0.0655,
+"sneak": 0.386,
 "roundness_known": 1.0
 }
 },
@@ -5317,6 +5713,9 @@
 "unpredict": 0.5904,
 "mimicry": 0.0,
 "speed_cv": 0.2365,
+"tracking": 0.2636,
+"mass_log": -0.2822,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5357,6 +5756,9 @@
 "unpredict": 0.6194,
 "mimicry": 0.5651,
 "speed_cv": 0.3268,
+"tracking": 0.2563,
+"mass_log": -0.4176,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5397,6 +5799,9 @@
 "unpredict": 0.7373,
 "mimicry": 0.0023,
 "speed_cv": 0.2725,
+"tracking": 0.3544,
+"mass_log": 0.2526,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5437,6 +5842,9 @@
 "unpredict": 0.5227,
 "mimicry": 0.4258,
 "speed_cv": 0.2965,
+"tracking": 0.2535,
+"mass_log": -0.9263,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5477,6 +5885,9 @@
 "unpredict": 0.4282,
 "mimicry": 0.0032,
 "speed_cv": 0.228,
+"tracking": 0.2746,
+"mass_log": -0.0664,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5517,6 +5928,9 @@
 "unpredict": 0.6343,
 "mimicry": 0.5237,
 "speed_cv": 0.3415,
+"tracking": 0.2409,
+"mass_log": 0.1502,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5557,6 +5971,9 @@
 "unpredict": 0.7349,
 "mimicry": 0.0,
 "speed_cv": 0.2689,
+"tracking": 0.2642,
+"mass_log": -0.0047,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5597,6 +6014,9 @@
 "unpredict": 0.6909,
 "mimicry": 0.5479,
 "speed_cv": 0.3188,
+"tracking": 0.2648,
+"mass_log": -0.2797,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5637,6 +6057,9 @@
 "unpredict": 0.5285,
 "mimicry": 0.0128,
 "speed_cv": 0.2179,
+"tracking": 0.2786,
+"mass_log": -0.0646,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5677,6 +6100,9 @@
 "unpredict": 0.7051,
 "mimicry": 0.5293,
 "speed_cv": 0.3306,
+"tracking": 0.307,
+"mass_log": -0.3611,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5717,6 +6143,9 @@
 "unpredict": 0.5095,
 "mimicry": 0.1207,
 "speed_cv": 0.2433,
+"tracking": 0.2659,
+"mass_log": -0.0621,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5757,6 +6186,9 @@
 "unpredict": 0.6606,
 "mimicry": 0.5281,
 "speed_cv": 0.334,
+"tracking": 0.2629,
+"mass_log": 0.0232,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -5797,6 +6229,9 @@
 "unpredict": 0.6293,
 "mimicry": 0.0524,
 "speed_cv": 0.3468,
+"tracking": 0.4724,
+"mass_log": 0.4368,
+"sneak": -0.1376,
 "roundness_known": 1.0
 }
 },
@@ -5837,6 +6272,9 @@
 "unpredict": 0.5832,
 "mimicry": 0.651,
 "speed_cv": 0.291,
+"tracking": 0.4587,
+"mass_log": 0.9514,
+"sneak": -0.069,
 "roundness_known": 1.0
 }
 },
@@ -5877,6 +6315,9 @@
 "unpredict": 0.8713,
 "mimicry": 0.0424,
 "speed_cv": 0.2892,
+"tracking": 0.4624,
+"mass_log": 0.3378,
+"sneak": -0.0704,
 "roundness_known": 1.0
 }
 },
@@ -5917,6 +6358,9 @@
 "unpredict": 0.803,
 "mimicry": 0.5366,
 "speed_cv": 0.3332,
+"tracking": 0.4577,
+"mass_log": 1.056,
+"sneak": -0.2403,
 "roundness_known": 1.0
 }
 },
@@ -5957,6 +6401,9 @@
 "unpredict": 0.7168,
 "mimicry": 0.0049,
 "speed_cv": 0.36,
+"tracking": 0.4675,
+"mass_log": 1.1596,
+"sneak": -0.1037,
 "roundness_known": 1.0
 }
 },
@@ -5997,6 +6444,9 @@
 "unpredict": 0.6739,
 "mimicry": 0.7074,
 "speed_cv": 0.2191,
+"tracking": 0.4507,
+"mass_log": 0.4517,
+"sneak": 0.0278,
 "roundness_known": 1.0
 }
 },
@@ -6037,6 +6487,9 @@
 "unpredict": 0.9764,
 "mimicry": 0.0036,
 "speed_cv": 0.2899,
+"tracking": 0.4575,
+"mass_log": 0.3591,
+"sneak": -0.018,
 "roundness_known": 1.0
 }
 },
@@ -6077,6 +6530,9 @@
 "unpredict": 0.4551,
 "mimicry": 0.714,
 "speed_cv": 0.2791,
+"tracking": 0.4683,
+"mass_log": 0.9199,
+"sneak": -0.2014,
 "roundness_known": 1.0
 }
 },
@@ -6117,6 +6573,9 @@
 "unpredict": 0.6544,
 "mimicry": 0.0001,
 "speed_cv": 0.3556,
+"tracking": 0.4691,
+"mass_log": 0.4885,
+"sneak": -0.1248,
 "roundness_known": 1.0
 }
 },
@@ -6157,6 +6616,9 @@
 "unpredict": 0.646,
 "mimicry": 0.7972,
 "speed_cv": 0.1976,
+"tracking": 0.467,
+"mass_log": 1.1858,
+"sneak": -0.0369,
 "roundness_known": 1.0
 }
 },
@@ -6197,6 +6659,9 @@
 "unpredict": 0.7241,
 "mimicry": 0.0,
 "speed_cv": 0.3416,
+"tracking": 0.4436,
+"mass_log": 1.0308,
+"sneak": -0.0937,
 "roundness_known": 1.0
 }
 },
@@ -6237,6 +6702,9 @@
 "unpredict": 0.609,
 "mimicry": 0.6422,
 "speed_cv": 0.2731,
+"tracking": 0.4644,
+"mass_log": 0.6686,
+"sneak": -0.1165,
 "roundness_known": 1.0
 }
 },
@@ -6277,6 +6745,9 @@
 "unpredict": 0.7842,
 "mimicry": 0.0,
 "speed_cv": 0.3599,
+"tracking": 0.4667,
+"mass_log": 0.8093,
+"sneak": -0.12,
 "roundness_known": 1.0
 }
 },
@@ -6317,6 +6788,9 @@
 "unpredict": 0.56,
 "mimicry": 0.7137,
 "speed_cv": 0.2214,
+"tracking": 0.465,
+"mass_log": 0.3089,
+"sneak": -0.0253,
 "roundness_known": 1.0
 }
 },
@@ -6357,6 +6831,9 @@
 "unpredict": 0.8535,
 "mimicry": 0.0,
 "speed_cv": 0.3466,
+"tracking": 0.4676,
+"mass_log": 0.2261,
+"sneak": -0.128,
 "roundness_known": 1.0
 }
 },
@@ -6397,6 +6874,9 @@
 "unpredict": 0.6181,
 "mimicry": 0.6526,
 "speed_cv": 0.2367,
+"tracking": 0.4669,
+"mass_log": 1.0215,
+"sneak": -0.0795,
 "roundness_known": 1.0
 }
 },
@@ -6437,6 +6917,9 @@
 "unpredict": 0.8223,
 "mimicry": 0.0337,
 "speed_cv": 0.3389,
+"tracking": 0.4634,
+"mass_log": 1.1527,
+"sneak": -0.1101,
 "roundness_known": 1.0
 }
 },
@@ -6477,6 +6960,9 @@
 "unpredict": 0.4807,
 "mimicry": 0.7108,
 "speed_cv": 0.2429,
+"tracking": 0.4672,
+"mass_log": 0.6488,
+"sneak": -0.0887,
 "roundness_known": 1.0
 }
 },
@@ -6517,6 +7003,9 @@
 "unpredict": 0.8253,
 "mimicry": 0.0,
 "speed_cv": 0.3361,
+"tracking": 0.4652,
+"mass_log": 0.8709,
+"sneak": -0.0779,
 "roundness_known": 1.0
 }
 },
@@ -6557,6 +7046,9 @@
 "unpredict": 0.4682,
 "mimicry": 0.7405,
 "speed_cv": 0.3233,
+"tracking": 0.4682,
+"mass_log": 0.4303,
+"sneak": -0.1552,
 "roundness_known": 1.0
 }
 },
@@ -6597,6 +7089,9 @@
 "unpredict": 1.1151,
 "mimicry": 0.0006,
 "speed_cv": 0.2674,
+"tracking": 0.4649,
+"mass_log": 0.6668,
+"sneak": -0.0198,
 "roundness_known": 1.0
 }
 },
@@ -6637,6 +7132,9 @@
 "unpredict": 0.7269,
 "mimicry": 0.7057,
 "speed_cv": 0.224,
+"tracking": 0.4475,
+"mass_log": 0.7988,
+"sneak": -0.0205,
 "roundness_known": 1.0
 }
 },
@@ -6677,6 +7175,9 @@
 "unpredict": 0.7753,
 "mimicry": 0.0,
 "speed_cv": 0.3673,
+"tracking": 0.4664,
+"mass_log": 0.3286,
+"sneak": -0.0469,
 "roundness_known": 1.0
 }
 },
@@ -6717,6 +7218,9 @@
 "unpredict": 0.4622,
 "mimicry": 0.7654,
 "speed_cv": 0.2435,
+"tracking": 0.4678,
+"mass_log": 1.193,
+"sneak": -0.1043,
 "roundness_known": 1.0
 }
 },
@@ -6757,6 +7261,9 @@
 "unpredict": 0.994,
 "mimicry": 0.0017,
 "speed_cv": 0.5931,
+"tracking": 0.2579,
+"mass_log": 0.5528,
+"sneak": 0.1545,
 "roundness_known": 1.0
 }
 },
@@ -6797,6 +7304,9 @@
 "unpredict": 0.6629,
 "mimicry": 0.6693,
 "speed_cv": 0.3885,
+"tracking": 0.1993,
+"mass_log": 0.7909,
+"sneak": -0.0369,
 "roundness_known": 1.0
 }
 },
@@ -6837,6 +7347,9 @@
 "unpredict": 1.0252,
 "mimicry": 0.0036,
 "speed_cv": 0.4869,
+"tracking": 0.2181,
+"mass_log": -0.173,
+"sneak": -0.1337,
 "roundness_known": 1.0
 }
 },
@@ -6877,6 +7390,9 @@
 "unpredict": 0.6769,
 "mimicry": 0.7266,
 "speed_cv": 0.3962,
+"tracking": 0.2214,
+"mass_log": 0.2305,
+"sneak": 0.0576,
 "roundness_known": 1.0
 }
 },
@@ -6917,6 +7433,9 @@
 "unpredict": 1.0146,
 "mimicry": 0.312,
 "speed_cv": 0.5865,
+"tracking": 0.214,
+"mass_log": 0.5533,
+"sneak": 0.1319,
 "roundness_known": 1.0
 }
 },
@@ -6957,6 +7476,9 @@
 "unpredict": 0.6523,
 "mimicry": 0.7561,
 "speed_cv": 0.3864,
+"tracking": 0.2048,
+"mass_log": -0.0958,
+"sneak": -0.0587,
 "roundness_known": 1.0
 }
 },
@@ -6997,6 +7519,9 @@
 "unpredict": 1.0018,
 "mimicry": 0.0029,
 "speed_cv": 0.4711,
+"tracking": 0.1887,
+"mass_log": 0.0616,
+"sneak": -0.0919,
 "roundness_known": 1.0
 }
 },
@@ -7037,6 +7562,9 @@
 "unpredict": 0.7016,
 "mimicry": 0.6672,
 "speed_cv": 0.4018,
+"tracking": 0.165,
+"mass_log": 0.459,
+"sneak": -0.0505,
 "roundness_known": 1.0
 }
 },
@@ -7077,6 +7605,9 @@
 "unpredict": 1.0543,
 "mimicry": 0.0017,
 "speed_cv": 0.5053,
+"tracking": 0.2037,
+"mass_log": 0.8011,
+"sneak": -0.1052,
 "roundness_known": 1.0
 }
 },
@@ -7117,6 +7648,9 @@
 "unpredict": 0.7404,
 "mimicry": 0.6991,
 "speed_cv": 0.3968,
+"tracking": 0.218,
+"mass_log": 0.2428,
+"sneak": -0.0628,
 "roundness_known": 1.0
 }
 },
@@ -7157,6 +7691,9 @@
 "unpredict": 1.0127,
 "mimicry": 0.3679,
 "speed_cv": 0.5758,
+"tracking": 0.2125,
+"mass_log": -0.0706,
+"sneak": -0.0502,
 "roundness_known": 1.0
 }
 },
@@ -7197,6 +7734,9 @@
 "unpredict": 0.6461,
 "mimicry": 0.7467,
 "speed_cv": 0.3928,
+"tracking": 0.2453,
+"mass_log": 0.1851,
+"sneak": -0.186,
 "roundness_known": 1.0
 }
 },
@@ -7237,6 +7777,9 @@
 "unpredict": 1.0318,
 "mimicry": 0.0,
 "speed_cv": 0.5971,
+"tracking": 0.2011,
+"mass_log": 0.1343,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -7277,6 +7820,9 @@
 "unpredict": 0.6134,
 "mimicry": 0.7396,
 "speed_cv": 0.3974,
+"tracking": 0.17,
+"mass_log": 0.4496,
+"sneak": 0.0141,
 "roundness_known": 1.0
 }
 },
@@ -7317,6 +7863,9 @@
 "unpredict": 0.9686,
 "mimicry": 0.2244,
 "speed_cv": 0.5335,
+"tracking": 0.288,
+"mass_log": 0.5063,
+"sneak": -0.278,
 "roundness_known": 1.0
 }
 },
@@ -7357,6 +7906,9 @@
 "unpredict": 0.7088,
 "mimicry": 0.6601,
 "speed_cv": 0.3713,
+"tracking": 0.1929,
+"mass_log": 0.7169,
+"sneak": -0.0594,
 "roundness_known": 1.0
 }
 },
@@ -7397,6 +7949,9 @@
 "unpredict": 1.0393,
 "mimicry": 0.0011,
 "speed_cv": 0.5153,
+"tracking": 0.2926,
+"mass_log": 0.7197,
+"sneak": 0.1253,
 "roundness_known": 1.0
 }
 },
@@ -7437,6 +7992,9 @@
 "unpredict": 0.5684,
 "mimicry": 0.6884,
 "speed_cv": 0.3742,
+"tracking": 0.2273,
+"mass_log": 0.5147,
+"sneak": 0.0791,
 "roundness_known": 1.0
 }
 },
@@ -7477,6 +8035,9 @@
 "unpredict": 1.0719,
 "mimicry": 0.1931,
 "speed_cv": 0.5507,
+"tracking": 0.2237,
+"mass_log": 0.1252,
+"sneak": 0.2317,
 "roundness_known": 1.0
 }
 },
@@ -7517,6 +8078,9 @@
 "unpredict": 0.7173,
 "mimicry": 0.6831,
 "speed_cv": 0.3819,
+"tracking": 0.1741,
+"mass_log": 0.7423,
+"sneak": -0.0326,
 "roundness_known": 1.0
 }
 },
@@ -7557,6 +8121,9 @@
 "unpredict": 0.9819,
 "mimicry": 0.003,
 "speed_cv": 0.5805,
+"tracking": 0.1961,
+"mass_log": -0.0978,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -7597,6 +8164,9 @@
 "unpredict": 0.7407,
 "mimicry": 0.6698,
 "speed_cv": 0.3664,
+"tracking": 0.209,
+"mass_log": 0.5821,
+"sneak": 0.0816,
 "roundness_known": 1.0
 }
 },
@@ -7637,6 +8207,9 @@
 "unpredict": 0.9792,
 "mimicry": 0.0,
 "speed_cv": 0.5188,
+"tracking": 0.187,
+"mass_log": 0.5747,
+"sneak": 0.2103,
 "roundness_known": 1.0
 }
 },
@@ -7677,6 +8250,9 @@
 "unpredict": 0.5815,
 "mimicry": 0.7906,
 "speed_cv": 0.4319,
+"tracking": 0.196,
+"mass_log": 0.6139,
+"sneak": -0.1192,
 "roundness_known": 1.0
 }
 },
@@ -7717,6 +8293,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9999,
 "speed_cv": 0.0051,
+"tracking": 0.8241,
+"mass_log": 0.2372,
+"sneak": 0.0001,
 "roundness_known": 1.0
 }
 },
@@ -7757,6 +8336,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9998,
 "speed_cv": 0.0036,
+"tracking": 0.828,
+"mass_log": 1.354,
+"sneak": -0.0002,
 "roundness_known": 1.0
 }
 },
@@ -7797,6 +8379,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9998,
 "speed_cv": 0.0018,
+"tracking": 0.9781,
+"mass_log": 0.4864,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -7837,6 +8422,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9998,
 "speed_cv": 0.0098,
+"tracking": 0.4408,
+"mass_log": 0.3206,
+"sneak": 0.0141,
 "roundness_known": 1.0
 }
 },
@@ -7877,6 +8465,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0001,
+"tracking": 1.0,
+"mass_log": 1.2464,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -7917,6 +8508,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9998,
 "speed_cv": 0.0101,
+"tracking": 0.2797,
+"mass_log": 1.013,
+"sneak": -0.0021,
 "roundness_known": 1.0
 }
 },
@@ -7957,6 +8551,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 1.0,
+"mass_log": 1.347,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -7997,6 +8594,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9998,
 "speed_cv": 0.0094,
+"tracking": 0.4641,
+"mass_log": 1.0169,
+"sneak": 0.0098,
 "roundness_known": 1.0
 }
 },
@@ -8037,6 +8637,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 1.0,
+"mass_log": 0.0599,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -8077,6 +8680,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9996,
 "speed_cv": 0.0128,
+"tracking": 0.3668,
+"mass_log": 0.8729,
+"sneak": -0.0007,
 "roundness_known": 1.0
 }
 },
@@ -8117,6 +8723,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0006,
+"tracking": 0.9999,
+"mass_log": 0.5645,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -8157,6 +8766,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9996,
 "speed_cv": 0.0061,
+"tracking": 0.5592,
+"mass_log": 1.3869,
+"sneak": -0.0003,
 "roundness_known": 1.0
 }
 },
@@ -8197,6 +8809,9 @@
 "unpredict": 0.0,
 "mimicry": 0.994,
 "speed_cv": 0.0057,
+"tracking": 0.9525,
+"mass_log": -0.2181,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -8237,6 +8852,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9997,
 "speed_cv": 0.0107,
+"tracking": 0.4004,
+"mass_log": 0.7873,
+"sneak": 0.0018,
 "roundness_known": 1.0
 }
 },
@@ -8277,6 +8895,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9997,
 "speed_cv": 0.005,
+"tracking": 0.7347,
+"mass_log": 0.6979,
+"sneak": -0.0001,
 "roundness_known": 1.0
 }
 },
@@ -8317,6 +8938,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9999,
 "speed_cv": 0.0024,
+"tracking": 0.8167,
+"mass_log": 1.0682,
+"sneak": 0.0023,
 "roundness_known": 1.0
 }
 },
@@ -8357,6 +8981,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 1.0,
+"mass_log": 0.2964,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -8397,6 +9024,9 @@
 "unpredict": 0.0,
 "mimicry": 1.0,
 "speed_cv": 0.0006,
+"tracking": 0.5985,
+"mass_log": 0.8049,
+"sneak": 0.0001,
 "roundness_known": 1.0
 }
 },
@@ -8437,6 +9067,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9995,
 "speed_cv": 0.0061,
+"tracking": 0.7974,
+"mass_log": 0.6342,
+"sneak": -0.0003,
 "roundness_known": 1.0
 }
 },
@@ -8477,6 +9110,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9998,
 "speed_cv": 0.0038,
+"tracking": 0.7861,
+"mass_log": 1.1786,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -8517,6 +9153,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 1.0,
+"mass_log": 0.9812,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -8557,6 +9196,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9996,
 "speed_cv": 0.0094,
+"tracking": 0.4575,
+"mass_log": 0.7615,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -8597,6 +9239,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 1.0,
+"mass_log": 0.2585,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -8637,6 +9282,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9999,
 "speed_cv": 0.0067,
+"tracking": 0.6791,
+"mass_log": -0.0593,
+"sneak": 0.0069,
 "roundness_known": 1.0
 }
 },
@@ -8677,6 +9325,9 @@
 "unpredict": 0.6902,
 "mimicry": 0.0102,
 "speed_cv": 0.4075,
+"tracking": 0.5463,
+"mass_log": 1.0606,
+"sneak": 0.0001,
 "roundness_known": 1.0
 }
 },
@@ -8717,6 +9368,9 @@
 "unpredict": 0.1945,
 "mimicry": 0.9755,
 "speed_cv": 0.1758,
+"tracking": 0.3035,
+"mass_log": 1.5967,
+"sneak": 0.0149,
 "roundness_known": 1.0
 }
 },
@@ -8757,6 +9411,9 @@
 "unpredict": 0.6421,
 "mimicry": 0.0144,
 "speed_cv": 0.42,
+"tracking": 0.3518,
+"mass_log": 1.0246,
+"sneak": -0.014,
 "roundness_known": 1.0
 }
 },
@@ -8797,6 +9454,9 @@
 "unpredict": 0.2321,
 "mimicry": 0.9729,
 "speed_cv": 0.1897,
+"tracking": 0.2587,
+"mass_log": 0.6512,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -8837,6 +9497,9 @@
 "unpredict": 0.5041,
 "mimicry": 0.0077,
 "speed_cv": 0.5009,
+"tracking": 0.3235,
+"mass_log": 0.7659,
+"sneak": 0.0142,
 "roundness_known": 1.0
 }
 },
@@ -8877,6 +9540,9 @@
 "unpredict": 0.2259,
 "mimicry": 0.9707,
 "speed_cv": 0.2076,
+"tracking": 0.2533,
+"mass_log": 0.4685,
+"sneak": 0.0316,
 "roundness_known": 1.0
 }
 },
@@ -8917,6 +9583,9 @@
 "unpredict": 0.7003,
 "mimicry": 0.0094,
 "speed_cv": 0.5069,
+"tracking": 0.3264,
+"mass_log": 1.1392,
+"sneak": -0.0336,
 "roundness_known": 1.0
 }
 },
@@ -8957,6 +9626,9 @@
 "unpredict": 0.166,
 "mimicry": 0.9738,
 "speed_cv": 0.2109,
+"tracking": 0.2309,
+"mass_log": 1.2235,
+"sneak": -0.0047,
 "roundness_known": 1.0
 }
 },
@@ -8997,6 +9669,9 @@
 "unpredict": 0.6871,
 "mimicry": 0.0074,
 "speed_cv": 0.4826,
+"tracking": 0.3373,
+"mass_log": 1.3114,
+"sneak": -0.0182,
 "roundness_known": 1.0
 }
 },
@@ -9037,6 +9712,9 @@
 "unpredict": 0.1609,
 "mimicry": 0.9696,
 "speed_cv": 0.1698,
+"tracking": 0.4762,
+"mass_log": 1.4397,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -9077,6 +9755,9 @@
 "unpredict": 0.6483,
 "mimicry": 0.156,
 "speed_cv": 0.5809,
+"tracking": 0.2862,
+"mass_log": 1.4851,
+"sneak": 0.009,
 "roundness_known": 1.0
 }
 },
@@ -9117,6 +9798,9 @@
 "unpredict": 0.1883,
 "mimicry": 0.9746,
 "speed_cv": 0.1914,
+"tracking": 0.2903,
+"mass_log": 1.0655,
+"sneak": -0.0106,
 "roundness_known": 1.0
 }
 },
@@ -9157,6 +9841,9 @@
 "unpredict": 0.6049,
 "mimicry": 0.0018,
 "speed_cv": 0.4685,
+"tracking": 0.3635,
+"mass_log": 0.5795,
+"sneak": -0.0094,
 "roundness_known": 1.0
 }
 },
@@ -9197,6 +9884,9 @@
 "unpredict": 0.2568,
 "mimicry": 0.9591,
 "speed_cv": 0.2305,
+"tracking": 0.2655,
+"mass_log": 0.6391,
+"sneak": -0.0381,
 "roundness_known": 1.0
 }
 },
@@ -9237,6 +9927,9 @@
 "unpredict": 0.5239,
 "mimicry": 0.0018,
 "speed_cv": 0.5188,
+"tracking": 0.3094,
+"mass_log": 1.2216,
+"sneak": -0.0293,
 "roundness_known": 1.0
 }
 },
@@ -9277,6 +9970,9 @@
 "unpredict": 0.258,
 "mimicry": 0.9351,
 "speed_cv": 0.2447,
+"tracking": 0.2517,
+"mass_log": 0.0095,
+"sneak": -0.0175,
 "roundness_known": 1.0
 }
 },
@@ -9317,6 +10013,9 @@
 "unpredict": 0.6862,
 "mimicry": 0.0019,
 "speed_cv": 0.5142,
+"tracking": 0.2547,
+"mass_log": 1.0163,
+"sneak": -0.0183,
 "roundness_known": 1.0
 }
 },
@@ -9357,6 +10056,9 @@
 "unpredict": 0.2031,
 "mimicry": 0.9604,
 "speed_cv": 0.2295,
+"tracking": 0.2666,
+"mass_log": 1.1502,
+"sneak": -0.0115,
 "roundness_known": 1.0
 }
 },
@@ -9397,6 +10099,9 @@
 "unpredict": 0.5982,
 "mimicry": 0.0115,
 "speed_cv": 0.5317,
+"tracking": 0.2511,
+"mass_log": 0.9953,
+"sneak": 0.0578,
 "roundness_known": 1.0
 }
 },
@@ -9437,6 +10142,9 @@
 "unpredict": 0.2256,
 "mimicry": 0.9698,
 "speed_cv": 0.2106,
+"tracking": 0.2649,
+"mass_log": 0.7203,
+"sneak": -0.0173,
 "roundness_known": 1.0
 }
 },
@@ -9477,6 +10185,9 @@
 "unpredict": 0.6453,
 "mimicry": 0.0061,
 "speed_cv": 0.4892,
+"tracking": 0.6105,
+"mass_log": 1.018,
+"sneak": 0.0037,
 "roundness_known": 1.0
 }
 },
@@ -9517,6 +10228,9 @@
 "unpredict": 0.229,
 "mimicry": 0.9632,
 "speed_cv": 0.2157,
+"tracking": 0.2649,
+"mass_log": 0.7462,
+"sneak": -0.0145,
 "roundness_known": 1.0
 }
 },
@@ -9557,6 +10271,9 @@
 "unpredict": 0.7435,
 "mimicry": 0.5494,
 "speed_cv": 0.4192,
+"tracking": 0.3183,
+"mass_log": 1.1328,
+"sneak": -0.0147,
 "roundness_known": 1.0
 }
 },
@@ -9597,6 +10314,9 @@
 "unpredict": 0.2975,
 "mimicry": 0.9219,
 "speed_cv": 0.26,
+"tracking": 0.3242,
+"mass_log": 0.959,
+"sneak": -0.0203,
 "roundness_known": 1.0
 }
 },
@@ -9637,6 +10357,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9889,
 "speed_cv": 0.0083,
+"tracking": 0.9909,
+"mass_log": 0.429,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -9677,6 +10400,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9995,
 "speed_cv": 0.0157,
+"tracking": 0.9577,
+"mass_log": 1.0775,
+"sneak": -0.0012,
 "roundness_known": 1.0
 }
 },
@@ -9717,6 +10443,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0029,
+"tracking": 0.9974,
+"mass_log": 0.4409,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -9757,6 +10486,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9997,
 "speed_cv": 0.0117,
+"tracking": 0.97,
+"mass_log": 1.1929,
+"sneak": -0.0008,
 "roundness_known": 1.0
 }
 },
@@ -9797,6 +10529,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0001,
+"tracking": 0.9998,
+"mass_log": 1.3901,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -9837,6 +10572,9 @@
 "unpredict": 0.0026,
 "mimicry": 0.9699,
 "speed_cv": 0.0943,
+"tracking": 0.8446,
+"mass_log": 0.5804,
+"sneak": -0.0283,
 "roundness_known": 1.0
 }
 },
@@ -9877,6 +10615,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0001,
+"tracking": 0.9998,
+"mass_log": 0.4158,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -9917,6 +10658,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9996,
 "speed_cv": 0.0143,
+"tracking": 0.9225,
+"mass_log": 1.1432,
+"sneak": 0.0001,
 "roundness_known": 1.0
 }
 },
@@ -9957,6 +10701,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0002,
+"tracking": 0.9998,
+"mass_log": 0.5507,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -9997,6 +10744,9 @@
 "unpredict": 0.0003,
 "mimicry": 0.9993,
 "speed_cv": 0.0203,
+"tracking": 0.9049,
+"mass_log": 1.4203,
+"sneak": 0.001,
 "roundness_known": 1.0
 }
 },
@@ -10037,6 +10787,9 @@
 "unpredict": 0.0,
 "mimicry": 0.4418,
 "speed_cv": 0.0057,
+"tracking": 0.987,
+"mass_log": 1.2351,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -10077,6 +10830,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9996,
 "speed_cv": 0.0154,
+"tracking": 0.9568,
+"mass_log": 0.7393,
+"sneak": -0.0303,
 "roundness_known": 1.0
 }
 },
@@ -10117,6 +10873,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 1.0,
+"mass_log": 1.0039,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10157,6 +10916,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9998,
 "speed_cv": 0.0114,
+"tracking": 0.9846,
+"mass_log": 0.4051,
+"sneak": 0.0003,
 "roundness_known": 1.0
 }
 },
@@ -10197,6 +10959,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0001,
 "speed_cv": 0.0009,
+"tracking": 0.9996,
+"mass_log": 0.3017,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -10237,6 +11002,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9997,
 "speed_cv": 0.0101,
+"tracking": 0.9174,
+"mass_log": 1.1959,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -10277,6 +11045,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0001,
+"tracking": 0.9999,
+"mass_log": 1.334,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -10317,6 +11088,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9997,
 "speed_cv": 0.0106,
+"tracking": 0.9912,
+"mass_log": 0.7722,
+"sneak": -0.0034,
 "roundness_known": 1.0
 }
 },
@@ -10357,6 +11131,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0001,
+"tracking": 1.0,
+"mass_log": 0.9788,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10397,6 +11174,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9996,
 "speed_cv": 0.0153,
+"tracking": 0.9594,
+"mass_log": 0.547,
+"sneak": 0.0006,
 "roundness_known": 1.0
 }
 },
@@ -10437,6 +11217,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0002,
+"tracking": 0.9997,
+"mass_log": 0.8021,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -10477,6 +11260,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9996,
 "speed_cv": 0.0119,
+"tracking": 0.9188,
+"mass_log": 0.9303,
+"sneak": -0.0001,
 "roundness_known": 1.0
 }
 },
@@ -10517,6 +11303,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0,
 "speed_cv": 0.0002,
+"tracking": 0.9991,
+"mass_log": 0.3207,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10557,6 +11346,9 @@
 "unpredict": 0.0,
 "mimicry": 0.9996,
 "speed_cv": 0.015,
+"tracking": 0.8424,
+"mass_log": 1.3599,
+"sneak": 0.0002,
 "roundness_known": 1.0
 }
 },
@@ -10597,6 +11389,9 @@
 "unpredict": 0.4132,
 "mimicry": 0.018,
 "speed_cv": 0.738,
+"tracking": 0.2,
+"mass_log": 0.4578,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10637,6 +11432,9 @@
 "unpredict": 0.2093,
 "mimicry": 0.9469,
 "speed_cv": 0.2995,
+"tracking": 0.2678,
+"mass_log": 0.879,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10677,6 +11475,9 @@
 "unpredict": 0.8332,
 "mimicry": 0.0,
 "speed_cv": 0.8073,
+"tracking": 0.2905,
+"mass_log": -0.3871,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10717,6 +11518,9 @@
 "unpredict": 0.2848,
 "mimicry": 0.9192,
 "speed_cv": 0.3772,
+"tracking": 0.4353,
+"mass_log": -0.0338,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10757,6 +11561,9 @@
 "unpredict": 0.852,
 "mimicry": 0.6315,
 "speed_cv": 0.8241,
+"tracking": 0.393,
+"mass_log": 0.6072,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10797,6 +11604,9 @@
 "unpredict": 0.2939,
 "mimicry": 0.9116,
 "speed_cv": 0.3908,
+"tracking": 0.3021,
+"mass_log": -0.2937,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10837,6 +11647,9 @@
 "unpredict": 1.0,
 "mimicry": 0.004,
 "speed_cv": 1.063,
+"tracking": 0.2865,
+"mass_log": 0.02,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10877,6 +11690,9 @@
 "unpredict": 0.2767,
 "mimicry": 0.8936,
 "speed_cv": 0.4001,
+"tracking": 0.5949,
+"mass_log": 0.5723,
+"sneak": 0.8413,
 "roundness_known": 1.0
 }
 },
@@ -10917,6 +11733,9 @@
 "unpredict": 0.703,
 "mimicry": 0.0,
 "speed_cv": 0.9248,
+"tracking": 0.2916,
+"mass_log": 0.9629,
+"sneak": 0.1922,
 "roundness_known": 1.0
 }
 },
@@ -10957,6 +11776,9 @@
 "unpredict": 0.3586,
 "mimicry": 0.909,
 "speed_cv": 0.4259,
+"tracking": 0.4199,
+"mass_log": 0.241,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -10997,6 +11819,9 @@
 "unpredict": 0.9881,
 "mimicry": 0.7373,
 "speed_cv": 0.8379,
+"tracking": 0.2286,
+"mass_log": -0.1675,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11037,6 +11862,9 @@
 "unpredict": 0.3028,
 "mimicry": 0.9073,
 "speed_cv": 0.4251,
+"tracking": 0.5589,
+"mass_log": 0.1712,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11077,6 +11905,9 @@
 "unpredict": 0.9989,
 "mimicry": 0.0,
 "speed_cv": 0.9003,
+"tracking": 0.2123,
+"mass_log": 0.0819,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11117,6 +11948,9 @@
 "unpredict": 0.2326,
 "mimicry": 0.95,
 "speed_cv": 0.2743,
+"tracking": 0.3452,
+"mass_log": 0.3664,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11157,6 +11991,9 @@
 "unpredict": 0.999,
 "mimicry": 0.4767,
 "speed_cv": 0.8225,
+"tracking": 0.399,
+"mass_log": 0.4056,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11197,6 +12034,9 @@
 "unpredict": 0.3184,
 "mimicry": 0.9272,
 "speed_cv": 0.3552,
+"tracking": 0.6549,
+"mass_log": 0.7565,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11237,6 +12077,9 @@
 "unpredict": 0.3853,
 "mimicry": 0.0524,
 "speed_cv": 0.7083,
+"tracking": 0.2355,
+"mass_log": 0.8578,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11277,6 +12120,9 @@
 "unpredict": 0.2496,
 "mimicry": 0.9182,
 "speed_cv": 0.3164,
+"tracking": 0.6403,
+"mass_log": 0.5624,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11317,6 +12163,9 @@
 "unpredict": 0.9996,
 "mimicry": 0.4294,
 "speed_cv": 0.9773,
+"tracking": 0.4711,
+"mass_log": 0.1765,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11357,6 +12206,9 @@
 "unpredict": 0.2296,
 "mimicry": 0.9523,
 "speed_cv": 0.2854,
+"tracking": 0.3851,
+"mass_log": 0.5497,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11397,6 +12249,9 @@
 "unpredict": 0.8332,
 "mimicry": 0.0,
 "speed_cv": 0.7839,
+"tracking": 0.4334,
+"mass_log": -0.093,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11437,6 +12292,9 @@
 "unpredict": 0.2736,
 "mimicry": 0.9265,
 "speed_cv": 0.3744,
+"tracking": 0.4781,
+"mass_log": 0.4907,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11477,6 +12335,9 @@
 "unpredict": 0.8279,
 "mimicry": 0.0,
 "speed_cv": 0.765,
+"tracking": 0.3313,
+"mass_log": 0.632,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11517,6 +12378,9 @@
 "unpredict": 0.3469,
 "mimicry": 0.9437,
 "speed_cv": 0.334,
+"tracking": 0.6856,
+"mass_log": 0.5262,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11557,6 +12421,9 @@
 "unpredict": 0.0715,
 "mimicry": 0.6219,
 "speed_cv": 0.1023,
+"tracking": 0.6688,
+"mass_log": 4.2721,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11597,6 +12464,9 @@
 "unpredict": 0.0367,
 "mimicry": 0.9919,
 "speed_cv": 0.0,
+"tracking": 0.335,
+"mass_log": 4.5733,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11637,6 +12507,9 @@
 "unpredict": 0.0426,
 "mimicry": 0.6012,
 "speed_cv": 0.0,
+"tracking": 0.6554,
+"mass_log": 3.9028,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11677,6 +12550,9 @@
 "unpredict": 0.0204,
 "mimicry": 0.9824,
 "speed_cv": 0.0,
+"tracking": 0.3344,
+"mass_log": 3.6287,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11717,6 +12593,9 @@
 "unpredict": 0.0324,
 "mimicry": 0.0153,
 "speed_cv": 0.0,
+"tracking": 0.7386,
+"mass_log": 4.5089,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -11757,6 +12636,9 @@
 "unpredict": 0.089,
 "mimicry": 0.9172,
 "speed_cv": 0.5034,
+"tracking": 0.4108,
+"mass_log": 4.2996,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11797,6 +12679,9 @@
 "unpredict": 0.043,
 "mimicry": 0.2316,
 "speed_cv": 0.0,
+"tracking": 0.7889,
+"mass_log": 4.5549,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11837,6 +12722,9 @@
 "unpredict": 0.0253,
 "mimicry": 0.8946,
 "speed_cv": 0.0,
+"tracking": 0.5119,
+"mass_log": 4.5514,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11877,6 +12765,9 @@
 "unpredict": 0.0438,
 "mimicry": 0.0177,
 "speed_cv": 0.0312,
+"tracking": 0.3612,
+"mass_log": 3.8963,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11917,6 +12808,9 @@
 "unpredict": 0.0346,
 "mimicry": 0.9887,
 "speed_cv": 0.0,
+"tracking": 0.4193,
+"mass_log": 3.6453,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11957,6 +12851,9 @@
 "unpredict": 0.0658,
 "mimicry": 0.0004,
 "speed_cv": 0.1573,
+"tracking": 0.4755,
+"mass_log": 3.9921,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -11997,6 +12894,9 @@
 "unpredict": 0.0532,
 "mimicry": 0.7688,
 "speed_cv": 0.0255,
+"tracking": 0.4617,
+"mass_log": 3.459,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12037,6 +12937,9 @@
 "unpredict": 0.0668,
 "mimicry": 0.0,
 "speed_cv": 0.1477,
+"tracking": 0.3616,
+"mass_log": 4.6368,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12077,6 +12980,9 @@
 "unpredict": 0.063,
 "mimicry": 0.8769,
 "speed_cv": 0.2961,
+"tracking": 0.3676,
+"mass_log": 4.0603,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12117,6 +13023,9 @@
 "unpredict": 0.0682,
 "mimicry": 0.0,
 "speed_cv": 0.0941,
+"tracking": 0.5509,
+"mass_log": 4.2219,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12157,6 +13066,9 @@
 "unpredict": 0.0244,
 "mimicry": 0.991,
 "speed_cv": 0.0,
+"tracking": 0.5015,
+"mass_log": 4.628,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12197,6 +13109,9 @@
 "unpredict": 0.0386,
 "mimicry": 0.0082,
 "speed_cv": 0.0,
+"tracking": 0.4506,
+"mass_log": 3.9423,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12237,6 +13152,9 @@
 "unpredict": 0.0266,
 "mimicry": 0.9045,
 "speed_cv": 0.0,
+"tracking": 0.4303,
+"mass_log": 4.5686,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12277,6 +13195,9 @@
 "unpredict": 0.0847,
 "mimicry": 0.2401,
 "speed_cv": 0.1442,
+"tracking": 0.6914,
+"mass_log": 4.3662,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12317,6 +13238,9 @@
 "unpredict": 0.0193,
 "mimicry": 0.9732,
 "speed_cv": 0.0,
+"tracking": 0.3593,
+"mass_log": 4.3639,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12357,6 +13281,9 @@
 "unpredict": 0.0494,
 "mimicry": 0.1023,
 "speed_cv": 0.0,
+"tracking": 0.4684,
+"mass_log": 4.6403,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12397,6 +13324,9 @@
 "unpredict": 0.0105,
 "mimicry": 0.9766,
 "speed_cv": 0.0,
+"tracking": 0.3985,
+"mass_log": 3.3416,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12437,6 +13367,9 @@
 "unpredict": 0.0759,
 "mimicry": 0.0096,
 "speed_cv": 0.1922,
+"tracking": 0.477,
+"mass_log": 4.2761,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12477,6 +13410,9 @@
 "unpredict": 0.028,
 "mimicry": 0.8484,
 "speed_cv": 0.1042,
+"tracking": 0.3084,
+"mass_log": 4.1267,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -12517,6 +13453,9 @@
 "unpredict": 0.0598,
 "mimicry": 0.0,
 "speed_cv": 0.0521,
+"tracking": 0.3172,
+"mass_log": 3.5413,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12557,6 +13496,9 @@
 "unpredict": 0.0279,
 "mimicry": 0.2398,
 "speed_cv": 0.0,
+"tracking": 0.3812,
+"mass_log": 3.8365,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -12597,6 +13539,9 @@
 "unpredict": 0.0472,
 "mimicry": 0.0,
 "speed_cv": 0.0832,
+"tracking": 0.2726,
+"mass_log": 3.4837,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12637,6 +13582,9 @@
 "unpredict": 0.0498,
 "mimicry": 0.7092,
 "speed_cv": 0.0,
+"tracking": 0.2725,
+"mass_log": 3.2052,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12677,6 +13625,9 @@
 "unpredict": 0.077,
 "mimicry": 0.0014,
 "speed_cv": 0.0584,
+"tracking": 0.2992,
+"mass_log": 3.2172,
+"sneak": -0.0179,
 "roundness_known": 1.0
 }
 },
@@ -12717,6 +13668,9 @@
 "unpredict": 0.0279,
 "mimicry": 0.8725,
 "speed_cv": 0.0,
+"tracking": 0.3973,
+"mass_log": 2.3812,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12757,6 +13711,9 @@
 "unpredict": 0.0686,
 "mimicry": 0.0609,
 "speed_cv": 0.1096,
+"tracking": 0.3215,
+"mass_log": 3.5337,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12797,6 +13754,9 @@
 "unpredict": 0.0197,
 "mimicry": 0.2573,
 "speed_cv": 0.0,
+"tracking": 0.3293,
+"mass_log": 3.6186,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12837,6 +13797,9 @@
 "unpredict": 0.0205,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 0.4506,
+"mass_log": 3.5297,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12877,6 +13840,9 @@
 "unpredict": 0.0309,
 "mimicry": 0.6529,
 "speed_cv": 0.0,
+"tracking": 0.4637,
+"mass_log": 3.3078,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12917,6 +13883,9 @@
 "unpredict": 0.0298,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 0.3512,
+"mass_log": 3.8157,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -12957,6 +13926,9 @@
 "unpredict": 0.0443,
 "mimicry": 0.8007,
 "speed_cv": 0.002,
+"tracking": 0.2873,
+"mass_log": 3.5696,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -12997,6 +13969,9 @@
 "unpredict": 0.0131,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 0.3128,
+"mass_log": 3.2243,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13037,6 +14012,9 @@
 "unpredict": 0.0511,
 "mimicry": 0.4358,
 "speed_cv": 0.0481,
+"tracking": 0.4761,
+"mass_log": 2.7793,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13077,6 +14055,9 @@
 "unpredict": 0.0207,
 "mimicry": 0.0,
 "speed_cv": 0.042,
+"tracking": 0.3139,
+"mass_log": 3.5887,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13117,6 +14098,9 @@
 "unpredict": 0.1033,
 "mimicry": 0.5855,
 "speed_cv": 0.3461,
+"tracking": 0.3848,
+"mass_log": 2.3776,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13157,6 +14141,9 @@
 "unpredict": 0.0304,
 "mimicry": 0.0017,
 "speed_cv": 0.0105,
+"tracking": 0.2415,
+"mass_log": 3.4606,
+"sneak": 0.0019,
 "roundness_known": 1.0
 }
 },
@@ -13197,6 +14184,9 @@
 "unpredict": 0.0425,
 "mimicry": 0.8713,
 "speed_cv": 0.0,
+"tracking": 0.4002,
+"mass_log": 3.3071,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13237,6 +14227,9 @@
 "unpredict": 0.0361,
 "mimicry": 0.0194,
 "speed_cv": 0.0,
+"tracking": 0.3274,
+"mass_log": 3.373,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13277,6 +14270,9 @@
 "unpredict": 0.0382,
 "mimicry": 0.7488,
 "speed_cv": 0.0,
+"tracking": 0.3215,
+"mass_log": 3.2881,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13317,6 +14313,9 @@
 "unpredict": 0.094,
 "mimicry": 0.0,
 "speed_cv": 0.124,
+"tracking": 0.3287,
+"mass_log": 3.3237,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13357,6 +14356,9 @@
 "unpredict": 0.0281,
 "mimicry": 0.7085,
 "speed_cv": 0.002,
+"tracking": 0.2896,
+"mass_log": 3.2236,
+"sneak": -0.0005,
 "roundness_known": 1.0
 }
 },
@@ -13397,6 +14399,9 @@
 "unpredict": 0.0184,
 "mimicry": 0.277,
 "speed_cv": 0.0,
+"tracking": 0.317,
+"mass_log": 3.6045,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -13437,6 +14442,9 @@
 "unpredict": 0.0188,
 "mimicry": 0.9256,
 "speed_cv": 0.0,
+"tracking": 0.3753,
+"mass_log": 2.8678,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13477,6 +14485,9 @@
 "unpredict": 0.0457,
 "mimicry": 0.0933,
 "speed_cv": 0.1159,
+"tracking": 0.3747,
+"mass_log": 0.9746,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13517,6 +14528,9 @@
 "unpredict": 0.0441,
 "mimicry": 0.6807,
 "speed_cv": 0.2633,
+"tracking": 0.4379,
+"mass_log": 0.633,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13557,6 +14571,9 @@
 "unpredict": 0.0405,
 "mimicry": 0.0,
 "speed_cv": 0.1076,
+"tracking": 0.3595,
+"mass_log": 0.589,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13597,6 +14614,9 @@
 "unpredict": 0.0218,
 "mimicry": 0.5468,
 "speed_cv": 0.0,
+"tracking": 0.3843,
+"mass_log": 1.4979,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13637,6 +14657,9 @@
 "unpredict": 0.012,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 0.6174,
+"mass_log": 1.2901,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13677,6 +14700,9 @@
 "unpredict": 0.0499,
 "mimicry": 0.8978,
 "speed_cv": 0.0,
+"tracking": 0.2838,
+"mass_log": 1.2552,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -13717,6 +14743,9 @@
 "unpredict": 0.0654,
 "mimicry": 0.0389,
 "speed_cv": 0.1313,
+"tracking": 0.3656,
+"mass_log": 0.4271,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13757,6 +14786,9 @@
 "unpredict": 0.0232,
 "mimicry": 0.5645,
 "speed_cv": 0.0,
+"tracking": 0.5436,
+"mass_log": -0.2246,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13797,6 +14829,9 @@
 "unpredict": 0.0247,
 "mimicry": 0.0,
 "speed_cv": 0.0,
+"tracking": 0.372,
+"mass_log": 0.8077,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -13837,6 +14872,9 @@
 "unpredict": 0.0546,
 "mimicry": 0.7845,
 "speed_cv": 0.085,
+"tracking": 0.4149,
+"mass_log": 1.1238,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13877,6 +14915,9 @@
 "unpredict": 0.0333,
 "mimicry": 0.0,
 "speed_cv": 0.0924,
+"tracking": 0.4399,
+"mass_log": 0.8612,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13917,6 +14958,9 @@
 "unpredict": 0.0215,
 "mimicry": 0.3456,
 "speed_cv": 0.0,
+"tracking": 0.4031,
+"mass_log": 0.7909,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13957,6 +15001,9 @@
 "unpredict": 0.0403,
 "mimicry": 0.0242,
 "speed_cv": 0.0916,
+"tracking": 0.3674,
+"mass_log": 0.984,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -13997,6 +15044,9 @@
 "unpredict": 0.0136,
 "mimicry": 0.9335,
 "speed_cv": 0.0,
+"tracking": 0.3475,
+"mass_log": 1.2161,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14037,6 +15087,9 @@
 "unpredict": 0.0217,
 "mimicry": 0.0117,
 "speed_cv": 0.0745,
+"tracking": 0.4017,
+"mass_log": 0.9117,
+"sneak": 0.0001,
 "roundness_known": 1.0
 }
 },
@@ -14077,6 +15130,9 @@
 "unpredict": 0.0228,
 "mimicry": 0.5808,
 "speed_cv": 0.0,
+"tracking": 0.2856,
+"mass_log": 1.5893,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -14117,6 +15173,9 @@
 "unpredict": 0.0182,
 "mimicry": 0.022,
 "speed_cv": 0.0,
+"tracking": 0.366,
+"mass_log": 1.7769,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14157,6 +15216,9 @@
 "unpredict": 0.0099,
 "mimicry": 0.848,
 "speed_cv": 0.0,
+"tracking": 0.2763,
+"mass_log": 1.4805,
+"sneak": -0.0,
 "roundness_known": 1.0
 }
 },
@@ -14197,6 +15259,9 @@
 "unpredict": 0.023,
 "mimicry": 0.0,
 "speed_cv": 0.0372,
+"tracking": 0.4369,
+"mass_log": 0.966,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14237,6 +15302,9 @@
 "unpredict": 0.0203,
 "mimicry": 0.8019,
 "speed_cv": 0.0,
+"tracking": 0.4663,
+"mass_log": -0.0102,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14277,6 +15345,9 @@
 "unpredict": 0.0397,
 "mimicry": 0.0,
 "speed_cv": 0.0848,
+"tracking": 0.3682,
+"mass_log": 0.6927,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14317,6 +15388,9 @@
 "unpredict": 0.0247,
 "mimicry": 0.929,
 "speed_cv": 0.1583,
+"tracking": 0.5249,
+"mass_log": -0.8313,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14357,6 +15431,9 @@
 "unpredict": 0.0193,
 "mimicry": 0.0025,
 "speed_cv": 0.0,
+"tracking": 0.313,
+"mass_log": 1.1894,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14397,6 +15474,9 @@
 "unpredict": 0.0431,
 "mimicry": 0.757,
 "speed_cv": 0.0,
+"tracking": 0.3397,
+"mass_log": 1.6181,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14437,6 +15517,9 @@
 "unpredict": 0.1121,
 "mimicry": 0.0,
 "speed_cv": 0.178,
+"tracking": 0.427,
+"mass_log": 2.3724,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14477,6 +15560,9 @@
 "unpredict": 0.0846,
 "mimicry": 0.7583,
 "speed_cv": 0.2444,
+"tracking": 0.4248,
+"mass_log": 2.1295,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14517,6 +15603,9 @@
 "unpredict": 0.105,
 "mimicry": 0.0,
 "speed_cv": 0.2654,
+"tracking": 0.4314,
+"mass_log": 1.8244,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14557,6 +15646,9 @@
 "unpredict": 0.1161,
 "mimicry": 0.7506,
 "speed_cv": 0.1322,
+"tracking": 0.4947,
+"mass_log": 1.8749,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14597,6 +15689,9 @@
 "unpredict": 0.0597,
 "mimicry": 0.7805,
 "speed_cv": 0.1436,
+"tracking": 0.4009,
+"mass_log": 2.4752,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14637,6 +15732,9 @@
 "unpredict": 0.0284,
 "mimicry": 0.8639,
 "speed_cv": 0.1416,
+"tracking": 0.5067,
+"mass_log": 0.6958,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14677,6 +15775,9 @@
 "unpredict": 0.137,
 "mimicry": 0.0,
 "speed_cv": 0.2383,
+"tracking": 0.5729,
+"mass_log": 1.0844,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14717,6 +15818,9 @@
 "unpredict": 0.0569,
 "mimicry": 0.8054,
 "speed_cv": 0.182,
+"tracking": 0.3144,
+"mass_log": 2.4551,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14757,6 +15861,9 @@
 "unpredict": 0.1367,
 "mimicry": 0.0602,
 "speed_cv": 0.2301,
+"tracking": 0.3574,
+"mass_log": 2.8121,
+"sneak": -0.0197,
 "roundness_known": 1.0
 }
 },
@@ -14797,6 +15904,9 @@
 "unpredict": 0.1262,
 "mimicry": 0.7608,
 "speed_cv": 0.3579,
+"tracking": 0.3089,
+"mass_log": 2.2269,
+"sneak": -0.0619,
 "roundness_known": 1.0
 }
 },
@@ -14837,6 +15947,9 @@
 "unpredict": 0.1355,
 "mimicry": 0.5715,
 "speed_cv": 0.2357,
+"tracking": 0.5069,
+"mass_log": 1.5476,
+"sneak": -0.0929,
 "roundness_known": 1.0
 }
 },
@@ -14877,6 +15990,9 @@
 "unpredict": 0.0463,
 "mimicry": 0.84,
 "speed_cv": 0.0576,
+"tracking": 0.4759,
+"mass_log": 1.7579,
+"sneak": -0.0107,
 "roundness_known": 1.0
 }
 },
@@ -14917,6 +16033,9 @@
 "unpredict": 0.0999,
 "mimicry": 0.0,
 "speed_cv": 0.1431,
+"tracking": 0.7347,
+"mass_log": 1.7055,
+"sneak": 0.0064,
 "roundness_known": 1.0
 }
 },
@@ -14957,6 +16076,9 @@
 "unpredict": 0.0756,
 "mimicry": 0.7697,
 "speed_cv": 0.2349,
+"tracking": 0.4972,
+"mass_log": 1.5199,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -14997,6 +16119,9 @@
 "unpredict": 0.1344,
 "mimicry": 0.0,
 "speed_cv": 0.1315,
+"tracking": 0.6295,
+"mass_log": 1.2433,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -15037,6 +16162,9 @@
 "unpredict": 0.0917,
 "mimicry": 0.7882,
 "speed_cv": 0.2525,
+"tracking": 0.3286,
+"mass_log": 2.5571,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -15077,6 +16205,9 @@
 "unpredict": 0.1066,
 "mimicry": 0.0,
 "speed_cv": 0.1999,
+"tracking": 0.527,
+"mass_log": 2.5735,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -15117,6 +16248,9 @@
 "unpredict": 0.0458,
 "mimicry": 0.7998,
 "speed_cv": 0.0,
+"tracking": 0.5173,
+"mass_log": 1.9258,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -15157,6 +16291,9 @@
 "unpredict": 0.1394,
 "mimicry": 0.3344,
 "speed_cv": 0.1192,
+"tracking": 0.5145,
+"mass_log": 1.6882,
+"sneak": -0.0376,
 "roundness_known": 1.0
 }
 },
@@ -15197,6 +16334,9 @@
 "unpredict": 0.0821,
 "mimicry": 0.7659,
 "speed_cv": 0.144,
+"tracking": 0.5228,
+"mass_log": 2.619,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -15237,6 +16377,9 @@
 "unpredict": 0.1146,
 "mimicry": 0.0,
 "speed_cv": 0.2339,
+"tracking": 0.5031,
+"mass_log": 1.1986,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -15277,6 +16420,9 @@
 "unpredict": 0.0879,
 "mimicry": 0.7387,
 "speed_cv": 0.2478,
+"tracking": 0.2673,
+"mass_log": 2.6816,
+"sneak": -0.0341,
 "roundness_known": 1.0
 }
 },
@@ -15317,6 +16463,9 @@
 "unpredict": 0.0708,
 "mimicry": 0.0149,
 "speed_cv": 0.0736,
+"tracking": 0.587,
+"mass_log": 2.3479,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -15357,6 +16506,9 @@
 "unpredict": 0.0976,
 "mimicry": 0.8114,
 "speed_cv": 0.2561,
+"tracking": 0.336,
+"mass_log": 2.6842,
+"sneak": -0.0743,
 "roundness_known": 1.0
 }
 },
@@ -15397,6 +16549,9 @@
 "unpredict": 0.2282,
 "mimicry": 0.323,
 "speed_cv": 0.2716,
+"tracking": 0.0691,
+"mass_log": 1.3248,
+"sneak": 0.1147,
 "roundness_known": 1.0
 }
 },
@@ -15437,6 +16592,9 @@
 "unpredict": 0.1325,
 "mimicry": 0.8376,
 "speed_cv": 0.3853,
+"tracking": 0.0691,
+"mass_log": 2.4417,
+"sneak": -0.0583,
 "roundness_known": 1.0
 }
 },
@@ -15477,6 +16635,9 @@
 "unpredict": 0.1789,
 "mimicry": 0.1718,
 "speed_cv": 0.2629,
+"tracking": 0.0625,
+"mass_log": 2.0147,
+"sneak": -0.0159,
 "roundness_known": 1.0
 }
 },
@@ -15517,6 +16678,9 @@
 "unpredict": 0.0999,
 "mimicry": 0.8402,
 "speed_cv": 0.1993,
+"tracking": 0.078,
+"mass_log": 1.4083,
+"sneak": 0.0379,
 "roundness_known": 1.0
 }
 },
@@ -15557,6 +16721,9 @@
 "unpredict": 0.2045,
 "mimicry": 0.0001,
 "speed_cv": 0.2887,
+"tracking": 0.0726,
+"mass_log": 2.3848,
+"sneak": -0.0153,
 "roundness_known": 1.0
 }
 },
@@ -15597,6 +16764,9 @@
 "unpredict": 0.0795,
 "mimicry": 0.9141,
 "speed_cv": 0.2365,
+"tracking": 0.0863,
+"mass_log": 2.1203,
+"sneak": -0.0029,
 "roundness_known": 1.0
 }
 },
@@ -15637,6 +16807,9 @@
 "unpredict": 0.1661,
 "mimicry": 0.0,
 "speed_cv": 0.3393,
+"tracking": 0.0398,
+"mass_log": 2.4347,
+"sneak": -0.0112,
 "roundness_known": 1.0
 }
 },
@@ -15677,6 +16850,9 @@
 "unpredict": 0.1014,
 "mimicry": 0.8663,
 "speed_cv": 0.3238,
+"tracking": 0.085,
+"mass_log": 2.3502,
+"sneak": -0.0029,
 "roundness_known": 1.0
 }
 },
@@ -15717,6 +16893,9 @@
 "unpredict": 0.2058,
 "mimicry": 0.0,
 "speed_cv": 0.2464,
+"tracking": 0.0398,
+"mass_log": 1.3932,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -15757,6 +16936,9 @@
 "unpredict": 0.0821,
 "mimicry": 0.8914,
 "speed_cv": 0.2222,
+"tracking": 0.1113,
+"mass_log": 2.1185,
+"sneak": -0.0213,
 "roundness_known": 1.0
 }
 },
@@ -15797,6 +16979,9 @@
 "unpredict": 0.2289,
 "mimicry": 0.0001,
 "speed_cv": 0.3053,
+"tracking": 0.0398,
+"mass_log": 1.6522,
+"sneak": -0.0144,
 "roundness_known": 1.0
 }
 },
@@ -15837,6 +17022,9 @@
 "unpredict": 0.1211,
 "mimicry": 0.8472,
 "speed_cv": 0.2493,
+"tracking": 0.1015,
+"mass_log": 2.5819,
+"sneak": -0.0531,
 "roundness_known": 1.0
 }
 },
@@ -15877,6 +17065,9 @@
 "unpredict": 0.1669,
 "mimicry": 0.0387,
 "speed_cv": 0.2817,
+"tracking": 0.048,
+"mass_log": 1.3102,
+"sneak": -0.0017,
 "roundness_known": 1.0
 }
 },
@@ -15917,6 +17108,9 @@
 "unpredict": 0.1242,
 "mimicry": 0.8215,
 "speed_cv": 0.3048,
+"tracking": 0.0804,
+"mass_log": 1.9823,
+"sneak": -0.041,
 "roundness_known": 1.0
 }
 },
@@ -15957,6 +17151,9 @@
 "unpredict": 0.142,
 "mimicry": 0.3581,
 "speed_cv": 0.3929,
+"tracking": 0.06,
+"mass_log": 1.7856,
+"sneak": -0.0177,
 "roundness_known": 1.0
 }
 },
@@ -15997,6 +17194,9 @@
 "unpredict": 0.1505,
 "mimicry": 0.7818,
 "speed_cv": 0.2657,
+"tracking": 0.0914,
+"mass_log": 2.2632,
+"sneak": -0.0132,
 "roundness_known": 1.0
 }
 },
@@ -16037,6 +17237,9 @@
 "unpredict": 0.2195,
 "mimicry": 0.0,
 "speed_cv": 0.2913,
+"tracking": 0.0398,
+"mass_log": 1.3841,
+"sneak": -0.0145,
 "roundness_known": 1.0
 }
 },
@@ -16077,6 +17280,9 @@
 "unpredict": 0.1502,
 "mimicry": 0.7389,
 "speed_cv": 0.2693,
+"tracking": 0.0592,
+"mass_log": 2.0505,
+"sneak": -0.0677,
 "roundness_known": 1.0
 }
 },
@@ -16117,6 +17323,9 @@
 "unpredict": 0.2252,
 "mimicry": 0.2541,
 "speed_cv": 0.3207,
+"tracking": 0.0589,
+"mass_log": 1.7415,
+"sneak": -0.0137,
 "roundness_known": 1.0
 }
 },
@@ -16157,6 +17366,9 @@
 "unpredict": 0.1047,
 "mimicry": 0.8506,
 "speed_cv": 0.3297,
+"tracking": 0.0699,
+"mass_log": 2.317,
+"sneak": -0.0339,
 "roundness_known": 1.0
 }
 },
@@ -16197,6 +17409,9 @@
 "unpredict": 0.1867,
 "mimicry": 0.0,
 "speed_cv": 0.2512,
+"tracking": 0.0398,
+"mass_log": 2.1196,
+"sneak": -0.0118,
 "roundness_known": 1.0
 }
 },
@@ -16237,6 +17452,9 @@
 "unpredict": 0.1438,
 "mimicry": 0.7465,
 "speed_cv": 0.3189,
+"tracking": 0.0737,
+"mass_log": 2.0948,
+"sneak": -0.0616,
 "roundness_known": 1.0
 }
 },
@@ -16277,6 +17495,9 @@
 "unpredict": 0.2181,
 "mimicry": 0.0,
 "speed_cv": 0.1537,
+"tracking": 0.0398,
+"mass_log": 1.3658,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16317,6 +17538,9 @@
 "unpredict": 0.0771,
 "mimicry": 0.8601,
 "speed_cv": 0.173,
+"tracking": 0.0614,
+"mass_log": 1.4691,
+"sneak": 0.0332,
 "roundness_known": 1.0
 }
 },
@@ -16357,6 +17581,9 @@
 "unpredict": 0.6362,
 "mimicry": 0.0104,
 "speed_cv": 1.2351,
+"tracking": 0.4994,
+"mass_log": 1.836,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16397,6 +17624,9 @@
 "unpredict": 0.7159,
 "mimicry": 0.8039,
 "speed_cv": 0.6814,
+"tracking": 0.4092,
+"mass_log": 2.3757,
+"sneak": 0.3294,
 "roundness_known": 1.0
 }
 },
@@ -16437,6 +17667,9 @@
 "unpredict": 0.4468,
 "mimicry": 0.0031,
 "speed_cv": 1.1547,
+"tracking": 0.594,
+"mass_log": 1.8504,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16477,6 +17710,9 @@
 "unpredict": 0.4045,
 "mimicry": 0.8328,
 "speed_cv": 0.5959,
+"tracking": 0.4526,
+"mass_log": 1.2413,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16517,6 +17753,9 @@
 "unpredict": 0.502,
 "mimicry": 0.0092,
 "speed_cv": 0.8863,
+"tracking": 0.5775,
+"mass_log": 1.5146,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16557,6 +17796,9 @@
 "unpredict": 1.1315,
 "mimicry": 0.4945,
 "speed_cv": 1.1595,
+"tracking": 0.3099,
+"mass_log": 1.1583,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16597,6 +17839,9 @@
 "unpredict": 0.2691,
 "mimicry": 0.0,
 "speed_cv": 0.9394,
+"tracking": 0.6174,
+"mass_log": 1.9117,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16637,6 +17882,9 @@
 "unpredict": 0.4585,
 "mimicry": 0.6869,
 "speed_cv": 0.8712,
+"tracking": 0.336,
+"mass_log": 2.1094,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16677,6 +17925,9 @@
 "unpredict": 0.1519,
 "mimicry": 0.0032,
 "speed_cv": 0.9224,
+"tracking": 0.5665,
+"mass_log": 1.9069,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16717,6 +17968,9 @@
 "unpredict": 1.0605,
 "mimicry": 0.1838,
 "speed_cv": 1.5818,
+"tracking": 0.4614,
+"mass_log": 2.0419,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16757,6 +18011,9 @@
 "unpredict": 0.2604,
 "mimicry": 0.0856,
 "speed_cv": 1.0612,
+"tracking": 0.5447,
+"mass_log": 2.3507,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16797,6 +18054,9 @@
 "unpredict": 0.1422,
 "mimicry": 0.774,
 "speed_cv": 0.782,
+"tracking": 0.3423,
+"mass_log": 1.8725,
+"sneak": 0.3378,
 "roundness_known": 1.0
 }
 },
@@ -16837,6 +18097,9 @@
 "unpredict": 0.5672,
 "mimicry": 0.0011,
 "speed_cv": 1.493,
+"tracking": 0.3977,
+"mass_log": 1.5238,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16877,6 +18140,9 @@
 "unpredict": 0.3857,
 "mimicry": 0.8103,
 "speed_cv": 0.6729,
+"tracking": 0.43,
+"mass_log": 1.3781,
+"sneak": 0.1332,
 "roundness_known": 1.0
 }
 },
@@ -16917,6 +18183,9 @@
 "unpredict": 0.2233,
 "mimicry": 0.0062,
 "speed_cv": 0.8588,
+"tracking": 0.5695,
+"mass_log": 2.0722,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16957,6 +18226,9 @@
 "unpredict": 0.6453,
 "mimicry": 0.4393,
 "speed_cv": 1.0756,
+"tracking": 0.4033,
+"mass_log": 0.8196,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -16997,6 +18269,9 @@
 "unpredict": 0.3004,
 "mimicry": 0.0013,
 "speed_cv": 0.7605,
+"tracking": 0.6914,
+"mass_log": 1.7307,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17037,6 +18312,9 @@
 "unpredict": 1.0452,
 "mimicry": 0.6984,
 "speed_cv": 0.8195,
+"tracking": 0.4646,
+"mass_log": 1.9631,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17077,6 +18355,9 @@
 "unpredict": 0.138,
 "mimicry": 0.0007,
 "speed_cv": 0.7335,
+"tracking": 0.6229,
+"mass_log": 1.7972,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17117,6 +18398,9 @@
 "unpredict": 0.2802,
 "mimicry": 0.8681,
 "speed_cv": 0.5278,
+"tracking": 0.5169,
+"mass_log": 1.4991,
+"sneak": 0.0255,
 "roundness_known": 1.0
 }
 },
@@ -17157,6 +18441,9 @@
 "unpredict": 0.2228,
 "mimicry": 0.0,
 "speed_cv": 0.9754,
+"tracking": 0.5692,
+"mass_log": 1.7326,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17197,6 +18484,9 @@
 "unpredict": 0.7341,
 "mimicry": 0.769,
 "speed_cv": 0.705,
+"tracking": 0.4993,
+"mass_log": 1.4099,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17237,6 +18527,9 @@
 "unpredict": 0.1953,
 "mimicry": 0.6733,
 "speed_cv": 0.7299,
+"tracking": 0.7007,
+"mass_log": 1.7585,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17277,6 +18570,9 @@
 "unpredict": 0.4516,
 "mimicry": 0.5936,
 "speed_cv": 0.9008,
+"tracking": 0.3847,
+"mass_log": 1.8271,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17317,6 +18613,9 @@
 "unpredict": 0.1478,
 "mimicry": 0.0051,
 "speed_cv": 0.3037,
+"tracking": 0.3193,
+"mass_log": 1.9181,
+"sneak": -0.012,
 "roundness_known": 1.0
 }
 },
@@ -17357,6 +18656,9 @@
 "unpredict": 0.0887,
 "mimicry": 0.812,
 "speed_cv": 0.2828,
+"tracking": 0.2699,
+"mass_log": 2.5605,
+"sneak": 0.2174,
 "roundness_known": 1.0
 }
 },
@@ -17397,6 +18699,9 @@
 "unpredict": 0.1461,
 "mimicry": 0.0,
 "speed_cv": 0.1531,
+"tracking": 0.3206,
+"mass_log": 1.7392,
+"sneak": -0.0121,
 "roundness_known": 1.0
 }
 },
@@ -17437,6 +18742,9 @@
 "unpredict": 0.1423,
 "mimicry": 0.8367,
 "speed_cv": 0.2528,
+"tracking": 0.2548,
+"mass_log": 2.3427,
+"sneak": -0.0619,
 "roundness_known": 1.0
 }
 },
@@ -17477,6 +18785,9 @@
 "unpredict": 0.1714,
 "mimicry": 0.0073,
 "speed_cv": 0.526,
+"tracking": 0.3806,
+"mass_log": 2.7765,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17517,6 +18828,9 @@
 "unpredict": 0.2411,
 "mimicry": 0.7894,
 "speed_cv": 0.3016,
+"tracking": 0.2518,
+"mass_log": 1.8586,
+"sneak": 0.1121,
 "roundness_known": 1.0
 }
 },
@@ -17557,6 +18871,9 @@
 "unpredict": 0.1844,
 "mimicry": 0.0,
 "speed_cv": 0.4428,
+"tracking": 0.375,
+"mass_log": 1.9494,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17597,6 +18914,9 @@
 "unpredict": 0.1426,
 "mimicry": 0.7709,
 "speed_cv": 0.336,
+"tracking": 0.4723,
+"mass_log": 2.5352,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17637,6 +18957,9 @@
 "unpredict": 0.2501,
 "mimicry": 0.0,
 "speed_cv": 0.3495,
+"tracking": 0.3811,
+"mass_log": 1.8971,
+"sneak": -0.0787,
 "roundness_known": 1.0
 }
 },
@@ -17677,6 +19000,9 @@
 "unpredict": 0.1588,
 "mimicry": 0.7999,
 "speed_cv": 0.2851,
+"tracking": 0.3369,
+"mass_log": 2.8036,
+"sneak": 0.0768,
 "roundness_known": 1.0
 }
 },
@@ -17717,6 +19043,9 @@
 "unpredict": 0.2316,
 "mimicry": 0.0,
 "speed_cv": 0.4707,
+"tracking": 0.4911,
+"mass_log": 2.539,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17757,6 +19086,9 @@
 "unpredict": 0.1474,
 "mimicry": 0.8279,
 "speed_cv": 0.2961,
+"tracking": 0.2789,
+"mass_log": 2.274,
+"sneak": 0.0005,
 "roundness_known": 1.0
 }
 },
@@ -17797,6 +19129,9 @@
 "unpredict": 0.1861,
 "mimicry": 0.0,
 "speed_cv": 0.3444,
+"tracking": 0.2611,
+"mass_log": 2.2306,
+"sneak": -0.0055,
 "roundness_known": 1.0
 }
 },
@@ -17837,6 +19172,9 @@
 "unpredict": 0.1722,
 "mimicry": 0.7277,
 "speed_cv": 0.4293,
+"tracking": 0.3484,
+"mass_log": 1.7088,
+"sneak": -0.334,
 "roundness_known": 1.0
 }
 },
@@ -17877,6 +19215,9 @@
 "unpredict": 0.1112,
 "mimicry": 0.0207,
 "speed_cv": 0.4747,
+"tracking": 0.4247,
+"mass_log": 1.6217,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17917,6 +19258,9 @@
 "unpredict": 0.0939,
 "mimicry": 0.8269,
 "speed_cv": 0.2976,
+"tracking": 0.4085,
+"mass_log": 2.6334,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -17957,6 +19301,9 @@
 "unpredict": 0.2267,
 "mimicry": 0.0057,
 "speed_cv": 0.327,
+"tracking": 0.3828,
+"mass_log": 2.6651,
+"sneak": -0.0381,
 "roundness_known": 1.0
 }
 },
@@ -17997,6 +19344,9 @@
 "unpredict": 0.1296,
 "mimicry": 0.7852,
 "speed_cv": 0.3763,
+"tracking": 0.3591,
+"mass_log": 2.2533,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18037,6 +19387,9 @@
 "unpredict": 0.1074,
 "mimicry": 0.0,
 "speed_cv": 0.2648,
+"tracking": 0.3589,
+"mass_log": 2.1511,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18077,6 +19430,9 @@
 "unpredict": 0.0871,
 "mimicry": 0.8011,
 "speed_cv": 0.2659,
+"tracking": 0.4086,
+"mass_log": 2.1063,
+"sneak": -0.0954,
 "roundness_known": 1.0
 }
 },
@@ -18117,6 +19473,9 @@
 "unpredict": 0.185,
 "mimicry": 0.0,
 "speed_cv": 0.4077,
+"tracking": 0.6106,
+"mass_log": 2.263,
+"sneak": 0.0297,
 "roundness_known": 1.0
 }
 },
@@ -18157,6 +19516,9 @@
 "unpredict": 0.0798,
 "mimicry": 0.8636,
 "speed_cv": 0.2713,
+"tracking": 0.2995,
+"mass_log": 2.4012,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18197,6 +19559,9 @@
 "unpredict": 0.1582,
 "mimicry": 0.0035,
 "speed_cv": 0.3432,
+"tracking": 0.4433,
+"mass_log": 1.9172,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18237,6 +19602,9 @@
 "unpredict": 0.1117,
 "mimicry": 0.8428,
 "speed_cv": 0.3184,
+"tracking": 0.3884,
+"mass_log": 2.8111,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18277,6 +19645,9 @@
 "unpredict": 0.0738,
 "mimicry": 0.0016,
 "speed_cv": 0.0607,
+"tracking": 0.6573,
+"mass_log": 2.5049,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18317,6 +19688,9 @@
 "unpredict": 0.0475,
 "mimicry": 0.9331,
 "speed_cv": 0.2241,
+"tracking": 0.7014,
+"mass_log": 3.2731,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18357,6 +19731,9 @@
 "unpredict": 0.1679,
 "mimicry": 0.0,
 "speed_cv": 0.4357,
+"tracking": 0.5685,
+"mass_log": 3.1436,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18397,6 +19774,9 @@
 "unpredict": 0.0536,
 "mimicry": 0.8603,
 "speed_cv": 0.2631,
+"tracking": 0.5345,
+"mass_log": 2.8608,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18437,6 +19817,9 @@
 "unpredict": 0.0508,
 "mimicry": 0.7287,
 "speed_cv": 0.5042,
+"tracking": 0.7055,
+"mass_log": 2.7112,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18477,6 +19860,9 @@
 "unpredict": 0.0527,
 "mimicry": 0.9253,
 "speed_cv": 0.2283,
+"tracking": 0.6645,
+"mass_log": 2.9608,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18517,6 +19903,9 @@
 "unpredict": 0.0946,
 "mimicry": 0.021,
 "speed_cv": 0.4497,
+"tracking": 0.6556,
+"mass_log": 3.1579,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18557,6 +19946,9 @@
 "unpredict": 0.0571,
 "mimicry": 0.8378,
 "speed_cv": 0.1362,
+"tracking": 0.6255,
+"mass_log": 3.0555,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18597,6 +19989,9 @@
 "unpredict": 0.0689,
 "mimicry": 0.0194,
 "speed_cv": 0.2789,
+"tracking": 0.6642,
+"mass_log": 3.1684,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18637,6 +20032,9 @@
 "unpredict": 0.0476,
 "mimicry": 0.7782,
 "speed_cv": 0.2921,
+"tracking": 0.6016,
+"mass_log": 2.2568,
+"sneak": -0.5128,
 "roundness_known": 1.0
 }
 },
@@ -18677,6 +20075,9 @@
 "unpredict": 0.1339,
 "mimicry": 0.731,
 "speed_cv": 0.4631,
+"tracking": 0.5303,
+"mass_log": 2.6134,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18717,6 +20118,9 @@
 "unpredict": 0.0293,
 "mimicry": 0.9208,
 "speed_cv": 0.199,
+"tracking": 0.5355,
+"mass_log": 3.1838,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18757,6 +20161,9 @@
 "unpredict": 0.0448,
 "mimicry": 0.033,
 "speed_cv": 0.4026,
+"tracking": 0.587,
+"mass_log": 2.8572,
+"sneak": -0.4367,
 "roundness_known": 1.0
 }
 },
@@ -18797,6 +20204,9 @@
 "unpredict": 0.0529,
 "mimicry": 0.9102,
 "speed_cv": 0.211,
+"tracking": 0.6451,
+"mass_log": 2.503,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18837,6 +20247,9 @@
 "unpredict": 0.1373,
 "mimicry": 0.3978,
 "speed_cv": 0.4692,
+"tracking": 0.43,
+"mass_log": 3.0341,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18877,6 +20290,9 @@
 "unpredict": 0.1348,
 "mimicry": 0.8776,
 "speed_cv": 0.2356,
+"tracking": 0.5681,
+"mass_log": 2.8608,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18917,6 +20333,9 @@
 "unpredict": 0.1116,
 "mimicry": 0.0215,
 "speed_cv": 0.2355,
+"tracking": 0.6699,
+"mass_log": 2.7201,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18957,6 +20376,9 @@
 "unpredict": 0.0875,
 "mimicry": 0.7658,
 "speed_cv": 0.2488,
+"tracking": 0.6031,
+"mass_log": 3.0184,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -18997,6 +20419,9 @@
 "unpredict": 0.1275,
 "mimicry": 0.6038,
 "speed_cv": 0.4825,
+"tracking": 0.5189,
+"mass_log": 3.2256,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -19037,6 +20462,9 @@
 "unpredict": 0.0434,
 "mimicry": 0.9193,
 "speed_cv": 0.2414,
+"tracking": 0.6122,
+"mass_log": 2.6316,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -19077,6 +20505,9 @@
 "unpredict": 0.169,
 "mimicry": 0.0262,
 "speed_cv": 0.4212,
+"tracking": 0.5978,
+"mass_log": 2.485,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -19117,6 +20548,9 @@
 "unpredict": 0.0655,
 "mimicry": 0.8496,
 "speed_cv": 0.1959,
+"tracking": 0.6446,
+"mass_log": 2.207,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -19157,6 +20591,9 @@
 "unpredict": 0.0478,
 "mimicry": 0.0,
 "speed_cv": 0.4751,
+"tracking": 0.6346,
+"mass_log": 2.7546,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -19197,6 +20634,9 @@
 "unpredict": 0.0787,
 "mimicry": 0.9258,
 "speed_cv": 0.2538,
+"tracking": 0.6233,
+"mass_log": 3.0534,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -19209,34 +20649,37 @@
 "seed": 1000,
 "f": {
 "size_log": -0.9677,
-"extent_log": 1.0736,
+"extent_log": 4.533,
 "roundness": 0.4725,
 "count_log": 6.8074,
-"approach": -0.1723,
-"loom": 3.2441,
-"tau_inv": 2.8695,
+"approach": -0.0297,
+"loom": 2.0333,
+"tau_inv": 2.8995,
 "view_fill": 1.0,
-"proximity": 0.9973,
-"gaze": -0.3224,
-"pursuit": 0.0568,
-"orbit": 0.6451,
-"encircle": 0.4746,
-"converge": 0.0286,
-"coherence": 0.5276,
-"speed_rel": 0.4766,
-"accel_rel": 5.9333,
-"jerk_rel": 1.675,
-"curvature": 11.1627,
-"synchrony": 0.0005,
-"regularity": 0.3801,
-"stillness": 0.0032,
+"proximity": 0.9895,
+"gaze": -0.06,
+"pursuit": 0.4204,
+"orbit": 0.2342,
+"encircle": 0.8234,
+"converge": -0.0335,
+"coherence": 0.8484,
+"speed_rel": 0.975,
+"accel_rel": 0.6192,
+"jerk_rel": 0.1556,
+"curvature": 0.5198,
+"synchrony": 0.3636,
+"regularity": 0.6457,
+"stillness": 0.0005,
 "burst": 0.0,
-"bounce": 0.0524,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8773,
-"mimicry": 0.4601,
-"speed_cv": 0.4285,
+"bounce": 0.0674,
+"wobble_hz": 5.0,
+"approach_retreat": 2.9444,
+"unpredict": 0.1734,
+"mimicry": 0.2554,
+"speed_cv": 0.2438,
+"tracking": 0.3725,
+"mass_log": 1.2971,
+"sneak": 0.0104,
 "roundness_known": 1.0
 }
 },
@@ -19249,34 +20692,37 @@
 "seed": 1001,
 "f": {
 "size_log": -0.1296,
-"extent_log": 1.3185,
+"extent_log": 4.8301,
 "roundness": 0.4842,
 "count_log": 6.8826,
-"approach": -0.8829,
-"loom": 0.6295,
-"tau_inv": 0.2795,
-"view_fill": 0.9985,
-"proximity": 0.9413,
-"gaze": -0.8805,
-"pursuit": 0.0063,
-"orbit": 0.3489,
-"encircle": 0.0426,
-"converge": 0.0031,
-"coherence": 0.9184,
-"speed_rel": 0.9845,
-"accel_rel": 4.4375,
-"jerk_rel": 0.5725,
-"curvature": 3.6816,
-"synchrony": 0.007,
-"regularity": 0.4894,
+"approach": -0.1794,
+"loom": 2.0293,
+"tau_inv": 2.6145,
+"view_fill": 1.0,
+"proximity": 0.9855,
+"gaze": -0.1568,
+"pursuit": 0.2675,
+"orbit": 0.4182,
+"encircle": 0.7697,
+"converge": -0.0679,
+"coherence": 0.9141,
+"speed_rel": 1.5925,
+"accel_rel": 1.881,
+"jerk_rel": 0.1136,
+"curvature": 0.8497,
+"synchrony": 0.3859,
+"regularity": 0.5233,
 "stillness": 0.0001,
 "burst": 0.0,
-"bounce": 0.0597,
+"bounce": 0.0982,
 "wobble_hz": 5.0,
-"approach_retreat": 0.0,
-"unpredict": 0.4543,
-"mimicry": 0.8757,
-"speed_cv": 0.2745,
+"approach_retreat": 3.0445,
+"unpredict": 0.4887,
+"mimicry": 0.583,
+"speed_cv": 0.3446,
+"tracking": 0.2705,
+"mass_log": 2.1606,
+"sneak": 0.0033,
 "roundness_known": 1.0
 }
 },
@@ -19289,34 +20735,37 @@
 "seed": 1031,
 "f": {
 "size_log": -0.2057,
-"extent_log": 1.0475,
+"extent_log": 4.6559,
 "roundness": 0.6229,
 "count_log": 5.4919,
-"approach": -0.1836,
-"loom": 2.3787,
-"tau_inv": 1.4786,
+"approach": -0.0007,
+"loom": 1.995,
+"tau_inv": 3.2782,
 "view_fill": 1.0,
-"proximity": 0.9969,
-"gaze": -0.4546,
-"pursuit": 0.0521,
-"orbit": 0.6194,
-"encircle": 0.3081,
-"converge": 0.0341,
-"coherence": 0.6121,
-"speed_rel": 0.4013,
-"accel_rel": 4.5561,
-"jerk_rel": 1.5831,
-"curvature": 10.254,
-"synchrony": 0.0011,
-"regularity": 0.3875,
-"stillness": 0.0055,
+"proximity": 0.9837,
+"gaze": -0.0137,
+"pursuit": 0.4484,
+"orbit": 0.2627,
+"encircle": 0.8533,
+"converge": -0.017,
+"coherence": 0.7262,
+"speed_rel": 0.975,
+"accel_rel": 1.2379,
+"jerk_rel": 0.2169,
+"curvature": 0.9979,
+"synchrony": 0.3867,
+"regularity": 0.6473,
+"stillness": 0.0007,
 "burst": 0.0,
-"bounce": 0.0682,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8262,
-"mimicry": 0.2819,
-"speed_cv": 0.4498,
+"bounce": 0.0877,
+"wobble_hz": 5.0,
+"approach_retreat": 3.0445,
+"unpredict": 0.2434,
+"mimicry": 0.0989,
+"speed_cv": 0.2344,
+"tracking": 0.4035,
+"mass_log": 1.6141,
+"sneak": 0.0075,
 "roundness_known": 1.0
 }
 },
@@ -19329,34 +20778,37 @@
 "seed": 1032,
 "f": {
 "size_log": -0.9109,
-"extent_log": 1.0849,
+"extent_log": 4.7,
 "roundness": 0.5061,
 "count_log": 6.858,
-"approach": -0.891,
-"loom": 0.4024,
-"tau_inv": 0.3605,
-"view_fill": 0.765,
-"proximity": 0.9487,
-"gaze": -0.8493,
-"pursuit": 0.0063,
-"orbit": 0.3954,
-"encircle": 0.0443,
-"converge": 0.0036,
-"coherence": 0.8873,
-"speed_rel": 1.0294,
-"accel_rel": 5.8176,
-"jerk_rel": 0.7297,
-"curvature": 4.6291,
-"synchrony": 0.0081,
-"regularity": 0.4647,
+"approach": -0.1029,
+"loom": 1.6747,
+"tau_inv": 3.8607,
+"view_fill": 1.0,
+"proximity": 0.9883,
+"gaze": -0.1163,
+"pursuit": 0.3034,
+"orbit": 0.4052,
+"encircle": 0.7522,
+"converge": -0.0109,
+"coherence": 0.9103,
+"speed_rel": 1.6808,
+"accel_rel": 2.7697,
+"jerk_rel": 0.2149,
+"curvature": 1.3397,
+"synchrony": 0.3957,
+"regularity": 0.5297,
 "stillness": 0.0001,
 "burst": 0.0,
-"bounce": 0.0378,
-"wobble_hz": 0.0,
-"approach_retreat": 0.0,
-"unpredict": 0.5343,
-"mimicry": 0.8389,
-"speed_cv": 0.3008,
+"bounce": 0.0936,
+"wobble_hz": 5.0,
+"approach_retreat": 2.9444,
+"unpredict": 0.5238,
+"mimicry": 0.5592,
+"speed_cv": 0.3357,
+"tracking": 0.2859,
+"mass_log": 1.3709,
+"sneak": 0.0189,
 "roundness_known": 1.0
 }
 },
@@ -19369,34 +20821,37 @@
 "seed": 1062,
 "f": {
 "size_log": -0.0157,
-"extent_log": 1.219,
+"extent_log": 3.797,
 "roundness": 0.5422,
 "count_log": 6.2288,
-"approach": -0.1647,
-"loom": 2.914,
-"tau_inv": 1.164,
+"approach": -0.0091,
+"loom": 3.2494,
+"tau_inv": 3.4758,
 "view_fill": 1.0,
-"proximity": 0.9976,
-"gaze": -0.4358,
-"pursuit": 0.0435,
-"orbit": 0.6378,
-"encircle": 0.3752,
-"converge": 0.0272,
-"coherence": 0.6477,
-"speed_rel": 0.3745,
-"accel_rel": 4.2658,
-"jerk_rel": 1.6435,
-"curvature": 10.3567,
-"synchrony": -0.0019,
-"regularity": 0.3833,
-"stillness": 0.0079,
+"proximity": 0.9942,
+"gaze": -0.0495,
+"pursuit": 0.4237,
+"orbit": 0.223,
+"encircle": 0.7781,
+"converge": 0.0028,
+"coherence": 0.7934,
+"speed_rel": 0.975,
+"accel_rel": 1.0791,
+"jerk_rel": 0.1931,
+"curvature": 0.8939,
+"synchrony": 0.5701,
+"regularity": 0.6405,
+"stillness": 0.0033,
 "burst": 0.0,
-"bounce": 0.074,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.7881,
+"bounce": 0.1166,
+"wobble_hz": 5.0,
+"approach_retreat": 3.1355,
+"unpredict": 0.4157,
 "mimicry": 0.0,
-"speed_cv": 0.4509,
+"speed_cv": 0.2899,
+"tracking": 0.2443,
+"mass_log": 2.0541,
+"sneak": 0.0822,
 "roundness_known": 1.0
 }
 },
@@ -19409,34 +20864,37 @@
 "seed": 1063,
 "f": {
 "size_log": -0.3177,
-"extent_log": 1.2075,
+"extent_log": 3.9853,
 "roundness": 0.4325,
 "count_log": 6.6439,
-"approach": -0.8699,
-"loom": 0.5077,
-"tau_inv": 0.3169,
-"view_fill": 0.8941,
-"proximity": 0.938,
-"gaze": -0.8603,
-"pursuit": 0.0125,
-"orbit": 0.3623,
-"encircle": 0.0531,
-"converge": 0.0085,
-"coherence": 0.9148,
-"speed_rel": 1.0049,
-"accel_rel": 4.7365,
-"jerk_rel": 0.5896,
-"curvature": 3.8769,
-"synchrony": 0.0068,
-"regularity": 0.4862,
-"stillness": 0.0,
+"approach": -0.2908,
+"loom": 2.0046,
+"tau_inv": 3.0275,
+"view_fill": 1.0,
+"proximity": 0.99,
+"gaze": -0.2669,
+"pursuit": 0.2603,
+"orbit": 0.3532,
+"encircle": 0.6522,
+"converge": -0.0655,
+"coherence": 0.894,
+"speed_rel": 1.6437,
+"accel_rel": 3.7392,
+"jerk_rel": 0.1894,
+"curvature": 1.4088,
+"synchrony": 0.3564,
+"regularity": 0.5069,
+"stillness": 0.0002,
 "burst": 0.0,
-"bounce": 0.048,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.4861,
-"mimicry": 0.8676,
-"speed_cv": 0.2849,
+"bounce": 0.0982,
+"wobble_hz": 5.0,
+"approach_retreat": 2.9444,
+"unpredict": 0.5633,
+"mimicry": 0.5782,
+"speed_cv": 0.3489,
+"tracking": 0.2896,
+"mass_log": 1.892,
+"sneak": 0.1154,
 "roundness_known": 1.0
 }
 },
@@ -19449,34 +20907,37 @@
 "seed": 1093,
 "f": {
 "size_log": -0.1353,
-"extent_log": 1.2986,
+"extent_log": 4.4709,
 "roundness": 0.5037,
 "count_log": 6.8704,
-"approach": -0.1498,
-"loom": 3.1479,
-"tau_inv": 0.9328,
+"approach": 0.0309,
+"loom": 3.1952,
+"tau_inv": 2.9663,
 "view_fill": 1.0,
-"proximity": 0.9975,
-"gaze": -0.3648,
-"pursuit": 0.051,
-"orbit": 0.6561,
-"encircle": 0.4605,
-"converge": 0.0276,
-"coherence": 0.6147,
-"speed_rel": 0.4016,
-"accel_rel": 4.4463,
-"jerk_rel": 1.5693,
-"curvature": 10.0744,
-"synchrony": -0.002,
-"regularity": 0.3807,
-"stillness": 0.0063,
+"proximity": 0.9914,
+"gaze": 0.0124,
+"pursuit": 0.46,
+"orbit": 0.2334,
+"encircle": 0.8797,
+"converge": 0.0281,
+"coherence": 0.8612,
+"speed_rel": 0.975,
+"accel_rel": 1.012,
+"jerk_rel": 0.1699,
+"curvature": 0.8243,
+"synchrony": 0.4149,
+"regularity": 0.6622,
+"stillness": 0.002,
 "burst": 0.0,
-"bounce": 0.1108,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8227,
+"bounce": 0.103,
+"wobble_hz": 5.0,
+"approach_retreat": 3.0445,
+"unpredict": 0.2203,
 "mimicry": 0.0,
-"speed_cv": 0.4478,
+"speed_cv": 0.2317,
+"tracking": 0.3945,
+"mass_log": 2.1507,
+"sneak": 0.011,
 "roundness_known": 1.0
 }
 },
@@ -19489,34 +20950,37 @@
 "seed": 1094,
 "f": {
 "size_log": -0.0444,
-"extent_log": 1.1898,
+"extent_log": 4.5003,
 "roundness": 0.5846,
 "count_log": 5.9542,
-"approach": -0.8905,
-"loom": 0.4691,
-"tau_inv": 0.2977,
-"view_fill": 0.8535,
-"proximity": 0.9144,
-"gaze": -0.8934,
-"pursuit": 0.0052,
-"orbit": 0.3318,
-"encircle": 0.0314,
-"converge": 0.0027,
-"coherence": 0.9304,
-"speed_rel": 0.985,
-"accel_rel": 4.3084,
-"jerk_rel": 0.5463,
-"curvature": 3.5983,
-"synchrony": 0.0155,
-"regularity": 0.5119,
-"stillness": 0.0,
+"approach": -0.2582,
+"loom": 1.7884,
+"tau_inv": 3.2263,
+"view_fill": 1.0,
+"proximity": 0.9854,
+"gaze": -0.23,
+"pursuit": 0.2484,
+"orbit": 0.3969,
+"encircle": 0.681,
+"converge": -0.0839,
+"coherence": 0.8658,
+"speed_rel": 1.515,
+"accel_rel": 2.0425,
+"jerk_rel": 0.1147,
+"curvature": 0.8582,
+"synchrony": 0.3869,
+"regularity": 0.5116,
+"stillness": 0.0003,
 "burst": 0.0,
-"bounce": 0.0409,
-"wobble_hz": 0.0,
-"approach_retreat": 0.0,
-"unpredict": 0.4417,
-"mimicry": 0.876,
-"speed_cv": 0.2607,
+"bounce": 0.1063,
+"wobble_hz": 5.0,
+"approach_retreat": 2.9444,
+"unpredict": 0.5341,
+"mimicry": 0.567,
+"speed_cv": 0.3579,
+"tracking": 0.309,
+"mass_log": 1.9326,
+"sneak": 0.0614,
 "roundness_known": 1.0
 }
 },
@@ -19529,34 +20993,37 @@
 "seed": 1124,
 "f": {
 "size_log": -0.785,
-"extent_log": 0.978,
+"extent_log": 3.8407,
 "roundness": 0.4543,
 "count_log": 6.0875,
-"approach": -0.1837,
-"loom": 2.7208,
-"tau_inv": 2.4899,
+"approach": -0.037,
+"loom": 2.4079,
+"tau_inv": 3.1916,
 "view_fill": 1.0,
-"proximity": 0.997,
-"gaze": -0.3795,
-"pursuit": 0.0543,
-"orbit": 0.6292,
-"encircle": 0.3941,
-"converge": 0.0297,
-"coherence": 0.5422,
-"speed_rel": 0.452,
-"accel_rel": 5.5692,
-"jerk_rel": 1.682,
-"curvature": 11.1733,
-"synchrony": -0.0012,
-"regularity": 0.3761,
-"stillness": 0.0066,
+"proximity": 0.9941,
+"gaze": -0.0747,
+"pursuit": 0.3992,
+"orbit": 0.2494,
+"encircle": 0.7919,
+"converge": -0.0018,
+"coherence": 0.7534,
+"speed_rel": 0.975,
+"accel_rel": 1.3768,
+"jerk_rel": 0.2833,
+"curvature": 1.1913,
+"synchrony": 0.4576,
+"regularity": 0.6324,
+"stillness": 0.0006,
 "burst": 0.0,
-"bounce": 0.071,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8636,
-"mimicry": 0.0014,
-"speed_cv": 0.4442,
+"bounce": 0.0828,
+"wobble_hz": 5.0,
+"approach_retreat": 3.0445,
+"unpredict": 0.3522,
+"mimicry": 0.0009,
+"speed_cv": 0.273,
+"tracking": 0.2448,
+"mass_log": 1.237,
+"sneak": 0.0748,
 "roundness_known": 1.0
 }
 },
@@ -19569,34 +21036,37 @@
 "seed": 1125,
 "f": {
 "size_log": -0.3191,
-"extent_log": 1.1649,
+"extent_log": 4.4668,
 "roundness": 0.445,
 "count_log": 6.4594,
-"approach": -0.8894,
-"loom": 0.4555,
-"tau_inv": 0.317,
-"view_fill": 0.8577,
-"proximity": 0.9258,
-"gaze": -0.8705,
-"pursuit": 0.0043,
-"orbit": 0.3753,
-"encircle": 0.0379,
-"converge": 0.0031,
-"coherence": 0.9177,
-"speed_rel": 1.0111,
-"accel_rel": 4.7388,
-"jerk_rel": 0.5909,
-"curvature": 3.8858,
-"synchrony": 0.0108,
-"regularity": 0.502,
-"stillness": 0.0,
+"approach": -0.0525,
+"loom": 1.8959,
+"tau_inv": 4.0581,
+"view_fill": 1.0,
+"proximity": 0.9852,
+"gaze": -0.071,
+"pursuit": 0.3401,
+"orbit": 0.3915,
+"encircle": 0.7475,
+"converge": -0.0067,
+"coherence": 0.8743,
+"speed_rel": 1.7772,
+"accel_rel": 3.0869,
+"jerk_rel": 0.1558,
+"curvature": 1.335,
+"synchrony": 0.3277,
+"regularity": 0.5187,
+"stillness": 0.0003,
 "burst": 0.0,
-"bounce": 0.0506,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.4981,
-"mimicry": 0.8572,
-"speed_cv": 0.2694,
+"bounce": 0.1276,
+"wobble_hz": 5.0,
+"approach_retreat": 3.2189,
+"unpredict": 0.636,
+"mimicry": 0.5342,
+"speed_cv": 0.3083,
+"tracking": 0.2848,
+"mass_log": 1.8285,
+"sneak": -0.0277,
 "roundness_known": 1.0
 }
 },
@@ -19609,34 +21079,37 @@
 "seed": 1155,
 "f": {
 "size_log": -0.7392,
-"extent_log": 1.1069,
+"extent_log": 4.0327,
 "roundness": 0.5938,
 "count_log": 6.7279,
-"approach": -0.1761,
-"loom": 3.1421,
-"tau_inv": 2.0729,
+"approach": -0.0649,
+"loom": 2.8136,
+"tau_inv": 3.1007,
 "view_fill": 1.0,
-"proximity": 0.9975,
-"gaze": -0.3477,
-"pursuit": 0.047,
-"orbit": 0.6492,
-"encircle": 0.4481,
-"converge": 0.0234,
-"coherence": 0.54,
-"speed_rel": 0.4486,
-"accel_rel": 5.4814,
-"jerk_rel": 1.681,
-"curvature": 11.1442,
-"synchrony": -0.0025,
-"regularity": 0.3733,
-"stillness": 0.0052,
+"proximity": 0.9947,
+"gaze": -0.1007,
+"pursuit": 0.3901,
+"orbit": 0.2349,
+"encircle": 0.8175,
+"converge": -0.0096,
+"coherence": 0.8107,
+"speed_rel": 0.975,
+"accel_rel": 0.8366,
+"jerk_rel": 0.2082,
+"curvature": 0.677,
+"synchrony": 0.3973,
+"regularity": 0.6462,
+"stillness": 0.001,
 "burst": 0.0,
-"bounce": 0.0699,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8705,
-"mimicry": 0.0003,
-"speed_cv": 0.4404,
+"bounce": 0.0791,
+"wobble_hz": 5.0,
+"approach_retreat": 3.0445,
+"unpredict": 0.3262,
+"mimicry": 0.0,
+"speed_cv": 0.2684,
+"tracking": 0.2593,
+"mass_log": 1.4989,
+"sneak": 0.0419,
 "roundness_known": 1.0
 }
 },
@@ -19649,34 +21122,37 @@
 "seed": 1156,
 "f": {
 "size_log": -0.0139,
-"extent_log": 1.316,
+"extent_log": 4.4373,
 "roundness": 0.6151,
 "count_log": 6.7004,
-"approach": -0.8839,
-"loom": 0.7177,
-"tau_inv": 0.3233,
-"view_fill": 0.9975,
-"proximity": 0.9355,
-"gaze": -0.8776,
-"pursuit": 0.0046,
-"orbit": 0.3599,
-"encircle": 0.039,
-"converge": 0.0029,
-"coherence": 0.9305,
-"speed_rel": 0.9961,
-"accel_rel": 4.2632,
-"jerk_rel": 0.5292,
-"curvature": 3.5389,
-"synchrony": 0.0455,
-"regularity": 0.5106,
-"stillness": 0.0,
+"approach": -0.1502,
+"loom": 2.2176,
+"tau_inv": 3.2682,
+"view_fill": 1.0,
+"proximity": 0.989,
+"gaze": -0.1438,
+"pursuit": 0.3196,
+"orbit": 0.3435,
+"encircle": 0.7381,
+"converge": -0.0326,
+"coherence": 0.8796,
+"speed_rel": 1.8327,
+"accel_rel": 2.4059,
+"jerk_rel": 0.1117,
+"curvature": 1.0333,
+"synchrony": 0.3492,
+"regularity": 0.517,
+"stillness": 0.0001,
 "burst": 0.0,
-"bounce": 0.077,
+"bounce": 0.1176,
 "wobble_hz": 5.0,
-"approach_retreat": 0.0,
-"unpredict": 0.4759,
-"mimicry": 0.8778,
-"speed_cv": 0.2623,
+"approach_retreat": 3.1355,
+"unpredict": 0.6106,
+"mimicry": 0.5528,
+"speed_cv": 0.3192,
+"tracking": 0.2779,
+"mass_log": 2.2149,
+"sneak": 0.0456,
 "roundness_known": 1.0
 }
 },
@@ -19689,34 +21165,37 @@
 "seed": 1186,
 "f": {
 "size_log": -0.7454,
-"extent_log": 0.9199,
+"extent_log": 4.2169,
 "roundness": 0.4164,
 "count_log": 5.7004,
-"approach": -0.2059,
-"loom": 2.3129,
-"tau_inv": 2.0255,
+"approach": 0.0011,
+"loom": 1.7739,
+"tau_inv": 3.6055,
 "view_fill": 1.0,
-"proximity": 0.9969,
-"gaze": -0.4221,
-"pursuit": 0.0424,
-"orbit": 0.6346,
-"encircle": 0.3306,
-"converge": 0.0252,
-"coherence": 0.542,
-"speed_rel": 0.4437,
-"accel_rel": 5.4932,
-"jerk_rel": 1.7122,
-"curvature": 11.1734,
-"synchrony": 0.0031,
-"regularity": 0.3805,
-"stillness": 0.0056,
+"proximity": 0.9892,
+"gaze": -0.0171,
+"pursuit": 0.447,
+"orbit": 0.2477,
+"encircle": 0.8112,
+"converge": -0.0085,
+"coherence": 0.7559,
+"speed_rel": 0.975,
+"accel_rel": 1.4766,
+"jerk_rel": 0.2651,
+"curvature": 1.1938,
+"synchrony": 0.4196,
+"regularity": 0.6561,
+"stillness": 0.0001,
 "burst": 0.0,
-"bounce": 0.0657,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8718,
-"mimicry": 0.0472,
-"speed_cv": 0.4328,
+"bounce": 0.1028,
+"wobble_hz": 5.0,
+"approach_retreat": 3.1355,
+"unpredict": 0.2879,
+"mimicry": 0.0229,
+"speed_cv": 0.2334,
+"tracking": 0.3399,
+"mass_log": 1.1454,
+"sneak": 0.0462,
 "roundness_known": 1.0
 }
 },
@@ -19729,34 +21208,37 @@
 "seed": 1187,
 "f": {
 "size_log": -0.4935,
-"extent_log": 1.1651,
+"extent_log": 4.8533,
 "roundness": 0.4454,
 "count_log": 6.6865,
-"approach": -0.8769,
-"loom": 0.5787,
-"tau_inv": 0.4473,
-"view_fill": 0.8556,
-"proximity": 0.9448,
-"gaze": -0.8596,
-"pursuit": 0.0107,
-"orbit": 0.3717,
-"encircle": 0.0497,
-"converge": 0.0068,
-"coherence": 0.9083,
-"speed_rel": 1.011,
-"accel_rel": 5.0341,
-"jerk_rel": 0.6354,
-"curvature": 4.1485,
-"synchrony": 0.0235,
-"regularity": 0.4835,
+"approach": -0.1021,
+"loom": 1.7245,
+"tau_inv": 3.1683,
+"view_fill": 1.0,
+"proximity": 0.9828,
+"gaze": -0.0901,
+"pursuit": 0.3158,
+"orbit": 0.4063,
+"encircle": 0.8078,
+"converge": -0.0792,
+"coherence": 0.9082,
+"speed_rel": 1.7504,
+"accel_rel": 2.293,
+"jerk_rel": 0.1532,
+"curvature": 1.1603,
+"synchrony": 0.3887,
+"regularity": 0.5385,
 "stillness": 0.0,
 "burst": 0.0,
-"bounce": 0.0595,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.4977,
-"mimicry": 0.8443,
-"speed_cv": 0.2851,
+"bounce": 0.1071,
+"wobble_hz": 5.0,
+"approach_retreat": 3.2189,
+"unpredict": 0.5449,
+"mimicry": 0.5323,
+"speed_cv": 0.3103,
+"tracking": 0.2304,
+"mass_log": 1.7306,
+"sneak": -0.0706,
 "roundness_known": 1.0
 }
 },
@@ -19769,34 +21251,37 @@
 "seed": 1217,
 "f": {
 "size_log": -0.6417,
-"extent_log": 1.169,
+"extent_log": 4.5149,
 "roundness": 0.4085,
 "count_log": 6.9189,
-"approach": -0.1638,
-"loom": 3.294,
-"tau_inv": 1.8751,
+"approach": 0.0252,
+"loom": 2.4526,
+"tau_inv": 3.5923,
 "view_fill": 1.0,
-"proximity": 0.9974,
-"gaze": -0.3271,
-"pursuit": 0.0555,
-"orbit": 0.6542,
-"encircle": 0.4835,
-"converge": 0.0262,
-"coherence": 0.5461,
-"speed_rel": 0.4522,
-"accel_rel": 5.2992,
-"jerk_rel": 1.6291,
-"curvature": 10.6856,
-"synchrony": -0.0018,
-"regularity": 0.3756,
-"stillness": 0.0056,
+"proximity": 0.9897,
+"gaze": 0.0152,
+"pursuit": 0.4614,
+"orbit": 0.2434,
+"encircle": 0.8639,
+"converge": 0.0144,
+"coherence": 0.866,
+"speed_rel": 0.975,
+"accel_rel": 1.1952,
+"jerk_rel": 0.2101,
+"curvature": 0.9276,
+"synchrony": 0.4343,
+"regularity": 0.667,
+"stillness": 0.0003,
 "burst": 0.0,
-"bounce": 0.0714,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8709,
-"mimicry": 0.3532,
-"speed_cv": 0.4374,
+"bounce": 0.1235,
+"wobble_hz": 5.0,
+"approach_retreat": 3.2189,
+"unpredict": 0.2935,
+"mimicry": 0.1604,
+"speed_cv": 0.232,
+"tracking": 0.4417,
+"mass_log": 1.6606,
+"sneak": 0.0038,
 "roundness_known": 1.0
 }
 },
@@ -19809,34 +21294,37 @@
 "seed": 1218,
 "f": {
 "size_log": -0.0018,
-"extent_log": 1.1733,
+"extent_log": 4.925,
 "roundness": 0.3997,
 "count_log": 5.8329,
-"approach": -0.8893,
-"loom": 0.5241,
-"tau_inv": 0.3843,
-"view_fill": 0.8512,
-"proximity": 0.9161,
-"gaze": -0.8929,
-"pursuit": 0.0052,
-"orbit": 0.3313,
-"encircle": 0.0317,
-"converge": 0.0029,
-"coherence": 0.9325,
-"speed_rel": 0.9823,
-"accel_rel": 4.2452,
-"jerk_rel": 0.5308,
-"curvature": 3.5518,
-"synchrony": 0.0374,
-"regularity": 0.5127,
-"stillness": 0.0001,
+"approach": -0.026,
+"loom": 1.4781,
+"tau_inv": 3.3513,
+"view_fill": 1.0,
+"proximity": 0.9753,
+"gaze": -0.0558,
+"pursuit": 0.323,
+"orbit": 0.4087,
+"encircle": 0.6684,
+"converge": -0.0082,
+"coherence": 0.8678,
+"speed_rel": 1.7443,
+"accel_rel": 1.6548,
+"jerk_rel": 0.0964,
+"curvature": 0.7909,
+"synchrony": 0.3763,
+"regularity": 0.5446,
+"stillness": 0.0002,
 "burst": 0.0,
-"bounce": 0.0555,
+"bounce": 0.0927,
 "wobble_hz": 5.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.4435,
-"mimicry": 0.8665,
-"speed_cv": 0.264,
+"approach_retreat": 3.0445,
+"unpredict": 0.4829,
+"mimicry": 0.5298,
+"speed_cv": 0.3323,
+"tracking": 0.3134,
+"mass_log": 1.934,
+"sneak": -0.0479,
 "roundness_known": 1.0
 }
 },
@@ -19849,34 +21337,37 @@
 "seed": 1248,
 "f": {
 "size_log": -0.9275,
-"extent_log": 1.0892,
+"extent_log": 4.2455,
 "roundness": 0.4353,
 "count_log": 6.8329,
-"approach": -0.1709,
-"loom": 3.1419,
-"tau_inv": 2.5127,
+"approach": -0.0193,
+"loom": 2.3291,
+"tau_inv": 2.9553,
 "view_fill": 1.0,
-"proximity": 0.9974,
-"gaze": -0.3207,
-"pursuit": 0.0598,
-"orbit": 0.6511,
-"encircle": 0.4832,
-"converge": 0.0293,
-"coherence": 0.5223,
-"speed_rel": 0.477,
-"accel_rel": 5.8512,
-"jerk_rel": 1.6754,
-"curvature": 11.03,
-"synchrony": -0.0007,
-"regularity": 0.381,
-"stillness": 0.0049,
+"proximity": 0.9935,
+"gaze": -0.0516,
+"pursuit": 0.4208,
+"orbit": 0.2541,
+"encircle": 0.837,
+"converge": 0.0077,
+"coherence": 0.8337,
+"speed_rel": 0.975,
+"accel_rel": 1.2534,
+"jerk_rel": 0.2683,
+"curvature": 1.0722,
+"synchrony": 0.3582,
+"regularity": 0.623,
+"stillness": 0.0001,
 "burst": 0.0,
-"bounce": 0.0876,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8851,
-"mimicry": 0.0,
-"speed_cv": 0.4294,
+"bounce": 0.0677,
+"wobble_hz": 5.0,
+"approach_retreat": 2.9444,
+"unpredict": 0.237,
+"mimicry": 0.0003,
+"speed_cv": 0.2484,
+"tracking": 0.3007,
+"mass_log": 1.3458,
+"sneak": 0.0404,
 "roundness_known": 1.0
 }
 },
@@ -19889,34 +21380,37 @@
 "seed": 1249,
 "f": {
 "size_log": -0.3727,
-"extent_log": 1.1628,
+"extent_log": 4.2775,
 "roundness": 0.6112,
 "count_log": 6.4094,
-"approach": -0.8935,
-"loom": 0.485,
-"tau_inv": 0.3615,
-"view_fill": 0.8358,
-"proximity": 0.9319,
-"gaze": -0.886,
-"pursuit": 0.0037,
-"orbit": 0.3434,
-"encircle": 0.0346,
-"converge": 0.001,
-"coherence": 0.9107,
-"speed_rel": 0.9868,
-"accel_rel": 4.8277,
-"jerk_rel": 0.6161,
-"curvature": 3.9855,
-"synchrony": 0.0117,
-"regularity": 0.4834,
-"stillness": 0.0,
+"approach": -0.1753,
+"loom": 2.0246,
+"tau_inv": 3.9188,
+"view_fill": 1.0,
+"proximity": 0.9875,
+"gaze": -0.1782,
+"pursuit": 0.2848,
+"orbit": 0.3697,
+"encircle": 0.7065,
+"converge": 0.0022,
+"coherence": 0.8835,
+"speed_rel": 1.6199,
+"accel_rel": 2.1999,
+"jerk_rel": 0.1345,
+"curvature": 0.9542,
+"synchrony": 0.4265,
+"regularity": 0.5185,
+"stillness": 0.0002,
 "burst": 0.0,
-"bounce": 0.0542,
-"wobble_hz": 0.0,
-"approach_retreat": 0.0,
-"unpredict": 0.4587,
-"mimicry": 0.8382,
-"speed_cv": 0.2788,
+"bounce": 0.1243,
+"wobble_hz": 5.0,
+"approach_retreat": 3.1355,
+"unpredict": 0.5826,
+"mimicry": 0.527,
+"speed_cv": 0.3502,
+"tracking": 0.2782,
+"mass_log": 1.758,
+"sneak": 0.0339,
 "roundness_known": 1.0
 }
 },
@@ -19929,34 +21423,37 @@
 "seed": 1279,
 "f": {
 "size_log": -0.6092,
-"extent_log": 1.1247,
+"extent_log": 4.5469,
 "roundness": 0.4557,
 "count_log": 6.6439,
-"approach": -0.1612,
-"loom": 3.0061,
-"tau_inv": 1.7712,
+"approach": 0.0034,
+"loom": 2.5238,
+"tau_inv": 3.2105,
 "view_fill": 1.0,
-"proximity": 0.9976,
-"gaze": -0.3415,
-"pursuit": 0.0588,
-"orbit": 0.646,
-"encircle": 0.4529,
-"converge": 0.0317,
-"coherence": 0.5635,
-"speed_rel": 0.4451,
-"accel_rel": 5.2401,
-"jerk_rel": 1.6235,
-"curvature": 10.7476,
-"synchrony": -0.0018,
-"regularity": 0.3788,
-"stillness": 0.0054,
+"proximity": 0.9901,
+"gaze": -0.0207,
+"pursuit": 0.4352,
+"orbit": 0.2527,
+"encircle": 0.8018,
+"converge": -0.0157,
+"coherence": 0.8474,
+"speed_rel": 0.975,
+"accel_rel": 0.9054,
+"jerk_rel": 0.1851,
+"curvature": 0.7897,
+"synchrony": 0.3516,
+"regularity": 0.6267,
+"stillness": 0.0017,
 "burst": 0.0,
-"bounce": 0.0651,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8624,
-"mimicry": 0.3519,
-"speed_cv": 0.4457,
+"bounce": 0.0691,
+"wobble_hz": 5.0,
+"approach_retreat": 2.9444,
+"unpredict": 0.2087,
+"mimicry": 0.1457,
+"speed_cv": 0.2587,
+"tracking": 0.3897,
+"mass_log": 1.6005,
+"sneak": -0.0013,
 "roundness_known": 1.0
 }
 },
@@ -19969,34 +21466,37 @@
 "seed": 1280,
 "f": {
 "size_log": -0.0719,
-"extent_log": 1.2457,
+"extent_log": 4.5492,
 "roundness": 0.3892,
 "count_log": 6.3219,
-"approach": -0.8905,
-"loom": 0.515,
-"tau_inv": 0.3002,
-"view_fill": 0.9078,
-"proximity": 0.9245,
-"gaze": -0.8948,
-"pursuit": 0.0043,
-"orbit": 0.33,
-"encircle": 0.0338,
-"converge": 0.0015,
-"coherence": 0.9232,
-"speed_rel": 0.9783,
-"accel_rel": 4.3496,
-"jerk_rel": 0.5559,
-"curvature": 3.6177,
-"synchrony": 0.0132,
-"regularity": 0.5011,
-"stillness": 0.0,
+"approach": -0.0886,
+"loom": 2.1884,
+"tau_inv": 3.2996,
+"view_fill": 1.0,
+"proximity": 0.9878,
+"gaze": -0.1118,
+"pursuit": 0.3127,
+"orbit": 0.3595,
+"encircle": 0.7105,
+"converge": -0.0007,
+"coherence": 0.8703,
+"speed_rel": 1.7432,
+"accel_rel": 1.7382,
+"jerk_rel": 0.0981,
+"curvature": 0.7868,
+"synchrony": 0.3426,
+"regularity": 0.5017,
+"stillness": 0.0001,
 "burst": 0.0,
-"bounce": 0.0513,
+"bounce": 0.1094,
 "wobble_hz": 5.0,
-"approach_retreat": 0.0,
-"unpredict": 0.4393,
-"mimicry": 0.8742,
-"speed_cv": 0.2645,
+"approach_retreat": 3.0445,
+"unpredict": 0.5433,
+"mimicry": 0.5361,
+"speed_cv": 0.35,
+"tracking": 0.2738,
+"mass_log": 2.0294,
+"sneak": 0.0092,
 "roundness_known": 1.0
 }
 },
@@ -20009,34 +21509,37 @@
 "seed": 1310,
 "f": {
 "size_log": -0.2326,
-"extent_log": 1.1552,
+"extent_log": 4.141,
 "roundness": 0.452,
 "count_log": 6.2288,
-"approach": -0.165,
-"loom": 2.9263,
-"tau_inv": 1.3758,
+"approach": 0.0276,
+"loom": 3.2021,
+"tau_inv": 3.6797,
 "view_fill": 1.0,
-"proximity": 0.9972,
-"gaze": -0.4018,
-"pursuit": 0.053,
-"orbit": 0.6382,
-"encircle": 0.3947,
-"converge": 0.0313,
-"coherence": 0.6041,
-"speed_rel": 0.4056,
-"accel_rel": 4.5989,
-"jerk_rel": 1.5904,
-"curvature": 10.2412,
-"synchrony": -0.0048,
-"regularity": 0.3802,
-"stillness": 0.0067,
+"proximity": 0.995,
+"gaze": 0.0025,
+"pursuit": 0.4511,
+"orbit": 0.2375,
+"encircle": 0.8297,
+"converge": 0.0325,
+"coherence": 0.8087,
+"speed_rel": 0.975,
+"accel_rel": 1.5444,
+"jerk_rel": 0.2566,
+"curvature": 1.2864,
+"synchrony": 0.4846,
+"regularity": 0.6138,
+"stillness": 0.0038,
 "burst": 0.0,
-"bounce": 0.0616,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8266,
-"mimicry": 0.0023,
-"speed_cv": 0.447,
+"bounce": 0.1108,
+"wobble_hz": 5.0,
+"approach_retreat": 3.0445,
+"unpredict": 0.3197,
+"mimicry": 0.0,
+"speed_cv": 0.2738,
+"tracking": 0.3183,
+"mass_log": 1.8372,
+"sneak": 0.0677,
 "roundness_known": 1.0
 }
 },
@@ -20049,34 +21552,37 @@
 "seed": 1311,
 "f": {
 "size_log": -0.2526,
-"extent_log": 1.1283,
+"extent_log": 4.3661,
 "roundness": 0.4984,
 "count_log": 6.0875,
-"approach": -0.889,
-"loom": 0.4282,
-"tau_inv": 0.3447,
-"view_fill": 0.8247,
-"proximity": 0.9221,
-"gaze": -0.885,
-"pursuit": 0.0047,
-"orbit": 0.3472,
-"encircle": 0.0338,
-"converge": 0.0038,
-"coherence": 0.9197,
-"speed_rel": 0.9923,
-"accel_rel": 4.6307,
-"jerk_rel": 0.5892,
-"curvature": 3.8928,
-"synchrony": 0.0155,
-"regularity": 0.5027,
-"stillness": 0.0,
+"approach": -0.2757,
+"loom": 1.9264,
+"tau_inv": 3.6035,
+"view_fill": 1.0,
+"proximity": 0.9847,
+"gaze": -0.2375,
+"pursuit": 0.2519,
+"orbit": 0.3792,
+"encircle": 0.6923,
+"converge": -0.0822,
+"coherence": 0.873,
+"speed_rel": 1.5988,
+"accel_rel": 3.139,
+"jerk_rel": 0.1737,
+"curvature": 1.3106,
+"synchrony": 0.3578,
+"regularity": 0.5036,
+"stillness": 0.0001,
 "burst": 0.0,
-"bounce": 0.0441,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.4534,
-"mimicry": 0.8295,
-"speed_cv": 0.2727,
+"bounce": 0.1102,
+"wobble_hz": 5.0,
+"approach_retreat": 3.0445,
+"unpredict": 0.537,
+"mimicry": 0.5078,
+"speed_cv": 0.3496,
+"tracking": 0.2668,
+"mass_log": 1.7695,
+"sneak": 0.0414,
 "roundness_known": 1.0
 }
 },
@@ -20089,34 +21595,37 @@
 "seed": 1341,
 "f": {
 "size_log": -0.8798,
-"extent_log": 1.0548,
+"extent_log": 4.3975,
 "roundness": 0.3903,
 "count_log": 6.585,
-"approach": -0.1815,
-"loom": 2.9607,
-"tau_inv": 2.3999,
+"approach": -0.0472,
+"loom": 2.1836,
+"tau_inv": 2.9235,
 "view_fill": 1.0,
-"proximity": 0.9978,
-"gaze": -0.3455,
-"pursuit": 0.0536,
-"orbit": 0.6493,
-"encircle": 0.4472,
-"converge": 0.0263,
-"coherence": 0.5234,
-"speed_rel": 0.467,
-"accel_rel": 5.7552,
-"jerk_rel": 1.693,
-"curvature": 11.1416,
-"synchrony": 0.0017,
-"regularity": 0.3774,
-"stillness": 0.0054,
+"proximity": 0.992,
+"gaze": -0.0775,
+"pursuit": 0.4077,
+"orbit": 0.2527,
+"encircle": 0.8344,
+"converge": -0.0206,
+"coherence": 0.8214,
+"speed_rel": 0.975,
+"accel_rel": 1.0493,
+"jerk_rel": 0.2395,
+"curvature": 0.8568,
+"synchrony": 0.3251,
+"regularity": 0.6105,
+"stillness": 0.0022,
 "burst": 0.0,
-"bounce": 0.0786,
-"wobble_hz": 0.0,
-"approach_retreat": 1.0986,
-"unpredict": 0.8843,
-"mimicry": 0.0001,
-"speed_cv": 0.4304,
+"bounce": 0.0617,
+"wobble_hz": 5.0,
+"approach_retreat": 2.9444,
+"unpredict": 0.2423,
+"mimicry": 0.0011,
+"speed_cv": 0.2661,
+"tracking": 0.3518,
+"mass_log": 1.3102,
+"sneak": 0.0102,
 "roundness_known": 1.0
 }
 },
@@ -20129,34 +21638,37 @@
 "seed": 1342,
 "f": {
 "size_log": -0.6292,
-"extent_log": 0.9291,
+"extent_log": 3.8821,
 "roundness": 0.583,
 "count_log": 5.7004,
-"approach": -0.8915,
-"loom": 0.3251,
-"tau_inv": 0.4255,
-"view_fill": 0.6693,
-"proximity": 0.9118,
-"gaze": -0.8856,
-"pursuit": 0.0074,
-"orbit": 0.3392,
-"encircle": 0.0338,
-"converge": 0.0038,
-"coherence": 0.909,
-"speed_rel": 0.9941,
-"accel_rel": 5.2764,
-"jerk_rel": 0.6789,
-"curvature": 4.3508,
-"synchrony": 0.0105,
-"regularity": 0.4825,
-"stillness": 0.0,
+"approach": -0.1944,
+"loom": 1.5216,
+"tau_inv": 4.422,
+"view_fill": 0.8894,
+"proximity": 0.9873,
+"gaze": -0.2157,
+"pursuit": 0.2971,
+"orbit": 0.33,
+"encircle": 0.6243,
+"converge": 0.0053,
+"coherence": 0.8399,
+"speed_rel": 1.7418,
+"accel_rel": 3.6149,
+"jerk_rel": 0.2127,
+"curvature": 1.4572,
+"synchrony": 0.3627,
+"regularity": 0.4974,
+"stillness": 0.0001,
 "burst": 0.0,
-"bounce": 0.0169,
-"wobble_hz": 0.0,
-"approach_retreat": 0.0,
-"unpredict": 0.4623,
-"mimicry": 0.8574,
-"speed_cv": 0.2816,
+"bounce": 0.1084,
+"wobble_hz": 5.0,
+"approach_retreat": 3.0445,
+"unpredict": 0.5885,
+"mimicry": 0.5513,
+"speed_cv": 0.3498,
+"tracking": 0.2825,
+"mass_log": 1.2616,
+"sneak": 0.1671,
 "roundness_known": 1.0
 }
 },
@@ -20197,6 +21709,9 @@
 "unpredict": 0.3194,
 "mimicry": 0.0,
 "speed_cv": 0.5891,
+"tracking": 0.2886,
+"mass_log": 2.0105,
+"sneak": 0.101,
 "roundness_known": 1.0
 }
 },
@@ -20237,6 +21752,9 @@
 "unpredict": 0.1745,
 "mimicry": 0.7632,
 "speed_cv": 0.3863,
+"tracking": 0.345,
+"mass_log": 2.5689,
+"sneak": 0.2008,
 "roundness_known": 1.0
 }
 },
@@ -20277,6 +21795,9 @@
 "unpredict": 0.2175,
 "mimicry": 0.0017,
 "speed_cv": 0.4474,
+"tracking": 0.2704,
+"mass_log": 2.0669,
+"sneak": 0.0779,
 "roundness_known": 1.0
 }
 },
@@ -20317,6 +21838,9 @@
 "unpredict": 0.2901,
 "mimicry": 0.6164,
 "speed_cv": 0.4208,
+"tracking": 0.2783,
+"mass_log": 1.6286,
+"sneak": 0.22,
 "roundness_known": 1.0
 }
 },
@@ -20357,6 +21881,9 @@
 "unpredict": 0.1412,
 "mimicry": 0.0079,
 "speed_cv": 0.5581,
+"tracking": 0.2721,
+"mass_log": 1.7763,
+"sneak": 0.1377,
 "roundness_known": 1.0
 }
 },
@@ -20397,6 +21924,9 @@
 "unpredict": 0.213,
 "mimicry": 0.6751,
 "speed_cv": 0.4069,
+"tracking": 0.276,
+"mass_log": 1.4043,
+"sneak": 0.2294,
 "roundness_known": 1.0
 }
 },
@@ -20437,6 +21967,9 @@
 "unpredict": 0.1902,
 "mimicry": 0.0,
 "speed_cv": 0.6431,
+"tracking": 0.3127,
+"mass_log": 2.1594,
+"sneak": 0.0771,
 "roundness_known": 1.0
 }
 },
@@ -20477,6 +22010,9 @@
 "unpredict": 0.1944,
 "mimicry": 0.7265,
 "speed_cv": 0.3747,
+"tracking": 0.2998,
+"mass_log": 2.2123,
+"sneak": 0.1615,
 "roundness_known": 1.0
 }
 },
@@ -20517,6 +22053,9 @@
 "unpredict": 0.3204,
 "mimicry": 0.0002,
 "speed_cv": 0.4735,
+"tracking": 0.2787,
+"mass_log": 2.2931,
+"sneak": 0.0639,
 "roundness_known": 1.0
 }
 },
@@ -20557,6 +22096,9 @@
 "unpredict": 0.2122,
 "mimicry": 0.5931,
 "speed_cv": 0.4312,
+"tracking": 0.2547,
+"mass_log": 2.4241,
+"sneak": 0.2834,
 "roundness_known": 1.0
 }
 },
@@ -20597,6 +22139,9 @@
 "unpredict": 0.2088,
 "mimicry": 0.0289,
 "speed_cv": 0.6222,
+"tracking": 0.3114,
+"mass_log": 2.4675,
+"sneak": 0.1024,
 "roundness_known": 1.0
 }
 },
@@ -20637,6 +22182,9 @@
 "unpredict": 0.2384,
 "mimicry": 0.6874,
 "speed_cv": 0.4002,
+"tracking": 0.2623,
+"mass_log": 2.0259,
+"sneak": 0.3297,
 "roundness_known": 1.0
 }
 },
@@ -20677,6 +22225,9 @@
 "unpredict": 0.1574,
 "mimicry": 0.0022,
 "speed_cv": 0.4518,
+"tracking": 0.2762,
+"mass_log": 1.5901,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -20717,6 +22268,9 @@
 "unpredict": 0.1785,
 "mimicry": 0.734,
 "speed_cv": 0.4095,
+"tracking": 0.2844,
+"mass_log": 1.6123,
+"sneak": 0.1914,
 "roundness_known": 1.0
 }
 },
@@ -20757,6 +22311,9 @@
 "unpredict": 0.1751,
 "mimicry": 0.0043,
 "speed_cv": 0.5439,
+"tracking": 0.2859,
+"mass_log": 2.1763,
+"sneak": 0.1357,
 "roundness_known": 1.0
 }
 },
@@ -20797,6 +22354,9 @@
 "unpredict": 0.112,
 "mimicry": 0.6328,
 "speed_cv": 0.4443,
+"tracking": 0.2989,
+"mass_log": 0.9674,
+"sneak": 0.2591,
 "roundness_known": 1.0
 }
 },
@@ -20837,6 +22397,9 @@
 "unpredict": 0.188,
 "mimicry": 0.0,
 "speed_cv": 0.5419,
+"tracking": 0.2599,
+"mass_log": 1.964,
+"sneak": 0.1076,
 "roundness_known": 1.0
 }
 },
@@ -20877,6 +22440,9 @@
 "unpredict": 0.1402,
 "mimicry": 0.7517,
 "speed_cv": 0.3777,
+"tracking": 0.309,
+"mass_log": 2.113,
+"sneak": 0.1426,
 "roundness_known": 1.0
 }
 },
@@ -20917,6 +22483,9 @@
 "unpredict": 0.1526,
 "mimicry": 0.0,
 "speed_cv": 0.5929,
+"tracking": 0.2914,
+"mass_log": 1.9732,
+"sneak": 0.1031,
 "roundness_known": 1.0
 }
 },
@@ -20957,6 +22526,9 @@
 "unpredict": 0.2242,
 "mimicry": 0.69,
 "speed_cv": 0.4259,
+"tracking": 0.2888,
+"mass_log": 1.6691,
+"sneak": 0.1837,
 "roundness_known": 1.0
 }
 },
@@ -20997,6 +22569,9 @@
 "unpredict": 0.3072,
 "mimicry": 0.0005,
 "speed_cv": 0.5526,
+"tracking": 0.2787,
+"mass_log": 1.9658,
+"sneak": 0.0407,
 "roundness_known": 1.0
 }
 },
@@ -21037,6 +22612,9 @@
 "unpredict": 0.2216,
 "mimicry": 0.6455,
 "speed_cv": 0.4322,
+"tracking": 0.2882,
+"mass_log": 1.6756,
+"sneak": 0.1908,
 "roundness_known": 1.0
 }
 },
@@ -21077,6 +22655,9 @@
 "unpredict": 0.2784,
 "mimicry": 0.1714,
 "speed_cv": 0.4885,
+"tracking": 0.2641,
+"mass_log": 2.0989,
+"sneak": 0.0575,
 "roundness_known": 1.0
 }
 },
@@ -21117,6 +22698,9 @@
 "unpredict": 0.1768,
 "mimicry": 0.681,
 "speed_cv": 0.4068,
+"tracking": 0.2804,
+"mass_log": 1.9405,
+"sneak": 0.2303,
 "roundness_known": 1.0
 }
 },
@@ -21157,6 +22741,9 @@
 "unpredict": 0.1113,
 "mimicry": 0.0294,
 "speed_cv": 0.8466,
+"tracking": 0.2246,
+"mass_log": 2.6911,
+"sneak": 0.1643,
 "roundness_known": 1.0
 }
 },
@@ -21197,6 +22784,9 @@
 "unpredict": 0.217,
 "mimicry": 0.4203,
 "speed_cv": 0.5408,
+"tracking": 0.2894,
+"mass_log": 3.8135,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -21237,6 +22827,9 @@
 "unpredict": 0.0524,
 "mimicry": 0.0,
 "speed_cv": 0.6083,
+"tracking": 0.2251,
+"mass_log": 2.7605,
+"sneak": 0.1722,
 "roundness_known": 1.0
 }
 },
@@ -21277,6 +22870,9 @@
 "unpredict": 0.3035,
 "mimicry": 0.8104,
 "speed_cv": 0.6609,
+"tracking": 0.2513,
+"mass_log": 3.2535,
+"sneak": -0.4074,
 "roundness_known": 1.0
 }
 },
@@ -21317,6 +22913,9 @@
 "unpredict": 0.1991,
 "mimicry": 0.0,
 "speed_cv": 0.6902,
+"tracking": 0.2145,
+"mass_log": 3.7951,
+"sneak": 0.2552,
 "roundness_known": 1.0
 }
 },
@@ -21357,6 +22956,9 @@
 "unpredict": 0.4664,
 "mimicry": 0.5783,
 "speed_cv": 0.5347,
+"tracking": 0.3284,
+"mass_log": 3.191,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -21397,6 +22999,9 @@
 "unpredict": 0.1719,
 "mimicry": 0.0,
 "speed_cv": 0.6714,
+"tracking": 0.2391,
+"mass_log": 3.8388,
+"sneak": -0.068,
 "roundness_known": 1.0
 }
 },
@@ -21437,6 +23042,9 @@
 "unpredict": 0.3461,
 "mimicry": 0.6641,
 "speed_cv": 0.5959,
+"tracking": 0.3227,
+"mass_log": 3.234,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -21477,6 +23085,9 @@
 "unpredict": 0.1904,
 "mimicry": 0.0,
 "speed_cv": 1.0151,
+"tracking": 0.2292,
+"mass_log": 2.6917,
+"sneak": 0.0669,
 "roundness_known": 1.0
 }
 },
@@ -21517,6 +23128,9 @@
 "unpredict": 0.5999,
 "mimicry": 0.4651,
 "speed_cv": 0.7785,
+"tracking": 0.4034,
+"mass_log": 3.2664,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -21557,6 +23171,9 @@
 "unpredict": 0.169,
 "mimicry": 0.0002,
 "speed_cv": 1.0186,
+"tracking": 0.2313,
+"mass_log": 3.4545,
+"sneak": 0.0532,
 "roundness_known": 1.0
 }
 },
@@ -21597,6 +23214,9 @@
 "unpredict": 0.3147,
 "mimicry": 0.5455,
 "speed_cv": 0.6488,
+"tracking": 0.3294,
+"mass_log": 2.8792,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -21637,6 +23257,9 @@
 "unpredict": 0.0,
 "mimicry": 0.0155,
 "speed_cv": 0.8407,
+"tracking": 0.2408,
+"mass_log": 2.9369,
+"sneak": 0.1775,
 "roundness_known": 1.0
 }
 },
@@ -21677,6 +23300,9 @@
 "unpredict": 0.2233,
 "mimicry": 0.6494,
 "speed_cv": 0.6557,
+"tracking": 0.3841,
+"mass_log": 2.6293,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -21717,6 +23343,9 @@
 "unpredict": 0.2611,
 "mimicry": 0.0,
 "speed_cv": 0.9628,
+"tracking": 0.2425,
+"mass_log": 3.4007,
+"sneak": 0.0547,
 "roundness_known": 1.0
 }
 },
@@ -21757,6 +23386,9 @@
 "unpredict": 0.1788,
 "mimicry": 0.7093,
 "speed_cv": 0.7906,
+"tracking": 0.2593,
+"mass_log": 3.1897,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -21797,6 +23429,9 @@
 "unpredict": 0.2606,
 "mimicry": 0.0287,
 "speed_cv": 0.8116,
+"tracking": 0.2332,
+"mass_log": 3.406,
+"sneak": -0.1069,
 "roundness_known": 1.0
 }
 },
@@ -21837,6 +23472,9 @@
 "unpredict": 0.5428,
 "mimicry": 0.5768,
 "speed_cv": 0.7909,
+"tracking": 0.4083,
+"mass_log": 2.9624,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -21877,6 +23515,9 @@
 "unpredict": 0.2457,
 "mimicry": 0.0,
 "speed_cv": 0.8725,
+"tracking": 0.2389,
+"mass_log": 3.332,
+"sneak": 0.0574,
 "roundness_known": 1.0
 }
 },
@@ -21917,6 +23558,9 @@
 "unpredict": 0.5036,
 "mimicry": 0.5838,
 "speed_cv": 0.89,
+"tracking": 0.3813,
+"mass_log": 3.0314,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -21957,6 +23601,9 @@
 "unpredict": 0.0006,
 "mimicry": 0.023,
 "speed_cv": 0.9363,
+"tracking": 0.2546,
+"mass_log": 2.9657,
+"sneak": -0.1158,
 "roundness_known": 1.0
 }
 },
@@ -21997,6 +23644,9 @@
 "unpredict": 0.4265,
 "mimicry": 0.6572,
 "speed_cv": 0.6984,
+"tracking": 0.3844,
+"mass_log": 3.5134,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -22037,6 +23687,9 @@
 "unpredict": 0.0764,
 "mimicry": 0.0,
 "speed_cv": 0.795,
+"tracking": 0.2382,
+"mass_log": 3.4163,
+"sneak": 0.1948,
 "roundness_known": 1.0
 }
 },
@@ -22077,6 +23730,9 @@
 "unpredict": 0.2638,
 "mimicry": 0.4868,
 "speed_cv": 0.6708,
+"tracking": 0.2727,
+"mass_log": 2.6755,
+"sneak": 0.0,
 "roundness_known": 1.0
 }
 },
@@ -22117,6 +23773,9 @@
 "unpredict": 0.6421,
 "mimicry": 0.0,
 "speed_cv": 0.5183,
+"tracking": 0.2043,
+"mass_log": 2.1481,
+"sneak": 0.0997,
 "roundness_known": 1.0
 }
 },
@@ -22157,6 +23816,9 @@
 "unpredict": 0.48,
 "mimicry": 0.632,
 "speed_cv": 0.5648,
+"tracking": 0.2388,
+"mass_log": 2.4887,
+"sneak": -0.0269,
 "roundness_known": 1.0
 }
 },
@@ -22197,6 +23859,9 @@
 "unpredict": 0.354,
 "mimicry": 0.0067,
 "speed_cv": 0.583,
+"tracking": 0.2891,
+"mass_log": 1.2667,
+"sneak": 0.0181,
 "roundness_known": 1.0
 }
 },
@@ -22237,6 +23902,9 @@
 "unpredict": 0.6482,
 "mimicry": 0.6407,
 "speed_cv": 0.6519,
+"tracking": 0.2105,
+"mass_log": 1.8149,
+"sneak": -0.0034,
 "roundness_known": 1.0
 }
 },
@@ -22277,6 +23945,9 @@
 "unpredict": 0.4926,
 "mimicry": 0.2803,
 "speed_cv": 0.6308,
+"tracking": 0.211,
+"mass_log": 2.2068,
+"sneak": 0.0339,
 "roundness_known": 1.0
 }
 },
@@ -22317,6 +23988,9 @@
 "unpredict": 0.5459,
 "mimicry": 0.5995,
 "speed_cv": 0.609,
+"tracking": 0.219,
+"mass_log": 1.3653,
+"sneak": -0.0202,
 "roundness_known": 1.0
 }
 },
@@ -22357,6 +24031,9 @@
 "unpredict": 0.5655,
 "mimicry": 0.0046,
 "speed_cv": 0.4644,
+"tracking": 0.2626,
+"mass_log": 1.6099,
+"sneak": 0.1436,
 "roundness_known": 1.0
 }
 },
@@ -22397,6 +24074,9 @@
 "unpredict": 0.4973,
 "mimicry": 0.5372,
 "speed_cv": 0.6116,
+"tracking": 0.2268,
+"mass_log": 2.1266,
+"sneak": -0.0302,
 "roundness_known": 1.0
 }
 },
@@ -22437,6 +24117,9 @@
 "unpredict": 0.5895,
 "mimicry": 0.0021,
 "speed_cv": 0.6234,
+"tracking": 0.2485,
+"mass_log": 2.4834,
+"sneak": 0.032,
 "roundness_known": 1.0
 }
 },
@@ -22477,6 +24160,9 @@
 "unpredict": 0.4418,
 "mimicry": 0.6852,
 "speed_cv": 0.729,
+"tracking": 0.2321,
+"mass_log": 1.8233,
+"sneak": -0.1105,
 "roundness_known": 1.0
 }
 },
@@ -22517,6 +24203,9 @@
 "unpredict": 0.3313,
 "mimicry": 0.2762,
 "speed_cv": 0.5528,
+"tracking": 0.2568,
+"mass_log": 1.4521,
+"sneak": 0.1307,
 "roundness_known": 1.0
 }
 },
@@ -22557,6 +24246,9 @@
 "unpredict": 0.3776,
 "mimicry": 0.6521,
 "speed_cv": 0.5958,
+"tracking": 0.2432,
+"mass_log": 1.7059,
+"sneak": 0.0124,
 "roundness_known": 1.0
 }
 },
@@ -22597,6 +24289,9 @@
 "unpredict": 0.5542,
 "mimicry": 0.0013,
 "speed_cv": 0.6157,
+"tracking": 0.2159,
+"mass_log": 1.7157,
+"sneak": 0.0491,
 "roundness_known": 1.0
 }
 },
@@ -22637,6 +24332,9 @@
 "unpredict": 0.3788,
 "mimicry": 0.6659,
 "speed_cv": 0.6833,
+"tracking": 0.2451,
+"mass_log": 2.0411,
+"sneak": -0.1108,
 "roundness_known": 1.0
 }
 },
@@ -22677,6 +24375,9 @@
 "unpredict": 0.357,
 "mimicry": 0.1696,
 "speed_cv": 0.5651,
+"tracking": 0.2535,
+"mass_log": 2.0376,
+"sneak": 0.0523,
 "roundness_known": 1.0
 }
 },
@@ -22717,6 +24418,9 @@
 "unpredict": 0.3912,
 "mimicry": 0.5683,
 "speed_cv": 0.6526,
+"tracking": 0.252,
+"mass_log": 2.4182,
+"sneak": 0.0979,
 "roundness_known": 1.0
 }
 },
@@ -22757,6 +24461,9 @@
 "unpredict": 0.4807,
 "mimicry": 0.0,
 "speed_cv": 0.502,
+"tracking": 0.2299,
+"mass_log": 2.4293,
+"sneak": 0.0941,
 "roundness_known": 1.0
 }
 },
@@ -22797,6 +24504,9 @@
 "unpredict": 0.6011,
 "mimicry": 0.5495,
 "speed_cv": 0.678,
+"tracking": 0.2203,
+"mass_log": 2.1601,
+"sneak": -0.0068,
 "roundness_known": 1.0
 }
 },
@@ -22837,6 +24547,9 @@
 "unpredict": 0.5056,
 "mimicry": 0.2006,
 "speed_cv": 0.6582,
+"tracking": 0.2161,
+"mass_log": 1.6634,
+"sneak": -0.0058,
 "roundness_known": 1.0
 }
 },
@@ -22877,6 +24590,9 @@
 "unpredict": 0.4283,
 "mimicry": 0.6475,
 "speed_cv": 0.6088,
+"tracking": 0.2355,
+"mass_log": 2.4196,
+"sneak": 0.0575,
 "roundness_known": 1.0
 }
 },
@@ -22917,6 +24633,9 @@
 "unpredict": 0.4305,
 "mimicry": 0.0064,
 "speed_cv": 0.4681,
+"tracking": 0.2614,
+"mass_log": 1.4021,
+"sneak": 0.0672,
 "roundness_known": 1.0
 }
 },
@@ -22957,6 +24676,9 @@
 "unpredict": 0.5861,
 "mimicry": 0.6033,
 "speed_cv": 0.6063,
+"tracking": 0.2202,
+"mass_log": 2.2327,
+"sneak": 0.087,
 "roundness_known": 1.0
 }
 },
@@ -22997,6 +24719,9 @@
 "unpredict": 0.7087,
 "mimicry": 0.0,
 "speed_cv": 0.6114,
+"tracking": 0.2046,
+"mass_log": 2.253,
+"sneak": 0.0259,
 "roundness_known": 1.0
 }
 },
@@ -23037,6 +24762,9 @@
 "unpredict": 0.5623,
 "mimicry": 0.6906,
 "speed_cv": 0.6604,
+"tracking": 0.2333,
+"mass_log": 2.2185,
+"sneak": -0.1133,
 "roundness_known": 1.0
 }
 }

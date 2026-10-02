@@ -83,8 +83,44 @@ class Prototype:
         P = np.exp(L); return P / P.sum(1, keepdims=True)
 
 
+class SubPrototype(Prototype):
+    """One prototype per (emotion, mechanism) cluster: k-means with k = `per` inside each emotion; an
+    emotion's score is its NEAREST sub-prototype. Still interpretable (each centre is a named archetype
+    mean); lets 'terrifying' be both 'a big thing charging' and 'a cloud of small things converging'."""
+    def __init__(self, per=3, seed=0):
+        self.per, self.seed = per, seed
+
+    def fit(self, X, y, K=len(EMOTIONS)):
+        super().fit(X, y, K)
+        Z = self.std(X); rng = np.random.default_rng(self.seed)
+        cs, lab = [], []
+        for k in range(K):
+            Zk = Z[y == k]; m = min(self.per, len(Zk))
+            C = Zk[rng.choice(len(Zk), m, replace=False)]
+            for _ in range(30):
+                a = np.argmin(np.sum(self.w * (Zk[:, None] - C[None]) ** 2, 2), 1)
+                C = np.array([Zk[a == j].mean(0) if (a == j).any() else C[j] for j in range(m)])
+            cs.append(C); lab += [k] * m
+        self.Cs, self.lab, self.K = np.vstack(cs), np.array(lab), K
+        D = self._dk(Z)
+        self.T = max(np.median(np.sort(D, 1)[:, 1] - np.sort(D, 1)[:, 0]) / math.log(4), 1e-3)
+        return self
+
+    def _dk(self, Z):
+        D = np.sum(self.w * (Z[:, None, :] - self.Cs[None]) ** 2, axis=2)
+        return np.stack([D[:, self.lab == k].min(1) for k in range(self.K)], 1)
+
+    def proba(self, X):
+        L = -self._dk(self.std(X)) / self.T; L -= L.max(1, keepdims=True)
+        P = np.exp(L); return P / P.sum(1, keepdims=True)
+
+
 def make(kind, **kw):
-    return Logistic(**kw) if kind == "logistic" else Prototype()
+    if kind == "logistic":
+        return Logistic(**kw)
+    if kind == "subproto":
+        return SubPrototype(**kw)
+    return Prototype()
 
 
 def lofo(X, y, fam, kind="logistic", **kw):

@@ -404,22 +404,28 @@ class MenPatrol(Body):
 
 # ============================================================================================ TERRIFYING
 class TerSwarm(Body):
-    """40-120 small hunters converging on the pilot from every side, faster than it, re-converging after
-    each pass - a looming, closing mass."""
+    """40-120 small hunters attacking in WAVES: they pull back to a wide shell, then converge on the pilot
+    from every side at once, faster than it, pass through, and pull back for the next wave - a looming,
+    closing mass. (Round 3: the first version let the separation push pile them into a ball milling on top
+    of the pilot, which read - correctly - as a magnified cute bunch. Fixed to match this docstring.)"""
     def __init__(self, rng, pilot):
         n = int(rng.integers(40, 121)); s = rng.uniform(3, 6)
         super().__init__(rng, n, s, rng.uniform(1.6, 2.6), pilot.speed * 1.5 + 60, pilot.pos)
-        self.agent_pos = pilot.pos + _rand_unit(rng, n) * rng.uniform(150, 400, n)[:, None]
-        self.jit = rng.uniform(0.1, 0.3)
+        self.dirs = _rand_unit(rng, n); self.R = rng.uniform(220, 380, n)
+        self.agent_pos = pilot.pos + self.dirs * self.R[:, None]
+        self.jit = rng.uniform(0.05, 0.2); self.attack, self.regroup = rng.uniform(2.5, 4.0), rng.uniform(2.0, 3.5)
 
     def step(self, arena, dt):
         p = arena.pilots[0]
-        lead = p.pos + p.vel * 0.4
-        u = _unit(lead - self.agent_pos)
-        want = u * self.vmax[:, None] + _rand_unit(self.rng, self.n) * self.vmax[:, None] * self.jit
-        want += _sep(self.agent_pos, 8) * 40 if self.n <= 160 else 0
+        c = self.t % (self.attack + self.regroup)
+        if c < self.attack:
+            u = _unit(p.pos + p.vel * 0.3 - self.agent_pos)
+            want = u * self.vmax[:, None] + _rand_unit(self.rng, self.n) * self.vmax[:, None] * self.jit
+            self.intent = np.ones(self.n)
+        else:
+            want = (p.pos + self.dirs * self.R[:, None] - self.agent_pos) * 1.5 + p.vel
+            self.intent = np.zeros(self.n)
         self.drive(want, dt)
-        self.intent = np.clip(1 - np.linalg.norm(p.pos - self.agent_pos, axis=1) / 150, 0, 1)
 
 
 class TerEncircle(Body):
