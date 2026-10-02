@@ -516,10 +516,16 @@ namespace CosmicShore.Gameplay
 
         void Shuffle(int[] a) { for (int i = a.Length - 1; i > 0; i--) { int j = _rng.Next(i + 1); (a[i], a[j]) = (a[j], a[i]); } }
 
+        // Box-Muller makes normals in PAIRS; the second is kept for the next call (round 6: the wander draws
+        // three per member per step, and throwing half away was ~15% of a frac-8 step)
+        float _gSpare; bool _gHas;
         float Gauss()
         {
+            if (_gHas) { _gHas = false; return _gSpare; }
             double u1 = 1.0 - _rng.NextDouble(), u2 = _rng.NextDouble();
-            return (float)(Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2));
+            double r = Math.Sqrt(-2.0 * Math.Log(u1)), th = 2.0 * Math.PI * u2;
+            _gSpare = (float)(r * Math.Sin(th)); _gHas = true;
+            return (float)(r * Math.Cos(th));
         }
 
         Vector3 Gauss3() => new(Gauss(), Gauss(), Gauss());
