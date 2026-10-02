@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using Unity.Burst;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
@@ -238,6 +240,7 @@ namespace CosmicShore.ECS
                 // restarts version counters, so stale keys could alias entities in
                 // the new world and force-toggle an unrelated prism.
                 s_pendingVisibility.Clear();
+                ClearPendingTransforms();
                 LiveEntityCount = 0;
                 _epoch++;
             }
@@ -569,6 +572,90 @@ namespace CosmicShore.ECS
             return new PrismRenderHandle { Entity = entity, Epoch = _epoch };
         }
 
+        /// <summary>
+        /// Bulk <see cref="Create"/>: one batched Instantiate from the shared prototype and
+        /// one Burst pass that writes mesh/material, pose, bounds and the material's
+        /// authored colour trio for every clone. Clones are born HIDDEN, exactly like
+        /// <see cref="Create"/>; show them with <see cref="QueueVisible"/> (or
+        /// <see cref="SetVisible"/>). Writes <paramref name="localToWorld"/>.Length handles
+        /// into <paramref name="outHandles"/> (Invalid on every slot when the ECS path is
+        /// unavailable — callers stay on their fallback). Returns false in that case.
+        /// </summary>
+        public static bool CreateBatch(Mesh mesh, Material material, int layer,
+            Unity.Collections.NativeArray<float4x4> localToWorld,
+            Unity.Collections.NativeArray<PrismRenderHandle> outHandles,
+            PrismRenderOverrideSet overrideSet = PrismRenderOverrideSet.Prism)
+        {
+            int n = math.min(localToWorld.Length, outHandles.Length);
+            if (!Enabled || mesh == null || material == null || n == 0 || !TryEnsure())
+            {
+                for (int i = 0; i < outHandles.Length; i++) outHandles[i] = PrismRenderHandle.Invalid;
+                return false;
+            }
+
+            var em = _world.EntityManager;
+            var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob);
+            em.Instantiate(GetPrototype(layer, overrideSet, mesh, material), entities);
+            em.CompleteDependencyBeforeRW<LocalToWorld>();
+
+            var job = new InitCreatedJob
+            {
+                Entities = entities,
+                Matrices = localToWorld,
+                Mmi = new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh)),
+                Bounds = new AABB { Center = mesh.bounds.center, Extents = mesh.bounds.extents },
+                Bright = ReadColor(material, BrightColorId),
+                Dark = ReadColor(material, DarkColorId),
+                Spread = ReadVector3(material, SpreadId),
+                MmiLookup = em.GetComponentLookup<MaterialMeshInfo>(false),
+                L2wLookup = em.GetComponentLookup<LocalToWorld>(false),
+                BoundsLookup = em.GetComponentLookup<RenderBounds>(false),
+                BrightLookup = em.GetComponentLookup<PrismBrightColorOverride>(false),
+                DarkLookup = em.GetComponentLookup<PrismDarkColorOverride>(false),
+                SpreadLookup = em.GetComponentLookup<PrismSpreadOverride>(false),
+            };
+            if (n < TransformJobInlineThreshold) job.Run(n);
+            else job.Schedule(n, TransformJobBatch).Complete();
+
+            for (int i = 0; i < n; i++)
+                outHandles[i] = new PrismRenderHandle { Entity = entities[i], Epoch = _epoch };
+            for (int i = n; i < outHandles.Length; i++)
+                outHandles[i] = PrismRenderHandle.Invalid;
+
+            LiveEntityCount += n;
+            entities.Dispose();
+            return true;
+        }
+
+        [BurstCompile]
+        struct InitCreatedJob : IJobParallelFor
+        {
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<Entity> Entities;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<float4x4> Matrices;
+            public MaterialMeshInfo Mmi;
+            public AABB Bounds;
+            public float4 Bright;
+            public float4 Dark;
+            public float3 Spread;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<MaterialMeshInfo> MmiLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<LocalToWorld> L2wLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<RenderBounds> BoundsLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismBrightColorOverride> BrightLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismDarkColorOverride> DarkLookup;
+            [Unity.Collections.NativeDisableParallelForRestriction] public ComponentLookup<PrismSpreadOverride> SpreadLookup;
+
+            public void Execute(int i)
+            {
+                var e = Entities[i];
+                MmiLookup[e] = Mmi;
+                L2wLookup[e] = new LocalToWorld { Value = Matrices[i] };
+                BoundsLookup[e] = new RenderBounds { Value = Bounds };
+                BrightLookup[e] = new PrismBrightColorOverride { Value = Bright };
+                DarkLookup[e] = new PrismDarkColorOverride { Value = Dark };
+                SpreadLookup[e] = new PrismSpreadOverride { Value = Spread };
+            }
+        }
+
         /// <summary>Shows/hides the entity immediately (DisableRendering tag add/remove —
         /// a structural change per call). Use for pooled VFX bursts and hand-offs to the
         /// GameObject renderer, where same-instant application matters. High-churn
@@ -653,7 +740,13 @@ namespace CosmicShore.ECS
         [DefaultExecutionOrder(30000)]
         sealed class VisibilityFlushHost : MonoBehaviour
         {
-            void LateUpdate() => FlushVisibility();
+            void LateUpdate()
+            {
+                // Visibility first: its structural changes would invalidate the
+                // component lookup the transform flush takes.
+                FlushVisibility();
+                FlushTransforms();
+            }
         }
 
         internal static void FlushVisibility()
@@ -695,7 +788,187 @@ namespace CosmicShore.ECS
         public static void SetTransform(in PrismRenderHandle handle, in Matrix4x4 localToWorld)
         {
             if (!IsUsable(in handle)) return;
-            _world.EntityManager.SetComponentData(handle.Entity, new LocalToWorld { Value = ToFloat4x4(in localToWorld) });
+            var m = ToFloat4x4(in localToWorld);
+            // The immediate path is authoritative: a same-frame queued (older) pose
+            // must not overwrite it at the flush.
+            if (s_pendingTransformCount > 0 && s_pendingTransformIndex.TryGetValue(handle.Entity, out int slot))
+                s_pendingTransformMatrices[slot] = m;
+            _world.EntityManager.SetComponentData(handle.Entity, new LocalToWorld { Value = m });
+        }
+
+        // ------------------------------------------------------------------
+        // Batched transforms — one Burst pass per frame for every mover
+        // ------------------------------------------------------------------
+
+        // Last write this frame wins. Flushed by the same LateUpdate host as the
+        // visibility batch (DefaultExecutionOrder 30000 — after every gameplay
+        // LateUpdate, and before the PresentationSystemGroup / Entities Graphics
+        // upload that runs at the end of PreLateUpdate), so a queued pose renders in
+        // the SAME frame it was queued: no added latency versus SetTransform.
+        // Managed backing arrays (not persistent native ones) so a play-mode exit with
+        // domain reload disabled can never leak an allocation.
+        static readonly Dictionary<Entity, int> s_pendingTransformIndex = new(256);
+        static Entity[] s_pendingTransformEntities = new Entity[256];
+        static float4x4[] s_pendingTransformMatrices = new float4x4[256];
+        static int s_pendingTransformCount;
+        static readonly Unity.Profiling.ProfilerMarker s_transformFlushMarker = new("PrismRender.TransformFlush");
+
+        /// <summary>Number of transforms waiting for this frame's flush (diagnostics/tests).</summary>
+        public static int PendingTransformCount => s_pendingTransformCount;
+
+        /// <summary>
+        /// Deferred <see cref="SetTransform"/> for per-frame movers (fauna body prisms,
+        /// bond steering): the pose is applied with every other mover's in one Burst job
+        /// at this frame's LateUpdate flush — before rendering, so it is not visibly late.
+        /// Falls back to the immediate write when no flush host can exist (edit mode,
+        /// teardown).
+        /// </summary>
+        public static void QueueTransform(in PrismRenderHandle handle, in Matrix4x4 localToWorld)
+        {
+            if (!IsUsable(in handle)) return;
+            if (!s_quitting && Application.isPlaying) EnsureFlushHost();
+            if (s_flushHost == null)
+            {
+                _world.EntityManager.SetComponentData(handle.Entity, new LocalToWorld { Value = ToFloat4x4(in localToWorld) });
+                return;
+            }
+            EnqueueTransform(handle.Entity, ToFloat4x4(in localToWorld));
+        }
+
+        static void EnqueueTransform(Entity entity, in float4x4 m)
+        {
+            if (s_pendingTransformIndex.TryGetValue(entity, out int slot))
+            {
+                s_pendingTransformMatrices[slot] = m;
+                return;
+            }
+            if (s_pendingTransformCount == s_pendingTransformEntities.Length)
+            {
+                int n = s_pendingTransformEntities.Length * 2;
+                System.Array.Resize(ref s_pendingTransformEntities, n);
+                System.Array.Resize(ref s_pendingTransformMatrices, n);
+            }
+            slot = s_pendingTransformCount++;
+            s_pendingTransformEntities[slot] = entity;
+            s_pendingTransformMatrices[slot] = m;
+            s_pendingTransformIndex[entity] = slot;
+        }
+
+        static void DropPendingTransform(Entity entity)
+        {
+            if (s_pendingTransformCount == 0) return;
+            if (!s_pendingTransformIndex.TryGetValue(entity, out int slot)) return;
+            // Swap-remove keeps the arrays dense.
+            int last = --s_pendingTransformCount;
+            s_pendingTransformIndex.Remove(entity);
+            if (slot != last)
+            {
+                var moved = s_pendingTransformEntities[last];
+                s_pendingTransformEntities[slot] = moved;
+                s_pendingTransformMatrices[slot] = s_pendingTransformMatrices[last];
+                s_pendingTransformIndex[moved] = slot;
+            }
+            s_pendingTransformEntities[last] = Entity.Null;
+        }
+
+        static void ClearPendingTransforms()
+        {
+            s_pendingTransformIndex.Clear();
+            s_pendingTransformCount = 0;
+        }
+
+        /// <summary>Applies every queued transform in one Burst job. Called by the flush host.</summary>
+        internal static void FlushTransforms()
+        {
+            if (s_pendingTransformCount == 0) return;
+            if (_world == null || !_world.IsCreated)
+            {
+                ClearPendingTransforms();
+                return;
+            }
+
+            using (s_transformFlushMarker.Auto())
+            {
+                int n = s_pendingTransformCount;
+                var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob,
+                    Unity.Collections.NativeArrayOptions.UninitializedMemory);
+                var matrices = new Unity.Collections.NativeArray<float4x4>(n, Unity.Collections.Allocator.TempJob,
+                    Unity.Collections.NativeArrayOptions.UninitializedMemory);
+                Unity.Collections.NativeArray<Entity>.Copy(s_pendingTransformEntities, entities, n);
+                Unity.Collections.NativeArray<float4x4>.Copy(s_pendingTransformMatrices, matrices, n);
+                ClearPendingTransforms();
+
+                WriteTransforms(entities, matrices, n);
+
+                entities.Dispose();
+                matrices.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Bulk transform write for data-driven callers that already hold their poses in
+        /// native memory (e.g. a swarm tick job's instance array): one Burst job over a
+        /// <c>ComponentLookup&lt;LocalToWorld&gt;</c> instead of one managed
+        /// <c>EntityManager.SetComponentData</c> per entity. Handles with a stale epoch or
+        /// a dead entity are skipped. Completes before returning (main thread).
+        /// </summary>
+        public static void SetTransformsBatch(Unity.Collections.NativeArray<PrismRenderHandle> handles,
+            Unity.Collections.NativeArray<float4x4> localToWorld, int count = -1)
+        {
+            if (!handles.IsCreated || !localToWorld.IsCreated) return;
+            if (_world == null || !_world.IsCreated) return;
+            int n = count < 0 ? math.min(handles.Length, localToWorld.Length) : math.min(count, math.min(handles.Length, localToWorld.Length));
+            if (n <= 0) return;
+
+            var entities = new Unity.Collections.NativeArray<Entity>(n, Unity.Collections.Allocator.TempJob);
+            for (int i = 0; i < n; i++)
+            {
+                var h = handles[i];
+                entities[i] = h.Epoch == _epoch ? h.Entity : Entity.Null;
+                // The bulk write is authoritative over any same-frame queued pose.
+                if (s_pendingTransformCount > 0) DropPendingTransform(h.Entity);
+            }
+            var matrices = localToWorld.GetSubArray(0, n);
+            WriteTransforms(entities, matrices, n);
+            entities.Dispose();
+        }
+
+        const int TransformJobInlineThreshold = 256;
+        const int TransformJobBatch = 64;
+
+        static void WriteTransforms(Unity.Collections.NativeArray<Entity> entities,
+            Unity.Collections.NativeArray<float4x4> matrices, int n)
+        {
+            var em = _world.EntityManager;
+            // Any in-flight system job touching LocalToWorld must finish before we write.
+            em.CompleteDependencyBeforeRW<LocalToWorld>();
+            var job = new WriteLocalToWorldJob
+            {
+                Entities = entities,
+                Matrices = matrices,
+                LocalToWorldLookup = em.GetComponentLookup<LocalToWorld>(false),
+            };
+            // Small batches: Burst on the main thread (no scheduling overhead).
+            if (n < TransformJobInlineThreshold) job.Run(n);
+            else job.Schedule(n, TransformJobBatch).Complete();
+        }
+
+        [BurstCompile]
+        struct WriteLocalToWorldJob : IJobParallelFor
+        {
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<Entity> Entities;
+            [Unity.Collections.ReadOnly] public Unity.Collections.NativeArray<float4x4> Matrices;
+            // Entities are unique per batch (dedup by the pending index / caller contract),
+            // so parallel writes never alias.
+            [Unity.Collections.NativeDisableParallelForRestriction]
+            public ComponentLookup<LocalToWorld> LocalToWorldLookup;
+
+            public void Execute(int i)
+            {
+                var e = Entities[i];
+                if (e == Entity.Null || !LocalToWorldLookup.HasComponent(e)) return;
+                LocalToWorldLookup[e] = new LocalToWorld { Value = Matrices[i] };
+            }
         }
 
         /// <summary>
@@ -1532,6 +1805,7 @@ namespace CosmicShore.ECS
                 // Entity indices recycle — drop any queued toggle so the flush can
                 // never apply a dead prism's wish to a future entity reusing the id.
                 s_pendingVisibility.Remove(handle.Entity);
+                DropPendingTransform(handle.Entity);
                 _world.EntityManager.DestroyEntity(handle.Entity);
                 LiveEntityCount = Mathf.Max(0, LiveEntityCount - 1);
             }

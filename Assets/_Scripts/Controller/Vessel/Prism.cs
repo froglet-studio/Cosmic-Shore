@@ -1736,8 +1736,20 @@ namespace CosmicShore.Gameplay
 
             // Movers (gyroid steering, fauna body prisms) must also keep the
             // companion render entity's matrix honest — same contract as the
-            // spatial index position.
-            SyncRenderTransform();
+            // spatial index position. Queued, not written: every mover's pose this
+            // frame lands in ONE Burst pass at PrismRenderService's LateUpdate flush
+            // (still before rendering, so no visible lag) instead of one managed
+            // EntityManager.SetComponentData per prism per frame.
+            QueueRenderTransform();
+        }
+
+        /// <summary>Deferred <see cref="SyncRenderTransform"/> for per-frame movers —
+        /// applied in this frame's batched transform flush.</summary>
+        internal void QueueRenderTransform()
+        {
+            if (_exoticVisualActive) return;
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            PrismRenderService.QueueTransform(in RenderHandle, transform.localToWorldMatrix);
         }
 
         private void OnDisable()
