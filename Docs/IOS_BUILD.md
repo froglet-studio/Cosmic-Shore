@@ -62,8 +62,24 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
    1. Unity Hub → Installs → ⚙ → Add modules → **iOS Build Support**.
    2. File → Build Profiles → iOS → **Switch Platform**. This re-imports the whole project; consider
       a separate clone so your Windows working copy does not flip back and forth.
-   3. Tick **Development Build**. That also exempts the build from `UnityPipelineReleaseGuard`.
-   4. **Build** to an empty folder.
+   3. Set the build profile and Player Settings as in the table below.
+   4. Press **Build**, not *Build And Run* (that needs a Mac), into an **empty folder outside the
+      project**. Plain Build is enough; *Clean Build* is not needed.
+
+   | Where | Setting | Value | Why |
+   |---|---|---|---|
+   | Build Profile (iOS) | Run in Xcode as | Release | Only affects Xcode's Run button. The CI job builds Release regardless |
+   | | Development Build | ✔ | Keeps logs; also exempts the release-only build guards (`UnityPipelineReleaseGuard`, `CreditsReleaseGuard`) |
+   | | Autoconnect Profiler / Deep Profiling / Script Debugging | off | All three slow the build and the game, and a sideloaded phone has nothing to connect them to |
+   | | Compression Method | LZ4 | Smaller `Data` folder, so a smaller zip to upload. Loads fast |
+   | Player → iOS → Other Settings | Bundle Identifier | `com.FrogletGames.CosmicShore.dev` | Already set in `ProjectSettings.asset` (§1) |
+   | | Signing Team ID / Automatically Sign | empty / off | Path A builds unsigned; Sideloadly signs. On a borrowed Mac (3b), pick the team in Xcode instead |
+   | | Target SDK | **Device SDK** | Already set. A Simulator build will not install on a phone |
+   | | Target minimum iOS Version | 15.0 | Already set (Unity 6.3's floor) |
+   | | Architecture | ARM64 | Default |
+   | | C++ Compiler Configuration | Release | *Debug* is huge and slow; *Master* takes much longer to compile on a 3-core runner |
+   | | IL2CPP Code Generation | *Optimize for code size and build time* (optional) | Less C++ to compile on the free runner. The game is fine either way |
+   | | Managed Stripping Level | leave as authored | Reflex DI, Netcode and SOAP use reflection; stripping harder can delete types they need at runtime |
 2. Zip that folder and upload it to **Dropbox** (most reliable for a large file) or Google Drive
    (big public files sometimes hit its "too many downloads" limit). Share it as "anyone with the
    link".
@@ -156,6 +172,26 @@ portal. A free team's Xcode-made profile expires weekly, so it cannot drive auto
 Path A's GitHub Actions job could also do Path B's job. With the paid team's `.p12` and profile
 stored as secrets, it could sign and upload to TestFlight itself, at no cost on this public
 repository. Build Automation is the default because it already builds the other platforms.
+
+### Code that compiles ONLY in an iOS player build
+
+The editor defines `UNITY_EDITOR` even with iOS selected. So anything under
+`#if UNITY_IOS && !UNITY_EDITOR` is compiled by nobody until somebody builds an iOS player. Measured
+on 2026-10-02, the code that compiles in an iOS player and in neither the iOS editor nor a Windows
+player is:
+
+- Nice Vibrations' iOS bindings (`LofeltHaptics.cs`, `DeviceCapabilities.cs`, plus small pieces of
+  `HapticController.cs` and `HapticPatterns.cs`)
+- NativeShare's `__Internal` import
+- FMOD's iOS interrupt callback and `PlatformIOS.cs`
+- The share path of `PaintingShareExporter.cs`
+
+The first iOS build failed with 31 × CS0246 in `LofeltHaptics.cs`: its iOS branch used `DllImport`
+and `[In]` without `using System.Runtime.InteropServices;`. That using is now added. Every other
+iOS-only path above was checked: each `UnityEngine.iOS.DeviceGeneration` member
+`DeviceCapabilities` names exists and is not obsoleted in Unity's 6000.3 reference source, the FMOD
+and NativeShare paths are fully qualified or have their usings, and no asmdef excludes iOS. That is
+a checked list, not a compile. The iOS player build is still the only proof.
 
 ---
 
