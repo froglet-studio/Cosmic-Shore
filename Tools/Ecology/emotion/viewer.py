@@ -57,13 +57,16 @@ document.getElementById('blind').onchange=drawPanel;
 document.getElementById('exp').onclick=()=>{const b=new Blob([JSON.stringify({ratings:ratings(),runs:RUNS.map(r=>({label:r.meta.label,truth:r.meta.truth||null,probe:r.meta.probe}))},null,1)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='emotion_ratings.json';a.click()};
 document.getElementById('run').addEventListener('change',()=>{drawPanel();lastP=null});
-let lastP=null;
-(function follow(){requestAnimationFrame(follow);
-  if(!document.getElementById('follow').checked||typeof run==='undefined'||!run) {lastP=null;return}
-  const f=run.frames[k]; if(!f||!f.pilots.length) return;
-  const p=new THREE.Vector3(f.pilots[0][0],f.pilots[0][1],f.pilots[0][2]);
-  if(lastP) cam.position.add(p.clone().sub(lastP)); else cam.position.copy(p).add(new THREE.Vector3(0,220,520));
-  ctl.target.copy(p); lastP=p;})();
+// follow: ease the camera's target toward the pilot's INTERPOLATED position (pilotNow, set by the template's
+// playback) and carry the camera by the same delta, so the user's orbit offset is kept. A jump the size of a
+// loop or a run switch snaps instead of sweeping across the arena.
+let lastP=null, fLast=performance.now();
+(function follow(now){requestAnimationFrame(follow);const dt=Math.min(0.1,(now-fLast)/1000);fLast=now;
+  if(!document.getElementById('follow').checked||typeof run==='undefined'||!run||!pilotNow) {lastP=null;return}
+  const p=new THREE.Vector3(pilotNow[0],pilotNow[1],pilotNow[2]);
+  if(!lastP||lastP.distanceTo(p)>300){cam.position.copy(p).add(new THREE.Vector3(0,220,520));ctl.target.copy(p);lastP=p.clone();return}
+  const nt=lastP.clone().lerp(p,1-Math.exp(-dt*5));
+  cam.position.add(nt.clone().sub(lastP)); ctl.target.copy(nt); lastP=nt;})(performance.now());
 drawPanel();});
 </script>"""
 
