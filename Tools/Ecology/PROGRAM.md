@@ -38,6 +38,33 @@ The emotional range comes out of the same parameters, and that is the claim to t
 species can be CUTE sparse and fed (small, curious, approach-and-retreat), then TERRIFYING dense and hungry
 (convergent, coordinated, fast), with nothing scripted between the two.
 
+## 0.5 Where the game is today (inventory, 2026-10-02 — measured, not remembered)
+
+- **Fauna that threaten a pilot directly:**
+  - the worm colony: cruise, pursue, a telegraphed coil, a locked lunge, a tail-whip, and danger fangs and stinger;
+  - the swarm's Time members, which mob a ship that hovers still. Branch only.
+- **Fauna that threaten indirectly:**
+  - every herbivore eats your (opposing, unshielded) trail;
+  - shark and worm danger prisms burn petals.
+- **What does not exist yet:**
+  - no creature STEALS;
+  - no flora is a threat beyond gyroid danger prisms;
+  - nothing ambushes, nothing hitchhikes, nothing builds.
+- **Serpent walls:** a VESSEL ability. `SeedWallAction` → `WallAssembler`. It finds nearby prisms through
+  `PrismSpatialIndex.QuerySphere`, pulls each mate into a lattice (faster for an opponent's prism) and
+  calls `Steal(superSteal: true)` on snap. Direction D generalises exactly this to creatures.
+- **Performance:**
+  - no Burst and no compute in FloraAndFauna today;
+  - `BoidManager` and `LightFaunaManager` are dormant;
+  - every creature runs its own `Update`.
+- **What creatures can build on:**
+  - `PrismSpatialIndex`: sphere/cone/segment queries, `TryReserve`, shell contacts, Burst jobs;
+  - `PrismRenderService`: Entities Graphics companion entities with GPU clock stamps (sway, grow, jiggle,
+    suction, flight, shield morph);
+  - the swarm round-7 port on `cece/swarm-fauna-game`: Burst sim, GPU-instanced members.
+- **Masterplan roadmap gaps:** a trait genome with mutation (P3), open-ended evolution (P4), territory and
+  migration (P5).
+
 ## 1. Locked rules every experiment keeps (CLAUDE.md, Ecosystem Design Principles)
 
 - **Mass is conserved.** Prisms leave only through active forces: eating, vessel abilities. No timers, TTLs
