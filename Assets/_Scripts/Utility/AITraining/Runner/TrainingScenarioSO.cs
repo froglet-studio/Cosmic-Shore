@@ -75,12 +75,79 @@ namespace CosmicShore.Utility.AITraining
             DistanceAtLeast = 5,
         }
 
+        /// <summary>
+        /// Intensity-4 Skim Race crystal target. A pilot who reaches it can
+        /// close the episode once AssignScores has written the finish time.
+        /// </summary>
+        public const int HexRaceCrystalTarget = 54;
+
+        /// <summary>
+        /// Long enough for a domain to collect the intensity-4 target. The
+        /// 120s default ended every evaluation before a finish time existed.
+        /// </summary>
+        public const float HexRaceMaxEpisodeSeconds = 240f;
+
         public string Key => $"{Vessel}_{GameMode}_I{Intensity}";
 
         /// <summary>
+        /// Mode names a saved session key can still carry from before the
+        /// GameModes rename. The numeric ids did not change. These are key
+        /// tokens, not GameModes members.
+        /// </summary>
+        static readonly Dictionary<string, GameModes> LegacyModeNames = new(System.StringComparer.Ordinal)
+        {
+            { "HexRace", GameModes.SkimRace },
+            { "MultiplayerCrystalCapture", GameModes.Scurry },
+            { "MultiplayerJoust", GameModes.Joust },
+            { "Ribcage", GameModes.Cleave },
+            { "NucleusRush", GameModes.BroodRush },
+            { "MultiplayerCellularDuel", GameModes.OnlineDuelForTheCell },
+            { "CellularDuel", GameModes.DuelForTheCell },
+            { "MultiplayerWildlifeBlitzGame", GameModes.CoOpWildlifeBlitz },
+        };
+
+        /// <summary>
+        /// True when a saved session key names this scenario's vessel, mode id,
+        /// and intensity. A key written before a mode rename still matches, so
+        /// the saved population resumes instead of being reset.
+        /// </summary>
+        public bool MatchesSessionKey(string savedKey)
+        {
+            return TryParseKey(savedKey, out var vessel, out var mode, out int intensity)
+                   && vessel == Vessel
+                   && (int)mode == (int)GameMode
+                   && intensity == Intensity;
+        }
+
+        /// <summary>Reads a "{Vessel}_{Mode}_I{Intensity}" key. The mode may be a current or a legacy name.</summary>
+        public static bool TryParseKey(string key, out VesselClassType vessel, out GameModes mode, out int intensity)
+        {
+            vessel = default;
+            mode = default;
+            intensity = 0;
+            if (string.IsNullOrEmpty(key)) return false;
+
+            int first = key.IndexOf('_');
+            int last = key.LastIndexOf("_I", System.StringComparison.Ordinal);
+            if (first <= 0 || last <= first) return false;
+
+            string vesselToken = key.Substring(0, first);
+            string modeToken = key.Substring(first + 1, last - first - 1);
+            string intensityToken = key.Substring(last + 2);
+
+            if (!System.Enum.TryParse(vesselToken, false, out vessel) || !System.Enum.IsDefined(typeof(VesselClassType), vessel))
+                return false;
+            if (!int.TryParse(intensityToken, out intensity)) return false;
+            if (LegacyModeNames.TryGetValue(modeToken, out mode)) return true;
+            return System.Enum.TryParse(modeToken, false, out mode) && System.Enum.IsDefined(typeof(GameModes), mode);
+        }
+
+        /// <summary>
         /// Stamps the vessel, match size, and seek mode from the mode catalog.
-        /// Leaves the overnight population and episode defaults alone and clears
-        /// early-exit gates so a golf match is not closed before AssignScores.
+        /// HexRace also stamps the finish window and a crystal early-exit at
+        /// the intensity-4 target. Every other row clears early-exit gates and
+        /// leaves the episode cap alone, so a golf match is not closed before
+        /// AssignScores.
         /// </summary>
         public void ApplyCatalogDefaults(TrainingModeCatalog.Row row)
         {
@@ -90,7 +157,23 @@ namespace CosmicShore.Utility.AITraining
             Intensity = 4;
             OpponentCount = row.PlayerCount;
             TargetMode = row.TargetMode;
-            EarlyExitConditions = new List<EarlyExit>();
+            if (row.GameMode == GameModes.SkimRace)
+            {
+                MaxEpisodeSeconds = HexRaceMaxEpisodeSeconds;
+                EarlyExitConditions = new List<EarlyExit>
+                {
+                    new()
+                    {
+                        Kind = TerminationKind.CrystalsAtLeast,
+                        IntegerThreshold = HexRaceCrystalTarget,
+                        FloatThreshold = 0f,
+                    },
+                };
+            }
+            else
+            {
+                EarlyExitConditions = new List<EarlyExit>();
+            }
         }
 
         /// <summary>

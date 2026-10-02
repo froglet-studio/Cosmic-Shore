@@ -1,148 +1,303 @@
 using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace CosmicShore.Utility.AITraining
 {
     /// <summary>
-    /// Auto-installs trained pilots on AI vessels at game-scene load so that a
-    /// human player flying a normal HexRace match plays against the latest
-    /// trained genomes from the archive.
+    /// Boots with the app and, when <see cref="TrainingControlSO.DeployArchiveInNormalPlay"/>
+    /// is on, installs <see cref="TrainingPilot"/> on every AI vessel for the current game mode —
+    /// so a human immediately plays against trained opponents without waiting for a Learn session.
     ///
-    /// Lifecycle:
-    ///   - A single instance is auto-created at runtime via RuntimeInitializeOnLoadMethod.
-    ///   - It persists across scene loads (DontDestroyOnLoad).
-    ///   - It listens to gameData.OnPlayerPairInitialized. When an AI player
-    ///     gets paired with its vessel and the archive holds a real entry, it
-    ///     stops AIPilot and installs a TrainingPilot on the intensity-4 genome.
-    ///     Intensities 1–3 dither that genome. They do not write a second one.
-    ///   - Plain (non-AI) players are ignored — training only spoofs input,
-    ///     never overrides the human's controls.
-    ///   - The training-mode session runner (which also installs TrainingPilots
-    ///     during AI-vs-AI training) takes precedence: if a vessel already has
-    ///     a TrainingPilot, this service skips it.
-    ///
-    /// Disable globally by setting TrainingControlSO.DeployArchiveInNormalPlay = false.
+    /// Idle while a training session is running (<see cref="GameDataSO.IsTraining"/>) so it never
+    /// fights the session runner for ownership of an AI's brain. Uses the same
+    /// <see cref="ArchiveDeployment.TryInstall"/> path as the training bridge and editor tools.
     /// </summary>
-    public class TrainingDeploymentService : MonoBehaviour
+    public sealed class TrainingDeploymentService : MonoBehaviour
     {
-        TrainingControlSO _control;
-        GameDataSO _gameData;
-        CellRuntimeDataSO _cellData;
-        bool _hooked;
+        const int EnsureBurstFrames = 12;
+        const float KeepReadyIntervalSeconds = 1f;
+
+        static TrainingControlSO s_Control;
+        static TrainingArchiveSO s_Archive;
+        static GameDataSO s_GameData;
+        static CellRuntimeDataSO s_CellData;
+        static bool s_Booted;
+        static bool s_WatchingGameData;
+        static TrainingDeploymentService s_Instance;
+        static readonly HashSet<string> s_Installed = new();
+        static readonly HashSet<IPlayer> s_MissingVesselWarned = new();
+
+        Coroutine _ensureRoutine;
+        Coroutine _keepReadyRoutine;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        static void AutoInstall()
+        static void Boot()
         {
-            // Only install once per process — domain-reload safe via the singleton check.
-            if (FindAnyObjectByType<TrainingDeploymentService>() != null) return;
-            var go = new GameObject("[Training Deployment Service]");
-            DontDestroyOnLoad(go);
-            go.AddComponent<TrainingDeploymentService>();
-        }
+            if (s_Booted) return;
+            s_Booted = true;
 
-        void Awake()
-        {
             ResolveAssets();
-        }
-
-        void Start()
-        {
-            HookGameData();
-        }
-
-        void OnDestroy() => UnhookGameData();
-
-        void ResolveAssets()
-        {
-#if UNITY_EDITOR
-            _control = FirstAsset<TrainingControlSO>();
-            _gameData = FirstAsset<GameDataSO>();
-            _cellData = FirstAsset<CellRuntimeDataSO>();
-#endif
-        }
-
-#if UNITY_EDITOR
-        static T FirstAsset<T>() where T : ScriptableObject
-        {
-            var guids = UnityEditor.AssetDatabase.FindAssets("t:" + typeof(T).Name);
-            if (guids == null || guids.Length == 0) return null;
-            return UnityEditor.AssetDatabase.LoadAssetAtPath<T>(UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]));
-        }
-#endif
-
-        void HookGameData()
-        {
-            if (_hooked || _gameData == null) return;
-            if (_gameData.OnPlayerPairInitialized != null)
-                _gameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
-            _hooked = true;
-        }
-
-        void UnhookGameData()
-        {
-            if (!_hooked || _gameData == null) return;
-            if (_gameData.OnPlayerPairInitialized != null)
-                _gameData.OnPlayerPairInitialized.OnRaised -= HandlePlayerPairInitialized;
-            _hooked = false;
-        }
-
-        void HandlePlayerPairInitialized(ulong clientId)
-        {
-            // Cheap pre-check: deployment is opt-in via the control asset, and only
-            // happens outside of training. The runner sets gameData.IsTraining = true
-            // when it's running, so we won't double-install.
-            if (_control == null || !_control.DeployArchiveInNormalPlay) return;
-            if (_control.Archive == null) return;
-            if (_gameData == null) return;
-            if (_gameData.IsTraining) return;
-
-            StartCoroutine(InstallAfterFrame(clientId));
-        }
-
-        IEnumerator InstallAfterFrame(ulong clientId)
-        {
-            // Wait one frame so the vessel transform / status are wired up.
-            yield return null;
-            for (int i = 0; i < _gameData.Players.Count; i++)
+            if (s_Control == null || s_GameData == null)
             {
-                var p = _gameData.Players[i];
-                if (p == null) continue;
-                if (p.OwnerClientNetId != clientId && (p.PlayerNetId != clientId)) continue;
-                if (!p.IsInitializedAsAI) continue;
+                Debug.LogWarning("[AITraining] TrainingDeploymentService: control or GameDataSO missing — idle.");
+                return;
+            }
 
-                InstallOn(p);
+            // Always subscribe. DeployArchiveInNormalPlay is gated at the handlers so an inspector
+            // flip mid-session still takes effect on the next turn / pair-init without an OnChanged
+            // event on TrainingControlSO (that asset has none).
+            HookGameData();
+
+            var go = new GameObject("[AITraining.Deployment]");
+            DontDestroyOnLoad(go);
+            go.hideFlags = HideFlags.HideAndDontSave;
+            s_Instance = go.AddComponent<TrainingDeploymentService>();
+        }
+
+        static void ResolveAssets()
+        {
+            if (s_Control == null) s_Control = FirstAsset<TrainingControlSO>();
+            if (s_GameData == null) s_GameData = FirstAsset<GameDataSO>();
+            if (s_CellData == null) s_CellData = FirstAsset<CellRuntimeDataSO>();
+            // Prefer the archive wired on the control asset (what the Learn button writes into).
+            if (s_Control != null && s_Control.Archive != null)
+                s_Archive = s_Control.Archive;
+            else if (s_Archive == null)
+                s_Archive = FirstAsset<TrainingArchiveSO>();
+        }
+
+        static T FirstAsset<T>() where T : Object
+        {
+#if UNITY_EDITOR
+            var guids = AssetDatabase.FindAssets($"t:{typeof(T).Name}");
+            if (guids == null || guids.Length == 0) return null;
+            return AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guids[0]));
+#else
+            return null;
+#endif
+        }
+
+        static void HookGameData()
+        {
+            if (s_WatchingGameData || s_GameData == null) return;
+            s_WatchingGameData = true;
+            if (s_GameData.OnMiniGameTurnStarted != null)
+                s_GameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStarted;
+            if (s_GameData.OnMiniGameTurnEnd != null)
+                s_GameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnded;
+            // VesselStatus has no OnVesselInitialized. Pair-init is the platform event that fires
+            // once a player+vessel exist — covers mid-match AI swaps / late AI seats.
+            if (s_GameData.OnPlayerPairInitialized != null)
+                s_GameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
+        }
+
+        static void HandleTurnStarted()
+        {
+            if (!ShouldDeploy()) return;
+            if (s_Instance == null) return;
+
+            s_Instance.StopEnsureAndKeep();
+            s_Instance._ensureRoutine = s_Instance.StartCoroutine(s_Instance.EnsureAiPilotsReady());
+            s_Instance._keepReadyRoutine = s_Instance.StartCoroutine(s_Instance.KeepAiPilotsReady());
+        }
+
+        static void HandleTurnEnded()
+        {
+            if (s_Instance != null)
+                s_Instance.StopEnsureAndKeep();
+            if (!ShouldDeploy()) return;
+            EndEpisodes();
+        }
+
+        static void HandlePlayerPairInitialized(ulong _)
+        {
+            if (!ShouldDeploy()) return;
+            InstallOnAllAi();
+            ReadyAllAiSeats();
+        }
+
+        static bool ShouldDeploy()
+        {
+            if (s_Control == null || !s_Control.DeployArchiveInNormalPlay) return false;
+            // Session runner owns genomes while a Learn match is live.
+            if (s_GameData != null && s_GameData.IsTraining) return false;
+            return true;
+        }
+
+        void StopEnsureAndKeep()
+        {
+            if (_ensureRoutine != null)
+            {
+                StopCoroutine(_ensureRoutine);
+                _ensureRoutine = null;
+            }
+            if (_keepReadyRoutine != null)
+            {
+                StopCoroutine(_keepReadyRoutine);
+                _keepReadyRoutine = null;
             }
         }
 
-        void InstallOn(IPlayer player)
+        /// <summary>
+        /// Burst of readiness assertions at turn start. Archive BeginEpisode never unstations —
+        /// a Vessel-null StartPlayer leaves IsStationary true forever (Ruby at 0), so we retry
+        /// across a few frames until Vessel wiring catches up.
+        /// </summary>
+        IEnumerator EnsureAiPilotsReady()
         {
-            var vessel = player.Vessel;
+            for (int i = 0; i < EnsureBurstFrames; i++)
+            {
+                if (!ShouldDeploy()) yield break;
+                ReadyAllAiSeats();
+                yield return null;
+            }
+            _ensureRoutine = null;
+        }
+
+        /// <summary>
+        /// 1 Hz heartbeat for the life of the turn. Mid-match re-freeze / late Vessel wiring
+        /// can re-park a seat; keep StartPlayer + IsStationary + BeginEpisode asserted.
+        /// </summary>
+        IEnumerator KeepAiPilotsReady()
+        {
+            var wait = new WaitForSeconds(KeepReadyIntervalSeconds);
+            while (true)
+            {
+                if (!ShouldDeploy()) yield break;
+                ReadyAllAiSeats();
+                yield return wait;
+            }
+        }
+
+        static void ReadyAllAiSeats()
+        {
+            if (s_GameData?.Players == null) return;
+            ResolveAssets();
+            for (int i = 0; i < s_GameData.Players.Count; i++)
+            {
+                var player = s_GameData.Players[i];
+                if (player == null || !player.IsInitializedAsAI) continue;
+
+                // Avoid repeating StartPlayer's null-vessel warning throughout the burst
+                // and heartbeat. Keep retrying this seat until its pair is wired.
+                if (player.Vessel == null)
+                {
+                    if (s_MissingVesselWarned.Add(player))
+                        CSDebug.LogWarning($"[AITraining] AI seat '{player.Name}' has no Vessel at StartPlayer; " +
+                                           "IsStationary cannot be cleared. Retrying vessel readiness.");
+                    continue;
+                }
+
+                player.StartPlayer();
+
+                var vessel = player.Vessel;
+                if (vessel == null) continue;
+
+                var status = vessel.VesselStatus as VesselStatus;
+                if (status != null)
+                    status.IsStationary = false;
+
+                InstallOn(vessel);
+
+                if (status == null) continue;
+                var pilot = status.GetComponent<TrainingPilot>();
+                if (pilot != null && !pilot.EpisodeActive)
+                    pilot.BeginEpisode();
+            }
+        }
+
+        void Update()
+        {
+            if (!ShouldDeploy()) return;
+            // Slow heartbeat so late-spawning AI (post-countdown backfill) still get a pilot
+            // even if the turn-started event already fired.
+            if (Time.frameCount % 30 != 0) return;
+            InstallOnAllAi();
+        }
+
+        static void InstallOnAllAi()
+        {
+            if (s_GameData?.Players == null) return;
+            ResolveAssets();
+            for (int i = 0; i < s_GameData.Players.Count; i++)
+            {
+                var player = s_GameData.Players[i];
+                if (player == null || !player.IsInitializedAsAI) continue;
+                var vessel = player.Vessel;
+                if (vessel == null) continue;
+                InstallOn(vessel);
+            }
+        }
+
+        static void EndEpisodes()
+        {
+            if (s_GameData?.Players == null) return;
+            for (int i = 0; i < s_GameData.Players.Count; i++)
+            {
+                var player = s_GameData.Players[i];
+                if (player?.Vessel == null) continue;
+                var status = player.Vessel.VesselStatus as VesselStatus;
+                if (status == null) continue;
+                var pilot = status.GetComponent<TrainingPilot>();
+                if (pilot != null && pilot.EpisodeActive)
+                    pilot.EndEpisode();
+            }
+            s_Installed.Clear();
+            s_MissingVesselWarned.Clear();
+        }
+
+        static void InstallOn(IVessel vessel)
+        {
             if (vessel == null) return;
-            var go = vessel.Transform != null ? vessel.Transform.gameObject : null;
+            var go = (vessel as Component)?.gameObject
+                     ?? (vessel.VesselStatus as Component)?.gameObject;
             if (go == null) return;
 
-            // Don't fight an already-installed TrainingPilot — that one is owned by
-            // the runner during a training session and has the live genome.
-            if (go.GetComponent<TrainingPilot>() != null) return;
-
-            VesselClassType liveVessel = vessel.VesselStatus?.VesselType ?? VesselClassType.Any;
-            GameModes mode = _gameData.GameMode;
-            int intensity = _gameData.SelectedIntensity != null
-                ? Mathf.Clamp(_gameData.SelectedIntensity.Value, 1, 4)
-                : 4;
-
-            // No archive entry leaves AIPilot in place. A registry-default genome is
-            // not an entry, and a partial match on a different hull is not this seat.
-            if (!ArchiveDeployment.TryInstall(go, vessel, _gameData, _cellData, _control.Archive,
-                    mode, liveVessel, intensity, _control.UseStoredGenomeForLowerIntensity))
+            // Dedup by vessel GameObject instance id — player Name can collide across respawns.
+            string key = go.GetInstanceID().ToString();
+            if (s_Installed.Contains(key) && go.GetComponent<TrainingPilot>() != null)
                 return;
 
-            CSDebug.LogVerbose(CSLogChannel.AITraining,
-                $"[Deploy] {player.Name} flies the archive " +
-                $"({ArchiveDeployment.ResolveVessel(mode, liveVessel)}, {mode}, play intensity {intensity}).");
+            var archive = s_Control != null && s_Control.Archive != null
+                ? s_Control.Archive
+                : s_Archive;
+            if (archive == null)
+            {
+                Debug.LogWarning("[AITraining] TrainingDeploymentService: no archive — cannot install.");
+                return;
+            }
+
+            var mode = s_GameData != null ? s_GameData.GameMode : GameModes.Random;
+            int intensity = s_GameData != null && s_GameData.SelectedIntensity != null
+                ? Mathf.Max(1, s_GameData.SelectedIntensity.Value)
+                : 1;
+            bool useStored = s_Control != null && s_Control.UseStoredGenomeForLowerIntensity;
+            VesselClassType liveVessel = vessel.VesselStatus?.VesselType ?? VesselClassType.Any;
+
+            // Same Install path as TrainingAIDeploymentBridge / editor tools.
+            // BeginEpisode is called inside ArchiveDeployment.Install when the vessel is ready.
+            if (!ArchiveDeployment.TryInstall(
+                    go,
+                    vessel,
+                    s_GameData,
+                    s_CellData,
+                    archive,
+                    mode,
+                    liveVessel,
+                    playIntensity: intensity,
+                    useStoredGenomeForLowerIntensity: useStored))
+            {
+                return;
+            }
+
+            s_Installed.Add(key);
         }
     }
 }

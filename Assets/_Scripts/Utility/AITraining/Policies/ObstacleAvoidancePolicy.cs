@@ -43,6 +43,13 @@ namespace CosmicShore.Utility.AITraining
 
         public DecisionOutput Decide(DecisionContext ctx)
         {
+            // Once the nose is already on a crystal, stand down entirely — trail prisms near a
+            // collectable would otherwise peel the approach off every time. Checked before the
+            // prism loop so an aimed crystal chase never pays for (or depends on) Vessel.
+            if (ctx.HasTarget && ctx.TargetKind == TargetKind.Crystal
+                && ctx.DotForwardObjective >= 0.85f)
+                return DecisionOutput.Zero;
+
             if (ctx.NearbyPrisms.Count == 0) return DecisionOutput.Zero;
 
             Vector3 push = Vector3.zero;
@@ -75,10 +82,17 @@ namespace CosmicShore.Utility.AITraining
             float yaw = Mathf.Clamp(localCross.y * _strength * 100f, -1f, 1f);
             float pitch = Mathf.Clamp(localCross.x * _strength * 100f, -1f, 1f);
 
+            // Archive gen-2 shipped avoid.steer_weight ≈ 0.95 against target.steer_weight ≈ 0.58,
+            // so blended steering was mostly "don't hit trails" and crystals were under-aimed.
+            // While pursuing a crystal, keep avoidance as a veto bias rather than the primary aim.
+            float weight = _steerWeight;
+            if (ctx.HasTarget && ctx.TargetKind == TargetKind.Crystal)
+                weight = Mathf.Min(weight, 0.35f);
+
             return new DecisionOutput
             {
                 SteerLocal = new Vector2(yaw, pitch),
-                SteerWeight = _steerWeight
+                SteerWeight = weight
             };
         }
     }

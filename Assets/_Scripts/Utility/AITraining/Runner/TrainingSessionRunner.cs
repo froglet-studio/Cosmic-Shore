@@ -57,6 +57,8 @@ namespace CosmicShore.Utility.AITraining
         readonly Dictionary<TrainingPilot, List<IFitnessComponent>> _fitnessComponents = new();
         readonly Dictionary<TrainingPilot, int> _populationIndices = new();
         readonly Dictionary<TrainingPilot, IRoundStats> _roundStatsByPilot = new();
+        // Last CrystalsCollected seen per pilot. A rise is one traced pickup event.
+        readonly Dictionary<TrainingPilot, int> _crystalsSeen = new();
 
         bool _running;
         bool _episodeActive;
@@ -66,6 +68,8 @@ namespace CosmicShore.Utility.AITraining
         bool _waitingToStartEpisode;
         float _restartAt;
         bool _replayHandoff;
+        bool _readyPending;
+        bool _readyWaitTraced;
         int _checkoutsThisEpisode;
         float _episodeWallStart;
         TrainingScheduleSO _schedule;
@@ -158,6 +162,7 @@ namespace CosmicShore.Utility.AITraining
             // fraction of what a complete run would produce and would poison both
             // the rolling-mean fitness on the genome and the hall-of-fame best.
             // Just unwind any active pilots and unhook events.
+            _readyPending = false;
             if (_episodeActive)
             {
                 _episodeActive = false;
@@ -290,8 +295,10 @@ namespace CosmicShore.Utility.AITraining
 
         void EnsureStateInitialized()
         {
+            // Same vessel, mode id, and intensity is the same session, even when
+            // the saved key spells the mode by a name from before a rename.
             if (state.Population == null || state.Population.PopulationSize == 0
-                || state.ScenarioKey != scenario.Key)
+                || !scenario.MatchesSessionKey(state.ScenarioKey))
             {
                 state.ResetForScenario(scenario.Key, scenario);
                 if (overrideScenarioDefaults)
@@ -356,6 +363,10 @@ namespace CosmicShore.Utility.AITraining
 
             if (!_episodeActive) return;
 
+            // The rollout can open before the scene has re-registered the host as
+            // LocalPlayer. Keep the one Ready press pending until it can land.
+            if (_readyPending) TryPressMatchReady();
+
             // Watchdog is wall-clock. The episode cap stays on Time.time, so a
             // faster simulation still flies a full cap of game time, and a
             // frozen timeScale still ends a wedged match. A timeout is a finished
@@ -371,6 +382,7 @@ namespace CosmicShore.Utility.AITraining
             for (int i = 0; i < _activePilots.Count; i++)
             {
                 var pilot = _activePilots[i];
+                TraceCrystalPickup(pilot);
                 if (!_fitnessComponents.TryGetValue(pilot, out var components)) continue;
                 foreach (var c in components) c.OnFrame(pilot.GetCurrentContext());
             }
@@ -401,10 +413,16 @@ namespace CosmicShore.Utility.AITraining
 
         bool CheckEarlyExitConditions()
         {
-            // Golf modes write Score in AssignScores at the domain objective.
-            // An individual stat gate closes the rollout before that write.
-            if (FitnessProfileSO.ScoreIsGolf(scenario.GameMode)) return false;
             if (scenario.EarlyExitConditions == null || scenario.EarlyExitConditions.Count == 0)
+                return false;
+            // Golf modes write Score in AssignScores at the domain objective.
+            // Closing on a crystal count before that write harvests the live
+            // clock as the golf term. A loser sentinel is written in the same
+            // pass as the winner's finish time, so it is the signal that the
+            // finish time is already on the stats. A split finish that no
+            // single pilot reaches the crystal gate still ends through
+            // OnMiniGameEnd, which runs after AssignScores.
+            if (FitnessProfileSO.ScoreIsGolf(scenario.GameMode) && !GolfAssignScoresHasRun())
                 return false;
             foreach (var pilot in _activePilots)
             {
@@ -413,6 +431,17 @@ namespace CosmicShore.Utility.AITraining
                 {
                     if (Matches(stats, cond)) return true;
                 }
+            }
+            return false;
+        }
+
+        bool GolfAssignScoresHasRun()
+        {
+            if (gameData == null || gameData.RoundStatsList == null) return false;
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats != null && stats.Score >= GolfScoreSentinels.DnfThreshold)
+                    return true;
             }
             return false;
         }
@@ -447,6 +476,7 @@ namespace CosmicShore.Utility.AITraining
             _fitnessComponents.Clear();
             _populationIndices.Clear();
             _roundStatsByPilot.Clear();
+            _crystalsSeen.Clear();
             _checkoutsThisEpisode = 0;
 
             for (int i = 0; i < gameData.Players.Count; i++)
@@ -485,6 +515,7 @@ namespace CosmicShore.Utility.AITraining
                 _fitnessComponents[pilot] = components;
                 _populationIndices[pilot] = popIdx;
                 _roundStatsByPilot[pilot] = player.RoundStats;
+                _crystalsSeen[pilot] = player.RoundStats != null ? player.RoundStats.CrystalsCollected : 0;
 
                 var initialCtx = pilot.GetCurrentContextOrNull();
                 if (initialCtx != null)
@@ -510,8 +541,13 @@ namespace CosmicShore.Utility.AITraining
             // human presses it. An all-AI rollout has nobody to press it, so the
             // ships stay stationary, the pilot never builds a context, and the
             // 120s cap records crystals 0 / time 0. This is the same public button
-            // the HUD wires — not a score write and not a mode rule change.
-            PressMatchReady();
+            // the HUD wires — not a score write and not a mode rule change. The
+            // roster can be complete before LocalPlayer is back after the scene
+            // load, so the press stays pending and Update retries it until the
+            // local player and the controller both exist. It is clicked once.
+            _readyPending = true;
+            _readyWaitTraced = false;
+            TryPressMatchReady();
 
             Trace($"[Training] Rollout start. generation={state.Population.Generation} " +
                   $"evaluations={state.EpisodesCompleted} pilots={_activePilots.Count}");
@@ -523,23 +559,51 @@ namespace CosmicShore.Utility.AITraining
             }
         }
 
-        void PressMatchReady()
+        void TryPressMatchReady()
         {
+            if (!_readyPending) return;
+
             if (gameData == null || gameData.LocalPlayer == null)
             {
-                Trace("[Training] Match ready not pressed — local player is not on the roster yet.");
+                TraceReadyWait("[Training] Match ready not pressed yet — local player is not on the roster. Retrying.");
                 return;
             }
 
+            // OnReadyClicked sends a ServerRpc, which needs a spawned NetworkBehaviour.
             var controller = FindAnyObjectByType<MiniGameControllerBase>();
-            if (controller == null)
+            if (controller == null || !controller.IsSpawned)
             {
-                Trace("[Training] Match ready not pressed — no game controller in the scene.");
+                TraceReadyWait("[Training] Match ready not pressed yet — no spawned game controller in the scene. Retrying.");
                 return;
             }
 
+            _readyPending = false;
             Trace("[Training] Pressing match ready.");
             controller.OnReadyClicked();
+        }
+
+        void TraceReadyWait(string message)
+        {
+            if (_readyWaitTraced) return;
+            _readyWaitTraced = true;
+            Trace(message);
+        }
+
+        /// <summary>
+        /// Traces a rise in this pilot's CrystalsCollected. Logs on the change only,
+        /// never per frame. A drop is the round setup clearing stats and just
+        /// moves the baseline.
+        /// </summary>
+        void TraceCrystalPickup(TrainingPilot pilot)
+        {
+            if (!_roundStatsByPilot.TryGetValue(pilot, out var stats) || stats == null) return;
+            int now = stats.CrystalsCollected;
+            _crystalsSeen.TryGetValue(pilot, out int seen);
+            if (now == seen) return;
+            _crystalsSeen[pilot] = now;
+            if (now < seen || !CSDebug.IsVerbose(CSLogChannel.AITraining)) return;
+            Trace($"[Training] Crystal collected. domain={stats.Domain} crystals={now} " +
+                  $"t={Time.time - _episodeStartTime:F1}s");
         }
 
         bool ShouldTrainPlayer(IPlayer player)
@@ -581,6 +645,7 @@ namespace CosmicShore.Utility.AITraining
         {
             if (!_episodeActive) return;
             _episodeActive = false;
+            _readyPending = false;
 
             int recorded = 0;
             for (int i = 0; i < _activePilots.Count; i++)
@@ -590,6 +655,7 @@ namespace CosmicShore.Utility.AITraining
                 // GetCurrentContextOrNull, and a null context skips Evaluate so
                 // every rollout records total=0.00 with an empty breakdown.
                 var ctx = pilot.GetCurrentContextOrNull();
+                var sticks = pilot.SummarizeStickWrites();
                 pilot.EndEpisode();
 
                 if (!_fitnessComponents.TryGetValue(pilot, out var components)) continue;
@@ -630,11 +696,15 @@ namespace CosmicShore.Utility.AITraining
                 state.RecordEpisode(fitness, pilot.Genome);
                 recorded++;
 
+                // A missing stat or context scores 0 without any reward having
+                // fired. Say so, so it does not read as a real 0 crystals.
                 var domain = stats != null ? stats.Domain.ToString() : "?";
-                var crystals = stats != null ? stats.CrystalsCollected : 0;
+                var crystals = stats != null ? stats.CrystalsCollected.ToString() : "n/a(no RoundStats)";
+                var evaluated = ctx != null ? "" : " [NOT EVALUATED: no context]";
+                Trace($"[Training] Rollout {sticks} domain={domain}");
                 Trace($"[Training] Rollout recorded. generation={state.Population.Generation} " +
                       $"evaluations={state.EpisodesCompleted} domain={domain} crystals={crystals} " +
-                      $"lineage={pilot.Genome.Lineage} {fitness.Summarize()}");
+                      $"lineage={pilot.Genome.Lineage}{evaluated} {fitness.Summarize()}");
             }
 
             if (telemetry != null)

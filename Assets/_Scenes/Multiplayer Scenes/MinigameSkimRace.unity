@@ -887,7 +887,7 @@ MonoBehaviour:
   noNucleusSpawnRadius: 0
   crystalCountMode: 1
   fixedCrystalCount: 1
-  extraCrystalsToSpawnBeyondPlayerCount: 0
+  extraCrystalsToSpawnBeyondPlayerCount: 8
   crystalCountByIntensity: []
   placementMode: 0
   laneRingRadius: 1120
@@ -895,7 +895,7 @@ MonoBehaviour:
   laneLeadDistance: 640
   laneLength: 800
   laneFormation: 0
-  spawnCrystalWithPlayerDomain: 1
+  spawnCrystalWithPlayerDomain: 0
   spawnOnClientReady: 1
 --- !u!114 &1078953732
 MonoBehaviour:

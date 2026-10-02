@@ -19,7 +19,7 @@ namespace CosmicShore.Utility.AITraining
     public class TrainingSessionStateSO : ScriptableObject
     {
         [Header("Identity")]
-        public string ScenarioKey;       // matches TrainingScenarioSO.Key
+        public string ScenarioKey;       // TrainingScenarioSO.Key; resume matches it with MatchesSessionKey
         public string LastWriteUtc;
         public int EpisodesCompleted;
         public int EpisodesRequested;
