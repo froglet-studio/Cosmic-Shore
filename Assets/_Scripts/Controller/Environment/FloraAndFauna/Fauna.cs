@@ -409,6 +409,15 @@ namespace CosmicShore.Gameplay
                 hostCell.UnregisterLiveFauna(this);
             lineageRegistered = false;
 
+            // Leave the cell's spawned-object list too. Flora does this in LifeForm.Die, but Fauna
+            // is not a LifeForm and nothing else removed it, so every creature that died (or was
+            // destroyed by a teardown, cell swap or split) left a dead entry behind and kept
+            // Cell's LifeFormsInCell stat inflated. Safe for every path: the removal is a no-op
+            // when the object was never registered or is already gone, and a cell that is itself
+            // being destroyed is skipped by the null check.
+            if (hostCell)
+                hostCell.UnregisterSpawnedObject(gameObject);
+
             // Last line of defence for a DEFERRED heart (see DefersHeartRelease): an interrupted
             // wither - a cell drain, a manager pulling the husk, a turn ending - never reaches
             // the release inside the wither. This is a genuine recovery rather than a hopeful

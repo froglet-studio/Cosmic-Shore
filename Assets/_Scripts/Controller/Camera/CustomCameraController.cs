@@ -275,7 +275,11 @@ namespace CosmicShore.Gameplay
         
         private void UpdateCamera()
         {
-            if (!_followTarget) return;
+            if (!_followTarget)
+            {
+                RecoverLostFollowTarget();
+                return;
+            }
 
             // A placement frames an explicit WORLD point, which is not in the frame a carry is
             // measuring in; the placement view snaps the camera itself, so the carry just ends.
@@ -419,9 +423,67 @@ namespace CosmicShore.Gameplay
         {
             // A carry belongs to the ship it was started for.
             if (target != _followTarget) CancelCarry();
+
+            // Remember WHO took the target away, so a frozen camera can name its cause instead of
+            // being diagnosed by reading every caller in the project (see RecoverLostFollowTarget).
+            // Captured only on a real loss - a null over a live target - so this costs nothing on
+            // the ordinary path, which only ever hands the camera a vessel.
+            if (!target && _followTarget)
+                _followTargetClearedBy = System.Environment.StackTrace;
+            if (target) { _reportedLostFollowTarget = false; _followTargetClearedBy = null; }
+
             _followTarget = target;
             _lastTargetPos = Vector3.zero;
             _velocity = Vector3.zero;
+        }
+
+        // --- Lost follow target -----------------------------------------------------------------
+        //
+        // The camera frames nothing without a follow target - UpdateCamera returns on the first
+        // line - so losing it while the PLAYER's rig is on screen freezes the view where it is
+        // while the ship flies on, and nothing re-points it until some later SetupGamePlayCameras
+        // (in Menu_Main, the next freestyle entry). That is the whole of "the camera stopped
+        // following me; I had to go to the menu and back". It has two shapes and both are covered:
+        // a caller handed this rig a NULL target (CameraManager.EndWindowedPlayerCamera did, for
+        // a loan that was never taken), or the Transform it followed was DESTROYED under it (a
+        // vessel swapped or despawned without the rig being told).
+        string _followTargetClearedBy;
+        bool _reportedLostFollowTarget;
+
+        /// <summary>
+        /// The player's rig has no live follow target while it is the camera on screen: say so
+        /// ONCE, with whoever cleared it, and latch back onto the player's own ship if
+        /// <see cref="CameraManager"/> still knows a live one. Only the player rig, and only while
+        /// it is the active camera - the replay camera clears its target on purpose
+        /// (<c>CameraManager.BeginManualReplayCamera</c>) and is posed by hand.
+        /// </summary>
+        private void RecoverLostFollowTarget()
+        {
+            var manager = CameraManager.Instance;
+            if (manager == null) return;
+            if (manager.GetCloseCamera() != transform) return;
+            if (!ReferenceEquals(manager.GetActiveController(), this)) return;
+
+            var ship = manager.PlayerFollowTarget;
+            bool canRecover = ship && ship.gameObject.activeInHierarchy;
+
+            if (!_reportedLostFollowTarget)
+            {
+                _reportedLostFollowTarget = true;
+                string cause = _followTargetClearedBy != null
+                    ? "It was handed a NULL follow target by:\n" + _followTargetClearedBy
+                    : "The Transform it was following was DESTROYED without the camera being " +
+                      "re-pointed.";
+                CSDebug.LogWarning(
+                    "[CustomCameraController] The player camera lost its follow target while on " +
+                    "screen, so it stopped following the ship. " +
+                    (canRecover ? $"Re-latching onto '{ship.name}'. " : "No live player vessel to re-latch onto. ") +
+                    cause, this);
+            }
+
+            if (!canRecover) return;
+            SetFollowTarget(ship);
+            SnapToTarget();
         }
 
         /// <summary>

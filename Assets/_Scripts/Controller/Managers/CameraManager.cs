@@ -142,6 +142,15 @@ namespace CosmicShore.Gameplay
         {
             if(!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
+            // A loan is still running (the mode preview has this rig drawing into its window) and
+            // the local vessel has just been (re)initialized - the preview swapping the hull it
+            // flies, on the way in or back out. That vessel IS the one the loan must hand back
+            // when it ends, so record it as the target to restore. Otherwise End "restored" the
+            // target captured at Begin: the hull the swap has just destroyed, which left the
+            // camera following nothing. The loan itself stays - the window is still drawing.
+            if (_windowedLoanActive)
+                _windowedPreviousTarget = followTarget;
+
             _playerFollowTarget = followTarget;
             _playerCamera?.SetFollowTarget(_playerFollowTarget);
             _deathCamera?.SetFollowTarget(_playerFollowTarget);
@@ -284,6 +293,16 @@ namespace CosmicShore.Gameplay
         Camera _windowedCamera;
         Transform _windowedPreviousTarget;
 
+        // True only between a BeginWindowedPlayerCamera and its matching End. The loan has to be
+        // balanced, because End RESTORES state: with no loan in force there is nothing to restore,
+        // and _windowedPreviousTarget is null - so an unmatched End (the mode preview calls it
+        // from four teardown paths, including while a card was only being LOOKED at, and twice in
+        // a row on a tap-out followed by a stop) used to hand the gameplay camera a NULL follow
+        // target. CustomCameraController returns on `!_followTarget`, so the camera froze where it
+        // was while the ship flew on, and nothing re-pointed it until the next freestyle entry ran
+        // SetupGamePlayCameras - "the camera stops following; go to the menu and back to fix it".
+        bool _windowedLoanActive;
+
         /// <summary>
         /// Point the ordinary gameplay camera at <paramref name="target"/> and render it into
         /// <paramref name="renderTexture"/> instead of the screen — the mode preview's "the game
@@ -303,7 +322,12 @@ namespace CosmicShore.Gameplay
             if (_playerCamera == null || renderTexture == null) return null;
             if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
-            _windowedPreviousTarget = _playerFollowTarget;
+            // Capture the target to give back only on the FIRST Begin of a loan: a re-Begin while
+            // a loan is already running (a card re-armed mid-flight) would otherwise record the
+            // borrowed target as the one to restore, and the player's own ship would be lost.
+            if (!_windowedLoanActive)
+                _windowedPreviousTarget = _playerFollowTarget;
+            _windowedLoanActive = true;
 
             _playerFollowTarget = target;
             _playerCamera.SetFollowTarget(target);
@@ -334,6 +358,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void EndWindowedPlayerCamera()
         {
+            // Nothing was lent, so there is nothing to give back - and "giving back" a loan that
+            // never happened writes a null follow target onto the live gameplay camera (see
+            // _windowedLoanActive). Safe to call when no windowed camera is running means a no-op.
+            if (!_windowedLoanActive) return;
+            _windowedLoanActive = false;
+
             if (_windowedCamera)
             {
                 _windowedCamera.targetTexture = null;

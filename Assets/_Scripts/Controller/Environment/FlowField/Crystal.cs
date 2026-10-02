@@ -112,8 +112,16 @@ namespace CosmicShore.Gameplay
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetRegistry() => s_active.Clear();
 
+        // Fade copies created by LerpCrystalMaterialCoroutine that haven't been destroyed yet.
+        readonly List<Material> _lerpTempMaterials = new();
+
         protected virtual void OnDestroy()
         {
+            // A crystal destroyed mid-fade never reaches the coroutine's own Destroy(tempMaterial).
+            foreach (var m in _lerpTempMaterials)
+                if (m) Destroy(m);
+            _lerpTempMaterials.Clear();
+
             // Pair every PrismTimerManager.ScheduleAction with a cancel (see the tint transition
             // block below) - the manager does not deduplicate per owner.
             PrismTimerManager.Instance?.CancelScheduledActions(this);
@@ -785,8 +793,14 @@ namespace CosmicShore.Gameplay
             // the lerp; the current domain's tint is reapplied once the material settles.
             ClearColorSetTint(model);
 
-            Material tempMaterial = new Material(renderer.material);
-            renderer.material = tempMaterial;
+            // sharedMaterial, NOT .material: the .material getter silently clones the current
+            // material onto the renderer, and that clone was immediately orphaned by the
+            // assignment below - one leaked Material per colour change. The temp is tracked so a
+            // fade that never reaches its end (crystal destroyed mid-lerp) is still cleaned up
+            // in OnDestroy.
+            Material tempMaterial = new Material(renderer.sharedMaterial);
+            _lerpTempMaterials.Add(tempMaterial);
+            renderer.sharedMaterial = tempMaterial;
 
             // Detect which color property names the source and target shaders use.
             // Regular crystal shaders use _BrightCrystalColor/_DullCrystalColor,
@@ -817,7 +831,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            renderer.material = targetMaterial;
+            renderer.sharedMaterial = targetMaterial;
 
             // Update the explodingMaterial for the matching crystal model entry
             for (int i = 0; i < crystalModels.Count; i++)
@@ -829,6 +843,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
+            _lerpTempMaterials.Remove(tempMaterial);
             Destroy(tempMaterial);
             ApplyColorSetTint();
         }

@@ -1,5 +1,7 @@
 # Bug Hunt Handoff — September 2026
 
+> Workflow, per-fix reports and the troubleshooting playbook: [`BugHunt/README.md`](BugHunt/README.md) · [`BugHunt/FIX_LOG.md`](BugHunt/FIX_LOG.md).
+
 **For:** whoever picks up the rest of the September 2026 low-blast-radius bug hunt.
 **Branch that fixed the first seven:** `cece/great-albattani-14izai` (PR against `bleeding-edge`).
 **Line numbers:** as of the merge of `bleeding-edge @ 44a9d5fe` into that branch. They will drift;
@@ -31,6 +33,11 @@ Confidence scale:
 | 6 | **Pool double-release / handler stacking.** `GenericPoolManager` released an instance twice, which put it in the pool twice. That handed the same prism to two callers. The per-Get `OnReturnToPool += Release` handlers also stacked. This is the likely cause of **the Squirrel's boost-ring prisms losing spawn consistency over a session.** | `GenericPoolManager` + 4 subclasses |
 | 7 | `.AsMainThread()` returns to the main thread on the EXCEPTION path too (`try/finally`). A faulted UGS task previously resumed its `catch` block off-thread. | `UniTaskExtensions.cs` |
 | 8 | **`Cell.countGrids` disposed on destroy (was §1.8).** Only re-initialisation disposed the density grids, so each destroyed cell leaked 4 grids × 6 persistent NativeArrays (24 allocations) per scene load. `OnDestroy` now disposes them (idempotent) and clears the map. `AddBlock`/`RemoveBlock` use `TryGetValue` so a prism torn down after its cell cannot throw on the emptied map. Shipped on `Bug_Hunt`. | `Cell.OnDestroy`, `Cell.AddBlock`, `Cell.RemoveBlock` |
+| 9 | **Crystal colour-lerp material leak (was §1.10).** `LerpCrystalMaterialCoroutine` ran `new Material(renderer.material)`; the `.material` getter clones the renderer's material onto it, and that clone was orphaned by the next assignment, so every colour change leaked one Material (it logs nothing). It now copies `sharedMaterial`, and each fade copy is tracked and destroyed in `OnDestroy` if the crystal dies mid-fade. Shipped on `Bug_Hunt`. | `Crystal.LerpCrystalMaterialCoroutine`, `Crystal.OnDestroy` |
+| 10 | **Fauna leaves its cell on destroy (was §1.13).** `Fauna` is not a `LifeForm`, so nothing removed a dead or torn-down creature from `Cell.spawnedLifeForms` (flora does it in `LifeForm.Die`); the dead entry stayed and `LifeFormsInCell` stayed inflated. That count feeds `AllLifeFormsDestroyedTurnMonitor` (used by the Wildlife Blitz co-op scene) and the Wildlife Blitz monitors. `Fauna.OnDestroy` now calls `hostCell.UnregisterSpawnedObject`. Shipped on `Bug_Hunt`. | `Fauna.OnDestroy` |
+| 11 | **AI no longer leaves a held drift when stopped (was §1.1).** Already fixed by `4c866f880` (2026-09-26): `AIPilot.StopAIPilot` releases the commit drift, stops every started ability and clears the aim telegraph, and `PilotSwap` releases the hull's held inputs while the server owns it. Verified by Yash in Menu_Main freestyle takeover on `Bug_Hunt`. No code change was needed; `AIPilot.OnDisable` was left alone on purpose (teardown path, vessel is going away). | `AIPilot.StopAIPilot`, `PilotSwap` |
+| 12 | **Gamepad triggers released on strategy switch and pause (was §1.2).** `GamepadInputStrategy` had no `OnStrategyDeactivated` / `OnPaused`, so a trigger or speed gesture held when the player touched the keyboard or mouse (or paused) never sent its release and the vessel kept the ability held. It now releases held triggers and speed effects and resets its state, mirroring `KeyboardInputStrategy`; the trigger edge logic moved into a shared `DispatchTriggers`. Shipped on `Bug_Hunt`. | `GamepadInputStrategy` |
+| 13 | **Auth scene: cached-auth timeout stays on the main thread, and a silent sign-in failure is no longer treated as success (was §1.3 and §1.4).** `TrySignInCachedWithTimeoutAsync` switches to the main thread in both catches (the `CancelAfter` timer thread used to resume it) and uses `.AsMainThread()` on the success path; `HostConnectionService.WaitForProfileInitAsync` got the same switch. `OnGuestLoginAsync` and `AttemptAutoSignInAsync` now check `_facade.IsSignedIn` after the await: guest shows the error and re-enables the button, auto sign-in goes to the main menu instead of waiting out the profile timeout. Shipped on `Bug_Hunt`. | `AuthenticationSceneController`, `HostConnectionService` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -41,55 +48,21 @@ Confidence scale:
 - **The Bends / Wrecking Ball (#1):** the trailing domain should visibly get comeback buffs. Before
   this fix their scenes read the wrong stat.
 - **Any domain mode (#3):** scores read 0 at the instant the countdown ends, never a leftover value.
+- **Gamepad held triggers (1.2):** with a pad, hold a trigger then move the mouse or tap a key, and
+  the ability/drift must end; hold a trigger and pause, and it must release, and the pad must work
+  after resume. Re-check this if a held ability ever sticks after an input switch.
+- **STILL TO TEST (revisit): 1.3 and 1.4 were pushed on `Bug_Hunt` (`6d16219`) but not yet retested in Unity.** Run
+  the next two items before merging them, or whenever the auth scene is next touched.
+- **Auth timeout (1.3):** set `cachedAuthTimeout` to ~0.1 s on the auth scene controller (or go
+  offline with a cached session) and boot. After "Cached auth timed out" it should carry on to the
+  auth panel or main menu with no `EnsureRunningOnMainThread` error and no frozen screen.
+- **Silent sign-in failure (1.4):** with no network and no session, press Guest. It should show the
+  sign-in error and re-enable the button immediately, not sit on "Loading profile…" until the
+  profile timeout. Re-check this if the auth scene ever hangs after a failed sign-in.
 
 ---
 
 ## 1. Tier 2 — small, local, high value (do these first)
-
-### 1.1 AI never releases a held drift when its pilot stops — High
-- **Where:** `Assets/_Scripts/Controller/AI/AIPilot.cs`, `StopAIPilot()` (~620) and `OnDisable()` (~303).
-- **Bug:** the AI starts a drift through `PerformShipControllerActions(InputEvents.CommitControl …)`.
-  `StopAIPilot` and `OnDisable` stop the brain but never send the matching stop.
-- **Trigger:** an AI vessel is mid-drift when autopilot is switched off. Examples: Menu_Main
-  freestyle entry (the local vessel's autopilot goes off), a vessel swap, a spectator takeover.
-- **Consequence:** the vessel stays drifting (course locked, throttle policy of a drift) under the
-  human pilot until they tap drift themselves.
-- **Fix:** in both methods,
-  `if (VesselStatus.IsDrifting) handler.StopShipControllerActions(InputEvents.CommitControl);`.
-  Use whichever control the drift is bound to (resolve it the way the press was resolved; see
-  `R_VesselActionHandler.TryGetInputForAction<T>`). Mirror `ReleaseHeldInputs` rather than
-  inventing a second release path.
-
-### 1.2 Gamepad triggers stay held across a strategy switch / pause — High
-- **Where:** `Assets/_Scripts/Controller/IO/GamepadInputStrategy.cs`. Compare with
-  `KeyboardInputStrategy.OnStrategyDeactivated` (54) / `OnPaused` (62).
-- **Bug:** the keyboard strategy clears held trigger/button state on deactivate and pause. The
-  gamepad strategy has no override, so a trigger held at the moment of the switch is never released.
-- **Trigger:** hold a trigger, then either plug in a keyboard or move the mouse (the device switch
-  hands the family over), or pause.
-- **Consequence:** the ability stays held until the trigger is pressed and released again.
-- **Fix:** add the same two overrides to `GamepadInputStrategy`, releasing whatever it holds.
-
-### 1.3 Cached-auth timeout resumes off the main thread — High
-- **Where:** `Assets/_Scripts/System/AuthenticationSceneController.cs`,
-  `TrySignInCachedWithTimeoutAsync` (303).
-- **Bug:** `CancelAfter` fires on a timer thread, so the `catch (OperationCanceledException)`
-  resumes on the ThreadPool. `.AttachExternalCancellation` sits OUTSIDE `.AsMainThread()`, so shipped
-  fix #7 does not cover this path. The caller then touches UI off-thread.
-- **Trigger:** a slow or unreachable UGS at boot (the `cachedAuthTimeout` expires).
-- **Consequence:** an `EnsureRunningOnMainThread` exception during the auth scene. The player may
-  land on a frozen auth screen.
-- **Fix:** first statement of both `catch` blocks: `await MainThreadDispatcher.SwitchToMainThreadAsync();`
-  (the method must become `async` in the catch; it already is). The same shape exists in
-  `HostConnectionService.WaitForProfileInitAsync` (2239) — check its timeout path too.
-
-### 1.4 Guest / auto sign-in treats a silent failure as success — Medium
-- **Where:** `AuthenticationSceneController.OnGuestLoginAsync` (356) and `AttemptAutoSignInAsync` (329).
-- **Bug:** both await the facade and proceed to `HandlePostAuthFlow` without checking the result.
-  The facade reports failure through `OnSignInFailed` rather than throwing.
-- **Consequence:** the scene navigates as signed in and then waits on a profile that never loads,
-  until the safety timeout.
-- **Fix:** after the await, `if (!_facade.IsSignedIn) { show the error / re-enable the button; return; }`.
 
 ### 1.5 Friends init latches `_initialized` before the service is actually up — High
 - **Where:** `Assets/_Scripts/Controller/Party/FriendsInitializer.cs` (~236-241).
@@ -122,13 +95,6 @@ Confidence scale:
   th-TH and fa-IR that is not Gregorian (see the weekly-challenge finding in CLAUDE.md).
 - **Fix:** pass `CultureInfo.InvariantCulture` to every one.
 
-### 1.10 Crystal material lerp leaks two materials per lerp — High
-- **Where:** `Assets/_Scripts/Controller/Environment/FlowField/Crystal.cs`, `LerpCrystalMaterialCoroutine` (~788).
-- **Bug:** `new Material(renderer.material)`. `renderer.material` already clones, so each call mints
-  TWO materials and neither is destroyed.
-- **Fix:** `new Material(renderer.sharedMaterial)`, then `Destroy(tempMaterial)` when the lerp
-  finishes or the coroutine is stopped.
-
 ### 1.11 Non-ASCII glyphs render as tofu — High
 - **Where:** `SpectatorOverlay.cs` 125 (`◀`), 138 (`▶`), 150 (`✕`). Also check
   `ToyConfigureModal.cs` (~514), `DogFightScoringRuleSO.cs` (~141), the `·` in the Broadside and
@@ -143,12 +109,6 @@ Confidence scale:
   processed-player bookkeeping and `IsInitializedAsAI`).
 - **Consequence:** later passes treat it as a human (ready gates, domain normalisation).
 - **Fix:** mark it exactly as `ServerPlayerVesselInitializerWithAI` marks its own AI.
-
-### 1.13 Fauna does not unregister from its cell on destroy — Medium
-- **Where:** `Fauna.OnDestroy` (424); `Cell.UnregisterSpawnedObject` (1361).
-- **Bug:** a creature destroyed outside the normal death path (scene teardown, cell swap, split)
-  stays in the cell's spawned-object list.
-- **Fix:** `hostCell?.UnregisterSpawnedObject(gameObject);` in `OnDestroy`.
 
 ---
 
