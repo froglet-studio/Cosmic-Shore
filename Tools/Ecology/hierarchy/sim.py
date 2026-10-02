@@ -168,12 +168,17 @@ class HierSim:
             E = pop.centre[reps_b] + rng.uniform(-0.5, 0.5, cnt) * pop.w
             target = (nr * pop.centre).sum() + pop.pool[r]
             E += (target - E.sum()) / cnt
+            if self.P.bug == "expand_flat_energy":
+                E[:] = target / cnt
             low = E < 0.05 * pop.w
             if low.any():          # never hand an agent an empty stomach: borrow from the rest
                 need = (0.05 * pop.w - E[low]).sum()
                 E[low] = 0.05 * pop.w
                 E[~low] -= need / max((~low).sum(), 1)
             resid = target - E.sum()
+            if self.P.bug == "expand_lose_pool":
+                resid = 0.0
+                E -= pop.pool[r] / cnt
             if abs(resid) > 0:
                 W.N[r] += resid; self.events["settle"] += abs(resid)
             # positions: voxel by occupancy, uniform inside the voxel
@@ -205,7 +210,7 @@ class HierSim:
         for s, pop in enumerate(self.M.pops):
             m = sp == s
             if m.any():
-                pop.place(rr[m], el[m].astype(np.int64), E[m])
+                pop.place(rr[m], el[m].astype(np.int64), E[m] * (0.99 if self.P.bug == "absorb_drop_stomach" else 1.0))
         mask = np.zeros(n, bool); mask[go] = True
         A.remove(mask)
         self.events["absorb"] += len(go)

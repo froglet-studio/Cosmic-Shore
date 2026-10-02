@@ -30,6 +30,8 @@ class Agents:
         self.births = np.zeros(2, np.int64)
         self.deaths = np.zeros(2, np.int64)
         self.sprinting = np.zeros(0, bool)
+        self.graze_acc = np.zeros(world.nreg)      # instrumentation: volume grazed per region (calibration)
+        self.kill_acc = np.zeros(world.nreg)       # kills per region (victim's region)
 
     def _alloc(self, cap):
         def grow(a, shape, dtype, fill=0):
@@ -95,8 +97,9 @@ class Agents:
         isP = ~isH
         emax = np.where(isH, HERB.e_max, PRED.e_max)
         sat = np.clip(1.0 - E / emax, 0.0, 1.0)
-        frac = E / emax
-        hungry = frac < np.where(isH, HERB.phase_lo, PRED.phase_lo)
+        frac = E / emax                                   # satiation / hunting scale
+        fb = E / np.where(isH, HERB.e_birth, PRED.e_birth)  # phase scale (shared with macro bins)
+        hungry = fb < np.where(isH, HERB.phase_lo, PRED.phase_lo)
         sprint = np.zeros(n, bool)
 
         # ---- grazing (herbivores) on the shared voxel field
@@ -115,6 +118,7 @@ class Agents:
             W.F[ur, uv] -= took_k * fF
             W.K[ur, uv] -= took_k * (1 - fF)
             E[hi] += want * sc[inv]
+            np.add.at(self.graze_acc, ur, took_k)
 
         # ---- predators: chase the nearest herbivore inside the sense radius, catch inside the catch radius
         pi = np.flatnonzero(isP & (frac < P.p_hunt_below))
@@ -136,6 +140,7 @@ class Agents:
                     meal = HERB.body + E[cv]
                     E[cp] += meal
                     dead[cv] = True
+                    np.add.at(self.kill_acc, reg[cv], 1)
                     self.kills += len(cv)
         # ---- herbivores: flee predators inside the flee radius
         if len(hi) and isP.any():
@@ -159,7 +164,7 @@ class Agents:
         steer += th * np.where(hungry, 1.2, 0.6)[:, None]
         # ---- velocity
         spd = np.where(isH, np.where(sprint, HERB.sprint, HERB.speed), np.where(sprint, PRED.sprint, PRED.speed))
-        sated = frac > np.where(isH, HERB.phase_hi, PRED.phase_hi)
+        sated = fb > np.where(isH, HERB.phase_hi, PRED.phase_hi)
         spd = spd * np.where(sated & ~sprint, 0.5, 1.0)
         nrm = np.linalg.norm(steer, axis=1, keepdims=True)
         want_v = np.where(nrm > 1e-9, steer / np.maximum(nrm, 1e-9), th) * spd[:, None]
@@ -197,7 +202,7 @@ class Agents:
             bs = sp[nb]
             body = np.where(bs == 0, HERB.body, PRED.body)
             e0 = np.where(bs == 0, HERB.e0, PRED.e0)
-            E[nb] -= body + e0
+            E[nb] -= (0.0 if self.P.bug == "birth_free_body" else body) + e0
             for s in (0, 1):
                 self.births[s] += int((bs == s).sum())
             off = pos[nb] + rng.normal(0, 2.0, (len(nb), 3))

@@ -29,15 +29,15 @@ class Species:
     speed: float         # cruise speed
     sprint: float        # flee / chase speed
     sprint_metab: float  # extra vol/s while sprinting
-    # phases are read off the stomach: sated > hi, hungry < lo, forage between
-    phase_lo: float = 0.25
-    phase_hi: float = 0.75
+    # phases are read off the stomach as a fraction of e_birth: sated > hi, hungry < lo, forage between
+    phase_lo: float = 0.3
+    phase_hi: float = 0.8
 
 
-HERB = Species("herb", body=8.0, e0=6.0, e_birth=20.0, e_max=24.0, metab=0.04,
-               speed=18.0, sprint=30.0, sprint_metab=0.04)
-PRED = Species("pred", body=40.0, e0=30.0, e_birth=100.0, e_max=120.0, metab=0.10,
-               speed=30.0, sprint=42.0, sprint_metab=0.10)
+HERB = Species("herb", body=8.0, e0=6.0, e_birth=20.0, e_max=32.0, metab=0.04,
+               speed=18.0, sprint=32.0, sprint_metab=0.04)
+PRED = Species("pred", body=40.0, e0=30.0, e_birth=100.0, e_max=120.0, metab=0.15,
+               speed=20.0, sprint=36.0, sprint_metab=0.30)
 
 
 @dataclass
@@ -60,9 +60,9 @@ class Params:
     p_handle: float = 4.0        # s per kill (the chase)
     p_hunt_below: float = 0.8    # predators hunt only while stomach < this * e_max (satiation)
     # ---- micro predation geometry (what p_attack / p_handle are fitted FROM)
-    p_sense: float = 60.0
+    p_sense: float = 25.0
     p_catch: float = 4.0
-    h_flee: float = 35.0
+    h_flee: float = 40.0
     # ---- macro movement (regional hops; fitted to micro effective diffusion) ----
     hop_rate: dict = field(default_factory=lambda: {"herb": (0.004, 0.008, 0.03), "pred": (0.006, 0.015, 0.05)})
     # per-neighbour hop rate by phase (sated, forage, hungry)
@@ -82,3 +82,5 @@ class Params:
     reps_per_region: int = 6         # impostor representatives per (region, species)
     bloom_s: float = 1.5             # emerging agents disperse from their representative over this
     seed: int = 7
+    # ---- NEGATIVE CONTROLS: a planted bug the gates must catch (tests/). Never set in a real run.
+    bug: str = ""

@@ -1,0 +1,141 @@
+{
+ "gate_passed": true,
+ "runs": [
+  {
+   "bug": "",
+   "passed": true,
+   "exercised": true,
+   "ledger_rel_drift": 1.4514614872504895e-13,
+   "lod_mass_mismatch": 2.3283064365386963e-10,
+   "lod_count_mismatch": 0,
+   "negative_state": false,
+   "flows": {
+    "expand": 158836,
+    "absorb": 166301,
+    "arrive": 10131,
+    "macro_births": [
+     4837,
+     6561
+    ],
+    "macro_deaths": [
+     13,
+     2472
+    ],
+    "macro_kills": 32951,
+    "micro_births": [
+     318,
+     615
+    ],
+    "micro_deaths": [
+     0,
+     147
+    ],
+    "micro_kills": 2183
+   },
+   "total": 6371531.89882447,
+   "settle": 3.664162862015985e-10
+  },
+  {
+   "bug": "absorb_drop_stomach",
+   "passed": false,
+   "exercised": true,
+   "ledger_rel_drift": 0.0035126776984532202,
+   "lod_mass_mismatch": 410.1307363247033,
+   "lod_count_mismatch": 0,
+   "negative_state": false,
+   "flows": {
+    "expand": 97979,
+    "absorb": 98971,
+    "arrive": 5068,
+    "macro_births": [
+     3380,
+     4770
+    ],
+    "macro_deaths": [
+     1,
+     234
+    ],
+    "macro_kills": 25782,
+    "micro_births": [
+     238,
+     475
+    ],
+    "micro_deaths": [
+     0,
+     10
+    ],
+    "micro_kills": 1733
+   },
+   "total": 6371531.89882447,
+   "settle": 1.752056277837255e-10
+  },
+  {
+   "bug": "birth_free_body",
+   "passed": false,
+   "exercised": true,
+   "ledger_rel_drift": 0.003273310144349737,
+   "lod_mass_mismatch": 2.3283064365386963e-10,
+   "lod_count_mismatch": 0,
+   "negative_state": false,
+   "flows": {
+    "expand": 99511,
+    "absorb": 100440,
+    "arrive": 5120,
+    "macro_births": [
+     3881,
+     5167
+    ],
+    "macro_deaths": [
+     2,
+     170
+    ],
+    "macro_kills": 26372,
+    "micro_births": [
+     272,
+     467
+    ],
+    "micro_deaths": [
+     0,
+     7
+    ],
+    "micro_kills": 1803
+   },
+   "total": 6371531.89882447,
+   "settle": 1.851603315117245e-10
+  },
+  {
+   "bug": "expand_lose_pool",
+   "passed": false,
+   "exercised": true,
+   "ledger_rel_drift": 0.000950344161748014,
+   "lod_mass_mismatch": 4558.5,
+   "lod_count_mismatch": 0,
+   "negative_state": false,
+   "flows": {
+    "expand": 98434,
+    "absorb": 99326,
+    "arrive": 5149,
+    "macro_births": [
+     3820,
+     4973
+    ],
+    "macro_deaths": [
+     1,
+     194
+    ],
+    "macro_kills": 26153,
+    "micro_births": [
+     228,
+     412
+    ],
+    "micro_deaths": [
+     0,
+     11
+    ],
+    "micro_kills": 1749
+   },
+   "total": 6371531.89882447,
+   "settle": 0.0
+  }
+ ]
+}

@@ -38,7 +38,7 @@ class MacroPop:
         self.pool = np.zeros(nreg)
         sat = np.clip(1.0 - self.centre / sp.e_max, 0.0, 1.0)
         self.sat = sat
-        f = self.centre / sp.e_max
+        f = self.centre / sp.e_birth
         self.phase_of_bin = np.where(f < sp.phase_lo, 2, np.where(f > sp.phase_hi, 0, 1))  # 0 sated 1 forage 2 hungry
 
     def bin_of(self, e):
@@ -102,6 +102,8 @@ class Macro:
         occ = self.occupancy()[cold]
         g = G / (G + P.h_half)
         want = eff[:, None] * occ * P.h_intake * g * dt
+        if P.bug == "macro_graze_x1.5":
+            want = want * 1.5
         took = np.minimum(want, G)
         fracF = np.where(G > 0, W.F[cold] / np.maximum(G, 1e-12), 0.0)
         W.F[cold] -= took * fracF
@@ -278,4 +280,8 @@ class Macro:
         return np.bincount(pop.phase_of_bin, weights=by_bin, minlength=3)
 
     def mass(self):
-        return self.H.mass() + self.Pr.mass()
+        inbox = sum((self.pops[s].sp.body + e) for (s, _d, _r, _el, e) in self.inbox)
+        return self.H.mass() + self.Pr.mass() + inbox
+
+    def inbox_count(self):
+        return len(self.inbox)
