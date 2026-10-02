@@ -1,0 +1,409 @@
+{
+ "classes": [
+  "cute",
+  "playful",
+  "eerie",
+  "majestic",
+  "menacing",
+  "terrifying",
+  "neutral"
+ ],
+ "lofo5": {
+  "accuracy": 0.746,
+  "per_fold": [
+   0.875,
+   0.685,
+   0.75,
+   0.649,
+   0.774
+  ],
+  "emotions_only": 0.713,
+  "neutral_recall": 0.95,
+  "confusion": [
+   [
+    96,
+    18,
+    0,
+    0,
+    0,
+    0,
+    6
+   ],
+   [
+    18,
+    102,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   [
+    24,
+    4,
+    52,
+    0,
+    24,
+    10,
+    6
+   ],
+   [
+    0,
+    0,
+    2,
+    89,
+    6,
+    1,
+    22
+   ],
+   [
+    0,
+    0,
+    21,
+    2,
+    92,
+    3,
+    2
+   ],
+   [
+    0,
+    0,
+    13,
+    0,
+    25,
+    82,
+    0
+   ],
+   [
+    0,
+    0,
+    1,
+    5,
+    0,
+    0,
+    114
+   ]
+  ]
+ },
+ "sealed2_plus_neutral": {
+  "accuracy": 0.911,
+  "per_family": {
+   "CuteTumble": {
+    "acc": 1.0,
+    "read_as": "cute"
+   },
+   "PlaySkipper": {
+    "acc": 1.0,
+    "read_as": "playful"
+   },
+   "EerieCarousel": {
+    "acc": 0.54,
+    "read_as": "eerie"
+   },
+   "MajProcession": {
+    "acc": 0.96,
+    "read_as": "majestic"
+   },
+   "MenOverhead": {
+    "acc": 1.0,
+    "read_as": "menacing"
+   },
+   "TerRise": {
+    "acc": 0.92,
+    "read_as": "terrifying"
+   },
+   "NeuForager": {
+    "acc": 0.96,
+    "read_as": "neutral"
+   }
+  }
+ },
+ "searched_under_v3": {
+  "cute": {
+   "cute": 6
+  },
+  "playful": {
+   "playful": 6
+  },
+  "eerie": {
+   "eerie": 6
+  },
+  "majestic": {
+   "neutral": 6
+  },
+  "menacing": {
+   "menacing": 6
+  },
+  "terrifying": {
+   "terrifying": 6
+  }
+ },
+ "game_under_v3": {
+  "worm_colony": {
+   "hover": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.059,
+     "playful": 0.025,
+     "eerie": 0.092,
+     "majestic": 0.33,
+     "menacing": 0.037,
+     "terrifying": 0.013,
+     "neutral": 0.444
+    }
+   },
+   "cruise": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.046,
+     "playful": 0.015,
+     "eerie": 0.058,
+     "majestic": 0.287,
+     "menacing": 0.031,
+     "terrifying": 0.005,
+     "neutral": 0.558
+    }
+   },
+   "evade": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.033,
+     "playful": 0.007,
+     "eerie": 0.06,
+     "majestic": 0.333,
+     "menacing": 0.022,
+     "terrifying": 0.002,
+     "neutral": 0.542
+    }
+   }
+  },
+  "worm_attack_cycle": {
+   "hover": {
+    "top": "eerie",
+    "p": {
+     "cute": 0.113,
+     "playful": 0.037,
+     "eerie": 0.333,
+     "majestic": 0.116,
+     "menacing": 0.087,
+     "terrifying": 0.082,
+     "neutral": 0.232
+    }
+   },
+   "cruise": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.058,
+     "playful": 0.016,
+     "eerie": 0.067,
+     "majestic": 0.237,
+     "menacing": 0.038,
+     "terrifying": 0.008,
+     "neutral": 0.575
+    }
+   },
+   "evade": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.015,
+     "playful": 0.003,
+     "eerie": 0.015,
+     "majestic": 0.14,
+     "menacing": 0.009,
+     "terrifying": 0.001,
+     "neutral": 0.817
+    }
+   }
+  },
+  "shark_r30": {
+   "hover": {
+    "top": "menacing",
+    "p": {
+     "cute": 0.005,
+     "playful": 0.034,
+     "eerie": 0.033,
+     "majestic": 0.297,
+     "menacing": 0.376,
+     "terrifying": 0.029,
+     "neutral": 0.227
+    }
+   },
+   "cruise": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.003,
+     "playful": 0.018,
+     "eerie": 0.022,
+     "majestic": 0.368,
+     "menacing": 0.251,
+     "terrifying": 0.011,
+     "neutral": 0.327
+    }
+   },
+   "evade": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.002,
+     "playful": 0.008,
+     "eerie": 0.018,
+     "majestic": 0.333,
+     "menacing": 0.191,
+     "terrifying": 0.006,
+     "neutral": 0.442
+    }
+   }
+  },
+  "shark_r60": {
+   "hover": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.004,
+     "playful": 0.026,
+     "eerie": 0.015,
+     "majestic": 0.429,
+     "menacing": 0.372,
+     "terrifying": 0.05,
+     "neutral": 0.104
+    }
+   },
+   "cruise": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.002,
+     "playful": 0.014,
+     "eerie": 0.01,
+     "majestic": 0.55,
+     "menacing": 0.246,
+     "terrifying": 0.018,
+     "neutral": 0.159
+    }
+   },
+   "evade": {
+    "top": "majestic",
+    "p": {
+     "cute": 0.001,
+     "playful": 0.007,
+     "eerie": 0.01,
+     "majestic": 0.533,
+     "menacing": 0.201,
+     "terrifying": 0.008,
+     "neutral": 0.24
+    }
+   }
+  },
+  "tadpole_flock": {
+   "hover": {
+    "top": "cute",
+    "p": {
+     "cute": 0.788,
+     "playful": 0.013,
+     "eerie": 0.034,
+     "majestic": 0.02,
+     "menacing": 0.003,
+     "terrifying": 0.002,
+     "neutral": 0.14
+    }
+   },
+   "cruise": {
+    "top": "cute",
+    "p": {
+     "cute": 0.618,
+     "playful": 0.011,
+     "eerie": 0.023,
+     "majestic": 0.038,
+     "menacing": 0.003,
+     "terrifying": 0.001,
+     "neutral": 0.307
+    }
+   },
+   "evade": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.373,
+     "playful": 0.008,
+     "eerie": 0.015,
+     "majestic": 0.062,
+     "menacing": 0.004,
+     "terrifying": 0.0,
+     "neutral": 0.538
+    }
+   }
+  },
+  "swarm_whale": {
+   "hover": {
+    "top": "eerie",
+    "p": {
+     "cute": 0.003,
+     "playful": 0.004,
+     "eerie": 0.331,
+     "majestic": 0.314,
+     "menacing": 0.072,
+     "terrifying": 0.015,
+     "neutral": 0.261
+    }
+   },
+   "cruise": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.003,
+     "playful": 0.004,
+     "eerie": 0.191,
+     "majestic": 0.28,
+     "menacing": 0.058,
+     "terrifying": 0.007,
+     "neutral": 0.458
+    }
+   },
+   "evade": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.002,
+     "playful": 0.002,
+     "eerie": 0.053,
+     "majestic": 0.278,
+     "menacing": 0.025,
+     "terrifying": 0.001,
+     "neutral": 0.64
+    }
+   }
+  },
+  "swarm_dragonfly": {
+   "hover": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.007,
+     "playful": 0.013,
+     "eerie": 0.195,
+     "majestic": 0.298,
+     "menacing": 0.076,
+     "terrifying": 0.02,
+     "neutral": 0.391
+    }
+   },
+   "cruise": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.002,
+     "playful": 0.004,
+     "eerie": 0.114,
+     "majestic": 0.32,
+     "menacing": 0.041,
+     "terrifying": 0.003,
+     "neutral": 0.515
+    }
+   },
+   "evade": {
+    "top": "neutral",
+    "p": {
+     "cute": 0.002,
+     "playful": 0.003,
+     "eerie": 0.055,
+     "majestic": 0.293,
+     "menacing": 0.022,
+     "terrifying": 0.001,
+     "neutral": 0.624
+    }
+   }
+  }
+ }
+}

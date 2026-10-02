@@ -1,0 +1,19 @@
+  majestic gen  0 best 0.546 sigma 0.276
+  majestic gen  1 best 0.593 sigma 0.272
+  majestic gen  2 best 0.627 sigma 0.260
+  majestic gen  3 best 0.694 sigma 0.257
+  majestic gen  4 best 0.603 sigma 0.255
+  majestic gen  5 best 0.714 sigma 0.255
+  majestic gen  6 best 0.774 sigma 0.245
+  majestic gen  7 best 0.809 sigma 0.242
+  majestic gen  8 best 0.810 sigma 0.238
+  majestic gen  9 best 0.849 sigma 0.234
+  majestic gen 10 best 0.883 sigma 0.227
+  majestic gen 11 best 0.837 sigma 0.218
+  majestic gen 12 best 0.849 sigma 0.204
+  majestic gen 13 best 0.847 sigma 0.190
+  majestic gen 14 best 0.869 sigma 0.179
+  majestic gen 15 best 0.893 sigma 0.171
+  majestic gen 16 best 0.887 sigma 0.164
+  majestic gen 17 best 0.864 sigma 0.159
+majestic {"fitness": 0.893, "val_fitness": 0.897, "val_hit": 1.0, "val_agree": 1.0, "params": {"n": 2, "size": 95.244, "aspect": 1.111, "vmax": 15.825, "approach": 0.515, "d0": 450.0, "orbit": 0.514, "ar_amp": 0.0, "ar_period": 1.49, "bounce_amp": 23.171, "bounce_hz": 0.156, "sync": 0.819, "noise": 0.387, "still_duty": 0.0, "still_period": 5.235, "rigid": 0.816, "spread": 54.054, "face": 0.168, "pace": 0.544, "sneak": 0.968}} | random 1.0

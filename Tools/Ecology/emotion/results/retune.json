@@ -1,0 +1,76 @@
+{
+ "playful->menacing": {
+  "source": "playful",
+  "target": "menacing",
+  "fitness": 0.489,
+  "val_fitness": 0.407,
+  "val_hit": 0.5,
+  "l2_move": 1.239,
+  "moved": [
+   [
+    "still_duty",
+    0.0,
+    0.77
+   ],
+   [
+    "size",
+    0.26,
+    0.92
+   ],
+   [
+    "spread",
+    0.93,
+    0.56
+   ],
+   [
+    "d0",
+    0.56,
+    0.85
+   ],
+   [
+    "face",
+    0.41,
+    0.7
+   ],
+   [
+    "pace",
+    0.0,
+    0.2
+   ]
+  ],
+  "history": [
+   0.158,
+   0.181,
+   0.28,
+   0.342,
+   0.358,
+   0.367,
+   0.419,
+   0.444,
+   0.412,
+   0.489
+  ],
+  "params": {
+   "n": 21,
+   "size": 43.5,
+   "aspect": 2.76,
+   "vmax": 19.46,
+   "approach": -0.22,
+   "d0": 269.05,
+   "orbit": 0.26,
+   "ar_amp": 0.41,
+   "ar_period": 2.85,
+   "bounce_amp": 37.4,
+   "bounce_hz": 0.36,
+   "sync": 0.48,
+   "noise": 0.8,
+   "still_duty": 0.61,
+   "still_period": 5.63,
+   "rigid": 0.11,
+   "spread": 39.12,
+   "face": 0.7,
+   "pace": 0.26,
+   "sneak": 0.56
+  }
+ }
+}

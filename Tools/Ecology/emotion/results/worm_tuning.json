@@ -1,0 +1,183 @@
+[
+ {
+  "lunge": 70,
+  "pursuit": 26.1,
+  "telegraph": 1.2,
+  "peak_threat": 0.319,
+  "mean_threat": 0.099,
+  "reads": {
+   "eerie": 30,
+   "majestic": 9,
+   "terrifying": 2,
+   "neutral": 10
+  }
+ },
+ {
+  "lunge": 70,
+  "pursuit": 26.1,
+  "telegraph": 0.5,
+  "peak_threat": 0.308,
+  "mean_threat": 0.093,
+  "reads": {
+   "eerie": 30,
+   "majestic": 10,
+   "terrifying": 3,
+   "neutral": 8
+  }
+ },
+ {
+  "lunge": 70,
+  "pursuit": 54.0,
+  "telegraph": 1.2,
+  "peak_threat": 0.345,
+  "mean_threat": 0.191,
+  "reads": {
+   "neutral": 3,
+   "playful": 1,
+   "eerie": 36,
+   "majestic": 10,
+   "terrifying": 1
+  }
+ },
+ {
+  "lunge": 70,
+  "pursuit": 54.0,
+  "telegraph": 0.5,
+  "peak_threat": 0.376,
+  "mean_threat": 0.196,
+  "reads": {
+   "neutral": 3,
+   "playful": 1,
+   "eerie": 36,
+   "majestic": 10,
+   "terrifying": 1
+  }
+ },
+ {
+  "lunge": 140,
+  "pursuit": 26.1,
+  "telegraph": 1.2,
+  "peak_threat": 0.343,
+  "mean_threat": 0.111,
+  "reads": {
+   "eerie": 30,
+   "majestic": 10,
+   "terrifying": 2,
+   "neutral": 9
+  }
+ },
+ {
+  "lunge": 140,
+  "pursuit": 26.1,
+  "telegraph": 0.5,
+  "peak_threat": 0.392,
+  "mean_threat": 0.112,
+  "reads": {
+   "eerie": 33,
+   "majestic": 9,
+   "terrifying": 2,
+   "neutral": 7
+  }
+ },
+ {
+  "lunge": 140,
+  "pursuit": 54.0,
+  "telegraph": 1.2,
+  "peak_threat": 0.391,
+  "mean_threat": 0.191,
+  "reads": {
+   "eerie": 36,
+   "majestic": 10,
+   "terrifying": 2,
+   "neutral": 3
+  }
+ },
+ {
+  "lunge": 140,
+  "pursuit": 54.0,
+  "telegraph": 0.5,
+  "peak_threat": 0.407,
+  "mean_threat": 0.211,
+  "reads": {
+   "eerie": 33,
+   "majestic": 10,
+   "terrifying": 5,
+   "neutral": 3
+  }
+ },
+ {
+  "lunge": 220,
+  "pursuit": 26.1,
+  "telegraph": 1.2,
+  "peak_threat": 0.335,
+  "mean_threat": 0.107,
+  "reads": {
+   "eerie": 31,
+   "majestic": 10,
+   "terrifying": 2,
+   "neutral": 8
+  }
+ },
+ {
+  "lunge": 220,
+  "pursuit": 26.1,
+  "telegraph": 0.5,
+  "peak_threat": 0.229,
+  "mean_threat": 0.091,
+  "reads": {
+   "eerie": 29,
+   "terrifying": 2,
+   "majestic": 10,
+   "neutral": 10
+  }
+ },
+ {
+  "lunge": 220,
+  "pursuit": 54.0,
+  "telegraph": 1.2,
+  "peak_threat": 0.338,
+  "mean_threat": 0.176,
+  "reads": {
+   "eerie": 29,
+   "terrifying": 6,
+   "majestic": 10,
+   "neutral": 6
+  }
+ },
+ {
+  "lunge": 220,
+  "pursuit": 54.0,
+  "telegraph": 0.5,
+  "peak_threat": 0.552,
+  "mean_threat": 0.196,
+  "reads": {
+   "eerie": 21,
+   "majestic": 10,
+   "terrifying": 9,
+   "neutral": 11
+  }
+ },
+ {
+  "one_body": true,
+  "peak_threat": 0.821,
+  "mean_threat": 0.606,
+  "reads": {
+   "menacing": 28,
+   "majestic": 16,
+   "terrifying": 7
+  }
+ },
+ {
+  "one_body": true,
+  "lunge": 220,
+  "pursue_mult": 3.0,
+  "telegraph": 0.5,
+  "peak_threat": 0.832,
+  "mean_threat": 0.563,
+  "reads": {
+   "menacing": 1,
+   "majestic": 29,
+   "terrifying": 21
+  }
+ }
+]
