@@ -155,3 +155,17 @@ Open:
 - **The stampede almost never tramples** (0.3 hits/min in one run). The alarm quorum flips the herd (phase
   0.8–0.9), but a herd fleeing AWAY rarely runs through the pilot.
 - **Multiple bodies per species** need a clustering step; today it is one body per species.
+
+**Why this direction stops here.** The last three experiments did not move the recommendation:
+- exact neighbours vs moments: same behaviour at 4–5× the cost;
+- intent low-pass: a weak lever;
+- pack parameters: expressivity, not architecture.
+
+The architecture (cell moments + spacing spring + attention LOD + one fused agent kernel + 40³ fields) has
+been stable since the spring fix.
+
+What remains is either in-engine or another direction's question:
+- only Unity can measure Burst against numba;
+- multi-body clustering and armoured bodies belong to Direction B;
+- reproduction cost and churn belong to Direction E;
+- per-phase emotion reads belong to Direction C.
