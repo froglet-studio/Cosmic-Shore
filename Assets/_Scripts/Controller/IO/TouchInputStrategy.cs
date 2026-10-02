@@ -22,15 +22,23 @@ namespace CosmicShore.Gameplay
         /// reach 100%). 0.6" keeps full deflection inside a comfortable thumb arc.</summary>
         const float JoystickRadiusInches = 0.6f;
 
-        /// <summary>Tremor filter around the touch origin, in pixels (~10-15px is standard on
-        /// phones). Output rescales from the dead zone's EDGE to the rim (scaled radial dead
-        /// zone), so there is no output cliff when leaving it.</summary>
-        const float DeadZonePixels = 12f;
+        /// <summary>Centre zone around the touch origin, in inches - 8% of the stick's travel at
+        /// any screen density. It was a flat 12 px, which is 0.075" on a 160 dpi screen and
+        /// 0.03" (under a millimetre) on the 400+ dpi phones the game actually runs on: a centre
+        /// nobody could find by feel, so a thumb walked back to "straight" kept a small turn
+        /// alive and the pilot corrected it into an overcorrection. Output rescales from the
+        /// zone's EDGE to the rim (scaled radial dead zone), so there is no cliff leaving it.</summary>
+        const float DeadZoneInches = 0.05f;
+
+        /// <summary>Floor for <see cref="DeadZoneInches"/> on a low-density or dpi-less screen -
+        /// the old flat value, so no device gets a smaller centre than it had.</summary>
+        const float DeadZoneMinPixels = 12f;
 
         /// <summary>Fallback when Screen.dpi reports 0 (some Android devices).</summary>
         const float FallbackDpi = 160f;
 
         private float joystickRadius;
+        private float deadZone;
         private Vector2 leftJoystickValue, rightJoystickValue;
         private Vector2 leftJoystickStart, rightJoystickStart;
         private Vector2 leftClampedPosition, rightClampedPosition;
@@ -168,6 +176,7 @@ namespace CosmicShore.Gameplay
             base.Initialize(inputStatus);
             float dpi = Screen.dpi > 0f ? Screen.dpi : FallbackDpi;
             joystickRadius = dpi * JoystickRadiusInches;
+            deadZone = Mathf.Max(DeadZoneMinPixels, dpi * DeadZoneInches);
             leftJoystickValue = leftClampedPosition = new Vector2(joystickRadius, joystickRadius);
             rightJoystickValue = rightClampedPosition = new Vector2(Screen.currentResolution.width - joystickRadius, joystickRadius);
             EnhancedTouchSupport.Enable();
@@ -452,17 +461,17 @@ namespace CosmicShore.Gameplay
             Vector2 clampedOffset = Vector2.ClampMagnitude(offset, joystickRadius);
             clampedPosition = joystickStart + clampedOffset;
 
-            // Scaled radial dead zone: inside DeadZonePixels output is zero (tremor filter);
+            // Scaled radial dead zone: inside deadZone output is zero (tremor filter);
             // outside, output rescales from the dead zone's edge to the rim so leaving the zone
             // ramps smoothly from 0 instead of jumping.
             float magnitude = clampedOffset.magnitude;
-            if (magnitude <= DeadZonePixels)
+            if (magnitude <= deadZone)
             {
                 joystick = Vector2.zero;
                 return;
             }
             joystick = (clampedOffset / magnitude)
-                       * ((magnitude - DeadZonePixels) / (joystickRadius - DeadZonePixels));
+                       * ((magnitude - deadZone) / (joystickRadius - deadZone));
         }
 
         private void StopStickEffects()

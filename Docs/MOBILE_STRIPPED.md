@@ -1049,3 +1049,81 @@ No Unity here; the eight out-of-editor gates, a Roslyn syntax parse of every cha
    it straightens out at speed. On a pad with digital triggers, the drift trigger drifts.
 3. Butterfly: a distant gate's window shows the far side; flying in, the camera is carried through
    and the window fills the screen without a hitch; the frame rate holds while a gate is in view.
+
+## Round 15 — the mesh membrane back, a Squirrel that holds its line on glass (2026-10-02)
+
+Reported after Round 14: *"the drift feels better now, portal works. lets use the older mesh
+membrane instead of the capsule membrane. the squirrel's controls still feel less responsive which
+leads to overcorrecting. when it isn't drifting it needs to feel like it has more grip and control
+if touch controls are going to compete with a controller."*
+
+### The membrane: the MembraneBase icosphere, at the capsule's radius
+
+The "older mesh membrane" is `MembraneBase.prefab` — the 642-vertex icosphere (`SkyboxModel.fbx`)
+on `SkyboxModelGraphMaterial` that Barren and Blob used until `dc22f9f9b` (2026-03) switched them to
+`CapsuleMembrane`. It is unlit, opaque and **faces inward** (measured: all 1,280 triangles wind
+inward), so from inside it is the cell's sky and from outside it shows only its far wall, behind
+whatever the cell holds.
+
+It comes back as **`MeshMembrane.prefab`, a prefab VARIANT of `MembraneBase` at scale 1200** — not
+`MembraneBase` itself, which sits at 1000. `Cell.MembraneRadius` reads a membrane without a
+`CapsuleMembrane` component as its `localScale.x`, so at 1200 every radius reader is exactly where
+it was (toy ring, planting bands, density grids, the connecting preview's clamp, the race shells).
+The mesh's own radius is ~1.04 units, so the wall stands at ~1250 and nothing laid inside 1200 is
+behind it (Garland's farthest prism is 1,074).
+
+Repointed: the thirteen cell configs the strip ships — Menu_Main's twelve (Garland, Lattice,
+Arboretum, Barren and the freestyle worlds) plus Skim Race (shared by Waystation). The 42 configs
+of modes the strip does not build still point at `CapsuleMembrane`. The three generators that own
+a repointed config (`author_garland_cell.py`, `author_lattice_cell.py`, `author_arboretum_cell.py`)
+were moved with it and are `--check` clean.
+
+Cost: one 642-vertex draw where the capsule membrane drew **2,562 instanced capsules** (subdivision
+4) every frame and rebuilt 2,562 matrices at 20 Hz; and from inside, the opaque wall writes depth in
+front of the skybox, so the sky shader is early-z rejected under it.
+
+Stated consequence: **Skim Race intensity 3** runs a lobe out to x = -3,480, outside the wall. From
+inside the cell that part of the track is behind the wall until you cross it; from outside, the
+membrane is transparent toward you. That is how Skim Race looked before March; the other three
+intensities stay within 700.
+
+### The Squirrel on glass: the nose follows the thumb
+
+The lag was not in the input — it was in the hull. `VesselTransformer.RotateShip` slerps the hull
+onto the commanded rotation at `LERP_AMOUNT 1.5 x dt`: a first-order lag with a **0.67 s time
+constant**, so while turning at full yaw (120°/s) the nose trails the command by **80°** and keeps
+swinging for a second after the thumb stops. A stick hides most of that — its spring recentres it
+the moment you let go, and the pad's cosine curve keeps mid-stick rates low. Glass has neither: the
+thumb has to be walked back to an origin it cannot feel while the hull is still coming round, the
+pilot reads the swing as their own, and counter-steers into it. The Squirrel's camera is
+hard-attached (its settings asset has no `mode`, so `FixedCamera`), so this slerp was the whole of
+the lag.
+
+- **`VesselTransformer.touchNoseResponse`** (0 = the fleet's 1.5, so every other hull is untouched;
+  **Squirrel 9**): for a TOUCH pilot outside a drift, the hull follows at that rate. The steady turn
+  RATE is unchanged — only the lag behind it shrinks: **80° → 14°** at full yaw, 40° → 7° at half.
+- **Drift unchanged**: the rate blends back to the fleet's by `DriftBlend01`, so the slide you
+  approved is exactly what it was.
+- **Drift exit without a whip**: a held drift leaves the nose ~95° behind the command. The response
+  falls to the fleet's the frame a drift starts and climbs back at 10/s (`NoseResponseRisePerSecond`),
+  so that leftover closes as a swell peaking near 210°/s, done in **~0.9 s** — against ~3.5 s to
+  settle at the fleet response, and a snap at the cap if it jumped straight to 9. A catch-up cap at
+  1.5x the hull's combined pitch+yaw+roll rate backstops large gaps (a flip); it never binds in
+  steady flight, because an exponential follower chasing a command at w moves at most w.
+- **Touch dead zone is a physical size**: `DeadZoneInches` 0.05 (8% of the 0.6" travel), floored
+  at the old 12 px. It was 12 px flat — under a millimetre on a 400+ dpi phone, a centre nobody
+  could find by feel, so a thumb walked back to "straight" kept a small turn alive.
+
+Gamepad and keyboard flight are unchanged; so is the AI unless it is flying a hull whose input
+device reads Touch (the local Squirrel on autopilot in the lava lamp, which now steers crisper).
+
+### Not verified in the editor
+
+No Unity here; the eight out-of-editor gates, a Roslyn syntax parse of every changed file,
+`touch_drift_slip.py --check`, and the three cell generators' `--check` pass. On device:
+1. Menu_Main / freestyle: the cell's sky is the mesh membrane (no capsules); toys, Garland and the
+   Wanderway look right inside it; the frame rate is at least what Round 14 had.
+2. Squirrel on touch: a turn stops when the thumbs come back to centre — no continued swing to
+   correct; small corrections land without overshoot. A held drift feels as before, and on exit the
+   hull comes round onto the line in under a second without snapping.
+3. Skim Race intensity 3: the far lobe appears as you cross the wall (expected, see above).

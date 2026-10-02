@@ -1179,7 +1179,7 @@ GUID = {
 # Shared, already-shipped references this cell composes from - the Blob-family membrane, nucleus,
 # cytoplasm and modifiers, so Garland is a sibling of the freestyle seven rather than a fork.
 REF = dict(
-    membrane=(346633111830028674, "6e330f85972faf843b8a128e7166f7b5"),
+    membrane=(5840952821447383370, "9c84646cbf7465c5a00661a60288c567"),
     nucleus=(7555898194514117247, "b9cf1833fa2493d4b8724ccb6740fb3a"),
     cytoplasm=(639495419069806261, "9cacd903fcf4643459f5f14ac811bb20"),
     modifier=(8058406376250941529, "daa37ae0e7af4b04383c1c4e6e76817d"),

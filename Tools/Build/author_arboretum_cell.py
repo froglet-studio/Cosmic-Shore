@@ -102,7 +102,7 @@ SCRIPT = {
 # ── Cell-owned visuals: the SAME prefabs every freestyle cell uses ──────────
 # Never a scene-placed or rescaled copy - a new core size means a new config pointing at a
 # resized prefab (CLAUDE.md / Docs/ECOSYSTEM.md §13.1). This cell wants the standard core.
-MEMBRANE = ("346633111830028674", "6e330f85972faf843b8a128e7166f7b5")
+MEMBRANE = ("5840952821447383370", "9c84646cbf7465c5a00661a60288c567")
 NUCLEUS = ("7555898194514117247", "b9cf1833fa2493d4b8724ccb6740fb3a")
 CYTOPLASM = ("639495419069806261", "9cacd903fcf4643459f5f14ac811bb20")
 MODIFIER = ("8058406376250941529", "daa37ae0e7af4b04383c1c4e6e76817d")

@@ -66,7 +66,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Nucleus.prefab localScale 400 x the Node mesh's ~0.98u radius - the node-control
         /// radius Cell.RefreshNucleusControlRadius derives from the renderer bounds.</summary>
         public const float NucleusR = 392f;
-        /// <summary>CapsuleMembrane.prefab radius - the playfield boundary.</summary>
+        /// <summary>The cell membrane's radius - the playfield boundary. MeshMembrane.prefab (the
+        /// MembraneBase icosphere at scale 1200) since the strip; CapsuleMembrane.prefab before it.</summary>
         public const float MembraneR = 1200f;
         /// <summary>MenuCam_LavaLamp1's orbit radius. The camera sits INSIDE the bough band, which
         /// is why the bough is the subject and the crown is the backdrop.</summary>

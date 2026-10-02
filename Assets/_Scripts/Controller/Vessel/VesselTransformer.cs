@@ -183,6 +183,32 @@ public class VesselTransformer : MonoBehaviour
                  "not scaled. 1 = no change while stopped.")]
         [SerializeField, Min(0f)] float restrictedTurnMultiplier = 3f;
 
+        [Tooltip("How fast the hull swings onto the rotation the pilot has commanded, per second, " +
+                 "while a TOUCH pilot flies outside a drift. 0 = the fleet's shared response " +
+                 "(1.5/s, a 0.67 s time constant). Inside a drift the fleet response returns, " +
+                 "blended by the drift amount, so the slide itself is unchanged.")]
+        [SerializeField, Min(0f)] float touchNoseResponse = 0f;
+
+        /// <summary>
+        /// The nose closes a LEFTOVER gap - one it inherited from a regime that let it fall far
+        /// behind (a drift running at the fleet response, a 180 degree flip) - no faster than this
+        /// multiple of the vessel's own combined max turn rate. It never binds while the response
+        /// is steady: chasing a command that turns at w, an exponential follower moves at most w,
+        /// which is under the cap. It only stops a drift EXIT from whipping the nose through a
+        /// 90 degree leftover gap in a tenth of a second.
+        /// </summary>
+        const float NoseCatchUpTurnRateMultiple = 1.5f;
+
+        /// <summary>How fast the touch nose response climbs back after a drift, per second: from
+        /// the fleet's 1.5 to a 9 in ~0.75 s, so the ~95 degree gap a held drift leaves is closed
+        /// as a swell peaking near 210 deg/s and done in ~0.9 s, where the fleet response takes
+        /// ~3.5 s to settle it and a straight jump to 9 would snap it at the 320 deg/s cap.</summary>
+        const float NoseResponseRisePerSecond = 10f;
+
+        /// <summary>The live touch nose response. Only meaningful while <see cref="touchNoseResponse"/>
+        /// is in force; 0 reads as the fleet response.</summary>
+        float _touchNoseRate;
+
         /// <summary>Pitch/yaw rate scalar for this frame — <c>restrictedTurnMultiplier</c> while
         /// the vessel is translation-restricted, 1 otherwise. Read at use time (the stance is
         /// toggled mid-flight), and applied by both this class's Pitch/Yaw and the overrides in
@@ -464,6 +490,7 @@ public class VesselTransformer : MonoBehaviour
             // Rotation - reset to face forward
             accumulatedRotation = Quaternion.identity;
             transform.rotation = Quaternion.identity;
+            _touchNoseRate = 0f;
 
             // Movement
             BankIntoTurnSuppressed = false;   // an interrupted ability must not strand the roll axis
@@ -507,20 +534,70 @@ public class VesselTransformer : MonoBehaviour
             Yaw();
             Pitch();
 
-            if (InputStatus != null && InputStatus.IsGyroEnabled)
+            Quaternion target = InputStatus != null && InputStatus.IsGyroEnabled
+                ? accumulatedRotation * InputStatus.GetGyroRotation()
+                : accumulatedRotation;
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation, target, NoseFollowFraction(target, Time.deltaTime));
+        }
+
+        /// <summary>
+        /// This frame's slerp fraction from the hull's rotation toward the commanded one.
+        ///
+        /// The fleet value, <c>LERP_AMOUNT * dt</c>, is a first-order lag with a 0.67 s time
+        /// constant: while turning at w the nose trails the command by w / 1.5 - eighty degrees
+        /// at the Squirrel's full 120 deg/s - and keeps swinging for a second after the input
+        /// stops. A stick hides most of that: its spring returns it to centre the moment the
+        /// thumb lets go, and the pad's cosine curve keeps mid-stick rates low. Glass has neither.
+        /// A thumb has to be walked back to an origin it cannot feel, while the hull is still
+        /// coming round from the last input, so the pilot reads the swing as their own and
+        /// counter-steers into it. That is the overcorrection.
+        ///
+        /// A vessel that authors <see cref="touchNoseResponse"/> follows at that rate instead,
+        /// for a touch pilot outside a drift. The steady turn RATE is unchanged - only the lag
+        /// behind it shrinks. Inside a drift the rate blends back to the fleet's by the drift
+        /// amount, so the slide is exactly what it was, and the catch-up cap keeps the gap a drift
+        /// leaves behind from being closed as a whip on the way out. Never slower than the fleet.
+        /// </summary>
+        protected float NoseFollowFraction(Quaternion target, float dt)
+        {
+            float fleet = LERP_AMOUNT * dt;
+            if (touchNoseResponse <= LERP_AMOUNT || InputStatus == null
+                || InputStatus.ActiveInputDevice != InputDeviceType.Touch)
             {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    accumulatedRotation * InputStatus.GetGyroRotation(),
-                    LERP_AMOUNT * Time.deltaTime);
+                _touchNoseRate = 0f;
+                return fleet;
             }
-            else
-            {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    accumulatedRotation,
-                    LERP_AMOUNT * Time.deltaTime);
-            }
+
+            // Falls at once (a drift takes the fleet response the frame it starts) and RISES at a
+            // bounded slew, because a drift leaves the nose 75-95 degrees behind the command and
+            // jumping straight to the touch response would close that leftover as a whip.
+            float wanted = Mathf.Lerp(touchNoseResponse, LERP_AMOUNT, DriftBlend01());
+            _touchNoseRate = wanted <= _touchNoseRate
+                ? wanted
+                : Mathf.MoveTowards(Mathf.Max(_touchNoseRate, LERP_AMOUNT), wanted, NoseResponseRisePerSecond * dt);
+            float t = 1f - Mathf.Exp(-_touchNoseRate * dt);
+
+            float gap = Quaternion.Angle(transform.rotation, target);
+            if (gap > 1e-3f)
+                t = Mathf.Min(t, MaxCombinedTurnRateDegreesPerSecond() * NoseCatchUpTurnRateMultiple * dt / gap);
+
+            return Mathf.Max(t, fleet);
+        }
+
+        /// <summary>The fastest the command can rotate with every axis at full stick at once -
+        /// pitch, yaw and roll are applied as three rotations per frame, so their rates combine
+        /// as a vector. The catch-up cap is measured against THIS rather than
+        /// <see cref="MaxTurnRateDegreesPerSecond"/> (one axis), or a full pitch+yaw+roll turn
+        /// would hit the cap in steady flight and fall back toward the fleet lag.</summary>
+        float MaxCombinedTurnRateDegreesPerSecond()
+        {
+            float fromSpeed = speed * RotationThrottleScaler;
+            float pitch = (fromSpeed + PitchScaler) * TurnScalar;
+            float yaw = (fromSpeed + YawScaler) * TurnScalar;
+            float roll = (fromSpeed + RollScaler) * RollScalar;
+            return Mathf.Sqrt(pitch * pitch + yaw * yaw + roll * roll);
         }
 
         // ----------------------------- Public Controls -----------------------------
