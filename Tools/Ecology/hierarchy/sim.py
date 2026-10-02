@@ -146,7 +146,7 @@ class HierSim:
                 r = np.linalg.norm(d, axis=1)
                 cos = (d @ v) / np.maximum(r, 1e-9)
                 near |= (r < P.expand_radius) | ((r < P.expand_ahead) & (cos > P.cone_cos))
-                keep |= (r < P.collapse_radius) | ((r < P.expand_ahead + 100) & (cos > P.cone_cos))
+                keep |= (r < P.collapse_radius) | ((r < P.expand_ahead + 80) & (cos > P.cone_cos))
             want = near | (self.hot & keep)
         newly = want & ~self.hot
         self.hot = want

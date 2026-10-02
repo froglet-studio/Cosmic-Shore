@@ -1,11 +1,12 @@
 {
- "gate_passed": false,
+ "gate_passed": true,
  "tol": {
   "count": 0.1,
   "mean_e": 0.1,
   "sd_e": 0.25,
   "phase": 0.08,
-  "flora": 0.05
+  "flora": 0.05,
+  "kills": 0.3
  },
  "overrides": {},
  "cfg": {
@@ -26,7 +27,8 @@
     "pred_mean_e": 0.0655719544788938,
     "pred_sd_e": 0.02350799202659428,
     "pred_phase": 0.05005547329106396,
-    "flora": 0.004393712215539029
+    "flora": 0.004393712215539029,
+    "kills": 0.022675736961451247
    },
    "passed": true,
    "which": {
@@ -38,7 +40,8 @@
     "pred_mean_e": true,
     "herb_phase": true,
     "pred_phase": true,
-    "flora": 1.0
+    "flora": 1.0,
+    "kills": 1.0
    },
    "noise": {
     "herb_count": 0.0006396895730293553,
@@ -1265,7 +1268,8 @@
     "pred_mean_e": 0.012059899294386998,
     "pred_sd_e": 0.037430264929784525,
     "pred_phase": 0.014560000444583738,
-    "flora": 0.004582617545219602
+    "flora": 0.004582617545219602,
+    "kills": 0.07029478458049887
    },
    "passed": true,
    "which": {
@@ -1277,7 +1281,8 @@
     "pred_mean_e": true,
     "herb_phase": true,
     "pred_phase": true,
-    "flora": 1.0
+    "flora": 1.0,
+    "kills": 1.0
    }
   },
   "macro_graze_x1.5": {
@@ -1290,7 +1295,8 @@
     "pred_mean_e": 0.041784549926640546,
     "pred_sd_e": 0.021797838448476728,
     "pred_phase": 0.035103880452357,
-    "flora": 0.11875594641638128
+    "flora": 0.11875594641638128,
+    "kills": 0.09523809523809523
    },
    "passed": false,
    "which": {
@@ -1302,7 +1308,8 @@
     "pred_mean_e": true,
     "herb_phase": false,
     "pred_phase": true,
-    "flora": 0.0
+    "flora": 0.0,
+    "kills": 1.0
    },
    "noise": {
     "herb_count": 0.0006396895730293553,
@@ -1319,7 +1326,8 @@
     "pred_mean_e": 0.0655719544788938,
     "pred_sd_e": 0.3783549315619635,
     "pred_phase": 0.1174790499730374,
-    "flora": 0.004393712215539029
+    "flora": 0.004393712215539029,
+    "kills": 0.022675736961451247
    },
    "passed": false,
    "which": {
@@ -1331,7 +1339,8 @@
     "pred_mean_e": true,
     "herb_phase": false,
     "pred_phase": false,
-    "flora": 1.0
+    "flora": 1.0,
+    "kills": 1.0
    },
    "noise": {
     "herb_count": 0.0006396895730293553,
@@ -1348,9 +1357,10 @@
     "pred_mean_e": 0.04848965862077605,
     "pred_sd_e": 0.12402403575623328,
     "pred_phase": 0.06012824054202977,
-    "flora": 0.0037320201461839716
+    "flora": 0.0037320201461839716,
+    "kills": 0.42630385487528344
    },
-   "passed": true,
+   "passed": false,
    "which": {
     "herb_count": true,
     "pred_count": true,
@@ -1360,7 +1370,8 @@
     "pred_mean_e": true,
     "herb_phase": true,
     "pred_phase": true,
-    "flora": 1.0
+    "flora": 1.0,
+    "kills": 0.0
    },
    "noise": {
     "herb_count": 0.0006396895730293553,
@@ -2578,5 +2589,5 @@
    ]
   ]
  },
- "wall_s": 220.90851163864136
+ "wall_s": 219.91501641273499
 }

@@ -80,10 +80,10 @@ class Params:
     dt_macro: float = 1.0
     dt_micro: float = 0.1
     # ---- LOD ----
-    expand_radius: float = 420.0     # region centre within this of a pilot -> hot
-    expand_ahead: float = 700.0      # ... or within this AND inside the pilot's forward cone (prefetch)
-    collapse_radius: float = 620.0   # hot region with no pilot within this -> cold (hysteresis band)
-    visible_radius: float = 450.0    # an agent closer than this to a pilot, inside its cone, is SEEN
+    expand_radius: float = 280.0     # region centre within this of a pilot -> hot
+    expand_ahead: float = 450.0      # ... or within this AND inside the pilot's forward cone (prefetch)
+    collapse_radius: float = 400.0   # hot region with no pilot within this -> cold (hysteresis band)
+    visible_radius: float = 330.0    # an agent closer than this to a pilot, inside its cone, is SEEN
     cone_cos: float = 0.5            # forward cone half-angle 60 deg
     reps_per_region: int = 6         # impostor representatives per (region, species)
     bloom_s: float = 1.5             # emerging agents disperse from their representative over this
