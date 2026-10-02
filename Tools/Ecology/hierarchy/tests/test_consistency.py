@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from hierarchy.params import Params  # noqa: E402
 from hierarchy.sim import HierSim  # noqa: E402
 
-TOL = dict(count=0.10, mean_e=0.10, sd_e=0.25, phase=0.08, flora=0.05)
+TOL = dict(count=0.10, mean_e=0.10, sd_e=0.25, phase=0.08, flora=0.05, kills=0.30)
 BUGS = ["macro_graze_x1.5", "expand_mean_field", "macro_attack_x2"]
 
 
@@ -58,6 +58,7 @@ def arm(kind, P, init_seed, run_seed, T, R, dens, pred_frac, series=False):
     sim.force_hot = np.ones(nreg, bool)
     sim._lod()
     s = sim.summary()
+    s["kills"] = int(sim.A.kills + sim.M.kills)      # the predation FLOW: stocks barely move in 300 s
     s["traj"] = traj
     return s
 
@@ -75,6 +76,8 @@ def compare(ref, test):
         err[f"{sp}_phase"] = float(0.5 * np.abs(pa - pb).sum())
     a, b = np.mean([r["flora"] for r in ref]), np.mean([r["flora"] for r in test])
     err["flora"] = abs(b - a) / a
+    a, b = np.mean([r["kills"] for r in ref]), np.mean([r["kills"] for r in test])
+    err["kills"] = abs(b - a) / max(a, 1.0)
     # seed-to-seed spread of the reference (the noise floor the tolerance has to sit above)
     sd = {}
     for sp in ("herb", "pred"):
@@ -86,7 +89,7 @@ def compare(ref, test):
 def within(err):
     lim = dict(herb_count=TOL["count"], pred_count=TOL["count"], herb_mean_e=TOL["mean_e"],
                herb_sd_e=TOL["sd_e"], pred_sd_e=TOL["sd_e"],
-               pred_mean_e=TOL["mean_e"], herb_phase=TOL["phase"], pred_phase=TOL["phase"], flora=TOL["flora"])
+               pred_mean_e=TOL["mean_e"], herb_phase=TOL["phase"], pred_phase=TOL["phase"], flora=TOL["flora"], kills=TOL["kills"])
     return all(err[k] <= lim[k] for k in lim), {k: err[k] <= lim[k] for k in lim}
 
 

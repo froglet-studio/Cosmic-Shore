@@ -1,37 +1,37 @@
 {
- "gate_passed": false,
+ "gate_passed": true,
  "runs": [
   {
    "bug": "",
-   "seen_agent_ticks": 1366658,
+   "seen_agent_ticks": 1402242,
    "pop_in": 0,
-   "pop_out": 1,
+   "pop_out": 0,
    "teleport": 0,
-   "expand": 188354,
-   "absorb": 184260,
-   "arrive": 8221,
-   "passed": false
+   "expand": 192640,
+   "absorb": 190380,
+   "arrive": 8475,
+   "passed": true
   },
   {
    "bug": "absorb_ignores_visibility",
-   "seen_agent_ticks": 597451,
+   "seen_agent_ticks": 608275,
    "pop_in": 0,
-   "pop_out": 16,
+   "pop_out": 50,
    "teleport": 0,
-   "expand": 84598,
-   "absorb": 76915,
-   "arrive": 3534,
+   "expand": 85681,
+   "absorb": 78605,
+   "arrive": 3564,
    "passed": false
   },
   {
    "bug": "expand_no_emerge",
-   "seen_agent_ticks": 610940,
-   "pop_in": 3231,
+   "seen_agent_ticks": 620769,
+   "pop_in": 3228,
    "pop_out": 0,
-   "teleport": 270901,
-   "expand": 84753,
-   "absorb": 76919,
-   "arrive": 3523,
+   "teleport": 111578,
+   "expand": 85419,
+   "absorb": 78441,
+   "arrive": 3627,
    "passed": false
   }
  ]
