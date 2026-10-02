@@ -492,6 +492,23 @@ namespace CosmicShore.Gameplay
             Starvation();
             Extinction();
             transform.position = Uni(_job.Anchor);
+            ReportCost();
+        }
+
+        double _tickMsSum; int _tickMsCount; float _nextCostReport;
+
+        /// <summary>The worker's cost is invisible to the Unity Profiler (thread-pool threads are not sampled),
+        /// so a swarm states it itself every 10 s on the Ecology channel (off by default) - QA-SWARM-ROUND7.</summary>
+        void ReportCost()
+        {
+            _tickMsSum += _job.LastTickMs; _tickMsCount++;
+            if (Time.unscaledTime < _nextCostReport) return;
+            _nextCostReport = Time.unscaledTime + 10f;
+            if (CSDebug.IsVerbose(CSLogChannel.Ecology))
+                CSDebug.LogVerbose(CSLogChannel.Ecology,
+                    $"[Swarm] {name}: {_job.AliveCount} tadpoles, {_proxySlots.Count} proxies, worker {_tickMsSum / Mathf.Max(1, _tickMsCount):F2} ms/tick " +
+                    $"({(_inline ? "inline" : "off-thread")}, {(_gpu ? "GPU-drawn" : "GameObjects")})");
+            _tickMsSum = 0; _tickMsCount = 0;
         }
 
         /// <summary>A member that died since the running tick started is still alive in its frame: hide it

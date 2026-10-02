@@ -95,7 +95,7 @@ namespace CosmicShore.Data
 namespace CosmicShore.Utility
 {
     public enum CSLogChannel { Ecology = 1 << 20 }
-    public static class CSDebug { public static void LogVerbose(CSLogChannel c, object m) { } public static void LogWarning(object m) { } public static void LogError(object m) { } }
+    public static class CSDebug { public static void LogVerbose(CSLogChannel c, object m) { } public static bool IsVerbose(CSLogChannel c) => false; public static void LogWarning(object m) { } public static void LogError(object m) { } }
     public class FaunaConfigurationSO : UnityEngine.ScriptableObject { public float BandInnerRadius, BandOuterRadius; }
 }
 

@@ -667,6 +667,61 @@ or snapping every 0.8 s · a body that dissolves into fizz with no readable shap
 fired and the swarm fed · a flinch that starts late · a `NullReferenceException` from `SwarmSortCore` ·
 tadpoles popping in or out.
 
+### QA-SWARM-ROUND7 ⬜ — three ~1,000-tadpole swarms, simulated off-thread and drawn on the GPU, have never been opened
+
+**Source:** branch `cece/swarm-fauna-game` (authored headless; never compiled in Unity). Full reference:
+`Docs/SWARM_FAUNA.md` §14. **Why it matters:** the Swarm cell was climbing back to 15-30 FPS. It is now
+three SORT swarms (whale / pufferfish / jellyfish, ~5x the old bodies) over Borromean feeding grounds;
+the simulation runs on a worker thread, every living member is drawn from one GPU buffer, and only
+members near a vessel are real GameObjects ("proxies"). Always-on colliders 5,008 -> 18. Headless:
+64/64 on the shape yardstick at the new size, smoothness 0.882, 1.08 ms of worker CPU per tick for all
+three swarms and 0.002 ms on the main thread (CoreCLR). Nothing about Unity is proven: not the shader
+compile, not the instanced draw, not the proxy hand-off, not Mono timings. Run `QA-SWARM-FAUNA` first.
+
+1. Let Unity import. Confirm no compile errors naming `SwarmTickJob`, `SwarmMemberRenderer`,
+   `SwarmFauna`, `SwarmTadpoleFauna` or `Prism`, and no shader errors on
+   `CosmicShore/SwarmMemberInstanced`.
+2. Select `Assets/_SO_Assets/Swarm Fauna/SwarmSortFaunaConfig.asset`: **Plan Density 5, Simulate Off
+   Main Thread on, Draw Members On Gpu on, Member Shader = SwarmMemberInstanced, Theme set, Engage
+   Radius 160, Max Proxies 160**. If they are missing, reimport the asset before judging.
+3. Turn on the `Ecology` log channel (FrogletTools > Toolbox > Logging). Enter the Swarm cell (Cell
+   Selector -> Swarm). Expect exactly THREE swarms (inner ~545 u, middle ~765 u, outer ~995 u) and
+   Borromean plants (closed knotted membranes), no phyllotactic forest. If the console says
+   `GPU member drawing is OFF`, record the reason it names - every member then falls back to a
+   GameObject and the rest of this item measures the wrong thing.
+4. **The look.** Park beside each swarm for 60 s. Each must read as its creature (whale, pufferfish,
+   jellyfish), members must glide between ticks (no 10 Hz stepping), newborns must bloom in, nothing pops.
+   Hearts sit at each member's nose; Charge members spike to the danger colour when you fly close.
+5. **Proxies.** Fly into a swarm. Members within ~160 u should look IDENTICAL as they become proxies
+   (there must be no visible swap, double image or flicker at the boundary) and again when you leave.
+6. **Kills.** Shoot members (Sparrow), ram them, joust one (Squirrel): each death withers / suctions /
+   leaves a skeleton as before and drops its crystal; the killed member must not reappear. Fly away
+   and back: leaving range must NOT drop crystals.
+7. **Morph.** A full body needs ~5x the kills of round 6 to flip. Kill a big share of the whale's Mass
+   members; it must morph (record roughly how many kills it took and whether it felt like a slog).
+8. **Prism occlusion corridor:** with members between the camera and your ship, they dissolve like
+   prisms do.
+9. **Profiler (the reason this item exists).** Let the bodies grow for 5+ minutes, then capture:
+   `SwarmFauna.Frame.Draw` and `SwarmFauna.Tick.*` together should be well under 1 ms per frame with
+   no vessel near a swarm; `PhyllotacticFlora.Update` must be gone. Read the `[Swarm] ... worker X
+   ms/tick` lines (the Profiler cannot see the worker thread): record Mono's figure (CoreCLR 0.3-0.4 ms
+   per swarm). Confirm the CPU line does NOT climb over minutes. Then fly into a swarm and record the
+   cost with proxies live (`Tick.Proxies`, `Frame.PoseProxies`).
+10. Starvation: in a cell with its plants grazed out (or `StarvationSeconds` set low on a copy of the
+    config), a starving swarm sheds members that wither to crystals - none simply vanish.
+
+**PASS:** no compile or shader errors; the step-2 values present; three swarms that read as their
+creatures and move smoothly; no visible proxy hand-off; every kill drops a crystal and leaving range drops
+none; the whale morphs; members respect the occlusion corridor; frame cost with no vessel near is under
+~1 ms and does not climb; the Mono worker cost is recorded.
+**FAIL:** any compile/shader error · `GPU member drawing is OFF` on a desktop GPU · members invisible,
+black, stretched or stepping at 10 Hz · a double image or pop at the 160 u boundary · a killed member
+reappearing · a crystal dropped by a member nobody killed · no morph after the majority is cut down ·
+a CPU line that still climbs over minutes · a `NullReferenceException` from `SwarmFauna` or the renderer.
+**Known costs to judge, not fail:** a member beyond 160 u of any vessel has no collider, so a long-range
+weapon (Serpent sniper, Dolphin cone, distant rocket) passes through it; other fauna cannot prey on
+members; member bodies do not move the cell's phase ladder (`Docs/SWARM_FAUNA.md` §14.4).
+
 ### QA-PALETTE-SHIELDED ⬜ — the four prism tiers across all three domains
 **Source:** PRs #644, #705 (danger prisms now paint on the domain's **shielded base
 face**), #707 (gold's shielded prism brought into the pastel family; the danger tier

@@ -31,8 +31,10 @@ one positional-information well of its element, unlike elements repel harder tha
 surplus member MOLTS into a missing element) and the **evofate** swarm (`SwarmEvoFateCore`, §11, the
 research's `evofate` — a trained neural network moves every tadpole, and a small designed pull toward
 the well it committed to sorts it). One config field picks the core (`SwarmFaunaConfigSO.Model`), and
-the Swarm cell hosts all four side by side, one per band, so they can be compared in one session:
-**grid whales inside, field dragonflies, sort pufferfish, evofate jellyfish on the rim**.
+the Swarm cell hosted all four side by side through round 6. **Since round 7 (§14) the cell holds THREE
+big SORT swarms** - a whale, a pufferfish and a jellyfish of up to ~1,000 tadpoles each, simulated off the
+main thread and drawn on the GPU, with a real GameObject only for members near a vessel. Where §1-§4 and
+§14 disagree about the cell, the per-member GameObjects or the collider budget, §14 is current.
 
 ---
 
@@ -181,6 +183,9 @@ remembered as barren for 45 s. With nothing to eat it wanders to a point in its 
 ---
 
 ## 4. The Swarm cell
+
+> **Superseded by §14 (round 7):** three sort swarms over Borromean feeding grounds, 18 always-on
+> colliders. The table below is the round-5/6 cell, kept as the record.
 
 `Assets/_SO_Assets/Cell Configs/Swarm Cell/Swarm Cell Config.asset` — **no `EnvironmentPrefab`**,
 its own spawn profile, the Arboretum's membrane / nucleus / cytoplasm (nucleus world radius ~392),
@@ -1277,6 +1282,10 @@ fractional schedule decides only WHEN a member reads its neighbours, never WHERE
 
 ## 13. The frame budget: one scheduler for the whole cell (playtest, 3 FPS)
 
+> **Partly superseded by §14 (round 7):** the sort tick now runs off the main thread, so the scheduler's
+> budget applies only to the inline fallback; per-member posing (`PoseEveryFrameWithin`, `FarPoseInterval`)
+> and the `Step.*` / `Render.*` markers are gone. QA-SWARM-FRAMEBUDGET below is replaced by QA-SWARM-ROUND7.
+
 **What was reported.** The Swarm cell ran fine at first, then the CPU line climbed as the bodies grew
 and stepped up to a plateau near **3 FPS** (~330 ms frames), with `SwarmFauna.Update` at ~65% of the
 frame, almost all of it SELF time (the cores, posing and the mover contract carried no profiler
@@ -1327,3 +1336,176 @@ editor can say what the cell costs now. QA-SWARM-FRAMEBUDGET:
    does, raise `PoseEveryFrameWithin` or set `FarPoseInterval` to 2.
 5. If the 5 s warning fires in Release, the cell is over budget on real hardware: lower the swarm count
    or raise `SimBudgetMsPerFrame` - the swarms will otherwise visibly swim in slow motion.
+
+---
+
+## 14. Round 7: three big swarms at ~zero main-thread cost (playtest: CPU climbing back to 15-30 FPS)
+
+**What was reported.** Round 6b fixed the 3 FPS spiral, but `PhyllotacticFlora.Update` was ~17% of the
+frame (11% self) and the CPU line still climbed over a few minutes toward 15-30 FPS. The lead's call:
+cheaper and fewer flora; back to THREE swarms, each substantially filled; not every member updated every
+frame; entity/GPU drawing; "ideally the cpu cost goes to zero".
+
+**What this round SUPERSEDES.** §4's 24-swarm, four-model cell and §4.1's 5,008-collider budget; §3's
+"every member is a GameObject, hatching is budgeted"; §13's per-member posing (`PoseEveryFrameWithin`,
+`FarPoseInterval` are deleted - nothing is posed per member any more). The field, grid and evofate cores
+and their configs/prefabs STAY in the tree (Spawn Matrix, harness) - they are just not in the cell.
+
+### 14.1 Design
+
+```
+SwarmFauna (anchor, main thread)                               worker thread (ThreadPool)
+ ├─ Update: acc += dt; if tick due:                           SwarmTickJob.Run
+ │    Collect()  - swap front/back buffers (0.002 ms / 3 swarms)  ├─ apply queued kills + deposits
+ │    OnTickPublished: Upload (2 SetData), events, proxies, feed  ├─ SwarmSortCore.Step (1-in-8 update)
+ │    Kick()     - next tick to the worker                      ├─ build SwarmInstance[] (80 B/member)
+ │  every frame: pose the few proxies, Draw()                  ├─ heart index lists per element
+ ├─ SwarmMemberRenderer  one GraphicsBuffer, RenderMeshPrimitives └─ engaged set (members near a vessel)
+ │    body draw + one draw per crystal model per element
+ └─ SwarmTadpoleFauna proxies (only within EngageRadius of a vessel; MaxProxies nearest)
+```
+
+- **Bigger bodies, same creature** (`SwarmPlanData.Upsample(m)`, `SwarmFaunaConfigSO.PlanDensity` 5). The
+  plan is scaled by m^(1/3) so the tadpole DENSITY - the spacing the sort core's collision and adhesion were
+  tuned at - is unchanged, and each unit becomes m copies on a small hashed Fibonacci sphere. One density
+  for every creature, because a swarm MORPHS between them: whale **960**, pufferfish **895**, jellyfish
+  **440**, dragonfly **380** tadpoles at full size (round 6: 192 / 179 / 88 / 76). `LayMax` and the stomach
+  scale with density so a body grows in proportion; `BitersPerStep` deliberately does NOT (24 per swarm per
+  tick - bites are the one main-thread cost that scales with appetite).
+- **Fractional update.** Unchanged from round 6: `SortUpdateFraction` 8, so 1 in 8 members re-steers per
+  step (and any member a vessel wakes). No tick pays for the whole body.
+- **Off the main thread** (`SwarmTickJob`). State is Idle -> Running -> Done, published with `Volatile`.
+  The worker owns the core while Running; the main thread only queues kills and food deposits under a lock
+  and reads the FRONT buffers. If a tick is still running when the next is due, the display holds at
+  alpha 1 and DROPS the time (never banks it) - the round-6 spiral cannot come back. `SimulateOffMainThread`
+  off = the same tick inline, budgeted by `SimBudgetMsPerFrame` (the round-6 scheduler's budget).
+- **GPU drawing** (`SwarmMemberRenderer` + `SwarmMemberInstanced.shader/.hlsl`). Per tick: two
+  `GraphicsBuffer.SetData`. Per frame: ~a dozen per-swarm values and one `RenderMeshPrimitives` per mesh.
+  The shader interpolates position and facing between ticks, blooms a newborn from 0.001 over the bloom,
+  plays the molt (old heart shrinks to 0 at the midpoint, the new element re-forms), shows the tier (plain /
+  danger / shielded pair of the swarm's ONE domain, from `SO_ColorSet.TryGetPrismKindColors`), collapses a
+  dead slot, and composes the prism occlusion corridor (`PrismOcclusionFade_float`, screen-door clip) - the
+  platform law holds for members too. Meshes are the member's own: the body prism mesh off the tadpole
+  prefab and each element's crystal models off `ElementalCrystalSetSO`. `DrawMembersOnGpu` off (or a device
+  without vertex-stage structured buffers) = every member gets a GameObject as in round 6, warned once.
+- **Proxies.** A member within `EngageRadius` (160) of a vessel becomes a real `SwarmTadpoleFauna` - heart,
+  body prism, colliders, spatial-index entry - nearest first, at most `MaxProxies` (160) per swarm, created
+  under the cell-wide `MaxSpawnsPerFrame` (24) and kept `ProxyLingerSeconds` (2) after it leaves range. Its
+  living visuals are hidden (`Prism.SetOwnerHidden`: the render entity exists but is not drawn; crystal and
+  spindle renderers off) because the GPU draw already shows it; `OnDeath` un-hides them first, so the
+  released heart, the withering skeleton and the suction are the platform's own. A retired proxy is
+  destroyed WITHOUT dying (`Fauna.OnDestroy` releases a heart only if the creature died), so leaving range
+  mints no crystal.
+- **Kills** route proxy -> `HandleMemberDeath` -> `QueueKill` + mask the slot in the uploaded buffer at
+  once (one 80-byte `SetData`), so a killed member never reappears for the tick in flight.
+- **Starvation** asks the worker for a victim; the next tick materialises a proxy for it (`force`), waits
+  for its body to be ready, and starves it - a starved member withers to its crystal like every member.
+
+### 14.2 Flora
+
+The **Borromean membrane**, forked per band from the canonical `Lifeforms/Borromean Flora <Element>`
+configs by `author_swarm_fauna.py` (the Wrecking Ball precedent: the cell generator owns the cell's copies;
+`author_flora_populations.py` hands any config whose name CONTAINS "Borromean" to the species' owner).
+Why it is the cheap family: no per-frame `Update` (PhyllotacticFlora's was the 11% self time) and it is
+COMPACT - it closes on itself and stops, so a finished plant's grow tick is one compare. Fewer plants: 18
+at cap (was 400).
+
+| band (world radius) | swarm starts as | body (tadpoles) | egg bill to full | grazes | plants floor / cap | forest at cap |
+|---|---|---|---|---|---|---|
+| inner 470-620 | whale (Mass) | 960 | 35,346 | Borromean Mass (15,739 / plant) | 2 / 3 | 47,217 |
+| middle 690-840 | pufferfish (Charge) | 895 | 30,729 | Borromean Time (3,279 / plant) | 6 / 10 | 32,790 |
+| outer 910-1080 | jellyfish (Space) | 440 | 12,022 | Borromean Space (2,623 / plant) | 3 / 5 | 13,115 |
+
+The egg bill is the full body's element mix at `EggVolume` (eaten volume converts to member volume 1:1),
+own element at its price and the rest at `CrossElementCost` 2. The author script FAILS if any band's forest
+at cap cannot pay its body once (a grazed plant regrows, so this is a floor on the economy). Charge is
+never food (armoured leaves), so the pufferfish's Charge majority is always paid at the cross price.
+
+**Volume ladder - MODELLED, re-derive in the editor.** A GPU-drawn member is not a registered prism, so
+the cell's LiveVolume holds the flora, skeletons, trails and the proxies - not the bodies. The ladder is
+derived from the modelled mature forest (5,688 prisms, 93,122 volume) plus a full proxy engagement:
+Restless 2,200 / 1,700 (volume 33,000 / 25,000), Frenzy 15,500 / 13,600 (volume 233,000 / 205,000). The
+seeded floor (59,021 volume) already sits above RestlessEnter, so the food web is live from the start.
+
+### 14.3 Collider budget
+
+| | always-on | only while a vessel is within 160 u of a swarm |
+|---|---|---|
+| round 6 (24 swarms) | **5,008** (4,608 tadpole hearts + 400 plant hearts) + up to 4,608 body prisms | - |
+| round 7 (3 swarms) | **18** (plant hearts at cap) | up to 2 x 160 per swarm = **960** (heart + body prism per proxy) |
+
+Worst case 978, asserted under `COLLIDER_CEILING` 1,200 by the author script. 2,295 starting tadpoles
+(up to ~2,880 if all three became whales) carry **zero** colliders.
+
+### 14.4 Invariants - what holds, and what each costs
+
+| law | holds? | how / cost |
+|---|---|---|
+| members are shootable | **yes, within 160 u of a vessel** | **COST:** a member with no proxy has no collider, so a weapon that reaches past `EngageRadius` - the Serpent's 3,000 u sniper, the Dolphin's 2,400 u cone, a rocket fired from range - passes through it. Options: raise `EngageRadius` (proxies are the collider bill), engage along a weapon's line on fire (a seam on the weapon side), or a `PrismSpatialIndex`-style query over member positions for hitscan weapons. Not built - it needs the lead's call on which weapons must reach a swarm at range. |
+| joustable | yes | a joust is contact, always inside 160 u |
+| every death drops a LifeFormCrystal | yes | only a proxy can die, and it dies through the sealed `Fauna.Die`; a retired proxy does not die |
+| starvation withers | yes | the victim is materialised first, then starved |
+| mass is conserved | yes | eggs are paid 1:1 from eaten volume (queued deposits); a dead proxy leaves its skeleton |
+| continuity of existence | yes | births bloom and molts re-form in the shader; a proxy appears and leaves under an unchanged picture; deaths are the platform's own |
+| one colour per swarm | yes | the renderer's palette is the anchor's one domain, read once at bind |
+| no imposed death | yes | unchanged |
+| killing the majority element morphs | **yes, but it takes ~5x the kills** | **COST:** the body is 5x bigger, so flipping its majority takes 5x the kills (harness S4b scales its burst with density and still morphs). If it reads as a slog, lower `PlanDensity`. |
+| other fauna prey on members | **no, outside proxies** | **COST:** members are not prisms, so the cell's predators cannot target them (they still can a proxy). Members still eat flora. |
+| member body volume in LiveVolume | **no** | **COST:** the bodies do not move the cell's phase ladder (the ladder is derived without them, §14.2). |
+| a virtual member's tier | colour only | danger / shield show as the tier's palette pair, not the octahedron shell; a proxy shows the real state |
+
+### 14.5 Proof (offline)
+
+- **Body reads as its creature** - `score_sortfeel.py --density 5` (the research's Sinkhorn shape loss
+  against each plan's own target, exported positions scaled back by 1/m^(1/3)): **64/64** transitions
+  (seeds 7, 23, 41, 101), own-plan loss mass 1.27-1.30 / space 2.03-2.08 / charge 0.93-0.94 / time
+  5.56-5.78 against the loss-8 bar (round 6 at density 1: 1.91 / 2.18 / 1.63 / 5.50). FEEL: speed 0.246,
+  jerk_rel 0.386, coherence 0.443, osc 0.025, planar_excess 0 -> ORGANIC. **Smoothness 0.882** at
+  density 5 (seeds 7 / 23 / 41: 0.848 / 0.910 / 0.889) against 0.917 at density 1 and the research hold's
+  0.724. 0 self-inflicted deaths. The copy radius was chosen by the same yardstick (seeds 7, 23): 0.15
+  fails the dragonfly (8.8), 0.45 -> worst 6.6, **0.6 -> worst 5.6** with the others <= 2.1, 0.75 ->
+  5.5 but space 2.3.
+- **Harness** (`run.sh`, all four cores OK; `SWARM_DENSITY=5 run.sh <plans> sort` OK - S7 needed
+  `ThreatGain` scaled by density^(2/3), because a fixed-size ship startles a smaller fraction of a bigger
+  body; `tickjob` R7a-g OK: worker == inline bit for bit over 300 ticks, frame/heart consistency, a kill
+  queued mid-tick lands next tick, deposit-funded laying, engagement, captured worker exceptions).
+- **Cost (CoreCLR):** three swarms grown to 2,157 members (902 / 841 / 414): **1.08 ms of worker CPU per
+  10 Hz tick** for all three (10.8 ms/s), **0.0019 ms on the main thread** per tick (kick + collect).
+  Mono will be slower - the worker's cost is reported by the swarm itself (below).
+- **Shader:** `Tools/Shaders/verify_swarm_member_pose.py` compiles the shipped HLSL with clang against the
+  proxy's own pose rules: body / heart worst relative error 8.2e-05 / 1.0e-04, molt switches at the
+  midpoint, bloom 0.001 -> 1, dead slot not drawn; negative control (PrismZ sign) fires.
+- **Glue:** type-checks against netstandard2.1 + a stub of the monolith surface (`swarm_glue_typecheck`),
+  negative-controlled (a planted missing member is CS1061). Gates: using-directives, self-referential
+  locals, duplicate attributes, abstract members, conditional compilation, enum members, switch labels,
+  fauna replication seam - all OK. (`check_console_logging` reports one pre-existing finding in
+  `TrainingSessionRunner.cs`; `author_flora_populations --check` fails on a pre-existing Tollway lattice
+  row - neither is this branch's.)
+
+**What only the editor can prove:** that the shader compiles on URP and the target devices; that
+`RenderMeshPrimitives` + `SV_InstanceID` + the per-draw `MaterialPropertyBlock`s behave as assumed (one
+block per draw, never shared); that harvesting a SKINNED crystal mesh gives the right local transform;
+the Mono timings; and the look.
+
+### 14.6 Profiler markers and the worker readout
+
+Main thread: `SwarmFauna.Tick.{Collect, Upload, Proxies, SenseVessels, Feed, Kick, InlineStep}`,
+`SwarmFauna.Frame.{PoseProxies, Draw}`. **The worker is invisible to the Unity Profiler** (thread-pool
+threads are not sampled), so `SwarmTickJob.LastTickMs` times it and each swarm logs
+`[Swarm] <name>: N tadpoles, P proxies, worker X ms/tick (off-thread, GPU-drawn)` every 10 s on the
+`Ecology` log channel (off by default; FrogletTools > Toolbox > Logging).
+
+### 14.7 Files
+
+| file | role |
+|---|---|
+| `.../Swarm/SwarmTickJob.cs` | the off-thread tick, double-buffered frame (`SwarmInstance`, 80 B), heart lists, engaged set |
+| `.../Swarm/SwarmMemberRenderer.cs` | the GPU draw of every living member (one buffer, one draw per mesh) |
+| `Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.shader` / `.hlsl` | member pose + look; the occlusion corridor |
+| `.../Swarm/SwarmFieldCore.cs` | `SwarmPlanData.Upsample` (+ `DefaultUpsampleRadius` 0.6) |
+| `.../Swarm/SwarmSortCore.cs` | `ThreatGain` |
+| `.../Swarm/SwarmFauna.cs`, `SwarmTadpoleFauna.cs`, `SwarmFaunaConfigSO.cs` | the glue, the proxy, the round-7 fields |
+| `Assets/_Scripts/Controller/Vessel/Prism.cs`, `.../Environment/HealthPrism.cs` | `Prism.SetOwnerHidden` (entity kept, not drawn); a skeleton un-hides |
+| `Tools/Build/author_swarm_fauna.py` | the cell (3 sort swarms, Borromean forks, ladder, collider gate, stale-file removal) |
+| `Tools/Build/swarm_core_harness/TickJobHarness.cs`, `score_sortfeel.py --density` | the proof above |
+| `Tools/Shaders/verify_swarm_member_pose.py` | the shader proof |

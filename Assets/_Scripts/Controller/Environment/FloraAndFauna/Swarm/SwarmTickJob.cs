@@ -206,11 +206,18 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>Wall time of the last finished tick, in ms (worker side). The Unity Profiler does not
+        /// sample thread-pool threads, so this is the one place the off-thread cost is visible.
+        /// Written by the worker before it publishes Done, read by the main thread after Collect.</summary>
+        public double LastTickMs { get; private set; }
+
         static void RunOnWorker(object o)
         {
             var job = (SwarmTickJob)o;
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             try { job.Run(); }
             catch (Exception e) { job.Error = e; }
+            job.LastTickMs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
             Volatile.Write(ref job._state, (int)SwarmJobState.Done);
         }
 

@@ -89,6 +89,22 @@ def _shrink(dump, m):
             r["win"] = [[[c * k for c in p] for p in step] for step in r["win"]]
 
 
+def _shrink_events(events, m):
+    """_shrink for swarm_smooth's events: snapshots are unit lists, traces are frames of flat "p" positions.
+    Every distance swarm_smooth reads (teleport is an ABSOLUTE step bound) is then in plan units."""
+    if m <= 1:
+        return
+    k = 1.0 / m ** (1.0 / 3.0)
+    for ev in events:
+        for key in ("snap", "snaps", "tail"):
+            for units in ev.get(key, []):
+                for u in units:
+                    u[0] *= k; u[1] *= k; u[2] *= k
+        for key in ("ref", "trace"):
+            for f in ev.get(key, []):
+                f["p"] = [c * k for c in f["p"]]
+
+
 def yardstick(a, sn, se, torch, targets, targets1, L, swarm_feel, res):
     exp = os.path.join(tempfile.mkdtemp(prefix="swarm_yard6_"), "yard.json")
     t0 = time.time()
@@ -163,8 +179,9 @@ def smoothness(a, sn, torch, targets, targets1, L, res):
         exp = os.path.join(tempfile.mkdtemp(prefix="swarm_smooth6_"), "smooth.json")
         t0 = time.time()
         subprocess.run(["bash", os.path.join(HERE, "run.sh"), "smoothsort", sg.PLANS, exp, str(seed), a.smooth, pairs],
-                       check=True)
+                       check=True, env=_density_env(a))
         evs = json.load(open(exp))["events"]
+        _shrink_events(evs, a.density)
         for ev in evs:
             ev["seed"] = seed
         events += evs
