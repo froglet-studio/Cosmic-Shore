@@ -104,8 +104,30 @@ class Arena:
         self.threats: list = []                # positions an evader flees (species publish here)
         self.log: list = []                    # (t, pilot, kind, amount)
         self.eaten: float = 0.0                # total volume consumed (conservation audit)
+        # OPTIONAL pilot trails (off by default - Direction B, bestiary). When `enable_trails` is called, every
+        # pilot lays one prism of `trail_vol` every `trail_spacing` u behind it, owned by that pilot (mass_owner =
+        # pilot index; environment mass is -1). Vessel-laid mass is a SOURCE (an ability creates it), so the
+        # conservation audit adds `trail_laid`. The skimmer then skims ENVIRONMENT mass only (never its own trail).
+        self.trail_spacing: float | None = None
+        self.trail_vol: float = 10.0
+        self.trail_laid: float = 0.0
+        self._owner = np.zeros(0, np.int16)
+        self._trail_acc: dict = {}
 
     # ---- mass -------------------------------------------------------------------------------------------
+    @property
+    def mass_owner(self) -> np.ndarray:
+        """-1 = environment, k = laid by pilot k. Padded lazily so code that grows the mass arrays directly
+        stays valid."""
+        n = len(self.mass_vol)
+        if len(self._owner) < n:
+            self._owner = np.concatenate([self._owner, np.full(n - len(self._owner), -1, np.int16)])
+        return self._owner
+
+    def enable_trails(self, spacing: float = 15.0, vol: float = 10.0):
+        self.trail_spacing, self.trail_vol = spacing, vol
+        return self
+
     def scatter_mass(self, n: int, r_lo: float = 0.3, r_hi: float = 0.9, vol=(8.0, 40.0), clumps: int = 24,
                      shielded_frac: float = 0.0):
         """`n` prism points in `clumps` plant-like clusters inside the band [r_lo, r_hi] x R (volume-uniform)."""
@@ -120,11 +142,13 @@ class Arena:
         self.mass_shielded = np.concatenate([self.mass_shielded, rng.random(n) < shielded_frac])
         self.mass_grid.build(self.mass_pos, self.mass_alive)
 
-    def lay_mass(self, p, vol, elem=0) -> int:
+    def lay_mass(self, p, vol, elem=0, owner: int = -1) -> int:
         """Create ONE prism (a species laying mass it PAID for - e.g. a builder's wall). Returns its index."""
+        self.mass_owner  # pad before growing
         self.mass_pos = np.vstack([self.mass_pos, p]); self.mass_vol = np.append(self.mass_vol, vol)
         self.mass_elem = np.append(self.mass_elem, np.int8(elem)); self.mass_alive = np.append(self.mass_alive, True)
         self.mass_shielded = np.append(self.mass_shielded, False)
+        self._owner = np.append(self._owner, np.int16(owner))
         return len(self.mass_vol) - 1
 
     def consume(self, i: int, by: str = "") -> float:
@@ -170,6 +194,15 @@ class Arena:
             r = np.linalg.norm(p.pos)
             if r > self.R * 0.97:
                 p.pos *= self.R * 0.97 / r
+            if self.trail_spacing:
+                k = self.pilots.index(p)
+                acc = self._trail_acc.get(k, 0.0) + p.speed * dt
+                while acc >= self.trail_spacing:
+                    acc -= self.trail_spacing
+                    back = p.vel / max(np.linalg.norm(p.vel), 1e-6) * (p.radius + 4.0 + acc)
+                    self.lay_mass(p.pos - back, self.trail_vol, elem=k % 4, owner=k)
+                    self.trail_laid += self.trail_vol
+                self._trail_acc[k] = acc
         self.mass_grid.build(self.mass_pos, self.mass_alive)
         self.t += dt
 
@@ -181,7 +214,7 @@ class Arena:
             away = p.pos - d
             return p.pos + away / max(np.linalg.norm(away), 1e-6) * 300.0
         if p.policy == "skimmer":
-            live = np.flatnonzero(self.mass_alive)
+            live = np.flatnonzero(self.mass_alive & (self.mass_owner < 0))
             if len(live):
                 j = live[np.argmin(np.linalg.norm(self.mass_pos[live] - p.pos, axis=1))]
                 side = np.cross(p.vel, [0, 1, 0]); side /= max(np.linalg.norm(side), 1e-6)

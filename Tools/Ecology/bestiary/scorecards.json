@@ -1,0 +1,123 @@
+{
+ "species": {
+  "pack": {
+   "hits_per_min_wander": 4.67,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 1.05,
+   "payoff_per_min": 6.0,
+   "variety": 1.143,
+   "feel": {
+    "size": 5.0,
+    "speed_rel": 0.738,
+    "approach": -7.848,
+    "coherence": 0.816,
+    "burstiness": 1.247,
+    "jerk_rel": 0.171
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "hits_per_min_skimmer": 10.0,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 4.68
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 3.11
+    },
+    "skimmer": {
+     "bite": 10.0
+    },
+    "evader120": {}
+   },
+   "crystals_per_min_hunter": 6.0,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 0.268,
+   "agents": 7.1,
+   "us_per_agent_step": 37.75,
+   "phase": {
+    "strikes": 6.667
+   },
+   "emotion": "dread (menacing, coordinated)",
+   "counter": "break through the gap before the ring closes; change heading so the cut-off is wrong",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "leech": {
+   "hits_per_min_wander": 49.10999999999999,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 2.15,
+   "payoff_per_min": 2.4433333333333334,
+   "variety": 1.761,
+   "feel": {
+    "size": 1.6,
+    "speed_rel": 0.055,
+    "approach": 28.626,
+    "coherence": 0.274,
+    "burstiness": 3.287,
+    "jerk_rel": 1.128
+   },
+   "hits_per_min_evader120": 0.67,
+   "counterplay_same_speed": 0.01,
+   "hits_per_min_skimmer": 24.0,
+   "hits_by_kind": {
+    "wander": {
+     "drain": 49.11
+    },
+    "evader": {},
+    "hunter": {
+     "drain": 46.0
+    },
+    "skimmer": {
+     "drain": 24.0
+    },
+    "evader120": {
+     "drain": 0.67
+    }
+   },
+   "crystals_per_min_hunter": 2.44,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 1.113,
+   "agents": 63.3,
+   "us_per_agent_step": 17.58,
+   "phase": {
+    "shaken": 8.5,
+    "attached_s": 73.625
+   },
+   "emotion": "cute (curious, clingy) with a sting",
+   "counter": "hard turn / drift shakes them off; give the puddle a wide berth; ram free ones",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  }
+ },
+ "feel_spread": {
+  "min_pair": [
+   "pack",
+   "leech"
+  ],
+  "min_dist": 4.9,
+  "mean_dist": 4.9
+ }
+}
