@@ -33,6 +33,32 @@ sys.path.insert(0, HERE)
 import score_grid as sg  # noqa: E402
 
 CS_KINDS = ["charge", "mass", "space", "time"]   # C# element order (= research element ids)
+_POOL = None
+_W = {}
+
+
+def _winit(nca):
+    sys.path.insert(0, nca)
+    os.chdir(nca)
+    import torch
+    import swarm_nca as sn
+    torch.set_num_threads(1)
+    targets = sn.load_targets(os.path.join(nca, "results", "swarm_targets"))
+    _W.update(sn=sn, torch=torch, T=targets, T1={k: sg.one_domain(sn, T) for k, T in targets.items()}, L=sn.LossCfg())
+
+
+def _wloss(job):
+    """(units, research?, [plan kinds], frames) -> {kind: sink loss}. Runs in a worker."""
+    units, research, kinds, frames = job
+    sn, torch = _W["sn"], _W["torch"]
+    T = _W["T"] if research else _W["T1"]
+    x = sn.decode(sg.build_swarm(sn, torch, units), 0)
+    return {k: float(sn.swarm_loss(x, T[k], _W["L"], frames=frames)[1]["sink"]) for k in kinds}
+
+
+def _pool(nca, jobs):
+    import multiprocessing as mp
+    return mp.get_context("fork").Pool(jobs, initializer=_winit, initargs=(nca,))
 
 
 def yardstick(a, sn, se, torch, targets, targets1, L, swarm_feel, res):
@@ -44,16 +70,18 @@ def yardstick(a, sn, se, torch, targets, targets1, L, swarm_feel, res):
     print(f"\nC# yardstick: {len(dump['runs'])} records in {time.time() - t0:.0f}s; self-inflicted deaths {dump['selfDeaths']}")
     res["selfDeaths"] = dump["selfDeaths"]
     tests = {}
+    live = [r for r in dump["runs"] if not r.get("na")]
+    t1 = time.time()
+    rows = _POOL.map(_wloss, [(r["units"], r["mode"].startswith("research"), list(sn.KINDS), None) for r in live], chunksize=4)
+    print(f"  scored {len(live)} records x 4 plans in {time.time() - t1:.0f}s", flush=True)
+    rowof = {id(r): row for r, row in zip(live, rows)}
     for r in dump["runs"]:
         key = (r["mode"], r["seed"], r["kind"], r["want"])
         if r.get("na"):
             tests.setdefault(key, [])
             continue
-        sw = sg.build_swarm(sn, torch, r["units"])
-        x = sn.decode(sw, 0)
-        T = targets if r["mode"].startswith("research") else targets1
-        row = {k: round(sn.swarm_loss(x, T[k], L)[1]["sink"], 2) for k in sn.KINDS}
-        n = int(sw.hatched[0].sum())
+        row = {k: round(v, 2) for k, v in rowof[id(r)].items()}
+        n = sum(1 for u in r["units"] if u[5] > 0.5)
         tests.setdefault(key, []).append(dict(ok=se._passes(row, r["want"], n), row=row, n=n))
         if r["tag"] == "own" and "win" in r:
             P = torch.tensor(r["win"], dtype=torch.float32)
@@ -120,8 +148,11 @@ def smoothness(a, sn, torch, targets, targets1, L, res):
             continue
         T = targets if ev["mode"].startswith("research") else targets1
         goal = ev["goal"]
-        loss = lambda units: float(sn.swarm_loss(sn.decode(sg.build_swarm(sn, torch, units), 0), T[goal], L,
-                                                 frames=ss.LOSS_FRAMES)[1]["sink"])
+        research = ev["mode"].startswith("research")
+        snaps = [ev["snap"][0]] + ev["snaps"] + ev["tail"]
+        vals = _POOL.map(_wloss, [(u, research, [goal], ss.LOSS_FRAMES) for u in snaps])
+        vals = [v[goal] for v in vals]
+        nsn = 1 + len(ev["snaps"])
         # reference speed: swarm_smooth._grown (median over 16 steps of the p95 step of members alive at both ends)
         P, A, _, _ = frames(ev["ref"])
         sp_ = []
@@ -130,8 +161,8 @@ def smoothness(a, sn, torch, targets, targets1, L, res):
             if int(b.sum()) >= 4:
                 sp_.append(float(torch.quantile((P[t][b] - P[t - 1][b]).norm(dim=-1), 0.95)))
         ref = float(torch.tensor(sp_).median()) if sp_ else 1e-3
-        losses = [loss(ev["snap"][0])] + [loss(u) for u in ev["snaps"]]
-        lt = torch.tensor([losses[-1]] + [loss(u) for u in ev["tail"]])
+        losses = vals[:nsn]
+        lt = torch.tensor([losses[-1]] + vals[nsn:])
         noise_rel = float((lt[1:] - lt[:-1]).clamp(min=0).sum() / lt[1:].sum().clamp(min=1e-6))
         P, A, H, E = frames(ev["trace"])
         # ── swarm_smooth._track, transcribed
@@ -235,15 +266,21 @@ def main():
     ap.add_argument("--smooth-seed", type=int, default=7)
     ap.add_argument("--nca", default="")
     ap.add_argument("--out", default="")
+    ap.add_argument("--jobs", type=int, default=4)
     a = ap.parse_args()
     nca = sg.research_dir(a.nca)
     sys.path.insert(0, nca)
     os.chdir(nca)
     import torch
-    torch.set_num_threads(1)
     import swarm_nca as sn
     import swarm_eval as se
     import swarm_feel
+    # AFTER the imports: swarm_nca sets torch.set_num_threads(4) at import, and on a busy 4-core box that
+    # oversubscribes OpenMP so badly that one swarm_loss takes ~20 s instead of ~0.1 s (measured). The
+    # losses are spread over worker processes instead (--jobs), each single-threaded.
+    torch.set_num_threads(1)
+    global _POOL
+    _POOL = _pool(nca, a.jobs)
     targets = sn.load_targets(os.path.join(nca, "results", "swarm_targets"))
     targets1 = {k: sg.one_domain(sn, T) for k, T in targets.items()}
     L = sn.LossCfg()
