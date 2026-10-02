@@ -1,4 +1,4 @@
-<title>Threat flora sandbox</title>
+<meta charset="utf-8"><title>Threat flora sandbox</title>
 <style>
 :root{--bg:#070a12;--fg:#d8dcf0;--mute:#8a92b8;--acc:#7fd1ff;--bad:#ff5a4a}
 @media (prefers-color-scheme: light){:root:not([data-theme="light"]){--bg:#070a12;--fg:#d8dcf0}}
@@ -23,7 +23,7 @@ canvas{display:block}
 <div id="help">Fly: mouse steers (click canvas to capture) or W/S pitch, A/D yaw · Shift = boost (1 s, 4 s cooldown) · Space = light touch (45 u/s) · fly into a blue heart to take its crystal, cyan diamonds are real crystals. Your trail (pale) is food: the flora grow toward where you fly. Rules are JS ports of Tools/Ecology/flora/*.py with the tuned parameters; scoring lives in the Python harness.</div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script>
-const PARAMS = {"snaptrap": {"ram": true, "heart_in_jaws": true, "n_traps": 40, "clumps": 8, "clump_r": 70.0, "sense": 170.0, "t_prime": 0.7, "t_close": 0.3, "t_reset": 3.0, "t_digest": 9.0, "gape": 35.0, "dgape": 18.0, "mouth_len": 55.0, "mouth_w": 24.0, "turn_deg": 4.0, "bud_bias": 0.0, "root": 90.0, "absorb_every": 4.0, "prism_vol": 12.0, "tooth_vol": 8.0, "fire_on": "mouth"}, "spores": {"ram": true, "n_pods": 80, "clumps": 10, "clump_r": 60.0, "charge_cap": 60.0, "spore_vol": 4.0, "shell_vol": 10.0, "touch": 24.0, "wake": 70.0, "v_soft": 70.0, "kick_hard": 1.2, "kick_soft": 0.25, "kick_wake": 0.15, "alarm_r": 90.0, "alarm_speed": 70.0, "alarm_gain": 0.75, "relax": 0.35, "t_swell": 0.8, "launch": 45.0, "drag": 0.6, "wind": 12.0, "wind_k": 0.006, "root": 80.0, "absorb_every": 3.0, "settle_v": 12.0, "spore_cd": 0.6, "spore_r": 4.0}, "physarum": {"G": 56, "n_agents": 16000, "n_hearts": 5, "so": 28.0, "sa": 30.0, "ra": 35.0, "ss": 40.0, "dep": 1.0, "diffuse": 0.5, "evap": 0.08, "food_dep": 1.5, "on": 6.0, "off": 3.0, "ema": 0.05, "prism_vol": 10.0, "plant_vol": 12000.0, "digest": 0.3, "period": 3.0, "wave_speed": 50.0, "ex_ticks": 2, "refr": 4, "wake_dep": 0.0, "warmup": 250, "jitter": 0.15, "spread_init": 1, "heart_speed": 6.0, "ram": true}, "coral": {"G": 48, "n_hearts": 6, "c0": 20.0, "plant_vol": 12000.0, "Du": 0.9, "Dv": 0.25, "rate": 1.2, "k": 0.05, "vth": 0.35, "sting": 0.04, "reach": 1, "eat_per_s": 0.5, "substeps": 2, "ram": true, "label_every": 10, "seed_r": 1}, "walker": {"n_walkers": 12, "shell": 24, "r_body": 28.0, "prism_vol": 14.0, "thorns": 10, "thorn_vol": 6.0, "speed": 5.0, "hunger_boost": 2.0, "sense": 160.0, "root": 60.0, "absorb_every": 2.0, "tell": 110.0, "prime": 130.0, "t_prime": 0.6, "strike": 40.0, "thorn": 55.0, "t_erupt": 0.45, "t_hold": 0.6, "t_retract": 1.2, "bud": 1, "ram": true}};
+const PARAMS = {"snaptrap": {"ram": true, "heart_in_jaws": true, "armour": 0.0, "n_traps": 40, "clumps": 9, "clump_r": 57.0011, "sense": 145.9975, "t_prime": 0.7308, "t_close": 0.5191, "t_reset": 6.6876, "t_digest": 9.0, "gape": 35.0, "dgape": 9.8316, "mouth_len": 36.3478, "mouth_w": 15.7119, "turn_deg": 4.4225, "bud_bias": 0.3049, "root": 90.0, "absorb_every": 4.0, "prism_vol": 12.0, "tooth_vol": 8.0, "fire_on": "mouth"}, "spores": {"ram": true, "n_pods": 80, "clumps": 10, "clump_r": 60.0, "charge_cap": 60.0, "spore_vol": 4.0, "shell_vol": 10.0, "touch": 23.5501, "wake": 70.0, "v_soft": 70.0, "kick_hard": 1.2, "kick_soft": 0.25, "kick_wake": 0.15, "alarm_r": 90.0, "alarm_speed": 102.4362, "alarm_gain": 0.75, "relax": 0.35, "t_swell": 0.8, "launch": 45.0, "drag": 0.8929, "wind": 11.5861, "wind_k": 0.006, "root": 80.0, "absorb_every": 3.0, "settle_v": 12.0, "spore_cd": 0.6, "spore_r": 4.0, "armour": 0.0}, "physarum": {"G": 56, "n_agents": 16000, "n_hearts": 5, "so": 28.0, "sa": 30.0, "ra": 35.0, "ss": 40.0, "dep": 1.0, "diffuse": 0.5, "evap": 0.08, "food_dep": 1.5, "on": 6.0, "off": 3.0, "ema": 0.05, "prism_vol": 10.0, "plant_vol": 12000.0, "digest": 0.3, "period": 3.0, "wave_speed": 50.0, "ex_ticks": 2, "refr": 4, "wake_dep": 0.0, "warmup": 250, "jitter": 0.15, "spread_init": 1, "heart_speed": 6.0, "ram": true, "armour": 0.0, "heart_guard": 0.0, "beat_on": 0.6, "beat_glow": 0.8}, "coral": {"G": 48, "n_hearts": 10, "c0": 6.0, "plant_vol": 12000.0, "Du": 0.9, "Dv": 0.25, "rate": 1.2, "k": 0.05, "vth": 0.35, "sting": 0.04, "reach": 2, "eat_per_s": 0.5, "substeps": 2, "ram": true, "label_every": 10, "seed_r": 1, "armour": 0.0, "sting_mode": "dense", "v_danger": 1.1, "warmup": 600}, "walker": {"n_walkers": 16, "shell": 24, "r_body": 26.0861, "prism_vol": 14.0, "thorns": 10, "thorn_vol": 6.0, "speed": 10.3666, "hunger_boost": 2.0, "sense": 160.0, "root": 60.0, "absorb_every": 2.0, "tell": 82.4097, "prime": 140.0398, "t_prime": 0.6, "strike": 55.7759, "thorn": 57.8965, "t_erupt": 0.5773, "t_hold": 0.6, "t_retract": 1.2, "bud": 1, "ram": true, "armour": 0.0, "guard": 0.0}};
 const DESC = {
  snaptrap:"<b>Snap trap.</b> Traps sense you, open WIDE and glow (primed), then sweep shut when you enter the mouth. The crystal sits in the jaws. Counter: boost through the mouth faster than it closes, or pass outside the lobes. Traps slowly turn to face where you fly and bud toward your traffic.",
  spores:"<b>Spore burster.</b> Touch a pod fast and it swells and bursts into a drifting danger cloud; an alarm wave runs to its neighbours. Counter: a LIGHT TOUCH (hold Space near pods), or route around the glow. Clouds that land on food re-seed the colony.",
@@ -166,8 +166,10 @@ function Physarum(P){
   let frame=0;
   return{step(dt){t+=dt;if((frame++)%2==0)sim(dt*2);waves(dt);
     const n=Math.max(2,Math.ceil(pilot.p.distanceTo(pilot.prev)/4));for(let k=0;k<=n;k++){const q=pilot.prev.clone().lerp(pilot.p,k/n);const i=vx(q);if(!tube[i])continue;if(E[i]>=1&&E[i]<=P.ex_ticks){if(pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}else{tube[i]=0;T[i]=0;Sm[i]=0;reserve+=P.prism_vol*2}}
+    if(P.heart_guard>0)for(const hh of hearts){if(!hh.alive)continue;const last=hh.beat-P.period;if(last>=0&&t-last<P.beat_on&&segDist(pilot.prev,pilot.p,hh.p)<P.heart_guard&&pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}
     for(const hh of hearts)if(hh.alive&&segDist(pilot.prev,pilot.p,hh.p)<12){hh.alive=false;stats.hearts++}},
-    draw(){let i=0,j=0,k=0,m=0;for(let v=0;v<N;v++){if(!tube[v])continue;const p=cen(v);if(E[v]>=1&&E[v]<=P.ex_ticks)put(L_hot,j++,p,h*.6,[1,.3,.1]);else put(L_body,i++,p,h*.85,[.85,.72,.25])}
+    draw(){let i=0,j=0,k=0,m=0;if(P.heart_guard>0)for(const hh of hearts){if(!hh.alive)continue;const last=hh.beat-P.period,on=last>=0&&t-last<P.beat_on,gl=hh.beat-t<P.beat_glow;if(on||gl)put(L_pts,m++,hh.p,P.heart_guard*(on?1:.55),on?[.9,.15,.08]:[.45,.2,.05])}
+      for(let v=0;v<N;v++){if(!tube[v])continue;const p=cen(v);if(E[v]>=1&&E[v]<=P.ex_ticks)put(L_hot,j++,p,h*.6,[1,.3,.1]);else put(L_body,i++,p,h*.85,[.85,.72,.25])}
       for(const hh of hearts)if(hh.alive)put(L_heart,k++,hh.p,6,[.4,.7,1]);for(let a=0;a<NA;a+=4)put(L_pts,m++,A[a],1.2,[.5,.45,.25]);return[i,j,k,m]}}
 }
 
@@ -180,13 +182,16 @@ function Coral(P){
   const per=P.plant_vol/P.c0/P.n_hearts/27*(48/40)**3;for(const hh of hearts){const c=vx(hh.p);for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)for(let dz=-1;dz<=1;dz++){const i=c+(dx*G+dy)*G+dz;if(i>=0&&i<N)v[i]+=per}}
   const lap=(F,i)=>{const x=Math.floor(i/(G*G)),y=Math.floor(i/G)%G,z=i%G;let s=0;if(x>0)s+=F[i-G*G]-F[i];if(x<G-1)s+=F[i+G*G]-F[i];if(y>0)s+=F[i-G]-F[i];if(y<G-1)s+=F[i+G]-F[i];if(z>0)s+=F[i-1]-F[i];if(z<G-1)s+=F[i+1]-F[i];return s};
   const k3=(48/40)**2; // diffusion rescaled to the coarser grid
-  return{step(dt){const hh=dt/P.substeps;
+  const sting=i=>P.sting_mode==='front'?rate[i]>P.sting:v[i]>P.v_danger;
+  const self={step(dt){const hh=dt/P.substeps;
     for(let s=0;s<P.substeps;s++){const nu=new Float32Array(N),nv=new Float32Array(N);for(let i=0;i<N;i++){nu[i]=u[i]+hh*P.Du/k3*lap(u,i);nv[i]=v[i]+hh*P.Dv/k3*lap(v,i)}
       for(let i=0;i<N;i++){const r=nu[i]*(1-Math.exp(-P.rate*nv[i]*nv[i]*hh)),b=nv[i]*(1-Math.exp(-P.k*hh));nu[i]+=b-r;nv[i]+=r-b;rate[i]=r/hh}u=nu;v=nv}
     for(const f of allFood()){const i=vx(f.p);if(v[i]>P.vth&&rng()<P.eat_per_s*dt){f.alive=false;u[i]+=f.v/P.c0}}
-    const n=Math.max(2,Math.ceil(pilot.p.distanceTo(pilot.prev)/4));for(let q=0;q<=n;q++){const i=vx(pilot.prev.clone().lerp(pilot.p,q/n));if(v[i]<=P.vth)continue;if(rate[i]>P.sting){if(pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}else{u[i]=0;v[i]=0}}
+    const n=Math.max(2,Math.ceil(pilot.p.distanceTo(pilot.prev)/4));for(let q=0;q<=n;q++){const i=vx(pilot.prev.clone().lerp(pilot.p,q/n));if(v[i]<=P.vth)continue;if(sting(i)){if(pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}else{u[i]=0;v[i]=0}}
     for(const hh of hearts)if(hh.alive&&segDist(pilot.prev,pilot.p,hh.p)<12){hh.alive=false;stats.hearts++}},
-    draw(){let i=0,j=0,k=0;for(let q=0;q<N;q++){if(v[q]<=P.vth)continue;const p=cen(q);if(rate[q]>P.sting)put(L_hot,j++,p,h*.6,[1,.35,.55]);else put(L_body,i++,p,Math.min(h,Math.cbrt(v[q])*h*.6),[.9,.5,.4])}for(const hh of hearts)if(hh.alive)put(L_heart,k++,hh.p,6,[.4,.7,1]);return[i,j,k,0]}}
+    draw(){let i=0,j=0,k=0;for(let q=0;q<N;q++){if(v[q]<=P.vth)continue;const p=cen(q);if(sting(q))put(L_hot,j++,p,h*.6,[1,.35,.55]);else put(L_body,i++,p,Math.min(h,Math.cbrt(v[q])*h*.6),[.9,.5,.4])}for(const hh of hearts)if(hh.alive)put(L_heart,k++,hh.p,6,[.4,.7,1]);return[i,j,k,0]}};
+  const save=pilot.p.clone(),sp=pilot.prev.clone();pilot.p.set(1e5,0,0);pilot.prev.set(1e5,0,0);for(let w=0;w<Math.min(200,(P.warmup||0)/3);w++)self.step(0.3);pilot.p.copy(save);pilot.prev.copy(sp);
+  return self
 }
 
 // ---------------- species: walking mimic ----------------
@@ -200,8 +205,9 @@ function Walker(P){
       for(let k=0;k<w.shell.length;k++)if(w.shell[k].distanceTo(w.h)>P.r_body*1.25){const d=new V3(gauss(),gauss(),gauss()).normalize();if(d.dot(w.dir)<0)d.negate();w.shell[k]=w.h.clone().addScaledVector(d,P.r_body*(.7+.3*rng()))}
       for(const f of foodNear(w.h,P.r_body))if(rng()<dt/P.absorb_every)f.alive=false;
       const near=pilot.p.distanceTo(lure(w));w.tm+=dt;
+      if(w.st==1)w.ext+=((P.guard||0)-w.ext)*Math.min(1,dt/P.t_prime);else if(w.st==0)w.ext=Math.max(0,w.ext-dt/P.t_retract);
       if(w.st==0&&near<P.prime){w.st=1;w.tm=0}else if(w.st==1){if(near>P.prime*1.3)w.st=0;else if(near<P.strike&&(w.tm>=P.t_prime||near<P.strike*.6)){w.st=2;w.tm=0}}
-      else if(w.st==2){w.ext=Math.min(1,w.tm/P.t_erupt);if(w.tm>P.t_erupt+P.t_hold){w.st=3;w.tm=0}}else if(w.st==3){w.ext=Math.max(0,1-w.tm/P.t_retract);if(w.ext<=0)w.st=0}
+      else if(w.st==2){w.ext=Math.max(w.ext,Math.min(1,w.tm/P.t_erupt));if(w.tm>P.t_erupt+P.t_hold){w.st=3;w.tm=0}}else if(w.st==3){w.ext=Math.max(0,1-w.tm/P.t_retract);if(w.ext<=0)w.st=0}
       if(w.ext>.25)for(let k=0;k<w.thorns.length;k++){const reach=P.r_body+w.ext*P.thorn;const p=w.h.clone().addScaledVector(w.thorns[k],P.r_body*.9+(reach-P.r_body*.9)*(k%3+1)/3);if(segDist(pilot.prev,pilot.p,p)<9&&pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}
       for(let k=w.shell.length-1;k>=0;k--)if(segDist(pilot.prev,pilot.p,w.shell[k])<11)w.shell.splice(k,1);
       while(w.shell.length<P.shell&&rng()<dt*3){const d=new V3(gauss(),gauss(),gauss()).normalize();if(d.dot(w.dir)<0)d.negate();w.shell.push(w.h.clone().addScaledVector(d,P.r_body*(.7+.3*rng())))}
