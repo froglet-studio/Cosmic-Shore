@@ -338,6 +338,36 @@ class Colony:
     def forage_bias(self, arena, k):
         return np.zeros(3)
 
+    def defend(self, arena, dt, centre, alarm_r, guard_r=None, strike_at=0.6, rise=0.6, fall=0.3, cooldown=1.5):
+        """Shared colony defence with a readable escalation (no branch picks a behaviour; one alarm level does):
+        a pilot inside `alarm_r` of `centre` raises the colony's ALARM (local: the workers that see it). Below
+        `strike_at` the unladen workers near home form a GUARD SCREEN between the core and the pilot (the
+        telegraph - the swarm visibly rises to meet you); at/above it they STRIKE and sting on contact."""
+        if not hasattr(self, "alarm_level"):
+            self.alarm_level = 0.0; self.cool = np.zeros(self.n)
+        guard_r = guard_r or alarm_r * 0.5
+        self.cool -= dt; self.intent[:] = 0.0
+        inside = [p for p in arena.pilots if np.linalg.norm(p.pos - centre) < alarm_r]
+        self.alarm_level = min(1.0, self.alarm_level + rise * dt) if inside else max(0.0, self.alarm_level - fall * dt)
+        if self.alarm_level <= 0:
+            return
+        p = min(inside or arena.pilots, key=lambda q: np.linalg.norm(q.pos - centre))
+        d = np.linalg.norm(self.agent_pos - p.pos, axis=1)
+        dh = np.linalg.norm(self.agent_pos - centre, axis=1)
+        ks = np.flatnonzero(self.alive & (self.carry < 0) & (dh < alarm_r * 2.2))
+        to = p.pos - centre; to = to / max(np.linalg.norm(to), 1e-6)
+        for k in ks:
+            if self.alarm_level < strike_at:
+                # screen: a loose shell between core and intruder (each worker its own offset on the screen)
+                off = self.wander[k] - to * (self.wander[k] @ to)
+                self.steer(k, centre + to * guard_r + off * guard_r * 0.6, dt, speed=self.speed * 1.4)
+                self.intent[k] = 0.25 + 0.5 * self.alarm_level / strike_at
+            else:
+                self.steer(k, p.pos + p.vel * 0.25, dt, speed=self.speed * 1.8)
+                self.intent[k] = 1.0
+                if d[k] < p.radius + 4 and self.cool[k] <= 0:
+                    arena.hit(p, "sting"); self.cool[k] = cooldown
+
     def wants_material(self, arena, k) -> bool:
         """Does an unladen worker pick material up now? (A trap builder only fetches once it smells a lane.)"""
         return True

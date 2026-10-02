@@ -86,20 +86,11 @@ class NestWeavers(Colony):
             sm[1:] += a[:-1]; sm[:-1] += a[1:]; sm[:, 1:] += a[:, :-1]; sm[:, :-1] += a[:, 1:]
             sm[:, :, 1:] += a[:, :, :-1]; sm[:, :, :-1] += a[:, :, 1:]
             self.cement = (0.97 * (0.8 * a + 0.2 / 6 * sm)).astype(np.float32)
-        self.cool -= dt
-        self.intent[:] = 0.0
         arena.targets = [self.lat.anchor]                 # a raider flies at the core
         arena.threats = list(self.agent_pos[self.alive][::4])
+        self.defend(arena, dt, self.lat.anchor, self.alarm_r)
         for p in arena.pilots:
             dn = np.linalg.norm(p.pos - self.lat.anchor)
-            if dn < self.alarm_r:
-                d = np.linalg.norm(self.agent_pos - p.pos, axis=1)
-                defenders = np.flatnonzero(self.alive & (self.carry < 0) & (d < 200))
-                for k in defenders:
-                    self.steer(k, p.pos + p.vel * 0.3, dt, speed=self.speed * 1.6)
-                    self.intent[k] = float(np.clip(1 - d[k] / 120, 0, 1))
-                    if d[k] < p.radius + 4 and self.cool[k] <= 0:
-                        arena.hit(p, "sting"); self.cool[k] = 1.5
             if p.policy in ("hunter", "cutter") and dn < 12 and self.store > 0:
                 self.crystals += self.store; self.raided += self.store; self.store = 0
 

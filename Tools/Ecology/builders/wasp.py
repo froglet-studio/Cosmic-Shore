@@ -168,18 +168,11 @@ class WaspComb(Colony):
     def behave(self, arena, dt):
         for s in self.sweep_destroyed(arena):
             self.typ[s] = 0
-        self.cool -= dt; self.intent[:] = 0
         arena.targets = [self.lat.anchor + np.array([0, 0, (self.top / 2) * self.lat.s]) @ self.lat.B]
         arena.threats = list(self.agent_pos[self.alive][::4])
+        self.defend(arena, dt, arena.targets[0], self.alarm_r)
         for p in arena.pilots:
             dn = np.linalg.norm(p.pos - arena.targets[0])
-            if dn < self.alarm_r:
-                d = np.linalg.norm(self.agent_pos - p.pos, axis=1)
-                for k in np.flatnonzero(self.alive & (self.carry < 0) & (d < 200)):
-                    self.steer(k, p.pos + p.vel * 0.3, dt, speed=self.speed * 1.6)
-                    self.intent[k] = float(np.clip(1 - d[k] / 120, 0, 1))
-                    if d[k] < p.radius + 4 and self.cool[k] <= 0:
-                        arena.hit(p, "sting"); self.cool[k] = 1.5
             if p.policy in ("hunter", "cutter") and dn < 15 and self.store > 0:
                 self.crystals += self.store; self.raided += self.store; self.store = 0
 
