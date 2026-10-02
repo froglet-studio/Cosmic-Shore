@@ -200,6 +200,7 @@ class Colony:
                 and i not in self.claimed and not getattr(arena, "struct_owner", {}).get(int(i)))
 
     def forage_target(self, arena, k):
+        self.queries = getattr(self, "queries", 0) + 1          # = one PrismSpatialIndex.QuerySphere in game
         c = arena.mass_near(self.agent_pos[k], self.sense)
         if len(c) == 0:
             return -1
@@ -261,7 +262,8 @@ class Colony:
         return dict(built=self.lat.n_built(), placed=self.placed, placed_trail=self.placed_trail,
                     trail_frac=round(trail_frac, 3), build_per_min=round(self.placed / minutes, 1),
                     pickups=self.pickups, carry_moves_per_s=round(self.carry_moves / (minutes * 60), 1),
-                    workers_alive=int(self.alive.sum()), kills=self.kills)
+                    workers_alive=int(self.alive.sum()), kills=self.kills,
+                    queries_per_s=round(getattr(self, "queries", 0) / (minutes * 60), 1))
 
     def behave(self, arena, dt):
         pass

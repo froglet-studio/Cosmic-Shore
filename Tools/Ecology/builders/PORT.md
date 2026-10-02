@@ -12,12 +12,12 @@ its position (only while it is being carried), and its owner registry. **Net col
 The only new colliders are the workers' hearts (one elemental crystal per lifeform - the colony's members ARE the
 lifeforms, CLAUDE.md "a connected COLONY is a population"), which is the colony's size.
 
-| species | new always-on colliders | prisms moving at once (steady state) | position writes / s (sim) |
-|---|---|---|---|
-| fortress / nest (48 workers) | 48 hearts | <= 48 (carriers) | 90-150 |
-| wasp comb (48) | 48 | <= 48 | 75-90 |
-| trap builders (30, tuned) | 30 | <= 30, parked carriers 0 | 25-65 |
-| wearers (40 hearts, 1-2 creatures of 240-400 prisms) | 40 | the whole body | 1,900-3,100 prism writes; 31-44 container writes; 1,700-2,800 index re-buckets |
+| species | new always-on colliders | prisms moving at once (steady state) | position writes / s (sim) | `QuerySphere` / s |
+|---|---|---|---|---|
+| fortress / nest (48 workers) | 48 hearts | <= 48 (carriers) | 86-100 | 85-89 |
+| wasp comb (48) | 48 | <= 48 | 75-90 | 89 |
+| trap builders (30, tuned) | 30 | <= 30, parked carriers 0 | 25 off-lane, 65-100 on a lane | 0 off-lane |
+| wearers (40 hearts, 1-2 creatures of 240-400 prisms) | 40 | the whole body | 2,085-2,529 prism writes; 31-44 container writes; 1,700-2,800 index re-buckets | 12-13 |
 
 The builders are cheap because **a built structure never moves**. The wearers are expensive because a body is
 moving mass by definition - see §4.
@@ -81,6 +81,21 @@ builds in the cell's controlling domain); shielded mass never taken (test_rules.
 
 **Collider budget:** +N heart crystals (N = 24-48 recommended), 0 prisms.
 
+### 2.1 What rounds 2-3 added to the fortress
+
+- **Scar tissue** (port it): keep a slow max of the alarm field (`scar = max(scar * 0.999, alarm)` every 3 ticks) and let
+  a site touching the wall deposit with `p = max(p, 0.5 * min(1, 3 * scar))` even outside the template band. Three cuts
+  along one line: wall on that line 65 -> 89 -> 113 vs 65 -> 74 -> 86 without - the fortress thickens where it is
+  attacked, from the same total mass.
+- **A defender caste** (port it, as a tunable): response thresholds `theta_k ~ U(0, 1/caste)`, a worker answers the
+  alarm only while `alarm_level > theta_k`. Without it, defence starves repair (t50 17.8 s vs 5.6 s); with a 30% caste
+  repair is back to 5.6 s at the same sting rate on a pass-through cutter. Cost: a nest with a 30% caste barely stings a
+  persistent raider (1.11 -> 0.11 hits/min). The fraction is the design dial between "mends" and "stings".
+- **Steal vs ram**: a vessel steal ability (Squirrel's Space steal, Urchin spikes) used on a mending wall is futile -
+  the stolen bricks fall loose at the breach and are re-stolen in seconds (t90 12.5 s vs 70 s for ramming). Two vessel
+  verbs, two outcomes, no special case: the wall only needs `BuilderRegistry` to treat "changed domain" like
+  "destroyed" (a breached site).
+
 ## 3. Trap builders - a mode-scoped threat
 
 Lane learning is the strongest effect measured: the colony makes a fixed racing line about as dangerous as you like
@@ -114,3 +129,15 @@ Port shape:
   the prism falls loose in the pilot's domain, mass conserved.
 
 **Collider budget:** +N hearts (40 measured), 0 prisms. **CPU:** the body-notify cost above, bounded by the cap.
+
+Measured caveats: the satiation moult (cap 150: shed the outermost prisms into a static lair + one birth) only cut
+moving-prism writes 8-28% at this population, because bodies regrow to the cap and births add bodies - the cap bounds
+cost per creature, it does not shrink it much. A heading-aligned body frame (the body turns with the creature) reads
+better and is free (one 3x3 per creature) but did not measurably change the threat (n = 2).
+
+## 5. Order of work
+
+1. `BuilderColony` + `BuilderRegistry` + the `IsStealableForMe` predicate, with the FORTRESS rules (2, 2.1) and one
+   cell that spawns it. Verify in editor: a cut closes, 98% of the plug is your trail, the alarm swarm reads.
+2. The trap colony in one gate-race mode (its lane field fed by trail creation).
+3. Wearers last, with the body cap and the per-phase notify policy, profiled before it ships.

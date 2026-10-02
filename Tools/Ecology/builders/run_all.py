@@ -17,6 +17,8 @@ SPECIES = {
     "nest_v1_logistic": (lambda a, s: NestWeavers(a, seed=s, Rc=44, w=30, k_cement=0.4, nucleate=0.02, homing="core"),
                          STD, "Nest weavers v1 (logistic)"),
     "nest_v2_wasp": (lambda a, s: WaspComb(a, seed=s), STD, "Nest weavers v2 (wasp comb, lattice-swarm rules)"),
+    "fortress_final": (lambda a, s: __import__("builders.fortress", fromlist=["Fortress"]).Fortress(a, seed=s, caste=0.3, scar=3.0),
+                       STD, "Fortress final (alarm + gap mending, scar, 30% defender caste)"),
     "traps_v1": (lambda a, s: TrapBuilders(a, seed=s), LANE, "Trap builders v1 (lane webs)"),
     "traps_v2_fair": (lambda a, s: TrapBuilders(a, seed=s, n=30, max_nb=2, lane_min=3.0), LANE,
                       "Trap builders v2 (tuned: 30 workers, lane_min 3)"),

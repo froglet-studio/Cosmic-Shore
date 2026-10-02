@@ -61,7 +61,7 @@ def cut_run(seed, mend="both", minutes=5.0, dt=0.1, record=False, n=48, same_lin
     if rec:
         os.makedirs(OUT, exist_ok=True)
         path = os.path.join(OUT, f"fortress_cut_{mend}{tag}_{seed}.json")
-        rec.save(path, dict(label=f"fortress cut test, mend={mend}{tag} (seed {seed})", note=sp.note, hud=hud,
+        rec.save(path, dict(label=f"fortress, {raid} raid x3 (mend={mend}{tag}, seed {seed})", note=sp.note, hud=hud,
                             focus=[round(float(x), 1) for x in A] + [320.0]))
         res["recording"] = path
     return res, sp

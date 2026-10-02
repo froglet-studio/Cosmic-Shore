@@ -194,3 +194,68 @@ players on the same seed get different nests, webs and monsters. Replayability i
 **0.94** (null -0.26; offset 4-16 u). Even the template shell v0 leans toward its supply (0.66), but only by 1-7 u. The
 wasp comb barely does (0.31): its stalk axis dominates. Ladley & Bullock's point holds: making workers carry real mass
 makes the structure face where the mass comes from. Here that is where the player flies.
+
+### Where Direction D stands (final scorecard, ~08:45 UTC)
+
+Final versions, 3 seeds x wander/evader/hunter (+ racer/varied for traps), 3 min each (`run_all.py`,
+`summarise.py`, `results/*.json`). Audit is 0.000 in every run: nothing in this direction removes mass except a
+pilot's ram and a sprung trap.
+
+| species | wander hits/min | evader | racer (circuit) | hunter hits/min | telegraph s | hunter kills/min | built (wander) | player trail in it | Jaccard seeds | moves/s (wander) | index queries/s | audit |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| nest_v1_logistic | 0.00 | 0.00 | - | 1.45 | 0.50 | 4.2 | 238 | 0.50 | 0.53 | 100 | 85 | 0.000 |
+| nest_v2_wasp | 0.00 | 0.00 | - | 0.89 | 0.50 | 3.7 | 240 | 0.49 | 0.69 | 86 | 89 | 0.000 |
+| fortress_final | 0.00 | 0.00 | - | 0.22 | 0.45 | 1.4 | 242 | 0.51 | 0.50 | 94 | 87 | 0.000 |
+| traps_v2_fair | 0.00 | 0.00 | 6.44 | 0.00 | - | 9.8 | 0 | 0.00 | 0.57 | 25 | 0 | 0.000 |
+| wearers_v2_contact | 2.45 | 0.00 | - | 2.00 | 1.42 | 13.3 | 322 | 0.74 | 0.92 | 2529 | 12 | 0.000 |
+| wearers_v3_moult | 2.56 | 0.00 | - | 1.89 | 1.23 | 13.3 | 223 | 0.86 | 0.87 | 2085 | 13 | 0.000 |
+
+Read across: the BUILDERS are territorial. They threaten only a pilot who comes to them (a raid, 0.2-1.5 hits/min,
+0.45-0.5 s telegraph), and they pay for it: 1.4-4.2 kills/min plus the brood store. They are also cheap: <= 100 moving
+prisms/s and ~87 spatial-index queries/s per 48-worker colony. The TRAPS threaten only a predictable pilot. The WEARERS
+are the one roaming threat: the only species that hits a wanderer, with the longest telegraph (1.2-1.4 s, the rear),
+evader 0 and the biggest payoff, at 20x the motion cost. Every species' structure is half or more made of the
+player's own trail.
+
+**Best species: the fortress** (with scar tissue and a defender caste). It is the emergent behaviour a player sees and
+understands in seconds - cut the wall, the colony swarms the wound, the wall knits shut thicker, out of your own trail.
+It is the cheapest per prism of stolen mass, it is a short step from shipped `WallAssembler`, and it gave the
+richest counterplay results: steal vs ram, defend vs mend, thicken-where-cut. **Port design: `builders/PORT.md`**
+(shared `BuilderColony` + `BuilderRegistry`, one `Fauna.IsStealableForMe` predicate that excludes shielded and
+super-shielded mass, steal-on-pickup via `Prism.Steal(colonyName, domain, superSteal: false)` and never on a shield,
+carried prisms on the mover contract, a deposit that is final at once with the settle as a GPU flight stamp,
+`TryReserve` claim-before-place, per-colony lattice fields as NativeArrays + a Burst diffuse). **Collider budget: +N
+heart crystals per colony (N = 24-48), 0 prisms**: a builder lays nothing new, it re-homes mass that already had
+colliders. Wearers are the showpiece to port last. A worn body is moving mass (~2,100-2,500 prism writes/s in sim,
+1,700-2,800 index re-buckets/s for a 300-prism body), so it needs a body cap and a per-phase notify policy, profiled
+first. Trap builders belong in the gate-race modes, where a course forces a racing line for them to learn.
+
+**Viewer:** `builders/viewer.html` (self-contained, three.js from jsDelivr). Ten scenes, each opened framed on its
+structure:
+- the fortress cut three times along one line (scar + caste);
+- a steal raid on the fortress;
+- the wasp comb growing, and the wasp comb raided;
+- the trap web vs a racer, and vs a varied line;
+- wearers stalking a wanderer, and fought by a hunter;
+- the mixed cell.
+
+Stolen prisms visibly travel and turn ruby, webs are orange.
+
+**Why the direction stops here.** The last round's changes stopped moving the numbers:
+- escalating recruitment: no change;
+- moult cost cut: 8-28%;
+- oriented bodies: within noise;
+- the wasp's envelope rule: a structural fix, not a new behaviour.
+
+The open questions left are in-editor ones the Python arena cannot answer: Mono/Burst frame cost, the look of a 300-prism
+wearer, and whether the fortress' alarm swarm reads at game speed. What it would take to go further:
+- a compiled-structure builder (Werfel, Petersen & Nagpal 2014's TERMES: a designer's target shape compiled into
+  local rules) if designers want authored silhouettes - it trades emergence for control, so it is a design call;
+- a predator that eats builders' carried prisms (the food web reaching into construction);
+- an editor pass on the port.
+
+Literature used: Grasse 1959 (stigmergy); Theraulaz & Bonabeau 1995, Science 269 and J. Theor. Biol. 177 (lattice
+swarms, wasp nests); Bonabeau, Theraulaz, Deneubourg et al. 1998, Phil. Trans. R. Soc. B 353 (pillars, walls,
+royal chambers); Ladley & Bullock 2005, J. Theor. Biol. 234 (logistic constraints); Bonabeau, Theraulaz & Deneubourg
+1996 (response thresholds); Khuong et al. 2016, PNAS (time-decaying building pheromone); Werfel, Petersen & Nagpal
+2014, Science 343 (TERMES).

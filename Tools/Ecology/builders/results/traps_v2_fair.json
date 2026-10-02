@@ -76,6 +76,7 @@
    "carry_moves_per_s": 22.6,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -83,7 +84,7 @@
    "moves_per_s": 22.6,
    "steals": 20,
    "hits_per_min": 0.0,
-   "wall_s": 9.5
+   "wall_s": 9.2
   },
   "wander/23": {
    "built": 0,
@@ -95,6 +96,7 @@
    "carry_moves_per_s": 27.4,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -102,7 +104,7 @@
    "moves_per_s": 27.4,
    "steals": 25,
    "hits_per_min": 0.0,
-   "wall_s": 9.3
+   "wall_s": 9.9
   },
   "wander/41": {
    "built": 0,
@@ -114,6 +116,7 @@
    "carry_moves_per_s": 25.1,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -121,7 +124,7 @@
    "moves_per_s": 25.1,
    "steals": 22,
    "hits_per_min": 0.0,
-   "wall_s": 9.3
+   "wall_s": 11.1
   },
   "evader/7": {
    "built": 0,
@@ -133,6 +136,7 @@
    "carry_moves_per_s": 25.1,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -140,7 +144,7 @@
    "moves_per_s": 25.1,
    "steals": 22,
    "hits_per_min": 0.0,
-   "wall_s": 10.0
+   "wall_s": 13.0
   },
   "evader/23": {
    "built": 0,
@@ -152,6 +156,7 @@
    "carry_moves_per_s": 24.0,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -159,7 +164,7 @@
    "moves_per_s": 24.0,
    "steals": 21,
    "hits_per_min": 0.0,
-   "wall_s": 9.2
+   "wall_s": 12.5
   },
   "evader/41": {
    "built": 0,
@@ -171,6 +176,7 @@
    "carry_moves_per_s": 27.6,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -178,7 +184,7 @@
    "moves_per_s": 27.6,
    "steals": 25,
    "hits_per_min": 0.0,
-   "wall_s": 9.2
+   "wall_s": 14.0
   },
   "hunter/7": {
    "built": 0,
@@ -190,6 +196,7 @@
    "carry_moves_per_s": 19.6,
    "workers_alive": 0,
    "kills": 30,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -197,7 +204,7 @@
    "moves_per_s": 19.6,
    "steals": 19,
    "hits_per_min": 0.0,
-   "wall_s": 6.5
+   "wall_s": 8.1
   },
   "hunter/23": {
    "built": 1,
@@ -209,6 +216,7 @@
    "carry_moves_per_s": 19.7,
    "workers_alive": 2,
    "kills": 28,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -216,7 +224,7 @@
    "moves_per_s": 19.7,
    "steals": 18,
    "hits_per_min": 0.0,
-   "wall_s": 7.4
+   "wall_s": 10.4
   },
   "hunter/41": {
    "built": 0,
@@ -228,6 +236,7 @@
    "carry_moves_per_s": 16.8,
    "workers_alive": 0,
    "kills": 30,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -235,7 +244,7 @@
    "moves_per_s": 16.8,
    "steals": 18,
    "hits_per_min": 0.0,
-   "wall_s": 6.2
+   "wall_s": 6.4
   },
   "circuit/7": {
    "built": 176,
@@ -247,6 +256,7 @@
    "carry_moves_per_s": 89.9,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 1.2,
    "sprung": 30,
    "trap_age_med": 18.4,
    "web_components": null,
@@ -255,7 +265,7 @@
    "moves_per_s": 91.1,
    "steals": 224,
    "hits_per_min": 6.67,
-   "wall_s": 10.9
+   "wall_s": 11.4
   },
   "circuit/23": {
    "built": 127,
@@ -267,6 +277,7 @@
    "carry_moves_per_s": 64.0,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 1.0,
    "sprung": 34,
    "trap_age_med": 16.6,
    "web_components": null,
@@ -275,7 +286,7 @@
    "moves_per_s": 64.9,
    "steals": 177,
    "hits_per_min": 5.33,
-   "wall_s": 10.3
+   "wall_s": 10.7
   },
   "circuit/41": {
    "built": 196,
@@ -287,6 +298,7 @@
    "carry_moves_per_s": 101.7,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 1.4,
    "sprung": 33,
    "trap_age_med": 19.1,
    "web_components": null,
@@ -295,7 +307,7 @@
    "moves_per_s": 103.0,
    "steals": 253,
    "hits_per_min": 7.33,
-   "wall_s": 11.6
+   "wall_s": 11.4
   },
   "varied/7": {
    "built": 0,
@@ -307,6 +319,7 @@
    "carry_moves_per_s": 25.7,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -314,7 +327,7 @@
    "moves_per_s": 25.7,
    "steals": 23,
    "hits_per_min": 0.0,
-   "wall_s": 10.1
+   "wall_s": 9.6
   },
   "varied/23": {
    "built": 0,
@@ -326,6 +339,7 @@
    "carry_moves_per_s": 25.6,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -333,7 +347,7 @@
    "moves_per_s": 25.6,
    "steals": 23,
    "hits_per_min": 0.0,
-   "wall_s": 9.4
+   "wall_s": 9.7
   },
   "varied/41": {
    "built": 0,
@@ -345,6 +359,7 @@
    "carry_moves_per_s": 26.8,
    "workers_alive": 30,
    "kills": 0,
+   "queries_per_s": 0.1,
    "sprung": 0,
    "trap_age_med": null,
    "web_components": null,
@@ -352,7 +367,7 @@
    "moves_per_s": 26.8,
    "steals": 23,
    "hits_per_min": 0.0,
-   "wall_s": 9.2
+   "wall_s": 9.6
   }
  },
  "hits_per_min_circuit": 6.4433333333333325,

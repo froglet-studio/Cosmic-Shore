@@ -30,7 +30,7 @@ class Wearers:
 
     def __init__(self, arena, seed=0, n=40, alpha=1.0, V_hunt=600.0, speed=95.0, windup=1.0, lunge=2.2,
                  sense=180.0, exposed_at=3, s=6.0, fuse=True, dom=2, slow=0.15, rear_at=140.0, intercept=True,
-                 contact=0.0, body_cap=0, keep=0.6, births=20):
+                 contact=0.0, body_cap=0, keep=0.6, births=20, oriented=False):
         self.rng = np.random.default_rng(seed + 13)
         n0 = n; n = n + (births if body_cap else 0)       # spare slots for hearts born at a lair
         self.n, self.alpha, self.V_hunt, self.speed0, self.windup, self.lunge_k = n, alpha, V_hunt, speed, windup, lunge
@@ -43,6 +43,8 @@ class Wearers:
         self.alive = np.zeros(n, bool); self.alive[:n0] = True
         self.unborn = ~self.alive.copy()
         self.body_cap, self.keep = body_cap, keep
+        self.oriented = oriented
+        self.F = np.tile(np.eye(3), (n, 1, 1))
         self.lair = {}                                    # mass index -> world position (static, shed by a moult)
         self.moults = 0; self.born = 0
         self.leader = np.arange(n)                         # leader[k] == k: an independent creature
@@ -84,14 +86,35 @@ class Wearers:
         if self.contact:
             # the prism sticks where it TOUCHED: frontier sites are weighted by how close they lie to the prism's
             # current offset from the heart (DLA's arrival point) - bodies grow arms toward what they feed on
-            rel = (arena.mass_pos[i] - self.agent_pos[k]) / self.s
+            rel = self.frame(k) @ (arena.mass_pos[i] - self.agent_pos[k]) / self.s
             dd = np.array([np.sum((np.asarray(r, float) - rel) ** 2) for r in sites])
             w = w * np.exp(-(dd - dd.min()) / self.contact)
         site = sites[self.rng.choice(len(sites), p=w / w.sum())]
         b[site] = int(i)
 
+    def frame(self, k):
+        """Body frame: rows = right, up, forward. Identity unless `oriented`, where forward follows the smoothed
+        velocity (the body turns with the creature, so what it grew toward stays in front of it)."""
+        if not self.oriented:
+            return np.eye(3)
+        return self.F[k]
+
+    def update_frames(self):
+        if not self.oriented:
+            return
+        for k in range(self.n):
+            v = self.agent_vel[k]; n = np.linalg.norm(v)
+            if n < 5.0:
+                continue
+            f = 0.85 * self.F[k][2] + 0.15 * v / n; f /= np.linalg.norm(f)
+            up = self.F[k][1] - f * (self.F[k][1] @ f)
+            if np.linalg.norm(up) < 1e-3:
+                up = np.cross(f, [1.0, 0, 0])
+            up /= np.linalg.norm(up); r = np.cross(up, f)
+            self.F[k] = np.array([r, up, f])
+
     def wear_pos(self, k, site):
-        return self.agent_pos[k] + np.asarray(site, float) * self.s * self.squash[k]
+        return self.agent_pos[k] + (np.asarray(site, float) * self.s * self.squash[k]) @ self.frame(k)
 
     # ---------------------------------------------------------------- step
     def step(self, arena, dt):
@@ -159,6 +182,7 @@ class Wearers:
                 L = self.leader[k]
                 P[k] = P[L] + self.offset[k] * self.squash[L]; self.agent_vel[k] = self.agent_vel[L]
                 self.intent[k] = self.intent[L]
+        self.update_frames()
         self.do_fuse(arena)
         if self.body_cap:
             for k in range(self.n):
@@ -184,6 +208,7 @@ class Wearers:
         if g >= 0 and (not arena.mass_alive[g] or arena.mass_dom[g] == self.dom or arena.mass_shielded[g]):
             self.claimed.discard(int(g)); self.goal[k] = g = -1
         if g < 0 and (k + self.tick) % 4 == 0:
+            self.queries = getattr(self, "queries", 0) + 1
             c = arena.mass_near(P[k], self.sense)
             best, bd = -1, 1e18
             for i in c:
@@ -264,7 +289,7 @@ class Wearers:
             return True
         if not self.body[k]:
             return False
-        S = np.array(list(self.body[k].keys()), float) * self.s * self.squash[k] + self.agent_pos[k]
+        S = (np.array(list(self.body[k].keys()), float) * self.s * self.squash[k]) @ self.frame(k) + self.agent_pos[k]
         return bool((np.sum((S - p.pos) ** 2, axis=1) < (p.radius + 0.6 * self.s) ** 2).any())
 
     def moult(self, arena, k):
@@ -320,6 +345,15 @@ class Wearers:
                     arena.move_mass(m, tgt); self.body_moves += 1; moved = True
             self.container_writes += int(moved and len(self.body[k]) > 0)
 
+    def ahead_frac(self):
+        """Fraction of the largest body that lies AHEAD of its heart along the body frame's forward axis."""
+        bigs = [(len(self.body[k]), k) for k in range(self.n) if self.alive[k] and self.leader[k] == k and self.body[k]]
+        if not bigs:
+            return None
+        k = max(bigs)[1]
+        z = np.array([s[2] for s in self.body[k]], float)
+        return round(float(np.mean(z > 0)), 3)
+
     def metrics(self, arena, minutes):
         worn = [len(self.body[k]) for k in range(self.n) if self.alive[k] and self.leader[k] == k]
         allw = [m for k in range(self.n) for m in self.body[k].values()]
@@ -331,6 +365,8 @@ class Wearers:
                     container_writes_per_s=round(self.container_writes / (minutes * 60), 1),
                     rebuckets_per_s=round(self.rebuckets / (minutes * 60), 1),
                     hits_lunge=self.hits_by_phase.get("lunge", 0),
+                    queries_per_s=round(getattr(self, "queries", 0) / (minutes * 60), 1),
+                    ahead_frac=self.ahead_frac(),
                     lair=len([m for m in self.lair if arena.mass_alive[m]]), moults=self.moults, born=self.born,
                     hunt_time_s=None)
 

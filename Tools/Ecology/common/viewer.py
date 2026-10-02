@@ -40,19 +40,19 @@ cam.position.set(0, 900, 2400); const ctl = new THREE.OrbitControls(cam, ren.dom
 addEventListener('resize', ()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();ren.setSize(innerWidth,innerHeight)});
 const shell = new THREE.Mesh(new THREE.SphereGeometry(1200,48,24), new THREE.MeshBasicMaterial({color:0x2a3a6a,wireframe:true,transparent:true,opacity:0.08}));
 scene.add(shell);
-function ptsMat(){return new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+function ptsMat(solid){return new THREE.ShaderMaterial(Object.assign(solid?{transparent:false,depthWrite:true,depthTest:true}:{transparent:true,depthWrite:false,blending:THREE.AdditiveBlending},{
   vertexShader:`attribute float size;attribute vec3 col;varying vec3 vC;void main(){vC=col;vec4 mv=modelViewMatrix*vec4(position,1.);gl_PointSize=clamp(size*900./-mv.z,1.5,64.);gl_Position=projectionMatrix*mv;}`,
-  fragmentShader:`varying vec3 vC;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;gl_FragColor=vec4(vC*(1.2-2.*r),1.);}`})}
-function cloud(n){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(n*3),3));
+  fragmentShader:`varying vec3 vC;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d);if(r>.25)discard;gl_FragColor=vec4(vC*(1.2-2.*r),1.);}`}))}
+function cloud(n,solid){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(n*3),3));
   g.setAttribute('col',new THREE.BufferAttribute(new Float32Array(n*3),3));g.setAttribute('size',new THREE.BufferAttribute(new Float32Array(n),1));
-  const p=new THREE.Points(g,ptsMat());p.frustumCulled=false;scene.add(p);return p}
+  const p=new THREE.Points(g,ptsMat(solid));p.frustumCulled=false;scene.add(p);return p}
 let mass=null, agents=null, pil=null, run=null, k=0, playing=true, cur=-1;
 // style: 0-3 element (neutral, dim), 4-6 domain jade/ruby/gold, 7 danger, 8 shielded
 const ST=[[.14,.21,.25],[.25,.16,.06],[.19,.12,.25],[.12,.25,.15],[.1,.75,.7],[1,.25,.35],[1,.8,.25],[1,.45,.1],[.6,.7,1]];
 const STS=[4,4,4,4,6,6,6,7,6];
 function load(i){
   run=RUNS[i]; k=0; cur=-1; for(const o of [mass,agents,pil]) if(o) scene.remove(o);
-  const n=Math.max(run.meta.mass_n_max||0, run.mass0.pos.length); mass=cloud(n); let maxA=1;
+  const n=Math.max(run.meta.mass_n_max||0, run.mass0.pos.length); mass=cloud(n,true); let maxA=1;
   for(const f of run.frames) {let a=0; for(const s in f.species) a+=f.species[s].pos.length; maxA=Math.max(maxA,a)}
   agents=cloud(maxA); pil=cloud(16); scrub.max=run.frames.length-1;
   const fo=run.meta.focus; // optional: [x,y,z,distance] frames the camera on a structure
