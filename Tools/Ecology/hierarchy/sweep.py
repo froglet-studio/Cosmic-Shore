@@ -25,6 +25,7 @@ OUT = os.path.join(os.path.dirname(__file__), "results")
 
 GRIDS = {
     "a": dict(h_half=[30.0, 90.0], pred_metab=[0.06, 0.12], flora_r=[0.003, 0.006]),
+    "d": dict(flora_cap=[120.0, 240.0], flora_r=[0.006, 0.012], pred_metab=[0.02, 0.03]),
     "c": dict(h_half=[60.0, 90.0], pred_metab=[0.015, 0.02, 0.025, 0.03], flora_r=[0.006]),
     "b": dict(h_half=[90.0], pred_metab=[0.02, 0.03, 0.04], pred_sprint=[0.03, 0.06], flora_r=[0.003, 0.006]),
 }
@@ -43,7 +44,7 @@ def one(args):
         PM.HERB.metab = hm
     P = Params(**kw)
     sim, rows, snaps, wall = run(T, 0, seed, P=P, verbose=False)
-    met = metrics(rows, snaps, burn=min(900.0, T / 3))
+    met = metrics(rows, snaps, burn=T / 2 if T >= 10000 else min(900.0, T / 3))   # long runs: score the late half only
     met.update(kw); met["pred_metab"] = pm; met["herb_metab"] = hm; met["pred_sprint"] = ps; met["wall"] = wall
     met["final_flora"] = float(rows[-1, 3]); met["final_N"] = float(rows[-1, 5])
     return met
@@ -75,7 +76,7 @@ def main():
     for r in res:
         print({k: (round(v, 3) if isinstance(v, float) else v) for k, v in r.items()
                if k in keys + ["pred_sprint", "min_herb", "min_pred", "mean_herb", "mean_pred", "cv_herb", "cv_pred", "period_s",
-                               "regional_sync", "final_flora", "ok"]})
+                               "regional_sync", "final_flora", "ok", "flora_cap"]})
 
 
 if __name__ == "__main__":
