@@ -1,0 +1,47 @@
+{
+ "defend_on": {
+  "summary": {
+   "cuts_healed_90": "7/9",
+   "refill_frac": 0.942,
+   "t50_median": 17.8,
+   "t90_median": 70.0,
+   "sites_per_cut": 15.2,
+   "repair_from_trail": 0.969
+  },
+  "hits": [
+   0,
+   1,
+   0
+  ]
+ },
+ "defend_off": {
+  "summary": {
+   "cuts_healed_90": "9/9",
+   "refill_frac": 0.978,
+   "t50_median": 5.6,
+   "t90_median": 38.5,
+   "sites_per_cut": 15.1,
+   "repair_from_trail": 0.985
+  },
+  "hits": [
+   0,
+   0,
+   0
+  ]
+ },
+ "defend_caste30": {
+  "summary": {
+   "cuts_healed_90": "8/9",
+   "refill_frac": 0.957,
+   "t50_median": 5.6,
+   "t90_median": 41.3,
+   "sites_per_cut": 15.3,
+   "repair_from_trail": 0.962
+  },
+  "hits": [
+   0,
+   1,
+   0
+  ]
+ }
+}
