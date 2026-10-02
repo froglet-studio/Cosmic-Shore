@@ -49,13 +49,10 @@ namespace SquirrelAiHarness
         public float NextRailAt;
         public bool WantDrift;
         public readonly HashSet<int> SkimTrack = new(), HullTrack = new(), SkimRails = new(), HullRails = new();
-        /// <summary>Tooling: the last few solved plans (time, polyline ahead of the ship).</summary>
-        public readonly List<(float t, List<Vector3> pts)> PlanHistory = new();
-        public int LastSolveSeen = -1;
         public readonly HashSet<int> NextSkimTrack = new(), NextHullTrack = new(), NextSkimRails = new(), NextHullRails = new();
         public readonly List<SkimObstacle> LastObstacles = new();
-        /// <summary>Wall-clock milliseconds of each <see cref="SkimRacerBrain.Tick"/> (and its
-        /// obstacle gather) - the cost the in-game driver pays per AI per frame on the host.</summary>
+        /// <summary>Wall-clock milliseconds of each <see cref="SkimRacerBrain.Tick"/> - the brain's
+        /// share of what the in-game driver costs per AI per frame on the host.</summary>
         public readonly List<double> TickMs = new();
         public bool Finished => Stats.FinishTime >= 0f;
     }
@@ -71,6 +68,9 @@ namespace SquirrelAiHarness
         public bool Gamepad = false;
         public Func<int, SkimRacerProfile> Profile = _ => SkimRacerProfile.Expert();
         public bool Trace = false;
+        /// <summary>Have each brain describe its decisions (<see cref="SkimRacerBrain.Trace"/>) for the
+        /// contact and trace lines. Off when timing: the game never builds those strings.</summary>
+        public bool BrainTrace = true;
         public bool Ghost = false;
         public float TraceFrom = 0f, TraceTo = float.MaxValue, TraceDt = 0.25f;
         public int TraceRacer = 0;
@@ -122,7 +122,7 @@ namespace SquirrelAiHarness
                 {
                     Id = i,
                     Plant = new Plant(c, pose) { Gamepad = o.Gamepad },
-                    Brain = new SkimRacerBrain(Route, o.Profile(i), o.Seed * 7919 + i),
+                    Brain = new SkimRacerBrain(Route, o.Profile(i), o.Seed * 7919 + i) { Trace = o.BrainTrace },
                     AnchorIndex = 0,
                 };
                 r.Crystal = CrystalAround(0);   // the first batch: every crystal around anchor 0
@@ -199,7 +199,6 @@ namespace SquirrelAiHarness
                 long t0 = System.Diagnostics.Stopwatch.GetTimestamp();   // the brain alone, not this harness's sensor
                 var cmd = r.Brain.Tick(sensors, _obstacles);
                 r.TickMs.Add((System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
-                SnapshotPlan(r);
                 p.XSum = cmd.XSum; p.YSum = cmd.YSum; p.YDiff = cmd.YDiff; p.XDiff = cmd.XDiff;
                 p.LeftTrigger = cmd.Drift ? 1f : 0f;
                 if (cmd.Drift && !r.WantDrift) p.BeginDrift();
@@ -271,7 +270,6 @@ namespace SquirrelAiHarness
                 $"cxo={CrystalOffset(r)} " +
                 $"keys={r.Brain.KeyCount} re={r.Brain.Reanchors} stick=({p.XSum,5:F2},{p.YSum,5:F2},{p.YDiff,5:F2}) " +
                 $"gap={Quaternion.Angle(p.Rotation, p.Commanded),5:F1} thr={r.Brain.ThrottleOut:F2} [{r.Brain.DebugThrottle}] plan={r.Brain.LastChoice} {r.Brain.DebugSteer}" +
-                (Environment.GetEnvironmentVariable("SKIM_DEMAND_DEBUG") == "1" ? " || " + r.Brain.DebugDemandCompare() : "") +
                 (Environment.GetEnvironmentVariable("SKIM_PLAN_DUMP") == "1" ? " || plan " + PlanDump(r, s) : ""));
         }
 
@@ -337,27 +335,7 @@ namespace SquirrelAiHarness
             r.NextRailAt = Time + Mathf.Clamp(raw, 0f, 3f);
         }
 
-        /// <summary>Tooling: for each remembered plan, how close it passed the rod of
-        /// <paramref name="rail"/> (centre line to the rod's axis segment), newest last.</summary>
-        string PlanClearance(Racer r, Rail rail)
-        {
-            Vector3 ax = rail.Rotation * Vector3.forward;
-            float hl = _c.RailHalf.z;
-            var sb = new System.Text.StringBuilder();
-            foreach (var (t, pts) in r.PlanHistory)
-            {
-                float best = float.MaxValue;
-                foreach (var q in pts)
-                {
-                    Vector3 rp = rail.Position + ax * Mathf.Clamp(Vector3.Dot(q - rail.Position, ax), -hl, hl);
-                    best = Mathf.Min(best, (q - rp).magnitude);
-                }
-                sb.Append($"{t - Time:F2}:{best:F1} ");
-            }
-            return sb.ToString();
-        }
-
-        /// <summary>Tooling: the plan's offsets (across, up) every 20 u ahead of the ship.</summary>
+        /// <summary>Tooling: the crystal's offset (across, up) in the ribbon's frame at its own arc.</summary>
         string CrystalOffset(Racer r)
         {
             float cs = Route.ProjectGlobal(r.Crystal);
@@ -366,6 +344,7 @@ namespace SquirrelAiHarness
             return $"({Vector3.Dot(d, right):F0},{Vector3.Dot(d, up):F0})";
         }
 
+        /// <summary>Tooling: the plan's offsets (across, up) every 20 u ahead of the ship.</summary>
         string PlanDump(Racer r, float s)
         {
             var sb = new System.Text.StringBuilder();
@@ -375,17 +354,6 @@ namespace SquirrelAiHarness
                 sb.Append($"({rho * Mathf.Sin(phi):F0},{rho * Mathf.Cos(phi):F0}) ");
             }
             return sb.ToString();
-        }
-
-        /// <summary>Tooling: remember the brain's plan whenever it re-solves.</summary>
-        void SnapshotPlan(Racer r)
-        {
-            if (r.Brain.SolveCount == r.LastSolveSeen || r.Brain.KeyCount < 4) return;
-            r.LastSolveSeen = r.Brain.SolveCount;
-            var pts = new List<Vector3>(140);
-            for (float ds = -20f; ds <= 400f; ds += 3f) pts.Add(r.Brain.PlanPosition(r.Brain.RouteS + ds));
-            r.PlanHistory.Add((Time, pts));
-            if (r.PlanHistory.Count > 8) r.PlanHistory.RemoveAt(0);
         }
 
         void Contacts(Racer r)
@@ -457,7 +425,7 @@ namespace SquirrelAiHarness
                     Vector3 rd = rail.Position - rc;
                     r.Stats.Events.Add($"{Time,7:F2}s rail touch ({(rail.Owner == r.Id ? "own" : $"racer {rail.Owner}")}, age {Time - rail.Born:F1}s) " +
                         $"rail at ({Vector3.Dot(rd, rr):F1},{Vector3.Dot(rd, ru):F1}) v={p.Speed:F0} xt={r.Brain.CrossTrackError:F1} " +
-                        $"{(seen ? "SEEN" : "NOT-GATHERED")} avoid: {r.Brain.LastAvoidNote} plan={r.Brain.LastChoice} | {r.Brain.DescribeObstacleNear(rail.Position)} | hist {PlanClearance(r, rail)}");
+                        $"{(seen ? "SEEN" : "NOT-GATHERED")} plan={r.Brain.LastChoice}");
                 }
             Swap(r.SkimRails, r.NextSkimRails);
             Swap(r.HullRails, r.NextHullRails);

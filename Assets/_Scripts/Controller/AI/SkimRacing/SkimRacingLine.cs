@@ -33,7 +33,6 @@ namespace CosmicShore.Gameplay
     public sealed class SkimRacingLine
     {
         const float GridStep = 24f;
-        public static bool ExperimentLegacySmoothing;
         const int Iterations = 4000;
 
         readonly SkimRoute _route;
@@ -119,24 +118,6 @@ namespace CosmicShore.Gameplay
                     b[i] = sign * Mathf.Clamp(nominalHeight, lo[i], hi[i]);
                     ya[i] = a[i];
                     yb[i] = b[i];
-                }
-                if (ExperimentLegacySmoothing)
-                {
-                    // EXPERIMENT: the first cut — curvature-only smoothing, 2500 plain sweeps, hard band.
-                    for (int sweep = 0; sweep < 2500; sweep++)
-                    {
-                        for (int i = 0; i < n; i++) p[i] = c[i] + right[i] * a[i] + up[i] * b[i];
-                        for (int i = 0; i < n; i++)
-                        {
-                            Vector3 d4 = p[Wrap(i - 2)] - 4f * p[Wrap(i - 1)] + 6f * p[i] - 4f * p[Wrap(i + 1)] + p[Wrap(i + 2)];
-                            Vector3 st = -d4 * (1f / 18f);
-                            a[i] = Mathf.Clamp(a[i] + Vector3.Dot(st, right[i]), -lat[i], lat[i]);
-                            b[i] = sign * Mathf.Clamp(sign * (b[i] + Vector3.Dot(st, up[i])), lo[i], hi[i]);
-                        }
-                    }
-                    _a[face] = a;
-                    _b[face] = b;
-                    continue;
                 }
 
                 float t = 1f;
