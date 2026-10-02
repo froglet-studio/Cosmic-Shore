@@ -175,7 +175,17 @@ does much of the work.
    *play*. The wolfpack effect gives the attention; menace also needs the slow, direct, persistent approach
    that `advise` asks for. A design takeaway: to move a pack from play to dread, slow it down and make it
    approach straight, not only make it look at you.
-8. **A headless viewer test caught a load-order bug** (the panel read `RUNS` before it existed) and a
+8. **`advise` followed by hand stalls; search does not** (`emotion/retune.py`, `results/retune.json`).
+   - **By hand:** I took the searched playful critter and applied the hints toward menacing one at a time
+     (lower bounce, lower noise, no approach-retreat, face the pilot, slower, bigger and elongated).
+     P(menacing) went only 0.05 → 0.25, and the critter ended eerie/neutral. It was an *avoider*
+     (approach −0.18) that ignored the pilot's motion, and no feature nudge fixes that. Feature hints do not
+     compose through a body's dynamics.
+   - **By search:** CMA-ES *started at* the playful critter (σ 0.12, 120 evaluations) reached menacing on
+     **0.5** of validation runs. Its largest moves were the stalking recipe: freeze 77% of the time (from 0),
+     much bigger, a tighter group, a larger standoff distance, facing the pilot, keeping pace.
+   - **So:** use `advise` to *explain* a reading, and `retune.py` to *change* a species.
+9. **A headless viewer test caught a load-order bug** (the panel read `RUNS` before it existed) and a
    camera that made encounters invisible at cell scale. Both fixed: initialisation on `load`, and a
    follow-pilot camera.
 

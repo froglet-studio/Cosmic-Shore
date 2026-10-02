@@ -49,13 +49,13 @@ def _eval(args):
     return float(np.mean(vals)), float(np.mean(tops)), float(np.mean(agree))
 
 
-def cma(target, gens, lam, pool, seed=0):
+def cma(target, gens, lam, pool, seed=0, start=None, sigma0=0.3):
     rng = np.random.default_rng(seed)
     mu = lam // 2; w = np.log(mu + 0.5) - np.log(np.arange(1, mu + 1)); w /= w.sum(); mueff = 1 / np.sum(w ** 2)
     cc, cs = 4 / (D + 4), (mueff + 2) / (D + mueff + 5)
     c1 = 2 / ((D + 1.3) ** 2 + mueff); cmu = min(1 - c1, 2 * (mueff - 2 + 1 / mueff) / ((D + 2) ** 2 + mueff))
     damps = 1 + 2 * max(0, math.sqrt((mueff - 1) / (D + 1)) - 1) + cs; chiN = math.sqrt(D) * (1 - 1 / (4 * D) + 1 / (21 * D * D))
-    m = rng.random(D); sigma = 0.3; C = np.eye(D); pc = np.zeros(D); ps = np.zeros(D)
+    m = rng.random(D) if start is None else np.array(start, float); sigma = sigma0; C = np.eye(D); pc = np.zeros(D); ps = np.zeros(D)
     best = (-1, None); hist = []
     for g in range(gens):
         Bv, Dv = np.linalg.eigh(C)[1], np.sqrt(np.maximum(np.linalg.eigh(C)[0], 1e-12))
