@@ -11,7 +11,7 @@ def load(p):
     from harness import replay_score_hard
     rows = [json.loads(l) for l in open(p)] if os.path.exists(p) else []
     for r in rows:
-        if r.get("R_hard") is None:
+        if True:                                     # re-score every row on the CURRENT stretch bar
             r["R_hard"] = replay_score_hard(dict(r["card"])); r["obj"] = r["R"] + r["R_hard"]
     return rows
 

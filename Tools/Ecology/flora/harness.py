@@ -577,7 +577,8 @@ def replay_score(c):
 def replay_score_hard(c):
     """The stretch bar, for when R saturates (snap trap reached 0.97 in two search steps). Same seven axes, tighter:
        threat [1.5, 4]/min, counterplay <= 0.15, telegraph worst decile >= 1.0 s, exchange rate [0.75, 2] crystals per
-       burn, twin variety >= 0.5, reader access >= 0.9, coverage [0.15, 0.3], route-bias growth >= 1.75x (static 0.3)."""
+       burn, twin variety >= 0.5, reader access >= 0.9, coverage [0.15, 0.3], route-bias growth >= 1.75x (static 0.3),
+       and a COLLIDER BUDGET: <= 2500 live plant prisms per grove (coral at c0 6 reached ~6000, round 5)."""
     if c["mass_drift_max"] > 1e-6 or not c["crystal_law"]:
         return 0.0
     cp = c["counterplay"]; f = 0.01
@@ -590,6 +591,8 @@ def replay_score_hard(c):
         access=float(np.clip((c["avoid_cost"] or 0) / 0.9, f, 1.0)),
         presence=max(f, _band(c["lane_coverage"], 0.15, 0.3)),
         adapt=0.3 if c["adapt"] is None else float(np.clip(0.3 + 0.7 * (c["adapt"] - 1.0) / 0.75, 0.3, 1.0)),
+        # collider budget: every plant prism is a collider in game. <= 2500 per grove full marks, x4 that -> floor
+        budget=max(f, _band(c.get("prisms_end") or 1.0, 1.0, 2500.0)),
     )
     c["R_hard_terms"] = {k: round(v, 3) for k, v in t.items()}
     return round(float(np.exp(np.mean(np.log(list(t.values()))))), 4)

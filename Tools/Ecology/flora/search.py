@@ -31,7 +31,7 @@ SPACE = dict(
                 guard=(0.0, 0.8, "lin")),
     coral=dict(n_hearts=(3, 12, "int"), Du=(0.1, 1.2, "lin"), Dv=(0.003, 0.08, "log"), rate=(5, 120, "log"),
                k=(0.002, 0.05, "log"), vth=(0.15, 0.8, "lin"), sting=(0.005, 0.2, "log"), eat_per_s=(0.1, 3.0, "log"),
-               reach=(1, 4, "int")),
+               reach=(1, 4, "int"), v_danger=(0.5, 4.0, "log"), c0=(4.0, 20.0, "log")),
     physarum=dict(sa=(15, 60, "lin"), ra=(15, 60, "lin"), so=(12, 50, "lin"), ss=(20, 80, "lin"), food_dep=(0.3, 6, "log"),
                   on=(3, 14, "lin"), off=(1, 6, "lin"), period=(1.5, 6, "lin"), wave_speed=(20, 120, "lin"),
                   ex_ticks=(1, 4, "int"), wake_dep=(-4, 8, "lin"), heart_speed=(0, 15, "lin")),

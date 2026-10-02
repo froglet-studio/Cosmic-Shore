@@ -10,8 +10,10 @@ c0 * (sum u + sum v) is exactly the coral's mass, and it only grows by eating.
     u, v       per-voxel substrate and coral, in units of c0 volume (one prism's worth)
     Du > Dv    the substrate spreads faster than the coral (the Turing condition): coral FRONTS chase nutrient
                halos around food, leave branching walls behind, and coarsen as resorbed interior feeds the tips
-    fronts     voxels where the reaction rate u v^2 exceeds `sting` are the growing tips - stinging polyps,
-               DANGER, glowing (the telegraph is the visible creeping front)
+    sting      `sting_mode="dense"` (round 5): living coral denser than `v_danger` is FIRE CORAL - danger, glowing;
+               the thinner new growth around it is a soft wall, and the creeping front is the telegraph.
+               `sting_mode="front"` (round 4, kept as the negative): only the actively reacting tips (rate u v^2 >
+               `sting`) stung - momentary and few, a blind pilot met none.
     walls      coral voxels (v > `vth`) behind the front are plain prisms: a pilot RAMS through them, which
                breaks them (an active force: their mass leaves as cut mass) - so flying through coral carves it
     hearts     the crystals the coral was planted from; only coral CONNECTED to a living heart reacts or
@@ -30,8 +32,9 @@ from harness import FloraSpecies, PlantBody, VIEW, GROVE_C, GROVE_R, seg_point_d
 from physarum import _blur
 from scipy_free import components
 
-DEFAULTS = dict(G=48, n_hearts=6, c0=20.0, plant_vol=12000.0, Du=0.9, Dv=0.25, rate=1.2, k=0.05, vth=0.35,
-                sting=0.04, reach=2, eat_per_s=0.5, substeps=2, ram=True, label_every=10, seed_r=1, armour=0.0)
+DEFAULTS = dict(G=48, n_hearts=10, c0=6.0, plant_vol=12000.0, Du=0.9, Dv=0.25, rate=1.2, k=0.05, vth=0.35,
+                sting=0.04, reach=2, eat_per_s=0.5, substeps=2, ram=True, label_every=10, seed_r=1, armour=0.0,
+                sting_mode="dense", v_danger=1.1, warmup=600)
 
 
 def _lap(F, M):
@@ -76,6 +79,13 @@ class Coral(FloraSpecies):
         self.ever = np.zeros(G ** 3, np.int32)
         self.body = PlantBody(16)          # coral's body IS the field; prisms are a view of it (render only)
         self.rate_f = np.zeros((G, G, G)); self.shield = np.zeros(G ** 3, bool); self.occ_prev = np.zeros(G ** 3, bool)
+        self.front = np.zeros(G ** 3, bool)
+        class _Quiet:                                    # the grove before you arrive: grow with no pilots present
+            pilots = []
+        for _ in range(int(p["warmup"])):
+            q = _Quiet(); q.t = 0.0; q.mass_alive = arena.mass_alive; q.mass_pos = arena.mass_pos
+            q.mass_vol = arena.mass_vol; q.consume = arena.consume
+            self.step(q, 0.1)
 
     def vox(self, P):
         g = np.clip(((P - self.o) / self.h).astype(np.int64), 0, self.G - 1)
@@ -140,7 +150,14 @@ class Coral(FloraSpecies):
             new = occ & ~self.occ_prev
             self.shield[new] = self.rng.random(int(new.sum())) < p["armour"]
             self.occ_prev = occ.copy()
-        front = occ & (self.rate_f.ravel() > p["sting"])
+        if p["sting_mode"] == "front":
+            # round 4 negative: only the actively reacting tips stung; they are momentary and few, so a blind pilot
+            # met none (threat 0.01, coverage 0.01, R 0.12 after 5 search steps)
+            front = occ & (self.rate_f.ravel() > p["sting"])
+        else:
+            # FIRE CORAL: living coral denser than v_danger stings; thinner growth is a soft wall you can carve.
+            # The danger is persistent and visible, so its lead is how long it has stood there
+            front = occ & (self.v.ravel() > p["v_danger"]) & self.living.ravel()
         newf = front & ~np.isfinite(self.front_t); self.front_t[newf] = arena.t
         self.front_t[~front] = np.inf
         self.ever += front
