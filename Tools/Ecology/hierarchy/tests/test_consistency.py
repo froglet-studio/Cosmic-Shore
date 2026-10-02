@@ -50,7 +50,8 @@ def arm(kind, P, init_seed, run_seed, T, R, dens, pred_frac, series=False):
         sim.force_hot = np.full(nreg, hot)
         sim.step()
         if series and i % (per * 10) == 0:
-            s = sim.summary(); traj.append([sim.t, s["herb"]["count"], s["pred"]["count"], s["flora"]])
+            s = sim.summary(); traj.append([sim.t, s["herb"]["count"], s["pred"]["count"], s["flora"], sim.A.kills + sim.M.kills,
+                                         int(sim.A.births[1] + sim.M.births[1]), int(sim.A.deaths[1] + sim.M.deaths[1]), s["pred"]["mean_e"]])
     # read the summary off EXPANDED agents (macro arm: expand everything now)
     sim.force_hot = np.ones(nreg, bool)
     sim._lod()

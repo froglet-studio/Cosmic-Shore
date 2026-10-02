@@ -179,6 +179,8 @@ class Agents:
             vn = (vel[out] * nrm_o).sum(1, keepdims=True)
             vel[out] -= 2 * np.maximum(vn, 0) * nrm_o
             self.heading[:n][out] -= 2 * np.maximum((self.heading[:n][out] * nrm_o).sum(1, keepdims=True), 0) * nrm_o
+        self.last_sprint = sprint.copy()
+        self.last_reg = reg.copy(); self.last_sp = sp.copy(); self.last_E = E.copy()
         # ---- metabolism -> the nutrient pool of the region the agent stands in
         burn = np.where(isH, HERB.metab + sprint * HERB.sprint_metab, PRED.metab + sprint * PRED.sprint_metab) * dt
         burn = np.minimum(burn, np.maximum(E, 0.0))

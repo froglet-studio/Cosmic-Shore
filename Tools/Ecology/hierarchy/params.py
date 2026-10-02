@@ -65,6 +65,7 @@ class Params:
     p_sense: float = 25.0
     p_catch: float = 4.0
     h_flee: float = 40.0
+    sprint_kappa: tuple = (0.36, 0.019)  # measured sprint time / Poisson-encounter odds (grazers flee, hunters chase)
     # ---- macro movement (regional hops; fitted to micro effective diffusion) ----
     hop_rate: dict = field(default_factory=lambda: {"herb": (0.00144, 0.00482, 0.0112), "pred": (0.0028, 0.0107, 0.0144)})
     # per-neighbour hop rate by phase (sated, forage, hungry)

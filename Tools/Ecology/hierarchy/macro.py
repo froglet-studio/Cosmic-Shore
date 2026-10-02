@@ -346,12 +346,12 @@ class Macro:
         if k == 0:
             other = self.Pr.count().astype(float)
             p_spr = 1.0 - np.exp(-other / Vreg * (4.0 / 3.0) * np.pi * P.h_flee ** 3)
-            spr = p_spr[:, None] * np.ones_like(m)
+            spr = P.sprint_kappa[0] * p_spr[:, None] * np.ones_like(m)
         else:
             other = self.H.count().astype(float)
             p_spr = 1.0 - np.exp(-other / Vreg * (4.0 / 3.0) * np.pi * P.p_sense ** 3)
             hunt = ndtr((P.p_hunt_below * sp.e_max - m) / np.maximum(np.sqrt(v), 1e-6))
-            spr = p_spr[:, None] * hunt
+            spr = P.sprint_kappa[1] * p_spr[:, None] * hunt
         if P.bug == "macro_no_sprint_cost":
             spr = spr * 0.0
         burn_pc = (sp.metab + sp.sprint_metab * spr) * dt
