@@ -157,7 +157,8 @@ class HierSim:
     def _expand(self, r):
         W, rng, A = self.W, self.rng, self.A
         occ = self.M.occupancy()[r]
-        for s, pop in enumerate(self.M.pops):
+        pred_pos = []                                    # predators are placed first; grazers then avoid them
+        for s, pop in reversed(list(enumerate(self.M.pops))):
             n, m, v = pop.mean_var()
             reg_mean = float(pop.S[r].sum() / max(n[r].sum(), 1))
             for c in np.flatnonzero(n[r] > 0):  # noqa: B007
@@ -188,6 +189,19 @@ class HierSim:
                 po = occ if s == 0 else W.vox_ok[r] / W.vox_ok[r].sum()   # predators: not on top of prey
                 vv = rng.choice(W.nvox, cnt, p=po)
                 pos = W.centers[r] + W.vox_off[vv] + rng.uniform(-0.5, 0.5, (cnt, 3)) * W.vox_h
+                if s == 0 and pred_pos and self.P.bug != "expand_ignore_predators":
+                    # steady state has grazers OUTSIDE every predator's flee radius (they fled): sample that,
+                    # or a fresh expansion is a massacre (114 kills in 30 s vs 11 in macro, measured)
+                    PP = np.concatenate(pred_pos)
+                    for _ in range(8):
+                        d = np.linalg.norm(pos[:, None, :] - PP[None], axis=2).min(1)
+                        bad = d < self.P.h_flee
+                        if not bad.any():
+                            break
+                        vb = rng.choice(W.nvox, int(bad.sum()), p=po)
+                        pos[bad] = W.centers[r] + W.vox_off[vb] + rng.uniform(-0.5, 0.5, (int(bad.sum()), 3)) * W.vox_h
+                if s == 1:
+                    pred_pos.append(pos)
                 orig = self.reps[r, s][rng.integers(0, P_reps(self.P), cnt)]
                 A.add(pos, np.full(cnt, s, np.int8), el, E, origin=orig, emerge=0.0)
                 self.events["expand"] += cnt
@@ -205,7 +219,10 @@ class HierSim:
         if not cold.any():
             return
         idx = np.flatnonzero(cold)
-        vis = self.visible(pos[idx])
+        e = A.view("emerge")[idx][:, None]
+        ease = e * e * (3 - 2 * e)
+        drawn = A.view("origin")[idx] * (1 - ease) + pos[idx] * ease
+        vis = self.visible(pos[idx]) | self.visible(drawn)      # never absorb what is SEEN, sim pos or drawn pos
         go = idx[~vis]
         if len(go) == 0:
             return

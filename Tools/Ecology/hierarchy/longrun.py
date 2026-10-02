@@ -160,9 +160,10 @@ def main():
     ap.add_argument("--tag", default="macro")
     ap.add_argument("--herb", type=int, default=45000)
     ap.add_argument("--pred", type=int, default=3000)
+    ap.add_argument("--snap", type=float, default=10.0)
     a = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
-    sim, rows, snaps, wall = run(a.T, a.pilots, a.seed, n_herb=a.herb, n_pred=a.pred)
+    sim, rows, snaps, wall = run(a.T, a.pilots, a.seed, n_herb=a.herb, n_pred=a.pred, snap_every=a.snap)
     met = metrics(rows, snaps)
     met["wall_s"] = wall
     met["ledger_drift_rel"] = abs(sim.ledger()["total"] - sim.ledger0["total"]) / sim.ledger0["total"]
