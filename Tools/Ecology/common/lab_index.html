@@ -1,0 +1,96 @@
+<title>Living Ecology Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Barlow:wght@400;500&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+:root{--bg:#f3f4f8;--panel:#ffffff;--fg:#151826;--mute:#5b6280;--line:#dde0ea;--acc:#1f6fd1;--warm:#c4521a;--ok:#1d8a52;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0a0c13;--panel:#121725;--fg:#dde1f2;--mute:#8a92b6;--line:#232b44;--acc:#7fc4ff;--warm:#ff9a5c;--ok:#5fd394;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0a0c13;--panel:#121725;--fg:#dde1f2;--mute:#8a92b6;--line:#232b44;--acc:#7fc4ff;--warm:#ff9a5c;--ok:#5fd394;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 Barlow,system-ui,sans-serif;padding-inline:16px}
+.wrap{max-width:1080px;margin:0 auto;padding-block:40px 64px}
+h1{font:700 clamp(28px,5vw,44px)/1.05 "Chakra Petch",system-ui,sans-serif;letter-spacing:.01em;margin:0 0 10px;text-wrap:balance}
+.lede{color:var(--mute);max-width:68ch;margin:0 0 28px}
+.k{font:600 11px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card h2{font:700 20px/1.2 "Chakra Petch",system-ui,sans-serif;margin:0}
+.card p{margin:0;color:var(--fg)}
+.num{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+.pick{font-size:14px;color:var(--mute)}
+.pick b{color:var(--warm);font-weight:500}
+a.go{margin-top:auto;align-self:flex-start;font:600 14px/1 "Chakra Petch",system-ui,sans-serif;color:var(--bg);background:var(--acc);text-decoration:none;padding:10px 14px;border-radius:7px}
+a.go:hover{filter:brightness(1.1)}
+section{margin-top:40px}
+h3{font:700 18px/1.2 "Chakra Petch",system-ui,sans-serif;margin:0 0 10px}
+ul{margin:0;padding-left:20px;max-width:72ch}
+li{margin:4px 0}
+.note{border-left:3px solid var(--warm);padding:4px 0 4px 14px;color:var(--mute);max-width:72ch}
+</style>
+<div class="wrap">
+  <div class="k">Cosmic Shore · Living Ecology program · rounds 1–2</div>
+  <h1>Living Ecology Lab</h1>
+  <p class="lede"><b>New: fly it yourself.</b> The flight sim below puts you at the stick among every species. Round 1 was six research directions on fauna and flora that behave without behaviour trees: local rules, shared fields, quorum switches and swarms that assemble into bodies. Each is scored against scripted pilots on telegraph, counterplay, variety and payoff, and every run audits conserved mass. Open any viewer to fly the camera among the results. The recorded viewers open in <b>pilot view</b>, over the pilot's shoulder at whatever it is facing; 1–4 switch between pilot, chase, orbit and fly cameras, and clicking a creature follows it.</p>
+
+  <div class="grid" style="margin-bottom:16px">
+    <div class="card"><div class="k">H · flight · round 2</div><h2>Fly the ecology</h2>
+      <p>Pilot a vessel through the cell, one species at a time or all ten together, on a JS port of the exact code that was scored. Your wake is food: thieves tail it, fortress workers carry it off. Press R after an encounter to rate it.</p>
+      <div class="num">all 10 species pass the fidelity gate vs Python · ~1,400 agents · ~7 ms/step · mass residual 0</div>
+      <div class="pick">Next: <b>stakes</b>, so danger prisms burn your petals</div>
+      <a class="go" href="flight.html">Fly it</a></div>
+
+    <div class="card"><div class="k">G · living cell · round 2</div><h2>Everything in one cell</h2>
+      <p>Every round-1 pick sharing one conserved cell under the hierarchical LOD. The naive sum was a siege; niches and hunger-gated predators made it livable. A recorded 5-minute explorer flight with an encounter timeline.</p>
+      <div class="num">0 pop-ins at LOD 520/760/680 · audit ≤ 1.1e-5 vol · 10/10 negative controls fire</div>
+      <div class="pick">Swarm colour finding: <b>newborns take the colour of the food that paid for them</b></div>
+      <a class="go" href="living_cell.html">Open viewer</a></div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="k">A · substrate</div><h2>One sim, many species</h2>
+      <p>Agents, fields, quorum and bodies. Six species are just parameter sets of one simulation, and a loose school condenses into a leviathan and dissolves again, with no script.</p>
+      <div class="num">1.2 ms / 10k agents · 11 ms / 100k · mass drift ≤ 4e-16</div>
+      <div class="pick">Port pick: <b>Burst layer every species runs on</b></div>
+      <a class="go" href="substrate.html">Open viewer</a></div>
+
+    <div class="card"><div class="k">B · bestiary</div><h2>Threat fauna</h2>
+      <p>Eight species, cute to terrifying: thieves that tail your trail, pack hunters that ring and strike, locusts that flip from shy to storm.</p>
+      <div class="num">all 8 pass telegraph ≥ 0.7 s · counterplay · variety · payoff</div>
+      <div class="pick">Port picks: <b>thieves, pack hunters, locusts</b></div>
+      <a class="go" href="bestiary.html">Open viewer</a></div>
+
+    <div class="card"><div class="k">C · emotion</div><h2>Reading feeling from motion</h2>
+      <p>A probe that names cute, playful, eerie, majestic, menacing or terrifying from motion and size alone, then a search toward each.</p>
+      <div class="num">held-out families 0.75 · sealed sets 0.78 / 0.91</div>
+      <div class="pick">Needs: <b>a 5-rater blind pass</b> (below)</div>
+      <a class="go" href="emotion.html">Open viewer</a></div>
+
+    <div class="card"><div class="k">D · builders</div><h2>Builders and thieves</h2>
+      <p>Colonies that steal trail and build with it. Cut the fortress wall and the colony swarms the wound and knits it thicker, out of your own prisms.</p>
+      <div class="num">mass audit 0.000 every run · ≤ 100 moving prisms/s</div>
+      <div class="pick">Port pick: <b>the fortress</b></div>
+      <a class="go" href="builders.html">Open viewer</a></div>
+
+    <div class="card"><div class="k">E · hierarchy</div><h2>Macro to individual</h2>
+      <p>Far from players a population is a set of cohorts; near them it expands into individuals. It conserves mass exactly, nothing pops in, and the predator–prey cycles never die out.</p>
+      <div class="num">8 h cycles · 18.8k–163k grazers · drift 5.3e-15</div>
+      <div class="pick">Port pick: <b>regions in the Cell, a stomach for the starvation clock</b></div>
+      <a class="go" href="hierarchy.html">Open viewer</a></div>
+
+    <div class="card"><div class="k">F · threat flora</div><h2>Plants that hunt</h2>
+      <p>A snap-trap clump that slowly turns to face your routes, and a slime-mould network whose danger pulses run down cables it grew from what it ate.</p>
+      <div class="num">snap trap R 0.97 · physarum telegraph 3.6 s</div>
+      <div class="pick">Port picks: <b>snap trap, then physarum</b></div>
+      <a class="go" href="flora.html">Open sandbox</a></div>
+  </div>
+
+  <section>
+    <h3>In progress now</h3>
+    <ul>
+      <li><b>Stakes in the flight sim:</b> a petal HUD, and opposing-domain danger prisms that burn petals for good, so a threat costs something you earned.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h3>One step only people can take</h3>
+    <p class="note">The emotion probe's agreement numbers compare it with archetypes drawn from the literature, not with human ratings. In the emotion viewer, turn on blind mode and rate a handful of runs; five raters turn the probe into evidence. The viewer's export button can't download inside this page, so rate there and send the tallies, or run it from <span class="num">Tools/Ecology/emotion/results/</span> locally to export.</p>
+  </section>
+</div>
+

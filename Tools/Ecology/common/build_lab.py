@@ -3,8 +3,7 @@ doctype and a "<- Lab" link back to the index, so the published lab never strand
 
     python Tools/Ecology/common/build_lab.py <out_dir>
 
-The index page itself (index.html) is hand-written and lives in the out dir; this script only stages the
-viewers. A viewer is listed with the id of its top bar (a left-anchored flex row every viewer has), and the
+The index page itself is hand-written in common/lab_index.html and copied to <out_dir>/index.html. A viewer is listed with the id of its top bar (a left-anchored flex row every viewer has), and the
 back link is inserted as that bar's FIRST child, so it flows with the bar instead of overlapping it.
 """
 from __future__ import annotations
@@ -22,6 +21,8 @@ VIEWERS = [  # (published name, source relative to Tools/Ecology, id of the view
     ("builders.html", "builders/viewer.html", "ui"),
     ("hierarchy.html", "hierarchy/results/hierarchy_viewer.html", "ui"),
     ("flora.html", "flora/sandbox.html", "hud"),
+    ("flight.html", "flight/index.html", "top"),
+    ("living_cell.html", "living_cell/viewer.html", "ui"),
 ]
 
 PREFIX = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -46,6 +47,10 @@ def stage(out: str):
         with open(os.path.join(out, name), "w", encoding="utf-8") as fh:
             fh.write(s)
         print(f"{name:16s} {len(s):>10,d} bytes")
+    with open(os.path.join(HERE, "common", "lab_index.html"), encoding="utf-8") as fh:
+        idx = fh.read()
+    with open(os.path.join(out, "index.html"), "w", encoding="utf-8") as fh:
+        fh.write(idx)
 
 
 if __name__ == "__main__":
