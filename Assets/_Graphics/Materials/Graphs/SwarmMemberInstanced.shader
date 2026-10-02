@@ -49,6 +49,7 @@ Shader "CosmicShore/SwarmMemberInstanced"
             {
                 float3 positionOS : POSITION;
                 float3 normalOS : NORMAL;
+                float4 tangentOS : TANGENT;
                 uint instanceID : SV_InstanceID;
             };
 
@@ -64,7 +65,7 @@ Shader "CosmicShore/SwarmMemberInstanced"
             Varyings Vert(Attributes IN)
             {
                 Varyings o;
-                SwarmMemberVertex v = SwarmMemberPose(IN.instanceID, IN.positionOS, IN.normalOS);
+                SwarmMemberVertex v = SwarmMemberPose(IN.instanceID, IN.positionOS, IN.normalOS, IN.tangentOS.xyz);
                 o.positionWS = v.positionWS;
                 o.normalWS = v.normalWS;
                 o.positionCS = v.visible ? TransformWorldToHClip(v.positionWS) : float4(0, 0, -2, 1);

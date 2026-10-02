@@ -40,6 +40,9 @@ namespace CosmicShore.Gameplay
         static readonly int DangerDarkId = Shader.PropertyToID("_SwarmDangerDark"), DangerBrightId = Shader.PropertyToID("_SwarmDangerBright");
         static readonly int ShieldDarkId = Shader.PropertyToID("_SwarmShieldDark"), ShieldBrightId = Shader.PropertyToID("_SwarmShieldBright");
         static readonly int HeartDullId = Shader.PropertyToID("_SwarmHeartDull"), HeartBrightId = Shader.PropertyToID("_SwarmHeartBright");
+        static readonly int SpreadPlainId = Shader.PropertyToID("_SwarmSpreadPlain");
+        static readonly int SpreadDangerId = Shader.PropertyToID("_SwarmSpreadDanger");
+        static readonly int SpreadShieldId = Shader.PropertyToID("_SwarmSpreadShield");
 
         readonly Material _mat;
         readonly GraphicsBuffer _inst, _heart;
@@ -123,6 +126,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Palette, read once at bind (the swarm's ONE domain).</summary>
+        /// <summary>Each body tier's prism spread, read once at bind: xyz = the tier material's <c>_Spread</c>,
+        /// w = its <c>_SqrDistance</c>. Zero spread draws a closed prism (the pre-fix look).</summary>
+        public void SetSpread(Vector4 plain, Vector4 danger, Vector4 shield)
+        {
+            foreach (var b in _mpbs)
+            {
+                b.SetVector(SpreadPlainId, plain);
+                b.SetVector(SpreadDangerId, danger);
+                b.SetVector(SpreadShieldId, shield);
+            }
+        }
+
         public void SetColours(Color bodyDark, Color bodyBright, Color dangerDark, Color dangerBright,
                                Color shieldDark, Color shieldBright, Color heartDull, Color heartBright,
                                Vector4 heartScale, float rimPower)

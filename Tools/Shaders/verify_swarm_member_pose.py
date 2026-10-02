@@ -45,6 +45,7 @@ template<class A, class B, class C, class D> static inline float4 mk4(A a, B b, 
 static inline float4 mk4(float3 v, float w) { return float4{v.x, v.y, v.z, w}; }
 static inline float max(float a, float b) { return a > b ? a : b; }
 static inline float min(float a, float b) { return a < b ? a : b; }
+static inline float3 max(float3 a, float3 b) { return float3{max(a.x, b.x), max(a.y, b.y), max(a.z, b.z)}; }
 static inline float saturate(float v) { return min(1.0f, max(0.0f, v)); }
 static inline float lerp(float a, float b, float t) { return a + (b - a) * t; }
 static inline float3 lerp(float3 a, float3 b, float t) { return a + (b - a) * t; }
@@ -86,9 +87,22 @@ void set_frame(float part, float base, float elem, const float* local16, float a
     _SwarmUp = mk4(up[0], up[1], up[2], 0); _SwarmUpAlt = mk4(upAlt[0], upAlt[1], upAlt[2], 0);
     _SwarmHeartScale = mk4(heartScale[0], heartScale[1], heartScale[2], heartScale[3]);
 }
+void set_spread(const float* plain, const float* danger, const float* shield, const float* cam)
+{
+    _SwarmSpreadPlain = mk4(plain[0], plain[1], plain[2], plain[3]);
+    _SwarmSpreadDanger = mk4(danger[0], danger[1], danger[2], danger[3]);
+    _SwarmSpreadShield = mk4(shield[0], shield[1], shield[2], shield[3]);
+    _WorldSpaceCameraPos = mk3(cam[0], cam[1], cam[2]);
+}
+int pose_nt(uint id, float x, float y, float z, float nx, float ny, float nz, float tx, float ty, float tz, float* out)
+{
+    SwarmMemberVertex v = SwarmMemberPose(id, mk3(x, y, z), mk3(nx, ny, nz), mk3(tx, ty, tz));
+    out[0] = v.positionWS.x; out[1] = v.positionWS.y; out[2] = v.positionWS.z;
+    return v.visible ? 1 : 0;
+}
 int pose(uint id, float x, float y, float z, float* out)
 {
-    SwarmMemberVertex v = SwarmMemberPose(id, mk3(x, y, z), mk3(0, 0, 1));
+    SwarmMemberVertex v = SwarmMemberPose(id, mk3(x, y, z), mk3(0, 0, 1), mk3(0, 0, 0));
     out[0] = v.positionWS.x; out[1] = v.positionWS.y; out[2] = v.positionWS.z;
     return v.visible ? 1 : 0;
 }
@@ -124,6 +138,9 @@ def build(text, tag):
                             ctypes.c_float, F, F, F]
     L.pose.argtypes = [ctypes.c_uint, ctypes.c_float, ctypes.c_float, ctypes.c_float, F]
     L.pose.restype = ctypes.c_int
+    L.set_spread.argtypes = [F, F, F, F]
+    L.pose_nt.argtypes = [ctypes.c_uint] + [ctypes.c_float] * 9 + [F]
+    L.pose_nt.restype = ctypes.c_int
     return L
 
 
@@ -226,6 +243,51 @@ def check(L, n=4000, seed=1):
     return worst_body, worst_heart, leaks
 
 
+SPREAD = {0: [0.1, 0.1, 0.1, 100000.0], 1: [0.2, 0.2, 0.2, 100000.0], 2: [0.09, 0.29, 0.8, 100000.0]}
+
+
+def ref_spread(v, n, t, scale, sq, sp):
+    """Independent transcription of the three subgraphs (see the HLSL's SwarmPrismSpread comment)."""
+    far = [sp[0] * 50, sp[1] * 35, sp[2] * 20]
+    mx = max(sp[3], 1e-6)
+    eff = far if sq > mx else [-7 + (far[i] + 7) * (sq / mx) for i in range(3)]
+    eff = [max(eff[i], sp[i]) for i in range(3)]
+    sc = [max(x, 1e-4) for x in scale]
+    return [v[i] + eff[i] / sc[i] * n[i] + (eff[i] - sp[i]) / sc[i] * t[i] * 0.5 for i in range(3)]
+
+
+def spread_check(L, n=3000, seed=11):
+    rng = random.Random(seed)
+    L.set_spread(farr(SPREAD[0]), farr(SPREAD[1]), farr(SPREAD[2]), farr([0, 0, 0]))
+    hs = [2.298, 1.737, 2.298, 1.737]
+    worst, opened = 0.0, 0.0
+    out = (ctypes.c_float * 3)()
+    for k in range(n):
+        m = member(rng)
+        up, up_alt = rand_unit(rng), rand_unit(rng)
+        a = rng.random()
+        tier = rng.randrange(3)
+        set_member(L, 0, m, pack(True, tier, 1, 1))
+        # the camera at a near, mid or far distance from the body
+        p = lerp(m["prev"], m["cur"], a)
+        x, y, z = look_rotation(lerp(m["pface"], m["cface"], a), up, up_alt)
+        centre = add(p, mulv(z, m["pz"]))
+        dist = [30.0, 200.0, 600.0][k % 3]
+        cam = add(centre, mulv(rand_unit(rng), dist))
+        L.set_spread(farr(SPREAD[0]), farr(SPREAD[1]), farr(SPREAD[2]), farr(cam))
+        L.set_frame(0, 0, 0, farr(IDENT), a, 0, 8, farr(up), farr(up_alt), farr(hs))
+        v = [rng.uniform(-0.5, 0.5) for _ in range(3)]
+        nrm, tan = rand_unit(rng), rand_unit(rng)
+        L.pose_nt(0, *v, *nrm, *tan, out)
+        sq = dot(sub(centre, cam), sub(centre, cam))
+        vs = ref_spread(v, nrm, tan, m["scale"], sq, SPREAD[tier])
+        ref = proxy_body(m, a, up, up_alt, vs)
+        worst = max(worst, math.dist(ref, list(out)))
+        if dist >= 600.0:
+            opened = max(opened, math.dist(ref, proxy_body(m, a, up, up_alt, v)))
+    return worst, opened, True
+
+
 def main():
     text = open(HLSL).read()
     L = build(text, "shipped")
@@ -289,6 +351,21 @@ def main():
     t6 = wb2 > 1e-2
     print(f"T6 negative control (PrismZ sign flipped): body worst rel err {wb2:.2e} - {'fires' if t6 else 'DID NOT FIRE'}")
     ok &= t6
+
+    # T7 the prism SPREAD (BlockGraph's DistanceSpreadAndColors -> SpreadSubGraph -> TangentSlider), against an
+    # independent transcription of those three subgraphs, at near / mid / far camera distances and every tier
+    worst, opened, ok7 = spread_check(L)
+    t7 = worst < 1e-3 and opened > 1.0
+    print(f"T7 prism spread: worst error {worst:.2e} world units, far-camera face separation {opened:.2f} u: "
+          f"{'OK' if t7 else 'FAIL'}")
+    ok &= t7
+    # T8 negative control: a shader that ignores the spread (the round-7 shipped behaviour) must FAIL T7
+    closed = text.replace("positionOS = SwarmPrismSpread(", "float3 _unused = SwarmPrismSpread(")
+    assert closed != text, "negative control did not apply"
+    w8, _, _ = spread_check(build(closed, "closed"))
+    t8 = w8 > 0.1
+    print(f"T8 negative control (spread ignored): worst error {w8:.2e} - {'fires' if t8 else 'DID NOT FIRE'}")
+    ok &= t8
 
     print("OK" if ok else "FAIL")
     return 0 if ok else 1

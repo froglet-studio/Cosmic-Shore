@@ -25,7 +25,7 @@ namespace UnityEngine
     public class MeshFilter : Component { public Mesh sharedMesh; }
     public class Mesh : Object { public int subMeshCount; }
     public class Shader : Object { public static int PropertyToID(string n) => 0; }
-    public class Material : Object { public Material(Shader s) { } }
+    public class Material : Object { public Material(Shader s) { } public bool HasProperty(string n) => false; public bool HasProperty(int n) => false; public Vector4 GetVector(int n) => default; public float GetFloat(int n) => 0; }
     public struct Color { public float r, g, b, a; public Color(float r, float g, float b) { this.r = r; this.g = g; this.b = b; a = 1; } }
     public struct Matrix4x4 { public static Matrix4x4 identity; public static Matrix4x4 Rotate(Quaternion q) => default; public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b) => a; }
     public struct Bounds { public Bounds(Vector3 c, Vector3 s) { } }
@@ -103,6 +103,8 @@ namespace CosmicShore.ScriptableObjects
 {
     using UnityEngine;
     using CosmicShore.Data;
+    // SO_MaterialSet.cs:13-22 (the base material set the theme clones from)
+    public class SO_MaterialSet : ScriptableObject { public Material BlockMaterial, ShieldedBlockMaterial, DangerousBlockMaterial; }
     // SO_ColorSet.cs:16, :240; DomainColorSet fields
     public class DomainColorSet { public Color DullCrystalColor, BrightCrystalColor; }
     public class SO_ColorSet : ScriptableObject
@@ -133,7 +135,7 @@ namespace CosmicShore.Gameplay
 
     public class PrismProperties { public bool IsDangerous, IsShielded, IsSuperShielded; }
     // ThemeManagerDataContainerSO.cs:9-12
-    public class ThemeManagerDataContainerSO : ScriptableObject { public CosmicShore.ScriptableObjects.SO_ColorSet ColorSet; }
+    public class ThemeManagerDataContainerSO : ScriptableObject { public CosmicShore.ScriptableObjects.SO_ColorSet ColorSet; public CosmicShore.ScriptableObjects.SO_MaterialSet BaseMaterialSet; }
     public class Prism : MonoBehaviour
     {
         public PrismProperties prismProperties; public bool destroyed;

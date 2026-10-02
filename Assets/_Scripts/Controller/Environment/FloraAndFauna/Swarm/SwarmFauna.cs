@@ -226,6 +226,25 @@ namespace CosmicShore.Gameplay
             }
             else CSDebug.LogWarning($"{name}: SwarmFaunaConfigSO.Theme is not assigned - members are drawn in fallback colours.");
             _render.SetColours(bd, bb, dd, db, sd, sb, hd, hb, config.HeartWorldScale, 2f);
+
+            // the prism OPENS with distance (BlockGraph's spread) - read each tier's own authored spread off the
+            // base materials every live prism is cloned from (ThemeManager), so a member opens exactly as much
+            // as any other prism of its tier would
+            var set = config.Theme ? config.Theme.BaseMaterialSet : null;
+            _render.SetSpread(TierSpread(set ? set.BlockMaterial : null),
+                              TierSpread(set ? set.DangerousBlockMaterial : null),
+                              TierSpread(set ? set.ShieldedBlockMaterial : null));
+        }
+
+        static readonly int SpreadPropId = Shader.PropertyToID("_Spread");
+        static readonly int SqrDistancePropId = Shader.PropertyToID("_SqrDistance");
+
+        static Vector4 TierSpread(Material m)
+        {
+            if (!m || !m.HasProperty(SpreadPropId)) return new Vector4(0f, 0f, 0f, 100000f);
+            Vector4 s = m.GetVector(SpreadPropId);
+            s.w = m.HasProperty(SqrDistancePropId) ? m.GetFloat(SqrDistancePropId) : 100000f;
+            return s;
         }
 
         void BuildMouths()

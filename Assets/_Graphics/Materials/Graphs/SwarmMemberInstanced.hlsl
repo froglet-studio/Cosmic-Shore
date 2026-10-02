@@ -37,6 +37,10 @@ float4 _SwarmDangerDark, _SwarmDangerBright;   // danger tier
 float4 _SwarmShieldDark, _SwarmShieldBright;   // shielded tier
 float4 _SwarmHeartDull, _SwarmHeartBright;     // a living heart's neutral tint
 float _SwarmRimPower;        // body rim falloff (heart uses 4: the crystal convention)
+// per swarm, at bind: each body tier's prism SPREAD - xyz = that tier material's _Spread, w = its _SqrDistance.
+// This is what OPENS a prism: BlockGraph's DistanceSpreadAndColors -> SpreadSubGraph -> TangentSlider push
+// every face out along its own normal by an amount that grows with camera distance (SwarmPrismSpread).
+float4 _SwarmSpreadPlain, _SwarmSpreadDanger, _SwarmSpreadShield;
 
 struct SwarmMemberVertex
 {
@@ -71,7 +75,28 @@ void SwarmHeart(SwarmInstance s, float a, out int element, out float factor)
     factor = m > 0.0 ? abs(1.0 - 2.0 * m) : 1.0;
 }
 
-SwarmMemberVertex SwarmMemberPose(uint instanceID, float3 positionOS, float3 normalOS)
+// The prism look's face spread, transcribed from the graphs every live prism draws with (BlockGraph's vertex
+// stage): DistanceSpreadAndColors.shadersubgraph -> SpreadSubGraph.shadersubgraph -> TangentSlider.shadersubgraph.
+//   far      = Spread * (50, 35, 20)
+//   eff      = SqrDistance > MaxSqrDistance ? far : lerp(-7, far, SqrDistance / MaxSqrDistance)
+//   eff      = max(eff, Spread)                                       (never closer than the authored spread)
+//   position = positionOS + (eff / objectScale) * normalOS            (SpreadSubGraph: a WORLD-size offset)
+//            + ((eff - Spread) / objectScale) * tangentOS * 0.5       (TangentSlider: the faces slide as they part)
+// SqrDistance is the prism's own centre to the camera (PrismFlightSqrDistance with no flight). objectScale is
+// the prism's TRANSFORM scale (the body's Scale); the bloom is the prism's grow, which multiplies AFTER.
+float3 SwarmPrismSpread(float3 positionOS, float3 normalOS, float3 tangentOS, float3 objectScale, float sqrDistance,
+                        float4 spread)
+{
+    float3 sp = spread.xyz;
+    float3 far = sp * float3(50.0, 35.0, 20.0);
+    float maxSqr = max(spread.w, 1e-6);
+    float3 eff = sqrDistance > maxSqr ? far : lerp(float3(-7.0, -7.0, -7.0), far, sqrDistance / maxSqr);
+    eff = max(eff, sp);
+    float3 scl = max(objectScale, float3(1e-4, 1e-4, 1e-4));
+    return positionOS + (eff / scl) * normalOS + ((eff - sp) / scl) * tangentOS * 0.5;
+}
+
+SwarmMemberVertex SwarmMemberPose(uint instanceID, float3 positionOS, float3 normalOS, float3 tangentOS)
 {
     SwarmMemberVertex o;
     o.visible = false;
@@ -95,6 +120,15 @@ SwarmMemberVertex SwarmMemberPose(uint instanceID, float3 positionOS, float3 nor
     // continuity of existence: a newborn grows in from nothing over the bloom
     float bloom = max(0.001, SwarmSmooth01((_SwarmClock - s.BirthTick) / max(_SwarmBloomTicks, 1e-3)));
 
+    if (!heart)
+    {
+        // the prism opens with distance, exactly as a live prism does (SwarmPrismSpread)
+        int bodyTier = (int)((s.Flags >> 1) & 3u);
+        float4 spread = bodyTier == 1 ? _SwarmSpreadDanger : bodyTier == 2 ? _SwarmSpreadShield : _SwarmSpreadPlain;
+        float3 centre = p + bz * (s.PrismZ * bloom);
+        float3 dc = centre - _WorldSpaceCameraPos;
+        positionOS = SwarmPrismSpread(positionOS, normalOS, tangentOS, s.Scale, dot(dc, dc), spread);
+    }
     float3 lp = mul(_SwarmMeshLocal, float4(positionOS, 1.0)).xyz;
     float3 ln = mul((float3x3)_SwarmMeshLocal, normalOS);
     if (heart)

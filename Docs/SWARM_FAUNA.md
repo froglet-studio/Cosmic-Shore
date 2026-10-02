@@ -1509,3 +1509,43 @@ threads are not sampled), so `SwarmTickJob.LastTickMs` times it and each swarm l
 | `Tools/Build/author_swarm_fauna.py` | the cell (3 sort swarms, Borromean forks, ladder, collider gate, stale-file removal) |
 | `Tools/Build/swarm_core_harness/TickJobHarness.cs`, `score_sortfeel.py --density` | the proof above |
 | `Tools/Shaders/verify_swarm_member_pose.py` | the shader proof |
+
+## 15. Members OPEN with distance like every other prism (playtest: "the spread value ... not allowing them to open")
+
+**The report.** In freestyle, the swarm cell's members stayed closed boxes at every range, where a live prism
+of the same tier visibly opens (its faces push apart) as the camera pulls away.
+
+**The cause.** Round 7 moved members off `BlockGraph` onto `SwarmMemberInstanced.shader`, and only the
+pose came across. A prism's opening is not in its mesh or its transform: it is BlockGraph's vertex SPREAD,
+traced out of the graphs exactly:
+
+- `DistanceSpreadAndColors`: `norm = |objectPos - camera|^2 / _SqrDistance`, and `over = norm > 1`.
+- `SpreadSubGraph`: `far = _Spread * (50, 35, 20)`; `eff = over ? far : lerp(-7, far, norm)`; then
+  `eff = max(eff, _Spread)`; `pos += eff / objectScale * normalOS`.
+- `TangentSlider`: `pos += (eff - _Spread) / objectScale * tangentOS * 0.5`.
+
+**The fix.**
+
+- `SwarmPrismSpread` in `SwarmMemberInstanced.hlsl` is that formula, evaluated per vertex in the member's
+  own mesh space before the pose. The distance is measured from the BODY PRISM's centre (`PrismZ` along
+  the body axis, after bloom), matching `PrismFlightSqrDistance`'s object position.
+- The shader now reads `TANGENT`.
+- The three tier spreads (`_Spread.xyz`, `_SqrDistance` in `w`) are READ off the theme's
+  `BaseMaterialSet` (Block / Dangerous / Shielded) in `SwarmFauna.ApplyPalette`. They are pushed through
+  `SwarmMemberRenderer.SetSpread`, once per palette change, never per frame.
+- Because it is a read, a retune of the prism materials moves the swarm with it.
+- The crystal heart is untouched. It has its own `CrystalGraph` spread, and the report was about prisms.
+
+**Verified offline.** `Tools/Shaders/verify_swarm_member_pose.py` compiles the shipped HLSL and checks it
+against an independent Python transcription of the three graphs:
+
+- **T7:** worst error 9.95e-05 u; far-camera face separation 22.6 u.
+- **T8:** the negative control, which drops the spread, fires at 2.26e+01.
+
+The glue type-check passes.
+
+**Cost.** Zero CPU per frame. Per vertex, it adds one dot product and a lerp.
+
+**QA (QA-SWARM-SPREAD).** In the Swarm cell, fly away from a swarm. Its members' faces should part with
+distance exactly like a nearby trail prism of the same tier. Fly back in: they should close again, and at
+contact range a member should read as one box.
