@@ -46,6 +46,20 @@ namespace CosmicShore.Gameplay
         [Range(2f, 30f)] public float TickHz = 10f;
         [Tooltip("Steps the sim may run in one frame before it drops time (a hitch must not cascade).")]
         [Min(1)] public int MaxStepsPerFrame = 3;
+        [Tooltip("CELL-WIDE CPU budget, in ms per frame, shared by EVERY swarm's simulation. The swarms are " +
+                 "stepped round-robin from one scheduler until this is spent; a swarm left over waits for " +
+                 "the next frame and its clock drops the time (it swims in slow motion) rather than catching " +
+                 "up. That is what stops a slow frame from making the next one slower: without it every swarm " +
+                 "ran MaxStepsPerFrame catch-up steps once a frame passed 1/TickHz, and the cell locked at a " +
+                 "few FPS. The cell takes the largest value any live swarm authors.")]
+        [Min(0.1f)] public float SimBudgetMsPerFrame = 3f;
+        [Tooltip("Members of a swarm closer than this to the camera are re-posed every frame. Further " +
+                 "swarms are re-posed every FarPoseInterval frames (staggered across swarms). Posing - a " +
+                 "transform, a spatial-index entry and a render-entity matrix per member - is paid every " +
+                 "frame for every member, so it is the swarm's other big bill beside the simulation.")]
+        [Min(0f)] public float PoseEveryFrameWithin = 500f;
+        [Tooltip("Frames between re-poses of a swarm beyond PoseEveryFrameWithin. 1 = every frame.")]
+        [Range(1, 8)] public int FarPoseInterval = 4;
 
         [Header("Seed")]
         [Tooltip("Tadpoles a new swarm hatches with, at its plan's element mix, each on a slot of its " +

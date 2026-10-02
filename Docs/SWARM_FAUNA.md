@@ -1272,3 +1272,58 @@ fractional schedule decides only WHEN a member reads its neighbours, never WHERE
     steps and pass; whether 0.8 s of straight coasting reads well against wells that animate one frame per
     0.8 s is a LOOK question only the editor answers - QA-SWARM-ROUND6 step 4 (dial: `SortUpdateFraction 4`).
     The vessel reaction is unaffected (a threatened member re-steers every step; harness S7).
+
+---
+
+## 13. The frame budget: one scheduler for the whole cell (playtest, 3 FPS)
+
+**What was reported.** The Swarm cell ran fine at first, then the CPU line climbed as the bodies grew
+and stepped up to a plateau near **3 FPS** (~330 ms frames), with `SwarmFauna.Update` at ~65% of the
+frame, almost all of it SELF time (the cores, posing and the mover contract carried no profiler
+markers, so everything landed on the one line).
+
+**Why it locked instead of just running slow — a spiral.** Every swarm ran its own fixed-step clock and
+caught up after a slow frame: up to `MaxStepsPerFrame` (3) steps per frame. Once the grown cell's cost
+pushed a frame past 1/`TickHz` (100 ms), each of the 24 swarms ran 2-3 steps the NEXT frame, which made
+that frame slower still, so it stayed pinned at three steps per swarm per frame. The per-swarm "drop
+time" clamp only stopped the backlog growing; it never stopped the 3x. **A catch-up clock per object
+is a spiral as soon as there are enough objects** — the bound has to be on the frame, not the object.
+
+**The fix.**
+
+- **One scheduler** (`SwarmFauna.Schedule`, run by whichever swarm updates first in a frame) steps
+  every live swarm that is due, ROUND-ROBIN, one step per swarm per pass, until a **cell-wide CPU
+  budget** is spent (`SwarmFaunaConfigSO.SimBudgetMsPerFrame`, default 3 ms; the cell takes the
+  largest value any live swarm authors). The cursor resumes where the last frame stopped, so no
+  swarm is starved by its place in the list.
+- **Falling behind drops time; it is never banked past `MaxStepsPerFrame`.** An overloaded cell's
+  swarms swim in slow motion, and the frame stays at render + budget. After 5 s of saturation one
+  warning names the swarm count and points at the profiler markers and at the Editor's Debug code
+  optimization (which runs the plain-C# cores several times slower than Release).
+- **Staggered from birth**: each swarm's clock starts at a random phase, so 24 swarms at 10 Hz spread
+  ~4 steps over each 60 fps frame instead of landing together.
+- **Far swarms are re-posed less often.** Posing — a transform, a spatial-index entry and a
+  render-entity matrix per member — is paid every frame for every member (~4,600 at cap) and is the
+  swarm's other big bill. A swarm further than `PoseEveryFrameWithin` (500) + its own radius from the
+  camera is re-posed every `FarPoseInterval` (4) frames, staggered across swarms. Transform, colliders
+  and index entries move together, so they never disagree; the heart's molt display advances by the
+  time since that swarm's last pose, so a far molt is not slowed.
+- **Profiler markers**, so the next capture names the bill: `SwarmFauna.Schedule`,
+  `SwarmFauna.Step.{Field,Grid,Sort,EvoFate}`, `SwarmFauna.SenseVessels`, `SwarmFauna.Tick.Members`,
+  `SwarmFauna.Feed`, `SwarmFauna.Hatch`, `SwarmFauna.Render.Pose`, `SwarmFauna.Render.SyncBodies`.
+
+**Verified offline:** `SwarmFauna.cs` + the config + the five cores compile against Unity's
+netstandard2.1 profile beside a stub of the monolith surface it touches (negative-controlled: a planted
+missing member is reported); the seven textual gates pass. **Not verified:** any frame time — only the
+editor can say what the cell costs now. QA-SWARM-FRAMEBUDGET:
+
+1. Load the Swarm cell, let the bodies grow (the old spiral took a few minutes), and profile. Expect no
+   step to a plateau: `SwarmFauna.Schedule` should sit at or under ~3 ms per frame.
+2. Read the markers. If `Step.Grid` / `Step.EvoFate` dominate, the dear models are the bill (they have
+   no 1-in-k update yet - only the sort core does). If `Render.SyncBodies` dominates, the mover
+   contract is, and the next lever is the far-pose interval or a cheaper render-entity sync.
+3. Set Code Optimization to Release (bug icon, bottom-right of the editor) and compare.
+4. Watch a far swarm while flying: re-posing at 15 Hz at range should not read as stepping. If it
+   does, raise `PoseEveryFrameWithin` or set `FarPoseInterval` to 2.
+5. If the 5 s warning fires in Release, the cell is over budget on real hardware: lower the swarm count
+   or raise `SimBudgetMsPerFrame` - the swarms will otherwise visibly swim in slow motion.

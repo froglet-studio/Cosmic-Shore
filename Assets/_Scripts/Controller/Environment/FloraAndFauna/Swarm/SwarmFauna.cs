@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 using SVector3 = System.Numerics.Vector3;
 
@@ -61,6 +62,31 @@ namespace CosmicShore.Gameplay
         readonly Queue<int> _pending = new();
         static int s_spawnFrame = -1, s_spawnsThisFrame;
 
+        // ONE scheduler for every swarm in the scene. Each swarm used to run its own catch-up clock, so a
+        // frame slower than 1/TickHz made all 24 of them run MaxStepsPerFrame steps the next frame, which
+        // made THAT frame slower: a spiral that locked the Swarm cell at ~3 FPS once the bodies had grown.
+        // Now the swarms are stepped round-robin from one shared CPU budget, and a swarm the budget does
+        // not reach drops the time instead of banking it (Docs/SWARM_FAUNA.md §13).
+        static readonly List<SwarmFauna> s_live = new();
+        static int s_schedFrame = -1, s_cursor;
+        static bool s_warnedSaturated;
+        static float s_saturatedSince = -1f;
+        int _poseOffset;
+        float _lastPoseTime = -1f;
+
+        static readonly ProfilerMarker s_mSchedule = new("SwarmFauna.Schedule");
+        static readonly ProfilerMarker s_mSense = new("SwarmFauna.SenseVessels");
+        static readonly ProfilerMarker[] s_mStep =
+        {
+            new("SwarmFauna.Step.Field"), new("SwarmFauna.Step.Grid"),
+            new("SwarmFauna.Step.Sort"), new("SwarmFauna.Step.EvoFate"),
+        };
+        static readonly ProfilerMarker s_mMembers = new("SwarmFauna.Tick.Members");
+        static readonly ProfilerMarker s_mFeed = new("SwarmFauna.Feed");
+        static readonly ProfilerMarker s_mHatch = new("SwarmFauna.Hatch");
+        static readonly ProfilerMarker s_mPose = new("SwarmFauna.Render.Pose");
+        static readonly ProfilerMarker s_mSync = new("SwarmFauna.Render.SyncBodies");
+
         /// <summary>The live sim (null before the first frame).</summary>
         public ISwarmCore Core => _core;
         public SwarmFaunaConfigSO Config => config;
@@ -107,6 +133,8 @@ namespace CosmicShore.Gameplay
             _plans = SwarmPlanLibrary.Load(config);
             if (_plans == null) return;
             _seeded = true;
+            s_live.Add(this);
+            _poseOffset = Random.Range(0, 64);
 
             _defaultHalf = SwarmPlanLibrary.TypicalHalfExtents(_plans);
             _centre = host.transform.position;
@@ -137,6 +165,7 @@ namespace CosmicShore.Gameplay
             HatchPending();
 
             _lastFedTime = Time.time;
+            _acc = Random.value * _dt;   // stagger the cell's swarms across frames from the first tick
             StartLoop();
             CSDebug.LogVerbose(CSLogChannel.Ecology,
                 $"[Swarm] {name} ({config.Model}) hatched as {_core.Plan.Kind} with {_core.AliveCount} tadpoles at r={radial.magnitude:F0}");
@@ -365,22 +394,103 @@ namespace CosmicShore.Gameplay
 
         // ───────────────────────────────────────────────────────────────── the clock
 
+        // Enter Play Mode without a domain reload keeps statics: start every session clean.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_live.Clear();
+            s_schedFrame = -1; s_cursor = 0;
+            s_warnedSaturated = false; s_saturatedSince = -1f;
+            s_spawnFrame = -1; s_spawnsThisFrame = 0;
+        }
+
+        protected override void OnDestroy()
+        {
+            s_live.Remove(this);
+            base.OnDestroy();
+        }
+
         void Update()
         {
             if (_core == null) return;
 
-            _acc += Time.deltaTime;
-            int steps = 0;
-            while (_acc >= _dt && steps < config.MaxStepsPerFrame)
+            // whichever swarm updates first this frame steps the whole cell
+            if (s_schedFrame != Time.frameCount)
             {
-                Tick();
-                _acc -= _dt;
-                steps++;
+                s_schedFrame = Time.frameCount;
+                using (s_mSchedule.Auto()) Schedule();
             }
-            if (steps == config.MaxStepsPerFrame && _acc > _dt) _acc = _dt;   // drop time, never spiral
 
-            HatchPending();
-            Render(Mathf.Clamp01(_acc / _dt));
+            using (s_mHatch.Auto()) HatchPending();
+            if (PoseThisFrame()) Render(Mathf.Clamp01(_acc / _dt));
+        }
+
+        /// <summary>
+        /// Step every live swarm that is due, round-robin, until the cell-wide budget is spent. Each swarm
+        /// may bank at most MaxStepsPerFrame steps; anything beyond is dropped, so falling behind slows the
+        /// swarms down rather than charging the next frame for it. The cursor resumes where the last frame
+        /// stopped, so no swarm is starved by its position in the list.
+        /// </summary>
+        static void Schedule()
+        {
+            float dt = Time.deltaTime, budgetMs = 0f;
+            for (int k = s_live.Count - 1; k >= 0; k--)
+            {
+                var sw = s_live[k];
+                if (!sw) { s_live.RemoveAt(k); continue; }
+                if (sw._core == null || !sw.isActiveAndEnabled) continue;
+                sw._acc = Mathf.Min(sw._acc + dt, sw._dt * sw.config.MaxStepsPerFrame);
+                budgetMs = Mathf.Max(budgetMs, sw.config.SimBudgetMsPerFrame);
+            }
+            int count = s_live.Count;
+            if (count == 0 || budgetMs <= 0f) return;
+
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            long budget = (long)(budgetMs * 0.001 * System.Diagnostics.Stopwatch.Frequency);
+            bool overBudget = false;
+            // passes: one step per due swarm per pass, so a budget that runs out mid-pass has still
+            // spread its steps evenly across the cell
+            for (bool any = true; any && !overBudget;)
+            {
+                any = false;
+                for (int n = 0; n < count && s_live.Count > 0; n++)
+                {
+                    if (System.Diagnostics.Stopwatch.GetTimestamp() - start >= budget) { overBudget = true; break; }
+                    s_cursor = (s_cursor + 1) % s_live.Count;
+                    var sw = s_live[s_cursor];
+                    if (!sw || sw._core == null || !sw.isActiveAndEnabled || sw._acc < sw._dt) continue;
+                    sw.Tick();
+                    sw._acc -= sw._dt;
+                    any = true;
+                }
+            }
+            ReportSaturation(overBudget, count, budgetMs);
+        }
+
+        static void ReportSaturation(bool overBudget, int swarms, float budgetMs)
+        {
+            if (!overBudget) { s_saturatedSince = -1f; return; }
+            if (s_saturatedSince < 0f) { s_saturatedSince = Time.unscaledTime; return; }
+            if (s_warnedSaturated || Time.unscaledTime - s_saturatedSince < 5f) return;
+            s_warnedSaturated = true;
+            CSDebug.LogWarning($"[Swarm] {swarms} swarms have needed more than the {budgetMs:F1} ms/frame simulation " +
+                               "budget for 5 s, so they are swimming in slow motion (time is dropped, never banked). " +
+                               "Profile SwarmFauna.Step.* to see which model is dear; in the Editor, check Code " +
+                               "Optimization is set to Release (the bug icon, bottom right) - Debug codegen runs " +
+                               "the swarm cores several times slower.");
+        }
+
+        /// <summary>Far swarms are re-posed every FarPoseInterval frames, staggered so they do not all land
+        /// on one frame. Colliders and index entries move with the transforms, so they never disagree.</summary>
+        bool PoseThisFrame()
+        {
+            int every = config.FarPoseInterval;
+            if (every <= 1) return true;
+            var cam = Camera.main;
+            if (!cam) return true;
+            float near = config.PoseEveryFrameWithin + _core.Plan.Radius * config.UnitScale;
+            if ((cam.transform.position - transform.position).sqrMagnitude <= near * near) return true;
+            return (Time.frameCount + _poseOffset) % every == 0;
         }
 
         void Tick()
@@ -388,9 +498,10 @@ namespace CosmicShore.Gameplay
             int n = _core.Cap;
             for (int i = 0; i < n; i++) { _prevPos[i] = _core.Pos[i]; _prevFace[i] = _core.Facing[i]; }
 
-            SenseVessels();
+            using (s_mSense.Auto()) SenseVessels();
             _core.SwimTarget = ToSim(Goal);
-            _core.Step(new System.ReadOnlySpan<SwarmPredator>(_preds, 0, _predCount));
+            using (s_mStep[Mathf.Clamp((int)config.Model, 0, s_mStep.Length - 1)].Auto())
+                _core.Step(new System.ReadOnlySpan<SwarmPredator>(_preds, 0, _predCount));
 
             var events = _core.Events;
             for (int q = 0; q < events.Count; q++)
@@ -417,17 +528,20 @@ namespace CosmicShore.Gameplay
             events.Clear();
 
             // shapes and tiers follow the homes, at the homes' own cadence
-            bool reshape = _core.Clock % 8 == 0;
-            for (int i = 0; i < n; i++)
+            using (s_mMembers.Auto())
             {
-                var m = _members[i];
-                if (!m || !_core.Alive[i]) continue;
-                int e = _core.EffectiveElement(i);
-                if (reshape && _core.Molt[i] <= 0f) m.SetShape(ShapeFor(i, e), PrismZ(i, e));
-                UpdateTier(i, m, e);
+                bool reshape = _core.Clock % 8 == 0;
+                for (int i = 0; i < n; i++)
+                {
+                    var m = _members[i];
+                    if (!m || !_core.Alive[i]) continue;
+                    int e = _core.EffectiveElement(i);
+                    if (reshape && _core.Molt[i] <= 0f) m.SetShape(ShapeFor(i, e), PrismZ(i, e));
+                    UpdateTier(i, m, e);
+                }
             }
 
-            Feed();
+            using (s_mFeed.Auto()) Feed();
             Starvation();
             Extinction();
         }
@@ -454,7 +568,11 @@ namespace CosmicShore.Gameplay
 
         void Render(float alpha)
         {
-            float now = Time.time, dt = Time.deltaTime;
+            float now = Time.time;
+            // a far swarm is posed every few frames, so the molt advances by the time since ITS last pose
+            float dt = _lastPoseTime < 0f ? Time.deltaTime : Mathf.Min(now - _lastPoseTime, 0.5f);
+            _lastPoseTime = now;
+            s_mPose.Begin();
             float bloom = config.BirthBloomSeconds, moltRate = dt / config.MoltHeartSeconds;
             for (int i = 0; i < _core.Cap; i++)
             {
@@ -488,9 +606,16 @@ namespace CosmicShore.Gameplay
                     m.SetHeartDisplay(h);
                 }
                 _heartFactor[i] = h;
-
-                m.SyncBodyToIndex();
             }
+            s_mPose.End();
+
+            // the mover contract (spatial index + render-entity matrix), measured on its own
+            using (s_mSync.Auto())
+                for (int i = 0; i < _core.Cap; i++)
+                {
+                    var m = _members[i];
+                    if (m && _core.Alive[i]) m.SyncBodyToIndex();
+                }
             transform.position = ToWorld(_core.Anchor);
         }
 
