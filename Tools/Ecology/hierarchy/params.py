@@ -48,7 +48,7 @@ class Params:
     vox_per_axis: int = 4        # flora voxels per region axis (50 u voxels)
     # ---- flora (regional prism mass) ----
     flora_r: float = 0.006       # logistic growth rate /s
-    flora_cap: float = 120.0     # volume a voxel can carry
+    flora_cap: float = 240.0     # volume a voxel can carry
     nutrient_half: float = 4000.0  # half-saturation of the region nutrient pool
     seed_rain: float = 0.02      # recolonisation: growth uses F + seed_rain * mean(region flora) (no flora from nothing)
     nutrient_diffuse: float = 0.002  # /s exchange of nutrient between face-neighbour regions (soil)
