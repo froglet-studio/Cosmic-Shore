@@ -21,6 +21,8 @@ SPECIES = {
     "traps_v2_fair": (lambda a, s: TrapBuilders(a, seed=s, n=30, max_nb=2, lane_min=3.0), LANE,
                       "Trap builders v2 (tuned: 30 workers, lane_min 3)"),
     "wearers_v1": (lambda a, s: Wearers(a, seed=s), STD, "Wearers v1 (body from stolen mass)"),
+    "wearers_v3_moult": (lambda a, s: Wearers(a, seed=s, contact=0.5, body_cap=150), STD,
+                         "Wearers v3 (body cap 150: satiation moult into a static lair + a birth)"),
     "wearers_v2_contact": (lambda a, s: Wearers(a, seed=s, contact=0.5), STD, "Wearers v2 (contact attachment)"),
 }
 

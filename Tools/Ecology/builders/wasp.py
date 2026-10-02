@@ -110,6 +110,11 @@ class WaspComb(Colony):
                 return 0, 0.0
             if not self.win(q, self.env_gap, (2,)):
                 return 0, 0.0
+            x, y, z = q; r = 2
+            up = self.typ[max(0, x - r):x + r + 1, max(0, y - r):y + r + 1, z + 1:z + 4]
+            dn = self.typ[max(0, x - r):x + r + 1, max(0, y - r):y + r + 1, max(0, z - 3):z]
+            if (up == 2).any() and (dn == 2).any():
+                return 0, 0.0                                   # between two tiers: the wasps keep it clear
             rho = np.hypot(q[0] - self.root[0], q[1] - self.root[1])
             if rho < self.mouth and q[2] <= self.root[2] + 1:
                 return 0, 0.0                                   # the mouth stays open

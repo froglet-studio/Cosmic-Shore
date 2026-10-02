@@ -30,8 +30,9 @@ class Wearers:
 
     def __init__(self, arena, seed=0, n=40, alpha=1.0, V_hunt=600.0, speed=95.0, windup=1.0, lunge=2.2,
                  sense=180.0, exposed_at=3, s=6.0, fuse=True, dom=2, slow=0.15, rear_at=140.0, intercept=True,
-                 contact=0.0):
+                 contact=0.0, body_cap=0, keep=0.6, births=20):
         self.rng = np.random.default_rng(seed + 13)
+        n0 = n; n = n + (births if body_cap else 0)       # spare slots for hearts born at a lair
         self.n, self.alpha, self.V_hunt, self.speed0, self.windup, self.lunge_k = n, alpha, V_hunt, speed, windup, lunge
         self.sense, self.exposed_at, self.s, self.fuse, self.dom = sense, exposed_at, s, fuse, dom
         self.slow, self.rear_at, self.intercept = slow, rear_at, intercept
@@ -39,7 +40,11 @@ class Wearers:
         c = arena._ball(1, 300, 800)[0]
         self.agent_pos = c + self.rng.normal(0, 150, (n, 3))
         self.agent_vel = np.zeros((n, 3)); self.agent_size = np.full(n, 2.0); self.intent = np.zeros(n)
-        self.alive = np.ones(n, bool)
+        self.alive = np.zeros(n, bool); self.alive[:n0] = True
+        self.unborn = ~self.alive.copy()
+        self.body_cap, self.keep = body_cap, keep
+        self.lair = {}                                    # mass index -> world position (static, shed by a moult)
+        self.moults = 0; self.born = 0
         self.leader = np.arange(n)                         # leader[k] == k: an independent creature
         self.offset = np.zeros((n, 3))                     # a follower heart's offset in its leader's frame
         self.body = [dict() for _ in range(n)]            # leader: site -> mass index   (heart at (0,0,0) reserved)
@@ -155,6 +160,10 @@ class Wearers:
                 P[k] = P[L] + self.offset[k] * self.squash[L]; self.agent_vel[k] = self.agent_vel[L]
                 self.intent[k] = self.intent[L]
         self.do_fuse(arena)
+        if self.body_cap:
+            for k in range(self.n):
+                if self.alive[k] and self.leader[k] == k and len(self.body[k]) > self.body_cap and self.phase[k] in (0, 1):
+                    self.moult(arena, k)
         self.fight(arena)
         self.sync_body(arena)
         arena.targets = [P[k] for k in np.flatnonzero(self.alive)]
@@ -258,6 +267,27 @@ class Wearers:
         S = np.array(list(self.body[k].keys()), float) * self.s * self.squash[k] + self.agent_pos[k]
         return bool((np.sum((S - p.pos) ** 2, axis=1) < (p.radius + 0.6 * self.s) ** 2).any())
 
+    def moult(self, arena, k):
+        """SATIATION MOULT: a body over its cap sheds its OUTERMOST prisms where they hang - they stop moving and
+        become a static LAIR (cheap: a built structure never moves). Feeding pays out as population: each moult
+        a new heart is born at the lair (production gating, not a cull - nothing is removed)."""
+        b = self.body[k]
+        keep = int(self.keep * self.body_cap)
+        sites = sorted(b, key=lambda s: -(s[0] ** 2 + s[1] ** 2 + s[2] ** 2))
+        for site in sites[:len(b) - keep]:
+            m = b.pop(site)
+            self.lair[m] = arena.mass_pos[m].copy()
+            if not hasattr(arena, "struct_owner"):
+                arena.struct_owner = {}
+            arena.struct_owner[m] = self.name
+            getattr(arena, "worn", set()).discard(m)
+        self.moults += 1
+        free = np.flatnonzero(self.unborn)
+        if len(free):
+            j = int(free[0]); self.unborn[j] = False; self.alive[j] = True; self.leader[j] = j
+            self.agent_pos[j] = self.agent_pos[k] + self.rng.normal(0, 8, 3); self.agent_vel[j] = 0
+            self.phase[j] = 0; self.born += 1
+
     def on_rammed(self, arena, k, pilot):
         pass                       # Wearers.fight owns contact (strip the body first, then the exposed heart)
 
@@ -301,6 +331,7 @@ class Wearers:
                     container_writes_per_s=round(self.container_writes / (minutes * 60), 1),
                     rebuckets_per_s=round(self.rebuckets / (minutes * 60), 1),
                     hits_lunge=self.hits_by_phase.get("lunge", 0),
+                    lair=len([m for m in self.lair if arena.mass_alive[m]]), moults=self.moults, born=self.born,
                     hunt_time_s=None)
 
     def hud(self, arena):

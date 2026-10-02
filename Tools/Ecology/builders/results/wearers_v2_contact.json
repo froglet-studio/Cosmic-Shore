@@ -69,12 +69,15 @@
    "container_writes_per_s": 30.7,
    "rebuckets_per_s": 2247.7,
    "hits_lunge": 6,
+   "lair": 0,
+   "moults": 0,
+   "born": 0,
    "hunt_time_s": null,
    "audit": 0.0,
    "moves_per_s": 2541.8,
    "steals": 325,
    "hits_per_min": 2.0,
-   "wall_s": 18.8
+   "wall_s": 18.9
   },
   "wander/23": {
    "built": 241,
@@ -92,12 +95,15 @@
    "container_writes_per_s": 30.9,
    "rebuckets_per_s": 1757.2,
    "hits_lunge": 8,
+   "lair": 0,
+   "moults": 0,
+   "born": 0,
    "hunt_time_s": null,
    "audit": 0.0,
    "moves_per_s": 1938.2,
    "steals": 241,
    "hits_per_min": 2.67,
-   "wall_s": 9.7
+   "wall_s": 10.1
   },
   "wander/41": {
    "built": 400,
@@ -115,12 +121,15 @@
    "container_writes_per_s": 42.4,
    "rebuckets_per_s": 2761.4,
    "hits_lunge": 8,
+   "lair": 0,
+   "moults": 0,
+   "born": 0,
    "hunt_time_s": null,
    "audit": -0.0,
    "moves_per_s": 3107.8,
    "steals": 400,
    "hits_per_min": 2.67,
-   "wall_s": 25.1
+   "wall_s": 25.3
   },
   "evader/7": {
    "built": 238,
@@ -138,12 +147,15 @@
    "container_writes_per_s": 39.2,
    "rebuckets_per_s": 1737.0,
    "hits_lunge": 0,
+   "lair": 0,
+   "moults": 0,
+   "born": 0,
    "hunt_time_s": null,
    "audit": 0.0,
    "moves_per_s": 1883.8,
    "steals": 238,
    "hits_per_min": 0.0,
-   "wall_s": 11.6
+   "wall_s": 11.7
   },
   "evader/23": {
    "built": 225,
@@ -161,12 +173,15 @@
    "container_writes_per_s": 31.7,
    "rebuckets_per_s": 1707.4,
    "hits_lunge": 0,
+   "lair": 0,
+   "moults": 0,
+   "born": 0,
    "hunt_time_s": null,
    "audit": 0.0,
    "moves_per_s": 1855.5,
    "steals": 225,
    "hits_per_min": 0.0,
-   "wall_s": 12.1
+   "wall_s": 12.0
   },
   "evader/41": {
    "built": 283,
@@ -184,12 +199,15 @@
    "container_writes_per_s": 44.2,
    "rebuckets_per_s": 2099.2,
    "hits_lunge": 0,
+   "lair": 0,
+   "moults": 0,
+   "born": 0,
    "hunt_time_s": null,
    "audit": -0.0,
    "moves_per_s": 2326.0,
    "steals": 283,
    "hits_per_min": 0.0,
-   "wall_s": 15.8
+   "wall_s": 15.4
   },
   "hunter/7": {
    "built": 0,
@@ -207,12 +225,15 @@
    "container_writes_per_s": 20.8,
    "rebuckets_per_s": 329.1,
    "hits_lunge": 4,
+   "lair": 0,
+   "moults": 0,
+   "born": 0,
    "hunt_time_s": null,
    "audit": 0.0,
    "moves_per_s": 407.1,
    "steals": 428,
    "hits_per_min": 1.33,
-   "wall_s": 6.8
+   "wall_s": 6.6
   },
   "hunter/23": {
    "built": 0,
@@ -230,12 +251,15 @@
    "container_writes_per_s": 19.9,
    "rebuckets_per_s": 589.0,
    "hits_lunge": 4,
+   "lair": 0,
+   "moults": 0,
+   "born": 0,
    "hunt_time_s": null,
    "audit": 0.0,
    "moves_per_s": 723.6,
    "steals": 493,
    "hits_per_min": 1.33,
-   "wall_s": 9.5
+   "wall_s": 9.9
   },
   "hunter/41": {
    "built": 0,
@@ -253,12 +277,15 @@
    "container_writes_per_s": 29.1,
    "rebuckets_per_s": 790.6,
    "hits_lunge": 10,
+   "lair": 0,
+   "moults": 0,
+   "born": 0,
    "hunt_time_s": null,
    "audit": -0.0,
    "moves_per_s": 969.1,
    "steals": 593,
    "hits_per_min": 3.33,
-   "wall_s": 9.0
+   "wall_s": 9.1
   }
  }
 }

@@ -1,0 +1,179 @@
+[
+ {
+  "seed": 7,
+  "audit": 0.0,
+  "moves_per_s": 687.9,
+  "hits": {
+   "circuit": {
+    "n": 8,
+    "kinds": {
+     "burn": 8
+    }
+   },
+   "wanderer": {
+    "n": 7,
+    "kinds": {
+     "crush": 1,
+     "sting": 6
+    }
+   },
+   "hunter": {
+    "n": 13,
+    "kinds": {
+     "burn": 2,
+     "crush": 8,
+     "sting": 3
+    }
+   }
+  },
+  "species": {
+   "wasp": {
+    "built": 479,
+    "placed": 589,
+    "placed_trail": 516,
+    "trail_frac": 0.871,
+    "build_per_min": 117.8,
+    "pickups": 594,
+    "carry_moves_per_s": 109.9,
+    "workers_alive": 41,
+    "kills": 7,
+    "stalk": 1,
+    "comb": 132,
+    "envelope": 346,
+    "tiers": 3,
+    "brood_store": 1,
+    "raided": 15
+   },
+   "traps": {
+    "built": 31,
+    "placed": 59,
+    "placed_trail": 59,
+    "trail_frac": 1.0,
+    "build_per_min": 11.8,
+    "pickups": 88,
+    "carry_moves_per_s": 27.5,
+    "workers_alive": 2,
+    "kills": 28,
+    "sprung": 28,
+    "trap_age_med": 18.8,
+    "web_components": null,
+    "on_lane_frac": 0.968
+   },
+   "wearers": {
+    "built": 0,
+    "worn_max": 0,
+    "creatures": 0,
+    "max_vol": 1034.9,
+    "worn_steals": 487,
+    "trail_frac": 0.0,
+    "stripped": 102,
+    "stripped_vol": 1430.7,
+    "fusions": 40,
+    "splits": 21,
+    "kills": 40,
+    "body_moves_per_s": 548.3,
+    "container_writes_per_s": 18.1,
+    "rebuckets_per_s": 459.0,
+    "hits_lunge": 9,
+    "lair": 0,
+    "moults": 0,
+    "born": 0,
+    "hunt_time_s": null
+   }
+  },
+  "mass_share": {
+   "wasp": 0.519,
+   "traps": 0.052,
+   "wearers": 0.429
+  }
+ },
+ {
+  "seed": 23,
+  "audit": -0.0,
+  "moves_per_s": 1562.0,
+  "hits": {
+   "circuit": {
+    "n": 41,
+    "kinds": {
+     "sting": 14,
+     "crush": 2,
+     "burn": 25
+    }
+   },
+   "wanderer": {
+    "n": 3,
+    "kinds": {
+     "crush": 3
+    }
+   },
+   "hunter": {
+    "n": 15,
+    "kinds": {
+     "sting": 6,
+     "crush": 4,
+     "burn": 5
+    }
+   }
+  },
+  "species": {
+   "wasp": {
+    "built": 518,
+    "placed": 631,
+    "placed_trail": 483,
+    "trail_frac": 0.834,
+    "build_per_min": 126.2,
+    "pickups": 639,
+    "carry_moves_per_s": 77.7,
+    "workers_alive": 28,
+    "kills": 20,
+    "stalk": 8,
+    "comb": 113,
+    "envelope": 397,
+    "tiers": 3,
+    "brood_store": 2,
+    "raided": 11
+   },
+   "traps": {
+    "built": 143,
+    "placed": 206,
+    "placed_trail": 206,
+    "trail_frac": 1.0,
+    "build_per_min": 41.2,
+    "pickups": 231,
+    "carry_moves_per_s": 34.7,
+    "workers_alive": 5,
+    "kills": 25,
+    "sprung": 63,
+    "trap_age_med": 16.2,
+    "web_components": null,
+    "on_lane_frac": 1.0
+   },
+   "wearers": {
+    "built": 72,
+    "worn_max": 66,
+    "creatures": 2,
+    "max_vol": 1206.6,
+    "worn_steals": 573,
+    "trail_frac": 0.986,
+    "stripped": 141,
+    "stripped_vol": 1217.8,
+    "fusions": 56,
+    "splits": 42,
+    "kills": 36,
+    "body_moves_per_s": 1446.7,
+    "container_writes_per_s": 29.1,
+    "rebuckets_per_s": 1279.7,
+    "hits_lunge": 9,
+    "lair": 0,
+    "moults": 0,
+    "born": 0,
+    "hunt_time_s": null
+   }
+  },
+  "mass_share": {
+   "wasp": 0.448,
+   "traps": 0.146,
+   "wearers": 0.406
+  }
+ }
+]

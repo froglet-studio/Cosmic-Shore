@@ -95,3 +95,54 @@ contracts, intent rises), LUNGE. Wanderer **2.1 hits/min with a 1.15-1.3 s teleg
 **Cost, measured (sim at 10 Hz).** Carried-prism writes: nest 90-110/s (48 workers), traps 120-380/s (60 workers).
 Wearer body prisms move with their creature: **1,900-2,500 prism writes/s** for one 300-prism monster. That is
 the expensive part, and it is why the port design (below, round 2) parents a body to one transform.
+
+### Round 2 (~07:00 UTC) - tuning, scar tissue, moulting, one shared cell
+
+**Trap dose-response** (`results/traps_sweep.json`; 18 configs x circuit/varied/wander x 2 seeds, 3 min). Hits on a
+racing-line pilot scale with colony size and fall with the lane threshold; a pilot who varies its line stays near 0 at
+every setting; the filament rule `max_nb` barely matters.
+
+| workers | lane_min 1.2: circuit / varied | lane_min 3.0: circuit / varied |
+|---|---|---|
+| 15 | 14.2-17.2 / 0-0.17 | 3.8-5.7 / 0 |
+| 30 | 24.2-29.5 / 0-0.33 | 8.3-10.8 / 0 |
+| 60 | 34.5-37.5 / 0.5-0.83 | 12.0-15.2 / 0 |
+
+`lane_min` is the commitment dial ("how many laps before the web goes up"). Picked for v2: 30 workers, max_nb 2,
+lane_min 3. Its first full run had ~15 laden workers hauling prisms around with nowhere to build (120-170 carried-prism
+writes/s with nothing built). Raising the pickup threshold to 0.3 x lane_min on the blurred scent **broke it: 0 built
+anywhere** (the blurred scent never gets that high; recorded as a negative). What works is PARKING: a laden worker that
+has not deposited for 20 s and smells no lane at all stops moving (a carrier at rest costs nothing). Parking only where
+the lane field is low also failed: a parked worker never woke up, and building halved. **traps_v2**: racing line 6.4
+hits/min, varied / wanderer / evader / hunter 0; carried-prism writes 20-30/s off-lane (was 120-160) and 65-100/s on a
+lane; webs differ between seeds in the world frame (Jaccard 0.57 on a 100 u grid, same lanes).
+
+**The fortress learns where it is attacked** (`run_scar.py`, 3 cuts along the SAME line, 3 seeds). SCAR = a slow memory
+of alarm that widens the template where the wall was cut, so a wound heals thicker. Wall prisms within 20 u of the cut
+line just before passes 1 / 2 / 3:
+
+| | pass 1 | pass 2 | pass 3 | sites the 3rd pass cuts |
+|---|---|---|---|---|
+| no scar | 65 | 74 | 86 | 11-19 |
+| scar 3.0 | 65 | 89 | **113** | 25-32 |
+
+That is +31% wall on the attacked line by the third pass, from the same total mass (743-843 built either way): the
+colony moves material to where it is attacked. Healing stays fast (t50 16.6 s, 8/9 cuts healed to 90%, 99% of the repair
+material from the attacker's trail).
+
+**Wearers v3 - satiation moult** (body cap 150: over the cap a body sheds its outermost prisms where they hang into a
+static LAIR, and a new heart is born there - feeding pays out as population). The lair is real (106-266 static prisms,
+mostly your trail, 1-3 births per run) and the threat holds (wanderer 2.56 hits/min, telegraph 1.23 s, evader 0). **But
+the cost cut is weak: moving-prism writes fell only 8-28%**, because a body regrows to the cap and the births add more
+bodies. The cap bounds the cost per creature; it does not lower it much at this population.
+
+**Wasp comb at 10 min:** the envelope grew to 4x the comb (618 vs 141), because the space BETWEEN tiers is also "two
+sites from a comb". One more local rule (no envelope with comb both above and below) holds it to a skirt under the
+combs: envelope/comb 2.6 at 6 min, 3 tiers.
+
+**One shared cell** (`run_mixed.py`: wasp comb + trap web + wearers; a racer, a wanderer and a hunter; 5 min, 2 seeds).
+Audit 0 in both. All three are the cell's one colour, so they can never steal from each other; they compete only for
+loose mass. The mass split was wasp 45-52%, wearers 41-43%, traps 5-15%. The traps' share depends on how much lane
+the racer lays before the others strip it. Hits by kind on the racer: burn 8 / 25 (the web), sting 0 / 14 (it flew
+through the nest), crush 0 / 2. The hunter took everything apart: all 40 wearers and most trap workers killed in 5 min.
+The single hunter policy is too strong to be the only probe in a mixed cell.

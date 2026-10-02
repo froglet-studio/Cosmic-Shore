@@ -29,10 +29,12 @@ class Fortress(NestWeavers):
             "alarm + a gap-filling rule pull laden menders to it and the wall knits shut - often with the cutter's "
             "own trail.")
 
-    def __init__(self, arena, seed=0, n=48, Rc=40.0, w=7.0, mend="both", gap_gain=2.5, alarm_gain=1.0, **kw):
+    def __init__(self, arena, seed=0, n=48, Rc=40.0, w=7.0, mend="both", gap_gain=2.5, alarm_gain=1.0, scar=0.0, **kw):
         super().__init__(arena, seed=seed, n=n, Rc=Rc, w=w, k_cement=0.6, nucleate=0.02, name="fortress", **kw)
         self.mend, self.gap_gain, self.alarm_gain = mend, gap_gain, alarm_gain
         self.alarm = np.zeros_like(self.cement)
+        self.scar_gain = scar
+        self.scar = np.zeros_like(self.cement)      # SCAR: a slow memory of alarm; it widens the template where cut
         self.cuts = []                 # (t, site) of every breach
         self.repairs = []              # (t, site) a breach site re-filled
         self.open_breach = set()
@@ -40,6 +42,9 @@ class Fortress(NestWeavers):
 
     def deposit_score(self, arena, site):
         p = super().deposit_score(arena, site)
+        if self.scar_gain and self.scar[site] > 0.05 and self.lat.count(site) > 0 and not self.lat.blocked[site]:
+            # scar tissue: where the wall has been cut, the template widens (outward), so the wound heals THICKER
+            p = max(p, min(1.0, self.scar_gain * float(self.scar[site])) * 0.5)
         if p <= 0:
             return p
         if self.mend in ("gap", "both"):
@@ -81,6 +86,8 @@ class Fortress(NestWeavers):
             sm[1:] += a[:-1]; sm[:-1] += a[1:]; sm[:, 1:] += a[:, :-1]; sm[:, :-1] += a[:, 1:]
             sm[:, :, 1:] += a[:, :, :-1]; sm[:, :, :-1] += a[:, :, 1:]
             self.alarm = (0.95 * (0.5 * a + 0.5 / 6 * sm)).astype(np.float32)
+            if self.scar_gain:
+                self.scar = np.maximum(self.scar * 0.999, self.alarm)
 
     def repair_stats(self, cut_t, frac=0.9):
         """Time from the first cut at/after cut_t until `frac` of the sites cut in that pass are re-filled
