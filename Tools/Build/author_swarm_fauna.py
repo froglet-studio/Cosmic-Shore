@@ -60,7 +60,12 @@ MENU_SCENE = A("_Scenes", "Menu_Main.unity")
 TADPOLE_SRC = os.path.join(PREFAB_DIR, "TadPoleFauna.prefab")
 
 SCRIPTS = ["ISwarmCore", "SwarmFieldCore", "SwarmGridCore", "SwarmSortCore", "SwarmEvoFateCore", "SwarmFaunaConfigSO", "SwarmPlanLibrary", "SwarmFauna",
-           "SwarmTadpoleFauna"]
+           "SwarmTadpoleFauna", "SwarmTickJob", "SwarmMemberRenderer"]
+# round 7: the GPU member shader (Docs/SWARM_FAUNA.md §14) and the palette its members wear
+GRAPHS_DIR = A("_Graphics", "Materials", "Graphs")
+MEMBER_SHADER = os.path.join(GRAPHS_DIR, "SwarmMemberInstanced.shader")
+MEMBER_HLSL = os.path.join(GRAPHS_DIR, "SwarmMemberInstanced.hlsl")
+THEME = "d45a23e6bd2da304988606fba6c97628"   # Assets/_SO_Assets/ThemeManagerDataContainer.asset
 SO_SCRIPT = {
     "cell": "01f934d50526431a9392a6ceca1dc33d",
     "profile": "e8d8aa5d835249798a256e18f2f7d912",
@@ -85,31 +90,36 @@ TADPOLE_MB_FID = "5945480239701989318"     # TadPoleFauna's Boid MB fileID, kept
 # ── the sim (research units; Docs/SWARM_FAUNA.md "Findings for the research") ─────────────
 UNIT_SCALE = 2.0          # world units per voxel
 TICK_HZ = 10.0
-SEED_MEMBERS = 96         # OVERTUNE (x4): a hatchling swarm is already a half-built creature
-TOTAL_SWARMS = 24         # OVERTUNE (x8 per band at three bands): the cell's whole school; REGIONS splits it
-MAX_SPAWNS_PER_FRAME = 48 # cell-wide budget of tadpole Instantiates per frame (queued past it)
+SEED_MEMBERS = 48         # per plan DENSITY unit (x PLAN_DENSITY in code): 240 tadpoles, a sparse ghost of the creature
+TOTAL_SWARMS = 3          # ROUND 7: three big sort swarms (Docs/SWARM_FAUNA.md §14) - was 24 small ones on four models
+MAX_SPAWNS_PER_FRAME = 24 # cell-wide budget of PROXY Instantiates per frame (round 7: births are free, proxies are not)
+PLAN_DENSITY = 5          # ROUND 7: tadpoles per plan unit - the whale is 960, the pufferfish 895, the jellyfish 440
+ENGAGE_RADIUS = 160       # world units around a vessel inside which a member is a real GameObject (a proxy)
+MAX_PROXIES = 160         # per swarm: the nearest members win
+BITERS_PER_STEP = 24      # bites per tick per swarm - the one main-thread cost that scales with appetite
 PRISM_SCALE = 1.0
 HEARTS = {"Charge": 2.298, "Mass": 1.737, "Space": 2.298, "Time": 1.737}  # = Tadpole Fauna * (read below)
 
-# ── the four populations ─────────────────────────────────────────────────────────────────
+# ── the three populations ────────────────────────────────────────────────────────────────
 ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
-# MODEL: which simulation drives the population (SwarmFaunaConfigSO.Model). The cell hosts ALL FOUR,
-# one per band, so a pilot flying outward from the nucleus meets grid / field / sort / evofate and can
-# compare them in one session (Docs/SWARM_FAUNA.md §8, §9, §11). One model per band, never mixed within one: every
-# tadpole wears the cell's one colour, so WHERE a swarm swims is the only way a pilot can tell which
-# model it runs. The cell's swarm count is unchanged (TOTAL_SWARMS).
+# ROUND 7 (Docs/SWARM_FAUNA.md §14): THREE swarms, all on the SORT model (research sortfeel + the 1-in-8
+# update - the only one that passes the research hold, smoothness 0.917), each ~5x the round-6 body, each
+# starting as a different creature so the cell still shows variety. The field, grid and evofate cores stay
+# in the tree (Spawn Matrix, their configs below) - just not in this cell.
+#
+# FLORA: the BORROMEAN membrane, forked per band from the canonical species configs (the Wrecking Ball
+# precedent: the cell's own generator owns the cell's copies). It is the cheapest family at steady state -
+# no per-frame Update (PhyllotacticFlora's was 11% of the frame in the round-6b capture), and a COMPACT plant
+# that closes and stops: a finished plant's grow tick is one compare. Few plants, sized against the egg bill
+# of the three bodies (report() prints both). Charge is never food (armoured leaves), so the pufferfish band
+# grows Time plants and its Charge majority is paid at the cross-element price - the feeding-ground lever.
 REGIONS = [
-    # name,   band (world),   start,   plan,     model,    ground species, ground element, canonical asset, plants floor/cap,
-    # swarms. The cell's swarm count stays 24: the evofate band's three are paid for by the grid's G8 default
-    # (half the grid CPU) and taken from the grid (-2) and sort (-1) bands - Docs/SWARM_FAUNA.md §4.1, §11.
-    dict(key="Inner", band=(430, 560), start="Mass", plan="whale", model="Grid", swarms=6,
-         flora="Arbor", food="Mass", canon="Arbor Flora Mass", floor=40, cap=80),
-    dict(key="Middle", band=(610, 740), start="Time", plan="dragonfly", model="Field", swarms=8,
-         flora="Spire", food="Space", canon="Spire Flora Space", floor=52, cap=110),
-    dict(key="Outer", band=(790, 920), start="Charge", plan="pufferfish", model="Sort", swarms=7,
-         flora="Frond", food="Time", canon="Frond Flora Time", floor=60, cap=120),
-    dict(key="Rim", band=(970, 1120), start="Space", plan="jellyfish", model="EvoFate", swarms=3,
-         flora="Reed", food="Space", canon="Reed Flora Space", floor=40, cap=90),
+    dict(key="Inner", band=(470, 620), start="Mass", plan="whale", model="Sort", swarms=1,
+         flora="Borromean", food="Mass", floor=2, cap=3),
+    dict(key="Middle", band=(690, 840), start="Charge", plan="pufferfish", model="Sort", swarms=1,
+         flora="Borromean", food="Time", floor=6, cap=10),
+    dict(key="Outer", band=(910, 1080), start="Space", plan="jellyfish", model="Sort", swarms=1,
+         flora="Borromean", food="Space", floor=3, cap=5),
 ]
 MODEL_ID = {"Field": 0, "Grid": 1, "Sort": 2, "EvoFate": 3}
 # the grid model's game settings (SwarmGridCore; research combo = hgrid2 made lossless, unless noted).
@@ -143,13 +153,12 @@ FLORA_GROWTH_PER_OFFSPRING = 0.8   # x the plant's own budget: a plant seeds a n
 FLORA_COOLDOWN = 20
 FLORA_SPREAD = 120
 
-# ladder ratios (against the modelled mature cell; see ladder())
+# ladder ratios (against the modelled mature FOREST; see ladder()). Round 7: a GPU-drawn member is not a
+# registered prism, so the cell's LiveVolume holds the flora, the skeletons, trails and the few proxies - not
+# the bodies (Docs/SWARM_FAUNA.md §14.4). The ladder is derived from what the cell can actually measure.
 RESTLESS_ENTER, RESTLESS_EXIT, FRENZY_ENTER, FRENZY_EXIT = 0.35, 0.26, 2.5, 2.2
 LATTICE_HEART_COLLIDERS = 1080
-# OVERTUNE PASS (user-authorized, "the next order of magnitude across the board"): this cell
-# deliberately exceeds the Lattice cell's heart-collider budget. The gate is restated as an explicit
-# overtune ceiling so it still FAILS if the numbers drift further, and the doc states the cost.
-OVERTUNE_HEART_CEILING = 6000
+COLLIDER_CEILING = 1200         # round 7: always-on hearts + every proxy's two colliders, all swarms engaged
 ATLANTIS_PRISMS = 69000
 
 
@@ -183,6 +192,11 @@ PREFAB_META = ("fileFormatVersion: 2\nguid: %s\nPrefabImporter:\n  externalObjec
 ASSET_META = ("fileFormatVersion: 2\nguid: %s\nNativeFormatImporter:\n  externalObjects: {}\n"
               "  mainObjectFileID: 11400000\n  mainObjectFileType: 2\n  userData:\n  assetBundleName:\n"
               "  assetBundleVariant:\n")
+SHADER_META = ("fileFormatVersion: 2\nguid: %s\nShaderImporter:\n  externalObjects: {}\n  defaultTextures: []\n"
+               "  nonModifiableTextures: []\n  preprocessorOverride: 0\n  userData:\n  assetBundleName:\n"
+               "  assetBundleVariant:\n")
+HLSL_META = ("fileFormatVersion: 2\nguid: %s\nShaderIncludeImporter:\n  externalObjects: {}\n  userData:\n"
+             "  assetBundleName:\n  assetBundleVariant:\n")
 SO_HEADER = """%%YAML 1.1
 %%TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
@@ -432,8 +446,14 @@ def config_asset(eggs, model="Field"):
         f"  TimePlan: {{fileID: 4900000, guid: {pg('time')}, type: 3}}\n"
         f"  TadpolePrefab: {{fileID: {TADPOLE_MB_FID}, guid: {guid(rel(os.path.join(PREFAB_DIR, 'SwarmTadpole.prefab')))}, type: 3}}\n"
         f"  UnitScale: {_g(UNIT_SCALE)}\n  TickHz: {_g(TICK_HZ)}\n  MaxStepsPerFrame: 3\n"
+        "  SimBudgetMsPerFrame: 3\n"
+        f"  PlanDensity: {PLAN_DENSITY if model == 'Sort' else 1}\n"
+        "  SimulateOffMainThread: 1\n  DrawMembersOnGpu: 1\n"
+        f"  MemberShader: {{fileID: 4800000, guid: {guid(rel(MEMBER_SHADER))}, type: 3}}\n"
+        f"  Theme: {{fileID: 11400000, guid: {THEME}, type: 2}}\n"
+        f"  EngageRadius: {ENGAGE_RADIUS}\n  MaxProxies: {MAX_PROXIES}\n  ProxyLingerSeconds: 2\n"
         f"  SeedMembers: {SEED_MEMBERS}\n"
-        "  BiteRadius: 10\n  BitersPerStep: 96\n"
+        f"  BiteRadius: 10\n  BitersPerStep: {BITERS_PER_STEP}\n"
         f"  EggVolume: {v4(egg)}\n"
         f"  CrossElementCost: 2\n  StomachEggs: 240\n  LayRate: 0.2\n  LayMax: 16\n  MaxSpawnsPerFrame: {MAX_SPAWNS_PER_FRAME}\n  KillLayHoldSeconds: 2\n"
         "  StarvationSeconds: 90\n  ShedIntervalSeconds: 1\n  ExtinctLingerSeconds: 10\n"
@@ -462,18 +482,23 @@ def fauna_name(r):
 
 
 def flora_name(r):
+    # the SPECIES is in the name, so author_flora_populations.py hands this config to the species' owner
+    # rule ("Borromean"); the CELL generator (this script) authors it, the Wrecking Ball way
     return f"{PREFIX} {r['key']} {r['flora']} Flora {r['food']} Config Data"
 
 
+def canon_path(r):
+    return A("_SO_Assets", "Lifeforms", f"{r['flora']} Flora {r['food']}.asset")
+
+
 def canon(r):
-    path = A("_SO_Assets", "Lifeforms", r["canon"] + ".asset")
+    """The canonical species config the band forks (Borromean: one per element, a measured table)."""
+    path = canon_path(r)
     text = read(path)
     leaf = re.search(r"LeafSize: \{x: ([\d.]+), y: ([\d.]+), z: ([\d.]+)\}", text).groups()
     budget = int(re.search(r"MaxTotalSpawnedObjects: (\d+)", text).group(1))
     prefab = re.search(r"FloraPrefab: \{fileID: (-?\d+), guid: (\w+)", text).groups()
-    seg = float(re.search(r"segmentLength: ([\d.]+)", read(
-        [p for p in (A("_Prefabs", "FloraAndFauna", r["flora"] + "Flora.prefab"),) if os.path.exists(p)][0])).group(1))
-    return dict(guid=meta_guid(path), leaf=tuple(map(float, leaf)), budget=budget, prefab=prefab, seg=seg)
+    return dict(guid=meta_guid(path), leaf=tuple(map(float, leaf)), budget=budget, prefab=prefab, text=text)
 
 
 def fauna_asset(r):
@@ -490,55 +515,67 @@ def fauna_asset(r):
 
 
 def flora_asset(r, c):
+    """A FORK of the canonical species config: the species' own plate, budget, quota, heart and shield
+    (byte for byte), with only what a CELL owns rewritten - the name, how many (seed floor, live cap) and
+    where (the planting band, as the cell-level override pair)."""
     lo, hi = r["band"]
-    quota = max(1, int(round(c["budget"] * FLORA_GROWTH_PER_OFFSPRING)))
-    return SO_HEADER % (SO_SCRIPT["flora"], flora_name(r)) + (
-        f"  FloraPrefab: {{fileID: {c['prefab'][0]}, guid: {c['prefab'][1]}, type: 3}}\n"
-        "  NetworkSynced: 0\n  SpawnProbability: 1\n"
-        f"  InitialSpawnCount: {r['floor']}\n  OverrideDefaultPlantPeriod: 0\n  NewPlantPeriod: 2147483647\n"
-        f"  PopulationSize: {r['floor']}\n  MaxLivePopulation: {r['cap']}\n"
-        f"  GrowthPerOffspring: {quota}\n  OffspringPerBirth: 1\n"
-        f"  ReproductionCooldownSeconds: {FLORA_COOLDOWN}\n  MaturityFraction: 0.5\n"
-        f"  OffspringSpread: {FLORA_SPREAD}\n  PreferredSites: 0\n"
-        f"  Element: {ELEMENT_ID[r['food']]}\n  Variant:\n    Enabled: 0\n"
-        "  SpreadElements: 1\n"
-        f"  ElementPalette:\n  - {{fileID: 11400000, guid: {c['guid']}, type: 2}}\n"
-        f"  PlantRadiusCellFractionMaxOverride: {_g(hi / MEMBRANE_RADIUS)}\n"
-        f"  PlantRadiusCellFractionMinOverride: {_g(lo / MEMBRANE_RADIUS)}\n"
-        "  MaxTotalSpawnedObjectsOverride: -1\n")
+    t = c["text"]
+    t = re.sub(r"(?m)^  m_Name: .*$", f"  m_Name: {flora_name(r)}", t, count=1)
+    t = re.sub(r"(?m)^  InitialSpawnCount: \d+$", f"  InitialSpawnCount: {r['floor']}", t, count=1)
+    t = re.sub(r"(?m)^  PopulationSize: \d+$", f"  PopulationSize: {r['floor']}", t, count=1)
+    t = re.sub(r"(?m)^  MaxLivePopulation: \d+$", f"  MaxLivePopulation: {r['cap']}", t, count=1)
+    t = re.sub(r"(?m)^  PlantRadiusCellFraction(Max|Min)Override: .*\n", "", t)
+    if not t.endswith("\n"):
+        t += "\n"
+    t += (f"  PlantRadiusCellFractionMaxOverride: {_g(hi / MEMBRANE_RADIUS)}\n"
+          f"  PlantRadiusCellFractionMinOverride: {_g(lo / MEMBRANE_RADIUS)}\n")
+    return t
 
 
 def model(plans):
-    """The mature cell, modelled (Docs/SWARM_FAUNA.md §6 says how to re-measure it in the editor).
+    """The mature cell, modelled (Docs/SWARM_FAUNA.md §6, §14 say how to re-measure it in the editor).
 
-    A phyllotactic prism is a strut: its cross-section is the leaf's x*y and its length is a
-    segment or a whorl reach (PhyllotacticFlora), modelled at 0.55 x segmentLength. Swarms are
-    counted at their LARGEST plan's headcount and their typical prism volume."""
+    A Borromean prism is a PLATE of its element's measured leaf; a plant is its whole site table (it
+    closes). The swarms are the three bodies at PLAN_DENSITY x their plan's headcount: they cost no
+    always-on collider (a member is GPU-drawn data until a vessel is near), and their bodies are not in
+    the cell's LiveVolume (no registered prism) - so the ladder is the forest's."""
     eggs = egg_volumes(plans)
-    rows, tot = [], dict(prisms=0, volume=0.0, hearts=0, plants_max=0, tadpoles=0)
+    kind = {"whale": "mass", "pufferfish": "charge", "jellyfish": "space", "dragonfly": "time"}
+    rows, tot = [], dict(prisms=0, volume=0.0, hearts=0, plants_max=0, tadpoles=0, bill=0.0, food=0.0, forest_at_cap=0.0)
     for r in REGIONS:
         c = canon(r)
-        per = c["leaf"][0] * c["leaf"][1] * 0.55 * c["seg"]
-        plants = r["cap"]
-        rows.append(dict(r=r, c=c, per=per, plant_volume=per * c["budget"]))
-        tot["prisms"] += plants * c["budget"]
-        tot["volume"] += plants * c["budget"] * per
-        tot["plants_max"] += plants
-    cap = max(p["n"] for p in plans.values())
-    tot["tadpoles"] = cap * sum(r["swarms"] for r in REGIONS)
-    tot["prisms"] += tot["tadpoles"]
-    tot["volume"] += tot["tadpoles"] * max(eggs.values())
-    tot["hearts"] = tot["plants_max"] + tot["tadpoles"]
+        per = c["leaf"][0] * c["leaf"][1] * c["leaf"][2]
+        p = plans[kind[r["plan"]]]
+        mix = [0] * 4
+        for e in p["elem"]:
+            mix[e] += 1
+        food_e = {"Charge": 0, "Mass": 1, "Space": 2, "Time": 3}[r["food"]]
+        # the egg bill of the full body: own-element eggs at their price, the rest at the cross price (2x)
+        bill = sum(PLAN_DENSITY * mix[e] * 0.939 * eggs[e] * (1 if e == food_e else 2) for e in range(4))
+        rows.append(dict(r=r, c=c, per=per, plant_volume=per * c["budget"], body=PLAN_DENSITY * p["n"], bill=bill))
+        tot["prisms"] += r["cap"] * c["budget"]
+        tot["volume"] += r["cap"] * c["budget"] * per
+        tot["plants_max"] += r["cap"]
+        tot["tadpoles"] += PLAN_DENSITY * p["n"] * r["swarms"]
+        tot["bill"] += bill
+        tot["food"] += r["floor"] * c["budget"] * per
+        tot["forest_at_cap"] += r["cap"] * c["budget"] * per
+    tot["plans"] = plans
+    tot["hearts"] = tot["plants_max"]                              # always on: one heart per live plant
+    tot["proxy_colliders"] = 2 * MAX_PROXIES * TOTAL_SWARMS        # only near vessels: heart + body each
+    tot["colliders_engaged"] = tot["hearts"] + tot["proxy_colliders"]
     return rows, tot, eggs
 
 
 def ladder(tot):
-    rt = lambda x, s: int(math.ceil(x / s) * s)
+    rt = lambda x, st: int(math.ceil(x / st) * st)
+    # proxies + skeletons are counted in prisms beside the forest (a full engagement of every swarm)
+    prisms = tot["prisms"] + MAX_PROXIES * TOTAL_SWARMS
     return {
-        "RestlessEnter": rt(tot["prisms"] * RESTLESS_ENTER, 100),
-        "RestlessExit": rt(tot["prisms"] * RESTLESS_EXIT, 100),
-        "FrenzyEnter": rt(tot["prisms"] * FRENZY_ENTER, 100),
-        "FrenzyExit": rt(tot["prisms"] * FRENZY_EXIT, 100),
+        "RestlessEnter": rt(prisms * RESTLESS_ENTER, 100),
+        "RestlessExit": rt(prisms * RESTLESS_EXIT, 100),
+        "FrenzyEnter": rt(prisms * FRENZY_ENTER, 100),
+        "FrenzyExit": rt(prisms * FRENZY_EXIT, 100),
         "RestlessEnterVolume": rt(tot["volume"] * RESTLESS_ENTER, 1000),
         "RestlessExitVolume": rt(tot["volume"] * RESTLESS_EXIT, 1000),
         "FrenzyEnterVolume": rt(tot["volume"] * FRENZY_ENTER, 1000),
@@ -564,10 +601,9 @@ def profile_asset():
 def cell_asset(L):
     return SO_HEADER % (SO_SCRIPT["cell"], f"{PREFIX} Cell Config") + (
         "  CellName: Swarm\n"
-        "  Description: Tadpole swarms in four shells of the cytoplasm, on four simulation models - a\n"
-        "    grid-morphogen whale, a field dragonfly, a cell-sorting pufferfish and an evolved-rule\n"
-        "    jellyfish - each over its own feeding ground. Kill a body's majority element and it becomes\n"
-        "    another animal\n"
+        "  Description: Three great tadpole swarms in three shells of the cytoplasm - a whale, a\n"
+        "    pufferfish and a jellyfish of about a thousand tadpoles each - over Borromean feeding\n"
+        "    grounds. Kill a body's majority element and it becomes another animal\n"
         f"  Icon: {{fileID: 21300000, guid: {ICON}, type: 3}}\n"
         "  Difficulty: 2\n  CellEndGameScore: 0\n"
         f"  MembranePrefab: {{fileID: {MEMBRANE[0]}, guid: {MEMBRANE[1]}, type: 3}}\n"
@@ -624,6 +660,8 @@ def emit():
         out[d + ".meta"] = FOLDER_META % guid(rel(d))
     for s in SCRIPTS:
         out[os.path.join(SCRIPT_DIR, s + ".cs.meta")] = SCRIPT_META % script_guid(s)
+    out[MEMBER_SHADER + ".meta"] = SHADER_META % guid(rel(MEMBER_SHADER))
+    out[MEMBER_HLSL + ".meta"] = HLSL_META % guid(rel(MEMBER_HLSL))
 
     rows, tot, eggs = model(plans)
     prefabs = [("SwarmTadpole.prefab", tadpole_prefab())] + [(anchor_name(m), anchor_prefab(m)) for m in MODEL_ID]
@@ -667,12 +705,25 @@ def verify(out, tot, rows):
         problems.append("the outer band reaches the membrane")
     if len({r["start"] for r in REGIONS}) != len(REGIONS):
         problems.append("two populations start as the same creature")
-    if {r["model"] for r in REGIONS} != set(MODEL_ID):
-        problems.append("the cell must host every model side by side (field, grid, sort and evofate)")
+    if any(r["model"] != "Sort" for r in REGIONS):
+        problems.append("round 7: every swarm in the cell is a SORT swarm (the only model that passes the research hold)")
     if sum(r["swarms"] for r in REGIONS) != TOTAL_SWARMS:
-        problems.append(f"the cell holds {sum(r['swarms'] for r in REGIONS)} swarms, not {TOTAL_SWARMS} (the round-5 rule: evofate is paid for, not added)")
-    if len({r["model"] for r in REGIONS}) != len(REGIONS):
-        problems.append("one model per band: a pilot tells the models apart only by where they swim")
+        problems.append(f"the cell holds {sum(r['swarms'] for r in REGIONS)} swarms, not {TOTAL_SWARMS}")
+    # one density for every creature (a swarm MORPHS between them, so a per-creature density would change
+    # its headcount on every morph): the biggest body sets the cap, the smaller creatures are smaller
+    bodies = {k: PLAN_DENSITY * p["n"] for k, p in tot["plans"].items()}
+    if max(bodies.values()) > 1000:
+        problems.append(f"the largest body is {max(bodies.values())} tadpoles - round 7 caps a swarm near 1,000")
+    if min(row["body"] for row in rows) < 400:
+        problems.append("a starting body under 400 tadpoles is not 'substantially filled' (round 7)")
+    if tot["colliders_engaged"] >= COLLIDER_CEILING:
+        problems.append(f"{tot['colliders_engaged']} colliders with every swarm fully engaged >= the ceiling {COLLIDER_CEILING}")
+    # food, PER BAND (the swarms are penned apart): the band's forest at its CAP must be able to pay for
+    # its body grown to full once (a grazed plant regrows, so this is a floor on the economy, not its ceiling)
+    for row in rows:
+        at_cap = row["r"]["cap"] * row["plant_volume"]
+        if at_cap < row["bill"]:
+            problems.append(f"{row['r']['key']}: its forest at cap ({at_cap:,.0f}) cannot pay its {row['r']['plan']}'s egg bill ({row['bill']:,.0f})")
     # the C# defaults of the sort fields are the authored values (an SO created by hand matches the cell)
     so = read(os.path.join(SCRIPT_DIR, "SwarmFaunaConfigSO.cs"))
     for k, v in SORT:
@@ -686,8 +737,6 @@ def verify(out, tot, rows):
             problems.append(f"SwarmFaunaConfigSO.{k} defaults to {m.group(1)} but the cell authors {v}")
     if any(r["food"] == "Charge" for r in REGIONS):
         problems.append("a Charge feeding ground is no food at all (armoured leaves)")
-    if tot["hearts"] >= OVERTUNE_HEART_CEILING:
-        problems.append(f"{tot['hearts']} always-on heart colliders >= the overtune ceiling {OVERTUNE_HEART_CEILING}")
     # the prefab really is stripped of its network layer and its authored crystal
     tp = out[os.path.join(PREFAB_DIR, "SwarmTadpole.prefab")]
     for bad, what in (("d5a57f767e5e46a458fc5d3c628d0cbb", "NetworkObject"), ("818b214228314119900f4d9860f0762d", "FaunaNetworkSync"),
@@ -704,20 +753,29 @@ def verify(out, tot, rows):
 
 
 def report(rows, tot, eggs, L, baked):
-    print("Swarm cell - four populations in four shells of the cytoplasm\n")
+    print("Swarm cell - three sort swarms in three shells of the cytoplasm (round 7)\n")
     for row in rows:
         r, c = row["r"], row["c"]
-        print(f"  {r['key']:<6} {r['band'][0]:>4}-{r['band'][1]:<4}u  {r['model']:<5} starts {r['start']:<6} ({r['plan']:<10})  "
-              f"grazes {r['food']:<5} {r['flora']:<5} x{r['floor']}..{r['cap']}  "
-              f"{c['budget']} prisms/plant, ~{row['plant_volume']:,.0f} volume/plant (model)")
+        print(f"  {r['key']:<6} {r['band'][0]:>4}-{r['band'][1]:<4}u  {r['model']:<4} starts {r['start']:<6} ({r['plan']:<10}) "
+              f"body {row['body']:>4} tadpoles, egg bill {row['bill']:>8,.0f}  grazes {r['flora']} {r['food']:<5} "
+              f"x{r['floor']}..{r['cap']}  {c['budget']} plates/plant, {row['plant_volume']:,.0f} volume/plant")
     print(f"\n  egg = one body prism's world volume: " + ", ".join(
         f"{n} {eggs[i]:.1f}" for i, n in enumerate(("Charge", "Mass", "Space", "Time"))))
-    print(f"  colliders: {tot['hearts']} always-on hearts at the caps ({tot['tadpoles']} tadpoles + "
-          f"{tot['plants_max']} plants) - the Lattice cell's is {LATTICE_HEART_COLLIDERS}; "
-          f"+{tot['tadpoles']} tadpole body prisms")
-    print(f"  mature cell (model): {tot['prisms']:,} prisms, {tot['volume']:,.0f} volume - Atlantis is {ATLANTIS_PRISMS:,}")
+    print(f"  food: forest {tot['food']:,.0f} at the floor, {tot['forest_at_cap']:,.0f} at the cap, "
+          f"against an egg bill of {tot['bill']:,.0f} to grow all three bodies to full")
+    print(f"  colliders: BEFORE (round 6) 5,008 always-on at the caps; NOW {tot['hearts']} always-on plant hearts "
+          f"+ up to {tot['proxy_colliders']} proxy colliders only while vessels are near "
+          f"({tot['colliders_engaged']} worst case, ceiling {COLLIDER_CEILING}); {tot['tadpoles']} tadpoles GPU-drawn, 0 colliders")
+    print(f"  mature forest (model): {tot['prisms']:,} prisms, {tot['volume']:,.0f} volume - Atlantis is {ATLANTIS_PRISMS:,}")
     print("  ladder: " + ", ".join(f"{k} {v:,}" for k, v in L.items()))
     print(f"  plans: {'re-baked from ' + swarm_plans.RESEARCH_REF if baked else 'research ref not reachable - committed plans kept'}")
+
+
+def stale(out):
+    """Files in the cell folder this script owns no longer (an earlier round's populations)."""
+    owned = {os.path.abspath(p) for p in out}
+    return sorted(os.path.join(CELL_DIR, f) for f in os.listdir(CELL_DIR)
+                  if os.path.abspath(os.path.join(CELL_DIR, f)) not in owned) if os.path.isdir(CELL_DIR) else []
 
 
 def main():
@@ -732,6 +790,7 @@ def main():
 
     if args.check:
         drift = [rel(p) for p, t in out.items() if not os.path.exists(p) or read(p) != t]
+        drift += [rel(p) + " (stale: no longer authored)" for p in stale(out)]
         if not listed:
             drift.append(rel(MENU_SCENE) + " (Cell.CellConfigs does not list the Swarm cell)")
         if problems or drift:
@@ -751,7 +810,10 @@ def main():
         os.makedirs(os.path.dirname(p), exist_ok=True)
         with open(p, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(t)
-    print(f"\nwrote {len(out)} files")
+    gone = stale(out)
+    for p in gone:
+        os.remove(p)
+    print(f"\nwrote {len(out)} files, removed {len(gone)} stale cell files")
     if listed:
         print("  Cell Selector: already listed in Menu_Main")
     else:

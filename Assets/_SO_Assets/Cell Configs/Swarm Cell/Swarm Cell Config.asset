@@ -13,10 +13,9 @@ MonoBehaviour:
   m_Name: Swarm Cell Config
   m_EditorClassIdentifier:
   CellName: Swarm
-  Description: Tadpole swarms in four shells of the cytoplasm, on four simulation models - a
-    grid-morphogen whale, a field dragonfly, a cell-sorting pufferfish and an evolved-rule
-    jellyfish - each over its own feeding ground. Kill a body's majority element and it becomes
-    another animal
+  Description: Three great tadpole swarms in three shells of the cytoplasm - a whale, a
+    pufferfish and a jellyfish of about a thousand tadpoles each - over Borromean feeding
+    grounds. Kill a body's majority element and it becomes another animal
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -27,11 +26,11 @@ MonoBehaviour:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SpawnProfile: {fileID: 11400000, guid: 02633d3f53225652894dc5c3b785ce53, type: 2}
   PhaseThresholds:
-    RestlessEnter: 23700
-    RestlessExit: 17600
-    FrenzyEnter: 169000
-    FrenzyExit: 148700
-    RestlessEnterVolume: 3576000
-    RestlessExitVolume: 2656000
-    FrenzyEnterVolume: 25538000
-    FrenzyExitVolume: 22474000
+    RestlessEnter: 2200
+    RestlessExit: 1700
+    FrenzyEnter: 15500
+    FrenzyExit: 13600
+    RestlessEnterVolume: 33000
+    RestlessExitVolume: 25000
+    FrenzyEnterVolume: 233000
+    FrenzyExitVolume: 205000
