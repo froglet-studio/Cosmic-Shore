@@ -70,7 +70,9 @@ class Pilot:
        wander   cruises between random points (the player who is not engaging)
        hunter   flies at the nearest live agent of a species (the player who is engaging)
        evader   flies away from the nearest threat (the player who is fleeing)
-       skimmer  orbits mass at close range (the player farming prisms)"""
+       skimmer  orbits mass at close range (the player farming prisms)
+       circuit  loops a fixed list of waypoints (the player racing the same lanes)
+    Any policy lays a TRAIL of conserved prisms in its `domain` when `trail_every` > 0."""
     policy: str = "wander"
     pos: np.ndarray = field(default_factory=lambda: np.zeros(3))
     vel: np.ndarray = field(default_factory=lambda: np.zeros(3))
@@ -80,6 +82,13 @@ class Pilot:
     goal: np.ndarray = field(default_factory=lambda: np.zeros(3))
     hits: list = field(default_factory=list)
     name: str = "pilot"
+    # --- optional (additive, defaults keep the original behaviour) ---
+    domain: int = 1                        # 1..3 playable domains (0 = neutral / environment, Domains.Blue)
+    trail_every: float = 0.0               # seconds between trail prisms it lays; 0 = lays no trail
+    trail_vol: float = 6.0                 # volume of each trail prism (a Squirrel trail prism is ~3-6)
+    waypoints: list = field(default_factory=list)   # the "circuit" policy loops these
+    _trail_t: float = 0.0
+    _wp: int = 0
 
     @staticmethod
     def wanderer(speed=120.0): return Pilot("wander", speed=speed, name="wanderer")
@@ -89,6 +98,10 @@ class Pilot:
     def evader(speed=140.0): return Pilot("evader", speed=speed, name="evader")
     @staticmethod
     def skimmer(speed=90.0): return Pilot("skimmer", speed=speed, name="skimmer")
+    @staticmethod
+    def circuit(waypoints, speed=140.0, name="circuit"):
+        """Flies a fixed loop of waypoints forever: the player who RACES the same lanes (makes trail lanes)."""
+        return Pilot("circuit", speed=speed, name=name, waypoints=[np.asarray(w, float) for w in waypoints])
 
 
 class Arena:
@@ -104,6 +117,17 @@ class Arena:
         self.threats: list = []                # positions an evader flees (species publish here)
         self.log: list = []                    # (t, pilot, kind, amount)
         self.eaten: float = 0.0                # total volume consumed (conservation audit)
+        # --- optional ledgers (additive): domain ownership, steals, active destruction, motion ---
+        self.mass_dom = np.zeros(0, np.int8)   # 0 = environment (Domains.Blue), 1..3 = playable domains
+        self.mass_danger = np.zeros(0, bool)
+        self.mass_trail = np.zeros(0, bool)    # True = laid by a pilot's trail (player-derived mass)
+        self.laid: float = 0.0                 # volume created by lay_mass / trails
+        self.scattered: float = 0.0            # volume created by scatter_mass
+        self.destroyed: float = 0.0            # volume removed by an ACTIVE force other than eating (abilities)
+        self.stolen: float = 0.0               # volume that changed hands (never removed)
+        self.steals: int = 0
+        self.moves: int = 0                    # prism position writes (move_mass) - the expensive part in game
+        self.dirty: set = set()                # mass indices whose pos/style changed since the recorder last looked
 
     # ---- mass -------------------------------------------------------------------------------------------
     def scatter_mass(self, n: int, r_lo: float = 0.3, r_hi: float = 0.9, vol=(8.0, 40.0), clumps: int = 24,
@@ -118,14 +142,60 @@ class Arena:
         self.mass_elem = np.concatenate([self.mass_elem, (which % 4).astype(np.int8)])
         self.mass_alive = np.concatenate([self.mass_alive, np.ones(n, bool)])
         self.mass_shielded = np.concatenate([self.mass_shielded, rng.random(n) < shielded_frac])
+        self.mass_dom = np.concatenate([self.mass_dom, np.zeros(n, np.int8)])
+        self.mass_danger = np.concatenate([self.mass_danger, np.zeros(n, bool)])
+        self.mass_trail = np.concatenate([self.mass_trail, np.zeros(n, bool)])
+        self.scattered += float(self.mass_vol[-n:].sum()) if n else 0.0
         self.mass_grid.build(self.mass_pos, self.mass_alive)
 
-    def lay_mass(self, p, vol, elem=0) -> int:
-        """Create ONE prism (a species laying mass it PAID for - e.g. a builder's wall). Returns its index."""
+    def lay_mass(self, p, vol, elem=0, dom=0, danger=False, trail=False, shielded=False) -> int:
+        """Create ONE prism (a species laying mass it PAID for - e.g. a builder's wall, or a pilot's trail).
+        Returns its index."""
         self.mass_pos = np.vstack([self.mass_pos, p]); self.mass_vol = np.append(self.mass_vol, vol)
         self.mass_elem = np.append(self.mass_elem, np.int8(elem)); self.mass_alive = np.append(self.mass_alive, True)
-        self.mass_shielded = np.append(self.mass_shielded, False)
+        self.mass_shielded = np.append(self.mass_shielded, bool(shielded))
+        self._pad_ledgers()
+        self.mass_dom[-1] = dom; self.mass_danger[-1] = bool(danger); self.mass_trail[-1] = bool(trail)
+        self.laid += float(vol); self.dirty.add(len(self.mass_vol) - 1)
         return len(self.mass_vol) - 1
+
+    def _pad_ledgers(self):
+        """Keep the optional ledgers as long as mass_pos (a sibling may append to the core arrays directly)."""
+        n = len(self.mass_vol)
+        for name, dt in (("mass_dom", np.int8), ("mass_danger", bool), ("mass_trail", bool)):
+            a = getattr(self, name)
+            if len(a) < n:
+                setattr(self, name, np.concatenate([a, np.zeros(n - len(a), dt)]))
+
+    # ---- active forces other than eating (all conserve mass in the ledger sense) -------------------------
+    def steal(self, i: int, dom: int, by: str = "") -> float:
+        """Change hands: prism i now belongs to domain `dom`. NEVER removes mass. Shielded (and super-shielded)
+        mass is immune, as are dead prisms. Returns the volume that changed hands (0 = refused / no-op)."""
+        self._pad_ledgers()
+        if not self.mass_alive[i] or self.mass_shielded[i] or self.mass_dom[i] == dom:
+            return 0.0
+        self.mass_dom[i] = dom; v = float(self.mass_vol[i])
+        self.stolen += v; self.steals += 1; self.dirty.add(int(i))
+        return v
+
+    def move_mass(self, i: int, p) -> None:
+        """Move a live prism (one transform write + one spatial-index notify in game). Counted in `moves`."""
+        self.mass_pos[i] = p; self.moves += 1; self.dirty.add(int(i))
+
+    def set_danger(self, i: int, on: bool = True) -> None:
+        self._pad_ledgers(); self.mass_danger[i] = on; self.dirty.add(int(i))
+
+    def destroy(self, i: int, by: str = "") -> float:
+        """An ACTIVE force (a vessel ability) removes prism i. Shielded mass survives. Returns its volume."""
+        if not self.mass_alive[i] or self.mass_shielded[i]:
+            return 0.0
+        self.mass_alive[i] = False
+        v = float(self.mass_vol[i]); self.destroyed += v
+        return v
+
+    def audit(self) -> float:
+        """Conservation residual: (everything ever created) - (live + eaten + destroyed). 0 means conserved."""
+        return (self.scattered + self.laid) - (self.live_volume() + self.eaten + self.destroyed)
 
     def consume(self, i: int, by: str = "") -> float:
         if not self.mass_alive[i] or self.mass_shielded[i]:
@@ -170,6 +240,12 @@ class Arena:
             r = np.linalg.norm(p.pos)
             if r > self.R * 0.97:
                 p.pos *= self.R * 0.97 / r
+            if p.trail_every > 0:
+                p._trail_t += dt
+                while p._trail_t >= p.trail_every:
+                    p._trail_t -= p.trail_every
+                    back = p.vel / max(np.linalg.norm(p.vel), 1e-6) * (p.radius * 2.0)
+                    self.lay_mass(p.pos - back, p.trail_vol, elem=0, dom=p.domain, trail=True)
         self.mass_grid.build(self.mass_pos, self.mass_alive)
         self.t += dt
 
@@ -180,6 +256,10 @@ class Arena:
             T = np.asarray(self.threats); d = T[np.argmin(np.linalg.norm(T - p.pos, axis=1))]
             away = p.pos - d
             return p.pos + away / max(np.linalg.norm(away), 1e-6) * 300.0
+        if p.policy == "circuit" and p.waypoints:
+            if np.linalg.norm(p.waypoints[p._wp] - p.pos) < 60.0:
+                p._wp = (p._wp + 1) % len(p.waypoints)
+            return p.waypoints[p._wp]
         if p.policy == "skimmer":
             live = np.flatnonzero(self.mass_alive)
             if len(live):
@@ -198,22 +278,48 @@ class Arena:
 
 
 class Recorder:
-    """Frames for the shared HTML viewer (common/viewer.html.tpl): every `every` steps, the pilots, live mass
-    (positions sent once + alive bitmask deltas) and each species' render buffer
-    {name: {"pos": (n,3), "col": (n,3) 0-1, "size": (n,)}}."""
+    """Frames for the shared HTML viewer (common/viewer.py): every `every` steps, the pilots, live mass
+    (positions sent once + alive bitmask) and each species' render buffer
+    {name: {"pos": (n,3), "col": (n,3) 0-1, "size": (n,)}}.
+
+    Mass that MOVES, is LAID, or changes owner/state after the first frame (Arena.move_mass / lay_mass / steal /
+    set_danger) is sent as a per-frame delta `md` = [[i, x, y, z, style], ...]; the viewer replays deltas, so
+    stolen prisms visibly travel and change colour. style: 0-3 element (neutral), 4-6 domain 1-3, 7 danger,
+    8 shielded."""
 
     def __init__(self, every: int = 2):
         self.every, self.k, self.frames = every, 0, []
         self.mass0 = None
+        self.n_max = 0
+
+    @staticmethod
+    def style(arena: Arena, idx) -> np.ndarray:
+        idx = np.asarray(idx, np.int64)
+        arena._pad_ledgers()
+        st = arena.mass_elem[idx].astype(np.int64) % 4
+        dom = arena.mass_dom[idx]
+        st = np.where(dom > 0, 3 + dom, st)
+        st = np.where(arena.mass_danger[idx], 7, st)
+        st = np.where(arena.mass_shielded[idx], 8, st)
+        return st
 
     def frame(self, arena: Arena, species: list):
         self.k += 1
         if self.k % self.every:
             return
         if self.mass0 is None:
-            self.mass0 = dict(pos=np.round(arena.mass_pos, 1).tolist(), elem=arena.mass_elem.tolist())
+            self.mass0 = dict(pos=np.round(arena.mass_pos, 1).tolist(), elem=arena.mass_elem.tolist(),
+                              style=self.style(arena, np.arange(len(arena.mass_vol))).tolist())
+            arena.dirty = set()
         f = dict(t=round(arena.t, 2), pilots=[np.round(p.pos, 1).tolist() for p in arena.pilots],
                  alive=np.packbits(arena.mass_alive).tobytes().hex(), species={})
+        dirty = getattr(arena, "dirty", None)
+        if dirty:
+            d = np.array(sorted(dirty), np.int64)
+            st = self.style(arena, d)
+            f["md"] = [[int(i), *np.round(arena.mass_pos[i], 1).tolist(), int(s)] for i, s in zip(d, st)]
+            arena.dirty = set()
+        self.n_max = max(self.n_max, len(arena.mass_vol))
         for s in species:
             out = {}
             s.render(out)
@@ -224,5 +330,6 @@ class Recorder:
         self.frames.append(f)
 
     def save(self, path: str, meta: dict | None = None):
+        meta = dict(meta or {}); meta.setdefault("mass_n_max", self.n_max)
         with open(path, "w") as fh:
-            json.dump(dict(meta=meta or {}, mass0=self.mass0, frames=self.frames), fh, separators=(",", ":"))
+            json.dump(dict(meta=meta, mass0=self.mass0, frames=self.frames), fh, separators=(",", ":"))

@@ -3,7 +3,8 @@
     python Tools/Ecology/common/viewer.py out.html run1.json [run2.json ...] --title "Pack hunters"
 
 One HTML file, three.js + OrbitControls from jsDelivr (the artifact CSP allows it), data inlined. Mass prisms
-draw as dim points tinted by element, species agents as bright points sized by body radius, pilots as white
+draw as dim points tinted by element (or bright in their DOMAIN colour once owned, orange when dangerous, and
+they MOVE when a species moves them - Recorder per-frame deltas), species agents as bright points sized by body radius, pilots as white
 diamonds with a short trail. A dropdown switches runs; space pauses; the slider scrubs.
 """
 from __future__ import annotations
@@ -44,21 +45,29 @@ function ptsMat(){return new THREE.ShaderMaterial({transparent:true,depthWrite:f
 function cloud(n){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(n*3),3));
   g.setAttribute('col',new THREE.BufferAttribute(new Float32Array(n*3),3));g.setAttribute('size',new THREE.BufferAttribute(new Float32Array(n),1));
   const p=new THREE.Points(g,ptsMat());p.frustumCulled=false;scene.add(p);return p}
-let mass=null, agents=null, pil=null, run=null, k=0, playing=true, massBits=null;
+let mass=null, agents=null, pil=null, run=null, k=0, playing=true, cur=-1;
+// style: 0-3 element (neutral, dim), 4-6 domain jade/ruby/gold, 7 danger, 8 shielded
+const ST=[[.14,.21,.25],[.25,.16,.06],[.19,.12,.25],[.12,.25,.15],[.1,.75,.7],[1,.25,.35],[1,.8,.25],[1,.45,.1],[.6,.7,1]];
+const STS=[4,4,4,4,6,6,6,7,6];
 function load(i){
-  run=RUNS[i]; k=0; for(const o of [mass,agents,pil]) if(o) scene.remove(o);
-  const m=run.mass0; const n=m.pos.length; mass=cloud(n);
-  const P=mass.geometry.attributes.position.array, C=mass.geometry.attributes.col.array, S=mass.geometry.attributes.size.array;
-  for(let j=0;j<n;j++){P.set(m.pos[j],j*3);const c=EL[m.elem[j]%4];C.set([c[0]*.25,c[1]*.25,c[2]*.25],j*3);S[j]=4}
-  mass.geometry.attributes.position.needsUpdate=true; let maxA=1;
+  run=RUNS[i]; k=0; cur=-1; for(const o of [mass,agents,pil]) if(o) scene.remove(o);
+  const n=Math.max(run.meta.mass_n_max||0, run.mass0.pos.length); mass=cloud(n); let maxA=1;
   for(const f of run.frames) {let a=0; for(const s in f.species) a+=f.species[s].pos.length; maxA=Math.max(maxA,a)}
   agents=cloud(maxA); pil=cloud(16); scrub.max=run.frames.length-1;
   document.getElementById('info').textContent=(run.meta.note||'')+'  ·  drag to orbit, scroll to zoom, space to pause';
 }
+function setMass(j,x,y,z,st){const P=mass.geometry.attributes.position.array, C=mass.geometry.attributes.col.array;
+  P[j*3]=x;P[j*3+1]=y;P[j*3+2]=z;C.set(ST[st]||ST[0],j*3);mass.userData.st[j]=st}
+function reset(){const m=run.mass0, n=m.pos.length; mass.userData.st=new Int8Array(mass.geometry.attributes.size.array.length);
+  for(let j=0;j<n;j++){const p=m.pos[j];setMass(j,p[0],p[1],p[2],m.style?m.style[j]:m.elem[j]%4)} cur=-1}
+function seek(kk){ if(kk<cur||cur<0) reset();
+  for(let q=cur+1;q<=kk;q++){const md=run.frames[q].md; if(md) for(const d of md) setMass(d[0],d[1],d[2],d[3],d[4])}
+  cur=kk; mass.geometry.attributes.position.needsUpdate=true; mass.geometry.attributes.col.needsUpdate=true}
 function hex2bits(h){const b=new Uint8Array(h.length/2);for(let i=0;i<b.length;i++)b[i]=parseInt(h.substr(i*2,2),16);return b}
-function show(f){
-  const bits=hex2bits(f.alive), S=mass.geometry.attributes.size.array;
-  for(let j=0;j<S.length;j++) S[j]=(bits[j>>3]>>(7-(j&7)))&1?4:0; mass.geometry.attributes.size.needsUpdate=true;
+function show(kk){
+  const f=run.frames[kk]; if(kk!==cur) seek(kk);
+  const bits=hex2bits(f.alive), S=mass.geometry.attributes.size.array, st=mass.userData.st;
+  for(let j=0;j<S.length;j++) S[j]=(j<bits.length*8&&((bits[j>>3]>>(7-(j&7)))&1))?STS[st[j]]:0; mass.geometry.attributes.size.needsUpdate=true;
   const P=agents.geometry.attributes.position.array, C=agents.geometry.attributes.col.array, Z=agents.geometry.attributes.size.array; let q=0;
   for(const s in f.species){const b=f.species[s];for(let j=0;j<b.pos.length;j++){P.set(b.pos[j],q*3);C.set(b.col[j],q*3);Z[q]=b.size[j];q++}}
   for(let j=q;j<Z.length;j++)Z[j]=0;
@@ -66,7 +75,7 @@ function show(f){
   const PP=pil.geometry.attributes.position.array, PC=pil.geometry.attributes.col.array, PZ=pil.geometry.attributes.size.array;
   for(let j=0;j<16;j++){if(j<f.pilots.length){PP.set(f.pilots[j],j*3);PC.set([1,1,1],j*3);PZ[j]=22}else PZ[j]=0}
   for(const a of ['position','col','size']) pil.geometry.attributes[a].needsUpdate=true;
-  document.getElementById('t').textContent='t '+f.t.toFixed(1)+' s';
+  document.getElementById('t').textContent='t '+f.t.toFixed(1)+' s'+(run.meta.hud?'  '+(run.meta.hud[kk]||''):'');
 }
 const sel=document.getElementById('run'), scrub=document.getElementById('scrub');
 RUNS.forEach((r,i)=>{const o=document.createElement('option');o.value=i;o.textContent=r.meta.label||('run '+i);sel.appendChild(o)});
@@ -76,7 +85,7 @@ addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();document.
 load(0); let acc=0, last=performance.now();
 (function loop(now){requestAnimationFrame(loop);acc+=(now-last)/1000;last=now;
   if(playing&&acc>1/20){acc=0;k=(k+1)%run.frames.length;scrub.value=k}
-  show(run.frames[k]);ctl.update();ren.render(scene,cam)})(performance.now());
+  show(k);ctl.update();ren.render(scene,cam)})(performance.now());
 </script>
 """
 
