@@ -13,7 +13,7 @@
 #
 # HOW TO RUN (full steps: Docs/IOS_BUILD.md section 2, Path A):
 #   1. On Windows: Switch Platform to iOS, tick Development Build, Build to an empty folder.
-#   2. Zip that folder and upload it to Dropbox (most reliable) or Google Drive.
+#   2. Zip (or RAR / 7z) that folder and upload it to Dropbox (most reliable) or Google Drive.
 #      Share it as "anyone with the link".
 #   3. Repository Settings -> Secrets and variables -> Actions -> New repository secret:
 #      name IOS_XCODE_EXPORT_URL, value = that share link. A SECRET, not a variable: the repo
@@ -106,18 +106,35 @@ jobs:
               ;;
           esac
           ls -lh export.zip
-          # A share page saved as export.zip is the usual failure, and unzip's error for it is cryptic.
-          if ! file export.zip | grep -qi 'zip archive'; then
-            echo "::error::The link did not return a zip ($(file -b export.zip)). Use a direct-download or share link to the .zip itself."
-            exit 1
-          fi
+          # Accept zip, RAR and 7z - Windows users reach for whichever archiver they have. A share
+          # PAGE saved as export.zip is the usual failure, and the extractors' errors for it are cryptic.
+          KIND=$(file -b export.zip)
+          case "$KIND" in
+            # 7-zip first: "7-zip archive data" also contains "zip archive".
+            *RAR\ archive*|*7-zip\ archive*) echo "ARCHIVE_KIND=7z" >> "$GITHUB_ENV" ;;
+            *[Zz]ip\ archive*) echo "ARCHIVE_KIND=zip" >> "$GITHUB_ENV" ;;
+            *)
+              echo "::error::The link did not return an archive ($KIND). Use a direct-download or share link to the .zip / .rar / .7z itself."
+              exit 1 ;;
+          esac
 
       - name: Unzip and restore executable bits
         if: steps.gate.outputs.ready == 'true'
         run: |
           cd "$WORK"
-          # ditto copes with large (zip64) archives that Info-ZIP unzip sometimes rejects.
-          ditto -x -k export.zip src || unzip -q export.zip -d src
+          if [ "$ARCHIVE_KIND" = "zip" ]; then
+            # ditto copes with large (zip64) archives that Info-ZIP unzip sometimes rejects.
+            ditto -x -k export.zip src || unzip -q export.zip -d src
+          else
+            # RAR5 and 7z: 7-Zip reads both. unar is the fallback if the formula is unavailable.
+            export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1
+            if brew install --quiet sevenzip; then
+              7zz x -y -bso0 -bsp0 -osrc export.zip
+            else
+              brew install --quiet unar
+              unar -q -o src export.zip
+            fi
+          fi
           rm -f export.zip
           PROJ_FILE=$(find src -maxdepth 4 -name 'Unity-iPhone.xcodeproj' -type d | head -1)
           if [ -z "$PROJ_FILE" ]; then
