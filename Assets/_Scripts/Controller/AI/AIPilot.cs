@@ -260,6 +260,33 @@ namespace CosmicShore.Gameplay
 
         Func<Vector3?> _driftLookTargetProvider;
 
+        // ---- Mode driver (see IAIPilotDriver) ----
+        IAIPilotDriver _driver;
+
+        /// <summary>The mode's driver flying this hull, or null while AIPilot steers it itself.</summary>
+        public IAIPilotDriver Driver => _driver;
+
+        /// <summary>
+        /// Hand this pilot's flying to <paramref name="driver"/>: from the next frame it writes the
+        /// sticks and the throttle itself, and none of AIPilot's own steering runs (no seeking, no
+        /// orbit break, no commit drift). Null restores AIPilot's steering. The outgoing driver is
+        /// released, so it can never resume a flight on a hull it no longer flies.
+        ///
+        /// <para>For a mode whose objective is a LINE rather than a place — see
+        /// <see cref="IAIPilotDriver"/>. A mode whose objective is a place wants
+        /// <see cref="SetExternalTargetProvider"/> instead, which keeps everything else AIPilot
+        /// does.</para>
+        /// </summary>
+        public void SetDriver(IAIPilotDriver driver)
+        {
+            if (ReferenceEquals(_driver, driver)) return;
+            _driver?.Release();
+            _driver = driver;
+        }
+
+        /// <summary>Restores AIPilot's own steering.</summary>
+        public void ClearDriver() => SetDriver(null);
+
         /// <summary>
         /// Move the MODE's steering hooks (<see cref="SetExternalTargetProvider"/> and
         /// <see cref="SetDriftLookTargetProvider"/>) off <paramref name="source"/> and onto this
@@ -280,6 +307,13 @@ namespace CosmicShore.Gameplay
             _driftLookTargetProvider = source._driftLookTargetProvider;
             source._externalTargetProvider = null;
             source._driftLookTargetProvider = null;
+
+            // A driver follows the bot like the hooks do, and is released on the way: it was
+            // flying the hull the bot just left, and must pick the new one up from scratch.
+            var driver = source._driver;
+            source._driver = null;
+            if (driver != null) SetDriver(driver);
+            driver?.Release();
         }
 
         /// <summary>
@@ -330,6 +364,7 @@ namespace CosmicShore.Gameplay
             // the scene unloading under a live match.
             ReleaseAimTelegraph();
             EndOrbitBreak();
+            _driver?.Release();
         }
 
 
@@ -673,6 +708,9 @@ namespace CosmicShore.Gameplay
                 _commitDriftHeld = false;
                 vessel?.StopShipControllerActions(CommitControl);
             }
+
+            // The driver keeps its seat (the autopilot may restart) but forgets this flight.
+            _driver?.Release();
         }
 
         // The cycled abilities currently between their StartAction and StopAction, and whether
@@ -693,6 +731,21 @@ namespace CosmicShore.Gameplay
                 // sweep accumulated before it stopped describes a pursuit that is no longer running.
                 ReleaseAimTelegraph();
                 EndOrbitBreak();
+                return;
+            }
+
+            // A mode driver flies the whole frame itself. AIPilot's own commitments are put down
+            // first - each of these is a no-op unless it was holding something - so nothing it
+            // started before the driver took over is left held under the driver's sticks.
+            if (_driver != null && _driver.Drive(this, vessel, Time.deltaTime))
+            {
+                ReleaseAimTelegraph();
+                EndOrbitBreak();
+                if (_commitDriftHeld)
+                {
+                    _commitDriftHeld = false;
+                    vessel.StopShipControllerActions(CommitControl);
+                }
                 return;
             }
 

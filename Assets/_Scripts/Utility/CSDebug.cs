@@ -297,6 +297,16 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[FoldGate] Butterfly fold gate placement and transits")]
         ButterflyFold = 1 << 28,
+        /// <summary>
+        /// <c>[SkimRacerAI]</c> — the Skim Race AI driver: what it measured of the hull it was
+        /// handed (hull box, skim reach, rotation lag) and which racers it took over. Its whole
+        /// job is to make "the AI is flying on prefab defaults" separable from "the AI is flying
+        /// on what it measured" in one line. A racer that cannot be driven falls back to the
+        /// platform autopilot silently by design; a track that never arrives is the controller's
+        /// warning, not this channel's.
+        /// </summary>
+        [CSLogChannelLabel("[SkimRacerAI] Skim Race AI driver: measured hull, takeovers")]
+        SkimRacerAI = 1 << 29,
         All = ~0
     }
 

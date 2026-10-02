@@ -269,6 +269,42 @@ public class VesselTransformer : MonoBehaviour
         public float MinTurnRadius =>
             PursuitReachability.MinTurnRadius(Mathf.Abs(speed), MaxTurnRateDegreesPerSecond);
 
+        // ----------------------------- Plant model, for pilots that lead it -----------------------------
+        // A pilot that only points the stick at its target steers with the rotation lag below 0.67 s
+        // out of date. The Skim Race AI (SkimFlightController) servoes the COMMANDED rotation instead,
+        // and these are the facts it needs - read-only views of what Pitch/Yaw/Roll and RotateShip
+        // already compute, so the model it plans against can never drift from the one that flies.
+
+        /// <summary>
+        /// The rotation the stick has COMMANDED: Pitch/Yaw/Roll turn this about the transform's own
+        /// axes, and <see cref="RotateShip"/> slerps the transform toward it at
+        /// <see cref="RotationFollowRate"/>. The hull therefore turns at that rate times the rotation
+        /// between the two, and holding a turn means holding this AHEAD of the hull.
+        /// </summary>
+        public Quaternion CommandedRotation => accumulatedRotation;
+
+        /// <summary>Fraction (per second) of the transform-to-commanded rotation the transform closes.</summary>
+        public float RotationFollowRate => LERP_AMOUNT;
+
+        /// <summary>Degrees per second <see cref="Pitch"/> turns the commanded rotation at full stick this frame.</summary>
+        public float PitchRateDegreesPerSecond => (speed * RotationThrottleScaler + PitchScaler) * TurnScalar;
+
+        /// <summary>Degrees per second <see cref="Yaw"/> turns the commanded rotation at full stick this frame.</summary>
+        public float YawRateDegreesPerSecond => (speed * RotationThrottleScaler + YawScaler) * TurnScalar;
+
+        /// <summary>Degrees per second <see cref="Roll"/> turns the commanded rotation at full stick this
+        /// frame (zero while an ability owns the roll axis).</summary>
+        public float RollRateDegreesPerSecond =>
+            BankIntoTurnSuppressed ? 0f : (speed * RotationThrottleScaler + RollScaler) * RollScalar;
+
+        /// <summary>The boost ceiling this hull reports with every boost change.</summary>
+        public float MaxBoost => MaxBoostMultiplier;
+
+        /// <summary>Cruise speed per unit of throttle before boost: <see cref="ThrottleScaler"/> times its
+        /// live elemental multiplier, as <see cref="ComputeThrottleTarget"/> applies it.</summary>
+        public float EffectiveThrottleScaler =>
+            VesselStatus != null ? ThrottleScaler * ThrottleScalerMultiplier.EvaluateLive(VesselStatus) : ThrottleScaler;
+
         private readonly List<ShipThrottleModifier> ThrottleModifiers = new();
         private readonly List<ShipVelocityModifier> VelocityModifiers = new();
 

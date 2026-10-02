@@ -300,9 +300,11 @@ namespace SquirrelAiHarness
                 bool trace = args.Contains("--trace");
                 _segStats = args.Contains("--segments");
                 _ghost = args.Contains("--ghost");
+                _timing = args.Contains("--timing");
                 _traceFrom = float.Parse(Arg(args, "--trace-from", "0"));
                 _traceTo = float.Parse(Arg(args, "--trace-to", "1e9"));
                 _traceDt = float.Parse(Arg(args, "--trace-dt", "0.25"));
+                _traceRacer = int.Parse(Arg(args, "--trace-racer", "0"));
                 int firstSeed = int.Parse(Arg(args, "--seed", "1"));
                 var res = Batch(cfg, intensity, racers, seeds, profile, fps, trace, printEach: true, firstSeed);
                 Print($"I{intensity} x{racers} {profile} @{fps}fps", res);
@@ -342,10 +344,12 @@ namespace SquirrelAiHarness
             public double MeanCross;
             public float MaxCross;
             public float FirstFull;
+            public readonly List<double> TickMs = new();
         }
 
         static float _traceFrom, _traceTo = float.MaxValue, _traceDt = 0.25f;
-        static bool _segStats, _ghost;
+        static int _traceRacer;
+        static bool _segStats, _ghost, _timing;
         static readonly List<(float dt, float ds, bool face, float vmin, float gap, float bm0)> _segRows = new();
 
         static Result Batch(Config cfg, int intensity, int racers, int seeds, string profile, float fps, bool trace, bool printEach, int firstSeed = 1)
@@ -366,6 +370,7 @@ namespace SquirrelAiHarness
                     TraceFrom = _traceFrom,
                     TraceTo = _traceTo,
                     TraceDt = _traceDt,
+                    TraceRacer = _traceRacer,
                     Profile = _ => Tweak(profile == "tier" ? SkimRacerProfile.ForIntensity(intensity) : SkimRacerProfile.Expert()),
                 };
                 var race = new Race(cfg, opts);
@@ -383,6 +388,7 @@ namespace SquirrelAiHarness
                     crossSum += s.CrossTrackSum; crossN += s.CrossTrackSamples;
                     res.MaxCross = Math.Max(res.MaxCross, s.MaxCrossTrack);
                     if (s.TimeToFirstFullBoost >= 0f) { firstFullSum += s.TimeToFirstFullBoost; firstFullN++; }
+                    res.TickMs.AddRange(r.TickMs);
                     if (printEach)
                     {
                         Console.WriteLine($"  seed {seed,3} racer {r.Id}: {(s.FinishTime < 0 ? "DNF" : $"{s.FinishTime,6:F1}s")} " +
@@ -436,6 +442,13 @@ namespace SquirrelAiHarness
             Console.WriteLine($"{label,-28} {times}  DNF {r.Dnf}/{r.Racers}  ribbon touches {r.RibbonTouches}  " +
                               $"rail touches {r.RailTouches}  reanchors {r.Reanchors}  unresolved {r.Unresolved}  " +
                               $"x-track mean {r.MeanCross:F2} max {r.MaxCross:F1}  first 5x at {r.FirstFull:F1}s");
+            if (_timing && r.TickMs.Count > 0)
+            {
+                var ms = r.TickMs.OrderBy(x => x).ToList();
+                double P(double q) => ms[Math.Min(ms.Count - 1, (int)(q * ms.Count))];
+                Console.WriteLine($"{"",-28} brain tick ms: mean {ms.Average():F3}  p50 {P(0.5):F3}  p95 {P(0.95):F3}  " +
+                                  $"p99 {P(0.99):F3}  p99.9 {P(0.999):F2}  max {ms[^1]:F2}  ({ms.Count} ticks)");
+            }
         }
 
         static int StandardReport(Config cfg)

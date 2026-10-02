@@ -31,11 +31,21 @@ namespace CosmicShore.Gameplay
         [Tooltip("Drag SkimRaceScoringRule.asset - the per-mode scoring strategy (end condition, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
 
+        [Header("AI")]
+        [Tooltip("Fly every AI racer with the Skim Race brain (SkimRaceAIDriver): it plans a line " +
+                 "along the ribbon, skims it, swings out to its own crystal and threads the rails " +
+                 "the other racers leave. Off hands the AI back to the platform autopilot, which " +
+                 "flies straight at crystals and never takes off - a fallback, not a difficulty.")]
+        [SerializeField] bool useRacingAI = true;
+
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
         private bool _raceEnded;
         private bool _trackSpawned;
         private bool _arenaBuildAnnounced;
+        private SkimRaceAICourse _aiCourse;
+        private bool _racersArmed;
+        private float _nextArmCheck;
         private CancellationTokenSource _seedPollCts;
         private readonly NetworkVariable<int> _netTrackSeed = new(0);
 
@@ -97,6 +107,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            DisarmRacers();
             CancelSeedPoll();
             ReleaseArenaBuildAnnouncement();
             _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
@@ -203,6 +214,78 @@ namespace CosmicShore.Gameplay
 
             SpawnTrack_ClientRpc(_netTrackSeed.Value);
             base.OnCountdownTimerEnded();
+            ArmRacers();
+        }
+
+        // ── AI ────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Hand every AI racer to the Skim Race brain. Server-only, because an AI is simulated
+        /// server-only. The drivers share one <see cref="SkimRaceAICourse"/>, which builds the route
+        /// from the ribbon's prisms the first frame one of them asks after the track exists - so it
+        /// does not matter that the track's ClientRpc may land after this.
+        ///
+        /// <para>Difficulty comes from the intensity (<see cref="SkimRacerProfile.ForIntensity"/>):
+        /// every tier flies the same ship with the same physics, and an easier one is the same pilot
+        /// with something taken away.</para>
+        /// </summary>
+        void ArmRacers()
+        {
+            if (!IsServer || !useRacingAI || segmentSpawner == null) return;
+            _aiCourse ??= new SkimRaceAICourse(segmentSpawner);
+            _racersArmed = true;
+
+            int index = 0;
+            foreach (var player in gameData.Players)
+            {
+                if (player == null || !player.IsInitializedAsAI) continue;
+                var pilot = player.Vessel?.VesselStatus?.AIPilot;
+                if (pilot == null) continue;
+                index++;
+                if (pilot.Driver is SkimRaceAIDriver) continue;
+
+                pilot.SetDriver(new SkimRaceAIDriver(_aiCourse, SkimRacerProfile.ForIntensity(Intensity),
+                    seed: StableSeed(player.Name, index)));
+                if (CSDebug.IsVerbose(CSLogChannel.SkimRacerAI))
+                    CSDebug.LogVerbose(CSLogChannel.SkimRacerAI,
+                        $"[SkimRacerAI] {player.Name} handed to the racing brain (intensity {Intensity})");
+            }
+        }
+
+        /// <summary>A seed that is the same on every run for the same racer (string.GetHashCode is
+        /// not guaranteed to be). It only phases the brain's line wander.</summary>
+        static int StableSeed(string name, int index)
+        {
+            unchecked
+            {
+                int h = (int)2166136261;
+                if (name != null)
+                    for (int i = 0; i < name.Length; i++) h = (h ^ name[i]) * 16777619;
+                return h * 31 + index;
+            }
+        }
+
+        /// <summary>Take the brain back off every AI this controller armed. AI vessels can outlive
+        /// the scene (they are spawned destroyWithScene: false), and a driver left on one would keep
+        /// flying a route whose prisms are gone.</summary>
+        void DisarmRacers()
+        {
+            if (!_racersArmed) return;
+            _racersArmed = false;
+            foreach (var player in gameData.Players)
+            {
+                var pilot = player?.Vessel?.VesselStatus?.AIPilot;
+                if (pilot != null && pilot.Driver is SkimRaceAIDriver) pilot.ClearDriver();
+            }
+        }
+
+        void Update()
+        {
+            // A racer can become AI mid-race (a human who leaves hands their hull to the autopilot);
+            // arm it too. Once a second is plenty - until then it flies the platform autopilot.
+            if (!_racersArmed || !IsServer || Time.time < _nextArmCheck) return;
+            _nextArmCheck = Time.time + 1f;
+            ArmRacers();
         }
 
         /// <summary>

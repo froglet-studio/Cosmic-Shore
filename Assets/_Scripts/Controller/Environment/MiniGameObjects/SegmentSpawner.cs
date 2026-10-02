@@ -62,6 +62,13 @@ namespace CosmicShore.Gameplay
         private float[] _normalizedWeights;
 
         /// <summary>
+        /// The trails this spawner has laid, in lay order — read by AI that follows the track (the
+        /// Skim Race racer builds its route from the waypoint track's trail). Empty until
+        /// <see cref="Initialize"/> has run and after <see cref="NukeTheTrails"/>. Do not mutate.
+        /// </summary>
+        public IReadOnlyList<Trail> Trails => trails;
+
+        /// <summary>
         /// When true, SegmentSpawner will not auto-reset on OnResetForReplay.
         /// Set by external controllers (e.g. SkimRaceController) that manage the track lifecycle themselves.
         /// </summary>

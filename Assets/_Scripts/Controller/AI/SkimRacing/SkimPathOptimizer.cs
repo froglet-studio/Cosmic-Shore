@@ -92,8 +92,11 @@ namespace CosmicShore.Gameplay
         readonly double[] _rhoD = new double[MaxPoints];
         readonly double[] _zpa = new double[MaxPoints], _zpb = new double[MaxPoints];
         readonly double[] _wpa = new double[MaxPoints], _wpb = new double[MaxPoints];
-        // Each obstacle's copy is the curve point at its arc, held outside the obstacle's capsule.
+        // Each obstacle's copy is the curve point at its arc, held outside the obstacle's capsule —
+        // but only while the obstacle is ACTIVE (near the line). See UpdateActivation.
         readonly Vector3[] _zo = new Vector3[MaxObstacles], _wo = new Vector3[MaxObstacles];
+        readonly bool[] _oActive = new bool[MaxObstacles];
+        int _activeObstacles;
         readonly int[] _oSeg = new int[MaxObstacles];    // B-spline segment the obstacle sits beside
         readonly float[] _oT = new float[MaxObstacles];  // and where along it
 
@@ -305,12 +308,12 @@ namespace CosmicShore.Gameplay
                 float u = _obsU[o];
                 _oSeg[o] = Mathf.Clamp(Mathf.FloorToInt(u), 1, _n - 3);
                 _oT[o] = Mathf.Clamp01(u - _oSeg[o]);
-                _wo[o] = Vector3.zero;
-                _zo[o] = CurvePoint(u);
+                _oActive[o] = false;
             }
+            _activeObstacles = 0;
+            UpdateActivation();
 
             // ---- the fixed system: every copy's least-squares fit.
-            Array.Clear(_h, 0, need);
             for (int i = 1; i <= _n - 3; i++)
             {
                 Stencil(0.5f * (_v[i] + _v[i + 1]), k, _step, out double c0, out double c1, out double c2, out double c3);
@@ -320,33 +323,25 @@ namespace CosmicShore.Gameplay
                 _rhoD[i] = rho / Math.Max(1e-9, norm);
                 StoreRow(i, _r[i], c0, c1, c2, c3, _rowR, out _rowRc[i]);
                 StoreRow(i, _u[i], c0, c1, c2, c3, _rowU, out _rowUc[i]);
-                LoadRow(i, _rowR, _rowRc[i]);
-                CommitMatrix(_rhoD[i]);
-                LoadRow(i, _rowU, _rowUc[i]);
-                CommitMatrix(_rhoD[i]);
                 DemandVector(i, out _zdr[i], out _zdu[i]);
                 _wdr[i] = _wdu[i] = 0.0;
             }
             for (int i = FixedCount; i < _n; i++)
             {
-                Begin(0.0); Add(i, 1.0, 0.0); CommitMatrix(rho + 1e-6);
-                Begin(0.0); Add(i, 0.0, 1.0); CommitMatrix(rho + 1e-6);
                 _zpa[i] = _a[i];
                 _zpb[i] = _b[i];
                 _wpa[i] = _wpb[i] = 0.0;
             }
-            for (int o = 0; o < _obsCenters.Count; o++)
-                for (int axis = 0; axis < 3; axis++)
-                {
-                    ObstacleRow(o, axis);
-                    CommitMatrix(rho);
-                }
-            Factor(nu);
+            AssembleAndFactor(nu, need, rho);
 
             const double relax = 1.6;   // over-relaxation: the standard 1.5-1.8 roughly halves the iterations
             int it = 0;
             for (; it < Mathf.Max(1, iterations); it++)
             {
+                // A line that has moved toward an obstacle the solve started clear of brings it in.
+                if (it > 0 && it % ActivationCheckInterval == 0 && UpdateActivation())
+                    AssembleAndFactor(nu, need, rho);
+
                 // ---- x: least-squares fit of the line to every copy (minus its dual).
                 Array.Clear(_rhs, 0, nu);
                 for (int i = 1; i <= _n - 3; i++)
@@ -361,11 +356,14 @@ namespace CosmicShore.Gameplay
                     _rhs[u + 1] += rho * (_zpb[i] - _wpb[i]);
                 }
                 for (int o = 0; o < _obsCenters.Count; o++)
+                {
+                    if (!_oActive[o]) continue;
                     for (int axis = 0; axis < 3; axis++)
                     {
                         ObstacleRow(o, axis);
                         CommitRhs(rho, _zo[o][axis] - _wo[o][axis]);
                     }
+                }
                 SolveFactored(nu);
                 for (int f = 0; f < m; f++)
                 {
@@ -402,6 +400,7 @@ namespace CosmicShore.Gameplay
                 }
                 for (int o = 0; o < _obsCenters.Count; o++)
                 {
+                    if (!_oActive[o]) continue;
                     Vector3 q = CurvePoint(_oSeg[o] + _oT[o]);
                     Vector3 hq = (float)relax * q + (float)(1.0 - relax) * _zo[o];
                     Vector3 vq = hq + _wo[o];
@@ -428,6 +427,73 @@ namespace CosmicShore.Gameplay
             Iterations = it;
             Diagnose();
         }
+
+        /// <summary>
+        /// The banded system for the current set of copies: every demand stencil, every free
+        /// point, and every ACTIVE obstacle — then factored. Rebuilt whenever an obstacle joins.
+        /// </summary>
+        void AssembleAndFactor(int nu, int need, double rho)
+        {
+            Array.Clear(_h, 0, need);
+            for (int i = 1; i <= _n - 3; i++)
+            {
+                LoadRow(i, _rowR, _rowRc[i]);
+                CommitMatrix(_rhoD[i]);
+                LoadRow(i, _rowU, _rowUc[i]);
+                CommitMatrix(_rhoD[i]);
+            }
+            for (int i = FixedCount; i < _n; i++)
+            {
+                Begin(0.0); Add(i, 1.0, 0.0); CommitMatrix(rho + 1e-6);
+                Begin(0.0); Add(i, 0.0, 1.0); CommitMatrix(rho + 1e-6);
+            }
+            for (int o = 0; o < _obsCenters.Count; o++)
+            {
+                if (!_oActive[o]) continue;
+                for (int axis = 0; axis < 3; axis++)
+                {
+                    ObstacleRow(o, axis);
+                    CommitMatrix(rho);
+                }
+            }
+            Factor(nu);
+        }
+
+        /// <summary>
+        /// Brings into the solve every obstacle the line now passes within its radius plus
+        /// <see cref="ObstacleActivation"/> of; true when any joined. An obstacle far from the line
+        /// constrains nothing, and its copy is not free: ADMM pulls the line toward every copy, so
+        /// hundreds of idle ones (a lap of rails along the route) act as inertia on the whole line,
+        /// slow every iteration, and stop it moving to where the near ones need it. Once in, an
+        /// obstacle stays in for the solve, so the system cannot flap.
+        /// </summary>
+        bool UpdateActivation()
+        {
+            bool changed = false;
+            for (int o = 0; o < _obsCenters.Count; o++)
+            {
+                if (_oActive[o]) continue;
+                Vector3 q = CurvePoint(_oSeg[o] + _oT[o]);
+                float reach = _obsRadii[o] + ObstacleActivation;
+                if ((q - RodPoint(o, q)).sqrMagnitude > reach * reach) continue;
+                _oActive[o] = true;
+                _zo[o] = q;
+                _wo[o] = Vector3.zero;
+                _activeObstacles++;
+                changed = true;
+            }
+            return changed;
+        }
+
+        /// <summary>Obstacles further than this beyond their radius from the line are left out of a
+        /// solve until the line comes near them.</summary>
+        const float ObstacleActivation = 12f;
+
+        /// <summary>Iterations between checks for obstacles the line has moved toward.</summary>
+        const int ActivationCheckInterval = 10;
+
+        /// <summary>Obstacles taking part in the last solve.</summary>
+        public int ActiveObstacleCount => _activeObstacles;
 
         /// <summary>
         /// Proximal step of <c>w_D |z|² + w_H (|z| - B)²₊</c> against <c>rho |z - v|²</c>: the

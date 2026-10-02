@@ -51,6 +51,9 @@ namespace SquirrelAiHarness
         public readonly HashSet<int> SkimTrack = new(), HullTrack = new(), SkimRails = new(), HullRails = new();
         public readonly HashSet<int> NextSkimTrack = new(), NextHullTrack = new(), NextSkimRails = new(), NextHullRails = new();
         public readonly List<SkimObstacle> LastObstacles = new();
+        /// <summary>Wall-clock milliseconds of each <see cref="SkimRacerBrain.Tick"/> (and its
+        /// obstacle gather) - the cost the in-game driver pays per AI per frame on the host.</summary>
+        public readonly List<double> TickMs = new();
         public bool Finished => Stats.FinishTime >= 0f;
     }
 
@@ -67,6 +70,7 @@ namespace SquirrelAiHarness
         public bool Trace = false;
         public bool Ghost = false;
         public float TraceFrom = 0f, TraceTo = float.MaxValue, TraceDt = 0.25f;
+        public int TraceRacer = 0;
     }
 
     sealed class Race
@@ -186,10 +190,12 @@ namespace SquirrelAiHarness
                     CrystalPosition = r.Crystal,
                     CrystalRadius = _c.CaptureRadius,
                 };
+                long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 GatherObstacles(r);
                 r.LastObstacles.Clear();
                 r.LastObstacles.AddRange(_obstacles);
                 var cmd = r.Brain.Tick(sensors, _obstacles);
+                r.TickMs.Add((System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
                 p.XSum = cmd.XSum; p.YSum = cmd.YSum; p.YDiff = cmd.YDiff; p.XDiff = cmd.XDiff;
                 p.LeftTrigger = cmd.Drift ? 1f : 0f;
                 if (cmd.Drift && !r.WantDrift) p.BeginDrift();
@@ -237,7 +243,7 @@ namespace SquirrelAiHarness
                 s.MaxCrossTrack = Mathf.Max(s.MaxCrossTrack, ct);
                 s.CrossTrackSum += ct;
                 s.CrossTrackSamples++;
-                if (_o.Trace && r.Id == 0 && Time >= _o.TraceFrom && Time <= _o.TraceTo
+                if (_o.Trace && r.Id == _o.TraceRacer && Time >= _o.TraceFrom && Time <= _o.TraceTo
                     && Math.Floor(Time / _o.TraceDt) != Math.Floor((Time - dt) / _o.TraceDt)) TraceLine(r);
             }
         }

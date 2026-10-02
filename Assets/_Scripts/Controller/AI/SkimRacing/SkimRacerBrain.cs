@@ -1569,7 +1569,7 @@ namespace CosmicShore.Gameplay
             _planSpeed = Mathf.Max(_sensors.Speed, 1f);
             int newFace = FaceOf(_keys[_keys.Count - 1].Phi);
             if (oldFace >= 0 && newFace != oldFace) FaceChanges++;
-            LastChoice = $"{note} it={_opt.Iterations} d={_opt.WorstDemand:F2} miss={_opt.CrystalMiss:F1} clr={_opt.WorstClearDeficit:F1} obs={_opt.WorstObstacleDeficit:F1}/{_opt.ObstacleCount}of{(_obstacles != null ? _obstacles.Count : 0)}";
+            LastChoice = $"{note} it={_opt.Iterations} d={_opt.WorstDemand:F2} miss={_opt.CrystalMiss:F1} clr={_opt.WorstClearDeficit:F1} obs={_opt.WorstObstacleDeficit:F1}/{_opt.ActiveObstacleCount}a{_opt.ObstacleCount}of{(_obstacles != null ? _obstacles.Count : 0)}";
         }
 
         /// <summary>Pins optimiser point <paramref name="i"/> to world control point
