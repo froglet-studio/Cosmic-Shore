@@ -796,32 +796,41 @@ proxy. The cell's ladder was re-derived for it: Restless 55,000 / 41,000, Frenzy
 jump; kills lower it. **FAIL:** volume jumps when you approach or leave a swarm · the cell pins at Frenzy
 with no trail · live volume never moves as the swarms grow.
 
-### QA-SWARM-ROUND8-4 ⬜ — MultiDomain swarms wear the colours of what they ate
+### QA-SWARM-ROUND8-4 ⛔ — superseded by QA-SWARM-ROUND9-2
 
-**Source:** branch `cece/swarm-fauna-game` (headless only; **never run in the editor**). Full reference:
-`Docs/SWARM_FAUNA.md` §16.4 and the CLAUDE.md exception beside "No domain asymmetry". **Why it matters:**
-the Swarm cell's swarms are now MultiDomain. Seeds wear the controlling domain, and every newborn wears the
-domain of the mass that funded its egg, so a swarm grazing a mixed forest grows into several colours that
-sort into regions. Headless: in the sort core a member's nearest neighbour shares its domain 56% of the
-time (34% for random labels); a one-colour control fed the same food stays one colour.
+Round 8's diet colouring (newborns wearing the colour of what they ate) was removed on playtest. See
+`Docs/SWARM_FAUNA.md` §17.
 
-1. Select the four `Assets/_SO_Assets/Swarm Fauna/*Config.asset`: **Multi Domain on**. Confirm the C#
-   default (a new SwarmFaunaConfigSO) is **off**.
-2. Enter the Swarm cell. Confirm there are no shader errors on `CosmicShore/SwarmMemberInstanced` (the
-   palette is now `_SwarmTierDark/_SwarmTierBright[9]`). Seeded swarms must be one colour.
-3. Lay trails or plant other domains' mass near a swarm's feeding ground (switch domain with the Domain
-   Changer and graze-test), then wait 5-10 minutes. Newborns should appear in the other domains' colours
-   and gather into patches or regions, not a random speckle.
-4. Shoot members of each colour with a rocket from each domain: own-colour members are spared, others die,
-   matching prisms of those colours.
-5. A proxy (fly close) must show the same colour as its GPU-drawn member, with no colour flicker at 160 u.
-6. In a mode that pins control (`Cell.SetModeControlOverride`), a MultiDomain swarm must keep its colours.
-   With MultiDomain off on a test config, the whole swarm, proxies included, must recolour.
+### QA-SWARM-ROUND9-1 ⬜ — swarms graze and move on
 
-**PASS:** seeds one colour; newborns take their food's colour; colours cluster; domain sparing follows the
-member's colour; proxies match; the override recolours only a one-colour swarm. **FAIL:** shader error ·
-all members stay one colour despite mixed food · colours randomly speckled · a proxy colour mismatch · a
-MultiDomain swarm recoloured by a mode override.
+**Source:** branch `cece/swarm-fauna-game` (headless only). Reference: `Docs/SWARM_FAUNA.md` §17.1. **Why it
+matters:** in round 8 a swarm parked on the nearest plant's heart crystal and never left.
+
+1. Enter the Swarm cell and watch one swarm for 3-5 minutes from a distance (no vessel near it).
+2. While it is growing (hungry) it should travel to a plant, graze, then leave for ANOTHER plant or roam.
+3. Once full-grown it should roam its band rather than sit on a plant.
+4. Kill a chunk of it; it should go back to grazing, and leave the plant once sated.
+
+**PASS:** no swarm stays on one plant for more than ~1 minute while sated; hungry swarms visit plants in turn.
+**FAIL:** a swarm hovers on a plant's crystal indefinitely · a swarm never goes to food while it is growing.
+
+### QA-SWARM-ROUND9-2 ⬜ — one colour at birth, a second lineage owns a region
+
+**Source:** branch `cece/swarm-fauna-game` (headless only). Reference: `Docs/SWARM_FAUNA.md` §17.2 and the CLAUDE.md
+exception beside "No domain asymmetry". Headless: 8/8 whales grew back and belly in different domains (R9b).
+
+1. Select `SwarmSortFaunaConfig.asset`: **Multi Domain on**, **Lineage Drift 0.01**.
+2. Enter the Swarm cell. Every swarm must hatch ONE colour (the controlling domain). No shader errors on
+   `CosmicShore/SwarmMemberInstanced`.
+3. Watch the bodies fill out. In most of them a second colour should appear as a few members, then fill one
+   region (whale: back OR belly; pufferfish: top OR bottom) rather than speckle the body.
+4. Graze-test: grazing other domains' mass must NOT add their colours (food colours nothing).
+5. Across several sessions, the second colour and the region it takes should both vary.
+6. Weapons: own-colour members are spared, others die. Proxies (fly close) match their member's colour.
+
+**PASS:** births one colour; a second colour grows as a region; colour and region vary between swarms; food does
+not recolour. **FAIL:** a newborn in a food's colour · random speckle instead of a region · every swarm picks the
+same colour or the same region · shader error.
 
 ### QA-PALETTE-SHIELDED ⬜ — the four prism tiers across all three domains
 **Source:** PRs #644, #705 (danger prisms now paint on the domain's **shielded base

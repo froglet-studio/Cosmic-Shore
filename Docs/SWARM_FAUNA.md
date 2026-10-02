@@ -1792,3 +1792,93 @@ and **-4** (MultiDomain colours). Run `QA-SWARM-ROUND7` first.
   - `Tools/Build/swarm_glue_typecheck/Stubs.cs`
   - `Tools/Shaders/verify_swarm_member_pose.py`
   - `Tools/Build/author_swarm_fauna.py`
+
+## 17. Round 9: one colour at birth, regional lineages, and a grazer that moves on (playtest of round 8)
+
+**What was reported.** "The swarms were attracted to the crystals of flora and never left. The swarms began one
+colour and mixed in the colour they consumed if killed. ... not worth deviating from ecology expectations for
+this. The hope is that we could get different domains growing as a subpopulation within a population, to give
+the superstructures some colour contrast with regions that biased a difference in domains. The goal is not to
+prescribe any asymmetry by prescribing specific domains, but expect two regions to have different domains, like
+the belly vs back of a whale."
+
+**What this round SUPERSEDES.** §16.4's diet colouring is gone: `StomachDom`, the domain-aware `TryFund`, the
+domain-tagged `QueueDeposit` and every core's `FoodDomains` are deleted. Food pays for eggs and nothing else.
+§16.4's drawing, proxy, weapon and recolour plumbing (`Flags` bits 7-8, the per-slot palette, the slot table,
+`MemberDomain`, `AcceptsTeamRecolour`) is KEPT: it is what a member's domain means, whatever gave it the domain.
+
+**Nothing in this section was run in the Unity editor.** QA: `QA-SWARM-ROUND9-1` (foraging) and `-2` (lineages).
+
+### 17.1 Foraging: the cause of "never left" and the fix
+
+The swarm's goal was `FloraHeartRegistry.NearestToPoint` - the nearest plant's HEART, which is the plant's
+crystal (`LifeForm.HeartTransform`), so a body parked on a crystal. It had exactly one way to leave: 10 s at the
+plant with no bite. But any bite by any member anywhere reset that clock, and a Borromean membrane regrows, so
+there was always a bite; and with 2-3 plants per band the nearest plant was always the same one. It also never
+asked whether the plant was food.
+
+Now (`SwarmFauna.ResolveGoal`) the swarm is an ordinary grazer:
+
+| state | goal | leaves when |
+|---|---|---|
+| hungry (stomach < `ForageBelow` 0.5 of `StomachEggs`) | the nearest plant in its band that it can EAT (`IsPreyForMe` on the plant's own domain, not in the nucleus) and has not just left | sated (stomach >= `SatedAbove` 0.9), or `GiveUpSeconds` (10) at the plant with no bite taken from THAT plant (bites elsewhere no longer count), or 6 x `GiveUpSeconds` without reaching it |
+| sated | a wander point on its own shell of the band (unchanged) | it gets hungry |
+
+A plant it leaves is passed over for `PlantRestSeconds` (60), so the next meal is somewhere else and the plant
+regrows. A full-grown body has a full stomach (it only spends food on eggs), so it roams until kills or
+starvation make it hungry - "a grown body does not strip its feeding ground for nothing" (§3) now also means it
+does not sit on it. No new death: starvation is unchanged (`Feed` still counts a full stomach as fed).
+
+### 17.2 Regional lineages (`SwarmSortParams.Lineages`, `Drift`)
+
+The research plans already divide each body into REGIONS (`plan.Slot`): the whale's are its back (+y, tail) and
+belly (-y, head), the pufferfish's top and bottom, the jellyfish's bell and tentacles, the dragonfly's three.
+Round 9 treats a region as ANATOMY and lets a LINEAGE own it:
+
+- **Birth is one colour.** Every seed wears slot 0, the cell's controlling domain. A child keeps its parent's
+  domain. Food colours nothing.
+- **Seeds settle in one region**, drawn in proportion to its tissue - so the controlling colour is the back in
+  some bodies and the belly in others.
+- **Ownership is census, not assignment** (`PickOwners`, every `RoleEvery` steps): each region is owned by the
+  lineage holding most of its hatched tissue, one region per lineage, sticky by two members. A region nobody
+  holds is UNOWNED.
+- **Unowned tissue is grown by any parent** with room (the same deficit rule, at `PCross`). A child laid there by
+  a parent whose own lineage owns a region **founds a new lineage with probability `Drift` (0.01)**: a domain the
+  swarm holds no member of, drawn uniformly. That is the only place a new colour can begin.
+- **The founder breeds true** into the region it now owns. **Strangers** (members sitting in tissue another
+  lineage owns) go home when their own region has room, at the molt rate, and a surplus transfer never moves a
+  member into another lineage's tissue. Nothing dies for its colour; turnover (kills, starvation) does the rest.
+
+What is and is not prescribed: the regions are the plan's (they were authored by the research as body parts);
+WHICH domain lands in WHICH region, WHEN a second lineage appears and WHETHER one does are all drawn. Slots 1 and
+2 are the other two playable domains in Jade, Ruby, Gold order (the §16.4 slot table), so a founder is either of
+them with equal chance.
+
+`MultiDomain` now means lineages, and only the SORT model has them (`SwarmFauna.Lineages`); a MultiDomain grid,
+field or evofate config is one colour. All three Swarm-cell swarms are sort.
+
+### 17.3 Proof (headless, `run.sh <plans> lineage`, SWARM_DENSITY=5, the cell's 240-tadpole seed)
+
+- **R9a.** Lineages off: 240 seeds grow to 902 members, 902/0/0 by domain, on plain food. Lineages on: every seed
+  wears slot 0.
+- **R9b** (8 whales, 900 growth steps + 2,400 steps of turnover). A second lineage founded itself in 8/8; back
+  and belly ended DIFFERENT domains in 8/8; mean region purity 100%; a member's nearest neighbour shares its
+  domain 92-97% (50% for random labels). Founders: slot 1 x4, slot 2 x4. The anchor's lineage holds the back in
+  4, the belly in 4.
+- **R9c.** The second lineage GROWS: in the first whale it founds at step 10, reaches 186 by step 50, and under
+  turnover takes its whole region (441 of 833) as strangers drain home.
+- **R9d.** Pufferfish 412/405 split top/bottom; jellyfish 300/112; the dragonfly stayed one colour in this run
+  (its seed filled the body before a founder drew) - variance the rule allows on purpose.
+- At `Drift` 0.003 founding is too rare (3/8 bodies two-tone); at 0.05 it is near-instant. 0.01 keeps a
+  visible founding moment and two-tone bodies.
+- The sort, tick-job, field, grid and evofate suites still pass; the glue type-check and
+  `verify_swarm_member_pose.py` (T9/T10, the per-slot palette) pass; `author_swarm_fauna.py --check` passes.
+
+### 17.4 Files
+
+- `Swarm/SwarmSortCore.cs` (`Lineages`, `Drift`, `PickOwners`, `UnownedNeed`, `AbsentDomain`, the seed's region,
+  stranger homing, `RegionOf`), `ISwarmCore.cs`, `SwarmTickJob.cs`, the other three cores (diet colouring removed)
+- `Swarm/SwarmFauna.cs` (foraging, `Lineages`), `Swarm/SwarmFaunaConfigSO.cs` (`LineageDrift`, `ForageBelow`,
+  `SatedAbove`, `GiveUpSeconds`, `PlantRestSeconds`), the four config assets
+- `Tools/Build/swarm_core_harness/LineageHarness.cs` (R9a-d; `lineage <out.json>` exports grown bodies),
+  `Tools/Build/author_swarm_fauna.py`, `Tools/Build/swarm_glue_typecheck/Stubs.cs`
