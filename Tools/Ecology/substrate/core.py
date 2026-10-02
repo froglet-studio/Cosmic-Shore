@@ -64,7 +64,8 @@ class Regime:
     w_trail: float = 0.0         # follow own species' trail gradient
     w_alarm: float = 0.5         # alarm field gradient as danger
     w_threat: float = 0.5        # threat field gradient as danger
-    w_home: float = 0.0          # toward the species' home (territory centroid)
+    w_home: float = 0.0          # toward the agent's own home (where it was born/spawned)
+    trample: float = 0.0         # >0.5: contact harms a pilot when moving fast (a stampede), regardless of aggression
     size: float = 3.0
     color: tuple = (0.5, 0.9, 1.0)
 
@@ -107,6 +108,10 @@ class SpeciesParams:
     q_width: float = 0.05
     q_rate: float = 0.4                # phase relaxation per second
     q_contagion: float = 0.5           # weight of neighbours' mean phase in the target
+    q_w_dens: float = 1.0              # quorum signal weights (see _quorum)
+    q_w_prox: float = 0.0
+    q_w_alarm: float = 0.0
+    q_hunger: float = 1.0              # hunger exponent gating the signal (0 = hunger-independent)
     # world
     bite_r: float = 10.0
     bite_cool: float = 1.5
@@ -119,6 +124,8 @@ class SpeciesParams:
     deposit_alarm: float = 0.5         # scaled by fear
     n_dirs: int = 18
     frac_k: int = 4
+    attn_r: float = 0.0                # attention LOD: within this distance of a pilot, re-steer every step
+    attn_urg: float = 1.0              # ... or when max(fear, aggression) exceeds this (1 = off)
     ring_roles: int = 0                # pack: number of ring slots (role = i % ring_roles)
     body: BodyPlan | None = None
     seed: int = 0
@@ -147,7 +154,8 @@ class Substrate:
     TERMS = ("food", "coh", "align", "wander", "curious", "hunt", "ring", "trail", "home", "body", "inward")
     DANGERS = ("sep", "flee", "alarm", "threat", "wall")
 
-    def __init__(self, arena, P: SpeciesParams, backend="numpy", center=None, spread=60.0, G=40, init_hunger=None):
+    def __init__(self, arena, P: SpeciesParams, backend="numpy", center=None, spread=60.0, G=40, init_hunger=None,
+                 anchor=None):
         self.P, self.backend = P, backend
         if backend in ("numba", "fused") and not HAVE_NUMBA:
             raise RuntimeError("numba backend requested but numba missing")
@@ -178,6 +186,7 @@ class Substrate:
         self.assembling = False
         self.death_log = []
         self._freed_tick = np.full(cap, -1)
+        self._steered = np.zeros(cap, bool)
         self._dt = 0.1
         self.arena_pilots = []
         self.timers: dict[str, float] = {}
@@ -185,6 +194,10 @@ class Substrate:
         c = arena._ball(1, 0.3 * arena.R, 0.7 * arena.R)[0] if center is None else np.asarray(center, float)
         n = P.n0
         self.pos[:n] = c + self.rng.normal(0, spread, (n, 3))
+        if anchor == "mass" and arena.mass_alive.any():
+            # each agent's home is a live prism (an ambusher waits IN the flora, not in open water)
+            live = np.flatnonzero(arena.mass_alive)
+            self.pos[:n] = arena.mass_pos[self.rng.choice(live, n)] + self.rng.normal(0, 6, (n, 3))
         d = self.rng.normal(size=(n, 3)); self.idir[:n] = _unit(d)[0]
         self.vel[:n] = self.idir[:n] * P.solitary.speed * 0.5
         self.ispeed[:n] = P.solitary.speed
@@ -194,6 +207,7 @@ class Substrate:
         self.stock[:n] = P.stock0          # a spawned seed's body (a spawner is a seeder, as in the game)
         self.wseed[:n] = self.rng.uniform(0, 100, (n, 3))
         self.home = c.copy()
+        self.homes = self.pos.copy()           # per-agent territory anchor (a child inherits its parent's)
         self._expose()
 
     # ---- scorecard / arena views -------------------------------------------------------------------
@@ -228,6 +242,7 @@ class Substrate:
 
     def step(self, arena, dt):
         P = self.P
+        self._arena = arena
         t0 = time.perf_counter()
         F = self.fields
         F.update(arena)
@@ -247,17 +262,22 @@ class Substrate:
             return
         pos = self.pos[A]
         cells = F.cell(pos)
-        # ---- hash + moments (all agents) and neighbour reads (the re-steering slice only) ----
+        # ---- drives (all agents, elementwise) ----
+        self._drives(arena, dt, A, cells, None)
+        t0 = self._t("drives", t0)
+        # ---- the re-steering slice: a rotating 1/k, PLUS every agent that is near a pilot or urgent
+        # (attention LOD: calm agents coast on stale intent, engaged ones re-steer every step) ----
         k = max(1, P.frac_k)
-        S = A[(A + self.tick) % k == 0] if k > 1 else A
-        sl = np.searchsorted(A, S)                       # S's rows inside A
+        rot = ((A + self.tick) % k == 0) if k > 1 else np.ones(len(A), bool)
+        if P.attn_r > 0:
+            rot |= self._pd < P.attn_r
+        if P.attn_urg < 1:
+            rot |= np.maximum(self.fear[A], self.aggr[A]) > P.attn_urg
+        S = A[rot]
+        sl = np.flatnonzero(rot)                         # S's rows inside A
         self._S = S
-        t0 = self._t("drives_pre", t0)
         nb = self._neighbours(A, sl)
         t0 = self._t("neighbours", t0)
-        # ---- drives (all agents, elementwise) ----
-        self._drives(arena, dt, A, cells, nb)
-        t0 = self._t("drives", t0)
         # ---- steer the slice ----
         if len(S):
             self._steer(arena, S, sl, cells[sl], nb)
@@ -335,6 +355,7 @@ class Substrate:
         h = self.hunger
         h[A] = np.minimum(1.0, h[A] + P.metabolism * dt)
         pp, pd, _ = self._nearest_pilot(arena, self.pos[A])
+        self._pd = pd
         prox = np.clip(1 - pd / P.sense, 0, 1)
         threat = F.sample("threat", cells); alarm = F.sample("alarm", cells)
         f = self.fear[A]
@@ -365,8 +386,16 @@ class Substrate:
         P = self.P
         if P.q_up >= 9:
             return
+        # ONE quorum signal for every species: a weighted sum of local density, pilot proximity and alarm,
+        # gated by hunger. Locusts and packs read density; an ambusher reads proximity; a herd reads alarm.
         dens = nb["count"] / P.dens_norm
-        s = dens * self.hunger[S]
+        sig = P.q_w_dens * dens
+        if P.q_w_prox:
+            _, pd, _ = self._nearest_pilot(self._arena, self.pos[S])
+            sig = sig + P.q_w_prox * np.clip(1 - pd / P.sense, 0, 1)
+        if P.q_w_alarm:
+            sig = sig + P.q_w_alarm * np.minimum(self.fields.sample("alarm", self.fields.cell(self.pos[S])), 2)
+        s = sig * self.hunger[S] ** P.q_hunger
         theta = np.where(self.qtarget[S] > 0.5, P.q_down, P.q_up)
         tgt = 1 / (1 + np.exp(-(s - theta) / P.q_width))
         tgt = (1 - P.q_contagion) * tgt + P.q_contagion * np.maximum(tgt, nb["mphase"]) * (nb["count"] > 0) + \
@@ -417,8 +446,7 @@ class Substrate:
                 term("ring", slot - p, W("w_ring") * ag * near)
             danger("flee", p - pp, W("w_flee") * fe * np.clip(1 - pd / P.sense, 0, 1))
         term("trail", F.sample_grad(self.trail_ch, cells), W("w_trail"))
-        if self.home is not None:
-            term("home", self.home - p, W("w_home") * (1 - hu))
+        term("home", self.homes[S] - p, W("w_home") * (1 - hu))
         if P.body is not None and self.body_c is not None:
             # the member's desired VELOCITY is its slot's own velocity plus a closing speed along the
             # displacement (flat-bottom well: zero inside `well`), bounded by the turn radius
@@ -515,10 +543,10 @@ class Substrate:
                        F.grad["food"].reshape(-1, 3), F.grad[self.trail_ch].reshape(-1, 3),
                        F.ch["alarm"].reshape(-1), F.grad["alarm"].reshape(-1, 3),
                        F.ch["threat"].reshape(-1), F.grad["threat"].reshape(-1, 3),
-                       self.home if self.home is not None else np.zeros(3), self.home is not None,
-                       self.tick, max(1, P.frac_k), dt, float(self.R))
-        k = max(1, P.frac_k)
-        self._S = A[(A + self.tick) % k == 0]
+                       self.homes, True,
+                       self.tick, max(1, P.frac_k), dt, float(self.R), float(P.attn_r), float(P.attn_urg),
+                       self._steered)
+        self._S = A[self._steered[A]]
         t0 = self._t("fused", t0)
         if P.deposit_trail:
             F.deposit(self.trail_ch, self.pos[A], P.deposit_trail * dt)
@@ -613,7 +641,10 @@ class Substrate:
             for pl in arena.pilots:
                 d = np.linalg.norm(self.pos[A] - pl.pos, axis=1)
                 self.cool[A] -= dt / max(len(arena.pilots), 1)
-                b = A[(d < P.bite_r + pl.radius) & (self.aggr[A] > 0.5) & (self.cool[A] <= 0)]
+                tr = _lerp(P.solitary.trample, P.gregarious.trample, self.phase[A])
+                fast = np.linalg.norm(self.vel[A], axis=1) > 60
+                harm = (self.aggr[A] > 0.5) | ((tr > 0.5) & fast)
+                b = A[(d < P.bite_r + pl.radius) & harm & (self.cool[A] <= 0)]
                 # one harm EVENT per pilot per bite_cool (a swarm nibbles, it does not machine-gun); the event's
                 # amount is how many agents were in contact
                 key = id(pl)
@@ -642,7 +673,7 @@ class Substrate:
             for i, j in zip(par[:nb], free[:nb]):
                 half = self.stock[i] * 0.5
                 self.stock[i] -= half; self.stock[j] = half
-                self.pos[j] = self.pos[i]; self.vel[j] = self.vel[i] * 0.5
+                self.pos[j] = self.pos[i]; self.vel[j] = self.vel[i] * 0.5; self.homes[j] = self.homes[i]
                 self.idir[j] = self.idir[i]; self.ispeed[j] = self.ispeed[i]
                 for arr in (self.hunger, self.fear, self.curious, self.aggr, self.attach, self.phase, self.qtarget):
                     arr[j] = arr[i]

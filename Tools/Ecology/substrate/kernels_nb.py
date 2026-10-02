@@ -157,7 +157,8 @@ REG_FIELDS = ("speed", "burst", "turn", "accel", "w_food", "w_coh", "w_align", "
               "w_curious", "comfort", "w_flee", "w_hunt", "w_ring", "ring_r", "w_trail", "w_alarm",
               "w_threat", "w_home")
 SP_FIELDS = ("metabolism", "fear_gain", "fear_decay", "sense", "curiosity_rate", "q_up", "q_down", "q_width",
-             "q_contagion", "q_rate", "dens_norm", "nbr_r", "ring_roles")
+             "q_contagion", "q_rate", "dens_norm", "nbr_r", "ring_roles", "q_w_dens", "q_w_prox", "q_w_alarm",
+             "q_hunger")
 
 if HAVE_NUMBA:
     @nb.njit(cache=True, inline="always")
@@ -185,7 +186,7 @@ if HAVE_NUMBA:
     @nb.njit(parallel=True, fastmath=True, cache=True)
     def fused_step(A, pos, vel, idir, ispeed, hunger, fear, curious, aggr, attach, phase, qtarget, wseed, role,
                    Rs, Rg, SPv, dirs, PP, PV, fcell_R, fG, food_g, trail_g, alarm_v, alarm_g, threat_v, threat_g,
-                   home, has_home, tick, k, dt, R):
+                   homes, has_home, tick, k, dt, R, attn_r, attn_urg, steered):
         n = len(A)
         h = SPv[11]
         M = np.int64(2 * R / h) + 4
@@ -238,7 +239,9 @@ if HAVE_NUMBA:
             capw = min(1.0, (Rs[12] + Rs[13]) + ((Rg[12] + Rg[13]) - (Rs[12] + Rs[13])) * ph)
             ag = min(max(hu * 1.4 - 0.3, 0.0), 1.0) * capw; aggr[i] = ag
             # ---- re-steer the 1/k slice ----
-            if (i + tick) % k == 0:
+            st = ((i + tick) % k == 0) or (pd < attn_r) or (max(fe, ag) > attn_urg)
+            steered[i] = st
+            if st:
                 acc = np.zeros(8)
                 k0 = key[q]
                 for ddx in range(-1, 2):
@@ -255,7 +258,8 @@ if HAVE_NUMBA:
                 mph = (acc[7] - ph) * inv if cnt > 0 else ph
                 # quorum target
                 if SPv[5] < 9.0:
-                    s = cnt / SPv[10] * hu
+                    sig = SPv[13] * cnt / SPv[10] + SPv[14] * prox + SPv[15] * min(alarm_v[fc], 2.0)
+                    s = sig * hu ** SPv[16]
                     th = SPv[6] if qtarget[i] > 0.5 else SPv[5]
                     tg = 1.0 / (1.0 + np.exp(-(s - th) / SPv[7]))
                     c = SPv[8]
@@ -297,7 +301,7 @@ if HAVE_NUMBA:
                     _paintD(G, dirs, -tpx, -tpy, -tpz, W[11] * fe * prox)
                 _paint(I, dirs, trail_g[fc, 0], trail_g[fc, 1], trail_g[fc, 2], W[15])
                 if has_home:
-                    _paint(I, dirs, home[0] - px, home[1] - py, home[2] - pz, W[18] * (1.0 - hu))
+                    _paint(I, dirs, homes[i, 0] - px, homes[i, 1] - py, homes[i, 2] - pz, W[18] * (1.0 - hu))
                 r = (px * px + py * py + pz * pz) ** 0.5
                 _paint(I, dirs, -px, -py, -pz, min(max((r - 0.8 * R) / (0.15 * R), 0.0), 1.0) * 3.0)
                 _paintD(G, dirs, px, py, pz, min(max((r - 0.85 * R) / (0.1 * R), 0.0), 1.0) * 3.0)

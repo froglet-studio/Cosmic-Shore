@@ -19,8 +19,9 @@ MK = dict(wander=Pilot.wanderer, evader=Pilot.evader, hunter=Pilot.hunter)
 def one(name, policy, seed, minutes, dt=0.1, backend="numpy"):
     ar = Arena(seed=seed); ar.scatter_mass(2500)
     pl = ar.add_pilot(MK[policy]())
-    sp = Substrate(ar, S.SPECIES[name](seed=seed), backend=backend)
-    pl.pos = sp.home + ar._ball(1, 350, 450)[0]       # an encounter, not a 1200 u search
+    sp = Substrate(ar, S.SPECIES[name](seed=seed), backend=backend, anchor=S.ANCHOR.get(name))
+    if name not in S.ANCHOR:
+        pl.pos = sp.home + ar._ball(1, 350, 450)[0]       # an encounter, not a 1200 u search
     pr = Probe(dt); enc = Encounter()
     for _ in range(int(minutes * 60 / dt)):
         sp.step(ar, dt); ar.step(dt); pr.observe(ar, sp); enc.observe(ar, sp)
@@ -32,7 +33,7 @@ def one(name, policy, seed, minutes, dt=0.1, backend="numpy"):
 if __name__ == "__main__":
     minutes = float(sys.argv[sys.argv.index("--minutes") + 1]) if "--minutes" in sys.argv else 1.5
     out = {}
-    for name in ("grazer", "locust", "pack", "leviathan"):
+    for name in ("grazer", "locust", "pack", "leviathan", "lurker", "stampede"):
         runs = {}
         for policy in ("wander", "evader", "hunter"):
             for seed in (7, 23):

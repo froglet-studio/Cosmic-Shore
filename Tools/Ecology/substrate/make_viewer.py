@@ -40,7 +40,7 @@ def record(label, note, species, pilot, seconds, every, seed=7, mass=2500, sprea
 if __name__ == "__main__":
     full = "--full" in sys.argv
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
-    k = 1 if full else 2            # frame-every multiplier for the sample
+    k = 1 if full else 3            # frame-every multiplier for the sample
     runs = [
         record("Grazer school (cute)", "one substrate, grazer params: curious spring to a comfort ring, aligns, flees "
                "when the pilot charges; never aggressive", [S.grazer(n0=140)], Pilot.wanderer(), 60, 3 * k),

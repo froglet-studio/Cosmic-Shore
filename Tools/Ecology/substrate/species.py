@@ -78,4 +78,37 @@ def leviathan(n0=160, seed=0) -> SpeciesParams:
     return P
 
 
-SPECIES = dict(grazer=grazer, locust=locust, pack=pack, leviathan=leviathan)
+def lurker(n0=12, seed=0) -> SpeciesParams:
+    """An ambusher: sits on its own home (near-still), and the SAME quorum rule reading pilot PROXIMITY
+    instead of density flips it to a lunge. Puffing up (size 2.5 -> 7) over the flip is the telegraph."""
+    sit = Regime(speed=4, burst=1.0, turn=1.0, accel=20, w_food=0.0, w_coh=0.0, w_align=0.0, w_sep=0.5,
+                 w_wander=0.05, w_curious=0.0, w_flee=0.0, w_hunt=0.0, w_alarm=0.0, w_threat=0.0, w_home=3.0,
+                 size=2.5, color=(0.35, 0.45, 0.4))
+    lunge = replace(sit, speed=230, burst=1.0, turn=5.0, accel=900, w_hunt=3.0, w_home=0.0, w_sep=0.2,
+                    size=7.0, color=(1.0, 0.35, 0.1))
+    return SpeciesParams(name="lurker", n0=n0, capacity=n0 * 2, solitary=sit, gregarious=lunge, nbr_r=40,
+                         metabolism=0.004, eat_r=10, eat_hunger=0.2, sense=300, q_w_dens=0.0, q_w_prox=1.0,
+                         q_hunger=0.0, q_up=0.5, q_down=0.25, q_width=0.04, q_rate=1.6, q_contagion=0.0,
+                         bite_r=12, bite_cool=2.5, birth_stock=1e9, starve_s=1e9, deposit_alarm=0.0,
+                         frac_k=1, seed=seed)
+
+
+def stampede(n0=220, seed=0) -> SpeciesParams:
+    """A herd: calm grazers whose quorum reads ALARM (hunger-independent). Frighten a few and the alarm field
+    spreads the flip: the herd goes gregarious = fast, tightly aligned, and it TRAMPLES what it runs through."""
+    calm = Regime(speed=22, burst=2.0, turn=2.0, accel=50, w_food=1.0, w_coh=0.4, w_align=0.4, w_sep=0.9,
+                  w_wander=0.3, w_curious=0.3, comfort=150, w_flee=1.2, w_alarm=0.6, w_threat=0.3, size=4.0,
+                  color=(0.85, 0.8, 0.55))
+    run = replace(calm, speed=110, burst=1.2, turn=1.6, accel=120, w_coh=1.0, w_align=2.5, w_sep=0.5,
+                  w_wander=0.02, w_curious=0.0, w_flee=0.4, w_alarm=1.5, trample=1.0, size=4.5,
+                  color=(1.0, 0.55, 0.25))
+    return SpeciesParams(name="stampede", n0=n0, capacity=int(n0 * 1.5), solitary=calm, gregarious=run,
+                         nbr_r=35, dens_norm=6, metabolism=0.008, eat_r=9, sense=260, fear_gain=1.6,
+                         q_w_dens=0.0, q_w_alarm=1.0, q_hunger=0.0, q_up=0.35, q_down=0.08, q_width=0.04,
+                         q_rate=0.9, q_contagion=0.7, bite_r=9, bite_cool=1.0, birth_stock=120,
+                         deposit_alarm=1.2, frac_k=4, seed=seed)
+
+
+ANCHOR = dict(lurker="mass")
+
+SPECIES = dict(grazer=grazer, locust=locust, pack=pack, leviathan=leviathan, lurker=lurker, stampede=stampede)
