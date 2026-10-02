@@ -138,9 +138,20 @@ Port the substrate to Burst as specified in `DESIGN_BURST.md`:
 
 It is the platform layer every other direction's species can run on.
 
+11. **A pack's read is set by whether it STRIKES, not by how it stalks** (`results/emotion_pack.json`).
+    - The shipped pack reads playful 0.88.
+    - A 48-sample parameter search reaches **terrifying 0.60**: ~10 large (13 u), elongated (aspect 3.2)
+      members, slow stalk. But menacing never exceeds **0.10** in the search.
+    - **Menacing appears only when the quorum never fires.** 4–5 big members holding the ring and never
+      striking read **menacing 0.37–0.42** as the top emotion.
+    - Turn the strike back on and the run-average read splits playful 0.44 / terrifying 0.43: the strike
+      phase is what reads as play.
+    - Two levers tested and NOT ported: feeding the pilot's velocity forward into the ring term (+0.04
+      menacing) and publishing a gaze toward the pilot (shifts the read to eerie, 0.27).
+    - Design consequence: a pack is a menace→terror ARC, so a per-phase emotion read (not a run average)
+      is the right measurement. Handed to Direction C/B.
+
 Open:
-- **Pack reads "playful" (0.88) to Direction C's probe.** A coordinated ring of fast things around you
-  reads as play, not menace; a parameter search for a menacing pack is below.
 - **The stampede almost never tramples** (0.3 hits/min in one run). The alarm quorum flips the herd (phase
   0.8–0.9), but a herd fleeing AWAY rarely runs through the pilot.
 - **Multiple bodies per species** need a clustering step; today it is one body per species.
