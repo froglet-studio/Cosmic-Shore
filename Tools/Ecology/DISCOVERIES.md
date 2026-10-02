@@ -43,6 +43,41 @@ conserved mass, threat/feel scorecard, playback viewer). Template: `examples/dem
 **Needs a human, not a session:** the emotion probe's numbers are agreement with literature archetypes,
 not human ratings. A 5-rater blind pass is the one step that turns them into evidence.
 
+## 2026-10-02 ~16:00 UTC - the lead's verdict on the emotion viewer
+
+The lead flew many of the emotion runs in the rebuilt 3D viewer. In their words:
+
+> "I think in general you are on the right track. I didn't find any that truly evoked a strong emotion,
+> probably due to the limitations of the test, but i think the test did what it needed to do which was allow
+> me to confirm that all of this seems to be sensible thinking that could evoke the intended emotions once
+> coupled with the player's fear of loosing hard earned crystals when a fauna's danger prisms collide with
+> them and permanently reduce their vessel's elements. I can imagine being surrounded by them and having them
+> all dive in at once will be scary once the stakes are felt."
+
+What this settles and what it changes:
+- **Motion design is validated as sensible, not as sufficient.** The probe and the archetypes describe a
+  creature that CAN be frightening. The fear itself comes from **stakes**, which no recording carries. This
+  matches Direction C's own honest limit: danger prisms that burn petals change "menacing" more than any
+  motion could.
+- **The stake already exists in the game.** `Docs/ELEMENTAL_ECONOMY.md`: an opposing-domain danger prism
+  BURNS the pilot's petals permanently. It is the economy's only sink, and fauna spawn in the cell's
+  controlling colour, so a creature's danger rods burn the pilots who do not hold that cell. So threat fauna
+  do not need a new punishment. They need to deliver the existing one through readable motion.
+- **The image the lead named is the design target for the scariest tier:** surrounded, then everything dives
+  in at once. That is the converge-wave shape: the emotion archetype `TerSwarm`, the bestiary pack's ring and
+  strike, and the locust's dense phase. Its telegraph is the ring closing; its counterplay is breaking the gap
+  before it closes.
+- **Every threat scorecard should now price STAKES:**
+  - petals burned per encounter, with the scripted pilots;
+  - how many of those burns were telegraphed;
+  - what a skilled pilot loses versus a careless one.
+
+  A threat that burns nothing is decoration, and one that burns without a telegraph is unfair. This turns
+  "counterplay" into the currency the player actually feels.
+- **The flyable sim (Direction H) should carry the stake:** a petal/element HUD, danger-prism burns on
+  contact, crystals to recollect. A player can only judge fear when something they earned is at risk. If H
+  lands without this, it is the first follow-up.
+
 ## Substrate (Direction A, `substrate/`, branch `cece/eco-substrate`)
 
 **Question:** can one agents + fields + quorum + bodies substrate express many species, and what does it cost at

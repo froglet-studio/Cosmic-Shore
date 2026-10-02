@@ -87,6 +87,12 @@ A threat is replayable when:
 
 Every species is scored against a scripted pilot on these four, plus an **emotion profile**.
 
+**(e) it has stakes** (added after the lead's verdict, 2026-10-02). A threat frightens through what it can
+take, not through motion alone. In this game that is the elemental economy: an opposing-domain danger prism
+permanently burns petals (`Docs/ELEMENTAL_ECONOMY.md`). Score petals burned per encounter, the telegraphed
+share of those burns, and the gap between a skilled and a careless pilot. Motion makes a threat readable;
+stakes make it felt.
+
 ## 3. Performance target
 
 - The substrate runs Burst- or GPU-shaped: SoA, fixed tick, fractional update (1/k of agents re-steer per
