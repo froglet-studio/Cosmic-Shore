@@ -193,5 +193,27 @@ each clone is destroyed.
 
 ---
 
+## 6. Input held after the active input changes (stuck triggers, drift, abilities)
+
+**Shows up as:** a vessel keeps an ability, drift or charge "held" after the player switches input
+(touches the keyboard or mouse while holding a pad trigger) or pauses. No console error. FIX_LOG
+BH-1.2 is this pattern; BH-1.1 (AI held drift) is the same idea for the AI pilot.
+
+**Why it happens:** each input strategy turns "held" into press/release events by remembering the
+previous frame (`prevLeftTriggerActive` and friends). When the strategy stops being live,
+`ProcessInput` stops running, so the release edge never fires and the remembered state goes stale.
+
+**Fix pattern:** every strategy overrides `OnStrategyDeactivated` and `OnPaused` to release held
+triggers and speed effects (through the same dispatch code a real let-go uses) and reset its own
+state. `KeyboardInputStrategy` is the reference; `GamepadInputStrategy` now matches it. Any new
+strategy (touch, AI, etc.) needs both overrides.
+
+**Re-verify if it comes back:** with a pad connected, (1) hold a trigger, then move the mouse or tap
+a key, and the ability should end; (2) hold a trigger and pause, and it should release, and the pad
+should work normally after resume. If it recurs, check first that `InputController` still calls
+`OnStrategyDeactivated` on a switch and `OnPaused` from `SetPause`.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).

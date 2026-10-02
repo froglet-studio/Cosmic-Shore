@@ -10,7 +10,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-1.2 — gamepad triggers stayed held across a strategy switch or pause
 
-- **Date:** fixed 2026-10-02 (commit); merge pending Yash's retest. Skipped the repro on
+- **Date:** fixed 2026-10-02; Yash retested on `Bug_Hunt` and it works. Skipped the repro on
   `bleeding-edge` at Yash's call; the cause is clear from the code.
 - **Symptom:** hold a gamepad trigger, then touch the keyboard or mouse (the input controller
   hands over to another strategy) or pause. The vessel keeps the trigger's ability held (drift,
@@ -28,8 +28,8 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
     and `OnPaused` (release triggers, zero sticks and analog triggers), mirroring the keyboard.
   - The trigger edge logic moved unchanged into `DispatchTriggers(left, right)`, so a release is
     the same code path as a real let-go (`ReleaseHeldTriggers` calls it with 0, 0).
-- **Verification:** all gate scripts pass. Needs Yash's retest on `Bug_Hunt`: hold a trigger, move
-  the mouse, and the ability should end; and pause with a trigger held.
+- **Verification:** all gate scripts pass; Yash retested with a pad and it works. Re-verify steps are
+  kept in PLAYBOOK §6 and the handoff playtest list in case it recurs.
 - **PR/commit:** pending.
 
 ---
@@ -71,7 +71,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-1.13 — `Fauna` never left its cell's spawned-object list
 
-- **Date:** fixed 2026-10-02 (commit); merge pending Yash's retest. Skipped the repro on
+- **Date:** fixed 2026-10-02; Yash retested on `Bug_Hunt` and it works. Skipped the repro on
   `bleeding-edge` at Yash's call, because the cause is clear from the code.
 - **Symptom:** none visible in normal play and nothing in the Console. `Cell.spawnedLifeForms`
   kept an entry for every creature that died or was torn down, so the cell's `LifeFormsInCell`
@@ -96,7 +96,7 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ## BH-1.10 — crystal colour fade leaks a Material per colour change
 
-- **Date:** fixed 2026-10-02 (commit); merge pending Yash's retest.
+- **Date:** fixed 2026-10-02; Yash retested on `Bug_Hunt` and it works.
 - **Symptom:** nothing in the Console. The Profiler's Materials count creeps up over a long
   session in one scene (crystal colour changes: a heart becoming a pickup, theft and decay back
   to blue), and the extra materials are named `Crystal... (Instance)`. Unity frees them on a full

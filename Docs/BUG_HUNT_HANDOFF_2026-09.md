@@ -47,6 +47,9 @@ Confidence scale:
 - **The Bends / Wrecking Ball (#1):** the trailing domain should visibly get comeback buffs. Before
   this fix their scenes read the wrong stat.
 - **Any domain mode (#3):** scores read 0 at the instant the countdown ends, never a leftover value.
+- **Gamepad held triggers (1.2):** with a pad, hold a trigger then move the mouse or tap a key, and
+  the ability/drift must end; hold a trigger and pause, and it must release, and the pad must work
+  after resume. Re-check this if a held ability ever sticks after an input switch.
 
 ---
 
