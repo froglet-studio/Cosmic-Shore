@@ -307,16 +307,22 @@ namespace CosmicShore.Core
 
             try
             {
-                return await _facade.TrySignInCachedAsync().AsUniTask()
+                return await _facade.TrySignInCachedAsync().AsMainThread()
                     .AttachExternalCancellation(timeoutCts.Token);
             }
             catch (OperationCanceledException)
             {
+                // The timeout is raised by CancelAfter's TIMER thread, and AttachExternalCancellation
+                // sits OUTSIDE AsMainThread(), so this catch resumes on that thread - not the main
+                // one. The caller goes on to touch UI/PlayerPrefs, which throws
+                // EnsureRunningOnMainThread off-thread (BH-1.3, Docs/THREADING.md).
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
                 CSDebug.LogWarning("[AuthScene] Cached auth timed out.");
                 return false;
             }
             catch (Exception ex)
             {
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
                 CSDebug.LogWarning($"[AuthScene] Cached auth failed: {ex.Message}");
                 return false;
             }
@@ -331,8 +337,21 @@ namespace CosmicShore.Core
             try
             {
                 if (_facade != null)
+                {
                     await _facade.EnsureSignedInAnonymouslyAsync().AsUniTask()
                         .AttachExternalCancellation(ct);
+
+                    // The facade reports a failed sign-in through OnSignInFailed, it does not
+                    // throw - so reaching here is not proof of a session (BH-1.4). Without this
+                    // check the scene went on to wait out the whole profile timeout for a
+                    // profile that was never going to load.
+                    if (!_facade.IsSignedIn)
+                    {
+                        CSDebug.LogWarning("[AuthScene] Auto sign-in did not produce a session. Navigating to main menu.");
+                        NavigateToMainMenu();
+                        return;
+                    }
+                }
 
                 await HandlePostAuthFlowAsync(ct);
             }
@@ -363,26 +382,42 @@ namespace CosmicShore.Core
             try
             {
                 if (_facade != null)
+                {
                     await _facade.EnsureSignedInAnonymouslyAsync().AsUniTask()
                         .AttachExternalCancellation(ct);
+
+                    // Failure arrives through OnSignInFailed, not as an exception (BH-1.4):
+                    // treat "no session" as a failed attempt, not a success.
+                    if (!_facade.IsSignedIn)
+                    {
+                        ShowGuestSignInFailed();
+                        CSDebug.LogWarning("[AuthScene] Guest login did not produce a session.");
+                        return;
+                    }
+                }
 
                 await HandlePostAuthFlowAsync(ct);
             }
             catch (OperationCanceledException) { /* scene destroyed */ }
             catch (Exception ex)
             {
-                HideLoading();
-                ShowAuthPanel();
-                if (statusText)
-                    statusText.text = IsOffline
-                        ? "No internet connection. Check your network and try again."
-                        : "Sign-in failed. Please try again.";
+                ShowGuestSignInFailed();
                 CSDebug.LogWarning($"[AuthScene] Guest login failed: {ex}");
             }
             finally
             {
                 if (guestLoginButton) guestLoginButton.interactable = true;
             }
+        }
+
+        void ShowGuestSignInFailed()
+        {
+            HideLoading();
+            ShowAuthPanel();
+            if (statusText)
+                statusText.text = IsOffline
+                    ? "No internet connection. Check your network and try again."
+                    : "Sign-in failed. Please try again.";
         }
 
         // ──────────────────────────────────────────────
