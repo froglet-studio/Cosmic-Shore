@@ -18,8 +18,9 @@ alone, and then used as a search target? **Answer: yes, with stated limits.**
 - **Searching works:** one 20-parameter creature family under game laws reaches every emotion, by
   parameters alone.
 
-The headline game finding: **today's fauna mostly evoke nothing**. They read as neutral background, because
-none of them attends to the pilot. Code and how to run: `emotion/README.md`. Sources: `emotion/LITERATURE.md`.
+The headline game finding: **today's fauna are majestic giants and cute tadpoles, and none of them
+attends to the pilot.** Their only threat, the worm's attack cycle, reads menacing only to a pilot who stays
+put. Nothing reads terrifying in any 8 s window. Code and how to run: `emotion/README.md`. Sources: `emotion/LITERATURE.md`.
 
 ### What was built
 - **`common/affect.py`:** 32 features read from agent tracks and body size, all relative to the viewing pilot.
@@ -104,28 +105,29 @@ So **one parameter family reaches all six emotions plus neutral** by parameters 
 random on confidence for cute, playful, eerie and terrifying. Majestic and menacing are close to the family's
 defaults, so random finds them too.
 
-### Today's game species (`species.py`, every constant quoted from a shipped asset)
-Probe v3, 4 seeds × 3 viewers.
+### Today's game species (`species.py`, every constant quoted from a shipped asset; bodies declared)
+Probe v3, 4 seeds × 3 viewers. The worm's segments and an assembled swarm creature are each declared as
+**one body** (`agent_body_id`, see negative 9).
 
 | species | hovering pilot | cruising pilot | evading pilot |
 |---|---|---|---|
-| worm colony, as encountered | neutral | neutral | neutral |
-| worm attack cycle, isolated (hunt window forced on) | **eerie** | neutral | neutral |
+| worm colony, as encountered | majestic | majestic | majestic |
+| worm attack cycle, isolated (hunt window forced on) | **menacing** 0.52 (judges agree 1.0) | majestic | majestic |
 | shark, radius 30 (assumed) | menacing (judges agree 0.25) | majestic | neutral |
 | shark, radius 60 | majestic | majestic | majestic |
 | tadpole flock | **cute** 0.79 | cute | neutral |
-| swarm whale / dragonfly | eerie / neutral | neutral | neutral |
+| swarm whale / dragonfly, as one body | majestic (judges agree 0–0.5) | majestic | majestic |
+| the same swarm read as a group | eerie | neutral | neutral |
 
-- **The worm can only threaten a parked pilot.** In 5 of 6 runs it never left cruise. It grazes toward food,
-  hunts only 12 s in every 26 s, and only engages a pilot within 220 u. Its 26 u/s pursuit and 70 u/s lunge
-  can never reach a 90 u/s ship. Its isolated attack cycle reads *eerie* rather than menacing, because the
-  follow-the-leader segments move in lockstep (synchrony) and the head faces you.
-- **The shark hunts prey fauna and never targets pilots**, so it can never read as a threat to one. Only its
-  size makes it majestic.
-- **The fauna are background, not antagonists.** No game species *attends* to the pilot: tracking is low,
-  pursuit near zero, gaze not on you. That is exactly what the program's direction B has to change.
-- Judge agreement on game species is lower (0–1.0 per run) than on held-out archetypes (0.84). Real species
-  sit outside the reference set, so treat low-agreement readings as uncertain.
+- **The game's range today is majestic giants plus cute tadpoles.** The only threat is the worm's attack
+  cycle, and only against a pilot who stays put.
+- **The worm can only threaten a parked pilot.** In 5 of 6 runs it never left cruise. It grazes, hunts only
+  12 s in every 26 s, and only engages within 220 u. Its 26 u/s pursuit and 70 u/s lunge can never reach a
+  90 u/s ship.
+- **No game species ever reads terrifying in any 8 s window** (timeline below).
+- **The shark hunts prey fauna and never targets pilots.** It reads big and indifferent, so majestic.
+- **Nothing in today's game *pursues* the pilot**, which is exactly what direction B adds.
+- Judge agreement on the swarm bodies is low (0–0.5): they are uncertain readings, outside the reference set.
 
 ### Sibling species (`siblings.py`, run on their own `common/`; v3, 4 seeds per viewer, final branch states)
 The packs' play-vs-dread analysis and the facing test (negative 7) were run on the bestiary's *earlier*
@@ -164,23 +166,26 @@ A 40 s average hides an arc and dilutes a single snap. The timeline reads the pr
 mean of windows is right 100% of the time. (This is a check that short windows don't break the probe, not a
 held-out score.)
 
-Hovering pilot; one letter per window (n neutral, c cute, p playful, e eerie, m majestic, t terrifying):
+Hovering pilot, seed 301; one letter per window: c cute, p playful, e eerie, **J majestic**, **M menacing**,
+T terrifying, n neutral.
 
 | species | windows | peak threat | mean threat |
 |---|---|---|---|
-| bestiary leviathan, seed 301 | `mmmmmmmmmeeeeette` | 0.48 | 0.23 |
-| bestiary stampede, seed 301 | `nnnnnnnnntttttmnn` | **0.74** | 0.26 |
-| bestiary lurker, seed 301 | `nnnneppcppppppttt` | 0.48 | 0.27 |
-| bestiary locust, seed 301 | `nnnnnnnnnnnncccct` | 0.79 | 0.06 |
-| game worm attack cycle | eerie in 15 of 17 windows | **0.095** | 0.07 |
+| bestiary leviathan | `JJJJJJJJJeeeeeTTe` | 0.48 | 0.23 |
+| bestiary stampede | `nnnnnnnnnTTTTTJnn` | **0.75** | 0.26 |
+| bestiary lurker | `nnnneppcppppppTTT` | 0.48 | 0.27 |
+| bestiary locust | `nnnnnnnnnnnnccccT` | 0.79 | 0.06 |
+| bestiary pack | `TTTTTTTTTTTJTTTTT` | 0.80 | 0.55 |
+| game worm attack cycle (as one body) | `MMMMMMMMMMMMMMMMM` | 0.65 | 0.62 |
+| game worm colony | `JJJJJJJJJJJJJJJJJ` | 0.32 | 0.31 |
+| game shark, radius 30 | `MMJJJJJJJJJJJMJJJ` | 0.47 | 0.32 |
+| game tadpole flock | `ccccccccccccccccc` | 0.01 | 0.01 |
 
 - **The leviathan plays exactly its stated arc** ("majestic awe → dread up close"): majestic → eerie →
   terrifying as it closes.
 - **The stampede's panic is a terror spike** inside an otherwise neutral encounter.
-- **The lurker's snap is visible** as terrifying windows at the end.
-- **The worm's telegraph and lunge never read as a threat in any window.** That is the clearest game
-  finding of the night: the shipped kaiju attack reads *eerie* (lockstep body, facing you), and the lunge is
-  too slow (70 u/s) and too brief to register as looming.
+- **The lurker's snap is visible** as terrifying windows at the end. **The game worm's attack is steady
+  menace, never terror.**
 - **Recommendation:** report `peak_threat` alongside the mean for any ambush or burst species.
 
 ### Negatives (kept)
@@ -191,8 +196,10 @@ Hovering pilot; one letter per window (n neutral, c cute, p playful, e eerie, m 
    majestic (12/12)**.
    - Fix: a NEUTRAL class. Under v3 the dot reads neutral 6/6, and majestic is carried by size first:
      awe needs vastness (Keltner & Haidt 2003).
-   - It changed the game verdict from "majestic" to "neutral". *An affect probe needs a "nothing" class, or
-     indifference reads as awe.*
+   - Small indifferent things (the r30 shark to an evader, the tadpoles to an evader, the swarm read as a
+     group) now read neutral. The genuinely vast ones (the worm colony, the r60 shark, swarm bodies
+     declared as one body) stay majestic for the right reason, size. *An affect probe needs a "nothing"
+     class, or indifference reads as awe.*
 3. **The first terror swarm was misclassified as cute.** Its separation push piled the agents into a ball
    milling on the pilot, a magnified cute bunch. The probe was right; the generator was wrong. It was fixed to
    attack in waves.
@@ -224,7 +231,20 @@ Hovering pilot; one letter per window (n neutral, c cute, p playful, e eerie, m 
      **0.5** of validation runs. Its largest moves were the stalking recipe: freeze 77% of the time (from 0),
      much bigger, a tighter group, a larger standoff distance, facing the pilot, keeping pace.
    - **So:** use `advise` to *explain* a reading, and `retune.py` to *change* a species.
-9. **A headless viewer test caught a load-order bug** (the panel read `RUNS` before it existed) and a
+9. **The probe could not tell a jointed BODY from a lockstep GROUP** (`results/worm_tuning.json`).
+   - The worm's 8 follow-the-leader segments measured as 8 agents in perfect synchrony, so they read
+     *eerie*, and no shipped dial changed that. A 2×3×2 sweep of lunge speed 70 / 140 / 220, pursuit
+     ×1.45 / ×3 and telegraph 1.2 / 0.5 s moved peak threat only 0.31 → 0.55.
+   - Presented as **one** body (radius 95, aspect 8), the *unchanged* worm reads **menacing**: peak threat
+     0.82, mean 0.61. With a 220 u/s lunge and a 0.5 s telegraph it reads terrifying in 21 of 51 windows.
+   - **Fix:** `common/affect.py` takes `body_id` (published as `agent_body_id`) and merges a body's parts
+     into one agent before any feature. Every species built from parts must declare its bodies, or its
+     emotion is wrong.
+   - The reference set itself declares none. The assembled-giant families (MajAssembly, the swarm whale)
+     were trained as groups. Declaring them would change the probe; that is not done, and is recorded here.
+10. **I mislabelled my own timeline legend.** The first version abbreviated both majestic and menacing as
+    `m`; the letters were recomputed (J / M), and the earlier bestiary rows were confirmed majestic.
+11. **A headless viewer test caught a load-order bug** (the panel read `RUNS` before it existed) and a
    camera that made encounters invisible at cell scale. Both fixed: initialisation on `load`, and a
    follow-pilot camera.
 

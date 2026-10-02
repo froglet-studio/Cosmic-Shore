@@ -64,6 +64,13 @@ Each feature is tied to a line of the literature (full table in emotion/LITERATU
                   SPEED_REF.  Stalking predators freeze while the prey looks (Caro 1994, cheetah stalks)
                   and creep when it does not; positive = it moves when you are not looking.
 
+BODIES: a species whose agents are PARTS of one body (a worm's segments, a swarm assembled into a whale)
+should pass `body_id` (n,) to `observe` (or publish `agent_body_id`). Agents sharing an id are merged into
+ONE agent before any feature is computed: mean position and velocity, radius = the body's extent, aspect =
+its principal-axis extent over its cross-section, heading = mean heading. Without it a jointed body reads as
+a lockstep GROUP, and synchrony makes it "eerie": the shipped worm attack cycle read eerie as 8 segments
+(peak threat 0.32) and MENACING as one body (peak threat 0.82).
+
 Temporal features use stable agent indexing over up to MAX_TRACK agents; when the agent count changes the
 track restarts (births/deaths), so a species that churns every step loses only those features.
 """
@@ -90,6 +97,26 @@ def _unit(v):
     return v / np.maximum(n, 1e-9), n[..., 0]
 
 
+def merge_bodies(P, V, size, aspect, heading, body_id):
+    bid = np.asarray(body_id); ids = np.unique(bid)
+    n = len(P); size = np.full(n, 3.0) if size is None else np.broadcast_to(np.asarray(size, float), (n,))
+    asp0 = None if aspect is None else np.broadcast_to(np.asarray(aspect, float), (n,))
+    P2, V2, S2, A2, H2 = [], [], [], [], []
+    for i in ids:
+        m = bid == i; Pm = P[m]; c = Pm.mean(0)
+        P2.append(c); V2.append(V[m].mean(0))
+        if m.sum() >= 2:
+            X = Pm - c; sv = np.linalg.svd(X, compute_uv=False) / math.sqrt(m.sum())
+            ext = float(np.max(np.linalg.norm(X, axis=1)) + np.max(size[m]))
+            S2.append(ext); A2.append(float(max(1.0, (sv[0] + size[m].mean()) / max(sv[-1] + size[m].mean(), 1e-6))))
+        else:
+            S2.append(float(size[m][0])); A2.append(float(asp0[m][0]) if asp0 is not None else 1.5)
+        if heading is not None:
+            h = np.asarray(heading, float).reshape(-1, 3)[m].mean(0); H2.append(h / max(np.linalg.norm(h), 1e-9))
+    return (np.array(P2), np.array(V2), np.array(S2), np.array(A2),
+            np.array(H2) if heading is not None else None)
+
+
 class AffectRecorder:
     def __init__(self, dt: float, pilot_radius: float = 6.0):
         self.dt, self.pr = dt, pilot_radius
@@ -105,10 +132,12 @@ class AffectRecorder:
         self.aspect_known = False
 
     # ------------------------------------------------------------------------------------------------
-    def observe(self, pilot_pos, pilot_vel, P, V, size=None, aspect=None, heading=None):
+    def observe(self, pilot_pos, pilot_vel, P, V, size=None, aspect=None, heading=None, body_id=None):
         """One step. pilot_*: (3,) the VIEWER. P, V: (n,3). size: (n,) body radius. aspect: (n,) or scalar
-        length/width. heading: (n,3) facing (optional)."""
+        length/width. heading: (n,3) facing (optional). body_id: (n,) ints - agents sharing one are ONE body."""
         P = np.asarray(P, float).reshape(-1, 3); V = np.asarray(V, float).reshape(-1, 3)
+        if body_id is not None and len(P):
+            P, V, size, aspect, heading = merge_bodies(P, V, size, aspect, heading, body_id)
         n = len(P)
         pp = np.asarray(pilot_pos, float); pv = np.asarray(pilot_vel, float)
         self.pilot_speed.append(float(np.linalg.norm(pv)))

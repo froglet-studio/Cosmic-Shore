@@ -31,7 +31,8 @@ class WormColony(Body):
     pursued at 18 x 1.45 = 26 u/s turning 80 deg/s; inside StrikeRange 90: telegraph 1.2 s (near-stopped,
     coil x2.5) -> lunge at 70 u/s at the point locked at telegraph end (<= 2.5 s, arrive 10) -> recover
     2.5 s at 35% speed. Segment spacing 8.4 x KaijuScale 3 = 25 u; segment radius ASSUMED 9 u."""
-    def __init__(self, rng, pilot, start_dist=(150, 260), always_hunt=False):
+    def __init__(self, rng, pilot, start_dist=(150, 260), always_hunt=False, lunge=70.0, pursue_mult=1.45,
+                 telegraph=1.2, cruise=18.0):
         n = 8; super().__init__(rng, n, 9.0, 1.3, 200.0, pilot.pos)
         self.head = pilot.pos + _rand_unit(rng) * rng.uniform(*start_dist)
         self.dir = _rand_unit(rng); self.spacing = 25.0
@@ -39,6 +40,8 @@ class WormColony(Body):
         self.agent_pos = np.array([self.head - self.dir * self.spacing * i for i in range(n)])
         self.state, self.st_t, self.lock = "cruise", 0.0, None
         self.goal = self.head + _rand_unit(rng) * 300; self.always_hunt = always_hunt
+        self.agent_body_id = np.zeros(n, int)          # 8 segments, ONE body (common/affect.py BODIES)
+        self.lunge, self.pursue, self.tele, self.cruise = lunge, cruise * pursue_mult, telegraph, cruise
 
     def step(self, arena, dt):
         p = arena.pilots[0]; t = self.t
@@ -50,7 +53,7 @@ class WormColony(Body):
                 self.state = "pursue" if dist > 90 else "telegraph"; self.st_t = 0.0 if self.state == "telegraph" else self.st_t
             elif self.state == "pursue":
                 self.state = "cruise"
-        if self.state == "telegraph" and self.st_t >= 1.2:
+        if self.state == "telegraph" and self.st_t >= self.tele:
             self.state, self.st_t, self.lock = "lunge", 0.0, p.pos.copy()
         elif self.state == "lunge" and (self.st_t >= 2.5 or np.linalg.norm(self.lock - self.head) < 10):
             self.state, self.st_t = "recover", 0.0
@@ -60,15 +63,15 @@ class WormColony(Body):
         if self.state == "cruise":
             if np.linalg.norm(self.goal - self.head) < 40:
                 self.goal = p.pos + _rand_unit(self.rng) * 250
-            self.dir = _turn_toward(self.dir, self.goal - self.head, math.radians(40) * dt); speed = 18.0
+            self.dir = _turn_toward(self.dir, self.goal - self.head, math.radians(40) * dt); speed = self.cruise
         elif self.state == "pursue":
-            self.dir = _turn_toward(self.dir, d, math.radians(80) * dt); speed = 26.1
+            self.dir = _turn_toward(self.dir, d, math.radians(80) * dt); speed = self.pursue
         elif self.state == "telegraph":
             self.dir = _turn_toward(self.dir, d, math.radians(80) * dt); speed = 2.0; und *= 2.5
         elif self.state == "lunge":
-            self.dir = _turn_toward(self.dir, self.lock - self.head, math.radians(80) * dt); speed = 70.0
+            self.dir = _turn_toward(self.dir, self.lock - self.head, math.radians(80) * dt); speed = self.lunge
         else:
-            speed = 18.0 * 0.35
+            speed = self.cruise * 0.35
         side = _unit(np.cross(self.dir, [0, 1, 0])[None])[0]
         v = (self.dir * math.cos(und) + side * math.sin(und)) * speed
         self.head = self.head + v * dt
@@ -150,13 +153,14 @@ class SwarmBody(Body):
     flee (flee weight Charge .6 Mass .5 Space 1.4 Time 2.0 - the body's majority decides); if the pilot is
     loitering (speed < MOB_SPEED) and the body is a dragonfly, its Time members MOB it. SENSE / MOB_SPEED /
     body extent ASSUMED (60 u, 30 u/s, from the doc's descriptions)."""
-    def __init__(self, rng, pilot, plan="whale"):
+    def __init__(self, rng, pilot, plan="whale", as_body=True):
         n, ext, flee, mob = dict(whale=(192, (80, 28, 32), 0.6, 0.0), dragonfly=(76, (60, 12, 30), 1.7, 0.7))[plan]
         u = _unit(rng.normal(size=(n, 3))) * np.cbrt(rng.random(n))[:, None]
         self.shape = u * np.array(ext)
         c = pilot.pos + _rand_unit(rng) * rng.uniform(120, 200)
         super().__init__(rng, n, 2.5, 2.5, 40.0, c, 1)
         self.c = c; self.agent_pos = c + self.shape; self.dir = _rand_unit(rng)
+        self.agent_body_id = np.zeros(n, int) if as_body else None   # an assembled creature is ONE body
         self.flee, self.mob = flee, mob; self.is_time = rng.random(n) < (0.7 if plan == "dragonfly" else 0.1)
         self.startle = np.zeros(n)
 
@@ -188,4 +192,6 @@ GAME = {
     "tadpole_flock": lambda rng, p: TadpoleFlock(rng, p),
     "swarm_whale": lambda rng, p: SwarmBody(rng, p, "whale"),
     "swarm_dragonfly": lambda rng, p: SwarmBody(rng, p, "dragonfly"),
+    # the same swarm read as a GROUP of tadpoles (no body id) - how the swarm reads mid-morph or scattered
+    "swarm_whale_as_group": lambda rng, p: SwarmBody(rng, p, "whale", as_body=False),
 }

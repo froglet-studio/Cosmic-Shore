@@ -39,7 +39,8 @@ def run(factory, seed: int, viewer: str = "hover", seconds: float = 30.0, dt: fl
         ar.step(dt)
         if k >= w:
             aff.observe(p.pos, p.vel, sp.agent_pos, sp.agent_vel, getattr(sp, "agent_size", None),
-                        getattr(sp, "agent_aspect", None), getattr(sp, "agent_heading", None))
+                        getattr(sp, "agent_aspect", None), getattr(sp, "agent_heading", None),
+                        getattr(sp, "agent_body_id", None))
             if rec is not None:
                 rec.frame(ar, [sp])
     return aff.features(), rec

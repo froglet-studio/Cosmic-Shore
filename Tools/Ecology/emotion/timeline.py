@@ -34,7 +34,8 @@ def record(factory, seed, viewer, seconds=40.0, warm=2.0):
             H = getattr(sp, "agent_heading", None)
             frames.append((p.pos.copy(), p.vel.copy(), np.array(sp.agent_pos, float), np.array(sp.agent_vel, float),
                            None if getattr(sp, "agent_size", None) is None else np.array(sp.agent_size, float),
-                           getattr(sp, "agent_aspect", None), None if H is None else np.array(H, float)))
+                           getattr(sp, "agent_aspect", None), None if H is None else np.array(H, float),
+                           getattr(sp, "agent_body_id", None)))
     return frames, p.radius
 
 

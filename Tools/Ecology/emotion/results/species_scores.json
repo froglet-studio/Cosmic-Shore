@@ -2,223 +2,223 @@
  "worm_colony": {
   "hover": {
    "p": {
-    "cute": 0.059,
-    "playful": 0.025,
-    "eerie": 0.092,
-    "majestic": 0.33,
-    "menacing": 0.037,
-    "terrifying": 0.013,
-    "neutral": 0.444
+    "cute": 0.003,
+    "playful": 0.015,
+    "eerie": 0.013,
+    "majestic": 0.494,
+    "menacing": 0.324,
+    "terrifying": 0.051,
+    "neutral": 0.1
    },
-   "top": "neutral",
+   "top": "majestic",
    "votes": {
-    "neutral": 4
+    "menacing": 1,
+    "majestic": 3
    },
    "judges_agree": 0.75,
    "affect": {
-    "valence": 0.15,
-    "arousal": 0.2,
-    "threat": 0.122
+    "valence": 0.039,
+    "arousal": 0.338,
+    "threat": 0.344
    },
    "why": [
     [
-     "speed_rel",
-     0.39
-    ],
-    [
-     "converge",
-     0.27
+     "size_log",
+     0.94
     ],
     [
      "proximity",
-     0.26
+     0.46
     ],
     [
-     "view_fill",
-     0.22
+     "gaze",
+     0.31
+    ],
+    [
+     "wobble_hz",
+     -0.25
     ]
    ],
    "features": {
-    "size_log": 0.585,
-    "extent_log": 1.093,
-    "roundness": 0.769,
-    "count_log": 1.723,
-    "approach": -0.015,
-    "loom": 0.043,
-    "tau_inv": 0.147,
-    "view_fill": 0.265,
-    "proximity": 0.245,
-    "gaze": 0.036,
-    "pursuit": 0.026,
-    "orbit": 0.842,
-    "encircle": 0.025,
-    "converge": -0.144,
-    "coherence": 0.901,
-    "speed_rel": 0.18,
-    "accel_rel": 0.33,
-    "jerk_rel": 0.24,
-    "curvature": 1.823,
+    "size_log": 3.994,
+    "extent_log": 3.994,
+    "roundness": 0.139,
+    "count_log": 0.386,
+    "approach": -0.018,
+    "loom": 0.085,
+    "tau_inv": 0.117,
+    "view_fill": 0.46,
+    "proximity": 0.2,
+    "gaze": -0.005,
+    "pursuit": 0.02,
+    "orbit": 0.854,
+    "encircle": 0.0,
+    "converge": -0.17,
+    "coherence": 0.0,
+    "speed_rel": 0.174,
+    "accel_rel": 0.173,
+    "jerk_rel": 0.142,
+    "curvature": 0.968,
     "synchrony": 0.0,
-    "regularity": 0.933,
-    "stillness": 0.0,
+    "regularity": 0.0,
+    "stillness": 0.004,
     "burst": 0.0,
-    "bounce": 0.023,
-    "wobble_hz": 1.333,
-    "approach_retreat": 1.354,
-    "unpredict": 0.156,
-    "mimicry": 0.01,
-    "speed_cv": 0.051,
+    "bounce": 0.008,
+    "wobble_hz": 1.234,
+    "approach_retreat": 1.274,
+    "unpredict": 0.088,
+    "mimicry": 0.011,
+    "speed_cv": 0.147,
     "tracking": 0.35,
-    "mass_log": 1.585,
-    "sneak": 0.0,
+    "mass_log": 3.962,
+    "sneak": 0.001,
     "roundness_known": 1.0
    }
   },
   "cruise": {
    "p": {
-    "cute": 0.046,
-    "playful": 0.015,
-    "eerie": 0.058,
-    "majestic": 0.287,
-    "menacing": 0.031,
-    "terrifying": 0.005,
-    "neutral": 0.558
+    "cute": 0.003,
+    "playful": 0.012,
+    "eerie": 0.011,
+    "majestic": 0.484,
+    "menacing": 0.299,
+    "terrifying": 0.025,
+    "neutral": 0.167
    },
-   "top": "neutral",
+   "top": "majestic",
    "votes": {
-    "neutral": 4
+    "majestic": 4
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.75,
    "affect": {
-    "valence": 0.159,
-    "arousal": 0.18,
-    "threat": 0.102
+    "valence": 0.069,
+    "arousal": 0.305,
+    "threat": 0.3
    },
    "why": [
     [
-     "converge",
-     0.58
-    ],
-    [
-     "speed_rel",
-     0.39
+     "size_log",
+     0.94
     ],
     [
      "proximity",
-     0.37
+     0.58
     ],
     [
-     "view_fill",
-     0.35
+     "converge",
+     0.29
+    ],
+    [
+     "wobble_hz",
+     -0.26
     ]
    ],
    "features": {
-    "size_log": 0.585,
-    "extent_log": 0.585,
-    "roundness": 0.769,
-    "count_log": 1.002,
-    "approach": 0.024,
-    "loom": 0.018,
-    "tau_inv": 0.22,
-    "view_fill": 0.191,
-    "proximity": 0.111,
-    "gaze": 0.18,
-    "pursuit": 0.069,
-    "orbit": 0.86,
-    "encircle": 0.007,
-    "converge": -0.261,
-    "coherence": 0.905,
-    "speed_rel": 0.18,
-    "accel_rel": 0.338,
-    "jerk_rel": 0.265,
-    "curvature": 1.825,
-    "synchrony": 0.022,
-    "regularity": 0.886,
-    "stillness": 0.003,
+    "size_log": 3.992,
+    "extent_log": 3.992,
+    "roundness": 0.139,
+    "count_log": 0.197,
+    "approach": 0.018,
+    "loom": 0.064,
+    "tau_inv": 0.19,
+    "view_fill": 0.359,
+    "proximity": 0.101,
+    "gaze": 0.174,
+    "pursuit": 0.124,
+    "orbit": 0.88,
+    "encircle": 0.0,
+    "converge": -0.329,
+    "coherence": 0.0,
+    "speed_rel": 0.176,
+    "accel_rel": 0.178,
+    "jerk_rel": 0.156,
+    "curvature": 0.995,
+    "synchrony": 0.0,
+    "regularity": 0.0,
+    "stillness": 0.0,
     "burst": 0.0,
-    "bounce": 0.024,
-    "wobble_hz": 1.681,
-    "approach_retreat": 1.839,
-    "unpredict": 0.162,
+    "bounce": 0.009,
+    "wobble_hz": 1.135,
+    "approach_retreat": 1.996,
+    "unpredict": 0.093,
     "mimicry": 0.0,
-    "speed_cv": 0.081,
+    "speed_cv": 0.134,
     "tracking": 0.335,
-    "mass_log": 1.528,
-    "sneak": 0.002,
+    "mass_log": 3.973,
+    "sneak": 0.018,
     "roundness_known": 1.0
    }
   },
   "evade": {
    "p": {
-    "cute": 0.033,
-    "playful": 0.007,
-    "eerie": 0.06,
-    "majestic": 0.333,
-    "menacing": 0.022,
-    "terrifying": 0.002,
-    "neutral": 0.542
+    "cute": 0.002,
+    "playful": 0.006,
+    "eerie": 0.014,
+    "majestic": 0.525,
+    "menacing": 0.282,
+    "terrifying": 0.011,
+    "neutral": 0.16
    },
-   "top": "neutral",
+   "top": "majestic",
    "votes": {
-    "majestic": 1,
-    "neutral": 3
+    "majestic": 4
    },
    "judges_agree": 0.5,
    "affect": {
-    "valence": 0.15,
-    "arousal": 0.161,
-    "threat": 0.081
+    "valence": 0.113,
+    "arousal": 0.287,
+    "threat": 0.278
    },
    "why": [
     [
-     "converge",
-     0.56
-    ],
-    [
-     "view_fill",
-     0.45
+     "size_log",
+     0.94
     ],
     [
      "proximity",
-     0.44
+     0.67
+    ],
+    [
+     "wobble_hz",
+     -0.25
     ],
     [
      "speed_rel",
-     0.39
+     0.24
     ]
    ],
    "features": {
-    "size_log": 0.585,
-    "extent_log": 0.585,
-    "roundness": 0.769,
-    "count_log": 0.154,
-    "approach": 0.019,
-    "loom": 0.0,
-    "tau_inv": 0.0,
-    "view_fill": 0.129,
-    "proximity": 0.031,
-    "gaze": 0.347,
-    "pursuit": 0.062,
-    "orbit": 0.689,
-    "encircle": 0.005,
-    "converge": -0.254,
-    "coherence": 0.93,
-    "speed_rel": 0.18,
-    "accel_rel": 0.329,
-    "jerk_rel": 0.24,
-    "curvature": 1.825,
+    "size_log": 4.003,
+    "extent_log": 4.003,
+    "roundness": 0.137,
+    "count_log": 0.024,
+    "approach": -0.004,
+    "loom": 0.007,
+    "tau_inv": 0.021,
+    "view_fill": 0.242,
+    "proximity": 0.03,
+    "gaze": 0.209,
+    "pursuit": 0.0,
+    "orbit": 0.498,
+    "encircle": 0.0,
+    "converge": -0.267,
+    "coherence": 0.0,
+    "speed_rel": 0.177,
+    "accel_rel": 0.169,
+    "jerk_rel": 0.134,
+    "curvature": 0.91,
     "synchrony": 0.0,
-    "regularity": 0.933,
+    "regularity": 0.0,
     "stillness": 0.0,
     "burst": 0.0,
-    "bounce": 0.039,
-    "wobble_hz": 1.111,
+    "bounce": 0.014,
+    "wobble_hz": 1.234,
     "approach_retreat": 1.134,
-    "unpredict": 0.151,
-    "mimicry": 0.232,
-    "speed_cv": 0.051,
+    "unpredict": 0.083,
+    "mimicry": 0.255,
+    "speed_cv": 0.103,
     "tracking": 0.443,
-    "mass_log": 1.046,
+    "mass_log": 3.994,
     "sneak": 0.0,
     "roundness_known": 1.0
    }
@@ -227,223 +227,225 @@
  "worm_attack_cycle": {
   "hover": {
    "p": {
-    "cute": 0.113,
-    "playful": 0.037,
-    "eerie": 0.333,
-    "majestic": 0.116,
-    "menacing": 0.087,
-    "terrifying": 0.082,
-    "neutral": 0.232
+    "cute": 0.003,
+    "playful": 0.009,
+    "eerie": 0.03,
+    "majestic": 0.245,
+    "menacing": 0.523,
+    "terrifying": 0.145,
+    "neutral": 0.045
    },
-   "top": "eerie",
+   "top": "menacing",
    "votes": {
-    "eerie": 3,
-    "neutral": 1
+    "menacing": 3,
+    "majestic": 1
    },
-   "judges_agree": 0.75,
+   "judges_agree": 1.0,
    "affect": {
-    "valence": -0.095,
-    "arousal": 0.34,
-    "threat": 0.305
+    "valence": -0.354,
+    "arousal": 0.505,
+    "threat": 0.577
    },
    "why": [
     [
-     "gaze",
-     0.33
+     "roundness",
+     0.9
     ],
     [
-     "jerk_rel",
-     0.31
+     "size_log",
+     0.51
     ],
     [
-     "wobble_hz",
-     0.28
+     "coherence",
+     0.21
     ],
     [
-     "burst",
-     -0.12
+     "regularity",
+     0.17
     ]
    ],
    "features": {
-    "size_log": 0.585,
-    "extent_log": 2.738,
-    "roundness": 0.769,
-    "count_log": 2.844,
-    "approach": 0.143,
-    "loom": 0.065,
-    "tau_inv": 0.223,
-    "view_fill": 0.363,
-    "proximity": 0.492,
-    "gaze": 0.72,
-    "pursuit": 0.541,
+    "size_log": 3.999,
+    "extent_log": 3.999,
+    "roundness": 0.141,
+    "count_log": 0.854,
+    "approach": 0.145,
+    "loom": 0.16,
+    "tau_inv": 0.167,
+    "view_fill": 0.572,
+    "proximity": 0.316,
+    "gaze": 0.719,
+    "pursuit": 0.574,
     "orbit": 0.306,
-    "encircle": 0.035,
-    "converge": -0.042,
-    "coherence": 0.781,
-    "speed_rel": 0.241,
-    "accel_rel": 0.48,
-    "jerk_rel": 0.689,
-    "curvature": 1.784,
-    "synchrony": 0.216,
-    "regularity": 0.602,
-    "stillness": 0.162,
-    "burst": 1.255,
-    "bounce": 0.101,
-    "wobble_hz": 1.944,
-    "approach_retreat": 1.653,
-    "unpredict": 0.369,
-    "mimicry": 0.081,
-    "speed_cv": 0.574,
+    "encircle": 0.0,
+    "converge": -0.049,
+    "coherence": 0.0,
+    "speed_rel": 0.226,
+    "accel_rel": 0.236,
+    "jerk_rel": 0.306,
+    "curvature": 0.565,
+    "synchrony": 0.0,
+    "regularity": 0.0,
+    "stillness": 0.106,
+    "burst": 0.656,
+    "bounce": 0.073,
+    "wobble_hz": 3.179,
+    "approach_retreat": 1.141,
+    "unpredict": 0.123,
+    "mimicry": 0.11,
+    "speed_cv": 0.465,
     "tracking": 0.528,
-    "mass_log": 1.585,
-    "sneak": 0.034,
+    "mass_log": 3.978,
+    "sneak": -0.024,
     "roundness_known": 1.0
    }
   },
   "cruise": {
    "p": {
-    "cute": 0.058,
-    "playful": 0.016,
-    "eerie": 0.067,
-    "majestic": 0.237,
-    "menacing": 0.038,
-    "terrifying": 0.008,
-    "neutral": 0.575
+    "cute": 0.004,
+    "playful": 0.012,
+    "eerie": 0.013,
+    "majestic": 0.425,
+    "menacing": 0.32,
+    "terrifying": 0.026,
+    "neutral": 0.2
    },
-   "top": "neutral",
+   "top": "majestic",
    "votes": {
-    "neutral": 4
+    "majestic": 4
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.0,
    "affect": {
-    "valence": 0.131,
-    "arousal": 0.183,
-    "threat": 0.102
+    "valence": 0.012,
+    "arousal": 0.318,
+    "threat": 0.318
    },
    "why": [
     [
-     "converge",
-     0.63
-    ],
-    [
-     "speed_rel",
-     0.39
+     "size_log",
+     0.94
     ],
     [
      "proximity",
-     0.37
+     0.58
     ],
     [
-     "view_fill",
-     0.35
+     "converge",
+     0.32
+    ],
+    [
+     "wobble_hz",
+     -0.31
     ]
    ],
    "features": {
-    "size_log": 0.585,
-    "extent_log": 0.585,
-    "roundness": 0.769,
-    "count_log": 1.082,
-    "approach": 0.036,
-    "loom": 0.016,
-    "tau_inv": 0.213,
-    "view_fill": 0.188,
-    "proximity": 0.113,
-    "gaze": 0.329,
-    "pursuit": 0.13,
-    "orbit": 0.808,
-    "encircle": 0.003,
-    "converge": -0.28,
-    "coherence": 0.849,
-    "speed_rel": 0.18,
-    "accel_rel": 0.342,
-    "jerk_rel": 0.403,
-    "curvature": 1.825,
-    "synchrony": 0.02,
-    "regularity": 0.725,
-    "stillness": 0.044,
-    "burst": 0.358,
-    "bounce": 0.08,
-    "wobble_hz": 1.373,
-    "approach_retreat": 1.685,
-    "unpredict": 0.172,
-    "mimicry": 0.031,
-    "speed_cv": 0.309,
+    "size_log": 3.992,
+    "extent_log": 3.992,
+    "roundness": 0.141,
+    "count_log": 0.21,
+    "approach": 0.026,
+    "loom": 0.058,
+    "tau_inv": 0.246,
+    "view_fill": 0.354,
+    "proximity": 0.1,
+    "gaze": 0.331,
+    "pursuit": 0.107,
+    "orbit": 0.857,
+    "encircle": 0.0,
+    "converge": -0.357,
+    "coherence": 0.0,
+    "speed_rel": 0.172,
+    "accel_rel": 0.19,
+    "jerk_rel": 0.223,
+    "curvature": 1.035,
+    "synchrony": 0.0,
+    "regularity": 0.0,
+    "stillness": 0.012,
+    "burst": 0.0,
+    "bounce": 0.013,
+    "wobble_hz": 0.536,
+    "approach_retreat": 2.755,
+    "unpredict": 0.097,
+    "mimicry": 0.041,
+    "speed_cv": 0.275,
     "tracking": 0.331,
-    "mass_log": 1.528,
-    "sneak": 0.021,
+    "mass_log": 3.979,
+    "sneak": 0.007,
     "roundness_known": 1.0
    }
   },
   "evade": {
    "p": {
-    "cute": 0.015,
-    "playful": 0.003,
-    "eerie": 0.015,
-    "majestic": 0.14,
-    "menacing": 0.009,
-    "terrifying": 0.001,
-    "neutral": 0.817
+    "cute": 0.002,
+    "playful": 0.005,
+    "eerie": 0.016,
+    "majestic": 0.423,
+    "menacing": 0.302,
+    "terrifying": 0.011,
+    "neutral": 0.24
    },
-   "top": "neutral",
+   "top": "majestic",
    "votes": {
-    "neutral": 4
+    "menacing": 1,
+    "majestic": 2,
+    "neutral": 1
    },
-   "judges_agree": 1.0,
+   "judges_agree": 0.0,
    "affect": {
-    "valence": 0.062,
-    "arousal": 0.123,
-    "threat": 0.029
+    "valence": 0.073,
+    "arousal": 0.269,
+    "threat": 0.254
    },
    "why": [
     [
-     "converge",
-     1.78
-    ],
-    [
-     "view_fill",
-     0.44
+     "size_log",
+     0.93
     ],
     [
      "proximity",
-     0.43
+     0.67
     ],
     [
-     "speed_rel",
-     0.39
+     "converge",
+     0.49
+    ],
+    [
+     "wobble_hz",
+     -0.26
     ]
    ],
    "features": {
-    "size_log": 0.585,
-    "extent_log": 0.585,
-    "roundness": 0.769,
-    "count_log": 0.224,
-    "approach": 0.066,
-    "loom": 0.0,
-    "tau_inv": 0.0,
-    "view_fill": 0.134,
-    "proximity": 0.035,
-    "gaze": 0.495,
-    "pursuit": 0.115,
-    "orbit": 0.779,
-    "encircle": 0.002,
-    "converge": -0.715,
-    "coherence": 0.858,
-    "speed_rel": 0.18,
-    "accel_rel": 0.331,
-    "jerk_rel": 0.376,
-    "curvature": 1.827,
-    "synchrony": 0.002,
-    "regularity": 0.76,
-    "stillness": 0.037,
-    "burst": 0.309,
-    "bounce": 0.087,
-    "wobble_hz": 1.458,
-    "approach_retreat": 0.725,
-    "unpredict": 0.166,
-    "mimicry": 0.139,
-    "speed_cv": 0.271,
+    "size_log": 3.988,
+    "extent_log": 3.988,
+    "roundness": 0.14,
+    "count_log": 0.032,
+    "approach": 0.073,
+    "loom": 0.012,
+    "tau_inv": 0.069,
+    "view_fill": 0.248,
+    "proximity": 0.032,
+    "gaze": 0.585,
+    "pursuit": 0.33,
+    "orbit": 0.761,
+    "encircle": 0.0,
+    "converge": -0.523,
+    "coherence": 0.0,
+    "speed_rel": 0.17,
+    "accel_rel": 0.188,
+    "jerk_rel": 0.225,
+    "curvature": 1.003,
+    "synchrony": 0.0,
+    "regularity": 0.0,
+    "stillness": 0.023,
+    "burst": 0.0,
+    "bounce": 0.02,
+    "wobble_hz": 1.161,
+    "approach_retreat": 0.778,
+    "unpredict": 0.106,
+    "mimicry": 0.157,
+    "speed_cv": 0.19,
     "tracking": 0.421,
-    "mass_log": 1.344,
+    "mass_log": 3.951,
     "sneak": 0.0,
     "roundness_known": 1.0
    }
@@ -462,8 +464,8 @@
    },
    "top": "menacing",
    "votes": {
-    "majestic": 1,
-    "menacing": 3
+    "menacing": 3,
+    "majestic": 1
    },
    "judges_agree": 0.25,
    "affect": {
@@ -537,9 +539,9 @@
    },
    "top": "majestic",
    "votes": {
-    "neutral": 1,
+    "menacing": 1,
     "majestic": 2,
-    "menacing": 1
+    "neutral": 1
    },
    "judges_agree": 0.5,
    "affect": {
@@ -690,8 +692,8 @@
    },
    "top": "majestic",
    "votes": {
-    "majestic": 2,
-    "menacing": 2
+    "menacing": 2,
+    "majestic": 2
    },
    "judges_agree": 0.75,
    "affect": {
@@ -1130,6 +1132,458 @@
  "swarm_whale": {
   "hover": {
    "p": {
+    "cute": 0.002,
+    "playful": 0.005,
+    "eerie": 0.039,
+    "majestic": 0.501,
+    "menacing": 0.332,
+    "terrifying": 0.037,
+    "neutral": 0.085
+   },
+   "top": "majestic",
+   "votes": {
+    "majestic": 4
+   },
+   "judges_agree": 0.25,
+   "affect": {
+    "valence": 0.006,
+    "arousal": 0.341,
+    "threat": 0.361
+   },
+   "why": [
+    [
+     "size_log",
+     0.87
+    ],
+    [
+     "stillness",
+     -0.52
+    ],
+    [
+     "proximity",
+     0.5
+    ],
+    [
+     "speed_rel",
+     0.29
+    ]
+   ],
+   "features": {
+    "size_log": 3.76,
+    "extent_log": 3.76,
+    "roundness": 0.413,
+    "count_log": 0.485,
+    "approach": 0.052,
+    "loom": 0.008,
+    "tau_inv": 0.025,
+    "view_fill": 0.41,
+    "proximity": 0.17,
+    "gaze": 0.736,
+    "pursuit": 0.0,
+    "orbit": 0.408,
+    "encircle": 0.0,
+    "converge": -0.139,
+    "coherence": 0.0,
+    "speed_rel": 0.07,
+    "accel_rel": 0.002,
+    "jerk_rel": 0.0,
+    "curvature": 0.0,
+    "synchrony": 0.0,
+    "regularity": 0.0,
+    "stillness": 1.0,
+    "burst": 0.0,
+    "bounce": 0.002,
+    "wobble_hz": 5.0,
+    "approach_retreat": 0.337,
+    "unpredict": 0.011,
+    "mimicry": 0.011,
+    "speed_cv": 0.002,
+    "tracking": 0.354,
+    "mass_log": 3.76,
+    "sneak": 0.0,
+    "roundness_known": 1.0
+   }
+  },
+  "cruise": {
+   "p": {
+    "cute": 0.002,
+    "playful": 0.004,
+    "eerie": 0.026,
+    "majestic": 0.502,
+    "menacing": 0.248,
+    "terrifying": 0.024,
+    "neutral": 0.193
+   },
+   "top": "majestic",
+   "votes": {
+    "majestic": 4
+   },
+   "judges_agree": 0.0,
+   "affect": {
+    "valence": 0.107,
+    "arousal": 0.287,
+    "threat": 0.281
+   },
+   "why": [
+    [
+     "size_log",
+     0.87
+    ],
+    [
+     "proximity",
+     0.59
+    ],
+    [
+     "stillness",
+     -0.52
+    ],
+    [
+     "converge",
+     0.35
+    ]
+   ],
+   "features": {
+    "size_log": 3.76,
+    "extent_log": 3.76,
+    "roundness": 0.413,
+    "count_log": 0.162,
+    "approach": 0.054,
+    "loom": 0.05,
+    "tau_inv": 0.226,
+    "view_fill": 0.328,
+    "proximity": 0.096,
+    "gaze": 0.764,
+    "pursuit": 0.0,
+    "orbit": 0.372,
+    "encircle": 0.0,
+    "converge": -0.39,
+    "coherence": 0.0,
+    "speed_rel": 0.07,
+    "accel_rel": 0.007,
+    "jerk_rel": 0.0,
+    "curvature": 0.0,
+    "synchrony": 0.0,
+    "regularity": 0.0,
+    "stillness": 1.0,
+    "burst": 0.0,
+    "bounce": 0.0,
+    "wobble_hz": 5.0,
+    "approach_retreat": 0.565,
+    "unpredict": 0.052,
+    "mimicry": 0.243,
+    "speed_cv": 0.002,
+    "tracking": 0.353,
+    "mass_log": 3.76,
+    "sneak": 0.0,
+    "roundness_known": 1.0
+   }
+  },
+  "evade": {
+   "p": {
+    "cute": 0.001,
+    "playful": 0.003,
+    "eerie": 0.019,
+    "majestic": 0.541,
+    "menacing": 0.183,
+    "terrifying": 0.009,
+    "neutral": 0.243
+   },
+   "top": "majestic",
+   "votes": {
+    "majestic": 4
+   },
+   "judges_agree": 0.25,
+   "affect": {
+    "valence": 0.198,
+    "arousal": 0.232,
+    "threat": 0.199
+   },
+   "why": [
+    [
+     "size_log",
+     0.87
+    ],
+    [
+     "proximity",
+     0.67
+    ],
+    [
+     "stillness",
+     -0.52
+    ],
+    [
+     "converge",
+     0.49
+    ]
+   ],
+   "features": {
+    "size_log": 3.76,
+    "extent_log": 3.76,
+    "roundness": 0.413,
+    "count_log": 0.013,
+    "approach": 0.032,
+    "loom": 0.0,
+    "tau_inv": 0.001,
+    "view_fill": 0.236,
+    "proximity": 0.036,
+    "gaze": 0.46,
+    "pursuit": 0.0,
+    "orbit": 0.585,
+    "encircle": 0.0,
+    "converge": -0.526,
+    "coherence": 0.0,
+    "speed_rel": 0.07,
+    "accel_rel": 0.002,
+    "jerk_rel": 0.0,
+    "curvature": 0.0,
+    "synchrony": 0.0,
+    "regularity": 0.0,
+    "stillness": 1.0,
+    "burst": 0.0,
+    "bounce": 0.001,
+    "wobble_hz": 5.0,
+    "approach_retreat": 0.0,
+    "unpredict": 0.019,
+    "mimicry": 0.825,
+    "speed_cv": 0.002,
+    "tracking": 0.424,
+    "mass_log": 3.76,
+    "sneak": 0.0,
+    "roundness_known": 1.0
+   }
+  }
+ },
+ "swarm_dragonfly": {
+  "hover": {
+   "p": {
+    "cute": 0.002,
+    "playful": 0.009,
+    "eerie": 0.028,
+    "majestic": 0.469,
+    "menacing": 0.331,
+    "terrifying": 0.074,
+    "neutral": 0.087
+   },
+   "top": "majestic",
+   "votes": {
+    "menacing": 1,
+    "majestic": 3
+   },
+   "judges_agree": 0.25,
+   "affect": {
+    "valence": -0.016,
+    "arousal": 0.358,
+    "threat": 0.376
+   },
+   "why": [
+    [
+     "size_log",
+     0.83
+    ],
+    [
+     "stillness",
+     -0.52
+    ],
+    [
+     "proximity",
+     0.41
+    ],
+    [
+     "speed_rel",
+     0.29
+    ]
+   ],
+   "features": {
+    "size_log": 3.605,
+    "extent_log": 3.605,
+    "roundness": 0.322,
+    "count_log": 0.493,
+    "approach": 0.017,
+    "loom": 0.043,
+    "tau_inv": 0.028,
+    "view_fill": 0.475,
+    "proximity": 0.24,
+    "gaze": 0.226,
+    "pursuit": 0.029,
+    "orbit": 0.641,
+    "encircle": 0.0,
+    "converge": -0.169,
+    "coherence": 0.0,
+    "speed_rel": 0.069,
+    "accel_rel": 0.004,
+    "jerk_rel": 0.001,
+    "curvature": 0.1,
+    "synchrony": 0.0,
+    "regularity": 0.0,
+    "stillness": 0.944,
+    "burst": 0.0,
+    "bounce": 0.0,
+    "wobble_hz": 5.0,
+    "approach_retreat": 0.949,
+    "unpredict": 0.033,
+    "mimicry": 0.041,
+    "speed_cv": 0.167,
+    "tracking": 0.316,
+    "mass_log": 3.717,
+    "sneak": 0.0,
+    "roundness_known": 1.0
+   }
+  },
+  "cruise": {
+   "p": {
+    "cute": 0.001,
+    "playful": 0.004,
+    "eerie": 0.023,
+    "majestic": 0.487,
+    "menacing": 0.229,
+    "terrifying": 0.014,
+    "neutral": 0.241
+   },
+   "top": "majestic",
+   "votes": {
+    "menacing": 1,
+    "majestic": 3
+   },
+   "judges_agree": 0.5,
+   "affect": {
+    "valence": 0.15,
+    "arousal": 0.247,
+    "threat": 0.219
+   },
+   "why": [
+    [
+     "size_log",
+     0.72
+    ],
+    [
+     "proximity",
+     0.59
+    ],
+    [
+     "stillness",
+     -0.52
+    ],
+    [
+     "converge",
+     0.5
+    ]
+   ],
+   "features": {
+    "size_log": 3.216,
+    "extent_log": 3.216,
+    "roundness": 0.283,
+    "count_log": 0.171,
+    "approach": 0.008,
+    "loom": 0.031,
+    "tau_inv": 0.184,
+    "view_fill": 0.267,
+    "proximity": 0.095,
+    "gaze": 0.102,
+    "pursuit": 0.071,
+    "orbit": 0.484,
+    "encircle": 0.0,
+    "converge": -0.54,
+    "coherence": 0.0,
+    "speed_rel": 0.07,
+    "accel_rel": 0.007,
+    "jerk_rel": 0.001,
+    "curvature": 0.063,
+    "synchrony": 0.0,
+    "regularity": 0.0,
+    "stillness": 0.986,
+    "burst": 0.0,
+    "bounce": 0.0,
+    "wobble_hz": 5.0,
+    "approach_retreat": 0.532,
+    "unpredict": 0.056,
+    "mimicry": 0.152,
+    "speed_cv": 0.022,
+    "tracking": 0.347,
+    "mass_log": 3.218,
+    "sneak": 0.0,
+    "roundness_known": 1.0
+   }
+  },
+  "evade": {
+   "p": {
+    "cute": 0.001,
+    "playful": 0.004,
+    "eerie": 0.025,
+    "majestic": 0.458,
+    "menacing": 0.215,
+    "terrifying": 0.007,
+    "neutral": 0.291
+   },
+   "top": "majestic",
+   "votes": {
+    "menacing": 1,
+    "majestic": 2,
+    "neutral": 1
+   },
+   "judges_agree": 0.25,
+   "affect": {
+    "valence": 0.157,
+    "arousal": 0.227,
+    "threat": 0.192
+   },
+   "why": [
+    [
+     "size_log",
+     0.72
+    ],
+    [
+     "proximity",
+     0.68
+    ],
+    [
+     "stillness",
+     -0.52
+    ],
+    [
+     "converge",
+     0.51
+    ]
+   ],
+   "features": {
+    "size_log": 3.216,
+    "extent_log": 3.216,
+    "roundness": 0.283,
+    "count_log": 0.012,
+    "approach": 0.008,
+    "loom": 0.0,
+    "tau_inv": 0.002,
+    "view_fill": 0.187,
+    "proximity": 0.027,
+    "gaze": 0.12,
+    "pursuit": 0.0,
+    "orbit": 0.697,
+    "encircle": 0.0,
+    "converge": -0.548,
+    "coherence": 0.0,
+    "speed_rel": 0.07,
+    "accel_rel": 0.002,
+    "jerk_rel": 0.0,
+    "curvature": 0.0,
+    "synchrony": 0.0,
+    "regularity": 0.0,
+    "stillness": 1.0,
+    "burst": 0.0,
+    "bounce": 0.001,
+    "wobble_hz": 5.0,
+    "approach_retreat": 0.0,
+    "unpredict": 0.012,
+    "mimicry": 0.676,
+    "speed_cv": 0.001,
+    "tracking": 0.433,
+    "mass_log": 3.216,
+    "sneak": 0.0,
+    "roundness_known": 1.0
+   }
+  }
+ },
+ "swarm_whale_as_group": {
+  "hover": {
+   "p": {
     "cute": 0.003,
     "playful": 0.004,
     "eerie": 0.331,
@@ -1215,8 +1669,8 @@
    },
    "top": "neutral",
    "votes": {
-    "neutral": 2,
-    "majestic": 2
+    "majestic": 2,
+    "neutral": 2
    },
    "judges_agree": 0.5,
    "affect": {
@@ -1348,232 +1802,6 @@
     "speed_cv": 0.002,
     "tracking": 0.424,
     "mass_log": 0.733,
-    "sneak": 0.0,
-    "roundness_known": 1.0
-   }
-  }
- },
- "swarm_dragonfly": {
-  "hover": {
-   "p": {
-    "cute": 0.007,
-    "playful": 0.013,
-    "eerie": 0.195,
-    "majestic": 0.298,
-    "menacing": 0.076,
-    "terrifying": 0.02,
-    "neutral": 0.391
-   },
-   "top": "neutral",
-   "votes": {
-    "neutral": 4
-   },
-   "judges_agree": 0.25,
-   "affect": {
-    "valence": -0.0,
-    "arousal": 0.221,
-    "threat": 0.195
-   },
-   "why": [
-    [
-     "speed_rel",
-     0.48
-    ],
-    [
-     "size_log",
-     0.39
-    ],
-    [
-     "converge",
-     0.27
-    ],
-    [
-     "proximity",
-     0.21
-    ]
-   ],
-   "features": {
-    "size_log": -1.263,
-    "extent_log": -0.407,
-    "roundness": 0.4,
-    "count_log": 4.897,
-    "approach": 0.019,
-    "loom": 0.003,
-    "tau_inv": 0.025,
-    "view_fill": 0.275,
-    "proximity": 0.304,
-    "gaze": 0.267,
-    "pursuit": 0.037,
-    "orbit": 0.565,
-    "encircle": 0.006,
-    "converge": -0.142,
-    "coherence": 0.991,
-    "speed_rel": 0.07,
-    "accel_rel": 0.004,
-    "jerk_rel": 0.003,
-    "curvature": 0.171,
-    "synchrony": 0.421,
-    "regularity": 0.771,
-    "stillness": 0.942,
-    "burst": 0.0,
-    "bounce": 0.003,
-    "wobble_hz": 5.0,
-    "approach_retreat": 0.879,
-    "unpredict": 0.034,
-    "mimicry": 0.04,
-    "speed_cv": 0.171,
-    "tracking": 0.316,
-    "mass_log": 0.82,
-    "sneak": -0.016,
-    "roundness_known": 1.0
-   }
-  },
-  "cruise": {
-   "p": {
-    "cute": 0.002,
-    "playful": 0.004,
-    "eerie": 0.114,
-    "majestic": 0.32,
-    "menacing": 0.041,
-    "terrifying": 0.003,
-    "neutral": 0.515
-   },
-   "top": "neutral",
-   "votes": {
-    "majestic": 1,
-    "neutral": 3
-   },
-   "judges_agree": 0.5,
-   "affect": {
-    "valence": 0.132,
-    "arousal": 0.167,
-    "threat": 0.105
-   },
-   "why": [
-    [
-     "converge",
-     1.07
-    ],
-    [
-     "speed_rel",
-     0.48
-    ],
-    [
-     "size_log",
-     0.39
-    ],
-    [
-     "view_fill",
-     0.39
-    ]
-   ],
-   "features": {
-    "size_log": -1.263,
-    "extent_log": -1.263,
-    "roundness": 0.4,
-    "count_log": 3.009,
-    "approach": 0.008,
-    "loom": 0.012,
-    "tau_inv": 0.184,
-    "view_fill": 0.168,
-    "proximity": 0.105,
-    "gaze": 0.101,
-    "pursuit": 0.02,
-    "orbit": 0.489,
-    "encircle": 0.003,
-    "converge": -0.445,
-    "coherence": 0.998,
-    "speed_rel": 0.07,
-    "accel_rel": 0.007,
-    "jerk_rel": 0.001,
-    "curvature": 0.067,
-    "synchrony": 0.899,
-    "regularity": 0.964,
-    "stillness": 0.994,
-    "burst": 0.0,
-    "bounce": 0.001,
-    "wobble_hz": 5.0,
-    "approach_retreat": 0.5,
-    "unpredict": 0.056,
-    "mimicry": 0.15,
-    "speed_cv": 0.014,
-    "tracking": 0.347,
-    "mass_log": 0.816,
-    "sneak": 0.0,
-    "roundness_known": 1.0
-   }
-  },
-  "evade": {
-   "p": {
-    "cute": 0.002,
-    "playful": 0.003,
-    "eerie": 0.055,
-    "majestic": 0.293,
-    "menacing": 0.022,
-    "terrifying": 0.001,
-    "neutral": 0.624
-   },
-   "top": "neutral",
-   "votes": {
-    "neutral": 3,
-    "majestic": 1
-   },
-   "judges_agree": 0.75,
-   "affect": {
-    "valence": 0.129,
-    "arousal": 0.155,
-    "threat": 0.086
-   },
-   "why": [
-    [
-     "converge",
-     1.0
-    ],
-    [
-     "speed_rel",
-     0.48
-    ],
-    [
-     "view_fill",
-     0.47
-    ],
-    [
-     "proximity",
-     0.44
-    ]
-   ],
-   "features": {
-    "size_log": -1.263,
-    "extent_log": -1.263,
-    "roundness": 0.4,
-    "count_log": 0.689,
-    "approach": 0.009,
-    "loom": 0.0,
-    "tau_inv": 0.002,
-    "view_fill": 0.117,
-    "proximity": 0.029,
-    "gaze": 0.127,
-    "pursuit": 0.0,
-    "orbit": 0.71,
-    "encircle": 0.0,
-    "converge": -0.418,
-    "coherence": 1.0,
-    "speed_rel": 0.07,
-    "accel_rel": 0.002,
-    "jerk_rel": 0.0,
-    "curvature": 0.0,
-    "synchrony": 1.0,
-    "regularity": 1.0,
-    "stillness": 1.0,
-    "burst": 0.0,
-    "bounce": 0.001,
-    "wobble_hz": 5.0,
-    "approach_retreat": 0.0,
-    "unpredict": 0.012,
-    "mimicry": 0.676,
-    "speed_cv": 0.001,
-    "tracking": 0.433,
-    "mass_log": 0.469,
     "sneak": 0.0,
     "roundness_known": 1.0
    }

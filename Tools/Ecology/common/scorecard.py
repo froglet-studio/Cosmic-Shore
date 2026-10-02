@@ -83,7 +83,8 @@ class Probe:
                 if self.affect is None:
                     self.affect = AffectRecorder(self.dt, pilot_radius=getattr(p0, "radius", 6.0))
                 self.affect.observe(p0.pos, p0.vel, P, V, getattr(sp, "agent_size", None),
-                                    getattr(sp, "agent_aspect", None), getattr(sp, "agent_heading", None))
+                                    getattr(sp, "agent_aspect", None), getattr(sp, "agent_heading", None),
+                                    getattr(sp, "agent_body_id", None))
             except Exception:
                 self.affect = False          # a species that breaks the extractor keeps its old scorecard
         if len(P) == 0:
