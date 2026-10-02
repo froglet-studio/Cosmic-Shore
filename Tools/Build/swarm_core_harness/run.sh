@@ -33,7 +33,14 @@ NSREF=$(ls "$DOTNET_ROOT"/packs/NETStandard.Library.Ref/*/ref/netstandard2.1/net
 SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "-r:$NSREF" -target:library -out:"$OUT/unityprofile.dll" \
   "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" "$SW/SwarmGridCore.cs" "$SW/SwarmSortCore.cs" "$SW/SwarmEvoFateCore.cs" \
-  "$SW/SwarmTickJob.cs" || { echo "FAIL: the sim cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
+  "$SW/SwarmTickJob.cs" "$SW/SwarmMemberQuery.cs" || { echo "FAIL: the sim cores do not compile against netstandard2.1 (Unity's API profile)" >&2; exit 1; }
+# Round 8 (Docs/SWARM_FAUNA.md §16.1): the member query vs the SHIPPED prism predicates, extracted verbatim from
+# PrismSpatialIndex.cs (R8a/R8b). Its own small executable; runs first because it takes about a second.
+python3 "$HERE/extract_burst_predicates.py" "$ROOT/Assets/_Scripts/Controller/Managers/PrismSpatialIndex.cs" "$OUT/ShippedPrismQuery.g.cs"
+"$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" -nowarn:CS0649 \
+  -target:exe -main:QueryHarness -out:"$OUT/swarmquery.exe" \
+  "$SW/SwarmMemberQuery.cs" "$SW/SwarmTickJob.cs" "$SW/ISwarmCore.cs" "$SW/SwarmFieldCore.cs" \
+  "$HERE/BurstShim.cs" "$OUT/ShippedPrismQuery.g.cs" "$HERE/QueryHarness.cs"
 "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -target:exe -main:Program -out:"$OUT/swarmcore.exe" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/ISwarmCore.cs" \
@@ -42,8 +49,12 @@ SW="$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm"
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmSortCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmEvoFateCore.cs" \
   "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmTickJob.cs" \
+  "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/Swarm/SwarmMemberQuery.cs" \
   "$HERE/Program.cs" "$HERE/TickJobHarness.cs" "$HERE/GridHarness.cs" "$HERE/SortHarness.cs" "$HERE/SortFeelHarness.cs" "$HERE/EvoHarness.cs"
 V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
 printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" > "$OUT/swarmcore.runtimeconfig.json"
+cp "$OUT/swarmcore.runtimeconfig.json" "$OUT/swarmquery.runtimeconfig.json"
+if [ "${1:-}" = "query" ]; then exec "$DOTNET" "$OUT/swarmquery.exe"; fi
+case "${1:-}" in export|yardstick|evofate|smoothsort|benchsort) ;; *) "$DOTNET" "$OUT/swarmquery.exe" || exit 1;; esac
 case "${1:-}" in export|yardstick|evofate|smoothsort|benchsort) exec "$DOTNET" "$OUT/swarmcore.exe" "$@";; esac
 "$DOTNET" "$OUT/swarmcore.exe" "${1:-$ROOT/Assets/_SO_Assets/Swarm Fauna/Plans}" "${2:-}"

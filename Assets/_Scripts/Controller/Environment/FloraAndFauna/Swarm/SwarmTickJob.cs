@@ -33,7 +33,8 @@ namespace CosmicShore.Gameplay
     /// One member as the GPU draws it (80 bytes, std430-compatible: float3 + float pairs). Positions are
     /// WORLD space; the shader lerps Prev -> Cur by the swarm's display alpha. Flags: bit 0 alive, bits
     /// 1-2 tier (0 plain, 1 danger, 2 shield), bits 3-4 the heart's element before the molt midpoint,
-    /// bits 5-6 after it. Scale is the body prism's local scale (x wide, y thin, z long) and PrismZ its
+    /// bits 5-6 after it, bits 7-8 the member's DOMAIN slot (round 8, Docs/SWARM_FAUNA.md §16.4: 0 = the
+    /// swarm's controlling domain; only a MultiDomain swarm uses 1 and 2). Scale is the body prism's local scale (x wide, y thin, z long) and PrismZ its
     /// seat behind the heart along -facing. Molt is the core's molt progress (0 = not molting).
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
@@ -50,9 +51,11 @@ namespace CosmicShore.Gameplay
         public int Tier => (int)((Flags >> 1) & 3u);
         public int HeartFrom => (int)((Flags >> 3) & 3u);
         public int HeartTo => (int)((Flags >> 5) & 3u);
+        public int DomainSlot => (int)((Flags >> 7) & 3u);
 
-        public static uint Pack(bool alive, int tier, int from, int to) =>
-            (alive ? 1u : 0u) | ((uint)(tier & 3) << 1) | ((uint)(from & 3) << 3) | ((uint)(to & 3) << 5);
+        public static uint Pack(bool alive, int tier, int from, int to, int domainSlot = 0) =>
+            (alive ? 1u : 0u) | ((uint)(tier & 3) << 1) | ((uint)(from & 3) << 3) | ((uint)(to & 3) << 5)
+            | ((uint)(domainSlot & 3) << 7);
     }
 
     /// <summary>The numbers a tick job needs to turn the core's state into the frame. Set once.</summary>
@@ -69,6 +72,9 @@ namespace CosmicShore.Gameplay
         public float EngageRadius = 160f;
         /// <summary>Most proxies this swarm may hold (nearest first).</summary>
         public int MaxEngaged = 160;
+        /// <summary>Round 8: a MULTI-DOMAIN swarm (Docs/SWARM_FAUNA.md §16.4) - members carry the core's own domain
+        /// slot, and eaten volume is banked by the domain of the mass it came from. Off = every member is slot 0.</summary>
+        public bool MultiDomain;
     }
 
     public enum SwarmJobState { Idle = 0, Running = 1, Done = 2 }
@@ -96,6 +102,7 @@ namespace CosmicShore.Gameplay
         readonly int[] _kills, _killsRun;
         int _killCount;
         readonly float[] _deposit = new float[4], _depositRun = new float[4];
+        readonly float[] _depositDom = new float[12], _depositDomRun = new float[12];
         readonly object _inLock = new();
         public bool WantStarvationVictim;
 
@@ -111,6 +118,11 @@ namespace CosmicShore.Gameplay
         public int PlanIx, AliveCount, StarvationVictim = -1;
         public long Tick;                           // index of the PAIR in Instances: Prev = tick, Cur = tick + 1
         public Vector3 Anchor, BX, BY, BZ;
+        /// <summary>Round 8: the published members, spatially hashed (SwarmMemberGrid) - what every member query walks.</summary>
+        public SwarmMemberGrid Grid;
+        /// <summary>Round 8: total BODY prism volume of the published living members, by domain slot (0..2; 3 unused).
+        /// Double: the cell adds it to a float sum, and this is where precision is cheap to keep.</summary>
+        public readonly double[] VolumeBySlot = new double[4];
 
         // ── back buffers (worker writes) ──
         SwarmInstance[] _bInst;
@@ -123,6 +135,8 @@ namespace CosmicShore.Gameplay
         readonly float[] _bStomach = new float[4];
         int _bPlanIx, _bAlive, _bVictim = -1;
         Vector3 _bAnchor, _bBX, _bBY, _bBZ;
+        SwarmMemberGrid _bGrid;
+        readonly double[] _bVol = new double[4];
 
         // ── worker-private state carried tick to tick ──
         readonly Vector3[] _lastPos, _lastFace;
@@ -147,6 +161,7 @@ namespace CosmicShore.Gameplay
             _lastMolt = new float[_cap]; _born = new float[_cap];
             _lastAlive = new bool[_cap]; _danger = new bool[_cap];
             _engD = new float[_cap]; _engI = new int[_cap];
+            Grid = new SwarmMemberGrid(_cap); _bGrid = new SwarmMemberGrid(_cap);
             _toWorldSpeed = settings.UnitScale * tickHz;
         }
 
@@ -166,11 +181,14 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Bank eaten volume (main thread, any time); paid into the core's stomach next tick.</summary>
-        public void QueueDeposit(int element, float volume)
+        /// <summary>Bank eaten volume (main thread, any time); paid into the core's stomach next tick.
+        /// <paramref name="domainSlot"/> is the slot (0..2) of the domain the eaten mass wore - a MultiDomain
+        /// swarm funds each egg in the domain of the food that paid for it (Docs/SWARM_FAUNA.md §16.4).</summary>
+        public void QueueDeposit(int element, float volume, int domainSlot = 0)
         {
             if (element < 0 || element > 3 || !(volume > 0f)) return;
-            lock (_inLock) _deposit[element] += volume;
+            if (domainSlot < 0 || domainSlot > 2) domainSlot = 0;
+            lock (_inLock) { _deposit[element] += volume; _depositDom[element * 3 + domainSlot] += volume; }
         }
 
         /// <summary>True when slot i's member in the FRONT buffers was born in the published pair - i.e.
@@ -231,9 +249,12 @@ namespace CosmicShore.Gameplay
                 Array.Copy(_kills, _killsRun, kills);
                 _killCount = 0;
                 for (int e = 0; e < 4; e++) { _depositRun[e] = _deposit[e]; _deposit[e] = 0f; }
+                for (int q = 0; q < 12; q++) { _depositDomRun[q] = _depositDom[q]; _depositDom[q] = 0f; }
             }
             for (int q = 0; q < kills; q++) Core.Kill(_killsRun[q]);
             for (int e = 0; e < 4; e++) Core.Stomach[e] += _depositRun[e];
+            // the domain ledger is only kept where something spends it: a one-colour swarm would grow it forever
+            if (S.MultiDomain) for (int q = 0; q < 12; q++) Core.StomachDom[q] += _depositDomRun[q];
             Core.SwimTarget = SwimTarget;
             _bEvents.Clear();
             for (int s = 0; s < Math.Max(1, Steps); s++)
@@ -258,6 +279,8 @@ namespace CosmicShore.Gameplay
             for (int e = 0; e < 4; e++) Stomach[e] = _bStomach[e];
             PlanIx = _bPlanIx; AliveCount = _bAlive; StarvationVictim = _bVictim;
             Anchor = _bAnchor; BX = _bBX; BY = _bBY; BZ = _bBZ;
+            (Grid, _bGrid) = (_bGrid, Grid);
+            for (int d = 0; d < 4; d++) VolumeBySlot[d] = _bVol[d];
             Tick = _tick - 1;
         }
 
@@ -268,6 +291,9 @@ namespace CosmicShore.Gameplay
             float m = 2f * S.UnitScale * S.PrismScale;
             int alive = 0;
             Array.Clear(_hc, 0, 4);
+            Array.Clear(_bVol, 0, 4);
+            var dom = S.MultiDomain ? c.Dom : null;
+            float maxStepSq = 0f, maxSeat = 0f;
             float tickNow = _tick;   // members born now bloom from the pair's start
 
             for (int i = 0; i < _cap; i++)
@@ -314,8 +340,12 @@ namespace CosmicShore.Gameplay
                 inst.Scale = scale;
                 inst.PrismZ = -(S.HeartWorldScale[eff] + S.HeartPrismGap + 0.5f * scale.Z);
                 inst.BirthTick = _born[i];
-                inst.Flags = SwarmInstance.Pack(true, tier, from, to);
+                int ds = dom != null ? Math.Clamp(dom[i], 0, 2) : 0;
+                inst.Flags = SwarmInstance.Pack(true, tier, from, to, ds);
                 _bSpeed[i] = c.Vel[i].Length() * _toWorldSpeed;
+                _bVol[ds] += (double)scale.X * scale.Y * scale.Z;
+                maxStepSq = MathF.Max(maxStepSq, Vector3.DistanceSquared(inst.PrevPos, inst.CurPos));
+                maxSeat = MathF.Max(maxSeat, MathF.Abs(inst.PrismZ));
 
                 _hc[from]++;
                 if (to != from) _hc[to]++;
@@ -337,6 +367,8 @@ namespace CosmicShore.Gameplay
             }
 
             BuildEngaged();
+            // the member grid: a member is drawn anywhere on its Prev->Cur step, its body seated PrismZ behind it
+            _bGrid.Build(_bInst, MathF.Sqrt(maxStepSq) + maxSeat + 1f);
             for (int e = 0; e < 4; e++) _bStomach[e] = c.Stomach[e];
             _bPlanIx = c.PlanIx; _bAlive = alive;
             _bAnchor = S.Centre + c.Anchor * S.UnitScale; _bBX = c.BX; _bBY = c.BY; _bBZ = c.BZ;
@@ -378,6 +410,31 @@ namespace CosmicShore.Gameplay
             var f = Vector3.Lerp(Instances[i].PrevFace, Instances[i].CurFace, alpha);
             float l = f.Length();
             return l > 1e-5f ? f / l : Instances[i].CurFace;
+        }
+
+        /// <summary>World centre of slot i's BODY PRISM at display alpha - the point a weapon tests, exactly as the
+        /// proxy's own body sits (local z = PrismZ under a pose facing FaceAt). Main thread, front buffers.</summary>
+        public Vector3 BodyAt(int i, float alpha) => PoseAt(i, alpha) + FaceAt(i, alpha) * Instances[i].PrismZ;
+
+        /// <summary>
+        /// Round 8 (Docs/SWARM_FAUNA.md §16.1): every published LIVING member whose BODY centre (or heart, with
+        /// <paramref name="heart"/>) is inside <paramref name="v"/> at display <paramref name="alpha"/>, appended to
+        /// <paramref name="results"/>. O(members filed under the volume's box). <paramref name="scratch"/> is a
+        /// caller-owned list the candidate walk uses. Main thread, front buffers.
+        /// </summary>
+        public int QueryMembers(in SwarmVolume v, float alpha, bool heart, List<int> scratch, List<int> results)
+        {
+            int before = results.Count;
+            if (v.IsEmpty) return 0;
+            scratch.Clear();
+            Grid.Candidates(v.Lo, v.Hi, scratch);
+            for (int q = 0; q < scratch.Count; q++)
+            {
+                int i = scratch[q];
+                if (!Instances[i].Alive) continue;
+                if (v.Contains(heart ? PoseAt(i, alpha) : BodyAt(i, alpha))) results.Add(i);
+            }
+            return results.Count - before;
         }
     }
 }

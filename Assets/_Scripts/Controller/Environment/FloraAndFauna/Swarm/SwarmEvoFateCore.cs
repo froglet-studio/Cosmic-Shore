@@ -233,6 +233,8 @@ namespace CosmicShore.Gameplay
         public Vector3 Heading = Vector3.UnitX;
         public Vector3 BX = Vector3.UnitX, BY = Vector3.UnitY, BZ = Vector3.UnitZ;
         public readonly float[] Stomach = new float[4];
+        /// <summary>Banked volume by [element * 3 + domain slot] (ISwarmCore.StomachDom).</summary>
+        public readonly float[] StomachDom = new float[12];
         public readonly List<SwarmEvent> Events = new();
         public readonly int[] Perm = { 0, 1, 2 };
         public readonly int[] RoleOfDom = { 0, -1, -1 };
@@ -298,6 +300,8 @@ namespace CosmicShore.Gameplay
         float[] ISwarmCore.Molt => Molt;
         int[] ISwarmCore.MoltTo => MoltTo;
         float[] ISwarmCore.Stomach => Stomach;
+        float[] ISwarmCore.StomachDom => StomachDom;
+        int[] ISwarmCore.Dom => Dom;
         List<SwarmEvent> ISwarmCore.Events => Events;
         int ISwarmCore.Clock => Clock;
         int ISwarmCore.PlanIx => Math.Max(0, PlanIx);

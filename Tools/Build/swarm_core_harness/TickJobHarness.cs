@@ -213,6 +213,32 @@ static class TickJobHarness
             Check(j.Error is InvalidOperationException, "Error carries the worker's exception for the main thread to report");
         }
 
+        Console.WriteLine("\nR8c. QueryMembers on a live job == a brute-force scan of every drawn BODY (Docs/SWARM_FAUNA.md §16.1)");
+        {
+            var j = Make(plans, 1, 5);
+            for (int t = 0; t < 60; t++) Tick(j, inline: true);
+            var scratch = new System.Collections.Generic.List<int>(); var got = new System.Collections.Generic.List<int>();
+            var rng = new Random(3); int cases = 0, wrong = 0;
+            for (int v = 0; v < 400; v++)
+            {
+                int m; do m = rng.Next(j.Instances.Length); while (!j.Instances[m].Alive);
+                float alpha = (float)rng.NextDouble();
+                var c = j.BodyAt(m, alpha) + new Vector3((float)rng.NextDouble() * 8 - 4, 0, 0);
+                var vol = v % 2 == 0 ? SwarmVolume.Sphere(c, 3f + 20f * (float)rng.NextDouble())
+                                     : SwarmVolume.ConeSlab(c - new Vector3(60, 0, 0), Vector3.UnitX, Vector3.UnitY, 0f, 120f, 0.1f, 0.05f);
+                got.Clear(); j.QueryMembers(vol, alpha, false, scratch, got);
+                var want = new System.Collections.Generic.HashSet<int>();
+                for (int i = 0; i < j.Instances.Length; i++) if (j.Instances[i].Alive && vol.Contains(j.BodyAt(i, alpha))) want.Add(i);
+                cases += want.Count;
+                if (want.Count != got.Count || !want.SetEquals(got)) wrong++;
+            }
+            Console.WriteLine($"  {j.AliveCount} members, 400 volumes, {cases} member hits, {wrong} volumes disagreed");
+            Check(wrong == 0 && cases > 0, "the grid + exact test returns exactly the brute-force set");
+            double vol0 = 0; for (int i = 0; i < j.Instances.Length; i++) if (j.Instances[i].Alive) { var sc = j.Instances[i].Scale; vol0 += (double)sc.X * sc.Y * sc.Z; }
+            Check(Math.Abs(j.VolumeBySlot[0] - vol0) < 1e-6 * Math.Max(1, vol0) && j.VolumeBySlot[1] == 0 && j.VolumeBySlot[2] == 0,
+                  $"VolumeBySlot sums every drawn body ({vol0:F0}), all in slot 0 for a one-colour swarm");
+        }
+
         Console.WriteLine(_fail == 0 ? "\ntick job: OK" : $"\ntick job: {_fail} FAILED");
         return _fail;
     }
@@ -229,6 +255,8 @@ static class TickJobHarness
         public float[] Molt { get; } = new float[4];
         public int[] MoltTo { get; } = new int[4];
         public float[] Stomach { get; } = new float[4];
+        public float[] StomachDom { get; } = new float[12];
+        public int[] Dom { get; } = new int[4];
         public System.Collections.Generic.List<SwarmEvent> Events { get; } = new();
         public int Clock => 0;
         public int PlanIx => 0;

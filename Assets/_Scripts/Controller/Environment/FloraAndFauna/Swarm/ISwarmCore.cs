@@ -50,6 +50,11 @@ namespace CosmicShore.Gameplay
         int[] MoltTo { get; }
         /// <summary>Eaten volume banked per research element (0 Charge .. 3 Time) - what pays for eggs.</summary>
         float[] Stomach { get; }
+        /// <summary>Round 8 (Docs/SWARM_FAUNA.md §16.4): the same banked volume split by the DOMAIN slot (0..2) of the
+        /// mass that was eaten, laid out [element * 3 + slot]. Only a core that funds eggs by food domain spends it.</summary>
+        float[] StomachDom { get; }
+        /// <summary>Each member's domain SLOT (0..2; 0 = the swarm's controlling domain). All 0 in a one-colour swarm.</summary>
+        int[] Dom { get; }
         List<SwarmEvent> Events { get; }
 
         int Clock { get; }

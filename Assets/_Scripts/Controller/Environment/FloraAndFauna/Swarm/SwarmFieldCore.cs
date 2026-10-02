@@ -320,6 +320,9 @@ namespace CosmicShore.Gameplay
         public Vector3 BX = Vector3.UnitX, BY = Vector3.UnitY, BZ = Vector3.UnitZ;
         public Vector3 SwimTarget;
         public readonly float[] Stomach = new float[4];
+        /// <summary>Banked volume by [element * 3 + domain slot] (ISwarmCore.StomachDom).</summary>
+        public readonly float[] StomachDom = new float[12];
+        readonly int[] _dom;   // a field swarm is one colour: every member is slot 0
         public readonly List<SwarmEvent> Events = new();
 
         readonly Vector3[] _sp, _sv, _sf, _sw;   // _sw: slot positions in the world (sim) this step
@@ -341,7 +344,7 @@ namespace CosmicShore.Gameplay
             Plans = plansByElement; C = c; Cap = Math.Max(1, c.Cap);
             _rng = new Random(seed);
             Pos = new Vector3[Cap]; Vel = new Vector3[Cap]; Facing = new Vector3[Cap];
-            Elem = new int[Cap]; Home = new int[Cap]; MoltTo = new int[Cap];
+            Elem = new int[Cap]; Home = new int[Cap]; MoltTo = new int[Cap]; _dom = new int[Cap];
             Molt = new float[Cap]; Startle = new float[Cap]; Alive = new bool[Cap];
             int mx = 1; foreach (var p in plansByElement) mx = Math.Max(mx, p.N);
             _sp = new Vector3[mx]; _sv = new Vector3[mx]; _sf = new Vector3[mx]; _sw = new Vector3[mx];
@@ -801,6 +804,8 @@ namespace CosmicShore.Gameplay
         float[] ISwarmCore.Molt => Molt;
         int[] ISwarmCore.MoltTo => MoltTo;
         float[] ISwarmCore.Stomach => Stomach;
+        float[] ISwarmCore.StomachDom => StomachDom;
+        int[] ISwarmCore.Dom => _dom;
         List<SwarmEvent> ISwarmCore.Events => Events;
         int ISwarmCore.Clock => Clock;
         int ISwarmCore.PlanIx => PlanIx;
