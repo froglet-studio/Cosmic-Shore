@@ -39,6 +39,43 @@ POLICIES = {"wander": Pilot.wanderer, "evader": Pilot.evader, "hunter": Pilot.hu
             # "being faster". This one flees at the wanderer's own speed: counterplay_same_speed is fleeing alone.
             "evader120": lambda: Pilot("evader", speed=120.0, name="evader120")}
 DT = 0.1
+GAP = 3.0          # a hit with no hit on that pilot in the previous GAP seconds opens a new ENGAGEMENT
+
+
+class TelProbe(Probe):
+    """The shared Probe plus a per-step series of the nearest agent's intent for each pilot, so a swarm's
+    burst of follow-up bites does not drown the telegraph: `first_leads` scores only the FIRST strike of each
+    engagement - how long the nearest agent's intent had been > 0.5 continuously right before it."""
+
+    def __init__(self, dt):
+        super().__init__(dt)
+        self.series = {}
+
+    def observe(self, arena, sp):
+        super().observe(arena, sp)
+        P = np.asarray(sp.agent_pos, float)
+        it = getattr(sp, "intent", None)
+        for p in arena.pilots:
+            v = 0.0
+            if it is not None and len(P):
+                v = float(np.asarray(it)[int(np.argmin(np.linalg.norm(P - p.pos, axis=1)))])
+            self.series.setdefault(p.name, []).append((arena.t, v))
+
+    def first_leads(self, arena):
+        out = []
+        for name, ser in self.series.items():
+            T = np.array([t for t, _ in ser]); I = np.array([v for _, v in ser])
+            hits = sorted(t for (t, n, *_r) in arena.log if n == name)
+            last = -1e9
+            for th in hits:
+                if th - last > GAP:
+                    j = np.searchsorted(T, th - 1e-6) - 1          # last observation strictly before the hit
+                    lead = 0.0
+                    while j >= 0 and I[j] > 0.5:
+                        lead = th - T[j]; j -= 1
+                    out.append(lead)
+                last = th
+        return out
 
 
 def make_arena(seed, mass=3000):
@@ -55,7 +92,7 @@ def one(args):
     sp = mod.make(ar)
     ar.add_pilot(POLICIES[policy]())
     view = ScoreView(sp)
-    pr = Probe(DT)
+    pr = TelProbe(DT)
     led0 = ar.live_volume() + sp.ledger()
     drift = 0.0
     nsteps = int(minutes * 60 / DT)
@@ -79,7 +116,7 @@ def one(args):
     kinds = {}
     for (_t, _n, kind, amt) in ar.log:
         kinds[kind] = kinds.get(kind, 0) + 1
-    r.update(hits_by_kind=kinds, conservation=round(drift, 3), ms_per_step=round(1000 * tcost / nsteps, 3),
+    r.update(first_leads=[round(x, 2) for x in pr.first_leads(ar)], hits_by_kind=kinds, conservation=round(drift, 3), ms_per_step=round(1000 * tcost / nsteps, 3),
              agents=round(float(np.mean(pop)), 1), phase=getattr(sp, "phase_stats", lambda: {})())
     return (key, policy, seed), r, (rec, ar, sp) if rec else None
 
@@ -98,6 +135,10 @@ def score(keys, seeds, minutes, procs=4):
         w = card["hits_per_min_wander"]
         card["counterplay_same_speed"] = round(e120 / w, 2) if w else None
         sk = [r["hits_per_min"] for (p, s), r in runs.items() if p == "skimmer"]
+        fl = [x for r in allruns.values() for x in r["first_leads"]]
+        card["telegraph_first_s"] = round(float(np.median(fl)), 2) if fl else None
+        card["engagements"] = len(fl)
+        card["unwarned_frac"] = round(float(np.mean(np.array(fl) < 0.3)), 2) if fl else None
         card["hits_per_min_skimmer"] = round(float(np.mean(sk)), 2)
         card["hits_by_kind"] = {p: {} for p in POLICIES}
         for (p, s), r in allruns.items():
@@ -121,7 +162,7 @@ def score(keys, seeds, minutes, procs=4):
 
 
 def verdict(c):
-    tel = c["telegraph_s"]; cp = c["counterplay"]; pay = c["payoff_per_min"]
+    tel = c["telegraph_first_s"]; cp = c["counterplay"]; pay = c["payoff_per_min"]
     return dict(telegraph=tel is not None and tel >= 0.7, counterplay=cp is not None and cp < 1.0,
                 variety=c["variety"] > 0, payoff=(pay or 0) > 0)
 
@@ -160,7 +201,7 @@ if __name__ == "__main__":
         c["verdict"] = verdict(c)
     json.dump(allc, open(a.out, "w"), indent=1)
     for k, c in cards.items():
-        print(f"{k:10s} tel {c['telegraph_s']}  cp {c['counterplay']} cp120 {c['counterplay_same_speed']} (w {c['hits_per_min_wander']} e {c['hits_per_min_evader']} s {c['hits_per_min_skimmer']})"
+        print(f"{k:10s} tel {c['telegraph_s']}/first {c['telegraph_first_s']} unw {c['unwarned_frac']}  cp {c['counterplay']} cp120 {c['counterplay_same_speed']} (w {c['hits_per_min_wander']} e {c['hits_per_min_evader']} s {c['hits_per_min_skimmer']})"
               f"  pay {c['payoff_per_min']}  var {c['variety']}  cons {c['conservation_max_drift']}  "
               f"{c['ms_per_step']}ms/{c['agents']}ag  {c['verdict']}")
         print("           feel", c["feel"], "kinds", c["hits_by_kind"], "phase", c.get("phase"))

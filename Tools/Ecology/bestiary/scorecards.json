@@ -17,6 +17,9 @@
    },
    "hits_per_min_evader120": 0.0,
    "counterplay_same_speed": 0.0,
+   "telegraph_first_s": 0.9,
+   "engagements": 62,
+   "unwarned_frac": 0.13,
    "hits_per_min_skimmer": 10.0,
    "hits_by_kind": {
     "wander": {
@@ -33,9 +36,9 @@
    },
    "crystals_per_min_hunter": 6.0,
    "conservation_max_drift": 0.0,
-   "ms_per_step": 0.268,
+   "ms_per_step": 0.26,
    "agents": 7.1,
-   "us_per_agent_step": 37.75,
+   "us_per_agent_step": 36.62,
    "phase": {
     "strikes": 6.667
    },
@@ -58,7 +61,7 @@
    "hits_per_min_wander": 49.10999999999999,
    "hits_per_min_evader": 0.0,
    "counterplay": 0.0,
-   "telegraph_s": 2.15,
+   "telegraph_s": 0.65,
    "payoff_per_min": 2.4433333333333334,
    "variety": 1.761,
    "feel": {
@@ -71,6 +74,9 @@
    },
    "hits_per_min_evader120": 0.67,
    "counterplay_same_speed": 0.01,
+   "telegraph_first_s": 2.0,
+   "engagements": 32,
+   "unwarned_frac": 0.12,
    "hits_per_min_skimmer": 24.0,
    "hits_by_kind": {
     "wander": {
@@ -89,9 +95,9 @@
    },
    "crystals_per_min_hunter": 2.44,
    "conservation_max_drift": 0.0,
-   "ms_per_step": 1.113,
+   "ms_per_step": 1.119,
    "agents": 63.3,
-   "us_per_agent_step": 17.58,
+   "us_per_agent_step": 17.68,
    "phase": {
     "shaken": 8.5,
     "attached_s": 73.625
@@ -110,14 +116,141 @@
     "variety": true,
     "payoff": true
    }
+  },
+  "locust": {
+   "hits_per_min_wander": 38.666666666666664,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.1,
+   "payoff_per_min": 21.33666666666667,
+   "variety": 1.0,
+   "feel": {
+    "size": 2.853,
+    "speed_rel": 0.588,
+    "approach": 4.338,
+    "coherence": 0.579,
+    "burstiness": 1.971,
+    "jerk_rel": 0.633
+   },
+   "hits_per_min_evader120": 0.0,
+   "counterplay_same_speed": 0.0,
+   "telegraph_first_s": 0.8,
+   "engagements": 10,
+   "unwarned_frac": 0.1,
+   "hits_per_min_skimmer": 116.45,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 38.66
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 5.34
+    },
+    "skimmer": {
+     "bite": 116.44
+    },
+    "evader120": {}
+   },
+   "crystals_per_min_hunter": 21.33,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 12.256,
+   "agents": 200.7,
+   "us_per_agent_step": 61.07,
+   "phase": {
+    "births": 338.0,
+    "trail_eaten": 1217.5,
+    "greg_frac_end": 0.623,
+    "greg_frac_max": 0.82,
+    "t_tip": 27.583,
+    "solitary_speed": 16.283,
+    "solitary_approach": 10.775,
+    "gregarious_speed": 58.683,
+    "gregarious_approach": -5.267
+   },
+   "emotion": "cute & shy when sparse -> terrifying storm when dense",
+   "counter": "leave before the cloud tips; outrun the march; thin it (every locust is frail)",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
+  },
+  "stampede": {
+   "hits_per_min_wander": 10.886666666666665,
+   "hits_per_min_evader": 0.0,
+   "counterplay": 0.0,
+   "telegraph_s": 0.1,
+   "payoff_per_min": 3.776666666666667,
+   "variety": 1.059,
+   "feel": {
+    "size": 10.0,
+    "speed_rel": 0.193,
+    "approach": 14.347,
+    "coherence": 0.824,
+    "burstiness": 3.488,
+    "jerk_rel": 0.321
+   },
+   "hits_per_min_evader120": 1.33,
+   "counterplay_same_speed": 0.12,
+   "telegraph_first_s": 0.7,
+   "engagements": 44,
+   "unwarned_frac": 0.34,
+   "hits_per_min_skimmer": 5.33,
+   "hits_by_kind": {
+    "wander": {
+     "bite": 10.89
+    },
+    "evader": {},
+    "hunter": {
+     "bite": 17.12
+    },
+    "skimmer": {
+     "bite": 5.33
+    },
+    "evader120": {
+     "bite": 1.33
+    }
+   },
+   "crystals_per_min_hunter": 3.78,
+   "conservation_max_drift": 0.0,
+   "ms_per_step": 3.22,
+   "agents": 71.3,
+   "us_per_agent_step": 45.16,
+   "phase": {
+    "charges": 21.5,
+    "trail_eaten": 510.833,
+    "env_trampled": 1265.8,
+    "stampede_s": 8.892
+   },
+   "emotion": "majestic (awe, then danger in its panic)",
+   "counter": "approach from outside the alarm radius; never sit in a bolting herd's path; sidestep a bull; split off a calf",
+   "minutes": 1.5,
+   "seeds": [
+    7,
+    23,
+    41
+   ],
+   "verdict": {
+    "telegraph": true,
+    "counterplay": true,
+    "variety": true,
+    "payoff": true
+   }
   }
  },
  "feel_spread": {
   "min_pair": [
    "pack",
-   "leech"
+   "locust"
   ],
-  "min_dist": 4.9,
-  "mean_dist": 4.9
+  "min_dist": 2.26,
+  "mean_dist": 3.85
  }
 }

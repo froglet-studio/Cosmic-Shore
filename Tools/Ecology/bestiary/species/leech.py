@@ -83,7 +83,7 @@ class Leech(Herd):
         self.vel = contain(self.pos, self.vel, arena.R)
         self.hop = np.where(pounce, self.hop - dt, np.minimum(1.4, self.hop + 0.4 * dt))
         self.daze = np.maximum(0, self.daze - dt)
-        self.intent = np.where(pounce, 1.0, np.where(self.host >= 0, 0.4, 0.0))
+        self.intent = np.where(pounce, 1.0, np.where(self.host >= 0, 0.8, 0.0))   # a leech ON your hull is a visible warning
         # latch (only from a pounce, and not on a pilot ramming it - that is a squash)
         load = np.bincount(self.host[self.host >= 0], minlength=len(arena.pilots))
         for i in np.flatnonzero(free & (dist < arena.pilots[0].radius + self.size + 3)):
