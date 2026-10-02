@@ -225,6 +225,9 @@ class Colony:
     def on_placed(self, arena, i, site):
         pass
 
+    def on_pickup(self, arena, k, i):
+        pass
+
     note = ""
     extent = 120.0
 
@@ -318,6 +321,7 @@ class Colony:
                         self.claimed.discard(int(g)); self.goal[k] = -1
                         if arena.mass_dom[g] == self.dom:
                             self.carry[k] = g; self.taken.add(int(g)); self.pickups += 1
+                            self.on_pickup(arena, k, g)
                 else:
                     if refresh:
                         w = self.wander[k] + self.rng.normal(0, 0.5, 3)

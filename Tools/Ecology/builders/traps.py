@@ -31,7 +31,7 @@ class TrapBuilders(Colony):
             "(orange) across the lanes, strands perpendicular to the flow with holes you can thread.")
 
     def __init__(self, arena, seed=0, n=60, lane_min=1.2, max_nb=2, nucleate=0.02, perp=True, memory_s=60.0,
-                 name="traps", danger=True, cooldown=0.5):
+                 name="traps", danger=True, cooldown=0.5, pickup=0.05, park_s=20.0):
         rng = np.random.default_rng(seed + 9)
         d = rng.normal(size=3); d /= np.linalg.norm(d)
         super().__init__(arena, n, d * 300.0, dom=2, s=10.0, speed=85.0, sense=200.0, frac=4, name=name, seed=seed)
@@ -44,7 +44,8 @@ class TrapBuilders(Colony):
         self.seen = 0
         self.last_trail = {}                            # pilot domain -> last trail prism index (heading)
         self.sprung = []                                # (t, age_s) of every trap a pilot touched
-        self.burn_cool = {}; self.cooldown = cooldown
+        self.burn_cool = {}; self.cooldown = cooldown; self.pickup = pickup; self.park_s = park_s
+        self.laden_t = np.zeros(n)          # seconds since this worker last deposited (a laden worker parks after park_s)
         self.extent = 1200.0; self.sig_centre = np.zeros(3); self.sig_bins = 24   # webs compare in the WORLD frame
 
     # -- learning the lanes from the trail -------------------------------------------------------------------
@@ -78,7 +79,7 @@ class TrapBuilders(Colony):
 
     # -- hooks ---------------------------------------------------------------------------------------------------
     def wants_material(self, arena, k):
-        return self.S.sample(self.agent_pos[k]) > 0.05 * self.lane_min
+        return self.S.sample(self.agent_pos[k]) > self.pickup * self.lane_min
 
     def forage_bias(self, arena, k):
         g = self.S.grad(self.agent_pos[k]); n = np.linalg.norm(g)
@@ -86,6 +87,9 @@ class TrapBuilders(Colony):
 
     def home(self, arena, k):
         p = self.agent_pos[k]; h = self.L.h
+        self.laden_t[k] += 0.1
+        if self.laden_t[k] > self.park_s and self.S.sample(p) < 2 * self.pickup * self.lane_min:
+            return p                         # nothing to build: PARK (a carrier at rest costs nothing)
         F = self.L if self.L.sample(p) > 0.2 * self.lane_min else self.S
         here = F.sample(p)
         best, bv = None, here
@@ -115,6 +119,9 @@ class TrapBuilders(Colony):
                 e = np.asarray(site, float) - np.asarray(attached[0], float); e /= np.linalg.norm(e)
                 w = (1.0 - abs(float(e @ D))) ** 2
         return min(1.0, 0.6 * w * min(1.0, L / (3 * self.lane_min)))
+
+    def on_pickup(self, arena, k, i):
+        self.laden_t[k] = 0.0
 
     def on_placed(self, arena, i, site):
         if self.danger:

@@ -50,7 +50,7 @@ class Wearers:
         self.kills = 0; self.crystals = 0; self.stripped = 0; self.stripped_vol = 0.0
         self.worn_steals = 0; self.worn_trail = 0; self.fusions = 0; self.splits = 0
         self.hits_by_phase = {}
-        self.body_moves = 0
+        self.body_moves = 0; self.rebuckets = 0; self.container_writes = 0
         self.tick = 0
         self.extent = 60.0
         self.max_vol = 0.0
@@ -129,7 +129,7 @@ class Wearers:
             elif ph == 3:                                        # LUNGE: committed, straight, fast, overextends
                 v = self.lunge_dir[k] * sp * self.lunge_k * 1.8
                 self.squash[k] = 1.25; self.intent[k] = 1.0
-                if dist < R + tgt.radius:
+                if dist < R * 2.5 + tgt.radius and self.touches(k, tgt):
                     arena.hit(tgt, "crush"); self.hits_by_phase["lunge"] = self.hits_by_phase.get("lunge", 0) + 1
                     self.phase[k] = 4; self.ptime[k] = 0
                 elif self.ptime[k] > 0.9:
@@ -249,6 +249,15 @@ class Wearers:
                 if near < self.exposed_at:
                     self.kill(arena, k)
 
+    def touches(self, k, p):
+        """Contact is with the BODY ITSELF (a long tail can sweep), or the heart."""
+        if np.linalg.norm(self.agent_pos[k] - p.pos) < self.s + p.radius:
+            return True
+        if not self.body[k]:
+            return False
+        S = np.array(list(self.body[k].keys()), float) * self.s * self.squash[k] + self.agent_pos[k]
+        return bool((np.sum((S - p.pos) ** 2, axis=1) < (p.radius + 0.6 * self.s) ** 2).any())
+
     def on_rammed(self, arena, k, pilot):
         pass                       # Wearers.fight owns contact (strip the body first, then the exposed heart)
 
@@ -265,13 +274,21 @@ class Wearers:
                     self.agent_vel[j] = self.rng.normal(0, 1, 3) * 40
 
     def sync_body(self, arena):
+        """The game cost model: a body rides ONE container transform per creature (1 write when it moves); each
+        body prism still owes the spatial index a position, but PrismSpatialIndex only RE-BUCKETS when a prism
+        crosses an 8 u bucket boundary - counted here as `rebuckets`."""
         for k in range(self.n):
             if not self.alive[k] or self.leader[k] != k:
                 continue
+            moved = False
             for site, m in self.body[k].items():
                 tgt = self.wear_pos(k, site)
-                if np.sum((arena.mass_pos[m] - tgt) ** 2) > 0.25:
-                    arena.move_mass(m, tgt); self.body_moves += 1
+                old = arena.mass_pos[m]
+                if np.sum((old - tgt) ** 2) > 0.25:
+                    if (np.floor(old / 8.0) != np.floor(tgt / 8.0)).any():
+                        self.rebuckets += 1
+                    arena.move_mass(m, tgt); self.body_moves += 1; moved = True
+            self.container_writes += int(moved and len(self.body[k]) > 0)
 
     def metrics(self, arena, minutes):
         worn = [len(self.body[k]) for k in range(self.n) if self.alive[k] and self.leader[k] == k]
@@ -281,6 +298,8 @@ class Wearers:
                     trail_frac=round(float(arena.mass_trail[allw].mean()), 3) if allw else 0.0,
                     stripped=self.stripped, stripped_vol=round(self.stripped_vol, 1), fusions=self.fusions,
                     splits=self.splits, kills=self.kills, body_moves_per_s=round(self.body_moves / (minutes * 60), 1),
+                    container_writes_per_s=round(self.container_writes / (minutes * 60), 1),
+                    rebuckets_per_s=round(self.rebuckets / (minutes * 60), 1),
                     hits_lunge=self.hits_by_phase.get("lunge", 0),
                     hunt_time_s=None)
 
