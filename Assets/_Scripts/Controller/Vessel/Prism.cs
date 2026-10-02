@@ -225,6 +225,25 @@ namespace CosmicShore.Gameplay
         internal PrismRenderHandle RenderHandle;
         bool _renderVisible;
         bool _exoticVisualActive;
+        bool _ownerHidden;
+
+        /// <summary>
+        /// An OWNER that draws this prism by other means hides it here (a swarm member's body: the swarm
+        /// draws every living member from one GPU buffer, Docs/SWARM_FAUNA.md §14, and this prism is the
+        /// member's collider-and-mass PROXY). Only photons change: the collider, the spatial index, the
+        /// mass and every gameplay state stay exactly as they are, and the companion entity still EXISTS
+        /// (clock stamps are one-shot - an entity created late loses them), it is just not drawn. The
+        /// owner must un-hide before the prism stops being drawn elsewhere - a skeleton, a released body -
+        /// or it becomes an invisible piece of mass. Cleared on pool reuse.
+        /// </summary>
+        public void SetOwnerHidden(bool hidden)
+        {
+            if (_ownerHidden == hidden) return;
+            _ownerHidden = hidden;
+            ApplyRenderPath();
+        }
+
+        public bool OwnerHidden => _ownerHidden;
 
         /// <summary>True when per-frame color animation should sink into the
         /// companion entity instead of a MaterialPropertyBlock.</summary>
@@ -414,6 +433,8 @@ namespace CosmicShore.Gameplay
             // already hid the entity, and re-showing it would orphan a visible
             // entity until pool reuse.
             bool show = _renderVisible && gameObject.activeInHierarchy;
+            // existence follows `show`; DRAWING additionally follows the owner's hide (SetOwnerHidden)
+            bool draw = show && !_ownerHidden;
 
             // Entity EXISTENCE is deliberately independent of which path currently
             // DRAWS. Clock stamps are one-shot initial-conditions writes
@@ -446,7 +467,7 @@ namespace CosmicShore.Gameplay
                 // Batched: applied in one structural change per direction at
                 // LateUpdate (same frame, before rendering). Per-prism toggles were
                 // the dominant creation-tick cost (Prism.Create.Visibility).
-                PrismRenderService.QueueVisible(in RenderHandle, show);
+                PrismRenderService.QueueVisible(in RenderHandle, draw);
             }
             else
             {
@@ -455,7 +476,7 @@ namespace CosmicShore.Gameplay
                 // entity + MeshRenderer for the rest of the frame.
                 if (PrismRenderService.IsHandleUsable(in RenderHandle))
                     PrismRenderService.SetVisible(in RenderHandle, false);
-                if (meshRenderer) meshRenderer.enabled = _renderVisible;
+                if (meshRenderer) meshRenderer.enabled = _renderVisible && !_ownerHidden;
             }
         }
 
@@ -813,6 +834,7 @@ namespace CosmicShore.Gameplay
 
             destroyed = false;
             devastated = false;
+            _ownerHidden = false;
             CompletesAsLiveRibbon = false; // pool reuse: the next life states its own class
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
             _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag

@@ -46,20 +46,36 @@ namespace CosmicShore.Gameplay
         [Range(2f, 30f)] public float TickHz = 10f;
         [Tooltip("Steps the sim may run in one frame before it drops time (a hitch must not cascade).")]
         [Min(1)] public int MaxStepsPerFrame = 3;
-        [Tooltip("CELL-WIDE CPU budget, in ms per frame, shared by EVERY swarm's simulation. The swarms are " +
-                 "stepped round-robin from one scheduler until this is spent; a swarm left over waits for " +
-                 "the next frame and its clock drops the time (it swims in slow motion) rather than catching " +
-                 "up. That is what stops a slow frame from making the next one slower: without it every swarm " +
-                 "ran MaxStepsPerFrame catch-up steps once a frame passed 1/TickHz, and the cell locked at a " +
-                 "few FPS. The cell takes the largest value any live swarm authors.")]
+        [Tooltip("CELL-WIDE CPU budget, in ms per frame, for swarm ticks run INLINE on the main thread " +
+                 "(SimulateOffMainThread off, or WebGL). Swarms are stepped round-robin until it is spent; one " +
+                 "left over waits and drops the time (slow motion) rather than catching up - the round-6 rule " +
+                 "that stops a slow frame making the next slower. Off-thread ticks do not draw on it.")]
         [Min(0.1f)] public float SimBudgetMsPerFrame = 3f;
-        [Tooltip("Members of a swarm closer than this to the camera are re-posed every frame. Further " +
-                 "swarms are re-posed every FarPoseInterval frames (staggered across swarms). Posing - a " +
-                 "transform, a spatial-index entry and a render-entity matrix per member - is paid every " +
-                 "frame for every member, so it is the swarm's other big bill beside the simulation.")]
-        [Min(0f)] public float PoseEveryFrameWithin = 500f;
-        [Tooltip("Frames between re-poses of a swarm beyond PoseEveryFrameWithin. 1 = every frame.")]
-        [Range(1, 8)] public int FarPoseInterval = 4;
+        [Header("Round 7 - big bodies at ~zero main-thread cost (Docs/SWARM_FAUNA.md §14)")]
+        [Tooltip("Tadpoles per plan unit. The body plan is upsampled this many times (SwarmPlanData.Upsample): " +
+                 "the creature is scaled by the cube root so the DENSITY - and the spacing the sort model was " +
+                 "tuned at - is unchanged. 5 turns a 192-tadpole whale into a 960-tadpole one. 1 = the plan as baked.")]
+        [Range(1, 8)] public int PlanDensity = 1;
+        [Tooltip("Run each swarm's tick (simulation step + the frame it draws) on a worker thread. The main " +
+                 "thread then only swaps buffers. Off = run it inline on the main thread (WebGL always does).")]
+        public bool SimulateOffMainThread = true;
+        [Tooltip("Draw every LIVING member from one GPU buffer (SwarmMemberInstanced). Off, or on a device " +
+                 "without vertex-stage structured buffers, every member gets a real GameObject again (the " +
+                 "pre-round-7 cost).")]
+        public bool DrawMembersOnGpu = true;
+        [Tooltip("The instanced member shader (Assets/_Graphics/Materials/Graphs/SwarmMemberInstanced.shader). " +
+                 "Referenced here so a player build includes it.")]
+        public Shader MemberShader;
+        [Tooltip("The palette the GPU-drawn members wear (the same container the prisms and crystals read).")]
+        public ThemeManagerDataContainerSO Theme;
+        [Tooltip("World radius around a vessel inside which a member is given a PROXY - a real GameObject " +
+                 "with its heart and body prism, colliders on - so every weapon, ram, joust and skim finds " +
+                 "it. Outside it a member is data and pixels: no GameObject, no collider.")]
+        [Min(0f)] public float EngageRadius = 160f;
+        [Tooltip("Most proxies one swarm holds at once (the nearest members to the vessels win).")]
+        [Min(0)] public int MaxProxies = 160;
+        [Tooltip("Seconds a proxy outlives its vessel leaving before it is given back to the simulation.")]
+        [Min(0f)] public float ProxyLingerSeconds = 2f;
 
         [Header("Seed")]
         [Tooltip("Tadpoles a new swarm hatches with, at its plan's element mix, each on a slot of its " +
@@ -84,9 +100,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Eggs per step as a share of the headcount, and at most this many per step.")]
         [Range(0f, 1f)] public float LayRate = 0.02f;
         [Min(1)] public int LayMax = 2;
-        [Tooltip("Cell-wide budget of tadpole births made VISIBLE per frame, shared by every swarm. A " +
-                 "laid member past it is already alive in the sim and simply hatches a frame or two later, " +
-                 "so a burst of laying (or a whole cell of swarms seeding at once) never spikes a frame.")]
+        [Tooltip("Cell-wide budget of PROXIES (member GameObjects) created per frame, shared by every swarm. " +
+                 "A member past it stays drawn by the swarm and gets its proxy a frame or two later, so a " +
+                 "vessel diving into a body never spikes a frame (round 7: births themselves are free).")]
         [Min(1)] public int MaxSpawnsPerFrame = 48;
         [Tooltip("A WOUNDED swarm holds its eggs: every kill postpones laying by this long. This is what " +
                  "keeps a morph reachable at a fast lay rate - without it a fed swarm re-lays its majority " +

@@ -9,23 +9,49 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
-    public class Object { public string name; public static void Destroy(Object o) { } public static T Instantiate<T>(T o, Vector3 p, Quaternion r) where T : Object => o; public static implicit operator bool(Object o) => o != null; }
-    public class Component : Object { public Transform transform; public GameObject gameObject; public T GetComponent<T>() => default; public T GetComponentInParent<T>() => default; public T GetComponentInChildren<T>(bool b = false) => default; public T[] GetComponentsInChildren<T>(bool b = false) => default; public bool TryGetComponent<T>(out T c) { c = default; return false; } }
+    public class Object { public string name; public HideFlags hideFlags; public static void Destroy(Object o) { } public static T Instantiate<T>(T o, Vector3 p, Quaternion r) where T : Object => o; public static implicit operator bool(Object o) => o != null; }
+    [Flags] public enum HideFlags { None = 0, DontSave = 52 }
+    public class Component : Object { public Transform transform; public GameObject gameObject; public T GetComponent<T>() => default; public T GetComponentInParent<T>(bool includeInactive = false) => default; public T GetComponentInChildren<T>(bool b = false) => default; public T[] GetComponentsInChildren<T>(bool b = false) => default; public bool TryGetComponent<T>(out T c) { c = default; return false; } }
     public class Behaviour : Component { public bool enabled; public bool isActiveAndEnabled; }
     public class MonoBehaviour : Behaviour { public Coroutine StartCoroutine(System.Collections.IEnumerator e) => null; public void StopAllCoroutines() { } }
     public class Coroutine { }
     public class ScriptableObject : Object { }
     public class TextAsset : Object { public string text; }
-    public class GameObject : Object { public bool activeInHierarchy; public Scene scene; public T AddComponent<T>() where T : Component => default; }
+    public class GameObject : Object { public GameObject(string n) { } public bool activeInHierarchy; public Scene scene; public int layer; public Transform transform; public T AddComponent<T>() where T : Component => default; }
     public struct Scene { public bool isLoaded; }
-    public class Transform : Component { public Vector3 position, localPosition, localScale; public Quaternion rotation; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } }
+    public class Transform : Component { public Vector3 position, localPosition, localScale; public Quaternion rotation, localRotation; public Matrix4x4 localToWorldMatrix, worldToLocalMatrix; public void SetPositionAndRotation(Vector3 p, Quaternion q) { } public void SetParent(Transform p, bool worldPositionStays) { } }
+    public class Renderer : Component { public bool enabled; }
+    public class SkinnedMeshRenderer : Renderer { public Mesh sharedMesh; }
+    public class MeshFilter : Component { public Mesh sharedMesh; }
+    public class Mesh : Object { public int subMeshCount; }
+    public class Shader : Object { public static int PropertyToID(string n) => 0; }
+    public class Material : Object { public Material(Shader s) { } }
+    public struct Color { public float r, g, b, a; public Color(float r, float g, float b) { this.r = r; this.g = g; this.b = b; a = 1; } }
+    public struct Matrix4x4 { public static Matrix4x4 identity; public static Matrix4x4 Rotate(Quaternion q) => default; public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b) => a; }
+    public struct Bounds { public Bounds(Vector3 c, Vector3 s) { } }
+    public sealed class MaterialPropertyBlock { public void SetFloat(int n, float v) { } public void SetVector(int n, Vector4 v) { } public void SetColor(int n, Color c) { } public void SetMatrix(int n, Matrix4x4 m) { } public void SetBuffer(int n, GraphicsBuffer b) { } }
+    public sealed class GraphicsBuffer : IDisposable
+    {
+        public enum Target { Structured = 16 }
+        public GraphicsBuffer(Target t, int count, int stride) { }
+        public void SetData(Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count) { }
+        public void Release() { } public void Dispose() { }
+    }
+    public struct RenderParams { public RenderParams(Material m) { worldBounds = default; matProps = null; shadowCastingMode = default; receiveShadows = false; layer = 0; } public Bounds worldBounds; public MaterialPropertyBlock matProps; public UnityEngine.Rendering.ShadowCastingMode shadowCastingMode; public bool receiveShadows; public int layer; }
+    public static class Graphics { public static void RenderMeshPrimitives(in RenderParams rp, Mesh mesh, int submeshIndex, int instanceCount = 1) { } }
+    public static class SystemInfo { public static bool supportsComputeShaders; public static int maxComputeBufferInputsVertex; public static UnityEngine.Rendering.GraphicsDeviceType graphicsDeviceType; }
+    public enum RuntimePlatform { WebGLPlayer = 17 }
+    public static class Application { public static RuntimePlatform platform; }
+    public class Camera : Behaviour { public static Camera main; }
+    public enum RuntimeInitializeLoadType { SubsystemRegistration = 4 }
+    public class RuntimeInitializeOnLoadMethodAttribute : Attribute { public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { } }
     public class Collider : Component { }
     public struct Vector3 { public float x, y, z; public Vector3(float a, float b, float c) { x = a; y = b; z = c; } public static Vector3 one, zero, right, forward, up; public float sqrMagnitude => 0; public float magnitude => 0; public Vector3 normalized => this; public static Vector3 operator +(Vector3 a, Vector3 b) => a; public static Vector3 operator -(Vector3 a, Vector3 b) => a; public static Vector3 operator *(Vector3 a, float b) => a; public static Vector3 operator *(float b, Vector3 a) => a; public static Vector3 operator /(Vector3 a, float b) => a; public static Vector3 Cross(Vector3 a, Vector3 b) => a; public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a; public static float Dot(Vector3 a, Vector3 b) => 0; public static bool operator ==(Vector3 a, Vector3 b) => true; public static bool operator !=(Vector3 a, Vector3 b) => false; public override bool Equals(object o) => true; public override int GetHashCode() => 0; }
-    public struct Vector4 { public float x, y, z, w; public Vector4(float a, float b, float c, float d) { x = a; y = b; z = c; w = d; } }
+    public struct Vector4 { public float x, y, z, w; public Vector4(float a, float b, float c, float d) { x = a; y = b; z = c; w = d; } public static implicit operator Vector4(Vector3 v) => default; }
     public struct Quaternion { public static Quaternion LookRotation(Vector3 f, Vector3 u) => default; }
-    public static class Mathf { public static int RoundToInt(float f) => 0; public static float Max(float a, float b) => a; public static int Max(int a, int b) => a; public static float Min(float a, float b) => a; public static float Abs(float a) => a; public static float Clamp01(float a) => a; }
-    public static class Random { public static int Range(int a, int b) => a; public static Vector3 onUnitSphere; }
-    public static class Time { public static float time, deltaTime; public static int frameCount; }
+    public static class Mathf { public static int RoundToInt(float f) => 0; public static float Max(float a, float b) => a; public static int Max(int a, int b) => a; public static float Min(float a, float b) => a; public static float Abs(float a) => a; public static float Clamp01(float a) => a; public static int Clamp(int v, int a, int b) => v; public static float Pow(float a, float b) => a; }
+    public static class Random { public static int Range(int a, int b) => a; public static Vector3 onUnitSphere; public static float value; }
+    public static class Time { public static float time, deltaTime, unscaledTime; public static int frameCount; }
     public static class Physics { public static int OverlapSphereNonAlloc(Vector3 p, float r, Collider[] res, int mask) => 0; }
     public static class JsonUtility { public static T FromJson<T>(string s) => default; }
     public class HeaderAttribute : Attribute { public HeaderAttribute(string s) { } }
@@ -34,6 +60,23 @@ namespace UnityEngine
     public class MinAttribute : Attribute { public MinAttribute(float f) { } }
     public class RangeAttribute : Attribute { public RangeAttribute(float a, float b) { } }
     public class CreateAssetMenuAttribute : Attribute { public string fileName, menuName; }
+}
+
+namespace UnityEngine.Rendering
+{
+    public enum ShadowCastingMode { Off = 0 }
+    public enum GraphicsDeviceType { Direct3D11 = 2 }
+}
+
+namespace Unity.Profiling
+{
+    public readonly struct ProfilerMarker
+    {
+        public ProfilerMarker(string name) { }
+        public AutoScope Auto() => default;
+        public void Begin() { } public void End() { }
+        public readonly struct AutoScope : IDisposable { public void Dispose() { } }
+    }
 }
 
 namespace FMODUnity
@@ -46,6 +89,7 @@ namespace CosmicShore.Data
 {
     public enum Element { None = 0, Charge = 1, Mass = 2, Space = 3, Time = 4, Omni = 5 }
     public enum Domains { Jade = 1, Ruby = 2, Blue = 3, Gold = 4 }
+    public enum PrismKind { Plain = 0, Danger = 1, Shielded = 2, SuperShielded = 3 }
 }
 
 namespace CosmicShore.Utility
@@ -53,6 +97,25 @@ namespace CosmicShore.Utility
     public enum CSLogChannel { Ecology = 1 << 20 }
     public static class CSDebug { public static void LogVerbose(CSLogChannel c, object m) { } public static void LogWarning(object m) { } public static void LogError(object m) { } }
     public class FaunaConfigurationSO : UnityEngine.ScriptableObject { public float BandInnerRadius, BandOuterRadius; }
+}
+
+namespace CosmicShore.ScriptableObjects
+{
+    using UnityEngine;
+    using CosmicShore.Data;
+    // SO_ColorSet.cs:16, :240; DomainColorSet fields
+    public class DomainColorSet { public Color DullCrystalColor, BrightCrystalColor; }
+    public class SO_ColorSet : ScriptableObject
+    {
+        public bool TryGetColorSetByDomain(Domains domain, out DomainColorSet colorSet) { colorSet = null; return false; }
+        public bool TryGetPrismKindColors(Domains domain, PrismKind kind, out Color bright, out Color dark) { bright = default; dark = default; return false; }
+    }
+    // ElementalCrystalSetSO.cs:82, :94
+    public class ElementalCrystalSetSO : ScriptableObject
+    {
+        public CosmicShore.Gameplay.Crystal GetPrefab(Element element) => null;
+        public static ElementalCrystalSetSO Load() => null;
+    }
 }
 
 namespace CosmicShore.Core
@@ -69,6 +132,8 @@ namespace CosmicShore.Gameplay
     using CosmicShore.Utility;
 
     public class PrismProperties { public bool IsDangerous, IsShielded, IsSuperShielded; }
+    // ThemeManagerDataContainerSO.cs:9-12
+    public class ThemeManagerDataContainerSO : ScriptableObject { public CosmicShore.ScriptableObjects.SO_ColorSet ColorSet; }
     public class Prism : MonoBehaviour
     {
         public PrismProperties prismProperties; public bool destroyed;
@@ -79,6 +144,9 @@ namespace CosmicShore.Gameplay
         public void MakeDangerous() { } public void DeactivateShields() { } public void ActivateShield() { }
         public void ChangeTeam(Domains d) { } public virtual void Initialize(string playerName = "") { }
         public void NotifyPositionChanged() { }
+        public void CompleteGrowthImmediately() { }
+        public void SetOwnerHidden(bool hidden) { }
+        public bool OwnerHidden => false;
     }
     public class HealthPrism : Prism { public LifeForm LifeForm; public Fauna ResolveOwnerFauna() => null; public void LeaveAsSkeleton(Transform t) { } }
     public class Crystal : MonoBehaviour { public bool IsEmbedded => false; public void SetEmbeddedIn(ILifeFormEntity o) { } }

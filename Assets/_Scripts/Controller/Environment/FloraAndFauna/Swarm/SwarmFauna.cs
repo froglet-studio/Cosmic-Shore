@@ -16,20 +16,26 @@ namespace CosmicShore.Gameplay
     /// This is the population's ANCHOR and brain, in the shape the worm colony established
     /// (Docs/ECOSYSTEM.md §23.3): it is lineage-registered through the ordinary spawner (so the
     /// cell's seed floor, cap and cleanup all apply), it carries NO heart and NO body, and it cannot
-    /// be preyed on. The lifeforms are its MEMBERS (<see cref="SwarmTadpoleFauna"/>), each with its
-    /// own heart and body prism, each dying through the sealed fauna death path.
+    /// be preyed on. The lifeforms are its MEMBERS, each with its own heart and body prism, each dying
+    /// through the sealed fauna death path.
     ///
-    /// The behaviour is ONE simulation over a struct-of-arrays run at a fixed tick - the config picks
-    /// which (<see cref="SwarmFaunaConfigSO.Model"/>): <see cref="SwarmFieldCore"/> (designed fields,
-    /// every tadpole owns a slot), <see cref="SwarmGridCore"/> (the grid morphogen, nothing assigns a
-    /// place) or <see cref="SwarmSortCore"/> (emergent cell sorting: positional-information wells, fate,
-    /// differential adhesion, a lossless molting corrector). Members are posed by interpolating between ticks, so motion is smooth at any frame rate
-    /// and no member runs an Update of its own.
+    /// ROUND 7 (Docs/SWARM_FAUNA.md §14) - ~1,000 members a swarm at ~zero main-thread cost:
+    ///  • the TICK (simulation step + the frame it draws) runs on a worker thread (<see cref="SwarmTickJob"/>);
+    ///    the main thread queues kills and food, and swaps buffers once per tick;
+    ///  • every LIVING member is DRAWN from one GPU buffer (<see cref="SwarmMemberRenderer"/>), uploaded
+    ///    once per tick and interpolated by the shader - no per-member transform, matrix or index write;
+    ///  • a member is DATA unless a vessel is near: then (and only then) it gets a PROXY
+    ///    (<see cref="SwarmTadpoleFauna"/>) - a real heart and a real body prism with colliders - so every
+    ///    weapon, ram, joust and skim finds a lifeform to act on. The swarm keeps drawing it; the proxy's
+    ///    own visuals take over only at its death (the released heart, the skeleton). A member the swarm
+    ///    sheds to starvation is given a proxy first and withers through the same sealed death.
     ///
-    /// Invariants it touches (Docs/SWARM_FAUNA.md §2): mass is conserved (every egg is PAID for out of
-    /// eaten flora volume, 1:1), there is no imposed death (members only die to vessels, predators or
-    /// starvation), one colour (every member wears this anchor's domain - the cell's controlling one),
-    /// every member drops its crystal, and nothing pops (births bloom, molts re-form, deaths wither).
+    /// Invariants it touches (Docs/SWARM_FAUNA.md §2, §14.4): mass is conserved (every egg is PAID for out
+    /// of eaten flora volume, 1:1), there is no imposed death (members only die to vessels, predators or
+    /// starvation), one colour (every member wears this anchor's domain), every member drops its crystal
+    /// (only through a proxy - a member with no proxy cannot die), and nothing pops (births bloom in the
+    /// shader, molts re-form in the shader, a proxy appears and leaves under an unchanged picture, deaths
+    /// wither through the platform).
     /// </summary>
     public class SwarmFauna : Fauna
     {
@@ -37,68 +43,71 @@ namespace CosmicShore.Gameplay
         [SerializeField] SwarmFaunaConfigSO config;
 
         ISwarmCore _core;
-        SwarmTadpoleFauna[] _members;
-        SVector3[] _prevPos, _prevFace;
-        float[] _birthTime, _heartFactor;
-        bool[] _danger;
+        SwarmTickJob _job;
+        SwarmMemberRenderer _render;
+        bool _gpu, _inline;
         SwarmPlanData[] _plans;
-        Vector3[] _defaultHalf;          // per research element: a typical prism of that element
         Vector3 _centre;                 // the host cell's centre (sim origin)
         float _dt, _acc;
+        float _bloomTicks;
+        int _cap;
+
+        // proxies: the only members with a GameObject
+        SwarmTadpoleFauna[] _proxy;
+        float[] _wantedAt;               // last time the tick said "a vessel is near this member"
+        bool[] _gone;                    // died; masked until the tick that applies the kill is published
+        bool[] _starving;                // given a proxy to be shed - Starve() once the proxy is Ready
+        readonly List<int> _proxySlots = new();
+        readonly List<int> _goneSlots = new();
+
+        // feeding: a few "mouths" a bitten prism is suctioned into, posed at their biter
+        Transform[] _mouth;
+        int[] _mouthSlot;
+        float[] _mouthUntil;
+        int _mouthCursor;
+
         int _biteCursor;
         float _lastFedTime, _lastShedTime, _extinctSince = -1f;
         Element _startElement = Element.Mass;
-        bool _seeded;
+        bool _seeded, _warnedError;
         string _eaterName;
         FMODUnity.StudioEventEmitter _loop;
-        readonly SwarmPredator[] _preds = new SwarmPredator[8];
-        int _predCount;
         readonly List<IVesselStatus> _seen = new(8);
         Flora _goalPlant;
         float _atPlantSince = -1f;
         readonly Dictionary<Flora, float> _barren = new();
-        // Laid/seeded members waiting for a hatch slot (alive in the sim, no GameObject yet). The
-        // budget is shared cell-wide: every swarm draws from the same per-frame allowance.
-        readonly Queue<int> _pending = new();
         static int s_spawnFrame = -1, s_spawnsThisFrame;
+        // inline ticks (off-thread disabled, or WebGL) share one per-frame budget - the round-6 rule
+        static int s_inlineFrame = -1;
+        static double s_inlineMs;
 
-        // ONE scheduler for every swarm in the scene. Each swarm used to run its own catch-up clock, so a
-        // frame slower than 1/TickHz made all 24 of them run MaxStepsPerFrame steps the next frame, which
-        // made THAT frame slower: a spiral that locked the Swarm cell at ~3 FPS once the bodies had grown.
-        // Now the swarms are stepped round-robin from one shared CPU budget, and a swarm the budget does
-        // not reach drops the time instead of banking it (Docs/SWARM_FAUNA.md §13).
-        static readonly List<SwarmFauna> s_live = new();
-        static int s_schedFrame = -1, s_cursor;
-        static bool s_warnedSaturated;
-        static float s_saturatedSince = -1f;
-        int _poseOffset;
-        float _lastPoseTime = -1f;
+        static readonly ProfilerMarker s_mCollect = new("SwarmFauna.Tick.Collect");
+        static readonly ProfilerMarker s_mUpload = new("SwarmFauna.Tick.Upload");
+        static readonly ProfilerMarker s_mProxies = new("SwarmFauna.Tick.Proxies");
+        static readonly ProfilerMarker s_mSense = new("SwarmFauna.Tick.SenseVessels");
+        static readonly ProfilerMarker s_mFeed = new("SwarmFauna.Tick.Feed");
+        static readonly ProfilerMarker s_mKick = new("SwarmFauna.Tick.Kick");
+        static readonly ProfilerMarker s_mInline = new("SwarmFauna.Tick.InlineStep");
+        static readonly ProfilerMarker s_mPose = new("SwarmFauna.Frame.PoseProxies");
+        static readonly ProfilerMarker s_mDraw = new("SwarmFauna.Frame.Draw");
 
-        static readonly ProfilerMarker s_mSchedule = new("SwarmFauna.Schedule");
-        static readonly ProfilerMarker s_mSense = new("SwarmFauna.SenseVessels");
-        static readonly ProfilerMarker[] s_mStep =
-        {
-            new("SwarmFauna.Step.Field"), new("SwarmFauna.Step.Grid"),
-            new("SwarmFauna.Step.Sort"), new("SwarmFauna.Step.EvoFate"),
-        };
-        static readonly ProfilerMarker s_mMembers = new("SwarmFauna.Tick.Members");
-        static readonly ProfilerMarker s_mFeed = new("SwarmFauna.Feed");
-        static readonly ProfilerMarker s_mHatch = new("SwarmFauna.Hatch");
-        static readonly ProfilerMarker s_mPose = new("SwarmFauna.Render.Pose");
-        static readonly ProfilerMarker s_mSync = new("SwarmFauna.Render.SyncBodies");
-
-        /// <summary>The live sim (null before the first frame).</summary>
-        public ISwarmCore Core => _core;
         public SwarmFaunaConfigSO Config => config;
 
         /// <summary>The body plan the swarm is currently growing ("mass", "space", "charge", "time").</summary>
-        public string CurrentPlan => _core != null ? _core.Plan.Kind : "";
+        public string CurrentPlan => _job != null && _plans != null ? _plans[Mathf.Clamp(_job.PlanIx, 0, 3)].Kind : "";
+
+        /// <summary>Live members (eggs included), as of the last published tick.</summary>
+        public int MemberCount => _job != null ? _job.AliveCount : 0;
+
+        /// <summary>Members that currently have a proxy (a GameObject, colliders on).</summary>
+        public int ProxyCount => _proxySlots.Count;
 
         public override float CurrentSpeed => config ? config.Cruise * config.UnitScale * config.TickHz : 0f;
 
         /// <summary>A member's swim speed in world units/s - what a jouster has to outrun.</summary>
-        public float MemberSpeed(int i) =>
-            _core != null && i >= 0 && i < _core.Cap ? _core.Vel[i].Length() * config.UnitScale * config.TickHz : 0f;
+        public float MemberSpeed(int i) => _job != null && i >= 0 && i < _cap ? _job.Speed[i] : 0f;
+
+        int Density => config ? Mathf.Max(1, config.PlanDensity) : 1;
 
         /// <summary>The anchor is a population, not an animal: nothing eats a swarm whole.</summary>
         public override bool Predated(string predatorName, Transform devourTarget) => false;
@@ -133,12 +142,10 @@ namespace CosmicShore.Gameplay
             _plans = SwarmPlanLibrary.Load(config);
             if (_plans == null) return;
             _seeded = true;
-            s_live.Add(this);
-            _poseOffset = Random.Range(0, 64);
 
-            _defaultHalf = SwarmPlanLibrary.TypicalHalfExtents(_plans);
             _centre = host.transform.position;
             _dt = 1f / config.TickHz;
+            _bloomTicks = config.BirthBloomSeconds * config.TickHz;
             _eaterName = "swarm";
 
             _core = config.Model switch
@@ -148,27 +155,90 @@ namespace CosmicShore.Gameplay
                 SwarmModel.EvoFate => BuildEvoFateCore(host),
                 _ => BuildFieldCore(host),
             };
-            int n = _core.Cap;
-            _members = new SwarmTadpoleFauna[n];
-            _prevPos = new SVector3[n]; _prevFace = new SVector3[n];
-            _birthTime = new float[n]; _heartFactor = new float[n];
-            _danger = new bool[n];
+            _cap = _core.Cap;
+            _proxy = new SwarmTadpoleFauna[_cap];
+            _wantedAt = new float[_cap];
+            _gone = new bool[_cap];
+            _starving = new bool[_cap];
 
             var anchor = ToSim(transform.position);
             var radial = transform.position - _centre;
             var tangent = Vector3.Cross(radial.sqrMagnitude > 1f ? radial.normalized : Vector3.forward, Random.onUnitSphere);
             if (tangent.sqrMagnitude < 1e-4f) tangent = Vector3.right;
-            _core.Seed(SwarmFaunaConfigSO.ToIndex(_startElement), config.SeedMembers, anchor, Sim(tangent.normalized));
+            _core.Seed(SwarmFaunaConfigSO.ToIndex(_startElement), config.SeedMembers * Density, anchor, Sim(tangent.normalized));
             _core.SwimTarget = anchor;
-            for (int i = 0; i < n; i++)
-                if (_core.Alive[i]) _pending.Enqueue(i);
-            HatchPending();
 
+            _job = new SwarmTickJob(_core, BuildTickSettings(), config.TickHz) { SwimTarget = anchor };
+            _job.Prime();
+            _inline = !config.SimulateOffMainThread || Application.platform == RuntimePlatform.WebGLPlayer;
+
+            _gpu = false;
+            if (config.DrawMembersOnGpu)
+            {
+                _render = new SwarmMemberRenderer(config.MemberShader, config.TadpolePrefab, _cap, gameObject.layer);
+                _gpu = _render.Valid;
+                if (_gpu) { ApplyPalette(); _render.Upload(_job); }
+            }
+
+            BuildMouths();
             _lastFedTime = Time.time;
             _acc = Random.value * _dt;   // stagger the cell's swarms across frames from the first tick
             StartLoop();
             CSDebug.LogVerbose(CSLogChannel.Ecology,
-                $"[Swarm] {name} ({config.Model}) hatched as {_core.Plan.Kind} with {_core.AliveCount} tadpoles at r={radial.magnitude:F0}");
+                $"[Swarm] {name} ({config.Model}, density {Density}) hatched as {_core.Plan.Kind} with " +
+                $"{_job.AliveCount} tadpoles at r={radial.magnitude:F0}; tick {(_inline ? "inline" : "off-thread")}, " +
+                $"members {(_gpu ? "GPU-drawn" : "GameObjects")}");
+        }
+
+        SwarmTickSettings BuildTickSettings()
+        {
+            var half = SwarmPlanLibrary.TypicalHalfExtents(_plans);
+            var s = new SwarmTickSettings
+            {
+                Centre = Sim(_centre), UnitScale = config.UnitScale, PrismScale = config.PrismScale,
+                HeartPrismGap = config.HeartPrismGap,
+                DangerEnter = config.DangerEnter, DangerExit = config.DangerExit,
+                EngageRadius = config.EngageRadius, MaxEngaged = config.MaxProxies,
+            };
+            for (int e = 0; e < 4; e++)
+            {
+                s.HeartWorldScale[e] = SwarmFaunaConfigSO.Of(config.HeartWorldScale, SwarmFaunaConfigSO.ToElement(e));
+                s.DefaultHalf[e] = new SVector3(half[e].x, half[e].y, half[e].z);
+            }
+            return s;
+        }
+
+        /// <summary>The swarm's ONE domain, in the palette's own tier pairs (Docs/PALETTE.md §2).</summary>
+        void ApplyPalette()
+        {
+            var colors = config.Theme ? config.Theme.ColorSet : null;
+            Color bd = new(0.05f, 0.2f, 0.4f), bb = new(0.4f, 0.8f, 1.2f);
+            Color dd = bd, db = new(1.5f, 0.3f, 0.1f), sd = bd, sb = bb;
+            Color hd = new(0.1f, 0.2f, 0.5f), hb = new(0.8f, 0.9f, 1.4f);
+            if (colors != null)
+            {
+                colors.TryGetPrismKindColors(domain, PrismKind.Plain, out bb, out bd);
+                colors.TryGetPrismKindColors(domain, PrismKind.Danger, out db, out dd);
+                colors.TryGetPrismKindColors(domain, PrismKind.Shielded, out sb, out sd);
+                // a living heart wears the neutral (no-domain) crystal pair - the Crystal's own rule
+                if (colors.TryGetColorSetByDomain(Domains.Blue, out var neutral) && neutral != null)
+                { hd = neutral.DullCrystalColor; hb = neutral.BrightCrystalColor; }
+            }
+            else CSDebug.LogWarning($"{name}: SwarmFaunaConfigSO.Theme is not assigned - members are drawn in fallback colours.");
+            _render.SetColours(bd, bb, dd, db, sd, sb, hd, hb, config.HeartWorldScale, 2f);
+        }
+
+        void BuildMouths()
+        {
+            const int n = 8;
+            _mouth = new Transform[n]; _mouthSlot = new int[n]; _mouthUntil = new float[n];
+            for (int q = 0; q < n; q++)
+            {
+                var go = new GameObject("SwarmMouth");
+                go.transform.SetParent(transform, false);
+                _mouth[q] = go.transform;
+                _mouthSlot[q] = -1;
+            }
         }
 
         // MembraneRadius reads 0 until the membrane has spawned (Docs/CONNECTING_PANEL.md); the
@@ -254,7 +324,7 @@ namespace CosmicShore.Gameplay
                 ASame = config.SortAdhesion.x, AElem = config.SortAdhesion.y, ARole = config.SortAdhesion.z, AOther = config.SortAdhesion.w,
                 Swap = config.SortSwap, RSwap = config.SortSwapRadius,
                 Inertia = config.SortInertia, Noise = config.SortNoise, KWellFF = config.SortFeedForward,
-                Dwell = config.SortDwell, LayRate = config.SortLayRate, LayMax = config.SortLayMax,
+                Dwell = config.SortDwell, LayRate = config.SortLayRate, LayMax = config.SortLayMax * Density,
                 PCross = config.SortCrossChance, FillTol = config.SortFillTolerance, Over = config.SortBodyFill,
                 Molt = true, Transfer = true, MoltRate = config.SortMoltRate, MoltSteps = config.SortMoltSteps, MoltWindow = -1,
                 KillLayHoldSteps = Mathf.RoundToInt(config.KillLayHoldSeconds * config.TickHz),
@@ -270,6 +340,8 @@ namespace CosmicShore.Gameplay
                 WellDead = config.SortWellDead, WellDeadTime = config.SortWellDeadTime,
                 Wander = config.SortWander, WanderTau = config.SortWanderTau,
                 Frac = Mathf.Max(1, config.SortUpdateFraction),
+                // round 7: a fixed-size ship startles density^(-2/3) of an upsampled body (SwarmSortParams.ThreatGain)
+                ThreatGain = 3f * Mathf.Pow(Density, 2f / 3f),
             };
             for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
             if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }
@@ -297,7 +369,7 @@ namespace CosmicShore.Gameplay
                 Pull = config.EvoPull, E0 = config.EvoDeadZone, Adh = config.EvoAdhesion,
                 TMix = config.EvoTimeSpeed, TE0 = config.EvoTimeDeadZone,
                 K = config.SortWellsPerType, PerWell = config.SortUnitsPerWell, CovScale = config.SortWellWidth,
-                Dwell = config.SortDwell, LayRate = config.SortLayRate, LayMax = config.SortLayMax,
+                Dwell = config.SortDwell, LayRate = config.SortLayRate, LayMax = config.SortLayMax * Density,
                 PCross = config.SortCrossChance, FillTol = config.SortFillTolerance, Over = config.SortBodyFill,
                 Molt = true, Transfer = true, MoltRate = config.SortMoltRate, MoltSteps = config.SortMoltSteps,
                 KillLayHoldSteps = Mathf.RoundToInt(config.KillLayHoldSeconds * config.TickHz),
@@ -324,311 +396,262 @@ namespace CosmicShore.Gameplay
             _loop.Play();
         }
 
-        // ───────────────────────────────────────────────────────────────── members
-
-        void SpawnMember(int i, int parent)
-        {
-            var e = SwarmFaunaConfigSO.ToElement(_core.Elem[i]);
-            var pos = ToWorld(_core.Pos[i]);
-            var face = Face(_core.Facing[i]);
-            var member = Instantiate(config.TadpolePrefab, pos, face);
-            member.Bind(HostCell, this, i, e, SwarmFaunaConfigSO.Of(config.HeartWorldScale, e),
-                        ShapeFor(i, _core.Elem[i]), PrismZ(i, _core.Elem[i]));
-            HostCell.RegisterSpawnedObject(member.gameObject);
-            // The replication seam every fauna producer reaches. A swarm member carries no
-            // NetworkObject (members are client-local, like every freestyle creature), so this
-            // only neutralizes; it is here so the seam gate holds for this producer too.
-            FaunaNetworkSync.ServerSpawn(member);
-
-            // continuity of existence: a newborn grows in from nothing
-            member.transform.localScale = Vector3.one * 0.001f;
-            _members[i] = member;
-            _birthTime[i] = Time.time;
-            _heartFactor[i] = 1f;
-            _danger[i] = false;
-            _prevPos[i] = _core.Pos[i];
-            _prevFace[i] = _core.Facing[i];
-        }
-
-        /// <summary>
-        /// Give queued members their bodies, within the cell-wide per-frame budget. A queued index
-        /// that died or was already given a body in the meantime is skipped.
-        /// </summary>
-        void HatchPending()
-        {
-            int frame = Time.frameCount;
-            if (s_spawnFrame != frame) { s_spawnFrame = frame; s_spawnsThisFrame = 0; }
-            while (_pending.Count > 0 && s_spawnsThisFrame < config.MaxSpawnsPerFrame)
-            {
-                int i = _pending.Dequeue();
-                if (i < 0 || i >= _members.Length || !_core.Alive[i] || _members[i]) continue;
-                SpawnMember(i, -1);
-                s_spawnsThisFrame++;
-            }
-        }
-
-        /// <summary>A member died (any path). The body re-solves its homes around the hole.</summary>
-        public void HandleMemberDeath(SwarmTadpoleFauna member)
-        {
-            if (_core == null || !member) return;
-            int i = member.Index;
-            if (i < 0 || i >= _members.Length || _members[i] != member) return;
-            _core.Kill(i);
-            _members[i] = null;
-        }
-
-        /// <summary>Body prism shape for member i as element e: the core's look for it (the field core:
-        /// its home slot's prism when the slot is of its own element; the grid core: the prism its look
-        /// state has eased to), else a typical prism of that element. Local scale, long axis +z.</summary>
-        Vector3 ShapeFor(int i, int e)
-        {
-            Vector3 h = _defaultHalf[e];
-            if (_core.TryGetLook(i, e, out var s, out _)) h = new Vector3(s.X, s.Y, s.Z);
-            float m = 2f * config.UnitScale * config.PrismScale;
-            return new Vector3(h.y * m, h.z * m, h.x * m);
-        }
-
-        float PrismZ(int i, int e) =>
-            -(SwarmFaunaConfigSO.Of(config.HeartWorldScale, SwarmFaunaConfigSO.ToElement(e))
-              + config.HeartPrismGap + 0.5f * ShapeFor(i, e).z);
-
-        // ───────────────────────────────────────────────────────────────── the clock
+        // ───────────────────────────────────────────────────────────────── the frame
 
         // Enter Play Mode without a domain reload keeps statics: start every session clean.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
-            s_live.Clear();
-            s_schedFrame = -1; s_cursor = 0;
-            s_warnedSaturated = false; s_saturatedSince = -1f;
             s_spawnFrame = -1; s_spawnsThisFrame = 0;
+            s_inlineFrame = -1; s_inlineMs = 0;
         }
 
         protected override void OnDestroy()
         {
-            s_live.Remove(this);
+            // a tick still running on a worker owns the core: it finishes into buffers nobody reads, which is
+            // harmless (the job holds no Unity object). The GPU buffers are ours to release.
+            _render?.Dispose();
+            _render = null;
             base.OnDestroy();
         }
 
         void Update()
         {
-            if (_core == null) return;
+            if (_job == null) return;
+            if (_job.Error != null) { ReportWorkerError(); return; }
 
-            // whichever swarm updates first this frame steps the whole cell
-            if (s_schedFrame != Time.frameCount)
-            {
-                s_schedFrame = Time.frameCount;
-                using (s_mSchedule.Auto()) Schedule();
-            }
+            _acc += Time.deltaTime;
+            if (_acc >= _dt) AdvanceTick();
+            float alpha = Mathf.Clamp01(_acc / _dt);
 
-            using (s_mHatch.Auto()) HatchPending();
-            if (PoseThisFrame()) Render(Mathf.Clamp01(_acc / _dt));
+            using (s_mPose.Auto()) PoseProxies(alpha);
+            if (_gpu)
+                using (s_mDraw.Auto())
+                {
+                    float r = (_plans[Mathf.Clamp(_job.PlanIx, 0, 3)].Radius * 3f + 20f) * config.UnitScale + 40f;
+                    var bounds = new Bounds(Uni(_job.Anchor), Vector3.one * (2f * r));
+                    _render.Draw(bounds, alpha, _job.Tick + alpha, _bloomTicks, Uni(_job.BY), Uni(_job.BZ), _cap);
+                }
         }
 
         /// <summary>
-        /// Step every live swarm that is due, round-robin, until the cell-wide budget is spent. Each swarm
-        /// may bank at most MaxStepsPerFrame steps; anything beyond is dropped, so falling behind slows the
-        /// swarms down rather than charging the next frame for it. The cursor resumes where the last frame
-        /// stopped, so no swarm is starved by its position in the list.
+        /// The display has reached the end of the published pair. If the next tick (computed in the background
+        /// while this pair was on screen) is done, publish it and start the one after; if it is still running,
+        /// HOLD at the end of this pair and drop the time - a slow worker slows the swarm, never the frame.
         /// </summary>
-        static void Schedule()
+        void AdvanceTick()
         {
-            float dt = Time.deltaTime, budgetMs = 0f;
-            for (int k = s_live.Count - 1; k >= 0; k--)
+            var state = _job.State;
+            if (state == SwarmJobState.Running) { _acc = _dt; return; }
+            if (state == SwarmJobState.Done)
             {
-                var sw = s_live[k];
-                if (!sw) { s_live.RemoveAt(k); continue; }
-                if (sw._core == null || !sw.isActiveAndEnabled) continue;
-                sw._acc = Mathf.Min(sw._acc + dt, sw._dt * sw.config.MaxStepsPerFrame);
-                budgetMs = Mathf.Max(budgetMs, sw.config.SimBudgetMsPerFrame);
+                using (s_mCollect.Auto()) _job.Collect();
+                OnTickPublished();
+                _acc -= _dt;
+                if (_acc > _dt) _acc = _dt;   // never bank more than one tick (the round-6 rule)
             }
-            int count = s_live.Count;
-            if (count == 0 || budgetMs <= 0f) return;
-
-            long start = System.Diagnostics.Stopwatch.GetTimestamp();
-            long budget = (long)(budgetMs * 0.001 * System.Diagnostics.Stopwatch.Frequency);
-            bool overBudget = false;
-            // passes: one step per due swarm per pass, so a budget that runs out mid-pass has still
-            // spread its steps evenly across the cell
-            for (bool any = true; any && !overBudget;)
-            {
-                any = false;
-                for (int n = 0; n < count && s_live.Count > 0; n++)
-                {
-                    if (System.Diagnostics.Stopwatch.GetTimestamp() - start >= budget) { overBudget = true; break; }
-                    s_cursor = (s_cursor + 1) % s_live.Count;
-                    var sw = s_live[s_cursor];
-                    if (!sw || sw._core == null || !sw.isActiveAndEnabled || sw._acc < sw._dt) continue;
-                    sw.Tick();
-                    sw._acc -= sw._dt;
-                    any = true;
-                }
-            }
-            ReportSaturation(overBudget, count, budgetMs);
+            Kick();
         }
 
-        static void ReportSaturation(bool overBudget, int swarms, float budgetMs)
+        void Kick()
         {
-            if (!overBudget) { s_saturatedSince = -1f; return; }
-            if (s_saturatedSince < 0f) { s_saturatedSince = Time.unscaledTime; return; }
-            if (s_warnedSaturated || Time.unscaledTime - s_saturatedSince < 5f) return;
-            s_warnedSaturated = true;
-            CSDebug.LogWarning($"[Swarm] {swarms} swarms have needed more than the {budgetMs:F1} ms/frame simulation " +
-                               "budget for 5 s, so they are swimming in slow motion (time is dropped, never banked). " +
-                               "Profile SwarmFauna.Step.* to see which model is dear; in the Editor, check Code " +
-                               "Optimization is set to Release (the bug icon, bottom right) - Debug codegen runs " +
-                               "the swarm cores several times slower.");
-        }
-
-        /// <summary>Far swarms are re-posed every FarPoseInterval frames, staggered so they do not all land
-        /// on one frame. Colliders and index entries move with the transforms, so they never disagree.</summary>
-        bool PoseThisFrame()
-        {
-            int every = config.FarPoseInterval;
-            if (every <= 1) return true;
-            var cam = Camera.main;
-            if (!cam) return true;
-            float near = config.PoseEveryFrameWithin + _core.Plan.Radius * config.UnitScale;
-            if ((cam.transform.position - transform.position).sqrMagnitude <= near * near) return true;
-            return (Time.frameCount + _poseOffset) % every == 0;
-        }
-
-        void Tick()
-        {
-            int n = _core.Cap;
-            for (int i = 0; i < n; i++) { _prevPos[i] = _core.Pos[i]; _prevFace[i] = _core.Facing[i]; }
-
             using (s_mSense.Auto()) SenseVessels();
-            _core.SwimTarget = ToSim(Goal);
-            using (s_mStep[Mathf.Clamp((int)config.Model, 0, s_mStep.Length - 1)].Auto())
-                _core.Step(new System.ReadOnlySpan<SwarmPredator>(_preds, 0, _predCount));
+            _job.SwimTarget = ToSim(Goal);
+            if (!_inline)
+            {
+                using (s_mKick.Auto()) _job.Kick(false);
+                return;
+            }
+            // inline: the cell's ticks share one per-frame budget; over it, this swarm waits a frame
+            if (s_inlineFrame != Time.frameCount) { s_inlineFrame = Time.frameCount; s_inlineMs = 0; }
+            if (s_inlineMs >= config.SimBudgetMsPerFrame) return;
+            long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            using (s_mInline.Auto()) _job.Kick(true);
+            s_inlineMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        }
 
-            var events = _core.Events;
+        void ReportWorkerError()
+        {
+            if (_warnedError) return;
+            _warnedError = true;
+            CSDebug.LogError($"[Swarm] {name}: the swarm's tick threw on its worker and the swarm has stopped: {_job.Error}");
+        }
+
+        /// <summary>Once per tick, on the main thread: everything the published frame drives.</summary>
+        void OnTickPublished()
+        {
+            MaskGone();
+            if (_gpu) using (s_mUpload.Auto()) _render.Upload(_job);
+
+            var events = _job.Events;
             for (int q = 0; q < events.Count; q++)
-            {
-                var ev = events[q];
-                switch (ev.Kind)
-                {
-                    case SwarmEventKind.Laid:
-                        _pending.Enqueue(ev.Index);
-                        break;
-                    case SwarmEventKind.MoltBegan:
-                        if (_members[ev.Index]) _members[ev.Index].SetShape(ShapeFor(ev.Index, ev.Other), PrismZ(ev.Index, ev.Other));
-                        break;
-                    case SwarmEventKind.Switched:
-                        OnMorph(ev.Index, ev.Other);
-                        break;
-                    case SwarmEventKind.Starved:
-                        // only a research-mode grid core kills by itself; the game never builds one
-                        // (BuildGridCore sets HungerKills = false). Kept so the death is never silent.
-                        if (_members[ev.Index]) _members[ev.Index].Starve();
-                        break;
-                }
-            }
-            events.Clear();
+                if (events[q].Kind == SwarmEventKind.Switched) OnMorph(events[q].Index, events[q].Other);
 
-            // shapes and tiers follow the homes, at the homes' own cadence
-            using (s_mMembers.Auto())
-            {
-                bool reshape = _core.Clock % 8 == 0;
-                for (int i = 0; i < n; i++)
-                {
-                    var m = _members[i];
-                    if (!m || !_core.Alive[i]) continue;
-                    int e = _core.EffectiveElement(i);
-                    if (reshape && _core.Molt[i] <= 0f) m.SetShape(ShapeFor(i, e), PrismZ(i, e));
-                    UpdateTier(i, m, e);
-                }
-            }
-
+            using (s_mProxies.Auto()) SyncProxies();
             using (s_mFeed.Auto()) Feed();
             Starvation();
             Extinction();
+            transform.position = Uni(_job.Anchor);
+        }
+
+        /// <summary>A member that died since the running tick started is still alive in its frame: hide it
+        /// until a tick that applied the kill is published (or the slot holds a NEW member).</summary>
+        void MaskGone()
+        {
+            for (int q = _goneSlots.Count - 1; q >= 0; q--)
+            {
+                int i = _goneSlots[q];
+                if (!_job.Instances[i].Alive || _job.BornThisTick(i)) { _gone[i] = false; _goneSlots.RemoveAt(q); continue; }
+                _job.Instances[i].Flags = 0u;
+            }
         }
 
         void OnMorph(int fromPlan, int toPlan)
         {
             CSDebug.LogVerbose(CSLogChannel.Ecology,
-                $"[Swarm] {name} morphs {_plans[fromPlan].Kind} -> {_plans[toPlan].Kind} ({_core.AliveCount} tadpoles)");
+                $"[Swarm] {name} morphs {_plans[fromPlan].Kind} -> {_plans[toPlan].Kind} ({_job.AliveCount} tadpoles)");
             if (!config.MorphEvent.IsNull && AudioSystem.Instance)
                 AudioSystem.Instance.PlaySFXEvent(config.MorphEvent, transform.position);
         }
 
-        void UpdateTier(int i, SwarmTadpoleFauna m, int e)
-        {
-            if (e != 0) { m.SetTier(false, false); _danger[i] = false; return; }   // only Charge changes state
-            float st = _core.Startle[i];
-            if (_danger[i]) { if (st < config.DangerExit) _danger[i] = false; }
-            else if (st > config.DangerEnter) _danger[i] = true;
-            bool shield = _core.TryGetLook(i, 0, out _, out int tier) && tier == 2;
-            m.SetTier(_danger[i], shield);
-        }
+        // ───────────────────────────────────────────────────────────────── proxies
 
-        // ───────────────────────────────────────────────────────────────── render
-
-        void Render(float alpha)
+        /// <summary>
+        /// Members a vessel is near get a proxy (budgeted cell-wide per frame); a proxy whose vessel has been
+        /// gone for ProxyLingerSeconds is retired. Without GPU drawing EVERY member needs one (the fallback).
+        /// Each kept proxy takes its member's shape, tier and heart element from the published frame.
+        /// </summary>
+        void SyncProxies()
         {
             float now = Time.time;
-            // a far swarm is posed every few frames, so the molt advances by the time since ITS last pose
-            float dt = _lastPoseTime < 0f ? Time.deltaTime : Mathf.Min(now - _lastPoseTime, 0.5f);
-            _lastPoseTime = now;
-            s_mPose.Begin();
-            float bloom = config.BirthBloomSeconds, moltRate = dt / config.MoltHeartSeconds;
-            for (int i = 0; i < _core.Cap; i++)
+            var inst = _job.Instances;
+            if (_gpu)
             {
-                var m = _members[i];
-                if (!m || !_core.Alive[i]) continue;
-
-                var p = SVector3.Lerp(_prevPos[i], _core.Pos[i], alpha);
-                var f = SVector3.Lerp(_prevFace[i], _core.Facing[i], alpha);
-                m.transform.SetPositionAndRotation(ToWorld(p), Face(f));
-
-                float age = now - _birthTime[i];
-                if (age < bloom)
+                for (int q = 0; q < _job.EngagedCount; q++)
                 {
-                    float a = Mathf.Clamp01(age / bloom);
+                    int i = _job.Engaged[q];
+                    if (_gone[i]) continue;
+                    _wantedAt[i] = now;
+                    if (!_proxy[i]) TrySpawnProxy(i);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < _cap; i++)
+                {
+                    if (!inst[i].Alive || _gone[i]) continue;
+                    _wantedAt[i] = now;
+                    if (!_proxy[i]) TrySpawnProxy(i);
+                }
+            }
+
+            for (int q = _proxySlots.Count - 1; q >= 0; q--)
+            {
+                int i = _proxySlots[q];
+                var m = _proxy[i];
+                if (!m) { _proxySlots.RemoveAt(q); _proxy[i] = null; continue; }
+                if (!inst[i].Alive && !_gone[i])
+                {
+                    // the core dropped the member without a death through us (a research-mode core); the
+                    // proxy dies the platform's way so the crystal is never lost
+                    m.Starve();
+                    continue;
+                }
+                if (_gpu && !_starving[i] && now - _wantedAt[i] > config.ProxyLingerSeconds)
+                {
+                    m.Retire();
+                    _proxy[i] = null;
+                    _proxySlots.RemoveAt(q);
+                    continue;
+                }
+                ref var s = ref inst[i];
+                var e = SwarmFaunaConfigSO.ToElement(s.CurMolt >= 0.5f && s.CurMolt < 1f ? s.HeartTo : s.HeartFrom);
+                if (m.HeartElement != e) m.ReformHeart(e, SwarmFaunaConfigSO.Of(config.HeartWorldScale, e));
+                m.SetShape(new Vector3(s.Scale.X, s.Scale.Y, s.Scale.Z), s.PrismZ);
+                m.SetTier(s.Tier == 1, s.Tier == 2);
+            }
+        }
+
+        bool TrySpawnProxy(int i, bool force = false)
+        {
+            int frame = Time.frameCount;
+            if (s_spawnFrame != frame) { s_spawnFrame = frame; s_spawnsThisFrame = 0; }
+            if (!force && s_spawnsThisFrame >= config.MaxSpawnsPerFrame) return false;
+            s_spawnsThisFrame++;
+
+            ref var s = ref _job.Instances[i];
+            var e = SwarmFaunaConfigSO.ToElement(s.CurMolt >= 0.5f && s.CurMolt < 1f ? s.HeartTo : s.HeartFrom);
+            var member = Instantiate(config.TadpolePrefab, Uni(s.CurPos), Face(s.CurFace));
+            member.Bind(HostCell, this, i, e, SwarmFaunaConfigSO.Of(config.HeartWorldScale, e),
+                        new Vector3(s.Scale.X, s.Scale.Y, s.Scale.Z), s.PrismZ, hideLive: _gpu);
+            HostCell.RegisterSpawnedObject(member.gameObject);
+            // The replication seam every fauna producer reaches. A swarm member carries no NetworkObject
+            // (members are client-local, like every freestyle creature), so this only neutralizes; it is
+            // here so the seam gate holds for this producer too.
+            FaunaNetworkSync.ServerSpawn(member);
+            // without GPU drawing the proxy IS the member's picture, so it grows in (continuity of existence)
+            if (!_gpu && _job.BornThisTick(i)) member.transform.localScale = Vector3.one * 0.001f;
+            _proxy[i] = member;
+            _proxySlots.Add(i);
+            return true;
+        }
+
+        /// <summary>A member died (any path, through its proxy). The core hears of it on the next tick.</summary>
+        public void HandleMemberDeath(SwarmTadpoleFauna member)
+        {
+            if (_job == null || !member) return;
+            int i = member.Index;
+            if (i < 0 || i >= _cap || _proxy[i] != member) return;
+            _job.QueueKill(i);
+            _proxy[i] = null;
+            _proxySlots.Remove(i);
+            _starving[i] = false;
+            if (!_gone[i]) { _gone[i] = true; _goneSlots.Add(i); }
+            if (_gpu) _render.HideSlot(_job, i);   // the proxy's own death visuals take over this frame
+            else _job.Instances[i].Flags = 0u;
+        }
+
+        /// <summary>Proxies follow their member every frame (at most MaxProxies; the mover contract keeps
+        /// the spatial index and colliders honest). The fallback also grows newborns in here.</summary>
+        void PoseProxies(float alpha)
+        {
+            var up = Uni(_job.BY);
+            for (int q = 0; q < _proxySlots.Count; q++)
+            {
+                int i = _proxySlots[q];
+                var m = _proxy[i];
+                if (!m) continue;
+                m.transform.SetPositionAndRotation(Uni(_job.PoseAt(i, alpha)), Face(_job.FaceAt(i, alpha), up));
+                if (!_gpu)
+                {
+                    float age = (_job.Tick + alpha - _job.Instances[i].BirthTick) / Mathf.Max(_bloomTicks, 1e-3f);
+                    float a = Mathf.Clamp01(age);
                     m.transform.localScale = Vector3.one * Mathf.Max(0.001f, a * a * (3f - 2f * a));
                 }
-                else if (m.transform.localScale.x != 1f) m.transform.localScale = Vector3.one;
-
-                // MOLT, made visible: the heart shrinks away, re-forms as the new element, grows back.
-                var want = SwarmFaunaConfigSO.ToElement(_core.Molt[i] >= 0.5f ? _core.MoltTo[i] : _core.Elem[i]);
-                float h = _heartFactor[i];
-                if (m.HeartElement != want)
-                {
-                    h -= moltRate;
-                    if (h <= 0f) { h = 0f; m.ReformHeart(want, SwarmFaunaConfigSO.Of(config.HeartWorldScale, want)); }
-                    m.SetHeartDisplay(h);
-                }
-                else if (h < 1f)
-                {
-                    h = Mathf.Min(1f, h + moltRate);
-                    m.SetHeartDisplay(h);
-                }
-                _heartFactor[i] = h;
+                m.SyncBodyToIndex();
+                if (_starving[i] && m.Ready) { _starving[i] = false; m.Starve(); }
             }
-            s_mPose.End();
-
-            // the mover contract (spatial index + render-entity matrix), measured on its own
-            using (s_mSync.Auto())
-                for (int i = 0; i < _core.Cap; i++)
-                {
-                    var m = _members[i];
-                    if (m && _core.Alive[i]) m.SyncBodyToIndex();
-                }
-            transform.position = ToWorld(_core.Anchor);
+            for (int q = 0; q < _mouth.Length; q++)
+            {
+                int i = _mouthSlot[q];
+                if (i < 0) continue;
+                if (Time.time > _mouthUntil[q] || !_job.Instances[i].Alive) { _mouthSlot[q] = -1; continue; }
+                _mouth[q].position = Uni(_job.PoseAt(i, alpha));
+            }
         }
 
         // ───────────────────────────────────────────────────────────────── vessels
 
         void SenseVessels()
         {
-            _predCount = 0;
+            _job.PredCount = 0;
             _seen.Clear();
-            float radius = _core.Plan.Radius * config.UnitScale * 1.6f + config.SenseMargin;
+            float radius = _plans[Mathf.Clamp(_job.PlanIx, 0, 3)].Radius * config.UnitScale * 1.6f
+                           + Mathf.Max(config.SenseMargin, config.EngageRadius);
             int hits = Physics.OverlapSphereNonAlloc(transform.position, radius, OverlapScratch, NonPrismOverlapMask);
             float toSimVel = 1f / (config.UnitScale * config.TickHz);
-            for (int h = 0; h < hits && _predCount < _preds.Length; h++)
+            var preds = _job.Preds;
+            for (int h = 0; h < hits && _job.PredCount < preds.Length; h++)
             {
                 var col = OverlapScratch[h];
                 if (!col) continue;
@@ -637,7 +660,7 @@ namespace CosmicShore.Gameplay
                 if (status == null || _seen.Contains(status) || status is not Component c || !c) continue;
                 _seen.Add(status);
                 var v = status.Course * status.Speed;
-                _preds[_predCount++] = new SwarmPredator
+                preds[_job.PredCount++] = new SwarmPredator
                 {
                     C = ToSim(c.transform.position),
                     V = Sim(v) * toSimVel,
@@ -649,43 +672,52 @@ namespace CosmicShore.Gameplay
         // ───────────────────────────────────────────────────────────────── food
 
         /// <summary>
-        /// Grazing. A few members per step take one bite each of the nearest edible FLORA prism within
-        /// reach; the prism is consumed (suctioned into the biter - the food web's sanctioned
-        /// down-force on mass) and its volume is banked in the stomach under the PLANT's element,
-        /// which is what later pays for eggs. A full stomach stops grazing: a grown body does not
-        /// strip its feeding ground for nothing.
+        /// Grazing. A few members per tick take one bite each of the nearest edible FLORA prism within
+        /// reach of where the published frame has them; the prism is consumed (suctioned into a mouth
+        /// posed at the biter - the food web's sanctioned down-force on mass) and its volume is QUEUED
+        /// into the stomach under the PLANT's element, which is what later pays for eggs. A full stomach
+        /// stops grazing: a grown body does not strip its feeding ground for nothing.
         /// </summary>
         void Feed()
         {
-            float capacity = config.StomachEggs * (config.EggVolume.x + config.EggVolume.y + config.EggVolume.z + config.EggVolume.w) * 0.25f;
-            float banked = _core.Stomach[0] + _core.Stomach[1] + _core.Stomach[2] + _core.Stomach[3];
-            if (banked >= capacity) { _lastFedTime = Time.time; return; }
+            float capacity = config.StomachEggs * Density * (config.EggVolume.x + config.EggVolume.y + config.EggVolume.z + config.EggVolume.w) * 0.25f;
+            var st = _job.Stomach;
+            if (st[0] + st[1] + st[2] + st[3] >= capacity) { _lastFedTime = Time.time; return; }
 
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable) return;
 
-            int n = _core.Cap, bitten = 0;
-            for (int tries = 0; tries < n && bitten < config.BitersPerStep; tries++)
+            var inst = _job.Instances;
+            int bitten = 0, biters = config.BitersPerStep;   // round 7: NOT x Density - bites are the one main-thread cost that scales with appetite
+            for (int tries = 0; tries < _cap && bitten < biters; tries++)
             {
-                _biteCursor = (_biteCursor + 1) % n;
+                _biteCursor = (_biteCursor + 1) % _cap;
                 int i = _biteCursor;
-                var m = _members[i];
-                if (!m || !_core.Alive[i]) continue;
+                if (!inst[i].Alive || _gone[i]) continue;
                 bitten++;
-                Vector3 at = m.transform.position;
+                Vector3 at = Uni(inst[i].CurPos);
                 int found = index.QuerySphere(at, config.BiteRadius, FeedScratch);
                 for (int q = 0; q < found; q++)
                 {
                     var prism = FeedScratch[q];
                     if (!IsFood(prism, out int e)) continue;
                     float volume = Mathf.Max(0.001f, prism.Volume);
-                    prism.Consume(m.transform, domain, _eaterName, false, true);
-                    _core.Stomach[e] += volume;
+                    prism.Consume(MouthFor(i, at), domain, _eaterName, false, true);
+                    _job.QueueDeposit(e, volume);
                     _lastFedTime = Time.time;
                     _atPlantSince = -1f;
                     break;
                 }
             }
+        }
+
+        Transform MouthFor(int i, Vector3 at)
+        {
+            _mouthCursor = (_mouthCursor + 1) % _mouth.Length;
+            _mouthSlot[_mouthCursor] = i;
+            _mouthUntil[_mouthCursor] = Time.time + 2f;   // longer than a consume suction
+            _mouth[_mouthCursor].position = at;
+            return _mouth[_mouthCursor];
         }
 
         /// <summary>
@@ -712,7 +744,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override Vector3 ResolveGoal()
         {
-            if (_core == null || !HostCell) return Goal;
+            if (_job == null || !HostCell) return Goal;
             Vector3 here = transform.position;
             float now = Time.time;
 
@@ -749,20 +781,24 @@ namespace CosmicShore.Gameplay
 
         void Starvation()
         {
+            // the victim the tick picked (asked for last tick): give it a proxy, shed it once that is Ready
+            int v = _job.StarvationVictim;
+            if (v >= 0 && v < _cap && _job.Instances[v].Alive && !_gone[v] && !_starving[v])
+            {
+                if (_proxy[v] || TrySpawnProxy(v, force: true)) { _starving[v] = true; _wantedAt[v] = Time.time; }
+            }
+
             float now = Time.time;
             if (now - _lastFedTime < config.StarvationSeconds) return;
             if (now - _lastShedTime < config.ShedIntervalSeconds) return;
             _lastShedTime = now;
-
-            // shed the member the body needs least - the core decides who (the field core: one of the
-            // most-surplus element; the grid core: the hungriest misplaced-surplus member)
-            int victim = _core.StarvationVictim();
-            if (victim >= 0 && _members[victim] && _core.Alive[victim]) _members[victim].Starve();
+            // shed the member the body needs least - the core decides who, on the worker, next tick
+            _job.WantStarvationVictim = true;
         }
 
         void Extinction()
         {
-            if (_core.AliveCount > 0) { _extinctSince = -1f; return; }
+            if (_job.AliveCount > 0 || _proxySlots.Count > 0) { _extinctSince = -1f; return; }
             if (_extinctSince < 0f) { _extinctSince = Time.time; return; }
             if (Time.time - _extinctSince < config.ExtinctLingerSeconds) return;
             // The anchor has no body and no heart - removing it pops nothing - and the cell's seeder
@@ -774,16 +810,16 @@ namespace CosmicShore.Gameplay
         // ───────────────────────────────────────────────────────────────── units
 
         SVector3 ToSim(Vector3 world) => Sim((world - _centre) / config.UnitScale);
-        Vector3 ToWorld(SVector3 sim) => _centre + Uni(sim) * config.UnitScale;
         static SVector3 Sim(Vector3 v) => new(v.x, v.y, v.z);
         static Vector3 Uni(SVector3 v) => new(v.X, v.Y, v.Z);
 
-        Quaternion Face(SVector3 f)
+        Quaternion Face(SVector3 f) => Face(f, Uni(_job.BY));
+
+        Quaternion Face(SVector3 f, Vector3 up)
         {
             var fw = Uni(f);
-            if (fw.sqrMagnitude < 1e-6f) fw = Uni(_core.BX);
-            var up = Uni(_core.BY);
-            if (Mathf.Abs(Vector3.Dot(fw.normalized, up)) > 0.98f) up = Uni(_core.BZ);
+            if (fw.sqrMagnitude < 1e-6f) fw = Uni(_job.BX);
+            if (Mathf.Abs(Vector3.Dot(fw.normalized, up)) > 0.98f) up = Uni(_job.BZ);
             return Quaternion.LookRotation(fw, up);
         }
     }

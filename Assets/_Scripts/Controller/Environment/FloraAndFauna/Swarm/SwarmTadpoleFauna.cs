@@ -5,6 +5,17 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
+    /// ROUND 7 (Docs/SWARM_FAUNA.md §14): this is now a member's PROXY. A swarm member is data in the
+    /// swarm's simulation and is DRAWN by the swarm from one GPU buffer; only a member within reach of a
+    /// vessel (or one the swarm is about to shed) is given this GameObject, so the platform's every
+    /// weapon, ram, joust, skim and predator finds a real heart and a real body prism to act on. While it
+    /// lives a proxy draws NOTHING (its body prism is owner-hidden, its heart's and spindle's renderers are
+    /// off) - the swarm keeps drawing it, so a member never changes look when it gains or loses its proxy.
+    /// On death the proxy's real visuals take over: the released heart and the skeleton (or the suction
+    /// into an eater) are the platform's own. A proxy RETIRED because the vessel left is destroyed without
+    /// dying: no crystal, no skeleton - the member lives on in the simulation (Fauna.OnDestroy releases a
+    /// heart only for a creature that died).
+    ///
     /// One member of a swarm (Docs/SWARM_FAUNA.md) - a heart, a spindle and one body prism. It is a
     /// genuine fauna and a genuine lifeform: it carries its OWN elemental heart and dies through the
     /// sealed <see cref="Fauna.Die"/>, so every kill drops a collectable crystal and nothing pops.
@@ -35,6 +46,7 @@ namespace CosmicShore.Gameplay
         bool _dead;
         bool _danger;
         bool _shield;
+        bool _ready, _hideLive = true;
         Vector3 _shape;
 
         /// <summary>True once any death path has run.</summary>
@@ -55,7 +67,7 @@ namespace CosmicShore.Gameplay
         /// species size. Called once, right after Instantiate, by <see cref="SwarmFauna"/>.
         /// </summary>
         public void Bind(Cell cell, SwarmFauna swarm, int index, Element element, float heartWorldScale,
-                         Vector3 prismLocalScale, float prismLocalZ)
+                         Vector3 prismLocalScale, float prismLocalZ, bool hideLive = true)
         {
             Swarm = swarm;
             Index = index;
@@ -76,6 +88,68 @@ namespace CosmicShore.Gameplay
             // Every member carries its own heart (Docs/ECOSYSTEM.md §23.3): joustable while it lives,
             // dropped by the sealed Die on death.
             ProvisionMemberHeart(element, heartWorldScale);
+
+            // The swarm draws the living member; this proxy only collides and conserves (§14). Without GPU
+            // drawing (the fallback) the proxy IS the member's picture and stays visible.
+            _hideLive = hideLive;
+            if (hideLive) HideLiveVisuals();
+        }
+
+        /// <summary>
+        /// True once the body prism has finished its creation (collider live, spatial index registered)
+        /// and its grow-in has been completed: from here a death leaves a full-size skeleton exactly where
+        /// the swarm was drawing the body. Polled by the swarm, which defers a starvation shed until then.
+        /// </summary>
+        public bool Ready
+        {
+            get
+            {
+                if (_ready) return true;
+                if (!_body || _body.destroyed || !_body.IsCreationComplete) return false;
+                _body.CompleteGrowthImmediately();
+                _ready = true;
+                return true;
+            }
+        }
+
+        /// <summary>Every renderer this proxy owns, off, except what the platform draws for itself: the body
+        /// prism is owner-hidden (its collider, index entry and companion entity stay live), and the heart's
+        /// renderers are switched off. Undone by <see cref="ShowDeathVisuals"/>.</summary>
+        void HideLiveVisuals()
+        {
+            if (_body) _body.SetOwnerHidden(true);
+            var renderers = GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                var r = renderers[i];
+                if (!r || r.GetComponentInParent<Prism>(true)) continue;   // the prism draws through its entity
+                r.enabled = false;                                         // spindle + heart models
+            }
+        }
+
+        /// <summary>The death's visuals are the platform's: un-hide the heart (released, collectable) and
+        /// the body (skeleton or suction). Runs before anything the death leaves behind can be seen.</summary>
+        void ShowDeathVisuals()
+        {
+            if (crystal)
+            {
+                var rs = crystal.GetComponentsInChildren<Renderer>(true);
+                for (int i = 0; i < rs.Length; i++) if (rs[i]) rs[i].enabled = true;
+            }
+            var prisms = GetComponentsInChildren<HealthPrism>(true);
+            for (int i = 0; i < prisms.Length; i++) if (prisms[i]) prisms[i].SetOwnerHidden(false);
+        }
+
+        /// <summary>
+        /// The vessel left: give the member back to the swarm's simulation. Not a death - nothing is
+        /// released, nothing is left behind, and nothing visible changes (the swarm was drawing it all
+        /// along). Mass is conserved because the member still exists in the simulation.
+        /// </summary>
+        public void Retire()
+        {
+            if (_dead) return;
+            Swarm = null;   // a late death callback must not reach the swarm for a slot that moved on
+            Destroy(gameObject);
         }
 
         void ProvisionMemberHeart(Element element, float heartWorldScale)
@@ -89,6 +163,13 @@ namespace CosmicShore.Gameplay
             }
             ApplyHeartSize(heartWorldScale);
             _heartElement = element;
+            if (crystal && !_dead && _hideLive)
+            {
+                // a proxy's heart is never drawn while it lives (the swarm draws it), so a re-formed one
+                // is hidden from its first frame too
+                var rs = crystal.GetComponentsInChildren<Renderer>(true);
+                for (int i = 0; i < rs.Length; i++) if (rs[i]) rs[i].enabled = false;
+            }
         }
 
         /// <summary>
@@ -102,21 +183,9 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Draws the heart at <paramref name="factor"/> of its species size - the molt's shrink and
-        /// re-form (factor 1 = the true size). The member's root is authored at scale 1, so the heart's
-        /// local scale IS its world scale at rest; during a newborn's bloom the heart scales WITH the
-        /// root, which is the bloom.
-        /// </summary>
-        public void SetHeartDisplay(float factor)
-        {
-            if (_dead || !crystal || !crystal.IsEmbedded) return;
-            crystal.transform.localScale = Vector3.one * Mathf.Max(0.001f, HeartWorldScale * Mathf.Clamp01(factor));
-        }
-
-        /// <summary>
-        /// A heart caught mid-molt is drawn shrunk, and a crystal's world scale IS its collect reward
-        /// (Docs/ECOSYSTEM.md §40.2) - so every death path restores the true size BEFORE the sealed Die
-        /// releases it. A molt can never make a kill pay less.
+        /// A crystal's world scale IS its collect reward (Docs/ECOSYSTEM.md §40.2), so every death path
+        /// asserts the true size BEFORE the sealed Die releases it. Since round 7 the proxy's heart is never
+        /// drawn shrunk (the molt is drawn by the swarm's shader), so this is a guard, not a repair.
         /// </summary>
         void RestoreHeartSize()
         {
@@ -204,6 +273,7 @@ namespace CosmicShore.Gameplay
         {
             if (_dead) return;
             _dead = true;
+            ShowDeathVisuals();
 
             // The population re-solves its body around the hole first, while this husk still exists.
             if (Swarm) Swarm.HandleMemberDeath(this);
