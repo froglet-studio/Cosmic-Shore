@@ -38,7 +38,8 @@
 //     steps; under CLAUDE.md's no-imposed-death law that would be a timer cull. In the game the only
 //     self-inflicted death is STARVATION (the host decides: the swarm went unfed), and hunger only
 //     picks WHO is shed - the most misplaced surplus member first (Docs/SWARM_FAUNA.md §8.3);
-//   * one domain (the cell's controlling colour): every slot maps to domain 0;
+//   * one domain (the cell's controlling colour): every slot maps to domain 0 - unless the swarm is
+//     MultiDomain (round 8, Docs/SWARM_FAUNA.md §16.4: DomainSlots + FoodDomains, a newborn wears its food's domain);
 //   * swimming (the body cruises toward the host's goal and turns to face its heading), the radial
 //     band, the membrane, and the vessel reaction ported from SwarmFieldCore (startle wave, per-
 //     element flee, Time mobbing a loitering ship, the pufferfish inflating).
@@ -125,6 +126,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Keep the research's three domain slots (true: only for the harness). The game's
         /// one-colour law maps every slot to domain 0.</summary>
         public bool DomainSlots = false;
+        /// <summary>Round 8 MultiDomain (Docs/SWARM_FAUNA.md §16.4): a member's domain slot is its population's
+        /// DIET HISTORY - every seed takes slot 0 (the cell's controlling domain) and a newborn takes the slot of the
+        /// mass that FUNDED its egg (StomachDom). Off: seeds follow the plan's slot mix and a child keeps its parent's.</summary>
+        public bool FoodDomains = false;
         /// <summary>Hunger withers a member by itself (research). False = hunger only picks the
         /// starvation victim when the HOST starves the swarm (the game's law).</summary>
         public bool HungerKills = false;
@@ -338,7 +343,7 @@ namespace CosmicShore.Gameplay
             var plan = Plans[planElement];
             count = Math.Min(count, Math.Min(Cap, plan.N));   // never more than the creature holds
             var em = LargestRemainder(plan.Mix, count, true);
-            var dm = C.DomainSlots ? LargestRemainder(plan.SlotMix, count, true) : new[] { count, 0, 0 };
+            var dm = C.DomainSlots && !C.FoodDomains ? LargestRemainder(plan.SlotMix, count, true) : new[] { count, 0, 0 };
             SeedWith(em, dm, anchor, 2f);
             SetHeading(heading, snap: true);
             SwimTarget = anchor;
@@ -1118,7 +1123,11 @@ namespace CosmicShore.Gameplay
                 int free = -1; for (int i = 0; i < Cap; i++) if (!Active[i]) { free = i; break; }
                 if (free < 0) break;
                 int e = childE[par], d = Dom[par];
-                if (C.Funded && !TryFund(e)) continue;   // hungry: this parent waits for the next meal
+                if (C.Funded)
+                {
+                    if (!SwarmCoreShared.TryFund(Stomach, C.FoodDomains ? StomachDom : null, e, C.EggCost[e], C.CrossCost, out int fd)) continue;   // hungry: this parent waits for the next meal
+                    if (fd >= 0) d = fd;   // MultiDomain: the domain of the mass that paid
+                }
                 var u = GridCoord(_pos0[par], centre, swell);
                 var g = Rotate(SampleGrad(_def, e * 3 + d, u));
                 g /= MathF.Max(g.Length(), 1e-6f);

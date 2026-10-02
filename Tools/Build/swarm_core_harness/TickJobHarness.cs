@@ -271,6 +271,91 @@ static class TickJobHarness
                   $"negative control: without the exclusions the cell over-counts by exactly the proxied volume ({over:F0})");
         }
 
+        Console.WriteLine("\nR8e. MultiDomain: seeds wear the anchor domain, a newborn wears the domain of the mass that FUNDED it (Docs/SWARM_FAUNA.md §16.4)");
+        {
+            ISwarmCore SortCore(bool multiDomain)
+            {
+                var p = SortHarness.Game(plans);
+                p.LayMax = Math.Max(p.LayMax, 5 * Math.Max(1, plans[1].N / 192));
+                p.DomainSlots = multiDomain; p.FoodDomains = multiDomain;
+                return SortHarness.GameSwarm(plans, 1, 7, fed: false, p);
+            }
+            ISwarmCore GridCore(bool multiDomain)
+            {
+                var p = GridHarness.Game(plans);
+                p.DomainSlots = multiDomain; p.FoodDomains = multiDomain;
+                return GridHarness.GameSwarm(plans, 1, 7, fed: false, p);
+            }
+            ISwarmCore FieldCore(bool multiDomain)
+            {
+                var c = new SwarmFieldCore(plans, new SwarmFieldParams { FoodDomains = multiDomain, LayMax = 5, LayRate = 0.1f, Cap = plans.Max(q => q.N) }, 7);
+                c.Seed(1, SortHarness.GameSeed, new Vector3(200, 0, 0), Vector3.UnitX);
+                c.SwimTarget = c.Anchor;
+                return c;
+            }
+            (int[] count, int seeds, double sameNN, double randomNN) RunMulti(Func<bool, ISwarmCore> make, bool multiDomain)
+            {
+                var core = make(multiDomain);
+                var st = Settings(); st.MultiDomain = multiDomain;
+                var j = new SwarmTickJob(core, st, 10f) { SwimTarget = core.SwimTarget };
+                j.Prime();
+                int seeds = j.AliveCount;
+                // the eaten mass arrives a little at a time, the way grazing deposits it: first slot 1, then slot 2
+                for (int t = 0; t < 400; t++)
+                {
+                    int slot = t < 200 ? 1 : 2;
+                    if (t % 10 == 0) for (int e = 0; e < 4; e++) j.QueueDeposit(e, 0.6f * plans[1].Mix[e] / (float)plans[1].N * 10f, slot);
+                    Tick(j, inline: true);
+                }
+                for (int t = 0; t < 300; t++) Tick(j, inline: true);
+                var count = new int[3]; var live = new System.Collections.Generic.List<int>();
+                for (int i = 0; i < j.Instances.Length; i++)
+                    if (j.Instances[i].Alive) { count[j.Instances[i].DomainSlot]++; live.Add(i); }
+                int same = 0;
+                foreach (int i in live)
+                {
+                    int best = -1; float bd = float.MaxValue; var pi = j.Instances[i].CurPos;
+                    foreach (int k in live) { if (k == i) continue; float d = Vector3.DistanceSquared(pi, j.Instances[k].CurPos); if (d < bd) { bd = d; best = k; } }
+                    if (best >= 0 && j.Instances[best].DomainSlot == j.Instances[i].DomainSlot) same++;
+                }
+                double n = Math.Max(1, live.Count), rnd = 0; for (int d = 0; d < 3; d++) rnd += (count[d] / n) * (count[d] / n);
+                return (count, seeds, same / n, rnd);
+            }
+            var on = RunMulti(SortCore, true);
+            Console.WriteLine($"  MultiDomain on : {on.seeds} seeds; members by slot {on.count[0]}/{on.count[1]}/{on.count[2]}; " +
+                              $"nearest neighbour shares the domain {on.sameNN:P0} (labels at random: {on.randomNN:P0})");
+            Check(on.count[0] == on.seeds, "every seed - and only the seeds - wears slot 0 (the anchor's domain)");
+            Check(on.count[1] > 0 && on.count[2] > 0, "newborns wear the slot of the mass that funded them (slot-1 food, then slot-2 food)");
+            Check(on.sameNN > on.randomNN + 0.1, "domains sort into regions (nearest neighbour shares the domain well above chance)");
+            var off = RunMulti(SortCore, false);
+            Console.WriteLine($"  MultiDomain off: members by slot {off.count[0]}/{off.count[1]}/{off.count[2]}");
+            Check(off.count[1] == 0 && off.count[2] == 0 && off.count[0] > off.seeds,
+                  "negative control: the one-colour swarm fed the SAME mixed-domain food stays one colour");
+            foreach (var (label, make) in new (string, Func<bool, ISwarmCore>)[] { ("grid", GridCore), ("field", FieldCore) })
+            {
+                var m = RunMulti(make, true); var o = RunMulti(make, false);
+                Console.WriteLine($"  {label,-5} core: on {m.count[0]}/{m.count[1]}/{m.count[2]} ({m.seeds} seeds), off {o.count[0]}/{o.count[1]}/{o.count[2]}");
+                Check(m.count[0] == m.seeds && m.count[1] > 0 && m.count[2] > 0 && o.count[1] == 0 && o.count[2] == 0,
+                      $"the {label} core follows the same rule (and stays one colour with it off)");
+            }
+        }
+
+        Console.WriteLine("\nR8f. the funding rule draws the domain split in proportion and names the slot that paid most");
+        {
+            var stomach = new float[] { 0f, 10f, 0f, 0f };
+            var dom = new float[12]; dom[1 * 3 + 0] = 2f; dom[1 * 3 + 2] = 8f;   // Mass reserve: 2 of slot 0, 8 of slot 2
+            bool ok1 = SwarmCoreShared.TryFund(stomach, dom, 1, 5f, 2f, out int s1);
+            Check(ok1 && s1 == 2 && Math.Abs(dom[3] - 1f) < 1e-5 && Math.Abs(dom[5] - 4f) < 1e-5 && stomach[1] == 5f,
+                  $"an egg costing half the reserve draws half of each domain's share and is the majority's (slot {s1})");
+            var st2 = new float[] { 0f, 0f, 3f, 0f }; var d2 = new float[12]; d2[2 * 3 + 1] = 3f;
+            bool ok2 = SwarmCoreShared.TryFund(st2, d2, 1, 1f, 2f, out int s2);   // cross-element: Space pays for a Mass egg
+            Check(ok2 && s2 == 1 && Math.Abs(d2[7] - 1f) < 1e-5, $"a cross-element egg is credited to the domain of the reserve it drew (slot {s2})");
+            var st3 = new float[] { 0f, 0f, 0f, 0f }; var d3 = new float[12];
+            Check(!SwarmCoreShared.TryFund(st3, d3, 0, 1f, 2f, out int s3) && s3 == -1, "an unaffordable egg spends nothing and names no slot");
+            var st4 = new float[] { 5f, 0f, 0f, 0f };
+            Check(SwarmCoreShared.TryFund(st4, null, 0, 1f, 2f, out int s4) && s4 == -1, "a one-colour swarm (no split) names no slot: the parent's domain stands");
+        }
+
         Console.WriteLine(_fail == 0 ? "\ntick job: OK" : $"\ntick job: {_fail} FAILED");
         return _fail;
     }

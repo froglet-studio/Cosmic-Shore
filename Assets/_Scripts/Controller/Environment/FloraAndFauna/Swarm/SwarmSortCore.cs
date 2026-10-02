@@ -73,6 +73,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Keep the research's domain regions (true: only for the harness). The game's
         /// one-colour law leaves one region, so a type is just an element.</summary>
         public bool DomainSlots = false;
+        /// <summary>Round 8 MultiDomain (Docs/SWARM_FAUNA.md §16.4): a member's domain slot is its population's
+        /// DIET HISTORY - every seed takes slot 0 (the cell's controlling domain) and a newborn takes the slot of the
+        /// mass that FUNDED its egg (StomachDom). Off: seeds follow the plan's slot mix and a child keeps its parent's.</summary>
+        public bool FoodDomains = false;
         /// <summary>Laying pays out of the stomach (game). False = free (research).</summary>
         public bool Funded = true;
         public float[] EggCost = { 1f, 1f, 1f, 1f };
@@ -483,7 +487,7 @@ namespace CosmicShore.Gameplay
             var plan = Plans[planElement];
             count = Math.Min(count, Math.Min(Cap, plan.N));
             var em = LargestRemainder(plan.Mix, count, true);
-            var dm = C.DomainSlots ? LargestRemainder(plan.SlotMix, count, true) : new[] { count, 0, 0 };
+            var dm = C.DomainSlots && !C.FoodDomains ? LargestRemainder(plan.SlotMix, count, true) : new[] { count, 0, 0 };
             SeedWith(em, dm, anchor, 2f);
             SetHeading(heading, snap: true);
             SwimTarget = anchor;
@@ -1122,17 +1126,26 @@ namespace CosmicShore.Gameplay
                     if (_rng.NextDouble() < C.PCross && _deficit[maj * 4 + r] > 0) ce = maj;          // the plan's element keeps its lead
                     else continue;
                 }
-                if (C.Funded && !SwarmCoreShared.TryFund(Stomach, ce, C.EggCost[ce], C.CrossCost)) continue;   // hungry: waits for a meal
+                int cd = Dom[par];
+                if (C.Funded)
+                {
+                    if (!SwarmCoreShared.TryFund(Stomach, C.FoodDomains ? StomachDom : null, ce, C.EggCost[ce], C.CrossCost, out int fd)) continue;   // hungry: waits for a meal
+                    if (fd >= 0) cd = fd;   // MultiDomain: the domain of the mass that paid
+                }
                 int j2 = -1; for (int i = freeFrom; i < Cap; i++) if (!Active[i]) { j2 = i; break; }
                 if (j2 < 0) break;
                 freeFrom = j2 + 1;
                 _ec[ce]++;
                 var dir = Gauss3(); dir /= MathF.Max(dir.Length(), 1e-6f);
                 Pos[j2] = Pos[par] + C.RBud * dir; Vel[j2] = Vector3.Zero; Wand[j2] = Vector3.Zero;
-                Elem[j2] = ce; Dom[j2] = Dom[par]; Active[j2] = true; Hatched[j2] = false; Age[j2] = 0;
+                Elem[j2] = ce; Dom[j2] = cd; Active[j2] = true; Hatched[j2] = false; Age[j2] = 0;
                 Startle[j2] = 0; Molt[j2] = 0; Fate[j2] = 0; FKey[j2] = 0; XferPlan[j2] = -1; Facing[j2] = Facing[par];
-                int q2 = ce * 4 + r;
-                _deficit[q2] -= 1; cen[q2] += 1; _fill[q2] = cen[q2] / MathF.Max(_want[q2], 1f);
+                int rq = cd == Dom[par] ? r : RoleOfDom[Math.Clamp(cd, 0, 2)];   // the CHILD region, not the parent one
+                if (rq >= 0)
+                {
+                    int q2 = ce * 4 + rq;
+                    _deficit[q2] -= 1; cen[q2] += 1; _fill[q2] = cen[q2] / MathF.Max(_want[q2], 1f);
+                }
                 laid++;
                 Events.Add(new SwarmEvent { Kind = SwarmEventKind.Laid, Index = j2, Other = par });
             }

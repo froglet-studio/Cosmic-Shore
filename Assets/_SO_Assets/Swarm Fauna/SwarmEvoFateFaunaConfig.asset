@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: SwarmEvoFateFaunaConfig
   m_EditorClassIdentifier:
   Model: 3
+  MultiDomain: 1
   ChargePlan: {fileID: 4900000, guid: 07dfea02463d653b53c1d4c2e33d628c, type: 3}
   MassPlan: {fileID: 4900000, guid: b37e5df8f8e587075a45938a89048a3f, type: 3}
   SpacePlan: {fileID: 4900000, guid: 337aaa14d97dd0a87399f1d0223ec939, type: 3}

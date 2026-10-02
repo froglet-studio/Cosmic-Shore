@@ -32,9 +32,12 @@ float _SwarmBloomTicks;      // a newborn grows in over this many ticks
 float4 _SwarmUp;             // the body's up (BY) ...
 float4 _SwarmUpAlt;          // ... and the fallback when the facing is parallel to it (BZ)
 float4 _SwarmHeartScale;     // heart world scale per element (x Charge, y Mass, z Space, w Time)
-float4 _SwarmBodyDark, _SwarmBodyBright;       // plain tier (base face, fresnel rim) - linear HDR
-float4 _SwarmDangerDark, _SwarmDangerBright;   // danger tier
-float4 _SwarmShieldDark, _SwarmShieldBright;   // shielded tier
+// the body palette, per TIER and per DOMAIN SLOT (Docs/SWARM_FAUNA.md §16.4): [tier * 3 + slot], tier 0 plain,
+// 1 danger, 2 shielded; slot = SwarmInstance.Flags bits 7-8. A one-colour swarm writes the same domain into all
+// three slots. Base face (dark) and fresnel rim (bright), linear HDR. (New names: a shader property ARRAY's
+// length is pinned per editor session by NAME, so the round-7 scalar names are not reused.)
+float4 _SwarmTierDark[9];
+float4 _SwarmTierBright[9];
 float4 _SwarmHeartDull, _SwarmHeartBright;     // a living heart's neutral tint
 float _SwarmRimPower;        // body rim falloff (heart uses 4: the crystal convention)
 // per swarm, at bind: each body tier's prism SPREAD - xyz = that tier material's _Spread, w = its _SqrDistance.
@@ -148,8 +151,10 @@ SwarmMemberVertex SwarmMemberPose(uint instanceID, float3 positionOS, float3 nor
         lp = float3(lp.x * s.Scale.x, lp.y * s.Scale.y, lp.z * s.Scale.z + s.PrismZ);
         ln = float3(ln.x / max(s.Scale.x, 1e-4), ln.y / max(s.Scale.y, 1e-4), ln.z / max(s.Scale.z, 1e-4));
         int tier = (int)((s.Flags >> 1) & 3u);
-        o.dark = tier == 1 ? _SwarmDangerDark : tier == 2 ? _SwarmShieldDark : _SwarmBodyDark;
-        o.bright = tier == 1 ? _SwarmDangerBright : tier == 2 ? _SwarmShieldBright : _SwarmBodyBright;
+        int slot = (int)((s.Flags >> 7) & 3u);
+        int pal = (tier == 1 ? 1 : tier == 2 ? 2 : 0) * 3 + (slot > 2 ? 0 : slot);
+        o.dark = _SwarmTierDark[pal];
+        o.bright = _SwarmTierBright[pal];
     }
 
     o.positionWS = p + (bx * lp.x + by * lp.y + bz * lp.z) * bloom;

@@ -58,6 +58,23 @@ trio, and the traps).
   rule, and a per-subclass copy is a rule you can forget to apply in the next grazer.
   A biome's STARTING release state is authored data (`SpawnProfileSO.InitialFaunaReleaseTier`),
   not a runtime call — a runtime-only gate races the cell's own bootstrap and loses.
+- **THE NAMED EXCEPTION: a MultiDomain SWARM wears the colours of what it ATE** (`SwarmFaunaConfigSO.MultiDomain`,
+  ON for the Swarm cell's swarms and OFF by default everywhere else; `Docs/SWARM_FAUNA.md §16.4`). Every SEED
+  still takes exactly one colour - the cell's controlling domain - but every NEWBORN takes the domain of the
+  mass whose eaten volume FUNDED its egg (`SwarmCoreShared.TryFund` draws an element's reserve and its domain
+  split, `StomachDom`, in proportion and names the slot that paid most). So a swarm grazing three domains'
+  forest grows into three colours, and the members sort themselves into domain REGIONS through the research
+  model's own `DomainSlots` machinery (Sort, EvoFate, Grid; the Field model only recolours). The reason it is
+  not "cross-domain spawning by fiat" and stays inside the law's spirit: **a swarm IS its population's diet
+  history** - nothing chooses a colour, the food web does, and a swarm fed one domain stays one colour. Each
+  member is drawn (`Flags` bits 7-8 -> the shader's per-slot palette), fed (`Fauna.IsPreyForMe` with the
+  member's own domain), spared by weapons and credited in ITS domain, and its proxy takes it. Two
+  consequences to carry: `Cell.SetModeControlOverride`'s one-colour re-colour **does not apply** to a
+  MultiDomain swarm (`Fauna.AcceptsTeamRecolour` is false - re-painting a diet history would erase the only
+  thing the colours mean), while a one-colour swarm still re-colours in full, proxies included
+  (`SwarmFauna.OnTeamChanged`); and mass of a domain the swarm's slot table does not hold (neutral Blue
+  environment) funds slot 0, the anchor's. Do not extend this to any other species: a single creature has no
+  population to carry a history, so for it the one-colour law stands unmodified.
 - **A creature dies when its last body prism is destroyed** — `Fauna.OnBodyPrismExploded`
   (platform-wide since Wildlife Liberation; before it, only the worm colony implemented it, so
   shooting any other creature stripped its body and left an immortal husk swimming). This is an

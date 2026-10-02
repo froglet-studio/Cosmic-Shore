@@ -179,6 +179,7 @@ namespace CosmicShore.Gameplay
             _job.Prime();
             _inline = !config.SimulateOffMainThread || Application.platform == RuntimePlatform.WebGLPlayer;
 
+            _slotDomain = BuildSlotDomains();   // before the palette: each slot is drawn in its domain
             _gpu = false;
             if (config.DrawMembersOnGpu)
             {
@@ -188,7 +189,6 @@ namespace CosmicShore.Gameplay
             }
 
             BuildMouths();
-            _slotDomain = BuildSlotDomains();
             s_live.Add(this);
             _lastFedTime = Time.time;
             _acc = Random.value * _dt;   // stagger the cell's swarms across frames from the first tick
@@ -208,6 +208,7 @@ namespace CosmicShore.Gameplay
                 HeartPrismGap = config.HeartPrismGap,
                 DangerEnter = config.DangerEnter, DangerExit = config.DangerExit,
                 EngageRadius = config.EngageRadius, MaxEngaged = config.MaxProxies,
+                MultiDomain = config.MultiDomain,
             };
             for (int e = 0; e < 4; e++)
             {
@@ -217,24 +218,35 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        /// <summary>The swarm's ONE domain, in the palette's own tier pairs (Docs/PALETTE.md §2).</summary>
+        readonly Vector4[] _tierDark = new Vector4[9], _tierBright = new Vector4[9];
+
+        /// <summary>Each domain SLOT's colours in the palette's own tier pairs (Docs/PALETTE.md §2) - a one-colour
+        /// swarm's three slots are all its domain; a MultiDomain swarm's are the slot table (§16.4).</summary>
         void ApplyPalette()
         {
             var colors = config.Theme ? config.Theme.ColorSet : null;
-            Color bd = new(0.05f, 0.2f, 0.4f), bb = new(0.4f, 0.8f, 1.2f);
-            Color dd = bd, db = new(1.5f, 0.3f, 0.1f), sd = bd, sb = bb;
             Color hd = new(0.1f, 0.2f, 0.5f), hb = new(0.8f, 0.9f, 1.4f);
-            if (colors != null)
+            if (colors == null)
+                CSDebug.LogWarning($"{name}: SwarmFaunaConfigSO.Theme is not assigned - members are drawn in fallback colours.");
+            for (int slot = 0; slot < 3; slot++)
             {
-                colors.TryGetPrismKindColors(domain, PrismKind.Plain, out bb, out bd);
-                colors.TryGetPrismKindColors(domain, PrismKind.Danger, out db, out dd);
-                colors.TryGetPrismKindColors(domain, PrismKind.Shielded, out sb, out sd);
-                // a living heart wears the neutral (no-domain) crystal pair - the Crystal's own rule
-                if (colors.TryGetColorSetByDomain(Domains.Blue, out var neutral) && neutral != null)
-                { hd = neutral.DullCrystalColor; hb = neutral.BrightCrystalColor; }
+                Color bd = new(0.05f, 0.2f, 0.4f), bb = new(0.4f, 0.8f, 1.2f);
+                Color dd = bd, db = new(1.5f, 0.3f, 0.1f), sd = bd, sb = bb;
+                if (colors != null)
+                {
+                    var d = _slotDomain[slot];
+                    colors.TryGetPrismKindColors(d, PrismKind.Plain, out bb, out bd);
+                    colors.TryGetPrismKindColors(d, PrismKind.Danger, out db, out dd);
+                    colors.TryGetPrismKindColors(d, PrismKind.Shielded, out sb, out sd);
+                }
+                _tierDark[0 + slot] = bd; _tierBright[0 + slot] = bb;
+                _tierDark[3 + slot] = dd; _tierBright[3 + slot] = db;
+                _tierDark[6 + slot] = sd; _tierBright[6 + slot] = sb;
             }
-            else CSDebug.LogWarning($"{name}: SwarmFaunaConfigSO.Theme is not assigned - members are drawn in fallback colours.");
-            _render.SetColours(bd, bb, dd, db, sd, sb, hd, hb, config.HeartWorldScale, 2f);
+            // a living heart wears the neutral (no-domain) crystal pair - the Crystal's own rule
+            if (colors != null && colors.TryGetColorSetByDomain(Domains.Blue, out var neutral) && neutral != null)
+            { hd = neutral.DullCrystalColor; hb = neutral.BrightCrystalColor; }
+            _render.SetColours(_tierDark, _tierBright, hd, hb, config.HeartWorldScale, 2f);
 
             // the prism OPENS with distance (BlockGraph's spread) - read each tier's own authored spread off the
             // base materials every live prism is cloned from (ThemeManager), so a member opens exactly as much
@@ -295,6 +307,7 @@ namespace CosmicShore.Gameplay
                 Membrane = SimMembrane(host),
                 CrossCost = config.CrossElementCost,
                 Cap = PlanCap,
+                FoodDomains = config.MultiDomain,   // a field swarm has no regions: only the colour follows the food
             };
             for (int e = 0; e < 4; e++) p.EggCost[e] = SwarmFaunaConfigSO.Of(config.EggVolume, SwarmFaunaConfigSO.ToElement(e));
             if (TryBand(out float lo, out float hi)) { p.BandInner = lo; p.BandOuter = hi; }
@@ -327,7 +340,7 @@ namespace CosmicShore.Gameplay
                     Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.x)), Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.y)),
                     Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.z)), Mathf.Max(1, Mathf.RoundToInt(config.GridFramePeriod.w)),
                 },
-                DomainSlots = false, HungerKills = false, Funded = true, Oriented = true,
+                DomainSlots = config.MultiDomain, FoodDomains = config.MultiDomain, HungerKills = false, Funded = true, Oriented = true,
                 Cruise = config.Cruise, Turn = config.TurnPerStep,
                 Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
             };
@@ -361,7 +374,7 @@ namespace CosmicShore.Gameplay
                     Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.x)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.y)),
                     Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.z)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.w)),
                 },
-                DomainSlots = false, Funded = true, Animate = true, WellLook = true, Oriented = true,
+                DomainSlots = config.MultiDomain, FoodDomains = config.MultiDomain, Funded = true, Animate = true, WellLook = true, Oriented = true,
                 Cruise = config.Cruise, Turn = config.TurnPerStep,
                 Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
                 // round 6 (Docs/SWARM_FAUNA.md §12): sortfeel's flat wells + wander, the 1-in-k update
@@ -406,7 +419,7 @@ namespace CosmicShore.Gameplay
                     Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.x)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.y)),
                     Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.z)), Mathf.Max(1, Mathf.RoundToInt(config.SortFramePeriod.w)),
                 },
-                DomainSlots = false, Funded = true, KeepEggs = true, Animate = true, Oriented = true,
+                DomainSlots = config.MultiDomain, FoodDomains = config.MultiDomain, Funded = true, KeepEggs = true, Animate = true, Oriented = true,
                 Cruise = config.Cruise, Turn = config.TurnPerStep,
                 Membrane = SimMembrane(host), CrossCost = config.CrossElementCost, Cap = PlanCap,
             };
@@ -947,10 +960,46 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The swarm's domain SLOT table (§16.4): slot 0 is the anchor's - the cell's controlling domain, which every
-        /// seed wears. A one-colour swarm maps every slot to it.
+        /// The swarm's domain SLOT table (§16.4): slot 0 is the anchor's - the cell's controlling domain when the
+        /// swarm was seeded, which every seed wears. A one-colour swarm maps every slot to it; a MultiDomain swarm
+        /// gives slots 1 and 2 the other two playable domains in Jade, Ruby, Gold order. Fixed for the swarm's
+        /// life, so a member's slot always names the same domain.
         /// </summary>
-        Domains[] BuildSlotDomains() => new[] { domain, domain, domain };
+        Domains[] BuildSlotDomains()
+        {
+            var t = new[] { domain, domain, domain };
+            if (!config.MultiDomain) return t;
+            int k = 1;
+            foreach (var d in PlayableDomains)
+                if (d != domain && k < 3) t[k++] = d;
+            return t;
+        }
+
+        static readonly Domains[] PlayableDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+
+        /// <summary>The slot a domain's mass funds (§16.4). Mass of a domain the table does not hold - neutral
+        /// (Blue) environment, or anything in a one-colour swarm - funds slot 0, the anchor's.</summary>
+        int SlotOfDomain(Domains d)
+        {
+            for (int s = 1; s < 3; s++) if (_slotDomain[s] == d && d != _slotDomain[0]) return s;
+            return 0;
+        }
+
+        protected override bool AcceptsTeamRecolour => !(config && config.MultiDomain);
+
+        /// <summary>A one-colour swarm re-coloured by its cell (Cell.SetModeControlOverride): every slot, the
+        /// palette and every live proxy take the new domain at once, so the cell never holds two fauna colours.</summary>
+        protected override void OnTeamChanged()
+        {
+            if (!_seeded) return;
+            _slotDomain = BuildSlotDomains();
+            if (_gpu) ApplyPalette();
+            for (int q = 0; q < _proxySlots.Count; q++)
+            {
+                var m = _proxy[_proxySlots[q]];
+                if (m) m.SetTeam(domain);
+            }
+        }
 
         // ───────────────────────────────────────────────────────────────── vessels
 
@@ -1012,10 +1061,12 @@ namespace CosmicShore.Gameplay
                 for (int q = 0; q < found; q++)
                 {
                     var prism = FeedScratch[q];
-                    if (!IsFood(prism, out int e)) continue;
+                    var eater = MemberDomain(i);   // a MultiDomain member eats as its own domain (§16.4)
+                    if (!IsFood(prism, eater, out int e)) continue;
                     float volume = Mathf.Max(0.001f, prism.Volume);
-                    prism.Consume(MouthFor(i, at), domain, _eaterName, false, true);
-                    _job.QueueDeposit(e, volume);
+                    var paid = prism.Domain;   // read before Consume - the domain of the mass that will fund an egg
+                    prism.Consume(MouthFor(i, at), eater, _eaterName, false, true);
+                    _job.QueueDeposit(e, volume, SlotOfDomain(paid));
                     _lastFedTime = Time.time;
                     _atPlantSince = -1f;
                     break;
@@ -1038,14 +1089,14 @@ namespace CosmicShore.Gameplay
         /// shielded-mass rule (<see cref="Fauna.IsShieldedMass"/> - which is why a Charge plant, whose
         /// leaves are armoured, is no food at all). Returns the plant's element as a research index.
         /// </summary>
-        bool IsFood(Prism prism, out int element)
+        bool IsFood(Prism prism, Domains eater, out int element)
         {
             element = -1;
             if (!prism || prism.destroyed || prism is not HealthPrism hp) return false;
             if (hp.ResolveOwnerFauna() != null) return false;          // another creature's body
             if (hp.LifeForm is not Flora plant || !plant) return false;  // flora only
             if (IsShieldedMass(prism)) return false;
-            if (!IsPreyForMe(prism.transform.position, prism.Domain)) return false;
+            if (!IsPreyForMe(prism.transform.position, prism.Domain, eater)) return false;
             element = SwarmFaunaConfigSO.ToIndex(plant.Element);
             return element >= 0;
         }

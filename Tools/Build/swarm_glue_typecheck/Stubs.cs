@@ -26,10 +26,10 @@ namespace UnityEngine
     public class Mesh : Object { public int subMeshCount; }
     public class Shader : Object { public static int PropertyToID(string n) => 0; }
     public class Material : Object { public Material(Shader s) { } public bool HasProperty(string n) => false; public bool HasProperty(int n) => false; public Vector4 GetVector(int n) => default; public float GetFloat(int n) => 0; }
-    public struct Color { public float r, g, b, a; public Color(float r, float g, float b) { this.r = r; this.g = g; this.b = b; a = 1; } }
+    public struct Color { public float r, g, b, a; public Color(float r, float g, float b) { this.r = r; this.g = g; this.b = b; a = 1; } public static implicit operator Vector4(Color c) => default; }
     public struct Matrix4x4 { public static Matrix4x4 identity; public static Matrix4x4 Rotate(Quaternion q) => default; public static Matrix4x4 operator *(Matrix4x4 a, Matrix4x4 b) => a; }
     public struct Bounds { public Bounds(Vector3 c, Vector3 s) { } }
-    public sealed class MaterialPropertyBlock { public void SetFloat(int n, float v) { } public void SetVector(int n, Vector4 v) { } public void SetColor(int n, Color c) { } public void SetMatrix(int n, Matrix4x4 m) { } public void SetBuffer(int n, GraphicsBuffer b) { } }
+    public sealed class MaterialPropertyBlock { public void SetFloat(int n, float v) { } public void SetVector(int n, Vector4 v) { } public void SetColor(int n, Color c) { } public void SetMatrix(int n, Matrix4x4 m) { } public void SetBuffer(int n, GraphicsBuffer b) { } public void SetVectorArray(int n, Vector4[] v) { } }
     public sealed class GraphicsBuffer : IDisposable
     {
         public enum Target { Structured = 16 }
@@ -174,6 +174,10 @@ namespace CosmicShore.Gameplay
         public Vector3 Goal { get => _goal; set => _goal = value; }
         public bool IsInsideBand(Vector3 p) => true;
         protected bool IsPreyForMe(Vector3 position, Domains preyDomain) => true;
+        protected bool IsPreyForMe(Vector3 position, Domains preyDomain, Domains eaterDomain) => true;   // Fauna.cs (round 8)
+        public void SetTeam(Domains domain) { }                                                       // Fauna.cs
+        protected virtual bool AcceptsTeamRecolour => true;                                           // Fauna.cs (round 8)
+        protected virtual void OnTeamChanged() { }                                                    // Fauna.cs (round 8)
         public Cell HostCell => null;
         public FaunaConfigurationSO SourceConfig => null;
         protected virtual void ProvisionHeart(Element element) { }

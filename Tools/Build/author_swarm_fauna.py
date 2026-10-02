@@ -98,6 +98,7 @@ ENGAGE_RADIUS = 160       # world units around a vessel inside which a member is
 MAX_PROXIES = 160         # per swarm: the nearest members win
 BITERS_PER_STEP = 24      # bites per tick per swarm - the one main-thread cost that scales with appetite
 PRISM_SCALE = 1.0
+MULTI_DOMAIN = 1          # ROUND 8 (Docs/SWARM_FAUNA.md §16.4): the Swarm cell's swarms take the colour of what they eat
 HEARTS = {"Charge": 2.298, "Mass": 1.737, "Space": 2.298, "Time": 1.737}  # = Tadpole Fauna * (read below)
 
 # ── the three populations ────────────────────────────────────────────────────────────────
@@ -441,6 +442,7 @@ def config_asset(eggs, model="Field"):
     grid += "".join(f"  {k}: {_g(v)}\n" for k, v in GRID_TAIL.items())
     return SO_HEADER % (script_guid("SwarmFaunaConfigSO"), config_name(model)[:-6]) + (
         f"  Model: {MODEL_ID[model]}\n"
+        f"  MultiDomain: {MULTI_DOMAIN}\n"
         f"  ChargePlan: {{fileID: 4900000, guid: {pg('charge')}, type: 3}}\n"
         f"  MassPlan: {{fileID: 4900000, guid: {pg('mass')}, type: 3}}\n"
         f"  SpacePlan: {{fileID: 4900000, guid: {pg('space')}, type: 3}}\n"
@@ -763,6 +765,13 @@ def verify(out, tot, rows):
         au = re.findall(r"-?[\d.]+", v)
         if [float(x) for x in cs] != [float(x) for x in au]:
             problems.append(f"SwarmFaunaConfigSO.{k} defaults to {m.group(1)} but the cell authors {v}")
+    # round 8: MultiDomain is ON for these configs (the Swarm cell owns them) and OFF in the C# default, so a
+    # swarm config created anywhere else keeps the one-colour law
+    m = re.search(r"public bool MultiDomain = (\w+);", so)
+    if not m or m.group(1) != "false":
+        problems.append("SwarmFaunaConfigSO.MultiDomain must default to false (the one-colour law everywhere but here)")
+    if MULTI_DOMAIN != 1:
+        problems.append("the Swarm cell's swarms are MultiDomain (round 8)")
     if any(r["food"] == "Charge" for r in REGIONS):
         problems.append("a Charge feeding ground is no food at all (armoured leaves)")
     # the prefab really is stripped of its network layer and its authored crystal

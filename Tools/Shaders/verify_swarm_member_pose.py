@@ -18,6 +18,11 @@ proxy's transform chain, written independently in Python from what the C# glue d
   T4  bloom: a newborn is ~0 at its birth tick and full after BirthBloomSeconds
   T5  a dead slot is collapsed (not drawn)
   T6  NEGATIVE CONTROL: the same check against a shader whose PrismZ sign is flipped must FAIL
+  T7  the prism SPREAD against an independent transcription of BlockGraph's spread subgraphs
+  T8  NEGATIVE CONTROL: a shader that ignores the spread must FAIL T7
+  T9  round 8: a body's colour is the palette entry for ITS tier and ITS domain slot (Flags bits 7-8) - the
+      MultiDomain swarm draws each member in the domain of the mass that funded it (Docs/SWARM_FAUNA.md §16.4)
+  T10 NEGATIVE CONTROL: a shader that ignores the domain slot must FAIL T9
 
     python3 Tools/Shaders/verify_swarm_member_pose.py
 """
@@ -100,6 +105,20 @@ int pose_nt(uint id, float x, float y, float z, float nx, float ny, float nz, fl
     out[0] = v.positionWS.x; out[1] = v.positionWS.y; out[2] = v.positionWS.z;
     return v.visible ? 1 : 0;
 }
+void set_palette(const float* dark36, const float* bright36)
+{
+    for (int k = 0; k < 9; k++)
+    {
+        _SwarmTierDark[k] = mk4(dark36[k * 4], dark36[k * 4 + 1], dark36[k * 4 + 2], dark36[k * 4 + 3]);
+        _SwarmTierBright[k] = mk4(bright36[k * 4], bright36[k * 4 + 1], bright36[k * 4 + 2], bright36[k * 4 + 3]);
+    }
+}
+int pose_col(uint id, float* dark, float* bright)
+{
+    SwarmMemberVertex v = SwarmMemberPose(id, mk3(0, 0, 0.25f), mk3(0, 0, 1), mk3(0, 0, 0));
+    for (int i = 0; i < 4; i++) { dark[i] = v.dark[i]; bright[i] = v.bright[i]; }
+    return v.visible ? 1 : 0;
+}
 int pose(uint id, float x, float y, float z, float* out)
 {
     SwarmMemberVertex v = SwarmMemberPose(id, mk3(x, y, z), mk3(0, 0, 1), mk3(0, 0, 0));
@@ -141,6 +160,9 @@ def build(text, tag):
     L.set_spread.argtypes = [F, F, F, F]
     L.pose_nt.argtypes = [ctypes.c_uint] + [ctypes.c_float] * 9 + [F]
     L.pose_nt.restype = ctypes.c_int
+    L.set_palette.argtypes = [F, F]
+    L.pose_col.argtypes = [ctypes.c_uint, F, F]
+    L.pose_col.restype = ctypes.c_int
     return L
 
 
@@ -190,8 +212,30 @@ def rand_unit(rng):
         if 0.2 < l <= 1: return [x / l for x in v]
 
 
-def pack(alive, tier, frm, to):
-    return (1 if alive else 0) | ((tier & 3) << 1) | ((frm & 3) << 3) | ((to & 3) << 5)
+def pack(alive, tier, frm, to, dom=0):
+    return (1 if alive else 0) | ((tier & 3) << 1) | ((frm & 3) << 3) | ((to & 3) << 5) | ((dom & 3) << 7)
+
+
+def palette_check(L, seed=21):
+    """T9: a body's colour is the palette entry for ITS tier and ITS domain slot (Flags bits 7-8) - the
+    MultiDomain swarm draws each member in the colour of the mass that funded it (Docs/SWARM_FAUNA.md §16.4)."""
+    dark = [float(k * 10 + c + 1) for k in range(9) for c in range(4)]
+    bright = [-x for x in dark]
+    L.set_palette(farr(dark), farr(bright))
+    rng = random.Random(seed); d = (ctypes.c_float * 4)(); b = (ctypes.c_float * 4)()
+    hs = [2.0, 2.0, 2.0, 2.0]
+    L.set_frame(0, 0, 0, farr(IDENT), 0.5, 100, 8, farr([0, 1, 0]), farr([0, 0, 1]), farr(hs))
+    wrong = 0; seen = set()
+    for tier in range(3):
+        for dom in range(3):
+            m = member(rng)
+            set_member(L, 0, m, pack(True, tier, 1, 1, dom))
+            if not L.pose_col(0, d, b): wrong += 1; continue
+            k = tier * 3 + dom
+            want_d, want_b = dark[k * 4:k * 4 + 4], bright[k * 4:k * 4 + 4]
+            if list(d) != want_d or list(b) != want_b: wrong += 1
+            seen.add(tuple(d))
+    return wrong, len(seen)
 
 
 IDENT = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
@@ -366,6 +410,20 @@ def main():
     t8 = w8 > 0.1
     print(f"T8 negative control (spread ignored): worst error {w8:.2e} - {'fires' if t8 else 'DID NOT FIRE'}")
     ok &= t8
+
+    # T9 the per-member DOMAIN colour: every (tier, domain slot) reads its own palette entry
+    wrong9, distinct = palette_check(L)
+    t9 = wrong9 == 0 and distinct == 9
+    print(f"T9 per-member domain colour: {9 - wrong9}/9 (tier, slot) pairs read their own entry, {distinct} distinct: "
+          f"{'OK' if t9 else 'FAIL'}")
+    ok &= t9
+    # T10 negative control: a shader that ignores the domain slot (the one-colour swarm) must FAIL T9
+    onecol = text.replace("int slot = (int)((s.Flags >> 7) & 3u);", "int slot = 0;")
+    assert onecol != text, "negative control did not apply"
+    wrong10, _ = palette_check(build(onecol, "onecolour"))
+    t10 = wrong10 > 0
+    print(f"T10 negative control (domain slot ignored): {wrong10} wrong - {'fires' if t10 else 'DID NOT FIRE'}")
+    ok &= t10
 
     print("OK" if ok else "FAIL")
     return 0 if ok else 1

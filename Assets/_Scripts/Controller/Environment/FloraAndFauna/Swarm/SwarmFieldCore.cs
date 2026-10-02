@@ -285,6 +285,9 @@ namespace CosmicShore.Gameplay
         // reserve it costs CrossCost times as much (the feeding-ground lever, Docs/SWARM_FAUNA.md).
         public float[] EggCost = { 1f, 1f, 1f, 1f };
         public float CrossCost = 2f;
+        /// <summary>Round 8 MultiDomain (Docs/SWARM_FAUNA.md §16.4): a newborn takes the domain slot of the mass that
+        /// FUNDED its egg; every seed is slot 0. A field swarm has no domain regions - only the colour moves.</summary>
+        public bool FoodDomains = false;
         /// <summary>Headcount ceiling - never more tadpoles than the largest plan holds.</summary>
         public int Cap = 192;
     }
@@ -322,7 +325,7 @@ namespace CosmicShore.Gameplay
         public readonly float[] Stomach = new float[4];
         /// <summary>Banked volume by [element * 3 + domain slot] (ISwarmCore.StomachDom).</summary>
         public readonly float[] StomachDom = new float[12];
-        readonly int[] _dom;   // a field swarm is one colour: every member is slot 0
+        readonly int[] _dom;   // domain slot per member: all 0 for a one-colour swarm (FoodDomains: the funding mass)
         public readonly List<SwarmEvent> Events = new();
 
         readonly Vector3[] _sp, _sv, _sf, _sw;   // _sw: slot positions in the world (sim) this step
@@ -391,7 +394,7 @@ namespace CosmicShore.Gameplay
                 for (int q = 0; q < want[e] && slots.Count > 0; q++)
                 {
                     int pick = _rng.Next(slots.Count); int k = slots[pick]; slots.RemoveAt(pick);
-                    Alive[n] = true; Elem[n] = e; Home[n] = k;
+                    Alive[n] = true; Elem[n] = e; Home[n] = k; _dom[n] = 0;   // every seed: the anchor domain
                     Pos[n] = Rotate(_sp[k]) + Anchor; Vel[n] = Vector3.Zero; Facing[n] = Rotate(_sf[k]);
                     n++;
                 }
@@ -681,21 +684,7 @@ namespace CosmicShore.Gameplay
         /// Returns false - and spends nothing - when the swarm cannot afford it. This is the one
         /// place laying differs from the research model, where laying was free.
         /// </summary>
-        public bool TryFund(int e)
-        {
-            float cost = C.EggCost[e];
-            if (Stomach[e] >= cost) { Stomach[e] -= cost; return true; }
-            float cross = cost * C.CrossCost, others = 0;
-            for (int o = 0; o < 4; o++) if (o != e) others += Stomach[o];
-            if (others < cross) return false;
-            while (cross > 1e-6f)
-            {
-                int best = -1; for (int o = 0; o < 4; o++) if (o != e && (best < 0 || Stomach[o] > Stomach[best])) best = o;
-                float take = MathF.Min(Stomach[best], cross); Stomach[best] -= take; cross -= take;
-                if (take <= 0f) break;
-            }
-            return true;
-        }
+        public bool TryFund(int e) => SwarmCoreShared.TryFund(Stomach, e, C.EggCost[e], C.CrossCost);
 
         readonly int[] _want = new int[4], _have = new int[4];
         int _layHoldUntil;
@@ -721,7 +710,8 @@ namespace CosmicShore.Gameplay
                 }
                 if (be < 0) return;
                 int free = Array.IndexOf(Alive, false); if (free < 0) return;
-                if (!TryFund(be)) return;      // hungry: the body waits for its next meal
+                if (!SwarmCoreShared.TryFund(Stomach, C.FoodDomains ? StomachDom : null, be, C.EggCost[be], C.CrossCost, out int fd))
+                    return;      // hungry: the body waits for its next meal
                 int bp = -1, bs = -1; float bdist = float.MaxValue;
                 for (int s = 0; s < plan.N; s++)
                 {
@@ -736,6 +726,7 @@ namespace CosmicShore.Gameplay
                 dir /= MathF.Max(dir.Length(), 1e-6f);
                 Alive[free] = true; Pos[free] = Pos[bp] + C.RBud * dir; Vel[free] = Vel[bp]; Elem[free] = be;
                 Home[free] = bs; Molt[free] = 0; Startle[free] = 0; Facing[free] = Facing[bp];
+                _dom[free] = fd >= 0 ? fd : _dom[bp];   // MultiDomain: the domain of the mass that paid
                 have[be]++; if (bs >= 0) _taken[bs] = true; LastAssign = -1000000;
                 Events.Add(new SwarmEvent { Kind = SwarmEventKind.Laid, Index = free, Other = bp });
             }

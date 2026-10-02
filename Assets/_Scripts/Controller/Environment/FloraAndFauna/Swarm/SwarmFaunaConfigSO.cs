@@ -26,6 +26,15 @@ namespace CosmicShore.Gameplay
                  "member MOLTS into a missing element (lossless). Docs/SWARM_FAUNA.md §8, §9.")]
         public SwarmModel Model = SwarmModel.Field;
 
+        [Tooltip("MULTI-DOMAIN (Docs/SWARM_FAUNA.md §16.4; CLAUDE.md, the named swarm exception to 'No domain " +
+                 "asymmetry'). Off (the default, and every cell but the Swarm cell): the swarm is ONE colour - the " +
+                 "cell's controlling domain - and Cell.SetModeControlOverride re-colours it. On: every SEED takes the " +
+                 "controlling domain, and every NEWBORN takes the domain of the mass whose eaten volume FUNDED its egg, " +
+                 "so the swarm's colours are its population's diet history. Members sort into domain regions (Sort, " +
+                 "EvoFate, Grid models), each drawn, fed, spared and credited in its own domain. A mode override does " +
+                 "not re-colour a MultiDomain swarm.")]
+        public bool MultiDomain = false;
+
         [Header("Body plans (Tools/Build/swarm_plans.py)")]
         [Tooltip("The Charge plan - the pufferfish.")] public TextAsset ChargePlan;
         [Tooltip("The Mass plan - the whale.")] public TextAsset MassPlan;

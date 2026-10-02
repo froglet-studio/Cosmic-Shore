@@ -137,9 +137,13 @@ namespace CosmicShore.Gameplay
         /// mass it cannot reach or eat" is ONE rule, and a per-subclass copy is a rule you can
         /// forget to apply in the next grazer.
         /// </summary>
-        protected bool IsPreyForMe(Vector3 position, Domains preyDomain) =>
+        protected bool IsPreyForMe(Vector3 position, Domains preyDomain) => IsPreyForMe(position, preyDomain, domain);
+
+        /// <summary>The same rule for an eater that is not this creature's own domain - a MultiDomain swarm's
+        /// member eats as ITS domain (Docs/SWARM_FAUNA.md §16.4). One predicate, two callers.</summary>
+        protected bool IsPreyForMe(Vector3 position, Domains preyDomain, Domains eaterDomain) =>
             cell != null && IsInsideBand(position) &&
-            cell.IsPreyForHerbivore(position, domain, preyDomain);
+            cell.IsPreyForHerbivore(position, eaterDomain, preyDomain);
 
         // Stable per-instance offset so each fauna orbits its resolved goal at a
         // different point. Seeded once at Start so the spread is deterministic per
@@ -1171,8 +1175,19 @@ namespace CosmicShore.Gameplay
 
         public void SetTeam(Domains domain)
         {
+            if (!AcceptsTeamRecolour) return;
             this.domain = domain;
+            OnTeamChanged();
         }
+
+        /// <summary>False for a creature whose colours are its own history rather than its cell's controller
+        /// (a MultiDomain swarm, Docs/SWARM_FAUNA.md §16.4): <see cref="Cell.SetModeControlOverride"/>'s
+        /// one-colour re-colour does not apply to it.</summary>
+        protected virtual bool AcceptsTeamRecolour => true;
+
+        /// <summary>After <see cref="SetTeam"/> changed <see cref="domain"/> - a subclass that draws or caches
+        /// its colour re-reads it here.</summary>
+        protected virtual void OnTeamChanged() { }
 
         IEnumerator UpdateGoalCoroutine()
         {
