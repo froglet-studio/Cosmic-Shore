@@ -142,20 +142,14 @@ namespace CosmicShore.Gameplay
         {
             if(!gameObject.activeInHierarchy) gameObject.SetActive(true);
 
-            // Gameplay is taking the rig back for the screen. A windowed loan still outstanding at
-            // this point is VOID: forget it here, so that a preview teardown which lands later
-            // (they are async) cannot "restore" the target it captured before this call over the
-            // vessel being set right now - nor point the rig at a render texture nobody sees.
+            // A loan is still running (the mode preview has this rig drawing into its window) and
+            // the local vessel has just been (re)initialized - the preview swapping the hull it
+            // flies, on the way in or back out. That vessel IS the one the loan must hand back
+            // when it ends, so record it as the target to restore. Otherwise End "restored" the
+            // target captured at Begin: the hull the swap has just destroyed, which left the
+            // camera following nothing. The loan itself stays - the window is still drawing.
             if (_windowedLoanActive)
-            {
-                _windowedLoanActive = false;
-                _windowedPreviousTarget = null;
-                if (_windowedCamera)
-                {
-                    _windowedCamera.targetTexture = null;
-                    _windowedCamera = null;
-                }
-            }
+                _windowedPreviousTarget = followTarget;
 
             _playerFollowTarget = followTarget;
             _playerCamera?.SetFollowTarget(_playerFollowTarget);

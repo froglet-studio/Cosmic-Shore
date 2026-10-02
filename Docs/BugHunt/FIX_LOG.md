@@ -23,8 +23,9 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   - `CameraManager.EndWindowedPlayerCamera` restored `_windowedPreviousTarget` even when no loan
     was running (null), so an unmatched or repeated End (the mode preview calls it from four
     teardown paths) handed the gameplay camera a NULL follow target: exactly this symptom. The
-    loan is now balanced, and `SetupGamePlayCameras` voids an outstanding loan so a late preview
-    teardown cannot overwrite the fresh target.
+    loan is now balanced. And when the preview swaps the hull while it holds the loan (its tap-in
+    and tap-out both do), `SetupGamePlayCameras` now records the NEW hull as the target to give
+    back - `End` used to restore the hull captured at `Begin`, which the swap had just destroyed.
   - `CustomCameraController` now reports, once, when the on-screen player rig loses its follow
     target, naming the call stack that cleared it (or that the target was destroyed), and
     re-latches onto `CameraManager.PlayerFollowTarget`. **This is the diagnostic for the next
@@ -45,6 +46,19 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 - **Retest:** freestyle → vessel changer → Sparrow → gamepad A (stance) on and off, fly. If the
   camera still freezes, copy the `[CustomCameraController] The player camera lost its follow
   target` warning (with its stack) into this entry.
+- **Follow-ups seen, not fixed (rows, unmeasured in play):**
+  - After a mode-preview tap-out the hull swap runs `SetupGamePlayCameras`, which makes the player
+    rig the ACTIVE controller; `EndWindowedPlayerCamera` then skips its `Deactivate` because
+    `_activeController == _playerCamera`. So the player rig may stay enabled behind the menu
+    camera after a preview. Measure: after tapping out of a card preview, read
+    `CameraManager.GetActiveController()` and whether the player rig GameObject is active.
+  - `SingleStickVesselTransformer.Initialize` creates a new `CourseObject` GameObject on every
+    call and never destroys it (only used until the first `RotateShip`). Measure: count
+    `CourseObject` roots in the hierarchy after several vessel swaps.
+  - `ControllerButtonPress` gates on an `EventSystem` cached via `FindAnyObjectByType` while
+    `ScreenSwitcher` gates `EventSystem.current`. Each of Bootstrap / Authentication / Menu_Main
+    authors one root EventSystem (none DDOL in the scene files), so this is only a defect if two
+    are ever alive at once. Measure: `FindObjectsByType<EventSystem>` count in Menu_Main at runtime.
 
 ---
 
