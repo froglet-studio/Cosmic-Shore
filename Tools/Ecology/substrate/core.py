@@ -65,6 +65,9 @@ class Regime:
     w_alarm: float = 0.5         # alarm field gradient as danger
     w_threat: float = 0.5        # threat field gradient as danger
     w_home: float = 0.0          # toward the agent's own home (where it was born/spawned)
+    gait_hz: float = 0.0         # locomotion gait: a vertical bob (hop / porpoise) of this frequency ...
+    gait_amp: float = 0.0        # ... and peak speed (u/s), added to the motion, never to the heading
+    aspect: float = 1.5          # published body length/width (1 = round); a locust lengthens when gregarious
     crowd: float = 1.0           # spacing spring target: neighbour count / dens_norm the agent settles at
     trample: float = 0.0         # >0.5: contact harms a pilot when moving fast (a stampede), regardless of aggression
     size: float = 3.0
@@ -193,6 +196,8 @@ class Substrate:
         self.death_log = []
         self._freed_tick = np.full(cap, -1)
         self._steered = np.zeros(cap, bool)
+        self.gaitv = np.zeros((cap, 3))
+        self.t = 0.0
         self._dt = 0.1
         self.arena_pilots = []
         self.timers: dict[str, float] = {}
@@ -220,7 +225,8 @@ class Substrate:
     def _expose(self):
         a = np.flatnonzero(self.alive & ~self.dying)
         self._live = a
-        self.agent_pos = self.pos[a]; self.agent_vel = self.vel[a]
+        self.agent_pos = self.pos[a]; self.agent_vel = self.vel[a] + self.gaitv[a]
+        self.agent_aspect = _lerp(self.P.solitary.aspect, self.P.gregarious.aspect, self.phase[a])
         self.agent_size = self._sizes()[a]
         self.intent = self._intent()[a]
 
@@ -539,6 +545,7 @@ class Substrate:
         ns = vs + np.clip(self.ispeed[A] - vs, -acc * dt, acc * dt)
         self.vel[A] = nd * ns[:, None]
         self.pos[A] = self.pos[A] + self.vel[A] * dt
+        self._gait(dt, A)
         r = np.linalg.norm(self.pos[A], axis=1)
         out = r > 0.98 * self.R
         if out.any():
@@ -546,6 +553,19 @@ class Substrate:
         # phase relaxes every step toward the last computed quorum target
         self.phase[A] += dt * self.P.q_rate * (self.qtarget[A] - ph)
         self._dt = dt
+
+    def _gait(self, dt, A):
+        """A gait (hop/bob) moves the body without touching its heading or intent: a vertical oscillation
+        whose frequency/amplitude are regime weights. Measured (Direction C's probe, held-out seeds): a 27 u/s
+        2.15 Hz hop takes a sparse fed locust from P(cute) 0.45 to 0.86."""
+        P = self.P
+        self.t += dt
+        amp = _lerp(P.solitary.gait_amp, P.gregarious.gait_amp, self.phase[A])
+        self.gaitv[A] = 0.0
+        if np.any(amp > 0):
+            hz = _lerp(P.solitary.gait_hz, P.gregarious.gait_hz, self.phase[A])
+            self.gaitv[A, 1] = amp * np.cos(2 * np.pi * hz * self.t + self.wseed[A, 0])
+            self.pos[A] = self.pos[A] + self.gaitv[A] * dt
 
     # ---- fused (Burst-shaped) path ----
     def _fused(self, arena, dt, A):
@@ -568,6 +588,7 @@ class Substrate:
                        self.homes, True,
                        self.tick, max(1, P.frac_k), dt, float(self.R), float(P.attn_r), float(P.attn_urg),
                        self._steered)
+        self._gait(dt, A)
         self._S = A[self._steered[A]]
         t0 = self._t("fused", t0)
         if P.deposit_trail:

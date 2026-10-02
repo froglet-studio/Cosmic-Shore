@@ -1,0 +1,267 @@
+{
+ "note": "Direction C frozen probe (cece/eco-emotion emotion/results/probe.json). pre_tune = emotion_check on the pre-tune params, seeds 7/23. validate = held-out seeds 41/1000/5. search = top-8 of a 30-sample random search over the locust SOLITARY regime only (seeds 7/23).",
+ "pre_tune": {
+  "locust sparse+fed": {
+   "majestic": 0.451,
+   "cute": 0.144,
+   "eerie": 0.252
+  },
+  "locust dense+hungry": {
+   "terrifying": 0.958
+  },
+  "grazer": {
+   "majestic": 0.53,
+   "cute": 0.121
+  },
+  "pack": {
+   "playful": 0.876,
+   "terrifying": 0.065
+  },
+  "lurker": {
+   "playful": 0.402,
+   "cute": 0.234
+  },
+  "stampede": {
+   "majestic": 0.426
+  },
+  "leviathan (assembled)": {
+   "majestic": 0.532
+  }
+ },
+ "validate": {
+  "best/sparse_fed": {
+   "cute": 0.861,
+   "playful": 0.045,
+   "eerie": 0.061,
+   "majestic": 0.024,
+   "menacing": 0.006,
+   "terrifying": 0.003
+  },
+  "best/dense_hungry": {
+   "cute": 0.012,
+   "playful": 0.026,
+   "eerie": 0.007,
+   "majestic": 0.002,
+   "menacing": 0.002,
+   "terrifying": 0.951
+  },
+  "best_no_gait/sparse_fed": {
+   "cute": 0.447,
+   "playful": 0.052,
+   "eerie": 0.24,
+   "majestic": 0.223,
+   "menacing": 0.029,
+   "terrifying": 0.01
+  },
+  "best_no_gait/dense_hungry": {
+   "cute": 0.009,
+   "playful": 0.022,
+   "eerie": 0.007,
+   "majestic": 0.002,
+   "menacing": 0.001,
+   "terrifying": 0.959
+  },
+  "best_round_only/sparse_fed": {
+   "cute": 0.473,
+   "playful": 0.071,
+   "eerie": 0.184,
+   "majestic": 0.236,
+   "menacing": 0.028,
+   "terrifying": 0.008
+  },
+  "best_round_only/dense_hungry": {
+   "cute": 0.009,
+   "playful": 0.024,
+   "eerie": 0.007,
+   "majestic": 0.002,
+   "menacing": 0.001,
+   "terrifying": 0.957
+  }
+ },
+ "search_top": [
+  [
+   0.87905,
+   {
+    "speed": 31.392944504224378,
+    "burst": 2.4442968676648418,
+    "comfort": 68.60100845868223,
+    "w_curious": 2.434735743874528,
+    "gait_hz": 2.152601053734648,
+    "gait_amp": 27.570551371898286,
+    "aspect": 1.0560381038061426,
+    "fear_gain": 1.4469719722391217,
+    "fear_decay": 1.269959816519247,
+    "curiosity_rate": 0.3268440271893701
+   },
+   {
+    "cute": 0.87905,
+    "playful": 0.04265,
+    "eerie": 0.05145,
+    "majestic": 0.0194,
+    "menacing": 0.0048000000000000004,
+    "terrifying": 0.0027
+   }
+  ],
+  [
+   0.765,
+   {
+    "speed": 44.71148966928177,
+    "burst": 2.2618419890385804,
+    "comfort": 55.106709674587556,
+    "w_curious": 2.936732032205723,
+    "gait_hz": 2.3254706719471923,
+    "gait_amp": 30.195930710493286,
+    "aspect": 1.1564575366397252,
+    "fear_gain": 0.8252459384285049,
+    "fear_decay": 0.9724459157891288,
+    "curiosity_rate": 0.9527473501295214
+   },
+   {
+    "cute": 0.765,
+    "playful": 0.07045,
+    "eerie": 0.10995,
+    "majestic": 0.033,
+    "menacing": 0.01365,
+    "terrifying": 0.0079
+   }
+  ],
+  [
+   0.76065,
+   {
+    "speed": 48.834744428813394,
+    "burst": 1.7277864616474525,
+    "comfort": 108.26634798211148,
+    "w_curious": 2.904142984159467,
+    "gait_hz": 2.5046218933923603,
+    "gait_amp": 25.319259377517895,
+    "aspect": 1.048195602632538,
+    "fear_gain": 1.9488732024674253,
+    "fear_decay": 1.1773165954313938,
+    "curiosity_rate": 0.2926924899766163
+   },
+   {
+    "cute": 0.76065,
+    "playful": 0.04925,
+    "eerie": 0.1236,
+    "majestic": 0.0498,
+    "menacing": 0.0108,
+    "terrifying": 0.0058
+   }
+  ],
+  [
+   0.75315,
+   {
+    "speed": 86.19229759823891,
+    "burst": 2.2533538247504112,
+    "comfort": 45.36900446280879,
+    "w_curious": 1.0380454179074339,
+    "gait_hz": 2.350796484119858,
+    "gait_amp": 33.76175466064031,
+    "aspect": 1.0451574491263533,
+    "fear_gain": 1.119761059938872,
+    "fear_decay": 1.821016965733495,
+    "curiosity_rate": 0.5381735255563498
+   },
+   {
+    "cute": 0.75315,
+    "playful": 0.06985,
+    "eerie": 0.12625,
+    "majestic": 0.0296,
+    "menacing": 0.013049999999999999,
+    "terrifying": 0.0081
+   }
+  ],
+  [
+   0.70875,
+   {
+    "speed": 60.8010492094612,
+    "burst": 1.1588818550609867,
+    "comfort": 76.9843951432902,
+    "w_curious": 1.4510606747163308,
+    "gait_hz": 2.50552908853723,
+    "gait_amp": 28.92371235418862,
+    "aspect": 1.1293680246332218,
+    "fear_gain": 1.7744448595917386,
+    "fear_decay": 1.374629699750284,
+    "curiosity_rate": 0.8482194816850392
+   },
+   {
+    "cute": 0.70875,
+    "playful": 0.0706,
+    "eerie": 0.14665,
+    "majestic": 0.0501,
+    "menacing": 0.016050000000000002,
+    "terrifying": 0.00785
+   }
+  ],
+  [
+   0.6866,
+   {
+    "speed": 75.1076752771441,
+    "burst": 1.0367360162400447,
+    "comfort": 80.6113898437645,
+    "w_curious": 2.797721549084556,
+    "gait_hz": 2.6882855932020977,
+    "gait_amp": 36.33664853471829,
+    "aspect": 1.198106614156157,
+    "fear_gain": 0.7174388543134018,
+    "fear_decay": 1.6064788981236324,
+    "curiosity_rate": 0.3693397940860084
+   },
+   {
+    "cute": 0.6866,
+    "playful": 0.0733,
+    "eerie": 0.17735,
+    "majestic": 0.0361,
+    "menacing": 0.0169,
+    "terrifying": 0.00975
+   }
+  ],
+  [
+   0.6605,
+   {
+    "speed": 90.34559959227914,
+    "burst": 1.788444284743381,
+    "comfort": 33.41432210336413,
+    "w_curious": 2.9124193599493395,
+    "gait_hz": 1.9229452029993315,
+    "gait_amp": 17.447496181206265,
+    "aspect": 1.037338099754644,
+    "fear_gain": 1.547103783825296,
+    "fear_decay": 0.6193020623612961,
+    "curiosity_rate": 0.513993420810066
+   },
+   {
+    "cute": 0.6605,
+    "playful": 0.12329999999999999,
+    "eerie": 0.14400000000000002,
+    "majestic": 0.02495,
+    "menacing": 0.0238,
+    "terrifying": 0.0235
+   }
+  ],
+  [
+   0.5887,
+   {
+    "speed": 103.00384185952758,
+    "burst": 2.0344452331706213,
+    "comfort": 65.03207876631839,
+    "w_curious": 0.6927095212513469,
+    "gait_hz": 2.0792086087539428,
+    "gait_amp": 14.810591850890699,
+    "aspect": 1.0398088892640363,
+    "fear_gain": 1.160310368299934,
+    "fear_decay": 1.6346449974148303,
+    "curiosity_rate": 0.4360051542444156
+   },
+   {
+    "cute": 0.5887,
+    "playful": 0.13785,
+    "eerie": 0.15205000000000002,
+    "majestic": 0.07355,
+    "menacing": 0.033,
+    "terrifying": 0.01485
+   }
+  ]
+ ]
+}

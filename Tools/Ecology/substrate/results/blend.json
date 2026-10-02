@@ -3,100 +3,100 @@
   "cond": "grazer",
   "blend": 0.0,
   "hits_per_min": 0.0,
-  "jerk_rel": 0.112,
-  "coherence": 0.736,
-  "heading_to_pilot": 0.427,
-  "near_frac": 0.013,
-  "turn_deg_s": 86.855
+  "jerk_rel": 0.108,
+  "coherence": 0.699,
+  "heading_to_pilot": 0.599,
+  "near_frac": 0.011,
+  "turn_deg_s": 68.065
  },
  {
   "cond": "grazer",
   "blend": 0.3,
   "hits_per_min": 0.0,
-  "jerk_rel": 0.106,
-  "coherence": 0.717,
-  "heading_to_pilot": 0.463,
-  "near_frac": 0.014,
-  "turn_deg_s": 82.225
+  "jerk_rel": 0.098,
+  "coherence": 0.686,
+  "heading_to_pilot": 0.445,
+  "near_frac": 0.01,
+  "turn_deg_s": 59.485
  },
  {
   "cond": "grazer",
   "blend": 0.5,
   "hits_per_min": 0.0,
-  "jerk_rel": 0.1,
-  "coherence": 0.685,
-  "heading_to_pilot": 0.44,
-  "near_frac": 0.014,
-  "turn_deg_s": 86.99
+  "jerk_rel": 0.102,
+  "coherence": 0.696,
+  "heading_to_pilot": 0.476,
+  "near_frac": 0.01,
+  "turn_deg_s": 55.005
  },
  {
   "cond": "grazer",
   "blend": 0.7,
   "hits_per_min": 0.0,
-  "jerk_rel": 0.103,
-  "coherence": 0.7,
-  "heading_to_pilot": 0.348,
-  "near_frac": 0.012,
-  "turn_deg_s": 90.86
+  "jerk_rel": 0.09,
+  "coherence": 0.687,
+  "heading_to_pilot": 0.389,
+  "near_frac": 0.009,
+  "turn_deg_s": 34.55
  },
  {
   "cond": "grazer",
   "blend": 0.85,
   "hits_per_min": 0.0,
-  "jerk_rel": 0.059,
-  "coherence": 0.54,
-  "heading_to_pilot": 0.244,
-  "near_frac": 0.01,
-  "turn_deg_s": 19.89
+  "jerk_rel": 0.057,
+  "coherence": 0.577,
+  "heading_to_pilot": -0.005,
+  "near_frac": 0.009,
+  "turn_deg_s": 17.275
  },
  {
   "cond": "locust_frenzy",
   "blend": 0.0,
   "hits_per_min": 48.0,
-  "jerk_rel": 0.226,
-  "coherence": 0.842,
-  "heading_to_pilot": -0.36,
-  "near_frac": 0.816,
-  "turn_deg_s": 146.22
+  "jerk_rel": 0.228,
+  "coherence": 0.837,
+  "heading_to_pilot": -0.435,
+  "near_frac": 0.732,
+  "turn_deg_s": 135.41
  },
  {
   "cond": "locust_frenzy",
   "blend": 0.3,
-  "hits_per_min": 47.5,
-  "jerk_rel": 0.25,
-  "coherence": 0.845,
-  "heading_to_pilot": -0.265,
-  "near_frac": 0.829,
-  "turn_deg_s": 170.305
+  "hits_per_min": 47.0,
+  "jerk_rel": 0.216,
+  "coherence": 0.85,
+  "heading_to_pilot": -0.445,
+  "near_frac": 0.76,
+  "turn_deg_s": 138.09
  },
  {
   "cond": "locust_frenzy",
   "blend": 0.5,
-  "hits_per_min": 44.5,
-  "jerk_rel": 0.27,
-  "coherence": 0.857,
-  "heading_to_pilot": -0.32,
-  "near_frac": 0.839,
-  "turn_deg_s": 186.025
+  "hits_per_min": 47.5,
+  "jerk_rel": 0.211,
+  "coherence": 0.859,
+  "heading_to_pilot": -0.457,
+  "near_frac": 0.788,
+  "turn_deg_s": 139.125
  },
  {
   "cond": "locust_frenzy",
   "blend": 0.7,
-  "hits_per_min": 22.0,
-  "jerk_rel": 0.224,
-  "coherence": 0.859,
-  "heading_to_pilot": -0.475,
-  "near_frac": 0.861,
-  "turn_deg_s": 161.645
+  "hits_per_min": 31.5,
+  "jerk_rel": 0.136,
+  "coherence": 0.871,
+  "heading_to_pilot": -0.464,
+  "near_frac": 0.74,
+  "turn_deg_s": 98.95
  },
  {
   "cond": "locust_frenzy",
   "blend": 0.85,
-  "hits_per_min": 32.5,
-  "jerk_rel": 0.051,
-  "coherence": 0.83,
-  "heading_to_pilot": -0.037,
-  "near_frac": 0.585,
-  "turn_deg_s": 52.835
+  "hits_per_min": 35.0,
+  "jerk_rel": 0.038,
+  "coherence": 0.81,
+  "heading_to_pilot": -0.102,
+  "near_frac": 0.391,
+  "turn_deg_s": 35.77
  }
 ]

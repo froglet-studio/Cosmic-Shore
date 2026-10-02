@@ -29,15 +29,18 @@ def grazer(n0=180, seed=0) -> SpeciesParams:
 
 
 def locust(n0=400, seed=0, hunger0=None) -> SpeciesParams:
-    sol = Regime(speed=26, burst=2.0, turn=2.2, accel=50, w_food=1.0, w_coh=0.05, w_align=0.05, w_sep=1.4,
-                 w_wander=0.5, w_curious=1.0, comfort=90, w_flee=1.4, w_hunt=0.0, w_alarm=0.6, w_threat=0.3,
-                 crowd=0.5, size=2.2, color=(0.45, 0.95, 0.35))
+    # solitary end tuned against Direction C's emotion probe (cute 0.86 / terrifying 0.95 on held-out seeds,
+    # results/emotion.json); the gregarious end is untouched. Before the tune: speed 26, burst 2.0, comfort
+    # 90, w_curious 1.0, no gait, aspect 1.5 -> read majestic 0.45 / cute 0.14.
+    sol = Regime(speed=31.4, burst=2.44, turn=2.2, accel=50, w_food=1.0, w_coh=0.05, w_align=0.05, w_sep=1.4,
+                 w_wander=0.5, w_curious=2.43, comfort=68.6, w_flee=1.4, w_hunt=0.0, w_alarm=0.6, w_threat=0.3,
+                 crowd=0.5, gait_hz=2.15, gait_amp=27.6, aspect=1.06, size=2.2, color=(0.45, 0.95, 0.35))
     gre = Regime(speed=95, burst=1.5, turn=4.0, accel=160, w_food=0.6, w_coh=0.9, w_align=1.2, w_sep=0.6,
                  w_wander=0.08, w_curious=0.0, comfort=90, w_flee=0.0, w_hunt=1.8, w_alarm=0.0, w_threat=0.0,
-                 crowd=2.0, size=3.2, color=(1.0, 0.82, 0.1))
+                 crowd=2.0, aspect=2.2, size=3.2, color=(1.0, 0.82, 0.1))
     return SpeciesParams(name="locust", n0=n0, capacity=int(n0 * 1.6), solitary=sol, gregarious=gre, nbr_r=30,
                          dens_norm=5, metabolism=0.02, eat_r=7, eat_hunger=0.15, hunger_per_vol=0.02,
-                         fear_gain=1.0, fear_decay=0.6, sense=220, curiosity_rate=0.4,
+                         fear_gain=1.45, fear_decay=1.27, sense=220, curiosity_rate=0.33,
                          q_up=0.55, q_down=0.30, q_width=0.06, q_rate=0.5, q_contagion=0.6,
                          bite_r=8, bite_cool=1.2, birth_stock=90, deposit_alarm=0.3, frac_k=4, attn_r=150,
                          attn_urg=0.6, seed=seed)
