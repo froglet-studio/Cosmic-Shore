@@ -1,0 +1,5 @@
+snaptrap {'t50_med': 41.1, 't80_med': 999.0, 'end_frac_med': 0.606} [71, 110, 127]
+spores {'t50_med': 999.0, 't80_med': 999.0, 'end_frac_med': 0.0} [78, 32, 165]
+walker {'t50_med': 0.1, 't80_med': 0.1, 'end_frac_med': 0.167} [8, 6, 9]
+coral {'t50_med': 999.0, 't80_med': 999.0, 'end_frac_med': 0.0} [202, 53, 142]
+physarum {'t50_med': 26.1, 't80_med': 999.0, 'end_frac_med': 0.797} [270, 206, 232]

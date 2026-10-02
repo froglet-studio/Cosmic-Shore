@@ -1,4 +1,4 @@
-"""Build out/sandbox.html - the flyable threat-flora sandbox - with each species' DEFAULTS overlaid by its searched
+"""Build sandbox.html - the flyable threat-flora sandbox - with each species' DEFAULTS overlaid by its searched
 best parameters (results/search_<species>_best.json) so the sandbox flies the tuned plants.
 
     python sandbox.py
@@ -16,5 +16,5 @@ if __name__ == "__main__":
         params[name] = p
     src = open(os.path.join(HERE, "sandbox_src.html")).read().replace("__PARAMS__", json.dumps(params))
     os.makedirs(os.path.join(HERE, "out"), exist_ok=True)
-    out = os.path.join(HERE, "out", "sandbox.html"); open(out, "w").write(src)
+    out = os.path.join(HERE, "sandbox.html"); open(out, "w").write(src)
     print(out, len(src), "bytes")

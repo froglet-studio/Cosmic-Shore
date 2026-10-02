@@ -8,3 +8,5 @@ start 1.1149 {"threat": 0.01, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.
 6 obj 1.7728 R 0.934 Rh 0.8388 best 1.8883  {"period": 3.8978} {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 0.632, "variety": 1.0, "access": 0.917, "presence": 1.0, "adapt": 1.0}
 7 obj 1.6013 R 0.8634 Rh 0.7379 best 1.8883  {"wave_speed": 63.095, "ss": 50.4629} {"threat": 0.708, "counterplay": 1.0, "telegraph": 1.0, "payoff": 0.632, "variety": 1.0, "access": 0.691, "presence": 1.0, "adapt": 1.0}
 8 obj 1.8299 R 0.96 Rh 0.8699 best 1.8883  {"wake_dep": -0.1975, "heart_speed": 2.5867, "heart_guard": 59.6852} {"threat": 1.0, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 0.721, "presence": 1.0, "adapt": 1.0}
+9 obj 1.8009 R 0.9454 Rh 0.8555 best 1.8883  {"prism_vol": 12.9561, "on": 9.1194} {"threat": 0.708, "counterplay": 1.0, "telegraph": 1.0, "payoff": 1.0, "variety": 1.0, "access": 0.928, "presence": 0.972, "adapt": 1.0}
+BEST 1.8883 {"wake_dep": -0.2435, "wave_speed": 64.711, "off": 4.1165, "heart_speed": 7.7737, "heart_guard": 50, "prism_vol": 15.2827, "ss": 44.3024, "ra": 40.4291}
