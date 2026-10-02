@@ -471,11 +471,139 @@ class TerCharge(Body):
         self.intent = np.array([float(c >= self.wait)])
 
 
+# ============================================================================================ 4th families
+class CuteNuzzler(Body):
+    """One small round creature that drifts slowly up to the pilot, bumps it gently, bobs there a moment,
+    wanders off, and comes back. Slow cute - cute does not have to hop."""
+    def __init__(self, rng, pilot):
+        s = rng.uniform(2.5, 5)
+        super().__init__(rng, 1, s, rng.uniform(1.0, 1.15), pilot.speed * 1.1 + 25, pilot.pos + _rand_unit(rng) * 70)
+        self.cyc = rng.uniform(6, 10); self.bob = rng.uniform(0.5, 1.0); self.wander = _rand_unit(rng)
+
+    def step(self, arena, dt):
+        p = arena.pilots[0]
+        c = self.t % self.cyc
+        d = p.pos - self.agent_pos[0]
+        if c < self.cyc * 0.6:
+            want = _unit(d[None])[0] * min(25, max(0, np.linalg.norm(d) - 8)) + p.vel
+        else:
+            self.wander = _unit((self.wander + 0.2 * _rand_unit(self.rng))[None])[0]
+            want = self.wander * 18 + p.vel * 0.8
+        want = want + np.array([0, 6 * math.sin(2 * math.pi * self.bob * self.t), 0])
+        self.drive(want[None], dt)
+
+
+class PlayBurst(Body):
+    """A small group hiding still in a knot, then bursting out round the pilot in looping arcs, regrouping,
+    hiding again - surprise in a friendly key (does still-then-burst always mean threat?)."""
+    def __init__(self, rng, pilot):
+        n = int(rng.integers(4, 9)); s = rng.uniform(3, 6)
+        super().__init__(rng, n, s, rng.uniform(1.3, 2.0), pilot.speed * 1.5 + 70, pilot.pos + _rand_unit(rng) * 90, 6)
+        self.hide, self.play = rng.uniform(1.5, 3.0), rng.uniform(2.5, 4.0)
+        self.home = _rand_unit(rng) * rng.uniform(60, 110); self.ph = rng.uniform(0, 1, n); self.w = rng.uniform(1.5, 2.5)
+
+    def step(self, arena, dt):
+        p = arena.pilots[0]
+        c = self.t % (self.hide + self.play)
+        knot = p.pos + self.home
+        if c < self.hide:
+            want = (knot - self.agent_pos) * 3.0 + p.vel
+            want *= (np.linalg.norm(knot - self.agent_pos, axis=1) > 6)[:, None]
+            want += p.vel * 0.0
+        else:
+            a = self.w * (c - self.hide) + 2 * math.pi * self.ph
+            R = 40 + 30 * np.sin(a * 0.5)
+            off = np.stack([np.cos(a) * R, np.sin(2 * a) * 20, np.sin(a) * R], 1)
+            want = (p.pos + off - self.agent_pos) * 3.0 + p.vel
+        self.drive(want, dt)
+
+
+class EerieAngel(Body):
+    """A figure that never moves while the pilot comes toward it, and is always a little closer whenever
+    the pilot turns away. Smooth, silent, facing."""
+    def __init__(self, rng, pilot):
+        n = int(rng.integers(1, 4)); s = rng.uniform(4, 9)
+        super().__init__(rng, n, s, rng.uniform(1.8, 3.0), pilot.speed + 30, pilot.pos + _rand_unit(rng) * 200, 60)
+        self.creep = rng.uniform(15, 35); self.stop = rng.uniform(40, 70)
+
+    def step(self, arena, dt):
+        p = arena.pilots[0]
+        d = p.pos - self.agent_pos; dist = np.linalg.norm(d, axis=1); u = _unit(d)
+        fwd = _unit(p.vel[None])[0] if np.linalg.norm(p.vel) > 1 else np.array([0, 0, 1.0])
+        watched = np.sum(-u * fwd, axis=1) > 0.2            # the pilot flies toward it -> it holds still
+        move = ~watched & (dist > self.stop)
+        want = np.where(move[:, None], u * self.creep + p.vel, p.vel * 0.0)
+        want = np.where(watched[:, None], p.vel * 0.0, want)
+        self.drive(want, dt)
+        self.agent_heading = u
+
+
+class MajSchool(Body):
+    """A large school of medium fish wheeling in slow, smooth, coherent arcs at a distance - every member
+    its own small wobble (not a rigid lattice)."""
+    def __init__(self, rng, pilot):
+        n = int(rng.integers(60, 121)); s = rng.uniform(5, 10)
+        c = pilot.pos + _rand_unit(rng) * rng.uniform(250, 400)
+        super().__init__(rng, n, s, rng.uniform(2.0, 3.0), 60, c, 40)
+        self.c = c; self.dir = _rand_unit(rng); self.turn = rng.uniform(0.15, 0.3) * rng.choice([-1, 1])
+        self.slot = rng.normal(0, 45, (n, 3)) * np.array([1.6, 0.6, 1.0]); self.ph = rng.uniform(0, 6.28, n)
+
+    def step(self, arena, dt):
+        p = arena.pilots[0]
+        r = p.pos - self.c
+        self.dir = _unit((self.dir + self.turn * dt * np.cross([0, 1, 0], self.dir) + 0.01 * _unit(r[None])[0] * (np.linalg.norm(r) > 450))[None])[0]
+        cv = self.dir * 35 + p.vel * 0.5; self.c = self.c + cv * dt
+        wob = np.stack([np.sin(0.7 * self.t + self.ph), np.cos(0.5 * self.t + self.ph), np.sin(0.6 * self.t + 2 * self.ph)], 1) * 8
+        want = (self.c + self.slot + wob - self.agent_pos) * 0.8 + cv
+        self.drive(want, dt)
+
+
+class MenShadow(Body):
+    """A big dark body pacing alongside the pilot at a fixed distance, matching every turn, watching -
+    never closing, never leaving."""
+    def __init__(self, rng, pilot):
+        s = rng.uniform(25, 60)
+        super().__init__(rng, 1, s, rng.uniform(2.5, 4.0), pilot.speed * 1.3 + 40, pilot.pos + _rand_unit(rng) * 200)
+        self.dist = rng.uniform(140, 240); self.side = rng.choice([-1, 1]); self.sway = rng.uniform(0.05, 0.12)
+
+    def step(self, arena, dt):
+        p = arena.pilots[0]
+        fwd = _unit(p.vel[None])[0] if np.linalg.norm(p.vel) > 1 else np.array([0, 0, 1.0])
+        side = _unit(np.cross(fwd, [0, 1, 0])[None])[0] * self.side
+        tgt = p.pos + side * self.dist * (1 + 0.15 * math.sin(2 * math.pi * self.sway * self.t))
+        want = (tgt - self.agent_pos[0]) * 1.2 + p.vel
+        self.drive(want[None], dt)
+        self.agent_heading = _unit((p.pos - self.agent_pos[0])[None])
+
+
+class TerAmbush(Body):
+    """A pack lying motionless in a wide scatter round the pilot - then every member launches at it at
+    once, at full speed, from every side; scatters through, goes still again, and waits."""
+    def __init__(self, rng, pilot):
+        n = int(rng.integers(8, 25)); s = rng.uniform(6, 14)
+        super().__init__(rng, n, s, rng.uniform(2.0, 3.5), pilot.speed * 1.6 + 90, pilot.pos)
+        self.dirs = _rand_unit(rng, n); self.R = rng.uniform(150, 260)
+        self.agent_pos = pilot.pos + self.dirs * self.R
+        self.wait, self.go = rng.uniform(2.0, 4.0), rng.uniform(2.0, 3.0)
+
+    def step(self, arena, dt):
+        p = arena.pilots[0]
+        c = self.t % (self.wait + self.go)
+        if c < self.wait:
+            want = (p.pos + self.dirs * self.R - self.agent_pos) * 0.4
+            want *= (np.linalg.norm(want, axis=1) > 6)[:, None]
+            self.intent = np.zeros(self.n)
+        else:
+            want = _unit(p.pos - self.agent_pos) * self.vmax[:, None]
+            self.intent = np.ones(self.n)
+        self.drive(want, dt)
+
+
 FAMILIES = {
-    "cute": [CuteHopper, CutePuppy, CuteBunch],
-    "playful": [PlayPorpoise, PlayTag, PlayLoop],
-    "eerie": [EerieMimic, EerieSync, EerieWatchers],
-    "majestic": [MajWhale, MajGlider, MajAssembly],
-    "menacing": [MenCircle, MenStalker, MenPatrol],
-    "terrifying": [TerSwarm, TerEncircle, TerCharge],
+    "cute": [CuteHopper, CutePuppy, CuteBunch, CuteNuzzler],
+    "playful": [PlayPorpoise, PlayTag, PlayLoop, PlayBurst],
+    "eerie": [EerieMimic, EerieSync, EerieWatchers, EerieAngel],
+    "majestic": [MajWhale, MajGlider, MajAssembly, MajSchool],
+    "menacing": [MenCircle, MenStalker, MenPatrol, MenShadow],
+    "terrifying": [TerSwarm, TerEncircle, TerCharge, TerAmbush],
 }

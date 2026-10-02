@@ -3,84 +3,84 @@
   "step": "G0 old scorecard feel",
   "n_features": 5,
   "logistic": {
-   "lofo": 0.396,
-   "within": 0.632,
-   "viewer": 0.639
+   "lofo": 0.321,
+   "within": 0.496,
+   "viewer": 0.465
   },
   "prototype": {
-   "lofo": 0.479,
-   "within": 0.653,
-   "viewer": 0.528
+   "lofo": 0.28,
+   "within": 0.496,
+   "viewer": 0.486
   }
  },
  {
   "step": "G1 + looming (Schiff, Lee tau)",
   "n_features": 9,
   "logistic": {
-   "lofo": 0.507,
-   "within": 0.789,
-   "viewer": 0.769
+   "lofo": 0.559,
+   "within": 0.766,
+   "viewer": 0.771
   },
   "prototype": {
-   "lofo": 0.44,
-   "within": 0.829,
-   "viewer": 0.806
+   "lofo": 0.481,
+   "within": 0.788,
+   "viewer": 0.84
   }
  },
  {
   "step": "G2 + scale & baby schema",
   "n_features": 12,
   "logistic": {
-   "lofo": 0.519,
-   "within": 0.856,
-   "viewer": 0.852
+   "lofo": 0.59,
+   "within": 0.814,
+   "viewer": 0.84
   },
   "prototype": {
-   "lofo": 0.512,
-   "within": 0.847,
-   "viewer": 0.898
+   "lofo": 0.658,
+   "within": 0.833,
+   "viewer": 0.896
   }
  },
  {
   "step": "G3 + gaze / chase / encircle (Gao, Heider-Simmel)",
   "n_features": 17,
   "logistic": {
-   "lofo": 0.593,
-   "within": 0.928,
-   "viewer": 0.889
+   "lofo": 0.634,
+   "within": 0.92,
+   "viewer": 0.91
   },
   "prototype": {
-   "lofo": 0.6,
-   "within": 0.903,
-   "viewer": 0.907
+   "lofo": 0.694,
+   "within": 0.904,
+   "viewer": 0.896
   }
  },
  {
   "step": "G4 + coordination / uncanny",
   "n_features": 20,
   "logistic": {
-   "lofo": 0.639,
-   "within": 0.93,
-   "viewer": 0.944
+   "lofo": 0.677,
+   "within": 0.889,
+   "viewer": 0.882
   },
   "prototype": {
-   "lofo": 0.604,
-   "within": 0.912,
-   "viewer": 0.907
+   "lofo": 0.693,
+   "within": 0.91,
+   "viewer": 0.896
   }
  },
  {
   "step": "G5 + effort & rhythm (Laban, Pollick, Tremoulet)",
   "n_features": 29,
   "logistic": {
-   "lofo": 0.597,
-   "within": 0.951,
-   "viewer": 0.926
+   "lofo": 0.667,
+   "within": 0.958,
+   "viewer": 0.931
   },
   "prototype": {
-   "lofo": 0.625,
-   "within": 0.912,
-   "viewer": 0.88
+   "lofo": 0.688,
+   "within": 0.925,
+   "viewer": 0.91
   }
  }
 ]
