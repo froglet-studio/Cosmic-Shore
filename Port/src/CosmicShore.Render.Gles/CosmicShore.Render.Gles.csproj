@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The port's renderer compiled against OpenGL ES 3.2 (the mobile heads). The SAME sources as
+       CosmicShore.Render, built with GLES defined: each file swaps its Silk.NET binding under
+       #if GLES and GlProgram rewrites the shaders' "#version 330 core" line to GLSL ES 3.20.
+       The assembly keeps the CosmicShore.Render name so a head references exactly one of the two. -->
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>CosmicShore.Render</AssemblyName>
+    <RootNamespace>CosmicShore.Render</RootNamespace>
+    <DefineConstants>$(DefineConstants);GLES</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../CosmicShore.Render/*.cs" LinkBase="Shared" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Silk.NET.OpenGLES" Version="2.22.0" />
+  </ItemGroup>
+
+</Project>

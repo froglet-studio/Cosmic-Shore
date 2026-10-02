@@ -1,0 +1,108 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The port's PLAYER on Android: the real game (CosmicShore.Live — Assets/_Scripts compiled
+       against the port engine) booting from the project's own scenes and content, drawn through
+       the OpenGL ES 3.2 build of the renderer (CosmicShore.Render.Gles). The successor to the
+       July CosmicShore.Client.Android head, which wrapped the hand-ported SkimRace harness.
+
+       Build (from Port/):
+         python3 tools/fetch_native.py (platform android-arm64: FMOD Android runtime, from LFS)
+         dotnet publish src/CosmicShore.Player.Android -c Release
+       The content pack (tools/pack_android_content.py) is produced by the PackContent target
+       below on every build; the signed APK lands in bin/Release/net10.0-android/publish/. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <!-- A DIFFERENT application id from every other Cosmic Shore build so they install side by
+         side on one device: the Unity Android player is com.FrogletGames.TailGlider (ProjectSettings),
+         the July port APK was studio.froglet.cosmicshore.port. -->
+    <ApplicationId>studio.froglet.cosmicshore.engine</ApplicationId>
+    <ApplicationTitle>Cosmic Shore (Engine)</ApplicationTitle>
+    <ApplicationVersion>3</ApplicationVersion>
+    <ApplicationDisplayVersion>0.3.0-engine</ApplicationDisplayVersion>
+    <AssemblyName>CosmicShore</AssemblyName>
+    <RootNamespace>CosmicShore.Player</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>disable</Nullable>
+    <DefineConstants>$(DefineConstants);GLES</DefineConstants>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- Progress builds sideload as APKs (Release default would be .aab). -->
+    <AndroidPackageFormats>apk</AndroidPackageFormats>
+    <!-- The game and the engine lean on reflection everywhere (DI injectors, SOAP, the content
+         bridge resolving scripts by guid), so nothing may be trimmed — and AOT needs trimming. -->
+    <AndroidLinkMode>None</AndroidLinkMode>
+    <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <!-- Device-verified on the July head: with LLVM marshal methods on, every Java→managed
+         callback died at startup (no Java_* exports for SilkActivity's natives). Keep it off. -->
+    <AndroidEnableMarshalMethods>false</AndroidEnableMarshalMethods>
+    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <!-- The content pack is already a zip; storing it uncompressed keeps the APK from deflating it twice. -->
+    <AndroidStoreUncompressedFileExtensions>.zip</AndroidStoreUncompressedFileExtensions>
+    <NoWarn>$(NoWarn);CA1416;XA4211</NoWarn>
+  </PropertyGroup>
+
+  <!-- The desktop player's sources, verbatim: only its command-line entry point and the headless
+       training host stay behind. MainActivity is this head's entry point. -->
+  <ItemGroup>
+    <Compile Include="../CosmicShore.Player/*.cs"
+             Exclude="../CosmicShore.Player/Program.cs;../CosmicShore.Player/TrainingHost*.cs;../CosmicShore.Player/TrainingWorkers.cs"
+             LinkBase="Shared" />
+    <Compile Include="../CosmicShore.Client/MiniPng.cs" Link="Shared/MiniPng.cs" />
+    <Compile Include="*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <ProjectReference Include="../CosmicShore.Compat/CosmicShore.Compat.csproj" />
+    <ProjectReference Include="../CosmicShore.Live/CosmicShore.Live.csproj" />
+    <ProjectReference Include="../CosmicShore.Content/CosmicShore.Content.csproj" />
+    <ProjectReference Include="../CosmicShore.Render.Gles/CosmicShore.Render.Gles.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Silk.NET.Windowing.Sdl's Android lib carries SilkActivity + libSDL2.so in its bundled .aar. -->
+    <PackageReference Include="Silk.NET.Windowing.Sdl" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.Input" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.Input.Sdl" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.SDL" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.OpenGLES" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.Maths" Version="2.22.0" />
+  </ItemGroup>
+
+  <!-- NuGet RID fallback (android-arm64 → linux-arm64) drags Ultz.Native.SDL's glibc
+       libSDL2-2.0.so into the APK. Bionic cannot load it; the real SDL2 ships in the Silk aar. -->
+  <Target Name="DropGlibcSdlNative" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)" Condition="'%(Filename)%(Extension)' == 'libSDL2-2.0.so'" />
+    </ItemGroup>
+  </Target>
+
+  <!-- FMOD Studio's Android runtime: the two native libraries (fetched out of Git LFS into
+       Port/.native by tools/fetch_native.py) and the Java half FMOD.init(Context) lives in. -->
+  <PropertyGroup>
+    <FmodNativeDir>$(MSBuildThisFileDirectory)../../.native/android-arm64/</FmodNativeDir>
+    <ProjectRootDir>$(MSBuildThisFileDirectory)../../../</ProjectRootDir>
+    <ContentPackDir>$(MSBuildThisFileDirectory)obj/contentpack/</ContentPackDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <AndroidNativeLibrary Include="$(FmodNativeDir)libfmod.so" Abi="arm64-v8a" Condition="Exists('$(FmodNativeDir)libfmod.so')" />
+    <AndroidNativeLibrary Include="$(FmodNativeDir)libfmodstudio.so" Abi="arm64-v8a" Condition="Exists('$(FmodNativeDir)libfmodstudio.so')" />
+    <AndroidLibrary Include="$(ProjectRootDir)Assets/Plugins/FMOD/platforms/android/lib/fmod.jar" Bind="false" />
+  </ItemGroup>
+
+  <!-- The project content the player reads, packed from Assets/ on every build (a few seconds;
+       the pack is content-hashed, so an unchanged tree reinstalls nothing on the device). -->
+  <Target Name="PackContent" BeforeTargets="PrepareForBuild">
+    <Warning Condition="!Exists('$(FmodNativeDir)libfmodstudio.so')" Text="FMOD Android runtime missing - the APK will be silent. Run: python3 Port/tools/fetch_native.py --platform android-arm64" />
+    <Exec Command="python3 &quot;$(MSBuildThisFileDirectory)../../tools/pack_android_content.py&quot; &quot;$(ContentPackDir)content.zip&quot;" />
+    <ItemGroup>
+      <AndroidAsset Include="$(ContentPackDir)content.zip" Link="Assets/content.zip" />
+      <AndroidAsset Include="$(ContentPackDir)content.version" Link="Assets/content.version" />
+    </ItemGroup>
+  </Target>
+
+</Project>

@@ -3,12 +3,22 @@ using System.Collections.Generic;
 using System.Numerics;
 using CosmicShore.Engine;
 using CosmicShore.Engine.UI;
+#if GLES
+using Silk.NET.OpenGLES;
+using GLNS = Silk.NET.OpenGLES;
+#else
 using Silk.NET.OpenGL;
+using GLNS = Silk.NET.OpenGL;
+#endif
 using EngineVector3 = CosmicShore.Engine.Vector3;
 using EngineColor = CosmicShore.Engine.Color;
 using Rect = CosmicShore.Engine.Rect;
 using Vector4 = System.Numerics.Vector4;
+#if GLES
+using PrimitiveType = Silk.NET.OpenGLES.PrimitiveType;
+#else
 using PrimitiveType = Silk.NET.OpenGL.PrimitiveType;
+#endif
 
 namespace CosmicShore.Render
 {

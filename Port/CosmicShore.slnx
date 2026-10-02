@@ -10,7 +10,9 @@
     <Project Path="src/CosmicShore.Game/CosmicShore.Game.csproj" />
     <Project Path="src/CosmicShore.Live/CosmicShore.Live.csproj" />
     <Project Path="src/CosmicShore.Player/CosmicShore.Player.csproj" />
+    <Project Path="src/CosmicShore.Player.Gles/CosmicShore.Player.Gles.csproj" />
     <Project Path="src/CosmicShore.Render/CosmicShore.Render.csproj" />
+    <Project Path="src/CosmicShore.Render.Gles/CosmicShore.Render.Gles.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CosmicShore.Tests.Ported/CosmicShore.Tests.Ported.csproj" />

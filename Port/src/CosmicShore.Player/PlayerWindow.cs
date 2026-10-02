@@ -3,7 +3,11 @@ using CosmicShore.Engine;
 using CosmicShore.Render;
 using ColorSpace = CosmicShore.Render.ColorSpace;
 using Silk.NET.Maths;
+#if GLES
+using Silk.NET.OpenGLES;
+#else
 using Silk.NET.OpenGL;
+#endif
 using Silk.NET.Windowing;
 
 namespace CosmicShore.Player
@@ -17,7 +21,7 @@ namespace CosmicShore.Player
         readonly InputScript _script;
         readonly int _width, _height;
 
-        IWindow _window;
+        IView _window;
         GL _gl;
         PlayerBoot _boot;
         TextureCache _textures;
@@ -65,8 +69,22 @@ namespace CosmicShore.Player
                 VSync = true,
                 PreferredStencilBufferBits = 8,
                 PreferredDepthBufferBits = 24,
+#if GLES
+                // The mobile renderer: OpenGL ES 3.2 (texture buffers, base-vertex instancing and
+                // float colour targets are core there; see GlProgram.ToEs).
+                API = new GraphicsAPI(ContextAPI.OpenGLES, ContextProfile.Core, ContextFlags.Default, new APIVersion(3, 2)),
+#endif
             };
-            _window = Window.Create(options);
+            Run(Window.Create(options));
+        }
+
+        /// <summary>
+        /// Drives the player on a view the host already made: a desktop window, or the SDL surface
+        /// an Android activity owns (<c>SilkActivity</c> hands out an <see cref="IView"/>, not a window).
+        /// </summary>
+        public void Run(IView view)
+        {
+            _window = view;
             _window.Load += OnLoad;
             _window.Update += OnUpdate;
             _window.Render += OnRender;
@@ -74,6 +92,9 @@ namespace CosmicShore.Player
             _boot?.Dispose();
             _inputBridge?.Dispose();
         }
+
+        /// <summary>Raised once the boot has run and the first scene is loading (a host's splash can come down).</summary>
+        public event Action Booted;
 
         void OnLoad()
         {
@@ -102,6 +123,7 @@ namespace CosmicShore.Player
             _boot = new PlayerBoot();
             _boot.Start(_scene);
             _tmp.Fonts = _boot.Runtime.Fonts;
+            Booted?.Invoke();
         }
 
         void OnUpdate(double dt)

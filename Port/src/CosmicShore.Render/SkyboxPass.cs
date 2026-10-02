@@ -1,6 +1,12 @@
 using System;
 using CosmicShore.Engine;
+#if GLES
+using Silk.NET.OpenGLES;
+using GLNS = Silk.NET.OpenGLES;
+#else
 using Silk.NET.OpenGL;
+using GLNS = Silk.NET.OpenGL;
+#endif
 using EMatrix = CosmicShore.Engine.Matrix4x4;
 using Shader = CosmicShore.Engine.Shader;
 
@@ -82,7 +88,7 @@ void main(){
             _gl.Disable(EnableCap.Blend);
             _gl.Disable(EnableCap.CullFace);
             _gl.BindVertexArray(_vao);
-            _gl.DrawArrays(Silk.NET.OpenGL.PrimitiveType.Triangles, 0, 3);
+            _gl.DrawArrays(GLNS.PrimitiveType.Triangles, 0, 3);
             _gl.DepthMask(true);
             return true;
         }

@@ -2,11 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using CosmicShore.Engine;
+#if GLES
+using Silk.NET.OpenGLES;
+using GLNS = Silk.NET.OpenGLES;
+#else
 using Silk.NET.OpenGL;
+using GLNS = Silk.NET.OpenGL;
+#endif
 using EngineTexture = CosmicShore.Engine.Texture;
 using EngineWrap = CosmicShore.Engine.TextureWrapMode;
 using EngineFilter = CosmicShore.Engine.FilterMode;
+#if GLES
+using GlWrap = Silk.NET.OpenGLES.TextureWrapMode;
+#else
 using GlWrap = Silk.NET.OpenGL.TextureWrapMode;
+#endif
 
 namespace CosmicShore.Render
 {
@@ -38,6 +48,9 @@ namespace CosmicShore.Render
             // makes the driver read that many bytes and cut the tail off ("unexpected end of file").
             for (int i = 0; i < src.Length; i++)
                 if (src[i] > 127) throw new InvalidOperationException($"{name}: shader source must be ASCII (U+{(int)src[i]:X4} at char {i}).");
+#if GLES
+            src = ToEs(src);
+#endif
             uint s = _gl.CreateShader(type);
             _gl.ShaderSource(s, src);
             _gl.CompileShader(s);
@@ -45,6 +58,23 @@ namespace CosmicShore.Render
             if (ok == 0) throw new InvalidOperationException($"{name}: {_gl.GetShaderInfoLog(s)}");
             return s;
         }
+
+#if GLES
+        /// <summary>
+        /// The renderer's GLSL is authored as desktop "#version 330 core"; GLSL ES 3.20 accepts the
+        /// same language once the version line names it and default precisions are declared (ES has
+        /// no default float precision in a fragment shader, and samplerBuffer needs one everywhere).
+        /// ES 3.20 rather than 3.00 because the scene shader reads its per-instance clock block from
+        /// a texture buffer, which ES gains in 3.2. Validated offline with glslangValidator.
+        /// </summary>
+        internal static string ToEs(string src)
+        {
+            const string Header = "#version 320 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\nprecision highp samplerBuffer;\n";
+            int nl = src.IndexOf('\n');
+            if (src.StartsWith("#version", System.StringComparison.Ordinal) && nl > 0) return Header + src.Substring(nl + 1);
+            return Header + src;
+        }
+#endif
 
         public int Loc(string uniform)
         {

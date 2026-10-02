@@ -54,6 +54,14 @@ On Windows, a clone made with git-lfs already has `fmodstudio.dll`; otherwise ru
 `python tools\fetch_native.py --platform win-x64`. Progress and remaining gaps:
 `docs/PROGRESS_2026-09-29.md`.
 
+## Run it on Android
+
+`CosmicShore.Player.Android` is the same player as an APK (OpenGL ES 3.2, touch, FMOD, the
+project content packed inside it), package `studio.froglet.cosmicshore.engine` so it installs
+beside the Unity build. It is left out of `CosmicShore.slnx` (it needs the .NET Android workload);
+build it directly. Build, what is Android-specific, and how to verify the GLES path on a desktop
+with `CosmicShore.Player.Gles`: `docs/ANDROID.md`.
+
 ## Edit content without Unity
 
 `cs-asset` writes the project's scenes, prefabs and assets: set any field, create and delete
@@ -81,7 +89,10 @@ Port/
 │   ├── CosmicShore.Game/        # ported game code (mirrors Assets/_Scripts structure)
 │   ├── CosmicShore.AssetTool/   # cs-asset: edit/create/delete in scenes & prefabs (docs/AUTHORING.md)
 │   ├── CosmicShore.Cli/         # headless smoke/sim harness (engine boot, SOAP, sims)
-│   └── CosmicShore.Client/      # playable SkimRace window (Silk.NET, sprint builds)
+│   ├── CosmicShore.Client/      # playable SkimRace window (Silk.NET, sprint builds)
+│   ├── CosmicShore.Render.Gles/ # the renderer built against OpenGL ES 3.2 (mobile heads)
+│   ├── CosmicShore.Player.Gles/ # the player on a desktop GLES context (mobile render path, testable under xvfb)
+│   └── CosmicShore.Player.Android/ # the player as an APK (docs/ANDROID.md)
 ├── dist/                        # playable progress-build zips (see play-latest.bat)
 ├── artifacts/                   # curated headless render verifications
 └── tests/

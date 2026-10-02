@@ -73,6 +73,13 @@ namespace CosmicShore.Player
 
         static string FindLibrary(string projectRoot)
         {
+            // Android: FMOD ships as the APK's own native libraries (lib/arm64-v8a), loaded by
+            // soname through the app's linker namespace - there is no file path to probe.
+            if (OperatingSystem.IsAndroid())
+            {
+                var lib = Environment.GetEnvironmentVariable("COSMIC_SHORE_FMOD_LIB");
+                return string.IsNullOrEmpty(lib) ? null : lib;
+            }
             bool win = OperatingSystem.IsWindows();
             string file = win ? "fmodstudio.dll" : "libfmodstudio.so";
             string rid = win ? "win-x64" : "linux-x64";

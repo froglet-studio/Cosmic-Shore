@@ -3,10 +3,20 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using CosmicShore.Engine;
 using CosmicShore.Engine.UI;
+#if GLES
+using Silk.NET.OpenGLES;
+using GLNS = Silk.NET.OpenGLES;
+#else
 using Silk.NET.OpenGL;
+using GLNS = Silk.NET.OpenGL;
+#endif
 using Rect = CosmicShore.Engine.Rect;
 using Vector4 = System.Numerics.Vector4;
+#if GLES
+using PrimitiveType = Silk.NET.OpenGLES.PrimitiveType;
+#else
 using PrimitiveType = Silk.NET.OpenGL.PrimitiveType;
+#endif
 
 namespace CosmicShore.Render
 {
@@ -241,8 +251,8 @@ namespace CosmicShore.Render
             _gl.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)Silk.NET.OpenGL.TextureWrapMode.ClampToEdge);
-            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)Silk.NET.OpenGL.TextureWrapMode.ClampToEdge);
+            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)GLNS.TextureWrapMode.ClampToEdge);
+            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)GLNS.TextureWrapMode.ClampToEdge);
             return tex;
         }
 

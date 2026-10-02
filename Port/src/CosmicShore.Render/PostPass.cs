@@ -1,7 +1,17 @@
 using System;
 using System.Collections.Generic;
+#if GLES
+using Silk.NET.OpenGLES;
+using GLNS = Silk.NET.OpenGLES;
+#else
 using Silk.NET.OpenGL;
+using GLNS = Silk.NET.OpenGL;
+#endif
+#if GLES
+using GlWrap = Silk.NET.OpenGLES.TextureWrapMode;
+#else
 using GlWrap = Silk.NET.OpenGL.TextureWrapMode;
+#endif
 
 namespace CosmicShore.Render
 {
@@ -256,7 +266,7 @@ void main(){
             return 1f + (fit - 1f) * Math.Clamp(s.PaniniCropToFit, 0f, 1f);
         }
 
-        void Fullscreen() => _gl.DrawArrays(Silk.NET.OpenGL.PrimitiveType.Triangles, 0, 3);
+        void Fullscreen() => _gl.DrawArrays(GLNS.PrimitiveType.Triangles, 0, 3);
 
         void Tex(int unit, uint tex)
         {

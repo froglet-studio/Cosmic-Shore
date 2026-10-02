@@ -192,7 +192,7 @@ uniform float _DriftSpeed;
             float temp = hash31(cellId + 127.1);
             vec3 orient = normalize(hash33(cellId + 53.0) - 0.5);
 
-            float obj = 0;
+            float obj = 0.0;
             vec3 col = vec3(0, 0, 0);
 
             // Decompose starPos into components along orient axis

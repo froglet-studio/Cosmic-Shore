@@ -3,10 +3,20 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using CosmicShore.Engine;
 using CosmicShore.Engine.Rendering;
+#if GLES
+using Silk.NET.OpenGLES;
+using GLNS = Silk.NET.OpenGLES;
+#else
 using Silk.NET.OpenGL;
+using GLNS = Silk.NET.OpenGL;
+#endif
 using EMatrix = CosmicShore.Engine.Matrix4x4;
 using EVector3 = CosmicShore.Engine.Vector3;
+#if GLES
+using GlPrimitive = Silk.NET.OpenGLES.PrimitiveType;
+#else
 using GlPrimitive = Silk.NET.OpenGL.PrimitiveType;
+#endif
 using Texture = CosmicShore.Engine.Texture;
 using Shader = CosmicShore.Engine.Shader;
 using Light = CosmicShore.Engine.Light;

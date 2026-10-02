@@ -20,6 +20,8 @@ PORT = os.path.join(ROOT, "Port")
 PLATFORMS = {
     "linux-x64": ("Assets/Plugins/FMOD/platforms/linux/lib/x86_64", ["libfmodstudio.so"]),
     "win-x64": ("Assets/Plugins/FMOD/platforms/win/lib/x86_64", ["fmodstudio.dll"]),
+    # The Android head (CosmicShore.Player.Android): FMOD Studio needs the core runtime beside it.
+    "android-arm64": ("Assets/Plugins/FMOD/platforms/android/lib/arm64-v8a", ["libfmod.so", "libfmodstudio.so"]),
 }
 
 POINTER = re.compile(r"^version https://git-lfs\.github\.com/spec/v1\noid sha256:([0-9a-f]{64})\nsize (\d+)\n?$")
