@@ -438,6 +438,12 @@ the Mono cost of the network — `QA-SWARM-ROUND5`.
 
 ---
 
+- **Round 6 (§12):** `SwarmSortCore`'s sortfeel + 1-in-8 options are compiled and RUN by the same harness (S0-S11
+  green on the shipped config) and scored by `score_sortfeel.py` with the research's unchanged scorer on the
+  16-transition yardstick (two RNG streams, 3,840 records, 0 self-inflicted deaths), the organic band, and
+  `swarm_smooth`'s events over three seeds. Glue type-check and `author_swarm_fauna.py --check` green. Nothing
+  about Unity: QA-SWARM-ROUND6.
+
 ## 7. Findings for the research
 
 Things the game port taught, for whoever iterates the field model:
@@ -1146,8 +1152,9 @@ which the research found the hard way (`lite_sortfeel` NOTE §5.1). Raw: `score_
 | game, shipped with noise 0 | 13 | 13 | 13 | 13 | 52/52 | 52/52 | - |
 
 Python, the research's own hold (`results/hold/sortfeel.json`, `results/lite_sortfeel/hold/vec_look_1_frac_8.txt`):
-sortfeel 12/11/13/13 = 49/52, lite frac 8 11/12/13/13 = 49/52. The C# held config lands on the same 49 in both
-streams. Every research-mode fail is a switch INTO or OUT OF the dragonfly near the bar (7.7-9.7) - the research's
+sortfeel 12/11/13/13 = 49/52, lite frac 8 11/12/13/13 = 49/52; re-run here at seed 7 they reproduce exactly
+(sortfeel 12/13, lite 11/13 losing `mass->time` at 7.88; 3.37 and 1.50 ms/step in Python). The C# held config
+lands on the same 49 in both streams, at ~27x the speed of the Python lite model. Every research-mode fail is a switch INTO or OUT OF the dragonfly near the bar (7.7-9.7) - the research's
 known open problem, not a port defect. Own-plan losses (whale / jellyfish / pufferfish / dragonfly), stream B
 seed 7: game round 5 1.66 / 1.86 / 1.38 / 4.35, **shipped 1.91 / 2.18 / 1.63 / 5.50** - every body loosens a
 little and the dragonfly most (+1.2, still 2.5 under the bar): the price of a body that fills its wells instead

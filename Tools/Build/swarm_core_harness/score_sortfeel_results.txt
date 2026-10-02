@@ -617,3 +617,15 @@ BENCH mode=researchSortFeelD0F8 B=1 tadpoles=169 ms_per_swarm_step=0.0658 us_per
 BENCH mode=researchSortFeelD0F8 B=4 tadpoles=505 ms_per_swarm_step=0.0484 us_per_tadpole_step=0.383 ms_per_frame_all=0.193
 BENCH mode=researchSortFeelD0F8 B=16 tadpoles=2020 ms_per_swarm_step=0.0499 us_per_tadpole_step=0.396 ms_per_frame_all=0.799
 BENCH mode=researchSortFeelD0F8 B=64 tadpoles=8080 ms_per_swarm_step=0.0548 us_per_tadpole_step=0.434 ms_per_frame_all=3.508
+
+############ Python reference, re-run here (score_sortfeel.py --modes '' --seeds 7 --ref lite8,sortfeel)
+  Python lite8 seed 7: 11/13 (76s)
+  Python lite8: deaths 0  1.498 ms/step @ 126
+  Python sortfeel seed 7: 12/13 (102s)
+  Python sortfeel: deaths 0  3.372 ms/step @ 126
+YARDSTICK (swarm_eval: 4 own + 12 switches, majority of samples, loss-8 bar); own = mass / space / charge / time
+  Python lite8             seed   7: 11/13  own 1.57 / 2.77 / 1.22 / 3.90  fails ['mass->time(7.88)', 'time->space(9.09)']
+  Python lite8             TOTAL     11/13
+  Python sortfeel          seed   7: 12/13  own 1.51 / 2.69 / 1.17 / 3.45  fails ['time->space(9.01)']
+  Python sortfeel          TOTAL     12/13
+wrote /tmp/claude-0/-home-user-Cosmic-Shore/979a65d9-1e36-525d-a1ec-8c4d017ecc39/scratchpad/pyref.json
