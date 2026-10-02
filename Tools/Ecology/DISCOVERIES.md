@@ -20,6 +20,29 @@ conserved mass, threat/feel scorecard, playback viewer). Template: `examples/dem
 | E hierarchical ecology | cece/eco-hierarchy | session_019eCUxuj386nfbZFngZgRFq |
 | F threat flora (optional) | cece/eco-flora | session_01PAowH8iPzv2LZEMPjGVyqz |
 | game round 7 (3 big GPU swarms) | cece/swarm-fauna-game | session_01C1G9JxfU65kaHsa5TXg1tt |
+## 2026-10-02 14:35 UTC - round 1 harvested; round 2 launched
+
+**All six directions reached a stopping point, and each one said why** (sections below).
+
+| dir | answer in one line | port pick |
+|---|---|---|
+| A substrate | one agents + fields + quorum + bodies sim expresses 6 species as parameter sets; 1.2 ms / 10k agents, 11 ms / 100k (k = 8) | port to Burst per `substrate/DESIGN_BURST.md` as the platform layer |
+| B bestiary | 8 species scored on telegraph / counterplay / variety / payoff | thieves, pack hunters, locusts (lurker next) |
+| C emotion | a motion+size probe, LOFO 0.75, sealed 0.78 / 0.91; per-window timeline | needs a 5-rater blind pass (`emotion/results/emotion_viewer.html` + `ratings.py`) to become evidence |
+| D builders | stigmergic builders made of stolen trail; mass audit 0.000 everywhere | the fortress (`builders/PORT.md`); wearers last |
+| E hierarchy | escalator-boxcar cohorts: exact mass, no pop-in, macro-then-expand matches micro; 8 h cycles, no extinction | regions in `Cell`, stomach replaces the starvation clock, replicate macro state |
+| F threat flora | snap trap R 0.97, physarum R 0.94-0.98, spores R 1.00 | snap trap, then physarum (share a grove) |
+
+**What no direction has measured yet: a whole cell.** Round 2 asks it as one question:
+
+| dir | branch | session |
+|---|---|---|
+| G living cell (all species together under E's LOD; plus multi-domain swarm dynamics) | cece/eco-living-cell | session_01C7xRo1y3JTtgh2dcm852hQ |
+| game round 8 (swarm members hittable at range, predatable, counted in LiveVolume; multi-domain swarms) | cece/swarm-fauna-game | session_01J36XaFE3aw7WBwNzY7zubF |
+
+**Needs a human, not a session:** the emotion probe's numbers are agreement with literature archetypes,
+not human ratings. A 5-rater blind pass is the one step that turns them into evidence.
+
 ## Substrate (Direction A, `substrate/`, branch `cece/eco-substrate`)
 
 **Question:** can one agents + fields + quorum + bodies substrate express many species, and what does it cost at
