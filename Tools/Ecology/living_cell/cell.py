@@ -166,7 +166,13 @@ class Cell:
         reg = w.region_of(w.pos[live])
         kinds = w.kind[live].astype(np.int64)
         lists, food = {}, {}
-        for nm, km in (("herb", K_HERB), ("nectar", 1 << FLORA)):
+        # macro edible lists: the legacy pair, plus one per guild that declares its own macro_mask (R8)
+        specs = [("herb", K_HERB), ("nectar", 1 << FLORA)]
+        for g in self.guilds.values():
+            mm = getattr(g, "macro_mask", None)
+            if mm is not None and ("m%d" % mm) not in dict(specs):
+                specs.append(("m%d" % mm, int(mm)))
+        for nm, km in specs:
             m = ((km >> kinds) & 1).astype(bool)
             idx = live[m]; r = reg[m]
             perm = w.rng.permutation(len(idx)); idx = idx[perm]; r = r[perm]
@@ -176,7 +182,8 @@ class Cell:
             groups = np.split(idx, cut); keys = r[np.concatenate([[0], cut])] if len(r) else []
             lists[nm] = {int(k): list(gp) for k, gp in zip(keys, groups)}
         for name, g in self.guilds.items():
-            key = "nectar" if name == "thief" else "herb"
+            mm = getattr(g, "macro_mask", None)
+            key = ("m%d" % mm) if mm is not None else ("nectar" if name == "thief" else "herb")
             g.macro_step(dt, food[key], lists[key], self.guilds)
         self.flora.grow(dt)
 

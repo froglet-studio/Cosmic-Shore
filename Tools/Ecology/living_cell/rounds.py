@@ -69,3 +69,29 @@ R7 = {
     "r7_thief_metab": dict(BASE7, **{"thief.metab": 0.015}),
     "r7_thief_both_pack90": dict(BASE7, pack_cap=90, **{"thief.F_half": 600.0, "thief.metab": 0.015}),
 }
+# NOTE r7_thief_metab duplicated r7_base: HIGHCAP already sets thief.metab 0.015 (kept as run, flagged in DISCOVERIES).
+
+# The recommended cell (DISCOVERIES "Living cell"): R7's base. Thieves stay the fragile link (1 of 3 seeds lost them
+# in R7); every thief fix tried moved the extinction onto locusts, which share the flora with them.
+FINAL = dict(BASE7)   # superseded below by R8 (kept so R8 can be read as a delta)
+
+# LOD radius sweep on FINAL: (expand_r, ahead_r, absorb_r) scaled together around the default 520/760/680.
+LOD = {
+    "lod_360": dict(expand_r=360.0, ahead_r=520.0, absorb_r=470.0),
+    "lod_520": dict(expand_r=520.0, ahead_r=760.0, absorb_r=680.0),
+    "lod_700": dict(expand_r=700.0, ahead_r=1000.0, absorb_r=900.0),
+}
+
+# Round 8 (after the 45-min final run lost thieves in 3/4 seeds to STARVATION - 54 of 58 losses, 181 vol eaten in
+# 45 min against the grazers' 165k): off-screen thieves could only eat flora, where the calibrated grazers out-compete
+# them, while their actual niche (stolen trail, hoards) existed only near pilots. Give the macro level each species'
+# OWN diet. Masks: FLORA=1, TRAIL=2, SKEL=4, HOARD=8 bits (world.py kinds 0..3).
+_F, _T, _S, _H = 1, 2, 4, 8
+R8 = {
+    "r8_thief_loose": dict(FINAL, **{"thief.macro_mask": _F | _T | _S | _H}),
+    "r8_own_diets": dict(FINAL, **{"thief.macro_mask": _F | _T | _S | _H, "grazer.macro_mask": _F | _S,
+                                   "locust.macro_mask": _F | _T}),
+}
+
+# The recommended cell after R8: per-species macro diets (= the micro diets). 0 extinctions in 3 seeds x 30 min.
+FINAL = dict(R8["r8_own_diets"])

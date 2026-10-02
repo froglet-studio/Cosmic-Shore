@@ -181,6 +181,9 @@ let acc=0,last=performance.now();
 
 
 def build(seed=2, cfg=None, burn=600.0, seconds=300.0, out=None):
+    if cfg is None:
+        from .rounds import FINAL
+        cfg = FINAL
     d = record(seed=seed, cfg=cfg, burn=burn, seconds=seconds)
     out = out or os.path.join(HERE, "viewer.html")
     with open(out, "w") as fh:
