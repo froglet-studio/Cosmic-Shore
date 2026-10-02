@@ -1,0 +1,53 @@
+{
+ "params": {
+  "t_close": 0.5191,
+  "turn_deg": 4.4225,
+  "t_prime": 0.7308,
+  "clumps": 9,
+  "sense": 145.9975,
+  "bud_bias": 0.3049,
+  "mouth_len": 36.3478,
+  "mouth_w": 15.7119,
+  "dgape": 9.8316,
+  "clump_r": 57.0011,
+  "t_reset": 6.6876
+ },
+ "R": 0.9811,
+ "card": {
+  "hits_per_min_wander": 5.667,
+  "hits_per_min_reader": 0.333,
+  "counterplay": 0.059,
+  "telegraph_s": 1.3,
+  "telegraph_p10": 0.7,
+  "unwarned_frac": 0.083,
+  "payoff_per_min": 22.833,
+  "cutter_burns_per_min": 19.5,
+  "crystals_per_burn": 1.171,
+  "variety": 0.705,
+  "avoid_cost": 0.644,
+  "lane_coverage": 0.272,
+  "threat_density": 4.187,
+  "growth_per_min": 306.5,
+  "prisms_end": 1693.0,
+  "mass_drift_max": 1.4662370476684553e-16,
+  "crystal_law": true,
+  "py_ms_per_step": 5.897,
+  "courier_hits_per_min": 14.167,
+  "adapt": 1.994,
+  "kinds": {
+   "burn": 20,
+   "snap": 14
+  },
+  "R_terms": {
+   "threat": 1.0,
+   "counterplay": 1.0,
+   "telegraph": 1.0,
+   "payoff": 1.0,
+   "variety": 1.0,
+   "access": 0.859,
+   "presence": 1.0,
+   "adapt": 1.0
+  },
+  "R": 0.9811
+ }
+}

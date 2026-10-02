@@ -31,7 +31,7 @@ from harness import FloraSpecies, PlantBody, VIEW, GARDEN, seg_point_dist
 
 OPEN, PRIMING, ARMED, CLOSING, SHUT = 0, 1, 2, 3, 4
 
-DEFAULTS = dict(ram=True, heart_in_jaws=True, n_traps=40, clumps=8, clump_r=70.0, sense=170.0, t_prime=0.7, t_close=0.3, t_reset=3.0,
+DEFAULTS = dict(ram=True, heart_in_jaws=True, armour=0.0, n_traps=40, clumps=8, clump_r=70.0, sense=170.0, t_prime=0.7, t_close=0.3, t_reset=3.0,
                 t_digest=9.0, gape=35.0, dgape=18.0, mouth_len=55.0, mouth_w=24.0, turn_deg=4.0, bud_bias=0.0,
                 root=90.0, absorb_every=4.0, prism_vol=12.0, tooth_vol=8.0, fire_on="mouth")
 
@@ -63,7 +63,7 @@ class SnapTrap(FloraSpecies):
     name = "snaptrap"
 
     def __init__(self, arena, params=None):
-        self.p = dict(DEFAULTS); self.p.update(params or {})
+        self.p = dict(DEFAULTS); self.p.update(params or {}); self.rng_a = np.random.default_rng(99)
         p = self.p; rng = arena.rng
         self.body = PlantBody(4096)
         self.cap = 512
@@ -102,7 +102,8 @@ class SnapTrap(FloraSpecies):
             vol = self.p["tooth_vol"] if _dg[k] else self.p["prism_vol"]
             if self.reserve < vol: return
             self.reserve -= vol
-            self.slots[i, k] = self.body.lay(self.h[i], 4.0 if not _dg[k] else 3.5, vol, owner=i, danger=bool(_dg[k]))
+            self.slots[i, k] = self.body.lay(self.h[i], 4.0 if not _dg[k] else 3.5, vol, owner=i, danger=bool(_dg[k]),
+                                             shield=bool(not _dg[k] and self.rng_a.random() < self.p["armour"]))
 
     def _pose(self):
         idx = np.flatnonzero(self.slots[:self.n].max(axis=1) >= 0)
@@ -303,7 +304,9 @@ class SnapTrap(FloraSpecies):
         for j in c:
             if self.body.danger[j]: continue             # teeth burn, they do not cut
             o = self.body.owner[j]
-            self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j])
+            v = self.body.take(j)
+            if not v: continue
+            self.cut_volume += v
             if o >= 0: self.slots[o][self.slots[o] == j] = -1
         live = np.flatnonzero(self.alive[:self.n])
         if len(live):
@@ -323,14 +326,18 @@ class SnapTrap(FloraSpecies):
         for pi in arena.pilots:
             for j in self.body.contacts(pi.prev, pi.pos, pi.radius):
                 if self.body.danger[j]: continue
-                self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j])
+                v = self.body.take(j)
+                if not v: continue
+                self.cut_volume += v
                 o = self.body.owner[j]
                 if o >= 0: self.slots[o][self.slots[o] == j] = -1
 
     def remove_ball(self, arena, c, r):
         bi = self.body.live(); m = bi[np.linalg.norm(self.body.pos[bi] - c, axis=1) < r]
         for j in m:
-            self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j]); o = self.body.owner[j]
+            v = self.body.take(j)
+            if not v: continue
+            self.cut_volume += v; o = self.body.owner[j]
             if o >= 0: self.slots[o][self.slots[o] == j] = -1
 
     def mass_total(self):
