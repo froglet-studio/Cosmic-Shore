@@ -230,8 +230,8 @@ colliders. Wearers are the showpiece to port last. A worn body is moving mass (~
 1,700-2,800 index re-buckets/s for a 300-prism body), so it needs a body cap and a per-phase notify policy, profiled
 first. Trap builders belong in the gate-race modes, where a course forces a racing line for them to learn.
 
-**Viewer:** `builders/viewer.html` (self-contained, three.js from jsDelivr). Ten scenes, each opened framed on its
-structure:
+**Viewer:** `builders/viewer.html` (self-contained, three.js from jsDelivr). Nine scenes, the structure ones opened framed on their
+structures:
 - the fortress cut three times along one line (scar + caste);
 - a steal raid on the fortress;
 - the wasp comb growing, and the wasp comb raided;
