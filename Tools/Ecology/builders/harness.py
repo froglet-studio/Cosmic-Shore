@@ -131,7 +131,7 @@ def replayability(sps):
 
 
 def evaluate(factory, name, policies=("wander", "evader", "hunter"), seeds=(7, 23, 41), minutes=2.0, extra=None,
-             record_seed=7):
+             record_seed=7, replay_policy="wander"):
     runs, structs, sps, recs = {}, {}, [], []
     for pol in policies:
         for sd in seeds:
@@ -141,7 +141,7 @@ def evaluate(factory, name, policies=("wander", "evader", "hunter"), seeds=(7, 2
             structs[f"{pol}/{sd}"] = r["structure"] | dict(audit=r["audit"], moves_per_s=r["moves_per_s"],
                                                            steals=r["steals"], hits_per_min=r["hits_per_min"],
                                                            wall_s=r["wall_s"])
-            if pol == "wander":
+            if pol == replay_policy:
                 sps.append(sp)
             if "recording" in r:
                 recs.append(r["recording"])

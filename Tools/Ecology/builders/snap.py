@@ -23,3 +23,18 @@ def snap(path, panels, title="", slab=None):
             x.set_title(f"{lab}  {'xyz'[a]}{'xyz'[b]}{' slab' if slab else ''}", fontsize=8)
     fig.suptitle(title, fontsize=10); fig.tight_layout()
     fig.savefig(path, dpi=90, facecolor="white"); plt.close(fig)
+
+
+def snap3d(path, panels, title="", elev=18, azims=(30, 120)):
+    """panels: (label, points, colours). One 3D view per azimuth, per panel."""
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+    fig = plt.figure(figsize=(4.2 * len(azims), 4.0 * len(panels)))
+    for r, (lab, P, C) in enumerate(panels):
+        P = np.asarray(P)
+        for j, az in enumerate(azims):
+            ax = fig.add_subplot(len(panels), len(azims), r * len(azims) + j + 1, projection="3d")
+            if len(P):
+                ax.scatter(P[:, 0], P[:, 1], P[:, 2], c=C, s=14, marker="s", depthshade=True, linewidths=0)
+                m = np.abs(P).max(); ax.set_xlim(-m, m); ax.set_ylim(-m, m); ax.set_zlim(-m, m)
+            ax.view_init(elev, az); ax.set_axis_off(); ax.set_title(lab, fontsize=8)
+    fig.suptitle(title, fontsize=10); fig.tight_layout(); fig.savefig(path, dpi=80); plt.close(fig)

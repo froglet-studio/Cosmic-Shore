@@ -79,8 +79,9 @@ class Lattice:
     """Construction lattice: site (i,j,k) <-> world anchor + s*(i,j,k). Dense int array of mass indices
     (-1 empty), extent `half` sites each way."""
 
-    def __init__(self, anchor, s: float, half: int = 40):
+    def __init__(self, anchor, s: float, half: int = 40, basis=None):
         self.anchor = np.asarray(anchor, float); self.s = s; self.half = half
+        self.B = np.eye(3) if basis is None else np.asarray(basis, float)     # rows = the lattice axes in world
         self.m = 2 * half + 1
         self.occ = np.full((self.m,) * 3, -1, np.int64)
         self.t_placed = np.full((self.m,) * 3, -1.0, np.float32)
@@ -88,10 +89,10 @@ class Lattice:
         self.sites: dict[int, tuple] = {}                    # mass index -> site
 
     def site_of(self, p):
-        return tuple(np.round((np.asarray(p, float) - self.anchor) / self.s).astype(int) + self.half)
+        return tuple(np.round(self.B @ (np.asarray(p, float) - self.anchor) / self.s).astype(int) + self.half)
 
     def pos(self, site):
-        return self.anchor + (np.asarray(site, float) - self.half) * self.s
+        return self.anchor + ((np.asarray(site, float) - self.half) * self.s) @ self.B
 
     def inside(self, site):
         return all(0 <= c < self.m for c in site)
