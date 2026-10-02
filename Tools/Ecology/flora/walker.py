@@ -30,7 +30,7 @@ from harness import FloraSpecies, PlantBody, VIEW, seg_point_dist
 IDLE, TREMBLE, ERUPT, RETRACT = 0, 1, 2, 3
 DEFAULTS = dict(n_walkers=12, shell=24, r_body=28.0, prism_vol=14.0, thorns=10, thorn_vol=6.0, speed=5.0,
                 hunger_boost=2.0, sense=160.0, root=60.0, absorb_every=2.0, tell=110.0, prime=130.0, t_prime=0.6,
-                strike=40.0, thorn=55.0, t_erupt=0.45, t_hold=0.6, t_retract=1.2, bud=1, ram=True)
+                strike=40.0, thorn=55.0, t_erupt=0.45, t_hold=0.6, t_retract=1.2, bud=1, ram=True, armour=0.0)
 
 
 class Walker(FloraSpecies):
@@ -77,7 +77,8 @@ class Walker(FloraSpecies):
         d = self.rng.normal(size=3); d /= np.linalg.norm(d)
         if front and d @ self.dir[i] < 0: d = -d
         self.res[i] -= p["prism_vol"]
-        self.shell[i].append(self.body.lay(self.h[i] + d * p["r_body"] * self.rng.uniform(0.7, 1.0), 5.0, p["prism_vol"], owner=i))
+        self.shell[i].append(self.body.lay(self.h[i] + d * p["r_body"] * self.rng.uniform(0.7, 1.0), 5.0, p["prism_vol"], owner=i,
+                                           shield=bool(self.rng.random() < p["armour"])))
         return True
 
     # ---- step -------------------------------------------------------------------------------------------
@@ -160,7 +161,7 @@ class Walker(FloraSpecies):
                     t0 = self.hot_since.get((o, pi.name), self.seen_since.get((o, pi.name), t))
                     self.leads.append(t - t0); arena.hit(pi, "burn")
                 elif p["ram"]:
-                    self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j])
+                    self.cut_volume += self.body.take(j)
         for pi in arena.pilots:
             d = np.linalg.norm(self.h[:self.n] - pi.pos, axis=1)
             for i in np.flatnonzero(self.alive[:self.n] & (d < VIEW)):
@@ -199,7 +200,7 @@ class Walker(FloraSpecies):
     def cut(self, arena, pilot, a, b):
         for j in self.body.contacts(a, b, 14.0):
             if self.body.danger[j]: continue
-            self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j])
+            self.cut_volume += self.body.take(j)
         live = np.flatnonzero(self.alive[:self.n])
         if len(live):
             d = seg_point_dist(a, b, self.h[live])
@@ -212,7 +213,7 @@ class Walker(FloraSpecies):
     def remove_ball(self, arena, c, r):
         bi = self.body.live(); m = bi[np.linalg.norm(self.body.pos[bi] - c, axis=1) < r]
         for j in m:
-            self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j])
+            self.cut_volume += self.body.take(j)
 
     def mass_total(self):
         return self.reserve + float(self.res[:self.n].sum()) + self.body.total_volume()

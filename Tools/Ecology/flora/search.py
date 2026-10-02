@@ -60,9 +60,11 @@ if __name__ == "__main__":
     rng = np.random.default_rng(hash(name) % (1 << 31))
     def score(p):
         t = time.time(); c, _ = scorecard(SPEC[name], p)
-        rec = dict(params=p, R=c["R"], terms=c.get("R_terms"), card=c, wall=round(time.time() - t, 1))
+        obj = c["R"] + c.get("R_hard", 0.0)        # R, then the stretch bar once R saturates
+        rec = dict(params=p, R=c["R"], R_hard=c.get("R_hard"), obj=obj, terms=c.get("R_terms"),
+                   hard_terms=c.get("R_hard_terms"), card=c, wall=round(time.time() - t, 1))
         with open(out, "a") as fh: fh.write(json.dumps(rec) + "\n")
-        return c["R"], c
+        return obj, c
     best_R, best_c = score(x)
     print("start", best_R, json.dumps(best_c.get("R_terms")), flush=True)
     for it in range(iters):
@@ -70,7 +72,7 @@ if __name__ == "__main__":
         R, c = score(y)
         kept = R > best_R + margin
         if kept: x, best_R, best_c = y, R, c
-        print(it, "R", R, "best", best_R, "KEPT" if kept else "", json.dumps({k: y[k] for k in y if y.get(k) != x.get(k) or kept}),
+        print(it, "obj", round(R, 4), "R", c["R"], "Rh", c.get("R_hard"), "best", round(best_R, 4), "KEPT" if kept else "", json.dumps({k: y[k] for k in y if y.get(k) != x.get(k) or kept}),
               json.dumps(c.get("R_terms")), flush=True)
     with open(out.replace(".jsonl", "_best.json"), "w") as fh:
         json.dump(dict(params=x, R=best_R, card=best_c), fh, indent=1)

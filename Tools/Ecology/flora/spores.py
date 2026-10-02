@@ -33,7 +33,7 @@ IDLE, SWELL, EMPTY, GROW = 0, 1, 2, 3
 DEFAULTS = dict(ram=True, n_pods=80, clumps=10, clump_r=60.0, charge_cap=60.0, spore_vol=4.0, shell_vol=10.0,
                 touch=24.0, wake=70.0, v_soft=70.0, kick_hard=1.2, kick_soft=0.25, kick_wake=0.15,
                 alarm_r=90.0, alarm_speed=70.0, alarm_gain=0.75, relax=0.35, t_swell=0.8, launch=45.0,
-                drag=0.6, wind=12.0, wind_k=0.006, root=80.0, absorb_every=3.0, settle_v=12.0, spore_cd=0.6, spore_r=4.0)
+                drag=0.6, wind=12.0, wind_k=0.006, root=80.0, absorb_every=3.0, settle_v=12.0, spore_cd=0.6, spore_r=4.0, armour=0.0)
 SHELL = 6
 
 
@@ -42,6 +42,7 @@ class SporeBurster(FloraSpecies):
 
     def __init__(self, arena, params=None):
         self.p = dict(DEFAULTS); self.p.update(params or {}); p = self.p; rng = arena.rng
+        self.rng_a = np.random.default_rng(99)
         self.cap = 1024
         self.h = np.zeros((self.cap, 3)); self.ax = np.zeros((self.cap, 3)); self.u = np.zeros(self.cap)
         self.charge = np.zeros(self.cap); self.state = np.zeros(self.cap, int); self.timer = np.zeros(self.cap)
@@ -80,7 +81,7 @@ class SporeBurster(FloraSpecies):
             if self.reserve >= v: self.reserve -= v
             elif self.sprout_res[i] >= v: self.sprout_res[i] -= v
             else: return
-            self.slots[i, k] = self.body.lay(self.h[i], 3.5, v, owner=i)
+            self.slots[i, k] = self.body.lay(self.h[i], 3.5, v, owner=i, shield=bool(self.rng_a.random() < self.p["armour"]))
 
     def _centre(self, idx):
         return self.h[idx] + self.ax[idx] * 16.0
@@ -260,7 +261,9 @@ class SporeBurster(FloraSpecies):
             o = self.body.owner[j]
             if o >= 0 and self.alive[o] and self.state[o] == IDLE and self.charge[o] > 0:
                 self.u[o] += 1.0                      # cutting into a full pod sets it off
-            self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j])
+            v = self.body.take(j)
+            if not v: continue
+            self.cut_volume += v
             if o >= 0: self.slots[o][self.slots[o] == j] = -1
         live = np.flatnonzero(self.alive[:self.n])
         if len(live):
@@ -283,14 +286,17 @@ class SporeBurster(FloraSpecies):
         for pi in arena.pilots:
             for j in self.body.contacts(pi.prev, pi.pos, pi.radius):
                 if self.body.danger[j]: continue
-                self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j])
-                o = self.body.owner[j]
+                v = self.body.take(j)
+                if not v: continue
+                self.cut_volume += v; o = self.body.owner[j]
                 if o >= 0: self.slots[o][self.slots[o] == j] = -1
 
     def remove_ball(self, arena, c, r):
         bi = self.body.live(); m = bi[np.linalg.norm(self.body.pos[bi] - c, axis=1) < r]
         for j in m:
-            self.body.alive[j] = False; self.cut_volume += float(self.body.vol[j]); o = self.body.owner[j]
+            v = self.body.take(j)
+            if not v: continue
+            self.cut_volume += v; o = self.body.owner[j]
             if o >= 0: self.slots[o][self.slots[o] == j] = -1
         if len(self.spos):
             g = np.linalg.norm(self.spos - c, axis=1) < r

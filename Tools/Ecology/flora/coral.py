@@ -31,7 +31,7 @@ from physarum import _blur
 from scipy_free import components
 
 DEFAULTS = dict(G=48, n_hearts=6, c0=20.0, plant_vol=12000.0, Du=0.9, Dv=0.25, rate=1.2, k=0.05, vth=0.35,
-                sting=0.04, reach=2, eat_per_s=0.5, substeps=2, ram=True, label_every=10, seed_r=1)
+                sting=0.04, reach=2, eat_per_s=0.5, substeps=2, ram=True, label_every=10, seed_r=1, armour=0.0)
 
 
 def _lap(F, M):
@@ -75,7 +75,7 @@ class Coral(FloraSpecies):
         self.front_t = np.full(G ** 3, np.inf); self.burn_cd = {}; self.step_k = 0
         self.ever = np.zeros(G ** 3, np.int32)
         self.body = PlantBody(16)          # coral's body IS the field; prisms are a view of it (render only)
-        self.rate_f = np.zeros((G, G, G))
+        self.rate_f = np.zeros((G, G, G)); self.shield = np.zeros(G ** 3, bool); self.occ_prev = np.zeros(G ** 3, bool)
 
     def vox(self, P):
         g = np.clip(((P - self.o) / self.h).astype(np.int64), 0, self.G - 1)
@@ -136,6 +136,10 @@ class Coral(FloraSpecies):
         self._eat(arena, dt)
         self._rd(dt)
         occ = (self.v > p["vth"]).ravel()
+        if p["armour"]:
+            new = occ & ~self.occ_prev
+            self.shield[new] = self.rng.random(int(new.sum())) < p["armour"]
+            self.occ_prev = occ.copy()
         front = occ & (self.rate_f.ravel() > p["sting"])
         newf = front & ~np.isfinite(self.front_t); self.front_t[newf] = arena.t
         self.front_t[~front] = np.inf
@@ -157,6 +161,10 @@ class Coral(FloraSpecies):
                 if p["ram"]: self._remove(cold)
 
     def _remove(self, vs):
+        vs = np.asarray(vs, np.int64)
+        sh = vs[self.shield[vs]]
+        self.shield[sh] = False                          # CHARGE armour: the first hit sheds the shield
+        vs = np.setdiff1d(vs, sh)
         u, v = self.u.ravel(), self.v.ravel()
         self.cut_volume += float((u[vs] + v[vs]).sum()) * self.p["c0"]
         u[vs] = 0; v[vs] = 0

@@ -260,24 +260,33 @@ class PlantBody:
         self.pos = np.zeros((cap, 3)); self.half = np.zeros(cap); self.vol = np.zeros(cap)
         self.danger = np.zeros(cap, bool); self.owner = np.full(cap, -1); self.alive = np.zeros(cap, bool)
         self.hot = np.zeros(cap)            # 0..1 visible glow (the telegraph a reader can see)
+        self.shield = np.zeros(cap, bool)   # CHARGE armour: the first ram/cut sheds it instead of breaking the prism
         self.burn_cd = {}                    # (prism, pilot) -> t until it can burn again
         self.n = 0
         self.laid = 0; self.laid_vol = 0.0; self.cut_volume = 0.0
 
     def _grow(self):
         cap = len(self.vol) * 2
-        for k in ("pos", "half", "vol", "danger", "owner", "alive", "hot"):
+        for k in ("pos", "half", "vol", "danger", "owner", "alive", "hot", "shield"):
             a = getattr(self, k); b = np.zeros((cap,) + a.shape[1:], a.dtype)
             if k == "owner": b[:] = -1
             b[:len(a)] = a; setattr(self, k, b)
 
-    def lay(self, p, half, vol, owner=-1, danger=False):
+    def lay(self, p, half, vol, owner=-1, danger=False, shield=False):
         if self.n >= len(self.vol): self._grow()
         i = self.n; self.n += 1
         self.pos[i] = p; self.half[i] = half; self.vol[i] = vol; self.owner[i] = owner
-        self.danger[i] = danger; self.alive[i] = True; self.hot[i] = 0.0
+        self.danger[i] = danger; self.alive[i] = True; self.hot[i] = 0.0; self.shield[i] = shield
         self.laid += 1; self.laid_vol += vol
         return i
+
+    def take(self, j) -> float:
+        """An active force (ram, cut) hits plain prism j: a shielded prism SHEDS its shield (0 volume removed), an
+        unshielded one breaks and its volume is returned (the caller books it as cut mass)."""
+        if not self.alive[j]: return 0.0
+        if self.shield[j]:
+            self.shield[j] = False; return 0.0
+        self.alive[j] = False; return float(self.vol[j])
 
     def live(self):
         return np.flatnonzero(self.alive[:self.n])
@@ -373,7 +382,8 @@ class FloraProbe:
             self.route_bias.append((on_route + 1e-4) / (on_lanes + 1e-4))
         else:
             self.coverage.append(0.0); self.route_bias.append(1.0)
-        self.prisms.append(sp.body.alive[:sp.body.n].sum() if hasattr(sp, "body") else 0)
+        pc = getattr(sp, "prism_count", None)          # a field species (coral) counts its occupied voxels
+        self.prisms.append(pc if pc is not None else (sp.body.alive[:sp.body.n].sum() if hasattr(sp, "body") else 0))
 
     def summary(self, minutes):
         pr = np.asarray(self.prisms, float)
@@ -511,6 +521,7 @@ def summarize(runs, minutes):
                sorted({k for r in runs.values() for k in r["kinds"]})},
     )
     card["R"] = replay_score(card)
+    card["R_hard"] = replay_score_hard(card)
     return card
 
 
@@ -561,3 +572,24 @@ def replay_score(c):
     )
     c["R_terms"] = {k: round(v, 3) for k, v in terms.items()}
     return round(float(np.exp(np.mean(np.log(list(terms.values()))))), 4)
+
+
+def replay_score_hard(c):
+    """The stretch bar, for when R saturates (snap trap reached 0.97 in two search steps). Same seven axes, tighter:
+       threat [1.5, 4]/min, counterplay <= 0.15, telegraph worst decile >= 1.0 s, exchange rate [0.75, 2] crystals per
+       burn, twin variety >= 0.5, reader access >= 0.9, coverage [0.15, 0.3], route-bias growth >= 1.75x (static 0.3)."""
+    if c["mass_drift_max"] > 1e-6 or not c["crystal_law"]:
+        return 0.0
+    cp = c["counterplay"]; f = 0.01
+    t = dict(
+        threat=max(f, _band(c["hits_per_min_wander"], 1.5, 4.0)),
+        counterplay=f if cp is None else float(np.clip((1.0 - cp) / 0.85, f, 1.0)),
+        telegraph=f if c["telegraph_p10"] is None else float(np.clip(c["telegraph_p10"] / 1.0, f, 1.0)),
+        payoff=max(f, _band(c["crystals_per_burn"], 0.75, 2.0) * min(1.0, (c["payoff_per_min"] or 0) / 1.0)),
+        variety=float(np.clip(c["variety"] / 0.5, f, 1.0)),
+        access=float(np.clip((c["avoid_cost"] or 0) / 0.9, f, 1.0)),
+        presence=max(f, _band(c["lane_coverage"], 0.15, 0.3)),
+        adapt=0.3 if c["adapt"] is None else float(np.clip(0.3 + 0.7 * (c["adapt"] - 1.0) / 0.75, 0.3, 1.0)),
+    )
+    c["R_hard_terms"] = {k: round(v, 3) for k, v in t.items()}
+    return round(float(np.exp(np.mean(np.log(list(t.values()))))), 4)

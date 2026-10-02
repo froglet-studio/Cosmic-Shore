@@ -37,7 +37,7 @@ from harness import FloraSpecies, PlantBody, VIEW, GROVE_C, GROVE_R, seg_point_d
 DEFAULTS = dict(G=56, n_agents=16000, n_hearts=5, so=28.0, sa=30.0, ra=35.0, ss=40.0, dep=1.0,
                 diffuse=0.5, evap=0.08, food_dep=1.5, on=6.0, off=3.0, ema=0.05, prism_vol=10.0,
                 plant_vol=12000.0, digest=0.3, period=3.0, wave_speed=50.0, ex_ticks=2, refr=4,
-                wake_dep=0.0, warmup=250, jitter=0.15, spread_init=1, heart_speed=6.0, ram=True)
+                wake_dep=0.0, warmup=250, jitter=0.15, spread_init=1, heart_speed=6.0, ram=True, armour=0.0)
 
 _NB6 = ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1))
 
@@ -65,7 +65,7 @@ class Physarum(FloraSpecies):
         X, Y, Z = np.meshgrid(c, c, c, indexing="ij")
         self.inside = (X ** 2 + Y ** 2 + Z ** 2) < GROVE_R ** 2
         self.centres = np.stack([X, Y, Z], -1) + GROVE_C
-        self.vox_prism = np.full(G ** 3, -1, np.int64)
+        self.vox_prism = np.full(G ** 3, -1, np.int64); self.vox_shield = np.zeros(G ** 3, bool)
         self.E = np.zeros(G ** 3, np.int8); self.W = np.zeros(G ** 3, np.int64)
         self.body = PlantBody(8192)
         self.reserve = p["plant_vol"]
@@ -171,6 +171,7 @@ class Physarum(FloraSpecies):
                 for v in cand[:k]:
                     self.reserve -= p["prism_vol"]
                     self.vox_prism[v] = self.body.lay(cen[v], self.h * 0.5, p["prism_vol"])
+                    self.vox_shield[v] = self.rng.random() < p["armour"]
 
     def _digest(self, arena, dt):
         """Tube voxels that hold food absorb it into the reserve (a fraction of a prism's worth per tick is
@@ -298,6 +299,10 @@ class Physarum(FloraSpecies):
             self.heart_alive[k] = False; self.crystals += 1; self.deaths += 1
 
     def _remove(self, vs):
+        vs = np.asarray(vs, np.int64)
+        sh = vs[self.vox_shield[vs] & (self.vox_prism[vs] >= 0)]
+        self.vox_shield[sh] = False                      # CHARGE armour: the first hit sheds the shield
+        vs = np.setdiff1d(vs, sh)
         for v in vs:
             j = self.vox_prism[v]
             if j >= 0:
