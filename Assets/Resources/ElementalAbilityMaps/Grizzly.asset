@@ -19,7 +19,7 @@ MonoBehaviour:
     AbilityDescription: Hold to charge, release to fire - bigger charge, bigger boom.
       Space grows the explosion radius. At level 5 your blasts spare allies, so you
       can bombard freely near teammates (you still ride your own shockwaves).
-    Input: 1
+    Input: 8
     MultiplierAtFullLevel: 2.5
     MinMultiplier: 0.5
     UnlockLevel: 5
@@ -33,7 +33,7 @@ MonoBehaviour:
     AbilityDescription: Cycle your three weapons - explosives, sniper, and the
       plasma-claw flamethrower. Mass grows your trail prisms. At level 5 the
       claw stops destroying what it burns and STEALS it for your team instead.
-    Input: 2
+    Input: 3
     MultiplierAtFullLevel: 2.5
     MinMultiplier: 0.4
     UnlockLevel: 5

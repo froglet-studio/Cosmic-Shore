@@ -71,7 +71,7 @@ INPUT_EVENTS = {
     0: ("FullSpeedStraightAction", "", ""),
     1: ("RightStickAction", "RT", "R-Shift"),
     2: ("LeftStickAction", "LT", "L-Shift"),
-    3: ("FlipAction", "RB", ""),
+    3: ("FlipAction", "RB", "E"),
     4: ("IdleAction", "", ""),
     5: ("MinimumSpeedStraightAction", "", ""),
     6: ("Button1Action", "A", "Space"),

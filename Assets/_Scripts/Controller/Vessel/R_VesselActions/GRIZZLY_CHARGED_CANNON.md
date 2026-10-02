@@ -1,4 +1,8 @@
-# Grizzly — Charged Cannon (Fire, right trigger)
+# Grizzly — Charged Cannon (Fire, X / Q)
+
+> **Input moved 2026-10-02:** both triggers are now the bomb pump (`GRIZZLY_BOMB_PUMP.md`),
+> so Fire is on the pad's X (keyboard Q) and the weapon cycle on RB (keyboard E). The
+> gesture below is unchanged — it only changed buttons.
 
 Design source: `ClassGrizzly.md` (07/16/2026 design pass). Element link: **Space**.
 

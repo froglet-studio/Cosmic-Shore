@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Grizzly Fire — Charged Cannon (right trigger). See GRIZZLY_CHARGED_CANNON.md.
+    /// Grizzly Fire — Charged Cannon (X / Q; the triggers are the bomb pump). See GRIZZLY_CHARGED_CANNON.md.
     ///
     /// Fly-by-wire gesture, one input:
     ///   pull    → charge (energy builds while held)
