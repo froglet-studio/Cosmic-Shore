@@ -33,7 +33,7 @@ IDLE, SWELL, EMPTY, GROW = 0, 1, 2, 3
 DEFAULTS = dict(ram=True, n_pods=80, clumps=10, clump_r=60.0, charge_cap=60.0, spore_vol=4.0, shell_vol=10.0,
                 touch=24.0, wake=70.0, v_soft=70.0, kick_hard=1.2, kick_soft=0.25, kick_wake=0.15,
                 alarm_r=90.0, alarm_speed=70.0, alarm_gain=0.75, relax=0.35, t_swell=0.8, launch=45.0,
-                drag=0.6, wind=12.0, wind_k=0.006, root=80.0, absorb_every=3.0, settle_v=12.0, spore_cd=0.6)
+                drag=0.6, wind=12.0, wind_k=0.006, root=80.0, absorb_every=3.0, settle_v=12.0, spore_cd=0.6, spore_r=4.0)
 SHELL = 6
 
 
@@ -182,7 +182,7 @@ class SporeBurster(FloraSpecies):
         for pi in arena.pilots:
             if not len(self.spos): break
             d = seg_point_dist(pi.prev, pi.pos, self.spos)
-            hit = np.flatnonzero(d < 4.0 + pi.radius)
+            hit = np.flatnonzero(d < p["spore_r"] + pi.radius)
             if len(hit) and self.burn_cd.get(pi.name, -1e9) <= t:
                 self.burn_cd[pi.name] = t + p["spore_cd"]
                 self.leads.append(t - float(self.sbirth[hit].min()))
@@ -240,7 +240,7 @@ class SporeBurster(FloraSpecies):
         N = self.n; live = np.flatnonzero(self.alive[:N])
         agitated = live[(self.u[live] > 0.3) | (self.state[live] == SWELL)]
         H = np.concatenate([self._centre(agitated), self.spos])
-        R = np.concatenate([np.full(len(agitated), 40.0), np.full(len(self.spos), 10.0)])
+        R = np.concatenate([np.full(len(agitated), 40.0), np.full(len(self.spos), self.p["spore_r"] + 6.0)])
         W = np.concatenate([np.clip(self.u[agitated], 0.3, 1.0), np.full(len(self.spos), 1.0)])
         calm = live[np.isin(self.state[live], (IDLE,))]
         return H, R, W, self._centre(calm)
@@ -248,7 +248,7 @@ class SporeBurster(FloraSpecies):
     def threat_elements(self):
         live = np.flatnonzero(self.alive[:self.n] & np.isin(self.state[:self.n], (IDLE, SWELL)))
         return (np.concatenate([self.spos, self._centre(live)]),
-                np.concatenate([np.full(len(self.spos), 4.0), np.full(len(live), self.p["touch"])]))
+                np.concatenate([np.full(len(self.spos), self.p["spore_r"]), np.full(len(live), self.p["touch"])]))
 
     def cut_targets(self):
         live = np.flatnonzero(self.alive[:self.n])

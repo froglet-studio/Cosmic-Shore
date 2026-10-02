@@ -1,0 +1,85 @@
+{
+ "assumptions": {
+  "BW": [
+   "desktop (RTX 3060, 360 GB/s)",
+   "laptop iGPU (Iris Xe, ~60 GB/s)",
+   "mobile (Adreno 650, ~44 GB/s)"
+  ],
+  "EFF": 0.35,
+  "LAUNCH_us": 8.0,
+  "BURST_WORKERS": 4,
+  "NS": {
+   "agent_step": 45.0,
+   "voxel_stencil": 1.6,
+   "voxel_simple": 0.5,
+   "prism_test": 6.0
+  }
+ },
+ "physarum_gpu_ms": {
+  "16k agents, 56^3": {
+   "desktop (RTX 3060, 360 GB/s)": 0.139,
+   "laptop iGPU (Iris Xe, ~60 GB/s)": 0.594,
+   "mobile (Adreno 650, ~44 GB/s)": 0.792
+  },
+  "32k agents, 64^3": {
+   "desktop (RTX 3060, 360 GB/s)": 0.198,
+   "laptop iGPU (Iris Xe, ~60 GB/s)": 0.946,
+   "mobile (Adreno 650, ~44 GB/s)": 1.273
+  },
+  "100k agents, 128^3": {
+   "desktop (RTX 3060, 360 GB/s)": 0.978,
+   "laptop iGPU (Iris Xe, ~60 GB/s)": 5.63,
+   "mobile (Adreno 650, ~44 GB/s)": 7.66
+  },
+  "100k agents, 96^3": {
+   "desktop (RTX 3060, 360 GB/s)": 0.54,
+   "laptop iGPU (Iris Xe, ~60 GB/s)": 2.998,
+   "mobile (Adreno 650, ~44 GB/s)": 4.07
+  }
+ },
+ "physarum_burst_ms_per_frame": {
+  "16k agents, 56^3 @60Hz": 0.391,
+  "32k agents, 64^3 @20Hz": 0.225,
+  "100k agents, 128^3 @10Hz": 0.607,
+  "16k agents, 48^3 @10Hz": 0.052
+ },
+ "coral_gpu_ms": {
+  "48^3": {
+   "desktop (RTX 3060, 360 GB/s)": 0.202,
+   "laptop iGPU (Iris Xe, ~60 GB/s)": 0.975,
+   "mobile (Adreno 650, ~44 GB/s)": 1.312
+  },
+  "64^3": {
+   "desktop (RTX 3060, 360 GB/s)": 0.414,
+   "laptop iGPU (Iris Xe, ~60 GB/s)": 2.245,
+   "mobile (Adreno 650, ~44 GB/s)": 3.044
+  },
+  "96^3": {
+   "desktop (RTX 3060, 360 GB/s)": 1.284,
+   "laptop iGPU (Iris Xe, ~60 GB/s)": 7.463,
+   "mobile (Adreno 650, ~44 GB/s)": 10.159
+  },
+  "128^3": {
+   "desktop (RTX 3060, 360 GB/s)": 2.977,
+   "laptop iGPU (Iris Xe, ~60 GB/s)": 17.624,
+   "mobile (Adreno 650, ~44 GB/s)": 24.015
+  }
+ },
+ "coral_burst_ms_per_frame": {
+  "48^3 @60Hz": 0.265,
+  "48^3 @10Hz": 0.044,
+  "64^3 @10Hz": 0.105
+ },
+ "agent_species_burst_ms": {
+  "snaptrap 60 traps x 27 prisms": 0.002,
+  "spores 140 pods + 2000 spores": 0.024,
+  "walker 24 x 34 prisms": 0.001
+ },
+ "numpy_ms_per_step_measured": {
+  "snaptrap": 3.67,
+  "spores": 2.45,
+  "walker": 4.32,
+  "coral 48^3": 12.06,
+  "physarum 16k/56^3": 19.32
+ }
+}

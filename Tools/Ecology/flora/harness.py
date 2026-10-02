@@ -58,7 +58,8 @@ class FloraArena(Arena):
         # species may publish LURES (mimics) through `lures()`; a pilot cannot tell a lure from a crystal unless
         # it is a reader inside the lure's tell range.
         self.crys = self.grove(n_crystals, 30.0) if n_crystals else np.zeros((0, 3))
-        self.divert = divert; self.collected = {}; self.lured = {}; self.known_lures = {}
+        self.divert = divert; self.collected = {}; self.lured = {}; self.known_lures = {}; self.goal_t = {}
+        self.bait_t = {}; self.bait_skip = {}
         self.trails, self.trail_gap, self.trail_vol = trails, trail_gap, trail_vol
         self.created = 0.0; self.trail_acc = {}; self.n_trail = 0
         self.species = None                  # the flora species under test (set by run())
@@ -100,9 +101,9 @@ class FloraArena(Arena):
                     self.created += self.trail_vol; self.n_trail += 1
                     self.mass_grid.build(self.mass_pos, self.mass_alive)
 
-    def _new_goal(self, p):
-        self.goals_reached[p.name] += 1
-        p.goal = self.grove(1)[0]
+    def _new_goal(self, p, reached=True):
+        if reached: self.goals_reached[p.name] += 1
+        p.goal = self.grove(1)[0]; self.goal_t[p.name] = self.t
 
     def grove(self, n, margin=0.0):
         """n points volume-uniform in the grove ball (shrunk by margin)."""
@@ -131,6 +132,8 @@ class FloraArena(Arena):
                 return T[np.argmin(np.linalg.norm(T - p.pos, axis=1))]
         if np.linalg.norm(p.goal - p.pos) < 60.0:
             self._new_goal(p)
+        elif self.t - self.goal_t.get(p.name, 0.0) > 15.0:
+            self._new_goal(p, reached=False)          # players re-plan: an unreachable goal is dropped after 15 s
         bait = self._bait(p)
         if bait is not None:
             if p.policy == "reader":
@@ -162,8 +165,16 @@ class FloraArena(Arena):
                 for k in known:
                     if np.linalg.norm(P[m] - k) < 80.0:
                         ok[m] = False; k[:] = P[m]; break
+        for q, until in self.bait_skip.get(p.name, []):          # baits given up on, for 20 s
+            if until > self.t: ok &= np.linalg.norm(P - q, axis=1) > 40.0
         if not ok.any(): return None
         j = int(np.flatnonzero(ok)[np.argmin(d[ok])])
+        q0, t0 = self.bait_t.get(p.name, (None, self.t))
+        if q0 is None or np.linalg.norm(P[j] - q0) > 40.0:
+            self.bait_t[p.name] = (P[j].copy(), self.t)
+        elif self.t - t0 > 10.0:                                    # chased it 10 s and never got it: give up
+            self.bait_skip.setdefault(p.name, []).append((P[j].copy(), self.t + 20.0)); self.bait_t.pop(p.name)
+            return None
         if is_lure[j]: self.lured[p.name] = self.lured.get(p.name, 0) + 1
         return P[j]
 
