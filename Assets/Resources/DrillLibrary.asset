@@ -16,8 +16,31 @@ MonoBehaviour:
   oneThumbLesson: {fileID: 11400000, guid: 2f4a9cc8c965873a4e31f8f04b85b520, type: 2}
   lessonSkipDelaySeconds: 3
   defaultHintAfterSeconds: 8
-  metricTips: []
-  modeTips: []
+  metricTips:
+  - Metric: 9
+    Tips: {fileID: 11400000, guid: 386ccbb36d0d7d16e35e7a29946502d6, type: 2}
+  modeTips:
+  - Mode: 45
+    Tips: {fileID: 11400000, guid: 00ffca075cf60ca4fdd08fa78c652069, type: 2}
+    ReplacesMetricTips: 0
+  - Mode: 49
+    Tips: {fileID: 11400000, guid: dd9d7d438b1358cd42c3bff063849bbf, type: 2}
+    ReplacesMetricTips: 0
+  - Mode: 53
+    Tips: {fileID: 11400000, guid: 713a580909fdf8bff76c37f3d7072176, type: 2}
+    ReplacesMetricTips: 0
+  - Mode: 50
+    Tips: {fileID: 11400000, guid: 2879abcf0ce4a7ef58acc5a050b502ca, type: 2}
+    ReplacesMetricTips: 0
+  - Mode: 51
+    Tips: {fileID: 11400000, guid: b249a3a1b07ef06ab26ed06ae8dbe449, type: 2}
+    ReplacesMetricTips: 0
+  - Mode: 58
+    Tips: {fileID: 11400000, guid: 1581e94e3741ff9149e474d59d6d56fc, type: 2}
+    ReplacesMetricTips: 0
+  - Mode: 56
+    Tips: {fileID: 11400000, guid: bd1bd5e2ac6443c83ce8e7dc43ed5c95, type: 2}
+    ReplacesMetricTips: 0
   advancedTips: {fileID: 0}
   abilityTipTemplate: 'Did you know? {ability:E} is on {glyph:E}. {abilityDescription:E}'
   mentorDwellSeconds: 6

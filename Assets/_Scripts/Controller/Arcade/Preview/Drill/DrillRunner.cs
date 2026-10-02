@@ -151,6 +151,28 @@ namespace CosmicShore.Gameplay
         public int SkimCount => 0;
 
         public int GatesThreaded => _ctx.GateCourse ? _ctx.GateCourse.Threaded : 0;
+        public int LapsCompleted => _ctx.GateCourse ? _ctx.GateCourse.LapsCompleted : 0;
+
+        public bool TryGetNextGate(out float seconds, out float angleDegrees)
+        {
+            seconds = angleDegrees = 0f;
+            var status = Status;
+            if (status == null || !_ctx.GateCourse || !_ctx.GateCourse.TryGetNextGate(out var gate)) return false;
+            var t = _ctx.Vessel.Transform;
+            if (!t) return false;
+
+            Vector3 toGate = gate - t.position;
+            float distance = toGate.magnitude;
+            // Course, not the nose: "ahead" is where the ship is GOING (they differ in a drift).
+            Vector3 heading = status.Course.sqrMagnitude > 1e-6f ? status.Course : t.forward;
+            angleDegrees = distance > 1e-3f ? Vector3.Angle(heading, toGate) : 0f;
+            seconds = distance / Mathf.Max(status.Speed, MinSpeedForSeconds);
+            return true;
+        }
+
+        /// <summary>Below this speed a ship is not racing; the gate reads as far away rather than
+        /// as infinitely far (and never as a divide by zero).</summary>
+        const float MinSpeedForSeconds = 1f;
         public int PressCount(InputEvents input) => _presses.TryGetValue(input, out var n) ? n : 0;
         public int AbilityActivationCount(Element element) => _abilityUses.TryGetValue(element, out var n) ? n : 0;
 
@@ -191,15 +213,29 @@ namespace CosmicShore.Gameplay
             var scheme = _facts.Scheme;
             _skippable = context.PartyGuest || DrillProgressStore.IsLessonSkippable(scheme);
             _steps = DrillComposer.ComposeLesson(_library, _facts);
+            _resumeKey = (context.Mode, status.VesselType);
 
-            if (_steps.Count > 0) EnterLesson();
-            else EnterMentor();
+            // Re-entering this card with this hull picks up where the last visit left off (§4.4).
+            if (DrillResume.TryGet(_resumeKey, out var mark) && mark.Phase != DrillPhase.Idle)
+            {
+                if (mark.Phase == DrillPhase.Lesson && _steps.Count > 0)
+                    EnterLesson(Mathf.Clamp(mark.StepIndex, 0, _steps.Count - 1));
+                else if (mark.Phase == DrillPhase.Done)
+                    FinishMentor();
+                else
+                    EnterMentor(mark.NextTipId);
+                return true;
+            }
+
+            if (_steps.Count > 0) EnterLesson(0);
+            else EnterMentor(null);
             return true;
         }
 
         /// <summary>End the run without recording anything. Idempotent.</summary>
         public void Stop()
         {
+            RememberWhereWeAre();
             if (_handler) _handler.OnInputEventStarted -= HandleInputStarted;
             _handler = null;
             _liveCondition = null;
@@ -216,12 +252,31 @@ namespace CosmicShore.Gameplay
 
         void OnDisable() => Stop();
 
+        (GameModes, VesselClassType) _resumeKey;
+
+        /// <summary>Record where this visit stopped, so the next one on this card and hull resumes
+        /// there. Nothing is recorded for a run that never started.</summary>
+        void RememberWhereWeAre()
+        {
+            if (Phase == DrillPhase.Idle) return;
+            var mark = new DrillResume.Mark { Phase = Phase, StepIndex = StepIndex };
+            if (Phase == DrillPhase.Mentor)
+            {
+                // A tip still waiting for its moment was never said: resume ON it. One already
+                // said resumes at the one after it.
+                int next = _tipStage == TipStage.Waiting ? _tipIndex : _tipIndex + 1;
+                if (next >= _tips.Count) mark.Phase = DrillPhase.Done;
+                else mark.NextTipId = _tips[next].Id;
+            }
+            DrillResume.Set(_resumeKey, mark);
+        }
+
         /// <summary>The Skip button. Refused unless skipping is currently offered.</summary>
         public void Skip()
         {
             if (Phase != DrillPhase.Lesson || !SkipAvailable) return;
             OnLessonEnded?.Invoke(false);
-            EnterMentor();
+            EnterMentor(null);
         }
 
         /// <summary>The Mentor's 'next': say the next tip now.</summary>
@@ -254,12 +309,12 @@ namespace CosmicShore.Gameplay
 
         // ── The Lesson ───────────────────────────────────────────────────
 
-        void EnterLesson()
+        void EnterLesson(int stepIndex)
         {
             Phase = DrillPhase.Lesson;
             Title = _library.Strings.LessonTitle ?? string.Empty;
             _lessonElapsed = 0f;
-            StepIndex = 0;
+            StepIndex = stepIndex;
             BeginStep();
         }
 
@@ -325,12 +380,14 @@ namespace CosmicShore.Gameplay
         {
             DrillProgressStore.RecordLessonCompleted(_facts.Scheme);
             OnLessonEnded?.Invoke(true);
-            EnterMentor();
+            EnterMentor(null);
         }
 
         // ── The Mentor ───────────────────────────────────────────────────
 
-        void EnterMentor()
+        /// <param name="resumeAtTipId">Start at this tip if the playlist still has it; null or a
+        /// tip no longer in it starts at the top.</param>
+        void EnterMentor(string resumeAtTipId)
         {
             _liveCondition = null;
             SkipAvailable = ShowingHint = false;
@@ -339,6 +396,9 @@ namespace CosmicShore.Gameplay
             _tips = DrillComposer.ComposeMentor(_library, _facts, _ctx.Mode, _ctx.Metric,
                                                 DrillProgressStore.SeenTipIds());
             _tipIndex = 0;
+            if (!string.IsNullOrEmpty(resumeAtTipId))
+                for (int i = 0; i < _tips.Count; i++)
+                    if (_tips[i].Id == resumeAtTipId) { _tipIndex = i; break; }
             BeginTip();
         }
 
@@ -417,6 +477,7 @@ namespace CosmicShore.Gameplay
         void FinishMentor()
         {
             Phase = DrillPhase.Done;
+            Title = _library.Strings.MentorTitle ?? string.Empty;
             _liveCondition = null;
             LineElement = Element.None;
             Line = DrillTokens.Resolve(_library.Strings.MentorClosingLine, _facts, out var outcome);

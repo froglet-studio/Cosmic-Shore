@@ -25,6 +25,17 @@ namespace CosmicShore.Gameplay
 
         int SkimCount { get; }
         int GatesThreaded { get; }
+
+        /// <summary>Laps closed on the preview's course (monotonic).</summary>
+        int LapsCompleted { get; }
+
+        /// <summary>
+        /// The next ring of the preview's race, measured the way a PILOT reads it: how many
+        /// seconds away at the ship's current speed, and how many degrees off the line the ship is
+        /// travelling. False with no course. Seconds rather than distance so one authored number
+        /// means the same moment on every hull and in every arena.
+        /// </summary>
+        bool TryGetNextGate(out float seconds, out float angleDegrees);
         int PressCount(InputEvents input);
 
         /// <summary>Presses of the control the hull's <paramref name="element"/> ability is bound to.</summary>
@@ -191,6 +202,46 @@ namespace CosmicShore.Gameplay
             s.GatesThreaded - st.Baseline >= Count;
 
         public override string Describe() => $"Thread {Count} gate(s)";
+    }
+
+    /// <summary>
+    /// The next ring is ahead: within <see cref="MaxAngle"/> degrees of the line the ship is
+    /// travelling, between <see cref="MinSeconds"/> and <see cref="MaxSeconds"/> away at its
+    /// current speed. A long window and a narrow angle reads as "on a straight"; a short window
+    /// and a wide angle as "a ring is coming up". A moment, never a step: a ship that is not
+    /// racing never satisfies it, so on a card without rings it only ever times out.
+    /// </summary>
+    [Serializable]
+    public sealed class GateAheadCondition : DrillCondition
+    {
+        [Range(1f, 180f)] public float MaxAngle = 45f;
+        [Min(0f)] public float MinSeconds;
+        [Min(0f)] public float MaxSeconds = 4f;
+
+        public override bool Tick(IDrillSignals s, float dt, ref DrillConditionState st) =>
+            s.TryGetNextGate(out float seconds, out float angle) &&
+            angle <= MaxAngle && seconds >= MinSeconds && seconds <= MaxSeconds;
+
+        public override string Describe() =>
+            $"Next ring within {MaxAngle:0} deg, {MinSeconds:0.#}-{MaxSeconds:0.#}s away";
+    }
+
+    /// <summary>Close some number of laps of the preview's course.</summary>
+    [Serializable]
+    public sealed class LapsCompletedCondition : DrillCondition
+    {
+        [Min(1)] public int Count = 1;
+
+        public override void Begin(IDrillSignals s, ref DrillConditionState st)
+        {
+            st = default;
+            st.Baseline = s.LapsCompleted;
+        }
+
+        public override bool Tick(IDrillSignals s, float dt, ref DrillConditionState st) =>
+            s.LapsCompleted - st.Baseline >= Count;
+
+        public override string Describe() => $"Close {Count} lap(s)";
     }
 
     /// <summary>Let time pass (unscaled - the preview runs beside a menu free to touch timeScale).</summary>

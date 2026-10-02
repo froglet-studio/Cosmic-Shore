@@ -27,10 +27,17 @@ static class RunnerDriver
         public R_VesselActionHandler ActionHandler { get; set; } = new();
         public InputController InputController { get; set; } = new();
         public IInputStatus InputStatus => In;
+        public Vector3 Course { get; set; } = Vector3.forward;
         public Input In = new();
     }
 
-    sealed class Vessel : MonoBehaviour, IVessel { public Status S = new(); public IVesselStatus VesselStatus => S; }
+    sealed class Vessel : MonoBehaviour, IVessel
+    {
+        public Status S = new();
+        public Transform T = new();
+        public IVesselStatus VesselStatus => S;
+        public Transform Transform => T;
+    }
 
     static Action<bool, string> _check;
     static readonly MethodInfo Update = typeof(DrillRunner).GetMethod("Update", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -102,6 +109,7 @@ static class RunnerDriver
                                  : null;
         ProgressionBackendGate.CloudEnabled = false;
         DrillProgressStore.ResetLocal();
+        DrillResume.Clear();
 
         // ── 1. First visit: forced. ──
         var v = new Vessel();
@@ -169,6 +177,13 @@ static class RunnerDriver
         r.Stop();
         check(v.S.ActionHandler.Subscribers == 0 && r.Phase == DrillPhase.Idle, "runner: Stop unsubscribes and idles");
 
+        // ── 1b. Resume: the closed run above ended at Done, so re-entering says the closing line. ──
+        r.Begin(ctx);
+        check(r.Phase == DrillPhase.Done && r.Line == "Done in the Squirrel.",
+              $"runner: re-entering a finished card resumes at its closing line ({r.Phase})");
+        r.Stop();
+        DrillResume.Clear();
+
         // ── 2. Later visit: skippable after the delay; skipping records nothing new. ──
         DrillProgressStore.ResetLocal();
         DrillProgressStore.RecordLessonCompleted(FlightScheme.TwoThumb);
@@ -181,7 +196,63 @@ static class RunnerDriver
         check(r.SkipAvailable, "runner: Skip appears after 3 s");
         r.Skip();
         check(ended == false && r.Phase == DrillPhase.Mentor, "runner: Skip goes to the Mentor");
+        string firstTip = r.Line;
+        r.NextTip();
+        check(r.Line == "", $"runner: next goes to the moment-gated tip, which waits ({r.Line})");
         r.Stop();
+        // Forget the seen list, so a run from the top would say the Mass tip first again: only
+        // the resume mark can put it on the waiting tip.
+        DrillProgressStore.ResetLocal();
+        r.Begin(ctx);
+        check(r.Phase == DrillPhase.Mentor && r.Line == "",
+              $"runner: tapping back in resumes ON the tip still waiting, not the top ({r.Phase} '{r.Line}' after '{firstTip}')");
+        r.Stop();
+        DrillResume.Clear();
+
+        // ── 2b. A Lesson left part way resumes at its step. ──
+        DrillProgressStore.ResetLocal();
+        DrillProgressStore.RecordLessonCompleted(FlightScheme.TwoThumb);
+        r.Begin(ctx);
+        v.S.In.EasedLeftJoystickPosition = new Vector2(0.9f, 0);
+        Tick(r, 1.2f);
+        v.S.In.EasedLeftJoystickPosition = new Vector2(0, 0);
+        check(r.StepIndex == 1, $"runner: steer done (step {r.StepIndex})");
+        r.Stop();
+        r.Begin(ctx);
+        check(r.Phase == DrillPhase.Lesson && r.StepIndex == 1,
+              $"runner: re-entering mid-Lesson resumes at its step ({r.Phase} {r.StepIndex})");
+        r.Stop();
+        DrillResume.Clear();
+
+        // ── 2c. Another card is another visit. ──
+        var other = ctx;
+        other.Mode = GameModes.Headlong;
+        DrillResume.Set((GameModes.Switchback, VesselClassType.Squirrel), new DrillResume.Mark { Phase = DrillPhase.Done });
+        r.Begin(other);
+        check(r.Phase == DrillPhase.Lesson && r.StepIndex == 0, "runner: a resume mark is per card");
+        r.Stop();
+        DrillResume.Clear();
+
+        // ── 2d. The gate signal: seconds at speed, angle off the course. ──
+        var gc = new ModePreviewGateCourse { HasGate = true, Gate = new Vector3(0, 0, 300) };
+        var raced = ctx;
+        raced.GateCourse = gc;
+        DrillProgressStore.RecordLessonCompleted(FlightScheme.TwoThumb);
+        r.Begin(raced);
+        v.S.Speed = 100;
+        check(r.TryGetNextGate(out float secs, out float ang) && Math.Abs(secs - 3f) < 1e-3f && ang < 1e-3f,
+              $"runner: a gate 300 ahead at 100 u/s is 3 s dead ahead ({secs}, {ang})");
+        v.S.Course = new Vector3(1, 0, 0);
+        r.TryGetNextGate(out _, out ang);
+        check(Math.Abs(ang - 90f) < 1e-2f, $"runner: angle is measured off the COURSE ({ang})");
+        v.S.Speed = 0;
+        r.TryGetNextGate(out secs, out _);
+        check(secs > 0f && !float.IsInfinity(secs), $"runner: a stopped ship reads a finite time ({secs})");
+        gc.HasGate = false;
+        check(!r.TryGetNextGate(out _, out _), "runner: no lit ring, no gate");
+        v.S.Course = Vector3.forward;
+        r.Stop();
+        DrillResume.Clear();
 
         // ── 3. Party guest: never forced, even on a fresh account. ──
         DrillProgressStore.ResetLocal();

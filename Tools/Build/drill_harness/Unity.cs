@@ -17,7 +17,25 @@ namespace UnityEngine
     {
         public static float Clamp01(float v) => v < 0 ? 0 : v > 1 ? 1 : v;
         public static float Max(float a, float b) => a > b ? a : b;
+        public static int Clamp(int v, int lo, int hi) => v < lo ? lo : v > hi ? hi : v;
     }
+    public struct Vector3
+    {
+        public float x, y, z;
+        public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+        public static Vector3 forward => new(0, 0, 1);
+        public float sqrMagnitude => x * x + y * y + z * z;
+        public float magnitude => (float)System.Math.Sqrt(sqrMagnitude);
+        public static Vector3 operator -(Vector3 a, Vector3 b) => new(a.x - b.x, a.y - b.y, a.z - b.z);
+        public static float Angle(Vector3 a, Vector3 b)
+        {
+            double d = Math.Sqrt((double)a.sqrMagnitude * b.sqrMagnitude);
+            if (d < 1e-15) return 0f;
+            double c = Math.Clamp((a.x * b.x + a.y * b.y + a.z * b.z) / d, -1.0, 1.0);
+            return (float)(Math.Acos(c) * 180.0 / Math.PI);
+        }
+    }
+    public class Transform : Component { public Vector3 position; public Vector3 forward = Vector3.forward; }
     public struct Vector2 { public float x, y; public Vector2(float x, float y) { this.x = x; this.y = y; } public float magnitude => (float)System.Math.Sqrt(x * x + y * y); }
     public struct Color { public float r, g, b, a; public Color(float r, float g, float b, float a) { this.r = r; this.g = g; this.b = b; this.a = a; } public static Color white => new(1, 1, 1, 1); }
     public static class Resources { public static Func<string, Object> Loader; public static T Load<T>(string path) where T : Object => Loader?.Invoke(path) as T; }

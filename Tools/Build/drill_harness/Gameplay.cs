@@ -22,7 +22,15 @@ namespace CosmicShore.Gameplay
         float Speed { get; } bool IsDrifting { get; } bool IsSingleStickControls { get; }
         VesselClassType VesselType { get; } R_VesselActionHandler ActionHandler { get; }
         InputController InputController { get; } IInputStatus InputStatus { get; }
+        Vector3 Course { get; }
     }
-    public interface IVessel { IVesselStatus VesselStatus { get; } }
-    public class ModePreviewGateCourse : MonoBehaviour { public int Threaded; }
+    public interface IVessel { IVesselStatus VesselStatus { get; } Transform Transform { get; } }
+    public class ModePreviewGateCourse : MonoBehaviour
+    {
+        public int Threaded;
+        public int LapsCompleted;
+        public bool HasGate;
+        public Vector3 Gate;
+        public bool TryGetNextGate(out Vector3 position) { position = Gate; return HasGate; }
+    }
 }

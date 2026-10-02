@@ -145,7 +145,7 @@ human can edit, blank or delete without touching code:
 
 **What exists (2026-10-01):** the ability maps, `DrillLibrary.asset` (pacing, the ability tip
 template, the *Strings* block with pad and flight-control labels) and the two `LessonTemplate_*`
-assets. No `TipListSO` is authored yet - the Mentor's tip lists are phase 3. The seed text was
+assets, and (since phase 3, §10.4) eight `TipListSO`s in `Assets/_SO_Assets/Drills/Tips/`. The seed text was
 written by `Tools/Build/author_drill_assets.py`, which authors an asset only while it does not
 exist (a writer's edit is the point, not drift); its `--check` verifies the SHIPPED assets: ASCII
 only, every `{token}` known to the resolver, step ids unique, scheme correct, references resolve.
@@ -445,7 +445,7 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 | 1b **(landed)** | `DrillRunner`, `DrillCoachView`, the window's release hold and the card's Play gate (§10.2) | a forced Lesson in the window, then the Mentor |
 | 1a **(landed)** | The data layer (§10.1): beats, conditions, tokens, composer, hull facts, progress store + `DRILL_PROGRESS` cloud key, the library and both Lesson templates | the Lesson composes for any hull, offline |
 | 2 **(landed)** | §7 gate course in previews; start lines, Breakwater's stations, Notes (§10.3) | the race is in the window |
-| 3 | The Mentor: TipListSOs for the gate-race family, pacing, Moment conditions, resume | the curated tutor |
+| 3 **(landed)** | The Mentor: TipListSOs for the gate-race family, race Moment conditions, resume (§10.4) | the curated tutor |
 | 4 | Quest Graph P0 railroad; the Game of the Week source | first login → Lesson, end to end |
 | 5 | Remaining races; tip lists for non-racing families; relevance-gated leaderboards (§6); practice-lap result | coverage |
 | 6 | Authoring window, coverage test, analytics (genre already read from `ModeGenre`, §8) | the "every vessel ever" guarantee |
@@ -496,8 +496,7 @@ it (hold, skip gate, unsubscribe, seen-marking, party guest).
 - **A Skims step is skipped live.** No per-vessel skim signal reaches the runner (the skim event
   is a scene-wired SOAP asset shared by every vessel), so a Skims condition would hold a forced
   Lesson forever; the runner skips it with a warning. None of the seeded steps uses it.
-- **No resume.** Tapping out ends the run; tapping back in starts the Lesson again (skippable by
-  then if it was finished). The Mentor's "resume where it left off" is phase 3.
+- ~~**No resume.**~~ Landed in phase 3 (§10.4).
 - **Not reached by a first login.** Forcing the player INTO the window is the Quest Graph railroad
   (phase 4); today the Lesson starts when a player taps into any preview.
 
@@ -516,6 +515,39 @@ Proof: `Tools/Build/race_course_source_harness` (1600 course pairs, 0 failures; 
 syntax pass over every changed file. Both generators' `--check` pass. **Nothing has been compiled
 in the Unity editor.** Stated: a structure prefab carrying a `NetworkObject` is refused rather
 than spawned; `SpawnableBreakwater` carries none.
+
+### 10.4 Phase 3 - the Mentor's race tips, and resume
+
+| Piece | File | Note |
+|---|---|---|
+| Race moments | `Drill/DrillConditions.cs` | `GateAheadCondition` (the next ring within an angle of the ship's COURSE and between two times away) and `LapsCompletedCondition`. "Away" is SECONDS at the ship's current speed, not distance: one authored number then means the same moment on a 60 u/s hull and an 840 u/s one, in a small arena and a big one. A wide angle and a short time reads as "a ring is coming up"; a narrow angle and a long time as "on a straight" |
+| Their signals | `IDrillSignals.LapsCompleted` / `TryGetNextGate` | Filled by the runner from the preview's own course: `ModePreviewGateCourse.LapsCompleted` (monotonic, like `Threaded`) and `TryGetNextGate` (the lit ring's centre). Angle is measured off `IVesselStatus.Course`, which differs from the nose during a drift |
+| Tips | `Assets/_SO_Assets/Drills/Tips/` | `Tips_SwitchesThreaded` (six tips for every gate race: order, lining up, best-pilot scoring, turning early, straights, learning the course) plus one short list per race mode: Switchback, Headlong, Redline, Breakwater, Skein, Waystation, Regatta. Mode lists are ADDED to the family's (`ReplacesMetricTips` off) |
+| Resume | `Drill/DrillResume.cs` | Where each (mode, hull) visit stopped: the Lesson step, the next Mentor tip, or Done. Stopping records it, beginning reads it, so a tap out to read the card and straight back in carries on. Session memory only: the persistent half (finished Lessons, tips said) was already `DrillProgressStore` |
+
+Two writing rules every seeded tip follows, and any new one should:
+- **A tip must read true even when its moment never came.** A moment that does not arrive within
+  the library's 14 s lets the tip go anyway (D10), so "Lap done!" would be read out with no lap.
+- **A mode tip names only that mode's own hull.** Regatta seats every hull, so its tip is about the
+  arena (each team's coloured rail), never about one ship's controls.
+
+`author_drill_assets.py` seeds the tip lists only while they do not exist, and ADDS the library's
+mapping rows to an existing library without touching anything else (a writer's edits stay). Its
+`--check` adds: tip ids unique across every list (the seen memory is keyed on id), every moment
+reference resolves, every seeded list is mapped, and the enum values it writes match the C#.
+`--self-test` has 11 negative controls, plus a proof that the merge keeps a human edit and is
+idempotent.
+
+Proof: the drill harness drives the shipped runner through resume at Done, resume on a tip still
+waiting for its moment (with the seen list cleared, so only the resume mark can explain it),
+resume mid-Lesson, per-card isolation, and the gate signal (seconds at speed, angle off the
+course, a stopped ship, no lit ring) - 97 checks. Four negative controls each fail it: resume
+ignored, a waiting tip skipped, angle off the nose, a Lesson restarted. **Nothing has been run
+in the editor.**
+
+Stated: every tip line was checked against the mode docs, not against play. The Headlong and
+Redline lines describe how the Rhino's ramp boost and the Manta's Soar trade speed for turn; if a
+playtest finds them wrong, they are fields in their `Tips_<Mode>` asset.
 
 ---
 

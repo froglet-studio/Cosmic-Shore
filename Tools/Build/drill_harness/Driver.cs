@@ -77,6 +77,13 @@ static class Driver
         public bool IsDrifting { get; set; }
         public int SkimCount { get; set; }
         public int GatesThreaded { get; set; }
+        public int LapsCompleted { get; set; }
+        public bool HasGate;
+        public float GateSeconds, GateAngle;
+        public bool TryGetNextGate(out float seconds, out float angle)
+        {
+            seconds = GateSeconds; angle = GateAngle; return HasGate;
+        }
         public Dictionary<InputEvents, int> Presses = new();
         public Dictionary<Element, int> Abilities = new();
         public int PressCount(InputEvents i) => Presses.TryGetValue(i, out var n) ? n : 0;
@@ -162,6 +169,25 @@ static class Driver
         gates.Begin(s, ref st);
         s.GatesThreaded = 4;
         Check(gates.Tick(s, 0f, ref st), "conditions: gates");
+
+        var ahead = new GateAheadCondition { MaxAngle = 30f, MinSeconds = 2f, MaxSeconds = 5f };
+        ahead.Begin(s, ref st);
+        Check(!ahead.Tick(s, 0f, ref st), "conditions: no course, no gate ahead");
+        s.HasGate = true; s.GateAngle = 10f; s.GateSeconds = 3f;
+        Check(ahead.Tick(s, 0f, ref st), "conditions: a gate inside the window is ahead");
+        s.GateAngle = 40f;
+        Check(!ahead.Tick(s, 0f, ref st), "conditions: too far off the line is not ahead");
+        s.GateAngle = 10f; s.GateSeconds = 1f;
+        Check(!ahead.Tick(s, 0f, ref st), "conditions: closer than MinSeconds is not 'a straight'");
+        s.GateSeconds = 6f;
+        Check(!ahead.Tick(s, 0f, ref st), "conditions: further than MaxSeconds is not yet");
+
+        var laps = new LapsCompletedCondition { Count = 1 };
+        s.LapsCompleted = 2;
+        laps.Begin(s, ref st);
+        Check(!laps.Tick(s, 0f, ref st), "conditions: laps before Begin do not count");
+        s.LapsCompleted = 3;
+        Check(laps.Tick(s, 0f, ref st), "conditions: a lap after Begin counts");
     }
 
     static DrillLibrarySO Library(out LessonTemplateSO twoThumb)

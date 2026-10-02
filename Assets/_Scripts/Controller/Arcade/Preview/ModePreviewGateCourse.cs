@@ -86,6 +86,22 @@ namespace CosmicShore.Gameplay
             pose = _startPose;
             return _hasStartPose && IsRaised;
         }
+        /// <summary>Laps closed for this component's whole life - monotonic like
+        /// <see cref="Threaded"/>, so a drill condition can baseline it.</summary>
+        public int LapsCompleted { get; private set; }
+
+        /// <summary>
+        /// The ring the local pilot must thread next: its centre, in world space. False while no
+        /// course stands.
+        /// </summary>
+        public bool TryGetNextGate(out Vector3 position)
+        {
+            position = default;
+            if (_litRing < 0 || _litRing >= _rings.Count || !_rings[_litRing]) return false;
+            position = _rings[_litRing].transform.position;
+            return true;
+        }
+
         readonly List<RaceGateRing> _rings = new();
         RaceCourseSource _source;
         int _intensity;
@@ -253,6 +269,7 @@ namespace CosmicShore.Gameplay
             {
                 float now = Time.unscaledTime;
                 _lap++;
+                LapsCompleted++;
                 OnLapCompleted?.Invoke(_lap, now - _lapStart);
                 _lapStart = now;
             }

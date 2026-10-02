@@ -1,0 +1,100 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3ad6d4674ab419a88260ad2eec9aacb, type: 3}
+  m_Name: Tips_SwitchesThreaded
+  m_EditorClassIdentifier: 
+  tips:
+  - Id: race-next-ring
+    Prompt: 'Rings count in order. Fly through the highlighted one next.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 1
+    Priority: 0
+    DwellSeconds: 0
+    Moment:
+      rid: -2
+  - Id: race-line-up
+    Prompt: 'Line up early. Come at a ring straight on, not from the side.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 1
+    Priority: 10
+    DwellSeconds: 0
+    Moment:
+      rid: 1001
+  - Id: race-best-pilot
+    Prompt: 'Your team scores with its best pilot, not its total. Race for the lead.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 1
+    Priority: 20
+    DwellSeconds: 0
+    Moment:
+      rid: -2
+  - Id: race-turn-early
+    Prompt: 'Start the next turn before you reach the ring, not after it.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 2
+    Priority: 0
+    DwellSeconds: 0
+    Moment:
+      rid: 1003
+  - Id: race-straights
+    Prompt: 'A long straight is free speed. Keep the nose steady and stay on the throttle.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 2
+    Priority: 10
+    DwellSeconds: 0
+    Moment:
+      rid: 1004
+  - Id: race-learn-it
+    Prompt: 'The course repeats. Learn where it turns, then fly it tighter.'
+    Element: 0
+    Anchor: 0
+    Cue: 0
+    Tier: 2
+    Priority: 20
+    DwellSeconds: 0
+    Moment:
+      rid: 1005
+  references:
+    version: 2
+    RefIds:
+    - rid: 1001
+      type: {class: GateAheadCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
+      data:
+        MaxAngle: 60
+        MinSeconds: 0
+        MaxSeconds: 3
+    - rid: 1003
+      type: {class: GatesThreadedCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
+      data:
+        Count: 1
+    - rid: 1004
+      type: {class: GateAheadCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
+      data:
+        MaxAngle: 10
+        MinSeconds: 3
+        MaxSeconds: 30
+    - rid: 1005
+      type: {class: LapsCompletedCondition, ns: CosmicShore.Gameplay, asm: Assembly-CSharp}
+      data:
+        Count: 1
+    - rid: -2
+      type: {class: , ns: , asm: }
