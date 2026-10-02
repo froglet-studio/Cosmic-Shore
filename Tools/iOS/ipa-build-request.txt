@@ -1,0 +1,6 @@
+# Changing this file and pushing it starts .github/workflows/ios-unsigned-ipa.yml.
+# The Xcode-project link is NOT read from here. It is the repository SECRET
+# IOS_XCODE_EXPORT_URL, because this repository is public. Steps: Docs/IOS_BUILD.md section 2, Path A.
+#
+# Bump the line below to request a new build.
+request: 1

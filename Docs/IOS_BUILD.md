@@ -1,8 +1,9 @@
 # iOS builds — identifiers, getting a build onto a phone, cross-platform play
 
-Status: **written 2026-10-02, nothing in it has been run yet.** No iOS build of this project has
-been produced since the bundle-id change below; treat every step as a plan until somebody has done
-it once and corrected this file.
+Status: **written 2026-10-02, and nothing in it has been run yet.** No iOS build of this project has
+been made since the bundle-id change below. That includes
+`.github/workflows/ios-unsigned-ipa.yml`, which is written but has not had a real run. Treat every
+step as a plan until somebody has done it once and corrected this file.
 
 ---
 
@@ -44,12 +45,18 @@ To go to production: Player Settings → iOS → Bundle Identifier → `com.Frog
 Unity on Windows can **export** the Xcode project but cannot **compile or sign** it. That step
 needs Xcode, which only runs on macOS. Every path below is "do the Xcode step on a Mac somewhere".
 
-### Path A — free Apple ID + one MacinCloud day + Sideloadly (no paid membership)
+### Path A — free Apple ID + a borrowed Mac step + Sideloadly (no paid membership)
 
-Constraint: **a cloud Mac cannot see your phone.** MacinCloud is a remote desktop, so Xcode's
-**Run** button cannot install over USB. A free team also cannot register a device except by
-plugging it into Xcode. So the cloud Mac only **compiles an unsigned app**. Signing and installing
-happen on Windows, with your free Apple ID.
+Constraint: **a remote Mac cannot see your phone.** Xcode's **Run** button installs over USB, and a
+free team can only register a device by plugging it into Xcode. So a remote Mac only **compiles an
+unsigned app**. Signing and installing happen on Windows, with your free Apple ID.
+
+**The Mac step is free here.** This repository is public, and standard GitHub-hosted runners —
+macOS included — are free and unlimited on public repositories.
+`.github/workflows/ios-unsigned-ipa.yml` does the compile (step 3a). Renting a Mac is the fallback,
+and it is not as cheap as it looks: Apple's macOS licence forces a **24-hour minimum** on any cloud
+Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.92 at checkout on
+2026-10-02, not the $4 its plan page suggests).
 
 1. **Windows, Unity 6000.3.17f1:**
    1. Unity Hub → Installs → ⚙ → Add modules → **iOS Build Support**.
@@ -57,21 +64,46 @@ happen on Windows, with your free Apple ID.
       a separate clone so your Windows working copy does not flip back and forth.
    3. Tick **Development Build**. That also exempts the build from `UnityPipelineReleaseGuard`.
    4. **Build** to an empty folder.
-2. Zip that folder and upload it to Dropbox, OneDrive or Google Drive (MacinCloud syncs with all three).
-3. **MacinCloud** (the $4/day pay-as-you-go plan is enough):
-   1. Download and unzip the folder.
-   2. Confirm the server's Xcode version is one Unity 6000.3 supports (Unity's iOS requirements
-      page lists it).
-   3. In Terminal, inside the folder:
-      ```
-      xcodebuild -project Unity-iPhone.xcodeproj -scheme Unity-iPhone -configuration Release \
-        -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
-        CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
-      mkdir Payload
-      cp -R build/Build/Products/Release-iphoneos/*.app Payload/
-      zip -r CosmicShore-dev.ipa Payload
-      ```
-   4. Upload `CosmicShore-dev.ipa` back to the cloud drive.
+2. Zip that folder and upload it to **Dropbox** (most reliable for a large file) or Google Drive
+   (big public files sometimes hit its "too many downloads" limit). Share it as "anyone with the
+   link".
+3. **Compile it on a Mac.** Pick one:
+   - **3a. GitHub Actions — free (recommended).**
+     1. Repository Settings → Secrets and variables → Actions → **New repository secret**. Name it
+        `IOS_XCODE_EXPORT_URL` and set the value to the share link. Use a *secret*: the repo is
+        public, so a variable, a committed file or a log line would show the link to everyone.
+     2. Change `Tools/iOS/ipa-build-request.txt` (any edit) and push it to a branch. The push
+        starts the **iOS unsigned ipa** workflow. Once the workflow is on `bleeding-edge`, the
+        Actions tab's **Run workflow** button works as well.
+     3. When the run is green, download the **CosmicShore-dev-ipa** artifact from the run page.
+        GitHub wraps it in a zip; the `.ipa` is inside.
+
+     The runner is a 3-core M1 with 7 GB RAM, using the newest Xcode 16.x on the image. The job
+     restores the executable bits a Windows zip drops; without that, Xcode fails on
+     `MapFileParser.sh: Permission denied` and Unity's il2cpp tools. If it fails, the
+     `xcodebuild-log` artifact holds the full log.
+
+     **The artifact is public-ish**: on a public repository any signed-in GitHub user can download
+     a run's artifacts. The `.ipa` is unsigned, so it installs on no phone until someone signs it,
+     and it is kept for 3 days.
+   - **3b. Any Mac you can borrow for an hour — free, and simpler.** With the phone plugged into
+     that Mac, open `Unity-iPhone.xcodeproj`. Under Signing & Capabilities, add the free Apple ID
+     as the team. Press **Run**. That skips Sideloadly and step 4. The Mac needs a macOS version
+     that runs Xcode 16.
+   - **3c. Codemagic** — a personal account gets 500 free macOS minutes a month. That is the same
+     idea as 3a, on someone else's runner, and needs its own setup.
+   - **3d. Rented Mac** (24-hour minimum). Scaleway Apple silicon is about €0.22/hour, so roughly
+     €5 for the minimum. MacinCloud's PAYG is a 10-day prepay. On a rented Mac, in Terminal:
+     ```
+     find . -name '*.sh' -exec chmod +x {} +     # a Windows zip drops the executable bits
+     chmod -R u+x Il2CppOutputProject/IL2CPP/build
+     xcodebuild -project Unity-iPhone.xcodeproj -scheme Unity-iPhone -configuration Release \
+       -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+       CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+     mkdir Payload
+     cp -R build/Build/Products/Release-iphoneos/*.app Payload/
+     zip -qry CosmicShore-dev.ipa Payload
+     ```
 4. **Windows:**
    1. Install **iTunes and iCloud from apple.com**, not the Microsoft Store versions — Sideloadly
       needs the desktop ones. Then install **Sideloadly**.
@@ -121,9 +153,9 @@ portal. A free team's Xcode-made profile expires weekly, so it cannot drive auto
    - A development build installs from the build's share link opened in Safari on the phone.
    - An App Store build can be uploaded to TestFlight by Build Automation directly.
 
-A project-owned GitHub Actions macOS job is the other way off a rented Mac. It still needs the same
-paid-team credentials to produce an installable build, and macOS runner minutes are billed at 10× on
-private repos.
+Path A's GitHub Actions job could also do Path B's job. With the paid team's `.p12` and profile
+stored as secrets, it could sign and upload to TestFlight itself, at no cost on this public
+repository. Build Automation is the default because it already builds the other platforms.
 
 ---
 

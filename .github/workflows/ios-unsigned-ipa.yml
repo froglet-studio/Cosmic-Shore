@@ -1,0 +1,191 @@
+# iOS unsigned .ipa - compiles an Xcode project that Unity exported on WINDOWS, on a free
+# GitHub-hosted Mac, and hands back an UNSIGNED .ipa to sign and install with Sideloadly.
+#
+# Why this exists: Unity on Windows can export the Xcode project but cannot compile it, and every
+# rented Mac carries a minimum (Apple's macOS licence forces a 24-hour lease; MacinCloud's
+# pay-as-you-go is a 10-day prepay). This repository is PUBLIC, and standard GitHub-hosted runners
+# are free and unlimited on public repositories - so the one step that needs macOS costs nothing.
+# It is a stopgap until the paid Apple team exists and Unity Build Automation takes over
+# (Docs/IOS_BUILD.md section 2, Path B).
+#
+# It does NOT run Unity. Importing this project on a 3-core runner would take longer than the job
+# is worth and needs a Unity licence; the Windows machine that already has the Library does that.
+#
+# HOW TO RUN (full steps: Docs/IOS_BUILD.md section 2, Path A):
+#   1. On Windows: Switch Platform to iOS, tick Development Build, Build to an empty folder.
+#   2. Zip that folder and upload it to Dropbox (most reliable) or Google Drive.
+#      Share it as "anyone with the link".
+#   3. Repository Settings -> Secrets and variables -> Actions -> New repository secret:
+#      name IOS_XCODE_EXPORT_URL, value = that share link. A SECRET, not a variable: the repo
+#      is public, so anything not a secret is readable by everyone, including run logs.
+#   4. Edit Tools/iOS/ipa-build-request.txt (any change) and push it. That push starts this job.
+#      Once this file is on the default branch, the Actions tab's "Run workflow" button works too.
+#   5. When the run is green, download the "CosmicShore-dev-ipa" artifact from the run page.
+#
+# PRIVACY: artifacts on a public repository are downloadable by any signed-in GitHub user who
+# finds the run. The .ipa is unsigned (it runs on no phone until somebody signs it), and it is kept
+# for 3 days only.
+
+name: iOS unsigned ipa
+
+on:
+  push:
+    paths:
+      - 'Tools/iOS/ipa-build-request.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-unsigned-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    # Apple silicon, 3 vCPU / 7 GB RAM. Free and unlimited on a public repo.
+    runs-on: macos-15
+    timeout-minutes: 150
+    env:
+      EXPORT_URL: ${{ secrets.IOS_XCODE_EXPORT_URL }}
+      WORK: ${{ github.workspace }}/ios-work
+    steps:
+      - name: Check the export link is configured
+        id: gate
+        run: |
+          if [ -z "$EXPORT_URL" ]; then
+            echo "::notice::IOS_XCODE_EXPORT_URL is not set, so there is nothing to build. Add it under Settings -> Secrets and variables -> Actions, then push a change to Tools/iOS/ipa-build-request.txt."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Select Xcode 16
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          # Unity 6000.3 targets Xcode 16; pick the newest 16.x the image carries.
+          XCODE=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$XCODE" ]; then
+            echo "::error::No Xcode 16.x on this runner image. Installed:"; ls -d /Applications/Xcode*.app
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+          # Reclaim disk: the image guarantees only 14 GB, and an IL2CPP build of this game is
+          # large. The other Xcodes and the simulator runtimes are never used here.
+          for x in /Applications/Xcode*.app; do
+            [ "$x" != "$XCODE" ] && sudo rm -rf "$x" &
+          done
+          wait
+          xcrun simctl delete all >/dev/null 2>&1 || true
+          sudo rm -rf ~/Library/Developer/CoreSimulator/Caches || true
+          df -h /
+
+      - name: Download the Xcode project
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          mkdir -p "$WORK"
+          cd "$WORK"
+          case "$EXPORT_URL" in
+            *drive.google.com*|*docs.google.com*)
+              python3 -m pip install --quiet --break-system-packages gdown
+              python3 -m gdown --fuzzy "$EXPORT_URL" -O export.zip
+              ;;
+            *dropbox.com*)
+              # A Dropbox share link serves an HTML page unless dl=1.
+              case "$EXPORT_URL" in
+                *dl=0*) URL=$(printf '%s' "$EXPORT_URL" | sed -e 's/dl=0/dl=1/') ;;
+                *dl=1*) URL="$EXPORT_URL" ;;
+                *\?*)   URL="$EXPORT_URL&dl=1" ;;
+                *)      URL="$EXPORT_URL?dl=1" ;;
+              esac
+              curl -fL --retry 3 -o export.zip "$URL"
+              ;;
+            *)
+              curl -fL --retry 3 -o export.zip "$EXPORT_URL"
+              ;;
+          esac
+          ls -lh export.zip
+          # A share page saved as export.zip is the usual failure, and unzip's error for it is cryptic.
+          if ! file export.zip | grep -qi 'zip archive'; then
+            echo "::error::The link did not return a zip ($(file -b export.zip)). Use a direct-download or share link to the .zip itself."
+            exit 1
+          fi
+
+      - name: Unzip and restore executable bits
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          cd "$WORK"
+          # ditto copes with large (zip64) archives that Info-ZIP unzip sometimes rejects.
+          ditto -x -k export.zip src || unzip -q export.zip -d src
+          rm -f export.zip
+          PROJ_FILE=$(find src -maxdepth 4 -name 'Unity-iPhone.xcodeproj' -type d | head -1)
+          if [ -z "$PROJ_FILE" ]; then
+            echo "::error::No Unity-iPhone.xcodeproj in the zip. Zip the folder Unity built into."
+            exit 1
+          fi
+          PROJ=$(dirname "$PROJ_FILE")
+          echo "PROJ=$PROJ" >> "$GITHUB_ENV"
+          # A zip made on Windows carries no Unix permission bits, so every script and tool the
+          # Xcode build phases call would fail with "Permission denied" (MapFileParser.sh is the
+          # well-known one; Unity's il2cpp build tools are the rest).
+          find "$PROJ" -type f \( -name '*.sh' -o -name 'MapFileParser' -o -name 'usymtool*' \) -exec chmod +x {} +
+          if [ -d "$PROJ/Il2CppOutputProject/IL2CPP/build" ]; then
+            chmod -R u+x "$PROJ/Il2CppOutputProject/IL2CPP/build"
+          fi
+          du -sh "$PROJ"
+          df -h /
+
+      - name: Build (unsigned)
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          cd "$PROJ"
+          set -o pipefail
+          xcodebuild \
+            -project Unity-iPhone.xcodeproj \
+            -scheme Unity-iPhone \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$WORK/dd" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build 2>&1 | tee "$WORK/xcodebuild.log" | grep -E '(error|warning: .*il2cpp|\*\* BUILD)' || true
+          # tee+grep hides the exit status above; read it from the log instead.
+          if ! grep -q '\*\* BUILD SUCCEEDED \*\*' "$WORK/xcodebuild.log"; then
+            echo "::error::xcodebuild failed. Last 80 lines:"
+            tail -80 "$WORK/xcodebuild.log"
+            exit 1
+          fi
+
+      - name: Package the .ipa
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          APP=$(find "$WORK/dd/Build/Products/Release-iphoneos" -maxdepth 1 -name '*.app' -type d | head -1)
+          [ -n "$APP" ] || { echo "::error::No .app produced"; exit 1; }
+          mkdir -p "$WORK/stage/Payload" "$WORK/out"
+          cp -R "$APP" "$WORK/stage/Payload/"
+          # An .ipa is a zip with Payload/ at its root. -y keeps framework symlinks as symlinks.
+          (cd "$WORK/stage" && zip -qry "$WORK/out/CosmicShore-dev.ipa" Payload)
+          ls -lh "$WORK/out/CosmicShore-dev.ipa"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist"
+
+      - name: Upload the .ipa
+        if: steps.gate.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CosmicShore-dev-ipa
+          path: ios-work/out/CosmicShore-dev.ipa
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Keep the build log on failure
+        if: failure() && steps.gate.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: ios-work/xcodebuild.log
+          retention-days: 3
+          if-no-files-found: ignore
