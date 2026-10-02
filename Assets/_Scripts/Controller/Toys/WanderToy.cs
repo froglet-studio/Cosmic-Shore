@@ -87,6 +87,14 @@ namespace CosmicShore.Gameplay
             _arkCfg = definition ? definition.BuildWithArkConfig() : new ArkwayConfig();
         }
 
+        /// <summary>
+        /// Whether this build offers the WITH ARK choice. The Android strip does not: a voyage
+        /// stands a corridor of three satellite cells, which is the heaviest thing the toybox can
+        /// build (<see cref="PerfStrip.LightToysOnly"/>). Gated at the one declaration, so the
+        /// station and the Toy Box card drop it together and the two surfaces still agree.
+        /// </summary>
+        static bool ArkShips => !PerfStrip.LightToysOnly;
+
         bool WanderRunning => _wanderRun && _wanderRun.IsRunning;
         bool VoyageRunning => _arkRun && _arkRun.IsRunning;
         bool VoyageBuilding => _arkRun && _arkRun.IsBuilding;
@@ -127,6 +135,13 @@ namespace CosmicShore.Gameplay
                 if (slot == 0)
                 {
                     heavy = true; // mesh assembly - give the streamer a clear frame after it
+                    // A build that does not offer the Ark must not advertise one: its core is the
+                    // Without Ark station's own microscene instead.
+                    if (!ArkShips)
+                    {
+                        var core = BuildSceneMiniature(_toy._wanderCfg, StationRecipe, 7, radius);
+                        return _toy.AttachEmblemModel(holder, core, "Microscene", spin: true);
+                    }
                     var ark = BuildArkMiniature(_toy._arkCfg, _toy.LiveDomain, radius);
                     return _toy.AttachEmblemModel(holder, ark, "Ark", spin: true);
                 }
@@ -207,6 +222,15 @@ namespace CosmicShore.Gameplay
                 return; // the run's end callback reblooms the toy
             }
 
+            // With one choice there is nothing to choose: a pass starts the wander, exactly as the
+            // single-purpose Wanderway toy did before the two runs were merged into this one, so
+            // the toy stays a one-ring toggle (pass to leave, pass again to come home).
+            if (!ArkShips)
+            {
+                StartChoice(Choice.WithoutArk);
+                return;
+            }
+
             base.OnActivated(localVessel);
         }
 
@@ -227,7 +251,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override void BuildOptions(List<ToyShellOption> into)
         {
-            into.Add(BuildOption(Choice.WithArk));
+            if (ArkShips) into.Add(BuildOption(Choice.WithArk));
             into.Add(BuildOption(Choice.WithoutArk));
         }
 

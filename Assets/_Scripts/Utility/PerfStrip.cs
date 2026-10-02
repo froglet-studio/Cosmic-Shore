@@ -31,8 +31,9 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Stop vessels laying their continuous prism trail (the biggest per-frame win) — EXCEPT
-        /// while a capped trail is active (see <see cref="CappedTrailActive"/>): the conveyor's
-        /// breadcrumb (300) or Skim Race's skimmable trail (2000, ≥ two laps).
+        /// while a trail is sanctioned: Skim Race's capped skimmable trail
+        /// (<see cref="CappedTrailActive"/>, 2000, ≥ two laps), the Wanderway's rolling tether
+        /// (<see cref="WanderwayTetherActive"/>) or freestyle flight (<see cref="FreestyleTrailActive"/>).
         /// </summary>
         public static bool TrailsDisabled =>
             Enabled && !CappedTrailActive && !WanderwayTetherActive && !FreestyleTrailActive;
@@ -185,14 +186,17 @@ namespace CosmicShore.Utility
         public static bool CellLifeRuns(bool isHomeWorld) => !Enabled || isHomeWorld;
 
         /// <summary>
-        /// Ship only the LIGHT toys in the freestyle toybox: the conveyor (the reason this build
-        /// exists), the domain changer (two switch rings - repaints your trail and HUD), the
-        /// element charger (one station opening into four accent-material crystals - lets a pilot
+        /// Ship only the LIGHT toys in the freestyle toybox: the Wander toy (the reason this build
+        /// exists) offering only its WITHOUT ARK choice, the Wanderway belt - its WITH ARK voyage
+        /// stands three satellite cells and is gated off inside <c>WanderToy</c> - the domain
+        /// changer (two switch rings - repaints your trail and HUD), the element charger (one station opening into four accent-material crystals - lets a pilot
         /// feel the Squirrel's element upgrades) and the vessel changer (its roster narrowed to
         /// <see cref="ShipsVessel"/>, so it opens onto one hull). Each is a few meshes and no
         /// prisms until it is opened. Skipped: the toys whose whole content is mass or ecology
         /// this build cannot afford - painting (trail strokes), cell selector (34-69k-prism
-        /// worlds), spawn matrix (releases flora/fauna/AI), Arkway (three satellite cells).
+        /// worlds), spawn matrix (releases flora/fauna/AI). Upstream merged the old Conveyor and
+        /// Arkway toys into the one Wander toy, so the filter names <c>WanderToyDefinitionSO</c> and
+        /// the Ark is refused one level down, at the toy's own option list.
         /// </summary>
         public static bool LightToysOnly => Enabled;
 

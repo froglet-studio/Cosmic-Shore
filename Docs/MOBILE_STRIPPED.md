@@ -56,7 +56,7 @@ no-op. Nothing was deleted; each heavy system early-returns when the strip is on
 | 2 | **URP graphics cut** | `Assets/_Graphics/URP_Asset.asset`: `SupportsHDR 1→0`, `MSAA 4→1` (off), `RenderScale 1→0.8` | Kills the HDR buffer bandwidth, the MSAA resolve, and ~36% of the fragment/fill-rate cost. |
 | 3 | **ARM64-only** | `ProjectSettings/ProjectSettings.asset`: `AndroidTargetArchitectures 3→2` | Drops the ARMv7 slice (any "years-old mid device" is ARM64); smaller APK, IL2CPP ARM64 is faster. |
 | 4 | **Build trimmed to the boot path** | `EditorBuildSettings.asset`: only `Bootstrap`, `Authentication`, `Menu_Main` enabled (10 minigame scenes disabled) | Smaller/faster build, fewer break points. |
-| 5 | **Toybox is conveyor-only** | `ToyboxController.PlaceToys()` filters to `ConveyorToyDefinitionSO` on `PerfStrip.ConveyorOnlyToybox` | Drops the other 3 toys' idle cost — notably the vessel-changer's 6 mini-ship preview models. Squirrel stays the only vessel. |
+| 5 | **Toybox is conveyor-only** (since Round 18: the light toys, see `PerfStrip.LightToysOnly`) | `ToyboxController.PlaceToys()` filters to the light toys (`WanderToyDefinitionSO`, offering Without Ark only, plus domain changer / element charger / vessel changer) on `PerfStrip.LightToysOnly` | Drops the other 3 toys' idle cost — notably the vessel-changer's 6 mini-ship preview models. Squirrel stays the only vessel. |
 | 6 | **Conveyor mass cut ~71%** | `Assets/_SO_Assets/Toys/Toy_Conveyor.asset`: `poolSize 7→5`, `prismBudgetPerScene 100→40`, `aheadTargetScenes 5→3` | Max resident conveyor prisms **700 → 200** (each is a GameObject + BoxCollider + ~5 MonoBehaviours). This is the dominant per-frame content cost. |
 | 7 | **Social networking overhead off** | `HostConnectionService.Update` (1.5s UGS presence refresh) and `FriendsInitializer.HandleSignedInEvent` early-return on `PerfStrip.DisableSocialNetworking` | Removes the recurring UGS-read + main-thread-marshal GC/hitch and the Friends init. **The Relay host that spawns the Squirrel is untouched.** |
 
@@ -1266,3 +1266,43 @@ No Unity here; the eight out-of-editor gates, a Roslyn parse, `bake_static_skybo
    black; frame rate holds. Inside a cell nothing changes (the membrane is in front of it).
 2. Skim Race intensity 3: the whole barbell is visible from the start; intensities 1, 2, 4 unchanged.
 3. Butterfly on touch: turns settle where the thumb stops; a Fold lands on the line you aimed.
+
+## Round 18 — the Wander toy: a compile fix, and the Ark stays home (2026-10-02)
+
+Reported: `ToyboxController.cs(137,34): error CS0234: The type or namespace name
+'ConveyorToyDefinitionSO' does not exist in the namespace 'CosmicShore.ScriptableObjects'`.
+
+### Cause
+
+Upstream `bc6b98d52` merged the Wanderway (Conveyor) and Arkway toys into one **Wander** toy with
+two choices, Without Ark and With Ark, and deleted `ConveyorToyDefinitionSO`. The strip's toybox
+filter still named the old type. Every gate passed the merge, because none of them can see this:
+the Roslyn harness is syntax-only for monolith files and abandons type binding, and
+`check_using_directives.py` resolves unqualified names, not a fully-qualified one. A scan of every
+type the strip's own diff names (`is` / `as` / `new` / `typeof` / `or` patterns and qualified
+`CosmicShore.*` names) against every type declared in `Assets/` found this one and no other.
+The mobile belt tune did carry through the rename: `Wander_WithoutArk.asset` still holds
+poolSize 8, prismBudgetPerScene 150, aheadTargetScenes 4, maxCrystalsPerScene 2, lifeformScenes 0.
+
+### Fix
+
+- `ToyboxController` filters to `WanderToyDefinitionSO` (with the domain changer, element
+  charger and vessel changer, as before).
+- **With Ark is gated off inside `WanderToy`** (`ArkShips => !PerfStrip.LightToysOnly`). The
+  merge would otherwise have smuggled the Arkway in: a voyage stands a corridor of three satellite
+  cells, which `PerfStrip.LightToysOnly` already listed as skipped. It is gated at the toy's ONE
+  declaration (`BuildOptions`), so the fly-through station and the Toy Box card drop it together.
+- **The emblem's core is a microscene**, not a miniature Ark - a build that does not offer the Ark
+  must not advertise one.
+- **A pass starts the wander directly.** With one choice there is nothing to choose, so the toy
+  is the one-ring toggle the Wanderway toy was before the merge: fly it to leave, fly it (or the
+  return station on the tether's tail) to come home. Upstream's behaviour returns the moment
+  `PerfStrip.LightToysOnly` is false.
+
+### Not verified in the editor
+
+No Unity here; the out-of-editor gates and a Roslyn parse pass. On device:
+1. The project compiles; the toybox shows the Wander toy (microscene emblem), domain changer,
+   element charger and vessel changer.
+2. Flying the Wander toy starts the Wanderway immediately (no station matrix); flying it again,
+   or the return station, brings you home.

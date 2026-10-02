@@ -134,7 +134,7 @@ namespace CosmicShore.Gameplay
                 // Android stripped-performance branch: only the light toys ship (see
                 // PerfStrip.LightToysOnly for what each costs and why the rest stay out).
                 if (PerfStrip.LightToysOnly
-                    && t is not (CosmicShore.ScriptableObjects.ConveyorToyDefinitionSO
+                    && t is not (CosmicShore.ScriptableObjects.WanderToyDefinitionSO
                         or CosmicShore.ScriptableObjects.DomainChangerToyDefinitionSO
                         or CosmicShore.ScriptableObjects.ElementChargerToyDefinitionSO
                         or CosmicShore.ScriptableObjects.VesselChangerToyDefinitionSO))
