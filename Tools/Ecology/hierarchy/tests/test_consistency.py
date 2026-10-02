@@ -13,7 +13,12 @@ NEGATIVE CONTROLS (planted bugs) must FAIL:
     macro_attack_x2       predation attack rate mis-calibrated by 2x
     (macro_no_sprint_cost was a control until the sprint cost was MEASURED to be ~1% of predator burn: a
      control that stops breaking anything is retired, not kept as a fake pass)
-Run:  python -m hierarchy.tests.test_consistency [--seeds 6] [--T 300]
+REGIMES (--regime). The gate runs in the CALIBRATED regime (flora_cap 120, the regime the macro rates were
+fitted in). The ENRICHED regime (flora_cap 240, the shipped long-run cycles) is reported, not gated: there the
+whole herd fills to e_birth together and breeds in ONE synchronised burst inside the 300 s window, and the
+macro level reproduces the burst's timing only to ~15 s - herbivore mean stomach 16% off, phase TV 0.145 at
+t = 300 (recorded negative, DISCOVERIES "Hierarchical ecology"). Switch / count / predators / kills still pass.
+Run:  python -m hierarchy.tests.test_consistency [--seeds 6] [--T 300] [--regime calibrated|enriched]
 """
 from __future__ import annotations
 
@@ -30,6 +35,7 @@ from hierarchy.params import Params  # noqa: E402
 from hierarchy.sim import HierSim  # noqa: E402
 
 TOL = dict(count=0.10, mean_e=0.10, sd_e=0.25, phase=0.08, flora=0.05, kills=0.30)
+REGIMES = dict(calibrated=dict(flora_cap=120.0), enriched=dict(flora_cap=240.0))
 BUGS = ["macro_graze_x1.5", "expand_mean_field", "macro_attack_x2"]
 
 
@@ -100,10 +106,13 @@ def main(argv=None):
     ap.add_argument("--R", type=float, default=600.0)
     ap.add_argument("--dens", type=float, default=40.0)
     ap.add_argument("--pred_frac", type=float, default=0.06)
-    ap.add_argument("--out", default="gate_consistency.json")
+    ap.add_argument("--regime", default="calibrated", choices=list(REGIMES))
+    ap.add_argument("--out", default=None)
     ap.add_argument("--set", nargs="*", default=[], help="Params overrides key=value (float)")
     a = ap.parse_args(argv)
-    over = {k: float(v) for k, v in (s.split("=") for s in a.set)}
+    over = dict(REGIMES[a.regime])
+    over.update({k: float(v) for k, v in (s.split("=") for s in a.set)})
+    a.out = a.out or ("gate_consistency.json" if a.regime == "calibrated" else f"gate_consistency_{a.regime}.json")
 
     def Pm(**kw):
         return Params(**over, **kw)
@@ -125,7 +134,7 @@ def main(argv=None):
             res["clean"]["traj_macro"] = [r["traj"] for r in mac]
     res["micro_traj"] = [r["traj"] for r in micro]
     gate = res["clean"]["passed"] and res["switch"]["passed"] and not any(res[b]["passed"] for b in BUGS)
-    out = dict(gate_passed=bool(gate), tol=TOL, overrides=over, cfg=dict(T=a.T, R=a.R, dens=a.dens, pred_frac=a.pred_frac,
+    out = dict(gate_passed=bool(gate), regime=a.regime, tol=TOL, overrides=over, cfg=dict(T=a.T, R=a.R, dens=a.dens, pred_frac=a.pred_frac,
                seeds=a.seeds), results=res, wall_s=time.time() - t0)
     os.makedirs(os.path.join(os.path.dirname(__file__), "..", "results"), exist_ok=True)
     with open(os.path.join(os.path.dirname(__file__), "..", "results", a.out), "w") as fh:

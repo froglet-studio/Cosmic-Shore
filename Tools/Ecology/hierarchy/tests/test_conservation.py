@@ -76,7 +76,9 @@ def run(bug="", T=300.0, seed=5, n_herb=30000, n_pred=2500):
 
 
 def main():
-    res = [run("")] + [run(b, T=120.0) for b in BUGS]
+    # bug runs use the clean horizon: at T=120 no agent had bred yet, so birth_free_body had nothing to corrupt and
+    # PASSED - a vacuous control (bounded cohorts clip expanded stomachs below e_birth, delaying the first agent birth)
+    res = [run("")] + [run(b) for b in BUGS]
     gate = res[0]["passed"] and res[0]["exercised"] and not any(r["passed"] for r in res[1:])
     out = dict(gate_passed=bool(gate), runs=res)
     os.makedirs(os.path.join(os.path.dirname(__file__), "..", "results"), exist_ok=True)
