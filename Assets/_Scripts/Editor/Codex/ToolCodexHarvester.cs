@@ -124,8 +124,7 @@ namespace CosmicShore.Editor.Codex
                 case DomainChangerToyDefinitionSO: AddDomainChanger(entry); return;
                 case ElementChargerToyDefinitionSO charger: AddElementCharger(entry, charger); return;
                 case CellSelectorToyDefinitionSO cells: AddCellSelector(entry, cells); return;
-                case ConveyorToyDefinitionSO conveyor: AddConveyor(entry, conveyor); return;
-                case ArkwayToyDefinitionSO arkway: AddArkway(entry, arkway); return;
+                case WanderToyDefinitionSO wander: AddWander(entry, wander); return;
                 case PaintingToyDefinitionSO paintings: AddPaintingGallery(entry, paintings); return;
                 case SpawnMatrixToyDefinitionSO bench: AddSpawnMatrix(entry, bench); return;
 
@@ -247,74 +246,89 @@ namespace CosmicShore.Editor.Codex
             }
         }
 
-        static void AddConveyor(CodexEntry entry, ConveyorToyDefinitionSO definition)
+        static void AddWander(CodexEntry entry, WanderToyDefinitionSO definition)
         {
-            // Read by NAME here, unlike the rest of this file: the conveyor is the one definition
-            // that exposes no public accessors, and adding some purely so an editor tool can read
-            // them would be coupling the runtime to the codex rather than the other way round.
-            var config = new SerializedObject(definition);
+            CodexHarvester.Add(entry.Stats, "Form",
+                "One station that opens into two choices - wander WITH an Ark or WITHOUT one. " +
+                "Either is a run you leave for and come back from");
+            CodexHarvester.Add(entry.Stats, "Offers", "2 ways to wander");
+            CodexHarvester.Add(entry.Stats, "One at a time",
+                "Both take you out of the cell, so while one is under way the other waits until " +
+                "you come home");
+            CodexHarvester.Add(entry.Stats, "Getting back",
+                "The way home the run leaves you, another pass through the tool, or leaving " +
+                "freestyle - and, with an Ark, the Ark falling, which resets the voyage");
+
+            entry.Variants.Add(WithArkVariant(definition.WithArk));
+            entry.Variants.Add(WithoutArkVariant(definition.WithoutArk));
+        }
+
+        static CodexVariant WithoutArkVariant(WanderwaySettingsSO settings)
+        {
+            var variant = Variant(WanderToy.WithoutArkLabel,
+                "The cell is handed its bare canvas and a field of little worlds streams ahead of " +
+                "you, wherever you fly, for as long as you fly");
+            variant.SourceConfig = settings;
+            if (!settings) return variant;
+
+            // Read by NAME, unlike the rest of this file: the settings expose no public accessors,
+            // and adding some purely so an editor tool can read them would be coupling the runtime
+            // to the codex rather than the other way round.
+            var config = new SerializedObject(settings);
             int pool = Int(config, "poolSize");
             int perScene = Int(config, "prismBudgetPerScene");
             int tether = Int(config, "tetherPrisms");
             bool lifeforms = Bool(config, "lifeformScenes");
 
-            CodexHarvester.Add(entry.Stats, "Form",
-                "A run you leave for and come back from — not a matrix. Fly it once to go, and " +
-                "the return station rides the end of your own trail");
-            CodexHarvester.Add(entry.Stats, "What happens",
-                "The cell is handed its bare canvas and a field of little worlds streams ahead of " +
-                "you, wherever you fly, for as long as you fly");
             if (pool > 0 && perScene > 0)
-                CodexHarvester.Add(entry.Stats, "The belt",
-                    $"{pool} scenes of {perScene:N0} prisms — {pool * perScene:N0} in all, built " +
+                CodexHarvester.Add(variant.Stats, "The belt",
+                    $"{pool} scenes of {perScene:N0} prisms - {pool * perScene:N0} in all, built " +
                     "once and then transported forever. The scene farthest behind you is the one " +
                     "that blooms ahead");
-            CodexHarvester.Add(entry.Stats, "Tether",
+            CodexHarvester.Add(variant.Stats, "Tether",
                 tether > 0
                     ? $"{tether:N0} prisms. Your trail follows you rather than accumulating, and " +
                       "the way home is always one tether-length behind"
                     : null);
-            CodexHarvester.Add(entry.Stats, "You will find",
+            CodexHarvester.Add(variant.Stats, "You will find",
                 lifeforms
                     ? "Structures, skimmable crystals, and flora and fauna released into the cell " +
                       "as ordinary citizens"
                     : "Structures and skimmable crystals");
-            CodexHarvester.Add(entry.Stats, "Getting back",
-                "Three ways, all the same thing: the return station, another pass through the " +
-                "tool, or leaving freestyle");
+            return variant;
         }
 
-        static void AddArkway(CodexEntry entry, ArkwayToyDefinitionSO definition)
+        static CodexVariant WithArkVariant(ArkwaySettingsSO settings)
         {
-            // Read by NAME, same trade as the conveyor: the definition exposes no accessors for
-            // these numbers, and adding some purely for the codex would couple the runtime to it.
-            var config = new SerializedObject(definition);
+            var variant = Variant(WanderToy.WithArkLabel,
+                "A corridor of whole cells opens and an Ark, a prism-bodied mothership in your " +
+                "colour, sails it at its own unhurried pace with you sworn to its side");
+            variant.SourceConfig = settings;
+            if (!settings) return variant;
+
+            // Read by NAME, same trade as the belt's settings.
+            var config = new SerializedObject(settings);
             float spacing = Float(config, "cellSpacing");
             float speed = Float(config, "arkSpeed");
             float grace = Float(config, "leashGraceSeconds");
 
-            CodexHarvester.Add(entry.Stats, "Form",
-                "A voyage — the tool opens a corridor of whole cells and an Ark, a prism-bodied " +
-                "mothership in your colour, sails it at its own unhurried pace");
-            CodexHarvester.Add(entry.Stats, "The corridor",
-                "Three cells stand at once — previous, current, next — drawn from the cell " +
+            CodexHarvester.Add(variant.Stats, "The corridor",
+                "Three cells stand at once - previous, current, next - drawn from the cell " +
                 "selector's own worlds, recycled forever as the Ark advances");
-            CodexHarvester.Add(entry.Stats, "The fight",
+            CodexHarvester.Add(variant.Stats, "The fight",
                 "Each cell's fauna spawn in whichever colour holds its volume. Take a cell and " +
                 "its waves protect the Ark; lose it and they hunt the Ark's hull, which is " +
                 "ordinary mass they can eat");
-            CodexHarvester.Add(entry.Stats, "The leash",
+            CodexHarvester.Add(variant.Stats, "The leash",
                 grace > 0f
-                    ? $"Stay within a cell radius of the Ark. Stray and a {grace:0}-second " +
-                      "countdown runs before the Ark recalls you to its side"
-                    : "Stay within a cell radius of the Ark");
+                    ? $"Stay near the Ark. Stray and a {grace:0}-second countdown runs before the " +
+                      "Ark recalls you to its side"
+                    : "Stay near the Ark");
             if (speed > 0f && spacing > 0f)
-                CodexHarvester.Add(entry.Stats, "The pace",
+                CodexHarvester.Add(variant.Stats, "The pace",
                     $"The Ark cruises at {speed:0} units a second, cells about {spacing:N0} apart " +
-                    "— the voyage's clock is the ship, not a timer");
-            CodexHarvester.Add(entry.Stats, "Getting back",
-                "Four ways: the disembark dinghy trailing the Ark, another pass through the " +
-                "tool, leaving freestyle — or the Ark falling, which resets the voyage");
+                    "- the voyage's clock is the ship, not a timer");
+            return variant;
         }
 
         static void AddPaintingGallery(CodexEntry entry, PaintingToyDefinitionSO definition)

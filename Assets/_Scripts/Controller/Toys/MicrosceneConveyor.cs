@@ -7,10 +7,10 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
-    /// <summary>Tunables for the microscene conveyor, authored on the toy definition.</summary>
+    /// <summary>Tunables for the microscene conveyor (Wander WITHOUT an Ark), authored on <c>WanderwaySettingsSO</c>.</summary>
     public sealed class ConveyorConfig
     {
-        /// <summary>The toy's player-facing name — shown on the build veil ("GROWING WANDERWAY…").</summary>
+        /// <summary>The label shown on the build veil; the Wander toy supplies it.</summary>
         public string DisplayName = "WANDERWAY";
 
         public Prism PrismPrefab;

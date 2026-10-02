@@ -254,23 +254,19 @@ namespace CosmicShore.Gameplay
             box.AddToy(MakeDefault<ElementChargerToyDefinitionSO>(
                 "element_charger", "Element Charger", "Fly through to charge your vessel's elements.",
                 new Color(0.90f, 0.95f, 1.00f)));
-            // The conveyor's prism prefab is an asset reference the code-built fallback can't
-            // supply - its scenes degrade to crystals + lifeforms until the authored asset
-            // (FrogletTools > Scene Setup > Setup Freestyle Toybox) wires one.
-            box.AddToy(MakeDefault<ConveyorToyDefinitionSO>(
-                "conveyor", "Wanderway", "Fly through to summon an endless trail of little worlds.",
+            // Wander: one toy, two choices - with an Ark (the Arkway voyage) or without one (the
+            // Wanderway belt). Both need a prism prefab the code-built fallback can't supply: the
+            // belt's scenes degrade to crystals + lifeforms and the Ark refuses to sail (with a
+            // warning) until the authored asset (FrogletTools > Scene Setup > Setup Freestyle
+            // Toybox) wires the settings.
+            box.AddToy(MakeDefault<WanderToyDefinitionSO>(
+                "wander", "Wander", "Leave the cell and go wandering - with an Ark, or without one.",
                 new Color(0.35f, 1.00f, 0.55f)));
             // Needs no content wiring: with no cells authored it reads the containing Cell's
             // own CellConfigs rotation.
             box.AddToy(MakeDefault<CellSelectorToyDefinitionSO>(
                 "cell_selector", "Cell Selector", "Fly through to pick the world you fly in - or reset it.",
                 new Color(0.55f, 0.75f, 1.00f)));
-            // The Arkway's prism prefab is an asset reference the code-built fallback can't
-            // supply - the toy refuses to sail (with a warning) until the authored asset
-            // (FrogletTools > Scene Setup > Setup Freestyle Toybox) wires one.
-            box.AddToy(MakeDefault<ArkwayToyDefinitionSO>(
-                "arkway", "Arkway", "Fly through to escort an Ark on a voyage through the cells.",
-                new Color(1.00f, 0.55f, 0.30f)));
             return box;
         }
 

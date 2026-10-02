@@ -297,6 +297,14 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[FoldGate] Butterfly fold gate placement and transits")]
         ButterflyFold = 1 << 28,
+        /// <summary>
+        /// <c>[Training]</c> — overnight GA bring-up: launch, rollout start, a recorded
+        /// episode, replay handoff, deployment install. Off by default. A watchdog
+        /// timeout, a missing controller, and a failed save stay warnings or errors.
+        /// Nothing in the per-frame fitness sample logs, on this channel or otherwise.
+        /// </summary>
+        [CSLogChannelLabel("[Training] overnight GA bring-up")]
+        AITraining = 1 << 29,
         All = ~0
     }
 

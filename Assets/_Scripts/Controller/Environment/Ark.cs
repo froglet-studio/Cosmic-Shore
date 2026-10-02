@@ -62,9 +62,36 @@ namespace CosmicShore.Gameplay
 
         readonly List<Prism> _prisms = new();
         Trail _trail;
-        float _speed;
+
+        // ── Wake ─────────────────────────────────────────────────────────────
+        // A ship leaves a wake. The Ark's is conserved prism mass in its own domain, laid on
+        // DISTANCE (never a clock) through the canonical lay path, so it is ordinary grazeable
+        // food-web citizenry the moment it exists - which is also the only honest way to make a
+        // 150-prism hull matter to a swarm grazing a 10,000-prism world: the ribbon is where the
+        // Ark HAS BEEN, it is dense along a line rather than spread over a sphere, and following
+        // it leads to the ship.
+        //
+        // It lives on its own STATIONARY root, not under the Ark: the hull rides the Ark's
+        // transform (that is what makes it a moving body), and a wake that moved with the ship
+        // would be a second hull rather than a trail.
+        Transform _wakeRoot;
+        Trail _wakeTrail;
+        readonly List<Prism> _wake = new();
+        readonly List<(Prism prism, float dueAt)> _wakeWithering = new();
+        Prism _wakePrefab;
+        Domains _wakeDomain;
+        float _wakeSpacing;
+        Vector3 _wakeScale = Vector3.one;
+        int _wakeBudget;
+        Vector3 _lastWakeAt;
+        bool _wakeArmed;
+        float _speed;                                     // live speed this frame
+        float _approachSpeed;                             // speed at the destination's core
+        float _cruiseSpeed;                               // speed in open water between cells
+        float _slowRadius;                                // range over which cruise eases to approach
         Vector3 _destination;
         bool _hasDestination;
+        bool _underWay;
         bool _laying;
         bool _layComplete;
         bool _hullLost;
@@ -92,6 +119,8 @@ namespace CosmicShore.Gameplay
 
         public Vector3 Position => transform.position;
         public Vector3 Forward => transform.forward;
+        /// <summary>The Ark's speed THIS frame — a live reading of the arrival profile, not a
+        /// setting (see <see cref="SetSpeedProfile"/>).</summary>
         public float Speed => _speed;
 
         /// <summary>Create an Ark root at a pose. Lay the hull with <see cref="LayHullAsync"/>.</summary>
@@ -120,7 +149,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            _speed = Mathf.Max(1f, speed);
+            _speed = _approachSpeed = _cruiseSpeed = Mathf.Max(1f, speed);
             _trail = new Trail();
 
             // The lay runs on the Ark's OWN linked token so RetireAsync can stop it: a retire
@@ -191,13 +220,248 @@ namespace CosmicShore.Gameplay
             return lays;
         }
 
+        // ── Wake ─────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Arm the wake: from here the Ark lays one prism every <paramref name="spacing"/> units
+        /// of travel, at <paramref name="scale"/>, in <paramref name="domain"/> - well spaced and
+        /// far larger than a vessel's trail prism, so the ribbon reads as a ship's wake rather
+        /// than as another pilot's line.
+        ///
+        /// Laid on DISTANCE, never on a clock, so the wake is a record of where the ship went and
+        /// its density is a property of the ship's speed - dense through the slow pass under a
+        /// cell's core, sparse across the open water it crosses under way.
+        ///
+        /// <paramref name="parent"/> must be a STATIONARY transform (the toybox root, never this
+        /// Ark): the hull rides the Ark's transform, and a wake that rode it too would just be a
+        /// longer hull.
+        ///
+        /// It is ordinary conserved mass with no lifespan: nothing retires a wake prism except
+        /// the food web eating it, or <see cref="RetireWakeBefore"/> when the cell it was laid in
+        /// is struck. <paramref name="budget"/> is a backstop for a voyage that somehow outruns
+        /// its corridor, not a lifespan - reaching it retires the OLDEST, never the nearest.
+        /// </summary>
+        public void ConfigureWake(Prism prefab, Domains domain, float spacing, Vector3 scale,
+            int budget, Transform parent)
+        {
+            if (!prefab || spacing <= 0.5f) return;
+
+            _wakePrefab = prefab;
+            _wakeDomain = domain;
+            _wakeSpacing = spacing;
+            _wakeScale = scale;
+            _wakeBudget = Mathf.Max(16, budget);
+
+            var go = new GameObject("ArkWake");
+            go.transform.SetParent(parent, false);
+            go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            _wakeRoot = go.transform;
+            _wakeTrail = new Trail();
+
+            _lastWakeAt = transform.position;
+            _wakeArmed = true;
+        }
+
+        /// <summary>Wake prisms standing right now — the census number that would climb if the
+        /// corridor stopped retiring behind the Ark.</summary>
+        public int WakeCount => _wake.Count;
+
+        /// <summary>The newest wake prism, or null - the boundary
+        /// <see cref="RetireWakeBefore"/> retires up to. A PRISM, never an index: the list is
+        /// front-removed, so any recorded number goes stale on the first retire.</summary>
+        public Prism WakeHead => _wake.Count > 0 ? _wake[^1] : null;
+
+        /// <summary>
+        /// Retire every wake prism laid before <paramref name="mark"/> - the ribbon goes with the
+        /// cell it was laid in, the same rule <see cref="Cell.RequestCellSwap"/> already applies
+        /// to loose trail mass in a struck world. Continuity of existence is not waived: each
+        /// prism withers on the grow clock and only then goes back to the environment pool.
+        /// </summary>
+        public void RetireWakeBefore(Prism mark)
+        {
+            if (!mark) return;
+            int stop = _wake.IndexOf(mark);
+            if (stop <= 0) return;
+            RetireOldestWake(stop);
+        }
+
+        void RetireOldestWake(int count)
+        {
+            count = Mathf.Min(count, _wake.Count);
+            for (int i = 0; i < count; i++)
+            {
+                var prism = _wake[i];
+                _wakeTrail?.RemoveOldest();
+                // Already gone - the food web ate it, which is the whole point of the wake being
+                // ordinary mass. Consumed prisms stay ACTIVE with destroyed = true, so the
+                // aliveness test needs both (Docs/ECOSYSTEM.md - "a devoured prism never
+                // deactivates"); withering or pool-returning one would fight whoever took it.
+                if (!prism || prism.destroyed) continue;
+                prism.TargetScale = RetiredScale;
+                _wakeWithering.Add((prism, Time.time + WitherSeconds));
+            }
+            // RemoveOldest above walks the Trail in step; the list is the authority on order.
+            _wake.RemoveRange(0, count);
+        }
+
+        void TickWake()
+        {
+            if (!_wakeArmed || _retiring || _hullLost) return;
+
+            // CATCH UP, don't skip. One prism per frame is a rate, and the Ark's speed is not:
+            // it runs fast leaving a cell and slow on the approach, and the corridor's own
+            // builds hitch the frame. A single test per Update lays ONE prism however far the
+            // ship travelled and then moves the mark to where it now is, so every hitch and
+            // every fast stretch silently swallows the prisms that stretch was owed - which
+            // reads exactly as a wake arriving in inconsistent batches with gaps between them.
+            // Stepping the mark by one spacing per prism keeps the wake evenly spaced in
+            // DISTANCE, which is the only thing it was ever meant to be even in.
+            //
+            // The per-frame cap is what keeps that honest: a several-thousand-unit jump (a
+            // teleport, a long stall) must not lay a thousand prisms in one frame to cover
+            // ground nobody watched the ship cross. Past the cap the mark snaps forward, so the
+            // gap is taken deliberately, once, instead of accumulating silently every frame.
+            const int MaxWakePrismsPerTick = 8;
+            float spacingSqr = _wakeSpacing * _wakeSpacing;
+            int laid = 0;
+            while ((transform.position - _lastWakeAt).sqrMagnitude >= spacingSqr)
+            {
+                if (laid >= MaxWakePrismsPerTick)
+                {
+                    _lastWakeAt = transform.position;
+                    break;
+                }
+
+                // Step the mark ALONG the travelled line rather than to the ship: the ship is
+                // already past this prism's place by the time we lay it.
+                Vector3 toShip = transform.position - _lastWakeAt;
+                _lastWakeAt += toShip.normalized * _wakeSpacing;
+                LayWakePrism(_lastWakeAt);
+                laid++;
+            }
+
+            // Backstop only - a voyage whose corridor is not retiring behind it.
+            if (_wake.Count > _wakeBudget)
+                RetireOldestWake(_wake.Count - _wakeBudget);
+
+            for (int i = _wakeWithering.Count - 1; i >= 0; i--)
+            {
+                var (prism, dueAt) = _wakeWithering[i];
+                if (prism && Time.time < dueAt) continue;
+                _wakeWithering.RemoveAt(i);
+                ReleaseWakePrism(prism);
+            }
+        }
+
+        /// <param name="at">Where the ship WAS when this prism was owed - not where it is now.
+        /// A catch-up tick lays several in one frame, and laying them all at the live position
+        /// would stack them in one place instead of spacing them along the wake.</param>
+        void LayWakePrism(Vector3 at)
+        {
+            // Astern and a little below the keel - a wake trails a ship, it does not run
+            // through it, and laying inside the hull would put the two in the same grid cell.
+            var pose = new SpawnPoint(
+                at - transform.forward * (_wakeScale.z * 1.5f),
+                Quaternion.LookRotation(transform.forward, transform.up),
+                _wakeScale);
+
+            // watchForReveal: FALSE. The wake is a CONTINUOUS source - it lays for as long as the
+            // voyage runs - and the reveal watch is the arena-ready gate's "has everything
+            // materialized" set. A source that keeps adding to it can never all-clear, so the
+            // load veil holds forever with its settling count jittering: a hang, not a slow load.
+            var prism = PrismTrailBuilder.LayOne(_wakePrefab,
+                new PrismLay(pose, _wakeDomain), _wakeRoot, _wakeTrail, WakeOwnerId,
+                watchForReveal: false);
+            if (!prism) return;
+            // The wake is a ribbon behind a mover: it must not queue behind a growing
+            // corridor's flora for its creation completion.
+            prism.CompletesAsLiveRibbon = true;
+
+            // LayOne writes localPosition - the wake root sits at the world origin unrotated,
+            // so local IS world here. Stated rather than assumed: a future parent with a pose
+            // would silently place the whole ribbon somewhere else.
+            _wake.Add(prism);
+        }
+
+        void ReleaseWakePrism(Prism prism)
+        {
+            if (!prism || prism.destroyed) return;
+            if (!EnvironmentPrismPool.TryRelease(prism)) Destroy(prism.gameObject);
+        }
+
+        /// <summary>Owner id no pilot carries, so the self-trail contact grace can never mistake
+        /// the wake for a vessel's own fresh ribbon.</summary>
+        const string WakeOwnerId = "ArkWake";
+
+        void StrikeWake()
+        {
+            for (int i = 0; i < _wakeWithering.Count; i++)
+                ReleaseWakePrism(_wakeWithering[i].prism);
+            _wakeWithering.Clear();
+
+            for (int i = 0; i < _wake.Count; i++)
+                ReleaseWakePrism(_wake[i]);
+            _wake.Clear();
+            _wakeTrail?.Clear();
+            _wakeArmed = false;
+
+            if (_wakeRoot) Destroy(_wakeRoot.gameObject);
+            _wakeRoot = null;
+        }
+
         // ── Course ───────────────────────────────────────────────────────────
 
-        /// <summary>Point the voyage at a world position; the Ark cruises there on its own.</summary>
+        /// <summary>
+        /// The arrival profile: an Ark makes way in open water and comes in SLOW under a cell's
+        /// core, the way a ship enters harbour. One function gives both halves of that, because
+        /// both are read off the SAME quantity — range to the destination. Leaving a cell, the
+        /// next core is a whole corridor spacing away, so the Ark is already at
+        /// <paramref name="cruiseSpeed"/> by the time its stern clears the membrane; arriving, it
+        /// eases to <paramref name="approachSpeed"/> across the last <paramref name="slowRadius"/>
+        /// (the destination cell's own membrane, so the deceleration IS entering the cell).
+        ///
+        /// No acceleration state is kept: speed is a pure function of position, so a destination
+        /// change (the corridor advancing) re-reads it on the same frame with nothing to unwind.
+        /// </summary>
+        public void SetSpeedProfile(float approachSpeed, float cruiseSpeed, float slowRadius)
+        {
+            _approachSpeed = Mathf.Max(1f, approachSpeed);
+            _cruiseSpeed = Mathf.Max(_approachSpeed, cruiseSpeed);
+            _slowRadius = Mathf.Max(0f, slowRadius);
+        }
+
+        /// <summary>
+        /// Whether the Ark is MAKING WAY. False until the voyage actually begins, and it is a
+        /// gate on the movement itself rather than a convention about when to set a destination.
+        ///
+        /// It exists because the Ark is created and its hull laid BEHIND THE LOAD VEIL, and
+        /// `Update` keeps running the whole time the screen is covered — so an Ark with a course
+        /// sails for the entire build. At the cruise speed the arrival profile gives it (72 u/s),
+        /// a 40-second build puts it 2,880 units downrange: past the first cell, parked at a core
+        /// the player cannot see, and the voyage opens with no Ark anywhere. It was survivable at
+        /// the old flat 18 u/s and is not at 4x that.
+        ///
+        /// General shape: <b>a build behind a veil is not a pause</b> — every Update in the scene
+        /// runs through it, so anything that moves has to be told not to yet.
+        /// </summary>
+        public void SetUnderway(bool underWay) => _underWay = underWay;
+
+        /// <summary>Point the voyage at a world position; the Ark cruises there on its own —
+        /// once <see cref="SetUnderway"/> has been called.</summary>
         public void SetDestination(Vector3 worldPosition)
         {
             _destination = worldPosition;
             _hasDestination = true;
+        }
+
+        /// <summary>
+        /// Point the voyage at a world position and state the range over which the Ark should
+        /// slow onto it — the destination cell's membrane radius.
+        /// </summary>
+        public void SetDestination(Vector3 worldPosition, float slowRadius)
+        {
+            _slowRadius = Mathf.Max(0f, slowRadius);
+            SetDestination(worldPosition);
         }
 
         /// <summary>True when the Ark is within <paramref name="within"/> of its destination.</summary>
@@ -209,12 +473,18 @@ namespace CosmicShore.Gameplay
             if (_retiring) return;
 
             bool moved = false;
-            if (_hasDestination && !_hullLost)
+            if (_underWay && _hasDestination && !_hullLost)
             {
                 Vector3 to = _destination - transform.position;
                 float dist = to.magnitude;
                 if (dist > 0.5f)
                 {
+                    // Smoothstep over the approach band: flat cruise outside it, flat approach
+                    // speed at the core, and no discontinuity at either end — an Ark that
+                    // stepped between two speeds would read as a stutter, not as a landing.
+                    float t = _slowRadius > 1f ? Mathf.Clamp01(dist / _slowRadius) : 1f;
+                    _speed = Mathf.Lerp(_approachSpeed, _cruiseSpeed, t * t * (3f - 2f * t));
+
                     Vector3 dir = to / dist;
                     transform.position += dir * Mathf.Min(_speed * Time.deltaTime, dist);
                     transform.rotation = Quaternion.RotateTowards(transform.rotation,
@@ -257,6 +527,8 @@ namespace CosmicShore.Gameplay
                     }
             }
 
+            TickWake();
+
             if (_layComplete && !_hullLost && Time.time >= _nextAliveScanAt)
             {
                 _nextAliveScanAt = Time.time + AliveScanSeconds;
@@ -269,6 +541,13 @@ namespace CosmicShore.Gameplay
         /// here: destroyed (an ability - <c>destroyed</c> set, object deactivated) or devoured
         /// (fauna - <c>Prism.Consume</c> implodes it back to its pool, object deactivated).
         /// </summary>
+        void OnDestroy()
+        {
+            // Scene teardown / an Ark destroyed outside RetireAsync: the wake root is a SIBLING,
+            // so nothing else would collect it.
+            if (_wakeRoot) Destroy(_wakeRoot.gameObject);
+        }
+
         void ScanHullIntegrity()
         {
             int alive = 0;
@@ -305,6 +584,14 @@ namespace CosmicShore.Gameplay
         {
             if (_retiring) return;
             _retiring = true;
+
+            _underWay = false;
+
+            // Disarm the wake FIRST, before any await. A retire is followed by the next voyage's
+            // veiled build, and this method waits out a lay and then a 0.8s wither - so a wake
+            // left armed keeps laying into the successor's arena hold. StrikeWake at the bottom
+            // is the cleanup; this is the stop.
+            _wakeArmed = false;
 
             // Stop a lay still in flight and wait it out, so no prism can be laid after the
             // wither pass below has swept the list.
@@ -350,6 +637,10 @@ namespace CosmicShore.Gameplay
                 }
             }
             _prisms.Clear();
+
+            // The wake is NOT under this root (it is stationary by design), so it has to be
+            // struck explicitly or it outlives the voyage that laid it.
+            StrikeWake();
 
             if (!cancelled && this) Destroy(gameObject);
         }

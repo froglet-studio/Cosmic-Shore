@@ -5470,30 +5470,6 @@ MonoBehaviour:
       - Label: What it does
         Value: Swap into this class
         Authored: 0
-  - Id: tool.arkway
-    Kingdom: 3
-    DisplayName: Arkway
-    Tagline: Fly through to escort an Ark on a voyage through the cells.
-    Description: 'Escort an Ark: a prism-bodied mothership that wears a domain, sails
-      a corridor of cells at its own unhurried pace, and lives or dies by the food
-      web like anything else in the hypersea. You are leashed to its side for the
-      voyage. The cells ahead of it are built as it goes and the ones behind are
-      struck, so an Arkway run is a place that exists only while you are in it.'
-    Image: {fileID: 21300000, guid: 7c982fddd190aff488ffbc43d7016b7d, type: 3}
-    SourcePrefab: {fileID: 0}
-    SourceConfig: {fileID: 11400000, guid: d85a7bce8eb442abbd2d17a05397bd33, type: 2}
-    AccentColor: {r: 1, g: 0.55, b: 0.3, a: 1}
-    UnlockedByDefault: 1
-    DiscoveryKey: use.tool.arkway
-    PreviewYaw: -28
-    PreviewPitch: 16
-    PreviewPadding: 1.05
-    FlatSilhouette: 0
-    Group: "2 \xB7 World"
-    SortOrder: 0
-    LockAutoHarvest: 0
-    Stats: []
-    Variants: []
   - Id: tool.cell-selector
     Kingdom: 3
     DisplayName: Cell Selector
@@ -5554,21 +5530,17 @@ MonoBehaviour:
         same config \u2014 the accumulated freestyle trail goes with it"
       Authored: 0
     Variants: []
-  - Id: tool.conveyor
+  - Id: tool.wander
     Kingdom: 3
-    DisplayName: Wanderway
-    Tagline: Fly through to summon an endless trail of little worlds.
-    Description: Leave the cell and go wandering. The world ahead of you is assembled
-      as you fly - gate runs, orchards, torus knots, cathedrals, drowned cities -
-      out of one fixed stock of prisms that recycles from behind you into the distance
-      ahead, so it never ends and never grows. Your trail becomes a rolling tether
-      with the way home riding its tail.
+    DisplayName: Wander
+    Tagline: "Leave the cell and go wandering - with an Ark, or without one."
+    Description: "Leave the cell and go wandering, alone or as an escort. Without an Ark, the world ahead of you is assembled as you fly - gate runs, orchards, torus knots, cathedrals, drowned cities - out of one fixed stock of prisms that recycles from behind you into the distance ahead, so it never ends and never grows, and your trail becomes a rolling tether with the way home riding its tail. With an Ark, a prism-bodied mothership that wears your domain sails a corridor of cells at its own unhurried pace and lives or dies by the food web like anything else in the hypersea; the cells ahead of it are built as it goes and the ones behind are struck, so a voyage is a place that exists only while you are in it."
     Image: {fileID: 21300000, guid: 44b9c6faf238c4041b0573026a9cf203, type: 3}
     SourcePrefab: {fileID: 0}
-    SourceConfig: {fileID: 11400000, guid: 3c1bc1b829fa4f7ea2c153842659d24d, type: 2}
+    SourceConfig: {fileID: 11400000, guid: 2de19b5588ab4320a497d5ff31f2ca3d, type: 2}
     AccentColor: {r: 0.11635202, g: 0.22510868, b: 1, a: 1}
     UnlockedByDefault: 1
-    DiscoveryKey: use.tool.conveyor
+    DiscoveryKey: use.tool.wander
     PreviewYaw: -28
     PreviewPitch: 16
     PreviewPadding: 1.05
@@ -5596,31 +5568,59 @@ MonoBehaviour:
       Value: "Out by the cell membrane, at 60\xB0 around the cell"
       Authored: 0
     - Label: Form
-      Value: "A run you leave for and come back from \u2014 not a matrix. Fly it
-        once to go, and the return station rides the end of your own trail"
+      Value: "One station that opens into two choices - wander WITH an Ark or WITHOUT one. Either is a run you leave for and come back from"
       Authored: 0
-    - Label: What happens
-      Value: The cell is handed its bare canvas and a field of little worlds streams
-        ahead of you, wherever you fly, for as long as you fly
+    - Label: Offers
+      Value: "2 ways to wander"
       Authored: 0
-    - Label: The belt
-      Value: "20 scenes of 1,500 prisms \u2014 30,000 in all, built once and then
-        transported forever. The scene farthest behind you is the one that blooms
-        ahead"
-      Authored: 0
-    - Label: Tether
-      Value: 100 prisms. Your trail follows you rather than accumulating, and the
-        way home is always one tether-length behind
-      Authored: 0
-    - Label: You will find
-      Value: Structures, skimmable crystals, and flora and fauna released into the
-        cell as ordinary citizens
+    - Label: One at a time
+      Value: "Both take you out of the cell, so while one is under way the other waits until you come home"
       Authored: 0
     - Label: Getting back
-      Value: 'Three ways, all the same thing: the return station, another pass through
-        the tool, or leaving freestyle'
+      Value: "The way home the run leaves you, another pass through the tool, or leaving freestyle - and, with an Ark, the Ark falling, which resets the voyage"
       Authored: 0
-    Variants: []
+    Variants:
+    - Label: With Ark
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: d85a7bce8eb442abbd2d17a05397bd33, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: "A corridor of whole cells opens and an Ark, a prism-bodied mothership in your colour, sails it at its own unhurried pace with you sworn to its side"
+        Authored: 0
+      - Label: The corridor
+        Value: "Three cells stand at once - previous, current, next - drawn from the cell selector's own worlds, recycled forever as the Ark advances"
+        Authored: 0
+      - Label: The fight
+        Value: "Each cell's fauna spawn in whichever colour holds its volume. Take a cell and its waves protect the Ark; lose it and they hunt the Ark's hull, which is ordinary mass they can eat"
+        Authored: 0
+      - Label: The leash
+        Value: "Stay near the Ark. Stray and a 5-second countdown runs before the Ark recalls you to its side"
+        Authored: 0
+      - Label: The pace
+        Value: "The Ark cruises at 18 units a second, cells about 3,200 apart - the voyage's clock is the ship, not a timer"
+        Authored: 0
+    - Label: Without Ark
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 3c1bc1b829fa4f7ea2c153842659d24d, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: "The cell is handed its bare canvas and a field of little worlds streams ahead of you, wherever you fly, for as long as you fly"
+        Authored: 0
+      - Label: The belt
+        Value: "20 scenes of 1,500 prisms - 30,000 in all, built once and then transported forever. The scene farthest behind you is the one that blooms ahead"
+        Authored: 0
+      - Label: Tether
+        Value: "100 prisms. Your trail follows you rather than accumulating, and the way home is always one tether-length behind"
+        Authored: 0
+      - Label: You will find
+        Value: "Structures, skimmable crystals, and flora and fauna released into the cell as ordinary citizens"
+        Authored: 0
   - Id: tool.painting
     Kingdom: 3
     DisplayName: Connect the Dots

@@ -694,6 +694,16 @@ namespace CosmicShore.UI
             // reacting to vessel ability buttons). Read the LIVE freestyle state each frame
             // and (re)apply the EventSystem gating whenever it flips.
             bool inFreestyle = InFreestyle;
+
+            // ...and heal the GATE itself, not only the flag that says it was applied. Two other
+            // systems write sendNavigationEvents (ModePreviewSession and MaelstromPreviewHost save
+            // and restore it around their own flight), and a restore that lands after freestyle
+            // began re-opened the pad to the appshell for the rest of the flight, with
+            // _appliedFreestyleGate still reading true - so the comparison below never fired again.
+            if (inFreestyle && _appliedFreestyleGate
+                && EventSystem.current && EventSystem.current.sendNavigationEvents)
+                ApplyFreestyleInputGate(true);
+
             if (inFreestyle != _appliedFreestyleGate)
             {
                 ApplyFreestyleInputGate(inFreestyle);

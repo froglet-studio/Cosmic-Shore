@@ -173,7 +173,7 @@ Strict mode is working as designed; QA's job is to bound the blast radius.
 1. Launch **Skim Race / SkimRace** (any intensity) and watch the track build.
 2. Read the Console for `[PrismClock] STRICT MODE` errors; note the count and whether
    it is bounded (one burst at build) or continuous.
-3. Fly the **Wanderway** conveyor toy in freestyle and watch scenes arrive.
+3. Fly the **Wander** toy in freestyle, choose **Without Ark**, and watch scenes arrive.
 4. Note every *other* place prisms appear to snap rather than bloom (cell environments,
    trails, flora, fauna, cage bars, the new Boneyard and Wildlife Liberation cages).
 
@@ -1226,7 +1226,7 @@ exactly to home · the remote client seeing something different.
 
 ### QA-TOYS-WANDERWAY-INVISIBLE ⬜ — the conveyor's transport is never watched
 **Source:** PR #609.
-1. Freestyle, fly the Wanderway toy, then fly straight for a while.
+1. Freestyle, fly the Wander toy and choose Without Ark, then fly straight for a while.
 2. Hard-turn and reverse over ground you just covered.
 3. Vary speed from cruise to boosted and watch the field ahead.
 

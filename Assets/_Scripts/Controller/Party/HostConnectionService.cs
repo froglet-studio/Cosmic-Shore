@@ -2277,6 +2277,10 @@ namespace CosmicShore.Gameplay
             }
             catch (OperationCanceledException)
             {
+                // The timeout comes from `cts`'s timer thread and AttachExternalCancellation does
+                // not marshal, so this catch - and the caller's SyncLocalIdentity / lobby join
+                // after it - would otherwise run off the main thread (BH-1.3).
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
                 CSDebug.LogWarning(
                     $"[HostConnectionService] PlayerDataService.IsInitialized still false after {timeoutMs}ms - " +
                     "proceeding with local default identity; profile-change republish will correct it.");

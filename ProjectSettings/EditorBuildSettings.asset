@@ -116,6 +116,9 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSirocco.unity
     guid: f3efa5204ad2461ebf22bc57e2170a5a
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameWildlifeBlitzMultuplayerCoOp.unity
+    guid: ad3b1401174bb7d46af84ae67c6ffbe3
   m_configObjects:
     com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: d81858d78bc481248ad644af4fc19343,
       type: 2}
