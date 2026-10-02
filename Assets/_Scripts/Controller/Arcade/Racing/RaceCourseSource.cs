@@ -121,6 +121,47 @@ namespace CosmicShore.Gameplay
         public int RingIndexFor(int threaded, int ringCount, int intensity) =>
             GateRaceController.RingIndexFor(threaded, ringCount, LeadInGates, LapsPerRace(intensity));
 
+        // ── The start line ───────────────────────────────────────────────
+
+        /// <summary>How far behind the start line a pilot lines up.</summary>
+        public float StartLineStandoff = DefaultStartLineStandoff;
+
+        public const float DefaultStartLineStandoff = 220f;
+
+        /// <summary>
+        /// What a pilot lines up on: a point and the direction to fly through it, CELL-LOCAL. The
+        /// default is the race's first ring - its mouth faces along its own axis, so standing
+        /// <see cref="StartLineStandoff"/> behind it and flying straight is threading it. A mode
+        /// whose start is not its first ring (Skein's collar) overrides.
+        ///
+        /// <para>The arcade card's preview uses this for its one pilot. A match with several
+        /// pilots is free to start them elsewhere for fairness (the gate races' pole-and-ring);
+        /// the modes that start a match on a line (Regatta, Skein) answer the same point here and
+        /// in their <c>IPlayerSpawnLine</c>.</para>
+        /// </summary>
+        public virtual bool TryStartLine(in RaceCourseRequest request, IReadOnlyList<RaceGate> course,
+                                         out Vector3 target, out Vector3 axis)
+        {
+            target = default;
+            axis = Vector3.forward;
+            if (course == null || course.Count == 0) return false;
+            target = course[0].Position;
+            axis = course[0].Axis;
+            return axis.sqrMagnitude > 1e-6f;
+        }
+
+        // ── Structure hung on the course ─────────────────────────────────
+
+        /// <summary>
+        /// Pose a controller-built structure on the course BEFORE it spawns (Breakwater's
+        /// stations). The match's controller and the card's preview both call this, so the
+        /// structure the preview flies through is the match's. Default: the mode has none.
+        /// <paramref name="cellCentre"/> is the cell's centre in the course's own frame (zero for
+        /// a cell-local course).
+        /// </summary>
+        public virtual bool PoseCourseStructure(Component structure, IReadOnlyList<RaceGate> course,
+                                                Vector3 cellCentre) => false;
+
         /// <summary>
         /// The course, CELL-LOCAL, or null with <paramref name="failure"/> saying why in one
         /// sentence. May be retried every frame by the match (a scene-built arena answers a

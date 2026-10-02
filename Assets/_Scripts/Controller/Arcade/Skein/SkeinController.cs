@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
         [Header("Skein start line")]
         [Tooltip("How far BEHIND the start collar the pilots line up. Far enough that the ring " +
                  "reads as something to fly at rather than something they are already inside.")]
-        [SerializeField, Min(1f)] float startLineStandoff = 220f;
+        [SerializeField, Min(1f)] float startLineStandoff = RaceCourseSource.DefaultStartLineStandoff;
 
         [Tooltip("Radius of the ring the pilots stand on, about the collar's axis. Must stay " +
                  "well inside the collar's own 150 u mouth: everyone threads the first gate by " +

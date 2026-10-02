@@ -16,6 +16,21 @@ namespace CosmicShore.Gameplay
     {
         public override GameModes Mode => GameModes.Skein;
 
+        /// <summary>
+        /// The start collar at spine arc 0 - the same point <c>SkeinController</c> lines a match
+        /// up on. It is on the SPINE, whose radii are the same at every intensity, so the fallback
+        /// settings give the identical collar when no arena resolves.
+        /// </summary>
+        public override bool TryStartLine(in RaceCourseRequest request, IReadOnlyList<RaceGate> course,
+                                          out Vector3 target, out Vector3 axis)
+        {
+            var settings = TryResolveArena(request.Config, out var arena, out _)
+                ? arena.CourseSettings
+                : SkeinCourseSettings.ForIntensity(1);
+            SkeinCourse.StartPose(settings, out target, out axis);
+            return axis.sqrMagnitude > 1e-6f;
+        }
+
         public override int AuthoredGateTarget(int intensity)
         {
             var overrides = EndConditionOverridesSO.Instance;

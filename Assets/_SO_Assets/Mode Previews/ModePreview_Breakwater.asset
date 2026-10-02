@@ -13,10 +13,11 @@ MonoBehaviour:
   m_Name: ModePreview_Breakwater
   m_EditorClassIdentifier:
   Mode: 50
-  Notes: 'OPEN-ENDED, shell-only: the fourteen stations are controller-built (closed-form dishes
-    on a zigzag ring), so the preview shows the cell''s own four configs - no
-    EnvironmentPrefab, no nucleus - and the Sparrow''s guns and skyburst. The spawn ring is
-    the scene''s (480u equatorial), which the walk keeps clear of every station.'
+  Notes: 'The LOOKING phase shows the cell''s own four configs - no EnvironmentPrefab, no nucleus.
+    The FLIGHT phase stands the start gate and the circuit (same RaceCourseSource, card-art
+    seed) AND the stations: CourseStructurePrefab is the scene controller''s own
+    SpawnableBreakwater, posed by the same source call, so the dishes and danger weave are
+    the match''s. The pilot starts behind the start gate.'
   PreviewCell: {fileID: 11400000, guid: 49ce4640e8d53ff19253cadc21ef3246, type: 2}
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: 49ce4640e8d53ff19253cadc21ef3246, type: 2}
@@ -25,6 +26,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8e805865a0f7963218c8f2c12e625480, type: 2}
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
+  CourseStructurePrefab: {fileID: 5230000000000103, guid: 02cab3fdb03e82611cfe11e1013c71fb, type: 3}
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 11

@@ -15,8 +15,9 @@ MonoBehaviour:
   Mode: 51
   Notes: 'The knot is an authored EnvironmentPrefab, one per intensity, so the scale model shows
     the (2,3) torus knot cable and the flight preview lets the Urchin ride a strand and take
-    an aimed launch across a break. The rings are controller-laid and absent, so the
-    objective is OPEN-ENDED; riding is what the mode is.'
+    an aimed launch across a break. The FLIGHT phase also stands the rings on the cable
+    (same RaceCourseSource) and starts the pilot on the match''s own start line, behind the
+    collar.'
   PreviewCell: {fileID: 11400000, guid: 203067c05312120557c4693210d7482e, type: 2}
   PreviewCellsByIntensity:
   - {fileID: 11400000, guid: 203067c05312120557c4693210d7482e, type: 2}
@@ -25,6 +26,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 49793c20915d9de7a1ddc299197380ca, type: 2}
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
+  CourseStructurePrefab: {fileID: 0}
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 4

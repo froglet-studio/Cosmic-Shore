@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("How far behind gate 0, along its axis, the start line sits. Every hull spawns " +
                  "here pointed through the first ring, which is fair by symmetry.")]
-        [SerializeField, Min(1f)] float startLineStandoff = 260f;
+        [SerializeField, Min(1f)] float startLineStandoff = RegattaCourseSource.SceneStartLineStandoff;
 
         [Tooltip("Radius of the start ring around gate 0's axis. Wider than the mouth so the " +
                  "grid is not stacked on the rails.")]

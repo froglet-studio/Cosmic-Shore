@@ -79,19 +79,11 @@ namespace CosmicShore.Gameplay
             var arena = Instantiate(arenaPrefab, transform);
             arena.name = "BreakwaterArena";
 
-            // Before Spawn, never after: Spawn runs the generation that reads it. The RaceGate the
-            // platform carries and the BreakwaterStation the builder wants hold the same three
-            // values, so the conversion is total.
-            var stations = new List<BreakwaterStation>(_course.Count);
-            for (int i = 0; i < _course.Count; i++)
-                stations.Add(new BreakwaterStation(_course[i].Position, _course[i].Axis, _course[i].Radius));
-            arena.SetCourse(stations);
-
-            // The pads in the COURSE'S frame — the course was offset onto the cell before it was
-            // broadcast, so these must be too, and every peer computes them from the same cell it
-            // built the rest of the arena around.
-            arena.SetSpawnPads(BreakwaterCourse.SpawnPadRing(ResolveCellCentre(),
-                                                             BreakwaterCourseSettings.DefaultSpawnRingRadius));
+            // Before Spawn, never after: Spawn runs the generation that reads it. The course source
+            // does the posing so the arcade card's preview hangs the identical stations. The pads
+            // are in the COURSE'S frame - the course was offset onto the cell before it was
+            // broadcast, so these must be too.
+            CourseSource.PoseCourseStructure(arena, _course, ResolveCellCentre());
 
             var container = arena.Spawn(Intensity);
             if (container) container.name = "BreakwaterArena (prisms)";

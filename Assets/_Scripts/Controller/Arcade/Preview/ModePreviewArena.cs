@@ -196,6 +196,68 @@ namespace CosmicShore.Gameplay
         GameObject _trackStructure;
         GameObject _trackSource;
 
+        // A gate race's controller-built structure (Breakwater's stations), hung on the preview
+        // course. Same lifetime and same retirement as the track structure.
+        GameObject _courseStructure;
+        GameObject _courseStructureSource;
+
+        /// <summary>True while a course structure is standing.</summary>
+        public bool HasCourseStructure => _courseStructure;
+
+        /// <summary>
+        /// Build a gate race's structure on the preview's course - the SAME prefab the mode's
+        /// scene controller spawns, posed by the same <see cref="RaceCourseSource"/> call, so the
+        /// stations you fly through are the match's. The course is CELL-LOCAL, so the instance
+        /// sits at the cell centre and its prisms stream in there (spawn-then-parent is safe for a
+        /// streamed spawnable - see <see cref="SpawnTrackStructure"/>). Instantiated mass, never
+        /// pooled; retired with the world on strike.
+        /// </summary>
+        public bool BuildCourseStructure(SpawnableBase prefab, RaceCourseSource source,
+                                         IReadOnlyList<RaceGate> course, int intensity)
+        {
+            if (!prefab || source == null || course == null || course.Count == 0 || !_root) return false;
+            StrikeCourseStructure();
+
+            if (prefab.GetComponentInChildren<Unity.Netcode.NetworkObject>(true))
+            {
+                CSDebug.LogError($"[ModePreview] Course structure '{prefab.name}' carries a " +
+                                 "NetworkObject. A preview is strictly local - skipped.");
+                return false;
+            }
+
+            var instance = Object.Instantiate(prefab, _root.transform);
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+            _courseStructureSource = instance.gameObject;
+
+            if (!source.PoseCourseStructure(instance, course, Vector3.zero))
+            {
+                CSDebug.LogWarning($"[ModePreview] {source.ModeName}'s course source does not pose " +
+                                   $"'{prefab.name}' - no structure built.");
+                StrikeCourseStructure();
+                return false;
+            }
+
+            var built = instance.Spawn(Mathf.Max(1, intensity));
+            if (!built) { StrikeCourseStructure(); return false; }
+
+            built.transform.SetParent(_root.transform, false);
+            built.transform.localPosition = Vector3.zero;
+            built.transform.localRotation = Quaternion.identity;
+            built.name = $"ModePreviewCourseStructure ({source.ModeName})";
+            _courseStructure = built;
+            return true;
+        }
+
+        /// <summary>Take a course structure down outside a strike (the course was re-raised).</summary>
+        public void StrikeCourseStructure()
+        {
+            if (_courseStructureSource) Object.Destroy(_courseStructureSource);
+            _courseStructureSource = null;
+            if (_courseStructure) Object.Destroy(_courseStructure);
+            _courseStructure = null;
+        }
+
         /// <summary>
         /// Build the mode's scene-built structure FOR REAL - the thing you actually fly through.
         ///
@@ -435,6 +497,18 @@ namespace CosmicShore.Gameplay
                 _trackStructure = null;
             }
 
+            if (_courseStructureSource)
+            {
+                Object.Destroy(_courseStructureSource);
+                _courseStructureSource = null;
+            }
+            if (_courseStructure)
+            {
+                if (retiring) _courseStructure.transform.SetParent(retiring.transform, true);
+                else Object.Destroy(_courseStructure);
+                _courseStructure = null;
+            }
+
             return retiring;
         }
 
@@ -452,6 +526,8 @@ namespace CosmicShore.Gameplay
             // just keep the fields honest.
             _trackStructure = null;
             _trackSource = null;
+            _courseStructure = null;
+            _courseStructureSource = null;
 
             if (_root)
             {

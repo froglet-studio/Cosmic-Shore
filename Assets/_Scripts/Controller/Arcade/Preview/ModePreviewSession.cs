@@ -278,6 +278,10 @@ namespace CosmicShore.Gameplay
                 // follows the row while the world stays up.
                 if (courseChanges)
                 {
+                    // The structure hangs on THIS course, so it goes with it. An immediate destroy
+                    // rather than the retiring-root drain: no shipped card reaches here with one -
+                    // Breakwater's arena differs per intensity, so its nudge rebuilds the world.
+                    _arena.StrikeCourseStructure();
                     StrikeGateCourse();
                     RaiseGateCourse(definition, definition.ResolveCell(intensity));
                     if (_state == State.Live) _gateCourse.Track(gameData?.LocalPlayer?.Vessel);
@@ -450,16 +454,17 @@ namespace CosmicShore.Gameplay
                 // Rampage, and RequestSwap already preserves pose, speed and domain.
                 await SwapVessel(ResolveVessel(definition), remember: true, ct);
 
+                // A racing card's race: the mode's own rings, from the same course source the
+                // match builds from, plus any structure the match hangs on them (Breakwater's
+                // stations). Stood once per arena - a tap back into a standing world resumes the
+                // same course. BEFORE the park, because a race starts the pilot on its own line.
+                RaiseGateCourse(definition, config);
+
                 // Relocate the vessel and point its autopilot at the ARENA's runtime data -
                 // without this the AI keeps hunting the menu cell's crystals 120k units away and
                 // flies straight back out of the arena.
                 ParkVesselInArena(definition);
                 RetargetAIToArena();
-
-                // A racing card's race: the mode's own rings, from the same course source the
-                // match builds from. Stood once per arena - a tap back into a standing world
-                // resumes the same course.
-                RaiseGateCourse(definition, config);
 
                 // The gameplay camera takes the window from the arena camera. Order matters: the
                 // arena camera only stands down once the gameplay one has the texture, so the
@@ -865,7 +870,10 @@ namespace CosmicShore.Gameplay
                 _hasVesselHome = true;
             }
 
-            var pose = _arena.SpawnPose(definition);
+            // A race starts on its own line - behind its first ring (Skein: its collar), pointed
+            // through it - rather than on the cell ring the definition mirrors for every mode.
+            bool onStartLine = _gateCourse && _gateCourse.TryGetStartPose(out var startPose);
+            var pose = onStartLine ? startPose : _arena.SpawnPose(definition);
             vessel.SetPose(pose);
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
@@ -1248,8 +1256,16 @@ namespace CosmicShore.Gameplay
 
             if (!_gateCourse) _gateCourse = gameObject.AddComponent<ModePreviewGateCourse>();
             float nucleus = _arena.Cell ? _arena.Cell.ExpectedNucleusWorldRadius : 0f;
-            _gateCourse.Raise(definition.Mode, _intensity, config, nucleus, _arena.Origin,
-                              gameData ? gameData.ThemeManagerData : null);
+            if (!_gateCourse.Raise(definition.Mode, _intensity, config, nucleus, _arena.Origin,
+                                   gameData ? gameData.ThemeManagerData : null))
+                return;
+
+            // The structure the match hangs on these rings (Breakwater's stations), from the
+            // prefab the mode's scene controller spawns, posed by the same source. Mass in the
+            // satellite world: it retires with the arena's own world on strike.
+            if (definition.CourseStructurePrefab)
+                _arena.BuildCourseStructure(definition.CourseStructurePrefab, _gateCourse.Source,
+                                            _gateCourse.CellLocalCourse, _intensity);
         }
 
         void StrikeGateCourse()

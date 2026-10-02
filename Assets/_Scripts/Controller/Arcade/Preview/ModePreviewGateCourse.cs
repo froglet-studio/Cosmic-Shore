@@ -65,6 +65,27 @@ namespace CosmicShore.Gameplay
         public int RingCount => _rings.Count;
 
         readonly List<RaceGate> _course = new();
+        readonly List<RaceGate> _localCourse = new();
+        Pose _startPose;
+        bool _hasStartPose;
+
+        /// <summary>The source this course was built from, while raised.</summary>
+        public RaceCourseSource Source => _source;
+
+        /// <summary>The course in the CELL's frame (no arena offset) - what a structure hung on the
+        /// course is posed with.</summary>
+        public IReadOnlyList<RaceGate> CellLocalCourse => _localCourse;
+
+        /// <summary>
+        /// Where a pilot starts this race, in world space: <see cref="RaceCourseSource.StartLineStandoff"/>
+        /// behind the source's start line, pointed through it. False when the course is down or
+        /// the source has no line.
+        /// </summary>
+        public bool TryGetStartPose(out Pose pose)
+        {
+            pose = _startPose;
+            return _hasStartPose && IsRaised;
+        }
         readonly List<RaceGateRing> _rings = new();
         RaceCourseSource _source;
         int _intensity;
@@ -107,6 +128,17 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"[ModePreview] {mode}: no gate course in the preview - {failure}");
                 _source = null;
                 return false;
+            }
+
+            _localCourse.AddRange(course);
+            _hasStartPose = false;
+            if (_source.TryStartLine(request, course, out var lineTarget, out var lineAxis))
+            {
+                Vector3 axisN = lineAxis.normalized;
+                Vector3 up = Mathf.Abs(Vector3.Dot(axisN, Vector3.up)) > 0.98f ? Vector3.forward : Vector3.up;
+                _startPose = new Pose(origin + lineTarget - axisN * _source.StartLineStandoff,
+                                      Quaternion.LookRotation(axisN, up));
+                _hasStartPose = true;
             }
 
             _root = new GameObject($"ModePreviewGateCourse ({mode})").transform;
@@ -159,6 +191,8 @@ namespace CosmicShore.Gameplay
 
             _rings.Clear();
             _course.Clear();
+            _localCourse.Clear();
+            _hasStartPose = false;
             _pilot = null;
             _hasLastPosition = false;
             _litRing = -1;

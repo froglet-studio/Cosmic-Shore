@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// of stations. The stations themselves - the dishes and the danger weave - are hung on the
     /// course by <c>BreakwaterController.OnCourseRaised</c>; this is the rings only.
     /// </summary>
-    public sealed class BreakwaterCourseSource : RaceCourseSource
+    public sealed partial class BreakwaterCourseSource : RaceCourseSource
     {
         /// <summary>Laps of the circuit when the end-condition overrides asset is missing.</summary>
         public int LapsFallback = BreakwaterCourseSettings.DefaultLaps;

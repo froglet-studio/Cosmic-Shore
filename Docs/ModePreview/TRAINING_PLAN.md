@@ -31,12 +31,9 @@ separate thread; this plan only assumes it names one `GameModes` value, whose ca
   input-focus handoff (`ModePreviewWindow.AnyHasFocus`, with its four gates), and
   `ModePreviewRunner`, a plain MonoBehaviour that counts one `ScoringMetric` against a baseline.
   Training is a layer on top of that and rebuilds none of it.
-- **The racing microgames have no race in them yet.** Switchback, Headlong, Redline and Breakwater
-  preview **shell only**: their rings are built by `GateRaceController` at match start, and the
-  preview has no controller. Skein and Regatta show their rails but no rings. Skim Race is the only
-  race whose track is in the window. The Lesson can teach flight without rings, but the Mentor's
-  racing tips ("take the gate on the inside", "boost the straight") need them. **§7 is a
-  prerequisite for phase 2.**
+- **The racing microgames had no race in them** (true when this plan was written). Switchback,
+  Headlong, Redline and Breakwater previewed shell only, and Skein and Regatta showed their rails
+  but no rings. §7 put the race in the window, and phase 2 (§10.3) closed its last gaps.
 
 ---
 
@@ -338,9 +335,8 @@ config.
      a course knob that differs from the source default - which is what would make the preview's
      course silently stop being the match's. Measured today: every scene authors the defaults
      (Breakwater's inner fallback is 420, and its source says so).
-   Stated gap: Breakwater's STATIONS (the dishes, `OnCourseRaised`) are not part of the source,
-   so its preview would show rings without dishes until the station prefab is reachable from the
-   preview definition.
+   **Breakwater's stations LANDED in phase 2 (§10.3).** `RaceCourseSource.PoseCourseStructure` is
+   the seam, and `ModePreviewDefinitionSO.CourseStructurePrefab` makes the station prefab reachable.
 2. **`ModePreviewGateCourse`** stands `RaceGateRing`s in the preview arena from a local seed, tests
    crossings with the existing pure `RaceGateRing.CrossedMouth(prev, cur)`, and raises
    `GateThreaded` / `LapCompleted` for the Mentor's Moment conditions and the practice-lap time.
@@ -360,9 +356,10 @@ config.
    **Half landed.** The seven gate-race definitions already author `ObjectiveMetric` 9
    (`SwitchesThreaded`), so with the local count feeding the runner the objective box now counts
    gates with no asset edit. `ObjectiveTarget` stays 0 on purpose: the box never shows a target,
-   and a looping race has no finish to stop counting at. The Notes text is generator-owned and
-   still reads OPEN-ENDED; retiring it is an edit to `author_mode_previews.py` /
-   `author_regatta_assets.py`, not to the assets.
+   and a looping race has no finish to stop counting at. The Notes now describe both phases
+   (phase 2, §10.3), re-authored by `author_mode_previews.py` and `author_waystation_assets.py`.
+   Regatta's Note was already accurate (the rings are not in the scale model; the rails are), so
+   its generator was left alone.
 
 ---
 
@@ -447,7 +444,7 @@ schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 | 1 | `DrillRunner`, `DrillComposer`, `DrillCoachView`, `DrillProgressStore`; the Lesson with derived beats; the two account keys + 3 s skip; Play gating | every hull has a Lesson |
 | 1b **(landed)** | `DrillRunner`, `DrillCoachView`, the window's release hold and the card's Play gate (§10.2) | a forced Lesson in the window, then the Mentor |
 | 1a **(landed)** | The data layer (§10.1): beats, conditions, tokens, composer, hull facts, progress store + `DRILL_PROGRESS` cloud key, the library and both Lesson templates | the Lesson composes for any hull, offline |
-| 2 | §7 gate course in previews (Switchback + Redline first) | the race is in the window |
+| 2 **(landed)** | §7 gate course in previews; start lines, Breakwater's stations, Notes (§10.3) | the race is in the window |
 | 3 | The Mentor: TipListSOs for the gate-race family, pacing, Moment conditions, resume | the curated tutor |
 | 4 | Quest Graph P0 railroad; the Game of the Week source | first login → Lesson, end to end |
 | 5 | Remaining races; tip lists for non-racing families; relevance-gated leaderboards (§6); practice-lap result | coverage |
@@ -503,6 +500,22 @@ it (hold, skip gate, unsubscribe, seen-marking, party guest).
   then if it was finished). The Mentor's "resume where it left off" is phase 3.
 - **Not reached by a first login.** Forcing the player INTO the window is the Quest Graph railroad
   (phase 4); today the Lesson starts when a player taps into any preview.
+
+### 10.3 Phase 2 - the race in the window
+
+§7's course landed earlier (2026-09-29). Phase 2 closed the three gaps it had stated.
+
+| Gap | Fix |
+|---|---|
+| The pilot spawned on the cell ring, not the race's start line | `RaceCourseSource.TryStartLine` names the point the race starts from. By default it is gate 0; Skein uses `SkeinCourse.StartPose`. `StartLineStandoff` backs the pilot off it (220 by default, Regatta 260), and the two controllers that read a standoff now initialise from those constants. `ModePreviewGateCourse.TryGetStartPose` turns it into a pose. `ModePreviewSession.EnterFlightAsync` now raises the course BEFORE parking the vessel, so the hull lands on the line, facing gate 0's axis. Modes without a course still park at `ModePreviewArena.SpawnPose` |
+| Breakwater's stations (the dishes) were not stood | `RaceCourseSource.PoseCourseStructure(structure, course, cellCentre)` is the seam the controller's `OnCourseRaised` and the preview now share. Breakwater's override lives in `BreakwaterCourseSource.Structure.cs`, a partial kept apart so the course harness need not compile `SpawnableBreakwater`. `ModePreviewDefinitionSO.CourseStructurePrefab` names the prefab. `author_mode_previews.py` reads it off the scene controller's `arenaPrefab`, so the preview and the match cannot point at different stations. `ModePreviewArena.BuildCourseStructure` spawns it under the arena root. Teardown follows the track structure's path: the strike retires it with the world, and an intensity nudge strikes it with the rings |
+| Notes still said OPEN-ENDED / no rings | Re-authored for Switchback, Headlong, Breakwater, Skein, Redline and Waystation to describe both phases |
+
+Proof: `Tools/Build/race_course_source_harness` (1600 course pairs, 0 failures; it gained a
+`Component` stub for the new seam), the drill harness (80), the eight standing gates, and a Roslyn
+syntax pass over every changed file. Both generators' `--check` pass. **Nothing has been compiled
+in the Unity editor.** Stated: a structure prefab carrying a `NetworkObject` is refused rather
+than spawned; `SpawnableBreakwater` carries none.
 
 ---
 

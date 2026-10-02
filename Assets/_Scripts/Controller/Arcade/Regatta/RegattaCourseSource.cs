@@ -14,6 +14,12 @@ namespace CosmicShore.Gameplay
     {
         public override GameModes Mode => GameModes.Regatta;
 
+        /// <summary>The scene's start-line standoff (Regatta lines up further back than the
+        /// platform default, 260 against 220).</summary>
+        public const float SceneStartLineStandoff = 260f;
+
+        public RegattaCourseSource() => StartLineStandoff = SceneStartLineStandoff;
+
         /// <summary>Laps = authored gate threadings / the arena's rings per lap. ONE authority.</summary>
         public override int LapsPerRace(int intensity) =>
             Mathf.Max(1, AuthoredGateTarget(intensity) / RegattaCourse.RingsPerLap);

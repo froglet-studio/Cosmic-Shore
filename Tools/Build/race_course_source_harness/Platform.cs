@@ -6,7 +6,8 @@ namespace UnityEngine
 {
     public class Object { public string name = ""; }
     public class ScriptableObject : Object { }
-    public class MonoBehaviour : Object { }
+    public class Component : Object { }
+    public class MonoBehaviour : Component { }
     public class MinAttribute : Attribute { public MinAttribute(float v) { } }
     public class HeaderAttribute : Attribute { public HeaderAttribute(string s) { } }
     public class RangeAttribute : Attribute { public RangeAttribute(float a, float b) { } }

@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: ModePreview_Headlong
   m_EditorClassIdentifier:
   Mode: 49
-  Notes: 'OPEN-ENDED, shell-only: the circuit is solved by the controller from the Rhino''s own
-    turn curve and laid as rings at match start, so a preview has no gates. It teaches the
-    Barren cell and the ramp boost. One cell serves every intensity (intensity is the corner
-    mix).'
+  Notes: 'The FLIGHT phase stands the circuit the controller would solve from the Rhino''s own
+    turn curve (same RaceCourseSource, card-art seed), laps it as the match does, and starts
+    the pilot behind gate 1. One cell serves every intensity (intensity is the corner mix).'
   PreviewCell: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6, type: 2}
   PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
+  CourseStructurePrefab: {fileID: 0}
   PreviewFauna: {fileID: 0}
   PreviewFaunaCount: 4
   Vessel: 3
