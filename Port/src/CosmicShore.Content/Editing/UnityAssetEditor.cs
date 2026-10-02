@@ -32,6 +32,16 @@ namespace CosmicShore.Content.Editing
         public readonly UnityYamlFile File;
         readonly Random _ids;
 
+        /// <summary>
+        /// Set by <see cref="PrefabInstanceEditor"/>: answers for objects that live inside a nested
+        /// prefab instance (their components, adding to them, creating under them). Without it,
+        /// an edit that reaches into an instance is refused.
+        /// </summary>
+        public PrefabInstanceEditor Instances { get; internal set; }
+
+        /// <summary>Every write goes through here, so a cached view of the file (the instance graph) is dropped.</summary>
+        void Changed() => Instances?.Invalidate();
+
         public UnityAssetEditor(UnityYamlFile file, int? seed = null)
         {
             File = file;
@@ -60,7 +70,7 @@ namespace CosmicShore.Content.Editing
 
         public void Set(long fileId, string path, YNode value)
         {
-            var doc = Require(fileId);
+            var doc = RequireOwned(fileId);
             Resolve(doc.Body, path, create: true, out var parent, out var last);
             switch (parent)
             {
@@ -68,17 +78,23 @@ namespace CosmicShore.Content.Editing
                 case YSeq q when int.TryParse(last, out int i) && i >= 0 && i < q.List.Count: q.List[i] = value; break;
                 default: throw new ArgumentException($"cannot set '{path}' on &{fileId}");
             }
+            Changed();
         }
 
         /// <summary>Removes a map key (or sequence item). Returns false when it was not there.</summary>
         public bool Remove(long fileId, string path)
         {
-            var doc = Require(fileId);
+            var doc = RequireOwned(fileId);
             if (Resolve(doc.Body, path, create: false, out var parent, out var last) == null) return false;
-            if (parent is YMap m) return m.Remove(last);
-            if (parent is YSeq q && int.TryParse(last, out int i)) { q.List.RemoveAt(i); return true; }
-            return false;
+            bool removed = false;
+            if (parent is YMap m) removed = m.Remove(last);
+            else if (parent is YSeq q && int.TryParse(last, out int i)) { q.List.RemoveAt(i); removed = true; }
+            if (removed) Changed();
+            return removed;
         }
+
+        /// <summary>Reads a field of any body by the same paths <see cref="Get"/> takes.</summary>
+        public static YNode Lookup(YMap body, string path) => Resolve(body, path, create: false, out _, out _);
 
         static YNode Resolve(YMap body, string path, bool create, out YNode parent, out string last)
         {
@@ -185,17 +201,30 @@ namespace CosmicShore.Content.Editing
 
         /// <summary>
         /// Adds an empty GameObject with a Transform, under <paramref name="parentGameObject"/>
-        /// (0 = a scene root). Returns the new GameObject's fileID.
+        /// (0 = a scene root). Returns the new GameObject's fileID. Like the Editor's "Create
+        /// Empty Child", a child of a RectTransform gets a RectTransform and takes its parent's
+        /// layer. A parent inside a nested prefab is recorded as an added object of that instance.
         /// </summary>
         public long CreateGameObject(string name, long parentGameObject = 0)
         {
-            long parentTransform = 0;
-            if (parentGameObject != 0)
-            {
-                parentTransform = TransformOf(Require(parentGameObject));
-                if (parentTransform == 0) throw new ArgumentException($"&{parentGameObject} has no Transform");
-            }
-            long goId = NewId(), tId = NewId();
+            if (parentGameObject == 0) return CreateUnderTransform(name, 0, rect: false, layer: "0", out _);
+            var parent = Require(parentGameObject);
+            if (parent.Stripped)
+                return (Instances ?? throw InsideInstance(parentGameObject)).CreateGameObject(name, Instances.Object(parentGameObject));
+            long parentTransform = TransformOf(parent);
+            if (parentTransform == 0) throw new ArgumentException($"&{parentGameObject} has no Transform");
+            bool rect = File.Find(parentTransform)?.ClassId == RectTransformClass;
+            return CreateUnderTransform(name, parentTransform, rect, parent.Body.Str("m_Layer") ?? "0", out _);
+        }
+
+        /// <summary>
+        /// The new GameObject + Transform documents, parented to <paramref name="parentTransform"/>
+        /// (a stand-in for a transform inside a nested prefab is allowed: it has no child list, the
+        /// instance records the addition instead).
+        /// </summary>
+        internal long CreateUnderTransform(string name, long parentTransform, bool rect, string layer, out long transformId)
+        {
+            long goId = NewFileId(), tId = NewFileId();
 
             var go = new YMap();
             go.Add("m_ObjectHideFlags", S("0"));
@@ -206,7 +235,7 @@ namespace CosmicShore.Content.Editing
             var comps = new YSeq();
             var entry = new YMap(); entry.Add("component", YMap.Ref(tId)); comps.List.Add(entry);
             go.Add("m_Component", comps);
-            go.Add("m_Layer", S("0"));
+            go.Add("m_Layer", S(string.IsNullOrEmpty(layer) ? "0" : layer));
             go.Add("m_Name", S(name));
             go.Add("m_TagString", S("Untagged"));
             go.Add("m_Icon", YMap.Ref(0));
@@ -230,10 +259,18 @@ namespace CosmicShore.Content.Editing
             t.Add("m_LocalEulerAnglesHint", Flow(("x", "0"), ("y", "0"), ("z", "0")));
 
             Insert(new UnityDocument { ClassId = GameObjectClass, FileId = goId, TypeName = "GameObject", Body = go });
-            Insert(new UnityDocument { ClassId = TransformClass, FileId = tId, TypeName = "Transform", Body = t });
+            var td = new UnityDocument { ClassId = TransformClass, FileId = tId, TypeName = "Transform", Body = t };
+            Insert(td);
+            if (rect) MakeRectTransform(td);
 
-            if (parentTransform != 0) Children(File.Find(parentTransform)).List.Add(YMap.Ref(tId));
+            if (parentTransform != 0)
+            {
+                var pd = Require(parentTransform);
+                if (!pd.Stripped) Children(pd).List.Add(YMap.Ref(tId));
+            }
             else SceneRoots()?.List.Add(YMap.Ref(tId));
+            transformId = tId;
+            Changed();
             return goId;
         }
 
@@ -249,9 +286,11 @@ namespace CosmicShore.Content.Editing
             if (sorted)
                 while (at > 0 && docs[at - 1].FileId > doc.FileId) at--;
             docs.Insert(at, doc);
+            Changed();
         }
 
-        long NewId()
+        /// <summary>A fresh local fileID no document of this file uses.</summary>
+        public long NewFileId()
         {
             // Unity has written random 64-bit local IDs since 2018.3, which is what keeps two
             // people's additions to one file from colliding when their edits merge.
@@ -267,6 +306,7 @@ namespace CosmicShore.Content.Editing
         public List<UnityDocument> Components(long goId)
         {
             var go = Require(goId);
+            if (go.Stripped) return (Instances ?? throw InsideInstance(goId)).ComponentDocuments(goId);
             var list = new List<UnityDocument>();
             if (go.Body["m_Component"] is YSeq comps)
                 foreach (var c in comps.Items)
@@ -281,13 +321,22 @@ namespace CosmicShore.Content.Editing
         public long AddComponentDocument(long goId, int classId, string typeName, YMap body)
         {
             var go = Require(goId);
-            if (go.ClassId != GameObjectClass || go.Stripped) throw new ArgumentException($"&{goId} is not a GameObject this file defines");
-            long id = NewId();
+            if (go.ClassId != GameObjectClass) throw new ArgumentException($"&{goId} is not a GameObject");
+            if (go.Stripped && Instances == null) throw InsideInstance(goId);
+            long id = NewFileId();
             body.Set("m_GameObject", YMap.Ref(goId));
             Insert(new UnityDocument { ClassId = classId, FileId = id, TypeName = typeName, Body = body });
+            if (go.Stripped)
+            {
+                // A GameObject inside a nested prefab: the stand-in has no component list; the
+                // instance records the component as one added to it.
+                Instances.RecordAdded(goId, id, "m_AddedComponents");
+                return id;
+            }
             if (go.Body["m_Component"] is not YSeq comps) { comps = new YSeq(); go.Body.Set("m_Component", comps); }
             var entry = new YMap(); entry.Add("component", YMap.Ref(id));
             comps.List.Add(entry);
+            Changed();
             return id;
         }
 
@@ -297,18 +346,10 @@ namespace CosmicShore.Content.Editing
         /// </summary>
         public DeleteResult RemoveComponent(long componentId)
         {
-            var doc = Require(componentId);
+            var doc = RequireOwned(componentId);
             if (doc.ClassId is TransformClass or RectTransformClass) throw new ArgumentException("a Transform cannot be removed; delete the GameObject instead");
-            long goId = Ref(doc.Body["m_GameObject"]);
-            if (goId != 0 && File.Find(goId)?.Body["m_Component"] is YSeq comps)
-                comps.List.RemoveAll(c => Ref(c["component"]) == componentId);
-            var doomed = new HashSet<long> { componentId };
-            var result = new DeleteResult();
-            File.Documents.Remove(doc);
-            result.Removed.Add(componentId);
-            foreach (var d in File.Documents)
-                ClearRefs(d.Body, doomed, $"&{d.FileId} {d.TypeName}", result.ClearedReferences);
-            return result;
+            if (doc.ClassId is GameObjectClass or PrefabInstanceClass) throw new ArgumentException($"&{componentId} is not a component");
+            return DeleteDocuments(new HashSet<long> { componentId });
         }
 
         /// <summary>
@@ -317,10 +358,19 @@ namespace CosmicShore.Content.Editing
         /// </summary>
         public bool EnsureRectTransform(long goId)
         {
-            long t = TransformOf(Require(goId));
+            var go = Require(goId);
+            if (go.Stripped) return (Instances ?? throw InsideInstance(goId)).EnsureRectTransform(goId);
+            long t = TransformOf(go);
             if (t == 0 || File.Find(t) is not { } td) throw new ArgumentException($"&{goId} has no Transform");
             if (td.ClassId == RectTransformClass) return false;
-            if (td.Stripped) throw new ArgumentException($"&{goId} is inside a nested prefab; edit the prefab itself");
+            if (td.Stripped) throw new ArgumentException($"&{goId}'s Transform is inside a nested prefab; make it a RectTransform in that prefab");
+            MakeRectTransform(td);
+            Changed();
+            return true;
+        }
+
+        void MakeRectTransform(UnityDocument td)
+        {
             td.ClassId = RectTransformClass;
             td.TypeName = "RectTransform";
             td.Body.Remove("serializedVersion"); // a Transform's; a RectTransform writes none
@@ -330,7 +380,6 @@ namespace CosmicShore.Content.Editing
             Add("m_AnchoredPosition", "{x: 0, y: 0}");
             Add("m_SizeDelta", "{x: 100, y: 100}");
             Add("m_Pivot", "{x: 0.5, y: 0.5}");
-            return true;
         }
 
         // ── Delete ────────────────────────────────────────────────────
@@ -352,17 +401,56 @@ namespace CosmicShore.Content.Editing
         {
             var go = Require(goId);
             if (go.ClassId != GameObjectClass) throw new ArgumentException($"&{goId} is not a GameObject");
+            if (go.Stripped) return (Instances ?? throw InsideInstance(goId)).Delete(Instances.Object(goId));
             var doomed = new HashSet<long>();
             long t = TransformOf(go);
             if (t != 0) CollectTransform(t, doomed);
             else CollectGameObject(go, doomed);
+            return DeleteDocuments(doomed);
+        }
 
-            // Unlink from the parent / scene roots before the documents go.
-            if (t != 0 && File.Find(t) is { } td)
+        /// <summary>
+        /// Removes a set of documents and every link to them: list entries (a transform's
+        /// <c>m_Children</c>, a GameObject's <c>m_Component</c>, the scene's roots, a prefab
+        /// instance's added-object records) are dropped; any other field naming one is cleared to
+        /// <c>{fileID: 0}</c> and reported.
+        /// </summary>
+        public DeleteResult DeleteDocuments(HashSet<long> doomed)
+        {
+            // A stand-in exists only to be referred to: one whose last referrer is going goes too
+            // (e.g. a placed prefab's parent stand-in). Stand-ins that were already unreferenced
+            // are left alone — this delete did not orphan them.
+            var orphaned = new HashSet<long>();
+            foreach (var d in File.Documents)
+                if (doomed.Contains(d.FileId)) CollectLocalRefs(d.Body, orphaned);
+            if (orphaned.Count > 0)
             {
-                long father = Ref(td.Body["m_Father"]);
-                if (father != 0 && File.Find(father) is { } fd) RemoveRefs(Children(fd), doomed);
-                if (SceneRoots() is { } roots) RemoveRefs(roots, doomed);
+                var stillReferenced = new HashSet<long>();
+                foreach (var d in File.Documents)
+                    if (!doomed.Contains(d.FileId)) CollectLocalRefs(d.Body, stillReferenced);
+                foreach (var d in File.Documents)
+                    if (d.Stripped && orphaned.Contains(d.FileId) && !stillReferenced.Contains(d.FileId)) doomed.Add(d.FileId);
+            }
+
+            foreach (var d in File.Documents)
+            {
+                if (doomed.Contains(d.FileId) || d.Stripped) continue;
+                switch (d.ClassId)
+                {
+                    case TransformClass or RectTransformClass when d.Body["m_Children"] is YSeq kids:
+                        RemoveRefs(kids, doomed);
+                        break;
+                    case GameObjectClass when d.Body["m_Component"] is YSeq comps:
+                        comps.List.RemoveAll(c => doomed.Contains(Ref(c["component"])));
+                        break;
+                    case SceneRootsClass when d.Body["m_Roots"] is YSeq roots:
+                        RemoveRefs(roots, doomed);
+                        break;
+                    case PrefabInstanceClass when d.Body["m_Modification"] is YMap mod:
+                        foreach (var key in new[] { "m_AddedGameObjects", "m_AddedComponents" })
+                            if (mod[key] is YSeq added) added.List.RemoveAll(a => doomed.Contains(Ref(a["addedObject"])));
+                        break;
+                }
             }
 
             var result = new DeleteResult();
@@ -374,10 +462,11 @@ namespace CosmicShore.Content.Editing
             });
             foreach (var d in File.Documents)
                 ClearRefs(d.Body, doomed, $"&{d.FileId} {d.TypeName}", result.ClearedReferences);
+            Changed();
             return result;
         }
 
-        void CollectTransform(long transformId, HashSet<long> doomed)
+        internal void CollectTransform(long transformId, HashSet<long> doomed)
         {
             if (!doomed.Add(transformId) || File.Find(transformId) is not { } td) return;
             if (td.Stripped)
@@ -408,11 +497,16 @@ namespace CosmicShore.Content.Editing
                 }
         }
 
-        void CollectPrefabInstance(long piId, HashSet<long> doomed)
+        /// <summary>A prefab instance, its stand-ins, and everything added to it or nested under it.</summary>
+        internal void CollectPrefabInstance(long piId, HashSet<long> doomed)
         {
             if (!doomed.Add(piId)) return;
-            var standIns = File.Documents.Where(d => d.Stripped && Ref(d.Body["m_PrefabInstance"]) == piId).Select(d => d.FileId).ToList();
+            var standIns = File.Documents.Where(d => d.Stripped && Ref(d.Body["m_PrefabInstance"]) == piId).Select(d => d.FileId).ToHashSet();
             foreach (var id in standIns) doomed.Add(id);
+            // Prefab instances placed under one of its objects.
+            foreach (var d in File.Documents)
+                if (d.ClassId == PrefabInstanceClass && standIns.Contains(Ref(d.Body["m_Modification"]?["m_TransformParent"])))
+                    CollectPrefabInstance(d.FileId, doomed);
             // Objects added to the instance from outside it hang off its stripped transforms.
             foreach (var d in File.Documents)
             {
@@ -457,6 +551,22 @@ namespace CosmicShore.Content.Editing
             }
         }
 
+        static void CollectLocalRefs(YNode node, HashSet<long> into)
+        {
+            switch (node)
+            {
+                case YMap m when m.Flow && m.Has("fileID") && Guid(m) == null:
+                    if (m.Long("fileID") is var id and not 0) into.Add(id);
+                    break;
+                case YMap m:
+                    foreach (var e in m.Entries) CollectLocalRefs(e.Value, into);
+                    break;
+                case YSeq q:
+                    foreach (var x in q.List) CollectLocalRefs(x, into);
+                    break;
+            }
+        }
+
         static bool IsLocalRef(YNode n, HashSet<long> doomed)
             => n is YMap m && m.Flow && m.Has("fileID") && Guid(m) == null && doomed.Contains(m.Long("fileID"));
 
@@ -464,6 +574,15 @@ namespace CosmicShore.Content.Editing
 
         UnityDocument Require(long fileId)
             => File.Find(fileId) ?? throw new ArgumentException($"no document &{fileId}");
+
+        UnityDocument RequireOwned(long fileId)
+        {
+            var d = Require(fileId);
+            return d.Stripped ? throw InsideInstance(fileId) : d;
+        }
+
+        static ArgumentException InsideInstance(long id)
+            => new($"&{id} is an object inside a nested prefab instance; edit it through the instance (an override) or in its prefab");
 
         YSeq SceneRoots()
             => File.Documents.FirstOrDefault(d => d.ClassId == SceneRootsClass)?.Body["m_Roots"] as YSeq;

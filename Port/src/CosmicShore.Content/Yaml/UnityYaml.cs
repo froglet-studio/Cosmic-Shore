@@ -161,6 +161,13 @@ namespace CosmicShore.Content.Yaml
             if (_index != null) _index[key] = value;
         }
 
+        /// <summary>Inserts a key at <paramref name="index"/> (Unity's files fix the order of a map's keys).</summary>
+        public void Insert(int index, string key, YNode value)
+        {
+            Entries.Insert(index, new KeyValuePair<string, YNode>(key, value));
+            if (_index != null) _index[key] = value;
+        }
+
         public bool Remove(string key)
         {
             for (int i = 0; i < Entries.Count; i++)

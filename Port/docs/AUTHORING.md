@@ -1,10 +1,13 @@
 # Authoring: editing Unity content without the Unity Editor
 
-**Status (2026-10-01):** the port can WRITE the project's scenes, prefabs and assets, not only
+**Status (2026-10-02):** the port can WRITE the project's scenes, prefabs and assets, not only
 read them. The command-line tool (`cs-asset`) creates, edits and deletes GameObjects, and adds
 and removes components: project scripts, Unity built-ins (colliders, renderers, Rigidbody …)
-and package components (uGUI, TextMeshPro …). There is no visual editor yet (no hierarchy
-panel, inspector or gizmos); see "Not built yet" below.
+and package components (uGUI, TextMeshPro …). It also edits **through nested prefab
+instances** — overriding fields, removing and adding objects and components inside a placed
+prefab, and placing new prefabs — written as the instance's overrides, the way the Unity Editor
+writes them. There is no visual editor yet (no hierarchy panel, inspector or gizmos); see "Not
+built yet" below.
 
 Before this, the port was a runtime only. It read `Assets/` and played the game, but the one
 thing it could write was trained AI exported as ScriptableObjects (`UnityYamlWriter`). Every
@@ -187,6 +190,87 @@ For anything without a template, `add --like &fileID` copies an existing compone
   answers lookups from an index, which a direct list write doesn't update. `YMap.SetAt` is the
   safe write; the editing code uses it.
 
+## Prefab instances
+
+An object inside a placed prefab has no document of its own in the scene or prefab that
+places it. The file holds a `PrefabInstance` naming the prefab, plus that instance's changes in
+its `m_Modification` block. `Content/Editing/PrefabInstanceEditor.cs` edits those objects the
+way the Unity Editor does: every change goes into `m_Modification`, and every read comes from
+`PrefabGraph`, the same expansion the game loads, so what an edit writes is checked against
+what the file then loads as.
+
+In `cs-asset`, paths and names reach inside instances (`GameCanvas/ConnectingPanel` is an
+object of `GameCanvas.prefab`), and every command routes there on its own:
+
+| edit | written as |
+|---|---|
+| change a field | one `m_Modifications` entry per leaf (`m_LocalScale.x`, `.y`, `.z`); a list as `.Array.size` then `.Array.data[i]`; a reference in `objectReference` with an empty `value` |
+| remove a component / GameObject | a source reference in `m_RemovedComponents` / `m_RemovedGameObjects`; the object's overrides and stand-ins go with it |
+| add a component / child GameObject | an ordinary document of this file hung off a "stripped" stand-in for the instance object, listed in `m_AddedComponents` / `m_AddedGameObjects` (`insertIndex: -1`) |
+| place a prefab (`instantiate`) | a new `PrefabInstance` with the overrides Unity writes on placement: the root's `m_Name`, then its transform (10 paths for a Transform root, 20 for a RectTransform) |
+| delete an instance's root | the whole instance: its document, its stand-ins, and anything added to it or placed under it |
+| `revert` | drops an object's overrides, all of them or one field's |
+
+A reference to an object inside an instance — from an override or from any field of the file —
+goes through that object's stand-in, which is created when missing, with the id Unity derives
+for it (`(instance ^ source) & 0x7FFF_FFFF_FFFF_FFFF`) when that id is free.
+
+**Ordering and shapes, measured over the project's Unity-written files:**
+
+| rule | measured |
+|---|---|
+| overrides grouped by target, groups in ascending (signed) target fileID; within a target, the order the changes were made | 488 / 518 instances (Unity left the other 30 unsorted; existing entries are never moved) |
+| a list's `Array.size` precedes its elements | 85 / 85 |
+| an override's `target` carries the instance's source-prefab guid | 17,113 / 17,114 |
+| a reference override has an empty `value` | 873 / 873 |
+| a prefab placed under an object of another instance is listed in that instance's `m_AddedGameObjects`, naming the new instance's stripped root Transform | 23 / 23 |
+| an added object is a Transform/RectTransform (stripped when it is a placed prefab's root) | 71 / 71 |
+| a script's stand-in keeps `m_GameObject: {fileID: 0}`, `m_Enabled`, `m_EditorHideFlags`, `m_Script`, `m_Name`, `m_EditorClassIdentifier` | 435 / 435 |
+
+**What an instance cannot do is refused**, as Unity refuses it:
+
+- Overriding a field that links the prefab's objects together (`m_GameObject`, `m_Father`,
+  `m_Children`, `m_Component`, `m_Script`, the prefab bookkeeping). Place or delete objects
+  instead.
+- Overriding a field the prefab doesn't have. `--force` writes it anyway: Unity keeps such an
+  override and ignores it.
+- Adding a UI component to an instance object whose prefab gives it a plain Transform. Only the
+  prefab can make it a RectTransform.
+- Placing a prefab inside itself, directly or through nesting; placing at a prefab file's root
+  (a prefab has exactly one root).
+
+A delete also removes any stand-in whose last reference it removed (the parent stand-in a placed
+prefab needed, say), and leaves stand-ins that were already unreferenced alone.
+
+### How it's verified
+
+- **Replay.** Every override list in every Unity-written file is stripped and re-made through
+  the API, its targets in shuffled order: **122 / 131 files byte-identical**. The other 9 are
+  exactly the files in which Unity itself left a list unsorted
+  (`PrefabInstanceEditingTests.UnityWrittenOverrideListsReplayByteForByte`).
+- **The loader agrees with every edit.** Three random trials on each of the 131 files (all but
+  the few over 3 MB), each re-reading the result through `PrefabGraph`: scalar overrides
+  389 / 389, structure overrides 390 / 390, references through stand-ins 111 / 111, removed
+  components 360 / 360, added children 390 / 390, removed objects 300 / 300, deleted instances
+  390 / 390. After every trial the file reads back as written and holds no dangling local
+  reference (390 / 390).
+- **Full restore.** Placing two prefabs in a scene (one under an object inside `GameCanvas`),
+  adding a child and a component inside an instance, then removing all four gives back the
+  original scene byte for byte.
+- `PrefabInstanceEditingTests` pins each operation on a miniature project (one prefab, one
+  scene) written to a temp folder.
+
+### A loader bug this found
+
+`Dolphin.prefab` gives its jet instances sequential ids (`3901220100012000001`, `…002`, …).
+Unity derives an instance object's id as `instance ^ source`, and with ids this close two
+objects of different jets derive the same number: jet 1's GameObject (`…001 ^ …806`) and the
+file's own stand-in for jet 2's Transform (`…002 ^ …805`). `PrefabGraph` registered the
+stand-in over the real object, so the loader linked components of two jets to the wrong
+GameObject. An id the file gives a stand-in now belongs to the object that stand-in names, and
+the colliding derived object is renamed. Across all 85,226 component links in the 149 files
+that place prefabs: **4 wrong before, 0 after.** Two tests pin it; both fail without the fix.
+
 ## The tool
 
 ```bash
@@ -207,6 +291,18 @@ $T add    <file> Label TextMeshProUGUI                # package: adds CanvasRend
 $T add    <file> Box CosmicShore.Utility.NetcodeHooks # project script (short name works when unique)
 $T add    <file> Box --like &7131408450299668755      # copy an existing component
 $T remove-component <file> Box --component BoxCollider#2
+
+# Inside placed prefabs (written as that instance's overrides)
+$T overrides <file>                                   # what each placed prefab overrides, removes, adds
+$T set    <file> GameCanvas/ConnectingPanel m_IsActive 0
+$T set    <file> GameCanvas/ConnectingPanel connectingCamera "@GameCanvas/ConnectingPanel/Camera:Camera" \
+              --component ConnectingPanelController     # @object[:Type[#n]] is a reference to it
+$T revert <file> GameCanvas/ConnectingPanel m_IsActive
+$T add    <file> GameCanvas/ConnectingPanel BoxCollider  # an added component
+$T delete <file> "GameCanvas/ConnectingPanel/Safe Area/Level Preview"   # a removed object
+$T instantiate <file> Assets/_Prefabs/Spacevessels/Components/Jet/VesselJet.prefab \
+              --parent Holder --name Jet --position 0,1,0
+
 $T schema                                             # measure the script serializer against the project
 $T addall                                             # smoke-test adding every component
 ```
@@ -222,7 +318,9 @@ open, and saving from Unity afterwards would overwrite them.
   structural: Unity's own files round-trip exactly, and edits follow the same file invariants
   and formatting. A file whose edits Unity loads, re-saves and leaves unchanged would be the
   real proof. That is the first thing to do with an editor open:
-  `create` + `add` + `set` on a copy of a scene, open it, save it, diff it.
+  `create` + `add` + `set` on a copy of a scene, open it, save it, diff it. The same goes for
+  prefab instance edits: `instantiate`, an override, an added component and a removed object,
+  then open, save and diff.
 - `.meta` files are not covered (the single-document format). That doesn't matter yet,
   because no operation here creates a new asset file. Creating new assets will need it.
 
@@ -230,13 +328,13 @@ open, and saving from Unity afterwards would overwrite them.
 
 1. **`[SerializeReference]` fields.** These are skipped today. They need the `references:`
    block Unity writes (`rid`, `type: {class, ns, asm}`).
-2. **Prefab instance edits.** Changing a field on an object inside a nested prefab means
-   writing an `m_Modifications` override, not editing the stripped stand-in. `PrefabGraph`
-   already applies these overrides when reading, so the inverse lives next to it.
-3. **New asset files.** A new prefab, material or ScriptableObject needs a `.meta` with a
+2. **New asset files.** A new prefab, material or ScriptableObject needs a `.meta` with a
    fresh guid.
-4. **Live editing in the Player.** Select an object in the running game, change a field, save
+3. **Live editing in the Player.** Select an object in the running game, change a field, save
    back through `UnityAssetEditor`. This needs a fileID ↔ live-object map at scene load. The
    instantiator already knows both sides.
+4. **Apply / revert to the prefab.** Pushing an instance's overrides into the prefab asset
+   (Unity's "Apply"), and unpacking an instance into ordinary objects. Both are a write to a
+   second file, plus re-targeting the overrides that remain.
 5. **Editor UI.** Hierarchy, inspector (reflection over `[SerializeField]`), selection,
    transform gizmos, undo (snapshot `UnityYamlFile` documents, or invert operations).

@@ -22,11 +22,15 @@ namespace CosmicShore.AssetTool
     ///   cs-asset components &lt;file&gt; &lt;object&gt;
     ///   cs-asset add    &lt;file&gt; &lt;object&gt; &lt;Component&gt; [--like &amp;fileID]
     ///   cs-asset remove-component &lt;file&gt; &lt;object&gt; --component Type[#n]
+    ///   cs-asset instantiate &lt;file&gt; &lt;prefab&gt; [--parent &lt;object&gt;] [--name N] [--position x,y,z]
+    ///   cs-asset overrides &lt;file&gt; [&lt;object&gt;]
+    ///   cs-asset revert &lt;file&gt; &lt;object&gt; [field.path]
     ///   cs-asset schema [path…]                         measure the component serializer against the project
     ///
-    /// &lt;object&gt; is <c>&amp;fileID</c>, a GameObject hierarchy path (<c>Canvas/Panel/Button</c>) or a
-    /// unique GameObject name; add <c>--component Type</c> to address that GameObject's
-    /// component (Transform, MonoBehaviour, …; <c>Type#2</c> for the second one).
+    /// &lt;object&gt; is <c>&amp;id</c>, a GameObject hierarchy path (<c>Canvas/Panel/Button</c>) or a
+    /// unique GameObject name — reaching inside nested prefab instances, where every edit is
+    /// written as that instance's overrides; add <c>--component Type</c> to address that
+    /// GameObject's component (Transform, MonoBehaviour, …; <c>Type#2</c> for the second one).
     ///
     /// Writes change the file in place (<c>--dry-run</c> prints the diff and writes nothing) and
     /// touch only the lines the edit changed. Before anything is written the output is parsed
@@ -42,7 +46,7 @@ namespace CosmicShore.AssetTool
             var pos = new List<string>();
             for (int i = 0; i < args.Length; i++)
             {
-                if (args[i] == "--dry-run") { opts["dry-run"] = "1"; continue; }
+                if (args[i] is "--dry-run" or "--force") { opts[args[i][2..]] = "1"; continue; }
                 if (args[i].StartsWith("--", StringComparison.Ordinal) && i + 1 < args.Length) { opts[args[i][2..]] = args[++i]; continue; }
                 pos.Add(args[i]);
             }
@@ -57,22 +61,20 @@ namespace CosmicShore.AssetTool
                     "list" => List(Need(pos, 2)),
                     "docs" => Docs(Need(pos, 2)),
                     "get" => Get(Need(pos, 3), opts),
-                    "set" => Edit(Need(pos, 5), opts, (ed, id) => ed.Set(id, pos[3], pos[4])),
-                    "remove" => Edit(Need(pos, 4), opts, (ed, id) =>
+                    "set" => Edit(Need(pos, 5), opts, (s, o) => Set(s, o, pos[3], pos[4], opts)),
+                    "remove" => Edit(Need(pos, 4), opts, (s, o) =>
                     {
-                        if (!ed.Remove(id, pos[3])) throw new ArgumentException($"no field '{pos[3]}'");
+                        if (o.InInstance) throw new ArgumentException($"&{o.Id} is inside a prefab instance; use 'revert' to drop an override");
+                        if (!s.Ed.Remove(o.Id, pos[3])) throw new ArgumentException($"no field '{pos[3]}'");
                     }),
+                    "revert" => Revert(Need(pos, 3), opts),
                     "create" => Create(Need(pos, 3), opts),
                     "components" => Components(Need(pos, 3), opts),
                     "add" => AddComponent(Need(pos, 4), opts),
-                    "remove-component" => Edit(Need(pos, 3), opts, (ed, id) =>
-                    {
-                        if (!opts.ContainsKey("component") && !pos[2].StartsWith('&'))
-                            throw new ArgumentException("name the component: --component Type[#n], or &fileID");
-                        var r = ed.RemoveComponent(id);
-                        foreach (var c in r.ClearedReferences) Console.WriteLine($"  cleared reference {c}");
-                    }),
+                    "remove-component" => RemoveComponent(Need(pos, 3), opts),
                     "delete" => Delete(Need(pos, 3), opts),
+                    "instantiate" => Instantiate(Need(pos, 3), opts),
+                    "overrides" => Overrides(Need(pos, 2), opts),
                     _ => Fail($"unknown command '{pos[0]}'"),
                 };
             }
@@ -104,32 +106,52 @@ namespace CosmicShore.AssetTool
                                             (BoxCollider, Rigidbody ...) component; --like &fileID copies
                                             an existing component in the same file instead
   remove-component <file> <object> --component <Type>[#n]
+  instantiate <file> <prefab> [--parent <object>] [--name N] [--position x,y,z]
+                                            place a prefab (as the Editor does when one is dropped in)
+  overrides <file> [<object>]               what each placed prefab overrides, removes and adds
+  revert <file> <object> [field.path]       drop an object's overrides (all of them, or one field's)
   schema [path...]                          check the component serializer against every saved script
 
-<object>: &fileID | GameObject path (Canvas/Panel/Button) | unique GameObject name
+<object>: &id | GameObject path (Canvas/Panel/Button) | unique GameObject name
+          paths and names reach inside placed prefabs; there, set/add/create/delete/remove-component
+          are written as the instance's overrides, exactly as the Unity Editor writes them
           --component <Type>[#n] targets that GameObject's component instead
---dry-run prints the change and writes nothing.");
+<yaml value>: 5 | Hello | {x: 0, y: 1, z: 0} | [] | {fileID: 0} | @<object>[:<Type>[#n]] (a reference to it)
+--dry-run prints the change and writes nothing.  --force writes an override for a field the prefab lacks.");
+
+        // ── Session: one file, its editor, and its prefab instances ───────
+
+        sealed class Session
+        {
+            public readonly string Path;
+            public readonly UnityAssetEditor Ed;
+            public readonly PrefabInstanceEditor Pie;
+            public Session(string path)
+            {
+                Path = System.IO.Path.GetFullPath(path);
+                Ed = new UnityAssetEditor(UnityYamlFile.Load(Path));
+                Pie = new PrefabInstanceEditor(Ed, Scripts.Db, Path);
+            }
+            public UnityYamlFile File => Ed.File;
+        }
+
+        static string Short(string assetPath) => assetPath == null ? "(missing prefab)" : System.IO.Path.GetFileName(assetPath);
+
+        /// <summary>How a listing marks an object: a placed prefab's root, or an object inside one.</summary>
+        static string Where(Session s, SceneObject o)
+        {
+            if (!o.InInstance) return "";
+            string prefab = Short(s.Pie.SourcePrefabPath(o.Instance));
+            return s.Pie.InstanceRoot(o.Instance)?.Id == o.Id ? $"  [prefab {prefab}]" : $"  (in {prefab})";
+        }
 
         // ── Read ──────────────────────────────────────────────────────
 
         static int List(List<string> pos)
         {
-            var ed = new UnityAssetEditor(UnityYamlFile.Load(pos[1]));
-            var all = ed.GameObjects();
-            var byT = all.Where(g => g.TransformId != 0).GroupBy(g => g.TransformId).ToDictionary(g => g.Key, g => g.First());
-            string PathOf(GameObjectInfo g)
-            {
-                var n = new List<string>();
-                for (int guard = 0; guard < 256; guard++)
-                {
-                    n.Add(g.Name);
-                    if (g.ParentTransformId == 0 || !byT.TryGetValue(g.ParentTransformId, out g)) break;
-                }
-                n.Reverse();
-                return string.Join("/", n);
-            }
-            foreach (var g in all.OrderBy(PathOf, StringComparer.Ordinal))
-                Console.WriteLine($"&{g.FileId,-22} {PathOf(g)}{(g.FromPrefabInstance ? "  (in a nested prefab)" : "")}");
+            var s = new Session(pos[1]);
+            foreach (var (go, path) in s.Pie.GameObjects().OrderBy(g => g.Path, StringComparer.Ordinal))
+                Console.WriteLine($"&{go.Id,-22} {path}{Where(s, go)}");
             return 0;
         }
 
@@ -143,53 +165,192 @@ namespace CosmicShore.AssetTool
 
         static int Get(List<string> pos, Dictionary<string, string> opts)
         {
-            var file = UnityYamlFile.Load(pos[1]);
-            var ed = new UnityAssetEditor(file);
-            long id = ResolveObject(ed, pos[2], opts);
+            var s = new Session(pos[1]);
+            var o = ResolveObject(s, pos[2], opts);
             if (pos.Count < 4)
             {
                 var one = UnityYamlFile.CreateEmpty();
-                one.Documents.Add(file.Find(id));
+                if (o.InInstance)
+                {
+                    int n = s.Pie.Overrides(o.Instance).Count(m => m.Target == o.Source);
+                    Console.WriteLine($"# inside prefab instance &{o.Instance} of {Scripts.Db.ProjectRelative(s.Pie.SourcePrefabPath(o.Instance) ?? "?")}: the prefab's values with {n} override(s) of this file");
+                    one.Documents.Add(new UnityDocument { ClassId = o.ClassId, FileId = o.Id, TypeName = o.TypeName, Body = s.Pie.Body(o) });
+                }
+                else one.Documents.Add(s.File.Find(o.Id));
                 var text = one.Write(canonical: true);
-                Console.Write(text[(text.IndexOf("---", StringComparison.Ordinal))..]);
+                Console.Write(text[text.IndexOf("---", StringComparison.Ordinal)..]);
                 return 0;
             }
-            var node = ed.Get(id, pos[3]);
-            if (node == null) return Fail($"no field '{pos[3]}' on &{id}");
+            var node = o.InInstance ? s.Pie.Get(o, pos[3]) : s.Ed.Get(o.Id, pos[3]);
+            if (node == null) return Fail($"no field '{pos[3]}' on &{o.Id}");
             Console.WriteLine(node.Scalar ?? UnityYamlFile.FormatValue(node));
+            return 0;
+        }
+
+        static int Components(List<string> pos, Dictionary<string, string> opts)
+        {
+            var s = new Session(pos[1]);
+            var go = ResolveObject(s, pos[2], new());
+            foreach (var c in s.Pie.Components(go))
+            {
+                string origin = c.InInstance ? "" : go.InInstance ? "  (added by this file)" : "";
+                Console.WriteLine($"&{c.Id,-22} {ComponentName(s, c)}{origin}");
+            }
+            return 0;
+        }
+
+        static string ComponentName(Session s, SceneObject c)
+        {
+            if (c.ClassId == 114 && s.Pie.Body(c)?["m_Script"]?.Str("guid") is { } g)
+                return Scripts.Catalog.FromGuid(g).Type?.Name ?? $"(missing script {g})";
+            return c.TypeName;
+        }
+
+        /// <summary>cs-asset overrides: what each placed prefab changes, removes and adds.</summary>
+        static int Overrides(List<string> pos, Dictionary<string, string> opts)
+        {
+            var s = new Session(pos[1]);
+            long only = pos.Count > 2 ? ResolveObject(s, pos[2], new()) is { InInstance: true } o ? o.Instance
+                                        : throw new ArgumentException($"'{pos[2]}' is not inside a prefab instance") : 0;
+            foreach (var d in s.Pie.Instances())
+            {
+                if (only != 0 && d.FileId != only) continue;
+                var root = s.Pie.InstanceRoot(d.FileId);
+                var src = s.Pie.Graph.InstanceSource(d.FileId);
+                string prefab = s.Pie.SourcePrefabPath(d.FileId);
+                Console.WriteLine($"&{d.FileId}  {(prefab == null ? "(missing prefab)" : Scripts.Db.ProjectRelative(prefab))}  as '{(root == null ? "?" : s.Pie.PathOf(root))}'");
+                string Describe(long source)
+                {
+                    var obj = s.Pie.InstanceObject(d.FileId, source);
+                    if (obj != null)
+                        return (obj.ClassId == UnityAssetEditor.GameObjectClass ? s.Pie.PathOf(obj) : s.Pie.PathOf(s.Pie.GameObjectOf(obj)) + " " + ComponentName(s, obj));
+                    // Removed by this instance: name it from the prefab.
+                    var so = src?.Get(source);
+                    if (so == null) return $"&{source} (not in the prefab: ignored)";
+                    var sgo = so.ClassId == UnityAssetEditor.GameObjectClass ? so : src.Get(src.Resolve(so.Body["m_GameObject"]?.Long("fileID") ?? 0));
+                    var live = sgo == null ? null : s.Pie.InstanceObject(d.FileId, sgo.Id);
+                    string where = live != null ? s.Pie.PathOf(live) : sgo?.Body.Str("m_Name") ?? "?";
+                    string type = so.ClassId == 114 && so.Body["m_Script"]?.Str("guid") is { } g
+                        ? Scripts.Catalog.FromGuid(g).Type?.Name ?? so.TypeName : so.TypeName;
+                    return so.ClassId == UnityAssetEditor.GameObjectClass ? where : $"{where} {type}";
+                }
+                foreach (var m in s.Pie.Overrides(d.FileId))
+                {
+                    string v = m.ObjectReference is { } r && r.Long("fileID") != 0 ? "-> " + UnityYamlFile.FormatValue(r) : m.Value;
+                    Console.WriteLine($"  {Describe(m.Target)}  .{m.PropertyPath} = {v}");
+                }
+                var mod = d.Body["m_Modification"];
+                foreach (var r in mod?["m_RemovedComponents"]?.Items ?? Array.Empty<YNode>())
+                    Console.WriteLine($"  removed component  {Describe(r.Long("fileID"))}");
+                foreach (var r in mod?["m_RemovedGameObjects"]?.Items ?? Array.Empty<YNode>())
+                    Console.WriteLine($"  removed object     {Describe(r.Long("fileID"))}");
+                foreach (var key in new[] { "m_AddedGameObjects", "m_AddedComponents" })
+                    foreach (var a in mod?[key]?.Items ?? Array.Empty<YNode>())
+                    {
+                        long added = a["addedObject"]?.Long("fileID") ?? 0;
+                        var ao = s.Pie.Object(added);
+                        string what = ao == null ? $"&{added}"
+                            : key == "m_AddedGameObjects" ? s.Pie.PathOf(s.Pie.GameObjectOf(ao)) : s.Pie.PathOf(s.Pie.GameObjectOf(ao)) + " " + ComponentName(s, ao);
+                        Console.WriteLine($"  {(key == "m_AddedGameObjects" ? "added object    " : "added component ")}  {what}  (&{added})");
+                    }
+            }
             return 0;
         }
 
         // ── Write ─────────────────────────────────────────────────────
 
-        static int Edit(List<string> pos, Dictionary<string, string> opts, Action<UnityAssetEditor, long> edit)
+        static int Edit(List<string> pos, Dictionary<string, string> opts, Action<Session, SceneObject> edit)
         {
-            string path = pos[1];
-            var ed = new UnityAssetEditor(UnityYamlFile.Load(path));
-            long id = ResolveObject(ed, pos[2], opts);
-            edit(ed, id);
-            return Save(path, ed.File, opts);
+            var s = new Session(pos[1]);
+            edit(s, ResolveObject(s, pos[2], opts));
+            return Save(s.Path, s.File, opts);
+        }
+
+        static void Set(Session s, SceneObject o, string path, string raw, Dictionary<string, string> opts)
+        {
+            var value = ParseValue(s, raw);
+            if (o.InInstance)
+            {
+                s.Pie.SetOverride(o, path, value, force: opts.ContainsKey("force"));
+                Console.WriteLine($"override on {Short(s.Pie.SourcePrefabPath(o.Instance))} instance &{o.Instance}");
+            }
+            else s.Ed.Set(o.Id, path, value);
+        }
+
+        /// <summary>A YAML value, or <c>@object</c> (<c>@Canvas/Panel</c>, <c>@&amp;id</c>, <c>@Canvas/Panel:Image#2</c>) for a reference to it.</summary>
+        static YNode ParseValue(Session s, string raw)
+        {
+            if (!raw.StartsWith('@')) return UnityYaml.ParseValue(raw);
+            string spec = raw[1..];
+            var opts = new Dictionary<string, string>();
+            int colon = spec.LastIndexOf(':');
+            if (colon > 0) { opts["component"] = spec[(colon + 1)..]; spec = spec[..colon]; }
+            var target = ResolveObject(s, spec, opts);
+            return YMap.Ref(s.Pie.StandIn(target));
+        }
+
+        static int Revert(List<string> pos, Dictionary<string, string> opts)
+        {
+            var s = new Session(pos[1]);
+            var o = ResolveObject(s, pos[2], opts);
+            int n = s.Pie.Revert(o, pos.Count > 3 ? pos[3] : null);
+            Console.WriteLine(n == 0 ? "no override to revert" : $"reverted {n} override(s)");
+            return Save(s.Path, s.File, opts);
         }
 
         static int Create(List<string> pos, Dictionary<string, string> opts)
         {
-            string path = pos[1];
-            var ed = new UnityAssetEditor(UnityYamlFile.Load(path));
-            long parent = opts.TryGetValue("parent", out var p) ? ResolveObject(ed, p, new()) : 0;
-            long id = ed.CreateGameObject(pos[2], parent);
-            Console.WriteLine($"created &{id} '{pos[2]}'");
-            return Save(path, ed.File, opts);
+            var s = new Session(pos[1]);
+            var parent = opts.TryGetValue("parent", out var p) ? ResolveObject(s, p, new()) : null;
+            long id = s.Pie.CreateGameObject(pos[2], parent);
+            Console.WriteLine($"created &{id} '{pos[2]}'{(parent is { InInstance: true } ? $" (added to {Short(s.Pie.SourcePrefabPath(parent.Instance))} instance &{parent.Instance})" : "")}");
+            return Save(s.Path, s.File, opts);
         }
 
         static int Delete(List<string> pos, Dictionary<string, string> opts)
         {
-            string path = pos[1];
-            var ed = new UnityAssetEditor(UnityYamlFile.Load(path));
-            long id = ResolveObject(ed, pos[2], new());
-            var r = ed.DeleteGameObject(id);
-            Console.WriteLine($"removed {r.Removed.Count} document(s)");
+            var s = new Session(pos[1]);
+            var o = ResolveObject(s, pos[2], new());
+            bool wholeInstance = o.InInstance && s.Pie.InstanceRoot(o.Instance)?.Id == o.Id;
+            var r = s.Pie.Delete(o);
+            if (wholeInstance) Console.WriteLine($"removed prefab instance &{o.Instance} ({r.Removed.Count} document(s))");
+            else if (o.InInstance) Console.WriteLine($"recorded as removed from {Short(s.Pie.SourcePrefabPath(o.Instance))} instance &{o.Instance}");
+            else Console.WriteLine($"removed {r.Removed.Count} document(s)");
             foreach (var c in r.ClearedReferences) Console.WriteLine($"  cleared reference {c}");
-            return Save(path, ed.File, opts);
+            return Save(s.Path, s.File, opts);
+        }
+
+        static int RemoveComponent(List<string> pos, Dictionary<string, string> opts)
+        {
+            if (!opts.ContainsKey("component") && !pos[2].StartsWith('&'))
+                throw new ArgumentException("name the component: --component Type[#n], or &fileID");
+            var s = new Session(pos[1]);
+            var c = ResolveObject(s, pos[2], opts);
+            var r = s.Pie.RemoveComponent(c);
+            if (c.InInstance) Console.WriteLine($"recorded as removed from {Short(s.Pie.SourcePrefabPath(c.Instance))} instance &{c.Instance}");
+            foreach (var x in r.ClearedReferences) Console.WriteLine($"  cleared reference {x}");
+            return Save(s.Path, s.File, opts);
+        }
+
+        /// <summary>cs-asset instantiate: place a prefab.</summary>
+        static int Instantiate(List<string> pos, Dictionary<string, string> opts)
+        {
+            var s = new Session(pos[1]);
+            var parent = opts.TryGetValue("parent", out var p) ? ResolveObject(s, p, new()) : null;
+            YMap position = null;
+            if (opts.TryGetValue("position", out var at))
+            {
+                position = at.TrimStart().StartsWith('{') ? UnityYaml.ParseValue(at) as YMap : null;
+                if (position == null)
+                {
+                    var xyz = at.Split(',', StringSplitOptions.TrimEntries);
+                    if (xyz.Length != 3) throw new ArgumentException("--position takes x,y,z or {x: …, y: …, z: …}");
+                    position = (YMap)UnityYaml.ParseValue($"{{x: {xyz[0]}, y: {xyz[1]}, z: {xyz[2]}}}");
+                }
+            }
+            var root = s.Pie.Instantiate(pos[2], parent, opts.GetValueOrDefault("name"), position);
+            Console.WriteLine($"placed prefab instance &{root.Instance} as '{s.Pie.PathOf(root)}' (root &{root.Id})");
+            return Save(s.Path, s.File, opts);
         }
 
         static int Save(string path, UnityYamlFile file, Dictionary<string, string> opts)
@@ -207,74 +368,68 @@ namespace CosmicShore.AssetTool
             return 0;
         }
 
-        static long ResolveObject(UnityAssetEditor ed, string spec, Dictionary<string, string> opts)
+        /// <summary>
+        /// &amp;id (a document, a stand-in, or an instance object's id from 'list'), a GameObject
+        /// path, or a unique GameObject name — inside nested prefab instances as well — then
+        /// optionally <c>--component Type[#n]</c> of that GameObject.
+        /// </summary>
+        static SceneObject ResolveObject(Session s, string spec, Dictionary<string, string> opts)
         {
-            long id;
-            if (spec.StartsWith('&') && long.TryParse(spec.AsSpan(1), out id))
+            SceneObject o;
+            if (spec.StartsWith('&') && long.TryParse(spec.AsSpan(1), out long id))
             {
-                if (ed.File.Find(id) == null) throw new ArgumentException($"no document &{id}");
+                o = s.Pie.Object(id);
+                if (o == null)
+                {
+                    // A document the loader does not treat as an object (a PrefabInstance, SceneRoots …).
+                    var d = s.File.Find(id) ?? throw new ArgumentException($"no object &{id}");
+                    if (d.Stripped) throw new ArgumentException($"&{id} stands for an object its prefab instance removes");
+                    o = new SceneObject(id, d.ClassId, d.TypeName, 0, 0);
+                }
             }
             else
             {
-                id = ed.FindGameObject(spec);
-                if (id == 0) throw new ArgumentException($"no unique GameObject '{spec}' (use a path like Parent/Child, or &fileID from 'list')");
+                o = s.Pie.FindGameObject(spec)
+                    ?? throw new ArgumentException($"no unique GameObject '{spec}' (use a path like Parent/Child, or &id from 'list')");
             }
-            if (!opts.TryGetValue("component", out var comp)) return id;
+            if (!opts.TryGetValue("component", out var comp)) return o;
 
             string type = comp; int nth = 1;
             int hash = comp.IndexOf('#');
             if (hash > 0) { type = comp[..hash]; nth = int.Parse(comp[(hash + 1)..]); }
-            var go = ed.File.Find(id);
-            if (go?.Body["m_Component"] is not YSeq comps) throw new ArgumentException($"&{id} is not a GameObject");
+            if (o.ClassId != UnityAssetEditor.GameObjectClass) throw new ArgumentException($"&{o.Id} is not a GameObject");
             int seen = 0;
-            foreach (var c in comps.Items)
-            {
-                long cid = c["component"] is YMap m ? m.Long("fileID") : 0;
-                if (ed.File.Find(cid) is not { } cd) continue;
+            foreach (var c in s.Pie.Components(o))
                 // A script component is "MonoBehaviour" in the file; match its class name too.
-                string scriptName = cd.ClassId == 114 && cd.Body["m_Script"]?.Str("guid") is { } g ? Scripts.Catalog.FromGuid(g).Type?.Name : null;
-                if ((cd.TypeName == type || scriptName == type) && ++seen == nth) return cid;
-            }
-            throw new ArgumentException($"&{id} has no component {comp}");
+                if ((c.TypeName == type || ComponentName(s, c) == type) && ++seen == nth) return c;
+            throw new ArgumentException($"&{o.Id} has no component {comp}");
         }
 
         // ── Components ────────────────────────────────────────────────
 
-        static int Components(List<string> pos, Dictionary<string, string> opts)
-        {
-            var ed = new UnityAssetEditor(UnityYamlFile.Load(pos[1]));
-            long go = ResolveObject(ed, pos[2], new());
-            foreach (var c in ed.Components(go))
-            {
-                string name = c.TypeName;
-                if (c.ClassId == 114 && c.Body["m_Script"]?.Str("guid") is { } g)
-                    name = Scripts.Catalog.FromGuid(g).Type?.Name ?? $"(missing script {g})";
-                Console.WriteLine($"&{c.FileId,-22} {name}");
-            }
-            return 0;
-        }
-
         static int AddComponent(List<string> pos, Dictionary<string, string> opts)
         {
-            string path = pos[1];
-            var ed = new UnityAssetEditor(UnityYamlFile.Load(path));
-            long go = ResolveObject(ed, pos[2], new());
+            var s = new Session(pos[1]);
+            var go = ResolveObject(s, pos[2], new());
+            if (go.ClassId != UnityAssetEditor.GameObjectClass) throw new ArgumentException($"&{go.Id} is not a GameObject");
+            long target = s.Pie.StandIn(go); // an object inside an instance is added to through its stand-in
             if (opts.TryGetValue("like", out var like))
             {
-                if (!like.StartsWith('&') || !long.TryParse(like.AsSpan(1), out long src) || ed.File.Find(src) is not { } doc)
-                    throw new ArgumentException($"--like needs a component &fileID in this file");
-                if (doc.ClassId is UnityAssetEditor.TransformClass or UnityAssetEditor.RectTransformClass or UnityAssetEditor.GameObjectClass)
+                var src = ResolveObject(s, like, new());
+                if (src.ClassId is UnityAssetEditor.TransformClass or UnityAssetEditor.RectTransformClass or UnityAssetEditor.GameObjectClass or UnityAssetEditor.PrefabInstanceClass)
                     throw new ArgumentException("--like copies a component, not a Transform or GameObject");
-                var body = (YMap)doc.Body.Clone();
-                long id = ed.AddComponentDocument(go, doc.ClassId, doc.TypeName, body);
-                Console.WriteLine($"added &{id} {doc.TypeName} (copy of &{src})");
-                return Save(path, ed.File, opts);
+                var body = (YMap)s.Pie.Body(src).Clone();
+                foreach (var k in new[] { "m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset" })
+                    if (body.Has(k)) body.Set(k, YMap.Ref(0));
+                long id = s.Ed.AddComponentDocument(target, src.ClassId, src.TypeName, s.Pie.ToFileRefs(body));
+                Console.WriteLine($"added &{id} {ComponentName(s, src)} (copy of &{src.Id})");
+                return Save(s.Path, s.File, opts);
             }
-            var adder = new ComponentAdder(ed, Scripts.Catalog, new ComponentTemplates(Scripts.Db.AssetsRoot));
-            var r = adder.Add(go, pos[3]);
+            var adder = new ComponentAdder(s.Ed, Scripts.Catalog, new ComponentTemplates(Scripts.Db.AssetsRoot));
+            var r = adder.Add(target, pos[3]);
             foreach (var (id, type, source) in r.Added) Console.WriteLine($"added &{id} {type}  ({source})");
             foreach (var n in r.Notes) Console.WriteLine($"  note: {n}");
-            return Save(path, ed.File, opts);
+            return Save(s.Path, s.File, opts);
         }
 
         // ── Verification ──────────────────────────────────────────────

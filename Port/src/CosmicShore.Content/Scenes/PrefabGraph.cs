@@ -38,6 +38,12 @@ namespace CosmicShore.Content.Scenes
         public readonly Dictionary<long, GraphObject> Objects = new();
         /// <summary>Stripped-document id → the concrete object id it stands for.</summary>
         public readonly Dictionary<long, long> Aliases = new();
+        /// <summary>
+        /// For every object a PrefabInstance of THIS file put into the graph: which instance, and
+        /// its id in the instance's source prefab (the <c>target</c> fileID an override names).
+        /// </summary>
+        public readonly Dictionary<long, (long Instance, long Source)> InstanceOrigin = new();
+
         /// <summary>Scene root transform order (SceneRoots document), when present.</summary>
         public readonly List<long> RootOrder = new();
         public readonly List<string> Warnings = new();
@@ -50,6 +56,9 @@ namespace CosmicShore.Content.Scenes
         /// (m_PrefabInstance, m_CorrespondingSourceObject), never by the derived number.
         /// </summary>
         readonly Dictionary<(long, long), long> _instanceIds = new();
+
+        /// <summary>The source prefab graph a PrefabInstance of this file was expanded from.</summary>
+        public PrefabGraph InstanceSource(long instanceId) => _instanceSources.TryGetValue(instanceId, out var s) ? s : null;
 
         /// <summary>The id the object <paramref name="sourceId"/> of instance <paramref name="instanceId"/> carries in this graph.</summary>
         public long MapInstance(long instanceId, long sourceId)
@@ -79,6 +88,11 @@ namespace CosmicShore.Content.Scenes
         // Per-instance source graph, so an owning stripped doc can resolve through the source's own aliases.
         readonly Dictionary<long, PrefabGraph> _instanceSources = new();
         readonly HashSet<long> _reserved = new();
+        // This file's stripped documents: id → (instance, source object it stands for).
+        readonly Dictionary<long, (long Instance, long Source)> _standIns = new();
+
+        bool ForeignStandIn(long id, long instanceId, PrefabGraph src, long sourceId)
+            => _standIns.TryGetValue(id, out var s) && !(s.Instance == instanceId && src.Resolve(s.Source) == sourceId);
 
         internal long MapInstanceResolved(long instanceId, long sourceId)
             => _instanceSources.TryGetValue(instanceId, out var src)
@@ -142,6 +156,14 @@ namespace CosmicShore.Content.Scenes
                     };
                 }
 
+                // An id the file gives a stand-in belongs to the object that stand-in names. A derived
+                // id can equal it for a DIFFERENT object when instance ids are close together
+                // (Dolphin.prefab's jets are …001, …002, …: 2^805 = 1^806 in the low bits), and the
+                // derived object must then be the one renamed — otherwise every lookup of it would
+                // resolve through the stand-in to the other object.
+                foreach (var d in stripped)
+                    g._standIns[d.FileId] = (ObjRef.From(d.Body["m_PrefabInstance"]).FileId, ObjRef.From(d.Body["m_CorrespondingSourceObject"]).FileId);
+
                 foreach (var pi in instances)
                     ExpandInstance(g, pi, depth);
 
@@ -187,16 +209,17 @@ namespace CosmicShore.Content.Scenes
                 {
                     if (so.Removed) continue;
                     long nid = Xor(piId, so.Id);
-                    if (g.Objects.ContainsKey(nid))
+                    if (g.Objects.ContainsKey(nid) || g.ForeignStandIn(nid, piId, src, so.Id))
                     {
                         long fresh = nid;
                         do fresh = (long)(((ulong)fresh * 6364136223846793005UL + 1442695040888963407UL) & (ulong)IdMask);
-                        while (fresh == 0 || g.Objects.ContainsKey(fresh) || g._reserved.Contains(fresh));
+                        while (fresh == 0 || g.Objects.ContainsKey(fresh) || g._reserved.Contains(fresh) || g._standIns.ContainsKey(fresh));
                         g.Warnings.Add($"derived id {nid} of &{so.Id} in instance &{piId} collides in {g.File.Path}; using {fresh}");
                         nid = fresh;
                     }
                     g._instanceIds[(piId, so.Id)] = nid;
                     g._reserved.Add(nid);
+                    g.InstanceOrigin[nid] = (piId, so.Id);
                 }
 
                 // 1. Copy every source object into our id space, re-mapping its local refs.
