@@ -55,6 +55,17 @@ made 2.25x lighter AND much smoother without giving anything up.
 4. **The game** (cece/swarm-fauna-game): grid (combo rules), sort and evofate species are ported to C#; the
    recommended next port is sortfeel's flat wells + wander + the frac 8 schedule into SwarmSortCore. Round 5 there
    needs an editor pass (compile, JSON import, visuals, Mono cost; QA-SWARM-ROUND5).
+   **Round 6 (01:38 UTC) shipped that port.** SwarmSortCore now runs sortfeel with 1-in-8 updates. The shipped assets
+   carry SortUpdateFraction 8 and SortNoise 0.1; the session's own summary text said 4 and 0.03, so confirm the
+   values in the inspector. Results in CoreCLR:
+   - 52/52 in game mode, 0 deaths. Research-mode C# reproduces Python: the held config scores 49/52.
+   - Organic: planar excess 0.015. Round 5 measured 0.280, which was outside the band.
+   - Smoothness 0.917 over 3 seeds; round 5 scored 0.751.
+   - 0.055 ms per swarm-step at B16, against 0.149 in round 5: 2.8x cheaper, 0.43 us per tadpole.
+   - Colliders unchanged at 5,008.
+   Mono cost is unmeasured. Before trusting these numbers, it needs the QA-SWARM-ROUND6 editor pass: compile and
+   import, confirm the 5 new config values, a side-by-side against the old settings, a burst-kill morph, a
+   fly-through flinch check, and Mono frame cost.
 
 ## The yardstick, now
 
