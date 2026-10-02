@@ -25,10 +25,43 @@ Scores (each run is one species x one pilot policy x one seed; aggregate with `c
         coherence       mean |mean unit velocity| over neighbourhoods (1 = moves as one)
         burstiness      p95 / median of per-step speed (sudden vs steady)
         jerk_rel        mean |third difference of position| / mean step length
+        a_<feature>     (Direction C) the affect features of common/affect.py, read from the FIRST pilot: looming,
+                        gaze, pursuit, encirclement, synchrony, bounce, still-then-burst, sneak ... (prefixed
+                        `a_` because several share a name with an older key above but a different scale).
+        emo_<emotion>   P(cute / playful / eerie / majestic / menacing / terrifying) from the frozen emotion
+                        probe (Tools/Ecology/emotion/results/probe.json), when that file exists.
+                        Old keys are unchanged; the new ones are plain floats, so `combine` averages them.
 """
 from __future__ import annotations
 
+import importlib.util
+import os
+
 import numpy as np
+
+try:
+    from .affect import AffectRecorder
+except ImportError:                     # scorecard imported as a top-level module
+    from affect import AffectRecorder
+
+_EMO = None
+
+
+def _emotion_probe():
+    """The frozen emotion probe, loaded once by file path (scorecard stays numpy-only and never fails on it)."""
+    global _EMO
+    if _EMO is None:
+        _EMO = False
+        here = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(here, "..", "emotion", "probe.py")
+        if os.path.exists(os.path.join(here, "..", "emotion", "results", "probe.json")):
+            try:
+                spec = importlib.util.spec_from_file_location("cs_emotion_probe", path)
+                m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+                _EMO = m.EmotionProbe.load()
+            except Exception:
+                _EMO = False
+    return _EMO or None
 
 
 class Probe:
@@ -40,9 +73,19 @@ class Probe:
         self.leads = []
         self.n_hits_seen = 0
         self.pilot_speed = 1.0
+        self.affect = None
 
     def observe(self, arena, sp):
         P = np.asarray(sp.agent_pos, float); V = np.asarray(sp.agent_vel, float)
+        if arena.pilots:
+            try:
+                p0 = arena.pilots[0]
+                if self.affect is None:
+                    self.affect = AffectRecorder(self.dt, pilot_radius=getattr(p0, "radius", 6.0))
+                self.affect.observe(p0.pos, p0.vel, P, V, getattr(sp, "agent_size", None),
+                                    getattr(sp, "agent_aspect", None), getattr(sp, "agent_heading", None))
+            except Exception:
+                self.affect = False          # a species that breaks the extractor keeps its old scorecard
         if len(P) == 0:
             return
         size = np.asarray(getattr(sp, "agent_size", np.full(len(P), 3.0)), float)
@@ -86,6 +129,19 @@ class Probe:
     def feel(self):
         sp = np.concatenate(self.speeds) if self.speeds else np.zeros(1)
         med = float(np.median(sp)) if len(sp) else 0.0
+        out = self._feel_old(sp, med)
+        if self.affect:
+            try:
+                a = self.affect.features()
+                out.update({f"a_{k}": v for k, v in a.items()})
+                pr = _emotion_probe()
+                if pr is not None:
+                    out.update({f"emo_{e}": v for e, v in pr.score(a)["p"].items()})
+            except Exception:
+                pass
+        return out
+
+    def _feel_old(self, sp, med):
         return dict(size=round(float(np.median(self.sizes)) if self.sizes else 0.0, 2),
                     speed_rel=round(med / max(self.pilot_speed, 1e-6), 3),
                     approach=round(float(np.mean(self.approach)) if self.approach else 0.0, 2),
