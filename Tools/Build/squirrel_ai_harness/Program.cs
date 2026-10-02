@@ -25,6 +25,10 @@ namespace SquirrelAiHarness
                     _tweaks.Add((kv[0], float.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture)));
                 }
 
+            // World what-ifs (tooling only): how much of a lap the crystals cost, measured by moving them.
+            if (args.Contains("--jitter")) cfg.Jitter = float.Parse(Arg(args, "--jitter", "35"), System.Globalization.CultureInfo.InvariantCulture);
+            if (args.Contains("--capture")) cfg.CaptureRadius = float.Parse(Arg(args, "--capture", "24"), System.Globalization.CultureInfo.InvariantCulture);
+
             SkimRacingLine.ExperimentLegacySmoothing = args.Contains("--legacy-lane");
             if (args.Contains("--dump-track"))
             {
@@ -113,6 +117,49 @@ namespace SquirrelAiHarness
                 }
                 all.Sort();
                 Console.WriteLine($"  all: in-band {100f * all.Count(x => x <= 0f) / all.Count:F0}%  median {all[all.Count / 2]:F1}  p90 {all[(int)(all.Count * 0.9)]:F1}  max {all[^1]:F1}");
+                return 0;
+            }
+
+            if (args.Contains("--obs-test"))
+            {
+                // Tooling: one solve with the line in the top band and ONE rail laid across it, to see
+                // whether the obstacle constraint is met at its copy, and how fast.
+                int ti = int.Parse(Arg(args, "--obs-test", "2"));
+                var prisms = TrackBuilder.Build(cfg, cfg.Tracks[ti - 1]);
+                var list = new List<SkimRoutePrism>();
+                foreach (var tp in prisms) list.Add(new SkimRoutePrism(tp.Position, tp.Rotation, tp.ShellSemi, tp.Marker));
+                var route = new SkimRoute(list, closed: true);
+                float s0 = float.Parse(Arg(args, "--s", "2600"));
+                float v = float.Parse(Arg(args, "--v", "300"));
+                float step = float.Parse(Arg(args, "--grid", "36"));
+                int count = int.Parse(Arg(args, "--n", "28"));
+                float obsAt = float.Parse(Arg(args, "--obs-at", "300"));
+                float oa = float.Parse(Arg(args, "--oa", "0")), ob = float.Parse(Arg(args, "--ob", "8"));
+                float angle = float.Parse(Arg(args, "--angle", "0"));
+                int iters = int.Parse(Arg(args, "--iters", "50"));
+                var prof = Tweak(SkimRacerProfile.Expert());
+                float reach = Mathf.Sqrt(cfg.HullHalf.x * cfg.HullHalf.x + cfg.HullHalf.y * cfg.HullHalf.y);
+                var set = new SkimPathOptimizer.Settings
+                {
+                    Budget = prof.PlanAuthority * cfg.YawDps * Mathf.Deg2Rad * prof.RollBonus,
+                    FollowRate = cfg.FollowRate, HingeWeight = prof.OptHingeWeight, DemandWeight = prof.OptDemandWeight,
+                    BandWeight = float.Parse(Arg(args, "--band", "0.1")), Rho = float.Parse(Arg(args, "--rho", "10")),
+                    ClearMargin = prof.ClearanceMargin, SkimReach = cfg.SkimRadius - 0.5f, ObstacleMargin = prof.ObstacleMargin,
+                };
+                var opt = new SkimPathOptimizer();
+                opt.Setup(route, s0, step, count, cfg.HullHalf.z + prof.ClearanceMargin, reach, set);
+                for (int i = 0; i < opt.Count; i++) { opt.SetPoint(i, 0f, 8f); opt.SetSpeed(i, v); }
+                route.Frame(s0 + obsAt, out Vector3 oc, out Vector3 ot, out Vector3 orr, out Vector3 ou);
+                Vector3 center = oc + orr * oa + ou * ob;
+                Vector3 axis = Quaternion.AngleAxis(angle, ou) * ot;
+                float r = reach + 0.414f + prof.ObstacleMargin + 0.6f;
+                opt.AddObstacle(center, axis, 3.04f, r);
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                opt.DebugLog = Console.WriteLine;
+                opt.Solve(iters);
+                Console.WriteLine($"  {iters} its in {sw.Elapsed.TotalMilliseconds:F1} ms; obstacle r={r:F2} copy distance {opt.CopyDistance(center):F2}; {opt.DescribeObstacleNear(center)}");
+                for (int i = 0; i < opt.Count; i++)
+                    Console.WriteLine($"   {i,3} s={s0 + i * step,7:F1} a={opt.A(i),7:F2} b={opt.B(i),7:F2} demand={opt.Demand(i),6:F2}");
                 return 0;
             }
 
@@ -301,6 +348,14 @@ namespace SquirrelAiHarness
                 _segStats = args.Contains("--segments");
                 _ghost = args.Contains("--ghost");
                 _timing = args.Contains("--timing");
+                SkimRacerBrain.DiagnoseObstacles = args.Contains("--diag-obstacles");
+                SkimRacerBrain.DiagnoseResolve = args.Contains("--diag-resolve");
+                if (args.Contains("--diag-file"))
+                {
+                    var diagWriter = new System.IO.StreamWriter(Arg(args, "--diag-file", "diag.txt"));
+                    diagWriter.AutoFlush = true;
+                    SkimRacerBrain.DiagSink = line => diagWriter.WriteLine(line);
+                }
                 _traceFrom = float.Parse(Arg(args, "--trace-from", "0"));
                 _traceTo = float.Parse(Arg(args, "--trace-to", "1e9"));
                 _traceDt = float.Parse(Arg(args, "--trace-dt", "0.25"));
@@ -396,6 +451,7 @@ namespace SquirrelAiHarness
                             $"skims {s.SkimHits}+{s.RailSkimHits}  full-boost {s.TimeAtFullBoost,5:F1}s (first {s.TimeToFirstFullBoost,5:F1}s)  " +
                             $"xtrack mean {s.CrossTrackSum / Math.Max(1, s.CrossTrackSamples):F2} max {s.MaxCrossTrack:F1}  " +
                             $"reanchor {r.Brain.Reanchors} avoid {r.Brain.Avoidances} unresolved {r.Brain.UnresolvedConflicts} faces {r.Brain.FaceChanges}  " +
+                            (SkimRacerBrain.DiagnoseObstacles ? $"diag(solves {r.Brain.DiagSolves} filtered {r.Brain.DiagFiltered} inactive {r.Brain.DiagInactive} violated {r.Brain.DiagViolated} of-which-copy-ok {r.Brain.DiagViolatedCopyOk} near-solves {r.Brain.DiagNear} far-solves {r.Brain.DiagFar})  " : "") +
                             $"lost: throttle {s.LostThrottle:F1}s boost {s.LostBoost:F1}s contact {s.LostContact:F1}s other {s.LostOther:F1}s  laps {LapSummary(s)}");
                         if (trace || s.RibbonTouches + s.RailTouches > 0)
                             foreach (var e in s.Events.Take(trace ? 4000 : 12)) Console.WriteLine("      " + e);

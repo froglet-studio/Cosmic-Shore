@@ -69,6 +69,40 @@ namespace CosmicShore.Gameplay
             public float SkimReach;
             /// <summary>Clearance (u) kept between the hull's reach and a rail prism.</summary>
             public float ObstacleMargin;
+            /// <summary>An obstacle joins the solve once the line passes within its radius plus this
+            /// (u). Zero means the default.</summary>
+            public float ObstacleActivation;
+            /// <summary>A point keeps its face for the whole set-up and may only move to a
+            /// neighbouring one (round an edge), never straight across the plates.</summary>
+            public bool FaceLock;
+            /// <summary>Every point held on this side of the plates' clearance (0 +a, 1 -a, 2 +b, 3 -b); -1 = free.</summary>
+            public int LockSide;
+            /// <summary>Speed fit: the demand at each segment's two ENDS (where a cubic B-spline's curvature
+            /// peaks), not only at its middle.</summary>
+            public bool FitSegmentEnds;
+
+            /// <summary>Tooling experiment: the obstacle copies' penalty as a multiple of Rho.</summary>
+            public float ObstacleRhoScale;
+            /// <summary>Tooling experiment: extra iterations while an active obstacle is still violated.</summary>
+            public int ObstacleExtraIterations;
+            /// <summary>Tooling experiment: polish passes moving control points out of violated obstacles.</summary>
+            public int PolishPasses;
+            /// <summary>Carry each obstacle's copy and dual from the last solve into the next (keyed by the
+            /// obstacle's centre): a rail does not move, so the force that held the line off it last
+            /// re-plan is where this one should start.</summary>
+            public bool CarryObstacleDuals;
+            /// <summary>Samples per B-spline segment held outside the plates' clearance box (0 = only
+            /// the control points are). The control points alone let a segment between two of them on
+            /// opposite faces pass straight through the ribbon.</summary>
+            public int SegmentClearanceSamples;
+            /// <summary>Price each segment's turn per unit of the LINE's length, not the ribbon's arc.</summary>
+            public bool ArcAware;
+            /// <summary>Share of <see cref="ClearMargin"/> the segment samples keep (1 = the control
+            /// points' whole box; 0 = only the plates and the hull's reach).</summary>
+            public float SegmentMarginScale;
+            /// <summary>An obstacle's copy leaves its rod by the nearest way that is also clear of the
+            /// plates, not by the radial push alone.</summary>
+            public bool ClearAwareObstacles;
         }
 
         public const int MaxPoints = 160;
@@ -96,6 +130,13 @@ namespace CosmicShore.Gameplay
         // but only while the obstacle is ACTIVE (near the line). See UpdateActivation.
         readonly Vector3[] _zo = new Vector3[MaxObstacles], _wo = new Vector3[MaxObstacles];
         readonly bool[] _oActive = new bool[MaxObstacles];
+        readonly int[] _oActIt = new int[MaxObstacles];
+        // Segment clearance copies: the curve's offset at sample t of segment j, held outside the
+        // plates' clearance box. Index c = (j - 1) * samples + q.
+        const int MaxSegCopies = MaxPoints * 4;
+        readonly Vector2[] _zc = new Vector2[MaxSegCopies], _wc = new Vector2[MaxSegCopies];
+        readonly bool[] _cActive = new bool[MaxSegCopies];
+        int _segSamples, _segCopies, _activeSegCopies;
         int _activeObstacles;
         readonly int[] _oSeg = new int[MaxObstacles];    // B-spline segment the obstacle sits beside
         readonly float[] _oT = new float[MaxObstacles];  // and where along it
@@ -143,6 +184,10 @@ namespace CosmicShore.Gameplay
         public float CrystalMiss { get; private set; }
         public float WorstClearDeficit { get; private set; }
         public float WorstObstacleDeficit { get; private set; }
+        /// <summary>Tooling: the knot parameter of the worst obstacle, and the worst beyond the first
+        /// free knot (where the solve can still move the line).</summary>
+        public float WorstObstacleU { get; private set; }
+        public float WorstFarObstacleDeficit { get; private set; }
         public int Iterations { get; private set; }
         public int ObstacleCount => _obsCenters.Count;
 
@@ -163,6 +208,8 @@ namespace CosmicShore.Gameplay
             _step = Mathf.Max(1f, step);
             _set = settings;
             _crystalIndex = -1;
+            _sidesValid = false;
+            _carryFromCommitted = true;
             _obsCenters.Clear();
             _obsAxes.Clear();
             _obsHalf.Clear();
@@ -194,6 +241,8 @@ namespace CosmicShore.Gameplay
         {
             _a[i] = a;
             _b[i] = b;
+            _sidesValid = false;   // a new seed: its faces are read off it at the next solve
+            _carryFromCommitted = true;
         }
 
         /// <summary>The line must pass within <paramref name="radius"/> of (a, b) at point
@@ -302,7 +351,19 @@ namespace CosmicShore.Gameplay
             double rho = Math.Max(1e-6, _set.Rho);
             float k = Mathf.Max(0.05f, _set.FollowRate);
 
-            for (int i = 0; i < _n; i++) _side[i] = NearestSide(i, _a[i], _b[i]);
+            // Each point's face is decided ONCE per set-up, from the seed: a later solve on the same
+            // set-up (the speed fit's re-solves) must not re-read it off an iterate that may have
+            // stepped through the plates in its last x-update.
+            if (_set.LockSide >= 0)
+            {
+                for (int i = 0; i < _n; i++) _side[i] = _set.LockSide;
+                _sidesValid = true;
+            }
+            else if (!_sidesValid || !_set.FaceLock)
+            {
+                for (int i = 0; i < _n; i++) _side[i] = NearestSide(i, _a[i], _b[i]);
+                _sidesValid = true;
+            }
             for (int o = 0; o < _obsCenters.Count; o++)
             {
                 float u = _obsU[o];
@@ -311,12 +372,18 @@ namespace CosmicShore.Gameplay
                 _oActive[o] = false;
             }
             _activeObstacles = 0;
-            UpdateActivation();
+            if (_set.CarryObstacleDuals) RestoreCarried(_carryFromCommitted ? _carryCommit : _carryWork);
+            UpdateActivation(0);
+            _segSamples = Mathf.Clamp(_set.SegmentClearanceSamples, 0, 4);
+            _segCopies = _segSamples > 0 ? (_n - 3) * _segSamples : 0;
+            _activeSegCopies = 0;
+            for (int c = 0; c < _segCopies; c++) _cActive[c] = false;
+            UpdateSegActivation();
 
             // ---- the fixed system: every copy's least-squares fit.
             for (int i = 1; i <= _n - 3; i++)
             {
-                Stencil(0.5f * (_v[i] + _v[i + 1]), k, _step, out double c0, out double c1, out double c2, out double c3);
+                Stencil(0.5f * (_v[i] + _v[i + 1]), k, SegmentLength(i), out double c0, out double c1, out double c2, out double c3);
                 // Scale each demand copy's penalty by its stencil's size, so a unit of slack means
                 // as much to the fit at 300 u/s as at 60.
                 double norm = c0 * c0 + c1 * c1 + c2 * c2 + c3 * c3;
@@ -336,11 +403,18 @@ namespace CosmicShore.Gameplay
 
             const double relax = 1.6;   // over-relaxation: the standard 1.5-1.8 roughly halves the iterations
             int it = 0;
-            for (; it < Mathf.Max(1, iterations); it++)
+            int minIt = Mathf.Max(1, iterations);
+            int maxIt = minIt + Mathf.Max(0, _set.ObstacleExtraIterations);
+            for (; it < maxIt; it++)
             {
+                if (it >= minIt && it % 5 == 0 && ActiveObstacleDeficit() < 0.25f) break;
                 // A line that has moved toward an obstacle the solve started clear of brings it in.
-                if (it > 0 && it % ActivationCheckInterval == 0 && UpdateActivation())
-                    AssembleAndFactor(nu, need, rho);
+                if (it > 0 && it % ActivationCheckInterval == 0)
+                {
+                    bool joined = UpdateActivation(it);
+                    joined |= UpdateSegActivation();
+                    if (joined) AssembleAndFactor(nu, need, rho);
+                }
 
                 // ---- x: least-squares fit of the line to every copy (minus its dual).
                 Array.Clear(_rhs, 0, nu);
@@ -355,14 +429,23 @@ namespace CosmicShore.Gameplay
                     _rhs[u] += rho * (_zpa[i] - _wpa[i]);
                     _rhs[u + 1] += rho * (_zpb[i] - _wpb[i]);
                 }
+                double rhoO = rho * Math.Max(1f, _set.ObstacleRhoScale);
                 for (int o = 0; o < _obsCenters.Count; o++)
                 {
                     if (!_oActive[o]) continue;
                     for (int axis = 0; axis < 3; axis++)
                     {
                         ObstacleRow(o, axis);
-                        CommitRhs(rho, _zo[o][axis] - _wo[o][axis]);
+                        CommitRhs(rhoO, _zo[o][axis] - _wo[o][axis]);
                     }
+                }
+                for (int c = 0; c < _segCopies; c++)
+                {
+                    if (!_cActive[c]) continue;
+                    SegRow(c, 0);
+                    CommitRhs(rho, _zc[c].x - _wc[c].x);
+                    SegRow(c, 1);
+                    CommitRhs(rho, _zc[c].y - _wc[c].y);
                 }
                 SolveFactored(nu);
                 for (int f = 0; f < m; f++)
@@ -412,10 +495,21 @@ namespace CosmicShore.Gameplay
                     {
                         if (d < 1e-3f) away = PushDirection(_oSeg[o]);
                         else away /= d;
-                        vq = rod + away * rad;
+                        Vector3 radial = rod + away * rad;
+                        vq = _set.ClearAwareObstacles ? ProjectClearOfRod(o, vq, rod, rad, radial) : radial;
                     }
                     _wo[o] += hq - vq;
                     _zo[o] = vq;
+                }
+                for (int c = 0; c < _segCopies; c++)
+                {
+                    if (!_cActive[c]) continue;
+                    SegOffset(c, out float sa, out float sb);
+                    Vector2 hc = (float)relax * new Vector2(sa, sb) + (float)(1.0 - relax) * _zc[c];
+                    Vector2 vc = hc + _wc[c];
+                    ProjectSegment(c, ref vc);
+                    _wc[c] += hc - vc;
+                    _zc[c] = vc;
                 }
 
                 if (DebugLog != null && (it % 20 == 0 || it == iterations - 1))
@@ -425,7 +519,210 @@ namespace CosmicShore.Gameplay
                 }
             }
             Iterations = it;
+            for (int pass = 0; pass < _set.PolishPasses; pass++)
+                if (!PolishObstacles()) break;
+            if (_set.CarryObstacleDuals)
+            {
+                StoreCarried(_carryWork);
+                _carryFromCommitted = false;
+            }
             Diagnose();
+        }
+
+        // ---------------------------------------------------------------- carried obstacle state
+
+        /// <summary>Every active obstacle's world copy and scaled dual, keyed by its centre, with an
+        /// open-addressed index so a solve finds its obstacles' last state in O(1) each.</summary>
+        sealed class CarryTable
+        {
+            public readonly Vector3[] Key = new Vector3[MaxObstacles];
+            public readonly Vector3[] Z = new Vector3[MaxObstacles];
+            public readonly Vector3[] W = new Vector3[MaxObstacles];
+            public readonly int[] Index = new int[IndexSize];
+            public int Count;
+
+            public const int IndexSize = 2048;
+
+            public void Clear()
+            {
+                Count = 0;
+                Array.Fill(Index, -1);
+            }
+
+            public void Add(Vector3 key, Vector3 z, Vector3 w)
+            {
+                if (Count >= MaxObstacles) return;
+                int h = Hash(key);
+                while (Index[h] >= 0) h = (h + 1) & (IndexSize - 1);
+                Index[h] = Count;
+                Key[Count] = key;
+                Z[Count] = z;
+                W[Count] = w;
+                Count++;
+            }
+
+            public int Find(Vector3 key)
+            {
+                int h = Hash(key);
+                for (int probe = 0; probe < IndexSize; probe++)
+                {
+                    int e = Index[h];
+                    if (e < 0) return -1;
+                    if (Key[e].x == key.x && Key[e].y == key.y && Key[e].z == key.z) return e;
+                    h = (h + 1) & (IndexSize - 1);
+                }
+                return -1;
+            }
+
+            public void CopyFrom(CarryTable other)
+            {
+                Count = other.Count;
+                Array.Copy(other.Key, Key, Count);
+                Array.Copy(other.Z, Z, Count);
+                Array.Copy(other.W, W, Count);
+                Array.Copy(other.Index, Index, IndexSize);
+            }
+
+            static int Hash(Vector3 v)
+            {
+                unchecked
+                {
+                    int h = BitConverter.SingleToInt32Bits(v.x) * 73856093;
+                    h ^= BitConverter.SingleToInt32Bits(v.y) * 19349663;
+                    h ^= BitConverter.SingleToInt32Bits(v.z) * 83492791;
+                    h ^= h >> 15;
+                    return h & (IndexSize - 1);
+                }
+            }
+        }
+
+        readonly CarryTable _carryWork = NewCarryTable(), _carryCommit = NewCarryTable();
+        readonly CarryTable[] _carrySlots = { NewCarryTable(), NewCarryTable() };
+        bool _carryFromCommitted = true;
+
+        static CarryTable NewCarryTable()
+        {
+            var t = new CarryTable();
+            t.Clear();
+            return t;
+        }
+
+        void RestoreCarried(CarryTable table)
+        {
+            if (table.Count == 0) return;
+            for (int o = 0; o < _obsCenters.Count; o++)
+            {
+                int e = table.Find(_obsCenters[o]);
+                if (e < 0) continue;
+                _oActive[o] = true;
+                _oActIt[o] = -1;
+                _zo[o] = table.Z[e];
+                _wo[o] = table.W[e];
+                _activeObstacles++;
+            }
+        }
+
+        void StoreCarried(CarryTable table)
+        {
+            table.Clear();
+            for (int o = 0; o < _obsCenters.Count; o++)
+                if (_oActive[o]) table.Add(_obsCenters[o], _zo[o], _wo[o]);
+        }
+
+        /// <summary>Keeps the last solve's obstacle state as candidate <paramref name="slot"/>'s.</summary>
+        public void SaveCarry(int slot) => _carrySlots[Mathf.Clamp(slot, 0, _carrySlots.Length - 1)].CopyFrom(_carryWork);
+
+        /// <summary>The plan flown is candidate <paramref name="slot"/>'s: its obstacle state is where
+        /// the next re-plan starts.</summary>
+        public void CommitCarry(int slot) => _carryCommit.CopyFrom(_carrySlots[Mathf.Clamp(slot, 0, _carrySlots.Length - 1)]);
+
+        /// <summary>Forgets every carried obstacle state (a new race).</summary>
+        public void ClearCarry()
+        {
+            _carryWork.Clear();
+            _carryCommit.Clear();
+            for (int i = 0; i < _carrySlots.Length; i++) _carrySlots[i].Clear();
+            _carryFromCommitted = true;
+        }
+
+        /// <summary>
+        /// Tooling experiment: pushes the SEED out of every obstacle before a solve (the same least
+        /// move <see cref="PolishObstacles"/> makes after one), so the solve starts on the side of each
+        /// rod the seed was nearest and its copies all push the same way.
+        /// </summary>
+        public void PolishSeed(int passes)
+        {
+            for (int o = 0; o < _obsCenters.Count; o++)
+            {
+                float u = _obsU[o];
+                _oSeg[o] = Mathf.Clamp(Mathf.FloorToInt(u), 1, _n - 3);
+                _oT[o] = Mathf.Clamp01(u - _oSeg[o]);
+            }
+            if (!_sidesValid || !_set.FaceLock)
+            {
+                for (int i = 0; i < _n; i++) _side[i] = NearestSide(i, _a[i], _b[i]);
+            }
+            for (int pass = 0; pass < passes; pass++)
+                if (!PolishObstacles()) break;
+        }
+
+        /// <summary>Tooling experiment: the deepest any ACTIVE obstacle's copy point is inside its rod.</summary>
+        float ActiveObstacleDeficit()
+        {
+            float worst = 0f;
+            for (int o = 0; o < _obsCenters.Count; o++)
+            {
+                if (!_oActive[o]) continue;
+                Vector3 q = CurvePoint(_oSeg[o] + _oT[o]);
+                worst = Mathf.Max(worst, _obsRadii[o] - (q - RodPoint(o, q)).magnitude);
+            }
+            return worst;
+        }
+
+        /// <summary>
+        /// Tooling experiment: moves the free control points under each obstacle the line still passes
+        /// through by the least (in their offset planes) that puts its copy point on the rod's surface,
+        /// then re-applies the plates' clearance to them. True when anything moved.
+        /// </summary>
+        bool PolishObstacles()
+        {
+            bool moved = false;
+            for (int o = 0; o < _obsCenters.Count; o++)
+            {
+                Vector3 q = CurvePoint(_oSeg[o] + _oT[o]);
+                Vector3 rod = RodPoint(o, q);
+                Vector3 away = q - rod;
+                float d = away.magnitude;
+                float rad = _obsRadii[o] + 0.05f;
+                if (d >= rad) continue;
+                away = d < 1e-3f ? PushDirection(_oSeg[o]) : away / d;
+                Vector3 delta = rod + away * rad - q;
+                int j = _oSeg[o];
+                SplineWeights(_oT[o], out float w0, out float w1, out float w2, out float w3);
+                float sum = 0f;
+                for (int k = 0; k < 4; k++)
+                {
+                    int idx = j - 1 + k;
+                    if (idx < FixedCount || idx >= _n) continue;
+                    float w = k == 0 ? w0 : k == 1 ? w1 : k == 2 ? w2 : w3;
+                    sum += w * w;
+                }
+                if (sum < 1e-4f) continue;
+                for (int k = 0; k < 4; k++)
+                {
+                    int idx = j - 1 + k;
+                    if (idx < FixedCount || idx >= _n) continue;
+                    float w = k == 0 ? w0 : k == 1 ? w1 : k == 2 ? w2 : w3;
+                    Vector3 dk = delta * (w / sum);
+                    double na = _a[idx] + Vector3.Dot(dk, _r[idx]);
+                    double nb = _b[idx] + Vector3.Dot(dk, _u[idx]);
+                    ProjectClear(idx, ref na, ref nb);
+                    _a[idx] = (float)na;
+                    _b[idx] = (float)nb;
+                }
+                moved = true;
+            }
+            return moved;
         }
 
         /// <summary>
@@ -447,14 +744,23 @@ namespace CosmicShore.Gameplay
                 Begin(0.0); Add(i, 1.0, 0.0); CommitMatrix(rho + 1e-6);
                 Begin(0.0); Add(i, 0.0, 1.0); CommitMatrix(rho + 1e-6);
             }
+            double rhoO = rho * Math.Max(1f, _set.ObstacleRhoScale);
             for (int o = 0; o < _obsCenters.Count; o++)
             {
                 if (!_oActive[o]) continue;
                 for (int axis = 0; axis < 3; axis++)
                 {
                     ObstacleRow(o, axis);
-                    CommitMatrix(rho);
+                    CommitMatrix(rhoO);
                 }
+            }
+            for (int c = 0; c < _segCopies; c++)
+            {
+                if (!_cActive[c]) continue;
+                SegRow(c, 0);
+                CommitMatrix(rho);
+                SegRow(c, 1);
+                CommitMatrix(rho);
             }
             Factor(nu);
         }
@@ -467,16 +773,17 @@ namespace CosmicShore.Gameplay
         /// slow every iteration, and stop it moving to where the near ones need it. Once in, an
         /// obstacle stays in for the solve, so the system cannot flap.
         /// </summary>
-        bool UpdateActivation()
+        bool UpdateActivation(int iteration)
         {
             bool changed = false;
             for (int o = 0; o < _obsCenters.Count; o++)
             {
                 if (_oActive[o]) continue;
                 Vector3 q = CurvePoint(_oSeg[o] + _oT[o]);
-                float reach = _obsRadii[o] + ObstacleActivation;
+                float reach = _obsRadii[o] + (_set.ObstacleActivation > 0f ? _set.ObstacleActivation : ObstacleActivation);
                 if ((q - RodPoint(o, q)).sqrMagnitude > reach * reach) continue;
                 _oActive[o] = true;
+                _oActIt[o] = iteration;
                 _zo[o] = q;
                 _wo[o] = Vector3.zero;
                 _activeObstacles++;
@@ -484,6 +791,156 @@ namespace CosmicShore.Gameplay
             }
             return changed;
         }
+
+        // ---------------------------------------------------------------- obstacle vs plates
+
+        /// <summary>
+        /// The copy's way out of obstacle <paramref name="o"/>'s rod that does not lead into the
+        /// plates. The radial push is the nearest way out of the rod alone — but a rail lying in the
+        /// skim band beside the plates has the plates on its near side, and the radial push from a line
+        /// between them points INTO the clearance box: the plates' projection pushes the line straight
+        /// back, and the two alternate there for the rest of the solve with the line inside the rail.
+        /// The nearest point that is clear of BOTH is round the rod in the cross-section, along the
+        /// plates; sampled on the rod's circle there.
+        /// </summary>
+        Vector3 ProjectClearOfRod(int o, Vector3 vq, Vector3 rod, float rad, Vector3 radial)
+        {
+            int j = _oSeg[o];
+            float t = _oT[o];
+            Vector3 c = Vector3.Lerp(_c[j], _c[j + 1], t);
+            Vector3 r = Vector3.Lerp(_r[j], _r[j + 1], t).normalized;
+            Vector3 u = Vector3.Lerp(_u[j], _u[j + 1], t);
+            u = (u - r * Vector3.Dot(u, r)).normalized;
+            Vector3 tan = Vector3.Cross(r, u);
+            float cw = Mathf.Max(_cw[j], _cw[j + 1]) + ClearPad, ch = Mathf.Max(_ch[j], _ch[j + 1]) + ClearPad;
+            Vector3 dr = radial - c;
+            float ra = Vector3.Dot(dr, r), rb = Vector3.Dot(dr, u);
+            if (Mathf.Abs(ra) >= cw || Mathf.Abs(rb) >= ch) return radial;   // the radial way out is clear of the plates
+
+            Vector3 dq = vq - c, dc = rod - c;
+            float qa = Vector3.Dot(dq, r), qb = Vector3.Dot(dq, u), qt = Vector3.Dot(dq, tan);
+            float oa = Vector3.Dot(dc, r), ob = Vector3.Dot(dc, u);
+            float best = float.MaxValue, ba = 0f, bb = 0f;
+            const int samples = 32;
+            for (int k = 0; k < samples; k++)
+            {
+                float th = k * (2f * Mathf.PI / samples);
+                float pa = oa + rad * Mathf.Cos(th), pb = ob + rad * Mathf.Sin(th);
+                if (Mathf.Abs(pa) < cw && Mathf.Abs(pb) < ch) continue;
+                float da = pa - qa, db = pb - qb;
+                float dist = da * da + db * db;
+                if (dist < best) { best = dist; ba = pa; bb = pb; }
+            }
+            if (best == float.MaxValue) return radial;
+            return c + r * ba + u * bb + tan * qt;
+        }
+
+        // ---------------------------------------------------------------- segment clearance
+
+        void SegAt(int c, out int j, out float t)
+        {
+            j = 1 + c / _segSamples;
+            t = (c % _segSamples) / (float)_segSamples;
+        }
+
+        /// <summary>The curve's offset (across the plates, along their up) at segment copy
+        /// <paramref name="c"/>: the B-spline blend of its control points' offsets. Exact where the
+        /// frames of neighbouring knots agree, and they turn a degree or two per knot.</summary>
+        void SegOffset(int c, out float a, out float b)
+        {
+            SegAt(c, out int j, out float t);
+            SplineWeights(t, out float w0, out float w1, out float w2, out float w3);
+            a = w0 * _a[j - 1] + w1 * _a[j] + w2 * _a[j + 1] + w3 * _a[j + 2];
+            b = w0 * _b[j - 1] + w1 * _b[j] + w2 * _b[j + 1] + w3 * _b[j + 2];
+        }
+
+        void SegRow(int c, int axis)
+        {
+            SegAt(c, out int j, out float t);
+            SplineWeights(t, out float w0, out float w1, out float w2, out float w3);
+            Begin(0.0);
+            double ka = axis == 0 ? 1.0 : 0.0, kb = axis == 1 ? 1.0 : 0.0;
+            Add(j - 1, ka * w0, kb * w0);
+            Add(j, ka * w1, kb * w1);
+            Add(j + 1, ka * w2, kb * w2);
+            Add(j + 2, ka * w3, kb * w3);
+        }
+
+        void SegBox(int c, out float cw, out float ch)
+        {
+            SegAt(c, out int j, out float t);
+            float relief = _set.ClearMargin * (1f - Mathf.Clamp01(_set.SegmentMarginScale));
+            cw = Mathf.Max(_cw[j], _cw[j + 1]) - relief;
+            ch = Mathf.Max(_ch[j], _ch[j + 1]) - relief;
+        }
+
+        /// <summary>
+        /// Moves a segment sample that is inside the clearance box out of it. Where the segment's
+        /// control points are on OPPOSITE faces the sample goes out the side BETWEEN them — round the
+        /// edge — and never back through the face it came from: the nearest exit from a thin plate
+        /// is always through it, which is the tunnel this constraint exists to close.
+        /// </summary>
+        void ProjectSegment(int c, ref Vector2 v)
+        {
+            SegBox(c, out float cw, out float ch);
+            float lw = cw + ClearPad, lh = ch + ClearPad;
+            if (Mathf.Abs(v.x) >= lw || Mathf.Abs(v.y) >= lh) return;
+            SegAt(c, out int j, out _);
+            bool top = false, bottom = false, right = false, left = false;
+            float sumA = 0f, sumB = 0f;
+            for (int k = j - 1; k <= j + 2; k++)
+            {
+                switch (_side[k])
+                {
+                    case 0: right = true; break;
+                    case 1: left = true; break;
+                    case 2: top = true; break;
+                    default: bottom = true; break;
+                }
+                sumA += _a[k];
+                sumB += _b[k];
+            }
+            int side;
+            if (top && bottom) side = sumA >= 0f ? 0 : 1;
+            else if (right && left) side = sumB >= 0f ? 2 : 3;
+            else
+            {
+                float da = lw - Mathf.Abs(v.x), db = lh - Mathf.Abs(v.y);
+                side = da < db ? (v.x >= 0f ? 0 : 1) : (v.y >= 0f ? 2 : 3);
+            }
+            switch (side)
+            {
+                case 0: v.x = lw; break;
+                case 1: v.x = -lw; break;
+                case 2: v.y = lh; break;
+                default: v.y = -lh; break;
+            }
+        }
+
+        /// <summary>Brings into the solve every segment sample now within a unit of the clearance
+        /// box; true when any joined.</summary>
+        bool UpdateSegActivation()
+        {
+            bool changed = false;
+            for (int c = 0; c < _segCopies; c++)
+            {
+                if (_cActive[c]) continue;
+                SegOffset(c, out float a, out float b);
+                SegBox(c, out float cw, out float ch);
+                if (Mathf.Abs(a) >= cw + SegActivation || Mathf.Abs(b) >= ch + SegActivation) continue;
+                _cActive[c] = true;
+                _zc[c] = new Vector2(a, b);
+                _wc[c] = Vector2.zero;
+                _activeSegCopies++;
+                changed = true;
+            }
+            return changed;
+        }
+
+        const float SegActivation = 1f;
+
+        /// <summary>The deepest any segment sample is inside the clearance box.</summary>
+        public float WorstSegmentDeficit { get; private set; }
 
         /// <summary>Obstacles further than this beyond their radius from the line are left out of a
         /// solve until the line comes near them.</summary>
@@ -523,9 +980,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ProxPoint(int i, double rho, ref double va, ref double vb)
         {
-            // Hand the point to the face it is now clearest of, if it is outside the box.
+            // Hand the point to the face it is now clearest of, if it is outside the box — but only
+            // to a NEIGHBOURING face. The x-update fits the line to the copies with nothing between
+            // the knots, so one iteration can carry a knot clean through the plates (top to bottom
+            // across the ribbon's width, 15 u of knot spacing against a 3 u plate); handing it the
+            // opposite face then makes the tunnel the answer, and the hull flies it. A point that has
+            // jumped across keeps its face and is projected back onto it; round an edge (through
+            // the side regions, one face at a time) is the only way from one face to the other.
             float fa = (float)va, fb = (float)vb;
-            if (Mathf.Abs(fa) >= _cw[i] || Mathf.Abs(fb) >= _ch[i]) _side[i] = NearestSide(i, fa, fb);
+            if (_set.LockSide < 0 && (Mathf.Abs(fa) >= _cw[i] || Mathf.Abs(fb) >= _ch[i]))
+            {
+                int ns = NearestSide(i, fa, fb);
+                if (!_set.FaceLock || ns != OppositeSide(_side[i])) _side[i] = ns;
+            }
 
             // Toward the band: exact prox of w_B dist² to the reach region.
             if (_set.BandWeight > 0f)
@@ -580,6 +1047,11 @@ namespace CosmicShore.Gameplay
             Vector3 n = _r[i] * _a[i] + _u[i] * _b[i];
             return n.sqrMagnitude > 1e-4f ? n.normalized : _u[i];
         }
+
+        /// <summary>The face across the plates from <paramref name="side"/>.</summary>
+        static int OppositeSide(int side) => side ^ 1;
+
+        bool _sidesValid;
 
         /// <summary>The face of the clearance box (0 +a, 1 -a, 2 +b, 3 -b) the ray to (a, b) leaves
         /// through — the side of the plates the point is on.</summary>
@@ -832,6 +1304,15 @@ namespace CosmicShore.Gameplay
                 if (da > 0f && db > 0f) clear = Mathf.Max(clear, Mathf.Min(da, db));
             }
             WorstClearDeficit = clear;
+            float segWorst = 0f;
+            for (int c = 0; c < _segCopies; c++)
+            {
+                SegOffset(c, out float sa, out float sb);
+                SegBox(c, out float cw, out float ch);
+                float da = cw - Mathf.Abs(sa), db = ch - Mathf.Abs(sb);
+                if (da > 0f && db > 0f) segWorst = Mathf.Max(segWorst, Mathf.Min(da, db));
+            }
+            WorstSegmentDeficit = segWorst;
 
             CrystalMiss = 0f;
             if (_crystalIndex >= 0)
@@ -840,13 +1321,17 @@ namespace CosmicShore.Gameplay
                 CrystalMiss = Mathf.Max(0f, Mathf.Sqrt(da * da + db * db) - _crystalR);
             }
 
-            float obs = 0f;
+            float obs = 0f, obsFar = 0f;
+            WorstObstacleU = -1f;
             for (int o = 0; o < _obsCenters.Count; o++)
             {
                 Vector3 q = CurvePoint(_oSeg[o] + _oT[o]);
-                obs = Mathf.Max(obs, _obsRadii[o] - (q - RodPoint(o, q)).magnitude);
+                float def = _obsRadii[o] - (q - RodPoint(o, q)).magnitude;
+                if (def > obs) { obs = def; WorstObstacleU = _obsU[o]; }
+                if (_obsU[o] >= FixedCount + 1f) obsFar = Mathf.Max(obsFar, def);
             }
             WorstObstacleDeficit = obs;
+            WorstFarObstacleDeficit = obsFar;
         }
 
         /// <summary>
@@ -856,20 +1341,46 @@ namespace CosmicShore.Gameplay
         /// its rate of change there (the same stencil the solve bounds). Exact by bisection — the two
         /// terms are vectors, and where they point apart the sum is less than the bound on their sizes.
         /// </summary>
+        /// <summary>
+        /// Length of line segment <paramref name="i"/> (between grid points i and i+1) the turn model
+        /// prices it at: the grid step, or — <see cref="Settings.ArcAware"/> — the control polygon's own
+        /// span there. A line running across the ribbon covers several units per unit of arc, and the
+        /// stencil's differences per unit of arc then read its turn that many times too sharp.
+        /// </summary>
+        public float SegmentLength(int i)
+        {
+            if (!_set.ArcAware || i < 0 || i >= _n - 1) return _step;
+            float len = (Point(i + 1) - Point(i)).magnitude;
+            return _step * Mathf.Clamp(len / _step, 0.8f, 4f);
+        }
+
         public float MaxSpeed(int i, float budget, float vCap)
         {
             if (i < 1 || i > _n - 3) return vCap;
             Vector3 p0 = Point(i - 1), p1 = Point(i), p2 = Point(i + 1), p3 = Point(i + 2);
-            float h = _step;
+            float h = SegmentLength(i);
             Vector3 kv = 0.5f * (p0 - p1 - p2 + p3) / (h * h);
             Vector3 jv = (-p0 + 3f * p1 - 3f * p2 + p3) / (h * h * h);
             float kr = Vector3.Dot(kv, _r[i]), ku = Vector3.Dot(kv, _u[i]);
             float jr = Vector3.Dot(jv, _r[i]), ju = Vector3.Dot(jv, _u[i]);
+            // The curvature at the segment's two knots: the curvature runs linearly along a cubic
+            // B-spline segment, so the demand peaks at an end — the middle reads the average.
+            Vector3 k0 = (p0 - 2f * p1 + p2) / (h * h), k1 = (p1 - 2f * p2 + p3) / (h * h);
+            float k0r = Vector3.Dot(k0, _r[i]), k0u = Vector3.Dot(k0, _u[i]);
+            float k1r = Vector3.Dot(k1, _r[i]), k1u = Vector3.Dot(k1, _u[i]);
+            bool ends = _set.FitSegmentEnds;
             float k = Mathf.Max(0.05f, _set.FollowRate);
             float Demand(float v)
             {
-                float dr = v * kr + v * v / k * jr, du = v * ku + v * v / k * ju;
-                return Mathf.Sqrt(dr * dr + du * du);
+                float jt = v * v / k;
+                if (!ends)
+                {
+                    float dr = v * kr + jt * jr, du = v * ku + jt * ju;
+                    return Mathf.Sqrt(dr * dr + du * du);
+                }
+                float ar = v * k0r + jt * jr, au = v * k0u + jt * ju;
+                float br = v * k1r + jt * jr, bu = v * k1u + jt * ju;
+                return Mathf.Sqrt(Mathf.Max(ar * ar + au * au, br * br + bu * bu));
             }
             if (Demand(vCap) <= budget) return vCap;
             float lo = 0f, hi = vCap;
@@ -895,6 +1406,64 @@ namespace CosmicShore.Gameplay
             Vector3 rp = RodPoint(best, q);
             return $"nearest obstacle {Mathf.Sqrt(bd):F1} away: u={_obsU[best]:F2} (seg {_oSeg[best]} t {_oT[best]:F2} of n {_n}) " +
                    $"curve-to-rod {(q - rp).magnitude:F2} radius {_obsRadii[best]:F2}";
+        }
+
+        /// <summary>Tooling: the state of the obstacle at <paramref name="center"/> in the last solve:
+        /// -1 not in it, 0 in it but never activated, 1 activated.</summary>
+        public int ObstacleState(Vector3 center)
+        {
+            for (int o = 0; o < _obsCenters.Count; o++)
+                if ((_obsCenters[o] - center).sqrMagnitude < 1e-4f) return _oActive[o] ? 1 : 0;
+            return -1;
+        }
+
+        /// <summary>Tooling: distance from the obstacle at <paramref name="center"/>'s rod to the curve
+        /// at its copy's own parameter (what the solve constrains), or -1.</summary>
+        public int ActivatedAt(Vector3 center)
+        {
+            for (int o = 0; o < _obsCenters.Count; o++)
+                if ((_obsCenters[o] - center).sqrMagnitude < 1e-4f) return _oActive[o] ? _oActIt[o] : -1;
+            return -2;
+        }
+
+        /// <summary>Tooling: the knot parameter of the obstacle at <paramref name="center"/>, or -1.</summary>
+        public float ObstacleU(Vector3 center)
+        {
+            for (int o = 0; o < _obsCenters.Count; o++)
+                if ((_obsCenters[o] - center).sqrMagnitude < 1e-4f) return _obsU[o];
+            return -1f;
+        }
+
+        public float CopyDistance(Vector3 center)
+        {
+            for (int o = 0; o < _obsCenters.Count; o++)
+            {
+                if ((_obsCenters[o] - center).sqrMagnitude >= 1e-4f) continue;
+                Vector3 q = CurvePoint(_oSeg[o] + _oT[o]);
+                return (q - RodPoint(o, q)).magnitude;
+            }
+            return -1f;
+        }
+
+        /// <summary>Tooling: why a rod at <paramref name="center"/> would or would not have been
+        /// taken into the last solve (the same tests <see cref="AddObstacle"/> makes).</summary>
+        public string WhyNotInSolve(Vector3 center)
+        {
+            if (_n < FixedCount + 2) return "no grid";
+            int best = -1;
+            float bestD = float.MaxValue;
+            for (int i = 0; i < _n; i++)
+            {
+                float d = (_c[i] - center).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = i; }
+            }
+            int i0 = Mathf.Max(0, best - 1), i1 = Mathf.Min(_n - 1, best + 1);
+            Vector3 tangent = (_c[i1] - _c[i0]).normalized;
+            float u = best + Vector3.Dot(center - _c[best], tangent) / _step;
+            Vector3 lateral = center - _c[best] - tangent * Vector3.Dot(center - _c[best], tangent);
+            string why = u < FixedCount - 2 + 0.5f ? "behind" : u > _n - 2.01f ? "beyond" :
+                         lateral.magnitude > MaxObstacleLateral ? "lateral" : _obsCenters.Count >= MaxObstacles ? "cap?" : "should-be-in";
+            return $"[{why} u={u:F2} n={_n} lat={lateral.magnitude:F0} count={_obsCenters.Count}]";
         }
 
         /// <summary>Tooling: one point's constraint state.</summary>

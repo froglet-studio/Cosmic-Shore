@@ -134,6 +134,77 @@ namespace CosmicShore.Gameplay
         public string LastChoice { get; private set; } = "";
         /// <summary>The last steering terms — for tooling.</summary>
         public string DebugSteer { get; private set; } = "";
+
+        /// <summary>Tooling: after every solve, check the solved line against every obstacle it was
+        /// handed, and count the ones it passes through by why: filtered out of the solve, in it but
+        /// never activated, activated but still violated.</summary>
+        public static bool DiagnoseObstacles;
+        public static System.Action<string> DiagSink;
+        public int DiagFiltered, DiagInactive, DiagViolated, DiagViolatedCopyOk, DiagSolves, DiagNear, DiagFar;
+
+        public static bool DiagnoseResolve;
+
+        void DiagnoseSolvedLine()
+        {
+            if (!DiagnoseObstacles || _obstacles == null || _keys.Count < 4) return;
+            DiagSolves++;
+            if (DiagnoseResolve && _opt.WorstFarObstacleDeficit > 1.0f)
+            {
+                // Tooling: would the same set-up resolve it with many more iterations? (Destroys the
+                // plan's grid state, so only ever under the diagnostic.)
+                float before = _opt.WorstFarObstacleDeficit, demBefore = _opt.WorstDemand;
+                _opt.Solve(600);
+                DiagSink?.Invoke($"RESOLVE before far={before:F2} dem={demBefore:F2} after600 far={_opt.WorstFarObstacleDeficit:F2} dem={_opt.WorstDemand:F2} clr={_opt.WorstClearDeficit:F2} miss={_opt.CrystalMiss:F2} active={_opt.ActiveObstacleCount} u={_opt.WorstObstacleU:F1}");
+            }
+            if (DiagnoseObstacles) { DiagNear += _opt.WorstObstacleDeficit > 1f && _opt.WorstObstacleU < 4f ? 1 : 0; DiagFar += _opt.WorstFarObstacleDeficit > 1f ? 1 : 0; }
+            float s0 = _s, s1 = _s + 400f;
+            int n = Mathf.CeilToInt((s1 - s0) / 2f) + 1;
+            if (_diagPts.Length < n) _diagPts = new Vector3[n];
+            for (int i = 0; i < n; i++) _diagPts[i] = LinePoint(_keys, s0 + i * 2f);
+            for (int o = 0; o < _obstacles.Count; o++)
+            {
+                var ob = _obstacles[o];
+                float r = HullReach + Mathf.Max(ob.HalfExtents.x, ob.HalfExtents.y) + _p.ObstacleMargin + 0.6f;
+                Vector3 ax = ob.Rotation * Vector3.forward;
+                float best = float.MaxValue;
+                for (int i = 0; i < n; i++)
+                {
+                    Vector3 q = _diagPts[i];
+                    if ((q - ob.Center).sqrMagnitude > (r + ob.HalfExtents.z + 4f) * (r + ob.HalfExtents.z + 4f)) continue;
+                    Vector3 rp = ob.Center + ax * Mathf.Clamp(Vector3.Dot(q - ob.Center, ax), -ob.HalfExtents.z, ob.HalfExtents.z);
+                    best = Mathf.Min(best, (q - rp).magnitude);
+                }
+                if (best >= r - 1f) continue;
+                int st = _opt.ObstacleState(ob.Center);
+                if (st < 0) DiagFiltered++; else if (st == 0) DiagInactive++;
+                else
+                {
+                    DiagViolated++;
+                    float cd = _opt.CopyDistance(ob.Center);
+                    if (cd >= r - 0.5f) DiagViolatedCopyOk++;
+                    if (DiagSink != null)
+                    {
+                        float os = _route.Project(ob.Center, _s, 10f, 450f);
+                        _route.Frame(os, out Vector3 oc, out _, out Vector3 orr, out Vector3 ouu);
+                        Vector3 od = ob.Center - oc;
+                        Vector3 lp = LinePoint(_keys, os);
+                        Vector3 ld = lp - oc;
+                        int ci = -1; float cds = float.NaN;
+                        if (_planHasCrystal) cds = _crystalS - os;
+                        DiagSink($"u={_opt.ObstacleU(ob.Center):F2} act={_opt.ActivatedAt(ob.Center)} pen={r - best:F2} copy={cd:F2} r={r:F2} n={_opt.Count} v={_sensors.Speed:F0} " +
+                                 $"obs=({Vector3.Dot(od, orr):F1},{Vector3.Dot(od, ouu):F1}) line=({Vector3.Dot(ld, orr):F1},{Vector3.Dot(ld, ouu):F1}) ds={os - _s:F0} crys={cds:F0} active={_opt.ActiveObstacleCount}/{_opt.ObstacleCount} note={LastChoice.Split(' ')[0]}");
+                    }
+                }
+            }
+        }
+        Vector3[] _diagPts = new Vector3[256];
+
+        /// <summary>Tooling: how many lines the optimiser has solved, and the plan's point at an arc.</summary>
+        public int SolveCount { get; private set; }
+        public Vector3 PlanPosition(float s) => LinePoint(_keys, s);
+
+        /// <summary>Tooling: the last throttle decision's terms (cap, plan speed, lead).</summary>
+        public string DebugThrottle { get; private set; } = "";
         /// <summary>What the last obstacle check concluded — for tooling.</summary>
         public string LastAvoidNote { get; private set; } = "";
 
@@ -159,7 +230,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Tooling: the last solve's view of the obstacle nearest a point.</summary>
-        public string DescribeObstacleNear(Vector3 p) => _opt.DescribeObstacleNear(p);
+        public string DescribeObstacleNear(Vector3 p) => _opt.DescribeObstacleNear(p) + " " + _opt.WhyNotInSolve(p) + $" solveAge={_sensors.Time - _lastRefresh:F2}";
 
         /// <summary>The planned offset (distance, angle) at arc <paramref name="s"/> — for tooling.</summary>
         public void DescribePlan(float s, out float rho, out float phi) => Offset(_keys, s, out rho, out phi);
@@ -192,6 +263,11 @@ namespace CosmicShore.Gameplay
             _crystalPlanned = false;
             _crystalS = float.NaN;
             _crystalSeenAt = -1f;
+            _planApproach = false;
+            _approach = false;
+            _seeking = false;
+            _realigning = false;
+            _opt.ClearCarry();
         }
 
         public SkimRacerCommand Tick(in SkimRacerSensors sensors, IReadOnlyList<SkimObstacle> obstacles)
@@ -210,15 +286,49 @@ namespace CosmicShore.Gameplay
                 _initialized = true;
                 _throttle = Mathf.Clamp01(_p.Throttle);
                 ObserveCrystal(force: true);
-                if (_p.UseOptimizer) Optimize(fromShip: true, cold: true);
+                _approach = _p.ApproachArcAware && OffBandDistance() > 4f;
+                if (_approach)
+                {
+                    _route.Frame(_s, out Vector3 c0, out _, out _, out Vector3 u0);
+                    _approachSide = Vector3.Dot(sensors.Position - c0, u0) < 0f ? 3 : 2;
+                }
+                _launching = _p.UseOptimizer && _p.LaunchOffBand > 0f && _haveCrystal && OffBandDistance() > _p.LaunchOffBand;
+                if (_launching) _launchCrystal = _crystal;
+                else if (_p.UseOptimizer) Optimize(fromShip: true, cold: true);
                 else Replan(fromShip: true);
             }
 
             _s = _route.Project(sensors.Position, _s, 60f, 60f + v * sensors.DeltaTime * 4f);
+            if (_seeking)
+            {
+                if (!SeekOver()) return SeekTick(_seekCrystal);
+                _seeking = false;
+                ObserveCrystal(force: true);
+                _route.Frame(_s, out _, out Vector3 tSeek, out _, out _);
+                _realigning = Vector3.Dot(sensors.Rotation * Vector3.forward, tSeek) < 0.5f;
+                if (!_realigning) Optimize(fromShip: true, cold: true);
+            }
+            if (_realigning)
+            {
+                _route.Frame(_s, out _, out Vector3 tAl, out _, out _);
+                if (Vector3.Dot(sensors.Rotation * Vector3.forward, tAl) < 0.7f && _sensors.Time - _seekStart < _p.RecoverMaxSeconds + 6f)
+                    return SeekTick(LaunchMergePoint());
+                _realigning = false;
+                Optimize(fromShip: true, cold: true);
+            }
+            if (_approach) UpdateApproach();
+            if (_launching)
+            {
+                if (!LaunchOver()) return LaunchTick();
+                _launching = false;
+                ObserveCrystal(force: true);
+                Optimize(fromShip: true, cold: true);
+            }
             PruneKeys();
 
             if (_p.UseOptimizer)
             {
+                if (RescueCrystal()) return SeekTick(_seekCrystal);
                 TickOptimized(obstacles);
                 UpdateThrottle();
                 return Steer();
@@ -240,6 +350,246 @@ namespace CosmicShore.Gameplay
             if (obstacles != null && obstacles.Count > 0) Avoid(obstacles);
             UpdateThrottle();
             return Steer();
+        }
+
+        // ============================================================================== missed crystal
+
+        bool _seeking;
+        bool _realigning;
+        Vector3 _seekCrystal;
+        float _seekStart;
+
+        /// <summary>Starts the turn for the crystal now, when it is close ahead and the line being flown
+        /// passes too wide of it to collect it — the plan cannot be re-solved onto it in time.</summary>
+        bool RescueCrystal()
+        {
+            if (!_p.RecoverMissedCrystal || _seeking || !_haveCrystal || float.IsNaN(_crystalS) || _keys.Count < 4) return false;
+            float ahead = _crystalS - _s;
+            float v = Mathf.Max(_sensors.Speed, 30f);
+            if (ahead <= 0f || ahead > Mathf.Max(_p.RescueMinAhead, v * _p.RescueSeconds)) return false;
+            float miss = Vector3.Distance(LinePoint(_keys, _crystalS), _crystal);
+            if (miss < _p.RescueMiss) return false;
+            _seeking = true;
+            _seekCrystal = _crystal;
+            _seekStart = _sensors.Time;
+            CrystalsRescued++;
+            return true;
+        }
+
+        /// <summary>Tooling: crystals the plan was about to miss, gone for directly.</summary>
+        public int CrystalsRescued { get; private set; }
+
+        /// <summary>Tooling: crystals flown past and turned round for.</summary>
+        public int CrystalsRecovered { get; private set; }
+
+        /// <summary>The turn-round ends when the crystal is collected (it moves on) — or, as a backstop,
+        /// after <see cref="SkimRacerProfile.RecoverMaxSeconds"/>, when it is left for the next lap.</summary>
+        bool SeekOver()
+        {
+            if (!_sensors.HasCrystal) return true;
+            if ((_sensors.CrystalPosition - _seekCrystal).sqrMagnitude > 25f) return true;
+            if (_sensors.Time - _seekStart <= _p.RecoverMaxSeconds) return false;
+            if (!float.IsNaN(_crystalS) && _route.Closed) { _crystalS += _route.Length; CrystalsDeferred++; }
+            return true;
+        }
+
+        /// <summary>
+        /// Back to a crystal flown past: nose onto it (round the ribbon's nearer edge if the plates are
+        /// in the way) as hard as the stick allows, slowed until it lies outside the turning circle —
+        /// a ship that keeps its speed through a turn-round circles a point inside its turn for ever.
+        /// </summary>
+        SkimRacerCommand SeekTick(Vector3 target)
+        {
+            var s = _sensors;
+            Vector3 pos = s.Position;
+            Vector3 fwd = s.Rotation * Vector3.forward;
+            Vector3 aim = target;
+            if (LaunchBlocked(pos, target, out float sb, out float ab, out float bb, out float kw, out float kh))
+                aim = LaunchDetour(pos, target, sb, ab, bb, kw, kh);
+            Vector3 d = aim - pos;
+            float dist = d.magnitude;
+            Vector3 omega = Vector3.zero;
+            float angle = 0f;
+            if (dist > 1e-3f)
+            {
+                Vector3 turn = SkimFlightController.TurnVector(fwd, d / dist, s.Rotation * Vector3.up);
+                angle = turn.magnitude;
+                float rate = Mathf.Min(TurnRateRad, _p.LaunchGain * angle);
+                if (angle > 1e-5f) omega = turn * (rate / angle);
+            }
+            // The aim is reachable from a turn of radius r = v / w while it lies outside the circle:
+            // dist >= 2 r sin(angle). Hold the speed under that, with a margin.
+            float full = s.ThrottleScaler * Mathf.Max(1f, s.BoostMultiplier);
+            float sin = Mathf.Sin(Mathf.Min(angle, 0.5f * Mathf.PI));
+            float vReach = sin > 0.05f ? 0.7f * TurnRateRad * dist / (2f * sin) : float.MaxValue;
+            _throttle = full > 1f ? Mathf.Clamp(vReach / full, 0.15f, 1f) : 1f;
+            if (s.Speed > vReach * 1.1f) _throttle = 0f;
+            SkimFlightController.Solve(s, omega, Vector3.zero, _p.ServoGain, out float xSum, out float ySum, out float yDiff);
+            DebugThrottle = $"seek{(_realigning ? "-align" : "")} aim={(aim == target ? "target" : "detour")} d={dist:F0} ang={angle * Mathf.Rad2Deg:F0} vReach={Mathf.Min(vReach, 999f):F0}";
+            CrossTrackError = 0f;
+            return new SkimRacerCommand { XSum = xSum, YSum = ySum, YDiff = yDiff, XDiff = _throttle };
+        }
+
+        // ============================================================================== approach
+
+        bool _approach;
+        int _approachSide = 3;
+        bool _approachEnded;
+
+        /// <summary>Tooling: true while the brain is still on its approach to the ribbon.</summary>
+        public bool Approaching => _approach;
+
+        /// <summary>Whether lines are read per unit of their OWN length rather than of ribbon arc: on the
+        /// approach, and whenever the ship is slow (the start, after a boost reset) — when its line is
+        /// most often running across the ribbon, and ribbon arc reads a crossing's turns several times
+        /// too sharp.</summary>
+        bool ArcPhase => _approach || (_p.ArcAwareBelowSpeed > 0f && _sensors.Speed < _p.ArcAwareBelowSpeed);
+
+        /// <summary>The approach ends once the ship is in the skim band flying along the ribbon (or,
+        /// as a backstop, once the boost has taken off).</summary>
+        void UpdateApproach()
+        {
+            if (_sensors.BoostMultiplier >= 2f || _sensors.Time > 20f) { _approach = false; return; }
+            if (OffBandDistance() > 0f) return;
+            _route.Frame(_s, out _, out Vector3 t, out _, out _);
+            Vector3 fwd = _sensors.Rotation * Vector3.forward;
+            if (Vector3.Dot(fwd, t) > Mathf.Cos(_p.ApproachEndDegrees * Mathf.Deg2Rad)) { _approach = false; _approachEnded = true; }
+        }
+
+        // ============================================================================== launch
+
+        bool _launching;
+        Vector3 _launchCrystal;
+
+        /// <summary>Tooling: true while the brain is still flying its launch.</summary>
+        public bool Launching => _launching;
+
+        /// <summary>The launch ends with the first crystal (it moves on) — or, as a backstop, after
+        /// <see cref="LaunchMaxSeconds"/>.</summary>
+        bool LaunchOver()
+        {
+            if (!_sensors.HasCrystal) return true;
+            if ((_sensors.CrystalPosition - _launchCrystal).sqrMagnitude > 25f) return true;
+            if (_p.LaunchMerge && OffBandDistance() < _p.LaunchHandover) return true;
+            return _sensors.Time > LaunchMaxSeconds;
+        }
+
+        /// <summary>
+        /// Where a merging launch aims: the skim band of the ribbon's nearer broad face (over or under
+        /// the plates — the racing line's faces), across from where the ship is now, an approach angle
+        /// ahead: <see cref="SkimRacerProfile.LaunchLead"/> times the ship's distance out. The point
+        /// moves on with the ship, so the line to it flattens as it closes — pure pursuit onto the band.
+        /// </summary>
+        Vector3 LaunchMergePoint()
+        {
+            _route.Frame(_s, out Vector3 c, out _, out Vector3 r, out Vector3 u);
+            Vector3 d = _sensors.Position - c;
+            float a = Vector3.Dot(d, r), b = Vector3.Dot(d, u);
+            float off = Mathf.Max(0f, OffBandDistance());
+            float sm = _s + Mathf.Max(_p.LaunchMinLead, _p.LaunchLead * off);
+            _route.Frame(sm, out Vector3 cm, out _, out Vector3 rm, out Vector3 um);
+            _route.Envelope(sm, 0f, out float hw, out float hh);
+            float height = hh + Mathf.Min(_p.NominalHeight, _sensors.SkimRadius - 1f);
+            float am = Mathf.Clamp(a, -0.6f * hw, 0.6f * hw);
+            float bm = b >= 0f ? height : -height;
+            return cm + rm * am + um * bm;
+        }
+
+        const float LaunchMaxSeconds = 20f;
+
+        /// <summary>
+        /// The start, flown straight at the first crystal at full throttle.
+        ///
+        /// <para><b>Why not the planner.</b> A racer is spawned at rest a hundred units off the ribbon,
+        /// and the first crystal is a few hundred units on — usually on the ribbon's FAR side. The line
+        /// planner parameterises everything by arc of the ribbon, and a line that runs ACROSS the
+        /// ribbon covers several units of its own length per unit of arc: its turns read several times
+        /// too sharp, so the throttle sat near half, and its plate constraints hold only at the grid
+        /// points, so it planned straight through the ribbon and the hull followed it in. The launch
+        /// is neither a skimming problem nor a speed problem — at 60 u/s the ship turns inside 30 u —
+        /// it is getting to the crystal without touching the ribbon, which is a straight line, or a
+        /// straight line round the ribbon's nearer edge.</para>
+        /// </summary>
+        SkimRacerCommand LaunchTick()
+        {
+            var s = _sensors;
+            Vector3 pos = s.Position;
+            Vector3 fwd = s.Rotation * Vector3.forward;
+            Vector3 target = _p.LaunchMerge ? LaunchMergePoint() : _launchCrystal;
+            Vector3 aim = target;
+            if (LaunchBlocked(pos, target, out float sb, out float ab, out float bb, out float kw, out float kh))
+                aim = LaunchDetour(pos, target, sb, ab, bb, kw, kh);
+
+            Vector3 d = aim - pos;
+            Vector3 omega = Vector3.zero;
+            if (d.sqrMagnitude > 1e-4f)
+            {
+                Vector3 turn = SkimFlightController.TurnVector(fwd, d.normalized, s.Rotation * Vector3.up);
+                float angle = turn.magnitude;
+                float rate = Mathf.Min(TurnRateRad, _p.LaunchGain * angle);
+                if (angle > 1e-5f) omega = turn * (rate / angle);
+            }
+            SkimFlightController.Solve(s, omega, Vector3.zero, _p.ServoGain, out float xSum, out float ySum, out float yDiff);
+            _throttle = 1f;
+            DebugThrottle = $"launch aim={(aim == target ? (_p.LaunchMerge ? "merge" : "crystal") : "detour")}";
+            CrossTrackError = 0f;
+            return new SkimRacerCommand { XSum = xSum, YSum = ySum, YDiff = yDiff, XDiff = _throttle };
+        }
+
+        /// <summary>
+        /// Whether the straight line from <paramref name="from"/> to <paramref name="to"/> passes
+        /// through the ribbon's keep-out box (the plates' envelope grown by the hull's reach and a
+        /// margin); if so, the arc and cross-section offset where it is deepest inside, and the box.
+        /// </summary>
+        bool LaunchBlocked(Vector3 from, Vector3 to, out float sb, out float ab, out float bb, out float kw, out float kh)
+        {
+            sb = ab = bb = kw = kh = 0f;
+            float s1 = float.IsNaN(_crystalS) ? _s + Vector3.Distance(from, to) : _crystalS;
+            float deepest = 0f;
+            const int samples = 24;
+            float hint = _s;
+            for (int k = 1; k < samples; k++)
+            {
+                float t = k / (float)samples;
+                Vector3 p = Vector3.Lerp(from, to, t);
+                float guess = s1 >= _s ? Mathf.Max(hint, Mathf.Lerp(_s, s1, t) - 40f) : Mathf.Lerp(_s, s1, t);
+                float sp = _route.Project(p, guess, 60f, s1 >= _s ? 120f : 60f);
+                hint = sp;
+                _route.Frame(sp, out Vector3 c, out _, out Vector3 r, out Vector3 u);
+                _route.Envelope(sp, _sensors.HullHalfExtents.z, out float hw, out float hh);
+                float bw = hw + HullReach + _p.LaunchMargin, bh = hh + HullReach + _p.LaunchMargin;
+                Vector3 dp = p - c;
+                float a = Vector3.Dot(dp, r), b = Vector3.Dot(dp, u);
+                float depth = Mathf.Min(bw - Mathf.Abs(a), bh - Mathf.Abs(b));
+                if (depth > deepest)
+                {
+                    deepest = depth;
+                    sb = sp; ab = a; bb = b; kw = bw; kh = bh;
+                }
+            }
+            return deepest > 0f;
+        }
+
+        /// <summary>
+        /// The corner of the keep-out box at arc <paramref name="sb"/> to go round: of the four ways
+        /// past the plates (over, under, either edge), the one with the shortest path from
+        /// <paramref name="from"/> through it to <paramref name="to"/>.
+        /// </summary>
+        Vector3 LaunchDetour(Vector3 from, Vector3 to, float sb, float ab, float bb, float kw, float kh)
+        {
+            _route.Frame(sb, out Vector3 c, out _, out Vector3 r, out Vector3 u);
+            float pad = _p.LaunchMargin;
+            Vector3 best = to;
+            float bestCost = float.MaxValue;
+            for (int k = 0; k < 4; k++)
+            {
+                float a = k < 2 ? (k == 0 ? kw + pad : -(kw + pad)) : Mathf.Clamp(ab, -kw, kw);
+                float b = k < 2 ? Mathf.Clamp(bb, -kh, kh) : (k == 2 ? kh + pad : -(kh + pad));
+                Vector3 v = c + r * a + u * b;
+                float cost = Vector3.Distance(from, v) + Vector3.Distance(v, to);
+                if (cost < bestCost) { bestCost = cost; best = v; }
+            }
+            return best;
         }
 
         // ============================================================================== speed
@@ -751,16 +1101,27 @@ namespace CosmicShore.Gameplay
                 Vector3 d = _smooth[m + 1] - _smooth[m - 1];
                 _tangents.Add(d.sqrMagnitude > 1e-10f ? d.normalized : Vector3.forward);
             }
-            // _t[i] and _k[i] are sample index i - window.
+            // _t[i] and _k[i] are sample index i - window. The curvature is per unit of the LINE's own
+            // length: a line running across the ribbon covers several units of path per unit of ribbon
+            // arc, and read per unit of arc its turn is that many times too sharp (squared for the
+            // rate-of-change term) — which, off the ribbon at the start, kept the throttle near half.
             _t.Clear();
             _k.Clear();
+            _ds.Clear();
             for (int q = 1; q < _tangents.Count - 1; q++)
             {
                 _t.Add(_tangents[q]);
-                _k.Add((_tangents[q + 1] - _tangents[q - 1]) / (2f * SampleStep));
+                float ds = SampleStep;
+                if (_p.PathArcCurvature || ArcPhase)
+                    ds = Mathf.Max(0.25f * SampleStep, 0.5f * (_smooth[q + 2] - _smooth[q]).magnitude);
+                _ds.Add(ds);
+                _k.Add((_tangents[q + 1] - _tangents[q - 1]) / (2f * ds));
             }
             _window = window;
         }
+
+        /// <summary>Path length per sample step around each sampled point (parallel to <see cref="_t"/>).</summary>
+        readonly List<float> _ds = new List<float>(512);
 
         int _window;
         int _rawPad;
@@ -778,7 +1139,7 @@ namespace CosmicShore.Gameplay
         {
             int c = i + _window;
             Vector3 t = _t[c];
-            Vector3 dk = (_k[c + _window] - _k[c - _window]) / (2f * _window * SampleStep);
+            Vector3 dk = (_k[c + _window] - _k[c - _window]) / (2f * _window * _ds[c]);
             return (Vector3.Cross(t, _k[c]) * v + Vector3.Cross(t, dk) * (v * v / Follow)).magnitude;
         }
 
@@ -788,7 +1149,7 @@ namespace CosmicShore.Gameplay
         {
             int c = i + _window;
             float a = Vector3.Cross(_t[c], _k[c]).magnitude;
-            Vector3 dk = (_k[c + _window] - _k[c - _window]) / (2f * _window * SampleStep);
+            Vector3 dk = (_k[c + _window] - _k[c - _window]) / (2f * _window * _ds[c]);
             float b = Vector3.Cross(_t[c], dk).magnitude / Follow;
             return VMax(a, b, budget);
         }
@@ -815,7 +1176,7 @@ namespace CosmicShore.Gameplay
             SampleCurve(keys, s, 1, w);
             t = _t[w];
             k = _k[w];
-            dk = (_k[2 * w] - _k[0]) / (2f * w * SampleStep);
+            dk = (_k[2 * w] - _k[0]) / (2f * w * _ds[w]);
         }
 
         /// <summary>Tooling: the stick rate the current plan needs at every sample over
@@ -1290,7 +1651,7 @@ namespace CosmicShore.Gameplay
             if (_cap.Length < count) _cap = new float[count * 2];
             float budget = _p.SpeedAuthority * TurnRateRad * _p.RollBonus;
             for (int i = 0; i < count; i++) _cap[i] = SampleVMax(i, budget);
-            for (int i = count - 2; i >= 0; i--) _cap[i] = Mathf.Min(_cap[i], _cap[i + 1] + BrakePerUnit * SampleStep);
+            for (int i = count - 2; i >= 0; i--) _cap[i] = Mathf.Min(_cap[i], _cap[i + 1] + BrakePerUnit * _ds[i + _window]);
 
             float v = Mathf.Max(_sensors.Speed, 20f);
             float bmMax = Mathf.Max(1f, _sensors.MaxBoost);
@@ -1365,9 +1726,19 @@ namespace CosmicShore.Gameplay
                 return true;
             }
 
-            // Flown past it without collecting: the next chance is a lap on.
+            // Flown past it without collecting: the next chance is a lap on — unless it is close enough
+            // behind to turn round for, which costs a few seconds where the lap costs twenty.
             if (_s > _crystalS + 40f && _route.Closed)
             {
+                if (_p.RecoverMissedCrystal && !_seeking
+                    && (_crystal - _sensors.Position).sqrMagnitude < _p.RecoverMaxDistance * _p.RecoverMaxDistance)
+                {
+                    _seeking = true;
+                    _seekCrystal = _crystal;
+                    _seekStart = _sensors.Time;
+                    CrystalsRecovered++;
+                    return false;
+                }
                 _crystalS += _route.Length;
                 CrystalsDeferred++;
                 return true;
@@ -1406,6 +1777,12 @@ namespace CosmicShore.Gameplay
         {
             bool crystalChanged = ObserveCrystal(force: false);
             float now = _sensors.Time;
+            if (_approachEnded)
+            {
+                // Merged: the line was held to the face the ship came up to; plan the crystal freely.
+                _approachEnded = false;
+                if (_p.ApproachLockFace) { Optimize(fromShip: false, cold: true); return; }
+            }
             if (OffPlan())
             {
                 Optimize(fromShip: true, cold: true);
@@ -1414,7 +1791,14 @@ namespace CosmicShore.Gameplay
             }
             float toCrystal = _haveCrystal && !float.IsNaN(_crystalS) ? _crystalS - _s : float.MaxValue;
             bool inRange = toCrystal <= MaxPlanLength - PlanTail && toCrystal >= 2f * MinGridStep;
-            if (crystalChanged || (inRange && !_planHasCrystal))
+            bool approaching = DefersCrystalForApproach(toCrystal);
+            if (_planApproach && !approaching)
+            {
+                // Merged: now plan the crystal from the band.
+                Optimize(fromShip: false, cold: true);
+                return;
+            }
+            if (crystalChanged || (inRange && !_planHasCrystal && !approaching))
             {
                 Optimize(fromShip: false, cold: true);
                 return;
@@ -1428,6 +1812,31 @@ namespace CosmicShore.Gameplay
                 conflict = FindConflict(_keys, obstacles, _s + 2f, horizon, out _, out _);
             }
             if (now >= _nextRefresh || conflict) Optimize(fromShip: false, cold: false);
+        }
+
+        /// <summary>The crystal must be at least this far (u) beyond the merge for the approach to
+        /// leave it for later; nearer than that, the line goes for it straight away.</summary>
+        const float ApproachCrystalSlack = 160f;
+
+        bool _planApproach;
+
+        /// <summary>True when the ship is far off the ribbon and its crystal is far enough ahead to
+        /// merge onto the nearest face first.</summary>
+        bool DefersCrystalForApproach(float toCrystal)
+        {
+            float excess = OffBandDistance();
+            if (excess <= _p.ApproachDistance) return false;
+            return toCrystal > excess + ApproachCrystalSlack;
+        }
+
+        /// <summary>How far (u) the ship is outside the skimmer's reach of the ribbon, at its own arc.</summary>
+        float OffBandDistance()
+        {
+            _route.Frame(_s, out Vector3 c, out _, out Vector3 r, out Vector3 u);
+            Vector3 d = _sensors.Position - c;
+            float a = Vector3.Dot(d, r), b = Vector3.Dot(d, u);
+            float rho = Mathf.Sqrt(a * a + b * b);
+            return rho - SkimRho(Mathf.Atan2(a, b), _s);
         }
 
         SkimPathOptimizer.Settings OptSettings()
@@ -1446,6 +1855,18 @@ namespace CosmicShore.Gameplay
                 ClearMargin = _p.ClearanceMargin,
                 SkimReach = Mathf.Max(0f, _sensors.SkimRadius - 0.5f),
                 ObstacleMargin = _p.ObstacleMargin,
+                ObstacleActivation = _p.OptObstacleActivation,
+                FaceLock = _p.OptFaceLock,
+                LockSide = _approach && _p.ApproachLockFace ? _approachSide : -1,
+                FitSegmentEnds = _p.OptFitSegmentEnds,
+                ObstacleRhoScale = _p.OptObstacleRhoScale,
+                ObstacleExtraIterations = _p.OptObstacleExtraIterations,
+                PolishPasses = _p.OptPolishPasses,
+                CarryObstacleDuals = _p.OptCarryObstacleDuals,
+                SegmentClearanceSamples = _approach ? Mathf.Max(_p.OptSegmentClearanceSamples, _p.ApproachSegmentSamples) : _p.OptSegmentClearanceSamples,
+                ArcAware = _p.OptArcAware || ArcPhase,
+                SegmentMarginScale = _p.OptSegmentMarginScale,
+                ClearAwareObstacles = _p.OptClearAwareObstacles,
             };
         }
 
@@ -1464,6 +1885,7 @@ namespace CosmicShore.Gameplay
         void Optimize(bool fromShip, bool cold)
         {
             float s0 = _s;
+            SolveCount++;
             _lastRefresh = _sensors.Time;
             _nextRefresh = _sensors.Time + RefreshInterval;
 
@@ -1478,6 +1900,8 @@ namespace CosmicShore.Gameplay
             // plain band line inside three and a half grid steps, and a ship knocked off its line
             // there flew past its crystal and lost a lap).
             bool target = ahead >= 2f * MinGridStep && ahead <= MaxPlanLength - PlanTail;
+            _planApproach = target && DefersCrystalForApproach(ahead);
+            if (_planApproach) target = false;
             float step = grid;
             int count, ic = -1;
             if (target)
@@ -1528,14 +1952,17 @@ namespace CosmicShore.Gameplay
                 SeedFromPlan(count, step, useLane: false);
                 SolveLine(count, step, cold: false);
                 GridToKeys(_optCands[0]);
+                _opt.SaveCarry(0);
                 note = "warm";
             }
             else if (!target)
             {
-                SeedFromPlan(count, step, useLane: _keys.Count == 0);
+                if (_p.SeedMerge && (_planApproach || _keys.Count == 0)) SeedMerge(count, step);
+                else SeedFromPlan(count, step, useLane: _keys.Count == 0);
                 SolveLine(count, step, cold: true);
                 GridToKeys(_optCands[0]);
-                note = "band";
+                _opt.SaveCarry(0);
+                note = _planApproach ? "approach" : "band";
             }
             else
             {
@@ -1554,12 +1981,14 @@ namespace CosmicShore.Gameplay
                     SeedTowards(count, step, ic, phiT, rhoP);
                     SolveLine(count, step, cold: true);
                     GridToKeys(_optCands[k]);
+                    _opt.SaveCarry(k);
                     float cost = options > 1 ? Evaluate(_optCands[k], s0, sEnd) : 0f;
                     if (cost < bestCost) { bestCost = cost; chosen = k; }
                 }
                 note = options > 1 ? (chosen == 0 ? "short-way" : "long-way") : "crystal";
             }
 
+            _opt.CommitCarry(chosen);
             int oldFace = _keys.Count > 0 ? FaceOf(_keys[_keys.Count - 1].Phi) : -1;
             _keys.Clear();
             _keys.AddRange(_optCands[chosen]);
@@ -1569,7 +1998,8 @@ namespace CosmicShore.Gameplay
             _planSpeed = Mathf.Max(_sensors.Speed, 1f);
             int newFace = FaceOf(_keys[_keys.Count - 1].Phi);
             if (oldFace >= 0 && newFace != oldFace) FaceChanges++;
-            LastChoice = $"{note} it={_opt.Iterations} d={_opt.WorstDemand:F2} miss={_opt.CrystalMiss:F1} clr={_opt.WorstClearDeficit:F1} obs={_opt.WorstObstacleDeficit:F1}/{_opt.ActiveObstacleCount}a{_opt.ObstacleCount}of{(_obstacles != null ? _obstacles.Count : 0)}";
+            DiagnoseSolvedLine();
+            LastChoice = $"{note} it={_opt.Iterations} d={_opt.WorstDemand:F2} miss={_opt.CrystalMiss:F1} clr={_opt.WorstClearDeficit:F1}/{_opt.WorstSegmentDeficit:F1} obs={_opt.WorstObstacleDeficit:F1}/{_opt.ActiveObstacleCount}a{_opt.ObstacleCount}of{(_obstacles != null ? _obstacles.Count : 0)}";
         }
 
         /// <summary>Pins optimiser point <paramref name="i"/> to world control point
@@ -1639,6 +2069,34 @@ namespace CosmicShore.Gameplay
             else PlanOffset(_keys, s, out a, out b);
         }
 
+        /// <summary>
+        /// Seed the line from the ship onto its nearest face's lane, blended over a stretch long
+        /// enough to turn onto it — never round the ribbon, and never through it. Seeding the lane
+        /// one knot after a ship a hundred units off (what <see cref="SeedFromPlan"/> does with no
+        /// line to start from) hands the solver a step it can only smooth by overshooting, and at
+        /// the start that overshoot went up through the plates and round the far edge.
+        /// </summary>
+        void SeedMerge(int count, float step)
+        {
+            float s0 = _opt.Start;
+            float a2 = _opt.A(2), b2 = _opt.B(2);
+            float phi2 = Mathf.Atan2(a2, b2);
+            int face = FaceOf(phi2);
+            float excess = Mathf.Max(0f, Mathf.Sqrt(a2 * a2 + b2 * b2) - SkimRho(phi2, s0 + 2f * step));
+            float merge = Mathf.Clamp(1.5f * excess, 4f * step, 300f);
+            for (int i = 3; i < count; i++)
+            {
+                float s = s0 + i * step;
+                _line.Offset(face, s, out float la, out float lb);
+                float t = Mathf.Clamp01((i - 2f) * step / merge);
+                float w = t * t * (3f - 2f * t);
+                float a = a2 + (la - a2) * w, b = b2 + (lb - b2) * w;
+                float phi = Mathf.Atan2(a, b);
+                float rho = Mathf.Max(Mathf.Sqrt(a * a + b * b), ClearRho(phi, s) + 0.75f);
+                _opt.SetPoint(i, rho * Mathf.Sin(phi), rho * Mathf.Cos(phi));
+            }
+        }
+
         readonly float[] _seedA = new float[SkimPathOptimizer.MaxPoints + 2];
         readonly float[] _seedB = new float[SkimPathOptimizer.MaxPoints + 2];
 
@@ -1687,6 +2145,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void SolveLine(int count, float step, bool cold)
         {
+            if (_p.OptSeedPolishPasses > 0) _opt.PolishSeed(_p.OptSeedPolishPasses);
             if (cold)
             {
                 PlanSpeeds(count, step, useBand: false);
@@ -1721,7 +2180,7 @@ namespace CosmicShore.Gameplay
                 if (vm < _fitV[i + 1] - 0.5f) { _fitV[i + 1] = vm; changed = true; }
             }
             if (!changed) return false;
-            for (int i = count - 2; i >= 2; i--) _fitV[i] = Mathf.Min(_fitV[i], _fitV[i + 1] + _p.PlanBrakePerUnit * step);
+            for (int i = count - 2; i >= 2; i--) _fitV[i] = Mathf.Min(_fitV[i], _fitV[i + 1] + _p.PlanBrakePerUnit * _opt.SegmentLength(i));
             for (int i = 0; i < count; i++) _opt.SetSpeed(i, Mathf.Max(_fitV[i], MinPlanSpeed));
             return true;
         }
@@ -1751,7 +2210,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < count; i++)
             {
                 _opt.SetSpeed(i, v);
-                float dt = step / Mathf.Max(v, 20f);
+                float dt = ((_p.OptArcAware || ArcPhase) && i < count - 1 ? _opt.SegmentLength(i) : step) / Mathf.Max(v, 20f);
                 if (!useBand || _opt.InBand(i)) bm = Mathf.Min(bmMax, bm + perUnit * step);
                 if (bm > 1f) bm = Mathf.Max(1f, bm - BoostDecay * dt);
                 float targetV = _sensors.ThrottleScaler * thr * bm;
@@ -1971,8 +2430,12 @@ namespace CosmicShore.Gameplay
             float cap = float.MaxValue;
             int count = Mathf.CeilToInt(horizon / SampleStep) + 1;
             SampleCurve(_keys, _s, count, WindowFor(v));
+            float run = 0f;
             for (int i = 0; i < count; i++)
-                cap = Mathf.Min(cap, SampleVMax(i, budget) + BrakePerUnit * i * SampleStep);
+            {
+                cap = Mathf.Min(cap, SampleVMax(i, budget) + BrakePerUnit * run);
+                run += _ds[i + _window];
+            }
 
             float full = _sensors.ThrottleScaler * Mathf.Max(1f, _sensors.BoostMultiplier);
             float want = Mathf.Clamp01(_p.Throttle);
@@ -1990,8 +2453,21 @@ namespace CosmicShore.Gameplay
             // over: the lerp then sheds the excess in proportion to it, so a ship a few u/s over its
             // cap eases off instead of decelerating at 1.5 v per second mid-bend.
             if (full < 1f || cap >= full * want) _throttle = want;
+            else if (v > cap && _p.DeadBeatBrake)
+            {
+                // Brake onto the cap rather than through it: the throttle that leaves the speed ON the
+                // braking curve at the next scan (the cap less what that curve sheds over the scan),
+                // through the thrust lerp's own response. Shutting the throttle instead sheds 1.5 v
+                // per second for the whole scan — a tenth of a second, 40 u/s at 280 — where holding
+                // the curve sheds 1.2 v; the excess is speed the ship then spends a second winning back.
+                float dt = SpeedScanInterval;
+                float gain = 1f - Mathf.Exp(-Follow * dt);
+                float next = cap - BrakePerUnit * v * dt;
+                _throttle = Mathf.Clamp(v + (next - v) / gain, 0f, full * want) / full;
+            }
             else if (v > cap && !_p.ProportionalBrake) _throttle = 0f;
             else _throttle = Mathf.Clamp01(Mathf.Min(want, cap / full));
+            DebugThrottle = $"cap={Mathf.Min(cap, 999f):F0} vplan={(IsSpline(_keys) ? PlanSpeedAt(_s) : -1f):F0} want={want:F2} full={full:F0}";
         }
 
         SkimRacerCommand Steer()
