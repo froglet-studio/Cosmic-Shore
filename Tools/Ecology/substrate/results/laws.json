@@ -65,11 +65,11 @@
   "policy": "wander",
   "scarce": false,
   "mass_rel_err": 1.7750839742839728e-16,
-  "eaten": 78038,
-  "laid": 36056,
-  "births": 815,
+  "eaten": 78681,
+  "laid": 38164,
+  "births": 835,
   "deaths": {
-   "starvation": 581
+   "starvation": 610
   },
   "imposed_deaths": 0,
   "pop_in": 0,
@@ -85,12 +85,12 @@
   "policy": "hunter",
   "scarce": false,
   "mass_rel_err": 1.7750839742839728e-16,
-  "eaten": 81058,
-  "laid": 46127,
-  "births": 983,
+  "eaten": 78865,
+  "laid": 40303,
+  "births": 916,
   "deaths": {
-   "pilot": 466,
-   "starvation": 294
+   "pilot": 357,
+   "starvation": 330
   },
   "imposed_deaths": 0,
   "pop_in": 0,
@@ -105,12 +105,12 @@
   "species": "locust",
   "policy": "wander",
   "scarce": true,
-  "mass_rel_err": 4.1917586096549756e-16,
-  "eaten": 11444,
-  "laid": 17187,
-  "births": 94,
+  "mass_rel_err": 2.0958793048274878e-16,
+  "eaten": 10972,
+  "laid": 17647,
+  "births": 91,
   "deaths": {
-   "starvation": 425
+   "starvation": 437
   },
   "imposed_deaths": 0,
   "pop_in": 0,
@@ -243,21 +243,21 @@
   "policy": "hunter",
   "scarce": false,
   "mass_rel_err": 1.7750839742839728e-16,
-  "eaten": 78299,
-  "laid": 41522,
-  "births": 936,
+  "eaten": 81478,
+  "laid": 44666,
+  "births": 986,
   "deaths": {
-   "pilot": 399,
-   "starvation": 307
+   "pilot": 487,
+   "starvation": 263
   },
   "imposed_deaths": 0,
   "pop_in": 0,
   "pop_out": 0,
-  "teleport": 33,
+  "teleport": 0,
   "accel": 0,
   "size_jump": 0,
   "steps": 2400,
-  "ok": false,
+  "ok": true,
   "backend": "fused"
  }
 ]
