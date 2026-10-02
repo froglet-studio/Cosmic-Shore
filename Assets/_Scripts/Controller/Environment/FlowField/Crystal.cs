@@ -471,18 +471,7 @@ namespace CosmicShore.Gameplay
 
         public void InjectDependencies(CrystalManager cm) => CrystalManager = cm;
 
-        public bool CanBeCollected(Domains shipDomain) => IsCollectableBy(ownDomain, shipDomain);
-
-        /// <summary>
-        /// THE collectability rule, stated once: a crystal wearing <see cref="Domains.Blue"/> (the
-        /// "no team" sentinel) is free-for-all, any other crystal only by its own domain. Both
-        /// <see cref="CanBeCollected"/> (which the AI's target sensor and the HUD objective read) and
-        /// <see cref="TeamCrystalImpactor"/> (which actually admits the pickup) route through here —
-        /// when they were two expressions they disagreed, and Skim Race's Blue farm steered every
-        /// pilot at crystals the impact chain then refused.
-        /// </summary>
-        public static bool IsCollectableBy(Domains crystalDomain, Domains shipDomain) =>
-            crystalDomain == Domains.Blue || crystalDomain == shipDomain;
+        public bool CanBeCollected(Domains shipDomain) => ownDomain == Domains.Blue || ownDomain == shipDomain;
 
         /// <summary>
         /// Paints this crystal in <paramref name="domain"/>'s crystal colours immediately, with

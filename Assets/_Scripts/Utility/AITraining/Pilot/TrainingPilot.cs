@@ -56,11 +56,6 @@ namespace CosmicShore.Utility.AITraining
         int _episodeFrame;
         int _populationIndexForReporting = -1;
 
-        // Episode tally of stick writes. The runner logs it once at episode end,
-        // so the AITraining channel shows the pilot drove without a per-frame line.
-        int _stickWrites, _throttleWrites;
-        float _steerAbsXSum, _steerAbsYSum, _throttleSum;
-
         public TrainingGenome Genome => _genome;
         public bool EpisodeActive => _episodeActive;
         public int PopulationIndex { get => _populationIndexForReporting; set => _populationIndexForReporting = value; }
@@ -156,18 +151,6 @@ namespace CosmicShore.Utility.AITraining
             _episodeActive = true;
             _episodeStartTime = Time.time;
             _episodeFrame = 0;
-            _stickWrites = _throttleWrites = 0;
-            _steerAbsXSum = _steerAbsYSum = _throttleSum = 0f;
-        }
-
-        /// <summary>Stick writes this episode and their mean magnitudes. Read before EndEpisode.</summary>
-        public string SummarizeStickWrites()
-        {
-            if (_stickWrites == 0) return "sticks writes=0";
-            float n = _stickWrites;
-            return $"sticks writes={_stickWrites} mean|steerX|={_steerAbsXSum / n:F2} " +
-                   $"mean|steerY|={_steerAbsYSum / n:F2} meanThrottle=" +
-                   (_throttleWrites > 0 ? (_throttleSum / _throttleWrites).ToString("F2") : "n/a");
         }
 
         public void EndEpisode()
@@ -197,14 +180,7 @@ namespace CosmicShore.Utility.AITraining
             // seat is paused on purpose so the keyboard does not fight this pilot.
             // The pilot is the writer of the sticks, so the pause flag is not a
             // reason to sit idle.
-            //
-            // IsStationary gates VesselTransformer.MoveShip. Archive deploy can
-            // leave a seat frozen when StartPlayer raced Vessel-null — clearing
-            // once at turn-start is not enough if something re-sets it mid-match
-            // (Ruby stuck at 0 while Gold still flies). An active episode owns
-            // the sticks; keep the transformer live every frame.
-            if (_status.IsStationary)
-                _status.IsStationary = false;
+            if (_status.IsStationary) return;
 
             // 1) Build the per-frame context.
             BuildContext();
@@ -245,10 +221,7 @@ namespace CosmicShore.Utility.AITraining
             _ctx.Clear();
             _ctx.Vessel = _vessel;
             _ctx.VesselStatus = _status;
-            // Prefer Player.Domain — IVesselStatus.Domain defaults to Jade when
-            // Player is null, which makes a Ruby seat hunt Jade crystals that
-            // CanBeCollected(Ruby) refuses. Read the live player mirror first.
-            _ctx.MyDomain = _status.Player != null ? _status.Player.Domain : _status.Domain;
+            _ctx.MyDomain = _status.Domain;
             _ctx.PlayerName = _status.PlayerName;
 
             var t = _vessel.Transform;
@@ -257,12 +230,7 @@ namespace CosmicShore.Utility.AITraining
             _ctx.Up = t.up;
             _ctx.Right = t.right;
             _ctx.Speed = _status.Speed;
-            // Course is the direction of travel (differs from the nose during a drift). Orbit
-            // break and reachability tests need TRAVEL direction, not the nose.
-            Vector3 course = _status.Course;
-            _ctx.Velocity = course.sqrMagnitude > 1e-4f
-                ? course.normalized * _status.Speed
-                : t.forward * _status.Speed;
+            _ctx.Velocity = t.forward * _status.Speed;
             _ctx.IsBoosting = _status.IsBoosting;
             _ctx.IsDrifting = _status.IsDrifting;
             _ctx.IsStationary = _status.IsStationary;
@@ -357,21 +325,6 @@ namespace CosmicShore.Utility.AITraining
                 _input.YSum = d.SteerLocal.y;
                 _input.YDiff = d.SteerLocal.x;
                 _input.XDiff = d.RequestRam ? 1f : d.Throttle;
-            }
-
-            if (_stickWrites == 0 && CSDebug.IsVerbose(CSLogChannel.AITraining))
-                CSDebug.LogVerbose(CSLogChannel.AITraining,
-                    $"[Training] First stick write. pilot={_status.PlayerName} domain={_status.Domain} " +
-                    $"t={Time.time - _episodeStartTime:F1}s steer=({d.SteerLocal.x:F2},{d.SteerLocal.y:F2}) " +
-                    $"throttle={d.Throttle:F2} singleStick={_status.IsSingleStickControls}");
-            _stickWrites++;
-            _steerAbsXSum += Mathf.Abs(d.SteerLocal.x);
-            _steerAbsYSum += Mathf.Abs(d.SteerLocal.y);
-            // A single-stick vessel is not sent a throttle, so none is tallied.
-            if (!_status.IsSingleStickControls)
-            {
-                _throttleWrites++;
-                _throttleSum += d.RequestRam ? 1f : d.Throttle;
             }
         }
 

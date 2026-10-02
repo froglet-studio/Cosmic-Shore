@@ -22,7 +22,7 @@ MonoBehaviour:
   NumericMutationStrength: 0.18
   StructuralMutationRate: 0.04
   NoveltyWeight: 0.15
-  MaxEpisodeSeconds: 240
+  MaxEpisodeSeconds: 120
   MinEpisodeSeconds: 5
   OpponentCount: 3
   OpponentsUseTrainedGenome: 0
@@ -30,7 +30,4 @@ MonoBehaviour:
   FitnessProfile: {fileID: 11400000, guid: 0f877bf4476bf62944d530eda571323e, type: 2}
   UseResetForReplay: 1
   DelayBetweenEpisodes: 1
-  EarlyExitConditions:
-  - Kind: 1
-    IntegerThreshold: 54
-    FloatThreshold: 0
+  EarlyExitConditions: []
