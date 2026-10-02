@@ -1,0 +1,634 @@
+{
+ "cfg": "CONS",
+ "fitted": {
+  "grazer.F_half": 7.8125,
+  "locust.F_half": 500.0,
+  "thief.F_half": 1200.0,
+  "pack.a_attack": 0.0006,
+  "lurker.a_attack": 0.0384,
+  "grazer.hop": 0.012,
+  "locust.hop": 0.012,
+  "pack.hop": 0.008
+ },
+ "err_start": 0.6498,
+ "err_end": 0.1362,
+ "gap_end": {
+  "grazer": {
+   "micro_end": 1067.0,
+   "macro_end": 1053.7,
+   "rel": 0.012
+  },
+  "locust": {
+   "micro_end": 130.7,
+   "macro_end": 60.0,
+   "rel": 0.541
+  },
+  "pack": {
+   "micro_end": 32.7,
+   "macro_end": 27.3,
+   "rel": 0.163
+  },
+  "thief": {
+   "micro_end": 49.0,
+   "macro_end": 47.7,
+   "rel": 0.027
+  },
+  "lurker": {
+   "micro_end": 60.0,
+   "macro_end": 60.0,
+   "rel": 0.0
+  }
+ },
+ "log": [
+  {
+   "step": 0,
+   "err": 0.6498,
+   "dials": {
+    "grazer.F_half": 250.0,
+    "locust.F_half": 250.0,
+    "thief.F_half": 300.0,
+    "pack.a_attack": 0.0006,
+    "lurker.a_attack": 0.00015,
+    "grazer.hop": 0.003,
+    "locust.hop": 0.006,
+    "pack.hop": 0.004
+   }
+  },
+  {
+   "step": 1,
+   "dial": "grazer.F_half",
+   "factor": 0.25,
+   "err": 0.4978
+  },
+  {
+   "step": 2,
+   "dial": "grazer.F_half",
+   "factor": 0.5,
+   "err": 0.4764
+  },
+  {
+   "step": 3,
+   "dial": "grazer.F_half",
+   "factor": 2.0,
+   "err": 0.4978
+  },
+  {
+   "step": 4,
+   "dial": "grazer.F_half",
+   "factor": 4.0,
+   "err": 0.5806
+  },
+  {
+   "step": 5,
+   "dial": "locust.F_half",
+   "factor": 0.25,
+   "err": 0.5353
+  },
+  {
+   "step": 6,
+   "dial": "locust.F_half",
+   "factor": 0.5,
+   "err": 0.4882
+  },
+  {
+   "step": 7,
+   "dial": "locust.F_half",
+   "factor": 2.0,
+   "err": 0.4725
+  },
+  {
+   "step": 8,
+   "dial": "locust.F_half",
+   "factor": 4.0,
+   "err": 0.5511
+  },
+  {
+   "step": 9,
+   "dial": "thief.F_half",
+   "factor": 0.25,
+   "err": 0.5254
+  },
+  {
+   "step": 10,
+   "dial": "thief.F_half",
+   "factor": 0.5,
+   "err": 0.503
+  },
+  {
+   "step": 11,
+   "dial": "thief.F_half",
+   "factor": 2.0,
+   "err": 0.4374
+  },
+  {
+   "step": 12,
+   "dial": "thief.F_half",
+   "factor": 4.0,
+   "err": 0.4319
+  },
+  {
+   "step": 13,
+   "dial": "pack.a_attack",
+   "factor": 0.25,
+   "err": 0.4319
+  },
+  {
+   "step": 14,
+   "dial": "pack.a_attack",
+   "factor": 0.5,
+   "err": 0.4319
+  },
+  {
+   "step": 15,
+   "dial": "pack.a_attack",
+   "factor": 2.0,
+   "err": 0.4319
+  },
+  {
+   "step": 16,
+   "dial": "pack.a_attack",
+   "factor": 4.0,
+   "err": 0.4319
+  },
+  {
+   "step": 17,
+   "dial": "lurker.a_attack",
+   "factor": 0.25,
+   "err": 0.4679
+  },
+  {
+   "step": 18,
+   "dial": "lurker.a_attack",
+   "factor": 0.5,
+   "err": 0.4368
+  },
+  {
+   "step": 19,
+   "dial": "lurker.a_attack",
+   "factor": 2.0,
+   "err": 0.419
+  },
+  {
+   "step": 20,
+   "dial": "lurker.a_attack",
+   "factor": 4.0,
+   "err": 0.3188
+  },
+  {
+   "step": 21,
+   "dial": "grazer.hop",
+   "factor": 0.25,
+   "err": 0.3035
+  },
+  {
+   "step": 22,
+   "dial": "grazer.hop",
+   "factor": 0.5,
+   "err": 0.3111
+  },
+  {
+   "step": 23,
+   "dial": "grazer.hop",
+   "factor": 2.0,
+   "err": 0.3052
+  },
+  {
+   "step": 24,
+   "dial": "grazer.hop",
+   "factor": 4.0,
+   "err": 0.3188
+  },
+  {
+   "step": 25,
+   "dial": "locust.hop",
+   "factor": 0.25,
+   "err": 0.3479
+  },
+  {
+   "step": 26,
+   "dial": "locust.hop",
+   "factor": 0.5,
+   "err": 0.3075
+  },
+  {
+   "step": 27,
+   "dial": "locust.hop",
+   "factor": 2.0,
+   "err": 0.3225
+  },
+  {
+   "step": 28,
+   "dial": "locust.hop",
+   "factor": 4.0,
+   "err": 0.3022
+  },
+  {
+   "step": 29,
+   "dial": "pack.hop",
+   "factor": 0.25,
+   "err": 0.3678
+  },
+  {
+   "step": 30,
+   "dial": "pack.hop",
+   "factor": 0.5,
+   "err": 0.342
+  },
+  {
+   "step": 31,
+   "dial": "pack.hop",
+   "factor": 2.0,
+   "err": 0.2896
+  },
+  {
+   "step": 32,
+   "dial": "pack.hop",
+   "factor": 4.0,
+   "err": 0.3547
+  },
+  {
+   "step": 33,
+   "dial": "grazer.F_half",
+   "factor": 0.25,
+   "err": 0.2801
+  },
+  {
+   "step": 34,
+   "dial": "grazer.F_half",
+   "factor": 0.5,
+   "err": 0.2815
+  },
+  {
+   "step": 35,
+   "dial": "grazer.F_half",
+   "factor": 2.0,
+   "err": 0.3022
+  },
+  {
+   "step": 36,
+   "dial": "grazer.F_half",
+   "factor": 4.0,
+   "err": 0.2896
+  },
+  {
+   "step": 37,
+   "dial": "locust.F_half",
+   "factor": 0.25,
+   "err": 0.3167
+  },
+  {
+   "step": 38,
+   "dial": "locust.F_half",
+   "factor": 0.5,
+   "err": 0.3361
+  },
+  {
+   "step": 39,
+   "dial": "locust.F_half",
+   "factor": 2.0,
+   "err": 0.2726
+  },
+  {
+   "step": 40,
+   "dial": "locust.F_half",
+   "factor": 4.0,
+   "err": 0.3391
+  },
+  {
+   "step": 41,
+   "dial": "thief.F_half",
+   "factor": 0.25,
+   "err": 0.3023
+  },
+  {
+   "step": 42,
+   "dial": "thief.F_half",
+   "factor": 0.5,
+   "err": 0.2575
+  },
+  {
+   "step": 43,
+   "dial": "thief.F_half",
+   "factor": 2.0,
+   "err": 0.2726
+  },
+  {
+   "step": 44,
+   "dial": "thief.F_half",
+   "factor": 4.0,
+   "err": 0.2911
+  },
+  {
+   "step": 45,
+   "dial": "pack.a_attack",
+   "factor": 0.25,
+   "err": 0.2575
+  },
+  {
+   "step": 46,
+   "dial": "pack.a_attack",
+   "factor": 0.5,
+   "err": 0.2575
+  },
+  {
+   "step": 47,
+   "dial": "pack.a_attack",
+   "factor": 2.0,
+   "err": 0.2575
+  },
+  {
+   "step": 48,
+   "dial": "pack.a_attack",
+   "factor": 4.0,
+   "err": 0.2575
+  },
+  {
+   "step": 49,
+   "dial": "lurker.a_attack",
+   "factor": 0.25,
+   "err": 0.3797
+  },
+  {
+   "step": 50,
+   "dial": "lurker.a_attack",
+   "factor": 0.5,
+   "err": 0.3361
+  },
+  {
+   "step": 51,
+   "dial": "lurker.a_attack",
+   "factor": 2.0,
+   "err": 0.2216
+  },
+  {
+   "step": 52,
+   "dial": "lurker.a_attack",
+   "factor": 4.0,
+   "err": 0.1921
+  },
+  {
+   "step": 53,
+   "dial": "grazer.hop",
+   "factor": 0.25,
+   "err": 0.2088
+  },
+  {
+   "step": 54,
+   "dial": "grazer.hop",
+   "factor": 0.5,
+   "err": 0.1965
+  },
+  {
+   "step": 55,
+   "dial": "grazer.hop",
+   "factor": 2.0,
+   "err": 0.1883
+  },
+  {
+   "step": 56,
+   "dial": "grazer.hop",
+   "factor": 4.0,
+   "err": 0.1759
+  },
+  {
+   "step": 57,
+   "dial": "locust.hop",
+   "factor": 0.25,
+   "err": 0.2131
+  },
+  {
+   "step": 58,
+   "dial": "locust.hop",
+   "factor": 0.5,
+   "err": 0.1958
+  },
+  {
+   "step": 59,
+   "dial": "locust.hop",
+   "factor": 2.0,
+   "err": 0.1877
+  },
+  {
+   "step": 60,
+   "dial": "locust.hop",
+   "factor": 4.0,
+   "err": 0.1895
+  },
+  {
+   "step": 61,
+   "dial": "pack.hop",
+   "factor": 0.25,
+   "err": 0.1952
+  },
+  {
+   "step": 62,
+   "dial": "pack.hop",
+   "factor": 0.5,
+   "err": 0.1743
+  },
+  {
+   "step": 63,
+   "dial": "pack.hop",
+   "factor": 2.0,
+   "err": 0.1759
+  },
+  {
+   "step": 64,
+   "dial": "pack.hop",
+   "factor": 4.0,
+   "err": 0.1887
+  },
+  {
+   "step": 65,
+   "dial": "grazer.F_half",
+   "factor": 0.25,
+   "err": 0.1842
+  },
+  {
+   "step": 66,
+   "dial": "grazer.F_half",
+   "factor": 0.5,
+   "err": 0.1875
+  },
+  {
+   "step": 67,
+   "dial": "grazer.F_half",
+   "factor": 2.0,
+   "err": 0.175
+  },
+  {
+   "step": 68,
+   "dial": "grazer.F_half",
+   "factor": 4.0,
+   "err": 0.1742
+  },
+  {
+   "step": 69,
+   "dial": "locust.F_half",
+   "factor": 0.25,
+   "err": 0.1659
+  },
+  {
+   "step": 70,
+   "dial": "locust.F_half",
+   "factor": 0.5,
+   "err": 0.1961
+  },
+  {
+   "step": 71,
+   "dial": "locust.F_half",
+   "factor": 2.0,
+   "err": 0.1579
+  },
+  {
+   "step": 72,
+   "dial": "locust.F_half",
+   "factor": 4.0,
+   "err": 0.2386
+  },
+  {
+   "step": 73,
+   "dial": "thief.F_half",
+   "factor": 0.25,
+   "err": 0.192
+  },
+  {
+   "step": 74,
+   "dial": "thief.F_half",
+   "factor": 0.5,
+   "err": 0.1717
+  },
+  {
+   "step": 75,
+   "dial": "thief.F_half",
+   "factor": 2.0,
+   "err": 0.185
+  },
+  {
+   "step": 76,
+   "dial": "thief.F_half",
+   "factor": 4.0,
+   "err": 0.1748
+  },
+  {
+   "step": 77,
+   "dial": "pack.a_attack",
+   "factor": 0.25,
+   "err": 0.1579
+  },
+  {
+   "step": 78,
+   "dial": "pack.a_attack",
+   "factor": 0.5,
+   "err": 0.1579
+  },
+  {
+   "step": 79,
+   "dial": "pack.a_attack",
+   "factor": 2.0,
+   "err": 0.1579
+  },
+  {
+   "step": 80,
+   "dial": "pack.a_attack",
+   "factor": 4.0,
+   "err": 0.1579
+  },
+  {
+   "step": 81,
+   "dial": "lurker.a_attack",
+   "factor": 0.25,
+   "err": 0.2366
+  },
+  {
+   "step": 82,
+   "dial": "lurker.a_attack",
+   "factor": 0.5,
+   "err": 0.1733
+  },
+  {
+   "step": 83,
+   "dial": "lurker.a_attack",
+   "factor": 2.0,
+   "err": 0.1639
+  },
+  {
+   "step": 84,
+   "dial": "lurker.a_attack",
+   "factor": 4.0,
+   "err": 0.1531
+  },
+  {
+   "step": 85,
+   "dial": "grazer.hop",
+   "factor": 0.25,
+   "err": 0.1787
+  },
+  {
+   "step": 86,
+   "dial": "grazer.hop",
+   "factor": 0.5,
+   "err": 0.1614
+  },
+  {
+   "step": 87,
+   "dial": "grazer.hop",
+   "factor": 2.0,
+   "err": 0.1452
+  },
+  {
+   "step": 88,
+   "dial": "grazer.hop",
+   "factor": 4.0,
+   "err": 0.145
+  },
+  {
+   "step": 89,
+   "dial": "locust.hop",
+   "factor": 0.25,
+   "err": 0.1659
+  },
+  {
+   "step": 90,
+   "dial": "locust.hop",
+   "factor": 0.5,
+   "err": 0.1382
+  },
+  {
+   "step": 91,
+   "dial": "locust.hop",
+   "factor": 2.0,
+   "err": 0.1452
+  },
+  {
+   "step": 92,
+   "dial": "locust.hop",
+   "factor": 4.0,
+   "err": 0.1591
+  },
+  {
+   "step": 93,
+   "dial": "pack.hop",
+   "factor": 0.25,
+   "err": 0.1479
+  },
+  {
+   "step": 94,
+   "dial": "pack.hop",
+   "factor": 0.5,
+   "err": 0.1501
+  },
+  {
+   "step": 95,
+   "dial": "pack.hop",
+   "factor": 2.0,
+   "err": 0.1362
+  },
+  {
+   "step": 96,
+   "dial": "pack.hop",
+   "factor": 4.0,
+   "err": 0.1577
+  }
+ ]
+}

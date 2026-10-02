@@ -59,13 +59,13 @@ class Cell:
         for name in cfg["species"]:
             g = SPECIES[name](w, dict(cap=cfg[f"{name}_cap"]))
             self.guilds[name] = g
+        if "pack" in self.guilds:
+            self.guilds["pack"].metab = cfg["pack_metab"]; self.guilds["pack"].a_attack = cfg["pack_attack"]
         for k, v in cfg.items():
-            if "." in k:                         # per-species overrides: "grazer.metab": 0.05
+            if "." in k:                         # per-species overrides: "grazer.metab": 0.05 (win over the above)
                 sp, attr = k.split(".", 1)
                 if sp in self.guilds:
                     setattr(self.guilds[sp], attr, v)
-        if "pack" in self.guilds:
-            self.guilds["pack"].metab = cfg["pack_metab"]; self.guilds["pack"].a_attack = cfg["pack_attack"]
         if bug == "leak_birth":
             for g in self.guilds.values():
                 g.body_paid = False
@@ -92,6 +92,12 @@ class Cell:
             self.phys = Physarum(w, gc, n_agents=cfg["phys_agents"])
         else:
             self.phys = None
+        for k, v in cfg.items():                 # structure overrides: "physarum.upkeep": 0.002
+            if "." in k:
+                sp, attr = k.split(".", 1)
+                obj = dict(snaptrap=self.traps, fortress=self.fortress, physarum=self.phys).get(sp)
+                if obj is not None:
+                    setattr(obj, attr, v)
         for i, pol in enumerate(pilots):
             w.add_pilot(Pilot(pol, w.rng, w.R, domain=pilot_domains[i % len(pilot_domains)], name=f"{pol}{i}",
                               trail_spacing=cfg["trail_spacing"], trail_vol=cfg["trail_vol"]))

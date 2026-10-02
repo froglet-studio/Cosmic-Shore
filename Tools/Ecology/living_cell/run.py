@@ -165,23 +165,35 @@ CONTROLS = {
 
 
 def controls(minutes=12.0, seeds=(1, 2)):
+    """Each control is the RECOMMENDED cell (rounds.FINAL) with one planted failure."""
+    from .rounds import FINAL
     jobs, keys = [], []
     for name, (cfg, bug, _) in CONTROLS.items():
         for s in seeds:
-            jobs.append(dict(seed=s, cfg=cfg, minutes=minutes, bug=bug, burn=300.0, keep_series=False)); keys.append(name)
+            jobs.append(dict(seed=s, cfg=dict(FINAL, **cfg), minutes=minutes, bug=bug, burn=300.0, keep_series=False)); keys.append(name)
+    # the recommended cell itself must NOT fire any of them
+    for s in seeds:
+        jobs.append(dict(seed=s, cfg=FINAL, minutes=minutes, burn=300.0, keep_series=False)); keys.append("clean")
     # replayability control: the SAME seed twice must measure distance 0 (two identical flights)
-    jobs += [dict(seed=5, cfg=None, minutes=minutes, burn=300.0, keep_series=False)] * 2; keys += ["replay", "replay"]
+    jobs += [dict(seed=5, cfg=FINAL, minutes=minutes, burn=300.0, keep_series=False)] * 2; keys += ["replay", "replay"]
     res = pool_map(jobs)
     out = {}
     for name in CONTROLS:
         rs = [r for r, k in zip(res, keys) if k == name]
         s = dict(eco=eco_table(rs), player=flight_table(rs))
         out[name] = dict(fired=bool(CONTROLS[name][2](s)), eco=s["eco"], player={k: v for k, v in s["player"].items() if k != "enc_by_species_total"})
+    rc = [r for r, k in zip(res, keys) if k == "clean"]
+    sc = dict(eco=eco_table(rc), player=flight_table(rc))
+    out["clean"] = dict(fires={n: bool(f(sc)) for n, (_, _, f) in CONTROLS.items()}, eco=sc["eco"],
+                        player={k: v for k, v in sc["player"].items() if k != "enc_by_species_total"})
     rr = [r for r, k in zip(res, keys) if k == "replay"]
     d = [replay_distance(a, b) for a, b in zip(rr[0]["flights"], rr[1]["flights"])]
     out["replay"] = dict(fired=all(x["jaccard_dist"] == 0 and x["species_tv"] == 0 for x in d), distances=d)
     for k, v in out.items():
-        print(k, "FIRED" if v["fired"] else "did NOT fire")
+        if k == "clean":
+            print("clean cell fires:", {n: f for n, f in v["fires"].items() if f} or "nothing")
+        else:
+            print(k, "FIRED" if v["fired"] else "did NOT fire")
     save("controls.json", out)
     return out
 
@@ -251,6 +263,12 @@ if __name__ == "__main__":
         baseline(minutes=mins)
     elif what == "controls":
         controls()
+    elif what == "final":
+        from .rounds import FINAL
+        baseline(seeds=(1, 2, 3, 4), minutes=float(sys.argv[2]) if len(sys.argv) > 2 else 45.0, cfg=FINAL, label="final")
+    elif what == "lod":
+        from .rounds import FINAL, LOD
+        iterate({k: dict(FINAL, **v) for k, v in LOD.items()}, minutes=15.0, seeds=(1, 2), tag="lod")
     elif what == "consistency":
         import importlib
         consistency(cfg=getattr(importlib.import_module("living_cell.rounds"), sys.argv[2]) if len(sys.argv) > 2 else None)

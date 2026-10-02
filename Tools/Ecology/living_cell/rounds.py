@@ -47,3 +47,25 @@ R5 = {
 # Long horizon: does the cell BREATHE (a flora recovery feeding a second herbivore / locust boom)?
 LONG = {"long_r5d008": dict(BASE5, locust_n=500, flora_r=0.008)}
 CONS = dict(BASE5, locust_n=500, flora_r=0.008)
+
+# Round 6: the macro rates FITTED to the micro level (calibrate.py, results/calibrate.json) + the three fixes
+# the 60-min run asked for. Every number below the CAL line comes from the fit, not from a guess.
+CAL = {"grazer.F_half": 7.8125, "locust.F_half": 500.0, "thief.F_half": 1200.0, "pack.a_attack": 0.0006,
+       "lurker.a_attack": 0.0384, "grazer.hop": 0.012, "locust.hop": 0.012, "pack.hop": 0.008}
+BASE6 = dict(CONS, **CAL, **{"physarum.upkeep": 0.0015})
+R6 = {
+    "r6_cal": BASE6,
+    "r6_cal_thief_free": dict(BASE6, **{"pack.prey_names": ("grazer", "locust")}),
+    "r6_cal_pack06": dict(BASE6, pack_metab=0.06, **{"pack.prey_names": ("grazer", "locust")}),
+    "r6_cal_lurk20": dict(BASE6, **{"pack.prey_names": ("grazer", "locust"), "lurker.metab": 0.2}),
+}
+
+# Round 7: thieves still starved in R6 even with no pack predation (r6_cal_thief_free) -> the fitted
+# thief.F_half (x4) made the far-away macro thief a slow eater. Test two thief fixes on r6_cal_lurk20.
+BASE7 = dict(BASE6, **{"pack.prey_names": ("grazer", "locust"), "lurker.metab": 0.2})
+R7 = {
+    "r7_base": BASE7,
+    "r7_thief_fh600": dict(BASE7, **{"thief.F_half": 600.0}),
+    "r7_thief_metab": dict(BASE7, **{"thief.metab": 0.015}),
+    "r7_thief_both_pack90": dict(BASE7, pack_cap=90, **{"thief.F_half": 600.0, "thief.metab": 0.015}),
+}
