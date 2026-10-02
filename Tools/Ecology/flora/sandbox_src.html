@@ -166,8 +166,10 @@ function Physarum(P){
   let frame=0;
   return{step(dt){t+=dt;if((frame++)%2==0)sim(dt*2);waves(dt);
     const n=Math.max(2,Math.ceil(pilot.p.distanceTo(pilot.prev)/4));for(let k=0;k<=n;k++){const q=pilot.prev.clone().lerp(pilot.p,k/n);const i=vx(q);if(!tube[i])continue;if(E[i]>=1&&E[i]<=P.ex_ticks){if(pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}else{tube[i]=0;T[i]=0;Sm[i]=0;reserve+=P.prism_vol*2}}
+    if(P.heart_guard>0)for(const hh of hearts){if(!hh.alive)continue;const last=hh.beat-P.period;if(last>=0&&t-last<P.beat_on&&segDist(pilot.prev,pilot.p,hh.p)<P.heart_guard&&pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}
     for(const hh of hearts)if(hh.alive&&segDist(pilot.prev,pilot.p,hh.p)<12){hh.alive=false;stats.hearts++}},
-    draw(){let i=0,j=0,k=0,m=0;for(let v=0;v<N;v++){if(!tube[v])continue;const p=cen(v);if(E[v]>=1&&E[v]<=P.ex_ticks)put(L_hot,j++,p,h*.6,[1,.3,.1]);else put(L_body,i++,p,h*.85,[.85,.72,.25])}
+    draw(){let i=0,j=0,k=0,m=0;if(P.heart_guard>0)for(const hh of hearts){if(!hh.alive)continue;const last=hh.beat-P.period,on=last>=0&&t-last<P.beat_on,gl=hh.beat-t<P.beat_glow;if(on||gl)put(L_pts,m++,hh.p,P.heart_guard*(on?1:.55),on?[.9,.15,.08]:[.45,.2,.05])}
+      for(let v=0;v<N;v++){if(!tube[v])continue;const p=cen(v);if(E[v]>=1&&E[v]<=P.ex_ticks)put(L_hot,j++,p,h*.6,[1,.3,.1]);else put(L_body,i++,p,h*.85,[.85,.72,.25])}
       for(const hh of hearts)if(hh.alive)put(L_heart,k++,hh.p,6,[.4,.7,1]);for(let a=0;a<NA;a+=4)put(L_pts,m++,A[a],1.2,[.5,.45,.25]);return[i,j,k,m]}}
 }
 
@@ -180,13 +182,16 @@ function Coral(P){
   const per=P.plant_vol/P.c0/P.n_hearts/27*(48/40)**3;for(const hh of hearts){const c=vx(hh.p);for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)for(let dz=-1;dz<=1;dz++){const i=c+(dx*G+dy)*G+dz;if(i>=0&&i<N)v[i]+=per}}
   const lap=(F,i)=>{const x=Math.floor(i/(G*G)),y=Math.floor(i/G)%G,z=i%G;let s=0;if(x>0)s+=F[i-G*G]-F[i];if(x<G-1)s+=F[i+G*G]-F[i];if(y>0)s+=F[i-G]-F[i];if(y<G-1)s+=F[i+G]-F[i];if(z>0)s+=F[i-1]-F[i];if(z<G-1)s+=F[i+1]-F[i];return s};
   const k3=(48/40)**2; // diffusion rescaled to the coarser grid
-  return{step(dt){const hh=dt/P.substeps;
+  const sting=i=>P.sting_mode==='front'?rate[i]>P.sting:v[i]>P.v_danger;
+  const self={step(dt){const hh=dt/P.substeps;
     for(let s=0;s<P.substeps;s++){const nu=new Float32Array(N),nv=new Float32Array(N);for(let i=0;i<N;i++){nu[i]=u[i]+hh*P.Du/k3*lap(u,i);nv[i]=v[i]+hh*P.Dv/k3*lap(v,i)}
       for(let i=0;i<N;i++){const r=nu[i]*(1-Math.exp(-P.rate*nv[i]*nv[i]*hh)),b=nv[i]*(1-Math.exp(-P.k*hh));nu[i]+=b-r;nv[i]+=r-b;rate[i]=r/hh}u=nu;v=nv}
     for(const f of allFood()){const i=vx(f.p);if(v[i]>P.vth&&rng()<P.eat_per_s*dt){f.alive=false;u[i]+=f.v/P.c0}}
-    const n=Math.max(2,Math.ceil(pilot.p.distanceTo(pilot.prev)/4));for(let q=0;q<=n;q++){const i=vx(pilot.prev.clone().lerp(pilot.p,q/n));if(v[i]<=P.vth)continue;if(rate[i]>P.sting){if(pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}else{u[i]=0;v[i]=0}}
+    const n=Math.max(2,Math.ceil(pilot.p.distanceTo(pilot.prev)/4));for(let q=0;q<=n;q++){const i=vx(pilot.prev.clone().lerp(pilot.p,q/n));if(v[i]<=P.vth)continue;if(sting(i)){if(pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}else{u[i]=0;v[i]=0}}
     for(const hh of hearts)if(hh.alive&&segDist(pilot.prev,pilot.p,hh.p)<12){hh.alive=false;stats.hearts++}},
-    draw(){let i=0,j=0,k=0;for(let q=0;q<N;q++){if(v[q]<=P.vth)continue;const p=cen(q);if(rate[q]>P.sting)put(L_hot,j++,p,h*.6,[1,.35,.55]);else put(L_body,i++,p,Math.min(h,Math.cbrt(v[q])*h*.6),[.9,.5,.4])}for(const hh of hearts)if(hh.alive)put(L_heart,k++,hh.p,6,[.4,.7,1]);return[i,j,k,0]}}
+    draw(){let i=0,j=0,k=0;for(let q=0;q<N;q++){if(v[q]<=P.vth)continue;const p=cen(q);if(sting(q))put(L_hot,j++,p,h*.6,[1,.35,.55]);else put(L_body,i++,p,Math.min(h,Math.cbrt(v[q])*h*.6),[.9,.5,.4])}for(const hh of hearts)if(hh.alive)put(L_heart,k++,hh.p,6,[.4,.7,1]);return[i,j,k,0]}};
+  const save=pilot.p.clone(),sp=pilot.prev.clone();pilot.p.set(1e5,0,0);pilot.prev.set(1e5,0,0);for(let w=0;w<Math.min(200,(P.warmup||0)/3);w++)self.step(0.3);pilot.p.copy(save);pilot.prev.copy(sp);
+  return self
 }
 
 // ---------------- species: walking mimic ----------------
@@ -200,8 +205,9 @@ function Walker(P){
       for(let k=0;k<w.shell.length;k++)if(w.shell[k].distanceTo(w.h)>P.r_body*1.25){const d=new V3(gauss(),gauss(),gauss()).normalize();if(d.dot(w.dir)<0)d.negate();w.shell[k]=w.h.clone().addScaledVector(d,P.r_body*(.7+.3*rng()))}
       for(const f of foodNear(w.h,P.r_body))if(rng()<dt/P.absorb_every)f.alive=false;
       const near=pilot.p.distanceTo(lure(w));w.tm+=dt;
+      if(w.st==1)w.ext+=((P.guard||0)-w.ext)*Math.min(1,dt/P.t_prime);else if(w.st==0)w.ext=Math.max(0,w.ext-dt/P.t_retract);
       if(w.st==0&&near<P.prime){w.st=1;w.tm=0}else if(w.st==1){if(near>P.prime*1.3)w.st=0;else if(near<P.strike&&(w.tm>=P.t_prime||near<P.strike*.6)){w.st=2;w.tm=0}}
-      else if(w.st==2){w.ext=Math.min(1,w.tm/P.t_erupt);if(w.tm>P.t_erupt+P.t_hold){w.st=3;w.tm=0}}else if(w.st==3){w.ext=Math.max(0,1-w.tm/P.t_retract);if(w.ext<=0)w.st=0}
+      else if(w.st==2){w.ext=Math.max(w.ext,Math.min(1,w.tm/P.t_erupt));if(w.tm>P.t_erupt+P.t_hold){w.st=3;w.tm=0}}else if(w.st==3){w.ext=Math.max(0,1-w.tm/P.t_retract);if(w.ext<=0)w.st=0}
       if(w.ext>.25)for(let k=0;k<w.thorns.length;k++){const reach=P.r_body+w.ext*P.thorn;const p=w.h.clone().addScaledVector(w.thorns[k],P.r_body*.9+(reach-P.r_body*.9)*(k%3+1)/3);if(segDist(pilot.prev,pilot.p,p)<9&&pilot.burnCd<=0){pilot.burnCd=1;burn('burn')}}
       for(let k=w.shell.length-1;k>=0;k--)if(segDist(pilot.prev,pilot.p,w.shell[k])<11)w.shell.splice(k,1);
       while(w.shell.length<P.shell&&rng()<dt*3){const d=new V3(gauss(),gauss(),gauss()).normalize();if(d.dot(w.dir)<0)d.negate();w.shell.push(w.h.clone().addScaledVector(d,P.r_body*(.7+.3*rng())))}
