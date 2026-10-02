@@ -146,7 +146,8 @@ jobs:
             echo "::error::No Unity-iPhone.xcodeproj in the zip. Zip the folder Unity built into."
             exit 1
           fi
-          PROJ=$(dirname "$PROJ_FILE")
+          # ABSOLUTE: every later step starts a fresh shell in the workspace, not in $WORK.
+          PROJ=$(cd "$(dirname "$PROJ_FILE")" && pwd)
           echo "PROJ=$PROJ" >> "$GITHUB_ENV"
           # A zip made on Windows carries no Unix permission bits, so every script and tool the
           # Xcode build phases call would fail with "Permission denied" (MapFileParser.sh is the
