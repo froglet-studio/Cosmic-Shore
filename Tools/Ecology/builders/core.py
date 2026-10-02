@@ -99,6 +99,9 @@ class Lattice:
     def occupied(self, site) -> bool:
         return self.inside(site) and self.occ[site] >= 0
 
+    def free(self, site) -> bool:
+        return self.inside(site) and self.occ[site] < 0 and not self.blocked[site]
+
     def count(self, site, offs=N26) -> int:
         n = 0
         for o in offs:
@@ -121,6 +124,44 @@ class Lattice:
 
     def occupancy_points(self):
         return np.array([self.pos(s) for s in self.sites.values()]) if self.sites else np.zeros((0, 3))
+
+
+class SparseLattice(Lattice):
+    """The same interface over an unbounded dict (for colonies that build all over the cell, e.g. lane traps)."""
+
+    def __init__(self, anchor, s: float):
+        self.anchor = np.asarray(anchor, float); self.s = s; self.half = 0
+        self.d: dict[tuple, int] = {}
+        self.tp: dict[tuple, float] = {}
+        self.sites = {}
+
+    def site_of(self, p):
+        return tuple(np.round((np.asarray(p, float) - self.anchor) / self.s).astype(int))
+
+    def pos(self, site):
+        return self.anchor + np.asarray(site, float) * self.s
+
+    def inside(self, site):
+        return True
+
+    def occupied(self, site):
+        return site in self.d
+
+    def free(self, site):
+        return site not in self.d
+
+    def count(self, site, offs=N26):
+        d = self.d
+        return sum(1 for o in offs if (site[0] + o[0], site[1] + o[1], site[2] + o[2]) in d)
+
+    def place(self, site, mass_idx, t):
+        self.d[site] = mass_idx; self.tp[site] = t; self.sites[mass_idx] = site
+
+    def remove(self, mass_idx):
+        s = self.sites.pop(mass_idx, None)
+        if s is not None:
+            self.d.pop(s, None)
+        return s
 
 
 class Colony:
@@ -232,7 +273,7 @@ class Colony:
         best, bp = None, 0.0
         for o in N26[self.rng.choice(26, 8, replace=False)]:
             q = (here[0] + o[0], here[1] + o[1], here[2] + o[2])
-            if not self.lat.inside(q) or self.lat.occ[q] >= 0 or self.lat.blocked[q]:
+            if not self.lat.free(q):
                 continue
             p = self.deposit_score(arena, q)
             if p > bp:
@@ -265,7 +306,7 @@ class Colony:
                 g = self.goal[k]
                 if g >= 0 and (not arena.mass_alive[g] or int(g) in self.taken):
                     self.claimed.discard(int(g)); self.goal[k] = g = -1
-                if g < 0 and refresh:
+                if g < 0 and refresh and self.wants_material(arena, k):
                     g = self.forage_target(arena, k)
                     if g >= 0:
                         self.goal[k] = g; self.claimed.add(g)
@@ -288,12 +329,17 @@ class Colony:
         self.agent_pos[out] *= (R * 0.95 / r[out])[:, None]
         # carried prisms ride their carrier (live gameplay data: the mover contract, one write each)
         for k in np.flatnonzero(self.alive & (self.carry >= 0)):
-            arena.move_mass(int(self.carry[k]), self.agent_pos[k] + np.array([0, -4.0, 0]))
-            self.carry_moves += 1
+            c = int(self.carry[k]); tgt = self.agent_pos[k] + np.array([0, -4.0, 0])
+            if np.sum((arena.mass_pos[c] - tgt) ** 2) > 0.25:      # a carrier at rest costs nothing
+                arena.move_mass(c, tgt); self.carry_moves += 1
         self.build_log.append((round(arena.t, 2), self.lat.n_built()))
 
     def forage_bias(self, arena, k):
         return np.zeros(3)
+
+    def wants_material(self, arena, k) -> bool:
+        """Does an unladen worker pick material up now? (A trap builder only fetches once it smells a lane.)"""
+        return True
 
     # ---------------------------------------------------------------- render
     def render(self, out):

@@ -1,0 +1,422 @@
+{
+ "none": {
+  "summary": {
+   "cuts_healed_90": "4/9",
+   "refill_frac": 0.829,
+   "t50_median": 39.5,
+   "t90_median": 90.44999999999999,
+   "sites_per_cut": 14.3,
+   "repair_from_trail": 0.981
+  },
+  "runs": [
+   {
+    "seed": 7,
+    "mend": "none",
+    "built": 651,
+    "audit": 0.0,
+    "cuts": [
+     {
+      "cut_sites": 11,
+      "refilled": 11,
+      "t50": 53.4,
+      "t90": 94.8
+     },
+     {
+      "cut_sites": 12,
+      "refilled": 12,
+      "t50": 38.5,
+      "t90": 58.9
+     },
+     {
+      "cut_sites": 15,
+      "refilled": 8,
+      "t50": 47.1,
+      "t90": null
+     }
+    ],
+    "repair_trail": 31,
+    "repaired": 31,
+    "moves_per_s": 178.8,
+    "trail_frac": 0.951,
+    "hits": 8
+   },
+   {
+    "seed": 23,
+    "mend": "none",
+    "built": 746,
+    "audit": 0.0,
+    "cuts": [
+     {
+      "cut_sites": 11,
+      "refilled": 11,
+      "t50": 27.6,
+      "t90": 86.1
+     },
+     {
+      "cut_sites": 19,
+      "refilled": 17,
+      "t50": 39.5,
+      "t90": null
+     },
+     {
+      "cut_sites": 19,
+      "refilled": 13,
+      "t50": 32.1,
+      "t90": null
+     }
+    ],
+    "repair_trail": 40,
+    "repaired": 41,
+    "moves_per_s": 234.8,
+    "trail_frac": 0.794,
+    "hits": 9
+   },
+   {
+    "seed": 41,
+    "mend": "none",
+    "built": 653,
+    "audit": -0.0,
+    "cuts": [
+     {
+      "cut_sites": 12,
+      "refilled": 12,
+      "t50": 63.5,
+      "t90": 129.0
+     },
+     {
+      "cut_sites": 14,
+      "refilled": 12,
+      "t50": 39.7,
+      "t90": null
+     },
+     {
+      "cut_sites": 16,
+      "refilled": 11,
+      "t50": 39.4,
+      "t90": null
+     }
+    ],
+    "repair_trail": 34,
+    "repaired": 35,
+    "moves_per_s": 186.7,
+    "trail_frac": 0.956,
+    "hits": 5
+   }
+  ]
+ },
+ "gap": {
+  "summary": {
+   "cuts_healed_90": "6/9",
+   "refill_frac": 0.938,
+   "t50_median": 15.8,
+   "t90_median": 43.599999999999994,
+   "sites_per_cut": 16.1,
+   "repair_from_trail": 0.978
+  },
+  "runs": [
+   {
+    "seed": 7,
+    "mend": "gap",
+    "built": 715,
+    "audit": 0.0,
+    "cuts": [
+     {
+      "cut_sites": 15,
+      "refilled": 15,
+      "t50": 46.6,
+      "t90": 83.5
+     },
+     {
+      "cut_sites": 15,
+      "refilled": 13,
+      "t50": 15.7,
+      "t90": null
+     },
+     {
+      "cut_sites": 13,
+      "refilled": 10,
+      "t50": 30.9,
+      "t90": null
+     }
+    ],
+    "repair_trail": 38,
+    "repaired": 38,
+    "moves_per_s": 147.4,
+    "trail_frac": 0.954,
+    "hits": 14
+   },
+   {
+    "seed": 23,
+    "mend": "gap",
+    "built": 855,
+    "audit": -0.0,
+    "cuts": [
+     {
+      "cut_sites": 12,
+      "refilled": 12,
+      "t50": 10.2,
+      "t90": 36.8
+     },
+     {
+      "cut_sites": 20,
+      "refilled": 20,
+      "t50": 19.3,
+      "t90": 50.4
+     },
+     {
+      "cut_sites": 21,
+      "refilled": 19,
+      "t50": 13.0,
+      "t90": 27.0
+     }
+    ],
+    "repair_trail": 49,
+    "repaired": 51,
+    "moves_per_s": 190.5,
+    "trail_frac": 0.805,
+    "hits": 14
+   },
+   {
+    "seed": 41,
+    "mend": "gap",
+    "built": 706,
+    "audit": -0.0,
+    "cuts": [
+     {
+      "cut_sites": 13,
+      "refilled": 13,
+      "t50": 15.8,
+      "t90": 119.6
+     },
+     {
+      "cut_sites": 18,
+      "refilled": 18,
+      "t50": 18.1,
+      "t90": 31.3
+     },
+     {
+      "cut_sites": 18,
+      "refilled": 16,
+      "t50": 15.0,
+      "t90": null
+     }
+    ],
+    "repair_trail": 46,
+    "repaired": 47,
+    "moves_per_s": 150.0,
+    "trail_frac": 0.936,
+    "hits": 18
+   }
+  ]
+ },
+ "alarm": {
+  "summary": {
+   "cuts_healed_90": "5/9",
+   "refill_frac": 0.865,
+   "t50_median": 6.8,
+   "t90_median": 41.1,
+   "sites_per_cut": 14.0,
+   "repair_from_trail": 0.972
+  },
+  "runs": [
+   {
+    "seed": 7,
+    "mend": "alarm",
+    "built": 645,
+    "audit": 0.0,
+    "cuts": [
+     {
+      "cut_sites": 11,
+      "refilled": 11,
+      "t50": 6.8,
+      "t90": 48.3
+     },
+     {
+      "cut_sites": 10,
+      "refilled": 9,
+      "t50": 4.3,
+      "t90": 42.6
+     },
+     {
+      "cut_sites": 17,
+      "refilled": 14,
+      "t50": 11.7,
+      "t90": null
+     }
+    ],
+    "repair_trail": 32,
+    "repaired": 34,
+    "moves_per_s": 182.1,
+    "trail_frac": 0.933,
+    "hits": 11
+   },
+   {
+    "seed": 23,
+    "mend": "alarm",
+    "built": 754,
+    "audit": 0.0,
+    "cuts": [
+     {
+      "cut_sites": 11,
+      "refilled": 11,
+      "t50": 5.5,
+      "t90": 26.5
+     },
+     {
+      "cut_sites": 18,
+      "refilled": 18,
+      "t50": 5.9,
+      "t90": 41.1
+     },
+     {
+      "cut_sites": 15,
+      "refilled": 10,
+      "t50": 29.5,
+      "t90": null
+     }
+    ],
+    "repair_trail": 39,
+    "repaired": 39,
+    "moves_per_s": 240.9,
+    "trail_frac": 0.798,
+    "hits": 7
+   },
+   {
+    "seed": 41,
+    "mend": "alarm",
+    "built": 636,
+    "audit": -0.0,
+    "cuts": [
+     {
+      "cut_sites": 12,
+      "refilled": 12,
+      "t50": 5.2,
+      "t90": 36.8
+     },
+     {
+      "cut_sites": 17,
+      "refilled": 15,
+      "t50": 7.4,
+      "t90": null
+     },
+     {
+      "cut_sites": 15,
+      "refilled": 9,
+      "t50": 10.2,
+      "t90": null
+     }
+    ],
+    "repair_trail": 35,
+    "repaired": 36,
+    "moves_per_s": 187.5,
+    "trail_frac": 0.959,
+    "hits": 8
+   }
+  ]
+ },
+ "both": {
+  "summary": {
+   "cuts_healed_90": "6/9",
+   "refill_frac": 0.905,
+   "t50_median": 6.4,
+   "t90_median": 61.55,
+   "sites_per_cut": 16.4,
+   "repair_from_trail": 0.978
+  },
+  "runs": [
+   {
+    "seed": 7,
+    "mend": "both",
+    "built": 699,
+    "audit": 0.0,
+    "cuts": [
+     {
+      "cut_sites": 15,
+      "refilled": 15,
+      "t50": 5.3,
+      "t90": 82.0
+     },
+     {
+      "cut_sites": 16,
+      "refilled": 13,
+      "t50": 4.4,
+      "t90": null
+     },
+     {
+      "cut_sites": 15,
+      "refilled": 14,
+      "t50": 7.6,
+      "t90": 46.5
+     }
+    ],
+    "repair_trail": 42,
+    "repaired": 42,
+    "moves_per_s": 148.6,
+    "trail_frac": 0.954,
+    "hits": 13
+   },
+   {
+    "seed": 23,
+    "mend": "both",
+    "built": 846,
+    "audit": -0.0,
+    "cuts": [
+     {
+      "cut_sites": 12,
+      "refilled": 12,
+      "t50": 5.6,
+      "t90": 48.5
+     },
+     {
+      "cut_sites": 21,
+      "refilled": 20,
+      "t50": 17.6,
+      "t90": 85.9
+     },
+     {
+      "cut_sites": 22,
+      "refilled": 15,
+      "t50": 15.5,
+      "t90": null
+     }
+    ],
+    "repair_trail": 44,
+    "repaired": 47,
+    "moves_per_s": 192.1,
+    "trail_frac": 0.799,
+    "hits": 11
+   },
+   {
+    "seed": 41,
+    "mend": "both",
+    "built": 698,
+    "audit": -0.0,
+    "cuts": [
+     {
+      "cut_sites": 13,
+      "refilled": 13,
+      "t50": 6.4,
+      "t90": 60.3
+     },
+     {
+      "cut_sites": 18,
+      "refilled": 18,
+      "t50": 7.4,
+      "t90": 62.8
+     },
+     {
+      "cut_sites": 16,
+      "refilled": 14,
+      "t50": 5.6,
+      "t90": null
+     }
+    ],
+    "repair_trail": 45,
+    "repaired": 45,
+    "moves_per_s": 149.9,
+    "trail_frac": 0.944,
+    "hits": 10
+   }
+  ]
+ }
+}

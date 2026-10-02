@@ -59,7 +59,7 @@ def vary_lines(arena):
 def ram(arena, colonies, dt, reach=4.0, policies=("hunter", "cutter")):
     """Ram-capable pilots destroy unshielded structure prisms and kill workers they touch."""
     for p in arena.pilots:
-        if p.policy not in policies:
+        if p.policy not in policies and not getattr(p, "ram", False):
             continue
         for c in arena.mass_near(p.pos, p.radius + reach):
             if arena.mass_alive[c] and getattr(arena, "struct_owner", {}).get(int(c)):
