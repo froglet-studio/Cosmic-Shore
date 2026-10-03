@@ -35,6 +35,10 @@ MonoBehaviour:
   RibbonClearLateral: 18
   CrossingHeightFraction: 0.305
   SequencedCrossing: 0
+  CrossingLeadSeconds: 0
+  CrossingLookaheadScale: 1
+  CrossingThrottle: 1
+  CrossingSlowDistance: 150
   SlabGuardSeconds: 0
   HullGuardSeconds: 0
   HullMargin: 1.2
@@ -64,6 +68,7 @@ MonoBehaviour:
   TrackMpcLead: 15
   TrackMpcCaptureReward: 200
   TrackMpcNominalBias: 0.1
+  TrackMpcStrikeCost: 0
   UseMpc: 0
   MpcHz: 15
   MpcHorizon: 1.5
@@ -74,6 +79,7 @@ MonoBehaviour:
   MpcCaptureMargin: 2
   MpcBoostValue: 1.5
   MpcStrikeCost: 20
+  MpcStrikeUsesBoostLoss: 0
   MpcNominalBias: 0.05
   LeadGain: 1.796
   MaxLeadDegrees: 66.396

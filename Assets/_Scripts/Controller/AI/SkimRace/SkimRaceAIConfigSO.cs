@@ -84,6 +84,18 @@ namespace CosmicShore.Gameplay
                  "(the chord to its look-ahead point) never cuts through the plates. Off = the original " +
                  "simultaneous swing/ramp.")]
         public bool SequencedCrossing = false;
+        [Tooltip("Face change: the whole swing-and-ramp profile is started this many SECONDS of travel " +
+                 "earlier (scaled by the current speed, capped at half the approach), so the hull - which " +
+                 "lags its stick by ~0.67 s - is already past the plate edge when the height changes. 0 = off.")]
+        [Min(0f)] public float CrossingLeadSeconds = 0f;
+        [Tooltip("While a face change is being approached, line pursuit's look-ahead is multiplied by this, " +
+                 "so the chord the pursuit flies hugs the line round the plate edge. 1 = off.")]
+        [Range(0.1f, 1f)] public float CrossingLookaheadScale = 1f;
+        [Tooltip("Throttle ceiling while within CrossingSlowDistance before a face change (a strike costs " +
+                 "the whole boost; a brief lift costs far less). 1 = off.")]
+        [Range(0.1f, 1f)] public float CrossingThrottle = 1f;
+        [Tooltip("Arc distance before the crystal over which CrossingThrottle applies.")]
+        [Min(0f)] public float CrossingSlowDistance = 150f;
         [Tooltip("Look-ahead (seconds of travel) of the safety layer that keeps the hull out of " +
                  "the ribbon's slab. 0 disables it.")]
         [Min(0f)] public float SlabGuardSeconds = 0f;
@@ -166,6 +178,9 @@ namespace CosmicShore.Gameplay
         [Min(0f)] public float TrackMpcCaptureReward = 200f;
         [Tooltip("Fractional preference for the pursuit controller's own stick.")]
         [Range(0f, 0.9f)] public float TrackMpcNominalBias = 0.1f;
+        [Tooltip("Penalty for a rollout whose hull comes within MpcHullMargin of a track shell, added to the " +
+                 "tracking cost (squared world units). 0 = strikes are not scored (the original behaviour).")]
+        [Min(0f)] public float TrackMpcStrikeCost = 0f;
 
         [Header("Model-predictive control")]
         [Tooltip("Replace the guard with full MPC: each decision scores ~50 stick/throttle commands by " +
@@ -183,6 +198,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds-equivalent value of 1x of banked boost.")]
         [Min(0f)] public float MpcBoostValue = 1.5f;
         [Min(0f)] public float MpcStrikeCost = 20f;
+        [Tooltip("A predicted strike also costs the boost it would reset (MpcBoostValue x (boost - 1)): what " +
+                 "a strike actually takes from the race. Off = the flat MpcStrikeCost.")]
+        public bool MpcStrikeUsesBoostLoss = false;
         [Tooltip("Preference for the pursuit controller's own command (seconds), so the plan only " +
                  "overrides it for a real gain.")]
         [Min(0f)] public float MpcNominalBias = 0.05f;

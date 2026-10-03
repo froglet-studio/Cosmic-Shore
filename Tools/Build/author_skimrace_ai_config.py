@@ -191,6 +191,14 @@ def render(name, overrides):
 def main(argv):
     check = "--check" in argv
     bad = 0
+    # A key that is not a field would silently write nothing (render only emits class fields) and
+    # still pass --check, so a winning tuning value could fail to reach the asset unnoticed.
+    known = {name for _, name, _ in class_fields()}
+    for name, ov in POLICIES.items():
+        unknown = sorted(set(ov) - known)
+        if unknown:
+            print(f"ERROR: {name}: not SkimRaceAIConfigSO fields: {unknown}")
+            return 1
     for name, ov in POLICIES.items():
         path = os.path.join(OUT_DIR, name + ".asset")
         text = render(name, ov)

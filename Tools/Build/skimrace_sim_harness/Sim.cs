@@ -98,6 +98,7 @@ class Physics
     public int RingGeometry = 1;
     public int TrackHits = 1, MassHits = 1;
     public int Seats = 1;
+    public int TargetHintFix = 1;   // 0 = project the crystal from the VESSEL's hint (the pre-fix behaviour), for A/B only
     public int LineDiag = 0;
     public float ExtraTime = 60f;   // a race is cut at limit + this                   // AI seats racing at once (each its own crystal stream)
     public float ColliderDelay = 0.5f;      // VesselPrismController defaultWaitTime: a laid prism's collider is off this long for everyone   // diagnostic switches: 0 = that contact class never strikes
@@ -295,7 +296,7 @@ static class Race
         public float SlowUntil = -1f;
         public int Anchor; public Vector3 Crystal; public int Collected;
         public readonly HashSet<int> Inside = new(), Hull = new(), ObsInside = new(), ObsHull = new();
-        public int Hint = -1, HullHits;
+        public int Hint = -1, TargetHint = -1, HullHits;
         public float SpeedSum, BoostSum; public int Frames, FarFrames;
         public readonly List<(float init, float start)> Mods = new();
         public float RailTravel;
@@ -359,7 +360,7 @@ static class Race
                     Position = ag.Pos, Forward = fwd, Right = right, Up = up,
                     CommandedForward = ag.Acc * Vector3.forward,
                     Rotation = ag.Rot, CommandedRotation = ag.Acc,
-                    Speed = ag.Speed * (ph.StackedSlow != 0 ? Mult(ag, t) : 1f), Velocity = fwd * ag.Speed,
+                    Speed = ag.Speed * (ph.StackedSlow != 0 ? Mult(ag, t) : 1f), Velocity = fwd * (ag.Speed * (ph.StackedSlow != 0 ? Mult(ag, t) : 1f)),
                     BoostMultiplier = ag.Boosting ? ag.Boost : 1f, MaxBoost = ph.MaxBoost,
                     TurnRateDegrees = ph.TurnRate, FollowRate = ph.Follow, ThrottleScaler = ph.ThrottleScaler,
                     RaceTime = t, Collected = ag.Collected, Remaining = required - ag.Collected,
@@ -372,8 +373,9 @@ static class Race
                 o.CourseLength = course.Length;
                 o.CourseProgress = course.Project(ag.Pos, ref ag.Hint, out _, out o.CourseDistance);
                 course.Sample(o.CourseProgress, out o.CourseTangent, out _);
-                int th = ag.Hint;
-                float sc = course.Project(ag.Crystal, ref th, out _, out _);
+                // The target's own hint (SkimRacePilot._targetHint): full search on a new crystal.
+                if (ph.TargetHintFix == 0) ag.TargetHint = ag.Hint;   // A/B: the old projection from the vessel's hint
+                float sc = course.Project(ag.Crystal, ref ag.TargetHint, out _, out _);
                 o.TargetAheadOnCourse = course.Ahead(o.CourseProgress, sc);
                 o.Sanitize();
 
@@ -528,6 +530,7 @@ static class Race
                     {
                         ag.Anchor = (ag.Anchor + 1) % def.Anchors.Count;
                         ag.Crystal = def.Anchors[ag.Anchor] + OnUnitSphere(ag.Rng) * ph.Jitter;
+                        ag.TargetHint = -1;
                     }
                 }
 
@@ -593,10 +596,28 @@ static class Program
         "TerminalCentreBias", "StallSeconds", "RecoveryThrottle",
         "MassGuardSeconds", "MassGuardMargin", "MassGuardSegment", "LowBoostApproachScale", "LowBoostFull",
         "TrackGuardMargin", "DirectBoost", "DirectBoostHysteresis", "DirectViaClearance", "DirectViaLift", "DirectViaLateral",
+        "TerminalChordClearance", "ChordClearance",
+        "CrossingLeadSeconds", "CrossingLookaheadScale", "CrossingThrottle", "CrossingSlowDistance",
+        "LaneHeightStep",
+    };
+    // set=mpc: the predictive controllers' weights (pin UseMpc=1 / UseTrackMpc=1 on the command line).
+    static readonly string[] MpcTunables =
+    {
+        "MpcHullMargin", "MpcStrikeCost", "MpcBoostValue", "MpcHorizon", "MpcSegment",
+        "TrackMpcHorizon", "TrackMpcLead", "TrackMpcCaptureReward", "TrackMpcNominalBias", "TrackMpcStrikeCost",
+        "LookaheadSeconds", "StickGainPerDegree", "LeadGain", "MinThrottle",
     };
     static readonly Dictionary<string, (float lo, float hi)> Ranges = new()
     {
         ["TrackGuardMargin"] = (0.2f, 3f),
+        ["TerminalChordClearance"] = (0.5f, 5f), ["ChordClearance"] = (0f, 6f),
+        ["MpcHullMargin"] = (0.2f, 3f), ["MpcStrikeCost"] = (0f, 40f), ["MpcBoostValue"] = (0f, 5f),
+        ["MpcHorizon"] = (0.4f, 2.5f), ["MpcSegment"] = (0.1f, 0.8f),
+        ["TrackMpcHorizon"] = (0.3f, 2f), ["TrackMpcLead"] = (0f, 60f), ["TrackMpcCaptureReward"] = (0f, 600f),
+        ["TrackMpcNominalBias"] = (0f, 0.9f), ["TrackMpcStrikeCost"] = (0f, 5000f),
+        ["CrossingLeadSeconds"] = (0f, 1.5f), ["CrossingLookaheadScale"] = (0.2f, 1f),
+        ["CrossingThrottle"] = (0.3f, 1f), ["CrossingSlowDistance"] = (30f, 400f),
+        ["LaneHeightStep"] = (0.8f, 3f),
         ["DirectBoost"] = (2.5f, 5f), ["DirectBoostHysteresis"] = (0.2f, 2.5f), ["DirectViaClearance"] = (2f, 10f),
         ["DirectViaLift"] = (6f, 40f), ["DirectViaLateral"] = (18f, 50f),
         ["LowBoostApproachScale"] = (0.3f, 1f), ["LowBoostFull"] = (1.5f, 5f),
@@ -629,6 +650,24 @@ static class Program
         else f.SetValue(target, value);
     }
 
+    static float GetNum(object target, string key)
+    {
+        var f = target.GetType().GetField(key, BindingFlags.Public | BindingFlags.Instance)
+                ?? throw new ArgumentException("unknown field " + key);
+        object v = f.GetValue(target);
+        return v switch { float x => x, int i => i, bool b => b ? 1f : 0f, _ => throw new ArgumentException($"{key} is not numeric") };
+    }
+
+    static void SetNum(object target, string key, float value)
+    {
+        var f = target.GetType().GetField(key, BindingFlags.Public | BindingFlags.Instance)
+                ?? throw new ArgumentException("unknown field " + key);
+        if (f.FieldType == typeof(float)) f.SetValue(target, value);
+        else if (f.FieldType == typeof(int)) f.SetValue(target, (int)Math.Round(value));
+        else if (f.FieldType == typeof(bool)) f.SetValue(target, value >= 0.5f);
+        else throw new ArgumentException($"{key} is not numeric");
+    }
+
     static (SkimRaceAIConfigSO cfg, Physics ph) Parse(IEnumerable<string> kv)
     {
         var cfg = new SkimRaceAIConfigSO();
@@ -644,7 +683,7 @@ static class Program
     }
 
     static (float score, int fin, float median, float worst, float mean, List<RaceResult> runs) Evaluate(
-        TrackDef def, TrackPrisms prisms, SkimRaceCourse course, SkimRaceAIConfigSO cfg, Physics ph, int seeds, float limit, int seedBase = 1000)
+        TrackDef def, TrackPrisms prisms, SkimRaceCourse course, SkimRaceAIConfigSO cfg, Physics ph, int seeds, float limit, int seedBase = 1000, float overWeight = 0f)
     {
         var runs = new List<RaceResult>();
         for (int s = 0; s < seeds; s++) runs.Add(Race.Run(def, prisms, course, cfg, ph, seedBase + s, limit));
@@ -655,6 +694,12 @@ static class Program
         // Score: every unfinished race is a disaster; then the WORST time, then the mean.
         float score = runs.Sum(r => r.Finished ? r.Time : 300f + (r.Required - r.Collected) * 10f) / seeds
                       + 0.5f * (runs.All(r => r.Finished) ? fin.Max() : 300f);
+        // over=w: w x 50 x the fraction of SEAT times above the limit (every seat must be <= limit).
+        if (overWeight > 0f)
+        {
+            var seatTimes = runs.SelectMany(r => r.AgentTimes).ToList();
+            if (seatTimes.Count > 0) score += overWeight * 50f * seatTimes.Count(x => x > limit) / (float)seatTimes.Count;
+        }
         return (score, fin.Count, median, worst, mean, runs);
     }
 
@@ -667,7 +712,7 @@ static class Program
     }
 
     static string Describe(SkimRaceAIConfigSO cfg) =>
-        string.Join(" ", Tunables.Select(k => k + "=" + ((float)cfg.GetType().GetField(k).GetValue(cfg)).ToString("0.###", CultureInfo.InvariantCulture)));
+        string.Join(" ", Tunables.Select(k => k + "=" + GetNum(cfg, k).ToString("0.###", CultureInfo.InvariantCulture)));
 
     static int Main(string[] args)
     {
@@ -679,6 +724,21 @@ static class Program
         var course = new SkimRaceCourse(prisms.Points, prisms.Normals, prisms.Rotations, prisms.ShellHalf);
         float limit = 70f;
 
+        if (mode == "shell")
+        {
+            // Landmarks for SkimRaceShell on the track plate's shell (15 x 1.5 x 4.5): exact vs the retired bound.
+            var plate = new Vector3(15f, 1.5f, 4.5f);
+            foreach (var (label, p, expect) in new[]
+            {
+                ("above +3", new Vector3(0f, 4.5f, 0f), 3f),
+                ("beside edge +11", new Vector3(26f, 0f, 0f), 11f),
+                ("beyond tip (2,1,3)", new Vector3(17f, 2.5f, 7.5f), new Vector3(2, 1, 3).magnitude),
+                ("inside", Vector3.zero, 0f),
+            })
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  {0,-20} exact {1:F4} (expect {2:F4})  old bound {3:F4}",
+                    label, SkimRaceShell.StellaDistance(p, plate), expect, SkimRaceShell.FacePlaneBound(p, plate)));
+            return 0;
+        }
         if (mode == "geo")
         {
             // How often does the STRAIGHT line between consecutive crystals pass through the
@@ -710,6 +770,12 @@ static class Program
                 Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  anchor {0}: lateral {1:F0}, height {2:F0}, along {3:F0} (dist {4:F0})",
                     k, Vector3.Dot(rel, ll), Vector3.Dot(rel, nn), Vector3.Dot(rel, tg), dist));
             }
+            // Arc-length gap between consecutive anchors (a full search per anchor, no hint).
+            var arcs = new float[N];
+            for (int k = 0; k < N; k++) { int h = -1; arcs[k] = course.Project(def.Anchors[k], ref h, out _, out _); }
+            var gaps = Enumerable.Range(0, N).Select(k => course.Ahead(arcs[k], arcs[(k + 1) % N])).ToArray();
+            Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  course {0:F0} u; anchor arc gaps (u): {1}  (max {2:F0}, gaps > 250: {3})",
+                course.Length, string.Join(" ", gaps.Select(g => g.ToString("F0", CultureInfo.InvariantCulture))), gaps.Max(), gaps.Count(g => g > 250f)));
             Console.WriteLine($"I{intensity}: straight crystal-to-crystal lines through the ribbon shell: {blocked}/{total} = {100f * blocked / total:F0}%");
             Console.WriteLine("  per gap %: " + string.Join(" ", perGap.Select(x => (x / 2).ToString())));
             return 0;
@@ -725,6 +791,19 @@ static class Program
             var e = Evaluate(def, prisms, course, cfg, ph, seeds, limit, seedBase);
             Console.WriteLine($"I{intensity} track={course.Length:F0}u prisms={prisms.Points.Count} finished {e.fin}/{seeds} " +
                               $"median={e.median:F2} mean={e.mean:F2} worst={e.worst:F2} score={e.score:F2}");
+            {
+                var seatTimes = e.runs.SelectMany(r => r.AgentTimes).OrderBy(x => x).ToList();
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "  seats <= {0:F0} s: {1}/{2}; races with EVERY seat <= {0:F0} s: {3}/{4}; seat median {5:F2}",
+                    limit, seatTimes.Count(x => x <= limit), seatTimes.Count,
+                    e.runs.Count(r => r.AgentTimes.All(x => x <= limit)), e.runs.Count, seatTimes[seatTimes.Count / 2]));
+                // What the EDITOR benchmark can observe: the race ends at the first finisher, so it judges
+                // the WINNING seat only. Comparable to Docs/SKIM_RACE_AI.md section 8.
+                var first = e.runs.Select(r => r.AgentTimes.Min()).OrderBy(x => x).ToList();
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "  first finisher (editor-comparable): <= {0:F0} s in {1}/{2}, median {3:F2}",
+                    limit, first.Count(x => x <= limit), first.Count, first[first.Count / 2]));
+            }
             var causes = e.runs.SelectMany(r => r.ResetCauses).GroupBy(k => k.Key).Select(g => (g.Key, n: g.Sum(k => k.Value))).OrderByDescending(x => x.n);
             var lost = e.runs.SelectMany(r => r.ResetBoostLost).GroupBy(k => k.Key).ToDictionary(g => g.Key, g => g.Sum(k => k.Value));
             Console.WriteLine("  boost resets per race by cause: " + string.Join(", ", causes.Select(c =>
@@ -747,17 +826,19 @@ static class Program
         {
             int seeds = int.Parse(args[3]);
             int iters = int.Parse(args[4]);
-            float sigmaScale = 0.25f;
+            float sigmaScale = 0.25f, over = 0f;
             Tunables = PursuitTunables;
             foreach (var a in args.Skip(5))
             {
                 if (a.StartsWith("sigma=")) sigmaScale = float.Parse(a.Substring(6), CultureInfo.InvariantCulture);
                 if (a == "set=planner") Tunables = PlannerTunables;
+                if (a == "set=mpc") Tunables = MpcTunables;
+                if (a.StartsWith("over=")) over = float.Parse(a.Substring(5), CultureInfo.InvariantCulture);
             }
-            var (baseCfg, ph) = Parse(args.Skip(5).Where(a => !a.StartsWith("sigma=") && !a.StartsWith("set=")));
+            var (baseCfg, ph) = Parse(args.Skip(5).Where(a => !a.StartsWith("sigma=") && !a.StartsWith("set=") && !a.StartsWith("over=")));
             var rng = new System.Random(7);
             int dim = Tunables.Length;
-            var mu = Tunables.Select(k => (float)baseCfg.GetType().GetField(k).GetValue(baseCfg)).ToArray();
+            var mu = Tunables.Select(k => GetNum(baseCfg, k)).ToArray();
             var sigma = Tunables.Select(k => (Ranges[k].hi - Ranges[k].lo) * sigmaScale).ToArray();
             for (int d = 0; d < dim; d++) mu[d] = Mathf.Clamp(mu[d], Ranges[Tunables[d]].lo, Ranges[Tunables[d]].hi);
             float bestScore = float.MaxValue; float[] best = (float[])mu.Clone();
@@ -782,8 +863,8 @@ static class Program
                 System.Threading.Tasks.Parallel.For(0, pop, p =>
                 {
                     var cfg = CloneConfig(baseCfg);
-                    for (int d = 0; d < dim; d++) cfg.GetType().GetField(Tunables[d]).SetValue(cfg, xs[p][d]);
-                    scores[p] = Evaluate(def, prisms, course, cfg, ph, seeds, limit, iterSeed).score;
+                    for (int d = 0; d < dim; d++) SetNum(cfg, Tunables[d], xs[p][d]);
+                    scores[p] = Evaluate(def, prisms, course, cfg, ph, seeds, limit, iterSeed, over).score;
                 });
                 var samples = new List<(float score, float[] x)>();
                 for (int p = 0; p < pop; p++) samples.Add((scores[p], xs[p]));
@@ -796,11 +877,11 @@ static class Program
                     mu[d] = m; sigma[d] = Math.Max((float)Math.Sqrt(v), (Ranges[Tunables[d]].hi - Ranges[Tunables[d]].lo) * 0.02f);
                 }
                 var bc = CloneConfig(baseCfg);
-                for (int d = 0; d < dim; d++) bc.GetType().GetField(Tunables[d]).SetValue(bc, best[d]);
+                for (int d = 0; d < dim; d++) SetNum(bc, Tunables[d], best[d]);
                 Console.WriteLine($"iter {it} gen-best={samples[0].score:F2} best={bestScore:F2} :: {Describe(bc)}");
             }
             var fc = CloneConfig(baseCfg);
-            for (int d = 0; d < dim; d++) fc.GetType().GetField(Tunables[d]).SetValue(fc, best[d]);
+            for (int d = 0; d < dim; d++) SetNum(fc, Tunables[d], best[d]);
             var fe = Evaluate(def, prisms, course, fc, ph, 40, limit, 99000);
             Console.WriteLine($"FINAL (40 fresh seeds) finished {fe.fin}/40 median={fe.median:F2} mean={fe.mean:F2} worst={fe.worst:F2}");
             Console.WriteLine("BEST " + Describe(fc));

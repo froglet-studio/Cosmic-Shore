@@ -17,7 +17,8 @@ DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
 DOTNET="$DOTNET_ROOT/dotnet"
 CSC=$(ls "$DOTNET_ROOT"/sdk/*/Roslyn/bincore/csc.dll | head -1)
 REFDIR=$(ls -d "$DOTNET_ROOT"/packs/Microsoft.NETCore.App.Ref/*/ref/net* | tail -1)
-OUT="${TMPDIR:-/tmp}/skimrace_sim"
+# SKIMRACE_SHELL_FILE swaps in another SkimRaceShell.cs (A/B of the contact geometry only).
+OUT="${TMPDIR:-/tmp}/skimrace_sim${SKIMRACE_BUILD_TAG:+_$SKIMRACE_BUILD_TAG}"
 SR="$ROOT/Assets/_Scripts/Controller/AI/SkimRace"
 mkdir -p "$OUT"
 
@@ -52,7 +53,7 @@ PY
 
 ls "$REFDIR"/*.dll | sed 's/^/-r:/' > "$OUT/refs.rsp"
 printf '"%s"\n' "$HERE/UnityShim.cs" "$HERE/Sim.cs" \
-  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "$SR/SkimRaceShell.cs" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" > "$OUT/files.rsp"
+  "$SR/SkimRaceAIConfigSO.cs" "$SR/SkimRaceCourse.cs" "$SR/SkimRaceObservation.cs" "$SR/SkimRaceDriver.cs" "${SKIMRACE_SHELL_FILE:-$SR/SkimRaceShell.cs}" "$SR/SkimRacePlanner.cs" "$SR/SkimRaceObstacle.cs" > "$OUT/files.rsp"
 "$DOTNET" "$CSC" -nologo -langversion:latest -nostdlib -noconfig -optimize+ "@$OUT/refs.rsp" \
   -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0108,CS1587 \
   -target:exe -main:Program -out:"$OUT/sim.dll" "@$OUT/files.rsp" >&2

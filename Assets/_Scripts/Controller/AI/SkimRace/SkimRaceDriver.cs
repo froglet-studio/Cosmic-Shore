@@ -502,7 +502,8 @@ namespace CosmicShore.Gameplay
                     clear = Mathf.Min(clear, Mathf.Min(c, Mathf.Min(ob.Distance(pos + fwd), ob.Distance(pos - fwd))));
                 }
                 if (clear < _cfg.MpcHullMargin)
-                    return _cfg.MpcStrikeCost + (H - t) * 2f; // an earlier strike is worse
+                    return _cfg.MpcStrikeCost + (H - t) * 2f // an earlier strike is worse
+                           + (_cfg.MpcStrikeUsesBoostLoss ? _cfg.MpcBoostValue * (boost - 1f) : 0f);
             }
             // Remaining distance measured ALONG the course (going the wrong way along the track wraps
             // to nearly a lap), never less than the straight line.
@@ -588,6 +589,15 @@ namespace CosmicShore.Gameplay
                 pos += (rot * Vector3.forward) * speed * dt;
                 if (o.HasTarget && (pos - o.TargetPosition).sqrMagnitude <= capture * capture)
                     return sum / Mathf.Max(1, n) - _cfg.TrackMpcCaptureReward * (H - t);
+                if (_cfg.TrackMpcStrikeCost > 0f && course.HasShells)
+                {
+                    course.Project(pos, ref hint, out _, out _);
+                    Vector3 wing = rot * (Vector3.right * _cfg.HullHalfWidth);
+                    float clear = Mathf.Min(course.ShellClearance(pos, hint, 6, out _),
+                        Mathf.Min(course.ShellClearance(pos + wing, hint, 6, out _), course.ShellClearance(pos - wing, hint, 6, out _)));
+                    if (clear < _cfg.MpcHullMargin)
+                        return sum / Mathf.Max(1, n) + _cfg.TrackMpcStrikeCost * (1f + (H - t) / H);
+                }
                 Vector3 target;
                 if (lineMode)
                 {
@@ -732,6 +742,8 @@ namespace CosmicShore.Gameplay
 
             // Face change: height ramps from this face to the pass height over the second half of
             // the approach, while a wider lateral swing holds the line outside the slab's edge.
+            // CrossingLeadSeconds starts the whole profile earlier, by the travel the hull's lag eats.
+            if (_cfg.CrossingLeadSeconds > 0f) ds += Mathf.Min(_speed * _cfg.CrossingLeadSeconds, 0.5f * W);
             float rampStart = -W, rampEnd = -W * (1f - _cfg.CrossingHeightFraction);
             float u = Mathf.Clamp01((ds - rampStart) / Mathf.Max(1f, rampEnd - rampStart));
             u = u * u * (3f - 2f * u);
@@ -768,8 +780,18 @@ namespace CosmicShore.Gameplay
         float _pickupHoldUntil = -1f;
         public bool Crossing => _bumpActive && _bumpCrossing;
 
+        /// <summary>A face change is planned for the current crystal and its centre is within
+        /// <paramref name="within"/> of arc length ahead.</summary>
+        bool ApproachingCrossing(SkimRaceCourse c, float s, float within)
+        {
+            if (!_bumpActive || !_bumpCrossing) return false;
+            float ds = SignedDelta(c, s, _bumpCentre);
+            return ds <= 0f && ds >= -within;
+        }
+
         static float Smooth01(float x) { x = Mathf.Clamp01(x); return x * x * (3f - 2f * x); }
         float _lookDist = 100f;        // current pursuit look-ahead (world units)
+        float _speed;                  // the hull's speed this decision (sizes the crossing lead)
         float _crossOriginDs = -1e6f;  // where (signed, relative to the crystal) the current face change was decided
         float _crossForCentre = float.NaN;
         float LaneSkimHeight => Mathf.Abs(_cfg.SkimHeight) + Lane * _cfg.LaneHeightStep;
@@ -846,6 +868,7 @@ namespace CosmicShore.Gameplay
         {
             if (_mode == Mode.Idle) _mode = Mode.Racing;
             dt = Mathf.Max(dt, 1e-4f);
+            _speed = o.Speed;
 
             UpdateProgress(o, now, dt);
 
@@ -905,6 +928,8 @@ namespace CosmicShore.Gameplay
             else if (haveCourse)
             {
                 float look = Mathf.Clamp(o.Speed * _cfg.LookaheadSeconds, _cfg.LookaheadMin, _cfg.LookaheadMax);
+                if (_cfg.CrossingLookaheadScale < 1f && ApproachingCrossing(course, o.CourseProgress, _approachW))
+                    look = Mathf.Max(20f, look * _cfg.CrossingLookaheadScale);
                 aim = LinePoint(course, o.CourseProgress + look);
                 // Pursue only along a CLEAR chord: pure pursuit flies the straight line to its
                 // look-ahead point, which can cut the ribbon even where the line itself is clear.
@@ -965,6 +990,8 @@ namespace CosmicShore.Gameplay
                     throttle = _cfg.MinThrottle;
                 }
             }
+            if (_cfg.CrossingThrottle < 1f && haveCourse && ApproachingCrossing(course, o.CourseProgress, _cfg.CrossingSlowDistance))
+                throttle = Mathf.Min(throttle, _cfg.CrossingThrottle);
             if (_mode == Mode.Recovering) throttle = Mathf.Min(throttle, _cfg.RecoveryThrottle);
 
             // ── Planner (optional): replaces the pursuit command with the best rolled-out one ──

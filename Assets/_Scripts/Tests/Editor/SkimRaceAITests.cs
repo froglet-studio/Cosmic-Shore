@@ -403,6 +403,64 @@ namespace CosmicShore.Tests
             finally { Object.DestroyImmediate(gd); }
         }
 
+        // ── Crossing controls (off by default) ───────────────────────────
+
+        [Test]
+        public void CrossingControls_DefaultToNoOp()
+        {
+            var cfg = Config();
+            Assert.AreEqual(0f, cfg.CrossingLeadSeconds);
+            Assert.AreEqual(1f, cfg.CrossingLookaheadScale);
+            Assert.AreEqual(1f, cfg.CrossingThrottle);
+            Assert.IsFalse(cfg.MpcStrikeUsesBoostLoss);
+            Assert.AreEqual(0f, cfg.TrackMpcStrikeCost);
+        }
+
+        // Vessel 50 u up the square's first leg, crystal 100 u further on and 60 u BELOW the ribbon:
+        // too deep for the top face, so the pass is a face change.
+        static SkimRaceObservation CrossingObs(SkimRaceCourse c)
+        {
+            var o = Obs(new Vector3(200f, 6f, -150f), Vector3.forward, new Vector3(200f, -60f, -50f));
+            int h = -1;
+            o.HasCourse = true;
+            o.CourseLength = c.Length;
+            o.CourseProgress = c.Project(o.Position, ref h, out _, out o.CourseDistance);
+            c.Sample(o.CourseProgress, out o.CourseTangent, out _);
+            int th = -1;
+            o.TargetAheadOnCourse = c.Ahead(o.CourseProgress, c.Project(o.TargetPosition, ref th, out _, out _));
+            o.TargetRadius = 24f;
+            return o;
+        }
+
+        [Test]
+        public void CrossingThrottle_CapsOnlyWhenSet()
+        {
+            var c = Square();
+            var off = Config();
+            off.ReachabilityMargin = 0f;   // isolate the crossing cap from the Dubins ease-off
+            var d0 = new SkimRaceDriver(off);
+            var a0 = d0.Decide(CrossingObs(c), c, 0f, 0.02f);
+            Assert.IsTrue(d0.Crossing, "the scenario must plan a face change");
+            Assert.AreEqual(off.CruiseThrottle, a0.Throttle, 1e-4f, "default: no cap");
+
+            var on = Config();
+            on.ReachabilityMargin = 0f;
+            on.CrossingThrottle = 0.5f;
+            on.CrossingSlowDistance = 150f;
+            var a1 = new SkimRaceDriver(on).Decide(CrossingObs(c), c, 0f, 0.02f);
+            Assert.AreEqual(0.5f, a1.Throttle, 1e-4f);
+        }
+
+        [Test]
+        public void ShippedPolicies_DoNotEnableUnsetCrossingControls_OnI1()
+        {
+            var i1 = Resources.Load<SkimRaceAIConfigSO>("SkimRaceAIConfig_I1");
+            Assert.IsNotNull(i1);
+            Assert.AreEqual(0f, i1.CrossingLeadSeconds);
+            Assert.AreEqual(1f, i1.CrossingLookaheadScale);
+            Assert.AreEqual(1f, i1.CrossingThrottle);
+        }
+
         // ── Benchmark verdict ─────────────────────────────────────────────
 
         [Test]
