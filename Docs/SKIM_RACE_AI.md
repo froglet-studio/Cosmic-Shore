@@ -198,6 +198,17 @@ Plus 3 races at the default "Very High" quality (session 20261003-021648, ~25 ms
 
 Simulator (same policy, calibrated model, 120 fresh seeds): 106/120 (88%) <= 70 s, median ~58 s.
 
+### Intensity 2 — 3 races, policy `skimrace-v1-i2` (session 20261003-024656)
+
+| race | crystals | finish (s) | result |
+|---|---|---|---|
+| 0 | 30/30 | 112.39 | FAIL (> 70 s) |
+| 1 | 30/30 | 106.79 | FAIL (> 70 s) |
+| 2 | 30/30 | 111.71 | FAIL (> 70 s) |
+
+Completable (3/3), not within the benchmark (0/3). Simulator: 40/40 complete, median ~105 s. The
+base policy it replaces completed 0/20 in the simulator.
+
 ### Earlier policies (in-game, for the record)
 
 | policy | races | <= 70 s | median | note |
@@ -218,10 +229,11 @@ remains completable; it is not a stall.
 
 **Intensities 2, 3 and 4: NOT achieved.** Do not read the I1 result as covering them.
 - I3: 56 crystals over ~37,000 u is 124 s at top speed — 70 s is physically impossible for one pilot.
-- I2 (30 crystals, ~15,200 u, 51 s at top speed) and I4 (54 crystals, ~15,800 u with a 157-degree
-  hairpin) need a sustained mean speed the current policy does not reach on those tracks: in the
-  calibrated simulator the I1 policy collects ~22/30 (I2) and ~27/54 (I4) in 130 s. Policies there
-  fall back to the base asset and complete slowly or not at all inside a benchmark timeout.
+- I2 (30 crystals, ~15,200 u, 51 s at top speed): its own policy makes the sequence completable
+  (3/3 in-game, ~107-112 s) but the tuner plateaued near 105 s; 70 s needs a mean speed of ~220 u/s
+  where the policy sustains ~135-145. Not met.
+- I4 (54 crystals, ~15,800 u with a 157-degree hairpin): not tuned; the I1 policy collects ~27/54
+  in 130 s in the simulator and I4 falls back to the base policy. Not met.
 
 **Conditions the result depends on.** A focused editor at normal frame rate (~25 ms). Under ~15 fps
 the policy is measurably worse; the recorder states the frame time of every race so a slow machine

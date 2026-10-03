@@ -78,6 +78,36 @@ POLICIES = {
         "HullGuardSeconds": 0.0,
         "UsePlanner": False,
     },
+    # Intensity 2 (tilted spline loop): tuned from v4 (two CEM rounds, calibrated sim). Makes the
+    # sequence COMPLETABLE (sim 40/40, median ~105 s) - it does NOT meet the 70 s benchmark.
+    "SkimRaceAIConfig_I2": {
+        "PolicyVersion": "skimrace-v1-i2",
+        "LookaheadSeconds": 0.536,
+        "LookaheadMin": 27.273,
+        "LookaheadMax": 422.085,
+        "SkimHeight": 6.952,
+        "CrystalBumpHalfWidth": 266.463,
+        "CrystalDirectDistance": 134.317,
+        "LeadGain": 2.546,
+        "MaxLeadDegrees": 35.436,
+        "StickGainPerDegree": 0.21,
+        "MinThrottle": 0.357,
+        "ReachabilityMargin": 0.865,
+        "PassMargin": 11.32,
+        "CrossingHeightFraction": 0.12,
+        "RibbonClearHeight": 5.133,
+        "RibbonClearLateral": 28.961,
+        "TerminalCentreBias": 0.095,
+        "StallSeconds": 2.921,
+        "RecoveryThrottle": 0.556,
+        "MassGuardSeconds": 0.678,
+        "MassGuardMargin": 0.979,
+        "MassGuardSegment": 0.262,
+        "LowBoostApproachScale": 0.745,
+        "LowBoostFull": 1.993,
+        "HullGuardSeconds": 0.0,
+        "UsePlanner": False,
+    },
 }
 
 

@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4bf12f8c9f443417b8791c1048628978, type: 3}
+  m_Name: SkimRaceAIConfig_I2
+  m_EditorClassIdentifier: 
+  PolicyVersion: skimrace-v1-i2
+  DeployInNormalPlay: 1
+  DecisionHz: 0
+  LookaheadSeconds: 0.536
+  LookaheadMin: 27.273
+  LookaheadMax: 422.085
+  SkimHeight: 6.952
+  CrystalBumpHalfWidth: 266.463
+  LowBoostApproachScale: 0.745
+  LowBoostFull: 1.993
+  PassMargin: 11.32
+  DefaultCaptureRadius: 24
+  RibbonClearHeight: 5.133
+  RibbonClearLateral: 28.961
+  CrossingHeightFraction: 0.12
+  SlabGuardSeconds: 0
+  HullGuardSeconds: 0
+  HullMargin: 1.2
+  HullEscapeLift: 40
+  CrystalDirectDistance: 134.317
+  TerminalCentreBias: 0.095
+  MassGuardSeconds: 0.678
+  MassGuardMargin: 0.979
+  MassGuardSegment: 0.262
+  MassGuardStep: 0.04
+  HullHalfWidth: 2.06
+  HullHalfLength: 1.55
+  LeadGain: 2.546
+  MaxLeadDegrees: 35.436
+  StickGainPerDegree: 0.21
+  LevelingRoll: 0.25
+  CruiseThrottle: 1
+  MinThrottle: 0.357
+  ReachabilityMargin: 0.865
+  UseDrift: 0
+  DriftEnterDegrees: 70
+  DriftExitDegrees: 25
+  UsePlanner: 0
+  PlannerHz: 20
+  PlannerHorizon: 1.5
+  PlannerSegment: 0.3
+  PlannerStep: 0.0333
+  PlannerSlowThrottle: 0.5
+  PlannerCaptureMargin: 4
+  PlannerSkimReach: 7.5
+  PlannerBoostValue: 1.5
+  PlannerExitWeight: 0.6
+  PlannerClearanceBuffer: 1.5
+  PlannerClearancePenalty: 0.5
+  PlannerEffortCost: 0.01
+  UseLaunchRing: 0
+  RingBelowBoost: 3
+  RingAlignDegrees: 1.5
+  RingForwardDistance: 100
+  RingCooldownSeconds: 20.5
+  StallSeconds: 2.921
+  ProgressEpsilon: 25
+  RecoverySeconds: 2.5
+  RecoveryThrottle: 0.556
+  MissingTargetGrace: 0.25
