@@ -219,6 +219,9 @@ class RaceResult
     public Dictionary<string, int> ResetCauses = new();
     public Dictionary<string, float> ResetBoostLost = new();
     public float[] AgentTimes = Array.Empty<float>();   // every AI seat's own finish time (999 = did not finish)
+    // STEP-1 diagnostics: time / boost / speed / skim time per flight phase, and every track hit.
+    public Dictionary<string, float> PhaseTime = new(), PhaseBoostT = new(), PhaseSpeedT = new(), PhaseSkimT = new();
+    public List<(string phase, float lat, float hgt, float along, float headErr, float speed, float boost)> TrackHitLog = new();
     public float FarFrac, MeanBoost;
     public bool Finished;
     public float Time;
@@ -306,7 +309,23 @@ static class Race
         public readonly Queue<string> GuardLog = new();
         public readonly List<float> TrackErrors = new();
         public readonly List<float> LineClear = new();
+        public float LastPickupAt = -10f;
+        public readonly Dictionary<string, float> PhaseTime = new(), PhaseBoostT = new(), PhaseSpeedT = new(), PhaseSkimT = new();
+        public readonly List<(string, float, float, float, float, float, float)> TrackHitLog = new();
+        public string Phase(SkimRaceDriver d, float now) =>
+            now - LastPickupAt < 1f ? "post-pickup"
+            : d.CurrentMode == SkimRaceDriver.Mode.Recovering ? "recovery"
+            : d.Crossing ? "crossing"
+            : d.LastDiagnostics.CrystalPull ? "pull"
+            : "line";
         public void Note(string cause, float boostBefore) { if (boostBefore < 1.3f) return; Causes[cause] = Causes.GetValueOrDefault(cause) + 1; Lost[cause] = Lost.GetValueOrDefault(cause) + (boostBefore - 1f); }
+    }
+
+    static Dictionary<string, float> Sum(IEnumerable<Dictionary<string, float>> ds)
+    {
+        var r = new Dictionary<string, float>();
+        foreach (var d in ds) foreach (var kv in d) r[kv.Key] = r.GetValueOrDefault(kv.Key) + kv.Value;
+        return r;
     }
 
     public static RaceResult Run(TrackDef def, TrackPrisms prisms, SkimRaceCourse course, SkimRaceAIConfigSO cfg,
@@ -425,6 +444,14 @@ static class Race
                 if (o.CourseDistance > 20f) ag.FarFrames++;
                 ag.BoostSum += ag.Boosting ? ag.Boost : 1f;
                 float tn = t + dt;
+                {
+                    string ph0 = ag.Phase(driver, t);
+                    float bst = ag.Boosting ? ag.Boost : 1f;
+                    ag.PhaseTime[ph0] = ag.PhaseTime.GetValueOrDefault(ph0) + dt;
+                    ag.PhaseBoostT[ph0] = ag.PhaseBoostT.GetValueOrDefault(ph0) + bst * dt;
+                    ag.PhaseSpeedT[ph0] = ag.PhaseSpeedT.GetValueOrDefault(ph0) + ag.Speed * mult * dt;
+                    if (ag.Inside.Count > 0) ag.PhaseSkimT[ph0] = ag.PhaseSkimT.GetValueOrDefault(ph0) + dt;
+                }
 
                 // ── lay own trail rails ──
                 if (ph.TrailRails != 0 && tn > 2f && ag.Speed > 3f)
@@ -491,6 +518,10 @@ static class Race
                     if (ag.Hull.Add(i))
                     {
                         ag.Note(driver.Crossing ? "track-crossing" : driver.LastDiagnostics.CrystalPull ? "track-pull" : "track-line", ag.Boost);
+                        {
+                            Vector3 lph = Quaternion.Inverse(prisms.Rotations[i]) * (ag.Pos - prisms.Points[i]);
+                            ag.TrackHitLog.Add((ag.Phase(driver, tn), lph.x, lph.y, lph.z, driver.LastDiagnostics.HeadingErrorDegrees, ag.Speed * mult, ag.Boost));
+                        }
                         ag.HullHits++; Slow(ag, 30f, tn); ag.Boost = 1f; // VesselResetBoostPrismEffect + SquirrelVesselChangeSpeedByPrism
                         if (trace)
                         {
@@ -507,6 +538,7 @@ static class Race
                 if ((ag.Crystal - ag.Pos).sqrMagnitude <= ph.CaptureReach * ph.CaptureReach)
                 {
                     ag.Collected++;
+                    ag.LastPickupAt = tn;
                     if (ph.RingGeometry != 0)
                     {
                         // SquirrelVesselExplosionByCrystalEffect -> AOEShieldedRingSpawner: 8 prisms,
@@ -561,6 +593,9 @@ static class Race
             Recoveries = agents.Sum(x => x.Driver.Recoveries), HullHits = agents.Sum(x => x.HullHits),
             MeanSpeed = worst.SpeedSum / frames, FarFrac = worst.FarFrames / (float)frames, MeanBoost = worst.BoostSum / frames,
             AgentTimes = agents.Select(x => x.Done ? x.DoneAt : 999f).ToArray(),
+            PhaseTime = Sum(agents.Select(x => x.PhaseTime)), PhaseBoostT = Sum(agents.Select(x => x.PhaseBoostT)),
+            PhaseSpeedT = Sum(agents.Select(x => x.PhaseSpeedT)), PhaseSkimT = Sum(agents.Select(x => x.PhaseSkimT)),
+            TrackHitLog = agents.SelectMany(x => x.TrackHitLog).ToList(),
             TrackErrors = agents.SelectMany(x => x.TrackErrors).ToList(),
             LineClear = agents.SelectMany(x => x.LineClear).ToList(),
             ResetCauses = agents.SelectMany(x => x.Causes).GroupBy(k => k.Key).ToDictionary(g => g.Key, g => g.Sum(k => k.Value)),
@@ -649,6 +684,8 @@ static class Program
         }
         else f.SetValue(target, value);
     }
+
+    static float Med(IEnumerable<float> xs) { var l = xs.OrderBy(x => x).ToList(); return l.Count == 0 ? 0f : l[l.Count / 2]; }
 
     static float GetNum(object target, string key)
     {
@@ -786,7 +823,7 @@ static class Program
             int seedBase = 1000;
             foreach (var a in args.Skip(4))
                 if (a.StartsWith("seedbase=")) seedBase = int.Parse(a.Substring(9), CultureInfo.InvariantCulture);
-            var (cfg, ph) = Parse(args.Skip(4).Where(a => !a.StartsWith("seedbase=")));
+            var (cfg, ph) = Parse(args.Skip(4).Where(a => !a.StartsWith("seedbase=") && !a.StartsWith("diag=")));
             if (mode == "trace") { var r = Race.Run(def, prisms, course, cfg, ph, 1000 + seeds, limit, true); Console.WriteLine($"finished={r.Finished} t={r.Time:F2} {r.Collected}/{r.Required}"); return 0; }
             var e = Evaluate(def, prisms, course, cfg, ph, seeds, limit, seedBase);
             Console.WriteLine($"I{intensity} track={course.Length:F0}u prisms={prisms.Points.Count} finished {e.fin}/{seeds} " +
@@ -808,6 +845,39 @@ static class Program
             var lost = e.runs.SelectMany(r => r.ResetBoostLost).GroupBy(k => k.Key).ToDictionary(g => g.Key, g => g.Sum(k => k.Value));
             Console.WriteLine("  boost resets per race by cause: " + string.Join(", ", causes.Select(c =>
                 string.Format(CultureInfo.InvariantCulture, "{0} {1:F1} (boost lost {2:F1})", c.Key, c.n / (float)seeds, lost[c.Key] / seeds))));
+            if (args.Contains("diag=1"))
+            {
+                float seatsN = Math.Max(1, ph.Seats);
+                var pt = new Dictionary<string, float>(); var pb = new Dictionary<string, float>(); var ps = new Dictionary<string, float>(); var pk = new Dictionary<string, float>();
+                foreach (var r in e.runs)
+                {
+                    foreach (var kv in r.PhaseTime) pt[kv.Key] = pt.GetValueOrDefault(kv.Key) + kv.Value;
+                    foreach (var kv in r.PhaseBoostT) pb[kv.Key] = pb.GetValueOrDefault(kv.Key) + kv.Value;
+                    foreach (var kv in r.PhaseSpeedT) ps[kv.Key] = ps.GetValueOrDefault(kv.Key) + kv.Value;
+                    foreach (var kv in r.PhaseSkimT) pk[kv.Key] = pk.GetValueOrDefault(kv.Key) + kv.Value;
+                }
+                float total = pt.Values.Sum();
+                Console.WriteLine("  PHASES (per seat per race): phase  time(s)  share  mean-boost  mean-speed  skimming%  track-hits");
+                var hits = e.runs.SelectMany(r => r.TrackHitLog).ToList();
+                foreach (var kv in pt.OrderByDescending(k => k.Value))
+                {
+                    float tt = kv.Value;
+                    int nh = hits.Count(h => h.phase == kv.Key);
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "    {0,-12} {1,7:F1} {2,6:P0} {3,10:F2} {4,10:F0} {5,9:P0} {6,10:F1}",
+                        kv.Key, tt / seeds / seatsN, tt / total, pb.GetValueOrDefault(kv.Key) / tt, ps.GetValueOrDefault(kv.Key) / tt,
+                        pk.GetValueOrDefault(kv.Key) / tt, nh / (float)seeds / seatsN));
+                }
+                // Where on the plate the hull was when it struck: prism-local (x = lateral, y = normal, z = along).
+                Console.WriteLine("  TRACK HITS by plate-local position (per seat per race):");
+                foreach (var g in hits.GroupBy(h =>
+                    (Math.Abs(h.lat) < 10f ? "over plate |x|<10" : Math.Abs(h.lat) < 15f ? "over edge 10-15" : Math.Abs(h.lat) < 20f ? "beside edge 15-20" : "beside >20")
+                    + (h.hgt > 0.5f ? ", above" : h.hgt < -0.5f ? ", below" : ", in plane")).OrderByDescending(g => g.Count()))
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "    {0,-34} {1,5:F2}  (mean heading err {2:F0} deg, speed {3:F0}, boost lost {4:F1})",
+                        g.Key, g.Count() / (float)seeds / seatsN, g.Average(h => h.headErr), g.Average(h => h.speed), g.Average(h => h.boost - 1f)));
+                foreach (var g in hits.GroupBy(h => h.phase).OrderByDescending(g => g.Count()))
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "    phase {0,-12} {1,5:F2}/seat/race  |lat| median {2:F1}  |hgt| median {3:F1}  heading err median {4:F0}",
+                        g.Key, g.Count() / (float)seeds / seatsN, Med(g.Select(h => Math.Abs(h.lat))), Med(g.Select(h => Math.Abs(h.hgt))), Med(g.Select(h => h.headErr))));
+            }
             var te = e.runs.SelectMany(r => r.TrackErrors).OrderBy(x => x).ToList();
             if (te.Count > 0)
                 Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  cross-track error (hull vs line at its own progress): median {0:F1}  p75 {1:F1}  p90 {2:F1}  p99 {3:F1}",
@@ -818,7 +888,7 @@ static class Program
                     "  planned line (next 300 u) min shell clearance: <0.6 in {0:P0}, <1.5 in {1:P0}, <3 in {2:P0} of decisions",
                     lc.Count(x => x < 0.6f) / (float)lc.Count, lc.Count(x => x < 1.5f) / (float)lc.Count, lc.Count(x => x < 3f) / (float)lc.Count));
             foreach (var r in e.runs)
-                Console.WriteLine($"  {(r.Finished ? "FIN" : "DNF")} t={r.Time:F2} {r.Collected}/{r.Required} recov={r.Recoveries} hull={r.HullHits} mean={r.MeanSpeed:F0} boost={r.MeanBoost:F2} far={r.FarFrac:F2}");
+                Console.WriteLine($"  {(r.Finished ? "FIN" : "DNF")} t={r.Time:F2} {r.Collected}/{r.Required} recov={r.Recoveries} hull={r.HullHits} mean={r.MeanSpeed:F0} boost={r.MeanBoost:F2} far={r.FarFrac:F2} seats=[{string.Join(" ", r.AgentTimes.Select(x => x.ToString("F1", CultureInfo.InvariantCulture)))}]");
             return 0;
         }
 
