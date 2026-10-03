@@ -64,7 +64,7 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 | `SkimRaceObservation` / `SkimRaceAction` | The observation and action schema (feature vector, schema version, NaN sanitising, clamping) |
 | `SkimRaceDriver` | The decision core (pure C#): racing line, crystal pass planning, lag-compensated steering, throttle, recovery |
 | `SkimRacePlanner` | Optional model-predictive layer (rolls the Squirrel's own dynamics forward over a stick grid) |
-| `SkimRaceShell` | The stella-octangula contact distance, shared by the pilot and the simulator |
+| `SkimRaceShell` | The EXACT stella-octangula contact distance (the game's `ShieldShellMath` construction, cross-checked by `SkimRaceShellTests`), shared by the pilot and the simulator (§6.4) |
 | `SkimRaceAIConfigSO` | The policy: every tunable. Ships as `Resources/SkimRaceAIConfig[_I<n>].asset`, authored by `Tools/Build/author_skimrace_ai_config.py` |
 | `SkimRaceRaceRecorder` / `SkimRaceBenchmarkRunner` | The benchmark referee and driver (§7) |
 
@@ -132,6 +132,10 @@ worst time, then re-checked on 40 fresh seeds before going into the asset.
 bash Tools/Build/skimrace_sim_harness/run.sh eval 1 20            # evaluate the default policy
 bash Tools/Build/skimrace_sim_harness/run.sh eval 1 20 Field=v... # evaluate overrides
 bash Tools/Build/skimrace_sim_harness/run.sh tune 1 10 25 sigma=0.08 Field=v...
+# fly an authored policy (run under bash: zsh does not word-split the argument list)
+bash -c 'bash Tools/Build/skimrace_sim_harness/run.sh eval 2 40 $(python3 Tools/Build/skimrace_sim_harness/policy_args.py SkimRaceAIConfig_I2) ph.Seats=2 ph.Dt=0.026 ph.DtJitter=0.5'
+bash Tools/Build/skimrace_sim_harness/run.sh tune 2 8 20 set=mpc over=1 ...   # over= scores seats above 70 s
+bash Tools/Build/skimrace_sim_harness/run.sh geo 2     # anchor arc gaps; shell 1 = contact-distance landmarks
 ```
 
 ### 6.1 What calibration taught (in order)
@@ -196,6 +200,97 @@ every machine agrees on (`SkimRacePilot.ResolveLane`). Sim, I1, 2 AI seats: 13/3
 The simulator runs N seats in one world (`ph.Seats=N`), each with its own crystal stream, sharing
 all laid mass, and scores a race by its SLOWEST seat.
 
+### 6.4 The contact geometry was wrong (2026-10-03) - exact shell distance
+
+`SkimRaceShell.StellaDistance` used to return a face-plane LOWER bound (the largest signed distance
+to a tetrahedron's planes). For a convex solid that never overstates, but on the track plate's flat
+shell (half-extents 15 x 1.5 x 4.5) every face plane is nearly horizontal, so beside the plate's long
+edge it under-reported ~10.6x: a hull 11 u past the edge read **1.04 u**. The simulator uses this
+one function for BOTH hull strikes and skims, and the pilot's guards use it too, so all three saw
+contacts the game never registers (the game resolves the shell exactly, `ShieldShellMath`). It is
+now the exact closest-point distance to the two tetrahedra (Ericson RTCD 5.1.5), proven against
+`ShieldShellMath` by `SkimRaceShellTests`. Landmarks (`run.sh shell 1`): above the face +3 -> 3.000
+(old 2.833); beside the edge +11 -> 11.000 (old 1.039); beyond a tip (2,1,3) -> 3.742 (old 1.700).
+
+### 6.5 The crystal's position along the track was mis-projected
+
+The pilot projected the crystal onto the course from the VESSEL's hint, searching +-24 segments
+(~+-288 u) and accepting a windowed answer within 150 u. Measured anchor gaps along the track
+(`run.sh geo`): I1 539 u each; I2 468-646 u; I4 186-415 u (21 of 27 above 250 u). So a far crystal
+could match the end of the window and the swerve was placed early. The target now has its own hint,
+reset on a new or moved crystal (`SkimRacePilot._targetHint`, mirrored in the simulator).
+
+A/B on I1, 2 AI seats, 40 seeds (every seat judged): legacy shell + old projection 53/80 seats
+<= 70 s; legacy shell + new projection 48/80; exact shell + old projection 49/80; both fixes 48/80.
+**All within noise: neither fix regressed I1, and neither moved the needle by itself.**
+
+### 6.6 What the simulator can and cannot be compared with
+
+The simulator judges a race by its SLOWEST seat (the strict reading of "each AI <= 70 s"). The
+editor benchmark cannot: a Skim Race ends at the FIRST finisher, so only the winning seat's time is
+ever observed (the others' crystal counts at that moment are recorded). `run.sh eval` therefore also
+prints the first-finisher statistic, which is the editor-comparable one. I1, 2 AI seats, current
+policy: first finisher <= 70 s in 38-40 of 40 sim races (median ~60 s) - matching the editor's
+9/10-10/10 - while EVERY seat <= 70 s in only 12-22 of 40.
+
+### 6.7 Baselines and the strike-free ceiling (exact shell, both fixes, shipped policies)
+
+40 seeds, 26 ms frames with 50% jitter, every seat judged:
+
+| Cell | Every seat <= 70 s | Seat median | Race (slowest seat) median | Largest reset causes / race |
+|---|---|---|---|---|
+| I1, 2 AI | 12/40 | 68.8 s | 73.6 s | crossing 5.6, pull 5.3, pickup ring 5.1 |
+| I1, 3 AI | 2/40 | 74.4 s | 86.3 s | pickup ring 13.4, pull 11.8, other seat's rail 10.8 |
+| I2, 2 AI | 0/40 | 102.9 s | 112.3 s | pull 10.2, crossing 7.2 |
+| I2, 3 AI | 0/40 | 105.7 s | 115.8 s | pull 13.5, other seat's rail 11.6, crossing 11.4 |
+| I4, 2 AI | 0/40 | ~150 s | ~162 s | pull 9.4-10.1, crossing 5.7-6.2 |
+| I4, 3 AI | 0/40 | - | none within 130 s | pull 12.7, other rail 10.5 |
+
+**Ceiling: every hull contact switched off** (`ph.TrackHits=0 ph.MassHits=0`, 20 seeds) - the best
+any pilot of this racing line could do:
+
+| Cell | Race median | First finisher <= 70 s |
+|---|---|---|
+| I2, 1 AI | 66.5 s | 17/20 |
+| I2, 2 AI, lane step 1 | 69.9 s | 17/20 |
+| I2, 2 AI, lane step 3 | 83.9 s | 14/20 |
+| I4, 1 AI | **123.7 s** | 0/20 |
+| I4, 2 AI | 136.7 s | 0/20 |
+
+**I4 cannot reach 70 s with this approach even with zero strikes.** I2 can, but only with
+essentially zero strikes; it currently takes ~15-30 per race.
+
+### 6.8 Every lever re-tested with the corrected geometry (I2/I4, 2 AI seats, 20 seeds)
+
+Race median (slowest seat), each change on its own over the shipped policy:
+
+| Change | I2 | I4 |
+|---|---|---|
+| none (shipped) | 109.4 s | 161.7 s |
+| `TrackGuard=2` (guard includes the track shells) | 122.2 s | 172.1 s |
+| `TerminalNeedsClearChord` | 110.4 s | 166.6 s |
+| `ChordClearance=2` | 117.8 s | 171.9 s |
+| `SidePassOverCrossing` | 133.1 s | 167.2 s |
+| `BesidePassNoCrossing` | 118.0 s | 161.7 s |
+| `SequencedCrossing` | 117.3 s | 167.5 s |
+| `UseTrackMpc` + `TrackMpcStrikeCost=1000` (new) | 101.9 s | 173.8 s |
+| `UseMpc` + `MpcStrikeUsesBoostLoss` (new) | DNF 0/20 | DNF 0/20 |
+| `CrossingLeadSeconds=0.6` (new) | 114.0 s | 160.9 s |
+| `CrossingLookaheadScale=0.5` (new) | 148.8 s | 177.3 s |
+| `CrossingThrottle=0.7` (new) | 113.7 s | 167.3 s |
+
+None reaches 70 s; the tracking-MPC strike term is the only one that improves I2 (~7%), and it costs
+I4. A cross-entropy tune of 37 parameters (including every new field and `LaneHeightStep`) at 3 AI
+seats, 20 iterations x 24 candidates x 8 races, validated on 40 fresh seeds: race median **115.9 s**
+against the shipped policy's 115.8 s. **No policy change shipped.**
+
+### 6.9 Lanes
+
+`LaneHeightStep` 3 lifts the second AI seat ~1.5 u past the skimmer's reach over the plate's top, which
+looked like the reason upper seats run slower (the I2 ceiling above). Re-measured on 40 fresh I1 seeds
+it is within noise (2 AI: 53/80 seats <= 70 s at step 1 vs 57/80 at step 3; 3 AI: 56/120 vs 65/120) -
+the stella's top is ridged, so an upper lane still skims part of the time. Left at 3.
+
 ## 7. Running the benchmark
 
 In the editor: **FrogletTools > AI > Skim Race AI Benchmark** (races, intensity, players), or drop
@@ -207,7 +302,26 @@ policy) to `BenchmarkResults/SkimRaceAI/` (git-ignored). Summarise with
 
 ## 8. Results
 
-### 8.1 Current validation matrix (2026-10-03, every race listed, none selected)
+### 8.0 Re-validation after the geometry fixes (2026-10-03, afternoon) - NOT completed
+
+The pilot code changed (exact shell distance in its guards, per-target course projection - §6.4,
+§6.5); the policies did not. The matrix below (§8.1) was therefore re-run with the AI-seat counts
+the requirement names (2 and 3 AI seats = 3 and 4 players including the idle host), and every launch
+had to be thrown out for the frame-rate reason §6.1 records: the machine was in active use (Rider
+indexing at ~200% CPU, Discord and Notion foreground, load average 18-28 on 8 cores) and the editor
+could not hold focus.
+
+| Session | Cell | Races | Frame ms (mean) | Disposition |
+|---|---|---|---|---|
+| `skimrace_I1_20261003-135603` | I1, 1 AI (wrong cell) | 0 finished | - | aborted: started with players=2 by mistake |
+| `skimrace_I1_20261003-140053` | I1, 2 AI | 5 (3 complete, 107-116 s; 2 timeouts) | 151-193 (max 1031) | **invalid** - ~5x the 32-37 ms the matrix was calibrated at |
+| `skimrace_I1_20261003-141329` | I1, 2 AI | 1 (complete, 120.3 s) | 207.5 (max 847) | **invalid**; focus lost to another app mid-race |
+
+These are environment results, not AI results (the simulator at 115 ms frames already degrades the
+same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
+on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
+
+### 8.1 Validation matrix before the geometry fixes (2026-10-03, every race listed, none selected)
 
 Branch `feat/skimrace-ai`, editor 6000.3.17f1, focused, no other load. Policies:
 `skimrace-v4-i1`, `skimrace-v1-i2`, `skimrace-v1-i4` (lanes on). Each cell is two separate fresh
@@ -338,26 +452,33 @@ Runs excluded, and why (all disclosed, none are AI results):
 
 ## 9. Status and known limits
 
-**The 70 s requirement is met on intensity 1 only.**
+**The 70 s requirement is met on intensity 1 only, and only in the form the editor can observe.**
 
-- **I1:** 19/20 races within 70 s across 2 and 3 seats (median ~60 s); 20/20 completed.
-- **I2: not met.** 20/20 completed, 0/20 within 70 s; median ~101 s - a gap of ~31 s (~44%).
-- **I4: not met.** 20/20 completed, 0/20 within 70 s; median ~150 s - a gap of ~80 s (more than 2x).
+- **I1:** last valid in-editor matrix (pre-fix pilot code, §8.1): 19/20 races won within 70 s across
+  1 and 2 AI seats. That judges the WINNING seat - a Skim Race ends at the first finisher, so no other
+  seat's time exists. The strict per-seat reading is only measurable in the simulator: every AI seat
+  <= 70 s in 12-22 of 40 races with 2 AI seats and 2-4 of 40 with 3 AI seats (§6.6, §6.9).
+- **I2: not met.** Simulator, 2/3 AI seats: race median 112-116 s, 0/40 with every seat <= 70 s.
+  The strike-free ceiling is 66-70 s, so 70 s needs essentially zero strikes; the pilot takes ~15-30
+  per race and no lever or tune tried reduces that without losing more time (§6.8).
+- **I4: not met, and not reachable with this approach.** Even with every hull contact switched off
+  the simulator needs ~124 s for one AI seat (§6.7).
 - **I3: not attempted; physically impossible** (56 crystals over ~37,000 u needs 528 u/s; the
   Squirrel tops out at 300 u/s).
+- **Owed:** the in-editor matrix for the current pilot code (§8.0).
 
-What blocks I2 and I4 (section 6.2): hull strikes on the ribbon's super-shield contact shell while
-taking crystals that sit within a few units of it. Each strike resets the skim boost to 1x and cuts
-speed by up to half; on I2 the same policy finishes in 67-69 s with strikes switched off. Every
-controller tried - line shaping, sequenced face changes, side passes, direct crystal-to-crystal
-flight, a predictive guard, full MPC, model-predictive line following - either keeps ~9+ strikes per
-race or avoids them only by flying slower or farther, and lands at ~98-110 s. The vessel's heading
-lags the stick with a 0.67 s time constant at up to 300 u/s; that, against a 30 u-wide, 3 u-thick
-hazard with crystals 0-35 u from it, is the measured constraint. Nothing here changes the Squirrel,
-the course, the crystals or the timer, so none of those levers was available.
+What blocks I2 and I4: hull strikes on the ribbon's super-shield contact shell while taking crystals
+that sit within a few units of it (each resets the skim boost to 1x and cuts speed by up to half), and
+on I4 the racing line itself - following the ribbon round 54 crystals, the strike-free pilot averages
+well under the ~234 u/s a 70 s finish needs. Correcting the contact geometry (§6.4) removed phantom
+strikes and phantom skims together and left the outcome where it was. The vessel's heading lags the
+stick with a 0.67 s time constant at up to 300 u/s; that, against a 30 u-wide, 3 u-thick hazard with
+crystals 0-35 u from it, is the measured constraint. Nothing here changes the Squirrel, the course, the
+crystals or the timer, so none of those levers was available.
 
 Other limits:
-- Frame rate matters: below ~15 fps the policy degrades; every race records its frame time.
+- Frame rate matters: below ~15 fps the policy degrades; every race records its frame time, and an
+  unfocused editor or a busy machine is enough to invalidate a batch (§8.0).
 - Not yet run in a standalone player build or from a fresh checkout on another machine.
 - `MiniGameHUD`'s destroyed-`Player` exception (fixed here) is a game bug that a 3-seat replay hits;
   it is outside the AI and worth a separate look at why `GameDataSO.LocalPlayer` holds a destroyed
