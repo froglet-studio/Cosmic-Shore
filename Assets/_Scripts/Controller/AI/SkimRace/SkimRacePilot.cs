@@ -45,6 +45,13 @@ namespace CosmicShore.Gameplay
         float _raceStart;
         float _nextCourseAttempt;
         int _courseHint = -1;
+        // The target's OWN projection hint. Projecting the crystal from the vessel's hint searches only
+        // +-24 segments (~+-288 u) around the vessel and accepts a windowed answer within 150 u, so a
+        // crystal further ahead (every anchor gap on these tracks is 186-646 u) could match the end of
+        // the window and give a wrong TargetAheadOnCourse. A new target starts with a full search.
+        int _targetHint = -1;
+        int _targetHintId;
+        Vector3 _targetHintPos;   // a crystal object may be re-used at its next anchor: a move is a new target too
         float _nextDecision;
         SkimRaceAction _held;
 
@@ -110,6 +117,7 @@ namespace CosmicShore.Gameplay
             _raceActive = false;
             _driver?.Reset();
             _courseHint = -1;
+            _targetHint = -1;
             _nextDecision = 0f;
             _held = SkimRaceAction.Neutral;
             _lastCollected = 0;
@@ -277,8 +285,13 @@ namespace CosmicShore.Gameplay
                 _course.Sample(o.CourseProgress, out o.CourseTangent, out _);
                 if (o.HasTarget)
                 {
-                    int targetHint = _courseHint;
-                    float sTarget = _course.Project(o.TargetPosition, ref targetHint, out _, out _);
+                    if (o.TargetId != _targetHintId || (o.TargetPosition - _targetHintPos).sqrMagnitude > 1f)
+                    {
+                        _targetHintId = o.TargetId;
+                        _targetHintPos = o.TargetPosition;
+                        _targetHint = -1;
+                    }
+                    float sTarget = _course.Project(o.TargetPosition, ref _targetHint, out _, out _);
                     o.TargetAheadOnCourse = _course.Ahead(o.CourseProgress, sTarget);
                 }
             }
@@ -321,6 +334,7 @@ namespace CosmicShore.Gameplay
             {
                 _course = course;
                 _courseHint = -1;
+                _targetHint = -1;
                 CSDebug.LogVerbose(CSLogChannel.AITraining,
                     $"[SkimRacePilot] {_status.PlayerName}: course built ({course.Count} prisms, {course.Length:F0} u).");
             }

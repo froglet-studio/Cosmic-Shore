@@ -21,6 +21,7 @@ namespace CosmicShore.Gameplay
         readonly Vector3[] _points;
         readonly Vector3[] _normals;
         readonly Quaternion[] _rotations;   // each prism's pose (identity frames when unknown)
+        readonly Quaternion[] _invRotations; // cached inverses for ShellClearance (called per rollout step)
         readonly Vector3[] _shellHalf;      // each prism's contact-shell half-extents (zero = unknown)
         readonly float[] _cumulative; // _cumulative[i] = arc length from point 0 to point i
         readonly float _length;
@@ -38,12 +39,14 @@ namespace CosmicShore.Gameplay
             _points = new Vector3[n];
             _normals = new Vector3[n];
             _rotations = new Quaternion[n];
+            _invRotations = new Quaternion[n];
             _shellHalf = new Vector3[n];
             HasShells = rotations != null && shellHalfExtents != null
                         && rotations.Count == n && shellHalfExtents.Count == n;
             for (int i = 0; i < n; i++)
             {
                 _rotations[i] = HasShells ? rotations[i] : Quaternion.identity;
+                _invRotations[i] = Quaternion.Inverse(_rotations[i]);
                 _shellHalf[i] = HasShells ? shellHalfExtents[i] : Vector3.zero;
             }
             _cumulative = new float[n + 1];
@@ -139,7 +142,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Distance from <paramref name="position"/> to the nearest track prism's contact shell,
         /// searching <paramref name="window"/> prisms either side of segment <paramref name="hint"/>.
-        /// Uses <see cref="SkimRaceShell.StellaDistance"/> (conservative). Returns +inf without shells.
+        /// Uses <see cref="SkimRaceShell.StellaDistance"/> (exact). Returns +inf without shells.
         /// </summary>
         public float ShellClearance(Vector3 position, int hint, int window, out int nearest)
         {
@@ -152,7 +155,7 @@ namespace CosmicShore.Gameplay
                 int i = ((hint + k) % n + n) % n;
                 Vector3 d = position - _points[i];
                 if (d.sqrMagnitude > 60f * 60f) continue;
-                float c = SkimRaceShell.StellaDistance(Quaternion.Inverse(_rotations[i]) * d, _shellHalf[i]);
+                float c = SkimRaceShell.StellaDistance(_invRotations[i] * d, _shellHalf[i]);
                 if (c < best) { best = c; nearest = i; }
             }
             return best;
