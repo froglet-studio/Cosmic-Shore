@@ -13,5 +13,6 @@ the record of when it last passed and on what build.
 | ID | Passed on (commit) | Date | Tester | Notes |
 |---|---|---|---|---|
 | QA-BUILD-COMPILE | `5144ad269` | 2026-08-14 | Caleb |  |
+| QA-P2-LIFEFORM-MATRIX-MOONS | `025eb058` | 2026-10-03 | akouroshm | The four element-crystal moons on the Lifeform Matrix bench are visible and distinct, outside the toy body sphere. |
 
 <!-- /qa-archive -->

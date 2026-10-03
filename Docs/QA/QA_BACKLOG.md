@@ -1353,12 +1353,6 @@ cytoplasm prefabs and three scenes (including `Menu_Main`) still point at a
 throw from `LifeForm.Start()` / `Flora.Plant()`. **PASS = enumerate which ones actually
 throw** — that list scopes the fix branch.
 
-### QA-P2-LIFEFORM-MATRIX-MOONS ⬜ — element-crystal "moons" swallowed by the toy body
-Suspected pre-existing: the Lifeform Matrix's four crystal moons sit ~2.2 world units out
-while toys place at `toyBodyRadius = 22`. Look at the bench. **PASS = the four moons are
-visible and distinct.** **FAIL = they are inside the sphere** (then the fix is a placement
-value, not code).
-
 ---
 
 ## Not covered by this list
