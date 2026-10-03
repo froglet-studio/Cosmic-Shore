@@ -47,6 +47,26 @@ namespace CosmicShore.Gameplay
         [Range(0.05f, 1f)] public float LowBoostApproachScale = 1f;
         [Tooltip("Skim boost at and above which the full approach is used.")]
         [Min(1.01f)] public float LowBoostFull = 3f;
+        [Tooltip("Boost-gated DIRECT flight: at or above this skim boost the pilot leaves the ribbon and " +
+                 "flies straight at the crystal, letting each pickup's ring (+0.8) hold the boost - above " +
+                 "~3.2x on these tracks pickups come faster than the 0.3/s decay. It drops back to the " +
+                 "ribbon below (this - DirectBoostHysteresis) to skim the boost back up. 0 = off.")]
+        [Min(0f)] public float DirectBoost = 0f;
+        [Min(0f)] public float DirectBoostHysteresis = 0.7f;
+        [Tooltip("Direct flight: the straight line is re-routed where the hull centre would come " +
+                 "within this distance of the ribbon's contact shell (covers the 2 u wingtips).")]
+        [Min(0f)] public float DirectViaClearance = 4f;
+        [Tooltip("Same-face re-route: height of the via-point above the blocking plate.")]
+        [Min(0f)] public float DirectViaLift = 14f;
+        [Tooltip("Opposite-face re-route: lateral distance of the via-point beside the ribbon's edge " +
+                 "(the shell reaches 15 u from the centreline).")]
+        [Min(0f)] public float DirectViaLateral = 26f;
+        [Tooltip("Whether the laid-mass guard also keeps the hull off the TRACK's contact shells: " +
+                 "0 = never, 1 = only during direct flight (a straight line between crystals cuts " +
+                 "across the ribbon), 2 = always.")]
+        [Range(0, 2)] public int TrackGuard = 1;
+        [Tooltip("Predicted hull clearance (world units) the guard keeps from the track's contact shells.")]
+        [Min(0f)] public float TrackGuardMargin = 1f;
         [Tooltip("How far INSIDE the crystal's capture radius the pass point sits (safety margin).")]
         [Min(0f)] public float PassMargin = 8f;
         [Tooltip("Capture radius assumed when the crystal's collider cannot be measured.")]
@@ -59,6 +79,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("When a pass crosses to the far side of the ribbon, the height change uses this " +
                  "fraction of the bump width, so the lateral swing round the edge comes first.")]
         [Range(0.1f, 1f)] public float CrossingHeightFraction = 0.33f;
+        [Tooltip("Sequenced face change: the swing past the ribbon's edge is completed one pursuit " +
+                 "look-ahead BEFORE the height starts to change, so the line the pursuit actually flies " +
+                 "(the chord to its look-ahead point) never cuts through the plates. Off = the original " +
+                 "simultaneous swing/ramp.")]
+        public bool SequencedCrossing = false;
         [Tooltip("Look-ahead (seconds of travel) of the safety layer that keeps the hull out of " +
                  "the ribbon's slab. 0 disables it.")]
         [Min(0f)] public float SlabGuardSeconds = 0f;
@@ -75,6 +100,36 @@ namespace CosmicShore.Gameplay
         [Tooltip("In the terminal approach, how far the aim moves from the pass point toward the " +
                  "crystal's centre (0..1) when the centre is clear of the ribbon's slab.")]
         [Range(0f, 1f)] public float TerminalCentreBias = 0.5f;
+        [Tooltip("Fly the terminal straight line to the pass point only when that straight line is " +
+                 "clear of the ribbon's contact shell; otherwise keep to the racing line (which flies a " +
+                 "face change round the ribbon's edge).")]
+        public bool TerminalNeedsClearChord = false;
+        [Tooltip("Hull-centre clearance from a track shell below which the terminal chord counts as blocked.")]
+        [Min(0f)] public float TerminalChordClearance = 1.5f;
+        [Tooltip("Keep the racing line out of the slab band: within the ribbon's lateral reach it stays " +
+                 "at least RibbonClearHeight off the plane.")]
+        public bool LineBandClamp = false;
+        [Tooltip("A crystal pass point beside the ribbon (|lateral| >= RibbonClearLateral) is flown from " +
+                 "the current face, never as a face change - a face change there costs two crossings " +
+                 "(there, and back for the next crystal) for a point that needs none.")]
+        public bool BesidePassNoCrossing = false;
+        [Tooltip("A crystal too deep to take from this face is taken from BESIDE the ribbon (out past " +
+                 "the plate edge, at its own height) when the capture sphere reaches there, instead of " +
+                 "a full face change.")]
+        public bool SidePassOverCrossing = false;
+        [Tooltip("Pursuit flies the straight chord to its look-ahead point; when that chord would bring " +
+                 "the hull centre within this distance of a track shell the look-ahead is shortened " +
+                 "until it does not. 0 = off.")]
+        [Min(0f)] public float ChordClearance = 0f;
+
+        [Tooltip("Extra skim height per AI lane: seat k skims at SkimHeight + k x this, so seats never " +
+                 "share a height with each other's trail rails (rail half-thickness 0.42 + hull half-height 0.3).")]
+        [Min(0f)] public float LaneHeightStep = 3f;
+
+        [Tooltip("After a pickup, hold the stick neutral for this many world units of travel so the " +
+                 "hull passes through the pickup ring's hollow centre (ring: 8 prisms, radius 8.2, " +
+                 "centred 8 u ahead, 7.5 long). 0 = off.")]
+        [Min(0f)] public float PickupClearDistance = 0f;
 
         [Header("Laid-mass guard")]
         [Tooltip("Look-ahead (seconds) of the guard against mass the race has LAID - the Squirrel's " +
@@ -89,10 +144,48 @@ namespace CosmicShore.Gameplay
         [Min(0.02f)] public float MassGuardSegment = 0.25f;
         [Tooltip("Rollout step (seconds).")]
         [Min(0.005f)] public float MassGuardStep = 0.04f;
+        [Tooltip("The guard's rollout continues by re-following the racing line from wherever it has " +
+                 "got to (what the driver will actually do), instead of flying at a fixed aim point.")]
+        public bool RolloutFollowsLine = false;
         [Tooltip("Hull half-width used by the guard's contact test (Squirrel hull box 4.12 x 0.59 x 3.11).")]
         [Min(0f)] public float HullHalfWidth = 2.06f;
         [Tooltip("Hull half-length used by the guard's contact test.")]
         [Min(0f)] public float HullHalfLength = 1.55f;
+
+        [Header("Tracking MPC (model-predictive line following)")]
+        [Tooltip("Choose the stick by rolling each candidate forward and keeping the one whose predicted " +
+                 "path stays closest to the racing line (pure path following; the line carries the safety).")]
+        public bool UseTrackMpc = false;
+        [Min(1f)] public float TrackMpcHz = 20f;
+        [Min(0.1f)] public float TrackMpcHorizon = 0.8f;
+        [Min(0.02f)] public float TrackMpcSegment = 0.25f;
+        [Min(0.01f)] public float TrackMpcStep = 0.05f;
+        [Tooltip("Lead (world units) of the line point each predicted position is compared with.")]
+        [Min(0f)] public float TrackMpcLead = 15f;
+        [Tooltip("Reward (per second of horizon left) for a predicted pickup.")]
+        [Min(0f)] public float TrackMpcCaptureReward = 200f;
+        [Tooltip("Fractional preference for the pursuit controller's own stick.")]
+        [Range(0f, 0.9f)] public float TrackMpcNominalBias = 0.1f;
+
+        [Header("Model-predictive control")]
+        [Tooltip("Replace the guard with full MPC: each decision scores ~50 stick/throttle commands by " +
+                 "rolling the Squirrel's own dynamics forward against the visible track shells and laid " +
+                 "mass (skims, pickups and strikes included) and flies the cheapest.")]
+        public bool UseMpc = false;
+        [Min(1f)] public float MpcHz = 15f;
+        [Min(0.2f)] public float MpcHorizon = 1.5f;
+        [Min(0.02f)] public float MpcSegment = 0.3f;
+        [Min(0.01f)] public float MpcStep = 0.05f;
+        [Range(0f, 1f)] public float MpcSlowThrottle = 0.55f;
+        [Tooltip("Predicted hull clearance (world units) below which a rollout counts as a strike.")]
+        [Min(0f)] public float MpcHullMargin = 0.9f;
+        [Min(0f)] public float MpcCaptureMargin = 2f;
+        [Tooltip("Seconds-equivalent value of 1x of banked boost.")]
+        [Min(0f)] public float MpcBoostValue = 1.5f;
+        [Min(0f)] public float MpcStrikeCost = 20f;
+        [Tooltip("Preference for the pursuit controller's own command (seconds), so the plan only " +
+                 "overrides it for a real gain.")]
+        [Min(0f)] public float MpcNominalBias = 0.05f;
 
         [Header("Steering")]
         [Tooltip("How far past the desired heading the commanded heading is allowed to LEAD the " +

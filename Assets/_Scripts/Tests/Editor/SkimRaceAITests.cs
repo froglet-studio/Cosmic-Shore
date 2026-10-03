@@ -297,6 +297,40 @@ namespace CosmicShore.Tests
             Assert.AreEqual(1f, a.Throttle);
         }
 
+        [Test]
+        public void Driver_LanesSkimAtSeparateHeights()
+        {
+            // Two AI seats on the same course: lane 1's line sits LaneHeightStep above lane 0's, so
+            // one seat never flies at the height of the other's trail rails.
+            var c = Square();
+            var cfg = Config();
+            Vector3 AimFor(int lane)
+            {
+                var d = new SkimRaceDriver(cfg) { Lane = lane };
+                d.Reset();
+                var o = Obs(new Vector3(200, 6, -150), Vector3.forward, null, 200f);
+                int hint = -1;
+                o.HasCourse = true;
+                o.CourseLength = c.Length;
+                o.CourseProgress = c.Project(o.Position, ref hint, out _, out o.CourseDistance);
+                d.Decide(o, c, 0f, 0.016f);
+                return d.LastDiagnostics.AimPoint;
+            }
+            float dh = AimFor(1).y - AimFor(0).y;
+            Assert.That(dh, Is.EqualTo(cfg.LaneHeightStep).Within(0.01f));
+        }
+
+        [Test]
+        public void Action_ClampedIntoHumanRanges()
+        {
+            // The pilot clamps at actuation whatever the policy produced (anti-cheat contract).
+            var a = new SkimRaceAction { Yaw = 5f, Pitch = -7f, Roll = 3f, Throttle = 4f }.Clamped();
+            Assert.AreEqual(1f, a.Yaw);
+            Assert.AreEqual(-1f, a.Pitch);
+            Assert.AreEqual(1f, a.Roll);
+            Assert.AreEqual(1f, a.Throttle);
+        }
+
         // ── Target selection ──────────────────────────────────────────────
 
         static SkimRaceTargetTracker.Candidate C(Domains d, Vector3 p, bool exploding = false, bool embedded = false, bool alive = true) =>

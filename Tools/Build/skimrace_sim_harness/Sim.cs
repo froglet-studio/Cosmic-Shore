@@ -96,6 +96,11 @@ class Physics
     public int TrailRails = 1;
     public float RailOffset = 9.66f, RailSpacing = 7f, TrailGrace = 1f;
     public int RingGeometry = 1;
+    public int TrackHits = 1, MassHits = 1;
+    public int Seats = 1;
+    public int LineDiag = 0;
+    public float ExtraTime = 60f;   // a race is cut at limit + this                   // AI seats racing at once (each its own crystal stream)
+    public float ColliderDelay = 0.5f;      // VesselPrismController defaultWaitTime: a laid prism's collider is off this long for everyone   // diagnostic switches: 0 = that contact class never strikes
     public float HullHalfX = 2.06f, HullHalfZ = 1.55f;
     public float HullSlow = 0.5f;        // throttle multiplier applied for HullSlowSeconds on a strike
     public float HullSlowSeconds = 1f;
@@ -208,6 +213,11 @@ class TrackPrisms
 
 class RaceResult
 {
+    public List<float> TrackErrors = new();
+    public List<float> LineClear = new();
+    public Dictionary<string, int> ResetCauses = new();
+    public Dictionary<string, float> ResetBoostLost = new();
+    public float[] AgentTimes = Array.Empty<float>();   // every AI seat's own finish time (999 = did not finish)
     public float FarFrac, MeanBoost;
     public bool Finished;
     public float Time;
@@ -222,13 +232,18 @@ class RaceResult
 sealed class Obstacles
 {
     public readonly List<(Vector3 c, Quaternion r, Vector3 half, float activeAt)> Items = new();
+    public readonly List<(int owner, float ownerActiveAt)> Owners = new();
+    public bool ActiveFor(int i, int agent, float t)
+        => Owners[i].owner == agent ? t >= Owners[i].ownerActiveAt : t >= Items[i].activeAt;
     readonly Dictionary<long, List<int>> _grid = new();
     const float Cell = 24f;
     static long Key(int x, int y, int z) => ((long)(x + 100000) * 200003L + (y + 100000)) * 200003L + (z + 100000);
-    public void Add(Vector3 c, Quaternion r, Vector3 half, float activeAt)
+    public void Add(Vector3 c, Quaternion r, Vector3 half, float activeAt) => Add(c, r, half, activeAt, -1, activeAt);
+    public void Add(Vector3 c, Quaternion r, Vector3 half, float activeAt, int owner, float ownerActiveAt)
     {
         int id = Items.Count;
         Items.Add((c, r, half, activeAt));
+        Owners.Add((owner, ownerActiveAt));
         long k = Key(Mathf.FloorToInt(c.x / Cell), Mathf.FloorToInt(c.y / Cell), Mathf.FloorToInt(c.z / Cell));
         if (!_grid.TryGetValue(k, out var l)) _grid[k] = l = new List<int>();
         l.Add(id);
@@ -270,269 +285,298 @@ static class Race
         }
     }
 
+    sealed class Agent
+    {
+        public int Id;
+        public SkimRaceDriver Driver;
+        public System.Random Rng;
+        public Vector3 Pos; public Quaternion Rot, Acc;
+        public float Speed, Boost = 1f; public bool Boosting;
+        public float SlowUntil = -1f;
+        public int Anchor; public Vector3 Crystal; public int Collected;
+        public readonly HashSet<int> Inside = new(), Hull = new(), ObsInside = new(), ObsHull = new();
+        public int Hint = -1, HullHits;
+        public float SpeedSum, BoostSum; public int Frames, FarFrames;
+        public readonly List<(float init, float start)> Mods = new();
+        public float RailTravel;
+        public bool Done; public float DoneAt = 999f;
+        public Dictionary<string, int> Causes = new();
+        public Dictionary<string, float> Lost = new();
+        public readonly Queue<string> GuardLog = new();
+        public readonly List<float> TrackErrors = new();
+        public readonly List<float> LineClear = new();
+        public void Note(string cause, float boostBefore) { if (boostBefore < 1.3f) return; Causes[cause] = Causes.GetValueOrDefault(cause) + 1; Lost[cause] = Lost.GetValueOrDefault(cause) + (boostBefore - 1f); }
+    }
+
     public static RaceResult Run(TrackDef def, TrackPrisms prisms, SkimRaceCourse course, SkimRaceAIConfigSO cfg,
         Physics ph, int seed, float limit, bool trace = false)
     {
         var rng = new System.Random(seed);
-        var driver = new SkimRaceDriver(cfg);
-        driver.Reset();
-
         int required = def.Waypoints.Count * def.Laps;
-        Vector3 pos = ph.SpawnPos;
-        Quaternion rot = Quaternion.LookRotation(ph.SpawnFwd, Vector3.up);
-        Quaternion acc = rot;
-        float speed = 0f, boost = 1f;
-        bool boosting = false;
-        float slowUntil = -1f;
-        int anchor = 0;
-        Vector3 crystal = def.Anchors[0] + OnUnitSphere(rng) * ph.Jitter;
-        int collected = 0;
-        var inside = new HashSet<int>();
-        var hull = new HashSet<int>();
+        var obs = new Obstacles();
+        var obsNear = new List<int>();
         var near = new List<int>();
-        int hint = -1, hullHits = 0;
-        float t = 0f, speedSum = 0f;
-        int frames = 0, farFrames = 0; float boostSum = 0f;
-        var mods = new List<(float init, float start)>();
-        float Mult(float now)
+        var agents = new List<Agent>();
+        for (int k = 0; k < Math.Max(1, ph.Seats); k++)
+        {
+            var ag = new Agent { Id = k, Driver = new SkimRaceDriver(cfg) { Lane = k }, Rng = new System.Random(seed * 31 + k * 977) };
+            ag.Driver.Reset();
+            ag.Pos = ph.SpawnPos + Vector3.up * (10f * k);
+            ag.Rot = ag.Acc = Quaternion.LookRotation(ph.SpawnFwd, Vector3.up);
+            ag.Crystal = def.Anchors[0] + OnUnitSphere(ag.Rng) * ph.Jitter;
+            agents.Add(ag);
+        }
+        float t = 0f, maxT = limit + ph.ExtraTime;
+
+        float Mult(Agent ag, float now)
         {
             float m = 1f;
-            for (int i = mods.Count - 1; i >= 0; i--)
+            for (int i = ag.Mods.Count - 1; i >= 0; i--)
             {
-                float e = now - mods[i].start;
-                if (e >= ph.HullSlowSeconds) { mods.RemoveAt(i); continue; }
-                m *= Mathf.Lerp(mods[i].init, 1f, e / ph.HullSlowSeconds);
+                float e = now - ag.Mods[i].start;
+                if (e >= ph.HullSlowSeconds) { ag.Mods.RemoveAt(i); continue; }
+                m *= Mathf.Lerp(ag.Mods[i].init, 1f, e / ph.HullSlowSeconds);
             }
             return m;
         }
-        void Slow(float volume, float now) { if (ph.StackedSlow != 0) mods.Add((1f - Math.Min(volume * 0.1f, 0.5f), now)); else slowUntil = now + ph.HullSlowSeconds; }
-        Vector3 lastFwd = rot * Vector3.forward;
-        float maxT = limit + 60f;
-        var ring = new List<(Vector3 c, Quaternion r)>();
-        var ringInside = new HashSet<int>();
-        var ringHull = new HashSet<int>();
-        float ringReady = 0f;
-        int ringsLaid = 0;
-        var obs = new Obstacles();
-        var obsNear = new List<int>();
-        var obsInside = new HashSet<int>();
-        var obsHull = new HashSet<int>();
-        float railTravel = 0f;
-        int obsHits = 0;
+        void Slow(Agent ag, float volume, float now)
+        {
+            if (ph.StackedSlow != 0) ag.Mods.Add((1f - Math.Min(volume * 0.1f, 0.5f), now));
+            else ag.SlowUntil = now + ph.HullSlowSeconds;
+        }
 
-        while (t < maxT)
+        while (t < maxT && agents.Exists(x => !x.Done))
         {
             float dt = ph.DtJitter > 0f ? ph.Dt * (1f + ph.DtJitter * (float)(rng.NextDouble() * 2.0 - 1.0)) : ph.Dt;
-            // ── observe ──
-            Vector3 fwd = rot * Vector3.forward, up = rot * Vector3.up, right = rot * Vector3.right;
-            var o = new SkimRaceObservation
+            foreach (var ag in agents)
             {
-                Position = pos, Forward = fwd, Right = right, Up = up,
-                CommandedForward = acc * Vector3.forward,
-                Rotation = rot, CommandedRotation = acc,
-                Speed = speed * (ph.StackedSlow != 0 ? Mult(t) : 1f), Velocity = fwd * speed,
-                BoostMultiplier = boosting ? boost : 1f, MaxBoost = ph.MaxBoost,
-                TurnRateDegrees = ph.TurnRate, FollowRate = ph.Follow, ThrottleScaler = ph.ThrottleScaler,
-                RaceTime = t, Collected = collected, Remaining = required - collected,
-                HasTarget = true, TargetPosition = crystal, ToTarget = crystal - pos,
-            };
-            o.TargetDistance = o.ToTarget.magnitude;
-            o.TargetRadius = ph.CaptureReach - 1.5f;
-            o.TargetAlignment = Vector3.Dot(fwd, o.ToTarget.normalized);
-            o.HasCourse = true;
-            o.CourseLength = course.Length;
-            o.CourseProgress = course.Project(pos, ref hint, out _, out o.CourseDistance);
-            course.Sample(o.CourseProgress, out o.CourseTangent, out _);
-            int th = hint;
-            float sc = course.Project(crystal, ref th, out _, out _);
-            o.TargetAheadOnCourse = course.Ahead(o.CourseProgress, sc);
-            o.Sanitize();
-
-            // Perception: the laid mass the pilot can see near its path (SkimRacePilot does the same
-            // from PrismSpatialIndex), excluding its own trail still inside the self-contact grace.
-            driver.Obstacles.Clear();
-            if (cfg.MassGuardSeconds > 0f)
-            {
-                Vector3 qc = pos + fwd * (speed * cfg.MassGuardSeconds * 0.5f);
-                float qr = speed * cfg.MassGuardSeconds * 0.5f + 20f;
-                obs.QueryRadius(qc, qr, obsNear);
-                foreach (var i in obsNear)
+                if (ag.Done) continue;
+                var driver = ag.Driver;
+                // ── observe ──
+                Vector3 fwd = ag.Rot * Vector3.forward, up = ag.Rot * Vector3.up, right = ag.Rot * Vector3.right;
+                var o = new SkimRaceObservation
                 {
-                    var it = obs.Items[i];
-                    if (t < it.activeAt) continue;
-                    if ((it.c - qc).sqrMagnitude > qr * qr) continue;
-                    driver.Obstacles.Add(new SkimRaceObstacle { Center = it.c, Rotation = it.r, Half = it.half });
+                    Position = ag.Pos, Forward = fwd, Right = right, Up = up,
+                    CommandedForward = ag.Acc * Vector3.forward,
+                    Rotation = ag.Rot, CommandedRotation = ag.Acc,
+                    Speed = ag.Speed * (ph.StackedSlow != 0 ? Mult(ag, t) : 1f), Velocity = fwd * ag.Speed,
+                    BoostMultiplier = ag.Boosting ? ag.Boost : 1f, MaxBoost = ph.MaxBoost,
+                    TurnRateDegrees = ph.TurnRate, FollowRate = ph.Follow, ThrottleScaler = ph.ThrottleScaler,
+                    RaceTime = t, Collected = ag.Collected, Remaining = required - ag.Collected,
+                    HasTarget = true, TargetPosition = ag.Crystal, ToTarget = ag.Crystal - ag.Pos,
+                };
+                o.TargetDistance = o.ToTarget.magnitude;
+                o.TargetRadius = ph.CaptureReach - 1.5f;
+                o.TargetAlignment = Vector3.Dot(fwd, o.ToTarget.normalized);
+                o.HasCourse = true;
+                o.CourseLength = course.Length;
+                o.CourseProgress = course.Project(ag.Pos, ref ag.Hint, out _, out o.CourseDistance);
+                course.Sample(o.CourseProgress, out o.CourseTangent, out _);
+                int th = ag.Hint;
+                float sc = course.Project(ag.Crystal, ref th, out _, out _);
+                o.TargetAheadOnCourse = course.Ahead(o.CourseProgress, sc);
+                o.Sanitize();
+
+                // Perception: laid mass near the path (SkimRacePilot reads PrismSpatialIndex), excluding
+                // what the game would not let this hull hit yet.
+                driver.Obstacles.Clear();
+                if (cfg.MassGuardSeconds > 0f)
+                {
+                    Vector3 qc = ag.Pos + fwd * (ag.Speed * cfg.MassGuardSeconds * 0.5f);
+                    float qr = ag.Speed * cfg.MassGuardSeconds * 0.5f + 20f;
+                    obs.QueryRadius(qc, qr, obsNear);
+                    foreach (var i in obsNear)
+                    {
+                        if (!obs.ActiveFor(i, ag.Id, t)) continue;
+                        var it = obs.Items[i];
+                        if ((it.c - qc).sqrMagnitude > qr * qr) continue;
+                        driver.Obstacles.Add(new SkimRaceObstacle { Center = it.c, Rotation = it.r, Half = it.half });
+                    }
                 }
-            }
-            var a = driver.Decide(o, course, t, dt);
-            if (a.Ring && t >= ringReady)
-            {
-                // SquirrelTubeAction: 8 danger cubes (scale 4) on radius 8, laid 100 ahead of the nose.
-                ringReady = t + 20f;
-                ringsLaid++;
-                ring.Clear(); ringInside.Clear(); ringHull.Clear();
-                Vector3 c0 = pos + fwd * 100f;
-                for (int k = 0; k < 8; k++)
+                var a = driver.Decide(o, course, t, dt);
+                if (driver.LastTrackError >= 0f && ag.Frames % 4 == 0) ag.TrackErrors.Add(driver.LastTrackError);
+                if (ph.LineDiag != 0 && ag.Frames % 20 == 0)
                 {
-                    float ang = k * Mathf.PI * 2f / 8f;
-                    ring.Add((c0 + (right * Mathf.Cos(ang) + up * Mathf.Sin(ang)) * 8f, rot));
+                    float lc = driver.LineMinClearance(course, o.CourseProgress, 300f);
+                    ag.LineClear.Add(lc);
                 }
-            }
-
-            // ── VesselTransformer.Update order: DecayBoost, RotateShip, MoveShip ──
-            if (boost > 1f) boost -= ph.BoostDecay * dt; else boost = Math.Min(1f, boost + ph.BoostDecay * dt);
-
-            acc = Quaternion.AngleAxis(a.Roll * ph.RollRate * dt, fwd) * acc;
-            acc = Quaternion.AngleAxis(a.Yaw * ph.TurnRate * dt, up) * acc;
-            acc = Quaternion.AngleAxis(a.Pitch * ph.TurnRate * dt, right) * acc;
-            rot = Quaternion.Slerp(rot, acc, ph.Follow * dt);
-
-            float thr = a.Throttle * (t < slowUntil ? ph.HullSlow : 1f);
-            float mult = ph.StackedSlow != 0 ? Mult(t) : 1f;
-            float target = thr * ph.ThrottleScaler * (boosting ? boost : 1f);
-            speed = Mathf.Lerp(speed, target, ph.Follow * dt);
-            fwd = rot * Vector3.forward;
-            pos += fwd * (speed * mult) * dt;
-            speedSum += speed; frames++;
-            if (o.CourseDistance > 20f) farFrames++;
-            boostSum += boosting ? boost : 1f;
-            t += dt;
-
-            // ── lay own trail rails ──
-            if (ph.TrailRails != 0 && t > 2f && speed > 3f)
-            {
-                railTravel += speed * dt;
-                while (railTravel >= ph.RailSpacing)
+                if (trace)
                 {
-                    railTravel -= ph.RailSpacing;
-                    Vector3 rgt = rot * Vector3.right;
-                    var half = new Vector3(0.415f, 0.415f, 3.04f);
-                    obs.Add(pos + rgt * ph.RailOffset, rot, half, t + ph.TrailGrace);
-                    obs.Add(pos - rgt * ph.RailOffset, rot, half, t + ph.TrailGrace);
+                    ag.GuardLog.Enqueue(string.Format(CultureInfo.InvariantCulture, "{0:F2}:{1:F1}/{2:F1}", t,
+                        Math.Min(driver.LastGuardNominal, 99f), Math.Min(driver.LastGuardChosen, 99f)));
+                    while (ag.GuardLog.Count > 14) ag.GuardLog.Dequeue();
                 }
-            }
-            // ── contacts with laid mass ──
-            obs.Query(pos, obsNear);
-            {
-                var onow = new HashSet<int>(); var hnowO = new HashSet<int>();
-                foreach (var i in obsNear)
+
+                // ── VesselTransformer.Update order: DecayBoost, RotateShip, MoveShip ──
+                if (ag.Boost > 1f) ag.Boost -= ph.BoostDecay * dt; else ag.Boost = Math.Min(1f, ag.Boost + ph.BoostDecay * dt);
+                ag.Acc = Quaternion.AngleAxis(a.Roll * ph.RollRate * dt, fwd) * ag.Acc;
+                ag.Acc = Quaternion.AngleAxis(a.Yaw * ph.TurnRate * dt, up) * ag.Acc;
+                ag.Acc = Quaternion.AngleAxis(a.Pitch * ph.TurnRate * dt, right) * ag.Acc;
+                ag.Rot = Quaternion.Slerp(ag.Rot, ag.Acc, ph.Follow * dt);
+                float thr = a.Throttle * (t < ag.SlowUntil ? ph.HullSlow : 1f);
+                float mult = ph.StackedSlow != 0 ? Mult(ag, t) : 1f;
+                float target = thr * ph.ThrottleScaler * (ag.Boosting ? ag.Boost : 1f);
+                ag.Speed = Mathf.Lerp(ag.Speed, target, ph.Follow * dt);
+                fwd = ag.Rot * Vector3.forward;
+                ag.Pos += fwd * (ag.Speed * mult) * dt;
+                ag.SpeedSum += ag.Speed; ag.Frames++;
+                if (o.CourseDistance > 20f) ag.FarFrames++;
+                ag.BoostSum += ag.Boosting ? ag.Boost : 1f;
+                float tn = t + dt;
+
+                // ── lay own trail rails ──
+                if (ph.TrailRails != 0 && tn > 2f && ag.Speed > 3f)
                 {
-                    if (t < obs.Items[i].activeAt) continue;
-                    float d = obs.Distance(i, pos);
-                    if (d <= ph.SkimReach) onow.Add(i);
+                    ag.RailTravel += ag.Speed * dt;
+                    while (ag.RailTravel >= ph.RailSpacing)
+                    {
+                        ag.RailTravel -= ph.RailSpacing;
+                        Vector3 rgt = ag.Rot * Vector3.right;
+                        var half = new Vector3(0.415f, 0.415f, 3.04f);
+                        obs.Add(ag.Pos + rgt * ph.RailOffset, ag.Rot, half, tn + ph.ColliderDelay, ag.Id, tn + Math.Max(ph.TrailGrace, ph.ColliderDelay));
+                        obs.Add(ag.Pos - rgt * ph.RailOffset, ag.Rot, half, tn + ph.ColliderDelay, ag.Id, tn + Math.Max(ph.TrailGrace, ph.ColliderDelay));
+                    }
+                }
+                // ── contacts with laid mass ──
+                obs.Query(ag.Pos, obsNear);
+                {
+                    var onow = new HashSet<int>(); var hnowO = new HashSet<int>();
+                    foreach (var i in obsNear)
+                    {
+                        if (!obs.ActiveFor(i, ag.Id, tn)) continue;
+                        float d = obs.Distance(i, ag.Pos);
+                        if (d <= ph.SkimReach) onow.Add(i);
+                        float dh = d;
+                        if (ph.HullBox != 0 && d <= ph.HullReach + 3f)
+                            for (int bx = -1; bx <= 1; bx++)
+                            for (int bz = -1; bz <= 1; bz++)
+                                dh = Math.Min(dh, obs.Distance(i, ag.Pos + ag.Rot * new Vector3(bx * ph.HullHalfX, 0f, bz * ph.HullHalfZ)));
+                        if (ph.MassHits != 0 && dh <= ph.HullReach) hnowO.Add(i);
+                    }
+                    foreach (var i in onow)
+                        if (ag.ObsInside.Add(i)) { ag.Boosting = true; ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd, 1f, ph.MaxBoost); }
+                    ag.ObsInside.IntersectWith(onow);
+                    foreach (var i in hnowO)
+                        if (ag.ObsHull.Add(i))
+                        {
+                            int own = obs.Owners[i].owner;
+                            ag.Note(own < 0 ? "pickup-ring" : own == ag.Id ? "own-rail" : "other-rail", ag.Boost);
+                            ag.HullHits++; var oh = obs.Items[i].half; Slow(ag, 8f * oh.x * oh.y * oh.z, tn); ag.Boost = 1f;
+                            if (trace) Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "   OBSHIT a{0} t={1:F2} spd={2:F0} owner={3} pull={4}", ag.Id, tn, ag.Speed, obs.Owners[i].owner, driver.LastDiagnostics.CrystalPull));
+                        }
+                    ag.ObsHull.IntersectWith(hnowO);
+                }
+
+                // ── skimmer & hull contacts (enter events), against each track prism's shell ──
+                prisms.Query(ag.Pos, 40f, near);
+                var now = new HashSet<int>();
+                var hnow = new HashSet<int>();
+                foreach (var i in near)
+                {
+                    float d = prisms.ShellDistance(i, ag.Pos);
+                    if (d <= ph.SkimReach) now.Add(i);
                     float dh = d;
                     if (ph.HullBox != 0 && d <= ph.HullReach + 3f)
                         for (int bx = -1; bx <= 1; bx++)
                         for (int bz = -1; bz <= 1; bz++)
-                            dh = Math.Min(dh, obs.Distance(i, pos + rot * new Vector3(bx * ph.HullHalfX, 0f, bz * ph.HullHalfZ)));
-                    if (dh <= ph.HullReach) hnowO.Add(i);
+                            dh = Math.Min(dh, prisms.ShellDistance(i, ag.Pos + ag.Rot * new Vector3(bx * ph.HullHalfX, 0f, bz * ph.HullHalfZ)));
+                    if (ph.TrackHits != 0 && dh <= ph.HullReach) hnow.Add(i);
                 }
-                foreach (var i in onow)
-                    if (obsInside.Add(i)) { boosting = true; boost = Mathf.Clamp(boost + ph.SkimAdd, 1f, ph.MaxBoost); }
-                obsInside.IntersectWith(onow);
-                foreach (var i in hnowO)
-                    if (obsHull.Add(i))
+                foreach (var i in now)
+                    if (ag.Inside.Add(i)) { ag.Boosting = true; ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd, 1f, ph.MaxBoost); }
+                ag.Inside.IntersectWith(now);
+                foreach (var i in hnow)
+                    if (ag.Hull.Add(i))
                     {
-                        hullHits++; obsHits++; var oh = obs.Items[i].half; Slow(8f * oh.x * oh.y * oh.z, t); boost = 1f;
-                        if (trace) Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "   OBSHIT t={0:F2} spd={1:F0} pull={2}", t, speed, driver.LastDiagnostics.CrystalPull));
+                        ag.Note(driver.Crossing ? "track-crossing" : driver.LastDiagnostics.CrystalPull ? "track-pull" : "track-line", ag.Boost);
+                        ag.HullHits++; Slow(ag, 30f, tn); ag.Boost = 1f; // VesselResetBoostPrismEffect + SquirrelVesselChangeSpeedByPrism
+                        if (trace)
+                        {
+                            Vector3 lp = Quaternion.Inverse(prisms.Rotations[i]) * (ag.Pos - prisms.Points[i]);
+                            Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                                "   HIT a{9} t={0:F2} prism={1} local=({2:F1},{3:F1},{4:F1}) spd={5:F0} mode={6} pull={7} dist={8:F0} cross={10}",
+                                tn, i, lp.x, lp.y, lp.z, ag.Speed, driver.CurrentMode, driver.LastDiagnostics.CrystalPull, (ag.Crystal - ag.Pos).magnitude, ag.Id, driver.Crossing));
+                            Console.WriteLine("      guard nominal/chosen clearance: " + string.Join(" ", ag.GuardLog));
+                        }
                     }
-                obsHull.IntersectWith(hnowO);
-            }
+                ag.Hull.IntersectWith(hnow);
 
-            // ── skimmer & hull contacts (enter events), against each prism's shell ──
-            prisms.Query(pos, 40f, near);
-            var now = new HashSet<int>();
-            var hnow = new HashSet<int>();
-            foreach (var i in near)
-            {
-                float d = prisms.ShellDistance(i, pos);
-                if (d <= ph.SkimReach) now.Add(i);
-                float dh = d;
-                if (ph.HullBox != 0 && d <= ph.HullReach + 3f)
-                    for (int bx = -1; bx <= 1; bx++)
-                    for (int bz = -1; bz <= 1; bz++)
-                        dh = Math.Min(dh, prisms.ShellDistance(i, pos + rot * new Vector3(bx * ph.HullHalfX, 0f, bz * ph.HullHalfZ)));
-                if (dh <= ph.HullReach) hnow.Add(i);
-            }
-            foreach (var i in now)
-                if (inside.Add(i))
+                // ── crystal ──
+                if ((ag.Crystal - ag.Pos).sqrMagnitude <= ph.CaptureReach * ph.CaptureReach)
                 {
-                    boosting = true;
-                    boost = Mathf.Clamp(boost + ph.SkimAdd, 1f, ph.MaxBoost);
-                }
-            inside.IntersectWith(now);
-            foreach (var i in hnow)
-                if (hull.Add(i))
-                {
-                    hullHits++; Slow(30f, t); boost = 1f; // VesselResetBoostPrismEffect + SquirrelVesselChangeSpeedByPrism
-                    if (trace)
+                    ag.Collected++;
+                    if (ph.RingGeometry != 0)
                     {
-                        Vector3 lp = Quaternion.Inverse(prisms.Rotations[i]) * (pos - prisms.Points[i]);
-                        Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
-                            "   HIT t={0:F2} prism={1} local=({2:F1},{3:F1},{4:F1}) spd={5:F0} mode={6} pull={7} dist={8:F0}",
-                            t, i, lp.x, lp.y, lp.z, speed, driver.CurrentMode, driver.LastDiagnostics.CrystalPull, (crystal - pos).magnitude));
+                        // SquirrelVesselExplosionByCrystalEffect -> AOEShieldedRingSpawner: 8 prisms,
+                        // radius 8.2, 8 u ahead; colliders live from frame 0 for everyone.
+                        Vector3 rc = ag.Pos + (ag.Rot * Vector3.forward) * 8f;
+                        for (int k = 0; k < 8; k++)
+                        {
+                            float ang = k * Mathf.PI * 2f / 8f;
+                            Vector3 radial = new Vector3(Mathf.Cos(ang), Mathf.Sin(ang), 0f);
+                            obs.Add(rc + ag.Rot * (radial * 8.2f), ag.Rot * Quaternion.LookRotation(Vector3.forward, radial),
+                                new Vector3(0.9f, 0.9f, 3.75f), tn);
+                        }
                     }
-                }
-            hull.IntersectWith(hnow);
-
-            for (int k = 0; k < ring.Count; k++)
-            {
-                Vector3 lp = Quaternion.Inverse(ring[k].r) * (pos - ring[k].c);
-                Vector3 q = new Vector3(Math.Max(Math.Abs(lp.x) - 2f, 0f), Math.Max(Math.Abs(lp.y) - 2f, 0f), Math.Max(Math.Abs(lp.z) - 2f, 0f));
-                float d = q.magnitude;
-                if (d <= ph.SkimReach) { if (ringInside.Add(k)) { boosting = true; boost = Mathf.Clamp(boost + ph.SkimAdd, 1f, ph.MaxBoost); } }
-                if (d <= ph.HullReach && ringHull.Add(k)) { hullHits++; boost = 1f; slowUntil = t + 3f; }
-            }
-
-            // ── crystal ──
-            if ((crystal - pos).sqrMagnitude <= ph.CaptureReach * ph.CaptureReach)
-            {
-                collected++;
-                // SquirrelVesselExplosionByCrystalEffect lays a ring of 8 shielded boost prisms
-                // around the hull at the pickup (AOEShieldedRingSpawner): 8 instant skims.
-                if (ph.RingGeometry != 0)
-                {
-                    Vector3 rc = pos + (rot * Vector3.forward) * 8f;
-                    for (int k = 0; k < 8; k++)
+                    else
                     {
-                        float ang = k * Mathf.PI * 2f / 8f;
-                        Vector3 radial = new Vector3(Mathf.Cos(ang), Mathf.Sin(ang), 0f);
-                        obs.Add(rc + rot * (radial * 8.2f), rot * Quaternion.LookRotation(Vector3.forward, radial),
-                            new Vector3(0.9f, 0.9f, 3.75f), t);
+                        ag.Boosting = true;
+                        ag.Boost = Mathf.Clamp(ag.Boost + ph.SkimAdd * ph.PickupRingPrisms, 1f, ph.MaxBoost);
+                    }
+                    if (ag.Collected >= required) { ag.Done = true; ag.DoneAt = tn; }
+                    else
+                    {
+                        ag.Anchor = (ag.Anchor + 1) % def.Anchors.Count;
+                        ag.Crystal = def.Anchors[ag.Anchor] + OnUnitSphere(ag.Rng) * ph.Jitter;
                     }
                 }
-                else
-                {
-                    boosting = true;
-                    boost = Mathf.Clamp(boost + ph.SkimAdd * ph.PickupRingPrisms, 1f, ph.MaxBoost);
-                }
-                if (collected >= required)
-                    return new RaceResult { Finished = true, Time = t, Collected = collected, Required = required,
-                        Recoveries = driver.Recoveries, HullHits = hullHits, MeanSpeed = speedSum / frames, FarFrac = farFrames / (float)frames, MeanBoost = boostSum / frames };
-                anchor = (anchor + 1) % def.Anchors.Count;
-                crystal = def.Anchors[anchor] + OnUnitSphere(rng) * ph.Jitter;
-            }
 
-            if (trace && frames % 6 == 0)
-            {
-                Vector3 cpt = course.Sample(o.CourseProgress, out Vector3 tt, out Vector3 nn);
-                Vector3 ll = Vector3.Cross(nn, tt).normalized; nn = Vector3.Cross(tt, ll).normalized;
-                Vector3 rr = pos - cpt;
-                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
-                    "{0:F2} pos=({1:F0},{2:F0},{3:F0}) spd={4:F0} boost={5:F2} dist={6:F0} col={7} mode={8} err={9:F0} lat={10:F1} h={11:F1} skim={12} pull={13}",
-                    t, pos.x, pos.y, pos.z, speed, boost, o.TargetDistance, collected, driver.CurrentMode,
-                    driver.LastDiagnostics.HeadingErrorDegrees, Vector3.Dot(rr, ll), Vector3.Dot(rr, nn), inside.Count,
-                    driver.LastDiagnostics.CrystalPull ? 1 : 0));
+                if (trace && ag.Frames % 6 == 0)
+                {
+                    Vector3 cpt = course.Sample(o.CourseProgress, out Vector3 tt, out Vector3 nn);
+                    Vector3 ll = Vector3.Cross(nn, tt).normalized; nn = Vector3.Cross(tt, ll).normalized;
+                    Vector3 rr = ag.Pos - cpt;
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                        "{0:F2} a{14} pos=({1:F0},{2:F0},{3:F0}) spd={4:F0} boost={5:F2} dist={6:F0} col={7} mode={8} err={9:F0} lat={10:F1} h={11:F1} skim={12} pull={13}",
+                        tn, ag.Pos.x, ag.Pos.y, ag.Pos.z, ag.Speed, ag.Boost, o.TargetDistance, ag.Collected, driver.CurrentMode,
+                        driver.LastDiagnostics.HeadingErrorDegrees, Vector3.Dot(rr, ll), Vector3.Dot(rr, nn), ag.Inside.Count,
+                        driver.LastDiagnostics.CrystalPull ? 1 : 0, ag.Id));
+                }
             }
+            t += dt;
         }
-        if (trace) Console.WriteLine($"rings laid: {ringsLaid}");
-        return new RaceResult { Finished = false, Time = t, Collected = collected, Required = required,
-            Recoveries = driver.Recoveries, HullHits = hullHits, MeanSpeed = speedSum / Math.Max(1, frames), FarFrac = farFrames / (float)Math.Max(1, frames), MeanBoost = boostSum / Math.Max(1, frames) };
+
+        // The STRICT reading of "each AI completes in 70 s": the race result is the SLOWEST seat.
+        var worst = agents[0];
+        foreach (var ag in agents) if (!ag.Done || ag.DoneAt > worst.DoneAt || (!ag.Done && worst.Done)) worst = ag;
+        bool allDone = agents.TrueForAll(x => x.Done);
+        int frames = Math.Max(1, worst.Frames);
+        return new RaceResult
+        {
+            Finished = allDone, Time = allDone ? agents.Max(x => x.DoneAt) : t,
+            Collected = agents.Min(x => x.Collected), Required = required,
+            Recoveries = agents.Sum(x => x.Driver.Recoveries), HullHits = agents.Sum(x => x.HullHits),
+            MeanSpeed = worst.SpeedSum / frames, FarFrac = worst.FarFrames / (float)frames, MeanBoost = worst.BoostSum / frames,
+            AgentTimes = agents.Select(x => x.Done ? x.DoneAt : 999f).ToArray(),
+            TrackErrors = agents.SelectMany(x => x.TrackErrors).ToList(),
+            LineClear = agents.SelectMany(x => x.LineClear).ToList(),
+            ResetCauses = agents.SelectMany(x => x.Causes).GroupBy(k => k.Key).ToDictionary(g => g.Key, g => g.Sum(k => k.Value)),
+            ResetBoostLost = agents.SelectMany(x => x.Lost).GroupBy(k => k.Key).ToDictionary(g => g.Key, g => g.Sum(k => k.Value)),
+        };
     }
 }
 
 static class Program
 {
+    static Vector3 OnUnit(System.Random r)
+    {
+        while (true)
+        {
+            var v = new Vector3((float)(r.NextDouble() * 2 - 1), (float)(r.NextDouble() * 2 - 1), (float)(r.NextDouble() * 2 - 1));
+            float m = v.sqrMagnitude;
+            if (m > 1e-4f && m <= 1f) return v / (float)Math.Sqrt(m);
+        }
+    }
     static string[] Tunables;   // set in tune mode (static field order would leave it null here)
     static readonly string[] PlannerTunables =
     {
@@ -548,9 +592,13 @@ static class Program
         "ReachabilityMargin", "PassMargin", "CrossingHeightFraction", "RibbonClearHeight", "RibbonClearLateral",
         "TerminalCentreBias", "StallSeconds", "RecoveryThrottle",
         "MassGuardSeconds", "MassGuardMargin", "MassGuardSegment", "LowBoostApproachScale", "LowBoostFull",
+        "TrackGuardMargin", "DirectBoost", "DirectBoostHysteresis", "DirectViaClearance", "DirectViaLift", "DirectViaLateral",
     };
     static readonly Dictionary<string, (float lo, float hi)> Ranges = new()
     {
+        ["TrackGuardMargin"] = (0.2f, 3f),
+        ["DirectBoost"] = (2.5f, 5f), ["DirectBoostHysteresis"] = (0.2f, 2.5f), ["DirectViaClearance"] = (2f, 10f),
+        ["DirectViaLift"] = (6f, 40f), ["DirectViaLateral"] = (18f, 50f),
         ["LowBoostApproachScale"] = (0.3f, 1f), ["LowBoostFull"] = (1.5f, 5f),
         ["MassGuardSeconds"] = (0.2f, 1.0f), ["MassGuardMargin"] = (0.2f, 3f), ["MassGuardSegment"] = (0.08f, 0.5f),
         ["LookaheadSeconds"] = (0.2f, 2.0f), ["LookaheadMin"] = (20f, 200f), ["LookaheadMax"] = (120f, 700f),
@@ -631,6 +679,41 @@ static class Program
         var course = new SkimRaceCourse(prisms.Points, prisms.Normals, prisms.Rotations, prisms.ShellHalf);
         float limit = 70f;
 
+        if (mode == "geo")
+        {
+            // How often does the STRAIGHT line between consecutive crystals pass through the
+            // ribbon's contact shell? (hull centre clearance, capture spheres excluded)
+            var rng = new System.Random(3);
+            int N = def.Anchors.Count, blocked = 0, total = 0;
+            var perGap = new int[N];
+            for (int trial = 0; trial < 200; trial++)
+            for (int k = 0; k < N; k++)
+            {
+                Vector3 a = def.Anchors[k] + OnUnit(rng) * 35f, b = def.Anchors[(k + 1) % N] + OnUnit(rng) * 35f;
+                float L = Vector3.Distance(a, b), minC = float.MaxValue;
+                for (float u = 24f; u < L - 24f; u += 2f)
+                {
+                    Vector3 p = Vector3.Lerp(a, b, u / L);
+                    var near = new List<int>(); prisms.Query(p, 30f, near);
+                    foreach (var i in near) minC = Math.Min(minC, prisms.ShellDistance(i, p));
+                }
+                total++;
+                if (minC < 2.5f) { blocked++; perGap[k]++; }
+            }
+            for (int k = 0; k < N; k++)
+            {
+                int h = -1;
+                float sc = course.Project(def.Anchors[k], ref h, out Vector3 cp, out float dist);
+                course.Sample(sc, out Vector3 tg, out Vector3 nn);
+                Vector3 ll = Vector3.Cross(nn, tg).normalized; nn = Vector3.Cross(tg, ll).normalized;
+                Vector3 rel = def.Anchors[k] - cp;
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  anchor {0}: lateral {1:F0}, height {2:F0}, along {3:F0} (dist {4:F0})",
+                    k, Vector3.Dot(rel, ll), Vector3.Dot(rel, nn), Vector3.Dot(rel, tg), dist));
+            }
+            Console.WriteLine($"I{intensity}: straight crystal-to-crystal lines through the ribbon shell: {blocked}/{total} = {100f * blocked / total:F0}%");
+            Console.WriteLine("  per gap %: " + string.Join(" ", perGap.Select(x => (x / 2).ToString())));
+            return 0;
+        }
         if (mode == "eval" || mode == "trace")
         {
             int seeds = int.Parse(args[3]);
@@ -642,6 +725,19 @@ static class Program
             var e = Evaluate(def, prisms, course, cfg, ph, seeds, limit, seedBase);
             Console.WriteLine($"I{intensity} track={course.Length:F0}u prisms={prisms.Points.Count} finished {e.fin}/{seeds} " +
                               $"median={e.median:F2} mean={e.mean:F2} worst={e.worst:F2} score={e.score:F2}");
+            var causes = e.runs.SelectMany(r => r.ResetCauses).GroupBy(k => k.Key).Select(g => (g.Key, n: g.Sum(k => k.Value))).OrderByDescending(x => x.n);
+            var lost = e.runs.SelectMany(r => r.ResetBoostLost).GroupBy(k => k.Key).ToDictionary(g => g.Key, g => g.Sum(k => k.Value));
+            Console.WriteLine("  boost resets per race by cause: " + string.Join(", ", causes.Select(c =>
+                string.Format(CultureInfo.InvariantCulture, "{0} {1:F1} (boost lost {2:F1})", c.Key, c.n / (float)seeds, lost[c.Key] / seeds))));
+            var te = e.runs.SelectMany(r => r.TrackErrors).OrderBy(x => x).ToList();
+            if (te.Count > 0)
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  cross-track error (hull vs line at its own progress): median {0:F1}  p75 {1:F1}  p90 {2:F1}  p99 {3:F1}",
+                    te[te.Count / 2], te[te.Count * 3 / 4], te[te.Count * 9 / 10], te[te.Count * 99 / 100]));
+            var lc = e.runs.SelectMany(r => r.LineClear).ToList();
+            if (lc.Count > 0)
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture,
+                    "  planned line (next 300 u) min shell clearance: <0.6 in {0:P0}, <1.5 in {1:P0}, <3 in {2:P0} of decisions",
+                    lc.Count(x => x < 0.6f) / (float)lc.Count, lc.Count(x => x < 1.5f) / (float)lc.Count, lc.Count(x => x < 3f) / (float)lc.Count));
             foreach (var r in e.runs)
                 Console.WriteLine($"  {(r.Finished ? "FIN" : "DNF")} t={r.Time:F2} {r.Collected}/{r.Required} recov={r.Recoveries} hull={r.HullHits} mean={r.MeanSpeed:F0} boost={r.MeanBoost:F2} far={r.FarFrac:F2}");
             return 0;

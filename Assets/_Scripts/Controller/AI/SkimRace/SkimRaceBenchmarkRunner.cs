@@ -37,7 +37,6 @@ namespace CosmicShore.Gameplay
             public int TotalPlayers = 2;   // host + AI backfill
             public float LimitSeconds = 70f;
             public float TimeoutSeconds = 150f;
-            public float TimeScale = 1f;
             public string Commit = "";
             public string OutputDirectory = "";
             public bool TraceFrames = true;
@@ -92,7 +91,6 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (Active == this) Active = null;
-            if (_s != null && _s.TimeScale > 1f) Time.timeScale = 1f;
             if (_previousQuality >= 0) QualitySettings.SetQualityLevel(_previousQuality, true);
         }
 
@@ -142,17 +140,30 @@ namespace CosmicShore.Gameplay
                 _recorder.TraceFrames = _s.TraceFrames;
 
                 // 3) Press Ready (the public HUD button) until the countdown has run.
-                deadline = Time.unscaledTime + 30f;
+                deadline = Time.unscaledTime + 120f; // the connecting panel alone may hold up to 45 s for every peer
                 while (!_gameData.IsTurnRunning && Time.unscaledTime < deadline)
                 {
+                    // One press, then let the countdown run: a further press while it is running
+                    // RESTARTS it (the ready gate re-arms), so pressing on a short timer can hold the
+                    // race at the start line indefinitely. Re-press only if nothing started.
                     if (controller != null) controller.OnReadyClicked();
-                    yield return new WaitForSecondsRealtime(2f);
+                    float repress = Time.unscaledTime + 15f;
+                    while (!_gameData.IsTurnRunning && Time.unscaledTime < repress && Time.unscaledTime < deadline)
+                        yield return new WaitForSecondsRealtime(0.25f);
                 }
-                if (_s.TimeScale > 1f) Time.timeScale = _s.TimeScale;
 
                 // 4) Wait for the referee.
+                if (!_gameData.IsTurnRunning)
+                {
+                    // The normal flow did not start this race (no countdown after 120 s of Ready
+                    // presses). Record it as a failure rather than waiting forever, and stop the
+                    // batch: the session is not in a state a further replay can be trusted from.
+                    if (_recorder != null) _recorder.RecordNotStarted("race never started: the turn did not begin within 120 s of pressing Ready");
+                    _completed++;
+                    CSDebug.LogError("[SkimRaceBenchmark] Race did not start; stopping the batch.");
+                    break;
+                }
                 while (_recorder != null && !_recorder.Finished) yield return null;
-                Time.timeScale = 1f;
                 if (_recorder != null && _recorder.Record != null)
                 {
                     _completed++;
@@ -165,7 +176,7 @@ namespace CosmicShore.Gameplay
                 // 5) Play Again (full scene reload). Wait for the old controller to go away.
                 controller = FindAnyObjectByType<MiniGameControllerBase>();
                 if (controller != null) controller.RequestReplay();
-                deadline = Time.unscaledTime + 30f;
+                deadline = Time.unscaledTime + 120f; // wait for the reload to tear the old scene down
                 while (controller != null && Time.unscaledTime < deadline) yield return new WaitForSecondsRealtime(0.25f);
             }
 

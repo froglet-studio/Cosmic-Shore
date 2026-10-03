@@ -22,23 +22,59 @@ MonoBehaviour:
   CrystalBumpHalfWidth: 266.463
   LowBoostApproachScale: 0.745
   LowBoostFull: 1.993
+  DirectBoost: 0
+  DirectBoostHysteresis: 0.7
+  DirectViaClearance: 4
+  DirectViaLift: 14
+  DirectViaLateral: 26
+  TrackGuard: 1
+  TrackGuardMargin: 1
   PassMargin: 11.32
   DefaultCaptureRadius: 24
   RibbonClearHeight: 5.133
   RibbonClearLateral: 28.961
   CrossingHeightFraction: 0.12
+  SequencedCrossing: 0
   SlabGuardSeconds: 0
   HullGuardSeconds: 0
   HullMargin: 1.2
   HullEscapeLift: 40
   CrystalDirectDistance: 134.317
   TerminalCentreBias: 0.095
+  TerminalNeedsClearChord: 0
+  TerminalChordClearance: 1.5
+  LineBandClamp: 0
+  BesidePassNoCrossing: 0
+  SidePassOverCrossing: 0
+  ChordClearance: 0
+  LaneHeightStep: 3
+  PickupClearDistance: 0
   MassGuardSeconds: 0.678
   MassGuardMargin: 0.979
   MassGuardSegment: 0.262
   MassGuardStep: 0.04
+  RolloutFollowsLine: 0
   HullHalfWidth: 2.06
   HullHalfLength: 1.55
+  UseTrackMpc: 0
+  TrackMpcHz: 20
+  TrackMpcHorizon: 0.8
+  TrackMpcSegment: 0.25
+  TrackMpcStep: 0.05
+  TrackMpcLead: 15
+  TrackMpcCaptureReward: 200
+  TrackMpcNominalBias: 0.1
+  UseMpc: 0
+  MpcHz: 15
+  MpcHorizon: 1.5
+  MpcSegment: 0.3
+  MpcStep: 0.05
+  MpcSlowThrottle: 0.55
+  MpcHullMargin: 0.9
+  MpcCaptureMargin: 2
+  MpcBoostValue: 1.5
+  MpcStrikeCost: 20
+  MpcNominalBias: 0.05
   LeadGain: 2.546
   MaxLeadDegrees: 35.436
   StickGainPerDegree: 0.21

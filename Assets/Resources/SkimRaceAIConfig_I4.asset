@@ -10,37 +10,37 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4bf12f8c9f443417b8791c1048628978, type: 3}
-  m_Name: SkimRaceAIConfig_I1
+  m_Name: SkimRaceAIConfig_I4
   m_EditorClassIdentifier: 
-  PolicyVersion: skimrace-v4-i1
+  PolicyVersion: skimrace-v1-i4
   DeployInNormalPlay: 1
   DecisionHz: 0
-  LookaheadSeconds: 0.637
-  LookaheadMin: 65.451
-  LookaheadMax: 406.453
-  SkimHeight: 6.022
-  CrystalBumpHalfWidth: 443.319
-  LowBoostApproachScale: 0.937
-  LowBoostFull: 2.685
-  DirectBoost: 0
-  DirectBoostHysteresis: 0.7
-  DirectViaClearance: 4
-  DirectViaLift: 14
-  DirectViaLateral: 26
+  LookaheadSeconds: 0.562
+  LookaheadMin: 38.148
+  LookaheadMax: 435.887
+  SkimHeight: 8.064
+  CrystalBumpHalfWidth: 204.001
+  LowBoostApproachScale: 0.637
+  LowBoostFull: 3.758
+  DirectBoost: 2.554
+  DirectBoostHysteresis: 0.427
+  DirectViaClearance: 2
+  DirectViaLift: 22.619
+  DirectViaLateral: 23.841
   TrackGuard: 1
-  TrackGuardMargin: 1
-  PassMargin: 0.413
+  TrackGuardMargin: 1.54
+  PassMargin: 9.2
   DefaultCaptureRadius: 24
-  RibbonClearHeight: 4.961
-  RibbonClearLateral: 27.544
-  CrossingHeightFraction: 0.194
+  RibbonClearHeight: 4.737
+  RibbonClearLateral: 29.748
+  CrossingHeightFraction: 0.153
   SequencedCrossing: 0
   SlabGuardSeconds: 0
   HullGuardSeconds: 0
   HullMargin: 1.2
   HullEscapeLift: 40
-  CrystalDirectDistance: 310.714
-  TerminalCentreBias: 0.007
+  CrystalDirectDistance: 98.858
+  TerminalCentreBias: 0.1
   TerminalNeedsClearChord: 0
   TerminalChordClearance: 1.5
   LineBandClamp: 0
@@ -49,9 +49,9 @@ MonoBehaviour:
   ChordClearance: 0
   LaneHeightStep: 3
   PickupClearDistance: 0
-  MassGuardSeconds: 0.524
-  MassGuardMargin: 0.878
-  MassGuardSegment: 0.25
+  MassGuardSeconds: 0.915
+  MassGuardMargin: 0.857
+  MassGuardSegment: 0.221
   MassGuardStep: 0.04
   RolloutFollowsLine: 0
   HullHalfWidth: 2.06
@@ -75,13 +75,13 @@ MonoBehaviour:
   MpcBoostValue: 1.5
   MpcStrikeCost: 20
   MpcNominalBias: 0.05
-  LeadGain: 2.447
-  MaxLeadDegrees: 39.649
-  StickGainPerDegree: 0.117
+  LeadGain: 2.474
+  MaxLeadDegrees: 25.604
+  StickGainPerDegree: 0.133
   LevelingRoll: 0.25
   CruiseThrottle: 1
-  MinThrottle: 0.266
-  ReachabilityMargin: 0
+  MinThrottle: 0.155
+  ReachabilityMargin: 1.232
   UseDrift: 0
   DriftEnterDegrees: 70
   DriftExitDegrees: 25
@@ -103,8 +103,8 @@ MonoBehaviour:
   RingAlignDegrees: 1.5
   RingForwardDistance: 100
   RingCooldownSeconds: 20.5
-  StallSeconds: 4.341
+  StallSeconds: 4.308
   ProgressEpsilon: 25
   RecoverySeconds: 2.5
-  RecoveryThrottle: 0.455
+  RecoveryThrottle: 0.641
   MissingTargetGrace: 0.25

@@ -68,7 +68,18 @@ Read from the prefab and from an in-editor probe (`SkimRaceRaceRecorder.WritePro
 | `SkimRaceAIConfigSO` | The policy: every tunable. Ships as `Resources/SkimRaceAIConfig[_I<n>].asset`, authored by `Tools/Build/author_skimrace_ai_config.py` |
 | `SkimRaceRaceRecorder` / `SkimRaceBenchmarkRunner` | The benchmark referee and driver (§7) |
 
-### Input-only contract
+### Input-only contract (enforced)
+
+`Tools/Build/check_ai_no_state_writes.py` (`--check`, `--self-test`) fails the build if anything
+under the AI trees (`Controller/AI/SkimRace`, `Utility/AITraining` - the genome path - and
+`Editor/AI`) writes vessel pose or motion, speed/course/boost, crystal, score, winner or race state
+or the time scale, or uses reflection. Five reviewed exceptions, each named in the script (the
+genome copying READS into its own context struct; the overnight training batch's time scale, which
+applies to every pilot and never runs in a benchmark). Both actuation points clamp to the human
+stick/trigger ranges whatever the policy produced (`SkimRacePilot.Apply`,
+`TrainingPilot.ApplyToInputStatus` - the genome's output was unclamped before this). The benchmark
+no longer has a time-scale option, and the recorder fails any race during which `Time.timeScale`
+left 1.
 
 The pilot writes `IInputStatus.XSum` (yaw), `YSum` (pitch), `YDiff` (roll), `XDiff` (throttle) —
 the same channels the dual-stick strategies write — and presses the hull's own bound controls
@@ -143,6 +154,48 @@ else did. Each correction came from a diagnostic in the recorder, not from guess
 3. **The slow.** A contact multiplies the real speed and stacks; the sim had a mild throttle-target
    cut. Fixed, the sim median for the same policy moved to 66.6 s against the editor's ~66 s.
 
+### 6.2 Intensities 2 and 4: what was tried, measured in the calibrated simulator
+
+Every row below is a measurement over the same fresh seeds (I2, 12 races unless stated), with the
+simulator attributing every boost reset to its cause. The baseline is the shipped I2 policy.
+
+| Change | I2 median | Resets/race | Verdict |
+|---|---|---|---|
+| baseline (`skimrace-v1-i2`) | 106 s | ~15 (crossing 7, pull 5.5) | |
+| **strikes switched off** (ceiling, not a policy) | **67-69 s** | 0 | the whole gap is hull strikes |
+| direct crystal-to-crystal flight, boost-gated | 104-124 s | fewer, but circling | pickups hold 5x only above ~3.3x; approaches fail |
+| + via-points round the ribbon | 104-123 s | | no gain |
+| sequenced face change (swing out a look-ahead before height changes) | 104-109 s | crossing 7-9 | no gain |
+| terminal flight only on a clear chord | 103-108 s | unchanged | no gain |
+| line kept out of the slab band / beside-pass / side-pass | 106-123 s | pull up | no gain |
+| predictive guard incl. track shells (+ tuned) | 98-106 s | ~9 | fewer strikes, evasions cost the same time |
+| full MPC (50 commands x 1.5 s, strikes/skims/pickups modelled) | DNF | 1-4 | avoids strikes by leaving the track; never builds boost |
+| tracking MPC (model-predictive line following) | 111 s | ~17 | cross-track p90 67 -> 28 u, strikes unchanged |
+
+What blocks 70 s, as measured:
+- **I2:** crystal anchors sit only 22-35 u from the ribbon, ringed round it, plus 35 u of random
+  jitter against a 24 u capture radius. Most pickups therefore pass within a few units of a plate
+  whose super-shield contact shell is 30 u wide and 3 u thick, at 200-300 u/s, with a heading that
+  lags the stick by a 0.67 s time constant. Every strike costs the whole skim boost (reset to 1x)
+  and up to half the speed, and rebuilding boost by skimming takes ~10 s at 60 u/s. With strikes
+  removed the same policy finishes in 67-69 s; every controller tried either keeps ~9+ strikes
+  per race or avoids them by flying slower or farther, and lands at ~98-110 s.
+- **I4:** 54 crystals whose anchors sit ON the ribbon (distance 0), 35 u jitter, crystal-to-crystal
+  gaps of 104-412 u and a 157-degree hairpin. About one crystal in five is out of reach from the
+  current face, forcing a face change round the plate edge every few seconds. Best policy:
+  completes, ~160 s.
+- **I3:** 56 crystals over ~37,000 u needs 528 u/s; the Squirrel tops out at 300 u/s.
+
+### 6.3 Multiple AI seats
+
+Every Squirrel lays two trail rails at +-9.66 u, at its own height. With two AI seats on one racing
+line, each strays sideways into the other's rails (I1, 2 AI seats: 13/30 sim races with BOTH seats
+under 70 s). Each AI seat now flies its own **lane**: lane k skims `LaneHeightStep` (3 u) higher
+than lane k-1, the lane being the seat's rank among the AI seats by domain then name - public facts
+every machine agrees on (`SkimRacePilot.ResolveLane`). Sim, I1, 2 AI seats: 13/30 -> 22/30.
+The simulator runs N seats in one world (`ph.Seats=N`), each with its own crystal stream, sharing
+all laid mass, and scores a race by its SLOWEST seat.
+
 ## 7. Running the benchmark
 
 In the editor: **FrogletTools > AI > Skim Race AI Benchmark** (races, intensity, players), or drop
@@ -154,60 +207,122 @@ policy) to `BenchmarkResults/SkimRaceAI/` (git-ignored). Summarise with
 
 ## 8. Results
 
-Policy `skimrace-v4-i1` (`Resources/SkimRaceAIConfig_I1.asset`), editor 6000.3.17f1, branch base
-`23442ab77` + this change, 2 seats (idle host + the AI), every race launched through the normal
-arcade flow, Ready pressed through the public HUD handler, timed by the game's own clock. Crystal
-placement is the game's own random draw (not seeded); the "seed" column is the controller's track
-seed, which does not change the I1 waypoint track. Two separate fresh Play-mode launches; within each,
-races 2..N are the in-process restart (the scoreboard's replay = network scene reload).
-Reproduce: `{"op":"bench","races":12,"intensity":1,"players":2,"limit":70,"timeout":130,"quality":1}`.
+### 8.1 Current validation matrix (2026-10-03, every race listed, none selected)
 
-### Intensity 1 — 22 races, "Low" quality (~25 ms frames)
+Branch `feat/skimrace-ai`, editor 6000.3.17f1, focused, no other load. Policies:
+`skimrace-v4-i1`, `skimrace-v1-i2`, `skimrace-v1-i4` (lanes on). Each cell is two separate fresh
+Play-mode launches of 5 races (races 2-5 of each launch are the in-process restart). Every race went
+through the normal arcade flow, Ready via the HUD handler, timed by the game's own clock, with crystal
+placement drawn by the game. With two AI seats the race ends at the FIRST finisher, so the judged
+AI is the winning one; the other AI's crystals at that moment are listed (its own finish time is
+not observable).
 
-| # | session | race | crystals | finish (s) | result | recoveries | mean u/s | frame ms |
-|---|---|---|---|---|---|---|---|---|
-| 1 | 20261002-191546 | 0 | 24/24 | 64.91 | PASS | 0 | 199 | 25.5 |
-| 2 | 20261002-191546 | 1 | 24/24 | 52.70 | PASS | 0 | 227 | 24.5 |
-| 3 | 20261002-191546 | 2 | 24/24 | 53.25 | PASS | 0 | 228 | 25.2 |
-| 4 | 20261002-191546 | 3 | 24/24 | 50.66 | PASS | 0 | 242 | 25.2 |
-| 5 | 20261002-191546 | 4 | 24/24 | 56.60 | PASS | 0 | 199 | 24.2 |
-| 6 | 20261002-191546 | 5 | 24/24 | 58.40 | PASS | 1 | 231 | 25.2 |
-| 7 | 20261002-191546 | 6 | 24/24 | 65.24 | PASS | 0 | 177 | 24.4 |
-| 8 | 20261002-191546 | 7 | 24/24 | 65.61 | PASS | 0 | 186 | 24.4 |
-| 9 | 20261002-191546 | 8 | 24/24 | 52.01 | PASS | 0 | 232 | 24.5 |
-| 10 | 20261002-191546 | 9 | 24/24 | 89.32 | **FAIL** (> 70 s) | 0 | 141 | 24.9 |
-| 11 | 20261002-191546 | 10 | 24/24 | 63.22 | PASS | 0 | 194 | 26.1 |
-| 12 | 20261002-191546 | 11 | 24/24 | 57.84 | PASS | 0 | 214 | 24.1 |
-| 13 | 20261003-014415 | 0 | 24/24 | 54.90 | PASS | 0 | 219 | 24.6 |
-| 14 | 20261003-014415 | 1 | 24/24 | 74.22 | **FAIL** (> 70 s) | 1 | 183 | 26.1 |
-| 15 | 20261003-014415 | 2 | 24/24 | 53.23 | PASS | 0 | 228 | 26.3 |
-| 16 | 20261003-014415 | 3 | 24/24 | 49.47 | PASS | 0 | 247 | 24.2 |
-| 17 | 20261003-014415 | 4 | 24/24 | 60.80 | PASS | 0 | 186 | 24.8 |
-| 18 | 20261003-014415 | 5 | 24/24 | 57.48 | PASS | 0 | 213 | 25.2 |
-| 19 | 20261003-014415 | 6 | 24/24 | 55.75 | PASS | 0 | 211 | 24.7 |
-| 20 | 20261003-014415 | 7 | 24/24 | 62.03 | PASS | 0 | 188 | 24.8 |
-| 21 | 20261003-014415 | 8 | 24/24 | 53.94 | PASS | 0 | 228 | 25.2 |
-| 22 | 20261003-014415 | 9 | 24/24 | 59.15 | PASS | 0 | 199 | 25.0 |
+| Cell | Complete | Within 70 s | Best / median / mean / worst (s) | Other AI at end | Frame ms |
+|---|---|---|---|---|---|
+| I1, 2 seats | 10/10 | **9/10** | 53.0 / 59.1 / 60.8 / 73.9 | - | 24-26 |
+| I1, 3 seats | 10/10 | **10/10** | 51.9 / 60.6 / 60.0 / 69.1 | 20-23 of 24 | 32-37 |
+| I2, 2 seats | 10/10 | **0/10** | 80.5 / 100.8 / 100.1 / 116.2 | - | 28-30 |
+| I2, 3 seats | 10/10 | **0/10** | 89.9 / 101.6 / 101.0 / 110.4 | 27-29 of 30 | 37-45 |
+| I4, 2 seats | 10/10 | **0/10** | 137.6 / 152.3 / 152.5 / 170.5 | - | 32-34 |
+| I4, 3 seats | 10/10 | **0/10** | 142.0 / 149.0 / 151.5 / 163.2 | 49-53 of 54 | 46-52 |
 
-- Full-sequence completion: **22/22 (100%)**
-- Completed in <= 70.0 s: **20/22 (90.9%)**
-- Finish time best / median / mean / worst: **49.47 / 57.66 / 59.58 / 89.32 s**
+Runs excluded, and why (all disclosed, none are AI results):
+- `skimrace_I2_20261003-080837` (I2, 3 seats): 2 races completed (97.6 s, 98.7 s, both counted
+  nowhere above but consistent with the cell), then the replay stalled: `MiniGameHUD.Update` threw a
+  `MissingReferenceException` every frame on a destroyed `Player` (fixed in this branch), and the
+  runner had no start deadline. The cell was re-run as `skimrace_I2_20261003-105712`.
+- `104807`, `104912`, `105040`, `105306`: harness bug - the runner pressed Ready every 2 s and each
+  press RESTARTS the countdown, so no race started. Fixed (one press, then let the countdown run).
 
-Plus 3 races at the default "Very High" quality (session 20261003-021648, ~25 ms frames):
-50.83, 54.48 (PASS), 68.05 s — 3/3 complete, 3/3 <= 70 s.
+#### I1, 2 seats (host + 1 AI)
 
-Simulator (same policy, calibrated model, 120 fresh seeds): 106/120 (88%) <= 70 s, median ~58 s.
+| # | session | race | int | crystals | finish (s) | result | other AI at end | recov | mean u/s | frame ms |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 20261003-065502 | 0 | 1 | 24/24 | 55.14 | PASS | - | 0 | 225 | 24.3 |
+| 2 | 20261003-065502 | 1 | 1 | 24/24 | 59.22 | PASS | - | 0 | 198 | 24.3 |
+| 3 | 20261003-065502 | 2 | 1 | 24/24 | 53.04 | PASS | - | 0 | 224 | 24.4 |
+| 4 | 20261003-065502 | 3 | 1 | 24/24 | 66.71 | PASS | - | 0 | 179 | 25.0 |
+| 5 | 20261003-065502 | 4 | 1 | 24/24 | 66.32 | PASS | - | 1 | 186 | 25.8 |
+| 6 | 20261003-070359 | 0 | 1 | 24/24 | 73.89 | FAIL: finish 73.89s > limit | - | 0 | 165 | 25.6 |
+| 7 | 20261003-070359 | 1 | 1 | 24/24 | 56.81 | PASS | - | 0 | 211 | 23.9 |
+| 8 | 20261003-070359 | 2 | 1 | 24/24 | 56.43 | PASS | - | 0 | 208 | 24.1 |
+| 9 | 20261003-070359 | 3 | 1 | 24/24 | 61.43 | PASS | - | 0 | 198 | 25.4 |
+| 10 | 20261003-070359 | 4 | 1 | 24/24 | 58.95 | PASS | - | 0 | 209 | 25.2 |
 
-### Intensity 2 — 3 races, policy `skimrace-v1-i2` (session 20261003-024656)
+#### I1, 3 seats (host + 2 AI)
 
-| race | crystals | finish (s) | result |
-|---|---|---|---|
-| 0 | 30/30 | 112.39 | FAIL (> 70 s) |
-| 1 | 30/30 | 106.79 | FAIL (> 70 s) |
-| 2 | 30/30 | 111.71 | FAIL (> 70 s) |
+| # | session | race | int | crystals | finish (s) | result | other AI at end | recov | mean u/s | frame ms |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 20261003-071310 | 0 | 1 | 24/24 | 51.91 | PASS | 20/24 | 0 | 218 | 32.0 |
+| 2 | 20261003-071310 | 1 | 1 | 24/24 | 54.73 | PASS | 20/24 | 0 | 215 | 32.9 |
+| 3 | 20261003-071310 | 2 | 1 | 24/24 | 58.07 | PASS | 22/24 | 0 | 216 | 35.4 |
+| 4 | 20261003-071310 | 3 | 1 | 24/24 | 60.47 | PASS | 23/24 | 0 | 197 | 33.0 |
+| 5 | 20261003-071310 | 4 | 1 | 24/24 | 56.15 | PASS | 23/24 | 0 | 214 | 32.6 |
+| 6 | 20261003-072153 | 0 | 1 | 24/24 | 60.77 | PASS | 23/24 | 0 | 195 | 32.8 |
+| 7 | 20261003-072153 | 1 | 1 | 24/24 | 65.37 | PASS | 22/24 | 0 | 173 | 34.9 |
+| 8 | 20261003-072153 | 2 | 1 | 24/24 | 61.93 | PASS | 22/24 | 0 | 182 | 37.4 |
+| 9 | 20261003-072153 | 3 | 1 | 24/24 | 61.50 | PASS | 21/24 | 0 | 196 | 34.4 |
+| 10 | 20261003-072153 | 4 | 1 | 24/24 | 69.09 | PASS | 22/24 | 0 | 172 | 35.6 |
 
-Completable (3/3), not within the benchmark (0/3). Simulator: 40/40 complete, median ~105 s. The
-base policy it replaces completed 0/20 in the simulator.
+#### I2, 2 seats
+
+| # | session | race | int | crystals | finish (s) | result | other AI at end | recov | mean u/s | frame ms |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 20261003-073115 | 0 | 2 | 30/30 | 97.76 | FAIL: finish 97.76s > limit | - | 0 | 155 | 28.2 |
+| 2 | 20261003-073115 | 1 | 2 | 30/30 | 112.18 | FAIL: finish 112.18s > limit | - | 0 | 128 | 28.3 |
+| 3 | 20261003-073115 | 2 | 2 | 30/30 | 85.55 | FAIL: finish 85.55s > limit | - | 0 | 181 | 28.6 |
+| 4 | 20261003-073115 | 3 | 2 | 30/30 | 116.17 | FAIL: finish 116.17s > limit | - | 0 | 131 | 29.2 |
+| 5 | 20261003-073115 | 4 | 2 | 30/30 | 101.17 | FAIL: finish 101.17s > limit | - | 0 | 152 | 28.5 |
+| 6 | 20261003-074355 | 0 | 2 | 30/30 | 80.53 | FAIL: finish 80.53s > limit | - | 0 | 190 | 27.8 |
+| 7 | 20261003-074355 | 1 | 2 | 30/30 | 96.93 | FAIL: finish 96.93s > limit | - | 0 | 156 | 29.3 |
+| 8 | 20261003-074355 | 2 | 2 | 30/30 | 107.05 | FAIL: finish 107.05s > limit | - | 0 | 142 | 29.6 |
+| 9 | 20261003-074355 | 3 | 2 | 30/30 | 100.50 | FAIL: finish 100.50s > limit | - | 0 | 156 | 29.5 |
+| 10 | 20261003-074355 | 4 | 2 | 30/30 | 103.26 | FAIL: finish 103.26s > limit | - | 0 | 148 | 29.6 |
+
+#### I2, 3 seats
+
+| # | session | race | int | crystals | finish (s) | result | other AI at end | recov | mean u/s | frame ms |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 20261003-075609 | 0 | 2 | 30/30 | 105.36 | FAIL: finish 105.36s > limit | 27/30 | 0 | 135 | 37.8 |
+| 2 | 20261003-075609 | 1 | 2 | 30/30 | 96.51 | FAIL: finish 96.51s > limit | 29/30 | 0 | 153 | 42.1 |
+| 3 | 20261003-075609 | 2 | 2 | 30/30 | 109.31 | FAIL: finish 109.31s > limit | 29/30 | 0 | 135 | 40.4 |
+| 4 | 20261003-075609 | 3 | 2 | 30/30 | 89.92 | FAIL: finish 89.92s > limit | 29/30 | 0 | 166 | 39.1 |
+| 5 | 20261003-075609 | 4 | 2 | 30/30 | 102.45 | FAIL: finish 102.45s > limit | 28/30 | 0 | 149 | 45.1 |
+| 6 | 20261003-105712 | 0 | 2 | 30/30 | 94.14 | FAIL: finish 94.14s > limit | 28/30 | 0 | 160 | 37.0 |
+| 7 | 20261003-105712 | 1 | 2 | 30/30 | 110.43 | FAIL: finish 110.43s > limit | 28/30 | 0 | 137 | 42.7 |
+| 8 | 20261003-105712 | 2 | 2 | 30/30 | 102.34 | FAIL: finish 102.34s > limit | 28/30 | 0 | 154 | 41.4 |
+| 9 | 20261003-105712 | 3 | 2 | 30/30 | 98.44 | FAIL: finish 98.44s > limit | 29/30 | 0 | 143 | 37.2 |
+| 10 | 20261003-105712 | 4 | 2 | 30/30 | 100.94 | FAIL: finish 100.94s > limit | 28/30 | 0 | 153 | 43.2 |
+
+#### I4, 2 seats
+
+| # | session | race | int | crystals | finish (s) | result | other AI at end | recov | mean u/s | frame ms |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 20261003-110710 | 0 | 4 | 54/54 | 153.30 | FAIL: finish 153.30s > limit | - | 0 | 113 | 33.5 |
+| 2 | 20261003-110710 | 1 | 4 | 54/54 | 145.28 | FAIL: finish 145.28s > limit | - | 0 | 116 | 31.9 |
+| 3 | 20261003-110710 | 2 | 4 | 54/54 | 151.26 | FAIL: finish 151.26s > limit | - | 0 | 120 | 33.4 |
+| 4 | 20261003-110710 | 3 | 4 | 54/54 | 137.56 | FAIL: finish 137.56s > limit | - | 0 | 125 | 32.5 |
+| 5 | 20261003-110710 | 4 | 4 | 54/54 | 170.47 | FAIL: finish 170.47s > limit | - | 0 | 100 | 33.9 |
+| 6 | 20261003-112122 | 0 | 4 | 54/54 | 163.69 | FAIL: finish 163.69s > limit | - | 0 | 104 | 34.0 |
+| 7 | 20261003-112122 | 1 | 4 | 54/54 | 139.31 | FAIL: finish 139.31s > limit | - | 0 | 124 | 33.1 |
+| 8 | 20261003-112122 | 2 | 4 | 54/54 | 165.43 | FAIL: finish 165.43s > limit | - | 1 | 104 | 33.9 |
+| 9 | 20261003-112122 | 3 | 4 | 54/54 | 142.56 | FAIL: finish 142.56s > limit | - | 0 | 114 | 33.2 |
+| 10 | 20261003-112122 | 4 | 4 | 54/54 | 156.40 | FAIL: finish 156.40s > limit | - | 0 | 117 | 33.8 |
+
+#### I4, 3 seats
+
+| # | session | race | int | crystals | finish (s) | result | other AI at end | recov | mean u/s | frame ms |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 20261003-113619 | 0 | 4 | 54/54 | 146.39 | FAIL: finish 146.39s > limit | 52/54 | 0 | 123 | 49.7 |
+| 2 | 20261003-113619 | 1 | 4 | 54/54 | 160.29 | FAIL: finish 160.29s > limit | 52/54 | 0 | 104 | 50.5 |
+| 3 | 20261003-113619 | 2 | 4 | 54/54 | 149.30 | FAIL: finish 149.30s > limit | 49/54 | 0 | 108 | 48.5 |
+| 4 | 20261003-113619 | 3 | 4 | 54/54 | 145.98 | FAIL: finish 145.98s > limit | 52/54 | 0 | 107 | 45.7 |
+| 5 | 20261003-113619 | 4 | 4 | 54/54 | 155.83 | FAIL: finish 155.83s > limit | 53/54 | 0 | 124 | 50.7 |
+| 6 | 20261003-115019 | 0 | 4 | 54/54 | 158.76 | FAIL: finish 158.76s > limit | 52/54 | 1 | 112 | 50.2 |
+| 7 | 20261003-115019 | 1 | 4 | 54/54 | 148.70 | FAIL: finish 148.70s > limit | 51/54 | 0 | 109 | 49.8 |
+| 8 | 20261003-115019 | 2 | 4 | 54/54 | 141.97 | FAIL: finish 141.97s > limit | 52/54 | 1 | 125 | 49.4 |
+| 9 | 20261003-115019 | 3 | 4 | 54/54 | 144.08 | FAIL: finish 144.08s > limit | 52/54 | 1 | 132 | 50.8 |
+| 10 | 20261003-115019 | 4 | 4 | 54/54 | 163.18 | FAIL: finish 163.18s > limit | 53/54 | 0 | 116 | 51.9 |
 
 ### Earlier policies (in-game, for the record)
 
@@ -218,24 +333,32 @@ base policy it replaces completed 0/20 in the simulator.
 | v2 (no guard) | 10 | 0 | 88.8 | ~115 ms frames (environment) |
 | v2 + guard defaults | 5 | 4 | 66.9 | first laid-mass guard |
 | v3 | 10 | 5 | 69.9 | batch contaminated by a concurrent tuner (400-600 ms spikes) |
+| v4 (2026-10-02, 1 AI seat, before lanes) | 22 + 3 | 20/22 + 3/3 | 57.7 | sessions 20261002-191546, 20261003-014415, 20261003-021648 |
+| v1-i2 (2026-10-02, 1 AI seat) | 3 | 0/3 | 111.7 | session 20261003-024656 |
 
 ## 9. Status and known limits
 
-**Intensity 1: met, not perfect.** 22/22 races completed the whole 24-crystal sequence, 20/22 inside
-70 s. The two misses (74.2 s, 89.3 s) are the residual failure mode: a hull strike on the ribbon
-while the line crosses faces for a crystal on the other side (the hit log shows `trackShellClearance`
-~0), each costing the whole boost bank, after which the Squirrel rebuilds speed at 60 u/s. The race
-remains completable; it is not a stall.
+**The 70 s requirement is met on intensity 1 only.**
 
-**Intensities 2, 3 and 4: NOT achieved.** Do not read the I1 result as covering them.
-- I3: 56 crystals over ~37,000 u is 124 s at top speed — 70 s is physically impossible for one pilot.
-- I2 (30 crystals, ~15,200 u, 51 s at top speed): its own policy makes the sequence completable
-  (3/3 in-game, ~107-112 s) but the tuner plateaued near 105 s; 70 s needs a mean speed of ~220 u/s
-  where the policy sustains ~135-145. Not met.
-- I4 (54 crystals, ~15,800 u with a 157-degree hairpin): not tuned; the I1 policy collects ~27/54
-  in 130 s in the simulator and I4 falls back to the base policy. Not met.
+- **I1:** 19/20 races within 70 s across 2 and 3 seats (median ~60 s); 20/20 completed.
+- **I2: not met.** 20/20 completed, 0/20 within 70 s; median ~101 s - a gap of ~31 s (~44%).
+- **I4: not met.** 20/20 completed, 0/20 within 70 s; median ~150 s - a gap of ~80 s (more than 2x).
+- **I3: not attempted; physically impossible** (56 crystals over ~37,000 u needs 528 u/s; the
+  Squirrel tops out at 300 u/s).
 
-**Conditions the result depends on.** A focused editor at normal frame rate (~25 ms). Under ~15 fps
-the policy is measurably worse; the recorder states the frame time of every race so a slow machine
-cannot be mistaken for a regression. Not yet run in a standalone player build or from a fresh
-checkout on another machine.
+What blocks I2 and I4 (section 6.2): hull strikes on the ribbon's super-shield contact shell while
+taking crystals that sit within a few units of it. Each strike resets the skim boost to 1x and cuts
+speed by up to half; on I2 the same policy finishes in 67-69 s with strikes switched off. Every
+controller tried - line shaping, sequenced face changes, side passes, direct crystal-to-crystal
+flight, a predictive guard, full MPC, model-predictive line following - either keeps ~9+ strikes per
+race or avoids them only by flying slower or farther, and lands at ~98-110 s. The vessel's heading
+lags the stick with a 0.67 s time constant at up to 300 u/s; that, against a 30 u-wide, 3 u-thick
+hazard with crystals 0-35 u from it, is the measured constraint. Nothing here changes the Squirrel,
+the course, the crystals or the timer, so none of those levers was available.
+
+Other limits:
+- Frame rate matters: below ~15 fps the policy degrades; every race records its frame time.
+- Not yet run in a standalone player build or from a fresh checkout on another machine.
+- `MiniGameHUD`'s destroyed-`Player` exception (fixed here) is a game bug that a 3-seat replay hits;
+  it is outside the AI and worth a separate look at why `GameDataSO.LocalPlayer` holds a destroyed
+  Player after the reload.

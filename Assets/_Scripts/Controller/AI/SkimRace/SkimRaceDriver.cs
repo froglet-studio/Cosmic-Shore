@@ -115,14 +115,19 @@ namespace CosmicShore.Gameplay
             Frame(course, sTarget, out Vector3 cp, out Vector3 t, out Vector3 n, out Vector3 l);
             Vector3 rel = o.TargetPosition - cp;
             float cl = Vector3.Dot(rel, l), ch = Vector3.Dot(rel, n), ct = Vector3.Dot(rel, t);
-            float H = Mathf.Abs(_cfg.SkimHeight);
+            float H = LaneSkimHeight;
             float R = Mathf.Max(2f, (o.TargetRadius > 0f ? o.TargetRadius : _cfg.DefaultCaptureRadius) - _cfg.PassMargin);
             float clearH = _cfg.RibbonClearHeight;
 
             float side = _side;
             ClosestOnDisk(cl, ch, R, 0f, side * H, out float ql, out float qh);
             bool crossing = false;
-            if (qh * side < clearH)
+            // A pass point BESIDE the ribbon (outside its lateral reach) is reachable from this face
+            // without a face change, whatever its height: the line swings out first (the band clamp
+            // in Compose holds it off the plane until it is past the edge), then drops. Only a pass
+            // point over/under the slab itself needs the face-change machinery.
+            bool beside = _cfg.BesidePassNoCrossing && Mathf.Abs(ql) >= _cfg.RibbonClearLateral;
+            if (!beside && qh * side < clearH)
             {
                 if ((ch + side * R) * side >= clearH)
                 {
@@ -130,6 +135,13 @@ namespace CosmicShore.Gameplay
                     qh = side * clearH;
                     float span = Mathf.Sqrt(Mathf.Max(0f, R * R - (qh - ch) * (qh - ch)));
                     ql = Mathf.Clamp(0f, cl - span, cl + span);
+                }
+                else if (_cfg.SidePassOverCrossing && SidePass(cl, ch, R, side * H, out float sl, out float sh))
+                {
+                    // Too deep for this face, but reachable from BESIDE the ribbon: take it out past
+                    // the plate edge at its own height and stay on this face - no face change.
+                    ql = sl;
+                    qh = sh;
                 }
                 else
                 {
@@ -144,7 +156,15 @@ namespace CosmicShore.Gameplay
             _centreInSlab = Mathf.Abs(ch) < clearH + 1f && Mathf.Abs(cl) < _cfg.RibbonClearLateral;
             _bumpActive = true;
             _bumpCrossing = crossing;
-            _bumpCentre = course.Wrap(sTarget + ct);
+            float centre = course.Wrap(sTarget + ct);
+            // Remember where this face change began (once per crystal), so the swing starts there.
+            if (crossing && (float.IsNaN(_crossForCentre) || Mathf.Abs(SignedDelta(course, centre, _crossForCentre)) > 60f))
+            {
+                _crossForCentre = centre;
+                _crossOriginDs = SignedDelta(course, o.CourseProgress, centre);
+            }
+            if (!crossing) _crossForCentre = float.NaN;
+            _bumpCentre = centre;
             _passLateral = ql;
             _passHeight = qh;
             _pendingSide = side;
@@ -232,6 +252,8 @@ namespace CosmicShore.Gameplay
         int _hullVetoes;
         int _massVetoes;
         float _approachW = 300f;
+        bool _direct;
+        public bool DirectFlight => _direct;
 
         /// <summary>
         /// Laid mass near the pilot this decision (trail rails, pickup rings), filled by the caller
@@ -248,6 +270,103 @@ namespace CosmicShore.Gameplay
         /// and then pursuing <paramref name="aim"/>, and returns the hull's closest approach to any
         /// laid-mass box, sampling the hull's centre, wingtips and nose/tail.
         /// </summary>
+        int _viaHint = -1;
+        public int ViaPoints { get; private set; }
+
+        /// <summary>
+        /// Walks the straight line from the hull to <paramref name="target"/> and, at the first
+        /// point where it would enter the ribbon's contact shell, returns a via-point that keeps
+        /// it out: lifted along the plate's normal when the hull and the crystal are on the same
+        /// face, or round the ribbon's EDGE when they are on opposite faces (a strip in space can
+        /// only be crossed beside it). Only visible track geometry is used.
+        /// </summary>
+        bool DirectVia(in SkimRaceObservation o, SkimRaceCourse course, Vector3 target, out Vector3 via)
+            => DirectVia(o, course, target, _cfg.DirectViaClearance, out via);
+
+        bool DirectVia(in SkimRaceObservation o, SkimRaceCourse course, Vector3 target, float clearance, out Vector3 via)
+        {
+            via = target;
+            Vector3 a = o.Position;
+            float L = Vector3.Distance(a, target);
+            float stop = L - Mathf.Max(4f, (o.TargetRadius > 0f ? o.TargetRadius : _cfg.DefaultCaptureRadius) * 0.8f);
+            int hint = _viaHint;
+            int blockIdx = -1;
+            for (float u = 4f; u < stop; u += 4f)
+            {
+                Vector3 p = Vector3.Lerp(a, target, u / L);
+                course.Project(p, ref hint, out _, out float dist);
+                if (dist > 60f) continue;
+                if (course.ShellClearance(p, hint, 6, out int idx) < clearance) { blockIdx = idx; break; }
+            }
+            course.Project(a, ref _viaHint, out _, out _);
+            if (blockIdx < 0) return false;
+
+            Vector3 c0 = course.PointAtIndex(blockIdx), n = course.PrismUp(blockIdx), l = course.PrismRight(blockIdx);
+            float ha = Vector3.Dot(a - c0, n), hb = Vector3.Dot(target - c0, n);
+            if (Mathf.Abs(ha) > 0.5f && Mathf.Sign(ha) == Mathf.Sign(hb))
+                via = c0 + n * (Mathf.Sign(ha) * _cfg.DirectViaLift);
+            else
+            {
+                float side = Mathf.Sign(Vector3.Dot(a - c0, l) + Vector3.Dot(target - c0, l));
+                if (side == 0f) side = 1f;
+                via = c0 + l * (side * _cfg.DirectViaLateral) + n * (0.5f * (ha + hb));
+            }
+            ViaPoints++;
+            return true;
+        }
+
+        /// <summary>
+        /// Would the STRAIGHT line from the hull to <paramref name="target"/> pass through the
+        /// ribbon's contact shell? (Same walk as <see cref="DirectVia"/>, answer only.)
+        /// </summary>
+        bool ChordBlocked(in SkimRaceObservation o, SkimRaceCourse course, Vector3 target)
+            => ChordBlocked(o, course, target, _cfg.ChordClearance);
+
+        bool ChordBlocked(in SkimRaceObservation o, SkimRaceCourse course, Vector3 target, float clearance)
+        {
+            int saved = ViaPoints;
+            bool blocked = DirectVia(o, course, target, clearance, out _);
+            ViaPoints = saved;
+            return blocked;
+        }
+
+        // Track shells the guard also respects this decision (null = laid mass only), and the
+        // extra margin it keeps from them (expressed against MassGuardMargin).
+        SkimRaceCourse _guardCourse;
+        int _guardCourseHint = -1;
+        int _guardBaseHint = -1;
+
+        SkimRaceCourse _rollCourse;   // set while the nominal command is line pursuit
+        int _rollHint = -1;
+
+        /// <summary>The driver's steering law: lead the hull, then drive the commanded heading there.</summary>
+        void Steer(Vector3 fwd, Vector3 up, Vector3 right, Vector3 cmdFwd, Vector3 desired,
+            out float yaw, out float pitch, out float headingErr, out float cmdErr)
+        {
+            headingErr = Vector3.Angle(fwd, desired);
+            Vector3 cmdTarget = desired;
+            if (headingErr > 0.05f)
+            {
+                Vector3 axis = Vector3.Cross(fwd, desired);
+                if (axis.sqrMagnitude < 1e-8f) axis = up;
+                float lead = Mathf.Min(headingErr * _cfg.LeadGain, headingErr + _cfg.MaxLeadDegrees, 179f);
+                cmdTarget = Quaternion.AngleAxis(lead, axis.normalized) * fwd;
+            }
+            cmdErr = Vector3.Angle(cmdFwd, cmdTarget);
+            yaw = 0f; pitch = 0f;
+            if (cmdErr > 0.01f)
+            {
+                Vector3 axis = Vector3.Cross(cmdFwd, cmdTarget);
+                if (axis.sqrMagnitude < 1e-8f) axis = up;
+                axis.Normalize();
+                float stick = Mathf.Clamp01(cmdErr * _cfg.StickGainPerDegree);
+                float u = Vector3.Dot(axis, up), r = Vector3.Dot(axis, right);
+                float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
+                yaw = stick * u / m;
+                pitch = stick * r / m;
+            }
+        }
+
         float RolloutClearance(in SkimRaceObservation o, float yaw, float pitch, float throttle, Vector3 aim,
             float stopBelow, out Vector3 endPos)
         {
@@ -258,19 +377,24 @@ namespace CosmicShore.Gameplay
             float boost = Mathf.Max(1f, o.BoostMultiplier);
             float minC = float.PositiveInfinity;
             float w = _cfg.HullHalfWidth, l = _cfg.HullHalfLength;
+            float capture = o.HasTarget ? Mathf.Max(4f, (o.TargetRadius > 0f ? o.TargetRadius : _cfg.DefaultCaptureRadius) - 1f) : 0f;
+            _guardCourseHint = _guardBaseHint;
             for (float t = 0f; t < H; t += dt)
             {
                 float y = yaw, p = pitch;
                 if (t >= T1)
                 {
-                    Vector3 cf = cmd * Vector3.forward;
-                    Vector3 to = aim - pos;
-                    Vector3 axis = Vector3.Cross(cf, to.normalized);
-                    float stick = Mathf.Clamp01(Vector3.Angle(cf, to) * _cfg.StickGainPerDegree);
-                    Vector3 hu = rot * Vector3.up, hr = rot * Vector3.right;
-                    float u = Vector3.Dot(axis, hu), r = Vector3.Dot(axis, hr);
-                    float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
-                    y = stick * u / m; p = stick * r / m;
+                    // Continuation = what this driver will actually do next: re-follow the racing
+                    // line from wherever the rollout has got to (or keep the fixed aim in terminal
+                    // flight), with the same lag-compensated steering law as Decide.
+                    Vector3 a = aim;
+                    if (_rollCourse != null)
+                    {
+                        float sr = _rollCourse.Project(pos, ref _rollHint, out _, out _);
+                        a = LinePoint(_rollCourse, sr + _lookDist);
+                    }
+                    Steer(rot * Vector3.forward, rot * Vector3.up, rot * Vector3.right, cmd * Vector3.forward,
+                        (a - pos).normalized, out y, out p, out _, out _);
                 }
                 cmd = Quaternion.AngleAxis(y * o.TurnRateDegrees * dt, rot * Vector3.up) * cmd;
                 cmd = Quaternion.AngleAxis(p * o.TurnRateDegrees * dt, rot * Vector3.right) * cmd;
@@ -278,6 +402,8 @@ namespace CosmicShore.Gameplay
                 boost = boost > 1f ? boost - 0.3f * dt : 1f;
                 speed = Mathf.Lerp(speed, throttle * o.ThrottleScaler * boost, o.FollowRate * dt);
                 pos += (rot * Vector3.forward) * speed * dt;
+                // The pickup happens first: nothing after it on this path matters to this decision.
+                if (o.HasTarget && (pos - o.TargetPosition).sqrMagnitude <= capture * capture) break;
 
                 Vector3 right = rot * (Vector3.right * w), fwd = rot * (Vector3.forward * l);
                 for (int i = 0; i < Obstacles.Count; i++)
@@ -289,11 +415,218 @@ namespace CosmicShore.Gameplay
                     c = Mathf.Min(c, Mathf.Min(ob.Distance(pos + fwd), ob.Distance(pos - fwd)));
                     if (c < minC) minC = c;
                 }
+                if (_guardCourse != null)
+                {
+                    _guardCourse.Project(pos, ref _guardCourseHint, out _, out _); // keep the shell window on the rollout
+                    // The ribbon's contact shell, measured from the hull centre and wingtips, offset
+                    // so TrackGuardMargin maps onto the same threshold as laid mass.
+                    float offset = _cfg.MassGuardMargin - _cfg.TrackGuardMargin;
+                    float tc = _guardCourse.ShellClearance(pos, _guardCourseHint, 6, out _);
+                    tc = Mathf.Min(tc, _guardCourse.ShellClearance(pos + right, _guardCourseHint, 6, out _));
+                    tc = Mathf.Min(tc, _guardCourse.ShellClearance(pos - right, _guardCourseHint, 6, out _));
+                    if (tc + offset < minC) minC = tc + offset;
+                }
                 if (minC < stopBelow) break;
             }
             endPos = pos;
             return minC;
         }
+
+        // ── Model-predictive control ──────────────────────────────────────────
+        static readonly float[] MpcSticks = { -1f, -0.5f, 0f, 0.5f, 1f };
+        readonly HashSet<int> _mpcSkimmed = new();
+        float _nextMpc;
+        float _mpcYaw, _mpcPitch, _mpcThrottle = 1f;
+        bool _mpcValid;
+        public int MpcOverrides { get; private set; }
+
+        /// <summary>
+        /// Scores one command: held for MpcSegment, then the driver's own continuation (re-following
+        /// the racing line, or the fixed aim in terminal flight), rolled through the transformer's
+        /// dynamics against the visible track shells and laid mass. Lower is better, in
+        /// seconds-equivalent: a strike is ruinous (it resets the boost), a pickup ends the rollout,
+        /// banked boost is worth MpcBoostValue seconds per 1x.
+        /// </summary>
+        float MpcCost(in SkimRaceObservation o, SkimRaceCourse course, float yaw, float pitch, float throttle, Vector3 aim)
+        {
+            float H = _cfg.MpcHorizon, T1 = _cfg.MpcSegment, dt = _cfg.MpcStep;
+            Quaternion rot = o.Rotation, cmd = o.CommandedRotation;
+            Vector3 pos = o.Position;
+            float speed = o.Speed, boost = Mathf.Max(1f, o.BoostMultiplier), b0 = boost;
+            float w = _cfg.HullHalfWidth, l = _cfg.HullHalfLength;
+            float capture = o.HasTarget ? Mathf.Max(4f, (o.TargetRadius > 0f ? o.TargetRadius : _cfg.DefaultCaptureRadius) - _cfg.MpcCaptureMargin) : 0f;
+            _mpcSkimmed.Clear();
+            int hint = _rollHint;
+            for (float t = 0f; t < H; t += dt)
+            {
+                float y = yaw, p = pitch;
+                if (t >= T1)
+                {
+                    Vector3 a = aim;
+                    if (_rollCourse != null)
+                    {
+                        float sr = _rollCourse.Project(pos, ref hint, out _, out _);
+                        a = LinePoint(_rollCourse, sr + _lookDist);
+                    }
+                    Steer(rot * Vector3.forward, rot * Vector3.up, rot * Vector3.right, cmd * Vector3.forward,
+                        (a - pos).normalized, out y, out p, out _, out _);
+                }
+                cmd = Quaternion.AngleAxis(y * o.TurnRateDegrees * dt, rot * Vector3.up) * cmd;
+                cmd = Quaternion.AngleAxis(p * o.TurnRateDegrees * dt, rot * Vector3.right) * cmd;
+                rot = Quaternion.Slerp(rot, cmd, o.FollowRate * dt);
+                boost = boost > 1f ? boost - 0.3f * dt : 1f;
+                float thr = t >= T1 ? 1f : throttle;
+                speed = Mathf.Lerp(speed, thr * o.ThrottleScaler * boost, o.FollowRate * dt);
+                pos += (rot * Vector3.forward) * speed * dt;
+
+                if (o.HasTarget && (pos - o.TargetPosition).sqrMagnitude <= capture * capture)
+                    return t - _cfg.MpcBoostValue * (Mathf.Min(o.MaxBoost, boost + 0.8f) - b0);
+
+                // contacts: track shells (centre + wingtips) and laid mass (centre, wingtips, nose, tail)
+                Vector3 right = rot * (Vector3.right * w), fwd = rot * (Vector3.forward * l);
+                float clear = float.PositiveInfinity;
+                if (course != null && course.HasShells)
+                {
+                    course.Project(pos, ref hint, out _, out _); // keep the shell window on the rollout
+                    float c0 = course.ShellClearance(pos, hint, 6, out int idx);
+                    if (c0 < 7.5f && idx >= 0 && _mpcSkimmed.Add(idx)) boost = Mathf.Min(o.MaxBoost, boost + 0.1f);
+                    clear = Mathf.Min(c0, Mathf.Min(course.ShellClearance(pos + right, hint, 6, out _),
+                                                     course.ShellClearance(pos - right, hint, 6, out _)));
+                }
+                for (int i = 0; i < Obstacles.Count; i++)
+                {
+                    var ob = Obstacles[i];
+                    float reach = ob.Half.magnitude + w + l + 1f;
+                    if ((ob.Center - pos).sqrMagnitude > reach * reach) continue;
+                    float c = Mathf.Min(ob.Distance(pos), Mathf.Min(ob.Distance(pos + right), ob.Distance(pos - right)));
+                    clear = Mathf.Min(clear, Mathf.Min(c, Mathf.Min(ob.Distance(pos + fwd), ob.Distance(pos - fwd))));
+                }
+                if (clear < _cfg.MpcHullMargin)
+                    return _cfg.MpcStrikeCost + (H - t) * 2f; // an earlier strike is worse
+            }
+            // Remaining distance measured ALONG the course (going the wrong way along the track wraps
+            // to nearly a lap), never less than the straight line.
+            float remaining = 0f;
+            if (o.HasTarget)
+            {
+                remaining = Vector3.Distance(pos, o.TargetPosition);
+                if (course != null && _mpcTargetS >= 0f)
+                {
+                    int h2 = hint;
+                    float sEnd = course.Project(pos, ref h2, out _, out _);
+                    remaining = Mathf.Max(remaining, course.Ahead(sEnd, _mpcTargetS) - capture);
+                }
+            }
+            return H + remaining / Mathf.Max(speed, 60f) - _cfg.MpcBoostValue * (boost - b0);
+        }
+
+        float _mpcTargetS = -1f;
+
+        void Mpc(in SkimRaceObservation o, SkimRaceCourse course, Vector3 aim, float now,
+            ref float yaw, ref float pitch, ref float throttle)
+        {
+            if (now >= _nextMpc || !_mpcValid)
+            {
+                _mpcTargetS = course != null ? course.Wrap(o.CourseProgress + o.TargetAheadOnCourse) : -1f;
+                _nextMpc = now + 1f / Mathf.Max(1f, _cfg.MpcHz);
+                float best = MpcCost(o, course, yaw, pitch, throttle, aim) - _cfg.MpcNominalBias;
+                float by = yaw, bp = pitch, bt = throttle;
+                float[] throttles = { 1f, _cfg.MpcSlowThrottle };
+                for (int ti = 0; ti < throttles.Length; ti++)
+                for (int a = 0; a < MpcSticks.Length; a++)
+                for (int b = 0; b < MpcSticks.Length; b++)
+                {
+                    float c = MpcCost(o, course, MpcSticks[a], MpcSticks[b], throttles[ti], aim);
+                    if (c < best) { best = c; by = MpcSticks[a]; bp = MpcSticks[b]; bt = throttles[ti]; }
+                }
+                _mpcValid = !(by == yaw && bp == pitch && bt == throttle);
+                _mpcYaw = by; _mpcPitch = bp; _mpcThrottle = bt;
+                if (_mpcValid) MpcOverrides++;
+            }
+            if (_mpcValid) { yaw = _mpcYaw; pitch = _mpcPitch; throttle = _mpcThrottle; }
+        }
+
+        // ── Tracking MPC: follow the racing line itself, not a look-ahead point on it ──
+        float _nextTrack;
+        float _trackYaw, _trackPitch;
+        bool _trackValid;
+
+        /// <summary>
+        /// Mean squared distance of a rolled-out path from the racing line (each predicted position
+        /// against the line at that position's own course progress, plus a small lead), with a pickup
+        /// inside the horizon rewarded. Steering by this is model-predictive path following: it
+        /// accounts for the hull's lag instead of hoping a look-ahead point does.
+        /// </summary>
+        float TrackCost(in SkimRaceObservation o, SkimRaceCourse course, float yaw, float pitch, float throttle, Vector3 aim, bool lineMode)
+        {
+            float H = _cfg.TrackMpcHorizon, T1 = _cfg.TrackMpcSegment, dt = _cfg.TrackMpcStep;
+            Quaternion rot = o.Rotation, cmd = o.CommandedRotation;
+            Vector3 pos = o.Position;
+            float speed = o.Speed, boost = Mathf.Max(1f, o.BoostMultiplier);
+            float capture = o.HasTarget ? Mathf.Max(4f, (o.TargetRadius > 0f ? o.TargetRadius : _cfg.DefaultCaptureRadius) - _cfg.PassMargin) : 0f;
+            int hint = _trackHint;
+            float sum = 0f; int n = 0;
+            for (float t = 0f; t < H; t += dt)
+            {
+                float y = yaw, p = pitch;
+                if (t >= T1)
+                {
+                    Vector3 a = aim;
+                    if (lineMode)
+                    {
+                        float sr0 = course.Project(pos, ref hint, out _, out _);
+                        a = LinePoint(course, sr0 + _lookDist);
+                    }
+                    Steer(rot * Vector3.forward, rot * Vector3.up, rot * Vector3.right, cmd * Vector3.forward,
+                        (a - pos).normalized, out y, out p, out _, out _);
+                }
+                cmd = Quaternion.AngleAxis(y * o.TurnRateDegrees * dt, rot * Vector3.up) * cmd;
+                cmd = Quaternion.AngleAxis(p * o.TurnRateDegrees * dt, rot * Vector3.right) * cmd;
+                rot = Quaternion.Slerp(rot, cmd, o.FollowRate * dt);
+                boost = boost > 1f ? boost - 0.3f * dt : 1f;
+                speed = Mathf.Lerp(speed, throttle * o.ThrottleScaler * boost, o.FollowRate * dt);
+                pos += (rot * Vector3.forward) * speed * dt;
+                if (o.HasTarget && (pos - o.TargetPosition).sqrMagnitude <= capture * capture)
+                    return sum / Mathf.Max(1, n) - _cfg.TrackMpcCaptureReward * (H - t);
+                Vector3 target;
+                if (lineMode)
+                {
+                    float sr = course.Project(pos, ref hint, out _, out _);
+                    target = LinePoint(course, sr + _cfg.TrackMpcLead);
+                    float d = Vector3.Distance(pos, target);
+                    sum += d * d; n++;
+                }
+                else
+                {
+                    // Terminal flight: close on the aim point.
+                    float d = Vector3.Distance(pos, aim);
+                    sum += d; n++;
+                }
+            }
+            return sum / Mathf.Max(1, n);
+        }
+
+        void TrackMpc(in SkimRaceObservation o, SkimRaceCourse course, Vector3 aim, bool lineMode, float now,
+            ref float yaw, ref float pitch, float throttle)
+        {
+            if (now >= _nextTrack || !_trackValid)
+            {
+                _nextTrack = now + 1f / Mathf.Max(1f, _cfg.TrackMpcHz);
+                course.Project(o.Position, ref _trackHint, out _, out _);
+                float best = TrackCost(o, course, yaw, pitch, throttle, aim, lineMode) * (1f - _cfg.TrackMpcNominalBias);
+                float by = yaw, bp = pitch;
+                for (int a = 0; a < MpcSticks.Length; a++)
+                for (int b = 0; b < MpcSticks.Length; b++)
+                {
+                    float c = TrackCost(o, course, MpcSticks[a], MpcSticks[b], throttle, aim, lineMode);
+                    if (c < best) { best = c; by = MpcSticks[a]; bp = MpcSticks[b]; }
+                }
+                _trackValid = !(by == yaw && bp == pitch);
+                _trackYaw = by; _trackPitch = bp;
+            }
+            if (_trackValid) { yaw = _trackYaw; pitch = _trackPitch; }
+        }
+        int _trackHint = -1;
 
         /// <summary>
         /// The laid-mass guard. Returns true when the commanded stick was replaced because its
@@ -303,6 +636,8 @@ namespace CosmicShore.Gameplay
         {
             float margin = _cfg.MassGuardMargin;
             float nominal = RolloutClearance(o, yaw, pitch, throttle, aim, margin, out Vector3 nominalEnd);
+            LastGuardNominal = nominal;
+            LastGuardChosen = nominal;
             if (nominal >= margin) return false;
 
             float bestCost = float.MaxValue, bestYaw = yaw, bestPitch = pitch;
@@ -315,7 +650,7 @@ namespace CosmicShore.Gameplay
                 float cost = (c >= margin ? 0f : 1000f + 100f * (margin - Mathf.Min(c, margin)))
                              + Vector3.Distance(end, nominalEnd) * 0.05f
                              + 0.1f * (Mathf.Abs(cy - yaw) + Mathf.Abs(cp - pitch));
-                if (cost < bestCost) { bestCost = cost; bestYaw = cy; bestPitch = cp; }
+                if (cost < bestCost) { bestCost = cost; bestYaw = cy; bestPitch = cp; LastGuardChosen = c; }
             }
             yaw = bestYaw;
             pitch = bestPitch;
@@ -333,6 +668,22 @@ namespace CosmicShore.Gameplay
         public int RingsLaid => _rings;
         public int HullVetoes => _hullVetoes;
 
+        /// <summary>
+        /// The capture-disk point beside the ribbon (|lateral| = RibbonClearLateral, on the crystal's
+        /// side) closest in height to <paramref name="faceH"/>; false when the disk does not reach it.
+        /// </summary>
+        bool SidePass(float cl, float ch, float R, float faceH, out float ql, out float qh)
+        {
+            float Ls = _cfg.RibbonClearLateral;
+            float sgn = cl >= 0f ? 1f : -1f;
+            float dl = sgn * Ls - cl;
+            ql = sgn * Ls; qh = ch;
+            if (Mathf.Abs(dl) > R) return false;
+            float span = Mathf.Sqrt(Mathf.Max(0f, R * R - dl * dl));
+            qh = Mathf.Clamp(faceH, ch - span, ch + span);
+            return true;
+        }
+
         static void ClosestOnDisk(float cl, float ch, float r, float nl, float nh, out float ql, out float qh)
         {
             float dl = nl - cl, dh = nh - ch;
@@ -346,7 +697,7 @@ namespace CosmicShore.Gameplay
         Vector3 LinePoint(SkimRaceCourse c, float s)
         {
             Frame(c, s, out Vector3 p, out _, out Vector3 n, out Vector3 l);
-            float H = Mathf.Abs(_cfg.SkimHeight);
+            float H = LaneSkimHeight;
             if (!_bumpActive) return p + n * (_side * H);
 
             float ds = SignedDelta(c, s, _bumpCentre);
@@ -355,7 +706,28 @@ namespace CosmicShore.Gameplay
             {
                 float w = Bump(ds, W);
                 float baseH = _side * H;
-                return p + n * (baseH + (_passHeight - baseH) * w) + l * (_passLateral * w);
+                return Compose(p, n, l, _passLateral * w, baseH + (_passHeight - baseH) * w);
+            }
+
+            if (_cfg.SequencedCrossing)
+            {
+                // Face change, SEQUENCED so the pursuit chord can never cut the ribbon: (1) swing out
+                // past the slab's edge on this face, (2) only once the swing is complete one full
+                // look-ahead earlier, change height, (3) swing back in to the pass. Pure pursuit aims
+                // a look-ahead ahead, so the swing has to lead the height change by that distance.
+                float lead = Mathf.Max(_lookDist, 1f);
+                float swingIn = Mathf.Max(30f, 0.35f * lead);
+                float latStart = Mathf.Max(-W, _crossOriginDs);
+                float hStart = latStart + swingIn + lead;
+                float hLen = Mathf.Max(40f, W * _cfg.CrossingHeightFraction);
+                float hEnd = Mathf.Min(hStart + hLen, -Mathf.Max(10f, 0.25f * lead));
+                if (hEnd < hStart + 20f) hStart = hEnd - 20f;
+                float Lc = _crossLateralSign * (_cfg.RibbonClearLateral + 4f);
+                float sLat = ds < hEnd
+                    ? Lc * Smooth01((ds - latStart) / swingIn)
+                    : Mathf.Lerp(Lc, _passLateral, Smooth01((ds - hEnd) / Mathf.Max(1f, -hEnd)));
+                float sHgt = Mathf.Lerp(_side * H, _passHeight, Smooth01((ds - hStart) / Mathf.Max(1f, hEnd - hStart)));
+                return Compose(p, n, l, sLat, sHgt);
             }
 
             // Face change: height ramps from this face to the pass height over the second half of
@@ -367,6 +739,54 @@ namespace CosmicShore.Gameplay
             float swingCentre = (rampStart + rampEnd) * 0.5f;
             float swing = _crossLateralSign * (_cfg.RibbonClearLateral + 4f) * Bump(ds - swingCentre, W * 0.9f);
             float lat = Mathf.Lerp(swing, _passLateral, Mathf.Clamp01((ds - rampEnd) / Mathf.Max(1f, -rampEnd)));
+            return Compose(p, n, l, lat, hgt);
+        }
+
+        /// <summary>
+        /// This seat's lane among the AI seats in the race (0, 1, ...). Each lane skims at its own
+        /// height (<see cref="SkimRaceAIConfigSO.LaneHeightStep"/> apart), so one seat's trail
+        /// rails - laid at its own height, 9.66 u to either side - are never at the height of
+        /// another seat that strays sideways into them. Set by the pilot from public seat order.
+        /// </summary>
+        public int Lane { get; set; }
+        public float LastTrackError { get; private set; } = -1f;
+
+        /// <summary>Diagnostic: the closest the PLANNED line comes to a track shell over the next span.</summary>
+        public float LineMinClearance(SkimRaceCourse course, float s0, float span)
+        {
+            float best = float.PositiveInfinity; int h = -1;
+            for (float d = 0f; d <= span; d += 6f)
+            {
+                Vector3 p = LinePoint(course, s0 + d);
+                course.Project(p, ref h, out _, out _);
+                best = Mathf.Min(best, course.ShellClearance(p, h, 6, out _));
+            }
+            return best;
+        }
+        public float LastGuardNominal = float.PositiveInfinity, LastGuardChosen = float.PositiveInfinity;
+        int _lastCollected = -1;
+        float _pickupHoldUntil = -1f;
+        public bool Crossing => _bumpActive && _bumpCrossing;
+
+        static float Smooth01(float x) { x = Mathf.Clamp01(x); return x * x * (3f - 2f * x); }
+        float _lookDist = 100f;        // current pursuit look-ahead (world units)
+        float _crossOriginDs = -1e6f;  // where (signed, relative to the crystal) the current face change was decided
+        float _crossForCentre = float.NaN;
+        float LaneSkimHeight => Mathf.Abs(_cfg.SkimHeight) + Lane * _cfg.LaneHeightStep;
+
+        /// <summary>
+        /// A racing-line point from its frame offsets - never inside the slab band: within the
+        /// ribbon's lateral reach the line keeps at least RibbonClearHeight off the plane, on
+        /// whichever face it is on. (Without this, a pass beside-and-below the ribbon blended height
+        /// and lateral together and the line dipped through the plates' edge.)
+        /// </summary>
+        Vector3 Compose(Vector3 p, Vector3 n, Vector3 l, float lat, float hgt)
+        {
+            if (_cfg.LineBandClamp && Mathf.Abs(lat) < _cfg.RibbonClearLateral)
+            {
+                float c = _cfg.RibbonClearHeight;
+                if (Mathf.Abs(hgt) < c) hgt = (Mathf.Abs(hgt) > 1e-3f ? Mathf.Sign(hgt) : _side) * c;
+            }
             return p + n * hgt + l * lat;
         }
 
@@ -397,6 +817,9 @@ namespace CosmicShore.Gameplay
             _guardHint = -1;
             _hullVetoes = 0;
             _massVetoes = 0;
+            _direct = false;
+            _viaHint = -1;
+            ViaPoints = 0;
             Obstacles.Clear();
             _ringReadyAt = 0f;
             _ringHoldUntil = 0f;
@@ -405,6 +828,13 @@ namespace CosmicShore.Gameplay
             _planHint = -1;
             _rings = 0;
             _pendingSide = _side;
+            _crossForCentre = float.NaN;
+            _crossOriginDs = -1e6f;
+            _lastCollected = -1;
+            _pickupHoldUntil = -1f;
+            _nextMpc = 0f; _mpcValid = false; MpcOverrides = 0;
+            _nextTrack = 0f; _trackValid = false; _trackHint = -1;
+            _lookDist = 100f;
             _bumpActive = false;
         }
 
@@ -422,6 +852,7 @@ namespace CosmicShore.Gameplay
             // ── 1. Aim point ────────────────────────────────────────────────
             bool haveCourse = course != null && o.HasCourse;
             bool pull = false;
+            bool linePursuit = false;
             Vector3 aim;
             _bumpActive = false;
 
@@ -440,12 +871,28 @@ namespace CosmicShore.Gameplay
             Vector3 passPoint = _bumpActive ? _passWorld : o.TargetPosition;
             float passDist = Vector3.Distance(o.Position, passPoint);
 
-            if (o.HasTarget && (!haveCourse || _mode == Mode.Recovering || behind))
+            if (_cfg.DirectBoost > 0f && o.HasTarget)
+            {
+                if (!_direct && o.BoostMultiplier >= _cfg.DirectBoost) _direct = true;
+                else if (_direct && o.BoostMultiplier < _cfg.DirectBoost - _cfg.DirectBoostHysteresis) _direct = false;
+            }
+            else _direct = false;
+
+            if (_direct && haveCourse && course.HasShells)
+            {
+                // Direct flight: straight at the crystal, routed round the ribbon only where the
+                // straight line would enter its contact shell.
+                aim = o.TargetPosition;
+                if (DirectVia(o, course, o.TargetPosition, out Vector3 via)) aim = via;
+                pull = true;
+            }
+            else if (o.HasTarget && (!haveCourse || _mode == Mode.Recovering || behind || _direct))
             {
                 aim = passPoint;
                 pull = true;
             }
-            else if (o.HasTarget && passDist <= directDistance && inFront)
+            else if (o.HasTarget && passDist <= directDistance && inFront
+                     && !(haveCourse && _cfg.TerminalNeedsClearChord && course.HasShells && ChordBlocked(o, course, passPoint, _cfg.TerminalChordClearance)))
             {
                 // Terminal: fly at the pass point itself, which pure pursuit would otherwise cut -
                 // biased toward the crystal's centre when that does not take the hull into the
@@ -459,12 +906,23 @@ namespace CosmicShore.Gameplay
             {
                 float look = Mathf.Clamp(o.Speed * _cfg.LookaheadSeconds, _cfg.LookaheadMin, _cfg.LookaheadMax);
                 aim = LinePoint(course, o.CourseProgress + look);
+                // Pursue only along a CLEAR chord: pure pursuit flies the straight line to its
+                // look-ahead point, which can cut the ribbon even where the line itself is clear.
+                for (int k = 0; k < 4 && _cfg.ChordClearance > 0f && course.HasShells && ChordBlocked(o, course, aim); k++)
+                {
+                    look *= 0.6f;
+                    aim = LinePoint(course, o.CourseProgress + look);
+                }
+                _lookDist = look;
+                linePursuit = true;
                 pull = _bumpActive && Mathf.Abs(SignedDelta(course, o.CourseProgress + look, _bumpCentre)) < _approachW;
             }
             else
             {
                 aim = o.Position + o.Forward * 100f;
             }
+
+            LastTrackError = haveCourse ? Vector3.Distance(o.Position, LinePoint(course, o.CourseProgress)) : -1f;
 
             // ── 1b. Slab guard: never let the hull approach the ribbon plane inside its edge ─
             bool guarded = false;
@@ -477,33 +935,8 @@ namespace CosmicShore.Gameplay
             Vector3 desired = toAim.sqrMagnitude > 1e-4f ? toAim.normalized : o.Forward;
 
             // ── 2. Lag-compensated steering ────────────────────────────────
-            float headingErr = Vector3.Angle(o.Forward, desired);
-            Vector3 cmdTarget = desired;
-            if (headingErr > 0.05f)
-            {
-                Vector3 axis = Vector3.Cross(o.Forward, desired);
-                if (axis.sqrMagnitude < 1e-8f) axis = o.Up; // anti-parallel: pick a side
-                float lead = Mathf.Min(headingErr * _cfg.LeadGain, headingErr + _cfg.MaxLeadDegrees, 179f);
-                cmdTarget = Quaternion.AngleAxis(lead, axis.normalized) * o.Forward;
-            }
-
-            float cmdErr = Vector3.Angle(o.CommandedForward, cmdTarget);
-            float yaw = 0f, pitch = 0f;
-            if (cmdErr > 0.01f)
-            {
-                Vector3 axis = Vector3.Cross(o.CommandedForward, cmdTarget);
-                if (axis.sqrMagnitude < 1e-8f) axis = o.Up;
-                axis.Normalize();
-                float stick = Mathf.Clamp01(cmdErr * _cfg.StickGainPerDegree);
-                // Pitch rotates about the hull's right axis, yaw about its up axis (see
-                // VesselTransformer.Pitch/Yaw), so the split is the rotation axis expressed in
-                // hull space. A component along the hull's forward would be roll: ignored.
-                float u = Vector3.Dot(axis, o.Up);
-                float r = Vector3.Dot(axis, o.Right);
-                float m = Mathf.Max(Mathf.Abs(u), Mathf.Abs(r), 1e-4f);
-                yaw = stick * u / m;
-                pitch = stick * r / m;
-            }
+            Steer(o.Forward, o.Up, o.Right, o.CommandedForward, desired, out float yaw, out float pitch,
+                out float headingErr, out float cmdErr);
 
             // Cosmetic levelling only: roll the wings toward the ribbon plane.
             float roll = 0f;
@@ -550,8 +983,40 @@ namespace CosmicShore.Gameplay
             }
 
             // ── Laid-mass guard: never fly the hull into trail rails or pickup-ring prisms ──
-            if (_cfg.MassGuardSeconds > 0f && Obstacles.Count > 0 && GuardMass(o, aim, ref yaw, ref pitch, throttle))
+            _guardCourse = null;
+            LastGuardNominal = LastGuardChosen = float.PositiveInfinity;
+            _rollCourse = (_cfg.RolloutFollowsLine && haveCourse && linePursuit) ? course : null;
+            if (_rollCourse != null) _rollHint = -1;
+            bool trackGuard = haveCourse && course.HasShells
+                              && (_cfg.TrackGuard == 2 || (_cfg.TrackGuard == 1 && _direct));
+            if (trackGuard)
+            {
+                _guardCourse = course;
+                // Project from a point ahead too: a fast rollout can leave the 6-prism window
+                // around the hull's own projection.
+                course.Project(o.Position, ref _guardBaseHint, out _, out _);
+            }
+            if (_cfg.UseTrackMpc && haveCourse && _mode != Mode.Recovering)
+                TrackMpc(o, course, aim, linePursuit, now, ref yaw, ref pitch, throttle);
+
+            if (_cfg.UseMpc && o.HasTarget)
+            {
+                if (_rollCourse == null && _cfg.RolloutFollowsLine && haveCourse) { _rollCourse = course; _rollHint = -1; }
+                if (haveCourse) course.Project(o.Position, ref _rollHint, out _, out _);
+                Mpc(o, haveCourse ? course : null, aim, now, ref yaw, ref pitch, ref throttle);
+            }
+            else if (_cfg.MassGuardSeconds > 0f && (Obstacles.Count > 0 || trackGuard) && GuardMass(o, aim, ref yaw, ref pitch, throttle))
                 guarded = true;
+
+            // ── Pickup hold: fly straight through the pickup ring's hollow centre ──
+            // A pickup lays 8 prisms on radius 8.2, centred 8 u ahead along the hull's heading
+            // (AOEShieldedRingSpawner). Turning toward the next crystal at once sweeps a wingtip into
+            // one of them (boost reset); holding the stick for the ~14 u it takes to clear the ring
+            // passes through the hollow - and skims all eight (+0.8).
+            if (o.Collected > _lastCollected && _lastCollected >= 0 && _cfg.PickupClearDistance > 0f)
+                _pickupHoldUntil = now + _cfg.PickupClearDistance / Mathf.Max(o.Speed, 30f);
+            _lastCollected = o.Collected;
+            if (now < _pickupHoldUntil) { yaw = 0f; pitch = 0f; roll = 0f; }
 
             // ── Boost Ring launch (optional) ────────────────────────────────
             bool ring = false;

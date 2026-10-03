@@ -62,6 +62,7 @@ namespace CosmicShore.Gameplay
             public float meanFrameMs;
             public float maxFrameMs;
             public string quality;      // graphics quality level the race rendered at (frame rate affects every pilot)
+            public float timeScaleMin = 1f, timeScaleMax = 1f;  // anything but 1 invalidates the race
             public string aiDomain;
             public int aiDomainCrystals;
             public bool success;
@@ -128,6 +129,8 @@ namespace CosmicShore.Gameplay
             _frameSum += Time.unscaledDeltaTime;
             _frames++;
             _frameMax = Mathf.Max(_frameMax, Time.unscaledDeltaTime);
+            _race.timeScaleMin = Mathf.Min(_race.timeScaleMin, Time.timeScale);
+            _race.timeScaleMax = Mathf.Max(_race.timeScaleMax, Time.timeScale);
             SampleSeats(now);
 
             bool ended = !string.IsNullOrEmpty(_gameData.WinnerName) || (_gameData.WinnerDomain != Domains.Blue && !_gameData.IsTurnRunning);
@@ -311,6 +314,14 @@ namespace CosmicShore.Gameplay
                 d.CommandErrorDegrees, d.CrystalPull ? 1 : 0, d.Unreachable ? 1 : 0, a.Yaw, a.Pitch, a.Throttle));
         }
 
+        /// <summary>Writes a failure record for a race the normal flow never started.</summary>
+        public void RecordNotStarted(string reason)
+        {
+            if (_written) return;
+            if (!_running) BeginRace();
+            FinishRace(0f, reason);
+        }
+
         void FinishRace(float now, string timeoutReason)
         {
             SampleSeats(now);
@@ -332,6 +343,10 @@ namespace CosmicShore.Gameplay
             }
             _race.authoritativeFinishTime = _race.finished ? finish : 0f;
 
+            // With several AI seats, judge the one whose domain WON (the race ends at the first
+            // finisher, so that is the only AI whose own finish time exists).
+            foreach (var s in _race.seats)
+                if (!string.IsNullOrEmpty(s.policy) && s.domain == _race.winnerDomain) { _race.aiDomain = s.domain; break; }
             int domainCrystals = 0;
             foreach (var s in _race.seats)
                 if (s.domain == _race.aiDomain) domainCrystals += s.crystals;
@@ -339,6 +354,11 @@ namespace CosmicShore.Gameplay
 
             _race.success = Evaluate(_race.finished, _race.winnerDomain, _race.aiDomain, domainCrystals,
                 _race.requiredCrystals, _race.authoritativeFinishTime, _limit, timeoutReason, out var reason);
+            if (_race.timeScaleMin < 0.999f || _race.timeScaleMax > 1.001f)
+            {
+                _race.success = false;
+                reason = $"invalid: Time.timeScale left 1 during the race ({_race.timeScaleMin:F2}..{_race.timeScaleMax:F2})";
+            }
             _race.failureReason = reason;
 
             try

@@ -86,6 +86,25 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Clear all per-race state and hold neutral input.</summary>
+        /// <summary>
+        /// This seat's lane: its rank among the AI seats in the race, ordered by domain then name -
+        /// public facts every machine agrees on. Lanes skim at different heights so one AI never
+        /// flies at the height of another AI's trail rails.
+        /// </summary>
+        int ResolveLane()
+        {
+            var me = _status?.Player;
+            if (me == null || _gameData?.Players == null) return 0;
+            int lane = 0;
+            foreach (var p in _gameData.Players)
+            {
+                if (p == null || p == me || !p.IsInitializedAsAI) continue;
+                int c = ((int)p.Domain).CompareTo((int)me.Domain);
+                if (c < 0 || (c == 0 && string.CompareOrdinal(p.Name, me.Name) < 0)) lane++;
+            }
+            return lane;
+        }
+
         public void ResetRace()
         {
             _raceActive = false;
@@ -117,6 +136,7 @@ namespace CosmicShore.Gameplay
             if (!_raceActive)
             {
                 ResetRace();
+                if (_driver != null) _driver.Lane = ResolveLane();
                 _raceActive = true;
                 _raceStart = Time.time;
                 _lastForward = _vessel.Transform.forward;
@@ -310,6 +330,9 @@ namespace CosmicShore.Gameplay
 
         void Apply(SkimRaceAction a)
         {
+            // Clamped HERE, at the actuation point, whatever the policy produced: the AI's only
+            // authority is the human stick/trigger range (see check_ai_no_state_writes.py).
+            a = a.Clamped();
             var input = _status.InputStatus;
             input.XSum = a.Yaw;
             input.YSum = a.Pitch;

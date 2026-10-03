@@ -159,6 +159,7 @@ namespace CosmicShore.Gameplay
         }
 
         public Vector3 PrismUp(int i) => _rotations[i] * Vector3.up;
+        public Vector3 PrismRight(int i) => _rotations[i] * Vector3.right;
 
         /// <summary>
         /// The largest heading change (degrees) the course makes between arc lengths
