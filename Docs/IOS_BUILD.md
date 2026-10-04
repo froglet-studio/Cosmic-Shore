@@ -5,10 +5,8 @@ Windows-exported, **RAR5**-packed Xcode project (402 MB archive, 2.5 GB unpacked
 Xcode 16.4 on `macos-15` in about **18 minutes**. It produced a 163 MB `CosmicShore-dev.ipa` whose
 bundle id is `com.FrogletGames.CosmicShore.dev`. On 2026-10-04 that `.ipa` was **sideloaded with a
 free Apple ID through Sideloadly and the game was played** on an iPhone, so Path A works end to end.
-Path B and the cross-platform section are still plans. For Sideloadly, use iTunes and iCloud from
-Apple's website, not the Microsoft Store versions: iTunes from apple.com/itunes/download/win64, and
-the iCloud installer that sideloadly.io links to. iCloud only has to be installed; never sign in to
-it. Developer Mode must stay on for a sideloaded build to open; TestFlight builds do not need it. The four failed runs before it are recorded in the workflow's comments and commit
+Path B and the cross-platform section are still plans. The Windows and iPhone steps that worked,
+including the exact iTunes and iCloud installers, are in §2 Path A, steps 4 and 5. The four failed runs before it are recorded in the workflow's comments and commit
 history: a RAR archive, Homebrew 7-Zip lacking the RAR codec, a relative project path, and a disk
 cleanup that deleted the selected Xcode.
 
@@ -95,9 +93,11 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
      1. Repository Settings → Secrets and variables → Actions → **New repository secret**. Name it
         `IOS_XCODE_EXPORT_URL` and set the value to the share link. Use a *secret*: the repo is
         public, so a variable, a committed file or a log line would show the link to everyone.
-     2. Change `Tools/iOS/ipa-build-request.txt` (any edit) and push it to a branch. The push
-        starts the **iOS unsigned ipa** workflow. Once the workflow is on `bleeding-edge`, the
-        Actions tab's **Run workflow** button works as well.
+     2. Change `Tools/iOS/ipa-build-request.txt` (any edit) and push it to a **feature** branch.
+        The push starts the **iOS unsigned ipa** workflow. Pushes to `bleeding-edge`,
+        `development`, `main` and `build/**` are ignored on purpose, so a merge or a weekly
+        promotion does not start a build nobody asked for. Once the workflow is on
+        `bleeding-edge`, use the Actions tab's **Run workflow** button there instead.
      3. When the run is green, download the **CosmicShore-dev-ipa** artifact from the run page.
         GitHub wraps it in a zip; the `.ipa` is inside.
 
@@ -127,19 +127,36 @@ Mac, and MacinCloud's "pay-as-you-go" checkout is a **10-day prepay** (₹4,319.
      cp -R build/Build/Products/Release-iphoneos/*.app Payload/
      zip -qry CosmicShore-dev.ipa Payload
      ```
-4. **Windows:**
-   1. Install **iTunes and iCloud from apple.com**, not the Microsoft Store versions — Sideloadly
-      needs the desktop ones. Then install **Sideloadly**.
-   2. Plug in the phone and trust the PC.
-   3. In Sideloadly, pick the `.ipa`, sign in with the free Apple ID, and press Start.
-      Sideloadly is a third-party tool that asks for that Apple ID's password, so use a dedicated
-      test Apple ID, not a Froglet account.
+4. **Windows** (this is the path that was confirmed on 2026-10-04):
+   1. Uninstall any **Microsoft Store** iTunes or iCloud. Sideloadly cannot use those.
+   2. Install **iTunes** from https://www.apple.com/itunes/download/win64 .
+   3. Install **iCloud** from Apple's direct installer, which is the link sideloadly.io gives:
+      `https://updates.cdn-apple.com/2020/windows/001-39935-20200911-1A70AA56-F448-11EA-8CC0-99D41950005E/iCloudSetup.exe`
+      (a 2020 build, about 160 MB; that is expected). Sideloadly only needs it installed.
+      **Never sign in to iCloud on the PC**; close the window when it asks.
+   4. Install **Sideloadly** from https://sideloadly.io and restart the PC.
+   5. **Keep phone data off the PC:**
+      - In iTunes → Edit → Preferences → Devices, tick *Prevent iPods, iPhones, and iPads from
+        syncing automatically*.
+      - In Windows Settings → Bluetooth & devices, turn **AutoPlay** off.
+      - Never press Back Up or Sync.
+   6. Plug in the phone, unlock it and tap **Trust**. The trust is needed for every 7-day
+      reinstall; resetting it (Settings → General → Transfer or Reset → Reset Location &
+      Privacy) is only worth doing when the PC changes hands.
+   7. In Sideloadly, drop in the `.ipa`, enter the Apple ID and press **Start**. Approve the
+      sign-in request on the phone and type its 6-digit code into Sideloadly.
+      - **Use an Apple ID that has been signed in on an iPhone or iPad before.** Sideloadly
+        rejects a brand-new one, so the account already on the test phone is the one that works.
+      - Sideloadly sends that login only to Apple, to mint the free 7-day signing certificate.
 5. **iPhone:**
-   1. Settings → Privacy & Security → **Developer Mode** on (iOS 16+), then restart.
-   2. Settings → General → VPN & Device Management → trust the Apple ID.
+   1. Settings → Privacy & Security → **Developer Mode** on (iOS 16+), then restart. The switch
+      only appears after the first install.
+   2. Settings → General → VPN & Device Management → *Developer App* → trust the Apple ID.
+   3. **Leave Developer Mode on.** A sideloaded build will not open without it. Turn it off once
+      builds come through TestFlight, which does not need it.
 
 **Free-account limits:**
-- The install expires after **7 days**. Re-run step 4 with the same `.ipa`; no Mac needed.
+- The install expires after **7 days**. Re-run steps 4.6–4.7 with the same `.ipa`; no Mac needed.
 - At most 3 sideloaded apps at once.
 - No TestFlight.
 - No push, Game Center or In-App Purchase capabilities. Push is already off in

@@ -18,8 +18,10 @@
 #   3. Repository Settings -> Secrets and variables -> Actions -> New repository secret:
 #      name IOS_XCODE_EXPORT_URL, value = that share link. A SECRET, not a variable: the repo
 #      is public, so anything not a secret is readable by everyone, including run logs.
-#   4. Edit Tools/iOS/ipa-build-request.txt (any change) and push it. That push starts this job.
-#      Once this file is on the default branch, the Actions tab's "Run workflow" button works too.
+#   4. Edit Tools/iOS/ipa-build-request.txt (any change) and push it to a FEATURE branch. That
+#      push starts this job. On bleeding-edge / development / main / build/** the request file is
+#      ignored; use the Actions tab's "Run workflow" button there (once this file is on the
+#      default branch).
 #   5. When the run is green, download the "CosmicShore-dev-ipa" artifact from the run page.
 #
 # PRIVACY: artifacts on a public repository are downloadable by any signed-in GitHub user who
@@ -32,6 +34,15 @@ on:
   push:
     paths:
       - 'Tools/iOS/ipa-build-request.txt'
+    # Feature branches only. The first push that carries this file into a shared branch - the
+    # merge into bleeding-edge, the promotion into development, the force-moved build/* snapshots
+    # - would otherwise "change" it and start a 20-minute Mac build nobody asked for. Use the
+    # Actions tab's "Run workflow" button (workflow_dispatch) on those branches instead.
+    branches-ignore:
+      - 'bleeding-edge'
+      - 'development'
+      - 'main'
+      - 'build/**'
   workflow_dispatch:
 
 permissions:
