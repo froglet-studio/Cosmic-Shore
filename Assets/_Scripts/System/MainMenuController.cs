@@ -197,6 +197,13 @@ namespace CosmicShore.Core
 
         void HandleMenuReady()
         {
+            // OnClientReady can be re-raised while the pilot is FLYING (a late pair
+            // initialization - the same edge MainMenuCameraController.HandleMenuReady guards).
+            // Acting on it here switched the hull to autopilot and paused the pilot's input
+            // mid-freestyle, and moved the menu state machine out of Freestyle while the camera,
+            // the HUD and the click handler all still believed the player was flying.
+            if (_state == MainMenuState.Freestyle) return;
+
             TransitionTo(MainMenuState.Ready);
             ActivateLocalPlayerAutopilot();
             _analytics?.RecordMenuReady();

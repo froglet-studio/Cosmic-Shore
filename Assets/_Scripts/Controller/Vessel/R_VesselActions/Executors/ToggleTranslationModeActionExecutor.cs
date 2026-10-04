@@ -105,7 +105,13 @@ namespace CosmicShore.Gameplay
             if (_status == null) return;
 
             if (!_status.IsTranslationRestricted) return;
-            _status.IsTranslationRestricted = false;
+
+            // Through the controller, the way Toggle does: writing the status alone left the
+            // owner's replicated n_IsTranslationRestricted at TRUE, so every other peer went on
+            // seeing this vessel stopped (and the next stance press on the owner wrote a value the
+            // variable already held, which replicates nothing).
+            if (_status.Vessel is VesselController controller) controller.SetTranslationRestricted(false);
+            else _status.IsTranslationRestricted = false;
 
             vesselPrismController?.StartSpawn();
             if (seedAssemblerExecutor) seedAssemblerExecutor.StopSeedCompletely();
