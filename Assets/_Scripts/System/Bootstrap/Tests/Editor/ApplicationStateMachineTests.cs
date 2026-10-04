@@ -169,6 +169,19 @@ namespace CosmicShore.Core
             Assert.AreEqual(ApplicationState.MainMenu, _stateVariable.Value.PreviousState);
         }
 
+        [TestCase(ApplicationState.LoadingGame)]
+        [TestCase(ApplicationState.InGame)]
+        [TestCase(ApplicationState.GameOver)]
+        public void ActiveGameStates_To_Authenticating_Succeeds_Reconnect(ApplicationState from)
+        {
+            AdvanceTo(from);
+
+            bool result = _sm.TransitionTo(ApplicationState.Authenticating);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(ApplicationState.Authenticating, _sm.Current);
+        }
+
         [Test]
         public void LoadingGame_To_MainMenu_Succeeds_CancelledLoad()
         {

@@ -16,11 +16,11 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
   scene runs. Anything keyed on app state sees the wrong phase during the re-boot.
 - **Root cause:** `ReconnectService` calls `TransitionTo(Authenticating)` from the menu, but the
   transition table only listed `MainMenu → LoadingGame`.
-- **Fix:** `MainMenu → Authenticating` added to the table (reconnect is a legitimate path), the
-  class summary lists it, and `ApplicationStateMachineTests` has a new case.
-- **Not changed:** other states are still refused. A reconnect started from `InGame` or
-  `GameOver` would still log the same warning; the Reconnect controls live in the menu, so this
-  was left alone rather than loosening the table further.
+- **Fix:** `Authenticating` is now a valid target from `MainMenu`, `LoadingGame`, `InGame` and
+  `GameOver` (reconnect is a legitimate path from any of them, since the disconnect notice can
+  appear mid-game). The class summary lists it, and `ApplicationStateMachineTests` has new cases.
+- **Not changed:** `Bootstrapping`, `None` and `ShuttingDown` still do not accept it, and
+  `Disconnected` already did.
 - **Verification:** gate scripts pass; the new EditMode test was not run (Unity not available
   here). Retest is on the handoff playtest list.
 - **PR/commit:** pending.
