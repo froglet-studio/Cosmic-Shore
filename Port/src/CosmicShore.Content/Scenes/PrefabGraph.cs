@@ -66,6 +66,10 @@ namespace CosmicShore.Content.Scenes
 
         internal PrefabGraph(AssetFile file) { File = file; }
 
+        /// <summary>Writes one override (a Unity property path) into a body, the way the loader applies it.</summary>
+        internal static void ApplyOverride(YMap body, string path, string value, YMap refNode, ObjRef r)
+            => Builder.ApplyModification(body, path, value, refNode, r);
+
         internal static void ApplyModificationForTests(YMap body, string path, string value, YMap refNode, ObjRef r)
             => Builder.ApplyModification(body, path, value, refNode, r);
 
@@ -110,6 +114,33 @@ namespace CosmicShore.Content.Scenes
             }
             return null;
         }
+
+        /// <summary>
+        /// Where an added component sits among its instance's additions: its index in the
+        /// m_AddedComponents list of the file that added it — this one, or (deeper) a prefab nested in it.
+        /// Unity shows a prefab's own additions before those a file placing it adds on top, so sort
+        /// by Depth descending, then Index.
+        /// </summary>
+        public (int Depth, int Index) AddedComponentRank(long id) => AddedRank(this, id, 0);
+
+        static (int Depth, int Index) AddedRank(PrefabGraph g, long id, int depth)
+        {
+            if (depth < 12 && g.InstanceOrigin.TryGetValue(id, out var origin) && g.InstanceSource(origin.Instance) is { } src)
+                return AddedRank(src, src.Resolve(origin.Source), depth + 1);
+            if (g._addedIndex == null)
+            {
+                g._addedIndex = new Dictionary<long, int>();
+                foreach (var d in g.File.Documents)
+                {
+                    if (d.ClassId != 1001 || d.Body["m_Modification"]?["m_AddedComponents"] is not YSeq list) continue;
+                    for (int i = 0; i < list.List.Count; i++)
+                        g._addedIndex.TryAdd(ObjRef.From(list.List[i]["addedObject"]).FileId, i);
+                }
+            }
+            return (depth, g._addedIndex.TryGetValue(id, out int at) ? at : int.MaxValue);
+        }
+
+        Dictionary<long, int> _addedIndex; // addedObject id → its index in its instance's m_AddedComponents
 
         // ── Construction ───────────────────────────────────────────────────
 

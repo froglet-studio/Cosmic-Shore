@@ -6,7 +6,7 @@ and removes components: project scripts, Unity built-ins (colliders, renderers, 
 and package components (uGUI, TextMeshPro …). It also edits **through nested prefab
 instances** — overriding fields, removing and adding objects and components inside a placed
 prefab, and placing new prefabs — written as the instance's overrides, the way the Unity Editor
-writes them. There is no visual editor yet (no hierarchy panel, inspector or gizmos); see "Not
+writes them — and **applies** an instance's changes to its prefab. There is no visual editor yet (no hierarchy panel, inspector or gizmos); see "Not
 built yet" below.
 
 Before this, the port was a runtime only. It read `Assets/` and played the game, but the one
@@ -271,6 +271,61 @@ GameObject. An id the file gives a stand-in now belongs to the object that stand
 the colliding derived object is renamed. Across all 85,226 component links in the 149 files
 that place prefabs: **4 wrong before, 0 after.** Two tests pin it; both fail without the fix.
 
+## Apply to prefab
+
+`PrefabInstanceEditor.Apply` / `ApplyAll` (`Editing/PrefabInstanceEditor.Apply.cs`) is Unity's
+"Apply": an instance's changes become its prefab's own and leave the instance. It applies to
+the **outermost** prefab, the one this file placed, as Unity's default does.
+
+| instance change | what the prefab gets |
+|---|---|
+| property override | the value written into the prefab's object; when that object comes from a prefab nested in it, the prefab's own override of that nested instance |
+| added component / GameObject | the object itself (its whole hierarchy, nested prefabs included) moved into the prefab, under the prefab's copy of the object it was added to; references to it in this file follow it, through a stand-in |
+| removed component / GameObject | deleted from the prefab |
+
+What stays on the instance, as in Unity:
+
+- **The root's name and placement.** Its position, rotation and euler hint, plus a UI root's
+  pivot, anchors, size and anchored position. They say where this copy is, not what the prefab
+  is.
+- **A change that refers outside the prefab**, such as another object of the scene. A prefab
+  cannot name it.
+- **A stale override**, for a field or object the prefab no longer has.
+- **A change to a packed number list**, one element of a hex-encoded array. Apply it in Unity.
+
+Each refused change is reported with its reason.
+
+**Every apply verifies itself.** Before anything is returned, the file is re-read against the
+edited prefab, and every object of the instance's hierarchy is compared with how it loaded
+before: its place, type and every field, with references written as what they point at. Any
+difference throws, and nothing should be saved. Two loads compare equal when they differ only in
+the order a file lists a map's keys, or in a missing reference versus an empty one. Neither
+affects what loads: fields are found by name, and both references are null.
+
+Measured: apply-all on **every one of the 498 placed prefabs with changes** in the project's
+Unity-written files.
+
+| | result |
+|---|---|
+| applied, and the instance loads identically afterwards | **498 / 498** |
+| changes applied | 7,376 |
+| root name/placement overrides left on their instance | 8,160 |
+| left on the instance: the prefab no longer has that field / that object | 555 / 529 |
+| left on the instance: refers to an object outside the prefab | 110 |
+| left on the instance: packed number list | 16 |
+
+`PrefabInstanceEditingTests` pins each kind of apply on the miniature project and runs every
+fourth project instance.
+
+### Added-component order: a loader bug the check found
+
+Unity shows a GameObject's added components in the order of its instance's
+`m_AddedComponents` list, a prefab's own additions before the ones a file placing it adds on
+top. Both the editor and the game loader (`SceneInstantiator`) attached them in file order, so
+with two of one type, `GetComponent` could return the wrong one. It surfaced on
+`TeamCrystal.prefab`: two FMOD emitters, max distance 750 and 250, swapped. Both now order by
+`PrefabGraph.AddedComponentRank`.
+
 ## The tool
 
 ```bash
@@ -303,6 +358,12 @@ $T delete <file> "GameCanvas/ConnectingPanel/Safe Area/Level Preview"   # a remo
 $T instantiate <file> Assets/_Prefabs/Spacevessels/Components/Jet/VesselJet.prefab \
               --parent Holder --name Jet --position 0,1,0
 
+# Apply to prefab (writes the prefab AND this file; --dry-run shows both diffs)
+$T apply  <file> GameCanvas/ConnectingPanel m_IsActive       # one field
+$T apply  <file> GameCanvas/ConnectingPanel --component BoxCollider   # an added component
+$T apply  <file> GameCanvas/ConnectingPanel                  # that object's overrides
+$T apply  <file> GameCanvas --all                            # everything the instance changes
+
 $T schema                                             # measure the script serializer against the project
 $T addall                                             # smoke-test adding every component
 ```
@@ -320,7 +381,9 @@ open, and saving from Unity afterwards would overwrite them.
   real proof. That is the first thing to do with an editor open:
   `create` + `add` + `set` on a copy of a scene, open it, save it, diff it. The same goes for
   prefab instance edits: `instantiate`, an override, an added component and a removed object,
-  then open, save and diff.
+  then open, save and diff. And for apply: `apply --all`, then reserialize both the scene and the
+  prefab in Unity and diff them, and check the Overrides dropdown shows nothing left but the
+  placement.
 - `.meta` files are not covered (the single-document format). That doesn't matter yet,
   because no operation here creates a new asset file. Creating new assets will need it.
 
@@ -333,8 +396,8 @@ open, and saving from Unity afterwards would overwrite them.
 3. **Live editing in the Player.** Select an object in the running game, change a field, save
    back through `UnityAssetEditor`. This needs a fileID ↔ live-object map at scene load. The
    instantiator already knows both sides.
-4. **Apply / revert to the prefab.** Pushing an instance's overrides into the prefab asset
-   (Unity's "Apply"), and unpacking an instance into ordinary objects. Both are a write to a
-   second file, plus re-targeting the overrides that remain.
+4. **Apply to an inner prefab, and unpack.** Apply writes to the outermost prefab only (Unity's
+   default). Unity can also apply to a prefab nested deeper, or unpack an instance into ordinary
+   objects; neither is built.
 5. **Editor UI.** Hierarchy, inspector (reflection over `[SerializeField]`), selection,
    transform gizmos, undo (snapshot `UnityYamlFile` documents, or invert operations).

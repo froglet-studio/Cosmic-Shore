@@ -59,7 +59,7 @@ On Windows, a clone made with git-lfs already has `fmodstudio.dll`; otherwise ru
 `cs-asset` writes the project's scenes, prefabs and assets: set any field, create and delete
 GameObjects (with their hierarchy, nested prefabs and references), add and remove components
 (project scripts, built-ins, uGUI/TMP), and edit through placed prefabs (overrides, added and
-removed objects, placing new prefabs) the way the Unity Editor writes them. A file is written back
+removed objects, placing new prefabs, applying an instance's changes to its prefab) the way the Unity Editor writes them. A file is written back
 byte-identical except for what the edit changed; that holds on all 2030 YAML files in
 `Assets/`. Close the scene in Unity first. Details, measurements and what's not built yet:
 `docs/AUTHORING.md`.

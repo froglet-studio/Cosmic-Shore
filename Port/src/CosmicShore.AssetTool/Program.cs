@@ -46,7 +46,7 @@ namespace CosmicShore.AssetTool
             var pos = new List<string>();
             for (int i = 0; i < args.Length; i++)
             {
-                if (args[i] is "--dry-run" or "--force") { opts[args[i][2..]] = "1"; continue; }
+                if (args[i] is "--dry-run" or "--force" or "--all") { opts[args[i][2..]] = "1"; continue; }
                 if (args[i].StartsWith("--", StringComparison.Ordinal) && i + 1 < args.Length) { opts[args[i][2..]] = args[++i]; continue; }
                 pos.Add(args[i]);
             }
@@ -75,6 +75,7 @@ namespace CosmicShore.AssetTool
                     "delete" => Delete(Need(pos, 3), opts),
                     "instantiate" => Instantiate(Need(pos, 3), opts),
                     "overrides" => Overrides(Need(pos, 2), opts),
+                    "apply" => Apply(Need(pos, 3), opts),
                     _ => Fail($"unknown command '{pos[0]}'"),
                 };
             }
@@ -110,6 +111,10 @@ namespace CosmicShore.AssetTool
                                             place a prefab (as the Editor does when one is dropped in)
   overrides <file> [<object>]               what each placed prefab overrides, removes and adds
   revert <file> <object> [field.path]       drop an object's overrides (all of them, or one field's)
+  apply  <file> <object> [field.path]       apply to prefab: an object's overrides (or one field's), or an
+                                            object/component this file added to an instance; --all applies
+                                            every change of that object's instance (overrides, additions,
+                                            removals). Writes the prefab AND this file
   schema [path...]                          check the component serializer against every saved script
 
 <object>: &id | GameObject path (Canvas/Panel/Button) | unique GameObject name
@@ -330,6 +335,30 @@ namespace CosmicShore.AssetTool
             if (c.InInstance) Console.WriteLine($"recorded as removed from {Short(s.Pie.SourcePrefabPath(c.Instance))} instance &{c.Instance}");
             foreach (var x in r.ClearedReferences) Console.WriteLine($"  cleared reference {x}");
             return Save(s.Path, s.File, opts);
+        }
+
+        /// <summary>cs-asset apply: an instance's changes become its prefab's.</summary>
+        static int Apply(List<string> pos, Dictionary<string, string> opts)
+        {
+            var s = new Session(pos[1]);
+            var o = ResolveObject(s, pos[2], opts);
+            PrefabInstanceEditor.ApplyResult r;
+            if (opts.ContainsKey("all"))
+            {
+                if (!o.InInstance) throw new ArgumentException("--all needs an object inside a placed prefab");
+                r = s.Pie.ApplyAll(o.Instance);
+            }
+            else r = s.Pie.Apply(o, pos.Count > 3 ? pos[3] : null);
+            Console.WriteLine($"apply to {Scripts.Db.ProjectRelative(r.PrefabPath)}:");
+            foreach (var a in r.Applied) Console.WriteLine($"  applied  {a}");
+            foreach (var k in r.Kept) Console.WriteLine($"  kept     {k}");
+            if (r.PlacementOverrides > 0) Console.WriteLine($"  ({r.PlacementOverrides} override(s) of the root's name and placement stay with this copy)");
+            if (r.Applied.Count == 0) { Console.WriteLine("nothing to apply"); return 0; }
+            Console.WriteLine("-- the prefab:");
+            int a1 = Save(r.PrefabPath, r.Prefab, opts);
+            Console.WriteLine("-- this file:");
+            int a2 = Save(s.Path, s.File, opts);
+            return a1 != 0 ? a1 : a2;
         }
 
         /// <summary>cs-asset instantiate: place a prefab.</summary>

@@ -270,6 +270,117 @@ namespace CosmicShore.Tests
         public void FieldPathsBecomeUnityPropertyPaths(string path, string expected)
             => Assert.Equal(expected, PrefabInstanceEditor.PropertyPath(path));
 
+        // ── Apply to prefab ───────────────────────────────────────────
+
+        [Fact]
+        public void ApplyingAllWritesOverridesIntoThePrefabAndLeavesThePlacement()
+        {
+            var (pie, file) = Open();
+            var root = pie.Instantiate("Assets/Widget.prefab", name: "Gizmo", position: (YMap)UnityYaml.ParseValue("{x: 1, y: 2, z: 3}"));
+            var knob = pie.TransformOf(pie.Children(root).Single());
+            pie.SetOverride(knob, "m_LocalScale", UnityYaml.ParseValue("{x: 2, y: 3, z: 4}"));
+            pie.SetOverride(pie.Components(root).Single(c => c.ClassId == 65), "m_IsTrigger", new YScalar("1"));
+
+            var r = pie.ApplyAll(root.Instance); // throws if the instance would load differently
+
+            Assert.Equal(4, r.Applied.Count);
+            Assert.Equal(11, r.PlacementOverrides);                   // name + transform: where THIS copy is
+            Assert.Equal(11, Paths(file.Find(root.Instance)).Count);  // …and nothing else stays on it
+            Assert.Equal("{x: 2, y: 3, z: 4}", UnityYamlFile.FormatValue(r.Prefab.Find(201).Body["m_LocalScale"]));
+            Assert.Equal("1", r.Prefab.Find(102).Body.Str("m_IsTrigger"));
+            // Only the two changed lines of the prefab differ.
+            var lines = r.Prefab.Write().Split('\n');
+            Assert.Equal(2, WidgetPrefab.Split('\n').Zip(lines).Count(p => p.First != p.Second));
+            Assert.Equal("Gizmo", pie.PathOf(pie.InstanceRoot(root.Instance)));
+        }
+
+        [Fact]
+        public void ApplyingAnAdditionMovesItIntoThePrefabAndReferencesFollowIt()
+        {
+            var (pie, file) = Open(Scene + "--- !u!114 &60\nMonoBehaviour:\n" + ObjHeader(10) + "  m_Enabled: 1\n  target: {fileID: 0}\n");
+            var root = pie.Instantiate("Assets/Widget.prefab");
+            var knob = pie.Children(root).Single();
+            long collider = pie.Editor.AddComponentDocument(pie.StandIn(knob), 65, "BoxCollider", (YMap)UnityYaml.ParseValue("{m_Enabled: 1, m_Size: {x: 3, y: 3, z: 3}}"));
+            long grip = pie.CreateGameObject("Grip", knob);
+            new UnityAssetEditor(file).Set(60, "target", YMap.Ref(grip));
+            pie.Invalidate();
+
+            var r = pie.ApplyAll(root.Instance);
+
+            Assert.Equal(2, r.Applied.Count(a => a.StartsWith("added", StringComparison.Ordinal)));
+            var mod = file.Find(root.Instance).Body["m_Modification"];
+            Assert.Empty(mod["m_AddedComponents"].Items);
+            Assert.Empty(mod["m_AddedGameObjects"].Items);
+            Assert.Null(file.Find(collider));
+            Assert.Null(file.Find(grip));
+            Assert.Equal(2, r.Prefab.Find(200).Body["m_Component"].Items.Count);   // Knob: Transform + the collider
+            Assert.Single(r.Prefab.Find(201).Body["m_Children"].Items);           // Knob's transform: Grip
+            var g = pie.FindGameObject("Widget/Knob/Grip");
+            Assert.True(g.InInstance);
+            Assert.Equal(g.Id, pie.Graph.Resolve(file.Find(60).Body["target"].Long("fileID"))); // through a stand-in
+            Assert.Contains(pie.Components(pie.Object(knob.Id)), c => c.ClassId == 65 && c.InInstance);
+        }
+
+        [Fact]
+        public void ApplyingRemovalsDeletesFromThePrefab()
+        {
+            var (pie, file) = Open();
+            var root = pie.Instantiate("Assets/Widget.prefab");
+            pie.RemoveComponent(pie.Components(root).Single(c => c.ClassId == 65));
+            pie.Delete(pie.Children(root).Single());
+
+            var r = pie.ApplyAll(root.Instance);
+
+            Assert.Null(r.Prefab.Find(102));
+            Assert.Null(r.Prefab.Find(200));
+            Assert.Null(r.Prefab.Find(201));
+            Assert.Empty(r.Prefab.Find(101).Body["m_Children"].Items);
+            Assert.DoesNotContain(r.Prefab.Find(100).Body["m_Component"].Items, c => c["component"].Long("fileID") == 102);
+            var mod = file.Find(root.Instance).Body["m_Modification"];
+            Assert.Empty(mod["m_RemovedComponents"].Items);
+            Assert.Empty(mod["m_RemovedGameObjects"].Items);
+        }
+
+        [Fact]
+        public void AChangeThatRefersOutsideThePrefabStaysOnTheInstance()
+        {
+            var (pie, file) = Open(Scene + "--- !u!114 &60\nMonoBehaviour:\n" + ObjHeader(10) + "  m_Enabled: 1\n");
+            var root = pie.Instantiate("Assets/Widget.prefab");
+            var renderer = pie.Components(root).Single(c => c.ClassId == 23);
+            pie.SetOverride(renderer, "m_Materials[0]", YMap.Ref(60)); // a scene object: the prefab cannot name it
+
+            var r = pie.Apply(renderer);
+
+            Assert.Empty(r.Applied);
+            Assert.Contains(r.Kept, k => k.Contains("outside the prefab"));
+            Assert.Contains("m_Materials.Array.data[0]", Paths(file.Find(root.Instance)));
+        }
+
+        [Fact]
+        public void AnObjectFromANestedPrefabIsAppliedAsTheOuterPrefabsOverride()
+        {
+            // Assembly.prefab places Widget under its root; the scene places Assembly.
+            string asmPath = Path.Combine(_root, "Assets/Assembly.prefab");
+            var asm = new PrefabInstanceEditor(new UnityAssetEditor(UnityYamlFile.Parse(Header + GameObject(300, "Assembly", 301) + Transform(301, 300, 0)), seed: 5), _db, asmPath);
+            asm.Instantiate("Assets/Widget.prefab", asm.FindGameObject("Assembly"));
+            Write("Assets/Assembly.prefab", asm.Editor.File.Write(), "ffffffffffffffffffffffffffffffff");
+            var db = new AssetDatabase(_root);
+            var file = UnityYamlFile.Parse(Scene);
+            var pie = new PrefabInstanceEditor(new UnityAssetEditor(file, seed: 3), db, Path.Combine(_root, "Assets/Scene.unity"));
+            var root = pie.Instantiate("Assets/Assembly.prefab");
+            var knob = pie.TransformOf(pie.FindGameObject("Assembly/Widget/Knob"));
+            pie.SetOverride(knob, "m_LocalScale.x", new YScalar("7"));
+
+            var r = pie.ApplyAll(root.Instance);
+
+            Assert.EndsWith("Assembly.prefab", r.PrefabPath);
+            var nested = r.Prefab.Documents.Single(d => d.ClassId == 1001);
+            var o = nested.Body["m_Modification"]["m_Modifications"].Items.Single(m => m.Str("propertyPath") == "m_LocalScale.x");
+            Assert.Equal(201, o["target"].Long("fileID")); // Knob's Transform, as Widget.prefab knows it
+            Assert.Equal("7", o.Str("value"));
+            Assert.Equal(WidgetPrefab, File.ReadAllText(Path.Combine(_root, "Assets/Widget.prefab")));
+        }
+
         // ── The loader ────────────────────────────────────────────────
 
         [Fact]
@@ -339,6 +450,42 @@ namespace CosmicShore.Tests
             Assert.True(files > 100, $"only {files} files with prefab instances");
             Assert.Empty(lost);
             Assert.True(identical >= files - 12, $"{identical}/{files} identical");
+        }
+
+        /// <summary>
+        /// Apply-all on a sample of every placed prefab with changes in the project (every fourth,
+        /// for time): each must leave its instance loading exactly as before — Apply re-reads the
+        /// file against the edited prefab and throws on any difference — and write files that read back.
+        /// </summary>
+        [Fact]
+        public void ApplyingAllToProjectInstancesLeavesThemLoadingTheSame()
+        {
+            if (ContentYamlTests.ProjectRoot == null) return;
+            var db = new AssetDatabase(ContentYamlTests.ProjectRoot); // own cache: applies replace prefabs in it
+            int tried = 0, k = 0;
+            foreach (var f in Directory.EnumerateFiles(db.AssetsRoot, "*.prefab", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.Ordinal))
+            {
+                string text = File.ReadAllText(f);
+                if (!text.Contains("--- !u!1001 ") || text.Contains("m_EditorClassIdentifier:\n")) continue;
+                foreach (var pi in UnityYaml.ParseDocuments(text).Where(d => d.ClassId == 1001).Select(d => d.FileId))
+                {
+                    if (k++ % 4 != 0) continue;
+                    var file = UnityYamlFile.Parse(text);
+                    var pie = new PrefabInstanceEditor(new UnityAssetEditor(file, seed: 1), db, f);
+                    string guid = file.Find(pi).Body["m_SourcePrefab"].Str("guid");
+                    if (db.PathOf(guid)?.EndsWith(".prefab", StringComparison.Ordinal) != true) continue;
+                    var previous = db.Load(guid);
+                    try
+                    {
+                        var r = pie.ApplyAll(pi);
+                        tried++;
+                        Assert.True(UnityYamlFile.SameContent(r.Prefab, UnityYamlFile.Parse(r.Prefab.Write())));
+                        Assert.True(UnityYamlFile.SameContent(file, UnityYamlFile.Parse(file.Write())));
+                    }
+                    finally { db.Restore(guid, previous); }
+                }
+            }
+            Assert.True(tried > 40, $"only {tried} instances tried");
         }
 
         [Fact]

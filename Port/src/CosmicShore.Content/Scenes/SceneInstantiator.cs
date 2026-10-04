@@ -141,7 +141,11 @@ namespace CosmicShore.Content.Scenes
                 }
             }
             // Components added by prefab overrides point at their GameObject but aren't listed on it.
-            foreach (var co in graph.Objects.Values)
+            // Unity orders them by the instance's m_AddedComponents list, a prefab's own additions first.
+            foreach (var co in graph.Objects.Values.Select((o, i) => (o, i))
+                                  .OrderByDescending(x => graph.AddedComponentRank(x.o.Id).Depth)
+                                  .ThenBy(x => graph.AddedComponentRank(x.o.Id).Index).ThenBy(x => x.i)
+                                  .Select(x => x.o))
             {
                 if (co.Removed || co.ClassId == 1 || _result.ById.ContainsKey(co.Id)) continue;
                 var goRef = ObjRef.From(co.Body["m_GameObject"]);

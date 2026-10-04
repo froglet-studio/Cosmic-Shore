@@ -146,6 +146,24 @@ namespace CosmicShore.Content
                 : new AssetFile(path, g, UnityYaml.ParseDocuments(File.ReadAllText(path))));
         }
 
+        /// <summary>
+        /// Makes every later read of <paramref name="guid"/> see <paramref name="documents"/> instead of
+        /// the file on disk (an edit not yet saved). Returns what it replaced, to put back with
+        /// <see cref="Restore"/>.
+        /// </summary>
+        public AssetFile Replace(string guid, List<UnityDocument> documents)
+        {
+            _files.TryGetValue(guid, out var old);
+            _files[guid] = new AssetFile(PathOf(guid), guid, documents);
+            return old;
+        }
+
+        public void Restore(string guid, AssetFile previous)
+        {
+            if (previous != null) _files[guid] = previous;
+            else _files.TryRemove(guid, out _);
+        }
+
         // ── Model files ────────────────────────────────────────────────────
 
         readonly ConcurrentDictionary<string, Lazy<Models.ImportedModel>> _models = new(StringComparer.Ordinal);

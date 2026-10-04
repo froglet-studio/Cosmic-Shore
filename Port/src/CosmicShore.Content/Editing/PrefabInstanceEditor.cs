@@ -44,7 +44,7 @@ namespace CosmicShore.Content.Editing
     /// through <see cref="PrefabGraph"/>, the same expansion the game loader uses, so what an edit
     /// writes is checked against what the file then loads as.</para>
     /// </summary>
-    public sealed class PrefabInstanceEditor
+    public sealed partial class PrefabInstanceEditor
     {
         public readonly UnityAssetEditor Editor;
         readonly AssetDatabase _db;
@@ -102,10 +102,19 @@ namespace CosmicShore.Content.Editing
                 _components[o.Id] = list;
             }
             // A component added to an object inside an instance is in no m_Component list: it
-            // names its GameObject (through a stand-in) and the instance lists it as added.
+            // names its GameObject (through a stand-in) and the instance lists it as added — in
+            // the order Unity shows it, which is its place in that m_AddedComponents list.
+            var added = new List<(long Id, (int Depth, int Index) Rank, int Seen)>();
+            int seen = 0;
             foreach (var o in _graph.Objects.Values)
             {
                 if (o.Removed || o.ClassId == GO || o.ClassId == PI || claimed.Contains(o.Id) || o.Body["m_GameObject"] == null) continue;
+                added.Add((o.Id, _graph.AddedComponentRank(o.Id), seen++));
+            }
+            // A prefab's own additions come before the ones a file placing it adds on top.
+            foreach (var a in added.OrderByDescending(a => a.Rank.Depth).ThenBy(a => a.Rank.Index).ThenBy(a => a.Seen))
+            {
+                var o = _graph.Objects[a.Id];
                 if (_components.TryGetValue(_graph.Resolve(Ref(o.Body["m_GameObject"])), out var l)) { l.Add(o.Id); claimed.Add(o.Id); }
             }
             _children = new Dictionary<long, List<long>>();
