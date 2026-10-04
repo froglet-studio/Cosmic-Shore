@@ -642,6 +642,14 @@ static class Program
         "TrackMpcHorizon", "TrackMpcLead", "TrackMpcCaptureReward", "TrackMpcNominalBias", "TrackMpcStrikeCost",
         "LookaheadSeconds", "StickGainPerDegree", "LeadGain", "MinThrottle",
     };
+    // set=winner: the pursuit set plus the tracking-MPC weights (pin UseTrackMpc=1 on the command line).
+    // Excludes the direct-flight switch and its sub-parameters and CrystalDirectDistance: their ranges have
+    // floors above their OFF values (DirectBoost >= 2.5 turns direct flight ON), so tuning them would
+    // silently re-enable what the command line pinned off.
+    static readonly string[] WinnerTunables = PursuitTunables
+        .Where(k => !k.StartsWith("Direct") && k != "CrystalDirectDistance").Concat(new[]
+        { "TrackMpcHorizon", "TrackMpcLead", "TrackMpcCaptureReward", "TrackMpcNominalBias", "TrackMpcStrikeCost", "MpcHullMargin",
+          "LevelApproachSeconds", "LevelSegment", "LevelExitSeconds", "LevelStrikeMargin", "LevelStrikeCost", "LevelClearanceWeight", "CaptureMargin", "HullGuardSeconds", "HullMargin", "PickupClearDistance" }).ToArray();
     static readonly Dictionary<string, (float lo, float hi)> Ranges = new()
     {
         ["TrackGuardMargin"] = (0.2f, 3f),
@@ -653,6 +661,9 @@ static class Program
         ["CrossingLeadSeconds"] = (0f, 1.5f), ["CrossingLookaheadScale"] = (0.2f, 1f),
         ["CrossingThrottle"] = (0.3f, 1f), ["CrossingSlowDistance"] = (30f, 400f),
         ["LaneHeightStep"] = (0.8f, 3f),
+        ["LevelApproachSeconds"] = (0.8f, 3f), ["LevelSegment"] = (0.1f, 0.6f), ["LevelExitSeconds"] = (0f, 1.5f),
+        ["LevelStrikeMargin"] = (0.3f, 1.5f), ["LevelStrikeCost"] = (1f, 15f), ["LevelClearanceWeight"] = (0f, 0.3f),
+        ["CaptureMargin"] = (0f, 8f), ["PickupClearDistance"] = (0f, 30f),
         ["DirectBoost"] = (2.5f, 5f), ["DirectBoostHysteresis"] = (0.2f, 2.5f), ["DirectViaClearance"] = (2f, 10f),
         ["DirectViaLift"] = (6f, 40f), ["DirectViaLateral"] = (18f, 50f),
         ["LowBoostApproachScale"] = (0.3f, 1f), ["LowBoostFull"] = (1.5f, 5f),
@@ -720,7 +731,7 @@ static class Program
     }
 
     static (float score, int fin, float median, float worst, float mean, List<RaceResult> runs) Evaluate(
-        TrackDef def, TrackPrisms prisms, SkimRaceCourse course, SkimRaceAIConfigSO cfg, Physics ph, int seeds, float limit, int seedBase = 1000, float overWeight = 0f)
+        TrackDef def, TrackPrisms prisms, SkimRaceCourse course, SkimRaceAIConfigSO cfg, Physics ph, int seeds, float limit, int seedBase = 1000, float overWeight = 0f, bool winnerScore = false)
     {
         var runs = new List<RaceResult>();
         for (int s = 0; s < seeds; s++) runs.Add(Race.Run(def, prisms, course, cfg, ph, seedBase + s, limit));
@@ -728,6 +739,15 @@ static class Program
         float median = fin.Count > 0 ? fin[fin.Count / 2] : 999f;
         float worst = runs.All(r => r.Finished) ? fin.Max() : 999f;
         float mean = fin.Count > 0 ? fin.Average() : 999f;
+        if (winnerScore)
+        {
+            // score=winner: the race is judged by its FIRST finisher (the editor's and the scoreboard's
+            // reading); no finisher = 300. over=w adds w x 50 x the fraction of winners above the limit.
+            var winners = runs.Select(r => r.AgentTimes.Length > 0 ? r.AgentTimes.Min() : 999f).ToList();
+            float ws = winners.Sum(x => x >= 999f ? 300f : x) / seeds;
+            if (overWeight > 0f) ws += overWeight * 50f * winners.Count(x => x > limit) / (float)winners.Count;
+            return (ws, fin.Count, median, worst, mean, runs);
+        }
         // Score: every unfinished race is a disaster; then the WORST time, then the mean.
         float score = runs.Sum(r => r.Finished ? r.Time : 300f + (r.Required - r.Collected) * 10f) / seeds
                       + 0.5f * (runs.All(r => r.Finished) ? fin.Max() : 300f);
@@ -759,7 +779,12 @@ static class Program
         var def = tracks[intensity];
         var prisms = new TrackPrisms(def);
         var course = new SkimRaceCourse(prisms.Points, prisms.Normals, prisms.Rotations, prisms.ShellHalf);
-        float limit = 70f;
+        // The benchmark limit per intensity: a COPY of SkimRaceRaceRecorder.DefaultLimitSeconds (keep the
+        // two in step). I2 was re-baselined to 80 s by product decision; `limit=` overrides.
+        float limit = intensity == 2 ? 80f : 70f;
+        foreach (var a in args)
+            if (a.StartsWith("limit=")) limit = float.Parse(a.Substring(6), CultureInfo.InvariantCulture);
+        if (mode == "eval" || mode == "tune") Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "  benchmark limit: {0:F0} s (I{1})", limit, intensity));
 
         if (mode == "shell")
         {
@@ -823,7 +848,7 @@ static class Program
             int seedBase = 1000;
             foreach (var a in args.Skip(4))
                 if (a.StartsWith("seedbase=")) seedBase = int.Parse(a.Substring(9), CultureInfo.InvariantCulture);
-            var (cfg, ph) = Parse(args.Skip(4).Where(a => !a.StartsWith("seedbase=") && !a.StartsWith("diag=")));
+            var (cfg, ph) = Parse(args.Skip(4).Where(a => !a.StartsWith("seedbase=") && !a.StartsWith("diag=") && !a.StartsWith("limit=")));
             if (mode == "trace") { var r = Race.Run(def, prisms, course, cfg, ph, 1000 + seeds, limit, true); Console.WriteLine($"finished={r.Finished} t={r.Time:F2} {r.Collected}/{r.Required}"); return 0; }
             var e = Evaluate(def, prisms, course, cfg, ph, seeds, limit, seedBase);
             Console.WriteLine($"I{intensity} track={course.Length:F0}u prisms={prisms.Points.Count} finished {e.fin}/{seeds} " +
@@ -897,15 +922,17 @@ static class Program
             int seeds = int.Parse(args[3]);
             int iters = int.Parse(args[4]);
             float sigmaScale = 0.25f, over = 0f;
+            bool winnerScore = args.Skip(5).Contains("score=winner");
             Tunables = PursuitTunables;
             foreach (var a in args.Skip(5))
             {
                 if (a.StartsWith("sigma=")) sigmaScale = float.Parse(a.Substring(6), CultureInfo.InvariantCulture);
                 if (a == "set=planner") Tunables = PlannerTunables;
                 if (a == "set=mpc") Tunables = MpcTunables;
+                if (a == "set=winner") Tunables = WinnerTunables;
                 if (a.StartsWith("over=")) over = float.Parse(a.Substring(5), CultureInfo.InvariantCulture);
             }
-            var (baseCfg, ph) = Parse(args.Skip(5).Where(a => !a.StartsWith("sigma=") && !a.StartsWith("set=") && !a.StartsWith("over=")));
+            var (baseCfg, ph) = Parse(args.Skip(5).Where(a => !a.StartsWith("sigma=") && !a.StartsWith("set=") && !a.StartsWith("over=") && !a.StartsWith("score=") && !a.StartsWith("limit=")));
             var rng = new System.Random(7);
             int dim = Tunables.Length;
             var mu = Tunables.Select(k => GetNum(baseCfg, k)).ToArray();
@@ -934,7 +961,7 @@ static class Program
                 {
                     var cfg = CloneConfig(baseCfg);
                     for (int d = 0; d < dim; d++) SetNum(cfg, Tunables[d], xs[p][d]);
-                    scores[p] = Evaluate(def, prisms, course, cfg, ph, seeds, limit, iterSeed, over).score;
+                    scores[p] = Evaluate(def, prisms, course, cfg, ph, seeds, limit, iterSeed, over, winnerScore).score;
                 });
                 var samples = new List<(float score, float[] x)>();
                 for (int p = 0; p < pop; p++) samples.Add((scores[p], xs[p]));
@@ -954,6 +981,11 @@ static class Program
             for (int d = 0; d < dim; d++) SetNum(fc, Tunables[d], best[d]);
             var fe = Evaluate(def, prisms, course, fc, ph, 40, limit, 99000);
             Console.WriteLine($"FINAL (40 fresh seeds) finished {fe.fin}/40 median={fe.median:F2} mean={fe.mean:F2} worst={fe.worst:F2}");
+            {
+                var w = fe.runs.Select(r => r.AgentTimes.Min()).OrderBy(x => x).ToList();
+                Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "FINAL winner <= {0:F0} s in {1}/{2}, median {3:F2}, worst {4:F2}",
+                    limit, w.Count(x => x <= limit), w.Count, w[w.Count / 2], w[w.Count - 1]));
+            }
             Console.WriteLine("BEST " + Describe(fc));
             return 0;
         }

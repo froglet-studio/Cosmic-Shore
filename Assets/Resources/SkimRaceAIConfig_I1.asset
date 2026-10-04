@@ -85,9 +85,30 @@ MonoBehaviour:
   MaxLeadDegrees: 39.649
   StickGainPerDegree: 0.117
   LevelingRoll: 0.25
+  UseLineTracker: 0
+  TrackerConvergeSeconds: 0.6
+  TrackerConvergeMin: 20
+  TrackerFeedforwardGain: 1
+  TrackerHeadingGain: 0.6
+  TrackerMaxLeadDegrees: 90
+  TrackerCurvatureSpan: 12
   CruiseThrottle: 1
   MinThrottle: 0.266
   ReachabilityMargin: 0
+  CaptureThrottleSearch: 0
+  CaptureHorizon: 1.5
+  CaptureWindowSeconds: 2
+  CaptureMargin: 3
+  UseLevelApproach: 0
+  LevelApproachSeconds: 2
+  LevelSegment: 0.3
+  LevelExitSeconds: 1
+  LevelHz: 15
+  LevelStrikeMargin: 1
+  LevelClearanceCap: 4
+  LevelClearanceWeight: 0.15
+  LevelStrikeCost: 6
+  LevelNominalBias: 0.05
   UseDrift: 0
   DriftEnterDegrees: 70
   DriftExitDegrees: 25

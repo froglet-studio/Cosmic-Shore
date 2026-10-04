@@ -15,7 +15,8 @@ the vessel through the same input channels a human uses. Code:
 | Required crystals | `CrystalTargetCount` = waypoints x laps: I1 8x3 = **24**, I2 10x3 = 30, I3 28x2 = 56, I4 27x2 = 54 |
 | Crystal placement | Each player has ONE crystal in their domain; on pickup the manager moves it to the next authored anchor plus a random point on a 35 u sphere (`CrystalManager.GetSpawnPointAroundAnchor`). Randomisation is preserved; nothing is seeded for the AI |
 | Timer | The game's own race clock: `SkimRaceScoreTracker` accumulates from `OnMiniGameTurnStarted`; `SkimRaceController` writes it into the winners' `Score` when the domain reaches the target |
-| Success | The AI's domain wins, its collected count reaches the target, and the authoritative finish time is <= 70.0 s (`SkimRaceRaceRecorder.Evaluate`) |
+| Success | The AI's domain wins, its collected count reaches the target, and the authoritative finish time is <= the intensity's limit (`SkimRaceRaceRecorder.Evaluate`) |
+| Limit | `SkimRaceRaceRecorder.DefaultLimitSeconds`: **I1 70 s, I2 80 s, I3 70 s, I4 70 s**. I2 was re-baselined from 70 s by product decision (§6.11). An explicit `limit` still overrides |
 
 Geometry that bounds what is possible (route = anchor-to-anchor, top speed 300 u/s):
 
@@ -291,10 +292,102 @@ looked like the reason upper seats run slower (the I2 ceiling above). Re-measure
 it is within noise (2 AI: 53/80 seats <= 70 s at step 1 vs 57/80 at step 3; 3 AI: 56/120 vs 65/120) -
 the stella's top is ridged, so an upper lane still skims part of the time. Left at 3.
 
+### 6.10 Intensity 2, second pass: where the time goes, and three mechanisms (2026-10-03)
+
+**Diagnosis** (`run.sh eval ... diag=1`, shipped I2 policy, 2 AI seats, 40 seeds, per seat per race):
+
+| Phase | Time | Mean boost | Mean speed | Skimming | Track hits |
+|---|---|---|---|---|---|
+| pull (approaching a crystal) | 34.3 s | 3.11 | 168 | 38 % | 10.6 |
+| post-pickup (1 s after each pickup) | 29.4 s | 3.68 | 191 | 25 % | 9.8 |
+| crossing (face change) | 26.2 s | 2.51 | 138 | 18 % | 3.1 |
+| line | 14.0 s | 1.84 | 97 | 41 % | 2.7 |
+
+Face changes are NOT the main strike source; the approach to a crystal and the second after taking it
+are (20 of ~26 hits). The hits are over the plate's FACE (|lateral| < 10, hull 1.6-2 u off the plate,
+the shell top is 1.5) with only 10-17 deg of heading error: the straight terminal chord DESCENDS to a
+pass point just above the plate, the crystal is taken ~24 u early, and the lagging hull keeps diving.
+The hull also skims only 18-41 % of the time, because each crystal's raised-cosine swerve is +-266 u
+wide against ~557 u gaps - the line is almost always detouring - so the boost sits at ~2.5-3.7.
+
+**What each lever did** (20 seeds; "ceiling" = every hull contact off):
+
+| Change | 2 AI race median | Notes |
+|---|---|---|
+| shipped | 109.9 s | ceiling 83.9 s |
+| no terminal chord (`CrystalDirectDistance=0`) | 108.9 s | ceiling 93.0 s |
+| sharper swerves (half-width 100-200, pass margin 2-6), no strikes | 151-218 s, mostly DNF | the hull cannot follow them: misses, orbits, recovery |
+| `LaneHeightStep=1` | 101.3 s | ceiling **69.9 s** (11/20 races every seat <= 70 s) |
+| lane 1 + tracking MPC strike term + no terminal chord | **96.8 s** | strikes pull 3.8 / crossing 3.6 per race; best real result |
+| `UseLineTracker` (new, lag-inverting path tracker) | 154-218 s | tracks straights to ~0 u, lags the swerve's peak, misses the crystal |
+| `CaptureThrottleSearch` (new, rollout-checked throttle) | 103.6-106.8 s | recoveries -> ~0, but the lifts cost more: 1-seat ceiling 66.5 -> 81.8 s |
+
+**The 3-seat ceiling** (lane 1, strike-free) is 126.5 s race median although the seat median is
+74 s: per-seat times such as [67.2 122.1 65.6] and [81.3 79.5 182.9] show one seat per race losing
+8-21 crystal approaches to orbit-and-recover. The capture search removes that (race median 85.2 s,
+recoveries 0.1/race) but only by flying slower everywhere.
+
+**Two new mechanisms ship OFF** and are documented as negative results:
+- `UseLineTracker` - commands the desired heading plus the turn the line makes over the hull's lag
+  (curvature x speed x 1/FollowRate) with a cross-track correction. Correct on straights; pure
+  pursuit's corner cutting is what actually takes the crystal.
+- `CaptureThrottleSearch` - rolls the hull's dynamics forward at five throttles and flies the highest
+  whose path does not pass the crystal outside its capture sphere. It removes the orbits, at a net loss.
+
+**Stop condition met (prompt step 5): no line found has a strike-free ceiling under 70 s for 3 AI
+seats, and the best 2 AI ceiling (69.9 s) leaves no margin for a single strike. No I2 policy change
+shipped.** What the numbers say would be needed: a capture controller that takes crystals at full
+speed without orbiting (the 1-seat strike-free pilot does it 17/20 times with pure pursuit) AND a
+line that skims well over 40 % of the time - the two pull in opposite directions on this track,
+whose crystals sit 22-70 u off the ribbon with a 24 u capture radius.
+
+### 6.11 I2 target re-baselined to 80 s (2026-10-04)
+
+**The decision.** The I2 limit is now **80 s**. That is a product decision made by the user, not an AI
+result: 70 s is not reachable at I2 without changing the game for every pilot. Measured with the
+rules changed for EVERY pilot (sim, 2 AI seats, 20 seeds, best config, untuned for each rule set):
+track-plate contacts free -> winner <= 70 s in 3/20, median 73.6 s; laid-mass contacts free -> 5/20,
+77.0 s; both free -> 11/20, 69.2 s. Even removing every contact penalty from the game is a coin flip, so
+the game was left alone and the target moved. I1, I3 and I4 stay at 70 s
+(`SkimRaceRaceRecorder.DefaultLimitSeconds`; the simulator copies the table and takes `limit=`).
+
+**Structural levers tried first** (12 fixed seeds, 2 AI, winner median; baseline = lane step 1 +
+tracking MPC strike term + no terminal chord, 79.7 s, 7/12 <= 80 s):
+
+| Change | Winner median | <= 80 s | Verdict |
+|---|---|---|---|
+| `HullGuardSeconds` 0.67 (re-test on the exact shell) | 78.1 s | 7/12 | kept (tuned) |
+| `HullGuardSeconds` 0.4 / 1.0 | 84.7 / 80.9 s | 3, 6 | noise |
+| `SlabGuardSeconds` 0.67 | 84.7 s | 4/12 | rejected |
+| `PickupClearDistance` 14 / 30 | 80.7 / 89.8 s | 5, 0 | noise / worse |
+| new height-rate floor (predicted hull height over the plate, steer up past the tracking MPC) | 96-130 s | 0-4 | **rejected and removed**: the escape lifts throw the hull off the line and into the other seat's rails (other-rail resets 3.3 -> 6-7/race) |
+
+None beat the baseline beyond 12-seed noise. **The tune did.** Winner-scored CEM (`score=winner
+set=winner limit=80 over=1`, 2 AI seats, 28 ms frames with 50% jitter, 8 seeds/candidate; the
+tunable set now includes `HullGuardSeconds`, `HullMargin`, `PickupClearDistance`) for 3 iterations,
+then resumed from its best for 10 (the first run hit a background-job time limit). Tuner score 98.5 ->
+70.4; its own final check (40 fresh seeds, seedbase 99000): winner <= 80 s in 38/40, median 74.1 s.
+
+**Validation** (40 fresh seeds, seedbase 50000, 28 ms frames, every race scored; shipped
+`skimrace-v1-i2` on the same seeds for comparison):
+
+| | v1-i2 winner median | v1-i2 <= 80 s | **v2-i2 winner median** | **v2-i2 <= 80 s** | v2 winner p90 | v2 strikes/seat/race (track) |
+|---|---|---|---|---|---|---|
+| 2 AI | 97.0 s | 0/40 | **76.1 s** | **30/40** | 83.7 s | 4.6 |
+| 3 AI | 98.7 s | 0/40 | **75.7 s** | **31/40** | 81.6 s | 6.7 |
+
+The bar set before validating (winner median <= 76 s and >= 80% of winners <= 80 s at both seat
+counts) was **missed narrowly** (76.1 s; 75% and 78%). Per the rule set in advance the policy ships
+anyway because it beats v1-i2 by ~21 s and 0/40 -> 30-31/40. The remaining resets are mostly laid mass
+(pickup rings 3.6/race at 2 AI, 8.5 at 3 AI; other seats' rails 1.9 / 7.1), which is where the next
+gain is. Tuned values the code does not read under these switches (`Level*`, `CaptureMargin`,
+`TerminalChordClearance`, `TrackGuardMargin`) are left at their defaults in the asset.
+
 ## 7. Running the benchmark
 
 In the editor: **FrogletTools > AI > Skim Race AI Benchmark** (races, intensity, players), or drop
-`Library/SkimRaceAIRemote/command.json` = `{"op":"bench","races":10,"intensity":1,"players":2,"limit":70,"timeout":120}`
+`Library/SkimRaceAIRemote/command.json` = `{"op":"bench","races":10,"intensity":1,"players":2,"timeout":120}`
+(the limit defaults to the intensity's, §1; add `"limit":N` to override)
 into an open editor (`SkimRaceBenchmarkRemote`; also `{"op":"tests"}` runs `SkimRaceAITests`).
 Each race appends a JSON record (crystal timestamps, authoritative finish time, frame time, recoveries,
 policy) to `BenchmarkResults/SkimRaceAI/` (git-ignored). Summarise with
@@ -452,20 +545,30 @@ Runs excluded, and why (all disclosed, none are AI results):
 
 ## 9. Status and known limits
 
-**The 70 s requirement is met on intensity 1 only, and only in the form the editor can observe.**
+**Limits: I1 70 s, I2 80 s (re-baselined, §6.11), I4 70 s. Met on I1 (editor, winner); I2 80 s is
+nearly met in the simulator with `skimrace-v2-i2` and NOT YET VERIFIED in the editor.**
+
+- **I2 at 80 s (§6.11):** `skimrace-v2-i2`, sim, 40 fresh seeds: winner median 76.1 s (2 AI) / 75.7 s
+  (3 AI), winner <= 80 s in 30/40 / 31/40, against 0/40 for v1-i2. Just short of the pre-set bar.
+  In-editor matrix owed (the editor was in a play session during this pass).
 
 - **I1:** last valid in-editor matrix (pre-fix pilot code, §8.1): 19/20 races won within 70 s across
   1 and 2 AI seats. That judges the WINNING seat - a Skim Race ends at the first finisher, so no other
   seat's time exists. The strict per-seat reading is only measurable in the simulator: every AI seat
   <= 70 s in 12-22 of 40 races with 2 AI seats and 2-4 of 40 with 3 AI seats (§6.6, §6.9).
-- **I2: not met.** Simulator, 2/3 AI seats: race median 112-116 s, 0/40 with every seat <= 70 s.
+- **I2 at the original 70 s: not met** (history; superseded by the 80 s limit above). Simulator, 2/3 AI seats: race median 112-116 s, 0/40 with every seat <= 70 s.
   The strike-free ceiling is 66-70 s, so 70 s needs essentially zero strikes; the pilot takes ~15-30
   per race and no lever or tune tried reduces that without losing more time (§6.8).
 - **I4: not met, and not reachable with this approach.** Even with every hull contact switched off
   the simulator needs ~124 s for one AI seat (§6.7).
 - **I3: not attempted; physically impossible** (56 crystals over ~37,000 u needs 528 u/s; the
   Squirrel tops out at 300 u/s).
-- **Owed:** the in-editor matrix for the current pilot code (§8.0).
+- **I2 second pass (§6.10):** best real result 96.8 s race median at 2 AI seats (lane step 1 +
+  tracking-MPC strike term + no terminal chord); strike-free ceilings 69.9 s (2 AI) and 85-127 s
+  (3 AI). Stop condition met; no policy change shipped.
+- **Owed:** the in-editor matrix for the current pilot code (§8.0) - I2 at players 3 and 4 against
+  80 s, I1 at players 3 against 70 s - and an editor compile/test pass for the §6.10/§6.11 code (the
+  editor was in a play session during both passes).
 
 What blocks I2 and I4: hull strikes on the ribbon's super-shield contact shell while taking crystals
 that sit within a few units of it (each resets the skim boost to 1x and cuts speed by up to half), and
