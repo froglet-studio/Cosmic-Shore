@@ -414,6 +414,33 @@ These are environment results, not AI results (the simulator at 115 ms frames al
 same policy from 53 s to 77 s). **The in-editor matrix for the current code is still owed** - run it
 on an idle machine with the editor focused (§7), 2 launches x 5 races per cell, players 3 and 4.
 
+### 8.0c Hand-played races are slower because the editor renders at ~8 fps (2026-10-04)
+
+Hand-played I2 races, 3 players (human seat Joseph + 2 AI), recorded by the new editor-only recorder
+(`manual_I2_20261004-181400.jsonl`, every race listed), policy `skimrace-v2-i2` on both AI seats:
+
+| Race | Winner (s) | Frame ms (mean / max) | Joseph's crystals |
+|---|---|---|---|
+| 0 | 92.8 | 126.8 / 256 | 2 |
+| 1 | 90.3 | 128.7 / 245 | 2 |
+| 2 | 128.2 | 126.3 / 287 | 4 |
+
+Earlier unrecorded hand-played races: 103.7, 105.6, 117.3, 123.0 s (one with Joseph on 0 crystals,
+so the human seat's trail is not the cause). **Same policy, same race; the difference is the frame
+rate.** Simulator, same 12 seeds, only the frame time changed: 35 ms -> winner median 73.7 s, 11/12
+<= 80 s; 127 ms -> 94.0 s, 2/12. The hull turns and moves in 38 u steps at 127 ms and 300 u/s, so
+pass points are overshot and plates are struck between samples.
+
+Why the editor renders at 127 ms while being played by hand (and at 33-46 ms in the background
+benchmark) is NOT yet established. Observed during hand play: quality Very High with vsync on, a
+different editor layout. Candidates in cost order: Game view size/resolution on a Retina display,
+quality level, the Scene view rendering beside the Game view. Check with the Game view's Stats
+overlay. A player build is the representative frame rate; whether the AI must also hold 80 s at
+~8 fps in the editor is an open decision.
+
+Note: on macOS, Unity rewrites its preferences plist on quit and DROPS `NSAppSleepDisabled` (it was
+gone after a restart). Re-apply it before every background benchmark session.
+
 ### 8.0b v2-i2 editor matrix (2026-10-04, valid - every race listed)
 
 Branch `feat/skimrace-ai` at `02da300fe` (+ report fix), editor 6000.3.17f1, Unity in the
@@ -590,7 +617,8 @@ Runs excluded, and why (all disclosed, none are AI results):
 ## 9. Status and known limits
 
 **Limits: I1 70 s, I2 80 s (re-baselined, §6.11), I4 70 s. Met on I1 (editor, winner); I2 80 s is met
-in most editor races with `skimrace-v2-i2` (2 AI 7/10, 3 AI 10/10 incl. team wins; §8.0b), not in all.**
+in most benchmark races with `skimrace-v2-i2` (2 AI 7/10, 3 AI 10/10 incl. team wins; §8.0b) at 33-46 ms
+frames, NOT in hand-played editor races, which ran at ~127 ms frames and took 90-128 s (§8.0c).**
 
 - **I2 at 80 s (§6.11, §8.0b):** `skimrace-v2-i2`. Editor: 2 AI winner <= 80 s in 7/10 (median
   72.6 s, both misses after recoveries); 3 AI 10/10 domain wins <= 80 s (6 of them two-AI team wins;
