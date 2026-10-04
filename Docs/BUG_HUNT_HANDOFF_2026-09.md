@@ -48,6 +48,7 @@ Confidence scale:
 | 21 | **Presence lobby is rejoined with backoff after a failed reconnect (was §2.2).** After three refresh errors the lobby was cleared and rejoined once; if that one attempt failed the lobby stayed null and nothing retried. `HostConnectionService` now retries from `Update` at 3s, 6s, 12s up to 60s until the lobby is back. Shipped on `Bug_Hunt`. | `HostConnectionService` |
 | 22 | **Invite-clear always takes the lobby mutex unless the caller holds it (was §2.3).** The shared `_insideRefreshCycle` flag meant "some refresh is running", so a user cancel, a party-leave callback, or a fire-and-forget clear that outlived its refresh skipped the lock and could race a send. It is replaced by an explicit `callerHoldsLobbyMutex` argument, true only for the one awaited call inside `RefreshPartyMembersAsync`. Shipped on `Bug_Hunt`. | `HostConnectionService`, `LobbyPropertyWriter` (comment) |
 | 23 | **Reconnect from the menu is a valid app-state transition (was §2.4).** `ApplicationStateMachine` refused `MainMenu → Authenticating`, so reconnect logged `Invalid transition` and the state mirror stayed `MainMenu` during the re-boot. The edge is now in the table from the menu and from the in-game states, with tests. Shipped on `Bug_Hunt`. | `ApplicationStateMachine`, `ApplicationStateMachineTests` |
+| 24 | **Play Again fade-in is armed before the init delay (was §3.1).** `FadeFromBlackOnReplay` was subscribed to `OnClientReady` after the 1 s `InitDelayMs` wait, so a vessel that became ready earlier left the replay overlay black. It is now armed in `OnNetworkSpawn` and removed on despawn. Shipped on `Bug_Hunt`. | `MultiplayerMiniGameControllerBase` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -118,6 +119,11 @@ Confidence scale:
   disconnect notice). The console must not show `Invalid transition: MainMenu → Authenticating`;
   with the `Boot` channel verbose you should see `[AppState] MainMenu → Authenticating`, then
   `Authenticating → MainMenu` once the menu is back. The menu should still load as before.
+- **STILL TO TEST (revisit): 3.1, kept on Bug_Hunt untested at Yash's call.**
+- **Play Again fade (3.1):** in Skim Race (host plus a client if you can), finish a round and press
+  Play Again several times in a row. Every peer must fade back in to the arena each time; the
+  screen must never stay black. Also quit to the menu right after pressing Play Again once, and
+  start a normal game: it must not fade oddly.
 
 ---
 
@@ -130,13 +136,6 @@ Confidence scale:
 ---
 
 ## 3. Confirm first
-
-### 3.1 Play Again (scene reload) may leave the screen black
-- **Where:** `MultiplayerMiniGameControllerBase.cs` ~171-179.
-- **Suspicion:** `FadeFromBlackOnReplay` is subscribed AFTER the `InitDelayMs` wait, so if
-  `OnClientReady` fires inside that window, the fade-from-black is missed.
-- **Repro:** Skim Race → finish → Play Again, several times, host and client. If it never sticks
-  black, close it.
 
 ---
 

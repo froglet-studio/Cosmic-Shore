@@ -8,6 +8,24 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-3.1 — Play Again could leave the screen black when the vessel was ready early
+
+- **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.
+- **Symptom (suspected):** after Play Again (scene-reload replay) a host or client stays on a black
+  overlay and never fades in.
+- **Root cause:** `MultiplayerMiniGameControllerBase` subscribed `FadeFromBlackOnReplay` to
+  `OnClientReady` inside `InitializeAfterDelay`, after the `InitDelayMs` (1 s) wait and after
+  `InitializeGame()`. The player vessel can finish initialising inside that window, so
+  `OnClientReady` had already fired, the subscription never saw it, and nothing lowered the overlay.
+- **Fix:** the fade is now armed in `OnNetworkSpawn`, as soon as `IsReplayReload` is seen (the flag
+  is cleared there). The late block is removed. `OnNetworkDespawn` unsubscribes so an armed fade
+  cannot outlive the scene. The handler still unsubscribes itself on first run.
+- **Verification:** gate scripts pass; not run in Unity (needs a multiplayer replay). Retest is on
+  the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-2.4 — reconnect from the main menu was refused by the app-state machine
 
 - **Date:** fixed 2026-10-05; kept on `Bug_Hunt` with the retest deferred to the handoff revisit list (not merged to bleeding-edge). Repro skipped.

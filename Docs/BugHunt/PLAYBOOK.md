@@ -340,5 +340,19 @@ of loosening the table.
 
 ---
 
+## 15. Subscribe to a one-shot event before any wait, not after
+
+**Shows up as:** a screen, spinner or flag that never clears, but only sometimes, and only when the
+machine was fast (BH-3.1: black screen after Play Again).
+
+**Why:** a handler added after `await UniTask.Delay(...)` misses an event that fired during the
+delay. Events such as `OnClientReady` are raised once and not replayed.
+
+**Fix pattern:** subscribe in `OnNetworkSpawn` / `OnEnable`, before any wait. Make the handler
+unsubscribe itself, and unsubscribe again on despawn so an armed handler cannot leak into the next
+scene.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).
