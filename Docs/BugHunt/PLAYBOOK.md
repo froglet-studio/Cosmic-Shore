@@ -312,5 +312,18 @@ success, shutdown or when another path restores the state. Log each retry once.
 
 ---
 
+## 13. "Am I holding the lock?" must be answered per call, not with a shared flag
+
+**Shows up as:** two lobby writes overwriting each other, with the lock apparently in place (BH-2.3).
+
+**Why:** a field such as `_insideRefreshCycle` says that someone is inside the section, not that the
+current caller is. Unrelated callers, and continuations that outlive the section, read it wrongly and
+skip the lock. A non-reentrant semaphore makes the opposite mistake a deadlock.
+
+**Fix pattern:** pass `callerHoldsMutex` explicitly, true only where the caller is awaited inside
+the locked section. Fire-and-forget work started inside the section takes the lock itself.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).

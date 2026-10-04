@@ -46,6 +46,7 @@ Confidence scale:
 | 19 | **A departed player's vessel handed to the AI is now marked AI (was §1.12).** `ConvertPlayerToAI` only flipped `NetIsAI`, so the local `Player.IsInitializedAsAI` stayed false on the server and every client. `Player` now follows `NetIsAI` changes (`OnNetIsAIChanged`). Shipped on `Bug_Hunt`. | `Player` |
 | 20 | **Cloud Save no longer tells a failed load apart from "no data" (was §2.1).** `ICloudSaveProvider.TryLoadAsync` reports `Loaded`, `Missing` or `Failed`. After a `Failed` load a repository keeps using its local snapshot but does not upload to the cloud until a retry gets a definite answer (`Missing` allows the write; `Loaded` adopts the real record). An unreadable stored value now counts as `Failed`. Shipped on `Bug_Hunt`. | `ICloudSaveProvider`, `UGSCloudSaveProvider`, `CloudDataRepository` |
 | 21 | **Presence lobby is rejoined with backoff after a failed reconnect (was §2.2).** After three refresh errors the lobby was cleared and rejoined once; if that one attempt failed the lobby stayed null and nothing retried. `HostConnectionService` now retries from `Update` at 3s, 6s, 12s up to 60s until the lobby is back. Shipped on `Bug_Hunt`. | `HostConnectionService` |
+| 22 | **Invite-clear always takes the lobby mutex unless the caller holds it (was §2.3).** The shared `_insideRefreshCycle` flag meant "some refresh is running", so a user cancel, a party-leave callback, or a fire-and-forget clear that outlived its refresh skipped the lock and could race a send. It is replaced by an explicit `callerHoldsLobbyMutex` argument, true only for the one awaited call inside `RefreshPartyMembersAsync`. Shipped on `Bug_Hunt`. | `HostConnectionService`, `LobbyPropertyWriter` (comment) |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -106,6 +107,11 @@ Confidence scale:
   minute the console should show "Presence lobby rejoined", the online list should refill on both
   sides, and an invite sent after that should arrive. Before the fix the list stayed empty until
   a restart.
+- **STILL TO TEST (revisit): 2.3, merged untested at Yash's call.**
+- **Invite clear vs send (2.3):** with two players, send an invite and cancel it straight away,
+  then send it again; the second invite must arrive and fire once. Repeat while the other player
+  joins or leaves the party. Also let an invite time out, then re-invite. No stuck or doubled
+  invites, and no hang on the invite button (a hang would mean a lock deadlock).
 
 ---
 
@@ -114,14 +120,6 @@ Confidence scale:
 ---
 
 ## 2. Larger items (need design or several files)
-
-### 2.3 Invite-clear runs without the property-write mutex — Medium
-- **Where:** `HostConnectionService.cs` ~2034 (`needsLock`). Callers: ~757, 1729, 1810, 1915, 2000, 2422.
-- **Bug:** some paths clear `invite_payloads` without taking the lock the send path takes, so a
-  clear and a send race and one overwrites the other.
-- **Consequence:** an invite that silently never arrives, or one that re-fires.
-- **Fix:** every write to the per-player invite property goes through the same lock. Audit the six
-  callers.
 
 ### 2.4 `ApplicationStateMachine` refuses MainMenu → Authenticating — High
 - **Where:** `Assets/_Scripts/System/ReconnectService.cs:193` calls
