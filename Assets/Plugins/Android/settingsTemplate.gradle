@@ -18,9 +18,6 @@ dependencyResolutionManagement {
         mavenCentral()
 // Android Resolver Repos Start
         def unityProjectPath = $/file:///**DIR_UNITYPROJECT**/$.replace("\\", "/")
-        maven {
-            url "https://maven.google.com/" // Packages/com.unity.ads/Editor/Source/Dependencies.xml:7
-        }
         mavenLocal()
 // Android Resolver Repos End
         flatDir {
