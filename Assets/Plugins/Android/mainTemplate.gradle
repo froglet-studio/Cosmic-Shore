@@ -21,6 +21,13 @@ android {
 }
 // Android Resolver Exclusions End
 android {
+    // namespace/ndkPath/ndkVersion MUST stay in this block, outside the "Android Resolver" markers:
+    // EDM4U rewrites everything between those markers on every resolve and silently drops them,
+    // and AGP then fails with "Namespace not specified" (plus a knock-on launcher compileSdk error).
+    namespace "com.unity3d.player"
+    ndkPath "**NDKPATH**"
+    ndkVersion "**NDKVERSION**"
+
     compileSdk **APIVERSION**
     buildToolsVersion '**BUILDTOOLS**'
 
