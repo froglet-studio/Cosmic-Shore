@@ -8,6 +8,33 @@ of Yash's `Editor.log`. The 0510 copy contains the whole 0447 session plus the l
 
 ---
 
+## BH-2.1 — Cloud Save could not tell "load failed" from "no data yet"
+
+- **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.
+- **Symptom (risk):** on a flaky connection a player's progression, unlocks or profile could be
+  replaced by defaults.
+- **Root cause:** `UGSCloudSaveProvider.LoadAsync` returned `null` both for a missing key and
+  for any error (offline, auth, network, unreadable value). `CloudDataRepository` treated both as
+  "new player", kept its fresh default object and uploaded it on the next write, over the
+  real record.
+- **Fix:**
+  - `ICloudSaveProvider.TryLoadAsync` returns `CloudLoadResult<T>` with a `CloudLoadStatus` of
+    `Loaded`, `Missing` or `Failed`. `LoadAsync` stays as a wrapper. A stored value that cannot be
+    read is `Failed`, not `Missing`.
+  - `CloudDataRepository.LoadAsync` records a failed load. It still falls back to the local
+    snapshot so the player can play. `SaveAsync` still writes the local snapshot, but while the
+    load is marked failed it does not upload: it retries the load first. `Missing` clears the flag
+    and allows the upload, `Loaded` adopts the cloud record (cloud wins, as on a normal load; the
+    pending local edits are dropped and a warning is logged), and `Failed` leaves the data dirty to
+    retry later. `ResetAsync` clears the flag because a deliberate wipe is meant to overwrite.
+- **Trade-off:** edits made while the load was failing are dropped if the real record then loads.
+  That matches what already happened on the next launch, and is safer than overwriting the record.
+- **Verification:** all gate scripts pass; not run in Unity. No test double implements
+  `ICloudSaveProvider`, so no tests needed updating. Retest is on the handoff playtest list.
+- **PR/commit:** pending.
+
+---
+
 ## BH-1.12 — a departed player's vessel handed to the AI was not marked AI
 
 - **Date:** fixed 2026-10-05; merged 2026-10-05 at Yash's call with the retest deferred to the handoff revisit list. Repro skipped.

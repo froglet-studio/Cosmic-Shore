@@ -44,6 +44,7 @@ Confidence scale:
 | 17 | **Timestamps formatted with the invariant culture (was §1.9).** `PostHogAnalyticsSink` and `AnalyticsServiceFacade` wrote their ISO-8601 UTC timestamps with the device culture, and `ScreenshotDirectorConfigSO.BuildFileName` and `DesktopPlatformServices.TimestampedName` built file names the same way. On ar-SA, th-TH and fa-IR that renders a non-Gregorian year or non-Latin digits. All four now pass `CultureInfo.InvariantCulture`. Shipped on `Bug_Hunt`. | `PostHogAnalyticsSink`, `AnalyticsServiceFacade`, `ScreenshotDirectorConfigSO`, `DesktopPlatformServices` |
 | 18 | **Non-ASCII UI strings replaced with ASCII (was §1.11).** The only UI font (ALDRICH) has 97 glyphs, so `◀ ▶ ✕ › · × ● ◆` rendered as empty boxes. Replaced in `SpectatorOverlay` (buttons and hint), `ToyConfigureModal` (Back), `ToyVariantCard` (branch marker), `DogFightScoringRuleSO` (breakdown now reads `N pts - B rounds, M rockets`), and the Broadside and Undertow scoring-rule labels (`·` became `,`). Shipped on `Bug_Hunt`. | `SpectatorOverlay`, `ToyConfigureModal`, `ToyVariantCard`, `DogFightScoringRuleSO`, `BroadsideScoringRuleSO`, `UndertowScoringRuleSO` |
 | 19 | **A departed player's vessel handed to the AI is now marked AI (was §1.12).** `ConvertPlayerToAI` only flipped `NetIsAI`, so the local `Player.IsInitializedAsAI` stayed false on the server and every client. `Player` now follows `NetIsAI` changes (`OnNetIsAIChanged`). Shipped on `Bug_Hunt`. | `Player` |
+| 20 | **Cloud Save no longer tells a failed load apart from "no data" (was §2.1).** `ICloudSaveProvider.TryLoadAsync` reports `Loaded`, `Missing` or `Failed`. After a `Failed` load a repository keeps using its local snapshot but does not upload to the cloud until a retry gets a definite answer (`Missing` allows the write; `Loaded` adopts the real record). An unreadable stored value now counts as `Failed`. Shipped on `Bug_Hunt`. | `ICloudSaveProvider`, `UGSCloudSaveProvider`, `CloudDataRepository` |
 
 ### Playtest items for the shipped fixes
 - **Squirrel ring (#6):** fly Menu_Main freestyle → an arcade game → back, 2-3 round trips, then
@@ -89,6 +90,14 @@ Confidence scale:
   client quit mid-round. The ship must keep flying under the AI, its object name must change to
   `AI`, and at the next round reset it must be restarted by the AI (not left idle). Watch for the
   host console showing no new errors.
+- **STILL TO TEST (revisit): 2.1, merged untested at Yash's call.**
+- **Cloud Save failed load (2.1):** (a) normal boot online: profile, hangar, settings and
+  progress load as before, and a change you make is still saved (check the cloud record or relaunch).
+  (b) With a signed-in account that has progress, start the game with the network cut (or block
+  Unity Services), make a change, then restore the network and wait a minute or play on: the
+  console may show "adopting it instead of uploading local data", and the original progress must
+  still be there. It must never reset to a new-player state. (c) A fresh account still saves its
+  first changes.
 
 ---
 
@@ -97,17 +106,6 @@ Confidence scale:
 ---
 
 ## 2. Larger items (need design or several files)
-
-### 2.1 Cloud Save cannot tell "load failed" from "no data yet" — High, highest stakes
-- **Where:** `Assets/_Scripts/System/CloudData/Providers/UGSCloudSaveProvider.cs` (~64-117: the
-  catches return `null`). Also `CloudDataRepository` and `PlayerDataService`.
-- **Bug:** a network/auth error returns the same `null` as a missing key. The repository then
-  treats the player as new, seeds defaults, and **saves those defaults over the real cloud record**
-  on the next write.
-- **Consequence:** progression / unlock / profile wipe on a flaky connection.
-- **Fix:** return a result type (`Loaded`, `Missing`, `Failed`). On `Failed`, fall back to
-  `LocalCloudDataCache` and **block writes** for that key until a successful load. This touches
-  every repository, so plan it as its own PR.
 
 ### 2.2 Presence lobby is never rejoined after it drops — Medium
 - **Where:** `HostConnectionService.cs`: the `Update` gate (~418), the refresh loop (~1496-1528), and

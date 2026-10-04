@@ -283,5 +283,21 @@ also refreshes the copy.
 
 ---
 
+## 11. "Not found" and "failed" must not look the same
+
+**Shows up as:** a player's saved data reset to defaults after a network blip (BH-2.1).
+
+**Why:** a loader that returns `null` for both "key missing" and "request failed" lets the caller
+seed defaults and later upload them over the real record.
+
+**Fix pattern:** return a three-way result (`Loaded`, `Missing`, `Failed`). On `Failed`, use the local
+snapshot for play, block uploads, and retry the load before the next upload. Treat data that exists
+but cannot be parsed as `Failed`. A deliberate reset is the only thing allowed to skip the block.
+
+**Check when adding a repository:** it must go through `CloudDataRepository`, not call the
+provider's save directly.
+
+---
+
 Threading errors (`EnsureRunningOnMainThread`, UGS callbacks off the main thread) have their own
 guide: [`../THREADING.md`](../THREADING.md).
